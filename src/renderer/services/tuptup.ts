@@ -156,17 +156,9 @@ class TuptupService {
     const headers = this.generateHeaders();
     const url = `${TUPTUP_BASE_URL}${endpoint}`;
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API request failed: ${response.status} ${errorText}`);
-    }
-
-    return response.json();
+    // 使用 Tauri HTTP API
+    const { httpRequest } = await import('./httpClient');
+    return httpRequest<T>(url, { headers });
   }
 
   async getUserInfo(): Promise<TuptupUserInfo> {
@@ -208,18 +200,10 @@ class TuptupService {
     };
 
     const url = `${TUPTUP_BASE_URL}/api/client/smtp/config`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`SMTP config request failed: ${response.status} ${errorText}`);
-    }
-
-    const smtpConfig = await response.json();
-    return smtpConfig;
+    
+    // 使用 Tauri HTTP API
+    const { httpRequest } = await import('./httpClient');
+    return httpRequest<TuptupSmtpConfig>(url, { headers });
   }
 }
 

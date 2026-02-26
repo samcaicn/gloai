@@ -49,6 +49,9 @@
       "dialog": false,
       "pubkey": ""
     },
-    "dialog": {}
+    "dialog": {},
+    "http": {
+      "scope": ["https://claw.hncea.cc/**"]
+    }
   }
 }
