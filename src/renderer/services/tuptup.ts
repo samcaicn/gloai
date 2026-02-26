@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import CryptoJS from 'crypto-js';
 
 interface TuptupUserInfo {
   id: string;
@@ -72,7 +72,7 @@ class TuptupService {
 
   private generateSignature(timestamp: number, apiKey: string, apiSecret: string): string {
     const data = `${timestamp}${apiKey}${apiSecret}`;
-    return crypto.createHash('sha256').update(data).digest('hex');
+    return CryptoJS.SHA256(data).toString();
   }
 
   private generateHeaders(): Record<string, string> {
@@ -135,7 +135,7 @@ class TuptupService {
     const timestamp = Date.now();
     
     const data = `${timestamp}${API_KEY}${API_SECRET}`;
-    const signature = crypto.createHash('sha256').update(data).digest('hex');
+    const signature = CryptoJS.SHA256(data).toString();
 
     const headers = {
       'X-App-Key': API_KEY,

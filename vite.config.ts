@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src/renderer'),
+      crypto: 'crypto-js',
     },
   },
   build: {
@@ -21,7 +22,6 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     host: true,
-    // 配置静态文件服务
     fs: {
       allow: ['..', './SKILLs'],
     },
