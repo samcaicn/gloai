@@ -130,30 +130,58 @@ const EmailSkillConfig: React.FC<EmailSkillConfigProps> = ({ onClose }) => {
   const persistQueuedRef = useRef(false);
   const latestConfigRef = useRef<Record<string, string>>({});
 
+  // 自动获取 SMTP 配置，带重试机制
+  const fetchSmtpConfig = async (retryCount = 3) => {
+    for (let i = 0; i < retryCount; i++) {
+      try {
+        const smtpConfig = await tuptupService.getSmtpConfig();
+        if (smtpConfig) {
+          setSmtpHost(smtpConfig.host || '');
+          setSmtpPort(smtpConfig.port ? String(smtpConfig.port) : '587');
+          setSmtpSecure(smtpConfig.secure ? 'true' : 'false');
+          if (smtpConfig.username) setEmail(smtpConfig.username);
+          if (smtpConfig.password) setPassword(smtpConfig.password);
+          setSmtpLoadError(null);
+          // 自动保存配置
+          queuePersist();
+          return true;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch SMTP config (attempt ${i + 1}):`, error);
+        // 重试前等待 1 秒
+        if (i < retryCount - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+    return false;
+  };
+
+  // 检查登录状态并在过期时重新获取 SMTP 配置
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      if (tuptupService.isLoginExpired()) {
+        console.log('Login session expired, refreshing SMTP config...');
+        await fetchSmtpConfig();
+      }
+    };
+
+    // 每 5 分钟检查一次登录状态
+    const interval = setInterval(checkLoginStatus, 5 * 60 * 1000);
+    
+    // 初始检查
+    checkLoginStatus();
+
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const loadConfig = async () => {
-      let smtpConfig = null;
-      try {
-        smtpConfig = await tuptupService.getSmtpConfig();
-        setSmtpLoadError(null);
-      } catch (error) {
-        console.error('Failed to load SMTP config:', error);
-        setSmtpLoadError('无法加载默认 SMTP 配置，请手动填写');
-      }
-
+      // 1. 先获取本地保存的配置
       const config = await skillService.getSkillConfig(SKILL_ID);
       
       if (config.IMAP_USER) setEmail(config.IMAP_USER);
       if (config.IMAP_PASS) setPassword(config.IMAP_PASS);
-      
-      if (smtpConfig) {
-        setSmtpHost(smtpConfig.host || '');
-        setSmtpPort(smtpConfig.port ? String(smtpConfig.port) : '587');
-        setSmtpSecure(smtpConfig.secure ? 'true' : 'false');
-        if (smtpConfig.username) setEmail(smtpConfig.username);
-        if (smtpConfig.password) setPassword(smtpConfig.password);
-      }
-      
       if (config.IMAP_HOST) setImapHost(config.IMAP_HOST);
       if (config.IMAP_PORT) setImapPort(config.IMAP_PORT);
       if (config.SMTP_HOST) setSmtpHost(config.SMTP_HOST);
@@ -161,6 +189,14 @@ const EmailSkillConfig: React.FC<EmailSkillConfigProps> = ({ onClose }) => {
       if (config.SMTP_SECURE) setSmtpSecure(config.SMTP_SECURE);
       if (config.IMAP_TLS) setImapTls(config.IMAP_TLS);
       if (config.IMAP_MAILBOX) setMailbox(config.IMAP_MAILBOX);
+
+      // 2. 自动从服务器获取 SMTP 配置（带重试）
+      const smtpConfigFetched = await fetchSmtpConfig();
+      
+      if (!smtpConfigFetched) {
+        // 如果获取失败，显示提示
+        setSmtpLoadError('无法加载默认 SMTP 配置，请手动填写');
+      }
 
       const detected = detectProvider(config);
       if (detected) setProvider(detected);

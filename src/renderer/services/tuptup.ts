@@ -48,26 +48,82 @@ interface TuptupConfig {
 
 const TUPTUP_BASE_URL = 'https://claw.hncea.cc';
 
+interface TuptupLoginInfo {
+  config: TuptupConfig;
+  timestamp: number;
+  expiresAt: number;
+}
+
 class TuptupService {
   private config: TuptupConfig | null = null;
+  private loginInfo: TuptupLoginInfo | null = null;
+  private readonly SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24小时过期
+
+  constructor() {
+    this.loadLoginInfo();
+  }
+
+  private saveLoginInfo() {
+    if (this.loginInfo) {
+      localStorage.setItem('tuptupLoginInfo', JSON.stringify(this.loginInfo));
+    }
+  }
+
+  private loadLoginInfo() {
+    try {
+      const saved = localStorage.getItem('tuptupLoginInfo');
+      if (saved) {
+        const loginInfo = JSON.parse(saved) as TuptupLoginInfo;
+        if (Date.now() < loginInfo.expiresAt) {
+          this.loginInfo = loginInfo;
+          this.config = loginInfo.config;
+        } else {
+          // 登录过期，清除信息
+          this.clearLoginInfo();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load login info:', error);
+      this.clearLoginInfo();
+    }
+  }
+
+  private clearLoginInfo() {
+    this.config = null;
+    this.loginInfo = null;
+    localStorage.removeItem('tuptupLoginInfo');
+  }
 
   setConfig(config: TuptupConfig) {
     this.config = config;
+    this.loginInfo = {
+      config,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + this.SESSION_EXPIRY
+    };
+    this.saveLoginInfo();
   }
 
   getConfig(): TuptupConfig | null {
+    this.loadLoginInfo(); // 每次获取配置时检查是否过期
     return this.config;
   }
 
   clearConfig() {
-    this.config = null;
+    this.clearLoginInfo();
   }
 
   isLoggedIn(): boolean {
+    this.loadLoginInfo(); // 每次检查登录状态时检查是否过期
     return this.config !== null && 
            this.config.apiKey.length > 0 && 
            this.config.apiSecret.length > 0 && 
            this.config.userId.length > 0;
+  }
+
+  isLoginExpired(): boolean {
+    this.loadLoginInfo();
+    return this.loginInfo === null || Date.now() >= this.loginInfo.expiresAt;
   }
 
   private generateSignature(timestamp: number, apiKey: string, apiSecret: string): string {
@@ -130,6 +186,12 @@ class TuptupService {
   }
 
   async getSmtpConfig(userId: string = '2'): Promise<TuptupSmtpConfig> {
+    // 检查登录状态是否过期
+    if (this.isLoginExpired()) {
+      console.warn('Login session expired, using default SMTP config');
+      // 登录过期时，仍然使用默认的 API 密钥获取配置
+    }
+
     const API_KEY = 'gk_981279d245764a1cb53738da';
     const API_SECRET = 'gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2';
     const timestamp = Date.now();
@@ -156,7 +218,8 @@ class TuptupService {
       throw new Error(`SMTP config request failed: ${response.status} ${errorText}`);
     }
 
-    return response.json();
+    const smtpConfig = await response.json();
+    return smtpConfig;
   }
 }
 

@@ -2405,27 +2405,75 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               'X-Signature': signatureHex,
             };
             
-            const [userInfoRes, tokenBalanceRes, planRes, overviewRes] = await Promise.all([
-              fetch('https://claw.hncea.cc/api/client/user/info', { headers }),
-              fetch('https://claw.hncea.cc/api/client/user/token-balance', { headers }),
-              fetch('https://claw.hncea.cc/api/client/user/plan', { headers }),
-              fetch('https://claw.hncea.cc/api/client/user/overview', { headers }),
-            ]);
-            
-            const userInfo = await userInfoRes.json();
-            const tokenBalance = await tokenBalanceRes.json();
-            const plan = await planRes.json();
-            const overview = await overviewRes.json();
-            
-            setTuptupUserInfo(userInfo);
-            setTuptupTokenBalance(tokenBalance);
-            setTuptupPlan(plan);
-            setTuptupOverview(overview);
-            
-            const { tauriApi } = await import('../services/tauriApi');
-            const packageStatus = await tauriApi.tuptup.getPackageStatus();
-            setTuptupPackageStatus(packageStatus);
+            // 测试网络连接
+            try {
+              const testResponse = await fetch('https://claw.hncea.cc/api/client/user/info', { 
+                headers, 
+                timeout: 10000 // 10秒超时
+              });
+              
+              if (!testResponse.ok) {
+                throw new Error(`服务器返回错误: ${testResponse.status} ${await testResponse.text()}`);
+              }
+              
+              const userInfo = await testResponse.json();
+              setTuptupUserInfo(userInfo);
+              
+              // 获取其他信息
+              const [tokenBalanceRes, planRes, overviewRes] = await Promise.all([
+                fetch('https://claw.hncea.cc/api/client/user/token-balance', { headers, timeout: 10000 }),
+                fetch('https://claw.hncea.cc/api/client/user/plan', { headers, timeout: 10000 }),
+                fetch('https://claw.hncea.cc/api/client/user/overview', { headers, timeout: 10000 }),
+              ]);
+              
+              const tokenBalance = await tokenBalanceRes.json();
+              const plan = await planRes.json();
+              const overview = await overviewRes.json();
+              
+              setTuptupTokenBalance(tokenBalance);
+              setTuptupPlan(plan);
+              setTuptupOverview(overview);
+              
+              try {
+                const { tauriApi } = await import('../services/tauriApi');
+                const packageStatus = await tauriApi.tuptup.getPackageStatus();
+                setTuptupPackageStatus(packageStatus);
+              } catch (tauriError) {
+                console.warn('获取包状态失败:', tauriError);
+                // 不影响登录流程
+              }
+              
+              // 登录成功后获取 SMTP 配置
+              try {
+                const { tuptupService } = await import('../services/tuptup');
+                const smtpConfig = await tuptupService.getSmtpConfig();
+                if (smtpConfig) {
+                  // 保存 SMTP 配置到本地
+                  const { skillService } = await import('../services/skill');
+                  const skillConfig = await skillService.getSkillConfig('imap-smtp-email');
+                  await skillService.setSkillConfig('imap-smtp-email', {
+                    ...skillConfig,
+                    SMTP_HOST: smtpConfig.host || '',
+                    SMTP_PORT: smtpConfig.port ? String(smtpConfig.port) : '587',
+                    SMTP_SECURE: smtpConfig.secure ? 'true' : 'false',
+                    SMTP_USER: smtpConfig.username || tuptupEmail,
+                    SMTP_PASS: smtpConfig.password || '',
+                    SMTP_FROM: smtpConfig.from || tuptupEmail,
+                    IMAP_USER: smtpConfig.username || tuptupEmail,
+                    IMAP_PASS: smtpConfig.password || '',
+                  });
+                  console.log('SMTP 配置获取并保存成功');
+                }
+              } catch (smtpError) {
+                console.error('获取 SMTP 配置失败:', smtpError);
+                // 不影响登录流程
+              }
+            } catch (networkError) {
+              console.error('网络连接错误:', networkError);
+              setTuptupError('网络连接失败，请检查网络连接后重试');
+            }
           } catch (error) {
+            console.error('登录错误:', error);
             setTuptupError(error instanceof Error ? error.message : '登录失败');
           } finally {
             setTuptupIsLoading(false);
@@ -2475,6 +2523,16 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     >
                       {tuptupIsLoading ? '登录中...' : '登录'}
                     </button>
+                    <div className="text-center mt-3">
+                      <a 
+                        href="https://ggai.tuptup.top" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-claude-accent hover:underline"
+                      >
+                        平台账户注册
+                      </a>
+                    </div>
                     {tuptupError && (
                       <div className="text-sm text-red-500 mt-2">{tuptupError}</div>
                     )}
