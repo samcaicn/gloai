@@ -424,6 +424,7 @@ impl TuptupService {
             .header("X-Email", email)
             .header("X-Timestamp", timestamp.to_string())
             .header("X-Signature", signature)
+            .header("X-Encryption", "aes-256-gcm")
             .send()
             .await?;
 
