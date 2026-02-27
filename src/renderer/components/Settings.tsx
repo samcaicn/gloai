@@ -2517,32 +2517,32 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               
               // 尝试获取用户信息
               try {
-                const info = await httpRequest('https://claw.hncea.cc/api/client/user/info', { headers });
-                userInfo = info as { user_id: string; email: string; username: string; vip_level: number };
+                const info = await httpRequest<{ user_id: string; email: string; username: string; vip_level: number }>('https://claw.hncea.cc/api/client/user/info', { headers });
+                userInfo = info;
               } catch (e) {
                 console.warn('获取用户信息失败:', e);
               }
               
               // 尝试获取token余额
               try {
-                const balance = await httpRequest('https://claw.hncea.cc/api/client/user/token-balance', { headers });
-                tokenBalance = balance as { balance: number; currency: string };
+                const balance = await httpRequest<{ balance: number; currency: string }>('https://claw.hncea.cc/api/client/user/token-balance', { headers });
+                tokenBalance = balance;
               } catch (e) {
                 console.warn('获取token余额失败:', e);
               }
               
               // 尝试获取套餐信息
               try {
-                const planInfo = await httpRequest('https://claw.hncea.cc/api/client/user/plan', { headers });
-                plan = planInfo as { level: number; name: string; expires_at: null };
+                const planInfo = await httpRequest<{ level: number; name: string; expires_at: null }>('https://claw.hncea.cc/api/client/user/plan', { headers });
+                plan = planInfo;
               } catch (e) {
                 console.warn('获取套餐信息失败:', e);
               }
               
               // 尝试获取概览信息
               try {
-                const overviewInfo = await httpRequest('https://claw.hncea.cc/api/client/user/overview', { headers });
-                overview = overviewInfo as { user_id: string; email: string; username: string; vip_level: number; level: number; plan: { level: number; name: string; expires_at: null }; token_balance: number };
+                const overviewInfo = await httpRequest<{ user_id: string; email: string; username: string; vip_level: number; level: number; plan: { level: number; name: string; expires_at: null }; token_balance: number }>('https://claw.hncea.cc/api/client/user/overview', { headers });
+                overview = overviewInfo;
               } catch (e) {
                 console.warn('获取概览信息失败:', e);
               }
