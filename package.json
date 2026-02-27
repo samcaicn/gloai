@@ -1,7 +1,7 @@
 {
   "name": "ggclaw",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "ggclaw - 基于 Rust 技术构建的 AI 桌面助手",
   "author": "ggclaw Team",

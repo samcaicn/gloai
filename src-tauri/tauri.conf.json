@@ -1,11 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "ggclaw",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.ggclaw.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:1421",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
@@ -17,9 +17,10 @@
         "height": 800
       }
     ],
-    "withGlobalTauri": true,
+    "withGlobalTauri": false,
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": ["default"]
     }
   },
   "bundle": {
@@ -48,10 +49,6 @@
       ],
       "dialog": false,
       "pubkey": ""
-    },
-    "dialog": {},
-    "http": {
-      "scope": ["https://claw.hncea.cc/**"]
     }
   }
 }
