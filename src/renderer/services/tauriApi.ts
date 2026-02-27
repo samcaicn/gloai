@@ -176,8 +176,41 @@ const invoke = async <T>(cmd: string, args?: Record<string, unknown>): Promise<T
 };
 
 const openUrl = async (url: string): Promise<void> => {
-  if (typeof window !== 'undefined') {
-    window.open(url, '_blank');
+  try {
+    // 复制链接到剪贴板
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+      // 显示复制成功提示
+      if (typeof window !== 'undefined') {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300 ease-in-out transform translate-y-0 opacity-100';
+        notification.textContent = '链接已复制到剪贴板！';
+        document.body.appendChild(notification);
+        
+        // 3秒后自动消失
+        setTimeout(() => {
+          notification.classList.add('translate-y-[-20px]', 'opacity-0');
+          setTimeout(() => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification);
+            }
+          }, 300);
+        }, 3000);
+      }
+    }
+    
+    // 优先使用 Tauri 命令打开链接
+    try {
+      await invoke('open_external', { url });
+    } catch (tauriError) {
+      console.warn('Tauri open_external failed, falling back to window.open:', tauriError);
+      // 回退到 window.open
+      if (typeof window !== 'undefined') {
+        window.open(url, '_blank');
+      }
+    }
+  } catch (error) {
+    console.error('Failed to open URL:', error);
   }
 };
 
@@ -480,11 +513,31 @@ export const tauriApi = {
       }
     },
     sendVerificationEmail: async (email: string): Promise<any> => {
-      if (!isTauriReady()) return null;
+      if (!isTauriReady()) return { success: false, message: 'Tauri 未就绪' };
       try {
-        return await invoke<any>('tuptup_send_verification_email', { email });
+        const result = await invoke<any>('tuptup_send_verification_email', { email });
+        console.log('sendVerificationEmail result:', result);
+        return result;
       } catch (e) {
         console.error('tuptup_send_verification_email failed:', e);
+        return { success: false, message: String(e) };
+      }
+    },
+    verifyCode: async (email: string, code: string): Promise<boolean> => {
+      if (!isTauriReady()) return false;
+      try {
+        return await invoke<boolean>('tuptup_verify_code', { email, code });
+      } catch (e) {
+        console.error('tuptup_verify_code failed:', e);
+        return false;
+      }
+    },
+    getUserIdByEmail: async (email: string): Promise<string | null> => {
+      if (!isTauriReady()) return null;
+      try {
+        return await invoke<string | null>('tuptup_get_user_id_by_email', { email });
+      } catch (e) {
+        console.error('tuptup_get_user_id_by_email failed:', e);
         return null;
       }
     },
@@ -498,6 +551,23 @@ export const tauriApi = {
         return await invoke<string>('get_platform');
       } catch (e) {
         return navigator.platform;
+      }
+    },
+    isAutoStartEnabled: async (): Promise<boolean> => {
+      if (!isTauriReady()) return false;
+      try {
+        return await invoke<boolean>('system_is_auto_start_enabled');
+      } catch (e) {
+        console.error('system_is_auto_start_enabled failed:', e);
+        return false;
+      }
+    },
+    enableAutoStart: async (enable: boolean): Promise<void> => {
+      if (!isTauriReady()) return;
+      try {
+        await invoke('system_enable_auto_start', { enable });
+      } catch (e) {
+        console.error('system_enable_auto_start failed:', e);
       }
     },
   },

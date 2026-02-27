@@ -41,84 +41,84 @@ impl Logger {
             config: Mutex::new(config),
         }
     }
-    
+
     pub fn new_default() -> Self {
         Self::new(LogConfig::default())
     }
-    
+
     pub fn set_config(&self, config: LogConfig) {
         *self.config.lock().unwrap() = config;
     }
-    
+
     pub fn get_config(&self) -> LogConfig {
         self.config.lock().unwrap().clone()
     }
-    
+
     // 记录跟踪级别的日志
     pub fn trace(&self, module: &str, message: &str) {
         let config = self.config.lock().unwrap();
         if !config.enabled || config.level > LogLevel::Trace {
             return;
         }
-        
+
         let timestamp = self.get_timestamp();
         let log_message = format!("[{}] [TRACE] [{}] {}", timestamp, module, message);
         trace!("{}", log_message);
         self.write_to_file(&log_message);
     }
-    
+
     // 记录调试级别的日志
     pub fn debug(&self, module: &str, message: &str) {
         let config = self.config.lock().unwrap();
         if !config.enabled || config.level > LogLevel::Debug {
             return;
         }
-        
+
         let timestamp = self.get_timestamp();
         let log_message = format!("[{}] [DEBUG] [{}] {}", timestamp, module, message);
         debug!("{}", log_message);
         self.write_to_file(&log_message);
     }
-    
+
     // 记录信息级别的日志
     pub fn info(&self, module: &str, message: &str) {
         let config = self.config.lock().unwrap();
         if !config.enabled || config.level > LogLevel::Info {
             return;
         }
-        
+
         let timestamp = self.get_timestamp();
         let log_message = format!("[{}] [INFO] [{}] {}", timestamp, module, message);
         info!("{}", log_message);
         self.write_to_file(&log_message);
     }
-    
+
     // 记录警告级别的日志
     pub fn warn(&self, module: &str, message: &str) {
         let config = self.config.lock().unwrap();
         if !config.enabled || config.level > LogLevel::Warn {
             return;
         }
-        
+
         let timestamp = self.get_timestamp();
         let log_message = format!("[{}] [WARN] [{}] {}", timestamp, module, message);
         warn!("{}", log_message);
         self.write_to_file(&log_message);
     }
-    
+
     // 记录错误级别的日志
     pub fn error(&self, module: &str, message: &str) {
         let config = self.config.lock().unwrap();
         if !config.enabled || config.level > LogLevel::Error {
             return;
         }
-        
+
         let timestamp = self.get_timestamp();
         let log_message = format!("[{}] [ERROR] [{}] {}", timestamp, module, message);
         error!("{}", log_message);
         self.write_to_file(&log_message);
     }
-    
+
     // 获取当前时间戳
     fn get_timestamp(&self) -> String {
         let now = SystemTime::now();
@@ -129,7 +129,7 @@ impl Logger {
         let nanos = datetime.subsec_nanos();
         format!("{}.{:09}", seconds, nanos)
     }
-    
+
     // 写入日志到文件
     fn write_to_file(&self, message: &str) {
         let config = self.config.lock().unwrap();

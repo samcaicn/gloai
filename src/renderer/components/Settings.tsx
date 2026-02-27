@@ -378,6 +378,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   const [tuptupPackageStatus, setTuptupPackageStatus] = useState<any>(null);
   const [tuptupIsLoading, setTuptupIsLoading] = useState(false);
   const [tuptupError, setTuptupError] = useState<string | null>(null);
+  const [tuptupVerificationCode, setTuptupVerificationCode] = useState('');
+  const [tuptupLoginStep, setTuptupLoginStep] = useState<'email' | 'code' | 'login'>('email');
+  const [, setTuptupCodeSent] = useState(false);
 
   useEffect(() => {
     setCoworkExecutionMode(coworkConfig.executionMode || 'local');
@@ -430,11 +433,15 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       setLanguage(config.language);
 
       // Load auto-launch setting
-      window.electron.autoLaunch.get().then(({ enabled }) => {
-        setAutoLaunchState(enabled);
-      }).catch(err => {
-        console.error('Failed to load auto-launch setting:', err);
-      });
+      (async () => {
+        try {
+          const { tauriApi } = await import('../services/tauriApi');
+          const enabled = await tauriApi.platform.isAutoStartEnabled?.() ?? false;
+          setAutoLaunchState(enabled);
+        } catch (err) {
+          console.error('Failed to load auto-launch setting:', err);
+        }
+      })();
       
       // Set up providers based on saved config
       if (config.api) {
@@ -1209,7 +1216,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     }
 
     try {
-      let response: Awaited<ReturnType<typeof window.electron.api.fetch>>;
+      const { httpRequest } = await import('../services/httpClient');
       const normalizedBaseUrl = providerConfig.baseUrl.replace(/\/+$/, '');
 
       // 统一为两种协议格式：
@@ -1217,55 +1224,46 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       // - openai: /v1/chat/completions
       const useAnthropicFormat = getEffectiveApiFormat(activeProvider, providerConfig.apiFormat) === 'anthropic';
 
+      let url: string;
+      let headers: Record<string, string>;
+      let body: any;
+
       if (useAnthropicFormat) {
-        const anthropicUrl = normalizedBaseUrl.endsWith('/v1')
+        url = normalizedBaseUrl.endsWith('/v1')
           ? `${normalizedBaseUrl}/messages`
           : `${normalizedBaseUrl}/v1/messages`;
-        response = await window.electron.api.fetch({
-          url: anthropicUrl,
-          method: 'POST',
-          headers: {
-            'x-api-key': providerConfig.apiKey,
-            'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: firstModel.id,
-            max_tokens: 1,
-            messages: [{ role: 'user', content: 'Hi' }],
-          }),
-        });
+        headers = {
+          'x-api-key': providerConfig.apiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        };
+        body = {
+          model: firstModel.id,
+          max_tokens: 1,
+          messages: [{ role: 'user', content: 'Hi' }],
+        };
       } else {
-        const openaiUrl = buildOpenAICompatibleChatCompletionsUrl(normalizedBaseUrl, activeProvider);
-        const headers: Record<string, string> = {
+        url = buildOpenAICompatibleChatCompletionsUrl(normalizedBaseUrl, activeProvider);
+        headers = {
           'Content-Type': 'application/json',
         };
         if (providerConfig.apiKey) {
           headers.Authorization = `Bearer ${providerConfig.apiKey}`;
         }
-        response = await window.electron.api.fetch({
-          url: openaiUrl,
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            model: firstModel.id,
-            max_tokens: 1,
-            messages: [{ role: 'user', content: 'Hi' }],
-          }),
-        });
+        body = {
+          model: firstModel.id,
+          max_tokens: 1,
+          messages: [{ role: 'user', content: 'Hi' }],
+        };
       }
 
-      if (response.ok) {
-        setTestResult({ success: true, message: i18nService.t('connectionSuccess') });
-      } else {
-        const data = response.data || {};
-        // 提取错误信息
-        const errorMessage = data.error?.message || data.message || `${i18nService.t('connectionFailed')}: ${response.status}`;
-        setTestResult({
-          success: false,
-          message: errorMessage,
-        });
-      }
+      await httpRequest(url, {
+        method: 'POST',
+        headers,
+        body,
+      });
+
+      setTestResult({ success: true, message: i18nService.t('connectionSuccess') });
     } catch (err) {
       setTestResult({
         success: false,
@@ -1607,12 +1605,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     const next = !autoLaunch;
                     setIsUpdatingAutoLaunch(true);
                     try {
-                      const result = await window.electron.autoLaunch.set(next);
-                      if (result.success) {
-                        setAutoLaunchState(next);
-                      } else {
-                        setError(result.error || 'Failed to update auto-launch setting');
-                      }
+                      const { tauriApi } = await import('../services/tauriApi');
+                      await tauriApi.platform.enableAutoStart(next);
+                      setAutoLaunchState(next);
                     } catch (err) {
                       console.error('Failed to set auto-launch:', err);
                       setError('Failed to update auto-launch setting');
@@ -2113,15 +2108,17 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
 
               {activeProvider === 'tuptup' && (
                 <div className="mb-3">
-                  <a
-                    href="https://aiapi.tuptup.top/panel/token"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-xs font-medium text-claude-accent hover:text-claude-accentHover"
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const { tauriApi } = await import('../services/tauriApi');
+                      await tauriApi.shell.openExternal('https://aiapi.tuptup.top/panel/token');
+                    }}
+                    className="inline-flex items-center text-xs font-medium text-claude-accent hover:text-claude-accentHover hover:underline cursor-pointer"
                   >
                     <div className="mr-1">💎</div>
                     查看 Token 余额并充值
-                  </a>
+                  </button>
                 </div>
               )}
 
@@ -2298,7 +2295,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                                   onClick={async () => {
                                     const confirmed = window.confirm('请升级 VIP 套餐以使用更多模型，确认后打开升级页面？');
                                     if (confirmed) {
-                                      await window.electron.shell.openExternal('https://ggai.tuptup.top/#/duserEdit?type=buy_plan');
+                                      const { tauriApi } = await import('../services/tauriApi');
+                                      await tauriApi.shell.openExternal('https://ggai.tuptup.top/#/duserEdit?type=buy_plan');
                                     }
                                   }}
                                   className="text-[10px] px-1.5 py-0.5 rounded-md bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
@@ -2379,6 +2377,70 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         return <IMSettings />;
 
       case 'tuptup':
+        const handleSendVerificationCode = async () => {
+          if (!tuptupEmail) {
+            setTuptupError('请输入邮箱地址');
+            return;
+          }
+          setTuptupIsLoading(true);
+          setTuptupError(null);
+          try {
+            const { tauriApi } = await import('../services/tauriApi');
+            console.log('开始验证邮箱:', tuptupEmail);
+            // 先验证邮箱是否存在
+            const userId = await tauriApi.tuptup.getUserIdByEmail(tuptupEmail);
+            console.log('邮箱验证结果:', userId);
+            if (!userId) {
+              setTuptupError('该邮箱未注册，请先注册账户');
+              return;
+            }
+            // 邮箱存在，发送验证码
+            console.log('邮箱存在，开始发送验证码');
+            const result = await tauriApi.tuptup.sendVerificationEmail(tuptupEmail);
+            console.log('发送验证码结果:', result);
+            if (result && result.success) {
+              setTuptupCodeSent(true);
+              setTuptupLoginStep('code');
+            } else {
+              setTuptupError(result?.message || '发送验证码失败');
+            }
+          } catch (error) {
+            console.error('发送验证码错误:', error);
+            setTuptupError(`发送验证码失败: ${error instanceof Error ? error.message : String(error)}`);
+          } finally {
+            setTuptupIsLoading(false);
+          }
+        };
+
+        const handleVerifyCode = async () => {
+          if (!tuptupVerificationCode || tuptupVerificationCode.length !== 6) {
+            setTuptupError('请输入6位验证码');
+            return;
+          }
+          setTuptupIsLoading(true);
+          setTuptupError(null);
+          try {
+            const { tauriApi } = await import('../services/tauriApi');
+            const isValid = await tauriApi.tuptup.verifyCode(tuptupEmail, tuptupVerificationCode);
+            if (isValid) {
+              const userId = await tauriApi.tuptup.getUserIdByEmail(tuptupEmail);
+              if (userId) {
+                setTuptupUserId(userId);
+                setTuptupLoginStep('login');
+              } else {
+                setTuptupError('该邮箱未注册，请先注册账户');
+              }
+            } else {
+              setTuptupError('验证码错误或已过期');
+            }
+          } catch (error) {
+            console.error('验证码验证错误:', error);
+            setTuptupError(`验证失败: ${error instanceof Error ? error.message : String(error)}`);
+          } finally {
+            setTuptupIsLoading(false);
+          }
+        };
+
         const handleTuptupLogin = async () => {
           setTuptupIsLoading(true);
           setTuptupError(null);
@@ -2386,7 +2448,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
             const API_KEY = 'gk_981279d245764a1cb53738da';
             const API_SECRET = 'gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2';
             const timestamp = Date.now().toString();
-            const userId = '2';
             
             const encoder = new TextEncoder();
             const data = encoder.encode(timestamp + API_KEY + API_SECRET);
@@ -2400,19 +2461,16 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
             
             const headers = {
               'X-App-Key': API_KEY,
-              'X-User-Id': userId,
+              'X-User-Id': tuptupUserId,
               'X-Timestamp': timestamp,
               'X-Signature': signatureHex,
             };
             
-            // 使用 Tauri HTTP API 发送请求，绕过 CORS
             const { httpRequest } = await import('../services/httpClient');
             
-            // 验证用户信息
             const userInfo = await httpRequest('https://claw.hncea.cc/api/client/user/info', { headers });
             setTuptupUserInfo(userInfo);
             
-            // 获取其他用户信息
             const [tokenBalance, plan, overview] = await Promise.all([
               httpRequest('https://claw.hncea.cc/api/client/user/token-balance', { headers }),
               httpRequest('https://claw.hncea.cc/api/client/user/plan', { headers }),
@@ -2423,7 +2481,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
             setTuptupPlan(plan);
             setTuptupOverview(overview);
             
-            // 获取包状态
             try {
               const { tauriApi } = await import('../services/tauriApi');
               const packageStatus = await tauriApi.tuptup.getPackageStatus();
@@ -2432,12 +2489,10 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               console.warn('获取包状态失败:', tauriError);
             }
             
-            // 登录成功后获取 SMTP 配置
             try {
               const { tuptupService } = await import('../services/tuptup');
               const smtpConfig = await tuptupService.getSmtpConfig();
               if (smtpConfig) {
-                // 保存 SMTP 配置到本地
                 const { skillService } = await import('../services/skill');
                 const skillConfig = await skillService.getSkillConfig('imap-smtp-email');
                 await skillService.setSkillConfig('imap-smtp-email', {
@@ -2455,17 +2510,11 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               }
             } catch (smtpError) {
               console.error('获取 SMTP 配置失败:', smtpError);
-              // 不影响登录流程
             }
           } catch (error) {
             console.error('登录错误:', error);
-            const errorMessage = error instanceof Error ? error.message : '登录失败';
-            // 提供更友好的错误提示
-            if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-              setTuptupError('网络连接失败，请检查网络后重试');
-            } else {
-              setTuptupError(errorMessage);
-            }
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            setTuptupError(`登录失败: ${errorMessage}`);
           } finally {
             setTuptupIsLoading(false);
           }
@@ -2482,6 +2531,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
           setTuptupOverview(null);
           setTuptupPackageStatus(null);
           setTuptupError(null);
+          setTuptupVerificationCode('');
+          setTuptupLoginStep('email');
+          setTuptupCodeSent(false);
         };
 
         const isTuptupLoggedIn = tuptupUserInfo || tuptupOverview;
@@ -2495,34 +2547,96 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     登录 我的账户
                   </h4>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-1">
-                        请输入平台邮箱
-                      </label>
-                      <input
-                        type="email"
-                        value={tuptupEmail}
-                        onChange={(e) => setTuptupEmail(e.target.value)}
-                        placeholder="your@email.com"
-                        className="w-full rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <button
-                      onClick={handleTuptupLogin}
-                      disabled={tuptupIsLoading || !tuptupEmail}
-                      className="w-full bg-claude-accent text-white rounded-xl py-2 px-4 text-sm font-medium hover:bg-claude-accentHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {tuptupIsLoading ? '登录中...' : '登录'}
-                    </button>
+                    {tuptupLoginStep === 'email' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-1">
+                            请输入平台邮箱
+                          </label>
+                          <input
+                            type="email"
+                            value={tuptupEmail}
+                            onChange={(e) => setTuptupEmail(e.target.value)}
+                            placeholder="your@email.com"
+                            className="w-full rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <button
+                          onClick={handleSendVerificationCode}
+                          disabled={tuptupIsLoading || !tuptupEmail}
+                          className="w-full bg-claude-accent text-white rounded-xl py-2 px-4 text-sm font-medium hover:bg-claude-accentHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {tuptupIsLoading ? '发送中...' : '发送验证码'}
+                        </button>
+                      </>
+                    )}
+                    
+                    {tuptupLoginStep === 'code' && (
+                      <>
+                        <div className="text-sm text-claude-textSecondary dark:text-claude-darkTextSecondary mb-2">
+                          验证码已发送至 <span className="text-claude-accent">{tuptupEmail}</span>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-1">
+                            请输入6位验证码
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={6}
+                            value={tuptupVerificationCode}
+                            onChange={(e) => setTuptupVerificationCode(e.target.value.replace(/\D/g, ''))}
+                            placeholder="000000"
+                            className="w-full rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm text-center tracking-widest"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setTuptupLoginStep('email');
+                              setTuptupVerificationCode('');
+                              setTuptupError(null);
+                            }}
+                            className="flex-1 bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset text-claude-text dark:text-claude-darkText rounded-xl py-2 px-4 text-sm font-medium hover:bg-claude-surfaceInset/80 transition-colors"
+                          >
+                            返回
+                          </button>
+                          <button
+                            onClick={handleVerifyCode}
+                            disabled={tuptupIsLoading || tuptupVerificationCode.length !== 6}
+                            className="flex-1 bg-claude-accent text-white rounded-xl py-2 px-4 text-sm font-medium hover:bg-claude-accentHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {tuptupIsLoading ? '验证中...' : '验证'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    
+                    {tuptupLoginStep === 'login' && (
+                      <>
+                        <div className="text-sm text-green-500 mb-2">
+                          验证通过，点击登录按钮完成登录
+                        </div>
+                        <button
+                          onClick={handleTuptupLogin}
+                          disabled={tuptupIsLoading}
+                          className="w-full bg-claude-accent text-white rounded-xl py-2 px-4 text-sm font-medium hover:bg-claude-accentHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {tuptupIsLoading ? '登录中...' : '登录'}
+                        </button>
+                      </>
+                    )}
+                    
                     <div className="text-center mt-3">
-                      <a 
-                        href="https://ggai.tuptup.top" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sm text-claude-accent hover:underline"
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const { tauriApi } = await import('../services/tauriApi');
+                          await tauriApi.shell.openExternal('https://ggai.tuptup.top');
+                        }}
+                        className="text-sm text-claude-accent hover:underline cursor-pointer"
                       >
                         平台账户注册
-                      </a>
+                      </button>
                     </div>
                     {tuptupError && (
                       <div className="text-sm text-red-500 mt-2">{tuptupError}</div>

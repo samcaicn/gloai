@@ -128,16 +128,12 @@ const isExternalHref = (href: string): boolean => {
 };
 
 const openExternalViaDefaultBrowser = async (url: string): Promise<boolean> => {
-  const openExternal = (window as any)?.electron?.shell?.openExternal;
-  if (typeof openExternal !== 'function') {
-    return false;
-  }
-
   try {
-    const result = await openExternal(url);
-    return !!result?.success;
+    const { tauriApi } = await import('../services/tauriApi');
+    await tauriApi.shell.openExternal(url);
+    return true;
   } catch (error) {
-    console.error('Failed to open external link with system browser:', url, error);
+    console.error('Failed to open external link with tauriApi:', url, error);
     return false;
   }
 };
@@ -484,23 +480,22 @@ const createMarkdownComponents = (
         e.preventDefault();
         const anchor = e.currentTarget;
         try {
-          const result = await window.electron.shell.openPath(filePath);
-          if (result?.success) {
-            return;
-          }
+          const { tauriApi } = await import('../services/tauriApi');
+          await tauriApi.shell.openPath(filePath);
+          return;
+        } catch (error) {
+          console.warn('Failed to open file with tauriApi, trying fallback:', filePath, error);
+        }
 
+        try {
           const fallbackPath = findFallbackPathFromContext(
             anchor,
             linkText,
             resolveLocalFilePath
           );
           if (fallbackPath) {
-            const fallbackResult = await window.electron.shell.openPath(fallbackPath);
-            if (!fallbackResult?.success) {
-              console.error('Failed to open file (fallback):', fallbackPath, fallbackResult?.error);
-            }
-          } else {
-            console.error('Failed to open file:', filePath, result?.error);
+            const { tauriApi } = await import('../services/tauriApi');
+            await tauriApi.shell.openPath(fallbackPath);
           }
         } catch (error) {
           console.error('Failed to open file:', filePath, error);
@@ -527,11 +522,6 @@ const createMarkdownComponents = (
 
     if (isExternalLink) {
       const handleExternalClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
-        const openExternal = (window as any)?.electron?.shell?.openExternal;
-        if (typeof openExternal !== 'function') {
-          return;
-        }
-
         e.preventDefault();
         const opened = await openExternalViaDefaultBrowser(hrefValue);
         if (!opened) {

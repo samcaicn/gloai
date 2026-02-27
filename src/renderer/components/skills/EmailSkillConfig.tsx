@@ -36,6 +36,15 @@ type EmailConnectivityTestResult = {
 };
 
 const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
+  default: {
+    label: 'Default',
+    imapHost: '',
+    imapPort: '993',
+    smtpHost: 'smtp.qq.com',
+    smtpPort: '465',
+    smtpSecure: 'true',
+    hint: 'emailHintDefault',
+  },
   gmail: {
     label: 'Gmail',
     imapHost: 'imap.gmail.com',
@@ -199,7 +208,12 @@ const EmailSkillConfig: React.FC<EmailSkillConfigProps> = ({ onClose }) => {
       }
 
       const detected = detectProvider(config);
-      if (detected) setProvider(detected);
+      if (detected) {
+        setProvider(detected);
+      } else {
+        // 默认选择 TinyClaw 默认配置
+        setProvider('default');
+      }
 
       setLoading(false);
     };
@@ -307,7 +321,7 @@ const EmailSkillConfig: React.FC<EmailSkillConfigProps> = ({ onClose }) => {
 
   const currentPreset = provider ? PROVIDER_PRESETS[provider] : null;
   const hintKey = currentPreset?.hint;
-  const canTest = Boolean(email && password && imapHost && smtpHost);
+  const canTest = provider === 'default' ? Boolean(smtpHost) : Boolean(email && password && imapHost && smtpHost);
   const connectivityPassed = connectivityResult?.verdict === 'pass';
 
   const inputClassName = 'block w-full rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-xs';
@@ -353,11 +367,22 @@ const EmailSkillConfig: React.FC<EmailSkillConfigProps> = ({ onClose }) => {
           className={inputClassName}
         >
           <option value="">{i18nService.t('emailSelectProvider')}</option>
-          {Object.entries(PROVIDER_PRESETS).map(([key, preset]) => (
-            <option key={key} value={key}>
-              {key === 'custom' ? i18nService.t('emailCustomProvider') : preset.label}
-            </option>
-          ))}
+          {/* Default option first */}
+          <option key="default" value="default">
+            {PROVIDER_PRESETS.default.label}
+          </option>
+          {/* Other providers */}
+          {Object.entries(PROVIDER_PRESETS)
+            .filter(([key]) => key !== 'default' && key !== 'custom')
+            .map(([key, preset]) => (
+              <option key={key} value={key}>
+                {preset.label}
+              </option>
+            ))}
+          {/* Custom option last */}
+          <option key="custom" value="custom">
+            {i18nService.t('emailCustomProvider')}
+          </option>
         </select>
       </div>
 
@@ -368,31 +393,42 @@ const EmailSkillConfig: React.FC<EmailSkillConfigProps> = ({ onClose }) => {
         </div>
       )}
 
-      {/* Email */}
-      <div>
-        <label className={labelClassName}>{i18nService.t('emailAddress')}</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onBlur={queuePersist}
-          className={inputClassName}
-          placeholder="your@email.com"
-        />
-      </div>
+      {/* Email and Password - only show if not using default provider */}
+      {provider !== 'default' && (
+        <>
+          {/* Email */}
+          <div>
+            <label className={labelClassName}>{i18nService.t('emailAddress')}</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={queuePersist}
+              className={inputClassName}
+              placeholder="your@email.com"
+            />
+          </div>
 
-      {/* Password */}
-      <div>
-        <label className={labelClassName}>{i18nService.t('emailPassword')}</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onBlur={queuePersist}
-          className={inputClassName}
-          placeholder={i18nService.t('emailPasswordPlaceholder')}
-        />
-      </div>
+          {/* Password */}
+          <div>
+            <label className={labelClassName}>{i18nService.t('emailPassword')}</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onBlur={queuePersist}
+              className={inputClassName}
+              placeholder={i18nService.t('emailPasswordPlaceholder')}
+            />
+          </div>
+        </>
+      )}
+      {/* Default provider info */}
+      {provider === 'default' && (
+        <div className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
+          {i18nService.t('emailHintDefault')}
+        </div>
+      )}
 
       {/* Advanced Settings Toggle */}
       <button
@@ -408,8 +444,8 @@ const EmailSkillConfig: React.FC<EmailSkillConfigProps> = ({ onClose }) => {
         {i18nService.t('emailAdvancedSettings')}
       </button>
 
-      {/* Advanced Settings */}
-      {showAdvanced && (
+      {/* Advanced Settings - only show if not using default provider */}
+      {showAdvanced && provider !== 'default' && (
         <div className="space-y-3 pl-2 border-l-2 border-claude-border dark:border-claude-darkBorder">
           <div className="grid grid-cols-2 gap-3">
             <div>

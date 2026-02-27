@@ -1,10 +1,12 @@
-use super::gateway::{Gateway, GatewayStatus, GatewayEvent, EventCallback, IMMessage, MessageDeduplicationCache};
-use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use super::gateway::{
+    EventCallback, Gateway, GatewayEvent, GatewayStatus, IMMessage, MessageDeduplicationCache,
+};
+use async_trait::async_trait;
 use chrono::Local;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use async_trait::async_trait;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TelegramConfig {
@@ -245,7 +247,8 @@ impl TelegramGateway {
 
     async fn get_me(&self) -> Result<TelegramUser, String> {
         let url = self.get_api_url("getMe");
-        let response = self.http_client
+        let response = self
+            .http_client
             .get(&url)
             .send()
             .await
@@ -263,7 +266,8 @@ impl TelegramGateway {
 
     async fn get_file(&self, file_id: &str) -> Result<TelegramFile, String> {
         let url = self.get_api_url("getFile");
-        let response = self.http_client
+        let response = self
+            .http_client
             .get(&url)
             .query(&[("file_id", file_id)])
             .send()
@@ -283,21 +287,26 @@ impl TelegramGateway {
     async fn download_file(&self, file_path: &str) -> Result<Vec<u8>, String> {
         let token = self.config.lock().unwrap().bot_token.clone();
         let url = format!("https://api.telegram.org/file/bot{}/{}", token, file_path);
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .get(&url)
             .send()
             .await
             .map_err(|e| format!("Download failed: {}", e))?;
-        
-        let bytes = response.bytes()
+
+        let bytes = response
+            .bytes()
             .await
             .map_err(|e| format!("Failed to read bytes: {}", e))?;
-        
+
         Ok(bytes.to_vec())
     }
 
-    fn extract_media_from_message(&self, message: &TelegramMessage) -> Vec<TelegramMediaAttachment> {
+    fn extract_media_from_message(
+        &self,
+        message: &TelegramMessage,
+    ) -> Vec<TelegramMediaAttachment> {
         let mut attachments = Vec::new();
 
         if let Some(photos) = &message.photo {
@@ -389,15 +398,27 @@ impl TelegramGateway {
         attachments
     }
 
-    async fn send_text_message(&self, chat_id: i64, text: &str, reply_to_message_id: Option<i64>) -> Result<(), String> {
-        self.send_message_with_retry(chat_id, text, reply_to_message_id, 3).await
+    async fn send_text_message(
+        &self,
+        chat_id: i64,
+        text: &str,
+        reply_to_message_id: Option<i64>,
+    ) -> Result<(), String> {
+        self.send_message_with_retry(chat_id, text, reply_to_message_id, 3)
+            .await
     }
 
-    async fn send_message_with_retry(&self, chat_id: i64, text: &str, reply_to_message_id: Option<i64>, max_retries: u32) -> Result<(), String> {
+    async fn send_message_with_retry(
+        &self,
+        chat_id: i64,
+        text: &str,
+        reply_to_message_id: Option<i64>,
+        max_retries: u32,
+    ) -> Result<(), String> {
         let url = self.get_api_url("sendMessage");
-        
+
         let mut last_error = String::new();
-        
+
         for attempt in 1..=max_retries {
             let request = SendMessageRequest {
                 chat_id,
@@ -406,11 +427,7 @@ impl TelegramGateway {
                 reply_to_message_id,
             };
 
-            let result = self.http_client
-                .post(&url)
-                .json(&request)
-                .send()
-                .await;
+            let result = self.http_client.post(&url).json(&request).send().await;
 
             match result {
                 Ok(response) => {
@@ -423,13 +440,16 @@ impl TelegramGateway {
                     last_error = e.to_string();
                 }
             }
-            
+
             if attempt < max_retries {
-                self.log(&format!("Send message failed (attempt {}/{}): {}", attempt, max_retries, last_error));
+                self.log(&format!(
+                    "Send message failed (attempt {}/{}): {}",
+                    attempt, max_retries, last_error
+                ));
                 tokio::time::sleep(Duration::from_secs(2)).await;
             }
         }
-        
+
         // Try without markdown if failed
         let request = serde_json::json!({
             "chat_id": chat_id,
@@ -447,7 +467,14 @@ impl TelegramGateway {
         Ok(())
     }
 
-    async fn send_media(&self, chat_id: i64, media_type: &str, file_id: &str, caption: Option<&str>, reply_to_message_id: Option<i64>) -> Result<(), String> {
+    async fn send_media(
+        &self,
+        chat_id: i64,
+        media_type: &str,
+        file_id: &str,
+        caption: Option<&str>,
+        reply_to_message_id: Option<i64>,
+    ) -> Result<(), String> {
         let method = match media_type {
             "photo" => "sendPhoto",
             "video" => "sendVideo",
@@ -459,17 +486,17 @@ impl TelegramGateway {
         };
 
         let url = self.get_api_url(method);
-        
+
         let mut request = serde_json::json!({
             "chat_id": chat_id,
             media_type: file_id,
         });
-        
+
         if let Some(caption_text) = caption {
             request["caption"] = serde_json::json!(caption_text);
             request["parse_mode"] = serde_json::json!("Markdown");
         }
-        
+
         if let Some(reply_to) = reply_to_message_id {
             request["reply_to_message_id"] = serde_json::json!(reply_to);
         }
@@ -497,10 +524,10 @@ impl TelegramGateway {
             // Try to split at newline first
             if let Some(pos) = remaining[..max_length].rfind('\n') {
                 chunks.push(remaining[..pos].to_string());
-                remaining = remaining[pos+1..].to_string();
+                remaining = remaining[pos + 1..].to_string();
             } else if let Some(pos) = remaining[..max_length].rfind(' ') {
                 chunks.push(remaining[..pos].to_string());
-                remaining = remaining[pos+1..].to_string();
+                remaining = remaining[pos + 1..].to_string();
             } else {
                 chunks.push(remaining[..max_length].to_string());
                 remaining = remaining[max_length..].to_string();
@@ -525,14 +552,14 @@ impl TelegramGateway {
 
         let token = config.bot_token.clone();
         let debug = config.debug.unwrap_or(false);
-        
+
         let get_api_url = move |method: &str| -> String {
             format!("https://api.telegram.org/bot{}/{}", token, method)
         };
 
         let handle = tokio::spawn(async move {
             let mut offset: i64 = 0;
-            
+
             loop {
                 tokio::select! {
                     _ = &mut rx => {
@@ -541,7 +568,7 @@ impl TelegramGateway {
                     }
                     _ = tokio::time::sleep(Duration::from_secs(1)) => {
                         let url = get_api_url("getUpdates");
-                        
+
                         let result: Result<Vec<TelegramUpdate>, String> = async {
                             let response = http_client
                                 .get(&url)
@@ -570,7 +597,7 @@ impl TelegramGateway {
                                     for update in &updates {
                                         offset = update.update_id + 1;
                                     }
-                                    
+
                                     if let Some(callback) = &*event_callback.lock().unwrap() {
                                         for update in updates {
                                             if let Some(message) = update.message {
@@ -581,15 +608,15 @@ impl TelegramGateway {
                                                 let sender_name = message.from.as_ref()
                                                     .map(|f| f.first_name.clone().unwrap_or_default())
                                                     .unwrap_or_else(|| "Unknown".to_string());
-                                                
+
                                                 let sender_id = message.from.as_ref()
                                                     .map(|f| f.id.to_string())
                                                     .unwrap_or_else(|| "unknown".to_string());
 
                                                 let content = message.text.clone().or(message.caption.clone()).unwrap_or_default();
-                                                
+
                                                 let attachments = Self::extract_media_from_message_static(&message);
-                                                
+
                                                 let im_message = IMMessage {
                                                     id: message.message_id.to_string(),
                                                     platform: "telegram".to_string(),
@@ -611,7 +638,7 @@ impl TelegramGateway {
                                                     let mut cache = deduplication_cache.lock().unwrap();
                                                     cache.check_and_mark(&message_id, timestamp, 60)
                                                 };
-                                                
+
                                                 if is_duplicate {
                                                     if debug { println!("[Telegram Gateway] Skipping duplicate message: {}", message_id); }
                                                     continue;
@@ -635,7 +662,9 @@ impl TelegramGateway {
         *self.polling_task.lock().unwrap() = Some(handle);
     }
 
-    fn extract_media_from_message_static(message: &TelegramMessage) -> Vec<TelegramMediaAttachment> {
+    fn extract_media_from_message_static(
+        message: &TelegramMessage,
+    ) -> Vec<TelegramMediaAttachment> {
         let mut attachments = Vec::new();
 
         if let Some(photos) = &message.photo {
@@ -689,7 +718,7 @@ impl TelegramGateway {
         if let Some(tx) = self.stop_polling.lock().unwrap().take() {
             let _ = tx.send(());
         }
-        
+
         let handle_opt = self.polling_task.lock().unwrap().take();
         if let Some(handle) = handle_opt {
             let _ = handle.await;
@@ -719,13 +748,13 @@ impl Gateway for TelegramGateway {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
-    
+
     async fn start(&self) -> Result<(), String> {
         let (config_enabled, bot_token) = {
             let config = self.config.lock().unwrap();
             (config.enabled, config.bot_token.clone())
         };
-        
+
         if !config_enabled {
             return Ok(());
         }
@@ -739,7 +768,7 @@ impl Gateway for TelegramGateway {
             self.emit_event(GatewayEvent::StatusChanged(status.clone()));
             return Err(error_msg);
         }
-        
+
         {
             let mut status = self.status.lock().unwrap();
             status.starting = true;
@@ -750,7 +779,10 @@ impl Gateway for TelegramGateway {
 
         match self.get_me().await {
             Ok(bot_info) => {
-                self.log(&format!("Bot verified: @{}", bot_info.username.unwrap_or_default()));
+                self.log(&format!(
+                    "Bot verified: @{}",
+                    bot_info.username.unwrap_or_default()
+                ));
             }
             Err(e) => {
                 let mut status = self.status.lock().unwrap();
@@ -806,7 +838,8 @@ impl Gateway for TelegramGateway {
             return Err("网关未连接".to_string());
         }
 
-        let chat_id: i64 = conversation_id.parse()
+        let chat_id: i64 = conversation_id
+            .parse()
             .map_err(|_| "无效的会话ID".to_string())?;
 
         self.send_text_message(chat_id, text, None).await?;
@@ -817,16 +850,22 @@ impl Gateway for TelegramGateway {
         Ok(true)
     }
 
-    async fn send_media_message(&self, conversation_id: &str, file_path: &str) -> Result<bool, String> {
+    async fn send_media_message(
+        &self,
+        conversation_id: &str,
+        file_path: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
 
-        let chat_id: i64 = conversation_id.parse()
+        let chat_id: i64 = conversation_id
+            .parse()
             .map_err(|_| "无效的会话ID".to_string())?;
 
         let path = std::path::Path::new(file_path);
-        let extension = path.extension()
+        let extension = path
+            .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("")
             .to_lowercase();
@@ -838,15 +877,18 @@ impl Gateway for TelegramGateway {
             _ => ("document", "document"),
         };
 
-        let file_bytes = tokio::fs::read(file_path).await
+        let file_bytes = tokio::fs::read(file_path)
+            .await
             .map_err(|e| format!("读取文件失败: {}", e))?;
 
-        let file_name = path.file_name()
+        let file_name = path
+            .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("file")
             .to_string();
 
-        self.send_media(chat_id, msg_type, &file_name, Some(&file_name), None).await?;
+        self.send_media(chat_id, msg_type, &file_name, Some(&file_name), None)
+            .await?;
 
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
@@ -859,17 +901,21 @@ impl Gateway for TelegramGateway {
             return Err("网关未连接".to_string());
         }
 
-        let chat_id = self.last_chat_id.lock().unwrap().ok_or_else(|| "未找到聊天ID".to_string())?;
+        let chat_id = self
+            .last_chat_id
+            .lock()
+            .unwrap()
+            .ok_or_else(|| "未找到聊天ID".to_string())?;
 
         let chunks = self.split_message(text, 4000);
-        
+
         for chunk in chunks {
             self.send_text_message(chat_id, &chunk, None).await?;
         }
-        
+
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
@@ -878,26 +924,32 @@ impl Gateway for TelegramGateway {
         Ok(())
     }
 
-    async fn edit_message(&self, conversation_id: &str, message_id: &str, new_text: &str) -> Result<bool, String> {
+    async fn edit_message(
+        &self,
+        conversation_id: &str,
+        message_id: &str,
+        new_text: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
 
-        let chat_id: i64 = conversation_id.parse()
+        let chat_id: i64 = conversation_id
+            .parse()
             .map_err(|_| "无效的会话ID".to_string())?;
 
-        let message_id: i64 = message_id.parse()
-            .map_err(|_| "无效的消息ID".to_string())?;
+        let message_id: i64 = message_id.parse().map_err(|_| "无效的消息ID".to_string())?;
 
         let url = self.get_api_url("editMessageText");
-        
+
         let request = serde_json::json!({
             "chat_id": chat_id,
             "message_id": message_id,
             "text": new_text,
         });
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(&url)
             .json(&request)
             .send()
@@ -914,25 +966,30 @@ impl Gateway for TelegramGateway {
         Ok(true)
     }
 
-    async fn delete_message(&self, conversation_id: &str, message_id: &str) -> Result<bool, String> {
+    async fn delete_message(
+        &self,
+        conversation_id: &str,
+        message_id: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
 
-        let chat_id: i64 = conversation_id.parse()
+        let chat_id: i64 = conversation_id
+            .parse()
             .map_err(|_| "无效的会话ID".to_string())?;
 
-        let message_id: i64 = message_id.parse()
-            .map_err(|_| "无效的消息ID".to_string())?;
+        let message_id: i64 = message_id.parse().map_err(|_| "无效的消息ID".to_string())?;
 
         let url = self.get_api_url("deleteMessage");
-        
+
         let request = serde_json::json!({
             "chat_id": chat_id,
             "message_id": message_id,
         });
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(&url)
             .json(&request)
             .send()
@@ -946,16 +1003,21 @@ impl Gateway for TelegramGateway {
         Ok(true)
     }
 
-    async fn get_message_history(&self, conversation_id: &str, limit: u32) -> Result<Vec<IMMessage>, String> {
+    async fn get_message_history(
+        &self,
+        conversation_id: &str,
+        limit: u32,
+    ) -> Result<Vec<IMMessage>, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
 
-        let chat_id: i64 = conversation_id.parse()
+        let chat_id: i64 = conversation_id
+            .parse()
             .map_err(|_| "无效的会话ID".to_string())?;
 
         let url = self.get_api_url("getChatHistory");
-        
+
         let request = serde_json::json!({
             "chat_id": chat_id,
             "limit": limit,
@@ -967,7 +1029,8 @@ impl Gateway for TelegramGateway {
             result: Option<Vec<TelegramMessage>>,
         }
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(&url)
             .json(&request)
             .send()
@@ -981,12 +1044,17 @@ impl Gateway for TelegramGateway {
             return Err("Failed to get message history".to_string());
         }
 
-        let messages: Vec<IMMessage> = response.result.unwrap()
+        let messages: Vec<IMMessage> = response
+            .result
+            .unwrap()
             .into_iter()
             .map(|msg| {
                 let content = msg.text.clone().unwrap_or_else(|| {
                     if let Some(photo) = &msg.photo {
-                        photo.last().map(|p| p.file_id.clone()).unwrap_or_else(|| "[Photo]".to_string())
+                        photo
+                            .last()
+                            .map(|p| p.file_id.clone())
+                            .unwrap_or_else(|| "[Photo]".to_string())
                     } else if let Some(video) = &msg.video {
                         video.file_id.clone()
                     } else if let Some(document) = &msg.document {
@@ -1002,8 +1070,17 @@ impl Gateway for TelegramGateway {
                     id: msg.message_id.to_string(),
                     platform: "telegram".to_string(),
                     channel_id: chat_id.to_string(),
-                    user_id: msg.from.as_ref().map(|u| u.id.to_string()).unwrap_or_default(),
-                    user_name: msg.from.as_ref().and_then(|u| u.first_name.as_ref()).map(|s| s.clone()).unwrap_or_else(|| "Unknown".to_string()),
+                    user_id: msg
+                        .from
+                        .as_ref()
+                        .map(|u| u.id.to_string())
+                        .unwrap_or_default(),
+                    user_name: msg
+                        .from
+                        .as_ref()
+                        .and_then(|u| u.first_name.as_ref())
+                        .map(|s| s.clone())
+                        .unwrap_or_else(|| "Unknown".to_string()),
                     content,
                     timestamp: msg.date,
                     is_mention: false,

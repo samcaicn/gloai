@@ -1,12 +1,11 @@
-
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
-use regex::Regex;
-use lazy_static::lazy_static;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Skill {
@@ -101,7 +100,10 @@ impl SkillsManager {
         println!("[skills] User skills directory: {:?}", self.skills_dir);
 
         if !bundled_dir.exists() {
-            println!("[skills] Bundled skills directory not found: {:?}", bundled_dir);
+            println!(
+                "[skills] Bundled skills directory not found: {:?}",
+                bundled_dir
+            );
             // 列出父目录内容以便调试
             if let Some(parent) = bundled_dir.parent() {
                 println!("[skills] Parent directory: {:?}", parent);
@@ -124,17 +126,18 @@ impl SkillsManager {
         // 读取内置技能目录
         let bundled_skills = self.list_skill_dirs(bundled_dir)?;
         println!("[skills] Found {} bundled skills", bundled_skills.len());
-        
+
         let mut synced_count = 0;
         let mut skipped_count = 0;
-        
+
         for skill_dir in bundled_skills {
-            let skill_id = skill_dir.file_name()
+            let skill_id = skill_dir
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("unknown");
-            
+
             let target_dir = self.skills_dir.join(skill_id);
-            
+
             // 如果技能已存在，跳过
             if target_dir.exists() {
                 skipped_count += 1;
@@ -151,12 +154,15 @@ impl SkillsManager {
             }
         }
 
-        println!("[skills] Sync complete: {} synced, {} skipped", synced_count, skipped_count);
+        println!(
+            "[skills] Sync complete: {} synced, {} skipped",
+            synced_count, skipped_count
+        );
 
         // 同步 skills.config.json
         let bundled_config = bundled_dir.join(SKILLS_CONFIG_FILE);
         let target_config = self.skills_dir.join(SKILLS_CONFIG_FILE);
-        
+
         if bundled_config.exists() && !target_config.exists() {
             match fs::copy(&bundled_config, &target_config) {
                 Ok(_) => println!("[skills] Synced skills.config.json"),
@@ -170,7 +176,7 @@ impl SkillsManager {
     /// 列出目录中的所有技能
     fn list_skill_dirs(&self, root: &Path) -> anyhow::Result<Vec<PathBuf>> {
         let mut skill_dirs = Vec::new();
-        
+
         if !root.exists() {
             return Ok(skill_dirs);
         }
@@ -178,7 +184,7 @@ impl SkillsManager {
         for entry in fs::read_dir(root)? {
             let entry = entry?;
             let path = entry.path();
-            
+
             if path.is_dir() {
                 let skill_file = path.join(SKILL_FILE_NAME);
                 if skill_file.exists() {
@@ -193,33 +199,35 @@ impl SkillsManager {
     /// 复制技能目录
     fn copy_skill_dir(&self, source: &Path, target: &Path) -> anyhow::Result<()> {
         fs::create_dir_all(target)?;
-        
+
         for entry in fs::read_dir(source)? {
             let entry = entry?;
             let source_path = entry.path();
             let target_path = target.join(entry.file_name());
-            
+
             if source_path.is_dir() {
                 self.copy_skill_dir(&source_path, &target_path)?;
             } else {
                 fs::copy(&source_path, &target_path)?;
             }
         }
-        
+
         Ok(())
     }
 
     /// 解析 SKILL.md 的前置元数据
     fn parse_frontmatter(&self, content: &str) -> ParsedFrontmatter {
         let normalized = content.strip_prefix('\u{FEFF}').unwrap_or(content);
-        
+
         let frontmatter_text = match FRONTMATTER_RE.captures(normalized) {
             Some(caps) => caps.get(1).map(|m| m.as_str()).unwrap_or(""),
-            None => return ParsedFrontmatter {
-                name: None,
-                description: None,
-                official: None,
-            },
+            None => {
+                return ParsedFrontmatter {
+                    name: None,
+                    description: None,
+                    official: None,
+                }
+            }
         };
 
         let mut name = None;
@@ -234,7 +242,10 @@ impl SkillsManager {
 
             if let Some(colon_pos) = trimmed.find(':') {
                 let key = trimmed[..colon_pos].trim();
-                let value = trimmed[colon_pos + 1..].trim().trim_matches('"').trim_matches('\'');
+                let value = trimmed[colon_pos + 1..]
+                    .trim()
+                    .trim_matches('"')
+                    .trim_matches('\'');
 
                 match key {
                     "name" => name = Some(value.to_string()),
@@ -272,7 +283,10 @@ impl SkillsManager {
     }
 
     /// 从指定根目录加载技能默认配置
-    fn load_skills_defaults_from_root(&self, root: &Path) -> anyhow::Result<HashMap<String, SkillDefaultConfig>> {
+    fn load_skills_defaults_from_root(
+        &self,
+        root: &Path,
+    ) -> anyhow::Result<HashMap<String, SkillDefaultConfig>> {
         let mut defaults = HashMap::new();
         let config_path = root.join(SKILLS_CONFIG_FILE);
 
@@ -280,7 +294,11 @@ impl SkillsManager {
             if let Ok(content) = fs::read_to_string(&config_path) {
                 if let Ok(config) = serde_json::from_str::<SkillsConfig>(&content) {
                     defaults = config.defaults;
-                    println!("[skills] Loaded {} defaults from {:?}", defaults.len(), config_path);
+                    println!(
+                        "[skills] Loaded {} defaults from {:?}",
+                        defaults.len(),
+                        config_path
+                    );
                 }
             }
         }
@@ -298,7 +316,7 @@ impl SkillsManager {
         }
 
         let mut defaults = HashMap::new();
-        
+
         // 先从内置技能目录加载，然后从用户目录加载（用户目录覆盖内置）
         if let Some(bundled_dir) = &self.bundled_skills_dir {
             if let Ok(bundled_defaults) = self.load_skills_defaults_from_root(bundled_dir) {
@@ -307,7 +325,7 @@ impl SkillsManager {
                 }
             }
         }
-        
+
         if let Ok(user_defaults) = self.load_skills_defaults_from_root(&self.skills_dir) {
             for (id, config) in user_defaults {
                 defaults.insert(id, config);
@@ -328,14 +346,14 @@ impl SkillsManager {
 
         let mut skills = Vec::new();
         let mut skill_map = std::collections::HashMap::new();
-        
+
         // 获取所有技能根目录（内置技能目录在前，用户目录在后，后者覆盖前者）
         let mut roots = Vec::new();
         if let Some(bundled_dir) = &self.bundled_skills_dir {
             roots.push(bundled_dir.clone());
         }
         roots.push(self.skills_dir.clone());
-        
+
         println!("[skills] Loading skills from roots: {:?}", roots);
 
         for root in roots {
@@ -382,8 +400,9 @@ impl SkillsManager {
         config: &HashMap<String, SkillConfig>,
     ) -> anyhow::Result<Skill> {
         let skill_md_path = dir.join(SKILL_FILE_NAME);
-        
-        let id = dir.file_name()
+
+        let id = dir
+            .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("unknown")
             .to_string();
@@ -392,14 +411,15 @@ impl SkillsManager {
         let (name, description, prompt, is_official, updated_at) = if skill_md_path.exists() {
             let content = fs::read_to_string(&skill_md_path)?;
             let frontmatter = self.parse_frontmatter(&content);
-            
+
             let name = frontmatter.name.unwrap_or_else(|| id.clone());
-            let description = frontmatter.description
+            let description = frontmatter
+                .description
                 .or_else(|| Some(self.extract_description(&content)))
                 .unwrap_or_else(|| name.clone());
-            
+
             let is_official = frontmatter.official.unwrap_or(false);
-            
+
             let updated_at = fs::metadata(&skill_md_path)?
                 .modified()?
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -408,7 +428,13 @@ impl SkillsManager {
 
             (name, description, content, is_official, updated_at)
         } else {
-            (id.clone(), id.clone(), String::new(), false, chrono::Utc::now().timestamp())
+            (
+                id.clone(),
+                id.clone(),
+                String::new(),
+                false,
+                chrono::Utc::now().timestamp(),
+            )
         };
 
         // 获取默认配置
@@ -417,12 +443,15 @@ impl SkillsManager {
         let order = default_config.and_then(|c| c.order).unwrap_or(999);
 
         // 获取用户配置
-        let enabled = config.get(&id)
+        let enabled = config
+            .get(&id)
             .map(|c| c.enabled)
             .unwrap_or(default_enabled);
 
         // 检查是否为内置技能
-        let is_built_in = self.bundled_skills_dir.as_ref()
+        let is_built_in = self
+            .bundled_skills_dir
+            .as_ref()
             .map(|dir| dir.join(&id).exists())
             .unwrap_or(false);
 
@@ -464,7 +493,7 @@ impl SkillsManager {
         if let Some(parent) = self.config_path.parent() {
             fs::create_dir_all(parent)?;
         }
-        
+
         let content = serde_json::to_string_pretty(config)?;
         fs::write(&self.config_path, content)?;
 
@@ -476,7 +505,7 @@ impl SkillsManager {
 
     pub async fn set_enabled(&self, skill_id: &str, enabled: bool) -> anyhow::Result<()> {
         let mut config = self.load_config().await?;
-        
+
         let entry = config.entry(skill_id.to_string()).or_insert(SkillConfig {
             enabled: false,
             settings: None,
@@ -501,7 +530,7 @@ impl SkillsManager {
     pub async fn delete_skill(&self, skill_id: &str) -> anyhow::Result<()> {
         // 检查是否为内置技能
         let skill_path = self.skills_dir.join(skill_id);
-        
+
         // 读取技能信息检查是否为内置技能
         let skill_md_path = skill_path.join(SKILL_FILE_NAME);
         if skill_md_path.exists() {
@@ -527,14 +556,21 @@ impl SkillsManager {
         Ok(())
     }
 
-    pub async fn get_skill_config(&self, skill_id: &str) -> anyhow::Result<Option<serde_json::Value>> {
+    pub async fn get_skill_config(
+        &self,
+        skill_id: &str,
+    ) -> anyhow::Result<Option<serde_json::Value>> {
         let config = self.load_config().await?;
         Ok(config.get(skill_id).and_then(|c| c.settings.clone()))
     }
 
-    pub async fn set_skill_config(&self, skill_id: &str, settings: serde_json::Value) -> anyhow::Result<()> {
+    pub async fn set_skill_config(
+        &self,
+        skill_id: &str,
+        settings: serde_json::Value,
+    ) -> anyhow::Result<()> {
         let mut config = self.load_config().await?;
-        
+
         let entry = config.entry(skill_id.to_string()).or_insert(SkillConfig {
             enabled: false,
             settings: None,
@@ -548,11 +584,11 @@ impl SkillsManager {
     pub async fn build_auto_routing_prompt(&self) -> anyhow::Result<String> {
         let skills = self.load_skills().await?;
         let enabled_skills: Vec<_> = skills.into_iter().filter(|s| s.enabled).collect();
-        
+
         if enabled_skills.is_empty() {
             return Ok(String::new());
         }
-        
+
         let skill_entries: Vec<String> = enabled_skills
             .iter()
             .map(|s| format!(
@@ -578,7 +614,7 @@ impl SkillsManager {
             skill_entries.join("\n"),
             "</available_skills>".to_string(),
         ].join("\n");
-        
+
         Ok(prompt)
     }
 

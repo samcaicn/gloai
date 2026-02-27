@@ -1,39 +1,39 @@
-mod storage;
-mod skills;
-mod filesystem;
-mod shell;
-mod tuptup;
-mod system;
-mod database;
 mod cowork;
+mod crypto;
+mod database;
+mod dialog;
+mod filesystem;
 mod goclaw;
-mod scheduler;
 mod im;
 mod im_gateway;
-mod update_manager;
 mod logger;
-mod dialog;
-mod crypto;
+mod scheduler;
+mod shell;
+mod skills;
+mod storage;
+mod system;
+mod tuptup;
+mod update_manager;
 
 use std::sync::{Arc, Mutex as StdMutex};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
 
-pub use storage::*;
-pub use skills::*;
-pub use filesystem::*;
-pub use shell::*;
-pub use tuptup::*;
-pub use system::*;
-pub use database::*;
 pub use cowork::*;
-pub use goclaw::*;
-pub use scheduler::*;
-pub use im_gateway::*;
-pub use update_manager::*;
-pub use logger::*;
-pub use dialog::*;
 pub use crypto::*;
+pub use database::*;
+pub use dialog::*;
+pub use filesystem::*;
+pub use goclaw::*;
+pub use im_gateway::*;
+pub use logger::*;
+pub use scheduler::*;
+pub use shell::*;
+pub use skills::*;
+pub use storage::*;
+pub use system::*;
+pub use tuptup::*;
+pub use update_manager::*;
 
 struct AppState {
     storage: Storage,
@@ -52,17 +52,66 @@ struct AppState {
 async fn initialize_app(app: AppHandle) -> Result<(), String> {
     println!("[App] Initializing application...");
     let state = app.state::<AppState>();
-    
+
     let mut system_manager = state.system_manager.lock().await;
     system_manager.set_app_handle(app.clone());
-    
+
     let goclaw_manager = state.goclaw_manager.lock().await;
     if let Err(e) = goclaw_manager.auto_start_if_enabled().await {
         println!("[App] GoClaw auto-start failed: {}", e);
     }
-    
+
     println!("[App] Application initialized successfully");
     Ok(())
+}
+
+#[tauri::command]
+async fn make_http_request(
+    url: String,
+    method: String,
+    headers: std::collections::HashMap<String, String>,
+    body: Option<String>,
+) -> Result<serde_json::Value, String> {
+    use reqwest::Client;
+
+    let client = Client::new();
+    let mut request = match method.as_str() {
+        "GET" => client.get(&url),
+        "POST" => client.post(&url),
+        "PUT" => client.put(&url),
+        "DELETE" => client.delete(&url),
+        _ => return Err(format!("Unsupported method: {}", method)),
+    };
+
+    // 添加请求头
+    for (key, value) in headers {
+        request = request.header(key, value);
+    }
+
+    // 添加请求体
+    if let Some(body_str) = body {
+        request = request.body(body_str);
+    }
+
+    // 发送请求
+    let response = request
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {}", e))?;
+
+    // 检查响应状态
+    if !response.status().is_success() {
+        let status = response.status();
+        let text = response.text().await.unwrap_or_default();
+        return Err(format!("HTTP {}: {}", status, text));
+    }
+
+    // 解析响应体
+    let json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+    Ok(json)
 }
 
 #[tauri::command]
@@ -89,13 +138,19 @@ async fn skills_list(state: State<'_, AppState>) -> Result<Vec<Skill>, String> {
 #[tauri::command]
 async fn skills_enable(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let manager = state.skills_manager.lock().await;
-    manager.set_enabled(&id, true).await.map_err(|e| e.to_string())
+    manager
+        .set_enabled(&id, true)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn skills_disable(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let manager = state.skills_manager.lock().await;
-    manager.set_enabled(&id, false).await.map_err(|e| e.to_string())
+    manager
+        .set_enabled(&id, false)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -178,7 +233,10 @@ async fn goclaw_request(
     state: State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
     let manager = state.goclaw_manager.lock().await;
-    manager.request(method, params).await.map_err(|e| e.to_string())
+    manager
+        .request(method, params)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -187,7 +245,10 @@ async fn goclaw_send_message(
     state: State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
     let manager = state.goclaw_manager.lock().await;
-    manager.send_message(content).await.map_err(|e| e.to_string())
+    manager
+        .send_message(content)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -199,7 +260,7 @@ async fn goclaw_list_sessions(state: State<'_, AppState>) -> Result<serde_json::
 #[tauri::command]
 async fn cowork_list_sessions(state: State<'_, AppState>) -> Result<Vec<CoworkSession>, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.list_sessions().map_err(|e| e.to_string())
+    manager.list_sessions().await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -211,13 +272,16 @@ async fn cowork_create_session(
     state: State<'_, AppState>,
 ) -> Result<CoworkSession, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.create_session(title, cwd, system_prompt, execution_mode).map_err(|e| e.to_string())
+    manager
+        .create_session(title, cwd, system_prompt, execution_mode)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn cowork_delete_session(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let manager = state.cowork_manager.lock().await;
-    manager.delete_session(id).map_err(|e| e.to_string())
+    manager.delete_session(id).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -232,7 +296,18 @@ async fn cowork_update_session(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let manager = state.cowork_manager.lock().await;
-    manager.update_session(id, title, pinned, status, cwd, system_prompt, execution_mode).map_err(|e| e.to_string())
+    manager
+        .update_session(
+            id,
+            title,
+            pinned,
+            status,
+            cwd,
+            system_prompt,
+            execution_mode,
+        )
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -244,19 +319,26 @@ async fn cowork_update_message(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let manager = state.cowork_manager.lock().await;
-    manager.update_message(session_id, id, content, metadata).map_err(|e| e.to_string())
+    manager
+        .update_message(session_id, id, content, metadata)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn cowork_get_config(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.get_config().map_err(|e| e.to_string())
+    manager.get_config().await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn cowork_set_config(key: String, value: String, state: State<'_, AppState>) -> Result<(), String> {
+async fn cowork_set_config(
+    key: String,
+    value: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     let manager = state.cowork_manager.lock().await;
-    manager.set_config(key, value).map_err(|e| e.to_string())
+    manager.set_config(key, value).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -269,25 +351,33 @@ async fn cowork_update_user_memory(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let manager = state.cowork_manager.lock().await;
-    manager.update_user_memory(id, text, confidence, status, is_explicit).map_err(|e| e.to_string())
+    manager
+        .update_user_memory(id, text, confidence, status, is_explicit)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn cowork_delete_user_memory(id: String, state: State<'_, AppState>) -> Result<bool, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.delete_user_memory(id).map_err(|e| e.to_string())
+    manager.delete_user_memory(id).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn cowork_get_user_memory_stats(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+async fn cowork_get_user_memory_stats(
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.get_user_memory_stats().map_err(|e| e.to_string())
+    manager.get_user_memory_stats().await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn cowork_list_messages(session_id: String, state: State<'_, AppState>) -> Result<Vec<CoworkMessage>, String> {
+async fn cowork_list_messages(
+    session_id: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<CoworkMessage>, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.list_messages(session_id).map_err(|e| e.to_string())
+    manager.list_messages(session_id).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -298,13 +388,16 @@ async fn cowork_add_message(
     state: State<'_, AppState>,
 ) -> Result<CoworkMessage, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.add_message(session_id, msg_type, content).map_err(|e| e.to_string())
+    manager
+        .add_message(session_id, msg_type, content)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn cowork_list_user_memories(state: State<'_, AppState>) -> Result<Vec<UserMemory>, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.list_user_memories().map_err(|e| e.to_string())
+    manager.list_user_memories().await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -315,7 +408,10 @@ async fn cowork_create_user_memory(
     state: State<'_, AppState>,
 ) -> Result<UserMemory, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.create_user_memory(text, confidence, is_explicit).map_err(|e| e.to_string())
+    manager
+        .create_user_memory(text, confidence, is_explicit)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -325,11 +421,18 @@ async fn cowork_send_message(
     state: State<'_, AppState>,
 ) -> Result<CoworkMessage, String> {
     let manager = state.cowork_manager.lock().await;
-    manager.send_message(session_id, content).await.map_err(|e| e.to_string())
+    manager
+        .send_message(session_id, content)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn logger_log(level: String, message: String, state: State<'_, AppState>) -> Result<(), String> {
+async fn logger_log(
+    level: String,
+    message: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     let logger = state.logger.lock().await;
     let log_level = match level.as_str() {
         "debug" => LogLevel::Debug,
@@ -420,21 +523,37 @@ async fn window_is_maximized(app: AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
-async fn skills_get_config(id: String, state: State<'_, AppState>) -> Result<Option<serde_json::Value>, String> {
+async fn skills_get_config(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<Option<serde_json::Value>, String> {
     let manager = state.skills_manager.lock().await;
-    manager.get_skill_config(&id).await.map_err(|e| e.to_string())
+    manager
+        .get_skill_config(&id)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn skills_set_config(id: String, settings: serde_json::Value, state: State<'_, AppState>) -> Result<(), String> {
+async fn skills_set_config(
+    id: String,
+    settings: serde_json::Value,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     let manager = state.skills_manager.lock().await;
-    manager.set_skill_config(&id, settings).await.map_err(|e| e.to_string())
+    manager
+        .set_skill_config(&id, settings)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn skills_build_auto_routing_prompt(state: State<'_, AppState>) -> Result<String, String> {
     let manager = state.skills_manager.lock().await;
-    manager.build_auto_routing_prompt().await.map_err(|e| e.to_string())
+    manager
+        .build_auto_routing_prompt()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 // App Config commands
@@ -442,16 +561,17 @@ async fn skills_build_auto_routing_prompt(state: State<'_, AppState>) -> Result<
 async fn app_config_get(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let kv = &state.kv_store;
     match kv.get("app_config") {
-        Ok(Some(value)) => {
-            serde_json::from_str(&value).map_err(|e| e.to_string())
-        }
+        Ok(Some(value)) => serde_json::from_str(&value).map_err(|e| e.to_string()),
         Ok(None) => Ok(serde_json::json!({"api_configs": {}})),
         Err(e) => Err(e.to_string()),
     }
 }
 
 #[tauri::command]
-async fn app_config_set(config: serde_json::Value, state: State<'_, AppState>) -> Result<(), String> {
+async fn app_config_set(
+    config: serde_json::Value,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     let kv = &state.kv_store;
     let value = serde_json::to_string(&config).map_err(|e| e.to_string())?;
     kv.set("app_config", &value).map_err(|e| e.to_string())
@@ -462,16 +582,17 @@ async fn app_config_set(config: serde_json::Value, state: State<'_, AppState>) -
 async fn tuptup_config_get(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let kv = &state.kv_store;
     match kv.get("tuptup_config") {
-        Ok(Some(value)) => {
-            serde_json::from_str(&value).map_err(|e| e.to_string())
-        }
+        Ok(Some(value)) => serde_json::from_str(&value).map_err(|e| e.to_string()),
         Ok(None) => Ok(serde_json::json!({})),
         Err(e) => Err(e.to_string()),
     }
 }
 
 #[tauri::command]
-async fn tuptup_config_set(config: serde_json::Value, state: State<'_, AppState>) -> Result<(), String> {
+async fn tuptup_config_set(
+    config: serde_json::Value,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     let kv = &state.kv_store;
     let value = serde_json::to_string(&config).map_err(|e| e.to_string())?;
     kv.set("tuptup_config", &value).map_err(|e| e.to_string())
@@ -484,9 +605,14 @@ async fn tuptup_get_user_info(state: State<'_, AppState>) -> Result<TuptupUserIn
 }
 
 #[tauri::command]
-async fn tuptup_get_token_balance(state: State<'_, AppState>) -> Result<TuptupTokenBalance, String> {
+async fn tuptup_get_token_balance(
+    state: State<'_, AppState>,
+) -> Result<TuptupTokenBalance, String> {
     let service = state.tuptup_service.lock().await;
-    service.get_token_balance("2").await.map_err(|e| e.to_string())
+    service
+        .get_token_balance("2")
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -504,7 +630,10 @@ async fn tuptup_get_overview(state: State<'_, AppState>) -> Result<TuptupOvervie
 #[tauri::command]
 async fn tuptup_get_smtp_config(state: State<'_, AppState>) -> Result<SmtpConfig, String> {
     let service = state.tuptup_service.lock().await;
-    service.get_smtp_config("2").await.map_err(|e| e.to_string())
+    service
+        .get_smtp_config("2")
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -518,21 +647,52 @@ async fn tuptup_send_verification_email(
     email: String,
     state: State<'_, AppState>,
 ) -> Result<VerifyCodeResponse, String> {
+    let mut service = state.tuptup_service.lock().await;
+    service
+        .send_verification_email(&email)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn tuptup_verify_code(
+    email: String,
+    code: String,
+    state: State<'_, AppState>,
+) -> Result<bool, String> {
     let service = state.tuptup_service.lock().await;
-    service.send_verification_email(&email, "2").await.map_err(|e| e.to_string())
+    Ok(service.verify_code(&email, &code).await)
+}
+
+#[tauri::command]
+async fn tuptup_get_user_id_by_email(
+    email: String,
+    state: State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    let service = state.tuptup_service.lock().await;
+    service
+        .get_user_id_by_email(&email)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn tuptup_get_package_status(state: State<'_, AppState>) -> Result<PackageStatus, String> {
     let service = state.tuptup_service.lock().await;
-    let package = service.get_user_package().await.map_err(|e| e.to_string())?;
+    let package = service
+        .get_user_package()
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(PackageStatus::from_package(&package))
 }
 
 #[tauri::command]
 async fn tuptup_is_package_expired(state: State<'_, AppState>) -> Result<bool, String> {
     let service = state.tuptup_service.lock().await;
-    let package = service.get_user_package().await.map_err(|e| e.to_string())?;
+    let package = service
+        .get_user_package()
+        .await
+        .map_err(|e| e.to_string())?;
     let status = PackageStatus::from_package(&package);
     Ok(status.is_expired)
 }
@@ -540,7 +700,10 @@ async fn tuptup_is_package_expired(state: State<'_, AppState>) -> Result<bool, S
 #[tauri::command]
 async fn tuptup_get_package_level(state: State<'_, AppState>) -> Result<i32, String> {
     let service = state.tuptup_service.lock().await;
-    let package = service.get_user_package().await.map_err(|e| e.to_string())?;
+    let package = service
+        .get_user_package()
+        .await
+        .map_err(|e| e.to_string())?;
     let status = PackageStatus::from_package(&package);
     Ok(status.level)
 }
@@ -561,6 +724,12 @@ async fn crypto_decrypt(encrypted: String) -> Result<String, String> {
 #[tauri::command]
 async fn get_platform() -> Result<String, String> {
     Ok(std::env::consts::OS.to_string())
+}
+
+#[tauri::command]
+async fn open_external(url: String) -> Result<(), String> {
+    use open::that;
+    that(&url).map_err(|e| format!("Failed to open URL: {}", e))
 }
 
 #[tauri::command]
@@ -616,7 +785,11 @@ async fn scheduler_delete_task(id: String, state: State<'_, AppState>) -> Result
 }
 
 #[tauri::command]
-async fn scheduler_update_task(id: String, enabled: bool, state: State<'_, AppState>) -> Result<(), String> {
+async fn scheduler_update_task(
+    id: String,
+    enabled: bool,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     let scheduler = state.scheduler.lock().await;
     scheduler.update_task(&id, enabled)
 }
@@ -641,9 +814,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             println!("[setup] Starting application setup...");
-            
+
             let storage = match Storage::new() {
                 Ok(s) => {
                     println!("[setup] Storage created successfully");
@@ -654,10 +828,10 @@ pub fn run() {
                     return Err(e.to_string().into());
                 }
             };
-            
+
             let kv_store_path = storage.get_kv_store_path();
             println!("[setup] KV store path: {:?}", kv_store_path);
-            
+
             let kv_store = match KvStore::new(kv_store_path) {
                 Ok(k) => {
                     println!("[setup] KvStore created successfully");
@@ -668,15 +842,15 @@ pub fn run() {
                     return Err(e.to_string().into());
                 }
             };
-            
+
             let skills_dir = storage.get_skills_dir();
             let skills_config_path = storage.get_skills_config_path();
-            
+
             // 配置内置技能目录
             let bundled_skills_dir = if cfg!(dev) {
                 // 开发模式：尝试多个可能的路径
                 let current_dir = std::env::current_dir().expect("Failed to get current dir");
-                
+
                 // 可能的技能目录路径（按优先级）
                 let possible_paths = [
                     // 当前目录下的 SKILLs（如果直接在项目根目录运行）
@@ -686,58 +860,71 @@ pub fn run() {
                     // 上上级目录的 SKILLs（如果在 src-tauri/src 目录运行）
                     current_dir.join("..").join("..").join("SKILLs"),
                 ];
-                
+
                 let bundled_dir = possible_paths
                     .iter()
                     .find(|path| {
                         let canonical = path.canonicalize().ok();
-                        canonical.map(|p| p.join("skills.config.json").exists()).unwrap_or(false)
+                        canonical
+                            .map(|p| p.join("skills.config.json").exists())
+                            .unwrap_or(false)
                     })
                     .cloned()
                     .unwrap_or_else(|| current_dir.join("SKILLs"));
-                
-                println!("[skills] Dev mode: using bundled skills from: {:?}", bundled_dir);
+
+                println!(
+                    "[skills] Dev mode: using bundled skills from: {:?}",
+                    bundled_dir
+                );
                 bundled_dir
             } else {
                 // 生产模式：使用应用资源目录
-                let resource_dir = app.path().resource_dir()
+                let resource_dir = app
+                    .path()
+                    .resource_dir()
                     .expect("Failed to get resource dir");
                 let bundled_dir = resource_dir.join("SKILLs");
                 println!("[skills] Production mode: resource dir: {:?}", resource_dir);
-                println!("[skills] Production mode: bundled skills dir: {:?}", bundled_dir);
+                println!(
+                    "[skills] Production mode: bundled skills dir: {:?}",
+                    bundled_dir
+                );
                 bundled_dir
             };
-            
+
             println!("[skills] User skills dir: {:?}", skills_dir);
             println!("[skills] Bundled skills dir: {:?}", bundled_skills_dir);
-            
+
             let skills_manager = SkillsManager::new(skills_dir, skills_config_path)
                 .with_bundled_skills(bundled_skills_dir);
-            
-            let app_data_dir = app.path().app_data_dir().expect("Failed to get app data dir");
+
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .expect("Failed to get app data dir");
             std::fs::create_dir_all(&app_data_dir).expect("Failed to create app data dir");
-            
+
             let logger = Logger::new().expect("Failed to create Logger");
-            
+
             let db_path = app_data_dir.join("glo.db");
             let database = Database::new(db_path).expect("Failed to create Database");
-            
+
             let database_arc = Arc::new(TokioMutex::new(database));
-            
+
             let mut system_manager = SystemManager::new();
             system_manager.set_app_handle(app.handle().clone());
-            
+
             if let Err(e) = system_manager.setup_system_tray(app) {
                 eprintln!("[System] Failed to setup system tray: {}", e);
             }
-            
+
             let goclaw_manager = Arc::new(TokioMutex::new(GoClawManager::new(kv_store.clone())));
             let mut cowork_manager = CoworkManager::new(database_arc.clone());
             cowork_manager.set_goclaw_manager(goclaw_manager.clone());
-            
+
             let scheduler = Scheduler::new(database_arc.clone());
             let tuptup_service = Arc::new(TokioMutex::new(TuptupService::new()));
-            
+
             app.manage(AppState {
                 storage,
                 kv_store,
@@ -750,7 +937,7 @@ pub fn run() {
                 logger: Arc::new(TokioMutex::new(logger)),
                 tuptup_service,
             });
-            
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -830,11 +1017,15 @@ pub fn run() {
             tuptup_get_smtp_config,
             tuptup_get_user_package,
             tuptup_send_verification_email,
+            tuptup_verify_code,
+            tuptup_get_user_id_by_email,
             tuptup_get_package_status,
             tuptup_is_package_expired,
             tuptup_get_package_level,
             crypto_encrypt,
             crypto_decrypt,
+            make_http_request,
+            open_external,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

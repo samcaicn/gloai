@@ -1,12 +1,12 @@
-use super::gateway::{Gateway, GatewayStatus, GatewayEvent, EventCallback, IMMessage};
+use super::gateway::{EventCallback, Gateway, GatewayEvent, GatewayStatus, IMMessage};
+use base64::Engine as _;
+use chrono::Local;
+use futures_util::{SinkExt, StreamExt};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use chrono::Local;
-use reqwest::Client;
 use std::time::Duration;
-use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
-use base64::Engine as _;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscordConfig {
@@ -173,8 +173,14 @@ impl DiscordGateway {
     fn get_headers(&self) -> reqwest::header::HeaderMap {
         let token = self.config.lock().unwrap().bot_token.clone();
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(reqwest::header::AUTHORIZATION, format!("Bot {}", token).parse().unwrap());
-        headers.insert(reqwest::header::CONTENT_TYPE, "application/json".parse().unwrap());
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            format!("Bot {}", token).parse().unwrap(),
+        );
+        headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            "application/json".parse().unwrap(),
+        );
         headers
     }
 
@@ -192,7 +198,8 @@ impl DiscordGateway {
 
     async fn get_current_user(&self) -> Result<DiscordUser, String> {
         let url = self.get_api_url("/users/@me");
-        let response = self.http_client
+        let response = self
+            .http_client
             .get(&url)
             .headers(self.get_headers())
             .send()
@@ -211,7 +218,7 @@ impl DiscordGateway {
 
     async fn send_message(&self, channel_id: &str, content: &str) -> Result<(), String> {
         let url = self.get_api_url(&format!("/channels/{}/messages", channel_id));
-        
+
         #[derive(Serialize)]
         struct SendMessageRequest {
             content: String,
@@ -274,16 +281,16 @@ impl DiscordGateway {
                 println!("[Discord Gateway] {}", msg);
             }
         });
-        
+
         let handle = tokio::spawn(async move {
             if let Ok((ws_stream, _)) = connect_async(DISCORD_GATEWAY_URL).await {
                 log_fn("Connected to Discord Gateway");
-                
+
                 let (mut write, mut read) = ws_stream.split();
-                
+
                 let mut heartbeat_interval_ms: u64 = 41250;
                 let mut last_seq: Option<i64> = None;
-                
+
                 loop {
                     tokio::select! {
                         _ = &mut rx => {
@@ -296,13 +303,13 @@ impl DiscordGateway {
                                         *seq.lock().unwrap() = Some(s);
                                         last_seq = Some(s);
                                     }
-                                    
+
                                     match payload.op {
                                         OP_HELLO => {
                                             if let Some(interval) = payload.d.get("heartbeat_interval").and_then(|v| v.as_u64()) {
                                                 heartbeat_interval_ms = interval;
                                                 *heartbeat_interval.lock().unwrap() = Some(interval);
-                                                
+
                                                 let identify = serde_json::json!({
                                                     "op": OP_IDENTIFY,
                                                     "d": {
@@ -333,7 +340,7 @@ impl DiscordGateway {
                                                         let channel_id = payload.d.get("channel_id").and_then(|v| v.as_str()).unwrap_or("");
                                                         let user_id = payload.d.get("author").and_then(|a| a.get("id")).and_then(|v| v.as_str()).unwrap_or("");
                                                         let username = payload.d.get("author").and_then(|a| a.get("username")).and_then(|v| v.as_str()).unwrap_or("");
-                                                        
+
                                                         if !msg_data.is_empty() && user_id != config.bot_token {
                                                             if let Some(callback) = &*event_callback.lock().unwrap() {
                                                                 callback(GatewayEvent::Message(IMMessage {
@@ -369,7 +376,7 @@ impl DiscordGateway {
         if let Some(tx) = self.stop_ws.lock().unwrap().take() {
             let _ = tx.send(());
         }
-        
+
         if let Some(handle) = self.ws_task.lock().unwrap().take() {
             let _ = handle.abort();
         }
@@ -398,13 +405,13 @@ impl Gateway for DiscordGateway {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
-    
+
     async fn start(&self) -> Result<(), String> {
         let (config_enabled, bot_token) = {
             let config = self.config.lock().unwrap();
             (config.enabled, config.bot_token.clone())
         };
-        
+
         if !config_enabled {
             return Ok(());
         }
@@ -418,7 +425,7 @@ impl Gateway for DiscordGateway {
             self.emit_event(GatewayEvent::StatusChanged(status.clone()));
             return Err(error_msg);
         }
-        
+
         {
             let mut status = self.status.lock().unwrap();
             status.starting = true;
@@ -499,7 +506,7 @@ impl Gateway for DiscordGateway {
         }
 
         let channel_id = self.last_channel_id.lock().unwrap().clone();
-        
+
         if let Some(channel_id) = channel_id {
             self.send_message(&channel_id, text).await?;
             let mut status = self.status.lock().unwrap();
@@ -516,21 +523,26 @@ impl Gateway for DiscordGateway {
         }
 
         self.send_message(conversation_id, text).await?;
-        
+
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
-    async fn send_media_message(&self, conversation_id: &str, file_path: &str) -> Result<bool, String> {
+    async fn send_media_message(
+        &self,
+        conversation_id: &str,
+        file_path: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
 
-        let file_bytes = tokio::fs::read(file_path).await
+        let file_bytes = tokio::fs::read(file_path)
+            .await
             .map_err(|e| format!("读取文件失败: {}", e))?;
-        
+
         let file_name = std::path::Path::new(file_path)
             .file_name()
             .and_then(|n| n.to_str())
@@ -564,9 +576,13 @@ impl Gateway for DiscordGateway {
             .text("content", "")
             .part("file", part);
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(&url)
-            .header("Authorization", format!("Bot {}", self.config.lock().unwrap().bot_token.clone()))
+            .header(
+                "Authorization",
+                format!("Bot {}", self.config.lock().unwrap().bot_token.clone()),
+            )
             .multipart(form)
             .send()
             .await
@@ -578,7 +594,7 @@ impl Gateway for DiscordGateway {
 
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
@@ -591,7 +607,12 @@ impl Gateway for DiscordGateway {
         }
     }
 
-    async fn edit_message(&self, conversation_id: &str, message_id: &str, new_text: &str) -> Result<bool, String> {
+    async fn edit_message(
+        &self,
+        conversation_id: &str,
+        message_id: &str,
+        new_text: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
@@ -610,9 +631,13 @@ impl Gateway for DiscordGateway {
             content: new_text.to_string(),
         };
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .patch(&url)
-            .header("Authorization", format!("Bot {}", self.config.lock().unwrap().bot_token.clone()))
+            .header(
+                "Authorization",
+                format!("Bot {}", self.config.lock().unwrap().bot_token.clone()),
+            )
             .json(&request)
             .send()
             .await
@@ -625,7 +650,11 @@ impl Gateway for DiscordGateway {
         Ok(true)
     }
 
-    async fn delete_message(&self, conversation_id: &str, message_id: &str) -> Result<bool, String> {
+    async fn delete_message(
+        &self,
+        conversation_id: &str,
+        message_id: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
@@ -635,9 +664,13 @@ impl Gateway for DiscordGateway {
             conversation_id, message_id
         );
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .delete(&url)
-            .header("Authorization", format!("Bot {}", self.config.lock().unwrap().bot_token.clone()))
+            .header(
+                "Authorization",
+                format!("Bot {}", self.config.lock().unwrap().bot_token.clone()),
+            )
             .send()
             .await
             .map_err(|e| format!("HTTP request failed: {}", e))?;
@@ -649,7 +682,11 @@ impl Gateway for DiscordGateway {
         Ok(true)
     }
 
-    async fn get_message_history(&self, conversation_id: &str, limit: u32) -> Result<Vec<IMMessage>, String> {
+    async fn get_message_history(
+        &self,
+        conversation_id: &str,
+        limit: u32,
+    ) -> Result<Vec<IMMessage>, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
@@ -675,9 +712,13 @@ impl Gateway for DiscordGateway {
             bot: Option<bool>,
         }
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .get(&url)
-            .header("Authorization", format!("Bot {}", self.config.lock().unwrap().bot_token.clone()))
+            .header(
+                "Authorization",
+                format!("Bot {}", self.config.lock().unwrap().bot_token.clone()),
+            )
             .send()
             .await
             .map_err(|e| format!("HTTP request failed: {}", e))?

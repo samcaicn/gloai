@@ -1,9 +1,9 @@
-use super::gateway::{Gateway, GatewayStatus, GatewayEvent, EventCallback, IMMessage};
+use super::gateway::{EventCallback, Gateway, GatewayEvent, GatewayStatus, IMMessage};
+use async_trait::async_trait;
+use chrono::Local;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use chrono::Local;
-use async_trait::async_trait;
-use reqwest::Client;
 use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,7 +103,8 @@ impl WeWorkGateway {
             }),
         };
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(&webhook_url)
             .json(&request)
             .send()
@@ -116,7 +117,10 @@ impl WeWorkGateway {
         if response.errcode == 0 {
             Ok(())
         } else {
-            Err(format!("Failed to send message: {}", response.errmsg.unwrap_or_default()))
+            Err(format!(
+                "Failed to send message: {}",
+                response.errmsg.unwrap_or_default()
+            ))
         }
     }
 
@@ -150,13 +154,13 @@ impl Gateway for WeWorkGateway {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
-    
+
     async fn start(&self) -> Result<(), String> {
         let (config_enabled, webhook_url) = {
             let config = self.config.lock().unwrap();
             (config.enabled, config.webhook_url.clone())
         };
-        
+
         if !config_enabled {
             return Ok(());
         }
@@ -170,7 +174,7 @@ impl Gateway for WeWorkGateway {
             self.emit_event(GatewayEvent::StatusChanged(status.clone()));
             return Err(error_msg);
         }
-        
+
         {
             let mut status = self.status.lock().unwrap();
             status.starting = true;
@@ -239,10 +243,10 @@ impl Gateway for WeWorkGateway {
         }
 
         self.send_text_message(text).await?;
-        
+
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
@@ -252,14 +256,18 @@ impl Gateway for WeWorkGateway {
         }
 
         self.send_text_message(text).await?;
-        
+
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
-    async fn send_media_message(&self, _conversation_id: &str, _file_path: &str) -> Result<bool, String> {
+    async fn send_media_message(
+        &self,
+        _conversation_id: &str,
+        _file_path: &str,
+    ) -> Result<bool, String> {
         Err("企业微信 Webhook 不支持发送媒体消息".to_string())
     }
 
@@ -271,15 +279,28 @@ impl Gateway for WeWorkGateway {
         }
     }
 
-    async fn edit_message(&self, _conversation_id: &str, _message_id: &str, _new_text: &str) -> Result<bool, String> {
+    async fn edit_message(
+        &self,
+        _conversation_id: &str,
+        _message_id: &str,
+        _new_text: &str,
+    ) -> Result<bool, String> {
         Err("企业微信 Webhook 不支持编辑消息".to_string())
     }
 
-    async fn delete_message(&self, _conversation_id: &str, _message_id: &str) -> Result<bool, String> {
+    async fn delete_message(
+        &self,
+        _conversation_id: &str,
+        _message_id: &str,
+    ) -> Result<bool, String> {
         Err("企业微信 Webhook 不支持删除消息".to_string())
     }
 
-    async fn get_message_history(&self, _conversation_id: &str, _limit: u32) -> Result<Vec<IMMessage>, String> {
+    async fn get_message_history(
+        &self,
+        _conversation_id: &str,
+        _limit: u32,
+    ) -> Result<Vec<IMMessage>, String> {
         Err("企业微信 Webhook 不支持获取历史消息".to_string())
     }
 

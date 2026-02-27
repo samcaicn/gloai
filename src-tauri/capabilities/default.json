@@ -5,6 +5,13 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "dialog:default"
+    "dialog:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://claw.hncea.cc/**" },
+        { "url": "https://*.tauri.app" }
+      ]
+    }
   ]
 }

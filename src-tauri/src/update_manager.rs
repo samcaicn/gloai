@@ -1,15 +1,15 @@
-use std::fs::{File, create_dir_all};
+use anyhow::Result;
+use chrono;
+use flate2::read::GzDecoder;
+use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Mutex;
-use tauri::{AppHandle, Manager};
-use tokio::time::sleep;
-use anyhow::Result;
-use chrono;
 use tar::Archive;
-use flate2::read::GzDecoder;
+use tauri::{AppHandle, Manager};
+use tokio::sync::Mutex;
+use tokio::time::sleep;
 
 #[derive(Debug)]
 pub struct UpdateManager {
@@ -51,7 +51,7 @@ impl UpdateManager {
                 if let Some(app_handle) = &*app_handle {
                     let app_handle_clone = app_handle.clone();
                     drop(app_handle);
-                    
+
                     if let Err(e) = Self::check_for_updates(&app_handle_clone, &server_url).await {
                         eprintln!("Error checking for updates: {:?}", e);
                     }
@@ -68,20 +68,27 @@ impl UpdateManager {
         let platform = Self::get_current_platform();
 
         // 2. Check for updates from API
-        let update_info = Self::fetch_update_info(server_url, &app_name, &current_version, &platform).await?;
+        let update_info =
+            Self::fetch_update_info(server_url, &app_name, &current_version, &platform).await?;
 
         // 3. If update available, download it
         if let Some(info) = update_info {
             if info.version > current_version {
                 println!("New version available: {}", info.version);
-                Self::download_update(app_handle, &info.download_url, info.sha256.as_deref()).await?;
+                Self::download_update(app_handle, &info.download_url, info.sha256.as_deref())
+                    .await?;
             }
         }
 
         Ok(())
     }
 
-    async fn fetch_update_info(server_url: &str, app_name: &str, current_version: &str, platform: &str) -> Result<Option<UpdateInfo>> {
+    async fn fetch_update_info(
+        server_url: &str,
+        app_name: &str,
+        current_version: &str,
+        platform: &str,
+    ) -> Result<Option<UpdateInfo>> {
         use reqwest::Client;
 
         let client = Client::new();
@@ -100,23 +107,38 @@ impl UpdateManager {
             if result["update_available"].as_bool().unwrap_or(false) {
                 let version = result["version"].as_str().unwrap_or("").to_string();
                 let release_notes = result["release_notes"].as_str().unwrap_or("").to_string();
-                
+
                 // 根据平台获取对应的CDN下载地址
                 let download_url = match platform {
-                    "macos" => result["download"]["macos"].as_str().unwrap_or("").to_string(),
-                    "windows" => result["download"]["windows"].as_str().unwrap_or("").to_string(),
-                    "linux" => result["download"]["linux"].as_str().unwrap_or("").to_string(),
+                    "macos" => result["download"]["macos"]
+                        .as_str()
+                        .unwrap_or("")
+                        .to_string(),
+                    "windows" => result["download"]["windows"]
+                        .as_str()
+                        .unwrap_or("")
+                        .to_string(),
+                    "linux" => result["download"]["linux"]
+                        .as_str()
+                        .unwrap_or("")
+                        .to_string(),
                     _ => "".to_string(),
                 };
-                
+
                 // 获取SHA256校验和（可选，用于后续验证）
                 let sha256 = match platform {
-                    "macos" => result["download"]["macos_sha256"].as_str().map(|s| s.to_string()),
-                    "windows" => result["download"]["windows_sha256"].as_str().map(|s| s.to_string()),
-                    "linux" => result["download"]["linux_sha256"].as_str().map(|s| s.to_string()),
+                    "macos" => result["download"]["macos_sha256"]
+                        .as_str()
+                        .map(|s| s.to_string()),
+                    "windows" => result["download"]["windows_sha256"]
+                        .as_str()
+                        .map(|s| s.to_string()),
+                    "linux" => result["download"]["linux_sha256"]
+                        .as_str()
+                        .map(|s| s.to_string()),
                     _ => None,
                 };
-                
+
                 if !download_url.is_empty() {
                     return Ok(Some(UpdateInfo {
                         version,
@@ -131,7 +153,11 @@ impl UpdateManager {
         Ok(None)
     }
 
-    async fn download_update(_app_handle: &AppHandle, download_url: &str, expected_sha256: Option<&str>) -> Result<()> {
+    async fn download_update(
+        _app_handle: &AppHandle,
+        download_url: &str,
+        expected_sha256: Option<&str>,
+    ) -> Result<()> {
         // 1. Get download directory
         let download_dir = Self::get_update_download_dir()?;
         std::fs::create_dir_all(&download_dir)?;
@@ -144,14 +170,18 @@ impl UpdateManager {
         let response = reqwest::get(download_url).await?;
         let bytes = response.bytes().await?;
         file.write_all(&bytes)?;
-        
+
         // 4. Verify SHA256 if provided
         if let Some(expected_hash) = expected_sha256 {
             let actual_hash = Self::calculate_sha256(&filename)?;
             if actual_hash != expected_hash {
                 // 删除损坏的文件
                 std::fs::remove_file(&filename)?;
-                return Err(anyhow::anyhow!("SHA256 checksum mismatch. Expected: {}, Actual: {}", expected_hash, actual_hash));
+                return Err(anyhow::anyhow!(
+                    "SHA256 checksum mismatch. Expected: {}, Actual: {}",
+                    expected_hash,
+                    actual_hash
+                ));
             }
             println!("SHA256 checksum verified successfully");
         }
@@ -175,13 +205,13 @@ impl UpdateManager {
     }
 
     fn calculate_sha256(file_path: &PathBuf) -> Result<String> {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         use std::io::Read;
-        
+
         let mut file = File::open(file_path)?;
         let mut hasher = Sha256::new();
         let mut buffer = [0; 8192];
-        
+
         loop {
             let bytes_read = file.read(&mut buffer)?;
             if bytes_read == 0 {
@@ -189,7 +219,7 @@ impl UpdateManager {
             }
             hasher.update(&buffer[..bytes_read]);
         }
-        
+
         let hash = hasher.finalize();
         Ok(hex::encode(hash))
     }
@@ -197,20 +227,21 @@ impl UpdateManager {
     fn get_update_filename() -> String {
         #[cfg(target_os = "macos")]
         return "update.app.tar.gz".to_string();
-        
+
         #[cfg(target_os = "windows")]
         return "update.msi".to_string();
-        
+
         #[cfg(target_os = "linux")]
         return "update.AppImage".to_string();
-        
+
         #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
         return "update.zip".to_string();
     }
 
     fn get_update_download_dir() -> Result<PathBuf> {
         use directories_next::ProjectDirs;
-        let project_dirs = ProjectDirs::from("com", "ggai", "ggai").ok_or_else(|| anyhow::anyhow!("Failed to get project directories"))?;
+        let project_dirs = ProjectDirs::from("com", "ggai", "ggai")
+            .ok_or_else(|| anyhow::anyhow!("Failed to get project directories"))?;
         let app_dir = project_dirs.data_dir();
         Ok(app_dir.join("updates"))
     }
@@ -218,13 +249,13 @@ impl UpdateManager {
     fn get_current_platform() -> String {
         #[cfg(target_os = "macos")]
         return "macos".to_string();
-        
+
         #[cfg(target_os = "windows")]
         return "windows".to_string();
-        
+
         #[cfg(target_os = "linux")]
         return "linux".to_string();
-        
+
         #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
         return "unknown".to_string();
     }
@@ -233,24 +264,24 @@ impl UpdateManager {
         // 1. Check if there's a pending update
         let download_dir = Self::get_update_download_dir()?;
         let manifest_path = download_dir.join("update.json");
-        
+
         if !manifest_path.exists() {
             println!("No pending update found");
             return Ok(());
         }
-        
+
         // 2. Read update manifest
         let manifest_content = std::fs::read_to_string(manifest_path)?;
         let manifest: serde_json::Value = serde_json::from_str(&manifest_content)?;
-        
+
         if !manifest["ready"].as_bool().unwrap_or(false) {
             println!("Update is not ready for installation");
             return Ok(());
         }
-        
+
         let platform = manifest["platform"].as_str().unwrap_or("unknown");
         let update_filename = manifest["update_filename"].as_str().unwrap_or("");
-        
+
         // 3. Install update based on platform
         match platform {
             "macos" => {
@@ -266,11 +297,11 @@ impl UpdateManager {
                 eprintln!("Unsupported platform: {}", platform);
             }
         }
-        
+
         // 4. Clean up
         std::fs::remove_file(download_dir.join("update.json"))?;
         std::fs::remove_file(download_dir.join(update_filename))?;
-        
+
         println!("Update installed successfully");
         Ok(())
     }
@@ -279,30 +310,33 @@ impl UpdateManager {
         // 1. Paths
         let update_file = download_dir.join(update_filename);
         let extract_dir = download_dir.join("extract");
-        
+
         // 2. Extract the .app.tar.gz file
         create_dir_all(&extract_dir)?;
-        
+
         let file = File::open(update_file)?;
         let decoder = GzDecoder::new(file);
         let mut archive = Archive::new(decoder);
         archive.unpack(&extract_dir)?;
-        
+
         // 3. Find the .app bundle
-        let app_bundle = extract_dir.read_dir()?.find(|entry| {
-            if let Ok(entry) = entry {
-                entry.file_name().to_string_lossy().ends_with(".app")
-            } else {
-                false
-            }
-        }).ok_or_else(|| anyhow::anyhow!("No .app bundle found in update package"))?;
-        
+        let app_bundle = extract_dir
+            .read_dir()?
+            .find(|entry| {
+                if let Ok(entry) = entry {
+                    entry.file_name().to_string_lossy().ends_with(".app")
+                } else {
+                    false
+                }
+            })
+            .ok_or_else(|| anyhow::anyhow!("No .app bundle found in update package"))?;
+
         // 4. Replace the existing app (simplified version)
         // Note: In a real implementation, you'd need to handle:
         // - Quitting the app before replacement
         // - Handling permissions
         // - Backing up the old app
-        
+
         println!("macOS update installed successfully: {:?}", app_bundle);
         Ok(())
     }
@@ -310,12 +344,12 @@ impl UpdateManager {
     fn install_windows_update(download_dir: &PathBuf, update_filename: &str) -> Result<()> {
         // 1. Paths
         let update_file = download_dir.join(update_filename);
-        
+
         // 2. Run the MSI installer
         // Note: In a real implementation, you'd need to:
         // - Run the installer with appropriate flags
         // - Handle installation errors
-        
+
         println!("Windows update ready for installation: {:?}", update_file);
         println!("MSI installer will run on next restart");
         Ok(())
@@ -324,12 +358,12 @@ impl UpdateManager {
     fn install_linux_update(download_dir: &PathBuf, update_filename: &str) -> Result<()> {
         // 1. Paths
         let update_file = download_dir.join(update_filename);
-        
+
         // 2. Make the AppImage executable and run it
         // Note: In a real implementation, you'd need to:
         // - Make the file executable
         // - Handle installation
-        
+
         println!("Linux update ready for installation: {:?}", update_file);
         Ok(())
     }

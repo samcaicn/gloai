@@ -1,6 +1,6 @@
+use anyhow::Result;
 use std::fs;
 use std::path::PathBuf;
-use anyhow::Result;
 
 pub struct FileSystem {
     base_dir: PathBuf,
@@ -50,7 +50,7 @@ impl FileSystem {
     pub async fn list_dir(&self, path: &str) -> Result<Vec<String>> {
         let full_path = self.base_dir.join(path);
         let mut entries = Vec::new();
-        
+
         if full_path.is_dir() {
             for entry in fs::read_dir(full_path)? {
                 let entry = entry?;
@@ -58,7 +58,7 @@ impl FileSystem {
                 entries.push(file_name.to_string_lossy().into());
             }
         }
-        
+
         Ok(entries)
     }
 

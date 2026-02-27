@@ -1,12 +1,12 @@
-use super::gateway::{Gateway, GatewayStatus, GatewayEvent, EventCallback, IMMessage};
+use super::gateway::{EventCallback, Gateway, GatewayEvent, GatewayStatus, IMMessage};
+use async_trait::async_trait;
+use chrono::Local;
+use futures_util::{SinkExt, StreamExt};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use chrono::Local;
-use async_trait::async_trait;
-use reqwest::Client;
 use std::time::Duration;
 use tokio::sync::mpsc;
-use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message as WsMessage};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -249,7 +249,7 @@ impl DingTalkGateway {
             let config = self.config.lock().unwrap();
             (config.client_id.clone(), config.client_secret.clone())
         };
-        
+
         let now = chrono::Utc::now().timestamp();
         if let Some(expires_at) = *self.token_expires_at.lock().unwrap() {
             if expires_at - now > 300 {
@@ -265,7 +265,8 @@ impl DingTalkGateway {
             "appSecret": client_secret,
         });
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(url)
             .json(&request)
             .send()
@@ -279,41 +280,50 @@ impl DingTalkGateway {
             let token = response.access_token.unwrap();
             let expires_in = response.expire_in.unwrap_or(7200);
             let expires_at = now + expires_in;
-            
+
             *self.access_token.lock().unwrap() = Some(token.clone());
             *self.token_expires_at.lock().unwrap() = Some(expires_at);
-            
+
             Ok(token)
         } else {
-            Err(format!("Failed to get access token: {}", response.errmsg.unwrap_or_default()))
+            Err(format!(
+                "Failed to get access token: {}",
+                response.errmsg.unwrap_or_default()
+            ))
         }
     }
 
     async fn upload_media(&self, file_path: &str, media_type: &str) -> Result<String, String> {
         let access_token = self.get_access_token().await?;
-        
-        let file_data = tokio::fs::read(file_path).await
+
+        let file_data = tokio::fs::read(file_path)
+            .await
             .map_err(|e| format!("Failed to read file: {}", e))?;
-        
+
         let file_name = std::path::Path::new(file_path)
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("file");
-        
-        let part = reqwest::multipart::Part::bytes(file_data)
-            .file_name(file_name.to_string());
-        
+
+        let part = reqwest::multipart::Part::bytes(file_data).file_name(file_name.to_string());
+
         let form = reqwest::multipart::Form::new()
             .part("media", part)
             .text("type".to_string(), media_type.to_string());
-        
+
         let url = format!(
             "https://api.dingtalk.com/v1.0/robot/media/upload?access_token={}&agentId={}",
             access_token,
-            self.config.lock().unwrap().agent_id.clone().unwrap_or_default()
+            self.config
+                .lock()
+                .unwrap()
+                .agent_id
+                .clone()
+                .unwrap_or_default()
         );
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .post(&url)
             .multipart(form)
             .send()
@@ -326,41 +336,57 @@ impl DingTalkGateway {
         if response.errcode == 0 && response.media_id.is_some() {
             Ok(response.media_id.unwrap())
         } else {
-            Err(format!("Upload failed: {}", response.errmsg.unwrap_or_default()))
+            Err(format!(
+                "Upload failed: {}",
+                response.errmsg.unwrap_or_default()
+            ))
         }
     }
 
     async fn download_media(&self, download_code: &str) -> Result<Vec<u8>, String> {
         let access_token = self.get_access_token().await?;
-        
+
         let url = format!(
             "https://api.dingtalk.com/v1.0/robot/media/download?access_token={}&downloadCode={}",
             access_token, download_code
         );
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .get(&url)
             .send()
             .await
             .map_err(|e| format!("Download failed: {}", e))?;
-        
-        let bytes = response.bytes()
+
+        let bytes = response
+            .bytes()
             .await
             .map_err(|e| format!("Failed to read bytes: {}", e))?;
-        
+
         Ok(bytes.to_vec())
     }
 
     // 使用 OpenAPI 发送消息到指定用户
-    async fn send_message_to_user(&self, user_id: &str, content: &str, msg_type: &str) -> Result<(), String> {
+    async fn send_message_to_user(
+        &self,
+        user_id: &str,
+        content: &str,
+        msg_type: &str,
+    ) -> Result<(), String> {
         let access_token = self.get_access_token().await?;
-        let agent_id = self.config.lock().unwrap().agent_id.clone().unwrap_or_default();
-        
+        let agent_id = self
+            .config
+            .lock()
+            .unwrap()
+            .agent_id
+            .clone()
+            .unwrap_or_default();
+
         let url = format!(
             "https://api.dingtalk.com/v1.0/robot/oToMessages/batchSend?access_token={}",
             access_token
         );
-        
+
         let msg_param = match msg_type {
             "text" => serde_json::json!({
                 "msgtype": "text",
@@ -382,15 +408,16 @@ impl DingTalkGateway {
                 }
             }),
         };
-        
+
         let request = serde_json::json!({
             "robotCode": self.config.lock().unwrap().robot_code.clone().unwrap_or_default(),
             "userIds": [user_id],
             "msgKey": msg_type,
             "msgParam": msg_param.to_string(),
         });
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .post(&url)
             .json(&request)
             .send()
@@ -399,23 +426,31 @@ impl DingTalkGateway {
             .json::<DingTalkRobotResponse>()
             .await
             .map_err(|e| format!("Failed to parse response: {}", e))?;
-        
+
         if response.errcode == 0 {
             Ok(())
         } else {
-            Err(format!("Send message failed: {}", response.errmsg.unwrap_or_default()))
+            Err(format!(
+                "Send message failed: {}",
+                response.errmsg.unwrap_or_default()
+            ))
         }
     }
 
     // 发送群消息
-    async fn send_message_to_group(&self, open_conversation_id: &str, content: &str, msg_type: &str) -> Result<(), String> {
+    async fn send_message_to_group(
+        &self,
+        open_conversation_id: &str,
+        content: &str,
+        msg_type: &str,
+    ) -> Result<(), String> {
         let access_token = self.get_access_token().await?;
-        
+
         let url = format!(
             "https://api.dingtalk.com/v1.0/robot/groupMessages/send?access_token={}",
             access_token
         );
-        
+
         let msg_param = match msg_type {
             "text" => serde_json::json!({
                 "msgtype": "text",
@@ -437,15 +472,16 @@ impl DingTalkGateway {
                 }
             }),
         };
-        
+
         let request = serde_json::json!({
             "robotCode": self.config.lock().unwrap().robot_code.clone().unwrap_or_default(),
             "openConversationId": open_conversation_id,
             "msgKey": msg_type,
             "msgParam": msg_param.to_string(),
         });
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .post(&url)
             .json(&request)
             .send()
@@ -454,15 +490,21 @@ impl DingTalkGateway {
             .json::<DingTalkRobotResponse>()
             .await
             .map_err(|e| format!("Failed to parse response: {}", e))?;
-        
+
         if response.errcode == 0 {
             Ok(())
         } else {
-            Err(format!("Send message failed: {}", response.errmsg.unwrap_or_default()))
+            Err(format!(
+                "Send message failed: {}",
+                response.errmsg.unwrap_or_default()
+            ))
         }
     }
 
-    fn extract_media_from_message(&self, msg: &DingTalkInboundMessage) -> Vec<DingTalkMediaAttachment> {
+    fn extract_media_from_message(
+        &self,
+        msg: &DingTalkInboundMessage,
+    ) -> Vec<DingTalkMediaAttachment> {
         let mut attachments = Vec::new();
 
         if let Some(image) = &msg.image {
@@ -511,22 +553,27 @@ impl DingTalkGateway {
     }
 
     async fn handle_inbound_message(&self, data: &str) -> Result<(), String> {
-        let msg: DingTalkInboundMessage = serde_json::from_str(data)
-            .map_err(|e| format!("Failed to parse message: {}", e))?;
-        
-        let content = msg.text.as_ref()
+        let msg: DingTalkInboundMessage =
+            serde_json::from_str(data).map_err(|e| format!("Failed to parse message: {}", e))?;
+
+        let content = msg
+            .text
+            .as_ref()
             .and_then(|t| t.content.clone())
             .or_else(|| msg.content.as_ref().and_then(|c| c.recognition.clone()))
             .unwrap_or_default();
 
         let attachments = self.extract_media_from_message(&msg);
-        
+
         if content.is_empty() && attachments.is_empty() {
             return Ok(());
         }
 
-        let conversation_type = msg.conversation_type.clone().unwrap_or_else(|| "1".to_string());
-        
+        let conversation_type = msg
+            .conversation_type
+            .clone()
+            .unwrap_or_else(|| "1".to_string());
+
         // 保存会话信息
         if let Some(conversation_id) = &msg.conversation_id {
             *self.last_conversation.lock().unwrap() = Some(DingTalkConversation {
@@ -544,7 +591,9 @@ impl DingTalkGateway {
             user_id: msg.sender_staff_id.clone().unwrap_or_default(),
             user_name: msg.sender_nick.clone().unwrap_or_default(),
             content,
-            timestamp: msg.create_at.unwrap_or_else(|| chrono::Utc::now().timestamp()),
+            timestamp: msg
+                .create_at
+                .unwrap_or_else(|| chrono::Utc::now().timestamp()),
             is_mention: false,
         };
 
@@ -559,7 +608,7 @@ impl DingTalkGateway {
     // 启动 WebSocket Stream 连接
     async fn start_stream_connection(&self) -> Result<(), String> {
         let access_token = self.get_access_token().await?;
-        
+
         let url = format!(
             "wss://api.dingtalk.com/v1.0/robot/stream?token={}",
             access_token
@@ -585,7 +634,9 @@ impl DingTalkGateway {
             "type": "connect",
             "data": {}
         });
-        let _ = ws_sender.send(WsMessage::Text(connect_msg.to_string())).await;
+        let _ = ws_sender
+            .send(WsMessage::Text(connect_msg.to_string()))
+            .await;
 
         let event_callback = Arc::clone(&self.event_callback);
         let status = Arc::clone(&self.status);
@@ -595,7 +646,7 @@ impl DingTalkGateway {
         // 启动消息处理任务
         let handle = tokio::spawn(async move {
             let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(30));
-            
+
             loop {
                 tokio::select! {
                     // 处理 WebSocket 消息
@@ -603,7 +654,7 @@ impl DingTalkGateway {
                         match msg {
                             Ok(WsMessage::Text(text)) => {
                                 self_ref.log(&format!("Received: {}", &text[..text.len().min(100)]));
-                                
+
                                 // 解析 Stream 消息
                                 if let Ok(stream_msg) = serde_json::from_str::<DingTalkStreamMessage>(&text) {
                                     // 发送确认回执
@@ -613,7 +664,7 @@ impl DingTalkGateway {
                                         "data": { "success": true }
                                     });
                                     let _ = ws_sender.send(WsMessage::Text(ack.to_string())).await;
-                                    
+
                                     // 处理消息
                                     let _ = self_ref.handle_inbound_message(&stream_msg.data).await;
                                 }
@@ -632,7 +683,7 @@ impl DingTalkGateway {
                             _ => {}
                         }
                     }
-                    
+
                     // 发送心跳
                     _ = heartbeat_interval.tick() => {
                         let heartbeat = serde_json::json!({
@@ -643,7 +694,7 @@ impl DingTalkGateway {
                             break;
                         }
                     }
-                    
+
                     // 检查是否需要停止
                     _ = tokio::time::sleep(Duration::from_millis(100)) => {
                         if *is_stopping.lock().unwrap() {
@@ -659,12 +710,12 @@ impl DingTalkGateway {
             if let Some(cb) = &*event_callback.lock().unwrap() {
                 cb(GatewayEvent::Disconnected);
             }
-            
+
             self_ref.log("WebSocket Stream disconnected");
         });
 
         *self.ws_task.lock().unwrap() = Some(handle);
-        
+
         Ok(())
     }
 
@@ -676,9 +727,9 @@ impl DingTalkGateway {
 
         let delay = *self.reconnect_delay_ms.lock().unwrap();
         self.log(&format!("Reconnecting in {}ms...", delay));
-        
+
         tokio::time::sleep(Duration::from_millis(delay)).await;
-        
+
         if *self.is_stopping.lock().unwrap() {
             return Ok(());
         }
@@ -718,11 +769,15 @@ impl Gateway for DingTalkGateway {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
-    
+
     async fn start(&self) -> Result<(), String> {
         let (config_enabled, client_id, client_secret) = {
             let config = self.config.lock().unwrap();
-            (config.enabled, config.client_id.clone(), config.client_secret.clone())
+            (
+                config.enabled,
+                config.client_id.clone(),
+                config.client_secret.clone(),
+            )
         };
 
         if !config_enabled {
@@ -750,7 +805,10 @@ impl Gateway for DingTalkGateway {
         // 获取访问令牌
         match self.get_access_token().await {
             Ok(token) => {
-                self.log(&format!("Access token obtained: {}...", &token[..token.len().min(10)]));
+                self.log(&format!(
+                    "Access token obtained: {}...",
+                    &token[..token.len().min(10)]
+                ));
             }
             Err(e) => {
                 let mut status = self.status.lock().unwrap();
@@ -834,10 +892,16 @@ impl Gateway for DingTalkGateway {
 
         // 获取最后会话信息
         let conversation = self.last_conversation.lock().unwrap().clone();
-        
+
         if let Some(conv) = conversation {
-            let msg_type = self.config.lock().unwrap().message_type.clone().unwrap_or_else(|| "text".to_string());
-            
+            let msg_type = self
+                .config
+                .lock()
+                .unwrap()
+                .message_type
+                .clone()
+                .unwrap_or_else(|| "text".to_string());
+
             if conv.conversation_type == "1" {
                 // 单聊
                 if let Some(user_id) = conv.sender_staff_id {
@@ -845,7 +909,8 @@ impl Gateway for DingTalkGateway {
                 }
             } else if let Some(open_conv_id) = conv.open_conversation_id {
                 // 群聊
-                self.send_message_to_group(&open_conv_id, text, &msg_type).await?;
+                self.send_message_to_group(&open_conv_id, text, &msg_type)
+                    .await?;
             }
         } else {
             return Err("没有可用的会话".to_string());
@@ -853,7 +918,7 @@ impl Gateway for DingTalkGateway {
 
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
@@ -864,11 +929,17 @@ impl Gateway for DingTalkGateway {
 
         self.get_access_token().await?;
 
-        let msg_type = self.config.lock().unwrap().message_type.clone().unwrap_or_else(|| "text".to_string());
-        
+        let msg_type = self
+            .config
+            .lock()
+            .unwrap()
+            .message_type
+            .clone()
+            .unwrap_or_else(|| "text".to_string());
+
         // 获取最后会话信息
         let conversation = self.last_conversation.lock().unwrap().clone();
-        
+
         if let Some(conv) = conversation {
             if conv.conversation_id == conversation_id {
                 if conv.conversation_type == "1" {
@@ -878,18 +949,23 @@ impl Gateway for DingTalkGateway {
                     }
                 } else if let Some(open_conv_id) = conv.open_conversation_id {
                     // 群聊
-                    self.send_message_to_group(&open_conv_id, text, &msg_type).await?;
+                    self.send_message_to_group(&open_conv_id, text, &msg_type)
+                        .await?;
                 }
             }
         }
 
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
-    async fn send_media_message(&self, conversation_id: &str, file_path: &str) -> Result<bool, String> {
+    async fn send_media_message(
+        &self,
+        conversation_id: &str,
+        file_path: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
@@ -898,13 +974,13 @@ impl Gateway for DingTalkGateway {
 
         // 上传媒体文件
         let media_id = self.upload_media(file_path, "file").await?;
-        
+
         // TODO: 发送媒体消息需要使用不同的 API
         // 这里简化处理，实际应该根据文件类型选择不同的发送方式
 
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
@@ -916,15 +992,28 @@ impl Gateway for DingTalkGateway {
         }
     }
 
-    async fn edit_message(&self, _conversation_id: &str, _message_id: &str, _new_text: &str) -> Result<bool, String> {
+    async fn edit_message(
+        &self,
+        _conversation_id: &str,
+        _message_id: &str,
+        _new_text: &str,
+    ) -> Result<bool, String> {
         Err("DingTalk 不支持编辑消息".to_string())
     }
 
-    async fn delete_message(&self, _conversation_id: &str, _message_id: &str) -> Result<bool, String> {
+    async fn delete_message(
+        &self,
+        _conversation_id: &str,
+        _message_id: &str,
+    ) -> Result<bool, String> {
         Err("DingTalk 不支持删除消息".to_string())
     }
 
-    async fn get_message_history(&self, _conversation_id: &str, _limit: u32) -> Result<Vec<IMMessage>, String> {
+    async fn get_message_history(
+        &self,
+        _conversation_id: &str,
+        _limit: u32,
+    ) -> Result<Vec<IMMessage>, String> {
         Err("DingTalk 不支持获取历史消息".to_string())
     }
 

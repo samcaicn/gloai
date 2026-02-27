@@ -5,7 +5,7 @@
   "identifier": "com.ggclaw.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1421",
+    "devUrl": "http://localhost:1427",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },

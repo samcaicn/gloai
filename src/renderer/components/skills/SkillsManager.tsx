@@ -210,14 +210,16 @@ const SkillsManager: React.FC = () => {
       <div>
         <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
           集合全球最佳的skills技能和智能体agent！
-          <a
-            href="https://ggai.tuptup.top/admin/login"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-claude-accent hover:text-claude-accentHover ml-1"
+          <button
+            type="button"
+            onClick={async () => {
+              const { tauriApi } = await import('../../services/tauriApi');
+              await tauriApi.shell.openExternal('https://ggai.tuptup.top/admin/login');
+            }}
+            className="text-claude-accent hover:text-claude-accentHover ml-1 hover:underline cursor-pointer"
           >
             开发者注册上架点我
-          </a>
+          </button>
         </p>
       </div>
 

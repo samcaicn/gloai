@@ -1,13 +1,13 @@
-use super::gateway::IMMessage;
-use super::dingtalk::{DingTalkGateway, DingTalkConfig};
-use super::feishu::{FeishuGateway, FeishuConfig};
-use super::telegram::{TelegramGateway, TelegramConfig};
-use super::discord::{DiscordGateway, DiscordConfig};
-use super::wework::{WeWorkGateway, WeWorkConfig};
-use super::whatsapp::{WhatsAppGateway, WhatsAppConfig};
-use super::message_handler::{MessageHandler, MessageMode};
-use super::llm_config::{LLMManager, LLMConfig};
 use super::connectivity_test::ConnectivityTester;
+use super::dingtalk::{DingTalkConfig, DingTalkGateway};
+use super::discord::{DiscordConfig, DiscordGateway};
+use super::feishu::{FeishuConfig, FeishuGateway};
+use super::gateway::IMMessage;
+use super::llm_config::{LLMConfig, LLMManager};
+use super::message_handler::{MessageHandler, MessageMode};
+use super::telegram::{TelegramConfig, TelegramGateway};
+use super::wework::{WeWorkConfig, WeWorkGateway};
+use super::whatsapp::{WhatsAppConfig, WhatsAppGateway};
 use super::IMManager;
 use std::sync::Arc;
 use tokio::test;
@@ -25,9 +25,9 @@ async fn test_dingtalk_gateway() {
         media_download_path: None,
         debug: Some(false),
     };
-    
+
     let gateway = DingTalkGateway::new(config);
-    
+
     // 测试获取配置
     let retrieved_config = gateway.get_config();
     assert_eq!(retrieved_config.enabled, true);
@@ -49,9 +49,9 @@ async fn test_feishu_gateway() {
         media_download_path: None,
         debug: Some(false),
     };
-    
+
     let gateway = FeishuGateway::new(config);
-    
+
     // 测试获取配置
     let retrieved_config = gateway.get_config();
     assert_eq!(retrieved_config.enabled, true);
@@ -69,9 +69,9 @@ async fn test_telegram_gateway() {
         media_download_path: None,
         debug: Some(false),
     };
-    
+
     let gateway = TelegramGateway::new(config);
-    
+
     // 测试获取配置
     let retrieved_config = gateway.get_config();
     assert_eq!(retrieved_config.enabled, true);
@@ -86,9 +86,9 @@ async fn test_discord_gateway() {
         bot_token: "test_bot_token".to_string(),
         debug: Some(false),
     };
-    
+
     let gateway = DiscordGateway::new(config);
-    
+
     // 测试获取配置
     let retrieved_config = gateway.get_config();
     assert_eq!(retrieved_config.enabled, true);
@@ -109,9 +109,9 @@ async fn test_wework_gateway() {
         debug: Some(false),
         media_download_path: None,
     };
-    
+
     let gateway = WeWorkGateway::new(config);
-    
+
     // 测试获取配置
     let retrieved_config = gateway.get_config();
     assert_eq!(retrieved_config.enabled, true);
@@ -130,14 +130,20 @@ async fn test_whatsapp_gateway() {
         debug: Some(false),
         media_download_path: None,
     };
-    
+
     let gateway = WhatsAppGateway::new(config);
-    
+
     // 测试获取配置
     let retrieved_config = gateway.get_config();
     assert_eq!(retrieved_config.enabled, true);
-    assert_eq!(retrieved_config.phone_number_id, Some("test_phone_number_id".to_string()));
-    assert_eq!(retrieved_config.access_token, Some("test_access_token".to_string()));
+    assert_eq!(
+        retrieved_config.phone_number_id,
+        Some("test_phone_number_id".to_string())
+    );
+    assert_eq!(
+        retrieved_config.access_token,
+        Some("test_access_token".to_string())
+    );
 }
 
 // 测试消息处理器
@@ -147,9 +153,9 @@ async fn test_message_handler() {
         mode: MessageMode::Chat,
         enabled: true,
     };
-    
+
     let handler = MessageHandler::new(config);
-    
+
     // 测试普通聊天消息
     let chat_message = IMMessage {
         id: "test_id".to_string(),
@@ -161,19 +167,19 @@ async fn test_message_handler() {
         timestamp: 1234567890,
         is_mention: false,
     };
-    
+
     let chat_result = handler.handle_message(chat_message);
     assert!(chat_result.is_ok());
     assert!(chat_result.unwrap().contains("你好"));
-    
+
     // 测试Cowork模式消息
     let cowork_config = super::message_handler::MessageHandlerConfig {
         mode: MessageMode::Cowork,
         enabled: true,
     };
-    
+
     let cowork_handler = MessageHandler::new(cowork_config);
-    
+
     let cowork_message = IMMessage {
         id: "test_id".to_string(),
         platform: "TestPlatform".to_string(),
@@ -184,7 +190,7 @@ async fn test_message_handler() {
         timestamp: 1234567890,
         is_mention: false,
     };
-    
+
     let cowork_result = cowork_handler.handle_message(cowork_message);
     assert!(cowork_result.is_ok());
     assert!(cowork_result.unwrap().contains("已创建任务"));
@@ -202,26 +208,26 @@ async fn test_llm_manager() {
         max_tokens: 1024,
         skill_prompts: Default::default(),
     };
-    
+
     let manager = LLMManager::new(config);
-    
+
     // 测试获取配置
     let retrieved_config = manager.get_config();
     assert_eq!(retrieved_config.enabled, true);
     assert_eq!(retrieved_config.model, "gpt-3.5-turbo");
     assert_eq!(retrieved_config.api_key, "test_api_key");
-    
+
     // 测试添加技能提示
     manager.add_skill_prompt("test_skill", "test_prompt");
     let skill_prompt = manager.get_skill_prompt("test_skill");
     assert!(skill_prompt.is_some());
     assert_eq!(skill_prompt.unwrap(), "test_prompt");
-    
+
     // 测试删除技能提示
     manager.remove_skill_prompt("test_skill");
     let removed_skill = manager.get_skill_prompt("test_skill");
     assert!(removed_skill.is_none());
-    
+
     // 测试配置有效性
     assert!(manager.is_config_valid());
 }
@@ -230,7 +236,7 @@ async fn test_llm_manager() {
 #[test]
 async fn test_connectivity_tester() {
     let tester = ConnectivityTester::new();
-    
+
     // 测试钉钉网关
     let dingtalk_config = DingTalkConfig {
         enabled: true,
@@ -243,11 +249,11 @@ async fn test_connectivity_tester() {
         debug: Some(false),
     };
     let dingtalk_gateway = DingTalkGateway::new(dingtalk_config);
-    
+
     let dingtalk_result = tester.test_dingtalk(&dingtalk_gateway).await;
     assert_eq!(dingtalk_result.platform, "DingTalk");
     assert_eq!(dingtalk_result.verdict, "fail"); // 因为配置是测试数据，鉴权会失败
-    
+
     // 测试飞书网关
     let feishu_config = FeishuConfig {
         enabled: true,
@@ -261,11 +267,11 @@ async fn test_connectivity_tester() {
         debug: Some(false),
     };
     let feishu_gateway = FeishuGateway::new(feishu_config);
-    
+
     let feishu_result = tester.test_feishu(&feishu_gateway).await;
     assert_eq!(feishu_result.platform, "Feishu");
     assert_eq!(feishu_result.verdict, "fail"); // 因为配置是测试数据，鉴权会失败
-    
+
     // 测试WhatsApp网关
     let whatsapp_config = WhatsAppConfig {
         enabled: true,
@@ -275,7 +281,7 @@ async fn test_connectivity_tester() {
         media_download_path: None,
     };
     let whatsapp_gateway = WhatsAppGateway::new(whatsapp_config);
-    
+
     let whatsapp_result = tester.test_whatsapp(&whatsapp_gateway).await;
     assert_eq!(whatsapp_result.platform, "WhatsApp");
     assert_eq!(whatsapp_result.verdict, "fail"); // 因为配置是测试数据，鉴权会失败
@@ -285,7 +291,7 @@ async fn test_connectivity_tester() {
 #[test]
 async fn test_im_manager() {
     let manager = IMManager::new_default();
-    
+
     // 测试添加网关
     let dingtalk_config = DingTalkConfig {
         enabled: true,
@@ -298,13 +304,13 @@ async fn test_im_manager() {
         debug: Some(false),
     };
     let dingtalk_gateway = DingTalkGateway::new(dingtalk_config);
-    
+
     manager.add_gateway("dingtalk", Arc::new(dingtalk_gateway));
-    
+
     // 验证网关已添加
     let gateway_names = manager.get_gateway_names();
     assert!(gateway_names.contains(&"dingtalk".to_string()));
-    
+
     // 测试获取网关
     let gateway = manager.get_gateway("dingtalk");
     assert!(gateway.is_some());

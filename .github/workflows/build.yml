@@ -20,6 +20,9 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             build_cmd: npm run build:linux
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            build_cmd: cargo tauri build --target aarch64-unknown-linux-gnu
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             build_cmd: npm run build:win
@@ -60,14 +63,15 @@ jobs:
         run: ${{ matrix.build_cmd }}
         env:
           CI: true
+          apiKey: ${{ secrets.apiKey || 'gk_981279d245764a1cb53738da' }}
+          apiSecret: ${{ secrets.apiSecret || 'gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2' }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ggai-${{ matrix.os }}
+          name: ggai-${{ matrix.os }}-${{ matrix.target }}
           path: |
             src-tauri/target/*/release/bundle/dmg/*.dmg
-            src-tauri/target/*/release/bundle/macos/*.app
             src-tauri/target/*/release/bundle/msi/*.msi
             src-tauri/target/*/release/bundle/appimage/*.AppImage
             src-tauri/target/*/release/bundle/deb/*.deb

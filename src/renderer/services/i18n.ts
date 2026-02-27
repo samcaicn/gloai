@@ -367,7 +367,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     coworkOpenFolder: '打开文件夹',
 
     // Skills
-    skills: '技能',
+    skills: '技能(应用中心)',
     searchSkills: '搜索技能',
     manageSkills: '管理技能',
     officialSkills: '官方技能',

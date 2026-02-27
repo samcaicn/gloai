@@ -1,11 +1,11 @@
-use super::gateway::{Gateway, GatewayStatus, GatewayEvent, EventCallback, IMMessage};
-use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
-use chrono::Local;
+use super::gateway::{EventCallback, Gateway, GatewayEvent, GatewayStatus, IMMessage};
 use async_trait::async_trait;
+use chrono::Local;
 use reqwest::Client;
-use std::time::Duration;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::sync::Mutex;
+use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WhatsAppConfig {
@@ -134,15 +134,36 @@ impl WhatsAppGateway {
     }
 
     fn get_api_url(&self, endpoint: &str) -> String {
-        let phone_number_id = self.config.lock().unwrap().phone_number_id.clone().unwrap_or_default();
-        format!("https://graph.facebook.com/v18.0/{}{}", phone_number_id, endpoint)
+        let phone_number_id = self
+            .config
+            .lock()
+            .unwrap()
+            .phone_number_id
+            .clone()
+            .unwrap_or_default();
+        format!(
+            "https://graph.facebook.com/v18.0/{}{}",
+            phone_number_id, endpoint
+        )
     }
 
     fn get_headers(&self) -> reqwest::header::HeaderMap {
-        let token = self.config.lock().unwrap().access_token.clone().unwrap_or_default();
+        let token = self
+            .config
+            .lock()
+            .unwrap()
+            .access_token
+            .clone()
+            .unwrap_or_default();
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(reqwest::header::AUTHORIZATION, format!("Bearer {}", token).parse().unwrap());
-        headers.insert(reqwest::header::CONTENT_TYPE, "application/json".parse().unwrap());
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            format!("Bearer {}", token).parse().unwrap(),
+        );
+        headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            "application/json".parse().unwrap(),
+        );
         headers
     }
 
@@ -160,8 +181,9 @@ impl WhatsAppGateway {
 
     async fn verify_credentials(&self) -> Result<WhatsAppUser, String> {
         let url = format!("https://graph.facebook.com/v18.0/me");
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .get(&url)
             .headers(self.get_headers())
             .send()
@@ -174,13 +196,16 @@ impl WhatsAppGateway {
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))
         } else {
-            Err(format!("Failed to verify credentials: {}", response.status()))
+            Err(format!(
+                "Failed to verify credentials: {}",
+                response.status()
+            ))
         }
     }
 
     async fn send_message(&self, to: &str, text: &str) -> Result<(), String> {
         let url = self.get_api_url("/messages");
-        
+
         #[derive(Serialize)]
         struct SendMessageRequest {
             messaging_product: String,
@@ -209,19 +234,23 @@ impl WhatsAppGateway {
     }
 
     async fn upload_media(&self, file_path: &str) -> Result<String, String> {
-        let file_bytes = tokio::fs::read(file_path).await
+        let file_bytes = tokio::fs::read(file_path)
+            .await
             .map_err(|e| format!("Failed to read file: {}", e))?;
-        
+
         let file_name = Path::new(file_path)
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("file")
             .to_string();
-        
-        let mime_type = match Path::new(file_path).extension()
+
+        let mime_type = match Path::new(file_path)
+            .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("")
-            .to_lowercase().as_str() {
+            .to_lowercase()
+            .as_str()
+        {
             "jpg" | "jpeg" => "image/jpeg",
             "png" => "image/png",
             "gif" => "image/gif",
@@ -234,19 +263,20 @@ impl WhatsAppGateway {
             "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             _ => "application/octet-stream",
         };
-        
+
         let url = "https://graph.facebook.com/v18.0/me/media";
-        
+
         let part = reqwest::multipart::Part::bytes(file_bytes)
             .file_name(file_name)
             .mime_str(mime_type)
             .map_err(|e| format!("Invalid mime type: {}", e))?;
-        
+
         let form = reqwest::multipart::Form::new()
             .text("messaging_product", "whatsapp")
             .part("file", part);
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .post(url)
             .headers(self.get_headers())
             .multipart(form)
@@ -256,14 +286,15 @@ impl WhatsAppGateway {
             .json::<WhatsAppMediaUploadResponse>()
             .await
             .map_err(|e| format!("Failed to parse response: {}", e))?;
-        
+
         Ok(response.id)
     }
 
     async fn get_media_info(&self, media_id: &str) -> Result<WhatsAppMediaInfo, String> {
         let url = format!("https://graph.facebook.com/v18.0/{}", media_id);
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .get(&url)
             .headers(self.get_headers())
             .send()
@@ -272,35 +303,44 @@ impl WhatsAppGateway {
             .json::<WhatsAppMediaInfo>()
             .await
             .map_err(|e| format!("Failed to parse response: {}", e))?;
-        
+
         Ok(response)
     }
 
     async fn download_media(&self, media_id: &str, save_path: &str) -> Result<String, String> {
         let media_info = self.get_media_info(media_id).await?;
-        
+
         if let Some(url) = media_info.url {
-            let response = self.http_client
+            let response = self
+                .http_client
                 .get(&url)
                 .send()
                 .await
                 .map_err(|e| format!("HTTP request failed: {}", e))?;
-            
-            let bytes = response.bytes().await
+
+            let bytes = response
+                .bytes()
+                .await
                 .map_err(|e| format!("Failed to read response bytes: {}", e))?;
-            
-            tokio::fs::write(save_path, &bytes).await
+
+            tokio::fs::write(save_path, &bytes)
+                .await
                 .map_err(|e| format!("Failed to write file: {}", e))?;
-            
+
             Ok(save_path.to_string())
         } else {
             Err("Media URL not available".to_string())
         }
     }
 
-    async fn send_image_message(&self, to: &str, media_id: &str, caption: Option<&str>) -> Result<(), String> {
+    async fn send_image_message(
+        &self,
+        to: &str,
+        media_id: &str,
+        caption: Option<&str>,
+    ) -> Result<(), String> {
         let url = self.get_api_url("/messages");
-        
+
         #[derive(Serialize)]
         struct SendImageRequest {
             messaging_product: String,
@@ -333,9 +373,14 @@ impl WhatsAppGateway {
         Ok(())
     }
 
-    async fn send_video_message(&self, to: &str, media_id: &str, caption: Option<&str>) -> Result<(), String> {
+    async fn send_video_message(
+        &self,
+        to: &str,
+        media_id: &str,
+        caption: Option<&str>,
+    ) -> Result<(), String> {
         let url = self.get_api_url("/messages");
-        
+
         #[derive(Serialize)]
         struct SendVideoRequest {
             messaging_product: String,
@@ -370,7 +415,7 @@ impl WhatsAppGateway {
 
     async fn send_audio_message(&self, to: &str, media_id: &str) -> Result<(), String> {
         let url = self.get_api_url("/messages");
-        
+
         #[derive(Serialize)]
         struct SendAudioRequest {
             messaging_product: String,
@@ -398,9 +443,15 @@ impl WhatsAppGateway {
         Ok(())
     }
 
-    async fn send_document_message(&self, to: &str, media_id: &str, caption: Option<&str>, filename: Option<&str>) -> Result<(), String> {
+    async fn send_document_message(
+        &self,
+        to: &str,
+        media_id: &str,
+        caption: Option<&str>,
+        filename: Option<&str>,
+    ) -> Result<(), String> {
         let url = self.get_api_url("/messages");
-        
+
         #[derive(Serialize)]
         struct SendDocumentRequest {
             messaging_product: String,
@@ -438,7 +489,7 @@ impl WhatsAppGateway {
 
     async fn send_sticker_message(&self, to: &str, media_id: &str) -> Result<(), String> {
         let url = self.get_api_url("/messages");
-        
+
         #[derive(Serialize)]
         struct SendStickerRequest {
             messaging_product: String,
@@ -466,15 +517,21 @@ impl WhatsAppGateway {
         Ok(())
     }
 
-    pub async fn send_media_message(&self, to: &str, file_path: &str, caption: Option<&str>) -> Result<bool, String> {
+    pub async fn send_media_message(
+        &self,
+        to: &str,
+        file_path: &str,
+        caption: Option<&str>,
+    ) -> Result<bool, String> {
         let path = Path::new(file_path);
-        let extension = path.extension()
+        let extension = path
+            .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("")
             .to_lowercase();
-        
+
         let media_id = self.upload_media(file_path).await?;
-        
+
         match extension.as_str() {
             "jpg" | "jpeg" | "png" | "gif" | "webp" => {
                 self.send_image_message(to, &media_id, caption).await?;
@@ -486,20 +543,28 @@ impl WhatsAppGateway {
                 self.send_audio_message(to, &media_id).await?;
             }
             "pdf" | "doc" | "docx" | "xls" | "xlsx" | "ppt" | "pptx" | "txt" | "zip" | "rar" => {
-                let filename = path.file_name()
+                let filename = path
+                    .file_name()
                     .and_then(|n| n.to_str())
                     .map(|s| s.to_string());
-                self.send_document_message(to, &media_id, caption, filename.as_deref()).await?;
+                self.send_document_message(to, &media_id, caption, filename.as_deref())
+                    .await?;
             }
             _ => return Err("不支持的文件类型".to_string()),
         }
-        
+
         Ok(true)
     }
 
-    pub async fn send_interactive_list_message(&self, to: &str, title: &str, description: &str, button_text: &str) -> Result<bool, String> {
+    pub async fn send_interactive_list_message(
+        &self,
+        to: &str,
+        title: &str,
+        description: &str,
+        button_text: &str,
+    ) -> Result<bool, String> {
         let url = self.get_api_url("/messages");
-        
+
         #[derive(Serialize)]
         struct SendInteractiveRequest {
             messaging_product: String,
@@ -540,9 +605,15 @@ impl WhatsAppGateway {
         Ok(true)
     }
 
-    pub async fn send_location_message(&self, to: &str, latitude: f64, longitude: f64, title: Option<&str>) -> Result<bool, String> {
+    pub async fn send_location_message(
+        &self,
+        to: &str,
+        latitude: f64,
+        longitude: f64,
+        title: Option<&str>,
+    ) -> Result<bool, String> {
         let url = self.get_api_url("/messages");
-        
+
         #[derive(Serialize)]
         struct SendLocationRequest {
             messaging_product: String,
@@ -556,7 +627,7 @@ impl WhatsAppGateway {
             "latitude": latitude,
             "longitude": longitude
         });
-        
+
         if let Some(t) = title {
             location_obj["name"] = serde_json::json!(t);
         }
@@ -795,7 +866,7 @@ impl Gateway for WhatsAppGateway {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
-    
+
     async fn start(&self) -> Result<(), String> {
         let (config_enabled, phone_number_id, access_token) = {
             let config = self.config.lock().unwrap();
@@ -805,12 +876,17 @@ impl Gateway for WhatsAppGateway {
                 config.access_token.clone(),
             )
         };
-        
+
         if !config_enabled {
             return Ok(());
         }
 
-        if phone_number_id.is_none() || phone_number_id.as_ref().map(|s| s.is_empty()).unwrap_or(true) {
+        if phone_number_id.is_none()
+            || phone_number_id
+                .as_ref()
+                .map(|s| s.is_empty())
+                .unwrap_or(true)
+        {
             let mut status = self.status.lock().unwrap();
             status.error = Some("缺少必要的配置: phone_number_id".to_string());
             status.last_error = status.error.clone();
@@ -829,7 +905,7 @@ impl Gateway for WhatsAppGateway {
             self.emit_event(GatewayEvent::StatusChanged(status.clone()));
             return Err(error_msg);
         }
-        
+
         {
             let mut status = self.status.lock().unwrap();
             status.starting = true;
@@ -841,7 +917,10 @@ impl Gateway for WhatsAppGateway {
         // Verify credentials
         match self.verify_credentials().await {
             Ok(user) => {
-                self.log(&format!("WhatsApp API verified for: {}", user.name.unwrap_or_default()));
+                self.log(&format!(
+                    "WhatsApp API verified for: {}",
+                    user.name.unwrap_or_default()
+                ));
             }
             Err(e) => {
                 let mut status = self.status.lock().unwrap();
@@ -899,7 +978,7 @@ impl Gateway for WhatsAppGateway {
         }
 
         let chat_id = self.last_chat_id.lock().unwrap().clone();
-        
+
         if let Some(chat_id) = chat_id {
             self.send_message(&chat_id, text).await?;
             Ok(true)
@@ -914,23 +993,28 @@ impl Gateway for WhatsAppGateway {
         }
 
         self.send_message(conversation_id, text).await?;
-        
+
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
-    async fn send_media_message(&self, conversation_id: &str, file_path: &str) -> Result<bool, String> {
+    async fn send_media_message(
+        &self,
+        conversation_id: &str,
+        file_path: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
 
-        self.send_media_message(conversation_id, file_path, None).await?;
-        
+        self.send_media_message(conversation_id, file_path, None)
+            .await?;
+
         let mut status = self.status.lock().unwrap();
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
@@ -942,15 +1026,28 @@ impl Gateway for WhatsAppGateway {
         }
     }
 
-    async fn edit_message(&self, _conversation_id: &str, _message_id: &str, _new_text: &str) -> Result<bool, String> {
+    async fn edit_message(
+        &self,
+        _conversation_id: &str,
+        _message_id: &str,
+        _new_text: &str,
+    ) -> Result<bool, String> {
         Err("WhatsApp 不支持编辑消息".to_string())
     }
 
-    async fn delete_message(&self, _conversation_id: &str, _message_id: &str) -> Result<bool, String> {
+    async fn delete_message(
+        &self,
+        _conversation_id: &str,
+        _message_id: &str,
+    ) -> Result<bool, String> {
         Err("WhatsApp 不支持删除消息".to_string())
     }
 
-    async fn get_message_history(&self, conversation_id: &str, limit: u32) -> Result<Vec<IMMessage>, String> {
+    async fn get_message_history(
+        &self,
+        conversation_id: &str,
+        limit: u32,
+    ) -> Result<Vec<IMMessage>, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
@@ -959,7 +1056,7 @@ impl Gateway for WhatsAppGateway {
         // 这里返回空列表，因为 WhatsApp API 不支持获取历史消息
         let _ = conversation_id;
         let _ = limit;
-        
+
         Ok(vec![])
     }
 

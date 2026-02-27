@@ -1,10 +1,9 @@
-
-use std::sync::RwLock;
+use chrono::Local;
 use rusqlite::{Connection, Result};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use chrono::Local;
 use std::fmt;
+use std::path::PathBuf;
+use std::sync::RwLock;
 
 // 自定义数据库错误类型
 #[derive(Debug)]
@@ -66,9 +65,9 @@ impl Database {
 
     fn initialize(&self) -> Result<()> {
         println!("[Database] Initializing database...");
-        
+
         let conn = self.conn.write().unwrap();
-        
+
         // 创建 KV 表
         println!("[Database] Creating kv table...");
         conn.execute(
@@ -80,7 +79,8 @@ impl Database {
                 updated_at INTEGER NOT NULL
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating kv table: {}", e);
             e
         })?;
@@ -101,7 +101,8 @@ impl Database {
                 updated_at INTEGER NOT NULL
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating cowork_sessions table: {}", e);
             e
         })?;
@@ -120,7 +121,8 @@ impl Database {
                 FOREIGN KEY (session_id) REFERENCES cowork_sessions(id) ON DELETE CASCADE
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating cowork_messages table: {}", e);
             e
         })?;
@@ -135,7 +137,8 @@ impl Database {
                 updated_at INTEGER NOT NULL
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating cowork_config table: {}", e);
             e
         })?;
@@ -154,7 +157,8 @@ impl Database {
                 last_used_at INTEGER
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating user_memories table: {}", e);
             e
         })?;
@@ -173,7 +177,8 @@ impl Database {
                 FOREIGN KEY (memory_id) REFERENCES user_memories(id) ON DELETE CASCADE
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating user_memory_sources table: {}", e);
             e
         })?;
@@ -191,7 +196,8 @@ impl Database {
                 updated_at INTEGER NOT NULL
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating scheduled_tasks table: {}", e);
             e
         })?;
@@ -210,7 +216,8 @@ impl Database {
                 FOREIGN KEY (task_id) REFERENCES scheduled_tasks(id) ON DELETE CASCADE
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating task_runs table: {}", e);
             e
         })?;
@@ -227,7 +234,8 @@ impl Database {
                 updated_at INTEGER NOT NULL
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating im_config table: {}", e);
             e
         })?;
@@ -250,7 +258,8 @@ impl Database {
                 updated_at INTEGER NOT NULL
             )",
             [],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating im_messages table: {}", e);
             e
         })?;
@@ -263,12 +272,13 @@ impl Database {
     pub fn kv_get(&self, key: &str) -> Result<Option<String>> {
         println!("[Database] KV get: {}", key);
         let conn = self.conn.read().unwrap();
-        let mut stmt = conn.prepare("SELECT value FROM kv WHERE key = ?").map_err(|e| {
-            println!("[Database] Error preparing KV get statement: {}", e);
-            e
-        })?;
-        let value = stmt.query_row([key], |row| row.get(0))
-            .ok();
+        let mut stmt = conn
+            .prepare("SELECT value FROM kv WHERE key = ?")
+            .map_err(|e| {
+                println!("[Database] Error preparing KV get statement: {}", e);
+                e
+            })?;
+        let value = stmt.query_row([key], |row| row.get(0)).ok();
         println!("[Database] KV get result: {:?}", value);
         Ok(value)
     }
@@ -277,19 +287,22 @@ impl Database {
         println!("[Database] KV set: {}, value length: {}", key, value.len());
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
-        let count = conn.execute(
-            "UPDATE kv SET value = ?, updated_at = ? WHERE key = ?",
-            [value, &now.to_string(), key],
-        ).map_err(|e| {
-            println!("[Database] Error updating KV: {}", e);
-            e
-        })?;
-        
+        let count = conn
+            .execute(
+                "UPDATE kv SET value = ?, updated_at = ? WHERE key = ?",
+                [value, &now.to_string(), key],
+            )
+            .map_err(|e| {
+                println!("[Database] Error updating KV: {}", e);
+                e
+            })?;
+
         if count == 0 {
             conn.execute(
                 "INSERT INTO kv (key, value, created_at, updated_at) VALUES (?, ?, ?, ?)",
                 [key, value, &now.to_string(), &now.to_string()],
-            ).map_err(|e| {
+            )
+            .map_err(|e| {
                 println!("[Database] Error inserting KV: {}", e);
                 e
             })?;
@@ -303,13 +316,12 @@ impl Database {
     pub fn kv_remove(&self, key: &str) -> Result<()> {
         println!("[Database] KV remove: {}", key);
         let conn = self.conn.write().unwrap();
-        let count = conn.execute(
-            "DELETE FROM kv WHERE key = ?",
-            [key],
-        ).map_err(|e| {
-            println!("[Database] Error removing KV: {}", e);
-            e
-        })?;
+        let count = conn
+            .execute("DELETE FROM kv WHERE key = ?", [key])
+            .map_err(|e| {
+                println!("[Database] Error removing KV: {}", e);
+                e
+            })?;
         println!("[Database] KV removed: {}, rows affected: {}", key, count);
         Ok(())
     }
@@ -326,24 +338,26 @@ impl Database {
             println!("[Database] Error preparing cowork_list_sessions statement: {}", e);
             e
         })?;
-        let rows = stmt.query_map([], |row| {
-            Ok(serde_json::json! ({
-                "id": row.get::<_, String>(0)?,
-                "title": row.get::<_, String>(1)?,
-                "status": row.get::<_, String>(2)?,
-                "pinned": row.get::<_, bool>(3)?,
-                "cwd": row.get::<_, Option<String>>(4)?,
-                "system_prompt": row.get::<_, Option<String>>(5)?,
-                "execution_mode": row.get::<_, Option<String>>(6)?,
-                "active_skill_ids": row.get::<_, Option<String>>(7)?,
-                "created_at": row.get::<_, i64>(8)?,
-                "updated_at": row.get::<_, i64>(9)?,
-            }))
-        }).map_err(|e| {
-            println!("[Database] Error querying cowork sessions: {}", e);
-            e
-        })?;
-        
+        let rows = stmt
+            .query_map([], |row| {
+                Ok(serde_json::json! ({
+                    "id": row.get::<_, String>(0)?,
+                    "title": row.get::<_, String>(1)?,
+                    "status": row.get::<_, String>(2)?,
+                    "pinned": row.get::<_, bool>(3)?,
+                    "cwd": row.get::<_, Option<String>>(4)?,
+                    "system_prompt": row.get::<_, Option<String>>(5)?,
+                    "execution_mode": row.get::<_, Option<String>>(6)?,
+                    "active_skill_ids": row.get::<_, Option<String>>(7)?,
+                    "created_at": row.get::<_, i64>(8)?,
+                    "updated_at": row.get::<_, i64>(9)?,
+                }))
+            })
+            .map_err(|e| {
+                println!("[Database] Error querying cowork sessions: {}", e);
+                e
+            })?;
+
         let mut sessions = Vec::new();
         for row in rows {
             sessions.push(row?);
@@ -353,14 +367,17 @@ impl Database {
     }
 
     pub fn cowork_create_session(
-        &self, 
-        id: &str, 
-        title: &str, 
-        cwd: Option<&str>, 
-        system_prompt: Option<&str>, 
-        execution_mode: Option<&str>
+        &self,
+        id: &str,
+        title: &str,
+        cwd: Option<&str>,
+        system_prompt: Option<&str>,
+        execution_mode: Option<&str>,
     ) -> Result<()> {
-        println!("[Database] Creating cowork session: {}, title: {}", id, title);
+        println!(
+            "[Database] Creating cowork session: {}, title: {}",
+            id, title
+        );
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
         conn.execute(
@@ -386,26 +403,28 @@ impl Database {
     pub fn cowork_delete_session(&self, id: &str) -> Result<()> {
         println!("[Database] Deleting cowork session: {}", id);
         let conn = self.conn.write().unwrap();
-        let count = conn.execute(
-            "DELETE FROM cowork_sessions WHERE id = ?",
-            [id],
-        ).map_err(|e| {
-            println!("[Database] Error deleting cowork session: {}", e);
-            e
-        })?;
-        println!("[Database] Cowork session deleted: {}, rows affected: {}", id, count);
+        let count = conn
+            .execute("DELETE FROM cowork_sessions WHERE id = ?", [id])
+            .map_err(|e| {
+                println!("[Database] Error deleting cowork session: {}", e);
+                e
+            })?;
+        println!(
+            "[Database] Cowork session deleted: {}, rows affected: {}",
+            id, count
+        );
         Ok(())
     }
 
     pub fn cowork_update_session(
-        &self, 
-        id: &str, 
-        title: Option<&str>, 
+        &self,
+        id: &str,
+        title: Option<&str>,
         pinned: Option<bool>,
         status: Option<&str>,
         cwd: Option<&str>,
         system_prompt: Option<&str>,
-        execution_mode: Option<&str>
+        execution_mode: Option<&str>,
     ) -> Result<()> {
         println!("[Database] Updating cowork session: {}", id);
         let conn = self.conn.write().unwrap();
@@ -447,11 +466,15 @@ impl Database {
         params.push(now.to_string());
         params.push(id.to_string());
 
-        let sql = format!("UPDATE cowork_sessions SET {} WHERE id = ?", set_clauses.join(", "));
-        conn.execute(&sql, rusqlite::params_from_iter(params)).map_err(|e| {
-            println!("[Database] Error updating cowork session: {}", e);
-            e
-        })?;
+        let sql = format!(
+            "UPDATE cowork_sessions SET {} WHERE id = ?",
+            set_clauses.join(", ")
+        );
+        conn.execute(&sql, rusqlite::params_from_iter(params))
+            .map_err(|e| {
+                println!("[Database] Error updating cowork session: {}", e);
+                e
+            })?;
 
         println!("[Database] Cowork session updated successfully: {}", id);
         Ok(())
@@ -461,75 +484,123 @@ impl Database {
     pub fn cowork_list_messages(&self, session_id: &str) -> Result<Vec<serde_json::Value>> {
         println!("[Database] Listing messages for session: {}", session_id);
         let conn = self.conn.read().unwrap();
-        let mut stmt = conn.prepare(
-            "SELECT id, type, content, timestamp, metadata 
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, type, content, timestamp, metadata 
              FROM cowork_messages 
              WHERE session_id = ? 
-             ORDER BY sequence ASC, timestamp ASC"
-        ).map_err(|e| {
-            println!("[Database] Error preparing cowork_list_messages statement: {}", e);
-            e
-        })?;
-        let rows = stmt.query_map([session_id], |row| {
-            Ok(serde_json::json! ({
-                "id": row.get::<_, String>(0)?,
-                "type": row.get::<_, String>(1)?,
-                "content": row.get::<_, String>(2)?,
-                "timestamp": row.get::<_, i64>(3)?,
-                "metadata": row.get::<_, Option<String>>(4)?,
-            }))
-        }).map_err(|e| {
-            println!("[Database] Error querying cowork messages: {}", e);
-            e
-        })?;
-        
+             ORDER BY sequence ASC, timestamp ASC",
+            )
+            .map_err(|e| {
+                println!(
+                    "[Database] Error preparing cowork_list_messages statement: {}",
+                    e
+                );
+                e
+            })?;
+        let rows = stmt
+            .query_map([session_id], |row| {
+                Ok(serde_json::json! ({
+                    "id": row.get::<_, String>(0)?,
+                    "type": row.get::<_, String>(1)?,
+                    "content": row.get::<_, String>(2)?,
+                    "timestamp": row.get::<_, i64>(3)?,
+                    "metadata": row.get::<_, Option<String>>(4)?,
+                }))
+            })
+            .map_err(|e| {
+                println!("[Database] Error querying cowork messages: {}", e);
+                e
+            })?;
+
         let mut messages = Vec::new();
         for row in rows {
             messages.push(row?);
         }
-        println!("[Database] Found {} messages for session: {}", messages.len(), session_id);
+        println!(
+            "[Database] Found {} messages for session: {}",
+            messages.len(),
+            session_id
+        );
         Ok(messages)
     }
 
-    pub fn cowork_add_message(&self, id: &str, session_id: &str, msg_type: &str, content: &str) -> Result<()> {
-        println!("[Database] Adding message to session: {}, type: {}, content length: {}", session_id, msg_type, content.len());
+    pub fn cowork_add_message(
+        &self,
+        id: &str,
+        session_id: &str,
+        msg_type: &str,
+        content: &str,
+    ) -> Result<()> {
+        println!(
+            "[Database] Adding message to session: {}, type: {}, content length: {}",
+            session_id,
+            msg_type,
+            content.len()
+        );
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
-        let sequence = conn.query_row(
-            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM cowork_messages WHERE session_id = ?",
-            [session_id],
-            |row| row.get::<_, i32>(0)
-        ).map_err(|e| {
-            println!("[Database] Error getting next message sequence: {}", e);
-            e
-        })?;
-        
-        println!("[Database] Message sequence for session {}: {}", session_id, sequence);
-        
+        let sequence = conn
+            .query_row(
+                "SELECT COALESCE(MAX(sequence), 0) + 1 FROM cowork_messages WHERE session_id = ?",
+                [session_id],
+                |row| row.get::<_, i32>(0),
+            )
+            .map_err(|e| {
+                println!("[Database] Error getting next message sequence: {}", e);
+                e
+            })?;
+
+        println!(
+            "[Database] Message sequence for session {}: {}",
+            session_id, sequence
+        );
+
         conn.execute(
             "INSERT INTO cowork_messages (id, session_id, type, content, timestamp, sequence) 
              VALUES (?, ?, ?, ?, ?, ?)",
-            [id, session_id, msg_type, content, &now.to_string(), &sequence.to_string()],
-        ).map_err(|e| {
+            [
+                id,
+                session_id,
+                msg_type,
+                content,
+                &now.to_string(),
+                &sequence.to_string(),
+            ],
+        )
+        .map_err(|e| {
             println!("[Database] Error adding cowork message: {}", e);
             e
         })?;
-        
+
         // 更新会话的更新时间
         conn.execute(
             "UPDATE cowork_sessions SET updated_at = ? WHERE id = ?",
             [&now.to_string(), session_id],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error updating session updated_at: {}", e);
             e
         })?;
-        
-        println!("[Database] Message added successfully: {}, session: {}", id, session_id);
+
+        println!(
+            "[Database] Message added successfully: {}, session: {}",
+            id, session_id
+        );
         Ok(())
     }
 
-    pub fn cowork_update_message(&self, id: &str, session_id: &str, content: Option<&str>, metadata: Option<&str>) -> Result<()> {
-        println!("[Database] Updating message: {}, session: {}", id, session_id);
+    pub fn cowork_update_message(
+        &self,
+        id: &str,
+        session_id: &str,
+        content: Option<&str>,
+        metadata: Option<&str>,
+    ) -> Result<()> {
+        println!(
+            "[Database] Updating message: {}, session: {}",
+            id, session_id
+        );
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
         let mut set_clauses = Vec::new();
@@ -552,17 +623,22 @@ impl Database {
         params.push(id.to_string());
         params.push(session_id.to_string());
 
-        let sql = format!("UPDATE cowork_messages SET {} WHERE id = ? AND session_id = ?", set_clauses.join(", "));
-        conn.execute(&sql, rusqlite::params_from_iter(params)).map_err(|e| {
-            println!("[Database] Error updating message: {}", e);
-            e
-        })?;
+        let sql = format!(
+            "UPDATE cowork_messages SET {} WHERE id = ? AND session_id = ?",
+            set_clauses.join(", ")
+        );
+        conn.execute(&sql, rusqlite::params_from_iter(params))
+            .map_err(|e| {
+                println!("[Database] Error updating message: {}", e);
+                e
+            })?;
 
         // 更新会话的更新时间
         conn.execute(
             "UPDATE cowork_sessions SET updated_at = ? WHERE id = ?",
             [&now.to_string(), session_id],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error updating session updated_at: {}", e);
             e
         })?;
@@ -582,7 +658,11 @@ impl Database {
     }
 
     pub fn cowork_config_set(&self, key: &str, value: &str) -> Result<()> {
-        println!("[Database] Setting cowork config: {}, value length: {}", key, value.len());
+        println!(
+            "[Database] Setting cowork config: {}, value length: {}",
+            key,
+            value.len()
+        );
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
 
@@ -636,22 +716,24 @@ impl Database {
             println!("[Database] Error preparing user_memories_list statement: {}", e);
             e
         })?;
-        let rows = stmt.query_map([], |row| {
-            Ok(serde_json::json! ({
-                "id": row.get::<_, String>(0)?,
-                "text": row.get::<_, String>(1)?,
-                "confidence": row.get::<_, f64>(2)?,
-                "is_explicit": row.get::<_, bool>(3)?,
-                "status": row.get::<_, String>(4)?,
-                "created_at": row.get::<_, i64>(5)?,
-                "updated_at": row.get::<_, i64>(6)?,
-                "last_used_at": row.get::<_, Option<i64>>(7)?,
-            }))
-        }).map_err(|e| {
-            println!("[Database] Error querying user memories: {}", e);
-            e
-        })?;
-        
+        let rows = stmt
+            .query_map([], |row| {
+                Ok(serde_json::json! ({
+                    "id": row.get::<_, String>(0)?,
+                    "text": row.get::<_, String>(1)?,
+                    "confidence": row.get::<_, f64>(2)?,
+                    "is_explicit": row.get::<_, bool>(3)?,
+                    "status": row.get::<_, String>(4)?,
+                    "created_at": row.get::<_, i64>(5)?,
+                    "updated_at": row.get::<_, i64>(6)?,
+                    "last_used_at": row.get::<_, Option<i64>>(7)?,
+                }))
+            })
+            .map_err(|e| {
+                println!("[Database] Error querying user memories: {}", e);
+                e
+            })?;
+
         let mut memories = Vec::new();
         for row in rows {
             memories.push(row?);
@@ -660,8 +742,17 @@ impl Database {
         Ok(memories)
     }
 
-    pub fn user_memory_create(&self, id: &str, text: &str, confidence: f64, is_explicit: bool) -> Result<()> {
-        println!("[Database] Creating user memory: {}, confidence: {}, is_explicit: {}", id, confidence, is_explicit);
+    pub fn user_memory_create(
+        &self,
+        id: &str,
+        text: &str,
+        confidence: f64,
+        is_explicit: bool,
+    ) -> Result<()> {
+        println!(
+            "[Database] Creating user memory: {}, confidence: {}, is_explicit: {}",
+            id, confidence, is_explicit
+        );
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
         let is_explicit_int = if is_explicit { 1 } else { 0 };
@@ -677,7 +768,14 @@ impl Database {
         Ok(())
     }
 
-    pub fn user_memory_update(&self, id: &str, text: Option<&str>, confidence: Option<f64>, status: Option<&str>, is_explicit: Option<bool>) -> Result<()> {
+    pub fn user_memory_update(
+        &self,
+        id: &str,
+        text: Option<&str>,
+        confidence: Option<f64>,
+        status: Option<&str>,
+        is_explicit: Option<bool>,
+    ) -> Result<()> {
         println!("[Database] Updating user memory: {}", id);
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
@@ -710,11 +808,15 @@ impl Database {
         params.push(now.to_string());
         params.push(id.to_string());
 
-        let sql = format!("UPDATE user_memories SET {} WHERE id = ?", set_clauses.join(", "));
-        conn.execute(&sql, rusqlite::params_from_iter(params)).map_err(|e| {
-            println!("[Database] Error updating user memory: {}", e);
-            e
-        })?;
+        let sql = format!(
+            "UPDATE user_memories SET {} WHERE id = ?",
+            set_clauses.join(", ")
+        );
+        conn.execute(&sql, rusqlite::params_from_iter(params))
+            .map_err(|e| {
+                println!("[Database] Error updating user memory: {}", e);
+                e
+            })?;
 
         println!("[Database] User memory updated successfully: {}", id);
         Ok(())
@@ -731,27 +833,30 @@ impl Database {
             [&now.to_string(), id],
         )?;
 
-        println!("[Database] User memory marked as deleted: {}, rows affected: {}", id, count);
+        println!(
+            "[Database] User memory marked as deleted: {}, rows affected: {}",
+            id, count
+        );
         Ok(count > 0)
     }
 
     pub fn user_memory_get_stats(&self) -> Result<serde_json::Value> {
         println!("[Database] Getting user memory stats...");
         let conn = self.conn.read().unwrap();
-        
+
         let mut stmt = conn.prepare(
             "SELECT status, is_explicit, COUNT(*) as count 
              FROM user_memories 
-             GROUP BY status, is_explicit"
+             GROUP BY status, is_explicit",
         )?;
-        
+
         let mut total = 0;
         let mut created = 0;
         let mut stale = 0;
         let mut deleted = 0;
         let mut explicit = 0;
         let mut implicit = 0;
-        
+
         let rows = stmt.query_map([], |row| {
             Ok((
                 row.get::<_, String>(0)?,
@@ -759,7 +864,7 @@ impl Database {
                 row.get::<_, i64>(2)?,
             ))
         })?;
-        
+
         for row in rows {
             let (status, is_explicit, count) = row?;
             total += count;
@@ -775,10 +880,10 @@ impl Database {
                 _ => {}
             }
         }
-        
+
         println!("[Database] User memory stats: total={}, created={}, stale={}, deleted={}, explicit={}, implicit={}", 
             total, created, stale, deleted, explicit, implicit);
-        
+
         Ok(serde_json::json!({
             "total": total,
             "created": created,
@@ -793,29 +898,36 @@ impl Database {
     pub fn scheduled_tasks_list(&self) -> Result<Vec<serde_json::Value>> {
         println!("[Database] Listing scheduled tasks...");
         let conn = self.conn.read().unwrap();
-        let mut stmt = conn.prepare(
-            "SELECT id, name, description, cron_expression, enabled, created_at, updated_at 
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, name, description, cron_expression, enabled, created_at, updated_at 
              FROM scheduled_tasks 
-             ORDER BY created_at DESC"
-        ).map_err(|e| {
-            println!("[Database] Error preparing scheduled_tasks_list statement: {}", e);
-            e
-        })?;
-        let rows = stmt.query_map([], |row| {
-            Ok(serde_json::json! ({
-                "id": row.get::<_, String>(0)?,
-                "name": row.get::<_, String>(1)?,
-                "description": row.get::<_, Option<String>>(2)?,
-                "cron_expression": row.get::<_, String>(3)?,
-                "enabled": row.get::<_, bool>(4)?,
-                "created_at": row.get::<_, i64>(5)?,
-                "updated_at": row.get::<_, i64>(6)?,
-            }))
-        }).map_err(|e| {
-            println!("[Database] Error querying scheduled tasks: {}", e);
-            e
-        })?;
-        
+             ORDER BY created_at DESC",
+            )
+            .map_err(|e| {
+                println!(
+                    "[Database] Error preparing scheduled_tasks_list statement: {}",
+                    e
+                );
+                e
+            })?;
+        let rows = stmt
+            .query_map([], |row| {
+                Ok(serde_json::json! ({
+                    "id": row.get::<_, String>(0)?,
+                    "name": row.get::<_, String>(1)?,
+                    "description": row.get::<_, Option<String>>(2)?,
+                    "cron_expression": row.get::<_, String>(3)?,
+                    "enabled": row.get::<_, bool>(4)?,
+                    "created_at": row.get::<_, i64>(5)?,
+                    "updated_at": row.get::<_, i64>(6)?,
+                }))
+            })
+            .map_err(|e| {
+                println!("[Database] Error querying scheduled tasks: {}", e);
+                e
+            })?;
+
         let mut tasks = Vec::new();
         for row in rows {
             tasks.push(row?);
@@ -825,7 +937,10 @@ impl Database {
     }
 
     pub fn scheduled_task_create(&self, id: &str, name: &str, cron_expression: &str) -> Result<()> {
-        println!("[Database] Creating scheduled task: {}, name: {}, cron: {}", id, name, cron_expression);
+        println!(
+            "[Database] Creating scheduled task: {}, name: {}, cron: {}",
+            id, name, cron_expression
+        );
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
         conn.execute(
@@ -843,30 +958,39 @@ impl Database {
     pub fn scheduled_task_delete(&self, id: &str) -> Result<()> {
         println!("[Database] Deleting scheduled task: {}", id);
         let conn = self.conn.write().unwrap();
-        let count = conn.execute(
-            "DELETE FROM scheduled_tasks WHERE id = ?",
-            [id],
-        ).map_err(|e| {
-            println!("[Database] Error deleting scheduled task: {}", e);
-            e
-        })?;
-        println!("[Database] Scheduled task deleted: {}, rows affected: {}", id, count);
+        let count = conn
+            .execute("DELETE FROM scheduled_tasks WHERE id = ?", [id])
+            .map_err(|e| {
+                println!("[Database] Error deleting scheduled task: {}", e);
+                e
+            })?;
+        println!(
+            "[Database] Scheduled task deleted: {}, rows affected: {}",
+            id, count
+        );
         Ok(())
     }
 
     pub fn scheduled_task_update_enabled(&self, id: &str, enabled: bool) -> Result<()> {
-        println!("[Database] Updating scheduled task enabled: {}, enabled: {}", id, enabled);
+        println!(
+            "[Database] Updating scheduled task enabled: {}, enabled: {}",
+            id, enabled
+        );
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
         let enabled_int = if enabled { 1 } else { 0 };
         conn.execute(
             "UPDATE scheduled_tasks SET enabled = ?, updated_at = ? WHERE id = ?",
             [&enabled_int.to_string(), &now.to_string(), id],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error updating scheduled task enabled: {}", e);
             e
         })?;
-        println!("[Database] Scheduled task enabled updated successfully: {}", id);
+        println!(
+            "[Database] Scheduled task enabled updated successfully: {}",
+            id
+        );
         Ok(())
     }
 
@@ -874,64 +998,72 @@ impl Database {
     pub fn task_runs_list(&self, task_id: Option<&str>) -> Result<Vec<serde_json::Value>> {
         println!("[Database] Listing task runs for task: {:?}", task_id);
         let conn = self.conn.read().unwrap();
-        
+
         let mut runs = Vec::new();
-        
+
         if let Some(task_id) = task_id {
-            let mut stmt = conn.prepare(
-                "SELECT id, task_id, status, start_time, end_time, output, error 
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id, task_id, status, start_time, end_time, output, error 
                  FROM task_runs 
                  WHERE task_id = ? 
-                 ORDER BY start_time DESC"
-            ).map_err(|e| {
-                println!("[Database] Error preparing task_runs_list statement: {}", e);
-                e
-            })?;
-            let rows = stmt.query_map([task_id], |row| {
-                Ok(serde_json::json! ({
-                    "id": row.get::<_, String>(0)?,
-                    "task_id": row.get::<_, String>(1)?,
-                    "status": row.get::<_, String>(2)?,
-                    "start_time": row.get::<_, i64>(3)?,
-                    "end_time": row.get::<_, Option<i64>>(4)?,
-                    "output": row.get::<_, Option<String>>(5)?,
-                    "error": row.get::<_, Option<String>>(6)?,
-                }))
-            }).map_err(|e| {
-                println!("[Database] Error querying task runs: {}", e);
-                e
-            })?;
+                 ORDER BY start_time DESC",
+                )
+                .map_err(|e| {
+                    println!("[Database] Error preparing task_runs_list statement: {}", e);
+                    e
+                })?;
+            let rows = stmt
+                .query_map([task_id], |row| {
+                    Ok(serde_json::json! ({
+                        "id": row.get::<_, String>(0)?,
+                        "task_id": row.get::<_, String>(1)?,
+                        "status": row.get::<_, String>(2)?,
+                        "start_time": row.get::<_, i64>(3)?,
+                        "end_time": row.get::<_, Option<i64>>(4)?,
+                        "output": row.get::<_, Option<String>>(5)?,
+                        "error": row.get::<_, Option<String>>(6)?,
+                    }))
+                })
+                .map_err(|e| {
+                    println!("[Database] Error querying task runs: {}", e);
+                    e
+                })?;
             for row in rows {
                 runs.push(row?);
             }
         } else {
-            let mut stmt = conn.prepare(
-                "SELECT id, task_id, status, start_time, end_time, output, error 
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id, task_id, status, start_time, end_time, output, error 
                  FROM task_runs 
-                 ORDER BY start_time DESC"
-            ).map_err(|e| {
-                println!("[Database] Error preparing task_runs_list statement: {}", e);
-                e
-            })?;
-            let rows = stmt.query_map([], |row| {
-                Ok(serde_json::json! ({
-                    "id": row.get::<_, String>(0)?,
-                    "task_id": row.get::<_, String>(1)?,
-                    "status": row.get::<_, String>(2)?,
-                    "start_time": row.get::<_, i64>(3)?,
-                    "end_time": row.get::<_, Option<i64>>(4)?,
-                    "output": row.get::<_, Option<String>>(5)?,
-                    "error": row.get::<_, Option<String>>(6)?,
-                }))
-            }).map_err(|e| {
-                println!("[Database] Error querying task runs: {}", e);
-                e
-            })?;
+                 ORDER BY start_time DESC",
+                )
+                .map_err(|e| {
+                    println!("[Database] Error preparing task_runs_list statement: {}", e);
+                    e
+                })?;
+            let rows = stmt
+                .query_map([], |row| {
+                    Ok(serde_json::json! ({
+                        "id": row.get::<_, String>(0)?,
+                        "task_id": row.get::<_, String>(1)?,
+                        "status": row.get::<_, String>(2)?,
+                        "start_time": row.get::<_, i64>(3)?,
+                        "end_time": row.get::<_, Option<i64>>(4)?,
+                        "output": row.get::<_, Option<String>>(5)?,
+                        "error": row.get::<_, Option<String>>(6)?,
+                    }))
+                })
+                .map_err(|e| {
+                    println!("[Database] Error querying task runs: {}", e);
+                    e
+                })?;
             for row in rows {
                 runs.push(row?);
             }
         }
-        
+
         println!("[Database] Found {} task runs", runs.len());
         Ok(runs)
     }
@@ -944,7 +1076,8 @@ impl Database {
             "INSERT INTO task_runs (id, task_id, status, start_time) 
              VALUES (?, ?, 'running', ?)",
             [id, task_id, &now.to_string()],
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             println!("[Database] Error creating task run: {}", e);
             e
         })?;
@@ -952,14 +1085,27 @@ impl Database {
         Ok(())
     }
 
-    pub fn task_run_complete(&self, id: &str, status: &str, output: Option<&str>, error: Option<&str>) -> Result<()> {
+    pub fn task_run_complete(
+        &self,
+        id: &str,
+        status: &str,
+        output: Option<&str>,
+        error: Option<&str>,
+    ) -> Result<()> {
         println!("[Database] Completing task run: {}, status: {}", id, status);
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
         conn.execute(
             "UPDATE task_runs SET status = ?, end_time = ?, output = ?, error = ? WHERE id = ?",
-            [status, &now.to_string(), output.unwrap_or(""), error.unwrap_or(""), id],
-        ).map_err(|e| {
+            [
+                status,
+                &now.to_string(),
+                output.unwrap_or(""),
+                error.unwrap_or(""),
+                id,
+            ],
+        )
+        .map_err(|e| {
             println!("[Database] Error completing task run: {}", e);
             e
         })?;
@@ -973,13 +1119,13 @@ impl Database {
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
         let enabled_int = if enabled { 1 } else { 0 };
-        
+
         // 尝试更新现有配置
         let count = conn.execute(
             "UPDATE im_config SET config = ?, enabled = ?, updated_at = ? WHERE platform = ?",
             [config, &enabled_int.to_string(), &now.to_string(), platform],
         )?;
-        
+
         if count == 0 {
             // 插入新配置
             conn.execute(
@@ -998,7 +1144,11 @@ impl Database {
         let conn = self.conn.read().unwrap();
         let mut stmt = conn.prepare("SELECT config FROM im_config WHERE platform = ?")?;
         let config = stmt.query_row([platform], |row| row.get(0)).ok();
-        println!("[Database] IM config loaded for platform: {}, found: {:?}", platform, config.is_some());
+        println!(
+            "[Database] IM config loaded for platform: {}, found: {:?}",
+            platform,
+            config.is_some()
+        );
         Ok(config)
     }
 
@@ -1017,7 +1167,7 @@ impl Database {
                 "updated_at": row.get::<_, i64>(4)?,
             }))
         })?;
-        
+
         let mut configs = Vec::new();
         for row in rows {
             configs.push(row?);
@@ -1030,28 +1180,34 @@ impl Database {
         println!("[Database] Deleting IM config for platform: {}", platform);
         let conn = self.conn.write().unwrap();
         let count = conn.execute("DELETE FROM im_config WHERE platform = ?", [platform])?;
-        println!("[Database] IM config deleted for platform: {}, rows affected: {}", platform, count);
+        println!(
+            "[Database] IM config deleted for platform: {}, rows affected: {}",
+            platform, count
+        );
         Ok(())
     }
 
     // IM 消息操作
     pub fn im_message_add(
-        &self, 
-        id: &str, 
-        platform: &str, 
-        channel_id: &str, 
-        user_id: &str, 
-        user_name: &str, 
-        content: &str, 
-        is_mention: bool, 
-        direction: &str, 
-        status: &str
+        &self,
+        id: &str,
+        platform: &str,
+        channel_id: &str,
+        user_id: &str,
+        user_name: &str,
+        content: &str,
+        is_mention: bool,
+        direction: &str,
+        status: &str,
     ) -> Result<()> {
-        println!("[Database] Adding IM message: {}, platform: {}, direction: {}", id, platform, direction);
+        println!(
+            "[Database] Adding IM message: {}, platform: {}, direction: {}",
+            id, platform, direction
+        );
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
         let is_mention_int = if is_mention { 1 } else { 0 };
-        
+
         conn.execute(
             "INSERT INTO im_messages (id, platform, channel_id, user_id, user_name, content, is_mention, direction, status, timestamp, created_at, updated_at) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -1061,43 +1217,54 @@ impl Database {
                 &now.to_string(), &now.to_string(), &now.to_string()
             ],
         )?;
-        
-        println!("[Database] IM message added successfully: {}, platform: {}", id, platform);
+
+        println!(
+            "[Database] IM message added successfully: {}, platform: {}",
+            id, platform
+        );
         Ok(())
     }
 
-    pub fn im_message_list(&self, platform: Option<&str>, channel_id: Option<&str>, limit: Option<u32>) -> Result<Vec<serde_json::Value>> {
-        println!("[Database] Listing IM messages, platform: {:?}, channel: {:?}, limit: {:?}", platform, channel_id, limit);
+    pub fn im_message_list(
+        &self,
+        platform: Option<&str>,
+        channel_id: Option<&str>,
+        limit: Option<u32>,
+    ) -> Result<Vec<serde_json::Value>> {
+        println!(
+            "[Database] Listing IM messages, platform: {:?}, channel: {:?}, limit: {:?}",
+            platform, channel_id, limit
+        );
         let conn = self.conn.read().unwrap();
-        
+
         // 使用更简单的方法构建查询，避免参数绑定问题
         let mut query = "SELECT id, platform, channel_id, user_id, user_name, content, is_mention, direction, status, timestamp, created_at, updated_at FROM im_messages".to_string();
-        
+
         if platform.is_some() || channel_id.is_some() {
             query.push_str(" WHERE");
             let mut conditions = Vec::new();
-            
+
             if let Some(p) = platform {
                 conditions.push(format!("platform = '{}'", p.replace("'", "''")));
             }
-            
+
             if let Some(c) = channel_id {
                 if !conditions.is_empty() {
                     conditions.push("AND".to_string());
                 }
                 conditions.push(format!("channel_id = '{}'", c.replace("'", "''")));
             }
-            
+
             query.push_str(" ");
             query.push_str(&conditions.join(" "));
         }
-        
+
         query.push_str(" ORDER BY timestamp DESC");
-        
+
         if let Some(lim) = limit {
             query.push_str(&format!(" LIMIT {}", lim));
         }
-        
+
         let mut stmt = conn.prepare(&query)?;
         let rows = stmt.query_map([], |row| {
             Ok(serde_json::json! ({
@@ -1115,7 +1282,7 @@ impl Database {
                 "updated_at": row.get::<_, i64>(11)?,
             }))
         })?;
-        
+
         let mut messages = Vec::new();
         for row in rows {
             messages.push(row?);
@@ -1125,14 +1292,20 @@ impl Database {
     }
 
     pub fn im_message_update_status(&self, id: &str, status: &str) -> Result<()> {
-        println!("[Database] Updating IM message status: {}, status: {}", id, status);
+        println!(
+            "[Database] Updating IM message status: {}, status: {}",
+            id, status
+        );
         let conn = self.conn.write().unwrap();
         let now = Local::now().timestamp_millis();
         conn.execute(
             "UPDATE im_messages SET status = ?, updated_at = ? WHERE id = ?",
             [status, &now.to_string(), id],
         )?;
-        println!("[Database] IM message status updated successfully: {}, status: {}", id, status);
+        println!(
+            "[Database] IM message status updated successfully: {}, status: {}",
+            id, status
+        );
         Ok(())
     }
 
@@ -1140,36 +1313,42 @@ impl Database {
         println!("[Database] Deleting IM message: {}", id);
         let conn = self.conn.write().unwrap();
         let count = conn.execute("DELETE FROM im_messages WHERE id = ?", [id])?;
-        println!("[Database] IM message deleted: {}, rows affected: {}", id, count);
+        println!(
+            "[Database] IM message deleted: {}, rows affected: {}",
+            id, count
+        );
         Ok(())
     }
 
     pub fn im_message_count(&self, platform: Option<&str>, direction: Option<&str>) -> Result<i64> {
-        println!("[Database] Counting IM messages, platform: {:?}, direction: {:?}", platform, direction);
+        println!(
+            "[Database] Counting IM messages, platform: {:?}, direction: {:?}",
+            platform, direction
+        );
         let conn = self.conn.read().unwrap();
-        
+
         // 使用更简单的方法构建查询，避免参数绑定问题
         let mut query = "SELECT COUNT(*) FROM im_messages".to_string();
-        
+
         if platform.is_some() || direction.is_some() {
             query.push_str(" WHERE");
             let mut conditions = Vec::new();
-            
+
             if let Some(p) = platform {
                 conditions.push(format!("platform = '{}'", p.replace("'", "''")));
             }
-            
+
             if let Some(d) = direction {
                 if !conditions.is_empty() {
                     conditions.push("AND".to_string());
                 }
                 conditions.push(format!("direction = '{}'", d.replace("'", "''")));
             }
-            
+
             query.push_str(" ");
             query.push_str(&conditions.join(" "));
         }
-        
+
         let count: i64 = conn.query_row(&query, [], |row| row.get(0))?;
         println!("[Database] IM message count: {}", count);
         Ok(count)
@@ -1179,15 +1358,15 @@ impl Database {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::path::PathBuf;
+    use tempfile::tempdir;
 
     #[tokio::test]
     async fn test_database_initialization() {
         // 创建临时目录
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // 初始化数据库
         let db = Database::new(db_path).unwrap();
         assert!(true, "Database initialization should succeed");
@@ -1198,22 +1377,22 @@ mod tests {
         // 创建临时目录
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // 初始化数据库
         let db = Database::new(db_path).unwrap();
-        
+
         // 测试设置值
         db.kv_set("test_key", "test_value").unwrap();
-        
+
         // 测试获取值
         let value = db.kv_get("test_key").unwrap();
         assert_eq!(value, Some("test_value".to_string()));
-        
+
         // 测试更新值
         db.kv_set("test_key", "updated_value").unwrap();
         let value = db.kv_get("test_key").unwrap();
         assert_eq!(value, Some("updated_value".to_string()));
-        
+
         // 测试删除值
         db.kv_remove("test_key").unwrap();
         let value = db.kv_get("test_key").unwrap();
@@ -1225,22 +1404,26 @@ mod tests {
         // 创建临时目录
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // 初始化数据库
         let db = Database::new(db_path).unwrap();
-        
+
         // 测试创建会话
         let session_id = "test_session_1";
-        db.cowork_create_session(session_id, "Test Session", None, None, None).unwrap();
-        
+        db.cowork_create_session(session_id, "Test Session", None, None, None)
+            .unwrap();
+
         // 测试列出会话
         let sessions = db.cowork_list_sessions().unwrap();
         assert!(!sessions.is_empty(), "Should have at least one session");
-        
+
         // 测试删除会话
         db.cowork_delete_session(session_id).unwrap();
         let sessions = db.cowork_list_sessions().unwrap();
-        assert!(sessions.is_empty(), "Should have no sessions after deletion");
+        assert!(
+            sessions.is_empty(),
+            "Should have no sessions after deletion"
+        );
     }
 
     #[tokio::test]
@@ -1248,18 +1431,20 @@ mod tests {
         // 创建临时目录
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // 初始化数据库
         let db = Database::new(db_path).unwrap();
-        
+
         // 创建会话
         let session_id = "test_session_1";
-        db.cowork_create_session(session_id, "Test Session", None, None, None).unwrap();
-        
+        db.cowork_create_session(session_id, "Test Session", None, None, None)
+            .unwrap();
+
         // 测试添加消息
         let message_id = "test_message_1";
-        db.cowork_add_message(message_id, session_id, "user", "Hello world").unwrap();
-        
+        db.cowork_add_message(message_id, session_id, "user", "Hello world")
+            .unwrap();
+
         // 测试列出消息
         let messages = db.cowork_list_messages(session_id).unwrap();
         assert!(!messages.is_empty(), "Should have at least one message");
@@ -1270,14 +1455,15 @@ mod tests {
         // 创建临时目录
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // 初始化数据库
         let db = Database::new(db_path).unwrap();
-        
+
         // 测试创建记忆
         let memory_id = "test_memory_1";
-        db.user_memory_create(memory_id, "Test memory content", 0.9, false).unwrap();
-        
+        db.user_memory_create(memory_id, "Test memory content", 0.9, false)
+            .unwrap();
+
         // 测试列出记忆
         let memories = db.user_memories_list().unwrap();
         assert!(!memories.is_empty(), "Should have at least one memory");
@@ -1288,14 +1474,15 @@ mod tests {
         // 创建临时目录
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // 初始化数据库
         let db = Database::new(db_path).unwrap();
-        
+
         // 测试创建任务
         let task_id = "test_task_1";
-        db.scheduled_task_create(task_id, "Test Task", "* * * * *").unwrap();
-        
+        db.scheduled_task_create(task_id, "Test Task", "* * * * *")
+            .unwrap();
+
         // 测试列出任务
         let tasks = db.scheduled_tasks_list().unwrap();
         assert!(!tasks.is_empty(), "Should have at least one task");
@@ -1306,25 +1493,30 @@ mod tests {
         // 创建临时目录
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // 初始化数据库
         let db = Database::new(db_path).unwrap();
-        
+
         // 创建任务
         let task_id = "test_task_1";
-        db.scheduled_task_create(task_id, "Test Task", "* * * * *").unwrap();
-        
+        db.scheduled_task_create(task_id, "Test Task", "* * * * *")
+            .unwrap();
+
         // 测试创建任务运行
         let run_id = "test_run_1";
         db.task_run_create(run_id, task_id).unwrap();
-        
+
         // 测试列出任务运行
         let runs = db.task_runs_list(Some(task_id)).unwrap();
         assert!(!runs.is_empty(), "Should have at least one task run");
-        
+
         // 测试完成任务运行
-        db.task_run_complete(run_id, "completed", Some("Task output"), None).unwrap();
+        db.task_run_complete(run_id, "completed", Some("Task output"), None)
+            .unwrap();
         let runs = db.task_runs_list(Some(task_id)).unwrap();
-        assert!(!runs.is_empty(), "Should have at least one completed task run");
+        assert!(
+            !runs.is_empty(),
+            "Should have at least one completed task run"
+        );
     }
 }

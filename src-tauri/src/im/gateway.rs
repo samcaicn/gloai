@@ -6,40 +6,54 @@ use std::any::Any;
 pub trait Gateway: Send + Sync + Any {
     // 用于向下转型
     fn as_any(&self) -> &dyn Any;
-    
+
     // 启动网关
     async fn start(&self) -> Result<(), String>;
-    
+
     // 停止网关
     async fn stop(&self) -> Result<(), String>;
-    
+
     // 检查是否连接
     fn is_connected(&self) -> bool;
-    
+
     // 获取状态
     fn get_status(&self) -> GatewayStatus;
-    
+
     // 发送通知到最后一个会话
     async fn send_notification(&self, text: &str) -> Result<bool, String>;
-    
+
     // 发送消息到指定会话 (conversation_id, text)
     async fn send_message(&self, conversation_id: &str, text: &str) -> Result<bool, String>;
-    
+
     // 发送媒体消息到指定会话
-    async fn send_media_message(&self, conversation_id: &str, file_path: &str) -> Result<bool, String>;
-    
+    async fn send_media_message(
+        &self,
+        conversation_id: &str,
+        file_path: &str,
+    ) -> Result<bool, String>;
+
     // 编辑已发送的消息
-    async fn edit_message(&self, conversation_id: &str, message_id: &str, new_text: &str) -> Result<bool, String>;
-    
+    async fn edit_message(
+        &self,
+        conversation_id: &str,
+        message_id: &str,
+        new_text: &str,
+    ) -> Result<bool, String>;
+
     // 删除消息
-    async fn delete_message(&self, conversation_id: &str, message_id: &str) -> Result<bool, String>;
-    
+    async fn delete_message(&self, conversation_id: &str, message_id: &str)
+        -> Result<bool, String>;
+
     // 获取聊天历史
-    async fn get_message_history(&self, conversation_id: &str, limit: u32) -> Result<Vec<IMMessage>, String>;
-    
+    async fn get_message_history(
+        &self,
+        conversation_id: &str,
+        limit: u32,
+    ) -> Result<Vec<IMMessage>, String>;
+
     // 重连（如果需要）
     async fn reconnect_if_needed(&self) -> Result<(), String>;
-    
+
     // 设置事件回调
     fn set_event_callback(&self, callback: Option<EventCallback>);
 }
@@ -116,13 +130,13 @@ impl MessageDeduplicationCache {
 
     pub fn check_and_mark(&mut self, message_id: &str, timestamp: i64, ttl_seconds: i64) -> bool {
         let now = chrono::Utc::now().timestamp();
-        
+
         if let Some(existing_time) = self.processed_messages.get(message_id) {
             if now - *existing_time < ttl_seconds {
                 return true;
             }
         }
-        
+
         self.processed_messages.insert(message_id.to_string(), now);
         false
     }
@@ -130,10 +144,9 @@ impl MessageDeduplicationCache {
     pub fn cleanup(&mut self) {
         let now = chrono::Utc::now().timestamp();
         let ttl: i64 = 300;
-        
-        self.processed_messages.retain(|_, &mut time| {
-            now - time < ttl
-        });
+
+        self.processed_messages
+            .retain(|_, &mut time| now - time < ttl);
     }
 }
 
@@ -155,8 +168,6 @@ pub struct GatewayConfig {
 
 impl Default for GatewayConfig {
     fn default() -> Self {
-        GatewayConfig {
-            enabled: false,
-        }
+        GatewayConfig { enabled: false }
     }
 }

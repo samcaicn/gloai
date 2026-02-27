@@ -177,31 +177,17 @@ class TuptupService {
     return this.request<TuptupUserOverview>('/api/client/user/overview');
   }
 
-  async getSmtpConfig(userId: string = '2'): Promise<TuptupSmtpConfig> {
-    // 检查登录状态是否过期
-    if (this.isLoginExpired()) {
-      console.warn('Login session expired, using default SMTP config');
-      // 登录过期时，仍然使用默认的 API 密钥获取配置
-    }
-
+  async getSmtpConfig(): Promise<TuptupSmtpConfig> {
     const API_KEY = 'gk_981279d245764a1cb53738da';
-    const API_SECRET = 'gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2';
-    const timestamp = Date.now();
-    
-    const data = `${timestamp}${API_KEY}${API_SECRET}`;
-    const signature = CryptoJS.SHA256(data).toString();
+    // API_SECRET and timestamp not needed for this endpoint
 
     const headers = {
-      'X-App-Key': API_KEY,
-      'X-User-Id': userId,
-      'X-Timestamp': timestamp.toString(),
-      'X-Signature': signature,
+      'X-API-Key': API_KEY,
       'Content-Type': 'application/json',
     };
 
     const url = `${TUPTUP_BASE_URL}/api/client/smtp/config`;
     
-    // 使用 Tauri HTTP API
     const { httpRequest } = await import('./httpClient');
     return httpRequest<TuptupSmtpConfig>(url, { headers });
   }

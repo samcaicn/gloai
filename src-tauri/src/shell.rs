@@ -15,9 +15,7 @@ impl ShellExecutor {
         working_dir: Option<&str>,
     ) -> anyhow::Result<(String, String, i32)> {
         let mut cmd = AsyncCommand::new(command);
-        cmd.args(args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+        cmd.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
 
         if let Some(dir) = working_dir {
             cmd.current_dir(dir);
@@ -38,9 +36,7 @@ impl ShellExecutor {
         working_dir: Option<&str>,
     ) -> anyhow::Result<(String, String, i32)> {
         let mut cmd = Command::new(command);
-        cmd.args(args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+        cmd.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
 
         if let Some(dir) = working_dir {
             cmd.current_dir(dir);

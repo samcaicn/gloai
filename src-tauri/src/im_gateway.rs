@@ -1,9 +1,9 @@
-use std::sync::Mutex;
-use std::process::{Command, Stdio};
-use std::path::PathBuf;
-use tauri::AppHandle;
-use serde::{Deserialize, Serialize};
 use chrono::Local;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
+use std::sync::Mutex;
+use tauri::AppHandle;
 
 // IM平台类型
 #[derive(Debug)]
@@ -201,11 +201,11 @@ impl ImGatewayManager {
         match cmd {
             Ok(child) => {
                 *process_guard = Some(child);
-                
+
                 // 更新状态
                 let mut status_guard = self.status.lock().unwrap();
                 status_guard.overall = "starting".to_string();
-                
+
                 Ok(())
             }
             Err(e) => {
@@ -226,7 +226,7 @@ impl ImGatewayManager {
                 return Err(format!("Failed to wait for IM gateway process: {}", e));
             }
         }
-        
+
         // 更新状态
         let mut status_guard = self.status.lock().unwrap();
         status_guard.overall = "disconnected".to_string();
@@ -235,7 +235,7 @@ impl ImGatewayManager {
         status_guard.telegram = IMPlatformStatus::default();
         status_guard.discord = IMPlatformStatus::default();
         status_guard.wework = IMPlatformStatus::default();
-        
+
         Ok(())
     }
 
@@ -246,11 +246,11 @@ impl ImGatewayManager {
                 Ok(None) => true,
                 _ => {
                     *process_guard = None;
-                    
+
                     // 更新状态
                     let mut status_guard = self.status.lock().unwrap();
                     status_guard.overall = "disconnected".to_string();
-                    
+
                     false
                 }
             }
@@ -291,37 +291,37 @@ impl ImGatewayManager {
         // 启动所有启用的网关
         // 先获取配置的克隆，避免MutexGuard跨越await
         let config = self.get_config();
-        
+
         if let Some(dingtalk_config) = &config.dingtalk {
             if dingtalk_config.enabled {
                 self.start_gateway(IMPlatform::DingTalk).await?;
             }
         }
-        
+
         if let Some(feishu_config) = &config.feishu {
             if feishu_config.enabled {
                 self.start_gateway(IMPlatform::Feishu).await?;
             }
         }
-        
+
         if let Some(telegram_config) = &config.telegram {
             if telegram_config.enabled {
                 self.start_gateway(IMPlatform::Telegram).await?;
             }
         }
-        
+
         if let Some(discord_config) = &config.discord {
             if discord_config.enabled {
                 self.start_gateway(IMPlatform::Discord).await?;
             }
         }
-        
+
         if let Some(wework_config) = &config.wework {
             if wework_config.enabled {
                 self.start_gateway(IMPlatform::WeWork).await?;
             }
         }
-        
+
         Ok(())
     }
 
@@ -332,13 +332,17 @@ impl ImGatewayManager {
         self.stop_gateway(IMPlatform::Telegram).await?;
         self.stop_gateway(IMPlatform::Discord).await?;
         self.stop_gateway(IMPlatform::WeWork).await?;
-        
+
         Ok(())
     }
 
     pub fn is_any_connected(&self) -> bool {
         let status = self.status.lock().unwrap();
-        status.dingtalk.connected || status.feishu.connected || status.telegram.connected || status.discord.connected || status.wework.connected
+        status.dingtalk.connected
+            || status.feishu.connected
+            || status.telegram.connected
+            || status.discord.connected
+            || status.wework.connected
     }
 
     pub fn is_connected(&self, platform: IMPlatform) -> bool {
@@ -352,17 +356,24 @@ impl ImGatewayManager {
         }
     }
 
-    pub async fn send_notification(&self, platform: IMPlatform, text: &str) -> Result<bool, String> {
+    pub async fn send_notification(
+        &self,
+        platform: IMPlatform,
+        text: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected(platform) {
             return Err(format!("Platform not connected"));
         }
-        
+
         // 这里应该实现具体的通知发送逻辑
         // 暂时返回Ok(true)
         Ok(true)
     }
 
-    pub async fn test_connectivity(&self, platform: IMPlatform) -> Result<serde_json::Value, String> {
+    pub async fn test_connectivity(
+        &self,
+        platform: IMPlatform,
+    ) -> Result<serde_json::Value, String> {
         Ok(serde_json::json!({
             "platform": format!("{:?}", platform).to_lowercase(),
             "tested_at": chrono::Local::now().timestamp_millis(),
@@ -390,7 +401,7 @@ impl ImGatewayManager {
         } else {
             "im_gateway"
         };
-        
+
         // 尝试多种路径解析策略
         // 1. 从当前可执行文件路径解析
         if let Ok(exe_path) = std::env::current_exe() {
@@ -401,7 +412,7 @@ impl ImGatewayManager {
                 }
             }
         }
-        
+
         // 2. 从当前工作目录解析
         if let Ok(current_dir) = std::env::current_dir() {
             let path = current_dir.join("im_gateway").join(binary_name);
@@ -409,16 +420,19 @@ impl ImGatewayManager {
                 return Ok(path);
             }
         }
-        
+
         // 3. 从应用资源目录解析（如果 Tauri API 支持）
         #[cfg(feature = "resources")]
         if let Some(resources_dir) = app_handle.resource_dir() {
-            let path = resources_dir.join("bin").join("im_gateway").join(binary_name);
+            let path = resources_dir
+                .join("bin")
+                .join("im_gateway")
+                .join(binary_name);
             if path.exists() {
                 return Ok(path);
             }
         }
-        
+
         // 如果所有路径都不存在，返回默认路径
         let default_path = std::env::current_exe()
             .unwrap_or_else(|_| std::path::PathBuf::from("."))
@@ -426,7 +440,7 @@ impl ImGatewayManager {
             .unwrap_or_else(|| std::path::Path::new("."))
             .join("im_gateway")
             .join(binary_name);
-        
+
         Ok(default_path)
     }
 }

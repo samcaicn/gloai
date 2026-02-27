@@ -15,13 +15,17 @@ pub struct ClientCrypto {
 
 impl ClientCrypto {
     pub fn new() -> Self {
+        // 从环境变量获取密钥，若不存在则使用默认值
+        let secret = std::env::var("GGCLAW_SECRET").unwrap_or_else(|_| "gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2".to_string());
         Self {
-            secret: "gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2".to_string(),
+            secret,
         }
     }
 
     pub fn with_secret(secret: &str) -> Self {
-        Self { secret: secret.to_string() }
+        Self {
+            secret: secret.to_string(),
+        }
     }
 
     fn derive_key(&self) -> [u8; 32] {
@@ -94,13 +98,98 @@ impl Default for ClientCrypto {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 pub struct SmtpConfig {
+    #[serde(default)]
     pub host: String,
+    #[serde(default)]
     pub port: u16,
+    #[serde(rename = "useSsl", default, deserialize_with = "deserialize_use_ssl")]
     pub secure: bool,
+    #[serde(default)]
     pub username: String,
+    #[serde(default, deserialize_with = "deserialize_nullable_string")]
     pub password: String,
+}
+
+fn deserialize_nullable_string<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::{self, Visitor};
+    struct NullableStringVisitor;
+    impl<'de> Visitor<'de> for NullableStringVisitor {
+        type Value = String;
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a string or null")
+        }
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(v.to_string())
+        }
+        fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(v)
+        }
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(String::new())
+        }
+        fn visit_unit<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(String::new())
+        }
+    }
+    deserializer.deserialize_any(NullableStringVisitor)
+}
+
+fn deserialize_use_ssl<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::{self, Visitor};
+    struct UseSslVisitor;
+    impl<'de> Visitor<'de> for UseSslVisitor {
+        type Value = bool;
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("an integer or a boolean")
+        }
+        fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(v != 0)
+        }
+        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(v != 0)
+        }
+        fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(v)
+        }
+    }
+    deserializer.deserialize_any(UseSslVisitor)
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct SmtpConfigResponse {
+    pub code: i32,
+    pub data: Option<SmtpConfig>,
+    pub success: bool,
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -128,38 +217,12 @@ pub fn get_verification_email_template(code: &str) -> String {
 <html>
 <head>
     <meta charset="UTF-8">
-    <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
-        .container {{ max-width: 480px; margin: 0 auto; padding: 40px 20px; }}
-        .code-box {{ 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            margin: 30px 0;
-        }}
-        .code {{ 
-            font-size: 36px; 
-            font-weight: bold; 
-            color: white;
-            letter-spacing: 8px;
-        }}
-        .footer {{ color: #666; font-size: 12px; margin-top: 30px; }}
-    </style>
 </head>
-<body>
-    <div class="container">
-        <h2>验证码通知</h2>
-        <p>您好，您正在进行身份验证，请使用以下验证码完成操作：</p>
-        <div class="code-box">
-            <div class="code">{}</div>
-        </div>
-        <p>验证码有效期为 <strong>5分钟</strong>，请尽快使用。</p>
-        <p>如果您没有进行此操作，请忽略此邮件。</p>
-        <div class="footer">
-            <p>此邮件由系统自动发送，请勿回复。</p>
-        </div>
-    </div>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2>TinyClaw</h2>
+    <p>Your security code is:</p>
+    <h1 style="color: #333; font-size: 32px; letter-spacing: 4px;">{}</h1>
+    <p style="color: #666; font-size: 12px;">This code expires in 5 minutes.</p>
 </body>
 </html>"#,
         code
@@ -167,20 +230,7 @@ pub fn get_verification_email_template(code: &str) -> String {
 }
 
 pub fn get_verification_email_text(code: &str) -> String {
-    format!(
-        r#"验证码通知
-
-您好，您正在进行身份验证，请使用以下验证码完成操作：
-
-验证码：{}
-
-验证码有效期为 5 分钟，请尽快使用。
-
-如果您没有进行此操作，请忽略此邮件。
-
-此邮件由系统自动发送，请勿回复。"#,
-        code
-    )
+    format!("{}\n\nExpires in 5 minutes.", code)
 }
 
 #[cfg(test)]

@@ -78,11 +78,22 @@ struct JsonRpcNotification {
     params: serde_json::Value,
 }
 
-type PendingRequests = Arc<Mutex<HashMap<String, oneshot::Sender<Result<serde_json::Value, String>>>>>;
-type NotificationCallback = Arc<Mutex<Option<Box<dyn Fn(String, serde_json::Value) + Send + Sync>>>>;
+type PendingRequests =
+    Arc<Mutex<HashMap<String, oneshot::Sender<Result<serde_json::Value, String>>>>>;
+type NotificationCallback =
+    Arc<Mutex<Option<Box<dyn Fn(String, serde_json::Value) + Send + Sync>>>>;
 
 struct WebSocketConnection {
-    write: Arc<AsyncMutex<futures_util::stream::SplitSink<tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>, Message>>>,
+    write: Arc<
+        AsyncMutex<
+            futures_util::stream::SplitSink<
+                tokio_tungstenite::WebSocketStream<
+                    tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+                >,
+                Message,
+            >,
+        >,
+    >,
     _task: tokio::task::JoinHandle<()>,
 }
 
@@ -139,8 +150,11 @@ impl GoClawManager {
         let running = self.is_running();
         let connected = self.ws_connection.blocking_lock().is_some();
         let error = self.last_error.lock().unwrap().clone();
-        
-        let binary_path = self.find_binary().ok().map(|p| p.to_string_lossy().to_string());
+
+        let binary_path = self
+            .find_binary()
+            .ok()
+            .map(|p| p.to_string_lossy().to_string());
 
         GoClawStatus {
             running,
@@ -161,7 +175,7 @@ impl GoClawManager {
 
     fn find_binary(&self) -> anyhow::Result<PathBuf> {
         let config = self.config.lock().unwrap();
-        
+
         if let Some(path) = &config.binary_path {
             let path = Path::new(path);
             if path.exists() {
@@ -170,7 +184,7 @@ impl GoClawManager {
         }
 
         let binary_names = Self::get_binary_names();
-        
+
         if let Ok(exe_dir) = std::env::current_exe() {
             if let Some(dir) = exe_dir.parent() {
                 for name in &binary_names {
@@ -179,7 +193,7 @@ impl GoClawManager {
                         return Ok(path);
                     }
                 }
-                
+
                 let goclaw_dir = dir.join("goclaw");
                 if goclaw_dir.is_dir() {
                     for name in &binary_names {
@@ -205,14 +219,14 @@ impl GoClawManager {
                 if !base_dir.is_dir() {
                     continue;
                 }
-                
+
                 for name in &binary_names {
                     let path = base_dir.join(name);
                     if path.exists() {
                         return Ok(path);
                     }
                 }
-                
+
                 let darwin_dir = base_dir.join("darwin");
                 if darwin_dir.is_dir() {
                     for name in &binary_names {
@@ -263,7 +277,7 @@ impl GoClawManager {
             let config = self.config.lock().unwrap();
             (config.enabled, config.start_timeout_ms)
         };
-        
+
         if !is_enabled {
             return Err(anyhow::anyhow!("GoClaw is disabled in config"));
         }
@@ -274,7 +288,7 @@ impl GoClawManager {
         }
 
         let binary_path = self.find_binary()?;
-        
+
         if !binary_path.exists() {
             let err = format!("GoClaw binary not found at: {:?}", binary_path);
             *self.last_error.lock().unwrap() = Some(err.clone());
@@ -301,12 +315,12 @@ impl GoClawManager {
         let pid = child.id();
         println!("[GoClaw] Started with PID: {}", pid);
         *self.process.lock().unwrap() = Some(child);
-        
+
         *self.last_error.lock().unwrap() = None;
 
         let timeout = Duration::from_millis(timeout_ms);
         let start_time = std::time::Instant::now();
-        
+
         while start_time.elapsed() < timeout {
             if self.check_port_available() {
                 println!("[GoClaw] Service is ready");
@@ -321,7 +335,7 @@ impl GoClawManager {
 
     fn check_port_available(&self) -> bool {
         let config = self.config.lock().unwrap();
-        
+
         if let Some(addr) = config.ws_url.strip_prefix("ws://") {
             let host_port = addr.split('/').next().unwrap_or(addr);
             if let Some((host, port)) = host_port.rsplit_once(':') {
@@ -334,7 +348,7 @@ impl GoClawManager {
                 }
             }
         }
-        
+
         false
     }
 
@@ -343,14 +357,14 @@ impl GoClawManager {
             let mut ws_conn = self.ws_connection.lock().await;
             *ws_conn = None;
         }
-        
+
         let mut process_guard = self.process.lock().unwrap();
         if let Some(mut child) = process_guard.take() {
             println!("[GoClaw] Stopping GoClaw...");
-            
+
             let _ = child.kill();
             let _ = child.wait();
-            
+
             println!("[GoClaw] GoClaw stopped");
         }
         Ok(())
@@ -370,21 +384,21 @@ impl GoClawManager {
 
     pub async fn restart(&self) -> anyhow::Result<()> {
         println!("[GoClaw] Restarting...");
-        
+
         let was_connected = {
             let conn = self.ws_connection.lock().await;
             conn.is_some()
         };
-        
+
         self.stop().await?;
         tokio::time::sleep(Duration::from_millis(1000)).await;
         self.start().await?;
-        
+
         if was_connected {
             tokio::time::sleep(Duration::from_millis(2000)).await;
             let _ = self.connect_websocket().await;
         }
-        
+
         Ok(())
     }
 
@@ -393,10 +407,10 @@ impl GoClawManager {
             let config = self.config.lock().unwrap();
             (config.enabled && config.auto_start, config.auto_reconnect)
         };
-        
+
         if should_start {
             println!("[GoClaw] Auto-start enabled, starting...");
-            
+
             match self.start().await {
                 Ok(_) => {
                     if auto_reconnect {
@@ -423,7 +437,7 @@ impl GoClawManager {
 
     pub async fn connect_websocket(&self) -> anyhow::Result<()> {
         let mut ws_conn = self.ws_connection.lock().await;
-        
+
         if ws_conn.is_some() {
             return Ok(());
         }
@@ -434,14 +448,12 @@ impl GoClawManager {
         };
 
         println!("[GoClaw] Connecting to WebSocket: {}", ws_url);
-        
+
         let ws_url_clone = ws_url.clone();
-        let connect_future = async {
-            connect_async(&ws_url_clone).await
-        };
+        let connect_future = async { connect_async(&ws_url_clone).await };
 
         let result = tokio::time::timeout(Duration::from_millis(timeout_ms), connect_future).await;
-        
+
         let (ws_stream, _) = match result {
             Ok(Ok(s)) => s,
             Ok(Err(e)) => {
@@ -457,12 +469,12 @@ impl GoClawManager {
         };
 
         let (write, mut read) = ws_stream.split();
-        
+
         let pending_requests = self.pending_requests.clone();
         let notification_callback = self.notification_callback.clone();
         let ws_connection = self.ws_connection.clone();
         let last_error = self.last_error.clone();
-        
+
         let task = tokio::spawn(async move {
             while let Some(msg) = read.next().await {
                 match msg {
@@ -478,7 +490,9 @@ impl GoClawManager {
                                     }
                                 }
                             }
-                        } else if let Ok(notification) = serde_json::from_str::<JsonRpcNotification>(&text) {
+                        } else if let Ok(notification) =
+                            serde_json::from_str::<JsonRpcNotification>(&text)
+                        {
                             let callback = notification_callback.lock().unwrap();
                             if let Some(cb) = &*callback {
                                 cb(notification.method, notification.params);
@@ -497,7 +511,7 @@ impl GoClawManager {
                     _ => {}
                 }
             }
-            
+
             let mut conn = ws_connection.lock().await;
             *conn = None;
             println!("[GoClaw] WebSocket disconnected");
@@ -525,7 +539,7 @@ impl GoClawManager {
         params: serde_json::Value,
     ) -> anyhow::Result<serde_json::Value> {
         self.connect_websocket().await?;
-        
+
         let id = self.next_request_id();
 
         let request = JsonRpcRequest {
@@ -544,7 +558,9 @@ impl GoClawManager {
         let ws_conn = self.ws_connection.lock().await;
         if let Some(conn) = &*ws_conn {
             let mut write = conn.write.lock().await;
-            write.send(Message::Text(serde_json::to_string(&request)?)).await?;
+            write
+                .send(Message::Text(serde_json::to_string(&request)?))
+                .await?;
         } else {
             return Err(anyhow::anyhow!("WebSocket not connected"));
         }
@@ -554,7 +570,7 @@ impl GoClawManager {
             .await
             .map_err(|_| anyhow::anyhow!("Request timeout"))?
             .map_err(|e| anyhow::anyhow!("Channel error: {}", e))?;
-            
+
         result.map_err(|e| anyhow::anyhow!(e))
     }
 
@@ -564,14 +580,15 @@ impl GoClawManager {
     }
 
     pub async fn list_sessions(&self) -> anyhow::Result<serde_json::Value> {
-        self.request("sessions.list".to_string(), serde_json::json!({})).await
+        self.request("sessions.list".to_string(), serde_json::json!({}))
+            .await
     }
 
     pub async fn health_check(&self) -> bool {
         if !self.is_running() {
             return false;
         }
-        
+
         let conn = self.ws_connection.lock().await;
         conn.is_some()
     }

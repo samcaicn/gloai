@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 // LLM配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,43 +39,45 @@ impl LLMManager {
             config: Mutex::new(config),
         }
     }
-    
+
     pub fn new_default() -> Self {
         Self::new(LLMConfig::default())
     }
-    
+
     pub fn set_config(&self, config: LLMConfig) {
         *self.config.lock().unwrap() = config;
     }
-    
+
     pub fn get_config(&self) -> LLMConfig {
         self.config.lock().unwrap().clone()
     }
-    
+
     // 添加技能提示
     pub fn add_skill_prompt(&self, skill_name: &str, prompt: &str) {
         let mut config = self.config.lock().unwrap();
-        config.skill_prompts.insert(skill_name.to_string(), prompt.to_string());
+        config
+            .skill_prompts
+            .insert(skill_name.to_string(), prompt.to_string());
     }
-    
+
     // 获取技能提示
     pub fn get_skill_prompt(&self, skill_name: &str) -> Option<String> {
         let config = self.config.lock().unwrap();
         config.skill_prompts.get(skill_name).cloned()
     }
-    
+
     // 删除技能提示
     pub fn remove_skill_prompt(&self, skill_name: &str) {
         let mut config = self.config.lock().unwrap();
         config.skill_prompts.remove(skill_name);
     }
-    
+
     // 获取所有技能提示
     pub fn get_all_skill_prompts(&self) -> HashMap<String, String> {
         let config = self.config.lock().unwrap();
         config.skill_prompts.clone()
     }
-    
+
     // 检查LLM配置是否有效
     pub fn is_config_valid(&self) -> bool {
         let config = self.config.lock().unwrap();

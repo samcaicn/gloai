@@ -1,14 +1,14 @@
-use super::gateway::Gateway;
 use super::dingtalk::DingTalkGateway;
-use super::feishu::FeishuGateway;
-use super::telegram::TelegramGateway;
 use super::discord::DiscordGateway;
+use super::feishu::FeishuGateway;
+use super::gateway::Gateway;
+use super::telegram::TelegramGateway;
 use super::wework::WeWorkGateway;
 use super::whatsapp::WhatsAppGateway;
+use chrono::{DateTime, Utc};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use chrono::{Utc, DateTime};
 
 // 连通性测试结果
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,7 +39,7 @@ impl ConnectivityTester {
             client: Mutex::new(Client::new()),
         }
     }
-    
+
     // 测试钉钉网关连接
     pub async fn test_dingtalk(&self, gateway: &DingTalkGateway) -> ConnectivityTestResult {
         let tested_at = Utc::now().timestamp_millis();
@@ -134,7 +134,7 @@ impl ConnectivityTester {
             checks,
         }
     }
-    
+
     // 测试飞书网关连接
     pub async fn test_feishu(&self, gateway: &FeishuGateway) -> ConnectivityTestResult {
         let tested_at = Utc::now().timestamp_millis();
@@ -235,7 +235,7 @@ impl ConnectivityTester {
             checks,
         }
     }
-    
+
     // 测试Telegram网关连接
     pub async fn test_telegram(&self, gateway: &TelegramGateway) -> ConnectivityTestResult {
         let tested_at = Utc::now().timestamp_millis();
@@ -274,7 +274,7 @@ impl ConnectivityTester {
         // 尝试调用 getMe API
         let url = format!("https://api.telegram.org/bot{}/getMe", config.bot_token);
         let client = self.client.lock().unwrap();
-        
+
         match client.get(&url).send().await {
             Ok(response) => {
                 if response.status().is_success() {
@@ -335,7 +335,7 @@ impl ConnectivityTester {
             checks,
         }
     }
-    
+
     // 测试Discord网关连接
     pub async fn test_discord(&self, gateway: &DiscordGateway) -> ConnectivityTestResult {
         let tested_at = Utc::now().timestamp_millis();
@@ -375,7 +375,8 @@ impl ConnectivityTester {
         let url = "https://discord.com/api/v10/users/@me";
         let client = self.client.lock().unwrap();
 
-        match client.get(url)
+        match client
+            .get(url)
             .header("Authorization", format!("Bot {}", config.bot_token))
             .send()
             .await
@@ -439,7 +440,7 @@ impl ConnectivityTester {
             checks,
         }
     }
-    
+
     // 测试企业微信网关连接
     pub async fn test_wework(&self, gateway: &WeWorkGateway) -> ConnectivityTestResult {
         let tested_at = Utc::now().timestamp_millis();
@@ -508,7 +509,7 @@ impl ConnectivityTester {
             checks,
         }
     }
-    
+
     // 测试WhatsApp网关连接
     pub async fn test_whatsapp(&self, gateway: &WhatsAppGateway) -> ConnectivityTestResult {
         let tested_at = Utc::now().timestamp_millis();

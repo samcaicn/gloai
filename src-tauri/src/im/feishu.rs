@@ -1,12 +1,12 @@
-use super::gateway::{Gateway, GatewayStatus, GatewayEvent, EventCallback, IMMessage};
+use super::gateway::{EventCallback, Gateway, GatewayEvent, GatewayStatus, IMMessage};
+use chrono::Local;
+use futures_util::{SinkExt, StreamExt};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tokio::sync::Mutex;
-use chrono::Local;
-use reqwest::Client;
 use std::time::Duration;
 use tokio::sync::mpsc;
-use futures_util::{SinkExt, StreamExt};
+use tokio::sync::Mutex;
 use tokio_tungstenite::{connect_async, tungstenite::Message as WsMessage};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -191,7 +191,12 @@ impl FeishuGateway {
     }
 
     fn get_base_url(&self) -> String {
-        let domain = self.config.blocking_lock().domain.clone().unwrap_or_else(|| "feishu".to_string());
+        let domain = self
+            .config
+            .blocking_lock()
+            .domain
+            .clone()
+            .unwrap_or_else(|| "feishu".to_string());
         match domain.as_str() {
             "lark" => "https://open.larkoffice.com".to_string(),
             _ => "https://open.feishu.cn".to_string(),
@@ -215,7 +220,7 @@ impl FeishuGateway {
             let config = self.config.lock().await;
             (config.app_id.clone(), config.app_secret.clone())
         };
-        
+
         let now = chrono::Utc::now().timestamp();
         if let Some(expires_at) = *self.token_expires_at.lock().await {
             if expires_at - now > 300 {
@@ -226,14 +231,18 @@ impl FeishuGateway {
         }
 
         let base_url = self.get_base_url();
-        let url = format!("{}/open-apis/auth/v3/tenant_access_token/internal", base_url);
-        
+        let url = format!(
+            "{}/open-apis/auth/v3/tenant_access_token/internal",
+            base_url
+        );
+
         let request = serde_json::json!({
             "app_id": app_id,
             "app_secret": app_secret,
         });
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(&url)
             .json(&request)
             .send()
@@ -248,45 +257,49 @@ impl FeishuGateway {
             if let Some(token) = data.token {
                 let expires_in = data.expire.unwrap_or(7200);
                 let expires_at = now + expires_in;
-                
+
                 *self.access_token.lock().await = Some(token.clone());
                 *self.token_expires_at.lock().await = Some(expires_at);
-                
+
                 Ok(token)
             } else {
                 Err("No token in response".to_string())
             }
         } else {
-            Err(format!("Failed to get access token: {}", response.message.unwrap_or_default()))
+            Err(format!(
+                "Failed to get access token: {}",
+                response.message.unwrap_or_default()
+            ))
         }
     }
 
     async fn upload_image(&self, file_path: &str) -> Result<String, String> {
         let access_token = self.get_access_token().await?;
         let base_url = self.get_base_url();
-        
-        let file_data = tokio::fs::read(file_path).await
+
+        let file_data = tokio::fs::read(file_path)
+            .await
             .map_err(|e| format!("Failed to read file: {}", e))?;
-        
+
         let file_name = std::path::Path::new(file_path)
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("image.jpg");
-        
+
         let part = reqwest::multipart::Part::bytes(file_data)
             .file_name(file_name.to_string())
             .mime_str("image/jpeg")
             .map_err(|e| format!("Invalid mime type: {}", e))?;
-        
-        let form = reqwest::multipart::Form::new()
-            .part("image", part);
-        
+
+        let form = reqwest::multipart::Form::new().part("image", part);
+
         let url = format!(
             "{}/open-apis/im/v1/images?access_token={}&image_type=message",
             base_url, access_token
         );
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .post(&url)
             .multipart(form)
             .send()
@@ -303,34 +316,37 @@ impl FeishuGateway {
                 Err("No file key in response".to_string())
             }
         } else {
-            Err(format!("Upload failed: {}", response.message.unwrap_or_default()))
+            Err(format!(
+                "Upload failed: {}",
+                response.message.unwrap_or_default()
+            ))
         }
     }
 
     async fn upload_file(&self, file_path: &str) -> Result<String, String> {
         let access_token = self.get_access_token().await?;
         let base_url = self.get_base_url();
-        
-        let file_data = tokio::fs::read(file_path).await
+
+        let file_data = tokio::fs::read(file_path)
+            .await
             .map_err(|e| format!("Failed to read file: {}", e))?;
-        
+
         let file_name = std::path::Path::new(file_path)
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("file");
-        
-        let part = reqwest::multipart::Part::bytes(file_data)
-            .file_name(file_name.to_string());
-        
-        let form = reqwest::multipart::Form::new()
-            .part("file", part);
-        
+
+        let part = reqwest::multipart::Part::bytes(file_data).file_name(file_name.to_string());
+
+        let form = reqwest::multipart::Form::new().part("file", part);
+
         let url = format!(
             "{}/open-apis/im/v1/files?access_token={}&file_type=message",
             base_url, access_token
         );
-        
-        let response = self.http_client
+
+        let response = self
+            .http_client
             .post(&url)
             .multipart(form)
             .send()
@@ -347,7 +363,10 @@ impl FeishuGateway {
                 Err("No file key in response".to_string())
             }
         } else {
-            Err(format!("Upload failed: {}", response.message.unwrap_or_default()))
+            Err(format!(
+                "Upload failed: {}",
+                response.message.unwrap_or_default()
+            ))
         }
     }
 
@@ -355,10 +374,13 @@ impl FeishuGateway {
     async fn start_websocket_connection(&self) -> Result<(), String> {
         let access_token = self.get_access_token().await?;
         let base_url = self.get_base_url();
-        
+
         // 飞书 WebSocket 连接地址
-        let ws_url = format!("{}/open-apis/event/callback/ws?token={}", base_url, access_token);
-        
+        let ws_url = format!(
+            "{}/open-apis/event/callback/ws?token={}",
+            base_url, access_token
+        );
+
         self.log(&format!("Connecting to WebSocket: {}", ws_url));
 
         let (ws_stream, _) = connect_async(&ws_url)
@@ -369,7 +391,7 @@ impl FeishuGateway {
 
         let (ws_sender, mut ws_receiver) = ws_stream.split();
         let ws_sender = Arc::new(Mutex::new(ws_sender));
-        
+
         // 重置停止标志
         *self.is_stopping.lock().await = false;
         *self.reconnect_delay_ms.lock().await = 3000;
@@ -384,7 +406,7 @@ impl FeishuGateway {
         let handle = tokio::spawn(async move {
             let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(30));
             let mut should_reconnect = false;
-            
+
             loop {
                 tokio::select! {
                     // 处理 WebSocket 消息
@@ -392,7 +414,7 @@ impl FeishuGateway {
                         match msg {
                             Ok(WsMessage::Text(text)) => {
                                 self_ref.log(&format!("Received: {}", &text[..text.len().min(200)]));
-                                
+
                                 // 解析 WebSocket 消息
                                 if let Ok(ws_msg) = serde_json::from_str::<FeishuWebSocketMessage>(&text) {
                                     if ws_msg.msg_type == "event_callback" {
@@ -422,7 +444,7 @@ impl FeishuGateway {
                             _ => {}
                         }
                     }
-                    
+
                     // 发送心跳
                     _ = heartbeat_interval.tick() => {
                         let heartbeat = serde_json::json!({
@@ -433,7 +455,7 @@ impl FeishuGateway {
                             break;
                         }
                     }
-                    
+
                     // 检查是否需要停止
                     _ = tokio::time::sleep(Duration::from_millis(100)) => {
                         if *is_stopping.lock().await {
@@ -447,13 +469,13 @@ impl FeishuGateway {
             let mut s = status.lock().await;
             s.connected = false;
             drop(s);
-            
+
             if let Some(cb) = &*event_callback.lock().await {
                 cb(GatewayEvent::Disconnected);
             }
-            
+
             self_ref.log("WebSocket disconnected");
-            
+
             // 尝试重连
             if should_reconnect && !*is_stopping.lock().await {
                 // 执行重连
@@ -462,7 +484,7 @@ impl FeishuGateway {
         });
 
         *self.ws_task.lock().await = Some(handle);
-        
+
         Ok(())
     }
 
@@ -472,14 +494,16 @@ impl FeishuGateway {
         *self.last_user_id.lock().await = msg.sender.sender_id.open_id.clone();
 
         // 解析消息内容
-        let content = if let Ok(content_json) = serde_json::from_str::<serde_json::Value>(&msg.content) {
-            content_json.get("text")
-                .and_then(|t| t.as_str())
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| msg.content.clone())
-        } else {
-            msg.content.clone()
-        };
+        let content =
+            if let Ok(content_json) = serde_json::from_str::<serde_json::Value>(&msg.content) {
+                content_json
+                    .get("text")
+                    .and_then(|t| t.as_str())
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| msg.content.clone())
+            } else {
+                msg.content.clone()
+            };
 
         let im_message = IMMessage {
             id: msg.message_id.clone(),
@@ -489,7 +513,11 @@ impl FeishuGateway {
             user_name: String::new(), // 飞书事件不直接提供用户名，需要额外查询
             content,
             timestamp: chrono::Utc::now().timestamp(),
-            is_mention: msg.mentions.as_ref().map(|m| !m.is_empty()).unwrap_or(false),
+            is_mention: msg
+                .mentions
+                .as_ref()
+                .map(|m| !m.is_empty())
+                .unwrap_or(false),
         };
 
         let mut status = self.status.lock().await;
@@ -509,7 +537,7 @@ impl FeishuGateway {
 
         let delay = *self.reconnect_delay_ms.blocking_lock();
         self.log(&format!("Reconnecting in {}ms...", delay));
-        
+
         // 指数退避
         let new_delay = std::cmp::min(delay * 2, 60000);
         *self.reconnect_delay_ms.blocking_lock() = new_delay;
@@ -518,7 +546,7 @@ impl FeishuGateway {
         let self_clone = self.clone();
         tokio::spawn(async move {
             tokio::time::sleep(Duration::from_millis(delay)).await;
-            
+
             if *self_clone.is_stopping.lock().await {
                 return;
             }
@@ -530,12 +558,17 @@ impl FeishuGateway {
         Ok(())
     }
 
-    async fn send_message_api(&self, receive_id_type: &str, receive_id: &str, content: &str) -> Result<(), String> {
+    async fn send_message_api(
+        &self,
+        receive_id_type: &str,
+        receive_id: &str,
+        content: &str,
+    ) -> Result<(), String> {
         let base_url = self.get_base_url();
         let url = format!("{}/open-apis/im/v1/messages", base_url);
-        
+
         let access_token = self.get_access_token().await?;
-        
+
         let request = serde_json::json!({
             "receive_id_type": receive_id_type,
             "receive_id": receive_id,
@@ -544,8 +577,14 @@ impl FeishuGateway {
         });
 
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert("Authorization", format!("Bearer {}", access_token).parse().unwrap());
-        headers.insert("Content-Type", "application/json; charset=utf-8".parse().unwrap());
+        headers.insert(
+            "Authorization",
+            format!("Bearer {}", access_token).parse().unwrap(),
+        );
+        headers.insert(
+            "Content-Type",
+            "application/json; charset=utf-8".parse().unwrap(),
+        );
 
         self.http_client
             .post(&url)
@@ -561,12 +600,17 @@ impl FeishuGateway {
         Ok(())
     }
 
-    async fn send_image_message_api(&self, receive_id_type: &str, receive_id: &str, image_key: &str) -> Result<(), String> {
+    async fn send_image_message_api(
+        &self,
+        receive_id_type: &str,
+        receive_id: &str,
+        image_key: &str,
+    ) -> Result<(), String> {
         let base_url = self.get_base_url();
         let url = format!("{}/open-apis/im/v1/messages", base_url);
-        
+
         let access_token = self.get_access_token().await?;
-        
+
         let request = serde_json::json!({
             "receive_id_type": receive_id_type,
             "receive_id": receive_id,
@@ -575,8 +619,14 @@ impl FeishuGateway {
         });
 
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert("Authorization", format!("Bearer {}", access_token).parse().unwrap());
-        headers.insert("Content-Type", "application/json; charset=utf-8".parse().unwrap());
+        headers.insert(
+            "Authorization",
+            format!("Bearer {}", access_token).parse().unwrap(),
+        );
+        headers.insert(
+            "Content-Type",
+            "application/json; charset=utf-8".parse().unwrap(),
+        );
 
         self.http_client
             .post(&url)
@@ -589,12 +639,17 @@ impl FeishuGateway {
         Ok(())
     }
 
-    async fn send_file_message_api(&self, receive_id_type: &str, receive_id: &str, file_key: &str) -> Result<(), String> {
+    async fn send_file_message_api(
+        &self,
+        receive_id_type: &str,
+        receive_id: &str,
+        file_key: &str,
+    ) -> Result<(), String> {
         let base_url = self.get_base_url();
         let url = format!("{}/open-apis/im/v1/messages", base_url);
-        
+
         let access_token = self.get_access_token().await?;
-        
+
         let request = serde_json::json!({
             "receive_id_type": receive_id_type,
             "receive_id": receive_id,
@@ -603,8 +658,14 @@ impl FeishuGateway {
         });
 
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert("Authorization", format!("Bearer {}", access_token).parse().unwrap());
-        headers.insert("Content-Type", "application/json; charset=utf-8".parse().unwrap());
+        headers.insert(
+            "Authorization",
+            format!("Bearer {}", access_token).parse().unwrap(),
+        );
+        headers.insert(
+            "Content-Type",
+            "application/json; charset=utf-8".parse().unwrap(),
+        );
 
         self.http_client
             .post(&url)
@@ -641,7 +702,7 @@ impl Gateway for FeishuGateway {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
-    
+
     async fn start(&self) -> Result<(), String> {
         let (config_enabled, app_id, app_secret) = {
             let config = self.config.lock().await;
@@ -651,7 +712,7 @@ impl Gateway for FeishuGateway {
                 config.app_secret.clone(),
             )
         };
-        
+
         if !config_enabled {
             return Ok(());
         }
@@ -665,7 +726,7 @@ impl Gateway for FeishuGateway {
             self.emit_event(GatewayEvent::StatusChanged(status.clone()));
             return Err(error_msg);
         }
-        
+
         {
             let mut status = self.status.lock().await;
             status.starting = true;
@@ -676,7 +737,10 @@ impl Gateway for FeishuGateway {
 
         match self.get_access_token().await {
             Ok(token) => {
-                self.log(&format!("Access token obtained: {}...", &token[..token.len().min(10)]));
+                self.log(&format!(
+                    "Access token obtained: {}...",
+                    &token[..token.len().min(10)]
+                ));
             }
             Err(e) => {
                 let mut status = self.status.lock().await;
@@ -756,13 +820,13 @@ impl Gateway for FeishuGateway {
         }
 
         let chat_id = self.last_chat_id.lock().await.clone();
-        
+
         if let Some(chat_id) = chat_id {
             self.send_message_api("chat_id", &chat_id, text).await?;
-            
+
             let mut status = self.status.lock().await;
             status.last_outbound_at = Some(Local::now().timestamp_millis());
-            
+
             Ok(true)
         } else {
             Err("没有可用的聊天".to_string())
@@ -774,21 +838,27 @@ impl Gateway for FeishuGateway {
             return Err("网关未连接".to_string());
         }
 
-        self.send_message_api("chat_id", conversation_id, text).await?;
-        
+        self.send_message_api("chat_id", conversation_id, text)
+            .await?;
+
         let mut status = self.status.lock().await;
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
-    async fn send_media_message(&self, conversation_id: &str, file_path: &str) -> Result<bool, String> {
+    async fn send_media_message(
+        &self,
+        conversation_id: &str,
+        file_path: &str,
+    ) -> Result<bool, String> {
         if !self.is_connected() {
             return Err("网关未连接".to_string());
         }
 
         let path = std::path::Path::new(file_path);
-        let extension = path.extension()
+        let extension = path
+            .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("")
             .to_lowercase();
@@ -796,17 +866,19 @@ impl Gateway for FeishuGateway {
         match extension.as_str() {
             "jpg" | "jpeg" | "png" | "gif" | "bmp" | "webp" => {
                 let image_key = self.upload_image(file_path).await?;
-                self.send_image_message_api("chat_id", conversation_id, &image_key).await?;
+                self.send_image_message_api("chat_id", conversation_id, &image_key)
+                    .await?;
             }
             _ => {
                 let file_key = self.upload_file(file_path).await?;
-                self.send_file_message_api("chat_id", conversation_id, &file_key).await?;
+                self.send_file_message_api("chat_id", conversation_id, &file_key)
+                    .await?;
             }
         }
 
         let mut status = self.status.lock().await;
         status.last_outbound_at = Some(Local::now().timestamp_millis());
-        
+
         Ok(true)
     }
 
@@ -818,15 +890,28 @@ impl Gateway for FeishuGateway {
         }
     }
 
-    async fn edit_message(&self, _conversation_id: &str, _message_id: &str, _new_text: &str) -> Result<bool, String> {
+    async fn edit_message(
+        &self,
+        _conversation_id: &str,
+        _message_id: &str,
+        _new_text: &str,
+    ) -> Result<bool, String> {
         Err("飞书不支持编辑消息".to_string())
     }
 
-    async fn delete_message(&self, _conversation_id: &str, _message_id: &str) -> Result<bool, String> {
+    async fn delete_message(
+        &self,
+        _conversation_id: &str,
+        _message_id: &str,
+    ) -> Result<bool, String> {
         Err("飞书不支持删除消息".to_string())
     }
 
-    async fn get_message_history(&self, _conversation_id: &str, _limit: u32) -> Result<Vec<IMMessage>, String> {
+    async fn get_message_history(
+        &self,
+        _conversation_id: &str,
+        _limit: u32,
+    ) -> Result<Vec<IMMessage>, String> {
         Err("飞书暂不支持获取历史消息".to_string())
     }
 
