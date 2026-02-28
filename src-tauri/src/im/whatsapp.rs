@@ -47,6 +47,7 @@ struct WhatsAppUser {
     name: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WhatsAppMessage {
     id: String,
@@ -61,11 +62,13 @@ struct WhatsAppMessage {
     document: Option<WhatsAppMediaMessage>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WhatsAppTextMessage {
     body: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WhatsAppMediaMessage {
     id: Option<String>,
@@ -74,18 +77,21 @@ struct WhatsAppMediaMessage {
     filename: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WhatsAppWebhookEntry {
     id: String,
     changes: Vec<WhatsAppWebhookChange>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WhatsAppWebhookChange {
     value: WhatsAppWebhookValue,
     field: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WhatsAppWebhookValue {
     messaging_product: String,
@@ -93,12 +99,14 @@ struct WhatsAppWebhookValue {
     messages: Option<Vec<WhatsAppMessage>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WhatsAppMetadata {
     display_phone_number: String,
     phone_number_id: String,
 }
 
+#[allow(dead_code)]
 pub struct WhatsAppGateway {
     config: Mutex<WhatsAppConfig>,
     status: Mutex<GatewayStatus>,
@@ -108,6 +116,7 @@ pub struct WhatsAppGateway {
     last_chat_id: Mutex<Option<String>>,
 }
 
+#[allow(dead_code)]
 impl WhatsAppGateway {
     pub fn new(config: WhatsAppConfig) -> Self {
         let http_client = Client::builder()
@@ -818,6 +827,7 @@ impl WhatsAppGateway {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemplateComponent {
     #[serde(rename = "type")]
@@ -827,6 +837,7 @@ pub struct TemplateComponent {
     pub parameters: Vec<TemplateParameter>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemplateParameter {
     #[serde(rename = "type")]
@@ -837,6 +848,7 @@ pub struct TemplateParameter {
     pub date_time: Option<serde_json::Value>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InteractiveButton {
     #[serde(rename = "type")]

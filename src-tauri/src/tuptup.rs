@@ -163,6 +163,7 @@ impl TuptupService {
         format!("{:x}", hasher.finalize())
     }
 
+    #[allow(dead_code)]
     async fn encrypt_request(&self, body: &serde_json::Value) -> anyhow::Result<String> {
         let json_str = serde_json::to_string(body)?;
         self.crypto.encrypt(&json_str)

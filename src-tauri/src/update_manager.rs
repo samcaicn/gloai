@@ -22,6 +22,7 @@ pub struct UpdateManager {
 struct UpdateInfo {
     version: String,
     download_url: String,
+    #[allow(dead_code)]
     release_notes: String,
     sha256: Option<String>,
 }

@@ -54,6 +54,7 @@ pub struct SkillsManager {
     bundled_skills_dir: Option<PathBuf>,
     skills_cache: Arc<Mutex<Option<Vec<Skill>>>>,
     config_cache: Arc<Mutex<Option<HashMap<String, SkillConfig>>>>,
+    #[allow(dead_code)]
     skills_defaults_cache: Arc<Mutex<Option<HashMap<String, SkillDefaultConfig>>>>,
 }
 
@@ -307,6 +308,7 @@ impl SkillsManager {
     }
 
     /// 加载技能默认配置（从所有可能的根目录合并）
+    #[allow(dead_code)]
     fn load_skills_defaults(&self) -> HashMap<String, SkillDefaultConfig> {
         // 检查缓存
         if let Ok(cache) = self.skills_defaults_cache.lock() {
