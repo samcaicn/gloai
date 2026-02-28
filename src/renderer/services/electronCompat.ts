@@ -2,8 +2,14 @@ import { tauriApi } from './tauriApi';
 
 // 创建与 Electron API 兼容的接口
 export function createElectronCompatLayer() {
+  // 获取实际平台信息
+  let platform = 'unknown';
+  if (typeof window !== 'undefined' && navigator) {
+    platform = navigator.platform;
+  }
+  
   const compatLayer = {
-    platform: 'tauri',
+    platform: platform,
     store: {
       get: (key: string) => tauriApi.store.get(key),
       set: (key: string, value: any) => tauriApi.store.set(key, value),

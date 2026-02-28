@@ -2440,7 +2440,78 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               const userId = await tauriApi.tuptup.getUserIdByEmail(tuptupEmail);
               if (userId) {
                 setTuptupUserId(userId);
-                setTuptupLoginStep('login');
+                
+                // 验证通过后自动保存登录信息
+                const { tuptupService } = await import('../services/tuptup');
+                tuptupService.setConfig({
+                  apiKey: 'gk_981279d245764a1cb53738da',
+                  apiSecret: 'gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2',
+                  userId: userId
+                });
+                
+                // 尝试获取用户信息（套餐和token），失败不影响登录
+                let userInfo = {
+                  user_id: userId,
+                  email: tuptupEmail,
+                  username: tuptupEmail.split('@')[0],
+                  vip_level: 0
+                };
+                
+                let tokenBalance = {
+                  balance: 0,
+                  currency: 'CNY'
+                };
+                
+                let plan = {
+                  level: 0,
+                  name: '免费版',
+                  price: 0
+                };
+                
+                // 尝试从服务器获取用户信息
+                try {
+                  const headers = {
+                    'X-App-Key': 'gk_981279d245764a1cb53738da',
+                    'X-User-Id': userId,
+                    'X-Timestamp': Date.now().toString(),
+                  };
+                  
+                  const encoder = new TextEncoder();
+                  const data = encoder.encode(headers['X-Timestamp'] + 'gk_981279d245764a1cb53738da' + 'gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2');
+                  let signatureHex = '';
+                  if (window.crypto && window.crypto.subtle) {
+                    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    signatureHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                  }
+                  headers['X-Signature'] = signatureHex;
+                  
+                  const [userInfoRes, packageStatusRes] = await Promise.allSettled([
+                    fetch('https://claw.hncea.cc/api/client/user/info', { headers }),
+                    fetch('https://claw.hncea.cc/api/client/user/package-status', { headers })
+                  ]);
+                  
+                  if (userInfoRes.status === 'fulfilled' && userInfoRes.value.ok) {
+                    userInfo = await userInfoRes.value.json();
+                  }
+                  
+                  if (packageStatusRes.status === 'fulfilled' && packageStatusRes.value.ok) {
+                    const packageData = await packageStatusRes.value.json();
+                    plan = packageData.data || plan;
+                  }
+                } catch (e) {
+                  console.error('获取用户信息失败:', e);
+                }
+                
+                setTuptupUserInfo(userInfo);
+                setTuptupTokenBalance(tokenBalance);
+                setTuptupPlan(plan);
+                setTuptupOverview({
+                  user: userInfo,
+                  tokenBalance,
+                  plan
+                });
+                setTuptupPackageStatus(plan);
               } else {
                 setTuptupError('该邮箱未注册，请先注册账户');
               }
@@ -2710,20 +2781,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                       </>
                     )}
                     
-                    {tuptupLoginStep === 'login' && (
-                      <>
-                        <div className="text-sm text-green-500 mb-2">
-                          验证通过，点击登录按钮完成登录
-                        </div>
-                        <button
-                          onClick={handleTuptupLogin}
-                          disabled={tuptupIsLoading}
-                          className="w-full bg-claude-accent text-white rounded-xl py-2 px-4 text-sm font-medium hover:bg-claude-accentHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {tuptupIsLoading ? '登录中...' : '登录'}
-                        </button>
-                      </>
-                    )}
+
                     
                     <div className="text-center mt-3">
                       <button

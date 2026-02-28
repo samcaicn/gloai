@@ -120,12 +120,18 @@ const App: React.FC = () => {
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to initialize app:', error);
-        setInitError(i18nService.t('initializationError'));
+        // 确保即使初始化失败也能显示错误信息
+        setInitError('初始化失败，请检查应用配置');
         setIsInitialized(true);
       }
     };
 
-    initializeApp();
+    // 确保捕获初始化过程中的错误
+    void initializeApp().catch(error => {
+      console.error('Error in initializeApp:', error);
+      setInitError('应用启动失败');
+      setIsInitialized(true);
+    });
   }, []);
 
   useEffect(() => {
