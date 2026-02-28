@@ -1137,6 +1137,14 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 监听会话加载完成
+  useEffect(() => {
+    if (currentSession) {
+      setIsLoading(false);
+    }
+  }, [currentSession]);
 
   // Menu and action states
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
@@ -1553,7 +1561,29 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
   }, [currentSession?.messages?.length, lastMessageContent, isStreaming, shouldAutoScroll]);
 
   if (!currentSession) {
-    return null;
+    return (
+      <div className="flex-1 flex items-center justify-center dark:bg-claude-darkBg bg-claude-bg">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-claude-accent border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
+            {i18nService.t('coworkLoadingSession')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center dark:bg-claude-darkBg bg-claude-bg">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-claude-accent border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
+            {i18nService.t('coworkLoadingSession')}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const displayItems = buildDisplayItems(currentSession.messages);

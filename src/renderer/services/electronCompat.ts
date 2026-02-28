@@ -147,7 +147,15 @@ export function createElectronCompatLayer() {
             prompt: `执行定时任务: ${id}`,
             title: `定时任务执行: ${id}`,
           });
-          return { success: true, session };
+          
+          // 确保会话已完全创建并保存
+          if (session) {
+            // 等待一小段时间确保所有异步操作完成
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return { success: true, session };
+          } else {
+            return { success: false, error: 'Failed to create session' };
+          }
         } catch (error) {
           console.error('Failed to run task manually:', error);
           return { success: false, error: String(error) };

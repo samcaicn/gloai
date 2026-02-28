@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { setViewMode } from '../../store/slices/scheduledTaskSlice';
@@ -31,6 +31,7 @@ interface TaskDetailProps {
 
 const TaskDetail: React.FC<TaskDetailProps> = ({ task, onRequestDelete }) => {
   const dispatch = useDispatch();
+  const [isRunning, setIsRunning] = useState(false);
   const runs = useSelector((state: RootState) => state.scheduledTask.runs[task.id] ?? []);
 
   useEffect(() => {
@@ -43,6 +44,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onRequestDelete }) => {
 
   const handleRunNow = async () => {
     try {
+      setIsRunning(true);
       const result = await scheduledTaskService.runManually(task.id);
       if (result && result.success && result.session) {
         // 跳转到会话详情页面
@@ -52,6 +54,8 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onRequestDelete }) => {
       }
     } catch (error) {
       console.error('Failed to run task:', error);
+    } finally {
+      setIsRunning(false);
     }
   };
 
@@ -95,11 +99,17 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onRequestDelete }) => {
           <button
             type="button"
             onClick={handleRunNow}
-            disabled={!!task.state.runningAtMs}
-            className="p-2 rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors disabled:opacity-50"
+            disabled={!!task.state.runningAtMs || isRunning}
+            className="p-2 rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors disabled:opacity-50 relative"
             title={i18nService.t('scheduledTasksRun')}
           >
-            <PlayIcon className="w-4 h-4" />
+            {isRunning ? (
+              <div className="w-4 h-4 flex items-center justify-center">
+                <div className="w-3 h-3 border-2 border-claude-accent border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <PlayIcon className="w-4 h-4" />
+            )}
           </button>
           <button
             type="button"
