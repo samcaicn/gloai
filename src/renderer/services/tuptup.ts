@@ -57,7 +57,7 @@ interface TuptupLoginInfo {
 class TuptupService {
   private config: TuptupConfig | null = null;
   private loginInfo: TuptupLoginInfo | null = null;
-  private readonly SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24小时过期
+  private readonly SESSION_EXPIRY = 100 * 365 * 24 * 60 * 60 * 1000; // 100年过期，视为永不过期
 
   constructor() {
     this.loadLoginInfo();
@@ -74,13 +74,9 @@ class TuptupService {
       const saved = localStorage.getItem('tuptupLoginInfo');
       if (saved) {
         const loginInfo = JSON.parse(saved) as TuptupLoginInfo;
-        if (Date.now() < loginInfo.expiresAt) {
-          this.loginInfo = loginInfo;
-          this.config = loginInfo.config;
-        } else {
-          // 登录过期，清除信息
-          this.clearLoginInfo();
-        }
+        // 不检查过期时间，只要存在就加载
+        this.loginInfo = loginInfo;
+        this.config = loginInfo.config;
       }
     } catch (error) {
       console.error('Failed to load login info:', error);
@@ -123,7 +119,7 @@ class TuptupService {
 
   isLoginExpired(): boolean {
     this.loadLoginInfo();
-    return this.loginInfo === null || Date.now() >= this.loginInfo.expiresAt;
+    return this.loginInfo === null;
   }
 
   private generateSignature(timestamp: number, apiKey: string, apiSecret: string): string {

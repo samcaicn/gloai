@@ -894,13 +894,13 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     }
 
     if (isEnabling) {
-      // 其他供应商需要 VIP1 及以上
+      // 其他供应商需要免费套餐以上
       if (!tuptupUserInfo && !tuptupOverview) {
         setError("请先登录我的账户");
         return;
       }
 
-      // 判断 VIP 等级
+      // 判断套餐等级
       try {
         const API_KEY = "gk_981279d245764a1cb53738da";
         const API_SECRET = "gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2";
@@ -929,8 +929,10 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         
         const vipLevel = plan?.data?.vipLevel || 0;
         
+        // 免费套餐以上可以启动（vipLevel >= 1）
         if (vipLevel < 1) {
-          setError("需要 VIP1 及以上等级才能启用该供应商");
+          // 显示升级套餐提示
+          setError("请到官网升级套餐 https://ggai.tuptup.top");
           return;
         }
         
@@ -948,7 +950,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
           }
         }));
       } catch (error) {
-        setError(error instanceof Error ? error.message : "验证 VIP 等级失败");
+        setError(error instanceof Error ? error.message : "验证套餐等级失败");
       }
     } else {
       // 关闭时不需要验证
@@ -2002,27 +2004,39 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
           <div className="flex h-full">
             {/* Provider List - Left Side */}
             <div className="w-2/5 border-r dark:border-claude-darkBorder border-claude-border pr-3 space-y-1.5 overflow-y-auto">
-              <div className="flex items-center justify-between mb-2 px-1">
-                <h3 className="text-sm font-medium dark:text-claude-darkText text-claude-text">
-                  {i18nService.t('modelProviders')}
-                </h3>
-                <div className="flex items-center space-x-1">
-                  <button
-                    type="button"
-                    onClick={handleImportProvidersClick}
-                    disabled={isImportingProviders || isExportingProviders}
-                    className="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
-                  >
-                    {i18nService.t('import')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleExportProviders}
-                    disabled={isImportingProviders || isExportingProviders}
-                    className="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
-                  >
-                    {i18nService.t('export')}
-                  </button>
+              <div className="mb-2 px-1">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium dark:text-claude-darkText text-claude-text">
+                    {i18nService.t('modelProviders')}
+                  </h3>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={handleImportProvidersClick}
+                      disabled={isImportingProviders || isExportingProviders}
+                      className="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
+                    >
+                      {i18nService.t('import')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportProviders}
+                      disabled={isImportingProviders || isExportingProviders}
+                      className="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
+                    >
+                      {i18nService.t('export')}
+                    </button>
+                  </div>
+                </div>
+                {/* 套餐提示 */}
+                <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs dark:text-yellow-400 text-yellow-800">
+                  <div className="flex items-start">
+                    <div className="mr-2 mt-0.5">⚠️</div>
+                    <div>
+                      <div className="font-medium">套餐提示</div>
+                      <div className="mt-1">免费套餐以上可以启动模型，否则请 <a href="https://ggai.tuptup.top" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">到官网升级套餐</a></div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <input
@@ -2601,6 +2615,11 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         };
 
         const handleTuptupLogout = () => {
+          // 清除本地登录信息
+          const { tuptupService } = require('../services/tuptup');
+          tuptupService.clearConfig();
+          
+          // 清除状态
           setTuptupEmail('');
           setTuptupApiKey('');
           setTuptupApiSecret('');

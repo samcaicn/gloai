@@ -105,20 +105,20 @@ class SkillService {
     return this.skills.find(s => s.id === id);
   }
 
-  async getSkillConfig(_skillId: string): Promise<Record<string, string>> {
+  async getSkillConfig(skillId: string): Promise<Record<string, string>> {
     try {
-      console.warn('getSkillConfig not implemented yet for Tauri');
-      return {};
+      const config = await tauriApi.store.get(`skill_config_${skillId}`);
+      return config || {};
     } catch (error) {
       console.error('Failed to get skill config:', error);
       return {};
     }
   }
 
-  async setSkillConfig(_skillId: string, _config: Record<string, string>): Promise<boolean> {
+  async setSkillConfig(skillId: string, config: Record<string, string>): Promise<boolean> {
     try {
-      console.warn('setSkillConfig not implemented yet for Tauri');
-      return false;
+      await tauriApi.store.set(`skill_config_${skillId}`, config);
+      return true;
     } catch (error) {
       console.error('Failed to set skill config:', error);
       return false;

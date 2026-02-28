@@ -107,6 +107,16 @@ const App: React.FC = () => {
         // 初始化定时任务服务
         await scheduledTaskService.init();
 
+        // 自动加载 tuptup 登录信息
+        try {
+          const { tuptupService } = await import('./services/tuptup');
+          if (tuptupService.isLoggedIn()) {
+            console.log('Auto-loaded tuptup login info');
+          }
+        } catch (error) {
+          console.error('Failed to load tuptup login info:', error);
+        }
+
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to initialize app:', error);
