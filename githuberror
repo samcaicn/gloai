@@ -1,69 +1,51 @@
-5m 28s
-    |
-help: the leading underscore in `_last_error` marks it as unused, consider renaming it to `last_error`
-    |
-420 -         let mut _last_error = String::new();
-420 +         let mut last_error = String::new();
-    |
-help: you might have meant to introduce a new binding
-    |
-437 |                     let last_error = format!("HTTP error: {}", response.status());
-    |                     +++
-
-error[E0425]: cannot find value `last_error` in this scope
-   --> src/im/telegram.rs:440:21
-    |
-420 |         let mut _last_error = String::new();
-    |                 ----------- `_last_error` defined here
+7m 29s
 ...
-440 |                     last_error = e.to_string();
-    |                     ^^^^^^^^^^
-    |
-help: the leading underscore in `_last_error` marks it as unused, consider renaming it to `last_error`
-    |
-420 -         let mut _last_error = String::new();
-420 +         let mut last_error = String::new();
-    |
-help: you might have meant to introduce a new binding
-    |
-440 |                     let last_error = e.to_string();
-    |                     +++
+133 |     pub async fn send_markdown_message(&self, content: &str) -> Result<(), String> {
+    |                  ^^^^^^^^^^^^^^^^^^^^^
 
-error[E0425]: cannot find value `last_error` in this scope
-   --> src/im/telegram.rs:447:43
-    |
-420 |         let mut _last_error = String::new();
-    |                 ----------- `_last_error` defined here
-...
-447 |                     attempt, max_retries, last_error
-    |                                           ^^^^^^^^^^
-    |
-help: the leading underscore in `_last_error` marks it as unused, consider renaming it to `last_error`
-    |
-420 -         let mut _last_error = String::new();
-420 +         let mut last_error = String::new();
-    |
+warning: fields `id`, `mime_type`, and `file_size` are never read
+  --> src/im/whatsapp.rs:38:5
+   |
+37 | struct WhatsAppMediaInfo {
+   |        ----------------- fields in this struct
+38 |     id: String,
+   |     ^^
+39 |     mime_type: String,
+   |     ^^^^^^^^^
+40 |     file_size: Option<i64>,
+   |     ^^^^^^^^^
+   |
+   = note: `WhatsAppMediaInfo` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
 
-warning: unused variable: `rx`
-   --> src/im/dingtalk.rs:635:18
-    |
-635 |         let (tx, rx) = mpsc::channel::<String>(100);
-    |                  ^^ help: if this is intentional, prefix it with an underscore: `_rx`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+warning: fields `id` and `name` are never read
+  --> src/im/whatsapp.rs:46:5
+   |
+45 | struct WhatsAppUser {
+   |        ------------ fields in this struct
+46 |     id: String,
+   |     ^^
+47 |     name: Option<String>,
+   |     ^^^^
+   |
+   = note: `WhatsAppUser` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
 
-warning: value assigned to `skills` is never read
-   --> src/skills.rs:349:26
-    |
-349 |         let mut skills = Vec::new();
-    |                          ^^^^^^^^^^
-    |
-    = help: maybe it is overwritten before being read?
-    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+  --> src/update_manager.rs:54:21
+   |
+54 |                     drop(app_handle);
+   |                     ^^^^^----------^
+   |                          |
+   |                          argument has type `&AppHandle`
+   |
+   = note: `#[warn(dropping_references)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+   |
+54 -                     drop(app_handle);
+54 +                     let _ = app_handle;
+   |
 
-For more information about this error, try `rustc --explain E0425`.
-warning: `ggclaw` (lib) generated 2 warnings
-error: could not compile `ggclaw` (lib) due to 3 previous errors; 2 warnings emitted
-failed to build aarch64-apple-darwin binary: failed to build app
-       Error failed to build aarch64-apple-darwin binary: failed to build app
+warning: `ggclaw` (lib) generated 95 warnings
+    Finished `release` profile [optimized] target(s) in 7m 08s
+failed to build x86_64-apple-darwin binary: Target x86_64-apple-darwin is not installed (installed targets: aarch64-apple-darwin). Please run `rustup target add x86_64-apple-darwin`.
+       Error failed to build x86_64-apple-darwin binary: Target x86_64-apple-darwin is not installed (installed targets: aarch64-apple-darwin). Please run `rustup target add x86_64-apple-darwin`.
 Error: Process completed with exit code 1.

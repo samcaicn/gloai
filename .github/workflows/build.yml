@@ -40,7 +40,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target != 'universal-apple-darwin' && matrix.target || '' }}
+          targets: ${{ matrix.target != 'universal-apple-darwin' && matrix.target || 'x86_64-apple-darwin,aarch64-apple-darwin' }}
           components: rustfmt, clippy
 
       - name: Install dependencies (Linux)
