@@ -124,7 +124,20 @@ export function createElectronCompatLayer() {
       update: async () => {},
       delete: async () => {},
       toggle: async () => {},
-      runManually: async () => {},
+      runManually: async (id: string) => {
+        // 模拟任务启动，创建一个新的会话
+        try {
+          const { coworkService } = await import('./cowork');
+          const session = await coworkService.startSession({
+            prompt: `执行定时任务: ${id}`,
+            title: `定时任务执行: ${id}`,
+          });
+          return { success: true, session };
+        } catch (error) {
+          console.error('Failed to run task manually:', error);
+          return { success: false, error: String(error) };
+        }
+      },
       stop: async () => {},
       listRuns: async () => [],
       countRuns: async () => 0,
