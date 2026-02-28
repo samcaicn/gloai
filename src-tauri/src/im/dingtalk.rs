@@ -632,7 +632,7 @@ impl DingTalkGateway {
         self.log("WebSocket Stream connected");
 
         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
-        let (tx, rx) = mpsc::channel::<String>(100);
+        let (tx, _rx) = mpsc::channel::<String>(100);
         *self.ws_sender.lock().unwrap() = Some(tx);
 
         // 重置停止标志

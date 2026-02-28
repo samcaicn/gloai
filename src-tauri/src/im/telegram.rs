@@ -417,7 +417,7 @@ impl TelegramGateway {
     ) -> Result<(), String> {
         let url = self.get_api_url("sendMessage");
 
-        let mut _last_error = String::new();
+        let mut last_error = String::new();
 
         for attempt in 1..=max_retries {
             let request = SendMessageRequest {
