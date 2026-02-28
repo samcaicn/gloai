@@ -207,6 +207,44 @@ class CoworkService {
         } catch (kvError) {
           console.error('Failed to save session to KV store:', kvError);
         }
+
+        // 检查并连接 GoClaw
+        try {
+          console.log('Checking GoClaw status...');
+          const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
+          console.log('GoClaw is running:', isRunning);
+          
+          if (isRunning) {
+            try {
+              console.log('Connecting to GoClaw WebSocket...');
+              await tauriInvoke('goclaw_connect');
+              console.log('GoClaw WebSocket connected');
+            } catch (connectError) {
+              console.warn('Failed to connect to GoClaw WebSocket:', connectError);
+              // 继续执行，不阻止会话创建
+            }
+          } else {
+            console.warn('GoClaw is not running, starting...');
+            try {
+              await tauriInvoke('goclaw_start');
+              console.log('GoClaw started, waiting for ready...');
+              // 等待 GoClaw 启动
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              try {
+                await tauriInvoke('goclaw_connect');
+                console.log('GoClaw WebSocket connected after startup');
+              } catch (connectError) {
+                console.warn('Failed to connect to GoClaw WebSocket after startup:', connectError);
+              }
+            } catch (startError) {
+              console.warn('Failed to start GoClaw:', startError);
+              // 继续执行，不阻止会话创建
+            }
+          }
+        } catch (goclawError) {
+          console.warn('GoClaw status check failed:', goclawError);
+          // 继续执行，不阻止会话创建
+        }
       }
 
       store.dispatch(addSession(session));
@@ -246,12 +284,60 @@ class CoworkService {
         } catch (dbError) {
           console.error('Failed to save message to database:', dbError);
         }
+
+        // 检查并连接 GoClaw
+        try {
+          console.log('Checking GoClaw status for message sending...');
+          const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
+          console.log('GoClaw is running:', isRunning);
+          
+          if (isRunning) {
+            try {
+              console.log('Connecting to GoClaw WebSocket...');
+              await tauriInvoke('goclaw_connect');
+              console.log('GoClaw WebSocket connected');
+            } catch (connectError) {
+              console.warn('Failed to connect to GoClaw WebSocket:', connectError);
+              // 继续执行，不阻止消息发送
+            }
+          } else {
+            console.warn('GoClaw is not running, starting...');
+            try {
+              await tauriInvoke('goclaw_start');
+              console.log('GoClaw started, waiting for ready...');
+              // 等待 GoClaw 启动
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              try {
+                await tauriInvoke('goclaw_connect');
+                console.log('GoClaw WebSocket connected after startup');
+              } catch (connectError) {
+                console.warn('Failed to connect to GoClaw WebSocket after startup:', connectError);
+              }
+            } catch (startError) {
+              console.warn('Failed to start GoClaw:', startError);
+              // 继续执行，不阻止消息发送
+            }
+          }
+
+          // 发送消息到 GoClaw
+          try {
+            console.log('Sending message to GoClaw...');
+            const response = await tauriInvoke<any>('cowork_send_message', {
+              session_id: options.sessionId,
+              content: options.prompt,
+            });
+            console.log('GoClaw message response:', response);
+          } catch (sendError) {
+            console.error('Failed to send message to GoClaw:', sendError);
+            // 继续执行，不阻止消息发送
+          }
+        } catch (goclawError) {
+          console.warn('GoClaw integration failed:', goclawError);
+          // 继续执行，不阻止消息发送
+        }
       }
 
       store.dispatch(addMessage({ sessionId: options.sessionId, message: userMessage }));
-
-      // 这里可以添加 AI 响应的模拟或真实调用
-      // 为了简单起见，我们先返回成功
 
       return true;
     } catch (error) {
