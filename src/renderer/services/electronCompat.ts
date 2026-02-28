@@ -64,7 +64,22 @@ export function createElectronCompatLayer() {
       deleteSession: async () => {},
       setSessionPinned: async () => {},
       renameSession: async () => {},
-      getSession: async () => null,
+      getSession: async (sessionId: string) => {
+        // 从 store 中获取会话信息
+        try {
+          const { store } = await import('../store');
+          const state = store.getState();
+          const session = state.cowork.sessions.find(s => s.id === sessionId);
+          if (session) {
+            return { success: true, session };
+          } else {
+            return { success: false, error: 'Session not found' };
+          }
+        } catch (error) {
+          console.error('Failed to get session:', error);
+          return { success: false, error: String(error) };
+        }
+      },
       listSessions: async () => [],
       exportResultImage: async () => {},
       captureImageChunk: async () => '',

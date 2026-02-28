@@ -42,7 +42,17 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onRequestDelete }) => {
   };
 
   const handleRunNow = async () => {
-    await scheduledTaskService.runManually(task.id);
+    try {
+      const result = await scheduledTaskService.runManually(task.id);
+      if (result && result.success && result.session) {
+        // 跳转到会话详情页面
+        window.dispatchEvent(new CustomEvent('scheduledTask:viewSession', {
+          detail: { sessionId: result.session.id }
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to run task:', error);
+    }
   };
 
   const handleDelete = () => {

@@ -141,12 +141,12 @@ class ScheduledTaskService {
     }
   }
 
-  async runManually(id: string): Promise<void> {
+  async runManually(id: string): Promise<any> {
     const api = window.electron?.scheduledTasks;
-    if (!api) return;
+    if (!api) return null;
 
     try {
-      await api.runManually(id);
+      return await api.runManually(id);
     } catch (err: unknown) {
       store.dispatch(setError(err instanceof Error ? err.message : String(err)));
       throw err;
