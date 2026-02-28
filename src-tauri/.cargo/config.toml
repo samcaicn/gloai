@@ -2,7 +2,9 @@
 linker = "aarch64-linux-gnu-gcc"
 ar = "aarch64-linux-gnu-ar"
 strip = "aarch64-linux-gnu-strip"
-pkg-config = "aarch64-linux-gnu-pkg-config"
+
+[target.aarch64-unknown-linux-gnu.pkg-config]
+command = "aarch64-linux-gnu-pkg-config"
 
 [build]
 target-dir = "target"
