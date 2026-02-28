@@ -288,56 +288,55 @@ class CoworkService {
           console.error('Failed to save message to database:', dbError);
         }
 
-        // 检查并连接 GoClaw
-        try {
-          console.log('Checking GoClaw status for message sending...');
-          const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
-          console.log('GoClaw is running:', isRunning);
-          
-          if (isRunning) {
-            try {
-              console.log('Connecting to GoClaw WebSocket...');
-              await tauriInvoke('goclaw_connect');
-              console.log('GoClaw WebSocket connected');
-            } catch (connectError) {
-              console.warn('Failed to connect to GoClaw WebSocket:', connectError);
-              // 继续执行，不阻止消息发送
-            }
-          } else {
-            console.warn('GoClaw is not running, starting...');
-            try {
-              await tauriInvoke('goclaw_start');
-              console.log('GoClaw started, waiting for ready...');
-              // 等待 GoClaw 启动
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              try {
-                await tauriInvoke('goclaw_connect');
-                console.log('GoClaw WebSocket connected after startup');
-              } catch (connectError) {
-                console.warn('Failed to connect to GoClaw WebSocket after startup:', connectError);
-              }
-            } catch (startError) {
-              console.warn('Failed to start GoClaw:', startError);
-              // 继续执行，不阻止消息发送
-            }
-          }
-
-          // 发送消息到 GoClaw
+        // 在后台处理GoClaw操作，不阻塞消息发送
+        setTimeout(async () => {
           try {
-            console.log('Sending message to GoClaw...');
-            const response = await tauriInvoke<any>('cowork_send_message', {
-              session_id: options.sessionId,
-              content: options.prompt,
-            });
-            console.log('GoClaw message response:', response);
-          } catch (sendError) {
-            console.error('Failed to send message to GoClaw:', sendError);
-            // 继续执行，不阻止消息发送
+            // 检查并连接 GoClaw
+            console.log('Checking GoClaw status for message sending...');
+            const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
+            console.log('GoClaw is running:', isRunning);
+            
+            if (isRunning) {
+              try {
+                console.log('Connecting to GoClaw WebSocket...');
+                await tauriInvoke('goclaw_connect');
+                console.log('GoClaw WebSocket connected');
+              } catch (connectError) {
+                console.warn('Failed to connect to GoClaw WebSocket:', connectError);
+              }
+            } else {
+              console.warn('GoClaw is not running, starting...');
+              try {
+                await tauriInvoke('goclaw_start');
+                console.log('GoClaw started, waiting for ready...');
+                // 等待 GoClaw 启动
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                try {
+                  await tauriInvoke('goclaw_connect');
+                  console.log('GoClaw WebSocket connected after startup');
+                } catch (connectError) {
+                  console.warn('Failed to connect to GoClaw WebSocket after startup:', connectError);
+                }
+              } catch (startError) {
+                console.warn('Failed to start GoClaw:', startError);
+              }
+            }
+
+            // 发送消息到 GoClaw
+            try {
+              console.log('Sending message to GoClaw...');
+              const response = await tauriInvoke<any>('cowork_send_message', {
+                session_id: options.sessionId,
+                content: options.prompt,
+              });
+              console.log('GoClaw message response:', response);
+            } catch (sendError) {
+              console.error('Failed to send message to GoClaw:', sendError);
+            }
+          } catch (goclawError) {
+            console.warn('GoClaw integration failed:', goclawError);
           }
-        } catch (goclawError) {
-          console.warn('GoClaw integration failed:', goclawError);
-          // 继续执行，不阻止消息发送
-        }
+        }, 0);
       }
 
       store.dispatch(addMessage({ sessionId: options.sessionId, message: userMessage }));
