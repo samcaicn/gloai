@@ -150,8 +150,6 @@ export function createElectronCompatLayer() {
           
           // 确保会话已完全创建并保存
           if (session) {
-            // 等待一小段时间确保所有异步操作完成
-            await new Promise(resolve => setTimeout(resolve, 500));
             return { success: true, session };
           } else {
             return { success: false, error: 'Failed to create session' };

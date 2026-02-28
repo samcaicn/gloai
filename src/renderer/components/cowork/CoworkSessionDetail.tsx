@@ -1137,13 +1137,11 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!currentSession);
 
   // 监听会话加载完成
   useEffect(() => {
-    if (currentSession) {
-      setIsLoading(false);
-    }
+    setIsLoading(!currentSession);
   }, [currentSession]);
 
   // Menu and action states
