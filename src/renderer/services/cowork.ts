@@ -207,47 +207,50 @@ class CoworkService {
         } catch (kvError) {
           console.error('Failed to save session to KV store:', kvError);
         }
-
-        // 检查并连接 GoClaw
-        try {
-          console.log('Checking GoClaw status...');
-          const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
-          console.log('GoClaw is running:', isRunning);
-          
-          if (isRunning) {
-            try {
-              console.log('Connecting to GoClaw WebSocket...');
-              await tauriInvoke('goclaw_connect');
-              console.log('GoClaw WebSocket connected');
-            } catch (connectError) {
-              console.warn('Failed to connect to GoClaw WebSocket:', connectError);
-              // 继续执行，不阻止会话创建
-            }
-          } else {
-            console.warn('GoClaw is not running, starting...');
-            try {
-              await tauriInvoke('goclaw_start');
-              console.log('GoClaw started, waiting for ready...');
-              // 等待 GoClaw 启动
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              try {
-                await tauriInvoke('goclaw_connect');
-                console.log('GoClaw WebSocket connected after startup');
-              } catch (connectError) {
-                console.warn('Failed to connect to GoClaw WebSocket after startup:', connectError);
-              }
-            } catch (startError) {
-              console.warn('Failed to start GoClaw:', startError);
-              // 继续执行，不阻止会话创建
-            }
-          }
-        } catch (goclawError) {
-          console.warn('GoClaw status check failed:', goclawError);
-          // 继续执行，不阻止会话创建
-        }
       }
 
+      // 立即返回会话，不等待GoClaw操作
       store.dispatch(addSession(session));
+
+      // 在后台处理GoClaw连接，不阻塞会话创建
+      if (isTauriReady()) {
+        setTimeout(async () => {
+          try {
+            console.log('Checking GoClaw status...');
+            const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
+            console.log('GoClaw is running:', isRunning);
+            
+            if (isRunning) {
+              try {
+                console.log('Connecting to GoClaw WebSocket...');
+                await tauriInvoke('goclaw_connect');
+                console.log('GoClaw WebSocket connected');
+              } catch (connectError) {
+                console.warn('Failed to connect to GoClaw WebSocket:', connectError);
+              }
+            } else {
+              console.warn('GoClaw is not running, starting...');
+              try {
+                await tauriInvoke('goclaw_start');
+                console.log('GoClaw started, waiting for ready...');
+                // 等待 GoClaw 启动
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                try {
+                  await tauriInvoke('goclaw_connect');
+                  console.log('GoClaw WebSocket connected after startup');
+                } catch (connectError) {
+                  console.warn('Failed to connect to GoClaw WebSocket after startup:', connectError);
+                }
+              } catch (startError) {
+                console.warn('Failed to start GoClaw:', startError);
+              }
+            }
+          } catch (goclawError) {
+            console.warn('GoClaw status check failed:', goclawError);
+          }
+        }, 0);
+      }
+
       return session;
     } catch (error) {
       store.dispatch(setStreaming(false));
