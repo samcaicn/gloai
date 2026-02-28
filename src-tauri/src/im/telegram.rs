@@ -417,7 +417,7 @@ impl TelegramGateway {
     ) -> Result<(), String> {
         let url = self.get_api_url("sendMessage");
 
-        let mut last_error = String::new();
+        let mut _last_error = String::new();
 
         for attempt in 1..=max_retries {
             let request = SendMessageRequest {
@@ -543,11 +543,11 @@ impl TelegramGateway {
 
         let http_client = self.http_client.clone();
         let config = self.get_config();
-        let status = Arc::clone(&self.status);
-        let last_update_id = Arc::clone(&self.last_update_id);
+        let _status = Arc::clone(&self.status);
+        let _last_update_id = Arc::clone(&self.last_update_id);
         let event_callback = Arc::clone(&self.event_callback);
         let last_chat_id = Arc::clone(&self.last_chat_id);
-        let media_group_buffers = Arc::clone(&self.media_group_buffers);
+        let _media_group_buffers = Arc::clone(&self.media_group_buffers);
         let deduplication_cache = Arc::clone(&self.deduplication_cache);
 
         let token = config.bot_token.clone();
@@ -615,7 +615,7 @@ impl TelegramGateway {
 
                                                 let content = message.text.clone().or(message.caption.clone()).unwrap_or_default();
 
-                                                let attachments = Self::extract_media_from_message_static(&message);
+                                                let _attachments = Self::extract_media_from_message_static(&message);
 
                                                 let im_message = IMMessage {
                                                     id: message.message_id.to_string(),
@@ -870,14 +870,14 @@ impl Gateway for TelegramGateway {
             .unwrap_or("")
             .to_lowercase();
 
-        let (media_type, msg_type) = match extension.as_str() {
+        let (_media_type, msg_type) = match extension.as_str() {
             "jpg" | "jpeg" | "png" | "gif" | "bmp" | "webp" => ("photo", "photo"),
             "mp4" | "avi" | "mov" | "webm" => ("video", "video"),
             "mp3" | "ogg" | "wav" | "m4a" | "aac" => ("audio", "audio"),
             _ => ("document", "document"),
         };
 
-        let file_bytes = tokio::fs::read(file_path)
+        let _file_bytes = tokio::fs::read(file_path)
             .await
             .map_err(|e| format!("读取文件失败: {}", e))?;
 

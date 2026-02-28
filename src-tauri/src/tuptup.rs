@@ -1,9 +1,8 @@
 use crate::crypto::{
-    generate_6_digit_code, get_verification_email_template, get_verification_email_text,
+    generate_6_digit_code, get_verification_email_text,
     ClientCrypto, SmtpConfig, SmtpConfigResponse, VerifyCodeResponse,
 };
 use lettre::{
-    message::{header::ContentType, MultiPart, SinglePart},
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
 use reqwest::Client;

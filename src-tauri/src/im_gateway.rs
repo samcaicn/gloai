@@ -1,4 +1,4 @@
-use chrono::Local;
+
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -275,13 +275,13 @@ impl ImGatewayManager {
         *self.status.lock().unwrap() = status;
     }
 
-    pub async fn start_gateway(&self, platform: IMPlatform) -> Result<(), String> {
+    pub async fn start_gateway(&self, _platform: IMPlatform) -> Result<(), String> {
         // 这里应该实现具体的网关启动逻辑
         // 暂时返回Ok
         Ok(())
     }
 
-    pub async fn stop_gateway(&self, platform: IMPlatform) -> Result<(), String> {
+    pub async fn stop_gateway(&self, _platform: IMPlatform) -> Result<(), String> {
         // 这里应该实现具体的网关停止逻辑
         // 暂时返回Ok
         Ok(())
@@ -359,7 +359,7 @@ impl ImGatewayManager {
     pub async fn send_notification(
         &self,
         platform: IMPlatform,
-        text: &str,
+        _text: &str,
     ) -> Result<bool, String> {
         if !self.is_connected(platform) {
             return Err(format!("Platform not connected"));
@@ -395,7 +395,7 @@ impl ImGatewayManager {
         }))
     }
 
-    fn get_binary_path(&self, app_handle: &AppHandle) -> Result<PathBuf, String> {
+    fn get_binary_path(&self, _app_handle: &AppHandle) -> Result<PathBuf, String> {
         let binary_name = if cfg!(target_os = "windows") {
             "im_gateway.exe"
         } else {
@@ -422,7 +422,7 @@ impl ImGatewayManager {
         }
 
         // 3. 从应用资源目录解析（如果 Tauri API 支持）
-        #[cfg(feature = "resources")]
+        #[cfg(feature = "winreg")]
         if let Some(resources_dir) = app_handle.resource_dir() {
             let path = resources_dir
                 .join("bin")

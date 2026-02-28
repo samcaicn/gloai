@@ -5,12 +5,13 @@ use super::gateway::Gateway;
 use super::telegram::TelegramGateway;
 use super::wework::WeWorkGateway;
 use super::whatsapp::WhatsAppGateway;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
 // 连通性测试结果
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectivityTestResult {
     pub platform: String,
@@ -19,6 +20,7 @@ pub struct ConnectivityTestResult {
     pub checks: Vec<ConnectivityCheck>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectivityCheck {
     pub code: String,
@@ -29,6 +31,7 @@ pub struct ConnectivityCheck {
 }
 
 // 连通性测试器
+#[allow(dead_code)]
 pub struct ConnectivityTester {
     client: Mutex<Client>,
 }

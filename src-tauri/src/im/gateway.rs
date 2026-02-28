@@ -128,7 +128,7 @@ impl MessageDeduplicationCache {
         Self::default()
     }
 
-    pub fn check_and_mark(&mut self, message_id: &str, timestamp: i64, ttl_seconds: i64) -> bool {
+    pub fn check_and_mark(&mut self, message_id: &str, _timestamp: i64, ttl_seconds: i64) -> bool {
         let now = chrono::Utc::now().timestamp();
 
         if let Some(existing_time) = self.processed_messages.get(message_id) {

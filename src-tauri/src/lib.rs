@@ -15,8 +15,8 @@ mod system;
 mod tuptup;
 mod update_manager;
 
-use std::sync::{Arc, Mutex as StdMutex};
-use tauri::{AppHandle, Emitter, Manager, State};
+use std::sync::Arc;
+use tauri::{AppHandle, Manager, State};
 use tokio::sync::Mutex as TokioMutex;
 
 pub use cowork::*;
@@ -36,9 +36,11 @@ pub use tuptup::*;
 pub use update_manager::*;
 
 struct AppState {
+    #[allow(dead_code)]
     storage: Storage,
     kv_store: KvStore,
     skills_manager: Arc<TokioMutex<SkillsManager>>,
+    #[allow(dead_code)]
     database: Arc<TokioMutex<Database>>,
     system_manager: Arc<TokioMutex<SystemManager>>,
     goclaw_manager: Arc<TokioMutex<GoClawManager>>,

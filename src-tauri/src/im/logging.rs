@@ -133,7 +133,7 @@ impl Logger {
     // 写入日志到文件
     fn write_to_file(&self, message: &str) {
         let config = self.config.lock().unwrap();
-        if let Some(file_path) = &config.file_path {
+        if let Some(_file_path) = &config.file_path {
             // 这里应该实现文件写入逻辑
             // 为了简化，我们暂时只打印到控制台
             println!("[FILE LOG] {}", message);

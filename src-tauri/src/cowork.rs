@@ -77,7 +77,7 @@ impl CoworkManager {
                     return Ok(assistant_msg);
                 }
                 Err(e) => {
-                    let error_msg = self.add_message(
+                    let _error_msg = self.add_message(
                         session_id.clone(),
                         "assistant".to_string(),
                         format!("请求失败: {}", e),

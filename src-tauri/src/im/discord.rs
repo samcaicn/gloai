@@ -1,5 +1,5 @@
 use super::gateway::{EventCallback, Gateway, GatewayEvent, GatewayStatus, IMMessage};
-use base64::Engine as _;
+
 use chrono::Local;
 use futures_util::{SinkExt, StreamExt};
 use reqwest::Client;
@@ -269,12 +269,12 @@ impl DiscordGateway {
         let (tx, mut rx) = tokio::sync::oneshot::channel::<()>();
         *self.stop_ws.lock().unwrap() = Some(tx);
 
-        let http_client = self.http_client.clone();
+        let _http_client = self.http_client.clone();
         let config = self.get_config();
         let event_callback = Arc::clone(&self.event_callback);
-        let status = Arc::clone(&self.status);
+        let _status = Arc::clone(&self.status);
         let seq = Arc::clone(&self.seq);
-        let session_id = Arc::clone(&self.session_id);
+        let _session_id = Arc::clone(&self.session_id);
         let heartbeat_interval = Arc::clone(&self.heartbeat_interval);
         let log_fn = std::sync::Arc::new(move |msg: &str| {
             if config.debug.unwrap_or(false) {
@@ -288,8 +288,8 @@ impl DiscordGateway {
 
                 let (mut write, mut read) = ws_stream.split();
 
-                let mut heartbeat_interval_ms: u64 = 41250;
-                let mut last_seq: Option<i64> = None;
+                let mut _heartbeat_interval_ms: u64 = 41250;
+                let mut _last_seq: Option<i64> = None;
 
                 loop {
                     tokio::select! {
@@ -301,13 +301,13 @@ impl DiscordGateway {
                                 if let Ok(payload) = serde_json::from_str::<DiscordGatewayPayload>(&text) {
                                     if let Some(s) = payload.s {
                                         *seq.lock().unwrap() = Some(s);
-                                        last_seq = Some(s);
+                                        _last_seq = Some(s);
                                     }
 
                                     match payload.op {
                                         OP_HELLO => {
                                             if let Some(interval) = payload.d.get("heartbeat_interval").and_then(|v| v.as_u64()) {
-                                                heartbeat_interval_ms = interval;
+                                                _heartbeat_interval_ms = interval;
                                                 *heartbeat_interval.lock().unwrap() = Some(interval);
 
                                                 let identify = serde_json::json!({
@@ -731,7 +731,7 @@ impl Gateway for DiscordGateway {
         let messages: Vec<IMMessage> = response
             .into_iter()
             .map(|msg| {
-                let is_bot = msg.author.bot.unwrap_or(false);
+                let _is_bot = msg.author.bot.unwrap_or(false);
                 IMMessage {
                     id: msg.id,
                     platform: "discord".to_string(),

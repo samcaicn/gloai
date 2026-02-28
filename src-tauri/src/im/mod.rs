@@ -14,7 +14,7 @@ pub mod wework;
 pub mod whatsapp;
 
 use self::connectivity_test::ConnectivityTester;
-use self::gateway::{Gateway, GatewayEvent, GatewayStatus, IMMessage};
+use self::gateway::{Gateway, GatewayStatus};
 use self::llm_config::LLMManager;
 use self::logging::Logger;
 use self::message_handler::MessageHandler;
@@ -25,6 +25,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 // IM管理器配置
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IMManagerConfig {
     pub enabled: bool,
@@ -37,6 +38,7 @@ impl Default for IMManagerConfig {
 }
 
 // IM管理器
+#[allow(dead_code)]
 pub struct IMManager {
     config: Mutex<IMManagerConfig>,
     gateways: Arc<Mutex<HashMap<String, Arc<dyn Gateway + Send + Sync>>>>,

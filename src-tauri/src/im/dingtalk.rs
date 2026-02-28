@@ -1,5 +1,5 @@
 use super::gateway::{EventCallback, Gateway, GatewayEvent, GatewayStatus, IMMessage};
-use async_trait::async_trait;
+
 use chrono::Local;
 use futures_util::{SinkExt, StreamExt};
 use reqwest::Client;
@@ -9,6 +9,7 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio_tungstenite::{connect_async, tungstenite::Message as WsMessage};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DingTalkConfig {
     pub enabled: bool,
@@ -36,6 +37,7 @@ impl Default for DingTalkConfig {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct DingTalkAccessTokenResponse {
     errcode: i32,
@@ -44,6 +46,7 @@ struct DingTalkAccessTokenResponse {
     expire_in: Option<i64>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct DingTalkUserResponse {
     errcode: i32,
@@ -51,11 +54,13 @@ struct DingTalkUserResponse {
     result: Option<DingTalkUserResult>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct DingTalkUserResult {
     user_id: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct DingTalkRobotResponse {
     errcode: i32,
@@ -63,6 +68,7 @@ struct DingTalkRobotResponse {
     msg_id: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct DingTalkStreamResponse {
     #[serde(rename = "connId")]
@@ -71,6 +77,7 @@ struct DingTalkStreamResponse {
     topic_ids: Option<Vec<String>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct DingTalkMediaUploadResponse {
     errcode: i32,
@@ -78,6 +85,7 @@ struct DingTalkMediaUploadResponse {
     media_id: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct DingTalkMediaResponse {
     errcode: i32,
@@ -85,6 +93,7 @@ struct DingTalkMediaResponse {
 }
 
 // Stream 消息格式
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DingTalkStreamMessage {
     #[serde(rename = "messageId")]
@@ -374,7 +383,7 @@ impl DingTalkGateway {
         msg_type: &str,
     ) -> Result<(), String> {
         let access_token = self.get_access_token().await?;
-        let agent_id = self
+        let _agent_id = self
             .config
             .lock()
             .unwrap()
@@ -623,7 +632,7 @@ impl DingTalkGateway {
         self.log("WebSocket Stream connected");
 
         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
-        let (tx, mut rx) = mpsc::channel::<String>(100);
+        let (tx, rx) = mpsc::channel::<String>(100);
         *self.ws_sender.lock().unwrap() = Some(tx);
 
         // 重置停止标志
@@ -963,7 +972,7 @@ impl Gateway for DingTalkGateway {
 
     async fn send_media_message(
         &self,
-        conversation_id: &str,
+        _conversation_id: &str,
         file_path: &str,
     ) -> Result<bool, String> {
         if !self.is_connected() {
@@ -973,7 +982,7 @@ impl Gateway for DingTalkGateway {
         self.get_access_token().await?;
 
         // 上传媒体文件
-        let media_id = self.upload_media(file_path, "file").await?;
+        let _media_id = self.upload_media(file_path, "file").await?;
 
         // TODO: 发送媒体消息需要使用不同的 API
         // 这里简化处理，实际应该根据文件类型选择不同的发送方式

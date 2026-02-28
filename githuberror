@@ -1,0 +1,2384 @@
+6m 50s
+Run npm run build:mac
+
+> ggclaw@1.0.3 build:mac
+> tauri build --target universal-apple-darwin
+
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `npm run build`
+
+> ggclaw@1.0.3 build
+> tsc && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 2263 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /Users/runner/work/gloai/gloai/node_modules/@tauri-apps/api/core.js is dynamically imported by /Users/runner/work/gloai/gloai/src/renderer/services/httpClient.ts, /Users/runner/work/gloai/gloai/src/renderer/services/tauriApi.ts, /Users/runner/work/gloai/gloai/src/renderer/services/tauriApi.ts but also statically imported by /Users/runner/work/gloai/gloai/node_modules/@tauri-apps/api/event.js, /Users/runner/work/gloai/gloai/node_modules/@tauri-apps/plugin-dialog/dist-js/index.js, /Users/runner/work/gloai/gloai/src/renderer/services/cowork.ts, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /Users/runner/work/gloai/gloai/src/renderer/services/tauriApi.ts is dynamically imported by /Users/runner/work/gloai/gloai/src/renderer/components/MarkdownContent.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/MarkdownContent.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/MarkdownContent.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/im/IMSettings.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/skills/SkillsManager.tsx but also statically imported by /Users/runner/work/gloai/gloai/src/renderer/components/cowork/CoworkPromptInput.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/cowork/FolderSelectorPopover.tsx, /Users/runner/work/gloai/gloai/src/renderer/main.tsx, /Users/runner/work/gloai/gloai/src/renderer/services/cowork.ts, /Users/runner/work/gloai/gloai/src/renderer/services/electronCompat.ts, /Users/runner/work/gloai/gloai/src/renderer/services/skill.ts, dynamic import will not move module into another chunk.
+
+computing gzip size...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /Users/runner/work/gloai/gloai/src/renderer/services/skill.ts is dynamically imported by /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx but also statically imported by /Users/runner/work/gloai/gloai/src/renderer/components/cowork/CoworkPromptInput.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/cowork/CoworkView.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/skills/EmailSkillConfig.tsx, /Users/runner/work/gloai/gloai/src/renderer/components/skills/SkillsManager.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /Users/runner/work/gloai/gloai/src/renderer/services/tuptup.ts is dynamically imported by /Users/runner/work/gloai/gloai/src/renderer/components/Settings.tsx but also statically imported by /Users/runner/work/gloai/gloai/src/renderer/components/skills/EmailSkillConfig.tsx, dynamic import will not move module into another chunk.
+
+dist/index.html                         2.27 kB │ gzip:   0.92 kB
+
+dist/assets/index-Cv6P5ypu.css         73.91 kB │ gzip:  11.95 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+dist/assets/httpClient-DbYRZaVB.js      0.71 kB │ gzip:   0.52 kB
+- Using dynamic import() to code-split the application
+dist/assets/event-Chjq2DIx.js           1.34 kB │ gzip:   0.66 kB
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+dist/assets/index-CwFRsxFQ.js           1.58 kB │ gzip:   0.49 kB
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+dist/assets/index-alrs7_CS.js       1,458.29 kB │ gzip: 461.17 kB
+✓ built in 10.05s
+    Updating crates.io index
+     Locking 691 packages to latest compatible versions
+      Adding cron v0.12.1 (available: v0.15.0)
+      Adding dirs v5.0.1 (available: v6.0.0)
+      Adding generic-array v0.14.7 (available: v0.14.9)
+      Adding rand v0.8.5 (available: v0.10.0)
+      Adding reqwest v0.12.28 (available: v0.13.2)
+      Adding rusqlite v0.31.0 (available: v0.38.0)
+      Adding thiserror v1.0.69 (available: v2.0.18)
+      Adding tokio-tungstenite v0.23.1 (available: v0.28.0)
+      Adding toml v0.8.2 (available: v0.8.23)
+      Adding toml_datetime v0.6.3 (available: v0.6.11)
+      Adding toml_edit v0.20.2 (available: v0.20.7)
+      Adding winreg v0.50.0 (available: v0.55.0)
+ Downloading crates ...
+  Downloaded crossbeam-epoch v0.9.18
+  Downloaded either v1.15.0
+  Downloaded cfg_aliases v0.2.1
+  Downloaded darling_macro v0.21.3
+  Downloaded dyn-clone v1.0.20
+  Downloaded num-derive v0.4.2
+  Downloaded phf_codegen v0.8.0
+  Downloaded rand_chacha v0.2.2
+  Downloaded errno v0.3.14
+  Downloaded foreign-types-shared v0.3.1
+  Downloaded same-file v1.0.6
+  Downloaded futures-task v0.3.32
+  Downloaded futures-util v0.3.32
+  Downloaded image-webp v0.2.4
+  Downloaded rgb v0.8.53
+  Downloaded reqwest v0.13.2
+  Downloaded regex-syntax v0.8.10
+  Downloaded rayon v1.11.0
+  Downloaded sha1 v0.10.6
+  Downloaded stable_deref_trait v1.2.1
+  Downloaded tauri-plugin v2.5.3
+  Downloaded tauri-plugin-http v2.5.7
+  Downloaded tower-service v0.3.3
+  Downloaded wasm-bindgen-shared v0.2.114
+  Downloaded wasm-bindgen-macro-support v0.2.114
+  Downloaded v_frame v0.3.9
+  Downloaded unicase v2.9.0
+  Downloaded tracing-core v0.1.36
+  Downloaded tower-http v0.6.8
+  Downloaded uuid v1.21.0
+  Downloaded tokio-macros v2.6.0
+  Downloaded tinystr v0.8.2
+  Downloaded time v0.3.47
+  Downloaded thiserror-impl v2.0.18
+  Downloaded tracing-attributes v0.1.31
+  Downloaded thiserror v2.0.18
+  Downloaded tauri-utils v2.8.2
+  Downloaded vcpkg v0.2.15
+  Downloaded typenum v1.19.0
+  Downloaded version_check v0.9.5
+  Downloaded tracing v0.1.44
+  Downloaded unic-ucd-ident v0.9.0
+  Downloaded tungstenite v0.23.0
+  Downloaded try-lock v0.2.5
+  Downloaded toml_writer v1.0.6+spec-1.1.0
+  Downloaded tinyvec v1.10.0
+  Downloaded time-core v0.1.8
+  Downloaded tempfile v3.26.0
+  Downloaded tauri-plugin-updater v2.10.0
+  Downloaded wasm-bindgen-macro v0.2.114
+  Downloaded wasm-bindgen v0.2.114
+  Downloaded want v0.3.1
+  Downloaded walkdir v2.5.0
+  Downloaded unic-ucd-version v0.9.0
+  Downloaded tokio v1.49.0
+  Downloaded unic-common v0.9.0
+  Downloaded unic-char-range v0.9.0
+  Downloaded unic-char-property v0.9.0
+  Downloaded typeid v1.0.3
+  Downloaded tray-icon v0.21.3
+  Downloaded tower-layer v0.3.3
+  Downloaded tower v0.5.3
+  Downloaded time-macros v0.2.27
+  Downloaded thiserror-impl v1.0.69
+  Downloaded thiserror v1.0.69
+  Downloaded tendril v0.4.3
+  Downloaded tauri-winres v0.3.5
+  Downloaded tauri-runtime-wry v2.10.0
+  Downloaded tauri-runtime v2.10.0
+  Downloaded tao v0.34.5
+  Downloaded sys-locale v0.3.2
+  Downloaded strsim v0.11.1
+  Downloaded libsqlite3-sys v0.28.0
+  Downloaded tokio-native-tls v0.3.1
+  Downloaded tauri-plugin-opener v2.5.3
+  Downloaded tauri-plugin-fs v2.4.5
+  Downloaded tauri v2.10.2
+  Downloaded subtle v2.6.1
+  Downloaded tauri-plugin-dialog v2.6.0
+  Downloaded tauri-macros v2.5.4
+  Downloaded syn v2.0.117
+  Downloaded syn v1.0.109
+  Downloaded tauri-codegen v2.5.4
+  Downloaded tauri-build v2.5.5
+  Downloaded tar v0.4.44
+  Downloaded system-configuration-sys v0.6.0
+  Downloaded system-configuration v0.7.0
+  Downloaded synstructure v0.13.2
+  Downloaded sync_wrapper v1.0.2
+  Downloaded swift-rs v1.0.7
+  Downloaded string_cache_codegen v0.5.4
+  Downloaded string_cache v0.8.9
+  Downloaded stacker v0.1.23
+  Downloaded socket2 v0.6.2
+  Downloaded smallvec v1.15.1
+  Downloaded slab v0.4.12
+  Downloaded siphasher v1.0.2
+  Downloaded simd_helpers v0.1.0
+  Downloaded simd-adler32 v0.3.8
+  Downloaded shlex v1.3.0
+  Downloaded ring v0.17.14
+  Downloaded rav1e v0.8.1
+  Downloaded siphasher v0.3.11
+  Downloaded signal-hook-registry v1.4.8
+  Downloaded sha2 v0.10.9
+  Downloaded serialize-to-javascript-impl v0.1.2
+  Downloaded serialize-to-javascript v0.1.2
+  Downloaded rustc-hash v2.1.1
+  Downloaded rusqlite v0.31.0
+  Downloaded servo_arc v0.2.0
+  Downloaded regex-automata v0.4.14
+  Downloaded reqwest v0.12.28
+  Downloaded maybe-rayon v0.1.1
+  Downloaded matches v0.1.10
+  Downloaded match_token v0.1.0
+  Downloaded markup5ever v0.14.1
+  Downloaded mac v0.1.1
+  Downloaded loop9 v0.1.5
+  Downloaded libc v0.2.182
+  Downloaded rfd v0.16.0
+  Downloaded regex v1.12.3
+  Downloaded ref-cast-impl v1.0.25
+  Downloaded ref-cast v1.0.25
+  Downloaded rayon-core v1.13.0
+  Downloaded raw-window-handle v0.6.2
+  Downloaded tiff v0.10.3
+  Downloaded ravif v0.12.0
+  Downloaded mime v0.3.17
+  Downloaded memchr v2.8.0
+  Downloaded lru-slab v0.1.2
+  Downloaded log v0.4.29
+  Downloaded lock_api v0.4.14
+  Downloaded litrs v1.0.0
+  Downloaded litemap v0.8.1
+  Downloaded lettre v0.11.19
+  Downloaded lebe v0.5.3
+  Downloaded lazy_static v1.5.0
+  Downloaded kuchikiki v0.8.8-speedreader
+  Downloaded keyboard-types v0.7.0
+  Downloaded jsonptr v0.6.3
+  Downloaded json-patch v3.0.1
+  Downloaded jobserver v0.1.34
+  Downloaded itoa v1.0.17
+  Downloaded itertools v0.14.0
+  Downloaded iri-string v0.7.10
+  Downloaded ipnet v2.11.0
+  Downloaded inout v0.1.4
+  Downloaded infer v0.19.0
+  Downloaded indexmap v2.13.0
+  Downloaded indexmap v1.9.3
+  Downloaded imgref v1.12.0
+  Downloaded image v0.25.9
+  Downloaded http v1.4.0
+  Downloaded html5ever v0.29.1
+  Downloaded heck v0.5.0
+  Downloaded hashlink v0.9.1
+  Downloaded hashbrown v0.16.1
+  Downloaded hashbrown v0.14.5
+  Downloaded hashbrown v0.12.3
+  Downloaded half v2.7.1
+  Downloaded h2 v0.4.13
+  Downloaded gif v0.14.1
+  Downloaded getrandom v0.4.1
+  Downloaded getrandom v0.3.4
+  Downloaded getrandom v0.2.17
+  Downloaded getrandom v0.1.16
+  Downloaded encoding_rs v0.8.35
+  Downloaded idna_adapter v1.2.1
+  Downloaded http-body-util v0.1.3
+  Downloaded http-body v1.0.1
+  Downloaded hostname v0.4.2
+  Downloaded hex v0.4.3
+  Downloaded glob v0.3.3
+  Downloaded ghash v0.5.1
+  Downloaded generic-array v0.14.7
+  Downloaded fxhash v0.2.1
+  Downloaded wry v0.54.2
+  Downloaded window-vibrancy v0.6.0
+  Downloaded pxfm v0.1.27
+  Downloaded objc2-app-kit v0.3.2
+  Downloaded futures-sink v0.3.32
+  Downloaded futures-io v0.3.32
+  Downloaded futures-channel v0.3.32
+  Downloaded futf v0.1.5
+  Downloaded form_urlencoded v1.2.2
+  Downloaded exr v1.74.0
+  Downloaded erased-serde v0.4.9
+  Downloaded equivalent v1.0.2
+  Downloaded zune-jpeg v0.5.12
+  Downloaded zune-core v0.5.1
+  Downloaded zune-core v0.4.12
+  Downloaded zmij v1.0.21
+  Downloaded zerofrom-derive v0.1.6
+  Downloaded zerocopy-derive v0.8.40
+  Downloaded y4m v0.8.0
+  Downloaded xattr v1.6.1
+  Downloaded writeable v0.6.2
+  Downloaded winnow v0.7.14
+  Downloaded weezl v0.1.12
+  Downloaded webpki-roots v1.0.6
+  Downloaded serde_with v3.17.0
+  Downloaded serde_json v1.0.149
+  Downloaded serde_derive v1.0.228
+  Downloaded serde_core v1.0.228
+  Downloaded serde-untagged v0.1.9
+  Downloaded serde v1.0.228
+  Downloaded quinn-proto v0.11.13
+  Downloaded quick-xml v0.38.4
+  Downloaded object v0.37.3
+  Downloaded objc2-security v0.3.2
+  Downloaded objc2-foundation v0.3.2
+  Downloaded objc2 v0.6.4
+  Downloaded futures-macro v0.3.32
+  Downloaded futures-core v0.3.32
+  Downloaded fastrand v2.3.0
+  Downloaded fallible-streaming-iterator v0.1.9
+  Downloaded fallible-iterator v0.3.0
+  Downloaded equator-macro v0.4.2
+  Downloaded equator v0.4.2
+  Downloaded zune-jpeg v0.4.21
+  Downloaded zune-inflate v0.2.54
+  Downloaded zeroize v1.8.2
+  Downloaded zerofrom v0.1.6
+  Downloaded zerocopy v0.8.40
+  Downloaded yoke-derive v0.8.1
+  Downloaded yoke v0.8.1
+  Downloaded serde_with_macros v3.17.0
+  Downloaded serde_urlencoded v0.7.1
+  Downloaded serde_spanned v1.0.4
+  Downloaded serde_repr v0.1.20
+  Downloaded serde_derive_internals v0.29.1
+  Downloaded semver v1.0.27
+  Downloaded selectors v0.24.0
+  Downloaded security-framework-sys v2.17.0
+  Downloaded security-framework v3.7.0
+  Downloaded scopeguard v1.2.0
+  Downloaded schemars_derive v0.8.22
+  Downloaded schemars v1.2.1
+  Downloaded schemars v0.9.0
+  Downloaded schemars v0.8.22
+  Downloaded ryu v1.0.23
+  Downloaded rustls-webpki v0.103.9
+  Downloaded rustls-platform-verifier v0.6.2
+  Downloaded rustls v0.23.37
+  Downloaded rustix v1.1.4
+  Downloaded idna v1.1.0
+  Downloaded icu_provider v2.1.1
+  Downloaded rand v0.9.2
+  Downloaded rand v0.7.3
+  Downloaded png v0.18.1
+  Downloaded png v0.17.16
+  Downloaded objc2-web-kit v0.3.2
+  Downloaded objc2-core-text v0.3.2
+  Downloaded objc2-core-image v0.3.2
+  Downloaded objc2-core-graphics v0.3.2
+  Downloaded objc2-core-foundation v0.3.2
+  Downloaded num-bigint v0.4.6
+  Downloaded nom v7.1.3
+  Downloaded muda v0.17.1
+  Downloaded moxcms v0.7.11
+  Downloaded rustversion v1.0.22
+  Downloaded rustls-pki-types v1.14.0
+  Downloaded rustc_version v0.4.1
+  Downloaded ident_case v1.0.1
+  Downloaded icu_properties_data v2.1.2
+  Downloaded icu_properties v2.1.2
+  Downloaded icu_normalizer_data v2.1.1
+  Downloaded icu_normalizer v2.1.1
+  Downloaded icu_locale_core v2.1.1
+  Downloaded icu_collections v2.1.1
+  Downloaded ico v0.5.0
+  Downloaded iana-time-zone v0.1.65
+  Downloaded hyper-util v0.1.20
+  Downloaded hyper-tls v0.6.0
+  Downloaded hyper-rustls v0.27.7
+  Downloaded hyper v1.8.1
+  Downloaded httpdate v1.0.3
+  Downloaded httparse v1.10.1
+  Downloaded quinn-udp v0.5.14
+  Downloaded quinn v0.11.9
+  Downloaded qoi v0.4.1
+  Downloaded publicsuffix v2.3.0
+  Downloaded proc-macro2 v1.0.106
+  Downloaded plist v1.8.0
+  Downloaded phf_generator v0.8.0
+  Downloaded paste v1.0.15
+  Downloaded parking_lot v0.12.5
+  Downloaded once_cell v1.21.3
+  Downloaded objc2-quartz-core v0.3.2
+  Downloaded objc2-javascript-core v0.3.2
+  Downloaded objc2-encode v4.1.0
+  Downloaded objc2-core-video v0.3.2
+  Downloaded objc2-core-data v0.3.2
+  Downloaded objc2-cloud-kit v0.3.2
+  Downloaded num-traits v0.2.19
+  Downloaded mio v1.1.1
+  Downloaded miniz_oxide v0.8.9
+  Downloaded minimal-lexical v0.2.1
+  Downloaded brotli v8.0.2
+  Downloaded av-scenechange v0.14.1
+  Downloaded foreign-types-macros v0.2.3
+  Downloaded foreign-types v0.5.0
+  Downloaded fnv v1.0.7
+  Downloaded flate2 v1.1.9
+  Downloaded find-msvc-tools v0.1.9
+  Downloaded filetime v0.2.27
+  Downloaded fdeflate v0.3.7
+  Downloaded fax_derive v0.2.0
+  Downloaded fax v0.2.6
+  Downloaded zerovec v0.11.5
+  Downloaded zerotrie v0.2.3
+  Downloaded url v2.5.8
+  Downloaded unicode-segmentation v1.12.0
+  Downloaded unicode-ident v1.0.24
+  Downloaded tokio-util v0.7.18
+  Downloaded tokio-tungstenite v0.23.1
+  Downloaded rand_core v0.9.5
+  Downloaded rand_core v0.6.4
+  Downloaded rand_core v0.5.1
+  Downloaded rand_chacha v0.9.0
+  Downloaded rand v0.8.5
+  Downloaded quoted_printable v0.5.1
+  Downloaded psm v0.1.30
+  Downloaded psl-types v2.0.11
+  Downloaded ppv-lite86 v0.2.21
+  Downloaded polyval v0.6.2
+  Downloaded pkg-config v0.3.32
+  Downloaded pin-utils v0.1.0
+  Downloaded pin-project-lite v0.2.17
+  Downloaded phf_macros v0.11.3
+  Downloaded phf_generator v0.10.0
+  Downloaded phf v0.11.3
+  Downloaded parking_lot_core v0.9.12
+  Downloaded open v5.3.3
+  Downloaded objc2-osa-kit v0.3.2
+  Downloaded num-rational v0.4.2
+  Downloaded num-integer v0.1.46
+  Downloaded cssparser v0.29.6
+  Downloaded crossbeam-channel v0.5.15
+  Downloaded cookie_store v0.21.1
+  Downloaded chumsky v0.9.3
+  Downloaded chrono v0.4.44
+  Downloaded cc v1.2.56
+  Downloaded bytes v1.11.1
+  Downloaded bumpalo v3.20.2
+  Downloaded brotli-decompressor v5.0.0
+  Downloaded base64 v0.21.7
+  Downloaded ar_archive_writer v0.5.1
+  Downloaded aho-corasick v1.1.4
+  Downloaded aes-gcm v0.10.3
+  Downloaded aes v0.8.4
+  Downloaded zerovec-derive v0.11.2
+  Downloaded utf8_iter v1.0.4
+  Downloaded utf-8 v0.7.6
+  Downloaded urlpattern v0.3.0
+  Downloaded untrusted v0.9.0
+  Downloaded universal-hash v0.5.1
+  Downloaded toml_parser v1.0.9+spec-1.1.0
+  Downloaded toml_datetime v0.7.5+spec-1.1.0
+  Downloaded toml v0.9.12+spec-1.1.0
+  Downloaded tokio-rustls v0.26.4
+  Downloaded tinyvec_macros v0.1.1
+  Downloaded rand_pcg v0.2.1
+  Downloaded rand_chacha v0.3.1
+  Downloaded quote v1.0.44
+  Downloaded quick-error v2.0.1
+  Downloaded profiling v1.0.17
+  Downloaded proc-macro-hack v0.5.20+deprecated
+  Downloaded precomputed-hash v0.1.1
+  Downloaded powerfmt v0.2.0
+  Downloaded phf_shared v0.11.3
+  Downloaded phf_shared v0.8.0
+  Downloaded phf_codegen v0.11.3
+  Downloaded phf v0.10.1
+  Downloaded phf v0.8.0
+  Downloaded pathdiff v0.2.3
+  Downloaded pastey v0.1.1
+  Downloaded opaque-debug v0.3.1
+  Downloaded noop_proc_macro v0.3.0
+  Downloaded nodrop v0.1.14
+  Downloaded new_debug_unreachable v1.0.6
+  Downloaded minisign-verify v0.2.4
+  Downloaded embed-resource v3.0.6
+  Downloaded displaydoc v0.2.5
+  Downloaded dispatch2 v0.3.1
+  Downloaded derive_more v0.99.20
+  Downloaded data-encoding v2.10.0
+  Downloaded darling_core v0.21.3
+  Downloaded darling v0.21.3
+  Downloaded crossbeam-utils v0.8.21
+  Downloaded cron v0.12.1
+  Downloaded crc32fast v1.5.0
+  Downloaded core2 v0.4.0
+  Downloaded core-foundation-sys v0.8.7
+  Downloaded cookie_store v0.22.1
+  Downloaded cookie v0.18.1
+  Downloaded cfb v0.7.3
+  Downloaded cargo_toml v0.22.3
+  Downloaded camino v1.2.2
+  Downloaded bytemuck v1.25.0
+  Downloaded built v0.8.0
+  Downloaded block2 v0.6.2
+  Downloaded bitstream-io v4.9.0
+  Downloaded bitflags v1.3.2
+  Downloaded base64 v0.22.1
+  Downloaded av1-grain v0.2.5
+  Downloaded allocator-api2 v0.2.21
+  Downloaded ahash v0.8.12
+  Downloaded profiling-procmacros v1.0.17
+  Downloaded potential_utf v0.1.4
+  Downloaded phf_shared v0.10.0
+  Downloaded phf_macros v0.10.0
+  Downloaded phf_generator v0.11.3
+  Downloaded osakit v0.3.1
+  Downloaded option-ext v0.2.0
+  Downloaded objc2-io-surface v0.3.2
+  Downloaded objc2-exception-helper v0.1.1
+  Downloaded native-tls v0.2.18
+  Downloaded email_address v0.2.9
+  Downloaded email-encoding v0.4.1
+  Downloaded dtoa v1.0.11
+  Downloaded document-features v0.2.12
+  Downloaded dirs-sys-next v0.1.2
+  Downloaded dirs v6.0.0
+  Downloaded digest v0.10.7
+  Downloaded deranged v0.5.8
+  Downloaded data-url v0.3.2
+  Downloaded ctr v0.9.2
+  Downloaded crossbeam-deque v0.8.6
+  Downloaded core-graphics v0.24.0
+  Downloaded core-foundation v0.10.1
+  Downloaded core-foundation v0.9.4
+  Downloaded cipher v0.4.4
+  Downloaded cargo_metadata v0.19.2
+  Downloaded byteorder v1.5.0
+  Downloaded bitflags v2.11.0
+  Downloaded percent-encoding v2.3.2
+  Downloaded mime_guess v2.0.5
+  Downloaded dunce v1.0.5
+  Downloaded dpi v0.1.2
+  Downloaded dispatch v0.2.0
+  Downloaded dirs-sys v0.4.1
+  Downloaded directories-next v2.0.0
+  Downloaded cssparser-macros v0.6.1
+  Downloaded cpufeatures v0.2.17
+  Downloaded core-graphics-types v0.2.0
+  Downloaded convert_case v0.4.0
+  Downloaded color_quant v1.1.0
+  Downloaded block-buffer v0.10.4
+  Downloaded async-trait v0.1.89
+  Downloaded aligned v0.4.3
+  Downloaded aead v0.5.2
+  Downloaded num-conv v0.2.0
+  Downloaded nom v8.0.0
+  Downloaded embed_plist v1.2.2
+  Downloaded dtoa-short v0.3.5
+  Downloaded dirs-sys v0.5.0
+  Downloaded dirs v5.0.1
+  Downloaded ctor v0.2.9
+  Downloaded crypto-common v0.1.7
+  Downloaded arg_enum_proc_macro v0.3.4
+  Downloaded avif-serialize v0.8.8
+  Downloaded alloc-no-stdlib v2.0.4
+  Downloaded cfg-if v1.0.4
+  Downloaded cargo-platform v0.1.9
+  Downloaded byteorder-lite v0.1.0
+  Downloaded atomic-waker v1.1.2
+  Downloaded as-slice v0.2.1
+  Downloaded alloc-stdlib v0.2.2
+  Downloaded adler2 v2.0.1
+  Downloaded bit_field v0.10.3
+  Downloaded autocfg v1.5.0
+  Downloaded arrayvec v0.7.6
+  Downloaded anyhow v1.0.102
+  Downloaded aligned-vec v0.6.4
+   Compiling proc-macro2 v1.0.106
+   Compiling quote v1.0.44
+   Compiling unicode-ident v1.0.24
+   Compiling libc v0.2.182
+   Compiling serde_core v1.0.228
+   Compiling cfg-if v1.0.4
+   Compiling syn v2.0.117
+   Compiling shlex v1.3.0
+   Compiling find-msvc-tools v0.1.9
+   Compiling cc v1.2.56
+   Compiling zerocopy v0.8.40
+   Compiling synstructure v0.13.2
+   Compiling serde_derive v1.0.228
+   Compiling zerofrom-derive v0.1.6
+   Compiling yoke-derive v0.8.1
+   Compiling zerovec-derive v0.11.2
+   Compiling displaydoc v0.2.5
+   Compiling ppv-lite86 v0.2.21
+   Compiling bitflags v2.11.0
+   Compiling icu_normalizer_data v2.1.1
+   Compiling icu_properties_data v2.1.2
+   Compiling version_check v0.9.5
+   Compiling zmij v1.0.21
+   Compiling parking_lot_core v0.9.12
+   Compiling memchr v2.8.0
+   Compiling getrandom v0.2.17
+   Compiling rand_core v0.6.4
+   Compiling autocfg v1.5.0
+   Compiling rand_chacha v0.3.1
+   Compiling getrandom v0.4.1
+   Compiling rand v0.8.5
+   Compiling serde v1.0.228
+   Compiling stable_deref_trait v1.2.1
+   Compiling thiserror v2.0.18
+   Compiling siphasher v1.0.2
+   Compiling zerofrom v0.1.6
+   Compiling thiserror-impl v2.0.18
+   Compiling phf_shared v0.11.3
+   Compiling yoke v0.8.1
+   Compiling itoa v1.0.17
+   Compiling smallvec v1.15.1
+   Compiling phf_generator v0.11.3
+   Compiling siphasher v0.3.11
+   Compiling zerovec v0.11.5
+   Compiling getrandom v0.1.16
+   Compiling anyhow v1.0.102
+   Compiling typeid v1.0.3
+   Compiling thiserror v1.0.69
+   Compiling fnv v1.0.7
+   Compiling objc2-exception-helper v0.1.1
+   Compiling rand_core v0.5.1
+   Compiling tinystr v0.8.2
+   Compiling thiserror-impl v1.0.69
+   Compiling litemap v0.8.1
+   Compiling strsim v0.11.1
+   Compiling ident_case v1.0.1
+   Compiling erased-serde v0.4.9
+   Compiling syn v1.0.109
+   Compiling writeable v0.6.2
+   Compiling typenum v1.19.0
+   Compiling serde_json v1.0.149
+   Compiling icu_locale_core v2.1.1
+   Compiling darling_core v0.21.3
+   Compiling potential_utf v0.1.4
+   Compiling phf_macros v0.11.3
+   Compiling zerotrie v0.2.3
+   Compiling objc2 v0.6.4
+   Compiling icu_provider v2.1.1
+   Compiling icu_collections v2.1.1
+   Compiling darling_macro v0.21.3
+   Compiling rand_chacha v0.2.2
+   Compiling rand_pcg v0.2.1
+   Compiling phf_shared v0.8.0
+   Compiling generic-array v0.14.7
+   Compiling num-conv v0.2.0
+   Compiling time-core v0.1.8
+   Compiling proc-macro-hack v0.5.20+deprecated
+   Compiling objc2-encode v4.1.0
+   Compiling once_cell v1.21.3
+   Compiling rand v0.7.3
+   Compiling darling v0.21.3
+   Compiling phf_shared v0.10.0
+   Compiling new_debug_unreachable v1.0.6
+   Compiling byteorder v1.5.0
+   Compiling scopeguard v1.2.0
+   Compiling lock_api v0.4.14
+   Compiling phf_generator v0.10.0
+   Compiling serde_with_macros v3.17.0
+   Compiling phf_generator v0.8.0
+   Compiling icu_properties v2.1.2
+   Compiling icu_normalizer v2.1.1
+   Compiling string_cache_codegen v0.5.4
+   Compiling phf_codegen v0.11.3
+   Compiling precomputed-hash v0.1.1
+   Compiling winnow v0.7.14
+   Compiling mac v0.1.1
+   Compiling futf v0.1.5
+   Compiling markup5ever v0.14.1
+   Compiling phf_macros v0.10.0
+   Compiling idna_adapter v1.2.1
+   Compiling cssparser v0.29.6
+   Compiling phf_codegen v0.8.0
+   Compiling parking_lot v0.12.5
+   Compiling toml_datetime v0.7.5+spec-1.1.0
+   Compiling semver v1.0.27
+   Compiling serde_spanned v1.0.4
+   Compiling log v0.4.29
+   Compiling bytes v1.11.1
+   Compiling percent-encoding v2.3.2
+   Compiling utf8_iter v1.0.4
+   Compiling utf-8 v0.7.6
+   Compiling bitflags v1.3.2
+   Compiling toml_writer v1.0.6+spec-1.1.0
+   Compiling dtoa v1.0.11
+   Compiling toml_parser v1.0.9+spec-1.1.0
+   Compiling dtoa-short v0.3.5
+   Compiling tendril v0.4.3
+   Compiling idna v1.1.0
+   Compiling form_urlencoded v1.2.2
+   Compiling toml v0.9.12+spec-1.1.0
+   Compiling string_cache v0.8.9
+   Compiling selectors v0.24.0
+   Compiling phf v0.10.1
+   Compiling uuid v1.21.0
+   Compiling phf v0.11.3
+   Compiling indexmap v1.9.3
+   Compiling aho-corasick v1.1.4
+   Compiling cssparser-macros v0.6.1
+   Compiling ctor v0.2.9
+   Compiling nodrop v0.1.14
+   Compiling unic-common v0.9.0
+   Compiling matches v0.1.10
+   Compiling camino v1.2.2
+   Compiling regex-syntax v0.8.10
+   Compiling unic-char-range v0.9.0
+   Compiling hashbrown v0.16.1
+   Compiling convert_case v0.4.0
+   Compiling core-foundation-sys v0.8.7
+   Compiling alloc-no-stdlib v2.0.4
+   Compiling equivalent v1.0.2
+   Compiling indexmap v2.13.0
+   Compiling alloc-stdlib v0.2.2
+   Compiling derive_more v0.99.20
+   Compiling regex-automata v0.4.14
+   Compiling unic-char-property v0.9.0
+   Compiling unic-ucd-version v0.9.0
+   Compiling servo_arc v0.2.0
+   Compiling url v2.5.8
+   Compiling fxhash v0.2.1
+   Compiling objc2-core-foundation v0.3.2
+   Compiling phf v0.8.0
+   Compiling swift-rs v1.0.7
+   Compiling match_token v0.1.0
+   Compiling serde_derive_internals v0.29.1
+   Compiling errno v0.3.14
+   Compiling schemars v0.8.22
+   Compiling hashbrown v0.12.3
+   Compiling html5ever v0.29.1
+   Compiling schemars_derive v0.8.22
+   Compiling regex v1.12.3
+   Compiling unic-ucd-ident v0.9.0
+   Compiling brotli-decompressor v5.0.0
+   Compiling cfb v0.7.3
+   Compiling jsonptr v0.6.3
+   Compiling cargo-platform v0.1.9
+   Compiling same-file v1.0.6
+   Compiling dunce v1.0.5
+   Compiling dyn-clone v1.0.20
+   Compiling base64 v0.21.7
+   Compiling http v1.4.0
+   Compiling cargo_metadata v0.19.2
+   Compiling walkdir v2.5.0
+   Compiling brotli v8.0.2
+   Compiling infer v0.19.0
+   Compiling json-patch v3.0.1
+   Compiling urlpattern v0.3.0
+   Compiling kuchikiki v0.8.8-speedreader
+   Compiling serde-untagged v0.1.9
+   Compiling serde_with v3.17.0
+   Compiling glob v0.3.3
+   Compiling tauri-utils v2.8.2
+   Compiling block2 v0.6.2
+   Compiling pin-project-lite v0.2.17
+   Compiling powerfmt v0.2.0
+   Compiling crossbeam-utils v0.8.21
+   Compiling deranged v0.5.8
+   Compiling objc2-foundation v0.3.2
+   Compiling crc32fast v1.5.0
+   Compiling time v0.3.47
+   Compiling signal-hook-registry v1.4.8
+   Compiling quick-xml v0.38.4
+   Compiling tokio-macros v2.6.0
+   Compiling socket2 v0.6.2
+   Compiling mio v1.1.1
+   Compiling base64 v0.22.1
+   Compiling plist v1.8.0
+   Compiling tokio v1.49.0
+   Compiling objc2-core-data v0.3.2
+   Compiling objc2-quartz-core v0.3.2
+   Compiling objc2-core-image v0.3.2
+   Compiling objc2-cloud-kit v0.3.2
+   Compiling objc2-core-video v0.3.2
+   Compiling objc2-core-graphics v0.3.2
+   Compiling objc2-core-text v0.3.2
+   Compiling core-foundation v0.10.1
+   Compiling rustc_version v0.4.1
+   Compiling futures-core v0.3.32
+   Compiling option-ext v0.2.0
+   Compiling dirs-sys v0.5.0
+   Compiling embed-resource v3.0.6
+   Compiling objc2-app-kit v0.3.2
+   Compiling simd-adler32 v0.3.8
+   Compiling heck v0.5.0
+   Compiling tauri-winres v0.3.5
+   Compiling dirs v6.0.0
+   Compiling tauri-plugin v2.5.3
+   Compiling cargo_toml v0.22.3
+   Compiling zerocopy-derive v0.8.40
+   Compiling tauri-build v2.5.5
+   Compiling time-macros v0.2.27
+   Compiling num-traits v0.2.19
+   Compiling adler2 v2.0.1
+   Compiling futures-sink v0.3.32
+   Compiling miniz_oxide v0.8.9
+   Compiling cookie v0.18.1
+   Compiling slab v0.4.12
+   Compiling tauri v2.10.2
+   Compiling crypto-common v0.1.7
+   Compiling flate2 v1.1.9
+   Compiling dpi v0.1.2
+   Compiling futures-macro v0.3.32
+   Compiling ring v0.17.14
+   Compiling subtle v2.6.1
+   Compiling httparse v1.10.1
+   Compiling futures-task v0.3.32
+   Compiling futures-io v0.3.32
+   Compiling rustix v1.1.4
+   Compiling raw-window-handle v0.6.2
+   Compiling futures-util v0.3.32
+   Compiling fdeflate v0.3.7
+   Compiling zeroize v1.8.2
+   Compiling rustls-pki-types v1.14.0
+   Compiling block-buffer v0.10.4
+   Compiling crossbeam-channel v0.5.15
+   Compiling http-body v1.0.1
+   Compiling objc2-security v0.3.2
+   Compiling security-framework-sys v2.17.0
+   Compiling objc2-javascript-core v0.3.2
+   Compiling tracing-core v0.1.36
+   Compiling foreign-types-macros v0.2.3
+   Compiling foreign-types-shared v0.3.1
+   Compiling system-configuration-sys v0.6.0
+   Compiling untrusted v0.9.0
+   Compiling foreign-types v0.5.0
+   Compiling tracing v0.1.44
+   Compiling objc2-web-kit v0.3.2
+   Compiling security-framework v3.7.0
+   Compiling png v0.17.16
+   Compiling digest v0.10.7
+   Compiling tokio-util v0.7.18
+   Compiling core-graphics-types v0.2.0
+   Compiling crossbeam-epoch v0.9.18
+   Compiling cpufeatures v0.2.17
+   Compiling wry v0.54.2
+   Compiling unicode-segmentation v1.12.0
+   Compiling tower-service v0.3.3
+   Compiling rustls v0.23.37
+   Compiling tauri-runtime v2.10.0
+   Compiling try-lock v0.2.5
+   Compiling atomic-waker v1.1.2
+   Compiling mime v0.3.17
+   Compiling object v0.37.3
+   Compiling rayon-core v1.13.0
+   Compiling h2 v0.4.13
+   Compiling want v0.3.1
+   Compiling keyboard-types v0.7.0
+   Compiling sha2 v0.10.9
+   Compiling crossbeam-deque v0.8.6
+   Compiling core-graphics v0.24.0
+   Compiling ico v0.5.0
+   Compiling rustls-webpki v0.103.9
+   Compiling futures-channel v0.3.32
+   Compiling core-foundation v0.9.4
+   Compiling equator-macro v0.4.2
+   Compiling dispatch v0.2.0
+   Compiling getrandom v0.3.4
+   Compiling pin-utils v0.1.0
+   Compiling tauri-runtime-wry v2.10.0
+   Compiling fastrand v2.3.0
+   Compiling lazy_static v1.5.0
+   Compiling tao v0.34.5
+   Compiling tempfile v3.26.0
+   Compiling hyper v1.8.1
+   Compiling equator v0.4.2
+   Compiling system-configuration v0.7.0
+   Compiling tauri-codegen v2.5.4
+   Compiling muda v0.17.1
+   Compiling num-integer v0.1.46
+   Compiling tauri-plugin-fs v2.4.5
+   Compiling ahash v0.8.12
+   Compiling serialize-to-javascript-impl v0.1.2
+   Compiling native-tls v0.2.18
+   Compiling either v1.15.0
+   Compiling ipnet v2.11.0
+   Compiling hyper-util v0.1.20
+   Compiling serialize-to-javascript v0.1.2
+   Compiling num-bigint v0.4.6
+   Compiling ar_archive_writer v0.5.1
+   Compiling tray-icon v0.21.3
+   Compiling tauri-macros v2.5.4
+   Compiling aligned-vec v0.6.4
+   Compiling window-vibrancy v0.6.0
+   Compiling sync_wrapper v1.0.2
+   Compiling serde_repr v0.1.20
+   Compiling arrayvec v0.7.6
+   Compiling embed_plist v1.2.2
+   Compiling tower-layer v0.3.3
+   Compiling tower v0.5.3
+   Compiling v_frame v0.3.9
+   Compiling psm v0.1.30
+   Compiling num-rational v0.4.2
+   Compiling rayon v1.11.0
+   Compiling tokio-rustls v0.26.4
+   Compiling http-body-util v0.1.3
+   Compiling webpki-roots v1.0.6
+   Compiling as-slice v0.2.1
+   Compiling nom v8.0.0
+   Compiling litrs v1.0.0
+   Compiling built v0.8.0
+   Compiling av-scenechange v0.14.1
+   Compiling psl-types v2.0.11
+   Compiling allocator-api2 v0.2.21
+   Compiling unicase v2.9.0
+   Compiling iri-string v0.7.10
+   Compiling paste v1.0.15
+   Compiling mime_guess v2.0.5
+   Compiling hashbrown v0.14.5
+   Compiling publicsuffix v2.3.0
+   Compiling rav1e v0.8.1
+   Compiling document-features v0.2.12
+   Compiling aligned v0.4.3
+   Compiling tower-http v0.6.8
+   Compiling hyper-rustls v0.27.7
+   Compiling tokio-native-tls v0.3.1
+   Compiling inout v0.1.4
+   Compiling core2 v0.4.0
+   Compiling profiling-procmacros v1.0.17
+   Compiling arg_enum_proc_macro v0.3.4
+   Compiling stacker v0.1.23
+   Compiling quick-error v2.0.1
+   Compiling pkg-config v0.3.32
+   Compiling vcpkg v0.2.15
+   Compiling y4m v0.8.0
+   Compiling pastey v0.1.1
+   Compiling libsqlite3-sys v0.28.0
+   Compiling profiling v1.0.17
+   Compiling bitstream-io v4.9.0
+   Compiling cipher v0.4.4
+   Compiling av1-grain v0.2.5
+   Compiling maybe-rayon v0.1.1
+   Compiling itertools v0.14.0
+   Compiling universal-hash v0.5.1
+   Compiling half v2.7.1
+   Compiling tauri-plugin-dialog v2.6.0
+   Compiling tauri-plugin-opener v2.5.3
+   Compiling tauri-plugin-http v2.5.7
+   Compiling tauri-plugin-updater v2.10.0
+   Compiling fax_derive v0.2.0
+   Compiling num-derive v0.4.2
+   Compiling simd_helpers v0.1.0
+   Compiling imgref v1.12.0
+   Compiling weezl v0.1.12
+   Compiling zune-core v0.4.12
+   Compiling ryu v1.0.23
+   Compiling rfd v0.16.0
+   Compiling noop_proc_macro v0.3.0
+   Compiling opaque-debug v0.3.1
+   Compiling polyval v0.6.2
+   Compiling serde_urlencoded v0.7.1
+   Compiling zune-jpeg v0.4.21
+   Compiling loop9 v0.1.5
+   Compiling fax v0.2.6
+   Compiling hyper-tls v0.6.0
+   Compiling sha1 v0.10.6
+   Compiling cookie_store v0.22.1
+   Compiling avif-serialize v0.8.8
+   Compiling rustls-platform-verifier v0.6.2
+   Compiling xattr v1.6.1
+   Compiling objc2-osa-kit v0.3.2
+   Compiling pxfm v0.1.27
+   Compiling zune-inflate v0.2.54
+   Compiling dispatch2 v0.3.1
+   Compiling iana-time-zone v0.1.65
+   Compiling filetime v0.2.27
+   Compiling encoding_rs v0.8.35
+   Compiling color_quant v1.1.0
+   Compiling bytemuck v1.25.0
+   Compiling byteorder-lite v0.1.0
+   Compiling zune-core v0.5.1
+   Compiling data-encoding v2.10.0
+   Compiling rgb v0.8.53
+   Compiling pathdiff v0.2.3
+   Compiling bit_field v0.10.3
+   Compiling minimal-lexical v0.2.1
+   Compiling lebe v0.5.3
+   Compiling exr v1.74.0
+   Compiling nom v7.1.3
+   Compiling open v5.3.3
+   Compiling ravif v0.12.0
+   Compiling tungstenite v0.23.0
+   Compiling zune-jpeg v0.5.12
+   Compiling image-webp v0.2.4
+   Compiling qoi v0.4.1
+   Compiling gif v0.14.1
+   Compiling reqwest v0.12.28
+   Compiling moxcms v0.7.11
+   Compiling tar v0.4.44
+   Compiling chrono v0.4.44
+   Compiling osakit v0.3.1
+   Compiling reqwest v0.13.2
+   Compiling chumsky v0.9.3
+   Compiling tiff v0.10.3
+   Compiling ghash v0.5.1
+   Compiling ctr v0.9.2
+   Compiling aes v0.8.4
+   Compiling cookie_store v0.21.1
+   Compiling hashlink v0.9.1
+   Compiling png v0.18.1
+   Compiling dirs-sys v0.4.1
+   Compiling aead v0.5.2
+   Compiling email-encoding v0.4.1
+   Compiling ggclaw v1.0.0 (/Users/runner/work/gloai/gloai/src-tauri)
+   Compiling async-trait v0.1.89
+   Compiling hostname v0.4.2
+   Compiling dirs-sys-next v0.1.2
+   Compiling email_address v0.2.9
+   Compiling minisign-verify v0.2.4
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling quoted_printable v0.5.1
+   Compiling data-url v0.3.2
+   Compiling fallible-iterator v0.3.0
+   Compiling httpdate v1.0.3
+   Compiling lettre v0.11.19
+   Compiling rusqlite v0.31.0
+   Compiling directories-next v2.0.0
+   Compiling aes-gcm v0.10.3
+   Compiling dirs v5.0.1
+   Compiling image v0.25.9
+   Compiling cron v0.12.1
+   Compiling tokio-tungstenite v0.23.1
+   Compiling hex v0.4.3
+   Compiling sys-locale v0.3.2
+warning: unused import: `DateTime`
+ --> src/im/connectivity_test.rs:8:14
+  |
+8 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^
+  |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+ --> src/im/mod.rs:1:1
+  |
+1 | pub mod connectivity_test;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `async_trait::async_trait`
+ --> src/im/dingtalk.rs:2:5
+  |
+2 | use async_trait::async_trait;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `tokio::sync::mpsc`
+ --> src/im/feishu.rs:8:5
+  |
+8 | use tokio::sync::mpsc;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `async_trait::async_trait`
+ --> src/im/whatsapp.rs:2:5
+  |
+2 | use async_trait::async_trait;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `GatewayEvent` and `IMMessage`
+  --> src/im/mod.rs:17:30
+   |
+17 | use self::gateway::{Gateway, GatewayEvent, GatewayStatus, IMMessage};
+   |                              ^^^^^^^^^^^^                 ^^^^^^^^^
+
+warning: unused import: `chrono::Local`
+ --> src/im_gateway.rs:1:5
+  |
+1 | use chrono::Local;
+  |     ^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `resources`
+   --> src/im_gateway.rs:425:15
+    |
+425 |         #[cfg(feature = "resources")]
+    |               ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `winreg`
+    = help: consider adding `resources` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused import: `get_verification_email_template`
+ --> src/tuptup.rs:2:28
+  |
+2 |     generate_6_digit_code, get_verification_email_template, get_verification_email_text,
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `MultiPart`, `SinglePart`, and `header::ContentType`
+ --> src/tuptup.rs:6:15
+  |
+6 |     message::{header::ContentType, MultiPart, SinglePart},
+  |               ^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^  ^^^^^^^^^^
+
+warning: unused import: `Mutex as StdMutex`
+  --> src/lib.rs:18:22
+   |
+18 | use std::sync::{Arc, Mutex as StdMutex};
+   |                      ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Emitter`
+  --> src/lib.rs:19:24
+   |
+19 | use tauri::{AppHandle, Emitter, Manager, State};
+   |                        ^^^^^^^
+
+warning: variable does not need to be mutable
+   --> src/im/dingtalk.rs:626:18
+    |
+626 |         let (tx, mut rx) = mpsc::channel::<String>(100);
+    |                  ----^^
+    |                  |
+    |                  help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `base64::Engine`
+ --> src/im/discord.rs:2:5
+  |
+2 | use base64::Engine as _;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `Manager`
+  --> src/update_manager.rs:10:24
+   |
+10 | use tauri::{AppHandle, Manager};
+   |                        ^^^^^^^
+
+warning: unused variable: `error_msg`
+  --> src/cowork.rs:80:25
+   |
+80 |                     let error_msg = self.add_message(
+   |                         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_error_msg`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `agent_id`
+   --> src/im/dingtalk.rs:377:13
+    |
+377 |         let agent_id = self
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_agent_id`
+
+warning: unused variable: `rx`
+   --> src/im/dingtalk.rs:626:18
+    |
+626 |         let (tx, mut rx) = mpsc::channel::<String>(100);
+    |                  ^^^^^^ help: if this is intentional, prefix it with an underscore: `_rx`
+
+warning: unused variable: `media_id`
+   --> src/im/dingtalk.rs:976:13
+    |
+976 |         let media_id = self.upload_media(file_path, "file").await?;
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_media_id`
+
+warning: unused variable: `conversation_id`
+   --> src/im/dingtalk.rs:966:9
+    |
+966 |         conversation_id: &str,
+    |         ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_conversation_id`
+
+warning: variable `heartbeat_interval_ms` is assigned to, but never used
+   --> src/im/discord.rs:291:21
+    |
+291 |                 let mut heartbeat_interval_ms: u64 = 41250;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: consider using `_heartbeat_interval_ms` instead
+
+warning: variable `last_seq` is assigned to, but never used
+   --> src/im/discord.rs:292:21
+    |
+292 |                 let mut last_seq: Option<i64> = None;
+    |                     ^^^^^^^^^^^^
+    |
+    = note: consider using `_last_seq` instead
+
+warning: value assigned to `heartbeat_interval_ms` is never read
+   --> src/im/discord.rs:310:49
+    |
+310 | ...                   heartbeat_interval_ms = interval;
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `last_seq` is never read
+   --> src/im/discord.rs:304:41
+    |
+304 | ...                   last_seq = Some(s);
+    |                       ^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: unused variable: `http_client`
+   --> src/im/discord.rs:272:13
+    |
+272 |         let http_client = self.http_client.clone();
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_http_client`
+
+warning: unused variable: `status`
+   --> src/im/discord.rs:275:13
+    |
+275 |         let status = Arc::clone(&self.status);
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_status`
+
+warning: unused variable: `session_id`
+   --> src/im/discord.rs:277:13
+    |
+277 |         let session_id = Arc::clone(&self.session_id);
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_session_id`
+
+warning: unused variable: `is_bot`
+   --> src/im/discord.rs:734:21
+    |
+734 |                 let is_bot = msg.author.bot.unwrap_or(false);
+    |                     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_is_bot`
+
+warning: unused variable: `timestamp`
+   --> src/im/gateway.rs:131:56
+    |
+131 |     pub fn check_and_mark(&mut self, message_id: &str, timestamp: i64, ttl_seconds: i64) -> bool {
+    |                                                        ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_timestamp`
+
+warning: unused variable: `file_path`
+   --> src/im/logging.rs:136:21
+    |
+136 |         if let Some(file_path) = &config.file_path {
+    |                     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_file_path`
+
+warning: value assigned to `last_error` is never read
+   --> src/im/telegram.rs:420:30
+    |
+420 |         let mut last_error = String::new();
+    |                              ^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: unused variable: `attachments`
+   --> src/im/telegram.rs:618:53
+    |
+618 | ...                   let attachments = Self::extract_media_from_message_static(&message);
+    |                           ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_attachments`
+
+warning: unused variable: `status`
+   --> src/im/telegram.rs:546:13
+    |
+546 |         let status = Arc::clone(&self.status);
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_status`
+
+warning: unused variable: `last_update_id`
+   --> src/im/telegram.rs:547:13
+    |
+547 |         let last_update_id = Arc::clone(&self.last_update_id);
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_last_update_id`
+
+warning: unused variable: `media_group_buffers`
+   --> src/im/telegram.rs:550:13
+    |
+550 |         let media_group_buffers = Arc::clone(&self.media_group_buffers);
+    |             ^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_media_group_buffers`
+
+warning: unused variable: `media_type`
+   --> src/im/telegram.rs:873:14
+    |
+873 |         let (media_type, msg_type) = match extension.as_str() {
+    |              ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_media_type`
+
+warning: unused variable: `file_bytes`
+   --> src/im/telegram.rs:880:13
+    |
+880 |         let file_bytes = tokio::fs::read(file_path)
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_file_bytes`
+
+warning: unused variable: `platform`
+   --> src/im_gateway.rs:278:39
+    |
+278 |     pub async fn start_gateway(&self, platform: IMPlatform) -> Result<(), String> {
+    |                                       ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_platform`
+
+warning: unused variable: `platform`
+   --> src/im_gateway.rs:284:38
+    |
+284 |     pub async fn stop_gateway(&self, platform: IMPlatform) -> Result<(), String> {
+    |                                      ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_platform`
+
+warning: unused variable: `text`
+   --> src/im_gateway.rs:362:9
+    |
+362 |         text: &str,
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+
+warning: unused variable: `app_handle`
+   --> src/im_gateway.rs:398:31
+    |
+398 |     fn get_binary_path(&self, app_handle: &AppHandle) -> Result<PathBuf, String> {
+    |                               ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_app_handle`
+
+warning: value assigned to `skills` is never read
+   --> src/skills.rs:349:26
+    |
+349 |         let mut skills = Vec::new();
+    |                          ^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: fields `storage` and `database` are never read
+  --> src/lib.rs:39:5
+   |
+38 | struct AppState {
+   |        -------- fields in this struct
+39 |     storage: Storage,
+   |     ^^^^^^^
+...
+42 |     database: Arc<TokioMutex<Database>>,
+   |     ^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `IMManagerConfig` is never constructed
+  --> src/im/mod.rs:29:12
+   |
+29 | pub struct IMManagerConfig {
+   |            ^^^^^^^^^^^^^^^
+
+warning: struct `IMManager` is never constructed
+  --> src/im/mod.rs:40:12
+   |
+40 | pub struct IMManager {
+   |            ^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/mod.rs:50:12
+    |
+ 49 | impl IMManager {
+    | -------------- associated items in this implementation
+ 50 |     pub fn new(config: IMManagerConfig) -> Self {
+    |            ^^^
+...
+ 61 |     pub fn new_default() -> Self {
+    |            ^^^^^^^^^^^
+...
+ 65 |     pub fn set_config(&self, config: IMManagerConfig) {
+    |            ^^^^^^^^^^
+...
+ 69 |     pub fn get_config(&self) -> IMManagerConfig {
+    |            ^^^^^^^^^^
+...
+ 74 |     pub fn set_message_handler(&self, handler: MessageHandler) {
+    |            ^^^^^^^^^^^^^^^^^^^
+...
+ 83 |     pub fn get_message_handler(&self) -> Option<Arc<MessageHandler>> {
+    |            ^^^^^^^^^^^^^^^^^^^
+...
+ 88 |     pub fn set_network_monitor(&self, monitor: NetworkMonitor) {
+    |            ^^^^^^^^^^^^^^^^^^^
+...
+105 |     pub fn get_network_monitor(&self) -> Option<Arc<NetworkMonitor>> {
+    |            ^^^^^^^^^^^^^^^^^^^
+...
+110 |     pub async fn start_network_monitor(&self) {
+    |                  ^^^^^^^^^^^^^^^^^^^^^
+...
+124 |     pub fn stop_network_monitor(&self) {
+    |            ^^^^^^^^^^^^^^^^^^^^
+...
+135 |     pub fn set_llm_manager(&self, manager: LLMManager) {
+    |            ^^^^^^^^^^^^^^^
+...
+144 |     pub fn get_llm_manager(&self) -> Option<Arc<LLMManager>> {
+    |            ^^^^^^^^^^^^^^^
+...
+149 |     pub fn set_logger(&self, logger: Logger) {
+    |            ^^^^^^^^^^
+...
+154 |     pub fn get_logger(&self) -> Arc<Logger> {
+    |            ^^^^^^^^^^
+...
+159 |     pub fn add_gateway(&self, name: &str, gateway: Arc<dyn Gateway + Send + Sync>) {
+    |            ^^^^^^^^^^^
+...
+179 |     pub fn get_gateway(&self, name: &str) -> Option<Arc<dyn Gateway + Send + Sync>> {
+    |            ^^^^^^^^^^^
+...
+185 |     pub fn get_gateway_names(&self) -> Vec<String> {
+    |            ^^^^^^^^^^^^^^^^^
+...
+191 |     pub async fn start_all(&self) -> Result<(), String> {
+    |                  ^^^^^^^^^
+...
+235 |     pub async fn stop_all(&self) -> Result<(), String> {
+    |                  ^^^^^^^^
+...
+270 |     pub async fn start_gateway(&self, name: &str) -> Result<(), String> {
+    |                  ^^^^^^^^^^^^^
+...
+278 |     pub async fn stop_gateway(&self, name: &str) -> Result<(), String> {
+    |                  ^^^^^^^^^^^^
+...
+286 |     pub async fn send_notification(&self, text: &str) -> Result<(), String> {
+    |                  ^^^^^^^^^^^^^^^^^
+...
+325 |     pub async fn send_message(
+    |                  ^^^^^^^^^^^^
+...
+338 |     pub async fn test_gateway_connectivity(
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+421 |     pub fn get_gateways_status(&self) -> HashMap<String, GatewayStatus> {
+    |            ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `ConnectivityTestResult` is never constructed
+  --> src/im/connectivity_test.rs:15:12
+   |
+15 | pub struct ConnectivityTestResult {
+   |            ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `ConnectivityCheck` is never constructed
+  --> src/im/connectivity_test.rs:23:12
+   |
+23 | pub struct ConnectivityCheck {
+   |            ^^^^^^^^^^^^^^^^^
+
+warning: struct `ConnectivityTester` is never constructed
+  --> src/im/connectivity_test.rs:32:12
+   |
+32 | pub struct ConnectivityTester {
+   |            ^^^^^^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/connectivity_test.rs:37:12
+    |
+ 36 | impl ConnectivityTester {
+    | ----------------------- associated items in this implementation
+ 37 |     pub fn new() -> Self {
+    |            ^^^
+...
+ 44 |     pub async fn test_dingtalk(&self, gateway: &DingTalkGateway) -> ConnectivityTestResult {
+    |                  ^^^^^^^^^^^^^
+...
+139 |     pub async fn test_feishu(&self, gateway: &FeishuGateway) -> ConnectivityTestResult {
+    |                  ^^^^^^^^^^^
+...
+240 |     pub async fn test_telegram(&self, gateway: &TelegramGateway) -> ConnectivityTestResult {
+    |                  ^^^^^^^^^^^^^
+...
+340 |     pub async fn test_discord(&self, gateway: &DiscordGateway) -> ConnectivityTestResult {
+    |                  ^^^^^^^^^^^^
+...
+445 |     pub async fn test_wework(&self, gateway: &WeWorkGateway) -> ConnectivityTestResult {
+    |                  ^^^^^^^^^^^
+...
+514 |     pub async fn test_whatsapp(&self, gateway: &WhatsAppGateway) -> ConnectivityTestResult {
+    |                  ^^^^^^^^^^^^^
+...
+583 |     fn calculate_verdict(&self, checks: &[ConnectivityCheck]) -> String {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkConfig` is never constructed
+  --> src/im/dingtalk.rs:13:12
+   |
+13 | pub struct DingTalkConfig {
+   |            ^^^^^^^^^^^^^^
+
+warning: struct `DingTalkAccessTokenResponse` is never constructed
+  --> src/im/dingtalk.rs:40:8
+   |
+40 | struct DingTalkAccessTokenResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkUserResponse` is never constructed
+  --> src/im/dingtalk.rs:48:8
+   |
+48 | struct DingTalkUserResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkUserResult` is never constructed
+  --> src/im/dingtalk.rs:55:8
+   |
+55 | struct DingTalkUserResult {
+   |        ^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkRobotResponse` is never constructed
+  --> src/im/dingtalk.rs:60:8
+   |
+60 | struct DingTalkRobotResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkStreamResponse` is never constructed
+  --> src/im/dingtalk.rs:67:8
+   |
+67 | struct DingTalkStreamResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkMediaUploadResponse` is never constructed
+  --> src/im/dingtalk.rs:75:8
+   |
+75 | struct DingTalkMediaUploadResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkMediaResponse` is never constructed
+  --> src/im/dingtalk.rs:82:8
+   |
+82 | struct DingTalkMediaResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkStreamMessage` is never constructed
+  --> src/im/dingtalk.rs:89:8
+   |
+89 | struct DingTalkStreamMessage {
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkInboundMessage` is never constructed
+  --> src/im/dingtalk.rs:96:8
+   |
+96 | struct DingTalkInboundMessage {
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkTextContent` is never constructed
+   --> src/im/dingtalk.rs:123:8
+    |
+123 | struct DingTalkTextContent {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkContent` is never constructed
+   --> src/im/dingtalk.rs:128:8
+    |
+128 | struct DingTalkContent {
+    |        ^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkImageContent` is never constructed
+   --> src/im/dingtalk.rs:137:8
+    |
+137 | struct DingTalkImageContent {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkVoiceContent` is never constructed
+   --> src/im/dingtalk.rs:147:8
+    |
+147 | struct DingTalkVoiceContent {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkFileContent` is never constructed
+   --> src/im/dingtalk.rs:159:8
+    |
+159 | struct DingTalkFileContent {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkMediaAttachment` is never constructed
+   --> src/im/dingtalk.rs:171:12
+    |
+171 | pub struct DingTalkMediaAttachment {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkConversation` is never constructed
+   --> src/im/dingtalk.rs:182:8
+    |
+182 | struct DingTalkConversation {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DingTalkGateway` is never constructed
+   --> src/im/dingtalk.rs:189:12
+    |
+189 | pub struct DingTalkGateway {
+    |            ^^^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/dingtalk.rs:205:12
+    |
+204 | impl DingTalkGateway {
+    | -------------------- associated items in this implementation
+205 |     pub fn new(config: DingTalkConfig) -> Self {
+    |            ^^^
+...
+227 |     pub fn set_config(&self, config: DingTalkConfig) {
+    |            ^^^^^^^^^^
+...
+231 |     pub fn get_config(&self) -> DingTalkConfig {
+    |            ^^^^^^^^^^
+...
+235 |     fn emit_event(&self, event: GatewayEvent) {
+    |        ^^^^^^^^^^
+...
+241 |     fn log(&self, message: &str) {
+    |        ^^^
+...
+247 |     pub async fn get_access_token(&self) -> Result<String, String> {
+    |                  ^^^^^^^^^^^^^^^^
+...
+296 |     async fn upload_media(&self, file_path: &str, media_type: &str) -> Result<String, String> {
+    |              ^^^^^^^^^^^^
+...
+346 |     async fn download_media(&self, download_code: &str) -> Result<Vec<u8>, String> {
+    |              ^^^^^^^^^^^^^^
+...
+370 |     async fn send_message_to_user(
+    |              ^^^^^^^^^^^^^^^^^^^^
+...
+441 |     async fn send_message_to_group(
+    |              ^^^^^^^^^^^^^^^^^^^^^
+...
+504 |     fn extract_media_from_message(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+555 |     async fn handle_inbound_message(&self, data: &str) -> Result<(), String> {
+    |              ^^^^^^^^^^^^^^^^^^^^^^
+...
+609 |     async fn start_stream_connection(&self) -> Result<(), String> {
+    |              ^^^^^^^^^^^^^^^^^^^^^^^
+...
+723 |     async fn reconnect(&self) -> Result<(), String> {
+    |              ^^^^^^^^^
+
+warning: struct `DiscordConfig` is never constructed
+  --> src/im/discord.rs:12:12
+   |
+12 | pub struct DiscordConfig {
+   |            ^^^^^^^^^^^^^
+
+warning: struct `DiscordUser` is never constructed
+  --> src/im/discord.rs:29:8
+   |
+29 | struct DiscordUser {
+   |        ^^^^^^^^^^^
+
+warning: struct `DiscordGuild` is never constructed
+  --> src/im/discord.rs:36:8
+   |
+36 | struct DiscordGuild {
+   |        ^^^^^^^^^^^^
+
+warning: struct `DiscordChannel` is never constructed
+  --> src/im/discord.rs:42:8
+   |
+42 | struct DiscordChannel {
+   |        ^^^^^^^^^^^^^^
+
+warning: struct `DiscordMessage` is never constructed
+  --> src/im/discord.rs:51:8
+   |
+51 | struct DiscordMessage {
+   |        ^^^^^^^^^^^^^^
+
+warning: struct `DiscordMessageAuthor` is never constructed
+  --> src/im/discord.rs:65:8
+   |
+65 | struct DiscordMessageAuthor {
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DiscordAttachment` is never constructed
+  --> src/im/discord.rs:72:8
+   |
+72 | struct DiscordAttachment {
+   |        ^^^^^^^^^^^^^^^^^
+
+warning: struct `DiscordEmbed` is never constructed
+  --> src/im/discord.rs:81:8
+   |
+81 | struct DiscordEmbed {
+   |        ^^^^^^^^^^^^
+
+warning: struct `DiscordEmbedField` is never constructed
+  --> src/im/discord.rs:89:8
+   |
+89 | struct DiscordEmbedField {
+   |        ^^^^^^^^^^^^^^^^^
+
+warning: struct `DiscordMessageReference` is never constructed
+  --> src/im/discord.rs:96:8
+   |
+96 | struct DiscordMessageReference {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `DiscordReady` is never constructed
+   --> src/im/discord.rs:102:8
+    |
+102 | struct DiscordReady {
+    |        ^^^^^^^^^^^^
+
+warning: struct `DiscordGatewayPayload` is never constructed
+   --> src/im/discord.rs:110:8
+    |
+110 | struct DiscordGatewayPayload {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `DISCORD_GATEWAY_URL` is never used
+   --> src/im/discord.rs:117:7
+    |
+117 | const DISCORD_GATEWAY_URL: &str = "wss://gateway.discord.gg/?v=10&encoding=json";
+    |       ^^^^^^^^^^^^^^^^^^^
+
+warning: constant `OP_HELLO` is never used
+   --> src/im/discord.rs:119:7
+    |
+119 | const OP_HELLO: i32 = 10;
+    |       ^^^^^^^^
+
+warning: constant `OP_IDENTIFY` is never used
+   --> src/im/discord.rs:120:7
+    |
+120 | const OP_IDENTIFY: i32 = 2;
+    |       ^^^^^^^^^^^
+
+warning: constant `OP_HEARTBEAT` is never used
+   --> src/im/discord.rs:121:7
+    |
+121 | const OP_HEARTBEAT: i32 = 1;
+    |       ^^^^^^^^^^^^
+
+warning: constant `OP_HEARTBEAT_ACK` is never used
+   --> src/im/discord.rs:122:7
+    |
+122 | const OP_HEARTBEAT_ACK: i32 = 11;
+    |       ^^^^^^^^^^^^^^^^
+
+warning: constant `OP_RESUME` is never used
+   --> src/im/discord.rs:123:7
+    |
+123 | const OP_RESUME: i32 = 6;
+    |       ^^^^^^^^^
+
+warning: constant `OP_RECONNECT` is never used
+   --> src/im/discord.rs:124:7
+    |
+124 | const OP_RECONNECT: i32 = 7;
+    |       ^^^^^^^^^^^^
+
+warning: constant `OP_INVALID_SESSION` is never used
+   --> src/im/discord.rs:125:7
+    |
+125 | const OP_INVALID_SESSION: i32 = 9;
+    |       ^^^^^^^^^^^^^^^^^^
+
+warning: struct `DiscordGateway` is never constructed
+   --> src/im/discord.rs:127:12
+    |
+127 | pub struct DiscordGateway {
+    |            ^^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/discord.rs:141:12
+    |
+140 | impl DiscordGateway {
+    | ------------------- associated items in this implementation
+141 |     pub fn new(config: DiscordConfig) -> Self {
+    |            ^^^
+...
+161 |     pub fn set_config(&self, config: DiscordConfig) {
+    |            ^^^^^^^^^^
+...
+165 |     pub fn get_config(&self) -> DiscordConfig {
+    |            ^^^^^^^^^^
+...
+169 |     fn get_api_url(&self, endpoint: &str) -> String {
+    |        ^^^^^^^^^^^
+...
+173 |     fn get_headers(&self) -> reqwest::header::HeaderMap {
+    |        ^^^^^^^^^^^
+...
+187 |     fn emit_event(&self, event: GatewayEvent) {
+    |        ^^^^^^^^^^
+...
+193 |     fn log(&self, message: &str) {
+    |        ^^^
+...
+199 |     async fn get_current_user(&self) -> Result<DiscordUser, String> {
+    |              ^^^^^^^^^^^^^^^^
+...
+219 |     async fn send_message(&self, channel_id: &str, content: &str) -> Result<(), String> {
+    |              ^^^^^^^^^^^^
+...
+242 |     fn create_identify_payload(&self) -> String {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+...
+259 |     fn create_heartbeat_payload(&self) -> String {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+268 |     async fn start_gateway(&self) -> Result<(), String> {
+    |              ^^^^^^^^^^^^^
+...
+375 |     fn stop_gateway(&self) {
+    |        ^^^^^^^^^^^^
+
+warning: struct `FeishuConfig` is never constructed
+  --> src/im/feishu.rs:13:12
+   |
+13 | pub struct FeishuConfig {
+   |            ^^^^^^^^^^^^
+
+warning: struct `FeishuAccessTokenResponse` is never constructed
+  --> src/im/feishu.rs:42:8
+   |
+42 | struct FeishuAccessTokenResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `FeishuAccessTokenData` is never constructed
+  --> src/im/feishu.rs:50:8
+   |
+50 | struct FeishuAccessTokenData {
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `FeishuSendMessageResponse` is never constructed
+  --> src/im/feishu.rs:56:8
+   |
+56 | struct FeishuSendMessageResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `FeishuUploadResponse` is never constructed
+  --> src/im/feishu.rs:63:8
+   |
+63 | struct FeishuUploadResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `FeishuUploadData` is never constructed
+  --> src/im/feishu.rs:71:8
+   |
+71 | struct FeishuUploadData {
+   |        ^^^^^^^^^^^^^^^^
+
+warning: struct `FeishuWebSocketMessage` is never constructed
+  --> src/im/feishu.rs:78:8
+   |
+78 | struct FeishuWebSocketMessage {
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `FeishuEvent` is never constructed
+  --> src/im/feishu.rs:91:8
+   |
+91 | struct FeishuEvent {
+   |        ^^^^^^^^^^^
+
+warning: struct `FeishuMessageEvent` is never constructed
+   --> src/im/feishu.rs:102:8
+    |
+102 | struct FeishuMessageEvent {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: struct `FeishuMention` is never constructed
+   --> src/im/feishu.rs:118:8
+    |
+118 | struct FeishuMention {
+    |        ^^^^^^^^^^^^^
+
+warning: struct `FeishuUserId` is never constructed
+   --> src/im/feishu.rs:125:8
+    |
+125 | struct FeishuUserId {
+    |        ^^^^^^^^^^^^
+
+warning: struct `FeishuSender` is never constructed
+   --> src/im/feishu.rs:133:8
+    |
+133 | struct FeishuSender {
+    |        ^^^^^^^^^^^^
+
+warning: struct `FeishuMediaAttachment` is never constructed
+   --> src/im/feishu.rs:143:12
+    |
+143 | pub struct FeishuMediaAttachment {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `FeishuGateway` is never constructed
+   --> src/im/feishu.rs:149:12
+    |
+149 | pub struct FeishuGateway {
+    |            ^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/feishu.rs:164:12
+    |
+163 | impl FeishuGateway {
+    | ------------------ associated items in this implementation
+164 |     pub fn new(config: FeishuConfig) -> Self {
+    |            ^^^
+...
+185 |     pub fn set_config(&self, config: FeishuConfig) {
+    |            ^^^^^^^^^^
+...
+189 |     pub fn get_config(&self) -> FeishuConfig {
+    |            ^^^^^^^^^^
+...
+193 |     fn get_base_url(&self) -> String {
+    |        ^^^^^^^^^^^^
+...
+206 |     fn emit_event(&self, event: GatewayEvent) {
+    |        ^^^^^^^^^^
+...
+212 |     fn log(&self, message: &str) {
+    |        ^^^
+...
+218 |     pub async fn get_access_token(&self) -> Result<String, String> {
+    |                  ^^^^^^^^^^^^^^^^
+...
+276 |     async fn upload_image(&self, file_path: &str) -> Result<String, String> {
+    |              ^^^^^^^^^^^^
+...
+326 |     async fn upload_file(&self, file_path: &str) -> Result<String, String> {
+    |              ^^^^^^^^^^^
+...
+374 |     async fn start_websocket_connection(&self) -> Result<(), String> {
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+491 |     async fn handle_message_event(&self, msg: &FeishuMessageEvent) -> Result<(), String> {
+    |              ^^^^^^^^^^^^^^^^^^^^
+...
+533 |     fn reconnect(&self) -> Result<(), String> {
+    |        ^^^^^^^^^
+...
+561 |     async fn send_message_api(
+    |              ^^^^^^^^^^^^^^^^
+...
+603 |     async fn send_image_message_api(
+    |              ^^^^^^^^^^^^^^^^^^^^^^
+...
+642 |     async fn send_file_message_api(
+    |              ^^^^^^^^^^^^^^^^^^^^^
+
+warning: trait `Gateway` is never used
+ --> src/im/gateway.rs:6:11
+  |
+6 | pub trait Gateway: Send + Sync + Any {
+  |           ^^^^^^^
+
+warning: struct `MessageDeduplicationCache` is never constructed
+   --> src/im/gateway.rs:122:12
+    |
+122 | pub struct MessageDeduplicationCache {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated items `new`, `check_and_mark`, and `cleanup` are never used
+   --> src/im/gateway.rs:127:12
+    |
+126 | impl MessageDeduplicationCache {
+    | ------------------------------ associated items in this implementation
+127 |     pub fn new() -> Self {
+    |            ^^^
+...
+131 |     pub fn check_and_mark(&mut self, message_id: &str, timestamp: i64, ttl_seconds: i64) -> bool {
+    |            ^^^^^^^^^^^^^^
+...
+144 |     pub fn cleanup(&mut self) {
+    |            ^^^^^^^
+
+warning: enum `MessageAckStatus` is never used
+   --> src/im/gateway.rs:155:10
+    |
+155 | pub enum MessageAckStatus {
+    |          ^^^^^^^^^^^^^^^^
+
+warning: struct `GatewayConfig` is never constructed
+   --> src/im/gateway.rs:165:12
+    |
+165 | pub struct GatewayConfig {
+    |            ^^^^^^^^^^^^^
+
+warning: struct `LLMConfig` is never constructed
+ --> src/im/llm_config.rs:7:12
+  |
+7 | pub struct LLMConfig {
+  |            ^^^^^^^^^
+
+warning: struct `LLMManager` is never constructed
+  --> src/im/llm_config.rs:32:12
+   |
+32 | pub struct LLMManager {
+   |            ^^^^^^^^^^
+
+warning: multiple associated items are never used
+  --> src/im/llm_config.rs:37:12
+   |
+36 | impl LLMManager {
+   | --------------- associated items in this implementation
+37 |     pub fn new(config: LLMConfig) -> Self {
+   |            ^^^
+...
+43 |     pub fn new_default() -> Self {
+   |            ^^^^^^^^^^^
+...
+47 |     pub fn set_config(&self, config: LLMConfig) {
+   |            ^^^^^^^^^^
+...
+51 |     pub fn get_config(&self) -> LLMConfig {
+   |            ^^^^^^^^^^
+...
+56 |     pub fn add_skill_prompt(&self, skill_name: &str, prompt: &str) {
+   |            ^^^^^^^^^^^^^^^^
+...
+64 |     pub fn get_skill_prompt(&self, skill_name: &str) -> Option<String> {
+   |            ^^^^^^^^^^^^^^^^
+...
+70 |     pub fn remove_skill_prompt(&self, skill_name: &str) {
+   |            ^^^^^^^^^^^^^^^^^^^
+...
+76 |     pub fn get_all_skill_prompts(&self) -> HashMap<String, String> {
+   |            ^^^^^^^^^^^^^^^^^^^^^
+...
+82 |     pub fn is_config_valid(&self) -> bool {
+   |            ^^^^^^^^^^^^^^^
+
+warning: enum `LogLevel` is never used
+ --> src/im/logging.rs:7:10
+  |
+7 | pub enum LogLevel {
+  |          ^^^^^^^^
+
+warning: struct `LogConfig` is never constructed
+  --> src/im/logging.rs:17:12
+   |
+17 | pub struct LogConfig {
+   |            ^^^^^^^^^
+
+warning: struct `Logger` is never constructed
+  --> src/im/logging.rs:34:12
+   |
+34 | pub struct Logger {
+   |            ^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/logging.rs:39:12
+    |
+ 38 | impl Logger {
+    | ----------- associated items in this implementation
+ 39 |     pub fn new(config: LogConfig) -> Self {
+    |            ^^^
+...
+ 45 |     pub fn new_default() -> Self {
+    |            ^^^^^^^^^^^
+...
+ 49 |     pub fn set_config(&self, config: LogConfig) {
+    |            ^^^^^^^^^^
+...
+ 53 |     pub fn get_config(&self) -> LogConfig {
+    |            ^^^^^^^^^^
+...
+ 58 |     pub fn trace(&self, module: &str, message: &str) {
+    |            ^^^^^
+...
+ 71 |     pub fn debug(&self, module: &str, message: &str) {
+    |            ^^^^^
+...
+ 84 |     pub fn info(&self, module: &str, message: &str) {
+    |            ^^^^
+...
+ 97 |     pub fn warn(&self, module: &str, message: &str) {
+    |            ^^^^
+...
+110 |     pub fn error(&self, module: &str, message: &str) {
+    |            ^^^^^
+...
+123 |     fn get_timestamp(&self) -> String {
+    |        ^^^^^^^^^^^^^
+...
+134 |     fn write_to_file(&self, message: &str) {
+    |        ^^^^^^^^^^^^^
+
+warning: enum `MessageMode` is never used
+ --> src/im/message_handler.rs:8:10
+  |
+8 | pub enum MessageMode {
+  |          ^^^^^^^^^^^
+
+warning: struct `MessageHandlerConfig` is never constructed
+  --> src/im/message_handler.rs:17:12
+   |
+17 | pub struct MessageHandlerConfig {
+   |            ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `MessageHandler` is never constructed
+  --> src/im/message_handler.rs:32:12
+   |
+32 | pub struct MessageHandler {
+   |            ^^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/message_handler.rs:37:12
+    |
+ 36 | impl MessageHandler {
+    | ------------------- associated items in this implementation
+ 37 |     pub fn new(config: MessageHandlerConfig) -> Self {
+    |            ^^^
+...
+ 43 |     pub fn new_default() -> Self {
+    |            ^^^^^^^^^^^
+...
+ 47 |     pub fn set_config(&self, config: MessageHandlerConfig) {
+    |            ^^^^^^^^^^
+...
+ 51 |     pub fn get_config(&self) -> MessageHandlerConfig {
+    |            ^^^^^^^^^^
+...
+ 56 |     pub fn handle_message(&self, message: IMMessage) -> Result<String, String> {
+    |            ^^^^^^^^^^^^^^
+...
+ 70 |     fn handle_chat_message(&self, message: IMMessage) -> Result<String, String> {
+    |        ^^^^^^^^^^^^^^^^^^^
+...
+ 97 |     fn handle_cowork_message(&self, message: IMMessage) -> Result<String, String> {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+...
+143 |     pub fn handle_event(&self, event: GatewayEvent) {
+    |            ^^^^^^^^^^^^
+
+warning: struct `NetworkMonitorConfig` is never constructed
+ --> src/im/network_monitor.rs:8:12
+  |
+8 | pub struct NetworkMonitorConfig {
+  |            ^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `NetworkStatus` is never used
+  --> src/im/network_monitor.rs:26:10
+   |
+26 | pub enum NetworkStatus {
+   |          ^^^^^^^^^^^^^
+
+warning: type alias `GatewayCallback` is never used
+  --> src/im/network_monitor.rs:32:10
+   |
+32 | pub type GatewayCallback = Arc<dyn Fn() -> Vec<Arc<dyn Gateway + Send + Sync>> + Send + Sync>;
+   |          ^^^^^^^^^^^^^^^
+
+warning: struct `NetworkMonitor` is never constructed
+  --> src/im/network_monitor.rs:35:12
+   |
+35 | pub struct NetworkMonitor {
+   |            ^^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/network_monitor.rs:43:12
+    |
+ 42 | impl NetworkMonitor {
+    | ------------------- associated items in this implementation
+ 43 |     pub fn new(config: NetworkMonitorConfig) -> Self {
+    |            ^^^
+...
+ 52 |     pub fn new_default() -> Self {
+    |            ^^^^^^^^^^^
+...
+ 56 |     pub fn set_config(&self, config: NetworkMonitorConfig) {
+    |            ^^^^^^^^^^
+...
+ 60 |     pub fn get_config(&self) -> NetworkMonitorConfig {
+    |            ^^^^^^^^^^
+...
+ 64 |     pub fn set_gateways_callback(&self, callback: Option<GatewayCallback>) {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+...
+ 69 |     pub fn check_network_status(&self) -> NetworkStatus {
+    |            ^^^^^^^^^^^^^^^^^^^^
+...
+ 77 |     pub async fn start(&self) {
+    |                  ^^^^^
+...
+128 |     pub fn stop(&self) {
+    |            ^^^^
+...
+134 |     async fn reconnect_all_gateways(&self) {
+    |              ^^^^^^^^^^^^^^^^^^^^^^
+...
+155 |     async fn check_and_reconnect_gateways(&self) {
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+181 |     pub fn get_network_status(&self) -> NetworkStatus {
+    |            ^^^^^^^^^^^^^^^^^^
+...
+186 |     pub fn is_running(&self) -> bool {
+    |            ^^^^^^^^^^
+
+warning: struct `TelegramConfig` is never constructed
+  --> src/im/telegram.rs:12:12
+   |
+12 | pub struct TelegramConfig {
+   |            ^^^^^^^^^^^^^^
+
+warning: struct `TelegramMeResponse` is never constructed
+  --> src/im/telegram.rs:31:8
+   |
+31 | struct TelegramMeResponse {
+   |        ^^^^^^^^^^^^^^^^^^
+
+warning: struct `TelegramUser` is never constructed
+  --> src/im/telegram.rs:37:8
+   |
+37 | struct TelegramUser {
+   |        ^^^^^^^^^^^^
+
+warning: struct `TelegramMessage` is never constructed
+  --> src/im/telegram.rs:46:8
+   |
+46 | struct TelegramMessage {
+   |        ^^^^^^^^^^^^^^^
+
+warning: struct `TelegramPhoto` is never constructed
+  --> src/im/telegram.rs:65:8
+   |
+65 | struct TelegramPhoto {
+   |        ^^^^^^^^^^^^^
+
+warning: struct `TelegramVideo` is never constructed
+  --> src/im/telegram.rs:74:8
+   |
+74 | struct TelegramVideo {
+   |        ^^^^^^^^^^^^^
+
+warning: struct `TelegramAudio` is never constructed
+  --> src/im/telegram.rs:85:8
+   |
+85 | struct TelegramAudio {
+   |        ^^^^^^^^^^^^^
+
+warning: struct `TelegramVoice` is never constructed
+  --> src/im/telegram.rs:96:8
+   |
+96 | struct TelegramVoice {
+   |        ^^^^^^^^^^^^^
+
+warning: struct `TelegramDocument` is never constructed
+   --> src/im/telegram.rs:105:8
+    |
+105 | struct TelegramDocument {
+    |        ^^^^^^^^^^^^^^^^
+
+warning: struct `TelegramSticker` is never constructed
+   --> src/im/telegram.rs:114:8
+    |
+114 | struct TelegramSticker {
+    |        ^^^^^^^^^^^^^^^
+
+warning: struct `TelegramChat` is never constructed
+   --> src/im/telegram.rs:124:8
+    |
+124 | struct TelegramChat {
+    |        ^^^^^^^^^^^^
+
+warning: struct `TelegramFrom` is never constructed
+   --> src/im/telegram.rs:131:8
+    |
+131 | struct TelegramFrom {
+    |        ^^^^^^^^^^^^
+
+warning: struct `TelegramUpdate` is never constructed
+   --> src/im/telegram.rs:140:8
+    |
+140 | struct TelegramUpdate {
+    |        ^^^^^^^^^^^^^^
+
+warning: struct `TelegramUpdatesResponse` is never constructed
+   --> src/im/telegram.rs:147:8
+    |
+147 | struct TelegramUpdatesResponse {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `TelegramFileResponse` is never constructed
+   --> src/im/telegram.rs:153:8
+    |
+153 | struct TelegramFileResponse {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `TelegramFile` is never constructed
+   --> src/im/telegram.rs:159:8
+    |
+159 | struct TelegramFile {
+    |        ^^^^^^^^^^^^
+
+warning: struct `SendMessageRequest` is never constructed
+   --> src/im/telegram.rs:167:8
+    |
+167 | struct SendMessageRequest {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: struct `TelegramMediaAttachment` is never constructed
+   --> src/im/telegram.rs:177:12
+    |
+177 | pub struct TelegramMediaAttachment {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `TelegramGateway` is never constructed
+   --> src/im/telegram.rs:189:12
+    |
+189 | pub struct TelegramGateway {
+    |            ^^^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/telegram.rs:203:12
+    |
+202 | impl TelegramGateway {
+    | -------------------- associated items in this implementation
+203 |     pub fn new(config: TelegramConfig) -> Self {
+    |            ^^^
+...
+223 |     pub fn set_config(&self, config: TelegramConfig) {
+    |            ^^^^^^^^^^
+...
+227 |     pub fn get_config(&self) -> TelegramConfig {
+    |            ^^^^^^^^^^
+...
+231 |     fn get_api_url(&self, method: &str) -> String {
+    |        ^^^^^^^^^^^
+...
+236 |     fn emit_event(&self, event: GatewayEvent) {
+    |        ^^^^^^^^^^
+...
+242 |     fn log(&self, message: &str) {
+    |        ^^^
+...
+248 |     async fn get_me(&self) -> Result<TelegramUser, String> {
+    |              ^^^^^^
+...
+267 |     async fn get_file(&self, file_id: &str) -> Result<TelegramFile, String> {
+    |              ^^^^^^^^
+...
+287 |     async fn download_file(&self, file_path: &str) -> Result<Vec<u8>, String> {
+    |              ^^^^^^^^^^^^^
+...
+306 |     fn extract_media_from_message(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+401 |     async fn send_text_message(
+    |              ^^^^^^^^^^^^^^^^^
+...
+411 |     async fn send_message_with_retry(
+    |              ^^^^^^^^^^^^^^^^^^^^^^^
+...
+470 |     async fn send_media(
+    |              ^^^^^^^^^^
+...
+514 |     fn split_message(&self, text: &str, max_length: usize) -> Vec<String> {
+    |        ^^^^^^^^^^^^^
+...
+540 |     async fn start_polling(&self) {
+    |              ^^^^^^^^^^^^^
+...
+665 |     fn extract_media_from_message_static(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+717 |     async fn stop_polling(&self) {
+    |              ^^^^^^^^^^^^
+
+warning: struct `WeWorkConfig` is never constructed
+  --> src/im/wework.rs:10:12
+   |
+10 | pub struct WeWorkConfig {
+   |            ^^^^^^^^^^^^
+
+warning: struct `WeWorkWebhookResponse` is never constructed
+  --> src/im/wework.rs:27:8
+   |
+27 | struct WeWorkWebhookResponse {
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `WeWorkGateway` is never constructed
+  --> src/im/wework.rs:32:12
+   |
+32 | pub struct WeWorkGateway {
+   |            ^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/im/wework.rs:40:12
+    |
+ 39 | impl WeWorkGateway {
+    | ------------------ associated items in this implementation
+ 40 |     pub fn new(config: WeWorkConfig) -> Self {
+    |            ^^^
+...
+ 54 |     pub fn set_config(&self, config: WeWorkConfig) {
+    |            ^^^^^^^^^^
+...
+ 58 |     pub fn get_config(&self) -> WeWorkConfig {
+    |            ^^^^^^^^^^
+...
+ 62 |     fn emit_event(&self, event: GatewayEvent) {
+    |        ^^^^^^^^^^
+...
+ 68 |     fn log(&self, message: &str) {
+    |        ^^^
+...
+ 75 |     async fn send_webhook_message(&self, content: &str, msg_type: &str) -> Result<(), String> {
+    |              ^^^^^^^^^^^^^^^^^^^^
+...
+128 |     pub async fn send_text_message(&self, content: &str) -> Result<(), String> {
+    |                  ^^^^^^^^^^^^^^^^^
+...
+133 |     pub async fn send_markdown_message(&self, content: &str) -> Result<(), String> {
+    |                  ^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `id`, `mime_type`, and `file_size` are never read
+  --> src/im/whatsapp.rs:38:5
+   |
+37 | struct WhatsAppMediaInfo {
+   |        ----------------- fields in this struct
+38 |     id: String,
+   |     ^^
+39 |     mime_type: String,
+   |     ^^^^^^^^^
+40 |     file_size: Option<i64>,
+   |     ^^^^^^^^^
+   |
+   = note: `WhatsAppMediaInfo` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: fields `id` and `name` are never read
+  --> src/im/whatsapp.rs:46:5
+   |
+45 | struct WhatsAppUser {
+   |        ------------ fields in this struct
+46 |     id: String,
+   |     ^^
+47 |     name: Option<String>,
+   |     ^^^^
+   |
+   = note: `WhatsAppUser` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+  --> src/update_manager.rs:54:21
+   |
+54 |                     drop(app_handle);
+   |                     ^^^^^----------^
+   |                          |
+   |                          argument has type `&AppHandle`
+   |
+   = note: `#[warn(dropping_references)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+   |
+54 -                     drop(app_handle);
+54 +                     let _ = app_handle;
+   |
+
+warning: `ggclaw` (lib) generated 153 warnings (run `cargo fix --lib -p ggclaw` to apply 32 suggestions)
+    Finished `release` profile [optimized] target(s) in 6m 34s
+failed to build x86_64-apple-darwin binary: Target x86_64-apple-darwin is not installed (installed targets: aarch64-apple-darwin). Please run `rustup target add x86_64-apple-darwin`.
+       Error failed to build x86_64-apple-darwin binary: Target x86_64-apple-darwin is not installed (installed targets: aarch64-apple-darwin). Please run `rustup target add x86_64-apple-darwin`.
+Error: Process completed with exit code 1.

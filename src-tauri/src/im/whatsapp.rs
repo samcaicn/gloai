@@ -1,5 +1,5 @@
 use super::gateway::{EventCallback, Gateway, GatewayEvent, GatewayStatus, IMMessage};
-use async_trait::async_trait;
+
 use chrono::Local;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
