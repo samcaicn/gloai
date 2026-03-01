@@ -248,23 +248,45 @@ class CoworkService {
                     loggerService.info('GoClaw WebSocket connected');
                   } catch (connectError) {
                     loggerService.warn('Failed to connect to GoClaw WebSocket:', connectError as Error);
+                    loggerService.info('GoClaw is running but connection failed, continuing without WebSocket');
                   }
                 } else {
                   loggerService.warn('GoClaw is not running, starting...');
                   try {
-                    await tauriInvoke('goclaw_start');
+                    // 尝试启动 GoClaw
+                    loggerService.info('Attempting to start GoClaw...');
+                    const startResult = await tauriInvoke('goclaw_start');
+                    loggerService.info('GoClaw start result:', startResult);
                     loggerService.info('GoClaw started, waiting for ready...');
                     // 等待 GoClaw 启动
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    try {
-                      await tauriInvoke('goclaw_connect');
-                      loggerService.info('GoClaw WebSocket connected after startup');
-                    } catch (connectError) {
-                      loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
+                    await new Promise(resolve => setTimeout(resolve, 3000)); // 增加等待时间
+                    
+                    // 检查 GoClaw 是否真的启动成功
+                    const isRunningAfterStart = await tauriInvoke<boolean>('goclaw_is_running');
+                    loggerService.info(`GoClaw running status after startup: ${isRunningAfterStart}`);
+                    
+                    if (isRunningAfterStart) {
+                      try {
+                        loggerService.info('Connecting to GoClaw WebSocket...');
+                        await tauriInvoke('goclaw_connect');
+                        loggerService.info('GoClaw WebSocket connected after startup');
+                      } catch (connectError) {
+                        loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
+                        loggerService.info('GoClaw started but WebSocket connection failed, continuing without WebSocket');
+                      }
+                    } else {
+                      loggerService.error('GoClaw failed to start properly');
+                      loggerService.info('Continuing without GoClaw');
                     }
                   } catch (startError) {
                     loggerService.error('Failed to start GoClaw:', startError as Error);
-                    // GoClaw 启动失败，但不影响会话创建和任务执行
+                    // 尝试获取更多诊断信息
+                    try {
+                      const platform = await tauriInvoke<string>('get_platform');
+                      loggerService.info(`Platform: ${platform}`);
+                    } catch (e) {
+                      loggerService.warn('Failed to get platform info:', e);
+                    }
                     loggerService.info('Continuing without GoClaw');
                   }
                 }
@@ -342,23 +364,45 @@ class CoworkService {
                     loggerService.info('GoClaw WebSocket connected');
                   } catch (connectError) {
                     loggerService.warn('Failed to connect to GoClaw WebSocket:', connectError as Error);
+                    loggerService.info('GoClaw is running but connection failed, continuing without WebSocket');
                   }
                 } else {
                   loggerService.warn('GoClaw is not running, starting...');
                   try {
-                    await tauriInvoke('goclaw_start');
+                    // 尝试启动 GoClaw
+                    loggerService.info('Attempting to start GoClaw...');
+                    const startResult = await tauriInvoke('goclaw_start');
+                    loggerService.info('GoClaw start result:', startResult);
                     loggerService.info('GoClaw started, waiting for ready...');
                     // 等待 GoClaw 启动
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    try {
-                      await tauriInvoke('goclaw_connect');
-                      loggerService.info('GoClaw WebSocket connected after startup');
-                    } catch (connectError) {
-                      loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
+                    await new Promise(resolve => setTimeout(resolve, 3000)); // 增加等待时间
+                    
+                    // 检查 GoClaw 是否真的启动成功
+                    const isRunningAfterStart = await tauriInvoke<boolean>('goclaw_is_running');
+                    loggerService.info(`GoClaw running status after startup: ${isRunningAfterStart}`);
+                    
+                    if (isRunningAfterStart) {
+                      try {
+                        loggerService.info('Connecting to GoClaw WebSocket...');
+                        await tauriInvoke('goclaw_connect');
+                        loggerService.info('GoClaw WebSocket connected after startup');
+                      } catch (connectError) {
+                        loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
+                        loggerService.info('GoClaw started but WebSocket connection failed, continuing without WebSocket');
+                      }
+                    } else {
+                      loggerService.error('GoClaw failed to start properly');
+                      loggerService.info('Continuing without GoClaw');
                     }
                   } catch (startError) {
                     loggerService.error('Failed to start GoClaw:', startError as Error);
-                    // GoClaw 启动失败，但不影响消息发送和任务执行
+                    // 尝试获取更多诊断信息
+                    try {
+                      const platform = await tauriInvoke<string>('get_platform');
+                      loggerService.info(`Platform: ${platform}`);
+                    } catch (e) {
+                      loggerService.warn('Failed to get platform info:', e);
+                    }
                     loggerService.info('Continuing without GoClaw');
                     return;
                   }
