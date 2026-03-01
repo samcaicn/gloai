@@ -344,6 +344,10 @@ interface IElectronAPI {
     getPlan: () => Promise<{ success: boolean; data?: any; error?: string }>;
     getOverview: () => Promise<{ success: boolean; data?: any; error?: string }>;
   };
+  log: {
+    getPath: () => Promise<string>;
+    openFolder: () => Promise<void>;
+  };
 }
 
 // IM Gateway types

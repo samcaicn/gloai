@@ -24,6 +24,7 @@ import type { CoworkPermissionResult } from './types/cowork';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { i18nService } from './services/i18n';
 import { matchesShortcut } from './services/shortcuts';
+import { loggerService } from './services/logger';
 import AppUpdateBadge from './components/update/AppUpdateBadge';
 import AppUpdateModal from './components/update/AppUpdateModal';
 
@@ -59,14 +60,21 @@ const App: React.FC = () => {
         // 标记平台，用于 CSS 条件样式（如 Windows 标题栏按钮区域留白）
         document.documentElement.classList.add(`platform-${window.electron.platform}`);
 
+        // 初始化日志服务
+        await loggerService.init();
+        loggerService.info('Starting app initialization');
+
         // 初始化配置
         await configService.init();
+        loggerService.info('Config service initialized');
         
         // 初始化主题
         themeService.initialize();
+        loggerService.info('Theme service initialized');
 
         // 初始化语言
         await i18nService.initialize();
+        loggerService.info('i18n service initialized');
         
         const config = await configService.getConfig();
         
@@ -106,20 +114,24 @@ const App: React.FC = () => {
         
         // 初始化定时任务服务
         await scheduledTaskService.init();
+        loggerService.info('Scheduled task service initialized');
 
         // 自动加载 tuptup 登录信息
         try {
           const { tuptupService } = await import('./services/tuptup');
           if (tuptupService.isLoggedIn()) {
-            console.log('Auto-loaded tuptup login info');
+            loggerService.info('Auto-loaded tuptup login info');
+          } else {
+            loggerService.info('No tuptup login info found');
           }
         } catch (error) {
-          console.error('Failed to load tuptup login info:', error);
+          loggerService.error('Failed to load tuptup login info:', error as Error);
         }
 
+        loggerService.info('App initialization completed');
         setIsInitialized(true);
       } catch (error) {
-        console.error('Failed to initialize app:', error);
+        loggerService.error('Failed to initialize app:', error as Error);
         // 确保即使初始化失败也能显示错误信息
         setInitError('初始化失败，请检查应用配置');
         setIsInitialized(true);
@@ -128,7 +140,7 @@ const App: React.FC = () => {
 
     // 确保捕获初始化过程中的错误
     void initializeApp().catch(error => {
-      console.error('Error in initializeApp:', error);
+      loggerService.error('Error in initializeApp:', error as Error);
       setInitError('应用启动失败');
       setIsInitialized(true);
     });

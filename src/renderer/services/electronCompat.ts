@@ -119,8 +119,18 @@ export function createElectronCompatLayer() {
       getSystemLocale: () => tauriApi.appInfo.getSystemLocale(),
     },
     log: {
-      getPath: async () => '',
-      openFolder: async () => {},
+      getPath: async () => {
+        try {
+          // 在浏览器模式下返回一个模拟路径
+          return '/logs/app.log';
+        } catch (error) {
+          console.warn('Failed to get log path:', error);
+          return '/logs/app.log';
+        }
+      },
+      openFolder: async () => {
+        console.warn('log.openFolder not implemented in browser mode');
+      },
     },
     im: {
       getConfig: async () => ({}),
