@@ -43,7 +43,7 @@
     <script>
       // 检查 Tauri 是否已初始化
       window.__TAURI_CHECK_INTERVAL = setInterval(function() {
-        if (window.__TAURI_INTERNALS__) {
+        if (window.__TAURI_INTERNALS__ || window.__TAURI__ || window.isTauri || (window.electron && window.electron.store && window.electron.store.get)) {
           console.log('[index.html] Tauri initialized!');
           clearInterval(window.__TAURI_CHECK_INTERVAL);
         }
