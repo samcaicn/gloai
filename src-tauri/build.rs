@@ -15,8 +15,14 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
     let base_url = format!("https://github.com/smallnest/goclaw/releases/download/{}", version);
     
     // 确定目标操作系统和架构
-    let target_os = env::var("CARGO_TARGET_OS").expect("CARGO_TARGET_OS not set");
-    let target_arch = env::var("CARGO_TARGET_ARCH").expect("CARGO_TARGET_ARCH not set");
+    let target_os = env::var("CARGO_TARGET_OS").unwrap_or_else(|_| {
+        // 如果 CARGO_TARGET_OS 未设置，使用当前系统的 OS
+        std::env::consts::OS.to_string()
+    });
+    let target_arch = env::var("CARGO_TARGET_ARCH").unwrap_or_else(|_| {
+        // 如果 CARGO_TARGET_ARCH 未设置，使用当前系统的架构
+        std::env::consts::ARCH.to_string()
+    });
     
     // 处理 universal 构建
     let architectures = if target_os == "macos" && env::var("CARGO_BUILD_TARGET").unwrap_or_default() == "universal-apple-darwin" {
