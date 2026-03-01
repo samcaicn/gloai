@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::{oneshot, Mutex as AsyncMutex};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
+use crate::logger::Logger;
 use crate::storage::KvStore;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,10 +107,11 @@ pub struct GoClawManager {
     ws_connection: Arc<AsyncMutex<Option<WebSocketConnection>>>,
     notification_callback: NotificationCallback,
     last_error: Arc<Mutex<Option<String>>>,
+    logger: Arc<Mutex<Logger>>,
 }
 
 impl GoClawManager {
-    pub fn new(kv_store: KvStore) -> Self {
+    pub fn new(kv_store: KvStore, logger: Logger) -> Self {
         let config = if let Ok(Some(json)) = kv_store.get("goclaw_config") {
             serde_json::from_str(&json).unwrap_or_else(|_| GoClawConfig::default())
         } else {
@@ -125,6 +127,7 @@ impl GoClawManager {
             ws_connection: Arc::new(AsyncMutex::new(None)),
             notification_callback: Arc::new(Mutex::new(None)),
             last_error: Arc::new(Mutex::new(None)),
+            logger: Arc::new(Mutex::new(logger)),
         }
     }
 
@@ -180,15 +183,15 @@ impl GoClawManager {
         if let Some(path) = &config.binary_path {
             let path = Path::new(path);
             if path.exists() {
-                println!("[GoClaw] Using configured binary path: {:?}", path);
+                self.logger.lock().unwrap().info(&format!("Using configured binary path: {:?}", path));
                 return Ok(path.to_path_buf());
             } else {
-                println!("[GoClaw] Configured binary path does not exist: {:?}", path);
+                self.logger.lock().unwrap().warn(&format!("Configured binary path does not exist: {:?}", path));
             }
         }
 
         let binary_names = Self::get_binary_names();
-        println!("[GoClaw] Searching for binary names: {:?}", binary_names);
+        self.logger.lock().unwrap().info(&format!("Searching for binary names: {:?}", binary_names));
 
         // 检查构建目录（target/goclaw）
         if let Ok(current_dir) = std::env::current_dir() {
@@ -199,11 +202,11 @@ impl GoClawManager {
                 for profile in &["debug", "release"] {
                     let goclaw_dir = target_dir.join(profile).join("goclaw");
                     if goclaw_dir.is_dir() {
-                        println!("[GoClaw] Checking build directory: {:?}", goclaw_dir);
+                        self.logger.lock().unwrap().info(&format!("Checking build directory: {:?}", goclaw_dir));
                         for name in &binary_names {
                             let path = goclaw_dir.join(name);
                             if path.exists() {
-                                println!("[GoClaw] Found binary in build directory: {:?}", path);
+                                self.logger.lock().unwrap().info(&format!("Found binary in build directory: {:?}", path));
                                 return Ok(path);
                             }
                         }
@@ -220,11 +223,11 @@ impl GoClawManager {
                 if resources_dir.is_dir() {
                     let goclaw_dir = resources_dir.join("goclaw");
                     if goclaw_dir.is_dir() {
-                        println!("[GoClaw] Checking Resources/goclaw directory: {:?}", goclaw_dir);
+                        self.logger.lock().unwrap().info(&format!("Checking Resources/goclaw directory: {:?}", goclaw_dir));
                         for name in &binary_names {
                             let path = goclaw_dir.join(name);
                             if path.exists() {
-                                println!("[GoClaw] Found binary in Resources/goclaw directory: {:?}", path);
+                                self.logger.lock().unwrap().info(&format!("Found binary in Resources/goclaw directory: {:?}", path));
                                 return Ok(path);
                             }
                         }
@@ -235,13 +238,13 @@ impl GoClawManager {
 
         // 检查应用目录
         if let Ok(exe_dir) = std::env::current_exe() {
-            println!("[GoClaw] Current executable directory: {:?}", exe_dir);
+            self.logger.lock().unwrap().info(&format!("Current executable directory: {:?}", exe_dir));
             if let Some(dir) = exe_dir.parent() {
                 // 检查当前目录
                 for name in &binary_names {
                     let path = dir.join(name);
                     if path.exists() {
-                        println!("[GoClaw] Found binary in executable directory: {:?}", path);
+                        self.logger.lock().unwrap().info(&format!("Found binary in executable directory: {:?}", path));
                         return Ok(path);
                     }
                 }
@@ -249,11 +252,11 @@ impl GoClawManager {
                 // 检查 goclaw 子目录
                 let goclaw_dir = dir.join("goclaw");
                 if goclaw_dir.is_dir() {
-                    println!("[GoClaw] Checking goclaw subdirectory: {:?}", goclaw_dir);
+                    self.logger.lock().unwrap().info(&format!("Checking goclaw subdirectory: {:?}", goclaw_dir));
                     for name in &binary_names {
                         let path = goclaw_dir.join(name);
                         if path.exists() {
-                            println!("[GoClaw] Found binary in goclaw subdirectory: {:?}", path);
+                            self.logger.lock().unwrap().info(&format!("Found binary in goclaw subdirectory: {:?}", path));
                             return Ok(path);
                         }
                     }
@@ -261,11 +264,11 @@ impl GoClawManager {
 
                 // 检查上一级目录（针对 universal 构建）
                 if let Some(parent_dir) = dir.parent() {
-                    println!("[GoClaw] Checking parent directory: {:?}", parent_dir);
+                    self.logger.lock().unwrap().info(&format!("Checking parent directory: {:?}", parent_dir));
                     for name in &binary_names {
                         let path = parent_dir.join(name);
                         if path.exists() {
-                            println!("[GoClaw] Found binary in parent directory: {:?}", path);
+                            self.logger.lock().unwrap().info(&format!("Found binary in parent directory: {:?}", path));
                             return Ok(path);
                         }
                     }
@@ -273,11 +276,11 @@ impl GoClawManager {
                     // 检查 Resources 目录（针对 universal 构建）
                     let resources_dir = parent_dir.join("Resources");
                     if resources_dir.is_dir() {
-                        println!("[GoClaw] Checking Resources directory: {:?}", resources_dir);
+                        self.logger.lock().unwrap().info(&format!("Checking Resources directory: {:?}", resources_dir));
                         for name in &binary_names {
                             let path = resources_dir.join(name);
                             if path.exists() {
-                                println!("[GoClaw] Found binary in Resources directory: {:?}", path);
+                                self.logger.lock().unwrap().info(&format!("Found binary in Resources directory: {:?}", path));
                                 return Ok(path);
                             }
                         }
@@ -285,11 +288,11 @@ impl GoClawManager {
                         // 检查 Resources/goclaw 目录
                         let resources_goclaw_dir = resources_dir.join("goclaw");
                         if resources_goclaw_dir.is_dir() {
-                            println!("[GoClaw] Checking Resources/goclaw directory: {:?}", resources_goclaw_dir);
+                            self.logger.lock().unwrap().info(&format!("Checking Resources/goclaw directory: {:?}", resources_goclaw_dir));
                             for name in &binary_names {
                                 let path = resources_goclaw_dir.join(name);
                                 if path.exists() {
-                                    println!("[GoClaw] Found binary in Resources/goclaw directory: {:?}", path);
+                                    self.logger.lock().unwrap().info(&format!("Found binary in Resources/goclaw directory: {:?}", path));
                                     return Ok(path);
                                 }
                             }
@@ -298,11 +301,11 @@ impl GoClawManager {
 
                     // 检查更深层次的目录结构
                     if let Some(grandparent_dir) = parent_dir.parent() {
-                        println!("[GoClaw] Checking grandparent directory: {:?}", grandparent_dir);
+                        self.logger.lock().unwrap().info(&format!("Checking grandparent directory: {:?}", grandparent_dir));
                         for name in &binary_names {
                             let path = grandparent_dir.join(name);
                             if path.exists() {
-                                println!("[GoClaw] Found binary in grandparent directory: {:?}", path);
+                                self.logger.lock().unwrap().info(&format!("Found binary in grandparent directory: {:?}", path));
                                 return Ok(path);
                             }
                         }
@@ -310,12 +313,38 @@ impl GoClawManager {
                         // 检查 grandparent/goclaw 目录
                         let grandparent_goclaw_dir = grandparent_dir.join("goclaw");
                         if grandparent_goclaw_dir.is_dir() {
-                            println!("[GoClaw] Checking grandparent/goclaw directory: {:?}", grandparent_goclaw_dir);
+                            self.logger.lock().unwrap().info(&format!("Checking grandparent/goclaw directory: {:?}", grandparent_goclaw_dir));
                             for name in &binary_names {
                                 let path = grandparent_goclaw_dir.join(name);
                                 if path.exists() {
-                                    println!("[GoClaw] Found binary in grandparent/goclaw directory: {:?}", path);
+                                    self.logger.lock().unwrap().info(&format!("Found binary in grandparent/goclaw directory: {:?}", path));
                                     return Ok(path);
+                                }
+                            }
+                        }
+
+                        // 检查 grandparent/Resources 目录
+                        let grandparent_resources_dir = grandparent_dir.join("Resources");
+                        if grandparent_resources_dir.is_dir() {
+                            self.logger.lock().unwrap().info(&format!("Checking grandparent/Resources directory: {:?}", grandparent_resources_dir));
+                            for name in &binary_names {
+                                let path = grandparent_resources_dir.join(name);
+                                if path.exists() {
+                                    self.logger.lock().unwrap().info(&format!("Found binary in grandparent/Resources directory: {:?}", path));
+                                    return Ok(path);
+                                }
+                            }
+
+                            // 检查 grandparent/Resources/goclaw 目录
+                            let grandparent_resources_goclaw_dir = grandparent_resources_dir.join("goclaw");
+                            if grandparent_resources_goclaw_dir.is_dir() {
+                                self.logger.lock().unwrap().info(&format!("Checking grandparent/Resources/goclaw directory: {:?}", grandparent_resources_goclaw_dir));
+                                for name in &binary_names {
+                                    let path = grandparent_resources_goclaw_dir.join(name);
+                                    if path.exists() {
+                                        self.logger.lock().unwrap().info(&format!("Found binary in grandparent/Resources/goclaw directory: {:?}", path));
+                                        return Ok(path);
+                                    }
                                 }
                             }
                         }
@@ -326,7 +355,7 @@ impl GoClawManager {
 
         // 检查用户主目录
         if let Some(home) = dirs::home_dir() {
-            println!("[GoClaw] Checking home directory: {:?}", home);
+            self.logger.lock().unwrap().info(&format!("Checking home directory: {:?}", home));
             let search_paths = vec![
                 home.join(".glo"),
                 home.join(".glo").join("goclaw"),
@@ -339,11 +368,11 @@ impl GoClawManager {
                 if !base_dir.is_dir() {
                     continue;
                 }
-                println!("[GoClaw] Checking directory: {:?}", base_dir);
+                self.logger.lock().unwrap().info(&format!("Checking directory: {:?}", base_dir));
                 for name in &binary_names {
                     let path = base_dir.join(name);
                     if path.exists() {
-                        println!("[GoClaw] Found binary: {:?}", path);
+                        self.logger.lock().unwrap().info(&format!("Found binary: {:?}", path));
                         return Ok(path);
                     }
                 }
@@ -351,11 +380,11 @@ impl GoClawManager {
                 // 检查 darwin 子目录
                 let darwin_dir = base_dir.join("darwin");
                 if darwin_dir.is_dir() {
-                    println!("[GoClaw] Checking darwin subdirectory: {:?}", darwin_dir);
+                    self.logger.lock().unwrap().info(&format!("Checking darwin subdirectory: {:?}", darwin_dir));
                     for name in &binary_names {
                         let path = darwin_dir.join(name);
                         if path.exists() {
-                            println!("[GoClaw] Found binary in darwin subdirectory: {:?}", path);
+                            self.logger.lock().unwrap().info(&format!("Found binary in darwin subdirectory: {:?}", path));
                             return Ok(path);
                         }
                     }
@@ -367,12 +396,15 @@ impl GoClawManager {
         if cfg!(target_os = "macos") {
             let app_paths = vec![
                 PathBuf::from("/Applications/goclaw.app/Contents/MacOS/goclaw"),
+                PathBuf::from("/Applications/goclaw.app/Contents/MacOS/goclaw-universal"),
+                PathBuf::from("/Applications/goclaw.app/Contents/MacOS/goclaw-arm64"),
+                PathBuf::from("/Applications/goclaw.app/Contents/MacOS/goclaw-amd64"),
                 PathBuf::from("/usr/local/bin/goclaw"),
                 PathBuf::from("/opt/homebrew/bin/goclaw"),
             ];
             for path in app_paths {
                 if path.exists() {
-                    println!("[GoClaw] Found binary in system path: {:?}", path);
+                    self.logger.lock().unwrap().info(&format!("Found binary in system path: {:?}", path));
                     return Ok(path);
                 }
             }
@@ -389,9 +421,9 @@ impl GoClawManager {
         } else if cfg!(target_os = "macos") {
             let arch = std::env::consts::ARCH;
             if arch == "aarch64" {
-                vec!["goclaw-arm64".to_string(), "goclaw".to_string()]
+                vec!["goclaw-arm64".to_string(), "goclaw-universal".to_string(), "goclaw".to_string()]
             } else {
-                vec!["goclaw-amd64".to_string(), "goclaw".to_string()]
+                vec!["goclaw-amd64".to_string(), "goclaw-universal".to_string(), "goclaw".to_string()]
             }
         } else {
             vec!["goclaw".to_string()]
@@ -411,15 +443,15 @@ impl GoClawManager {
         }
 
         if self.is_running() {
-            println!("[GoClaw] Already running, skipping start");
+            self.logger.lock().unwrap().info("Already running, skipping start");
             return Ok(());
         }
 
-        println!("[GoClaw] Starting GoClaw service...");
+        self.logger.lock().unwrap().info("Starting GoClaw service...");
         
         let binary_path = match self.find_binary() {
             Ok(path) => {
-                println!("[GoClaw] Found GoClaw binary at: {:?}", path);
+                self.logger.lock().unwrap().info(&format!("Found GoClaw binary at: {:?}", path));
                 path
             },
             Err(e) => {
@@ -449,7 +481,7 @@ impl GoClawManager {
             
             if let Ok(permissions) = binary_path.metadata() {
                 let perms = permissions.permissions();
-                println!("[GoClaw] Binary permissions: {:o}", perms.mode());
+                self.logger.lock().unwrap().info(&format!("Binary permissions: {:o}", perms.mode()));
                 if (perms.mode() & 0o111) == 0 {
                     let err = format!("GoClaw binary is not executable: {:?}", binary_path);
                     *self.last_error.lock().unwrap() = Some(err.clone());
@@ -458,9 +490,10 @@ impl GoClawManager {
             }
         }
 
-        println!("[GoClaw] Starting GoClaw from: {:?}", binary_path);
-        println!("[GoClaw] Command: {:?} start", binary_path);
+        self.logger.lock().unwrap().info(&format!("Starting GoClaw from: {:?}", binary_path));
+        self.logger.lock().unwrap().info(&format!("Command: {:?} start", binary_path));
 
+        // 尝试不同的启动命令
         let mut child = match Command::new(&binary_path)
             .arg("start")
             .stdin(Stdio::null())
@@ -470,25 +503,45 @@ impl GoClawManager {
         {
             Ok(c) => c,
             Err(e) => {
-                let err = format!("Failed to start GoClaw: {}", e);
-                *self.last_error.lock().unwrap() = Some(err.clone());
-                return Err(anyhow::anyhow!(err));
+                self.logger.lock().unwrap().warn(&format!("Failed to start with 'start' argument: {}, trying without argument...", e));
+                // 尝试不使用 start 参数
+                match Command::new(&binary_path)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                {
+                    Ok(c) => {
+                        self.logger.lock().unwrap().info("Started without 'start' argument");
+                        c
+                    },
+                    Err(e) => {
+                        let err = format!("Failed to start GoClaw: {}", e);
+                        *self.last_error.lock().unwrap() = Some(err.clone());
+                        return Err(anyhow::anyhow!(err));
+                    }
+                }
             }
         };
 
         let pid = child.id();
-        println!("[GoClaw] Started with PID: {}", pid);
+        self.logger.lock().unwrap().info(&format!("Started with PID: {}", pid));
 
         // 检查进程是否立即退出
         tokio::time::sleep(Duration::from_millis(1000)).await;
         match child.try_wait() {
             Ok(Some(status)) => {
+                // 尝试读取标准输出和标准错误
+                let stdout = child.stdout.take().and_then(|stdout| std::io::read_to_string(stdout).ok());
+                let stderr = child.stderr.take().and_then(|stderr| std::io::read_to_string(stderr).ok());
+                self.logger.lock().unwrap().error(&format!("Process stdout: {:?}", stdout));
+                self.logger.lock().unwrap().error(&format!("Process stderr: {:?}", stderr));
                 let err = format!("GoClaw process exited immediately with status: {:?}", status);
                 *self.last_error.lock().unwrap() = Some(err.clone());
                 return Err(anyhow::anyhow!(err));
             }
             Ok(None) => {
-                println!("[GoClaw] Process is still running");
+                self.logger.lock().unwrap().info("Process is still running");
                 // 进程仍在运行，继续
             }
             Err(e) => {
@@ -503,14 +556,14 @@ impl GoClawManager {
 
         let timeout = Duration::from_millis(timeout_ms);
         let start_time = std::time::Instant::now();
-        println!("[GoClaw] Waiting for service to be ready (timeout: {}ms)", timeout_ms);
+        self.logger.lock().unwrap().info(&format!("Waiting for service to be ready (timeout: {}ms)", timeout_ms));
 
         while start_time.elapsed() < timeout {
             if self.check_port_available() {
-                println!("[GoClaw] Service is ready");
+                self.logger.lock().unwrap().info("Service is ready");
                 return Ok(());
             }
-            println!("[GoClaw] Service not ready yet, waiting...");
+            self.logger.lock().unwrap().info("Service not ready yet, waiting...");
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
 
@@ -519,13 +572,18 @@ impl GoClawManager {
         if let Some(ref mut child) = *process_guard {
             match child.try_wait() {
                 Ok(Some(status)) => {
+                    // 尝试读取标准输出和标准错误
+                    let stdout = child.stdout.take().and_then(|stdout| std::io::read_to_string(stdout).ok());
+                    let stderr = child.stderr.take().and_then(|stderr| std::io::read_to_string(stderr).ok());
+                    self.logger.lock().unwrap().error(&format!("Process stdout: {:?}", stdout));
+                    self.logger.lock().unwrap().error(&format!("Process stderr: {:?}", stderr));
                     let err = format!("GoClaw process exited during startup with status: {:?}", status);
                     *self.last_error.lock().unwrap() = Some(err.clone());
                     return Err(anyhow::anyhow!(err));
                 }
                 Ok(None) => {
                     // 进程仍在运行，但端口不可用
-                    println!("[GoClaw] Started but service may not be ready yet");
+                    self.logger.lock().unwrap().info("Started but service may not be ready yet");
                 }
                 Err(e) => {
                     let err = format!("Error checking GoClaw process status: {}", e);

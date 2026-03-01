@@ -934,7 +934,7 @@ pub fn run() {
                 eprintln!("[System] Failed to setup system tray: {}", e);
             }
 
-            let goclaw_manager = Arc::new(TokioMutex::new(GoClawManager::new(kv_store.clone())));
+            let goclaw_manager = Arc::new(TokioMutex::new(GoClawManager::new(kv_store.clone(), logger.clone())));
             let mut cowork_manager = CoworkManager::new(database_arc.clone());
             cowork_manager.set_goclaw_manager(goclaw_manager.clone());
 
