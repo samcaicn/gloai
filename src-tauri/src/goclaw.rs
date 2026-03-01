@@ -474,7 +474,7 @@ impl GoClawManager {
                 *self.last_error.lock().unwrap() = Some(err.clone());
                 return Err(anyhow::anyhow!(err));
             }
-        }
+        };
 
         let pid = child.id();
         println!("[GoClaw] Started with PID: {}", pid);

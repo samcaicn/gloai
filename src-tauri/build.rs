@@ -14,8 +14,8 @@ fn main() {
 }
 
 fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
-    let version = "v0.3.3"; // 使用最新版本
-    let base_url = format!("https://github.com/smallnest/goclaw/releases/download/{}", version);
+    let version = "0.3.3"; // 使用最新版本（不包含 v 前缀）
+    let base_url = format!("https://github.com/smallnest/goclaw/releases/download/v{}", version);
     
     // 确定目标操作系统和架构
     let target_os = env::var("CARGO_TARGET_OS").unwrap_or_else(|_| {
@@ -39,10 +39,10 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
     for arch in architectures {
         // 根据操作系统和架构确定文件名
         let (filename, executable_name) = match (target_os.as_str(), arch) {
-            ("macos", "aarch64") => ("goclaw_0.3.3_darwin_arm64.tar.gz", "goclaw-arm64"),
-            ("macos", "x86_64") => ("goclaw_0.3.3_darwin_amd64.tar.gz", "goclaw-amd64"),
-            ("windows", "x86_64") => ("goclaw_0.3.3_windows_amd64.zip", "goclaw.exe"),
-            ("linux", "x86_64") => ("goclaw_0.3.3_linux_amd64.tar.gz", "goclaw"),
+            ("macos", "aarch64") => (format!("goclaw_{}_darwin_arm64.tar.gz", version), "goclaw-arm64"),
+            ("macos", "x86_64") => (format!("goclaw_{}_darwin_amd64.tar.gz", version), "goclaw-amd64"),
+            ("windows", "x86_64") => (format!("goclaw_{}_windows_amd64.zip", version), "goclaw.exe"),
+            ("linux", "x86_64") => (format!("goclaw_{}_linux_amd64.tar.gz", version), "goclaw"),
             _ => return Err(format!("Unsupported target: {} {}", target_os, arch).into()),
         };
         
