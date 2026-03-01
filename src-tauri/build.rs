@@ -39,10 +39,10 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
     for arch in architectures {
         // 根据操作系统和架构确定文件名
         let (filename, executable_name) = match (target_os.as_str(), arch) {
-            ("macos", "aarch64") => (format!("goclaw_{}_darwin_arm64.tar.gz", version), "goclaw-arm64"),
-            ("macos", "x86_64") => (format!("goclaw_{}_darwin_amd64.tar.gz", version), "goclaw-amd64"),
-            ("windows", "x86_64") => (format!("goclaw_{}_windows_amd64.zip", version), "goclaw.exe"),
-            ("linux", "x86_64") => (format!("goclaw_{}_linux_amd64.tar.gz", version), "goclaw"),
+            ("macos", "aarch64") => ("goclaw_darwin_arm64.tar.gz".to_string(), "goclaw-arm64"),
+            ("macos", "x86_64") => ("goclaw_darwin_amd64.tar.gz".to_string(), "goclaw-amd64"),
+            ("windows", "x86_64") => ("goclaw_windows_amd64.zip".to_string(), "goclaw.exe"),
+            ("linux", "x86_64") => ("goclaw_linux_amd64.tar.gz".to_string(), "goclaw"),
             _ => return Err(format!("Unsupported target: {} {}", target_os, arch).into()),
         };
         
