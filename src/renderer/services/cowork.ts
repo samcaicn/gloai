@@ -192,29 +192,34 @@ class CoworkService {
 
       loggerService.info(`Created session ${sessionId} with title: ${session.title}`);
 
-      // 保存到数据库
+      // 保存到数据库（非阻塞，即使失败也继续执行）
       if (isTauriReady()) {
-        try {
-          loggerService.info(`Saving session ${sessionId} to database`);
-          await tauriInvoke('db_cowork_create_session', {
-            id: sessionId,
-            title: session.title,
-          });
-          loggerService.info(`Session ${sessionId} saved to database successfully`);
-        } catch (dbError) {
-          loggerService.error(`Failed to save session ${sessionId} to database:`, dbError as Error);
-        }
+        // 保存到数据库
+        setTimeout(async () => {
+          try {
+            loggerService.info(`Saving session ${sessionId} to database`);
+            await tauriInvoke('db_cowork_create_session', {
+              id: sessionId,
+              title: session.title,
+            });
+            loggerService.info(`Session ${sessionId} saved to database successfully`);
+          } catch (dbError) {
+            loggerService.error(`Failed to save session ${sessionId} to database:`, dbError as Error);
+          }
+        }, 0);
 
         // 保存到内存存储
-        try {
-          loggerService.info(`Saving session ${sessionId} to KV store`);
-          await tauriInvoke('cowork_create_session', {
-            title: session.title,
-          });
-          loggerService.info(`Session ${sessionId} saved to KV store successfully`);
-        } catch (kvError) {
-          loggerService.error(`Failed to save session ${sessionId} to KV store:`, kvError as Error);
-        }
+        setTimeout(async () => {
+          try {
+            loggerService.info(`Saving session ${sessionId} to KV store`);
+            await tauriInvoke('cowork_create_session', {
+              title: session.title,
+            });
+            loggerService.info(`Session ${sessionId} saved to KV store successfully`);
+          } catch (kvError) {
+            loggerService.error(`Failed to save session ${sessionId} to KV store:`, kvError as Error);
+          }
+        }, 0);
       }
 
       // 立即返回会话，不等待GoClaw操作
@@ -224,41 +229,51 @@ class CoworkService {
       // 在后台处理GoClaw连接，不阻塞会话创建
       if (isTauriReady()) {
         setTimeout(async () => {
+          // 添加超时机制，确保GoClaw操作不会无限等待
+          const timeoutPromise = new Promise<void>((_, reject) => {
+            setTimeout(() => reject(new Error('GoClaw operation timeout')), 10000); // 10秒超时
+          });
+          
           try {
-            loggerService.info('Checking GoClaw status...');
-            const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
-            loggerService.info(`GoClaw is running: ${isRunning}`);
-            
-            if (isRunning) {
-              try {
-                loggerService.info('Connecting to GoClaw WebSocket...');
-                await tauriInvoke('goclaw_connect');
-                loggerService.info('GoClaw WebSocket connected');
-              } catch (connectError) {
-                loggerService.warn('Failed to connect to GoClaw WebSocket:', connectError as Error);
-              }
-            } else {
-              loggerService.warn('GoClaw is not running, starting...');
-              try {
-                await tauriInvoke('goclaw_start');
-                loggerService.info('GoClaw started, waiting for ready...');
-                // 等待 GoClaw 启动
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                try {
-                  await tauriInvoke('goclaw_connect');
-                  loggerService.info('GoClaw WebSocket connected after startup');
-                } catch (connectError) {
-                  loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
+            await Promise.race([
+              (async () => {
+                loggerService.info('Checking GoClaw status...');
+                const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
+                loggerService.info(`GoClaw is running: ${isRunning}`);
+                
+                if (isRunning) {
+                  try {
+                    loggerService.info('Connecting to GoClaw WebSocket...');
+                    await tauriInvoke('goclaw_connect');
+                    loggerService.info('GoClaw WebSocket connected');
+                  } catch (connectError) {
+                    loggerService.warn('Failed to connect to GoClaw WebSocket:', connectError as Error);
+                  }
+                } else {
+                  loggerService.warn('GoClaw is not running, starting...');
+                  try {
+                    await tauriInvoke('goclaw_start');
+                    loggerService.info('GoClaw started, waiting for ready...');
+                    // 等待 GoClaw 启动
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    try {
+                      await tauriInvoke('goclaw_connect');
+                      loggerService.info('GoClaw WebSocket connected after startup');
+                    } catch (connectError) {
+                      loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
+                    }
+                  } catch (startError) {
+                    loggerService.error('Failed to start GoClaw:', startError as Error);
+                    // GoClaw 启动失败，但不影响会话创建和任务执行
+                    loggerService.info('Continuing without GoClaw');
+                  }
                 }
-              } catch (startError) {
-                loggerService.error('Failed to start GoClaw:', startError as Error);
-                // GoClaw 启动失败，但不影响会话创建和任务执行
-                loggerService.info('Continuing without GoClaw');
-              }
-            }
+              })(),
+              timeoutPromise
+            ]);
           } catch (goclawError) {
-            loggerService.error('GoClaw status check failed:', goclawError as Error);
-            // GoClaw 状态检查失败，但不影响会话创建和任务执行
+            loggerService.error('GoClaw operation failed:', goclawError as Error);
+            // GoClaw 操作失败，但不影响会话创建和任务执行
             loggerService.info('Continuing without GoClaw');
           }
         }, 0);
@@ -307,54 +322,64 @@ class CoworkService {
 
         // 在后台处理GoClaw操作，不阻塞消息发送
         setTimeout(async () => {
+          // 添加超时机制，确保GoClaw操作不会无限等待
+          const timeoutPromise = new Promise<void>((_, reject) => {
+            setTimeout(() => reject(new Error('GoClaw operation timeout')), 10000); // 10秒超时
+          });
+          
           try {
-            // 检查并连接 GoClaw
-            loggerService.info('Checking GoClaw status for message sending...');
-            const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
-            loggerService.info(`GoClaw is running: ${isRunning}`);
-            
-            if (isRunning) {
-              try {
-                loggerService.info('Connecting to GoClaw WebSocket...');
-                await tauriInvoke('goclaw_connect');
-                loggerService.info('GoClaw WebSocket connected');
-              } catch (connectError) {
-                loggerService.warn('Failed to connect to GoClaw WebSocket:', connectError as Error);
-              }
-            } else {
-              loggerService.warn('GoClaw is not running, starting...');
-              try {
-                await tauriInvoke('goclaw_start');
-                loggerService.info('GoClaw started, waiting for ready...');
-                // 等待 GoClaw 启动
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                try {
-                  await tauriInvoke('goclaw_connect');
-                  loggerService.info('GoClaw WebSocket connected after startup');
-                } catch (connectError) {
-                  loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
+            await Promise.race([
+              (async () => {
+                // 检查并连接 GoClaw
+                loggerService.info('Checking GoClaw status for message sending...');
+                const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
+                loggerService.info(`GoClaw is running: ${isRunning}`);
+                
+                if (isRunning) {
+                  try {
+                    loggerService.info('Connecting to GoClaw WebSocket...');
+                    await tauriInvoke('goclaw_connect');
+                    loggerService.info('GoClaw WebSocket connected');
+                  } catch (connectError) {
+                    loggerService.warn('Failed to connect to GoClaw WebSocket:', connectError as Error);
+                  }
+                } else {
+                  loggerService.warn('GoClaw is not running, starting...');
+                  try {
+                    await tauriInvoke('goclaw_start');
+                    loggerService.info('GoClaw started, waiting for ready...');
+                    // 等待 GoClaw 启动
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    try {
+                      await tauriInvoke('goclaw_connect');
+                      loggerService.info('GoClaw WebSocket connected after startup');
+                    } catch (connectError) {
+                      loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
+                    }
+                  } catch (startError) {
+                    loggerService.error('Failed to start GoClaw:', startError as Error);
+                    // GoClaw 启动失败，但不影响消息发送和任务执行
+                    loggerService.info('Continuing without GoClaw');
+                    return;
+                  }
                 }
-              } catch (startError) {
-                loggerService.error('Failed to start GoClaw:', startError as Error);
-                // GoClaw 启动失败，但不影响消息发送和任务执行
-                loggerService.info('Continuing without GoClaw');
-                return;
-              }
-            }
 
-            // 发送消息到 GoClaw
-            try {
-              loggerService.info(`Sending message to GoClaw for session ${options.sessionId}...`);
-              const response = await tauriInvoke<any>('cowork_send_message', {
-                session_id: options.sessionId,
-                content: options.prompt,
-              });
-              loggerService.info(`GoClaw message response for session ${options.sessionId}: ${JSON.stringify(response)}`);
-            } catch (sendError) {
-              loggerService.error(`Failed to send message to GoClaw for session ${options.sessionId}:`, sendError as Error);
-              // GoClaw 消息发送失败，但不影响任务执行
-              loggerService.info('Continuing without GoClaw message send');
-            }
+                // 发送消息到 GoClaw
+                try {
+                  loggerService.info(`Sending message to GoClaw for session ${options.sessionId}...`);
+                  const response = await tauriInvoke<any>('cowork_send_message', {
+                    session_id: options.sessionId,
+                    content: options.prompt,
+                  });
+                  loggerService.info(`GoClaw message response for session ${options.sessionId}: ${JSON.stringify(response)}`);
+                } catch (sendError) {
+                  loggerService.error(`Failed to send message to GoClaw for session ${options.sessionId}:`, sendError as Error);
+                  // GoClaw 消息发送失败，但不影响任务执行
+                  loggerService.info('Continuing without GoClaw message send');
+                }
+              })(),
+              timeoutPromise
+            ]);
           } catch (goclawError) {
             loggerService.error('GoClaw integration failed:', goclawError as Error);
             // GoClaw 集成失败，但不影响任务执行

@@ -11,7 +11,7 @@ import { initTauri } from './services/tauriApi';
 const waitForTauri = (): Promise<void> => {
   return new Promise((resolve) => {
     // 如果 Tauri 已经初始化，直接返回
-    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+    if (typeof window !== 'undefined' && ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__ || (window as any).isTauri)) {
       console.log('[main] Tauri already initialized');
       resolve();
       return;
@@ -24,7 +24,7 @@ const waitForTauri = (): Promise<void> => {
     
     const checkInterval = setInterval(() => {
       attempts++;
-      if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      if (typeof window !== 'undefined' && ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__ || (window as any).isTauri)) {
         console.log('[main] Tauri initialized after', attempts, 'attempts');
         clearInterval(checkInterval);
         resolve();

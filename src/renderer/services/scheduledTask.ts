@@ -80,14 +80,21 @@ class ScheduledTaskService {
     if (!api) return;
 
     try {
+      console.log('[scheduledTask] Creating task with input:', input);
       const result = await api.create(input);
+      console.log('[scheduledTask] Create task result:', result);
       if (result.success && result.task) {
+        console.log('[scheduledTask] Task created successfully:', result.task);
         store.dispatch(addTask(result.task));
       } else {
-        throw new Error(result.error || 'Failed to create task');
+        const errorMessage = result.error || 'Failed to create task';
+        console.error('[scheduledTask] Failed to create task:', errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (err: unknown) {
-      store.dispatch(setError(err instanceof Error ? err.message : String(err)));
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error('[scheduledTask] Error creating task:', errorMessage);
+      store.dispatch(setError(errorMessage));
       throw err;
     }
   }
@@ -100,12 +107,17 @@ class ScheduledTaskService {
     if (!api) return;
 
     try {
+      console.log('[scheduledTask] Updating task', id, 'with input:', input);
       const result = await api.update(id, input);
+      console.log('[scheduledTask] Update task result:', result);
       if (result.success && result.task) {
+        console.log('[scheduledTask] Task updated successfully:', result.task);
         store.dispatch(updateTask(result.task));
       }
     } catch (err: unknown) {
-      store.dispatch(setError(err instanceof Error ? err.message : String(err)));
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error('[scheduledTask] Error updating task:', errorMessage);
+      store.dispatch(setError(errorMessage));
       throw err;
     }
   }
@@ -115,12 +127,17 @@ class ScheduledTaskService {
     if (!api) return;
 
     try {
+      console.log('[scheduledTask] Deleting task:', id);
       const result = await api.delete(id);
+      console.log('[scheduledTask] Delete task result:', result);
       if (result.success) {
+        console.log('[scheduledTask] Task deleted successfully:', id);
         store.dispatch(removeTask(id));
       }
     } catch (err: unknown) {
-      store.dispatch(setError(err instanceof Error ? err.message : String(err)));
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error('[scheduledTask] Error deleting task:', errorMessage);
+      store.dispatch(setError(errorMessage));
       throw err;
     }
   }
@@ -130,13 +147,18 @@ class ScheduledTaskService {
     if (!api) return null;
 
     try {
+      console.log('[scheduledTask] Toggling task', id, 'to:', enabled);
       const result = await api.toggle(id, enabled);
+      console.log('[scheduledTask] Toggle task result:', result);
       if (result.success && result.task) {
+        console.log('[scheduledTask] Task toggled successfully:', result.task);
         store.dispatch(updateTask(result.task));
       }
       return result.warning ?? null;
     } catch (err: unknown) {
-      store.dispatch(setError(err instanceof Error ? err.message : String(err)));
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error('[scheduledTask] Error toggling task:', errorMessage);
+      store.dispatch(setError(errorMessage));
       throw err;
     }
   }
@@ -146,10 +168,18 @@ class ScheduledTaskService {
     if (!api) return null;
 
     try {
-      return await api.runManually(id);
+      // 添加超时机制，确保任务执行不会无限等待
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Task execution timeout')), 30000); // 30秒超时
+      });
+      
+      return await Promise.race([api.runManually(id), timeoutPromise]);
     } catch (err: unknown) {
-      store.dispatch(setError(err instanceof Error ? err.message : String(err)));
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      store.dispatch(setError(errorMessage));
+      console.error('Failed to run task manually:', err);
+      // 不抛出错误，确保任务执行失败不会导致整个流程卡死
+      return { success: false, error: errorMessage };
     }
   }
 
