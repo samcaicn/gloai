@@ -190,6 +190,28 @@ impl GoClawManager {
         let binary_names = Self::get_binary_names();
         println!("[GoClaw] Searching for binary names: {:?}", binary_names);
 
+        // 检查构建目录（target/goclaw）
+        if let Ok(current_dir) = std::env::current_dir() {
+            // 检查当前目录下的 target 目录
+            let target_dir = current_dir.join("target");
+            if target_dir.is_dir() {
+                // 检查 debug 和 release 目录
+                for profile in &["debug", "release"] {
+                    let goclaw_dir = target_dir.join(profile).join("goclaw");
+                    if goclaw_dir.is_dir() {
+                        println!("[GoClaw] Checking build directory: {:?}", goclaw_dir);
+                        for name in &binary_names {
+                            let path = goclaw_dir.join(name);
+                            if path.exists() {
+                                println!("[GoClaw] Found binary in build directory: {:?}", path);
+                                return Ok(path);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // 检查应用目录
         if let Ok(exe_dir) = std::env::current_exe() {
             println!("[GoClaw] Current executable directory: {:?}", exe_dir);
@@ -336,7 +358,7 @@ impl GoClawManager {
         }
 
         Err(anyhow::anyhow!(
-            "GoClaw binary not found. Searched paths: ~/.glo, ~/.glo/goclaw, application directory, system paths"
+            "GoClaw binary not found. Searched paths: build directory, ~/.glo, ~/.glo/goclaw, application directory, system paths"
         ))
     }
 
