@@ -1,6 +1,4 @@
 use std::env;
-use std::fs::File;
-use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
@@ -95,8 +93,7 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
         use std::fs::Permissions;
         use std::os::unix::fs::PermissionsExt;
         
-        let mut permissions = Permissions::default();
-        permissions.set_mode(0o755);
+        let permissions = Permissions::from_mode(0o755);
         std::fs::set_permissions(&executable_path, permissions)?;
     }
     
