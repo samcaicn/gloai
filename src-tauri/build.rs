@@ -105,4 +105,4 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
     
     println!("cargo:rerun-if-changed=build.rs");
     Ok(())
-}"}
+}
