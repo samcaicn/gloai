@@ -62,47 +62,70 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
         }
     
         // 下载文件
-        println!("Downloading goclaw from {}", download_url);
+        println!("cargo:warning=Downloading goclaw from {}", download_url);
+        println!("cargo:warning=Saving to: {}", archive_path.display());
         
         #[cfg(target_os = "windows")]
         {
             // Windows 使用 PowerShell 下载
+            println!("cargo:warning=Using PowerShell to download");
             let status = Command::new("powershell")
-                .args(&["-Command", &format!("Invoke-WebRequest -Uri '{}' -OutFile '{}'", download_url, archive_path.display())])
+                .args(&["-Command", &format!("Invoke-WebRequest -Uri '{}' -OutFile '{}' -Verbose", download_url, archive_path.display())])
                 .status()?;
             
+            println!("cargo:warning=Download status: {:?}", status);
             if !status.success() {
-                return Err("Failed to download goclaw".into());
+                return Err(format!("Failed to download goclaw: {:?}", status).into());
+            }
+            
+            // 检查文件大小
+            if let Ok(metadata) = std::fs::metadata(&archive_path) {
+                println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
+            } else {
+                println!("cargo:warning=Failed to get file metadata");
             }
             
             // 解压 zip 文件
+            println!("cargo:warning=Extracting zip file");
             let status = Command::new("powershell")
-                .args(&["-Command", &format!("Expand-Archive -Path '{}' -DestinationPath '{}'", archive_path.display(), output_dir.display())])
+                .args(&["-Command", &format!("Expand-Archive -Path '{}' -DestinationPath '{}' -Verbose", archive_path.display(), output_dir.display())])
                 .status()?;
             
+            println!("cargo:warning=Extract status: {:?}", status);
             if !status.success() {
-                return Err("Failed to extract goclaw".into());
+                return Err(format!("Failed to extract goclaw: {:?}", status).into());
             }
         }
         
         #[cfg(not(target_os = "windows"))]
         {
             // Unix-like 系统使用 curl 下载
+            println!("cargo:warning=Using curl to download");
             let status = Command::new("curl")
-                .args(&["-L", "-o", archive_path.to_str().unwrap(), &download_url])
+                .args(&["-v", "-L", "-o", archive_path.to_str().unwrap(), &download_url])
                 .status()?;
             
+            println!("cargo:warning=Download status: {:?}", status);
             if !status.success() {
-                return Err("Failed to download goclaw".into());
+                return Err(format!("Failed to download goclaw: {:?}", status).into());
+            }
+            
+            // 检查文件大小
+            if let Ok(metadata) = std::fs::metadata(&archive_path) {
+                println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
+            } else {
+                println!("cargo:warning=Failed to get file metadata");
             }
             
             // 解压 tar.gz 文件
+            println!("cargo:warning=Extracting tar.gz file");
             let status = Command::new("tar")
-                .args(&["-xzf", archive_path.to_str().unwrap(), "-C", output_dir.to_str().unwrap()])
+                .args(&["-xzvf", archive_path.to_str().unwrap(), "-C", output_dir.to_str().unwrap()])
                 .status()?;
             
+            println!("cargo:warning=Extract status: {:?}", status);
             if !status.success() {
-                return Err("Failed to extract goclaw".into());
+                return Err(format!("Failed to extract goclaw: {:?}", status).into());
             }
         }
         

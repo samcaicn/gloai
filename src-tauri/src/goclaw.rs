@@ -415,8 +415,13 @@ impl GoClawManager {
             return Ok(());
         }
 
+        println!("[GoClaw] Starting GoClaw service...");
+        
         let binary_path = match self.find_binary() {
-            Ok(path) => path,
+            Ok(path) => {
+                println!("[GoClaw] Found GoClaw binary at: {:?}", path);
+                path
+            },
             Err(e) => {
                 let err = format!("Failed to find GoClaw binary: {}", e);
                 *self.last_error.lock().unwrap() = Some(err.clone());
@@ -444,6 +449,7 @@ impl GoClawManager {
             
             if let Ok(permissions) = binary_path.metadata() {
                 let perms = permissions.permissions();
+                println!("[GoClaw] Binary permissions: {:o}", perms.mode());
                 if (perms.mode() & 0o111) == 0 {
                     let err = format!("GoClaw binary is not executable: {:?}", binary_path);
                     *self.last_error.lock().unwrap() = Some(err.clone());
@@ -453,6 +459,7 @@ impl GoClawManager {
         }
 
         println!("[GoClaw] Starting GoClaw from: {:?}", binary_path);
+        println!("[GoClaw] Command: {:?} start", binary_path);
 
         let mut child = match Command::new(&binary_path)
             .arg("start")
@@ -467,7 +474,7 @@ impl GoClawManager {
                 *self.last_error.lock().unwrap() = Some(err.clone());
                 return Err(anyhow::anyhow!(err));
             }
-        };
+        }
 
         let pid = child.id();
         println!("[GoClaw] Started with PID: {}", pid);
@@ -481,6 +488,7 @@ impl GoClawManager {
                 return Err(anyhow::anyhow!(err));
             }
             Ok(None) => {
+                println!("[GoClaw] Process is still running");
                 // 进程仍在运行，继续
             }
             Err(e) => {
@@ -495,12 +503,14 @@ impl GoClawManager {
 
         let timeout = Duration::from_millis(timeout_ms);
         let start_time = std::time::Instant::now();
+        println!("[GoClaw] Waiting for service to be ready (timeout: {}ms)", timeout_ms);
 
         while start_time.elapsed() < timeout {
             if self.check_port_available() {
                 println!("[GoClaw] Service is ready");
                 return Ok(());
             }
+            println!("[GoClaw] Service not ready yet, waiting...");
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
 
