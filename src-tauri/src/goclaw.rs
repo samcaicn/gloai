@@ -226,6 +226,57 @@ impl GoClawManager {
                             return Ok(path);
                         }
                     }
+
+                    // 检查 Resources 目录（针对 universal 构建）
+                    let resources_dir = parent_dir.join("Resources");
+                    if resources_dir.is_dir() {
+                        println!("[GoClaw] Checking Resources directory: {:?}", resources_dir);
+                        for name in &binary_names {
+                            let path = resources_dir.join(name);
+                            if path.exists() {
+                                println!("[GoClaw] Found binary in Resources directory: {:?}", path);
+                                return Ok(path);
+                            }
+                        }
+
+                        // 检查 Resources/goclaw 目录
+                        let resources_goclaw_dir = resources_dir.join("goclaw");
+                        if resources_goclaw_dir.is_dir() {
+                            println!("[GoClaw] Checking Resources/goclaw directory: {:?}", resources_goclaw_dir);
+                            for name in &binary_names {
+                                let path = resources_goclaw_dir.join(name);
+                                if path.exists() {
+                                    println!("[GoClaw] Found binary in Resources/goclaw directory: {:?}", path);
+                                    return Ok(path);
+                                }
+                            }
+                        }
+                    }
+
+                    // 检查更深层次的目录结构
+                    if let Some(grandparent_dir) = parent_dir.parent() {
+                        println!("[GoClaw] Checking grandparent directory: {:?}", grandparent_dir);
+                        for name in &binary_names {
+                            let path = grandparent_dir.join(name);
+                            if path.exists() {
+                                println!("[GoClaw] Found binary in grandparent directory: {:?}", path);
+                                return Ok(path);
+                            }
+                        }
+
+                        // 检查 grandparent/goclaw 目录
+                        let grandparent_goclaw_dir = grandparent_dir.join("goclaw");
+                        if grandparent_goclaw_dir.is_dir() {
+                            println!("[GoClaw] Checking grandparent/goclaw directory: {:?}", grandparent_goclaw_dir);
+                            for name in &binary_names {
+                                let path = grandparent_goclaw_dir.join(name);
+                                if path.exists() {
+                                    println!("[GoClaw] Found binary in grandparent/goclaw directory: {:?}", path);
+                                    return Ok(path);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
