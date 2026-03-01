@@ -43,9 +43,18 @@
     <script>
       // 检查 Tauri 是否已初始化
       window.__TAURI_CHECK_INTERVAL = setInterval(function() {
-        if (window.__TAURI_INTERNALS__ || window.__TAURI__ || window.isTauri || (window.electron && window.electron.store && window.electron.store.get)) {
+        // 检查多种Tauri初始化状态
+        const isTauriReady = window.__TAURI_INTERNALS__ || 
+                           window.__TAURI__ || 
+                           window.isTauri || 
+                           (window.electron && typeof window.electron === 'object') ||
+                           window.tauri;
+        
+        if (isTauriReady) {
           console.log('[index.html] Tauri initialized!');
           clearInterval(window.__TAURI_CHECK_INTERVAL);
+          // 确保清除间隔
+          window.__TAURI_CHECK_INTERVAL = null;
         }
       }, 100);
       
@@ -54,6 +63,7 @@
         if (window.__TAURI_CHECK_INTERVAL) {
           console.log('[index.html] Tauri initialization check timeout');
           clearInterval(window.__TAURI_CHECK_INTERVAL);
+          window.__TAURI_CHECK_INTERVAL = null;
         }
       }, 10000);
     </script>
