@@ -29,10 +29,27 @@ class LoggerService {
     if (!this.logPath || this.logBuffer.length === 0) return;
     
     try {
-      // 这里应该调用后端API来写入日志
-      // 由于暂时没有后端API，我们先将日志输出到控制台
-      const logs = this.logBuffer.join('\n');
-      console.log('[Logger] Flushing logs:', logs);
+      // 尝试使用后端的日志 API 写入日志
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        for (const log of this.logBuffer) {
+          // 解析日志级别
+          const levelMatch = log.match(/\[(INFO|WARN|ERROR|DEBUG)\]/);
+          const level = levelMatch ? levelMatch[1].toLowerCase() : 'info';
+          // 提取日志消息
+          const messageMatch = log.match(/\] \[(INFO|WARN|ERROR|DEBUG)\] (.*)/s);
+          const message = messageMatch ? messageMatch[2] : log;
+          
+          // 调用后端日志 API
+          await invoke(`logger_${level}`, { message });
+        }
+        console.log(`[Logger] Flushed ${this.logBuffer.length} logs to backend`);
+      } catch (error) {
+        console.warn('Failed to write logs to backend, falling back to console:', error);
+        // 回退到控制台输出
+        const logs = this.logBuffer.join('\n');
+        console.log('[Logger] Flushing logs:', logs);
+      }
       this.logBuffer = [];
     } catch (error) {
       console.error('Failed to flush logs:', error);
