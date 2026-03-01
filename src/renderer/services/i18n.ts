@@ -100,6 +100,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     // 错误信息
     failedToLoadSettings: '加载设置失败',
     failedToSaveSettings: '保存设置失败',
+    failedToLoadModel: '模型加载失败',
     
     // 加载状态
     loading: '加载中...',
@@ -707,6 +708,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     // Error Messages
     failedToLoadSettings: 'Failed to load settings',
     failedToSaveSettings: 'Failed to save settings',
+    failedToLoadModel: 'Failed to load model',
     
     // Loading State
     loading: 'Loading...',

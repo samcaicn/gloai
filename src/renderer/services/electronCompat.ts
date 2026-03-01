@@ -121,6 +121,12 @@ export function createElectronCompatLayer() {
     log: {
       getPath: async () => {
         try {
+          // 检查 Tauri 是否可用
+          const { isTauriReady } = await import('./tauriApi');
+          if (isTauriReady()) {
+            const { invoke } = await import('@tauri-apps/api/core');
+            return await invoke<string>('logger_get_path');
+          }
           // 在浏览器模式下返回一个模拟路径
           return '/logs/app.log';
         } catch (error) {
@@ -129,7 +135,18 @@ export function createElectronCompatLayer() {
         }
       },
       openFolder: async () => {
-        console.warn('log.openFolder not implemented in browser mode');
+        try {
+          // 检查 Tauri 是否可用
+          const { isTauriReady } = await import('./tauriApi');
+          if (isTauriReady()) {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('logger_open_folder');
+            return;
+          }
+          console.warn('log.openFolder not implemented in browser mode');
+        } catch (error) {
+          console.warn('Failed to open log folder:', error);
+        }
       },
     },
     im: {

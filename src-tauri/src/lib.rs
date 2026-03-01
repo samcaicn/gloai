@@ -476,6 +476,20 @@ async fn logger_error(message: String, state: State<'_, AppState>) -> Result<(),
 }
 
 #[tauri::command]
+async fn logger_get_path(state: State<'_, AppState>) -> Result<String, String> {
+    let logger = state.logger.lock().await;
+    Ok(logger.get_log_file_path())
+}
+
+#[tauri::command]
+async fn logger_open_folder(state: State<'_, AppState>) -> Result<(), String> {
+    use open::that;
+    let logger = state.logger.lock().await;
+    let logs_dir = logger.get_logs_dir().map_err(|e| e.to_string())?;
+    that(logs_dir).map_err(|e| format!("Failed to open log folder: {}", e))
+}
+
+#[tauri::command]
 async fn skills_delete(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let manager = state.skills_manager.lock().await;
     manager.delete_skill(&id).await.map_err(|e| e.to_string())
@@ -1005,6 +1019,8 @@ pub fn run() {
             logger_info,
             logger_warn,
             logger_error,
+            logger_get_path,
+            logger_open_folder,
             scheduler_start,
             scheduler_stop,
             scheduler_is_running,
