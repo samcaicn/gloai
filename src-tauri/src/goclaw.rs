@@ -360,7 +360,7 @@ impl GoClawManager {
 
         println!("[GoClaw] Starting GoClaw from: {:?}", binary_path);
 
-        let child = match Command::new(&binary_path)
+        let mut child = match Command::new(&binary_path)
             .arg("start")
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
@@ -377,8 +377,26 @@ impl GoClawManager {
 
         let pid = child.id();
         println!("[GoClaw] Started with PID: {}", pid);
-        *self.process.lock().unwrap() = Some(child);
 
+        // 检查进程是否立即退出
+        tokio::time::sleep(Duration::from_millis(1000)).await;
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let err = format!("GoClaw process exited immediately with status: {:?}", status);
+                *self.last_error.lock().unwrap() = Some(err.clone());
+                return Err(anyhow::anyhow!(err));
+            }
+            Ok(None) => {
+                // 进程仍在运行，继续
+            }
+            Err(e) => {
+                let err = format!("Error checking GoClaw process status: {}", e);
+                *self.last_error.lock().unwrap() = Some(err.clone());
+                return Err(anyhow::anyhow!(err));
+            }
+        }
+
+        *self.process.lock().unwrap() = Some(child);
         *self.last_error.lock().unwrap() = None;
 
         let timeout = Duration::from_millis(timeout_ms);
@@ -392,7 +410,27 @@ impl GoClawManager {
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
 
-        println!("[GoClaw] Started but service may not be ready yet");
+        // 检查进程状态
+        let mut process_guard = self.process.lock().unwrap();
+        if let Some(ref mut child) = *process_guard {
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    let err = format!("GoClaw process exited during startup with status: {:?}", status);
+                    *self.last_error.lock().unwrap() = Some(err.clone());
+                    return Err(anyhow::anyhow!(err));
+                }
+                Ok(None) => {
+                    // 进程仍在运行，但端口不可用
+                    println!("[GoClaw] Started but service may not be ready yet");
+                }
+                Err(e) => {
+                    let err = format!("Error checking GoClaw process status: {}", e);
+                    *self.last_error.lock().unwrap() = Some(err.clone());
+                    return Err(anyhow::anyhow!(err));
+                }
+            }
+        }
+
         Ok(())
     }
 
