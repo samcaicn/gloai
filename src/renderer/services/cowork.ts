@@ -256,7 +256,7 @@ class CoworkService {
                     // 尝试启动 GoClaw
                     loggerService.info('Attempting to start GoClaw...');
                     const startResult = await tauriInvoke('goclaw_start');
-                    loggerService.info('GoClaw start result:', startResult);
+                    loggerService.info(`GoClaw start result: ${JSON.stringify(startResult)}`);
                     loggerService.info('GoClaw started, waiting for ready...');
                     // 等待 GoClaw 启动
                     await new Promise(resolve => setTimeout(resolve, 3000)); // 增加等待时间
@@ -285,7 +285,7 @@ class CoworkService {
                       const platform = await tauriInvoke<string>('get_platform');
                       loggerService.info(`Platform: ${platform}`);
                     } catch (e) {
-                      loggerService.warn('Failed to get platform info:', e);
+                      loggerService.warn('Failed to get platform info:', e instanceof Error ? e : new Error(String(e)));
                     }
                     loggerService.info('Continuing without GoClaw');
                   }
@@ -372,7 +372,7 @@ class CoworkService {
                     // 尝试启动 GoClaw
                     loggerService.info('Attempting to start GoClaw...');
                     const startResult = await tauriInvoke('goclaw_start');
-                    loggerService.info('GoClaw start result:', startResult);
+                    loggerService.info(`GoClaw start result: ${JSON.stringify(startResult)}`);
                     loggerService.info('GoClaw started, waiting for ready...');
                     // 等待 GoClaw 启动
                     await new Promise(resolve => setTimeout(resolve, 3000)); // 增加等待时间
@@ -401,7 +401,7 @@ class CoworkService {
                       const platform = await tauriInvoke<string>('get_platform');
                       loggerService.info(`Platform: ${platform}`);
                     } catch (e) {
-                      loggerService.warn('Failed to get platform info:', e);
+                      loggerService.warn('Failed to get platform info:', e instanceof Error ? e : new Error(String(e)));
                     }
                     loggerService.info('Continuing without GoClaw');
                     return;
