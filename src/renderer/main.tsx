@@ -10,8 +10,18 @@ import { initTauri } from './services/tauriApi';
 // 等待 Tauri 初始化的函数
 const waitForTauri = (): Promise<void> => {
   return new Promise((resolve) => {
+    // 检查 Tauri 是否已经初始化的函数
+    const checkTauriReady = () => {
+      return typeof window !== 'undefined' && 
+             ((window as any).__TAURI_INTERNALS__ || 
+              (window as any).__TAURI__ || 
+              (window as any).isTauri ||
+              // 检查是否已经有 Tauri API 可用
+              (window as any).electron?.store?.get !== undefined);
+    };
+
     // 如果 Tauri 已经初始化，直接返回
-    if (typeof window !== 'undefined' && ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__ || (window as any).isTauri)) {
+    if (checkTauriReady()) {
       console.log('[main] Tauri already initialized');
       resolve();
       return;
@@ -24,7 +34,7 @@ const waitForTauri = (): Promise<void> => {
     
     const checkInterval = setInterval(() => {
       attempts++;
-      if (typeof window !== 'undefined' && ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__ || (window as any).isTauri)) {
+      if (checkTauriReady()) {
         console.log('[main] Tauri initialized after', attempts, 'attempts');
         clearInterval(checkInterval);
         resolve();
