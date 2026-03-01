@@ -6,12 +6,15 @@ fn main() {
     // 构建 Tauri 应用
     tauri_build::build();
     
-    // 下载 goclaw 二进制文件
-    download_goclaw().expect("Failed to download goclaw");
+    // 下载 goclaw 二进制文件（失败时不中断构建）
+    if let Err(e) = download_goclaw() {
+        println!("cargo:warning=Failed to download goclaw: {}", e);
+        println!("cargo:warning=Build will continue without goclaw");
+    }
 }
 
 fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
-    let version = "v0.1.3";
+    let version = "v0.3.3"; // 使用最新版本
     let base_url = format!("https://github.com/smallnest/goclaw/releases/download/{}", version);
     
     // 确定目标操作系统和架构
@@ -36,10 +39,10 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
     for arch in architectures {
         // 根据操作系统和架构确定文件名
         let (filename, executable_name) = match (target_os.as_str(), arch) {
-            ("macos", "aarch64") => ("goclaw_0.1.3_darwin_arm64.tar.gz", "goclaw-arm64"),
-            ("macos", "x86_64") => ("goclaw_0.1.3_darwin_amd64.tar.gz", "goclaw-amd64"),
-            ("windows", "x86_64") => ("goclaw_0.1.3_windows_amd64.zip", "goclaw.exe"),
-            ("linux", "x86_64") => ("goclaw_0.1.3_linux_amd64.tar.gz", "goclaw"),
+            ("macos", "aarch64") => ("goclaw_0.3.3_darwin_arm64.tar.gz", "goclaw-arm64"),
+            ("macos", "x86_64") => ("goclaw_0.3.3_darwin_amd64.tar.gz", "goclaw-amd64"),
+            ("windows", "x86_64") => ("goclaw_0.3.3_windows_amd64.zip", "goclaw.exe"),
+            ("linux", "x86_64") => ("goclaw_0.3.3_linux_amd64.tar.gz", "goclaw"),
             _ => return Err(format!("Unsupported target: {} {}", target_os, arch).into()),
         };
         
