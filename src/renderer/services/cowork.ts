@@ -251,11 +251,15 @@ class CoworkService {
                   loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
                 }
               } catch (startError) {
-                loggerService.warn('Failed to start GoClaw:', startError as Error);
+                loggerService.error('Failed to start GoClaw:', startError as Error);
+                // GoClaw 启动失败，但不影响会话创建和任务执行
+                loggerService.info('Continuing without GoClaw');
               }
             }
           } catch (goclawError) {
-            loggerService.warn('GoClaw status check failed:', goclawError as Error);
+            loggerService.error('GoClaw status check failed:', goclawError as Error);
+            // GoClaw 状态检查失败，但不影响会话创建和任务执行
+            loggerService.info('Continuing without GoClaw');
           }
         }, 0);
       }
@@ -331,7 +335,10 @@ class CoworkService {
                   loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
                 }
               } catch (startError) {
-                loggerService.warn('Failed to start GoClaw:', startError as Error);
+                loggerService.error('Failed to start GoClaw:', startError as Error);
+                // GoClaw 启动失败，但不影响消息发送和任务执行
+                loggerService.info('Continuing without GoClaw');
+                return;
               }
             }
 
@@ -345,9 +352,13 @@ class CoworkService {
               loggerService.info(`GoClaw message response for session ${options.sessionId}: ${JSON.stringify(response)}`);
             } catch (sendError) {
               loggerService.error(`Failed to send message to GoClaw for session ${options.sessionId}:`, sendError as Error);
+              // GoClaw 消息发送失败，但不影响任务执行
+              loggerService.info('Continuing without GoClaw message send');
             }
           } catch (goclawError) {
-            loggerService.warn('GoClaw integration failed:', goclawError as Error);
+            loggerService.error('GoClaw integration failed:', goclawError as Error);
+            // GoClaw 集成失败，但不影响任务执行
+            loggerService.info('Continuing without GoClaw');
           }
         }, 0);
       }
