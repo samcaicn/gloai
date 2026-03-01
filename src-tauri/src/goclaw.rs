@@ -212,6 +212,27 @@ impl GoClawManager {
             }
         }
 
+        // 检查 Tauri 资源目录
+        if let Ok(exe_dir) = std::env::current_exe() {
+            if let Some(dir) = exe_dir.parent() {
+                // 检查 Resources/goclaw 目录（针对打包后的应用）
+                let resources_dir = dir.join("Resources");
+                if resources_dir.is_dir() {
+                    let goclaw_dir = resources_dir.join("goclaw");
+                    if goclaw_dir.is_dir() {
+                        println!("[GoClaw] Checking Resources/goclaw directory: {:?}", goclaw_dir);
+                        for name in &binary_names {
+                            let path = goclaw_dir.join(name);
+                            if path.exists() {
+                                println!("[GoClaw] Found binary in Resources/goclaw directory: {:?}", path);
+                                return Ok(path);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // 检查应用目录
         if let Ok(exe_dir) = std::env::current_exe() {
             println!("[GoClaw] Current executable directory: {:?}", exe_dir);
