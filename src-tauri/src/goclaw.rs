@@ -176,29 +176,53 @@ impl GoClawManager {
     fn find_binary(&self) -> anyhow::Result<PathBuf> {
         let config = self.config.lock().unwrap();
 
+        // 首先检查配置中指定的路径
         if let Some(path) = &config.binary_path {
             let path = Path::new(path);
             if path.exists() {
+                println!("[GoClaw] Using configured binary path: {:?}", path);
                 return Ok(path.to_path_buf());
+            } else {
+                println!("[GoClaw] Configured binary path does not exist: {:?}", path);
             }
         }
 
         let binary_names = Self::get_binary_names();
+        println!("[GoClaw] Searching for binary names: {:?}", binary_names);
 
+        // 检查应用目录
         if let Ok(exe_dir) = std::env::current_exe() {
+            println!("[GoClaw] Current executable directory: {:?}", exe_dir);
             if let Some(dir) = exe_dir.parent() {
+                // 检查当前目录
                 for name in &binary_names {
                     let path = dir.join(name);
                     if path.exists() {
+                        println!("[GoClaw] Found binary in executable directory: {:?}", path);
                         return Ok(path);
                     }
                 }
 
+                // 检查 goclaw 子目录
                 let goclaw_dir = dir.join("goclaw");
                 if goclaw_dir.is_dir() {
+                    println!("[GoClaw] Checking goclaw subdirectory: {:?}", goclaw_dir);
                     for name in &binary_names {
                         let path = goclaw_dir.join(name);
                         if path.exists() {
+                            println!("[GoClaw] Found binary in goclaw subdirectory: {:?}", path);
+                            return Ok(path);
+                        }
+                    }
+                }
+
+                // 检查上一级目录（针对 universal 构建）
+                if let Some(parent_dir) = dir.parent() {
+                    println!("[GoClaw] Checking parent directory: {:?}", parent_dir);
+                    for name in &binary_names {
+                        let path = parent_dir.join(name);
+                        if path.exists() {
+                            println!("[GoClaw] Found binary in parent directory: {:?}", path);
                             return Ok(path);
                         }
                     }
@@ -206,7 +230,9 @@ impl GoClawManager {
             }
         }
 
+        // 检查用户主目录
         if let Some(home) = dirs::home_dir() {
+            println!("[GoClaw] Checking home directory: {:?}", home);
             let search_paths = vec![
                 home.join(".glo"),
                 home.join(".glo").join("goclaw"),
@@ -219,19 +245,23 @@ impl GoClawManager {
                 if !base_dir.is_dir() {
                     continue;
                 }
-
+                println!("[GoClaw] Checking directory: {:?}", base_dir);
                 for name in &binary_names {
                     let path = base_dir.join(name);
                     if path.exists() {
+                        println!("[GoClaw] Found binary: {:?}", path);
                         return Ok(path);
                     }
                 }
 
+                // 检查 darwin 子目录
                 let darwin_dir = base_dir.join("darwin");
                 if darwin_dir.is_dir() {
+                    println!("[GoClaw] Checking darwin subdirectory: {:?}", darwin_dir);
                     for name in &binary_names {
                         let path = darwin_dir.join(name);
                         if path.exists() {
+                            println!("[GoClaw] Found binary in darwin subdirectory: {:?}", path);
                             return Ok(path);
                         }
                     }
@@ -239,6 +269,7 @@ impl GoClawManager {
             }
         }
 
+        // 检查系统路径
         if cfg!(target_os = "macos") {
             let app_paths = vec![
                 PathBuf::from("/Applications/goclaw.app/Contents/MacOS/goclaw"),
@@ -247,13 +278,14 @@ impl GoClawManager {
             ];
             for path in app_paths {
                 if path.exists() {
+                    println!("[GoClaw] Found binary in system path: {:?}", path);
                     return Ok(path);
                 }
             }
         }
 
         Err(anyhow::anyhow!(
-            "GoClaw binary not found. Searched paths: ~/.glo, ~/.glo/goclaw, application directory"
+            "GoClaw binary not found. Searched paths: ~/.glo, ~/.glo/goclaw, application directory, system paths"
         ))
     }
 
