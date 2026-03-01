@@ -279,7 +279,9 @@ impl GoClawManager {
         };
 
         if !is_enabled {
-            return Err(anyhow::anyhow!("GoClaw is disabled in config"));
+            let err = "GoClaw is disabled in config".to_string();
+            *self.last_error.lock().unwrap() = Some(err.clone());
+            return Err(anyhow::anyhow!(err));
         }
 
         if self.is_running() {
@@ -287,12 +289,41 @@ impl GoClawManager {
             return Ok(());
         }
 
-        let binary_path = self.find_binary()?;
+        let binary_path = match self.find_binary() {
+            Ok(path) => path,
+            Err(e) => {
+                let err = format!("Failed to find GoClaw binary: {}", e);
+                *self.last_error.lock().unwrap() = Some(err.clone());
+                return Err(anyhow::anyhow!(err));
+            }
+        };
 
         if !binary_path.exists() {
             let err = format!("GoClaw binary not found at: {:?}", binary_path);
             *self.last_error.lock().unwrap() = Some(err.clone());
             return Err(anyhow::anyhow!(err));
+        }
+
+        if !binary_path.is_file() {
+            let err = format!("GoClaw path is not a file: {:?}", binary_path);
+            *self.last_error.lock().unwrap() = Some(err.clone());
+            return Err(anyhow::anyhow!(err));
+        }
+
+        // 检查文件权限
+        #[cfg(unix)]
+        {
+            use std::fs::Permissions;
+            use std::os::unix::fs::PermissionsExt;
+            
+            if let Ok(permissions) = binary_path.metadata() {
+                let perms = permissions.permissions();
+                if (perms.mode() & 0o111) == 0 {
+                    let err = format!("GoClaw binary is not executable: {:?}", binary_path);
+                    *self.last_error.lock().unwrap() = Some(err.clone());
+                    return Err(anyhow::anyhow!(err));
+                }
+            }
         }
 
         println!("[GoClaw] Starting GoClaw from: {:?}", binary_path);
