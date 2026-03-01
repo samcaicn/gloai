@@ -100,7 +100,7 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
         // 重命名解压后的文件
         let extracted_path = output_dir.join(if cfg!(target_os = "windows") { "goclaw.exe" } else { "goclaw" });
         if extracted_path.exists() {
-            std::fs::rename(extracted_path, executable_path)?;
+            std::fs::rename(extracted_path, &executable_path)?;
         }
         
         // 设置可执行权限
