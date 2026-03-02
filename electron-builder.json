@@ -59,11 +59,6 @@
       "nsis"
     ],
     "icon": "build/icons/win/icon.ico",
-    "sign": false,
-    "verifyUpdateCodeSignature": false,
-    "signingHashAlgorithms": [
-      "sha256"
-    ],
     "extraResources": [
       {
         "from": "resources/mingit",

@@ -60,7 +60,6 @@ jobs:
         run: ${{ matrix.build_cmd }}
         env:
           CI: true
-          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
