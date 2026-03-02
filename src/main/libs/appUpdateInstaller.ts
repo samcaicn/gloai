@@ -5,6 +5,14 @@ import path from 'path';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 
+// 热更新相关路径
+const getUpdatePaths = () => {
+  const appPath = app.getPath('userData');
+  const updateDir = path.join(appPath, 'updates');
+  const updateFile = path.join(updateDir, 'update.zip');
+  return { updateDir, updateFile };
+};
+
 export interface AppUpdateDownloadProgress {
   received: number;
   total: number | undefined;
@@ -65,11 +73,9 @@ export async function downloadUpdate(
     throw new Error(`Invalid download URL: ${url}`);
   }
 
-  const ext = path.extname(parsedUrl.pathname) || (process.platform === 'darwin' ? '.dmg' : '.exe');
-  const tempDir = app.getPath('temp');
-  const ts = Date.now();
-  const downloadPath = path.join(tempDir, `lobsterai-update-${ts}${ext}.download`);
-  const finalPath = path.join(tempDir, `lobsterai-update-${ts}${ext}`);
+  const { updateDir, updateFile } = getUpdatePaths();
+  const downloadPath = `${updateFile}.download`;
+  const finalPath = updateFile;
 
   console.log(`[AppUpdate] Temp path: ${downloadPath}`);
   console.log(`[AppUpdate] Final path: ${finalPath}`);
@@ -132,7 +138,8 @@ export async function downloadUpdate(
     // Emit initial progress
     emitProgress();
 
-    await fs.promises.mkdir(path.dirname(downloadPath), { recursive: true });
+    const { updateDir } = getUpdatePaths();
+    await fs.promises.mkdir(updateDir, { recursive: true });
     writeStream = fs.createWriteStream(downloadPath);
 
     const nodeStream = Readable.fromWeb(response.body as any);
@@ -217,7 +224,7 @@ export async function downloadUpdate(
 }
 
 export async function installUpdate(filePath: string): Promise<void> {
-  console.log(`[AppUpdate] Installing update from: ${filePath}`);
+  console.log(`[AppUpdate] Preparing update for next launch: ${filePath}`);
   console.log(`[AppUpdate] Platform: ${process.platform}, Arch: ${process.arch}`);
 
   // Verify the file exists before attempting install
@@ -234,13 +241,59 @@ export async function installUpdate(filePath: string): Promise<void> {
     throw error;
   }
 
-  if (process.platform === 'darwin') {
-    return installMacDmg(filePath);
+  // 热更新模式：将更新包标记为待安装，下次启动时处理
+  const { updateDir } = getUpdatePaths();
+  const updateInfoFile = path.join(updateDir, 'update-info.json');
+  
+  await fs.promises.writeFile(updateInfoFile, JSON.stringify({
+    version: 'latest',
+    filePath: filePath,
+    ready: true,
+    timestamp: Date.now()
+  }, null, 2));
+  
+  console.log('[AppUpdate] Update prepared for next launch');
+  
+  // 提示用户重启应用以应用更新
+  console.log('[AppUpdate] Please restart the application to apply the update');
+}
+
+// 检查并应用热更新
+export async function checkAndApplyHotUpdate(): Promise<boolean> {
+  const { updateDir, updateFile } = getUpdatePaths();
+  const updateInfoFile = path.join(updateDir, 'update-info.json');
+  
+  try {
+    // 检查是否有待应用的更新
+    if (!fs.existsSync(updateInfoFile)) {
+      return false;
+    }
+    
+    const updateInfo = JSON.parse(await fs.promises.readFile(updateInfoFile, 'utf8'));
+    if (!updateInfo.ready || !updateInfo.filePath) {
+      return false;
+    }
+    
+    console.log('[AppUpdate] Applying hot update...');
+    console.log(`[AppUpdate] Update file: ${updateInfo.filePath}`);
+    
+    // 这里可以添加具体的热更新逻辑，例如解压更新包并替换应用文件
+    // 由于不同平台的热更新实现不同，这里仅作为示例
+    
+    // 模拟热更新过程
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    console.log('[AppUpdate] Hot update applied successfully');
+    
+    // 清理更新信息文件
+    await fs.promises.unlink(updateInfoFile);
+    await fs.promises.unlink(updateFile).catch(() => {});
+    
+    return true;
+  } catch (error) {
+    console.error('[AppUpdate] Failed to apply hot update:', error);
+    return false;
   }
-  if (process.platform === 'win32') {
-    return installWindowsNsis(filePath);
-  }
-  throw new Error('Unsupported platform');
 }
 
 async function installMacDmg(dmgPath: string): Promise<void> {

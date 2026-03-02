@@ -20,7 +20,7 @@ import { createTray, destroyTray, updateTrayMenu } from './trayManager';
 import { isAutoLaunched, getAutoLaunchEnabled, setAutoLaunchEnabled } from './autoLaunchManager';
 import { ScheduledTaskStore } from './scheduledTaskStore';
 import { Scheduler } from './libs/scheduler';
-import { downloadUpdate, installUpdate, cancelActiveDownload } from './libs/appUpdateInstaller';
+import { downloadUpdate, installUpdate, cancelActiveDownload, checkAndApplyHotUpdate } from './libs/appUpdateInstaller';
 import { initLogger, getLogFilePath } from './logger';
 import { ensurePythonRuntimeReady } from './libs/pythonRuntime';
 import {
@@ -424,13 +424,28 @@ if (enableVerboseLogging) {
   app.commandLine.appendSwitch('v', '1');
 }
 
-// 配置网络服务
-app.on('ready', () => {
+// 检查并应用热更新
+app.on('ready', async () => {
   // 配置网络服务重启策略
   app.configureHostResolver({
     enableBuiltInResolver: true,
     secureDnsMode: 'off'
   });
+  
+  // 检查并应用热更新
+  try {
+    console.log('[Main] Checking for hot updates...');
+    const updateApplied = await checkAndApplyHotUpdate();
+    if (updateApplied) {
+      console.log('[Main] Hot update applied, restarting application...');
+      app.relaunch();
+      app.quit();
+    } else {
+      console.log('[Main] No hot updates available');
+    }
+  } catch (error) {
+    console.error('[Main] Failed to check for hot updates:', error);
+  }
 });
 
 // 添加错误处理

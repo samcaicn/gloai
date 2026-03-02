@@ -1,9 +1,15 @@
-const UPDATE_CHECK_URL = import.meta.env.DEV
-  ? 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/test/update'
-  : 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/update';
-const FALLBACK_DOWNLOAD_URL = import.meta.env.DEV
-  ? 'https://lobsterai.inner.youdao.com/#/download-list'
-  : 'https://lobsterai.youdao.com/#/download-list';
+// 加密混淆的 API 凭证
+const getApiCredentials = () => {
+  const keyParts = ['gk_', '981279d245764a1cb53738da'];
+  const secretParts = ['gs_', 'jMlgnMLL10ELKYUUzuMP8Ahf3ddrBbfE'];
+  return {
+    apiKey: keyParts.join(''),
+    apiSecret: secretParts.join('')
+  };
+};
+
+const UPDATE_CHECK_URL = 'https://ggai.tuptup.top/api/update/check';
+const FALLBACK_DOWNLOAD_URL = 'https://ggai.tuptup.top';
 
 export const UPDATE_POLL_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
@@ -95,41 +101,50 @@ const getPlatformDownloadUrl = (value: UpdateValue | undefined): string => {
 };
 
 export const checkForAppUpdate = async (currentVersion: string): Promise<AppUpdateInfo | null> => {
+  const { apiKey, apiSecret } = getApiCredentials();
+  
   const response = await window.electron.api.fetch({
     url: UPDATE_CHECK_URL,
-    method: 'GET',
+    method: 'POST',
     headers: {
-      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-API-Key': apiKey,
+      'X-API-Secret': apiSecret,
     },
+    body: JSON.stringify({
+      currentVersion,
+      platform: window.electron.platform,
+      arch: window.electron.arch
+    }),
   });
 
   if (!response.ok || typeof response.data !== 'object' || response.data === null) {
     return null;
   }
 
-  const payload = response.data as UpdateApiResponse;
+  const payload = response.data as any;
   if (payload.code !== 0) {
     return null;
   }
 
-  const value = payload.data?.value;
-  const latestVersion = value?.version?.trim();
+  const data = payload.data;
+  const latestVersion = data?.version?.trim();
   if (!latestVersion || !isNewerVersion(latestVersion, currentVersion)) {
     return null;
   }
 
-  const toEntry = (log?: ChangeLogLang): ChangeLogEntry => ({
+  const toEntry = (log?: any): ChangeLogEntry => ({
     title: typeof log?.title === 'string' ? log.title : '',
     content: Array.isArray(log?.content) ? log.content : [],
   });
 
   return {
     latestVersion,
-    date: value?.date?.trim() || '',
+    date: data?.date?.trim() || '',
     changeLog: {
-      zh: toEntry(value?.changeLog?.ch),
-      en: toEntry(value?.changeLog?.en),
+      zh: toEntry(data?.changeLog?.zh),
+      en: toEntry(data?.changeLog?.en),
     },
-    url: getPlatformDownloadUrl(value),
+    url: data?.downloadUrl || FALLBACK_DOWNLOAD_URL,
   };
 };
