@@ -14,7 +14,7 @@ fn main() {
 }
 
 fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
-    let version = "0.3.3"; // 使用最新版本（不包含 v 前缀）
+    let version = "0.3.4"; // 使用最新版本（不包含 v 前缀）
     let base_url = format!("https://github.com/smallnest/goclaw/releases/download/v{}", version);
     
     // 确定目标操作系统和架构
