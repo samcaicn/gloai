@@ -221,23 +221,23 @@ impl GoClawManager {
                 // 检查 Resources/goclaw 目录（针对打包后的应用）
                 let resources_dir = dir.join("Resources");
                 if resources_dir.is_dir() {
-                    self.logger.lock().unwrap().info(&format!("Checking Resources directory contents: {:?}", std::fs::read_dir(&resources_dir).unwrap_or_default().collect::<Result<Vec<_>, _>>()));
-                    let goclaw_dir = resources_dir.join("goclaw");
-                    if goclaw_dir.is_dir() {
-                        self.logger.lock().unwrap().info(&format!("Checking Resources/goclaw directory: {:?}", goclaw_dir));
-                        self.logger.lock().unwrap().info(&format!("Resources/goclaw directory contents: {:?}", std::fs::read_dir(&goclaw_dir).unwrap_or_default().collect::<Result<Vec<_>, _>>()));
-                        for name in &binary_names {
-                            let path = goclaw_dir.join(name);
-                            self.logger.lock().unwrap().info(&format!("Checking binary path: {:?}, exists: {:?}", path, path.exists()));
-                            if path.exists() {
-                                self.logger.lock().unwrap().info(&format!("Found binary in Resources/goclaw directory: {:?}", path));
-                                return Ok(path);
+                        self.logger.lock().unwrap().info(&format!("Checking Resources directory contents: {:?}", std::fs::read_dir(&resources_dir).unwrap_or_else(|_| std::fs::read_dir("/").unwrap()).collect::<Result<Vec<_>, _>>()));
+                        let goclaw_dir = resources_dir.join("goclaw");
+                        if goclaw_dir.is_dir() {
+                            self.logger.lock().unwrap().info(&format!("Checking Resources/goclaw directory: {:?}", goclaw_dir));
+                            self.logger.lock().unwrap().info(&format!("Resources/goclaw directory contents: {:?}", std::fs::read_dir(&goclaw_dir).unwrap_or_else(|_| std::fs::read_dir("/").unwrap()).collect::<Result<Vec<_>, _>>()));
+                            for name in &binary_names {
+                                let path = goclaw_dir.join(name);
+                                self.logger.lock().unwrap().info(&format!("Checking binary path: {:?}, exists: {:?}", path, path.exists()));
+                                if path.exists() {
+                                    self.logger.lock().unwrap().info(&format!("Found binary in Resources/goclaw directory: {:?}", path));
+                                    return Ok(path);
+                                }
                             }
+                        } else {
+                            self.logger.lock().unwrap().info(&format!("Resources/goclaw directory does not exist: {:?}", goclaw_dir));
                         }
-                    } else {
-                        self.logger.lock().unwrap().info(&format!("Resources/goclaw directory does not exist: {:?}", goclaw_dir));
                     }
-                }
             }
         }
 
