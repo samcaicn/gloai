@@ -13,31 +13,7 @@ const FALLBACK_DOWNLOAD_URL = 'https://ggai.tuptup.top';
 
 export const UPDATE_POLL_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
-type ChangeLogLang = {
-  title?: string;
-  content?: string[];
-};
 
-type PlatformDownload = {
-  url?: string;
-};
-
-type UpdateApiResponse = {
-  code?: number;
-  data?: {
-    value?: {
-      version?: string;
-      date?: string;
-      changeLog?: {
-        ch?: ChangeLogLang;
-        en?: ChangeLogLang;
-      };
-      macIntel?: PlatformDownload;
-      macArm?: PlatformDownload;
-      windowsX64?: PlatformDownload;
-    };
-  };
-};
 
 export type ChangeLogEntry = { title: string; content: string[] };
 
