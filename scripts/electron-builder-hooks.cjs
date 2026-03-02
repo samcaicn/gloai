@@ -1,8 +1,9 @@
 'use strict';
 
 const path = require('path');
-const { existsSync, readdirSync, statSync } = require('fs');
+const { existsSync, readdirSync, statSync, writeFileSync, unlinkSync, mkdirSync } = require('fs');
 const { spawnSync } = require('child_process');
+const https = require('https');
 const { ensurePortableGit } = require('./setup-mingit.js');
 const { ensurePortablePythonRuntime, checkRuntimeHealth } = require('./setup-python-runtime.js');
 
@@ -12,6 +13,92 @@ function isWindowsTarget(context) {
 
 function isMacTarget(context) {
   return context?.electronPlatformName === 'darwin';
+}
+
+/**
+ * Download goclaw binary for the target platform and architecture
+ */
+async function downloadGoclawForTarget(targetPlatform, targetArch) {
+  // Map electron-builder platform to goclaw platform
+  const platformMap = {
+    'darwin': 'darwin',
+    'win32': 'windows',
+    'linux': 'linux'
+  };
+  
+  // Map electron-builder arch to goclaw arch
+  const archMap = {
+    'x64': 'amd64',
+    'arm64': 'arm64'
+  };
+  
+  const goclawPlatform = platformMap[targetPlatform];
+  const goclawArch = archMap[targetArch];
+  
+  if (!goclawPlatform || !goclawArch) {
+    console.warn(`[electron-builder-hooks] Unsupported platform/arch: ${targetPlatform}-${targetArch}, skipping goclaw download`);
+    return;
+  }
+  
+  const version = 'v0.3.4';
+  const filename = `goclaw_${goclawPlatform}_${goclawArch}.tar.gz`;
+  const url = `https://github.com/smallnest/goclaw/releases/download/${version}/${filename}`;
+  const downloadPath = path.join(__dirname, '..', filename);
+  const extractPath = path.join(__dirname, '..');
+  
+  console.log(`[electron-builder-hooks] Downloading goclaw for ${targetPlatform}-${targetArch} from ${url}...`);
+  
+  // Download the tar.gz file
+  await new Promise((resolve, reject) => {
+    const file = writeFileSync(downloadPath, '');
+    const request = https.get(url, (response) => {
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to download goclaw: ${response.statusCode}`));
+        return;
+      }
+      
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        writeFileSync(downloadPath, buffer);
+        resolve();
+      });
+    });
+    
+    request.on('error', (error) => {
+      reject(error);
+    });
+  });
+  
+  // Extract the tar.gz file
+  console.log(`[electron-builder-hooks] Extracting goclaw to ${extractPath}...`);
+  const extractResult = spawnSync('tar', ['-xzf', filename], {
+    cwd: extractPath,
+    encoding: 'utf-8',
+    stdio: 'pipe'
+  });
+  
+  if (extractResult.status !== 0) {
+    console.error(`[electron-builder-hooks] Failed to extract goclaw: ${extractResult.stderr}`);
+    unlinkSync(downloadPath);
+    return;
+  }
+  
+  // Remove the tar.gz file
+  unlinkSync(downloadPath);
+  
+  // Make sure the goclaw binary is executable
+  const goclawPath = path.join(extractPath, 'goclaw');
+  if (existsSync(goclawPath)) {
+    spawnSync('chmod', ['+x', 'goclaw'], {
+      cwd: extractPath,
+      encoding: 'utf-8'
+    });
+    console.log(`[electron-builder-hooks] ✓ goclaw downloaded and extracted successfully for ${targetPlatform}-${targetArch}`);
+  } else {
+    console.error(`[electron-builder-hooks] Failed to find goclaw binary after extraction`);
+  }
 }
 
 function findPackagedBash(appOutDir) {
@@ -276,6 +363,11 @@ async function beforePack(context) {
   // Install skill dependencies first (for all platforms)
   installSkillDependencies();
 
+  // Download goclaw for the target platform
+  const targetPlatform = context.electronPlatformName;
+  const targetArch = context.arch === 1 ? 'x64' : context.arch === 3 ? 'arm64' : 'x64';
+  await downloadGoclawForTarget(targetPlatform, targetArch);
+
   if (!isWindowsTarget(context)) {
     return;
   }
@@ -294,7 +386,6 @@ async function beforePack(context) {
   }
 
   // Re-download node-nim native binaries for Windows
-  const targetArch = context.arch === 1 ? 'x64' : context.arch === 3 ? 'arm64' : 'x64';
   await rebuildNodeNimForTarget('win32', targetArch);
 }
 

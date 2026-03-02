@@ -85,20 +85,7 @@ const isNewerVersion = (latestVersion: string, currentVersion: string): boolean 
 
 type UpdateValue = NonNullable<NonNullable<UpdateApiResponse['data']>['value']>;
 
-const getPlatformDownloadUrl = (value: UpdateValue | undefined): string => {
-  const { platform, arch } = window.electron;
 
-  if (platform === 'darwin') {
-    const download = arch === 'arm64' ? value?.macArm : value?.macIntel;
-    return download?.url?.trim() || FALLBACK_DOWNLOAD_URL;
-  }
-
-  if (platform === 'win32') {
-    return value?.windowsX64?.url?.trim() || FALLBACK_DOWNLOAD_URL;
-  }
-
-  return FALLBACK_DOWNLOAD_URL;
-};
 
 export const checkForAppUpdate = async (currentVersion: string): Promise<AppUpdateInfo | null> => {
   const { apiKey, apiSecret } = getApiCredentials();
