@@ -48,27 +48,43 @@ async function downloadGoclawForTarget(targetPlatform, targetArch) {
   
   console.log(`[electron-builder-hooks] Downloading goclaw for ${targetPlatform}-${targetArch} from ${url}...`);
   
-  // Download the tar.gz file
+  // Download the tar.gz file with redirect handling
   await new Promise((resolve, reject) => {
     const file = writeFileSync(downloadPath, '');
-    const request = https.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download goclaw: ${response.statusCode}`));
-        return;
-      }
-      
-      const chunks = [];
-      response.on('data', (chunk) => chunks.push(chunk));
-      response.on('end', () => {
-        const buffer = Buffer.concat(chunks);
-        writeFileSync(downloadPath, buffer);
-        resolve();
-      });
-    });
     
-    request.on('error', (error) => {
-      reject(error);
-    });
+    function download(url) {
+      const request = https.get(url, (response) => {
+        if (response.statusCode === 301 || response.statusCode === 302) {
+          const redirectUrl = response.headers.location;
+          if (redirectUrl) {
+            console.log(`[electron-builder-hooks] Redirecting to ${redirectUrl}...`);
+            download(redirectUrl);
+          } else {
+            reject(new Error(`Failed to download goclaw: redirect without location header`));
+          }
+          return;
+        }
+        
+        if (response.statusCode !== 200) {
+          reject(new Error(`Failed to download goclaw: ${response.statusCode}`));
+          return;
+        }
+        
+        const chunks = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          writeFileSync(downloadPath, buffer);
+          resolve();
+        });
+      });
+      
+      request.on('error', (error) => {
+        reject(error);
+      });
+    }
+    
+    download(url);
   });
   
   // Extract the tar.gz file
