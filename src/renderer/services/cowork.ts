@@ -619,15 +619,26 @@ class CoworkService {
     const cowork = window.electron?.cowork;
     if (!cowork) return null;
 
-    const result = await cowork.getSession(sessionId);
-    if (result.success && result.session) {
-      store.dispatch(setCurrentSession(result.session));
-      store.dispatch(setStreaming(result.session.status === 'running'));
-      return result.session;
-    }
+    try {
+      // 添加超时机制，确保会话加载不会无限等待
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Session loading timeout')), 10000); // 10秒超时
+      });
+      
+      const result = await Promise.race([cowork.getSession(sessionId), timeoutPromise]);
+      
+      if (result.success && result.session) {
+        store.dispatch(setCurrentSession(result.session));
+        store.dispatch(setStreaming(result.session.status === 'running'));
+        return result.session;
+      }
 
-    console.error('Failed to load session:', result.error);
-    return null;
+      console.error('Failed to load session:', result.error);
+      return null;
+    } catch (error) {
+      console.error('Failed to load session:', error);
+      return null;
+    }
   }
 
   async respondToPermission(requestId: string, result: CoworkPermissionResult): Promise<boolean> {

@@ -168,16 +168,25 @@ class ScheduledTaskService {
     if (!api) return null;
 
     try {
+      // 立即更新任务状态，让用户看到任务正在执行
+      store.dispatch(updateTaskState({ taskId: id, taskState: 'running' }));
+      
       // 添加超时机制，确保任务执行不会无限等待
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Task execution timeout')), 30000); // 30秒超时
       });
       
-      return await Promise.race([api.runManually(id), timeoutPromise]);
+      const result = await Promise.race([api.runManually(id), timeoutPromise]);
+      
+      // 任务执行成功，更新状态为 idle
+      store.dispatch(updateTaskState({ taskId: id, taskState: 'idle' }));
+      return result;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       store.dispatch(setError(errorMessage));
       console.error('Failed to run task manually:', err);
+      // 任务执行失败，更新状态为 idle
+      store.dispatch(updateTaskState({ taskId: id, taskState: 'idle' }));
       // 不抛出错误，确保任务执行失败不会导致整个流程卡死
       return { success: false, error: errorMessage };
     }
