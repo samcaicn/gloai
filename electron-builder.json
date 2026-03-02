@@ -60,6 +60,7 @@
     ],
     "icon": "build/icons/win/icon.ico",
     "sign": false,
+    "verifyUpdateCodeSignature": false,
     "extraResources": [
       {
         "from": "resources/mingit",
