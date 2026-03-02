@@ -83,10 +83,6 @@ const isNewerVersion = (latestVersion: string, currentVersion: string): boolean 
   compareVersions(latestVersion, currentVersion) > 0
 );
 
-type UpdateValue = NonNullable<NonNullable<UpdateApiResponse['data']>['value']>;
-
-
-
 export const checkForAppUpdate = async (currentVersion: string): Promise<AppUpdateInfo | null> => {
   const { apiKey, apiSecret } = getApiCredentials();
   
