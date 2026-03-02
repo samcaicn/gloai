@@ -184,7 +184,7 @@ export function createElectronCompatLayer() {
           if (isTauriReady()) {
             // 在 Tauri 环境中，调用后端的 scheduler_execute_task 命令
             const { invoke } = await import('@tauri-apps/api/core');
-            const runId = await invoke('scheduler_execute_task', { id });
+            await invoke('scheduler_execute_task', { id });
             
             // 创建一个新的会话
             const { coworkService } = await import('./cowork');
