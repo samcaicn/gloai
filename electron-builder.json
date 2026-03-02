@@ -1,0 +1,101 @@
+{
+  "appId": "com.lobsterai.app",
+  "productName": "LobsterAI",
+  "executableName": "LobsterAI",
+  "directories": {
+    "output": "release"
+  },
+  "beforePack": "./scripts/electron-builder-hooks.cjs",
+  "afterPack": "./scripts/electron-builder-hooks.cjs",
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "sandbox/agent-runner/AGENT_SYSTEM_PROMPT.md",
+    "goclaw"
+  ],
+  "extraResources": [
+    {
+      "from": "SKILLs",
+      "to": "SKILLs",
+      "filter": [
+        "**/*",
+        "!**/.env",
+        "!**/.env.*",
+        "!**/.venv",
+        "!**/.venv/**"
+      ]
+    },
+    {
+      "from": "resources/tray",
+      "to": "tray",
+      "filter": [
+        "**/*"
+      ]
+    }
+  ],
+  "mac": {
+    "target": [
+      "dmg"
+    ],
+    "icon": "build/icons/mac/icon.icns",
+    "category": "public.app-category.productivity",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    "extendInfo": {
+      "CFBundleIconName": "icon",
+      "NSCalendarsUsageDescription": "LobsterAI 需要访问您的日历来帮助您查看和管理日程安排，例如查找事件、创建会议等。",
+      "NSRemindersUsageDescription": "LobsterAI 需要访问您的提醒事项来帮助您管理待办事项。",
+      "NSAppleEventsUsageDescription": "LobsterAI 需要使用 Apple Events 来控制 Calendar 应用执行自动化操作。"
+    }
+  },
+  "dmg": {
+    "sign": false
+  },
+  "afterSign": "scripts/notarize.js",
+  "win": {
+    "target": [
+      "nsis"
+    ],
+    "icon": "build/icons/win/icon.ico",
+    "extraResources": [
+      {
+        "from": "resources/mingit",
+        "to": "mingit",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "resources/python-win",
+        "to": "python-win",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  },
+  "linux": {
+    "target": [
+      "AppImage"
+    ],
+    "icon": "build/icons/png",
+    "category": "Utility"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "runAfterFinish": true,
+    "deleteAppDataOnUninstall": true,
+    "include": "scripts/nsis-installer.nsh"
+  },
+  "electronVersion": "40.2.1",
+  "asarUnpack": [
+    "node_modules/@anthropic-ai/claude-agent-sdk/**",
+    "node_modules/@img/**",
+    "node_modules/sql.js/dist/**",
+    "node_modules/node-nim/**"
+  ],
+  "asar": true
+}
