@@ -48,44 +48,23 @@ async function downloadGoclawForTarget(targetPlatform, targetArch) {
   
   console.log(`[electron-builder-hooks] Downloading goclaw for ${targetPlatform}-${targetArch} from ${url}...`);
   
-  // Download the tar.gz file with redirect handling
-  await new Promise((resolve, reject) => {
-    const file = writeFileSync(downloadPath, '');
-    
-    function download(url) {
-      const request = https.get(url, (response) => {
-        if (response.statusCode === 301 || response.statusCode === 302) {
-          const redirectUrl = response.headers.location;
-          if (redirectUrl) {
-            console.log(`[electron-builder-hooks] Redirecting to ${redirectUrl}...`);
-            download(redirectUrl);
-          } else {
-            reject(new Error(`Failed to download goclaw: redirect without location header`));
-          }
-          return;
-        }
-        
-        if (response.statusCode !== 200) {
-          reject(new Error(`Failed to download goclaw: ${response.statusCode}`));
-          return;
-        }
-        
-        const chunks = [];
-        response.on('data', (chunk) => chunks.push(chunk));
-        response.on('end', () => {
-          const buffer = Buffer.concat(chunks);
-          writeFileSync(downloadPath, buffer);
-          resolve();
-        });
-      });
-      
-      request.on('error', (error) => {
-        reject(error);
-      });
-    }
-    
-    download(url);
+  // Download the tar.gz file using curl for better redirect handling
+  console.log(`[electron-builder-hooks] Downloading goclaw using curl...`);
+  const curlResult = spawnSync('curl', [
+    '-L', // Follow redirects
+    '-o', downloadPath,
+    url
+  ], {
+    encoding: 'utf-8',
+    stdio: 'pipe'
   });
+  
+  if (curlResult.status !== 0) {
+    console.error(`[electron-builder-hooks] Failed to download goclaw with curl: ${curlResult.stderr}`);
+    return;
+  }
+  
+  console.log(`[electron-builder-hooks] goclaw downloaded successfully`);
   
   // Extract the tar.gz file
   console.log(`[electron-builder-hooks] Extracting goclaw to ${extractPath}...`);
