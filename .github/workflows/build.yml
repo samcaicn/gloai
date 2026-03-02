@@ -60,6 +60,8 @@ jobs:
         run: ${{ matrix.build_cmd }}
         env:
           CI: true
+          WIN_CSC_LINK: ""
+          WIN_CSC_KEY_PASSWORD: ""
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

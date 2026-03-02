@@ -59,8 +59,6 @@
       "nsis"
     ],
     "icon": "build/icons/win/icon.ico",
-    "sign": "node -e \"console.log('Skipping signing')\"",
-    "verifyUpdateCodeSignature": false,
     "extraResources": [
       {
         "from": "resources/mingit",
