@@ -476,7 +476,6 @@ impl GoClawManager {
         // 检查文件权限
         #[cfg(unix)]
         {
-            use std::fs::Permissions;
             use std::os::unix::fs::PermissionsExt;
             
             if let Ok(permissions) = binary_path.metadata() {

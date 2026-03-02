@@ -128,6 +128,16 @@ impl Logger {
     }
 }
 
+impl Clone for Logger {
+    fn clone(&self) -> Self {
+        Logger {
+            log_file: Arc::new(Mutex::new(None)),
+            log_path: self.log_path.clone(),
+            max_size: self.max_size,
+        }
+    }
+}
+
 impl Default for Logger {
     fn default() -> Self {
         Self::new().expect("Failed to create logger")
