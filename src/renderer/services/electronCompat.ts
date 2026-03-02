@@ -160,26 +160,57 @@ export function createElectronCompatLayer() {
       onMessageReceived: () => () => {},
     },
     scheduledTasks: {
-      list: async () => [],
+      list: async () => {
+        try {
+          const { isTauriReady } = await import('./tauriApi');
+          if (isTauriReady()) {
+            const { invoke } = await import('@tauri-apps/api/core');
+            return await invoke('scheduler_list_tasks');
+          }
+          return [];
+        } catch (error) {
+          console.error('Failed to list tasks:', error);
+          return [];
+        }
+      },
       get: async () => null,
       create: async () => ({ id: '' }),
       update: async () => {},
       delete: async () => {},
       toggle: async () => {},
       runManually: async (id: string) => {
-        // 模拟任务启动，创建一个新的会话
         try {
-          const { coworkService } = await import('./cowork');
-          const session = await coworkService.startSession({
-            prompt: `执行定时任务: ${id}`,
-            title: `定时任务执行: ${id}`,
-          });
-          
-          // 确保会话已完全创建并保存
-          if (session) {
-            return { success: true, session };
+          const { isTauriReady } = await import('./tauriApi');
+          if (isTauriReady()) {
+            // 在 Tauri 环境中，调用后端的 scheduler_execute_task 命令
+            const { invoke } = await import('@tauri-apps/api/core');
+            const runId = await invoke('scheduler_execute_task', { id });
+            
+            // 创建一个新的会话
+            const { coworkService } = await import('./cowork');
+            const session = await coworkService.startSession({
+              prompt: `执行定时任务: ${id}`,
+              title: `定时任务执行: ${id}`,
+            });
+            
+            if (session) {
+              return { success: true, session };
+            } else {
+              return { success: false, error: 'Failed to create session' };
+            }
           } else {
-            return { success: false, error: 'Failed to create session' };
+            // 在浏览器模式下，模拟任务启动
+            const { coworkService } = await import('./cowork');
+            const session = await coworkService.startSession({
+              prompt: `执行定时任务: ${id}`,
+              title: `定时任务执行: ${id}`,
+            });
+            
+            if (session) {
+              return { success: true, session };
+            } else {
+              return { success: false, error: 'Failed to create session' };
+            }
           }
         } catch (error) {
           console.error('Failed to run task manually:', error);
@@ -187,9 +218,33 @@ export function createElectronCompatLayer() {
         }
       },
       stop: async () => {},
-      listRuns: async () => [],
+      listRuns: async () => {
+        try {
+          const { isTauriReady } = await import('./tauriApi');
+          if (isTauriReady()) {
+            const { invoke } = await import('@tauri-apps/api/core');
+            return await invoke('scheduler_list_task_runs');
+          }
+          return [];
+        } catch (error) {
+          console.error('Failed to list runs:', error);
+          return [];
+        }
+      },
       countRuns: async () => 0,
-      listAllRuns: async () => [],
+      listAllRuns: async () => {
+        try {
+          const { isTauriReady } = await import('./tauriApi');
+          if (isTauriReady()) {
+            const { invoke } = await import('@tauri-apps/api/core');
+            return await invoke('scheduler_list_task_runs', { taskId: null });
+          }
+          return [];
+        } catch (error) {
+          console.error('Failed to list all runs:', error);
+          return [];
+        }
+      },
       onStatusUpdate: () => () => {},
       onRunUpdate: () => () => {},
     },
