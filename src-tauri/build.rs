@@ -3,14 +3,14 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    // 构建 Tauri 应用
-    tauri_build::build();
-    
-    // 下载 goclaw 二进制文件（失败时不中断构建）
+    // 先下载 goclaw 二进制文件（失败时不中断构建）
     if let Err(e) = download_goclaw() {
         println!("cargo:warning=Failed to download goclaw: {}", e);
         println!("cargo:warning=Build will continue without goclaw");
     }
+    
+    // 构建 Tauri 应用
+    tauri_build::build();
 }
 
 fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
