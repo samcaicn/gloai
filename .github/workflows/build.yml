@@ -40,11 +40,21 @@ jobs:
           node-version: '24'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --verbose
+        env:
+          npm_config_timeout: 600000
+          npm_config_fetch_retry_mintimeout: 10000
+          npm_config_fetch_retry_maxtimeout: 60000
+        timeout-minutes: 20
 
       - name: Install web-search skill dependencies
-        run: npm install
+        run: npm install --verbose
         working-directory: ./SKILLs/web-search
+        env:
+          npm_config_timeout: 600000
+          npm_config_fetch_retry_mintimeout: 10000
+          npm_config_fetch_retry_maxtimeout: 60000
+        timeout-minutes: 10
 
       - name: Build
         run: ${{ matrix.build_cmd }}
