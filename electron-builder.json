@@ -6,6 +6,7 @@
     "output": "release"
   },
   "publish": false,
+  "forceCodeSigning": false,
   "beforePack": "./scripts/electron-builder-hooks.cjs",
   "afterPack": "./scripts/electron-builder-hooks.cjs",
   "files": [
@@ -76,13 +77,6 @@
         ]
       }
     ]
-  },
-  "winSign": {
-    "certificateFile": null,
-    "certificatePassword": null,
-    "certificateSubjectName": null,
-    "certificateSha1": null,
-    "signingHashAlgorithms": []
   },
   "linux": {
     "target": [
