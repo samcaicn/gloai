@@ -63,9 +63,14 @@ jobs:
             pkg-config
 
       - name: Check for package-lock.json
-        run: ls -la package-lock.json
+        run: |
+          ls -la
+          ls -la package-lock.json
 
       - name: Install dependencies
+        run: npm install --package-lock-only
+
+      - name: Install dependencies with ci
         run: npm ci
 
       - name: Install Rust targets (macOS)
