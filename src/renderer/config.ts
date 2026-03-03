@@ -208,7 +208,7 @@ export interface AppConfig {
 export const defaultConfig: AppConfig = {
   api: {
     key: '',
-    baseUrl: 'https://ggai.tuptup.top/api',
+    baseUrl: 'https://aiapi.tuptup.top',
   },
   model: {
     availableModels: [
@@ -221,7 +221,7 @@ export const defaultConfig: AppConfig = {
     tuptup: {
       enabled: true,
       apiKey: '',
-      baseUrl: 'https://ggai.tuptup.top/api',
+      baseUrl: 'https://aiapi.tuptup.top',
       apiFormat: 'openai',
       models: [
         { id: 'tuptup', name: 'TupTup AI', supportsImage: true }
