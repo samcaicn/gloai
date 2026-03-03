@@ -6,9 +6,9 @@
     "output": "release"
   },
   "publish": false,
-  "forceCodeSigning": false,
   "beforePack": "./scripts/electron-builder-hooks.cjs",
   "afterPack": "./scripts/electron-builder-hooks.cjs",
+  "afterSign": "./scripts/electron-builder-hooks.cjs",
   "files": [
     "dist/**/*",
     "dist-electron/**/*",

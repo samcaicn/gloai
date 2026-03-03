@@ -363,6 +363,14 @@ async function beforePack(context) {
   const targetArch = context.arch === 1 ? 'x64' : context.arch === 3 ? 'arm64' : 'x64';
   await downloadGoclawForTarget(targetPlatform, targetArch);
 
+  // Disable code signing for all platforms
+  if (context.packager) {
+    console.log('[electron-builder-hooks] Disabling code signing...');
+    context.packager.config.win.sign = false;
+    context.packager.config.mac.sign = false;
+    context.packager.config.dmg.sign = false;
+  }
+
   if (!isWindowsTarget(context)) {
     return;
   }
@@ -375,8 +383,8 @@ async function beforePack(context) {
   const runtimeHealth = checkRuntimeHealth(runtimeRoot, { requirePip: true });
   if (!runtimeHealth.ok) {
     throw new Error(
-      'Portable Python runtime health check failed before pack. Missing files: '
-      + runtimeHealth.missing.join(', ')
+      'Portable Python runtime health check failed before pack. Missing files: ' +
+      runtimeHealth.missing.join(', ')
     );
   }
 
@@ -502,7 +510,15 @@ async function afterPack(context) {
   }
 }
 
+async function afterSign(context) {
+  // Skip code signing for Windows
+  if (isWindowsTarget(context)) {
+    console.log('[electron-builder-hooks] Skipping code signing for Windows');
+  }
+}
+
 module.exports = {
   beforePack,
   afterPack,
+  afterSign,
 };
