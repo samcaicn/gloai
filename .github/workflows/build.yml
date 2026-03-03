@@ -8,27 +8,18 @@ on:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build on macOS
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
-            target: universal-apple-darwin
+          - target: universal-apple-darwin
             build_cmd: npm run dist:mac:universal
-          - os: macos-latest
-            target: x86_64-apple-darwin
+          - target: x86_64-apple-darwin
             build_cmd: npm run dist:mac:x64
-          - os: macos-latest
-            target: aarch64-apple-darwin
+          - target: aarch64-apple-darwin
             build_cmd: npm run dist:mac:arm64
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            build_cmd: npm run dist:win
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            build_cmd: npm run dist:linux
 
     steps:
       - name: Checkout code
@@ -66,7 +57,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lobsterai-${{ matrix.os }}-${{ matrix.target }}
+          name: globalclaw-macos-${{ matrix.target }}
           path: |
             release/*
           retention-days: 30
