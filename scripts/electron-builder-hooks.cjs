@@ -520,5 +520,4 @@ async function afterSign(context) {
 module.exports = {
   beforePack,
   afterPack,
-  afterSign,
 };
