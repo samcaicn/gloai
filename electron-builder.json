@@ -77,6 +77,13 @@
       }
     ]
   },
+  "winSign": {
+    "certificateFile": null,
+    "certificatePassword": null,
+    "certificateSubjectName": null,
+    "certificateSha1": null,
+    "signingHashAlgorithms": []
+  },
   "linux": {
     "target": [
       "AppImage"
