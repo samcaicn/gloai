@@ -1,539 +1,62 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from './store';
-import Settings, { type SettingsOpenOptions } from './components/Settings';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import Toast from './components/Toast';
-import WindowTitleBar from './components/window/WindowTitleBar';
 import { CoworkView } from './components/cowork';
 import { SkillsView } from './components/skills';
 import { ScheduledTasksView } from './components/scheduledTasks';
-import CoworkPermissionModal from './components/cowork/CoworkPermissionModal';
-import CoworkQuestionWizard from './components/cowork/CoworkQuestionWizard';
-import { configService } from './services/config';
-import { apiService } from './services/api';
-import { themeService } from './services/theme';
-import { coworkService } from './services/cowork';
-import { scheduledTaskService } from './services/scheduledTask';
-import { checkForAppUpdate, type AppUpdateInfo, UPDATE_POLL_INTERVAL_MS } from './services/appUpdate';
-import { defaultConfig } from './config';
-import { setAvailableModels, setSelectedModel } from './store/slices/modelSlice';
-import { clearSelection } from './store/slices/quickActionSlice';
-import type { ApiConfig } from './services/api';
-import type { CoworkPermissionResult } from './types/cowork';
-import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { i18nService } from './services/i18n';
-import { matchesShortcut } from './services/shortcuts';
 import { loggerService } from './services/logger';
-import AppUpdateBadge from './components/update/AppUpdateBadge';
-import AppUpdateModal from './components/update/AppUpdateModal';
-import { tauriApi, isTauriReady } from './services/tauriApi';
+import { configService } from './services/config';
+import { themeService } from './services/theme';
+import { scheduledTaskService } from './services/scheduledTask';
 
 const App: React.FC = () => {
-  const [showSettings, setShowSettings] = useState(false);
-  const [settingsOptions, setSettingsOptions] = useState<SettingsOpenOptions>({});
   const [mainView, setMainView] = useState<'cowork' | 'skills' | 'scheduledTasks'>('cowork');
   const [isInitialized, setIsInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [, forceLanguageRefresh] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [isWindows, setIsWindows] = useState(false);
-  const toastTimerRef = useRef<number | null>(null);
-  const hasInitialized = useRef(false);
-  const dispatch = useDispatch();
-  const selectedModel = useSelector((state: RootState) => state.model.selectedModel);
-  const currentSessionId = useSelector((state: RootState) => state.cowork.currentSessionId);
-  const pendingPermissions = useSelector((state: RootState) => state.cowork.pendingPermissions);
-  const pendingPermission = pendingPermissions[0] ?? null;
 
-  // 初始化应用
   useEffect(() => {
-    if (hasInitialized.current) {
-      return;
-    }
-    hasInitialized.current = true;
-
-    // 为每个异步操作添加超时处理
-    const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
-      return Promise.race([
-        promise,
-        new Promise<T>((_, reject) => {
-          setTimeout(() => reject(new Error('Operation timed out')), timeoutMs);
-        })
-      ]).catch(() => {
-        console.warn(`Operation timed out, using fallback: ${JSON.stringify(fallback)}`);
-        return fallback;
-      });
-    };
-
     const initializeApp = async () => {
       try {
-        // 标记平台，用于 CSS 条件样式（如 Windows 标题栏按钮区域留白）
-        let platform = 'unknown';
-        try {
-          if (isTauriReady()) {
-            platform = await withTimeout(tauriApi.platform.get(), 2000, navigator.platform);
-          } else {
-            platform = navigator.platform;
-          }
-        } catch (error) {
-          console.warn('Failed to get platform, using navigator.platform:', error);
-          platform = navigator.platform;
-        }
-        setIsWindows(platform === 'win32');
-        document.documentElement.classList.add(`platform-${platform}`);
-
         // 初始化日志服务
-        try {
-          await withTimeout(loggerService.init(), 2000, undefined);
-          loggerService.info('Starting app initialization');
-        } catch (error) {
-          console.warn('Failed to initialize logger service:', error);
-        }
+        await loggerService.init();
+        loggerService.info('Starting app initialization');
 
         // 初始化配置
-        try {
-          await withTimeout(configService.init(), 3000, undefined);
-          loggerService.info('Config service initialized');
-        } catch (error) {
-          console.warn('Failed to initialize config service:', error);
-        }
+        await configService.init();
+        loggerService.info('Config service initialized');
         
         // 初始化主题
-        try {
-          themeService.initialize();
-          loggerService.info('Theme service initialized');
-        } catch (error) {
-          console.warn('Failed to initialize theme service:', error);
-        }
+        themeService.initialize();
+        loggerService.info('Theme service initialized');
 
         // 初始化语言
-        try {
-          await withTimeout(i18nService.initialize(), 3000, undefined);
-          loggerService.info('i18n service initialized');
-        } catch (error) {
-          console.warn('Failed to initialize i18n service:', error);
-        }
-        
-        try {
-          const config = await configService.getConfig();
-          
-          const apiConfig: ApiConfig = {
-            apiKey: config.api.key,
-            baseUrl: config.api.baseUrl,
-          };
-          apiService.setConfig(apiConfig);
-
-          // 从 providers 配置中加载可用模型列表到 Redux
-          const providerModels: { id: string; name: string; provider?: string; supportsImage?: boolean }[] = [];
-          if (config.providers) {
-            Object.entries(config.providers).forEach(([providerName, providerConfig]) => {
-              if (providerConfig.enabled && providerConfig.models) {
-                providerConfig.models.forEach((model: { id: string; name: string; supportsImage?: boolean }) => {
-                  providerModels.push({
-                    id: model.id,
-                    name: model.name,
-                    provider: providerName.charAt(0).toUpperCase() + providerName.slice(1),
-                    supportsImage: model.supportsImage ?? false,
-                  });
-                });
-              }
-            });
-          }
-          const fallbackModels = config.model.availableModels.map(model => ({
-            id: model.id,
-            name: model.name,
-            supportsImage: model.supportsImage ?? false,
-          }));
-          const resolvedModels = providerModels.length > 0 ? providerModels : fallbackModels;
-          if (resolvedModels.length > 0) {
-            dispatch(setAvailableModels(resolvedModels));
-            const preferredModel = resolvedModels.find(model => model.id === config.model.defaultModel) ?? resolvedModels[0];
-            dispatch(setSelectedModel(preferredModel));
-          }
-        } catch (error) {
-          console.warn('Failed to load models:', error);
-        }
+        await i18nService.initialize();
+        loggerService.info('i18n service initialized');
         
         // 初始化定时任务服务
-        try {
-          await withTimeout(scheduledTaskService.init(), 3000, undefined);
-          loggerService.info('Scheduled task service initialized');
-        } catch (error) {
-          console.warn('Failed to initialize scheduled task service:', error);
-        }
-
-        // 自动加载 tuptup 登录信息
-        try {
-          const { tuptupService } = await import('./services/tuptup');
-          if (tuptupService.isLoggedIn()) {
-            loggerService.info('Auto-loaded tuptup login info');
-          } else {
-            loggerService.info('No tuptup login info found');
-          }
-        } catch (error) {
-          loggerService.error('Failed to load tuptup login info:', error as Error);
-        }
+        await scheduledTaskService.init();
+        loggerService.info('Scheduled task service initialized');
 
         loggerService.info('App initialization completed');
         setIsInitialized(true);
       } catch (error) {
         loggerService.error('Failed to initialize app:', error as Error);
-        // 确保即使初始化失败也能显示错误信息
         setInitError('初始化失败，请检查应用配置');
         setIsInitialized(true);
       }
     };
 
-    // 确保捕获初始化过程中的错误
-    void initializeApp().catch(error => {
-      console.error('Error in initializeApp:', error as Error);
-      setInitError('应用启动失败');
-      setIsInitialized(true);
-    });
+    void initializeApp();
   }, []);
-
-  useEffect(() => {
-    const unsubscribe = i18nService.subscribe(() => {
-      forceLanguageRefresh((prev) => prev + 1);
-    });
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  // Network status monitoring
-  useEffect(() => {
-    const handleOnline = () => {
-      console.log('[Renderer] Network online');
-      if (isTauriReady()) {
-        tauriApi.invoke('network_status_send', { status: 'online' }).catch(console.error);
-      }
-    };
-
-    const handleOffline = () => {
-      console.log('[Renderer] Network offline');
-      if (isTauriReady()) {
-        tauriApi.invoke('network_status_send', { status: 'offline' }).catch(console.error);
-      }
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isInitialized || !selectedModel?.id) return;
-    const config = configService.getConfig();
-    if (config.model.defaultModel === selectedModel.id) return;
-    void configService.updateConfig({
-      model: {
-        ...config.model,
-        defaultModel: selectedModel.id,
-      },
-    });
-  }, [isInitialized, selectedModel?.id]);
-
-  const handleShowSettings = useCallback((options?: SettingsOpenOptions) => {
-    setSettingsOptions({
-      initialTab: options?.initialTab,
-      notice: options?.notice,
-    });
-    setShowSettings(true);
-  }, []);
-
-  const handleShowSkills = useCallback(() => {
-    setMainView('skills');
-  }, []);
-
-  const handleShowCowork = useCallback(() => {
-    setMainView('cowork');
-  }, []);
-
-  const handleShowScheduledTasks = useCallback(() => {
-    setMainView('scheduledTasks');
-  }, []);
-
-  const handleToggleSidebar = useCallback(() => {
-    setIsSidebarCollapsed((prev) => !prev);
-  }, []);
-
-  const handleNewChat = useCallback(() => {
-    const shouldClearInput = mainView === 'cowork' || !!currentSessionId;
-    coworkService.clearSession();
-    dispatch(clearSelection());
-    setMainView('cowork');
-    window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('cowork:focus-input', {
-        detail: { clear: shouldClearInput },
-      }));
-    }, 0);
-  }, [dispatch, mainView, currentSessionId]);
-
-  const showToast = useCallback((message: string) => {
-    setToastMessage(message);
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current);
-    }
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage(null);
-      toastTimerRef.current = null;
-    }, 2200);
-  }, []);
-
-  const handleShowLogin = useCallback(() => {
-    showToast(i18nService.t('featureInDevelopment'));
-  }, [showToast]);
-
-  const runUpdateCheck = useCallback(async () => {
-    try {
-      let currentVersion = '0.1.0';
-      if (isTauriReady()) {
-        currentVersion = await tauriApi.appInfo.getVersion();
-      }
-      const nextUpdate = await checkForAppUpdate(currentVersion);
-      setUpdateInfo(nextUpdate);
-      if (!nextUpdate) {
-        setShowUpdateModal(false);
-      }
-    } catch (error) {
-      console.error('Failed to check app update:', error);
-      setUpdateInfo(null);
-      setShowUpdateModal(false);
-    }
-  }, []);
-
-  const handleOpenUpdateModal = useCallback(() => {
-    if (!updateInfo) return;
-    setShowUpdateModal(true);
-  }, [updateInfo]);
-
-  const handleConfirmUpdate = useCallback(async () => {
-    if (!updateInfo) return;
-    setShowUpdateModal(false);
-    try {
-      await tauriApi.shell.openExternal(updateInfo.url);
-    } catch (error) {
-      console.error('Failed to open update url:', error);
-      showToast(i18nService.t('updateOpenFailed'));
-    }
-  }, [updateInfo, showToast]);
-
-  const handlePermissionResponse = useCallback(async (result: CoworkPermissionResult) => {
-    if (!pendingPermission) return;
-    await coworkService.respondToPermission(pendingPermission.requestId, result);
-  }, [pendingPermission]);
-
-  const handleCloseSettings = () => {
-    setShowSettings(false);
-    const config = configService.getConfig();
-    apiService.setConfig({
-      apiKey: config.api.key,
-      baseUrl: config.api.baseUrl,
-    });
-
-    if (config.providers) {
-      const allModels: { id: string; name: string; provider?: string; supportsImage?: boolean }[] = [];
-      Object.entries(config.providers).forEach(([providerName, providerConfig]) => {
-        if (providerConfig.enabled && providerConfig.models) {
-          providerConfig.models.forEach((model: { id: string; name: string; supportsImage?: boolean }) => {
-            allModels.push({
-              id: model.id,
-              name: model.name,
-              provider: providerName.charAt(0).toUpperCase() + providerName.slice(1),
-              supportsImage: model.supportsImage ?? false,
-            });
-          });
-        }
-      });
-      if (allModels.length > 0) {
-        dispatch(setAvailableModels(allModels));
-      }
-    }
-  };
-
-  const isShortcutInputActive = () => {
-    const activeElement = document.activeElement;
-    if (!(activeElement instanceof HTMLElement)) return false;
-    return activeElement.dataset.shortcutInput === 'true';
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.repeat || isShortcutInputActive()) return;
-
-      const { shortcuts } = configService.getConfig();
-      const activeShortcuts = {
-        ...defaultConfig.shortcuts,
-        ...(shortcuts ?? {}),
-      };
-
-      if (matchesShortcut(event, activeShortcuts.newChat)) {
-        event.preventDefault();
-        handleNewChat();
-        return;
-      }
-
-      if (matchesShortcut(event, activeShortcuts.search)) {
-        event.preventDefault();
-        window.dispatchEvent(new CustomEvent('cowork:shortcut:search'));
-        return;
-      }
-
-      if (matchesShortcut(event, activeShortcuts.settings)) {
-        event.preventDefault();
-        handleShowSettings();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleShowSettings, handleNewChat]);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) {
-        window.clearTimeout(toastTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Listen for toast events from child components
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const message = (e as CustomEvent<string>).detail;
-      if (message) showToast(message);
-    };
-    window.addEventListener('app:showToast', handler);
-    return () => window.removeEventListener('app:showToast', handler);
-  }, [showToast]);
-
-  // 监听托盘菜单打开设置的事件
-  useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-    if (isTauriReady()) {
-      tauriApi.on('app:openSettings', () => {
-        handleShowSettings();
-      }).then((unsub) => {
-        unsubscribe = unsub;
-      });
-    }
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [handleShowSettings]);
-
-  // 监听托盘菜单新建任务的事件
-  useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-    if (isTauriReady()) {
-      tauriApi.on('app:newTask', () => {
-        handleNewChat();
-      }).then((unsub) => {
-        unsubscribe = unsub;
-      });
-    }
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [handleNewChat]);
-
-  // 监听定时任务查看会话事件
-  useEffect(() => {
-    const handleViewSession = async (event: Event) => {
-      const { sessionId } = (event as CustomEvent).detail;
-      if (sessionId) {
-        setMainView('cowork');
-        await coworkService.loadSession(sessionId);
-      }
-    };
-    window.addEventListener('scheduledTask:viewSession', handleViewSession);
-    return () => window.removeEventListener('scheduledTask:viewSession', handleViewSession);
-  }, []);
-
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    let cancelled = false;
-
-    const checkUpdate = async () => {
-      if (cancelled) return;
-      await runUpdateCheck();
-    };
-
-    void checkUpdate();
-    const timer = window.setInterval(() => {
-      void checkUpdate();
-    }, UPDATE_POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [isInitialized, runUpdateCheck]);
-
-  // 根据场景选择使用哪个权限组件
-  const permissionModal = useMemo(() => {
-    if (!pendingPermission) return null;
-
-    // 检查是否为 AskUserQuestion 且有多个问题 -> 使用向导式组件
-    const isQuestionTool = pendingPermission.toolName === 'AskUserQuestion';
-    if (isQuestionTool && pendingPermission.toolInput) {
-      const rawQuestions = (pendingPermission.toolInput as Record<string, unknown>).questions;
-      const hasMultipleQuestions = Array.isArray(rawQuestions) && rawQuestions.length > 1;
-
-      if (hasMultipleQuestions) {
-        return (
-          <CoworkQuestionWizard
-            permission={pendingPermission}
-            onRespond={handlePermissionResponse}
-          />
-        );
-      }
-    }
-
-    // 其他情况使用原有的权限模态框
-    return (
-      <CoworkPermissionModal
-        permission={pendingPermission}
-        onRespond={handlePermissionResponse}
-      />
-    );
-  }, [pendingPermission, handlePermissionResponse]);
-
-  const isOverlayActive = showSettings || showUpdateModal || pendingPermissions.length > 0;
-  const updateBadge = updateInfo ? (
-    <AppUpdateBadge
-      latestVersion={updateInfo.latestVersion}
-      onClick={handleOpenUpdateModal}
-    />
-  ) : null;
-  const windowsStandaloneTitleBar = isWindows ? (
-    <div className="draggable relative h-9 shrink-0 dark:bg-claude-darkSurfaceMuted bg-claude-surfaceMuted">
-      <WindowTitleBar isOverlayActive={isOverlayActive} />
-    </div>
-  ) : null;
 
   if (!isInitialized) {
     return (
       <div className="h-screen overflow-hidden flex flex-col">
-        {windowsStandaloneTitleBar}
         <div className="flex-1 flex items-center justify-center dark:bg-claude-darkBg bg-claude-bg">
           <div className="flex flex-col items-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-claude-accent to-claude-accentHover flex items-center justify-center shadow-glow-accent animate-pulse">
-              <ChatBubbleLeftRightIcon className="h-8 w-8 text-white" />
+              <div className="text-white text-2xl">G</div>
             </div>
             <div className="w-24 h-1 rounded-full bg-claude-accent/20 overflow-hidden">
               <div className="h-full w-1/2 rounded-full bg-claude-accent animate-shimmer" />
@@ -548,27 +71,13 @@ const App: React.FC = () => {
   if (initError) {
     return (
       <div className="h-screen overflow-hidden flex flex-col">
-        {windowsStandaloneTitleBar}
         <div className="flex-1 flex flex-col items-center justify-center dark:bg-claude-darkBg bg-claude-bg">
           <div className="flex flex-col items-center space-y-6 max-w-md px-6">
             <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
-              <ChatBubbleLeftRightIcon className="h-8 w-8 text-white" />
+              <div className="text-white text-2xl">G</div>
             </div>
             <div className="dark:text-claude-darkText text-claude-text text-xl font-medium text-center">{initError}</div>
-            <button
-              onClick={() => handleShowSettings()}
-              className="px-6 py-2.5 bg-claude-accent hover:bg-claude-accentHover text-white rounded-xl shadow-md transition-colors text-sm font-medium"
-            >
-              {i18nService.t('openSettings')}
-            </button>
           </div>
-          {showSettings && (
-            <Settings
-              onClose={handleCloseSettings}
-              initialTab={settingsOptions.initialTab}
-              notice={settingsOptions.notice}
-            />
-          )}
         </div>
       </div>
     );
@@ -576,70 +85,50 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen overflow-hidden flex flex-col dark:bg-claude-darkSurfaceMuted bg-claude-surfaceMuted">
-      {toastMessage && (
-        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
-      )}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar
-          onShowLogin={handleShowLogin}
-          onShowSettings={handleShowSettings}
+          onShowLogin={() => {}}
+          onShowSettings={() => {}}
           activeView={mainView}
-          onShowSkills={handleShowSkills}
-          onShowCowork={handleShowCowork}
-          onShowScheduledTasks={handleShowScheduledTasks}
-          onNewChat={handleNewChat}
+          onShowSkills={() => setMainView('skills')}
+          onShowCowork={() => setMainView('cowork')}
+          onShowScheduledTasks={() => setMainView('scheduledTasks')}
+          onNewChat={() => {}}
           isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={handleToggleSidebar}
-          updateBadge={!isSidebarCollapsed ? updateBadge : null}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          updateBadge={null}
         />
         <div className={`flex-1 min-w-0 py-1.5 pr-1.5 ${isSidebarCollapsed ? 'pl-1.5' : ''}`}>
           <div className="h-full rounded-xl dark:bg-claude-darkBg bg-claude-bg overflow-hidden">
             {mainView === 'skills' ? (
               <SkillsView
                 isSidebarCollapsed={isSidebarCollapsed}
-                onToggleSidebar={handleToggleSidebar}
-                onNewChat={handleNewChat}
-                updateBadge={isSidebarCollapsed ? updateBadge : null}
+                onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                onNewChat={() => {}}
+                updateBadge={null}
               />
             ) : mainView === 'scheduledTasks' ? (
               <ScheduledTasksView
                 isSidebarCollapsed={isSidebarCollapsed}
-                onToggleSidebar={handleToggleSidebar}
-                onNewChat={handleNewChat}
-                updateBadge={isSidebarCollapsed ? updateBadge : null}
+                onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                onNewChat={() => {}}
+                updateBadge={null}
               />
             ) : (
               <CoworkView
-                onRequestAppSettings={handleShowSettings}
-                onShowSkills={handleShowSkills}
+                onRequestAppSettings={() => {}}
+                onShowSkills={() => setMainView('skills')}
                 isSidebarCollapsed={isSidebarCollapsed}
-                onToggleSidebar={handleToggleSidebar}
-                onNewChat={handleNewChat}
-                updateBadge={isSidebarCollapsed ? updateBadge : null}
+                onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                onNewChat={() => {}}
+                updateBadge={null}
               />
             )}
           </div>
         </div>
       </div>
-
-      {/* 设置窗口显示在所有主内容之上，但不影响主界面的交互 */}
-      {showSettings && (
-        <Settings
-          onClose={handleCloseSettings}
-          initialTab={settingsOptions.initialTab}
-          notice={settingsOptions.notice}
-        />
-      )}
-      {showUpdateModal && updateInfo && (
-        <AppUpdateModal
-          latestVersion={updateInfo.latestVersion}
-          onCancel={() => setShowUpdateModal(false)}
-          onConfirm={handleConfirmUpdate}
-        />
-      )}
-      {permissionModal}
     </div>
   );
 };
 
-export default App; 
+export default App;

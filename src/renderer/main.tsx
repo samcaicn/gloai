@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { store } from './store';
 import App from './App';
 import './index.css';
-import { initTauri, isTauriReady } from './services/tauriApi';
+import { initTauri } from './services/tauriApi';
 
 // 主初始化函数
 const initApp = async () => {
