@@ -182,27 +182,42 @@ class ScheduledTaskService {
         }
       }));
       
-      // 添加超时机制，确保任务执行不会无限等待
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Task execution timeout')), 30000); // 30秒超时
+      // 非阻塞执行任务
+      api.runManually(id).then(() => {
+        // 任务执行成功，更新状态
+        store.dispatch(updateTaskState({ 
+          taskId: id, 
+          taskState: {
+            nextRunAtMs: null,
+            lastRunAtMs: Date.now(),
+            lastStatus: 'success',
+            lastError: null,
+            lastDurationMs: 0,
+            runningAtMs: null,
+            consecutiveErrors: 0
+          }
+        }));
+      }).catch(err => {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        store.dispatch(setError(errorMessage));
+        console.error('Failed to run task manually:', err);
+        // 任务执行失败，更新状态
+        store.dispatch(updateTaskState({ 
+          taskId: id, 
+          taskState: {
+            nextRunAtMs: null,
+            lastRunAtMs: Date.now(),
+            lastStatus: 'error',
+            lastError: errorMessage,
+            lastDurationMs: 0,
+            runningAtMs: null,
+            consecutiveErrors: 1
+          }
+        }));
       });
       
-      const result = await Promise.race([api.runManually(id), timeoutPromise]);
-      
-      // 任务执行成功，更新状态
-      store.dispatch(updateTaskState({ 
-        taskId: id, 
-        taskState: {
-          nextRunAtMs: null,
-          lastRunAtMs: Date.now(),
-          lastStatus: 'success',
-          lastError: null,
-          lastDurationMs: 0,
-          runningAtMs: null,
-          consecutiveErrors: 0
-        }
-      }));
-      return result;
+      // 立即返回，不等待任务执行完成
+      return { success: true, message: 'Task started in background' };
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       store.dispatch(setError(errorMessage));

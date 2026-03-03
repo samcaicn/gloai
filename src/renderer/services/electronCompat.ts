@@ -181,36 +181,31 @@ export function createElectronCompatLayer() {
       runManually: async (id: string) => {
         try {
           const { isTauriReady } = await import('./tauriApi');
+          
+          // 立即创建会话，不等待后端命令执行
+          const { coworkService } = await import('./cowork');
+          const session = await coworkService.startSession({
+            prompt: `执行定时任务: ${id}`,
+            title: `定时任务执行: ${id}`,
+          });
+          
+          // 在后台执行后端命令，不阻塞前端
           if (isTauriReady()) {
-            // 在 Tauri 环境中，调用后端的 scheduler_execute_task 命令
-            const { invoke } = await import('@tauri-apps/api/core');
-            await invoke('scheduler_execute_task', { id });
-            
-            // 创建一个新的会话
-            const { coworkService } = await import('./cowork');
-            const session = await coworkService.startSession({
-              prompt: `执行定时任务: ${id}`,
-              title: `定时任务执行: ${id}`,
-            });
-            
-            if (session) {
-              return { success: true, session };
-            } else {
-              return { success: false, error: 'Failed to create session' };
-            }
+            setTimeout(async () => {
+              try {
+                const { invoke } = await import('@tauri-apps/api/core');
+                await invoke('scheduler_execute_task', { id });
+                console.log('Task executed successfully:', id);
+              } catch (error) {
+                console.error('Failed to execute task in background:', error);
+              }
+            }, 0);
+          }
+          
+          if (session) {
+            return { success: true, session };
           } else {
-            // 在浏览器模式下，模拟任务启动
-            const { coworkService } = await import('./cowork');
-            const session = await coworkService.startSession({
-              prompt: `执行定时任务: ${id}`,
-              title: `定时任务执行: ${id}`,
-            });
-            
-            if (session) {
-              return { success: true, session };
-            } else {
-              return { success: false, error: 'Failed to create session' };
-            }
+            return { success: false, error: 'Failed to create session' };
           }
         } catch (error) {
           console.error('Failed to run task manually:', error);
