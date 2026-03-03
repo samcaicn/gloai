@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import { CoworkView } from './components/cowork';
 import { SkillsView } from './components/skills';
 import { ScheduledTasksView } from './components/scheduledTasks';
+import Settings from './components/Settings';
 import { i18nService } from './services/i18n';
 import { loggerService } from './services/logger';
 import { configService } from './services/config';
@@ -14,6 +15,7 @@ const App: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -88,7 +90,7 @@ const App: React.FC = () => {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar
           onShowLogin={() => {}}
-          onShowSettings={() => {}}
+          onShowSettings={() => setIsSettingsOpen(true)}
           activeView={mainView}
           onShowSkills={() => setMainView('skills')}
           onShowCowork={() => setMainView('cowork')}
@@ -116,7 +118,7 @@ const App: React.FC = () => {
               />
             ) : (
               <CoworkView
-                onRequestAppSettings={() => {}}
+                onRequestAppSettings={() => setIsSettingsOpen(true)}
                 onShowSkills={() => setMainView('skills')}
                 isSidebarCollapsed={isSidebarCollapsed}
                 onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -127,6 +129,11 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+      {isSettingsOpen && (
+        <Settings
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
     </div>
   );
 };
