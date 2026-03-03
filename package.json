@@ -8,8 +8,8 @@
     "node": ">=18 <25"
   },
   "config": {
-    "electron_mirror": "https://github.com/electron/electron/releases/download/v",
-    "electron_builder_binaries_mirror": "https://github.com/electron-userland/electron-builder-binaries/releases/download/"
+    "electron_mirror": "https://cdn.npmmirror.com/binaries/electron/",
+    "electron_builder_binaries_mirror": "https://cdn.npmmirror.com/binaries/electron-builder/"
   },
   "scripts": {
     "dev": "vite",
