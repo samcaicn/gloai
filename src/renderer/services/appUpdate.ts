@@ -8,7 +8,7 @@ const getApiCredentials = () => {
   };
 };
 
-const UPDATE_CHECK_URL = 'https://ggai.tuptup.top/api/hotupdate/checkUpdate';
+const UPDATE_CHECK_URL = 'https://ggai.tuptup.top/api';
 const FALLBACK_DOWNLOAD_URL = 'https://ggai.tuptup.top';
 
 export const UPDATE_POLL_INTERVAL_MS = 12 * 60 * 60 * 1000;

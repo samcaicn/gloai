@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { SignalIcon, XMarkIcon, CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { RootState } from '../../store';
 import { imService } from '../../services/im';
-import { setDingTalkConfig, setFeishuConfig, setTelegramConfig, setDiscordConfig, setNimConfig, setWeWorkConfig, clearError } from '../../store/slices/imSlice';
+import { setDingTalkConfig, setFeishuConfig, setTelegramConfig, setDiscordConfig, setNimConfig, setWeWorkConfig, setWhatsappConfig, clearError } from '../../store/slices/imSlice';
 import { i18nService } from '../../services/i18n';
 import type { IMPlatform, IMConnectivityCheck, IMConnectivityTestResult, IMGatewayConfig } from '../../types/im';
 import { getVisibleIMPlatforms } from '../../utils/regionFilter';
@@ -21,6 +21,7 @@ const platformMeta: Record<IMPlatform, { label: string; logo: string }> = {
   discord: { label: 'Discord', logo: 'discord.svg' },
   nim: { label: '云信', logo: 'nim.png' },
   wework: { label: '企业微信', logo: 'logo.png' },
+  whatsapp: { label: 'WhatsApp', logo: 'logo.png' },
 };
 
 const verdictColorClass: Record<IMConnectivityTestResult['verdict'], string> = {
@@ -98,6 +99,11 @@ const IMSettings: React.FC = () => {
   // Handle WeWork config change
   const handleWeWorkChange = (field: 'webhookUrl', value: string) => {
     dispatch(setWeWorkConfig({ [field]: value }));
+  };
+
+  // Handle WhatsApp config change
+  const handleWhatsappChange = (field: 'phoneNumberId' | 'accessToken' | 'verifyToken', value: string) => {
+    dispatch(setWhatsappConfig({ [field]: value }));
   };
 
   // Save config on blur (only save current platform to avoid overwriting other platforms with defaults)
@@ -212,6 +218,9 @@ const IMSettings: React.FC = () => {
     if (platform === 'wework') {
       return !!config.wework.webhookUrl;
     }
+    if (platform === 'whatsapp') {
+      return !!(config.whatsapp.phoneNumberId && config.whatsapp.accessToken && config.whatsapp.verifyToken);
+    }
     return !!(config.feishu.appId && config.feishu.appSecret);
   };
 
@@ -227,6 +236,7 @@ const IMSettings: React.FC = () => {
     if (platform === 'discord') return discordConnected;
     if (platform === 'nim') return nimConnected;
     if (platform === 'wework') return weworkConnected;
+    if (platform === 'whatsapp') return status.whatsapp.connected;
     return feishuConnected;
   };
 
@@ -234,6 +244,7 @@ const IMSettings: React.FC = () => {
   const getPlatformStarting = (platform: IMPlatform): boolean => {
     if (platform === 'discord') return status.discord.starting;
     if (platform === 'wework') return status.wework.starting;
+    if (platform === 'whatsapp') return status.whatsapp.starting;
     return false;
   };
 
@@ -264,6 +275,7 @@ const IMSettings: React.FC = () => {
       discord: setDiscordConfig,
       nim: setNimConfig,
       wework: setWeWorkConfig,
+      whatsapp: setWhatsappConfig,
     };
     return actionMap[platform];
   };
@@ -747,6 +759,76 @@ const IMSettings: React.FC = () => {
             {status.wework.lastError && (
               <div className="text-xs text-red-500 bg-red-500/10 px-3 py-2 rounded-lg">
                 {status.wework.lastError}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* WhatsApp Settings */}
+        {activePlatform === 'whatsapp' && (
+          <div className="space-y-3">
+            {/* Phone Number ID */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary">
+                Phone Number ID
+              </label>
+              <input
+                type="text"
+                value={config.whatsapp.phoneNumberId}
+                onChange={(e) => handleWhatsappChange('phoneNumberId', e.target.value)}
+                onBlur={handleSaveConfig}
+                className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
+                placeholder="123456789012345"
+              />
+              <p className="text-xs text-claude-textSecondary dark:text-claude-darkTextSecondary">
+                从 WhatsApp Business Manager 获取
+              </p>
+            </div>
+
+            {/* Access Token */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary">
+                Access Token
+              </label>
+              <input
+                type="password"
+                value={config.whatsapp.accessToken}
+                onChange={(e) => handleWhatsappChange('accessToken', e.target.value)}
+                onBlur={handleSaveConfig}
+                className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
+                placeholder="••••••••••••"
+              />
+              <p className="text-xs text-claude-textSecondary dark:text-claude-darkTextSecondary">
+                WhatsApp Business API 访问令牌
+              </p>
+            </div>
+
+            {/* Verify Token */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary">
+                Verify Token
+              </label>
+              <input
+                type="text"
+                value={config.whatsapp.verifyToken}
+                onChange={(e) => handleWhatsappChange('verifyToken', e.target.value)}
+                onBlur={handleSaveConfig}
+                className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
+                placeholder="your_verify_token"
+              />
+              <p className="text-xs text-claude-textSecondary dark:text-claude-darkTextSecondary">
+                用于验证 Webhook 的令牌
+              </p>
+            </div>
+
+            <div className="pt-1">
+              {renderConnectivityTestButton('whatsapp')}
+            </div>
+
+            {/* Error display */}
+            {status.whatsapp.lastError && (
+              <div className="text-xs text-red-500 bg-red-500/10 px-3 py-2 rounded-lg">
+                {status.whatsapp.lastError}
               </div>
             )}
           </div>

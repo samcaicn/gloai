@@ -317,10 +317,10 @@ interface IElectronAPI {
   im: {
     getConfig: () => Promise<{ success: boolean; config?: IMGatewayConfig; error?: string }>;
     setConfig: (config: Partial<IMGatewayConfig>) => Promise<{ success: boolean; error?: string }>;
-    startGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework') => Promise<{ success: boolean; error?: string }>;
-    stopGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework') => Promise<{ success: boolean; error?: string }>;
+    startGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework' | 'whatsapp') => Promise<{ success: boolean; error?: string }>;
+    stopGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework' | 'whatsapp') => Promise<{ success: boolean; error?: string }>;
     testGateway: (
-      platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework',
+      platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework' | 'whatsapp',
       configOverride?: Partial<IMGatewayConfig>
     ) => Promise<{ success: boolean; result?: IMConnectivityTestResult; error?: string }>;
     getStatus: () => Promise<{ success: boolean; status?: IMGatewayStatus; error?: string }>;
@@ -359,6 +359,7 @@ interface IMGatewayConfig {
   discord: DiscordConfig;
   nim: NimConfig;
   wework: WeWorkConfig;
+  whatsapp: WhatsAppConfig;
   settings: IMSettings;
 }
 
@@ -411,6 +412,14 @@ interface WeWorkConfig {
   debug?: boolean;
 }
 
+interface WhatsAppConfig {
+  enabled: boolean;
+  phoneNumberId: string;
+  accessToken: string;
+  verifyToken: string;
+  debug?: boolean;
+}
+
 interface IMSettings {
   systemPrompt?: string;
   skillsEnabled: boolean;
@@ -423,6 +432,7 @@ interface IMGatewayStatus {
   discord: DiscordGatewayStatus;
   nim: NimGatewayStatus;
   wework: WeWorkGatewayStatus;
+  whatsapp: WhatsAppGatewayStatus;
 }
 
 type IMConnectivityVerdict = 'pass' | 'warn' | 'fail';
@@ -451,7 +461,7 @@ interface IMConnectivityCheck {
 }
 
 interface IMConnectivityTestResult {
-  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework';
+  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework' | 'whatsapp';
   testedAt: number;
   verdict: IMConnectivityVerdict;
   checks: IMConnectivityCheck[];
@@ -512,8 +522,19 @@ interface WeWorkGatewayStatus {
   lastOutboundAt: number | null;
 }
 
+interface WhatsAppGatewayStatus {
+  connected: boolean;
+  starting: boolean;
+  startedAt: number | null;
+  error: string | null;
+  lastError: string | null;
+  lastInboundAt: number | null;
+  lastOutboundAt: number | null;
+  phoneNumber: string | null;
+}
+
 interface IMMessage {
-  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework';
+  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework' | 'whatsapp';
   messageId: string;
   conversationId: string;
   senderId: string;

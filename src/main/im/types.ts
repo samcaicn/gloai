@@ -159,9 +159,30 @@ export interface WeWorkGatewayStatus {
   lastOutboundAt: number | null;
 }
 
+// ==================== WhatsApp Types ====================
+
+export interface WhatsAppConfig {
+  enabled: boolean;
+  phoneNumberId: string;
+  accessToken: string;
+  verifyToken: string;
+  debug?: boolean;
+}
+
+export interface WhatsAppGatewayStatus {
+  connected: boolean;
+  starting: boolean;
+  startedAt: number | null;
+  error: string | null;
+  lastError: string | null;
+  lastInboundAt: number | null;
+  lastOutboundAt: number | null;
+  phoneNumber: string | null;
+}
+
 // ==================== Common IM Types ====================
 
-export type IMPlatform = 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework';
+export type IMPlatform = 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework' | 'whatsapp';
 
 export interface IMGatewayConfig {
   dingtalk: DingTalkConfig;
@@ -170,6 +191,7 @@ export interface IMGatewayConfig {
   discord: DiscordConfig;
   nim: NimConfig;
   wework: WeWorkConfig;
+  whatsapp: WhatsAppConfig;
   settings: IMSettings;
 }
 
@@ -185,6 +207,7 @@ export interface IMGatewayStatus {
   discord: DiscordGatewayStatus;
   nim: NimGatewayStatus;
   wework: WeWorkGatewayStatus;
+  whatsapp: WhatsAppGatewayStatus;
 }
 
 // ==================== Media Attachment Types ====================
@@ -341,6 +364,14 @@ export const DEFAULT_WEWORK_CONFIG: WeWorkConfig = {
   debug: true,
 };
 
+export const DEFAULT_WHATSAPP_CONFIG: WhatsAppConfig = {
+  enabled: false,
+  phoneNumberId: '',
+  accessToken: '',
+  verifyToken: '',
+  debug: true,
+};
+
 export const DEFAULT_IM_SETTINGS: IMSettings = {
   systemPrompt: '',
   skillsEnabled: true,
@@ -353,6 +384,7 @@ export const DEFAULT_IM_CONFIG: IMGatewayConfig = {
   discord: DEFAULT_DISCORD_CONFIG,
   nim: DEFAULT_NIM_CONFIG,
   wework: DEFAULT_WEWORK_CONFIG,
+  whatsapp: DEFAULT_WHATSAPP_CONFIG,
   settings: DEFAULT_IM_SETTINGS,
 };
 
@@ -411,6 +443,17 @@ export const DEFAULT_WEWORK_STATUS: WeWorkGatewayStatus = {
   lastOutboundAt: null,
 };
 
+export const DEFAULT_WHATSAPP_STATUS: WhatsAppGatewayStatus = {
+  connected: false,
+  starting: false,
+  startedAt: null,
+  error: null,
+  lastError: null,
+  lastInboundAt: null,
+  lastOutboundAt: null,
+  phoneNumber: null,
+};
+
 export const DEFAULT_IM_STATUS: IMGatewayStatus = {
   dingtalk: DEFAULT_DINGTALK_STATUS,
   feishu: DEFAULT_FEISHU_STATUS,
@@ -418,6 +461,7 @@ export const DEFAULT_IM_STATUS: IMGatewayStatus = {
   discord: DEFAULT_DISCORD_STATUS,
   nim: DEFAULT_NIM_STATUS,
   wework: DEFAULT_WEWORK_STATUS,
+  whatsapp: DEFAULT_WHATSAPP_STATUS,
 };
 
 // ==================== DingTalk Media Types ====================

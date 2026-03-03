@@ -10,6 +10,7 @@ import { TelegramGateway } from './telegramGateway';
 import { DiscordGateway } from './discordGateway';
 import { NimGateway } from './nimGateway';
 import { WeWorkGateway } from './weworkGateway';
+import { WhatsAppGateway } from './whatsappGateway';
 import { IMChatHandler } from './imChatHandler';
 import { IMCoworkHandler } from './imCoworkHandler';
 import { IMStore } from './imStore';
@@ -55,6 +56,7 @@ export class IMGatewayManager extends EventEmitter {
   private discordGateway: DiscordGateway;
   private nimGateway: NimGateway;
   private weworkGateway: WeWorkGateway;
+  private whatsappGateway: WhatsAppGateway;
   private imStore: IMStore;
   private chatHandler: IMChatHandler | null = null;
   private coworkHandler: IMCoworkHandler | null = null;
@@ -75,6 +77,7 @@ export class IMGatewayManager extends EventEmitter {
     this.discordGateway = new DiscordGateway();
     this.nimGateway = new NimGateway();
     this.weworkGateway = new WeWorkGateway({ enabled: false, webhookUrl: '' });
+    this.whatsappGateway = new WhatsAppGateway({ enabled: false, phoneNumberId: '', accessToken: '', verifyToken: '' });
 
     // Store Cowork dependencies if provided
     if (options?.coworkRunner && options?.coworkStore) {
@@ -185,6 +188,24 @@ export class IMGatewayManager extends EventEmitter {
       this.emit('error', { platform: 'wework', error });
       this.emit('statusChange', this.getStatus());
     });
+
+    // WhatsApp events
+    this.whatsappGateway.on('statusChanged', () => {
+      this.emit('statusChange', this.getStatus());
+    });
+    this.whatsappGateway.on('connected', () => {
+      this.emit('statusChange', this.getStatus());
+    });
+    this.whatsappGateway.on('disconnected', () => {
+      this.emit('statusChange', this.getStatus());
+    });
+    this.whatsappGateway.on('error', (error) => {
+      this.emit('error', { platform: 'whatsapp', error });
+      this.emit('statusChange', this.getStatus());
+    });
+    this.whatsappGateway.on('message', (message: IMMessage) => {
+      this.emit('message', message);
+    });
   }
 
   /**
@@ -222,6 +243,11 @@ export class IMGatewayManager extends EventEmitter {
     if (this.weworkGateway && !this.weworkGateway.isConnected()) {
       console.log('[IMGatewayManager] Reconnecting WeWork...');
       this.weworkGateway.reconnectIfNeeded();
+    }
+
+    if (this.whatsappGateway && !this.whatsappGateway.isConnected()) {
+      console.log('[IMGatewayManager] Reconnecting WhatsApp...');
+      this.whatsappGateway.reconnectIfNeeded();
     }
   }
 
@@ -291,6 +317,11 @@ export class IMGatewayManager extends EventEmitter {
     this.telegramGateway.setMessageCallback(messageHandler);
     this.discordGateway.setMessageCallback(messageHandler);
     this.nimGateway.setMessageCallback(messageHandler);
+    this.whatsappGateway.on('message', async (message: IMMessage) => {
+      await messageHandler(message, async (text) => {
+        await this.whatsappGateway.sendMessage(message.conversationId, text);
+      });
+    });
   }
 
   /**
@@ -312,6 +343,9 @@ export class IMGatewayManager extends EventEmitter {
       } else if (platform === 'wework') {
         // WeWork uses webhook URL as notification target
         target = { webhookUrl: this.weworkGateway.getConfig().webhookUrl };
+      } else if (platform === 'whatsapp') {
+        // WhatsApp uses phone number as notification target
+        target = { phoneNumber: this.whatsappGateway.getConfig().phoneNumberId };
       }
       if (target != null) {
         this.imStore.setNotificationTarget(platform, target);
@@ -344,6 +378,12 @@ export class IMGatewayManager extends EventEmitter {
         if (target.webhookUrl) {
           const config = this.weworkGateway.getConfig();
           this.weworkGateway.setConfig({ ...config, webhookUrl: target.webhookUrl });
+        }
+      } else if (platform === 'whatsapp') {
+        // WhatsApp uses phone number from target
+        if (target.phoneNumber) {
+          const config = this.whatsappGateway.getConfig();
+          this.whatsappGateway.setConfig({ ...config, phoneNumberId: target.phoneNumber });
         }
       }
       console.log(`[IMGatewayManager] Restored notification target for ${platform}`);
@@ -414,6 +454,11 @@ export class IMGatewayManager extends EventEmitter {
     if (config.telegram && this.telegramGateway) {
       this.telegramGateway.updateConfig(config.telegram);
     }
+
+    // Hot-update WhatsApp config on running gateway
+    if (config.whatsapp && this.whatsappGateway) {
+      this.whatsappGateway.setConfig(config.whatsapp);
+    }
   }
 
   // ==================== Status ====================
@@ -429,6 +474,7 @@ export class IMGatewayManager extends EventEmitter {
       discord: this.discordGateway.getStatus(),
       nim: this.nimGateway.getStatus(),
       wework: this.weworkGateway.getStatus(),
+      whatsapp: this.whatsappGateway.getStatus(),
     };
   }
 
@@ -625,6 +671,13 @@ export class IMGatewayManager extends EventEmitter {
         message: '企业微信使用 Webhook 模式，仅支持发送消息。',
         suggestion: '企业微信 Webhook 不支持接收消息，仅可用于发送通知。',
       });
+    } else if (platform === 'whatsapp') {
+      addCheck({
+        code: 'whatsapp_webhook_mode',
+        level: 'info',
+        message: 'WhatsApp 使用 Webhook 模式，需要配置 Webhook 回调。',
+        suggestion: '请在 Facebook 开发者后台配置 Webhook 回调 URL，并确保 verifyToken 正确。',
+      });
     }
 
     return {
@@ -658,6 +711,8 @@ export class IMGatewayManager extends EventEmitter {
       await this.nimGateway.start(config.nim);
     } else if (platform === 'wework') {
       await this.weworkGateway.start();
+    } else if (platform === 'whatsapp') {
+      await this.whatsappGateway.start();
     }
 
     // Restore persisted notification target
@@ -680,6 +735,8 @@ export class IMGatewayManager extends EventEmitter {
       await this.nimGateway.stop();
     } else if (platform === 'wework') {
       await this.weworkGateway.stop();
+    } else if (platform === 'whatsapp') {
+      await this.whatsappGateway.stop();
     }
   }
 
@@ -736,6 +793,14 @@ export class IMGatewayManager extends EventEmitter {
         console.error(`[IMGatewayManager] Failed to start WeWork: ${error.message}`);
       }
     }
+
+    if (config.whatsapp.enabled && config.whatsapp.phoneNumberId && config.whatsapp.accessToken && config.whatsapp.verifyToken) {
+      try {
+        await this.startGateway('whatsapp');
+      } catch (error: any) {
+        console.error(`[IMGatewayManager] Failed to start WhatsApp: ${error.message}`);
+      }
+    }
   }
 
   /**
@@ -749,6 +814,7 @@ export class IMGatewayManager extends EventEmitter {
       this.discordGateway.stop(),
       this.nimGateway.stop(),
       this.weworkGateway.stop(),
+      this.whatsappGateway.stop(),
     ]);
   }
 
@@ -756,7 +822,7 @@ export class IMGatewayManager extends EventEmitter {
    * Check if any gateway is connected
    */
   isAnyConnected(): boolean {
-    return this.dingtalkGateway.isConnected() || this.feishuGateway.isConnected() || this.telegramGateway.isConnected() || this.discordGateway.isConnected() || this.nimGateway.isConnected() || this.weworkGateway.isConnected();
+    return this.dingtalkGateway.isConnected() || this.feishuGateway.isConnected() || this.telegramGateway.isConnected() || this.discordGateway.isConnected() || this.nimGateway.isConnected() || this.weworkGateway.isConnected() || this.whatsappGateway.isConnected();
   }
 
   /**
@@ -777,6 +843,9 @@ export class IMGatewayManager extends EventEmitter {
     }
     if (platform === 'wework') {
       return this.weworkGateway.isConnected();
+    }
+    if (platform === 'whatsapp') {
+      return this.whatsappGateway.isConnected();
     }
     return this.feishuGateway.isConnected();
   }
@@ -805,6 +874,8 @@ export class IMGatewayManager extends EventEmitter {
         await this.nimGateway.sendNotification(text);
       } else if (platform === 'wework') {
         await this.weworkGateway.sendNotification(text);
+      } else if (platform === 'whatsapp') {
+        await this.whatsappGateway.sendNotification(text);
       }
       return true;
     } catch (error: any) {
@@ -833,6 +904,10 @@ export class IMGatewayManager extends EventEmitter {
       } else if (platform === 'wework') {
         // WeWork Webhook doesn't support media, send as text
         await this.weworkGateway.sendNotification(text);
+      } else if (platform === 'whatsapp') {
+        // WhatsApp supports media, send as media message
+        // Note: This requires the file path to be available
+        await this.whatsappGateway.sendNotification(text);
       }
       return true;
     } catch (error: any) {
@@ -884,6 +959,13 @@ export class IMGatewayManager extends EventEmitter {
     }
     if (platform === 'wework') {
       return config.wework.webhookUrl ? [] : ['webhookUrl'];
+    }
+    if (platform === 'whatsapp') {
+      const fields: string[] = [];
+      if (!config.whatsapp.phoneNumberId) fields.push('phoneNumberId');
+      if (!config.whatsapp.accessToken) fields.push('accessToken');
+      if (!config.whatsapp.verifyToken) fields.push('verifyToken');
+      return fields;
     }
     return config.discord.botToken ? [] : ['botToken'];
   }
@@ -946,6 +1028,16 @@ export class IMGatewayManager extends EventEmitter {
       } catch (error: any) {
         throw new Error(`Webhook 测试失败: ${error.message}`);
       }
+    } else if (platform === 'whatsapp') {
+      // Test WhatsApp credentials
+      try {
+        const whatsappGateway = new WhatsAppGateway(config.whatsapp);
+        // 验证凭据
+        await (whatsappGateway as any).verifyCredentials();
+        return 'WhatsApp 凭据验证成功。';
+      } catch (error: any) {
+        throw new Error(`WhatsApp 验证失败: ${error.message}`);
+      }
     }
     const response = await fetchJsonWithTimeout<DiscordUserResponse>('https://discord.com/api/v10/users/@me', {
       headers: {
@@ -982,6 +1074,7 @@ export class IMGatewayManager extends EventEmitter {
     if (platform === 'telegram') return status.telegram.startedAt;
     if (platform === 'nim') return status.nim.startedAt;
     if (platform === 'wework') return status.wework.startedAt;
+    if (platform === 'whatsapp') return status.whatsapp.startedAt;
     return status.discord.startedAt;
   }
 
@@ -991,6 +1084,7 @@ export class IMGatewayManager extends EventEmitter {
     if (platform === 'telegram') return status.telegram.lastInboundAt;
     if (platform === 'nim') return status.nim.lastInboundAt;
     if (platform === 'wework') return status.wework.lastInboundAt;
+    if (platform === 'whatsapp') return status.whatsapp.lastInboundAt;
     return status.discord.lastInboundAt;
   }
 
@@ -1000,6 +1094,7 @@ export class IMGatewayManager extends EventEmitter {
     if (platform === 'telegram') return status.telegram.lastOutboundAt;
     if (platform === 'nim') return status.nim.lastOutboundAt;
     if (platform === 'wework') return status.wework.lastOutboundAt;
+    if (platform === 'whatsapp') return status.whatsapp.lastOutboundAt;
     return status.discord.lastOutboundAt;
   }
 
@@ -1009,6 +1104,7 @@ export class IMGatewayManager extends EventEmitter {
     if (platform === 'telegram') return status.telegram.lastError;
     if (platform === 'nim') return status.nim.lastError;
     if (platform === 'wework') return status.wework.lastError;
+    if (platform === 'whatsapp') return status.whatsapp.lastError;
     return status.discord.lastError;
   }
 

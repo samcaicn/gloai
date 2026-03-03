@@ -12,6 +12,7 @@ import {
   DiscordConfig,
   NimConfig,
   WeWorkConfig,
+  WhatsAppConfig,
   IMSettings,
   IMPlatform,
   IMSessionMapping,
@@ -21,6 +22,7 @@ import {
   DEFAULT_DISCORD_CONFIG,
   DEFAULT_NIM_CONFIG,
   DEFAULT_WEWORK_CONFIG,
+  DEFAULT_WHATSAPP_CONFIG,
   DEFAULT_IM_SETTINGS,
 } from './types';
 
@@ -165,6 +167,7 @@ export class IMStore {
     const discord = this.getConfigValue<DiscordConfig>('discord') ?? DEFAULT_DISCORD_CONFIG;
     const nim = this.getConfigValue<NimConfig>('nim') ?? DEFAULT_NIM_CONFIG;
     const wework = this.getConfigValue<WeWorkConfig>('wework') ?? DEFAULT_WEWORK_CONFIG;
+    const whatsapp = this.getConfigValue<WhatsAppConfig>('whatsapp') ?? DEFAULT_WHATSAPP_CONFIG;
     const settings = this.getConfigValue<IMSettings>('settings') ?? DEFAULT_IM_SETTINGS;
 
     // Resolve enabled field: default to false for safety
@@ -185,6 +188,7 @@ export class IMStore {
       discord: resolveEnabled(discord, DEFAULT_DISCORD_CONFIG),
       nim: resolveEnabled(nim, DEFAULT_NIM_CONFIG),
       wework: resolveEnabled(wework, DEFAULT_WEWORK_CONFIG),
+      whatsapp: resolveEnabled(whatsapp, DEFAULT_WHATSAPP_CONFIG),
       settings: { ...DEFAULT_IM_SETTINGS, ...settings },
     };
   }
@@ -207,6 +211,9 @@ export class IMStore {
     }
     if (config.wework) {
       this.setWeWorkConfig(config.wework);
+    }
+    if (config.whatsapp) {
+      this.setWhatsAppConfig(config.whatsapp);
     }
     if (config.settings) {
       this.setIMSettings(config.settings);
@@ -285,6 +292,18 @@ export class IMStore {
     this.setConfigValue('wework', { ...current, ...config });
   }
 
+  // ==================== WhatsApp Config ====================
+
+  getWhatsAppConfig(): WhatsAppConfig {
+    const stored = this.getConfigValue<WhatsAppConfig>('whatsapp');
+    return { ...DEFAULT_WHATSAPP_CONFIG, ...stored };
+  }
+
+  setWhatsAppConfig(config: Partial<WhatsAppConfig>): void {
+    const current = this.getWhatsAppConfig();
+    this.setConfigValue('whatsapp', { ...current, ...config });
+  }
+
   // ==================== IM Settings ====================
 
   getIMSettings(): IMSettings {
@@ -318,7 +337,8 @@ export class IMStore {
     const hasDiscord = !!config.discord.botToken;
     const hasNim = !!(config.nim.appKey && config.nim.account && config.nim.token);
     const hasWeWork = !!config.wework.webhookUrl;
-    return hasDingTalk || hasFeishu || hasTelegram || hasDiscord || hasNim || hasWeWork;
+    const hasWhatsApp = !!(config.whatsapp.phoneNumberId && config.whatsapp.accessToken && config.whatsapp.verifyToken);
+    return hasDingTalk || hasFeishu || hasTelegram || hasDiscord || hasNim || hasWeWork || hasWhatsApp;
   }
 
   // ==================== Notification Target Persistence ====================

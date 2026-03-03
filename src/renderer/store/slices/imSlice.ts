@@ -13,6 +13,7 @@ import type {
   DiscordConfig,
   NimConfig,
   WeWorkConfig,
+  WhatsAppConfig,
   IMSettings,
 } from '../../types/im';
 import {
@@ -59,6 +60,9 @@ const imSlice = createSlice({
     setWeWorkConfig: (state, action: PayloadAction<Partial<WeWorkConfig>>) => {
       state.config.wework = { ...state.config.wework, ...action.payload };
     },
+    setWhatsappConfig: (state, action: PayloadAction<Partial<WhatsAppConfig>>) => {
+      state.config.whatsapp = { ...state.config.whatsapp, ...action.payload };
+    },
     setIMSettings: (state, action: PayloadAction<Partial<IMSettings>>) => {
       state.config.settings = { ...state.config.settings, ...action.payload };
     },
@@ -85,6 +89,7 @@ export const {
   setDiscordConfig,
   setNimConfig,
   setWeWorkConfig,
+  setWhatsappConfig,
   setIMSettings,
   setStatus,
   setLoading,
