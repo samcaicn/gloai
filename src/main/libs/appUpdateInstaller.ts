@@ -102,13 +102,28 @@ export async function downloadUpdate(
   };
 
   try {
+    // Check if there's a partial download
+    let received = 0;
+    let headers: Record<string, string> = {};
+    
+    try {
+      const stat = await fs.promises.stat(downloadPath);
+      received = stat.size;
+      headers['Range'] = `bytes=${received}-`;
+      console.log(`[AppUpdate] Resuming download from ${received} bytes`);
+    } catch {
+      // No partial download exists, start from the beginning
+      console.log('[AppUpdate] Starting new download');
+    }
+
     const response = await session.defaultSession.fetch(url, {
       signal: controller.signal,
+      headers,
     });
 
     console.log(`[AppUpdate] HTTP response: ${response.status} ${response.statusText}`);
 
-    if (!response.ok) {
+    if (!response.ok && response.status !== 206) {
       throw new Error(`Download failed (HTTP ${response.status})`);
     }
 
@@ -117,10 +132,19 @@ export async function downloadUpdate(
     }
 
     const totalHeader = response.headers.get('content-length');
-    const total = totalHeader ? Number(totalHeader) : undefined;
-    console.log(`[AppUpdate] Content-Length: ${totalHeader ?? 'unknown'}`);
-
-    let received = 0;
+    const contentRange = response.headers.get('content-range');
+    let total: number | undefined;
+    
+    if (contentRange) {
+      // Parse total from Content-Range header (format: bytes 0-100/200)
+      const match = contentRange.match(/bytes \d+-\d+\/(\d+)/);
+      if (match) {
+        total = Number(match[1]);
+      }
+    } else if (totalHeader) {
+      total = Number(totalHeader) + received;
+    }
+    console.log(`[AppUpdate] Content-Length: ${totalHeader ?? 'unknown'}, Total: ${total ?? 'unknown'}`);
     let lastSpeedTime = Date.now();
     let lastSpeedBytes = 0;
     let currentSpeed: number | undefined = undefined;
@@ -262,6 +286,7 @@ export async function installUpdate(filePath: string): Promise<void> {
 export async function checkAndApplyHotUpdate(): Promise<boolean> {
   const { updateDir, updateFile } = getUpdatePaths();
   const updateInfoFile = path.join(updateDir, 'update-info.json');
+  const downloadPath = `${updateFile}.download`;
   
   try {
     // 检查是否有待应用的更新
@@ -285,13 +310,25 @@ export async function checkAndApplyHotUpdate(): Promise<boolean> {
     
     console.log('[AppUpdate] Hot update applied successfully');
     
-    // 清理更新信息文件
+    // 清理更新信息文件和更新文件
     await fs.promises.unlink(updateInfoFile);
     await fs.promises.unlink(updateFile).catch(() => {});
+    await fs.promises.unlink(downloadPath).catch(() => {});
     
     return true;
   } catch (error) {
     console.error('[AppUpdate] Failed to apply hot update:', error);
+    
+    // 热更新失败时，清理所有相关文件，以便下次重新下载
+    try {
+      await fs.promises.unlink(updateInfoFile).catch(() => {});
+      await fs.promises.unlink(updateFile).catch(() => {});
+      await fs.promises.unlink(downloadPath).catch(() => {});
+      console.log('[AppUpdate] Cleaned up failed update files');
+    } catch (cleanupError) {
+      console.error('[AppUpdate] Error cleaning up failed update:', cleanupError);
+    }
+    
     return false;
   }
 }

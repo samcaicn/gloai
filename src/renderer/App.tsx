@@ -24,8 +24,7 @@ import type { CoworkPermissionResult } from './types/cowork';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { i18nService } from './services/i18n';
 import { matchesShortcut } from './services/shortcuts';
-import AppUpdateBadge from './components/update/AppUpdateBadge';
-import AppUpdateModal from './components/update/AppUpdateModal';
+
 
 const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
@@ -36,11 +35,6 @@ const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [, forceLanguageRefresh] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [updateModalState, setUpdateModalState] = useState<'info' | 'downloading' | 'installing' | 'error'>('info');
-  const [downloadProgress, setDownloadProgress] = useState<AppUpdateDownloadProgress | null>(null);
-  const [updateError, setUpdateError] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const hasInitialized = useRef(false);
   const dispatch = useDispatch();
@@ -225,100 +219,7 @@ const App: React.FC = () => {
     showToast(i18nService.t('featureInDevelopment'));
   }, [showToast]);
 
-  const runUpdateCheck = useCallback(async () => {
-    try {
-      const currentVersion = await window.electron.appInfo.getVersion();
-      const nextUpdate = await checkForAppUpdate(currentVersion);
-      setUpdateInfo(nextUpdate);
-      if (!nextUpdate) {
-        setShowUpdateModal(false);
-      }
-    } catch (error) {
-      console.error('Failed to check app update:', error);
-      setUpdateInfo(null);
-      setShowUpdateModal(false);
-    }
-  }, []);
 
-  const handleOpenUpdateModal = useCallback(() => {
-    if (!updateInfo) return;
-    setUpdateModalState('info');
-    setUpdateError(null);
-    setDownloadProgress(null);
-    setShowUpdateModal(true);
-  }, [updateInfo]);
-
-  const handleConfirmUpdate = useCallback(async () => {
-    if (!updateInfo) return;
-
-    // If the URL is a fallback page (not a direct file download), open in browser
-    if (updateInfo.url.includes('#') || updateInfo.url.endsWith('/download-list')) {
-      setShowUpdateModal(false);
-      try {
-        const result = await window.electron.shell.openExternal(updateInfo.url);
-        if (!result.success) {
-          showToast(i18nService.t('updateOpenFailed'));
-        }
-      } catch (error) {
-        console.error('Failed to open update url:', error);
-        showToast(i18nService.t('updateOpenFailed'));
-      }
-      return;
-    }
-
-    setUpdateModalState('downloading');
-    setDownloadProgress(null);
-    setUpdateError(null);
-
-    const unsubscribe = window.electron.appUpdate.onDownloadProgress((progress) => {
-      setDownloadProgress(progress);
-    });
-
-    try {
-      const downloadResult = await window.electron.appUpdate.download(updateInfo.url);
-      unsubscribe();
-
-      if (!downloadResult.success) {
-        // If user cancelled, handleCancelDownload already set the state — don't overwrite
-        if (downloadResult.error === 'Download cancelled') {
-          return;
-        }
-        setUpdateModalState('error');
-        setUpdateError(downloadResult.error || i18nService.t('updateDownloadFailed'));
-        return;
-      }
-
-      setUpdateModalState('installing');
-      const installResult = await window.electron.appUpdate.install(downloadResult.filePath!);
-
-      if (!installResult.success) {
-        setUpdateModalState('error');
-        setUpdateError(installResult.error || i18nService.t('updateInstallFailed'));
-      }
-      // If successful, app will quit and relaunch
-    } catch (error) {
-      unsubscribe();
-      const msg = error instanceof Error ? error.message : '';
-      // If user cancelled, handleCancelDownload already set the state — don't overwrite
-      if (msg === 'Download cancelled') {
-        return;
-      }
-      setUpdateModalState('error');
-      setUpdateError(msg || i18nService.t('updateDownloadFailed'));
-    }
-  }, [updateInfo, showToast]);
-
-  const handleCancelDownload = useCallback(async () => {
-    await window.electron.appUpdate.cancelDownload();
-    setUpdateModalState('info');
-    setDownloadProgress(null);
-  }, []);
-
-  const handleRetryUpdate = useCallback(() => {
-    setUpdateModalState('info');
-    setUpdateError(null);
-    setDownloadProgress(null);
-  }, []);
 
   const handlePermissionResponse = useCallback(async (result: CoworkPermissionResult) => {
     if (!pendingPermission) return;
@@ -439,26 +340,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scheduledTask:viewSession', handleViewSession);
   }, []);
 
-  useEffect(() => {
-    if (!isInitialized) return;
 
-    let cancelled = false;
-
-    const checkUpdate = async () => {
-      if (cancelled) return;
-      await runUpdateCheck();
-    };
-
-    void checkUpdate();
-    const timer = window.setInterval(() => {
-      void checkUpdate();
-    }, UPDATE_POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [isInitialized, runUpdateCheck]);
 
   // 根据场景选择使用哪个权限组件
   const permissionModal = useMemo(() => {
@@ -489,13 +371,7 @@ const App: React.FC = () => {
     );
   }, [pendingPermission, handlePermissionResponse]);
 
-  const isOverlayActive = showSettings || showUpdateModal || pendingPermissions.length > 0;
-  const updateBadge = updateInfo ? (
-    <AppUpdateBadge
-      latestVersion={updateInfo.latestVersion}
-      onClick={handleOpenUpdateModal}
-    />
-  ) : null;
+  const isOverlayActive = showSettings || pendingPermissions.length > 0;
   const windowsStandaloneTitleBar = isWindows ? (
     <div className="draggable relative h-9 shrink-0 dark:bg-claude-darkSurfaceMuted bg-claude-surfaceMuted">
       <WindowTitleBar isOverlayActive={isOverlayActive} />
@@ -566,7 +442,6 @@ const App: React.FC = () => {
           onNewChat={handleNewChat}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={handleToggleSidebar}
-          updateBadge={!isSidebarCollapsed ? updateBadge : null}
         />
         <div className={`flex-1 min-w-0 py-1.5 pr-1.5 ${isSidebarCollapsed ? 'pl-1.5' : ''}`}>
           <div className="h-full rounded-xl dark:bg-claude-darkBg bg-claude-bg overflow-hidden">
@@ -575,14 +450,12 @@ const App: React.FC = () => {
                 isSidebarCollapsed={isSidebarCollapsed}
                 onToggleSidebar={handleToggleSidebar}
                 onNewChat={handleNewChat}
-                updateBadge={isSidebarCollapsed ? updateBadge : null}
               />
             ) : mainView === 'scheduledTasks' ? (
               <ScheduledTasksView
                 isSidebarCollapsed={isSidebarCollapsed}
                 onToggleSidebar={handleToggleSidebar}
                 onNewChat={handleNewChat}
-                updateBadge={isSidebarCollapsed ? updateBadge : null}
               />
             ) : (
               <CoworkView
@@ -591,7 +464,6 @@ const App: React.FC = () => {
                 isSidebarCollapsed={isSidebarCollapsed}
                 onToggleSidebar={handleToggleSidebar}
                 onNewChat={handleNewChat}
-                updateBadge={isSidebarCollapsed ? updateBadge : null}
               />
             )}
           </div>
@@ -604,25 +476,6 @@ const App: React.FC = () => {
           onClose={handleCloseSettings}
           initialTab={settingsOptions.initialTab}
           notice={settingsOptions.notice}
-        />
-      )}
-      {showUpdateModal && updateInfo && (
-        <AppUpdateModal
-          updateInfo={updateInfo}
-          onCancel={() => {
-            if (updateModalState === 'info' || updateModalState === 'error') {
-              setShowUpdateModal(false);
-              setUpdateModalState('info');
-              setUpdateError(null);
-              setDownloadProgress(null);
-            }
-          }}
-          onConfirm={handleConfirmUpdate}
-          modalState={updateModalState}
-          downloadProgress={downloadProgress}
-          errorMessage={updateError}
-          onCancelDownload={handleCancelDownload}
-          onRetry={handleRetryUpdate}
         />
       )}
       {permissionModal}

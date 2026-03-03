@@ -52,6 +52,7 @@ interface SettingsProps extends SettingsOpenOptions {
 }
 
 const providerKeys = [
+  'tuptup',
   'openai',
   'gemini',
   'anthropic',
@@ -121,6 +122,7 @@ interface ProvidersImportPayload {
 }
 
 const providerMeta: Record<ProviderType, { label: string; icon: React.ReactNode }> = {
+  tuptup: { label: 'TupTup', icon: <BrainIcon /> },
   openai: { label: 'OpenAI', icon: <OpenAIIcon /> },
   deepseek: { label: 'DeepSeek', icon: <DeepSeekIcon /> },
   gemini: { label: 'Gemini', icon: <GeminiIcon /> },
@@ -137,6 +139,10 @@ const providerMeta: Record<ProviderType, { label: string; icon: React.ReactNode 
 };
 
 const providerSwitchableDefaultBaseUrls: Partial<Record<ProviderType, { anthropic: string; openai: string }>> = {
+  tuptup: {
+    anthropic: 'https://aiapi.tuptup.top',
+    openai: 'https://aiapi.tuptup.top',
+  },
   deepseek: {
     anthropic: 'https://api.deepseek.com/anthropic',
     openai: 'https://api.deepseek.com',
