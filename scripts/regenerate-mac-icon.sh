@@ -14,8 +14,8 @@ ICONSET_DIR="$MAC_DIR/icon.iconset"
 echo "🎨 Regenerating macOS icon for better compatibility..."
 
 # Check if source PNG exists
-if [ ! -f "$PNG_DIR/icon_512x512.png" ]; then
-    echo "❌ Error: Source PNG not found at $PNG_DIR/icon_512x512.png"
+if [ ! -f "$PNG_DIR/512x512.png" ]; then
+    echo "❌ Error: Source PNG not found at $PNG_DIR/512x512.png"
     echo "   Please ensure PNG icons are extracted first."
     exit 1
 fi
@@ -26,15 +26,15 @@ mkdir -p "$ICONSET_DIR"
 
 # Copy PNG files to iconset with correct naming
 for size in 16 32 128 256 512; do
-    if [ -f "$PNG_DIR/icon_${size}x${size}.png" ]; then
-        cp "$PNG_DIR/icon_${size}x${size}.png" "$ICONSET_DIR/icon_${size}x${size}.png"
+    if [ -f "$PNG_DIR/${size}x${size}.png" ]; then
+        cp "$PNG_DIR/${size}x${size}.png" "$ICONSET_DIR/icon_${size}x${size}.png"
         echo "  ✓ Added ${size}x${size}"
     fi
 
     # Copy @2x versions
     doubled=$((size * 2))
-    if [ -f "$PNG_DIR/icon_${size}x${size}@2x.png" ]; then
-        cp "$PNG_DIR/icon_${size}x${size}@2x.png" "$ICONSET_DIR/icon_${size}x${size}@2x.png"
+    if [ -f "$PNG_DIR/${size}x${size}@2x.png" ]; then
+        cp "$PNG_DIR/${size}x${size}@2x.png" "$ICONSET_DIR/icon_${size}x${size}@2x.png"
         echo "  ✓ Added ${size}x${size}@2x (${doubled}x${doubled})"
     fi
 done
