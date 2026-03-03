@@ -8,7 +8,7 @@
     "node": ">=18 <25"
   },
   "config": {
-    "electron_mirror": "https://cdn.npmjs.com/dist/electron/",
+    "electron_mirror": "https://github.com/electron/electron/releases/download/",
     "electron_builder_binaries_mirror": "https://github.com/electron-userland/electron-builder-binaries/releases/download/"
   },
   "scripts": {
