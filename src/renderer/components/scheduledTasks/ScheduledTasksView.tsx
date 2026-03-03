@@ -4,6 +4,7 @@ import { RootState } from '../../store';
 import { setViewMode, selectTask } from '../../store/slices/scheduledTaskSlice';
 import { scheduledTaskService } from '../../services/scheduledTask';
 import { i18nService } from '../../services/i18n';
+import { tauriApi } from '../../services/tauriApi';
 import TaskList from './TaskList';
 import TaskForm from './TaskForm';
 import TaskDetail from './TaskDetail';
@@ -30,8 +31,20 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
   updateBadge,
 }) => {
   const dispatch = useDispatch();
-  const isMac = window.electron.platform === 'darwin';
+  const [isMac, setIsMac] = useState(false);
   const viewMode = useSelector((state: RootState) => state.scheduledTask.viewMode);
+
+  useEffect(() => {
+    const checkPlatform = async () => {
+      try {
+        const platform = await tauriApi.platform.get();
+        setIsMac(platform === 'darwin');
+      } catch (error) {
+        console.error('Failed to get platform:', error);
+      }
+    };
+    checkPlatform();
+  }, []);
   const selectedTaskId = useSelector((state: RootState) => state.scheduledTask.selectedTaskId);
   const tasks = useSelector((state: RootState) => state.scheduledTask.tasks);
   const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) ?? null : null;

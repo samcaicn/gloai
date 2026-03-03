@@ -1,3 +1,5 @@
+import { isTauriReady, tauriApi } from './tauriApi';
+
 class LoggerService {
   private logPath: string | null = null;
   private logBuffer: string[] = [];
@@ -9,9 +11,11 @@ class LoggerService {
     
     try {
       // 获取日志文件路径
-      const path = await window.electron.log.getPath();
-      this.logPath = path;
-      console.log(`[Logger] Log path: ${path}`);
+      if (isTauriReady()) {
+        const path = await tauriApi.invoke<string>('logger_get_path');
+        this.logPath = path;
+        console.log(`[Logger] Log path: ${path}`);
+      }
       
       // 启动定期刷新
       this.flushInterval = setInterval(() => this.flush(), 5000);
@@ -26,29 +30,30 @@ class LoggerService {
   }
 
   private async flush(): Promise<void> {
-    if (!this.logPath || this.logBuffer.length === 0) return;
+    if (this.logBuffer.length === 0) return;
     
     try {
       // 尝试使用后端的日志 API 写入日志
-      try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        for (const log of this.logBuffer) {
-          // 解析日志级别
-          const levelMatch = log.match(/\[(INFO|WARN|ERROR|DEBUG)\]/);
-          const level = levelMatch ? levelMatch[1].toLowerCase() : 'info';
-          // 提取日志消息
-          const messageMatch = log.match(/\] \[(INFO|WARN|ERROR|DEBUG)\] (.*)/s);
-          const message = messageMatch ? messageMatch[2] : log;
-          
-          // 调用后端日志 API
-          await invoke(`logger_${level}`, { message });
+      if (isTauriReady()) {
+        try {
+          for (const log of this.logBuffer) {
+            // 解析日志级别
+            const levelMatch = log.match(/\[(INFO|WARN|ERROR|DEBUG)\]/);
+            const level = levelMatch ? levelMatch[1].toLowerCase() : 'info';
+            // 提取日志消息
+            const messageMatch = log.match(/\] \[(INFO|WARN|ERROR|DEBUG)\] (.*)/s);
+            const message = messageMatch ? messageMatch[2] : log;
+            
+            // 调用后端日志 API
+            await tauriApi.invoke(`logger_${level}`, { message });
+          }
+          console.log(`[Logger] Flushed ${this.logBuffer.length} logs to backend`);
+        } catch (error) {
+          console.warn('Failed to write logs to backend, falling back to console:', error);
+          // 回退到控制台输出
+          const logs = this.logBuffer.join('\n');
+          console.log('[Logger] Flushing logs:', logs);
         }
-        console.log(`[Logger] Flushed ${this.logBuffer.length} logs to backend`);
-      } catch (error) {
-        console.warn('Failed to write logs to backend, falling back to console:', error);
-        // 回退到控制台输出
-        const logs = this.logBuffer.join('\n');
-        console.log('[Logger] Flushing logs:', logs);
       }
       this.logBuffer = [];
     } catch (error) {
@@ -87,17 +92,19 @@ class LoggerService {
   }
 
   async openLogFolder(): Promise<void> {
-    try {
-      await window.electron.log.openFolder();
-    } catch (error) {
-      console.error('Failed to open log folder:', error);
+    if (isTauriReady()) {
+      try {
+        await tauriApi.invoke('logger_open_folder');
+      } catch (error) {
+        console.error('Failed to open log folder:', error);
+      }
     }
   }
 
   async getLogPath(): Promise<string | null> {
-    if (!this.logPath) {
+    if (!this.logPath && isTauriReady()) {
       try {
-        this.logPath = await window.electron.log.getPath();
+        this.logPath = await tauriApi.invoke('logger_get_path');
       } catch (error) {
         console.error('Failed to get log path:', error);
       }

@@ -4,6 +4,7 @@
  */
 
 import { store } from '../store';
+import { tauriApi, isTauriReady } from './tauriApi';
 import {
   setConfig,
   setStatus,
@@ -29,13 +30,15 @@ class IMService {
    * Initialize IM service
    */
   async init(): Promise<void> {
+    if (!isTauriReady()) return;
+
     // Set up status change listener
-    this.statusUnsubscribe = window.electron.im.onStatusChange((status) => {
+    this.statusUnsubscribe = await tauriApi.on('im_status_change', (status) => {
       store.dispatch(setStatus(status as IMGatewayStatus));
     });
 
     // Set up message listener (for logging/monitoring)
-    this.messageUnsubscribe = window.electron.im.onMessageReceived((message) => {
+    this.messageUnsubscribe = await tauriApi.on('im_message_received', (message) => {
       console.log('[IM Service] Message received:', message);
     });
 
@@ -62,9 +65,11 @@ class IMService {
    * Load configuration from main process
    */
   async loadConfig(): Promise<IMGatewayConfig | null> {
+    if (!isTauriReady()) return null;
+
     try {
       store.dispatch(setLoading(true));
-      const result = await window.electron.im.getConfig() as IMConfigResult;
+      const result = await tauriApi.invoke('im_get_config') as IMConfigResult;
       if (result.success && result.config) {
         store.dispatch(setConfig(result.config));
         return result.config;
@@ -85,8 +90,10 @@ class IMService {
    * Load status from main process
    */
   async loadStatus(): Promise<IMGatewayStatus | null> {
+    if (!isTauriReady()) return null;
+
     try {
-      const result = await window.electron.im.getStatus() as IMStatusResult;
+      const result = await tauriApi.invoke('im_get_status') as IMStatusResult;
       if (result.success && result.status) {
         store.dispatch(setStatus(result.status));
         return result.status;
@@ -102,9 +109,11 @@ class IMService {
    * Update configuration
    */
   async updateConfig(config: Partial<IMGatewayConfig>): Promise<boolean> {
+    if (!isTauriReady()) return false;
+
     try {
       store.dispatch(setLoading(true));
-      const result = await window.electron.im.setConfig(config as any) as IMGatewayResult;
+      const result = await tauriApi.invoke('im_set_config', { config }) as IMGatewayResult;
       if (result.success) {
         // Reload config to get merged values
         await this.loadConfig();
@@ -126,10 +135,12 @@ class IMService {
    * Start a gateway
    */
   async startGateway(platform: IMPlatform): Promise<boolean> {
+    if (!isTauriReady()) return false;
+
     try {
       store.dispatch(setLoading(true));
       store.dispatch(setError(null));
-      const result = await window.electron.im.startGateway(platform as any) as IMGatewayResult;
+      const result = await tauriApi.invoke('im_start_gateway', { platform }) as IMGatewayResult;
       if (result.success) {
         await this.loadStatus();
         return true;
@@ -150,9 +161,11 @@ class IMService {
    * Stop a gateway
    */
   async stopGateway(platform: IMPlatform): Promise<boolean> {
+    if (!isTauriReady()) return false;
+
     try {
       store.dispatch(setLoading(true));
-      const result = await window.electron.im.stopGateway(platform as any) as IMGatewayResult;
+      const result = await tauriApi.invoke('im_stop_gateway', { platform }) as IMGatewayResult;
       if (result.success) {
         await this.loadStatus();
         return true;
@@ -176,9 +189,11 @@ class IMService {
     platform: IMPlatform,
     configOverride?: Partial<IMGatewayConfig>
   ): Promise<IMConnectivityTestResult | null> {
+    if (!isTauriReady()) return null;
+
     try {
       store.dispatch(setLoading(true));
-      const result = await window.electron.im.testGateway(platform as any, configOverride as any) as IMConnectivityTestResponse;
+      const result = await tauriApi.invoke('im_test_gateway', { platform, configOverride }) as IMConnectivityTestResponse;
       if (result.success && result.result) {
         return result.result;
       }

@@ -47,31 +47,35 @@ const isNewerVersion = (latestVersion: string, currentVersion: string): boolean 
 );
 
 export const checkForAppUpdate = async (currentVersion: string): Promise<AppUpdateInfo | null> => {
-  const response = await window.electron.api.fetch({
-    url: UPDATE_CHECK_URL,
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
-  });
+  try {
+    const response = await fetch(UPDATE_CHECK_URL, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
 
-  if (!response.ok || typeof response.data !== 'object' || response.data === null) {
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json() as UpdateApiResponse;
+    if (payload.code !== 0) {
+      return null;
+    }
+
+    const latestVersion = payload.data?.value?.version?.trim();
+    if (!latestVersion || !isNewerVersion(latestVersion, currentVersion)) {
+      return null;
+    }
+
+    const url = payload.data?.value?.url?.trim() || FALLBACK_DOWNLOAD_URL;
+    return {
+      latestVersion,
+      url,
+    };
+  } catch (error) {
+    console.error('Failed to check for app update:', error);
     return null;
   }
-
-  const payload = response.data as UpdateApiResponse;
-  if (payload.code !== 0) {
-    return null;
-  }
-
-  const latestVersion = payload.data?.value?.version?.trim();
-  if (!latestVersion || !isNewerVersion(latestVersion, currentVersion)) {
-    return null;
-  }
-
-  const url = payload.data?.value?.url?.trim() || FALLBACK_DOWNLOAD_URL;
-  return {
-    latestVersion,
-    url,
-  };
 };

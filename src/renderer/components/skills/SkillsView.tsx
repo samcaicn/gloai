@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { i18nService } from '../../services/i18n';
+import { tauriApi } from '../../services/tauriApi';
 import SkillsManager from './SkillsManager';
 import SidebarToggleIcon from '../icons/SidebarToggleIcon';
 import ComposeIcon from '../icons/ComposeIcon';
@@ -13,7 +14,20 @@ interface SkillsViewProps {
 }
 
 const SkillsView: React.FC<SkillsViewProps> = ({ isSidebarCollapsed, onToggleSidebar, onNewChat, updateBadge }) => {
-  const isMac = window.electron.platform === 'darwin';
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    const checkPlatform = async () => {
+      try {
+        const platform = await tauriApi.platform.get();
+        setIsMac(platform === 'darwin');
+      } catch (error) {
+        console.error('Failed to get platform:', error);
+      }
+    };
+    checkPlatform();
+  }, []);
+
   return (
     <div className="flex-1 flex flex-col dark:bg-claude-darkBg bg-claude-bg h-full">
       <div className="draggable flex h-12 items-center justify-between px-4 border-b dark:border-claude-darkBorder border-claude-border shrink-0">

@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { i18nService } from '../../services/i18n';
 import { skillService } from '../../services/skill';
+import { tauriApi } from '../../services/tauriApi';
 import { setSkills } from '../../store/slices/skillSlice';
 import { RootState } from '../../store';
 import { Skill } from '../../types/skill';
@@ -177,10 +178,10 @@ const SkillsManager: React.FC = () => {
 
   const handleUploadSkillZip = async () => {
     if (isDownloadingSkill) return;
-    const result = await window.electron.dialog.selectFile({
+    const result = await tauriApi.dialog.selectFile({
       title: i18nService.t('uploadSkillZip'),
       filters: [{ name: 'Zip', extensions: ['zip'] }],
-    });
+    }) as { success: boolean; path?: string };
     if (result.success && result.path) {
       await handleAddSkillFromSource(result.path);
     }
@@ -188,7 +189,7 @@ const SkillsManager: React.FC = () => {
 
   const handleUploadSkillFolder = async () => {
     if (isDownloadingSkill) return;
-    const result = await window.electron.dialog.selectDirectory();
+    const result = await tauriApi.dialog.selectDirectory() as { success: boolean; path?: string };
     if (result.success && result.path) {
       await handleAddSkillFromSource(result.path);
     }

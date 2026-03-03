@@ -27,6 +27,7 @@ import { matchesShortcut } from './services/shortcuts';
 import { loggerService } from './services/logger';
 import AppUpdateBadge from './components/update/AppUpdateBadge';
 import AppUpdateModal from './components/update/AppUpdateModal';
+import { tauriApi, isTauriReady } from './services/tauriApi';
 
 const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
@@ -39,6 +40,7 @@ const App: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [isWindows, setIsWindows] = useState(false);
   const toastTimerRef = useRef<number | null>(null);
   const hasInitialized = useRef(false);
   const dispatch = useDispatch();
@@ -46,7 +48,6 @@ const App: React.FC = () => {
   const currentSessionId = useSelector((state: RootState) => state.cowork.currentSessionId);
   const pendingPermissions = useSelector((state: RootState) => state.cowork.pendingPermissions);
   const pendingPermission = pendingPermissions[0] ?? null;
-  const isWindows = window.electron.platform === 'win32';
 
   // 初始化应用
   useEffect(() => {
@@ -58,7 +59,14 @@ const App: React.FC = () => {
     const initializeApp = async () => {
       try {
         // 标记平台，用于 CSS 条件样式（如 Windows 标题栏按钮区域留白）
-        document.documentElement.classList.add(`platform-${window.electron.platform}`);
+        let platform = 'unknown';
+        if (isTauriReady()) {
+          platform = await tauriApi.platform.get();
+        } else {
+          platform = navigator.platform;
+        }
+        setIsWindows(platform === 'win32');
+        document.documentElement.classList.add(`platform-${platform}`);
 
         // 初始化日志服务
         await loggerService.init();
@@ -159,12 +167,16 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleOnline = () => {
       console.log('[Renderer] Network online');
-      window.electron.networkStatus.send('online');
+      if (isTauriReady()) {
+        tauriApi.invoke('network_status_send', { status: 'online' }).catch(console.error);
+      }
     };
 
     const handleOffline = () => {
       console.log('[Renderer] Network offline');
-      window.electron.networkStatus.send('offline');
+      if (isTauriReady()) {
+        tauriApi.invoke('network_status_send', { status: 'offline' }).catch(console.error);
+      }
     };
 
     window.addEventListener('online', handleOnline);
@@ -241,7 +253,10 @@ const App: React.FC = () => {
 
   const runUpdateCheck = useCallback(async () => {
     try {
-      const currentVersion = await window.electron.appInfo.getVersion();
+      let currentVersion = '0.1.0';
+      if (isTauriReady()) {
+        currentVersion = await tauriApi.appInfo.getVersion();
+      }
       const nextUpdate = await checkForAppUpdate(currentVersion);
       setUpdateInfo(nextUpdate);
       if (!nextUpdate) {
@@ -263,10 +278,7 @@ const App: React.FC = () => {
     if (!updateInfo) return;
     setShowUpdateModal(false);
     try {
-      const result = await window.electron.shell.openExternal(updateInfo.url);
-      if (!result.success) {
-        showToast(i18nService.t('updateOpenFailed'));
-      }
+      await tauriApi.shell.openExternal(updateInfo.url);
     } catch (error) {
       console.error('Failed to open update url:', error);
       showToast(i18nService.t('updateOpenFailed'));
@@ -362,20 +374,38 @@ const App: React.FC = () => {
     return () => window.removeEventListener('app:showToast', handler);
   }, [showToast]);
 
-  // 监听托盘菜单打开设置的 IPC 事件
+  // 监听托盘菜单打开设置的事件
   useEffect(() => {
-    const unsubscribe = window.electron.ipcRenderer.on('app:openSettings', () => {
-      handleShowSettings();
-    });
-    return unsubscribe;
+    let unsubscribe: (() => void) | null = null;
+    if (isTauriReady()) {
+      tauriApi.on('app:openSettings', () => {
+        handleShowSettings();
+      }).then((unsub) => {
+        unsubscribe = unsub;
+      });
+    }
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [handleShowSettings]);
 
-  // 监听托盘菜单新建任务的 IPC 事件
+  // 监听托盘菜单新建任务的事件
   useEffect(() => {
-    const unsubscribe = window.electron.ipcRenderer.on('app:newTask', () => {
-      handleNewChat();
-    });
-    return unsubscribe;
+    let unsubscribe: (() => void) | null = null;
+    if (isTauriReady()) {
+      tauriApi.on('app:newTask', () => {
+        handleNewChat();
+      }).then((unsub) => {
+        unsubscribe = unsub;
+      });
+    }
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [handleNewChat]);
 
   // 监听定时任务查看会话事件

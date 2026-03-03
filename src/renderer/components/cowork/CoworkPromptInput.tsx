@@ -294,12 +294,12 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       if (!dataBase64) {
         return null;
       }
-      const result = await window.electron.dialog.saveInlineFile({
+      const result = await tauriApi.invoke('dialog_save_inline_file', {
         dataBase64,
         fileName: file.name,
         mimeType: file.type,
         cwd: workingDirectory,
-      });
+      }) as { success: boolean; path?: string };
       if (result.success && result.path) {
         return result.path;
       }
@@ -335,7 +335,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       console.log('[CoworkPromptInput] Calling selectFile...');
       const result = await tauriApi.dialog.selectFile({
         title: i18nService.t('coworkAddFile'),
-      });
+      }) as { success: boolean; path?: string };
       console.log('[CoworkPromptInput] selectFile result:', result);
       if (result.success && result.path) {
         addAttachment(result.path);

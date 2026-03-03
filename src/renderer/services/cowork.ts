@@ -1,9 +1,5 @@
 import { store } from '../store';
-import { invoke as tauriInvoke } from '@tauri-apps/api/core';
-import {
-  isTauriReady,
-  localStorageFallback,
-} from './tauriApi';
+import { tauriApi, isTauriReady, localStorageFallback } from './tauriApi';
 import { loggerService } from './logger';
 import {
   setSessions,
@@ -49,20 +45,19 @@ class CoworkService {
     await this.loadSessions();
 
     // Set up stream listeners
-    this.setupStreamListeners();
+    await this.setupStreamListeners();
 
     this.initialized = true;
   }
 
-  private setupStreamListeners(): void {
-    const cowork = window.electron?.cowork;
-    if (!cowork) return;
+  private async setupStreamListeners(): Promise<void> {
+    if (!isTauriReady()) return;
 
     // Clean up any existing listeners
     this.cleanupListeners();
 
     // Message listener - also check if session exists (for IM-created sessions)
-    const messageCleanup = cowork.onStreamMessage(async ({ sessionId, message }) => {
+    const messageCleanup = await tauriApi.on('cowork_message', async ({ sessionId, message }) => {
       // Check if session exists in current list
       const state = store.getState().cowork;
       const sessionExists = state.sessions.some(s => s.id === sessionId);
@@ -85,13 +80,13 @@ class CoworkService {
     this.streamListenerCleanups.push(messageCleanup);
 
     // Message update listener (for streaming content updates)
-    const messageUpdateCleanup = cowork.onStreamMessageUpdate(({ sessionId, messageId, content }) => {
+    const messageUpdateCleanup = await tauriApi.on('cowork_message_update', ({ sessionId, messageId, content }) => {
       store.dispatch(updateMessageContent({ sessionId, messageId, content }));
     });
     this.streamListenerCleanups.push(messageUpdateCleanup);
 
     // Permission request listener
-    const permissionCleanup = cowork.onStreamPermission(({ sessionId, request }) => {
+    const permissionCleanup = await tauriApi.on('cowork_permission', ({ sessionId, request }) => {
       store.dispatch(enqueuePendingPermission({
         sessionId,
         toolName: request.toolName,
@@ -103,13 +98,13 @@ class CoworkService {
     this.streamListenerCleanups.push(permissionCleanup);
 
     // Complete listener
-    const completeCleanup = cowork.onStreamComplete(({ sessionId }) => {
+    const completeCleanup = await tauriApi.on('cowork_complete', ({ sessionId }) => {
       store.dispatch(updateSessionStatus({ sessionId, status: 'completed' }));
     });
     this.streamListenerCleanups.push(completeCleanup);
 
     // Error listener
-    const errorCleanup = cowork.onStreamError(({ sessionId }) => {
+    const errorCleanup = await tauriApi.on('cowork_error', ({ sessionId }) => {
       store.dispatch(updateSessionStatus({ sessionId, status: 'error' }));
     });
     this.streamListenerCleanups.push(errorCleanup);
@@ -126,17 +121,17 @@ class CoworkService {
       return;
     }
     try {
-      const sessions = await tauriInvoke<Array<any>>('cowork_list_sessions');
-      if (sessions) {
+      const sessions = await tauriApi.invoke('cowork_list_sessions');
+      if (sessions && Array.isArray(sessions)) {
         store.dispatch(setSessions(sessions));
       }
     } catch (error) {
       console.error('Failed to load sessions:', error);
       // 尝试使用数据库 API
       try {
-        const dbSessions = await tauriInvoke<any>('db_cowork_list_sessions');
-        if (dbSessions) {
-          store.dispatch(setSessions(dbSessions as Array<any>));
+        const dbSessions = await tauriApi.invoke('db_cowork_list_sessions');
+        if (dbSessions && Array.isArray(dbSessions)) {
+          store.dispatch(setSessions(dbSessions));
         }
       } catch (dbError) {
         console.error('Failed to load sessions from database:', dbError);
@@ -155,7 +150,7 @@ class CoworkService {
     }
     try {
       // 从存储中加载配置
-      const configJson = await tauriInvoke<string | null>('kv_get', { key: 'cowork_config' });
+      const configJson = await tauriApi.invoke<string>('kv_get', { key: 'cowork_config' });
       if (configJson) {
         const config = JSON.parse(configJson);
         store.dispatch(setConfig(config));
@@ -198,7 +193,7 @@ class CoworkService {
         setTimeout(async () => {
           try {
             loggerService.info(`Saving session ${sessionId} to database`);
-            await tauriInvoke('db_cowork_create_session', {
+            await tauriApi.invoke('db_cowork_create_session', {
               id: sessionId,
               title: session.title,
             });
@@ -212,7 +207,7 @@ class CoworkService {
         setTimeout(async () => {
           try {
             loggerService.info(`Saving session ${sessionId} to KV store`);
-            await tauriInvoke('cowork_create_session', {
+            await tauriApi.invoke('cowork_create_session', {
               title: session.title,
             });
             loggerService.info(`Session ${sessionId} saved to KV store successfully`);
@@ -238,13 +233,13 @@ class CoworkService {
             await Promise.race([
               (async () => {
                 loggerService.info('Checking GoClaw status...');
-                const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
+                const isRunning = await tauriApi.invoke('goclaw_is_running');
                 loggerService.info(`GoClaw is running: ${isRunning}`);
                 
                 if (isRunning) {
                   try {
                     loggerService.info('Connecting to GoClaw WebSocket...');
-                    await tauriInvoke('goclaw_connect');
+                    await tauriApi.invoke('goclaw_connect');
                     loggerService.info('GoClaw WebSocket connected');
                   } catch (connectError) {
                     loggerService.warn('Failed to connect to GoClaw WebSocket:', connectError as Error);
@@ -255,20 +250,20 @@ class CoworkService {
                   try {
                     // 尝试启动 GoClaw
                     loggerService.info('Attempting to start GoClaw...');
-                    const startResult = await tauriInvoke('goclaw_start');
+                    const startResult = await tauriApi.invoke('goclaw_start');
                     loggerService.info(`GoClaw start result: ${JSON.stringify(startResult)}`);
                     loggerService.info('GoClaw started, waiting for ready...');
                     // 等待 GoClaw 启动
                     await new Promise(resolve => setTimeout(resolve, 3000)); // 增加等待时间
                     
                     // 检查 GoClaw 是否真的启动成功
-                    const isRunningAfterStart = await tauriInvoke<boolean>('goclaw_is_running');
+                    const isRunningAfterStart = await tauriApi.invoke('goclaw_is_running');
                     loggerService.info(`GoClaw running status after startup: ${isRunningAfterStart}`);
                     
                     if (isRunningAfterStart) {
                       try {
                         loggerService.info('Connecting to GoClaw WebSocket...');
-                        await tauriInvoke('goclaw_connect');
+                        await tauriApi.invoke('goclaw_connect');
                         loggerService.info('GoClaw WebSocket connected after startup');
                       } catch (connectError) {
                         loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
@@ -282,7 +277,7 @@ class CoworkService {
                     loggerService.error('Failed to start GoClaw:', startError as Error);
                     // 尝试获取更多诊断信息
                     try {
-                      const platform = await tauriInvoke<string>('get_platform');
+                      const platform = await tauriApi.invoke('get_platform');
                       loggerService.info(`Platform: ${platform}`);
                     } catch (e) {
                       loggerService.warn('Failed to get platform info:', e instanceof Error ? e : new Error(String(e)));
@@ -331,7 +326,7 @@ class CoworkService {
       if (isTauriReady()) {
         try {
           loggerService.info(`Saving message ${messageId} to database for session ${options.sessionId}`);
-          await tauriInvoke('db_cowork_add_message', {
+          await tauriApi.invoke('db_cowork_add_message', {
             id: messageId,
             sessionId: options.sessionId,
             msg_type: 'user',
@@ -354,13 +349,13 @@ class CoworkService {
               (async () => {
                 // 检查并连接 GoClaw
                 loggerService.info('Checking GoClaw status for message sending...');
-                const isRunning = await tauriInvoke<boolean>('goclaw_is_running');
+                const isRunning = await tauriApi.invoke('goclaw_is_running');
                 loggerService.info(`GoClaw is running: ${isRunning}`);
                 
                 if (isRunning) {
                   try {
                     loggerService.info('Connecting to GoClaw WebSocket...');
-                    await tauriInvoke('goclaw_connect');
+                    await tauriApi.invoke('goclaw_connect');
                     loggerService.info('GoClaw WebSocket connected');
                   } catch (connectError) {
                     loggerService.warn('Failed to connect to GoClaw WebSocket:', connectError as Error);
@@ -371,20 +366,20 @@ class CoworkService {
                   try {
                     // 尝试启动 GoClaw
                     loggerService.info('Attempting to start GoClaw...');
-                    const startResult = await tauriInvoke('goclaw_start');
+                    const startResult = await tauriApi.invoke('goclaw_start');
                     loggerService.info(`GoClaw start result: ${JSON.stringify(startResult)}`);
                     loggerService.info('GoClaw started, waiting for ready...');
                     // 等待 GoClaw 启动
                     await new Promise(resolve => setTimeout(resolve, 3000)); // 增加等待时间
                     
                     // 检查 GoClaw 是否真的启动成功
-                    const isRunningAfterStart = await tauriInvoke<boolean>('goclaw_is_running');
+                    const isRunningAfterStart = await tauriApi.invoke('goclaw_is_running');
                     loggerService.info(`GoClaw running status after startup: ${isRunningAfterStart}`);
                     
                     if (isRunningAfterStart) {
                       try {
                         loggerService.info('Connecting to GoClaw WebSocket...');
-                        await tauriInvoke('goclaw_connect');
+                        await tauriApi.invoke('goclaw_connect');
                         loggerService.info('GoClaw WebSocket connected after startup');
                       } catch (connectError) {
                         loggerService.warn('Failed to connect to GoClaw WebSocket after startup:', connectError as Error);
@@ -398,7 +393,7 @@ class CoworkService {
                     loggerService.error('Failed to start GoClaw:', startError as Error);
                     // 尝试获取更多诊断信息
                     try {
-                      const platform = await tauriInvoke<string>('get_platform');
+                      const platform = await tauriApi.invoke('get_platform');
                       loggerService.info(`Platform: ${platform}`);
                     } catch (e) {
                       loggerService.warn('Failed to get platform info:', e instanceof Error ? e : new Error(String(e)));
@@ -411,7 +406,7 @@ class CoworkService {
                 // 发送消息到 GoClaw
                 try {
                   loggerService.info(`Sending message to GoClaw for session ${options.sessionId}...`);
-                  const response = await tauriInvoke<any>('cowork_send_message', {
+                  const response = await tauriApi.invoke('cowork_send_message', {
                     session_id: options.sessionId,
                     content: options.prompt,
                   });
@@ -445,18 +440,21 @@ class CoworkService {
   }
 
   async stopSession(sessionId: string): Promise<boolean> {
-    const cowork = window.electron?.cowork;
-    if (!cowork) return false;
+    if (!isTauriReady()) return false;
 
-    const result = await cowork.stopSession(sessionId);
-    if (result.success) {
-      store.dispatch(setStreaming(false));
-      store.dispatch(updateSessionStatus({ sessionId, status: 'idle' }));
-      return true;
+    try {
+      const result = await tauriApi.invoke<{ success: boolean; error?: string }>('cowork_stop_session', { sessionId });
+      if (result.success) {
+        store.dispatch(setStreaming(false));
+        store.dispatch(updateSessionStatus({ sessionId, status: 'idle' }));
+        return true;
+      }
+      console.error('Failed to stop session:', result.error);
+      return false;
+    } catch (error) {
+      console.error('Failed to stop session:', error);
+      return false;
     }
-
-    console.error('Failed to stop session:', result.error);
-    return false;
   }
 
   async deleteSession(sessionId: string): Promise<boolean> {
@@ -464,7 +462,7 @@ class CoworkService {
       if (isTauriReady()) {
         // 从数据库中删除
         try {
-          await tauriInvoke('db_cowork_delete_session', {
+          await tauriApi.invoke('db_cowork_delete_session', {
             id: sessionId,
           });
         } catch (dbError) {
@@ -473,7 +471,7 @@ class CoworkService {
 
         // 从 KV 存储中删除
         try {
-          await tauriInvoke('cowork_delete_session', {
+          await tauriApi.invoke('cowork_delete_session', {
             id: sessionId,
           });
         } catch (kvError) {
@@ -494,7 +492,7 @@ class CoworkService {
       if (isTauriReady()) {
         // 更新数据库
         try {
-          await tauriInvoke('db_cowork_update_session', {
+          await tauriApi.invoke('db_cowork_update_session', {
             id: sessionId,
             pinned: pinned,
           });
@@ -504,7 +502,7 @@ class CoworkService {
 
         // 更新 KV 存储
         try {
-          await tauriInvoke('cowork_update_session', {
+          await tauriApi.invoke('cowork_update_session', {
             id: sessionId,
             pinned: pinned,
           });
@@ -529,7 +527,7 @@ class CoworkService {
       if (isTauriReady()) {
         // 更新数据库
         try {
-          await tauriInvoke('db_cowork_update_session', {
+          await tauriApi.invoke('db_cowork_update_session', {
             id: sessionId,
             title: normalizedTitle,
           });
@@ -539,7 +537,7 @@ class CoworkService {
 
         // 更新 KV 存储
         try {
-          await tauriInvoke('cowork_update_session', {
+          await tauriApi.invoke('cowork_update_session', {
             id: sessionId,
             title: normalizedTitle,
           });
@@ -560,13 +558,12 @@ class CoworkService {
     rect: { x: number; y: number; width: number; height: number };
     defaultFileName?: string;
   }): Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }> {
-    const cowork = window.electron?.cowork;
-    if (!cowork?.exportResultImage) {
-      return { success: false, error: 'Cowork export API not available' };
+    if (!isTauriReady()) {
+      return { success: false, error: 'Tauri not ready' };
     }
 
     try {
-      const result = await cowork.exportResultImage(options);
+      const result = await tauriApi.invoke<{ success: boolean; canceled?: boolean; path?: string; error?: string }>('cowork_export_result_image', options);
       return result ?? { success: false, error: 'Failed to export session image' };
     } catch (error) {
       return {
@@ -579,13 +576,12 @@ class CoworkService {
   async captureSessionImageChunk(options: {
     rect: { x: number; y: number; width: number; height: number };
   }): Promise<{ success: boolean; width?: number; height?: number; pngBase64?: string; error?: string }> {
-    const cowork = window.electron?.cowork;
-    if (!cowork?.captureImageChunk) {
-      return { success: false, error: 'Cowork capture API not available' };
+    if (!isTauriReady()) {
+      return { success: false, error: 'Tauri not ready' };
     }
 
     try {
-      const result = await cowork.captureImageChunk(options);
+      const result = await tauriApi.invoke<{ success: boolean; width?: number; height?: number; pngBase64?: string; error?: string }>('cowork_capture_image_chunk', options);
       return result ?? { success: false, error: 'Failed to capture session image chunk' };
     } catch (error) {
       return {
@@ -599,13 +595,12 @@ class CoworkService {
     pngBase64: string;
     defaultFileName?: string;
   }): Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }> {
-    const cowork = window.electron?.cowork;
-    if (!cowork?.saveResultImage) {
-      return { success: false, error: 'Cowork save image API not available' };
+    if (!isTauriReady()) {
+      return { success: false, error: 'Tauri not ready' };
     }
 
     try {
-      const result = await cowork.saveResultImage(options);
+      const result = await tauriApi.invoke<{ success: boolean; canceled?: boolean; path?: string; error?: string }>('cowork_save_result_image', options);
       return result ?? { success: false, error: 'Failed to save session image' };
     } catch (error) {
       return {
@@ -616,8 +611,7 @@ class CoworkService {
   }
 
   async loadSession(sessionId: string): Promise<CoworkSession | null> {
-    const cowork = window.electron?.cowork;
-    if (!cowork) return null;
+    if (!isTauriReady()) return null;
 
     try {
       // 添加超时机制，确保会话加载不会无限等待
@@ -625,7 +619,7 @@ class CoworkService {
         setTimeout(() => reject(new Error('Session loading timeout')), 10000); // 10秒超时
       });
       
-      const result = await Promise.race([cowork.getSession(sessionId), timeoutPromise]);
+      const result = await Promise.race([tauriApi.invoke<{ success: boolean; session?: CoworkSession; error?: string }>('cowork_get_session', { sessionId }), timeoutPromise]);
       
       if (result.success && result.session) {
         store.dispatch(setCurrentSession(result.session));
@@ -642,17 +636,21 @@ class CoworkService {
   }
 
   async respondToPermission(requestId: string, result: CoworkPermissionResult): Promise<boolean> {
-    const cowork = window.electron?.cowork;
-    if (!cowork) return false;
+    if (!isTauriReady()) return false;
 
-    const response = await cowork.respondToPermission({ requestId, result });
-    if (response.success) {
-      store.dispatch(dequeuePendingPermission({ requestId }));
-      return true;
+    try {
+      const response = await tauriApi.invoke<{ success: boolean; error?: string }>('cowork_respond_to_permission', { requestId, result });
+      if (response.success) {
+        store.dispatch(dequeuePendingPermission({ requestId }));
+        return true;
+      }
+
+      console.error('Failed to respond to permission:', response.error);
+      return false;
+    } catch (error) {
+      console.error('Failed to respond to permission:', error);
+      return false;
     }
-
-    console.error('Failed to respond to permission:', response.error);
-    return false;
   }
 
   async updateConfig(config: CoworkConfigUpdate): Promise<boolean> {
@@ -663,7 +661,7 @@ class CoworkService {
       // 保存到存储
       if (isTauriReady()) {
         try {
-          await tauriInvoke('kv_set', {
+          await tauriApi.invoke('kv_set', {
             key: 'cowork_config',
             value: JSON.stringify(updatedConfig),
           });
@@ -683,38 +681,53 @@ class CoworkService {
   }
 
   async getApiConfig(): Promise<CoworkApiConfig | null> {
-    if (!window.electron?.getApiConfig) {
+    if (!isTauriReady()) return null;
+    try {
+      return await tauriApi.invoke('cowork_get_api_config');
+    } catch (error) {
+      console.error('Failed to get API config:', error);
       return null;
     }
-    return window.electron.getApiConfig();
   }
 
   async checkApiConfig(): Promise<{ hasConfig: boolean; config: CoworkApiConfig | null; error?: string } | null> {
-    if (!window.electron?.checkApiConfig) {
+    if (!isTauriReady()) return null;
+    try {
+      return await tauriApi.invoke('cowork_check_api_config');
+    } catch (error) {
+      console.error('Failed to check API config:', error);
       return null;
     }
-    return window.electron.checkApiConfig();
   }
 
   async saveApiConfig(config: CoworkApiConfig): Promise<{ success: boolean; error?: string } | null> {
-    if (!window.electron?.saveApiConfig) {
+    if (!isTauriReady()) return null;
+    try {
+      return await tauriApi.invoke('cowork_save_api_config', { config });
+    } catch (error) {
+      console.error('Failed to save API config:', error);
       return null;
     }
-    return window.electron.saveApiConfig(config);
   }
 
   async getSandboxStatus(): Promise<CoworkSandboxStatus | null> {
-    if (!window.electron?.cowork?.getSandboxStatus) {
+    if (!isTauriReady()) return null;
+    try {
+      return await tauriApi.invoke('cowork_get_sandbox_status');
+    } catch (error) {
+      console.error('Failed to get sandbox status:', error);
       return null;
     }
-    return window.electron.cowork.getSandboxStatus();
   }
 
   async installSandbox(): Promise<{ success: boolean; status: CoworkSandboxStatus; error?: string } | null> {
-    if (!window.electron?.cowork?.installSandbox) {
+    if (!isTauriReady()) return null;
+    try {
+      return await tauriApi.invoke('cowork_install_sandbox');
+    } catch (error) {
+      console.error('Failed to install sandbox:', error);
       return null;
     }
-    return window.electron.cowork.installSandbox();
   }
 
   async listMemoryEntries(input: {
@@ -724,11 +737,15 @@ class CoworkService {
     limit?: number;
     offset?: number;
   }): Promise<CoworkUserMemoryEntry[]> {
-    const api = window.electron?.cowork?.listMemoryEntries;
-    if (!api) return [];
-    const result = await api(input);
-    if (!result?.success || !result.entries) return [];
-    return result.entries;
+    if (!isTauriReady()) return [];
+    try {
+      const result = await tauriApi.invoke<{ success: boolean; entries?: CoworkUserMemoryEntry[] }>('cowork_list_memory_entries', input);
+      if (result.success && result.entries) return result.entries;
+      return [];
+    } catch (error) {
+      console.error('Failed to list memory entries:', error);
+      return [];
+    }
   }
 
   async createMemoryEntry(input: {
@@ -736,11 +753,15 @@ class CoworkService {
     confidence?: number;
     isExplicit?: boolean;
   }): Promise<CoworkUserMemoryEntry | null> {
-    const api = window.electron?.cowork?.createMemoryEntry;
-    if (!api) return null;
-    const result = await api(input);
-    if (!result?.success || !result.entry) return null;
-    return result.entry;
+    if (!isTauriReady()) return null;
+    try {
+      const result = await tauriApi.invoke<{ success: boolean; entry?: CoworkUserMemoryEntry }>('cowork_create_memory_entry', input);
+      if (result.success && result.entry) return result.entry;
+      return null;
+    } catch (error) {
+      console.error('Failed to create memory entry:', error);
+      return null;
+    }
   }
 
   async updateMemoryEntry(input: {
@@ -750,47 +771,65 @@ class CoworkService {
     status?: 'created' | 'stale' | 'deleted';
     isExplicit?: boolean;
   }): Promise<CoworkUserMemoryEntry | null> {
-    const api = window.electron?.cowork?.updateMemoryEntry;
-    if (!api) return null;
-    const result = await api(input);
-    if (!result?.success || !result.entry) return null;
-    return result.entry;
+    if (!isTauriReady()) return null;
+    try {
+      const result = await tauriApi.invoke<{ success: boolean; entry?: CoworkUserMemoryEntry }>('cowork_update_memory_entry', input);
+      if (result.success && result.entry) return result.entry;
+      return null;
+    } catch (error) {
+      console.error('Failed to update memory entry:', error);
+      return null;
+    }
   }
 
   async deleteMemoryEntry(input: { id: string }): Promise<boolean> {
-    const api = window.electron?.cowork?.deleteMemoryEntry;
-    if (!api) return false;
-    const result = await api(input);
-    return Boolean(result?.success);
+    if (!isTauriReady()) return false;
+    try {
+      const result = await tauriApi.invoke<{ success: boolean }>('cowork_delete_memory_entry', input);
+      return Boolean(result.success);
+    } catch (error) {
+      console.error('Failed to delete memory entry:', error);
+      return false;
+    }
   }
 
   async getMemoryStats(): Promise<CoworkMemoryStats | null> {
-    const api = window.electron?.cowork?.getMemoryStats;
-    if (!api) return null;
-    const result = await api();
-    if (!result?.success || !result.stats) return null;
-    return result.stats;
+    if (!isTauriReady()) return null;
+    try {
+      const result = await tauriApi.invoke<{ success: boolean; stats?: CoworkMemoryStats }>('cowork_get_memory_stats');
+      if (result.success && result.stats) return result.stats;
+      return null;
+    } catch (error) {
+      console.error('Failed to get memory stats:', error);
+      return null;
+    }
   }
 
-  onSandboxDownloadProgress(callback: (progress: CoworkSandboxProgress) => void): () => void {
-    if (!window.electron?.cowork?.onSandboxDownloadProgress) {
+  async onSandboxDownloadProgress(callback: (progress: CoworkSandboxProgress) => void): Promise<() => void> {
+    if (!isTauriReady()) {
       return () => {};
     }
-    return window.electron.cowork.onSandboxDownloadProgress(callback);
+    return await tauriApi.on('cowork_sandbox_download_progress', callback);
   }
 
   async generateSessionTitle(prompt: string | null): Promise<string | null> {
-    if (!window.electron?.generateSessionTitle) {
+    if (!isTauriReady()) return null;
+    try {
+      return await tauriApi.invoke('cowork_generate_session_title', { prompt });
+    } catch (error) {
+      console.error('Failed to generate session title:', error);
       return null;
     }
-    return window.electron.generateSessionTitle(prompt);
   }
 
   async getRecentCwds(limit?: number): Promise<string[]> {
-    if (!window.electron?.getRecentCwds) {
+    if (!isTauriReady()) return [];
+    try {
+      return await tauriApi.invoke('cowork_get_recent_cwds', { limit });
+    } catch (error) {
+      console.error('Failed to get recent cwds:', error);
       return [];
     }
-    return window.electron.getRecentCwds(limit);
   }
 
   clearSession(): void {

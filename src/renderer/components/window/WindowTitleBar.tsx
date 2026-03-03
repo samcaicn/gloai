@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { tauriApi, isTauriReady } from '../../services/tauriApi';
 
 interface WindowTitleBarProps {
   isOverlayActive?: boolean;
@@ -27,43 +28,73 @@ const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
 
   useEffect(() => {
     let disposed = false;
-    window.electron.window.isMaximized().then((isMaximized) => {
-      if (!disposed) {
-        setState((prev) => ({ ...prev, isMaximized }));
-      }
-    }).catch((error) => {
-      console.error('Failed to get initial maximize state:', error);
-    });
+    let unsubscribe: (() => void) | null = null;
 
-    const unsubscribe = window.electron.window.onStateChanged((nextState) => {
-      setState(nextState);
-    });
+    if (isTauriReady()) {
+      tauriApi.window.isMaximized().then((isMaximized) => {
+        if (!disposed) {
+          setState((prev) => ({ ...prev, isMaximized }));
+        }
+      }).catch((error) => {
+        console.error('Failed to get initial maximize state:', error);
+      });
+
+      tauriApi.on('window_state_changed', (nextState: WindowState) => {
+        setState(nextState);
+      }).then((unsub) => {
+        unsubscribe = unsub;
+      });
+    }
 
     return () => {
       disposed = true;
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, []);
 
   const handleMinimize = () => {
-    window.electron.window.minimize();
+    if (isTauriReady()) {
+      tauriApi.window.minimize().catch(console.error);
+    }
   };
 
   const handleToggleMaximize = () => {
-    window.electron.window.toggleMaximize();
+    if (isTauriReady()) {
+      tauriApi.window.toggleMaximize().catch(console.error);
+    }
   };
 
   const handleClose = () => {
-    window.electron.window.close();
+    if (isTauriReady()) {
+      tauriApi.window.close().catch(console.error);
+    }
   };
 
   const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
-    window.electron.window.showSystemMenu({
-      x: event.clientX,
-      y: event.clientY,
-    });
+    // Tauri 目前没有直接显示系统菜单的 API，这里可以添加一个自定义菜单或忽略
   };
+
+  const [isWindows, setIsWindows] = useState(false);
+
+  useEffect(() => {
+    const checkPlatform = async () => {
+      if (isTauriReady()) {
+        try {
+          const platform = await tauriApi.platform.get();
+          setIsWindows(platform === 'win32');
+        } catch (error) {
+          console.error('Failed to get platform:', error);
+        }
+      } else {
+        setIsWindows(navigator.platform === 'Win32');
+      }
+    };
+
+    checkPlatform();
+  }, []);
 
   const handleDoubleClick = () => {
     if (!state.isFullscreen) {
@@ -71,7 +102,7 @@ const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
     }
   };
 
-  if (window.electron.platform !== 'win32') {
+  if (!isWindows) {
     return null;
   }
 

@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { coworkService } from '../services/cowork';
 import { i18nService } from '../services/i18n';
+import { tauriApi } from '../services/tauriApi';
 import CoworkSessionList from './cowork/CoworkSessionList';
 import CoworkSearchModal from './cowork/CoworkSearchModal';
 import { MagnifyingGlassIcon, PuzzlePieceIcon, ClockIcon } from '@heroicons/react/24/outline';
@@ -36,7 +37,19 @@ const Sidebar: React.FC<SidebarProps> = ({
   const sessions = useSelector((state: RootState) => state.cowork.sessions);
   const currentSessionId = useSelector((state: RootState) => state.cowork.currentSessionId);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const isMac = window.electron.platform === 'darwin';
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    const checkPlatform = async () => {
+      try {
+        const platform = await tauriApi.platform.get();
+        setIsMac(platform === 'darwin');
+      } catch (error) {
+        console.error('Failed to get platform:', error);
+      }
+    };
+    checkPlatform();
+  }, []);
 
   useEffect(() => {
     const handleSearch = () => {

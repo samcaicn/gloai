@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { scheduledTaskService } from '../../services/scheduledTask';
 import { i18nService } from '../../services/i18n';
+import { tauriApi } from '../../services/tauriApi';
 import type { ScheduledTask, Schedule, ScheduledTaskInput, NotifyPlatform } from '../../types/scheduledTask';
 
 interface TaskFormProps {
@@ -163,7 +164,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
 
   const handleBrowseDirectory = async () => {
     try {
-      const result = await window.electron?.dialog?.selectDirectory();
+      const result = await tauriApi.dialog.selectDirectory() as { success: boolean; path?: string };
       if (result?.success && result.path) {
         setWorkingDirectory(result.path);
       }

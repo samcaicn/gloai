@@ -12,6 +12,8 @@ import {
   setAllRuns,
   appendAllRuns,
 } from '../store/slices/scheduledTaskSlice';
+import { tauriApi, isTauriReady } from './tauriApi';
+import { coworkService } from './cowork';
 import type {
   ScheduledTaskInput,
   ScheduledTaskStatusEvent,
@@ -26,7 +28,7 @@ class ScheduledTaskService {
     if (this.initialized) return;
     this.initialized = true;
 
-    this.setupListeners();
+    await this.setupListeners();
     await this.loadTasks();
   }
 
@@ -36,39 +38,35 @@ class ScheduledTaskService {
     this.initialized = false;
   }
 
-  private setupListeners(): void {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return;
+  private async setupListeners(): Promise<void> {
+    if (!isTauriReady()) return;
 
-    const cleanupStatus = api.onStatusUpdate(
-      (event: ScheduledTaskStatusEvent) => {
-        store.dispatch(
-          updateTaskState({
-            taskId: event.taskId,
-            taskState: event.state,
-          })
-        );
-      }
-    );
+    // 监听任务状态更新
+    const cleanupStatus = await tauriApi.on('scheduler_task_status', (event: ScheduledTaskStatusEvent) => {
+      store.dispatch(
+        updateTaskState({
+          taskId: event.taskId,
+          taskState: event.state,
+        })
+      );
+    });
     this.cleanupFns.push(cleanupStatus);
 
-    const cleanupRun = api.onRunUpdate(
-      (event: ScheduledTaskRunEvent) => {
-        store.dispatch(addOrUpdateRun(event.run));
-      }
-    );
+    // 监听任务运行更新
+    const cleanupRun = await tauriApi.on('scheduler_task_run', (event: ScheduledTaskRunEvent) => {
+      store.dispatch(addOrUpdateRun(event.run));
+    });
     this.cleanupFns.push(cleanupRun);
   }
 
   async loadTasks(): Promise<void> {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return;
+    if (!isTauriReady()) return;
 
     store.dispatch(setLoading(true));
     try {
-      const result = await api.list();
-      if (result.success && result.tasks) {
-        store.dispatch(setTasks(result.tasks));
+      const tasks = await tauriApi.invoke('scheduler_list_tasks');
+      if (tasks && Array.isArray(tasks)) {
+        store.dispatch(setTasks(tasks));
       }
     } catch (err: unknown) {
       store.dispatch(setError(err instanceof Error ? err.message : String(err)));
@@ -76,12 +74,11 @@ class ScheduledTaskService {
   }
 
   async createTask(input: ScheduledTaskInput): Promise<void> {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return;
+    if (!isTauriReady()) return;
 
     try {
       console.log('[scheduledTask] Creating task with input:', input);
-      const result = await api.create(input);
+      const result = await tauriApi.invoke<{ success: boolean; task?: any; error?: string }>('scheduler_create_task', { input });
       console.log('[scheduledTask] Create task result:', result);
       if (result.success && result.task) {
         console.log('[scheduledTask] Task created successfully:', result.task);
@@ -103,12 +100,11 @@ class ScheduledTaskService {
     id: string,
     input: Partial<ScheduledTaskInput>
   ): Promise<void> {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return;
+    if (!isTauriReady()) return;
 
     try {
       console.log('[scheduledTask] Updating task', id, 'with input:', input);
-      const result = await api.update(id, input);
+      const result = await tauriApi.invoke<{ success: boolean; task?: any }>('scheduler_update_task', { id, input });
       console.log('[scheduledTask] Update task result:', result);
       if (result.success && result.task) {
         console.log('[scheduledTask] Task updated successfully:', result.task);
@@ -123,12 +119,11 @@ class ScheduledTaskService {
   }
 
   async deleteTask(id: string): Promise<void> {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return;
+    if (!isTauriReady()) return;
 
     try {
       console.log('[scheduledTask] Deleting task:', id);
-      const result = await api.delete(id);
+      const result = await tauriApi.invoke<{ success: boolean }>('scheduler_delete_task', { id });
       console.log('[scheduledTask] Delete task result:', result);
       if (result.success) {
         console.log('[scheduledTask] Task deleted successfully:', id);
@@ -143,12 +138,11 @@ class ScheduledTaskService {
   }
 
   async toggleTask(id: string, enabled: boolean): Promise<string | null> {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return null;
+    if (!isTauriReady()) return null;
 
     try {
       console.log('[scheduledTask] Toggling task', id, 'to:', enabled);
-      const result = await api.toggle(id, enabled);
+      const result = await tauriApi.invoke<{ success: boolean; task?: any; warning?: string }>('scheduler_toggle_task', { id, enabled });
       console.log('[scheduledTask] Toggle task result:', result);
       if (result.success && result.task) {
         console.log('[scheduledTask] Task toggled successfully:', result.task);
@@ -164,8 +158,7 @@ class ScheduledTaskService {
   }
 
   async runManually(id: string): Promise<any> {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return null;
+    if (!isTauriReady()) return null;
 
     try {
       // 立即更新任务状态，让用户看到任务正在执行
@@ -183,38 +176,49 @@ class ScheduledTaskService {
       }));
       
       // 非阻塞执行任务
-      api.runManually(id).then(() => {
-        // 任务执行成功，更新状态
-        store.dispatch(updateTaskState({ 
-          taskId: id, 
-          taskState: {
-            nextRunAtMs: null,
-            lastRunAtMs: Date.now(),
-            lastStatus: 'success',
-            lastError: null,
-            lastDurationMs: 0,
-            runningAtMs: null,
-            consecutiveErrors: 0
-          }
-        }));
-      }).catch(err => {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        store.dispatch(setError(errorMessage));
-        console.error('Failed to run task manually:', err);
-        // 任务执行失败，更新状态
-        store.dispatch(updateTaskState({ 
-          taskId: id, 
-          taskState: {
-            nextRunAtMs: null,
-            lastRunAtMs: Date.now(),
-            lastStatus: 'error',
-            lastError: errorMessage,
-            lastDurationMs: 0,
-            runningAtMs: null,
-            consecutiveErrors: 1
-          }
-        }));
-      });
+      (async () => {
+        try {
+          // 执行后端任务
+          await tauriApi.invoke('scheduler_execute_task', { id });
+          
+          // 创建会话
+          await coworkService.startSession({
+            prompt: `执行定时任务: ${id}`,
+            title: `定时任务执行: ${id}`,
+          });
+          
+          // 任务执行成功，更新状态
+          store.dispatch(updateTaskState({ 
+            taskId: id, 
+            taskState: {
+              nextRunAtMs: null,
+              lastRunAtMs: Date.now(),
+              lastStatus: 'success',
+              lastError: null,
+              lastDurationMs: 0,
+              runningAtMs: null,
+              consecutiveErrors: 0
+            }
+          }));
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          store.dispatch(setError(errorMessage));
+          console.error('Failed to run task manually:', err);
+          // 任务执行失败，更新状态
+          store.dispatch(updateTaskState({ 
+            taskId: id, 
+            taskState: {
+              nextRunAtMs: null,
+              lastRunAtMs: Date.now(),
+              lastStatus: 'error',
+              lastError: errorMessage,
+              lastDurationMs: 0,
+              runningAtMs: null,
+              consecutiveErrors: 1
+            }
+          }));
+        }
+      })();
       
       // 立即返回，不等待任务执行完成
       return { success: true, message: 'Task started in background' };
@@ -241,11 +245,10 @@ class ScheduledTaskService {
   }
 
   async stopTask(id: string): Promise<void> {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return;
+    if (!isTauriReady()) return;
 
     try {
-      await api.stop(id);
+      await tauriApi.invoke('scheduler_stop_task', { id });
     } catch (err: unknown) {
       store.dispatch(setError(err instanceof Error ? err.message : String(err)));
       throw err;
@@ -253,11 +256,10 @@ class ScheduledTaskService {
   }
 
   async loadRuns(taskId: string, limit?: number, offset?: number): Promise<void> {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return;
+    if (!isTauriReady()) return;
 
     try {
-      const result = await api.listRuns(taskId, limit, offset);
+      const result = await tauriApi.invoke<{ success: boolean; runs?: any[] }>('scheduler_list_task_runs', { taskId, limit, offset });
       if (result.success && result.runs) {
         store.dispatch(setRuns({ taskId, runs: result.runs }));
       }
@@ -267,11 +269,10 @@ class ScheduledTaskService {
   }
 
   async loadAllRuns(limit?: number, offset?: number): Promise<void> {
-    const api = window.electron?.scheduledTasks;
-    if (!api) return;
+    if (!isTauriReady()) return;
 
     try {
-      const result = await api.listAllRuns(limit, offset);
+      const result = await tauriApi.invoke<{ success: boolean; runs?: any[] }>('scheduler_list_task_runs', { taskId: null, limit, offset });
       if (result.success && result.runs) {
         if (offset && offset > 0) {
           store.dispatch(appendAllRuns(result.runs));

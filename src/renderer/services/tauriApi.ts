@@ -164,7 +164,7 @@ export const isTauriReady = (): boolean => {
 };
 
 // 包装 invoke 函数
-const invoke = async <T>(cmd: string, args?: Record<string, unknown>): Promise<T> => {
+export const invoke = async <T>(cmd: string, args?: Record<string, unknown>): Promise<T> => {
   // 先检查可用性
   const available = await checkTauriAvailability();
   if (!available) {
@@ -316,6 +316,9 @@ export interface PackageStatus {
 
 // 基础 Tauri API
 export const tauriApi = {
+  // 直接调用 Tauri 命令
+  invoke: invoke,
+  
   // 存储命令 (使用 kv_* 命令名称匹配后端)
   store: {
     get: async (key: string): Promise<any> => {

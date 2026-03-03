@@ -8,6 +8,7 @@ import { coworkService } from '../../services/cowork';
 import { skillService } from '../../services/skill';
 import { quickActionService } from '../../services/quickAction';
 import { i18nService } from '../../services/i18n';
+import { tauriApi } from '../../services/tauriApi';
 import CoworkPromptInput, { type CoworkPromptInputRef } from './CoworkPromptInput';
 import CoworkSessionDetail from './CoworkSessionDetail';
 import ModelSelector from '../ModelSelector';
@@ -29,8 +30,20 @@ export interface CoworkViewProps {
 
 const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSkills, isSidebarCollapsed, onToggleSidebar, onNewChat, updateBadge }) => {
   const dispatch = useDispatch();
-  const isMac = window.electron.platform === 'darwin';
+  const [isMac, setIsMac] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const checkPlatform = async () => {
+      try {
+        const platform = await tauriApi.platform.get();
+        setIsMac(platform === 'darwin');
+      } catch (error) {
+        console.error('Failed to get platform:', error);
+      }
+    };
+    checkPlatform();
+  }, []);
   // Track if we're starting a session to prevent duplicate submissions
   const isStartingRef = useRef(false);
   // Track pending start request so stop can cancel delayed startup.

@@ -1,6 +1,7 @@
 import { store } from '../store';
 import { configService } from './config';
 import { ChatMessagePayload, ChatUserMessageInput, ImageAttachment } from '../types/chat';
+import { tauriApi, isTauriReady } from './tauriApi';
 
 export interface ApiConfig {
   apiKey: string;
@@ -34,7 +35,9 @@ class ApiService {
 
   cancelOngoingRequest() {
     if (this.currentRequestId) {
-      window.electron.api.cancelStream(this.currentRequestId);
+      if (isTauriReady()) {
+        tauriApi.invoke('api_cancel_stream', { requestId: this.currentRequestId }).catch(console.error);
+      }
       return true;
     }
     return false;
@@ -328,90 +331,183 @@ class ApiService {
         let aborted = false;
 
         // 设置流式监听器
-        const removeDataListener = window.electron.api.onStreamData(requestId, (chunk) => {
-          const lines = chunk.split('\n');
+        let removeDataListener: (() => void) = () => {};
+        let removeDoneListener: (() => void) = () => {};
+        let removeErrorListener: (() => void) = () => {};
+        let removeAbortListener: (() => void) = () => {};
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
+        if (isTauriReady()) {
+          tauriApi.on('api_stream_data', (data: { requestId: string; chunk: string }) => {
+            if (data.requestId === requestId) {
+              const lines = data.chunk.split('\n');
 
-              try {
-                const parsed = JSON.parse(data);
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') continue;
 
-                // Anthropic SSE 事件处理
-                if (parsed.type === 'content_block_delta') {
-                  const delta = parsed.delta;
-                  if (delta.type === 'text_delta') {
-                    fullContent += delta.text;
-                    onProgress?.(fullContent, fullReasoning || undefined);
-                  } else if (delta.type === 'thinking_delta') {
-                    fullReasoning += delta.thinking;
-                    onProgress?.(fullContent, fullReasoning || undefined);
+                  try {
+                    const parsed = JSON.parse(data);
+
+                    // Anthropic SSE 事件处理
+                    if (parsed.type === 'content_block_delta') {
+                      const delta = parsed.delta;
+                      if (delta.type === 'text_delta') {
+                        fullContent += delta.text;
+                        onProgress?.(fullContent, fullReasoning || undefined);
+                      } else if (delta.type === 'thinking_delta') {
+                        fullReasoning += delta.thinking;
+                        onProgress?.(fullContent, fullReasoning || undefined);
+                      }
+                    }
+                  } catch (e) {
+                    console.warn('Failed to parse SSE message:', e);
                   }
                 }
-              } catch (e) {
-                console.warn('Failed to parse SSE message:', e);
               }
             }
-          }
-        });
+          }).then((unsub) => removeDataListener = unsub);
 
-        const removeDoneListener = window.electron.api.onStreamDone(requestId, () => {
-          this.cleanup();
-          if (!fullContent) {
-            reject(new ApiError('No content received from the API. Please try again.'));
-          } else {
-            resolve({ content: fullContent, reasoning: fullReasoning || undefined });
-          }
-        });
+          tauriApi.on('api_stream_done', (data: { requestId: string }) => {
+            if (data.requestId === requestId) {
+              this.cleanup();
+              if (!fullContent) {
+                reject(new ApiError('No content received from the API. Please try again.'));
+              } else {
+                resolve({ content: fullContent, reasoning: fullReasoning || undefined });
+              }
+            }
+          }).then((unsub) => removeDoneListener = unsub);
 
-        const removeErrorListener = window.electron.api.onStreamError(requestId, (error) => {
-          this.cleanup();
-          reject(new ApiError(error));
-        });
+          tauriApi.on('api_stream_error', (data: { requestId: string; error: string }) => {
+            if (data.requestId === requestId) {
+              this.cleanup();
+              reject(new ApiError(data.error));
+            }
+          }).then((unsub) => removeErrorListener = unsub);
 
-        const removeAbortListener = window.electron.api.onStreamAbort(requestId, () => {
-          aborted = true;
-          this.cleanup();
-          resolve({ content: fullContent || 'Response was stopped.', reasoning: fullReasoning || undefined });
-        });
+          tauriApi.on('api_stream_abort', (data: { requestId: string }) => {
+            if (data.requestId === requestId) {
+              aborted = true;
+              this.cleanup();
+              resolve({ content: fullContent || 'Response was stopped.', reasoning: fullReasoning || undefined });
+            }
+          }).then((unsub) => removeAbortListener = unsub);
 
-        this.cleanupFunctions = [removeDataListener, removeDoneListener, removeErrorListener, removeAbortListener];
+          this.cleanupFunctions = [removeDataListener, removeDoneListener, removeErrorListener, removeAbortListener];
 
-        // 发起流式请求
-        window.electron.api.stream({
-          url: `${config.baseUrl}/v1/messages`,
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': config.apiKey,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify(requestBody),
-          requestId,
-        }).then((response) => {
-          if (!response.ok && !aborted) {
-            this.cleanup();
-            let errorMessage = 'API request failed';
-            if (response.error) {
-              try {
-                const errorData = JSON.parse(response.error);
-                if (errorData.error?.message) {
-                  errorMessage = errorData.error.message;
+          // 发起流式请求
+          tauriApi.invoke('api_stream', {
+            url: `${config.baseUrl}/v1/messages`,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': config.apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify(requestBody),
+            requestId,
+          }).then((response: any) => {
+            if (!response.ok && !aborted) {
+              this.cleanup();
+              let errorMessage = 'API request failed';
+              if (response.error) {
+                try {
+                  const errorData = JSON.parse(response.error);
+                  if (errorData.error?.message) {
+                    errorMessage = errorData.error.message;
+                  }
+                } catch {
+                  errorMessage = response.error;
                 }
-              } catch {
-                errorMessage = response.error;
+              }
+              reject(new ApiError(errorMessage, response.status));
+            }
+          }).catch((error) => {
+            if (!aborted) {
+              this.cleanup();
+              reject(new ApiError(error.message || 'Network error'));
+            }
+          });
+        } else {
+          // 浏览器模式下使用 fetch API
+          const controller = new AbortController();
+          const signal = controller.signal;
+
+          this.cleanupFunctions.push(() => controller.abort());
+
+          fetch(`${config.baseUrl}/v1/messages`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': config.apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({ ...requestBody, stream: true }),
+            signal,
+          }).then(async (response) => {
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new ApiError(errorData.error?.message || 'API request failed', response.status);
+            }
+
+            const reader = response.body?.getReader();
+            if (!reader) {
+              throw new ApiError('No response body');
+            }
+
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') continue;
+
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.type === 'content_block_delta') {
+                      const delta = parsed.delta;
+                      if (delta.type === 'text_delta') {
+                        fullContent += delta.text;
+                        onProgress?.(fullContent, fullReasoning || undefined);
+                      } else if (delta.type === 'thinking_delta') {
+                        fullReasoning += delta.thinking;
+                        onProgress?.(fullContent, fullReasoning || undefined);
+                      }
+                    }
+                  } catch (e) {
+                    console.warn('Failed to parse SSE message:', e);
+                  }
+                }
               }
             }
-            reject(new ApiError(errorMessage, response.status));
-          }
-        }).catch((error) => {
-          if (!aborted) {
+
             this.cleanup();
-            reject(new ApiError(error.message || 'Network error'));
-          }
-        });
+            if (!fullContent) {
+              reject(new ApiError('No content received from the API. Please try again.'));
+            } else {
+              resolve({ content: fullContent, reasoning: fullReasoning || undefined });
+            }
+          }).catch((error) => {
+            if (!aborted) {
+              this.cleanup();
+              if (error.name === 'AbortError') {
+                resolve({ content: fullContent || 'Response was stopped.', reasoning: fullReasoning || undefined });
+              } else {
+                reject(new ApiError(error.message || 'Network error'));
+              }
+            }
+          });
+        }
       });
     } catch (error) {
       this.cleanup();
@@ -456,107 +552,218 @@ class ApiService {
         let aborted = false;
 
         // 设置流式监听器
-        const removeDataListener = window.electron.api.onStreamData(requestId, (chunk) => {
-          const lines = chunk.split('\n');
+        let removeDataListener: (() => void) = () => {};
+        let removeDoneListener: (() => void) = () => {};
+        let removeErrorListener: (() => void) = () => {};
+        let removeAbortListener: (() => void) = () => {};
 
-          for (const line of lines) {
-            console.log('>>>>>', line);
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
+        if (isTauriReady()) {
+          tauriApi.on('api_stream_data', (data: { requestId: string; chunk: string }) => {
+            if (data.requestId === requestId) {
+              const lines = data.chunk.split('\n');
 
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta || {};
-                const content = typeof delta.content === 'string' ? delta.content : '';
-                const reasoning = typeof delta.reasoning_content === 'string'
-                  ? delta.reasoning_content
-                  : typeof delta.reasoning === 'string'
-                    ? delta.reasoning
-                    : typeof delta.thoughts === 'string'
-                      ? delta.thoughts
-                      : '';
+              for (const line of lines) {
+                console.log('>>>>>', line);
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') continue;
 
-                if (content) {
-                  fullContent += content;
+                  try {
+                    const parsed = JSON.parse(data);
+                    const delta = parsed.choices?.[0]?.delta || {};
+                    const content = typeof delta.content === 'string' ? delta.content : '';
+                    const reasoning = typeof delta.reasoning_content === 'string'
+                      ? delta.reasoning_content
+                      : typeof delta.reasoning === 'string'
+                        ? delta.reasoning
+                        : typeof delta.thoughts === 'string'
+                          ? delta.thoughts
+                          : '';
+
+                    if (content) {
+                      fullContent += content;
+                    }
+                    if (reasoning) {
+                      fullReasoning += reasoning;
+                    }
+                    if (content || reasoning) {
+                      onProgress?.(fullContent, fullReasoning || undefined);
+                    }
+                  } catch (e) {
+                    console.warn('Failed to parse SSE message:', e);
+                  }
                 }
-                if (reasoning) {
-                  fullReasoning += reasoning;
-                }
-                if (content || reasoning) {
-                  onProgress?.(fullContent, fullReasoning || undefined);
-                }
-              } catch (e) {
-                console.warn('Failed to parse SSE message:', e);
               }
             }
+          }).then((unsub) => removeDataListener = unsub);
+
+          tauriApi.on('api_stream_done', (data: { requestId: string }) => {
+            if (data.requestId === requestId) {
+              this.cleanup();
+              if (!fullContent) {
+                reject(new ApiError('No content received from the API. Please try again.'));
+              } else {
+                resolve({ content: fullContent, reasoning: fullReasoning || undefined });
+              }
+            }
+          }).then((unsub) => removeDoneListener = unsub);
+
+          tauriApi.on('api_stream_error', (data: { requestId: string; error: string }) => {
+            if (data.requestId === requestId) {
+              this.cleanup();
+              reject(new ApiError(data.error));
+            }
+          }).then((unsub) => removeErrorListener = unsub);
+
+          tauriApi.on('api_stream_abort', (data: { requestId: string }) => {
+            if (data.requestId === requestId) {
+              aborted = true;
+              this.cleanup();
+              resolve({ content: fullContent || 'Response was stopped.', reasoning: fullReasoning || undefined });
+            }
+          }).then((unsub) => removeAbortListener = unsub);
+
+          this.cleanupFunctions = [removeDataListener, removeDoneListener, removeErrorListener, removeAbortListener];
+
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          if (config.apiKey) {
+            headers.Authorization = `Bearer ${config.apiKey}`;
           }
-        });
 
-        const removeDoneListener = window.electron.api.onStreamDone(requestId, () => {
-          this.cleanup();
-          if (!fullContent) {
-            reject(new ApiError('No content received from the API. Please try again.'));
-          } else {
-            resolve({ content: fullContent, reasoning: fullReasoning || undefined });
+          // 发起流式请求
+          const chatCompletionsUrl = this.buildOpenAICompatibleChatCompletionsUrl(config.baseUrl, provider);
+
+          tauriApi.invoke('api_stream', {
+            url: chatCompletionsUrl,
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              model: modelId,
+              messages: messages,
+              stream: true,
+            }),
+            requestId,
+          }).then((response: any) => {
+            if (!response.ok && !aborted) {
+              this.cleanup();
+              let errorMessage = 'API request failed';
+              if (response.error) {
+                try {
+                  const errorData = JSON.parse(response.error);
+                  if (errorData.error?.message) {
+                    errorMessage = errorData.error.message;
+                  }
+                } catch {
+                  errorMessage = response.error;
+                }
+              }
+              reject(new ApiError(errorMessage, response.status));
+            }
+          }).catch((error) => {
+            if (!aborted) {
+              this.cleanup();
+              reject(new ApiError(error.message || 'Network error'));
+            }
+          });
+        } else {
+          // 浏览器模式下使用 fetch API
+          const controller = new AbortController();
+          const signal = controller.signal;
+
+          this.cleanupFunctions.push(() => controller.abort());
+
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          if (config.apiKey) {
+            headers.Authorization = `Bearer ${config.apiKey}`;
           }
-        });
 
-        const removeErrorListener = window.electron.api.onStreamError(requestId, (error) => {
-          this.cleanup();
-          reject(new ApiError(error));
-        });
+          const chatCompletionsUrl = this.buildOpenAICompatibleChatCompletionsUrl(config.baseUrl, provider);
 
-        const removeAbortListener = window.electron.api.onStreamAbort(requestId, () => {
-          aborted = true;
-          this.cleanup();
-          resolve({ content: fullContent || 'Response was stopped.', reasoning: fullReasoning || undefined });
-        });
+          fetch(chatCompletionsUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              model: modelId,
+              messages: messages,
+              stream: true,
+            }),
+            signal,
+          }).then(async (response) => {
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new ApiError(errorData.error?.message || 'API request failed', response.status);
+            }
 
-        this.cleanupFunctions = [removeDataListener, removeDoneListener, removeErrorListener, removeAbortListener];
+            const reader = response.body?.getReader();
+            if (!reader) {
+              throw new ApiError('No response body');
+            }
 
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        if (config.apiKey) {
-          headers.Authorization = `Bearer ${config.apiKey}`;
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') continue;
+
+                  try {
+                    const parsed = JSON.parse(data);
+                    const delta = parsed.choices?.[0]?.delta || {};
+                    const content = typeof delta.content === 'string' ? delta.content : '';
+                    const reasoning = typeof delta.reasoning_content === 'string'
+                      ? delta.reasoning_content
+                      : typeof delta.reasoning === 'string'
+                        ? delta.reasoning
+                        : typeof delta.thoughts === 'string'
+                          ? delta.thoughts
+                          : '';
+
+                    if (content) {
+                      fullContent += content;
+                    }
+                    if (reasoning) {
+                      fullReasoning += reasoning;
+                    }
+                    if (content || reasoning) {
+                      onProgress?.(fullContent, fullReasoning || undefined);
+                    }
+                  } catch (e) {
+                    console.warn('Failed to parse SSE message:', e);
+                  }
+                }
+              }
+            }
+
+            this.cleanup();
+            if (!fullContent) {
+              reject(new ApiError('No content received from the API. Please try again.'));
+            } else {
+              resolve({ content: fullContent, reasoning: fullReasoning || undefined });
+            }
+          }).catch((error) => {
+            if (!aborted) {
+              this.cleanup();
+              if (error.name === 'AbortError') {
+                resolve({ content: fullContent || 'Response was stopped.', reasoning: fullReasoning || undefined });
+              } else {
+                reject(new ApiError(error.message || 'Network error'));
+              }
+            }
+          });
         }
-
-        // 发起流式请求
-        const chatCompletionsUrl = this.buildOpenAICompatibleChatCompletionsUrl(config.baseUrl, provider);
-
-        window.electron.api.stream({
-          url: chatCompletionsUrl,
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            model: modelId,
-            messages: messages,
-            stream: true,
-          }),
-          requestId,
-        }).then((response) => {
-          if (!response.ok && !aborted) {
-            this.cleanup();
-            let errorMessage = 'API request failed';
-            if (response.error) {
-              try {
-                const errorData = JSON.parse(response.error);
-                if (errorData.error?.message) {
-                  errorMessage = errorData.error.message;
-                }
-              } catch {
-                errorMessage = response.error;
-              }
-            }
-            reject(new ApiError(errorMessage, response.status));
-          }
-        }).catch((error) => {
-          if (!aborted) {
-            this.cleanup();
-            reject(new ApiError(error.message || 'Network error'));
-          }
-        });
       });
     } catch (error) {
       this.cleanup();

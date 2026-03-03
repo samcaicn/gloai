@@ -4,20 +4,14 @@ import { Provider } from 'react-redux';
 import { store } from './store';
 import App from './App';
 import './index.css';
-import { injectElectronCompat } from './services/electronCompat';
-import { initTauri } from './services/tauriApi';
+import { initTauri, isTauriReady } from './services/tauriApi';
 
 // 等待 Tauri 初始化的函数
 const waitForTauri = (): Promise<void> => {
   return new Promise((resolve) => {
     // 检查 Tauri 是否已经初始化的函数
     const checkTauriReady = () => {
-      return typeof window !== 'undefined' && 
-             ((window as any).__TAURI_INTERNALS__ || 
-              (window as any).__TAURI__ || 
-              (window as any).isTauri ||
-              // 检查是否已经有 Tauri API 可用
-              (window as any).electron?.store?.get !== undefined);
+      return typeof window !== 'undefined' && isTauriReady();
     };
 
     // 如果 Tauri 已经初始化，直接返回
@@ -49,9 +43,6 @@ const waitForTauri = (): Promise<void> => {
 
 // 主初始化函数
 const initApp = async () => {
-  // 注入 Electron 兼容层
-  injectElectronCompat();
-  
   // 等待 Tauri 初始化
   await waitForTauri();
   

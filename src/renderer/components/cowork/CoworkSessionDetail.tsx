@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { i18nService } from '../../services/i18n';
+import { tauriApi } from '../../services/tauriApi';
 import type { CoworkMessage, CoworkMessageMetadata } from '../../types/cowork';
 import type { Skill } from '../../types/skill';
 import CoworkPromptInput from './CoworkPromptInput';
@@ -1130,7 +1131,20 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
   onNewChat,
   updateBadge,
 }) => {
-  const isMac = window.electron.platform === 'darwin';
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    const checkPlatform = async () => {
+      try {
+        const platform = await tauriApi.platform.get();
+        setIsMac(platform === 'darwin');
+      } catch (error) {
+        console.error('Failed to get platform:', error);
+      }
+    };
+
+    checkPlatform();
+  }, []);
   const { currentSession, isStreaming } = useSelector((state: RootState) => state.cowork);
   const skills = useSelector((state: RootState) => state.skill.skills);
   const detailRootRef = useRef<HTMLDivElement>(null);
@@ -1249,7 +1263,7 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
   const handleOpenFolder = useCallback(async () => {
     if (!currentSession?.cwd) return;
     try {
-      await window.electron.shell.openPath(currentSession.cwd);
+      await tauriApi.shell.openPath(currentSession.cwd);
     } catch (error) {
       console.error('Failed to open folder:', error);
     }

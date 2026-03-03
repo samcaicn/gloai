@@ -413,13 +413,17 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   }, [loadCoworkSandboxStatus]);
 
   useEffect(() => {
-    const unsubscribe = coworkService.onSandboxDownloadProgress((progress) => {
-      setCoworkSandboxProgress(progress);
-      if (progress.percent !== undefined && progress.percent >= 1) {
-        void loadCoworkSandboxStatus();
-      }
-    });
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | undefined;
+    const setupListener = async () => {
+      unsubscribe = await coworkService.onSandboxDownloadProgress((progress) => {
+        setCoworkSandboxProgress(progress);
+        if (progress.percent !== undefined && progress.percent >= 1) {
+          void loadCoworkSandboxStatus();
+        }
+      });
+    };
+    setupListener();
+    return () => unsubscribe?.();
   }, [loadCoworkSandboxStatus]);
 
   useEffect(() => {

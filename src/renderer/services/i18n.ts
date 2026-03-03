@@ -1,4 +1,5 @@
 import { configService } from './config';
+import { isTauriReady, tauriApi } from './tauriApi';
 
 // 支持的语言类型
 export type LanguageType = 'zh' | 'en';
@@ -1256,7 +1257,12 @@ class I18nService {
         } else {
           // 新用户或使用默认中文的旧用户:检测系统语言
           try {
-            const systemLocale = await window.electron.appInfo.getSystemLocale();
+            let systemLocale = 'zh-CN';
+            if (isTauriReady()) {
+              systemLocale = await tauriApi.appInfo.getSystemLocale();
+            } else if (navigator && navigator.language) {
+              systemLocale = navigator.language;
+            }
             const defaultLanguage = this.inferLanguageFromLocale(systemLocale);
 
             console.log(`[i18n] First run detected. System locale: ${systemLocale}, default language: ${defaultLanguage}`);

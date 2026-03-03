@@ -5,7 +5,7 @@
 
 import { store } from '../store';
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
-import { isTauriReady } from './tauriApi';
+import { isTauriReady, tauriApi } from './tauriApi';
 import { addSession, setCurrentSessionId, addMessage, setStreaming } from '../store/slices/coworkSlice';
 import type { IMMessage, IMSettings } from '../types/im';
 
@@ -37,17 +37,20 @@ class IMMessageHandler {
   /**
    * Start listening for IM messages
    */
-  start(): void {
+  async start(): Promise<void> {
     if (this.messageUnsubscribe) {
       return;
     }
 
-    this.messageUnsubscribe = window.electron.im.onMessageReceived(async (message: IMMessage) => {
-      console.log('[IM Message Handler] Received message:', message);
-      await this.processMessage(message);
-    });
-
-    console.log('[IM Message Handler] Started listening for messages');
+    try {
+      this.messageUnsubscribe = await tauriApi.on('im:message-received', async (message: IMMessage) => {
+        console.log('[IM Message Handler] Received message:', message);
+        await this.processMessage(message);
+      });
+      console.log('[IM Message Handler] Started listening for messages');
+    } catch (error) {
+      console.error('[IM Message Handler] Failed to start listening for messages:', error);
+    }
   }
 
   /**
@@ -354,7 +357,7 @@ export async function initIMMessageHandler(
     imSettings,
   });
 
-  handler.start();
+  await handler.start();
 
   return handler;
 }
