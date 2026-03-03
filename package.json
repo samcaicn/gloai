@@ -31,7 +31,7 @@
     "dist:mac:x64": "npm run build && npm run compile:electron && npm run build:skills && electron-builder --mac --x64",
     "dist:mac:arm64": "npm run build && npm run compile:electron && npm run build:skills && electron-builder --mac --arm64",
     "dist:mac:universal": "npm run build && npm run compile:electron && npm run build:skills && electron-builder --mac --universal",
-    "dist:win": "npm run setup:mingit && npm run setup:python-runtime && npm run build && npm run compile:electron && npm run build:skills && electron-builder --win --x64 --config electron-builder.json --no-sign",
+    "dist:win": "npm run setup:mingit && npm run setup:python-runtime && npm run build && npm run compile:electron && npm run build:skills && electron-builder --win --x64 --config electron-builder.json",
     "dist:linux": "npm run build && npm run compile:electron && npm run build:skills && electron-builder --linux",
     "sandbox:image:mac": "bash scripts/build-sandbox-image-mac.sh",
     "sandbox:image:win:mac": "bash scripts/build-sandbox-image-win-on-mac.sh",
