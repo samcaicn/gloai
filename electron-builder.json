@@ -59,6 +59,7 @@
       "nsis"
     ],
     "icon": "build/icons/win/icon.ico",
+    "sign": false,
     "extraResources": [
       {
         "from": "resources/mingit",
