@@ -67,6 +67,15 @@ jobs:
           ls -la
           ls -la package-lock.json
 
+      - name: Remove electronCompat.ts if exists
+        run: |
+          if [ -f "src/renderer/services/electronCompat.ts" ]; then
+            rm src/renderer/services/electronCompat.ts
+            echo "Removed electronCompat.ts"
+          else
+            echo "electronCompat.ts does not exist"
+          fi
+
       - name: Install dependencies
         run: npm install --package-lock-only
 
