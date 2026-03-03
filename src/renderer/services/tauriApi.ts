@@ -137,9 +137,19 @@ export const checkTauriAvailability = async (): Promise<boolean> => {
   }
   
   try {
-    // 动态导入并尝试调用一个简单的命令
+    // 动态导入并尝试调用一个简单的命令，添加超时处理
     const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('get_platform');
+    
+    // 添加 3 秒超时
+    const timeoutPromise = new Promise<boolean>((_, reject) => {
+      setTimeout(() => reject(new Error('Tauri availability check timeout')), 3000);
+    });
+    
+    await Promise.race([
+      invoke('get_platform'),
+      timeoutPromise
+    ]);
+    
     _isTauriAvailable = true;
     console.log('[tauriApi] Tauri is available');
     return true;
@@ -172,7 +182,16 @@ export const invoke = async <T>(cmd: string, args?: Record<string, unknown>): Pr
   }
   // 动态导入 @tauri-apps/api/core
   const { invoke: tauriInvoke } = await import('@tauri-apps/api/core');
-  return tauriInvoke<T>(cmd, args);
+  
+  // 添加 3 秒超时
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    setTimeout(() => reject(new Error(`Invoke ${cmd} timeout`)), 3000);
+  });
+  
+  return await Promise.race([
+    tauriInvoke<T>(cmd, args),
+    timeoutPromise
+  ]);
 };
 
 const openUrl = async (url: string): Promise<void> => {
@@ -551,7 +570,14 @@ export const tauriApi = {
     get: async (): Promise<string> => {
       if (!isTauriReady()) return navigator.platform;
       try {
-        return await invoke<string>('get_platform');
+        // 添加 2 秒超时
+        const timeoutPromise = new Promise<string>((_, reject) => {
+          setTimeout(() => reject(new Error('Platform get timeout')), 2000);
+        });
+        return await Promise.race([
+          invoke<string>('get_platform'),
+          timeoutPromise
+        ]);
       } catch (e) {
         return navigator.platform;
       }

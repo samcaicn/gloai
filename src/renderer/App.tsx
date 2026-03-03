@@ -56,73 +56,115 @@ const App: React.FC = () => {
     }
     hasInitialized.current = true;
 
+    // 为每个异步操作添加超时处理
+    const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          setTimeout(() => reject(new Error('Operation timed out')), timeoutMs);
+        })
+      ]).catch(() => {
+        console.warn(`Operation timed out, using fallback: ${JSON.stringify(fallback)}`);
+        return fallback;
+      });
+    };
+
     const initializeApp = async () => {
       try {
         // 标记平台，用于 CSS 条件样式（如 Windows 标题栏按钮区域留白）
         let platform = 'unknown';
-        if (isTauriReady()) {
-          platform = await tauriApi.platform.get();
-        } else {
+        try {
+          if (isTauriReady()) {
+            platform = await withTimeout(tauriApi.platform.get(), 2000, navigator.platform);
+          } else {
+            platform = navigator.platform;
+          }
+        } catch (error) {
+          console.warn('Failed to get platform, using navigator.platform:', error);
           platform = navigator.platform;
         }
         setIsWindows(platform === 'win32');
         document.documentElement.classList.add(`platform-${platform}`);
 
         // 初始化日志服务
-        await loggerService.init();
-        loggerService.info('Starting app initialization');
+        try {
+          await withTimeout(loggerService.init(), 2000, undefined);
+          loggerService.info('Starting app initialization');
+        } catch (error) {
+          console.warn('Failed to initialize logger service:', error);
+        }
 
         // 初始化配置
-        await configService.init();
-        loggerService.info('Config service initialized');
+        try {
+          await withTimeout(configService.init(), 3000, undefined);
+          loggerService.info('Config service initialized');
+        } catch (error) {
+          console.warn('Failed to initialize config service:', error);
+        }
         
         // 初始化主题
-        themeService.initialize();
-        loggerService.info('Theme service initialized');
+        try {
+          themeService.initialize();
+          loggerService.info('Theme service initialized');
+        } catch (error) {
+          console.warn('Failed to initialize theme service:', error);
+        }
 
         // 初始化语言
-        await i18nService.initialize();
-        loggerService.info('i18n service initialized');
-        
-        const config = await configService.getConfig();
-        
-        const apiConfig: ApiConfig = {
-          apiKey: config.api.key,
-          baseUrl: config.api.baseUrl,
-        };
-        apiService.setConfig(apiConfig);
-
-        // 从 providers 配置中加载可用模型列表到 Redux
-        const providerModels: { id: string; name: string; provider?: string; supportsImage?: boolean }[] = [];
-        if (config.providers) {
-          Object.entries(config.providers).forEach(([providerName, providerConfig]) => {
-            if (providerConfig.enabled && providerConfig.models) {
-              providerConfig.models.forEach((model: { id: string; name: string; supportsImage?: boolean }) => {
-                providerModels.push({
-                  id: model.id,
-                  name: model.name,
-                  provider: providerName.charAt(0).toUpperCase() + providerName.slice(1),
-                  supportsImage: model.supportsImage ?? false,
-                });
-              });
-            }
-          });
+        try {
+          await withTimeout(i18nService.initialize(), 3000, undefined);
+          loggerService.info('i18n service initialized');
+        } catch (error) {
+          console.warn('Failed to initialize i18n service:', error);
         }
-        const fallbackModels = config.model.availableModels.map(model => ({
-          id: model.id,
-          name: model.name,
-          supportsImage: model.supportsImage ?? false,
-        }));
-        const resolvedModels = providerModels.length > 0 ? providerModels : fallbackModels;
-        if (resolvedModels.length > 0) {
-          dispatch(setAvailableModels(resolvedModels));
-          const preferredModel = resolvedModels.find(model => model.id === config.model.defaultModel) ?? resolvedModels[0];
-          dispatch(setSelectedModel(preferredModel));
+        
+        try {
+          const config = await configService.getConfig();
+          
+          const apiConfig: ApiConfig = {
+            apiKey: config.api.key,
+            baseUrl: config.api.baseUrl,
+          };
+          apiService.setConfig(apiConfig);
+
+          // 从 providers 配置中加载可用模型列表到 Redux
+          const providerModels: { id: string; name: string; provider?: string; supportsImage?: boolean }[] = [];
+          if (config.providers) {
+            Object.entries(config.providers).forEach(([providerName, providerConfig]) => {
+              if (providerConfig.enabled && providerConfig.models) {
+                providerConfig.models.forEach((model: { id: string; name: string; supportsImage?: boolean }) => {
+                  providerModels.push({
+                    id: model.id,
+                    name: model.name,
+                    provider: providerName.charAt(0).toUpperCase() + providerName.slice(1),
+                    supportsImage: model.supportsImage ?? false,
+                  });
+                });
+              }
+            });
+          }
+          const fallbackModels = config.model.availableModels.map(model => ({
+            id: model.id,
+            name: model.name,
+            supportsImage: model.supportsImage ?? false,
+          }));
+          const resolvedModels = providerModels.length > 0 ? providerModels : fallbackModels;
+          if (resolvedModels.length > 0) {
+            dispatch(setAvailableModels(resolvedModels));
+            const preferredModel = resolvedModels.find(model => model.id === config.model.defaultModel) ?? resolvedModels[0];
+            dispatch(setSelectedModel(preferredModel));
+          }
+        } catch (error) {
+          console.warn('Failed to load models:', error);
         }
         
         // 初始化定时任务服务
-        await scheduledTaskService.init();
-        loggerService.info('Scheduled task service initialized');
+        try {
+          await withTimeout(scheduledTaskService.init(), 3000, undefined);
+          loggerService.info('Scheduled task service initialized');
+        } catch (error) {
+          console.warn('Failed to initialize scheduled task service:', error);
+        }
 
         // 自动加载 tuptup 登录信息
         try {
@@ -148,7 +190,7 @@ const App: React.FC = () => {
 
     // 确保捕获初始化过程中的错误
     void initializeApp().catch(error => {
-      loggerService.error('Error in initializeApp:', error as Error);
+      console.error('Error in initializeApp:', error as Error);
       setInitError('应用启动失败');
       setIsInitialized(true);
     });

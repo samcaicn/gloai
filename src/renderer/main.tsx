@@ -6,48 +6,14 @@ import App from './App';
 import './index.css';
 import { initTauri, isTauriReady } from './services/tauriApi';
 
-// 等待 Tauri 初始化的函数
-const waitForTauri = (): Promise<void> => {
-  return new Promise((resolve) => {
-    // 检查 Tauri 是否已经初始化的函数
-    const checkTauriReady = () => {
-      return typeof window !== 'undefined' && isTauriReady();
-    };
-
-    // 如果 Tauri 已经初始化，直接返回
-    if (checkTauriReady()) {
-      console.log('[main] Tauri already initialized');
-      resolve();
-      return;
-    }
-
-    // 否则等待一段时间
-    console.log('[main] Waiting for Tauri initialization...');
-    let attempts = 0;
-    const maxAttempts = 50; // 最多等待 5 秒
-    
-    const checkInterval = setInterval(() => {
-      attempts++;
-      if (checkTauriReady()) {
-        console.log('[main] Tauri initialized after', attempts, 'attempts');
-        clearInterval(checkInterval);
-        resolve();
-      } else if (attempts >= maxAttempts) {
-        console.warn('[main] Tauri initialization timeout, proceeding anyway');
-        clearInterval(checkInterval);
-        resolve();
-      }
-    }, 100);
-  });
-};
-
 // 主初始化函数
 const initApp = async () => {
-  // 等待 Tauri 初始化
-  await waitForTauri();
+  // 不等待 Tauri 初始化，直接渲染应用
+  // 应用内部会处理 Tauri 不可用的情况
+  console.log('[main] Starting app initialization...');
   
-  // 初始化 Tauri API
-  await initTauri().catch(console.error);
+  // 尝试初始化 Tauri API，但不阻塞应用启动
+  initTauri().catch(console.error);
   
   // 渲染应用
   const rootElement = document.getElementById('root');
@@ -63,6 +29,7 @@ const initApp = async () => {
         </Provider>
       </React.StrictMode>
     );
+    console.log('[main] App rendered successfully');
   } catch (error) {
     console.error('Failed to render the app:', error);
   }
