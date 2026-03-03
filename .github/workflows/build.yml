@@ -36,6 +36,15 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Configure npm registry
+        run: npm config set registry https://registry.npmjs.org/
+
+      - name: Configure Cargo registry
+        run: |
+          echo '[source.crates-io]' > ~/.cargo/config.toml
+          echo 'registry = "https://github.com/rust-lang/crates.io-index"' >> ~/.cargo/config.toml
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
