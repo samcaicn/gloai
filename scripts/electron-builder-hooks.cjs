@@ -381,7 +381,12 @@ async function beforePack(context) {
   }
 
   // Re-download node-nim native binaries for Windows
-  await rebuildNodeNimForTarget('win32', targetArch);
+  try {
+    await rebuildNodeNimForTarget('win32', targetArch);
+  } catch (error) {
+    console.warn(`[electron-builder-hooks] Failed to download node-nim binaries: ${error.message}`);
+    console.warn('[electron-builder-hooks] Continuing build process without node-nim binaries');
+  }
 }
 
 /**
