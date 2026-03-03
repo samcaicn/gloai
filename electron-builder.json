@@ -2,6 +2,7 @@
   "appId": "com.globalclaw.app",
   "productName": "GlobalClaw",
   "executableName": "GlobalClaw",
+  "forceCodeSigning": false,
   "directories": {
     "output": "release"
   },
