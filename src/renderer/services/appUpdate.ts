@@ -8,7 +8,7 @@ const getApiCredentials = () => {
   };
 };
 
-const UPDATE_CHECK_URL = 'https://ggai.tuptup.top/api/update/check';
+const UPDATE_CHECK_URL = 'https://ggai.tuptup.top/api/hotupdate/checkUpdate';
 const FALLBACK_DOWNLOAD_URL = 'https://ggai.tuptup.top';
 
 export const UPDATE_POLL_INTERVAL_MS = 12 * 60 * 60 * 1000;
@@ -62,19 +62,17 @@ const isNewerVersion = (latestVersion: string, currentVersion: string): boolean 
 export const checkForAppUpdate = async (currentVersion: string): Promise<AppUpdateInfo | null> => {
   const { apiKey, apiSecret } = getApiCredentials();
   
+  const url = new URL(UPDATE_CHECK_URL);
+  url.searchParams.append('version', currentVersion);
+  url.searchParams.append('platform', window.electron.platform);
+  
   const response = await window.electron.api.fetch({
-    url: UPDATE_CHECK_URL,
-    method: 'POST',
+    url: url.toString(),
+    method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
       'X-API-Key': apiKey,
       'X-API-Secret': apiSecret,
     },
-    body: JSON.stringify({
-      currentVersion,
-      platform: window.electron.platform,
-      arch: window.electron.arch
-    }),
   });
 
   if (!response.ok || typeof response.data !== 'object' || response.data === null) {
@@ -82,7 +80,7 @@ export const checkForAppUpdate = async (currentVersion: string): Promise<AppUpda
   }
 
   const payload = response.data as any;
-  if (payload.code !== 0) {
+  if (payload.code !== 200) {
     return null;
   }
 
