@@ -1,4 +1,4 @@
-name: Build LobsterAI
+name: Build GlobalClaw
 
 on:
   push:

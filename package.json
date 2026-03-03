@@ -1,8 +1,8 @@
 {
-  "name": "lobsterai",
+  "name": "globalclaw",
   "private": true,
   "license": "MIT",
-  "version": "0.1.23",
+  "version": "0.1.0",
   "main": "dist-electron/main.js",
   "engines": {
     "node": ">=18 <25"
