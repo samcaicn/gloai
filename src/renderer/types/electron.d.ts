@@ -317,10 +317,10 @@ interface IElectronAPI {
   im: {
     getConfig: () => Promise<{ success: boolean; config?: IMGatewayConfig; error?: string }>;
     setConfig: (config: Partial<IMGatewayConfig>) => Promise<{ success: boolean; error?: string }>;
-    startGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim') => Promise<{ success: boolean; error?: string }>;
-    stopGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim') => Promise<{ success: boolean; error?: string }>;
+    startGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework') => Promise<{ success: boolean; error?: string }>;
+    stopGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework') => Promise<{ success: boolean; error?: string }>;
     testGateway: (
-      platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim',
+      platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework',
       configOverride?: Partial<IMGatewayConfig>
     ) => Promise<{ success: boolean; result?: IMConnectivityTestResult; error?: string }>;
     getStatus: () => Promise<{ success: boolean; status?: IMGatewayStatus; error?: string }>;
@@ -358,6 +358,7 @@ interface IMGatewayConfig {
   telegram: TelegramConfig;
   discord: DiscordConfig;
   nim: NimConfig;
+  wework: WeWorkConfig;
   settings: IMSettings;
 }
 
@@ -404,6 +405,12 @@ interface NimConfig {
   debug?: boolean;
 }
 
+interface WeWorkConfig {
+  enabled: boolean;
+  webhookUrl: string;
+  debug?: boolean;
+}
+
 interface IMSettings {
   systemPrompt?: string;
   skillsEnabled: boolean;
@@ -415,6 +422,7 @@ interface IMGatewayStatus {
   telegram: TelegramGatewayStatus;
   discord: DiscordGatewayStatus;
   nim: NimGatewayStatus;
+  wework: WeWorkGatewayStatus;
 }
 
 type IMConnectivityVerdict = 'pass' | 'warn' | 'fail';
@@ -443,7 +451,7 @@ interface IMConnectivityCheck {
 }
 
 interface IMConnectivityTestResult {
-  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim';
+  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework';
   testedAt: number;
   verdict: IMConnectivityVerdict;
   checks: IMConnectivityCheck[];
@@ -494,8 +502,18 @@ interface NimGatewayStatus {
   lastOutboundAt: number | null;
 }
 
+interface WeWorkGatewayStatus {
+  connected: boolean;
+  starting: boolean;
+  startedAt: number | null;
+  error: string | null;
+  lastError: string | null;
+  lastInboundAt: number | null;
+  lastOutboundAt: number | null;
+}
+
 interface IMMessage {
-  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim';
+  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework';
   messageId: string;
   conversationId: string;
   senderId: string;

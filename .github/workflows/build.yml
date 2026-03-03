@@ -45,6 +45,7 @@ jobs:
           npm_config_timeout: 600000
           npm_config_fetch_retry_mintimeout: 10000
           npm_config_fetch_retry_maxtimeout: 60000
+          ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
         timeout-minutes: 20
 
       - name: Install web-search skill dependencies

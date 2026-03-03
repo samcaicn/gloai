@@ -102,9 +102,27 @@ export interface NimGatewayStatus {
   lastOutboundAt: number | null;
 }
 
+// ==================== WeWork (企业微信) Types ====================
+
+export interface WeWorkConfig {
+  enabled: boolean;
+  webhookUrl: string;
+  debug?: boolean;
+}
+
+export interface WeWorkGatewayStatus {
+  connected: boolean;
+  starting: boolean;
+  startedAt: number | null;
+  error: string | null;
+  lastError: string | null;
+  lastInboundAt: number | null;
+  lastOutboundAt: number | null;
+}
+
 // ==================== Common IM Types ====================
 
-export type IMPlatform = 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim';
+export type IMPlatform = 'dingtalk' | 'feishu' | 'telegram' | 'discord' | 'nim' | 'wework';
 
 export interface IMGatewayConfig {
   dingtalk: DingTalkConfig;
@@ -112,6 +130,7 @@ export interface IMGatewayConfig {
   telegram: TelegramConfig;
   discord: DiscordConfig;
   nim: NimConfig;
+  wework: WeWorkConfig;
   settings: IMSettings;
 }
 
@@ -126,6 +145,7 @@ export interface IMGatewayStatus {
   telegram: TelegramGatewayStatus;
   discord: DiscordGatewayStatus;
   nim: NimGatewayStatus;
+  wework: WeWorkGatewayStatus;
 }
 
 // ==================== Media Attachment Types ====================
@@ -255,6 +275,12 @@ export const DEFAULT_NIM_CONFIG: NimConfig = {
   debug: true,
 };
 
+export const DEFAULT_WEWORK_CONFIG: WeWorkConfig = {
+  enabled: false,
+  webhookUrl: '',
+  debug: true,
+};
+
 export const DEFAULT_IM_SETTINGS: IMSettings = {
   systemPrompt: '',
   skillsEnabled: true,
@@ -266,6 +292,7 @@ export const DEFAULT_IM_CONFIG: IMGatewayConfig = {
   telegram: DEFAULT_TELEGRAM_CONFIG,
   discord: DEFAULT_DISCORD_CONFIG,
   nim: DEFAULT_NIM_CONFIG,
+  wework: DEFAULT_WEWORK_CONFIG,
   settings: DEFAULT_IM_SETTINGS,
 };
 
@@ -307,6 +334,15 @@ export const DEFAULT_IM_STATUS: IMGatewayStatus = {
     startedAt: null,
     lastError: null,
     botAccount: null,
+    lastInboundAt: null,
+    lastOutboundAt: null,
+  },
+  wework: {
+    connected: false,
+    starting: false,
+    startedAt: null,
+    error: null,
+    lastError: null,
     lastInboundAt: null,
     lastOutboundAt: null,
   },

@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { SignalIcon, XMarkIcon, CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { RootState } from '../../store';
 import { imService } from '../../services/im';
-import { setDingTalkConfig, setFeishuConfig, setTelegramConfig, setDiscordConfig, setNimConfig, clearError } from '../../store/slices/imSlice';
+import { setDingTalkConfig, setFeishuConfig, setTelegramConfig, setDiscordConfig, setNimConfig, setWeWorkConfig, clearError } from '../../store/slices/imSlice';
 import { i18nService } from '../../services/i18n';
 import type { IMPlatform, IMConnectivityCheck, IMConnectivityTestResult, IMGatewayConfig } from '../../types/im';
 import { getVisibleIMPlatforms } from '../../utils/regionFilter';
@@ -20,6 +20,7 @@ const platformMeta: Record<IMPlatform, { label: string; logo: string }> = {
   telegram: { label: 'Telegram', logo: 'telegram.svg' },
   discord: { label: 'Discord', logo: 'discord.svg' },
   nim: { label: '云信', logo: 'nim.png' },
+  wework: { label: '企业微信', logo: 'logo.png' },
 };
 
 const verdictColorClass: Record<IMConnectivityTestResult['verdict'], string> = {
@@ -92,6 +93,11 @@ const IMSettings: React.FC = () => {
   // Handle NIM config change
   const handleNimChange = (field: 'appKey' | 'account' | 'token', value: string) => {
     dispatch(setNimConfig({ [field]: value }));
+  };
+
+  // Handle WeWork config change
+  const handleWeWorkChange = (field: 'webhookUrl', value: string) => {
+    dispatch(setWeWorkConfig({ [field]: value }));
   };
 
   // Save config on blur (only save current platform to avoid overwriting other platforms with defaults)
@@ -174,6 +180,7 @@ const IMSettings: React.FC = () => {
   const telegramConnected = status.telegram.connected;
   const discordConnected = status.discord.connected;
   const nimConnected = status.nim.connected;
+  const weworkConnected = status.wework.connected;
 
   // Compute visible platforms based on language
   const platforms = useMemo<IMPlatform[]>(() => {
@@ -202,6 +209,9 @@ const IMSettings: React.FC = () => {
     if (platform === 'nim') {
       return !!(config.nim.appKey && config.nim.account && config.nim.token);
     }
+    if (platform === 'wework') {
+      return !!config.wework.webhookUrl;
+    }
     return !!(config.feishu.appId && config.feishu.appSecret);
   };
 
@@ -216,12 +226,14 @@ const IMSettings: React.FC = () => {
     if (platform === 'telegram') return telegramConnected;
     if (platform === 'discord') return discordConnected;
     if (platform === 'nim') return nimConnected;
+    if (platform === 'wework') return weworkConnected;
     return feishuConnected;
   };
 
   // Get platform transient starting status
   const getPlatformStarting = (platform: IMPlatform): boolean => {
     if (platform === 'discord') return status.discord.starting;
+    if (platform === 'wework') return status.wework.starting;
     return false;
   };
 
@@ -251,6 +263,7 @@ const IMSettings: React.FC = () => {
       telegram: setTelegramConfig,
       discord: setDiscordConfig,
       nim: setNimConfig,
+      wework: setWeWorkConfig,
     };
     return actionMap[platform];
   };
@@ -700,6 +713,40 @@ const IMSettings: React.FC = () => {
             {status.nim.lastError && (
               <div className="text-xs text-red-500 bg-red-500/10 px-3 py-2 rounded-lg">
                 {status.nim.lastError}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* WeWork (企业微信) Settings */}
+        {activePlatform === 'wework' && (
+          <div className="space-y-3">
+            {/* Webhook URL */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary">
+                Webhook URL
+              </label>
+              <input
+                type="text"
+                value={config.wework.webhookUrl}
+                onChange={(e) => handleWeWorkChange('webhookUrl', e.target.value)}
+                onBlur={handleSaveConfig}
+                className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
+                placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
+              />
+              <p className="text-xs text-claude-textSecondary dark:text-claude-darkTextSecondary">
+                从企业微信群机器人获取 Webhook URL
+              </p>
+            </div>
+
+            <div className="pt-1">
+              {renderConnectivityTestButton('wework')}
+            </div>
+
+            {/* Error display */}
+            {status.wework.lastError && (
+              <div className="text-xs text-red-500 bg-red-500/10 px-3 py-2 rounded-lg">
+                {status.wework.lastError}
               </div>
             )}
           </div>
