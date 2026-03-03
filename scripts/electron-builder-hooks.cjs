@@ -510,12 +510,7 @@ async function afterPack(context) {
   }
 }
 
-async function afterSign(context) {
-  // Skip code signing for Windows
-  if (isWindowsTarget(context)) {
-    console.log('[electron-builder-hooks] Skipping code signing for Windows');
-  }
-}
+
 
 module.exports = {
   beforePack,
