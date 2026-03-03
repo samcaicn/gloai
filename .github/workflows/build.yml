@@ -62,12 +62,21 @@ jobs:
             libc6-dev-arm64-cross \
             pkg-config
 
-      - name: Check for package-lock.json
+      - name: Check for package-lock.json (Linux/macOS)
+        if: matrix.os != 'windows-latest'
         run: |
           ls -la
           ls -la package-lock.json
 
-      - name: Remove electronCompat.ts if exists
+      - name: Check for package-lock.json (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          Get-ChildItem
+          Get-ChildItem package-lock.json
+
+      - name: Remove electronCompat.ts if exists (Linux/macOS)
+        if: matrix.os != 'windows-latest'
         run: |
           if [ -f "src/renderer/services/electronCompat.ts" ]; then
             rm src/renderer/services/electronCompat.ts
@@ -75,6 +84,17 @@ jobs:
           else
             echo "electronCompat.ts does not exist"
           fi
+
+      - name: Remove electronCompat.ts if exists (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          if (Test-Path "src/renderer/services/electronCompat.ts") {
+            Remove-Item "src/renderer/services/electronCompat.ts"
+            Write-Output "Removed electronCompat.ts"
+          } else {
+            Write-Output "electronCompat.ts does not exist"
+          }
 
       - name: Install dependencies
         run: npm install --package-lock-only
