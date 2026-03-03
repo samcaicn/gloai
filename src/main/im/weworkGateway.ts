@@ -197,6 +197,11 @@ export class WeWorkGateway extends EventEmitter {
     await this.sendWebhookMessage(content, 'markdown');
   }
 
+  // 测试 Webhook 连接
+  public async testWebhook(): Promise<void> {
+    await this.sendTextMessage('企业微信 Webhook 测试');
+  }
+
   // 日志记录
   private log(message: string): void {
     if (this.config.debug) {

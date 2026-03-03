@@ -941,7 +941,7 @@ export class IMGatewayManager extends EventEmitter {
       // Test WeWork webhook by sending a test message
       try {
         const weworkGateway = new WeWorkGateway(config.wework);
-        await weworkGateway.sendTextMessage('企业微信 Webhook 测试');
+        await weworkGateway.testWebhook();
         return '企业微信 Webhook 测试成功。';
       } catch (error: any) {
         throw new Error(`Webhook 测试失败: ${error.message}`);

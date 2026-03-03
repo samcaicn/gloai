@@ -213,7 +213,8 @@ export type IMConnectivityCheckCode =
   | 'discord_group_requires_mention'
   | 'telegram_privacy_mode_hint'
   | 'dingtalk_bot_membership_hint'
-  | 'nim_p2p_only_hint';
+  | 'nim_p2p_only_hint'
+  | 'wework_webhook_mode';
 
 export interface IMConnectivityCheck {
   code: IMConnectivityCheckCode;
