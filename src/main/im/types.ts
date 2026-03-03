@@ -296,7 +296,8 @@ export type IMConnectivityCheckCode =
   | 'telegram_privacy_mode_hint'
   | 'dingtalk_bot_membership_hint'
   | 'nim_p2p_only_hint'
-  | 'wework_webhook_mode';
+  | 'wework_webhook_mode'
+  | 'whatsapp_webhook_mode';
 
 export interface IMConnectivityCheck {
   code: IMConnectivityCheckCode;

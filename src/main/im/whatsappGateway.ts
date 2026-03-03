@@ -199,7 +199,12 @@ export class WhatsAppGateway extends EventEmitter {
   private async verifyCredentials(): Promise<void> {
     const url = 'https://graph.facebook.com/v18.0/me';
 
-    const result = await fetchJsonWithTimeout(
+    interface FacebookUserResponse {
+      id: string;
+      name: string;
+    }
+
+    const result = await fetchJsonWithTimeout<FacebookUserResponse>(
       url,
       {
         method: 'GET',
