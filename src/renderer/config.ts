@@ -17,6 +17,17 @@ export interface AppConfig {
   };
   // 多模型提供商配置
   providers?: {
+    tuptup: {
+      enabled: boolean;
+      apiKey: string;
+      baseUrl: string;
+      apiFormat?: 'anthropic' | 'openai';
+      models?: Array<{
+        id: string;
+        name: string;
+        supportsImage?: boolean;
+      }>;
+    };
     openai: {
       enabled: boolean;
       apiKey: string;
@@ -226,6 +237,90 @@ export const defaultConfig: AppConfig = {
       models: [
         { id: 'tuptup', name: 'TupTup AI', supportsImage: true }
       ]
+    },
+    openai: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://api.openai.com/v1',
+      apiFormat: 'openai',
+      models: []
+    },
+    deepseek: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://api.deepseek.com/v1',
+      apiFormat: 'openai',
+      models: []
+    },
+    moonshot: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://api.moonshot.cn/v1',
+      apiFormat: 'openai',
+      models: []
+    },
+    zhipu: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://open.bigmodel.cn/api/mt',
+      apiFormat: 'openai',
+      models: []
+    },
+    minimax: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://api.minimax.chat/v1',
+      apiFormat: 'openai',
+      models: []
+    },
+    qwen: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://dashscope.aliyuncs.com/api/v1',
+      apiFormat: 'openai',
+      models: []
+    },
+    openrouter: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://openrouter.ai/api/v1',
+      apiFormat: 'openai',
+      models: []
+    },
+    gemini: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1',
+      apiFormat: 'openai',
+      models: []
+    },
+    anthropic: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://api.anthropic.com/v1',
+      apiFormat: 'anthropic',
+      models: []
+    },
+    volcengine: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+      apiFormat: 'openai',
+      models: []
+    },
+    xiaomi: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'https://api.mi.com/v1',
+      apiFormat: 'openai',
+      models: []
+    },
+    ollama: {
+      enabled: false,
+      apiKey: '',
+      baseUrl: 'http://localhost:11434/v1',
+      apiFormat: 'openai',
+      models: []
     },
     custom: {
       enabled: false,

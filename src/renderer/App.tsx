@@ -15,7 +15,7 @@ import { apiService } from './services/api';
 import { themeService } from './services/theme';
 import { coworkService } from './services/cowork';
 import { scheduledTaskService } from './services/scheduledTask';
-import { checkForAppUpdate, type AppUpdateInfo, type AppUpdateDownloadProgress, UPDATE_POLL_INTERVAL_MS } from './services/appUpdate';
+
 import { defaultConfig } from './config';
 import { setAvailableModels, setSelectedModel } from './store/slices/modelSlice';
 import { clearSelection } from './store/slices/quickActionSlice';
