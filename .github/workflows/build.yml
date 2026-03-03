@@ -62,6 +62,9 @@ jobs:
             libc6-dev-arm64-cross \
             pkg-config
 
+      - name: Check for package-lock.json
+        run: ls -la package-lock.json
+
       - name: Install dependencies
         run: npm ci
 
