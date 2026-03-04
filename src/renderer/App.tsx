@@ -24,7 +24,6 @@ const App: React.FC = () => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isUpdateDownloading, setIsUpdateDownloading] = useState(false);
   const [updateProgress, setUpdateProgress] = useState<{ percent: number; speed: number } | null>(null);
-  const [currentVersion, setCurrentVersion] = useState('');
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -51,7 +50,6 @@ const App: React.FC = () => {
 
         // Get current app version
         const version = await tauriApiService.getAppVersion();
-        setCurrentVersion(version);
         loggerService.info(`App version: ${version}`);
 
         // Set up update listeners
@@ -71,8 +69,8 @@ const App: React.FC = () => {
 
     const setupUpdateListeners = () => {
       // Listen for update available
-      window.addEventListener('update_available', (event: any) => {
-        const detail = event.detail;
+      window.addEventListener('update_available', (_event: any) => {
+        const detail = _event.detail;
         setUpdateInfo({
           version: detail.version,
           release_notes: detail.release_notes,
@@ -83,8 +81,8 @@ const App: React.FC = () => {
       });
 
       // Listen for update progress
-      window.addEventListener('update_progress', (event: any) => {
-        const detail = event.detail;
+      window.addEventListener('update_progress', (_event: any) => {
+        const detail = _event.detail;
         setUpdateProgress({
           percent: detail.percent || 0,
           speed: detail.speed || 0
@@ -93,7 +91,7 @@ const App: React.FC = () => {
       });
 
       // Listen for update downloaded
-      window.addEventListener('update_downloaded', (event: any) => {
+      window.addEventListener('update_downloaded', (_event: any) => {
         setIsUpdateDownloading(false);
         setUpdateProgress(null);
         loggerService.info('Update downloaded successfully');

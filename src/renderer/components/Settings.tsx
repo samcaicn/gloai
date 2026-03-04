@@ -14,6 +14,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setAvailableModels } from '../store/slices/modelSlice';
 import { RootState } from '../store';
 import ThemedSelect from './ui/ThemedSelect';
+import { tauriApi } from '../services/tauriApi';
+import MarkdownContent from './MarkdownContent';
 import type {
   CoworkExecutionMode,
   CoworkUserMemoryEntry,
@@ -2038,7 +2040,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     <div className="mr-2 mt-0.5">⚠️</div>
                     <div>
                       <div className="font-medium">套餐提示</div>
-                      <div className="mt-1">免费套餐以上可以启动模型，否则请 <a href="https://ggai.tuptup.top" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">到官网升级套餐</a></div>
+                      <div className="mt-1">免费套餐以上可以启动模型，否则请 <a href="#" onClick={(e) => { e.preventDefault(); tauriApi.shell.openExternal('https://ggai.tuptup.top'); }} className="text-blue-600 dark:text-blue-400 hover:underline">到官网升级套餐</a></div>
                     </div>
                   </div>
                 </div>
@@ -2662,44 +2664,29 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                   </button>
                 </div>
                 <div className="space-y-4">
-                  {tuptupUserInfo && (
-                    <div className="rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset p-4">
-                      <h5 className="text-sm font-medium dark:text-claude-darkText text-claude-text mb-2">
-                        用户信息
-                      </h5>
-                      <pre className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary overflow-auto">
-                        {JSON.stringify(tuptupUserInfo, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                  {tuptupTokenBalance && (
-                    <div className="rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset p-4">
-                      <h5 className="text-sm font-medium dark:text-claude-darkText text-claude-text mb-2">
-                        Token 余额
-                      </h5>
-                      <pre className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary overflow-auto">
-                        {JSON.stringify(tuptupTokenBalance, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                  {tuptupPlan && (
-                    <div className="rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset p-4">
-                      <h5 className="text-sm font-medium dark:text-claude-darkText text-claude-text mb-2">
-                        套餐信息
-                      </h5>
-                      <pre className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary overflow-auto">
-                        {JSON.stringify(tuptupPlan, null, 2)}
-                      </pre>
-                    </div>
-                  )}
                   {tuptupOverview && (
                     <div className="rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset p-4">
                       <h5 className="text-sm font-medium dark:text-claude-darkText text-claude-text mb-2">
-                        完整概览
+                        账户信息
                       </h5>
-                      <pre className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary overflow-auto">
-                        {JSON.stringify(tuptupOverview, null, 2)}
-                      </pre>
+                      <MarkdownContent 
+                        content={`# 账户信息
+
+## 用户信息
+- **用户ID**: ${tuptupOverview.user?.user_id || '未知'}
+- **邮箱**: ${tuptupOverview.user?.email || '未知'}
+- **用户名**: ${tuptupOverview.user?.username || '未知'}
+- **VIP等级**: ${tuptupOverview.user?.vip_level || 0}
+
+## 套餐信息
+- **套餐等级**: ${tuptupOverview.plan?.level || 0}
+- **套餐名称**: ${tuptupOverview.plan?.name || '免费版'}
+- **价格**: ${tuptupOverview.plan?.price || 0} CNY
+
+## Token 余额
+- **余额**: ${tuptupOverview.tokenBalance?.balance || 0}
+- **货币**: ${tuptupOverview.tokenBalance?.currency || 'CNY'}`}
+                      />
                     </div>
                   )}
                 </div>
@@ -2795,23 +2782,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               {renderTabContent()}
             </div>
 
-            {/* Footer buttons */}
-            <div className="flex justify-end space-x-4 p-4 dark:border-claude-darkBorder border-claude-border border-t dark:bg-claude-darkBg bg-claude-bg shrink-0">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover rounded-xl transition-colors text-sm font-medium border dark:border-claude-darkBorder border-claude-border active:scale-[0.98]"
-              >
-                {i18nService.t('cancel')}
-              </button>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="px-4 py-2 bg-claude-accent hover:bg-claude-accentHover text-white rounded-xl transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-              >
-                {isSaving ? i18nService.t('saving') : i18nService.t('save')}
-              </button>
-            </div>
+
           </form>
 
           {(isAddingModel || isEditingModel) && (
