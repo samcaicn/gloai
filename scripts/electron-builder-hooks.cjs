@@ -366,12 +366,21 @@ async function beforePack(context) {
   // Disable code signing for all platforms
   if (context.packager) {
     console.log('[electron-builder-hooks] Disabling code signing...');
+    // Set sign to false for all platforms
     context.packager.config.win.sign = false;
     context.packager.config.mac.sign = false;
     context.packager.config.dmg.sign = false;
-    // Disable code signing completely by removing any sign-related configuration
+    context.packager.config.linux.sign = false;
+    // Remove any sign-related configuration
     delete context.packager.config.win.signingInfo;
     delete context.packager.config.mac.signingInfo;
+    delete context.packager.config.signingInfo;
+    // Override the sign function to do nothing
+    if (context.packager.sign) {
+      context.packager.sign = async () => {
+        console.log('[electron-builder-hooks] Sign function overridden to do nothing');
+      };
+    }
   }
 
   if (!isWindowsTarget(context)) {
