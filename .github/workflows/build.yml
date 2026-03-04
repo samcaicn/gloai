@@ -68,7 +68,19 @@ jobs:
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
             libc6-dev-arm64-cross \
-            pkg-config
+            pkg-config \
+            libglib2.0-dev \
+            libgdk-pixbuf2.0-dev \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libharfbuzz-dev \
+            libz-dev \
+            libglib2.0-dev:arm64 \
+            libgdk-pixbuf2.0-dev:arm64 \
+            libcairo2-dev:arm64 \
+            libpango1.0-dev:arm64 \
+            libharfbuzz-dev:arm64 \
+            libz-dev:arm64
 
       - name: Check for package-lock.json (Linux/macOS)
         if: matrix.os != 'windows-latest'
