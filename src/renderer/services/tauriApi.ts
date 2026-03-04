@@ -872,9 +872,68 @@ export const tauriApi = {
       return () => {};
     }
   },
+
+  // 更新相关命令
+  update: {
+    check: async (): Promise<any> => {
+      if (!isTauriReady()) return { update_available: false };
+      try {
+        return await invoke<any>('update_check');
+      } catch (e) {
+        console.error('update_check failed:', e);
+        return { update_available: false };
+      }
+    },
+    download: async (url: string, sha256: string | undefined): Promise<void> => {
+      if (!isTauriReady()) throw new Error('Tauri is not available');
+      try {
+        await invoke('update_download', { url, sha256 });
+      } catch (e) {
+        console.error('update_download failed:', e);
+        throw e;
+      }
+    },
+    cancelDownload: async (): Promise<void> => {
+      if (!isTauriReady()) return;
+      try {
+        await invoke('update_cancel_download');
+      } catch (e) {
+        console.error('update_cancel_download failed:', e);
+      }
+    },
+    installPending: async (): Promise<boolean> => {
+      if (!isTauriReady()) return false;
+      try {
+        return await invoke<boolean>('update_install_pending');
+      } catch (e) {
+        console.error('update_install_pending failed:', e);
+        return false;
+      }
+    },
+  },
 };
 
 // 初始化存储
 export async function initTauri() {
   await tauriApi.initStorage();
 }
+
+// 便捷函数
+export const tauriApiService = {
+  ...tauriApi,
+  getAppVersion: async (): Promise<string> => {
+    return await tauriApi.appInfo.getVersion();
+  },
+  updateCheck: async (): Promise<any> => {
+    return await tauriApi.update.check();
+  },
+  updateDownload: async (url: string, sha256: string | undefined): Promise<void> => {
+    return await tauriApi.update.download(url, sha256);
+  },
+  updateCancelDownload: async (): Promise<void> => {
+    return await tauriApi.update.cancelDownload();
+  },
+  updateInstallPending: async (): Promise<boolean> => {
+    return await tauriApi.update.installPending();
+  },
+};

@@ -48,6 +48,7 @@ struct AppState {
     scheduler: Arc<TokioMutex<Scheduler>>,
     logger: Arc<TokioMutex<Logger>>,
     tuptup_service: Arc<TokioMutex<TuptupService>>,
+    update_manager: Arc<TokioMutex<UpdateManager>>,
 }
 
 #[tauri::command]
@@ -57,6 +58,18 @@ async fn initialize_app(app: AppHandle) -> Result<(), String> {
 
     let mut system_manager = state.system_manager.lock().await;
     system_manager.set_app_handle(app.clone());
+
+    // Initialize update manager
+    let mut update_manager = state.update_manager.lock().await;
+    update_manager.set_app_handle(app.clone()).await;
+    
+    // Check and apply pending update on startup
+    if let Err(e) = update_manager.install_pending_update().await {
+        println!("[App] Failed to install pending update: {}", e);
+    }
+    
+    // Start update checker
+    update_manager.start().await;
 
     let goclaw_manager = state.goclaw_manager.lock().await;
     if let Err(e) = goclaw_manager.auto_start_if_enabled().await {
@@ -754,6 +767,65 @@ async fn get_app_version(state: State<'_, AppState>) -> Result<String, String> {
     Ok(manager.get_app_version())
 }
 
+// Update commands
+#[tauri::command]
+async fn update_check(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let update_manager = state.update_manager.lock().await;
+    let app_handle = update_manager.app_handle.lock().await;
+    
+    if let Some(app_handle) = &*app_handle {
+        let server_url = "https://api.ggai.com/v1/update";
+        let current_version = app_handle.package_info().version.to_string();
+        let app_name = app_handle.package_info().name.to_string();
+        let platform = update_manager::UpdateManager::get_current_platform();
+        
+        match update_manager::UpdateManager::fetch_update_info(server_url, &app_name, &current_version, &platform).await {
+            Ok(Some(update_info)) => {
+                let is_newer = update_manager::UpdateManager::is_newer_version(&update_info.version, &current_version);
+                Ok(serde_json::json!({
+                    "update_available": is_newer,
+                    "version": update_info.version,
+                    "release_notes": update_info.release_notes
+                }))
+            },
+            Ok(None) => {
+                Ok(serde_json::json!({
+                    "update_available": false
+                }))
+            },
+            Err(e) => Err(e.to_string())
+        }
+    } else {
+        Err("App handle not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+async fn update_download(url: String, sha256: Option<String>, state: State<'_, AppState>) -> Result<(), String> {
+    let update_manager = state.update_manager.lock().await;
+    let app_handle = update_manager.app_handle.lock().await;
+    
+    if let Some(app_handle) = &*app_handle {
+        update_manager::UpdateManager::download_update(app_handle, &url, sha256.as_deref())
+            .await
+            .map_err(|e| e.to_string())
+    } else {
+        Err("App handle not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+async fn update_cancel_download(state: State<'_, AppState>) -> Result<(), String> {
+    let update_manager = state.update_manager.lock().await;
+    update_manager.cancel_download().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn update_install_pending(state: State<'_, AppState>) -> Result<bool, String> {
+    let update_manager = state.update_manager.lock().await;
+    update_manager.install_pending_update().await.map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 async fn get_system_locale() -> Result<String, String> {
     Ok(sys_locale::get_locale().unwrap_or_else(|| "en-US".to_string()))
@@ -940,6 +1012,7 @@ pub fn run() {
 
             let scheduler = Scheduler::new(database_arc.clone());
             let tuptup_service = Arc::new(TokioMutex::new(TuptupService::new()));
+            let update_manager = Arc::new(TokioMutex::new(UpdateManager::new()));
 
             app.manage(AppState {
                 storage,
@@ -952,6 +1025,7 @@ pub fn run() {
                 scheduler: Arc::new(TokioMutex::new(scheduler)),
                 logger: Arc::new(TokioMutex::new(logger)),
                 tuptup_service,
+                update_manager,
             });
 
             Ok(())
@@ -1044,6 +1118,11 @@ pub fn run() {
             crypto_decrypt,
             make_http_request,
             open_external,
+            // Update commands
+            update_check,
+            update_download,
+            update_cancel_download,
+            update_install_pending,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
