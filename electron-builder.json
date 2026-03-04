@@ -46,6 +46,14 @@
     "entitlements": "build/entitlements.mac.plist",
     "entitlementsInherit": "build/entitlements.mac.plist",
     "sign": false,
+    "x64ArchFiles": [
+      "**/sharp-darwin-x64/**",
+      "**/node_modules/@img/sharp-darwin-x64/**"
+    ],
+    "arm64ArchFiles": [
+      "**/sharp-darwin-arm64/**",
+      "**/node_modules/@img/sharp-darwin-arm64/**"
+    ],
     "extendInfo": {
       "CFBundleIconName": "icon",
       "NSCalendarsUsageDescription": "LobsterAI 需要访问您的日历来帮助您查看和管理日程安排，例如查找事件、创建会议等。",
