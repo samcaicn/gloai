@@ -170,7 +170,7 @@ impl UpdateManager {
         Ok(None)
     }
 
-    async fn download_update(
+    pub async fn download_update(
         app_handle: &AppHandle,
         download_url: &str,
         expected_sha256: Option<&str>,
@@ -432,13 +432,8 @@ impl UpdateManager {
         // 3. Find the .app bundle
         let app_bundle = extract_dir
             .read_dir()?
-            .find(|entry| {
-                if let Ok(entry) = entry {
-                    entry.file_name().to_string_lossy().ends_with(".app")
-                } else {
-                    false
-                }
-            })
+            .find_map(|entry| entry.ok())
+            .filter(|entry| entry.file_name().to_string_lossy().ends_with(".app"))
             .ok_or_else(|| anyhow::anyhow!("No .app bundle found in update package"))?;
 
         let app_bundle_path = app_bundle.path();
