@@ -7,8 +7,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use tar::Archive;
-use tauri::{AppHandle, Manager};
-use tokio::sync::{Mutex, AbortHandle};
+use tauri::{AppHandle, Manager, Emitter};
+use tokio::sync::Mutex;
+use tokio::task::AbortHandle;
 use tokio::time::sleep;
 
 #[derive(Debug)]
@@ -20,11 +21,11 @@ pub struct UpdateManager {
 }
 
 #[derive(Debug)]
-struct UpdateInfo {
-    version: String,
-    download_url: String,
-    release_notes: String,
-    sha256: Option<String>,
+pub struct UpdateInfo {
+    pub version: String,
+    pub download_url: String,
+    pub release_notes: String,
+    pub sha256: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -100,7 +101,7 @@ impl UpdateManager {
         Ok(())
     }
 
-    async fn fetch_update_info(
+    pub async fn fetch_update_info(
         server_url: &str,
         app_name: &str,
         current_version: &str,
@@ -322,7 +323,7 @@ impl UpdateManager {
         Ok(app_dir.join("updates"))
     }
 
-    fn get_current_platform() -> String {
+    pub fn get_current_platform() -> String {
         #[cfg(target_os = "macos")]
         return "macos".to_string();
 
@@ -561,7 +562,7 @@ impl UpdateManager {
         Err(anyhow::anyhow!("Linux update not supported on this platform"))
     }
 
-    fn is_newer_version(new_version: &str, current_version: &str) -> bool {
+    pub fn is_newer_version(new_version: &str, current_version: &str) -> bool {
         // Simple version comparison (major.minor.patch)
         let new_parts: Vec<u32> = new_version.split('.').map(|s| s.parse().unwrap_or(0)).collect();
         let current_parts: Vec<u32> = current_version.split('.').map(|s| s.parse().unwrap_or(0)).collect();
