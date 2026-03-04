@@ -369,6 +369,9 @@ async function beforePack(context) {
     context.packager.config.win.sign = false;
     context.packager.config.mac.sign = false;
     context.packager.config.dmg.sign = false;
+    // Disable code signing completely by removing any sign-related configuration
+    delete context.packager.config.win.signingInfo;
+    delete context.packager.config.mac.signingInfo;
   }
 
   if (!isWindowsTarget(context)) {
