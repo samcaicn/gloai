@@ -302,7 +302,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   const [language, setLanguage] = useState<LanguageType>('zh');
   const [autoLaunch, setAutoLaunchState] = useState(false);
   const [isUpdatingAutoLaunch, setIsUpdatingAutoLaunch] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(notice ?? null);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -374,8 +373,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   const [tuptupApiSecret, setTuptupApiSecret] = useState('');
   const [tuptupUserId, setTuptupUserId] = useState('');
   const [tuptupUserInfo, setTuptupUserInfo] = useState<any>(null);
-  const [tuptupTokenBalance, setTuptupTokenBalance] = useState<any>(null);
-  const [tuptupPlan, setTuptupPlan] = useState<any>(null);
   const [tuptupOverview, setTuptupOverview] = useState<any>(null);
   const [tuptupPackageStatus, setTuptupPackageStatus] = useState<any>(null);
   const [tuptupIsLoading, setTuptupIsLoading] = useState(false);
@@ -972,7 +969,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSaving(true);
     setError(null);
 
     try {
@@ -1068,8 +1064,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       }, 3000);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to save settings');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -2510,8 +2504,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 }
                 
                 setTuptupUserInfo(userInfo);
-                setTuptupTokenBalance(tokenBalance);
-                setTuptupPlan(plan);
                 setTuptupOverview({
                   user: userInfo,
                   tokenBalance,
@@ -2545,8 +2537,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
           setTuptupApiSecret('');
           setTuptupUserId('');
           setTuptupUserInfo(null);
-          setTuptupTokenBalance(null);
-          setTuptupPlan(null);
           setTuptupOverview(null);
           setTuptupPackageStatus(null);
           setTuptupError(null);
