@@ -613,7 +613,14 @@ export const tauriApi = {
     getSystemLocale: async (): Promise<string> => {
       if (!isTauriReady()) return navigator.language;
       try {
-        return await invoke<string>('get_system_locale');
+        // 添加 2 秒超时
+        const timeoutPromise = new Promise<string>((_, reject) => {
+          setTimeout(() => reject(new Error('System locale get timeout')), 2000);
+        });
+        return await Promise.race([
+          invoke<string>('get_system_locale'),
+          timeoutPromise
+        ]);
       } catch (e) {
         return navigator.language;
       }

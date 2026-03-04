@@ -27,38 +27,48 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initializeApp = async () => {
+      // 添加超时机制，确保初始化过程不会无限卡住
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('App initialization timeout')), 10000); // 10秒超时
+      });
+
       try {
-        // 初始化日志服务
-        await loggerService.init();
-        loggerService.info('Starting app initialization');
+        await Promise.race([
+          (async () => {
+            // 初始化日志服务
+            await loggerService.init();
+            loggerService.info('Starting app initialization');
 
-        // 初始化配置
-        await configService.init();
-        loggerService.info('Config service initialized');
-        
-        // 初始化主题
-        themeService.initialize();
-        loggerService.info('Theme service initialized');
+            // 初始化配置
+            await configService.init();
+            loggerService.info('Config service initialized');
+            
+            // 初始化主题
+            themeService.initialize();
+            loggerService.info('Theme service initialized');
 
-        // 初始化语言
-        await i18nService.initialize();
-        loggerService.info('i18n service initialized');
-        
-        // 初始化定时任务服务
-        await scheduledTaskService.init();
-        loggerService.info('Scheduled task service initialized');
+            // 初始化语言
+            await i18nService.initialize();
+            loggerService.info('i18n service initialized');
+            
+            // 初始化定时任务服务
+            await scheduledTaskService.init();
+            loggerService.info('Scheduled task service initialized');
 
-        // Get current app version
-        const version = await tauriApiService.getAppVersion();
-        loggerService.info(`App version: ${version}`);
+            // Get current app version
+            const version = await tauriApiService.getAppVersion();
+            loggerService.info(`App version: ${version}`);
 
-        // Set up update listeners
-        setupUpdateListeners();
+            // Set up update listeners
+            setupUpdateListeners();
 
-        // Check for updates
-        checkForUpdates();
+            // Check for updates
+            checkForUpdates();
 
-        loggerService.info('App initialization completed');
+            loggerService.info('App initialization completed');
+          })(),
+          timeoutPromise
+        ]);
         setIsInitialized(true);
       } catch (error) {
         loggerService.error('Failed to initialize app:', error as Error);

@@ -28,8 +28,23 @@ class ScheduledTaskService {
     if (this.initialized) return;
     this.initialized = true;
 
-    await this.setupListeners();
-    await this.loadTasks();
+    // 添加超时机制，确保初始化过程不会卡住
+    try {
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('Scheduled task service initialization timeout')), 5000);
+      });
+
+      await Promise.race([
+        (async () => {
+          await this.setupListeners();
+          await this.loadTasks();
+        })(),
+        timeoutPromise
+      ]);
+    } catch (error) {
+      console.error('Scheduled task service initialization failed:', error);
+      // 即使失败也继续，不影响应用启动
+    }
   }
 
   destroy(): void {
