@@ -61,6 +61,7 @@ struct FeishuWebSocketEndpointResponse {
 
 #[derive(Debug, Deserialize)]
 struct FeishuWebSocketEndpointData {
+    #[serde(rename = "URL")]
     url: Option<String>,
     ClientConfig: Option<FeishuClientConfig>,
 }
