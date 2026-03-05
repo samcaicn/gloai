@@ -80,25 +80,39 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
 
   useEffect(() => {
     const init = async () => {
-      await coworkService.init();
-      // Load quick actions with localization
+      // 添加超时机制，确保初始化不会卡住
       try {
-        quickActionService.initialize();
-        const actions = await quickActionService.getLocalizedActions();
-        dispatch(setActions(actions));
+        const timeoutPromise = new Promise<void>((_, reject) => {
+          setTimeout(() => reject(new Error('CoworkView init timeout')), 8000);
+        });
+
+        await Promise.race([
+          (async () => {
+            await coworkService.init();
+            // Load quick actions with localization
+            try {
+              quickActionService.initialize();
+              const actions = await quickActionService.getLocalizedActions();
+              dispatch(setActions(actions));
+            } catch (error) {
+              console.error('Failed to load quick actions:', error);
+            }
+            try {
+              const apiConfig = await coworkService.checkApiConfig();
+              if (apiConfig && !apiConfig.hasConfig) {
+                onRequestAppSettings?.({
+                  initialTab: 'model',
+                  notice: buildApiConfigNotice(apiConfig.error),
+                });
+              }
+            } catch (error) {
+              console.error('Failed to check cowork API config:', error);
+            }
+          })(),
+          timeoutPromise
+        ]);
       } catch (error) {
-        console.error('Failed to load quick actions:', error);
-      }
-      try {
-        const apiConfig = await coworkService.checkApiConfig();
-        if (apiConfig && !apiConfig.hasConfig) {
-          onRequestAppSettings?.({
-            initialTab: 'model',
-            notice: buildApiConfigNotice(apiConfig.error),
-          });
-        }
-      } catch (error) {
-        console.error('Failed to check cowork API config:', error);
+        console.error('CoworkView init failed:', error);
       }
       setIsInitialized(true);
     };
