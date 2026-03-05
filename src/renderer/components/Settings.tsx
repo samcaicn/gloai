@@ -2161,7 +2161,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                   id={`${activeProvider}-baseUrl`}
                   value={providers[activeProvider].baseUrl}
                   onChange={(e) => handleProviderConfigChange(activeProvider, 'baseUrl', e.target.value)}
-                  className="block w-full rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-xs"
+                  disabled={activeProvider === 'tuptup'}
+                  className="block w-full rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-xs disabled:opacity-50 disabled:bg-claude-surface/50 dark:disabled:bg-claude-darkSurface/50"
                   placeholder={i18nService.t('baseUrlPlaceholder')}
                 />
               </div>
@@ -2772,7 +2773,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               {renderTabContent()}
             </div>
 
-            {/* Bottom buttons - only show for non-tuptup tabs */}
+            {/* Bottom buttons - show for all tabs except tuptup */}
             {activeTab !== 'tuptup' && (
               <div className="px-6 py-4 border-t dark:border-claude-darkBorder border-claude-border">
                 <div className="flex justify-end space-x-2">
