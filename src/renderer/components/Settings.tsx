@@ -2772,7 +2772,26 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               {renderTabContent()}
             </div>
 
-
+            {/* Bottom buttons - only show for non-tuptup tabs */}
+            {activeTab !== 'tuptup' && (
+              <div className="px-6 py-4 border-t dark:border-claude-darkBorder border-claude-border">
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover rounded-xl border dark:border-claude-darkBorder border-claude-border transition-colors text-sm font-medium"
+                  >
+                    {i18nService.t('cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-claude-accent hover:bg-claude-accentHover text-white rounded-xl transition-colors text-sm font-medium"
+                  >
+                    {i18nService.t('save')}
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
 
           {(isAddingModel || isEditingModel) && (
