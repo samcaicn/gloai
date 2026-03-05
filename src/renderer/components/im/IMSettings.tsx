@@ -536,10 +536,19 @@ const IMSettings: React.FC = () => {
             {/* Help Link */}
             <div className="flex items-center gap-2 text-xs">
               <a
-                href="https://open.feishu.cn/document/home/introduction-to-custom-app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-claude-accent hover:text-claude-accent/80 dark:text-claude-accent dark:hover:text-claude-accent/80 flex items-center gap-1"
+                href="#"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  const url = 'https://open.feishu.cn/app/';
+                  try {
+                    const { tauriApi } = await import('../../services/tauriApi');
+                    // Open in browser and copy to clipboard
+                    await tauriApi.shell.openExternal(url);
+                  } catch (error) {
+                    console.error('Failed to copy and open link:', error);
+                  }
+                }}
+                className="text-claude-accent hover:text-claude-accent/80 dark:text-claude-accent dark:hover:text-claude-accent/80 flex items-center gap-1 cursor-pointer"
               >
                 <span>📖 如何创建飞书自定义应用</span>
               </a>

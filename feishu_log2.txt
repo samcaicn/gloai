@@ -1,0 +1,7 @@
+=== 飞书 SDK 长连接测试 ===
+创建客户端...
+Traceback (most recent call last):
+  File "/Volumes/d/ai/ggclawapp/feishu_sdk_test.py", line 22, in <module>
+    cli = lark.ws.Client(APP_ID, APP_SECRET,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Client.__init__() got an unexpected keyword argument 'transport_adapter'

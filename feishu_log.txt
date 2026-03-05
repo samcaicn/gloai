@@ -1,0 +1,6 @@
+=== 飞书 SDK 长连接测试 ===
+创建客户端...
+启动长连接...
+[Lark] [2026-03-05 13:57:06,609] [ERROR] connect failed, err: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)
+[Lark] [2026-03-05 13:57:17,074] [INFO] trying to reconnect for the 1st time
+[Lark] [2026-03-05 13:57:17,673] [ERROR] connect failed, err: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1000)

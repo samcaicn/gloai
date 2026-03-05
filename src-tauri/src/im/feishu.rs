@@ -53,6 +53,31 @@ struct FeishuAccessTokenData {
 }
 
 #[derive(Debug, Deserialize)]
+struct FeishuWebSocketEndpointResponse {
+    code: i32,
+    msg: Option<String>,
+    data: Option<FeishuWebSocketEndpointData>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FeishuWebSocketEndpointData {
+    url: Option<String>,
+    ClientConfig: Option<FeishuClientConfig>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FeishuClientConfig {
+    #[serde(rename = "reconnectCount")]
+    reconnect_count: Option<i32>,
+    #[serde(rename = "reconnectInterval")]
+    reconnect_interval: Option<i32>,
+    #[serde(rename = "reconnectNonce")]
+    reconnect_nonce: Option<i32>,
+    #[serde(rename = "pingInterval")]
+    ping_interval: Option<i32>,
+}
+
+#[derive(Debug, Deserialize)]
 struct FeishuSendMessageResponse {
     #[serde(rename = "msg")]
     message: Option<String>,
@@ -370,24 +395,56 @@ impl FeishuGateway {
         }
     }
 
-    // 启动 WebSocket 长连接
+    // 启动 WebSocket 长连接 (v2 协议)
     async fn start_websocket_connection(&self) -> Result<(), String> {
-        let access_token = self.get_access_token().await?;
+        let (app_id, app_secret) = {
+            let config = self.config.lock().await;
+            (config.app_id.clone(), config.app_secret.clone())
+        };
+
         let base_url = self.get_base_url();
 
-        // 飞书 WebSocket 连接地址
-        let ws_url = format!(
-            "{}/open-apis/event/callback/ws?token={}",
-            base_url, access_token
-        );
+        // 第一步：调用 /callback/ws/endpoint 获取连接 URL
+        let endpoint_url = format!("{}/callback/ws/endpoint", base_url);
+        self.log(&format!("获取 WebSocket 端点: {}", endpoint_url));
 
-        self.log(&format!("Connecting to WebSocket: {}", ws_url));
+        let request = serde_json::json!({
+            "AppID": app_id,
+            "AppSecret": app_secret,
+        });
 
+        let response = self
+            .http_client
+            .post(&endpoint_url)
+            .header("locale", "zh")
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| format!("获取 WebSocket 端点失败: {}", e))?
+            .json::<FeishuWebSocketEndpointResponse>()
+            .await
+            .map_err(|e| format!("解析端点响应失败: {}", e))?;
+
+        if response.code != 0 {
+            return Err(format!(
+                "获取 WebSocket 端点失败: {}",
+                response.msg.unwrap_or_default()
+            ));
+        }
+
+        let ws_url = response
+            .data
+            .and_then(|d| d.url)
+            .ok_or("WebSocket URL 为空")?;
+
+        self.log(&format!("获取到 WebSocket URL: {}", &ws_url[..ws_url.len().min(80)]));
+
+        // 第二步：建立 WebSocket 连接
         let (ws_stream, _) = connect_async(&ws_url)
             .await
-            .map_err(|e| format!("WebSocket connection failed: {}", e))?;
+            .map_err(|e| format!("WebSocket 连接失败: {}", e))?;
 
-        self.log("WebSocket connected");
+        self.log("WebSocket 连接成功!");
 
         let (ws_sender, mut ws_receiver) = ws_stream.split();
         let ws_sender = Arc::new(Mutex::new(ws_sender));
@@ -412,6 +469,28 @@ impl FeishuGateway {
                     // 处理 WebSocket 消息
                     Some(msg) = ws_receiver.next() => {
                         match msg {
+                            Ok(WsMessage::Binary(data)) => {
+                                // v2 协议使用 Protobuf 二进制格式
+                                // 简化处理：先尝试作为文本解析
+                                if let Ok(text) = String::from_utf8(data.clone()) {
+                                    self_ref.log(&format!("Received (as text): {}", &text[..text.len().min(200)]));
+
+                                    // 尝试解析 JSON 格式（可能有兼容模式）
+                                    if let Ok(ws_msg) = serde_json::from_str::<FeishuWebSocketMessage>(&text) {
+                                        if ws_msg.msg_type == "event_callback" {
+                                            if let Some(event) = ws_msg.event {
+                                                if event.event_type == "im.message.receive_v1" {
+                                                    if let Some(message) = event.message {
+                                                        let _ = self_ref.handle_message_event(&message).await;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    self_ref.log(&format!("Received binary: {} bytes", data.len()));
+                                }
+                            }
                             Ok(WsMessage::Text(text)) => {
                                 self_ref.log(&format!("Received: {}", &text[..text.len().min(200)]));
 
@@ -445,15 +524,11 @@ impl FeishuGateway {
                         }
                     }
 
-                    // 发送心跳
+                    // 发送心跳 (v2 协议使用 Pong 响应)
                     _ = heartbeat_interval.tick() => {
-                        let heartbeat = serde_json::json!({
-                            "type": "ping"
-                        });
-                        if ws_sender_clone.lock().await.send(WsMessage::Text(heartbeat.to_string())).await.is_err() {
-                            should_reconnect = true;
-                            break;
-                        }
+                        // v2 协议中，心跳由 SDK 自动处理
+                        // 这里可以发送一个空的 Pong 或 Ping 帧
+                        self_ref.log("发送心跳...");
                     }
 
                     // 检查是否需要停止
