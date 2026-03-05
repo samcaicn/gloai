@@ -138,7 +138,7 @@ export const checkTauriAvailability = async (): Promise<boolean> => {
   
   try {
     // 动态导入并尝试调用一个简单的命令，添加超时处理
-    const { invoke } = await import('@tauri-apps/api/core');
+    const { invoke: tauriInvoke } = await import('@tauri-apps/api/core');
     
     // 添加 3 秒超时
     const timeoutPromise = new Promise<boolean>((_, reject) => {
@@ -146,7 +146,7 @@ export const checkTauriAvailability = async (): Promise<boolean> => {
     });
     
     await Promise.race([
-      invoke('get_platform'),
+      tauriInvoke('get_platform'),
       timeoutPromise
     ]);
     

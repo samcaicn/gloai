@@ -38,16 +38,32 @@ class CoworkService {
   async init(): Promise<void> {
     if (this.initialized) return;
 
-    // Load initial config
-    await this.loadConfig();
+    // 添加超时机制，确保初始化过程不会卡住
+    try {
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('Cowork service initialization timeout')), 5000);
+      });
 
-    // Load sessions list
-    await this.loadSessions();
+      await Promise.race([
+        (async () => {
+          // Load initial config
+          await this.loadConfig();
 
-    // Set up stream listeners
-    await this.setupStreamListeners();
+          // Load sessions list
+          await this.loadSessions();
 
-    this.initialized = true;
+          // Set up stream listeners
+          await this.setupStreamListeners();
+        })(),
+        timeoutPromise
+      ]);
+
+      this.initialized = true;
+    } catch (error) {
+      console.error('Cowork service initialization failed:', error);
+      // 即使失败也继续，不影响应用启动
+      this.initialized = true;
+    }
   }
 
   private async setupStreamListeners(): Promise<void> {
