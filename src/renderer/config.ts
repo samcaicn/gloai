@@ -305,7 +305,7 @@ export const defaultConfig: AppConfig = {
     tuptup: {
       enabled: true,
       apiKey: '',
-      baseUrl: 'https://clawadmin.tuptup.top/api',
+      baseUrl: 'https://aiapi.tuptup.top/v1',
       apiFormat: 'openai',
       models: [
         { id: 'tuptup', name: 'Tuptup', supportsImage: false },
