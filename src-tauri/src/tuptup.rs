@@ -139,7 +139,7 @@ impl TuptupService {
         
         Self {
             client: Client::new(),
-            base_url: "https://claw.hncea.cc".to_string(),
+            base_url: "https://clawadmin.tuptup.top/api".to_string(),
             app_key,
             app_secret: app_secret.clone(),
             crypto: ClientCrypto::with_secret(&app_secret),

@@ -774,7 +774,7 @@ async fn update_check(state: State<'_, AppState>) -> Result<serde_json::Value, S
     let app_handle = update_manager.app_handle.lock().await;
     
     if let Some(app_handle) = &*app_handle {
-        let server_url = "https://api.ggai.com/v1/update";
+        let server_url = "https://clawadmin.tuptup.top/api/v1/update";
         let current_version = app_handle.package_info().version.to_string();
         let app_name = app_handle.package_info().name.to_string();
         let platform = update_manager::UpdateManager::get_current_platform();

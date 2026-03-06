@@ -41,7 +41,7 @@ impl UpdateManager {
         Self {
             app_handle: Arc::new(Mutex::new(None)),
             update_check_interval: Duration::from_secs(3600), // 1 hour
-            update_server_url: "https://api.ggai.com/v1/update".to_string(),
+            update_server_url: "https://clawadmin.tuptup.top/api/v1/update".to_string(),
             active_download: Arc::new(Mutex::new(None)),
         }
     }
