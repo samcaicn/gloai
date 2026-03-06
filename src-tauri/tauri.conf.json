@@ -45,7 +45,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://api.ggai.com/v1/update/check"
+        "https://clawadmin.tuptup.top/api/v1/update/check"
       ],
       "dialog": false,
       "pubkey": ""

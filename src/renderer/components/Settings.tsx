@@ -198,8 +198,8 @@ const providerSwitchableDefaultBaseUrls: Partial<Record<ProviderType, { anthropi
     openai: 'http://localhost:11434/v1',
   },
   tuptup: {
-    anthropic: 'https://clawadmin.tuptup.top/api',
-    openai: 'https://clawadmin.tuptup.top/api',
+    anthropic: 'https://aiapi.tuptup.top/panel/token/v1',
+    openai: 'https://aiapi.tuptup.top/panel/token/v1',
   },
 };
 
@@ -2126,7 +2126,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     type="button"
                     onClick={async () => {
                       const { tauriApi } = await import('../services/tauriApi');
-                      await tauriApi.shell.openExternal('https://clawadmin.tuptup.top/api/token');
+                      await tauriApi.shell.openExternal('https://aiapi.tuptup.top/panel/token');
                     }}
                     className="inline-flex items-center text-xs font-medium text-claude-accent hover:text-claude-accentHover hover:underline cursor-pointer"
                   >
