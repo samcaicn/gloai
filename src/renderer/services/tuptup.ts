@@ -46,7 +46,7 @@ interface TuptupConfig {
   userId: string;
 }
 
-const TUPTUP_BASE_URL = 'https://claw.hncea.cc';
+const TUPTUP_BASE_URL = 'https://clawadmin.tuptup.top';
 
 interface TuptupLoginInfo {
   config: TuptupConfig;

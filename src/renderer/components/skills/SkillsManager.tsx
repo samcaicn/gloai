@@ -215,7 +215,7 @@ const SkillsManager: React.FC = () => {
             type="button"
             onClick={async () => {
               const { tauriApi } = await import('../../services/tauriApi');
-              await tauriApi.shell.openExternal('https://ggai.tuptup.top/admin/login');
+              await tauriApi.shell.openExternal('https://clawadmin.tuptup.top/admin/login');
             }}
             className="text-claude-accent hover:text-claude-accentHover ml-1 hover:underline cursor-pointer"
           >

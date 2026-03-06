@@ -927,7 +927,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
           "X-Signature": signatureHex,
         };
         
-        const planRes = await fetch("https://claw.hncea.cc/api/client/user/plan", { headers });
+        const planRes = await fetch("https://clawadmin.tuptup.top/api/client/user/plan", { headers });
         const plan = await planRes.json();
         
         const vipLevel = plan?.data?.vipLevel || 0;
@@ -935,7 +935,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         // 免费套餐以上可以启动（vipLevel >= 1）
         if (vipLevel < 1) {
           // 显示升级套餐提示
-          setError("请到官网升级套餐 https://ggai.tuptup.top");
+          setError("请到官网升级套餐 https://clawadmin.tuptup.top");
           return;
         }
         
@@ -2034,7 +2034,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     <div className="mr-2 mt-0.5">⚠️</div>
                     <div>
                       <div className="font-medium">套餐提示</div>
-                      <div className="mt-1">免费套餐以上可以启动模型，否则请 <a href="#" onClick={(e) => { e.preventDefault(); tauriApi.shell.openExternal('https://ggai.tuptup.top'); }} className="text-blue-600 dark:text-blue-400 hover:underline">到官网升级套餐</a></div>
+                      <div className="mt-1">免费套餐以上可以启动模型，否则请 <a href="#" onClick={(e) => { e.preventDefault(); tauriApi.shell.openExternal('https://clawadmin.tuptup.top'); }} className="text-blue-600 dark:text-blue-400 hover:underline">到官网升级套餐</a></div>
                     </div>
                   </div>
                 </div>
@@ -2311,7 +2311,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                                     const confirmed = window.confirm('请升级 VIP 套餐以使用更多模型，确认后打开升级页面？');
                                     if (confirmed) {
                                       const { tauriApi } = await import('../services/tauriApi');
-                                      await tauriApi.shell.openExternal('https://ggai.tuptup.top/#/duserEdit?type=buy_plan');
+                                      await tauriApi.shell.openExternal('https://clawadmin.tuptup.top/#/duserEdit?type=buy_plan');
                                     }
                                   }}
                                   className="text-[10px] px-1.5 py-0.5 rounded-md bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
@@ -2488,8 +2488,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                   headers['X-Signature'] = signatureHex;
                   
                   const [userInfoRes, packageStatusRes] = await Promise.allSettled([
-                    fetch('https://claw.hncea.cc/api/client/user/info', { headers }),
-                    fetch('https://claw.hncea.cc/api/client/user/package-status', { headers })
+                    fetch('https://clawadmin.tuptup.top/api/client/user/info', { headers }),
+                    fetch('https://clawadmin.tuptup.top/api/client/user/package-status', { headers })
                   ]);
                   
                   if (userInfoRes.status === 'fulfilled' && userInfoRes.value.ok) {
@@ -2628,7 +2628,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                         type="button"
                         onClick={async () => {
                           const { tauriApi } = await import('../services/tauriApi');
-                          await tauriApi.shell.openExternal('https://ggai.tuptup.top');
+                          await tauriApi.shell.openExternal('https://clawadmin.tuptup.top');
                         }}
                         className="text-sm text-claude-accent hover:underline cursor-pointer"
                       >
