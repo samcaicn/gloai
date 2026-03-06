@@ -5,6 +5,7 @@ import { store } from './store';
 import App from './App';
 import './index.css';
 import { initTauri } from './services/tauriApi';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // 主初始化函数
 const initApp = async () => {
@@ -24,9 +25,11 @@ const initApp = async () => {
   try {
     ReactDOM.createRoot(rootElement).render(
       <React.StrictMode>
-        <Provider store={store}>
-          <App />
-        </Provider>
+        <ErrorBoundary>
+          <Provider store={store}>
+            <App />
+          </Provider>
+        </ErrorBoundary>
       </React.StrictMode>
     );
     console.log('[main] App rendered successfully');
