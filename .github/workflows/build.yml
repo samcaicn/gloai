@@ -2,9 +2,9 @@ name: Build ggai
 
 on:
   push:
-    branches: [ main, tauri-v2 ]
+    branches: [ main, tauri-v2, clawadmin ]
   pull_request:
-    branches: [ main, tauri-v2 ]
+    branches: [ main, tauri-v2, clawadmin ]
 
 jobs:
   build:
