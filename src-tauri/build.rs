@@ -9,6 +9,16 @@ fn main() {
         println!("cargo:warning=Build will continue without goclaw");
     }
     
+    // 确保 resources/goclaw 目录存在（即使 goclaw 下载失败）
+    let resources_dir = Path::new("resources");
+    let goclaw_dir = resources_dir.join("goclaw");
+    if !goclaw_dir.exists() {
+        std::fs::create_dir_all(&goclaw_dir).unwrap_or_else(|e| {
+            println!("cargo:warning=Failed to create goclaw directory: {}", e);
+        });
+        println!("cargo:warning=Created empty goclaw directory for build");
+    }
+    
     // 构建 Tauri 应用
     tauri_build::build();
 }
