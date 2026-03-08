@@ -280,7 +280,7 @@ const isRelativePath = (value: string): boolean => !isAbsolutePath(value) && !ha
 const SANDBOX_WORKSPACE_GUEST_ROOT = '/workspace/project';
 const SANDBOX_WORKSPACE_LEGACY_ROOT = '/workspace';
 const SANDBOX_WORKSPACE_RESERVED_DIRS = new Set(['skills', 'ipc', 'tmp']);
-const SANDBOX_WORKSPACE_PATH_PATTERN = /\/workspace(?:\/project)?(?:\/[^\s'"`\\)\]}>,;:!?]*)?/g;
+const SANDBOX_WORKSPACE_PATH_PATTERN = /\/workspace(?:\/project)?(?:\/[^\s'"`]+)?/g;
 
 const isReservedSandboxSegment = (relativePath: string): boolean => {
   const [firstSegment] = relativePath.split('/');
