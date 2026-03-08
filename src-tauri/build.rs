@@ -95,15 +95,8 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
         println!("cargo:warning=Downloading goclaw from {}", download_url);
         println!("cargo:warning=Saving to: {}", archive_path.display());
         
-        #[cfg(target_os = "windows")]
-        {
-            download_and_extract_windows(&download_url, &archive_path, &output_dir)?;
-        }
-        
-        #[cfg(not(target_os = "windows"))]
-        {
-            download_and_extract_unix(&download_url, &archive_path, &output_dir)?;
-        }
+        // 统一使用下载和解压函数，不再使用条件编译
+        download_and_extract(&download_url, &archive_path, &output_dir)?;
         
         let extracted_path = output_dir.join(if cfg!(target_os = "windows") { "goclaw.exe" } else { "goclaw" });
         if extracted_path.exists() {
@@ -169,109 +162,107 @@ fi
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
-fn download_and_extract_windows(download_url: &str, archive_path: &Path, output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    println!("cargo:warning=Using PowerShell to download");
+fn download_and_extract(download_url: &str, archive_path: &Path, output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    println!("cargo:warning=Downloading goclaw...");
     
-    // 使用更可靠的下载命令，添加重试和超时设置
-    let download_script = format!(
-        "$ProgressPreference = 'SilentlyContinue'; \
-         $maxAttempts = 3; \
-         $attempt = 1; \
-         while ($attempt -le $maxAttempts) {{ \
-             try {{ \
-                 Invoke-WebRequest -Uri '{}' -OutFile '{}' -UseBasicParsing -TimeoutSec 120; \
-                 if (Test-Path '{}') {{ exit 0; }} \
-             }} catch {{ \
-                 Write-Host \"Attempt $attempt failed: $_\"; \
-                 Start-Sleep -Seconds 5; \
+    // Windows 使用 PowerShell
+    if cfg!(target_os = "windows") {
+        println!("cargo:warning=Using PowerShell to download");
+        
+        let download_script = format!(
+            "$ProgressPreference = 'SilentlyContinue'; \
+             $maxAttempts = 3; \
+             $attempt = 1; \
+             while ($attempt -le $maxAttempts) {{ \
+                 try {{ \
+                     Invoke-WebRequest -Uri '{}' -OutFile '{}' -UseBasicParsing -TimeoutSec 120; \
+                     if (Test-Path '{}') {{ exit 0; }} \
+                 }} catch {{ \
+                     Write-Host \"Attempt $attempt failed: $_\"; \
+                     Start-Sleep -Seconds 5; \
+                 }} \
+                 $attempt++; \
              }} \
-             $attempt++; \
-         }} \
-         exit 1",
-        download_url,
-        archive_path.display(),
-        archive_path.display()
-    );
-    
-    let status = Command::new("powershell")
-        .args(&["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &download_script])
-        .status()?;
-    
-    println!("cargo:warning=Download status: {:?}", status);
-    if !status.success() {
-        return Err(format!("Failed to download goclaw after retries: {:?}", status).into());
-    }
-    
-    if let Ok(metadata) = std::fs::metadata(archive_path) {
-        println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
-        if metadata.len() < 1000 {
-            return Err("Downloaded file is too small, likely corrupted".into());
+             exit 1",
+            download_url,
+            archive_path.display(),
+            archive_path.display()
+        );
+        
+        let status = Command::new("powershell")
+            .args(&["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &download_script])
+            .status()?;
+        
+        println!("cargo:warning=Download status: {:?}", status);
+        if !status.success() {
+            return Err(format!("Failed to download goclaw after retries: {:?}", status).into());
+        }
+        
+        if let Ok(metadata) = std::fs::metadata(archive_path) {
+            println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
+            if metadata.len() < 1000 {
+                return Err("Downloaded file is too small, likely corrupted".into());
+            }
+        } else {
+            return Err("Failed to get file metadata".into());
+        }
+        
+        println!("cargo:warning=Extracting zip file");
+        let extract_script = format!(
+            "$ProgressPreference = 'SilentlyContinue'; \
+             Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
+            archive_path.display(),
+            output_dir.display()
+        );
+        
+        let status = Command::new("powershell")
+            .args(&["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &extract_script])
+            .status()?;
+        
+        println!("cargo:warning=Extract status: {:?}", status);
+        if !status.success() {
+            return Err(format!("Failed to extract goclaw: {:?}", status).into());
         }
     } else {
-        return Err("Failed to get file metadata".into());
-    }
-    
-    println!("cargo:warning=Extracting zip file");
-    let extract_script = format!(
-        "$ProgressPreference = 'SilentlyContinue'; \
-         Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
-        archive_path.display(),
-        output_dir.display()
-    );
-    
-    let status = Command::new("powershell")
-        .args(&["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &extract_script])
-        .status()?;
-    
-    println!("cargo:warning=Extract status: {:?}", status);
-    if !status.success() {
-        return Err(format!("Failed to extract goclaw: {:?}", status).into());
-    }
-    
-    Ok(())
-}
-
-#[cfg(not(target_os = "windows"))]
-fn download_and_extract_unix(download_url: &str, archive_path: &Path, output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    println!("cargo:warning=Using curl to download");
-    
-    // 使用 curl 的重试选项
-    let status = Command::new("curl")
-        .args(&[
-            "-L",                           // 跟随重定向
-            "-f",                           // 失败时返回错误码
-            "--retry", "3",                 // 重试次数
-            "--retry-delay", "5",           // 重试延迟
-            "--connect-timeout", "30",      // 连接超时
-            "--max-time", "300",            // 最大下载时间
-            "-o", archive_path.to_str().unwrap(),
-            download_url
-        ])
-        .status()?;
-    
-    println!("cargo:warning=Download status: {:?}", status);
-    if !status.success() {
-        return Err(format!("Failed to download goclaw: {:?}", status).into());
-    }
-    
-    if let Ok(metadata) = std::fs::metadata(archive_path) {
-        println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
-        if metadata.len() < 1000 {
-            return Err("Downloaded file is too small, likely corrupted".into());
+        // Unix 使用 curl
+        println!("cargo:warning=Using curl to download");
+        
+        let status = Command::new("curl")
+            .args(&[
+                "-L",
+                "-f",
+                "--retry", "3",
+                "--retry-delay", "5",
+                "--connect-timeout", "30",
+                "--max-time", "300",
+                "-o", archive_path.to_str().unwrap(),
+                download_url
+            ])
+            .status()?;
+        
+        println!("cargo:warning=Download status: {:?}", status);
+        if !status.success() {
+            return Err(format!("Failed to download goclaw: {:?}", status).into());
         }
-    } else {
-        return Err("Failed to get file metadata".into());
-    }
-    
-    println!("cargo:warning=Extracting tar.gz file");
-    let status = Command::new("tar")
-        .args(&["-xzf", archive_path.to_str().unwrap(), "-C", output_dir.to_str().unwrap()])
-        .status()?;
-    
-    println!("cargo:warning=Extract status: {:?}", status);
-    if !status.success() {
-        return Err(format!("Failed to extract goclaw: {:?}", status).into());
+        
+        if let Ok(metadata) = std::fs::metadata(archive_path) {
+            println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
+            if metadata.len() < 1000 {
+                return Err("Downloaded file is too small, likely corrupted".into());
+            }
+        } else {
+            return Err("Failed to get file metadata".into());
+        }
+        
+        println!("cargo:warning=Extracting tar.gz file");
+        let status = Command::new("tar")
+            .args(&["-xzf", archive_path.to_str().unwrap(), "-C", output_dir.to_str().unwrap()])
+            .status()?;
+        
+        println!("cargo:warning=Extract status: {:?}", status);
+        if !status.success() {
+            return Err(format!("Failed to extract goclaw: {:?}", status).into());
+        }
     }
     
     Ok(())
