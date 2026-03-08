@@ -34,7 +34,8 @@
           "icons/icon.ico"
         ],
         "resources": {
-          "../SKILLs": "SKILLs"
+          "../SKILLs": "SKILLs",
+          "resources/goclaw": "goclaw"
         },
     "macOS": {
       "entitlements": "entitlements.plist",

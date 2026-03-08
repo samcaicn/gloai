@@ -185,20 +185,20 @@ fi
     
     // 复制 goclaw 目录到 Tauri 资源目录
     let output_dir = Path::new("target").join(env::var("PROFILE").unwrap()).join("goclaw");
-    let tauri_resources_dir = Path::new("target").join(env::var("CARGO_BUILD_TARGET").unwrap_or_default()).join(env::var("PROFILE").unwrap()).join("resources");
-    let tauri_goclaw_dir = tauri_resources_dir.join("goclaw");
+    let resources_dir = Path::new("resources");
+    let goclaw_dir = resources_dir.join("goclaw");
     
-    // 创建 Tauri 资源目录
-    std::fs::create_dir_all(&tauri_resources_dir)?;
+    // 创建 resources 目录
+    std::fs::create_dir_all(&resources_dir)?;
     
     // 复制 goclaw 目录
     if output_dir.exists() {
         // 如果目标目录存在，先删除
-        if tauri_goclaw_dir.exists() {
-            std::fs::remove_dir_all(&tauri_goclaw_dir)?;
+        if goclaw_dir.exists() {
+            std::fs::remove_dir_all(&goclaw_dir)?;
         }
         // 复制目录
-        copy_dir_all(&output_dir, &tauri_goclaw_dir)?;
+        copy_dir_all(&output_dir, &goclaw_dir)?;
     }
     
     println!("cargo:rerun-if-changed=build.rs");
