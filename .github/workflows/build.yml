@@ -103,7 +103,7 @@ jobs:
             curl \
             wget \
             file \
-            pkg-config 
+            pkg-config
           
           # Install ARM64 dependencies
           sudo apt-get install -y \
@@ -118,6 +118,20 @@ jobs:
             libpango1.0-dev:arm64 \
             libharfbuzz-dev:arm64 \
             libz-dev:arm64
+          
+          # Verify ARM64 pkg-config files exist
+          echo "Checking ARM64 pkg-config files..."
+          find /usr/lib/aarch64-linux-gnu/pkgconfig -name "*.pc" | head -20
+          find /usr/share/pkgconfig -name "*.pc" | head -20
+          
+          # Create pkg-config wrapper for cross-compilation
+          cat << 'EOF' | sudo tee /usr/bin/aarch64-linux-gnu-pkg-config
+          #!/bin/bash
+          export PKG_CONFIG_PATH="/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig"
+          export PKG_CONFIG_LIBDIR="/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig"
+          exec pkg-config "$@"
+          EOF
+          sudo chmod +x /usr/bin/aarch64-linux-gnu-pkg-config
 
       - name: Check for package-lock.json (Linux/macOS)
         if: matrix.os != 'windows-latest'
@@ -171,8 +185,14 @@ jobs:
           CI: true
           apiKey: ${{ secrets.apiKey || 'gk_981279d245764a1cb53738da' }}
           apiSecret: ${{ secrets.apiSecret || 'gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2' }}
-          PKG_CONFIG: pkg-config
+          PKG_CONFIG: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && 'aarch64-linux-gnu-pkg-config' || 'pkg-config' }}
           PKG_CONFIG_ALLOW_CROSS: '1'
+          PKG_CONFIG_PATH: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && '/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig' || '' }}
+          PKG_CONFIG_LIBDIR: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && '/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig' || '' }}
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+          AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
