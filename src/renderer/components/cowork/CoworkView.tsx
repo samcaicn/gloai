@@ -32,6 +32,25 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
   const dispatch = useDispatch();
   const [isMac, setIsMac] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [renderError, setRenderError] = useState<string | null>(null);
+
+  // 全局错误捕获
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('[CoworkView] Global error:', event.error);
+      setRenderError(`渲染错误: ${event.message || '未知错误'}`);
+    };
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('[CoworkView] Unhandled rejection:', event.reason);
+      setRenderError(`异步错误: ${event.reason?.message || '未知错误'}`);
+    };
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
 
   useEffect(() => {
     const checkPlatform = async () => {
@@ -332,6 +351,29 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
       window.removeEventListener('cowork:shortcut:new-session', handleNewSession);
     };
   }, [dispatch]);
+
+  if (renderError) {
+    return (
+      <div className="flex-1 h-full flex flex-col dark:bg-claude-darkBg bg-claude-bg">
+        <div className="draggable flex h-12 items-center justify-end px-4 border-b dark:border-claude-darkBorder border-claude-border shrink-0">
+          <WindowTitleBar inline />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="dark:text-claude-darkTextSecondary text-claude-textSecondary text-center">
+              {renderError}
+            </div>
+            <button 
+              onClick={() => setRenderError(null)}
+              className="px-4 py-2 bg-claude-accent text-white rounded-lg"
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isInitialized) {
     return (
