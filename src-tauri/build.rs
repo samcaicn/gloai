@@ -1,12 +1,22 @@
 use std::env;
 use std::path::Path;
 use std::process::Command;
+use std::thread;
+use std::time::Duration;
+
+const MAX_RETRIES: u32 = 5;
+const RETRY_DELAY_SECS: u64 = 5;
 
 fn main() {
-    // 先下载 goclaw 二进制文件（失败时不中断构建）
-    if let Err(e) = download_goclaw() {
-        println!("cargo:warning=Failed to download goclaw: {}", e);
-        println!("cargo:warning=Build will continue without goclaw");
+    // 下载 goclaw 二进制文件（带重试机制）
+    match download_goclaw_with_retry() {
+        Ok(_) => {
+            println!("cargo:warning=goclaw downloaded successfully");
+        }
+        Err(e) => {
+            println!("cargo:warning=Failed to download goclaw after {} retries: {}", MAX_RETRIES, e);
+            println!("cargo:warning=Build will continue without goclaw");
+        }
     }
     
     // 确保 resources/goclaw 目录存在（即使 goclaw 下载失败）
@@ -23,31 +33,43 @@ fn main() {
     tauri_build::build();
 }
 
+fn download_goclaw_with_retry() -> Result<(), Box<dyn std::error::Error>> {
+    let mut retry_count = 0;
+    
+    loop {
+        match download_goclaw() {
+            Ok(_) => return Ok(()),
+            Err(e) => {
+                retry_count += 1;
+                if retry_count >= MAX_RETRIES {
+                    return Err(e);
+                }
+                println!("cargo:warning=Download attempt {}/{} failed: {}", retry_count, MAX_RETRIES, e);
+                println!("cargo:warning=Retrying in {} seconds...", RETRY_DELAY_SECS);
+                thread::sleep(Duration::from_secs(RETRY_DELAY_SECS));
+            }
+        }
+    }
+}
+
 fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
-    let version = "0.3.4"; // 使用最新版本（不包含 v 前缀）
+    let version = "0.3.4";
     let base_url = format!("https://github.com/smallnest/goclaw/releases/download/v{}", version);
     
-    // 确定目标操作系统和架构
     let target_os = env::var("CARGO_TARGET_OS").unwrap_or_else(|_| {
-        // 如果 CARGO_TARGET_OS 未设置，使用当前系统的 OS
         std::env::consts::OS.to_string()
     });
     let target_arch = env::var("CARGO_TARGET_ARCH").unwrap_or_else(|_| {
-        // 如果 CARGO_TARGET_ARCH 未设置，使用当前系统的架构
         std::env::consts::ARCH.to_string()
     });
     
-    // 处理 universal 构建
     let architectures = if target_os == "macos" && env::var("CARGO_BUILD_TARGET").unwrap_or_default() == "universal-apple-darwin" {
-        // 为 universal 构建下载两种架构的二进制文件
         vec!["aarch64", "x86_64"]
     } else {
-        // 为普通构建只下载当前架构的二进制文件
         vec![target_arch.as_str()]
     };
     
     for arch in architectures {
-        // 根据操作系统和架构确定文件名
         let (filename, executable_name) = match (target_os.as_str(), arch) {
             ("macos", "aarch64") => ("goclaw_darwin_arm64.tar.gz".to_string(), "goclaw-arm64"),
             ("macos", "x86_64") => ("goclaw_darwin_amd64.tar.gz".to_string(), "goclaw-amd64"),
@@ -59,93 +81,35 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
         let download_url = format!("{}/{}", base_url, filename);
         let output_dir = Path::new("target").join(env::var("PROFILE").unwrap()).join("goclaw");
         
-        // 创建输出目录
         std::fs::create_dir_all(&output_dir)?;
         
         let archive_path = output_dir.join(&filename);
         let executable_path = output_dir.join(executable_name);
         
-        // 如果可执行文件已经存在，跳过下载
         if executable_path.exists() {
+            println!("cargo:warning=goclaw executable already exists, skipping download");
             println!("cargo:rerun-if-changed=build.rs");
             continue;
         }
     
-        // 下载文件
         println!("cargo:warning=Downloading goclaw from {}", download_url);
         println!("cargo:warning=Saving to: {}", archive_path.display());
         
         #[cfg(target_os = "windows")]
         {
-            // Windows 使用 PowerShell 下载
-            println!("cargo:warning=Using PowerShell to download");
-            let status = Command::new("powershell")
-                .args(&["-Command", &format!("Invoke-WebRequest -Uri '{}' -OutFile '{}' -Verbose", download_url, archive_path.display())])
-                .status()?;
-            
-            println!("cargo:warning=Download status: {:?}", status);
-            if !status.success() {
-                return Err(format!("Failed to download goclaw: {:?}", status).into());
-            }
-            
-            // 检查文件大小
-            if let Ok(metadata) = std::fs::metadata(&archive_path) {
-                println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
-            } else {
-                println!("cargo:warning=Failed to get file metadata");
-            }
-            
-            // 解压 zip 文件
-            println!("cargo:warning=Extracting zip file");
-            let status = Command::new("powershell")
-                .args(&["-Command", &format!("Expand-Archive -Path '{}' -DestinationPath '{}' -Verbose", archive_path.display(), output_dir.display())])
-                .status()?;
-            
-            println!("cargo:warning=Extract status: {:?}", status);
-            if !status.success() {
-                return Err(format!("Failed to extract goclaw: {:?}", status).into());
-            }
+            download_and_extract_windows(&download_url, &archive_path, &output_dir)?;
         }
         
         #[cfg(not(target_os = "windows"))]
         {
-            // Unix-like 系统使用 curl 下载
-            println!("cargo:warning=Using curl to download");
-            let status = Command::new("curl")
-                .args(&["-v", "-L", "-o", archive_path.to_str().unwrap(), &download_url])
-                .status()?;
-            
-            println!("cargo:warning=Download status: {:?}", status);
-            if !status.success() {
-                return Err(format!("Failed to download goclaw: {:?}", status).into());
-            }
-            
-            // 检查文件大小
-            if let Ok(metadata) = std::fs::metadata(&archive_path) {
-                println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
-            } else {
-                println!("cargo:warning=Failed to get file metadata");
-            }
-            
-            // 解压 tar.gz 文件
-            println!("cargo:warning=Extracting tar.gz file");
-            let status = Command::new("tar")
-                .args(&["-xzvf", archive_path.to_str().unwrap(), "-C", output_dir.to_str().unwrap()])
-                .status()?;
-            
-            println!("cargo:warning=Extract status: {:?}", status);
-            if !status.success() {
-                return Err(format!("Failed to extract goclaw: {:?}", status).into());
-            }
+            download_and_extract_unix(&download_url, &archive_path, &output_dir)?;
         }
         
-        // 重命名解压后的文件
         let extracted_path = output_dir.join(if cfg!(target_os = "windows") { "goclaw.exe" } else { "goclaw" });
         if extracted_path.exists() {
             std::fs::rename(extracted_path, &executable_path)?;
         }
         
-        // 设置可执行权限
         #[cfg(unix)]
         {
             use std::fs::Permissions;
@@ -155,21 +119,17 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
             std::fs::set_permissions(&executable_path, permissions)?;
         }
         
-        // 清理下载的归档文件
-        std::fs::remove_file(archive_path)?;
+        if archive_path.exists() {
+            std::fs::remove_file(&archive_path)?;
+        }
     }
     
-    // 为 universal 构建创建一个包装脚本，根据架构选择合适的二进制文件
     if target_os == "macos" && env::var("CARGO_BUILD_TARGET").unwrap_or_default() == "universal-apple-darwin" {
         let output_dir = Path::new("target").join(env::var("PROFILE").unwrap()).join("goclaw");
         let wrapper_path = output_dir.join("goclaw");
         
         let wrapper_content = r#"#!/bin/bash
-
-# 检测当前架构
 ARCH=$(uname -m)
-
-# 根据架构选择合适的二进制文件
 if [ "$ARCH" = "arm64" ]; then
     exec "$(dirname "$0")/goclaw-arm64" "$@"
 elif [ "$ARCH" = "x86_64" ]; then
@@ -182,7 +142,6 @@ fi
         
         std::fs::write(&wrapper_path, wrapper_content)?;
         
-        // 设置包装脚本的可执行权限
         #[cfg(unix)]
         {
             use std::fs::Permissions;
@@ -193,32 +152,131 @@ fi
         }
     }
     
-    // 复制 goclaw 目录到 Tauri 资源目录
     let output_dir = Path::new("target").join(env::var("PROFILE").unwrap()).join("goclaw");
     let resources_dir = Path::new("resources");
     let goclaw_dir = resources_dir.join("goclaw");
     
-    // 创建 resources 目录
     std::fs::create_dir_all(&resources_dir)?;
     
-    // 复制 goclaw 目录（仅当存在时）
     if output_dir.exists() {
-        // 如果目标目录存在，先删除
         if goclaw_dir.exists() {
             std::fs::remove_dir_all(&goclaw_dir)?;
         }
-        // 复制目录
-        if let Err(e) = copy_dir_all(&output_dir, &goclaw_dir) {
-            println!("cargo:warning=Failed to copy goclaw directory: {}", e);
-            // 继续构建，不中断
-        }
+        copy_dir_all(&output_dir, &goclaw_dir)?;
     }
     
     println!("cargo:rerun-if-changed=build.rs");
     Ok(())
 }
 
-// 复制目录的辅助函数
+#[cfg(target_os = "windows")]
+fn download_and_extract_windows(download_url: &str, archive_path: &Path, output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    println!("cargo:warning=Using PowerShell to download");
+    
+    // 使用更可靠的下载命令，添加重试和超时设置
+    let download_script = format!(
+        "$ProgressPreference = 'SilentlyContinue'; \
+         $maxAttempts = 3; \
+         $attempt = 1; \
+         while ($attempt -le $maxAttempts) {{ \
+             try {{ \
+                 Invoke-WebRequest -Uri '{}' -OutFile '{}' -UseBasicParsing -TimeoutSec 120; \
+                 if (Test-Path '{}') {{ exit 0; }} \
+             }} catch {{ \
+                 Write-Host \"Attempt $attempt failed: $_\"; \
+                 Start-Sleep -Seconds 5; \
+             }} \
+             $attempt++; \
+         }} \
+         exit 1",
+        download_url,
+        archive_path.display(),
+        archive_path.display()
+    );
+    
+    let status = Command::new("powershell")
+        .args(&["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &download_script])
+        .status()?;
+    
+    println!("cargo:warning=Download status: {:?}", status);
+    if !status.success() {
+        return Err(format!("Failed to download goclaw after retries: {:?}", status).into());
+    }
+    
+    if let Ok(metadata) = std::fs::metadata(archive_path) {
+        println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
+        if metadata.len() < 1000 {
+            return Err("Downloaded file is too small, likely corrupted".into());
+        }
+    } else {
+        return Err("Failed to get file metadata".into());
+    }
+    
+    println!("cargo:warning=Extracting zip file");
+    let extract_script = format!(
+        "$ProgressPreference = 'SilentlyContinue'; \
+         Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
+        archive_path.display(),
+        output_dir.display()
+    );
+    
+    let status = Command::new("powershell")
+        .args(&["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &extract_script])
+        .status()?;
+    
+    println!("cargo:warning=Extract status: {:?}", status);
+    if !status.success() {
+        return Err(format!("Failed to extract goclaw: {:?}", status).into());
+    }
+    
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn download_and_extract_unix(download_url: &str, archive_path: &Path, output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    println!("cargo:warning=Using curl to download");
+    
+    // 使用 curl 的重试选项
+    let status = Command::new("curl")
+        .args(&[
+            "-L",                           // 跟随重定向
+            "-f",                           // 失败时返回错误码
+            "--retry", "3",                 // 重试次数
+            "--retry-delay", "5",           // 重试延迟
+            "--connect-timeout", "30",      // 连接超时
+            "--max-time", "300",            // 最大下载时间
+            "-o", archive_path.to_str().unwrap(),
+            download_url
+        ])
+        .status()?;
+    
+    println!("cargo:warning=Download status: {:?}", status);
+    if !status.success() {
+        return Err(format!("Failed to download goclaw: {:?}", status).into());
+    }
+    
+    if let Ok(metadata) = std::fs::metadata(archive_path) {
+        println!("cargo:warning=Downloaded file size: {} bytes", metadata.len());
+        if metadata.len() < 1000 {
+            return Err("Downloaded file is too small, likely corrupted".into());
+        }
+    } else {
+        return Err("Failed to get file metadata".into());
+    }
+    
+    println!("cargo:warning=Extracting tar.gz file");
+    let status = Command::new("tar")
+        .args(&["-xzf", archive_path.to_str().unwrap(), "-C", output_dir.to_str().unwrap()])
+        .status()?;
+    
+    println!("cargo:warning=Extract status: {:?}", status);
+    if !status.success() {
+        return Err(format!("Failed to extract goclaw: {:?}", status).into());
+    }
+    
+    Ok(())
+}
+
 fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(dst)?;
     for entry in std::fs::read_dir(src)? {
