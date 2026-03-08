@@ -74,11 +74,19 @@ jobs:
           # Enable ARM64 architecture
           sudo dpkg --add-architecture arm64
           
-          # Configure apt to only use amd64 for default repos
-          sudo sed -i 's/^deb/deb [arch=amd64]/g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true
-          sudo sed -i 's/^deb/deb [arch=amd64]/g' /etc/apt/sources.list 2>/dev/null || true
+          # Remove all existing sources to avoid conflicts with security.ubuntu.com
+          sudo rm -f /etc/apt/sources.list.d/*.list
+          sudo rm -f /etc/apt/sources.list.d/*.sources
           
-          # Add ARM64 repository (ports.ubuntu.com hosts all ARM64 packages including security updates)
+          # Create new amd64-only sources (for cross-compilation tools)
+          cat << 'EOF' | sudo tee /etc/apt/sources.list
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+          deb [arch=amd64] http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+          EOF
+          
+          # Add ARM64 repository (ports.ubuntu.com hosts all ARM64 packages)
           cat << 'EOF' | sudo tee /etc/apt/sources.list.d/arm64.list
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse

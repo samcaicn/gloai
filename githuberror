@@ -1,19 +1,17 @@
-25s
-  404  Not Found [IP: 40.81.13.82 80]
-Ign:21 https://security.ubuntu.com/ubuntu noble-updates/universe arm64 Packages
-Ign:26 https://security.ubuntu.com/ubuntu noble-updates/restricted arm64 Packages
-Ign:29 https://security.ubuntu.com/ubuntu noble-updates/multiverse arm64 Packages
-Ign:31 https://security.ubuntu.com/ubuntu noble-backports/main arm64 Packages
-Err:31 https://security.ubuntu.com/ubuntu noble-backports/main arm64 Packages
-  404  Not Found [IP: 40.81.13.82 80]
-Ign:33 https://security.ubuntu.com/ubuntu noble-backports/universe arm64 Packages
-Ign:38 https://security.ubuntu.com/ubuntu noble-security/main arm64 Packages
+2s
+1s
+3s
+0s
+0s
+12s
+0s
+23s
 Err:38 https://security.ubuntu.com/ubuntu noble-security/main arm64 Packages
   404  Not Found [IP: 40.81.13.82 80]
 Ign:43 https://security.ubuntu.com/ubuntu noble-security/universe arm64 Packages
 Ign:47 https://security.ubuntu.com/ubuntu noble-security/restricted arm64 Packages
 Ign:51 https://security.ubuntu.com/ubuntu noble-security/multiverse arm64 Packages
-Fetched 60.5 MB in 15s (3936 kB/s)
+Fetched 52.8 MB in 15s (3470 kB/s)
 Reading package lists...
 E: Failed to fetch https://security.ubuntu.com/ubuntu/dists/noble/main/binary-arm64/Packages  404  Not Found [IP: 40.81.13.82 80]
 E: Failed to fetch https://security.ubuntu.com/ubuntu/dists/noble-updates/main/binary-arm64/Packages  404  Not Found [IP: 40.81.13.82 80]
