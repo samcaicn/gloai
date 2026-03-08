@@ -191,14 +191,17 @@ fi
     // 创建 resources 目录
     std::fs::create_dir_all(&resources_dir)?;
     
-    // 复制 goclaw 目录
+    // 复制 goclaw 目录（仅当存在时）
     if output_dir.exists() {
         // 如果目标目录存在，先删除
         if goclaw_dir.exists() {
             std::fs::remove_dir_all(&goclaw_dir)?;
         }
         // 复制目录
-        copy_dir_all(&output_dir, &goclaw_dir)?;
+        if let Err(e) = copy_dir_all(&output_dir, &goclaw_dir) {
+            println!("cargo:warning=Failed to copy goclaw directory: {}", e);
+            // 继续构建，不中断
+        }
     }
     
     println!("cargo:rerun-if-changed=build.rs");
