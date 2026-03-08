@@ -1,3 +1,10 @@
+// 全局变量类型声明
+declare global {
+  interface Window {
+    __CLEAR_LOADING?: () => void;
+  }
+}
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -33,6 +40,10 @@ const initApp = async () => {
       </React.StrictMode>
     );
     console.log('[main] App rendered successfully');
+    // 清除HTML中的加载指示器
+    if (window.__CLEAR_LOADING) {
+      window.__CLEAR_LOADING();
+    }
   } catch (error) {
     console.error('Failed to render the app:', error);
   }
