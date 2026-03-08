@@ -1,24 +1,26 @@
-7m 13s
-   Compiling rand v0.8.5
+7m 15s
+   Compiling rand_chacha v0.3.1
    Compiling futures-io v0.3.32
-   Compiling slab v0.4.12
+   Compiling rand v0.8.5
    Compiling stable_deref_trait v1.2.1
+   Compiling slab v0.4.12
    Compiling semver v1.0.27
-   Compiling getrandom v0.4.2
    Compiling siphasher v1.0.2
-   Compiling zerofrom v0.1.6
+   Compiling getrandom v0.4.2
    Compiling phf_shared v0.11.3
+   Compiling zerofrom v0.1.6
    Compiling thiserror v2.0.18
-   Compiling toml v0.8.2
    Compiling winnow v0.7.15
    Compiling yoke v0.8.1
+   Compiling toml v0.8.2
    Compiling futures-sink v0.3.32
-   Compiling system-deps v6.2.2
    Compiling phf_generator v0.11.3
    Compiling thiserror-impl v2.0.18
+   Compiling system-deps v6.2.2
    Compiling siphasher v0.3.11
-   Compiling zerovec v0.11.5
    Compiling glib-sys v0.18.1
+   Compiling gobject-sys v0.18.0
+   Compiling zerovec v0.11.5
 warning: glib-sys@0.18.1: 
 error: failed to run custom build command for `glib-sys v0.18.1`
 

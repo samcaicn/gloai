@@ -179,21 +179,31 @@ jobs:
           rustup target add x86_64-apple-darwin
           rustup target add aarch64-apple-darwin
 
+      - name: Setup cross-compilation environment (Linux ARM64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          echo "PKG_CONFIG=aarch64-linux-gnu-pkg-config" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
+          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++" >> $GITHUB_ENV
+          echo "AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "RUSTFLAGS=-C linker=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "SYSTEM_DEPS_GLIB_2_0_LIB=glib-2.0" >> $GITHUB_ENV
+          echo "SYSTEM_DEPS_GLIB_2_0_LIB_DIR=/usr/lib/aarch64-linux-gnu" >> $GITHUB_ENV
+          echo "SYSTEM_DEPS_GLIB_2_0_INCLUDE=/usr/include/glib-2.0:/usr/lib/aarch64-linux-gnu/glib-2.0/include" >> $GITHUB_ENV
+          echo "SYSTEM_DEPS_GTK_3_LIB=gtk-3" >> $GITHUB_ENV
+          echo "SYSTEM_DEPS_GTK_3_LIB_DIR=/usr/lib/aarch64-linux-gnu" >> $GITHUB_ENV
+          echo "SYSTEM_DEPS_GTK_3_INCLUDE=/usr/include/gtk-3.0" >> $GITHUB_ENV
+
       - name: Build
         run: ${{ matrix.build_cmd }}
         env:
           CI: true
           apiKey: ${{ secrets.apiKey || 'gk_981279d245764a1cb53738da' }}
           apiSecret: ${{ secrets.apiSecret || 'gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2' }}
-          PKG_CONFIG: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && 'aarch64-linux-gnu-pkg-config' || 'pkg-config' }}
-          PKG_CONFIG_ALLOW_CROSS: '1'
-          PKG_CONFIG_PATH: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && '/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig' || '' }}
-          PKG_CONFIG_LIBDIR: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && '/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig' || '' }}
-          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
-          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
-          AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-          RUSTFLAGS: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && '-C linker=aarch64-linux-gnu-gcc' || '' }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
