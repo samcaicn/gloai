@@ -182,11 +182,11 @@ impl GoClawManager {
         // 首先检查配置中指定的路径
         if let Some(path) = &config.binary_path {
             let path = Path::new(path);
-            if path.exists() {
+            if path.is_file() {
                 self.logger.lock().unwrap().info(&format!("Using configured binary path: {:?}", path));
                 return Ok(path.to_path_buf());
             } else {
-                self.logger.lock().unwrap().warn(&format!("Configured binary path does not exist: {:?}", path));
+                self.logger.lock().unwrap().warn(&format!("Configured binary path does not exist or is not a file: {:?}", path));
             }
         }
 
@@ -205,7 +205,7 @@ impl GoClawManager {
                         self.logger.lock().unwrap().info(&format!("Checking build directory: {:?}", goclaw_dir));
                         for name in &binary_names {
                             let path = goclaw_dir.join(name);
-                            if path.exists() {
+                            if path.is_file() {
                                 self.logger.lock().unwrap().info(&format!("Found binary in build directory: {:?}", path));
                                 return Ok(path);
                             }
@@ -228,8 +228,8 @@ impl GoClawManager {
                             self.logger.lock().unwrap().info(&format!("Resources/goclaw directory contents: {:?}", std::fs::read_dir(&goclaw_dir).unwrap_or_else(|_| std::fs::read_dir("/").unwrap()).collect::<Result<Vec<_>, _>>()));
                             for name in &binary_names {
                                 let path = goclaw_dir.join(name);
-                                self.logger.lock().unwrap().info(&format!("Checking binary path: {:?}, exists: {:?}", path, path.exists()));
-                                if path.exists() {
+                                self.logger.lock().unwrap().info(&format!("Checking binary path: {:?}, is_file: {:?}", path, path.is_file()));
+                                if path.is_file() {
                                     self.logger.lock().unwrap().info(&format!("Found binary in Resources/goclaw directory: {:?}", path));
                                     return Ok(path);
                                 }
@@ -248,7 +248,7 @@ impl GoClawManager {
                 // 检查当前目录
                 for name in &binary_names {
                     let path = dir.join(name);
-                    if path.exists() {
+                    if path.is_file() {
                         self.logger.lock().unwrap().info(&format!("Found binary in executable directory: {:?}", path));
                         return Ok(path);
                     }
@@ -260,7 +260,7 @@ impl GoClawManager {
                     self.logger.lock().unwrap().info(&format!("Checking goclaw subdirectory: {:?}", goclaw_dir));
                     for name in &binary_names {
                         let path = goclaw_dir.join(name);
-                        if path.exists() {
+                        if path.is_file() {
                             self.logger.lock().unwrap().info(&format!("Found binary in goclaw subdirectory: {:?}", path));
                             return Ok(path);
                         }
@@ -272,7 +272,7 @@ impl GoClawManager {
                     self.logger.lock().unwrap().info(&format!("Checking parent directory: {:?}", parent_dir));
                     for name in &binary_names {
                         let path = parent_dir.join(name);
-                        if path.exists() {
+                        if path.is_file() {
                             self.logger.lock().unwrap().info(&format!("Found binary in parent directory: {:?}", path));
                             return Ok(path);
                         }
@@ -284,7 +284,7 @@ impl GoClawManager {
                         self.logger.lock().unwrap().info(&format!("Checking Resources directory: {:?}", resources_dir));
                         for name in &binary_names {
                             let path = resources_dir.join(name);
-                            if path.exists() {
+                            if path.is_file() {
                                 self.logger.lock().unwrap().info(&format!("Found binary in Resources directory: {:?}", path));
                                 return Ok(path);
                             }
@@ -296,7 +296,7 @@ impl GoClawManager {
                             self.logger.lock().unwrap().info(&format!("Checking Resources/goclaw directory: {:?}", resources_goclaw_dir));
                             for name in &binary_names {
                                 let path = resources_goclaw_dir.join(name);
-                                if path.exists() {
+                                if path.is_file() {
                                     self.logger.lock().unwrap().info(&format!("Found binary in Resources/goclaw directory: {:?}", path));
                                     return Ok(path);
                                 }
@@ -309,7 +309,7 @@ impl GoClawManager {
                         self.logger.lock().unwrap().info(&format!("Checking grandparent directory: {:?}", grandparent_dir));
                         for name in &binary_names {
                             let path = grandparent_dir.join(name);
-                            if path.exists() {
+                            if path.is_file() {
                                 self.logger.lock().unwrap().info(&format!("Found binary in grandparent directory: {:?}", path));
                                 return Ok(path);
                             }
@@ -321,7 +321,7 @@ impl GoClawManager {
                             self.logger.lock().unwrap().info(&format!("Checking grandparent/goclaw directory: {:?}", grandparent_goclaw_dir));
                             for name in &binary_names {
                                 let path = grandparent_goclaw_dir.join(name);
-                                if path.exists() {
+                                if path.is_file() {
                                     self.logger.lock().unwrap().info(&format!("Found binary in grandparent/goclaw directory: {:?}", path));
                                     return Ok(path);
                                 }
@@ -334,7 +334,7 @@ impl GoClawManager {
                             self.logger.lock().unwrap().info(&format!("Checking grandparent/Resources directory: {:?}", grandparent_resources_dir));
                             for name in &binary_names {
                                 let path = grandparent_resources_dir.join(name);
-                                if path.exists() {
+                                if path.is_file() {
                                     self.logger.lock().unwrap().info(&format!("Found binary in grandparent/Resources directory: {:?}", path));
                                     return Ok(path);
                                 }
@@ -346,7 +346,7 @@ impl GoClawManager {
                                 self.logger.lock().unwrap().info(&format!("Checking grandparent/Resources/goclaw directory: {:?}", grandparent_resources_goclaw_dir));
                                 for name in &binary_names {
                                     let path = grandparent_resources_goclaw_dir.join(name);
-                                    if path.exists() {
+                                    if path.is_file() {
                                         self.logger.lock().unwrap().info(&format!("Found binary in grandparent/Resources/goclaw directory: {:?}", path));
                                         return Ok(path);
                                     }
@@ -376,7 +376,7 @@ impl GoClawManager {
                 self.logger.lock().unwrap().info(&format!("Checking directory: {:?}", base_dir));
                 for name in &binary_names {
                     let path = base_dir.join(name);
-                    if path.exists() {
+                    if path.is_file() {
                         self.logger.lock().unwrap().info(&format!("Found binary: {:?}", path));
                         return Ok(path);
                     }
@@ -388,7 +388,7 @@ impl GoClawManager {
                     self.logger.lock().unwrap().info(&format!("Checking darwin subdirectory: {:?}", darwin_dir));
                     for name in &binary_names {
                         let path = darwin_dir.join(name);
-                        if path.exists() {
+                        if path.is_file() {
                             self.logger.lock().unwrap().info(&format!("Found binary in darwin subdirectory: {:?}", path));
                             return Ok(path);
                         }
@@ -408,7 +408,7 @@ impl GoClawManager {
                 PathBuf::from("/opt/homebrew/bin/goclaw"),
             ];
             for path in app_paths {
-                if path.exists() {
+                if path.is_file() {
                     self.logger.lock().unwrap().info(&format!("Found binary in system path: {:?}", path));
                     return Ok(path);
                 }
