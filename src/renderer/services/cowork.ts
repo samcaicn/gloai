@@ -145,7 +145,7 @@ class CoworkService {
       console.error('Failed to load sessions:', error);
       // 尝试使用数据库 API
       try {
-        const dbSessions = await tauriApi.invoke('db_cowork_list_sessions');
+        const dbSessions = await tauriApi.invoke('cowork_list_sessions');
         if (dbSessions && Array.isArray(dbSessions)) {
           store.dispatch(setSessions(dbSessions));
         }
@@ -209,8 +209,7 @@ class CoworkService {
         setTimeout(async () => {
           try {
             loggerService.info(`Saving session ${sessionId} to database`);
-            await tauriApi.invoke('db_cowork_create_session', {
-              id: sessionId,
+            await tauriApi.invoke('cowork_create_session', {
               title: session.title,
             });
             loggerService.info(`Session ${sessionId} saved to database successfully`);
@@ -342,7 +341,7 @@ class CoworkService {
       if (isTauriReady()) {
         try {
           loggerService.info(`Saving message ${messageId} to database for session ${options.sessionId}`);
-          await tauriApi.invoke('db_cowork_add_message', {
+          await tauriApi.invoke('cowork_add_message', {
             id: messageId,
             sessionId: options.sessionId,
             msg_type: 'user',
@@ -478,7 +477,7 @@ class CoworkService {
       if (isTauriReady()) {
         // 从数据库中删除
         try {
-          await tauriApi.invoke('db_cowork_delete_session', {
+          await tauriApi.invoke('cowork_delete_session', {
             id: sessionId,
           });
         } catch (dbError) {
@@ -508,7 +507,7 @@ class CoworkService {
       if (isTauriReady()) {
         // 更新数据库
         try {
-          await tauriApi.invoke('db_cowork_update_session', {
+          await tauriApi.invoke('cowork_update_session', {
             id: sessionId,
             pinned: pinned,
           });
@@ -543,7 +542,7 @@ class CoworkService {
       if (isTauriReady()) {
         // 更新数据库
         try {
-          await tauriApi.invoke('db_cowork_update_session', {
+          await tauriApi.invoke('cowork_update_session', {
             id: sessionId,
             title: normalizedTitle,
           });
