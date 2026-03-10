@@ -5,8 +5,6 @@ import remarkGfm from 'remark-gfm';
 import { ClipboardDocumentIcon, CheckIcon, DocumentIcon, FolderIcon } from '@heroicons/react/24/outline';
 import { i18nService } from '../services/i18n';
 
-const CODE_BLOCK_LINE_LIMIT = 200;
-const CODE_BLOCK_CHAR_LIMIT = 20000;
 const SAFE_URL_PROTOCOLS = new Set(['http', 'https', 'mailto', 'tel', 'file']);
 
 const encodeFileUrl = (url: string): string => {
