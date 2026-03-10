@@ -7,31 +7,7 @@ import { i18nService } from '../services/i18n';
 
 const CODE_BLOCK_LINE_LIMIT = 200;
 const CODE_BLOCK_CHAR_LIMIT = 20000;
-const SYNTAX_HIGHLIGHTER_STYLE = {
-  margin: 0,
-  borderRadius: 0,
-  background: '#282c34',
-};
 const SAFE_URL_PROTOCOLS = new Set(['http', 'https', 'mailto', 'tel', 'file']);
-
-let SyntaxHighlighter: any = null;
-let oneDark: any = null;
-
-const loadSyntaxHighlighter = async () => {
-  if (SyntaxHighlighter && oneDark) return true;
-  try {
-    const [highlighterModule, styleModule] = await Promise.all([
-      import('react-syntax-highlighter').then(m => m.Prism),
-      import('react-syntax-highlighter/dist/esm/styles/prism').then(m => m.oneDark),
-    ]);
-    SyntaxHighlighter = highlighterModule;
-    oneDark = styleModule;
-    return true;
-  } catch (error) {
-    console.error('Failed to load syntax highlighter:', error);
-    return false;
-  }
-};
 
 const encodeFileUrl = (url: string): string => {
   const encoded = encodeURI(url);
@@ -177,18 +153,8 @@ const CodeBlock: React.FC<any> = ({ node, className, children, ...props }) => {
       : !match;
   const codeText = Array.isArray(children) ? children.join('') : String(children);
   const trimmedCodeText = codeText.replace(/\n$/, '');
-  const shouldHighlight = !isInline && match
-    && trimmedCodeText.length <= CODE_BLOCK_CHAR_LIMIT
-    && trimmedCodeText.split('\n').length <= CODE_BLOCK_LINE_LIMIT;
   const [isCopied, setIsCopied] = useState(false);
-  const [highlighterReady, setHighlighterReady] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (shouldHighlight) {
-      loadSyntaxHighlighter().then(setHighlighterReady);
-    }
-  }, [shouldHighlight]);
 
   useEffect(() => () => {
     if (copyTimeoutRef.current != null) {
@@ -255,22 +221,11 @@ const CodeBlock: React.FC<any> = ({ node, className, children, ...props }) => {
             )}
           </button>
         </div>
-        {shouldHighlight && highlighterReady && SyntaxHighlighter ? (
-          <SyntaxHighlighter
-            style={oneDark}
-            language={match[1]}
-            PreTag="div"
-            customStyle={SYNTAX_HIGHLIGHTER_STYLE}
-          >
-            {trimmedCodeText}
-          </SyntaxHighlighter>
-        ) : (
           <div className="m-0 overflow-x-auto bg-[#282c34] text-[13px] leading-6">
             <code className="block px-4 py-3 font-mono text-claude-darkText whitespace-pre">
               {trimmedCodeText}
             </code>
           </div>
-        )}
       </div>
     );
   }
