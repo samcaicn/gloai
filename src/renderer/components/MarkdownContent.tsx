@@ -2,10 +2,6 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown';
 // @ts-ignore
 import remarkGfm from 'remark-gfm';
-// @ts-ignore
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-// @ts-ignore
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ClipboardDocumentIcon, CheckIcon, DocumentIcon, FolderIcon } from '@heroicons/react/24/outline';
 import { i18nService } from '../services/i18n';
 
@@ -17,6 +13,25 @@ const SYNTAX_HIGHLIGHTER_STYLE = {
   background: '#282c34',
 };
 const SAFE_URL_PROTOCOLS = new Set(['http', 'https', 'mailto', 'tel', 'file']);
+
+let SyntaxHighlighter: any = null;
+let oneDark: any = null;
+
+const loadSyntaxHighlighter = async () => {
+  if (SyntaxHighlighter && oneDark) return true;
+  try {
+    const [highlighterModule, styleModule] = await Promise.all([
+      import('react-syntax-highlighter').then(m => m.Prism),
+      import('react-syntax-highlighter/dist/esm/styles/prism').then(m => m.oneDark),
+    ]);
+    SyntaxHighlighter = highlighterModule;
+    oneDark = styleModule;
+    return true;
+  } catch (error) {
+    console.error('Failed to load syntax highlighter:', error);
+    return false;
+  }
+};
 
 const encodeFileUrl = (url: string): string => {
   const encoded = encodeURI(url);
@@ -166,7 +181,14 @@ const CodeBlock: React.FC<any> = ({ node, className, children, ...props }) => {
     && trimmedCodeText.length <= CODE_BLOCK_CHAR_LIMIT
     && trimmedCodeText.split('\n').length <= CODE_BLOCK_LINE_LIMIT;
   const [isCopied, setIsCopied] = useState(false);
+  const [highlighterReady, setHighlighterReady] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (shouldHighlight) {
+      loadSyntaxHighlighter().then(setHighlighterReady);
+    }
+  }, [shouldHighlight]);
 
   useEffect(() => () => {
     if (copyTimeoutRef.current != null) {
@@ -233,7 +255,7 @@ const CodeBlock: React.FC<any> = ({ node, className, children, ...props }) => {
             )}
           </button>
         </div>
-        {shouldHighlight ? (
+        {shouldHighlight && highlighterReady && SyntaxHighlighter ? (
           <SyntaxHighlighter
             style={oneDark}
             language={match[1]}
