@@ -20,7 +20,6 @@
     "build:linux": "tauri build --target x86_64-unknown-linux-gnu"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.50",
     "@headlessui/react": "^1.7.18",
     "@heroicons/react": "^2.1.1",
     "@reduxjs/toolkit": "^2.2.1",
