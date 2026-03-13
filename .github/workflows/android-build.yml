@@ -25,6 +25,19 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+
+      - name: Download Gradle Wrapper
+        working-directory: ./src-tauri/gen/android
+        run: |
+          mkdir -p gradle/wrapper
+          curl -L -o gradle/wrapper/gradle-wrapper.jar \
+            https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar
+          ls -la gradle/wrapper/
+
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -36,11 +49,12 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Grant execute permission for gradlew
-        run: chmod +x src-tauri/gen/android/gradlew
+        working-directory: ./src-tauri/gen/android
+        run: chmod +x gradlew
 
       - name: Build APK with Gradle
         working-directory: ./src-tauri/gen/android
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Sign APK (Debug)
         if: github.event_name == 'pull_request'
