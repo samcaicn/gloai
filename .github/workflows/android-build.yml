@@ -38,41 +38,33 @@ jobs:
             https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar
           ls -la gradle/wrapper/
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Grant execute permission for gradlew
+      - name: Make gradlew executable
         working-directory: ./src-tauri/gen/android
         run: chmod +x gradlew
 
-      - name: Build APK with Gradle
+      - name: Check Gradle version
         working-directory: ./src-tauri/gen/android
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew --version
 
-      - name: Sign APK (Debug)
-        if: github.event_name == 'pull_request'
-        uses: r0adkll/sign-android-release@v1
-        with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY || '' }}
-          alias: ${{ secrets.ALIAS || 'ggclaw' }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD || 'ggclaw123' }}
-          keyPassword: ${{ secrets.KEY_PASSWORD || 'ggclaw123' }}
-        continue-on-error: true
+      - name: Build Debug APK with Gradle
+        working-directory: ./src-tauri/gen/android
+        run: ./gradlew assembleDebug --info --stacktrace
 
-      - name: Upload APK
+      - name: List build outputs
+        if: always()
+        working-directory: ./src-tauri/gen/android
+        run: |
+          echo "=== Build outputs ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
+          echo "=== Build directory ==="
+          ls -la app/build/outputs/apk/ 2>/dev/null || echo "No outputs directory"
+
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: ggclaw-android-apk
+          name: ggclaw-android-debug-apk
           path: |
-            src-tauri/gen/android/app/build/outputs/apk/release/*.apk
             src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
           if-no-files-found: warn
