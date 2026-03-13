@@ -25,6 +25,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Android SDK licenses
+        run: |
+          yes | sdkmanager --licenses || true
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -42,22 +46,32 @@ jobs:
         working-directory: ./src-tauri/gen/android
         run: chmod +x gradlew
 
-      - name: Check Gradle version
+      - name: Check project structure
         working-directory: ./src-tauri/gen/android
-        run: ./gradlew --version
+        run: |
+          echo "=== Project structure ==="
+          ls -la
+          echo "=== App directory ==="
+          ls -la app/
+          echo "=== Build.gradle exists ==="
+          test -f build.gradle.kts && echo "Root build.gradle.kts exists" || echo "Root build.gradle.kts missing"
+          test -f app/build.gradle.kts && echo "App build.gradle.kts exists" || echo "App build.gradle.kts missing"
 
       - name: Build Debug APK with Gradle
         working-directory: ./src-tauri/gen/android
-        run: ./gradlew assembleDebug --info --stacktrace
+        run: |
+          ./gradlew assembleDebug --stacktrace 2>&1 | tee build.log
+        continue-on-error: true
 
-      - name: List build outputs
-        if: always()
+      - name: Check build result
         working-directory: ./src-tauri/gen/android
         run: |
           echo "=== Build outputs ==="
           find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
           echo "=== Build directory ==="
           ls -la app/build/outputs/apk/ 2>/dev/null || echo "No outputs directory"
+          echo "=== Build log tail ==="
+          tail -100 build.log 2>/dev/null || echo "No build log"
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -70,9 +84,11 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload Build Reports
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-reports
-          path: src-tauri/gen/android/app/build/reports/
+          path: |
+            src-tauri/gen/android/app/build/reports/
+            src-tauri/gen/android/build.log
           retention-days: 7
