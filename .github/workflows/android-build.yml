@@ -7,10 +7,15 @@ on:
     branches: [ main, tauri-v2, clawadmin ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     steps:
       - name: Checkout code
@@ -24,9 +29,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          build-tools: 34.0.0
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -45,14 +47,10 @@ jobs:
         working-directory: ./src-tauri/gen/android
         run: chmod +x gradlew
 
-      - name: Validate Gradle wrapper
-        working-directory: ./src-tauri/gen/android
-        run: ./gradlew wrapper --validate
-
-      - name: Clean and Build Debug APK
+      - name: Build Debug APK
         working-directory: ./src-tauri/gen/android
         run: |
-          ./gradlew clean assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
         continue-on-error: true
 
       - name: Check build outputs
@@ -62,8 +60,6 @@ jobs:
           find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
           echo "=== Build directory ==="
           ls -la app/build/outputs/apk/ 2>/dev/null || echo "No outputs directory"
-          echo "=== Build log (last 200 lines) ==="
-          tail -200 build.log 2>/dev/null || echo "No build log"
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -79,7 +75,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-reports
+          name: android-build-reports
           path: |
             src-tauri/gen/android/app/build/reports/
             src-tauri/gen/android/build.log
