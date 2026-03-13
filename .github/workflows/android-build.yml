@@ -24,10 +24,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Accept Android SDK licenses
-        run: |
-          yes | sdkmanager --licenses || true
+        with:
+          api-level: 34
+          build-tools: 34.0.0
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -46,32 +45,25 @@ jobs:
         working-directory: ./src-tauri/gen/android
         run: chmod +x gradlew
 
-      - name: Check project structure
+      - name: Validate Gradle wrapper
         working-directory: ./src-tauri/gen/android
-        run: |
-          echo "=== Project structure ==="
-          ls -la
-          echo "=== App directory ==="
-          ls -la app/
-          echo "=== Build.gradle exists ==="
-          test -f build.gradle.kts && echo "Root build.gradle.kts exists" || echo "Root build.gradle.kts missing"
-          test -f app/build.gradle.kts && echo "App build.gradle.kts exists" || echo "App build.gradle.kts missing"
+        run: ./gradlew wrapper --validate
 
-      - name: Build Debug APK with Gradle
+      - name: Clean and Build Debug APK
         working-directory: ./src-tauri/gen/android
         run: |
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee build.log
+          ./gradlew clean assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
         continue-on-error: true
 
-      - name: Check build result
+      - name: Check build outputs
         working-directory: ./src-tauri/gen/android
         run: |
           echo "=== Build outputs ==="
           find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
           echo "=== Build directory ==="
           ls -la app/build/outputs/apk/ 2>/dev/null || echo "No outputs directory"
-          echo "=== Build log tail ==="
-          tail -100 build.log 2>/dev/null || echo "No build log"
+          echo "=== Build log (last 200 lines) ==="
+          tail -200 build.log 2>/dev/null || echo "No build log"
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4

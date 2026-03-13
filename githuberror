@@ -1,61 +1,17 @@
-7m 15s
-   Compiling rand_chacha v0.3.1
-   Compiling futures-io v0.3.32
-   Compiling rand v0.8.5
-   Compiling stable_deref_trait v1.2.1
-   Compiling slab v0.4.12
-   Compiling semver v1.0.27
-   Compiling siphasher v1.0.2
-   Compiling getrandom v0.4.2
-   Compiling phf_shared v0.11.3
-   Compiling zerofrom v0.1.6
-   Compiling thiserror v2.0.18
-   Compiling winnow v0.7.15
-   Compiling yoke v0.8.1
-   Compiling toml v0.8.2
-   Compiling futures-sink v0.3.32
-   Compiling phf_generator v0.11.3
-   Compiling thiserror-impl v2.0.18
-   Compiling system-deps v6.2.2
-   Compiling siphasher v0.3.11
-   Compiling glib-sys v0.18.1
-   Compiling gobject-sys v0.18.0
-   Compiling zerovec v0.11.5
-warning: glib-sys@0.18.1: 
-error: failed to run custom build command for `glib-sys v0.18.1`
 
-Caused by:
-  process didn't exit successfully: `/home/runner/work/gloai/gloai/src-tauri/target/release/build/glib-sys-b9667ceb3a045480/build-script-build` (exit status: 1)
-  --- stdout
-  cargo:rerun-if-env-changed=GLIB_2.0_NO_PKG_CONFIG
-  cargo:rerun-if-env-changed=PKG_CONFIG_x86_64-unknown-linux-gnu
-  cargo:rerun-if-env-changed=PKG_CONFIG_x86_64_unknown_linux_gnu
-  cargo:rerun-if-env-changed=HOST_PKG_CONFIG
-  cargo:rerun-if-env-changed=PKG_CONFIG
-  cargo:rerun-if-env-changed=PKG_CONFIG_PATH_x86_64-unknown-linux-gnu
-  cargo:rerun-if-env-changed=PKG_CONFIG_PATH_x86_64_unknown_linux_gnu
-  cargo:rerun-if-env-changed=HOST_PKG_CONFIG_PATH
-  cargo:rerun-if-env-changed=PKG_CONFIG_PATH
-  cargo:rerun-if-env-changed=PKG_CONFIG_LIBDIR_x86_64-unknown-linux-gnu
-  cargo:rerun-if-env-changed=PKG_CONFIG_LIBDIR_x86_64_unknown_linux_gnu
-  cargo:rerun-if-env-changed=HOST_PKG_CONFIG_LIBDIR
-  cargo:rerun-if-env-changed=PKG_CONFIG_LIBDIR
-  cargo:rerun-if-env-changed=PKG_CONFIG_SYSROOT_DIR_x86_64-unknown-linux-gnu
-  cargo:rerun-if-env-changed=PKG_CONFIG_SYSROOT_DIR_x86_64_unknown_linux_gnu
-  cargo:rerun-if-env-changed=HOST_PKG_CONFIG_SYSROOT_DIR
-  cargo:rerun-if-env-changed=PKG_CONFIG_SYSROOT_DIR
-  cargo:warning=
-  pkg-config exited with status code 1
-  > PKG_CONFIG_PATH= PKG_CONFIG_LIBDIR= PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1 pkg-config --libs --cflags glib-2.0 'glib-2.0 >= 2.70'
+Fix: Improve Android build with better debugging and use assembleDebug #250
+All jobs
+Run details
+Triggered via push 36 minutes ago
+@samcaicnsamcaicn
+pushed
+ 115d954
+main
+Status
+Failure
+Total duration
+5m 10s
+Artifacts
+–
 
-  The system library `glib-2.0` required by crate `glib-sys` was not found.
-  The file `glib-2.0.pc` needs to be installed and the PKG_CONFIG_PATH environment variable must contain its parent directory.
-  PKG_CONFIG_PATH contains the following:
-      - 
 
-  HINT: you may need to install a package such as glib-2.0, glib-2.0-dev or glib-2.0-devel.
-
-warning: build failed, waiting for other jobs to finish...
-failed to build app: failed to build app
-       Error failed to build app: failed to build app
-Error: Process completed with exit code 1.
