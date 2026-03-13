@@ -7,6 +7,8 @@
   },
   "beforePack": "./scripts/electron-builder-hooks.cjs",
   "afterPack": "./scripts/electron-builder-hooks.cjs",
+  "npmRebuild": false,
+  "nodeGypRebuild": false,
   "files": [
     "sandbox/agent-runner/AGENT_SYSTEM_PROMPT.md",
     {
