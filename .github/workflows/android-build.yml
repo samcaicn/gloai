@@ -3,8 +3,18 @@ name: Build Android APK
 on:
   push:
     branches: [ main, tauri-v2, clawadmin, android ]
+    paths:
+      - 'src-tauri/gen/android/**'
+      - 'src-tauri/goclaw-android/**'
+      - '.github/workflows/android-build.yml'
+      - '.github/workflows/build-goclaw-android.yml'
   pull_request:
     branches: [ main, tauri-v2, clawadmin ]
+    paths:
+      - 'src-tauri/gen/android/**'
+      - 'src-tauri/goclaw-android/**'
+      - '.github/workflows/android-build.yml'
+      - '.github/workflows/build-goclaw-android.yml'
   workflow_dispatch:
 
 concurrency:
