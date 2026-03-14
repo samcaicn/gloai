@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
         // 添加 JavaScript 接口
         webView.addJavascriptInterface(GoClawInterface(), "GoClaw")
 
-        // Load the app URL
+        // Load the app URL with timestamp to trigger rebuild
         webView.loadUrl("https://clawadmin.tuptup.top")
     }
 
