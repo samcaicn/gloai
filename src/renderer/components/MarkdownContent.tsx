@@ -348,91 +348,91 @@ const findFallbackPathFromContext = (
 const createMarkdownComponents = (
   resolveLocalFilePath?: (href: string, text: string) => string | null
 ) => ({
-  p: ({ node, className, children, ...props }: any) => (
+  p: ({ children, ...props }: any) => (
     <p className="my-1 first:mt-0 last:mb-0 leading-6 dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </p>
   ),
-  strong: ({ node, className, children, ...props }: any) => (
+  strong: ({ children, ...props }: any) => (
     <strong className="font-semibold dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </strong>
   ),
-  h1: ({ node, className, children, ...props }: any) => (
+  h1: ({ children, ...props }: any) => (
     <h1 className="text-2xl font-semibold mt-6 mb-3 dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </h1>
   ),
-  h2: ({ node, className, children, ...props }: any) => (
+  h2: ({ children, ...props }: any) => (
     <h2 className="text-xl font-semibold mt-5 mb-2 dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </h2>
   ),
-  h3: ({ node, className, children, ...props }: any) => (
+  h3: ({ children, ...props }: any) => (
     <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </h3>
   ),
-  ul: ({ node, className, children, ...props }: any) => (
+  ul: ({ children, ...props }: any) => (
     <ul className="list-disc pl-5 my-1.5 dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </ul>
   ),
-  ol: ({ node, className, children, ...props }: any) => (
+  ol: ({ children, ...props }: any) => (
     <ol className="list-decimal pl-6 my-1.5 dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </ol>
   ),
-  li: ({ node, className, children, ...props }: any) => (
+  li: ({ children, ...props }: any) => (
     <li className="my-0.5 leading-6 dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </li>
   ),
-  blockquote: ({ node, className, children, ...props }: any) => (
+  blockquote: ({ children, ...props }: any) => (
     <blockquote className="border-l-4 border-claude-accent pl-4 py-1 my-2 dark:bg-claude-darkSurface/30 bg-claude-surfaceHover/30 rounded-r-lg dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </blockquote>
   ),
   code: CodeBlock,
-  table: ({ node, className, children, ...props }: any) => (
+  table: ({ children, ...props }: any) => (
     <div className="my-4 overflow-x-auto rounded-xl border dark:border-claude-darkBorder border-claude-border">
       <table className="border-collapse w-full" {...props}>
         {children}
       </table>
     </div>
   ),
-  thead: ({ node, className, children, ...props }: any) => (
+  thead: ({ children, ...props }: any) => (
     <thead className="dark:bg-claude-darkSurface bg-claude-surfaceHover" {...props}>
       {children}
     </thead>
   ),
-  tbody: ({ node, className, children, ...props }: any) => (
+  tbody: ({ children, ...props }: any) => (
     <tbody className="divide-y dark:divide-claude-darkBorder divide-claude-border" {...props}>
       {children}
     </tbody>
   ),
-  tr: ({ node, className, children, ...props }: any) => (
+  tr: ({ children, ...props }: any) => (
     <tr className="divide-x dark:divide-claude-darkBorder divide-claude-border" {...props}>
       {children}
     </tr>
   ),
-  th: ({ node, className, children, ...props }: any) => (
+  th: ({ children, ...props }: any) => (
     <th className="px-4 py-2 text-left font-semibold dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </th>
   ),
-  td: ({ node, className, children, ...props }: any) => (
+  td: ({ children, ...props }: any) => (
     <td className="px-4 py-2 dark:text-claude-darkText text-claude-text" {...props}>
       {children}
     </td>
   ),
-  img: ({ node, className, ...props }: any) => (
+  img: ({ ...props }: any) => (
     <img className="max-w-full h-auto rounded-xl my-4" {...props} />
   ),
-  hr: ({ node, ...props }: any) => (
+  hr: ({ ...props }: any) => (
     <hr className="my-5 dark:border-claude-darkBorder border-claude-border" {...props} />
   ),
-  a: ({ node, href, className, children, ...props }: any) => {
+  a: ({ href, children, ...props }: any) => {
     if (typeof href === 'string' && href.startsWith('#artifact-')) {
       return null;
     }
@@ -548,7 +548,7 @@ const MarkdownContent: React.FC<MarkdownContentProps> = ({
   return (
     <div className={`markdown-content text-[15px] leading-6 ${className}`}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm as any]}
         urlTransform={safeUrlTransform}
         components={components}
       >
