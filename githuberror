@@ -1,17 +1,59 @@
+1m 16s
+  OPENSSL_LIB_DIR unset
+  cargo:rerun-if-env-changed=AARCH64_LINUX_ANDROID_OPENSSL_INCLUDE_DIR
+  AARCH64_LINUX_ANDROID_OPENSSL_INCLUDE_DIR unset
+  cargo:rerun-if-env-changed=OPENSSL_INCLUDE_DIR
+  OPENSSL_INCLUDE_DIR unset
+  cargo:rerun-if-env-changed=AARCH64_LINUX_ANDROID_OPENSSL_DIR
+  AARCH64_LINUX_ANDROID_OPENSSL_DIR unset
+  cargo:rerun-if-env-changed=OPENSSL_DIR
+  OPENSSL_DIR unset
+  cargo:rerun-if-env-changed=OPENSSL_NO_PKG_CONFIG
+  cargo:rerun-if-env-changed=PKG_CONFIG_ALLOW_CROSS_aarch64-linux-android
+  cargo:rerun-if-env-changed=PKG_CONFIG_ALLOW_CROSS_aarch64_linux_android
+  cargo:rerun-if-env-changed=TARGET_PKG_CONFIG_ALLOW_CROSS
+  cargo:rerun-if-env-changed=PKG_CONFIG_ALLOW_CROSS
+  cargo:rerun-if-env-changed=PKG_CONFIG_aarch64-linux-android
+  cargo:rerun-if-env-changed=PKG_CONFIG_aarch64_linux_android
+  cargo:rerun-if-env-changed=TARGET_PKG_CONFIG
+  cargo:rerun-if-env-changed=PKG_CONFIG
+  cargo:rerun-if-env-changed=PKG_CONFIG_SYSROOT_DIR_aarch64-linux-android
+  cargo:rerun-if-env-changed=PKG_CONFIG_SYSROOT_DIR_aarch64_linux_android
+  cargo:rerun-if-env-changed=TARGET_PKG_CONFIG_SYSROOT_DIR
+  cargo:rerun-if-env-changed=PKG_CONFIG_SYSROOT_DIR
 
-Fix: Improve Android build with better debugging and use assembleDebug #250
-All jobs
-Run details
-Triggered via push 36 minutes ago
-@samcaicnsamcaicn
-pushed
- 115d954
-main
-Status
-Failure
-Total duration
-5m 10s
-Artifacts
-–
+
+  Could not find openssl via pkg-config:
+  pkg-config has not been configured to support cross-compilation.
+
+  Install a sysroot for the target platform and configure it via
+  PKG_CONFIG_SYSROOT_DIR and PKG_CONFIG_PATH, or install a
+  cross-compiling wrapper for pkg-config and set it via
+  PKG_CONFIG environment variable.
+
+  cargo:warning=Could not find directory of OpenSSL installation, and this `-sys` crate cannot proceed without this knowledge. If OpenSSL is installed and this crate had trouble finding it,  you can set the `OPENSSL_DIR` environment variable for the compilation process. See stderr section below for further information.
+
+  --- stderr
 
 
+  Could not find directory of OpenSSL installation, and this `-sys` crate cannot
+  proceed without this knowledge. If OpenSSL is installed and this crate had
+  trouble finding it,  you can set the `OPENSSL_DIR` environment variable for the
+  compilation process.
+
+  Make sure you also have the development packages of openssl installed.
+  For example, `libssl-dev` on Ubuntu or `openssl-devel` on Fedora.
+
+  If you're in a situation where you think the directory *should* be found
+  automatically, please open a bug at https://github.com/rust-openssl/rust-openssl
+  and include information about your system as well as this message.
+
+  $HOST = x86_64-unknown-linux-gnu
+  $TARGET = aarch64-linux-android
+  openssl-sys = 0.9.112
+
+
+warning: build failed, waiting for other jobs to finish...
+failed to build Android app: `Failed to run `cargo build`: command ["cargo", "build", "--package", "ggclaw", "--manifest-path", "/home/runner/work/gloai/gloai/src-tauri/Cargo.toml", "--target", "aarch64-linux-android", "--features", "tauri/custom-protocol tauri/custom-protocol", "--lib"] exited with code 101
+       Error failed to build Android app: `Failed to run `cargo build`: command ["cargo", "build", "--package", "ggclaw", "--manifest-path", "/home/runner/work/gloai/gloai/src-tauri/Cargo.toml", "--target", "aarch64-linux-android", "--features", "tauri/custom-protocol tauri/custom-protocol", "--lib"] exited with code 101
+Error: Process completed with exit code 1.
