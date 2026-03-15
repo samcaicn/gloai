@@ -1,4 +1,6 @@
+#[cfg(not(target_os = "android"))]
 use tauri::AppHandle;
+#[cfg(not(target_os = "android"))]
 use tauri_plugin_dialog::DialogExt;
 
 #[derive(serde::Serialize)]
@@ -8,14 +10,13 @@ pub struct DialogResult {
 }
 
 #[tauri::command]
+#[cfg(not(target_os = "android"))]
 pub async fn dialog_select_directory(app: AppHandle) -> Result<DialogResult, String> {
     println!("[dialog_select_directory] Called");
 
-    // 在 macOS 上，我们需要在主线程上运行对话框
     let path = tokio::task::spawn_blocking(move || {
         println!("[dialog_select_directory] Opening folder picker in blocking thread...");
 
-        // 使用 std::sync::mpsc 来同步等待结果
         let (tx, rx) = std::sync::mpsc::channel();
 
         app.dialog().file().pick_folder(move |path| {
@@ -26,7 +27,6 @@ pub async fn dialog_select_directory(app: AppHandle) -> Result<DialogResult, Str
             let _ = tx.send(path);
         });
 
-        // 等待结果，设置超时
         match rx.recv_timeout(std::time::Duration::from_secs(60)) {
             Ok(path) => {
                 println!("[dialog_select_directory] Got path: {:?}", path);
@@ -48,6 +48,7 @@ pub async fn dialog_select_directory(app: AppHandle) -> Result<DialogResult, Str
 }
 
 #[tauri::command]
+#[cfg(not(target_os = "android"))]
 pub async fn dialog_select_file(
     app: AppHandle,
     title: Option<String>,
@@ -102,5 +103,26 @@ pub async fn dialog_select_file(
     Ok(DialogResult {
         success: path.is_some(),
         path: path.map(|p| p.to_string()),
+    })
+}
+
+#[tauri::command]
+#[cfg(target_os = "android")]
+pub async fn dialog_select_directory() -> Result<DialogResult, String> {
+    Ok(DialogResult {
+        success: false,
+        path: None,
+    })
+}
+
+#[tauri::command]
+#[cfg(target_os = "android")]
+pub async fn dialog_select_file(
+    _title: Option<String>,
+    _filters: Option<Vec<serde_json::Value>>,
+) -> Result<DialogResult, String> {
+    Ok(DialogResult {
+        success: false,
+        path: None,
     })
 }

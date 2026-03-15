@@ -60,9 +60,16 @@ jobs:
       - name: Initialize Tauri Android
         run: |
           cd src-tauri
-          tauri android init || echo "Android already initialized"
+          tauri android init --ci || echo "Android already initialized"
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+
+      - name: Verify capabilities
+        run: |
+          echo "=== Checking capabilities ==="
+          cat src-tauri/capabilities/default.json
+          cat src-tauri/capabilities/android.json 2>/dev/null || echo "No android.json"
+          ls -la src-tauri/capabilities/
 
       - name: Build Android APK
         run: |

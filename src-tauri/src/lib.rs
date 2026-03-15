@@ -1,6 +1,7 @@
 mod cowork;
 mod crypto;
 mod database;
+#[cfg(not(target_os = "android"))]
 mod dialog;
 mod filesystem;
 mod goclaw;
@@ -22,6 +23,7 @@ use tokio::sync::Mutex as TokioMutex;
 pub use cowork::*;
 pub use crypto::*;
 pub use database::*;
+#[cfg(not(target_os = "android"))]
 pub use dialog::*;
 pub use filesystem::*;
 pub use goclaw::*;
