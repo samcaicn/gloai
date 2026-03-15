@@ -1,6 +1,4 @@
-#[cfg(not(target_os = "android"))]
 use tauri::AppHandle;
-#[cfg(not(target_os = "android"))]
 use tauri_plugin_dialog::DialogExt;
 
 #[derive(serde::Serialize)]
@@ -10,7 +8,6 @@ pub struct DialogResult {
 }
 
 #[tauri::command]
-#[cfg(not(target_os = "android"))]
 pub async fn dialog_select_directory(app: AppHandle) -> Result<DialogResult, String> {
     println!("[dialog_select_directory] Called");
 
@@ -48,7 +45,6 @@ pub async fn dialog_select_directory(app: AppHandle) -> Result<DialogResult, Str
 }
 
 #[tauri::command]
-#[cfg(not(target_os = "android"))]
 pub async fn dialog_select_file(
     app: AppHandle,
     title: Option<String>,
@@ -103,26 +99,5 @@ pub async fn dialog_select_file(
     Ok(DialogResult {
         success: path.is_some(),
         path: path.map(|p| p.to_string()),
-    })
-}
-
-#[tauri::command]
-#[cfg(target_os = "android")]
-pub async fn dialog_select_directory() -> Result<DialogResult, String> {
-    Ok(DialogResult {
-        success: false,
-        path: None,
-    })
-}
-
-#[tauri::command]
-#[cfg(target_os = "android")]
-pub async fn dialog_select_file(
-    _title: Option<String>,
-    _filters: Option<Vec<serde_json::Value>>,
-) -> Result<DialogResult, String> {
-    Ok(DialogResult {
-        success: false,
-        path: None,
     })
 }

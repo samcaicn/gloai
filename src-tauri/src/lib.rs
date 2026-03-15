@@ -10,6 +10,9 @@ mod crypto;
 mod database;
 #[cfg(not(target_os = "android"))]
 mod dialog;
+#[cfg(target_os = "android")]
+#[path = "dialog_android.rs"]
+mod dialog;
 mod filesystem;
 mod goclaw;
 mod im;
