@@ -6,7 +6,6 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "dialog:default",
     {
       "identifier": "http:default",
       "allow": [
