@@ -503,8 +503,7 @@ async fn logger_open_folder(state: State<'_, AppState>) -> Result<String, String
     
     #[cfg(not(target_os = "android"))]
     {
-        use open::that;
-        that(&logs_dir).map_err(|e| format!("Failed to open log folder: {}", e))?;
+        open::that(&logs_dir).map_err(|e| format!("Failed to open log folder: {}", e))?;
     }
     
     Ok(logs_dir.to_string_lossy().into_owned())
