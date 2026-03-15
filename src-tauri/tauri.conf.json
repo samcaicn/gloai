@@ -20,7 +20,7 @@
     "withGlobalTauri": false,
     "security": {
       "csp": null,
-      "capabilities": ["default"]
+      "capabilities": ["default", "mobile"]
     }
   },
   "bundle": {
@@ -34,8 +34,7 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../SKILLs": "SKILLs",
-      "resources/goclaw": "goclaw"
+      "../SKILLs": "SKILLs"
     },
     "macOS": {
       "entitlements": "entitlements.plist",

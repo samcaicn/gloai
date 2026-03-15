@@ -1,12 +1,10 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "default",
-  "description": "Capability for the main window on desktop",
-  "platforms": ["macOS", "windows", "linux"],
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Capability for mobile platforms",
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "dialog:default",
     {
       "identifier": "http:default",
       "allow": [
