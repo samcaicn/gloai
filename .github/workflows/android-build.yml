@@ -64,12 +64,56 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
-      - name: Verify capabilities
+      - name: Fix capabilities for Android
         run: |
-          echo "=== Checking capabilities ==="
-          cat src-tauri/capabilities/default.json
-          cat src-tauri/capabilities/android.json 2>/dev/null || echo "No android.json"
-          ls -la src-tauri/capabilities/
+          cd src-tauri/capabilities
+          
+          # 确保 default.json 只包含桌面平台权限
+          cat > default.json << 'EOF'
+          {
+            "$schema": "../gen/schemas/desktop-schema.json",
+            "identifier": "default",
+            "description": "Capability for desktop platforms only",
+            "platforms": ["macOS", "windows", "linux"],
+            "windows": ["main"],
+            "permissions": [
+              "core:default",
+              {
+                "identifier": "http:default",
+                "allow": [
+                  { "url": "https://claw.hncea.cc/**" },
+                  { "url": "https://*.tauri.app" }
+                ]
+              }
+            ]
+          }
+          EOF
+          
+          # 确保 android.json 存在
+          cat > android.json << 'EOF'
+          {
+            "$schema": "../gen/schemas/mobile-schema.json",
+            "identifier": "android",
+            "description": "Capability for Android platform",
+            "platforms": ["android"],
+            "windows": ["main"],
+            "permissions": [
+              "core:default",
+              {
+                "identifier": "http:default",
+                "allow": [
+                  { "url": "https://claw.hncea.cc/**" },
+                  { "url": "https://*.tauri.app" }
+                ]
+              }
+            ]
+          }
+          EOF
+          
+          echo "=== Final capabilities ==="
+          cat default.json
+          echo ""
+          cat android.json
 
       - name: Build Android APK
         run: |
