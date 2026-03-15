@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/mobile-schema.json",
-  "identifier": "mobile",
-  "description": "Capability for mobile platforms (Android and iOS)",
-  "platforms": ["android", "iOS"],
+  "identifier": "android",
+  "description": "Capability for Android platform",
+  "platforms": ["android"],
   "windows": ["main"],
   "permissions": [
     "core:default",

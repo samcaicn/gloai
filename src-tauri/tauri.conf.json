@@ -19,8 +19,7 @@
     ],
     "withGlobalTauri": false,
     "security": {
-      "csp": null,
-      "capabilities": ["default", "mobile"]
+      "csp": null
     }
   },
   "bundle": {
