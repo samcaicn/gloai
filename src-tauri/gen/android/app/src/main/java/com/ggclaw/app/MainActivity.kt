@@ -1,13 +1,8 @@
 package com.ggclaw.app
 
-import android.annotation.SuppressLint
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
-import android.webkit.JavascriptInterface
+import android.util.Log
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -16,46 +11,21 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var webView: WebView
-    private var goclawService: GoClawService? = null
-    private var serviceBound = false
-
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = service as GoClawService.LocalBinder
-            goclawService = binder.getService()
-            serviceBound = true
-
-            // 初始化 goclaw
-            val config = """
-                {
-                    "api_url": "https://clawadmin.tuptup.top",
-                    "platform": "android"
-                }
-            """.trimIndent()
-            val result = goclawService?.initialize(config)
-            android.util.Log.d("MainActivity", "GoClaw initialized: $result")
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            goclawService = null
-            serviceBound = false
-        }
+    companion object {
+        private const val TAG = "MainActivity"
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    private lateinit var webView: WebView
+    private var goClawService: GoClawService? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate started")
+        
         setContentView(R.layout.activity_main)
-
-        // 启动并绑定 GoClawService
-        val intent = Intent(this, GoClawService::class.java)
-        startService(intent)
-        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
 
         webView = findViewById(R.id.webView)
 
-        // Configure WebView settings
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -71,18 +41,32 @@ class MainActivity : AppCompatActivity() {
         webView.webChromeClient = WebChromeClient()
         webView.webViewClient = WebViewClient()
 
-        // 添加 JavaScript 接口
-        webView.addJavascriptInterface(GoClawInterface(), "GoClaw")
-
-        // Load the app URL - rebuild after crash fix
+        initGoClaw()
+        
         webView.loadUrl("https://clawadmin.tuptup.top")
+        Log.d(TAG, "WebView loading URL")
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        if (serviceBound) {
-            unbindService(serviceConnection)
-            serviceBound = false
+    private fun initGoClaw() {
+        try {
+            Log.d(TAG, "Initializing GoClaw...")
+            
+            val config = """
+                {
+                    "enabled": true,
+                    "auto_start": true,
+                    "ws_url": "ws://127.0.0.1:28789/ws",
+                    "http_url": "http://127.0.0.1:28788"
+                }
+            """.trimIndent()
+            
+            val serviceIntent = Intent(this, GoClawService::class.java)
+            serviceIntent.putExtra("config", config)
+            startService(serviceIntent)
+            
+            Log.d(TAG, "GoClaw service started")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize GoClaw: ${e.message}", e)
         }
     }
 
@@ -94,26 +78,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // JavaScript 接口类
-    inner class GoClawInterface {
-        @JavascriptInterface
-        fun sendMessage(message: String): String {
-            return goclawService?.send(message) ?: "{\"error\": \"service not available\"}"
-        }
-
-        @JavascriptInterface
-        fun getStatus(): String {
-            return goclawService?.status() ?: "{\"error\": \"service not available\"}"
-        }
-
-        @JavascriptInterface
-        fun startService(): String {
-            return goclawService?.start() ?: "{\"error\": \"service not available\"}"
-        }
-
-        @JavascriptInterface
-        fun stopService() {
-            goclawService?.stop()
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            val serviceIntent = Intent(this, GoClawService::class.java)
+            stopService(serviceIntent)
+            Log.d(TAG, "GoClaw service stopped")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping GoClaw service: ${e.message}", e)
         }
     }
 }

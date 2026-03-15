@@ -13,6 +13,10 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.6"
+        
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
     }
 
     buildTypes {
@@ -36,6 +40,18 @@ android {
     }
     buildFeatures {
         viewBinding = true
+    }
+    
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+    
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jniLibs")
+        }
     }
 }
 

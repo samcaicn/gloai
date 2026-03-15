@@ -11,13 +11,19 @@ class GoClawService : Service() {
     companion object {
         const val TAG = "GoClawService"
         
-        // 加载 native 库
+        private var libraryLoaded = false
+        
         init {
             try {
                 System.loadLibrary("goclaw")
+                libraryLoaded = true
                 Log.d(TAG, "GoClaw library loaded successfully")
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "Failed to load GoClaw library: ${e.message}")
+                libraryLoaded = false
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error loading GoClaw library: ${e.message}", e)
+                libraryLoaded = false
             }
         }
     }
@@ -34,16 +40,24 @@ class GoClawService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "GoClawService created")
+        Log.d(TAG, "GoClawService created, library loaded: $libraryLoaded")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "GoClawService started")
         
-        // 初始化 goclaw
-        val config = intent?.getStringExtra("config") ?: "{}"
-        val result = initGoClaw(config)
-        Log.d(TAG, "GoClaw init result: $result")
+        if (!libraryLoaded) {
+            Log.e(TAG, "Cannot initialize GoClaw: library not loaded")
+            return START_NOT_STICKY
+        }
+        
+        try {
+            val config = intent?.getStringExtra("config") ?: "{}"
+            val result = initGoClaw(config)
+            Log.d(TAG, "GoClaw init result: $result")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize GoClaw: ${e.message}", e)
+        }
         
         return START_STICKY
     }
@@ -51,10 +65,15 @@ class GoClawService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "GoClawService destroyed")
-        stopGoClaw()
+        if (libraryLoaded) {
+            try {
+                stopGoClaw()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error stopping GoClaw: ${e.message}", e)
+            }
+        }
     }
 
-    // Native 方法声明
     external fun initGoClaw(config: String): String
     external fun startGoClaw(): String
     external fun stopGoClaw()
@@ -62,24 +81,62 @@ class GoClawService : Service() {
     external fun getStatus(): String
     external fun freeString(str: String)
 
-    // 包装方法
     fun initialize(config: String): String {
-        return initGoClaw(config)
+        if (!libraryLoaded) {
+            return "{\"error\": \"library not loaded\"}"
+        }
+        return try {
+            initGoClaw(config)
+        } catch (e: Exception) {
+            Log.e(TAG, "initialize error: ${e.message}", e)
+            "{\"error\": \"${e.message}\"}"
+        }
     }
 
     fun start(): String {
-        return startGoClaw()
+        if (!libraryLoaded) {
+            return "{\"error\": \"library not loaded\"}"
+        }
+        return try {
+            startGoClaw()
+        } catch (e: Exception) {
+            Log.e(TAG, "start error: ${e.message}", e)
+            "{\"error\": \"${e.message}\"}"
+        }
     }
 
     fun stop() {
-        stopGoClaw()
+        if (!libraryLoaded) {
+            return
+        }
+        try {
+            stopGoClaw()
+        } catch (e: Exception) {
+            Log.e(TAG, "stop error: ${e.message}", e)
+        }
     }
 
     fun send(msg: String): String {
-        return sendMessage(msg)
+        if (!libraryLoaded) {
+            return "{\"error\": \"library not loaded\"}"
+        }
+        return try {
+            sendMessage(msg)
+        } catch (e: Exception) {
+            Log.e(TAG, "send error: ${e.message}", e)
+            "{\"error\": \"${e.message}\"}"
+        }
     }
 
     fun status(): String {
-        return getStatus()
+        if (!libraryLoaded) {
+            return "{\"running\": false, \"error\": \"library not loaded\"}"
+        }
+        return try {
+            getStatus()
+        } catch (e: Exception) {
+            Log.e(TAG, "status error: ${e.message}", e)
+            "{\"running\": false, \"error\": \"${e.message}\"}"
+        }
     }
 }
