@@ -3,18 +3,8 @@ name: Build Android APK
 on:
   push:
     branches: [ main, tauri-v2, clawadmin, android ]
-    paths:
-      - 'src-tauri/gen/android/**'
-      - 'src-tauri/goclaw-android/**'
-      - '.github/workflows/android-build.yml'
-      - '.github/workflows/build-goclaw-android.yml'
   pull_request:
     branches: [ main, tauri-v2, clawadmin ]
-    paths:
-      - 'src-tauri/gen/android/**'
-      - 'src-tauri/goclaw-android/**'
-      - '.github/workflows/android-build.yml'
-      - '.github/workflows/build-goclaw-android.yml'
   workflow_dispatch:
 
 concurrency:
@@ -25,51 +15,68 @@ jobs:
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Install Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r26b
+          add-to-path: true
+
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
+          java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.4'
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
 
-      - name: Download Gradle Wrapper
-        working-directory: ./src-tauri/gen/android
+      - name: Build frontend
+        run: npm run build
+
+      - name: Initialize Tauri Android
         run: |
-          mkdir -p gradle/wrapper
-          curl -L -o gradle/wrapper/gradle-wrapper.jar \
-            https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar
-          ls -la gradle/wrapper/
+          cd src-tauri
+          tauri android init || echo "Android already initialized"
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
-      - name: Make gradlew executable
-        working-directory: ./src-tauri/gen/android
-        run: chmod +x gradlew
-
-      - name: Build Debug APK
-        working-directory: ./src-tauri/gen/android
+      - name: Build Android APK
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
-        continue-on-error: true
+          cd src-tauri
+          tauri android build --debug
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
-      - name: Check build outputs
-        working-directory: ./src-tauri/gen/android
+      - name: Find APK files
         run: |
+          echo "=== Looking for APK files ==="
+          find src-tauri/gen/android -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
           echo "=== Build outputs ==="
-          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
-          echo "=== Build directory ==="
-          ls -la app/build/outputs/apk/ 2>/dev/null || echo "No outputs directory"
+          ls -la src-tauri/gen/android/app/build/outputs/apk/ 2>/dev/null || echo "No outputs directory"
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -77,16 +84,16 @@ jobs:
         with:
           name: ggclaw-android-debug-apk
           path: |
-            src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
+            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Upload Build Reports
-        if: always()
+      - name: Upload Build Logs
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: android-build-reports
+          name: android-build-logs
           path: |
             src-tauri/gen/android/app/build/reports/
-            src-tauri/gen/android/build.log
+            ~/.gradle/daemon/
           retention-days: 7
