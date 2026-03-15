@@ -1,4 +1,4 @@
-2m 33s
+2m 35s
   |                        ^^^^^^^
 
 warning: value assigned to `last_error` is never read
@@ -19,43 +19,37 @@ warning: value assigned to `skills` is never read
     = help: maybe it is overwritten before being read?
 
 warning: unused variable: `app`
-   --> src/lib.rs:526:26
+   --> src/lib.rs:530:26
     |
-526 | async fn window_minimize(app: AppHandle) -> Result<(), String> {
+530 | async fn window_minimize(app: AppHandle) -> Result<(), String> {
     |                          ^^^ help: if this is intentional, prefix it with an underscore: `_app`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
 warning: unused variable: `app`
-   --> src/lib.rs:537:33
+   --> src/lib.rs:541:33
     |
-537 | async fn window_toggle_maximize(app: AppHandle) -> Result<(), String> {
+541 | async fn window_toggle_maximize(app: AppHandle) -> Result<(), String> {
     |                                 ^^^ help: if this is intentional, prefix it with an underscore: `_app`
 
 warning: unused variable: `app`
-   --> src/lib.rs:552:23
+   --> src/lib.rs:556:23
     |
-552 | async fn window_close(app: AppHandle) -> Result<(), String> {
+556 | async fn window_close(app: AppHandle) -> Result<(), String> {
     |                       ^^^ help: if this is intentional, prefix it with an underscore: `_app`
 
 warning: unused variable: `app`
-   --> src/lib.rs:563:30
+   --> src/lib.rs:567:30
     |
-563 | async fn window_is_maximized(app: AppHandle) -> Result<bool, String> {
+567 | async fn window_is_maximized(app: AppHandle) -> Result<bool, String> {
     |                              ^^^ help: if this is intentional, prefix it with an underscore: `_app`
-
-warning: unused variable: `url`
-   --> src/lib.rs:778:24
-    |
-778 | async fn open_external(url: String) -> Result<(), String> {
-    |                        ^^^ help: if this is intentional, prefix it with an underscore: `_url`
 
 Some errors have detailed explanations: E0432, E0433.
 For more information about an error, try `rustc --explain E0432`.
-warning: `ggclaw` (lib) generated 14 warnings
+warning: `ggclaw` (lib) generated 13 warnings
 warning: ggclaw@1.0.0: Android target detected
 warning: ggclaw@1.0.0: Android will use embedded goclaw library or remote service
-error: could not compile `ggclaw` (lib) due to 4 previous errors; 14 warnings emitted
+error: could not compile `ggclaw` (lib) due to 4 previous errors; 13 warnings emitted
 failed to build Android app: `Failed to run `cargo build`: command ["cargo", "build", "--package", "ggclaw", "--manifest-path", "/home/runner/work/gloai/gloai/src-tauri/Cargo.toml", "--target", "aarch64-linux-android", "--features", "tauri/custom-protocol tauri/custom-protocol", "--lib"] exited with code 101
        Error failed to build Android app: `Failed to run `cargo build`: command ["cargo", "build", "--package", "ggclaw", "--manifest-path", "/home/runner/work/gloai/gloai/src-tauri/Cargo.toml", "--target", "aarch64-linux-android", "--features", "tauri/custom-protocol tauri/custom-protocol", "--lib"] exited with code 101
 Error: Process completed with exit code 1.

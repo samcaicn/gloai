@@ -15,7 +15,10 @@ mod goclaw;
 mod im;
 mod im_gateway;
 mod logger;
+#[cfg(not(target_os = "android"))]
 mod open_helper;
+#[cfg(target_os = "android")]
+mod open_helper_android as open_helper;
 mod scheduler;
 mod shell;
 mod skills;
