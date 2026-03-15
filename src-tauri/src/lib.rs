@@ -8,6 +8,7 @@ mod goclaw;
 mod im;
 mod im_gateway;
 mod logger;
+mod open_helper;
 mod scheduler;
 mod shell;
 mod skills;
@@ -501,10 +502,7 @@ async fn logger_open_folder(state: State<'_, AppState>) -> Result<String, String
     let logger = state.logger.lock().await;
     let logs_dir = logger.get_logs_dir().map_err(|e| e.to_string())?;
     
-    #[cfg(not(target_os = "android"))]
-    {
-        open::that(&logs_dir).map_err(|e| format!("Failed to open log folder: {}", e))?;
-    }
+    crate::open_helper::open_path(&logs_dir)?;
     
     Ok(logs_dir.to_string_lossy().into_owned())
 }
@@ -775,16 +773,7 @@ async fn get_platform() -> Result<String, String> {
 
 #[tauri::command]
 async fn open_external(url: String) -> Result<(), String> {
-    #[cfg(not(target_os = "android"))]
-    {
-        open::that(&url).map_err(|e| format!("Failed to open URL: {}", e))
-    }
-    
-    #[cfg(target_os = "android")]
-    {
-        let _ = url;
-        Ok(())
-    }
+    crate::open_helper::open_url(&url)
 }
 
 #[tauri::command]
