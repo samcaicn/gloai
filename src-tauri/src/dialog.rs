@@ -1,4 +1,7 @@
 #[cfg(not(target_os = "android"))]
+extern crate tauri_plugin_dialog;
+
+#[cfg(not(target_os = "android"))]
 use tauri::AppHandle;
 #[cfg(not(target_os = "android"))]
 use tauri_plugin_dialog::DialogExt;
