@@ -23,6 +23,7 @@ jobs:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
       - name: Install Android NDK
+        id: setup-ndk
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r26b
@@ -31,8 +32,9 @@ jobs:
       - name: Build GoClaw for Android
         working-directory: ./src-tauri/goclaw-android
         env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
           chmod +x build-android-rust.sh
           ./build-android-rust.sh
 
