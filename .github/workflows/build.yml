@@ -2,14 +2,14 @@ name: Build ggai
 
 on:
   push:
-    branches: [ main, tauri-v2, clawadmin ]
+    branches: [ tauri-v2, clawadmin ]
     paths-ignore:
       - 'src-tauri/gen/android/**'
       - 'src-tauri/goclaw-android/**'
       - '.github/workflows/android-build.yml'
       - '.github/workflows/build-goclaw-android.yml'
   pull_request:
-    branches: [ main, tauri-v2, clawadmin ]
+    branches: [ tauri-v2, clawadmin ]
     paths-ignore:
       - 'src-tauri/gen/android/**'
       - 'src-tauri/goclaw-android/**'
@@ -75,177 +75,71 @@ jobs:
             libssl-dev \
             libgtk-3-dev \
             libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libglib2.0-dev \
-            libgdk-pixbuf2.0-dev \
-            libcairo2-dev \
-            libpango1.0-dev \
-            libharfbuzz-dev \
-            libz-dev \
-            pkg-config
-          
-          # Verify pkg-config files exist
-          echo "Checking pkg-config files..."
-          pkg-config --list-all | grep -E "glib|gtk|webkit" || true
-          find /usr/lib/x86_64-linux-gnu/pkgconfig -name "glib-2.0.pc" || true
-          find /usr/lib/pkgconfig -name "glib-2.0.pc" || true
+            librsvg2-dev
 
-      - name: Install dependencies (Linux ARM64)
+      - name: Install dependencies (Linux aarch64)
         if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
-          # Enable ARM64 architecture
-          sudo dpkg --add-architecture arm64
-          
-          # Remove all existing sources to avoid conflicts with security.ubuntu.com
-          sudo rm -f /etc/apt/sources.list.d/*.list
-          sudo rm -f /etc/apt/sources.list.d/*.sources
-          
-          # Create new amd64-only sources (for cross-compilation tools)
-          cat << 'EOF' | sudo tee /etc/apt/sources.list
-          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
-          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
-          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
-          deb [arch=amd64] http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
-          EOF
-          
-          # Add ARM64 repository (ports.ubuntu.com hosts all ARM64 packages)
-          cat << 'EOF' | sudo tee /etc/apt/sources.list.d/arm64.list
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse
-          EOF
-          
           sudo apt-get update
-          
-          # Install cross-compilation tools
           sudo apt-get install -y \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu \
-            libc6-dev-arm64-cross \
+            libwebkit2gtk-4.1-dev \
             build-essential \
             curl \
             wget \
             file \
-            pkg-config
-          
-          # Install ARM64 dependencies
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev:arm64 \
-            libssl-dev:arm64 \
-            libgtk-3-dev:arm64 \
-            libayatana-appindicator3-dev:arm64 \
-            librsvg2-dev:arm64 \
-            libglib2.0-dev:arm64 \
-            libgdk-pixbuf2.0-dev:arm64 \
-            libcairo2-dev:arm64 \
-            libpango1.0-dev:arm64 \
-            libharfbuzz-dev:arm64 \
-            libz-dev:arm64
-          
-          # Verify ARM64 pkg-config files exist
-          echo "Checking ARM64 pkg-config files..."
-          find /usr/lib/aarch64-linux-gnu/pkgconfig -name "*.pc" | head -20
-          find /usr/share/pkgconfig -name "*.pc" | head -20
-          
-          # Create pkg-config wrapper for cross-compilation
-          cat << 'EOF' | sudo tee /usr/bin/aarch64-linux-gnu-pkg-config
-          #!/bin/bash
-          export PKG_CONFIG_PATH="/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig"
-          export PKG_CONFIG_LIBDIR="/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig"
-          exec pkg-config "$@"
-          EOF
-          sudo chmod +x /usr/bin/aarch64-linux-gnu-pkg-config
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
 
-      - name: Check for package-lock.json (Linux/macOS)
-        if: matrix.os != 'windows-latest'
-        run: |
-          ls -la
-          ls -la package-lock.json
-
-      - name: Check for package-lock.json (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          Get-ChildItem
-          Get-ChildItem package-lock.json
-
-      - name: Remove electronCompat.ts if exists (Linux/macOS)
-        if: matrix.os != 'windows-latest'
-        run: |
-          if [ -f "src/renderer/services/electronCompat.ts" ]; then
-            rm src/renderer/services/electronCompat.ts
-            echo "Removed electronCompat.ts"
-          else
-            echo "electronCompat.ts does not exist"
-          fi
-
-      - name: Remove electronCompat.ts if exists (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          if (Test-Path "src/renderer/services/electronCompat.ts") {
-            Remove-Item "src/renderer/services/electronCompat.ts"
-            Write-Output "Removed electronCompat.ts"
-          } else {
-            Write-Output "electronCompat.ts does not exist"
-          }
-
-      - name: Install dependencies
-        run: npm install --package-lock-only
-
-      - name: Install dependencies with ci
-        run: npm ci
-
-      - name: Install Rust targets (macOS)
+      - name: Install dependencies (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          rustup target add x86_64-apple-darwin
-          rustup target add aarch64-apple-darwin
+          brew install create-dmg
+          brew install jq
 
-      - name: Setup cross-compilation environment (Linux ARM64)
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
         run: |
-          echo "PKG_CONFIG=aarch64-linux-gnu-pkg-config" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH_aarch64_unknown_linux_gnu=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_LIBDIR_aarch64_unknown_linux_gnu=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo "CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++" >> $GITHUB_ENV
-          echo "AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar" >> $GITHUB_ENV
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-C linker=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo "SYSTEM_DEPS_GLIB_2_0_LIB=glib-2.0" >> $GITHUB_ENV
-          echo "SYSTEM_DEPS_GLIB_2_0_LIB_DIR=/usr/lib/aarch64-linux-gnu" >> $GITHUB_ENV
-          echo "SYSTEM_DEPS_GLIB_2_0_INCLUDE=/usr/include/glib-2.0:/usr/lib/aarch64-linux-gnu/glib-2.0/include" >> $GITHUB_ENV
-          echo "SYSTEM_DEPS_GTK_3_LIB=gtk-3" >> $GITHUB_ENV
-          echo "SYSTEM_DEPS_GTK_3_LIB_DIR=/usr/lib/aarch64-linux-gnu" >> $GITHUB_ENV
-          echo "SYSTEM_DEPS_GTK_3_INCLUDE=/usr/include/gtk-3.0" >> $GITHUB_ENV
+          choco install jq -y
 
-      - name: Set PKG_CONFIG_PATH (Linux x86_64)
-        if: matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-unknown-linux-gnu'
-        run: |
-          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_LIBDIR=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH_x86_64_unknown_linux_gnu=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_LIBDIR_x86_64_unknown_linux_gnu=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-          echo "Set PKG_CONFIG_PATH for Linux x86_64 build"
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
 
-      - name: Build
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Tauri app
         run: ${{ matrix.build_cmd }}
         env:
-          CI: true
-          apiKey: ${{ secrets.apiKey || 'gk_981279d245764a1cb53738da' }}
-          apiSecret: ${{ secrets.apiSecret || 'gs_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2' }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(jq -r '.version' package.json)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ggai-${{ matrix.os }}-${{ matrix.target }}
           path: |
-            src-tauri/target/*/release/bundle/dmg/*.dmg
-            src-tauri/target/*/release/bundle/msi/*.msi
-            src-tauri/target/*/release/bundle/appimage/*.AppImage
-            src-tauri/target/*/release/bundle/deb/*.deb
+            src-tauri/target/${{ matrix.target }}/release/bundle/
+            src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
+            src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: ignore
+
+      - name: Upload debug symbols (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ggai-windows-symbols
+          path: src-tauri/target/${{ matrix.target }}/release/*.pdb
+          retention-days: 30
+          if-no-files-found: ignore
