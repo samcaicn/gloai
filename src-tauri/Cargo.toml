@@ -55,6 +55,7 @@ winreg = "0.50.0"
 tauri-plugin-updater = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
+open = "5.0.0"
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"

@@ -778,12 +778,12 @@ async fn get_platform() -> Result<String, String> {
 async fn open_external(url: String) -> Result<(), String> {
     #[cfg(not(target_os = "android"))]
     {
-        use open::that;
-        that(&url).map_err(|e| format!("Failed to open URL: {}", e))
+        open::that(&url).map_err(|e| format!("Failed to open URL: {}", e))
     }
     
     #[cfg(target_os = "android")]
     {
+        let _ = url;
         Ok(())
     }
 }
