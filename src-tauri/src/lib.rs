@@ -522,19 +522,25 @@ async fn skills_get_root(state: State<'_, AppState>) -> Result<String, String> {
 
 #[tauri::command]
 async fn window_minimize(app: AppHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("main") {
-        window.minimize().map_err(|e| e.to_string())?;
+    #[cfg(not(target_os = "android"))]
+    {
+        if let Some(window) = app.get_webview_window("main") {
+            window.minimize().map_err(|e| e.to_string())?;
+        }
     }
     Ok(())
 }
 
 #[tauri::command]
 async fn window_toggle_maximize(app: AppHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("main") {
-        if window.is_maximized().map_err(|e| e.to_string())? {
-            window.unmaximize().map_err(|e| e.to_string())?;
-        } else {
-            window.maximize().map_err(|e| e.to_string())?;
+    #[cfg(not(target_os = "android"))]
+    {
+        if let Some(window) = app.get_webview_window("main") {
+            if window.is_maximized().map_err(|e| e.to_string())? {
+                window.unmaximize().map_err(|e| e.to_string())?;
+            } else {
+                window.maximize().map_err(|e| e.to_string())?;
+            }
         }
     }
     Ok(())
@@ -542,19 +548,24 @@ async fn window_toggle_maximize(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 async fn window_close(app: AppHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("main") {
-        window.close().map_err(|e| e.to_string())?;
+    #[cfg(not(target_os = "android"))]
+    {
+        if let Some(window) = app.get_webview_window("main") {
+            window.close().map_err(|e: std::error::Error| e.to_string())?;
+        }
     }
     Ok(())
 }
 
 #[tauri::command]
 async fn window_is_maximized(app: AppHandle) -> Result<bool, String> {
-    if let Some(window) = app.get_webview_window("main") {
-        window.is_maximized().map_err(|e| e.to_string())
-    } else {
-        Ok(false)
+    #[cfg(not(target_os = "android"))]
+    {
+        if let Some(window) = app.get_webview_window("main") {
+            return window.is_maximized().map_err(|e| e.to_string());
+        }
     }
+    Ok(false)
 }
 
 #[tauri::command]
@@ -913,10 +924,17 @@ async fn scheduler_execute_task(id: String, state: State<'_, AppState>) -> Resul
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_http::init())
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_http::init());
+    
+    #[cfg(not(target_os = "android"))]
+    {
+        builder = builder
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .plugin(tauri_plugin_dialog::init());
+    }
+    
+    builder
         .setup(|app| {
             println!("[setup] Starting application setup...");
 
