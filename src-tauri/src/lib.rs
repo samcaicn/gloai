@@ -1,3 +1,10 @@
+#[cfg(not(target_os = "android"))]
+extern crate tauri_plugin_updater;
+#[cfg(not(target_os = "android"))]
+extern crate tauri_plugin_dialog;
+#[cfg(not(target_os = "android"))]
+extern crate open;
+
 mod cowork;
 mod crypto;
 mod database;
@@ -16,13 +23,6 @@ mod storage;
 mod system;
 mod tuptup;
 mod update_manager;
-
-#[cfg(not(target_os = "android"))]
-extern crate tauri_plugin_updater;
-#[cfg(not(target_os = "android"))]
-extern crate tauri_plugin_dialog;
-#[cfg(not(target_os = "android"))]
-extern crate open;
 
 use std::sync::Arc;
 use tauri::{AppHandle, Manager, State};

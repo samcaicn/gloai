@@ -1,7 +1,4 @@
 #[cfg(not(target_os = "android"))]
-extern crate open;
-
-#[cfg(not(target_os = "android"))]
 use std::path::Path;
 
 #[cfg(not(target_os = "android"))]
