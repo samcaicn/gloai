@@ -1,6 +1,6 @@
 use jni::JNIEnv;
 use jni::objects::{JClass, JString};
-use jni::sys::{jstring};
+use jni::sys::jstring;
 use serde_json::json;
 use std::sync::{Arc, Mutex};
 
@@ -32,7 +32,7 @@ pub extern "system" fn Java_com_ggclaw_app_GoClawService_initGoClaw(
     log::debug!("initGoClaw called");
     
     let config_str = match env.get_string(&config) {
-        Ok(s) => s.into(),
+        Ok(s) => s.to_string(),
         Err(e) => {
             log::error!("Failed to get config string: {}", e);
             let result = json!({"error": format!("Failed to get config: {}", e)}).to_string();
@@ -55,7 +55,7 @@ pub extern "system" fn Java_com_ggclaw_app_GoClawService_initGoClaw(
 
 #[no_mangle]
 pub extern "system" fn Java_com_ggclaw_app_GoClawService_startGoClaw(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
 ) -> jstring {
     init_logger();
@@ -102,7 +102,7 @@ pub extern "system" fn Java_com_ggclaw_app_GoClawService_sendMessage(
     }
     
     let msg_str = match env.get_string(&message) {
-        Ok(s) => s.into(),
+        Ok(s) => s.to_string(),
         Err(e) => {
             log::error!("Failed to get message string: {}", e);
             let result = json!({"error": format!("Failed to get message: {}", e)}).to_string();
@@ -121,7 +121,7 @@ pub extern "system" fn Java_com_ggclaw_app_GoClawService_sendMessage(
 
 #[no_mangle]
 pub extern "system" fn Java_com_ggclaw_app_GoClawService_getStatus(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
 ) -> jstring {
     init_logger();
