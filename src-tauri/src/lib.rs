@@ -29,6 +29,7 @@ mod skills;
 mod storage;
 mod system;
 mod tuptup;
+#[cfg(not(target_os = "android"))]
 mod update_manager;
 
 use std::sync::Arc;
@@ -50,6 +51,7 @@ pub use skills::*;
 pub use storage::*;
 pub use system::*;
 pub use tuptup::*;
+#[cfg(not(target_os = "android"))]
 pub use update_manager::*;
 
 struct AppState {
@@ -65,6 +67,7 @@ struct AppState {
     scheduler: Arc<TokioMutex<Scheduler>>,
     logger: Arc<TokioMutex<Logger>>,
     tuptup_service: Arc<TokioMutex<TuptupService>>,
+    #[cfg(not(target_os = "android"))]
     update_manager: Arc<TokioMutex<UpdateManager>>,
 }
 
@@ -76,17 +79,17 @@ async fn initialize_app(app: AppHandle) -> Result<(), String> {
     let mut system_manager = state.system_manager.lock().await;
     system_manager.set_app_handle(app.clone());
 
-    // Initialize update manager
-    let mut update_manager = state.update_manager.lock().await;
-    update_manager.set_app_handle(app.clone()).await;
-    
-    // Check and apply pending update on startup
-    if let Err(e) = update_manager.install_pending_update().await {
-        println!("[App] Failed to install pending update: {}", e);
+    #[cfg(not(target_os = "android"))]
+    {
+        let mut update_manager = state.update_manager.lock().await;
+        update_manager.set_app_handle(app.clone()).await;
+        
+        if let Err(e) = update_manager.install_pending_update().await {
+            println!("[App] Failed to install pending update: {}", e);
+        }
+        
+        update_manager.start().await;
     }
-    
-    // Start update checker
-    update_manager.start().await;
 
     let goclaw_manager = state.goclaw_manager.lock().await;
     if let Err(e) = goclaw_manager.auto_start_if_enabled().await {
@@ -797,6 +800,7 @@ async fn get_app_version(state: State<'_, AppState>) -> Result<String, String> {
 }
 
 // Update commands
+#[cfg(not(target_os = "android"))]
 #[tauri::command]
 async fn update_check(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let update_manager = state.update_manager.lock().await;
@@ -829,6 +833,7 @@ async fn update_check(state: State<'_, AppState>) -> Result<serde_json::Value, S
     }
 }
 
+#[cfg(not(target_os = "android"))]
 #[tauri::command]
 async fn update_download(url: String, sha256: Option<String>, state: State<'_, AppState>) -> Result<(), String> {
     let update_manager = state.update_manager.lock().await;
@@ -843,12 +848,14 @@ async fn update_download(url: String, sha256: Option<String>, state: State<'_, A
     }
 }
 
+#[cfg(not(target_os = "android"))]
 #[tauri::command]
 async fn update_cancel_download(state: State<'_, AppState>) -> Result<(), String> {
     let update_manager = state.update_manager.lock().await;
     update_manager.cancel_download().await.map_err(|e| e.to_string())
 }
 
+#[cfg(not(target_os = "android"))]
 #[tauri::command]
 async fn update_install_pending(state: State<'_, AppState>) -> Result<bool, String> {
     let update_manager = state.update_manager.lock().await;
@@ -1048,6 +1055,7 @@ pub fn run() {
 
             let scheduler = Scheduler::new(database_arc.clone());
             let tuptup_service = Arc::new(TokioMutex::new(TuptupService::new()));
+            #[cfg(not(target_os = "android"))]
             let update_manager = Arc::new(TokioMutex::new(UpdateManager::new()));
 
             app.manage(AppState {
@@ -1061,6 +1069,7 @@ pub fn run() {
                 scheduler: Arc::new(TokioMutex::new(scheduler)),
                 logger: Arc::new(TokioMutex::new(logger)),
                 tuptup_service,
+                #[cfg(not(target_os = "android"))]
                 update_manager,
             });
 
@@ -1154,10 +1163,13 @@ pub fn run() {
             crypto_decrypt,
             make_http_request,
             open_external,
-            // Update commands
+            #[cfg(not(target_os = "android"))]
             update_check,
+            #[cfg(not(target_os = "android"))]
             update_download,
+            #[cfg(not(target_os = "android"))]
             update_cancel_download,
+            #[cfg(not(target_os = "android"))]
             update_install_pending,
         ])
         .run(tauri::generate_context!())

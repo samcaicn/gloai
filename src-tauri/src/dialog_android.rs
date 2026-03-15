@@ -1,4 +1,6 @@
-#[derive(serde::Serialize)]
+use serde::Serialize;
+
+#[derive(Serialize)]
 pub struct DialogResult {
     pub success: bool,
     pub path: Option<String>,
