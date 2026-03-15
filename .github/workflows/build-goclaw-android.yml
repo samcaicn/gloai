@@ -17,10 +17,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          go-version: '1.21'
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
       - name: Install Android NDK
         uses: nttld/setup-ndk@v1
@@ -28,61 +28,25 @@ jobs:
           ndk-version: r26b
           add-to-path: true
 
-      - name: Build GoClaw for Android ARM64
-        working-directory: ./src-tauri/goclaw-android/jni
+      - name: Build GoClaw for Android
+        working-directory: ./src-tauri/goclaw-android
         env:
-          CGO_ENABLED: 1
-          GOOS: android
-          GOARCH: arm64
-          CC: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
         run: |
-          echo "Building for Android ARM64..."
-          go build -buildmode=c-shared -o ../libs/arm64-v8a/libgoclaw.so goclaw_jni.go
-          ls -la ../libs/arm64-v8a/
+          chmod +x build-android-rust.sh
+          ./build-android-rust.sh
 
-      - name: Build GoClaw for Android ARM
-        working-directory: ./src-tauri/goclaw-android/jni
-        env:
-          CGO_ENABLED: 1
-          GOOS: android
-          GOARCH: arm
-          CC: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang
+      - name: Verify libraries
         run: |
-          echo "Building for Android ARM..."
-          go build -buildmode=c-shared -o ../libs/armeabi-v7a/libgoclaw.so goclaw_jni.go
-          ls -la ../libs/armeabi-v7a/
-
-      - name: Build GoClaw for Android x86_64
-        working-directory: ./src-tauri/goclaw-android/jni
-        env:
-          CGO_ENABLED: 1
-          GOOS: android
-          GOARCH: amd64
-          CC: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang
-        run: |
-          echo "Building for Android x86_64..."
-          go build -buildmode=c-shared -o ../libs/x86_64/libgoclaw.so goclaw_jni.go
-          ls -la ../libs/x86_64/
-
-      - name: Copy libraries to Android project
-        run: |
-          mkdir -p src-tauri/gen/android/app/src/main/jniLibs/arm64-v8a
-          mkdir -p src-tauri/gen/android/app/src/main/jniLibs/armeabi-v7a
-          mkdir -p src-tauri/gen/android/app/src/main/jniLibs/x86_64
-          
-          cp src-tauri/goclaw-android/libs/arm64-v8a/libgoclaw.so src-tauri/gen/android/app/src/main/jniLibs/arm64-v8a/
-          cp src-tauri/goclaw-android/libs/armeabi-v7a/libgoclaw.so src-tauri/gen/android/app/src/main/jniLibs/armeabi-v7a/
-          cp src-tauri/goclaw-android/libs/x86_64/libgoclaw.so src-tauri/gen/android/app/src/main/jniLibs/x86_64/
-          
           echo "=== JNI Libraries ==="
-          find src-tauri/gen/android/app/src/main/jniLibs -type f
+          find src-tauri/gen/android/app/src/main/jniLibs -type f -name "*.so" 2>/dev/null || echo "No .so files found"
+          ls -la src-tauri/gen/android/app/src/main/jniLibs/*/ 2>/dev/null || echo "jniLibs directory not found"
 
       - name: Upload GoClaw Libraries
         uses: actions/upload-artifact@v4
         with:
           name: goclaw-android-libraries
           path: |
-            src-tauri/goclaw-android/libs/
             src-tauri/gen/android/app/src/main/jniLibs/
           retention-days: 30
 
@@ -91,5 +55,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add src-tauri/gen/android/app/src/main/jniLibs/
-          git diff --staged --quiet || git commit -m "Update GoClaw Android libraries"
+          git diff --staged --quiet || git commit -m "Update GoClaw Android libraries [skip ci]"
           git push || echo "Nothing to commit"
