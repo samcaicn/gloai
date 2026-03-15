@@ -66,10 +66,17 @@ jobs:
 
       - name: Fix capabilities for Android
         run: |
-          cd src-tauri/capabilities
+          cd src-tauri
           
-          # 确保 default.json 只包含桌面平台权限
-          cat > default.json << 'EOF'
+          # 删除可能由 tauri android init 生成的 capabilities
+          rm -rf gen/android/app/capabilities 2>/dev/null || true
+          rm -rf gen/android/capabilities 2>/dev/null || true
+          
+          # 确保源 capabilities 目录存在
+          mkdir -p capabilities
+          
+          # 创建桌面平台 capabilities（不包含 dialog）
+          cat > capabilities/default.json << 'EOF'
           {
             "$schema": "../gen/schemas/desktop-schema.json",
             "identifier": "default",
@@ -89,8 +96,8 @@ jobs:
           }
           EOF
           
-          # 确保 android.json 存在
-          cat > android.json << 'EOF'
+          # 创建 Android 平台 capabilities
+          cat > capabilities/android.json << 'EOF'
           {
             "$schema": "../gen/schemas/mobile-schema.json",
             "identifier": "android",
@@ -111,9 +118,10 @@ jobs:
           EOF
           
           echo "=== Final capabilities ==="
-          cat default.json
+          ls -la capabilities/
+          cat capabilities/default.json
           echo ""
-          cat android.json
+          cat capabilities/android.json
 
       - name: Build Android APK
         run: |
