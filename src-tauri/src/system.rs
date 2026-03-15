@@ -1,10 +1,12 @@
 use std::env;
-use std::process::Command;
+use tauri::{AppHandle, Manager};
+
+#[cfg(not(target_os = "android"))]
 use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager,
+    Emitter,
 };
 
 #[cfg(target_os = "windows")]
@@ -22,6 +24,7 @@ use std::io::Write;
 
 pub struct SystemManager {
     app_handle: Option<AppHandle>,
+    #[cfg(not(target_os = "android"))]
     tray: Option<TrayIcon>,
 }
 
@@ -29,6 +32,7 @@ impl SystemManager {
     pub fn new() -> Self {
         SystemManager {
             app_handle: None,
+            #[cfg(not(target_os = "android"))]
             tray: None,
         }
     }
@@ -37,6 +41,7 @@ impl SystemManager {
         self.app_handle = Some(app_handle);
     }
 
+    #[cfg(not(target_os = "android"))]
     pub fn setup_system_tray(&mut self, app: &mut tauri::App) -> Result<(), String> {
         let app_handle = app.handle().clone();
 
@@ -110,6 +115,12 @@ impl SystemManager {
         Ok(())
     }
 
+    #[cfg(target_os = "android")]
+    pub fn setup_system_tray(&mut self, _app: &mut tauri::App) -> Result<(), String> {
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "android"))]
     fn get_tray_icon(_app_handle: &AppHandle) -> Result<Image<'static>, String> {
         let icon_bytes = include_bytes!("../icons/32x32.png");
         let img = image::load_from_memory(icon_bytes)
@@ -119,9 +130,10 @@ impl SystemManager {
         Ok(Image::new_owned(rgba.into_raw(), width, height))
     }
 
-    pub fn enable_auto_start(&self, enable: bool) -> Result<(), String> {
+    pub fn enable_auto_start(&self, _enable: bool) -> Result<(), String> {
         #[cfg(target_os = "windows")]
         {
+            let enable = _enable;
             let hkcu = RegKey::predef(HKEY_CURRENT_USER);
             let (key, _) = hkcu
                 .create_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
@@ -139,6 +151,9 @@ impl SystemManager {
 
         #[cfg(target_os = "macos")]
         {
+            let enable = _enable;
+            use std::process::Command;
+            
             let launch_agent_dir = dirs::home_dir()
                 .ok_or("Failed to get home directory".to_string())?
                 .join("Library")
@@ -195,6 +210,7 @@ impl SystemManager {
 
         #[cfg(target_os = "linux")]
         {
+            let enable = _enable;
             let autostart_dir = dirs::home_dir()
                 .ok_or("Failed to get home directory".to_string())?
                 .join(".config")
@@ -216,6 +232,11 @@ impl SystemManager {
                     std::fs::remove_file(desktop_path).map_err(|e| e.to_string())?;
                 }
             }
+            Ok(())
+        }
+
+        #[cfg(target_os = "android")]
+        {
             Ok(())
         }
     }
@@ -249,6 +270,11 @@ impl SystemManager {
                 .join("autostart")
                 .join("glo.desktop");
             Ok(desktop_path.exists())
+        }
+
+        #[cfg(target_os = "android")]
+        {
+            Ok(false)
         }
     }
 

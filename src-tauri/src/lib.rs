@@ -495,11 +495,17 @@ async fn logger_get_path(state: State<'_, AppState>) -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn logger_open_folder(state: State<'_, AppState>) -> Result<(), String> {
-    use open::that;
+async fn logger_open_folder(state: State<'_, AppState>) -> Result<String, String> {
     let logger = state.logger.lock().await;
     let logs_dir = logger.get_logs_dir().map_err(|e| e.to_string())?;
-    that(logs_dir).map_err(|e| format!("Failed to open log folder: {}", e))
+    
+    #[cfg(not(target_os = "android"))]
+    {
+        use open::that;
+        that(&logs_dir).map_err(|e| format!("Failed to open log folder: {}", e))?;
+    }
+    
+    Ok(logs_dir.to_string_lossy().into_owned())
 }
 
 #[tauri::command]
@@ -757,8 +763,16 @@ async fn get_platform() -> Result<String, String> {
 
 #[tauri::command]
 async fn open_external(url: String) -> Result<(), String> {
-    use open::that;
-    that(&url).map_err(|e| format!("Failed to open URL: {}", e))
+    #[cfg(not(target_os = "android"))]
+    {
+        use open::that;
+        that(&url).map_err(|e| format!("Failed to open URL: {}", e))
+    }
+    
+    #[cfg(target_os = "android")]
+    {
+        Ok(())
+    }
 }
 
 #[tauri::command]
