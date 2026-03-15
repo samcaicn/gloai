@@ -8,6 +8,27 @@ const MAX_RETRIES: u32 = 5;
 const RETRY_DELAY_SECS: u64 = 5;
 
 fn main() {
+    let target_os = env::var("CARGO_CFG_TARGET_OS")
+        .unwrap_or_else(|_| std::env::consts::OS.to_string());
+    
+    // Android 平台特殊处理
+    if target_os == "android" {
+        println!("cargo:warning=Android target detected");
+        println!("cargo:warning=Android will use embedded goclaw library or remote service");
+        
+        // 创建空目录避免构建错误
+        let resources_dir = Path::new("resources");
+        let goclaw_dir = resources_dir.join("goclaw");
+        if !goclaw_dir.exists() {
+            std::fs::create_dir_all(&goclaw_dir).unwrap_or_else(|e| {
+                println!("cargo:warning=Failed to create goclaw directory: {}", e);
+            });
+        }
+        
+        tauri_build::build();
+        return;
+    }
+    
     // 下载 goclaw 二进制文件（带重试机制）
     match download_goclaw_with_retry() {
         Ok(_) => {
@@ -65,6 +86,13 @@ fn download_goclaw() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|_| std::env::consts::ARCH.to_string());
     
     println!("cargo:warning=Target OS: {}, Target Arch: {}", target_os, target_arch);
+    
+    // Android 平台跳过下载
+    if target_os == "android" {
+        println!("cargo:warning=Android target - skipping goclaw binary download");
+        println!("cargo:warning=Android will use embedded goclaw library");
+        return Ok(());
+    }
     
     // 获取构建目标（用于检测 universal binary）
     let build_target = env::var("CARGO_BUILD_TARGET").unwrap_or_default();

@@ -6,6 +6,9 @@ use std::time::Duration;
 #[cfg(not(target_os = "android"))]
 use std::process::{Child, Command, Stdio};
 
+#[cfg(target_os = "android")]
+use std::process::Command;
+
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{oneshot, Mutex as AsyncMutex};
@@ -105,6 +108,8 @@ pub struct GoClawManager {
     config: Arc<Mutex<GoClawConfig>>,
     #[cfg(not(target_os = "android"))]
     process: Arc<Mutex<Option<Child>>>,
+    #[cfg(target_os = "android")]
+    process_running: Arc<Mutex<bool>>,
     pending_requests: PendingRequests,
     request_id: Arc<Mutex<u64>>,
     ws_connection: Arc<AsyncMutex<Option<WebSocketConnection>>>,
@@ -126,6 +131,8 @@ impl GoClawManager {
             config: Arc::new(Mutex::new(config)),
             #[cfg(not(target_os = "android"))]
             process: Arc::new(Mutex::new(None)),
+            #[cfg(target_os = "android")]
+            process_running: Arc::new(Mutex::new(false)),
             pending_requests: Arc::new(Mutex::new(HashMap::new())),
             request_id: Arc::new(Mutex::new(0)),
             ws_connection: Arc::new(AsyncMutex::new(None)),
@@ -165,7 +172,7 @@ impl GoClawManager {
             .map(|p| p.to_string_lossy().to_string());
         
         #[cfg(target_os = "android")]
-        let binary_path = None;
+        let binary_path = self.find_android_binary().map(|p| p.to_string_lossy().to_string());
 
         GoClawStatus {
             running,
@@ -324,6 +331,32 @@ impl GoClawManager {
         }
     }
 
+    #[cfg(target_os = "android")]
+    fn find_android_binary(&self) -> Option<PathBuf> {
+        // Android 上查找嵌入的二进制文件
+        // 通常在 /data/data/com.ggclaw.app/files/ 目录下
+        if let Ok(internal_dir) = std::env::var("INTERNAL_DIR") {
+            let binary_path = PathBuf::from(internal_dir).join("goclaw");
+            if binary_path.exists() {
+                return Some(binary_path);
+            }
+        }
+        
+        // 尝试默认路径
+        let default_paths = vec![
+            PathBuf::from("/data/data/com.ggclaw.app/files/goclaw"),
+            PathBuf::from("/data/data/com.ggclaw.app/goclaw"),
+        ];
+        
+        for path in default_paths {
+            if path.exists() {
+                return Some(path);
+            }
+        }
+        
+        None
+    }
+
     #[cfg(not(target_os = "android"))]
     pub async fn start(&self) -> anyhow::Result<()> {
         let (is_enabled, timeout_ms) = {
@@ -433,16 +466,69 @@ impl GoClawManager {
 
     #[cfg(target_os = "android")]
     pub async fn start(&self) -> anyhow::Result<()> {
-        self.logger.lock().unwrap().info("GoClaw process management is not supported on Android");
-        self.logger.lock().unwrap().info("Attempting to connect to remote GoClaw service...");
-        
-        let config = self.config.lock().unwrap();
-        if config.enabled {
-            drop(config);
-            self.connect_websocket().await
-        } else {
-            Err(anyhow::anyhow!("GoClaw is disabled in config"))
+        let (is_enabled, timeout_ms) = {
+            let config = self.config.lock().unwrap();
+            (config.enabled, config.start_timeout_ms)
+        };
+
+        if !is_enabled {
+            let err = "GoClaw is disabled in config".to_string();
+            *self.last_error.lock().unwrap() = Some(err.clone());
+            return Err(anyhow::anyhow!(err));
         }
+
+        if self.is_running() {
+            self.logger.lock().unwrap().info("Already running, skipping start");
+            return Ok(());
+        }
+
+        self.logger.lock().unwrap().info("Starting GoClaw service on Android...");
+        
+        // 尝试查找嵌入的二进制文件
+        if let Some(binary_path) = self.find_android_binary() {
+            self.logger.lock().unwrap().info(&format!("Found embedded GoClaw binary at: {:?}", binary_path));
+            
+            // 在 Android 上使用 shell 命令运行二进制
+            let result = Command::new("sh")
+                .arg("-c")
+                .arg(format!("{} start &", binary_path.display()))
+                .output();
+            
+            match result {
+                Ok(output) => {
+                    self.logger.lock().unwrap().info(&format!("GoClaw start output: {}", String::from_utf8_lossy(&output.stdout)));
+                    if !output.stderr.is_empty() {
+                        self.logger.lock().unwrap().warn(&format!("GoClaw start stderr: {}", String::from_utf8_lossy(&output.stderr)));
+                    }
+                    *self.process_running.lock().unwrap() = true;
+                    *self.last_error.lock().unwrap() = None;
+                }
+                Err(e) => {
+                    self.logger.lock().unwrap().warn(&format!("Failed to start embedded GoClaw: {}", e));
+                }
+            }
+        } else {
+            self.logger.lock().unwrap().info("No embedded GoClaw binary found, trying to connect to remote service");
+        }
+
+        // 等待服务启动
+        let timeout = Duration::from_millis(timeout_ms);
+        let start_time = std::time::Instant::now();
+        
+        while start_time.elapsed() < timeout {
+            if self.check_port_available() {
+                self.logger.lock().unwrap().info("GoClaw service is ready");
+                *self.process_running.lock().unwrap() = true;
+                *self.last_error.lock().unwrap() = None;
+                return Ok(());
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+
+        // 即使端口未就绪，也尝试连接远程服务
+        self.logger.lock().unwrap().info("Attempting to connect to remote GoClaw service...");
+        *self.process_running.lock().unwrap() = true;
+        Ok(())
     }
 
     #[cfg(not(target_os = "android"))]
@@ -466,6 +552,8 @@ impl GoClawManager {
     pub async fn stop(&self) -> anyhow::Result<()> {
         let mut ws_conn = self.ws_connection.lock().await;
         *ws_conn = None;
+        *self.process_running.lock().unwrap() = false;
+        println!("[GoClaw] GoClaw stopped on Android");
         Ok(())
     }
 
@@ -484,7 +572,7 @@ impl GoClawManager {
 
     #[cfg(target_os = "android")]
     pub fn is_running(&self) -> bool {
-        self.ws_connection.blocking_lock().is_some()
+        *self.process_running.lock().unwrap()
     }
 
     pub async fn restart(&self) -> anyhow::Result<()> {
