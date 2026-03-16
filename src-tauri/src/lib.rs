@@ -1149,7 +1149,9 @@ pub fn run() {
             scheduler_update_task,
             scheduler_list_task_runs,
             scheduler_execute_task,
+            #[cfg(not(target_os = "android"))]
             dialog_select_directory,
+            #[cfg(not(target_os = "android"))]
             dialog_select_file,
             tuptup_get_smtp_config,
             tuptup_get_user_package,
