@@ -1,7 +1,5 @@
-const { notarize } = require('@electron/notarize');
 const path = require('path');
 
-// 加载 .env 文件
 require('dotenv').config();
 
 exports.default = async function notarizing(context) {
@@ -21,6 +19,15 @@ exports.default = async function notarizing(context) {
   if (!process.env.APPLE_TEAM_ID) {
     console.warn('⚠️  跳过公证: 未设置 APPLE_TEAM_ID');
     console.warn('   公证需要 APPLE_TEAM_ID');
+    return;
+  }
+
+  let notarize;
+  try {
+    ({ notarize } = require('@electron/notarize'));
+  } catch (err) {
+    console.warn('⚠️  跳过公证: @electron/notarize 模块未安装');
+    console.warn('   如需启用公证，请运行: npm install @electron/notarize');
     return;
   }
 
