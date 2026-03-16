@@ -63,6 +63,7 @@
     "sign": false
   },
   "afterSign": null,
+  "publish": null,
   "win": {
     "target": [
       "nsis"
