@@ -60,7 +60,8 @@
     }
   },
   "dmg": {
-    "sign": false
+    "sign": false,
+    "format": "ULFO"
   },
   "afterSign": null,
   "publish": null,
