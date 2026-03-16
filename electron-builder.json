@@ -62,7 +62,7 @@
   "dmg": {
     "sign": false
   },
-  "afterSign": "scripts/notarize.js",
+  "afterSign": null,
   "win": {
     "target": [
       "nsis"
