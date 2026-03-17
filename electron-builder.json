@@ -1,7 +1,7 @@
 {
-  "appId": "com.lobsterai.app",
-  "productName": "LobsterAI",
-  "executableName": "LobsterAI",
+  "appId": "com.originclaw.app",
+  "productName": "OriginClaw",
+  "executableName": "OriginClaw",
   "directories": {
     "output": "release"
   },
@@ -54,9 +54,9 @@
     "entitlementsInherit": "build/entitlements.mac.plist",
     "extendInfo": {
       "CFBundleIconName": "icon",
-      "NSCalendarsUsageDescription": "LobsterAI 需要访问您的日历来帮助您查看和管理日程安排，例如查找事件、创建会议等。",
-      "NSRemindersUsageDescription": "LobsterAI 需要访问您的提醒事项来帮助您管理待办事项。",
-      "NSAppleEventsUsageDescription": "LobsterAI 需要使用 Apple Events 来控制 Calendar 应用执行自动化操作。"
+      "NSCalendarsUsageDescription": "OriginClaw 需要访问您的日历来帮助您查看和管理日程安排，例如查找事件、创建会议等。",
+      "NSRemindersUsageDescription": "OriginClaw 需要访问您的提醒事项来帮助您管理待办事项。",
+      "NSAppleEventsUsageDescription": "OriginClaw 需要使用 Apple Events 来控制 Calendar 应用执行自动化操作。"
     }
   },
   "dmg": {
@@ -95,7 +95,7 @@
     "icon": "build/icons/png",
     "category": "Utility",
     "desktop": {
-      "Name": "LobsterAI",
+      "Name": "OriginClaw",
       "Comment": "AI-assisted coding and productivity tool",
       "Terminal": "false"
     }
@@ -113,7 +113,16 @@
     "node_modules/@img/**",
     "node_modules/sql.js/dist/**",
     "node_modules/node-nim/**",
-    "node_modules/npm/**"
+    "node_modules/npm/**",
+    "SKILLs/**/node_modules/@img/**"
+  ],
+  "x64ArchFiles": [
+    "node_modules/@img/sharp-darwin-x64/**",
+    "SKILLs/**/node_modules/@img/sharp-darwin-x64/**"
+  ],
+  "arm64ArchFiles": [
+    "node_modules/@img/sharp-darwin-arm64/**",
+    "SKILLs/**/node_modules/@img/sharp-darwin-arm64/**"
   ],
   "asar": true
 }
