@@ -59,11 +59,15 @@ jobs:
           # Get global npm root path
           NPM_GLOBAL_ROOT=$(npm root -g)
           
-          # Create tauri as Node.js script with shebang
+          # Create tauri as Node.js script using ES modules
           cat > src-tauri/tauri << EOF
           #!/usr/bin/env node
-          const { spawnSync } = require('child_process');
-          const path = require('path');
+          import { spawnSync } from 'child_process';
+          import path from 'path';
+          import { fileURLToPath } from 'url';
+          
+          const __filename = fileURLToPath(import.meta.url);
+          const __dirname = path.dirname(__filename);
           
           const tauriCliPath = path.join('${NPM_GLOBAL_ROOT}', '@tauri-apps', 'cli', 'tauri.js');
           const result = spawnSync('node', [tauriCliPath, ...process.argv.slice(2)], {
