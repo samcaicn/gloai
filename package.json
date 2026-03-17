@@ -1,9 +1,9 @@
 {
-  "name": "lobsterai",
+  "name": "originclaw",
   "private": true,
   "author": {
-    "name": "LobsterAI",
-    "email": "lobsterai.project@rd.netease.com"
+    "name": "OriginClaw",
+    "email": "originclaw.project@rd.netease.com"
   },
   "license": "MIT",
   "version": "0.2.4",

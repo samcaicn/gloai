@@ -1,142 +1,137 @@
-#!/usr/bin/env node
+/**
+ * Generate tray icons for Windows, macOS, and Linux from a source PNG.
+ * Works on both macOS and Windows.
+ */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { execSync } = require('child_process');
+const os = require('os');
 
-const projectRoot = path.resolve(__dirname, '..');
-const inputPath = path.resolve(projectRoot, process.argv[2] || 'public/logo.png');
-const outputDir = path.resolve(projectRoot, 'resources/tray');
+const SOURCE = path.join(__dirname, '..', 'public', 'logo.png');
+const OUTPUT_DIR = path.join(__dirname, '..', 'resources', 'tray');
 
-function run(cmd, args) {
-  const result = spawnSync(cmd, args, { stdio: 'pipe', encoding: 'utf8' });
-  if (result.status !== 0) {
-    const stderr = result.stderr?.trim();
-    const stdout = result.stdout?.trim();
-    const detail = stderr || stdout || `exit code ${result.status}`;
-    throw new Error(`${cmd} ${args.join(' ')} failed: ${detail}`);
+function isWindows() {
+  return os.platform() === 'win32';
+}
+
+function resizeImageMac(src, dest, size) {
+  execSync(`sips -z ${size} ${size} "${src}" --out "${dest}"`, { stdio: 'inherit' });
+}
+
+function resizeImageWindows(src, dest, size) {
+  const tmpDir = path.join(__dirname, '..', 'build', 'icons', '_tmp');
+  fs.mkdirSync(tmpDir, { recursive: true });
+
+  const psScript = `
+Add-Type -AssemblyName System.Drawing
+$src = [System.Drawing.Image]::FromFile("${src.replace(/\\/g, '\\\\')}")
+$bmp = New-Object System.Drawing.Bitmap($src)
+$bmpNew = New-Object System.Drawing.Bitmap($size, $size)
+$g = [System.Drawing.Graphics]::FromImage($bmpNew)
+$g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+$g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+$g.DrawImage($bmp, 0, 0, $size, $size)
+$g.Dispose()
+$bmpNew.Save("${dest.replace(/\\/g, '\\\\')}", [System.Drawing.Imaging.ImageFormat]::Png)
+$bmpNew.Dispose()
+$bmp.Dispose()
+`;
+  const psFile = path.join(tmpDir, 'resize.ps1');
+  fs.writeFileSync(psFile, psScript, 'utf8');
+  execSync(`powershell -ExecutionPolicy Bypass -File "${psFile}"`, { stdio: 'inherit' });
+}
+
+function resizeImage(src, dest, size) {
+  if (isWindows()) {
+    resizeImageWindows(src, dest, size);
+  } else {
+    resizeImageMac(src, dest, size);
   }
 }
 
-function hasCommand(cmd, args) {
-  const result = spawnSync(cmd, args, { stdio: 'ignore' });
-  return result.status === 0;
-}
+function createIco() {
+  const tmpDir = path.join(__dirname, '..', 'build', 'icons', '_tmp');
+  fs.mkdirSync(tmpDir, { recursive: true });
 
-function ensureImageMagick() {
-  if (hasCommand('magick', ['-version'])) return 'magick';
-  if (hasCommand('convert', ['-version'])) return 'convert';
-  throw new Error('ImageMagick is required. Please install `magick` or `convert`.');
-}
+  const sizes = [16, 32, 48];
+  const pngBuffers = [];
 
-function ensureInputExists() {
-  if (!fs.existsSync(inputPath)) {
-    throw new Error(`Input logo not found: ${inputPath}`);
+  for (const size of sizes) {
+    const outPath = path.join(tmpDir, `tray-${size}.png`);
+    resizeImage(SOURCE, outPath, size);
+    pngBuffers.push({ size, data: fs.readFileSync(outPath) });
   }
+
+  const count = pngBuffers.length;
+  const headerSize = 6;
+  const entrySize = 16;
+  const dataOffset0 = headerSize + entrySize * count;
+
+  let currentOffset = dataOffset0;
+  const entries = pngBuffers.map(({ size, data }) => {
+    const entry = {
+      width: size >= 256 ? 0 : size,
+      height: size >= 256 ? 0 : size,
+      dataSize: data.length,
+      offset: currentOffset,
+      data,
+    };
+    currentOffset += data.length;
+    return entry;
+  });
+
+  const totalSize = currentOffset;
+  const ico = Buffer.alloc(totalSize);
+
+  ico.writeUInt16LE(0, 0);
+  ico.writeUInt16LE(1, 2);
+  ico.writeUInt16LE(count, 4);
+
+  entries.forEach((e, i) => {
+    const off = headerSize + i * entrySize;
+    ico.writeUInt8(e.width, off + 0);
+    ico.writeUInt8(e.height, off + 1);
+    ico.writeUInt8(0, off + 2);
+    ico.writeUInt8(0, off + 3);
+    ico.writeUInt16LE(1, off + 4);
+    ico.writeUInt16LE(32, off + 6);
+    ico.writeUInt32LE(e.dataSize, off + 8);
+    ico.writeUInt32LE(e.offset, off + 12);
+  });
+
+  entries.forEach(e => {
+    e.data.copy(ico, e.offset);
+  });
+
+  const icoPath = path.join(OUTPUT_DIR, 'tray-icon.ico');
+  fs.writeFileSync(icoPath, ico);
+  console.log(`Generated ${icoPath} — ${ico.length} bytes`);
 }
 
-function ensureOutputDir() {
-  fs.mkdirSync(outputDir, { recursive: true });
+function createTrayIcons() {
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+
+  console.log('Generating tray icons...');
+
+  const linuxPng = path.join(OUTPUT_DIR, 'tray-icon.png');
+  resizeImage(SOURCE, linuxPng, 48);
+  console.log('Generated tray-icon.png (48x48)');
+
+  createIco();
+
+  const macSizes = [
+    { size: 16, out: 'tray-icon-mac.png', template: 'trayIconTemplate.png' },
+    { size: 32, out: 'tray-icon-mac@2x.png', template: 'trayIconTemplate@2x.png' }
+  ];
+
+  for (const { size, out } of macSizes) {
+    const outPath = path.join(OUTPUT_DIR, out);
+    resizeImage(SOURCE, outPath, size);
+    console.log(`Generated ${out} (${size}x${size})`);
+  }
+
+  console.log(`\nTray icons generated successfully in ${OUTPUT_DIR}`);
 }
 
-function main() {
-  ensureInputExists();
-  ensureOutputDir();
-  const magick = ensureImageMagick();
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tray-icons-'));
-
-  const win16 = path.join(tmpDir, 'tray-16.png');
-  const win32 = path.join(tmpDir, 'tray-32.png');
-  const win48 = path.join(tmpDir, 'tray-48.png');
-
-  const linuxPng = path.join(outputDir, 'tray-icon.png');
-  const winIco = path.join(outputDir, 'tray-icon.ico');
-  const macTemplate = path.join(outputDir, 'trayIconTemplate.png');
-  const macTemplate2x = path.join(outputDir, 'trayIconTemplate@2x.png');
-  const macColor = path.join(outputDir, 'tray-icon-mac.png');
-  const macColor2x = path.join(outputDir, 'tray-icon-mac@2x.png');
-  const macColorRaw = path.join(tmpDir, 'tray-icon-mac-raw.png');
-  const macColor2xRaw = path.join(tmpDir, 'tray-icon-mac@2x-raw.png');
-
-  run(magick, [inputPath, '-resize', '48x48', linuxPng]);
-
-  run(magick, [inputPath, '-resize', '16x16', win16]);
-  run(magick, [inputPath, '-resize', '32x32', win32]);
-  run(magick, [inputPath, '-resize', '48x48', win48]);
-  run(magick, [win16, win32, win48, winIco]);
-
-  // macOS template images: convert the white lobster to opaque pixels while
-  // forcing the red background fully transparent, then center the glyph with
-  // a small padding to avoid menu bar clipping.
-  run(magick, [
-    inputPath, '-resize', '18x18',
-    '-colorspace', 'Gray', '-threshold', '70%',
-    '-alpha', 'copy',
-    '-channel', 'RGB', '-fill', 'black', '-colorize', '100',
-    '-trim', '+repage',
-    '-background', 'none', '-gravity', 'center', '-extent', '18x18',
-    macTemplate,
-  ]);
-
-  run(magick, [
-    inputPath, '-resize', '36x36',
-    '-colorspace', 'Gray', '-threshold', '70%',
-    '-alpha', 'copy',
-    '-channel', 'RGB', '-fill', 'black', '-colorize', '100',
-    '-trim', '+repage',
-    '-background', 'none', '-gravity', 'center', '-extent', '36x36',
-    macTemplate2x,
-  ]);
-
-  // macOS color tray icons: preserve original brand colors.
-  run(magick, [
-    inputPath,
-    '-trim', '+repage',
-    '-resize', '16x16',
-    '-modulate', '108,118,100',
-    '-sigmoidal-contrast', '4,50%',
-    '-background', 'none', '-gravity', 'center', '-extent', '18x18',
-    macColorRaw,
-  ]);
-
-  run(magick, [
-    inputPath,
-    '-trim', '+repage',
-    '-resize', '32x32',
-    '-modulate', '108,118,100',
-    '-sigmoidal-contrast', '4,50%',
-    '-background', 'none', '-gravity', 'center', '-extent', '36x36',
-    macColor2xRaw,
-  ]);
-
-  run(magick, [
-    macColorRaw,
-    '-alpha', 'on',
-    '-colorspace', 'sRGB',
-    '-type', 'TrueColorAlpha',
-    '-strip',
-    '-define', 'png:color-type=6',
-    macColor,
-  ]);
-
-  run(magick, [
-    macColor2xRaw,
-    '-alpha', 'on',
-    '-colorspace', 'sRGB',
-    '-type', 'TrueColorAlpha',
-    '-strip',
-    '-define', 'png:color-type=6',
-    macColor2x,
-  ]);
-
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-  console.log(`Generated tray icons from ${inputPath} -> ${outputDir}`);
-}
-
-try {
-  main();
-} catch (error) {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-}
+createTrayIcons();

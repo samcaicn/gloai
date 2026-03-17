@@ -39,11 +39,11 @@ jobs:
       - name: Build Skills
         run: pnpm run build:skills
 
-      - name: Build macOS universal app
-        run: pnpm run dist:mac:universal
+      - name: Build macOS app (arm64)
+        run: pnpm run dist:mac:arm64
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-app-universal
+          name: macos-app
           path: release/*.dmg

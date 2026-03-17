@@ -116,13 +116,5 @@
     "node_modules/npm/**",
     "SKILLs/**/node_modules/@img/**"
   ],
-  "x64ArchFiles": [
-    "node_modules/@img/sharp-darwin-x64/**",
-    "SKILLs/**/node_modules/@img/sharp-darwin-x64/**"
-  ],
-  "arm64ArchFiles": [
-    "node_modules/@img/sharp-darwin-arm64/**",
-    "SKILLs/**/node_modules/@img/sharp-darwin-arm64/**"
-  ],
   "asar": true
 }

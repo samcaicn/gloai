@@ -1,113 +1,179 @@
 /**
- * Generate a multi-size .ico file from a source PNG.
- *
- * ICO format with embedded PNGs:
- *   ICONDIR  (6 bytes)  – reserved(2) + type(2)=1 + count(2)
- *   ICONDIRENTRY * N (16 bytes each)
- *   PNG data blobs
- *
- * We use System.Drawing via PowerShell to resize the source image into
- * several sizes, save them as temporary PNGs, then pack them into .ico
- * purely with Node buffers.
+ * Generate app icons for both Windows (.ico) and macOS (.icns) from a source PNG.
+ * Works on both macOS and Windows.
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const os = require('os');
 
 const SOURCE = path.join(__dirname, '..', 'public', 'logo.png');
-const OUT_DIR = path.join(__dirname, '..', 'build', 'icons', 'win');
-const OUT_ICO = path.join(OUT_DIR, 'icon.ico');
+const ICONS_DIR = path.join(__dirname, '..', 'build', 'icons');
+const WIN_DIR = path.join(ICONS_DIR, 'win');
+const MAC_DIR = path.join(ICONS_DIR, 'mac');
+const PNG_DIR = path.join(ICONS_DIR, 'png');
+const OUT_ICO = path.join(WIN_DIR, 'icon.ico');
 const SIZES = [256, 128, 64, 48, 32, 16];
+const MAC_SIZES = [16, 32, 128, 256, 512];
 
-// Ensure output directory exists
-fs.mkdirSync(OUT_DIR, { recursive: true });
-
-// Step 1: Use PowerShell + System.Drawing to resize the source PNG
-const tmpDir = path.join(__dirname, '..', 'build', 'icons', '_tmp');
+const tmpDir = path.join(ICONS_DIR, '_tmp');
 fs.mkdirSync(tmpDir, { recursive: true });
 
-const psScript = `
-Add-Type -AssemblyName System.Drawing
-
-$src = [System.Drawing.Image]::FromFile("${SOURCE.replace(/\\/g, '\\\\')}")
-$sizes = @(${SIZES.join(',')})
-
-foreach ($s in $sizes) {
-    $bmp = New-Object System.Drawing.Bitmap($s, $s)
-    $g = [System.Drawing.Graphics]::FromImage($bmp)
-    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
-    $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
-    $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
-    $g.DrawImage($src, 0, 0, $s, $s)
-    $g.Dispose()
-    $outPath = "${tmpDir.replace(/\\/g, '\\\\')}\\\\icon_$s.png"
-    $bmp.Save($outPath, [System.Drawing.Imaging.ImageFormat]::Png)
-    $bmp.Dispose()
+function isWindows() {
+  return os.platform() === 'win32';
 }
 
-$src.Dispose()
+function resizeImageMac(src, dest, size) {
+  execSync(`sips -z ${size} ${size} "${src}" --out "${dest}"`, { stdio: 'inherit' });
+}
+
+function resizeImageWindows(src, dest, size) {
+  const psScript = `
+Add-Type -AssemblyName System.Drawing
+$src = [System.Drawing.Image]::FromFile("${src.replace(/\\/g, '\\\\')}")
+$bmp = New-Object System.Drawing.Bitmap($src)
+$bmpNew = New-Object System.Drawing.Bitmap($size, $size)
+$g = [System.Drawing.Graphics]::FromImage($bmpNew)
+$g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+$g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+$g.DrawImage($bmp, 0, 0, $size, $size)
+$g.Dispose()
+$bmpNew.Save("${dest.replace(/\\/g, '\\\\')}", [System.Drawing.Imaging.ImageFormat]::Png)
+$bmpNew.Dispose()
+$bmp.Dispose()
 `;
+  const psFile = path.join(tmpDir, 'resize.ps1');
+  fs.writeFileSync(psFile, psScript, 'utf8');
+  execSync(`powershell -ExecutionPolicy Bypass -File "${psFile}"`, { stdio: 'inherit' });
+}
 
-const psFile = path.join(tmpDir, 'resize.ps1');
-fs.writeFileSync(psFile, psScript, 'utf8');
-execSync(`powershell -ExecutionPolicy Bypass -File "${psFile}"`, { stdio: 'inherit' });
+function resizeImage(src, dest, size) {
+  if (isWindows()) {
+    resizeImageWindows(src, dest, size);
+  } else {
+    resizeImageMac(src, dest, size);
+  }
+}
 
-// Step 2: Read resized PNGs and pack into ICO
-const pngBuffers = SIZES.map(s => {
-  const p = path.join(tmpDir, `icon_${s}.png`);
-  return { size: s, data: fs.readFileSync(p) };
-});
+function generateWindowsIcon() {
+  fs.mkdirSync(WIN_DIR, { recursive: true });
 
-const count = pngBuffers.length;
-const headerSize = 6;
-const entrySize = 16;
-const dataOffset0 = headerSize + entrySize * count;
+  console.log('Generating Windows icons...');
+  for (const size of SIZES) {
+    const outPath = path.join(tmpDir, `icon_${size}.png`);
+    resizeImage(SOURCE, outPath, size);
+    console.log(`  Generated ${size}x${size}`);
+  }
 
-// Calculate offsets
-let currentOffset = dataOffset0;
-const entries = pngBuffers.map(({ size, data }) => {
-  const entry = {
-    width: size >= 256 ? 0 : size,   // 0 means 256 in ICO format
-    height: size >= 256 ? 0 : size,
-    dataSize: data.length,
-    offset: currentOffset,
-    data,
-  };
-  currentOffset += data.length;
-  return entry;
-});
+  const pngBuffers = SIZES.map(s => {
+    const p = path.join(tmpDir, `icon_${s}.png`);
+    return { size: s, data: fs.readFileSync(p) };
+  });
 
-// Build ICO buffer
-const totalSize = currentOffset;
-const ico = Buffer.alloc(totalSize);
+  const count = pngBuffers.length;
+  const headerSize = 6;
+  const entrySize = 16;
+  const dataOffset0 = headerSize + entrySize * count;
 
-// ICONDIR
-ico.writeUInt16LE(0, 0);        // reserved
-ico.writeUInt16LE(1, 2);        // type = ICO
-ico.writeUInt16LE(count, 4);    // image count
+  let currentOffset = dataOffset0;
+  const entries = pngBuffers.map(({ size, data }) => {
+    const entry = {
+      width: size >= 256 ? 0 : size,
+      height: size >= 256 ? 0 : size,
+      dataSize: data.length,
+      offset: currentOffset,
+      data,
+    };
+    currentOffset += data.length;
+    return entry;
+  });
 
-// ICONDIRENTRY for each image
-entries.forEach((e, i) => {
-  const off = headerSize + i * entrySize;
-  ico.writeUInt8(e.width, off + 0);       // width
-  ico.writeUInt8(e.height, off + 1);      // height
-  ico.writeUInt8(0, off + 2);             // color palette
-  ico.writeUInt8(0, off + 3);             // reserved
-  ico.writeUInt16LE(1, off + 4);          // color planes
-  ico.writeUInt16LE(32, off + 6);         // bits per pixel
-  ico.writeUInt32LE(e.dataSize, off + 8); // image data size
-  ico.writeUInt32LE(e.offset, off + 12);  // image data offset
-});
+  const totalSize = currentOffset;
+  const ico = Buffer.alloc(totalSize);
 
-// Image data
-entries.forEach(e => {
-  e.data.copy(ico, e.offset);
-});
+  ico.writeUInt16LE(0, 0);
+  ico.writeUInt16LE(1, 2);
+  ico.writeUInt16LE(count, 4);
 
-fs.writeFileSync(OUT_ICO, ico);
-console.log(`Generated ${OUT_ICO} (${SIZES.join(', ')}px) — ${ico.length} bytes`);
+  entries.forEach((e, i) => {
+    const off = headerSize + i * entrySize;
+    ico.writeUInt8(e.width, off + 0);
+    ico.writeUInt8(e.height, off + 1);
+    ico.writeUInt8(0, off + 2);
+    ico.writeUInt8(0, off + 3);
+    ico.writeUInt16LE(1, off + 4);
+    ico.writeUInt16LE(32, off + 6);
+    ico.writeUInt32LE(e.dataSize, off + 8);
+    ico.writeUInt32LE(e.offset, off + 12);
+  });
 
-// Cleanup temp files
+  entries.forEach(e => {
+    e.data.copy(ico, e.offset);
+  });
+
+  fs.writeFileSync(OUT_ICO, ico);
+  console.log(`Generated ${OUT_ICO} — ${ico.length} bytes`);
+}
+
+function generateMacIcon() {
+  fs.mkdirSync(MAC_DIR, { recursive: true });
+  fs.mkdirSync(PNG_DIR, { recursive: true });
+
+  const iconSetDir = path.join(tmpDir, 'icon.iconset');
+  if (fs.existsSync(iconSetDir)) {
+    fs.rmSync(iconSetDir, { recursive: true });
+  }
+  fs.mkdirSync(iconSetDir, { recursive: true });
+
+  console.log('Generating macOS icons...');
+  for (const size of MAC_SIZES) {
+    const outPath = path.join(tmpDir, `icon_${size}.png`);
+    resizeImage(SOURCE, outPath, size);
+
+    const destPng = path.join(iconSetDir, `icon_${size}x${size}.png`);
+    fs.copyFileSync(outPath, destPng);
+    console.log(`  Added ${size}x${size}`);
+
+    const outPath2x = path.join(tmpDir, `icon_${size}x${size}@2x.png`);
+    resizeImage(SOURCE, outPath2x, size * 2);
+    const destPng2x = path.join(iconSetDir, `icon_${size}x${size}@2x.png`);
+    fs.copyFileSync(outPath2x, destPng2x);
+    console.log(`  Added ${size}x${size}@2x (${size * 2}x${size * 2})`);
+
+    const pngOutPath = path.join(PNG_DIR, `${size}x${size}.png`);
+    fs.copyFileSync(outPath, pngOutPath);
+  }
+
+  const icnsPath = path.join(MAC_DIR, 'icon.icns');
+  if (fs.existsSync(icnsPath)) {
+    fs.copyFileSync(icnsPath, path.join(MAC_DIR, 'icon.icns.backup'));
+    console.log('Backed up old icon to icon.icns.backup');
+  }
+
+  try {
+    execSync(`iconutil -c icns "${iconSetDir}" -o "${icnsPath}"`, { stdio: 'inherit' });
+    console.log(`Generated ${icnsPath}`);
+  } catch (e) {
+    console.error('Failed to generate .icns file:', e.message);
+    if (fs.existsSync(path.join(MAC_DIR, 'icon.icns.backup'))) {
+      fs.copyFileSync(path.join(MAC_DIR, 'icon.icns.backup'), icnsPath);
+    }
+  }
+
+  fs.rmSync(iconSetDir, { recursive: true });
+  console.log('Cleaned up temporary iconset directory');
+}
+
+console.log(`Platform: ${os.platform()}`);
+console.log('\nGenerating Windows icon...');
+generateWindowsIcon();
+
+console.log('\nGenerating macOS icon...');
+generateMacIcon();
+
+console.log('\nCleaning up temp files...');
 fs.rmSync(tmpDir, { recursive: true, force: true });
+
+console.log('\n All icons generated successfully!');
+console.log('Now you can rebuild with: npm run dist:mac');
