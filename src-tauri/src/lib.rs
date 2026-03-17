@@ -69,6 +69,9 @@ struct AppState {
     tuptup_service: Arc<TokioMutex<TuptupService>>,
     #[cfg(not(target_os = "android"))]
     update_manager: Arc<TokioMutex<UpdateManager>>,
+    #[cfg(target_os = "android")]
+    #[allow(dead_code)]
+    update_manager: Option<Arc<TokioMutex<UpdateManager>>>,
 }
 
 #[tauri::command]
@@ -1071,6 +1074,8 @@ pub fn run() {
                 tuptup_service,
                 #[cfg(not(target_os = "android"))]
                 update_manager,
+                #[cfg(target_os = "android")]
+                update_manager: None,
             });
 
             Ok(())
