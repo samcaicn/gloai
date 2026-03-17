@@ -59,8 +59,9 @@ jobs:
           # Get global npm root path
           NPM_GLOBAL_ROOT=$(npm root -g)
           
-          # Create tauri as Node.js script (Gradle uses node to execute it)
+          # Create tauri as Node.js script with shebang
           cat > src-tauri/tauri << EOF
+          #!/usr/bin/env node
           const { spawnSync } = require('child_process');
           const path = require('path');
           
