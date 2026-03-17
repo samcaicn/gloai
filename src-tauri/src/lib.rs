@@ -31,6 +31,9 @@ mod system;
 mod tuptup;
 #[cfg(not(target_os = "android"))]
 mod update_manager;
+#[cfg(target_os = "android")]
+#[path = "update_manager_android.rs"]
+mod update_manager;
 
 use std::sync::Arc;
 use tauri::{AppHandle, Manager, State};
