@@ -56,12 +56,21 @@ jobs:
 
       - name: Create tauri wrapper script
         run: |
-          # Find global node_modules path
-          NODE_PATH=$(npm root -g)
-          # Create wrapper script in src-tauri
-          cat > src-tauri/tauri << 'EOF'
-          #!/bin/sh
-          exec "$(npm root -g)/@tauri-apps/cli/tauri.js" "$@"
+          # Get global npm root path
+          NPM_GLOBAL_ROOT=$(npm root -g)
+          
+          # Create tauri as Node.js script (Gradle uses node to execute it)
+          cat > src-tauri/tauri << EOF
+          const { spawnSync } = require('child_process');
+          const path = require('path');
+          
+          const tauriCliPath = path.join('${NPM_GLOBAL_ROOT}', '@tauri-apps', 'cli', 'tauri.js');
+          const result = spawnSync('node', [tauriCliPath, ...process.argv.slice(2)], {
+            stdio: 'inherit',
+            cwd: process.cwd()
+          });
+          
+          process.exit(result.status);
           EOF
           chmod +x src-tauri/tauri
           ls -la src-tauri/tauri
