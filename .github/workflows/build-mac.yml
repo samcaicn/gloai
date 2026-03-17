@@ -39,43 +39,11 @@ jobs:
       - name: Build Skills
         run: pnpm run build:skills
 
-      - name: Build macOS arm64
-        run: |
-          rm -rf release
-          pnpm run dist:mac:arm64
-          mkdir -p release-arm64
-          mv release/*.dmg release-arm64/
-
-      - name: Build macOS x64
-        run: |
-          rm -rf release
-          pnpm run dist:mac:x64
-          mkdir -p release-x64
-          mv release/*.dmg release-x64/
-
-      - name: Create Universal app
-        run: |
-          # Mount DMGs
-          hdiutil attach release-arm64/*.dmg -mountpoint /tmp/arm64 -nobrowse
-          hdiutil attach release-x64/*.dmg -mountpoint /tmp/x64 -nobrowse
-          
-          # Find .app
-          ARM64_APP=$(find /tmp/arm64 -name "*.app" -type d | head -1)
-          X64_APP=$(find /tmp/x64 -name "*.app" -type d | head -1)
-          
-          # Copy arm64 app and merge binaries
-          cp -r "$ARM64_APP" /tmp/LobsterAI.app
-          lipo -create "$ARM64_APP/Contents/MacOS/"* "$X64_APP/Contents/MacOS/"* -output /tmp/LobsterAI.app/Contents/MacOS/LobsterAI
-          
-          # Unmount
-          hdiutil detach /tmp/arm64
-          hdiutil detach /tmp/x64
-          
-          # Create DMG
-          hdiutil create -volname LobsterAI -srcfolder /tmp/LobsterAI.app -ov -format UDZO release/LobsterAI-universal.dmg
+      - name: Build macOS app (arm64)
+        run: pnpm run dist:mac:arm64
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-app-universal
+          name: macos-app
           path: release/*.dmg
