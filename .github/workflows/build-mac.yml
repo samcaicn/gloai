@@ -68,9 +68,9 @@ jobs:
           hdiutil attach "$ARM64_DMG" -mountpoint /tmp/arm64 -nobrowse
           hdiutil attach "$X64_DMG" -mountpoint /tmp/x64 -nobrowse
           
-          # Find the .app paths
-          ARM64_APP=$(ls /tmp/arm64/*.app | head -1)
-          X64_APP=$(ls /tmp/x64/*.app | head -1)
+          # Find the .app paths - look for .app directory
+          ARM64_APP=$(find /tmp/arm64 -name "*.app" -type d | head -1)
+          X64_APP=$(find /tmp/x64 -name "*.app" -type d | head -1)
           
           echo "Arm64 app: $ARM64_APP"
           echo "x64 app: $X64_APP"
