@@ -47,9 +47,18 @@ jobs:
 
       - name: Merge universal app
         run: |
-          # Extract both DMGs
-          hdiutil attach release/*.dmg -mountpoint /tmp/arm64
-          hdiutil attach release/*.dmg -mountpoint /tmp/x64
+          # Find the DMG files
+          ls -la release/
+          
+          ARM64_DMG=$(ls release/*arm64*.dmg | head -1)
+          X64_DMG=$(ls release/*x64*.dmg | head -1)
+          
+          echo "Arm64 DMG: $ARM64_DMG"
+          echo "x64 DMG: $X64_DMG"
+          
+          # Extract both DMGs to different mount points
+          hdiutil attach "$ARM64_DMG" -mountpoint /tmp/arm64 -nobrowse
+          hdiutil attach "$X64_DMG" -mountpoint /tmp/x64 -nobrowse
           
           # Find the .app paths
           ARM64_APP=$(ls /tmp/arm64/*.app | head -1)
@@ -60,6 +69,7 @@ jobs:
           
           # Create universal app by copying arm64 and merging binaries
           UNIVERSAL_APP="/tmp/LobsterAI.app"
+          rm -rf "$UNIVERSAL_APP"
           cp -r "$ARM64_APP" "$UNIVERSAL_APP"
           
           # Merge the main binary
@@ -78,6 +88,7 @@ jobs:
           hdiutil create -volname LobsterAI -srcfolder "$UNIVERSAL_APP" -ov -format UDZO release/LobsterAI-universal.dmg
           
           echo "Created universal DMG"
+          ls -la release/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
