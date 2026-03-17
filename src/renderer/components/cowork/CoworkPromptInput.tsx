@@ -733,14 +733,18 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                 {showModelSelector && <ModelSelector dropdownDirection="up" />}
                 <button
                   type="button"
-                  onClick={isRecording ? stopRecording : startRecording}
+                  onMouseDown={startRecording}
+                  onMouseUp={stopRecording}
+                  onMouseLeave={stopRecording}
+                  onTouchStart={startRecording}
+                  onTouchEnd={stopRecording}
                   className={`flex items-center justify-center p-1.5 rounded-lg text-sm transition-colors ${
                     isRecording
                       ? 'bg-red-500 text-white hover:bg-red-600'
                       : 'dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:hover:text-claude-darkText hover:text-claude-text'
                   }`}
-                  title={isRecording ? '停止录音' : '开始录音'}
-                  aria-label={isRecording ? '停止录音' : '开始录音'}
+                  title="按住录音，松开停止"
+                  aria-label="按住录音，松开停止"
                   disabled={disabled || isStreaming}
                 >
                   {isRecording ? (
@@ -809,14 +813,18 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={isRecording ? stopRecording : startRecording}
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
+                onMouseLeave={stopRecording}
+                onTouchStart={startRecording}
+                onTouchEnd={stopRecording}
                 className={`flex items-center justify-center p-1.5 rounded-lg text-sm transition-colors ${
                   isRecording
                     ? 'bg-red-500 text-white hover:bg-red-600'
                     : 'dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:hover:text-claude-darkText hover:text-claude-text'
                 }`}
-                title={isRecording ? '停止录音' : '开始录音'}
-                aria-label={isRecording ? '停止录音' : '开始录音'}
+                title="按住录音，松开停止"
+                aria-label="按住录音，松开停止"
                 disabled={disabled || isStreaming}
               >
                 {isRecording ? (
