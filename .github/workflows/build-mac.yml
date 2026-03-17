@@ -7,7 +7,7 @@ on:
     branches: [ec, main]
 
 jobs:
-  build-mac-arm64:
+  build-mac:
     runs-on: macos-latest
 
     steps:
@@ -42,49 +42,45 @@ jobs:
       - name: Build macOS app (arm64)
         run: pnpm run dist:mac:arm64
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-app-arm64
-          path: release/*.dmg
-
-  build-mac-x64:
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          enable_pre_post: true
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm config set frozen-lockfile false && pnpm install
-
-      - name: Build
-        run: pnpm run build
-
-      - name: Compile Electron
-        run: pnpm run compile:electron
-
-      - name: Build Skills
-        run: pnpm run build:skills
-
       - name: Build macOS app (x64)
         run: pnpm run dist:mac:x64
 
+      - name: Merge universal app
+        run: |
+          # Extract both DMGs
+          hdiutil attach release/*.dmg -mountpoint /tmp/arm64
+          hdiutil attach release/*.dmg -mountpoint /tmp/x64
+          
+          # Find the .app paths
+          ARM64_APP=$(ls /tmp/arm64/*.app | head -1)
+          X64_APP=$(ls /tmp/x64/*.app | head -1)
+          
+          echo "Arm64 app: $ARM64_APP"
+          echo "x64 app: $X64_APP"
+          
+          # Create universal app by copying arm64 and merging binaries
+          UNIVERSAL_APP="/tmp/LobsterAI.app"
+          cp -r "$ARM64_APP" "$UNIVERSAL_APP"
+          
+          # Merge the main binary
+          lipo -create \
+            "$ARM64_APP/Contents/MacOS/LobsterAI" \
+            "$X64_APP/Contents/MacOS/LobsterAI" \
+            -output "$UNIVERSAL_APP/Contents/MacOS/LobsterAI"
+          
+          echo "Created universal app at: $UNIVERSAL_APP"
+          
+          # Unmount
+          hdiutil detach /tmp/arm64
+          hdiutil detach /tmp/x64
+          
+          # Create new DMG
+          hdiutil create -volname LobsterAI -srcfolder "$UNIVERSAL_APP" -ov -format UDZO release/LobsterAI-universal.dmg
+          
+          echo "Created universal DMG"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-app-x64
+          name: macos-app-universal
           path: release/*.dmg
