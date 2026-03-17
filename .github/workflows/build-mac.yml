@@ -41,22 +41,25 @@ jobs:
 
       - name: Build macOS app (arm64)
         run: |
-          rm -rf release
+          rm -rf release-arm64 release
           pnpm run dist:mac:arm64
-          mv release/*.dmg release/LobsterAI-arm64.dmg
+          mv release release-arm64
+          mv release-arm64/*.dmg release-arm64/LobsterAI-arm64.dmg
 
       - name: Build macOS app (x64)
         run: |
-          rm -rf release
+          rm -rf release-x64 release
           pnpm run dist:mac:x64
-          mv release/*.dmg release/LobsterAI-x64.dmg
+          mv release release-x64
+          mv release-x64/*.dmg release-x64/LobsterAI-x64.dmg
 
       - name: Merge universal app
         run: |
-          ls -la release/
+          ls -la release-arm64/
+          ls -la release-x64/
           
-          ARM64_DMG="release/LobsterAI-arm64.dmg"
-          X64_DMG="release/LobsterAI-x64.dmg"
+          ARM64_DMG="release-arm64/LobsterAI-arm64.dmg"
+          X64_DMG="release-x64/LobsterAI-x64.dmg"
           
           echo "Arm64 DMG: $ARM64_DMG"
           echo "x64 DMG: $X64_DMG"
@@ -90,6 +93,7 @@ jobs:
           hdiutil detach /tmp/x64
           
           # Create new DMG
+          mkdir -p release
           hdiutil create -volname LobsterAI -srcfolder "$UNIVERSAL_APP" -ov -format UDZO release/LobsterAI-universal.dmg
           
           echo "Created universal DMG"
