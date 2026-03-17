@@ -51,17 +51,8 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Tauri CLI
-        run: npm install @tauri-apps/cli@latest
-
-      - name: Add npm bin to PATH
-        run: echo "$PWD/node_modules/.bin" >> $GITHUB_PATH
-
-      - name: Create tauri symlink for Gradle
-        run: |
-          cd src-tauri
-          ln -sf ../node_modules/.bin/tauri ./tauri
-          ls -la tauri
+      - name: Install Tauri CLI globally
+        run: npm install -g @tauri-apps/cli@latest
 
       - name: Build frontend
         run: npm run build
@@ -69,7 +60,7 @@ jobs:
       - name: Initialize Tauri Android
         run: |
           cd src-tauri
-          ./tauri android init --ci || echo "Android already initialized"
+          tauri android init --ci || echo "Android already initialized"
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
@@ -135,7 +126,7 @@ jobs:
       - name: Build Android APK
         run: |
           cd src-tauri
-          ./tauri android build --debug
+          tauri android build --debug
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
