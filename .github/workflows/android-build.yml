@@ -57,13 +57,19 @@ jobs:
       - name: Add npm bin to PATH
         run: echo "$PWD/node_modules/.bin" >> $GITHUB_PATH
 
+      - name: Create tauri symlink for Gradle
+        run: |
+          cd src-tauri
+          ln -sf ../node_modules/.bin/tauri ./tauri
+          ls -la tauri
+
       - name: Build frontend
         run: npm run build
 
       - name: Initialize Tauri Android
         run: |
           cd src-tauri
-          npx tauri android init --ci || echo "Android already initialized"
+          ./tauri android init --ci || echo "Android already initialized"
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
@@ -129,7 +135,7 @@ jobs:
       - name: Build Android APK
         run: |
           cd src-tauri
-          npx tauri android build --debug
+          ./tauri android build --debug
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
