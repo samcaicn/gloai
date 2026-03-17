@@ -39,65 +39,8 @@ jobs:
       - name: Build Skills
         run: pnpm run build:skills
 
-      - name: Build macOS app (arm64)
-        run: |
-          rm -rf release-arm64 release
-          pnpm run dist:mac:arm64
-          mv release release-arm64
-          mv release-arm64/*.dmg release-arm64/LobsterAI-arm64.dmg
-
-      - name: Build macOS app (x64)
-        run: |
-          rm -rf release-x64 release
-          pnpm run dist:mac:x64
-          mv release release-x64
-          mv release-x64/*.dmg release-x64/LobsterAI-x64.dmg
-
-      - name: Merge universal app
-        run: |
-          ls -la release-arm64/
-          ls -la release-x64/
-          
-          ARM64_DMG="release-arm64/LobsterAI-arm64.dmg"
-          X64_DMG="release-x64/LobsterAI-x64.dmg"
-          
-          echo "Arm64 DMG: $ARM64_DMG"
-          echo "x64 DMG: $X64_DMG"
-          
-          # Extract both DMGs to different mount points
-          hdiutil attach "$ARM64_DMG" -mountpoint /tmp/arm64 -nobrowse
-          hdiutil attach "$X64_DMG" -mountpoint /tmp/x64 -nobrowse
-          
-          # Find the .app paths - look for .app directory
-          ARM64_APP=$(find /tmp/arm64 -name "*.app" -type d | head -1)
-          X64_APP=$(find /tmp/x64 -name "*.app" -type d | head -1)
-          
-          echo "Arm64 app: $ARM64_APP"
-          echo "x64 app: $X64_APP"
-          
-          # Create universal app by copying arm64 and merging binaries
-          UNIVERSAL_APP="/tmp/LobsterAI.app"
-          rm -rf "$UNIVERSAL_APP"
-          cp -r "$ARM64_APP" "$UNIVERSAL_APP"
-          
-          # Merge the main binary
-          lipo -create \
-            "$ARM64_APP/Contents/MacOS/LobsterAI" \
-            "$X64_APP/Contents/MacOS/LobsterAI" \
-            -output "$UNIVERSAL_APP/Contents/MacOS/LobsterAI"
-          
-          echo "Created universal app at: $UNIVERSAL_APP"
-          
-          # Unmount
-          hdiutil detach /tmp/arm64
-          hdiutil detach /tmp/x64
-          
-          # Create new DMG
-          mkdir -p release
-          hdiutil create -volname LobsterAI -srcfolder "$UNIVERSAL_APP" -ov -format UDZO release/LobsterAI-universal.dmg
-          
-          echo "Created universal DMG"
-          ls -la release/
+      - name: Build macOS universal app
+        run: pnpm run dist:mac:universal
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
