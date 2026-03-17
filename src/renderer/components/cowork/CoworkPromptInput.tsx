@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { PaperAirplaneIcon, StopIcon, FolderIcon } from '@heroicons/react/24/solid';
+import { PaperAirplaneIcon, StopIcon, FolderIcon, MicIcon, MicOffIcon } from '@heroicons/react/24/solid';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 import PaperClipIcon from '../icons/PaperClipIcon';
 import XMarkIcon from '../icons/XMarkIcon';
@@ -9,6 +9,7 @@ import FolderSelectorPopover from './FolderSelectorPopover';
 import { SkillsButton, ActiveSkillBadge } from '../skills';
 import { i18nService } from '../../services/i18n';
 import { skillService } from '../../services/skill';
+import { apiService } from '../../services/api';
 import { RootState } from '../../store';
 import { setDraftPrompt } from '../../store/slices/coworkSlice';
 import { setSkills, toggleActiveSkill } from '../../store/slices/skillSlice';
@@ -115,9 +116,14 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
     const [showFolderRequiredWarning, setShowFolderRequiredWarning] = useState(false);
     const [isDraggingFiles, setIsDraggingFiles] = useState(false);
     const [isAddingFile, setIsAddingFile] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const folderButtonRef = useRef<HTMLButtonElement>(null);
     const dragDepthRef = useRef(0);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 暴露方法给父组件
   React.useImperativeHandle(ref, () => ({
@@ -204,6 +210,98 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       return () => clearTimeout(timer);
     }
   }, [value, draftPrompt, dispatch]);
+
+  // 清理录音定时器
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
+
+  // 开始录音
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        await transcribeAudio(audioBlob);
+        // 停止所有音频轨道
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      // 开始计时
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      alert('无法访问麦克风，请检查权限设置');
+    }
+  }, [transcribeAudio]);
+
+  // 停止录音
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      setRecordingTime(0);
+    }
+  }, []);
+
+  // 音频转文字
+  const transcribeAudio = useCallback(async (audioBlob: Blob) => {
+    try {
+      // 将音频转换为 base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Audio = e.target?.result as string;
+        const audioData = base64Audio.split(',')[1];
+        
+        // 构建提示词
+        const prompt = `Please transcribe the following audio to text. The audio is in Chinese. Return only the transcribed text, no additional explanation.`;
+        
+        // 调用大模型 API
+        const result = await apiService.chat(prompt);
+        if (result.content) {
+          setValue(prev => prev + result.content);
+        }
+      };
+      reader.readAsDataURL(audioBlob);
+    } catch (error) {
+      console.error('Failed to transcribe audio:', error);
+      alert('音频转文字失败，请重试');
+    }
+  }, []);
+
+  // 格式化录音时间
+  const formatRecordingTime = useCallback((seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, []);
 
   const handleSubmit = useCallback(() => {
     if (showFolderSelector && !workingDirectory?.trim()) {
@@ -635,6 +733,27 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                 {showModelSelector && <ModelSelector dropdownDirection="up" />}
                 <button
                   type="button"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`flex items-center justify-center p-1.5 rounded-lg text-sm transition-colors ${
+                    isRecording
+                      ? 'bg-red-500 text-white hover:bg-red-600'
+                      : 'dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:hover:text-claude-darkText hover:text-claude-text'
+                  }`}
+                  title={isRecording ? '停止录音' : '开始录音'}
+                  aria-label={isRecording ? '停止录音' : '开始录音'}
+                  disabled={disabled || isStreaming}
+                >
+                  {isRecording ? (
+                    <>
+                      <MicOffIcon className="h-4 w-4" />
+                      <span className="ml-1 text-xs">{formatRecordingTime(recordingTime)}</span>
+                    </>
+                  ) : (
+                    <MicIcon className="h-4 w-4" />
+                  )}
+                </button>
+                <button
+                  type="button"
                   onClick={handleAddFile}
                   className="flex items-center justify-center p-1.5 rounded-lg text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:hover:text-claude-darkText hover:text-claude-text transition-colors"
                   title={i18nService.t('coworkAddFile')}
@@ -688,6 +807,24 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
             />
 
             <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={isRecording ? stopRecording : startRecording}
+                className={`flex items-center justify-center p-1.5 rounded-lg text-sm transition-colors ${
+                  isRecording
+                    ? 'bg-red-500 text-white hover:bg-red-600'
+                    : 'dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:hover:text-claude-darkText hover:text-claude-text'
+                }`}
+                title={isRecording ? '停止录音' : '开始录音'}
+                aria-label={isRecording ? '停止录音' : '开始录音'}
+                disabled={disabled || isStreaming}
+              >
+                {isRecording ? (
+                  <MicOffIcon className="h-4 w-4" />
+                ) : (
+                  <MicIcon className="h-4 w-4" />
+                )}
+              </button>
               <button
                 type="button"
                 onClick={handleAddFile}
