@@ -40,18 +40,23 @@ jobs:
         run: pnpm run build:skills
 
       - name: Build macOS app (arm64)
-        run: pnpm run dist:mac:arm64
+        run: |
+          rm -rf release
+          pnpm run dist:mac:arm64
+          mv release/*.dmg release/LobsterAI-arm64.dmg
 
       - name: Build macOS app (x64)
-        run: pnpm run dist:mac:x64
+        run: |
+          rm -rf release
+          pnpm run dist:mac:x64
+          mv release/*.dmg release/LobsterAI-x64.dmg
 
       - name: Merge universal app
         run: |
-          # Find the DMG files
           ls -la release/
           
-          ARM64_DMG=$(ls release/*arm64*.dmg | head -1)
-          X64_DMG=$(ls release/*x64*.dmg | head -1)
+          ARM64_DMG="release/LobsterAI-arm64.dmg"
+          X64_DMG="release/LobsterAI-x64.dmg"
           
           echo "Arm64 DMG: $ARM64_DMG"
           echo "x64 DMG: $X64_DMG"
