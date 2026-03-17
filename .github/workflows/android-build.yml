@@ -52,7 +52,10 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Tauri CLI
-        run: npm install -g @tauri-apps/cli@latest
+        run: npm install @tauri-apps/cli@latest
+
+      - name: Add npm bin to PATH
+        run: echo "$PWD/node_modules/.bin" >> $GITHUB_PATH
 
       - name: Build frontend
         run: npm run build
@@ -60,7 +63,7 @@ jobs:
       - name: Initialize Tauri Android
         run: |
           cd src-tauri
-          tauri android init --ci || echo "Android already initialized"
+          npx tauri android init --ci || echo "Android already initialized"
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
@@ -126,7 +129,7 @@ jobs:
       - name: Build Android APK
         run: |
           cd src-tauri
-          tauri android build --debug
+          npx tauri android build --debug
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
