@@ -54,13 +54,25 @@ jobs:
       - name: Install Tauri CLI globally
         run: npm install -g @tauri-apps/cli@latest
 
+      - name: Create tauri wrapper script
+        run: |
+          # Find global node_modules path
+          NODE_PATH=$(npm root -g)
+          # Create wrapper script in src-tauri
+          cat > src-tauri/tauri << 'EOF'
+          #!/bin/sh
+          exec "$(npm root -g)/@tauri-apps/cli/tauri.js" "$@"
+          EOF
+          chmod +x src-tauri/tauri
+          ls -la src-tauri/tauri
+
       - name: Build frontend
         run: npm run build
 
       - name: Initialize Tauri Android
         run: |
           cd src-tauri
-          tauri android init --ci || echo "Android already initialized"
+          ./tauri android init --ci || echo "Android already initialized"
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
@@ -126,7 +138,7 @@ jobs:
       - name: Build Android APK
         run: |
           cd src-tauri
-          tauri android build --debug
+          ./tauri android build --debug
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
