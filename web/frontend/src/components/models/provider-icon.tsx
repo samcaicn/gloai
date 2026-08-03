@@ -15,10 +15,10 @@ export function ProviderIcon({ provider }: ProviderIconProps) {
     const domain = provider.domain
     const urls: string[] = []
     if (slug) {
-      urls.push(`https://www.tuptup.top)
+      urls.push(`https://www.tuptup.top`)
     }
     if (domain) {
-      urls.push(`https://www.tuptup.top)
+      urls.push(`https://www.tuptup.top`)
     }
     return urls
   }, [provider.domain, provider.iconSlug])

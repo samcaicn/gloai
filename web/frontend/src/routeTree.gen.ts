@@ -9,49 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ModelsRouteImport } from './routes/models'
-import { Route as LogsRouteImport } from './routes/logs'
-import { Route as LauncherSetupRouteImport } from './routes/launcher-setup'
-import { Route as LauncherLoginRouteImport } from './routes/launcher-login'
-import { Route as CredentialsRouteImport } from './routes/credentials'
-import { Route as ConfigRouteImport } from './routes/config'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentRouteImport } from './routes/agent'
 import { Route as ChannelsRouteRouteImport } from './routes/channels/route'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as ConfigRawRouteImport } from './routes/config.raw'
-import { Route as ChannelsNameRouteImport } from './routes/channels/$name'
-import { Route as AgentToolsRouteImport } from './routes/agent/tools'
-import { Route as AgentSkillsRouteImport } from './routes/agent/skills'
+import { Route as ConfigRouteImport } from './routes/config'
+import { Route as CredentialsRouteImport } from './routes/credentials'
+import { Route as LauncherLoginRouteImport } from './routes/launcher-login'
+import { Route as LauncherSetupRouteImport } from './routes/launcher-setup'
+import { Route as LogsRouteImport } from './routes/logs'
+import { Route as ModelsRouteImport } from './routes/models'
 import { Route as AgentHubRouteImport } from './routes/agent/hub'
+import { Route as AgentSkillsRouteImport } from './routes/agent/skills'
+import { Route as AgentToolsRouteImport } from './routes/agent/tools'
+import { Route as ChannelsNameRouteImport } from './routes/channels/$name'
+import { Route as ConfigRawRouteImport } from './routes/config.raw'
 
-const ModelsRoute = ModelsRouteImport.update({
-  id: '/models',
-  path: '/models',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LogsRoute = LogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LauncherSetupRoute = LauncherSetupRouteImport.update({
-  id: '/launcher-setup',
-  path: '/launcher-setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LauncherLoginRoute = LauncherLoginRouteImport.update({
-  id: '/launcher-login',
-  path: '/launcher-login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CredentialsRoute = CredentialsRouteImport.update({
-  id: '/credentials',
-  path: '/credentials',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConfigRoute = ConfigRouteImport.update({
-  id: '/config',
-  path: '/config',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentRoute = AgentRouteImport.update({
@@ -64,24 +39,39 @@ const ChannelsRouteRoute = ChannelsRouteRouteImport.update({
   path: '/channels',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ConfigRoute = ConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ConfigRawRoute = ConfigRawRouteImport.update({
-  id: '/raw',
-  path: '/raw',
-  getParentRoute: () => ConfigRoute,
+const CredentialsRoute = CredentialsRouteImport.update({
+  id: '/credentials',
+  path: '/credentials',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ChannelsNameRoute = ChannelsNameRouteImport.update({
-  id: '/$name',
-  path: '/$name',
-  getParentRoute: () => ChannelsRouteRoute,
+const LauncherLoginRoute = LauncherLoginRouteImport.update({
+  id: '/launcher-login',
+  path: '/launcher-login',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AgentToolsRoute = AgentToolsRouteImport.update({
-  id: '/tools',
-  path: '/tools',
+const LauncherSetupRoute = LauncherSetupRouteImport.update({
+  id: '/launcher-setup',
+  path: '/launcher-setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LogsRoute = LogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModelsRoute = ModelsRouteImport.update({
+  id: '/models',
+  path: '/models',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentHubRoute = AgentHubRouteImport.update({
+  id: '/hub',
+  path: '/hub',
   getParentRoute: () => AgentRoute,
 } as any)
 const AgentSkillsRoute = AgentSkillsRouteImport.update({
@@ -89,10 +79,20 @@ const AgentSkillsRoute = AgentSkillsRouteImport.update({
   path: '/skills',
   getParentRoute: () => AgentRoute,
 } as any)
-const AgentHubRoute = AgentHubRouteImport.update({
-  id: '/hub',
-  path: '/hub',
+const AgentToolsRoute = AgentToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
   getParentRoute: () => AgentRoute,
+} as any)
+const ChannelsNameRoute = ChannelsNameRouteImport.update({
+  id: '/$name',
+  path: '/$name',
+  getParentRoute: () => ChannelsRouteRoute,
+} as any)
+const ConfigRawRoute = ConfigRawRouteImport.update({
+  id: '/raw',
+  path: '/raw',
+  getParentRoute: () => ConfigRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -209,46 +209,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/models': {
-      id: '/models'
-      path: '/models'
-      fullPath: '/models'
-      preLoaderRoute: typeof ModelsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/logs': {
-      id: '/logs'
-      path: '/logs'
-      fullPath: '/logs'
-      preLoaderRoute: typeof LogsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/launcher-setup': {
-      id: '/launcher-setup'
-      path: '/launcher-setup'
-      fullPath: '/launcher-setup'
-      preLoaderRoute: typeof LauncherSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/launcher-login': {
-      id: '/launcher-login'
-      path: '/launcher-login'
-      fullPath: '/launcher-login'
-      preLoaderRoute: typeof LauncherLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/credentials': {
-      id: '/credentials'
-      path: '/credentials'
-      fullPath: '/credentials'
-      preLoaderRoute: typeof CredentialsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/config': {
-      id: '/config'
-      path: '/config'
-      fullPath: '/config'
-      preLoaderRoute: typeof ConfigRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agent': {
@@ -265,32 +230,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChannelsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/config': {
+      id: '/config'
+      path: '/config'
+      fullPath: '/config'
+      preLoaderRoute: typeof ConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/config/raw': {
-      id: '/config/raw'
-      path: '/raw'
-      fullPath: '/config/raw'
-      preLoaderRoute: typeof ConfigRawRouteImport
-      parentRoute: typeof ConfigRoute
+    '/credentials': {
+      id: '/credentials'
+      path: '/credentials'
+      fullPath: '/credentials'
+      preLoaderRoute: typeof CredentialsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/channels/$name': {
-      id: '/channels/$name'
-      path: '/$name'
-      fullPath: '/channels/$name'
-      preLoaderRoute: typeof ChannelsNameRouteImport
-      parentRoute: typeof ChannelsRouteRoute
+    '/launcher-login': {
+      id: '/launcher-login'
+      path: '/launcher-login'
+      fullPath: '/launcher-login'
+      preLoaderRoute: typeof LauncherLoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/agent/tools': {
-      id: '/agent/tools'
-      path: '/tools'
-      fullPath: '/agent/tools'
-      preLoaderRoute: typeof AgentToolsRouteImport
+    '/launcher-setup': {
+      id: '/launcher-setup'
+      path: '/launcher-setup'
+      fullPath: '/launcher-setup'
+      preLoaderRoute: typeof LauncherSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/logs': {
+      id: '/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof LogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/models': {
+      id: '/models'
+      path: '/models'
+      fullPath: '/models'
+      preLoaderRoute: typeof ModelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent/hub': {
+      id: '/agent/hub'
+      path: '/hub'
+      fullPath: '/agent/hub'
+      preLoaderRoute: typeof AgentHubRouteImport
       parentRoute: typeof AgentRoute
     }
     '/agent/skills': {
@@ -300,12 +286,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentSkillsRouteImport
       parentRoute: typeof AgentRoute
     }
-    '/agent/hub': {
-      id: '/agent/hub'
-      path: '/hub'
-      fullPath: '/agent/hub'
-      preLoaderRoute: typeof AgentHubRouteImport
+    '/agent/tools': {
+      id: '/agent/tools'
+      path: '/tools'
+      fullPath: '/agent/tools'
+      preLoaderRoute: typeof AgentToolsRouteImport
       parentRoute: typeof AgentRoute
+    }
+    '/channels/$name': {
+      id: '/channels/$name'
+      path: '/$name'
+      fullPath: '/channels/$name'
+      preLoaderRoute: typeof ChannelsNameRouteImport
+      parentRoute: typeof ChannelsRouteRoute
+    }
+    '/config/raw': {
+      id: '/config/raw'
+      path: '/raw'
+      fullPath: '/config/raw'
+      preLoaderRoute: typeof ConfigRawRouteImport
+      parentRoute: typeof ConfigRoute
     }
   }
 }

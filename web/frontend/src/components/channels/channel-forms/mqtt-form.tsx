@@ -61,7 +61,7 @@ export function MqttForm({
             <Input
               value={asString(config.broker)}
               onChange={(e) => onChange("broker", e.target.value)}
-              placeholder="mqtt://www.tuptup.top:1883"
+              placeholder="mqtt://broker.www.tuptup.top:1883"
             />
           </Field>
 
