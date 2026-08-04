@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.colearn.launcher'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.colearn.launcher"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+task copyLauncherBinary(type: Copy) {
+    def src = rootProject.file('../build/colearn-launcher-android-arm64')
+    if (!src.exists()) {
+        throw new GradleException(
+            "Go launcher binary not found: ${src}\nRun 'make build-launcher-android-arm64' first.")
+    }
+    from src
+    into 'src/main/assets'
+    rename { 'colearn-launcher' }
+}
+
+preBuild.dependsOn copyLauncherBinary

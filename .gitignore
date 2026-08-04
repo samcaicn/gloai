@@ -12,6 +12,12 @@ build/
 /colearn-test
 cmd/**/workspace
 
+# Android launcher
+android/.gradle/
+android/local.properties
+android/**/build/
+android/app/src/main/assets/colearn-launcher
+
 # colearn specific
 
 # colearn
