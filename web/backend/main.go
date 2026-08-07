@@ -434,6 +434,11 @@ func main() {
 	}
 	flag.Parse()
 
+	// Android has no /etc/resolv.conf, so the pure Go resolver falls back to
+	// defaultNS (127.0.0.1:53 / [::1]:53) and every outbound DNS lookup fails.
+	// Install a public-DNS resolver early so all provider/gateway traffic works.
+	fixAndroidDNS()
+
 	// Initialize logger
 	picoHome := utils.GetcolearnHome()
 
