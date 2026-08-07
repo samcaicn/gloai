@@ -7,7 +7,6 @@ import { toast } from "sonner"
 
 import { patchAppConfig, resetAppConfig } from "@/api/channels"
 import { launcherFetch } from "@/api/http"
-import { postLauncherDashboardSetup } from "@/api/launcher-auth"
 import {
   getAutoStartStatus,
   getLauncherConfig,
@@ -169,8 +168,6 @@ export function ConfigPage() {
       trustedProxyCIDRsText: (launcherConfig.trusted_proxy_cidrs ?? []).join(
         "\n",
       ),
-      dashboardPassword: "",
-      dashboardPasswordConfirm: "",
     }
     setLauncherForm(parsed)
     setLauncherBaseline(parsed)
@@ -191,10 +188,7 @@ export function ConfigPage() {
       launcherBaseline.allowLocalhostBypass ||
     launcherForm.trustedProxyCIDRsText !==
       launcherBaseline.trustedProxyCIDRsText
-  const launcherPasswordDirty =
-    launcherForm.dashboardPassword.trim() !== "" ||
-    launcherForm.dashboardPasswordConfirm.trim() !== ""
-  const launcherDirty = launcherSettingsDirty || launcherPasswordDirty
+  const launcherDirty = launcherSettingsDirty
   const autoStartDirty = autoStartEnabled !== autoStartBaseline
   const isDirty = configDirty || launcherDirty || autoStartDirty
 
@@ -295,19 +289,6 @@ export function ConfigPage() {
   const handleSave = async () => {
     try {
       setSaving(true)
-      const password = launcherForm.dashboardPassword.trim()
-      const confirm = launcherForm.dashboardPasswordConfirm.trim()
-      if (launcherPasswordDirty) {
-        if (!password) {
-          throw new Error(t("pages.config.dashboard_password_required"))
-        }
-        if (password !== confirm) {
-          throw new Error(t("pages.config.dashboard_password_mismatch"))
-        }
-        if (Array.from(password).length < 8) {
-          throw new Error(t("pages.config.dashboard_password_min_length"))
-        }
-      }
 
       if (configDirty) {
         const workspace = form.workspace.trim()
@@ -638,7 +619,6 @@ export function ConfigPage() {
         queryClient.invalidateQueries({ queryKey: ["config"] })
       }
 
-      let savedLauncherForm: LauncherForm | null = null
       if (launcherSettingsDirty) {
         const port = parseIntField(launcherForm.port, "Service port", {
           min: 1,
@@ -666,33 +646,13 @@ export function ConfigPage() {
           trustedProxyCIDRsText: (
             savedLauncherConfig.trusted_proxy_cidrs ?? []
           ).join("\n"),
-          dashboardPassword: "",
-          dashboardPasswordConfirm: "",
         }
-        savedLauncherForm = parsedLauncher
         setLauncherForm(parsedLauncher)
         setLauncherBaseline(parsedLauncher)
         queryClient.setQueryData(
           ["system", "launcher-config"],
           savedLauncherConfig,
         )
-      }
-
-      if (launcherPasswordDirty) {
-        const result = await postLauncherDashboardSetup(password, confirm)
-        if (!result.ok) {
-          throw new Error(result.error)
-        }
-
-        const clearedLauncherForm = savedLauncherForm ?? {
-          ...launcherForm,
-          dashboardPassword: "",
-          dashboardPasswordConfirm: "",
-        }
-        setLauncherForm(clearedLauncherForm)
-        if (savedLauncherForm) {
-          setLauncherBaseline(savedLauncherForm)
-        }
       }
 
       if (autoStartDirty) {

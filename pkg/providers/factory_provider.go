@@ -16,6 +16,7 @@ import (
 	"github.com/colearn/colearn/pkg/providers/azure"
 	"github.com/colearn/colearn/pkg/providers/bedrock"
 	"github.com/colearn/colearn/pkg/providers/common"
+	"github.com/colearn/colearn/pkg/providers/tupai"
 )
 
 // createClaudeAuthProvider creates a Claude provider using OAuth credentials from auth store.
@@ -106,6 +107,23 @@ func CreateProviderFromConfig(cfg *config.ModelConfig) (LLMProvider, string, err
 	}
 
 	switch protocol {
+	case "tupai":
+		// Tup AI direct MCP (/api/v2/mcp), device_token Bearer auth.
+		if cfg.APIKey() == "" && cfg.APIBase == "" {
+			return nil, "", fmt.Errorf("device_token (api_key) or api_base is required for tupai protocol")
+		}
+		apiBase := cfg.APIBase
+		if apiBase == "" {
+			apiBase = getDefaultAPIBase(protocol)
+		}
+		provider := tupai.NewProviderWithTimeout(
+			cfg.APIKey(), // device_token
+			apiBase,
+			userAgent,
+			cfg.RequestTimeout,
+		)
+		return finalizeProviderFromConfig(provider, modelID, cfg)
+
 	case "openai":
 		// OpenAI with OAuth/token auth (Codex-style)
 		if authMethod == "oauth" || authMethod == "token" {

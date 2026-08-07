@@ -262,6 +262,8 @@ func isPublicLauncherDashboardPath(method, p string) bool {
 		return method == http.MethodGet
 	case "/api/auth/setup":
 		return method == http.MethodPost
+	case "/api/auth/bind":
+		return method == http.MethodPost
 	}
 	return false
 }

@@ -76,8 +76,6 @@ export interface LauncherForm {
   allowedCIDRsText: string
   allowLocalhostBypass: boolean
   trustedProxyCIDRsText: string
-  dashboardPassword: string
-  dashboardPasswordConfirm: string
 }
 
 export const DM_SCOPE_OPTIONS = [
@@ -167,8 +165,6 @@ export const EMPTY_LAUNCHER_FORM: LauncherForm = {
   allowedCIDRsText: "",
   allowLocalhostBypass: true,
   trustedProxyCIDRsText: "",
-  dashboardPassword: "",
-  dashboardPasswordConfirm: "",
 }
 
 function asRecord(value: unknown): JsonRecord {

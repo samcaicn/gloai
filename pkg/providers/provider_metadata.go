@@ -25,6 +25,19 @@ type ModelProviderOption struct {
 }
 
 var modelProviderOptionsByName = map[string]ModelProviderOption{
+	"tupai": {
+		ID:                  "tupai",
+		DisplayName:         "Tup AI (MCP)",
+		IconSlug:            "tupai",
+		Domain:              "www.tuptup.top",
+		DefaultAPIBase:      "https://www.tuptup.top",
+		CreateAllowed:       true,
+		DefaultModelAllowed: true,
+		Priority:            100,
+		CommonModels:        []string{"gpt-4o-mini"},
+		Aliases:             []string{"tup", "tupaisaas"},
+		httpAPI:             true,
+	},
 	"openai": {
 		ID:                  "openai",
 		DisplayName:         "OpenAI",

@@ -1167,43 +1167,6 @@ export function LauncherSection({
       title={t("pages.config.sections.launcher")}
       description={t("pages.config.launcher_section_hint")}
     >
-      <Field
-        label={t("pages.config.dashboard_password")}
-        hint={t("pages.config.dashboard_password_hint")}
-        layout="setting-row"
-        controlClassName="md:max-w-md"
-      >
-        <Input
-          type="password"
-          value={launcherForm.dashboardPassword}
-          disabled={disabled}
-          autoComplete="new-password"
-          placeholder={t("pages.config.dashboard_password_placeholder")}
-          onChange={(e) => onFieldChange("dashboardPassword", e.target.value)}
-        />
-      </Field>
-
-      {launcherForm.dashboardPassword.trim() !== "" && (
-        <Field
-          label={t("pages.config.dashboard_password_confirm")}
-          hint={t("pages.config.dashboard_password_confirm_hint")}
-          layout="setting-row"
-          controlClassName="md:max-w-md"
-        >
-          <Input
-            type="password"
-            value={launcherForm.dashboardPasswordConfirm}
-            disabled={disabled}
-            autoComplete="new-password"
-            placeholder={t(
-              "pages.config.dashboard_password_confirm_placeholder",
-            )}
-            onChange={(e) =>
-              onFieldChange("dashboardPasswordConfirm", e.target.value)
-            }
-          />
-        </Field>
-      )}
 
       <SwitchCardField
         label={t("pages.config.lan_access")}

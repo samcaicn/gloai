@@ -17,6 +17,7 @@ android/.gradle/
 android/local.properties
 android/**/build/
 android/app/src/main/assets/colearn-launcher
+android/app/colearn.apk
 
 # colearn specific
 

@@ -27,7 +27,7 @@ const RootLayout = () => {
     isLauncherAuthPathname(windowPath) ||
     isLauncherAuthPathname(routerState.pathname) ||
     routerState.matches.some(
-      (m) => m.routeId === "/launcher-login" || m.routeId === "/launcher-setup",
+      (m) => m.routeId === ("/launcher-login" as const) || m.routeId === ("/launcher-setup" as const),
     )
 
   const [authError, setAuthError] = useState<string | null>(null)

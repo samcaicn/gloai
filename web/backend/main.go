@@ -583,18 +583,18 @@ func main() {
 	if authStoreErr == nil {
 		passwordStore = authStore
 		defer authStore.Close()
-	} else if errors.Is(authStoreErr, dashboardauth.ErrUnsupportedPlatform) {
+	} else {
+		// On Android and other platforms without CGO, SQLite store fails.
+		// Fall back to JSON config store for any error from SQLite store.
 		logger.InfoC(
 			"web",
 			fmt.Sprintf(
-				"Dashboard SQLite password store unavailable on this platform; using launcher-config password storage: %v",
+				"Dashboard SQLite password store unavailable (%v); using launcher-config password storage",
 				authStoreErr,
 			),
 		)
 		passwordStore = launcherconfig.NewPasswordStore(launcherPath, launcherCfg)
 		authStoreErr = nil
-	} else {
-		logger.ErrorC("web", fmt.Sprintf("Warning: could not open auth store: %v", authStoreErr))
 	}
 
 	migrationResult, migrationErr := launcherconfig.MigrateLegacyLauncherToken(
@@ -643,6 +643,7 @@ func main() {
 		SessionCookie: dashboardSessionCookie,
 		PasswordStore: passwordStore,
 		StoreError:    authStoreErr,
+		ConfigPath:    absPath,
 	})
 
 	// API Routes (e.g. /api/status)

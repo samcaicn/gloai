@@ -24,15 +24,13 @@
     "errorInvalid": "密码错误，请重试。",
     "errorNetwork": "网络错误，请重试。"
   },
-  "launcherSetup": {
-    "title": "设置控制台密码",
-    "description": "设置一个密码来保护控制台访问权限，登录时需要输入此密码。",
-    "passwordLabel": "密码",
-    "passwordPlaceholder": "至少 8 个字符",
-    "confirmLabel": "确认密码",
-    "confirmPlaceholder": "再次输入密码",
-    "submit": "设置密码",
-    "errorMismatch": "两次输入的密码不一致。",
+  "launcherBind": {
+    "title": "验证码绑定",
+    "description": "输入 8 位绑定码以关联租户，绑定成功后即可登录使用。",
+    "joinCodeLabel": "绑定码",
+    "joinCodePlaceholder": "输入 8 位数字绑定码",
+    "submit": "绑定",
+    "errorFormat": "绑定码必须为 8 位数字。",
     "errorNetwork": "网络错误，请重试。"
   },
   "chat": {
@@ -109,6 +107,7 @@
       "noConfiguredModel": "尚未配置模型",
       "noConfiguredModelDescription": "请先配置至少一个带有 API Key 的 AI 模型，才能开始对话。",
       "goToModels": "去模型页配置",
+      "mcpOnlyHint": "本版本仅通过 MCP 调用 LLM，无需本地配置模型。",
       "noSelectedModel": "尚未设置模型",
       "noSelectedModelDescription": "您已配置模型，但尚未设置默认模型。请选择一个模型后开始对话",
       "notRunning": "服务尚未运行",

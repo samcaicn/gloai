@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
 
-import { postLauncherDashboardSetup } from "@/api/launcher-auth"
+import { postLauncherDashboardBind } from "@/api/launcher-auth"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -22,31 +22,31 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTheme } from "@/hooks/use-theme"
 
-function LauncherSetupPage() {
+function LauncherBindPage() {
   const { t, i18n } = useTranslation()
   const { theme, toggleTheme } = useTheme()
-  const [password, setPassword] = React.useState("")
-  const [confirm, setConfirm] = React.useState("")
+  const [joinCode, setJoinCode] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState("")
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError("")
-    if (password !== confirm) {
-      setError(t("launcherSetup.errorMismatch"))
+    const code = joinCode.trim()
+    if (!/^\d{8}$/.test(code)) {
+      setError(t("launcherBind.errorFormat"))
       return
     }
     setSubmitting(true)
     try {
-      const result = await postLauncherDashboardSetup(password, confirm)
+      const result = await postLauncherDashboardBind(code)
       if (result.ok) {
-        globalThis.location.assign("/launcher-login")
+        globalThis.location.assign("/")
         return
       }
       setError(result.error)
     } catch {
-      setError(t("launcherSetup.errorNetwork"))
+      setError(t("launcherBind.errorNetwork"))
     } finally {
       setSubmitting(false)
     }
@@ -88,45 +88,30 @@ function LauncherSetupPage() {
       <div className="flex flex-1 items-center justify-center p-4">
         <Card className="w-full max-w-md" size="sm">
           <CardHeader>
-            <CardTitle>{t("launcherSetup.title")}</CardTitle>
-            <CardDescription>{t("launcherSetup.description")}</CardDescription>
+            <CardTitle>{t("launcherBind.title")}</CardTitle>
+            <CardDescription>{t("launcherBind.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="flex flex-col gap-4" onSubmit={onSubmit}>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="setup-password">
-                  {t("launcherSetup.passwordLabel")}
+                <Label htmlFor="bind-join-code">
+                  {t("launcherBind.joinCodeLabel")}
                 </Label>
                 <Input
-                  id="setup-password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
+                  id="bind-join-code"
+                  name="join_code"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={8}
                   required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t("launcherSetup.passwordPlaceholder")}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="setup-confirm">
-                  {t("launcherSetup.confirmLabel")}
-                </Label>
-                <Input
-                  id="setup-confirm"
-                  name="confirm"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  placeholder={t("launcherSetup.confirmPlaceholder")}
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                  placeholder={t("launcherBind.joinCodePlaceholder")}
                 />
               </div>
               <Button type="submit" disabled={submitting}>
-                {submitting ? t("labels.loading") : t("launcherSetup.submit")}
+                {submitting ? t("labels.loading") : t("launcherBind.submit")}
               </Button>
               {error ? (
                 <p className="text-destructive text-sm" role="alert">
@@ -142,5 +127,5 @@ function LauncherSetupPage() {
 }
 
 export const Route = createFileRoute("/launcher-setup")({
-  component: LauncherSetupPage,
+  component: LauncherBindPage,
 })

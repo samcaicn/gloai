@@ -32,7 +32,7 @@ function LauncherLoginPage() {
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState("")
 
-  // If the password store has never been initialized, go to setup instead.
+  // If the password store has never been initialized, go to bind instead.
   React.useEffect(() => {
     void getLauncherAuthStatus()
       .then((s) => {

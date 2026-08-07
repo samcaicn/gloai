@@ -4,10 +4,7 @@ import {
   IconRobotOff,
   IconStar,
 } from "@tabler/icons-react"
-import { Link } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
-
-import { Button } from "@/components/ui/button"
 
 interface ChatEmptyStateProps {
   hasAvailableModels: boolean
@@ -34,9 +31,9 @@ export function ChatEmptyState({
         <p className="text-muted-foreground mb-4 text-center text-sm">
           {t("chat.empty.noConfiguredModelDescription")}
         </p>
-        <Button asChild variant="outline" size="sm" className="px-4">
-          <Link to="/models">{t("chat.empty.goToModels")}</Link>
-        </Button>
+        <p className="text-muted-foreground text-center text-sm">
+          {t("chat.empty.mcpOnlyHint")}
+        </p>
       </div>
     )
   }

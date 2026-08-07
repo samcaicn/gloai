@@ -54,16 +54,20 @@ public class MainActivity extends Activity {
     private void startServer() {
         try {
             File dir = getFilesDir();
-            File bin = new File(dir, "colearn-launcher");
+            // 直接从 native lib 执行(已以 0755+apk_data_file 解压,可执行,无需复制到 files/)
+            String binPath = getApplicationInfo().nativeLibraryDir + "/libcolearn_launcher.so";
+            File bin = new File(binPath);
             if (!bin.exists() || bin.length() == 0) {
-                extractAsset("colearn-launcher", bin);
+                showError("native lib 未找到: " + binPath);
+                return;
             }
-            bin.setExecutable(true, false);
+            // 设置 colearn_HOME 到可写的 files 目录,避免二进制默认写 /.colearn(只读)
             ProcessBuilder pb = new ProcessBuilder(
                     bin.getAbsolutePath(),
                     "-console", "-no-browser",
                     "-host", HOST,
                     "-port", String.valueOf(PORT));
+            pb.environment().put("colearn_HOME", dir.getAbsolutePath());
             pb.directory(dir);
             pb.redirectErrorStream(true);
             Process proc = pb.start();
@@ -121,19 +125,6 @@ public class MainActivity extends Activity {
             return true;
         } catch (IOException e) {
             return false;
-        }
-    }
-
-    private void extractAsset(String name, File out) {
-        try (InputStream in = getAssets().open(name);
-             FileOutputStream fos = new FileOutputStream(out)) {
-            byte[] buf = new byte[65536];
-            int n;
-            while ((n = in.read(buf)) > 0) {
-                fos.write(buf, 0, n);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 

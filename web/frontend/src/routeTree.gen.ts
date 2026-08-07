@@ -17,7 +17,6 @@ import { Route as CredentialsRouteImport } from './routes/credentials'
 import { Route as LauncherLoginRouteImport } from './routes/launcher-login'
 import { Route as LauncherSetupRouteImport } from './routes/launcher-setup'
 import { Route as LogsRouteImport } from './routes/logs'
-import { Route as ModelsRouteImport } from './routes/models'
 import { Route as AgentHubRouteImport } from './routes/agent/hub'
 import { Route as AgentSkillsRouteImport } from './routes/agent/skills'
 import { Route as AgentToolsRouteImport } from './routes/agent/tools'
@@ -64,11 +63,6 @@ const LogsRoute = LogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ModelsRoute = ModelsRouteImport.update({
-  id: '/models',
-  path: '/models',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AgentHubRoute = AgentHubRouteImport.update({
   id: '/hub',
   path: '/hub',
@@ -104,7 +98,6 @@ export interface FileRoutesByFullPath {
   '/launcher-login': typeof LauncherLoginRoute
   '/launcher-setup': typeof LauncherSetupRoute
   '/logs': typeof LogsRoute
-  '/models': typeof ModelsRoute
   '/agent/hub': typeof AgentHubRoute
   '/agent/skills': typeof AgentSkillsRoute
   '/agent/tools': typeof AgentToolsRoute
@@ -120,7 +113,6 @@ export interface FileRoutesByTo {
   '/launcher-login': typeof LauncherLoginRoute
   '/launcher-setup': typeof LauncherSetupRoute
   '/logs': typeof LogsRoute
-  '/models': typeof ModelsRoute
   '/agent/hub': typeof AgentHubRoute
   '/agent/skills': typeof AgentSkillsRoute
   '/agent/tools': typeof AgentToolsRoute
@@ -137,7 +129,6 @@ export interface FileRoutesById {
   '/launcher-login': typeof LauncherLoginRoute
   '/launcher-setup': typeof LauncherSetupRoute
   '/logs': typeof LogsRoute
-  '/models': typeof ModelsRoute
   '/agent/hub': typeof AgentHubRoute
   '/agent/skills': typeof AgentSkillsRoute
   '/agent/tools': typeof AgentToolsRoute
@@ -155,7 +146,6 @@ export interface FileRouteTypes {
     | '/launcher-login'
     | '/launcher-setup'
     | '/logs'
-    | '/models'
     | '/agent/hub'
     | '/agent/skills'
     | '/agent/tools'
@@ -171,7 +161,6 @@ export interface FileRouteTypes {
     | '/launcher-login'
     | '/launcher-setup'
     | '/logs'
-    | '/models'
     | '/agent/hub'
     | '/agent/skills'
     | '/agent/tools'
@@ -187,7 +176,6 @@ export interface FileRouteTypes {
     | '/launcher-login'
     | '/launcher-setup'
     | '/logs'
-    | '/models'
     | '/agent/hub'
     | '/agent/skills'
     | '/agent/tools'
@@ -204,7 +192,6 @@ export interface RootRouteChildren {
   LauncherLoginRoute: typeof LauncherLoginRoute
   LauncherSetupRoute: typeof LauncherSetupRoute
   LogsRoute: typeof LogsRoute
-  ModelsRoute: typeof ModelsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -263,13 +250,6 @@ declare module '@tanstack/react-router' {
       path: '/logs'
       fullPath: '/logs'
       preLoaderRoute: typeof LogsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/models': {
-      id: '/models'
-      path: '/models'
-      fullPath: '/models'
-      preLoaderRoute: typeof ModelsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agent/hub': {
@@ -356,7 +336,6 @@ const rootRouteChildren: RootRouteChildren = {
   LauncherLoginRoute: LauncherLoginRoute,
   LauncherSetupRoute: LauncherSetupRoute,
   LogsRoute: LogsRoute,
-  ModelsRoute: ModelsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

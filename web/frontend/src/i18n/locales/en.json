@@ -24,15 +24,13 @@
     "errorInvalid": "Incorrect password. Please try again.",
     "errorNetwork": "Network error. Please try again."
   },
-  "launcherSetup": {
-    "title": "Set dashboard password",
-    "description": "Choose a password to protect access to this dashboard. You will use it every time you sign in.",
-    "passwordLabel": "Password",
-    "passwordPlaceholder": "At least 8 characters",
-    "confirmLabel": "Confirm password",
-    "confirmPlaceholder": "Repeat password",
-    "submit": "Set password",
-    "errorMismatch": "Passwords do not match.",
+  "launcherBind": {
+    "title": "Verification Code Binding",
+    "description": "Enter the 8-digit join code to bind to a tenant. After binding, you can sign in and use the dashboard.",
+    "joinCodeLabel": "Join Code",
+    "joinCodePlaceholder": "Enter 8-digit join code",
+    "submit": "Bind",
+    "errorFormat": "Join code must be 8 digits.",
     "errorNetwork": "Network error. Please try again."
   },
   "chat": {
@@ -109,6 +107,7 @@
       "noConfiguredModel": "No Model Configured",
       "noConfiguredModelDescription": "You need to configure at least one AI model with an API key before you can start chatting.",
       "goToModels": "Go to Models",
+      "mcpOnlyHint": "This version only calls LLM via MCP; no local model configuration needed.",
       "noSelectedModel": "No Model Selected",
       "noSelectedModelDescription": "You have configured models, but none is set as default. Select a model before starting chat.",
       "notRunning": "Gateway Not Running",

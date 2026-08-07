@@ -51,22 +51,29 @@ export async function postLauncherDashboardLogout(): Promise<boolean> {
   return res.ok
 }
 
-export type SetupResult = { ok: true } | { ok: false; error: string }
+export type BindResult = { ok: true } | { ok: false; error: string }
 
-export async function postLauncherDashboardSetup(
-  password: string,
-  confirm: string,
-): Promise<SetupResult> {
-  const res = await fetch("/api/auth/setup", {
+export async function postLauncherDashboardBind(
+  joinCode: string,
+): Promise<BindResult> {
+  const res = await fetch("/api/auth/bind", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "same-origin",
-    body: JSON.stringify({
-      password: password.trim(),
-      confirm: confirm.trim(),
-    }),
+    body: JSON.stringify({ join_code: joinCode.trim() }),
   })
-  if (res.ok) return { ok: true }
+  if (res.ok) {
+    const data = (await res.json()) as { status?: string; message?: string }
+    if (data && data.status === "pending") {
+      return {
+        ok: false,
+        error:
+          data.message ||
+          "绑定申请已提交，请等待租户管理员确认后刷新页面重试。",
+      }
+    }
+    return { ok: true }
+  }
   return { ok: false, error: await readLauncherAuthError(res) }
 }
 

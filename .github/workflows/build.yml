@@ -29,3 +29,44 @@ jobs:
 
       - name: Build core binaries
         run: make build-all
+
+  android-apk:
+    name: Build Android Launcher APK
+    needs: integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/frontend/pnpm-lock.yaml
+
+      - name: Install JDK
+        run: sudo apt-get update && sudo apt-get install -y openjdk-21-jdk-headless zip
+
+      - name: Build launcher for Android arm64
+        run: make build-launcher-android-arm64
+
+      - name: Build APK
+        run: bash ./scripts/build-android-launcher-apk.sh
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: colearn-launcher-apk
+          path: android/app/colearn.apk
