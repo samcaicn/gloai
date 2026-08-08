@@ -2,7 +2,10 @@ name: build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "colearn" ]
+
+permissions:
+  contents: write
 
 jobs:
   integration:
@@ -32,7 +35,7 @@ jobs:
 
   android-apk:
     name: Build Android Launcher APK
-    needs: integration
+    runs-on: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
