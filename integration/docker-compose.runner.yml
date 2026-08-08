@@ -1,0 +1,19 @@
+services:
+  integration-runner:
+    image: golang:1.25-bookworm
+    working_dir: /workspace
+    entrypoint: ["bash", "-c"]
+    volumes:
+      - ${INTEGRATION_REPO_ROOT}:/workspace
+      - colearn-integration-gocache:/go-build-cache
+      - colearn-integration-gomodcache:/go-mod-cache
+    environment:
+      GOCACHE: /go-build-cache
+      GOMODCACHE: /go-mod-cache
+      GOTOOLCHAIN: local
+      CGO_ENABLED: "0"
+      GOFLAGS: -tags=goolm,stdjson,integration
+
+volumes:
+  colearn-integration-gocache:
+  colearn-integration-gomodcache:

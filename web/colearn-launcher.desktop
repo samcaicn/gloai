@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=colearn Launcher
+Comment=Web-based configuration and management UI for colearn
+Exec=colearn-launcher
+Icon=colearn-launcher
+Terminal=true
+Type=Application
+Categories=Utility;Network;
+Keywords=colearn;ai;agent;bot;

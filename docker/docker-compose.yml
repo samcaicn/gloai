@@ -1,0 +1,64 @@
+services:
+  # ─────────────────────────────────────────────
+  # colearn Agent (one-shot query)
+  #   docker compose -f docker/docker-compose.yml run --rm colearn-agent -m "Hello"
+  # ─────────────────────────────────────────────
+  colearn-agent:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: docker.io/colearn/colearn:latest
+    container_name: colearn-agent
+    profiles:
+      - agent
+    # Uncomment to access host network; leave commented unless needed.
+    #extra_hosts:
+    #  - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/root/.colearn
+    entrypoint: ["colearn", "agent"]
+    stdin_open: true
+    tty: true
+
+  # ─────────────────────────────────────────────
+  # colearn Gateway (Long-running Bot)
+  #   docker compose -f docker/docker-compose.yml --profile gateway up
+  # ─────────────────────────────────────────────
+  colearn-gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: docker.io/colearn/colearn:latest
+    container_name: colearn-gateway
+    restart: unless-stopped
+    profiles:
+      - gateway
+    # Uncomment to access host network; leave commented unless needed.
+    #extra_hosts:
+    #  - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/root/.colearn
+
+  # ─────────────────────────────────────────────
+  # colearn Launcher (Web Console + Gateway)
+  #   docker compose -f docker/docker-compose.yml --profile launcher up
+  # ─────────────────────────────────────────────
+  colearn-launcher:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.launcher
+    image: docker.io/colearn/colearn:launcher
+    container_name: colearn-launcher
+    restart: unless-stopped
+    profiles:
+      - launcher
+    environment:
+      - colearn_GATEWAY_HOST=0.0.0.0
+      # Set a fixed dashboard token instead of a random one each restart.
+      # If not set, a random token is generated and printed to the console on startup.
+      #- colearn_LAUNCHER_TOKEN=your-secret-token-here
+    ports:
+      - "18800:18800"
+      - "18790:18790"
+    volumes:
+      - ./data:/root/.colearn

@@ -1,0 +1,11 @@
+FROM alpine:3.21
+
+ARG TARGETPLATFORM
+
+RUN apk add --no-cache ca-certificates tzdata
+
+COPY $TARGETPLATFORM/colearn /usr/local/bin/colearn
+COPY $TARGETPLATFORM/colearn-launcher /usr/local/bin/colearn-launcher
+
+ENTRYPOINT ["colearn-launcher"]
+CMD ["-console", "-public", "-no-browser"]
