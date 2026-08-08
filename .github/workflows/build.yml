@@ -62,6 +62,9 @@ jobs:
       - name: Build launcher for Android arm64
         run: make build-launcher-android-arm64
 
+      - name: Build core for Android arm64
+        run: make build-android-arm64
+
       - name: Build APK
         run: bash ./scripts/build-android-launcher-apk.sh
 

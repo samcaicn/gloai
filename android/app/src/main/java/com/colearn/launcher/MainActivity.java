@@ -68,6 +68,8 @@ public class MainActivity extends Activity {
                     "-host", HOST,
                     "-port", String.valueOf(PORT));
             pb.environment().put("colearn_HOME", dir.getAbsolutePath());
+            // 指向核心 agent 二进制(gateway 子命令),launcher 启动网关时使用
+            pb.environment().put("colearn_BINARY", getApplicationInfo().nativeLibraryDir + "/libcolearn.so");
             pb.directory(dir);
             pb.redirectErrorStream(true);
             Process proc = pb.start();

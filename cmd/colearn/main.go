@@ -25,7 +25,6 @@ import (
 	"github.com/colearn/colearn/cmd/colearn/internal/mcp"
 	"github.com/colearn/colearn/cmd/colearn/internal/migrate"
 	"github.com/colearn/colearn/cmd/colearn/internal/model"
-	"github.com/colearn/colearn/cmd/colearn/internal/onboard"
 	"github.com/colearn/colearn/cmd/colearn/internal/skills"
 	"github.com/colearn/colearn/cmd/colearn/internal/status"
 	"github.com/colearn/colearn/cmd/colearn/internal/version"
@@ -129,7 +128,6 @@ colearn --no-color status`,
 
 	cmd.AddCommand(
 		configcmd.NewConfigCommand(),
-		onboard.NewOnboardCommand(),
 		agent.NewAgentCommand(),
 		auth.NewAuthCommand(),
 		gateway.NewGatewayCommand(),

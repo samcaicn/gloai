@@ -68,26 +68,40 @@ AJAR="$ANDROID_HOME/platforms/android-34/android.jar"
 JAVAC=$(command -v javac 2>/dev/null || echo "")
 
 # ---------------------------------------------------------------------------
-# 2) 准备 Go 二进制 -> lib/arm64-v8a/libcolearn_launcher.so
+# 2) 准备 Go 二进制 -> lib/arm64-v8a/libcolearn_launcher.so + libcolearn.so
+#    - libcolearn_launcher.so: Web console (网关管理器, 前端 UI)
+#    - libcolearn.so: 核心 agent 二进制 (gateway 子命令), launcher 启动网关用
 # ---------------------------------------------------------------------------
 LAUNCHER_BIN="$SCRIPT_DIR/../build/colearn-launcher-android-arm64"
+CORE_BIN="$SCRIPT_DIR/../build/colearn-android-arm64"
 if [ ! -f "$LAUNCHER_BIN" ]; then
   LAUNCHER_BIN="$ASSETS_DIR/colearn-launcher"
 fi
 if [ ! -f "$LAUNCHER_BIN" ]; then
-  echo "[*] Go 二进制缺失,尝试 'make build-launcher-android-arm64' ..."
+  echo "[*] launcher 二进制缺失,尝试 'make build-launcher-android-arm64' ..."
   (cd "$SCRIPT_DIR/.." && make build-launcher-android-arm64) || true
   LAUNCHER_BIN="$SCRIPT_DIR/../build/colearn-launcher-android-arm64"
 fi
 if [ ! -f "$LAUNCHER_BIN" ]; then
-  echo "[!] Go 二进制不存在: $SCRIPT_DIR/../build/colearn-launcher-android-arm64"
+  echo "[!] launcher 二进制不存在: $SCRIPT_DIR/../build/colearn-launcher-android-arm64"
   echo "[!] 请先运行 'make build-launcher-android-arm64' 或放二进制到 src/main/assets/colearn-launcher"
+  exit 1
+fi
+if [ ! -f "$CORE_BIN" ]; then
+  echo "[*] 核心二进制缺失,尝试 'make build-android-arm64' ..."
+  (cd "$SCRIPT_DIR/.." && make build-android-arm64) || true
+  CORE_BIN="$SCRIPT_DIR/../build/colearn-android-arm64"
+fi
+if [ ! -f "$CORE_BIN" ]; then
+  echo "[!] 核心二进制不存在: $SCRIPT_DIR/../build/colearn-android-arm64"
+  echo "[!] 请先运行 'make build-android-arm64' 或放二进制到 src/main/assets/colearn"
   exit 1
 fi
 
 rm -rf "$BUILD_DIR/nativelib"
 mkdir -p "$BUILD_DIR/nativelib/lib/arm64-v8a"
 cp "$LAUNCHER_BIN" "$BUILD_DIR/nativelib/lib/arm64-v8a/libcolearn_launcher.so"
+cp "$CORE_BIN" "$BUILD_DIR/nativelib/lib/arm64-v8a/libcolearn.so"
 
 # ---------------------------------------------------------------------------
 # 3) javac -> jar -> d8 dex
@@ -118,6 +132,8 @@ cp "$BUILD_DIR/classes.dex" "$APP_DIR/classes.dex"
 rm -f "$APP_DIR/classes.dex"
 echo "[*] 加入 native lib lib/arm64-v8a/libcolearn_launcher.so ..."
 ( cd "$BUILD_DIR/nativelib" && "$AAPT" add "$BUILD_DIR/unsigned.apk" lib/arm64-v8a/libcolearn_launcher.so )
+echo "[*] 加入 native lib lib/arm64-v8a/libcolearn.so ..."
+( cd "$BUILD_DIR/nativelib" && "$AAPT" add "$BUILD_DIR/unsigned.apk" lib/arm64-v8a/libcolearn.so )
 echo "[*] zipalign ..."
 "$ZIPALIGN" -f 4 "$BUILD_DIR/unsigned.apk" "$BUILD_DIR/colearn-aligned.apk"
 echo "[*] apksigner 签名 ..."
