@@ -53,14 +53,35 @@ public class MainActivity extends Activity {
 
     private void startServer() {
         try {
+            logToFile("startServer called");
             File dir = getFilesDir();
             // 直接从 native lib 执行(已以 0755+apk_data_file 解压,可执行,无需复制到 files/)
-            String binPath = getApplicationInfo().nativeLibraryDir + "/libcolearn_launcher.so";
-            File bin = new File(binPath);
-            if (!bin.exists() || bin.length() == 0) {
-                showError("native lib 未找到: " + binPath);
+            // nativeLibraryDir 在部分 ROM 上返回 .../lib/<abi>,而实际解压目录可能是
+            // .../lib/<abi> 或 .../lib/arm64,这里做多路径兜底查找。
+            File nativeLibRoot = new File(getApplicationInfo().nativeLibraryDir).getParentFile();
+            String[] candidates = {
+                    getApplicationInfo().nativeLibraryDir,
+                    nativeLibRoot + "/arm64-v8a",
+                    nativeLibRoot + "/arm64",
+                    nativeLibRoot.getAbsolutePath(),
+            };
+            File bin = null;
+            for (String base : candidates) {
+                File f = new File(base, "libcolearn_launcher.so");
+                if (f.exists() && f.length() > 0) {
+                    bin = f;
+                    break;
+                }
+            }
+            if (bin == null) {
+                String msg = "native lib 未找到 (nativeLibraryDir="
+                        + getApplicationInfo().nativeLibraryDir + ", legacy="
+                        + nativeLibRoot.getAbsolutePath() + ")";
+                android.util.Log.e("COLEARN", msg);
+                showError(msg);
                 return;
             }
+            android.util.Log.i("COLEARN", "launcher bin = " + bin.getAbsolutePath());
             // 设置 colearn_HOME 到可写的 files 目录,避免二进制默认写 /.colearn(只读)
             ProcessBuilder pb = new ProcessBuilder(
                     bin.getAbsolutePath(),
@@ -69,13 +90,20 @@ public class MainActivity extends Activity {
                     "-port", String.valueOf(PORT));
             pb.environment().put("colearn_HOME", dir.getAbsolutePath());
             // 指向核心 agent 二进制(gateway 子命令),launcher 启动网关时使用
-            pb.environment().put("colearn_BINARY", getApplicationInfo().nativeLibraryDir + "/libcolearn.so");
+            File core = new File(bin.getParent(), "libcolearn.so");
+            if (!core.exists()) {
+                core = new File(bin.getParentFile().getParentFile(), "libcolearn.so");
+            }
+            if (core.exists()) {
+                pb.environment().put("colearn_BINARY", core.getAbsolutePath());
+            }
             pb.directory(dir);
             pb.redirectErrorStream(true);
             Process proc = pb.start();
             serverProcess = proc;
             new Thread(new OutputReader(proc)).start();
         } catch (Exception e) {
+            android.util.Log.e("COLEARN", "startServer exception", e);
             showError("启动后端失败: " + e + "\n\n" + stackTrace(e));
         }
     }
@@ -140,12 +168,23 @@ public class MainActivity extends Activity {
     }
 
     private void showError(final String text) {
+        logToFile("ERROR: " + text);
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 webView.loadData("<html><body style='font-family:monospace;padding:16px;color:#b00;white-space:pre-wrap'><h3>启动失败</h3><pre>" + escapeHtml(text) + "</pre></body></html>", "text/html", "utf-8");
             }
         });
+    }
+
+    private void logToFile(String text) {
+        try {
+            java.io.File f = new java.io.File(getFilesDir(), "launcher-debug.log");
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(f, true);
+            fos.write(("<" + System.currentTimeMillis() + "> " + text + "\n").getBytes("UTF-8"));
+            fos.close();
+        } catch (Exception ignored) {
+        }
     }
 
     private static String escapeHtml(String s) {

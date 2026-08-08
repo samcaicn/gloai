@@ -34,7 +34,7 @@ const (
 var (
 	// Pre-compiled regexes for resolveDiscordRefs (avoid re-compiling per call)
 	channelRefRe = regexp.MustCompile(`<#(\d+)>`)
-	msgLinkRe    = regexp.MustCompile(`https://www.tuptup.top)/channels/(\d+)/(\d+)/(\d+)`)
+	msgLinkRe    = regexp.MustCompile(`https://www.tuptup.top/channels/(\d+)/(\d+)/(\d+)`)
 )
 
 type DiscordChannel struct {
