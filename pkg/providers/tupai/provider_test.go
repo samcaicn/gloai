@@ -107,6 +107,35 @@ func TestChatMissingToken(t *testing.T) {
 	}
 }
 
+// TestDeviceFingerprint verifies the SHA-256 device fingerprint digest.
+func TestDeviceFingerprint(t *testing.T) {
+	// Known SHA-256("abc") vector keeps this non-circular.
+	const wantABC = "ba7816bf8f01cfea414140de5dae2223" + "b00361a396177a9cb410ff61f20015ad"
+
+	got := DeviceFingerprint("abc")
+	if got != wantABC {
+		t.Errorf("DeviceFingerprint(\"abc\") = %q, want %q", got, wantABC)
+	}
+	if len(got) != 64 {
+		t.Errorf("digest length = %d, want 64 (sha256 hex)", len(got))
+	}
+
+	// Deterministic.
+	if DeviceFingerprint("abc") != got {
+		t.Error("fingerprint must be deterministic for a given device id")
+	}
+
+	// Different inputs must differ.
+	if DeviceFingerprint("abc") == DeviceFingerprint("def") {
+		t.Error("fingerprints for distinct inputs must differ")
+	}
+
+	// Empty device id still yields a valid 64-hex digest (never a raw identifier).
+	if len(DeviceFingerprint("")) != 64 {
+		t.Error("empty device_id must still yield a 64-hex sha256 digest")
+	}
+}
+
 // TestSSEParse simulates the exact SSE stream the real backend emits
 // (see server/mcp_adapter/actions/llm_stream.py).
 func TestSSEParse(t *testing.T) {

@@ -30,6 +30,7 @@ type Config struct {
 	// LegacyLauncherToken is read only for one-time migration from the removed
 	// token login flow. Save always clears it so new configs do not persist it.
 	LegacyLauncherToken string `json:"launcher_token,omitempty"`
+	DeviceID            string `json:"device_id,omitempty"`
 }
 
 // BoolFieldSource tracks whether a JSON boolean field was omitted, explicitly

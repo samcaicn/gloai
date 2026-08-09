@@ -2,6 +2,7 @@ package com.colearn.launcher;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -14,6 +15,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.security.MessageDigest;
+import java.util.UUID;
+
+import org.json.JSONObject;
 
 public class MainActivity extends Activity {
 
@@ -47,6 +52,7 @@ public class MainActivity extends Activity {
         });
         setContentView(wv);
         showStatus("正在启动 colearn 后端…");
+        persistDeviceId();
         startServer();
         startWatchdog();
     }
@@ -197,6 +203,68 @@ public class MainActivity extends Activity {
             sb.append(el.toString()).append("\n");
         }
         return sb.toString();
+    }
+
+    private void persistDeviceId() {
+        try {
+            File cfg = new File(getFilesDir(), "launcher-config.json");
+            JSONObject json = cfg.exists() ? new JSONObject(readAll(cfg)) : new JSONObject();
+            if (!json.has("device_id")) {
+                String id = computeDeviceId();
+                json.put("device_id", id);
+                writeAll(cfg, json.toString());
+                logToFile("persistDeviceId: wrote new device_id=" + id);
+            }
+        } catch (Exception e) {
+            logToFile("persistDeviceId error: " + e);
+        }
+    }
+
+    private String computeDeviceId() {
+        String androidId = Settings.Secure.getString(
+                getContentResolver(), Settings.Secure.ANDROID_ID);
+        if (androidId != null
+                && !androidId.isEmpty()
+                && !"0000000000000000".equals(androidId)) {
+            try {
+                return sha256Hex(androidId);
+            } catch (Exception e) {
+                logToFile("sha256 failed for androidId: " + e);
+            }
+        }
+        logToFile("androidId unavailable; falling back to random UUID");
+        return UUID.randomUUID().toString();
+    }
+
+    private static String sha256Hex(String input) throws Exception {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] digest = md.digest(input.getBytes("UTF-8"));
+        StringBuilder sb = new StringBuilder(digest.length * 2);
+        for (byte b : digest) {
+            int v = b & 0xff;
+            if (v < 16) {
+                sb.append('0');
+            }
+            sb.append(Integer.toHexString(v));
+        }
+        return sb.toString();
+    }
+
+    private static String readAll(File f) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new java.io.FileReader(f))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static void writeAll(File f, String data) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(f)) {
+            fos.write(data.getBytes("UTF-8"));
+        }
     }
 
     private class OutputReader implements Runnable {

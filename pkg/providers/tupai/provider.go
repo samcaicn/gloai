@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -357,4 +358,20 @@ func intField(m map[string]any, keys ...string) int {
 		}
 	}
 	return 0
+}
+
+// DeviceFingerprint derives the device fingerprint from a stable, privacy-safe
+// device identifier (see launcherconfig.Config.DeviceID, persisted by the
+// Android launcher as SHA-256(ANDROID_ID)).
+//
+// It returns the SHA-256 hex digest of the supplied device id. The tup device
+// registration flow uses this digest when issuing/deriving the device_token
+// ("dt-<...>"): an identifier that is hashed (so the raw ANDROID_ID is never
+// transmitted or persisted) yet stable across application uninstall/reinstall,
+// because ANDROID_ID itself persists across reinstalls under the same signing
+// key. This keeps device identity stable without storing a raw persistent
+// device identifier in launcher-config.json.
+func DeviceFingerprint(deviceID string) string {
+	sum := sha256.Sum256([]byte(deviceID))
+	return hex.EncodeToString(sum[:])
 }
