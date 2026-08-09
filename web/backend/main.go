@@ -12,7 +12,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -30,7 +29,6 @@ import (
 	"github.com/colearn/colearn/pkg/logger"
 	"github.com/colearn/colearn/pkg/netbind"
 	"github.com/colearn/colearn/web/backend/api"
-	"github.com/colearn/colearn/web/backend/dashboardauth"
 	"github.com/colearn/colearn/web/backend/launcherconfig"
 	"github.com/colearn/colearn/web/backend/middleware"
 	"github.com/colearn/colearn/web/backend/utils"
@@ -58,36 +56,6 @@ var (
 
 func shouldEnableLauncherFileLogging(enableConsole, debug bool) bool {
 	return !enableConsole || debug
-}
-
-func shouldEnableLocalAutoLogin(noBrowser bool, probeHost string) bool {
-	return !noBrowser && isLoopbackLaunchHost(probeHost)
-}
-
-func isLoopbackLaunchHost(host string) bool {
-	host = strings.TrimSpace(host)
-	if strings.EqualFold(host, "www.tuptup.top") {
-		return true
-	}
-	host = strings.Trim(host, "[]")
-	if i := strings.LastIndex(host, "%"); i >= 0 {
-		host = host[:i]
-	}
-	ip := net.ParseIP(host)
-	return ip != nil && ip.IsLoopback()
-}
-
-func launcherBrowserLaunchSuffix(
-	needsSetup bool,
-	localAutoLogin *middleware.LauncherDashboardLocalAutoLogin,
-) string {
-	if needsSetup {
-		return middleware.LauncherDashboardSetupPath
-	}
-	if localAutoLogin != nil {
-		return localAutoLogin.URLPath()
-	}
-	return ""
 }
 
 func resolveLauncherHostInput(flagHost string, explicitFlag bool, envHost string) (string, bool, error) {
@@ -482,10 +450,6 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Failed to resolve config path: %v", err)
 	}
-	err = utils.EnsureOnboarded(absPath)
-	if err != nil {
-		logger.Errorf("Warning: Failed to initialize %s config automatically: %v", appName, err)
-	}
 	if !debug {
 		logger.SetLevelFromString(config.ResolveGatewayLogLevel(absPath))
 	}
@@ -582,72 +546,11 @@ func main() {
 		logger.Fatalf("Dashboard auth setup failed: %v", dashErr)
 	}
 
-	// Open the bcrypt password store (creates the DB file on first run).
-	authStore, authStoreErr := dashboardauth.New(picoHome)
-	var passwordStore api.PasswordStore
-	if authStoreErr == nil {
-		passwordStore = authStore
-		defer authStore.Close()
-	} else {
-		// On Android and other platforms without CGO, SQLite store fails.
-		// Fall back to JSON config store for any error from SQLite store.
-		logger.InfoC(
-			"web",
-			fmt.Sprintf(
-				"Dashboard SQLite password store unavailable (%v); using launcher-config password storage",
-				authStoreErr,
-			),
-		)
-		passwordStore = launcherconfig.NewPasswordStore(launcherPath, launcherCfg)
-		authStoreErr = nil
-	}
-
-	migrationResult, migrationErr := launcherconfig.MigrateLegacyLauncherToken(
-		context.Background(),
-		passwordStore,
-		launcherPath,
-		launcherCfg,
-	)
-	if migrationErr != nil {
-		logger.Fatalf("Failed to migrate legacy launcher token to password login: %v", migrationErr)
-	}
-	if migrationResult.Migrated {
-		logger.InfoC("web", "Migrated legacy launcher token to dashboard password login")
-	}
-	if migrationResult.CleanupErr != nil {
-		logger.WarnC(
-			"web",
-			fmt.Sprintf(
-				"Legacy launcher token password migration succeeded, but failed to remove launcher_token from %s: %v",
-				launcherPath,
-				migrationResult.CleanupErr,
-			),
-		)
-	}
-
-	var localAutoLogin *middleware.LauncherDashboardLocalAutoLogin
-	needsInitialSetup := false
-	if passwordStore != nil {
-		initialized, initErr := passwordStore.IsInitialized(context.Background())
-		if initErr != nil {
-			logger.ErrorC("web", fmt.Sprintf("Warning: could not check dashboard password state: %v", initErr))
-		} else if !initialized {
-			needsInitialSetup = true
-		} else if shouldEnableLocalAutoLogin(*noBrowser, openResult.ProbeHost) {
-			localAutoLogin, err = middleware.NewLauncherDashboardLocalAutoLogin(5 * time.Minute)
-			if err != nil {
-				logger.Fatalf("Failed to create local auto-login grant: %v", err)
-			}
-		}
-	}
-
 	// Initialize Server components
 	mux := http.NewServeMux()
 
 	api.RegisterLauncherAuthRoutes(mux, api.LauncherAuthRouteOpts{
 		SessionCookie: dashboardSessionCookie,
-		PasswordStore: passwordStore,
-		StoreError:    authStoreErr,
 		ConfigPath:    absPath,
 	})
 
@@ -679,7 +582,6 @@ func main() {
 
 	dashAuth := middleware.LauncherDashboardAuth(middleware.LauncherDashboardAuthConfig{
 		ExpectedCookie: dashboardSessionCookie,
-		LocalAutoLogin: localAutoLogin,
 	}, accessControlledMux)
 
 	// Apply middleware stack
@@ -697,35 +599,28 @@ func main() {
 
 		fmt.Print(utils.Banner)
 		fmt.Println()
-		if needsInitialSetup {
-			if *noBrowser {
-				fmt.Println("  First-time setup: open /launcher-setup to create the dashboard password.")
-			} else {
-				fmt.Println("  Launcher will open /launcher-setup automatically.")
-			}
-			fmt.Println()
-		}
 		fmt.Println("  Dashboard address:")
 		fmt.Println()
 		for _, host := range consoleHosts {
-			fmt.Printf("    >> https://www.tuptup.top <<\n", net.JoinHostPort(host, effectivePort))
+			fmt.Printf("    >> %s <<\n", net.JoinHostPort(host, effectivePort))
 		}
 		fmt.Println()
 	}
 
 	// Log startup info to file
 	for _, ln := range listeners {
-		logger.InfoC("web", fmt.Sprintf("Server will listen on https://www.tuptup.top", ln.Addr().String()))
+		logger.InfoC("web", fmt.Sprintf("Server will listen on %s", ln.Addr().String()))
 	}
 	if hasWildcardBindHosts(openResult.BindHosts) {
 		if ip := advertiseIPForWildcardBindHosts(openResult.BindHosts); ip != "" {
-			logger.InfoC("web", fmt.Sprintf("Public access enabled at https://www.tuptup.top", net.JoinHostPort(ip, effectivePort)))
+			logger.InfoC("web", fmt.Sprintf("Public access enabled at %s", net.JoinHostPort(ip, effectivePort)))
 		}
 	}
 
-	// Share the local URL with the launcher runtime.
-	serverAddr = fmt.Sprintf("https://www.tuptup.top", net.JoinHostPort(openResult.ProbeHost, effectivePort))
-	browserLaunchURL = serverAddr + launcherBrowserLaunchSuffix(needsInitialSetup, localAutoLogin)
+	// Share the local URL with the launcher runtime. The bind page is the only
+	// launcher auth page, so unauthenticated launches land there.
+	serverAddr = fmt.Sprintf("http://%s", net.JoinHostPort(openResult.ProbeHost, effectivePort))
+	browserLaunchURL = serverAddr + middleware.LauncherDashboardSetupPath
 
 	// Auto-open browser will be handled by the launcher runtime.
 

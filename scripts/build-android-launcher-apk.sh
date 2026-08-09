@@ -46,7 +46,11 @@ if [ -z "${ANDROID_HOME:-}" ] || [ ! -d "${ANDROID_HOME:-}" ]; then
   echo "[*] 未找到 Android SDK,在线安装 cmdline-tools ..."
   export ANDROID_HOME="$HOME/android-sdk"
   mkdir -p "$ANDROID_HOME/cmdline-tools"
-  curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o /tmp/cmdtools.zip
+   case "$(uname -s)" in
+     Darwin) CMDTOOLS=commandlinetools-mac-11076708_latest.zip ;;
+     *)      CMDTOOLS=commandlinetools-linux-11076708_latest.zip ;;
+   esac
+   curl -sL "https://dl.google.com/android/repository/$CMDTOOLS" -o /tmp/cmdtools.zip
   unzip -q /tmp/cmdtools.zip -d "$ANDROID_HOME/cmdline-tools"
   mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
   SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -66,6 +70,13 @@ AJAR="$ANDROID_HOME/platforms/android-34/android.jar"
 
 # JDK
 JAVAC=$(command -v javac 2>/dev/null || echo "")
+if [ -z "$JAVAC" ] && [ -n "${JAVA_HOME:-}" ]; then
+  JAVAC="$JAVA_HOME/bin/javac"
+fi
+if [ ! -x "${JAVAC:-}" ]; then
+  echo "[!] javac 未找到,请安装 JDK (openjdk-21) 并设置 JAVA_HOME"
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # 2) 准备 Go 二进制 -> lib/arm64-v8a/libcolearn_launcher.so + libcolearn.so

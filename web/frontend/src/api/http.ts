@@ -1,4 +1,4 @@
-import { isLauncherAuthPathname } from "@/lib/launcher-login-path"
+import { isLauncherAuthPathname } from "@/lib/launcher-auth-path"
 
 function isLauncherAuthPath(): boolean {
   if (typeof globalThis.location === "undefined") {
@@ -17,8 +17,8 @@ function isLauncherAuthPath(): boolean {
 }
 
 /**
- * Same-origin fetch that sends cookies; redirects to launcher login on 401 JSON responses.
- * Skips redirect while already on an auth page (login or setup) to avoid reload loops.
+ * Same-origin fetch that sends cookies; redirects to launcher bind page on 401 JSON responses.
+ * Skips redirect while already on the bind page to avoid reload loops.
  */
 export async function launcherFetch(
   input: RequestInfo | URL,
@@ -35,7 +35,7 @@ export async function launcherFetch(
       typeof globalThis.location !== "undefined" &&
       !isLauncherAuthPath()
     ) {
-      globalThis.location.assign("/launcher-login")
+      globalThis.location.assign("/launcher-setup")
     }
   }
   return res

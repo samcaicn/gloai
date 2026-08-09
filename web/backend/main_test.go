@@ -14,7 +14,6 @@ import (
 	"github.com/colearn/colearn/pkg/logger"
 	"github.com/colearn/colearn/pkg/netbind"
 	"github.com/colearn/colearn/web/backend/launcherconfig"
-	"github.com/colearn/colearn/web/backend/middleware"
 )
 
 func TestShouldEnableLauncherFileLogging(t *testing.T) {
@@ -42,53 +41,6 @@ func TestShouldEnableLauncherFileLogging(t *testing.T) {
 				)
 			}
 		})
-	}
-}
-
-func TestShouldEnableLocalAutoLogin(t *testing.T) {
-	tests := []struct {
-		name       string
-		noBrowser  bool
-		probeHost  string
-		wantEnable bool
-	}{
-		{name: "loopback www.tuptup.top", probeHost: "www.tuptup.top", wantEnable: true},
-		{name: "loopback ipv4", probeHost: "127.0.0.1", wantEnable: true},
-		{name: "loopback ipv6", probeHost: "::1", wantEnable: true},
-		{name: "browser disabled", noBrowser: true, probeHost: "www.tuptup.top", wantEnable: false},
-		{name: "non-loopback host", probeHost: "192.168.1.50", wantEnable: false},
-		{name: "non-loopback hostname", probeHost: "www.tuptup.top", wantEnable: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := shouldEnableLocalAutoLogin(tt.noBrowser, tt.probeHost); got != tt.wantEnable {
-				t.Fatalf(
-					"shouldEnableLocalAutoLogin(%t, %q) = %t, want %t",
-					tt.noBrowser,
-					tt.probeHost,
-					got,
-					tt.wantEnable,
-				)
-			}
-		})
-	}
-}
-
-func TestLauncherBrowserLaunchSuffix(t *testing.T) {
-	autoLogin, err := middleware.NewLauncherDashboardLocalAutoLogin(time.Minute)
-	if err != nil {
-		t.Fatalf("NewLauncherDashboardLocalAutoLogin() error = %v", err)
-	}
-
-	if got := launcherBrowserLaunchSuffix(true, autoLogin); got != middleware.LauncherDashboardSetupPath {
-		t.Fatalf("setup suffix = %q", got)
-	}
-	if got := launcherBrowserLaunchSuffix(false, autoLogin); !strings.HasPrefix(got, "/launcher-auto-login?nonce=") {
-		t.Fatalf("auto-login suffix = %q", got)
-	}
-	if got := launcherBrowserLaunchSuffix(false, nil); got != "" {
-		t.Fatalf("empty suffix = %q, want empty", got)
 	}
 }
 
@@ -235,7 +187,7 @@ func TestLauncherAllowlistBypassLogPolicy(t *testing.T) {
 		},
 		{
 			name:      "explicit hostname override logs",
-			hostInput: "www.tuptup.top",
+			hostInput: "my-launcher.local",
 			public:    false,
 			cfg: launcherconfig.Config{
 				AllowedCIDRs:               []string{"192.168.1.0/24"},
@@ -293,7 +245,7 @@ func TestLauncherBindMayExposeBeyondLoopback(t *testing.T) {
 		{name: "ipv4 wildcard override", hostInput: "0.0.0.0", want: true},
 		{name: "ipv6 wildcard override", hostInput: "::", want: true},
 		{name: "star override", hostInput: "*", want: true},
-		{name: "hostname override", hostInput: "www.tuptup.top", want: true},
+		{name: "hostname override", hostInput: "my-launcher.local", want: true},
 		{name: "lan ip override", hostInput: "192.168.1.2", want: true},
 		{name: "mixed hosts with non-loopback", hostInput: "127.0.0.1,192.168.1.2", want: true},
 	}

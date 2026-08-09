@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
 
-import { postLauncherDashboardBind } from "@/api/launcher-auth"
+import { getLauncherAuthStatus, postLauncherDashboardBind } from "@/api/launcher-auth"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -28,6 +28,20 @@ function LauncherBindPage() {
   const [joinCode, setJoinCode] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState("")
+
+  // If a session already exists (bind done in a previous run), go straight to
+  // the dashboard instead of showing the bind page.
+  React.useEffect(() => {
+    void getLauncherAuthStatus()
+      .then((s) => {
+        if (s.authenticated) {
+          globalThis.location.assign("/")
+        }
+      })
+      .catch(() => {
+        /* network error — stay on bind page */
+      })
+  }, [])
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

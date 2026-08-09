@@ -2009,12 +2009,24 @@ func (m *Manager) Reload(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
+// RegisterChannel registers a new channel on the manager.
 func (m *Manager) RegisterChannel(name string, channel Channel) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.channels[name] = channel
 	if m.mux != nil {
 		m.registerChannelHTTPHandler(name, channel)
+	}
+}
+
+// RegisterHTTPHandler registers an HTTP handler on the gateway's shared mux.
+// This allows non-channel routes (e.g. MCP endpoints) to be served on the
+// gateway's HTTP server. The pattern follows http.ServeMux semantics.
+func (m *Manager) RegisterHTTPHandler(pattern string, handler http.Handler) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.mux != nil {
+		m.mux.Handle(pattern, handler)
 	}
 }
 

@@ -7,20 +7,19 @@ import (
 	"testing"
 )
 
-func TestLauncherAuthSetupRejectsCrossSiteFirstRun(t *testing.T) {
-	store := &fakePasswordStore{}
+func TestLauncherAuthBindRejectsCrossSite(t *testing.T) {
 	mux := http.NewServeMux()
 	RegisterLauncherAuthRoutes(mux, LauncherAuthRouteOpts{
 		SessionCookie: "session-cookie-value",
-		PasswordStore: store,
 	})
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(
 		http.MethodPost,
-		"https://www.tuptup.top",
-		strings.NewReader(`{"password":"CrossSitePwn123!","confirm":"CrossSitePwn123!"}`),
+		"http://www.tuptup.top/api/auth/bind",
+		strings.NewReader(`{"join_code":"12345678"}`),
 	)
+	req.Host = "www.tuptup.top"
 	req.Header.Set("Origin", "https://www.tuptup.top")
 	req.Header.Set("Referer", "https://www.tuptup.top")
 	req.Header.Set("Sec-Fetch-Site", "cross-site")
@@ -28,36 +27,58 @@ func TestLauncherAuthSetupRejectsCrossSiteFirstRun(t *testing.T) {
 	mux.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("cross-site setup code = %d body=%s", rec.Code, rec.Body.String())
+		t.Fatalf("cross-site bind code = %d body=%s", rec.Code, rec.Body.String())
 	}
-	if store.initialized || store.password != "" {
-		t.Fatalf("cross-site setup mutated store: initialized=%v password=%q", store.initialized, store.password)
+	if len(rec.Result().Cookies()) != 0 {
+		t.Fatalf("cross-site bind set cookies: %#v", rec.Result().Cookies())
 	}
 }
 
-func TestLauncherAuthSetupAllowsSameOriginFirstRun(t *testing.T) {
-	store := &fakePasswordStore{}
+func TestLauncherAuthBindAllowsSameOrigin(t *testing.T) {
 	mux := http.NewServeMux()
 	RegisterLauncherAuthRoutes(mux, LauncherAuthRouteOpts{
 		SessionCookie: "session-cookie-value",
-		PasswordStore: store,
 	})
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(
 		http.MethodPost,
-		"https://www.tuptup.top",
-		strings.NewReader(`{"password":"LocalSetup123!","confirm":"LocalSetup123!"}`),
+		"http://www.tuptup.top/api/auth/bind",
+		strings.NewReader(`{"join_code":"12345678"}`),
 	)
-	req.Header.Set("Origin", "https://www.tuptup.top")
+	req.Host = "www.tuptup.top"
+	req.Header.Set("Origin", "http://www.tuptup.top")
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
 	req.Header.Set("Content-Type", "application/json")
 	mux.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("same-origin setup code = %d body=%s", rec.Code, rec.Body.String())
+		t.Fatalf("same-origin bind code = %d body=%s", rec.Code, rec.Body.String())
 	}
-	if !store.initialized || store.password != "LocalSetup123!" {
-		t.Fatalf("same-origin setup store: initialized=%v password=%q", store.initialized, store.password)
+	cookies := rec.Result().Cookies()
+	if len(cookies) != 1 || cookies[0].Name != "colearn_launcher_auth" {
+		t.Fatalf("same-origin bind cookies = %#v", cookies)
+	}
+}
+
+func TestLauncherAuthBindRejectsInvalidCode(t *testing.T) {
+	mux := http.NewServeMux()
+	RegisterLauncherAuthRoutes(mux, LauncherAuthRouteOpts{
+		SessionCookie: "session-cookie-value",
+	})
+
+	for _, body := range []string{
+		`{}`,
+		`{"join_code":"not-a-code"}`,
+		`{"join_code":"1234567"}`,
+		`{"join_code":""}`,
+	} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/bind", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		mux.ServeHTTP(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("bind body=%s code = %d body=%s", body, rec.Code, rec.Body.String())
+		}
 	}
 }

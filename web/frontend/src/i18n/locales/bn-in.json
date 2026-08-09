@@ -15,26 +15,6 @@
     "config": "কনফিগ",
     "logs": "লগ"
   },
-  "launcherLogin": {
-    "title": "সাইন ইন",
-    "description": "চালিয়ে যেতে ড্যাশবোর্ড পাসওয়ার্ড দিন।",
-    "passwordLabel": "পাসওয়ার্ড",
-    "passwordPlaceholder": "পাসওয়ার্ড লিখুন",
-    "submit": "সাইন ইন",
-    "errorInvalid": "ভুল পাসওয়ার্ড। আবার চেষ্টা করুন।",
-    "errorNetwork": "নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।"
-  },
-  "launcherSetup": {
-    "title": "ড্যাশবোর্ড পাসওয়ার্ড সেট করুন",
-    "description": "এই ড্যাশবোর্ডে অ্যাক্সেস সুরক্ষিত রাখতে একটি পাসওয়ার্ড বেছে নিন। প্রতিবার সাইন ইনের সময় এটি ব্যবহার করতে হবে।",
-    "passwordLabel": "পাসওয়ার্ড",
-    "passwordPlaceholder": "কমপক্ষে ৮ অক্ষর",
-    "confirmLabel": "পাসওয়ার্ড নিশ্চিত করুন",
-    "confirmPlaceholder": "পাসওয়ার্ড আবার লিখুন",
-    "submit": "পাসওয়ার্ড সেট করুন",
-    "errorMismatch": "পাসওয়ার্ড মিলছে না।",
-    "errorNetwork": "নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।"
-  },
   "chat": {
     "welcome": "আজ আমি আপনাকে কীভাবে সাহায্য করতে পারি?",
     "welcomeDesc": "আবহাওয়া, সেটিংস বা অন্য যেকোনো কাজ সম্পর্কে আমাকে জিজ্ঞাসা করুন। আমি সাহায্যের জন্য এখানে আছি।",
@@ -835,15 +815,6 @@
       "server_port_hint": "colearn Web দ্বারা ব্যবহৃত HTTP পোর্ট।",
       "launcher_section_hint": "এই বিভাগের পরিবর্তন লঞ্চার পুনরায় চালু হওয়ার পরে কার্যকর হয়।",
       "gateway_restart_hint": "এই বিভাগের পরিবর্তন গেটওয়ে পুনরায় চালু হওয়ার পরে কার্যকর হয়।",
-      "dashboard_password": "লগইন পাসওয়ার্ড",
-      "dashboard_password_hint": "একটি নতুন লগইন পাসওয়ার্ড সেট করুন।",
-      "dashboard_password_placeholder": "কমপক্ষে ৮ অক্ষর",
-      "dashboard_password_confirm": "নতুন পাসওয়ার্ড নিশ্চিত করুন",
-      "dashboard_password_confirm_hint": "নতুন লগইন পাসওয়ার্ড আবার লিখুন।",
-      "dashboard_password_confirm_placeholder": "পাসওয়ার্ড আবার লিখুন",
-      "dashboard_password_required": "নতুন লগইন পাসওয়ার্ড লিখুন এবং নিশ্চিত করুন।",
-      "dashboard_password_mismatch": "লগইন পাসওয়ার্ড মিলছে না।",
-      "dashboard_password_min_length": "লগইন পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।",
       "lan_access": "LAN অ্যাক্সেস সক্ষম করুন",
       "lan_access_hint": "আপনার স্থানীয় নেটওয়ার্কের অন্যান্য ডিভাইস থেকে অ্যাক্সেসের অনুমতি দিন।",
       "allowed_cidrs": "অনুমোদিত নেটওয়ার্ক CIDR",

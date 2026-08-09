@@ -414,7 +414,7 @@ func TestHandlePatchConfig_NormalizesStringChannelArrayFields(t *testing.T) {
 		picoCfg.AllowOrigins[0] != "https://www.tuptup.top" ||
 		picoCfg.AllowOrigins[1] != "https://www.tuptup.top" {
 		t.Fatalf(
-			"pico allow_origins = %#v, want [\"https://www.tuptup.top", \"https://www.tuptup.top"]",
+			"pico allow_origins = %#v, want [\"https://www.tuptup.top\", \"https://www.tuptup.top\"]",
 			picoCfg.AllowOrigins,
 		)
 	}

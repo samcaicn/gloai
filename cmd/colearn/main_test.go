@@ -45,7 +45,6 @@ func TestNewcolearnCommand(t *testing.T) {
 		"mcp",
 		"migrate",
 		"model",
-		"onboard",
 		"skills",
 		"status",
 		"update",

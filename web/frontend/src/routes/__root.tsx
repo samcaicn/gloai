@@ -5,12 +5,12 @@ import { useEffect, useState } from "react"
 import { getLauncherAuthStatus } from "@/api/launcher-auth"
 import { AppLayout } from "@/components/app-layout"
 import { initializeChatStore } from "@/features/chat/controller"
-import { isLauncherAuthPathname } from "@/lib/launcher-login-path"
+import { isLauncherAuthPathname } from "@/lib/launcher-auth-path"
 
 const RootLayout = () => {
   // Prefer the real address bar path: stale embedded bundles may not register
-  // /launcher-login or /launcher-setup in the route tree, which would otherwise
-  // keep AppLayout + gateway polling → 401 → launcherFetch redirect loop.
+  // /launcher-setup in the route tree, which would otherwise keep AppLayout +
+  // gateway polling → 401 → launcherFetch redirect loop.
   const routerState = useRouterState({
     select: (s) => ({
       pathname: s.location.pathname,
@@ -27,7 +27,7 @@ const RootLayout = () => {
     isLauncherAuthPathname(windowPath) ||
     isLauncherAuthPathname(routerState.pathname) ||
     routerState.matches.some(
-      (m) => m.routeId === ("/launcher-login" as const) || m.routeId === ("/launcher-setup" as const),
+      (m) => m.routeId === ("/launcher-setup" as const),
     )
 
   const [authError, setAuthError] = useState<string | null>(null)
@@ -37,24 +37,22 @@ const RootLayout = () => {
     if (isAuthPage) return
     void getLauncherAuthStatus()
       .then((s) => {
-        if (!s.initialized) {
+        if (!s.authenticated) {
           globalThis.location.assign("/launcher-setup")
-        } else if (!s.authenticated) {
-          globalThis.location.assign("/launcher-login")
         }
       })
       .catch((err: unknown) => {
-        // On 401/403, redirect to login — the session is invalid.
-        // On 5xx (e.g. 503 when the auth store is unavailable) or network errors,
-        // do NOT redirect: a subsequent successful login would loop straight back here.
+        // On 401/403, redirect to the bind page — the session is invalid.
+        // On 5xx (e.g. 503) or network errors, do NOT redirect: a subsequent
+        // successful bind would loop straight back here.
         // launcherFetch handles 401 on real API calls regardless.
         if (err instanceof Error && /^status 40[13]$/.test(err.message)) {
-          globalThis.location.assign("/launcher-login")
+          globalThis.location.assign("/launcher-setup")
         } else {
           setAuthError(
             err instanceof Error
               ? err.message
-              : "Auth service unavailable. Reset dashboard password storage and restart the application.",
+              : "Auth service unavailable. Please restart the application.",
           )
         }
       })

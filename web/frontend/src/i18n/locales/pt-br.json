@@ -15,26 +15,6 @@
     "config": "Configuração",
     "logs": "Logs"
   },
-  "launcherLogin": {
-    "title": "Entrar",
-    "description": "Digite a senha do dashboard para continuar.",
-    "passwordLabel": "Senha",
-    "passwordPlaceholder": "Digite a senha",
-    "submit": "Entrar",
-    "errorInvalid": "Senha incorreta. Tente novamente.",
-    "errorNetwork": "Erro de rede. Tente novamente."
-  },
-  "launcherSetup": {
-    "title": "Definir senha do dashboard",
-    "description": "Escolha uma senha para proteger o acesso a este dashboard. Você a usará toda vez que entrar.",
-    "passwordLabel": "Senha",
-    "passwordPlaceholder": "Pelo menos 8 caracteres",
-    "confirmLabel": "Confirmar senha",
-    "confirmPlaceholder": "Repita a senha",
-    "submit": "Definir senha",
-    "errorMismatch": "As senhas não coincidem.",
-    "errorNetwork": "Erro de rede. Tente novamente."
-  },
   "chat": {
     "welcome": "Como posso te ajudar hoje?",
     "welcomeDesc": "Pergunte sobre clima, configurações ou qualquer outra tarefa. Estou aqui para ajudar.",
@@ -836,15 +816,6 @@
       "server_port_hint": "Porta HTTP usada pelo colearn Web.",
       "launcher_section_hint": "Alterações nesta seção entram em vigor após o launcher reiniciar.",
       "gateway_restart_hint": "Alterações nesta seção entram em vigor após o gateway reiniciar.",
-      "dashboard_password": "Senha de Login",
-      "dashboard_password_hint": "Defina uma nova senha de login.",
-      "dashboard_password_placeholder": "Pelo menos 8 caracteres",
-      "dashboard_password_confirm": "Confirmar Nova Senha",
-      "dashboard_password_confirm_hint": "Digite a nova senha de login novamente.",
-      "dashboard_password_confirm_placeholder": "Repita a senha",
-      "dashboard_password_required": "Digite e confirme a nova senha de login.",
-      "dashboard_password_mismatch": "As senhas de login não coincidem.",
-      "dashboard_password_min_length": "A senha de login deve ter pelo menos 8 caracteres.",
       "lan_access": "Habilitar Acesso pela LAN",
       "lan_access_hint": "Permitir acesso de outros dispositivos na sua rede local.",
       "allowed_cidrs": "CIDRs de Rede Permitidos",

@@ -73,7 +73,7 @@ export function AppHeader() {
 
   const handleLogout = async () => {
     await postLauncherDashboardLogout()
-    globalThis.location.assign("/launcher-login")
+    globalThis.location.assign("/launcher-setup")
   }
 
   const handleGatewayToggle = () => {

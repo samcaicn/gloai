@@ -107,7 +107,6 @@ Version: %s`, internal.Logo, config.FormatVersion())
 		Short: short,
 		Long:  long,
 		Example: `colearn version
-colearn onboard
 colearn --no-color status`,
 		SilenceErrors: true,
 		// Avoid plain UsageString() on stderr/stdout when a command fails; cliui

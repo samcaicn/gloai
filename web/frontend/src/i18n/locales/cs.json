@@ -15,26 +15,6 @@
     "config": "Nastavení",
     "logs": "Logy"
   },
-  "launcherLogin": {
-    "title": "Přihlášení",
-    "description": "Zadejte heslo k dashboardu pro pokračení.",
-    "passwordLabel": "Heslo",
-    "passwordPlaceholder": "Zadejte heslo",
-    "submit": "Přihlásit se",
-    "errorInvalid": "Nesprávné heslo. Zkuste to znovu.",
-    "errorNetwork": "Chyba sítě. Zkuste to znovu."
-  },
-  "launcherSetup": {
-    "title": "Nastavení hesla k dashboardu",
-    "description": "Zvolte heslo pro ochranu přístupu k dashboardu. Budete ho zadávat při každém přihlášení.",
-    "passwordLabel": "Heslo",
-    "passwordPlaceholder": "Alespoň 8 znaků",
-    "confirmLabel": "Potvrzení hesla",
-    "confirmPlaceholder": "Zopakujte heslo",
-    "submit": "Nastavit heslo",
-    "errorMismatch": "Hesla se neshodují.",
-    "errorNetwork": "Chyba sítě. Zkuste to znovu."
-  },
   "chat": {
     "welcome": "Jak vám mohu dnes pomoci?",
     "welcomeDesc": "Zeptejte se mě na počasí, nastavení nebo jiné úkoly. Jsem tu, abych vám pomohl.",
@@ -834,15 +814,6 @@
       "server_port_hint": "HTTP port používaný colearn Web.",
       "launcher_section_hint": "Změny v této sekci se projeví až po restartu launcheru.",
       "gateway_restart_hint": "Změny v této části se projeví po restartu gateway.",
-      "dashboard_password": "Přihlašovací heslo",
-      "dashboard_password_hint": "Nastavit nové přihlašovací heslo.",
-      "dashboard_password_placeholder": "Alespoň 8 znaků",
-      "dashboard_password_confirm": "Potvrzení nového hesla",
-      "dashboard_password_confirm_hint": "Zadejte nové přihlašovací heslo znovu.",
-      "dashboard_password_confirm_placeholder": "Zopakujte heslo",
-      "dashboard_password_required": "Zadejte a potvrďte nové přihlašovací heslo.",
-      "dashboard_password_mismatch": "Přihlašovací hesla se neshodují.",
-      "dashboard_password_min_length": "Přihlašovací heslo musí mít alespoň 8 znaků.",
       "lan_access": "Aktivovat přístup z LAN",
       "lan_access_hint": "Povolit přístup z ostatních zařízení v lokální síti.",
       "allowed_cidrs": "Povolené síťové CIDRy",

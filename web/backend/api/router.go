@@ -79,6 +79,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	// Pico Channel (WebSocket chat)
 	h.registerPicoRoutes(mux)
 
+	// MCP Streamable HTTP passthrough (transparent proxy to gateway /api/v2/mcp)
+	h.registerMcpRoutes(mux)
+
 	// Gateway process lifecycle
 	h.registerGatewayRoutes(mux)
 

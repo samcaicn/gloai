@@ -15,15 +15,6 @@
     "config": "配置",
     "logs": "日志"
   },
-  "launcherLogin": {
-    "title": "登录",
-    "description": "请输入控制台密码以继续。",
-    "passwordLabel": "密码",
-    "passwordPlaceholder": "输入密码",
-    "submit": "登录",
-    "errorInvalid": "密码错误，请重试。",
-    "errorNetwork": "网络错误，请重试。"
-  },
   "launcherBind": {
     "title": "验证码绑定",
     "description": "输入 8 位绑定码以关联租户，绑定成功后即可登录使用。",
@@ -835,15 +826,6 @@
       "server_port_hint": "colearn Web 的 HTTP 监听端口",
       "launcher_section_hint": "此分组中的改动需要在重启 launcher 后生效",
       "gateway_restart_hint": "这组配置保存后，需要重启服务才能正式生效。",
-      "dashboard_password": "登录密码",
-      "dashboard_password_hint": "设置新的登录密码",
-      "dashboard_password_placeholder": "至少 8 个字符",
-      "dashboard_password_confirm": "确认新密码",
-      "dashboard_password_confirm_hint": "再次输入新的登录密码",
-      "dashboard_password_confirm_placeholder": "再次输入密码",
-      "dashboard_password_required": "请输入并确认新的登录密码",
-      "dashboard_password_mismatch": "两次输入的登录密码不一致",
-      "dashboard_password_min_length": "登录密码至少需要 8 个字符",
       "lan_access": "启用局域网访问",
       "lan_access_hint": "允许局域网中的其他设备访问当前服务",
       "allowed_cidrs": "允许访问网段",

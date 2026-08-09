@@ -47,6 +47,7 @@ import (
 	"github.com/colearn/colearn/pkg/heartbeat"
 	"github.com/colearn/colearn/pkg/logger"
 	"github.com/colearn/colearn/pkg/media"
+	"github.com/colearn/colearn/pkg/mcp"
 	"github.com/colearn/colearn/pkg/netbind"
 	"github.com/colearn/colearn/pkg/pid"
 	"github.com/colearn/colearn/pkg/providers"
@@ -484,6 +485,18 @@ func setupAndStartServices(
 
 	runningServices.authToken = authToken
 	runningServices.HealthServer = health.NewServer(listenResult.ProbeHost, cfg.Gateway.Port, authToken)
+
+	// Register MCP Streamable HTTP handler on the gateway's HTTP server,
+	// exposing the agent's tools to external MCP clients via /api/v2/mcp.
+	if runningServices.ChannelManager != nil {
+		if agent := agentLoop.GetDefaultAgent(); agent != nil && agent.Tools != nil {
+			mcpHandler := mcp.NewStreamableHTTPHandler(agent.Tools)
+			runningServices.ChannelManager.RegisterHTTPHandler(mcp.StreamableHTTPPath, mcpHandler)
+			logger.InfoCF("gateway", "MCP Streamable HTTP server registered", map[string]any{
+				"path": mcp.StreamableHTTPPath,
+			})
+		}
+	}
 
 	var listenAddr string
 	if len(listenResult.Listeners) > 0 {

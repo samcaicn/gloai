@@ -1,7 +1,6 @@
 package launcherconfig
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -35,8 +34,6 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 		AllowedCIDRs:          []string{"192.168.1.0/24", "10.0.0.0/8"},
 		AllowLocalhostBypass:  false,
 		TrustedProxyCIDRs:     []string{"172.16.0.0/12"},
-		DashboardPasswordHash: "$2a$12$saved-dashboard-password-hash",
-		LegacyLauncherToken:   "legacy-token-should-not-persist",
 	}
 
 	if err := Save(path, want); err != nil {
@@ -51,12 +48,6 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	}
 	if got.AllowLocalhostBypass != want.AllowLocalhostBypass {
 		t.Fatalf("allow_localhost_bypass = %t, want %t", got.AllowLocalhostBypass, want.AllowLocalhostBypass)
-	}
-	if got.DashboardPasswordHash != want.DashboardPasswordHash {
-		t.Fatalf("dashboard_password_hash = %q, want %q", got.DashboardPasswordHash, want.DashboardPasswordHash)
-	}
-	if got.LegacyLauncherToken != "" {
-		t.Fatalf("legacy launcher_token = %q, want empty after Save", got.LegacyLauncherToken)
 	}
 	if len(got.AllowedCIDRs) != len(want.AllowedCIDRs) {
 		t.Fatalf("allowed_cidrs len = %d, want %d", len(got.AllowedCIDRs), len(want.AllowedCIDRs))
@@ -85,21 +76,6 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 		}
 	} else if perm != 0o600 {
 		t.Fatalf("file perm = %o, want 600", perm)
-	}
-}
-
-func TestLoadReadsLegacyLauncherTokenForMigration(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "launcher-config.json")
-	if err := os.WriteFile(path, []byte(`{"port":18800,"launcher_token":"legacy-token"}`), 0o600); err != nil {
-		t.Fatalf("WriteFile() error = %v", err)
-	}
-
-	got, err := Load(path, Default())
-	if err != nil {
-		t.Fatalf("Load() error = %v", err)
-	}
-	if got.LegacyLauncherToken != "legacy-token" {
-		t.Fatalf("legacy launcher_token = %q, want legacy-token", got.LegacyLauncherToken)
 	}
 }
 
@@ -214,44 +190,5 @@ func TestNormalizeCIDRs(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("got[%d] = %q, want %q", i, got[i], want[i])
 		}
-	}
-}
-
-func TestPasswordStoreSetAndVerify(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "launcher-config.json")
-	store := NewPasswordStore(path, Default())
-	ctx := context.Background()
-
-	initialized, err := store.IsInitialized(ctx)
-	if err != nil {
-		t.Fatalf("IsInitialized() error = %v", err)
-	}
-	if initialized {
-		t.Fatal("IsInitialized() = true, want false before SetPassword")
-	}
-
-	if err = store.SetPassword(ctx, "dashboard-password"); err != nil {
-		t.Fatalf("SetPassword() error = %v", err)
-	}
-	initialized, err = store.IsInitialized(ctx)
-	if err != nil {
-		t.Fatalf("IsInitialized() after SetPassword error = %v", err)
-	}
-	if !initialized {
-		t.Fatal("IsInitialized() = false, want true after SetPassword")
-	}
-	ok, err := store.VerifyPassword(ctx, "dashboard-password")
-	if err != nil {
-		t.Fatalf("VerifyPassword() error = %v", err)
-	}
-	if !ok {
-		t.Fatal("VerifyPassword(correct) = false, want true")
-	}
-	ok, err = store.VerifyPassword(ctx, "wrong-password")
-	if err != nil {
-		t.Fatalf("VerifyPassword(wrong) error = %v", err)
-	}
-	if ok {
-		t.Fatal("VerifyPassword(wrong) = true, want false")
 	}
 }

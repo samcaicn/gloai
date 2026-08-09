@@ -15,15 +15,6 @@
     "config": "Config",
     "logs": "Logs"
   },
-  "launcherLogin": {
-    "title": "Sign in",
-    "description": "Enter the dashboard password to continue.",
-    "passwordLabel": "Password",
-    "passwordPlaceholder": "Enter password",
-    "submit": "Sign in",
-    "errorInvalid": "Incorrect password. Please try again.",
-    "errorNetwork": "Network error. Please try again."
-  },
   "launcherBind": {
     "title": "Verification Code Binding",
     "description": "Enter the 8-digit join code to bind to a tenant. After binding, you can sign in and use the dashboard.",
@@ -835,15 +826,6 @@
       "server_port_hint": "HTTP port used by colearn Web.",
       "launcher_section_hint": "Changes in this section take effect after the launcher restarts.",
       "gateway_restart_hint": "Changes in this section take effect after the gateway restarts.",
-      "dashboard_password": "Login Password",
-      "dashboard_password_hint": "Set a new login password.",
-      "dashboard_password_placeholder": "At least 8 characters",
-      "dashboard_password_confirm": "Confirm New Password",
-      "dashboard_password_confirm_hint": "Enter the new login password again.",
-      "dashboard_password_confirm_placeholder": "Repeat password",
-      "dashboard_password_required": "Enter and confirm the new login password.",
-      "dashboard_password_mismatch": "The login passwords do not match.",
-      "dashboard_password_min_length": "Login password must be at least 8 characters.",
       "lan_access": "Enable LAN Access",
       "lan_access_hint": "Allow access from other devices on your local network.",
       "allowed_cidrs": "Allowed Network CIDRs",

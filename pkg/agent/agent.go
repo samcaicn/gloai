@@ -140,6 +140,14 @@ const (
 	metadataKeyParentPeerID    = "parent_peer_id"
 )
 
+// GetDefaultAgent returns the default agent instance and its tool registry.
+func (al *AgentLoop) GetDefaultAgent() *AgentInstance {
+	if al.registry == nil {
+		return nil
+	}
+	return al.registry.GetDefaultAgent()
+}
+
 // registerSharedTools registers tools that are shared across all agents (web, message, spawn).
 
 func (al *AgentLoop) Run(ctx context.Context) error {
