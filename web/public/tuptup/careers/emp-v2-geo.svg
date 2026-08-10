@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <rect width="400" height="600" fill="none"/>
+  <text x="200" y="300" font-family="sans-serif" font-size="40" fill="#4338CA" text-anchor="middle" font-weight="bold">AI</text>
+  <text x="200" y="340" font-family="sans-serif" font-size="16" fill="#6366F1" text-anchor="middle">placeholder</text>
+</svg>

@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "files": {
+    "projects.json": {
+      "rows": 27,
+      "fields": 22
+    },
+    "monthly_trend.json": {
+      "rows": 324,
+      "fields": 8
+    },
+    "talent_risk.json": {
+      "rows": 1520,
+      "fields": 14
+    },
+    "role_dept_matrix.json": {
+      "rows": 115,
+      "fields": 9
+    }
+  }
+}

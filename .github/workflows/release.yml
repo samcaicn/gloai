@@ -1,0 +1,185 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # --- Build frontend (shared) ---
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
+        with:
+          version: latest
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: cd web && pnpm install --frozen-lockfile && pnpm run build
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: frontend-dist
+          path: internal/web/dist/
+      - name: Build edict frontend (artifact)
+        run: |
+          cd edict/edict/frontend
+          npm install --no-audit --no-fund
+          npx vite build
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: edict-frontend-dist
+          path: edict/edict/frontend/dist/
+
+  # --- Build darwin binaries on native macOS runners ---
+  darwin:
+    needs: frontend
+    strategy:
+      matrix:
+        include:
+          - goarch: amd64
+            runner: macos-latest
+          - goarch: arm64
+            runner: macos-latest
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e80b5a5461e7c # v8
+        with:
+          name: frontend-dist
+          path: internal/web/dist/
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+        with:
+          go-version-file: go.mod
+      - name: Build
+        env:
+          CGO_ENABLED: "1"
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then VERSION="snapshot"; fi
+          go build -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${GITHUB_SHA::7} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -o oih .
+          tar czf "CEOadmin_${VERSION}_darwin_${{ matrix.goarch }}.tar.gz" oih
+      - uses: actions/upload-Artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: darwin-${{ matrix.goarch }}
+          path: "*.tar.gz"
+
+  # --- Build linux binaries, Docker, and publish ---
+  release:
+    needs: [frontend, darwin]
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-Artifact@3e5f45b2cfb9172054b4087a40e80b5a5461e7c # v8
+        with:
+          name: frontend-dist
+          path: internal/web/dist/
+
+      - uses: actions/download-Artifact@3e5f45b2cfb9172054b4087a40e80b5a5461e7c # v8
+        with:
+          name: edict-frontend-dist
+          path: edict/edict/frontend/dist/
+
+      - uses: actions/download-Artifact@3e5f45b2cfb9172054b4087a40e80b5a5461e7c # v8
+        with:
+          pattern: darwin-*
+          path: darwin-archives/
+          merge-multiple: true
+
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install ARM64 cross compiler
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Set version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then VERSION="snapshot"; fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      # Build linux/amd64 binaries
+      - name: Build binaries (linux/amd64)
+        run: |
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+            -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${GITHUB_SHA::7} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -o oih-linux-amd64 .
+
+          cd edict
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ../edict-go-linux-amd64 ./cmd/edict
+
+      # Build linux/arm64 binaries
+      - name: Build binaries (linux/arm64)
+        run: |
+          CGO_CFLAGS="-Wno-stringop-overread -Wno-constant-conversion" \
+          CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc \
+            go build \
+            -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${GITHUB_SHA::7} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -o oih-linux-arm64 .
+
+          cd edict
+          CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc \
+            go build -ldflags "-s -w" -o ../edict-go-linux-arm64 ./cmd/edict
+
+      # Create linux archives
+      - name: Create linux archives
+        run: |
+          mkdir -p linux-archives
+          tar czf "linux-archives/CEOadmin_${VERSION}_linux_amd64.tar.gz" oih-linux-amd64
+          tar czf "linux-archives/CEOadmin_${VERSION}_linux_arm64.tar.gz" oih-linux-arm64
+
+      # Docker setup
+      - uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@4d49934e8c017e9e0e1e6d6e7b6d6c5c5e890410 # v6
+        with:
+          context: .
+          file: Dockerfile.release
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/ceoadmin/CEOadmin:${{ env.VERSION }}
+            ghcr.io/ceoadmin/CEOadmin:latest
+            docker.io/ceoadmin/CEOadmin:${{ env.VERSION }}
+            docker.io/ceoadmin/CEOadmin:latest
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@9a127d869fb706213d29cdf8eef3a4ea2b869415 # v7
+        with:
+          version: "~> v2"
+          args: >-
+            release --skip=docker --skip=validate
+            ${{ github.event_name == 'workflow_dispatch' && '--snapshot --clean' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,2016 @@
+[
+  {
+    "role": "产品",
+    "project_id": "P-01",
+    "headcount": 44,
+    "ai_cost": 12144,
+    "per_capita": 276,
+    "coverage_rate": 0.9091,
+    "avg_active_days": 8.5,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.9137,
+      "Cursor/IDE": 0.0285,
+      "Mivo": 0.0578,
+      "其他": 0.0
+    },
+    "sample_size": 44
+  },
+  {
+    "role": "其他",
+    "project_id": "P-01",
+    "headcount": 5,
+    "ai_cost": 566648,
+    "per_capita": 113330,
+    "coverage_rate": 1.0,
+    "avg_active_days": 16.2,
+    "model_mix": {
+      "Claude Opus": 0.7344,
+      "Claude Sonnet": 0.2392,
+      "GPT": 0.0176,
+      "Cursor/IDE": 0.0016,
+      "Mivo": 0.0001,
+      "其他": 0.0071
+    },
+    "sample_size": 5
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-01",
+    "headcount": 33,
+    "ai_cost": 85462,
+    "per_capita": 2590,
+    "coverage_rate": 0.9091,
+    "avg_active_days": 12.9,
+    "model_mix": {
+      "Claude Opus": 0.6345,
+      "Claude Sonnet": 0.0543,
+      "GPT": 0.2091,
+      "Cursor/IDE": 0.0958,
+      "Mivo": 0.0003,
+      "其他": 0.006
+    },
+    "sample_size": 33
+  },
+  {
+    "role": "管理",
+    "project_id": "P-01",
+    "headcount": 8,
+    "ai_cost": 143,
+    "per_capita": 18,
+    "coverage_rate": 0.25,
+    "avg_active_days": 1.5,
+    "model_mix": {
+      "Claude Opus": 0.0078,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.3539,
+      "Cursor/IDE": 0.3218,
+      "Mivo": 0.291,
+      "其他": 0.0255
+    },
+    "sample_size": 8
+  },
+  {
+    "role": "美术",
+    "project_id": "P-01",
+    "headcount": 86,
+    "ai_cost": 19368,
+    "per_capita": 225,
+    "coverage_rate": 0.9651,
+    "avg_active_days": 10.1,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.0434,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.9566,
+      "其他": 0.0
+    },
+    "sample_size": 86
+  },
+  {
+    "role": "设计",
+    "project_id": "P-01",
+    "headcount": 1,
+    "ai_cost": 0,
+    "per_capita": 0,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {},
+    "sample_size": 1
+  },
+  {
+    "role": "产品",
+    "project_id": "P-02",
+    "headcount": 1,
+    "ai_cost": 6164,
+    "per_capita": 6164,
+    "coverage_rate": 1.0,
+    "avg_active_days": 24.0,
+    "model_mix": {
+      "Claude Opus": 0.3642,
+      "Claude Sonnet": 0.0051,
+      "GPT": 0.6025,
+      "Cursor/IDE": 0.0125,
+      "Mivo": 0.0101,
+      "其他": 0.0057
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "其他",
+    "project_id": "P-02",
+    "headcount": 5,
+    "ai_cost": 40548,
+    "per_capita": 8110,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.4,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0002,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.9998
+    },
+    "sample_size": 5
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-02",
+    "headcount": 13,
+    "ai_cost": 32396,
+    "per_capita": 2492,
+    "coverage_rate": 1.0,
+    "avg_active_days": 22.6,
+    "model_mix": {
+      "Claude Opus": 0.064,
+      "Claude Sonnet": 0.0726,
+      "GPT": 0.7476,
+      "Cursor/IDE": 0.1036,
+      "Mivo": 0.0043,
+      "其他": 0.008
+    },
+    "sample_size": 13
+  },
+  {
+    "role": "管理",
+    "project_id": "P-02",
+    "headcount": 2,
+    "ai_cost": 635,
+    "per_capita": 318,
+    "coverage_rate": 1.0,
+    "avg_active_days": 22.5,
+    "model_mix": {
+      "Claude Opus": 0.0041,
+      "Claude Sonnet": 0.2073,
+      "GPT": 0.6043,
+      "Cursor/IDE": 0.1843,
+      "Mivo": 0.0,
+      "其他": 0.0001
+    },
+    "sample_size": 2
+  },
+  {
+    "role": "产品",
+    "project_id": "P-03",
+    "headcount": 8,
+    "ai_cost": 38535,
+    "per_capita": 4817,
+    "coverage_rate": 1.0,
+    "avg_active_days": 15.4,
+    "model_mix": {
+      "Claude Opus": 0.7373,
+      "Claude Sonnet": 0.0111,
+      "GPT": 0.1604,
+      "Cursor/IDE": 0.0191,
+      "Mivo": 0.0389,
+      "其他": 0.0332
+    },
+    "sample_size": 8
+  },
+  {
+    "role": "其他",
+    "project_id": "P-03",
+    "headcount": 3,
+    "ai_cost": 1785,
+    "per_capita": 595,
+    "coverage_rate": 0.0,
+    "avg_active_days": 19.0,
+    "model_mix": {
+      "Claude Opus": 0.3697,
+      "Claude Sonnet": 0.3245,
+      "GPT": 0.0083,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.2974
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-03",
+    "headcount": 17,
+    "ai_cost": 108445,
+    "per_capita": 6379,
+    "coverage_rate": 1.0,
+    "avg_active_days": 21.6,
+    "model_mix": {
+      "Claude Opus": 0.642,
+      "Claude Sonnet": 0.0229,
+      "GPT": 0.2103,
+      "Cursor/IDE": 0.0306,
+      "Mivo": 0.0,
+      "其他": 0.0942
+    },
+    "sample_size": 17
+  },
+  {
+    "role": "管理",
+    "project_id": "P-03",
+    "headcount": 4,
+    "ai_cost": 15116,
+    "per_capita": 3779,
+    "coverage_rate": 1.0,
+    "avg_active_days": 21.5,
+    "model_mix": {
+      "Claude Opus": 0.5966,
+      "Claude Sonnet": 0.1613,
+      "GPT": 0.2149,
+      "Cursor/IDE": 0.0115,
+      "Mivo": 0.001,
+      "其他": 0.0147
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "设计",
+    "project_id": "P-03",
+    "headcount": 1,
+    "ai_cost": 13831,
+    "per_capita": 13831,
+    "coverage_rate": 1.0,
+    "avg_active_days": 22.0,
+    "model_mix": {
+      "Claude Opus": 0.6124,
+      "Claude Sonnet": 0.0826,
+      "GPT": 0.1448,
+      "Cursor/IDE": 0.0012,
+      "Mivo": 0.0065,
+      "其他": 0.1525
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "运营",
+    "project_id": "P-03",
+    "headcount": 3,
+    "ai_cost": 6464,
+    "per_capita": 2155,
+    "coverage_rate": 1.0,
+    "avg_active_days": 24.0,
+    "model_mix": {
+      "Claude Opus": 0.0006,
+      "Claude Sonnet": 0.2949,
+      "GPT": 0.146,
+      "Cursor/IDE": 0.0003,
+      "Mivo": 0.0054,
+      "其他": 0.5527
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "产品",
+    "project_id": "P-04",
+    "headcount": 3,
+    "ai_cost": 57180,
+    "per_capita": 19060,
+    "coverage_rate": 1.0,
+    "avg_active_days": 27.3,
+    "model_mix": {
+      "Claude Opus": 0.3215,
+      "Claude Sonnet": 0.2031,
+      "GPT": 0.4611,
+      "Cursor/IDE": 0.0079,
+      "Mivo": 0.0005,
+      "其他": 0.0059
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "其他",
+    "project_id": "P-04",
+    "headcount": 1,
+    "ai_cost": 452,
+    "per_capita": 452,
+    "coverage_rate": 0.0,
+    "avg_active_days": 2.0,
+    "model_mix": {
+      "Claude Opus": 0.8939,
+      "Claude Sonnet": 0.101,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0051
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-04",
+    "headcount": 5,
+    "ai_cost": 74602,
+    "per_capita": 14920,
+    "coverage_rate": 1.0,
+    "avg_active_days": 22.8,
+    "model_mix": {
+      "Claude Opus": 0.6007,
+      "Claude Sonnet": 0.0134,
+      "GPT": 0.354,
+      "Cursor/IDE": 0.0204,
+      "Mivo": 0.0,
+      "其他": 0.0115
+    },
+    "sample_size": 5
+  },
+  {
+    "role": "管理",
+    "project_id": "P-04",
+    "headcount": 1,
+    "ai_cost": 21273,
+    "per_capita": 21273,
+    "coverage_rate": 1.0,
+    "avg_active_days": 28.0,
+    "model_mix": {
+      "Claude Opus": 0.6094,
+      "Claude Sonnet": 0.0317,
+      "GPT": 0.3414,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0175
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "设计",
+    "project_id": "P-04",
+    "headcount": 1,
+    "ai_cost": 3666,
+    "per_capita": 3666,
+    "coverage_rate": 1.0,
+    "avg_active_days": 24.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.8821,
+      "Cursor/IDE": 0.1128,
+      "Mivo": 0.005,
+      "其他": 0.0
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "产品",
+    "project_id": "P-05",
+    "headcount": 2,
+    "ai_cost": 32112,
+    "per_capita": 16056,
+    "coverage_rate": 1.0,
+    "avg_active_days": 19.5,
+    "model_mix": {
+      "Claude Opus": 0.9161,
+      "Claude Sonnet": 0.0268,
+      "GPT": 0.0246,
+      "Cursor/IDE": 0.0259,
+      "Mivo": 0.0023,
+      "其他": 0.0044
+    },
+    "sample_size": 2
+  },
+  {
+    "role": "其他",
+    "project_id": "P-05",
+    "headcount": 2,
+    "ai_cost": 16379,
+    "per_capita": 8190,
+    "coverage_rate": 0.0,
+    "avg_active_days": 11.5,
+    "model_mix": {
+      "Claude Opus": 0.9589,
+      "Claude Sonnet": 0.0287,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0125
+    },
+    "sample_size": 2
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-05",
+    "headcount": 1,
+    "ai_cost": 1944,
+    "per_capita": 1944,
+    "coverage_rate": 1.0,
+    "avg_active_days": 21.0,
+    "model_mix": {
+      "Claude Opus": 0.815,
+      "Claude Sonnet": 0.0084,
+      "GPT": 0.0502,
+      "Cursor/IDE": 0.125,
+      "Mivo": 0.0,
+      "其他": 0.0014
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "产品",
+    "project_id": "P-06",
+    "headcount": 27,
+    "ai_cost": 6972,
+    "per_capita": 258,
+    "coverage_rate": 0.5185,
+    "avg_active_days": 5.5,
+    "model_mix": {
+      "Claude Opus": 0.2983,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.62,
+      "Cursor/IDE": 0.0025,
+      "Mivo": 0.0793,
+      "其他": 0.0
+    },
+    "sample_size": 27
+  },
+  {
+    "role": "其他",
+    "project_id": "P-06",
+    "headcount": 1,
+    "ai_cost": 7,
+    "per_capita": 7,
+    "coverage_rate": 1.0,
+    "avg_active_days": 1.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 1.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "管理",
+    "project_id": "P-06",
+    "headcount": 8,
+    "ai_cost": 6807,
+    "per_capita": 851,
+    "coverage_rate": 0.75,
+    "avg_active_days": 8.2,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0002,
+      "GPT": 0.9542,
+      "Cursor/IDE": 0.0032,
+      "Mivo": 0.0424,
+      "其他": 0.0
+    },
+    "sample_size": 8
+  },
+  {
+    "role": "设计",
+    "project_id": "P-06",
+    "headcount": 3,
+    "ai_cost": 481,
+    "per_capita": 160,
+    "coverage_rate": 1.0,
+    "avg_active_days": 9.3,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.6792,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.3208,
+      "其他": 0.0
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "运营",
+    "project_id": "P-06",
+    "headcount": 3,
+    "ai_cost": 69,
+    "per_capita": 23,
+    "coverage_rate": 0.6667,
+    "avg_active_days": 4.3,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.7318,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.2682,
+      "其他": 0.0
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "产品",
+    "project_id": "P-07",
+    "headcount": 75,
+    "ai_cost": 302986,
+    "per_capita": 4040,
+    "coverage_rate": 0.9067,
+    "avg_active_days": 20.1,
+    "model_mix": {
+      "Claude Opus": 0.2775,
+      "Claude Sonnet": 0.316,
+      "GPT": 0.3284,
+      "Cursor/IDE": 0.0472,
+      "Mivo": 0.0047,
+      "其他": 0.0261
+    },
+    "sample_size": 75
+  },
+  {
+    "role": "其他",
+    "project_id": "P-07",
+    "headcount": 6,
+    "ai_cost": 35283,
+    "per_capita": 5880,
+    "coverage_rate": 0.0,
+    "avg_active_days": 11.8,
+    "model_mix": {
+      "Claude Opus": 0.0009,
+      "Claude Sonnet": 0.0158,
+      "GPT": 0.1377,
+      "Cursor/IDE": 0.0006,
+      "Mivo": 0.0,
+      "其他": 0.845
+    },
+    "sample_size": 6
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-07",
+    "headcount": 151,
+    "ai_cost": 1411951,
+    "per_capita": 9351,
+    "coverage_rate": 1.0,
+    "avg_active_days": 23.6,
+    "model_mix": {
+      "Claude Opus": 0.5944,
+      "Claude Sonnet": 0.0734,
+      "GPT": 0.2847,
+      "Cursor/IDE": 0.0344,
+      "Mivo": 0.0017,
+      "其他": 0.0113
+    },
+    "sample_size": 151
+  },
+  {
+    "role": "管理",
+    "project_id": "P-07",
+    "headcount": 42,
+    "ai_cost": 373680,
+    "per_capita": 8897,
+    "coverage_rate": 0.9286,
+    "avg_active_days": 21.8,
+    "model_mix": {
+      "Claude Opus": 0.6104,
+      "Claude Sonnet": 0.1457,
+      "GPT": 0.196,
+      "Cursor/IDE": 0.0346,
+      "Mivo": 0.0013,
+      "其他": 0.0121
+    },
+    "sample_size": 42
+  },
+  {
+    "role": "美术",
+    "project_id": "P-07",
+    "headcount": 1,
+    "ai_cost": 962,
+    "per_capita": 962,
+    "coverage_rate": 1.0,
+    "avg_active_days": 17.0,
+    "model_mix": {
+      "Claude Opus": 0.2674,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.1016,
+      "Cursor/IDE": 0.4829,
+      "Mivo": 0.141,
+      "其他": 0.0071
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-07",
+    "headcount": 1,
+    "ai_cost": 181,
+    "per_capita": 181,
+    "coverage_rate": 1.0,
+    "avg_active_days": 7.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 1.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "设计",
+    "project_id": "P-07",
+    "headcount": 15,
+    "ai_cost": 70972,
+    "per_capita": 4731,
+    "coverage_rate": 1.0,
+    "avg_active_days": 20.1,
+    "model_mix": {
+      "Claude Opus": 0.2814,
+      "Claude Sonnet": 0.034,
+      "GPT": 0.5255,
+      "Cursor/IDE": 0.1402,
+      "Mivo": 0.0159,
+      "其他": 0.003
+    },
+    "sample_size": 15
+  },
+  {
+    "role": "运营",
+    "project_id": "P-07",
+    "headcount": 23,
+    "ai_cost": 63727,
+    "per_capita": 2771,
+    "coverage_rate": 0.9565,
+    "avg_active_days": 19.3,
+    "model_mix": {
+      "Claude Opus": 0.5322,
+      "Claude Sonnet": 0.2852,
+      "GPT": 0.1763,
+      "Cursor/IDE": 0.0004,
+      "Mivo": 0.0017,
+      "其他": 0.0042
+    },
+    "sample_size": 23
+  },
+  {
+    "role": "其他",
+    "project_id": "P-08",
+    "headcount": 2,
+    "ai_cost": 0,
+    "per_capita": 0,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {},
+    "sample_size": 2
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-08",
+    "headcount": 8,
+    "ai_cost": 0,
+    "per_capita": 0,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {},
+    "sample_size": 8
+  },
+  {
+    "role": "管理",
+    "project_id": "P-09",
+    "headcount": 4,
+    "ai_cost": 9923,
+    "per_capita": 2481,
+    "coverage_rate": 1.0,
+    "avg_active_days": 16.2,
+    "model_mix": {
+      "Claude Opus": 0.7632,
+      "Claude Sonnet": 0.0387,
+      "GPT": 0.0907,
+      "Cursor/IDE": 0.0543,
+      "Mivo": 0.0202,
+      "其他": 0.0329
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-09",
+    "headcount": 24,
+    "ai_cost": 48417,
+    "per_capita": 2017,
+    "coverage_rate": 0.9583,
+    "avg_active_days": 15.3,
+    "model_mix": {
+      "Claude Opus": 0.3725,
+      "Claude Sonnet": 0.0643,
+      "GPT": 0.5045,
+      "Cursor/IDE": 0.0486,
+      "Mivo": 0.0034,
+      "其他": 0.0066
+    },
+    "sample_size": 24
+  },
+  {
+    "role": "运营",
+    "project_id": "P-09",
+    "headcount": 1,
+    "ai_cost": 0,
+    "per_capita": 0,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {},
+    "sample_size": 1
+  },
+  {
+    "role": "管理",
+    "project_id": "P-10",
+    "headcount": 3,
+    "ai_cost": 221,
+    "per_capita": 74,
+    "coverage_rate": 0.6667,
+    "avg_active_days": 4.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 1.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-10",
+    "headcount": 8,
+    "ai_cost": 57,
+    "per_capita": 7,
+    "coverage_rate": 0.375,
+    "avg_active_days": 0.9,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 1.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 8
+  },
+  {
+    "role": "产品",
+    "project_id": "P-11",
+    "headcount": 57,
+    "ai_cost": 84216,
+    "per_capita": 1477,
+    "coverage_rate": 0.9474,
+    "avg_active_days": 12.1,
+    "model_mix": {
+      "Claude Opus": 0.0669,
+      "Claude Sonnet": 0.0518,
+      "GPT": 0.8102,
+      "Cursor/IDE": 0.0623,
+      "Mivo": 0.0057,
+      "其他": 0.0032
+    },
+    "sample_size": 57
+  },
+  {
+    "role": "其他",
+    "project_id": "P-11",
+    "headcount": 8,
+    "ai_cost": 280756,
+    "per_capita": 35094,
+    "coverage_rate": 0.0,
+    "avg_active_days": 7.9,
+    "model_mix": {
+      "Claude Opus": 0.6886,
+      "Claude Sonnet": 0.233,
+      "GPT": 0.0001,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0783
+    },
+    "sample_size": 8
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-11",
+    "headcount": 65,
+    "ai_cost": 264558,
+    "per_capita": 4070,
+    "coverage_rate": 0.9692,
+    "avg_active_days": 19.7,
+    "model_mix": {
+      "Claude Opus": 0.3796,
+      "Claude Sonnet": 0.0929,
+      "GPT": 0.4136,
+      "Cursor/IDE": 0.0898,
+      "Mivo": 0.0099,
+      "其他": 0.0142
+    },
+    "sample_size": 65
+  },
+  {
+    "role": "管理",
+    "project_id": "P-11",
+    "headcount": 38,
+    "ai_cost": 102983,
+    "per_capita": 2710,
+    "coverage_rate": 0.8684,
+    "avg_active_days": 13.3,
+    "model_mix": {
+      "Claude Opus": 0.2875,
+      "Claude Sonnet": 0.0752,
+      "GPT": 0.5346,
+      "Cursor/IDE": 0.0779,
+      "Mivo": 0.0227,
+      "其他": 0.0023
+    },
+    "sample_size": 38
+  },
+  {
+    "role": "美术",
+    "project_id": "P-11",
+    "headcount": 81,
+    "ai_cost": 26495,
+    "per_capita": 327,
+    "coverage_rate": 0.8765,
+    "avg_active_days": 8.5,
+    "model_mix": {
+      "Claude Opus": 0.0068,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.3749,
+      "Cursor/IDE": 0.0352,
+      "Mivo": 0.5308,
+      "其他": 0.0523
+    },
+    "sample_size": 81
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-11",
+    "headcount": 4,
+    "ai_cost": 2743,
+    "per_capita": 686,
+    "coverage_rate": 1.0,
+    "avg_active_days": 16.8,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0051,
+      "GPT": 0.984,
+      "Cursor/IDE": 0.0037,
+      "Mivo": 0.0035,
+      "其他": 0.0036
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "设计",
+    "project_id": "P-11",
+    "headcount": 18,
+    "ai_cost": 6771,
+    "per_capita": 376,
+    "coverage_rate": 1.0,
+    "avg_active_days": 11.2,
+    "model_mix": {
+      "Claude Opus": 0.0071,
+      "Claude Sonnet": 0.1475,
+      "GPT": 0.2935,
+      "Cursor/IDE": 0.0007,
+      "Mivo": 0.549,
+      "其他": 0.0023
+    },
+    "sample_size": 18
+  },
+  {
+    "role": "产品",
+    "project_id": "P-12",
+    "headcount": 9,
+    "ai_cost": 9519,
+    "per_capita": 1058,
+    "coverage_rate": 1.0,
+    "avg_active_days": 15.7,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.4958,
+      "GPT": 0.4661,
+      "Cursor/IDE": 0.0256,
+      "Mivo": 0.0065,
+      "其他": 0.006
+    },
+    "sample_size": 9
+  },
+  {
+    "role": "其他",
+    "project_id": "P-12",
+    "headcount": 2,
+    "ai_cost": 75,
+    "per_capita": 38,
+    "coverage_rate": 0.0,
+    "avg_active_days": 1.5,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 1.0,
+      "其他": 0.0
+    },
+    "sample_size": 2
+  },
+  {
+    "role": "管理",
+    "project_id": "P-12",
+    "headcount": 14,
+    "ai_cost": 5402,
+    "per_capita": 386,
+    "coverage_rate": 0.9286,
+    "avg_active_days": 11.7,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0034,
+      "GPT": 0.8186,
+      "Cursor/IDE": 0.0036,
+      "Mivo": 0.1614,
+      "其他": 0.013
+    },
+    "sample_size": 14
+  },
+  {
+    "role": "设计",
+    "project_id": "P-12",
+    "headcount": 17,
+    "ai_cost": 18465,
+    "per_capita": 1086,
+    "coverage_rate": 0.9412,
+    "avg_active_days": 13.3,
+    "model_mix": {
+      "Claude Opus": 0.0001,
+      "Claude Sonnet": 0.0152,
+      "GPT": 0.2946,
+      "Cursor/IDE": 0.0075,
+      "Mivo": 0.5146,
+      "其他": 0.1679
+    },
+    "sample_size": 17
+  },
+  {
+    "role": "运营",
+    "project_id": "P-12",
+    "headcount": 13,
+    "ai_cost": 13652,
+    "per_capita": 1050,
+    "coverage_rate": 0.7692,
+    "avg_active_days": 13.7,
+    "model_mix": {
+      "Claude Opus": 0.2838,
+      "Claude Sonnet": 0.0025,
+      "GPT": 0.5851,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.1272,
+      "其他": 0.0014
+    },
+    "sample_size": 13
+  },
+  {
+    "role": "产品",
+    "project_id": "P-13",
+    "headcount": 3,
+    "ai_cost": 29135,
+    "per_capita": 9712,
+    "coverage_rate": 1.0,
+    "avg_active_days": 23.3,
+    "model_mix": {
+      "Claude Opus": 0.3377,
+      "Claude Sonnet": 0.0077,
+      "GPT": 0.5453,
+      "Cursor/IDE": 0.1042,
+      "Mivo": 0.0002,
+      "其他": 0.0048
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "其他",
+    "project_id": "P-13",
+    "headcount": 2,
+    "ai_cost": 11881,
+    "per_capita": 5940,
+    "coverage_rate": 0.0,
+    "avg_active_days": 3.5,
+    "model_mix": {
+      "Claude Opus": 0.9162,
+      "Claude Sonnet": 0.0427,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0411
+    },
+    "sample_size": 2
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-13",
+    "headcount": 28,
+    "ai_cost": 270538,
+    "per_capita": 9662,
+    "coverage_rate": 1.0,
+    "avg_active_days": 22.0,
+    "model_mix": {
+      "Claude Opus": 0.6884,
+      "Claude Sonnet": 0.0264,
+      "GPT": 0.2008,
+      "Cursor/IDE": 0.0707,
+      "Mivo": 0.0014,
+      "其他": 0.0124
+    },
+    "sample_size": 28
+  },
+  {
+    "role": "管理",
+    "project_id": "P-13",
+    "headcount": 4,
+    "ai_cost": 109672,
+    "per_capita": 27418,
+    "coverage_rate": 1.0,
+    "avg_active_days": 22.0,
+    "model_mix": {
+      "Claude Opus": 0.8444,
+      "Claude Sonnet": 0.0206,
+      "GPT": 0.0881,
+      "Cursor/IDE": 0.0441,
+      "Mivo": 0.0,
+      "其他": 0.0028
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "产品",
+    "project_id": "P-14",
+    "headcount": 4,
+    "ai_cost": 9131,
+    "per_capita": 2283,
+    "coverage_rate": 0.75,
+    "avg_active_days": 13.0,
+    "model_mix": {
+      "Claude Opus": 0.0089,
+      "Claude Sonnet": 0.0017,
+      "GPT": 0.9146,
+      "Cursor/IDE": 0.0727,
+      "Mivo": 0.0005,
+      "其他": 0.0016
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "其他",
+    "project_id": "P-14",
+    "headcount": 6,
+    "ai_cost": 60549,
+    "per_capita": 10092,
+    "coverage_rate": 0.8,
+    "avg_active_days": 20.5,
+    "model_mix": {
+      "Claude Opus": 0.4276,
+      "Claude Sonnet": 0.3513,
+      "GPT": 0.2112,
+      "Cursor/IDE": 0.0074,
+      "Mivo": 0.0,
+      "其他": 0.0025
+    },
+    "sample_size": 6
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-14",
+    "headcount": 9,
+    "ai_cost": 48572,
+    "per_capita": 5397,
+    "coverage_rate": 1.0,
+    "avg_active_days": 17.7,
+    "model_mix": {
+      "Claude Opus": 0.3263,
+      "Claude Sonnet": 0.0217,
+      "GPT": 0.4823,
+      "Cursor/IDE": 0.1366,
+      "Mivo": 0.0249,
+      "其他": 0.0083
+    },
+    "sample_size": 9
+  },
+  {
+    "role": "管理",
+    "project_id": "P-14",
+    "headcount": 7,
+    "ai_cost": 19395,
+    "per_capita": 2771,
+    "coverage_rate": 1.0,
+    "avg_active_days": 17.1,
+    "model_mix": {
+      "Claude Opus": 0.2852,
+      "Claude Sonnet": 0.0919,
+      "GPT": 0.5176,
+      "Cursor/IDE": 0.0974,
+      "Mivo": 0.0,
+      "其他": 0.008
+    },
+    "sample_size": 7
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-14",
+    "headcount": 5,
+    "ai_cost": 524,
+    "per_capita": 105,
+    "coverage_rate": 0.4,
+    "avg_active_days": 6.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.9751,
+      "Cursor/IDE": 0.0249,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 5
+  },
+  {
+    "role": "其他",
+    "project_id": "P-15",
+    "headcount": 8,
+    "ai_cost": 11189,
+    "per_capita": 1399,
+    "coverage_rate": 0.0,
+    "avg_active_days": 3.5,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.09,
+      "Cursor/IDE": 0.0007,
+      "Mivo": 0.0,
+      "其他": 0.9093
+    },
+    "sample_size": 8
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-15",
+    "headcount": 32,
+    "ai_cost": 202596,
+    "per_capita": 6331,
+    "coverage_rate": 1.0,
+    "avg_active_days": 20.7,
+    "model_mix": {
+      "Claude Opus": 0.5684,
+      "Claude Sonnet": 0.0596,
+      "GPT": 0.2909,
+      "Cursor/IDE": 0.0719,
+      "Mivo": 0.0004,
+      "其他": 0.0088
+    },
+    "sample_size": 32
+  },
+  {
+    "role": "管理",
+    "project_id": "P-15",
+    "headcount": 65,
+    "ai_cost": 227455,
+    "per_capita": 3499,
+    "coverage_rate": 0.8308,
+    "avg_active_days": 12.6,
+    "model_mix": {
+      "Claude Opus": 0.5295,
+      "Claude Sonnet": 0.0867,
+      "GPT": 0.2331,
+      "Cursor/IDE": 0.1095,
+      "Mivo": 0.0002,
+      "其他": 0.0411
+    },
+    "sample_size": 65
+  },
+  {
+    "role": "产品",
+    "project_id": "P-16",
+    "headcount": 3,
+    "ai_cost": 2022,
+    "per_capita": 674,
+    "coverage_rate": 1.0,
+    "avg_active_days": 6.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0762,
+      "GPT": 0.9137,
+      "Cursor/IDE": 0.0005,
+      "Mivo": 0.0096,
+      "其他": 0.0
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "其他",
+    "project_id": "P-16",
+    "headcount": 3,
+    "ai_cost": 2401,
+    "per_capita": 800,
+    "coverage_rate": 0.0,
+    "avg_active_days": 8.3,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.9794,
+      "Cursor/IDE": 0.0082,
+      "Mivo": 0.0124,
+      "其他": 0.0
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "管理",
+    "project_id": "P-16",
+    "headcount": 4,
+    "ai_cost": 9198,
+    "per_capita": 2300,
+    "coverage_rate": 0.5,
+    "avg_active_days": 6.8,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.8903,
+      "Cursor/IDE": 0.1097,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-16",
+    "headcount": 8,
+    "ai_cost": 5529,
+    "per_capita": 691,
+    "coverage_rate": 0.625,
+    "avg_active_days": 9.4,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.4155,
+      "GPT": 0.5664,
+      "Cursor/IDE": 0.0169,
+      "Mivo": 0.0,
+      "其他": 0.0011
+    },
+    "sample_size": 8
+  },
+  {
+    "role": "运营",
+    "project_id": "P-16",
+    "headcount": 13,
+    "ai_cost": 23030,
+    "per_capita": 1772,
+    "coverage_rate": 1.0,
+    "avg_active_days": 17.6,
+    "model_mix": {
+      "Claude Opus": 0.0003,
+      "Claude Sonnet": 0.0001,
+      "GPT": 0.9171,
+      "Cursor/IDE": 0.0647,
+      "Mivo": 0.0048,
+      "其他": 0.0129
+    },
+    "sample_size": 13
+  },
+  {
+    "role": "其他",
+    "project_id": "P-17",
+    "headcount": 3,
+    "ai_cost": 0,
+    "per_capita": 0,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {},
+    "sample_size": 3
+  },
+  {
+    "role": "产品",
+    "project_id": "P-18",
+    "headcount": 25,
+    "ai_cost": 62217,
+    "per_capita": 2489,
+    "coverage_rate": 0.92,
+    "avg_active_days": 14.3,
+    "model_mix": {
+      "Claude Opus": 0.2502,
+      "Claude Sonnet": 0.1154,
+      "GPT": 0.286,
+      "Cursor/IDE": 0.1969,
+      "Mivo": 0.0019,
+      "其他": 0.1495
+    },
+    "sample_size": 25
+  },
+  {
+    "role": "其他",
+    "project_id": "P-18",
+    "headcount": 6,
+    "ai_cost": 4378,
+    "per_capita": 730,
+    "coverage_rate": 1.0,
+    "avg_active_days": 9.3,
+    "model_mix": {
+      "Claude Opus": 0.3428,
+      "Claude Sonnet": 0.0189,
+      "GPT": 0.2702,
+      "Cursor/IDE": 0.0728,
+      "Mivo": 0.0,
+      "其他": 0.2953
+    },
+    "sample_size": 6
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-18",
+    "headcount": 12,
+    "ai_cost": 55326,
+    "per_capita": 4610,
+    "coverage_rate": 1.0,
+    "avg_active_days": 22.7,
+    "model_mix": {
+      "Claude Opus": 0.2424,
+      "Claude Sonnet": 0.047,
+      "GPT": 0.4693,
+      "Cursor/IDE": 0.2328,
+      "Mivo": 0.0018,
+      "其他": 0.0067
+    },
+    "sample_size": 12
+  },
+  {
+    "role": "管理",
+    "project_id": "P-18",
+    "headcount": 4,
+    "ai_cost": 344,
+    "per_capita": 86,
+    "coverage_rate": 1.0,
+    "avg_active_days": 7.5,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.7552,
+      "Cursor/IDE": 0.062,
+      "Mivo": 0.1829,
+      "其他": 0.0
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "美术",
+    "project_id": "P-18",
+    "headcount": 26,
+    "ai_cost": 11042,
+    "per_capita": 425,
+    "coverage_rate": 0.8462,
+    "avg_active_days": 9.6,
+    "model_mix": {
+      "Claude Opus": 0.2162,
+      "Claude Sonnet": 0.0194,
+      "GPT": 0.2627,
+      "Cursor/IDE": 0.1567,
+      "Mivo": 0.3046,
+      "其他": 0.0404
+    },
+    "sample_size": 26
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-18",
+    "headcount": 1,
+    "ai_cost": 0,
+    "per_capita": 0,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {},
+    "sample_size": 1
+  },
+  {
+    "role": "设计",
+    "project_id": "P-18",
+    "headcount": 4,
+    "ai_cost": 4035,
+    "per_capita": 1009,
+    "coverage_rate": 1.0,
+    "avg_active_days": 12.2,
+    "model_mix": {
+      "Claude Opus": 0.6397,
+      "Claude Sonnet": 0.0099,
+      "GPT": 0.0153,
+      "Cursor/IDE": 0.2598,
+      "Mivo": 0.0686,
+      "其他": 0.0067
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-19",
+    "headcount": 10,
+    "ai_cost": 10106,
+    "per_capita": 1011,
+    "coverage_rate": 0.9,
+    "avg_active_days": 9.6,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.97,
+      "Cursor/IDE": 0.03,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 10
+  },
+  {
+    "role": "产品",
+    "project_id": "P-20",
+    "headcount": 7,
+    "ai_cost": 9933,
+    "per_capita": 1419,
+    "coverage_rate": 0.7143,
+    "avg_active_days": 11.7,
+    "model_mix": {
+      "Claude Opus": 0.4528,
+      "Claude Sonnet": 0.0709,
+      "GPT": 0.4618,
+      "Cursor/IDE": 0.005,
+      "Mivo": 0.0059,
+      "其他": 0.0036
+    },
+    "sample_size": 7
+  },
+  {
+    "role": "其他",
+    "project_id": "P-20",
+    "headcount": 4,
+    "ai_cost": 4746,
+    "per_capita": 1186,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 1.0
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-20",
+    "headcount": 8,
+    "ai_cost": 23677,
+    "per_capita": 2960,
+    "coverage_rate": 1.0,
+    "avg_active_days": 19.9,
+    "model_mix": {
+      "Claude Opus": 0.1665,
+      "Claude Sonnet": 0.2364,
+      "GPT": 0.4902,
+      "Cursor/IDE": 0.1009,
+      "Mivo": 0.0001,
+      "其他": 0.0059
+    },
+    "sample_size": 8
+  },
+  {
+    "role": "管理",
+    "project_id": "P-20",
+    "headcount": 4,
+    "ai_cost": 9969,
+    "per_capita": 2492,
+    "coverage_rate": 1.0,
+    "avg_active_days": 16.5,
+    "model_mix": {
+      "Claude Opus": 0.392,
+      "Claude Sonnet": 0.0496,
+      "GPT": 0.4358,
+      "Cursor/IDE": 0.1156,
+      "Mivo": 0.004,
+      "其他": 0.003
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "设计",
+    "project_id": "P-20",
+    "headcount": 1,
+    "ai_cost": 137,
+    "per_capita": 137,
+    "coverage_rate": 1.0,
+    "avg_active_days": 9.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 1.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "产品",
+    "project_id": "P-21",
+    "headcount": 18,
+    "ai_cost": 3106,
+    "per_capita": 173,
+    "coverage_rate": 0.5556,
+    "avg_active_days": 4.1,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0002,
+      "GPT": 0.7943,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.1801,
+      "其他": 0.0254
+    },
+    "sample_size": 18
+  },
+  {
+    "role": "其他",
+    "project_id": "P-21",
+    "headcount": 14,
+    "ai_cost": 3333,
+    "per_capita": 238,
+    "coverage_rate": 0.3333,
+    "avg_active_days": 4.4,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.9206,
+      "Cursor/IDE": 0.0076,
+      "Mivo": 0.0668,
+      "其他": 0.005
+    },
+    "sample_size": 14
+  },
+  {
+    "role": "管理",
+    "project_id": "P-21",
+    "headcount": 1,
+    "ai_cost": 41,
+    "per_capita": 41,
+    "coverage_rate": 1.0,
+    "avg_active_days": 3.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 1.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-21",
+    "headcount": 1,
+    "ai_cost": 0,
+    "per_capita": 0,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {},
+    "sample_size": 1
+  },
+  {
+    "role": "运营",
+    "project_id": "P-21",
+    "headcount": 6,
+    "ai_cost": 4649,
+    "per_capita": 775,
+    "coverage_rate": 0.6667,
+    "avg_active_days": 7.3,
+    "model_mix": {
+      "Claude Opus": 0.7448,
+      "Claude Sonnet": 0.1833,
+      "GPT": 0.0687,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 0.0033
+    },
+    "sample_size": 6
+  },
+  {
+    "role": "产品",
+    "project_id": "P-22",
+    "headcount": 32,
+    "ai_cost": 86409,
+    "per_capita": 2700,
+    "coverage_rate": 1.0,
+    "avg_active_days": 17.2,
+    "model_mix": {
+      "Claude Opus": 0.4194,
+      "Claude Sonnet": 0.0941,
+      "GPT": 0.2697,
+      "Cursor/IDE": 0.1641,
+      "Mivo": 0.0325,
+      "其他": 0.0203
+    },
+    "sample_size": 32
+  },
+  {
+    "role": "其他",
+    "project_id": "P-22",
+    "headcount": 12,
+    "ai_cost": 10934,
+    "per_capita": 911,
+    "coverage_rate": 0.0,
+    "avg_active_days": 8.0,
+    "model_mix": {
+      "Claude Opus": 0.0935,
+      "Claude Sonnet": 0.0129,
+      "GPT": 0.5954,
+      "Cursor/IDE": 0.0259,
+      "Mivo": 0.0067,
+      "其他": 0.2654
+    },
+    "sample_size": 12
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-22",
+    "headcount": 27,
+    "ai_cost": 230011,
+    "per_capita": 8519,
+    "coverage_rate": 1.0,
+    "avg_active_days": 21.8,
+    "model_mix": {
+      "Claude Opus": 0.6902,
+      "Claude Sonnet": 0.0324,
+      "GPT": 0.135,
+      "Cursor/IDE": 0.1262,
+      "Mivo": 0.0,
+      "其他": 0.0162
+    },
+    "sample_size": 27
+  },
+  {
+    "role": "管理",
+    "project_id": "P-22",
+    "headcount": 11,
+    "ai_cost": 87807,
+    "per_capita": 7982,
+    "coverage_rate": 1.0,
+    "avg_active_days": 20.1,
+    "model_mix": {
+      "Claude Opus": 0.7473,
+      "Claude Sonnet": 0.0231,
+      "GPT": 0.0628,
+      "Cursor/IDE": 0.1505,
+      "Mivo": 0.0071,
+      "其他": 0.0092
+    },
+    "sample_size": 11
+  },
+  {
+    "role": "美术",
+    "project_id": "P-22",
+    "headcount": 18,
+    "ai_cost": 14248,
+    "per_capita": 792,
+    "coverage_rate": 0.8889,
+    "avg_active_days": 9.4,
+    "model_mix": {
+      "Claude Opus": 0.0106,
+      "Claude Sonnet": 0.012,
+      "GPT": 0.0484,
+      "Cursor/IDE": 0.0323,
+      "Mivo": 0.8913,
+      "其他": 0.0054
+    },
+    "sample_size": 18
+  },
+  {
+    "role": "其他",
+    "project_id": "P-23",
+    "headcount": 4,
+    "ai_cost": 14335,
+    "per_capita": 3584,
+    "coverage_rate": 0.0,
+    "avg_active_days": 15.2,
+    "model_mix": {
+      "Claude Opus": 0.8531,
+      "Claude Sonnet": 0.0127,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.09,
+      "其他": 0.0442
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-23",
+    "headcount": 4,
+    "ai_cost": 62031,
+    "per_capita": 15508,
+    "coverage_rate": 1.0,
+    "avg_active_days": 26.5,
+    "model_mix": {
+      "Claude Opus": 0.6085,
+      "Claude Sonnet": 0.093,
+      "GPT": 0.1029,
+      "Cursor/IDE": 0.0257,
+      "Mivo": 0.0023,
+      "其他": 0.1677
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "管理",
+    "project_id": "P-23",
+    "headcount": 10,
+    "ai_cost": 26772,
+    "per_capita": 2677,
+    "coverage_rate": 0.9,
+    "avg_active_days": 13.2,
+    "model_mix": {
+      "Claude Opus": 0.0774,
+      "Claude Sonnet": 0.0006,
+      "GPT": 0.0894,
+      "Cursor/IDE": 0.1583,
+      "Mivo": 0.0619,
+      "其他": 0.6124
+    },
+    "sample_size": 10
+  },
+  {
+    "role": "美术",
+    "project_id": "P-23",
+    "headcount": 59,
+    "ai_cost": 47438,
+    "per_capita": 804,
+    "coverage_rate": 0.8814,
+    "avg_active_days": 10.0,
+    "model_mix": {
+      "Claude Opus": 0.1952,
+      "Claude Sonnet": 0.0246,
+      "GPT": 0.3281,
+      "Cursor/IDE": 0.0643,
+      "Mivo": 0.3634,
+      "其他": 0.0244
+    },
+    "sample_size": 59
+  },
+  {
+    "role": "职能支持",
+    "project_id": "P-23",
+    "headcount": 1,
+    "ai_cost": 383,
+    "per_capita": 383,
+    "coverage_rate": 1.0,
+    "avg_active_days": 15.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.552,
+      "Cursor/IDE": 0.448,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "设计",
+    "project_id": "P-23",
+    "headcount": 30,
+    "ai_cost": 114733,
+    "per_capita": 3824,
+    "coverage_rate": 1.0,
+    "avg_active_days": 15.0,
+    "model_mix": {
+      "Claude Opus": 0.6053,
+      "Claude Sonnet": 0.0298,
+      "GPT": 0.187,
+      "Cursor/IDE": 0.1055,
+      "Mivo": 0.0613,
+      "其他": 0.0112
+    },
+    "sample_size": 30
+  },
+  {
+    "role": "管理",
+    "project_id": "P-24",
+    "headcount": 21,
+    "ai_cost": 9205,
+    "per_capita": 438,
+    "coverage_rate": 0.381,
+    "avg_active_days": 2.9,
+    "model_mix": {
+      "Claude Opus": 0.52,
+      "Claude Sonnet": 0.0142,
+      "GPT": 0.3815,
+      "Cursor/IDE": 0.0842,
+      "Mivo": 0.0,
+      "其他": 0.0
+    },
+    "sample_size": 21
+  },
+  {
+    "role": "其他",
+    "project_id": "P-25",
+    "headcount": 1,
+    "ai_cost": 43,
+    "per_capita": 43,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {
+      "Claude Opus": 0.0,
+      "Claude Sonnet": 0.0,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0,
+      "其他": 1.0
+    },
+    "sample_size": 1
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-25",
+    "headcount": 9,
+    "ai_cost": 50156,
+    "per_capita": 5573,
+    "coverage_rate": 1.0,
+    "avg_active_days": 22.4,
+    "model_mix": {
+      "Claude Opus": 0.1854,
+      "Claude Sonnet": 0.0398,
+      "GPT": 0.7275,
+      "Cursor/IDE": 0.0423,
+      "Mivo": 0.0,
+      "其他": 0.005
+    },
+    "sample_size": 9
+  },
+  {
+    "role": "管理",
+    "project_id": "P-25",
+    "headcount": 2,
+    "ai_cost": 5844,
+    "per_capita": 2922,
+    "coverage_rate": 1.0,
+    "avg_active_days": 19.5,
+    "model_mix": {
+      "Claude Opus": 0.4765,
+      "Claude Sonnet": 0.0005,
+      "GPT": 0.5125,
+      "Cursor/IDE": 0.0098,
+      "Mivo": 0.0,
+      "其他": 0.0008
+    },
+    "sample_size": 2
+  },
+  {
+    "role": "产品",
+    "project_id": "P-26",
+    "headcount": 62,
+    "ai_cost": 46763,
+    "per_capita": 754,
+    "coverage_rate": 0.871,
+    "avg_active_days": 9.4,
+    "model_mix": {
+      "Claude Opus": 0.3715,
+      "Claude Sonnet": 0.0589,
+      "GPT": 0.4934,
+      "Cursor/IDE": 0.0392,
+      "Mivo": 0.0336,
+      "其他": 0.0034
+    },
+    "sample_size": 62
+  },
+  {
+    "role": "其他",
+    "project_id": "P-26",
+    "headcount": 10,
+    "ai_cost": 9257,
+    "per_capita": 926,
+    "coverage_rate": 1.0,
+    "avg_active_days": 6.8,
+    "model_mix": {
+      "Claude Opus": 0.0082,
+      "Claude Sonnet": 0.056,
+      "GPT": 0.4395,
+      "Cursor/IDE": 0.0001,
+      "Mivo": 0.0289,
+      "其他": 0.4672
+    },
+    "sample_size": 10
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-26",
+    "headcount": 2,
+    "ai_cost": 0,
+    "per_capita": 0,
+    "coverage_rate": 0.0,
+    "avg_active_days": 0.0,
+    "model_mix": {},
+    "sample_size": 2
+  },
+  {
+    "role": "管理",
+    "project_id": "P-26",
+    "headcount": 8,
+    "ai_cost": 10214,
+    "per_capita": 1277,
+    "coverage_rate": 1.0,
+    "avg_active_days": 15.4,
+    "model_mix": {
+      "Claude Opus": 0.0993,
+      "Claude Sonnet": 0.0225,
+      "GPT": 0.6392,
+      "Cursor/IDE": 0.1978,
+      "Mivo": 0.0045,
+      "其他": 0.0366
+    },
+    "sample_size": 8
+  },
+  {
+    "role": "其他",
+    "project_id": "P-27",
+    "headcount": 4,
+    "ai_cost": 13876,
+    "per_capita": 3469,
+    "coverage_rate": 0.0,
+    "avg_active_days": 6.8,
+    "model_mix": {
+      "Claude Opus": 0.6703,
+      "Claude Sonnet": 0.2592,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0,
+      "Mivo": 0.0005,
+      "其他": 0.07
+    },
+    "sample_size": 4
+  },
+  {
+    "role": "技术研发",
+    "project_id": "P-27",
+    "headcount": 3,
+    "ai_cost": 11639,
+    "per_capita": 3880,
+    "coverage_rate": 1.0,
+    "avg_active_days": 21.3,
+    "model_mix": {
+      "Claude Opus": 0.5206,
+      "Claude Sonnet": 0.0781,
+      "GPT": 0.067,
+      "Cursor/IDE": 0.2978,
+      "Mivo": 0.0,
+      "其他": 0.0365
+    },
+    "sample_size": 3
+  },
+  {
+    "role": "管理",
+    "project_id": "P-27",
+    "headcount": 2,
+    "ai_cost": 13578,
+    "per_capita": 6789,
+    "coverage_rate": 1.0,
+    "avg_active_days": 17.0,
+    "model_mix": {
+      "Claude Opus": 0.3622,
+      "Claude Sonnet": 0.627,
+      "GPT": 0.0,
+      "Cursor/IDE": 0.0016,
+      "Mivo": 0.0,
+      "其他": 0.0091
+    },
+    "sample_size": 2
+  },
+  {
+    "role": "美术",
+    "project_id": "P-27",
+    "headcount": 19,
+    "ai_cost": 107357,
+    "per_capita": 5650,
+    "coverage_rate": 0.9474,
+    "avg_active_days": 12.9,
+    "model_mix": {
+      "Claude Opus": 0.6849,
+      "Claude Sonnet": 0.0616,
+      "GPT": 0.1981,
+      "Cursor/IDE": 0.0412,
+      "Mivo": 0.0014,
+      "其他": 0.0127
+    },
+    "sample_size": 19
+  }
+]

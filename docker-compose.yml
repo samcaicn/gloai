@@ -1,0 +1,87 @@
+# Environment variables (all optional, defaults for local dev):
+#   PASSWORD           - shared password for postgres, minio, storage (default: ceoadmin)
+#                        must be URL-safe (avoid @, /, %, # characters)
+#   HUB_PORT           - hub listen port on host (default: 9800)
+#   EDICT_PORT         - edict(Go 版) 端口在宿主机的映射（默认 7891，与 hub 同容器）
+#   RP_ORIGIN / RP_ID  - WebAuthn origin and relying party ID (default: localhost)
+#   ANTHROPIC_*        - AI 转型驾驶舱 (cockpit) 所需的 Claude 网关配置（部署 cockpit 服务时必填）
+#                        ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN / ANTHROPIC_MODEL
+#
+# Postgres and MinIO do not expose host ports by default.
+# To connect with GUI tools: docker compose exec postgres psql -U ceoadmin
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ceoadmin
+      POSTGRES_PASSWORD: ${PASSWORD:-ceoadmin}
+      POSTGRES_DB: ceoadmin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ceoadmin -d ceoadmin"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ceoadmin
+      MINIO_ROOT_PASSWORD: ${PASSWORD:-ceoadmin}
+    volumes:
+      - miniodata:/data
+
+  hub:
+    build: .
+    restart: on-failure
+    # edict（Go 版）与 Hub 同容器运行：镜像内置 edict-go，由 deploy/hub-entrypoint.sh
+    # 在同容器内后台拉起（默认 :7891），不另起容器。EDICT_PORT 仅控制宿主机映射。
+    # edict 的 sqlite 默认落在 /var/lib/CEOadmin/edict.db，与 Hub 主库同源数据卷，
+    # 通过 hub-data 卷持久化（EDICT_DB 可覆盖）。
+    ports:
+      - "${HUB_PORT:-9800}:9800"
+      - "${EDICT_PORT:-7891}:7891"
+    volumes:
+      - hub-data:/var/lib/CEOadmin
+    environment:
+      DATABASE_URL: postgres://ceoadmin:${PASSWORD:-ceoadmin}@postgres:5432/ceoadmin?sslmode=disable
+      RP_ORIGIN: ${RP_ORIGIN:-http://localhost:${HUB_PORT:-9800}}
+      RP_ID: ${RP_ID:-localhost}
+      STORAGE_ENDPOINT: minio:9000
+      STORAGE_ACCESS_KEY: ceoadmin
+      STORAGE_SECRET_KEY: ${PASSWORD:-ceoadmin}
+      STORAGE_BUCKET: ceoadmin
+      # STORAGE_PUBLIC_URL: https://s3.example.com/ceoadmin
+      # GITHUB_CLIENT_ID:
+      # GITHUB_CLIENT_SECRET:
+      # LINUXDO_CLIENT_ID:
+      # LINUXDO_CLIENT_SECRET:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  # AI 转型驾驶舱：独立 Next.js 前端（内置 App，源码已落地在仓库 cockpit/ 目录）。
+  # 不直接依赖 hub 后端，需配置 Anthropic API Key 才能生成 AI 内容。
+  # 启动后访问 http://localhost:3000 ，在 Hub 安装 cockpit 应用后点「应用主页」即可打开。
+  cockpit:
+    build:
+      context: .
+      dockerfile: deploy/cockpit.Dockerfile
+    restart: on-failure
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-6}
+
+volumes:
+  pgdata:
+  hub-data:
+  miniodata:

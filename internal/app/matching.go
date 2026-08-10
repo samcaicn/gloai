@@ -1,0 +1,287 @@
+package app
+
+import (
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/ceoadmin/CEOadmin/internal/store"
+)
+
+// SplitFirstField splits s into its first whitespace-delimited field and the
+// trimmed remainder. Unlike strings.SplitN(s, " ", 2) it treats any Unicode
+// whitespace as a separator — notably U+2005 (FOUR-PER-EM SPACE), which WeChat
+// inserts right after an @mention, and the full-width space U+3000. Without this
+// "@handle text" would parse the handle as "handle text" and fail to route.
+func SplitFirstField(s string) (first, rest string) {
+	i := strings.IndexFunc(s, unicode.IsSpace)
+	if i < 0 {
+		return s, ""
+	}
+	_, size := utf8.DecodeRuneInString(s[i:])
+	return s[:i], strings.TrimSpace(s[i+size:])
+}
+
+// ParseMention extracts handle, command, and text from @handle messages.
+// Returns handle, command (with / prefix or empty), remaining text.
+// Examples:
+//   "@echo-work hello"          → "echo-work", "", "hello"
+//   "@echo-work /echo hello"    → "echo-work", "/echo", "hello"
+//   "@echo-work"                → "echo-work", "", ""
+//   "hello"                     → "", "", ""
+func ParseMention(content string) (handle, command, text string) {
+	content = strings.TrimSpace(content)
+	if !strings.HasPrefix(content, "@") {
+		return "", "", ""
+	}
+	handleRaw, remaining := SplitFirstField(content[1:])
+	handle = strings.ToLower(handleRaw)
+	if handle == "" {
+		return "", "", ""
+	}
+	if strings.HasPrefix(remaining, "/") {
+		cmd, rest := SplitFirstField(remaining[1:])
+		command = "/" + strings.ToLower(cmd)
+		text = rest
+		return handle, command, text
+	}
+	return handle, "", remaining
+}
+
+// MatchHandle finds an enabled installation with the given handle on a bot.
+func (d *Dispatcher) MatchHandle(botID, handle string) (*store.AppInstallation, error) {
+	inst, err := d.store().GetInstallationByHandle(botID, handle)
+	if err != nil {
+		return nil, err
+	}
+	if !inst.Enabled {
+		return nil, nil
+	}
+	return inst, nil
+}
+
+// MatchCommand parses a slash command from the message content and finds
+// installations on the given bot whose app has registered that command.
+// Content format: "/commandname args..." or "@bothandle /commandname args..."
+// Returns matching installations, the parsed command name (without "/"), and
+// the remaining args string.
+func (d *Dispatcher) MatchCommand(botID string, content string) ([]store.AppInstallation, string, string, error) {
+	command, args := parseCommand(content)
+	if command == "" {
+		return nil, "", "", nil
+	}
+
+	installations, err := d.store().ListInstallationsByBot(botID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("list installations: %w", err)
+	}
+
+	var matched []store.AppInstallation
+	for _, inst := range installations {
+		if !inst.Enabled {
+			continue
+		}
+
+		app, err := d.store().GetApp(inst.AppID)
+		if err != nil {
+			slog.Error("failed to get app for matching",
+				"app_id", inst.AppID, "err", err)
+			continue
+		}
+
+		if appHasCommand(app, command) {
+			matched = append(matched, inst)
+			continue
+		}
+
+		// Check installation-level tools
+		if instHasCommand(&inst, command) {
+			matched = append(matched, inst)
+		}
+	}
+
+	return matched, command, args, nil
+}
+
+// MatchEvent finds installations on the given bot whose app subscribes to
+// the specified event type. The wildcard event type "message" matches any
+// "message.*" event.
+func (d *Dispatcher) MatchEvent(botID string, eventType string) ([]store.AppInstallation, error) {
+	installations, err := d.store().ListInstallationsByBot(botID)
+	if err != nil {
+		return nil, fmt.Errorf("list installations: %w", err)
+	}
+
+	var matched []store.AppInstallation
+	for _, inst := range installations {
+		if !inst.Enabled {
+			continue
+		}
+
+		app, err := d.store().GetApp(inst.AppID)
+		if err != nil {
+			slog.Error("failed to get app for event matching",
+				"app_id", inst.AppID, "err", err)
+			continue
+		}
+
+		// Installation must have message:read scope to receive message events
+		if strings.HasPrefix(eventType, "message.") || eventType == "message" {
+			if !instHasScope(&inst, "message:read") {
+				continue
+			}
+		}
+
+		if appSubscribesToEvent(app, eventType) {
+			matched = append(matched, inst)
+		}
+	}
+
+	return matched, nil
+}
+
+// parseCommand extracts a command name and args from message content.
+// Recognizes formats like:
+//   - "/command arg1 arg2"
+//   - "@mention /command arg1 arg2"
+//
+// Returns empty command if no slash command is found.
+func parseCommand(content string) (string, string) {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return "", ""
+	}
+
+	// Skip leading @mention if present.
+	if strings.HasPrefix(content, "@") {
+		_, rest := SplitFirstField(content[1:])
+		if rest == "" {
+			// Just a mention, no command.
+			return "", ""
+		}
+		content = rest
+	}
+
+	// Must start with "/" to be a command.
+	if !strings.HasPrefix(content, "/") {
+		return "", ""
+	}
+
+	// Split into command and args (strip leading "/").
+	command, args := SplitFirstField(content[1:])
+	command = strings.ToLower(command)
+	if command == "" {
+		return "", ""
+	}
+
+	return command, args
+}
+
+// appHasCommand checks whether an app has a tool with a matching Command trigger.
+func appHasCommand(app *store.App, commandName string) bool {
+	if app == nil || len(app.Tools) == 0 {
+		return false
+	}
+
+	var tools []store.AppTool
+	if err := json.Unmarshal(app.Tools, &tools); err != nil {
+		slog.Error("failed to unmarshal app tools",
+			"app_id", app.ID, "err", err)
+		return false
+	}
+
+	for _, tool := range tools {
+		if tool.Command == "" {
+			continue
+		}
+		if strings.ToLower(tool.Command) == strings.ToLower(commandName) {
+			return true
+		}
+	}
+	return false
+}
+
+// instHasCommand checks whether an installation has a tool with a matching Command trigger.
+func instHasCommand(inst *store.AppInstallation, commandName string) bool {
+	if len(inst.Tools) == 0 || string(inst.Tools) == "[]" {
+		return false
+	}
+	var tools []store.AppTool
+	if err := json.Unmarshal(inst.Tools, &tools); err != nil {
+		return false
+	}
+	for _, t := range tools {
+		if t.Command == "" {
+			continue
+		}
+		if strings.ToLower(t.Command) == strings.ToLower(commandName) {
+			return true
+		}
+	}
+	return false
+}
+
+// instHasScope checks if the installation has the given scope granted.
+// Scopes are snapshotted at install time (Slack model) — no fallback to app-level scopes.
+func instHasScope(inst *store.AppInstallation, scope string) bool {
+	if len(inst.Scopes) == 0 || string(inst.Scopes) == "[]" || string(inst.Scopes) == "null" {
+		return false // no scopes granted
+	}
+	var scopes []string
+	if err := json.Unmarshal(inst.Scopes, &scopes); err != nil {
+		return false
+	}
+	for _, s := range scopes {
+		if s == scope {
+			return true
+		}
+	}
+	return false
+}
+
+// appHasScope checks whether an app declares the given scope.
+func appHasScope(app *store.App, scope string) bool {
+	if app == nil || len(app.Scopes) == 0 {
+		return false
+	}
+	var scopes []string
+	if err := json.Unmarshal(app.Scopes, &scopes); err != nil {
+		return false
+	}
+	for _, s := range scopes {
+		if s == scope {
+			return true
+		}
+	}
+	return false
+}
+
+// appSubscribesToEvent checks whether an app subscribes to the given event type.
+// Supports the wildcard "message" which matches any "message.*" event.
+func appSubscribesToEvent(app *store.App, eventType string) bool {
+	if app == nil || len(app.Events) == 0 {
+		return false
+	}
+
+	var events []string
+	if err := json.Unmarshal(app.Events, &events); err != nil {
+		slog.Error("failed to unmarshal app events",
+			"app_id", app.ID, "err", err)
+		return false
+	}
+
+	for _, subscribed := range events {
+		if subscribed == eventType {
+			return true
+		}
+		// Wildcard: "message" matches any "message.*" event.
+		if subscribed == "message" && strings.HasPrefix(eventType, "message.") {
+			return true
+		}
+	}
+	return false
+}
+

@@ -1,0 +1,1628 @@
+[
+  {
+    "id": "P-01",
+    "name": "项目 Alpha",
+    "type": "自研工作室",
+    "headcount": 225,
+    "labor_cost": 6795434,
+    "ai_cost": 683765,
+    "ai_penetration": 90.2,
+    "power_user_ratio": 2.9,
+    "revenue": 25216508,
+    "profit": 13712545,
+    "engagement_score": 65.5,
+    "role_distribution": {
+      "技术研发": 33,
+      "产品": 44,
+      "设计": 1,
+      "美术": 86,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 8,
+      "其他": 5
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.6879,
+      "Claude Sonnet": 0.205,
+      "GPT": 0.0582,
+      "Cursor/IDE": 0.0139,
+      "Mivo": 0.0283,
+      "其他": 0.0066
+    },
+    "avg_active_days": 9.9,
+    "ai_platform_count_avg": 1.34,
+    "recent_turnover": {
+      "total_exits": 8,
+      "power_user_exits": 0,
+      "voluntary_exits": 4,
+      "involuntary_exits": 4
+    },
+    "avg_annual_salary": 330878,
+    "salary_cost_ratio": 0.791,
+    "engagement_dimensions": {
+      "overall": 65.5,
+      "career_development": 49.5,
+      "compensation_recognition": 50.4,
+      "management_leadership": 74.9,
+      "work_life_balance": 58.9,
+      "stay_intention": 65.3
+    },
+    "power_user_profile": {
+      "count": 6,
+      "top_roles": [
+        "技术研发",
+        "其他"
+      ],
+      "avg_ai_cost": 104432,
+      "avg_cr": 1.1
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-02",
+    "name": "项目 Beta",
+    "type": "职能",
+    "headcount": 16,
+    "labor_cost": 419234,
+    "ai_cost": 79743,
+    "ai_penetration": 100,
+    "power_user_ratio": 12.5,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.6,
+    "role_distribution": {
+      "技术研发": 13,
+      "产品": 1,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 2,
+      "其他": 5
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.0542,
+      "Claude Sonnet": 0.0316,
+      "GPT": 0.3551,
+      "Cursor/IDE": 0.0445,
+      "Mivo": 0.0025,
+      "其他": 0.5121
+    },
+    "avg_active_days": 17.4,
+    "ai_platform_count_avg": 2,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 236385,
+    "salary_cost_ratio": 0.779,
+    "engagement_dimensions": {
+      "overall": 64.6,
+      "career_development": 48.5,
+      "compensation_recognition": 48.5,
+      "management_leadership": 75,
+      "work_life_balance": 59,
+      "stay_intention": 64.2
+    },
+    "power_user_profile": {
+      "count": 2,
+      "top_roles": [
+        "技术研发",
+        "产品"
+      ],
+      "avg_ai_cost": 7771,
+      "avg_cr": 1
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-03",
+    "name": "项目 Gamma",
+    "type": "平台",
+    "headcount": 31,
+    "labor_cost": 1337294,
+    "ai_cost": 184176,
+    "ai_penetration": 100,
+    "power_user_ratio": 33.3,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": null,
+    "role_distribution": {
+      "技术研发": 17,
+      "产品": 8,
+      "设计": 1,
+      "美术": 0,
+      "运营": 3,
+      "职能支持": 0,
+      "管理": 4,
+      "其他": 3
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.6308,
+      "Claude Sonnet": 0.0488,
+      "GPT": 0.1911,
+      "Cursor/IDE": 0.023,
+      "Mivo": 0.0089,
+      "其他": 0.0973
+    },
+    "avg_active_days": 20.2,
+    "ai_platform_count_avg": 2.31,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 0,
+    "salary_cost_ratio": 0,
+    "engagement_dimensions": {
+      "overall": null,
+      "career_development": null,
+      "compensation_recognition": null,
+      "management_leadership": null,
+      "work_life_balance": null,
+      "stay_intention": null
+    },
+    "power_user_profile": {
+      "count": 11,
+      "top_roles": [
+        "技术研发",
+        "产品"
+      ],
+      "avg_ai_cost": 13651,
+      "avg_cr": 1.08
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-04",
+    "name": "项目 Delta",
+    "type": "自研工作室",
+    "headcount": 10,
+    "labor_cost": 441189,
+    "ai_cost": 157174,
+    "ai_penetration": 100,
+    "power_user_ratio": 80,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.5,
+    "role_distribution": {
+      "技术研发": 5,
+      "产品": 3,
+      "设计": 1,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 1,
+      "其他": 1
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.4871,
+      "Claude Sonnet": 0.0848,
+      "GPT": 0.4026,
+      "Cursor/IDE": 0.0152,
+      "Mivo": 0.0003,
+      "其他": 0.01
+    },
+    "avg_active_days": 22.7,
+    "ai_platform_count_avg": 2.36,
+    "recent_turnover": {
+      "total_exits": 1,
+      "power_user_exits": 0,
+      "voluntary_exits": 1,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 431237,
+    "salary_cost_ratio": 0.825,
+    "engagement_dimensions": {
+      "overall": 64.5,
+      "career_development": 48.2,
+      "compensation_recognition": 48.6,
+      "management_leadership": 74.7,
+      "work_life_balance": 58.7,
+      "stay_intention": 64.1
+    },
+    "power_user_profile": {
+      "count": 8,
+      "top_roles": [
+        "技术研发",
+        "产品"
+      ],
+      "avg_ai_cost": 17813,
+      "avg_cr": 1.02
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-05",
+    "name": "项目 Epsilon",
+    "type": "自研工作室",
+    "headcount": 3,
+    "labor_cost": 137816,
+    "ai_cost": 50434,
+    "ai_penetration": 100,
+    "power_user_ratio": 33.3,
+    "revenue": -45228,
+    "profit": -30611,
+    "engagement_score": 64.8,
+    "role_distribution": {
+      "技术研发": 1,
+      "产品": 2,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 0,
+      "其他": 2
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.9261,
+      "Claude Sonnet": 0.0267,
+      "GPT": 0.0176,
+      "Cursor/IDE": 0.0213,
+      "Mivo": 0.0015,
+      "其他": 0.0069
+    },
+    "avg_active_days": 16.6,
+    "ai_platform_count_avg": 2.4,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 452266,
+    "salary_cost_ratio": 0.734,
+    "engagement_dimensions": {
+      "overall": 64.8,
+      "career_development": 48.1,
+      "compensation_recognition": 49.1,
+      "management_leadership": 75,
+      "work_life_balance": 59,
+      "stay_intention": 64
+    },
+    "power_user_profile": {
+      "count": 2,
+      "top_roles": [
+        "其他",
+        "产品"
+      ],
+      "avg_ai_cost": 23732,
+      "avg_cr": 1
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-06",
+    "name": "项目 Zeta",
+    "type": "平台",
+    "headcount": 42,
+    "labor_cost": 3840,
+    "ai_cost": 14336,
+    "ai_penetration": 61.9,
+    "power_user_ratio": 0,
+    "revenue": 688913,
+    "profit": 295301,
+    "engagement_score": null,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 27,
+      "设计": 3,
+      "美术": 0,
+      "运营": 3,
+      "职能支持": 0,
+      "管理": 8,
+      "其他": 1
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.1451,
+      "Claude Sonnet": 0.0001,
+      "GPT": 0.7814,
+      "Cursor/IDE": 0.0027,
+      "Mivo": 0.0707,
+      "其他": 0
+    },
+    "avg_active_days": 6.1,
+    "ai_platform_count_avg": 0.95,
+    "recent_turnover": {
+      "total_exits": 1,
+      "power_user_exits": 0,
+      "voluntary_exits": 1,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 283996,
+    "salary_cost_ratio": 0.841,
+    "engagement_dimensions": {
+      "overall": null,
+      "career_development": null,
+      "compensation_recognition": null,
+      "management_leadership": null,
+      "work_life_balance": null,
+      "stay_intention": null
+    },
+    "power_user_profile": {
+      "count": 0,
+      "top_roles": [],
+      "avg_ai_cost": 0,
+      "avg_cr": 0
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-07",
+    "name": "项目 Eta",
+    "type": "平台",
+    "headcount": 376,
+    "labor_cost": 13240551,
+    "ai_cost": 2259742,
+    "ai_penetration": 96.4,
+    "power_user_ratio": 46.4,
+    "revenue": 216980009,
+    "profit": 50175230,
+    "engagement_score": 64.3,
+    "role_distribution": {
+      "技术研发": 151,
+      "产品": 75,
+      "设计": 15,
+      "美术": 1,
+      "运营": 23,
+      "职能支持": 1,
+      "管理": 42,
+      "其他": 6
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.5335,
+      "Claude Sonnet": 0.1217,
+      "GPT": 0.2781,
+      "Cursor/IDE": 0.0382,
+      "Mivo": 0.0025,
+      "其他": 0.026
+    },
+    "avg_active_days": 21.7,
+    "ai_platform_count_avg": 2.33,
+    "recent_turnover": {
+      "total_exits": 38,
+      "power_user_exits": 2,
+      "voluntary_exits": 9,
+      "involuntary_exits": 29
+    },
+    "avg_annual_salary": 400953,
+    "salary_cost_ratio": 0.753,
+    "engagement_dimensions": {
+      "overall": 64.3,
+      "career_development": 48.3,
+      "compensation_recognition": 48,
+      "management_leadership": 75.2,
+      "work_life_balance": 60.2,
+      "stay_intention": 63
+    },
+    "power_user_profile": {
+      "count": 143,
+      "top_roles": [
+        "技术研发",
+        "管理"
+      ],
+      "avg_ai_cost": 13244,
+      "avg_cr": 1.01
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-08",
+    "name": "项目 Theta",
+    "type": "职能",
+    "headcount": 10,
+    "labor_cost": 46626,
+    "ai_cost": 0,
+    "ai_penetration": 0,
+    "power_user_ratio": 0,
+    "revenue": -954933,
+    "profit": -590726,
+    "engagement_score": null,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 0,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 8,
+      "管理": 0,
+      "其他": 2
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0,
+      "Claude Sonnet": 0,
+      "GPT": 0,
+      "Cursor/IDE": 0,
+      "Mivo": 0,
+      "其他": 0
+    },
+    "avg_active_days": 0,
+    "ai_platform_count_avg": 0,
+    "recent_turnover": {
+      "total_exits": 1,
+      "power_user_exits": 0,
+      "voluntary_exits": 1,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 35629,
+    "salary_cost_ratio": 1,
+    "engagement_dimensions": {
+      "overall": null,
+      "career_development": null,
+      "compensation_recognition": null,
+      "management_leadership": null,
+      "work_life_balance": null,
+      "stay_intention": null
+    },
+    "power_user_profile": {
+      "count": 0,
+      "top_roles": [],
+      "avg_ai_cost": 0,
+      "avg_cr": 0
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-09",
+    "name": "项目 Iota",
+    "type": "职能",
+    "headcount": 26,
+    "labor_cost": 946626,
+    "ai_cost": 58340,
+    "ai_penetration": 93.1,
+    "power_user_ratio": 10.3,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.2,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 0,
+      "设计": 0,
+      "美术": 0,
+      "运营": 1,
+      "职能支持": 24,
+      "管理": 4,
+      "其他": 0
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.439,
+      "Claude Sonnet": 0.06,
+      "GPT": 0.4341,
+      "Cursor/IDE": 0.0495,
+      "Mivo": 0.0063,
+      "其他": 0.0111
+    },
+    "avg_active_days": 14.9,
+    "ai_platform_count_avg": 2.28,
+    "recent_turnover": {
+      "total_exits": 1,
+      "power_user_exits": 0,
+      "voluntary_exits": 1,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 421601,
+    "salary_cost_ratio": 0.738,
+    "engagement_dimensions": {
+      "overall": 64.2,
+      "career_development": 47.6,
+      "compensation_recognition": 48.2,
+      "management_leadership": 74.6,
+      "work_life_balance": 58,
+      "stay_intention": 63.7
+    },
+    "power_user_profile": {
+      "count": 3,
+      "top_roles": [
+        "职能支持",
+        "管理"
+      ],
+      "avg_ai_cost": 8017,
+      "avg_cr": 1.12
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-10",
+    "name": "项目 Kappa",
+    "type": "职能",
+    "headcount": 11,
+    "labor_cost": 257558,
+    "ai_cost": 279,
+    "ai_penetration": 45.5,
+    "power_user_ratio": 0,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.8,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 0,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 8,
+      "管理": 3,
+      "其他": 0
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0,
+      "Claude Sonnet": 0,
+      "GPT": 1,
+      "Cursor/IDE": 0,
+      "Mivo": 0,
+      "其他": 0
+    },
+    "avg_active_days": 1.7,
+    "ai_platform_count_avg": 0.45,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 176549,
+    "salary_cost_ratio": 0.799,
+    "engagement_dimensions": {
+      "overall": 64.8,
+      "career_development": 48.8,
+      "compensation_recognition": 49,
+      "management_leadership": 75,
+      "work_life_balance": 59,
+      "stay_intention": 64.5
+    },
+    "power_user_profile": {
+      "count": 0,
+      "top_roles": [],
+      "avg_ai_cost": 0,
+      "avg_cr": 0
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-11",
+    "name": "项目 Lambda",
+    "type": "自研工作室",
+    "headcount": 287,
+    "labor_cost": 9014075,
+    "ai_cost": 768522,
+    "ai_penetration": 92,
+    "power_user_ratio": 10.6,
+    "revenue": 45597365,
+    "profit": 31697191,
+    "engagement_score": null,
+    "role_distribution": {
+      "技术研发": 65,
+      "产品": 57,
+      "设计": 18,
+      "美术": 81,
+      "运营": 0,
+      "职能支持": 4,
+      "管理": 38,
+      "其他": 8
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.4284,
+      "Claude Sonnet": 0.1342,
+      "GPT": 0.3218,
+      "Cursor/IDE": 0.0494,
+      "Mivo": 0.0302,
+      "其他": 0.036
+    },
+    "avg_active_days": 12.9,
+    "ai_platform_count_avg": 1.68,
+    "recent_turnover": {
+      "total_exits": 11,
+      "power_user_exits": 0,
+      "voluntary_exits": 3,
+      "involuntary_exits": 8
+    },
+    "avg_annual_salary": 353151,
+    "salary_cost_ratio": 0.794,
+    "engagement_dimensions": {
+      "overall": null,
+      "career_development": null,
+      "compensation_recognition": null,
+      "management_leadership": null,
+      "work_life_balance": null,
+      "stay_intention": null
+    },
+    "power_user_profile": {
+      "count": 30,
+      "top_roles": [
+        "技术研发",
+        "管理"
+      ],
+      "avg_ai_cost": 18557,
+      "avg_cr": 1
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-12",
+    "name": "项目 Mu",
+    "type": "平台",
+    "headcount": 53,
+    "labor_cost": 1467230,
+    "ai_cost": 47113,
+    "ai_penetration": 88.9,
+    "power_user_ratio": 0,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.4,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 9,
+      "设计": 17,
+      "美术": 0,
+      "运营": 13,
+      "职能支持": 0,
+      "管理": 14,
+      "其他": 2
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.0823,
+      "Claude Sonnet": 0.1072,
+      "GPT": 0.4731,
+      "Cursor/IDE": 0.0085,
+      "Mivo": 0.26,
+      "其他": 0.0689
+    },
+    "avg_active_days": 12.9,
+    "ai_platform_count_avg": 1.67,
+    "recent_turnover": {
+      "total_exits": 3,
+      "power_user_exits": 0,
+      "voluntary_exits": 1,
+      "involuntary_exits": 2
+    },
+    "avg_annual_salary": 355994,
+    "salary_cost_ratio": 0.795,
+    "engagement_dimensions": {
+      "overall": 64.4,
+      "career_development": 47.9,
+      "compensation_recognition": 48.7,
+      "management_leadership": 74.5,
+      "work_life_balance": 58.3,
+      "stay_intention": 64.4
+    },
+    "power_user_profile": {
+      "count": 0,
+      "top_roles": [],
+      "avg_ai_cost": 0,
+      "avg_cr": 0
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-13",
+    "name": "项目 Nu",
+    "type": "平台",
+    "headcount": 34,
+    "labor_cost": 289466,
+    "ai_cost": 421225,
+    "ai_penetration": 100,
+    "power_user_ratio": 60,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.1,
+    "role_distribution": {
+      "技术研发": 28,
+      "产品": 3,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 4,
+      "其他": 2
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.7112,
+      "Claude Sonnet": 0.0241,
+      "GPT": 0.1896,
+      "Cursor/IDE": 0.0641,
+      "Mivo": 0.0009,
+      "其他": 0.0102
+    },
+    "avg_active_days": 21.1,
+    "ai_platform_count_avg": 2.59,
+    "recent_turnover": {
+      "total_exits": 1,
+      "power_user_exits": 0,
+      "voluntary_exits": 1,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 382160,
+    "salary_cost_ratio": 0.782,
+    "engagement_dimensions": {
+      "overall": 64.1,
+      "career_development": 47.5,
+      "compensation_recognition": 48.3,
+      "management_leadership": 74.6,
+      "work_life_balance": 58.7,
+      "stay_intention": 64.1
+    },
+    "power_user_profile": {
+      "count": 21,
+      "top_roles": [
+        "技术研发",
+        "管理"
+      ],
+      "avg_ai_cost": 15723,
+      "avg_cr": 1.05
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-14",
+    "name": "项目 Xi",
+    "type": "职能",
+    "headcount": 30,
+    "labor_cost": 3152164,
+    "ai_cost": 138171,
+    "ai_penetration": 83.3,
+    "power_user_ratio": 23.3,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.6,
+    "role_distribution": {
+      "技术研发": 9,
+      "产品": 4,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 5,
+      "管理": 7,
+      "其他": 6
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.3427,
+      "Claude Sonnet": 0.1746,
+      "GPT": 0.3989,
+      "Cursor/IDE": 0.0698,
+      "Mivo": 0.0088,
+      "其他": 0.0052
+    },
+    "avg_active_days": 15.6,
+    "ai_platform_count_avg": 1.9,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 818454,
+    "salary_cost_ratio": 0.567,
+    "engagement_dimensions": {
+      "overall": 64.6,
+      "career_development": 48.2,
+      "compensation_recognition": 48.5,
+      "management_leadership": 74.8,
+      "work_life_balance": 58.8,
+      "stay_intention": 64.1
+    },
+    "power_user_profile": {
+      "count": 7,
+      "top_roles": [
+        "技术研发",
+        "其他"
+      ],
+      "avg_ai_cost": 15236,
+      "avg_cr": 1.14
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-15",
+    "name": "项目 Omicron",
+    "type": "平台",
+    "headcount": 96,
+    "labor_cost": 2763382,
+    "ai_cost": 441239,
+    "ai_penetration": 88.7,
+    "power_user_ratio": 25.8,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 65.3,
+    "role_distribution": {
+      "技术研发": 32,
+      "产品": 0,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 65,
+      "其他": 8
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.5339,
+      "Claude Sonnet": 0.0721,
+      "GPT": 0.256,
+      "Cursor/IDE": 0.0895,
+      "Mivo": 0.0002,
+      "其他": 0.0483
+    },
+    "avg_active_days": 14.3,
+    "ai_platform_count_avg": 2.02,
+    "recent_turnover": {
+      "total_exits": 4,
+      "power_user_exits": 0,
+      "voluntary_exits": 1,
+      "involuntary_exits": 3
+    },
+    "avg_annual_salary": 344361,
+    "salary_cost_ratio": 0.768,
+    "engagement_dimensions": {
+      "overall": 65.3,
+      "career_development": 49.2,
+      "compensation_recognition": 49.2,
+      "management_leadership": 74.6,
+      "work_life_balance": 57.8,
+      "stay_intention": 65.2
+    },
+    "power_user_profile": {
+      "count": 25,
+      "top_roles": [
+        "管理",
+        "技术研发"
+      ],
+      "avg_ai_cost": 12140,
+      "avg_cr": 1.11
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-16",
+    "name": "项目 Pi",
+    "type": "平台",
+    "headcount": 51,
+    "labor_cost": 647011,
+    "ai_cost": 42180,
+    "ai_penetration": 79.3,
+    "power_user_ratio": 6.9,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 65.1,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 3,
+      "设计": 0,
+      "美术": 0,
+      "运营": 13,
+      "职能支持": 8,
+      "管理": 4,
+      "其他": 3
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.0002,
+      "Claude Sonnet": 0.0582,
+      "GPT": 0.8687,
+      "Cursor/IDE": 0.062,
+      "Mivo": 0.0038,
+      "其他": 0.0072
+    },
+    "avg_active_days": 12.1,
+    "ai_platform_count_avg": 1.26,
+    "recent_turnover": {
+      "total_exits": 1,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 1
+    },
+    "avg_annual_salary": 247730,
+    "salary_cost_ratio": 0.776,
+    "engagement_dimensions": {
+      "overall": 65.1,
+      "career_development": 48.8,
+      "compensation_recognition": 49,
+      "management_leadership": 75.1,
+      "work_life_balance": 59.1,
+      "stay_intention": 64.8
+    },
+    "power_user_profile": {
+      "count": 2,
+      "top_roles": [
+        "运营",
+        "管理"
+      ],
+      "avg_ai_cost": 11257,
+      "avg_cr": 1.08
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-17",
+    "name": "项目 Rho",
+    "type": "平台",
+    "headcount": 5,
+    "labor_cost": 94980,
+    "ai_cost": 0,
+    "ai_penetration": 0,
+    "power_user_ratio": 0,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": null,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 0,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 0,
+      "其他": 3
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0,
+      "Claude Sonnet": 0,
+      "GPT": 0,
+      "Cursor/IDE": 0,
+      "Mivo": 0,
+      "其他": 0
+    },
+    "avg_active_days": 0,
+    "ai_platform_count_avg": 0,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 0,
+    "salary_cost_ratio": 0,
+    "engagement_dimensions": {
+      "overall": null,
+      "career_development": null,
+      "compensation_recognition": null,
+      "management_leadership": null,
+      "work_life_balance": null,
+      "stay_intention": null
+    },
+    "power_user_profile": {
+      "count": 0,
+      "top_roles": [],
+      "avg_ai_cost": 0,
+      "avg_cr": 0
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-18",
+    "name": "项目 Sigma",
+    "type": "自研工作室",
+    "headcount": 79,
+    "labor_cost": 2858071,
+    "ai_cost": 137341,
+    "ai_penetration": 90.4,
+    "power_user_ratio": 11,
+    "revenue": 3891169,
+    "profit": 2885760,
+    "engagement_score": 65,
+    "role_distribution": {
+      "技术研发": 12,
+      "产品": 25,
+      "设计": 4,
+      "美术": 26,
+      "运营": 0,
+      "职能支持": 1,
+      "管理": 4,
+      "其他": 6
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.2581,
+      "Claude Sonnet": 0.0737,
+      "GPT": 0.3507,
+      "Cursor/IDE": 0.2057,
+      "Mivo": 0.0286,
+      "其他": 0.0833
+    },
+    "avg_active_days": 13,
+    "ai_platform_count_avg": 2.26,
+    "recent_turnover": {
+      "total_exits": 2,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 2
+    },
+    "avg_annual_salary": 378913,
+    "salary_cost_ratio": 0.761,
+    "engagement_dimensions": {
+      "overall": 65,
+      "career_development": 48.9,
+      "compensation_recognition": 50.5,
+      "management_leadership": 75.1,
+      "work_life_balance": 57.6,
+      "stay_intention": 65.2
+    },
+    "power_user_profile": {
+      "count": 8,
+      "top_roles": [
+        "产品",
+        "技术研发"
+      ],
+      "avg_ai_cost": 10980,
+      "avg_cr": 1.04
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-19",
+    "name": "项目 Tau",
+    "type": "职能",
+    "headcount": 10,
+    "labor_cost": 311919,
+    "ai_cost": 10106,
+    "ai_penetration": 90,
+    "power_user_ratio": 10,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 52.3,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 0,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 10,
+      "管理": 0,
+      "其他": 0
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0,
+      "Claude Sonnet": 0,
+      "GPT": 0.97,
+      "Cursor/IDE": 0.03,
+      "Mivo": 0,
+      "其他": 0
+    },
+    "avg_active_days": 9.6,
+    "ai_platform_count_avg": 1,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 321750,
+    "salary_cost_ratio": 0.756,
+    "engagement_dimensions": {
+      "overall": null,
+      "career_development": null,
+      "compensation_recognition": null,
+      "management_leadership": null,
+      "work_life_balance": null,
+      "stay_intention": null
+    },
+    "power_user_profile": {
+      "count": 1,
+      "top_roles": [
+        "职能支持"
+      ],
+      "avg_ai_cost": 6107,
+      "avg_cr": 1
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-20",
+    "name": "项目 Upsilon",
+    "type": "自研工作室",
+    "headcount": 25,
+    "labor_cost": 602732,
+    "ai_cost": 48462,
+    "ai_penetration": 90,
+    "power_user_ratio": 10,
+    "revenue": 1710714,
+    "profit": 1182987,
+    "engagement_score": 65.4,
+    "role_distribution": {
+      "技术研发": 8,
+      "产品": 7,
+      "设计": 1,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 4,
+      "其他": 4
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.2548,
+      "Claude Sonnet": 0.1402,
+      "GPT": 0.4266,
+      "Cursor/IDE": 0.0741,
+      "Mivo": 0.0021,
+      "其他": 0.1022
+    },
+    "avg_active_days": 13.2,
+    "ai_platform_count_avg": 1.42,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 323074,
+    "salary_cost_ratio": 0.776,
+    "engagement_dimensions": {
+      "overall": 65.4,
+      "career_development": 48.3,
+      "compensation_recognition": 49.3,
+      "management_leadership": 75.5,
+      "work_life_balance": 58.9,
+      "stay_intention": 65
+    },
+    "power_user_profile": {
+      "count": 2,
+      "top_roles": [
+        "技术研发",
+        "产品"
+      ],
+      "avg_ai_cost": 9823,
+      "avg_cr": 1
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-21",
+    "name": "项目 Phi",
+    "type": "平台",
+    "headcount": 29,
+    "labor_cost": 730533,
+    "ai_cost": 11128,
+    "ai_penetration": 55.2,
+    "power_user_ratio": 0,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.5,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 18,
+      "设计": 0,
+      "美术": 0,
+      "运营": 6,
+      "职能支持": 1,
+      "管理": 1,
+      "其他": 14
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.3111,
+      "Claude Sonnet": 0.0766,
+      "GPT": 0.5297,
+      "Cursor/IDE": 0.0023,
+      "Mivo": 0.0703,
+      "其他": 0.01
+    },
+    "avg_active_days": 4.6,
+    "ai_platform_count_avg": 0.82,
+    "recent_turnover": {
+      "total_exits": 1,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 1
+    },
+    "avg_annual_salary": 236535,
+    "salary_cost_ratio": 0.822,
+    "engagement_dimensions": {
+      "overall": 64.5,
+      "career_development": 48.3,
+      "compensation_recognition": 48.6,
+      "management_leadership": 74.8,
+      "work_life_balance": 58.6,
+      "stay_intention": 64.2
+    },
+    "power_user_profile": {
+      "count": 0,
+      "top_roles": [],
+      "avg_ai_cost": 0,
+      "avg_cr": 0
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-22",
+    "name": "项目 Chi",
+    "type": "自研工作室",
+    "headcount": 95,
+    "labor_cost": 2981039,
+    "ai_cost": 429407,
+    "ai_penetration": 97.7,
+    "power_user_ratio": 27.3,
+    "revenue": 24786067,
+    "profit": 15478283,
+    "engagement_score": null,
+    "role_distribution": {
+      "技术研发": 27,
+      "产品": 32,
+      "设计": 0,
+      "美术": 18,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 11,
+      "其他": 12
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.6096,
+      "Claude Sonnet": 0.0417,
+      "GPT": 0.1562,
+      "Cursor/IDE": 0.1331,
+      "Mivo": 0.0377,
+      "其他": 0.0216
+    },
+    "avg_active_days": 16.2,
+    "ai_platform_count_avg": 2.35,
+    "recent_turnover": {
+      "total_exits": 7,
+      "power_user_exits": 0,
+      "voluntary_exits": 4,
+      "involuntary_exits": 3
+    },
+    "avg_annual_salary": 353804,
+    "salary_cost_ratio": 0.772,
+    "engagement_dimensions": {
+      "overall": null,
+      "career_development": null,
+      "compensation_recognition": null,
+      "management_leadership": null,
+      "work_life_balance": null,
+      "stay_intention": null
+    },
+    "power_user_profile": {
+      "count": 24,
+      "top_roles": [
+        "技术研发",
+        "管理"
+      ],
+      "avg_ai_cost": 13206,
+      "avg_cr": 1.08
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-23",
+    "name": "项目 Psi",
+    "type": "平台",
+    "headcount": 102,
+    "labor_cost": 1895407,
+    "ai_cost": 265693,
+    "ai_penetration": 92.3,
+    "power_user_ratio": 11.5,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 63.8,
+    "role_distribution": {
+      "技术研发": 4,
+      "产品": 0,
+      "设计": 30,
+      "美术": 59,
+      "运营": 0,
+      "职能支持": 1,
+      "管理": 10,
+      "其他": 4
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.4921,
+      "Claude Sonnet": 0.0397,
+      "GPT": 0.1732,
+      "Cursor/IDE": 0.0796,
+      "Mivo": 0.1029,
+      "其他": 0.1124
+    },
+    "avg_active_days": 12.5,
+    "ai_platform_count_avg": 1.87,
+    "recent_turnover": {
+      "total_exits": 8,
+      "power_user_exits": 0,
+      "voluntary_exits": 6,
+      "involuntary_exits": 2
+    },
+    "avg_annual_salary": 329168,
+    "salary_cost_ratio": 0.761,
+    "engagement_dimensions": {
+      "overall": 63.8,
+      "career_development": 47.7,
+      "compensation_recognition": 47.9,
+      "management_leadership": 74.2,
+      "work_life_balance": 57,
+      "stay_intention": 63.8
+    },
+    "power_user_profile": {
+      "count": 13,
+      "top_roles": [
+        "设计",
+        "技术研发"
+      ],
+      "avg_ai_cost": 15313,
+      "avg_cr": 0.99
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-24",
+    "name": "项目 Omega",
+    "type": "职能",
+    "headcount": 22,
+    "labor_cost": 373395,
+    "ai_cost": 9205,
+    "ai_penetration": 38.1,
+    "power_user_ratio": 4.8,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.3,
+    "role_distribution": {
+      "技术研发": 0,
+      "产品": 0,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 21,
+      "其他": 0
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.52,
+      "Claude Sonnet": 0.0142,
+      "GPT": 0.3815,
+      "Cursor/IDE": 0.0842,
+      "Mivo": 0,
+      "其他": 0
+    },
+    "avg_active_days": 2.9,
+    "ai_platform_count_avg": 0.48,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 202944,
+    "salary_cost_ratio": 0.884,
+    "engagement_dimensions": {
+      "overall": 64.3,
+      "career_development": 47.7,
+      "compensation_recognition": 48.6,
+      "management_leadership": 74.2,
+      "work_life_balance": 58.6,
+      "stay_intention": 63.8
+    },
+    "power_user_profile": {
+      "count": 1,
+      "top_roles": [
+        "管理"
+      ],
+      "avg_ai_cost": 8627,
+      "avg_cr": 1
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  },
+  {
+    "id": "P-25",
+    "name": "项目 Orion",
+    "type": "平台",
+    "headcount": 11,
+    "labor_cost": 351856,
+    "ai_cost": 56043,
+    "ai_penetration": 100,
+    "power_user_ratio": 36.4,
+    "revenue": 251978,
+    "profit": 148271,
+    "engagement_score": 64.7,
+    "role_distribution": {
+      "技术研发": 9,
+      "产品": 0,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 2,
+      "其他": 1
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.2156,
+      "Claude Sonnet": 0.0357,
+      "GPT": 0.7045,
+      "Cursor/IDE": 0.0389,
+      "Mivo": 0,
+      "其他": 0.0053
+    },
+    "avg_active_days": 20.1,
+    "ai_platform_count_avg": 1.92,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 287488,
+    "salary_cost_ratio": 0.806,
+    "engagement_dimensions": {
+      "overall": 64.7,
+      "career_development": 48.5,
+      "compensation_recognition": 48.7,
+      "management_leadership": 74.9,
+      "work_life_balance": 58.8,
+      "stay_intention": 64.3
+    },
+    "power_user_profile": {
+      "count": 4,
+      "top_roles": [
+        "技术研发",
+        "管理"
+      ],
+      "avg_ai_cost": 11025,
+      "avg_cr": 1.04
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-26",
+    "name": "项目 Nova",
+    "type": "平台",
+    "headcount": 74,
+    "labor_cost": 1401366,
+    "ai_cost": 66233,
+    "ai_penetration": 86.3,
+    "power_user_ratio": 2.7,
+    "revenue": 2087370,
+    "profit": 1394921,
+    "engagement_score": 64.9,
+    "role_distribution": {
+      "技术研发": 2,
+      "产品": 62,
+      "设计": 0,
+      "美术": 0,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 8,
+      "其他": 10
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.2788,
+      "Claude Sonnet": 0.0529,
+      "GPT": 0.5083,
+      "Cursor/IDE": 0.0582,
+      "Mivo": 0.0285,
+      "其他": 0.0733
+    },
+    "avg_active_days": 9.4,
+    "ai_platform_count_avg": 1.54,
+    "recent_turnover": {
+      "total_exits": 3,
+      "power_user_exits": 0,
+      "voluntary_exits": 1,
+      "involuntary_exits": 2
+    },
+    "avg_annual_salary": 318860,
+    "salary_cost_ratio": 0.821,
+    "engagement_dimensions": {
+      "overall": 64.9,
+      "career_development": 48.2,
+      "compensation_recognition": 48.7,
+      "management_leadership": 74.5,
+      "work_life_balance": 59.1,
+      "stay_intention": 64.8
+    },
+    "power_user_profile": {
+      "count": 2,
+      "top_roles": [
+        "产品"
+      ],
+      "avg_ai_cost": 13025,
+      "avg_cr": 1
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": false
+  },
+  {
+    "id": "P-27",
+    "name": "项目 Aster",
+    "type": "平台",
+    "headcount": 24,
+    "labor_cost": 367932,
+    "ai_cost": 146451,
+    "ai_penetration": 95.8,
+    "power_user_ratio": 16.7,
+    "revenue": 0,
+    "profit": 0,
+    "engagement_score": 64.2,
+    "role_distribution": {
+      "技术研发": 3,
+      "产品": 0,
+      "设计": 0,
+      "美术": 19,
+      "运营": 0,
+      "职能支持": 0,
+      "管理": 2,
+      "其他": 4
+    },
+    "ai_model_mix": {
+      "Claude Opus": 0.6406,
+      "Claude Sonnet": 0.1341,
+      "GPT": 0.1505,
+      "Cursor/IDE": 0.0541,
+      "Mivo": 0.0011,
+      "其他": 0.0197
+    },
+    "avg_active_days": 13.2,
+    "ai_platform_count_avg": 1.96,
+    "recent_turnover": {
+      "total_exits": 0,
+      "power_user_exits": 0,
+      "voluntary_exits": 0,
+      "involuntary_exits": 0
+    },
+    "avg_annual_salary": 239377,
+    "salary_cost_ratio": 0.788,
+    "engagement_dimensions": {
+      "overall": 64.2,
+      "career_development": 48,
+      "compensation_recognition": 48,
+      "management_leadership": 74.7,
+      "work_life_balance": 58.3,
+      "stay_intention": 63.9
+    },
+    "power_user_profile": {
+      "count": 5,
+      "top_roles": [
+        "美术",
+        "技术研发"
+      ],
+      "avg_ai_cost": 21893,
+      "avg_cr": 0.94
+    },
+    "revenue_is_simulated": true,
+    "profit_is_simulated": true,
+    "is_cost_center": true
+  }
+]

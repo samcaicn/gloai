@@ -1,0 +1,61 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+/oih
+/CEOadmin
+/mockserver
+
+# Test/dev databases
+*.db
+*.db-shm
+*.db-wal
+# 运行态数据库需提交（本仓库为私有仓库，密钥不对外暴露）
+!ceoadmin.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Plans and docs (local only)
+docs/plans/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Runner config (contains app tokens)
+runner.yaml
+
+# Build output
+dist/
+.worktrees/
+.claude/worktrees/
+
+# Compiled Go binaries (reproducible via `go build`)
+/tenant-memory/tms
+
+# tms runtime logs
+/tenant-memory/tms.log
+
+# Local build artifacts / scratch (edict 等子项目的产物与运行态)
+/edict-go
+edict-go.log
+oih.log
+cockpit.log
+chat.json
+ckpt.html
+req.json
+/edict-shared/
+
+# pnpm store cache（不应提交）
+.pnpm-store/

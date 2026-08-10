@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#f0f4ff" rx="12"/>
+  <text x="100" y="90" font-family="sans-serif" font-size="14" fill="#4338CA" text-anchor="middle" font-weight="bold">联系拓谱</text>
+  <text x="100" y="120" font-family="sans-serif" font-size="12" fill="#6366F1" text-anchor="middle">微信扫码</text>
+  <rect x="40" y="40" width="120" height="120" fill="none" stroke="#4338CA" stroke-width="2" rx="8"/>
+  <rect x="55" y="55" width="30" height="30" fill="#4338CA" rx="4"/>
+  <rect x="115" y="55" width="30" height="30" fill="#4338CA" rx="4"/>
+  <rect x="85" y="85" width="30" height="30" fill="#4338CA" rx="4"/>
+  <rect x="55" y="115" width="30" height="30" fill="#4338CA" rx="4"/>
+  <rect x="115" y="115" width="30" height="30" fill="#4338CA" rx="4"/>
+</svg>

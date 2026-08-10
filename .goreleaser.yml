@@ -1,0 +1,49 @@
+version: 2
+
+project_name: CEOadmin
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: windows-amd64
+    binary: oih.exe
+    goos: [windows]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - zip
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: checksums.txt
+  extra_files:
+    - glob: darwin-archives/*
+    - glob: linux-archives/*
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  github:
+    owner: ceoadmin
+    name: CEOadmin
+  extra_files:
+    - glob: darwin-archives/*
+    - glob: linux-archives/*

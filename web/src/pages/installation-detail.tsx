@@ -1,0 +1,1210 @@
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  ArrowRight,
+  Loader2,
+  Trash2,
+  RefreshCw,
+  Key,
+  ScrollText,
+  Terminal,
+  Sliders,
+  ChevronRight,
+  ShieldCheck,
+  Zap,
+  ExternalLink,
+} from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "../components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { Skeleton } from "../components/ui/skeleton";
+import { Switch } from "../components/ui/switch";
+import { Label } from "../components/ui/label";
+import { api, botDisplayName } from "../lib/api";
+import { useBotApps, useBots } from "@/hooks/use-bots";
+import { useApp } from "@/hooks/use-apps";
+import { QueryClient, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { invalidateAllAppQueries } from "@/hooks/use-apps";
+import { SCOPE_DESCRIPTIONS, EVENT_TYPES } from "../lib/constants";
+import { useToast } from "@/hooks/use-toast";
+import { AppIcon } from "../components/app-icon";
+import { ToolsDisplay, parseTools } from "../components/tools-display";
+
+// ==================== Nav Definition ====================
+
+type SectionKey =
+  | "token"
+  | "config"
+  | "app-config"
+  | "tools"
+  | "permissions"
+  | "event-logs"
+  | "api-logs";
+
+function buildNavSections(app: any, inst?: any) {
+  const items: { key: SectionKey; label: string; icon: any }[] = [
+    { key: "token", label: "Token & 使用", icon: Key },
+  ];
+  if (parseTools(app?.tools).length > 0 || parseTools(inst?.tools).length > 0) {
+    items.push({ key: "tools", label: "命令 / 工具", icon: Terminal });
+  }
+  const instScopes: string[] = inst?.scopes || [];
+  const events: string[] = app?.events || [];
+  if (instScopes.length > 0 || events.length > 0) {
+    items.push({ key: "permissions", label: "权限", icon: ShieldCheck });
+  }
+  if (app?.config_schema) {
+    let parsed: any = {};
+    try {
+      parsed =
+        typeof app.config_schema === "string"
+          ? JSON.parse(app.config_schema || "{}")
+          : app.config_schema || {};
+    } catch {}
+    if (Object.keys(parsed.properties || {}).length > 0) {
+      items.push({ key: "app-config", label: "应用配置", icon: Sliders });
+    }
+  }
+  items.push({ key: "config", label: "危险操作", icon: Trash2 });
+  items.push({ key: "event-logs", label: "事件日志", icon: ScrollText });
+  items.push({ key: "api-logs", label: "API 日志", icon: ScrollText });
+  return items;
+}
+
+// ==================== Page ====================
+
+export function InstallationDetailPage() {
+  const { id: botId, iid } = useParams<{ id: string; iid: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Server state
+  const { data: installations = [], isLoading: installationsLoading } = useBotApps(botId!);
+  const inst = installations.find((i: any) => i.id === iid) ?? null;
+  const { data: app } = useApp(inst?.app_id ?? "");
+  const { data: allBots = [] } = useBots();
+  const bot = allBots.find((b: any) => b.id === botId);
+  const botName = bot ? botDisplayName(bot) : "";
+  const loading = installationsLoading;
+
+  const refreshInstallations = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.bots.apps(botId!) });
+
+  // Local UI state
+  const [section, setSection] = useState<SectionKey>("token");
+  const [handle, setHandle] = useState("");
+  const [enabled, setEnabled] = useState(true);
+  const [enablingPending, setEnablingPending] = useState(false);
+
+  // Sync local state when inst loads
+  useEffect(() => {
+    if (inst) {
+      setHandle(inst.handle || "");
+      setEnabled(inst.enabled ?? true);
+    }
+  }, [inst?.id, inst?.handle, inst?.enabled]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-20 w-full rounded-3xl" />
+        <Skeleton className="h-64 w-full rounded-3xl" />
+      </div>
+    );
+  }
+
+  if (!inst || !app) {
+    return (
+      <div className="py-20 text-center space-y-4">
+        <p className="font-bold">未找到安装实例</p>
+        <Button variant="link" asChild>
+          <Link to={`/dashboard/accounts/${botId}`}>返回账号</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const navItems = buildNavSections(app, inst);
+
+  async function handleSaveHandle(newHandle: string) {
+    const trimmed = newHandle.trim();
+    if (trimmed === handle) return;
+    if (!trimmed) {
+      toast({ variant: "destructive", title: "Handle 不能为空" });
+      return;
+    }
+    try {
+      await api.updateInstallation(inst.app_id, inst.id, { handle: trimmed });
+      setHandle(trimmed);
+      refreshInstallations();
+      toast({ title: "Handle 已保存" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "保存失败", description: e.message });
+    }
+  }
+
+  async function handleToggleEnabled(val: boolean) {
+    if (enablingPending) return;
+    setEnablingPending(true);
+    setEnabled(val);
+    try {
+      await api.updateInstallation(inst.app_id, inst.id, { enabled: val });
+      refreshInstallations();
+    } catch (e: any) {
+      setEnabled(!val);
+      toast({ variant: "destructive", title: "保存失败", description: e.message });
+    } finally {
+      setEnablingPending(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <Link to={`/dashboard/accounts/${botId}`}>
+            <ArrowLeft className="h-4 w-4" />
+            {botName || "返回"}
+          </Link>
+        </Button>
+
+        <div className="flex items-start gap-4">
+          <AppIcon
+            icon={inst.app_icon || app.icon}
+            iconUrl={inst.app_icon_url || app.icon_url}
+            size="h-14 w-14"
+          />
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold tracking-tight">{inst.app_name || app.name}</h1>
+              <InlineHandleEditor value={handle} onSave={handleSaveHandle} />
+              {app.registry && app.registry !== "builtin" ? (
+                <Badge variant="outline" className="rounded-full font-bold">
+                  来自应用市场
+                </Badge>
+              ) : null}
+              {app.registry === "builtin" ? (
+                <Badge variant="outline" className="rounded-full font-bold">
+                  内置应用
+                </Badge>
+              ) : null}
+              {app.homepage && app.registry ? (
+                <a
+                  href={app.homepage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  应用主页
+                </a>
+              ) : null}
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={enabled}
+                  onCheckedChange={handleToggleEnabled}
+                  disabled={enablingPending}
+                  aria-label="启用状态"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {enabled ? "运行中" : "已停用"}
+                </span>
+              </div>
+            </div>
+            {app.description ? (
+              <p className="text-sm text-muted-foreground">{app.description}</p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile nav */}
+      <div className="md:hidden">
+        <select
+          value={section}
+          onChange={(e) => setSection(e.target.value as SectionKey)}
+          className="w-full h-9 px-3 rounded-md border bg-background text-sm"
+          aria-label="选择页面"
+        >
+          {navItems.map((item) => (
+            <option key={item.key} value={item.key}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Desktop: Left nav + Right content */}
+      <div className="flex gap-8">
+        <nav className="hidden md:block w-48 shrink-0 space-y-1">
+          {navItems.map((item) => (
+            <Button
+              key={item.key}
+              variant="ghost"
+              size="sm"
+              onClick={() => setSection(item.key)}
+              className={`w-full justify-start gap-2 ${
+                section === item.key
+                  ? "bg-primary/10 text-primary font-medium hover:bg-primary/10 hover:text-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              {item.label}
+            </Button>
+          ))}
+        </nav>
+
+        <div className="flex-1 min-w-0">
+          {section === "token" && <TokenSection app={app} inst={inst} />}
+          {section === "tools" &&
+            (() => {
+              const appTools = parseTools(app?.tools);
+              const instTools = parseTools(inst?.tools);
+              return (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-base font-semibold">命令 / 工具</h2>
+                    <p className="text-sm text-muted-foreground mt-1">此安装可用的命令和工具。</p>
+                  </div>
+                  {instTools.length > 0 ? (
+                    <Card className="p-5 space-y-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        自定义命令
+                      </h3>
+                      <ToolsDisplay tools={instTools} />
+                    </Card>
+                  ) : null}
+                  {appTools.length > 0 ? (
+                    <Card className="p-5 space-y-3">
+                      {instTools.length > 0 ? (
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          应用命令
+                        </h3>
+                      ) : null}
+                      <ToolsDisplay tools={appTools} />
+                    </Card>
+                  ) : null}
+                </div>
+              );
+            })()}
+          {section === "permissions" && <PermissionsSection app={app} inst={inst} />}
+          {section === "app-config" && (
+            <AppConfigForm app={app} inst={inst} onUpdate={refreshInstallations} />
+          )}
+          {section === "config" && (
+            <ConfigSection
+              inst={inst}
+              onUninstall={() => navigate(`/dashboard/accounts/${botId}`)}
+              queryClient={queryClient}
+            />
+          )}
+          {section === "event-logs" && (
+            <EventLogsSection
+              appId={inst.app_id}
+              instId={inst.id}
+              botId={botId!}
+              homepage={app.homepage}
+            />
+          )}
+          {section === "api-logs" && <ApiLogsSection appId={inst.app_id} instId={inst.id} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== Inline Handle Editor ====================
+
+function InlineHandleEditor({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Prevents Enter keydown + subsequent onBlur from both calling onSave
+  const committingRef = useRef(false);
+  // Prevents Escape-triggered onBlur from calling onSave
+  const cancelledRef = useRef(false);
+
+  useEffect(() => {
+    // Select all text when entering edit mode (autoFocus handles focus)
+    if (editing) inputRef.current?.select();
+    // Reset guards when editing state settles
+    if (!editing) {
+      committingRef.current = false;
+      cancelledRef.current = false;
+    }
+  }, [editing]);
+
+  // Keep draft in sync when external value changes (e.g. after save round-trip)
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
+
+  function startEdit() {
+    setDraft(value);
+    setEditing(true);
+  }
+
+  function commit() {
+    if (committingRef.current || cancelledRef.current) return;
+    // Keep editor open on empty input so user can correct it
+    if (!draft.trim()) {
+      return;
+    }
+    committingRef.current = true;
+    setEditing(false);
+    onSave(draft);
+  }
+
+  function cancel() {
+    cancelledRef.current = true;
+    setEditing(false);
+    setDraft(value);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") commit();
+    if (e.key === "Escape") cancel();
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <span className="text-sm text-muted-foreground font-mono">@</span>
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
+          className="h-6 min-w-[8rem] max-w-[20rem] text-sm font-mono bg-transparent border-b border-primary outline-none px-0"
+          placeholder="handle"
+          aria-label="编辑 handle"
+          autoFocus
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={startEdit}
+      className={`text-sm font-mono transition-colors cursor-text hover:text-foreground ${
+        value ? "text-muted-foreground" : "text-muted-foreground/50 italic"
+      }`}
+      title="点击编辑 handle"
+    >
+      {value ? `@${value}` : "添加 handle"}
+    </button>
+  );
+}
+
+// ==================== Token & Usage Section ====================
+
+function TokenSection({ app, inst }: { app: any; inst: any }) {
+  const [showToken, setShowToken] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
+  const token = inst.app_token || inst.token || "";
+  const hubUrl = window.location.origin;
+
+  function handleCopy(text: string) {
+    if (!navigator.clipboard?.writeText) {
+      toast({
+        variant: "destructive",
+        title: "复制失败",
+        description: "当前浏览器不支持自动复制，请手动选中复制",
+      });
+      return;
+    }
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        toast({ variant: "destructive", title: "复制失败", description: "请手动选中复制" });
+      });
+  }
+
+  const maskedToken = token ? token.slice(0, 8) + "****" + token.slice(-4) : "---";
+
+  function renderGuide(): string | null {
+    if (app.guide) {
+      return app.guide
+        .replace(/\{hub_url\}/g, hubUrl)
+        .replace(/\{your_token\}/g, token || "<your_token>");
+    }
+    return null;
+  }
+
+  const guideText = renderGuide();
+  const guideHtml = useMemo(() => {
+    if (!guideText) return "";
+    // Open links in new tab to avoid navigating away from the SPA
+    DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+      if (node.tagName === "A") {
+        node.setAttribute("target", "_blank");
+        node.setAttribute("rel", "noopener noreferrer");
+      }
+    });
+    const html = DOMPurify.sanitize(marked.parse(guideText, { async: false }));
+    DOMPurify.removeHook("afterSanitizeAttributes");
+    return html;
+  }, [guideText]);
+  const guideRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = guideRef.current;
+    if (!el) return;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    el.querySelectorAll("pre").forEach((pre) => {
+      if (pre.querySelector(".copy-btn")) return;
+      // Read code text before appending button to avoid including button label
+      const codeText = pre.querySelector("code")?.textContent || pre.textContent || "";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "copy-btn";
+      btn.textContent = "复制";
+      btn.setAttribute("aria-label", "复制代码");
+      Object.assign(btn.style, {
+        position: "absolute",
+        top: "6px",
+        right: "6px",
+        fontSize: "11px",
+        padding: "2px 8px",
+        borderRadius: "4px",
+        border: "1px solid var(--border)",
+        background: "var(--background)",
+        color: "var(--muted-foreground)",
+        cursor: "pointer",
+      });
+      btn.addEventListener("click", () => {
+        if (!navigator.clipboard?.writeText) {
+          btn.textContent = "失败";
+          toast({
+            variant: "destructive",
+            title: "复制失败",
+            description: "当前浏览器不支持自动复制，请手动选中复制",
+          });
+          timeouts.push(
+            setTimeout(() => {
+              btn.textContent = "复制";
+            }, 2000),
+          );
+          return;
+        }
+        navigator.clipboard
+          .writeText(codeText)
+          .then(() => {
+            btn.textContent = "已复制";
+            timeouts.push(
+              setTimeout(() => {
+                btn.textContent = "复制";
+              }, 2000),
+            );
+          })
+          .catch(() => {
+            btn.textContent = "失败";
+            toast({ variant: "destructive", title: "复制失败", description: "请手动选中复制" });
+            timeouts.push(
+              setTimeout(() => {
+                btn.textContent = "复制";
+              }, 2000),
+            );
+          });
+      });
+      pre.appendChild(btn);
+    });
+    return () => {
+      timeouts.forEach(clearTimeout);
+    };
+  }, [guideHtml]);
+  const showGenericGuide = !guideText && app.registry === "builtin";
+  const showUsageGuide = guideText || showGenericGuide;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base font-semibold">Token & 使用方式</h2>
+        <p className="text-sm text-muted-foreground mt-1">应用的 Token 和接入指南。</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Token</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2 p-2 rounded-md border bg-background">
+            <code className="text-xs font-mono flex-1 break-all select-all">
+              {showToken ? token : maskedToken}
+            </code>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setShowToken(!showToken)}
+              aria-label={showToken ? "隐藏" : "显示"}
+            >
+              {showToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => handleCopy(token)}
+              aria-label="复制"
+            >
+              {copied ? (
+                <Check className="w-3.5 h-3.5 text-primary" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {guideText ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>使用指南</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              ref={guideRef}
+              className={[
+                "p-3 rounded-md bg-muted/30 border overflow-x-auto text-sm text-muted-foreground leading-relaxed",
+                "[&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-2",
+                "[&_h2]:text-base [&_h2]:font-semibold [&_h2]:mb-2",
+                "[&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mb-1",
+                "[&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_li]:mb-1",
+                "[&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono",
+                "[&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded-md [&_pre]:overflow-x-auto [&_pre]:mb-2 [&_pre]:relative [&_pre_code]:p-0 [&_pre_code]:bg-transparent",
+                "[&_a]:text-primary [&_a]:underline [&_a:hover]:text-primary/80",
+                "[&_table]:w-full [&_table]:border-collapse [&_table]:mb-2",
+                "[&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_th]:text-left [&_th]:bg-muted",
+                "[&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1",
+                "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:mb-2",
+                "[&_hr]:border-border [&_hr]:my-3",
+              ].join(" ")}
+              dangerouslySetInnerHTML={{ __html: guideHtml }}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {showGenericGuide ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>接入方式</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <details className="group">
+              <summary className="text-sm font-medium cursor-pointer flex items-center gap-2 select-none">
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+                WebSocket 连接
+              </summary>
+              <pre className="mt-2 p-3 rounded-md bg-muted/30 border text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+                {`${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/bot/v1/ws?token=${token || "<your_token>"}`}
+              </pre>
+            </details>
+
+            <details className="group">
+              <summary className="text-sm font-medium cursor-pointer flex items-center gap-2 select-none">
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+                HTTP 发消息
+              </summary>
+              <pre className="mt-2 p-3 rounded-md bg-muted/30 border text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+                {`curl -X POST ${hubUrl}/bot/v1/message/send \\\n  -H "Authorization: Bearer ${token || "<your_token>"}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"content":"hello"}'`}
+              </pre>
+            </details>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {!showUsageGuide && app.webhook_url ? (
+        <Card>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">
+              事件将推送到 <code className="font-mono">{app.webhook_url}</code>
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+    </div>
+  );
+}
+
+// ==================== App Config Form (config_schema) ====================
+
+function AppConfigForm({ app, inst, onUpdate }: { app: any; inst: any; onUpdate: () => void }) {
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+
+  let parsed: any = {};
+  try {
+    parsed =
+      typeof app.config_schema === "string"
+        ? JSON.parse(app.config_schema || "{}")
+        : app.config_schema || {};
+  } catch {
+    return null;
+  }
+  const properties = parsed.properties || {};
+  if (Object.keys(properties).length === 0) return null;
+
+  let currentConfig: Record<string, string> = {};
+  try {
+    currentConfig =
+      typeof inst.config === "string" ? JSON.parse(inst.config || "{}") : inst.config || {};
+  } catch {}
+
+  const [form, setForm] = useState<Record<string, string>>(currentConfig);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await api.updateInstallation(inst.app_id, inst.id, {
+        config: form,
+      });
+      toast({ title: "配置已保存" });
+      onUpdate();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "保存失败", description: e.message });
+    }
+    setSaving(false);
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base font-semibold">应用配置</h2>
+        <p className="text-sm text-muted-foreground mt-1">配置此应用的运行参数。</p>
+      </div>
+
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          {Object.entries(properties).map(([key, prop]: [string, any]) => (
+            <div key={key} className="space-y-1.5">
+              <Label className="text-muted-foreground">{prop.title || key}</Label>
+              <Input
+                value={form[key] || ""}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                className="h-8 text-xs font-mono"
+                placeholder={prop.description || ""}
+              />
+              {prop.description ? (
+                <p className="text-xs text-muted-foreground">{prop.description}</p>
+              ) : null}
+            </div>
+          ))}
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <Button size="sm" onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+              保存配置
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ==================== Config Section ====================
+
+function ConfigSection({ inst, onUninstall, queryClient }: { inst: any; onUninstall: () => void; queryClient: QueryClient }) {
+  const { toast } = useToast();
+  const [showUninstallDialog, setShowUninstallDialog] = useState(false);
+  const [uninstalling, setUninstalling] = useState(false);
+
+  async function handleUninstall() {
+    setUninstalling(true);
+    try {
+      await api.deleteInstallation(inst.app_id, inst.id);
+      toast({ title: "已卸载" });
+      invalidateAllAppQueries(queryClient, inst.bot_id);
+      onUninstall();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "卸载失败", description: e.message });
+    } finally {
+      setUninstalling(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base font-semibold">危险操作</h2>
+        <p className="text-sm text-muted-foreground mt-1">以下操作不可撤销，请谨慎操作。</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>卸载应用</CardTitle>
+          <CardDescription>卸载后将删除此安装实例，Token 将失效，此操作不可撤销。</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" size="sm" onClick={() => setShowUninstallDialog(true)}>
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            卸载应用
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showUninstallDialog} onOpenChange={setShowUninstallDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>确认卸载</DialogTitle>
+            <DialogDescription>
+              卸载后将删除此安装实例，Token 将失效，此操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="ghost" onClick={() => setShowUninstallDialog(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={handleUninstall} disabled={uninstalling}>
+              {uninstalling && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+              确认卸载
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ==================== Event Logs Section ====================
+
+function EventLogsSection({
+  appId,
+  instId,
+  botId,
+  homepage,
+}: {
+  appId: string;
+  instId: string;
+  botId: string;
+  homepage?: string;
+}) {
+  const navigate = useNavigate();
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const loadLogs = useCallback(async () => {
+    try {
+      const data = (await api.listEventLogs(appId, instId, 50)) || [];
+      setLogs(data);
+    } catch {
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [appId, instId]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+    async function poll() {
+      await loadLogs();
+      if (!cancelled) timer = setTimeout(poll, 10000);
+    }
+    poll();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [loadLogs]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold">事件投递日志</h2>
+          <p className="text-sm text-muted-foreground mt-1">Hub 推送到此应用的事件记录。</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs gap-1"
+          onClick={() => {
+            setLoading(true);
+            loadLogs();
+          }}
+        >
+          <RefreshCw className="h-3 w-3" />
+          刷新
+        </Button>
+      </div>
+
+      {/* Show hint when logs contain 403/4xx errors */}
+      {!loading && logs.some((l) => {
+        const code = l.status_code || l.status;
+        return code >= 400 && code < 500;
+      }) && (
+        <div className="rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30 p-3 text-xs text-muted-foreground space-y-1">
+          <p className="font-medium text-orange-700 dark:text-orange-400">部分事件投递失败</p>
+          <p>如果应用来自远程市场，4xx 错误通常是远程应用服务器的配置问题。请联系应用开发者确认 Webhook 地址和权限配置是否正确。</p>
+          {homepage ? (
+            <a
+              href={homepage}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-orange-700 hover:underline dark:text-orange-400"
+            >
+              <ExternalLink className="h-3 w-3" />
+              前往应用主页
+            </a>
+          ) : null}
+        </div>
+      )}
+
+      <Card className="overflow-hidden">
+        {loading ? (
+          <div className="p-6 space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))}
+          </div>
+        ) : logs.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8 px-4">暂无事件日志</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>时间</TableHead>
+                <TableHead>事件类型</TableHead>
+                <TableHead>Trace ID</TableHead>
+                <TableHead>状态码</TableHead>
+                <TableHead>耗时</TableHead>
+                <TableHead>错误</TableHead>
+                <TableHead className="w-8" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log) => (
+                <TableRow
+                  key={log.id || log.trace_id + log.created_at}
+                  className={log.trace_id ? "cursor-pointer focus-visible:bg-muted/50" : ""}
+                  tabIndex={log.trace_id ? 0 : undefined}
+                  onClick={() =>
+                    log.trace_id && navigate(`/dashboard/accounts/${botId}/traces/${log.trace_id}`)
+                  }
+                  onKeyDown={(e) => {
+                    if (log.trace_id && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      navigate(`/dashboard/accounts/${botId}/traces/${log.trace_id}`);
+                    }
+                  }}
+                >
+                  <TableCell className="font-mono whitespace-nowrap">
+                    {formatTime(log.created_at)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-mono">
+                      {log.event_type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-muted-foreground">
+                    {log.trace_id ? log.trace_id.slice(0, 12) + "…" : "-"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={log.status_code || log.status} />
+                  </TableCell>
+                  <TableCell className="font-mono">
+                    {log.duration_ms != null ? `${log.duration_ms}ms` : "-"}
+                  </TableCell>
+                  <TableCell className="text-destructive max-w-48 truncate">
+                    {log.error || "-"}
+                  </TableCell>
+                  <TableCell className="w-8 px-2">
+                    {log.trace_id && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+// ==================== API Logs Section ====================
+
+function ApiLogsSection({ appId, instId }: { appId: string; instId: string }) {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadLogs = useCallback(async () => {
+    try {
+      const data = (await api.listApiLogs(appId, instId, 50)) || [];
+      setLogs(data);
+    } catch {
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [appId, instId]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+    async function poll() {
+      await loadLogs();
+      if (!cancelled) timer = setTimeout(poll, 10000);
+    }
+    poll();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [loadLogs]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold">API 调用日志</h2>
+          <p className="text-sm text-muted-foreground mt-1">此应用通过 Bot API 发起的调用记录。</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs gap-1"
+          onClick={() => {
+            setLoading(true);
+            loadLogs();
+          }}
+        >
+          <RefreshCw className="h-3 w-3" />
+          刷新
+        </Button>
+      </div>
+
+      <Card className="overflow-hidden">
+        {loading ? (
+          <div className="p-6 space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))}
+          </div>
+        ) : logs.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8 px-4">暂无 API 日志</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>时间</TableHead>
+                <TableHead>方法</TableHead>
+                <TableHead>路径</TableHead>
+                <TableHead>状态码</TableHead>
+                <TableHead>耗时</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log, idx) => (
+                <TableRow key={log.id || idx}>
+                  <TableCell className="font-mono whitespace-nowrap">
+                    {formatTime(log.created_at)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-mono font-bold">
+                      {log.method}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-muted-foreground max-w-64 truncate">
+                    {log.path}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={log.status_code || log.status} />
+                  </TableCell>
+                  <TableCell className="font-mono">
+                    {log.duration_ms != null ? `${log.duration_ms}ms` : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+// ==================== Permissions Section ====================
+
+function PermissionsSection({ app, inst }: { app: any; inst: any }) {
+  const scopes: string[] = inst?.scopes || [];
+  const events: string[] = app?.events || [];
+  const readScopes = scopes.filter((s: string) => s.endsWith(":read"));
+  const writeScopes = scopes.filter((s: string) => s.endsWith(":write"));
+  const otherScopes = scopes.filter((s: string) => !s.endsWith(":read") && !s.endsWith(":write"));
+
+  function eventLabelEntry(key: string): { label: string; showKey: boolean } {
+    const found = EVENT_TYPES.find((e) => e.key === key);
+    return found ? { label: found.label, showKey: true } : { label: key, showKey: false };
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base font-semibold">权限</h2>
+        <p className="text-sm text-muted-foreground mt-1">此应用所申请的权限范围。</p>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          {readScopes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                读取权限
+              </p>
+              <div className="space-y-1.5">
+                {readScopes.map((scope: string) => (
+                  <div
+                    key={scope}
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Eye className="h-3.5 w-3.5 shrink-0" />
+                    <span>{SCOPE_DESCRIPTIONS[scope] || scope}</span>
+                    <span className="font-mono text-xs ml-auto text-muted-foreground/60">
+                      {scope}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {writeScopes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                写入权限
+              </p>
+              <div className="space-y-1.5">
+                {writeScopes.map((scope: string) => (
+                  <div
+                    key={scope}
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Zap className="h-3.5 w-3.5 shrink-0" />
+                    <span>{SCOPE_DESCRIPTIONS[scope] || scope}</span>
+                    <span className="font-mono text-xs ml-auto text-muted-foreground/60">
+                      {scope}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {otherScopes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                其他权限
+              </p>
+              <div className="space-y-1.5">
+                {otherScopes.map((scope: string) => (
+                  <div
+                    key={scope}
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                    <span>{SCOPE_DESCRIPTIONS[scope] || scope}</span>
+                    <span className="font-mono text-xs ml-auto text-muted-foreground/60">
+                      {scope}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {events.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                订阅事件
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {events.map((event: string) => {
+                  const { label, showKey } = eventLabelEntry(event);
+                  return (
+                    <Badge key={event} variant="outline" className="text-xs">
+                      {label}
+                      {showKey && (
+                        <span className="font-mono text-muted-foreground/60 ml-1">· {event}</span>
+                      )}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ==================== Helpers ====================
+
+function StatusBadge({ status }: { status: number | string | undefined }) {
+  if (status == null) return <span className="text-xs text-muted-foreground">-</span>;
+  const n = typeof status === "string" ? parseInt(status, 10) : status;
+  if (isNaN(n)) return <span className="text-xs text-muted-foreground">{status}</span>;
+
+  const variant = n >= 200 && n < 300 ? "default" : n >= 400 ? "destructive" : "outline";
+  return (
+    <Badge variant={variant} className="font-mono">
+      {n}
+    </Badge>
+  );
+}
+
+function formatTime(ts: number | undefined): string {
+  if (!ts) return "-";
+  try {
+    const d = new Date(ts * 1000);
+    return d.toLocaleString("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  } catch {
+    return "-";
+  }
+}

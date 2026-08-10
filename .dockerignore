@@ -1,0 +1,50 @@
+# Git
+.git
+.gitignore
+
+# Go
+*.exe
+*.test
+*.out
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.tar.gz
+*.zip
+*.tgz
+oih
+edict-go
+oih-linux-*
+edict-go-linux-*
+
+# Data
+ceoadmin.db
+ceoadmin.db-*
+*.db-*
+data/
+
+# Logs
+*.log
+
+# Cache
+.cache/
+*.cache
+
+# Node
+node_modules/
+*.cache
+
+# Test
+*_test.go
+
+# Exclude non-essential paths but keep internal/web/dist and edict/edict/frontend/dist

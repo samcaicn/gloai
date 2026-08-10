@@ -1,0 +1,82 @@
+# edict 需求分支集成补丁（已对齐 edict origin/main，避免冲掉 main 后续改动）
+#
+# 来源“已提出的需求分支”（均从较旧的 main 分叉，故仅取其相对 main 的真实功能增量）：
+#   1) copilot/add-ai-daily-digest            -> 增加“技术博客”RSS 源 + 看板分类
+#   2) copilot/fix-code-bugs-and-optimize-performance -> 增加回归测试
+#      （注：该分支对 kanban_update.py 的 save()->trigger_refresh() 重构，
+#       当前 origin/main 已包含，故此处仅补其新增测试）
+#
+# 应用方式（在 /workspace/edict 目录内）：
+#   git apply -p1 /workspace/scripts/edict-integration.patch
+diff --git a/edict/frontend/src/components/MorningPanel.tsx b/edict/frontend/src/components/MorningPanel.tsx
+index 64b7f4d..14acd5c 100644
+--- a/edict/frontend/src/components/MorningPanel.tsx
++++ b/edict/frontend/src/components/MorningPanel.tsx
+@@ -8,9 +8,10 @@ const CAT_META: Record<string, { icon: string; color: string; desc: string }> =
+   '军事': { icon: '⚔️', color: '#ff5270', desc: '军事与冲突' },
+   '经济': { icon: '💹', color: '#2ecc8a', desc: '经济与市场' },
+   'AI大模型': { icon: '🤖', color: '#a07aff', desc: 'AI与大模型进展' },
++  '技术博客': { icon: '📝', color: '#f5a623', desc: 'HN 精选技术博客（ai-daily-digest）' },
+ };
+ 
+-const DEFAULT_CATS = ['政治', '军事', '经济', 'AI大模型'];
++const DEFAULT_CATS = ['政治', '军事', '经济', 'AI大模型', '技术博客'];
+ 
+ export default function MorningPanel() {
+   const morningBrief = useStore((s) => s.morningBrief);
+diff --git a/scripts/fetch_morning_news.py b/scripts/fetch_morning_news.py
+index 45305f6..b5579f2 100644
+--- a/scripts/fetch_morning_news.py
++++ b/scripts/fetch_morning_news.py
+@@ -36,6 +36,18 @@ FEEDS = {
+         ('VentureBeat AI', 'https://venturebeat.com/category/ai/feed/'),
+         ('MIT Tech Review', 'https://www.technologyreview.com/feed/'),
+     ],
++    # 技术博客精选：来源于 ai-daily-digest（https://github.com/vigorX777/ai-daily-digest）
++    # 收录 Karpathy 推荐的 HN 最受欢迎技术博客 RSS 源
++    '技术博客': [
++        ('Simon Willison', 'https://simonwillison.net/atom/everything/'),
++        ('Paul Graham', 'https://www.aaronsw.com/2002/feeds/pgessays.rss'),
++        ('antirez (Redis)', 'https://antirez.com/rss'),
++        ('overreacted.io', 'https://overreacted.io/rss.xml'),
++        ('Eli Bendersky', 'https://eli.thegreenplace.net/feeds/all.atom.xml'),
++        ('Krebs on Security', 'https://krebsonsecurity.com/feed/'),
++        ('Daring Fireball', 'https://daringfireball.net/feeds/main'),
++        ('Fabien Sanglard', 'https://fabiensanglard.net/rss.xml'),
++    ],
+ }
+ 
+ CATEGORY_KEYWORDS = {
+diff --git a/tests/test_kanban.py b/tests/test_kanban.py
+index 54562d1..41ee6cf 100644
+--- a/tests/test_kanban.py
++++ b/tests/test_kanban.py
+@@ -207,3 +207,28 @@ def test_progress_log_capped(tmp_path):
+         assert len(task.get("progress_log", [])) == kb.MAX_PROGRESS_LOG
+     finally:
+         kb.TASKS_FILE = original
++
++def test_state_update_does_not_reload_file_again(tmp_path, monkeypatch):
++    """state 更新后不应再次 load/save 同一文件（防止冗余重写看板）。"""
++    tasks_file = tmp_path / 'tasks_source.json'
++    tasks_file.write_text(json.dumps([
++        {'id': 'T-3', 'title': 'perf', 'state': 'Inbox'}
++    ]))
++
++    original = kb.TASKS_FILE
++    kb.TASKS_FILE = tasks_file
++    popen_calls = []
++
++    def fail_on_reload(*_args, **_kwargs):
++        raise AssertionError('unexpected reload')
++
++    monkeypatch.setattr(kb.subprocess, 'Popen', lambda *args, **kwargs: popen_calls.append((args, kwargs)))
++    monkeypatch.setattr(kb, 'atomic_json_read', fail_on_reload)
++    try:
++        kb.cmd_state('T-3', 'Doing')
++        tasks = json.loads(tasks_file.read_text())
++        assert tasks[0]['state'] == 'Doing'
++        assert len(popen_calls) == 1
++    finally:
++        kb.TASKS_FILE = original
++

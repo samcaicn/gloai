@@ -1,0 +1,23 @@
+# Dockerfile.release - works with Docker Buildx for multi-arch builds
+# Build context contains platform-specific binaries and frontend assets
+
+FROM alpine:3.21
+RUN apk add --no-cache ca-certificates
+
+ARG TARGETARCH
+
+# Copy platform-specific binary
+# Docker Buildx builds once per platform, so TARGETARCH is always set correctly
+COPY oih-linux-${TARGETARCH} /usr/local/bin/oih
+COPY edict-go-linux-${TARGETARCH} /usr/local/bin/edict-go
+
+# Copy frontend assets
+COPY internal/web/dist /usr/local/web/dist
+COPY edict/edict/frontend/dist /app/edict/edict/frontend/dist
+
+# Copy entrypoint
+COPY deploy/hub-entrypoint.sh /usr/local/bin/hub-entrypoint.sh
+RUN chmod +x /usr/local/bin/hub-entrypoint.sh
+
+EXPOSE 9800 7891
+ENTRYPOINT ["/usr/local/bin/hub-entrypoint.sh"]

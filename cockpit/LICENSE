@@ -1,0 +1,100 @@
+Copyright (c) 2026 Northstar HR Lab
+
+Team members:
+  - 鹿洪蕾 (Lu Honglei) — HR COE Lead, Project Owner
+  - 陆程 (Lu Cheng)    — Distribution HRBP
+  - 龚文熙 (Gong Wenxi)  — Talent Development Lead
+
+All rights reserved.
+
+================================================================
+Hackathon Evaluation License
+================================================================
+
+This source code, together with the accompanying documentation,
+demo data, and configuration files, is published for the sole
+purpose of evaluation and review by the judges, organizers, and
+participants of the:
+
+  "首届全球 HR 精英 AI 黑客松大赛 2026"
+  (HRflag 1st Global HR-Professional AI Hackathon 2026)
+
+================================================================
+Permitted Use
+================================================================
+
+Subject to the terms below, permission is granted to:
+
+(a) Read, audit, and reference this code and documentation for the
+    purpose of judging the hackathon entry titled "AI 转型驾驶舱
+    (AI Transformation Cockpit)".
+
+(b) Run the code locally for evaluation purposes, provided the user
+    supplies their own AI API credentials and complies with the
+    upstream provider's terms of service.
+
+================================================================
+Restrictions
+================================================================
+
+The following uses are NOT permitted without prior written consent
+from the authors:
+
+(1) Commercial use of any kind, including but not limited to
+    incorporation into a paid product, service, or platform.
+
+(2) Redistribution, in source or binary form, in whole or in part,
+    outside of the original GitHub repository.
+
+(3) Creation of derivative works, forks, or modifications intended
+    for public release.
+
+(4) Use of the included demo data — even though it has been
+    desensitized — for benchmarking, model training, or any
+    application beyond demonstrating this specific project.
+
+================================================================
+Data & Confidentiality Notice
+================================================================
+
+All business data shipped with this repository (under
+`public/data/demo/`) has been thoroughly desensitized:
+
+  - Project names → Greek letter codenames (项目 Alpha / Eta / ...)
+  - Employee identifiers → opaque IDs (E-XXX)
+  - Department identifiers → opaque codes (P-XX)
+  - Profit / revenue figures → uniformly scaled and randomly
+    perturbed; not real financial figures
+  - Compensation percentile (CR) → public-industry P50/P75 proxy
+
+The desensitized data is provided strictly to demonstrate the
+product's analytical pipeline. It MUST NOT be interpreted as real
+business performance of any company, nor reverse-engineered to
+infer underlying business metrics.
+
+================================================================
+Disclaimer of Warranty
+================================================================
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+================================================================
+Future License Upgrade
+================================================================
+
+The authors reserve the right to relicense this work under a more
+permissive open-source license (such as MIT or Apache 2.0) at a
+later date, subject to internal approval processes.
+
+For licensing inquiries beyond hackathon evaluation, contact:
+  鹿洪蕾 (Lu Honglei) — Phone: 18621631626
+
+================================================================
