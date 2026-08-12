@@ -16,6 +16,7 @@ import (
 	"github.com/ceoadmin/CEOadmin/internal/ai"
 	appdelivery "github.com/ceoadmin/CEOadmin/internal/app"
 	"github.com/ceoadmin/CEOadmin/internal/modelrank"
+	"github.com/ceoadmin/CEOadmin/internal/memory"
 	"github.com/ceoadmin/CEOadmin/internal/provider"
 	"github.com/ceoadmin/CEOadmin/internal/storage"
 	"github.com/ceoadmin/CEOadmin/internal/store"
@@ -42,6 +43,7 @@ type AISink interface {
 // back through the bot. Supports tool calling via installed App tools.
 type AI struct {
 	Store      store.Store
+	Memory     memory.Store
 	AppDisp    *appdelivery.Dispatcher
 	Storage    storage.Store
 	BotManager BotModelSyncer
@@ -72,7 +74,21 @@ func (s *AI) Handle(d Delivery) {
 			return
 		}
 	}
-	s.reply(d)
+	// Inject tenant memory context into the AI prompt.
+	if s.Memory != nil {
+		cfg := s.resolveConfig(d.AIModel)
+		memories, err := s.Memory.Retrieve(context.Background(), cfg, d.BotDBID, d.Content, 5)
+		if err == nil && len(memories) > 0 {
+			var memMessages []ai.Message
+			for _, m := range memories {
+				memMessages = append(memMessages, ai.Message{Role: "user", Content: m.Content})
+			}
+			// Prepend memories to messages.
+			s.reply(d, memMessages)
+			return
+		}
+	}
+	s.reply(d, nil)
 }
 
 func (s *AI) handleCommand(d Delivery, cmd string) {
@@ -166,7 +182,9 @@ func (s *AI) resolveConfig(botModel string) store.AIConfig {
 	return cfg
 }
 
-func (s *AI) reply(d Delivery) {
+// reply sends the AI reply.
+// mems is an optional list of memory messages to prepend to the conversation context.
+func (s *AI) reply(d Delivery, mems []ai.Message) {
 	cfg := s.resolveConfig(d.AIModel)
 	replyStart := time.Now()
 	var replyCalled, replyFailed bool
@@ -260,7 +278,8 @@ func (s *AI) reply(d Delivery) {
 	}
 
 	// Build messages for conversation context (reused across tool-call rounds)
-	messages := ai.BuildMessages(ctx, cfg, s.Store, d.Channel.ID, sender, text, currentImages, resolver)
+	// Prepend memory messages if provided.
+	messages := ai.BuildMessages(ctx, cfg, s.Store, d.Channel.ID, sender, text, currentImages, resolver, mems)
 	replyCalled = true
 	result, err := ai.CompleteMessages(ctx, cfg, messages, tools)
 	if err != nil {
@@ -445,6 +464,11 @@ func (s *AI) reply(d Delivery) {
 		MessageType: 2,
 		ItemList:    itemList,
 	})
+
+	// Extract and store new memories from this exchange (user message + AI reply).
+	if s.Memory != nil {
+		go s.extractAndStoreMemories(d, sender, result.Content)
+	}
 }
 
 // collectTools gathers all tools from enabled app installations on this bot.
@@ -801,6 +825,61 @@ func (s *AI) sendErrorNotice(d Delivery, recipient string) {
 		Text:      "⚠️ AI 回复失败，请稍后重试。",
 	}); sendErr != nil {
 		slog.Error("ai error notice send failed", "bot", d.BotDBID, "err", sendErr)
+	}
+}
+
+// extractAndStoreMemories extracts key facts from the conversation and stores them.
+func (s *AI) extractAndStoreMemories(d Delivery, sender, reply string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	userText := d.Content
+	if d.MsgType == "image" {
+		for _, item := range d.Message.Items {
+			if item.Type == "text" && item.Text != "" {
+				userText = item.Text
+				break
+			}
+		}
+	}
+	if userText == "" {
+		return
+	}
+
+	cfg := s.resolveConfig(d.AIModel)
+	prompt := "从下面的对话中提取 1~3 条关键事实/偏好/事件，仅输出 JSON 数组，每项包含 type(fact|preference|episode) 和 content。\n\n用户：" + userText + "\n助手：" + reply
+
+	messages := []ai.Message{
+		{Role: "system", Content: prompt},
+		{Role: "user", Content: "请提取。"},
+	}
+	res, err := ai.CompleteMessages(ctx, cfg, messages, nil)
+	if err != nil {
+		slog.Debug("memory extract failed", "bot", d.BotDBID, "err", err)
+		return
+	}
+	if res.Content == "" {
+		return
+	}
+
+	var items []struct {
+		Type    string `json:"type"`
+		Content string `json:"content"`
+	}
+	if err := json.Unmarshal([]byte(res.Content), &items); err != nil {
+		slog.Debug("memory extract parse failed", "bot", d.BotDBID, "err", err)
+		return
+	}
+
+	for _, item := range items {
+		if item.Content == "" {
+			continue
+		}
+		typ := item.Type
+		if typ == "" {
+			typ = "fact"
+		}
+		_, _ = s.Memory.AddMemory(d.BotDBID, typ, item.Content)
 	}
 }
 

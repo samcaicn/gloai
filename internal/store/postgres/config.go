@@ -1,6 +1,11 @@
 package postgres
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+
+	"github.com/ceoadmin/CEOadmin/internal/store"
+)
 
 func (db *DB) GetConfig(key string) (string, error) {
 	var value string
@@ -41,4 +46,15 @@ func (db *DB) ListConfigByPrefix(prefix string) (map[string]string, error) {
 		result[k] = v
 	}
 	return result, rows.Err()
+}
+
+// GetBillingConfig returns default billing configuration.
+func (db *DB) GetBillingConfig(ctx context.Context) (*store.BillingConfig, error) {
+	return &store.BillingConfig{
+		SignupBonusGarlic:  100,
+		DailyBonusGarlic:   10,
+		LLMCostPerToken:    0.001,
+		SkillCallCost:      5,
+		TaskCompleteReward: 50,
+	}, nil
 }

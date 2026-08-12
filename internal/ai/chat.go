@@ -147,12 +147,9 @@ type CompletionResult struct {
 }
 
 // Complete calls the OpenAI-compatible chat completion API.
-// It builds context from recent message history for the given sender.
-// currentImages are pre-downloaded images for the current message.
-// resolver reads image data from storage for history messages (may be nil).
-// Returns text content or tool call requests.
-func Complete(ctx context.Context, cfg store.AIConfig, s store.MessageStore, channelID, sender, text string, tools []Tool, currentImages []ImageData, resolver MediaResolver) (*CompletionResult, error) {
-	messages := BuildMessages(ctx, cfg, s, channelID, sender, text, currentImages, resolver)
+// mems (if non-nil) are prepended to the messages as user context.
+func Complete(ctx context.Context, cfg store.AIConfig, s store.MessageStore, channelID, sender, text string, tools []Tool, currentImages []ImageData, resolver MediaResolver, mems []Message) (*CompletionResult, error) {
+	messages := BuildMessages(ctx, cfg, s, channelID, sender, text, currentImages, resolver, mems)
 	return CompleteMessages(ctx, cfg, messages, tools)
 }
 
@@ -211,7 +208,8 @@ func ContinueWithToolResults(ctx context.Context, cfg store.AIConfig, messages [
 }
 
 // BuildMessages builds the conversation message list from history and the current message.
-func BuildMessages(ctx context.Context, cfg store.AIConfig, s store.MessageStore, channelID, sender, text string, currentImages []ImageData, resolver MediaResolver) []Message {
+// mems (if non-nil) are prepended to the messages as user context.
+func BuildMessages(ctx context.Context, cfg store.AIConfig, s store.MessageStore, channelID, sender, text string, currentImages []ImageData, resolver MediaResolver, mems []Message) []Message {
 	maxHistory := cfg.MaxHistory
 	if maxHistory <= 0 {
 		maxHistory = defaultMaxHistory
@@ -238,6 +236,21 @@ func BuildMessages(ctx context.Context, cfg store.AIConfig, s store.MessageStore
 			}
 			messages = append(messages, Message{Role: "assistant", Content: text})
 		}
+	}
+
+	// Prepend memory context block if any.
+	if len(mems) > 0 {
+		var sb strings.Builder
+		sb.WriteString("## 租户个性化记忆\n")
+		for _, m := range mems {
+			if text, ok := m.Content.(string); ok && text != "" {
+				sb.WriteString("- " + text + "\n")
+			}
+		}
+		// Insert as a system message after the system prompt, before history.
+		messages = append([]Message{
+			{Role: "system", Content: sb.String()},
+		}, messages...)
 	}
 
 	// Append current message (with optional images)

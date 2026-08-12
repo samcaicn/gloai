@@ -22,7 +22,7 @@ RUN npm run build
 FROM golang:1.26-alpine AS backend
 ARG GOPROXY=https://goproxy.cn,direct
 ENV GOPROXY=$GOPROXY
-# Use default Alpine repositories (often faster than mirrors in some regions)
+RUN apk add --no-cache git gcc musl-dev
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -45,3 +45,4 @@ COPY deploy/hub-entrypoint.sh /usr/local/bin/hub-entrypoint.sh
 RUN chmod +x /usr/local/bin/hub-entrypoint.sh
 EXPOSE 9800 7891
 ENTRYPOINT ["/usr/local/bin/hub-entrypoint.sh"]
+CMD ["-listen", "0.0.0.0:9800"]

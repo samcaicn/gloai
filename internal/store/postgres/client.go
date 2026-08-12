@@ -69,6 +69,15 @@ func (db *DB) GetClientByClientID(ctx context.Context, clientID string) (*store.
 	return scanClient(row)
 }
 
+// GetClient looks up a client by clientID and tenantID.
+func (db *DB) GetClient(ctx context.Context, clientID, tenantID string) (*store.Client, error) {
+	row := db.QueryRowContext(ctx, `
+		SELECT id, tenant_id, client_id, device_token, device_secret, fingerprint, client_info, capability_tags, risk_level, risk_score, status, expires_at, created_at, updated_at, last_seen_at
+		FROM clients WHERE client_id = $1 AND tenant_id = $2
+	`, clientID, tenantID)
+	return scanClient(row)
+}
+
 // GetClientByFingerprint looks up a client by fingerprint.
 func (db *DB) GetClientByFingerprint(ctx context.Context, fingerprint string) (*store.Client, error) {
 	row := db.QueryRowContext(ctx, `
@@ -76,6 +85,16 @@ func (db *DB) GetClientByFingerprint(ctx context.Context, fingerprint string) (*
 		FROM clients WHERE fingerprint = $1
 	`, fingerprint)
 	return scanClient(row)
+}
+
+// FindFingerprint is an alias for GetClientByFingerprint.
+func (db *DB) FindFingerprint(ctx context.Context, fingerprint string) (*store.Client, error) {
+	return db.GetClientByFingerprint(ctx, fingerprint)
+}
+
+// TouchHeartbeat updates the client's last_seen_at timestamp (no-op for PostgreSQL).
+func (db *DB) TouchHeartbeat(ctx context.Context, clientID, tenantID string) error {
+	return nil
 }
 
 // UpdateClient updates client fields.

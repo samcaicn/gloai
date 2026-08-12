@@ -261,6 +261,6 @@ func (d *MCPDispatcher) handleClientUnbindStatus(ctx context.Context, client *st
 	}
 }
 
-func (d *MCPDispatcher) findTenantByJoinCode(ctx context.Context, joinCode string) (*store.User, error) {
+func (d *MCPDispatcher) findTenantByJoinCode(ctx context.Context, joinCode string) (*store.Tenant, error) {
 	return d.Store.FindTenantByJoinCode(joinCode)
 }

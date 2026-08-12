@@ -59,12 +59,15 @@ type AppInstallation struct {
 	AppSlug          string `json:"app_slug,omitempty"`
 	AppIcon          string `json:"app_icon,omitempty"`
 	AppIconURL       string `json:"app_icon_url,omitempty"`
+	AppReadme        string `json:"app_readme,omitempty"`
+	AppGuide         string `json:"app_guide,omitempty"`
 	AppWebhookURL    string `json:"-"`
 	AppWebhookSecret string `json:"-"`
 	AppRegistry      string `json:"app_registry,omitempty"`
-	AppReadme        string `json:"app_readme,omitempty"`
-	AppGuide         string `json:"app_guide,omitempty"`
-	BotName          string `json:"bot_name,omitempty"`
+
+	// For MCP auth
+	TenantID string `json:"tenant_id,omitempty"`
+	ClientID string `json:"client_id,omitempty"`
 }
 
 type AppReview struct {

@@ -191,3 +191,12 @@ type SkillStore interface {
 	CreateSkillReviewLog(l *SkillReviewLog) error
 	ListSkillReviewLogs(skillID string) ([]SkillReviewLog, error)
 }
+
+// SkillListParams are the query parameters for listing skills.
+type SkillListParams struct {
+	Q         string
+	Category  string
+	Sort      string
+	Mine      bool
+	Listing   string
+}

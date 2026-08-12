@@ -13,12 +13,14 @@ import (
 	"github.com/ceoadmin/CEOadmin/internal/api/media"
 	"github.com/ceoadmin/CEOadmin/internal/api/message"
 	"github.com/ceoadmin/CEOadmin/internal/api/skill"
+	tenantapi "github.com/ceoadmin/CEOadmin/internal/api/tenant"
 	"github.com/ceoadmin/CEOadmin/internal/api/tenantchat"
 	"github.com/ceoadmin/CEOadmin/internal/api/ws"
 	"github.com/ceoadmin/CEOadmin/internal/app"
 	"github.com/ceoadmin/CEOadmin/internal/auth"
 	"github.com/ceoadmin/CEOadmin/internal/bot"
 	"github.com/ceoadmin/CEOadmin/internal/config"
+	"github.com/ceoadmin/CEOadmin/internal/mcp"
 	"github.com/ceoadmin/CEOadmin/internal/push"
 	"github.com/ceoadmin/CEOadmin/internal/registry"
 	"github.com/ceoadmin/CEOadmin/internal/relay"
@@ -364,6 +366,9 @@ func (s *Server) Handler() http.Handler {
 	// WebSocket endpoints (auth via query param, outside appTokenAuth)
 	mux.HandleFunc("GET /bot/v1/ws", botH.HandleBotAPIWebSocket)       // per-installation
 	mux.HandleFunc("GET /bot/v1/app/ws", botH.HandleAppLevelWebSocket) // per-app (all installations)
+
+	// MCP endpoint (installation app_token auth, server-side MCP capabilities)
+	mux.Handle("/api/v2/mcp", mcp.MCPHandler(s.Store))
 
 	// MCP endpoint (app_token auth, stateless streamable HTTP)
 	mux.Handle("/mcp", botH.SetupMCP())

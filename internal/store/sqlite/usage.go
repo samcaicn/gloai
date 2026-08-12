@@ -1,11 +1,33 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
 	"github.com/ceoadmin/CEOadmin/internal/store"
 )
+
+// ReportSearchSignals records a search signals report (no-op for SQLite).
+func (db *DB) ReportSearchSignals(ctx context.Context, record *store.SearchSignalsReport) error {
+	return nil
+}
+
+// ReportSkillExecution records a skill execution report (no-op for SQLite).
+func (db *DB) ReportSkillExecution(ctx context.Context, record *store.SkillExecutionReport) error {
+	return nil
+}
+
+// GetGarlicLedger returns the garlic ledger for a client.
+func (db *DB) GetGarlicLedger(ctx context.Context, clientID string) (*store.GarlicLedger, error) {
+	return &store.GarlicLedger{
+		ClientID:    clientID,
+		Balance:     0,
+		TotalEarned: 0,
+		TotalSpent:  0,
+		Entries:     []store.LedgerEntry{},
+	}, nil
+}
 
 // RecordLLMUsage appends a single LLM token-usage row.
 func (db *DB) RecordLLMUsage(r *store.LLMUsageRecord) error {

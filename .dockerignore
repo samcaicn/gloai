@@ -24,8 +24,6 @@ Thumbs.db
 *.tgz
 oih
 edict-go
-oih-linux-*
-edict-go-linux-*
 
 # Data
 ceoadmin.db

@@ -67,7 +67,7 @@ func main() {
 		}
 	}
 
-	cfg := config.Parse()
+	cfg := config.Load()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()

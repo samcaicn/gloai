@@ -1,14 +1,28 @@
 package sqlite
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/ceoadmin/CEOadmin/internal/store"
 )
+
+// GetSkillEvaluation returns a stub skill evaluation.
+func (db *DB) GetSkillEvaluation(ctx context.Context, skillID string) (*store.SkillEvaluation, error) {
+	return &store.SkillEvaluation{
+		SkillID:        skillID,
+		OverallScore:   0,
+		QualityScore:   0,
+		UsageScore:     0,
+		SampleCount:    0,
+		LastEvaluated:  0,
+	}, nil
+}
 
 // --- helpers ---
 
@@ -93,6 +107,48 @@ func (db *DB) CreateSkill(s *store.Skill) (*store.Skill, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+// CreateSkillUploadTicket creates a skill upload ticket.
+func (db *DB) CreateSkillUploadTicket(ctx context.Context, req *store.SkillUploadTicketRequest) (*store.SkillUploadTicket, error) {
+	ticket := &store.SkillUploadTicket{
+		TicketID:  uuid.New().String(),
+		UploadURL: "",
+		Method:    "PUT",
+		Headers:   map[string]string{},
+		Key:       "",
+		MaxSize:   100 * 1024 * 1024, // 100MB
+		ExpiresAt: time.Now().Add(15 * time.Minute).Unix(),
+	}
+	_, err := db.ExecContext(ctx, `INSERT INTO skill_upload_tickets
+		(id, skill_name, version, expires_at, created_at)
+		VALUES (?,?,?,?,?)`,
+		ticket.TicketID, req.SkillName, req.Version, ticket.ExpiresAt, time.Now().Unix())
+	if err != nil {
+		return nil, err
+	}
+	return ticket, nil
+}
+
+// CreateUploadTicket creates a general upload ticket for skills.
+func (db *DB) CreateUploadTicket(ctx context.Context, skillID string, ttl int) (*store.UploadTicket, error) {
+	ticket := &store.UploadTicket{
+		TicketID:  uuid.New().String(),
+		UploadURL: "",
+		Method:    "PUT",
+		Headers:   map[string]string{},
+		Key:       "",
+		MaxSize:   100 * 1024 * 1024, // 100MB
+		ExpiresAt: time.Now().Add(time.Duration(ttl) * time.Second).Unix(),
+	}
+	_, err := db.ExecContext(ctx, `INSERT INTO upload_tickets
+		(id, skill_id, expires_at, created_at)
+		VALUES (?,?,?,?)`,
+		ticket.TicketID, skillID, ticket.ExpiresAt, time.Now().Unix())
+	if err != nil {
+		return nil, err
+	}
+	return ticket, nil
 }
 
 func (db *DB) GetSkill(id string) (*store.Skill, error) {

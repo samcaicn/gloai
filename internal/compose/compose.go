@@ -24,6 +24,7 @@ import (
 	"github.com/ceoadmin/CEOadmin/internal/config"
 	"github.com/ceoadmin/CEOadmin/internal/lifecycle"
 	"github.com/ceoadmin/CEOadmin/internal/media"
+	"github.com/ceoadmin/CEOadmin/internal/memory"
 	"github.com/ceoadmin/CEOadmin/internal/push"
 	"github.com/ceoadmin/CEOadmin/internal/registry"
 	"github.com/ceoadmin/CEOadmin/internal/relay"
@@ -210,7 +211,8 @@ func Build(ctx context.Context, cfg *config.Config, version string) (*Hub, error
 
 	hub := relay.NewHub(srv.SetupUpstreamHandler())
 	appDisp := appdelivery.NewDispatcher(s)
-	aiSink := &sink.AI{Store: s, AppDisp: appDisp, Storage: objStore}
+	memDir := filepath.Join(config.DataDir(), "tenants")
+	aiSink := &sink.AI{Store: s, Memory: memory.NewFileStore(memDir), AppDisp: appDisp, Storage: objStore}
 	mgr := bot.NewManager(s, hub, aiSink, objStore, cfg.RPOrigin)
 	aiSink.BotManager = mgr
 	srv.BotManager = mgr
