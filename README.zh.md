@@ -22,11 +22,16 @@ Made by [BitFun](https://github.com/GCWing/BitFun/).
 pnpm install
 pnpm test
 pnpm typecheck
+pnpm test:smoke
 pnpm desktop:dev
 pnpm desktop:build
 ```
 
 `pnpm desktop:dev` 会在 1420 端口启动 Vite 并打开 Tauri 窗口。在欢迎页打开工作区后，宿主在该目录启动 `dsh web --host 127.0.0.1 --port 0`，并嵌入 stdout 中的回环 URL。
+
+`pnpm test:smoke` 会真实拉起 `dsh web`（PATH 上的 `dsh`，否则 `npx @deepseek-ai/dsh`），解析 `dsh web:` 回环 URL 并 GET。没有 `dsh`/`npx` 时跳过。占位 `DEEPSEEK_API_KEY` 即可绑定端口。
+
+窗口尺寸与位置会在下次启动时恢复。第二次打开应用会聚焦已有窗口。`pnpm icons` 从 `src-tauri/icons/app-icon.svg` 重新生成托盘与打包图标。
 
 ## 设置
 

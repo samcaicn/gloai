@@ -20,6 +20,7 @@ export const zh = {
   "welcome.needKey": "请先在设置中填写 DeepSeek API Key。",
   "welcome.opening": "正在打开…",
   "welcome.madeBy": "Made by BitFun",
+  "splash.loading": "正在加载…",
   "panel.workspace": "工作区",
   "panel.noWorkspace": "未选择工作区",
   "panel.runtime": "运行时",

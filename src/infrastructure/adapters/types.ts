@@ -17,6 +17,7 @@ export interface HostAdapter {
   getHarnessStatus(): Promise<HarnessStatus>;
   subscribeHarnessStatus(onStatus: (status: HarnessStatus) => void): () => void;
   subscribeHarnessLog(onLine: (line: string) => void): () => void;
+  subscribeMaximized(onChange: (maximized: boolean) => void): () => void;
   doctor(): Promise<DoctorReport>;
   minimizeWindow(): Promise<void>;
   toggleMaximizeWindow(): Promise<void>;

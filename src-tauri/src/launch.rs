@@ -213,4 +213,35 @@ mod tests {
         assert!(spec.args.starts_with(&["--yes".into(), DEFAULT_DSH_PACKAGE.into()]));
         assert!(spec.args.windows(2).any(|pair| pair == ["--host", "127.0.0.1"]));
     }
+
+    #[test]
+    fn find_in_path_locates_temp_dsh() {
+        let dir = env::temp_dir().join(format!("dsh-gui-find-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp PATH dir");
+        let dsh = dir.join("dsh");
+        std::fs::write(&dsh, "#!/bin/sh\n").expect("temp dsh file");
+        let found = find_in_path("dsh", dir.to_str().expect("utf-8 PATH dir"));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(found, Some(dsh));
+    }
+
+    #[test]
+    fn augmented_path_includes_npm_global() {
+        let Some(home) = dirs::home_dir() else {
+            return;
+        };
+        let expected = home.join(".npm-global/bin").display().to_string();
+        assert!(augmented_path().contains(&expected));
+    }
+
+    #[test]
+    fn resolves_installed_dsh_when_present() {
+        let path = augmented_path();
+        if find_in_path("dsh", &path).is_none() {
+            return;
+        }
+        let spec = resolve_launch(&AppSettings::default(), &path);
+        assert_eq!(spec.source, LaunchSource::PathDsh);
+        assert!(spec.args.windows(2).any(|pair| pair == ["--host", "127.0.0.1"]));
+    }
 }

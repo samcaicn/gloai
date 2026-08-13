@@ -63,6 +63,16 @@ export const tauriAdapter: HostAdapter = {
     };
   },
 
+  subscribeMaximized(onChange) {
+    const windowRef = getCurrentWindow();
+    const unlisten = windowRef.onResized(() => {
+      void windowRef.isMaximized().then(onChange);
+    });
+    return () => {
+      void unlisten.then((fn) => fn());
+    };
+  },
+
   doctor() {
     return invoke<DoctorReport>("doctor");
   },

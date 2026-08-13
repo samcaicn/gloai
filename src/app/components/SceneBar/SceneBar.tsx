@@ -1,6 +1,7 @@
 import { MessageSquare, Settings2, Sparkles } from "lucide-react";
 import { useI18n } from "@/infrastructure/i18n";
 import { useAppStore } from "@/app/stores/appStore";
+import { useWindowChrome } from "@/app/hooks/useWindowChrome";
 import type { SceneId } from "@/shared/types";
 import "./SceneBar.scss";
 
@@ -14,8 +15,14 @@ export function SceneBar() {
   const { t } = useI18n();
   const active = useAppStore((s) => s.activeScene);
   const setScene = useAppStore((s) => s.setScene);
+  const { onDrag, onDoubleClick } = useWindowChrome();
   return (
-    <div className="dshg-scene-bar" role="tablist">
+    <div
+      className="dshg-scene-bar"
+      role="tablist"
+      onMouseDown={onDrag}
+      onDoubleClick={onDoubleClick}
+    >
       {TABS.map((tab) => {
         const Icon = tab.icon;
         return (
@@ -32,6 +39,7 @@ export function SceneBar() {
           </button>
         );
       })}
+      <div className="dshg-scene-bar__drag" data-tauri-drag-region />
     </div>
   );
 }

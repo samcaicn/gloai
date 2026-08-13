@@ -73,6 +73,10 @@ export const webAdapter: HostAdapter = {
     return () => undefined;
   },
 
+  subscribeMaximized() {
+    return () => undefined;
+  },
+
   async doctor() {
     return {
       node: { found: false, path: null, version: null, error: "web preview" },

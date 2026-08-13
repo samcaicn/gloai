@@ -22,6 +22,7 @@ export const en: Record<MessageKey, string> = {
   "welcome.needKey": "Add a DeepSeek API Key in Settings first.",
   "welcome.opening": "Opening…",
   "welcome.madeBy": "Made by BitFun",
+  "splash.loading": "Loading…",
   "panel.workspace": "Workspace",
   "panel.noWorkspace": "No workspace",
   "panel.runtime": "Runtime",

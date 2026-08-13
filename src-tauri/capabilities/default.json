@@ -13,9 +13,12 @@
     "core:window:allow-show",
     "core:window:allow-is-maximized",
     "core:window:allow-unmaximize",
+    "core:window:allow-unminimize",
     "core:window:allow-maximize",
+    "core:window:allow-set-focus",
     "core:event:default",
     "dialog:default",
-    "opener:default"
+    "opener:default",
+    "window-state:default"
   ]
 }

@@ -22,8 +22,10 @@
     "desktop:build": "tauri build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:smoke": "DSH_GUI_SMOKE=1 vitest run src/shared/dshWeb.smoke.test.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "icons": "bash scripts/generate-icons.sh"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

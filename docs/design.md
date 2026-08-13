@@ -73,6 +73,11 @@
 
 - macOS：系统 decorations + Overlay 标题栏 + 隐藏文字标题，交通灯位置对齐 BitFun（约 12, 15）；NavBar 左侧留 78px。
 - Windows / Linux：`decorations: false`，NavBar 右侧绘制 WindowControls。
+- `acceptFirstMouse` 与窗口居中；NavBar / SceneBar 空白区 `startDragging`，弹性条带使用 `data-tauri-drag-region`；双击空白区最大化（macOS 原生拖拽条带走系统 zoom，避免连点两次）。
+- `tauri-plugin-window-state` 记住主窗口尺寸、位置、最大化与全屏；不含 VISIBLE，避免关到托盘后下次启动窗口仍隐藏。该插件最后注册。
+- `tauri-plugin-single-instance` 把第二次启动聚焦到已有窗口（unminimize + show + focus）。
+- 启动至少展示 650ms 的 BitFun 风格 Splash（FishLogo 呼吸动画）；bootstrap 超过约 1.8s 时显示“正在加载…”。
+- 托盘 tooltip 为 `DeepSeek Harness`。打包图标由 `src-tauri/icons/app-icon.svg` 经 `pnpm icons` 生成。
 
 ## 安全
 
@@ -82,9 +87,10 @@
 
 ## 测试
 
-- Rust：URL 解析、PATH 查找、启动参数解析的单元测试。
-- 前端：adapter 选择、i18n 回退、store 场景切换。
+- Rust：URL 解析、PATH 查找（含临时 `dsh` 文件）、启动参数解析的单元测试。
+- 前端：adapter 选择、i18n 回退、store 场景切换、`dsh web:` 行解析、Splash 退出时序。
 - 编译：`tsc --noEmit`、`vite build`、`cargo test`、`cargo clippy`。
+- 本地冒烟：`pnpm test:smoke` 真实拉起 `dsh web --host 127.0.0.1 --port 0`，解析回环 URL 并 GET；PATH 上没有 `dsh`/`npx` 时跳过。使用占位 `DEEPSEEK_API_KEY` 即可绑定端口（与 harness keyless web smoke 相同）。
 - 手动：`pnpm tauri dev` 打开工作区并确认 iframe 出现官方 GUI。
 
 ## 仓库关系

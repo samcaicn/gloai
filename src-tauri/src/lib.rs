@@ -9,16 +9,38 @@ use std::sync::Arc;
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, WindowEvent};
+use tauri_plugin_window_state::StateFlags;
 
 use commands::AppState;
+
+fn focus_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+fn window_state_flags() -> StateFlags {
+    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED | StateFlags::FULLSCREEN
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let state = AppState::load().unwrap_or_else(|error| AppState::fallback(&error));
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            focus_main_window(app);
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(window_state_flags())
+                .with_filter(|label| label == "main")
+                .build(),
+        )
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
@@ -44,15 +66,11 @@ pub fn run() {
                 .icon(app.default_window_icon().cloned().ok_or_else(|| {
                     std::io::Error::new(std::io::ErrorKind::NotFound, "missing tray icon")
                 })?)
+                .tooltip("DeepSeek Harness")
                 .menu(&menu)
                 .show_menu_on_left_click(true)
                 .on_menu_event(move |app, event| match event.id().as_ref() {
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
+                    "show" => focus_main_window(app),
                     "quit" => {
                         quitting_for_menu.store(true, Ordering::SeqCst);
                         let app = app.clone();

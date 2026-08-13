@@ -22,11 +22,16 @@ Design: [docs/design.md](docs/design.md).
 pnpm install
 pnpm test
 pnpm typecheck
+pnpm test:smoke
 pnpm desktop:dev
 pnpm desktop:build
 ```
 
 `pnpm desktop:dev` starts Vite on port 1420 and the Tauri window. Open a workspace from the welcome scene; the host starts `dsh web --host 127.0.0.1 --port 0` in that directory and embeds the printed loopback URL.
+
+`pnpm test:smoke` spawns a real `dsh web` (PATH `dsh`, else `npx @deepseek-ai/dsh`) on loopback, waits for the `dsh web:` URL, and GETs it. It skips if neither launcher exists. A placeholder `DEEPSEEK_API_KEY` is enough to bind the port.
+
+Window size and position are restored across launches. A second process focuses the existing window. `pnpm icons` regenerates tray and bundle icons from `src-tauri/icons/app-icon.svg`.
 
 ## Settings
 
