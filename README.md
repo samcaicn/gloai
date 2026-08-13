@@ -1,5 +1,7 @@
 # DeepSeek Harness Plugin MCP
 
+Made by [BitFun](https://github.com/GCWing/BitFun/).
+
 MCP server that lets **any agent** discover, inspect, install, and run [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugins.
 
 Catalog source: [github.com/topics/dsh-plugin](https://github.com/topics/dsh-plugin).

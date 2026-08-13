@@ -1,5 +1,7 @@
 # DeepSeek Harness Plugin MCP
 
+Made by [BitFun](https://github.com/GCWing/BitFun/)。
+
 让**任意 agent** 通过 MCP 发现、检视、安装并运行 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 插件的服务器。
 
 目录来源：[github.com/topics/dsh-plugin](https://github.com/topics/dsh-plugin)。
