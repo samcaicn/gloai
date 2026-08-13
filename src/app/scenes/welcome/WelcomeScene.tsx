@@ -81,6 +81,14 @@ export function WelcomeScene() {
             </ul>
           )}
         </section>
+        <p className="dshg-welcome__credit">
+          <button
+            type="button"
+            onClick={() => void host.openExternal("https://github.com/GCWing/BitFun/")}
+          >
+            {t("welcome.madeBy")}
+          </button>
+        </p>
       </div>
     </div>
   );

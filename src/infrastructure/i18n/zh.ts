@@ -19,6 +19,7 @@ export const zh = {
   "welcome.empty": "还没有最近工作区。打开一个本地目录作为 Workspace。",
   "welcome.needKey": "请先在设置中填写 DeepSeek API Key。",
   "welcome.opening": "正在打开…",
+  "welcome.madeBy": "Made by BitFun",
   "panel.workspace": "工作区",
   "panel.noWorkspace": "未选择工作区",
   "panel.runtime": "运行时",

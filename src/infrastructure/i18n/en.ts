@@ -21,6 +21,7 @@ export const en: Record<MessageKey, string> = {
   "welcome.empty": "No recent workspaces yet. Open a local directory as the Workspace.",
   "welcome.needKey": "Add a DeepSeek API Key in Settings first.",
   "welcome.opening": "Opening…",
+  "welcome.madeBy": "Made by BitFun",
   "panel.workspace": "Workspace",
   "panel.noWorkspace": "No workspace",
   "panel.runtime": "Runtime",

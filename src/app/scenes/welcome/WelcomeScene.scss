@@ -122,4 +122,22 @@
       background: var(--dshg-element-soft);
     }
   }
+
+  &__credit {
+    margin: 0;
+    text-align: left;
+
+    button {
+      border: none;
+      background: transparent;
+      color: var(--dshg-text-muted);
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+
+      &:hover {
+        color: var(--dshg-accent);
+      }
+    }
+  }
 }

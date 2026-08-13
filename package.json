@@ -5,6 +5,11 @@
   "type": "module",
   "description": "Tauri desktop shell for DeepSeek Harness (dsh web)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bobleer/deepseek-harness-gui.git"
+  },
+  "homepage": "https://github.com/bobleer/deepseek-harness-gui",
   "engines": {
     "node": ">=22.12.0"
   },
