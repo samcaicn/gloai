@@ -1,0 +1,11 @@
+# DSH bundle patch: mount this package as an MCP server inside a live Harness.
+- insert:
+    - id: dsh-plugin-mcp
+      name: deepseek-harness-plugin-mcp
+      config:
+        host: 127.0.0.1
+        port: !!js Number(process.env.DSH_PLUGIN_MCP_PORT ?? 8765)
+        catalog: !!js process.env.DSH_PLUGIN_MCP_CATALOG !== '0'
+        bridgeTools: true
+        allowInstall: false
+        allowRuntime: false
