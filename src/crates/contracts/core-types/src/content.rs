@@ -116,7 +116,9 @@ pub fn flatten_text(blocks: &[ContentBlock]) -> String {
 }
 
 pub fn content_has_image(blocks: &[ContentBlock]) -> bool {
-    blocks.iter().any(|block| matches!(block, ContentBlock::Image(_)))
+    blocks
+        .iter()
+        .any(|block| matches!(block, ContentBlock::Image(_)))
 }
 
 #[cfg(test)]

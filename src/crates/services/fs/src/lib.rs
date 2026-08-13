@@ -107,7 +107,9 @@ impl FsPort for LocalFs {
         if matches > 1 && !replace_all {
             return Err(PortError::new(
                 PortErrorKind::InvalidRequest,
-                format!("old_string matched {matches} times; pass replace_all to replace every match"),
+                format!(
+                    "old_string matched {matches} times; pass replace_all to replace every match"
+                ),
             ));
         }
         let updated = if replace_all {
@@ -132,15 +134,17 @@ impl FsPort for LocalFs {
             .git_ignore(false)
             .build();
         for entry in walker {
-            let entry = entry.map_err(|error| {
-                PortError::new(PortErrorKind::Backend, error.to_string())
-            })?;
+            let entry =
+                entry.map_err(|error| PortError::new(PortErrorKind::Backend, error.to_string()))?;
             if !entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
                 continue;
             }
             let path = entry.path();
             let relative = path.strip_prefix(&root).unwrap_or(path);
-            let basename = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+            let basename = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or_default();
             let rel_str = relative.to_string_lossy();
             let matched = if pattern.contains('/') {
                 matcher.is_match(rel_str.as_ref())
@@ -151,11 +155,7 @@ impl FsPort for LocalFs {
                 paths.push(path.to_path_buf());
             }
         }
-        paths.sort_by_key(|path| {
-            std::fs::metadata(path)
-                .and_then(|m| m.modified())
-                .ok()
-        });
+        paths.sort_by_key(|path| std::fs::metadata(path).and_then(|m| m.modified()).ok());
         paths.reverse();
         Ok(paths)
     }
@@ -166,25 +166,30 @@ impl FsPort for LocalFs {
         search_path: Option<&Path>,
         include: Option<&str>,
     ) -> PortResult<Vec<GrepMatch>> {
-        let regex = Regex::new(pattern).map_err(|error| {
-            PortError::new(PortErrorKind::InvalidRequest, error.to_string())
-        })?;
+        let regex = Regex::new(pattern)
+            .map_err(|error| PortError::new(PortErrorKind::InvalidRequest, error.to_string()))?;
         let include_glob = include.map(glob_for).transpose()?;
         let root = search_path.unwrap_or(&self.root).to_path_buf();
         if root.is_file() {
             return grep_file(&regex, &root).await;
         }
         let mut matches = Vec::new();
-        for entry in WalkBuilder::new(&root).hidden(false).git_ignore(false).build() {
-            let entry = entry.map_err(|error| {
-                PortError::new(PortErrorKind::Backend, error.to_string())
-            })?;
+        for entry in WalkBuilder::new(&root)
+            .hidden(false)
+            .git_ignore(false)
+            .build()
+        {
+            let entry =
+                entry.map_err(|error| PortError::new(PortErrorKind::Backend, error.to_string()))?;
             if !entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
                 continue;
             }
             let path = entry.path();
             if let Some(glob) = &include_glob {
-                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+                let name = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or_default();
                 if !glob.compile_matcher().is_match(name) {
                     continue;
                 }
@@ -242,7 +247,11 @@ fn normalize(path: &Path) -> PathBuf {
     out
 }
 
-pub fn install(registry: &ToolRegistry, prompt: &SystemPrompt, fs: Arc<dyn FsPort>) -> Vec<Disposer> {
+pub fn install(
+    registry: &ToolRegistry,
+    prompt: &SystemPrompt,
+    fs: Arc<dyn FsPort>,
+) -> Vec<Disposer> {
     install_fs_tools(registry, prompt, fs)
 }
 

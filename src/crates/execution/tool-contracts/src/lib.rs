@@ -170,7 +170,10 @@ pub fn validate_args(schema: JsonValue, value: &JsonValue) -> Result<(), String>
     Ok(())
 }
 
-pub fn object_schema(properties: serde_json::Map<String, JsonValue>, required: &[&str]) -> JsonValue {
+pub fn object_schema(
+    properties: serde_json::Map<String, JsonValue>,
+    required: &[&str],
+) -> JsonValue {
     json!({
         "type": "object",
         "additionalProperties": false,
@@ -195,14 +198,14 @@ mod tests {
         }
         fn parameters(&self) -> JsonValue {
             object_schema(
-                serde_json::Map::from_iter([(
-                    "text".into(),
-                    json!({"type": "string"}),
-                )]),
+                serde_json::Map::from_iter([("text".into(), json!({"type": "string"}))]),
                 &["text"],
             )
         }
-        async fn execute(&self, input: ToolExecutionInput) -> Result<ToolExecutionResult, ToolError> {
+        async fn execute(
+            &self,
+            input: ToolExecutionInput,
+        ) -> Result<ToolExecutionResult, ToolError> {
             let text = input.arguments["text"].as_str().unwrap_or_default();
             Ok(ToolExecutionResult::text(text.to_string()))
         }

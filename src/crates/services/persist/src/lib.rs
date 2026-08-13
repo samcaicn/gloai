@@ -17,8 +17,12 @@ impl JsonlPersist {
         Self { root: root.into() }
     }
 
-    fn path_for(&self, id: &SessionId) -> PathBuf {
+    pub fn path_for(&self, id: &SessionId) -> PathBuf {
         self.root.join(format!("{id}.jsonl"))
+    }
+
+    pub fn root(&self) -> &Path {
+        &self.root
     }
 
     pub async fn save_session(&self, session: &Session) -> PortResult<()> {
@@ -32,9 +36,9 @@ impl JsonlPersist {
 #[async_trait]
 impl SessionPersistPort for JsonlPersist {
     async fn save(&self, header: &SessionHeader, events_jsonl: &str) -> PortResult<()> {
-        tokio::fs::create_dir_all(&self.root).await.map_err(|error| {
-            PortError::new(PortErrorKind::Backend, error.to_string())
-        })?;
+        tokio::fs::create_dir_all(&self.root)
+            .await
+            .map_err(|error| PortError::new(PortErrorKind::Backend, error.to_string()))?;
         // The payload already includes the header as its first line.
         let body = if events_jsonl.starts_with('{') {
             events_jsonl.to_string()
@@ -47,9 +51,9 @@ impl SessionPersistPort for JsonlPersist {
             )
         };
         let tmp = self.path_for(&header.id).with_extension("jsonl.tmp");
-        tokio::fs::write(&tmp, body).await.map_err(|error| {
-            PortError::new(PortErrorKind::Backend, error.to_string())
-        })?;
+        tokio::fs::write(&tmp, body)
+            .await
+            .map_err(|error| PortError::new(PortErrorKind::Backend, error.to_string()))?;
         tokio::fs::rename(&tmp, self.path_for(&header.id))
             .await
             .map_err(|error| PortError::new(PortErrorKind::Backend, error.to_string()))?;

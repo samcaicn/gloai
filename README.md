@@ -8,11 +8,9 @@ Rust implementation of [DeepSeek Harness](https://github.com/deepseek-ai/deepsee
 
 This is not a Cordis port. Composition is Cargo features plus an assembly crate. Live extension uses typed events and waterfalls. Concrete OS and provider behavior stays behind ports.
 
-Assembly, the `dsh` CLI, and ACP stdio are next. This tree currently ships contracts, execution, services, and adapters.
-
 ## Requirements
 
-- Rust 1.85+
+- Rust 1.88+
 - A DeepSeek API key for live runs (`DEEPSEEK_API_KEY`)
 
 ## Quick start

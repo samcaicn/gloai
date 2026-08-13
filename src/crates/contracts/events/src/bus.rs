@@ -11,12 +11,13 @@ use tracing::error;
 pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
 
 /// Dropping the disposer unregisters the listener.
+#[must_use = "dropping this disposer unregisters the contribution"]
 pub struct Disposer {
-    unreg: Option<Box<dyn FnOnce() + Send>>,
+    unreg: Option<Box<dyn FnOnce() + Send + Sync>>,
 }
 
 impl Disposer {
-    pub fn new(unreg: impl FnOnce() + Send + 'static) -> Self {
+    pub fn new(unreg: impl FnOnce() + Send + Sync + 'static) -> Self {
         Self {
             unreg: Some(Box::new(unreg)),
         }
@@ -81,7 +82,7 @@ pub enum BusEvent {
         session_id: dsh_core_types::SessionId,
     },
     SessionEvent {
-        event: crate::SessionEvent,
+        event: Box<crate::SessionEvent>,
     },
     AgentStatus {
         status: AgentStatus,
@@ -184,10 +185,16 @@ impl EventBus {
     }
 
     pub async fn emit(&self, event: BusEvent) {
-        let handlers: Vec<_> = self.emit.read().iter().map(|s| Arc::clone(&s.handler)).collect();
+        let handlers: Vec<_> = self
+            .emit
+            .read()
+            .iter()
+            .map(|s| Arc::clone(&s.handler))
+            .collect();
         for handler in handlers {
             let fut = handler(event.clone());
-            if let Err(error) = futures::FutureExt::catch_unwind(std::panic::AssertUnwindSafe(fut)).await
+            if let Err(error) =
+                futures::FutureExt::catch_unwind(std::panic::AssertUnwindSafe(fut)).await
             {
                 error!("emit listener panicked: {error:?}");
             }
@@ -241,7 +248,12 @@ where
     Fut: Future<Output = T> + Send + 'static,
 {
     let wrapped: WaterfallHandler<T> = Arc::new(move |value, next_fn| {
-        Box::pin(handler(value, Next { inner: Some(next_fn) }))
+        Box::pin(handler(
+            value,
+            Next {
+                inner: Some(next_fn),
+            },
+        ))
     });
     list.write().push(Slot {
         id,

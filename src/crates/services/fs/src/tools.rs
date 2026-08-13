@@ -19,8 +19,7 @@ pub fn install_fs_tools(
     prompt: &SystemPrompt,
     fs: Arc<dyn FsPort>,
 ) -> Vec<Disposer> {
-    let mut disposers = Vec::new();
-    disposers.push(
+    vec![
         prompt
             .section(PromptSection {
                 name: "tool:read".into(),
@@ -29,23 +28,29 @@ pub fn install_fs_tools(
                 complete: false,
             })
             .expect("tool:read"),
-    );
-    disposers.push(
         prompt
             .section(PromptSection {
                 name: "tool:glob".into(),
                 order: 103,
-                text: "Use the glob tool — not shell find — to discover files by path pattern.".into(),
+                text: "Use the glob tool — not shell find — to discover files by path pattern."
+                    .into(),
                 complete: false,
             })
             .expect("tool:glob"),
-    );
-    disposers.push(registry.register(Arc::new(ReadTool { fs: Arc::clone(&fs) })));
-    disposers.push(registry.register(Arc::new(WriteTool { fs: Arc::clone(&fs) })));
-    disposers.push(registry.register(Arc::new(EditTool { fs: Arc::clone(&fs) })));
-    disposers.push(registry.register(Arc::new(GlobTool { fs: Arc::clone(&fs) })));
-    disposers.push(registry.register(Arc::new(GrepTool { fs })));
-    disposers
+        registry.register(Arc::new(ReadTool {
+            fs: Arc::clone(&fs),
+        })),
+        registry.register(Arc::new(WriteTool {
+            fs: Arc::clone(&fs),
+        })),
+        registry.register(Arc::new(EditTool {
+            fs: Arc::clone(&fs),
+        })),
+        registry.register(Arc::new(GlobTool {
+            fs: Arc::clone(&fs),
+        })),
+        registry.register(Arc::new(GrepTool { fs })),
+    ]
 }
 
 struct ReadTool {

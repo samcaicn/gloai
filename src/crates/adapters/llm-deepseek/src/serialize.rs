@@ -229,11 +229,8 @@ mod tests {
     #[test]
     fn tool_result_becomes_role_tool() {
         let user = human_text("hi");
-        let result = create_tool_result_message(
-            CallId::new("c1"),
-            vec![ContentBlock::text("ok")],
-            false,
-        );
+        let result =
+            create_tool_result_message(CallId::new("c1"), vec![ContentBlock::text("ok")], false);
         let wire = serialize_messages(&[user, result]).unwrap();
         assert!(matches!(wire[0], WireMessage::User { .. }));
         assert!(matches!(wire[1], WireMessage::Tool { .. }));

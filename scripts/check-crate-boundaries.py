@@ -16,7 +16,7 @@ LAYERS: dict[str, int] = {
     "assembly": 2,
     "interfaces": 1,
     "apps": 1,
-    "support": 5,
+    "support": 2,
 }
 
 CRATE_LAYER: dict[str, int] = {}
@@ -40,11 +40,13 @@ def layer_of(manifest: Path) -> int:
     raise SystemExit(f"unlayered manifest: {rel}")
 
 
-def parse_path_deps(manifest: Path) -> list[str]:
+def parse_dsh_deps(manifest: Path) -> list[str]:
     names: list[str] = []
     for line in manifest.read_text().splitlines():
         stripped = line.strip()
-        if "path =" not in stripped or not stripped.startswith("dsh-"):
+        if stripped.startswith("#") or not stripped.startswith("dsh-"):
+            continue
+        if "workspace = true" not in stripped and "path =" not in stripped:
             continue
         names.append(stripped.split("=", 1)[0].strip())
     return names
@@ -61,7 +63,7 @@ def main() -> int:
     for manifest in manifests:
         here = crate_name(manifest)
         here_rank = CRATE_LAYER[here]
-        for dep in parse_path_deps(manifest):
+        for dep in parse_dsh_deps(manifest):
             there = CRATE_LAYER.get(dep)
             if there is None:
                 errors.append(f"{here} depends on unknown workspace crate {dep}")

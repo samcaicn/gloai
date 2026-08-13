@@ -32,4 +32,14 @@ tracing = { workspace = true }
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 serde_json = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time", "sync"] }
+async-trait = { workspace = true }
+async-stream = { workspace = true }
+parking_lot = { workspace = true }
+dsh-tool-contracts = { workspace = true }
+dsh-system-prompt = { workspace = true }
+dsh-session = { workspace = true }
+dsh-events = { workspace = true }
+dsh-core-types = { workspace = true }
+dsh-runtime-ports = { workspace = true }
+dsh-agent-runtime = { workspace = true }

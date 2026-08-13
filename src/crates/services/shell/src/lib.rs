@@ -1,5 +1,6 @@
 //! Bash capability: executor over `SubprocessPort` and the `bash` tool.
 
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -42,12 +43,53 @@ impl ShellPort for LocalShell {
 
 pub struct BashTool {
     shell: Arc<dyn ShellPort>,
+    workspace: PathBuf,
 }
 
 impl BashTool {
-    pub fn new(shell: Arc<dyn ShellPort>) -> Self {
-        Self { shell }
+    pub fn new(shell: Arc<dyn ShellPort>, workspace: impl Into<PathBuf>) -> Self {
+        Self {
+            shell,
+            workspace: workspace.into(),
+        }
     }
+}
+
+fn normalize(path: &Path) -> PathBuf {
+    let mut out = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::ParentDir => {
+                let _ = out.pop();
+            }
+            std::path::Component::CurDir => {}
+            other => out.push(other.as_os_str()),
+        }
+    }
+    out
+}
+
+fn resolve_workdir(workspace: &Path, requested: Option<&str>) -> Result<PathBuf, ToolError> {
+    let candidate = match requested {
+        None => workspace.to_path_buf(),
+        Some(path) => {
+            let path = PathBuf::from(path);
+            if path.is_absolute() {
+                path
+            } else {
+                workspace.join(path)
+            }
+        }
+    };
+    let normalized = normalize(&candidate);
+    let root = normalize(workspace);
+    if !normalized.starts_with(&root) {
+        return Err(ToolError::InvalidArgs {
+            name: "bash".into(),
+            message: "workdir is outside the session workspace".into(),
+        });
+    }
+    Ok(normalized)
 }
 
 #[async_trait]
@@ -87,13 +129,8 @@ impl ToolHandler for BashTool {
             .get("timeoutMs")
             .and_then(JsonValue::as_u64)
             .unwrap_or(DEFAULT_TIMEOUT_MS);
-        let workdir = input
-            .arguments
-            .get("workdir")
-            .and_then(JsonValue::as_str)
-            .map(std::path::PathBuf::from)
-            .unwrap_or_else(std::env::current_dir)
-            .unwrap_or_else(|_| std::path::PathBuf::from("."));
+        let requested = input.arguments.get("workdir").and_then(JsonValue::as_str);
+        let workdir = resolve_workdir(&self.workspace, requested)?;
         let result = self
             .shell
             .exec(ShellRequest {
@@ -123,7 +160,12 @@ impl ToolHandler for BashTool {
     }
 }
 
-pub fn install(registry: &ToolRegistry, prompt: &SystemPrompt, shell: Arc<dyn ShellPort>) -> Vec<Disposer> {
+pub fn install(
+    registry: &ToolRegistry,
+    prompt: &SystemPrompt,
+    shell: Arc<dyn ShellPort>,
+    workspace: PathBuf,
+) -> Vec<Disposer> {
     let section = prompt
         .section(PromptSection {
             name: "tool:bash".into(),
@@ -132,7 +174,10 @@ pub fn install(registry: &ToolRegistry, prompt: &SystemPrompt, shell: Arc<dyn Sh
             complete: false,
         })
         .expect("tool:bash section");
-    vec![section, registry.register(Arc::new(BashTool::new(shell)))]
+    vec![
+        section,
+        registry.register(Arc::new(BashTool::new(shell, workspace))),
+    ]
 }
 
 #[cfg(test)]
@@ -142,23 +187,52 @@ mod tests {
     use dsh_subprocess::LocalSubprocess;
 
     #[tokio::test]
-    async fn bash_echo() {
+    async fn bash_echo_uses_workspace_cwd() {
+        let dir = tempfile::tempdir().unwrap();
         let shell = Arc::new(LocalShell::new(Arc::new(LocalSubprocess)));
-        let tool = BashTool::new(shell);
+        let tool = BashTool::new(shell, dir.path());
         let result = tool
             .execute(ToolExecutionInput {
                 call_id: CallId::new("c"),
                 name: "bash".into(),
                 arguments: json!({
-                    "command": "echo hello-shell",
-                    "description": "Echo a marker"
+                    "command": "pwd",
+                    "description": "Print workspace"
                 }),
             })
             .await
             .unwrap();
         assert!(!result.is_error);
         let text = dsh_core_types::flatten_text(&result.content);
-        assert!(text.contains("hello-shell"));
+        assert!(
+            text.contains(
+                &dir.path()
+                    .canonicalize()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned()
+            ) || text.contains(&dir.path().to_string_lossy().into_owned())
+        );
         assert!(text.contains("[exit code: 0]"));
+    }
+
+    #[tokio::test]
+    async fn rejects_workdir_escape() {
+        let dir = tempfile::tempdir().unwrap();
+        let shell = Arc::new(LocalShell::new(Arc::new(LocalSubprocess)));
+        let tool = BashTool::new(shell, dir.path());
+        let err = tool
+            .execute(ToolExecutionInput {
+                call_id: CallId::new("c"),
+                name: "bash".into(),
+                arguments: json!({
+                    "command": "pwd",
+                    "description": "Escape",
+                    "workdir": "../"
+                }),
+            })
+            .await
+            .unwrap_err();
+        assert!(err.to_string().contains("outside"));
     }
 }

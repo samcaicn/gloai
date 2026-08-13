@@ -108,7 +108,8 @@ mod tests {
 
     #[test]
     fn tool_result_rides_in_a_user_role_message() {
-        let msg = create_tool_result_message(CallId::new("c1"), vec![ContentBlock::text("ok")], false);
+        let msg =
+            create_tool_result_message(CallId::new("c1"), vec![ContentBlock::text("ok")], false);
         assert_eq!(msg.role, MessageRole::User);
         assert!(matches!(msg.source, MessageSource::Tool { .. }));
         assert_eq!(msg.content.len(), 1);

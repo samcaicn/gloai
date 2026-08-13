@@ -2,12 +2,11 @@
 
 use dsh_core_types::Message;
 use dsh_events::{SessionEvent, SessionEventBody, SurfaceOp};
-use thiserror::Error;
 
 use crate::SessionError;
 
 #[derive(Clone, Debug, Default)]
-pub struct SurfaceState {
+pub(crate) struct SurfaceState {
     pub nodes: Vec<u64>,
     pub replace_generation: u64,
 }
@@ -44,7 +43,7 @@ pub fn fold_surface(events: &[SessionEvent]) -> Result<SurfaceFoldResult, Sessio
     })
 }
 
-pub fn apply(state: &mut SurfaceState, event: &SessionEvent) -> Result<(), SessionError> {
+pub(crate) fn apply(state: &mut SurfaceState, event: &SessionEvent) -> Result<(), SessionError> {
     if !event.is_surface_eligible() {
         return Ok(());
     }
@@ -74,7 +73,3 @@ pub fn apply(state: &mut SurfaceState, event: &SessionEvent) -> Result<(), Sessi
         None => Err(SessionError::SurfaceIntent(event.event_type())),
     }
 }
-
-#[derive(Debug, Error)]
-#[error("surface fold failed")]
-pub struct SurfaceFoldError;

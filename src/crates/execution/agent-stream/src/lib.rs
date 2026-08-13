@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 
 use dsh_core_types::{
-    CallId, ContentBlock, ContentBlockType, FinishReason, Message, StreamChunk, TokenUsage,
-    create_assistant_message, AssistantProvenance,
+    create_assistant_message, AssistantProvenance, CallId, ContentBlock, ContentBlockType,
+    FinishReason, Message, StreamChunk, TokenUsage,
 };
 
 struct PartialBlock {

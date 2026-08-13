@@ -5,8 +5,8 @@ use std::sync::Arc;
 use chrono::Utc;
 use dsh_core_types::{json::is_json_value, Message, SessionId};
 use dsh_events::{
-    EpochHeader, RequestContext, RequestHeaderReason, SessionEvent, SessionEventBody, SessionHeader,
-    SurfaceOp, SESSION_FORMAT_VERSION,
+    EpochHeader, RequestContext, RequestHeaderReason, SessionEvent, SessionEventBody,
+    SessionHeader, SurfaceOp, SESSION_FORMAT_VERSION,
 };
 use parking_lot::RwLock;
 use thiserror::Error;
@@ -62,7 +62,10 @@ impl Session {
         }))
     }
 
-    pub fn restore(header: SessionHeader, events: Vec<SessionEvent>) -> Result<Arc<Self>, SessionError> {
+    pub fn restore(
+        header: SessionHeader,
+        events: Vec<SessionEvent>,
+    ) -> Result<Arc<Self>, SessionError> {
         if header.version != SESSION_FORMAT_VERSION {
             return Err(SessionError::UnsupportedVersion {
                 found: header.version,
@@ -149,24 +152,36 @@ impl Session {
     }
 
     pub fn request_header(&self) -> Option<EpochHeader> {
-        self.log.read().iter().rev().find_map(|event| match &event.body {
-            SessionEventBody::RequestHeader { header, .. } => Some(header.clone()),
-            _ => None,
-        })
+        self.log
+            .read()
+            .iter()
+            .rev()
+            .find_map(|event| match &event.body {
+                SessionEventBody::RequestHeader { header, .. } => Some(header.clone()),
+                _ => None,
+            })
     }
 
     pub fn request_header_reason(&self) -> Option<RequestHeaderReason> {
-        self.log.read().iter().rev().find_map(|event| match &event.body {
-            SessionEventBody::RequestHeader { reason, .. } => Some(*reason),
-            _ => None,
-        })
+        self.log
+            .read()
+            .iter()
+            .rev()
+            .find_map(|event| match &event.body {
+                SessionEventBody::RequestHeader { reason, .. } => Some(*reason),
+                _ => None,
+            })
     }
 
     pub fn request_context(&self) -> Option<RequestContext> {
-        self.log.read().iter().rev().find_map(|event| match &event.body {
-            SessionEventBody::RequestContext(ctx) => Some(ctx.clone()),
-            _ => None,
-        })
+        self.log
+            .read()
+            .iter()
+            .rev()
+            .find_map(|event| match &event.body {
+                SessionEventBody::RequestContext(ctx) => Some(ctx.clone()),
+                _ => None,
+            })
     }
 
     pub fn last_turn(&self) -> u32 {
@@ -195,7 +210,7 @@ impl Session {
 
     pub fn from_jsonl(text: &str) -> Result<Arc<Self>, SessionError> {
         let mut lines = text.lines().filter(|l| !l.trim().is_empty());
-        let header_line = lines.next().ok_or_else(|| SessionError::NotJson)?;
+        let header_line = lines.next().ok_or(SessionError::NotJson)?;
         let header: SessionHeader =
             serde_json::from_str(header_line).map_err(|_| SessionError::NotJson)?;
         let mut events = Vec::new();
@@ -260,7 +275,10 @@ mod tests {
     fn rejects_wrong_version() {
         let mut h = header();
         h.version = 9;
-        let err = Session::create(h).unwrap_err();
+        let err = match Session::create(h) {
+            Err(error) => error,
+            Ok(_) => panic!("expected unsupported version"),
+        };
         assert!(matches!(err, SessionError::UnsupportedVersion { found: 9 }));
     }
 
@@ -268,11 +286,7 @@ mod tests {
     fn derive_messages_follows_surface_append() {
         let session = Session::create(header()).unwrap();
         session
-            .append(
-                SessionEventBody::TurnStart { turn: 1 },
-                None,
-                None,
-            )
+            .append(SessionEventBody::TurnStart { turn: 1 }, None, None)
             .unwrap();
         session
             .append(

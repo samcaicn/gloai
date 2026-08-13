@@ -7,7 +7,9 @@ pub mod json;
 pub mod llm;
 pub mod message;
 
-pub use brand::{CallId, CredentialRef, MessageId, ProviderRequestId, ReasoningEffortId, SessionId};
+pub use brand::{
+    CallId, CredentialRef, MessageId, ProviderRequestId, ReasoningEffortId, SessionId,
+};
 pub use content::{
     content_has_image, flatten_text, ContentBlock, ContentBlockType, ImageBlock, ReasoningBlock,
     TextBlock, ToolCallBlock, ToolResultBlock,

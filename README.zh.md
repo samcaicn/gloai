@@ -8,11 +8,9 @@ Made by [BitFun](https://github.com/GCWing/BitFun/).
 
 这不是 Cordis 移植。组装由 Cargo feature 与 assembly crate 完成；运行时扩展使用类型化事件与 waterfall。具体 OS 与供应商行为留在端口之后。
 
-Assembly、`dsh` CLI 与 ACP stdio 尚未合入。当前树已包含 contracts、execution、services 与 adapters。
-
 ## 要求
 
-- Rust 1.85+
+- Rust 1.88+
 - 真实调用需要 DeepSeek API key（`DEEPSEEK_API_KEY`）
 
 ## 快速开始

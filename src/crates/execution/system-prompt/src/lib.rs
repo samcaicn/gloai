@@ -67,22 +67,20 @@ impl SystemPrompt {
 
     pub fn with_identity_and_persona(persona: impl Into<String>) -> Self {
         let prompt = Self::new();
-        prompt
-            .section(PromptSection {
-                name: "identity".into(),
-                order: IDENTITY_ORDER,
-                text: IDENTITY.into(),
-                complete: false,
-            })
-            .expect("fresh registry");
-        prompt
-            .section(PromptSection {
-                name: "persona".into(),
-                order: PERSONA_ORDER,
-                text: persona.into(),
-                complete: false,
-            })
-            .expect("fresh registry");
+        let mut inner = prompt.inner.write();
+        inner.sections.push(PromptSection {
+            name: "identity".into(),
+            order: IDENTITY_ORDER,
+            text: IDENTITY.into(),
+            complete: false,
+        });
+        inner.sections.push(PromptSection {
+            name: "persona".into(),
+            order: PERSONA_ORDER,
+            text: persona.into(),
+            complete: false,
+        });
+        drop(inner);
         prompt
     }
 
@@ -116,7 +114,10 @@ impl SystemPrompt {
 
     pub fn variable(&self, name: impl Into<String>, value: impl Into<String>) -> Disposer {
         let name = name.into();
-        self.inner.write().variables.insert(name.clone(), value.into());
+        self.inner
+            .write()
+            .variables
+            .insert(name.clone(), value.into());
         let inner_ref = Arc::clone(&self.inner);
         Disposer::new(move || {
             inner_ref.write().variables.remove(&name);
@@ -156,7 +157,9 @@ pub fn render_prompt(assembly: &PromptAssembly) -> Result<String, PromptError> {
     Ok(parts.join("\n\n"))
 }
 
-pub fn render_context_sections(assembly: &PromptAssembly) -> Result<Vec<(String, String)>, PromptError> {
+pub fn render_context_sections(
+    assembly: &PromptAssembly,
+) -> Result<Vec<(String, String)>, PromptError> {
     let mut out = Vec::new();
     for context in &assembly.contexts {
         let text = interpolate(&context.text, &assembly.variables, "context")?;
@@ -211,7 +214,7 @@ mod tests {
     #[test]
     fn identity_then_persona_then_tool_guidance() {
         let prompt = SystemPrompt::with_identity_and_persona("You are DeepSeek Harness.");
-        prompt
+        let _keep = prompt
             .section(PromptSection {
                 name: "tool:read".into(),
                 order: 100,
@@ -229,7 +232,7 @@ mod tests {
     #[test]
     fn unknown_variable_fails_loud() {
         let prompt = SystemPrompt::new();
-        prompt
+        let _keep = prompt
             .section(PromptSection {
                 name: "x".into(),
                 order: 0,

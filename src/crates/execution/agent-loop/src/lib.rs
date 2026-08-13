@@ -2,15 +2,17 @@
 
 mod tool_calls;
 
+use std::panic::AssertUnwindSafe;
+use std::pin::pin;
 use std::sync::{Arc, OnceLock, Weak};
 
 use async_trait::async_trait;
 use dsh_agent_runtime::{Agent, AgentError, AgentOptions, CancelOptions, Cancellation, Inbox};
 use dsh_agent_stream::BlockAssembler;
 use dsh_core_types::{
-    create_assistant_message, create_user_message, error_chain, AssistantProvenance, ContentBlock,
-    FinishReason, GenerateOptions, LlmCallConfig, LlmError, LlmFailure, Message, MessageSource,
-    SessionId, UserMessage,
+    create_assistant_message, create_user_message, AssistantProvenance, ContentBlock, FinishReason,
+    GenerateOptions, LlmCallConfig, LlmError, LlmFailure, Message, MessageSource, SessionId,
+    UserMessage,
 };
 use dsh_events::{
     AgentCancelCause, AgentStatus, BusEvent, EpochHeader, EventBus, InboxTarget, PreStepInput,
@@ -22,6 +24,7 @@ use dsh_system_prompt::{
     join_context_sections, render_context_sections, render_prompt, PromptAssembly, SystemPrompt,
 };
 use dsh_tool_contracts::ToolRegistry;
+use futures::FutureExt;
 use parking_lot::Mutex;
 use tokio::sync::{Mutex as AsyncMutex, Notify};
 use tokio_stream::StreamExt;
@@ -97,7 +100,9 @@ impl ReactLoopAgent {
     fn send(&self, message: UserMessage, target: InboxTarget, wakeup: bool) {
         let waking_after_abort = {
             let state = self.state.lock();
-            wakeup && !matches!(state.phase, Phase::Idle { .. }) && state.cancellation.is_cancelled()
+            wakeup
+                && !matches!(state.phase, Phase::Idle { .. })
+                && state.cancellation.is_cancelled()
         };
         let resolved = if waking_after_abort {
             InboxTarget::NextTurn
@@ -136,7 +141,6 @@ impl ReactLoopAgent {
             state.cancellation = Cancellation::new();
             state.wake_requested = false;
         }
-        let _ = self.runtime.bus.clone();
         let agent = self.arc();
         tokio::spawn(async move {
             let _ = agent
@@ -151,12 +155,14 @@ impl ReactLoopAgent {
     }
 
     async fn kick(self: Arc<Self>) {
-        let _guard = self.activity.lock().await;
-        if let Err(error) = self.run_turns().await {
-            debug!("agent driver contained error: {error}");
-        }
         let mut replay = false;
         {
+            let _guard = self.activity.lock().await;
+            match AssertUnwindSafe(self.run_turns()).catch_unwind().await {
+                Ok(Ok(())) => {}
+                Ok(Err(error)) => debug!("agent driver contained error: {error}"),
+                Err(panic) => debug!("agent driver panicked: {panic:?}"),
+            }
             let mut state = self.state.lock();
             if let Phase::Running { turn, .. } = state.phase {
                 replay = state.wake_requested && self.inbox.has_pending();
@@ -220,7 +226,8 @@ impl ReactLoopAgent {
                         if turn_ends.is_some() && messages.is_empty() {
                             break;
                         }
-                        let first_step = matches!(self.state.lock().phase, Phase::Running { step: 0, .. });
+                        let first_step =
+                            matches!(self.state.lock().phase, Phase::Running { step: 0, .. });
                         if first_step && messages.is_empty() {
                             turn_ends = Some(TurnEndReason::Completed);
                             return Ok(false);
@@ -287,14 +294,15 @@ impl ReactLoopAgent {
                     turn_ends = Some(TurnEndReason::Error {
                         error: LlmFailure::new(error.clone(), "UNKNOWN"),
                     });
+                    let step = match self.state.lock().phase {
+                        Phase::Running { step, .. } => step,
+                        Phase::Idle { .. } => 0,
+                    };
                     self.runtime
                         .bus
                         .emit(BusEvent::AgentError {
                             turn,
-                            step: match self.state.lock().phase {
-                                Phase::Running { step, .. } => step,
-                                Phase::Idle { .. } => 0,
-                            },
+                            step,
                             message: error.clone(),
                         })
                         .await;
@@ -369,7 +377,9 @@ impl ReactLoopAgent {
         let (turn, step, token) = {
             let state = self.state.lock();
             match &state.phase {
-                Phase::Running { turn, step, .. } => (*turn, *step, state.cancellation.token.clone()),
+                Phase::Running { turn, step, .. } => {
+                    (*turn, *step, state.cancellation.token.clone())
+                }
                 Phase::Idle { .. } => return Err("step outside running phase".into()),
             }
         };
@@ -448,16 +458,16 @@ impl ReactLoopAgent {
         if tool_calls.is_empty() {
             return Ok(Some(TurnEndReason::Completed));
         }
-        let concluded = execute_tool_calls(
-            Arc::clone(&self.session),
-            Arc::clone(&self.inbox),
-            Arc::clone(&self.runtime.tools),
+        let concluded = execute_tool_calls(crate::tool_calls::ToolDispatch {
+            session: Arc::clone(&self.session),
+            inbox: Arc::clone(&self.inbox),
+            tools: Arc::clone(&self.runtime.tools),
             turn,
             step,
             tool_calls,
             token,
-            self.runtime.max_parallel_tools,
-        )
+            max_parallel: self.runtime.max_parallel_tools,
+        })
         .await?;
         if concluded {
             Ok(Some(TurnEndReason::Completed))
@@ -502,7 +512,9 @@ impl ReactLoopAgent {
             .unwrap_or(proposed);
         let header = EpochHeader {
             config: config.clone(),
-            adapter_defaults: prepared.as_ref().and_then(|call| call.adapter_defaults.clone()),
+            adapter_defaults: prepared
+                .as_ref()
+                .and_then(|call| call.adapter_defaults.clone()),
             system: if system.is_empty() {
                 None
             } else {
@@ -567,7 +579,10 @@ impl ReactLoopAgent {
             reasoning_effort: config.reasoning_effort,
             system: header.system,
             tools: header.tools,
-            temperature: config.temperature.as_ref().and_then(serde_json::Number::as_f64),
+            temperature: config
+                .temperature
+                .as_ref()
+                .and_then(serde_json::Number::as_f64),
             max_tokens: config.max_tokens,
             stop: config.stop,
             session_id: Some(self.session.id()),
@@ -631,13 +646,17 @@ impl Agent for ReactLoopAgent {
 
     async fn when_idle(&self) {
         loop {
+            let notified = self.idle.notified();
+            let mut notified = pin!(notified);
+            notified.as_mut().enable();
             if matches!(self.state.lock().phase, Phase::Idle { .. }) {
-                let _ = self.activity.lock().await;
+                let _activity = self.activity.lock().await;
                 if matches!(self.state.lock().phase, Phase::Idle { .. }) {
                     return;
                 }
+                continue;
             }
-            self.idle.notified().await;
+            notified.await;
         }
     }
 }

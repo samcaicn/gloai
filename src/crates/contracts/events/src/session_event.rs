@@ -4,7 +4,7 @@ use dsh_core_types::{
     GenerateOptions, JsonValue, LlmCallConfig, LlmFailure, Message, SessionId, StreamChunk,
     TokenUsage, ToolSchema, UserMessage,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// On-disk session format version. Unreleased harness: pinned at 0, no compatibility.
 pub const SESSION_FORMAT_VERSION: u32 = 0;
@@ -129,18 +129,70 @@ pub enum InboxTarget {
 }
 
 /// How a session event entered the ordered surface.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(untagged)]
+/// Wire form matches DeepSeek Harness: `"append"` or `{ op: "replace", start, end }`.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SurfaceOp {
-    #[serde(rename = "append")]
     Append,
-    Replace { op: ReplaceTag, start: u64, end: u64 },
+    Replace {
+        op: ReplaceTag,
+        start: u64,
+        end: u64,
+    },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ReplaceTag {
     Replace,
+}
+
+impl Serialize for SurfaceOp {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Append => serializer.serialize_str("append"),
+            Self::Replace { start, end, .. } => {
+                #[derive(Serialize)]
+                struct Repl {
+                    op: &'static str,
+                    start: u64,
+                    end: u64,
+                }
+                Repl {
+                    op: "replace",
+                    start: *start,
+                    end: *end,
+                }
+                .serialize(serializer)
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for SurfaceOp {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match value {
+            serde_json::Value::String(op) if op == "append" => Ok(Self::Append),
+            serde_json::Value::Object(map) => {
+                let op = map.get("op").and_then(serde_json::Value::as_str);
+                let start = map.get("start").and_then(serde_json::Value::as_u64);
+                let end = map.get("end").and_then(serde_json::Value::as_u64);
+                match (op, start, end) {
+                    (Some("replace"), Some(start), Some(end)) => Ok(Self::Replace {
+                        op: ReplaceTag::Replace,
+                        start,
+                        end,
+                    }),
+                    _ => Err(serde::de::Error::custom(
+                        "surfaceOp replace requires op, start, and end",
+                    )),
+                }
+            }
+            other => Err(serde::de::Error::custom(format!(
+                "invalid surfaceOp: {other}"
+            ))),
+        }
+    }
 }
 
 impl SurfaceOp {
@@ -329,5 +381,9 @@ mod tests {
             source_event_seqs: None,
         };
         assert!(event.is_surface_eligible());
+        let value = serde_json::to_value(&event).unwrap();
+        assert_eq!(value["surfaceOp"], "append");
+        let back: SessionEvent = serde_json::from_value(value).unwrap();
+        assert_eq!(back.surface_op, Some(SurfaceOp::Append));
     }
 }

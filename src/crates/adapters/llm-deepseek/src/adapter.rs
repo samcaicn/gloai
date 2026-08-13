@@ -92,7 +92,9 @@ fn is_quota_exceeded(detail: &str) -> bool {
 
 fn is_context_window_exceeded(detail: &str) -> bool {
     let lower = detail.to_ascii_lowercase();
-    lower.contains("context length") || lower.contains("context_window") || lower.contains("maximum context")
+    lower.contains("context length")
+        || lower.contains("context_window")
+        || lower.contains("maximum context")
 }
 
 fn model_info(provider: &str, model: &DeepSeekCatalogModel) -> LlmModelInfo {
@@ -235,12 +237,113 @@ async fn stream_once(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dsh_core_types::{human_text, GenerateOptions};
+    use dsh_runtime_ports::{CredentialsPort, LlmPort};
+    use tokio_stream::StreamExt;
+
+    struct StaticCreds(String);
+
+    #[async_trait::async_trait]
+    impl CredentialsPort for StaticCreds {
+        async fn resolve(
+            &self,
+            _reference: &dsh_core_types::CredentialRef,
+        ) -> Result<String, LlmError> {
+            Ok(self.0.clone())
+        }
+    }
+
+    fn sample_request(model: &str) -> GenerateOptions {
+        GenerateOptions {
+            provider: "deepseek".into(),
+            model: model.into(),
+            messages: vec![human_text("hi")],
+            reasoning_effort: None,
+            system: None,
+            tools: None,
+            temperature: None,
+            max_tokens: None,
+            stop: None,
+            session_id: None,
+            purpose: None,
+        }
+    }
 
     #[test]
     fn maps_auth_and_rate_limit() {
         assert_eq!(http_error_code(401, ""), "AUTH");
         assert_eq!(http_error_code(429, ""), "RATE_LIMIT");
-        assert_eq!(http_error_code(400, "maximum context length"), CONTEXT_WINDOW_EXCEEDED_CODE);
-        assert_eq!(http_error_code(400, "insufficient_quota"), QUOTA_EXCEEDED_CODE);
+        assert_eq!(
+            http_error_code(400, "maximum context length"),
+            CONTEXT_WINDOW_EXCEEDED_CODE
+        );
+        assert_eq!(
+            http_error_code(400, "insufficient_quota"),
+            QUOTA_EXCEEDED_CODE
+        );
+    }
+
+    #[tokio::test]
+    async fn http_401_is_auth() {
+        let server = httpmock::MockServer::start();
+        server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/chat/completions");
+            then.status(401).body(r#"{"error":{"message":"nope"}}"#);
+        });
+        let adapter = DeepSeekAdapter::new(DeepSeekAdapterOptions {
+            connection: DeepSeekConnectionOptions {
+                base_url: server.base_url(),
+                api_key_env: dsh_core_types::CredentialRef::new("DSH_TEST_UNUSED"),
+                defaults: crate::serialize::RequestDefaults::default(),
+                max_tokens: DEFAULT_MAX_TOKENS,
+                default_context_window: DEFAULT_CONTEXT_WINDOW,
+                models: Vec::new(),
+                stream_idle_timeout_ms: 5_000,
+            },
+            credentials: Arc::new(StaticCreds("sk-test".into())),
+        })
+        .unwrap();
+        let mut stream = adapter.stream(sample_request("deepseek-chat"));
+        let err = stream.next().await.unwrap().unwrap_err();
+        assert_eq!(err.code(), "AUTH");
+    }
+
+    #[tokio::test]
+    async fn sse_success_yields_text() {
+        let server = httpmock::MockServer::start();
+        server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/chat/completions");
+            then.status(200)
+                .header("content-type", "text/event-stream")
+                .body(
+                    "data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\n\
+                     data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n\
+                     data: [DONE]\n\n",
+                );
+        });
+        let adapter = DeepSeekAdapter::new(DeepSeekAdapterOptions {
+            connection: DeepSeekConnectionOptions {
+                base_url: server.base_url(),
+                api_key_env: dsh_core_types::CredentialRef::new("DSH_TEST_UNUSED"),
+                defaults: crate::serialize::RequestDefaults::default(),
+                max_tokens: DEFAULT_MAX_TOKENS,
+                default_context_window: DEFAULT_CONTEXT_WINDOW,
+                models: Vec::new(),
+                stream_idle_timeout_ms: 5_000,
+            },
+            credentials: Arc::new(StaticCreds("sk-test".into())),
+        })
+        .unwrap();
+        let mut stream = adapter.stream(sample_request("deepseek-chat"));
+        let mut chunks = Vec::new();
+        while let Some(item) = stream.next().await {
+            chunks.push(item.unwrap());
+        }
+        assert!(chunks.iter().any(|chunk| matches!(
+            chunk,
+            dsh_core_types::StreamChunk::TextDelta { text, .. } if text == "hi"
+        )));
     }
 }

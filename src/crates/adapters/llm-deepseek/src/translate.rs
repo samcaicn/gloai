@@ -122,7 +122,10 @@ pub fn translate(payloads: impl IntoIterator<Item = String>) -> Result<Vec<Strea
         }
         let chunk: WireChunk = serde_json::from_str(&payload).map_err(|_| {
             LlmError::new(
-                format!("malformed SSE payload: {}", payload.chars().take(120).collect::<String>()),
+                format!(
+                    "malformed SSE payload: {}",
+                    payload.chars().take(120).collect::<String>()
+                ),
                 MALFORMED_RESPONSE_CODE,
             )
         })?;

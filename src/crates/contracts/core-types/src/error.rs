@@ -62,10 +62,7 @@ impl LlmError {
     }
 
     pub fn missing_credential(name: &str) -> Self {
-        Self::new(
-            format!("missing credential `{name}`"),
-            "MISSING_CREDENTIAL",
-        )
+        Self::new(format!("missing credential `{name}`"), "MISSING_CREDENTIAL")
     }
 }
 

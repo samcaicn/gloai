@@ -43,9 +43,15 @@ macro_rules! branded_string {
     };
 }
 
-branded_string!(SessionId, "Identifies one session and its persistence artifacts.");
+branded_string!(
+    SessionId,
+    "Identifies one session and its persistence artifacts."
+);
 branded_string!(MessageId, "Stable identity of one conversation message.");
-branded_string!(CallId, "Provider-issued tool-call id; pairs a call with its result.");
+branded_string!(
+    CallId,
+    "Provider-issued tool-call id; pairs a call with its result."
+);
 branded_string!(
     ProviderRequestId,
     "Opaque provider-issued request identifier for diagnostics."

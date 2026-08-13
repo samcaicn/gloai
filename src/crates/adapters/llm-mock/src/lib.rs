@@ -19,7 +19,10 @@ pub enum MockTurn {
         then_text: String,
     },
     MaxTokens(String),
-    Error { message: String, code: String },
+    Error {
+        message: String,
+        code: String,
+    },
 }
 
 impl MockTurn {
@@ -161,7 +164,11 @@ impl LlmPort for MockLlm {
     }
 
     fn stream(&self, _request: GenerateOptions) -> ChunkStream {
-        let turn = self.turns.lock().pop().or_else(|| self.followups.lock().pop());
+        let turn = self
+            .turns
+            .lock()
+            .pop()
+            .or_else(|| self.followups.lock().pop());
         // Queue is FIFO: we stored in insertion order, so pop from front.
         let chunks = match turn {
             Some(turn) => {
@@ -250,9 +257,7 @@ impl LlmPort for ScriptLlm {
                 arguments,
                 then_text,
             }) => {
-                self.remaining
-                    .lock()
-                    .push_front(MockTurn::Text(then_text));
+                self.remaining.lock().push_front(MockTurn::Text(then_text));
                 MockTurn::Tool {
                     name,
                     arguments,

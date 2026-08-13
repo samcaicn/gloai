@@ -67,9 +67,9 @@ impl Inbox {
 
     pub fn claim(&self, target: InboxTarget, _turn: u32) -> Result<Vec<UserMessage>, SessionError> {
         let step_len = self.next_step().len();
-        let mut claimed = self.mutate(InboxTarget::NextStep, 0, step_len, Vec::new(), false)?;
+        let mut claimed = self.mutate(InboxTarget::NextStep, 0, step_len, Vec::new(), true)?;
         if target == InboxTarget::NextTurn {
-            claimed.extend(self.mutate(InboxTarget::NextTurn, 0, 1, Vec::new(), false)?);
+            claimed.extend(self.mutate(InboxTarget::NextTurn, 0, 1, Vec::new(), true)?);
         }
         Ok(claimed)
     }
@@ -84,7 +84,7 @@ impl Inbox {
         self.mutate(target, start, delete_count, inserted, true)
     }
 
-    fn list<'a>(state: &'a mut State, target: InboxTarget) -> &'a mut Vec<UserMessage> {
+    fn list(state: &mut State, target: InboxTarget) -> &mut Vec<UserMessage> {
         match target {
             InboxTarget::NextTurn => &mut state.next_turn,
             InboxTarget::NextStep => &mut state.next_step,
@@ -123,7 +123,9 @@ impl Inbox {
             state = self.state.lock();
         }
         let list = Self::list(&mut state, target);
-        let removed: Vec<_> = list.drain(actual_start..actual_start + actual_delete).collect();
+        let removed: Vec<_> = list
+            .drain(actual_start..actual_start + actual_delete)
+            .collect();
         for (offset, message) in inserted.into_iter().enumerate() {
             list.insert(actual_start + offset, message);
         }
@@ -143,11 +145,7 @@ impl Inbox {
 
     pub fn locate(&self, message_id: &MessageId) -> Option<(InboxTarget, usize)> {
         let state = self.state.lock();
-        if let Some(index) = state
-            .next_turn
-            .iter()
-            .position(|m| &m.id == message_id)
-        {
+        if let Some(index) = state.next_turn.iter().position(|m| &m.id == message_id) {
             return Some((InboxTarget::NextTurn, index));
         }
         state

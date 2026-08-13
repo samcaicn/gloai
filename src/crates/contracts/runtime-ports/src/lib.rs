@@ -42,7 +42,10 @@ impl PortError {
     }
 
     pub fn not_available(what: &str) -> Self {
-        Self::new(PortErrorKind::NotAvailable, format!("{what} is not registered"))
+        Self::new(
+            PortErrorKind::NotAvailable,
+            format!("{what} is not registered"),
+        )
     }
 }
 
@@ -69,10 +72,7 @@ pub trait LlmPort: Send + Sync {
         provider: &str,
         model: &str,
     ) -> Result<LlmResolvedModelInfo, LlmError>;
-    async fn prepare_call(
-        &self,
-        config: LlmCallConfig,
-    ) -> Result<PreparedLlmCall, LlmError> {
+    async fn prepare_call(&self, config: LlmCallConfig) -> Result<PreparedLlmCall, LlmError> {
         Ok(PreparedLlmCall {
             config,
             adapter_defaults: None,

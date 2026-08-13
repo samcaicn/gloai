@@ -4,22 +4,36 @@
 use std::sync::Arc;
 
 use dsh_agent_runtime::Inbox;
-use dsh_core_types::{create_tool_result_message, create_user_message, ContentBlock, ToolCallBlock};
+use dsh_core_types::{
+    create_tool_result_message, create_user_message, ContentBlock, ToolCallBlock,
+};
 use dsh_events::{InboxTarget, SessionEventBody, SurfaceOp, ToolErrorIdentity};
 use dsh_session::Session;
 use dsh_tool_contracts::{parse_arguments, ExecutionMode, ToolExecutionInput, ToolRegistry};
 use tokio_util::sync::CancellationToken;
 
-pub async fn execute_tool_calls(
-    session: Arc<Session>,
-    inbox: Arc<Inbox>,
-    tools: Arc<ToolRegistry>,
-    turn: u32,
-    step: u32,
-    tool_calls: Vec<ToolCallBlock>,
-    token: CancellationToken,
-    max_parallel: usize,
-) -> Result<bool, String> {
+pub(crate) struct ToolDispatch {
+    pub session: Arc<Session>,
+    pub inbox: Arc<Inbox>,
+    pub tools: Arc<ToolRegistry>,
+    pub turn: u32,
+    pub step: u32,
+    pub tool_calls: Vec<ToolCallBlock>,
+    pub token: CancellationToken,
+    pub max_parallel: usize,
+}
+
+pub(crate) async fn execute_tool_calls(dispatch: ToolDispatch) -> Result<bool, String> {
+    let ToolDispatch {
+        session,
+        inbox,
+        tools,
+        turn,
+        step,
+        tool_calls,
+        token,
+        max_parallel,
+    } = dispatch;
     let mut next = 0;
     let mut concluded = false;
     while next < tool_calls.len() {
@@ -50,9 +64,9 @@ pub async fn execute_tool_calls(
                 let tools = Arc::clone(&tools);
                 let call = call.clone();
                 let token = token.clone();
-                handles.push(tokio::spawn(async move {
-                    run_one(tools, call, token).await
-                }));
+                handles.push(tokio::spawn(
+                    async move { run_one(tools, call, token).await },
+                ));
             }
             for handle in handles {
                 results.push(handle.await.map_err(|e| e.to_string())?);

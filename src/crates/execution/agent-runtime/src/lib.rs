@@ -34,14 +34,9 @@ pub struct AgentOptions {
 
 pub use dsh_events::InboxTarget;
 
+#[derive(Default)]
 pub struct CancelOptions {
     pub keep_inbox: bool,
-}
-
-impl Default for CancelOptions {
-    fn default() -> Self {
-        Self { keep_inbox: false }
-    }
 }
 
 /// Public live-agent handle. Concrete driving belongs to `dsh-agent-loop`.
@@ -126,11 +121,13 @@ impl IdleGate {
     pub async fn wait(&self) {
         loop {
             let seen = *self.generation.lock();
-            self.notify.notified().await;
+            let notified = self.notify.notified();
+            let mut notified = std::pin::pin!(notified);
+            notified.as_mut().enable();
             if *self.generation.lock() != seen {
-                // Wait until callers observe the latest activity settlement.
+                return;
             }
-            return;
+            notified.await;
         }
     }
 }
@@ -174,7 +171,7 @@ impl AgentRegistry {
 mod tests {
     use super::*;
     use dsh_core_types::human_text;
-    use dsh_events::{SessionHeader, SurfaceOp};
+    use dsh_events::SessionHeader;
     use dsh_session::Session;
 
     #[test]

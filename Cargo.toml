@@ -17,6 +17,10 @@ members = [
     "src/crates/services/shell",
     "src/crates/adapters/llm-deepseek",
     "src/crates/adapters/llm-mock",
+    "src/crates/assembly/core",
+    "src/crates/interfaces/acp",
+    "src/crates/support/testkit",
+    "src/apps/cli",
 ]
 
 [workspace.package]
@@ -24,7 +28,7 @@ version = "0.1.0"
 authors = ["DeepSeek"]
 edition = "2021"
 license = "MIT"
-rust-version = "1.85"
+rust-version = "1.88"
 repository = "https://github.com/bobleer/deepseek-harness-rust"
 
 [workspace.lints.rust]
@@ -63,6 +67,7 @@ dsh-llm-mock = { path = "src/crates/adapters/llm-mock" }
 dsh-core = { path = "src/crates/assembly/core" }
 dsh-acp = { path = "src/crates/interfaces/acp" }
 dsh-testkit = { path = "src/crates/support/testkit" }
+dsh-cli = { path = "src/apps/cli" }
 
 tokio = { version = "1.47", default-features = false }
 tokio-util = { version = "0.7", default-features = false }
