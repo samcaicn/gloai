@@ -1,4 +1,4 @@
-import { FolderOpen, RotateCw, Settings, Square, Globe } from "lucide-react";
+import { Clock, FolderOpen, Globe, RotateCw, Settings, Square } from "lucide-react";
 import { useI18n } from "@/infrastructure/i18n";
 import { Button } from "@/component-library";
 import { useAppStore } from "@/app/stores/appStore";
@@ -7,6 +7,7 @@ import "./NavPanel.scss";
 export function NavPanel() {
   const { t } = useI18n();
   const workspacePath = useAppStore((s) => s.workspacePath);
+  const recent = useAppStore((s) => s.recentWorkspaces);
   const harness = useAppStore((s) => s.harness);
   const setScene = useAppStore((s) => s.setScene);
   const openWorkspace = useAppStore((s) => s.openWorkspace);
@@ -14,6 +15,7 @@ export function NavPanel() {
   const stopRuntime = useAppStore((s) => s.stopRuntime);
   const host = useAppStore((s) => s.host);
   const name = workspacePath?.split(/[\\/]/).filter(Boolean).at(-1);
+  const others = recent.filter((item) => item.path !== workspacePath).slice(0, 6);
 
   return (
     <aside className="dshg-nav-panel">
@@ -27,10 +29,32 @@ export function NavPanel() {
           {t("welcome.open")}
         </Button>
       </section>
+      {others.length > 0 && (
+        <section>
+          <div className="dshg-nav-panel__label">
+            <Clock size={11} />
+            {t("welcome.recent")}
+          </div>
+          <div className="dshg-nav-panel__recents">
+            {others.map((item) => (
+              <button
+                key={item.path}
+                type="button"
+                title={item.path}
+                onClick={() => void openWorkspace(item.path)}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
       <section>
         <div className="dshg-nav-panel__label">{t("panel.runtime")}</div>
         <div className={`dshg-nav-panel__status is-${harness.state}`}>
-          {t(`panel.${harness.state === "starting" ? "starting" : harness.state === "ready" ? "ready" : harness.state === "error" ? "error" : "idle"}`)}
+          {t(
+            `panel.${harness.state === "starting" ? "starting" : harness.state === "ready" ? "ready" : harness.state === "error" ? "error" : "idle"}`,
+          )}
         </div>
         <div className="dshg-nav-panel__actions">
           <Button disabled={!workspacePath} onClick={() => void restartHarness()}>
