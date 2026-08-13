@@ -1,0 +1,30 @@
+.dshg-workspace {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    width: var(--dshg-nav);
+    flex-shrink: 0;
+    background: var(--dshg-bg-primary);
+    border-right: 1px solid var(--dshg-border-subtle);
+  }
+
+  &.is-collapsed &__nav {
+    width: 56px;
+  }
+
+  &__scene {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  &__viewport {
+    flex: 1;
+    min-height: 0;
+  }
+}
