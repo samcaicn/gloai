@@ -1,0 +1,20 @@
+[package]
+name = "dsh-system-prompt"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Ordered system-prompt sections, context snapshots, and tool schemas"
+
+[lints]
+workspace = true
+
+[dependencies]
+dsh-core-types = { workspace = true }
+dsh-events = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }

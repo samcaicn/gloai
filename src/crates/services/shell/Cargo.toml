@@ -1,0 +1,25 @@
+[package]
+name = "dsh-shell"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Bash executor over SubprocessPort plus the model-facing bash tool"
+
+[lints]
+workspace = true
+
+[dependencies]
+dsh-core-types = { workspace = true }
+dsh-events = { workspace = true }
+dsh-runtime-ports = { workspace = true }
+dsh-tool-contracts = { workspace = true }
+dsh-system-prompt = { workspace = true }
+async-trait = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+dsh-subprocess = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
