@@ -123,7 +123,7 @@ export class GithubClient {
 
   async getFileText(owner: string, repo: string, path: string): Promise<string | null> {
     try {
-      const file = await this.json<GithubContentFile>(`/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`)
+      const file = await this.json<GithubContentFile>(`/repos/${owner}/${repo}/contents/${encodeGithubContentPath(path)}`)
       if (file.encoding === 'base64' && typeof file.content === 'string') {
         return Buffer.from(file.content.replace(/\n/g, ''), 'base64').toString('utf8')
       }
@@ -152,6 +152,11 @@ export class GithubClient {
       throw error
     }
   }
+}
+
+/** Encode a contents API path while keeping `/` as a segment separator. */
+export function encodeGithubContentPath(path: string): string {
+  return path.split('/').map(segment => encodeURIComponent(segment)).join('/')
 }
 
 export function mapSearchItem(item: GithubSearchRepo): {

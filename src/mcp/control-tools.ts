@@ -49,10 +49,11 @@ export interface SessionDeps {
   github: GithubClient
   dsh: DshRunner
   runtime: RuntimeHost
+  onToolsMutated?: () => void
 }
 
 export function createControlTools(deps: SessionDeps): ControlTool[] {
-  const { config, catalog, github, dsh, runtime } = deps
+  const { config, catalog, github, dsh, runtime, onToolsMutated } = deps
 
   const tools: ControlTool[] = [
     {
@@ -62,14 +63,14 @@ export function createControlTools(deps: SessionDeps): ControlTool[] {
         inputSchema: objectSchema({}),
       },
       async handle() {
-        const snapshot = await catalog.getSnapshot().catch((error: unknown) => ({ error: String(error) }))
+        const snapshot = await catalog.peekSnapshot()
         const installed = await readInstalledProfile(config.profile)
         return jsonToolResult({
           server: 'deepseek-harness-plugin-mcp',
           githubAuthenticated: github.authenticated,
-          catalog: 'repos' in snapshot
+          catalog: snapshot
             ? { fetchedAt: snapshot.fetchedAt, count: snapshot.repos.length, incomplete: snapshot.incomplete, stale: catalog.isStale(snapshot) }
-            : snapshot,
+            : { fetchedAt: null, count: 0, incomplete: false, stale: true, empty: true },
           dsh: dsh.whichDsh(),
           dshRoot: config.dshRoot,
           profile: config.profile,
@@ -265,6 +266,7 @@ export function createControlTools(deps: SessionDeps): ControlTool[] {
         const parsed = RuntimeStart.parse(args)
         try {
           const status = await runtime.start(parsed.plugins ?? [])
+          onToolsMutated?.()
           return jsonToolResult({ ok: true, status, tools: runtime.listBridged().map(tool => tool.name) })
         } catch (error) {
           return jsonToolResult({ error: String(error) }, true)
@@ -279,6 +281,7 @@ export function createControlTools(deps: SessionDeps): ControlTool[] {
       },
       async handle() {
         await runtime.stop()
+        onToolsMutated?.()
         return jsonToolResult({ ok: true, status: runtime.status() })
       },
     },
@@ -292,6 +295,7 @@ export function createControlTools(deps: SessionDeps): ControlTool[] {
         const { spec } = RuntimeLoad.parse(args)
         try {
           const status = await runtime.load(spec)
+          onToolsMutated?.()
           return jsonToolResult({ ok: true, spec, status, tools: runtime.listBridged().map(tool => tool.name) })
         } catch (error) {
           return jsonToolResult({ error: String(error) }, true)
@@ -308,6 +312,7 @@ export function createControlTools(deps: SessionDeps): ControlTool[] {
         const { packageName } = RuntimeUnload.parse(args)
         try {
           const status = await runtime.unload(packageName)
+          onToolsMutated?.()
           return jsonToolResult({ ok: true, packageName, status, tools: runtime.listBridged().map(tool => tool.name) })
         } catch (error) {
           return jsonToolResult({ error: String(error) }, true)

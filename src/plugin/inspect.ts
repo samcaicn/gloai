@@ -5,6 +5,22 @@ import type { GithubClient } from '../github/client.js'
 
 const PATCH_CANDIDATES = ['cordis.patch.yml', 'cordis.patch.yaml']
 
+/** Cordis loader evaluates `!!js` expressions; inspect only needs the file to parse. */
+const CORDIS_JS_TAG = {
+  tag: 'tag:yaml.org,2002:js',
+  resolve(value: string) {
+    return value
+  },
+}
+
+/**
+ * Parse a DSH `cordis.patch.yml`. Accepts Cordis `!!js` scalars as opaque strings.
+ * @param text - patch file contents
+ */
+export function parsePatchYaml(text: string): unknown {
+  return parseYaml(text, { customTags: [CORDIS_JS_TAG] })
+}
+
 /**
  * Load package.json, README, patch, and root listing, then classify the plugin.
  */
@@ -36,7 +52,7 @@ export async function inspectPlugin(
     patchText = await github.getFileText(repo.owner, repo.name, patchPath)
     if (patchText) {
       try {
-        parseYaml(patchText)
+        parsePatchYaml(patchText)
       } catch (error) {
         warnings.push(`${patchPath} is not valid YAML: ${String(error)}`)
       }

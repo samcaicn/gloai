@@ -133,6 +133,14 @@ npm install
 npm run check
 ```
 
+Protocol smoke (official [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) CLI, same client family as `@modelcontextprotocol/sdk`):
+
+```bash
+npx @modelcontextprotocol/inspector --cli node dist/cli.js --method tools/list
+npx @modelcontextprotocol/inspector --cli node dist/cli.js --method tools/call \
+  --tool-name dsh_plugin_status --tool-args-json '{}'
+```
+
 Design: [docs/design.md](docs/design.md).
 
 ## License

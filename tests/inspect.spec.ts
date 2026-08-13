@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { inspectPlugin, resolveRepo } from '../src/plugin/inspect.js'
+import { inspectPlugin, parsePatchYaml, resolveRepo } from '../src/plugin/inspect.js'
 import { GithubClient } from '../src/github/client.js'
 import { githubFetch, sampleRepo } from './helpers.js'
 
@@ -48,5 +48,19 @@ describe('resolveRepo', () => {
   it('uses the catalog hit when present', async () => {
     const github = new GithubClient({ token: null, fetch: githubFetch({}) })
     await expect(resolveRepo(github, [sampleRepo], 'github:dsh-external/dsh-tool-csv')).resolves.toEqual(sampleRepo)
+  })
+})
+
+describe('parsePatchYaml', () => {
+  it('accepts Cordis !!js scalars as opaque strings', () => {
+    const parsed = parsePatchYaml(`
+- insert:
+    - id: dsh-plugin-mcp
+      config:
+        port: !!js Number(process.env.DSH_PLUGIN_MCP_PORT ?? 8765)
+        catalog: !!js process.env.DSH_PLUGIN_MCP_CATALOG !== '0'
+`) as Array<{ insert: Array<{ config: { port: string; catalog: string } }> }>
+    expect(parsed[0]?.insert[0]?.config.port).toContain('DSH_PLUGIN_MCP_PORT')
+    expect(parsed[0]?.insert[0]?.config.catalog).toContain('DSH_PLUGIN_MCP_CATALOG')
   })
 })

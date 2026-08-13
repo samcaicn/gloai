@@ -69,6 +69,14 @@ export class PluginCatalog {
     return fresh
   }
 
+  /** Return the last fetched snapshot without contacting GitHub. */
+  async peekSnapshot(): Promise<CatalogSnapshot | null> {
+    if (this.memory) return this.memory
+    const disk = await this.store.load()
+    if (disk) this.memory = disk
+    return disk
+  }
+
   isStale(snapshot: CatalogSnapshot): boolean {
     const age = this.now() - Date.parse(snapshot.fetchedAt)
     return Number.isNaN(age) || age > this.ttlMs
@@ -109,6 +117,7 @@ export function dedupeRepos(repos: GithubRepo[]): GithubRepo[] {
 
 export interface ListFilter {
   query?: string | undefined
+  /** Reserved: catalog cards do not store kinds; inspect is authoritative. */
   kind?: PluginKind | undefined
   language?: string | undefined
   minStars?: number | undefined

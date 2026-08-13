@@ -5,10 +5,21 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import type { AppConfig } from '../config.js'
+import { notifyToolsChanged } from './server.js'
 
-interface SessionTransport {
+export type McpSessionFactory = () => Server
+
+interface SessionRecord {
   transport: StreamableHTTPServerTransport
+  server: Server
 }
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+  'Access-Control-Allow-Headers': 'content-type,mcp-session-id,mcp-protocol-version,accept,last-event-id',
+  'Access-Control-Expose-Headers': 'mcp-session-id,mcp-protocol-version',
+} as const
 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = []
@@ -18,17 +29,21 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
 }
 
 /**
- * Serve Streamable HTTP MCP plus GET /health. One Mcp Server instance is shared;
- * each initialize POST gets its own transport session.
+ * Serve Streamable HTTP MCP plus GET /health.
+ * Each initialize POST gets its own MCP Server instance; catalog/runtime state is shared by the factory closure.
  */
-export function serveHttp(server: Server, config: AppConfig): Promise<{ close: () => Promise<void>; url: string }> {
-  const sessions = new Map<string, SessionTransport>()
+export function serveHttp(
+  createSession: McpSessionFactory,
+  config: AppConfig,
+): Promise<{ close: () => Promise<void>; url: string; notifyToolsChanged: () => void }> {
+  const sessions = new Map<string, SessionRecord>()
 
   const http = createServer(async (req, res) => {
     try {
-      await handleHttp(req, res, server, sessions, config)
+      await handleHttp(req, res, createSession, sessions, config)
     } catch (error) {
       if (!res.headersSent) {
+        applyCors(res)
         res.writeHead(500, { 'Content-Type': 'application/json' })
       }
       res.end(JSON.stringify({ error: String(error) }))
@@ -42,9 +57,19 @@ export function serveHttp(server: Server, config: AppConfig): Promise<{ close: (
       const port = typeof address === 'object' && address !== null ? address.port : config.port
       resolve({
         url: `http://${config.host}:${port}/mcp`,
-        close: () => new Promise((done, fail) => {
-          http.close(error => error ? fail(error) : done())
-        }),
+        notifyToolsChanged: () => {
+          for (const session of sessions.values()) notifyToolsChanged(session.server)
+        },
+        close: async () => {
+          for (const session of [...sessions.values()]) {
+            await session.transport.close().catch(() => undefined)
+            await session.server.close().catch(() => undefined)
+          }
+          sessions.clear()
+          await new Promise<void>((done, fail) => {
+            http.close(error => error ? fail(error) : done())
+          })
+        },
       })
     })
   })
@@ -53,8 +78,8 @@ export function serveHttp(server: Server, config: AppConfig): Promise<{ close: (
 async function handleHttp(
   req: IncomingMessage,
   res: ServerResponse,
-  server: Server,
-  sessions: Map<string, SessionTransport>,
+  createSession: McpSessionFactory,
+  sessions: Map<string, SessionRecord>,
   config: AppConfig,
 ): Promise<void> {
   const host = req.headers.host ?? `${config.host}:${config.port}`
@@ -72,12 +97,10 @@ async function handleHttp(
     return
   }
 
+  applyCors(res)
+
   if (req.method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'content-type,mcp-session-id,accept',
-    })
+    res.writeHead(204)
     res.end()
     return
   }
@@ -100,23 +123,29 @@ async function handleHttp(
       }))
       return
     }
+    const sessionServer = createSession()
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (id) => {
-        sessions.set(id, { transport })
+        sessions.set(id, { transport, server: sessionServer })
       },
     })
     transport.onclose = () => {
       const id = transport.sessionId
       if (id) sessions.delete(id)
+      void sessionServer.close()
     }
-    await server.connect(transport as Transport)
+    await sessionServer.connect(transport as Transport)
     await transport.handleRequest(req, res, body)
     return
   }
 
   res.writeHead(400, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify({ error: 'missing mcp-session-id' }))
+}
+
+function applyCors(res: ServerResponse): void {
+  for (const [name, value] of Object.entries(CORS_HEADERS)) res.setHeader(name, value)
 }
 
 function header(req: IncomingMessage, name: string): string | undefined {

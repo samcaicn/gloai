@@ -8,7 +8,7 @@ describe('HTTP health', () => {
     const server = new Server({ name: 'test', version: '0.0.0' }, { capabilities: {} })
     const config = testConfig({ transport: 'http', port: 0, host: '127.0.0.1' })
     // serveHttp uses config.port; 0 lets the OS pick. Node listen(0) works.
-    const listening = await serveHttp(server, { ...config, port: 0 })
+    const listening = await serveHttp(() => server, { ...config, port: 0 })
     const healthUrl = listening.url.replace(/\/mcp$/, '/health')
     const response = await fetch(healthUrl)
     expect(response.ok).toBe(true)

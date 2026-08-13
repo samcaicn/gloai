@@ -133,6 +133,14 @@ npm install
 npm run check
 ```
 
+协议冒烟（官方 [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) CLI，与 `@modelcontextprotocol/sdk` 同属官方客户端）：
+
+```bash
+npx @modelcontextprotocol/inspector --cli node dist/cli.js --method tools/list
+npx @modelcontextprotocol/inspector --cli node dist/cli.js --method tools/call \
+  --tool-name dsh_plugin_status --tool-args-json '{}'
+```
+
 设计见 [docs/design.md](docs/design.md)。
 
 ## License

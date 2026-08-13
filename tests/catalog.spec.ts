@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GithubApiError, GithubClient } from '../src/github/client.js'
+import { encodeGithubContentPath, GithubApiError, GithubClient } from '../src/github/client.js'
 import { filterRepos } from '../src/github/catalog.js'
 import { githubFetch, jsonResponse, makeCatalog, sampleRepo, searchPayload } from './helpers.js'
 
@@ -47,6 +47,14 @@ describe('PluginCatalog', () => {
     const catalog = makeCatalog(fetch)
     await expect(catalog.getSnapshot(true)).rejects.toBeInstanceOf(GithubApiError)
   })
+
+  it('peeks disk/memory without fetching', async () => {
+    const fetch = async (): Promise<Response> => {
+      throw new Error('network')
+    }
+    const catalog = makeCatalog(fetch)
+    await expect(catalog.peekSnapshot()).resolves.toBeNull()
+  })
 })
 
 describe('filterRepos', () => {
@@ -85,5 +93,22 @@ describe('GithubClient.getFileText', () => {
     })
     expect(client.authenticated).toBe(true)
     await expect(client.getFileText('o', 'r', 'package.json')).resolves.toBe('{"name":"x"}')
+  })
+
+  it('keeps slashes as contents-API segment separators', async () => {
+    expect(encodeGithubContentPath('src/cordis.patch.yml')).toBe('src/cordis.patch.yml')
+    const client = new GithubClient({
+      token: null,
+      fetch: githubFetch({
+        '/repos/o/r/contents/src/cordis.patch.yml': {
+          type: 'file',
+          name: 'cordis.patch.yml',
+          path: 'src/cordis.patch.yml',
+          encoding: 'base64',
+          content: Buffer.from('plugins: []\n').toString('base64'),
+        },
+      }),
+    })
+    await expect(client.getFileText('o', 'r', 'src/cordis.patch.yml')).resolves.toBe('plugins: []\n')
   })
 })

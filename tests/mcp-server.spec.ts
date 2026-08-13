@@ -79,6 +79,30 @@ describe('MCP session', () => {
     await client.close()
     await handle.server.close()
   })
+
+  it('reports an empty catalog from cache without contacting GitHub', async () => {
+    const fetch = async (): Promise<Response> => {
+      throw new Error('network should not run for status')
+    }
+    const config = testConfig()
+    const github = new GithubClient({ token: null, fetch })
+    const catalog = makeCatalog(fetch)
+    const dsh = new FakeDsh()
+    const runtime = makeRuntime(config, dsh)
+    const handle = createPluginMcpServer({ config, catalog, github, dsh, runtime })
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+    await handle.server.connect(serverTransport)
+    const client = new Client({ name: 'test', version: '0.0.0' })
+    await client.connect(clientTransport)
+
+    const status = await client.callTool({ name: 'dsh_plugin_status', arguments: {} })
+    const text = (status.content as Array<{ text: string }>)[0]?.text ?? ''
+    expect(status.isError).not.toBe(true)
+    expect(text).toContain('"empty": true')
+
+    await client.close()
+    await handle.server.close()
+  })
 })
 
 describe('renderPrompt', () => {

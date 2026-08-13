@@ -25,9 +25,6 @@ export interface PluginMcpHandle {
  * Build the MCP Server that merges control-plane tools with live bridged DSH tools.
  */
 export function createPluginMcpServer(deps: SessionDeps): PluginMcpHandle {
-  const control = createControlTools(deps)
-  const byName = new Map<string, ControlTool>(control.map(tool => [tool.spec.name, tool]))
-
   const server = new Server(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
@@ -45,6 +42,15 @@ export function createPluginMcpServer(deps: SessionDeps): PluginMcpHandle {
       ].join(' '),
     },
   )
+
+  const control = createControlTools({
+    ...deps,
+    onToolsMutated: () => {
+      notifyToolsChanged(server)
+      deps.onToolsMutated?.()
+    },
+  })
+  const byName = new Map<string, ControlTool>(control.map(tool => [tool.spec.name, tool]))
 
   const listToolSpecs = (): McpToolSpec[] => [
     ...control.map(tool => tool.spec),

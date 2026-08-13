@@ -108,10 +108,23 @@ export class FakeDsh implements DshRunner {
   spawnProfile(options: { profile: string; env: Record<string, string> }): ChildHandle {
     this.spawned.push({ profile: options.profile, env: options.env })
     this.killed = false
+    let exited = false
+    let exitSignal: NodeJS.Signals | null = null
+    const exitHandlers: Array<(code: number | null, signal: NodeJS.Signals | null) => void> = []
+    const fireExit = (signal: NodeJS.Signals) => {
+      if (exited) return
+      exited = true
+      exitSignal = signal
+      this.killed = true
+      for (const handler of exitHandlers) handler(0, signal)
+    }
     return {
       pid: 4242,
-      kill: () => { this.killed = true },
-      onExit: () => undefined,
+      kill: (signal?: NodeJS.Signals) => { fireExit(signal ?? 'SIGTERM') },
+      onExit: (handler) => {
+        if (exited) handler(0, exitSignal)
+        else exitHandlers.push(handler)
+      },
       stdout: { on() { return this }, [Symbol.asyncIterator]: async function* () {} } as unknown as NodeJS.ReadableStream,
       stderr: { on() { return this } } as unknown as NodeJS.ReadableStream,
     }

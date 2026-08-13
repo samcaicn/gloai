@@ -18,8 +18,9 @@ async function main(): Promise<void> {
 
   const app = createApp(config)
   if (config.transport === 'http') {
-    const listening = await serveHttp(app.server, config)
-    process.stderr.write(`${listening.url}  health http://${config.host}:${config.port}/health\n`)
+    const listening = await serveHttp(() => app.createSession().server, config)
+    const healthUrl = listening.url.replace(/\/mcp$/, '/health')
+    process.stderr.write(`${listening.url}  health ${healthUrl}\n`)
     const shutdown = async () => {
       await app.runtime.stop()
       await listening.close()
@@ -30,7 +31,7 @@ async function main(): Promise<void> {
     return
   }
 
-  await serveStdio(app.server)
+  await serveStdio(app.createSession().server)
 }
 
 main().catch((error: unknown) => {

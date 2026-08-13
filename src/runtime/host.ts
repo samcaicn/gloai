@@ -122,12 +122,11 @@ export class RuntimeHost {
       await this.client.close().catch(() => undefined)
       this.client = null
     }
-    if (this.child) {
-      this.child.kill('SIGTERM')
-      this.child = null
-    }
+    const child = this.child
+    this.child = null
     this.bridged = []
     this.rawToPublic.clear()
+    if (child) await terminateChild(child)
   }
 
   async load(spec: string): Promise<RuntimeStatus> {
@@ -214,6 +213,25 @@ export class RuntimeHost {
   }
 }
 
+const CHILD_SIGKILL_AFTER_MS = 5_000
+
+async function terminateChild(child: ChildHandle): Promise<void> {
+  await new Promise<void>(resolve => {
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      clearTimeout(escalation)
+      resolve()
+    }
+    const escalation = setTimeout(() => {
+      child.kill('SIGKILL')
+    }, CHILD_SIGKILL_AFTER_MS)
+    child.onExit(() => finish())
+    child.kill('SIGTERM')
+  })
+}
+
 export async function defaultWaitForHttp(url: string, signal: AbortSignal): Promise<void> {
   let last = 'no response yet'
   while (!signal.aborted) {
@@ -224,9 +242,23 @@ export async function defaultWaitForHttp(url: string, signal: AbortSignal): Prom
     } catch (error) {
       last = String(error)
     }
-    await new Promise(resolve => setTimeout(resolve, 200))
+    await sleep(200, signal).catch(() => undefined)
   }
   throw new Error(`timed out waiting for ${url}: ${last}`)
+}
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(signal.reason instanceof Error ? signal.reason : new Error('aborted'))
+      return
+    }
+    const timer = setTimeout(resolve, ms)
+    signal.addEventListener('abort', () => {
+      clearTimeout(timer)
+      reject(signal.reason instanceof Error ? signal.reason : new Error('aborted'))
+    }, { once: true })
+  })
 }
 
 export async function defaultConnect(url: string): Promise<RuntimeMcpClient> {

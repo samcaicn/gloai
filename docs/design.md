@@ -39,7 +39,7 @@ Agent  --stdio/http MCP-->  PluginMcpServer
 
 - Source of truth: GitHub Search `q=topic:dsh-plugin`, paginated (`per_page=100`) until exhausted.
 - Cache: `$DSH_PLUGIN_MCP_CACHE_DIR/catalog.json` (default `~/.dsh-plugin-mcp/catalog.json`), TTL 30 minutes.
-- Inspect: `GET /repos/{owner}/{repo}/contents/package.json`, `/readme`, `cordis.patch.yml`, root listing. Classification is derived from those files plus topics and description.
+- Inspect: `GET /repos/{owner}/{repo}/contents/package.json`, `/readme`, `cordis.patch.yml`, root listing. Classification is derived from those files plus topics and description. Cordis `!!js` scalars parse as opaque strings (the loader evaluates them; inspect does not).
 - Auth: `GITHUB_TOKEN` or `GH_TOKEN`; otherwise unauthenticated (stricter rate limit). Errors name the rate-limit case.
 
 ### Profile plane
@@ -106,8 +106,9 @@ Dynamic tools: `dsh__<name>` after `dsh_runtime_start`.
 
 - Catalog is read-only GitHub HTTP.
 - Install runs `pnpm` inside the profile directory (same trust model as `dsh plugin add`).
-- Runtime executes plugin code with the privileges of the spawned `dsh` process.
+- Runtime executes plugin code with the privileges of the spawned `dsh` process. Stop sends `SIGTERM`, then `SIGKILL` after 5 seconds if the child is still alive.
 - Both mutating planes require an explicit allow flag. The server refuses those tools with an actionable error when the flag is off.
+- Streamable HTTP: one MCP `Server` instance per session (SDK `Protocol` is one-transport). CORS is enabled on `/mcp` for the browser Inspector.
 
 ## Dual entry
 
@@ -118,4 +119,6 @@ Dynamic tools: `dsh__<name>` after `dsh_runtime_start`.
 
 ## Testing
 
-Unit tests cover classification, catalog pagination/caching, inspect parsing, CLI argument/env resolution, DSH CLI command construction, tool-name normalization, tool-result bridging, and an in-memory MCP session (list/call/resources/prompts). Runtime spawn and GitHub are injected so tests do not need a live Harness or network.
+Unit tests cover classification, catalog pagination/caching, inspect parsing, CLI argument/env resolution, DSH CLI command construction, tool-name normalization, tool-result bridging, an in-memory MCP session (list/call/resources/prompts), and a real Streamable HTTP handshake with two concurrent official SDK clients. Runtime spawn and GitHub are injected so tests do not need a live Harness or network.
+
+Verify a built binary with the official Inspector (`npx @modelcontextprotocol/inspector --cli node dist/cli.js --method tools/list`) and the TypeScript SDK `Client` (`StdioClientTransport` / `StreamableHTTPClientTransport`). Each HTTP initialize creates its own MCP `Server`; catalog and runtime state stay in the factory closure.

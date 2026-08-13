@@ -8,7 +8,6 @@ import { defaultCacheDir, DEFAULT_HTTP_HOST, DEFAULT_HTTP_PORT, DEFAULT_PROFILE,
 import { ToolBridge } from './runtime/bridge.js'
 import type { AppConfig } from './config.js'
 import type { DshPluginContext } from './types.js'
-import { notifyToolsChanged } from './mcp/server.js'
 
 export const name = 'deepseek-harness-plugin-mcp'
 export const inject = ['tools']
@@ -41,47 +40,48 @@ export async function apply(ctx: DshPluginContext, config: PluginConfig = {}): P
   const bridge = resolved.bridgeTools ? new ToolBridge(ctx.tools) : null
   if (bridge) bridge.sync()
 
-  const handle = createPluginMcpServer({
+  const deps = {
     config: resolved,
     catalog,
     github,
     dsh,
-    runtime: overlayRuntime(runtime, bridge, ctx),
-  })
+    runtime: overlayRuntime(runtime, bridge),
+  }
 
-  const listening = await serveHttp(handle.server, resolved)
-  ctx.logger.info(`${name} listening at ${listening.url}`)
-
-  const stopChange = ctx.on('tools/change', () => {
-    bridge?.sync()
-    notifyToolsChanged(handle.server)
-  })
-
-  ctx.effect(() => () => {
-    stopChange()
-    void listening.close()
-  }, `${name}.http`)
+  const listening = await serveHttp(() => createPluginMcpServer(deps).server, resolved)
+  try {
+    ctx.logger.info(`${name} listening at ${listening.url}`)
+    const stopChange = ctx.on('tools/change', () => {
+      bridge?.sync()
+      listening.notifyToolsChanged()
+    })
+    ctx.effect(() => () => {
+      stopChange()
+      void listening.close()
+    }, `${name}.http`)
+  } catch (error) {
+    await listening.close()
+    throw error
+  }
 }
 
-function overlayRuntime(runtime: RuntimeHost, bridge: ToolBridge | null, ctx: DshPluginContext): RuntimeHost {
+function overlayRuntime(runtime: RuntimeHost, bridge: ToolBridge | null): RuntimeHost {
   if (!bridge) return runtime
-  const original = {
-    listBridged: runtime.listBridged.bind(runtime),
-    call: runtime.call.bind(runtime),
-  }
-  runtime.listBridged = () => {
+  const originalList = runtime.listBridged.bind(runtime)
+  const originalCall = runtime.call.bind(runtime)
+  const overlaid = Object.create(runtime) as RuntimeHost
+  overlaid.listBridged = () => {
     const live = bridge.mcpSpecs()
-    return live.length > 0 ? live : original.listBridged()
+    return live.length > 0 ? live : originalList()
   }
-  runtime.call = async (publicName, args, signal) => {
+  overlaid.call = async (publicName, args, signal) => {
     const live = bridge.list()
     if (live.some(tool => tool.publicName === publicName)) {
       return await bridge.call(publicName, args, signal)
     }
-    return await original.call(publicName, args, signal)
+    return await originalCall(publicName, args, signal)
   }
-  void ctx
-  return runtime
+  return overlaid
 }
 
 export function resolvePluginConfig(config: PluginConfig): AppConfig {

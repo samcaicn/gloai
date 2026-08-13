@@ -69,6 +69,10 @@ export class ProcessDshRunner implements DshRunner {
         child.kill(signal)
       },
       onExit(handler) {
+        if (child.exitCode !== null || child.signalCode !== null) {
+          handler(child.exitCode, child.signalCode)
+          return
+        }
         child.on('exit', handler)
       },
       stdout: child.stdout,
