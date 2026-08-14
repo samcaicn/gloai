@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  GO_VERSION: '1.25'
+
+jobs:
+  test:
+    name: Test (Go)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Run tests
+        run: |
+          go test ./... -v -json 2>&1 | tee test-results.json
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.json
+          retention-days: 30
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Build binary
+        run: go build -o oih .
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: oih-binary
+          path: oih
+          retention-days: 7
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+  notify:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [test, build, lint]
+    if: failure()
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "::notice ::CI failed - check ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # Add your webhook here (Slack/Discord/Telegram/Email)
+          # curl -X POST -H 'Content-type: application/json' --data '{"text":"CI failed: '${GITHUB_REPOSITORY}' #${GITHUB_RUN_NUMBER}"}' ${{ secrets.SLACK_WEBHOOK }}
+
+  metrics:
+    name: Collect metrics
+    runs-on: ubuntu-latest
+    needs: [test, build, lint]
+    if: always()
+    steps:
+      - name: Extract build duration
+        run: |
+          DURATION=$(( ${{ job-status }} == 'success' ? 0 : 1 ))
+          echo "ci_duration_seconds=${{ github.event.workflow_run.run_number }}" >> $GITHUB_OUTPUT
+          echo "ci_status=${{ job-status }}" >> $GITHUB_OUTPUT
+        id: metrics
+      - name: Push to Prometheus Pushgateway (optional)
+        if: env.PROMETHEUS_PUSHGATEWAY_URL != ''
+        run: |
+          cat <<EOF | curl --data-binary @- ${PROMETHEUS_PUSHGATEWAY_URL}/metrics/job/ci/instance/${GITHUB_REPOSITORY}
+          ci_build_duration_seconds{repo="${GITHUB_REPOSITORY}",branch="${GITHUB_REF_NAME}"} ${{ steps.metrics.outputs.ci_duration_seconds }}
+          ci_build_status{repo="${GITHUB_REPOSITORY}",branch="${GITHUB_REF_NAME}"} ${{ steps.metrics.outputs.ci_status }}
+          EOF
+        env:
+          PROMETHEUS_PUSHGATEWAY_URL: ${{ secrets.PROMETHEUS_PUSHGATEWAY_URL }}
