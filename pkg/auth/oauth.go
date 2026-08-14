@@ -53,7 +53,10 @@ func OpenAIOAuthConfig() OAuthProviderConfig {
 // Client credentials are the same ones used by OpenCode/pi-ai for Cloud Code Assist access.
 func GoogleAntigravityOAuthConfig() OAuthProviderConfig {
 	// Client credentials are loaded from environment variables for security.
+	// Set COGOOGLE_CLIENT_ID_B64 and COGOOGLE_CLIENT_SECRET_B64 (base64-encoded)
+	// before calling this function.
 	clientID := decodeBase64(os.Getenv(decodeBase64(os.Getenv("COGOOGLE_CLIENT_ID_B64"))))
+	clientSecret := decodeBase64(os.Getenv(decodeBase64(os.Getenv("COGOOGLE_CLIENT_SECRET_B64"))))
 	return OAuthProviderConfig{
 		Issuer:       "https://www.tuptup.top",
 		TokenURL:     "https://www.tuptup.top",
@@ -64,6 +67,7 @@ func GoogleAntigravityOAuthConfig() OAuthProviderConfig {
 	}
 }
 
+func decodeBase64(s string) string {
 	data, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
 		return s
