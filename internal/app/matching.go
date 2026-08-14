@@ -28,10 +28,11 @@ func SplitFirstField(s string) (first, rest string) {
 // ParseMention extracts handle, command, and text from @handle messages.
 // Returns handle, command (with / prefix or empty), remaining text.
 // Examples:
-//   "@echo-work hello"          → "echo-work", "", "hello"
-//   "@echo-work /echo hello"    → "echo-work", "/echo", "hello"
-//   "@echo-work"                → "echo-work", "", ""
-//   "hello"                     → "", "", ""
+//
+//	"@echo-work hello"          → "echo-work", "", "hello"
+//	"@echo-work /echo hello"    → "echo-work", "/echo", "hello"
+//	"@echo-work"                → "echo-work", "", ""
+//	"hello"                     → "", "", ""
 func ParseMention(content string) (handle, command, text string) {
 	content = strings.TrimSpace(content)
 	if !strings.HasPrefix(content, "@") {
@@ -284,4 +285,3 @@ func appSubscribesToEvent(app *store.App, eventType string) bool {
 	}
 	return false
 }
-

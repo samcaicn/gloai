@@ -1,7 +1,6 @@
 package actions
 
 import (
-	
 	"log/slog"
 	"time"
 
@@ -43,17 +42,17 @@ func (m *SkillManager) Search(ctx *shared.Context, params map[string]any) (any, 
 	result := make([]map[string]any, len(skills))
 	for i, s := range skills {
 		result[i] = map[string]any{
-			"id":              s.ID,
-			"name":            s.Name,
-			"description":     s.Description,
-			"category":        s.Category,
-			"tags":            s.Tags,
-			"author":          s.Author,
-			"owner_id":        s.OwnerID,
-			"latest_version":  s.LatestVersionID,
-			"listing":         s.Listing,
-			"created_at":      s.CreatedAt,
-			"updated_at":      s.UpdatedAt,
+			"id":             s.ID,
+			"name":           s.Name,
+			"description":    s.Description,
+			"category":       s.Category,
+			"tags":           s.Tags,
+			"author":         s.Author,
+			"owner_id":       s.OwnerID,
+			"latest_version": s.LatestVersionID,
+			"listing":        s.Listing,
+			"created_at":     s.CreatedAt,
+			"updated_at":     s.UpdatedAt,
 		}
 	}
 
@@ -111,27 +110,27 @@ func (m *SkillManager) Create(ctx *shared.Context, params map[string]any) (any, 
 
 	// Generate upload ticket
 	ticket, err := m.store.CreateSkillUploadTicket(ctx, &store.SkillUploadTicketRequest{
-		SkillName:      skillName,
-		Filename:       filename,
-		Version:        version,
-		SkillType:      skillType,
-		Description:    description,
-		RequiredCaps:   requiredCaps,
-		ContentType:    contentType,
-		TTLSeconds:     ttl,
+		SkillName:    skillName,
+		Filename:     filename,
+		Version:      version,
+		SkillType:    skillType,
+		Description:  description,
+		RequiredCaps: requiredCaps,
+		ContentType:  contentType,
+		TTLSeconds:   ttl,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]any{
-		"ticket_id":    ticket.TicketID,
-		"upload_url":   ticket.UploadURL,
-		"method":       ticket.Method,
-		"headers":      ticket.Headers,
-		"key":          ticket.Key,
-		"max_size":     ticket.MaxSize,
-		"expires_at":   ticket.ExpiresAt,
+		"ticket_id":  ticket.TicketID,
+		"upload_url": ticket.UploadURL,
+		"method":     ticket.Method,
+		"headers":    ticket.Headers,
+		"key":        ticket.Key,
+		"max_size":   ticket.MaxSize,
+		"expires_at": ticket.ExpiresAt,
 	}, nil
 }
 
@@ -189,11 +188,11 @@ func (m *SkillManager) InstallConfirm(ctx *shared.Context, params map[string]any
 	externalURL, _ := params["external_download_url"].(string)
 
 	promoted, err := m.store.ConfirmSkillInstall(ctx, ctx.ClientID, &store.SkillInstallConfirm{
-		SkillID:            skillID,
-		InstallPath:        installPath,
-		InstallVersion:     installVersion,
-		InstallSizeBytes:   int64(installSizeBytes),
-		IsExternal:         isExternal,
+		SkillID:             skillID,
+		InstallPath:         installPath,
+		InstallVersion:      installVersion,
+		InstallSizeBytes:    int64(installSizeBytes),
+		IsExternal:          isExternal,
 		ExternalDownloadURL: externalURL,
 	})
 	if err != nil {
@@ -216,15 +215,15 @@ func (m *SkillManager) ReportExecution(ctx *shared.Context, params map[string]an
 	durationMs, _ := params["duration_ms"].(float64)
 
 	record := &store.SkillExecutionReport{
-		SkillID:       skillID,
-		SkillVersion:  skillVersion,
-		ClientID:      ctx.ClientID,
-		TenantID:      ctx.TenantID,
-		Params:        execParams,
-		Result:        result,
-		ErrorMessage:  errorMsg,
-		DurationMs:    int64(durationMs),
-		Timestamp:     time.Now().Unix(),
+		SkillID:      skillID,
+		SkillVersion: skillVersion,
+		ClientID:     ctx.ClientID,
+		TenantID:     ctx.TenantID,
+		Params:       execParams,
+		Result:       result,
+		ErrorMessage: errorMsg,
+		DurationMs:   int64(durationMs),
+		Timestamp:    time.Now().Unix(),
 	}
 
 	if err := m.store.ReportSkillExecution(ctx, record); err != nil {

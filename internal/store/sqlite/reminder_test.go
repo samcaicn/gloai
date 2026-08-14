@@ -12,7 +12,7 @@ import (
 // fakeClock is a deterministic clock for testing.
 type fakeClock struct{ t time.Time }
 
-func (c *fakeClock) Now() time.Time  { return c.t }
+func (c *fakeClock) Now() time.Time          { return c.t }
 func (c *fakeClock) Advance(d time.Duration) { c.t = c.t.Add(d) }
 
 func openTestDB(t *testing.T) *sqlite.DB {

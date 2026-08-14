@@ -357,8 +357,10 @@ func openFile(dir string) *fileStore {
 	return &fileStore{dir: dir}
 }
 
-func (f *fileStore) tenantDir(t string) string  { return filepath.Join(f.dir, "tenants", t) }
-func (f *fileStore) profilePath(t string) string { return filepath.Join(f.tenantDir(t), "profile.json") }
+func (f *fileStore) tenantDir(t string) string { return filepath.Join(f.dir, "tenants", t) }
+func (f *fileStore) profilePath(t string) string {
+	return filepath.Join(f.tenantDir(t), "profile.json")
+}
 func (f *fileStore) memoriesPath(t string) string {
 	return filepath.Join(f.tenantDir(t), "memories.json")
 }

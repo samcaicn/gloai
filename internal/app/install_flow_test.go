@@ -47,7 +47,7 @@ func (m *mockInstallDB) SetAppWebhookVerified(id string, verified bool) error {
 type installCallback struct {
 	InstallationID string `json:"installation_id"`
 	AppToken       string `json:"app_token"`
-	SigningSecret   string `json:"signing_secret"`
+	SigningSecret  string `json:"signing_secret"`
 	BotID          string `json:"bot_id"`
 	Handle         string `json:"handle"`
 }
@@ -219,12 +219,12 @@ func TestInstallFlow_FullNotifyAndVerify(t *testing.T) {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	inst := &store.AppInstallation{
-		ID:            "inst-001",
-		AppID:         "app-001",
-		BotID:         "bot-001",
-		AppToken:      "tok_abc123",
+		ID:               "inst-001",
+		AppID:            "app-001",
+		BotID:            "bot-001",
+		AppToken:         "tok_abc123",
 		AppWebhookSecret: "sec_xyz789",
-		Handle:        "echo-work",
+		Handle:           "echo-work",
 	}
 
 	// Step 1: Notify the App
@@ -289,12 +289,12 @@ func TestInstallFlow_NotifyAppReturns500(t *testing.T) {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	inst := &store.AppInstallation{
-		ID:            "inst-002",
-		AppID:         "app-002",
-		BotID:         "bot-002",
-		AppToken:      "tok_fail",
+		ID:               "inst-002",
+		AppID:            "app-002",
+		BotID:            "bot-002",
+		AppToken:         "tok_fail",
 		AppWebhookSecret: "sec_fail",
-		Handle:        "failbot",
+		Handle:           "failbot",
 	}
 
 	requestURL, err := simulateNotifyAppInstalled(client, mock.server.URL+"/callback", inst.AppID, "sec_fail", inst, db)
@@ -321,12 +321,12 @@ func TestInstallFlow_NotifyAppReturnsNoRequestURL(t *testing.T) {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	inst := &store.AppInstallation{
-		ID:            "inst-003",
-		AppID:         "app-003",
-		BotID:         "bot-003",
-		AppToken:      "tok_nurl",
+		ID:               "inst-003",
+		AppID:            "app-003",
+		BotID:            "bot-003",
+		AppToken:         "tok_nurl",
 		AppWebhookSecret: "sec_nurl",
-		Handle:        "no-url-bot",
+		Handle:           "no-url-bot",
 	}
 
 	requestURL, err := simulateNotifyAppInstalled(client, mock.server.URL+"/callback", inst.AppID, "sec_nurl", inst, db)
@@ -412,12 +412,12 @@ func TestInstallFlow_EndToEnd_DynamicURL(t *testing.T) {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	inst := &store.AppInstallation{
-		ID:            "inst-e2e",
-		AppID:         "app-e2e",
-		BotID:         "bot-e2e",
-		AppToken:      "tok_e2e",
+		ID:               "inst-e2e",
+		AppID:            "app-e2e",
+		BotID:            "bot-e2e",
+		AppToken:         "tok_e2e",
 		AppWebhookSecret: "sec_e2e",
-		Handle:        "my-app",
+		Handle:           "my-app",
 	}
 
 	// Step 1: Notify

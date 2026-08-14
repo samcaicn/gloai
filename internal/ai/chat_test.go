@@ -23,7 +23,7 @@ func (m *mockMessageStore) ListChannelMessages(channelID, sender string, limit i
 func (m *mockMessageStore) SaveMessage(_ *store.Message) (store.SaveResult, error) {
 	return store.SaveResult{}, nil
 }
-func (m *mockMessageStore) GetMessage(_ int64) (*store.Message, error)     { return nil, nil }
+func (m *mockMessageStore) GetMessage(_ int64) (*store.Message, error) { return nil, nil }
 func (m *mockMessageStore) ListMessages(_ string, _ int, _ int64) ([]store.Message, error) {
 	return nil, nil
 }
@@ -33,12 +33,12 @@ func (m *mockMessageStore) ListMessagesBySender(_, _ string, _ int) ([]store.Mes
 func (m *mockMessageStore) GetMessagesSince(_ string, _ int64, _ int) ([]store.Message, error) {
 	return nil, nil
 }
-func (m *mockMessageStore) GetLatestContextToken(_ string) string                        { return "" }
-func (m *mockMessageStore) HasFreshContextToken(_ string, _ time.Duration) bool          { return false }
+func (m *mockMessageStore) GetLatestContextToken(_ string) string               { return "" }
+func (m *mockMessageStore) HasFreshContextToken(_ string, _ time.Duration) bool { return false }
 func (m *mockMessageStore) BatchHasFreshContextToken(_ []string, _ time.Duration) map[string]bool {
 	return nil
 }
-func (m *mockMessageStore) UpdateMediaStatus(_, _ string, _ json.RawMessage) error   { return nil }
+func (m *mockMessageStore) UpdateMediaStatus(_, _ string, _ json.RawMessage) error { return nil }
 func (m *mockMessageStore) UpdateMediaStatusByID(_ int64, _ string, _ json.RawMessage) error {
 	return nil
 }
@@ -68,7 +68,7 @@ func TestComplete_TextReply(t *testing.T) {
 	defer srv.Close()
 
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
-	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestComplete_ToolCall(t *testing.T) {
 		},
 	}
 
-	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "show PRs", tools, nil, nil)
+	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "show PRs", tools, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
@@ -225,7 +225,7 @@ func TestContinueWithToolResults(t *testing.T) {
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
 	tools := []Tool{{Type: "function", Function: ToolFunction{Name: "cmd.weather", Description: "Get weather"}}}
 
-	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "weather?", tools, nil, nil)
+	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "weather?", tools, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
@@ -233,7 +233,7 @@ func TestContinueWithToolResults(t *testing.T) {
 		t.Fatalf("expected tool_call, got text: %q", result.Content)
 	}
 
-	messages := BuildMessages(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "weather?", nil, nil)
+	messages := BuildMessages(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "weather?", nil, nil, nil)
 	messages = AppendAssistantToolCalls(messages, result.ToolCalls)
 	result2, _, err := ContinueWithToolResults(context.Background(), cfg, messages, []ToolCallResult{
 		{ID: "call_abc", Name: "cmd.weather", Content: "Sunny, 25°C"},
@@ -312,8 +312,8 @@ func TestComplete_MultiRoundToolCalls(t *testing.T) {
 		{Type: "function", Function: ToolFunction{Name: "cmd.detail", Description: "Get detail"}},
 	}
 
-	messages := BuildMessages(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "tell me about the latest PR", nil, nil)
-	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "tell me about the latest PR", tools, nil, nil)
+	messages := BuildMessages(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "tell me about the latest PR", nil, nil, nil)
+	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "tell me about the latest PR", tools, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("round 1: %v", err)
 	}
@@ -352,7 +352,7 @@ func TestComplete_APIError(t *testing.T) {
 	defer srv.Close()
 
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
-	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err == nil {
 		t.Fatal("expected error for 500 response")
 	}
@@ -368,7 +368,7 @@ func TestComplete_ErrorJSON(t *testing.T) {
 	defer srv.Close()
 
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
-	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err == nil {
 		t.Fatal("expected error for error JSON response")
 	}
@@ -382,7 +382,7 @@ func TestComplete_EmptyChoices(t *testing.T) {
 	defer srv.Close()
 
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
-	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err == nil {
 		t.Fatal("expected error for empty choices")
 	}
@@ -407,8 +407,8 @@ func TestComplete_MaxToolRoundsExceeded(t *testing.T) {
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
 	tools := []Tool{{Type: "function", Function: ToolFunction{Name: "cmd.loop", Description: "Loop forever"}}}
 
-	messages := BuildMessages(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "loop", nil, nil)
-	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "loop", tools, nil, nil)
+	messages := BuildMessages(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "loop", nil, nil, nil)
+	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "loop", tools, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("initial: %v", err)
 	}
@@ -460,7 +460,7 @@ func TestComplete_UsageParsed(t *testing.T) {
 	defer srv.Close()
 
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
-	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
@@ -496,7 +496,7 @@ func TestComplete_UsageNilWhenMissing(t *testing.T) {
 	defer srv.Close()
 
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
-	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
@@ -524,7 +524,7 @@ func TestComplete_UsagePartialDetails(t *testing.T) {
 	defer srv.Close()
 
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
-	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
@@ -570,7 +570,7 @@ func TestComplete_UsageOnToolCallResponse(t *testing.T) {
 	defer srv.Close()
 
 	cfg := store.AIConfig{BaseURL: srv.URL, APIKey: "test-key", Model: "test-model"}
-	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	result, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
@@ -628,7 +628,7 @@ func TestCustomHeaders_Applied(t *testing.T) {
 			"X-OpenRouter-Title": "OpenClaw",
 		},
 	}
-	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
@@ -659,7 +659,7 @@ func TestCustomHeaders_ReservedBlocked(t *testing.T) {
 			"Authorization": "Bearer evil-override",
 		},
 	}
-	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil)
+	_, err := Complete(context.Background(), cfg, &mockMessageStore{}, "ch1", "user1", "Hi", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete: %v", err)
 	}
@@ -696,7 +696,7 @@ func TestCompleteWithRealAPI(t *testing.T) {
 		MaxHistory:   5,
 	}
 
-	result, err := Complete(context.Background(), cfg, db, "nonexistent-channel", "test-sender", "Hello, what is 1+1?", nil, nil, nil)
+	result, err := Complete(context.Background(), cfg, db, "nonexistent-channel", "test-sender", "Hello, what is 1+1?", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Complete failed: %v", err)
 	}

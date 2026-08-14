@@ -34,10 +34,10 @@ func mockLLMServer(t *testing.T, token string, prompt, completion, total, cached
 				{"message": map[string]any{"role": "assistant", "content": "hi there"}},
 			},
 			"usage": map[string]any{
-				"prompt_tokens":        prompt,
-				"completion_tokens":    completion,
-				"total_tokens":         total,
-				"prompt_tokens_details": map[string]any{"cached_tokens": cached},
+				"prompt_tokens":             prompt,
+				"completion_tokens":         completion,
+				"total_tokens":              total,
+				"prompt_tokens_details":     map[string]any{"cached_tokens": cached},
 				"completion_tokens_details": map[string]any{"reasoning_tokens": reasoning},
 			},
 		})
@@ -78,7 +78,7 @@ func TestChatRecordsSystemLLMTokenUsage(t *testing.T) {
 	defer st.Close()
 
 	cfg := &config.Config{
-		Store:     "sqlite",
+		Store:      "sqlite",
 		LLMBaseURL: llmSrv.URL,
 		LLMAPIKey:  token,
 		LLMModel:   "gpt-4o-mini",

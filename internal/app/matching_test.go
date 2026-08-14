@@ -160,10 +160,10 @@ func TestAppSubscribesToEvent(t *testing.T) {
 		eventType string
 		want      bool
 	}{
-		{"message", true},          // exact match
-		{"message.text", true},     // wildcard match
-		{"message.image", true},    // wildcard match
-		{"reaction.added", true},   // exact match
+		{"message", true},        // exact match
+		{"message.text", true},   // wildcard match
+		{"message.image", true},  // wildcard match
+		{"reaction.added", true}, // exact match
 		{"reaction.removed", false},
 		{"unknown", false},
 	}

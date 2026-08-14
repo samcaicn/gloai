@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
-	"encoding/base64"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -17,9 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dop251/goja"
 	"github.com/ceoadmin/CEOadmin/internal/provider"
 	"github.com/ceoadmin/CEOadmin/internal/store"
+	"github.com/dop251/goja"
 )
 
 // Webhook pushes messages to a configured HTTP endpoint.
@@ -280,7 +280,6 @@ func DebugResponse(script string, mockMsg webhookPayload, response *resData) *De
 	return result
 }
 
-
 // MockPayload creates a test webhookPayload for debugging.
 func MockPayload(sender, content, msgType string) webhookPayload {
 	if sender == "" {
@@ -470,14 +469,14 @@ func contentTypeToFileInfo(ct string) (fileName, itemType string) {
 
 	// Document types
 	docMap := map[string]string{
-		"application/pdf":  ".pdf",
-		"application/zip":  ".zip",
-		"application/gzip": ".gz",
-		"application/x-tar": ".tar",
-		"application/x-rar-compressed": ".rar",
-		"application/x-7z-compressed":  ".7z",
-		"application/msword":           ".doc",
-		"application/vnd.ms-excel":     ".xls",
+		"application/pdf":               ".pdf",
+		"application/zip":               ".zip",
+		"application/gzip":              ".gz",
+		"application/x-tar":             ".tar",
+		"application/x-rar-compressed":  ".rar",
+		"application/x-7z-compressed":   ".7z",
+		"application/msword":            ".doc",
+		"application/vnd.ms-excel":      ".xls",
 		"application/vnd.ms-powerpoint": ".ppt",
 		"application/vnd.openxmlformats-officedocument.wordprocessingml.document":   ".docx",
 		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         ".xlsx",
@@ -890,7 +889,7 @@ type webhookPayload struct {
 }
 
 type webhookItem struct {
-	Type     string `json:"type"`               // "text", "image", "voice", "file", "video"
+	Type     string `json:"type"` // "text", "image", "voice", "file", "video"
 	Text     string `json:"text,omitempty"`
 	FileName string `json:"file_name,omitempty"`
 	MediaURL string `json:"media_url,omitempty"` // download URL (MinIO or CDN proxy)
@@ -979,8 +978,8 @@ func isBinaryContentType(ct string) bool {
 		"application/vnd.openxmlformats-officedocument.wordprocessingml.document",   // .docx
 		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",         // .xlsx
 		"application/vnd.openxmlformats-officedocument.presentationml.presentation", // .pptx
-		"application/msword",        // .doc
-		"application/vnd.ms-excel",  // .xls
+		"application/msword",            // .doc
+		"application/vnd.ms-excel",      // .xls
 		"application/vnd.ms-powerpoint": // .ppt
 		return true
 	}

@@ -81,18 +81,18 @@ func (h *TenantBindHandler) listTenantBindRequests(ctx context.Context, tenantID
 			clientInfo = client.ClientInfo
 		}
 		allBinds = append(allBinds, map[string]any{
-			"id":            req.ID,
-			"client_id":     req.ClientID,
-			"join_code":     req.JoinCode,
-			"tenant_id":     req.TenantID,
-			"status":        req.Status,
-			"reason":        req.Reason,
-			"created_at":    req.CreatedAt,
-			"updated_at":    req.UpdatedAt,
-			"expires_at":    req.ExpiresAt,
-			"device_token":  clientToken,
-			"fingerprint":   fingerprint,
-			"client_info":   clientInfo,
+			"id":           req.ID,
+			"client_id":    req.ClientID,
+			"join_code":    req.JoinCode,
+			"tenant_id":    req.TenantID,
+			"status":       req.Status,
+			"reason":       req.Reason,
+			"created_at":   req.CreatedAt,
+			"updated_at":   req.UpdatedAt,
+			"expires_at":   req.ExpiresAt,
+			"device_token": clientToken,
+			"fingerprint":  fingerprint,
+			"client_info":  clientInfo,
 		})
 	}
 
@@ -168,10 +168,10 @@ func (h *TenantBindHandler) HandleApproveBind(w http.ResponseWriter, r *http.Req
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success":    true,
-		"bind_id":    bindID,
-		"client_id":  req.ClientID,
-		"tenant_id":  user.ID,
+		"success":   true,
+		"bind_id":   bindID,
+		"client_id": req.ClientID,
+		"tenant_id": user.ID,
 	})
 }
 

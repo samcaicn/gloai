@@ -117,13 +117,13 @@ func TestMentionRouting_HandleWithCommand(t *testing.T) {
 	// Create dispatcher with mock store and deliver event
 	secret := "echo-secret"
 	inst := &store.AppInstallation{
-		ID:            "inst-echo-1",
-		AppID:         "app-echo-1",
-		BotID:         "bot-echo-1",
-		Handle:        "echo-work",
+		ID:               "inst-echo-1",
+		AppID:            "app-echo-1",
+		BotID:            "bot-echo-1",
+		Handle:           "echo-work",
 		AppWebhookSecret: secret,
 		AppWebhookURL:    srv.URL,
-		Enabled:       true,
+		Enabled:          true,
 	}
 
 	d := newTestDispatcher(&mockLogDB{}, srv.Client())

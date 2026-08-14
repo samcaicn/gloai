@@ -22,8 +22,8 @@ import (
 	"syscall"
 	"time"
 
-	appdelivery "github.com/ceoadmin/CEOadmin/internal/app"
 	"github.com/ceoadmin/CEOadmin/internal/api"
+	appdelivery "github.com/ceoadmin/CEOadmin/internal/app"
 	"github.com/ceoadmin/CEOadmin/internal/auth"
 	"github.com/ceoadmin/CEOadmin/internal/bot"
 	"github.com/ceoadmin/CEOadmin/internal/config"
@@ -339,4 +339,3 @@ func (c *controlHandler) handleReset(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 }
-

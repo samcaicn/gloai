@@ -23,22 +23,22 @@ func (s TaskStatus) String() string {
 
 // Task represents a unit of work assigned to a client
 type Task struct {
-	ID          string         `json:"id"`
-	TenantID    string         `json:"tenant_id"`
-	ClientID    string         `json:"client_id"`
-	Name        string         `json:"name"`
-	Type        string         `json:"type"`
+	ID          string          `json:"id"`
+	TenantID    string          `json:"tenant_id"`
+	ClientID    string          `json:"client_id"`
+	Name        string          `json:"name"`
+	Type        string          `json:"type"`
 	Payload     json.RawMessage `json:"payload"`
 	Metadata    json.RawMessage `json:"metadata"`
-	Status      TaskStatus     `json:"status"`
+	Status      TaskStatus      `json:"status"`
 	Result      json.RawMessage `json:"result,omitempty"`
-	ErrorMsg    string         `json:"error_message,omitempty"`
-	CreatedAt   int64          `json:"created_at"`
-	UpdatedAt   int64          `json:"updated_at"`
-	DeliveredAt int64          `json:"delivered_at,omitempty"`
-	AckedAt     int64          `json:"acked_at,omitempty"`
-	CompletedAt int64          `json:"completed_at,omitempty"`
-	FailedAt    int64          `json:"failed_at,omitempty"`
+	ErrorMsg    string          `json:"error_message,omitempty"`
+	CreatedAt   int64           `json:"created_at"`
+	UpdatedAt   int64           `json:"updated_at"`
+	DeliveredAt int64           `json:"delivered_at,omitempty"`
+	AckedAt     int64           `json:"acked_at,omitempty"`
+	CompletedAt int64           `json:"completed_at,omitempty"`
+	FailedAt    int64           `json:"failed_at,omitempty"`
 }
 
 func (t *Task) ToDict() map[string]any {

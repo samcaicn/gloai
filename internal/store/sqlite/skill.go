@@ -15,12 +15,12 @@ import (
 // GetSkillEvaluation returns a stub skill evaluation.
 func (db *DB) GetSkillEvaluation(ctx context.Context, skillID string) (*store.SkillEvaluation, error) {
 	return &store.SkillEvaluation{
-		SkillID:        skillID,
-		OverallScore:   0,
-		QualityScore:   0,
-		UsageScore:     0,
-		SampleCount:    0,
-		LastEvaluated:  0,
+		SkillID:       skillID,
+		OverallScore:  0,
+		QualityScore:  0,
+		UsageScore:    0,
+		SampleCount:   0,
+		LastEvaluated: 0,
 	}, nil
 }
 

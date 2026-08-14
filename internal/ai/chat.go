@@ -45,10 +45,10 @@ const MaxToolRounds = 5
 // Message supports text, tool_calls, and tool results.
 type Message struct {
 	Role       string     `json:"role"`
-	Content    any        `json:"content,omitempty"`     // string or null
-	ToolCalls  []toolCall `json:"tool_calls,omitempty"`  // assistant response
+	Content    any        `json:"content,omitempty"`      // string or null
+	ToolCalls  []toolCall `json:"tool_calls,omitempty"`   // assistant response
 	ToolCallID string     `json:"tool_call_id,omitempty"` // tool result
-	Name       string     `json:"name,omitempty"`        // tool result function name
+	Name       string     `json:"name,omitempty"`         // tool result function name
 }
 
 type toolCall struct {
@@ -75,9 +75,9 @@ type ToolFunction struct {
 }
 
 type chatRequest struct {
-	Model    string        `json:"model"`
+	Model    string    `json:"model"`
 	Messages []Message `json:"messages"`
-	Tools    []Tool        `json:"tools,omitempty"`
+	Tools    []Tool    `json:"tools,omitempty"`
 }
 
 type chatUsage struct {
@@ -378,10 +378,10 @@ func callAPI(ctx context.Context, baseURL, apiKey, model string, messages []Mess
 
 // reservedHeaders are HTTP headers that must not be overridden by custom config.
 var reservedHeaders = map[string]bool{
-	"authorization":    true,
-	"content-type":     true,
-	"content-length":   true,
-	"host":             true,
+	"authorization":     true,
+	"content-type":      true,
+	"content-length":    true,
+	"host":              true,
 	"transfer-encoding": true,
 }
 

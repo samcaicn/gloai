@@ -15,8 +15,8 @@ import (
 
 	"github.com/ceoadmin/CEOadmin/internal/ai"
 	appdelivery "github.com/ceoadmin/CEOadmin/internal/app"
-	"github.com/ceoadmin/CEOadmin/internal/modelrank"
 	"github.com/ceoadmin/CEOadmin/internal/memory"
+	"github.com/ceoadmin/CEOadmin/internal/modelrank"
 	"github.com/ceoadmin/CEOadmin/internal/provider"
 	"github.com/ceoadmin/CEOadmin/internal/storage"
 	"github.com/ceoadmin/CEOadmin/internal/store"

@@ -13,7 +13,7 @@ import (
 // tenant-memory sidecar (applications) consume it, so they reach the *same*
 // system LLM. It mirrors tenant-memory/internal/config.applySystemLLM.
 type platformLLMV2 struct {
-	Endpoint string `json:"endpoint"`
+	Endpoint       string `json:"endpoint"`
 	Authentication struct {
 		Attributes struct {
 			Token string `json:"token"`

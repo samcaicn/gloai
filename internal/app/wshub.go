@@ -12,8 +12,8 @@ import (
 
 type WSHub struct {
 	mu       sync.RWMutex
-	conns    map[string]*WSConn   // installation_id → conn
-	appConns map[string]*WSConn   // app_id → conn (app-level WS)
+	conns    map[string]*WSConn // installation_id → conn
+	appConns map[string]*WSConn // app_id → conn (app-level WS)
 }
 
 type WSConn struct {

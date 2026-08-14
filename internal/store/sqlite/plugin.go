@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/ceoadmin/CEOadmin/internal/store"
+	"github.com/google/uuid"
 )
 
 func scanPluginWithLatest(scanner interface{ Scan(...any) error }) (store.PluginWithLatest, error) {

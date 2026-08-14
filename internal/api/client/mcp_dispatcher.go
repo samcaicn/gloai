@@ -25,10 +25,10 @@ type MCPRequest struct {
 }
 
 type MCPResponse struct {
-	ID     string         `json:"id"`
-	OK     bool           `json:"ok"`
-	Data   any            `json:"data,omitempty"`
-	Error  *MCPError      `json:"error,omitempty"`
+	ID    string    `json:"id"`
+	OK    bool      `json:"ok"`
+	Data  any       `json:"data,omitempty"`
+	Error *MCPError `json:"error,omitempty"`
 }
 
 type MCPError struct {
@@ -77,9 +77,9 @@ func (d *MCPDispatcher) handleClientBind(ctx context.Context, client *store.Clie
 			ID: req.ID,
 			OK: true,
 			Data: map[string]any{
-				"status":      "already_bound",
-				"tenant_id":   client.TenantID,
-				"request_id":  "",
+				"status":     "already_bound",
+				"tenant_id":  client.TenantID,
+				"request_id": "",
 			},
 		}
 	}
@@ -125,9 +125,9 @@ func (d *MCPDispatcher) handleClientBind(ctx context.Context, client *store.Clie
 		ID: req.ID,
 		OK: true,
 		Data: map[string]any{
-			"status":      "pending_approval",
-			"request_id":  bindReq.ID,
-			"tenant_id":   tenant.ID,
+			"status":     "pending_approval",
+			"request_id": bindReq.ID,
+			"tenant_id":  tenant.ID,
 		},
 	}
 }
@@ -173,9 +173,9 @@ func (d *MCPDispatcher) handleClientBindStatus(ctx context.Context, client *stor
 		ID: req.ID,
 		OK: true,
 		Data: map[string]any{
-			"status":      bindReq.Status,
-			"request_id":  bindReq.ID,
-			"tenant_id":   bindReq.TenantID,
+			"status":     bindReq.Status,
+			"request_id": bindReq.ID,
+			"tenant_id":  bindReq.TenantID,
 		},
 	}
 }
@@ -209,8 +209,8 @@ func (d *MCPDispatcher) handleClientUnbind(ctx context.Context, client *store.Cl
 		ID: req.ID,
 		OK: true,
 		Data: map[string]any{
-			"status":      "pending",
-			"request_id":  bindReq.ID,
+			"status":     "pending",
+			"request_id": bindReq.ID,
 		},
 	}
 }
@@ -255,8 +255,8 @@ func (d *MCPDispatcher) handleClientUnbindStatus(ctx context.Context, client *st
 		ID: req.ID,
 		OK: true,
 		Data: map[string]any{
-			"status":      bindReq.Status,
-			"request_id":  bindReq.ID,
+			"status":     bindReq.Status,
+			"request_id": bindReq.ID,
 		},
 	}
 }

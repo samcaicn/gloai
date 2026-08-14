@@ -110,15 +110,15 @@ func (m *DeviceManager) FingerprintBind(ctx *shared.Context, params map[string]a
 	infoJSON, _ := json.Marshal(clientInfo)
 
 	client := &store.Client{
-		ID:              fmt.Sprintf("cli_%d", time.Now().UnixNano()),
-		TenantID:        ctx.TenantID,
-		ClientID:        fmt.Sprintf("cli_%d", time.Now().UnixNano()),
-		Fingerprint:     fingerprint,
-		CapabilityTags:  string(capsJSON),
-		ClientInfo:      string(infoJSON),
-		Status:          "active",
-		CreatedAt:       time.Now().Unix(),
-		UpdatedAt:       time.Now().Unix(),
+		ID:             fmt.Sprintf("cli_%d", time.Now().UnixNano()),
+		TenantID:       ctx.TenantID,
+		ClientID:       fmt.Sprintf("cli_%d", time.Now().UnixNano()),
+		Fingerprint:    fingerprint,
+		CapabilityTags: string(capsJSON),
+		ClientInfo:     string(infoJSON),
+		Status:         "active",
+		CreatedAt:      time.Now().Unix(),
+		UpdatedAt:      time.Now().Unix(),
 	}
 
 	if _, err := m.store.CreateClient(ctx, client); err != nil {
@@ -208,8 +208,8 @@ func (m *DeviceManager) UnbindStatus(ctx *shared.Context, params map[string]any)
 	}
 
 	return map[string]any{
-		"status":      bindReq.Status,
-		"request_id":  bindReq.ID,
+		"status":     bindReq.Status,
+		"request_id": bindReq.ID,
 	}, nil
 }
 
@@ -268,9 +268,9 @@ func (m *DeviceManager) BindStatus(ctx *shared.Context, params map[string]any) (
 	}
 
 	return map[string]any{
-		"status":      bindReq.Status,
-		"request_id":  bindReq.ID,
-		"tenant_id":   bindReq.TenantID,
+		"status":     bindReq.Status,
+		"request_id": bindReq.ID,
+		"tenant_id":  bindReq.TenantID,
 	}, nil
 }
 

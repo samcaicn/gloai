@@ -129,10 +129,10 @@ func TestStereoToMono(t *testing.T) {
 	// Create stereo PCM: L=1000, R=-1000 → mono should be 0
 	stereo := make([]byte, 8) // 2 samples × 2 channels × 2 bytes
 	neg1000 := int16(-1000)
-	binary.LittleEndian.PutUint16(stereo[0:], 1000)              // L
-	binary.LittleEndian.PutUint16(stereo[2:], uint16(neg1000))   // R
-	binary.LittleEndian.PutUint16(stereo[4:], 500)               // L
-	binary.LittleEndian.PutUint16(stereo[6:], 500)               // R
+	binary.LittleEndian.PutUint16(stereo[0:], 1000)            // L
+	binary.LittleEndian.PutUint16(stereo[2:], uint16(neg1000)) // R
+	binary.LittleEndian.PutUint16(stereo[4:], 500)             // L
+	binary.LittleEndian.PutUint16(stereo[6:], 500)             // R
 
 	mono := stereoToMono(stereo)
 	if len(mono) != 4 {

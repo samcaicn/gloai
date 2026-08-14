@@ -32,8 +32,12 @@ type embRequest struct {
 }
 
 type embResponse struct {
-	Data  []struct{ Embedding []float64 `json:"embedding"` } `json:"data"`
-	Error *struct{ Message string `json:"message"` }          `json:"error"`
+	Data []struct {
+		Embedding []float64 `json:"embedding"`
+	} `json:"data"`
+	Error *struct {
+		Message string `json:"message"`
+	} `json:"error"`
 }
 
 // ErrNoKey 表示未配置远程 embedding 密钥。

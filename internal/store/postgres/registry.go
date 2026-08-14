@@ -1,8 +1,8 @@
 package postgres
 
 import (
-	"github.com/google/uuid"
 	"github.com/ceoadmin/CEOadmin/internal/store"
+	"github.com/google/uuid"
 )
 
 func (db *DB) ListRegistries() ([]store.Registry, error) {

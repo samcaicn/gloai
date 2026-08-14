@@ -9,34 +9,34 @@ import (
 
 // Client represents a registered device/client for MCP access.
 type Client struct {
-	ID              string `json:"id"`
-	TenantID        string `json:"tenant_id"`
-	ClientID        string `json:"client_id"`
-	DeviceToken     string `json:"device_token"`
-	DeviceSecret    string `json:"device_secret"`     // HMAC secret for request signing
-	Fingerprint     string `json:"fingerprint"`
-	ClientInfo      string `json:"client_info"`       // JSON blob
-	CapabilityTags  string `json:"capability_tags"`   // JSON blob
-	RiskLevel       string `json:"risk_level"`        // trust, review, block
-	RiskScore       int    `json:"risk_score"`
-	Status          string `json:"status"`            // unbound, active, revoked
-	ExpiresAt       int64  `json:"expires_at"`        // Unix timestamp
-	CreatedAt       int64  `json:"created_at"`
-	UpdatedAt       int64  `json:"updated_at"`
-	LastSeenAt      int64  `json:"last_seen_at"`
+	ID             string `json:"id"`
+	TenantID       string `json:"tenant_id"`
+	ClientID       string `json:"client_id"`
+	DeviceToken    string `json:"device_token"`
+	DeviceSecret   string `json:"device_secret"` // HMAC secret for request signing
+	Fingerprint    string `json:"fingerprint"`
+	ClientInfo     string `json:"client_info"`     // JSON blob
+	CapabilityTags string `json:"capability_tags"` // JSON blob
+	RiskLevel      string `json:"risk_level"`      // trust, review, block
+	RiskScore      int    `json:"risk_score"`
+	Status         string `json:"status"`     // unbound, active, revoked
+	ExpiresAt      int64  `json:"expires_at"` // Unix timestamp
+	CreatedAt      int64  `json:"created_at"`
+	UpdatedAt      int64  `json:"updated_at"`
+	LastSeenAt     int64  `json:"last_seen_at"`
 }
 
 // BindRequest represents a pending bind request (join_code flow).
 type BindRequest struct {
-	ID          string `json:"id"`
-	ClientID    string `json:"client_id"`
-	JoinCode    string `json:"join_code"`
-	TenantID    string `json:"tenant_id"`
-	Status      string `json:"status"`       // pending, approved, rejected
-	Reason      string `json:"reason"`
-	CreatedAt   int64  `json:"created_at"`
-	UpdatedAt   int64  `json:"updated_at"`
-	ExpiresAt   int64  `json:"expires_at"`
+	ID        string `json:"id"`
+	ClientID  string `json:"client_id"`
+	JoinCode  string `json:"join_code"`
+	TenantID  string `json:"tenant_id"`
+	Status    string `json:"status"` // pending, approved, rejected
+	Reason    string `json:"reason"`
+	CreatedAt int64  `json:"created_at"`
+	UpdatedAt int64  `json:"updated_at"`
+	ExpiresAt int64  `json:"expires_at"`
 }
 
 // ClientStore interface for device/client management.

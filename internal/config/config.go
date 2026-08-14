@@ -13,14 +13,14 @@ type Config struct {
 	ListenAddr string
 
 	// Database
-	DBPath string
+	DBPath  string
 	DataDir string
 
 	// Authentication
-	RPID          string
-	RPName        string
-	RPOrigin      string
-	Secret        string
+	RPID     string
+	RPName   string
+	RPOrigin string
+	Secret   string
 
 	// Storage
 	StorageEndpoint  string
@@ -59,30 +59,29 @@ type Config struct {
 	AppProxies map[string]string
 }
 
-
 // OIDCProviderConfig holds configuration for an OIDC/OAuth login provider.
 type OIDCProviderConfig struct {
-	Slug          string
-	DisplayName   string
-	IssuerURL     string
-	ClientID      string
-	ClientSecret  string
-	Scopes        string
-	AuthURL       string
-	TokenURL      string
-	UserInfoURL   string
+	Slug         string
+	DisplayName  string
+	IssuerURL    string
+	ClientID     string
+	ClientSecret string
+	Scopes       string
+	AuthURL      string
+	TokenURL     string
+	UserInfoURL  string
 }
 
 // Load reads configuration from environment variables with sensible defaults.
 func Load() *Config {
 	cfg := &Config{
-		ListenAddr:  getenv("HUB_LISTEN", "0.0.0.0:9800"),
-		DBPath:      getenv("DATABASE_URL", ""),
-		DataDir:     getenv("DATA_DIR", ""),
-		RPID:        getenv("RP_ID", "localhost"),
-		RPName:      getenv("RP_NAME", "CEOadmin"),
-		RPOrigin:    getenv("RP_ORIGIN", "http://localhost:9800"),
-		Secret:      getenv("SECRET", "ceoadmin"),
+		ListenAddr: getenv("HUB_LISTEN", "0.0.0.0:9800"),
+		DBPath:     getenv("DATABASE_URL", ""),
+		DataDir:    getenv("DATA_DIR", ""),
+		RPID:       getenv("RP_ID", "localhost"),
+		RPName:     getenv("RP_NAME", "CEOadmin"),
+		RPOrigin:   getenv("RP_ORIGIN", "http://localhost:9800"),
+		Secret:     getenv("SECRET", "ceoadmin"),
 	}
 
 	// Storage

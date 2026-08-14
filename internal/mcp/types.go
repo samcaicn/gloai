@@ -12,44 +12,44 @@ type Action string
 
 const (
 	// Task actions
-	ActionTaskCreate        Action = "task.create"
-	ActionTaskGet           Action = "task.get"
-	ActionTaskList          Action = "task.list"
-	ActionTaskPollPending   Action = "task.poll_pending"
-	ActionTaskDelivered     Action = "task.delivered"
-	ActionTaskAcknowledge   Action = "task.acknowledge"
-	ActionTaskComplete      Action = "task.complete"
-	ActionTaskFail          Action = "task.fail"
-	ActionTaskCancel        Action = "task.cancel"
+	ActionTaskCreate      Action = "task.create"
+	ActionTaskGet         Action = "task.get"
+	ActionTaskList        Action = "task.list"
+	ActionTaskPollPending Action = "task.poll_pending"
+	ActionTaskDelivered   Action = "task.delivered"
+	ActionTaskAcknowledge Action = "task.acknowledge"
+	ActionTaskComplete    Action = "task.complete"
+	ActionTaskFail        Action = "task.fail"
+	ActionTaskCancel      Action = "task.cancel"
 
 	// Client/Device actions
-	ActionClientHeartbeat       Action = "client.heartbeat"
-	ActionClientFingerprintBind Action = "client.fingerprint.bind"
+	ActionClientHeartbeat         Action = "client.heartbeat"
+	ActionClientFingerprintBind   Action = "client.fingerprint.bind"
 	ActionClientFingerprintStatus Action = "client.fingerprint.status"
-	ActionClientUnbind          Action = "client.unbind"
-	ActionClientUnbindStatus    Action = "client.unbind.status"
-	ActionClientBind            Action = "client.bind"
-	ActionClientBindStatus      Action = "client.bind.status"
-	ActionClientCheckUpdate     Action = "client.check_update"
+	ActionClientUnbind            Action = "client.unbind"
+	ActionClientUnbindStatus      Action = "client.unbind.status"
+	ActionClientBind              Action = "client.bind"
+	ActionClientBindStatus        Action = "client.bind.status"
+	ActionClientCheckUpdate       Action = "client.check_update"
 
 	// LLM actions
 	ActionLLMRequest       Action = "llm.request"
 	ActionLLMStreamRequest Action = "llm.stream_request"
 
 	// Skill actions
-	ActionSkillSearch      Action = "skill.search"
-	ActionSkillDetail      Action = "skill.detail"
-	ActionSkillCreate      Action = "skill.create"
-	ActionSkillUpload      Action = "skill.upload"
-	ActionSkillCall        Action = "skill.call"
+	ActionSkillSearch         Action = "skill.search"
+	ActionSkillDetail         Action = "skill.detail"
+	ActionSkillCreate         Action = "skill.create"
+	ActionSkillUpload         Action = "skill.upload"
+	ActionSkillCall           Action = "skill.call"
 	ActionSkillInstallConfirm Action = "skill.install_confirm"
-	ActionSkillReportExec  Action = "skill.report_execution"
-	ActionSkillEvaluation  Action = "skill.evaluation"
+	ActionSkillReportExec     Action = "skill.report_execution"
+	ActionSkillEvaluation     Action = "skill.evaluation"
 
 	// Billing actions
-	ActionBillingConfig    Action = "billing.config"
-	ActionBillingLedger    Action = "billing.ledger"
-	ActionBillingUploadTicket Action = "billing.upload_ticket"
+	ActionBillingConfig        Action = "billing.config"
+	ActionBillingLedger        Action = "billing.ledger"
+	ActionBillingUploadTicket  Action = "billing.upload_ticket"
 	ActionBillingConfirmUpload Action = "billing.confirm_upload"
 
 	// Search actions
@@ -58,17 +58,17 @@ const (
 
 // Request is the incoming MCP JSON-RPC request
 type Request struct {
-	ID     string                 `json:"id"`
-	Action Action                 `json:"action"`
-	Params map[string]any         `json:"params,omitempty"`
+	ID     string         `json:"id"`
+	Action Action         `json:"action"`
+	Params map[string]any `json:"params,omitempty"`
 }
 
 // Response is the MCP JSON-RPC response
 type Response struct {
-	ID     string         `json:"id"`
-	OK     bool           `json:"ok"`
-	Data   any            `json:"data,omitempty"`
-	Error  *ErrorResponse `json:"error,omitempty"`
+	ID    string         `json:"id"`
+	OK    bool           `json:"ok"`
+	Data  any            `json:"data,omitempty"`
+	Error *ErrorResponse `json:"error,omitempty"`
 }
 
 type ErrorResponse struct {
@@ -155,33 +155,44 @@ func errorCode(err error) string {
 
 // Error types for MCP error codes
 type MissingParamError struct{ Param string }
+
 func (e *MissingParamError) Error() string { return "missing param: " + e.Param }
 
 type InvalidParamError struct{ Param, Reason string }
+
 func (e *InvalidParamError) Error() string { return "invalid param " + e.Param + ": " + e.Reason }
 
 type NotFoundError struct{ Resource, ID string }
+
 func (e *NotFoundError) Error() string { return e.Resource + " not found: " + e.ID }
 
 type AlreadyDoneError struct{ Resource, Status string }
+
 func (e *AlreadyDoneError) Error() string { return e.Resource + " already " + e.Status }
 
 type ForbiddenError struct{ Reason string }
+
 func (e *ForbiddenError) Error() string { return "forbidden: " + e.Reason }
 
 type InsufficientBalanceError struct{}
+
 func (e *InsufficientBalanceError) Error() string { return "insufficient balance" }
 
 type ResourceError struct{ Code, Reason string }
+
 func (e *ResourceError) Error() string { return e.Code + ": " + e.Reason }
 
-func MissingParam(param string) error         { return &MissingParamError{Param: param} }
-func InvalidParam(param, reason string) error { return &InvalidParamError{Param: param, Reason: reason} }
-func NotFound(resource, id string) error      { return &NotFoundError{Resource: resource, ID: id} }
-func AlreadyDone(resource, status string) error { return &AlreadyDoneError{Resource: resource, Status: status} }
-func Forbidden(reason string) error           { return &ForbiddenError{Reason: reason} }
-func InsufficientBalance() error              { return &InsufficientBalanceError{} }
-func ResourceErr(code, reason string) error   { return &ResourceError{Code: code, Reason: reason} }
+func MissingParam(param string) error { return &MissingParamError{Param: param} }
+func InvalidParam(param, reason string) error {
+	return &InvalidParamError{Param: param, Reason: reason}
+}
+func NotFound(resource, id string) error { return &NotFoundError{Resource: resource, ID: id} }
+func AlreadyDone(resource, status string) error {
+	return &AlreadyDoneError{Resource: resource, Status: status}
+}
+func Forbidden(reason string) error         { return &ForbiddenError{Reason: reason} }
+func InsufficientBalance() error            { return &InsufficientBalanceError{} }
+func ResourceErr(code, reason string) error { return &ResourceError{Code: code, Reason: reason} }
 
 // Convenience: parse request from JSON
 func ParseRequest(data []byte) (Request, error) {

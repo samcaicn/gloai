@@ -29,7 +29,7 @@ func (t *ClockTimer) Reset(d time.Duration) { t.reset(d) }
 // realClock delegates to the standard library.
 type realClock struct{}
 
-func (realClock) Now() time.Time                        { return time.Now() }
+func (realClock) Now() time.Time                         { return time.Now() }
 func (realClock) After(d time.Duration) <-chan time.Time { return time.After(d) }
 func (realClock) NewTimer(d time.Duration) *ClockTimer {
 	t := time.NewTimer(d)

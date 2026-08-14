@@ -8,13 +8,13 @@ import (
 
 // Config 来自环境变量，零配置文件。
 type Config struct {
-	Port       int
-	Store      string // "sqlite" | "file"
-	DBPath     string // sqlite 用
-	DataDir    string // file 模式用（与 edict 的 data/ 对齐）
-	LLMBaseURL string
-	LLMAPIKey  string
-	LLMModel   string
+	Port         int
+	Store        string // "sqlite" | "file"
+	DBPath       string // sqlite 用
+	DataDir      string // file 模式用（与 edict 的 data/ 对齐）
+	LLMBaseURL   string
+	LLMAPIKey    string
+	LLMModel     string
 	EmbedBaseURL string
 	EmbedAPIKey  string
 	EmbedModel   string
@@ -65,7 +65,7 @@ func (c *Config) applySystemLLM() {
 		return
 	}
 	var sys struct {
-		Endpoint string `json:"endpoint"`
+		Endpoint       string `json:"endpoint"`
 		Authentication struct {
 			Attributes struct {
 				Token string `json:"token"`

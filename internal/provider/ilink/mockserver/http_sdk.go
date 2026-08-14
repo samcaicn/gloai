@@ -31,7 +31,7 @@ func (s *HTTPServer) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"ret":    0,
-			"msgs":  []any{},
+			"msgs":   []any{},
 			"errmsg": err.Error(),
 		})
 		return
@@ -44,10 +44,10 @@ func (s *HTTPServer) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"ret":              0,
-		"msgs":             msgs,
-		"get_updates_buf":  req.GetUpdatesBuf,
-		"sync_buf":         result.SyncBuf,
+		"ret":             0,
+		"msgs":            msgs,
+		"get_updates_buf": req.GetUpdatesBuf,
+		"sync_buf":        result.SyncBuf,
 	})
 }
 
@@ -85,8 +85,8 @@ func (s *HTTPServer) handleGetConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"ret":            0,
-		"typing_ticket":  result.TypingTicket,
+		"ret":           0,
+		"typing_ticket": result.TypingTicket,
 	})
 }
 

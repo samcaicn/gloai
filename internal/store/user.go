@@ -87,15 +87,15 @@ type ScanLoginSession struct {
 
 // Passkey represents a WebAuthn passkey credential.
 type Passkey struct {
-	ID              string      `json:"id"`
-	UserID          string      `json:"user_id"`
-	PublicKey       []byte      `json:"-"`
-	AttestationType string      `json:"attestation_type"`
+	ID              string          `json:"id"`
+	UserID          string          `json:"user_id"`
+	PublicKey       []byte          `json:"-"`
+	AttestationType string          `json:"attestation_type"`
 	Transport       json.RawMessage `json:"transport"`
-	SignCount       uint32      `json:"sign_count"`
-	BackupEligible  uint32      `json:"backup_eligible"`
-	BackupState     uint32      `json:"backup_state"`
-	CreatedAt       int64       `json:"created_at"`
+	SignCount       uint32          `json:"sign_count"`
+	BackupEligible  uint32          `json:"backup_eligible"`
+	BackupState     uint32          `json:"backup_state"`
+	CreatedAt       int64           `json:"created_at"`
 }
 
 // SkillUsageRecord tracks usage metrics for a skill.
@@ -107,6 +107,3 @@ type SkillUsageRecord struct {
 	Timestamp  int64  `json:"timestamp"`
 	DurationMs int64  `json:"duration_ms"`
 }
-
-
-

@@ -1739,7 +1739,7 @@ func TestCredentialCRUD(t *testing.T, s store.Store) {
 		c := &store.Credential{
 			ID:              "cred_001",
 			UserID:          u.ID,
-			PublicKey:        []byte("pubkey123"),
+			PublicKey:       []byte("pubkey123"),
 			AttestationType: "none",
 			Transport:       "usb",
 			SignCount:       0,

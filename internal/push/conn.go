@@ -23,9 +23,9 @@ type Conn struct {
 	hub    *Hub
 	send   chan []byte
 
-	mu       sync.RWMutex
-	subs     map[string]struct{} // subscribed bot IDs
-	closed   bool
+	mu        sync.RWMutex
+	subs      map[string]struct{} // subscribed bot IDs
+	closed    bool
 	closeOnce sync.Once
 }
 

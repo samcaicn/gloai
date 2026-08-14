@@ -121,10 +121,10 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 func (s *Server) handleDebug(w http.ResponseWriter, r *http.Request) {
 	results := s.Preflight()
 	writeJSON(w, 200, map[string]any{
-		"store":     s.cfg.Store,
-		"model":     s.cfg.LLMModel,
-		"retrieve_k": s.cfg.RetrieveK,
-		"checks":    results,
+		"store":         s.cfg.Store,
+		"model":         s.cfg.LLMModel,
+		"retrieve_k":    s.cfg.RetrieveK,
+		"checks":        results,
 		"fatal_failure": HasFatalFailure(results),
 	})
 }

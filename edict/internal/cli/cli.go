@@ -1,9 +1,10 @@
 // Package cli 实现 edict 的命令行子命令，移植原 Python scripts/ 下的运维脚本：
-//   edict serve        -> dashboard/server.py（HTTP 服务，已内置）
-//   edict kanban ...   -> scripts/kanban_update.py（任务看板 CLI）
-//   edict fetch-news   -> scripts/fetch_morning_news.py（RSS 抓取→天下要闻）
-//   edict dump-live    -> scripts/refresh_live_data.py（导出 live-status）
-//   edict apply-model  -> scripts/apply_model_changes.py（应用模型变更）
+//
+//	edict serve        -> dashboard/server.py（HTTP 服务，已内置）
+//	edict kanban ...   -> scripts/kanban_update.py（任务看板 CLI）
+//	edict fetch-news   -> scripts/fetch_morning_news.py（RSS 抓取→天下要闻）
+//	edict dump-live    -> scripts/refresh_live_data.py（导出 live-status）
+//	edict apply-model  -> scripts/apply_model_changes.py（应用模型变更）
 package cli
 
 import (
@@ -196,9 +197,9 @@ type source struct {
 
 // categoryKeywords 简易分类关键词（对齐 Python CATEGORY_KEYWORDS）。
 var categoryKeywords = map[string][]string{
-	"军事":   {"war", "military", "troops", "attack", "missile", "army", "navy", "战", "军", "导弹"},
+	"军事":    {"war", "military", "troops", "attack", "missile", "army", "navy", "战", "军", "导弹"},
 	"AI大模型": {"ai", "llm", "gpt", "claude", "gemini", "openai", "anthropic", "deepseek", "大模型", "人工智能", "chatgpt"},
-	"经济":   {"economy", "market", "stock", "gdp", "经济", "股市", "金融"},
+	"经济":    {"economy", "market", "stock", "gdp", "经济", "股市", "金融"},
 }
 
 func runFetchNews(svc *service.Service, args []string) error {

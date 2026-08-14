@@ -3,8 +3,8 @@ package postgres
 import (
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/ceoadmin/CEOadmin/internal/store"
+	"github.com/google/uuid"
 )
 
 func (db *DB) CreatePlugin(p *store.Plugin) (*store.Plugin, error) {

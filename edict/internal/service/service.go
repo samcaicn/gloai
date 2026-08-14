@@ -239,16 +239,16 @@ func (s *Service) ArchiveAllDone() (int, error) {
 // CreateTask 新建旨意（初始状态 Taizi）。
 func (s *Service) CreateTask(p model.CreateTaskPayload) (*model.Task, error) {
 	t := &model.Task{
-		ID:        GenTaskID(),
-		Title:     store.TitleSafe(p.Title),
-		State:     "Taizi",
-		Org:       OrgForState("Taizi", p.Org),
-		Official:  "emperor",
-		Now:       fmt.Sprintf("📜 新旨意下达，待%s分拣", OrgForState("Taizi", p.Org)),
-		ETA:       "-",
-		Block:     "无",
-		FlowLog:   []model.FlowEntry{},
-		Todos:     []model.TodoItem{},
+		ID:         GenTaskID(),
+		Title:      store.TitleSafe(p.Title),
+		State:      "Taizi",
+		Org:        OrgForState("Taizi", p.Org),
+		Official:   "emperor",
+		Now:        fmt.Sprintf("📜 新旨意下达，待%s分拣", OrgForState("Taizi", p.Org)),
+		ETA:        "-",
+		Block:      "无",
+		FlowLog:    []model.FlowEntry{},
+		Todos:      []model.TodoItem{},
 		SourceMeta: map[string]any{},
 	}
 	if p.ID != "" {

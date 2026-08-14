@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ceoadmin/CEOadmin/internal/store"
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
-	"github.com/ceoadmin/CEOadmin/internal/store"
 )
 
 // WebAuthnUser adapts our DB user to the webauthn.User interface.

@@ -11,8 +11,8 @@ import (
 
 	ilink "github.com/openilink/openilink-sdk-go"
 
-	ilinkProvider "github.com/ceoadmin/CEOadmin/internal/provider/ilink"
 	"github.com/ceoadmin/CEOadmin/internal/provider"
+	ilinkProvider "github.com/ceoadmin/CEOadmin/internal/provider/ilink"
 	"github.com/ceoadmin/CEOadmin/internal/provider/ilink/mockserver"
 )
 

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/ceoadmin/CEOadmin/internal/store"
+	"github.com/google/uuid"
 )
 
 const botSelectCols = `id, user_id, name, display_name, provider, provider_id, status, credentials, sync_state,

@@ -5,9 +5,9 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/ceoadmin/CEOadmin/internal/store/postgres"
 	"github.com/ceoadmin/CEOadmin/internal/store/storetest"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func testPGStore(t *testing.T) *postgres.DB {

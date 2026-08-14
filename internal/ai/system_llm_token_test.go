@@ -24,11 +24,15 @@ func platformChatServer(t *testing.T, token string, prompt, completion, total, c
 		_ = json.NewEncoder(w).Encode(chatResponse{
 			Choices: []chatChoice{{Message: chatResponseMessage{Role: "assistant", Content: strPtr("hi")}}},
 			Usage: &chatUsage{
-				PromptTokens:        prompt,
-				CompletionTokens:    completion,
-				TotalTokens:         total,
-				PromptTokensDetails: &struct{ CachedTokens int `json:"cached_tokens"` }{CachedTokens: cached},
-				CompletionTokensDetails: &struct{ ReasoningTokens int `json:"reasoning_tokens"` }{ReasoningTokens: reasoning},
+				PromptTokens:     prompt,
+				CompletionTokens: completion,
+				TotalTokens:      total,
+				PromptTokensDetails: &struct {
+					CachedTokens int `json:"cached_tokens"`
+				}{CachedTokens: cached},
+				CompletionTokensDetails: &struct {
+					ReasoningTokens int `json:"reasoning_tokens"`
+				}{ReasoningTokens: reasoning},
 			},
 		})
 	}))

@@ -18,11 +18,11 @@ const (
 
 // CheckResult 单条自检结果。
 type CheckResult struct {
-	Name     string `json:"name"`
-	Status   string `json:"status"` // StatusOK | StatusWarn | StatusFail
-	Fatal    bool   `json:"fatal"`  // true 表示失败会阻断启动
-	Detail   string `json:"detail"`
-	ElapsedMs int64 `json:"elapsed_ms"`
+	Name      string `json:"name"`
+	Status    string `json:"status"` // StatusOK | StatusWarn | StatusFail
+	Fatal     bool   `json:"fatal"`  // true 表示失败会阻断启动
+	Detail    string `json:"detail"`
+	ElapsedMs int64  `json:"elapsed_ms"`
 }
 
 func since(t time.Time) int64 { return time.Since(t).Milliseconds() }
@@ -120,7 +120,7 @@ func (s *Server) selfTestEndToEnd() []CheckResult {
 	if cerr != nil {
 		results = append(results, CheckResult{Name: "selftest.chat", Status: StatusWarn, Fatal: false, Detail: cerr.Error()})
 	} else {
-		results = append(results, CheckResult{Name: "selftest.chat", Status: StatusOK, Detail: "reply len="+strconv.Itoa(len(reply))})
+		results = append(results, CheckResult{Name: "selftest.chat", Status: StatusOK, Detail: "reply len=" + strconv.Itoa(len(reply))})
 	}
 
 	_ = s.st.DeleteMemory(tenant, m.ID)

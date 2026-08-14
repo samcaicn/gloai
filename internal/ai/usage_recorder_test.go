@@ -95,11 +95,15 @@ func chatServer(t *testing.T, prompt, completion, total, cached, reasoning int) 
 		_ = json.NewEncoder(w).Encode(chatResponse{
 			Choices: []chatChoice{{Message: chatResponseMessage{Role: "assistant", Content: strPtr("hi")}}},
 			Usage: &chatUsage{
-				PromptTokens:        prompt,
-				CompletionTokens:    completion,
-				TotalTokens:         total,
-				PromptTokensDetails: &struct{ CachedTokens int `json:"cached_tokens"` }{CachedTokens: cached},
-				CompletionTokensDetails: &struct{ ReasoningTokens int `json:"reasoning_tokens"` }{ReasoningTokens: reasoning},
+				PromptTokens:     prompt,
+				CompletionTokens: completion,
+				TotalTokens:      total,
+				PromptTokensDetails: &struct {
+					CachedTokens int `json:"cached_tokens"`
+				}{CachedTokens: cached},
+				CompletionTokensDetails: &struct {
+					ReasoningTokens int `json:"reasoning_tokens"`
+				}{ReasoningTokens: reasoning},
 			},
 		})
 	}))
@@ -113,7 +117,7 @@ func embedServer(t *testing.T, total int) *httptest.Server {
 			return
 		}
 		_ = json.NewEncoder(w).Encode(embedResponse{
-			Data:  []embedData{{Index: 0, Embedding: []float32{0.1, 0.2}}},
+			Data: []embedData{{Index: 0, Embedding: []float32{0.1, 0.2}}},
 			Usage: &struct {
 				PromptTokens int `json:"prompt_tokens"`
 				TotalTokens  int `json:"total_tokens"`

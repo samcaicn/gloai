@@ -37,14 +37,14 @@ func (h *ClientHandler) HandleRegisterFingerprint(w http.ResponseWriter, r *http
 	ctx := r.Context()
 
 	var req struct {
-		Fingerprint     string          `json:"fingerprint"`
-		ClientInfo      json.RawMessage `json:"client_info"`
-		CapabilityTags  json.RawMessage `json:"capability_tags"`
-		HardwareConfig  json.RawMessage `json:"hardware_config"`
-		ConsentGranted  bool            `json:"consent_granted"`
-		ConsentID       string          `json:"consent_id"`
-		JoinCode        string          `json:"join_code"`
-		RSAPublicKey    string          `json:"rsa_public_key"`
+		Fingerprint    string          `json:"fingerprint"`
+		ClientInfo     json.RawMessage `json:"client_info"`
+		CapabilityTags json.RawMessage `json:"capability_tags"`
+		HardwareConfig json.RawMessage `json:"hardware_config"`
+		ConsentGranted bool            `json:"consent_granted"`
+		ConsentID      string          `json:"consent_id"`
+		JoinCode       string          `json:"join_code"`
+		RSAPublicKey   string          `json:"rsa_public_key"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -144,15 +144,15 @@ func (h *ClientHandler) HandleRegisterFingerprint(w http.ResponseWriter, r *http
 func (h *ClientHandler) writeFingerprintResponse(w http.ResponseWriter, client *store.Client, activationRequired bool, currentState string) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"success":              true,
-		"client_id":            client.ClientID,
-		"device_token":         client.DeviceToken,
-		"device_secret_b64":    base64.StdEncoding.EncodeToString([]byte(client.DeviceSecret)),
-		"risk_level":           client.RiskLevel,
-		"risk_score":           client.RiskScore,
-		"activation_required":  activationRequired,
-		"current_state":        currentState,
-		"next_step":            "ok",
+		"success":             true,
+		"client_id":           client.ClientID,
+		"device_token":        client.DeviceToken,
+		"device_secret_b64":   base64.StdEncoding.EncodeToString([]byte(client.DeviceSecret)),
+		"risk_level":          client.RiskLevel,
+		"risk_score":          client.RiskScore,
+		"activation_required": activationRequired,
+		"current_state":       currentState,
+		"next_step":           "ok",
 	})
 }
 
@@ -275,7 +275,7 @@ func (h *ClientHandler) verifySignature(r *http.Request, deviceToken string) err
 	method := r.Method
 	path := r.URL.Path
 	query := r.URL.RawQuery
-	
+
 	// Sort query params
 	var sortedQuery string
 	if query != "" {
@@ -312,8 +312,8 @@ func (h *ClientHandler) writeMCPError(w http.ResponseWriter, msg string, code in
 func (h *ClientHandler) writeMCPResponse(w http.ResponseWriter, id string, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"id":  id,
-		"ok":  true,
+		"id":   id,
+		"ok":   true,
 		"data": data,
 	})
 }

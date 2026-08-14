@@ -3,12 +3,12 @@ package ai
 import "regexp"
 
 var (
-	reCodeBlock  = regexp.MustCompile("(?s)```.*?```")
-	reBold1      = regexp.MustCompile(`\*\*([^*]+)\*\*`)
+	reCodeBlock = regexp.MustCompile("(?s)```.*?```")
+	reBold1     = regexp.MustCompile(`\*\*([^*]+)\*\*`)
 	// reBold2 captures surrounding non-alnum boundary chars so they are restored in replacement,
 	// preventing the pattern from eating adjacent spaces or mangling __dunder__ identifiers.
-	reBold2      = regexp.MustCompile(`([^a-zA-Z0-9]|^)__([^_\n]+)__([^a-zA-Z0-9]|$)`)
-	reItalic1    = regexp.MustCompile(`\*([^*]+)\*`)
+	reBold2   = regexp.MustCompile(`([^a-zA-Z0-9]|^)__([^_\n]+)__([^a-zA-Z0-9]|$)`)
+	reItalic1 = regexp.MustCompile(`\*([^*]+)\*`)
 	// reItalic2 uses the same boundary-preserving technique to avoid mangling snake_case.
 	reItalic2    = regexp.MustCompile(`([^a-zA-Z0-9]|^)_([^_\n]+)_([^a-zA-Z0-9]|$)`)
 	reStrike     = regexp.MustCompile(`~~(.*?)~~`)

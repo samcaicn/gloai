@@ -194,9 +194,9 @@ type SkillStore interface {
 
 // SkillListParams are the query parameters for listing skills.
 type SkillListParams struct {
-	Q         string
-	Category  string
-	Sort      string
-	Mine      bool
-	Listing   string
+	Q        string
+	Category string
+	Sort     string
+	Mine     bool
+	Listing  string
 }

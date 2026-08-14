@@ -16,10 +16,10 @@ import (
 
 // Server 持有业务服务与静态资源根目录。
 type Server struct {
-	Svc       *service.Service
-	Store     *store.Store
-	WebRoot   string
-	routes    []route
+	Svc     *service.Service
+	Store   *store.Store
+	WebRoot string
+	routes  []route
 }
 
 type route struct {

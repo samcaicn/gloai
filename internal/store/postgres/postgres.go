@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/ceoadmin/CEOadmin/internal/store"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // DB implements store.Store for PostgreSQL.

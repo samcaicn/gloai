@@ -87,38 +87,38 @@ type AgentConfig struct {
 }
 
 type ChangeLogEntry struct {
-	At        string `json:"at"`
-	AgentID   string `json:"agentId"`
-	OldModel  string `json:"oldModel"`
-	NewModel  string `json:"newModel"`
-	RolledBack bool  `json:"rolledBack,omitempty"`
+	At         string `json:"at"`
+	AgentID    string `json:"agentId"`
+	OldModel   string `json:"oldModel"`
+	NewModel   string `json:"newModel"`
+	RolledBack bool   `json:"rolledBack,omitempty"`
 }
 
 // ── 官员统计（功过簿） ──
 
 type OfficialInfo struct {
-	ID             string `json:"id"`
-	Label          string `json:"label"`
-	Emoji          string `json:"emoji"`
-	Role           string `json:"role"`
-	Rank           string `json:"rank"`
-	Model          string `json:"model"`
-	ModelShort     string `json:"model_short"`
-	TokensIn       int    `json:"tokens_in"`
-	TokensOut      int    `json:"tokens_out"`
-	CacheRead      int    `json:"cache_read"`
-	CacheWrite     int    `json:"cache_write"`
-	CostCNY        float64 `json:"cost_cny"`
-	CostUSD        float64 `json:"cost_usd"`
-	Sessions       int    `json:"sessions"`
-	Messages       int    `json:"messages"`
-	TasksDone      int    `json:"tasks_done"`
-	TasksActive    int    `json:"tasks_active"`
-	FlowParts      int    `json:"flow_participations"`
-	MeritScore     int    `json:"merit_score"`
-	MeritRank      int    `json:"merit_rank"`
-	LastActive     string `json:"last_active"`
-	Heartbeat      Heartbeat `json:"heartbeat"`
+	ID          string    `json:"id"`
+	Label       string    `json:"label"`
+	Emoji       string    `json:"emoji"`
+	Role        string    `json:"role"`
+	Rank        string    `json:"rank"`
+	Model       string    `json:"model"`
+	ModelShort  string    `json:"model_short"`
+	TokensIn    int       `json:"tokens_in"`
+	TokensOut   int       `json:"tokens_out"`
+	CacheRead   int       `json:"cache_read"`
+	CacheWrite  int       `json:"cache_write"`
+	CostCNY     float64   `json:"cost_cny"`
+	CostUSD     float64   `json:"cost_usd"`
+	Sessions    int       `json:"sessions"`
+	Messages    int       `json:"messages"`
+	TasksDone   int       `json:"tasks_done"`
+	TasksActive int       `json:"tasks_active"`
+	FlowParts   int       `json:"flow_participations"`
+	MeritScore  int       `json:"merit_score"`
+	MeritRank   int       `json:"merit_rank"`
+	LastActive  string    `json:"last_active"`
+	Heartbeat   Heartbeat `json:"heartbeat"`
 }
 
 type OfficialsData struct {
@@ -133,13 +133,13 @@ type OfficialsData struct {
 // ── Agent 运行状态 ──
 
 type AgentStatusInfo struct {
-	ID         string `json:"id"`
-	Label      string `json:"label"`
-	Emoji      string `json:"emoji"`
-	Role       string `json:"role"`
-	Status     string `json:"status"` // running | idle | offline | unconfigured
+	ID          string `json:"id"`
+	Label       string `json:"label"`
+	Emoji       string `json:"emoji"`
+	Role        string `json:"role"`
+	Status      string `json:"status"` // running | idle | offline | unconfigured
 	StatusLabel string `json:"statusLabel"`
-	LastActive string `json:"lastActive,omitempty"`
+	LastActive  string `json:"lastActive,omitempty"`
 }
 
 type GatewayStatus struct {
@@ -149,27 +149,27 @@ type GatewayStatus struct {
 }
 
 type AgentsStatusData struct {
-	OK        bool            `json:"ok"`
-	Gateway   GatewayStatus   `json:"gateway"`
+	OK        bool              `json:"ok"`
+	Gateway   GatewayStatus     `json:"gateway"`
 	Agents    []AgentStatusInfo `json:"agents"`
-	CheckedAt string          `json:"checkedAt"`
+	CheckedAt string            `json:"checkedAt"`
 }
 
 // ── 天下要闻 ──
 
 type MorningNewsItem struct {
-	Title    string `json:"title"`
-	Summary  string `json:"summary,omitempty"`
-	Desc     string `json:"desc,omitempty"`
-	Link     string `json:"link"`
-	Source   string `json:"source"`
-	Image    string `json:"image,omitempty"`
-	PubDate  string `json:"pub_date,omitempty"`
+	Title   string `json:"title"`
+	Summary string `json:"summary,omitempty"`
+	Desc    string `json:"desc,omitempty"`
+	Link    string `json:"link"`
+	Source  string `json:"source"`
+	Image   string `json:"image,omitempty"`
+	PubDate string `json:"pub_date,omitempty"`
 }
 
 type MorningBrief struct {
-	Date        string                     `json:"date,omitempty"`
-	GeneratedAt string                     `json:"generated_at,omitempty"`
+	Date        string                       `json:"date,omitempty"`
+	GeneratedAt string                       `json:"generated_at,omitempty"`
 	Categories  map[string][]MorningNewsItem `json:"categories"`
 }
 
@@ -185,36 +185,36 @@ type CustomFeed struct {
 }
 
 type SubConfig struct {
-	Categories   []SubCategoryConfig `json:"categories"`
-	Keywords     []string            `json:"keywords"`
-	CustomFeeds  []CustomFeed        `json:"custom_feeds"`
-	FeishuWebhook string             `json:"feishu_webhook"`
+	Categories    []SubCategoryConfig `json:"categories"`
+	Keywords      []string            `json:"keywords"`
+	CustomFeeds   []CustomFeed        `json:"custom_feeds"`
+	FeishuWebhook string              `json:"feishu_webhook"`
 }
 
 // ── 任务动态 / 调度 ──
 
 type ActivityEntry struct {
-	Kind      string `json:"kind"`
-	At        any    `json:"at,omitempty"`
-	Text      string `json:"text,omitempty"`
-	Thinking  string `json:"thinking,omitempty"`
-	Agent     string `json:"agent,omitempty"`
-	From      string `json:"from,omitempty"`
-	To        string `json:"to,omitempty"`
-	Remark    string `json:"remark,omitempty"`
-	Tools     []any  `json:"tools,omitempty"`
-	Tool      string `json:"tool,omitempty"`
-	Output    string `json:"output,omitempty"`
-	ExitCode  *int   `json:"exitCode,omitempty"`
-	Items     []TodoItem `json:"items,omitempty"`
-	Diff      any    `json:"diff,omitempty"`
+	Kind     string     `json:"kind"`
+	At       any        `json:"at,omitempty"`
+	Text     string     `json:"text,omitempty"`
+	Thinking string     `json:"thinking,omitempty"`
+	Agent    string     `json:"agent,omitempty"`
+	From     string     `json:"from,omitempty"`
+	To       string     `json:"to,omitempty"`
+	Remark   string     `json:"remark,omitempty"`
+	Tools    []any      `json:"tools,omitempty"`
+	Tool     string     `json:"tool,omitempty"`
+	Output   string     `json:"output,omitempty"`
+	ExitCode *int       `json:"exitCode,omitempty"`
+	Items    []TodoItem `json:"items,omitempty"`
+	Diff     any        `json:"diff,omitempty"`
 }
 
 type PhaseDuration struct {
-	Phase       string `json:"phase"`
-	DurationSec int    `json:"durationSec"`
+	Phase        string `json:"phase"`
+	DurationSec  int    `json:"durationSec"`
 	DurationText string `json:"durationText"`
-	Ongoing     bool   `json:"ongoing,omitempty"`
+	Ongoing      bool   `json:"ongoing,omitempty"`
 }
 
 type TodosSummary struct {
@@ -226,42 +226,42 @@ type TodosSummary struct {
 }
 
 type ResourceSummary struct {
-	TotalTokens    int `json:"totalTokens,omitempty"`
-	TotalCost      int `json:"totalCost,omitempty"`
+	TotalTokens     int `json:"totalTokens,omitempty"`
+	TotalCost       int `json:"totalCost,omitempty"`
 	TotalElapsedSec int `json:"totalElapsedSec,omitempty"`
 }
 
 type TaskActivityData struct {
-	OK             bool            `json:"ok"`
-	Message        string          `json:"message,omitempty"`
-	Error          string          `json:"error,omitempty"`
-	Activity       []ActivityEntry `json:"activity,omitempty"`
-	RelatedAgents  []string        `json:"relatedAgents,omitempty"`
-	AgentLabel     string          `json:"agentLabel,omitempty"`
-	LastActive     string          `json:"lastActive,omitempty"`
-	PhaseDurations []PhaseDuration `json:"phaseDurations,omitempty"`
-	TotalDuration  string          `json:"totalDuration,omitempty"`
-	TodosSummary   *TodosSummary    `json:"todosSummary,omitempty"`
+	OK              bool             `json:"ok"`
+	Message         string           `json:"message,omitempty"`
+	Error           string           `json:"error,omitempty"`
+	Activity        []ActivityEntry  `json:"activity,omitempty"`
+	RelatedAgents   []string         `json:"relatedAgents,omitempty"`
+	AgentLabel      string           `json:"agentLabel,omitempty"`
+	LastActive      string           `json:"lastActive,omitempty"`
+	PhaseDurations  []PhaseDuration  `json:"phaseDurations,omitempty"`
+	TotalDuration   string           `json:"totalDuration,omitempty"`
+	TodosSummary    *TodosSummary    `json:"todosSummary,omitempty"`
 	ResourceSummary *ResourceSummary `json:"resourceSummary,omitempty"`
 }
 
 type SchedulerInfo struct {
-	RetryCount        int    `json:"retryCount,omitempty"`
-	EscalationLevel   int    `json:"escalationLevel,omitempty"`
+	RetryCount         int    `json:"retryCount,omitempty"`
+	EscalationLevel    int    `json:"escalationLevel,omitempty"`
 	LastDispatchStatus string `json:"lastDispatchStatus,omitempty"`
-	StallThresholdSec int    `json:"stallThresholdSec,omitempty"`
-	Enabled           bool   `json:"enabled,omitempty"`
-	LastProgressAt    string `json:"lastProgressAt,omitempty"`
-	LastDispatchAt    string `json:"lastDispatchAt,omitempty"`
-	LastDispatchAgent string `json:"lastDispatchAgent,omitempty"`
-	AutoRollback      bool   `json:"autoRollback,omitempty"`
+	StallThresholdSec  int    `json:"stallThresholdSec,omitempty"`
+	Enabled            bool   `json:"enabled,omitempty"`
+	LastProgressAt     string `json:"lastProgressAt,omitempty"`
+	LastDispatchAt     string `json:"lastDispatchAt,omitempty"`
+	LastDispatchAgent  string `json:"lastDispatchAgent,omitempty"`
+	AutoRollback       bool   `json:"autoRollback,omitempty"`
 }
 
 type SchedulerStateData struct {
-	OK        bool          `json:"ok"`
-	Error     string        `json:"error,omitempty"`
-	Scheduler *SchedulerInfo `json:"scheduler,omitempty"`
-	StalledSec int          `json:"stalledSec,omitempty"`
+	OK         bool           `json:"ok"`
+	Error      string         `json:"error,omitempty"`
+	Scheduler  *SchedulerInfo `json:"scheduler,omitempty"`
+	StalledSec int            `json:"stalledSec,omitempty"`
 }
 
 type ScanAction struct {
@@ -284,22 +284,22 @@ type SkillContentResult struct {
 }
 
 type RemoteSkillItem struct {
-	SkillName  string `json:"skillName"`
-	AgentID    string `json:"agentId"`
-	SourceURL  string `json:"sourceUrl"`
+	SkillName   string `json:"skillName"`
+	AgentID     string `json:"agentId"`
+	SourceURL   string `json:"sourceUrl"`
 	Description string `json:"description"`
-	LocalPath  string `json:"localPath"`
-	AddedAt    string `json:"addedAt"`
+	LocalPath   string `json:"localPath"`
+	AddedAt     string `json:"addedAt"`
 	LastUpdated string `json:"lastUpdated"`
-	Status     string `json:"status"`
+	Status      string `json:"status"`
 }
 
 type RemoteSkillsListResult struct {
-	OK          bool             `json:"ok"`
+	OK           bool              `json:"ok"`
 	RemoteSkills []RemoteSkillItem `json:"remoteSkills,omitempty"`
-	Count       int              `json:"count,omitempty"`
-	ListedAt    string           `json:"listedAt,omitempty"`
-	Error       string           `json:"error,omitempty"`
+	Count        int               `json:"count,omitempty"`
+	ListedAt     string            `json:"listedAt,omitempty"`
+	Error        string            `json:"error,omitempty"`
 }
 
 // ── 朝堂议政 ──
@@ -313,14 +313,14 @@ type CourtDiscussMessage struct {
 }
 
 type CourtDiscussResult struct {
-	OK           bool                  `json:"ok"`
-	SessionID    string                `json:"session_id,omitempty"`
-	Topic        string                `json:"topic,omitempty"`
-	Round        int                   `json:"round,omitempty"`
-	NewMessages  []CourtDiscussMessage `json:"new_messages,omitempty"`
-	SceneNote    string                `json:"scene_note,omitempty"`
-	TotalMessages int                  `json:"total_messages,omitempty"`
-	Error        string                `json:"error,omitempty"`
+	OK            bool                  `json:"ok"`
+	SessionID     string                `json:"session_id,omitempty"`
+	Topic         string                `json:"topic,omitempty"`
+	Round         int                   `json:"round,omitempty"`
+	NewMessages   []CourtDiscussMessage `json:"new_messages,omitempty"`
+	SceneNote     string                `json:"scene_note,omitempty"`
+	TotalMessages int                   `json:"total_messages,omitempty"`
+	Error         string                `json:"error,omitempty"`
 }
 
 // ── 通用 ──
@@ -332,12 +332,12 @@ type ActionResult struct {
 }
 
 type CreateTaskPayload struct {
-	Title       string            `json:"title"`
-	Org         string            `json:"org"`
-	TargetDept  string            `json:"targetDept,omitempty"`
-	Priority    string            `json:"priority,omitempty"`
-	TemplateID  string            `json:"templateId,omitempty"`
-	Params      map[string]string `json:"params,omitempty"`
-	ID          string            `json:"-"`
-	Official    string            `json:"-"`
+	Title      string            `json:"title"`
+	Org        string            `json:"org"`
+	TargetDept string            `json:"targetDept,omitempty"`
+	Priority   string            `json:"priority,omitempty"`
+	TemplateID string            `json:"templateId,omitempty"`
+	Params     map[string]string `json:"params,omitempty"`
+	ID         string            `json:"-"`
+	Official   string            `json:"-"`
 }

@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/ceoadmin/CEOadmin/internal/store"
+	"github.com/google/uuid"
 )
 
 const (
@@ -54,12 +54,12 @@ type DeliveryResult struct {
 
 // eventEnvelope is the JSON structure POSTed to the app's webhook_url.
 type eventEnvelope struct {
-	V              int            `json:"v"`
-	Type           string         `json:"type"`
-	TraceID        string         `json:"trace_id"`
-	InstallationID string         `json:"installation_id"`
-	Bot            envelopBot     `json:"bot"`
-	Event          *Event         `json:"event"`
+	V              int        `json:"v"`
+	Type           string     `json:"type"`
+	TraceID        string     `json:"trace_id"`
+	InstallationID string     `json:"installation_id"`
+	Bot            envelopBot `json:"bot"`
+	Event          *Event     `json:"event"`
 }
 
 type envelopBot struct {

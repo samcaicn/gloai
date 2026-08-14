@@ -32,11 +32,11 @@ type InitData struct {
 }
 
 type MessageItem struct {
-	Type     string   `json:"type"` // text, image, voice, file, video
-	Text     string   `json:"text,omitempty"`
-	FileName string   `json:"file_name,omitempty"`
-	Media    *Media   `json:"media,omitempty"`
-	RefMsg   *RefMsg  `json:"ref_msg,omitempty"`
+	Type     string  `json:"type"` // text, image, voice, file, video
+	Text     string  `json:"text,omitempty"`
+	FileName string  `json:"file_name,omitempty"`
+	Media    *Media  `json:"media,omitempty"`
+	RefMsg   *RefMsg `json:"ref_msg,omitempty"`
 }
 
 type Media struct {

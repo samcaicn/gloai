@@ -24,11 +24,11 @@ type receivedEvent struct {
 
 // mockAppServer simulates an external App that receives events from the Hub.
 type mockAppServer struct {
-	mu       sync.Mutex
-	events   []receivedEvent
-	secret   string
-	replyFn  func(env eventEnvelope) any
-	server   *httptest.Server
+	mu      sync.Mutex
+	events  []receivedEvent
+	secret  string
+	replyFn func(env eventEnvelope) any
+	server  *httptest.Server
 }
 
 func newMockAppServer(secret string, replyFn func(eventEnvelope) any) *mockAppServer {

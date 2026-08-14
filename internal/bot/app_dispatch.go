@@ -542,4 +542,3 @@ func resolveItemMedia(item *relay.MessageItem, baseURL, botDBID string) {
 	m.AESKey = ""
 	item.Media = &m
 }
-

@@ -229,9 +229,9 @@ func (s *Server) handleAddSkill(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAddRemoteSkill(w http.ResponseWriter, r *http.Request) {
 	var p struct {
-		AgentID    string `json:"agentId"`
-		SkillName  string `json:"skillName"`
-		SourceURL  string `json:"sourceUrl"`
+		AgentID     string `json:"agentId"`
+		SkillName   string `json:"skillName"`
+		SourceURL   string `json:"sourceUrl"`
 		Description string `json:"description"`
 	}
 	if err := decodeBody(r, &p); err != nil {
@@ -350,9 +350,9 @@ func (s *Server) handleReviewAction(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleArchiveTask(w http.ResponseWriter, r *http.Request) {
 	var p struct {
-		TaskID        string `json:"taskId"`
-		Archived      bool   `json:"archived"`
-		ArchiveAllDone bool  `json:"archiveAllDone"`
+		TaskID         string `json:"taskId"`
+		Archived       bool   `json:"archived"`
+		ArchiveAllDone bool   `json:"archiveAllDone"`
 	}
 	if err := decodeBody(r, &p); err != nil {
 		writeErr(w, http.StatusBadRequest, err)
@@ -396,7 +396,7 @@ func (s *Server) handleSetModel(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
 	}
-	writeOK(w, "model set for " + p.AgentID)
+	writeOK(w, "model set for "+p.AgentID)
 }
 
 func (s *Server) handleSetDispatchChannel(w http.ResponseWriter, r *http.Request) {
@@ -418,9 +418,9 @@ func (s *Server) handleSetDispatchChannel(w http.ResponseWriter, r *http.Request
 
 func (s *Server) handleCourtDiscussStart(w http.ResponseWriter, r *http.Request) {
 	var p struct {
-		Topic    string   `json:"topic"`
+		Topic     string   `json:"topic"`
 		Officials []string `json:"officials"`
-		TaskID   string   `json:"taskId"`
+		TaskID    string   `json:"taskId"`
 	}
 	_ = decodeBody(r, &p)
 	sessionID := "CD-" + strings.ToUpper(time.Now().Format("20060102-150405"))
