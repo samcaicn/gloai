@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/ceoadmin/CEOadmin/internal/store"
+	"github.com/google/uuid"
 )
 
 func generateToken(n int) string {
@@ -318,7 +318,8 @@ func (db *DB) GetInstallation(id string) (*store.AppInstallation, error) {
 		&i.CreatedAt, &i.UpdatedAt,
 		&i.AppName, &i.AppSlug, &i.AppIcon, &i.AppIconURL,
 		&i.AppWebhookURL, &i.AppWebhookSecret,
-		&i.AppRegistry, &i.AppReadme, &i.AppGuide)
+		&i.AppRegistry, &i.AppReadme, &i.AppGuide,
+		&i.TenantID, &i.ClientID)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +341,8 @@ func (db *DB) GetInstallationByToken(token string) (*store.AppInstallation, erro
 		&i.CreatedAt, &i.UpdatedAt,
 		&i.AppName, &i.AppSlug, &i.AppIcon, &i.AppIconURL,
 		&i.AppWebhookURL, &i.AppWebhookSecret,
-		&i.AppRegistry, &i.AppReadme, &i.AppGuide)
+		&i.AppRegistry, &i.AppReadme, &i.AppGuide,
+		&i.TenantID, &i.ClientID)
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +441,8 @@ func (db *DB) GetInstallationByHandle(botID, handle string) (*store.AppInstallat
 		&i.CreatedAt, &i.UpdatedAt,
 		&i.AppName, &i.AppSlug, &i.AppIcon, &i.AppIconURL,
 		&i.AppWebhookURL, &i.AppWebhookSecret,
-		&i.AppRegistry, &i.AppReadme, &i.AppGuide)
+		&i.AppRegistry, &i.AppReadme, &i.AppGuide,
+		&i.TenantID, &i.ClientID)
 	if err != nil {
 		return nil, err
 	}

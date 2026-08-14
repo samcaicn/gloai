@@ -41,3 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_scan_login_sessions_user_id ON scan_login_session
 DROP TABLE IF EXISTS scan_login_sessions;
 DROP TABLE IF EXISTS passkeys;
 DROP TABLE IF EXISTS tenants;
+
+-- Add tenant_id and client_id columns to app_installations for MCP auth context
+ALTER TABLE app_installations ADD COLUMN tenant_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE app_installations ADD COLUMN client_id TEXT NOT NULL DEFAULT '';
