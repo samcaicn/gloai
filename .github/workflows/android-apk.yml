@@ -8,6 +8,7 @@ on:
       - "android/**"
       - "cmd/colearn/**"
       - "pkg/providers/tupai/**"
+      - "pkg/auth/**"
       - "web/backend/launcherconfig/**"
       - "web/backend/api/**"
       - "Makefile"
