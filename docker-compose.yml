@@ -1,69 +1,39 @@
 # Environment variables (all optional, defaults for local dev):
-#   PASSWORD           - shared password for postgres, minio, storage (default: ceoadmin)
-#                        must be URL-safe (avoid @, /, %, # characters)
 #   HUB_PORT           - hub listen port on host (default: 9800)
 #   EDICT_PORT         - edict(Go 版) 端口在宿主机的映射（默认 7891，与 hub 同容器）
+#   GOLERSHOP_PORT     - golershop(商城) 端口在宿主机的映射（默认 8000，与 hub 同容器）
 #   RP_ORIGIN / RP_ID  - WebAuthn origin and relying party ID (default: localhost)
 #   ANTHROPIC_*        - AI 转型驾驶舱 (cockpit) 所需的 Claude 网关配置（部署 cockpit 服务时必填）
 #                        ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN / ANTHROPIC_MODEL
 #
-# Postgres and MinIO do not expose host ports by default.
-# To connect with GUI tools: docker compose exec postgres psql -U ceoadmin
+# 单容器部署：hub 镜像内同时运行 oih (ceoadmin)、edict-go、golershop 三个进程，
+# 全部使用 SQLite + 本地文件存储，数据统一落在 /var/lib/CEOadmin (hub-data 卷)，
+# 无需 PostgreSQL / MinIO 等外部依赖。
 
 services:
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: ceoadmin
-      POSTGRES_PASSWORD: ${PASSWORD:-ceoadmin}
-      POSTGRES_DB: ceoadmin
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ceoadmin -d ceoadmin"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  minio:
-    image: minio/minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ceoadmin
-      MINIO_ROOT_PASSWORD: ${PASSWORD:-ceoadmin}
-    volumes:
-      - miniodata:/data
-
   hub:
     build: .
     restart: on-failure
-    # edict（Go 版）与 Hub 同容器运行：镜像内置 edict-go，由 deploy/hub-entrypoint.sh
-    # 在同容器内后台拉起（默认 :7891），不另起容器。EDICT_PORT 仅控制宿主机映射。
-    # edict 的 sqlite 默认落在 /var/lib/CEOadmin/edict.db，与 Hub 主库同源数据卷，
-    # 通过 hub-data 卷持久化（EDICT_DB 可覆盖）。
     ports:
       - "${HUB_PORT:-9800}:9800"
       - "${EDICT_PORT:-7891}:7891"
+      - "${GOLERSHOP_PORT:-8000}:8000"
     volumes:
       - hub-data:/var/lib/CEOadmin
+      - ./deploy/hub-entrypoint.sh:/usr/local/bin/hub-entrypoint.sh:ro
     environment:
-      DATABASE_URL: postgres://ceoadmin:${PASSWORD:-ceoadmin}@postgres:5432/ceoadmin?sslmode=disable
+      # oih 主库：SQLite（留空默认 /var/lib/CEOadmin/ceoadmin.db）
+      DATABASE_URL: ${DATABASE_URL:-/var/lib/CEOadmin/ceoadmin.db}
+      # 本地文件存储（替代 MinIO S3），媒体/技能包落在 hub-data 卷
+      STORAGE_PATH: /var/lib/CEOadmin/media
       RP_ORIGIN: ${RP_ORIGIN:-http://localhost:${HUB_PORT:-9800}}
       RP_ID: ${RP_ID:-localhost}
-      STORAGE_ENDPOINT: minio:9000
-      STORAGE_ACCESS_KEY: ceoadmin
-      STORAGE_SECRET_KEY: ${PASSWORD:-ceoadmin}
-      STORAGE_BUCKET: ceoadmin
-      # STORAGE_PUBLIC_URL: https://s3.example.com/ceoadmin
+      # APP_PROXIES 配置 golershop 反向代理挂载
+      APP_PROXIES: "golershop=http://localhost:8000"
       # GITHUB_CLIENT_ID:
       # GITHUB_CLIENT_SECRET:
       # LINUXDO_CLIENT_ID:
       # LINUXDO_CLIENT_SECRET:
-    depends_on:
-      postgres:
-        condition: service_healthy
-      minio:
-        condition: service_started
 
   # AI 转型驾驶舱：独立 Next.js 前端（内置 App，源码已落地在仓库 cockpit/ 目录）。
   # 不直接依赖 hub 后端，需配置 Anthropic API Key 才能生成 AI 内容。
@@ -82,6 +52,4 @@ services:
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-6}
 
 volumes:
-  pgdata:
   hub-data:
-  miniodata:

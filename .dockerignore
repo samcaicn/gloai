@@ -41,6 +41,8 @@ data/
 # Node
 node_modules/
 *.cache
+edict/edict/frontend/node_modules/
+web/node_modules/
 
 # Test
 *_test.go

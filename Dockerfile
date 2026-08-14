@@ -18,6 +18,17 @@ RUN npm install --no-audit --no-fund
 COPY edict/edict/frontend/ ./
 RUN npm run build
 
+# --- Build golershop ---
+FROM golang:1.26-alpine AS golershop-builder
+ARG GOPROXY=https://goproxy.cn,direct
+ENV GOPROXY=$GOPROXY
+RUN apk add --no-cache git gcc musl-dev sqlite-dev
+WORKDIR /app/golershop
+COPY golershop/go.mod golershop/go.sum ./
+RUN go mod download
+COPY golershop/ .
+RUN CGO_ENABLED=1 go build -o /golershop .
+
 # --- Build backend ---
 FROM golang:1.26-alpine AS backend
 ARG GOPROXY=https://goproxy.cn,direct
@@ -37,12 +48,16 @@ WORKDIR /app
 
 # --- Runtime ---
 FROM alpine:3.21
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates curl libgcc
 COPY --from=backend /oih /usr/local/bin/oih
 COPY --from=backend /edict-go /usr/local/bin/edict-go
+RUN mkdir -p /app/golershop
+COPY --from=golershop-builder /golershop /app/golershop/golershop
+COPY --from=golershop-builder /app/golershop/manifest/config /app/golershop/manifest/config
+COPY --from=golershop-builder /app/golershop/resource/public /app/golershop/resource/public
 COPY --from=frontend /app/edict-frontend/dist /app/edict/edict/frontend/dist
 COPY deploy/hub-entrypoint.sh /usr/local/bin/hub-entrypoint.sh
 RUN chmod +x /usr/local/bin/hub-entrypoint.sh
-EXPOSE 9800 7891
+EXPOSE 9800 7891 8000
 ENTRYPOINT ["/usr/local/bin/hub-entrypoint.sh"]
 CMD ["-listen", "0.0.0.0:9800"]

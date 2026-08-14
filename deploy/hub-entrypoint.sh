@@ -1,29 +1,59 @@
 #!/bin/sh
-# 同容器启动 Hub(oih) 与 edict-go（方案 C：edict 不作为独立容器，直连端口）。
+# 统一入口脚本：启动 golershop (商城)、edict-go 与 oih (ceoadmin)
 #
-# - edict-go 以后台进程运行在 ${EDICT_ADDR}（默认 :7891），直接对外提供服务；
-#   应用市场「应用主页」指向该端口即可，无需 Hub 反代 / APP_PROXY / -base 基路径。
-# - oih 以前台进程运行在 ${HUB_LISTEN}（默认 0.0.0.0:9800），作为容器主进程。
-#
-# 环境变量（均可覆盖）：
-#   EDICT_DB      edict sqlite 数据库路径，默认 /data/edict.db
-#   EDICT_ADDR    edict 监听地址，默认 :7891
-#   EDICT_WEB     edict 托管的 React 前端 dist 目录，默认 /app/edict/edict/frontend/dist
-#   HUB_LISTEN    oih 监听地址，默认 0.0.0.0:9800
+# 环境变量：
+#   GOLERSHOP_DB_DIR  golershop 数据库目录，默认 /var/lib/CEOadmin/golershop
+#   EDICT_DB          edict sqlite 数据库路径，默认 /var/lib/CEOadmin/edict.db
+#   EDICT_ADDR        edict 监听地址，默认 :7891
+#   EDICT_WEB         edict 前端 dist 目录，默认 /app/edict/edict/frontend/dist
+#   HUB_LISTEN        oih 监听地址，默认 0.0.0.0:9800
+#   GOLERSHOP_PORT    golershop 端口，默认 8000
 set -e
 
+# --- edict-go (后台运行) ---
 EDICT_DB="${EDICT_DB:-/var/lib/CEOadmin/edict.db}"
 EDICT_ADDR="${EDICT_ADDR:-:7891}"
 EDICT_WEB="${EDICT_WEB:-/app/edict/edict/frontend/dist}"
 
-# edict-go 后台运行；即便它启动失败也不影响 oih 前台主进程。
-# 若 EDICT_WEB 目录不存在，edict-go 退化为仅提供 API（前端需另行托管）。
-# 先确保 DB 所在目录存在（oih 可能尚未创建 /data），否则 edict-go 会因子目录缺失而打开库失败。
 mkdir -p "$(dirname "$EDICT_DB")"
 edict-go -db "$EDICT_DB" serve -addr "$EDICT_ADDR" -web "$EDICT_WEB" &
 
-# 未显式传入参数时，让 oih 默认监听 0.0.0.0:9800；否则直接使用传入参数，避免 -listen 重复。
+# --- golershop ---
+GOLERSHOP_DB_DIR="${GOLERSHOP_DB_DIR:-/var/lib/CEOadmin/golershop}"
+GOLERSHOP_PORT="${GOLERSHOP_PORT:-8000}"
+
+mkdir -p "$GOLERSHOP_DB_DIR"
+cd /app/golershop
+
+# 启动 golershop
+echo "Starting golershop on port ${GOLERSHOP_PORT}..."
+./golershop &
+GOLERSHOP_PID=$!
+
+# 等待 golershop 就绪（最多等 10 秒）
+GOLERSHOP_READY=false
+for i in $(seq 1 20); do
+  if ! kill -0 "$GOLERSHOP_PID" 2>/dev/null; then
+    echo "ERROR: golershop process exited unexpectedly"
+    exit 1
+  fi
+  if curl -s -o /dev/null -w "%{http_code}" "http://localhost:${GOLERSHOP_PORT}/" 2>/dev/null | grep -q "200\|301\|404"; then
+    GOLERSHOP_READY=true
+    break
+  fi
+  sleep 0.5
+done
+
+if [ "$GOLERSHOP_READY" = "true" ]; then
+  echo "golershop started successfully (PID: $GOLERSHOP_PID)"
+else
+  echo "WARNING: golershop health check did not pass, but continuing..."
+fi
+
+# --- oih ---
+HUB_LISTEN="${HUB_LISTEN:-0.0.0.0:9800}"
+
 if [ $# -eq 0 ]; then
-  set -- -listen "${HUB_LISTEN:-0.0.0.0:9800}"
+  set -- -listen "${HUB_LISTEN}"
 fi
 exec oih "$@"

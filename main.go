@@ -33,6 +33,9 @@ import (
 
 	// Register 供采市场 builtin app
 	_ "github.com/ceoadmin/CEOadmin/internal/builtin/supplymarket"
+
+	// Register golershop builtin app
+	_ "github.com/ceoadmin/CEOadmin/internal/builtin/golershop"
 )
 
 // Set by goreleaser ldflags.
