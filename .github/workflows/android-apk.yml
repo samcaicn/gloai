@@ -3,7 +3,7 @@ name: android-apk
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "colearn"]
+    branches: ["main", "colearn", "cnapk"]
     paths:
       - "android/**"
       - "cmd/colearn/**"
