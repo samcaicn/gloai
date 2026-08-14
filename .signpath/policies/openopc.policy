@@ -1,0 +1,22 @@
+# SignPath policy declaration for OpenOPC (checked into repo for auditability)
+# Reference: https://signpath.io/docs/policy
+# Hosted at: github.com/samcaicn/gloai  (public repo used as SignPath origin)
+
+project: openopc
+signing-policy:
+  name: release-signing
+  approval-mode: automatic
+  artifact-configuration: openopc-installer
+  trusted-build-system:
+    type: github
+    repository: samcaicn/gloai
+    workflow: .github/workflows/sign-windows.yml
+    branch-tag-pattern: "refs/tags/openopc-*"
+  # Sign only the Windows NSIS installer (and its payload exe)
+  file-patterns:
+    - "*.exe"
+  # Authenticode (Windows) signing
+  signing-methods:
+    - authenticode
+  # Always timestamp so signatures survive certificate expiry
+  timestamping: required
