@@ -3,7 +3,7 @@ name: android-apk
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: ["main", "colearn"]
     paths:
       - "android/**"
       - "cmd/colearn/**"
@@ -60,3 +60,15 @@ jobs:
         with:
           name: colearn-launcher-apk
           path: android/app/colearn.apk
+
+      - name: Create GitHub Release (colearn branch)
+        if: github.ref_name == 'colearn'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-build-${{ github.sha }}
+          name: APK Build
+          body: |
+            Auto-built debug APK from branch `colearn`.
+            Commit: ${{ github.sha }}
+          files: android/app/colearn.apk
+          fail_on_unmatched_files: true
