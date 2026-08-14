@@ -11,11 +11,18 @@ on:
     types: [published]
   workflow_dispatch:
 
+# Gate the whole job on the SignPath secret so it stays silent (no CI minutes
+# wasted, no false "ran but didn't sign" runs) until the OSS approval lands
+# and the repo secret SIGNPATH_API_TOKEN is configured.
+env:
+  SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+
 permissions:
   contents: write
 
 jobs:
   sign:
+    if: ${{ env.SIGNPATH_API_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download release asset (NSIS installer)
