@@ -1,0 +1,48 @@
+# .github/workflows/sign-windows.yml
+# Sign the Windows NSIS installer with SignPath (free OSS, cloud EV).
+# Trigger: after the installer build workflow publishes a Release with OpenOPC-Setup.exe.
+# Requires repo secrets: SIGNPATH_API_TOKEN, SIGNPATH_ORG_ID
+# Plus SignPath dashboard config: project slug, signing policy slug, artifact config slug.
+
+name: Sign Windows installer (SignPath)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release asset (NSIS installer)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p staging
+          gh release download "${{ github.event.release.tag_name || 'latest' }}" \
+            --pattern "OpenOPC-Setup.exe" --dir staging || true
+          ls -la staging
+
+      - name: Submit to SignPath for Authenticode signing
+        if: ${{ env.SIGNPATH_API_TOKEN != '' }}
+        uses: SignPath/github-action-submit-signing-request@v1
+        with:
+          organization-id: ${{ secrets.SIGNPATH_ORG_ID }}
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          project-slug: openopc
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: openopc-installer
+          github-artifact-name: openopc-setup
+          input-artifact-path: staging/OpenOPC-Setup.exe
+          output-artifact-path: signed/OpenOPC-Setup.exe
+
+      - name: Re-upload signed installer to Release
+        if: ${{ env.SIGNPATH_API_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" signed/OpenOPC-Setup.exe --clobber
