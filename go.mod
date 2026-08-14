@@ -14,6 +14,7 @@ require (
 	github.com/openilink/openilink-sdk-go v0.6.0
 	github.com/parquet-go/parquet-go v0.30.1
 	github.com/pressly/goose/v3 v3.27.0
+	github.com/tencentyun/cos-go-sdk-v5 v0.7.75
 	github.com/youthlin/silk v0.0.4
 	golang.org/x/oauth2 v0.36.0
 	modernc.org/sqlite v1.47.0
@@ -21,6 +22,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.2.0 // indirect
+	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
@@ -28,7 +30,8 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-webauthn/x v0.1.14 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.3 // indirect
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.1 // indirect
 	github.com/google/jsonschema-go v0.4.2 // indirect
 	github.com/google/pprof v0.0.0-20250317173921-a4b03ec1a45e // indirect
@@ -43,6 +46,7 @@ require (
 	github.com/minio/crc64nvme v1.1.1 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mozillazg/go-httpheader v0.2.1 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/parquet-go/bitpack v1.0.0 // indirect
 	github.com/parquet-go/jsonlite v1.0.0 // indirect
