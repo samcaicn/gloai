@@ -55,8 +55,8 @@ func GoogleAntigravityOAuthConfig() OAuthProviderConfig {
 	// Client credentials are loaded from environment variables for security.
 	// Set COGOOGLE_CLIENT_ID_B64 and COGOOGLE_CLIENT_SECRET_B64 (base64-encoded)
 	// before calling this function.
-	clientID := decodeBase64(os.Getenv(decodeBase64(os.Getenv("COGOOGLE_CLIENT_ID_B64"))))
-	clientSecret := decodeBase64(os.Getenv(decodeBase64(os.Getenv("COGOOGLE_CLIENT_SECRET_B64"))))
+	clientID := decodeBase64(os.Getenv("COGOOGLE_CLIENT_ID_B64"))
+	clientSecret := decodeBase64(os.Getenv("COGOOGLE_CLIENT_SECRET_B64"))
 	return OAuthProviderConfig{
 		Issuer:       "https://www.tuptup.top",
 		TokenURL:     "https://www.tuptup.top",
