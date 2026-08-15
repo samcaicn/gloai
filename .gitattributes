@@ -11,3 +11,11 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
+
+# Generated frontend bundle: force LF so the Windows-committed bundle matches
+# the Linux-built bundle byte-for-byte (CI frontend-contracts git diff check).
+# Scoped to text types only; PNG/sprite assets keep binary (text=auto) handling.
+opc/plugins/office_ui/frontend_dist/index.html text eol=lf
+opc/plugins/office_ui/frontend_dist/assets/*.css text eol=lf
+opc/plugins/office_ui/frontend_dist/assets/*.js text eol=lf
+opc/plugins/office_ui/frontend_src/index.html text eol=lf
