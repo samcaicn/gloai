@@ -135,7 +135,12 @@ def _pid_is_running(pid: int) -> bool:
 
 
 def _create_default_skills(opc_home: Path) -> None:
-    """Copy bundled skills to the OPC home skills directory."""
+    """Copy bundled skills to the OPC home skills directory.
+
+    Also installs built-in packaged skills (CreatorHub) into
+    ``<opc_home>/skills/`` as symlinks and drops their CLI shims into
+    ``<opc_home>/bin/`` so the main runtime and any spawned agent can use them.
+    """
     import shutil
 
     repo_skills = Path(__file__).parent.parent.parent / "skills" / "core"
@@ -150,19 +155,33 @@ def _create_default_skills(opc_home: Path) -> None:
                 shutil.copy2(skill_file, dest)
             copied = True
     if copied:
-        return
+        pass
+    else:
+        try:
+            resource_skills = importlib_resources.files("opc").joinpath("skills_assets", "core")
+        except Exception:
+            resource_skills = None
+        if resource_skills is not None and resource_skills.is_dir():
+            for child in resource_skills.iterdir():
+                if child.is_file() and child.name.endswith(".md"):
+                    dest = target_skills / child.name
+                    if not dest.exists():
+                        dest.write_bytes(child.read_bytes())
 
+    # Built-in packaged skills (CreatorHub) — always available to the runtime.
     try:
-        resource_skills = importlib_resources.files("opc").joinpath("skills_assets", "core")
-    except Exception:
-        return
-    if not resource_skills.is_dir():
-        return
-    for child in resource_skills.iterdir():
-        if child.is_file() and child.name.endswith(".md"):
-            dest = target_skills / child.name
-            if not dest.exists():
-                dest.write_bytes(child.read_bytes())
+        from opc.layer3_agent.skill_installer import (
+            install_creatorhub_skill,
+            ensure_creatorhub_bin,
+        )
+
+        install_creatorhub_skill(opc_home)
+        ensure_creatorhub_bin(opc_home)
+    except Exception as exc:  # pragma: no cover - defensive
+        try:
+            console.print(f"[warning]Failed to install CreatorHub built-in skill: {exc}[/warning]")
+        except Exception:
+            pass
 
 
 def _progress_callback():

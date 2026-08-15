@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://safeopc.dev/schemas/creatorhub.config.json",
+  "title": "CreatorHub built-in skill configuration",
+  "description": "Configuration items for the CreatorHub Xiaohongshu publishing sidecar. Effective config = defaults -> user file (<opc_home>/config/creatorhub.yaml) -> CLI flags.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "host": {
+      "type": "string",
+      "default": "127.0.0.1",
+      "description": "Sidecar bind host."
+    },
+    "port": {
+      "type": "integer",
+      "default": 8000,
+      "minimum": 1,
+      "maximum": 65535,
+      "description": "Sidecar bind port."
+    },
+    "data_root": {
+      "type": "string",
+      "default": "",
+      "description": "Profiles / media / db root. Empty string resolves to <opc_home>/integrations/creatorhub at runtime."
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["xhs"],
+      "default": "xhs",
+      "description": "Target platform. Only Xiaohongshu (xhs) is supported today."
+    },
+    "xhs_browser_mode": {
+      "type": "string",
+      "enum": ["auto", "cdp"],
+      "default": "auto",
+      "description": "auto = use the system Brave/Chrome; cdp = launch a controlled Chrome via CDP."
+    },
+    "browser": {
+      "type": "string",
+      "enum": ["bravenative", "chrome"],
+      "default": "bravenative",
+      "description": "Advisory: which system browser CreatorHub drives. Brave is preferred (bravenative)."
+    },
+    "headless": {
+      "type": "boolean",
+      "default": false,
+      "description": "Advisory: run the driven browser headless."
+    },
+    "auto_launch": {
+      "type": "boolean",
+      "default": true,
+      "description": "Launch the sidecar automatically when `opc-creatorhub open` runs."
+    },
+    "open_page": {
+      "type": "boolean",
+      "default": true,
+      "description": "Open the web page in the default browser after the sidecar is healthy."
+    },
+    "auto_stop_on_exit": {
+      "type": "boolean",
+      "default": false,
+      "description": "Stop the sidecar when SafeOPC exits."
+    },
+    "log_level": {
+      "type": "string",
+      "enum": ["DEBUG", "INFO", "WARNING", "ERROR"],
+      "default": "INFO",
+      "description": "Service log level."
+    }
+  },
+  "required": ["host", "port", "platform", "xhs_browser_mode", "browser", "headless", "auto_launch", "open_page", "auto_stop_on_exit", "log_level"]
+}

@@ -52,11 +52,15 @@ class CreatorHubLauncher:
         data_root: Path = DEFAULT_DATA_ROOT,
         port: int = DEFAULT_PORT,
         host: str = DEFAULT_HOST,
+        platform: str = "xhs",
+        xhs_browser_mode: str = "auto",
     ) -> None:
         self.creatorhub_dir = Path(creatorhub_dir)
         self.data_root = Path(data_root)
         self.port = int(port)
         self.host = host
+        self.platform = platform
+        self.xhs_browser_mode = xhs_browser_mode
         self.venv_dir = self.creatorhub_dir / ".venv"
         self.config_path = self.data_root / "config.yaml"
         self.requirements = self.creatorhub_dir / "requirements.txt"
@@ -92,7 +96,8 @@ class CreatorHubLauncher:
         engine = cfg.setdefault("engine", {})
         engine["profiles_dir"] = str(self.data_root / "profiles")
         engine["media_dir"] = str(self.data_root / "media")
-        engine.setdefault("xhs_browser_mode", "auto")
+        engine["platform"] = self.platform
+        engine["xhs_browser_mode"] = self.xhs_browser_mode
         cfg.setdefault("storage", {})["db_path"] = str(self.data_root / "creatorhub.db")
         self.data_root.mkdir(parents=True, exist_ok=True)
         with self.config_path.open("w", encoding="utf-8") as fh:

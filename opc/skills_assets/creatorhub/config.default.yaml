@@ -1,0 +1,16 @@
+# CreatorHub built-in skill — default configuration.
+# Effective config = these defaults -> <opc_home>/config/creatorhub.yaml -> CLI flags.
+# See config.schema.json for the full contract (types, enums, descriptions).
+
+host: 127.0.0.1
+port: 8000
+# Empty data_root resolves to <opc_home>/integrations/creatorhub at runtime.
+data_root: ""
+platform: xhs
+xhs_browser_mode: auto
+browser: bravenative
+headless: false
+auto_launch: true
+open_page: true
+auto_stop_on_exit: false
+log_level: INFO
