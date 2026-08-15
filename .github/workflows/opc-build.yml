@@ -1,0 +1,98 @@
+name: OPC Build (self-cleaning)
+
+# 临时分支 opc 专用 CI：push 到 opc 即构建 Windows 安装包 SafeOPC-Setup.exe。
+# 产物以 workflow artifact 保底（保留 90 天），同时短暂创建 GitHub Release 附上 exe；
+# 构建成功后由本 workflow 自动删除 release（含 tag）并删除 opc 分支本身。
+# 说明：本机 CI 无代码签名证书，构建走未签名安装包。
+# 失败时不执行清理，保留 opc 分支便于修复重推。
+
+on:
+  push:
+    branches: [opc]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: opc-build
+  cancel-in-progress: false
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller pywebview
+          python -m pip install -e ".[dev]"
+
+      - name: Build with PyInstaller
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m PyInstaller packaging/safeopc.spec --noconfirm --clean
+
+      - name: Install NSIS
+        shell: bash
+        run: |
+          set -euo pipefail
+          choco install nsis -y
+
+      - name: Package NSIS installer
+        shell: bash
+        env:
+          WS: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          SRC="$WS/dist/SafeOPC"
+          OUTFILE="$WS/dist/SafeOPC-Setup.exe"
+          if [ ! -f "$SRC/SafeOPC.exe" ]; then
+            echo "::error::PyInstaller output missing: $SRC/SafeOPC.exe"
+            exit 1
+          fi
+          MAKENSIS="/c/Program Files (x86)/NSIS/makensis.exe"
+          "$MAKENSIS" /DSRC="$SRC" /DOUTFILE="$OUTFILE" packaging/installer.nsi
+          echo "Installer: $OUTFILE"
+          ls -la "$OUTFILE"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: safeopc-windows-setup
+          path: ${{ github.workspace }}/dist/SafeOPC-Setup.exe
+          retention-days: 90
+
+      - name: Publish GitHub Release
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="safeopc-win-$(date +%Y%m%d%H%M%S)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          gh release create "$TAG" "${{ github.workspace }}/dist/SafeOPC-Setup.exe" \
+            --target "${{ github.sha }}" \
+            --title "SafeOPC Windows build" \
+            --notes "SafeOPC Windows 安装包（未签名）。exe 已同步留存于 workflow artifact：safeopc-windows-setup。"
+
+      - name: Cleanup - delete release and opc branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release delete "${{ steps.release.outputs.tag }}" --yes --cleanup-tag || true
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/opc" || true

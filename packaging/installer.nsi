@@ -7,11 +7,16 @@
 !define APPNAME    "SafeOPC"
 !define APPVERSION "0.1.0"
 !define PUBLISHER  "SafeOPC"
+!ifndef SRC
 !define SRC        "C:\code\openopc\dist\SafeOPC"
+!endif
 !define UNKEY      "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
 
 Name    "${APPNAME}"
-OutFile "C:\code\openopc\dist\SafeOPC-Setup.exe"
+!ifndef OUTFILE
+!define OUTFILE    "C:\code\openopc\dist\SafeOPC-Setup.exe"
+!endif
+OutFile "${OUTFILE}"
 InstallDir "$PROGRAMFILES\${APPNAME}"
 RequestExecutionLevel admin   ; writing to Program Files needs elevation
 Unicode true
