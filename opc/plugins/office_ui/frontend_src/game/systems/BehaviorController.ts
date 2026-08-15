@@ -58,13 +58,13 @@ export class BehaviorController {
 
   applyEvent(evt: VisualEvent) {
     const data = evt.data ?? {}
-    const agentId = evt.agent_id || 'openopc-main'
+    const agentId = evt.agent_id || 'safeopc-main'
 
     if (agentId === 'user') return
 
     const isSub = agentId.startsWith('subagent-')
     const parentId = isSub
-      ? (typeof data.parent_agent_id === 'string' ? data.parent_agent_id : 'openopc-main')
+      ? (typeof data.parent_agent_id === 'string' ? data.parent_agent_id : 'safeopc-main')
       : null
     const displayName = isSub ? `Sub ${agentId.slice(-4)}` : undefined
 

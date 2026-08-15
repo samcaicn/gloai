@@ -16,7 +16,7 @@ test('the registry is unique and contains the only default declaration', () => {
   const names = THEMES.map(theme => theme.name)
   assert.equal(new Set(names).size, names.length)
   assert.equal(THEMES.filter(theme => 'default' in theme && theme.default).length, 1)
-  assert.equal(DEFAULT_THEME, 'openopc')
+  assert.equal(DEFAULT_THEME, 'safeopc')
 })
 
 test('every registered theme is accepted and restored', () => {

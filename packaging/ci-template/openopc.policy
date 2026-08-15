@@ -1,0 +1,22 @@
+# SignPath policy declaration for SafeOPC (checked into repo for auditability)
+# Reference: https://signpath.io/docs/policy
+# Hosted at: github.com/samcaicn/safeopc  (public repo used as SignPath origin)
+
+project: safeopc
+signing-policy:
+  name: release-signing
+  approval-mode: automatic
+  artifact-configuration: safeopc-installer
+  trusted-build-system:
+    type: github
+    repository: samcaicn/safeopc
+    workflow: .github/workflows/sign-windows.yml
+    branch-tag-pattern: "refs/tags/safeopc-*"
+  # Sign only the Windows NSIS installer (and its payload exe)
+  file-patterns:
+    - "*.exe"
+  # Authenticode (Windows) signing
+  signing-methods:
+    - authenticode
+  # Always timestamp so signatures survive certificate expiry
+  timestamping: required

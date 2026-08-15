@@ -1372,7 +1372,7 @@ class NativeRuntimeV2Tests(unittest.IsolatedAsyncioTestCase):
         # 1 initial + 2 feedback retries + 1 context-reset retry = 4, never 20
         self.assertLessEqual(llm.stream_calls, 4)
 
-    async def test_todo_write_normalizes_openopc_task_ledger_shape(self) -> None:
+    async def test_todo_write_normalizes_safeopc_task_ledger_shape(self) -> None:
         runtime = NativeRuntimeV2(
             llm=_StubLLM(),
             tool_registry=ToolRegistry(),
@@ -1431,7 +1431,7 @@ class NativeRuntimeV2Tests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(todo_state[0]["active_form"], "Inspecting runtime")
         self.assertNotIn("activeForm", todo_state[0])
 
-    def test_native_runtime_tool_schemas_use_openopc_field_names(self) -> None:
+    def test_native_runtime_tool_schemas_use_safeopc_field_names(self) -> None:
         todo_write = next(tool for tool in create_todo_tools() if tool.name == "todo_write")
         agent_spawn = next(tool for tool in create_agent_runtime_tools() if tool.name == "agent_spawn")
 

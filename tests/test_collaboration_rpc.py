@@ -26,7 +26,7 @@ class CollaborationRpcTransportTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(
             rpc_env_available(
                 {
-                    OPC_COLLAB_RPC_PATH: "/tmp/openopc/requests.fifo",
+                    OPC_COLLAB_RPC_PATH: "/tmp/safeopc/requests.fifo",
                     OPC_COLLAB_RPC_TOKEN: "token",
                 }
             )
@@ -35,7 +35,7 @@ class CollaborationRpcTransportTests(unittest.IsolatedAsyncioTestCase):
             rpc_env_available(
                 {
                     OPC_COLLAB_RPC_TRANSPORT: "fifo",
-                    OPC_COLLAB_RPC_PATH: "/tmp/openopc/requests.fifo",
+                    OPC_COLLAB_RPC_PATH: "/tmp/safeopc/requests.fifo",
                     OPC_COLLAB_RPC_TOKEN: "token",
                 }
             )
@@ -210,7 +210,7 @@ class CollaborationRpcTransportTests(unittest.IsolatedAsyncioTestCase):
                 {"include_children": True},
                 env={
                     OPC_COLLAB_RPC_TRANSPORT: "fifo",
-                    OPC_COLLAB_RPC_PATH: "/tmp/openopc/requests.fifo",
+                    OPC_COLLAB_RPC_PATH: "/tmp/safeopc/requests.fifo",
                     OPC_COLLAB_RPC_TOKEN: "token",
                 },
             )

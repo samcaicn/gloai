@@ -943,7 +943,7 @@ class TestIntegration12_MultiAgentDependency:
         )
         task_a = Task(
             title="Create data file",
-            description=f"Create a file at {workspace}/data.json with content: {{\"name\": \"OpenOPC\", \"version\": \"1.0\"}}",
+            description=f"Create a file at {workspace}/data.json with content: {{\"name\": \"SafeOPC\", \"version\": \"1.0\"}}",
             assigned_to="data_creator",
         )
 

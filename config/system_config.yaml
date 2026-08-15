@@ -268,6 +268,21 @@ mcp_servers:
   tools_filter: []
   startup_timeout: 30.0
 
+# ── CreatorHub（多平台内容监控·采集·搬运）sidecar ───────────────
+# 前置：仓库含 submodule integrations/creatorhub，并先起 sidecar
+#   python opc/integrations/creatorhub_adapter/launcher.py setup
+#   python opc/integrations/creatorhub_adapter/launcher.py start
+# 浏览器：CreatorHub 优先使用系统稳定版 Chrome（不下载自带 Chromium）。
+# 启用时把下方 command 里的 mcp_server.py 换成绝对路径。
+# - name: creatorhub
+#   type: local
+#   command: ["python", "opc/integrations/creatorhub_adapter/mcp_server.py"]
+#   enabled: true
+#   env:
+#     CREATORHUB_BASE_URL: "http://127.0.0.1:8000"
+#   tools_filter: []
+#   startup_timeout: 30.0
+
 # Example: GitHub MCP server (uncomment and set GITHUB_TOKEN)
 # - name: github
 #   type: local

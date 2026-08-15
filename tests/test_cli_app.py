@@ -189,7 +189,7 @@ class CliInitProjectTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             opc_home = root / ".opc"
-            workplace_root = root / "OpenOPC_workplace"
+            workplace_root = root / "SafeOPC_workplace"
             fake_bin = root / "fake-bin"
             fake_bin.mkdir()
             for binary in ("codex", "claude", "cursor-agent", "opencode"):
@@ -221,7 +221,7 @@ class CliInitProjectTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             opc_home = root / ".opc"
-            workplace_root = root / "OpenOPC_workplace"
+            workplace_root = root / "SafeOPC_workplace"
 
             with patch("opc.core.config.get_opc_home", return_value=opc_home), patch(
                 "opc.core.config.get_project_workplace",
@@ -288,7 +288,7 @@ class CliInitProjectTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             opc_home = root / ".opc"
-            workplace_root = root / "OpenOPC_workplace"
+            workplace_root = root / "SafeOPC_workplace"
 
             with patch("opc.core.config.get_opc_home", return_value=opc_home), patch(
                 "opc.core.config.get_project_workplace",
@@ -306,7 +306,7 @@ class CliInitProjectTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             opc_home = root / ".opc"
-            workplace_root = root / "OpenOPC_workplace"
+            workplace_root = root / "SafeOPC_workplace"
             (opc_home / "memory" / "projects").mkdir(parents=True)
             (opc_home / "memory" / "projects" / "dupe.md").write_text("# Project Memory (dupe)\n", encoding="utf-8")
 
@@ -326,7 +326,7 @@ class CliInitProjectTests(unittest.TestCase):
             root = Path(tmpdir)
             opc_home = root / ".opc"
             config_dir = opc_home / "config"
-            workplace_root = root / "OpenOPC_workplace"
+            workplace_root = root / "SafeOPC_workplace"
             config_dir.mkdir(parents=True)
             config_file = config_dir / "llm_config.yaml"
             config_file.write_text("llm:\n  api_key: keep-me\n", encoding="utf-8")
@@ -349,7 +349,7 @@ class CliInitProjectTests(unittest.TestCase):
             root = Path(tmpdir)
             opc_home = root / ".opc"
             config_dir = opc_home / "config"
-            workplace_root = root / "OpenOPC_workplace"
+            workplace_root = root / "SafeOPC_workplace"
             config_dir.mkdir(parents=True)
             config_file = config_dir / "llm_config.yaml"
             config_file.write_text("llm:\n  api_key: keep-me\n", encoding="utf-8")

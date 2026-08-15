@@ -1758,7 +1758,7 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("agent_spawn(profile='explore')", external_task.description)
         self.assertNotIn("file_read", external_task.description)
         self.assertNotIn("git_*", external_task.description)
-        self.assertNotIn("OpenOPC task execution agent", external_task.description)
+        self.assertNotIn("SafeOPC task execution agent", external_task.description)
         self.assertNotIn("## Core Operating Principles", external_task.description)
         self.assertNotIn("## Native Working Contract", external_task.description)
         self.assertNotIn("Tool Strategy", external_task.description)
@@ -1874,7 +1874,7 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
 
         external_task = await engine._build_external_agent_task(task)
 
-        # OpenOPC-spawned agents (codex, claude, opencode, cursor) all use
+        # SafeOPC-spawned agents (codex, claude, opencode, cursor) all use
         # the `opc-collab` CLI. The prompt deliberately teaches only that
         # supported collaboration surface.
         self.assertIn("## Company Runtime Context", external_task.description)
@@ -2069,9 +2069,9 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("## Team Collaboration", external_task.description)
         self.assertNotIn("opc-collab", external_task.description)
         self.assertIn("## Task Brief", external_task.description)
-        self.assertIn("## OpenOPC Context", external_task.description)
+        self.assertIn("## SafeOPC Context", external_task.description)
         self.assertNotIn("## Collaboration Context", external_task.description)
-        self.assertNotIn("OpenOPC task execution agent", external_task.description)
+        self.assertNotIn("SafeOPC task execution agent", external_task.description)
         self.assertNotIn("## Core Operating Principles", external_task.description)
         self.assertNotIn("## Native Working Contract", external_task.description)
         self.assertNotIn("Tool Strategy", external_task.description)
@@ -2566,7 +2566,7 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(which_mock.call_args.kwargs["path"], r"D:\bin")
 
-    def test_codex_adapter_forwards_only_openopc_runtime_env_to_shell_policy(self) -> None:
+    def test_codex_adapter_forwards_only_safeopc_runtime_env_to_shell_policy(self) -> None:
         metadata: dict[str, object] = {}
 
         cmd = CodexAdapter._inject_runtime_shell_environment(
@@ -2574,7 +2574,7 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
             {
                 "OPC_ALLOWED_COLLAB_TOOLS": json.dumps(["delegate_work", "inbox"]),
                 "OPC_COLLAB_RPC_TOKEN": "rpc-token",
-                "PYTHONPATH": r"D:\OpenOPC",
+                "PYTHONPATH": r"D:\SafeOPC",
                 "UNRELATED_SECRET": "do-not-forward",
             },
             launch_metadata=metadata,
@@ -2591,7 +2591,7 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
             config_values,
         )
         self.assertIn(
-            "shell_environment_policy.set.PYTHONPATH='''D:\\OpenOPC'''",
+            "shell_environment_policy.set.PYTHONPATH='''D:\\SafeOPC'''",
             config_values,
         )
         self.assertFalse(any("UNRELATED_SECRET" in value for value in config_values))
@@ -2836,7 +2836,7 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
         adapter = CodexAdapter()
         task = Task(
             title="demo",
-            description="## Task Brief\n如何看待agent的发展趋势\n\n## OpenOPC Context\nctx",
+            description="## Task Brief\n如何看待agent的发展趋势\n\n## SafeOPC Context\nctx",
             metadata={"external_prompt_contract": "description_is_full_prompt"},
         )
 
@@ -3210,7 +3210,7 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
         adapter = ClaudeCodeAdapter()
         task = Task(
             title="demo",
-            description="## Task Brief\n在工作区里创建一个 hello.py\n\n## OpenOPC Context\nctx",
+            description="## Task Brief\n在工作区里创建一个 hello.py\n\n## SafeOPC Context\nctx",
             metadata={"external_prompt_contract": "description_is_full_prompt"},
         )
         prompt = adapter.build_task_prompt(task)
@@ -3463,7 +3463,7 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
         finally:
             _cleanup_test_dir(tmp_opc_home)
 
-    def test_claude_adapter_approval_modes_map_to_three_openopc_modes(self) -> None:
+    def test_claude_adapter_approval_modes_map_to_three_safeopc_modes(self) -> None:
         task = Task(title="demo", description="body")
 
         auto_cmd, auto_meta = ClaudeCodeAdapter(
@@ -4202,7 +4202,7 @@ class ExternalAgentMonitoringTests(unittest.IsolatedAsyncioTestCase):
 
     def test_external_task_prompt_does_not_duplicate_existing_task_brief(self) -> None:
         adapter = OpenCodeAdapter(config=ExternalAgentConfig(command="opencode"))
-        task = Task(title="hello", description="## Task Brief\nhello\n\n## OpenOPC Context\nctx")
+        task = Task(title="hello", description="## Task Brief\nhello\n\n## SafeOPC Context\nctx")
 
         prompt = adapter.build_task_prompt(task)
 

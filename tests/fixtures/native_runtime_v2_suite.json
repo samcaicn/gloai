@@ -1,7 +1,7 @@
 {
   "suite_version": "1.0",
-  "name": "native_runtime_v2_openopc_style",
-  "description": "OpenOPC style benchmark suite for evaluating OpenOPC Native Runtime V2 across long-running coding, resume, permission, subagent, and company-mode workflows.",
+  "name": "native_runtime_v2_safeopc_style",
+  "description": "SafeOPC style benchmark suite for evaluating SafeOPC Native Runtime V2 across long-running coding, resume, permission, subagent, and company-mode workflows.",
   "metrics": [
     "success_rate",
     "average_turns",

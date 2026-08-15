@@ -1,4 +1,4 @@
-"""Command-line entrypoint for the OpenOPC CLI board."""
+"""Command-line entrypoint for the SafeOPC CLI board."""
 
 from __future__ import annotations
 

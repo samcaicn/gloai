@@ -34,7 +34,7 @@ import time
 from pathlib import Path
 
 SCRATCH = Path(__file__).resolve().parent
-REPO = Path("/data2/bjdwhzzh/project-hku/OpenOPC")
+REPO = Path("/data2/bjdwhzzh/project-hku/SafeOPC")
 SANDBOX_ROOT = SCRATCH / "issue10_sandbox"
 
 sys.path.insert(0, str(REPO))

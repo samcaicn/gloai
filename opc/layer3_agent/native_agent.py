@@ -50,7 +50,7 @@ _CORE_HEADER = (
 )
 
 _TASK_MODE_CORE_HEADER = (
-    "You are {role_name}, an OpenOPC task execution agent.\n"
+    "You are {role_name}, an SafeOPC task execution agent.\n"
     "Role: {responsibility}\n\n"
     "You accomplish standalone user tasks by using the tools available to your role."
 )

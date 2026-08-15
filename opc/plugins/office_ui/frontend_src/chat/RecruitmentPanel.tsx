@@ -11,7 +11,7 @@ import type {
 import type { TaskPreferredAgent } from '../types/kanban'
 
 const TASK_AGENT_LABELS: Record<TaskPreferredAgent, string> = {
-  native: 'OpenOPC Native',
+  native: 'SafeOPC Native',
   codex: 'Codex',
   claude_code: 'Claude Code',
   cursor: 'Cursor',

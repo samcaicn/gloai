@@ -54,7 +54,7 @@ class _RuntimePrefetchHandle:
 
 
 class NativeRuntimeV2:
-    """OpenOPC native runtime with structured events and tool batches."""
+    """SafeOPC native runtime with structured events and tool batches."""
 
     def __init__(
         self,

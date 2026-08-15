@@ -103,7 +103,7 @@ REGULAR_TASKS = [
     # Test 2: Review-style task (should use REVIEW_GUIDELINES)
     (
         "Review/analysis task",
-        "Read the file /Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC/opc/__init__.py "
+        "Read the file /Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC/opc/__init__.py "
         "and tell me what version of OPC is defined there."
     ),
     # Test 3: Planning task (should trigger coordinator)
@@ -115,7 +115,7 @@ REGULAR_TASKS = [
     # Test 4: File operations (tests file_read, file_write tools)
     (
         "File read/write operations",
-        "Read the file /Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC/pyproject.toml "
+        "Read the file /Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC/pyproject.toml "
         "and tell me the project name and version."
     ),
     # Test 5: Shell execution
@@ -132,7 +132,7 @@ REGULAR_TASKS = [
     # Test 7: Code search task (tests file_search/list_dir)
     (
         "Code search and analysis",
-        "Search the OPC codebase at /Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC/opc/ "
+        "Search the OPC codebase at /Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC/opc/ "
         "for all files that import 'asyncio'. Just list the file paths."
     ),
     # Test 8: Python execution
@@ -148,7 +148,7 @@ REGULAR_TASKS = [
     # Test 10: Git operations
     (
         "Git status check",
-        "Check the git status of the repository at /Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC "
+        "Check the git status of the repository at /Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC "
         "and report the current branch and any uncommitted changes."
     ),
 ]
@@ -162,7 +162,7 @@ RANDOM_TASKS = [
     ),
     (
         "Random: Directory listing",
-        "List the contents of /Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC/opc/layer3_agent/ "
+        "List the contents of /Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC/opc/layer3_agent/ "
         "and briefly describe the purpose of each file."
     ),
     (
@@ -180,7 +180,7 @@ RANDOM_TASKS = [
     ),
     (
         "Random: Code explanation",
-        "Read the file /Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC/opc/layer4_tools/todo.py "
+        "Read the file /Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC/opc/layer4_tools/todo.py "
         "and explain what it does in 2-3 sentences."
     ),
     (
@@ -195,7 +195,7 @@ RANDOM_TASKS = [
     (
         "Random: File analysis",
         "How many lines of Python code are in the file "
-        "/Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC/opc/layer3_agent/runtime_v2/runtime.py?"
+        "/Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC/opc/layer3_agent/runtime_v2/runtime.py?"
     ),
     (
         "Random: Simple script",
@@ -207,7 +207,7 @@ RANDOM_TASKS = [
 STRESS_TASKS = [
     (
         "Stress: Long output handling",
-        "List all files recursively in /Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC/opc/ "
+        "List all files recursively in /Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC/opc/ "
         "and count the total number of .py files."
     ),
     (
@@ -222,7 +222,7 @@ STRESS_TASKS = [
     ),
     (
         "Stress: File search + analysis",
-        "Find all Python files in /Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC/opc/ "
+        "Find all Python files in /Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC/opc/ "
         "that contain the word 'async' and count them."
     ),
     (
@@ -252,7 +252,7 @@ STRESS_TASKS = [
     ),
     (
         "Stress: File read + summary",
-        "Read /Users/lizongwei/Desktop/Coding_Project/OPENOPC_BENCH/OpenOPC/opc/engine.py "
+        "Read /Users/lizongwei/Desktop/Coding_Project/SAFEOPC_BENCH/SafeOPC/opc/engine.py "
         "and tell me: how many async methods does the OPCEngine class have? List their names."
     ),
 ]

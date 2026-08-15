@@ -1002,7 +1002,7 @@ class CompanyCollaborationTests(unittest.IsolatedAsyncioTestCase):
             manifest = dict(task.metadata.get("workspace_manifest", {}) or {})
             self.assertEqual(manifest.get("root_path"), str(workspace.resolve()))
             reserved = dict(manifest.get("reserved_paths", {}) or {})
-            self.assertEqual(set(reserved), {"inputs", "deliverables", "work", ".openopc/manifests"})
+            self.assertEqual(set(reserved), {"inputs", "deliverables", "work", ".safeopc/manifests"})
             for path in reserved.values():
                 self.assertTrue(Path(path).is_dir())
             self.assertTrue(Path(manifest.get("manifest_path", "")).is_file())
@@ -1299,7 +1299,7 @@ class CompanyCollaborationTests(unittest.IsolatedAsyncioTestCase):
             deliverables = workspace / "deliverables"
             inputs = workspace / "inputs"
             workdir = workspace / "work"
-            manifests = workspace / ".openopc" / "manifests"
+            manifests = workspace / ".safeopc" / "manifests"
             deliverables.mkdir(parents=True, exist_ok=True)
             inputs.mkdir(parents=True, exist_ok=True)
             workdir.mkdir(parents=True, exist_ok=True)
@@ -1391,7 +1391,7 @@ class CompanyCollaborationTests(unittest.IsolatedAsyncioTestCase):
                             "inputs": str(inputs),
                             "deliverables": str(deliverables),
                             "work": str(workdir),
-                            ".openopc/manifests": str(manifests),
+                            ".safeopc/manifests": str(manifests),
                         },
                     },
                 },

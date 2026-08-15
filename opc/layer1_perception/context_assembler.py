@@ -36,7 +36,7 @@ class ExternalContextLayers:
     """Structured context buckets for external agent prompt envelopes."""
 
     primary_task_brief: str = ""
-    openopc_context: str = ""
+    safeopc_context: str = ""
     attachments_state_context: str = ""
     company_runtime_context: str = ""
     prepared_mailbox_context: str = ""
@@ -46,7 +46,7 @@ class ExternalContextLayers:
         return "\n\n".join(
             part
             for part in (
-                self.openopc_context,
+                self.safeopc_context,
                 self.company_runtime_context,
                 self.recovery_context,
                 self.prepared_mailbox_context,
@@ -104,8 +104,8 @@ def _split_core_context(core_context: str) -> tuple[str, str]:
         return "", ""
     marker = "\n\n## Runtime State\n"
     if marker in core_context:
-        openopc_context, runtime_state = core_context.split(marker, 1)
-        return openopc_context.strip(), ("## Runtime State\n" + runtime_state).strip()
+        safeopc_context, runtime_state = core_context.split(marker, 1)
+        return safeopc_context.strip(), ("## Runtime State\n" + runtime_state).strip()
     if core_context.startswith("## Runtime State\n"):
         return "", core_context
     return core_context, ""
@@ -510,7 +510,7 @@ class ContextAssembler:
             sections["reference"] = sections["reference"] or await self.build_role_reference_context(task, role_id=role_id)
             if company_collaboration_enabled_for_task(task):
                 sections["collaboration"] = sections["collaboration"] or await self.build_collaboration_context(task, role_id=role_id)
-        core_openopc, runtime_state = _split_core_context(sections.get("core", ""))
+        core_safeopc, runtime_state = _split_core_context(sections.get("core", ""))
         mode = str(task.metadata.get("execution_mode", "") or "")
         recovery_context = sections.get("recovery", "")
         attachments_state_context = _join_context_parts([
@@ -537,7 +537,7 @@ class ContextAssembler:
                     sections.get("reference", ""),
                     sections.get("assignment", ""),
                     sections.get("rework_feedback", ""),
-                    core_openopc,
+                    core_safeopc,
                     sections.get("member", ""),
                     sections.get("team_memory", ""),
                     sections.get("dependency", ""),
@@ -549,8 +549,8 @@ class ContextAssembler:
             )
         return ExternalContextLayers(
             primary_task_brief=prompt_assignment.primary_task_brief,
-            openopc_context=_join_context_parts([
-                core_openopc,
+            safeopc_context=_join_context_parts([
+                core_safeopc,
                 sections.get("turn_mode", ""),
                 sections.get("assignment", ""),
                 sections.get("rework_feedback", ""),
@@ -787,7 +787,7 @@ class ContextAssembler:
         if multi_team_org:
             lines.append("Mailbox is runtime-owned: this turn is driven by team board state plus the prepared mailbox backlog.")
         else:
-            lines.append("Mailbox is runtime-owned: OpenOPC has already prepared the actionable backlog for this turn.")
+            lines.append("Mailbox is runtime-owned: SafeOPC has already prepared the actionable backlog for this turn.")
         turn_mode = resolve_company_turn_mode(task, runtime_state=state)
         if turn_mode and not multi_team_org:
             lines.append(f"Current turn mode: {turn_mode}")
@@ -1357,7 +1357,7 @@ class ContextAssembler:
         """Build the comms section for company-mode external agent prompts.
 
         Collaboration tools are exposed via the ``opc-collab`` CLI, while
-        mailbox discovery is runtime-owned: OpenOPC reads `.opc-comms`,
+        mailbox discovery is runtime-owned: SafeOPC reads `.opc-comms`,
         classifies inbox state, and injects the actionable mailbox snapshot
         before each turn. Agents use `inbox` to peek or acknowledge messages
         explicitly when needed; prompt injection alone is not a read receipt.
@@ -1369,7 +1369,7 @@ class ContextAssembler:
         Blocking semantics (the rare 10% — meetings, urgent decisions
         the agent literally cannot work around) are handled by the
         broker's park/resume path: when the agent calls
-        ``ask_peer_and_wait(...)``, OpenOPC parks the sender's work item in
+        ``ask_peer_and_wait(...)``, SafeOPC parks the sender's work item in
         ``AWAITING_PEER``, runs the receiver, then resumes the sender
         once a reply has been written.
         """

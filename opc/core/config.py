@@ -42,7 +42,7 @@ def get_opc_home() -> Path:
 
 
 def get_default_workplace_root() -> Path:
-    """Return the default shared workplace root beside the OpenOPC repo."""
+    """Return the default shared workplace root beside the SafeOPC repo."""
     project_root = _find_project_root()
     return project_root.parent / f"{project_root.name}_workplace"
 
@@ -188,7 +188,7 @@ def read_company_index(config_dir: Path) -> str | None:
     schema_version = int(data.get("schema_version", COMPANY_INDEX_SCHEMA_VERSION) or COMPANY_INDEX_SCHEMA_VERSION)
     if schema_version > COMPANY_INDEX_SCHEMA_VERSION:
         raise ValueError(
-            f"{COMPANY_INDEX_FILENAME} schema_version {schema_version} is not supported by this version of OpenOPC"
+            f"{COMPANY_INDEX_FILENAME} schema_version {schema_version} is not supported by this version of SafeOPC"
         )
     active_id = data.get("active_organization_id") or DEFAULT_ORGANIZATION_ID
     return validate_organization_id(active_id)
@@ -483,12 +483,16 @@ class HeartbeatConfig(BaseModel):
 
 
 class BrowserConfig(BaseModel):
-    mode: Literal["embedded", "chrome", "auto"] = "embedded"
+    mode: Literal["embedded", "chrome", "auto", "cdp"] = "embedded"
     headless: bool = True
     chrome_channel: str = "chrome"
     chrome_executable_path: str = ""
     user_data_dir: str = ""
     args: list[str] = Field(default_factory=list)
+    # When True, the desktop shell opens WebView2 with a remote debugging port
+    # so Playwright can connect_over_cdp to SafeOPC's own window. Dev/test only.
+    debug_cdp: bool = False
+    cdp_port: int = 9222
 
 
 class TaskModeConfig(BaseModel):
@@ -1301,7 +1305,7 @@ def _validate_company_org_payload(path: Path, data: dict[str, Any]) -> dict[str,
     schema_version = int(data.get("schema_version", 1) or 1)
     if schema_version > COMPANY_ORG_SCHEMA_VERSION:
         raise ValueError(
-            f"{path.name} schema_version {schema_version} is not supported by this version of OpenOPC"
+            f"{path.name} schema_version {schema_version} is not supported by this version of SafeOPC"
         )
     kind = str(data.get("kind", "") or "").strip()
     if schema_version >= COMPANY_ORG_SCHEMA_VERSION and kind and kind != COMPANY_ORG_KIND:
@@ -1369,7 +1373,7 @@ def _read_legacy_corporate_config(config_dir: Path) -> dict[str, Any]:
         schema_ver = int(data.get("schema_version", 1) or 1)
         if schema_ver > 1:
             raise ValueError(
-                f"company_corporate_config.yaml schema_version {schema_ver} is not supported by this version of OpenOPC"
+                f"company_corporate_config.yaml schema_version {schema_ver} is not supported by this version of SafeOPC"
             )
         return data
     return {}

@@ -1,6 +1,6 @@
 # Channel Bridge Providers
 
-Some channel providers need a companion bridge service in addition to the OpenOPC Python runtime. OpenOPC connects to these bridges through the provider adapter; it does not start or manage the external bridge process for you.
+Some channel providers need a companion bridge service in addition to the SafeOPC Python runtime. SafeOPC connects to these bridges through the provider adapter; it does not start or manage the external bridge process for you.
 
 ## WhatsApp
 
@@ -16,7 +16,7 @@ Some channel providers need a companion bridge service in addition to the OpenOP
   2. Complete QR/device pairing in the bridge environment.
   3. Set `channels.whatsapp.bridge_url` in `.opc/config/channel_config.yaml`.
   4. Run `opc channels status`.
-  5. Start OpenOPC with `opc channels start -p <project>` or `opc run -p <project>`.
+  5. Start SafeOPC with `opc channels start -p <project>` or `opc run -p <project>`.
 
 ## Mochat
 

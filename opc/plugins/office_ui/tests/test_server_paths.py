@@ -8,12 +8,12 @@ from opc.plugins.office_ui.server import _is_under_path
 def test_is_under_path_accepts_platform_child_paths() -> None:
     cases = [
         (
-            PureWindowsPath(r"C:\work\OpenOPC\opc\plugins\office_ui\frontend_dist\assets\index.js"),
-            PureWindowsPath(r"C:\work\OpenOPC\opc\plugins\office_ui\frontend_dist\assets"),
+            PureWindowsPath(r"C:\work\SafeOPC\opc\plugins\office_ui\frontend_dist\assets\index.js"),
+            PureWindowsPath(r"C:\work\SafeOPC\opc\plugins\office_ui\frontend_dist\assets"),
         ),
         (
-            PurePosixPath("/work/OpenOPC/opc/plugins/office_ui/frontend_dist/assets/index.js"),
-            PurePosixPath("/work/OpenOPC/opc/plugins/office_ui/frontend_dist/assets"),
+            PurePosixPath("/work/SafeOPC/opc/plugins/office_ui/frontend_dist/assets/index.js"),
+            PurePosixPath("/work/SafeOPC/opc/plugins/office_ui/frontend_dist/assets"),
         ),
     ]
 
@@ -24,12 +24,12 @@ def test_is_under_path_accepts_platform_child_paths() -> None:
 def test_is_under_path_rejects_sibling_prefixes() -> None:
     cases = [
         (
-            PureWindowsPath(r"C:\work\OpenOPC\opc\plugins\office_ui\frontend_dist\assets-old\index.js"),
-            PureWindowsPath(r"C:\work\OpenOPC\opc\plugins\office_ui\frontend_dist\assets"),
+            PureWindowsPath(r"C:\work\SafeOPC\opc\plugins\office_ui\frontend_dist\assets-old\index.js"),
+            PureWindowsPath(r"C:\work\SafeOPC\opc\plugins\office_ui\frontend_dist\assets"),
         ),
         (
-            PurePosixPath("/work/OpenOPC/opc/plugins/office_ui/frontend_dist/assets-old/index.js"),
-            PurePosixPath("/work/OpenOPC/opc/plugins/office_ui/frontend_dist/assets"),
+            PurePosixPath("/work/SafeOPC/opc/plugins/office_ui/frontend_dist/assets-old/index.js"),
+            PurePosixPath("/work/SafeOPC/opc/plugins/office_ui/frontend_dist/assets"),
         ),
     ]
 
@@ -40,12 +40,12 @@ def test_is_under_path_rejects_sibling_prefixes() -> None:
 def test_is_under_path_rejects_traversal_after_resolution() -> None:
     cases = [
         (
-            PureWindowsPath(r"C:\work\OpenOPC\opc\plugins\office_ui\frontend_dist\index.html"),
-            PureWindowsPath(r"C:\work\OpenOPC\opc\plugins\office_ui\frontend_dist\assets"),
+            PureWindowsPath(r"C:\work\SafeOPC\opc\plugins\office_ui\frontend_dist\index.html"),
+            PureWindowsPath(r"C:\work\SafeOPC\opc\plugins\office_ui\frontend_dist\assets"),
         ),
         (
-            PurePosixPath("/work/OpenOPC/opc/plugins/office_ui/frontend_dist/index.html"),
-            PurePosixPath("/work/OpenOPC/opc/plugins/office_ui/frontend_dist/assets"),
+            PurePosixPath("/work/SafeOPC/opc/plugins/office_ui/frontend_dist/index.html"),
+            PurePosixPath("/work/SafeOPC/opc/plugins/office_ui/frontend_dist/assets"),
         ),
     ]
 

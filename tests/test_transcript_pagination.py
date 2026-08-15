@@ -27,11 +27,11 @@ _WORK_ITEM_RESULT = """Both work items have been successfully dispatched and can
 
 **Dispatch Summary**
 
-**Work Item 1: OpenOPC Source Code Architecture Deep-Dive Analysis**
+**Work Item 1: SafeOPC Source Code Architecture Deep-Dive Analysis**
 - ID: `1ed5f5f1-ac41-49a1-b1fa-23bbc9adab82`
 - Owner: senior_engineer
-- Scope: `openopc-source-analysis`
-- Output: `/workspace/openopc-architecture-analysis.md`
+- Scope: `safeopc-source-analysis`
+- Output: `/workspace/safeopc-architecture-analysis.md`
 - Covers: Layered architecture, work-item state machines, collaboration policy, and seat executors.
 
 **Work Item 2: External Multi-Agent Frameworks Architecture Research**
@@ -695,7 +695,7 @@ class ChatStorePaginationTests(unittest.TestCase):
         await store.initialize()
         channel_id = "session:work-item-repair"
         project_id = "test-project"
-        damaged_content = _WORK_ITEM_RESULT[_WORK_ITEM_RESULT.index("OpenOPC Source"):]
+        damaged_content = _WORK_ITEM_RESULT[_WORK_ITEM_RESULT.index("SafeOPC Source"):]
         metadata = {
             "source": "engine",
             "transcript_kind": "child_result",

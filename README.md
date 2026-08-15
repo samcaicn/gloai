@@ -1,4 +1,4 @@
-<h1 align="center" style="font-size: 1.75em;">OpenOPC: Build Your Personal AI-Native Company — Self-Built, Self-Run, Self-Grown</h1>
+<h1 align="center" style="font-size: 1.75em;">SafeOPC: Build Your Personal AI-Native Company — Self-Built, Self-Run, Self-Grown</h1>
 
 <p align="center">
   <b>English</b> | <a href="README.zh-CN.md">简体中文</a>
@@ -15,11 +15,11 @@
   <img alt="Office UI" src="https://img.shields.io/badge/Office%20UI-React%20%2B%20Phaser-14b8a6?style=flat-square">
   <img alt="CLI and UI" src="https://img.shields.io/badge/interface-CLI%20%2B%20Office%20UI-64748b?style=flat-square">
   <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-111827?style=flat-square">
-  <a href="https://github.com/HKUDS/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat-square&logo=feishu&logoColor=white" alt="Feishu" /></a>
-  <a href="https://github.com/HKUDS/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat-square&logo=wechat&logoColor=white" alt="WeChat" /></a>
+  <a href="https://github.com/samcaicn/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat-square&logo=feishu&logoColor=white" alt="Feishu" /></a>
+  <a href="https://github.com/samcaicn/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat-square&logo=wechat&logoColor=white" alt="WeChat" /></a>
 </p>
 
-![OpenOPC hero banner](docs/assets/chat.png)
+![SafeOPC hero banner](docs/assets/chat.png)
 
 ## News
 
@@ -29,9 +29,10 @@
 
 ## Table Of Contents
 
-- [When To Use OpenOPC](#when-to-use-openopc)
+- [When To Use SafeOPC](#when-to-use-safeopc)
 - [Demos](#demos)
-- [How OpenOPC Works](#how-openopc-works)
+- [How SafeOPC Works](#how-safeopc-works)
+- [Architecture](#architecture)
 - [Quick Start](#quick-start)
 - [Office UI Guide](#office-ui-guide)
 - [CLI Guide](#cli-guide)
@@ -40,9 +41,9 @@
 - [Roadmap](#roadmap)
 - [Acknowledgements](#acknowledgements)
 
-## When to Use OpenOPC
+## When to Use SafeOPC
 
-**OpenOPC** covers nine core verticals — from AI development and software engineering to finance, sales, media, e-commerce, and education. Whatever the industry, OpenOPC assembles the right team and delivers end-to-end.
+**SafeOPC** covers nine core verticals — from AI development and software engineering to finance, sales, media, e-commerce, and education. Whatever the industry, SafeOPC assembles the right team and delivers end-to-end.
 
 <table>
   <tr>
@@ -95,21 +96,21 @@
   <tr>
     <td width="33%" align="center" valign="top">
       <a href="https://youtu.be/XqQeTt6XvPQ">
-        <img src="https://img.youtube.com/vi/XqQeTt6XvPQ/maxresdefault.jpg" alt="OpenOPC video production demo" width="100%">
+        <img src="https://img.youtube.com/vi/XqQeTt6XvPQ/maxresdefault.jpg" alt="SafeOPC video production demo" width="100%">
       </a>
       <br><br>
       <strong>🎬 Video Production</strong>
     </td>
     <td width="33%" align="center" valign="top">
       <a href="https://drive.google.com/drive/folders/1T1Nl6CCE-cmbGy6sKrYML7_UnP8XID88?usp=drive_link">
-        <img src="docs/assets/vc-research-package.svg" alt="OpenOPC VC investment research demo" width="100%">
+        <img src="docs/assets/vc-research-package.svg" alt="SafeOPC VC investment research demo" width="100%">
       </a>
       <br><br>
       <strong>📈 Investment Research</strong>
     </td>
     <td width="33%" align="center" valign="top">
       <a href="https://youtu.be/SVc9BvE5ohY">
-        <img src="https://img.youtube.com/vi/SVc9BvE5ohY/maxresdefault.jpg" alt="OpenOPC game prototype demo" width="100%">
+        <img src="https://img.youtube.com/vi/SVc9BvE5ohY/maxresdefault.jpg" alt="SafeOPC game prototype demo" width="100%">
       </a>
       <br><br>
       <strong>🎮 Game Prototype</strong>
@@ -117,17 +118,17 @@
   </tr>
 </table>
 
-## How OpenOPC Works
+## How SafeOPC Works
 
-OpenOPC assembles a AI company around complex, real-world tasks — through three tightly coupled mechanisms: **Self-Built** staffs the organisation, **Self-Run** executes the work, and **Self-Grown** learns from the outcome.
+SafeOPC assembles a AI company around complex, real-world tasks — through three tightly coupled mechanisms: **Self-Built** staffs the organisation, **Self-Run** executes the work, and **Self-Grown** learns from the outcome.
 
 <p align="center">
-  <img src="docs/assets/video.png" alt="An OpenOPC company: roles, reporting lines, and the employee staffed into each role" width="100%">
+  <img src="docs/assets/video.png" alt="An SafeOPC company: roles, reporting lines, and the employee staffed into each role" width="100%">
 </p>
 
 **1. Self-Built — Staffing the Organisation**
 
-Before any work begins, the right people must be in place. Given a goal, OpenOPC:
+Before any work begins, the right people must be in place. Given a goal, SafeOPC:
 
 - 🌿 Drafts the org chart — deriving the roles and reporting structure the task demands.
 - 🎯 Fills each role — a recruiter agent chooses between reusing an existing employee (shaped by prior projects) and onboarding a fresh hire from the talent pool.
@@ -138,7 +139,7 @@ Before any work begins, the right people must be in place. Given a goal, OpenOPC
 
 With the team assembled, Self-Run orchestrates its members toward a finished deliverable. The central challenge is not raw execution but efficient collaboration under uncertainty, which manifests in two distinct problems.
 
-🔀 Dynamic collaboration orchestration. Real work cannot be fully planned upfront. OpenOPC addresses this through a work-item state machine, where each item's phase determines:
+🔀 Dynamic collaboration orchestration. Real work cannot be fully planned upfront. SafeOPC addresses this through a work-item state machine, where each item's phase determines:
 
 - 📋 Its kanban column — where it stands in the workflow.
 - 👑 Its owner — the role responsible at that phase.
@@ -151,7 +152,7 @@ A manager decomposes items, assigns, and reviews results — accepting, reworkin
 
 🔗 Dependency resolution and rejection propagate as structured phase transitions, eliminating ad-hoc coordination.
 
-🛡️ Handling blockers surfacing mid-run. Not all obstacles are visible upfront. OpenOPC resolves them at two levels:
+🛡️ Handling blockers surfacing mid-run. Not all obstacles are visible upfront. SafeOPC resolves them at two levels:
 
 - 💬 Within the team — a blocking message pauses the sender, activating the role best positioned to resolve it.
 - 📡 Beyond the team — when a blocker exceeds the team's authority, the runtime escalates to the human owner, invoking human judgment precisely when needed.
@@ -162,12 +163,12 @@ A manager decomposes items, assigns, and reviews results — accepting, reworkin
 
 Execution generates raw experience; Self-Grown turns it into lasting improvement, guided by two principles.
 
-🏅 Attributing outcomes to the right roles. Crediting the whole company teaches nothing. Instead, OpenOPC:
+🏅 Attributing outcomes to the right roles. Crediting the whole company teaches nothing. Instead, SafeOPC:
 
 - 🔍 Resolves user feedback into per-employee evaluations.
 - 🎯 Updates only roles that owned the relevant work items — credit and blame land where they were earned.
 
-📖 Distilling trajectories into knowledge. Execution traces are too noisy to learn from. OpenOPC therefore:
+📖 Distilling trajectories into knowledge. Execution traces are too noisy to learn from. SafeOPC therefore:
 - 💡 Distils each role's tasks into high-signal lessons, stored in its private experience profile.
 - 📚 Promotes recurring lessons into shared playbooks, which new hires inherit from the outset — compounding organisational knowledge over time.
 
@@ -184,11 +185,11 @@ Execution generates raw experience; Self-Grown turns it into lasting improvement
 
 ## Quick Start
 
-`uv` is the recommended setup path for OpenOPC. It can install/manage Python, create the project virtualenv, and run commands against that environment without mixing OpenOPC dependencies into your global Python.
+`uv` is the recommended setup path for SafeOPC. It can install/manage Python, create the project virtualenv, and run commands against that environment without mixing SafeOPC dependencies into your global Python.
 
-OpenOPC requires Python `>=3.10`; the examples below use Python `3.12`.
+SafeOPC requires Python `>=3.10`; the examples below use Python `3.12`.
 
-For direct one-off work, OpenOPC also includes Task Mode, a LobeChat-like single-agent workspace using OpenOPC Native, Codex, Claude Code, Cursor, or OpenCode.
+For direct one-off work, SafeOPC also includes Task Mode, a LobeChat-like single-agent workspace using SafeOPC Native, Codex, Claude Code, Cursor, or OpenCode.
 
 <details open>
 <summary><strong>Recommended: uv environment setup</strong></summary>
@@ -200,7 +201,7 @@ For direct one-off work, OpenOPC also includes Task Mode, a LobeChat-like single
 brew install uv
 # curl -LsSf https://astral.sh/uv/install.sh | sh
 
-cd /path/to/OpenOPC
+cd /path/to/SafeOPC
 uv python install 3.12
 uv venv --python 3.12
 source .venv/bin/activate
@@ -212,7 +213,7 @@ source .venv/bin/activate
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source "$HOME/.local/bin/env"
 
-cd /path/to/OpenOPC
+cd /path/to/SafeOPC
 uv python install 3.12
 uv venv --python 3.12
 source .venv/bin/activate
@@ -223,7 +224,7 @@ source .venv/bin/activate
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-cd C:\path\to\OpenOPC
+cd C:\path\to\SafeOPC
 uv python install 3.12
 uv venv --python 3.12
 .\.venv\Scripts\Activate.ps1
@@ -236,7 +237,7 @@ winget install --id=astral-sh.uv -e
 :: Or run the standalone installer from cmd:
 :: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-cd C:\path\to\OpenOPC
+cd C:\path\to\SafeOPC
 uv python install 3.12
 uv venv --python 3.12
 .venv\Scripts\activate.bat
@@ -244,7 +245,7 @@ uv venv --python 3.12
 </details>
 
 ```bash
-# Install OpenOPC into the uv-managed environment
+# Install SafeOPC into the uv-managed environment
 uv pip install -e .
 
 # Optional but recommended for browser tools
@@ -326,7 +327,7 @@ Scroll horizontally to browse the Office UI walkthrough. Each screenshot keeps i
   <div style="display:flex; gap:18px; min-width:5520px;">
     <figure style="flex:0 0 900px; width:900px; margin:0;">
       <img src="docs/assets/fig1.png" alt="Workspace project, chat, mode, organization, and agent controls" width="900">
-      <figcaption><strong>Workspace And Setup.</strong> Choose or create a project, start <code>New Chat</code>, then select <code>Company</code> or <code>Task</code> plus the matching organization or agent. In Company Mode, pick role employees and execution agents, or let OpenOPC auto-recruit.</figcaption>
+      <figcaption><strong>Workspace And Setup.</strong> Choose or create a project, start <code>New Chat</code>, then select <code>Company</code> or <code>Task</code> plus the matching organization or agent. In Company Mode, pick role employees and execution agents, or let SafeOPC auto-recruit.</figcaption>
     </figure>
     <figure style="flex:0 0 900px; width:900px; margin:0;">
       <img src="docs/assets/fig2.png" alt="Execution Progress panel showing role status and execution records" width="900">
@@ -375,7 +376,7 @@ The Workspace page is the default screen.
 1. Create or select a project from the top project selector.
 2. In Workspace, click `New Chat`.
 3. In the composer, choose `Task` or `Company`.
-4. For Task Mode, choose the agent: `OpenOPC Native`, `Codex`, `Claude Code`, `Cursor`, or `OpenCode`.
+4. For Task Mode, choose the agent: `SafeOPC Native`, `Codex`, `Claude Code`, `Cursor`, or `OpenCode`.
 5. For Company Mode, choose `Corporate` or a saved org architecture.
 6. Send the brief.
 
@@ -421,7 +422,7 @@ The Org page is where company structure becomes runnable.
 | `Architecture` | Browse built-in architecture presets, preview/apply packages, manage installed packages, and import/export YAML. |
 | `Employees` | Search talent templates, view details, hire into vacant roles, and staff the company. |
 
-To create a new company: open `Org`, click `New organization`, enter a name, add at least two members with responsibilities and reporting lines, review, and create. OpenOPC saves it automatically and switches the composer to `Company / <your org>`.
+To create a new company: open `Org`, click `New organization`, enter a name, add at least two members with responsibilities and reporting lines, review, and create. SafeOPC saves it automatically and switches the composer to `Company / <your org>`.
 
 To recruit: import talent templates first, then open `Org -> Employees`, search a template, click `Hire`, choose a vacant role, and deploy the employee from `Team Roster` if you want it visible in the Office page.
 
@@ -432,7 +433,7 @@ opc talent import /path/to/agency-agents
 <details>
 <summary><strong>Where project files live</strong></summary>
 
-OpenOPC separates runtime/config state from deliverable workspace files.
+SafeOPC separates runtime/config state from deliverable workspace files.
 
 | Path | Meaning |
 |---|---|
@@ -440,8 +441,8 @@ OpenOPC separates runtime/config state from deliverable workspace files.
 | `.opc/memory/` | Global and project markdown memory. |
 | `.opc/projects/<project>/` | Project runtime metadata and task stores. |
 | `.opc/ui_state.db` | Office UI chat, channels, and visual agent state. |
-| `../OpenOPC_workplace/<project>/` | Default project workplace. Agents should write durable project files here. |
-| `../OpenOPC_workplace/<project>/.opc-comms/` | Internal company-mode comms mailboxes, meetings, and tool-result scratch space. |
+| `../SafeOPC_workplace/<project>/` | Default project workplace. Agents should write durable project files here. |
+| `../SafeOPC_workplace/<project>/.opc-comms/` | Internal company-mode comms mailboxes, meetings, and tool-result scratch space. |
 
 Set `OPC_HOME=/path/to/opc-home` if you want config and runtime state outside the repo.
 </details>
@@ -453,9 +454,9 @@ Set `OPC_HOME=/path/to/opc-home` if you want config and runtime state outside th
 <details>
 <summary><b>Expand the CLI guide — common commands and interactive slash commands</b></summary>
 
-OpenOPC exposes both high-level natural-language commands and lower-level UI/service commands.
+SafeOPC exposes both high-level natural-language commands and lower-level UI/service commands.
 
-Conceptually OpenOPC has two execution modes: `task` and `company`. Some lower-level CLI/service commands still expose `org` as a compatibility selector for Company Mode with a saved organization architecture; in the UI this appears as Company plus an architecture choice.
+Conceptually SafeOPC has two execution modes: `task` and `company`. Some lower-level CLI/service commands still expose `org` as a compatibility selector for Company Mode with a saved organization architecture; in the UI this appears as Company plus an architecture choice.
 
 ### Common Commands
 
@@ -752,7 +753,7 @@ Check:
 
 ## Ecosystem And Sharing
 
-Everything OpenOPC builds is yours to keep, reuse, and share — organizations, employees, talent templates, skills, and channels are just files. Import a popular talent library, reuse a team across projects, or package a whole company as a shareable `.opcpkg`.
+Everything SafeOPC builds is yours to keep, reuse, and share — organizations, employees, talent templates, skills, and channels are just files. Import a popular talent library, reuse a team across projects, or package a whole company as a shareable `.opcpkg`.
 
 ```bash
 # Hire from a talent library (e.g. agency-agents) into a role
@@ -765,42 +766,20 @@ opc market export --id hku_lab --name "HKU Lab" --output-dir packages
 opc market install packages/hku_lab.opcpkg
 ```
 
-<!--
 ## Architecture
 
-OpenOPC is a coordination runtime, not just an agent launcher — it separates interaction, organization, execution, tools, memory, and observability into seven layers.
+SafeOPC is a coordination runtime, not just an agent launcher — it separates interaction, perception, organization, execution, tools, memory, and observability into seven layers, plus a small set of cross-cutting modules (channels, market, plugins, llm, database, core).
 
-<details>
-<summary><b>The seven layers</b></summary>
-
-| Layer | Name | Responsibilities |
-|---|---|---|
-| 0 | Interaction | CLI, Office UI, message bus, external channel runtime. |
-| 1 | Perception & Context | Context loading, routing metadata, context assembly. |
-| 2 | Organization | Work-item planning, company runtime, comms, escalation, approval, recovery, recruitment. |
-| 3 | Agent Execution | Native runtime, subagents, external agent adapters, permissions, tool planning. |
-| 4 | Tools | Shell, file ops, browser, web search, Python execution, git, collaboration tools. |
-| 5 | Memory & Evolution | Markdown memory, session compaction, preferences, skill library, talent import. |
-| 6 | Observability | Events, cost tracking, structured logs, UI/runtime snapshots. |
-</details>
-
-<details>
-<summary><b>Core mechanisms</b></summary>
-
-- **Collaboration** — Company Mode compiles a brief into a work-item graph; each role runs in its own session, with reviewers and final deciders as first-class runtime roles. Roles pause on `AWAITING_PEER`, hand off, meet, and pass review/delivery gates — all mirrored to the UI (chat, transcripts, Agents, Comms, Kanban, Execution Progress).
-- **Communication** — a file-backed, role-scoped `.opc-comms/` workspace (inboxes, meeting transcripts, shared memory) that can be audited, replayed, and used to wake blocked peers.
-- **Self-evolution** — runs feed employee experience, reviewer preferences, checklists, and learned skills into `employee_evolution.json`, so the org improves who it assigns and what context each role gets.
-</details>
--->
+For the full layer model, the source-tree mapping, the core data flow, and the three core mechanisms (collaboration, communication, self-evolution), see [docs/architecture.md](docs/architecture.md). The per-subsystem deep dives live in the other files under [docs/](docs/README.md).
 
 ## Roadmap
 
-OpenOPC is moving quickly. The areas below reflect active development priorities — each grounded in real gaps identified during early usage.
+SafeOPC is moving quickly. The areas below reflect active development priorities — each grounded in real gaps identified during early usage.
 
 | Area | Planned direction |
 |---|---|
 | **Role-level skills** | Role config already carries `skill_refs`, and the Org UI surfaces skill metadata today. The next step is letting users select which skills mount to which roles directly from the Org page — feeding into a broader self-evolving skill ecosystem. |
-| **Secretary settings** | The secretary will grow into a stronger configuration and memory steward: owning OPC system memory, analysing and comparing projects, and providing guided setup for OpenOPC YAML configuration. |
+| **Secretary settings** | The secretary will grow into a stronger configuration and memory steward: owning OPC system memory, analysing and comparing projects, and providing guided setup for SafeOPC YAML configuration. |
 | **Company-mode channels** | External channels will evolve beyond simple chat entrypoints into richer company-mode workflows — with role-aware notifications, structured approvals, and cross-platform collaboration. |
 | **CLI parity** | The CLI is functional today, but the Office UI remains the more complete surface. Upcoming work targets org editing, company-mode inspection, failure recovery, and long-running runtime control from the terminal. |
 | **TUI** | A full terminal UI is under consideration once CLI parity matures. The Office UI remains the primary interface in the meantime. |
@@ -809,18 +788,18 @@ OpenOPC is moving quickly. The areas below reflect active development priorities
 
 ## Acknowledgements
 
-OpenOPC is built with gratitude for several open-source projects that helped shape its agent design, skill structure, and talent template ecosystem:
+SafeOPC is built with gratitude for several open-source projects that helped shape its agent design, skill structure, and talent template ecosystem:
 
 - [openai/codex](https://github.com/openai/codex/) for inspiring practical coding-agent workflows and execution patterns.
 - [BloopAI/vibe-kanban](https://github.com/BloopAI/vibe-kanban) for inspiration around kanban-centered agent work management and task visibility.
 - [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) for the talent-template foundation. All talent templates included in this repository are imported from `agency-agents`.
-- [HKUDS/nanobot](https://github.com/HKUDS/nanobot) for inspiration around skill-oriented agent design and `SKILL.md`-style organization.
+- [SafeOPC/nanobot](https://github.com/samcaicn/nanobot) for inspiration around skill-oriented agent design and `SKILL.md`-style organization.
 - [pixel-agents-hq/pixel-agents](https://github.com/pixel-agents-hq/pixel-agents) for inspiration around the animated pixel-art office visualization of agent activity.
 
 ---
 
 <p align="center">
-  <em> ❤️ Thanks for visiting ✨ OpenOPC!</em><br><br>
-  <img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.OpenOPC&style=for-the-badge&color=00d4ff"
+  <em> ❤️ Thanks for visiting ✨ SafeOPC!</em><br><br>
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=SafeOPC.SafeOPC&style=for-the-badge&color=00d4ff"
   alt="Views">
 </p>

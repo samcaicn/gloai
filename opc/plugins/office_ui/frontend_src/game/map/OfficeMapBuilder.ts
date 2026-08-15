@@ -835,11 +835,11 @@ export class OfficeMapBuilder {
     }
 
     if (!opts?.skipLabels) {
-      this.addPixelLabel(scene, gateCenterX, lobbyY + TILE_SIZE * 0.6, 'OPENOPC', '#4e6b68', '#eef4ec', '10px')
+      this.addPixelLabel(scene, gateCenterX, lobbyY + TILE_SIZE * 0.6, 'SAFEOPC', '#4e6b68', '#eef4ec', '10px')
       const lawnLogoBaseY = courtyardY - TILE_SIZE * 0.24
       const letterW = TILE_SIZE * 0.88
       const letterGap = TILE_SIZE * 0.28
-      const word = 'OPENOPC'
+      const word = 'SAFEOPC'
       const totalLogoWidth = word.length * letterW + (word.length - 1) * letterGap
       let letterX = logoX - totalLogoWidth / 2
       for (const char of word) {

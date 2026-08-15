@@ -910,7 +910,7 @@ def init(
     trust_external_agents: bool = typer.Option(
         True,
         "--trust-external-agents/--no-trust-external-agents",
-        help="Persist OpenOPC approval rules for configured external-agent launches.",
+        help="Persist SafeOPC approval rules for configured external-agent launches.",
     ),
 ):
     """Initialize OPC configuration and workspace."""

@@ -409,7 +409,7 @@ class ApprovalEngine:
         if self._memory_path_decision("tool", tool_name, {"arguments": args}):
             return self._predict_decision(
                 PermissionResolution.ALLOW, RiskLevel.LOW,
-                "Direct agent access to canonical OpenOPC memory files.",
+                "Direct agent access to canonical SafeOPC memory files.",
                 source="memory_path_policy",
             )
         if tool_name in {str(item or "").strip() for item in p2.allow_tools if str(item or "").strip()}:
@@ -1372,7 +1372,7 @@ class ApprovalEngine:
                     action=ApprovalAction.ESCALATE,
                     risk_level=RiskLevel.MEDIUM,
                     rationale=(
-                        f"External agent launch uses OpenOPC approval mode `{approval_mode}`, "
+                        f"External agent launch uses SafeOPC approval mode `{approval_mode}`, "
                         "but external-agent auto-approval is disabled; direct user approval is required before start."
                     ),
                     confidence=0.95,
@@ -1383,8 +1383,8 @@ class ApprovalEngine:
                 action=ApprovalAction.AUTO_APPROVE,
                 risk_level=RiskLevel.LOW,
                 rationale=(
-                    f"External agent launch uses OpenOPC approval mode `{approval_mode}`; "
-                    "startup is audited while runtime permission requests remain bridged to OpenOPC."
+                    f"External agent launch uses SafeOPC approval mode `{approval_mode}`; "
+                    "startup is audited while runtime permission requests remain bridged to SafeOPC."
                 ),
                 confidence=0.95,
                 policy_source="external_agent_launch_policy",
@@ -2182,7 +2182,7 @@ class ApprovalEngine:
         return ApprovalDecision(
             action=ApprovalAction.AUTO_APPROVE,
             risk_level=RiskLevel.LOW,
-            rationale="Allowed direct agent access to canonical OpenOPC memory files.",
+            rationale="Allowed direct agent access to canonical SafeOPC memory files.",
             confidence=0.99,
             policy_source="memory_path_policy",
             metadata=metadata,

@@ -87,7 +87,7 @@ def _make_handler(
     cfg.org.talent_templates = talent_templates or []
     object.__setattr__(cfg, "save", lambda config_dir=None: None)
 
-    opc_home = Path(tempfile.mkdtemp(prefix="openopc-talent-hire-"))
+    opc_home = Path(tempfile.mkdtemp(prefix="safeopc-talent-hire-"))
     _write_talent_prompts(opc_home, talent_templates or [])
     org_engine = OrgEngine(cfg, opc_home, store=None)
     talent_market = TalentMarket(opc_home, cfg)
@@ -313,7 +313,7 @@ class TalentHireHandlerTests(unittest.IsolatedAsyncioTestCase):
             build_company_org_payload_from_config(
                 cfg,
                 organization_id="hkuds",
-                organization_name="HKUDS",
+                organization_name="SafeOPC",
                 force_profile="custom",
             ),
             default_flow_style=False,

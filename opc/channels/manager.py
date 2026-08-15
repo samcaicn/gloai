@@ -1,4 +1,4 @@
-"""Channel manager for OpenOPC."""
+"""Channel manager for SafeOPC."""
 
 from __future__ import annotations
 

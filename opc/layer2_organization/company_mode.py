@@ -298,7 +298,7 @@ _MAX_GATE_REVIEW_FEEDBACK_CHARS = 6000
 _DEFAULT_CONTRACT_REWORK_MAX_RETRIES = 2
 _WORKSPACE_BOOTSTRAP_PROJECTION_ID = "workspace_bootstrap"
 _DATA_ACQUISITION_PROJECTION_ID = "data_acquisition"
-_DEFAULT_WORKSPACE_LAYOUT = ("inputs", "deliverables", "work", ".openopc/manifests")
+_DEFAULT_WORKSPACE_LAYOUT = ("inputs", "deliverables", "work", ".safeopc/manifests")
 _DEFAULT_DATA_ACQUISITION_REPORT_PATH = "deliverables/data_acquisition_report.json"
 _DEFAULT_DATA_ACQUISITION_LOG_PATH = "deliverables/data_acquisition_log.json"
 _REVIEW_WAITING_STATUSES = {
@@ -680,7 +680,7 @@ class CompanyRuntimeWorkItemHelper:
         if _WORKSPACE_BOOTSTRAP_PROJECTION_ID in lowered or "workspace bootstrap" in lowered:
             return [
                 "The target workspace root exists and is writable for downstream work items.",
-                "The reserved directories exist: inputs/, deliverables/, work/, and .openopc/manifests/.",
+                "The reserved directories exist: inputs/, deliverables/, work/, and .safeopc/manifests/.",
                 "A workspace_manifest is recorded with the root path and reserved directory mapping.",
             ]
         if _DATA_ACQUISITION_PROJECTION_ID in lowered or "data acquisition" in lowered:
@@ -1720,7 +1720,7 @@ class CompanyWorkItemExecutor:
                 path = target / relative
                 path.mkdir(parents=True, exist_ok=True)
                 reserved_paths[relative] = str(path.resolve())
-            manifest_path = target / ".openopc" / "manifests" / "workspace_manifest.json"
+            manifest_path = target / ".safeopc" / "manifests" / "workspace_manifest.json"
             manifest = WorkspaceManifest(
                 root_path=str(target.resolve()),
                 manifest_path=str(manifest_path.resolve()),

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   OpenOPC Office UI — Redesigned
+   SafeOPC Office UI — Redesigned
    ═══════════════════════════════════════════════════════ */
 @import './kanban/kanban.css';
 @import './chat/chat.css';
@@ -157,9 +157,9 @@ html, body, #root {
   --accent-glow: rgba(245, 158, 11, 0.3);
 }
 
-/* ── OpenOPC theme ─────────────────────────────────── */
+/* ── SafeOPC theme ─────────────────────────────────── */
 /* Warm terracotta accent on near-black for focused work. */
-.app-shell[data-theme="openopc"] {
+.app-shell[data-theme="safeopc"] {
   --bg: #0a0a0a;
   --bg-elevated: #161616;
   --bg-card: #121111;
@@ -179,125 +179,125 @@ html, body, #root {
   --red: #e06c75;
 }
 
-.app-shell[data-theme="openopc"] .topbar {
+.app-shell[data-theme="safeopc"] .topbar {
   background: #0e0e0e;
   border-bottom-color: rgba(217, 119, 87, 0.08);
 }
 
-.app-shell[data-theme="openopc"] .session-sidebar {
+.app-shell[data-theme="safeopc"] .session-sidebar {
   background: #0e0e0e;
   border-right-color: rgba(217, 119, 87, 0.08);
 }
 
-.app-shell[data-theme="openopc"] .session-new-btn {
+.app-shell[data-theme="safeopc"] .session-new-btn {
   border-color: rgba(217, 119, 87, 0.18);
 }
 
-.app-shell[data-theme="openopc"] .session-new-btn:hover {
+.app-shell[data-theme="safeopc"] .session-new-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.app-shell[data-theme="openopc"] .msg-content-user {
+.app-shell[data-theme="safeopc"] .msg-content-user {
   background: linear-gradient(135deg, #d97757, #c96442);
   box-shadow: 0 2px 8px rgba(217, 119, 87, 0.15);
 }
 
-.app-shell[data-theme="openopc"] .msg-content-agent-card {
+.app-shell[data-theme="safeopc"] .msg-content-agent-card {
   background: #131313;
   border-color: rgba(217, 119, 87, 0.1);
   border-left-color: #d97757;
 }
 
-.app-shell[data-theme="openopc"] .msg-row.agent:hover .msg-content-agent-card {
+.app-shell[data-theme="safeopc"] .msg-row.agent:hover .msg-content-agent-card {
   border-color: rgba(217, 119, 87, 0.2);
   border-left-color: #d97757;
   box-shadow: 0 2px 12px rgba(217, 119, 87, 0.06);
 }
 
-.app-shell[data-theme="openopc"] .msg-content-agent pre {
+.app-shell[data-theme="safeopc"] .msg-content-agent pre {
   background: #0c0c0c;
   border-color: rgba(217, 119, 87, 0.08);
 }
 
-.app-shell[data-theme="openopc"] .msg-content-agent blockquote {
+.app-shell[data-theme="safeopc"] .msg-content-agent blockquote {
   background: rgba(217, 119, 87, 0.03);
   border-left-color: rgba(217, 119, 87, 0.25);
 }
 
-.app-shell[data-theme="openopc"] .msg-card-actions {
+.app-shell[data-theme="safeopc"] .msg-card-actions {
   border-top-color: rgba(217, 119, 87, 0.08);
 }
 
-.app-shell[data-theme="openopc"] .agent-avatar {
+.app-shell[data-theme="safeopc"] .agent-avatar {
   background: linear-gradient(135deg, rgba(217, 119, 87, 0.15), rgba(217, 119, 87, 0.05));
   border-color: rgba(217, 119, 87, 0.15);
   color: var(--accent);
 }
 
-.app-shell[data-theme="openopc"] .composer-send-btn {
+.app-shell[data-theme="safeopc"] .composer-send-btn {
   background: linear-gradient(135deg, #d97757, #c96442);
 }
 
-.app-shell[data-theme="openopc"] .composer-send-btn:not(:disabled):hover {
+.app-shell[data-theme="safeopc"] .composer-send-btn:not(:disabled):hover {
   filter: brightness(1.2);
 }
 
-.app-shell[data-theme="openopc"] .task-header-bar {
+.app-shell[data-theme="safeopc"] .task-header-bar {
   background: #0e0e0e;
   border-bottom-color: rgba(217, 119, 87, 0.08);
 }
 
-.app-shell[data-theme="openopc"] .ptl-live-think {
+.app-shell[data-theme="safeopc"] .ptl-live-think {
   background: rgba(217, 119, 87, 0.06);
 }
 
-.app-shell[data-theme="openopc"] .ptl-live-tool-name {
+.app-shell[data-theme="safeopc"] .ptl-live-tool-name {
   background: rgba(152, 195, 121, 0.1);
   color: #98c379;
 }
 
-.app-shell[data-theme="openopc"] .ptl-tool-badge {
+.app-shell[data-theme="safeopc"] .ptl-tool-badge {
   background: rgba(152, 195, 121, 0.08);
   color: #98c379;
 }
 
-.app-shell[data-theme="openopc"] .ptl-dot {
+.app-shell[data-theme="safeopc"] .ptl-dot {
   background: #131313;
   border-color: rgba(217, 119, 87, 0.12);
 }
 
-.app-shell[data-theme="openopc"] .ptl-line {
+.app-shell[data-theme="safeopc"] .ptl-line {
   background: rgba(217, 119, 87, 0.1);
 }
 
-.app-shell[data-theme="openopc"] .agent-working-row .ptl-block {
+.app-shell[data-theme="safeopc"] .agent-working-row .ptl-block {
   border-color: rgba(217, 119, 87, 0.15);
 }
 
-.app-shell[data-theme="openopc"] .code-block-header {
+.app-shell[data-theme="safeopc"] .code-block-header {
   background: #111111;
 }
 
-.app-shell[data-theme="openopc"] .code-block-wrap pre {
+.app-shell[data-theme="safeopc"] .code-block-wrap pre {
   background: #0e0e0e !important;
 }
 
-.app-shell[data-theme="openopc"] .msg-content-agent code {
+.app-shell[data-theme="safeopc"] .msg-content-agent code {
   background: rgba(217, 119, 87, 0.08);
   color: #ffb38a;
 }
 
-.app-shell[data-theme="openopc"] .msg-content-agent pre code {
+.app-shell[data-theme="safeopc"] .msg-content-agent pre code {
   background: transparent;
   color: #f0ede8;
 }
 
-.app-shell[data-theme="openopc"] .kanban-card:hover {
+.app-shell[data-theme="safeopc"] .kanban-card:hover {
   box-shadow: 0 2px 12px rgba(217, 119, 87, 0.06);
 }
 
-.app-shell[data-theme="openopc"] .kanban-card.is-dragging {
+.app-shell[data-theme="safeopc"] .kanban-card.is-dragging {
   box-shadow: 0 8px 24px rgba(217, 119, 87, 0.12);
 }
 

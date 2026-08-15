@@ -241,7 +241,7 @@ def _make_attachment_handler(engine: OPCEngine):
 async def _serve_no_build(request: aiohttp.web.Request) -> aiohttp.web.Response:
     return aiohttp.web.Response(
         text=(
-            "<h1>OpenOPC Office UI</h1>"
+            "<h1>SafeOPC Office UI</h1>"
             "<p>Frontend not built. Run <code>cd opc/plugins/office_ui/frontend_src && npm install && npm run build</code></p>"
         ),
         content_type="text/html",

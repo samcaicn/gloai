@@ -5,7 +5,7 @@ export const THEMES = [
   { name: 'retro' },
   { name: 'terminal' },
   { name: 'cozy' },
-  { name: 'openopc', default: true },
+  { name: 'safeopc', default: true },
 ] as const
 
 export type ThemeName = (typeof THEMES)[number]['name']

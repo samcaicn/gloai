@@ -180,7 +180,7 @@ class ExternalAgentAdapter(abc.ABC):
         cmd: list[str],
         metadata: dict[str, Any] | None = None,
     ) -> bool:
-        """Whether OpenOPC should bridge this process' live approval prompts.
+        """Whether SafeOPC should bridge this process' live approval prompts.
 
         The broker can only answer a provider approval prompt when the child
         process has a live stdin transport that accepts the formatted response.
@@ -192,8 +192,8 @@ class ExternalAgentAdapter(abc.ABC):
     # ------------------------------------------------------------------
     # Skill-based collaboration surface.
     #
-    # OpenOPC-spawned agents can use a dedicated home dir
-    # (``<opc_home>/agent_homes/<slug>/``) so OpenOPC can install the
+    # SafeOPC-spawned agents can use a dedicated home dir
+    # (``<opc_home>/agent_homes/<slug>/``) so SafeOPC can install the
     # ``opc-collab`` skill + CLI shim there. Adapters may still choose to keep
     # native user config for authentication-sensitive CLIs.
     # ------------------------------------------------------------------

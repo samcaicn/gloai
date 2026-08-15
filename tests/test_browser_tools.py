@@ -290,14 +290,14 @@ class BrowserToolTests(unittest.IsolatedAsyncioTestCase):
                 user_data_dir=".opc/browser-profile",
             )
         )
-        with patch.object(browser_tools, "async_playwright", factory), patch.object(browser_tools, "get_opc_home", return_value=Path("D:/Project/work_HKU/OpenOPC/.opc")):
+        with patch.object(browser_tools, "async_playwright", factory), patch.object(browser_tools, "get_opc_home", return_value=Path("D:/Project/work_HKU/SafeOPC/.opc")):
             await runtime.navigate("https://example.com")
 
         launch_kwargs = factory.instances[-1].chromium.launches[-1]
         self.assertTrue(bool(launch_kwargs["persistent"]))
         self.assertEqual(
             launch_kwargs["user_data_dir"],
-            str(Path("D:/Project/work_HKU/OpenOPC/.opc/browser-profile")),
+            str(Path("D:/Project/work_HKU/SafeOPC/.opc/browser-profile")),
         )
         self.assertEqual(launch_kwargs["channel"], "chrome")
 

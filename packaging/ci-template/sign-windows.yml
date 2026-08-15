@@ -1,0 +1,55 @@
+# .github/workflows/sign-windows.yml
+# Sign the Windows NSIS installer with SignPath (free OSS, cloud EV).
+# Trigger: after the installer build workflow publishes a Release with SafeOPC-Setup.exe.
+# Requires repo secrets: SIGNPATH_API_TOKEN, SIGNPATH_ORG_ID
+# Plus SignPath dashboard config: project slug, signing policy slug, artifact config slug.
+
+name: Sign Windows installer (SignPath)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# Gate the whole job on the SignPath secret so it stays silent (no CI minutes
+# wasted, no false "ran but didn't sign" runs) until the OSS approval lands
+# and the repo secret SIGNPATH_API_TOKEN is configured.
+env:
+  SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+
+permissions:
+  contents: write
+
+jobs:
+  sign:
+    if: ${{ env.SIGNPATH_API_TOKEN != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release asset (NSIS installer)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p staging
+          gh release download "${{ github.event.release.tag_name || 'latest' }}" \
+            --pattern "SafeOPC-Setup.exe" --dir staging || true
+          ls -la staging
+
+      - name: Submit to SignPath for Authenticode signing
+        if: ${{ env.SIGNPATH_API_TOKEN != '' }}
+        uses: SignPath/github-action-submit-signing-request@v1
+        with:
+          organization-id: ${{ secrets.SIGNPATH_ORG_ID }}
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          project-slug: safeopc
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: safeopc-installer
+          github-artifact-name: safeopc-setup
+          input-artifact-path: staging/SafeOPC-Setup.exe
+          output-artifact-path: signed/SafeOPC-Setup.exe
+
+      - name: Re-upload signed installer to Release
+        if: ${{ env.SIGNPATH_API_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" signed/SafeOPC-Setup.exe --clobber

@@ -26,7 +26,7 @@ def register_cli(parent_app) -> None:
             help="Cross-process reconcile interval in seconds",
         ),
     ) -> None:
-        """Launch the OpenOPC terminal Kanban board."""
+        """Launch the SafeOPC terminal Kanban board."""
         from opc.plugins.cli_board.entry import launch_board
 
         launch_board(

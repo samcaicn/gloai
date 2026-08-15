@@ -427,8 +427,8 @@ def test_custom_org_payload_materializes_effective_policy_when_empty():
 
     cfg = OPCConfig()
     cfg.org.organization_id = "hkuds"
-    cfg.org.organization_name = "HKUDS"
-    cfg.org.company_name = "HKUDS"
+    cfg.org.organization_name = "SafeOPC"
+    cfg.org.company_name = "SafeOPC"
     cfg.org.company_profile = "custom"
     cfg.org.final_decider_role_id = "chao"
     cfg.org.roles = [
@@ -440,7 +440,7 @@ def test_custom_org_payload_materializes_effective_policy_when_empty():
     payload = build_company_org_payload_from_config(
         cfg,
         organization_id="hkuds",
-        organization_name="HKUDS",
+        organization_name="SafeOPC",
         force_profile="custom",
     )
 

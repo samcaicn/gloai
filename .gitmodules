@@ -1,0 +1,4 @@
+[submodule "integrations/creatorhub"]
+	path = integrations/creatorhub
+	url = https://github.com/samcaicn/creatorhub.git
+	branch = main

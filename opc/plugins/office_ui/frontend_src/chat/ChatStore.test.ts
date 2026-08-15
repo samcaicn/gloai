@@ -295,11 +295,11 @@ const ctoDispatchContent = `Both work items have been successfully dispatched to
 
 ## Dispatch Summary
 
-**Work Item 1: OpenOPC Source Code Architecture Deep-Dive Analysis**
+**Work Item 1: SafeOPC Source Code Architecture Deep-Dive Analysis**
 - ID: \`1ed5f5f1-ac41-49a1-b1fa-23bbc9adab82\`
 - Owner: senior_engineer
-- Scope: \`openopc-source-analysis\`
-- Output: \`/data2/bjdwhzzh/project-hku/OpenOPC_workplace/0009/openopc-architecture-analysis.md\`
+- Scope: \`safeopc-source-analysis\`
+- Output: \`/data2/bjdwhzzh/project-hku/SafeOPC_workplace/0009/safeopc-architecture-analysis.md\`
 - Covers: Layered architecture, the work-item state machine, collaboration policy, and seat executor mechanisms.
 
 **Work Item 2: External Multi-Agent Frameworks Architecture Research**
@@ -350,7 +350,7 @@ for (let replay = 0; replay < 6; replay += 1) {
 }
 
 const truncatedCtoContent = ctoDispatchContent.slice(
-  ctoDispatchContent.indexOf('OpenOPC Source Code Architecture Deep-Dive Analysis**'),
+  ctoDispatchContent.indexOf('SafeOPC Source Code Architecture Deep-Dive Analysis**'),
 )
 const truncatedCtoFinal: ChatMessage = {
   ...ctoCompanyFinal,

@@ -1,6 +1,6 @@
-# OpenOPC CLI Board
+# SafeOPC CLI Board
 
-`opc board` provides a full-screen terminal command center for OpenOPC.
+`opc board` provides a full-screen terminal command center for SafeOPC.
 
 ## Install
 

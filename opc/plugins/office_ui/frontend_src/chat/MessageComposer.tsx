@@ -27,7 +27,7 @@ type ComposerModeOption = 'task' | 'company'
 type CompanyArchitectureOption = '' | 'corporate' | `org:${string}`
 
 const TASK_AGENT_LABELS: Record<TaskPreferredAgent, string> = {
-  native: 'OpenOPC Native',
+  native: 'SafeOPC Native',
   codex: 'Codex',
   claude_code: 'Claude Code',
   cursor: 'Cursor',

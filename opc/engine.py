@@ -7281,7 +7281,7 @@ class OPCEngine:
             )
         if status == "done":
             return (
-                f"Execution for work item `{projection_id}` finished in the external agent, but OpenOPC was interrupted "
+                f"Execution for work item `{projection_id}` finished in the external agent, but SafeOPC was interrupted "
                 "before the work-item result was persisted locally. Use `continue` to rerun it safely."
             )
         if status == "cancelled":
@@ -9100,7 +9100,7 @@ class OPCEngine:
         belongs at the *workspace* root (sibling to project deliverables),
         not inside the project's specific output folder. Putting it
         inside the deliverable folder pollutes that folder with
-        OpenOPC-internal state.
+        SafeOPC-internal state.
 
         Resolution order:
 
@@ -10136,7 +10136,7 @@ class OPCEngine:
         parts: list[str] = [
             "## Attachments",
             "Uploaded files have been staged inside the external agent workspace. "
-            "Use the Agent path below when reading them; the Store path is OpenOPC's canonical copy.",
+            "Use the Agent path below when reading them; the Store path is SafeOPC's canonical copy.",
         ]
         mounted_refs: list[dict[str, Any]] = []
         remaining_budget = 5000
@@ -10313,7 +10313,7 @@ class OPCEngine:
             if company_mode:
                 layers = ExternalContextLayers(company_runtime_context=legacy_ctx)
             else:
-                layers = ExternalContextLayers(openopc_context=legacy_ctx)
+                layers = ExternalContextLayers(safeopc_context=legacy_ctx)
         if external_attachment_context and external_attachment_context not in str(layers.attachments_state_context or ""):
             layers.attachments_state_context = "\n\n".join(
                 part
@@ -10345,8 +10345,8 @@ class OPCEngine:
                         if str(part).strip()
                     )
                 else:
-                    layers.openopc_context = "\n\n".join(
-                        part for part in (skills_summary, memory_paths_context, layers.openopc_context)
+                    layers.safeopc_context = "\n\n".join(
+                        part for part in (skills_summary, memory_paths_context, layers.safeopc_context)
                         if str(part).strip()
                     )
         from opc.layer3_agent.company_runtime_contract import build_external_company_work_item_contract
@@ -10357,7 +10357,7 @@ class OPCEngine:
         has_layer_context = any(
             str(value or "").strip()
             for value in (
-                layers.openopc_context,
+                layers.safeopc_context,
                 layers.attachments_state_context,
                 layers.company_runtime_context,
                 layers.prepared_mailbox_context,
@@ -10387,8 +10387,8 @@ class OPCEngine:
             if collaboration_context:
                 description_parts.append(f"## Collaboration Context\n{collaboration_context}")
         else:
-            if layers.openopc_context:
-                description_parts.append(f"## OpenOPC Context\n{layers.openopc_context}")
+            if layers.safeopc_context:
+                description_parts.append(f"## SafeOPC Context\n{layers.safeopc_context}")
         if layers.attachments_state_context:
             runtime_context = self._demote_prompt_headings(layers.attachments_state_context)
             description_parts.append(f"## Runtime Context\n{runtime_context}")
@@ -10593,7 +10593,7 @@ class OPCEngine:
     def _build_external_runtime_tool_hints(self, task: Task, *, role_id: str = "") -> str:
         """Render external collaboration instructions for company-mode runs.
 
-        OpenOPC-spawned agents talk to the rest of the company through the
+        SafeOPC-spawned agents talk to the rest of the company through the
         ``opc-collab`` CLI — installed on their PATH and also described by
         a skill under their isolated agent home. The CLI is the only
         transport taught here. Staying focused on the CLI keeps external

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 export type Locale = 'en' | 'zh-CN'
 
-const STORAGE_KEY = 'openopc_locale'
+const STORAGE_KEY = 'safeopc_locale'
 
 const en = {
   'app.page.workspace': 'Workspace',
@@ -26,7 +26,7 @@ const en = {
   'theme.retro': 'Retro',
   'theme.terminal': 'Terminal',
   'theme.cozy': 'Cozy',
-  'theme.openopc': 'OpenOPC',
+  'theme.safeopc': 'SafeOPC',
   'dev.tools': 'Developer Tools',
   'dev.connection': 'Connection',
   'dev.evolution': 'Evolution Pipeline',
@@ -194,7 +194,7 @@ const zh: Record<MessageKey, string> = {
   'theme.retro': '复古',
   'theme.terminal': '终端',
   'theme.cozy': '舒适',
-  'theme.openopc': 'OpenOPC',
+  'theme.safeopc': 'SafeOPC',
   'dev.tools': '开发工具',
   'dev.connection': '连接',
   'dev.evolution': '进化流水线',

@@ -1,4 +1,4 @@
-"""Shared provider helpers for native OpenOPC channels."""
+"""Shared provider helpers for native SafeOPC channels."""
 
 from __future__ import annotations
 

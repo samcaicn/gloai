@@ -1,4 +1,4 @@
-"""Static metadata for built-in OpenOPC channel providers."""
+"""Static metadata for built-in SafeOPC channel providers."""
 
 from __future__ import annotations
 

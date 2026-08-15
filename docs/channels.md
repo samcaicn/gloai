@@ -1,6 +1,6 @@
-# OpenOPC Channels
+# SafeOPC Channels
 
-OpenOPC has a channel runtime in `opc/channels/` for routing external messages into the engine and sending replies back through configured providers. Feishu is the primary documented setup in the README; the other providers are optional adapters with different dependency, credential, and bridge requirements.
+SafeOPC has a channel runtime in `opc/channels/` for routing external messages into the engine and sending replies back through configured providers. Feishu is the primary documented setup in the README; the other providers are optional adapters with different dependency, credential, and bridge requirements.
 
 Provider metadata is defined in `opc/channels/provider_registry.py`.
 

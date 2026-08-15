@@ -63,7 +63,7 @@ class CodexAdapter(ExternalAgentAdapter):
         # ``skills/opc-collab/`` there; codex exec's native skill
         # discovery picks it up. The user's personal ``~/.codex/`` is
         # not inherited, so codex invoked directly by the user stays
-        # separated from the OpenOPC collaboration surface.
+        # separated from the SafeOPC collaboration surface.
         return "codex"
 
     def agent_home_env_vars(self, home: str) -> dict[str, str]:
@@ -125,7 +125,7 @@ class CodexAdapter(ExternalAgentAdapter):
         cls,
         extra_env: dict[str, str] | None,
     ) -> tuple[list[str], list[str]]:
-        """Forward only OpenOPC's runtime contract into Codex shell tools.
+        """Forward only SafeOPC's runtime contract into Codex shell tools.
 
         Codex can intentionally run with ``shell_environment_policy.inherit=core``.
         The broker process still receives ``OPC_*`` variables, but commands launched
@@ -186,7 +186,7 @@ class CodexAdapter(ExternalAgentAdapter):
 
     def _extra_writable_roots(self, task: Task | None) -> list[str]:
         # Surface to Codex's workspace-write sandbox every path outside
-        # the main workspace that OpenOPC expects the agent (or a shell
+        # the main workspace that SafeOPC expects the agent (or a shell
         # it spawns) to be able to write to:
         #
         #   * ``comms_workspace_root`` — sibling of the deliverable

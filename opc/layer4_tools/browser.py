@@ -38,6 +38,7 @@ class BrowserLaunchConfig:
     chrome_executable_path: str = ""
     user_data_dir: str = ""
     args: tuple[str, ...] = ()
+    cdp_port: int = 9222
 
     @classmethod
     def load(cls) -> "BrowserLaunchConfig":
@@ -55,6 +56,7 @@ class BrowserLaunchConfig:
             chrome_executable_path=str(browser.chrome_executable_path or "").strip(),
             user_data_dir=str(browser.user_data_dir or "").strip(),
             args=tuple(str(arg).strip() for arg in (browser.args or []) if str(arg).strip()),
+            cdp_port=int(getattr(browser, "cdp_port", 9222) or 9222),
         )
 
 
@@ -69,6 +71,7 @@ class BrowserRuntime:
         self._lock = asyncio.Lock()
         self._config_loader = config_loader or BrowserLaunchConfig.load
         self._launch_config: BrowserLaunchConfig | None = None
+        self._cdp_connected: bool = False
 
     async def navigate(self, url: str, wait_until: str = "domcontentloaded") -> dict[str, Any]:
         async with self._lock:
@@ -242,6 +245,8 @@ class BrowserRuntime:
 
     async def _launch_browser(self, launch_config: BrowserLaunchConfig) -> tuple[Any, Any, Any]:
         mode = (launch_config.mode or "embedded").strip().lower()
+        if mode == "cdp":
+            return await self._launch_cdp(launch_config)
         if mode == "chrome":
             return await self._launch_local_chrome(launch_config)
         if mode == "auto":
@@ -266,6 +271,18 @@ class BrowserRuntime:
         )
         context = await browser.new_context(ignore_https_errors=True)
         page = await context.new_page()
+        return browser, context, page
+
+    async def _launch_cdp(self, launch_config: BrowserLaunchConfig) -> tuple[Any, Any, Any]:
+        """Connect to an already-running browser over CDP (e.g. SafeOPC's own
+        WebView2 window when it was launched with --remote-debugging-port)."""
+        port = int(getattr(launch_config, "cdp_port", 9222) or 9222)
+        browser = await self._playwright.chromium.connect_over_cdp(
+            f"http://127.0.0.1:{port}"
+        )
+        context = browser.contexts[0] if getattr(browser, "contexts", None) else await browser.new_context()
+        page = context.pages[0] if getattr(context, "pages", None) else await context.new_page()
+        self._cdp_connected = True
         return browser, context, page
 
     async def _launch_local_chrome(self, launch_config: BrowserLaunchConfig) -> tuple[Any, Any, Any]:
@@ -453,11 +470,23 @@ class BrowserRuntime:
 
     async def _reset(self) -> None:
         page, context, browser, playwright = self._page, self._context, self._browser, self._playwright
+        cdp = self._cdp_connected
         self._page = None
         self._context = None
         self._browser = None
         self._playwright = None
         self._launch_config = None
+        self._cdp_connected = False
+        if cdp:
+            # Connected to an external browser over CDP — only detach the
+            # Playwright session, never close the remote window (that would
+            # tear down SafeOPC's own WebView2).
+            if playwright is not None:
+                try:
+                    await playwright.stop()
+                except Exception:
+                    pass
+            return
         if page is not None:
             try:
                 await page.close()

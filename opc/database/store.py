@@ -267,7 +267,7 @@ class OPCStore:
     async def initialize(self, *, run_startup_maintenance: bool = True) -> None:
         """Open the store.
 
-        ``run_startup_maintenance`` is reserved for the owning OpenOPC runtime
+        ``run_startup_maintenance`` is reserved for the owning SafeOPC runtime
         process. Lightweight collaboration clients such as ``opc-collab`` open
         the already-initialized project DB to service one tool call; they must
         not run schema migrations or stale-claim sweeps as a side effect of a

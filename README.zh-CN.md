@@ -1,4 +1,4 @@
-<h1 align="center" style="font-size: 1.75em;">OpenOPC：打造你的个人 AI 原生公司 — 自建、自营、自成长</h1>
+<h1 align="center" style="font-size: 1.75em;">SafeOPC：打造你的个人 AI 原生公司 — 自建、自营、自成长</h1>
 
 <p align="center">
   <a href="README.md">English</a> | <b>简体中文</b>
@@ -15,17 +15,17 @@
   <img alt="Office UI" src="https://img.shields.io/badge/Office%20UI-React%20%2B%20Phaser-14b8a6?style=flat-square">
   <img alt="CLI and UI" src="https://img.shields.io/badge/interface-CLI%20%2B%20Office%20UI-64748b?style=flat-square">
   <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-111827?style=flat-square">
-  <a href="https://github.com/HKUDS/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat-square&logo=feishu&logoColor=white" alt="Feishu" /></a>
-  <a href="https://github.com/HKUDS/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat-square&logo=wechat&logoColor=white" alt="WeChat" /></a>
+  <a href="https://github.com/samcaicn/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat-square&logo=feishu&logoColor=white" alt="Feishu" /></a>
+  <a href="https://github.com/samcaicn/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat-square&logo=wechat&logoColor=white" alt="WeChat" /></a>
 </p>
 
-![OpenOPC hero banner](docs/assets/chat.png)
+![SafeOPC hero banner](docs/assets/chat.png)
 
 ## 目录
 
-- [何时使用 OpenOPC](#何时使用-openopc)
+- [何时使用 SafeOPC](#何时使用-safeopc)
 - [演示](#演示)
-- [OpenOPC 如何工作](#openopc-如何工作)
+- [SafeOPC 如何工作](#safeopc-如何工作)
 - [快速开始](#快速开始)
 - [Office UI 指南](#office-ui-指南)
 - [CLI 指南](#cli-指南)
@@ -34,9 +34,9 @@
 - [路线图](#路线图)
 - [致谢](#致谢)
 
-## 何时使用 OpenOPC
+## 何时使用 SafeOPC
 
-**OpenOPC** 覆盖九大核心垂直领域 — 从 AI 开发、软件工程到金融、销售、媒体、电商与教育。无论哪个行业，OpenOPC 都会组建合适的团队并端到端交付。
+**SafeOPC** 覆盖九大核心垂直领域 — 从 AI 开发、软件工程到金融、销售、媒体、电商与教育。无论哪个行业，SafeOPC 都会组建合适的团队并端到端交付。
 
 <table>
   <tr>
@@ -89,21 +89,21 @@
   <tr>
     <td width="33%" align="center" valign="top">
       <a href="https://youtu.be/XqQeTt6XvPQ">
-        <img src="https://img.youtube.com/vi/XqQeTt6XvPQ/maxresdefault.jpg" alt="OpenOPC 视频制作演示" width="100%">
+        <img src="https://img.youtube.com/vi/XqQeTt6XvPQ/maxresdefault.jpg" alt="SafeOPC 视频制作演示" width="100%">
       </a>
       <br><br>
       <strong>🎬 视频制作</strong>
     </td>
     <td width="33%" align="center" valign="top">
       <a href="https://drive.google.com/drive/folders/1T1Nl6CCE-cmbGy6sKrYML7_UnP8XID88?usp=drive_link">
-        <img src="docs/assets/vc-research-package.svg" alt="OpenOPC VC 投资研究演示" width="100%">
+        <img src="docs/assets/vc-research-package.svg" alt="SafeOPC VC 投资研究演示" width="100%">
       </a>
       <br><br>
       <strong>📈 投资研究</strong>
     </td>
     <td width="33%" align="center" valign="top">
       <a href="https://youtu.be/SVc9BvE5ohY">
-        <img src="https://img.youtube.com/vi/SVc9BvE5ohY/maxresdefault.jpg" alt="OpenOPC 游戏原型演示" width="100%">
+        <img src="https://img.youtube.com/vi/SVc9BvE5ohY/maxresdefault.jpg" alt="SafeOPC 游戏原型演示" width="100%">
       </a>
       <br><br>
       <strong>🎮 游戏原型</strong>
@@ -111,17 +111,17 @@
   </tr>
 </table>
 
-## OpenOPC 如何工作
+## SafeOPC 如何工作
 
-OpenOPC 围绕复杂的真实任务组建一家 AI 公司 — 通过三个紧密耦合的机制：**自建**负责组织配员，**自营**负责执行工作，**自成长**负责从结果中学习。
+SafeOPC 围绕复杂的真实任务组建一家 AI 公司 — 通过三个紧密耦合的机制：**自建**负责组织配员，**自营**负责执行工作，**自成长**负责从结果中学习。
 
 <p align="center">
-  <img src="docs/assets/video.png" alt="一家 OpenOPC 公司：角色、汇报关系，以及每个角色配备的员工" width="100%">
+  <img src="docs/assets/video.png" alt="一家 SafeOPC 公司：角色、汇报关系，以及每个角色配备的员工" width="100%">
 </p>
 
 **1. 自建 — 为组织配员**
 
-在任何工作开始之前，必须先把合适的人放到合适的位置。给定一个目标，OpenOPC 会：
+在任何工作开始之前，必须先把合适的人放到合适的位置。给定一个目标，SafeOPC 会：
 
 - 🌿 起草组织架构图 — 从任务需求推导出所需的角色与汇报结构。
 - 🎯 填补每个角色 — 由招聘 Agent 在「复用现有员工（带着以往项目塑造的经验）」与「从人才池中招募新人」之间做出选择。
@@ -132,7 +132,7 @@ OpenOPC 围绕复杂的真实任务组建一家 AI 公司 — 通过三个紧密
 
 团队组建完成后，自营机制协调成员产出最终交付物。核心挑战不在于单纯执行，而在于不确定性下的高效协作，具体体现为两个问题。
 
-🔀 动态协作编排。真实工作无法完全提前规划。OpenOPC 通过工作项状态机来解决，每个工作项所处的阶段决定：
+🔀 动态协作编排。真实工作无法完全提前规划。SafeOPC 通过工作项状态机来解决，每个工作项所处的阶段决定：
 
 - 📋 它在看板的哪一列 — 处于工作流的哪个位置。
 - 👑 它的负责人 — 该阶段由哪个角色负责。
@@ -145,7 +145,7 @@ OpenOPC 围绕复杂的真实任务组建一家 AI 公司 — 通过三个紧密
 
 🔗 依赖解除与驳回都作为结构化的阶段转换传播，消除了临时的人为协调。
 
-🛡️ 处理运行中途出现的阻塞。并非所有障碍都能提前预见。OpenOPC 在两个层面解决：
+🛡️ 处理运行中途出现的阻塞。并非所有障碍都能提前预见。SafeOPC 在两个层面解决：
 
 - 💬 团队内部 — 一条阻塞消息会暂停发送者，并激活最适合解决该问题的角色。
 - 📡 团队之外 — 当阻塞超出团队权限时，运行时会上报给人类所有者，在真正需要时引入人类判断。
@@ -156,12 +156,12 @@ OpenOPC 围绕复杂的真实任务组建一家 AI 公司 — 通过三个紧密
 
 执行产生原始经验；自成长把它转化为持久的改进，遵循两条原则。
 
-🏅 把结果归因到正确的角色。把功劳记给整个公司学不到任何东西。因此 OpenOPC：
+🏅 把结果归因到正确的角色。把功劳记给整个公司学不到任何东西。因此 SafeOPC：
 
 - 🔍 将用户反馈解析为针对每位员工的评估。
 - 🎯 只更新负责了相关工作项的角色 — 功与过都落到应得之处。
 
-📖 把执行轨迹提炼为知识。执行轨迹噪声太大，无法直接学习。因此 OpenOPC：
+📖 把执行轨迹提炼为知识。执行轨迹噪声太大，无法直接学习。因此 SafeOPC：
 - 💡 把每个角色的任务提炼为高信号的经验教训，存入其私有经验档案。
 - 📚 把反复出现的经验提升为共享的作业手册（playbook），新员工从入职起即可继承 — 让组织知识随时间复利增长。
 
@@ -178,11 +178,11 @@ OpenOPC 围绕复杂的真实任务组建一家 AI 公司 — 通过三个紧密
 
 ## 快速开始
 
-推荐使用 `uv` 来安装 OpenOPC。它可以安装/管理 Python、创建项目虚拟环境，并在该环境中运行命令，而不会把 OpenOPC 的依赖混入全局 Python。
+推荐使用 `uv` 来安装 SafeOPC。它可以安装/管理 Python、创建项目虚拟环境，并在该环境中运行命令，而不会把 SafeOPC 的依赖混入全局 Python。
 
-OpenOPC 要求 Python `>=3.10`；下面的示例使用 Python `3.12`。
+SafeOPC 要求 Python `>=3.10`；下面的示例使用 Python `3.12`。
 
-对于直接的一次性工作，OpenOPC 还提供 Task 模式 — 一个类 LobeChat 的单 Agent 工作台，可使用 OpenOPC Native、Codex、Claude Code、Cursor 或 OpenCode。
+对于直接的一次性工作，SafeOPC 还提供 Task 模式 — 一个类 LobeChat 的单 Agent 工作台，可使用 SafeOPC Native、Codex、Claude Code、Cursor 或 OpenCode。
 
 <details open>
 <summary><strong>推荐：uv 环境搭建</strong></summary>
@@ -194,7 +194,7 @@ OpenOPC 要求 Python `>=3.10`；下面的示例使用 Python `3.12`。
 brew install uv
 # curl -LsSf https://astral.sh/uv/install.sh | sh
 
-cd /path/to/OpenOPC
+cd /path/to/SafeOPC
 uv python install 3.12
 uv venv --python 3.12
 source .venv/bin/activate
@@ -206,7 +206,7 @@ source .venv/bin/activate
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source "$HOME/.local/bin/env"
 
-cd /path/to/OpenOPC
+cd /path/to/SafeOPC
 uv python install 3.12
 uv venv --python 3.12
 source .venv/bin/activate
@@ -217,7 +217,7 @@ source .venv/bin/activate
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-cd C:\path\to\OpenOPC
+cd C:\path\to\SafeOPC
 uv python install 3.12
 uv venv --python 3.12
 .\.venv\Scripts\Activate.ps1
@@ -230,7 +230,7 @@ winget install --id=astral-sh.uv -e
 :: 或在 cmd 中运行独立安装脚本：
 :: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-cd C:\path\to\OpenOPC
+cd C:\path\to\SafeOPC
 uv python install 3.12
 uv venv --python 3.12
 .venv\Scripts\activate.bat
@@ -238,7 +238,7 @@ uv venv --python 3.12
 </details>
 
 ```bash
-# 将 OpenOPC 安装到 uv 管理的环境中
+# 将 SafeOPC 安装到 uv 管理的环境中
 uv pip install -e .
 
 # 可选但推荐：安装浏览器工具所需的 Chromium
@@ -320,7 +320,7 @@ opc ui --rebuild
   <div style="display:flex; gap:18px; min-width:5520px;">
     <figure style="flex:0 0 900px; width:900px; margin:0;">
       <img src="docs/assets/fig1.png" alt="Workspace 的项目、聊天、模式、组织与 Agent 控件" width="900">
-      <figcaption><strong>工作台与初始设置。</strong>选择或创建项目，点击 <code>New Chat</code>，然后选择 <code>Company</code> 或 <code>Task</code> 以及对应的组织或 Agent。在 Company 模式下，可以指定角色员工与执行 Agent，也可以让 OpenOPC 自动招募。</figcaption>
+      <figcaption><strong>工作台与初始设置。</strong>选择或创建项目，点击 <code>New Chat</code>，然后选择 <code>Company</code> 或 <code>Task</code> 以及对应的组织或 Agent。在 Company 模式下，可以指定角色员工与执行 Agent，也可以让 SafeOPC 自动招募。</figcaption>
     </figure>
     <figure style="flex:0 0 900px; width:900px; margin:0;">
       <img src="docs/assets/fig2.png" alt="Execution Progress 面板显示角色状态与执行记录" width="900">
@@ -369,7 +369,7 @@ Workspace 页面是默认界面。
 1. 在顶部项目选择器中创建或选择一个项目。
 2. 在 Workspace 中点击 `New Chat`。
 3. 在输入框中选择 `Task` 或 `Company`。
-4. Task 模式下选择 Agent：`OpenOPC Native`、`Codex`、`Claude Code`、`Cursor` 或 `OpenCode`。
+4. Task 模式下选择 Agent：`SafeOPC Native`、`Codex`、`Claude Code`、`Cursor` 或 `OpenCode`。
 5. Company 模式下选择 `Corporate` 或一个已保存的组织架构。
 6. 发送任务简报。
 
@@ -415,7 +415,7 @@ Org 页面是公司结构变得可运行的地方。
 | `Architecture` | 浏览内置架构预设、预览/应用包、管理已安装的包、导入/导出 YAML。 |
 | `Employees` | 搜索人才模板、查看详情、招募到空缺角色、为公司配员。 |
 
-创建新公司：打开 `Org`，点击 `New organization`，输入名称，添加至少两名带职责与汇报关系的成员，检查并创建。OpenOPC 会自动保存，并把输入框切换为 `Company / <你的组织>`。
+创建新公司：打开 `Org`，点击 `New organization`，输入名称，添加至少两名带职责与汇报关系的成员，检查并创建。SafeOPC 会自动保存，并把输入框切换为 `Company / <你的组织>`。
 
 招募：先导入人才模板，然后打开 `Org -> Employees`，搜索模板，点击 `Hire`，选择一个空缺角色；若希望员工出现在 Office 页面，再从 `Team Roster` 部署。
 
@@ -426,7 +426,7 @@ opc talent import /path/to/agency-agents
 <details>
 <summary><strong>项目文件的位置</strong></summary>
 
-OpenOPC 把运行时/配置状态与交付物工作区文件分开存放。
+SafeOPC 把运行时/配置状态与交付物工作区文件分开存放。
 
 | 路径 | 含义 |
 |---|---|
@@ -434,8 +434,8 @@ OpenOPC 把运行时/配置状态与交付物工作区文件分开存放。
 | `.opc/memory/` | 全局与项目级 Markdown 记忆。 |
 | `.opc/projects/<project>/` | 项目运行时元数据与任务存储。 |
 | `.opc/ui_state.db` | Office UI 的聊天、频道与可视化 Agent 状态。 |
-| `../OpenOPC_workplace/<project>/` | 默认项目工作区。Agent 应把持久的项目文件写到这里。 |
-| `../OpenOPC_workplace/<project>/.opc-comms/` | Company 模式内部通讯信箱、会议与工具结果暂存区。 |
+| `../SafeOPC_workplace/<project>/` | 默认项目工作区。Agent 应把持久的项目文件写到这里。 |
+| `../SafeOPC_workplace/<project>/.opc-comms/` | Company 模式内部通讯信箱、会议与工具结果暂存区。 |
 
 若希望配置与运行时状态放在仓库之外，设置 `OPC_HOME=/path/to/opc-home`。
 </details>
@@ -447,9 +447,9 @@ OpenOPC 把运行时/配置状态与交付物工作区文件分开存放。
 <details>
 <summary><b>展开 CLI 指南 — 常用命令与交互式斜杠命令</b></summary>
 
-OpenOPC 同时提供高层的自然语言命令与更底层的 UI/服务命令。
+SafeOPC 同时提供高层的自然语言命令与更底层的 UI/服务命令。
 
-概念上 OpenOPC 有两种执行模式：`task` 与 `company`。部分底层 CLI/服务命令仍将 `org` 作为「Company 模式 + 已保存组织架构」的兼容选择器；在 UI 中这表现为 Company 加一个架构选择。
+概念上 SafeOPC 有两种执行模式：`task` 与 `company`。部分底层 CLI/服务命令仍将 `org` 作为「Company 模式 + 已保存组织架构」的兼容选择器；在 UI 中这表现为 Company 加一个架构选择。
 
 ### 常用命令
 
@@ -745,7 +745,7 @@ opc status
 
 ## 生态与分享
 
-OpenOPC 构建的一切都归你所有，可以保留、复用与分享 — 组织、员工、人才模板、技能与频道都只是文件。你可以导入一个流行的人才库、跨项目复用一个团队，或者把整个公司打包成可分享的 `.opcpkg`。
+SafeOPC 构建的一切都归你所有，可以保留、复用与分享 — 组织、员工、人才模板、技能与频道都只是文件。你可以导入一个流行的人才库、跨项目复用一个团队，或者把整个公司打包成可分享的 `.opcpkg`。
 
 ```bash
 # 从人才库（例如 agency-agents）招募到某个角色
@@ -760,12 +760,12 @@ opc market install packages/hku_lab.opcpkg
 
 ## 路线图
 
-OpenOPC 正在快速迭代。以下领域反映当前的开发重点 — 每一项都源自早期使用中发现的真实缺口。
+SafeOPC 正在快速迭代。以下领域反映当前的开发重点 — 每一项都源自早期使用中发现的真实缺口。
 
 | 领域 | 计划方向 |
 |---|---|
 | **角色级技能** | 角色配置已支持 `skill_refs`，Org UI 目前也展示技能元数据。下一步是让用户直接在 Org 页面选择哪些技能挂载到哪些角色 — 汇入更广泛的自演化技能生态。 |
-| **秘书设置** | 秘书将成长为更强的配置与记忆管家：负责 OPC 系统记忆、分析与对比项目，并为 OpenOPC YAML 配置提供引导式设置。 |
+| **秘书设置** | 秘书将成长为更强的配置与记忆管家：负责 OPC 系统记忆、分析与对比项目，并为 SafeOPC YAML 配置提供引导式设置。 |
 | **Company 模式频道** | 外部频道将从简单的聊天入口演进为更丰富的 Company 模式工作流 — 支持角色感知的通知、结构化审批与跨平台协作。 |
 | **CLI 对齐** | CLI 目前可用，但 Office UI 仍是更完整的界面。后续工作聚焦于从终端进行组织编辑、Company 模式检查、故障恢复与长时运行时控制。 |
 | **TUI** | CLI 对齐成熟后将考虑完整的终端 UI。在此期间 Office UI 仍是主要界面。 |
@@ -774,18 +774,18 @@ OpenOPC 正在快速迭代。以下领域反映当前的开发重点 — 每一�
 
 ## 致谢
 
-OpenOPC 的 Agent 设计、技能结构与人才模板生态受益于多个开源项目，在此致谢：
+SafeOPC 的 Agent 设计、技能结构与人才模板生态受益于多个开源项目，在此致谢：
 
 - [openai/codex](https://github.com/openai/codex/) 启发了实用的编码 Agent 工作流与执行模式。
 - [BloopAI/vibe-kanban](https://github.com/BloopAI/vibe-kanban) 启发了以看板为中心的 Agent 工作管理与任务可见性。
 - [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) 提供了人才模板的基础。本仓库包含的所有人才模板均导入自 `agency-agents`。
-- [HKUDS/nanobot](https://github.com/HKUDS/nanobot) 启发了面向技能的 Agent 设计与 `SKILL.md` 风格的组织方式。
+- [SafeOPC/nanobot](https://github.com/samcaicn/nanobot) 启发了面向技能的 Agent 设计与 `SKILL.md` 风格的组织方式。
 - [pixel-agents-hq/pixel-agents](https://github.com/pixel-agents-hq/pixel-agents) 启发了以像素动画办公室可视化 Agent 活动的方式。
 
 ---
 
 <p align="center">
-  <em> ❤️ 感谢访问 ✨ OpenOPC！</em><br><br>
-  <img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.OpenOPC&style=for-the-badge&color=00d4ff"
+  <em> ❤️ 感谢访问 ✨ SafeOPC！</em><br><br>
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=SafeOPC.SafeOPC&style=for-the-badge&color=00d4ff"
   alt="Views">
 </p>

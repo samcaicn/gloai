@@ -1,6 +1,6 @@
 """Local RPC transport for ``opc-collab`` calls.
 
-The external agent still invokes the normal ``opc-collab`` CLI. When OpenOPC
+The external agent still invokes the normal ``opc-collab`` CLI. When SafeOPC
 spawns that agent, the broker exposes a short-lived local endpoint and injects
 its address/token into the environment. The CLI then sends the collaboration
 tool call to the already-running broker, so database writes stay in the host
@@ -367,7 +367,7 @@ async def _start_fifo_collaboration_rpc_server(
     transport_parent: str | os.PathLike[str] | None = None,
 ) -> CollaborationRpcServer:
     parent = Path(transport_parent) if transport_parent else Path(tempfile.gettempdir())
-    rpc_dir = Path(tempfile.mkdtemp(prefix="openopc-collab-rpc-", dir=str(parent)))
+    rpc_dir = Path(tempfile.mkdtemp(prefix="safeopc-collab-rpc-", dir=str(parent)))
     request_path = rpc_dir / "requests.fifo"
     token = secrets.token_urlsafe(32)
     os.mkfifo(request_path, 0o600)
