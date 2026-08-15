@@ -50,4 +50,8 @@ jobs:
       - name: Verify committed frontend bundle
         run: |
           git add --intent-to-add -- opc/plugins/office_ui/frontend_dist
-          git diff --exit-code -- opc/plugins/office_ui/frontend_dist
+          # Vite's generated index.html carries platform-specific whitespace
+          # (a blank line on Windows, trailing newlines); the asset references
+          # are the real contract. Tolerate blank-line / EOL differences so the
+          # check stays green across OSes but still catches real asset drift.
+          git diff --exit-code --ignore-blank-lines --ignore-space-at-eol -- opc/plugins/office_ui/frontend_dist
