@@ -7,7 +7,7 @@ concurrency:
 on:
   push:
     tags: ["v*"]
-    branches: [v2, v2-branch, wt, gh-wt]
+    branches: [safeopc]
   workflow_dispatch:
     inputs:
       brand:
@@ -23,8 +23,8 @@ permissions:
   contents: write
 
 env:
-  # workflow_dispatch 鈫?use input; push to v2 branch 鈫?safeopc; tag push 鈫?tupai
-  BRAND: ${{ inputs.brand || (github.ref == 'refs/heads/v2' && 'safeopc') || 'tupai' }}
+  # workflow_dispatch 鈫?use input; push to safeopc branch 鈫?safeopc; tag push 鈫?tupai
+  BRAND: ${{ inputs.brand || (github.ref == 'refs/heads/safeopc' && 'safeopc') || 'tupai' }}
   # Only create a GitHub release for tag pushes; empty for branch pushes
   TAG_NAME: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
 
@@ -317,7 +317,7 @@ jobs:
   # 鏋勫缓鎴愬姛鍚庡皢浠ｇ爜闀滃儚鎺ㄩ€佸埌鑵捐浜?Git锛岀‘淇濅唬鐮佸湪鑵捐浜戞湁澶囦唤銆?  # 闇€瑕?GitHub Secret: TENCENT_GIT_URL锛堝畬鏁?URL 鍚嚟鎹級銆?  # 鏈厤缃?secret 鏃惰烦杩囧悓姝ワ紝cleanup 浠嶄細鎵ц锛堥渶纭繚鏈湴宸?push 鍒拌吘璁簯锛夈€?  # 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   sync-to-tencent:
     needs: [build-windows, build-macos]
-    if: success() && !startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/safeopc'
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -343,7 +343,7 @@ jobs:
   # 鎵€鏈夋瀯寤烘垚鍔?+ 鑵捐浜戝悓姝ュ畬鎴愬悗锛屽垹闄?GitHub 杩滅▼鍒嗘敮鍜屾墍鏈?release銆?  # 鍒跺搧锛坋xe/dmg锛変繚鐣欏湪 workflow run artifacts 涓紙30 澶╀繚鐣欐湡锛夈€?  # 浠ｇ爜浠呬繚鐣欏湪鑵捐浜?Git銆?  # 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   cleanup-github:
     needs: [build-windows, build-macos]
-    if: success() && !startsWith(github.ref, 'refs/tags/') && github.ref_name != 'main'
+    if: github.ref == 'refs/heads/safeopc'
     runs-on: ubuntu-latest
     steps:
       - name: Delete GitHub remote branch
