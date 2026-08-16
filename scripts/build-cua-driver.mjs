@@ -160,11 +160,15 @@ function binPathFor(profile) {
 
 // ── 前置检查 ──────────────────────────────────────────────────────
 if (!existsSync(CUA_REPO)) {
-  console.error(
-    `[build-cua-driver] 未找到 up/cua 目录。\n` +
-      `  请先拉取上游：bash scripts/upgrade-cua-upstream.sh`
+  // `up/cua` 是 gitignored 的 vendored 上游，在 CI 及未拉取上游的仓库里
+  // 不存在。cua-driver 只是「可选」sidecar：runtime 缺失时会回落到 enigo，
+  // 因此不应阻断 tauri dev / build。软跳过（exit 0）而非硬失败（exit 2）。
+  // 需要本地构建 cua-driver 时再拉取上游即可。
+  console.log(
+    `[build-cua-driver] 未找到 up/cua 目录，跳过 cua-driver（cua 为可选 sidecar，runtime 将回落到 enigo）。\n` +
+      `  如需本地构建 cua-driver：bash scripts/upgrade-cua-upstream.sh`
   );
-  process.exit(2);
+  process.exit(0);
 }
 
 const existingDebug = existsSync(binPathFor("debug"));

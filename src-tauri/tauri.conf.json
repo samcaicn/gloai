@@ -143,9 +143,6 @@
       "dmg",
       "app"
     ],
-    "externalBin": [
-      "binaries/cua-driver"
-    ],
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper"
