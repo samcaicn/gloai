@@ -2401,7 +2401,7 @@ export default function App() {
       {/* Topbar */}
       <header className="topbar">
         <div className="topbar-left">
-          <span className="logo-text">Open<span className="logo-accent">OPC</span></span>
+          <span className="logo-text">Safe<span className="logo-accent">OPC</span></span>
           <div className={`conn-dot ${statusClass(status)}`} title={`${status}${statusDetail ? ` — ${statusDetail}` : ''}\n${wsUrl}`} />
           <ProjectSelector
             projects={projectStore.projects}

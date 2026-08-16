@@ -9,7 +9,7 @@
  *   - currentColor everywhere so CSS controls tone
  *
  * When adding a new icon, copy the geometry from the official Lucide
- * source (https://github.com/lucide-icons/lucide/tree/main/icons) so the
+ * source (https://lucide.dev/icons) so the
  * whole set stays visually consistent.
  */
 
