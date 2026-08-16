@@ -120,6 +120,9 @@ export type SocketEnvelope =
   | { type: 'comms_message'; payload: Record<string, unknown> }
   | { type: 'comms_state_dirty'; payload: { project_id: string; [key: string]: unknown } }
   | { type: 'runtime_status_sync'; payload: { project_id: string; sessions: Array<{ task_id: string; status: string; agent_status?: string; current_tool?: string | null }> } }
+  | { type: 'ui_open_browser'; payload: { url: string; title?: string } }
+  | { type: 'plugin_list'; payload: { plugins: Array<Record<string, unknown>> } }
+  | { type: 'plugin_config_get'; payload: { plugin_id: string; config: Record<string, unknown>; config_schema?: unknown } }
 
 export type SocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
 

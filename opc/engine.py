@@ -823,7 +823,31 @@ class OPCEngine:
             self.tool_registry.register(tool)
         for tool in create_agent_runtime_tools():
             self.tool_registry.register(tool)
+        # Merge installed-plugin tools into the runtime registry so the
+        # "everything is a plugin" mechanism is live at startup. The native
+        # runtime re-reads list_tools() per task, so a later refresh_plugins()
+        # call (after a plugin install) makes new tools executable immediately.
+        self.refresh_plugin_tools()
         logger.debug(f"Registered {len(self.tool_registry.list_tools())} tools")
+
+    def refresh_plugin_tools(self) -> int:
+        """Reload installed plugins into the runtime tool registry (no restart).
+
+        Returns the number of newly registered plugin tools. Safe to call at
+        any time — used by the plugin service after an install/enable/disable.
+        """
+        try:
+            from opc.plugin_core.registry import PluginRegistry
+
+            pr = PluginRegistry(self.opc_home)
+            pr.load()
+            pr.load_all()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"plugin load_all failed during tool refresh: {exc}")
+        added = self.tool_registry.refresh_plugins()
+        if added:
+            logger.info(f"Refreshed {added} plugin tool(s) into the runtime registry")
+        return added
 
     async def _register_mcp_tools(self) -> None:
         assert self.mcp_manager

@@ -17,6 +17,7 @@ import { useProjectStore, type ProjectStoreState } from './stores/ProjectStore'
 import { ExecutionPanel } from './kanban/ExecutionPanel'
 import { ProjectSelector } from './components/ProjectSelector'
 import { OrgTab } from './org/OrgTab'
+import { PluginsPage } from './plugin/PluginsPage'
 import { notifyTaskAssigned } from './lib/taskChatBridge'
 import { InAppBrowser } from './components/InAppBrowser'
 import { DeviceAuthPanel } from './components/DeviceAuthPanel'
@@ -77,7 +78,7 @@ const SESSION_DETAIL_REFRESH_LOW_VALUE_RUNTIME_EVENTS = new Set([
   'member_inbox_updated',
 ])
 
-type AppPage = 'office' | 'workspace' | 'org' | 'mapEditor'
+type AppPage = 'office' | 'workspace' | 'org' | 'mapEditor' | 'plugins'
 type AppExecMode = 'task' | 'company' | 'org'
 
 function defaultWsUrl(): string {
@@ -499,6 +500,14 @@ export default function App() {
   const [reorgProposals, setReorgProposals] = useState<ReorgProposalInfo[]>([])
   const [marketPresets, setMarketPresets] = useState<any[]>([])
   const [marketPreviewData, setMarketPreviewData] = useState<any>(null)
+  const [plugins, setPlugins] = useState<any[]>([])
+  const [pluginConfigTarget, setPluginConfigTarget] = useState<string | null>(null)
+  const [pluginConfigData, setPluginConfigData] = useState<Record<string, unknown>>({})
+  const [pluginConfigSchema, setPluginConfigSchema] = useState<any>(null)
+  const [pluginConfigError, setPluginConfigError] = useState<string | null>(null)
+  const [discoverResults, setDiscoverResults] = useState<any[]>([])
+  const [discoverLoading, setDiscoverLoading] = useState(false)
+  const [discoverError, setDiscoverError] = useState<string | null>(null)
   const [configExportYaml, setConfigExportYaml] = useState<string | null>(null)
   const [configImportPreview, setConfigImportPreview] = useState<{ roles_added: number; roles_removed: number; employees_changed: number } | null>(null)
   const [configImportError, setConfigImportError] = useState<string | null>(null)
@@ -1942,6 +1951,24 @@ export default function App() {
       onMarketPreview: (payload) => {
         setMarketPreviewData(payload as any)
       },
+      onPluginList: (payload) => {
+        setPlugins((payload as any).plugins ?? [])
+      },
+      onPluginDiscover: (payload) => {
+        setDiscoverResults((payload as any).candidates ?? [])
+        setDiscoverLoading(false)
+        setDiscoverError((payload as any).error ?? null)
+      },
+      onPluginRefresh: () => {
+        clientRef.current?.pluginRefresh()
+      },
+      onPluginConfigGet: (payload) => {
+        const p = payload as any
+        setPluginConfigTarget(p.plugin_id ?? null)
+        setPluginConfigData(p.config ?? {})
+        setPluginConfigSchema(p.config_schema ?? null)
+        setPluginConfigError(null)
+      },
       onChildSessionCreated: (payload) => {
         if (!payloadMatchesActiveProject(payload as unknown as Record<string, unknown>, false)) return
         const ss = sessionStoreRef.current
@@ -2450,6 +2477,7 @@ export default function App() {
             </button>
             <button className={`page-nav-btn${activePage === 'office' ? ' active' : ''}`} onClick={() => setActivePage('office')}>{t('app.page.office')}</button>
             <button className={`page-nav-btn${activePage === 'org' ? ' active' : ''}`} onClick={() => setActivePage('org')}>{t('app.page.org')}</button>
+            <button className={`page-nav-btn${activePage === 'plugins' ? ' active' : ''}`} onClick={() => { setActivePage('plugins'); clientRef.current?.pluginList() }}>{t('app.page.plugins')}</button>
             <button
               className="page-nav-btn creatorhub-nav-btn"
               onClick={() => setInAppBrowser({ url: 'http://127.0.0.1:8000', title: 'CreatorHub' })}
@@ -2685,6 +2713,39 @@ export default function App() {
         <div className="editor-page">
           <CollisionEditor bridge={bridgeRef.current} />
         </div>
+      )}
+
+      {activePage === 'plugins' && (
+        <PluginsPage
+          plugins={plugins}
+          onRequestData={() => clientRef.current?.pluginList()}
+          onAdd={(source, enabled) => clientRef.current?.pluginAdd(source, enabled)}
+          onRemove={(pluginId) => clientRef.current?.pluginRemove(pluginId)}
+          onEnable={(pluginId) => clientRef.current?.pluginEnable(pluginId)}
+          onDisable={(pluginId) => clientRef.current?.pluginDisable(pluginId)}
+          onConfigGet={(pluginId) => {
+            setPluginConfigTarget(pluginId)
+            clientRef.current?.pluginConfigGet(pluginId)
+          }}
+          onConfigSet={(pluginId, config) => {
+            clientRef.current?.pluginConfigSet(pluginId, config)
+            setPluginConfigTarget(null)
+          }}
+          configTarget={pluginConfigTarget}
+          configData={pluginConfigData}
+          configSchema={pluginConfigSchema}
+          configError={pluginConfigError}
+          onConfigClose={() => setPluginConfigTarget(null)}
+          onDiscover={(query, provider) => {
+            setDiscoverLoading(true)
+            setDiscoverError(null)
+            clientRef.current?.pluginDiscover(query, provider)
+          }}
+          onRefresh={() => clientRef.current?.pluginRefresh()}
+          discoverResults={discoverResults}
+          discoverLoading={discoverLoading}
+          discoverError={discoverError}
+        />
       )}
 
       {/* Main Grid */}

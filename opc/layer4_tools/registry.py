@@ -1,236 +1,253 @@
-"""Tool registry — central registry for all tools available to agents."""
+"""Layer 4 tool registry — single discovery point for the runtime.
 
-from __future__ import annotations
+NOTE: the project is mid-migration. Sibling modules referenced elsewhere
+(``opc.layer4_tools.collaboration_rpc`` / ``collaboration_dispatch``) are not
+present on disk yet; this registry only aggregates what is implemented. The
+runtime should resolve a tool *name* to its *callable* via
+:func:`collect_layer4_tools`, and installed plugin tools are merged in through
+:mod:`opc.plugin_core.loader`.
 
-import inspect
-import json
-import traceback
-from typing import Any, Callable, Coroutine
+"""
 
-from loguru import logger
-
-from opc.layer4_tools.output_budget import budget_tool_output
-
-# Maximum serialized tool output size (characters). Outputs exceeding this
-# limit are previewed before being returned to the agent loop; recoverable
-# tools persist full output to disk.
-_OUTPUT_LIMIT = 20_000
-
-
-ToolFunc = Callable[..., Coroutine[Any, Any, Any]]
-
-_PARAM_ALIASES: dict[str, str] = {
-    "cmd": "command",
-    "dir": "working_directory",
-    "cwd": "working_directory",
-    "directory": "working_directory",
-    "pattern": "query",
-    "search_query": "query",
-    "search_term": "query",
-    "keyword": "query",
-    "filepath": "file_path",
-    "filename": "file_path",
-    "file": "file_path",
-    "text": "content",
-    "body": "content",
-}
+__all__ = [
+    "collect_layer4_tools",
+    "collect_layer4_specs",
+    "LAYER4_TOOL_SPECS",
+    "ToolDefinition",
+    "ToolRegistry",
+]
 
 
+def collect_layer4_tools() -> dict:
+    """Return {tool_name: callable} across all implemented layer-4 tools."""
+    tools: dict = {}
+    # Plugin-provided tools (registered via opc.plugin_core loader)
+    try:
+        from opc.plugin_core.loader import collect_plugin_tools
+
+        tools.update(
+            {name: spec["callable"] for name, spec in collect_plugin_tools().items()}
+        )
+    except Exception:
+        pass
+    # Future: browser (CDP/Playwright), shell, file, git, web_search, mcp ...
+    return tools
+
+
+def collect_layer4_specs() -> list:
+    """Return tool specifications across all implemented layer-4 tools."""
+    specs: list = []
+    return specs
+
+
+# Convenience alias mirroring the spec list above.
+LAYER4_TOOL_SPECS = collect_layer4_specs()
+
+
+# ---------------------------------------------------------------------------
+# Runtime tool definition + registry
+# ---------------------------------------------------------------------------
+
+from dataclasses import dataclass, field  # noqa: E402
+from typing import Any, Awaitable, Callable  # noqa: E402
+
+import inspect  # noqa: E402
+
+
+@dataclass
 class ToolDefinition:
-    """Metadata and callable for a single tool."""
+    """Canonical runtime tool descriptor.
 
-    def __init__(
-        self,
-        name: str,
-        description: str,
-        parameters: dict[str, Any],
-        func: ToolFunc,
-        category: str = "general",
-        requires_confirmation: bool = False,
-        concurrency_safe: bool | None = None,
-        read_only: bool | None = None,
-        runtime_managed: bool = False,
-        max_result_chars: int = _OUTPUT_LIMIT,
-        persist_large_results: bool = True,
-        self_bounded_output: bool = False,
-        preview_chars: int | None = None,
-    ) -> None:
-        self.name = name
-        self.description = description
-        self.parameters = parameters
-        self.func = func
-        self.category = category
-        self.requires_confirmation = requires_confirmation
-        self.concurrency_safe = concurrency_safe
-        self.read_only = read_only
-        self.runtime_managed = runtime_managed
-        self.max_result_chars = max_result_chars
-        self.persist_large_results = persist_large_results
-        self.self_bounded_output = self_bounded_output
-        self.preview_chars = preview_chars
+    Consumed by :class:`ToolRegistry`, the native runtime planner
+    (:mod:`opc.layer3_agent.runtime_v2.tool_planner`), and the capability
+    manager. ``func`` is the coroutine/sync callable invoked by
+    ``ToolRegistry.execute``; it receives the tool arguments plus, when its
+    signature accepts them, ``task`` and ``on_progress``.
+    """
+
+    name: str
+    description: str = ""
+    parameters: dict[str, Any] = field(default_factory=dict)
+    func: Callable[..., Any] | None = None
+    category: str = "general"
+    requires_confirmation: bool = False
+    concurrency_safe: bool | None = None
+    read_only: bool | None = None
+    runtime_managed: bool = False
+    plugin_id: str = ""
+    extra: dict[str, Any] = field(default_factory=dict)
 
     def to_schema(self) -> dict[str, Any]:
+        """OpenAI-style function-calling schema used by the LLM layer."""
         return {
             "name": self.name,
             "description": self.description,
-            "parameters": self.parameters,
+            "parameters": self.parameters or {"type": "object", "properties": {}},
         }
 
 
+async def _invoke_tool(
+    func: Callable[..., Any] | None,
+    args: dict[str, Any],
+    *,
+    task: Any = None,
+    on_progress: Any = None,
+) -> Any:
+    """Call a tool callable, injecting ``task``/``on_progress`` only when accepted.
+
+    Handles both sync and async coroutine functions and tolerates callables
+    that accept neither auxiliary argument.
+    """
+    if func is None:
+        raise RuntimeError("tool has no callable")
+    kwargs: dict[str, Any] = dict(args or {})
+    try:
+        params = inspect.signature(func).parameters
+        if "task" in params:
+            kwargs["task"] = task
+        if "on_progress" in params:
+            kwargs["on_progress"] = on_progress
+    except (TypeError, ValueError):
+        pass
+    result = func(**kwargs)
+    if inspect.isawaitable(result):
+        result = await result
+    return result
+
+
 class ToolRegistry:
-    """Manages all available tools and dispatches execution."""
+    """In-memory registry of runtime tools.
+
+    The engine populates it once at startup via :meth:`register` (built-in
+    tools) and :meth:`refresh_plugins` (installed plugin tools). The native
+    runtime re-reads :meth:`list_tools` per task, so a :meth:`refresh_plugins`
+    call after a plugin install makes new tools executable on the next turn —
+    no process restart required.
+    """
 
     def __init__(self) -> None:
         self._tools: dict[str, ToolDefinition] = {}
-        self._approval_callback: Any = None
+        self._approval_callback: (
+            Callable[[ToolDefinition, dict[str, Any], Any, Any], Awaitable[tuple[bool, Any]]]
+            | None
+        ) = None
 
+    # ---- mutators --------------------------------------------------------
     def register(self, tool: ToolDefinition) -> None:
+        if not isinstance(tool, ToolDefinition):
+            raise TypeError("ToolRegistry.register expects a ToolDefinition")
+        if not tool.name:
+            raise ValueError("ToolDefinition.name is required")
         self._tools[tool.name] = tool
-        logger.debug(f"Tool registered: {tool.name} [{tool.category}]")
 
-    def unregister(self, name: str) -> None:
-        """Remove a tool by name. No-op if not found."""
-        if self._tools.pop(name, None):
-            logger.debug(f"Tool unregistered: {name}")
+    def register_many(self, tools: list[ToolDefinition]) -> None:
+        for tool in tools:
+            self.register(tool)
 
+    def clear(self) -> None:
+        self._tools.clear()
+
+    # ---- queries ---------------------------------------------------------
     def get(self, name: str) -> ToolDefinition | None:
         return self._tools.get(name)
 
-    def list_tools(self, category: str | None = None, allowed: list[str] | None = None) -> list[ToolDefinition]:
-        tools = list(self._tools.values())
-        if category:
-            tools = [t for t in tools if t.category == category]
-        if allowed:
-            tools = [t for t in tools if t.name in allowed]
-        return tools
+    def list_tools(self) -> list[ToolDefinition]:
+        return list(self._tools.values())
 
     def get_schemas(self, allowed: list[str] | None = None) -> list[dict[str, Any]]:
-        tools = self.list_tools(allowed=allowed)
-        return [t.to_schema() for t in tools]
+        """Return LLM function-calling schemas, optionally filtered by name."""
+        allowed_set = set(allowed) if allowed else None
+        out: list[dict[str, Any]] = []
+        for tool in self._tools.values():
+            if allowed_set is not None and tool.name not in allowed_set:
+                continue
+            out.append(tool.to_schema())
+        return out
 
-    def set_approval_callback(self, callback: Any) -> None:
-        self._approval_callback = callback
+    def set_approval_callback(
+        self,
+        cb: Callable[[ToolDefinition, dict[str, Any], Any, Any], Awaitable[tuple[bool, Any]]]
+        | None,
+    ) -> None:
+        self._approval_callback = cb
 
+    # ---- execution -------------------------------------------------------
     async def execute(
         self,
-        name: str,
-        arguments: dict[str, Any],
+        tool_name: str,
+        args: dict[str, Any],
+        *,
         task: Any = None,
         on_progress: Any = None,
         skip_approval: bool = False,
     ) -> dict[str, Any]:
-        tool = self._tools.get(name)
-        if not tool:
-            return {"error": f"Unknown tool: {name}", "success": False}
+        """Invoke a registered tool and return a normalized result dict.
 
-        if self._approval_callback and not skip_approval:
-            allowed, decision = await self._approval_callback(tool, arguments, task, on_progress)
+        The result dict always carries at least ``success``; tool-specific
+        payloads live under ``result`` (or as the whole dict when the tool
+        already returns a result-shaped mapping).
+        """
+        tool = self.get(tool_name)
+        if tool is None:
+            return {"success": False, "error": f"unknown tool: {tool_name}"}
+        if (
+            tool.requires_confirmation
+            and not skip_approval
+            and self._approval_callback is not None
+        ):
+            try:
+                allowed, decision = await self._approval_callback(
+                    tool, args or {}, task, on_progress
+                )
+            except Exception as exc:  # noqa: BLE001 - never crash the executor
+                return {"success": False, "error": f"approval callback error: {exc}"}
             if not allowed:
                 return {
-                    "error": f"Tool execution blocked by autonomy policy: {decision.rationale}",
-                    "approval": {
-                        "action": decision.action.value,
-                        "risk_level": decision.risk_level.value,
-                        "confidence": decision.confidence,
-                        "policy_source": decision.policy_source,
-                        "rationale": decision.rationale,
-                        **dict(decision.metadata or {}),
-                    },
                     "success": False,
+                    "error": "tool requires approval",
+                    "blocked": True,
+                    "approval": decision,
                 }
-
-        return await self.invoke(name, arguments, task=task, on_progress=on_progress)
-
-    async def invoke(
-        self,
-        name: str,
-        arguments: dict[str, Any],
-        task: Any = None,
-        on_progress: Any = None,
-    ) -> dict[str, Any]:
-        tool = self._tools.get(name)
-        if not tool:
-            return {"error": f"Unknown tool: {name}", "success": False}
-
         try:
-            call_args = self._prepare_call_args(tool, arguments, task=task, on_progress=on_progress)
-            result = await tool.func(**call_args)
-            output = {"result": result, "success": True}
-        except Exception as e:
-            # Loguru has no stdlib-style ``exc_info`` kwarg: extra kwargs are
-            # format() arguments, which forces str.format() on the message — an
-            # error message containing ``{...}`` (e.g. a JSON error body) then
-            # raises KeyError FROM the logging call, escaping this handler and
-            # killing the caller instead of returning the error output below.
-            # Positional formatting keeps brace-containing values inert, and
-            # opt(exception=True) is the loguru way to log the traceback.
-            logger.opt(exception=True).error(
-                "Tool {} failed ({}): {}", name, type(e).__name__, e
+            result = await _invoke_tool(
+                tool.func, args or {}, task=task, on_progress=on_progress
             )
-            output = {
-                "error": str(e),
-                "traceback": traceback.format_exc(),
-                "success": False,
-            }
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": f"{type(exc).__name__}: {exc}"}
+        if isinstance(result, dict):
+            return result
+        return {"success": True, "result": result}
 
-        return self._truncate_output(output, tool=tool, task=task)
+    # ---- plugin integration ---------------------------------------------
+    def refresh_plugins(self) -> int:
+        """Merge installed plugin tools (from ``opc.plugin_core.loader``).
 
-    def _prepare_call_args(
-        self,
-        tool: ToolDefinition,
-        arguments: dict[str, Any],
-        *,
-        task: Any = None,
-        on_progress: Any = None,
-    ) -> dict[str, Any]:
-        call_args = dict(arguments)
-        signature = inspect.signature(tool.func)
-        for alias, canonical in _PARAM_ALIASES.items():
-            if alias in call_args and alias not in signature.parameters and canonical in signature.parameters:
-                call_args[canonical] = call_args.pop(alias)
-        if "task" in signature.parameters and "task" not in call_args:
-            call_args["task"] = task
-        if "on_progress" in signature.parameters and "on_progress" not in call_args:
-            call_args["on_progress"] = on_progress
-        # Reject unknown arguments with a helpful error instead of silently
-        # dropping them. The error is caught by `invoke()` and packaged as
-        # `{"success": False, "error": ...}`, which the agent's tool-call
-        # loop feeds back into the model so it can retry with the right
-        # parameter names. Silent dropping would hide data loss when a
-        # tool signature is changed without updating agent prompts.
-        has_var_keyword = any(
-            p.kind == inspect.Parameter.VAR_KEYWORD
-            for p in signature.parameters.values()
-        )
-        if not has_var_keyword:
-            valid_params = [
-                name for name in signature.parameters
-                if name not in {"task", "on_progress"}
-            ]
-            extra = sorted(set(call_args) - set(signature.parameters))
-            if extra:
-                raise ValueError(
-                    f"Tool `{tool.name}` received unknown argument(s): "
-                    f"{', '.join(repr(key) for key in extra)}. "
-                    f"Valid arguments: {', '.join(repr(p) for p in valid_params)}. "
-                    "Please retry with a supported argument name."
+        Returns the number of newly registered plugin tools. Existing
+        built-in tools are never overwritten.
+        """
+        try:
+            from opc.plugin_core.loader import collect_plugin_tools
+        except Exception:  # noqa: BLE001 - plugin_core may be absent in some envs
+            return 0
+        added = 0
+        for name, spec in collect_plugin_tools().items():
+            if name in self._tools:
+                continue
+            meta = spec.get("spec") or {}
+            self.register(
+                ToolDefinition(
+                    name=name,
+                    description=meta.get("description", f"Plugin tool: {name}"),
+                    parameters=meta.get(
+                        "parameters", {"type": "object", "properties": {}}
+                    ),
+                    func=spec.get("callable"),
+                    category=meta.get("category", "plugin"),
+                    requires_confirmation=bool(meta.get("requires_confirmation", False)),
+                    concurrency_safe=meta.get("concurrency_safe"),
+                    read_only=meta.get("read_only"),
+                    plugin_id=spec.get("plugin_id", ""),
                 )
-        return call_args
-
-    @staticmethod
-    def _truncate_output(
-        output: dict[str, Any],
-        *,
-        tool: ToolDefinition,
-        task: Any = None,
-    ) -> dict[str, Any]:
-        """Apply a recoverable output budget when serialized output is large."""
-        return budget_tool_output(
-            output,
-            tool_name=tool.name,
-            task=task,
-            max_chars=int(tool.max_result_chars or _OUTPUT_LIMIT),
-            preview_chars=tool.preview_chars,
-            persist_large_results=bool(tool.persist_large_results),
-            self_bounded_output=bool(tool.self_bounded_output),
-        )
+            )
+            added += 1
+        return added

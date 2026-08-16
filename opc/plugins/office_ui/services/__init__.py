@@ -9,6 +9,7 @@ from .kanban import KanbanService
 from .market import MarketService
 from .models import ServiceError, ServiceEvent, ServiceResult
 from .org import OrgService
+from .plugin import PluginService
 from .project import ProjectService
 from .runtime import RuntimeService
 from .session import SessionService
@@ -27,6 +28,7 @@ class OfficeServices:
         self.org = OrgService(context)
         self.talent = TalentService(context)
         self.market = MarketService(context)
+        self.plugin = PluginService(context)
         self.comms = CommsService(context)
         self.work_item = WorkItemService(context)
 
@@ -36,6 +38,7 @@ __all__ = [
     "CommsService",
     "KanbanService",
     "MarketService",
+    "PluginService",
     "ModeState",
     "OfficeServiceContext",
     "OfficeServices",

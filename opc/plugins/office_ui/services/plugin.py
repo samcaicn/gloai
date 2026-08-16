@@ -1,0 +1,150 @@
+"""Plugin management service (Settings UI backend).
+
+Mirrors :class:`MarketService` but operates on the plugin profile owned by
+:class:`opc.plugin_core.PluginRegistry`. All mutations persist to
+``<opc_home>/config/plugins_config.yaml``.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from loguru import logger
+from opc.core.config import get_opc_home
+from opc.plugin_core import PluginError, PluginRegistry
+
+from .context import OfficeServiceContext
+from .models import ServiceError, ServiceEvent, ServiceResult
+
+
+class PluginService:
+    def __init__(self, context: OfficeServiceContext) -> None:
+        self.context = context
+
+    def _registry(self) -> PluginRegistry:
+        home = getattr(self.context, "opc_home", None) or Path(get_opc_home())
+        r = PluginRegistry(home)
+        r.load()
+        return r
+
+    @staticmethod
+    def _translate(e: PluginError) -> ServiceError:
+        return ServiceError(e.code, e.message, e.payload)
+
+    @staticmethod
+    def _refresh_event(r: PluginRegistry) -> ServiceEvent:
+        """Broadcast the full plugin list so every UI client stays in sync."""
+        plugins = [p.model_dump() for p in r.list_plugins()]
+        return ServiceEvent("plugin_list", {"plugins": plugins})
+
+    async def list(self) -> ServiceResult:
+        plugins = [p.model_dump() for p in self._registry().list_plugins()]
+        return ServiceResult({"plugins": plugins})
+
+    # ------------------------------------------------------------------
+    # Web-wide discovery (the "search the whole network" half of the UI)
+    # ------------------------------------------------------------------
+    async def discover(self, query: str, provider: str = "github") -> ServiceResult:
+        from opc.plugin_core.discovery import discover_plugins
+
+        result = discover_plugins(query, provider=provider)
+        installed_ids = {p.id for p in self._registry().list_plugins()}
+        for cand in result.get("candidates", []):
+            cand["installed"] = cand.get("id") in installed_ids
+        return ServiceResult(result)
+
+    # ------------------------------------------------------------------
+    # Runtime refresh — re-load plugins into the live tool registry so a
+    # freshly installed plugin is executable on the next turn (no restart).
+    # ------------------------------------------------------------------
+    def _propagate_to_runtime(self) -> int:
+        engine = getattr(self.context, "engine", None)
+        if engine is None or not hasattr(engine, "refresh_plugin_tools"):
+            return 0
+        try:
+            return int(engine.refresh_plugin_tools() or 0)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"runtime plugin refresh failed: {exc}")
+            return 0
+
+    async def refresh(self) -> ServiceResult:
+        r = self._registry()
+        r.refresh()
+        runtime_added = self._propagate_to_runtime()
+        return ServiceResult(
+            {"ok": True, "action": "plugin_refreshed", "runtime_tools_added": runtime_added},
+            events=[self._refresh_event(r)],
+        )
+
+    async def add(self, *, source: str, enabled: bool = True) -> ServiceResult:
+        r = self._registry()
+        try:
+            st = r.install(source)
+            st.enabled = enabled
+            r.add(st)
+        except PluginError as e:
+            raise self._translate(e)
+        # Reload the plugin entry into the live runtime tool registry so the
+        # new plugin is immediately usable (install -> refresh -> execute).
+        self._propagate_to_runtime()
+        return ServiceResult(
+            {"ok": True, "action": "plugin_added", "plugin": st.model_dump()},
+            events=[self._refresh_event(r)],
+        )
+
+    async def remove(self, plugin_id: str) -> ServiceResult:
+        r = self._registry()
+        try:
+            r.remove(plugin_id)
+        except PluginError as e:
+            raise self._translate(e)
+        return ServiceResult(
+            {"ok": True, "action": "plugin_removed", "plugin_id": plugin_id},
+            events=[self._refresh_event(r)],
+        )
+
+    async def enable(self, plugin_id: str) -> ServiceResult:
+        r = self._registry()
+        try:
+            p = r.set_enabled(plugin_id, True)
+        except PluginError as e:
+            raise self._translate(e)
+        return ServiceResult(
+            {"ok": True, "action": "plugin_enabled", "plugin": p.model_dump()},
+            events=[self._refresh_event(r)],
+        )
+
+    async def disable(self, plugin_id: str) -> ServiceResult:
+        r = self._registry()
+        try:
+            p = r.set_enabled(plugin_id, False)
+        except PluginError as e:
+            raise self._translate(e)
+        return ServiceResult(
+            {"ok": True, "action": "plugin_disabled", "plugin": p.model_dump()},
+            events=[self._refresh_event(r)],
+        )
+
+    async def get_config(self, plugin_id: str) -> ServiceResult:
+        try:
+            c = self._registry().get_config(plugin_id)
+        except PluginError as e:
+            raise self._translate(e)
+        # Re-read schema from the manifest so the editor can render fields.
+        schema = self._registry().get_plugin(plugin_id)
+        config_schema = schema.config_schema if schema else None
+        return ServiceResult(
+            {"plugin_id": plugin_id, "config": c, "config_schema": config_schema}
+        )
+
+    async def set_config(self, plugin_id: str, config: dict[str, Any]) -> ServiceResult:
+        r = self._registry()
+        try:
+            p = r.set_config(plugin_id, config or {})
+        except PluginError as e:
+            raise self._translate(e)
+        return ServiceResult(
+            {"ok": True, "action": "plugin_config_updated", "plugin": p.model_dump()},
+            events=[self._refresh_event(r)],
+        )

@@ -60,6 +60,8 @@ interface SocketHandlers {
   onCommsState?: (payload: CommsStatePayload) => void
   onCommsMessage?: (payload: CommsMessagePayload) => void
   onUiOpenBrowser?: (payload: { url: string; title?: string }) => void
+  onPluginList?: (payload: { plugins: Array<Record<string, unknown>> }) => void
+  onPluginConfigGet?: (payload: { plugin_id: string; config: Record<string, unknown>; config_schema?: unknown }) => void
 }
 
 export interface RuntimeStatusSyncPayload {
@@ -607,6 +609,35 @@ export class VisualSocketClient {
     this.send({ type: 'market_uninstall', package_id: packageId })
   }
 
+  // ── Plugins (deepseek-harness style) ──────────────────────────────────
+  pluginList(): void {
+    this.send({ type: 'plugin_list' })
+  }
+  pluginAdd(source: string, enabled: boolean): void {
+    this.send({ type: 'plugin_add', source, enabled })
+  }
+  pluginRemove(pluginId: string): void {
+    this.send({ type: 'plugin_remove', plugin_id: pluginId })
+  }
+  pluginEnable(pluginId: string): void {
+    this.send({ type: 'plugin_enable', plugin_id: pluginId })
+  }
+  pluginDisable(pluginId: string): void {
+    this.send({ type: 'plugin_disable', plugin_id: pluginId })
+  }
+  pluginConfigGet(pluginId: string): void {
+    this.send({ type: 'plugin_config_get', plugin_id: pluginId })
+  }
+  pluginConfigSet(pluginId: string, config: Record<string, unknown>): void {
+    this.send({ type: 'plugin_config_set', plugin_id: pluginId, config })
+  }
+  pluginDiscover(query: string, provider: string = 'github'): void {
+    this.send({ type: 'plugin_discover', query, provider })
+  }
+  pluginRefresh(): void {
+    this.send({ type: 'plugin_refresh' })
+  }
+
   // ── Org Editing ───────────────────────────────────────────────────────
 
   addRole(roleId: string, name: string, responsibility: string, reportsTo: string = 'owner', icon?: string | null): void {
@@ -848,6 +879,12 @@ export class VisualSocketClient {
         break
       case 'market_browse':
         this.handlers.onMarketBrowse?.(parsed.payload as unknown as { presets: Array<Record<string, unknown>> })
+        break
+      case 'plugin_list':
+        this.handlers.onPluginList?.(parsed.payload as unknown as { plugins: Array<Record<string, unknown>> })
+        break
+      case 'plugin_config_get':
+        this.handlers.onPluginConfigGet?.(parsed.payload as unknown as { plugin_id: string; config: Record<string, unknown>; config_schema?: unknown })
         break
       case 'market_preview':
         this.handlers.onMarketPreview?.(parsed.payload as Record<string, unknown>)

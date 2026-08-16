@@ -10386,6 +10386,107 @@ class WSHandler:
             await self._send_ack(ws, ok=False, error=str(exc))
 
     # ------------------------------------------------------------------
+    # Plugins handlers (deepseek-harness style)
+    # ------------------------------------------------------------------
+
+    async def _handle_plugin_list(self, ws: Any, data: dict) -> None:
+        result = await self._ensure_office_services().plugin.list()
+        await ws.send_json({"type": "plugin_list", "payload": result.payload})
+
+    async def _handle_plugin_add(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.add(
+                source=data.get("source", ""), enabled=bool(data.get("enabled", True)),
+            )
+            await self._publish_service_result(result)
+            await self._send_service_ack(ws, result)
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_add")
+        except Exception as exc:
+            logger.warning(f"Plugin add failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_remove(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.remove(data.get("plugin_id", ""))
+            await self._publish_service_result(result)
+            await self._send_service_ack(ws, result)
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_remove")
+        except Exception as exc:
+            logger.warning(f"Plugin remove failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_enable(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.enable(data.get("plugin_id", ""))
+            await self._publish_service_result(result)
+            await self._send_service_ack(ws, result)
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_enable")
+        except Exception as exc:
+            logger.warning(f"Plugin enable failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_disable(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.disable(data.get("plugin_id", ""))
+            await self._publish_service_result(result)
+            await self._send_service_ack(ws, result)
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_disable")
+        except Exception as exc:
+            logger.warning(f"Plugin disable failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_config_get(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.get_config(data.get("plugin_id", ""))
+            await ws.send_json({"type": "plugin_config_get", "payload": result.payload})
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_config_get")
+        except Exception as exc:
+            logger.warning(f"Plugin config get failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_config_set(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.set_config(
+                data.get("plugin_id", ""), data.get("config", {}) or {},
+            )
+            await self._publish_service_result(result)
+            await self._send_service_ack(ws, result)
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_config_set")
+        except Exception as exc:
+            logger.warning(f"Plugin config set failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_discover(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.discover(
+                query=str(data.get("query", "") or ""),
+                provider=str(data.get("provider", "github") or "github"),
+            )
+            await ws.send_json({"type": "plugin_discover", "payload": result.payload})
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_discover")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Plugin discover failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_refresh(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.refresh()
+            await self._publish_service_result(result)
+            await self._send_service_ack(ws, result)
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_refresh")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Plugin refresh failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    # ------------------------------------------------------------------
     # Org editing handlers (custom mode)
     # ------------------------------------------------------------------
 
@@ -10560,6 +10661,16 @@ class WSHandler:
         "market_export":       _handle_market_export,
         "market_install":      _handle_market_install,
         "market_uninstall":    _handle_market_uninstall,
+        # Plugins (deepseek-harness style)
+        "plugin_list":         _handle_plugin_list,
+        "plugin_add":          _handle_plugin_add,
+        "plugin_remove":       _handle_plugin_remove,
+        "plugin_enable":       _handle_plugin_enable,
+        "plugin_disable":      _handle_plugin_disable,
+        "plugin_config_get":   _handle_plugin_config_get,
+        "plugin_config_set":   _handle_plugin_config_set,
+        "plugin_discover":     _handle_plugin_discover,
+        "plugin_refresh":      _handle_plugin_refresh,
         # Org config import/export
         "org_config_export":   _handle_org_config_export,
         "org_config_import":   _handle_org_config_import,
