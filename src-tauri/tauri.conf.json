@@ -1,0 +1,163 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "tupai",
+  "version": "1.9.6",
+  "identifier": "ai.tupai.desktop",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "node scripts/build-cua-driver.mjs && pnpm --dir src/web-ui/src/web-ui dev",
+    "beforeBuildCommand": "node scripts/build-cua-driver.mjs --check && pnpm --dir src/web-ui/src/web-ui build"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "create": true,
+        "title": "",
+        "url": "index.html",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "transparent": false,
+        "backgroundColor": "#0a0a12",
+        "decorations": false
+      },
+      {
+        "label": "screen-marker",
+        "create": false,
+        "title": "Screen marker",
+        "url": "index.html#/screen-marker",
+        "width": 800,
+        "height": 600,
+        "decorations": false,
+        "transparent": false,
+        "backgroundColor": "#0a0a12",
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false
+      },
+      {
+        "label": "settings",
+        "create": false,
+        "title": "Settings",
+        "url": "index.html#/settings",
+        "width": 960,
+        "height": 720,
+        "minWidth": 720,
+        "minHeight": 540,
+        "resizable": true
+      },
+      {
+        "label": "floating-window-quick-notes",
+        "create": false,
+        "title": "Quick Notes",
+        "url": "index.html#/floating-window?id=quick-notes",
+        "width": 360,
+        "height": 280,
+        "decorations": false,
+        "transparent": false,
+        "backgroundColor": "#0a0a12",
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": true
+      },
+      {
+        "label": "floating-window-quick-chat",
+        "create": false,
+        "title": "Quick Chat",
+        "url": "index.html#/floating-window?id=quick-chat",
+        "width": 380,
+        "height": 460,
+        "decorations": false,
+        "transparent": false,
+        "backgroundColor": "#0a0a12",
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": true
+      },
+      {
+        "label": "floating-window-working-directory",
+        "create": false,
+        "title": "Working Directory",
+        "url": "index.html#/floating-window?id=working-directory",
+        "width": 480,
+        "height": 420,
+        "decorations": false,
+        "transparent": false,
+        "backgroundColor": "#0a0a12",
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": true
+      },
+      {
+        "label": "floating-window-screen-marker",
+        "create": false,
+        "title": "Screen Marker",
+        "url": "index.html#/floating-window?id=screen-marker",
+        "width": 360,
+        "height": 220,
+        "decorations": false,
+        "transparent": false,
+        "backgroundColor": "#0a0a12",
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' https://kuaiju2c.tuptup.top; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://kuaiju2c.tuptup.top; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:* https://ai.tuptup.top https://kuaiju2c.tuptup.top https: wss:; style-src 'self' 'unsafe-inline' https://kuaiju2c.tuptup.top; img-src 'self' data: blob: https: http: https://kuaiju2c.tuptup.top; font-src 'self' data: https: https://kuaiju2c.tuptup.top; media-src 'self' data: blob: https: https://kuaiju2c.tuptup.top; worker-src 'self' blob: https://kuaiju2c.tuptup.top; frame-src 'self' https://kuaiju2c.tuptup.top; child-src 'self' https://kuaiju2c.tuptup.top; object-src 'self' https://kuaiju2c.tuptup.top; manifest-src 'self' https://kuaiju2c.tuptup.top"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "tupai"
+        ]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "publisher": "Trace Auto",
+    "category": "DeveloperTool",
+    "shortDescription": "Trace Auto - AI-Powered Desktop Workspace",
+    "longDescription": "Trace Auto is an AI-powered desktop workspace integrating a multi-agent Hermes backend, an extensible terminal, notebook, and a self-healing skill engine into a single transparent Tauri shell.",
+    "copyright": "Copyright (c) 2026 Trace Auto",
+    "homepage": "https://trace-auto.example.com",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "targets": [
+      "nsis",
+      "dmg",
+      "app"
+    ],
+    "externalBin": [
+      "binaries/cua-driver"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser",
+        "compression": "lzma",
+        "installerHooks": "installer/installer.nsh",
+        "startMenuFolder": "Trace Auto"
+      }
+    }
+  }
+}

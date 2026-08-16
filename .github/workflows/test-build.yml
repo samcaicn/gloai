@@ -1,0 +1,37 @@
+﻿name: Test Build
+
+on:
+  push:
+    branches: [v2, v2-branch]
+  workflow_dispatch:
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Echo test
+        run: echo "Test windows job running"
+      - name: Check rust
+        run: rustc --version
+      - name: Check pnpm
+        run: pnpm --version
+
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Echo test
+        run: echo "Test macos job running"
+      - name: Check rust
+        run: rustc --version
+      - name: Check pnpm
+        run: pnpm --version

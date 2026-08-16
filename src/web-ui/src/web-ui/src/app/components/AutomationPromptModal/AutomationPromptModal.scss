@@ -1,0 +1,249 @@
+/**
+ * AutomationPromptModal styles.
+ * Mirrors the NewProjectDialog conventions: BEM block
+ * `automation-prompt-modal`, CSS custom properties from the
+ * component-library token layer, small/zinc-tinted surfaces.
+ */
+@use '../../../component-library/styles/tokens.scss' as *;
+@use '../../../component-library/styles/btn-primary-tokens.scss' as btn-primary;
+
+// ==================== Container ====================
+
+.automation-prompt-modal {
+  display: flex;
+  flex-direction: column;
+  width: 560px;
+  max-width: 100%;
+
+  // ==================== Hero ====================
+
+  &__hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 24px 20px;
+    text-align: center;
+  }
+
+  &__icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    animation: automation-prompt-icon-enter 0.4s ease-out;
+
+    svg {
+      color: var(--color-primary);
+    }
+  }
+
+  @keyframes automation-prompt-icon-enter {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  &__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 6px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__question {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  // ==================== Content ====================
+
+  &__content {
+    padding: 0 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: automation-prompt-field-enter 0.35s ease-out both;
+  }
+
+  @keyframes automation-prompt-field-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // ==================== Choice list ====================
+
+  &__choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &--confirm {
+      flex-direction: row;
+      justify-content: center;
+      gap: 12px;
+    }
+  }
+
+  &__choice-btn {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    white-space: normal;
+  }
+
+  &__multi-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+
+    &:hover {
+      background: var(--element-bg-subtle);
+      border-color: var(--border-base);
+    }
+  }
+
+  &__multi-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  &__multi-label {
+    font-size: 13px;
+    color: var(--color-text-primary);
+    line-height: 1.4;
+  }
+
+  // ==================== Footer ====================
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border-subtle);
+    background: transparent;
+
+    .btn.btn-sm {
+      height: 28px;
+      min-height: 28px;
+      padding: 0 10px;
+      font-size: 11px;
+    }
+  }
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &--cancel {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--color-text-secondary);
+
+      &:hover:not(:disabled) {
+        background: var(--element-bg-subtle);
+        border-color: var(--border-base);
+        color: var(--color-text-primary);
+      }
+    }
+
+    &--skip {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--color-text-muted);
+
+      &:hover:not(:disabled) {
+        background: var(--element-bg-subtle);
+        border-color: var(--border-base);
+        color: var(--color-text-secondary);
+      }
+    }
+
+    &--confirm {
+      @include btn-primary.btn-primary-surface-default;
+      border: 1px solid color-mix(in srgb, var(--color-accent-500) 32%, transparent);
+
+      &:hover:not(:disabled) {
+        @include btn-primary.btn-primary-surface-hover;
+        border-color: color-mix(in srgb, var(--color-accent-500) 42%, transparent);
+      }
+
+      &:active:not(:disabled) {
+        @include btn-primary.btn-primary-surface-active;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+  }
+}
+
+// ==================== Responsive ====================
+
+@media (max-width: 640px) {
+  .automation-prompt-modal {
+    width: 100%;
+
+    &__hero {
+      padding: 8px 16px 16px;
+    }
+
+    &__content {
+      padding: 0 16px 12px;
+    }
+
+    &__choices--confirm {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+}

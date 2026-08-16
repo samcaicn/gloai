@@ -1,0 +1,80 @@
+@use '../../component-library/styles/tokens' as *;
+
+// macOS 辅助功能权限缺失提示 — 设置页面内联样式。
+// 与 WindowsOcrBanner 布局一致, 只在设置页面顶部显示。
+.os-compat-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: var(--color-warning-bg, rgba(250, 204, 21, 0.1));
+  border: 1px solid var(--color-warning-border, rgba(250, 204, 21, 0.3));
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.os-compat-banner__icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.os-compat-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.os-compat-banner__title {
+  font-weight: 600;
+  color: var(--color-warning);
+}
+
+.os-compat-banner__desc {
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.os-compat-banner__btn {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-warning-border);
+  background: var(--color-warning);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    filter: brightness(1.08);
+  }
+
+  &:active {
+    filter: brightness(0.95);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent, #3b82f6);
+    outline-offset: 2px;
+  }
+}
+
+// 窄屏适配
+@media (max-width: 640px) {
+  .os-compat-banner {
+    flex-wrap: wrap;
+  }
+
+  .os-compat-banner__desc {
+    white-space: normal;
+  }
+}

@@ -1,0 +1,81 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs - Frontend
+dist
+dist-ssr
+*.local
+**/dist
+**/dist-ssr
+!src/crates/contracts/product-domains/src/miniapp/builtin/assets/ppt-live/dist/
+!src/crates/contracts/product-domains/src/miniapp/builtin/assets/ppt-live/dist/ui.bundle.js
+
+# Build outputs - Rust/Tauri
+target/
+**/target/
+Cargo.lock
+
+# Monaco Editor - copied from node_modules
+public/monaco-editor/
+src/web-ui/public/monaco-editor/
+
+# Vditor - copied from node_modules
+public/vditor/
+src/web-ui/public/vditor/
+
+# Generated version files
+src/generated/version.ts
+src/generated/version-injection.html
+public/version.json
+src/web-ui/src/generated/version.ts
+src/web-ui/src/generated/version-injection.html
+src/web-ui/public/version.json
+
+# Tauri generated files
+apps/desktop/gen/
+src/apps/desktop/gen/
+src-tauri/gen/
+
+# Updater signing private key (never commit; pubkey is in tauri.conf.json)
+src/apps/desktop/.tauri/*.key
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.claude
+.codebuddy
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# E2E test reports and screenshots
+tests/e2e/reports/
+
+# Eval job artifacts
+.eval/
+Cross.toml
+
+# BitFun sandbox data - auto managed
+.bitfun/
+.cursor
+.cursor/rules/no-cargo.mdc
+.sisyphus/
+.worktrees/
+
+ASSETS_LICENSES.md
+
+external/

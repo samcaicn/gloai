@@ -1,0 +1,290 @@
+/* Model round item styles (BEM). */
+
+.model-round-item {
+  /*
+   * No bottom margin — the inter-round gap is covered by the same line-height rhythm
+   * as inter-item gaps inside a round, so flow text → tool / tool → thinking / cross-
+   * round transitions all read as one continuous, evenly-spaced text column.
+   */
+  margin-bottom: 0;
+  padding: 0 var(--flowchat-content-inline-pad, 3rem);
+  animation: fadeIn 0.4s ease;
+  position: relative;
+
+  // Streaming state
+  &--streaming {
+    opacity: 1;
+    margin-bottom: 0;
+    animation: none;
+
+    .flowchat-flow-item--tool-transition:not(.flowchat-flow-item--tool-completed),
+    .flowchat-flow-item--tool-active {
+      animation: none;
+      will-change: auto;
+    }
+  }
+
+  // Complete state
+  &--complete {
+    opacity: 1;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 var(--flowchat-content-inline-pad-mobile, 1.5rem);
+  }
+}
+
+.model-round-item__header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--flowchat-inline-gap, 0.35rem);
+  padding: 0 var(--flowchat-control-gap, 0.5rem);
+}
+
+// Action button container (bottom-right of last round).
+.model-round-item__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--flowchat-inline-gap, 0.35rem);
+  padding: var(--flowchat-inline-gap, 0.35rem) 0;
+  margin-top: var(--flowchat-inline-gap, 0.35rem);
+}
+
+.model-round-item__meta {
+  display: flex;
+  flex: 1 1 18rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  min-width: 0;
+  margin-right: auto;
+  color: color-mix(
+    in srgb,
+    var(--color-text-secondary, #a0a0a0) 50%,
+    var(--color-text-muted, #999)
+  );
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.model-round-item__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+
+  &:last-child {
+    white-space: normal;
+  }
+}
+
+.model-round-item__meta-label {
+  color: color-mix(
+    in srgb,
+    var(--color-text-secondary, #a0a0a0) 38%,
+    var(--color-text-muted, #999)
+  );
+}
+
+.model-round-item__meta-value {
+  min-width: 0;
+  color: color-mix(
+    in srgb,
+    var(--color-text-secondary, #a0a0a0) 68%,
+    var(--color-text-muted, #999)
+  );
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+}
+
+.model-round-item__history-loader {
+  color: var(--color-text-muted, #999);
+  font-size: 12px;
+  line-height: 18px;
+  padding: var(--flowchat-inline-gap, 0.35rem) 0;
+}
+
+.model-round-item__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--color-text-muted, #999);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 1;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-primary, #fff);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Copy button
+.model-round-item__copy-btn {
+  &.copied {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+  }
+}
+
+.model-round-item__fork-btn {
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+}
+
+// Export image button
+.model-round-item__export-btn {
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// ─── Turn Rating Buttons (👍/👎) ────────────────────────────
+.model-round-item__rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.model-round-item__rate-btn {
+  &.is-positive {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.12);
+
+    &:hover {
+      background: rgba(34, 197, 94, 0.2);
+    }
+  }
+
+  &.is-negative {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ==================== Explore region adjustments ====================
+
+.flowchat-flow-item--tool-transition {
+  overflow: hidden;
+  will-change: opacity, transform, max-height;
+}
+
+.flowchat-flow-item--tool-active {
+  animation: flow-tool-active-enter 180ms ease-out both;
+}
+
+.flowchat-flow-item--tool-completed {
+  animation: flow-tool-completed-exit 1000ms ease-in-out both;
+}
+
+.flowchat-flow-item--tool-settled {
+  opacity: 0;
+  transform: translateY(-4px);
+  max-height: 0;
+  margin-bottom: 0;
+  pointer-events: none;
+}
+
+@keyframes flow-tool-active-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flow-tool-completed-exit {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 96px;
+    margin-bottom: var(--flowchat-flow-item-gap, 0.42rem);
+  }
+  55% {
+    opacity: 0.72;
+    transform: translateY(-1px);
+    max-height: 96px;
+    margin-bottom: var(--flowchat-flow-item-gap, 0.42rem);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+    max-height: 0;
+    margin-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flowchat-flow-item--tool-active,
+  .flowchat-flow-item--tool-completed {
+    animation: none;
+  }
+}
+
+/* Focus highlight for programmatic "jump to marker" navigation. */
+.flowchat-flow-item.flowchat-flow-item--focused {
+  outline: 2px solid var(--border-accent);
+  outline-offset: 2px;
+  border-radius: var(--flowchat-card-radius, 8px);
+  box-shadow: var(--glow-shadow-blue);
+}

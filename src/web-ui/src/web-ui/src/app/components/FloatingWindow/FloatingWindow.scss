@@ -1,0 +1,593 @@
+// FloatingWindow — tupai 赛博朋克霓虹浮窗外壳。
+// 顶部拖拽标题栏 + 右上角关闭按钮 + 内容区，供 recorder / automation /
+// quick-notes / quick-chat 子视图复用。cyan #00ffe0 主色，bg #0a0a12。
+
+.tupai-floating-window {
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a12;
+  color: #00ffe0;
+  font-family: 'Orbitron', 'Rajdhani', 'Segoe UI', sans-serif;
+  user-select: none;
+  border: 1px solid rgba(0, 255, 224, 0.25);
+  box-shadow: inset 0 0 12px rgba(0, 255, 224, 0.12);
+
+  &__titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    flex-shrink: 0;
+    background: rgba(0, 255, 224, 0.06);
+    border-bottom: 1px solid rgba(0, 255, 224, 0.25);
+  }
+
+  &__title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #00ffe0;
+    text-shadow: 0 0 4px rgba(0, 255, 224, 0.45);
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__ctrl-btn {
+    width: 22px;
+    height: 22px;
+    line-height: 1;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: #00ffe0;
+    border: 1px solid rgba(0, 255, 224, 0.45);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      background: rgba(0, 255, 224, 0.15);
+      box-shadow: 0 0 6px rgba(0, 255, 224, 0.4);
+    }
+
+    &:active {
+      background: rgba(0, 255, 224, 0.25);
+    }
+  }
+
+  &__close-btn {
+    width: 22px;
+    height: 22px;
+    line-height: 1;
+    padding: 0;
+    background: transparent;
+    color: #00ffe0;
+    border: 1px solid rgba(0, 255, 224, 0.45);
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      background: rgba(0, 255, 224, 0.15);
+      box-shadow: 0 0 6px rgba(0, 255, 224, 0.4);
+    }
+
+    &:active {
+      background: rgba(0, 255, 224, 0.25);
+    }
+  }
+
+  &__body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+    overflow: auto;
+    min-height: 0;
+  }
+
+  &__action-btn {
+    padding: 8px 12px;
+    background: transparent;
+    color: #00ffe0;
+    border: 1px solid rgba(0, 255, 224, 0.55);
+    border-radius: 4px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: rgba(0, 255, 224, 0.1);
+      box-shadow: 0 0 8px rgba(0, 255, 224, 0.35);
+    }
+
+    &:active:not(:disabled) {
+      background: rgba(0, 255, 224, 0.2);
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+
+  &__textarea {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 80px;
+    box-sizing: border-box;
+    padding: 8px;
+    background: rgba(0, 255, 224, 0.04);
+    color: #d4fff8;
+    border: 1px solid rgba(0, 255, 224, 0.35);
+    border-radius: 4px;
+    font-family: 'Rajdhani', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus {
+      border-color: rgba(0, 255, 224, 0.7);
+      box-shadow: 0 0 6px rgba(0, 255, 224, 0.3);
+    }
+
+    &--notes {
+      flex: 1 1 auto;
+    }
+  }
+
+  &__result {
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    color: #b6ffe9;
+    border: 1px solid rgba(0, 255, 224, 0.25);
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  // 录制工具栏（迷你窗口：240×120）
+  &__recorder {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+    padding: 0;
+  }
+
+  &__recorder-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: rgba(0, 255, 224, 0.85);
+  }
+
+  &__recorder-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4a4a5a;
+    flex-shrink: 0;
+
+    &.is-recording {
+      background: #ff4040;
+      box-shadow: 0 0 6px rgba(255, 64, 64, 0.8);
+      animation: tupai-floating-window-pulse 1.2s ease-in-out infinite;
+    }
+
+    &.is-paused {
+      background: #ffb648;
+      box-shadow: 0 0 4px rgba(255, 182, 72, 0.6);
+    }
+  }
+
+  &__recorder-text {
+    color: rgba(0, 255, 224, 0.85);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // 录制计时器（MM:SS），显示在状态文本右侧
+  &__recorder-elapsed {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: auto;
+    color: rgba(0, 255, 224, 0.55);
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  &__recorder-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  &__action-btn--primary,
+  &__action-btn--stop {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  &__action-btn--stop {
+    border-color: rgba(255, 96, 96, 0.55);
+    color: #ff8a8a;
+    flex: 0 0 auto;
+    min-width: 56px;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 96, 96, 0.1);
+      box-shadow: 0 0 6px rgba(255, 96, 96, 0.35);
+    }
+  }
+
+  &__recorder-step-result {
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    line-height: 1.3;
+    word-break: break-word;
+
+    &.is-ok {
+      background: rgba(72, 255, 128, 0.08);
+      color: #6effa0;
+      border: 1px solid rgba(72, 255, 128, 0.25);
+    }
+
+    &.is-err {
+      background: rgba(255, 96, 96, 0.08);
+      color: #ff8a8a;
+      border: 1px solid rgba(255, 96, 96, 0.25);
+    }
+  }
+
+  // 录制浮窗内的反馈消息（成功/错误）。主窗口被 hide 时 toast 用户看不到，
+  // 浮窗内必须有本地 UI 反馈。
+  &__feedback {
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    word-break: break-word;
+
+    &--err {
+      background: rgba(255, 96, 96, 0.08);
+      color: #ff8a8a;
+      border: 1px solid rgba(255, 96, 96, 0.35);
+    }
+  }
+
+  // 自动化控制
+  &__automation {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  &__action-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  &__action-btn--primary {
+    flex: 1 1 0;
+  }
+
+  // 快捷对话
+  &__chat {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  &__chat-messages {
+    flex: 1 1 auto;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid rgba(0, 255, 224, 0.2);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    min-height: 60px;
+  }
+
+  &__chat-empty {
+    color: rgba(0, 255, 224, 0.45);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  &__chat-msg {
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    max-width: 80%;
+    word-break: break-word;
+
+    &.is-user {
+      align-self: flex-end;
+      background: rgba(0, 255, 224, 0.12);
+      color: #00ffe0;
+      border: 1px solid rgba(0, 255, 224, 0.4);
+    }
+
+    &.is-echo {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.04);
+      color: #b6ffe9;
+      border: 1px solid rgba(0, 255, 224, 0.2);
+    }
+  }
+
+  &__chat-input-row {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  &__chat-input {
+    flex: 1 1 auto;
+    padding: 6px 8px;
+    background: rgba(0, 255, 224, 0.04);
+    color: #d4fff8;
+    border: 1px solid rgba(0, 255, 224, 0.35);
+    border-radius: 4px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus {
+      border-color: rgba(0, 255, 224, 0.7);
+      box-shadow: 0 0 6px rgba(0, 255, 224, 0.3);
+    }
+  }
+}
+
+@keyframes tupai-floating-window-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+}
+
+// 消息气泡入场动画：从透明轻微下移到完全可见
+@keyframes tupai-floating-window-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ─── Chat Floater (悬浮聊天窗) ──────────────────────────────
+.tupai-floating-window__chat-floater {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.tupai-floating-window__chat-floater-hint {
+  font-size: 13px;
+  color: rgba(0, 255, 224, 0.6);
+  line-height: 1.4;
+  padding: 0 4px;
+}
+
+// 消息列表：占满剩余空间，超出滚动。窄浮窗 (240px) 下需要紧凑间距。
+.tupai-floating-window__chat-floater-messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(0, 255, 224, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+
+  // 自定义滚动条：与赛博朋克主题一致
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 224, 0.3);
+    border-radius: 2px;
+
+    &:hover {
+      background: rgba(0, 255, 224, 0.5);
+    }
+  }
+}
+
+// 空状态提示：居中，颜色偏暗
+.tupai-floating-window__chat-floater-empty {
+  margin-top: 24px;
+  padding: 0 8px;
+  color: rgba(0, 255, 224, 0.45);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  user-select: none;
+}
+
+// 消息气泡：窄浮窗下最大宽度放宽到 90%，避免长文本换行过多
+.tupai-floating-window__chat-floater-msg {
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  max-width: 90%;
+  word-break: break-word;
+  white-space: pre-wrap;
+  animation: tupai-floating-window-msg-in 0.18s ease-out;
+
+  &.is-user {
+    align-self: flex-end;
+    background: rgba(0, 255, 224, 0.12);
+    color: #00ffe0;
+    border: 1px solid rgba(0, 255, 224, 0.4);
+    box-shadow: 0 0 4px rgba(0, 255, 224, 0.15);
+  }
+
+  &.is-assistant {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.04);
+    color: #d4fff8;
+    border: 1px solid rgba(0, 255, 224, 0.2);
+  }
+}
+
+.tupai-floating-window__chat-floater-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tupai-floating-window__chat-floater-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  background: rgba(0, 255, 224, 0.05);
+  color: #d4fff8;
+  border: 1px solid rgba(0, 255, 224, 0.35);
+  border-radius: 6px;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus {
+    border-color: rgba(0, 255, 224, 0.7);
+    box-shadow: 0 0 8px rgba(0, 255, 224, 0.3);
+  }
+
+  &::placeholder {
+    color: rgba(0, 255, 224, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ─── Peek（贴边态：小半圆）──────────────────────────────
+// 整个 Tauri 窗口被后端缩到 PEEK_WIDTH(20px) 宽后，前端在这里
+// 渲染一个 20×40 的小半圆。用户把鼠标移过来或者点击，就调
+// fw_restore 让窗口恢复正常尺寸。
+//
+// 视觉上：
+//   * 整个区域是 20×full 像素（hit-area）
+//   * 垂直居中一个小半圆（直径 40px），cyan 渐变 + 发光
+//   * 贴右边时弧面朝左（凸入屏幕），贴左边时弧面朝右
+//   * hover 时半圆亮度提升 + 发光增强
+.tupai-floating-window__peek {
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  position: relative;
+  user-select: none;
+  // 占满整个 webview：webview 本身已经是 PEEK_WIDTH 宽，
+  // 这个根 div 必须填满才能 hover 到。
+
+  // 小半圆 —— peek 的视觉锚点
+  // 宽 = 100%(= PEEK_WIDTH 20px)，高 = 40px(= 2 × 半径)，
+  // border-radius 让左/右侧形成半径 20px 的半圆弧。
+  &::after {
+    content: '';
+    width: 100%;
+    height: 40px;
+    background: linear-gradient(180deg, #00ffe0 0%, #00d4b8 100%);
+    box-shadow: 0 0 8px rgba(0, 255, 224, 0.7);
+    border-radius: 20px 0 0 20px; // 默认贴右边：弧面朝左
+    transition: box-shadow 0.15s ease, background 0.15s ease;
+    pointer-events: none;
+  }
+
+  // 贴左边：弧面朝右（凸入屏幕），直边贴屏幕左缘
+  &--left::after {
+    border-radius: 0 20px 20px 0;
+  }
+
+  &:hover::after,
+  &:focus::after {
+    box-shadow: 0 0 14px rgba(0, 255, 224, 1.0), 0 0 28px rgba(0, 255, 224, 0.5);
+    background: linear-gradient(180deg, #00ffe0 0%, #b4fff0 50%, #00d4b8 100%);
+  }
+
+  &:focus-visible {
+    outline: 1px solid rgba(0, 255, 224, 0.6);
+    outline-offset: -1px;
+  }
+}

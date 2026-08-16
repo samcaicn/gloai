@@ -1,0 +1,867 @@
+// TupaiSkillsScene — tupai 技能市场瀑布流。
+// 深色主题：赛博朋克风格（cyan 主色、霓虹边框）。
+// 浅色主题：中性灰底 + 深色文字 + 蓝紫强调色。
+
+.tupai-skills {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: transparent;
+  color: rgba(0, 255, 224, 0.9);
+  font-family: 'Rajdhani', 'Noto Sans SC', 'Segoe UI', sans-serif;
+  overflow: hidden;
+
+  // ============================================================
+  // 浅色主题覆盖
+  // ============================================================
+  [data-theme-type='light'] & {
+    color: #1e293b;
+
+    &__search-input {
+      background: #ffffff;
+      border-color: rgba(100, 116, 139, 0.25);
+      color: #1e293b;
+      &::placeholder { color: rgba(100, 116, 139, 0.5); }
+      &:focus {
+        border-color: rgba(99, 102, 241, 0.5);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+      }
+    }
+
+    &__send-btn {
+      background: #4f46e5;
+      border-color: #4f46e5;
+      color: #fff;
+      box-shadow: none;
+      &:hover:not(:disabled) { background: #4338ca; box-shadow: none; }
+    }
+
+    &__mode-hint {
+      background: rgba(79, 70, 229, 0.08);
+      border-color: rgba(79, 70, 229, 0.25);
+      color: #4338ca;
+    }
+
+    &__scene-tags,
+    &__filter-tags {
+      background: rgba(241, 243, 248, 0.8);
+      border-color: rgba(100, 116, 139, 0.18);
+      &::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.2); }
+    }
+
+    &__scene-tags-prefix,
+    &__filter-tags-prefix { color: #64748b; }
+
+    &__scene-tag-chip {
+      background: rgba(79, 70, 229, 0.06);
+      border-color: rgba(79, 70, 229, 0.2);
+      color: #4338ca;
+    }
+
+    &__filter-tag-chip {
+      background: rgba(100, 116, 139, 0.05);
+      border-color: rgba(100, 116, 139, 0.2);
+      color: #475569;
+      &:hover {
+        background: rgba(79, 70, 229, 0.08);
+        border-color: rgba(79, 70, 229, 0.35);
+        color: #4338ca;
+      }
+      &.is-active {
+        background: rgba(79, 70, 229, 0.12);
+        border-color: rgba(79, 70, 229, 0.5);
+        color: #4338ca;
+        box-shadow: none;
+      }
+    }
+
+    &__filter-tag-count { color: #94a3b8; }
+
+    &__category-header { border-bottom-color: rgba(100, 116, 139, 0.15); }
+    &__category-name { color: #1e293b; text-shadow: none; }
+    &__category-count {
+      color: #64748b;
+      background: rgba(100, 116, 139, 0.08);
+      border-color: rgba(100, 116, 139, 0.15);
+    }
+    &__category-more { color: #94a3b8; }
+
+    &__main {
+      &::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.2); }
+    }
+
+    &__waterfall-header { color: #64748b; }
+
+    &__skill-card {
+      background: #ffffff;
+      border-color: rgba(100, 116, 139, 0.15);
+      box-shadow: 0 1px 3px rgba(71, 85, 105, 0.06);
+      &:hover {
+        border-color: rgba(79, 70, 229, 0.4);
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
+        background: rgba(79, 70, 229, 0.02);
+      }
+    }
+
+    &__skill-name { color: #1e293b; text-shadow: none; }
+    &__skill-desc { color: #64748b; }
+    &__skill-version {
+      background: rgba(79, 70, 229, 0.08);
+      border-color: rgba(79, 70, 229, 0.2);
+      color: #4338ca;
+    }
+
+    &__skill-badge-auto {
+      background: rgba(217, 119, 6, 0.1);
+      border-color: rgba(217, 119, 6, 0.4);
+      color: #b45309;
+      text-shadow: none;
+    }
+
+    &__skill-card.is-automation {
+      border-color: rgba(217, 119, 6, 0.3);
+      &:hover {
+        border-color: rgba(217, 119, 6, 0.55);
+        box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
+        background: rgba(217, 119, 6, 0.04);
+      }
+    }
+
+    &__skill-card.is-executing {
+      border-color: rgba(217, 119, 6, 0.7);
+      box-shadow: 0 0 12px rgba(217, 119, 6, 0.25);
+      background: rgba(217, 119, 6, 0.06);
+    }
+
+    &__skill-spinner {
+      color: #b45309;
+    }
+
+    &__loadmore {
+      color: #64748b;
+      border-color: rgba(100, 116, 139, 0.2);
+    }
+    &__waterfall-end { color: #94a3b8; }
+
+    &__status { color: #64748b; }
+
+    &__spinner {
+      border-color: rgba(100, 116, 139, 0.2);
+      border-top-color: #4f46e5;
+    }
+    &__spinner-small {
+      border-color: rgba(100, 116, 139, 0.2);
+      border-top-color: #4f46e5;
+    }
+  }
+
+  // ============================================================
+  // 顶部：搜索栏
+  // ============================================================
+  &__search-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  &__search-input {
+    flex: 1;
+    min-width: 0;
+    padding: 9px 14px;
+    background: rgba(20, 20, 30, 0.6);
+    border: 1px solid rgba(0, 255, 224, 0.2);
+    border-radius: 4px;
+    color: #00ffe0;
+    font-family: inherit;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &::placeholder {
+      color: rgba(0, 255, 224, 0.4);
+    }
+
+    &:focus {
+      border-color: rgba(0, 255, 224, 0.6);
+      box-shadow: 0 0 8px rgba(0, 255, 224, 0.25);
+    }
+  }
+
+  &__send-btn {
+    padding: 9px 18px;
+    background: rgba(0, 255, 224, 0.85);
+    border: 1px solid rgba(0, 255, 224, 0.9);
+    border-radius: 4px;
+    color: #0a0a12;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 0 8px rgba(0, 255, 224, 0.3);
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+
+    &:hover:not(:disabled) {
+      background: rgba(0, 255, 224, 1);
+      box-shadow: 0 0 12px rgba(0, 255, 224, 0.55);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  // ---- 对话模式提示 ----
+  &__mode-hint {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    background: rgba(0, 255, 224, 0.08);
+    border: 1px solid rgba(0, 255, 224, 0.3);
+    border-radius: 4px;
+    color: rgba(0, 255, 224, 0.85);
+    font-size: 12px;
+    letter-spacing: 0.6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+  }
+
+  // ---- 场景标签栏 ----
+  &__scene-tags {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(15, 15, 24, 0.5);
+    border: 1px solid rgba(0, 255, 224, 0.2);
+    border-radius: 6px;
+    overflow-x: auto;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 224, 0.25);
+      border-radius: 2px;
+    }
+  }
+
+  &__scene-tags-prefix {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: rgba(0, 255, 224, 0.7);
+  }
+
+  &__scene-tags-list {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  &__scene-tag-chip {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    background: rgba(0, 255, 224, 0.08);
+    border: 1px solid rgba(0, 255, 224, 0.25);
+    border-radius: 3px;
+    color: rgba(0, 255, 224, 0.85);
+    font-size: 12px;
+    letter-spacing: 0.4px;
+  }
+
+  &__scene-tag-icon {
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  &__scene-tag-label {
+    white-space: nowrap;
+  }
+
+  // ---- 分类筛选栏 ----
+  &__filter-tags {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(15, 15, 24, 0.5);
+    border: 1px solid rgba(0, 255, 224, 0.2);
+    border-radius: 6px;
+    overflow-x: auto;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 224, 0.25);
+      border-radius: 2px;
+    }
+  }
+
+  &__filter-tags-prefix {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: rgba(0, 255, 224, 0.7);
+  }
+
+  &__filter-tags-list {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  &__filter-tag-chip {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: rgba(0, 255, 224, 0.06);
+    border: 1px solid rgba(0, 255, 224, 0.2);
+    border-radius: 3px;
+    color: rgba(0, 255, 224, 0.75);
+    font-size: 12px;
+    font-family: inherit;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: rgba(0, 255, 224, 0.12);
+      border-color: rgba(0, 255, 224, 0.4);
+      color: rgba(0, 255, 224, 0.95);
+    }
+
+    &.is-active {
+      background: rgba(0, 255, 224, 0.18);
+      border-color: rgba(0, 255, 224, 0.6);
+      color: #00ffe0;
+      box-shadow: 0 0 8px rgba(0, 255, 224, 0.2);
+    }
+  }
+
+  &__filter-tag-count {
+    font-size: 10px;
+    color: rgba(0, 255, 224, 0.5);
+    margin-left: 2px;
+  }
+
+  // ---- 分类分组区域 ----
+  &__category-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__category-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px 2px;
+    border-bottom: 1px solid rgba(0, 255, 224, 0.12);
+  }
+
+  &__category-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(0, 255, 224, 0.9);
+    letter-spacing: 0.6px;
+    text-shadow: 0 0 8px rgba(0, 255, 224, 0.25);
+  }
+
+  &__category-count {
+    font-size: 11px;
+    color: rgba(0, 255, 224, 0.5);
+    background: rgba(0, 255, 224, 0.08);
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 255, 224, 0.15);
+  }
+
+  &__category-more {
+    text-align: center;
+    padding: 8px;
+    color: rgba(0, 255, 224, 0.45);
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    font-style: italic;
+  }
+
+  // ============================================================
+  // 主体：瀑布流
+  // ============================================================
+  &__main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 224, 0.25);
+      border-radius: 3px;
+    }
+  }
+
+  &__waterfall {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__waterfall-header {
+    font-size: 12px;
+    letter-spacing: 0.6px;
+    color: rgba(0, 255, 224, 0.7);
+    padding: 2px 4px;
+  }
+
+  &__waterfall-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  &__skill-card {
+    position: relative;
+    padding: 14px 14px 12px;
+    background: rgba(20, 20, 30, 0.5);
+    border: 1px solid rgba(0, 255, 224, 0.18);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.1s ease;
+
+    &:hover {
+      border-color: rgba(0, 255, 224, 0.6);
+      box-shadow: 0 0 12px rgba(0, 255, 224, 0.22);
+      background: rgba(0, 255, 224, 0.06);
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+
+  &__skill-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  &__skill-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #00ffe0;
+    letter-spacing: 0.4px;
+    word-break: break-word;
+    text-shadow: 0 0 6px rgba(0, 255, 224, 0.2);
+  }
+
+  &__skill-desc {
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgba(0, 255, 224, 0.65);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__skill-version {
+    padding: 1px 7px;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    border-radius: 3px;
+    background: rgba(0, 255, 224, 0.08);
+    border: 1px solid rgba(0, 255, 224, 0.25);
+    color: rgba(0, 255, 224, 0.8);
+    text-transform: uppercase;
+  }
+
+  // ── 自动化技能 meta 行（version + AUTO badge） ──
+  &__skill-meta {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  // ── AUTO 徽章 ──
+  &__skill-badge-auto {
+    padding: 1px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border-radius: 3px;
+    background: rgba(255, 184, 0, 0.15);
+    border: 1px solid rgba(255, 184, 0, 0.5);
+    color: #ffb800;
+    text-transform: uppercase;
+    text-shadow: 0 0 6px rgba(255, 184, 0, 0.4);
+  }
+
+  // ── 自动化技能卡片高亮 ──
+  &__skill-card.is-automation {
+    border-color: rgba(255, 184, 0, 0.35);
+    &:hover {
+      border-color: rgba(255, 184, 0, 0.7);
+      box-shadow: 0 0 12px rgba(255, 184, 0, 0.25);
+      background: rgba(255, 184, 0, 0.05);
+    }
+  }
+
+  // ── 执行中状态 ──
+  &__skill-card.is-executing {
+    border-color: rgba(255, 184, 0, 0.8);
+    box-shadow: 0 0 14px rgba(255, 184, 0, 0.35);
+    background: rgba(255, 184, 0, 0.08);
+    cursor: progress;
+    pointer-events: none;
+    opacity: 0.92;
+  }
+
+  // ── SVG spinner（lucide Loader2 旋转） ──
+  &__skill-spinner {
+    animation: tupai-skills-spin 1s linear infinite;
+    color: #ffb800;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  // ---- 加载更多 ----
+  &__loadmore {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    color: rgba(0, 255, 224, 0.6);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    border: 1px dashed rgba(0, 255, 224, 0.2);
+    border-radius: 6px;
+  }
+
+  &__waterfall-end {
+    text-align: center;
+    padding: 10px;
+    color: rgba(0, 255, 224, 0.5);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  // ---- 通用状态（加载 / 错误 / 空）----
+  &__status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 160px;
+    padding: 24px 12px;
+    color: rgba(0, 255, 224, 0.6);
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  // ---- Spinner ----
+  &__spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(0, 255, 224, 0.2);
+    border-top-color: #00ffe0;
+    border-radius: 50%;
+    animation: tupai-skills-spin 0.8s linear infinite;
+  }
+
+  &__spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 255, 224, 0.2);
+    border-top-color: #00ffe0;
+    border-radius: 50%;
+    animation: tupai-skills-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes tupai-skills-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ── 技能交互式提示对话框 ──
+.tupai-skills__prompt-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.tupai-skills__prompt-dialog {
+  background: #1a1a2e;
+  border: 1px solid rgba(0, 255, 224, 0.3);
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 380px;
+  max-width: 520px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(0, 255, 224, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  [data-theme-type='light'] & {
+    background: #ffffff;
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 24px rgba(99, 102, 241, 0.08);
+  }
+}
+
+.tupai-skills__prompt-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #00ffe0;
+  font-family: 'Rajdhani', 'Noto Sans SC', sans-serif;
+
+  [data-theme-type='light'] & {
+    color: #1e293b;
+  }
+}
+
+.tupai-skills__prompt-context {
+  font-size: 13px;
+  color: rgba(0, 255, 224, 0.6);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+
+  [data-theme-type='light'] & {
+    color: #64748b;
+  }
+}
+
+.tupai-skills__prompt-input {
+  background: rgba(0, 255, 224, 0.05);
+  border: 1px solid rgba(0, 255, 224, 0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #e0e0e0;
+  font-size: 14px;
+  font-family: 'Rajdhani', 'Noto Sans SC', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: rgba(0, 255, 224, 0.6);
+    box-shadow: 0 0 8px rgba(0, 255, 224, 0.15);
+  }
+
+  [data-theme-type='light'] & {
+    background: #f8fafc;
+    border-color: rgba(100, 116, 139, 0.25);
+    color: #1e293b;
+    &:focus {
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.1);
+    }
+  }
+}
+
+.tupai-skills__prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.tupai-skills__prompt-cancel,
+.tupai-skills__prompt-submit {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  font-family: 'Rajdhani', 'Noto Sans SC', sans-serif;
+}
+
+.tupai-skills__prompt-cancel {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  &:hover { background: rgba(255, 255, 255, 0.05); }
+
+  [data-theme-type='light'] & {
+    border-color: rgba(100, 116, 139, 0.25);
+    color: #64748b;
+    &:hover { background: #f1f5f9; }
+  }
+}
+
+.tupai-skills__prompt-submit {
+  background: rgba(0, 255, 224, 0.15);
+  border: 1px solid rgba(0, 255, 224, 0.4);
+  color: #00ffe0;
+  &:hover:not(:disabled) {
+    background: rgba(0, 255, 224, 0.25);
+    box-shadow: 0 0 10px rgba(0, 255, 224, 0.2);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  [data-theme-type='light'] & {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #6366f1;
+    &:hover:not(:disabled) {
+      background: rgba(99, 102, 241, 0.2);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
+    }
+  }
+}
+
+.tupai-skills__prompt-upload-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tupai-skills__prompt-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 255, 224, 0.2);
+  background: rgba(0, 255, 224, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    border-color: rgba(0, 255, 224, 0.5);
+    background: rgba(0, 255, 224, 0.15);
+    color: #00ffe0;
+    box-shadow: 0 0 8px rgba(0, 255, 224, 0.2);
+  }
+
+  [data-theme-type='light'] & {
+    border-color: rgba(99, 102, 241, 0.25);
+    background: rgba(99, 102, 241, 0.05);
+    color: #64748b;
+
+    &:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
+    }
+  }
+}
+
+.tupai-skills__prompt-file-previews,
+.tupai-skills__prompt-image-previews {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.tupai-skills__prompt-file-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  word-break: break-all;
+}
+
+.tupai-skills__prompt-file-size {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tupai-skills__prompt-file-remove,
+.tupai-skills__prompt-image-remove {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+  }
+}
+
+.tupai-skills__prompt-image-preview {
+  position: relative;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.tupai-skills__prompt-image-thumbnail {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.tupai-skills__prompt-image-remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+}

@@ -1,0 +1,192 @@
+/**
+ * tupai 赛博朋克霓虹主题覆盖
+ * 
+ * 覆盖 BitFun 默认设计 token，注入赛博朋克霓虹色板。
+ * 通过 CSS 变量覆盖，不修改 BitFun 原始 tokens.scss。
+ * 切换机制：<html data-scheme="cyberpunk-cyan">
+ */
+
+/* ==================== 赛博朋克 Cyan（默认） ==================== */
+:root,
+[data-scheme="cyberpunk-cyan"] {
+  /* 背景系统 - 深色霓虹底 */
+  --color-bg-primary: #0a0a12;
+  --color-bg-secondary: #0d0d1a;
+  --color-bg-tertiary: #0a0a12;
+  --color-bg-quaternary: #12121f;
+  --color-bg-elevated: #0d0d1a;
+  --color-bg-workbench: #0a0a12;
+  --color-bg-scene: #0d0d1a;
+  --color-bg-flowchat: var(--color-bg-scene);
+  --color-bg-tooltip: rgba(0, 240, 255, 0.08);
+
+  /* 文字系统 - 冷白偏蓝 */
+  --color-text-primary: #e0e0ff;
+  --color-text-secondary: #b0b0d0;
+  --color-text-muted: #7a7aaa;
+  --color-text-disabled: #444466;
+
+  /* 中性表面 - 半透明青色 */
+  --element-bg-subtle: rgba(0, 240, 255, 0.03);
+  --element-bg-soft: rgba(0, 240, 255, 0.05);
+  --element-bg-base: rgba(0, 240, 255, 0.08);
+  --element-bg-medium: rgba(0, 240, 255, 0.12);
+  --element-bg-strong: rgba(0, 240, 255, 0.16);
+  --element-bg-elevated: rgba(0, 240, 255, 0.20);
+
+  /* 强调色 - 青色霓虹 */
+  --color-accent-50: rgba(0, 240, 255, 0.04);
+  --color-accent-100: rgba(0, 240, 255, 0.08);
+  --color-accent-200: rgba(0, 240, 255, 0.15);
+  --color-accent-300: rgba(0, 240, 255, 0.25);
+  --color-accent-400: rgba(0, 240, 255, 0.4);
+  --color-accent-500: #00f0ff;
+  --color-accent-600: #00d4e0;
+  --color-accent-700: rgba(0, 212, 224, 0.8);
+  --color-accent-800: rgba(0, 212, 224, 0.9);
+
+  /* 紫色系统 - 品红霓虹 */
+  --color-purple-50: rgba(255, 0, 222, 0.04);
+  --color-purple-100: rgba(255, 0, 222, 0.08);
+  --color-purple-200: rgba(255, 0, 222, 0.15);
+  --color-purple-300: rgba(255, 0, 222, 0.25);
+  --color-purple-400: rgba(255, 0, 222, 0.4);
+  --color-purple-500: #ff00de;
+  --color-purple-600: #e000c0;
+  --color-purple-700: rgba(224, 0, 192, 0.8);
+  --color-purple-800: rgba(224, 0, 192, 0.9);
+
+  /* 语义色 */
+  --color-success: #39ff14;
+  --color-success-bg: rgba(57, 255, 20, 0.1);
+  --color-success-border: rgba(57, 255, 20, 0.3);
+
+  --color-warning: #ffe600;
+  --color-warning-bg: rgba(255, 230, 0, 0.1);
+  --color-warning-border: rgba(255, 230, 0, 0.3);
+
+  --color-error: #ff003c;
+  --color-error-bg: rgba(255, 0, 60, 0.1);
+  --color-error-border: rgba(255, 0, 60, 0.3);
+
+  --color-info: #00f0ff;
+  --color-info-bg: rgba(0, 240, 255, 0.1);
+  --color-info-border: rgba(0, 240, 255, 0.3);
+
+  /* 边框 - 青色半透明 */
+  --border-base: rgba(0, 240, 255, 0.12);
+  --border-bright: rgba(0, 240, 255, 0.35);
+
+  /* 字体 - 赛博朋克字体栈 */
+  --font-family-sans: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  --font-family-mono: 'Share Tech Mono', 'Courier New', monospace;
+
+  /* 霓虹发光效果 */
+  --glow-cyan: 0 0 8px rgba(0, 240, 255, 0.4), 0 0 20px rgba(0, 240, 255, 0.15);
+  --glow-magenta: 0 0 8px rgba(255, 0, 222, 0.4), 0 0 20px rgba(255, 0, 222, 0.15);
+}
+
+/* ==================== 赛博朋克 Magenta ==================== */
+[data-scheme="cyberpunk-magenta"] {
+  --color-accent-500: #ff00de;
+  --color-accent-600: #e000c0;
+  --color-accent-400: rgba(255, 0, 222, 0.4);
+  --color-accent-300: rgba(255, 0, 222, 0.25);
+  --color-bg-tooltip: rgba(255, 0, 222, 0.08);
+  --element-bg-base: rgba(255, 0, 222, 0.08);
+  --element-bg-medium: rgba(255, 0, 222, 0.12);
+  --border-base: rgba(255, 0, 222, 0.12);
+  --border-bright: rgba(255, 0, 222, 0.35);
+}
+
+/* ==================== 赛博朋克 Green ==================== */
+[data-scheme="cyberpunk-green"] {
+  --color-accent-500: #39ff14;
+  --color-accent-600: #2ee010;
+  --color-accent-400: rgba(57, 255, 20, 0.4);
+  --color-accent-300: rgba(57, 255, 20, 0.25);
+  --color-bg-tooltip: rgba(57, 255, 20, 0.08);
+  --element-bg-base: rgba(57, 255, 20, 0.08);
+  --element-bg-medium: rgba(57, 255, 20, 0.12);
+  --border-base: rgba(57, 255, 20, 0.12);
+  --border-bright: rgba(57, 255, 20, 0.35);
+}
+
+/* ==================== 赛博朋克 Yellow ==================== */
+[data-scheme="cyberpunk-yellow"] {
+  --color-accent-500: #ffe600;
+  --color-accent-600: #e0cc00;
+  --color-accent-400: rgba(255, 230, 0, 0.4);
+  --color-accent-300: rgba(255, 230, 0, 0.25);
+  --color-bg-tooltip: rgba(255, 230, 0, 0.08);
+  --element-bg-base: rgba(255, 230, 0, 0.08);
+  --element-bg-medium: rgba(255, 230, 0, 0.12);
+  --border-base: rgba(255, 230, 0, 0.12);
+  --border-bright: rgba(255, 230, 0, 0.35);
+}
+
+/* ==================== 赛博朋克 Red ==================== */
+[data-scheme="cyberpunk-red"] {
+  --color-accent-500: #ff003c;
+  --color-accent-600: #e00030;
+  --color-accent-400: rgba(255, 0, 60, 0.4);
+  --color-accent-300: rgba(255, 0, 60, 0.25);
+  --color-bg-tooltip: rgba(255, 0, 60, 0.08);
+  --element-bg-base: rgba(255, 0, 60, 0.08);
+  --element-bg-medium: rgba(255, 0, 60, 0.12);
+  --border-base: rgba(255, 0, 60, 0.12);
+  --border-bright: rgba(255, 0, 60, 0.35);
+}
+
+/* ==================== BitFun 原生深色（备选） ==================== */
+[data-scheme="bitfun-dark"] {
+  --color-bg-primary: #121214;
+  --color-bg-secondary: #18181a;
+  --color-text-primary: #e8e8e8;
+  --color-accent-500: #60a5fa;
+  --color-accent-600: #3b82f6;
+  --element-bg-base: rgba(255, 255, 255, 0.095);
+  --border-base: rgba(255, 255, 255, 0.1);
+}
+
+/* ==================== BitFun 原生浅色（备选） ==================== */
+[data-scheme="bitfun-light"] {
+  --color-bg-primary: #f3f3f5;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f3f3f5;
+  --color-bg-quaternary: #e8e8ea;
+  --color-bg-elevated: #ffffff;
+  --color-bg-scene: #f8f8fa;
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #333344;
+  --color-text-muted: #666677;
+  --element-bg-subtle: rgba(0, 0, 0, 0.03);
+  --element-bg-soft: rgba(0, 0, 0, 0.05);
+  --element-bg-base: rgba(0, 0, 0, 0.08);
+  --element-bg-medium: rgba(0, 0, 0, 0.12);
+  --border-base: rgba(0, 0, 0, 0.1);
+  --border-bright: rgba(0, 0, 0, 0.25);
+  --color-bg-tooltip: rgba(0, 0, 0, 0.85);
+}
+
+/* ==================== 霓虹发光增强 ==================== */
+/* 强调色按钮发光 */
+[data-scheme^="cyberpunk"] {
+  button:has(.lucide-react),
+  a[class*="accent"],
+  [class*="primary"]:not([class*="primary-bg"]) {
+    text-shadow: var(--glow-cyan);
+  }
+  
+  /* 选中态发光 */
+  ::selection {
+    background: var(--color-accent-300);
+    text-shadow: var(--glow-cyan);
+  }
+  
+  /* 焦点发光 */
+  :focus-visible {
+    outline: 2px solid var(--color-accent-400);
+    box-shadow: 0 0 8px var(--color-accent-300);
+  }
+}

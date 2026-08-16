@@ -1,0 +1,478 @@
+ 
+
+import {
+  IConfigManager,
+  ConfigValidationResult,
+  ConfigExport,
+} from '../types';
+import { configAPI } from '@/infrastructure/api/service-api/ConfigAPI';
+import { i18nService } from '@/infrastructure/i18n';
+import { createLogger } from '@/shared/utils/logger';
+import { extractProviderSegmentFromBaseUrl, matchProviderCatalogItemByBaseUrl, normalizeProviderBaseUrl } from './providerCatalog';
+
+const log = createLogger('ConfigManager');
+const PROVIDER_INSTANCE_METADATA_KEY = 'provider_instance_id';
+
+function legacyProviderInstanceId(seed: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `provider_legacy_${(hash >>> 0).toString(36)}`;
+}
+
+function readProviderInstanceId(model: Record<string, unknown>): string | undefined {
+  const metadata = model.metadata;
+  if (!metadata || typeof metadata !== 'object') {
+    return undefined;
+  }
+
+  const value = (metadata as Record<string, unknown>)[PROVIDER_INSTANCE_METADATA_KEY];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function legacyProviderGroupSeed(model: Record<string, unknown>, index: number): string {
+  const baseUrl = typeof model.base_url === 'string' ? model.base_url : '';
+  const normalizedBaseUrl = baseUrl ? normalizeProviderBaseUrl(baseUrl) : '';
+  if (normalizedBaseUrl) {
+    return `base_url:${normalizedBaseUrl}`;
+  }
+
+  const id = typeof model.id === 'string' ? model.id.trim() : '';
+  return id ? `id:${id}` : `index:${index}`;
+}
+
+class ConfigManagerImpl implements IConfigManager {
+  
+  private configCache: Map<string, any> = new Map();
+  private inFlightReads: Map<string, Promise<unknown>> = new Map();
+  private listeners: Set<(path: string, oldValue: any, newValue: any) => void> = new Set();
+  private pathListeners: Map<string, Set<() => void>> = new Map();
+
+  constructor() {
+    log.info('Initializing config manager (proxy mode)');
+  }
+
+  private async migrateLegacyAiModelsIfNeeded(config: unknown): Promise<unknown> {
+    if (!Array.isArray(config)) {
+      return config;
+    }
+
+    let migratedNameCount = 0;
+    let migratedProviderInstanceCount = 0;
+    const migratedModels = config.map((item, index) => {
+      if (!item || typeof item !== 'object') {
+        return item;
+      }
+
+      const model = item as Record<string, unknown>;
+      let nextModel = model;
+      const currentName = typeof model.name === 'string' ? model.name.trim() : '';
+      if (!currentName) {
+        const baseUrl = typeof model.base_url === 'string' ? model.base_url : '';
+        const matchedProvider = matchProviderCatalogItemByBaseUrl(baseUrl);
+        const inferredProviderName = matchedProvider
+          ? i18nService.t(`settings/ai-model:providers.${matchedProvider.id}.name`)
+          : extractProviderSegmentFromBaseUrl(baseUrl);
+
+        if (inferredProviderName) {
+          migratedNameCount += 1;
+          nextModel = {
+            ...nextModel,
+            name: inferredProviderName,
+          };
+        }
+      }
+
+      if (readProviderInstanceId(nextModel)) {
+        return nextModel;
+      }
+
+      const metadata = nextModel.metadata && typeof nextModel.metadata === 'object'
+        ? nextModel.metadata as Record<string, unknown>
+        : {};
+      migratedProviderInstanceCount += 1;
+      return {
+        ...nextModel,
+        metadata: {
+          ...metadata,
+          [PROVIDER_INSTANCE_METADATA_KEY]: legacyProviderInstanceId(
+            legacyProviderGroupSeed(nextModel, index)
+          ),
+        },
+      };
+    });
+
+    if (migratedNameCount === 0 && migratedProviderInstanceCount === 0) {
+      return config;
+    }
+
+    await configAPI.setConfig('ai.models', migratedModels);
+    log.info('Migrated legacy ai.models', {
+      migratedNameCount,
+      migratedProviderInstanceCount,
+    });
+    return migratedModels;
+  }
+
+  
+
+  private getReadKey(path?: string): string {
+    return path ?? '<root>';
+  }
+
+  private async readConfig<T = any>(path?: string): Promise<T> {
+    const config = await configAPI.getConfig(path);
+    const resolvedConfig = path === 'ai.models'
+      ? await this.migrateLegacyAiModelsIfNeeded(config)
+      : config;
+
+    if (path) {
+      this.configCache.set(path, resolvedConfig);
+    }
+
+    return resolvedConfig as T;
+  }
+
+  private async readConfigs(paths: string[]): Promise<Record<string, unknown>> {
+    const configs = await configAPI.getConfigs(paths);
+    const resolvedConfigs: Record<string, unknown> = {};
+
+    for (const path of paths) {
+      const resolvedConfig = path === 'ai.models'
+        ? await this.migrateLegacyAiModelsIfNeeded(configs[path])
+        : configs[path];
+
+      this.configCache.set(path, resolvedConfig);
+      resolvedConfigs[path] = resolvedConfig;
+    }
+
+    return resolvedConfigs;
+  }
+
+  private getFallbackConfigValue(path?: string): { hasFallback: boolean; value: unknown } {
+    if (path === 'ai.models') {
+      return { hasFallback: true, value: [] };
+    }
+    if (path === 'ai.agent_models' || path === 'ai.func_agent_models' || path === 'ai.default_models') {
+      return { hasFallback: true, value: {} };
+    }
+    return { hasFallback: false, value: undefined };
+  }
+
+  private fallbackOrThrow(path: string | undefined, error: unknown): unknown {
+    const fallback = this.getFallbackConfigValue(path);
+    if (fallback.hasFallback) {
+      return fallback.value;
+    }
+    throw error;
+  }
+
+  async getConfig<T = any>(path?: string): Promise<T> {
+    try {
+      
+      if (path && this.configCache.has(path)) {
+        return this.configCache.get(path);
+      }
+
+      const readKey = this.getReadKey(path);
+      const existingRead = this.inFlightReads.get(readKey);
+      if (existingRead) {
+        return (await existingRead) as T;
+      }
+
+      const readPromise = this.readConfig<T>(path);
+      this.inFlightReads.set(readKey, readPromise);
+      try {
+        return await readPromise;
+      } finally {
+        if (this.inFlightReads.get(readKey) === readPromise) {
+          this.inFlightReads.delete(readKey);
+        }
+      }
+    } catch (error) {
+      // offline 错误（非 Tauri 环境）静默处理，不输出 error 日志
+      const isOffline = error instanceof Error && error.message.includes('offline');
+      if (!isOffline) {
+        log.error('Failed to get config', { path, error });
+      }
+      // Return defaults to avoid breaking the UI.
+      if (path === 'ai.models') {
+        return [] as T;
+      }
+      if (path === 'ai.agent_models') {
+        return {} as T;
+      }
+      if (path === 'ai.func_agent_models') {
+        return {} as T;
+      }
+      if (path === 'ai.default_models') {
+        return {} as T;
+      }
+      throw error;
+    }
+  }
+
+  async getConfigs(paths: string[]): Promise<Record<string, unknown>> {
+    const uniquePaths = Array.from(new Set(paths));
+    const results: Record<string, unknown> = {};
+    const pendingReads: Array<[string, Promise<unknown>]> = [];
+    const missingPaths: string[] = [];
+
+    for (const path of uniquePaths) {
+      if (this.configCache.has(path)) {
+        results[path] = this.configCache.get(path);
+        continue;
+      }
+
+      const existingRead = this.inFlightReads.get(this.getReadKey(path));
+      if (existingRead) {
+        pendingReads.push([path, existingRead]);
+        continue;
+      }
+
+      missingPaths.push(path);
+    }
+
+    const batchRead = missingPaths.length > 0
+      ? this.readConfigs(missingPaths)
+      : undefined;
+    const perPathReads = new Map<string, Promise<unknown>>();
+    if (batchRead) {
+      for (const path of missingPaths) {
+        const perPathRead = batchRead.then(configs => configs[path]);
+        void perPathRead.catch(() => undefined);
+        perPathReads.set(path, perPathRead);
+        this.inFlightReads.set(this.getReadKey(path), perPathRead);
+      }
+    }
+
+    let fatalError: unknown;
+
+    try {
+      for (const [path, pendingRead] of pendingReads) {
+        try {
+          results[path] = await pendingRead;
+        } catch (error) {
+          try {
+            results[path] = this.fallbackOrThrow(path, error);
+          } catch (fallbackError) {
+            fatalError ??= fallbackError;
+          }
+        }
+      }
+
+      if (batchRead) {
+        try {
+          const batchResults = await batchRead;
+          Object.assign(results, batchResults);
+        } catch (error) {
+          // offline 错误（非 Tauri 环境）静默处理
+          const isOffline = error instanceof Error && error.message.includes('offline');
+          if (!isOffline) {
+            log.error('Failed to get configs', { paths: missingPaths, error });
+          }
+          for (const path of missingPaths) {
+            try {
+              results[path] = this.fallbackOrThrow(path, error);
+            } catch (fallbackError) {
+              fatalError ??= fallbackError;
+            }
+          }
+        }
+      }
+    } finally {
+      for (const [path, perPathRead] of perPathReads) {
+        const readKey = this.getReadKey(path);
+        if (this.inFlightReads.get(readKey) === perPathRead) {
+          this.inFlightReads.delete(readKey);
+        }
+      }
+    }
+
+    if (fatalError) {
+      throw fatalError;
+    }
+
+    return results;
+  }
+
+  async setConfig<T = any>(path: string, value: T): Promise<void> {
+    try {
+      const oldValue = this.configCache.get(path);
+      this.inFlightReads.delete(this.getReadKey(path));
+      
+      
+      await configAPI.setConfig(path, value);
+      
+      
+      this.configCache.set(path, value);
+      
+      
+      this.notifyConfigChange(path, oldValue, value);
+    } catch (error) {
+      log.error('Failed to set config', { path, error });
+      throw error;
+    }
+  }
+
+  async resetConfig(path?: string): Promise<void> {
+    try {
+      await configAPI.resetConfig(path);
+      
+      
+      if (path) {
+        this.configCache.delete(path);
+        this.inFlightReads.delete(this.getReadKey(path));
+      } else {
+        this.configCache.clear();
+        this.inFlightReads.clear();
+      }
+    } catch (error) {
+      log.error('Failed to reset config', { path, error });
+      throw error;
+    }
+  }
+
+  async validateConfig(): Promise<ConfigValidationResult> {
+    try {
+      
+      const { invoke } = await import('@tauri-apps/api/core');
+      const result = await invoke<ConfigValidationResult>('validate_config');
+      return result;
+    } catch (error) {
+      log.error('Failed to validate config', error);
+      return {
+        valid: false,
+        errors: [{ path: 'root', message: i18nService.t('errors:config.validationError'), code: 'VALIDATION_ERROR' }],
+        warnings: []
+      };
+    }
+  }
+
+  async exportConfig(): Promise<ConfigExport> {
+    try {
+      const exportData = await configAPI.exportConfig();
+      return exportData;
+    } catch (error) {
+      log.error('Failed to export config', error);
+      throw error;
+    }
+  }
+
+  async importConfig(config: ConfigExport): Promise<void> {
+    try {
+      await configAPI.importConfig(config);
+      
+      
+      this.configCache.clear();
+    } catch (error) {
+      log.error('Failed to import config', error);
+      throw error;
+    }
+  }
+
+  
+
+  onConfigChange(callback: (path: string, oldValue: any, newValue: any) => void): () => void {
+    this.listeners.add(callback);
+    return () => {
+      this.listeners.delete(callback);
+    };
+  }
+
+  async refreshCache(): Promise<void> {
+    try {
+      this.configCache.clear();
+      this.inFlightReads.clear();
+    } catch (error) {
+      log.error('Failed to refresh cache', error);
+    }
+  }
+
+  clearCache(): void {
+    this.configCache.clear();
+    this.inFlightReads.clear();
+  }
+
+  
+  private notifyConfigChange(path: string, oldValue: any, newValue: any): void {
+    this.listeners.forEach(callback => {
+      try {
+        callback(path, oldValue, newValue);
+      } catch (error) {
+        log.error('Config change notification failed', { path, error });
+      }
+    });
+    
+    
+    const pathCallbacks = this.pathListeners.get(path);
+    if (pathCallbacks) {
+      pathCallbacks.forEach(callback => {
+        try {
+          callback();
+        } catch (error) {
+          log.error('Path listener notification failed', { path, error });
+        }
+      });
+    }
+  }
+
+  
+  
+  
+  get<T = any>(path: string, defaultValue?: T): T {
+    if (this.configCache.has(path)) {
+      const value = this.configCache.get(path);
+      return value !== undefined ? value : (defaultValue as T);
+    }
+    return defaultValue as T;
+  }
+  
+  
+  async set<T = any>(path: string, value: T): Promise<void> {
+    return this.setConfig(path, value);
+  }
+  
+  
+  watch(path: string, callback: () => void): () => void {
+    if (!this.pathListeners.has(path)) {
+      this.pathListeners.set(path, new Set());
+    }
+    
+    const pathCallbacks = this.pathListeners.get(path)!;
+    pathCallbacks.add(callback);
+    
+    
+    return () => {
+      pathCallbacks.delete(callback);
+      if (pathCallbacks.size === 0) {
+        this.pathListeners.delete(path);
+      }
+    };
+  }
+  
+  
+  async reload(): Promise<void> {
+    try {
+      this.configCache.clear();
+      this.inFlightReads.clear();
+
+      await this.readConfigs([
+        'ai.models',
+        'ai.agent_models',
+        'ai.func_agent_models',
+        'ai.default_models',
+      ]);
+    } catch (error) {
+      log.error('Failed to reload config', error);
+      throw error;
+    }
+  }
+}
+
+
+export const configManager = new ConfigManagerImpl();
+
+export default configManager;

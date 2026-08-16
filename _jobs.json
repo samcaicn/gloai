@@ -1,0 +1,494 @@
+﻿[
+    {
+        "id":  88136231864,
+        "run_id":  29665930775,
+        "workflow_name":  "Build",
+        "head_branch":  "v2",
+        "run_url":  "https://api.github.com/repos/samcaicn/gloai/actions/runs/29665930775",
+        "run_attempt":  1,
+        "node_id":  "CR_kwDORUloKM8AAAAUhVQruA",
+        "head_sha":  "36567c343b38cd8c105d0a731891f7692bb6ee2d",
+        "url":  "https://api.github.com/repos/samcaicn/gloai/actions/jobs/88136231864",
+        "html_url":  "https://github.com/samcaicn/gloai/actions/runs/29665930775/job/88136231864",
+        "status":  "completed",
+        "conclusion":  "success",
+        "created_at":  "2026-07-18T23:50:49Z",
+        "started_at":  "2026-07-18T23:50:53Z",
+        "completed_at":  "2026-07-18T23:58:59Z",
+        "name":  "build-macos (x86_64-apple-darwin, macos-latest, x64)",
+        "steps":  [
+                      {
+                          "name":  "Set up job",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  1,
+                          "started_at":  "2026-07-18T23:50:54Z",
+                          "completed_at":  "2026-07-18T23:50:56Z"
+                      },
+                      {
+                          "name":  "Run actions/checkout@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  2,
+                          "started_at":  "2026-07-18T23:50:56Z",
+                          "completed_at":  "2026-07-18T23:51:01Z"
+                      },
+                      {
+                          "name":  "Run pnpm/action-setup@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  3,
+                          "started_at":  "2026-07-18T23:51:01Z",
+                          "completed_at":  "2026-07-18T23:51:02Z"
+                      },
+                      {
+                          "name":  "Run actions/setup-node@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  4,
+                          "started_at":  "2026-07-18T23:51:02Z",
+                          "completed_at":  "2026-07-18T23:51:06Z"
+                      },
+                      {
+                          "name":  "Run dtolnay/rust-toolchain@stable",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  5,
+                          "started_at":  "2026-07-18T23:51:06Z",
+                          "completed_at":  "2026-07-18T23:51:16Z"
+                      },
+                      {
+                          "name":  "Run Swatinem/rust-cache@v2",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  6,
+                          "started_at":  "2026-07-18T23:51:16Z",
+                          "completed_at":  "2026-07-18T23:51:47Z"
+                      },
+                      {
+                          "name":  "Run pnpm install --frozen-lockfile",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  7,
+                          "started_at":  "2026-07-18T23:51:47Z",
+                          "completed_at":  "2026-07-18T23:51:48Z"
+                      },
+                      {
+                          "name":  "Run pnpm --dir src/web-ui install --frozen-lockfile",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  8,
+                          "started_at":  "2026-07-18T23:51:48Z",
+                          "completed_at":  "2026-07-18T23:52:03Z"
+                      },
+                      {
+                          "name":  "Build frontend",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  9,
+                          "started_at":  "2026-07-18T23:52:03Z",
+                          "completed_at":  "2026-07-18T23:52:37Z"
+                      },
+                      {
+                          "name":  "Build (CI)",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  10,
+                          "started_at":  "2026-07-18T23:52:37Z",
+                          "completed_at":  "2026-07-18T23:58:50Z"
+                      },
+                      {
+                          "name":  "Upload DMG (CI)",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  11,
+                          "started_at":  "2026-07-18T23:58:50Z",
+                          "completed_at":  "2026-07-18T23:58:54Z"
+                      },
+                      {
+                          "name":  "Build and release",
+                          "status":  "completed",
+                          "conclusion":  "skipped",
+                          "number":  12,
+                          "started_at":  "2026-07-18T23:58:54Z",
+                          "completed_at":  "2026-07-18T23:58:54Z"
+                      },
+                      {
+                          "name":  "Post Run Swatinem/rust-cache@v2",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  21,
+                          "started_at":  "2026-07-18T23:58:54Z",
+                          "completed_at":  "2026-07-18T23:58:54Z"
+                      },
+                      {
+                          "name":  "Post Run actions/setup-node@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  22,
+                          "started_at":  "2026-07-18T23:58:54Z",
+                          "completed_at":  "2026-07-18T23:58:54Z"
+                      },
+                      {
+                          "name":  "Post Run pnpm/action-setup@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  23,
+                          "started_at":  "2026-07-18T23:58:54Z",
+                          "completed_at":  "2026-07-18T23:58:54Z"
+                      },
+                      {
+                          "name":  "Post Run actions/checkout@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  24,
+                          "started_at":  "2026-07-18T23:58:54Z",
+                          "completed_at":  "2026-07-18T23:58:55Z"
+                      },
+                      {
+                          "name":  "Complete job",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  25,
+                          "started_at":  "2026-07-18T23:58:55Z",
+                          "completed_at":  "2026-07-18T23:58:55Z"
+                      }
+                  ],
+        "check_run_url":  "https://api.github.com/repos/samcaicn/gloai/check-runs/88136231864",
+        "labels":  [
+                       "macos-latest"
+                   ],
+        "runner_id":  1000006224,
+        "runner_name":  "GitHub Actions 1000006224",
+        "runner_group_id":  0,
+        "runner_group_name":  "GitHub Actions"
+    },
+    {
+        "id":  88136231873,
+        "run_id":  29665930775,
+        "workflow_name":  "Build",
+        "head_branch":  "v2",
+        "run_url":  "https://api.github.com/repos/samcaicn/gloai/actions/runs/29665930775",
+        "run_attempt":  1,
+        "node_id":  "CR_kwDORUloKM8AAAAUhVQrwQ",
+        "head_sha":  "36567c343b38cd8c105d0a731891f7692bb6ee2d",
+        "url":  "https://api.github.com/repos/samcaicn/gloai/actions/jobs/88136231873",
+        "html_url":  "https://github.com/samcaicn/gloai/actions/runs/29665930775/job/88136231873",
+        "status":  "completed",
+        "conclusion":  "success",
+        "created_at":  "2026-07-18T23:50:49Z",
+        "started_at":  "2026-07-18T23:50:52Z",
+        "completed_at":  "2026-07-18T23:59:15Z",
+        "name":  "build-macos (aarch64-apple-darwin, macos-latest, aarch64)",
+        "steps":  [
+                      {
+                          "name":  "Set up job",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  1,
+                          "started_at":  "2026-07-18T23:50:53Z",
+                          "completed_at":  "2026-07-18T23:50:57Z"
+                      },
+                      {
+                          "name":  "Run actions/checkout@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  2,
+                          "started_at":  "2026-07-18T23:50:57Z",
+                          "completed_at":  "2026-07-18T23:51:02Z"
+                      },
+                      {
+                          "name":  "Run pnpm/action-setup@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  3,
+                          "started_at":  "2026-07-18T23:51:02Z",
+                          "completed_at":  "2026-07-18T23:51:03Z"
+                      },
+                      {
+                          "name":  "Run actions/setup-node@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  4,
+                          "started_at":  "2026-07-18T23:51:03Z",
+                          "completed_at":  "2026-07-18T23:51:08Z"
+                      },
+                      {
+                          "name":  "Run dtolnay/rust-toolchain@stable",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  5,
+                          "started_at":  "2026-07-18T23:51:08Z",
+                          "completed_at":  "2026-07-18T23:51:16Z"
+                      },
+                      {
+                          "name":  "Run Swatinem/rust-cache@v2",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  6,
+                          "started_at":  "2026-07-18T23:51:16Z",
+                          "completed_at":  "2026-07-18T23:51:36Z"
+                      },
+                      {
+                          "name":  "Run pnpm install --frozen-lockfile",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  7,
+                          "started_at":  "2026-07-18T23:51:36Z",
+                          "completed_at":  "2026-07-18T23:51:38Z"
+                      },
+                      {
+                          "name":  "Run pnpm --dir src/web-ui install --frozen-lockfile",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  8,
+                          "started_at":  "2026-07-18T23:51:38Z",
+                          "completed_at":  "2026-07-18T23:51:50Z"
+                      },
+                      {
+                          "name":  "Build frontend",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  9,
+                          "started_at":  "2026-07-18T23:51:50Z",
+                          "completed_at":  "2026-07-18T23:52:22Z"
+                      },
+                      {
+                          "name":  "Build (CI)",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  10,
+                          "started_at":  "2026-07-18T23:52:22Z",
+                          "completed_at":  "2026-07-18T23:59:06Z"
+                      },
+                      {
+                          "name":  "Upload DMG (CI)",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  11,
+                          "started_at":  "2026-07-18T23:59:06Z",
+                          "completed_at":  "2026-07-18T23:59:10Z"
+                      },
+                      {
+                          "name":  "Build and release",
+                          "status":  "completed",
+                          "conclusion":  "skipped",
+                          "number":  12,
+                          "started_at":  "2026-07-18T23:59:10Z",
+                          "completed_at":  "2026-07-18T23:59:10Z"
+                      },
+                      {
+                          "name":  "Post Run Swatinem/rust-cache@v2",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  21,
+                          "started_at":  "2026-07-18T23:59:10Z",
+                          "completed_at":  "2026-07-18T23:59:11Z"
+                      },
+                      {
+                          "name":  "Post Run actions/setup-node@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  22,
+                          "started_at":  "2026-07-18T23:59:11Z",
+                          "completed_at":  "2026-07-18T23:59:11Z"
+                      },
+                      {
+                          "name":  "Post Run pnpm/action-setup@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  23,
+                          "started_at":  "2026-07-18T23:59:11Z",
+                          "completed_at":  "2026-07-18T23:59:11Z"
+                      },
+                      {
+                          "name":  "Post Run actions/checkout@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  24,
+                          "started_at":  "2026-07-18T23:59:11Z",
+                          "completed_at":  "2026-07-18T23:59:12Z"
+                      },
+                      {
+                          "name":  "Complete job",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  25,
+                          "started_at":  "2026-07-18T23:59:12Z",
+                          "completed_at":  "2026-07-18T23:59:12Z"
+                      }
+                  ],
+        "check_run_url":  "https://api.github.com/repos/samcaicn/gloai/check-runs/88136231873",
+        "labels":  [
+                       "macos-latest"
+                   ],
+        "runner_id":  1000006225,
+        "runner_name":  "GitHub Actions 1000006225",
+        "runner_group_id":  0,
+        "runner_group_name":  "GitHub Actions"
+    },
+    {
+        "id":  88136231876,
+        "run_id":  29665930775,
+        "workflow_name":  "Build",
+        "head_branch":  "v2",
+        "run_url":  "https://api.github.com/repos/samcaicn/gloai/actions/runs/29665930775",
+        "run_attempt":  1,
+        "node_id":  "CR_kwDORUloKM8AAAAUhVQrxA",
+        "head_sha":  "36567c343b38cd8c105d0a731891f7692bb6ee2d",
+        "url":  "https://api.github.com/repos/samcaicn/gloai/actions/jobs/88136231876",
+        "html_url":  "https://github.com/samcaicn/gloai/actions/runs/29665930775/job/88136231876",
+        "status":  "completed",
+        "conclusion":  "failure",
+        "created_at":  "2026-07-18T23:50:49Z",
+        "started_at":  "2026-07-18T23:50:53Z",
+        "completed_at":  "2026-07-19T00:03:06Z",
+        "name":  "build-windows",
+        "steps":  [
+                      {
+                          "name":  "Set up job",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  1,
+                          "started_at":  "2026-07-18T23:50:53Z",
+                          "completed_at":  "2026-07-18T23:50:58Z"
+                      },
+                      {
+                          "name":  "Run actions/checkout@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  2,
+                          "started_at":  "2026-07-18T23:50:58Z",
+                          "completed_at":  "2026-07-18T23:51:08Z"
+                      },
+                      {
+                          "name":  "Run pnpm/action-setup@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  3,
+                          "started_at":  "2026-07-18T23:51:08Z",
+                          "completed_at":  "2026-07-18T23:51:14Z"
+                      },
+                      {
+                          "name":  "Run actions/setup-node@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  4,
+                          "started_at":  "2026-07-18T23:51:14Z",
+                          "completed_at":  "2026-07-18T23:51:25Z"
+                      },
+                      {
+                          "name":  "Run dtolnay/rust-toolchain@stable",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  5,
+                          "started_at":  "2026-07-18T23:51:25Z",
+                          "completed_at":  "2026-07-18T23:51:49Z"
+                      },
+                      {
+                          "name":  "Run Swatinem/rust-cache@v2",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  6,
+                          "started_at":  "2026-07-18T23:51:49Z",
+                          "completed_at":  "2026-07-18T23:52:31Z"
+                      },
+                      {
+                          "name":  "Run pnpm install --frozen-lockfile",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  7,
+                          "started_at":  "2026-07-18T23:52:31Z",
+                          "completed_at":  "2026-07-18T23:52:44Z"
+                      },
+                      {
+                          "name":  "Run pnpm --dir src/web-ui install --frozen-lockfile",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  8,
+                          "started_at":  "2026-07-18T23:52:44Z",
+                          "completed_at":  "2026-07-18T23:52:56Z"
+                      },
+                      {
+                          "name":  "Build frontend",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  9,
+                          "started_at":  "2026-07-18T23:52:56Z",
+                          "completed_at":  "2026-07-18T23:53:34Z"
+                      },
+                      {
+                          "name":  "Build (CI)",
+                          "status":  "completed",
+                          "conclusion":  "failure",
+                          "number":  10,
+                          "started_at":  "2026-07-18T23:53:34Z",
+                          "completed_at":  "2026-07-19T00:03:00Z"
+                      },
+                      {
+                          "name":  "Upload NSIS installer (CI)",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  11,
+                          "started_at":  "2026-07-19T00:03:00Z",
+                          "completed_at":  "2026-07-19T00:03:01Z"
+                      },
+                      {
+                          "name":  "Build and release",
+                          "status":  "completed",
+                          "conclusion":  "skipped",
+                          "number":  12,
+                          "started_at":  "2026-07-19T00:03:01Z",
+                          "completed_at":  "2026-07-19T00:03:01Z"
+                      },
+                      {
+                          "name":  "Post Run Swatinem/rust-cache@v2",
+                          "status":  "completed",
+                          "conclusion":  "skipped",
+                          "number":  21,
+                          "started_at":  "2026-07-19T00:03:01Z",
+                          "completed_at":  "2026-07-19T00:03:01Z"
+                      },
+                      {
+                          "name":  "Post Run actions/setup-node@v4",
+                          "status":  "completed",
+                          "conclusion":  "skipped",
+                          "number":  22,
+                          "started_at":  "2026-07-19T00:03:01Z",
+                          "completed_at":  "2026-07-19T00:03:01Z"
+                      },
+                      {
+                          "name":  "Post Run pnpm/action-setup@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  23,
+                          "started_at":  "2026-07-19T00:03:01Z",
+                          "completed_at":  "2026-07-19T00:03:01Z"
+                      },
+                      {
+                          "name":  "Post Run actions/checkout@v4",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  24,
+                          "started_at":  "2026-07-19T00:03:01Z",
+                          "completed_at":  "2026-07-19T00:03:04Z"
+                      },
+                      {
+                          "name":  "Complete job",
+                          "status":  "completed",
+                          "conclusion":  "success",
+                          "number":  25,
+                          "started_at":  "2026-07-19T00:03:04Z",
+                          "completed_at":  "2026-07-19T00:03:04Z"
+                      }
+                  ],
+        "check_run_url":  "https://api.github.com/repos/samcaicn/gloai/check-runs/88136231876",
+        "labels":  [
+                       "windows-latest"
+                   ],
+        "runner_id":  1000006226,
+        "runner_name":  "GitHub Actions 1000006226",
+        "runner_group_id":  0,
+        "runner_group_name":  "GitHub Actions"
+    }
+]

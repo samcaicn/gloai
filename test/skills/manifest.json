@@ -1,0 +1,82 @@
+{
+  "skill_set": "tupauto-skills",
+  "version": "1.0.0",
+  "description": "全部技能集 — 从 test/skills 加载到内存执行，不硬编码",
+  "skills": [
+    {
+      "id": "trace-auto",
+      "name": "Trace Auto",
+      "version": "5.0.0",
+      "file": "trace-auto.js",
+      "description": "Trae IDE 自动化全部功能：驱动循环(start/stop/status) + CDP检测(ensure_cdp/targets) + 页面读取(read_state/wait_idle) + 页面操作(click/type_and_send) + 条件回复(set_conditions/check_and_reply)",
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "驱动循环: start|stop|status|run_steps | CDP检测: ensure_cdp|find_exe|scan_ports|targets|check_page | 页面读取: read_state|wait_idle|detect_stuck|reset_stuck|read_input|count_turns|check_running | 页面操作: click_button|click_action_buttons|click_send|click_stop|type_input|type_and_send|verify_input|clear_input|send_input | 条件回复: set_conditions|get_conditions|check_and_reply|generate_followup|summarize_conditions|clear_conditions|check_only"
+        },
+        "goal": { "type": "string", "description": "[start/generate_followup] 任务目标" },
+        "maxRounds": { "type": "number", "description": "[start] 最大轮次（默认50）" },
+        "idleTimeoutSec": { "type": "number", "description": "[start] 等待超时（默认60s）" },
+        "conditions": { "type": "array", "description": "[set_conditions/summarize_conditions] 条件列表" },
+        "buttonText": { "type": "string", "description": "[click_button] 按钮文本" },
+        "text": { "type": "string", "description": "[type_input/type_and_send] 输入文本" },
+        "aiText": { "type": "string", "description": "[check_and_reply/check_only/generate_followup] AI回复文本(不传则自动读取)" },
+        "keyword": { "type": "string", "description": "[check_page] 页面关键词(默认trae)" },
+        "timeoutSec": { "type": "number", "description": "[wait_idle] 超时秒数(默认60)" },
+        "threshold": { "type": "number", "description": "[detect_stuck] 卡住阈值(默认3)" },
+        "waitAfterMs": { "type": "number", "description": "[type_and_send/check_and_reply] 发送后等待ms(默认8000)" },
+        "skipSummarize": { "type": "boolean", "description": "[set_conditions] 跳过LLM精炼" },
+        "selectors": { "type": "object", "description": "自定义CSS选择器(可选)" },
+        "steps": { "type": "array", "description": "[run_steps] 步骤列表" }
+      }
+    },
+    {
+      "id": "wechat-publisher",
+      "name": "公众号文章技能",
+      "version": "3.0.0",
+      "file": "wechat-publisher.js",
+      "description": "交互式对话配置→7种写作框架→全网热点监测→风格学习→质量检查→去AI化→one-click发布。品牌词+关键词+话题输入即可。",
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "setup=配置 | profile=查看配置 | write=撰写 | monitor=监测 | publish=发布 | auto=全自动 | status=状态 | learn=风格学习 | check=质量检查 | deai=去AI化 | upload=上传市场",
+          "enum": ["setup", "profile", "write", "monitor", "publish", "auto", "status", "learn", "check", "deai", "upload"]
+        },
+        "topic": { "type": "string", "description": "文章话题（write动作）" },
+        "content": { "type": "string", "description": "文章内容（check/deai动作）" },
+        "skipConfirm": { "type": "boolean", "description": "跳过确认步骤" }
+      }
+    },
+    {
+      "id": "xiaohongshu-publisher",
+      "name": "小红书文案技能",
+      "version": "1.0.0",
+      "file": "xiaohongshu-publisher.js",
+      "description": "全网热点监测→小红书文案撰写→配图→发布到微信公众号草稿箱备份。输入品牌词+目标关键词+监测间隔+输出间隔。",
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "monitor=启动监测 | status=查状态 | stop=停止",
+          "enum": ["monitor", "status", "stop"]
+        },
+        "brandKeywords": { "type": "string", "description": "自有业务品牌词，多个用逗号分隔" },
+        "targetKeywords": { "type": "string", "description": "监测目标关键词，多个用逗号分隔" },
+        "monitorInterval": { "type": "number", "description": "监测间隔（分钟，默认 120）" },
+        "outputInterval": { "type": "number", "description": "输出间隔（分钟，默认 1440）" }
+      }
+    },
+    {
+      "id": "kuaiju-viewer",
+      "name": "快剧",
+      "version": "1.0.0",
+      "file": "kuaiju-viewer.js",
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "open",
+          "enum": ["open"]
+        }
+      }
+    }
+  ]
+}

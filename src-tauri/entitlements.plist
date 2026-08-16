@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS Entitlements for tupAI / SafeOPC desktop app.
+
+  Referenced from tauri.safeopc.conf.json `bundle.macOS.entitlements`.
+  Without these entitlements, Hardened Runtime
+  would block the features the app depends on:
+
+    * disable-library-validation — terminator / uiautomation / duckdb / iroh
+      pull in native dylibs that are not ad-hoc signed by the same team ID.
+      Hardened Runtime's library validation would refuse to load them.
+    * allow-unsigned-executable-memory — reqwest + rustls + duckdb's C++ JIT
+      allocate writable+executable memory for JIT'd code paths.
+    * allow-jit — same justification; some libs (e.g. duckdb's vectorised
+      query engine) emit JIT'd code.
+    * network.client + network.server — 安全 P2P (QUIC/UDP), reqwest
+      outbound HTTPS, and the embedded Hermes gateway (axum on 127.0.0.1).
+    * automation.apple-events — AppleScript automation for IM bridges
+      (Feishu / Lark / WeChat Work) when the user opts in.
+    * device.audio-input — reserved for future voice-input skill; currently
+      unused but kept enabled so we don't have to re-sign when it ships.
+    * files.user-selected.read-write — Tauri file dialog / drag-and-drop
+      into the notebook / chat attachment flow.
+    * files.downloads.read-write — saving model files / exported skill
+      packages to ~/Downloads.
+
+  signingIdentity is set to `${APPLE_SIGNING_IDENTITY}` in the Tauri configs;
+  when the env var is unset (local dev builds), Tauri skips signing and the
+  app runs as an unsigned bundle. CI sets APPLE_SIGNING_IDENTITY to a real
+  Developer ID Application certificate for distribution outside the App Store.
+-->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+
+  <key>com.apple.security.cs.disable-executable-page-protection</key>
+  <true/>
+
+  <key>com.apple.security.network.client</key>
+  <true/>
+
+  <key>com.apple.security.network.server</key>
+  <true/>
+
+  <key>com.apple.security.automation.apple-events</key>
+  <true/>
+
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+
+  <key>com.apple.security.files.user-selected.read-write</key>
+  <true/>
+
+  <key>com.apple.security.files.downloads.read-write</key>
+  <true/>
+</dict>
+</plist>

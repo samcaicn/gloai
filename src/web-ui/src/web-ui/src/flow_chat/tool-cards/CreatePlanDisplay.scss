@@ -1,0 +1,431 @@
+/**
+ * Styles for the CreatePlan tool card.
+ * Plan file info card layout.
+ */
+@use './_tool-card-common.scss';
+
+.create-plan-display {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-flowchat);
+  border: 1px solid var(--border-base);
+  border-radius: 8px;
+  margin: var(--flowchat-card-gap, 0.45rem) 0;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+
+  &:hover {
+    border-color: var(--border-medium);
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.2),
+      0 2px 8px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transform: translateY(-1px);
+  }
+
+  &--loading {
+    padding: var(--flowchat-card-pad-y, 0.625rem) var(--flowchat-card-pad-x, 0.75rem);
+    /* Same chrome as the filled card when params are not ready yet (streaming start). */
+    border: 1px solid var(--border-base);
+    border-radius: 8px;
+    background: var(--color-bg-flowchat);
+    box-sizing: border-box;
+
+    .create-plan-header {
+      justify-content: flex-start;
+      gap: var(--flowchat-inline-gap, 0.35rem);
+      color: var(--tool-card-text-muted);
+      font-size: var(--tool-card-action-font-size, var(--flowchat-font-size-sm));
+      border-bottom: none;
+    }
+  }
+
+  &--loading-shimmer .create-plan-header--loading-shimmer {
+    min-height: 20px;
+  }
+
+  .create-plan-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--flowchat-inline-gap, 0.35rem);
+    padding: var(--flowchat-card-pad-y, 0.625rem) var(--flowchat-card-pad-x, 0.75rem);
+    background: linear-gradient(
+      90deg,
+      rgba(245, 158, 11, 0.07) 0%,
+      rgba(245, 158, 11, 0.04) 50%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+    border-bottom: 1px solid var(--border-base);
+
+    .create-plan-header-main {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+      color: inherit;
+      text-align: left;
+
+      &--clickable {
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      &:disabled {
+        cursor: default;
+      }
+    }
+
+    .create-plan-header-main--clickable {
+      cursor: pointer;
+
+      &:hover {
+        .file-name {
+          color: var(--tool-card-text-primary);
+        }
+      }
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: var(--flowchat-inline-gap, 0.35rem);
+    }
+
+    .file-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border-radius: 4px;
+      color: #f59e0b;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .file-name {
+      font-size: var(--flowchat-font-size-xs);
+      font-family: var(--tool-card-font-mono);
+      color: var(--tool-card-text-secondary);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .create-plan-header-folder-btn-wrapper {
+      display: inline-flex;
+      flex-shrink: 0;
+    }
+
+    .create-plan-header-folder-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--tool-card-text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover:not(:disabled) {
+        border-color: rgba(245, 158, 11, 0.35);
+        background: rgba(245, 158, 11, 0.07);
+        color: #f59e0b;
+      }
+
+      &:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+    }
+
+    &--loading-shimmer {
+      .file-name {
+        animation: tool-card-text-fade 1.6s ease-in-out infinite;
+      }
+    }
+  }
+
+  .create-plan-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--flowchat-card-gap, 0.45rem);
+    padding: var(--flowchat-card-pad-y, 0.625rem) var(--flowchat-card-pad-x, 0.75rem);
+
+    .plan-content-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .plan-title {
+      margin: 0 0 var(--flowchat-inline-gap, 0.35rem) 0;
+      font-size: var(--flowchat-font-size-base);
+      font-weight: 600;
+      color: var(--tool-card-text-primary);
+      line-height: var(--flowchat-support-line-height, 1.45);
+    }
+
+    .plan-overview {
+      margin: 0;
+      font-size: var(--tool-card-action-font-size, var(--flowchat-font-size-sm));
+      color: var(--tool-card-text-secondary);
+      line-height: var(--flowchat-support-line-height, 1.45);
+    }
+
+    .todos-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      align-self: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--tool-card-text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      svg {
+        width: 22px;
+        height: 22px;
+      }
+
+      &:hover {
+        border-color: rgba(245, 158, 11, 0.35);
+        background: rgba(245, 158, 11, 0.07);
+        color: #f59e0b;
+      }
+    }
+  }
+
+  .create-plan-todos {
+    border-top: 1px solid var(--border-base);
+    padding: var(--flowchat-card-pad-y, 0.625rem) var(--flowchat-card-pad-x, 0.75rem);
+
+    .todos-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--flowchat-inline-gap, 0.35rem);
+      max-height: 200px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--flowchat-inline-gap, 0.35rem);
+      padding: 5px 0;
+      transition: background 0.15s ease;
+      border-radius: 4px;
+      margin: 0 -4px;
+      padding-left: 4px;
+      padding-right: 4px;
+
+      .todo-icon {
+        flex-shrink: 0;
+        margin-top: 0.15em;
+        width: 12px;
+        height: 12px;
+
+        &--pending {
+          color: var(--tool-card-text-muted);
+          opacity: 0.5;
+        }
+
+        &--in-progress {
+          color: var(--color-info);
+        }
+
+        &--completed {
+          color: var(--color-success);
+        }
+
+        &--cancelled {
+          color: var(--color-error);
+          opacity: 0.6;
+        }
+      }
+
+      .todo-content {
+        font-size: var(--tool-card-action-font-size, var(--flowchat-font-size-sm));
+        line-height: var(--flowchat-support-line-height, 1.45);
+        color: var(--tool-card-text-secondary);
+      }
+
+      &.status-pending {
+        .todo-content {
+          color: var(--tool-card-text-secondary);
+        }
+      }
+
+      &.status-in_progress {
+        background: rgba(59, 130, 246, 0.08);
+        
+        .todo-content {
+          color: var(--tool-card-text-primary);
+          font-weight: 500;
+        }
+      }
+
+      &.status-completed {
+        .todo-content {
+          text-decoration: line-through;
+          color: var(--tool-card-text-muted);
+          opacity: 0.6;
+        }
+      }
+
+      &.status-cancelled {
+        opacity: 0.5;
+        
+        .todo-content {
+          text-decoration: line-through;
+          color: var(--tool-card-text-muted);
+        }
+      }
+    }
+  }
+
+  /* Plan params still streaming: footer actions read as disabled / grayed. */
+  &--plan-generating {
+    .create-plan-footer {
+      background: color-mix(in srgb, var(--color-bg-flowchat) 92%, var(--tool-card-text-muted));
+
+      .build-btn:disabled {
+        opacity: 1;
+        cursor: not-allowed;
+        color: var(--tool-card-text-muted);
+        background: color-mix(in srgb, var(--element-bg-soft, rgba(255, 255, 255, 0.06)) 80%, transparent);
+        border: 1px solid var(--border-base);
+        box-shadow: none;
+
+        &:hover {
+          background: color-mix(in srgb, var(--element-bg-soft, rgba(255, 255, 255, 0.06)) 80%, transparent);
+          box-shadow: none;
+        }
+
+        svg {
+          color: var(--tool-card-text-muted);
+        }
+      }
+    }
+  }
+
+  .create-plan-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--flowchat-card-pad-y, 0.625rem) var(--flowchat-card-pad-x, 0.75rem);
+    border-top: 1px solid var(--border-base);
+    background: rgba(255, 255, 255, 0.02);
+
+    &--generating-only {
+      justify-content: flex-end;
+    }
+
+    .view-plan-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--flowchat-inline-gap, 0.35rem);
+      padding: var(--flowchat-control-pad-y, 0.35rem) var(--flowchat-control-pad-x, 0.75rem);
+      font-size: var(--tool-card-action-font-size, var(--flowchat-font-size-sm));
+      font-weight: 500;
+      color: var(--tool-card-text-secondary);
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover:not(:disabled) {
+        color: var(--tool-card-text-primary);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+    }
+
+    .build-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--flowchat-inline-gap, 0.35rem);
+      padding: var(--flowchat-control-pad-y, 0.35rem) var(--flowchat-card-pad-x, 0.75rem);
+      font-size: var(--tool-card-action-font-size, var(--flowchat-font-size-sm));
+      font-weight: 500;
+      color: #fff;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      &:disabled {
+        opacity: 0.7;
+        cursor: default;
+      }
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      // Building state keeps the orange styling.
+      &--building {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      }
+
+      // Built state uses the success green styling.
+      &--built {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        
+        &:hover {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+  }
+}
+
+@keyframes tool-card-text-fade {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}

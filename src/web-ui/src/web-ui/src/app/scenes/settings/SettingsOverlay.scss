@@ -1,0 +1,100 @@
+/**
+ * SettingsOverlay styles.
+ *
+ * Modal 本体由 component-library 提供，这里只负责浮层内部 nav/scene 的
+ * 左右分栏与滚动行为，以及为可拖拽/可调整大小的浮层设定默认尺寸。
+ */
+
+@use '../../../component-library/styles/tokens.scss' as *;
+
+// ── 默认尺寸 ─────────────────────────────────────────────
+// overlayClassName="bitfun-settings-overlay-host" 加在 .modal-overlay 上，
+// 通过它作为 scope 控制 .modal--xlarge 的默认尺寸。打开后可拖拽/拉伸。
+.bitfun-settings-overlay-host {
+  .modal--xlarge {
+    width: min(720px, 100%);
+    max-width: min(720px, 100%);
+    height: min(60vh, 600px);
+    max-height: calc(100vh - 48px);
+  }
+
+  // 让 .modal__content 不带默认 padding，左右分栏直接撑满
+  .modal__content.bitfun-settings-overlay__content {
+    padding: 0;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+// ── 浮层内部布局 ───────────────────────────────────────────
+.bitfun-settings-overlay {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  overflow: hidden;
+
+  // ── 左侧导航 ────────────────────────────────────────────
+  &__nav {
+    flex: 0 0 220px;
+    width: 220px;
+    min-width: 0;
+    height: 100%;
+    border-right: 1px solid var(--border-subtle);
+    background: var(--color-bg-secondary);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    // SettingsNav 内部已有滚动条；这里确保高度撑满
+    .bitfun-settings-nav {
+      height: 100%;
+    }
+  }
+
+  // ── 右侧内容 ────────────────────────────────────────────
+  &__scene {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow: auto;
+    background: var(--color-bg-primary);
+
+    .bitfun-settings-scene {
+      height: 100%;
+    }
+  }
+
+  // ── 标题栏右侧的「自动保存」提示 ─────────────────────────
+  &__autosave-hint {
+    font-size: var(--font-size-xs, 11px);
+    color: var(--color-text-muted);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    padding-left: $size-gap-2;
+  }
+}
+
+// 窄屏回退：把左侧导航折叠成顶部条状（保留可用性，不强行隐藏）
+@media (max-width: 720px) {
+  .bitfun-settings-overlay {
+    flex-direction: column;
+    height: 100%;
+
+    &__nav {
+      flex: 0 0 auto;
+      width: 100%;
+      height: 140px;
+      border-right: none;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    &__scene {
+      flex: 1;
+    }
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "personalizationPage": {
+    "title": "Personalization",
+    "subtitle": "Auto session title and Agent companion"
+  },
+  "permissionsPage": {
+    "title": "Permission management",
+    "subtitle": "Accelerated workspace search, tool execution, Computer use, browser control, and debug mode"
+  },
+  "features": {
+    "sessionTitle": {
+      "title": "Auto Session Title",
+      "subtitle": "AI automatically generates concise titles for new conversations",
+      "warning": "Session title will use first 20 characters of user message"
+    },
+    "agentCompanion": {
+      "title": "Agent companion",
+      "subtitle": "Control where the companion appears.",
+      "enable": "Show Agent companion",
+      "displayModeLabel": "Display location",
+      "displayModeDescription": "Show the companion inside the input, or as a floating desktop pet outside the app.",
+      "displayInput": "Inside input",
+      "displayInputDesc": "Show it when the chat input is collapsed.",
+      "displayDesktop": "Floating desktop pet",
+      "displayDesktopDesc": "Show a borderless always-on-top mini window outside the app. Drag to move it.",
+      "petLabel": "Companion appearance",
+      "petDescription": "Choose a preset, or import a Petdex zip downloaded from petdex.crafter.run.",
+      "petPlaceholder": "Choose companion appearance",
+      "groupPreset": "Presets",
+      "groupImported": "Imported",
+      "import": "Import",
+      "importing": "Importing",
+      "importHint": "Download an appearance zip from https://petdex.crafter.run/zh, then import it here.",
+      "importDialogTitle": "Choose Petdex appearance zip",
+      "importFailed": "Failed to import Agent companion appearance",
+      "delete": "Remove imported appearance",
+      "deleteConfirmTitle": "Remove appearance",
+      "deleteConfirmBody": "Delete this imported companion from your device? This cannot be undone.",
+      "deleteSuccess": "Imported appearance removed",
+      "deleteFailed": "Failed to remove imported appearance",
+      "refresh": "Refresh appearances"
+    },
+    "workspaceSearch": {
+      "title": "Accelerated workspace search",
+      "subtitle": "Use flashgrep-backed indexed search for local workspaces. When off, the application falls back to legacy search.",
+      "enable": "Enable accelerated workspace search"
+    }
+  },
+  "toolExecution": {
+    "sectionTitle": "Tool execution behavior",
+    "sectionDescription": "Confirmation and timeout settings when tools run in a session."
+  },
+  "computerUse": {
+    "sectionTitle": "Computer use (desktop)",
+    "sectionDescription": "In the desktop app, the assistant can capture the screen and control the mouse and keyboard; requires a multimodal model for vision.",
+    "enable": "Enable Computer use",
+    "enableDesc": "When off, the ComputerUse tool stays disabled in every session mode.",
+    "accessibility": "Accessibility",
+    "accessibilityDesc": "",
+    "screenCapture": "Screen recording",
+    "screenCaptureDesc": "",
+    "granted": "Granted",
+    "notGranted": "Not granted",
+    "openSettings": "Setting",
+    "refreshStatus": "Refresh status",
+    "desktopOnly": "Computer use settings are only available in the desktop app.",
+    "platformNote": "Note",
+    "driverStatus": "CUA driver",
+    "driverStatusDesc": "The desktop automation driver (cua-driver) that performs mouse/keyboard actions.",
+    "driverReady": "Ready",
+    "driverNotConnected": "Not connected",
+    "driverMissing": "Driver binary not found",
+    "driverUnknown": "Unknown",
+    "driverTools": "tools"
+  },
+  "browserControl": {
+    "sectionTitle": "Browser control",
+    "sectionDescription": "Choose a browser and start CDP control.",
+    "desktopOnly": "Browser control is only available in the desktop app.",
+    "preferredBrowser": "Browser",
+    "preferredBrowserDesc": "Choose which browser the application controls through CDP. Default follows the system default browser.",
+    "notInstalled": "not installed",
+    "status": "Connection",
+    "statusDesc": "",
+    "notConnected": "Not connected",
+    "refreshStatus": "Refresh status",
+    "connect": "Connect",
+    "connectSuccess": "Connected to {{browser}}",
+    "connectFailed": "Failed to connect to browser",
+    "restartSuccess": "Restarted {{browser}} with debug mode enabled",
+    "restartFailed": "Failed to restart browser with debug mode enabled",
+    "restartModal": {
+      "title": "Enable browser debug mode",
+      "description": "{{browser}} is already running and the current instance was not started with the debug port enabled. the application needs to restart the browser in debug mode before it can control it.",
+      "warning": "This will close the current browser windows.",
+      "cancel": "Cancel",
+      "confirm": "Restart and enable debug",
+      "restarting": "Restarting..."
+    },
+    "createLauncher": "Create launcher",
+    "createLauncherSuccess": "Launcher created at {{path}}",
+    "createLauncherFailed": "Failed to create launcher",
+    "createLauncherDesc": "Create a browser shortcut with the debug port enabled.",
+    "tabs": "tabs"
+  },
+  "model": {
+    "label": "Model",
+    "primary": "Primary Model",
+    "fast": "Fast Model"
+  },
+  "common": {
+    "enable": "Enable"
+  },
+  "models": {
+    "empty": "No available models. Please add models in \"Models\" first.",
+    "updateSuccess": "{{agentName}} will use {{modelName}}"
+  },
+  "loading": {
+    "text": "Loading configuration..."
+  },
+  "messages": {
+    "saveSuccess": "Settings saved",
+    "saveFailed": "Save failed",
+    "updateFailed": "Update failed"
+  }
+}

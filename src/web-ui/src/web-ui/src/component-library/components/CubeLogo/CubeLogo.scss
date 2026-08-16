@@ -1,0 +1,175 @@
+/**
+ * T-logo styles
+ * Neon "T" mark rendered as inline SVG. Replaces the legacy 3D cube.
+ */
+.cube-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  background: transparent;
+
+  &__particles {
+    position: absolute;
+    inset: -30%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &__particle {
+    position: absolute;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.85), rgba(168, 85, 247, 0.65));
+    box-shadow: 0 0 6px rgba(0, 240, 255, 0.55);
+    animation: cube-logo-particle-float 6s ease-in-out infinite;
+  }
+
+  &__svg {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    animation: cube-logo-breathe 3.2s ease-in-out infinite;
+  }
+
+  &__bg {
+    fill: #0a0a12;
+  }
+
+  &__ring {
+    animation: cube-logo-ring-pulse 4s ease-in-out infinite;
+    transform-origin: 512px 512px;
+    transform-box: fill-box;
+  }
+
+  &__t {
+    transform-origin: 512px 540px;
+    transform-box: fill-box;
+    animation: cube-logo-t-pulse 3.2s ease-in-out infinite;
+  }
+
+  &__t-stroke {
+    animation: cube-logo-stroke-shimmer 4s ease-in-out infinite;
+  }
+
+  &__accent-top {
+    animation: cube-logo-accent-glow 2.4s ease-in-out infinite;
+  }
+
+  &__spine {
+    animation: cube-logo-spine-flow 3.6s linear infinite;
+  }
+
+  /* Compact variant: strip optional ornament, kill heavy animations */
+  &--compact {
+    .cube-logo__svg {
+      animation: cube-logo-breathe 4.2s ease-in-out infinite;
+    }
+    .cube-logo__t {
+      animation: none;
+    }
+    .cube-logo__ring,
+    .cube-logo__accent-top {
+      animation: none;
+    }
+  }
+}
+
+/* Light theme: soften the neon + lighten the bg so it sits on white */
+:root[data-theme-type="light"] {
+  .cube-logo__bg {
+    fill: #f3f3f5;
+  }
+  .cube-logo__particle {
+    background: linear-gradient(135deg, rgba(0, 170, 200, 0.65), rgba(120, 60, 200, 0.5));
+    box-shadow: 0 0 6px rgba(0, 170, 200, 0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cube-logo__svg,
+  .cube-logo__t,
+  .cube-logo__ring,
+  .cube-logo__t-stroke,
+  .cube-logo__accent-top,
+  .cube-logo__spine,
+  .cube-logo__particle {
+    animation: none !important;
+  }
+}
+
+@keyframes cube-logo-breathe {
+  0%, 100% {
+    opacity: 0.92;
+    transform: scale(0.985);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cube-logo-t-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.45));
+    transform: translateY(0);
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(168, 85, 247, 0.7));
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes cube-logo-ring-pulse {
+  0%, 100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes cube-logo-stroke-shimmer {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+@keyframes cube-logo-accent-glow {
+  0%, 100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes cube-logo-spine-flow {
+  0% { opacity: 0.25; }
+  50% { opacity: 0.6; }
+  100% { opacity: 0.25; }
+}
+
+@keyframes cube-logo-particle-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translate(10px, -15px) scale(1.2);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-5px, -25px) scale(0.8);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translate(-15px, -10px) scale(1.1);
+    opacity: 0.5;
+  }
+}

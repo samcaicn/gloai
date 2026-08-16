@@ -1,0 +1,3 @@
+# Sidecar binaries land here at build time.
+# See ./README.md for the naming convention and CI strategy.
+# Real hermes-* binaries are .gitignore'd to keep the repo small.

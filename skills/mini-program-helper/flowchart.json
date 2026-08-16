@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tupautochrome.io/flowchart/v1",
+  "id": "mini-program-helper-flowchart",
+  "skillId": "com.tupautochrome.skills.mini-program-helper",
+  "version": "1.0.0",
+  "name": "小程序开发流程",
+  "entry": "start",
+  "layout": "TB",
+  "style": "business",
+  "recognition": [],
+  "nodes": [
+    { "id": "start", "type": "start", "label": "开始" },
+    { "id": "choose", "type": "decision", "label": "选择服务", "branches": { "create": "project_setup", "guidance": "dev_guidance", "template": "code_template", "publish": "publish_guide", "optimize": "optimize_guide", "troubleshoot": "troubleshoot" } },
+    { "id": "project_setup", "type": "process", "label": "项目搭建" },
+    { "id": "dev_guidance", "type": "process", "label": "开发指导" },
+    { "id": "code_template", "type": "process", "label": "代码模板" },
+    { "id": "publish_guide", "type": "process", "label": "发布流程" },
+    { "id": "optimize_guide", "type": "process", "label": "性能优化" },
+    { "id": "troubleshoot", "type": "process", "label": "问题排查" },
+    { "id": "report", "type": "process", "label": "报告" },
+    { "id": "end", "type": "end", "label": "结束" }
+  ],
+  "connections": [
+    { "from": "start", "to": "choose" },
+    { "from": "choose", "to": "project_setup", "label": "create" },
+    { "from": "choose", "to": "dev_guidance", "label": "guidance" },
+    { "from": "choose", "to": "code_template", "label": "template" },
+    { "from": "choose", "to": "publish_guide", "label": "publish" },
+    { "from": "choose", "to": "optimize_guide", "label": "optimize" },
+    { "from": "choose", "to": "troubleshoot", "label": "troubleshoot" },
+    { "from": "project_setup", "to": "report" },
+    { "from": "dev_guidance", "to": "report" },
+    { "from": "code_template", "to": "report" },
+    { "from": "publish_guide", "to": "report" },
+    { "from": "optimize_guide", "to": "report" },
+    { "from": "troubleshoot", "to": "report" },
+    { "from": "report", "to": "end" }
+  ],
+  "judgments": [],
+  "selectors": {},
+  "variables": { "input": { "type": "object" } },
+  "metadata": { "createdAt": "2026-07-28T00:00:00Z", "updatedAt": "2026-07-28T00:00:00Z", "author": "tupAI" }
+}

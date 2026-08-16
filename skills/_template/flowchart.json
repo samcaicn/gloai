@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tupautochrome.io/flowchart/v1",
+  "id": "template-flowchart",
+  "skillId": "com.tupautochrome.skills.template",
+  "version": "1.0.0",
+  "name": "模板流程图",
+  "entry": "start",
+  "layout": "TB",
+  "style": "business",
+  "recognition": ["cdp", "uia", "ocr", "vlm"],
+  "nodes": [
+    { "id": "start", "type": "start", "label": "开始" },
+    { "id": "act", "type": "process", "label": "执行动作", "recognition": ["cdp"] },
+    { "id": "end", "type": "end", "label": "结束" }
+  ],
+  "connections": [
+    { "from": "start", "to": "act" },
+    { "from": "act", "to": "end" }
+  ],
+  "judgments": [],
+  "selectors": {},
+  "variables": {
+    "input": { "type": "object" }
+  },
+  "metadata": {
+    "createdAt": "2026-06-29T00:00:00Z",
+    "updatedAt": "2026-06-29T00:00:00Z",
+    "author": "your-org"
+  }
+}

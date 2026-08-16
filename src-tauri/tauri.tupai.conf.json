@@ -1,0 +1,32 @@
+{
+  "productName": "tupai",
+  "identifier": "ai.tupai.desktop",
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["tupai"]
+      }
+    }
+  },
+  "app": {
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "publisher": "tupAI",
+    "shortDescription": "tupAI - AI-Powered Desktop Workspace",
+    "longDescription": "tupAI is an AI-powered desktop workspace integrating a multi-agent Hermes backend, an extensible terminal, notebook, and a self-healing skill engine into a single transparent Tauri shell.",
+    "copyright": "Copyright (c) 2026 tupAI",
+    "homepage": "https://tupai.example.com",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "12.0",
+      "entitlements": "entitlements.plist"
+    }
+  }
+}

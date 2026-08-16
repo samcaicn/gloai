@@ -1,0 +1,33 @@
+# ===========================================
+# Cargo build
+# ===========================================
+# target/ is now unified across the whole repo via the root
+# .cargo/config.toml (build.target-dir = "src-tauri/target").
+# Keep this entry so anyone running `cargo` inside src-tauri/
+# still sees the artifacts ignored if they bypass the root config.
+/target/
+
+# ===========================================
+# Generated schemas / Tauri codegen (from tauri build)
+# ===========================================
+/gen/
+/gen/schemas
+
+# ===========================================
+# Rust debug/build artifacts
+# ===========================================
+**/*.rs.bk
+*.pdb
+
+# ===========================================
+# Bundle output (tauri build creates these)
+# ===========================================
+bundle/
+
+# ===========================================
+# Sidecar binaries (downloaded/staged by CI;
+# real hermes-* artifacts are kept out of git
+# to avoid bloating the repo. See ./binaries/README.md
+# for the naming convention.
+# ===========================================
+/binaries/hermes-*

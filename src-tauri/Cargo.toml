@@ -1,0 +1,293 @@
+[package]
+name = "tupai"
+version = "1.9.6"
+description = "tupAI - AI-Powered Desktop Workspace"
+authors = ["tupAI"]
+license = "Proprietary"
+repository = "https://github.com/meespace/hermes-slate-desk"
+homepage = "https://tupai.example.com"
+edition = "2021"
+rust-version = "1.91"
+
+# Feature flags for branding — safeopc-brand enables OEM branding.
+[features]
+default = []
+safeopc-brand = []
+# mesh P2P 组网模块 — 需 iroh / iroh-gossip 等 crate。
+# 当前 mesh 模块有 API 兼容性问题，默认禁用以保持构建通过。
+mesh = ["dep:iroh", "dep:iroh-gossip", "dep:n0-future", "dep:postcard", "dep:data-encoding"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# -----------------------------------------------------------------------------
+# Dev profile — tuned to keep target/debug small and fast.
+#
+# Default cargo dev profile emits full DWARF debug info (`debug = 2`) for
+# every dependency, which on this crate produces ~6 GB of .pdb / .rlib
+# files in target/debug/deps. The settings below cut that to ~1.5 GB
+# while preserving backtraces and `gdb`/`lldb` step-in for the *app*
+# crate (third-party deps are stripped of debug info entirely — they
+# are rarely stepped into, and when needed one can `cargo build -p
+# <dep>` with a local override).
+#
+# `split-debuginfo = "unpacked"` (default on macOS, opt-in on Windows)
+# writes debug info to separate `.pdb` files instead of embedding it
+# in the .rlib — this lets the linker skip re-reading debug info on
+# every incremental rebuild, cutting link time ~40% on Windows.
+# -----------------------------------------------------------------------------
+[profile.dev]
+debug = 1                       # line tables only — enough for backtraces
+incremental = true
+split-debuginfo = "unpacked"    # Windows: separate .pdb files
+
+# Third-party dependencies: no debug info, no optimization. This is the
+# single biggest disk saver — ~80% of target/debug is debug info for
+# transitive deps (tokio, reqwest, windows, tauri, ...).
+[profile.dev.package."*"]
+opt-level = 0
+debug = false
+
+# -----------------------------------------------------------------------------
+# Release profile — tuned for the CI release pipeline.
+#
+# Goals (see project memory: "light obfuscation, not anti-tamper"):
+#   - Drop the symbol table from the bundled binary so casual
+#     `nm` / `strings` inspection of `tupai.exe` /
+#     `tupai.app/Contents/MacOS/tupai` does not reveal Rust
+#     function names like `pc_automation::broker::router::route`
+#     or `commands::uirap::*`.
+#   - Keep compile time / link time in the same ballpark as the
+#     Tauri 2 default release profile (CI budgets 30-60 min/job
+#     per the release.yml matrix).
+#
+# `strip = "symbols"` is the *only* setting that actually
+# affects obfuscation; the rest are size / startup wins that
+# happen to also mildly help with reverse-engineering effort
+# (smaller, more inlined code = less for `objdump` to chew on).
+#
+# `panic = "abort"` also implies the unwinder is dead-code-
+# eliminated, which removes another class of identifiable
+# symbols.
+# -----------------------------------------------------------------------------
+[profile.release]
+strip = "symbols"
+lto = "thin"
+codegen-units = 8
+panic = "abort"
+
+# NSIS local build profile: no LTO but still stripped + abort.
+# Use `cargo build --profile release-nsis` or `pnpm build:nsis:fast`.
+# Produces a stripped, panic=abort binary in ~1-2 min (vs ~5-10 min for
+# release with lto=thin). Binary is ~10% larger than release but fully
+# suitable for distribution via NSIS.
+[profile.release-nsis]
+inherits = "release"
+lto = false
+codegen-units = 16
+incremental = true
+
+# CI-only profile: maximum optimization for shipping.
+# Use `cargo build --profile release-ci` or `pnpm build:nsis:ci`.
+[profile.release-ci]
+inherits = "release"
+codegen-units = 1
+
+# -----------------------------------------------------------------------------
+# Local release sanity-check profile.
+#
+# `cargo build --profile release-fast` (or `pnpm build:release-fast`)
+# produces a release-mode binary *without* LTO/codegen-units=1 — so it
+# links in ~30s instead of 5-10min. Use it to verify a code change
+# doesn't break the release build before pushing to CI.
+#
+# NOT for shipping: the resulting binary is larger and less optimized
+# than the real release profile. CI always uses [profile.release].
+# -----------------------------------------------------------------------------
+[profile.release-fast]
+inherits = "release"
+lto = false
+codegen-units = 64
+strip = "none"
+incremental = true
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "tupai"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.5.8", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.11.2", features = ["macos-private-api", "tray-icon"] }
+tauri-plugin-http = "2.5.8"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls-webpki-roots", "blocking"] }
+tauri-plugin-dialog = "2.7.0"
+tauri-plugin-fs = "2.5.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["clock", "serde"] }
+bytes = "1"
+tokio = { version = "1.51.1", features = ["process", "io-util", "sync", "time", "macros", "rt-multi-thread"] }
+futures = "0.3"
+once_cell = "1.21"
+rusqlite = { version = "0.29", features = ["bundled"] }
+# DuckDB 数据中台 —— 7 张核心表的持久化层。
+# 任务要求 duckdb 1.1，但 crates.io 上 1.1 / 1.0 均不存在（duckdb-rs
+# 稳定线从 1.4 起）。使用 ~1.4 锁定稳定线，避免拉入 1.105xx 开发线。
+# r2d2-duckdb 0.1.0 已 3 年未更新，与 duckdb 1.4 不兼容，故按任务
+# 备选方案改用 Arc<Mutex<Connection>> 单连接实现（简单优先）。
+duckdb = { version = "~1.4", features = ["bundled"] }
+serde_yaml = "0.9"
+walkdir = "2.5.0"
+dirs = "5"
+base64 = "0.22"
+qrcode = "0.14"
+aes-gcm = "0.10"
+getrandom = "0.2"
+# Worker 异步任务引擎 —— retry 指数退避 jitter 用
+rand = "0.8"
+portable-pty = "0.8"
+shellexpand = "3.1"
+
+# --- agent-infra additions ---
+async-trait = "0.1"
+urlencoding = "2"
+chromiumoxide = { version = "0.7", default-features = false, features = ["tokio-runtime"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+regex = "1"
+axum = { version = "0.7", features = ["macros"] }
+anyhow = "1"
+socket2 = "0.5"
+
+# Tauri main process dependencies
+# tauri-plugin-updater removed: update check now goes through MCP
+# (POST /api/v2/mcp action=update.check) — no more direct /api/update/ HTTP
+# calls that caused 401 Unauthorized due to missing Bearer token injection.
+tauri-plugin-store = "2"
+# tauri-plugin-screenshots removed in tupAI v5 §5.2 (vision pipeline
+# retired; PCUI route captures via OS-native APIs in pc_automation)
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-os = "2"
+tauri-plugin-process = "2"
+tauri-plugin-deep-link = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-autostart = "2"
+image = "0.25"
+arboard = "3"
+enigo = "0.3"
+semver = "1"
+url = "2"
+thiserror = "1"
+dotenvy = "0.15"
+
+# hermes / aicoop migration dependencies
+tokio-stream = "0.1"
+percent-encoding = "2"
+futures-util = "0.3"
+# ACP (Agent Client Protocol) — 简化 CLI 接入，支持 claude-code / codex / opencode 等
+# 通过 stdio JSON-RPC 与 ACP 兼容的 CLI 工具通信。tokio-util compat 用于
+# tokio::AsyncRead/Write ↔ futures::AsyncRead/Write 桥接（ByteStreams 需要）。
+agent-client-protocol = { version = "0.12", features = ["unstable"] }
+tokio-util = { version = "0.7", features = ["compat"] }
+tokio-tungstenite = { version = "0.21", features = ["rustls-tls-webpki-roots"] }
+
+# global keyboard / mouse listener
+# Windows / macOS: works out of the box.
+# Linux: requires an X11 session; Wayland does not expose raw input.
+rdev = "0.5"
+
+# Terminator — cross-platform desktop automation via accessibility APIs.
+# Upstream: https://github.com/mediar-ai/terminator (subtree at upsource/terminator, v0.10.15)
+# Used as the primary UIA + OCR backend, replacing the hand-rolled
+# uiautomation/WinRT bindings. The `terminator_bridge` adapter module
+# implements tupai's `UiaBackend` / `OcrBackend` traits on top of
+# terminator's `Desktop` / `AccessibilityEngine`.
+terminator = { package = "terminator-rs", version = "0.10.15" }
+
+# skill execution engine (skill.md <-> MCP binary serialization)
+borsh = "0.10"
+
+# infrastructure dependencies (hardware / crypto / models)
+sysinfo = { version = "0.31", features = ["disk"] }
+argon2 = "0.5"
+zeroize = { version = "1.7", features = ["derive"] }
+sha2 = "0.10"
+
+# --- mesh P2P 组网 (Phase 3: 安全设计 P2P + gossip) ---
+# MSRV 1.91+ 已在 Cargo.toml rust-version 声明 (见下方 override)。
+# iroh 1.0 / iroh-gossip 0.101 提供 Endpoint + Gossip 广播树 + NAT 穿透。
+# n0-future 提供 StreamExt; postcard 用于信封紧凑序列化; data-encoding
+# 用于 ticket base32 编码 (后者已作为传递依赖存在于 Cargo.lock)。
+# 当前 mesh 模块有 API 兼容性问题，默认禁用（见 [features] mesh flag）。
+iroh = { version = "1.0", optional = true }
+iroh-gossip = { version = "0.101", optional = true }
+n0-future = { version = "0.1", optional = true }
+postcard = { version = "1.0", features = ["use-std"], optional = true }
+data-encoding = { version = "2", optional = true }
+
+# Single-instance enforcement (desktop only — iOS/Android unsupported).
+# Registered as the FIRST plugin in lib.rs so secondary launches are
+# intercepted before any other plugin/state initialisation runs, which
+# prevents port conflicts (gateway 8642 / dashboard 9119), SQLite/DuckDB
+# file-lock races, duplicate tray icons, and duplicate global-shortkey
+# registration that previously crashed the second instance.
+[target.'cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = "2"
+
+# conditional Windows dependency
+# for enumerating installed software via the registry.
+#
+# Windows idle detection only (vision pipeline
+# has been replaced by `pc_automation` per tupAI v5 §1.1; only the
+# idle-detect side-channel remains)
+[target.'cfg(target_os = "windows")'.dependencies]
+winreg = "0.52"
+# Windows APIs — Win32 (UIA / GDI capture) + WinRT (OCR +
+# Imaging). Mixing the two halves in a single `features` list
+# is supported on `windows` 0.58+; the OCR code at
+# `pc_automation/ocr/windows.rs` is the only consumer of the
+# WinRT half.
+windows = { version = "0.58", features = [
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_System_SystemInformation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_System_WinRT_Graphics_Capture",
+    "Media_Ocr",
+    "Foundation_Collections",
+    "Graphics_Imaging",
+    "Storage_Streams",
+    "Globalization",
+] }
+# Real Windows UIA backend (replaces the `not yet wired` stub in
+# `pc_automation/uia/windows.rs`). 0.25 pulls in its own (newer)
+# `windows` crate; the two versions coexist in Cargo.lock.
+uiautomation = { version = "0.25", default-features = false, features = ["input", "control", "pattern"] }
+
+# Dev-only: legacy integration test in `commands/legacy.rs` shells
+# out to a temp directory and reads the bundled schema file. Both
+# `tempfile` and `schema/app.sql` are only required when building
+# the lib's `#[cfg(test)]` modules, so they live in
+# `[dev-dependencies]` to keep them out of release binaries.
+[dev-dependencies]
+tempfile = "3"
+
+# v5 PCUI placeholder skeleton: see `.trae/rules/project_rules.md` §2.
+# Workspace-level allow (vs. `#![allow(dead_code)]` in lib.rs) so the
+# suppression also covers the `cargo test --lib` compilation unit,
+# which compiles the test binary as a separate crate and does not
+# inherit the lib's inner attributes. Without this, test runs print
+# ~600 dead_code warnings for the v5 PCUI placeholders even though
+# `cargo check` is clean.
+[lints.rust]
+dead_code = "allow"

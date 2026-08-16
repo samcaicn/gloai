@@ -1,0 +1,3665 @@
+/**
+ * Standalone chat input component
+ * Separated from bottom bar, supports session-level state awareness
+ */
+
+import React, { useRef, useCallback, useEffect, useReducer, useState, useMemo, useSyncExternalStore } from 'react';
+import path from 'path-browserify';
+import { useTranslation } from 'react-i18next';
+import { ArrowUp, Image, Paperclip, RotateCcw, Plus, X, Sparkles, Loader2, ChevronRight, Files, MessageSquarePlus } from 'lucide-react';
+import { ContextDropZone, useContextStore } from '../../shared/context-system';
+import { useActiveSessionState } from '@/flow_chat/hooks';
+import { RichTextInput, type MentionState } from './RichTextInput';
+import { FileMentionPicker } from './FileMentionPicker';
+import { globalEventBus } from '@/infrastructure/event-bus';
+import {
+  useSessionDerivedState,
+  useSessionStateMachine,
+  useSessionStateMachineActions,
+} from '../hooks/useSessionStateMachine';
+import { SessionExecutionEvent } from '../state-machine/types';
+import { ModelSelector } from './ModelSelector';
+import { FlowChatStore } from '../store/FlowChatStore';
+import { useAcpPlan } from '../hooks/useAcpPlan';
+import { filterSlashCommands, useAcpSlashCommands } from '../hooks/useAcpSlashCommands';
+import { acpSessionRef, acpSlashCommandText } from '../utils/acpSession';
+import { AcpPlanPanel } from './AcpPlanPanel';
+import type { FlowChatState } from '../types/flow-chat';
+import type { FileContext, DirectoryContext, ImageContext } from '@/types/context.ts';
+import { SmartRecommendations } from './smart-recommendations';
+import { useCurrentWorkspace } from '@/infrastructure/contexts/WorkspaceContext';
+import { WorkspaceKind } from '@/shared/types';
+import { createImageContextFromFile, createImageContextFromClipboard, createAttachmentContextFromFile } from '../utils/imageUtils';
+import { isSlashCommand, stripSlashCommand } from '../utils/slashCommand';
+import { notificationService } from '@/shared/notification-system';
+import { inputReducer, initialInputState } from '../reducers/inputReducer';
+import { modeReducer, initialModeState } from '../reducers/modeReducer';
+import { CHAT_INPUT_CONFIG } from '../constants/chatInputConfig';
+import { useMessageSender } from '../hooks/useMessageSender';
+import { useChatInputState } from '../store/chatInputStateStore';
+import { useInputHistoryStore } from '../store/inputHistoryStore';
+import { startBtwThread } from '../services/BtwThreadService';
+import { runUsageReportCommand } from '../services/usageReportService';
+import { isGoalSlashCommand, parseGoalCommand } from '../services/goalService';
+import {
+  getHistorySessionOpenTransitionSnapshot,
+  subscribeHistorySessionOpenTransition,
+} from '../services/sessionOpenIntent';
+import { useThreadGoalController } from '../hooks/useThreadGoalController';
+import { ThreadGoalDialogs } from './thread-goal/ThreadGoalDialogs';
+import { FlowChatManager } from '@/flow_chat';
+import {
+  DEEP_REVIEW_SLASH_COMMAND,
+  getDeepReviewLaunchErrorMessage,
+  buildDeepReviewLaunchFromSlashCommand,
+  buildDeepReviewPreviewFromSlashCommand,
+  isDeepReviewSlashCommand,
+  launchDeepReviewSession,
+} from '../services/DeepReviewService';
+import { createLogger } from '@/shared/utils/logger';
+import { Tooltip, IconButton, confirmWarning } from '@/component-library';
+import { PendingQueuePanel } from './PendingQueuePanel';
+import { useAgentCanvasStore } from '@/app/components/panels/content-canvas/stores';
+import { openBtwSessionInAuxPane, selectActiveBtwSessionTab } from '../services/openBtwSession';
+import { resolveSessionRelationship } from '../utils/sessionMetadata';
+import { resolveWorkspaceChatInputMode } from '../utils/chatInputMode';
+import { useSceneStore } from '@/app/stores/sceneStore';
+import type { SceneTabId } from '@/app/components/SceneBar/types';
+import { configAPI } from '@/infrastructure/api';
+import type { ModeSkillInfo } from '@/infrastructure/config/types';
+import MCPAPI, { type MCPPrompt, type MCPPromptMessage, type MCPServerInfo } from '@/infrastructure/api/service-api/MCPAPI';
+import { ChatInputWorkspaceStrip } from './ChatInputWorkspaceStrip';
+import { SessionWorkspaceEditor } from './SessionWorkspaceEditor';
+import { expandWidgetPromptReferenceTokens } from '@/tools/generative-widget/widgetPromptReference';
+import { useDeepReviewConsent } from './DeepReviewConsentDialog';
+import { useSessionReviewActivity } from '../hooks/useSessionReviewActivity';
+import { shouldBlockDeepReviewCommand } from '../utils/deepReviewCommandGuard';
+import { deriveDeepReviewSessionConcurrencyGuard } from '../utils/deepReviewCapacityGuard';
+import { acpAgentTypeFromSession } from '../utils/acpSession';
+import {
+  getSessionContextUsageDisplay,
+  type ContextUsageDisplay,
+} from '../utils/tokenUsageDisplay';
+import { agentAPI } from '@/infrastructure/api/service-api/AgentAPI';
+import './ChatInput.scss';
+
+import { setChatPopupActive } from './chatPopupState';
+
+const log = createLogger('ChatInput');
+
+export interface ChatInputProps {
+  className?: string;
+  onSendMessage?: (message: string) => void;
+}
+
+type SlashActionItem = {
+  kind: 'action';
+  id: string;
+  command: string;
+  label: string;
+};
+
+type SlashModeItem = {
+  kind: 'mode';
+  id: string;
+  name: string;
+};
+
+type SlashMcpPromptItem = {
+  kind: 'mcpPrompt';
+  id: string;
+  command: string;
+  label: string;
+  serverId: string;
+  serverName: string;
+  promptName: string;
+  description?: string;
+  arguments: Array<{
+    name: string;
+    required: boolean;
+    description?: string;
+  }>;
+};
+
+type SlashAcpCommandItem = {
+  kind: 'acpCommand';
+  id: string;
+  command: string;
+  label: string;
+};
+
+type SlashPickerItem = SlashActionItem | SlashModeItem | SlashMcpPromptItem | SlashAcpCommandItem;
+type ChatInputTarget = 'main' | 'btw';
+type PendingLargePasteMap = Record<string, string>;
+
+function getCharacterCount(text: string): number {
+  return Array.from(text).length;
+}
+
+function buildMcpPromptSlashCommand(serverId: string, promptName: string): string {
+  return `/${serverId}:${promptName}`;
+}
+
+function parseSlashArguments(input: string): string[] {
+  const matches = input.match(/"([^"]*)"|'([^']*)'|[^\s]+/g) || [];
+  return matches.map(token => {
+    if (
+      (token.startsWith('"') && token.endsWith('"')) ||
+      (token.startsWith('\'') && token.endsWith('\''))
+    ) {
+      return token.slice(1, -1);
+    }
+    return token;
+  });
+}
+
+function renderMcpPromptContent(content: unknown): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  if (!content || typeof content !== 'object') {
+    return '[Unsupported MCP prompt content]';
+  }
+
+  const block = content as Record<string, unknown>;
+  const type = typeof block.type === 'string' ? block.type : undefined;
+
+  if (type === 'text' && typeof block.text === 'string') {
+    return block.text;
+  }
+
+  if (type === 'image') {
+    return `[Image${typeof block.mimeType === 'string' ? `: ${block.mimeType}` : ''}]`;
+  }
+
+  if (type === 'audio') {
+    return `[Audio${typeof block.mimeType === 'string' ? `: ${block.mimeType}` : ''}]`;
+  }
+
+  if (type === 'resource_link') {
+    const uri = typeof block.uri === 'string' ? block.uri : 'unknown';
+    const name = typeof block.name === 'string' ? block.name : undefined;
+    return name ? `[Resource Link: ${name} (${uri})]` : `[Resource Link: ${uri}]`;
+  }
+
+  if (type === 'resource' && block.resource && typeof block.resource === 'object') {
+    const resource = block.resource as Record<string, unknown>;
+    const resourceText =
+      typeof resource.text === 'string'
+        ? resource.text
+        : typeof resource.content === 'string'
+          ? resource.content
+          : undefined;
+    if (resourceText) {
+      return resourceText;
+    }
+    const uri = typeof resource.uri === 'string' ? resource.uri : 'unknown';
+    return `[Resource: ${uri}]`;
+  }
+
+  return '[Unsupported MCP prompt content]';
+}
+
+function renderMcpPromptMessages(messages: MCPPromptMessage[]): string {
+  return messages
+    .map(message => {
+      const text = renderMcpPromptContent(message.content).trim();
+      if (!text) {
+        return '';
+      }
+
+      switch (message.role) {
+        case 'system':
+          return text;
+        case 'user':
+          return `User: ${text}`;
+        case 'assistant':
+          return `Assistant: ${text}`;
+        default:
+          return `${message.role}: ${text}`;
+      }
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+export const ChatInput: React.FC<ChatInputProps> = ({
+  className = '',
+  onSendMessage
+}) => {
+  const { t } = useTranslation('flow-chat');
+  
+  const [inputState, dispatchInput] = useReducer(inputReducer, initialInputState);
+  const [modeState, dispatchMode] = useReducer(modeReducer, initialModeState);
+  
+  const richTextInputRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const agentBoostRef = useRef<HTMLDivElement>(null);
+  const isImeComposingRef = useRef(false);
+  // Ref so the queuedInput sync effect can read the latest value without it being a dep
+  const inputValueRef = useRef('');
+  const pendingLargePastesRef = useRef<PendingLargePasteMap>({});
+  const largePasteCountersRef = useRef<Record<number, number>>({});
+  const undoImageStackRef = useRef<string[]>([]);
+  
+  // History navigation state
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [savedDraft, setSavedDraft] = useState('');
+  const [inputTarget, setInputTarget] = useState<ChatInputTarget>('main');
+  const { addMessage: addToHistory, getSessionHistory } = useInputHistoryStore();
+  
+  const contexts = useContextStore(state => state.contexts);
+  const addContext = useContextStore(state => state.addContext);
+  const removeContext = useContextStore(state => state.removeContext);
+  const clearContexts = useContextStore(state => state.clearContexts);
+
+  const contextsRef = useRef(contexts);
+  contextsRef.current = contexts;
+
+  const imageContexts = useMemo(
+    () => contexts.filter((c): c is ImageContext => c.type === 'image'),
+    [contexts],
+  );
+const currentImageCount = imageContexts.length;
+
+  const fileContexts = useMemo(
+    () => contexts.filter((c): c is FileContext => c.type === 'file' && c.source === 'attachment'),
+    [contexts],
+  );
+  const currentFileCount = fileContexts.length;
+
+  const activeSessionState = useActiveSessionState();
+  const activeBtwSessionTab = useAgentCanvasStore(state => selectActiveBtwSessionTab(state as any));
+  const [flowChatState, setFlowChatState] = useState<FlowChatState>(() => FlowChatStore.getInstance().getState());
+  const currentSessionId = activeSessionState.sessionId;
+  const currentSession = currentSessionId ? flowChatState.sessions.get(currentSessionId) : undefined;
+  const activeBtwSessionData = activeBtwSessionTab?.content.data as
+    | { childSessionId: string; parentSessionId: string; workspacePath?: string }
+    | undefined;
+  const activeBtwSessionId = activeBtwSessionData?.parentSessionId === currentSessionId
+    ? activeBtwSessionData.childSessionId
+    : undefined;
+  const effectiveTargetSessionId =
+    inputTarget === 'btw' && activeBtwSessionId ? activeBtwSessionId : currentSessionId;
+  const effectiveTargetSession = effectiveTargetSessionId
+    ? flowChatState.sessions.get(effectiveTargetSessionId)
+    : undefined;
+  const historySessionOpenTransition = useSyncExternalStore(
+    subscribeHistorySessionOpenTransition,
+    getHistorySessionOpenTransitionSnapshot,
+    getHistorySessionOpenTransitionSnapshot,
+  );
+  const effectiveTargetRelationship = resolveSessionRelationship(effectiveTargetSession);
+  const isBtwSession = effectiveTargetRelationship.displayAsChild;
+  const acpSessionForInput = useMemo(
+    () => acpSessionRef(effectiveTargetSession),
+    [effectiveTargetSession],
+  );
+  const { commands: acpAgentCommands } = useAcpSlashCommands(acpSessionForInput);
+  const isAcpInputSession = Boolean(acpSessionForInput);
+  const { entries: acpPlanEntries } = useAcpPlan(acpSessionForInput?.sessionId ?? null);
+  const threadGoalController = useThreadGoalController(effectiveTargetSession, {
+    isBtwSession,
+  });
+  const currentSessionTitle = currentSession?.title?.trim() || t('session.untitled');
+  const activeBtwSession = activeBtwSessionId
+    ? flowChatState.sessions.get(activeBtwSessionId)
+    : undefined;
+  const activeBtwRelationship = resolveSessionRelationship(activeBtwSession);
+  const canInteractWithActiveChildSession = activeBtwRelationship.kind !== 'subagent';
+  const showTargetSwitcher = !!activeBtwSessionId && canInteractWithActiveChildSession;
+  const activeBtwKind = activeBtwRelationship.kind === 'review' || activeBtwRelationship.kind === 'deep_review'
+    ? activeBtwRelationship.kind
+    : 'btw';
+  const activeBtwTargetLabel = t(`childSession.kinds.${activeBtwKind}.short`, {
+    defaultValue: t('chatInput.targetBtw'),
+  });
+  const activeBtwSessionTitle = activeBtwSession
+    ? activeBtwSession.title?.trim() || t(`childSession.kinds.${activeBtwKind}.title`, {
+        defaultValue: t('btw.threadLabel'),
+      })
+    : '';
+  const deferChatStripPassiveGitRefresh =
+    historySessionOpenTransition !== null ||
+    (
+      effectiveTargetSession?.isHistorical === true &&
+      effectiveTargetSession.contextRestoreState === 'pending'
+    );
+  
+  // Memoize history so keyboard handlers don't see a fresh [] on every render.
+  const inputHistory = useMemo(
+    () => (effectiveTargetSessionId ? getSessionHistory(effectiveTargetSessionId) : []),
+    [effectiveTargetSessionId, getSessionHistory],
+  );
+  const derivedState = useSessionDerivedState(
+    effectiveTargetSessionId,
+    inputState.value.trim()
+  );
+  const currentReviewActivity = useSessionReviewActivity(currentSessionId);
+  useSessionStateMachine(effectiveTargetSessionId);
+  const { confirmDeepReviewLaunch, deepReviewConsentDialog } = useDeepReviewConsent();
+  // isMultiLine: true when content overflows a single line (scrollHeight > threshold or has newlines)
+  const [isMultiLine, setIsMultiLine] = useState(false);
+  // showPlaceholder is true when the editor DOM is truly empty (value empty AND no residual <br>)
+  const [showPlaceholder, setShowPlaceholder] = useState(true);
+  const [showSessionWorkspaceEditor, setShowSessionWorkspaceEditor] = useState(false);
+  const liveCapsuleInputWidthRef = useRef<number | null>(null);
+  const lockedCapsuleInputWidthRef = useRef<number | null>(null);
+  const collapseVerificationRafRef = useRef<number | null>(null);
+  const layoutMeasurementRafRef = useRef<number | null>(null);
+  const measureIsMultiLineRef = useRef<
+    ((source?: 'value-effect' | 'mutation-observer' | 'collapse-confirmation' | 'layout-change') => void) | null
+  >(null);
+
+  const checkDomEmpty = useCallback(() => {
+    const el = richTextInputRef.current;
+    if (!el) { setShowPlaceholder(true); return; }
+    const hasOnlyBr =
+      el.childNodes.length === 1 &&
+      (el.childNodes[0] as Element).nodeName === 'BR';
+    const isDomEmpty = (el.textContent ?? '').trim() === '' &&
+      (el.childNodes.length === 0 || hasOnlyBr);
+    const hasContexts = contextsRef.current.length > 0;
+    setShowPlaceholder(isDomEmpty && !hasContexts);
+  }, []);
+
+  const measureCapsuleInputWidth = useCallback((): number | null => {
+    const containerEl = containerRef.current;
+    const editorEl = richTextInputRef.current;
+    const boxEl = editorEl?.closest('.bitfun-chat-input__box') as HTMLElement | null;
+
+    if (!containerEl || !boxEl) {
+      return null;
+    }
+
+    const clone = containerEl.cloneNode(true) as HTMLElement;
+    clone.style.position = 'fixed';
+    clone.style.left = '-100000px';
+    clone.style.top = '0';
+    clone.style.visibility = 'hidden';
+    clone.style.pointerEvents = 'none';
+    clone.style.width = `${containerEl.getBoundingClientRect().width}px`;
+    clone.classList.add('bitfun-chat-input--capsule');
+    clone.classList.remove('bitfun-chat-input--multi-line');
+
+    const cloneBoxEl = clone.querySelector('.bitfun-chat-input__box') as HTMLElement | null;
+    const cloneInputAreaEl = clone.querySelector('.bitfun-chat-input__input-area') as HTMLElement | null;
+
+    if (cloneBoxEl) {
+      cloneBoxEl.classList.add('bitfun-chat-input__box--capsule');
+      cloneBoxEl.classList.remove('bitfun-chat-input__box--multi-line');
+    }
+
+    document.body.appendChild(clone);
+    const measuredWidth = cloneInputAreaEl
+      ? Math.max(80, Math.floor(cloneInputAreaEl.getBoundingClientRect().width))
+      : null;
+    clone.remove();
+
+    return measuredWidth;
+  }, []);
+
+  const refreshCapsuleInputWidth = useCallback((remeasureText: boolean) => {
+    const measuredWidth = measureCapsuleInputWidth();
+    if (measuredWidth == null) {
+      return;
+    }
+
+    const previousWidth = liveCapsuleInputWidthRef.current;
+    liveCapsuleInputWidthRef.current = measuredWidth;
+
+    if (!remeasureText || previousWidth === measuredWidth) {
+      return;
+    }
+
+    if (layoutMeasurementRafRef.current !== null) {
+      cancelAnimationFrame(layoutMeasurementRafRef.current);
+    }
+    layoutMeasurementRafRef.current = requestAnimationFrame(() => {
+      layoutMeasurementRafRef.current = null;
+      measureIsMultiLineRef.current?.('layout-change');
+      checkDomEmpty();
+    });
+  }, [checkDomEmpty, measureCapsuleInputWidth]);
+
+  // Shared measurement: temporarily unconstrain the editor and use the capsule input
+  // width so the result is consistent between capsule ↔ multi-line transitions.
+  const measureIsMultiLine = useCallback((source: 'value-effect' | 'mutation-observer' | 'collapse-confirmation' | 'layout-change' = 'value-effect') => {
+    const hasNewline = inputState.value.includes('\n');
+    const hasImages = imageContexts.length > 0;
+    if (hasNewline || hasImages || showTargetSwitcher) {
+      setIsMultiLine(true);
+      return;
+    }
+    const el = richTextInputRef.current;
+    if (!el) {
+      setIsMultiLine(false);
+      return;
+    }
+    // Measure against the live constrained input width in capsule mode.
+    // A fixed boxWidth-minus-constant estimate drifts when the right-side
+    // controls grow (for example with longer model labels), causing false
+    // "single-line" results for text that already wraps in the real editor.
+    const boxEl = el.closest('.bitfun-chat-input__box') as HTMLElement | null;
+    const actionsLeftEl = boxEl?.querySelector('.bitfun-chat-input__actions-left') as HTMLElement | null;
+    const actionsRightEl = boxEl?.querySelector('.bitfun-chat-input__actions-right') as HTMLElement | null;
+    const boxWidth = boxEl?.offsetWidth ?? containerRef.current?.offsetWidth ?? 400;
+    const boxComputedStyle = boxEl ? window.getComputedStyle(boxEl) : null;
+    const boxPaddingLeft = boxComputedStyle ? parseFloat(boxComputedStyle.paddingLeft || '0') : 0;
+    const boxPaddingRight = boxComputedStyle ? parseFloat(boxComputedStyle.paddingRight || '0') : 0;
+    const boxBorderLeft = boxComputedStyle ? parseFloat(boxComputedStyle.borderLeftWidth || '0') : 0;
+    const boxBorderRight = boxComputedStyle ? parseFloat(boxComputedStyle.borderRightWidth || '0') : 0;
+    const boxContentWidth = Math.max(
+      80,
+      Math.floor((boxEl?.getBoundingClientRect().width ?? boxWidth) - boxPaddingLeft - boxPaddingRight - boxBorderLeft - boxBorderRight),
+    );
+    const actionsLeftWidth = actionsLeftEl?.getBoundingClientRect().width ?? 0;
+    const actionsRightWidth = actionsRightEl?.getBoundingClientRect().width ?? 0;
+    const derivedCapsuleCandidateWidth = Math.max(
+      80,
+      Math.floor(boxContentWidth - actionsLeftWidth - actionsRightWidth),
+    );
+    const stableCapsuleCandidateWidth = liveCapsuleInputWidthRef.current ?? measureCapsuleInputWidth() ?? derivedCapsuleCandidateWidth;
+    const previousLockedWidth = lockedCapsuleInputWidthRef.current;
+    const measurementWidth = Math.max(
+      80,
+      Math.floor(
+        isMultiLine
+          ? Math.min(previousLockedWidth ?? stableCapsuleCandidateWidth, stableCapsuleCandidateWidth)
+          : stableCapsuleCandidateWidth,
+      ),
+    );
+    // Temporarily remove flex stretching + set capsule width to get the true content height.
+    const prevFlex = el.style.flex;
+    const prevMinH = el.style.minHeight;
+    const prevWidth = el.style.width;
+    el.style.flex = 'none';
+    el.style.minHeight = '0';
+    el.style.width = `${measurementWidth}px`;
+    const naturalHeightMeasured = el.scrollHeight;
+    el.style.flex = prevFlex;
+    el.style.minHeight = prevMinH;
+    el.style.width = prevWidth;
+    // ~1.45 × 14px ≈ 20px per line; threshold of 32px means "needs > 1 line"
+    const nextIsMultiLine = naturalHeightMeasured > 32;
+    const shouldVerifyCollapse =
+      isMultiLine &&
+      !nextIsMultiLine &&
+      source !== 'collapse-confirmation';
+    let nextLockedWidth: number | null;
+    if (nextIsMultiLine) {
+      nextLockedWidth =
+        previousLockedWidth == null
+          ? stableCapsuleCandidateWidth
+          : Math.min(previousLockedWidth, stableCapsuleCandidateWidth);
+      if (collapseVerificationRafRef.current !== null) {
+        cancelAnimationFrame(collapseVerificationRafRef.current);
+        collapseVerificationRafRef.current = null;
+      }
+    } else {
+      nextLockedWidth = null;
+    }
+    if (shouldVerifyCollapse) {
+      if (collapseVerificationRafRef.current !== null) {
+        cancelAnimationFrame(collapseVerificationRafRef.current);
+      }
+      collapseVerificationRafRef.current = requestAnimationFrame(() => {
+        collapseVerificationRafRef.current = null;
+        measureIsMultiLine('collapse-confirmation');
+      });
+      return;
+    }
+    lockedCapsuleInputWidthRef.current = nextLockedWidth;
+    setIsMultiLine(nextIsMultiLine);
+  }, [inputState.value, imageContexts.length, isMultiLine, measureCapsuleInputWidth, showTargetSwitcher]);
+  measureIsMultiLineRef.current = measureIsMultiLine;
+
+  // Re-measure when value or image count changes (handles typing / deleting)
+  useEffect(() => {
+    // Defer one frame so RichTextInput has synced the new value to the contenteditable DOM.
+    const rafId = requestAnimationFrame(() => {
+      measureIsMultiLine('value-effect');
+      checkDomEmpty();
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [measureIsMultiLine, checkDomEmpty]);
+
+  // Also watch DOM mutations on the editor so that Shift+Enter in an empty input
+  // (which adds a <br> without changing the React value) triggers expansion,
+  // and so that residual <br> after deletion is detected for placeholder visibility.
+  useEffect(() => {
+    const el = richTextInputRef.current;
+    if (!el) return;
+    let rafId: number;
+    const observer = new MutationObserver(() => {
+      rafId = requestAnimationFrame(() => {
+        measureIsMultiLine('mutation-observer');
+        checkDomEmpty();
+      });
+    });
+    observer.observe(el, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(rafId);
+    };
+  // measureIsMultiLine / checkDomEmpty capture latest closure values
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const containerEl = containerRef.current;
+    const boxEl = containerEl?.querySelector('.bitfun-chat-input__box') as HTMLElement | null;
+    const actionsLeftEl = containerEl?.querySelector('.bitfun-chat-input__actions-left') as HTMLElement | null;
+    const actionsRightEl = containerEl?.querySelector('.bitfun-chat-input__actions-right') as HTMLElement | null;
+    const observedElements = [containerEl, boxEl, actionsLeftEl, actionsRightEl].filter(
+      (element): element is HTMLElement => !!element,
+    );
+
+    if (observedElements.length === 0) {
+      return;
+    }
+
+    let rafId: number | null = null;
+    const observer = new ResizeObserver(() => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        refreshCapsuleInputWidth(true);
+      });
+    });
+
+    observedElements.forEach(element => observer.observe(element));
+    refreshCapsuleInputWidth(false);
+
+    return () => {
+      observer.disconnect();
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [
+    currentImageCount,
+    derivedState?.sendButtonMode,
+    isMultiLine,
+    refreshCapsuleInputWidth,
+    showTargetSwitcher,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (collapseVerificationRafRef.current !== null) {
+        cancelAnimationFrame(collapseVerificationRafRef.current);
+      }
+      if (layoutMeasurementRafRef.current !== null) {
+        cancelAnimationFrame(layoutMeasurementRafRef.current);
+      }
+    };
+  }, []);
+
+  const { transition, setQueuedInput } = useSessionStateMachineActions(effectiveTargetSessionId);
+
+  const { workspace, workspacePath, workspaceName } = useCurrentWorkspace();
+
+  const chatStripRepositoryPath = useMemo(() => {
+    const fromContext = (workspacePath || '').trim();
+    const fromSession = (effectiveTargetSession?.workspacePath || '').trim();
+    return fromContext || fromSession;
+  }, [workspacePath, effectiveTargetSession?.workspacePath]);
+
+  const chatStripWorkspaceLabel = useMemo(() => {
+    const name = (workspaceName || '').trim();
+    if (name) return name;
+    if (chatStripRepositoryPath) return path.basename(chatStripRepositoryPath);
+    return '';
+  }, [workspaceName, chatStripRepositoryPath]);
+  
+  const [tokenUsage, setTokenUsage] = React.useState<ContextUsageDisplay>(
+    getSessionContextUsageDisplay()
+  );
+  const isAssistantWorkspace = workspace?.workspaceKind === WorkspaceKind.Assistant;
+  const currentMode = modeState.current;
+  const isModeDropdownOpen = modeState.dropdownOpen;
+  const acpTargetAgentType = useMemo(
+    () => acpAgentTypeFromSession(effectiveTargetSession),
+    [effectiveTargetSession]
+  );
+  const isAcpTargetSession = Boolean(acpTargetAgentType);
+  const activeSessionMode = effectiveTargetSessionId
+    ? acpTargetAgentType || flowChatState.sessions.get(effectiveTargetSessionId)?.mode
+    : undefined;
+  const canSwitchModes = !isAssistantWorkspace && currentMode !== 'Cowork' && !isAcpTargetSession;
+
+  // Session-level mode policy: Cowork sessions are fixed; code sessions should not switch into Cowork.
+  const switchableModes = useMemo(
+    () =>
+      modeState.available.filter(mode =>
+        mode.id !== 'Cowork' &&
+        (isAssistantWorkspace || mode.id !== 'Claw')
+      ),
+    [isAssistantWorkspace, modeState.available]
+  );
+
+  // Stable refs for Shift+Tab mode cycling (avoids adding deps to handleKeyDown)
+  const switchableModesRef = useRef(switchableModes);
+  switchableModesRef.current = switchableModes;
+  const currentModeRef = useRef(currentMode);
+  currentModeRef.current = currentMode;
+  const applyModeChangeRef = useRef<((modeId: string) => void) | null>(null);
+
+  /** Code session: modes switchable on top of default agentic */
+  const incrementalCodeModes = useMemo(
+    () =>
+      switchableModes.filter(
+        m => m.id !== 'agentic'
+      ),
+    [switchableModes]
+  );
+
+  const openScene = useSceneStore(s => s.openScene);
+  const [boostPanelSkills, setBoostPanelSkills] = useState<ModeSkillInfo[]>([]);
+  const [boostSkillsLoading, setBoostSkillsLoading] = useState(false);
+
+  const [skillsFlyoutOpen, setSkillsFlyoutOpen] = useState(false);
+  const [skillsFlyoutLeft, setSkillsFlyoutLeft] = useState(false);
+  const [skillsFlyoutUp, setSkillsFlyoutUp] = useState(false);
+  const skillsHostRef = useRef<HTMLDivElement>(null);
+  const skillsTimerRef = useRef<number | null>(null);
+
+  const clearSkillsTimer = useCallback(() => {
+    if (skillsTimerRef.current !== null) {
+      window.clearTimeout(skillsTimerRef.current);
+      skillsTimerRef.current = null;
+    }
+  }, []);
+
+  const openSkillsFlyout = useCallback(() => {
+    clearSkillsTimer();
+    const host = skillsHostRef.current;
+    if (host) {
+      const r = host.getBoundingClientRect();
+      setSkillsFlyoutLeft(r.right + 260 > window.innerWidth - 8);
+      setSkillsFlyoutUp(r.top + 200 > window.innerHeight - 8);
+    }
+    setSkillsFlyoutOpen(true);
+  }, [clearSkillsTimer]);
+
+  const closeSkillsFlyout = useCallback(() => {
+    clearSkillsTimer();
+    skillsTimerRef.current = window.setTimeout(() => {
+      skillsTimerRef.current = null;
+      setSkillsFlyoutOpen(false);
+    }, 150);
+  }, [clearSkillsTimer]);
+  
+  const setChatInputActive = useChatInputState(state => state.setActive);
+  const setChatInputExpanded = useChatInputState(state => state.setExpanded);
+  const setChatInputHeight = useChatInputState(state => state.setInputHeight);
+  const runtimeBoostSkills = useMemo(
+    // Only surface skills that this mode will actually resolve at runtime.
+    () => boostPanelSkills.filter(skill => skill.selectedForRuntime),
+    [boostPanelSkills]
+  );
+
+  useEffect(() => {
+    const store = FlowChatStore.getInstance();
+
+    const unsubscribe = store.subscribeSelector(
+      (state: FlowChatState): string => {
+        const parts: string[] = [state.activeSessionId ?? ''];
+        // Track sessions that ChatInput reads in render body (lines 278, 288, 304, 619)
+        const sessionIds = [
+          state.activeSessionId,
+          currentSessionId,
+          effectiveTargetSessionId,
+          activeBtwSessionId,
+        ].filter((id): id is string => !!id);
+        for (const id of sessionIds) {
+          const s = state.sessions.get(id);
+          if (s) {
+            parts.push(
+              `${id}|${s.mode ?? ''}|${s.title ?? ''}|${s.workspacePath ?? ''}|` +
+              `${s.remoteConnectionId ?? ''}|${s.remoteSshHost ?? ''}|${s.lastSubmittedMode ?? ''}|` +
+              `${s.currentAcpContextUsage?.used ?? ''}|${s.currentAcpContextUsage?.size ?? ''}|` +
+              `${s.currentTokenUsage?.inputTokens ?? ''}|${s.maxContextTokens ?? ''}|` +
+              `${s.needsUserAttention ? '1':'0'}`
+            );
+          }
+        }
+        return parts.join(';');
+      },
+      () => {
+        const state = store.getState();
+        setFlowChatState(state);
+        if (effectiveTargetSessionId) {
+          const session = state.sessions.get(effectiveTargetSessionId);
+          if (session) {
+            setTokenUsage(getSessionContextUsageDisplay(session));
+          }
+        }
+      },
+      { isEqual: (a: string, b: string) => a === b },
+    );
+
+    // Initial token usage sync
+    if (effectiveTargetSessionId) {
+      const session = store.getState().sessions.get(effectiveTargetSessionId);
+      if (session) {
+        setTokenUsage(getSessionContextUsageDisplay(session));
+      }
+    }
+
+    return () => unsubscribe();
+  }, [currentSessionId, effectiveTargetSessionId, activeBtwSessionId]);
+
+  useEffect(() => {
+    if (!showTargetSwitcher || !activeBtwSessionId) {
+      setInputTarget('main');
+    }
+  }, [activeBtwSessionId, showTargetSwitcher]);
+
+  useEffect(() => {
+    setChatInputActive(inputState.isActive);
+  }, [inputState.isActive, setChatInputActive]);
+  
+  useEffect(() => {
+    setChatInputExpanded(inputState.isExpanded);
+  }, [inputState.isExpanded, setChatInputExpanded]);
+  
+  // Reset history index when switching sessions
+  useEffect(() => {
+    setHistoryIndex(-1);
+  }, [effectiveTargetSessionId]);
+  
+  const { sendMessage } = useMessageSender({
+    currentSessionId: effectiveTargetSessionId || undefined,
+    contexts,
+    onClearContexts: clearContexts,
+    onSuccess: onSendMessage,
+    // Composer mode is authoritative (synced from session on switch, updated in
+    // applyModeChange). Prefer it over session.mode so a stale store cannot force
+    // agentic when the user selected Team or another mode.
+    currentAgentType: acpTargetAgentType || modeState.current,
+  });
+
+  const modeInfoById = useMemo(
+    () => new Map(modeState.available.map(mode => [mode.id, mode])),
+    [modeState.available],
+  );
+
+  const getModeDisplayName = useCallback((modeId?: string) => {
+    if (!modeId) {
+      return '';
+    }
+
+    return (
+      t(`chatInput.modeNames.${modeId}`, { defaultValue: '' }) ||
+      modeInfoById.get(modeId)?.name ||
+      modeId
+    );
+  }, [modeInfoById, t]);
+
+  const confirmPromptCacheGuardIfNeeded = useCallback(async () => {
+    const nextMode = currentMode.trim();
+    const lastSubmittedMode = effectiveTargetSession?.lastSubmittedMode?.trim();
+    if (!nextMode || !lastSubmittedMode || nextMode === lastSubmittedMode) {
+      return true;
+    }
+
+    const nextScopeKey = modeInfoById.get(nextMode)?.promptCacheScopeKey;
+    const previousScopeKey = modeInfoById.get(lastSubmittedMode)?.promptCacheScopeKey;
+    if (!nextScopeKey || !previousScopeKey || nextScopeKey === previousScopeKey) {
+      return true;
+    }
+
+    return confirmWarning(
+      t('chatInput.promptCacheGuardTitle'),
+      t('chatInput.promptCacheGuardBody', {
+        fromMode: getModeDisplayName(lastSubmittedMode),
+        toMode: getModeDisplayName(nextMode),
+      }),
+      {
+        confirmText: t('chatInput.promptCacheGuardConfirm'),
+        cancelText: t('chatInput.promptCacheGuardCancel'),
+      },
+    );
+  }, [currentMode, effectiveTargetSession?.lastSubmittedMode, getModeDisplayName, modeInfoById, t]);
+
+  const [mcpPromptCommands, setMcpPromptCommands] = useState<SlashMcpPromptItem[]>([]);
+  const [mcpPromptCommandsLoading, setMcpPromptCommandsLoading] = useState(false);
+
+  const loadMcpPromptCommands = useCallback(async () => {
+    setMcpPromptCommandsLoading(true);
+
+    try {
+      const servers = await MCPAPI.getServers();
+      const connectedServers = servers.filter(
+        server => server.status === 'Connected' || server.status === 'Healthy'
+      );
+
+      const promptGroups = await Promise.all(
+        connectedServers.map(async (server: MCPServerInfo) => {
+          try {
+            const prompts = await MCPAPI.listPrompts({
+              serverId: server.id,
+              refresh: true,
+            });
+            return prompts.map((prompt: MCPPrompt) => ({
+              kind: 'mcpPrompt' as const,
+              id: `${server.id}:${prompt.name}`,
+              command: buildMcpPromptSlashCommand(server.id, prompt.name),
+              label:
+                prompt.description?.trim() ||
+                `${server.name} MCP prompt`,
+              serverId: server.id,
+              serverName: server.name,
+              promptName: prompt.name,
+              description: prompt.description,
+              arguments: (prompt.arguments || []).map(argument => ({
+                name: argument.name,
+                required: argument.required,
+                description: argument.description,
+              })),
+            }));
+          } catch (error) {
+            log.warn('Failed to load MCP prompts for server', {
+              serverId: server.id,
+              error,
+            });
+            return [] as SlashMcpPromptItem[];
+          }
+        })
+      );
+
+      setMcpPromptCommands(
+        promptGroups
+          .flat()
+          .sort((a, b) => a.command.localeCompare(b.command))
+      );
+    } finally {
+      setMcpPromptCommandsLoading(false);
+    }
+  }, []);
+  
+  const [recommendationContext, setRecommendationContext] = React.useState<{
+    workspacePath?: string;
+    sessionId?: string;
+    turnIndex?: number;
+    modifiedFiles?: string[];
+  } | null>(null);
+  
+  const [mentionState, setMentionState] = useState<MentionState>({
+    isActive: false,
+    query: '',
+    startOffset: 0,
+  });
+  
+  const [slashCommandState, setSlashCommandState] = useState<{
+    isActive: boolean;
+    kind: 'modes' | 'actions' | 'all';
+    query: string;
+    selectedIndex: number;
+  }>({
+    isActive: false,
+    kind: 'modes',
+    query: '',
+    selectedIndex: 0,
+  });
+
+  // Keep the module-level popup-active flag in sync so ModernFlowChatContainer
+  // can disable the global Escape shortcut while popups are open.
+  useEffect(() => {
+    setChatPopupActive(slashCommandState.isActive || mentionState.isActive);
+  }, [slashCommandState.isActive, mentionState.isActive]);
+
+  useEffect(() => {
+    if (!slashCommandState.isActive) {
+      return;
+    }
+
+    const frameId = requestAnimationFrame(() => {
+      const selectedItem = containerRef.current?.querySelector(
+        '.bitfun-chat-input__slash-command-list .bitfun-chat-input__slash-command-item--selected'
+      ) as HTMLElement | null;
+      selectedItem?.scrollIntoView({ block: 'nearest' });
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [
+    slashCommandState.isActive,
+    slashCommandState.kind,
+    slashCommandState.query,
+    slashCommandState.selectedIndex,
+  ]);
+
+  const clearPendingLargePastes = useCallback(() => {
+    pendingLargePastesRef.current = {};
+  }, []);
+
+  const createLargePastePlaceholder = useCallback((text: string): string | null => {
+    const charCount = getCharacterCount(text);
+    if (charCount <= CHAT_INPUT_CONFIG.largePaste.thresholdChars) {
+      return null;
+    }
+
+    const nextCounters = largePasteCountersRef.current;
+    const nextSuffix = (nextCounters[charCount] ?? 0) + 1;
+    nextCounters[charCount] = nextSuffix;
+
+    const base = t('input.largePastePlaceholder', {
+      count: charCount,
+    });
+    const placeholder = nextSuffix === 1 ? base : `${base} #${nextSuffix}`;
+
+    pendingLargePastesRef.current = {
+      ...pendingLargePastesRef.current,
+      [placeholder]: text,
+    };
+
+    return placeholder;
+  }, [t]);
+
+  const prunePendingLargePastes = useCallback((text: string) => {
+    const entries = Object.entries(pendingLargePastesRef.current);
+    if (entries.length === 0) {
+      return;
+    }
+
+    pendingLargePastesRef.current = Object.fromEntries(
+      entries.filter(([placeholder]) => text.includes(placeholder))
+    );
+  }, []);
+
+  const expandPendingLargePastes = useCallback((text: string) => {
+    let expanded = text;
+    for (const [placeholder, actual] of Object.entries(pendingLargePastesRef.current)) {
+      if (expanded.includes(placeholder)) {
+        expanded = expanded.split(placeholder).join(actual);
+      }
+    }
+    return expanded;
+  }, []);
+
+  const expandComposerSpecialTokens = useCallback((text: string) => {
+    return expandWidgetPromptReferenceTokens(expandPendingLargePastes(text)).trim();
+  }, [expandPendingLargePastes]);
+
+  React.useEffect(() => {
+    if (inputState.value === '') {
+      clearPendingLargePastes();
+    }
+  }, [clearPendingLargePastes, inputState.value]);
+
+  React.useEffect(() => {
+    const handleFillInput = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message: string }>;
+      const message = customEvent.detail?.message;
+      
+      if (message) {
+        clearPendingLargePastes();
+        dispatchInput({ type: 'ACTIVATE' });
+        dispatchInput({ type: 'SET_VALUE', payload: message });
+        
+        if (richTextInputRef.current) {
+          richTextInputRef.current.focus();
+        }
+      }
+    };
+
+    window.addEventListener('fill-chat-input', handleFillInput);
+    
+    return () => {
+      window.removeEventListener('fill-chat-input', handleFillInput);
+    };
+  }, [clearPendingLargePastes]);
+
+  React.useEffect(() => {
+    const handleFillChatInput = (data: {
+      content: string;
+      onlyIfEmpty?: boolean;
+      mode?: 'replace' | 'append';
+      separator?: string;
+    }) => {
+      if (data.onlyIfEmpty && inputValueRef.current.trim().length > 0) {
+        return;
+      }
+
+      const nextValue =
+        data.mode === 'append'
+          ? (() => {
+              const currentValue = inputValueRef.current;
+              if (!currentValue.trim()) {
+                return data.content;
+              }
+
+              const separator = data.separator ?? '\n\n';
+              return `${currentValue.replace(/\s+$/, '')}${separator}${data.content.replace(/^\s+/, '')}`;
+            })()
+          : data.content;
+
+      if (data.mode !== 'append') {
+        clearPendingLargePastes();
+      }
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: nextValue });
+      inputValueRef.current = nextValue;
+
+      if (richTextInputRef.current) {
+        richTextInputRef.current.focus();
+      }
+    };
+
+    globalEventBus.on('fill-chat-input', handleFillChatInput);
+
+    return () => {
+      globalEventBus.off('fill-chat-input', handleFillChatInput);
+    };
+  }, [clearPendingLargePastes]);
+
+  // Expose current input value for external queries (e.g. deep review fill-back confirmation)
+  React.useEffect(() => {
+    const handleGetChatInputState = (request: { getValue?: () => string }) => {
+      request.getValue = () => inputValueRef.current;
+    };
+
+    globalEventBus.on('chat-input:get-state', handleGetChatInputState);
+
+    return () => {
+      globalEventBus.off('chat-input:get-state', handleGetChatInputState);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!slashCommandState.isActive || slashCommandState.kind !== 'all' || derivedState?.isProcessing) {
+      return;
+    }
+
+    void loadMcpPromptCommands();
+  }, [derivedState?.isProcessing, loadMcpPromptCommands, slashCommandState.isActive, slashCommandState.kind]);
+
+  // Stable ref so the mcp-app:message handler can read the latest value without
+  // being included in the effect's dependency array (prevents rapid listener
+  // teardown/re-registration on every keystroke or streaming update).
+  const inputStateValueRef = React.useRef(inputState.value);
+  React.useEffect(() => {
+    inputStateValueRef.current = inputState.value;
+  });
+
+  // Handle MCP App ui/message requests (aligned with VSCode behavior)
+  React.useEffect(() => {
+    const handleMcpAppMessage = async (event: import('@/infrastructure/api/service-api/MCPAPI').McpAppMessageEvent) => {
+      const { requestId, params } = event;
+
+      // Don't fill if input already has content (aligned with VSCode behavior)
+      if (inputStateValueRef.current.trim()) {
+        log.warn('MCP App ui/message rejected: input already has content');
+        // Send error response (VSCode returns { isError: true } in this case)
+        globalEventBus.emit('mcp-app:message-response', {
+          requestId,
+          result: { isError: true }
+        } as import('@/infrastructure/api/service-api/MCPAPI').McpAppMessageResponseEvent);
+        return;
+      }
+
+      try {
+        // Extract text content and set input
+        const textContent = params.content
+          .filter(c => c.type === 'text')
+          .map(c => c.text)
+          .join('\n\n');
+
+        if (textContent) {
+          clearPendingLargePastes();
+          dispatchInput({ type: 'ACTIVATE' });
+          dispatchInput({ type: 'SET_VALUE', payload: textContent });
+        }
+
+        // Handle image attachments (respect max image limit)
+        let imgCount = currentImageCount;
+        for (const block of params.content) {
+          if (block.type === 'image') {
+            if (imgCount >= CHAT_INPUT_CONFIG.image.maxCount) break;
+            try {
+              const mimeType = block.mimeType || 'image/png';
+              const binaryString = atob(block.data);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              const blob = new Blob([bytes], { type: mimeType });
+              const file = new File([blob], `image.${mimeType.split('/')[1] || 'png'}`, { type: mimeType });
+              const imageContext = await createImageContextFromClipboard(file);
+              addContext(imageContext);
+              imgCount++;
+            } catch (err) {
+              log.error('Failed to add image from MCP App message', { err });
+            }
+          }
+        }
+
+        // Focus input
+        if (richTextInputRef.current) {
+          richTextInputRef.current.focus();
+        }
+
+        // Send success response
+        globalEventBus.emit('mcp-app:message-response', {
+          requestId,
+          result: { isError: false }
+        } as import('@/infrastructure/api/service-api/MCPAPI').McpAppMessageResponseEvent);
+      } catch (err) {
+        log.error('Failed to handle MCP App ui/message', { err });
+        // Send error response
+        globalEventBus.emit('mcp-app:message-response', {
+          requestId,
+          result: { isError: true }
+        } as import('@/infrastructure/api/service-api/MCPAPI').McpAppMessageResponseEvent);
+      }
+    };
+
+    globalEventBus.on('mcp-app:message', handleMcpAppMessage);
+
+    return () => {
+      globalEventBus.off('mcp-app:message', handleMcpAppMessage);
+    };
+  }, [addContext, clearPendingLargePastes, currentImageCount]);
+
+  React.useEffect(() => {
+    const handleInsertContextTag = (event: Event) => {
+      const customEvent = event as CustomEvent<{ context: any }>;
+      const context = customEvent.detail?.context;
+      
+      if (context) {
+        if (!inputState.isActive) {
+          dispatchInput({ type: 'ACTIVATE' });
+        }
+
+        setTimeout(() => {
+          if (richTextInputRef.current && (richTextInputRef.current as any).insertTag) {
+            const el = richTextInputRef.current;
+            if (!el.textContent?.trim() && !el.querySelector('[data-context-id]')) {
+              el.innerHTML = '';
+            }
+            el.focus();
+            const sel = window.getSelection();
+            if (sel) {
+              sel.selectAllChildren(el);
+              sel.collapseToEnd();
+            }
+            (el as any).insertTag(context);
+          }
+        }, 50);
+      }
+    };
+
+    window.addEventListener('insert-context-tag', handleInsertContextTag);
+    
+    return () => {
+      window.removeEventListener('insert-context-tag', handleInsertContextTag);
+    };
+  }, [inputState.isActive]);
+
+  React.useEffect(() => {
+    const fetchAvailableModes = async () => {
+      try {
+        const { agentAPI } = await import('@/infrastructure/api/service-api/AgentAPI');
+        const modes = await agentAPI.getAvailableModes();
+        dispatchMode({ type: 'SET_AVAILABLE_MODES', payload: modes });
+      } catch (error) {
+        log.error('Failed to fetch available modes', { error });
+      }
+    };
+    
+    fetchAvailableModes();
+    
+    const handleModeConfigUpdated = () => {
+      fetchAvailableModes();
+    };
+    
+    globalEventBus.on('mode:config:updated', handleModeConfigUpdated);
+    
+    return () => {
+      globalEventBus.off('mode:config:updated', handleModeConfigUpdated);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const handleSessionSwitched = (event: Event) => {
+      const customEvent = event as CustomEvent<{ sessionId: string; mode: string }>;
+      const { sessionId, mode } = customEvent.detail || {};
+      
+      if (sessionId && mode) {
+        log.debug('Session switched, syncing mode', { sessionId, mode });
+        dispatchMode({ type: 'SET_CURRENT_MODE', payload: mode });
+        try {
+          sessionStorage.setItem('bitfun:flowchat:lastMode', mode);
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    window.addEventListener('bitfun:session-switched', handleSessionSwitched);
+    
+    return () => {
+      window.removeEventListener('bitfun:session-switched', handleSessionSwitched);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const nextMode = resolveWorkspaceChatInputMode({
+      currentMode,
+      isAssistantWorkspace,
+      sessionMode: activeSessionMode,
+    });
+
+    if (nextMode) {
+      log.debug('Syncing mode with workspace and session', {
+        sessionId: effectiveTargetSessionId,
+        mode: nextMode,
+        sessionMode: activeSessionMode,
+        isAssistantWorkspace,
+      });
+      dispatchMode({ type: 'SET_CURRENT_MODE', payload: nextMode });
+      try {
+        sessionStorage.setItem('bitfun:flowchat:lastMode', nextMode);
+      } catch {
+        // ignore
+      }
+    }
+  }, [activeSessionMode, currentMode, effectiveTargetSessionId, isAssistantWorkspace]);
+
+  React.useEffect(() => {
+    const queuedInput = derivedState?.queuedInput;
+    if (!queuedInput?.trim() || !effectiveTargetSessionId) {
+      return;
+    }
+    // Sync machine queue into the input (e.g. failed turn restored by EventHandlerModule).
+    // `queuedInput` is cleared on successful send via `setQueuedInput(null)` so we do not fight CLEAR_VALUE.
+    // Use inputValueRef (not inputState.value) so this effect only re-runs when the machine's
+    // queuedInput actually changes — not on every keystroke — avoiding the race condition where
+    // a stale queuedInput would overwrite what the user is currently typing.
+    const currentValue = inputValueRef.current;
+    if (currentValue !== queuedInput && !currentValue.trim()) {
+      // Only restore when the input is empty: this effect is for failure-recovery
+      // (EventHandlerModule sets queuedInput on failed turns), NOT for live typing.
+      // Restoring while the user is actively typing would overwrite their draft.
+      log.debug('Detected queuedInput, restoring message to input', { queuedInput });
+      clearPendingLargePastes();
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: queuedInput });
+      inputValueRef.current = queuedInput;
+      if (richTextInputRef.current) {
+        richTextInputRef.current.focus();
+      }
+    }
+  }, [
+    derivedState?.queuedInput,
+    effectiveTargetSessionId,
+    clearPendingLargePastes,
+  ]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (agentBoostRef.current && !agentBoostRef.current.contains(event.target as Node)) {
+        dispatchMode({ type: 'CLOSE_DROPDOWN' });
+      }
+    };
+
+    if (modeState.dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [modeState.dropdownOpen]);
+
+  useEffect(() => {
+    if (!isModeDropdownOpen) {
+      return;
+    }
+    let cancelled = false;
+    setBoostSkillsLoading(true);
+    (async () => {
+      try {
+        const list = await configAPI.getModeSkillConfigs({
+          modeId: currentMode,
+          workspacePath: workspacePath || undefined,
+        });
+        if (!cancelled) {
+          setBoostPanelSkills(list);
+        }
+      } catch (err) {
+        log.error('Failed to load mode-resolved skills for boost panel', {
+          err,
+          modeId: currentMode,
+          workspacePath: workspacePath || undefined,
+        });
+        if (!cancelled) setBoostPanelSkills([]);
+      } finally {
+        if (!cancelled) setBoostSkillsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentMode, isModeDropdownOpen, workspacePath]);
+
+  useEffect(() => {
+    if (!modeState.dropdownOpen) {
+      clearSkillsTimer();
+      setSkillsFlyoutOpen(false);
+    }
+  }, [clearSkillsTimer, modeState.dropdownOpen]);
+
+  useEffect(
+    () => () => {
+      clearSkillsTimer();
+    },
+    [clearSkillsTimer]
+  );
+
+  useEffect(() => {
+    const handleImagePaste = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ file: File }>;
+      const file = customEvent.detail?.file;
+      
+      if (!file) return;
+
+      if (currentImageCount >= CHAT_INPUT_CONFIG.image.maxCount) {
+        notificationService.warning(t('input.maxImagesWarning', { count: CHAT_INPUT_CONFIG.image.maxCount }), { duration: 3000 });
+        return;
+      }
+      
+      try {
+        const imageContext = await createImageContextFromClipboard(file);
+
+        addContext(imageContext);
+        undoImageStackRef.current.push(imageContext.id);
+
+        if (!inputState.isActive) {
+          dispatchInput({ type: 'ACTIVATE' });
+        }
+      } catch (error) {
+        log.error('Failed to process clipboard image', { fileName: file.name, error });
+        notificationService.error(
+          `${t('input.imagePasteFailed')}: ${error instanceof Error ? error.message : t('error.unknown')}`,
+          { duration: 3000 }
+        );
+      }
+    };
+    
+    const inputElement = richTextInputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener('imagePaste', handleImagePaste);
+    }
+    
+    return () => {
+      if (inputElement) {
+        inputElement.removeEventListener('imagePaste', handleImagePaste);
+      }
+    };
+  }, [addContext, currentImageCount, inputState.isActive, t]);
+
+  React.useEffect(() => {
+    if (!effectiveTargetSessionId || !workspacePath) {
+      return;
+    }
+
+    const store = FlowChatStore.getInstance();
+    const state = store.getState();
+    const session = state.sessions.get(effectiveTargetSessionId);
+
+    if (!session || session.dialogTurns.length === 0) {
+      return;
+    }
+
+    const lastTurn = session.dialogTurns[session.dialogTurns.length - 1];
+    
+    if (lastTurn.status === 'completed') {
+      const modifiedFiles: string[] = [];
+      
+      for (const round of lastTurn.modelRounds) {
+        for (const item of round.items) {
+          if (item.type === 'tool') {
+            const toolItem = item as import('../types/flow-chat').FlowToolItem;
+            const fileModifyTools = ['write_file', 'edit_file', 'create_file', 'delete_file'];
+            if (fileModifyTools.includes(toolItem.toolName)) {
+              const toolInput = toolItem.toolCall?.input;
+              if (toolInput && typeof toolInput === 'object') {
+                const filePath = (toolInput as any).file_path || (toolInput as any).path || (toolInput as any).filePath;
+                if (filePath && typeof filePath === 'string') {
+                  modifiedFiles.push(filePath);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (modifiedFiles.length > 0) {
+        log.debug('File modifications detected, updating recommendation context', { modifiedFiles });
+        setRecommendationContext({
+          workspacePath,
+          sessionId: effectiveTargetSessionId,
+          turnIndex: lastTurn.backendTurnIndex ?? session.dialogTurns.length - 1,
+          modifiedFiles: [...new Set(modifiedFiles)]
+        });
+      }
+    }
+  }, [effectiveTargetSessionId, workspacePath, derivedState?.isProcessing]);
+
+  const getFilteredActions = useCallback(() => {
+    if (isAcpInputSession) {
+      return [];
+    }
+
+    const items: SlashActionItem[] = [
+      ...(isBtwSession
+        ? []
+        : [{
+            kind: 'action' as const,
+            id: 'btw',
+            command: '/btw',
+            label: t('btw.title'),
+          }]),
+      {
+        kind: 'action',
+        id: 'goal',
+        command: '/goal',
+        label: t('chatInput.goalAction'),
+      },
+      {
+        kind: 'action',
+        id: 'usage',
+        command: '/usage',
+        label: t('chatInput.usageAction'),
+      },
+      {
+        kind: 'action',
+        id: 'deepreview',
+        command: DEEP_REVIEW_SLASH_COMMAND,
+        label: t('chatInput.deepreviewAction'),
+      },
+      {
+        kind: 'action' as const,
+        id: 'reload-skills',
+        command: '/reload-skills',
+        label: t('chatInput.reloadSkillsAction'),
+      },
+      ...(!derivedState?.isProcessing
+        ? [
+            {
+              kind: 'action' as const,
+              id: 'compact',
+              command: '/compact',
+              label: t('chatInput.compactAction'),
+            },
+            {
+              kind: 'action' as const,
+              id: 'init',
+              command: '/init',
+              label: t('chatInput.initAction'),
+            },
+          ]
+        : []),
+    ];
+    const q = (slashCommandState.query || '').trim().toLowerCase();
+    if (!q) return items;
+
+    return items.filter(i => {
+      const cmd = i.command.slice(1).toLowerCase();
+      return cmd.includes(q) || i.label.toLowerCase().includes(q);
+    });
+  }, [derivedState?.isProcessing, isAcpInputSession, isBtwSession, slashCommandState.query, t]);
+
+  const getFilteredMcpPromptCommands = useCallback((): SlashMcpPromptItem[] => {
+    if (isAcpInputSession) {
+      return [];
+    }
+
+    const q = (slashCommandState.query || '').trim().toLowerCase();
+    if (!q) {
+      return mcpPromptCommands;
+    }
+
+    return mcpPromptCommands.filter(item => {
+      const commandToken = item.command.slice(1).toLowerCase();
+      return (
+        commandToken.includes(q) ||
+        item.serverName.toLowerCase().includes(q) ||
+        item.label.toLowerCase().includes(q)
+      );
+    });
+  }, [isAcpInputSession, mcpPromptCommands, slashCommandState.query]);
+
+  const getFilteredAcpCommands = useCallback((): SlashAcpCommandItem[] => {
+    return filterSlashCommands(acpAgentCommands, slashCommandState.query).map(command => ({
+      kind: 'acpCommand',
+      id: command.name,
+      command: `/${command.name}`,
+      label: command.description,
+    }));
+  }, [acpAgentCommands, slashCommandState.query]);
+
+  const resolveTypedMcpPromptCommand = useCallback((text: string): SlashMcpPromptItem | null => {
+    const trimmed = text.trim();
+    if (!trimmed.startsWith('/')) {
+      return null;
+    }
+
+    const token = trimmed.slice(1).split(/\s+/, 1)[0]?.toLowerCase() || '';
+    if (!token) {
+      return null;
+    }
+
+    return (
+      mcpPromptCommands.find(item => item.command.slice(1).toLowerCase() === token) || null
+    );
+  }, [mcpPromptCommands]);
+
+  const getSlashPickerItems = useCallback((): SlashPickerItem[] => {
+    const acpCommands = getFilteredAcpCommands();
+    if (isAcpInputSession) {
+      return acpCommands;
+    }
+
+    const actions = getFilteredActions();
+    const mcpPrompts = getFilteredMcpPromptCommands();
+    let modeList = incrementalCodeModes;
+    if (canSwitchModes && slashCommandState.query) {
+      const q = slashCommandState.query;
+      modeList = incrementalCodeModes.filter(
+        mode =>
+          mode.name.toLowerCase().includes(q) ||
+          mode.id.toLowerCase().includes(q)
+      );
+    }
+    const modes: SlashModeItem[] = (canSwitchModes ? modeList : []).map(mode => ({
+      kind: 'mode',
+      id: mode.id,
+      name: mode.name,
+    }));
+    return [...acpCommands, ...actions, ...mcpPrompts, ...modes];
+  }, [canSwitchModes, getFilteredActions, getFilteredAcpCommands, getFilteredMcpPromptCommands, incrementalCodeModes, isAcpInputSession, slashCommandState.query]);
+  
+  const handleInputChange = useCallback((text: string, activeContexts: import('../../shared/types/context').ContextItem[]) => {
+    if (!inputState.isActive && text.length > 0) {
+      dispatchInput({ type: 'ACTIVATE' });
+    }
+
+    const activeContextIds = new Set(activeContexts.map(context => context.id));
+    contexts.forEach(context => {
+      // Image contexts are not represented by inline tag pills inside the
+      // editor; they live in a separate thumbnail strip and are removed via
+      // their own × button. Skip them when reconciling against editor tags.
+      if (context.type === 'image') return;
+      if (!activeContextIds.has(context.id)) {
+        removeContext(context.id);
+      }
+    });
+    
+    prunePendingLargePastes(text);
+    dispatchInput({ type: 'SET_VALUE', payload: text });
+    inputValueRef.current = text;
+
+    const localSlashCommandsEnabled = !isAcpInputSession;
+    const trimmed = text.trim();
+    const isBtwCommand = localSlashCommandsEnabled && isSlashCommand(trimmed, '/btw');
+    const isCompactCommand = localSlashCommandsEnabled && isSlashCommand(trimmed, '/compact');
+    const isGoalCommand = localSlashCommandsEnabled && isGoalSlashCommand(text);
+    const isUsageCommand = localSlashCommandsEnabled && isSlashCommand(trimmed, '/usage');
+    const isDeepReviewCommand = localSlashCommandsEnabled && isDeepReviewSlashCommand(text);
+    const isProcessing = !!derivedState?.isProcessing;
+
+    // Don't queue /btw or /goal while the main session is processing; they have dedicated flows.
+    if (derivedState?.isProcessing && !isBtwCommand && !isGoalCommand && !isCompactCommand && !isUsageCommand && !isDeepReviewCommand) {
+      setQueuedInput(text);
+    }
+
+    if (text.startsWith('/')) {
+      const afterSlash = text.slice(1);
+      const hasWhitespace = /\s/.test(afterSlash);
+      const query = afterSlash.trimStart().split(/\s+/, 1)[0]?.toLowerCase?.() ?? '';
+      const matchedMcpPrompt = localSlashCommandsEnabled
+        ? resolveTypedMcpPromptCommand(text)
+        : null;
+
+      if (isAcpInputSession && hasWhitespace) {
+        if (slashCommandState.isActive) {
+          setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+        }
+        return;
+      }
+
+      // While the main session is running, expose a single quick action (/btw) via the same picker UX.
+      if (isProcessing) {
+        if (!localSlashCommandsEnabled) {
+          if (slashCommandState.isActive) {
+            setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+          }
+          return;
+        }
+
+        // Only show the picker for "/..." patterns that are plausibly a command (/ or /b... /d...).
+        // Once the user types a space (starts composing the real question), stop showing the picker
+        // so Enter can submit "/btw ..." or "/DeepReview ..." instead of selecting from the picker.
+        if (!hasWhitespace && (query === '' || query.startsWith('b') || query.startsWith('d') || query.startsWith('g') || query.startsWith('u'))) {
+          setSlashCommandState({
+            isActive: true,
+            kind: 'actions',
+            query,
+            selectedIndex: 0,
+          });
+        } else if (slashCommandState.isActive && slashCommandState.kind === 'actions') {
+          setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+        }
+        return;
+      }
+
+      // When idle, keep the picker for mode switching, but don't interfere with executable slash commands.
+      if (!isBtwCommand && !isGoalCommand && !isCompactCommand && !isUsageCommand && !isDeepReviewCommand && !matchedMcpPrompt) {
+        setSlashCommandState({
+          isActive: true,
+          kind: 'all',
+          query,
+          selectedIndex: 0,
+        });
+        return;
+      }
+    }
+
+    if (slashCommandState.isActive) {
+      setSlashCommandState({
+        isActive: false,
+        kind: 'modes',
+        query: '',
+        selectedIndex: 0,
+      });
+    }
+  }, [contexts, derivedState, inputState.isActive, isAcpInputSession, prunePendingLargePastes, removeContext, resolveTypedMcpPromptCommand, setQueuedInput, slashCommandState.isActive, slashCommandState.kind]);
+
+  const submitBtwFromInput = useCallback(async () => {
+    if (!derivedState) return;
+    if (!currentSessionId) {
+      notificationService.error(t('btw.noSession'));
+      return;
+    }
+    if (isBtwSession) {
+      notificationService.warning(t('btw.nestedDisabled'));
+      return;
+    }
+
+    const originalMessage = inputState.value.trim();
+    const originalPendingLargePastes = { ...pendingLargePastesRef.current };
+    const message = expandComposerSpecialTokens(originalMessage);
+    const messageCharCount = getCharacterCount(message);
+    const question = stripSlashCommand(message, '/btw').trim();
+
+    // Clear input without adding to main history.
+    dispatchInput({ type: 'CLEAR_VALUE' });
+    clearPendingLargePastes();
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+
+    if (!question) {
+      notificationService.warning(t('btw.empty'));
+      return;
+    }
+
+    if (messageCharCount > CHAT_INPUT_CONFIG.largePaste.maxMessageChars) {
+      notificationService.error(
+        t('input.messageTooLarge', {
+          max: CHAT_INPUT_CONFIG.largePaste.maxMessageChars,
+          count: messageCharCount,
+        }),
+        { duration: 4000 }
+      );
+      pendingLargePastesRef.current = originalPendingLargePastes;
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: originalMessage });
+      return;
+    }
+
+    try {
+      const { childSessionId } = await startBtwThread({
+        parentSessionId: currentSessionId,
+        workspacePath,
+        question,
+        modelId: 'fast',
+      });
+      openBtwSessionInAuxPane({
+        childSessionId,
+        parentSessionId: currentSessionId,
+        workspacePath,
+        expand: true,
+      });
+      setInputTarget('btw');
+      dispatchInput({ type: 'DEACTIVATE' });
+    } catch (e) {
+      log.error('Failed to start /btw thread', { e });
+      dispatchInput({ type: 'ACTIVATE' });
+      pendingLargePastesRef.current = originalPendingLargePastes;
+      dispatchInput({ type: 'SET_VALUE', payload: originalMessage });
+    }
+  }, [clearPendingLargePastes, currentSessionId, derivedState, expandComposerSpecialTokens, inputState.value, isBtwSession, setQueuedInput, t, workspacePath]);
+
+  const submitCompactFromInput = useCallback(async () => {
+    if (!effectiveTargetSessionId || !effectiveTargetSession) {
+      notificationService.error(
+        t('chatInput.compactNoSession')
+      );
+      return;
+    }
+
+    if (derivedState?.isProcessing) {
+      notificationService.warning(
+        t('chatInput.compactBusy')
+      );
+      return;
+    }
+
+    const message = inputState.value.trim();
+    if (!/^\/compact\s*$/i.test(message)) {
+      notificationService.warning(
+        t('chatInput.compactUsage')
+      );
+      return;
+    }
+
+    dispatchInput({ type: 'CLEAR_VALUE' });
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+
+    try {
+      const { agentAPI } = await import('@/infrastructure/api');
+      await agentAPI.compactSession({
+        sessionId: effectiveTargetSessionId,
+        workspacePath: effectiveTargetSession.workspacePath,
+        remoteConnectionId: effectiveTargetSession.remoteConnectionId,
+        remoteSshHost: effectiveTargetSession.remoteSshHost,
+      });
+    } catch (error) {
+      log.error('Failed to trigger /compact', {
+        error,
+        sessionId: effectiveTargetSessionId,
+      });
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: message });
+      notificationService.error(
+        error instanceof Error ? error.message : t('error.unknown'),
+        {
+          title: t('chatInput.compactFailed'),
+          duration: 5000,
+        }
+      );
+    }
+  }, [
+    derivedState?.isProcessing,
+    effectiveTargetSession,
+    effectiveTargetSessionId,
+    inputState.value,
+    setQueuedInput,
+    t,
+  ]);
+
+  const runEffectiveSessionUsageReport = useCallback(async () => {
+    if (!effectiveTargetSessionId || !effectiveTargetSession) {
+      notificationService.error(
+        t('chatInput.usageNoSession')
+      );
+      return;
+    }
+
+    try {
+      const result = await runUsageReportCommand({
+        session: effectiveTargetSession,
+        isProcessing: !!derivedState?.isProcessing,
+        busyMessage: t('chatInput.usageBusy'),
+        noWorkspaceMessage: t('chatInput.usageNoWorkspace'),
+        failedTitle: t('chatInput.usageFailed'),
+        unknownErrorMessage: t('error.unknown'),
+        loadingMarkdown: t('usage.loading.markdown'),
+      });
+
+      if (result.inserted) {
+        dispatchInput({ type: 'DEACTIVATE' });
+      }
+    } catch (error) {
+      log.error('Failed to trigger /usage', {
+        error,
+        sessionId: effectiveTargetSessionId,
+      });
+      throw error;
+    }
+  }, [
+    derivedState?.isProcessing,
+    effectiveTargetSession,
+    effectiveTargetSessionId,
+    t,
+  ]);
+
+  const submitUsageFromInput = useCallback(async () => {
+    if (!effectiveTargetSessionId || !effectiveTargetSession) {
+      notificationService.error(
+        t('chatInput.usageNoSession')
+      );
+      return;
+    }
+
+    const message = inputState.value.trim();
+    if (!/^\/usage\s*$/i.test(message)) {
+      notificationService.warning(
+        t('chatInput.usageCommandUsage')
+      );
+      return;
+    }
+
+    dispatchInput({ type: 'CLEAR_VALUE' });
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+
+    try {
+      await runEffectiveSessionUsageReport();
+    } catch {
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: message });
+    }
+  }, [
+    effectiveTargetSession,
+    effectiveTargetSessionId,
+    inputState.value,
+    runEffectiveSessionUsageReport,
+    setQueuedInput,
+    t,
+  ]);
+
+  const handleToolbarUsageReport = useCallback(() => {
+    void runEffectiveSessionUsageReport().catch(() => {
+      /* errors surfaced by runUsageReportCommand */
+    });
+  }, [runEffectiveSessionUsageReport]);
+
+  const submitInitFromInput = useCallback(async () => {
+    if (!effectiveTargetSessionId || !effectiveTargetSession) {
+      notificationService.error(
+        t('chatInput.initNoSession')
+      );
+      return;
+    }
+
+    if (derivedState?.isProcessing) {
+      notificationService.warning(
+        t('chatInput.initBusy')
+      );
+      return;
+    }
+
+    const message = inputState.value.trim();
+    if (!/^\/init\s*$/i.test(message)) {
+      notificationService.warning(
+        t('chatInput.initUsage')
+      );
+      return;
+    }
+
+    dispatchInput({ type: 'CLEAR_VALUE' });
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+
+    try {
+      await agentAPI.runInitAgentsMd({
+        sessionId: effectiveTargetSessionId,
+        workspacePath: effectiveTargetSession.workspacePath,
+        remoteConnectionId: effectiveTargetSession.remoteConnectionId,
+        remoteSshHost: effectiveTargetSession.remoteSshHost,
+      });
+      dispatchInput({ type: 'DEACTIVATE' });
+    } catch (error) {
+      log.error('Failed to trigger /init', {
+        error,
+        sessionId: effectiveTargetSessionId,
+      });
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: message });
+      notificationService.error(
+        error instanceof Error ? error.message : t('error.unknown'),
+        {
+          title: t('chatInput.initFailed'),
+          duration: 5000,
+        }
+      );
+    }
+  }, [
+    derivedState?.isProcessing,
+    effectiveTargetSession,
+    effectiveTargetSessionId,
+    inputState.value,
+    setQueuedInput,
+    t,
+  ]);
+
+  const submitGoalFromInput = useCallback(async () => {
+    if (!effectiveTargetSessionId || !effectiveTargetSession) {
+      notificationService.error(
+        t('chatInput.goalNoSession')
+      );
+      return;
+    }
+
+    if (isBtwSession) {
+      notificationService.warning(
+        t('chatInput.goalNestedDisabled')
+      );
+      return;
+    }
+
+    const message = inputState.value.trim();
+    if (!isGoalSlashCommand(message)) {
+      notificationService.warning(
+        t('chatInput.goalUsage')
+      );
+      return;
+    }
+
+    const originalMessage = message;
+    dispatchInput({ type: 'CLEAR_VALUE' });
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+
+    const parsed = parseGoalCommand(message);
+    const result = await threadGoalController.runSlashAction(message);
+
+    if (!result && parsed?.kind === 'set') {
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: originalMessage });
+      return;
+    }
+
+    dispatchInput({ type: 'DEACTIVATE' });
+  }, [
+    effectiveTargetSession,
+    effectiveTargetSessionId,
+    inputState.value,
+    isBtwSession,
+    setQueuedInput,
+    t,
+    threadGoalController,
+  ]);
+
+  const submitReloadSkillsFromInput = useCallback(async () => {
+    const message = inputState.value.trim();
+    if (!/^\/reload-skills\s*$/i.test(message)) {
+      notificationService.warning(t('chatInput.reloadSkillsUsage'));
+      return;
+    }
+
+    dispatchInput({ type: 'CLEAR_VALUE' });
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+
+    try {
+      // Re-fetch skill configs with forceRefresh=true. The Tauri command
+      // (skill_api.rs::get_skill_configs) calls SkillRegistry::global().refresh()
+      // before serializing the result, so this single call both refreshes
+      // the registry cache and returns the new view. Pass workspacePath so
+      // workspace-level skills (`.bitfun/skills/`, `.cursor/skills/`, etc.)
+      // are included in the count — without it, the registry falls back
+      // to user + built-in slots only and the toast would undercount.
+      const skills = await configAPI.getSkillConfigs({
+        forceRefresh: true,
+        workspacePath: workspacePath || undefined,
+      });
+      notificationService.success(
+        t('chatInput.reloadSkillsDone', { count: skills.length }),
+        { duration: 3000 }
+      );
+    } catch (error) {
+      log.error('Failed to trigger /reload-skills', { error });
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: message });
+      notificationService.error(
+        error instanceof Error ? error.message : t('error.unknown'),
+        {
+          title: t('chatInput.reloadSkillsFailed'),
+          duration: 5000,
+        }
+      );
+    }
+  }, [inputState.value, setQueuedInput, t, workspacePath]);
+
+  const submitDeepreviewFromInput = useCallback(async () => {
+    if (!effectiveTargetSessionId || !effectiveTargetSession) {
+      notificationService.error(
+        t('chatInput.deepreviewNoSession')
+      );
+      return;
+    }
+
+    const message = inputState.value.trim();
+    if (!isDeepReviewSlashCommand(message)) {
+      notificationService.warning(
+        t('chatInput.deepreviewUsage')
+      );
+      return;
+    }
+
+    if (isBtwSession) {
+      notificationService.warning(
+        t('chatInput.deepreviewNestedDisabled'),
+      );
+      return;
+    }
+
+    if (shouldBlockDeepReviewCommand(message, currentReviewActivity)) {
+      notificationService.warning(
+        t('chatInput.deepreviewBusy'),
+      );
+      return;
+    }
+
+    const originalPendingLargePastes = { ...pendingLargePastesRef.current };
+
+    try {
+      const preview = await buildDeepReviewPreviewFromSlashCommand(
+        message,
+        effectiveTargetSession.workspacePath,
+      );
+      const confirmed = await confirmDeepReviewLaunch(preview, {
+        sessionConcurrencyGuard: deriveDeepReviewSessionConcurrencyGuard(
+          flowChatState,
+          effectiveTargetSessionId,
+        ),
+      });
+      if (!confirmed) {
+        return;
+      }
+
+      if (effectiveTargetSessionId) {
+        addToHistory(effectiveTargetSessionId, message);
+      }
+      setHistoryIndex(-1);
+      setSavedDraft('');
+      dispatchInput({ type: 'CLEAR_VALUE' });
+      clearPendingLargePastes();
+      setQueuedInput(null);
+      setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+
+      const { prompt, runManifest } = await buildDeepReviewLaunchFromSlashCommand(
+        message,
+        effectiveTargetSession.workspacePath,
+      );
+
+      await launchDeepReviewSession({
+        parentSessionId: effectiveTargetSessionId,
+        workspacePath: effectiveTargetSession.workspacePath,
+        prompt,
+        displayMessage: message,
+        runManifest,
+        childSessionName: t('chatInput.deepreviewThreadTitle'),
+      });
+      dispatchInput({ type: 'DEACTIVATE' });
+    } catch (error) {
+      log.error('Failed to trigger /DeepReview', {
+        error,
+        sessionId: effectiveTargetSessionId,
+      });
+      pendingLargePastesRef.current = originalPendingLargePastes;
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: message });
+      notificationService.error(
+        getDeepReviewLaunchErrorMessage(error, t, t('error.unknown')),
+        {
+          title: t('chatInput.deepreviewFailed'),
+          duration: 5000,
+        }
+      );
+    }
+  }, [
+    addToHistory,
+    clearPendingLargePastes,
+    confirmDeepReviewLaunch,
+    currentReviewActivity,
+    effectiveTargetSession,
+    effectiveTargetSessionId,
+    flowChatState,
+    inputState.value,
+    isBtwSession,
+    setQueuedInput,
+    t,
+  ]);
+
+  const submitMcpPromptFromInput = useCallback(async () => {
+    const originalMessage = inputState.value.trim();
+    let command = resolveTypedMcpPromptCommand(originalMessage);
+
+    if (!command) {
+      await loadMcpPromptCommands();
+      command = resolveTypedMcpPromptCommand(originalMessage);
+    }
+
+    if (!command) {
+      notificationService.warning(
+        t('chatInput.noMatchingCommand')
+      );
+      return;
+    }
+
+    const argsText = originalMessage
+      .slice(command.command.length)
+      .trim();
+    const argValues = parseSlashArguments(argsText);
+    const requiredArgs = command.arguments.filter(argument => argument.required);
+
+    if (argValues.length < requiredArgs.length) {
+      const requiredNames = requiredArgs.map(argument => argument.name).join(', ');
+      notificationService.warning(
+        t('chatInput.mcpPromptMissingArgs', {
+          args: requiredNames,
+        })
+      );
+      return;
+    }
+
+    const confirmed = await confirmPromptCacheGuardIfNeeded();
+    if (!confirmed) {
+      return;
+    }
+
+    const originalPendingLargePastes = { ...pendingLargePastesRef.current };
+    if (effectiveTargetSessionId) {
+      addToHistory(effectiveTargetSessionId, originalMessage);
+    }
+    setHistoryIndex(-1);
+    setSavedDraft('');
+    dispatchInput({ type: 'CLEAR_VALUE' });
+    clearPendingLargePastes();
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+
+    try {
+      const promptArguments = command.arguments.reduce<Record<string, string>>((acc, argument, index) => {
+        const value = argValues[index];
+        if (typeof value === 'string' && value.length > 0) {
+          acc[argument.name] = value;
+        }
+        return acc;
+      }, {});
+
+      const prompt = await MCPAPI.getPrompt({
+        serverId: command.serverId,
+        promptName: command.promptName,
+        arguments: Object.keys(promptArguments).length > 0 ? promptArguments : undefined,
+      });
+
+      const renderedPrompt = renderMcpPromptMessages(prompt.messages);
+      if (!renderedPrompt.trim()) {
+        throw new Error('MCP prompt returned no displayable content');
+      }
+
+      await sendMessage(renderedPrompt, {
+        displayMessage: originalMessage,
+      });
+      dispatchInput({ type: 'DEACTIVATE' });
+    } catch (error) {
+      log.error('Failed to run MCP prompt command', {
+        command: originalMessage,
+        error,
+      });
+      pendingLargePastesRef.current = originalPendingLargePastes;
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: originalMessage });
+      notificationService.error(
+        error instanceof Error ? error.message : t('error.unknown'),
+        {
+          title: t('chatInput.mcpPromptFailed'),
+          duration: 5000,
+        }
+      );
+    }
+  }, [
+    clearPendingLargePastes,
+    addToHistory,
+    confirmPromptCacheGuardIfNeeded,
+    effectiveTargetSessionId,
+    inputState.value,
+    loadMcpPromptCommands,
+    resolveTypedMcpPromptCommand,
+    sendMessage,
+    setQueuedInput,
+    t,
+  ]);
+
+  const handleCancelCurrentTask = useCallback(async () => {
+    await FlowChatManager.getInstance().cancelCurrentTask();
+  }, []);
+  
+  const handleSendOrCancel = useCallback(async () => {
+    if (!derivedState) return;
+    
+    const { sendButtonMode } = derivedState;
+    const draftTrimmed = inputState.value.trim();
+
+    // While generating, an empty control in `cancel` mode means stop. If the user has typed a follow-up,
+    // never treat this path as cancel — that would call cancel_dialog_turn and abort the current round early.
+    if (sendButtonMode === 'cancel' && !draftTrimmed) {
+      await handleCancelCurrentTask();
+      return;
+    }
+    
+    if (sendButtonMode === 'retry') {
+      await transition(SessionExecutionEvent.RESET);
+    }
+    
+    if (!draftTrimmed) return;
+    
+    const originalMessage = draftTrimmed;
+    const originalPendingLargePastes = { ...pendingLargePastesRef.current };
+    const message = expandComposerSpecialTokens(originalMessage);
+    const messageCharCount = getCharacterCount(message);
+    const localSlashCommandsEnabled = !isAcpInputSession;
+
+    if (localSlashCommandsEnabled && isSlashCommand(message, '/btw')) {
+      // When idle, /btw can be sent via the normal send button.
+      await submitBtwFromInput();
+      return;
+    }
+
+    if (localSlashCommandsEnabled && isGoalSlashCommand(message)) {
+      await submitGoalFromInput();
+      return;
+    }
+
+    if (localSlashCommandsEnabled && /^\/compact\s*$/i.test(message)) {
+      await submitCompactFromInput();
+      return;
+    }
+
+    if (localSlashCommandsEnabled && /^\/usage\s*$/i.test(message)) {
+      await submitUsageFromInput();
+      return;
+    }
+
+    if (localSlashCommandsEnabled && /^\/init\s*$/i.test(message)) {
+      await submitInitFromInput();
+      return;
+    }
+
+    if (localSlashCommandsEnabled && isDeepReviewSlashCommand(message)) {
+      await submitDeepreviewFromInput();
+      return;
+    }
+
+    if (localSlashCommandsEnabled && /^\/reload-skills\s*$/i.test(message)) {
+      await submitReloadSkillsFromInput();
+      return;
+    }
+
+    if (localSlashCommandsEnabled && resolveTypedMcpPromptCommand(message)) {
+      await submitMcpPromptFromInput();
+      return;
+    }
+
+    if (localSlashCommandsEnabled && isSlashCommand(message, '/compact')) {
+      notificationService.warning(
+        t('chatInput.compactUsage')
+      );
+      return;
+    }
+
+    if (localSlashCommandsEnabled && isSlashCommand(message, '/usage')) {
+      notificationService.warning(
+        t('chatInput.usageCommandUsage')
+      );
+      return;
+    }
+
+    if (localSlashCommandsEnabled && isSlashCommand(message, '/init')) {
+      notificationService.warning(
+        t('chatInput.initUsage')
+      );
+      return;
+    }
+
+    if (localSlashCommandsEnabled && isSlashCommand(message, '/reload-skills')) {
+      notificationService.warning(t('chatInput.reloadSkillsUsage'));
+      return;
+    }
+    
+    if (messageCharCount > CHAT_INPUT_CONFIG.largePaste.maxMessageChars) {
+      notificationService.error(
+        t('input.messageTooLarge', {
+          max: CHAT_INPUT_CONFIG.largePaste.maxMessageChars,
+          count: messageCharCount,
+        }),
+        { duration: 4000 }
+      );
+      pendingLargePastesRef.current = originalPendingLargePastes;
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: originalMessage });
+      return;
+    }
+
+    const confirmed = await confirmPromptCacheGuardIfNeeded();
+    if (!confirmed) {
+      return;
+    }
+
+    // Add to history before clearing (session-scoped)
+    if (effectiveTargetSessionId) {
+      addToHistory(effectiveTargetSessionId, message);
+    }
+    setHistoryIndex(-1);
+    setSavedDraft('');
+
+    dispatchInput({ type: 'CLEAR_VALUE' });
+    clearPendingLargePastes();
+    // Clear machine queue too; otherwise the queuedInput→input sync effect puts the text back after send.
+    setQueuedInput(null);
+
+    try {
+      await sendMessage(message, {
+        displayMessage: originalMessage,
+      });
+      clearPendingLargePastes();
+      dispatchInput({ type: 'CLEAR_VALUE' });
+      dispatchInput({ type: 'DEACTIVATE' });
+    } catch (error) {
+      log.error('Failed to send message', { error });
+      pendingLargePastesRef.current = originalPendingLargePastes;
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: originalMessage });
+      if (derivedState?.isProcessing) {
+        setQueuedInput(originalMessage);
+      }
+    }
+  }, [
+    inputState.value,
+    derivedState,
+    handleCancelCurrentTask,
+    transition,
+    sendMessage,
+    addToHistory,
+    effectiveTargetSessionId,
+    clearPendingLargePastes,
+    expandComposerSpecialTokens,
+    isAcpInputSession,
+    setQueuedInput,
+    submitBtwFromInput,
+    submitGoalFromInput,
+    submitCompactFromInput,
+    submitUsageFromInput,
+    submitInitFromInput,
+    submitDeepreviewFromInput,
+    submitMcpPromptFromInput,
+    submitReloadSkillsFromInput,
+    confirmPromptCacheGuardIfNeeded,
+    t,
+    resolveTypedMcpPromptCommand,
+  ]);
+  
+  const getFilteredIncrementalModes = useCallback(() => {
+    if (!canSwitchModes) return [];
+    if (!slashCommandState.query) return incrementalCodeModes;
+    return incrementalCodeModes.filter(
+      mode =>
+        mode.name.toLowerCase().includes(slashCommandState.query) ||
+        mode.id.toLowerCase().includes(slashCommandState.query)
+    );
+  }, [canSwitchModes, incrementalCodeModes, slashCommandState.query]);
+
+  const applyModeChange = useCallback((modeId: string) => {
+    dispatchMode({
+      type: 'SET_CURRENT_MODE',
+      payload: modeId,
+    });
+
+    try {
+      sessionStorage.setItem('bitfun:flowchat:lastMode', modeId);
+    } catch {
+      // ignore
+    }
+
+    if (effectiveTargetSessionId) {
+      FlowChatStore.getInstance().updateSessionMode(effectiveTargetSessionId, modeId);
+    }
+  }, [effectiveTargetSessionId]);
+
+  applyModeChangeRef.current = applyModeChange;
+
+  const requestModeChange = useCallback((modeId: string) => {
+    if (!canSwitchModes) {
+      dispatchMode({ type: 'CLOSE_DROPDOWN' });
+      return;
+    }
+
+    if (modeId === currentMode) {
+      dispatchMode({ type: 'CLOSE_DROPDOWN' });
+      return;
+    }
+
+    if (!switchableModes.some(mode => mode.id === modeId)) {
+      dispatchMode({ type: 'CLOSE_DROPDOWN' });
+      return;
+    }
+
+    applyModeChange(modeId);
+    dispatchMode({ type: 'CLOSE_DROPDOWN' });
+  }, [applyModeChange, canSwitchModes, currentMode, switchableModes]);
+  
+  const selectSlashCommandMode = useCallback((modeId: string) => {
+    requestModeChange(modeId);
+    
+    dispatchInput({ type: 'CLEAR_VALUE' });
+    setSlashCommandState({
+      isActive: false,
+      kind: 'modes',
+      query: '',
+      selectedIndex: 0,
+    });
+  }, [requestModeChange]);
+
+  const selectSlashCommandAction = useCallback((actionId: string) => {
+    const raw = inputState.value || '';
+    const lower = raw.trimStart().toLowerCase();
+
+    let next = raw;
+
+    if (actionId === 'btw') {
+      if (isBtwSession) {
+        return;
+      }
+      if (!isSlashCommand(lower, '/btw')) {
+        next = '/btw ';
+      } else {
+        // Normalize to "/btw " + rest, preserving any already typed question.
+        const m = raw.match(/^(\s*)\/btw\b/i);
+        if (m) {
+          const leadingWs = m[1] || '';
+          const rest = raw.slice(m[0].length);
+          next = `${leadingWs}/btw ${rest.trimStart()}`;
+        } else {
+          next = '/btw ';
+        }
+      }
+    } else if (actionId === 'compact') {
+      next = '/compact';
+    } else if (actionId === 'goal') {
+      if (!isSlashCommand(lower, '/goal')) {
+        next = '/goal ';
+      } else {
+        const m = raw.match(/^(\s*)\/goal\b/i);
+        if (m) {
+          const leadingWs = m[1] || '';
+          const rest = raw.slice(m[0].length);
+          next = `${leadingWs}/goal ${rest.trimStart()}`;
+        } else {
+          next = '/goal ';
+        }
+      }
+    } else if (actionId === 'usage') {
+      next = '/usage';
+    } else if (actionId === 'init') {
+      next = '/init';
+    } else if (actionId === 'deepreview') {
+      next = `${DEEP_REVIEW_SLASH_COMMAND} `;
+    } else if (actionId === 'reload-skills') {
+      // /reload-skills takes no arguments. Setting the value to the bare
+      // command lets the user immediately press Enter to dispatch it
+      // (which is the same path /usage and /init use).
+      next = '/reload-skills';
+    } else {
+      return;
+    }
+
+    dispatchInput({ type: 'SET_VALUE', payload: next });
+    // Clear the machine's queued input so the queuedInput sync effect does not overwrite
+    // the just-set "/btw ..." value back to the stale "/" that was queued while processing.
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+    window.setTimeout(() => richTextInputRef.current?.focus(), 0);
+  }, [inputState.value, isBtwSession, setQueuedInput]);
+
+  const selectSlashPromptCommand = useCallback((item: SlashMcpPromptItem) => {
+    const hasArguments = item.arguments.length > 0;
+    dispatchInput({
+      type: 'SET_VALUE',
+      payload: hasArguments ? `${item.command} ` : item.command,
+    });
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+    window.setTimeout(() => richTextInputRef.current?.focus(), 0);
+  }, [setQueuedInput]);
+
+  const selectSlashAcpCommand = useCallback((item: SlashAcpCommandItem) => {
+    dispatchInput({ type: 'SET_VALUE', payload: acpSlashCommandText(item.id) });
+    setQueuedInput(null);
+    setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+    window.setTimeout(() => richTextInputRef.current?.focus(), 0);
+  }, [setQueuedInput]);
+
+  const handleBoostStartBtw = useCallback(
+    (e: React.SyntheticEvent) => {
+      e.stopPropagation();
+      if (!currentSessionId) {
+        notificationService.error(t('btw.noSession'));
+        return;
+      }
+      if (isBtwSession) {
+        notificationService.warning(
+          t('btw.nestedDisabled')
+        );
+        return;
+      }
+      selectSlashCommandAction('btw');
+      dispatchMode({ type: 'CLOSE_DROPDOWN' });
+    },
+    [currentSessionId, isBtwSession, selectSlashCommandAction, t]
+  );
+  
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Local /btw shortcut (Ctrl/Cmd+Alt+B) should work even when ChatInput is focused.
+    if ((e.ctrlKey || e.metaKey) && e.altKey && !e.shiftKey && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!currentSessionId) {
+        notificationService.error(t('btw.noSession'));
+        return;
+      }
+      if (isBtwSession) {
+        notificationService.warning(t('btw.nestedDisabled'));
+        return;
+      }
+
+      const selected = (window.getSelection?.()?.toString() ?? '').trim();
+      const initial = selected ? `/btw Explain this:\n\n${selected}` : '/btw ';
+      dispatchInput({ type: 'ACTIVATE' });
+      dispatchInput({ type: 'SET_VALUE', payload: initial });
+      window.setTimeout(() => richTextInputRef.current?.focus(), 0);
+      return;
+    }
+
+    // Ctrl+Z / Cmd+Z: undo last image paste (image pastes bypass the browser's native undo stack)
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
+      const stack = undoImageStackRef.current;
+      // Skip stale entries (images already removed manually or via clearContexts)
+      while (stack.length > 0) {
+        const imageId = stack.pop()!;
+        if (contextsRef.current.some(c => c.id === imageId)) {
+          e.preventDefault();
+          removeContext(imageId);
+          return;
+        }
+      }
+      // No valid image to undo; let the browser handle native text undo (do not preventDefault)
+    }
+
+    const nativeEvt = e.nativeEvent as KeyboardEvent;
+    // IME-owned keys must stay with the input method. In particular, Escape
+    // closes the Chinese/Japanese/Korean candidate window and must not cancel
+    // the running BitFun session.
+    const isComposing =
+      isImeComposingRef.current
+      || nativeEvt.isComposing
+      || nativeEvt.keyCode === 229;
+
+    if (e.key === 'Escape' && isComposing) {
+      return;
+    }
+
+    if (e.key === 'Tab' && e.shiftKey) {
+      const modes = switchableModesRef.current;
+      const modeNow = currentModeRef.current;
+      const apply = applyModeChangeRef.current;
+      if (!(canSwitchModes && apply && modes.length > 1)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (slashCommandState.isActive) {
+        setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+        dispatchInput({ type: 'CLEAR_VALUE' });
+      }
+
+      const currentIdx = modes.findIndex(m => m.id === modeNow);
+      if (currentIdx === -1) {
+        apply(modes[0].id);
+        return;
+      }
+      const nextIdx = (currentIdx + 1) % modes.length;
+      apply(modes[nextIdx].id);
+      return;
+    }
+
+    if (slashCommandState.isActive) {
+      if (!(slashCommandState.kind === 'modes' && !canSwitchModes)) {
+        const items =
+          slashCommandState.kind === 'modes'
+            ? getFilteredIncrementalModes()
+            : slashCommandState.kind === 'actions'
+              ? getFilteredActions()
+              : getSlashPickerItems();
+        const maxIndex = Math.max(0, items.length - 1);
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSlashCommandState(prev => ({
+            ...prev,
+            selectedIndex: Math.min(prev.selectedIndex + 1, maxIndex),
+          }));
+          return;
+        }
+        
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSlashCommandState(prev => ({
+            ...prev,
+            selectedIndex: Math.max(prev.selectedIndex - 1, 0),
+          }));
+          return;
+        }
+        
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (items.length > 0) {
+            if (slashCommandState.kind === 'modes') {
+              const mode = items[slashCommandState.selectedIndex] as any;
+              selectSlashCommandMode(mode.id);
+            } else if (slashCommandState.kind === 'actions') {
+              const action = items[slashCommandState.selectedIndex] as any;
+              selectSlashCommandAction(action.id);
+            } else {
+              const item = items[slashCommandState.selectedIndex] as SlashPickerItem;
+              if (item.kind === 'mode') {
+                selectSlashCommandMode(item.id);
+              } else if (item.kind === 'mcpPrompt') {
+                selectSlashPromptCommand(item);
+              } else if (item.kind === 'acpCommand') {
+                selectSlashAcpCommand(item);
+              } else {
+                selectSlashCommandAction(item.id);
+              }
+            }
+          }
+          return;
+        }
+        
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          const kind = slashCommandState.kind;
+          setSlashCommandState({ isActive: false, kind: 'modes', query: '', selectedIndex: 0 });
+
+          // For mode switching picker, "/" is just a trigger and should be cleared on cancel.
+          if (kind !== 'actions') {
+            dispatchInput({ type: 'CLEAR_VALUE' });
+          }
+          return;
+        }
+        
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          if (items.length > 0) {
+            if (slashCommandState.kind === 'modes') {
+              const mode = items[slashCommandState.selectedIndex] as any;
+              selectSlashCommandMode(mode.id);
+            } else if (slashCommandState.kind === 'actions') {
+              const action = items[slashCommandState.selectedIndex] as any;
+              selectSlashCommandAction(action.id);
+            } else {
+              const item = items[slashCommandState.selectedIndex] as SlashPickerItem;
+              if (item.kind === 'mode') {
+                selectSlashCommandMode(item.id);
+              } else if (item.kind === 'mcpPrompt') {
+                selectSlashPromptCommand(item);
+              } else if (item.kind === 'acpCommand') {
+                selectSlashAcpCommand(item);
+              } else {
+                selectSlashCommandAction(item.id);
+              }
+            }
+          }
+          return;
+        }
+      }
+    }
+    
+    // Tab key: toggle send target when the btw session switcher is visible
+    if (showTargetSwitcher && e.key === 'Tab' && !e.shiftKey && !slashCommandState.isActive) {
+      e.preventDefault();
+      setInputTarget(prev => prev === 'main' ? 'btw' : 'main');
+      return;
+    }
+
+    // History navigation with up/down arrows
+    // Only handle when not in slash command mode and not composing
+    if (!slashCommandState.isActive && inputHistory.length > 0) {
+      const selection = window.getSelection();
+      const editor = richTextInputRef.current;
+      
+      if (selection && selection.rangeCount > 0 && editor) {
+        const range = selection.getRangeAt(0);
+        
+        // Check cursor position
+        const isAtStart = range.collapsed && range.startOffset === 0 && 
+                          (range.startContainer === editor || 
+                           (range.startContainer.nodeType === Node.TEXT_NODE && 
+                            range.startContainer.previousSibling === null &&
+                            range.startContainer.parentNode === editor));
+        
+        // For end position, we need to check if cursor is at the end of content
+        const isAtEnd = (() => {
+          if (!range.collapsed) return false;
+          const editorContent = editor.textContent || '';
+          let cursorPos = 0;
+          const traverse = (node: Node): boolean => {
+            if (node === range.startContainer) {
+              if (node.nodeType === Node.TEXT_NODE) {
+                cursorPos += range.startOffset;
+              }
+              return true;
+            }
+            if (node.nodeType === Node.TEXT_NODE) {
+              cursorPos += (node.textContent || '').length;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+              for (const child of Array.from(node.childNodes)) {
+                if (traverse(child)) return true;
+              }
+            }
+            return false;
+          };
+          traverse(editor);
+          return cursorPos === editorContent.length;
+        })();
+        
+        // Arrow Up at start of line -> go back in history
+        if (e.key === 'ArrowUp' && isAtStart) {
+          e.preventDefault();
+          
+          // Save draft if starting navigation
+          if (historyIndex === -1 && inputState.value.trim()) {
+            setSavedDraft(inputState.value);
+          }
+          
+          // Navigate back (older messages)
+          if (historyIndex < inputHistory.length - 1) {
+            const newIndex = historyIndex + 1;
+            setHistoryIndex(newIndex);
+            dispatchInput({ type: 'SET_VALUE', payload: inputHistory[newIndex] });
+          }
+          return;
+        }
+        
+        // Arrow Down at end of line -> go forward in history
+        if (e.key === 'ArrowDown' && isAtEnd) {
+          e.preventDefault();
+          
+          if (historyIndex > 0) {
+            // Navigate forward (newer messages)
+            const newIndex = historyIndex - 1;
+            setHistoryIndex(newIndex);
+            dispatchInput({ type: 'SET_VALUE', payload: inputHistory[newIndex] });
+          } else if (historyIndex === 0) {
+            // Return to draft/empty
+            setHistoryIndex(-1);
+            dispatchInput({ type: 'SET_VALUE', payload: savedDraft });
+          }
+          return;
+        }
+      }
+    }
+    
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (isComposing) {
+        return;
+      }
+      
+      e.preventDefault();
+
+      const isBtwCommand = isSlashCommand(inputState.value.trim(), '/btw');
+      if (isBtwCommand) {
+        // Allow /btw submission even while the main session is generating.
+        void submitBtwFromInput();
+        return;
+      }
+
+      if (isGoalSlashCommand(inputState.value.trim())) {
+        void submitGoalFromInput();
+        return;
+      }
+
+      if (derivedState?.isProcessing) {
+        if (!inputState.value.trim()) return;
+        void handleSendOrCancel();
+        return;
+      }
+
+      handleSendOrCancel();
+    }
+    
+    if (e.key === 'Escape' && derivedState?.canCancel) {
+      e.preventDefault();
+      void handleCancelCurrentTask();
+    }
+  }, [handleSendOrCancel, submitBtwFromInput, submitGoalFromInput, derivedState, handleCancelCurrentTask, slashCommandState, getFilteredIncrementalModes, getFilteredActions, getSlashPickerItems, selectSlashCommandMode, selectSlashCommandAction, selectSlashPromptCommand, selectSlashAcpCommand, canSwitchModes, historyIndex, inputHistory, savedDraft, inputState.value, currentSessionId, isBtwSession, showTargetSwitcher, setInputTarget, removeContext, t]);
+
+  const handleImeCompositionStart = useCallback(() => {
+    isImeComposingRef.current = true;
+  }, []);
+
+  const handleImeCompositionEnd = useCallback(() => {
+    isImeComposingRef.current = false;
+  }, []);
+
+  const handleImageInput = useCallback(() => {
+    const remaining = CHAT_INPUT_CONFIG.image.maxCount - currentImageCount;
+    if (remaining <= 0) {
+      notificationService.warning(t('input.maxImagesWarning', { count: CHAT_INPUT_CONFIG.image.maxCount }), { duration: 3000 });
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = CHAT_INPUT_CONFIG.image.acceptedTypes.join(',');
+    input.multiple = true;
+    
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (!files || files.length === 0) return;
+      
+      const fileArray = Array.from(files).slice(0, remaining);
+      if (files.length > remaining) {
+        notificationService.warning(t('input.maxImagesWarning', { count: CHAT_INPUT_CONFIG.image.maxCount }), { duration: 3000 });
+      }
+      
+      for (const file of fileArray) {
+        try {
+          const imageContext = await createImageContextFromFile(file);
+          addContext(imageContext);
+        } catch (error) {
+          log.error('Failed to process image', { fileName: file.name, error });
+          notificationService.error(
+            `${file.name}: ${error instanceof Error ? error.message : t('error.processingFailed')}`,
+            { duration: 3000 }
+          );
+        }
+      }
+    };
+    
+    input.click();
+  }, [addContext, currentImageCount, t]);
+
+  const handleFileAttachmentInput = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (!files || files.length === 0) return;
+
+      const fileArray = Array.from(files).slice(
+        0,
+        CHAT_INPUT_CONFIG.attachment.maxCount - currentFileCount
+      );
+      if (files.length > fileArray.length) {
+        notificationService.warning(
+          t('input.maxAttachmentsWarning', {
+            count: CHAT_INPUT_CONFIG.attachment.maxCount,
+          }),
+          { duration: 3000 }
+        );
+      }
+
+      for (const file of fileArray) {
+        try {
+          const fileContext = await createAttachmentContextFromFile(file);
+          addContext(fileContext);
+        } catch (error) {
+          log.error('Failed to process attachment', {
+            fileName: file.name,
+            error,
+          });
+          notificationService.error(
+            `${file.name}: ${error instanceof Error ? error.message : t('error.processingFailed')}`,
+            { duration: 3000 }
+          );
+        }
+      }
+    };
+
+    input.click();
+  }, [addContext, currentFileCount, t]);
+
+  const focusRichTextInputSoon = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      richTextInputRef.current?.focus();
+    });
+  }, []);
+
+  // Space-to-focus: when no editable element is focused, Space key focuses the input.
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== ' ') return;
+      const target = e.target as HTMLElement;
+      const isEditable =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        target.closest('[contenteditable="true"]') !== null;
+      if (isEditable) return;
+      e.preventDefault();
+      focusRichTextInputSoon();
+    };
+    document.addEventListener('keydown', handleGlobalKeyDown, true);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown, true);
+  }, [focusRichTextInputSoon]);
+
+  const insertSkillIntoInput = useCallback(
+    (skillName: string) => {
+      const line = t('chatInput.insertSkillLine', { name: skillName });
+      dispatchInput({ type: 'ACTIVATE' });
+      const cur = inputState.value;
+      const next = cur.trim() ? `${cur.trimEnd()}\n\n${line}` : line;
+      dispatchInput({ type: 'SET_VALUE', payload: next });
+      clearSkillsTimer();
+      setSkillsFlyoutOpen(false);
+      dispatchMode({ type: 'CLOSE_DROPDOWN' });
+      focusRichTextInputSoon();
+    },
+    [clearSkillsTimer, focusRichTextInputSoon, inputState.value, t]
+  );
+
+  const handleBoostPickImage = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      dispatchMode({ type: 'CLOSE_DROPDOWN' });
+      handleImageInput();
+    },
+    [handleImageInput]
+  );
+
+  const handleBoostPickFile = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    dispatchMode({ type: 'CLOSE_DROPDOWN' });
+    handleFileAttachmentInput();
+  }, [handleFileAttachmentInput]);
+
+  const handleBoostOpenAtContext = useCallback((e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    dispatchMode({ type: 'CLOSE_DROPDOWN' });
+    dispatchInput({ type: 'ACTIVATE' });
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const el = richTextInputRef.current;
+        if (el && typeof (el as unknown as { openMention?: () => void }).openMention === 'function') {
+          (el as unknown as { openMention: () => void }).openMention();
+        }
+      });
+    });
+  }, []);
+
+  const handleOpenSkillsLibrary = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      clearSkillsTimer();
+      setSkillsFlyoutOpen(false);
+      dispatchMode({ type: 'CLOSE_DROPDOWN' });
+      openScene('skills' as SceneTabId);
+    },
+    [clearSkillsTimer, openScene]
+  );
+  useEffect(() => {
+    const dropZone = containerRef.current?.closest('.bitfun-chat-input-drop-zone') as HTMLElement | null;
+    const el = dropZone ?? containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setChatInputHeight(el.offsetHeight);
+    });
+    observer.observe(el);
+    setChatInputHeight(el.offsetHeight);
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+  const renderActionButton = () => {
+    if (!derivedState) return <IconButton className="bitfun-chat-input__send-button" disabled size="small"><ArrowUp size={11} /></IconButton>;
+
+    const { sendButtonMode, hasQueuedInput } = derivedState;
+    
+    if (sendButtonMode === 'cancel') {
+      return (
+        <Tooltip content={t('input.stopGeneration')}>
+          <div
+            className="bitfun-chat-input__send-button bitfun-chat-input__send-button--breathing"
+            onClick={handleSendOrCancel}
+            data-testid="chat-input-cancel-btn"
+          >
+            <div className="bitfun-chat-input__breathing-circle" />
+            {hasQueuedInput && <span className="bitfun-chat-input__queued-badge">1</span>}
+          </div>
+        </Tooltip>
+      );
+    }
+    
+    if (sendButtonMode === 'retry') {
+      return (
+        <IconButton
+          className="bitfun-chat-input__send-button bitfun-chat-input__send-button--retry"
+          onClick={handleSendOrCancel}
+          tooltip={t('input.retry')}
+          size="small"
+        >
+          <RotateCcw size={11} />
+        </IconButton>
+      );
+    }
+
+    if (sendButtonMode === 'split') {
+      return (
+        <div className="bitfun-chat-input__split-actions">
+          <Tooltip content={t('input.stopGeneration')}>
+            <div
+              className="bitfun-chat-input__send-button bitfun-chat-input__send-button--breathing"
+              onClick={() => {
+                void handleCancelCurrentTask();
+              }}
+              data-testid="chat-input-cancel-btn"
+            >
+              <div className="bitfun-chat-input__breathing-circle" />
+            </div>
+          </Tooltip>
+          <IconButton
+            className="bitfun-chat-input__send-button"
+            onClick={handleSendOrCancel}
+            disabled={!inputState.value.trim()}
+            data-testid="chat-input-send-btn"
+            tooltip={t('input.sendShortcut')}
+            size="small"
+          >
+            <ArrowUp size={11} />
+          </IconButton>
+        </div>
+      );
+    }
+    
+    return (
+      <IconButton
+        className="bitfun-chat-input__send-button"
+        onClick={handleSendOrCancel}
+        disabled={!inputState.value.trim()}
+        data-testid="chat-input-send-btn"
+        tooltip={t('input.sendShortcut')}
+        size="small"
+      >
+        <ArrowUp size={11} />
+      </IconButton>
+    );
+  };
+
+  return (
+    <>
+      {deepReviewConsentDialog}
+      <ContextDropZone
+        acceptedTypes={['file', 'directory', 'image', 'code-snippet', 'mermaid-diagram']}
+        className="bitfun-chat-input-drop-zone"
+        onContextAdded={(context) => {
+          if (context.type === 'image' && currentImageCount >= CHAT_INPUT_CONFIG.image.maxCount) {
+            notificationService.warning(t('input.maxImagesWarning', { count: CHAT_INPUT_CONFIG.image.maxCount }), { duration: 3000 });
+            return;
+          }
+          if (context.type === 'file' && (context as FileContext).source === 'attachment') {
+            // Skip: file attachments are added via the picker only, not drag-drop,
+            // to avoid duplicate uploads from workspace @-mentions.
+            return;
+          }
+          // Images are shown as separate thumbnails outside the editor; they
+          // don't get an inline #img: pill. All other context types do.
+          if (
+            context.type !== 'image' &&
+            richTextInputRef.current &&
+            (richTextInputRef.current as any).insertTag
+          ) {
+            (richTextInputRef.current as any).insertTag(context);
+          }
+          if (!inputState.isActive) {
+            dispatchInput({ type: 'ACTIVATE' });
+          }
+        }}
+      >
+        <div 
+          ref={containerRef}
+          className={`bitfun-chat-input ${isMultiLine ? 'bitfun-chat-input--multi-line' : 'bitfun-chat-input--capsule'} ${derivedState?.isProcessing ? 'bitfun-chat-input--processing' : ''} ${className}`}
+          data-testid="chat-input-container"
+        >
+        {recommendationContext && (
+          <SmartRecommendations
+            context={recommendationContext}
+            className="bitfun-chat-input__recommendations"
+          />
+        )}
+
+        <PendingQueuePanel sessionId={effectiveTargetSessionId || undefined} />
+
+        <div className="bitfun-chat-input__container">
+          <AcpPlanPanel entries={acpPlanEntries} />
+          <div className={`bitfun-chat-input__box ${isMultiLine ? 'bitfun-chat-input__box--multi-line' : 'bitfun-chat-input__box--capsule'}`}>
+            {showTargetSwitcher && (
+              <div className="bitfun-chat-input__target-switcher" data-testid="chat-input-target-switcher">
+                <span className="bitfun-chat-input__target-switcher-label">{t('chatInput.conversationTarget')}</span>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className={`bitfun-chat-input__target-tab ${inputTarget === 'main' ? 'bitfun-chat-input__target-tab--active' : ''}`}
+                  onClick={() => setInputTarget('main')}
+                >
+                  {t('chatInput.targetMain')}
+                  {inputTarget === 'main' && currentSessionTitle && (
+                    <span className="bitfun-chat-input__target-tab-name">{currentSessionTitle}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className={`bitfun-chat-input__target-tab ${inputTarget === 'btw' ? 'bitfun-chat-input__target-tab--active' : ''}`}
+                  onClick={() => setInputTarget('btw')}
+                >
+                  {activeBtwTargetLabel}
+                  {inputTarget === 'btw' && activeBtwSessionTitle && (
+                    <span className="bitfun-chat-input__target-tab-name">{activeBtwSessionTitle}</span>
+                  )}
+                </button>
+              </div>
+            )}
+            <div className="bitfun-chat-input__input-area">
+              {imageContexts.length > 0 && (
+                <div
+                  className="bitfun-chat-input__image-strip"
+                  data-testid="chat-input-image-strip"
+                >
+                  {imageContexts.map(image => {
+                    const previewUrl = image.thumbnailUrl || image.dataUrl;
+                    return (
+                      <div
+                        key={image.id}
+                        className="bitfun-chat-input__image-chip"
+                        title={image.imageName}
+                      >
+                        {previewUrl ? (
+                          <img
+                            className="bitfun-chat-input__image-chip-thumb"
+                            src={previewUrl}
+                            alt={image.imageName}
+                          />
+                        ) : (
+                          <div className="bitfun-chat-input__image-chip-thumb bitfun-chat-input__image-chip-thumb--placeholder">
+                            <Image size={14} />
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="bitfun-chat-input__image-chip-remove"
+                          aria-label={t('input.removeImage')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeContext(image.id);
+                          }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {showPlaceholder && (
+                <span className="bitfun-chat-input__placeholder" aria-hidden>
+                  {t('input.placeholder')}
+                </span>
+              )}
+              <RichTextInput
+                ref={richTextInputRef}
+                value={inputState.value}
+                onChange={handleInputChange}
+                onLargePaste={createLargePastePlaceholder}
+                onKeyDown={handleKeyDown}
+                onCompositionStart={handleImeCompositionStart}
+                onCompositionEnd={handleImeCompositionEnd}
+                placeholder=""
+                disabled={false}
+                contexts={contexts}
+                onRemoveContext={removeContext}
+                onMentionStateChange={setMentionState}
+                data-testid="chat-input-textarea"
+              />
+
+              
+              <FileMentionPicker
+                isOpen={mentionState.isActive}
+                searchQuery={mentionState.query}
+                workspacePath={workspacePath}
+                onSelect={(context: FileContext | DirectoryContext) => {
+                  addContext(context);
+                  
+                  if (richTextInputRef.current && (richTextInputRef.current as any).insertTagReplacingMention) {
+                    (richTextInputRef.current as any).insertTagReplacingMention(context);
+                  }
+                }}
+                onClose={() => {
+                  if (richTextInputRef.current && (richTextInputRef.current as any).closeMention) {
+                    (richTextInputRef.current as any).closeMention();
+                  }
+                  setMentionState({ isActive: false, query: '', startOffset: 0 });
+                }}
+              />
+              
+              {slashCommandState.isActive && (() => {
+                if (slashCommandState.kind === 'actions') {
+                  const actions = getFilteredActions();
+                  return (
+                    <div className="bitfun-chat-input__slash-command-picker">
+                      <div className="bitfun-chat-input__slash-command-header">
+                        <span>{t('chatInput.quickAction')}</span>
+                        <span className="bitfun-chat-input__slash-command-hint">{t('chatInput.selectHint')}</span>
+                      </div>
+                      <div className="bitfun-chat-input__slash-command-list">
+                        {actions.length > 0 ? (
+                          actions.map((action, index) => (
+                            <div
+                              key={action.id}
+                              className={`bitfun-chat-input__slash-command-item ${index === slashCommandState.selectedIndex ? 'bitfun-chat-input__slash-command-item--selected' : ''}`}
+                              onClick={() => selectSlashCommandAction(action.id)}
+                              onMouseEnter={() => setSlashCommandState(prev => ({ ...prev, selectedIndex: index }))}
+                            >
+                              <span className="bitfun-chat-input__slash-command-name">{action.command}</span>
+                              <span className="bitfun-chat-input__slash-command-label">{action.label}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="bitfun-chat-input__slash-command-empty">
+                            {t('chatInput.noMatchingCommand')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (slashCommandState.kind === 'all') {
+                  const items = getSlashPickerItems();
+                  return (
+                    <div className="bitfun-chat-input__slash-command-picker">
+                      <div className="bitfun-chat-input__slash-command-header">
+                        <span>{t('chatInput.commands')}</span>
+                        <span className="bitfun-chat-input__slash-command-hint">{t('chatInput.selectHint')}</span>
+                      </div>
+                      <div className="bitfun-chat-input__slash-command-list">
+                        {mcpPromptCommandsLoading && items.length === 0 ? (
+                          <div className="bitfun-chat-input__slash-command-empty">
+                            {t('chatInput.loadingMcpPrompts')}
+                          </div>
+                        ) : items.length > 0 ? (
+                          items.map((item, index) => {
+                            const commandText = item.kind === 'mode' ? `/${item.id}` : item.command;
+                            const labelText = item.kind === 'mode'
+                              ? item.name
+                              : item.kind === 'mcpPrompt'
+                                ? `${item.serverName} · ${item.label}`
+                                : item.label;
+
+                            return (
+                              <div
+                                key={`${item.kind}-${item.id}`}
+                                className={`bitfun-chat-input__slash-command-item ${index === slashCommandState.selectedIndex ? 'bitfun-chat-input__slash-command-item--selected' : ''} ${item.kind === 'mode' && item.id === modeState.current ? 'bitfun-chat-input__slash-command-item--active' : ''}`}
+                                title={`${commandText}\n${labelText}`}
+                                onClick={() => {
+                                  if (item.kind === 'mode') {
+                                    selectSlashCommandMode(item.id);
+                                  } else if (item.kind === 'mcpPrompt') {
+                                    selectSlashPromptCommand(item);
+                                  } else if (item.kind === 'acpCommand') {
+                                    selectSlashAcpCommand(item);
+                                  } else {
+                                    selectSlashCommandAction(item.id);
+                                  }
+                                }}
+                                onMouseEnter={() => setSlashCommandState(prev => ({ ...prev, selectedIndex: index }))}
+                              >
+                                <span className="bitfun-chat-input__slash-command-name">
+                                  {commandText}
+                                </span>
+                                <span className="bitfun-chat-input__slash-command-label">
+                                  {labelText}
+                                </span>
+                                {item.kind === 'mode' && item.id === modeState.current && <span className="bitfun-chat-input__slash-command-current">{t('chatInput.current')}</span>}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="bitfun-chat-input__slash-command-empty">
+                            {t('chatInput.noMatchingCommand')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (!canSwitchModes) return null;
+
+                const filteredModes = getFilteredIncrementalModes();
+                return (
+                  <div className="bitfun-chat-input__slash-command-picker">
+                    <div className="bitfun-chat-input__slash-command-header">
+                      <span>{t('chatInput.addModeMenuTitle')}</span>
+                      <span className="bitfun-chat-input__slash-command-hint">{t('chatInput.selectHint')}</span>
+                    </div>
+                    <div className="bitfun-chat-input__slash-command-list">
+                      {filteredModes.length > 0 ? (
+                        filteredModes.map((mode, index) => (
+                          <div
+                            key={mode.id}
+                            className={`bitfun-chat-input__slash-command-item ${index === slashCommandState.selectedIndex ? 'bitfun-chat-input__slash-command-item--selected' : ''} ${mode.id === modeState.current ? 'bitfun-chat-input__slash-command-item--active' : ''}`}
+                            onClick={() => selectSlashCommandMode(mode.id)}
+                            onMouseEnter={() => setSlashCommandState(prev => ({ ...prev, selectedIndex: index }))}
+                          >
+                            <span className="bitfun-chat-input__slash-command-name">/{mode.id}</span>
+                            <span className="bitfun-chat-input__slash-command-label">{mode.name}</span>
+                            {mode.id === modeState.current && <span className="bitfun-chat-input__slash-command-current">{t('chatInput.current')}</span>}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="bitfun-chat-input__slash-command-empty">
+                          {t('chatInput.noMatchingMode')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+            
+            <div className="bitfun-chat-input__actions">
+              <div className="bitfun-chat-input__actions-left">
+                <div className="bitfun-chat-input__agent-boost" ref={agentBoostRef}>
+                  {!isAcpTargetSession && (
+                    <Tooltip content={t('chatInput.addBoostTooltip')}>
+                      <IconButton
+                        className="bitfun-chat-input__agent-boost-add"
+                        variant="ghost"
+                        size="xs"
+                        aria-haspopup="menu"
+                        aria-expanded={modeState.dropdownOpen}
+                        onClick={e => {
+                          e.stopPropagation();
+                          dispatchMode({ type: 'TOGGLE_DROPDOWN' });
+                        }}
+                      >
+                        <Plus size={14} strokeWidth={2.25} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+
+                  {(canSwitchModes || isAcpTargetSession) && modeState.current !== 'agentic' && (
+                    <div
+                      className={`bitfun-chat-input__agent-capsule bitfun-chat-input__agent-capsule--${modeState.current === 'debug' ? 'debug' : modeState.current}`}
+                    >
+                      <span className="bitfun-chat-input__agent-capsule-label">
+                        {t(`chatInput.modeNames.${modeState.current}`, { defaultValue: '' }) ||
+                          modeState.available.find(m => m.id === modeState.current)?.name ||
+                          modeState.current}
+                      </span>
+                      {!isAcpTargetSession && (
+                        <button
+                          type="button"
+                          className="bitfun-chat-input__agent-capsule-close"
+                          aria-label={t('chatInput.resetToAgentic')}
+                          onClick={e => {
+                            e.stopPropagation();
+                            applyModeChange('agentic');
+                            dispatchMode({ type: 'CLOSE_DROPDOWN' });
+                          }}
+                        >
+                          <X size={12} strokeWidth={2.5} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {modeState.dropdownOpen && (
+                    <div className="bitfun-chat-input__mode-dropdown bitfun-chat-input__mode-dropdown--agent-boost">
+                      {canSwitchModes && (
+                        <>
+                          <div className="bitfun-chat-input__boost-section">
+                            {incrementalCodeModes.length > 0 ? (
+                              incrementalCodeModes.map(modeOption => {
+                                const modeDescription =
+                                  t(`chatInput.modeDescriptions.${modeOption.id}`, { defaultValue: '' }) ||
+                                  modeOption.description ||
+                                  modeOption.name;
+                                const modeName =
+                                  t(`chatInput.modeNames.${modeOption.id}`, { defaultValue: '' }) || modeOption.name;
+                                return (
+                                  <Tooltip key={modeOption.id} content={modeDescription} placement="left">
+                                    <div
+                                      className={`bitfun-chat-input__mode-option ${modeState.current === modeOption.id ? 'bitfun-chat-input__mode-option--active' : ''}`}
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        requestModeChange(modeOption.id);
+                                      }}
+                                    >
+                                      <span className="bitfun-chat-input__mode-option-name">{modeName}</span>
+                                      {modeState.current === modeOption.id && (
+                                        <span className="bitfun-chat-input__slash-command-current">{t('chatInput.current')}</span>
+                                      )}
+                                    </div>
+                                  </Tooltip>
+                                );
+                              })
+                            ) : (
+                              <div className="bitfun-chat-input__agent-boost-empty bitfun-chat-input__agent-boost-empty--inline">
+                                {t('chatInput.noIncrementalModes')}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="bitfun-chat-input__boost-section-divider" aria-hidden />
+                        </>
+                      )}
+
+                      <div className="bitfun-chat-input__boost-section">
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className="bitfun-chat-input__boost-context-row"
+                          onClick={handleBoostOpenAtContext}
+                          onKeyDown={e => e.key === 'Enter' && handleBoostOpenAtContext(e)}
+                        >
+                          <Files size={14} className="bitfun-chat-input__boost-context-icon" aria-hidden />
+                          <span>{t('chatInput.boostAddContext')}</span>
+                        </div>
+
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className="bitfun-chat-input__boost-context-row"
+                          onClick={handleBoostPickImage}
+                          onKeyDown={e => e.key === 'Enter' && handleBoostPickImage(e as any)}
+                        >
+                          <Image size={14} className="bitfun-chat-input__boost-context-icon" aria-hidden />
+                          <span>{t('input.addImage')}</span>
+                        </div>
+
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className="bitfun-chat-input__boost-context-row"
+                          onClick={handleBoostPickFile}
+                          onKeyDown={e => e.key === 'Enter' && handleBoostPickFile(e as any)}
+                        >
+                          <Paperclip size={14} className="bitfun-chat-input__boost-context-icon" aria-hidden />
+                          <span>{t('input.addFile')}</span>
+                        </div>
+
+                        <div
+                          ref={skillsHostRef}
+                          className="bitfun-chat-input__boost-submenu-host"
+                          onMouseEnter={openSkillsFlyout}
+                          onMouseLeave={closeSkillsFlyout}
+                        >
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            className="bitfun-chat-input__boost-submenu-trigger"
+                            aria-haspopup="menu"
+                            aria-expanded={skillsFlyoutOpen}
+                          >
+                            <span className="bitfun-chat-input__boost-submenu-trigger-main">
+                              <Sparkles size={14} className="bitfun-chat-input__boost-context-icon" aria-hidden />
+                              <span>{t('chatInput.boostSkills')}</span>
+                            </span>
+                            <ChevronRight size={14} className="bitfun-chat-input__boost-submenu-chevron" aria-hidden />
+                          </div>
+                          <div
+                            className={[
+                              'bitfun-chat-input__boost-submenu-shell',
+                              skillsFlyoutOpen ? 'bitfun-chat-input__boost-submenu-shell--open' : '',
+                              skillsFlyoutLeft ? 'bitfun-chat-input__boost-submenu-shell--left' : '',
+                              skillsFlyoutUp ? 'bitfun-chat-input__boost-submenu-shell--up' : '',
+                            ].filter(Boolean).join(' ')}
+                            onMouseEnter={openSkillsFlyout}
+                            onMouseLeave={closeSkillsFlyout}
+                          >
+                            <div className="bitfun-chat-input__boost-submenu-panel">
+                              {boostSkillsLoading ? (
+                                <div className="bitfun-chat-input__boost-submenu-loading">
+                                  <Loader2 size={14} className="bitfun-chat-input__boost-submenu-spinner" aria-hidden />
+                                  <span>{t('chatInput.boostSkillsLoading')}</span>
+                                </div>
+                              ) : runtimeBoostSkills.length === 0 ? (
+                                <div className="bitfun-chat-input__boost-submenu-empty">{t('chatInput.boostSkillsEmpty')}</div>
+                              ) : (
+                                <div className="bitfun-chat-input__boost-submenu-list">
+                                  {runtimeBoostSkills.map(skill => (
+                                    <div
+                                      key={skill.key}
+                                      role="button"
+                                      tabIndex={0}
+                                      className="bitfun-chat-input__boost-submenu-item"
+                                      title={skill.description || skill.name}
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        insertSkillIntoInput(skill.name);
+                                      }}
+                                      onKeyDown={e => e.key === 'Enter' && insertSkillIntoInput(skill.name)}
+                                    >
+                                      <Sparkles size={12} className="bitfun-chat-input__boost-submenu-item-icon" aria-hidden />
+                                      <span className="bitfun-chat-input__boost-submenu-item-name">{skill.name}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                className="bitfun-chat-input__boost-submenu-manage"
+                                onClick={handleOpenSkillsLibrary}
+                                onKeyDown={e => e.key === 'Enter' && handleOpenSkillsLibrary(e as any)}
+                              >
+                                {t('chatInput.openSkillsLibrary')}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {!!currentSessionId && !isBtwSession && (
+                          <>
+                            <div className="bitfun-chat-input__boost-section-divider" aria-hidden />
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              className="bitfun-chat-input__boost-context-row"
+                              data-testid="chat-input-boost-start-btw"
+                              onClick={handleBoostStartBtw}
+                              onKeyDown={e => e.key === 'Enter' && handleBoostStartBtw(e)}
+                            >
+                              <MessageSquarePlus size={14} className="bitfun-chat-input__boost-context-icon" aria-hidden />
+                              <span>{t('chatInput.boostStartBtw')}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="bitfun-chat-input__actions-right">
+                <div className="bitfun-chat-input__model-usage-group">
+                  <ModelSelector
+                    currentMode={modeState.current}
+                    sessionId={effectiveTargetSessionId || undefined}
+                    currentTokens={tokenUsage.current}
+                    maxTokens={tokenUsage.max}
+                    contextUsageSource={tokenUsage.source}
+                  />
+                </div>
+
+                {renderActionButton()}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {((chatStripRepositoryPath || chatStripWorkspaceLabel) ||
+        (effectiveTargetSessionId && effectiveTargetSession)) && (
+        <ChatInputWorkspaceStrip
+          repositoryPath={chatStripRepositoryPath}
+          workspaceLabel={chatStripWorkspaceLabel}
+          deferPassiveGitRefresh={deferChatStripPassiveGitRefresh}
+          onEditWorkspace={
+            effectiveTargetSessionId && !isBtwSession
+              ? () => setShowSessionWorkspaceEditor(true)
+              : undefined
+          }
+          usageReport={
+            effectiveTargetSessionId && effectiveTargetSession
+              ? { visible: true, onOpen: handleToolbarUsageReport }
+              : undefined
+          }
+          threadGoal={
+            effectiveTargetSessionId && effectiveTargetSession && !isBtwSession
+              ? {
+                  visible: true,
+                  goal: threadGoalController.goal,
+                  onOpen: () => {
+                    void threadGoalController.openGoalEntry();
+                  },
+                }
+              : undefined
+          }
+        />
+      )}
+      {showSessionWorkspaceEditor && effectiveTargetSessionId ? (
+        <SessionWorkspaceEditor
+          isOpen={showSessionWorkspaceEditor}
+          onClose={() => setShowSessionWorkspaceEditor(false)}
+          sessionId={effectiveTargetSessionId}
+          currentWorkspacePath={chatStripRepositoryPath || effectiveTargetSession?.workspacePath}
+        />
+      ) : null}
+      {effectiveTargetSession && !isBtwSession ? (
+        <ThreadGoalDialogs
+          controller={threadGoalController}
+          disabled={!effectiveTargetSession.workspacePath}
+        />
+      ) : null}
+    </ContextDropZone>
+    </>
+  );
+};
+
+export default ChatInput;

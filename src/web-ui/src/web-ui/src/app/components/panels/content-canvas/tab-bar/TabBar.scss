@@ -1,0 +1,81 @@
+/**
+ * TabBar component styles.
+ */
+
+.canvas-tab-bar {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 4px;
+  background: var(--color-bg-scene, #1a1a1a);
+  border-bottom: 1px solid var(--border-base);
+
+  // Active group - slightly different background for active tabs
+  &.is-active-group {
+    background: var(--color-bg-scene, #1a1a1a);
+  }
+
+  // Tab list
+  &__tabs {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  // Tab wrapper
+  &__tab-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  // Actions area
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-left: 8px;
+    flex-shrink: 0;
+  }
+
+  // Action button
+  &__action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: var(--color-bg-hover, rgba(255, 255, 255, 0.1));
+      color: var(--color-text-primary, rgba(255, 255, 255, 0.9));
+    }
+
+    &--close-all:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+  }
+}
+
+// Drop indicator
+.canvas-tab-drop-indicator {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--color-primary, #60a5fa);
+  border-radius: 1px;
+  z-index: 10;
+  pointer-events: none;
+}

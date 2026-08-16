@@ -1,0 +1,49 @@
+{
+  "productName": "safeopc",
+  "identifier": "com.safeopc.desktop",
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["safeopc"]
+      }
+    }
+  },
+  "app": {
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "publisher": "SafeOPC",
+    "shortDescription": "SafeOPC - Industrial-Grade AI Desktop Workspace",
+    "longDescription": "SafeOPC is the OEM edition of the tupAI workspace: a multi-agent Hermes backend, an extensible terminal, notebook, and a self-healing skill engine, packaged for SafeOPC production tenants.",
+    "copyright": "Copyright (c) 2026 SafeOPC",
+    "homepage": "https://safeopc.example.com",
+    "icon": [
+      "icons-safeopc/32x32.png",
+      "icons-safeopc/128x128.png",
+      "icons-safeopc/128x128@2x.png",
+      "icons-safeopc/icon.icns",
+      "icons-safeopc/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installerIcon": "icons-safeopc/icon.ico",
+        "startMenuFolder": "SafeOPC",
+        "compression": "lzma",
+        "installMode": "currentUser",
+        "installerHooks": "installer/installer.nsh"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "12.0",
+      "dmg": {
+        "appPosition": { "x": 180, "y": 170 },
+        "applicationFolderPosition": { "x": 480, "y": 170 },
+        "windowSize": { "height": 400, "width": 660 }
+      },
+      "entitlements": "entitlements.plist"
+    }
+  }
+}

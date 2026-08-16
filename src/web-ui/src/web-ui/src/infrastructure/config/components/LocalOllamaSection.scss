@@ -1,0 +1,111 @@
+.bitfun-local-ollama {
+  &__actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  &__spin {
+    animation: bitfun-local-ollama-spin 1s linear infinite;
+  }
+
+  &__readonly-input {
+    color: var(--bitfun-color-text-tertiary, #6b7280);
+    background: var(--bitfun-color-bg-soft, #fafbfc);
+  }
+
+  &__api-key-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__health-ok,
+  &__health-failed {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  &__health-ok {
+    color: var(--bitfun-color-success, #16a34a);
+    background: var(--bitfun-color-success-bg, rgba(22, 163, 74, 0.08));
+  }
+
+  &__health-failed {
+    color: var(--bitfun-color-error, #dc2626);
+    background: var(--bitfun-color-error-bg, rgba(220, 38, 38, 0.08));
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__enabled-models {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  &__model-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  &__model-empty {
+    color: var(--bitfun-color-text-tertiary, #6b7280);
+    padding: 6px 0;
+    font-size: 13px;
+  }
+
+  &__model-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__model-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 4px 3px 10px;
+    background: var(--bitfun-color-bg, #fff);
+    border: 1px solid var(--bitfun-color-border, #d1d5db);
+    border-radius: 14px;
+    font-size: 12px;
+  }
+
+  &__model-chip-label {
+    font-family: var(--bitfun-font-mono, monospace);
+  }
+
+  &__model-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--bitfun-color-text-tertiary, #6b7280);
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+      background: var(--bitfun-color-error-bg, rgba(220, 38, 38, 0.12));
+      color: var(--bitfun-color-error, #dc2626);
+    }
+  }
+}
+
+@keyframes bitfun-local-ollama-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

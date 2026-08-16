@@ -1,0 +1,92 @@
+/**
+ * AutoskillNavSection — 侧栏自动建议入口样式。
+ *
+ * 沿用 NavPanel 的行高、字号与 hover/active 状态，徽章为红色圆角。
+ */
+
+@use '../../../../../component-library/styles/tokens.scss' as *;
+
+.bitfun-autoskill-nav {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  margin: 0 $size-gap-2;
+  padding-top: $size-gap-1;
+
+  &__entry {
+    display: flex;
+    align-items: center;
+    gap: $size-gap-2;
+    width: 100%;
+    height: 30px;
+    padding: 0 $size-gap-2;
+    border: none;
+    border-radius: $size-radius-base;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    text-align: left;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    transition: background $motion-fast $easing-standard,
+                color $motion-fast $easing-standard;
+
+    &:hover {
+      background: var(--element-bg-soft);
+      color: var(--color-text-primary);
+    }
+
+    &.is-active {
+      background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+      color: var(--color-text-primary);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--color-accent-500);
+      outline-offset: -1px;
+    }
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--color-primary);
+    opacity: 0.9;
+  }
+
+  &__label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    font-size: var(--font-size-2xs);
+    font-weight: 600;
+    line-height: 1;
+    box-shadow: 0 0 0 1px color-mix(in srgb, #ef4444 40%, transparent);
+  }
+}
+
+// ── Reduced motion ────────────────────────────
+@media (prefers-reduced-motion: reduce) {
+  .bitfun-autoskill-nav {
+    &__entry {
+      transition: none;
+    }
+  }
+}

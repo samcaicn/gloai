@@ -1,0 +1,53 @@
+# Cua Driver 安全策略
+#
+# 此文件定义 Cua Driver sidecar 的输入权限策略。
+# Cua Driver 在启动时通过 CUA_DRIVER_PERMISSION_MODE 环境变量
+# 读取权限模式，并通过 CUA_DRIVER_DANGEROUSLY_BYPASS_APPROVALS
+# 控制是否跳过审批。
+#
+# 当前配置（在 cua_driver/client.rs 中设置）：
+#   CUA_DRIVER_PERMISSION_MODE=unrestricted
+#   CUA_DRIVER_DANGEROUSLY_BYPASS_APPROVALS=1
+#   CUA_DRIVER_EMBEDDED=1
+#
+# 这意味着 Cua Driver 以无限制模式运行，跳过所有审批。
+# 适用于嵌入式场景（宿主应用管理安全边界）。
+#
+# 未来可以切换到 "bounded" 模式，通过 session policy 文件
+# 限制可执行的工具和参数范围。
+
+# ── 会话策略示例（bounded 模式）────────────────────────────────
+#
+# 当 PERMISSION_MODE=bounded 时，Cua Driver 会读取此文件
+# 作为会话策略。以下是一个限制性策略示例：
+#
+# allowed_tools:
+#   - click
+#   - double_click
+#   - right_click
+#   - type_text
+#   - press_key
+#   - hotkey
+#   - scroll
+#   - move_cursor
+#   - get_screen_size
+#   - get_cursor_position
+#   - get_accessibility_tree
+#   - get_window_state
+#   - list_windows
+#   - bring_to_front
+#
+# denied_tools:
+#   - kill_app
+#   - set_config
+#   - browser_download
+#
+# input_constraints:
+#   max_type_text_length: 10000
+#   max_hotkey_keys: 5
+#   allowed_hotkey_modifiers: [ctrl, shift, alt]
+#
+# capture_scope:
+#   default: desktop
+#   allowed_scopes: [desktop, window]
+#   escalate_to_desktop: false

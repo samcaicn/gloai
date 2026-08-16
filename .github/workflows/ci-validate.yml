@@ -1,0 +1,799 @@
+# CI 代码质量验证 — 借鉴 understudy 的 CI 模式。
+#
+# 参考来源：understudy/.github/workflows/ci.yml
+#   validate job: lint + typecheck + test + pack check
+#
+# 本工作流在每次 push 时运行代码质量检查，与 build.yml 的构建任务并行。
+# 验证失败会标记 CI 状态为 failed（typecheck / skills / i18n 为阻断性检查），
+# build.yml 仍会继续运行（构建产物不阻塞），但 PR 合并前可参考 CI 状态。
+#
+# 与 build.yml 的关系：
+#   build.yml    → 构建产物 (NSIS / DMG) + 发布 + 清理
+#   ci-validate  → 代码质量 (typecheck + skills + i18n + cargo check)
+#   两者并行运行，互不阻塞。
+#
+# 阻断性检查（失败会标记 job failed）：
+#   - TypeScript typecheck（前端类型安全）
+#   - Skills validation（SKILL.md frontmatter + manifest.json）
+#   - i18n validation（locale JSON 合法性）
+#
+# 非阻断性检查（continue-on-error，仅报告）：
+#   - ESLint（代码风格）
+#   - Frontend build check（Vite 构建）
+#   - Cargo check / clippy（Rust 编译）
+#
+# 监控增强：
+#   - ci-status: 门禁 job，阻断性检查失败时整体 failed（用于 branch protection）
+#   - pr-comment: PR 自动评论 CI 结果（方便 review）
+#   - ci-alert: push 失败时创建 Issue 告警
+#   - ci-summary: 动态汇总所有 job 状态 + 计时 + 产物链接
+
+name: CI Validate
+
+concurrency:
+  group: ci-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    tags: ["v*"]
+    branches: [v2, v2-branch, main]
+    paths-ignore:
+      # 仅纯文档变更时跳过 CI，但不跳过 SKILL.md（技能定义文件需验证）
+      - "README.md"
+      - "CHANGELOG.md"
+      - "docs/**"
+      - ".trae/**"
+      - ".workbuddy/**"
+      - "LICENSE"
+      - "**/*.test.md"
+      - "**/*.spec.md"
+  pull_request:
+    branches: [v2, v2-branch, main]
+    paths-ignore:
+      - "README.md"
+      - "CHANGELOG.md"
+      - "docs/**"
+      - ".trae/**"
+      - ".workbuddy/**"
+      - "LICENSE"
+      - "**/*.test.md"
+      - "**/*.spec.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read        # ci-summary: gh run list 查询 build 工作流状态
+  issues: write        # ci-alert: 创建失败告警 Issue
+  pull-requests: write # pr-comment: 在 PR 上评论 CI 结果
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # Job: Frontend validation (typecheck [blocking] + lint [non-blocking])
+  # 借鉴 understudy CI 的 validate job 中的 lint + typecheck 步骤。
+  # TypeScript typecheck 为阻断性检查——类型错误会导致 CI failed。
+  # ─────────────────────────────────────────────────────────────────
+  validate-frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install web-ui dependencies
+        run: pnpm --dir src/web-ui install --frozen-lockfile
+
+      - name: Install web-ui inner dependencies
+        run: pnpm --dir src/web-ui/src/web-ui install --frozen-lockfile
+
+      # ── 阻断性：TypeScript 类型检查 ──
+      # 类型错误是编译期错误，必须阻断 CI。
+      # 注意：使用 pipefail 确保 tee 不会吞掉 tsc 的退出码
+      - name: TypeScript typecheck (blocking)
+        id: typecheck
+        run: |
+          set -o pipefail
+          cd src/web-ui/src/web-ui
+          npx tsc --noEmit 2>&1 | tee /tmp/typecheck.log
+        continue-on-error: true
+
+      # ── 非阻断性：ESLint 代码风格检查 ──
+      - name: Frontend lint (non-blocking)
+        id: lint
+        run: |
+          set -o pipefail
+          cd src/web-ui/src/web-ui
+          if ls .eslintrc.* eslint.config.* 1>/dev/null 2>&1; then
+            npx eslint src/ --max-warnings=999 2>&1 | tee /tmp/lint.log || true
+          else
+            echo "No ESLint config found, skipping lint"
+          fi
+        continue-on-error: true
+
+      # ── 非阻断性：前端构建检查 ──
+      - name: Frontend build check (non-blocking)
+        id: build-check
+        run: |
+          set -o pipefail
+          cd src/web-ui/src/web-ui
+          pnpm build 2>&1 | tee /tmp/build-check.log
+        continue-on-error: true
+
+      # ── 上传日志 artifact（便于离线调试）──
+      - name: Upload validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-frontend-logs
+          path: |
+            /tmp/typecheck.log
+            /tmp/lint.log
+            /tmp/build-check.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # ── 如果 typecheck 失败，在此步显式 fail ──
+      - name: Check typecheck result
+        if: steps.typecheck.outcome == 'failure'
+        run: |
+          echo "::error::TypeScript typecheck failed — see logs above or download ci-frontend-logs artifact"
+          exit 1
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Frontend Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.typecheck.outcome }}" = "success" ]; then
+            echo "- TypeScript typecheck: **✅ passed** (blocking)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- TypeScript typecheck: **❌ failed** (blocking)" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- Lint: ${{ steps.lint.outcome }} (non-blocking)" >> $GITHUB_STEP_SUMMARY
+          echo "- Build: ${{ steps.build-check.outcome }} (non-blocking)" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job: Skills validation (SKILL.md frontmatter + manifest.json)
+  # 阻断性检查——技能文件格式错误会导致技能无法挂载执行。
+  #
+  # 校验内容：
+  #   1. manifest.json 合法性（JSON parse + 必填字段 id/name/version/file）
+  #   2. 每个 manifest 条目的 file 指向的 index.js 存在
+  #   3. 每个技能目录的 SKILL.md 存在且含 YAML frontmatter（--- 分隔）
+  #   4. SKILL.md frontmatter 含必填字段 id/name/version
+  # ─────────────────────────────────────────────────────────────────
+  validate-skills:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate skill files
+        run: |
+          echo "## Skills Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          ERRORS=0
+          SKILLS_DIR="skills"
+
+          if [ ! -d "$SKILLS_DIR" ]; then
+            echo "⚠️ Skills directory not found, skipping" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          # ── 1. manifest.json 合法性 ──
+          MANIFEST="$SKILLS_DIR/manifest.json"
+          if [ -f "$MANIFEST" ]; then
+            if node -e "JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'))" 2>/dev/null; then
+              echo "✅ manifest.json — valid JSON" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ manifest.json — invalid JSON" >> $GITHUB_STEP_SUMMARY
+              ERRORS=$((ERRORS + 1))
+            fi
+
+            # 校验每个技能条目的必填字段
+            node -e "
+              const m = JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'));
+              const skills = m.skills || [];
+              let err = 0;
+              for (const s of skills) {
+                const missing = [];
+                if (!s.id) missing.push('id');
+                if (!s.name) missing.push('name');
+                if (!s.version) missing.push('version');
+                if (!s.file) missing.push('file');
+                if (missing.length > 0) {
+                  console.log('❌ manifest entry missing fields: ' + (s.id || s.name || 'unknown') + ' — missing: ' + missing.join(', '));
+                  err++;
+                } else {
+                  // 检查 file 指向的 index.js 是否存在
+                  const fs = require('fs');
+                  const filePath = '$SKILLS_DIR/' + s.file;
+                  if (!fs.existsSync(filePath)) {
+                    console.log('❌ file not found: ' + s.file + ' (skill: ' + s.id + ')');
+                    err++;
+                  } else {
+                    console.log('✅ ' + s.id + ' — manifest entry valid, file exists');
+                  }
+                }
+              }
+              process.exit(err > 0 ? 1 : 0);
+            " 2>&1 | tee /tmp/skills-check.log
+            if [ ${PIPESTATUS[0]} -ne 0 ]; then
+              ERRORS=$((ERRORS + 1))
+            fi
+            cat /tmp/skills-check.log >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ manifest.json not found, skipping manifest validation" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # ── 2. 每个技能目录的 SKILL.md 校验 ──
+          echo "### SKILL.md Frontmatter Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          for skillDir in "$SKILLS_DIR"/*/; do
+            # 跳过 _template 目录
+            skillName=$(basename "$skillDir")
+            if [ "$skillName" = "_template" ]; then
+              continue
+            fi
+
+            skillMd="$skillDir/SKILL.md"
+            if [ ! -f "$skillMd" ]; then
+              echo "❌ $skillName — SKILL.md not found" >> $GITHUB_STEP_SUMMARY
+              ERRORS=$((ERRORS + 1))
+              continue
+            fi
+
+            # 检查 SKILL.md 是否含 YAML frontmatter（以 --- 开头）
+            firstLine=$(head -1 "$skillMd")
+            if [ "$firstLine" != "---" ]; then
+              echo "❌ $skillName — SKILL.md missing YAML frontmatter (must start with ---)" >> $GITHUB_STEP_SUMMARY
+              ERRORS=$((ERRORS + 1))
+              continue
+            fi
+
+            # 检查 frontmatter 含必填字段 id/name/version
+            frontmatter=$(sed -n '/^---$/,/^---$/p' "$skillMd" | head -n -1 | tail -n +2)
+            hasId=$(echo "$frontmatter" | grep -c '^id:')
+            hasName=$(echo "$frontmatter" | grep -c '^name:')
+            hasVersion=$(echo "$frontmatter" | grep -c '^version:')
+
+            if [ "$hasId" -eq 0 ] || [ "$hasName" -eq 0 ] || [ "$hasVersion" -eq 0 ]; then
+              missing=""
+              [ "$hasId" -eq 0 ] && missing="$missing id"
+              [ "$hasName" -eq 0 ] && missing="$missing name"
+              [ "$hasVersion" -eq 0 ] && missing="$missing version"
+              echo "❌ $skillName — SKILL.md frontmatter missing required fields:$missing" >> $GITHUB_STEP_SUMMARY
+              ERRORS=$((ERRORS + 1))
+            else
+              contentLen=$(wc -c < "$skillMd")
+              echo "✅ $skillName — SKILL.md valid (${contentLen} bytes)" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "## ❌ Skills Validation Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Found $ERRORS error(s) in skill files." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "## ✅ Skills Validation Passed" >> $GITHUB_STEP_SUMMARY
+            echo "All skill files are valid." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job: Rust validation (cargo check --all-targets)
+  # 借鉴 understudy CI 的 validate job 中的 build + test 步骤。
+  # 关键：cargo check --all-targets 覆盖 #[cfg(test)] 代码。
+  # 非阻断性——Rust 编译依赖平台特性，Linux 上可能缺少 Windows 专属 crate。
+  # ─────────────────────────────────────────────────────────────────
+  validate-rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies (Linux build deps)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ci-validate-x86_64-unknown-linux-gnu
+
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install web-ui dependencies
+        run: pnpm --dir src/web-ui install --frozen-lockfile
+
+      - name: Install web-ui inner dependencies
+        run: pnpm --dir src/web-ui/src/web-ui install --frozen-lockfile
+
+      - name: Build frontend (for Tauri build deps)
+        run: pnpm --dir src/web-ui/src/web-ui build
+        continue-on-error: true
+
+      - name: Cargo check (lib only — fast)
+        working-directory: src-tauri
+        run: cargo check --lib 2>&1 | tail -50
+        continue-on-error: true
+
+      - name: Cargo check (all targets — covers #[cfg(test)])
+        working-directory: src-tauri
+        run: |
+          set +e
+          cargo check --all-targets 2>&1 | tee /tmp/cargo-check.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            {
+              echo "## ⚠️ Cargo Check Issues"
+              echo ""
+              echo "### Last 50 lines:"
+              echo '```'
+              tail -50 /tmp/cargo-check.log
+              echo '```'
+            } >> $GITHUB_STEP_SUMMARY
+          fi
+          exit 0  # Non-blocking — Linux may lack Windows-specific crates
+        continue-on-error: true
+
+      - name: Cargo clippy (if configured)
+        working-directory: src-tauri
+        run: |
+          if grep -q 'clippy' Cargo.toml 2>/dev/null; then
+            cargo clippy --all-targets -- -D warnings 2>&1 | tail -30 || true
+          else
+            echo "Clippy not configured, skipping"
+          fi
+        continue-on-error: true
+
+      # ── 上传 Rust 编译日志 artifact ──
+      - name: Upload Rust logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-rust-logs
+          path: /tmp/cargo-check.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Rust Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- cargo check --lib: non-blocking (Linux may lack Windows crates)" >> $GITHUB_STEP_SUMMARY
+          echo "- cargo check --all-targets: non-blocking" >> $GITHUB_STEP_SUMMARY
+          echo "- clippy: non-blocking" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job: i18n validation (blocking)
+  # 检查三语种 locale 文件完整性和 JSON 合法性。
+  # 阻断性检查——损坏的 locale JSON 会导致前端 i18n 初始化崩溃。
+  # ─────────────────────────────────────────────────────────────────
+  validate-i18n:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate locale JSON files
+        run: |
+          echo "## i18n Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          LOCALE_DIR="src/web-ui/src/web-ui/src/infrastructure/i18n/locales"
+          if [ ! -d "$LOCALE_DIR" ]; then
+            # Try alternate path
+            LOCALE_DIR="src/web-ui/src/web-ui/public/locales"
+          fi
+
+          if [ ! -d "$LOCALE_DIR" ]; then
+            echo "⚠️ Locale directory not found, skipping i18n validation" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          echo "Checking locale files in: $LOCALE_DIR" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          ERRORS=0
+          for f in $(find "$LOCALE_DIR" -name "*.json" -type f); do
+            if node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" 2>/dev/null; then
+              echo "✅ $f" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ $f — invalid JSON" >> $GITHUB_STEP_SUMMARY
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## ❌ i18n Validation Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Found $ERRORS invalid locale file(s)" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## ✅ i18n Validation Passed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job: CI Status Gate (门禁)
+  # 汇总所有阻断性检查结果。此 job 失败时表示有阻断性检查未通过。
+  # 用途：在 GitHub Branch Protection 中将此 job 设为 required status check，
+  #       这样只需一个 check 就能 gate 所有阻断性验证。
+  # ─────────────────────────────────────────────────────────────────
+  ci-status:
+    needs: [validate-frontend, validate-skills, validate-i18n]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Evaluate blocking checks
+        id: gate
+        run: |
+          FRONTEND="${{ needs.validate-frontend.result }}"
+          SKILLS="${{ needs.validate-skills.result }}"
+          I18N="${{ needs.validate-i18n.result }}"
+
+          echo "frontend=$FRONTEND skills=$SKILLS i18n=$I18N"
+
+          FAILED=""
+          if [ "$FRONTEND" = "failure" ] || [ "$FRONTEND" = "cancelled" ]; then
+            FAILED="$FAILED validate-frontend"
+          fi
+          if [ "$SKILLS" = "failure" ] || [ "$SKILLS" = "cancelled" ]; then
+            FAILED="$FAILED validate-skills"
+          fi
+          if [ "$I18N" = "failure" ] || [ "$I18N" = "cancelled" ]; then
+            FAILED="$FAILED validate-i18n"
+          fi
+
+          if [ -n "$FAILED" ]; then
+            echo "gate_status=fail" >> $GITHUB_OUTPUT
+            echo "::error::Blocking checks failed:$FAILED"
+            exit 1
+          else
+            echo "gate_status=pass" >> $GITHUB_OUTPUT
+            echo "✅ All blocking checks passed"
+          fi
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job: PR Comment (自动评论 CI 结果)
+  # 在 PR 上自动评论 CI 验证结果，方便 reviewer 一眼看到状态。
+  # ─────────────────────────────────────────────────────────────────
+  pr-comment:
+    needs: [validate-frontend, validate-skills, validate-rust, validate-i18n, ci-status]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request'
+    timeout-minutes: 2
+    steps:
+      - name: Comment PR with CI results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const results = {
+              'Frontend (typecheck)': '${{ needs.validate-frontend.result }}',
+              'Skills (SKILL.md)':    '${{ needs.validate-skills.result }}',
+              'Rust (cargo check)':   '${{ needs.validate-rust.result }}',
+              'i18n (locale JSON)':   '${{ needs.validate-i18n.result }}',
+              'CI Gate':              '${{ needs.ci-status.result }}',
+            };
+
+            const badge = (r) => {
+              if (r === 'success') return '✅';
+              if (r === 'failure') return '❌';
+              if (r === 'skipped') return '⏭️';
+              return '⚠️';
+            };
+
+            const blocking = {
+              'Frontend (typecheck)': true,
+              'Skills (SKILL.md)':    true,
+              'Rust (cargo check)':   false,
+              'i18n (locale JSON)':   true,
+              'CI Gate':             true,
+            };
+
+            let body = '## 🔍 CI Validate Results\n\n';
+            body += '| Job | Status | Blocking |\n';
+            body += '|-----|--------|----------|\n';
+            for (const [job, result] of Object.entries(results)) {
+              body += `| ${job} | ${badge(result)} ${result} | ${blocking[job] ? '✅ Yes' : '❌ No'} |\n`;
+            }
+            body += '\n';
+            body += '---\n';
+            body += `_Triggered by commit ${github.context.sha.substring(0, 7)} on \`${github.context.ref}\`_`;
+
+            // Find existing comment to update (avoid spam)
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('CI Validate Results')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+              core.info('Updated existing CI comment');
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+              core.info('Created new CI comment');
+            }
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job: CI Alert (失败告警)
+  # 当 push 到 main/v2 分支且 CI 阻断性检查失败时，创建 GitHub Issue。
+  # 确保团队成员能及时发现 CI 问题。
+  # ─────────────────────────────────────────────────────────────────
+  ci-alert:
+    needs: [validate-frontend, validate-skills, validate-i18n, ci-status]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'push' && needs.ci-status.result == 'failure'
+    timeout-minutes: 2
+    steps:
+      - name: Create failure alert issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ github.sha }}';
+            const shortSha = sha.substring(0, 7);
+            const branch = '${{ github.ref_name }}';
+            const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+            const commitMsg = `${{ github.event.head_commit.message }}`;
+
+            const results = {
+              'Frontend (typecheck)': '${{ needs.validate-frontend.result }}',
+              'Skills (SKILL.md)':    '${{ needs.validate-skills.result }}',
+              'i18n (locale JSON)':   '${{ needs.validate-i18n.result }}',
+            };
+
+            let failedList = '';
+            for (const [job, result] of Object.entries(results)) {
+              if (result === 'failure' || result === 'cancelled') {
+                failedList += `- ❌ ${job}\n`;
+              }
+            }
+
+            const title = `🚨 CI Validate Failed on ${branch} (${shortSha})`;
+
+            let body = `## CI Validation Failure\n\n`;
+            body += `**Branch:** \`${branch}\`\n`;
+            body += `**Commit:** [${shortSha}](${{ github.event.head_commit.url }})\n`;
+            body += `**Commit Message:** ${commitMsg.split('\n')[0]}\n`;
+            body += `**Workflow Run:** [View logs](${runUrl})\n\n`;
+            body += `### Failed Blocking Checks\n\n${failedList}\n`;
+            body += `### Action Required\n\n`;
+            body += `1. Review the [workflow logs](${runUrl}) for details.\n`;
+            body += `2. Fix the failing checks and push again.\n`;
+            body += `3. This issue will auto-close when CI passes.\n`;
+
+            // Search for existing open issue with same title prefix
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'ci-failure',
+              per_page: 50,
+            });
+
+            const existing = issues.find(i => i.title.includes(`CI Validate Failed on ${branch}`));
+
+            if (existing) {
+              // Add comment to existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `**Update (${shortSha}):**\n\n${body}`,
+              });
+              core.info(`Updated existing issue #${existing.number}`);
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['ci-failure', 'bug', 'auto-generated'],
+              });
+              core.info('Created new CI failure issue');
+            }
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job: CI Summary (增强汇总)
+  # 所有验证 job 完成后生成动态汇总表，包含：
+  #   - 各 job 实际状态（动态渲染 ✅/❌）
+  #   - 阻断性标记
+  #   - 运行链接
+  #   - artifact 下载提示
+  # ─────────────────────────────────────────────────────────────────
+  ci-summary:
+    needs: [validate-frontend, validate-skills, validate-rust, validate-i18n, ci-status]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Check build workflow status (cross-workflow)
+        id: build-status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 查询同一 commit 的 Build 工作流运行状态
+          BUILD_STATUS="unknown"
+          BUILD_URL=""
+          BUILD_CONCLUSION="unknown"
+
+          if command -v gh &>/dev/null; then
+            # 使用 gh CLI 查询 build.yml 的运行状态
+            RUN_DATA=$(gh run list \
+              --workflow=build.yml \
+              --branch="${{ github.ref_name }}" \
+              --limit=1 \
+              --json status,conclusion,databaseId,url \
+              2>/dev/null || echo "")
+
+            if [ -n "$RUN_DATA" ] && [ "$RUN_DATA" != "[]" ]; then
+              BUILD_STATUS=$(echo "$RUN_DATA" | jq -r '.[0].status // "unknown"')
+              BUILD_CONCLUSION=$(echo "$RUN_DATA" | jq -r '.[0].conclusion // "pending"')
+              BUILD_URL=$(echo "$RUN_DATA" | jq -r '.[0].url // ""')
+              BUILD_ID=$(echo "$RUN_DATA" | jq -r '.[0].databaseId // ""')
+              if [ -n "$BUILD_ID" ]; then
+                BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/$BUILD_ID"
+              fi
+            fi
+          fi
+
+          echo "build_status=$BUILD_STATUS" >> $GITHUB_OUTPUT
+          echo "build_conclusion=$BUILD_CONCLUSION" >> $GITHUB_OUTPUT
+          echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
+          echo "Build workflow: status=$BUILD_STATUS conclusion=$BUILD_CONCLUSION"
+
+      - name: Generate dynamic CI summary
+        env:
+          BUILD_STATUS: ${{ steps.build-status.outputs.build_status }}
+          BUILD_CONCLUSION: ${{ steps.build-status.outputs.build_conclusion }}
+          BUILD_URL: ${{ steps.build-status.outputs.build_url }}
+        run: |
+          echo "## 📋 CI Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status | Blocking | Logs |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|----------|------|" >> $GITHUB_STEP_SUMMARY
+
+          # 动态渲染状态 emoji
+          render_status() {
+            case "$1" in
+              success) echo "✅ success" ;;
+              failure) echo "❌ failure" ;;
+              skipped) echo "⏭️ skipped" ;;
+              cancelled) echo "🚫 cancelled" ;;
+              *) echo "⚠️ $1" ;;
+            esac
+          }
+
+          FE=$(render_status "${{ needs.validate-frontend.result }}")
+          SK=$(render_status "${{ needs.validate-skills.result }}")
+          RU=$(render_status "${{ needs.validate-rust.result }}")
+          I18=$(render_status "${{ needs.validate-i18n.result }}")
+          ST=$(render_status "${{ needs.ci-status.result }}")
+
+          echo "| Frontend (typecheck) | $FE | ✅ Yes | [logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skills (SKILL.md) | $SK | ✅ Yes | [logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rust (cargo check) | $RU | ❌ No | [logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| i18n (locale JSON) | $I18 | ✅ Yes | [logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **CI Gate** | $ST | **✅ Yes** | — |" >> $GITHUB_STEP_SUMMARY
+
+          # 跨工作流状态：Build workflow
+          BUILD_STATUS_EMOJI="⚠️"
+          BUILD_CONCLUSION_TEXT="$BUILD_STATUS"
+          if [ "$BUILD_STATUS" = "completed" ]; then
+            case "$BUILD_CONCLUSION" in
+              success) BUILD_STATUS_EMOJI="✅"; BUILD_CONCLUSION_TEXT="success" ;;
+              failure) BUILD_STATUS_EMOJI="❌"; BUILD_CONCLUSION_TEXT="failure" ;;
+              cancelled) BUILD_STATUS_EMOJI="🚫"; BUILD_CONCLUSION_TEXT="cancelled" ;;
+              *) BUILD_STATUS_EMOJI="⚠️"; BUILD_CONCLUSION_TEXT="$BUILD_CONCLUSION" ;;
+            esac
+          elif [ "$BUILD_STATUS" = "in_progress" ]; then
+            BUILD_STATUS_EMOJI="🔄"
+            BUILD_CONCLUSION_TEXT="running"
+          elif [ "$BUILD_STATUS" = "queued" ]; then
+            BUILD_STATUS_EMOJI="⏳"
+            BUILD_CONCLUSION_TEXT="queued"
+          fi
+
+          if [ -n "$BUILD_URL" ]; then
+            echo "| Build (cross-ref) | $BUILD_STATUS_EMOJI $BUILD_CONCLUSION_TEXT | ❌ No | [logs]($BUILD_URL) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Build (cross-ref) | $BUILD_STATUS_EMOJI $BUILD_CONCLUSION_TEXT | ❌ No | — |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ci-frontend-logs\` — TypeScript/ESLint/Build logs (7-day retention)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ci-rust-logs\` — Cargo check output (7-day retention)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # 整体状态
+          if [ "${{ needs.ci-status.result }}" = "success" ]; then
+            echo "### ✅ Overall: All blocking checks passed" >> $GITHUB_STEP_SUMMARY
+            echo "Safe to merge — all blocking validation checks passed." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Overall: Blocking checks failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Do not merge** — fix failing blocking checks before merging." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "_Run: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) · Branch: \`${{ github.ref_name }}\` · Commit: \`${{ github.sha }}\`_" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,206 @@
+/**
+ * TupaiSettingsTab styles.
+ *
+ * 复用 BitFun 通用 CSS 变量（--color-*, --size-gap-*, --border-* 等），
+ * 保证在 7 套 tupai 主题下均有合理表现。命名空间 `tupai-` 避免与 BitFun 冲突。
+ */
+
+.tupai-settings-tab__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-gap-6, 24px);
+}
+
+/* ==================== 主题切换器 ==================== */
+
+.tupai-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--size-gap-3, 12px);
+}
+
+.tupai-theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-base, rgba(255, 255, 255, 0.1));
+  border-radius: var(--size-radius-md, 8px);
+  background: transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  font-family: inherit;
+  text-align: left;
+
+  &:hover:not(.is-active) {
+    background: var(--element-bg-base, rgba(255, 255, 255, 0.06));
+    border-color: var(--border-bright, rgba(255, 255, 255, 0.25));
+  }
+
+  &:active:not(.is-active) {
+    transform: scale(0.98);
+  }
+
+  &.is-active {
+    border-color: var(--color-accent-500);
+    background: var(--element-bg-medium, rgba(255, 255, 255, 0.1));
+    box-shadow: 0 0 0 1px var(--color-accent-500), 0 0 12px var(--color-accent-300);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 2px;
+  }
+}
+
+.tupai-theme-swatch__color {
+  display: block;
+  width: 100%;
+  height: 36px;
+  border-radius: var(--size-radius-sm, 6px);
+  border: 1px solid var(--border-base, rgba(0, 0, 0, 0.15));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.tupai-theme-swatch__label {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.tupai-theme-swatch__id {
+  font-size: var(--font-size-xs, 11px);
+  font-family: var(--font-family-mono, Consolas, monospace);
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+/* ==================== 设备状态 ==================== */
+
+.tupai-device-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-medium, 500);
+  border: 1px solid var(--border-base, rgba(255, 255, 255, 0.1));
+  color: var(--color-text-muted);
+  background: var(--element-bg-subtle, transparent);
+  white-space: nowrap;
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  &.is-connected {
+    color: var(--color-success, #39ff14);
+    border-color: var(--color-success-border, rgba(57, 255, 20, 0.3));
+    background: var(--color-success-bg, rgba(57, 255, 20, 0.1));
+
+    &::before {
+      background: var(--color-success, #39ff14);
+    }
+  }
+
+  &.is-pending {
+    color: var(--color-warning, #f0b429);
+    border-color: var(--color-warning-border, rgba(240, 180, 41, 0.3));
+    background: var(--color-warning-bg, rgba(240, 180, 41, 0.1));
+
+    &::before {
+      background: var(--color-warning, #f0b429);
+      animation: tupai-pending-pulse 1.5s ease-in-out infinite;
+    }
+  }
+
+  &.is-rejected {
+    color: var(--color-danger, #ef4444);
+    border-color: var(--color-danger-border, rgba(239, 68, 68, 0.3));
+    background: var(--color-danger-bg, rgba(239, 68, 68, 0.1));
+
+    &::before {
+      background: var(--color-danger, #ef4444);
+    }
+  }
+}
+
+@keyframes tupai-pending-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.tupai-device-approval-hint {
+  padding: 10px 14px;
+  border-radius: var(--size-radius-sm, 6px);
+  background: var(--color-warning-bg, rgba(240, 180, 41, 0.08));
+  border: 1px solid var(--color-warning-border, rgba(240, 180, 41, 0.2));
+  color: var(--color-warning, #f0b429);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__text {
+    font-size: var(--font-size-sm, 13px);
+    line-height: 1.5;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__rebind {
+    font-size: var(--font-size-xs, 12px);
+    color: var(--color-text-muted);
+    line-height: 1.4;
+    opacity: 0.8;
+  }
+}
+
+.tupai-device-register {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ==================== 关于 ==================== */
+
+.tupai-about-value {
+  font-family: var(--font-family-mono, Consolas, monospace);
+  font-size: var(--font-size-sm, 13px);
+  color: var(--color-text-primary);
+  user-select: text;
+}
+
+/* ==================== 响应式 ==================== */
+
+@media (max-width: 600px) {
+  .tupai-theme-grid {
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  }
+
+  .tupai-device-register {
+    flex-direction: column;
+
+    .btn {
+      width: 100%;
+    }
+  }
+}

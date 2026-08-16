@@ -1,0 +1,51 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "enables the default permissions",
+  "windows": [
+    "main",
+    "screen-marker",
+    "settings",
+    "floating-window-*"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-unminimize",
+    "core:window:allow-close",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-set-title-bar-style",
+    "core:webview:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://ai.tuptup.top/**" },
+        { "url": "http://localhost/**" },
+        { "url": "http://127.0.0.1/**" },
+        { "url": "http://[::1]/**" },
+        { "url": "http://192.168.*" },
+        { "url": "http://10.*" },
+        { "url": "http://172.1[6-9].*" },
+        { "url": "http://172.2[0-9].*" },
+        { "url": "http://172.3[0-1].*" }
+      ]
+    },
+    "dialog:default",
+    "fs:default",
+    "store:default",
+    "global-shortcut:default",
+    "os:default",
+    "process:default",
+    "deep-link:default",
+    "notification:default",
+    "clipboard-manager:default",
+    "opener:default",
+    "autostart:default"
+  ]
+}

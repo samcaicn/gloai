@@ -1,0 +1,358 @@
+{
+  "title": "智能体",
+  "desc": "协作执行专项任务的子智能体 — 共 {{total}} 个，{{enabled}} 个启用",
+  "manage": "管理",
+  "builtin": "内置",
+  "custom": "自定义",
+  "empty": "暂无子智能体",
+  "goManage": "前往管理",
+  "loading": "加载中…",
+  "page": {
+    "title": "专业智能体",
+    "subtitle": "查看与管理核心模式、Agent 与 Sub-Agent，配置工具与 Skills。",
+    "searchPlaceholder": "搜索 Agent 名称或描述…",
+    "newAgent": "新建 Agent"
+  },
+  "nav": {
+    "coreAgents": "核心智能体",
+    "agents": "Agent",
+    "teams": "团队"
+  },
+  "teamsZone": {
+    "title": "智能体团队",
+    "subtitle": "为更深入的任务组织多智能体阵容，当前已提供专业的代码审核团队。",
+    "empty": "当前没有可用的智能体团队"
+  },
+  "filters": {
+    "source": "来源",
+    "kind": "类型",
+    "builtin": "内置",
+    "user": "用户",
+    "project": "项目",
+    "mode": "Agent",
+    "subagent": "Sub-Agent"
+  },
+  "coreAgentsZone": {
+    "title": "核心智能体",
+    "subtitle": "平台内置的核心 Agent，覆盖主流 AI 工作流，开箱即用。",
+    "empty": "暂未检测到核心智能体",
+    "roleLabel": "主要应用 · ",
+    "modes": {
+      "agentic": {
+        "role": "编码专业智能体"
+      },
+      "cowork": {
+        "role": "办公智能体"
+      },
+      "computerUse": {
+        "role": "电脑操作智能体"
+      }
+    }
+  },
+  "agentsZone": {
+    "title": "Agent 总览",
+    "subtitle": "查看所有 Agent / Sub-Agent，并直接管理工具与 Skills。",
+    "empty": {
+      "noAgents": "当前没有可用的 Agent",
+      "noMatch": "没有匹配的 Agent"
+    }
+  },
+  "agentCard": {
+    "badges": {
+      "agent": "Agent",
+      "subagent": "Sub-Agent",
+      "userSubagent": "用户 Sub-Agent",
+      "projectSubagent": "项目 Sub-Agent",
+      "disabled": "已禁用"
+    },
+    "actions": {
+      "expand": "展开详情"
+    },
+    "meta": {
+      "tools": "{{count}} 个工具",
+      "skills": "{{count}} 个 Skills",
+      "subagents": "{{count}} 个 Sub-Agent"
+    }
+  },
+  "capabilityCategories": {
+    "coding": "编码",
+    "docs": "文档",
+    "analysis": "分析",
+    "testing": "测试",
+    "creative": "创意",
+    "ops": "运维"
+  },
+  "agentsOverview": {
+    "filterUser": "用户级",
+    "filterProject": "项目级",
+    "backToOverview": "返回总览",
+    "capabilities": "能力配置",
+    "tools": "工具",
+    "toolsReset": "重置默认",
+    "toolsCancel": "取消编辑",
+    "toolsSave": "保存",
+    "toolsEdit": "管理工具",
+    "toolsResetSuccess": "已重置为默认工具",
+    "toolsResetFailed": "重置工具失败",
+    "toolToggleFailed": "工具切换失败",
+    "skills": "Skills",
+    "subagents": "Sub-Agents",
+    "skillsCancel": "取消编辑",
+    "skillsSave": "保存",
+    "skillsEdit": "管理 Skills",
+    "subagentsEdit": "管理 Sub-Agents",
+    "subagentsDone": "完成",
+    "noSubagents": "当前没有可管理的 Sub-Agent",
+    "enableGroup": "启用分组",
+    "disableGroup": "禁用分组",
+    "clearGroup": "清空",
+    "reset": "重置",
+    "cancel": "取消",
+    "save": "保存",
+    "skillToggleFailed": "Skill 切换失败",
+    "subagentToggleFailed": "Sub-Agent 切换失败",
+    "sharedProfileLabel": "共享配置",
+    "sharedProfileDefaultLabel": "共享编码配置",
+    "sharedProfileDescription": "这里的改动也会同时应用到：{{modes}}。",
+    "skillShadowed": "该 Skill 被同名且优先级更高的 Skill 遮蔽，运行时不会生效",
+    "noSkills": "未启用任何 Skill",
+    "skillGroups": {
+      "computerUse": "Computer Use",
+      "office": "Office",
+      "meta": "Meta",
+      "team": "Team",
+      "other": "其他"
+    },
+    "customActions": "自定义 Agent",
+    "editAgent": "编辑",
+    "deleteAgent": "删除",
+    "deleteConfirm": "确定删除自定义 Agent「{{name}}」？此操作不可恢复。",
+    "deleteSuccess": "已删除「{{name}}」",
+    "deleteFailed": "删除失败：",
+    "form": {
+      "title": "新建 Sub-Agent",
+      "subtitle": "创建一个自定义的用户级或项目级 Sub-Agent",
+      "titleEdit": "编辑 Sub-Agent",
+      "subtitleEdit": "可修改描述、系统提示词、工具与只读模式。名称与级别不可更改。",
+      "loadingDetail": "加载中…",
+      "save": "保存",
+      "updateSuccess": "已保存「{{name}}」",
+      "updateFailed": "保存失败：",
+      "name": "名称",
+      "namePlaceholder": "字母开头，可含字母/数字/下划线",
+      "nameRequired": "名称不能为空",
+      "nameFormat": "只能以字母开头，包含字母/数字/下划线/连字符",
+      "description": "描述",
+      "descPlaceholder": "简要描述该 Agent 的用途",
+      "descRequired": "描述不能为空",
+      "prompt": "系统提示词",
+      "promptPlaceholder": "输入系统提示词，定义 Agent 的行为…",
+      "promptRequired": "系统提示词不能为空",
+      "readonly": "只读模式",
+      "tools": "工具",
+      "toolsOptional": "可选",
+      "toolsHint": "（{{optionalLabel}}，不选则使用默认）",
+      "noWorkspace": "需要先打开项目",
+      "cancel": "取消",
+      "submit": "创建",
+      "createSuccess": "已创建 Agent「{{name}}」",
+      "createFailed": "创建失败：",
+      "review": "评审",
+      "reviewToolsHint": "评审子代理只能使用只读工具。"
+    }
+  },
+  "reviewTeams": {
+    "default": {
+      "name": "代码审核团队",
+      "summary": "专业深度代码审核团队，内置业务逻辑、性能、安全、架构和质检固定角色。",
+      "members": "{{count}} 名成员",
+      "tags": ["质量", "性能", "架构"]
+    },
+    "detail": {
+      "open": "打开团队",
+      "back": "返回专业智能体",
+      "openSettings": "审核设置",
+      "loading": "正在加载代码审核团队...",
+      "title": "代码审核团队",
+      "subtitle": "配置深度审核及 /DeepReview 使用的代码审核团队。每个审核员默认使用快速模型，你也可以单独修改。",
+      "summaryTitle": "团队概览",
+      "summaryDescription": "多个审核员会并行覆盖目标范围，最后由质检员汇总为最终结论。",
+      "membersTitle": "团队成员",
+      "membersDescription": "选择成员可查看职责、模型和策略覆盖。固定角色会始终保留在团队中。",
+      "membersCount": "{{count}} 名成员",
+      "lockedCount": "{{count}} 个固定角色",
+      "extraCount": "{{count}} 个额外 Sub-Agent",
+      "localOnly": "代码审核",
+      "localOnlyDescription": "在本应用内以只读 Sub-Agent 运行，并把结果回传到当前审核线程。",
+      "parallelLabel": "并行审核",
+      "parallelDescription": "逻辑、性能、安全、架构和额外审核员会并行工作，再由质检员验证结果。",
+      "warningLabel": "审核更重",
+      "warning": "建议用于风险更高的改动；它可能比普通审核耗时更久并消耗更多 token。",
+      "qualityGate": "质检复核",
+      "executionPolicyTitle": "审核执行策略",
+      "executionPolicyDescription": "控制审核深度、超时，以及大范围目标如何拆分给并行只读审核员。",
+      "policySummaryTitle": "当前策略",
+      "policySummaryIntro": "这里展示的实时策略来自审核设置，团队策略变更后会同步更新。",
+      "policySummaryEyebrow": "已配置行为",
+      "policySummaryDescription": "{{strategy}}审核会为每位审核员使用 {{reviewerTimeout}} 超时，为质检员使用 {{judgeTimeout}} 超时；每类角色在 {{splitThreshold}} 后拆分，并将同角色并发限制为 {{maxSameRoleInstances}}。",
+      "policySummaryAction": "打开审核设置以编辑当前策略",
+      "policyMetricsLabel": "当前策略值",
+      "policyStrategyLabel": "策略",
+      "reviewerTimeout": "审核员超时",
+      "reviewerTimeoutDescription": "单个审核员的超时时间，单位为秒。设为 0 表示不设置硬性截止时间。",
+      "judgeTimeout": "质检员超时",
+      "judgeTimeoutDescription": "质检复核的超时时间，单位为秒。设为 0 表示一直等待质检员完成。",
+      "fileSplitThreshold": "文件拆分阈值",
+      "fileSplitThresholdDescription": "目标文件数超过该值时，每类审核员可拆分为多个实例。设为 0 表示关闭拆分。",
+      "maxSameRoleInstances": "同角色最大实例数",
+      "maxSameRoleInstancesDescription": "启用文件拆分时，每个审核角色最多可并行运行的实例数。",
+      "seconds": "秒",
+      "secondsValue": "{{seconds}} 秒",
+      "noTimeout": "不限制",
+      "fileCountValue": "{{count}} 个文件",
+      "splitDisabled": "不拆分",
+      "instancesValue": "最多 {{count}} 个",
+      "memberDetailTitle": "成员详情",
+      "memberDetailDescription": "团队运行时，每个审核员都会保留自己的独立上下文。",
+      "responsibilities": "职责范围",
+      "model": "使用模型",
+      "modelDescription": "只修改当前审核员使用的模型。深度审核默认使用快速模型，保存后会立即生效。",
+      "remove": "移除成员",
+      "removeDescription": "将这个额外 Sub-Agent 从代码审核团队中移除。固定角色不可删除。",
+      "addTitle": "添加额外 Sub-Agent",
+      "addDescription": "把其他只读 Sub-Agent 加入深度代码审核团队，固定角色会始终保留。",
+      "addLabel": "候选成员",
+      "addHint": "只有只读 Sub-Agent 可以加入初始审核流程；每个额外审核员的结果仍会由质检员统一复核。",
+      "addPlaceholder": "选择一个 Sub-Agent",
+      "addButton": "加入团队",
+      "emptyCandidates": "当前没有可添加的额外只读 Sub-Agent。",
+      "memberTypes": {
+        "locked": "固定",
+        "core": "核心角色",
+        "extra": "额外 Sub-Agent",
+        "builtin": "内置",
+        "user": "用户级",
+        "project": "项目级"
+      },
+      "messages": {
+        "modelUpdated": "已更新 {{name}} 的模型配置。",
+        "memberAdded": "已将额外审核员加入团队。",
+        "memberRemoved": "已将额外审核员移出团队。",
+        "saveFailed": "保存代码审核团队配置失败。"
+      }
+    },
+    "strategy": {
+      "teamTitle": "审核策略",
+      "teamDescription": "选择整个代码审核团队的默认审核深度。单个审核员可以在成员详情中单独覆盖。",
+      "memberTitle": "审核员策略",
+      "memberDescription": "只有当某个角色需要不同于团队默认值的审核深度时，才建议单独覆盖。",
+      "impact": "大约 {{token}} token 消耗，{{runtime}} 耗时。",
+      "inheritLabel": "继承团队（{{level}}）",
+      "inheritSummary": "该审核员使用团队级审核策略。",
+      "modelFallbackShort": "已回退",
+      "modelFallbackDescription": "已配置的模型 {{configuredModel}} 当前不可用，因此该审核员会使用 {{model}}。",
+      "quick": {
+        "label": "快速",
+        "summary": "面向指定 diff 或范围的快速筛查，只保留高置信问题。"
+      },
+      "normal": {
+        "label": "正常",
+        "summary": "适合日常代码审核的均衡深度，兼顾覆盖面和证据质量。"
+      },
+      "deep": {
+        "label": "深度",
+        "summary": "适合高风险、大范围或发布前变更的多轮深度审核。"
+      }
+    },
+    "members": {
+      "businessLogic": {
+        "funName": "逻辑审核员",
+        "role": "业务逻辑审核员",
+        "description": "专门追踪业务规则、状态流转、回滚路径和真实用户正确性的流程侦探。",
+        "responsibilities": [
+          "验证业务流程、状态切换和领域规则是否仍然正确。",
+          "检查边界条件、回滚路径以及数据一致性假设。",
+          "优先指出会直接影响用户结果或产品意图的问题。"
+        ]
+      },
+      "performance": {
+        "funName": "性能审核员",
+        "role": "性能审核员",
+        "description": "专盯热点路径、无效工作、阻塞调用和规模化回退问题的速度分析员。",
+        "responsibilities": [
+          "检查热点路径、大循环以及不必要的分配或重复计算。",
+          "识别阻塞调用、N+1 模式和低效的数据搬运。",
+          "给出贴合现有架构、可落地的性能优化建议。"
+        ]
+      },
+      "security": {
+        "funName": "安全审核员",
+        "role": "安全审核员",
+        "description": "专门盯住注入风险、信任边界、权限错误以及危险文件或命令处理的边界守卫。",
+        "responsibilities": [
+          "审核信任边界、鉴权假设和敏感数据处理方式。",
+          "寻找注入、危险命令执行与数据暴露风险。",
+          "优先给出不依赖大改造的具体修复方案。"
+        ]
+      },
+      "judge": {
+        "funName": "审核仲裁员",
+        "role": "审核质检员",
+        "description": "独立的第三方仲裁者，从逻辑一致性和证据质量角度校验审核员报告。仅在特定声明需要验证时才抽查代码位置，而非从头重新审核代码库。",
+        "responsibilities": [
+          "基于逻辑一致性和证据质量，对各审核员的发现进行验证、合并、降级或驳回。",
+          "通过审核审核员的推理过程，过滤误报以及方向错误的优化建议。",
+          "仅在审核员的声明需要验证时，对特定代码位置进行抽查。",
+          "确保每条保留的问题都带有明确修复方案或后续计划。"
+        ]
+      },
+      "architecture": {
+        "funName": "架构审核员",
+        "role": "架构审核员",
+        "description": "负责检查模块边界、依赖方向、API 契约设计和抽象完整性的结构守护者。",
+        "responsibilities": [
+          "检测层级边界违规和方向错误的导入。",
+          "验证 API 契约、工具模式和传输消息的一致性。",
+          "确保平台无关代码不会泄露平台特定细节。"
+        ]
+      },
+      "frontend": {
+        "funName": "前端审核员",
+        "role": "前端审核员",
+        "description": "检查国际化同步、前端性能模式、无障碍访问和前后端契约一致性的 UI 专家。",
+        "responsibilities": [
+          "验证所有语言区域的国际化键完整性。",
+          "检查前端性能模式（记忆化、虚拟化、effect/reactivity 依赖）。",
+          "标记无障碍访问违规和前后端 API 契约偏差。"
+        ]
+      }
+    },
+    "extraReviewer": {
+      "role": "额外专项审核员",
+      "description": "由用户手动加入的额外 Sub-Agent，会带着自己的系统提示、工具和视角参与深度审核。",
+      "responsibilities": [
+        "从额外的独立视角补充本次审核目标中的问题发现。",
+        "保持 scope 严格聚焦在本次 diff、commit 或工作区改动上。",
+        "输出清晰、可执行的修复建议或后续计划。"
+      ]
+    }
+  },
+  "agentDescriptions": {
+    "Agentic": "自主执行模式：自动分析需求、规划任务并执行代码修改",
+    "Cowork": "协作模式：与您并肩工作，在关键步骤征求您的确认",
+    "ComputerUse": "计算机使用模式：能够操作浏览器、桌面应用和文件系统",
+    "DeepResearch": "深度研究智能体：对复杂主题进行系统性调研和分析",
+    "Explore": "探索智能体：快速浏览代码库，理解项目结构和关键文件",
+    "FileFinder": "文件查找智能体：根据需求定位相关文件和代码片段",
+    "CodeReview": "代码审查智能体：对代码进行质量检查和改进建议",
+    "DeepReview": "深度审查智能体：执行全面的代码审查，发现潜在问题",
+    "GenerateDoc": "文档生成智能体：自动生成代码文档和说明",
+    "Init": "初始化智能体：帮助设置项目结构和初始配置",
+    "ReviewFixer": "审查修复智能体：根据审查结果自动修复代码问题",
+    "Multitask": "多任务模式：将工作拆为正交分支，并在合适时并行使用子智能体推进",
+    "Plan": "规划模式：制定详细的任务计划和执行步骤",
+    "Debug": "调试模式：系统性地诊断和修复代码中的错误",
+    "Claw": "抓取模式：从外部源提取和整合信息",
+    "Team": "团队模式：协调多个智能体协同完成复杂任务"
+  }
+}

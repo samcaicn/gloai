@@ -1,0 +1,82 @@
+{
+  "$schema": "https://schema.tupautochrome.io/flowchart/v1",
+  "id": "trace-auto-flowchart",
+  "skillId": "com.tupautochrome.skills.trace-auto",
+  "version": "6.0.0",
+  "name": "Trae 自动化循环",
+  "entry": "start",
+  "layout": "TB",
+  "style": "business",
+  "recognition": ["cdp", "uia", "ocr", "vlm"],
+  "nodes": [
+    { "id": "start",    "type": "start",    "label": "开始" },
+    { "id": "ensure",   "type": "process",  "label": "确保软件支持连接",  "recognition": ["cdp", "uia"] },
+    { "id": "read",     "type": "process",  "label": "读取页面状态",      "recognition": ["cdp", "ocr", "vlm"] },
+    { "id": "running?", "type": "decision", "label": "AI 在运行?",
+      "branches": { "yes": "wait", "no": "act" } },
+    { "id": "wait",     "type": "process",  "label": "等待 AI 空闲" },
+    { "id": "act",      "type": "process",  "label": "执行下一步(点击/输入/发送)" },
+    { "id": "errors?",  "type": "decision", "label": "检测到错误?",
+      "branches": { "yes": "prompt", "no": "stuck?" } },
+    { "id": "stuck?",   "type": "decision", "label": "卡住?",
+      "branches": { "yes": "prompt", "no": "loop" } },
+    { "id": "prompt",   "type": "io",       "label": "向用户提问/发送指令" },
+    { "id": "loop",     "type": "process",  "label": "回到读取页面" },
+    { "id": "end",      "type": "end",      "label": "结束" }
+  ],
+  "connections": [
+    { "from": "start",     "to": "ensure" },
+    { "from": "ensure",    "to": "read" },
+    { "from": "read",      "to": "running?" },
+    { "from": "running?",  "to": "wait",    "label": "yes" },
+    { "from": "running?",  "to": "act",     "label": "no"  },
+    { "from": "wait",      "to": "read" },
+    { "from": "act",       "to": "errors?" },
+    { "from": "errors?",   "to": "prompt",  "label": "yes" },
+    { "from": "errors?",   "to": "stuck?",  "label": "no"  },
+    { "from": "stuck?",    "to": "prompt",  "label": "yes" },
+    { "from": "stuck?",    "to": "loop",    "label": "no"  },
+    { "from": "prompt",    "to": "loop" },
+    { "from": "loop",      "to": "read" }
+  ],
+  "judgments": [
+    {
+      "id": "J1",
+      "node": "running?",
+      "rule": "stop 按钮 enabled → running=true；CDP 直读 DOM，UIA/OCR 兜底",
+      "onMatch": "wait",
+      "recognition": ["cdp", "uia", "ocr"]
+    },
+    {
+      "id": "J2",
+      "node": "errors?",
+      "rule": "DOM 含 [class*=error],[class*=warning],[class*=danger] 且文本 5..500 字",
+      "onMatch": "prompt",
+      "recognition": ["cdp", "ocr"]
+    },
+    {
+      "id": "J3",
+      "node": "stuck?",
+      "rule": "对话轮次或 AI 最后回复文本 3 轮无变化 → stuck=true",
+      "onMatch": "prompt",
+      "recognition": ["cdp"]
+    }
+  ],
+  "selectors": {
+    "input": ".chat-input-v2-input-box-editable",
+    "sendBtn": ".chat-input-v2-send-button",
+    "stopBtn": "button[class*=stop]",
+    "userTurn": "section.chat-turn[data-role=user]",
+    "aiTurn": "section.chat-turn[data-role=assistant]"
+  },
+  "variables": {
+    "goal": { "type": "string" },
+    "maxRounds": { "type": "number", "default": 50 },
+    "recognition": { "type": "array", "items": "string", "default": ["cdp","uia","ocr","vlm"] }
+  },
+  "metadata": {
+    "createdAt": "2026-06-29T00:00:00Z",
+    "updatedAt": "2026-06-29T00:00:00Z",
+    "author": "tupAI"
+  }
+}

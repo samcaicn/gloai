@@ -1,0 +1,90 @@
+node_modules/
+*.log
+.DS_Store
+*.traineddata
+temp_*.png
+dashboard_history.json
+evolver_stats.json
+
+# Upstream source repositories (cua, terminator, etc.) — cloned for
+# reference / sidecar builds, not part of the project source tree.
+up/
+
+# Build outputs
+/dist/
+/out/
+/build-output/
+
+# Rust build cache (recreated by pnpm tauri build)
+src-tauri/target/
+target_fresh/
+src-tauri/target_fresh/
+
+# Tauri codegen output (regenerated on every `tauri build`)
+src-tauri/gen/
+
+# Vite cache (dependency pre-bundling, transform cache)
+node_modules/.vite/
+
+# ESLint / Babel cache
+**/.eslintcache
+**/*.tsbuildinfo
+
+# Test coverage reports
+coverage/
+
+# Temporary
+temp_*.json
+UsersUserAppDataLocalTemp*
+.tmp/
+build-log.txt
+# 临时调试输出文件
+check_err.txt
+check_out.txt
+test_output.txt
+nsis-build.log
+# cargo 编译输出日志（临时调试用）
+src-tauri/cargo_*.txt
+
+# IDE 配置
+.vscode/
+.idea/
+
+# Bundles / archives (not source)
+*.zip
+*.exe
+*.trae-autocdp
+trae-autocdp.exe
+dist/trae-autocdp
+
+# 临时调试脚本与输出（构建/检查/git诊断用，不入 git）
+.build_*.ps1
+.cargo_*.ps1
+.check_*.ps1
+.checkout_*.ps1
+.dump_err.ps1
+.gitlog_*.ps1
+.gitlog_*.txt
+extract_docx.ps1
+replace_bitfun.ps1
+.check_log.out
+.build_error.txt
+
+# 二进制文档（项目文档统一用 .md，docx 不入 git）
+*.docx
+
+# upsource 参考项目（非 subtree，手动 clone 的参考源码）
+upsource/Hermes-CN-Desktop-ref/
+target-check/
+
+# 本地签名凭据备份（不上传到GitHub）
+/signing/
+ci_status2.json
+
+# 本地 Agent 工作区状态（含记忆/身份，不上传）
+.workbuddy/
+
+# Windows pnpm store 镜像产物（非源码，不上传）
+C:pnpm-store/
+**/C:pnpm-store/
+*pnpm-store/

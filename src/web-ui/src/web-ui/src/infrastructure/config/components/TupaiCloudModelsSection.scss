@@ -1,0 +1,99 @@
+.bitfun-tupai-cloud {
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0;
+  }
+
+  &__spin {
+    animation: bitfun-tupai-cloud-spin 1s linear infinite;
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--bitfun-color-warning, #d97706);
+    padding: 6px 0;
+  }
+
+  &__empty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--bitfun-color-text-tertiary, #6b7280);
+    padding: 6px 0;
+  }
+
+  &__active-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--bitfun-color-primary-bg-soft, rgba(64, 158, 255, 0.12));
+    color: var(--bitfun-color-primary, #409eff);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  &__groups {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 4px;
+  }
+
+  &__group {
+    border: 1px solid var(--bitfun-color-border-soft, #e5e7eb);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: var(--bitfun-color-bg-soft, #fafbfc);
+  }
+
+  &__group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  &__group-name {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  &__group-count {
+    color: var(--bitfun-color-text-tertiary, #6b7280);
+    font-size: 12px;
+  }
+
+  &__model-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__model-tag {
+    display: inline-block;
+    padding: 3px 9px;
+    background: var(--bitfun-color-bg, #fff);
+    border: 1px solid var(--bitfun-color-border, #d1d5db);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--bitfun-color-text, #1f2937);
+  }
+
+  &__source {
+    margin: 12px 0 0;
+    color: var(--bitfun-color-text-tertiary, #6b7280);
+    font-size: 11px;
+    font-family: var(--bitfun-font-mono, monospace);
+    word-break: break-all;
+  }
+}
+
+@keyframes bitfun-tupai-cloud-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

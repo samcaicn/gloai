@@ -1,0 +1,261 @@
+@use '../../../component-library/styles/tokens' as *;
+
+.browser-scene {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: $size-gap-2;
+    padding: $size-gap-2 $size-gap-3;
+    border-bottom: 1px solid rgba(0, 255, 224, 0.4);
+    background: rgba(10, 10, 18, 0.85);
+  }
+
+  &__recording-dot {
+    color: #ff3b6b;
+    fill: #ff3b6b;
+    filter: drop-shadow(0 0 4px rgba(255, 59, 107, 0.7));
+    animation: browser-scene-pulse 1s ease-in-out infinite;
+  }
+
+  &__address {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    gap: $size-gap-2;
+    padding: 0 $size-gap-2;
+    border: 1px solid var(--border-subtle);
+    border-radius: $size-radius-base;
+    background: var(--color-bg-primary);
+    color: var(--color-text-muted);
+    overflow: hidden;
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    input {
+      flex: 1;
+      width: 0;
+      min-width: 0;
+      border: none;
+      outline: none;
+      box-shadow: none;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: var(--font-size-sm);
+      appearance: none;
+      -webkit-appearance: none;
+      border-radius: 0;
+
+      &:focus,
+      &:focus-visible,
+      &:active {
+        outline: none;
+        box-shadow: none;
+        border: none;
+      }
+    }
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: $size-gap-2;
+    margin: $size-gap-2 $size-gap-3 0;
+    padding: $size-gap-2 $size-gap-3;
+    border-radius: $size-radius-base;
+    background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+
+    svg {
+      color: var(--color-warning);
+      flex-shrink: 0;
+    }
+  }
+
+  &__content {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    background: var(--color-bg-primary);
+  }
+
+  &__iframe,
+  &__webview-host {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  &__webview-host {
+    position: relative;
+  }
+
+  &__webview-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $size-gap-2;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    background:
+      radial-gradient(circle at top, color-mix(in srgb, var(--color-accent-500) 8%, transparent), transparent 42%),
+      var(--color-bg-primary);
+
+    span {
+      max-width: min(60vw, 520px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  &__spinning {
+    animation: browser-scene-spin 0.8s linear infinite;
+  }
+
+  // ============================================================
+  // 自动化流程图折叠面板
+  // ============================================================
+  &__flowchart {
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(0, 255, 224, 0.3);
+    background: rgba(8, 8, 16, 0.9);
+  }
+
+  &__flowchart-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: transparent;
+    border: none;
+    color: rgba(0, 255, 224, 0.85);
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: rgba(0, 255, 224, 0.06);
+    }
+  }
+
+  &__flowchart-chevron {
+    color: #00ffe0;
+    transition: transform 0.18s ease;
+
+    &--collapsed {
+      transform: rotate(-90deg);
+    }
+  }
+
+  &__flowchart-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 14px 14px;
+  }
+
+  &__flowchart-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  &__flowchart-btn {
+    padding: 6px 14px;
+    background: transparent;
+    color: #00ffe0;
+    border: 1px solid rgba(0, 255, 224, 0.55);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: rgba(0, 255, 224, 0.1);
+      box-shadow: 0 0 8px rgba(0, 255, 224, 0.35);
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  &__flowchart-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background: rgba(255, 120, 120, 0.1);
+    border: 1px solid rgba(255, 120, 120, 0.4);
+    color: rgba(255, 170, 170, 0.9);
+    font-size: 12px;
+
+    svg {
+      flex-shrink: 0;
+      color: #ff7878;
+    }
+  }
+
+  &__flowchart-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__flowchart-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(0, 255, 224, 0.6);
+  }
+
+  &__pre {
+    margin: 0;
+    max-height: 220px;
+    overflow: auto;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 255, 224, 0.2);
+    border-radius: 4px;
+    color: rgba(0, 255, 224, 0.9);
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+}
+
+@keyframes browser-scene-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes browser-scene-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}

@@ -1,0 +1,57 @@
+/**
+ * ChatFloaterButton — circular button that opens a Tauri floating chat window.
+ * Simplified version of FloatingMiniChat button styling.
+ */
+
+@use '../../component-library/styles/tokens' as *;
+
+$button-size: 48px;
+$button-offset: 24px;
+
+.chat-floater-btn {
+  position: fixed;
+  bottom: $button-offset;
+  right: $button-offset;
+  z-index: $z-overlay + 1;
+  pointer-events: auto;
+
+  &__circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: $button-size;
+    height: $button-size;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--color-accent-500, #00ffe0), var(--color-accent-400, #00d4b8));
+    color: var(--color-bg-primary, #0a0a12);
+    box-shadow:
+      0 4px 12px rgba(0, 255, 224, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    opacity: 0.85;
+
+    &:hover {
+      transform: scale(1.08);
+      opacity: 1;
+      box-shadow:
+        0 6px 20px rgba(0, 255, 224, 0.4),
+        0 3px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    &.is-open {
+      background: var(--element-bg-soft, #1a1a2e);
+      color: var(--color-text-primary, #fff);
+      opacity: 1;
+
+      &:hover {
+        background: var(--element-bg-hover, #2a2a3e);
+      }
+    }
+  }
+}

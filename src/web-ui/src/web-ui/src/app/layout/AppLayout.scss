@@ -1,0 +1,367 @@
+/**
+ * BitFun main layout styles (SCSS).
+ * Token-driven application shell with a consistent dark background.
+ * Follows BEM naming and design tokens.
+ */
+
+@use '../../component-library/styles/tokens.scss' as *;
+
+// ==================== CSS reset ====================
+// Note: keep box-sizing !important for global consistency.
+*, *::before, *::after {
+  box-sizing: border-box !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  background: var(--color-bg-primary);
+  overflow: hidden;
+}
+
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+// ==================== Main layout container ====================
+.bitfun-app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  
+  // Use theme background
+  background: var(--color-bg-primary);
+  
+  color: var(--color-text-primary);
+  font-family: $font-family-sans;
+  position: relative;
+
+  // Ensure layout stability
+  min-height: 100vh;
+  max-height: 100vh;
+
+  // Font rendering
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  &:focus {
+    outline: none;
+  }
+
+  // All children
+  * {
+    box-sizing: border-box;
+  }
+
+  // Focus management
+  *:focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 2px;
+    border-radius: $size-radius-sm;
+  }
+  
+  // ==================== Startup mode ====================
+  &--startup-mode {
+    background: var(--color-bg-primary);
+  }
+  
+  // ==================== Transitioning ====================
+  &--transitioning {
+    // Styles during transition
+    .bitfun-app-main-workspace {
+      // Content transition handled by child components
+    }
+  }
+
+  // ==================== Modifier - loading ====================
+  &--loading {
+    pointer-events: none;
+    opacity: var(--opacity-focus);
+  }
+
+  // ==================== Modifier - error ====================
+  &--error {
+    .bitfun-app-header {
+      border-bottom-color: var(--color-error);
+      background: linear-gradient(135deg, 
+        var(--color-error-bg) 0%, 
+        var(--element-bg-base) 100%);
+    }
+  }
+
+  // ==================== Modifier - modal open ====================
+  &--modal-open {
+    overflow: hidden;
+
+    .bitfun-app-main {
+      filter: blur(2px);
+      pointer-events: none;
+    }
+  }
+
+}
+
+// ==================== Main content area (full height, no TitleBar) ====================
+.bitfun-app-main-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  background: var(--color-bg-flowchat);
+}
+
+.bitfun-app-acp-session-loading {
+  position: absolute;
+  left: 50%;
+  bottom: $size-gap-5;
+  z-index: 10020;
+  display: inline-flex;
+  align-items: center;
+  gap: $size-gap-2;
+  max-width: min(360px, calc(100vw - 32px));
+  min-height: 36px;
+  padding: 0 $size-gap-3;
+  border: 1px solid var(--border-subtle);
+  border-radius: $size-radius-base;
+  background: color-mix(in srgb, var(--color-bg-elevated) 92%, transparent);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.35;
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: bitfun-acp-session-loading-in $motion-fast $easing-decelerate forwards;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__spinner {
+    flex-shrink: 0;
+    color: var(--color-accent-500);
+    animation: bitfun-acp-session-spinner 0.9s linear infinite;
+  }
+}
+
+.bitfun-window-mode-hint {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + #{$size-gap-3});
+  left: 50%;
+  z-index: $z-notification;
+  display: inline-flex;
+  align-items: center;
+  gap: $size-gap-2;
+  max-width: min(560px, calc(100vw - 32px));
+  min-height: 34px;
+  padding: $size-gap-1 $size-gap-3;
+  border: 1px solid var(--border-subtle);
+  border-radius: $size-radius-base;
+  background: color-mix(in srgb, var(--color-bg-elevated) 90%, transparent);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.30);
+  color: var(--color-text-primary);
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: bitfun-window-mode-hint-in $motion-base $easing-decelerate both;
+  backdrop-filter: blur(12px);
+
+  &__title {
+    flex: 0 0 auto;
+    min-width: 0;
+    font-size: var(--font-size-sm);
+    font-weight: $font-weight-semibold;
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+
+  &__detail {
+    min-width: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@keyframes bitfun-acp-session-loading-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes bitfun-window-mode-hint-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes bitfun-acp-session-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ==================== Scrollbar styles ====================
+// Moved to global scrollbar.css for shared management.
+
+// ==================== Responsive ====================
+@media (max-width: 1024px) {
+  .bitfun-app-layout {
+    --header-height: 34px;
+  }
+}
+
+@media (max-width: 768px) {
+  .bitfun-app-layout {
+    --header-height: 32px;
+  }
+
+  .bitfun-window-mode-hint {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1px;
+    width: calc(100vw - 24px);
+    max-width: none;
+
+    &__title,
+    &__detail {
+      white-space: normal;
+    }
+  }
+}
+
+// ==================== Dark theme tweaks ====================
+@media (prefers-color-scheme: dark) {
+  .bitfun-app-layout {
+    background: var(--color-bg-flowchat);
+  }
+}
+
+// ==================== High-contrast mode ====================
+@media (prefers-contrast: high) {
+  .bitfun-app-layout {
+    background: var(--color-bg-flowchat);
+  }
+}
+
+// ==================== Reduced motion preference ====================
+@media (prefers-reduced-motion: reduce) {
+  .bitfun-app-layout * {
+    transition: none;
+    animation: none;
+  }
+
+  .bitfun-window-mode-hint {
+    animation: none;
+  }
+}
+
+// ==================== Animations ====================
+@keyframes shimmer {
+  0%, 100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+// Startup sweep glow: icy blue band from left to right, no delay.
+@keyframes header-sweep-glow {
+  0% {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(300%);
+    opacity: 0;
+  }
+}
+
+// ==================== 主窗口贴边态（半球 peek）====================
+// minimize 按钮把主窗口缩到 20px 宽、贴屏幕左/右边缘。docked 时主内容仅
+// display:none（组件保持挂载，FlowchartScene 等未保存编辑态不丢失），只显示
+// 覆盖层小半圆。视觉与浮窗 peek（FloatingWindow.scss）完全一致：20×40 半圆、
+// cyan 渐变 + 发光，弧面朝屏幕内侧。
+.bitfun-app-layout--main-docked {
+  // 隐藏所有直接子节点，只留 peek 覆盖层。
+  > *:not(.tupai-main-dock-peek) {
+    display: none !important;
+  }
+}
+
+.tupai-main-dock-peek {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  user-select: none;
+  z-index: 9999;
+
+  // 小半圆 —— peek 的视觉锚点。宽 100%(= 20px)，高 40px(= 2 × 半径)。
+  &::after {
+    content: '';
+    width: 100%;
+    height: 40px;
+    background: linear-gradient(180deg, #00ffe0 0%, #00d4b8 100%);
+    box-shadow: 0 0 8px rgba(0, 255, 224, 0.7);
+    border-radius: 20px 0 0 20px; // 默认贴右边：弧面朝左（凸入屏幕）
+    transition: box-shadow 0.15s ease, background 0.15s ease;
+    pointer-events: none;
+  }
+
+  // 贴左边：弧面朝右（凸入屏幕），直边贴屏幕左缘。
+  &--left::after {
+    border-radius: 0 20px 20px 0;
+  }
+
+  &:hover::after,
+  &:focus::after {
+    box-shadow: 0 0 14px rgba(0, 255, 224, 1), 0 0 28px rgba(0, 255, 224, 0.5);
+    background: linear-gradient(180deg, #00ffe0 0%, #b4fff0 50%, #00d4b8 100%);
+  }
+
+  &:focus-visible {
+    outline: 1px solid rgba(0, 255, 224, 0.6);
+    outline-offset: -1px;
+  }
+}

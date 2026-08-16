@@ -1,0 +1,139 @@
+.star-rating-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.star-rating-card {
+  background: #1a1a2e;
+  border: 1px solid rgba(0, 255, 224, 0.3);
+  border-radius: 8px;
+  padding: 20px 28px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  [data-theme-type='light'] & {
+    background: #ffffff;
+    border-color: rgba(79, 70, 229, 0.25);
+  }
+}
+
+.star-rating-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.star-rating-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #00ffe0;
+  letter-spacing: 1px;
+
+  [data-theme-type='light'] & {
+    color: #4338ca;
+  }
+}
+
+.star-rating-close {
+  background: none;
+  border: none;
+  color: rgba(0, 255, 224, 0.5);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+
+  &:hover {
+    color: #00ffe0;
+    background: rgba(0, 255, 224, 0.1);
+  }
+
+  [data-theme-type='light'] & {
+    color: #94a3b8;
+    &:hover {
+      color: #4f46e5;
+      background: rgba(79, 70, 229, 0.08);
+    }
+  }
+}
+
+.star-rating-skill-name {
+  font-size: 12px;
+  color: rgba(0, 255, 224, 0.7);
+  font-family: monospace;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  [data-theme-type='light'] & {
+    color: #64748b;
+  }
+}
+
+.star-rating-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+
+  [data-theme-type='light'] & {
+    color: #64748b;
+  }
+}
+
+.star-rating-stars {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.star-rating-star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: rgba(255, 255, 255, 0.2);
+  transition: color 0.15s ease, transform 0.1s ease;
+
+  &--active {
+    color: #fbbf24;
+    transform: scale(1.1);
+  }
+
+  &:hover:not(:disabled) {
+    color: #fbbf24;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  [data-theme-type='light'] & {
+    color: rgba(0, 0, 0, 0.15);
+    &--active {
+      color: #eab308;
+    }
+    &:hover:not(:disabled) {
+      color: #eab308;
+    }
+  }
+}
+
+.star-rating-submitting {
+  font-size: 11px;
+  color: rgba(0, 255, 224, 0.6);
+
+  [data-theme-type='light'] & {
+    color: #64748b;
+  }
+}

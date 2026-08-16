@@ -1,0 +1,71 @@
+/* Context compression card styles. */
+.context-compression-display {
+  .compression-icon {
+    color: var(--color-text-secondary);
+  }
+
+  .tool-card-icon.compression-icon {
+    color: var(--color-text-secondary);
+  }
+
+  .compression-info {
+    display: flex;
+    align-items: center;
+    gap: var(--flowchat-control-gap, 0.5rem);
+    flex-wrap: nowrap;
+
+    .token-stat {
+      font-weight: 600;
+      color: var(--tool-card-text-primary);
+      white-space: nowrap;
+    }
+
+    .savings-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.12rem 0.5rem;
+      border-radius: 4px;
+      font-size: var(--flowchat-font-size-xs);
+      font-weight: 600;
+      flex-shrink: 0;
+      white-space: nowrap;
+      color: rgba(34, 197, 94, 0.75);
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    .processing-text {
+      color: var(--tool-card-text-secondary);
+      font-style: italic;
+    }
+  }
+
+  .compression-meta {
+    font-size: var(--flowchat-font-size-sm);
+    color: var(--tool-card-text-secondary);
+    white-space: nowrap;
+  }
+
+  .error-content {
+    padding: var(--flowchat-card-expanded-pad-y, 0.5rem) var(--size-gap-4, 16px);
+    background: rgba(239, 68, 68, 0.05);
+    border-top: 1px solid rgba(239, 68, 68, 0.2);
+
+    .error-message {
+      color: rgba(239, 68, 68, 0.9);
+      font-size: var(--flowchat-font-size-sm);
+    }
+  }
+
+  .icon-completed {
+    color: rgba(34, 197, 94, 0.9);
+  }
+
+  .compression-detail-note {
+    padding: var(--flowchat-card-expanded-pad-y, 0.5rem) var(--size-gap-4, 16px);
+    font-size: var(--flowchat-font-size-sm);
+    line-height: var(--flowchat-support-line-height, 1.45);
+    color: var(--tool-card-text-secondary);
+    background: rgba(148, 163, 184, 0.08);
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
+  }
+}

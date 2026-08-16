@@ -1,0 +1,18 @@
+{
+  "name": "BitFun-workspace",
+  "private": true,
+  "version": "0.2.10",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev:web": "pnpm --dir src/web-ui dev",
+    "lint:web": "pnpm --dir src/web-ui run lint",
+    "lint:web:fix": "pnpm --dir src/web-ui run lint:fix",
+    "type-check:web": "pnpm --dir src/web-ui run type-check",
+    "build:web": "pnpm --dir src/web-ui build",
+    "preview": "pnpm --dir src/web-ui preview"
+  },
+  "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
+}

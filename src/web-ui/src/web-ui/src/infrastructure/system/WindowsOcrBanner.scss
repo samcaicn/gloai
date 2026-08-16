@@ -1,0 +1,81 @@
+@use '../../component-library/styles/tokens' as *;
+
+// Windows OCR 语言包缺失提示 — 设置页面内联样式。
+// 与 OsCompatibilityBanner (fixed 顶部覆盖) 不同，此组件是内联渲染，
+// 只在设置页面顶部显示，不遮挡主界面。
+.win-ocr-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: var(--color-warning-bg, rgba(250, 204, 21, 0.1));
+  border: 1px solid var(--color-warning-border, rgba(250, 204, 21, 0.3));
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.win-ocr-banner__icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.win-ocr-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.win-ocr-banner__title {
+  font-weight: 600;
+  color: var(--color-warning);
+}
+
+.win-ocr-banner__desc {
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.win-ocr-banner__btn {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-warning-border);
+  background: var(--color-warning);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    filter: brightness(1.08);
+  }
+
+  &:active {
+    filter: brightness(0.95);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent, #3b82f6);
+    outline-offset: 2px;
+  }
+}
+
+// 窄屏适配
+@media (max-width: 640px) {
+  .win-ocr-banner {
+    flex-wrap: wrap;
+  }
+
+  .win-ocr-banner__desc {
+    white-space: normal;
+  }
+}

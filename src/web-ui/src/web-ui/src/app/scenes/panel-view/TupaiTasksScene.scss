@@ -1,0 +1,309 @@
+// TupaiTasksScene — 任务调度面板赛博朋克风格。
+// 参考 TupaiHomeScene.scss：cyan 主色、透明背景、霓虹边框。
+
+.tupai-tasks {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 20px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: transparent;
+  color: rgba(0, 255, 224, 0.9);
+  font-family: 'Rajdhani', 'Noto Sans SC', 'Segoe UI', sans-serif;
+  overflow-y: auto;
+
+  // ============================================================
+  // 顶部标题栏
+  // ============================================================
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #00ffe0;
+    text-shadow: 0 0 8px rgba(0, 255, 224, 0.35);
+  }
+
+  &__header-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  // ============================================================
+  // 通用按钮
+  // ============================================================
+  &__btn {
+    padding: 8px 14px;
+    background: transparent;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+
+    &--ghost {
+      color: rgba(0, 255, 224, 0.7);
+      border: 1px solid rgba(0, 255, 224, 0.3);
+
+      &:hover:not(:disabled) {
+        background: rgba(0, 255, 224, 0.08);
+        border-color: rgba(0, 255, 224, 0.5);
+      }
+    }
+
+    &--primary {
+      color: #00ffe0;
+      border: 1px solid rgba(0, 255, 224, 0.55);
+
+      &:hover:not(:disabled) {
+        background: rgba(0, 255, 224, 0.12);
+        box-shadow: 0 0 8px rgba(0, 255, 224, 0.35);
+      }
+    }
+
+    &--danger {
+      color: rgba(255, 120, 120, 0.9);
+      border: 1px solid rgba(255, 120, 120, 0.45);
+
+      &:hover:not(:disabled) {
+        background: rgba(255, 120, 120, 0.12);
+        box-shadow: 0 0 8px rgba(255, 120, 120, 0.3);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  // ============================================================
+  // 错误提示
+  // ============================================================
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    background: rgba(255, 120, 120, 0.1);
+    border: 1px solid rgba(255, 120, 120, 0.4);
+    color: rgba(255, 170, 170, 0.9);
+    font-size: 13px;
+
+    svg {
+      flex-shrink: 0;
+      color: #ff7878;
+    }
+  }
+
+  // ============================================================
+  // 新建任务表单
+  // ============================================================
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    background: rgba(20, 20, 30, 0.6);
+    border: 1px solid rgba(0, 255, 224, 0.25);
+    border-radius: 6px;
+  }
+
+  &__form-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 200px;
+
+    &--grow {
+      flex: 2;
+    }
+
+    &--toggle {
+      flex-direction: row;
+      align-items: center;
+      min-width: auto;
+      flex: 0 0 auto;
+
+      input[type='checkbox'] {
+        width: 16px;
+        height: 16px;
+        accent-color: #00ffe0;
+        cursor: pointer;
+      }
+    }
+  }
+
+  &__field-label {
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(0, 255, 224, 0.7);
+  }
+
+  &__input,
+  &__select {
+    height: 36px;
+    padding: 0 12px;
+    background: rgba(10, 10, 18, 0.7);
+    border: 1px solid rgba(0, 255, 224, 0.25);
+    border-radius: 4px;
+    color: #00ffe0;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus {
+      border-color: rgba(0, 255, 224, 0.6);
+      box-shadow: 0 0 8px rgba(0, 255, 224, 0.25);
+    }
+  }
+
+  &__select {
+    cursor: pointer;
+    option {
+      background: #0a0a12;
+      color: #00ffe0;
+    }
+  }
+
+  &__form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  // ============================================================
+  // 任务列表
+  // ============================================================
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__empty {
+    padding: 24px;
+    border: 1px dashed rgba(0, 255, 224, 0.25);
+    border-radius: 6px;
+    text-align: center;
+    color: rgba(0, 255, 224, 0.5);
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+
+  &__card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(20, 20, 30, 0.6);
+    border: 1px solid rgba(0, 255, 224, 0.25);
+    border-radius: 6px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      border-color: rgba(0, 255, 224, 0.5);
+      box-shadow: 0 0 10px rgba(0, 255, 224, 0.18);
+    }
+
+    &--disabled {
+      opacity: 0.55;
+    }
+  }
+
+  &__card-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  &__card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #00ffe0;
+    letter-spacing: 0.5px;
+    word-break: break-word;
+  }
+
+  &__card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__chip {
+    padding: 2px 8px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    border-radius: 3px;
+    background: rgba(0, 255, 224, 0.08);
+    border: 1px solid rgba(0, 255, 224, 0.25);
+    color: rgba(0, 255, 224, 0.8);
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+
+    &--on {
+      background: rgba(0, 255, 224, 0.15);
+      border-color: rgba(0, 255, 224, 0.55);
+      color: #00ffe0;
+    }
+
+    &--off {
+      background: rgba(255, 120, 120, 0.1);
+      border-color: rgba(255, 120, 120, 0.4);
+      color: rgba(255, 170, 170, 0.9);
+    }
+  }
+
+  &__card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  // ============================================================
+  // 底部说明
+  // ============================================================
+  &__notice {
+    margin-top: auto;
+    padding: 10px 14px;
+    border-radius: 4px;
+    background: rgba(160, 160, 200, 0.06);
+    border: 1px dashed rgba(160, 160, 200, 0.3);
+    color: rgba(180, 180, 220, 0.75);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+}

@@ -1,0 +1,17 @@
+.bitfun-local-model-paths {
+  &__row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+  }
+
+  &__spin {
+    animation: bitfun-local-model-paths-spin 1s linear infinite;
+  }
+}
+
+@keyframes bitfun-local-model-paths-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

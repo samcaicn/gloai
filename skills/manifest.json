@@ -1,0 +1,388 @@
+{
+  "skill_set": "tupauto-skills",
+  "version": "1.0.0",
+  "description": "全部技能集 — 标准结构：每个技能一个子目录（SKILL.md 描述 + index.js 实现）",
+  "skills": [
+    {
+      "id": "trace-auto",
+      "name": "Trace Auto",
+      "version": "6.0.0",
+      "standard": "v1",
+      "file": "trace-auto/index.js",
+      "description": "Trae IDE 自动化技能 v6 — 含流程图(flowchart.json)、识别能力链(CDP>UIA>OCR>VLM)、迷你悬浮窗控制(单步/暂停/继续/停止)、软件名检索(search_software)、执行入口(execute/record)，停止后回看流程图与判断节点。完整保留 v5 旧版动作兼容。",
+      "tags": ["trae", "automation", "cdp", "uia", "ocr", "vlm", "flowchart", "rpa", "browser", "driving", "loop", "ide"],
+      "flowchart": "trace-auto/flowchart.json",
+      "recognition": ["cdp", "uia", "ocr", "vlm"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "流程图: get_flowchart|get_judgments|get_trace | 执行入口: search_software|execute|record | 控制: step_once|pause|resume|stop | 驱动循环(旧): start|status|run_steps | CDP检测: ensure_cdp|find_exe|scan_ports|targets|check_page | 页面读取: read_state|wait_idle|detect_stuck|reset_stuck|read_input|count_turns|check_running | 页面操作: click_button|click_action_buttons|click_send|click_stop|type_input|type_and_send|verify_input|clear_input|send_input | 条件回复: set_conditions|get_conditions|check_and_reply|generate_followup|summarize_conditions|clear_conditions|check_only"
+        },
+        "softwareName": { "type": "string", "description": "[search_software] 软件中文名" },
+        "softwareNameEn": { "type": "string", "description": "[search_software] 软件英文名(可选)" },
+        "goal": { "type": "string", "description": "[execute/start/generate_followup] 任务目标" },
+        "maxRounds": { "type": "number", "description": "[execute/start] 最大轮次(默认50)" },
+        "idleTimeoutSec": { "type": "number", "description": "[execute/start] 等待超时(默认60s)" },
+        "recognition": { "type": "array", "description": "[execute] 识别能力链顺序(默认 [cdp,uia,ocr,vlm])", "items": { "type": "string", "enum": ["cdp", "uia", "ocr", "vlm"] } },
+        "conditions": { "type": "array", "description": "[set_conditions/summarize_conditions] 条件列表" },
+        "buttonText": { "type": "string", "description": "[click_button] 按钮文本" },
+        "text": { "type": "string", "description": "[type_input/type_and_send] 输入文本" },
+        "aiText": { "type": "string", "description": "[check_and_reply/check_only/generate_followup] AI回复文本(不传则自动读取)" },
+        "keyword": { "type": "string", "description": "[check_page] 页面关键词(默认trae)" },
+        "timeoutSec": { "type": "number", "description": "[wait_idle] 超时秒数(默认60)" },
+        "threshold": { "type": "number", "description": "[detect_stuck] 卡住阈值(默认3)" },
+        "waitAfterMs": { "type": "number", "description": "[type_and_send/check_and_reply] 发送后等待ms(默认8000)" },
+        "skipSummarize": { "type": "boolean", "description": "[set_conditions] 跳过LLM精炼" },
+        "selectors": { "type": "object", "description": "自定义CSS选择器(可选)" },
+        "steps": { "type": "array", "description": "[run_steps] 步骤列表" }
+      }
+    },
+    {
+      "id": "wechat-publisher",
+      "name": "公众号文章技能",
+      "version": "3.0.0",
+      "file": "wechat-publisher/index.js",
+      "description": "交互式对话配置→7种写作框架→全网热点监测→风格学习→质量检查→去AI化→one-click发布。品牌词+关键词+话题输入即可。",
+      "tags": ["wechat", "writing", "publishing", "content-creation", "weixin", "social-media", "automation", "copywriting", "marketing"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "setup=配置 | profile=查看配置 | write=撰写 | monitor=监测 | publish=发布 | auto=全自动 | status=状态 | learn=风格学习 | check=质量检查 | deai=去AI化 | upload=上传市场",
+          "enum": ["setup", "profile", "write", "monitor", "publish", "auto", "status", "learn", "check", "deai", "upload"]
+        },
+        "topic": { "type": "string", "description": "文章话题（write动作）" },
+        "content": { "type": "string", "description": "文章内容（check/deai动作）" },
+        "skipConfirm": { "type": "boolean", "description": "跳过确认步骤" }
+      }
+    },
+    {
+      "id": "xiaohongshu-publisher",
+      "name": "小红书文案技能",
+      "version": "1.0.0",
+      "file": "xiaohongshu-publisher/index.js",
+      "description": "全网热点监测→小红书文案撰写→配图→发布到微信公众号草稿箱备份。输入品牌词+目标关键词+监测间隔+输出间隔。",
+      "tags": ["xiaohongshu", "redbook", "content-creation", "social-media", "monitor", "auto-writing", "marketing"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "monitor=启动监测 | status=查状态 | stop=停止",
+          "enum": ["monitor", "status", "stop"]
+        },
+        "brandKeywords": { "type": "string", "description": "自有业务品牌词，多个用逗号分隔" },
+        "targetKeywords": { "type": "string", "description": "监测目标关键词，多个用逗号分隔" },
+        "monitorInterval": { "type": "number", "description": "监测间隔（分钟，默认 120）" },
+        "outputInterval": { "type": "number", "description": "输出间隔（分钟，默认 1440）" }
+      }
+    },
+    {
+      "id": "kuaiju-viewer",
+      "name": "快剧",
+      "version": "1.0.0",
+      "file": "kuaiju-viewer/index.js",
+      "description": "一键打开快剧（快捷键视频）网页 https://kuaiju2c.tuptup.top",
+      "tags": ["kuaiju", "video", "short-video", "viewer", "iframe", "shortcut"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "open",
+          "enum": ["open"]
+        }
+      }
+    },
+    {
+      "id": "auto-product-comm",
+      "name": "自动选品智能沟通",
+      "version": "3.0.0",
+      "standard": "v1",
+      "file": "auto-product-comm/index.js",
+      "description": "LLM 驱动的多轮智能沟通引擎：CDP 控制浏览器打开微信小店选品中心，交互式预配置筛选条件，LLM 生成个性化开场白并多轮对话，自动发送产品资料，循环联系多家商家，支持人工干预，记录沟通效果，通过 Hermes 自我进化。",
+      "tags": ["auto-product", "weixin-store", "cdp", "browser", "automation", "merchant", "communication", "选品", "沟通", "weui", "flowchart", "筛选", "llm", "multi-turn", "self-evolution", "hermes", "material-management", "human-in-loop"],
+      "flowchart": "auto-product-comm/flowchart.json",
+      "recognition": ["cdp", "uia", "ocr", "vlm"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "流程图: get_flowchart|get_judgments|get_trace | 执行入口: execute|record | 配置: setup|status|get_filter_options | 资料管理: set_material_folder|load_materials|add_material|add_materials|get_materials|find_materials | 沟通日志: get_logs|clear_logs | 自进化: self_evolve|get_evolve_history | 控制: step_once|pause|resume|stop | 断点: add_breakpoint|remove_breakpoint|clear_breakpoints | 单步: open_page|apply_filters|contact_merchant|send_message|extract_page|extract_merchants | 对话: generate_opening|analyze_reply|generate_followup | 升级: check_upgrade|upgrade|rollback"
+        },
+        "keywords": { "type": "array", "description": "[execute/setup] 选品关键词列表", "items": { "type": "string" } },
+        "filters": { "type": "object", "description": "[execute/setup] 筛选配置 { sort, service[], priceRange{composition,min,max}, monthlySales, positiveRate, shopRating }" },
+        "materialFolder": { "type": "string", "description": "[execute/setup/set_material_folder] 产品介绍资料文件夹路径" },
+        "maxMerchants": { "type": "number", "description": "[execute/setup] 最多联系商家数量（默认5）" },
+        "maxConvRounds": { "type": "number", "description": "[execute/setup] 每个商家最大对话轮次（默认8）" },
+        "replyWaitSecs": { "type": "number", "description": "[execute/setup] 等待商家回复超时秒数（默认120）" },
+        "commStyle": { "type": "string", "description": "[execute/setup] 沟通风格: 专业友好/热情主动/稳重务实/轻松亲切", "enum": ["专业友好", "热情主动", "稳重务实", "轻松亲切"] },
+        "autoEvolve": { "type": "boolean", "description": "[execute/setup] 批次结束后是否自动自进化（默认true）" },
+        "recognition": { "type": "array", "description": "[execute] 识别能力链顺序", "items": { "type": "string", "enum": ["cdp", "uia", "ocr", "vlm"] } },
+        "index": { "type": "number", "description": "[contact_merchant] 联系第几个商家（从0开始）" },
+        "keyword": { "type": "string", "description": "[open_page] 搜索关键词" },
+        "url": { "type": "string", "description": "[open_page] 自定义页面 URL" },
+        "productInfo": { "type": "string", "description": "[send_message/generate_opening] 商品信息（用于 LLM 生成文案）" },
+        "message": { "type": "string", "description": "[send_message] 直接指定消息内容" },
+        "folder": { "type": "string", "description": "[set_material_folder/load_materials] 资料文件夹路径" },
+        "materials": { "type": "array", "description": "[add_materials] 批量添加资料 [{name, content}]" },
+        "name": { "type": "string", "description": "[add_material] 资料文件名" },
+        "content": { "type": "string", "description": "[add_material] 资料内容" },
+        "reply": { "type": "string", "description": "[analyze_reply] 商家回复内容" },
+        "context": { "type": "object", "description": "[analyze_reply/generate_followup] 对话上下文" },
+        "analysis": { "type": "object", "description": "[generate_followup] 回复分析结果" },
+        "nodeId": { "type": "string", "description": "[add_breakpoint/remove_breakpoint] 节点 ID" },
+        "skillId": { "type": "string", "description": "[check_upgrade/upgrade/rollback] 技能 ID" }
+      }
+    },
+    {
+      "id": "amazon-product-research",
+      "name": "亚马逊选品调研",
+      "version": "1.0.0",
+      "file": "amazon-product-research/index.js",
+      "description": "基于 LLM + 公开数据源的亚马逊选品调研工具。支持关键词搜索、ASIN 详情分析、BSR 排名追踪、评论情感分析和市场洞察。覆盖 US/UK/DE/FR/IT/ES/JP/CA 多站点。",
+      "tags": ["amazon", "product-research", "cross-border", "ecommerce", "data-analysis", "keyword", "bsr", "market-analysis"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "search=关键词搜索选品 | detail=ASIN详情 | analyze=市场分析 | keywords=关键词研究 | reviews=评论分析",
+          "enum": ["search", "detail", "analyze", "keywords", "reviews"]
+        },
+        "keywords": { "type": "array", "description": "[search/analyze] 搜索关键词列表", "items": { "type": "string" } },
+        "marketplace": { "type": "string", "description": "[all] 站点: US/UK/DE/FR/IT/ES/JP/CA (默认US)" },
+        "maxResults": { "type": "number", "description": "[search] 最大结果数 (默认20)" },
+        "asins": { "type": "array", "description": "[detail] ASIN 列表", "items": { "type": "string" } },
+        "asin": { "type": "string", "description": "[reviews] ASIN" },
+        "maxReviews": { "type": "number", "description": "[reviews] 最大评论数 (默认100)" },
+        "keyword": { "type": "string", "description": "[keywords] 核心关键词" }
+      }
+    },
+    {
+      "id": "alibaba-1688-sourcing",
+      "name": "1688货源搜索",
+      "version": "1.0.0",
+      "file": "alibaba-1688-sourcing/index.js",
+      "description": "专为跨境电商卖家打造的1688批发平台货源搜索工具，支持关键词搜索、价格筛选、销量排行、供应商信用分析、跨平台比价。",
+      "tags": ["1688", "sourcing", "wholesale", "cross-border", "ecommerce", "supplier", "product-research"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "search=搜索货源 | supplier=供应商分析 | compare=跨平台比价 | trending=热销榜单 | image_search=以图搜图",
+          "enum": ["search", "supplier", "compare", "trending", "image_search"]
+        },
+        "keywords": { "type": "array", "description": "[search] 搜索关键词列表", "items": { "type": "string" } },
+        "maxResults": { "type": "number", "description": "[search] 最大结果数 (默认30)" },
+        "filters": { "type": "object", "description": "[search] 筛选条件 { minPrice, maxPrice, minSales, sortBy }" },
+        "supplierId": { "type": "string", "description": "[supplier] 供应商ID" },
+        "productId": { "type": "string", "description": "[compare] 1688商品ID" },
+        "targetMarket": { "type": "string", "description": "[compare] 目标市场: US/UK/EU/JP/CA (默认US)" },
+        "category": { "type": "string", "description": "[trending] 类目名称" }
+      }
+    },
+    {
+      "id": "tiktok-trend-tracker",
+      "name": "TikTok热品追踪",
+      "version": "1.0.0",
+      "file": "tiktok-trend-tracker/index.js",
+      "description": "实时追踪TikTok Shop热销商品和带货趋势，支持 US/UK/ID/TH/VN 多站点，提供销量数据、GMV 估算、带货视频分析和爆款预测。",
+      "tags": ["tiktok", "trending", "cross-border", "ecommerce", "tiktok-shop", "viral", "product-research"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "search=搜索热品 | videos=带货视频 | trending=趋势报告 | creator=达人分析",
+          "enum": ["search", "videos", "trending", "creator"]
+        },
+        "keywords": { "type": "array", "description": "[search] 搜索关键词", "items": { "type": "string" } },
+        "marketplace": { "type": "string", "description": "[all] 站点: US/UK/ID/TH/VN (默认US)" },
+        "maxResults": { "type": "number", "description": "[search] 最大结果数 (默认20)" },
+        "productId": { "type": "string", "description": "[videos] 商品ID" },
+        "category": { "type": "string", "description": "[trending] 类目 (beauty/fashion/electronics/home)" },
+        "creatorId": { "type": "string", "description": "[creator] 达人ID" }
+      }
+    },
+    {
+      "id": "cross-border-competitor",
+      "name": "跨境竞品分析",
+      "version": "1.0.0",
+      "file": "cross-border-competitor/index.js",
+      "description": "多平台、多维度竞品分析工具，支持 Amazon/eBay/Shopee 主流跨境电商平台的竞品识别、定价分析、流量拆解、运营手法挖掘、SWOT 分析。",
+      "tags": ["competitor", "analysis", "cross-border", "ecommerce", "amazon", "ebay", "shopee", "benchmarking"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "search=竞品搜索 | analyze=深度分析 | monitor=价格监控 | compare=竞品对比 | landscape=市场格局",
+          "enum": ["search", "analyze", "monitor", "compare", "landscape"]
+        },
+        "keywords": { "type": "array", "description": "[search/landscape] 搜索关键词", "items": { "type": "string" } },
+        "platforms": { "type": "array", "description": "[search] 平台: amazon/ebay/shopee", "items": { "type": "string" } },
+        "maxResults": { "type": "number", "description": "[search] 最大结果数 (默认20)" },
+        "asin": { "type": "string", "description": "[analyze] ASIN" },
+        "asins": { "type": "array", "description": "[monitor/compare] ASIN 列表", "items": { "type": "string" } },
+        "platform": { "type": "string", "description": "[analyze/monitor/compare/landscape] 平台 (默认amazon)" }
+      }
+    },
+    {
+      "id": "listing-optimizer",
+      "name": "Listing优化器",
+      "version": "1.0.0",
+      "file": "listing-optimizer/index.js",
+      "description": "AI 驱动的跨境电商 Listing 全链路优化工具，覆盖标题、五点描述、产品描述、A+内容、关键词布局、搜索词优化，支持多站点适配。",
+      "tags": ["listing", "optimization", "seo", "keywords", "cross-border", "ecommerce", "copywriting", "conversion"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "title=标题优化 | bullets=五点优化 | description=描述生成 | searchTerms=搜索词优化 | fullOptimize=完整优化",
+          "enum": ["title", "bullets", "description", "searchTerms", "fullOptimize"]
+        },
+        "productInfo": { "type": "object", "description": "[title/bullets/description] 产品信息 { title, features[], keywords[], category, targetAudience }" },
+        "marketplace": { "type": "string", "description": "[all] 站点 (默认US)" },
+        "currentBullets": { "type": "array", "description": "[bullets] 当前五点描述列表", "items": { "type": "string" } },
+        "style": { "type": "string", "description": "[description] 风格: professional/emotional/technical (默认professional)" },
+        "keywords": { "type": "array", "description": "[searchTerms] 核心关键词", "items": { "type": "string" } },
+        "listing": { "type": "object", "description": "[fullOptimize] 完整Listing { title, bullets[], features[], keywords[], category }" }
+      }
+    },
+    {
+      "id": "seedance",
+      "name": "Seedance 视频生成",
+      "version": "1.0.0",
+      "file": "seedance/index.js",
+      "description": "Seedance 2.0 AI 视频生成 — 文生视频、图生视频、参考视频生成，支持同步音频，最高 1080p，4-15 秒短片。纯 LLM prompt 技能，引导用户完成视频创作。",
+      "tags": ["seedance", "video-generation", "ai-video", "bytedance", "text-to-video", "image-to-video", "content-creation"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "generate=生成视频 | guide=创作指导 | help=帮助",
+          "enum": ["generate", "guide", "help"]
+        },
+        "prompt": { "type": "string", "description": "[generate] 视频描述提示词" },
+        "model": { "type": "string", "description": "[generate] 模型: seedance-2-0 / seedance-2-0-fast / seedance-2-0-studio" }
+      }
+    },
+    {
+      "id": "cross-border-expansion",
+      "name": "跨境市场扩张战略",
+      "version": "1.0.0",
+      "file": "cross-border-expansion/index.js",
+      "description": "基于 nexscope-ai 59.2k 安装的扩张战略。8维度加权评分15+国际市场，对比5种物流方案，VAT/GST合规指南，分阶段扩张路线图。",
+      "tags": ["cross-border", "expansion", "market-entry", "strategy", "fulfillment", "tax", "localization"],
+      "params": {
+        "action": { "type": "string", "description": "score=市场评分 | fulfillment=物流对比 | roadmap=路线图 | taxGuide=税务指南 | fullAnalysis=全链路分析", "enum": ["score", "fulfillment", "roadmap", "taxGuide", "fullAnalysis"] },
+        "targetMarkets": { "type": "array", "description": "[score/roadmap/taxGuide] 目标市场列表", "items": { "type": "string" } },
+        "category": { "type": "string", "description": "[score] 产品品类" },
+        "monthlyOrders": { "type": "number", "description": "[fulfillment] 月订单量 (默认100)" },
+        "currentPlatform": { "type": "string", "description": "[roadmap] 当前平台 (默认amazon)" },
+        "homeMarket": { "type": "string", "description": "[roadmap/fullAnalysis] 起始市场 (默认US)" },
+        "productInfo": { "type": "object", "description": "[fullAnalysis] 产品信息 { category, avgPrice, weight }" }
+      }
+    },
+    {
+      "id": "global-tax-guide",
+      "name": "全球税务合规指南",
+      "version": "1.0.0",
+      "file": "global-tax-guide/index.js",
+      "description": "跨境电商多国税务合规专家。覆盖 EU VAT/IOSS、UK VAT、US Sales Tax、JP Consumption Tax、AU GST、CA GST，提供到岸成本计算和产品合规认证检查。",
+      "tags": ["tax", "vat", "gst", "compliance", "cross-border", "ecommerce", "ioss", "customs"],
+      "params": {
+        "action": { "type": "string", "description": "check=税务检查 | landedCost=到岸成本 | compliance=产品合规", "enum": ["check", "landedCost", "compliance"] },
+        "markets": { "type": "array", "description": "[check/compliance] 市场列表", "items": { "type": "string" } },
+        "revenue": { "type": "object", "description": "[check] 各市场年营收 { market: amount }" },
+        "productPrice": { "type": "number", "description": "[landedCost] 产品价格" },
+        "origin": { "type": "string", "description": "[landedCost] 原产国 (默认CN)" },
+        "destination": { "type": "string", "description": "[landedCost] 目的国" },
+        "productType": { "type": "string", "description": "[compliance] 产品类型: electronics/toys/food/cosmetics/medical" }
+      }
+    },
+    {
+      "id": "profit-calculator",
+      "name": "跨境利润计算器",
+      "version": "1.0.0",
+      "file": "profit-calculator/index.js",
+      "description": "跨境电商全链路利润计算。支持Amazon FBA费用、多平台佣金、跨境物流成本、关税/VAT影响、目标利润定价建议。",
+      "tags": ["profit", "calculator", "margin", "cross-border", "ecommerce", "fba", "pricing", "financial"],
+      "params": {
+        "action": { "type": "string", "description": "analyze=利润分析 | suggest=定价建议 | fba=FBA费用计算", "enum": ["analyze", "suggest", "fba"] },
+        "productInfo": { "type": "object", "description": "[analyze/fba] 产品信息 { purchasePrice, sellingPrice, platform, weight, category, dimensions }" },
+        "marketplace": { "type": "string", "description": "[analyze] 平台: amazon/ebay/shopify/tiktok/walmart" },
+        "market": { "type": "string", "description": "[analyze/fba] 市场: US/UK/DE (默认US)" },
+        "costInfo": { "type": "object", "description": "[suggest] 成本信息 { purchasePrice, shipping, fbaFee, adRate, platform }" },
+        "targetMargin": { "type": "number", "description": "[suggest] 目标利润率% (默认30)" }
+      }
+    },
+    {
+      "id": "shopify-operator",
+      "name": "Shopify店铺运营",
+      "version": "1.0.0",
+      "file": "shopify-operator/index.js",
+      "description": "Shopify独立站全链路运营助手。店铺健康审计、商品SEO优化、弃购挽回策略、Shopify Markets多市场扩张配置。",
+      "tags": ["shopify", "store", "ecommerce", "d2c", "dropshipping", "inventory", "orders", "catalog"],
+      "params": {
+        "action": { "type": "string", "description": "audit=店铺审计 | optimize=商品优化 | recovery=弃购挽回 | expand=市场扩张", "enum": ["audit", "optimize", "recovery", "expand"] },
+        "storeUrl": { "type": "string", "description": "[audit] 店铺URL" },
+        "metrics": { "type": "array", "description": "[audit] 审计维度 (默认 [catalog,seo,speed,conversion])", "items": { "type": "string" } },
+        "products": { "type": "array", "description": "[optimize] 商品列表 [{title, description, tags}]" },
+        "abandonedRate": { "type": "number", "description": "[recovery] 弃购率% (默认75)" },
+        "avgOrderValue": { "type": "number", "description": "[recovery] 平均客单价 (默认45)" },
+        "targetMarkets": { "type": "array", "description": "[expand] 目标市场", "items": { "type": "string" } },
+        "currentCurrency": { "type": "string", "description": "[expand] 当前币种 (默认USD)" }
+      }
+    },
+    {
+      "id": "listing-translator",
+      "name": "Listing多语言翻译",
+      "version": "1.0.0",
+      "file": "listing-translator/index.js",
+      "description": "跨境电商Listing多语言翻译和SEO本地化。支持德语/法语/日语/西语/阿语等，保留关键词密度和SEO结构，适配当地电商用语。",
+      "tags": ["translation", "localization", "listing", "multilingual", "seo", "cross-border", "i18n"],
+      "params": {
+        "action": { "type": "string", "description": "translate=Listing翻译 | keywords=关键词本地化", "enum": ["translate", "keywords"] },
+        "listing": { "type": "object", "description": "[translate] Listing { title, bullets[], description, keywords[] }" },
+        "targetLanguages": { "type": "array", "description": "[translate] 目标语言: de/fr/it/es/ja/ar/pt/nl/sv/pl", "items": { "type": "string" } },
+        "keywords": { "type": "array", "description": "[keywords] 种子关键词", "items": { "type": "string" } },
+        "targetMarket": { "type": "string", "description": "[keywords] 目标市场: DE/FR/JP/ES/IT (默认DE)" }
+      }
+    },
+    {
+      "id": "seedance-ad-creative",
+      "name": "Seedance 广告创意视频生成",
+      "version": "1.0.0",
+      "file": "seedance-ad-creative/index.js",
+      "description": "基于 BytePlus Seedance 的广告创意视频生成——对标爆款短视频模板的镜头语言与爽点结构，将用户提供的静态商品图复刻生成具备原生网感、高点击潜力的商品展示视频。支持详细分析、预演模式、生成保护与风险兜底。",
+      "tags": ["seedance", "ad-creative", "video-generation", "bytedance", "byteplus", "product-video", "viral", "marketing"],
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "analyze=分析模板视频 | rewrite=生成改写方案 | preview=预演 | generate=正式生成",
+          "enum": ["analyze", "rewrite", "preview", "generate"]
+        },
+        "templateVideo": { "type": "string", "description": "[analyze] 模板视频路径或URL" },
+        "productImage": { "type": "string", "description": "[analyze/rewrite] 商品图片路径" },
+        "brief": { "type": "object", "description": "[rewrite/generate] 改写方案 { templateProfile, rewriteStrategy, forbiddenCarryover, audioSetting }" }
+      }
+    },
+    {
+      "id": "mini-program-helper",
+      "name": "微信小程序开发助手",
+      "version": "1.0.0",
+      "file": "mini-program-helper/index.js",
+      "description": "全流程微信小程序开发指导：项目搭建、WXML/WXSS模板、JavaScript逻辑、API使用、云开发、UI组件库、发布审核流程、性能优化、问题排查、推广营销。LLM驱动交互式问答，覆盖从零基础到上线的完整开发周期。",
+      "tags": ["mini-program", "wechat", "weixin", "小程序", "development", "guidance", "template", "publish", "mobile", "cross-platform"],
+      "flowchart": "mini-program-helper/flowchart.json",
+      "params": {
+        "action": {
+          "type": "string",
+          "description": "create=项目搭建 | guidance=开发指导 | template=代码模板 | publish=发布流程 | optimize=性能优化 | troubleshoot=问题排查 | query=知识查询",
+          "enum": ["create", "guidance", "template", "publish", "optimize", "troubleshoot", "query"]
+        },
+        "projectName": { "type": "string", "description": "[create] 项目名称" },
+        "appId": { "type": "string", "description": "[create] 小程序 AppID" },
+        "description": { "type": "string", "description": "[create] 项目描述" },
+        "template": { "type": "string", "description": "[create] 框架偏好: 原生/uniapp/taro" },
+        "topic": { "type": "string", "description": "[guidance] 咨询主题" },
+        "question": { "type": "string", "description": "[guidance/troubleshoot] 具体问题" },
+        "experience": { "type": "string", "description": "[guidance] 经验水平: 新手/进阶/专家" },
+        "pageType": { "type": "string", "description": "[template] 页面类型: list/form/detail/tabs/login" },
+        "feature": { "type": "string", "description": "[template] 功能描述（LLM生成模板）" },
+        "stage": { "type": "string", "description": "[publish] 当前阶段: 准备/待审核/被驳回/已发布" },
+        "focus": { "type": "string", "description": "[optimize] 优化重点: 首屏/分包/渲染/启动" },
+        "issue": { "type": "string", "description": "[troubleshoot] 问题描述" },
+        "errorCode": { "type": "string", "description": "[troubleshoot] 错误码" },
+        "query": { "type": "string", "description": "[query] 知识查询关键词" }
+      }
+    }
+  ]
+}
