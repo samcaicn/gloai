@@ -492,6 +492,12 @@ commands::pc_automation::check_cua_driver,
 commands::pc_automation::cua_driver_click,
 commands::pc_automation::cua_driver_type_text,
 commands::pc_automation::cua_driver_invoke,
+// BrowserSkill (腾讯开源) —— 独立浏览器 Agent 驱动后端，
+// 通过 bsk CLI 操作用户已登录的真实浏览器，与 CDP 感知层并行互补。
+commands::pc_automation::browser_skill_health,
+commands::pc_automation::browser_skill_exec,
+commands::pc_automation::browser_skill_status,
+commands::pc_automation::browser_skill_setup,
 // Computer Use 设置页命令 —— 前端 SessionConfig.tsx 调用（此前缺失）。
 commands::computer_use::computer_use_get_status,
 commands::computer_use::computer_use_open_system_settings,

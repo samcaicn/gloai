@@ -26,6 +26,11 @@ pub mod cdp;
 // （MCP 协议）通信。替代 enigo 作为主要输入路径，enigo 降级
 // 为 fallback。详见 `cua_driver/mod.rs` 架构文档。
 pub mod cua_driver;
+// BrowserSkill 集成层 — 腾讯开源浏览器 Agent 驱动。
+// 通过子进程方式调用 bsk CLI，操作用户已登录的真实浏览器。
+// 独立于 CDP/UIA/OCR 感知级联，与 CDP 并行互补；详见
+// `browser_skill/mod.rs` 架构说明（不替代 CDP）。
+pub mod browser_skill;
 // Adaptive executor + multi-priority selector.
 // See `pc_automation/executor/mod.rs` for the public API and
 // `uirap改造技术方案.md` §5 for the main-loop algorithm. The

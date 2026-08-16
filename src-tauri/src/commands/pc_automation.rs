@@ -37,6 +37,9 @@ use tauri::Manager;
 use crate::pc_automation::apps::{find_profile, ALL_PROFILES};
 use crate::pc_automation::broker::types::BrokerHealth;
 use crate::pc_automation::broker::BrokerRouter;
+use crate::pc_automation::browser_skill::{
+    BskCliBackend, BrowserSkillAction, BrowserSkillBackend, BrowserSkillResult, BrowserSkillStatus,
+};
 use crate::pc_automation::cdp::websockets::WebSocketCdpBackend;
 use crate::pc_automation::ocr::backend::OcrHealth;
 use crate::pc_automation::parse_error::ParseError;
@@ -136,6 +139,9 @@ pub(crate) struct PcAutomationState {
     /// Active CDP browser sessions (kept alive so they don't get dropped).
     /// Key = session ID, Value = BrowserSession from automation::browser.
     browser_sessions: tokio::sync::Mutex<std::collections::HashMap<String, crate::automation::browser::BrowserSession>>,
+    /// BrowserSkill backend (腾讯开源 bsk CLI 桥接) — 独立的浏览器
+    /// Agent 驱动，操作用户已登录的真实浏览器，与 CDP 感知层并行互补。
+    browser_skill: Arc<dyn BrowserSkillBackend>,
 }
 
 impl PcAutomationState {
@@ -172,10 +178,14 @@ impl PcAutomationState {
         // flat list. Shares the same backend instances so we
         // don't pay the COM / WinRT init cost twice.
         let screen_parser = crate::pc_automation::screen_parser::default_backend(uia.clone(), ocr.clone());
+        // BrowserSkill — 子进程调用 bsk CLI，操作用户已登录的真实浏览器。
+        // 与 CDP 感知层并行互补，不进入 UIA/CDP/OCR 级联。
+        let browser_skill: Arc<dyn BrowserSkillBackend> = Arc::new(BskCliBackend::new());
         Self {
             router: PcRouter::new(uia, cdp, ocr),
             brokers: BrokerRouter::new(),
             screen_parser,
+            browser_skill,
             browser_sessions: tokio::sync::Mutex::new(std::collections::HashMap::new()),
         }
     }
@@ -823,4 +833,73 @@ pub async fn cua_driver_invoke(
 ) -> Result<serde_json::Value, String> {
     let cua = crate::pc_automation::cua_driver::CuaDriverClient::shared();
     cua.invoke_tool(&tool_name, arguments).await
+}
+
+// ---- 27-30. BrowserSkill surface ─────────────────────────
+//
+// BrowserSkill (腾讯开源) 通过 bsk CLI 桥接用户已登录的真实浏览器。
+// 它是独立于 CDP/UIA/OCR 感知级联的「浏览器 Agent 驱动」能力：
+//   * browser_skill_health  — 检测 bsk CLI 是否安装可用（返回版本）
+//   * browser_skill_exec    — 派发单个 BrowserSkill 动作（navigate /
+//                             click / input / scroll / screenshot /
+//                             extract / runSkill / evaluate / raw）
+//   * browser_skill_status  — 聚合运行时状态（CLI 版本 / daemon /
+//                             扩展连接），供前端驱动 onboarding
+//   * browser_skill_setup   — 自动安装 bsk CLI（缺失时跑官方一键脚本）
+//
+// 调用链：前端 / skillBridge.cap.browserSkill → invoke('browser_skill_*')
+// → shared_state().browser_skill → BskCliBackend → 子进程 `bsk ...`
+//
+// bsk 是同步子进程，必须在 spawn_blocking 中执行，避免阻塞 async runtime
+// （与 cua_click 一致）。
+//
+// 自动安装边界：CLI 可随应用自动安装（官方安装脚本放入 ~/.local/bin）；
+// 浏览器扩展无法静默安装（Chrome/Edge 禁止），只能检测 + 深链引导。
+
+/// 检测 `bsk` CLI 是否安装可用。
+/// 返回版本字符串（如 `bsk 0.1.10`）；不可用则 Err 带原因。
+#[tauri::command]
+pub async fn browser_skill_health() -> Result<String, String> {
+    let state = shared_state();
+    let bs = state.browser_skill.clone();
+    tokio::task::spawn_blocking(move || bs.health())
+        .await
+        .map_err(|e| format!("join error: {}", e))?
+}
+
+/// 派发一个 BrowserSkill 动作到 `bsk` CLI。
+/// 返回 stdout / stderr / 退出码 / 耗时，供前端或 skill 层判断成败。
+#[tauri::command]
+pub async fn browser_skill_exec(action: BrowserSkillAction) -> Result<BrowserSkillResult, String> {
+    let state = shared_state();
+    let bs = state.browser_skill.clone();
+    tokio::task::spawn_blocking(move || bs.exec(action))
+        .await
+        .map_err(|e| format!("join error: {}", e))?
+}
+
+/// 返回 BrowserSkill 运行时聚合状态（CLI 版本 / daemon / 扩展连接），
+/// 供前端驱动 onboarding（安装 CLI → 安装扩展 → 就绪）。非破坏式。
+#[tauri::command]
+pub async fn browser_skill_status() -> Result<BrowserSkillStatus, String> {
+    let state = shared_state();
+    let bs = state.browser_skill.clone();
+    tokio::task::spawn_blocking(move || bs.status())
+        .await
+        .map_err(|e| format!("join error: {}", e))
+}
+
+/// 自动安装 `bsk` CLI：若缺失则运行官方一键安装脚本，随后返回状态。
+/// 扩展无法静默安装——若返回 `needsExtension` 为真，前端应深链
+/// `extensionStoreUrl` 引导用户手动添加扩展。
+#[tauri::command]
+pub async fn browser_skill_setup() -> Result<BrowserSkillStatus, String> {
+    let state = shared_state();
+    let bs = state.browser_skill.clone();
+    tokio::task::spawn_blocking(move || {
+        bs.ensure_installed()?;
+        Ok::<BrowserSkillStatus, String>(bs.status())
+    })
+    .await
+    .map_err(|e| format!("join error: {}", e))?
 }
