@@ -65,6 +65,10 @@ class CreatorHubLauncher:
         self.config_path = self.data_root / "config.yaml"
         self.requirements = self.creatorhub_dir / "requirements.txt"
         self.pid_file = self.data_root / "creatorhub.pid"
+        # Marker written after a successful dependency install so that
+        # subsequent launches skip the (slow, no-op) pip pass. Stores the
+        # sha256 of requirements.txt; if requirements change, we reinstall.
+        self.provision_marker = self.venv_dir / ".creatorhub_provisioned"
 
     # ── paths ───────────────────────────────────────────────────
     @property
@@ -74,16 +78,58 @@ class CreatorHubLauncher:
         return self.venv_dir / "bin" / "python"
 
     # ── setup ───────────────────────────────────────────────────
-    def ensure_venv(self, upgrade_pip: bool = True) -> None:
-        if not self.venv_dir.exists():
+    def _requirements_hash(self) -> str:
+        import hashlib
+
+        if not self.requirements.exists():
+            return ""
+        return hashlib.sha256(self.requirements.read_bytes()).hexdigest()
+
+    def _is_provisioned(self) -> bool:
+        if not self.provision_marker.exists():
+            return False
+        try:
+            return self.provision_marker.read_text(encoding="utf-8").strip() == self._requirements_hash()
+        except OSError:
+            return False
+
+    def _write_provision_marker(self) -> None:
+        self.venv_dir.mkdir(parents=True, exist_ok=True)
+        self.provision_marker.write_text(self._requirements_hash(), encoding="utf-8")
+
+    def ensure_venv(self, force: bool = False) -> None:
+        """Create the isolated venv and install CreatorHub deps.
+
+        Skips the install pass entirely when the venv already exists and its
+        ``requirements.txt`` is unchanged (tracked via a marker file). This is
+        what keeps ``opc-creatorhub open`` fast on every call instead of
+        re-running a no-op ``pip install`` each time.
+
+        Pass ``force=True`` to reinstall regardless (used by ``setup --force``
+        and as an escape hatch when deps drift).
+        """
+        fresh = not self.venv_dir.exists()
+        if fresh:
             subprocess.run([sys.executable, "-m", "venv", str(self.venv_dir)], check=True)
-        if upgrade_pip:
-            subprocess.run([str(self.venv_python), "-m", "pip", "install", "--upgrade", "pip"], check=True)
+
+        if self._is_provisioned() and not force:
+            print("CreatorHub venv already provisioned — skipping install.")
+            return
+
+        print("Installing CreatorHub dependencies (first run / changed requirements)...")
+        # Only upgrade pip when we are (re)installing anyway; the bundled pip
+        # on a fresh venv is new enough for a normal install.
+        if fresh or force:
+            subprocess.run(
+                [str(self.venv_python), "-m", "pip", "install", "--upgrade", "pip"],
+                check=True,
+            )
         # Install deps WITHOUT downloading a browser binary.
         subprocess.run(
             [str(self.venv_python), "-m", "pip", "install", "-r", str(self.requirements)],
             check=True,
         )
+        self._write_provision_marker()
 
     def write_config(self) -> Path:
         if yaml is None:
@@ -181,7 +227,8 @@ class CreatorHubLauncher:
 def _build_cli() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="CreatorHub sidecar launcher")
     sub = p.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("setup", help="创建 venv 并安装依赖（不下载浏览器）")
+    setup_p = sub.add_parser("setup", help="创建 venv 并安装依赖（不下载浏览器）")
+    setup_p.add_argument("--force", action="store_true", help="即使已 provision 也重装依赖")
     sub.add_parser("start", help="启动 uvicorn")
     sub.add_parser("status", help="探活")
     sub.add_parser("stop", help="停止")
@@ -196,7 +243,7 @@ def main(argv: Optional[list] = None) -> int:
     launcher = CreatorHubLauncher(
         data_root=Path(args.data_root), port=args.port, host=args.host)
     if args.cmd == "setup":
-        launcher.ensure_venv()
+        launcher.ensure_venv(force=args.force)
         launcher.write_config()
         print(f"venv: {launcher.venv_dir}")
         print(f"config: {launcher.config_path}")

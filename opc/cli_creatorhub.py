@@ -25,6 +25,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import webbrowser
 from pathlib import Path
 from typing import Any
@@ -87,9 +88,9 @@ def _build_launcher(cfg: dict[str, Any]) -> CreatorHubLauncher:
     )
 
 
-def _cmd_setup(cfg: dict[str, Any]) -> int:
+def _cmd_setup(cfg: dict[str, Any], force: bool = False) -> int:
     launcher = _build_launcher(cfg)
-    launcher.ensure_venv()
+    launcher.ensure_venv(force=force)
     launcher.write_config()
     print(f"venv: {launcher.venv_dir}")
     print(f"config: {launcher.config_path}")
@@ -122,25 +123,30 @@ def _cmd_config(cfg: dict[str, Any]) -> int:
     return 0
 
 
-def _cmd_open(cfg: dict[str, Any], no_browser: bool) -> int:
+def _cmd_open(cfg: dict[str, Any], no_browser: bool, force: bool = False) -> int:
     launcher = _build_launcher(cfg)
     url = f"http://{launcher.host}:{launcher.port}"
 
     if cfg.get("auto_launch", True) and not launcher.is_running():
-        print("Sidecar not running — launching...")
-        launcher.ensure_venv()
+        print("Sidecar not running — launching CreatorHub sidecar...")
+        launcher.ensure_venv(force=force)
         launcher.write_config()
         launcher.start()
+    else:
+        print("Sidecar already running — reusing it.")
 
-    # Wait for health (bounded).
+    # Wait for health (bounded), with a single progress line so the user
+    # is never staring at a silent hang.
+    print(f"Waiting for CreatorHub at {url} ", end="", flush=True)
     health = {"ok": False}
-    for _ in range(40):
+    for i in range(40):
         health = launcher.health()
         if health.get("ok"):
             break
-        import time
-
+        if i % 4 == 0:
+            print(".", end="", flush=True)
         time.sleep(0.5)
+    print()  # finish the progress line
 
     if not health.get("ok"):
         sys.stderr.write(
@@ -169,14 +175,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="cmd", required=True, metavar="<command>")
 
-    sub.add_parser("setup", help="Create the isolated venv + write merged config.")
     sub.add_parser("start", help="Start the sidecar in the background.")
     sub.add_parser("status", help="Probe /health.")
     sub.add_parser("stop", help="Stop the running sidecar.")
     sub.add_parser("config", help="Print the effective, merged configuration (JSON).")
 
+    setup_p = sub.add_parser("setup", help="Create the isolated venv + write merged config.")
+    setup_p.add_argument("--force", action="store_true", help="Reinstall dependencies even if already provisioned.")
+
     open_p = sub.add_parser("open", help="Launch the sidecar (if needed) and open its page.")
     open_p.add_argument("--no-browser", action="store_true", help="Do not auto-open a browser; print the URL.")
+    open_p.add_argument("--force", action="store_true", help="Force a dependency reinstall before launching.")
     open_p.add_argument("--host", default=None, help="Override the bind host.")
     open_p.add_argument("--port", type=int, default=None, help="Override the bind port.")
     return parser
@@ -194,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     cfg = resolve_config(opc_home, overrides)
 
     if opts.cmd == "setup":
-        return _cmd_setup(cfg)
+        return _cmd_setup(cfg, force=opts.force)
     if opts.cmd == "start":
         return _cmd_start(cfg)
     if opts.cmd == "status":
@@ -204,7 +213,7 @@ def main(argv: list[str] | None = None) -> int:
     if opts.cmd == "config":
         return _cmd_config(cfg)
     if opts.cmd == "open":
-        return _cmd_open(cfg, no_browser=opts.no_browser)
+        return _cmd_open(cfg, no_browser=opts.no_browser, force=opts.force)
     parser.error("unknown command")
     return 2  # pragma: no cover
 

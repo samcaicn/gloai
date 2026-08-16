@@ -240,3 +240,27 @@ def test_launcher_write_config(tmp_path):
     assert cfg["engine"]["xhs_browser_mode"] == "auto"
     assert str(data_root / "profiles") in cfg["engine"]["profiles_dir"]
     assert str(data_root / "creatorhub.db") == cfg["storage"]["db_path"]
+
+
+def test_launcher_provision_marker_idempotent(tmp_path):
+    # The marker lets `ensure_venv` skip the (slow, no-op) pip install on
+    # every launch. Verify the hash/marker bookkeeping behaves.
+    ch_dir = tmp_path / "creatorhub"
+    ch_dir.mkdir()
+    req = ch_dir / "requirements.txt"
+    req.write_text("fastapi==0.115.6\nuvicorn\n", encoding="utf-8")
+
+    launcher = CreatorHubLauncher(
+        creatorhub_dir=ch_dir, data_root=tmp_path / "data", port=8124, host="127.0.0.1")
+
+    h1 = launcher._requirements_hash()
+    assert h1 and len(h1) == 64  # sha256 hex
+    assert launcher._is_provisioned() is False
+
+    launcher._write_provision_marker()
+    assert launcher._is_provisioned() is True  # skip install path
+
+    # Changing requirements invalidates the marker -> reinstall would run.
+    req.write_text("fastapi==0.115.6\nuvicorn\nhttpx\n", encoding="utf-8")
+    assert launcher._is_provisioned() is False
+
