@@ -902,6 +902,28 @@ class MCPServerConfig(BaseModel):
     startup_timeout: float = 30.0
 
 
+class DeviceAuthConfig(BaseModel):
+    """Device authorization for the desktop client (see auth_device.py).
+
+    SafeOPC 桌面端是**客户端**；本地 office-ui 只是客户端的本地后台，不是授权
+    服务端。真正的审批权威在远端授权服务器 ``auth_server_base_url``。本地只负责
+    把请求发给远端（或开发期跑本地桩模拟远端）、缓存远端裁决、本地执行门禁。
+
+    Env 覆盖：SAFEOPC_DEVICE_AUTH / SAFEOPC_AUTH_SERVER / SAFEOPC_AUTH_STUB /
+    SAFEOPC_APPROVE_CODES。
+    """
+
+    # 门禁总开关：关闭则本地不拦截 LLM/MCP 执行。
+    enabled: bool = True
+    # 远端授权服务器 base URL（权威）。空 = 未配置，设备保持未注册、门禁拦截。
+    auth_server_base_url: str = ""
+    # 开发期本地桩：模拟远端授权服务器（明确不是生产权威）。
+    dev_stub_enabled: bool = False
+    # 以下仅 dev_stub 生效，代表"服务端策略"的本地模拟：
+    stub_auto_approve_codes: list[str] = Field(default_factory=lambda: ["SAFEOPC-DEMO"])
+    stub_dev_approve_enabled: bool = True
+
+
 class SystemConfig(BaseModel):
     opc_home: str = ""
     default_channel: str = "cli"
@@ -917,6 +939,7 @@ class SystemConfig(BaseModel):
     heartbeat: HeartbeatConfig = Field(default_factory=HeartbeatConfig)
     browser: BrowserConfig = Field(default_factory=BrowserConfig)
     native_runtime: NativeRuntimeConfig = Field(default_factory=NativeRuntimeConfig)
+    device_auth: DeviceAuthConfig = Field(default_factory=DeviceAuthConfig)
     task_mode: TaskModeConfig = Field(
         default_factory=TaskModeConfig,
         validation_alias=AliasChoices("task_mode", "project_mode"),

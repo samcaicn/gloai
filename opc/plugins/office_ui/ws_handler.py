@@ -43,7 +43,15 @@ from opc.core.org_config import (
     write_org_config_payload,
     write_org_index,
 )
+from opc.plugins.office_ui import auth_device
 from opc.core.models import normalize_role_runtime_status
+
+# WS message types that trigger LLM/MCP execution. These are blocked by the
+# device-approval gate until this machine's fingerprint is approved (active).
+# Register / bind / verify live on separate HTTP endpoints and are not gated.
+_DEVICE_GATED_MESSAGE_TYPES = frozenset(
+    {"session_send", "session_resume", "run_task", "secretary_send", "cross_office_collab"}
+)
 from opc.core.transcript_visibility import rendered_transcript_metadata_visible
 from opc.presentation.kanban import build_company_board_columns
 from opc.layer2_organization.phase import (
@@ -3408,6 +3416,22 @@ class WSHandler:
             logger.debug(f"Ignoring WS message during shutdown: {msg_type}")
             return
         handler = self._HANDLERS.get(msg_type)
+        # ── Device approval gate ──────────────────────────────────────
+        # Client-is-reviewed-party model: block LLM/MCP execution messages
+        # until this device's fingerprint is approved (active). Register /
+        # bind / verify live on separate HTTP endpoints and are not gated.
+        if handler and msg_type in _DEVICE_GATED_MESSAGE_TYPES:
+            _engine = self._engine
+            _settings = auth_device.resolve_settings(_engine.config if _engine else None)
+            _home = _engine.opc_home if _engine else None
+            if not auth_device.is_execution_allowed(_home, _settings):
+                await self._send_ack(
+                    ws,
+                    ok=False,
+                    error="device.not_approved",
+                    action=msg_type,
+                )
+                return
         handoff_registry = None
         handoff_token: str | None = None
         if handler and msg_type in _EXECUTION_HANDOFF_MESSAGE_TYPES:

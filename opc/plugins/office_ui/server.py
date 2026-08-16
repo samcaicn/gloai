@@ -26,6 +26,7 @@ from opc.plugins.office_ui.chat_store import ChatStore
 from opc.plugins.office_ui.event_adapter import EventAdapter
 from opc.plugins.office_ui.terminal import server_banner
 from opc.plugins.office_ui.terminal import status as terminal_status
+from opc.plugins.office_ui import auth_device
 from opc.plugins.office_ui.ws_handler import WSHandler
 
 
@@ -168,6 +169,17 @@ async def create_app(
     # connected SPA client, which opens an in-app browser overlay.
     app.router.add_post("/api/ui/open-browser", _make_open_browser_handler())
 
+    # ── Device authorization (fingerprint + operator approval) ─────────
+    # Client-is-reviewed-party model: a device must be approved (active)
+    # before the server allows LLM/MCP execution. These HTTP endpoints let
+    # the SPA register its fingerprint, submit a join code, poll approval,
+    # and verify its token. See opc/plugins/office_ui/auth_device.py.
+    _device_handlers = _make_device_auth_handlers(engine)
+    app.router.add_post("/api/device/register", _device_handlers["register"])
+    app.router.add_post("/api/device/bind-status", _device_handlers["bind-status"])
+    app.router.add_post("/api/device/verify", _device_handlers["verify"])
+    app.router.add_post("/api/device/dev-approve", _device_handlers["dev-approve"])
+
     # Attachment download (must be registered before the SPA catch-all)
     app.router.add_get(
         "/api/attachments/{attachment_id}/{filename}",
@@ -251,6 +263,82 @@ def _make_open_browser_handler():
         return aiohttp.web.json_response({"ok": True})
 
     return _handle
+
+
+def _make_device_auth_handlers(engine: OPCEngine) -> dict[str, Any]:
+    """Return the HTTP handlers backing the device-authorization flow.
+
+    SafeOPC 桌面端是**客户端**：本地 office-ui 不是授权服务端。这些端点按配置
+    三选一：
+      * dev_stub_enabled → 调用本地桩（模拟远端服务器，仅开发期，非生产权威）；
+      * auth_server_base_url 已配置 → 代理转发到真正的远端授权服务器；
+      * 都未配置 → 503（客户端无法获得裁决，设备保持未注册）。
+    无论哪种，远端返回的裁决都会写入本地客户端缓存（device_auth_client.json），
+    供 WS 执行门禁读取。本地只缓存与执行，不裁决。
+    """
+
+    opc_home = engine.opc_home
+
+    async def _dispatch(action: str, body: dict) -> dict:
+        settings = auth_device.resolve_settings(engine.config)
+        if settings["dev_stub_enabled"]:
+            # 开发期：本地桩模拟远端服务器（明确不是生产权威）
+            if action == "register":
+                return await auth_device.stub_register(
+                    opc_home, body.get("joinCode") or "", settings
+                )
+            if action == "bind-status":
+                return await auth_device.stub_bind_status(
+                    opc_home, body.get("token") or "", body.get("requestId")
+                )
+            if action == "verify":
+                return await auth_device.stub_verify(opc_home, body.get("token") or "")
+            if action == "dev-approve":
+                return await auth_device.stub_dev_approve(
+                    opc_home,
+                    settings,
+                    request_id=body.get("requestId"),
+                    device_id=body.get("deviceId"),
+                )
+            raise ValueError(f"unknown device action: {action}")
+        if settings["auth_server_base_url"]:
+            # 生产：客户端把请求代理到真正的远端授权服务器
+            return await auth_device.proxy_to_server(
+                settings["auth_server_base_url"], action, body
+            )
+        raise RuntimeError("auth_server_not_configured")
+
+    def _make_handler(action: str, *, is_dev_approve: bool = False):
+        async def _handle(request: aiohttp.web.Request) -> aiohttp.web.Response:
+            try:
+                body = await request.json()
+            except Exception:
+                body = {}
+            if not isinstance(body, dict):
+                body = {}
+            try:
+                result = await _dispatch(action, body)
+            except RuntimeError as e:
+                if "auth_server_not_configured" in str(e):
+                    return aiohttp.web.json_response(
+                        {"ok": False, "error": "auth_server_not_configured"}, status=503
+                    )
+                return aiohttp.web.json_response({"ok": False, "error": str(e)}, status=502)
+            except Exception as e:  # 代理/桩异常
+                return aiohttp.web.json_response({"ok": False, "error": str(e)}, status=500)
+            # 客户端缓存远端裁决（供门禁读取）——本地只缓存，不裁决
+            auth_device.cache_server_response(opc_home, result)
+            status = 200 if not (is_dev_approve and not result.get("ok")) else 403
+            return aiohttp.web.json_response(result, status=status)
+
+        return _handle
+
+    return {
+        "register": _make_handler("register"),
+        "bind-status": _make_handler("bind-status"),
+        "verify": _make_handler("verify"),
+        "dev-approve": _make_handler("dev-approve", is_dev_approve=True),
+    }
 
 
 def _make_attachment_handler(engine: OPCEngine):

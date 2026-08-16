@@ -19,6 +19,9 @@ import { ProjectSelector } from './components/ProjectSelector'
 import { OrgTab } from './org/OrgTab'
 import { notifyTaskAssigned } from './lib/taskChatBridge'
 import { InAppBrowser } from './components/InAppBrowser'
+import { DeviceAuthPanel } from './components/DeviceAuthPanel'
+import { ensureDeviceToken, getDeviceApprovalStatus } from './lib/deviceAuth'
+import { useDeviceStatus } from './stores/deviceStatusStore'
 import { mapCollabSyncPayload, mapBackendMessage, mapBackendChannel, mapBackendSession, mapBackendBoard, mapBackendColumn, mapBackendTask, mergeSessionDetailHasMore } from './lib/collabSync'
 import { normalizeOrgInfoPayload } from './lib/runtimeOrg'
 import { companyRuntimeControlPatchForBoardStatus } from './lib/sessionRuntime'
@@ -43,6 +46,10 @@ function readOutdoorOverrideUi(): 'auto' | 'day' | 'night' {
 }
 
 const MAX_LOG_ITEMS = 80
+
+// 设备授权入口默认隐藏（代码保留，不删除）。设置 VITE_SHOW_DEVICE_AUTH=1 才显示
+// 设置齿轮与面板。对应后端服务端审核门禁（opc/plugins/office_ui/auth_device.py）。
+const SHOW_DEVICE_AUTH = (import.meta as any).env?.VITE_SHOW_DEVICE_AUTH === '1'
 const TASK_MODE_LOW_VALUE_RUNTIME_EVENTS = new Set([
   'message_start',
   'message_stop',
@@ -477,6 +484,8 @@ export default function App() {
   const [activePage, setActivePage] = useState<AppPage>('workspace')
   const [swarmAgents, setSwarmAgents] = useState<AgentInfo[]>([])
   const [showDevTools, setShowDevTools] = useState(false)
+  const [showDeviceAuth, setShowDeviceAuth] = useState(false)
+  const deviceStatus = useDeviceStatus()
   const [lastTaskDoneAgent, setLastTaskDoneAgent] = useState<string | null>(null)
   const [globalExecMode, setGlobalExecMode] = useState<AppExecMode>('task')
   const [globalCompanyProfile, setGlobalCompanyProfile] = useState<'corporate' | 'custom'>('corporate')
@@ -757,6 +766,11 @@ export default function App() {
   useEffect(() => {
     swarmAgentsRef.current = swarmAgents
   }, [swarmAgents])
+
+  // 启动静默确保设备令牌 + 反映服务端审批状态（绝不阻塞 UI）。
+  useEffect(() => {
+    ensureDeviceToken().catch(() => undefined)
+  }, [])
 
   useEffect(() => {
     globalExecModeRef.current = globalExecMode
@@ -2398,6 +2412,14 @@ export default function App() {
           onClose={() => setInAppBrowser(null)}
         />
       )}
+      {SHOW_DEVICE_AUTH && deviceStatus.approvalStatus !== 'active' && (
+        <div className="device-auth-banner" role="status">
+          <span className="device-auth-banner__dot" data-status={deviceStatus.approvalStatus} />
+          <span>设备未授权，LLM / MCP 调用被服务端拦截。</span>
+          <button className="btn-link" onClick={() => setShowDeviceAuth(true)}>去绑定</button>
+        </div>
+      )}
+      <DeviceAuthPanel open={showDeviceAuth} onClose={() => setShowDeviceAuth(false)} />
       {/* Topbar */}
       <header className="topbar">
         <div className="topbar-left">
@@ -2501,6 +2523,16 @@ export default function App() {
           <button className={`icon-btn ${showDevTools ? 'active' : ''}`} onClick={() => setShowDevTools((v) => !v)} title={t('dev.tools')} aria-label={t('dev.tools')}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5.5 2L2 5.5 5.5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M10.5 7L14 10.5 10.5 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
+          {SHOW_DEVICE_AUTH && (
+            <button
+              className={`icon-btn ${showDeviceAuth ? 'active' : ''}`}
+              onClick={() => setShowDeviceAuth((v) => !v)}
+              title="设备授权"
+              aria-label="设备授权"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l5.5 2v3.2c0 3.4-2.3 6.2-5.5 7.3-3.2-1.1-5.5-3.9-5.5-7.3V3.5L8 1.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M5.7 8l1.6 1.6 3-3.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          )}
         </div>
       </header>
 
