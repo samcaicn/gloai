@@ -1,8 +1,9 @@
 name: OPC Build (self-cleaning)
 
-# 临时分支 opc 专用 CI：push 到 opc 即构建 Windows 安装包 SafeOPC-Setup.exe。
+# 常驻分支 opc 专用 CI：push 到 opc 即构建 Windows 安装包 SafeOPC-Setup.exe。
 # 产物以 workflow artifact 保底（保留 90 天），同时短暂创建 GitHub Release 附上 exe；
-# 构建成功后由本 workflow 自动删除 release（含 tag）并删除 opc 分支本身。
+# 构建成功后由本 workflow 自动删除 release（含 tag），但保留 opc 分支本身，
+# 使 build run 在 Actions 页面像其他常驻分支（main 等）一样显眼可见、artifact 可下。
 # 说明：本机 CI 无代码签名证书，构建走未签名安装包。
 # 失败时不执行清理，保留 opc 分支便于修复重推。
 
@@ -90,11 +91,10 @@ jobs:
             --title "SafeOPC Windows build" \
             --notes "SafeOPC Windows 安装包（未签名）。exe 已同步留存于 workflow artifact：safeopc-windows-setup。"
 
-      - name: Cleanup - delete release and opc branch
+      - name: Cleanup - delete release (keep opc branch for visible runs)
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           gh release delete "${{ steps.release.outputs.tag }}" --yes --cleanup-tag || true
-          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/opc" || true
