@@ -28,6 +28,7 @@ import AgentTeamCard from './components/AgentTeamCard';
 import CoreAgentCard, { type CoreAgentMeta } from './components/CoreAgentCard';
 import CreateAgentPage from './components/CreateAgentPage';
 import ReviewTeamPage, { ReviewTeamErrorBoundary } from './components/ReviewTeamPage';
+import RuntimeAgentsPanel from './components/RuntimeAgentsPanel';
 import {
   type AgentWithCapabilities,
   useAgentsStore,
@@ -583,6 +584,13 @@ const AgentsHomeView: React.FC = () => {
             >
               {t('nav.agents')}
             </button>
+            <button
+              type="button"
+              className="gallery-anchor-btn"
+              onClick={() => scrollToZone('runtime-agents-zone')}
+            >
+              {t('nav.runtimeAgents', { defaultValue: 'Runtime Agents' })}
+            </button>
           </div>
         )}
         actions={(
@@ -775,6 +783,17 @@ const AgentsHomeView: React.FC = () => {
               ))}
             </GalleryGrid>
           ) : null}
+        </GalleryZone>
+
+        <GalleryZone
+          id="runtime-agents-zone"
+          title={t('runtimeAgents.title', { defaultValue: 'Runtime Agents' })}
+          subtitle={t('runtimeAgents.subtitle', {
+            defaultValue:
+              'Locally detected coding agents and your custom APIs — invoke them as teammates.',
+          })}
+        >
+          <RuntimeAgentsPanel />
         </GalleryZone>
       </div>
 

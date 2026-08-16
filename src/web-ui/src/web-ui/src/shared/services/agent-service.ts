@@ -6,6 +6,7 @@
  */
 import { agentAPI } from '@/infrastructure/api/service-api/AgentAPI';
 import { toolAPI } from '@/infrastructure/api/service-api/ToolAPI';
+import { runtimeRegistryAPI } from '@/infrastructure/api/runtimeRegistry';
 import { listen } from '@tauri-apps/api/event';
 import { createLogger } from '@/shared/utils/logger';
 
@@ -339,8 +340,17 @@ export class AgentService {
 
    
   async getAvailableAgents(): Promise<string[]> {
-    
-    return ['general-purpose'];
+    // 基础 agent 始终可用；再合并 runtime-registry 检测到的本机 CLI 子 agent
+    // （claude1 / opencode1 / ...，复刻 Multica「内置 runtime 自动出现」）。
+    // runtime-registry 未就绪或调用失败时不阻断基础列表。
+    const base = ['general-purpose'];
+    try {
+      const subs = await runtimeRegistryAPI.listSubagents();
+      return [...base, ...subs.map((s) => s.id)];
+    } catch (error) {
+      log.warn('Failed to merge runtime-registry sub-agents', error);
+      return base;
+    }
   }
 
    

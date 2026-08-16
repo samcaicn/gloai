@@ -13,6 +13,7 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
+use crate::runtime_registry::{RuntimeRegistry, SubAgentStatus};
 use super::legacy::{
     collect_installed_skills, extract_disabled_skills, load_hermes_config_yaml,
     load_installed_skill_detail, parse_toolsets_list, run_hermes_command, save_disabled_skills,
@@ -39,9 +40,23 @@ static AGENTS: std::sync::LazyLock<Mutex<Vec<Agent>>> = std::sync::LazyLock::new
 });
 
 #[tauri::command]
-pub fn get_agents() -> Result<Vec<Agent>, String> {
-    let agents = AGENTS.lock().map_err(|e| e.to_string())?;
-    Ok(agents.clone())
+pub async fn get_agents(
+    registry: tauri::State<'_, RuntimeRegistry>,
+) -> Result<Vec<Agent>, String> {
+    let mut agents = AGENTS.lock().map_err(|e| e.to_string())?.clone();
+    // 合并 runtime-registry 检测到的本机 CLI 子 agent（claude1 / opencode1 / ...）
+    // 以及用户自定义 agent，让它们出现在 agent 列表里（复用 Multica 模型）。
+    // hermes-agent 始终保留在前，作为默认助手。
+    for s in registry.list_subagents().await {
+        if s.status == SubAgentStatus::Available {
+            agents.push(Agent {
+                id: s.id.clone(),
+                name: s.display_name.clone(),
+                description: format!("runtime-registry 子 agent（provider: {}）", s.provider_id),
+            });
+        }
+    }
+    Ok(agents)
 }
 
 // ---------------------------------------------------------------------------

@@ -821,6 +821,115 @@ impl AcpClientService {
         Ok(())
     }
 
+    /// Blocking one-shot dialog turn used by the runtime-registry adapter.
+    ///
+    /// Mirrors the `send_prompt` + `read_update` loop in `start_dialog_turn`
+    /// but awaits completion and returns the accumulated assistant text
+    /// instead of streaming via events. Reuses a long-lived connection per
+    /// `client_id` (so we don't spawn a fresh CLI process per invocation)
+    /// and opens a fresh ACP session within it.
+    pub async fn run_dialog_turn_sync(
+        &self,
+        client_id: String,
+        cwd: PathBuf,
+        user_input: String,
+        timeout_seconds: Option<u64>,
+    ) -> Result<String, String> {
+        let session_key = format!("rr-sync-{}", uuid::Uuid::new_v4());
+        let connection_id = format!("{}::session::rr-registry", client_id);
+        let conn = self
+            .ensure_client_connection(&connection_id, &client_id, &cwd)
+            .await?;
+
+        let mut active = {
+            let mut sessions = conn.sessions.lock().await;
+            if !sessions.contains_key(&session_key) {
+                let cx = conn.connection().await?;
+                let new_session_response = cx
+                    .send_request(NewSessionRequest::new(&cwd))
+                    .block_task()
+                    .await
+                    .map_err(|e| format!("ACP newSession failed: {e}"))?;
+                let attached = cx
+                    .attach_session(new_session_response, Vec::new())
+                    .map_err(|e| format!("ACP attach_session failed: {e}"))?;
+                sessions.insert(session_key.clone(), attached);
+            }
+            match sessions.remove(&session_key) {
+                Some(a) => a,
+                None => return Err("ACP session init failed".into()),
+            }
+        };
+
+        let accumulated = Arc::new(Mutex::new(String::new()));
+        let acc = accumulated.clone();
+        let prompt_future = async {
+            active
+                .send_prompt(&user_input)
+                .map_err(|e| format!("ACP send_prompt failed: {e}"))?;
+            loop {
+                let message = active
+                    .read_update()
+                    .await
+                    .map_err(|e| format!("ACP read_update failed: {e}"))?;
+                match message {
+                    SessionMessage::SessionMessage(dispatch) => {
+                        let _ = MatchDispatch::new(dispatch)
+                            .if_notification(
+                                |notification: agent_client_protocol::schema::SessionNotification| {
+                                    let acc = acc.clone();
+                                    async move {
+                                        if let agent_client_protocol::schema::SessionUpdate::AgentMessageChunk(
+                                            chunk,
+                                        ) = notification.update
+                                        {
+                                            if let Some(text) = content_chunk_text(&chunk) {
+                                                let mut buf = acc.lock().await;
+                                                buf.push_str(&text);
+                                            }
+                                        }
+                                        Ok(())
+                                    }
+                                },
+                            )
+                            .await
+                            .otherwise_ignore();
+                    }
+                    SessionMessage::StopReason(stop_reason) => {
+                        if matches!(stop_reason, StopReason::Cancelled) {
+                            return Err("ACP dialog turn cancelled".into());
+                        }
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+            Ok::<(), String>(())
+        };
+
+        let result = if let Some(secs) = timeout_seconds.filter(|s| *s > 0) {
+            tokio::time::timeout(Duration::from_secs(secs), prompt_future)
+                .await
+                .map_err(|_| format!("ACP client timed out after {}s", secs))
+                .and_then(|r| r)
+        } else {
+            prompt_future.await
+        };
+
+        {
+            let mut sessions = conn.sessions.lock().await;
+            sessions.insert(session_key, active);
+        }
+
+        result?;
+        let text = accumulated.lock().await.clone();
+        if text.trim().is_empty() {
+            Ok("[ACP 已完成本轮，但无文本输出（可能需在对应 ACP 客户端交互确认权限）]".to_string())
+        } else {
+            Ok(text)
+        }
+    }
+
     // --- 权限处理 ---
 
     pub async fn submit_permission_response(

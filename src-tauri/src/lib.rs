@@ -56,6 +56,7 @@ mod worker;
 // opencode / omp）通信。从 BitFun 上游精简而来，去掉了 remote SSH /
 // session persistence / tool registry 等重依赖。
 mod acp;
+mod runtime_registry;
 // Path A 改造：Cordis 式可插拔能力层（插件总线 + 内置插件）。
 // 不引入 dsh 运行时；仅在已有 ToolRegistry2 / EventBus 之上提供 PluginContext。
 mod plugin_bus;
@@ -820,6 +821,18 @@ commands::floating_window::fw_chat_to_main,
             acp::commands::submit_acp_permission_response,
         ]);
     startup_stage!("15i-after-acp-handler");
+    let builder = builder
+        .invoke_handler(tauri::generate_handler![
+            runtime_registry::commands::rr_scan_runtimes,
+            runtime_registry::commands::rr_list_runtimes,
+            runtime_registry::commands::rr_list_subagents,
+            runtime_registry::commands::rr_spawn_instance,
+            runtime_registry::commands::rr_add_custom_agent,
+            runtime_registry::commands::rr_remove_agent,
+            runtime_registry::commands::rr_invoke_subagent,
+            runtime_registry::commands::rr_register_upstream,
+        ]);
+    startup_stage!("15i2-after-runtime-registry-handler");
     #[cfg(feature = "mesh")]
     let builder = builder
         .invoke_handler(tauri::generate_handler![
@@ -1367,14 +1380,41 @@ commands::floating_window::fw_chat_to_main,
             // 挂载 ACP 客户端服务全局 state。
             // acp::commands::* 通过 State<'_, Arc<AcpClientService>> 读取它。
             // 失败时记录诊断日志但不阻断启动 —— ACP 是可选功能。
-            match acp::AcpClientService::new(app.handle().clone()) {
-                Ok(service) => {
-                    app.manage(std::sync::Arc::new(service));
-                    log::info!("[startup] ACP client service initialized");
-                }
-                Err(error) => {
-                    log::warn!("[startup] ACP client service init failed: {}", error);
-                }
+            let acp_service: Option<std::sync::Arc<acp::AcpClientService>> =
+                match acp::AcpClientService::new(app.handle().clone()) {
+                    Ok(service) => {
+                        let arc = std::sync::Arc::new(service);
+                        app.manage(std::sync::Arc::clone(&arc));
+                        log::info!("[startup] ACP client service initialized");
+                        Some(arc)
+                    }
+                    Err(error) => {
+                        log::warn!("[startup] ACP client service init failed: {}", error);
+                        None
+                    }
+                };
+
+            // 挂载 runtime-registry 全局 state（探测 opencode/claude/codex/kimi/trae
+            // 并自动注册为子 agent；用户也可添加自定义 agent API）。
+            // ACP 是可选功能 —— 即使 ACP 初始化失败，CliRun/CustomApi 适配器仍可用。
+            let runtime_registry = std::sync::Arc::new(
+                crate::runtime_registry::RuntimeRegistry::new(acp_service),
+            );
+            app.manage(std::sync::Arc::clone(&runtime_registry));
+
+            // 启动流程：设置持久化目录 → 加载用户自定义 agent → 自动探测本机 CLI，
+            // 让内置 runtime 立即作为可用子 agent 出现（复刻 Multica 模型）。
+            {
+                let data_dir = app.path().app_data_dir().ok();
+                tauri::async_runtime::spawn(async move {
+                    if let Some(dir) = data_dir {
+                        runtime_registry.set_data_dir(dir).await;
+                        runtime_registry.load_custom_agents().await;
+                        runtime_registry.load_upstream_runtimes().await;
+                    }
+                    runtime_registry.scan().await;
+                    log::info!("[startup] runtime-registry scan complete");
+                });
             }
 
             // 初始化 IM 渠道：从配置文件加载已保存的渠道，注册到 ChannelRegistry 并加入白名单
