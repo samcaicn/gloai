@@ -67,6 +67,7 @@ const RuntimeAgentsPanel: React.FC = () => {
   const [prompts, setPrompts] = useState<Record<string, string>>({});
   const [running, setRunning] = useState<Record<string, boolean>>({});
   const [results, setResults] = useState<Record<string, InvokeResult>>({});
+  const [discovering, setDiscovering] = useState<Record<string, boolean>>({});
 
   const handleInvoke = useCallback(
     async (sa: SubAgent) => {
@@ -153,6 +154,33 @@ const RuntimeAgentsPanel: React.FC = () => {
       }
     },
     [notification, refresh],
+  );
+
+  const handleDiscover = useCallback(
+    async (providerId: string) => {
+      setDiscovering((d) => ({ ...d, [providerId]: true }));
+      try {
+        const snap = await runtimeRegistryAPI.discoverModels(providerId);
+        setRuntimes(snap.instances);
+        setSubagents(snap.subagents);
+        const inst = snap.instances.find(
+          (i) => i.providerId === providerId && i.kind === 'acp',
+        );
+        const n = inst?.availableModels?.length ?? 0;
+        notification.success(
+          n > 0
+            ? `Discovered ${n} model(s) for ${providerId}`
+            : `No models returned for ${providerId}`,
+        );
+      } catch (e) {
+        notification.error(
+          `Discover failed: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      } finally {
+        setDiscovering((d) => ({ ...d, [providerId]: false }));
+      }
+    },
+    [notification],
   );
 
   return (
@@ -297,6 +325,16 @@ const RuntimeAgentsPanel: React.FC = () => {
                 }}
               >
                 <span style={{ fontSize: 11, opacity: 0.7 }}>{rt.kind}</span>
+                {rt.installed && rt.kind === 'acp' && (
+                  <Button
+                    size="small"
+                    variant="ghost"
+                    onClick={() => void handleDiscover(rt.providerId)}
+                    disabled={discovering[rt.providerId]}
+                  >
+                    {discovering[rt.providerId] ? 'Discovering…' : 'Discover models'}
+                  </Button>
+                )}
                 {rt.installed && rt.kind !== 'acp' && (
                   <Button
                     size="small"
@@ -307,6 +345,23 @@ const RuntimeAgentsPanel: React.FC = () => {
                   </Button>
                 )}
               </div>
+              {rt.cliArgsTemplate && rt.cliArgsTemplate.length > 0 && (
+                <div style={{ marginTop: 6, fontSize: 11, opacity: 0.75 }}>
+                  <span style={{ opacity: 0.55 }}>task: </span>
+                  <code style={{ wordBreak: 'break-all' }}>
+                    {rt.cliArgsTemplate.join(' ')}
+                  </code>
+                </div>
+              )}
+              {rt.availableModels && rt.availableModels.length > 0 && (
+                <div style={{ marginTop: 6, fontSize: 11, opacity: 0.8 }}>
+                  <span style={{ opacity: 0.55 }}>
+                    models ({rt.availableModels.length}):{' '}
+                  </span>
+                  {rt.availableModels.slice(0, 6).join(', ')}
+                  {rt.availableModels.length > 6 ? ' …' : ''}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -389,6 +444,24 @@ const RuntimeAgentsPanel: React.FC = () => {
                   {running[sa.id] ? 'Running…' : 'Invoke'}
                 </Button>
               </div>
+              {(sa.model ||
+                (sa.availableModels && sa.availableModels.length > 0)) && (
+                <div style={{ marginTop: 6, fontSize: 11, opacity: 0.85 }}>
+                  {sa.model && (
+                    <div>
+                      <span style={{ opacity: 0.55 }}>model: </span>
+                      <code style={{ wordBreak: 'break-all' }}>{sa.model}</code>
+                    </div>
+                  )}
+                  {sa.availableModels && sa.availableModels.length > 0 && (
+                    <div style={{ marginTop: 2 }}>
+                      <span style={{ opacity: 0.55 }}>available: </span>
+                      {sa.availableModels.slice(0, 8).join(', ')}
+                      {sa.availableModels.length > 8 ? ' …' : ''}
+                    </div>
+                  )}
+                </div>
+              )}
               {results[sa.id] && (
                 <pre
                   style={{

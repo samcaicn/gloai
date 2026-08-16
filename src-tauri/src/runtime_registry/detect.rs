@@ -128,6 +128,8 @@ pub fn detect_builtins() -> Vec<RuntimeInstance> {
             cli_args_template: Some(
                 spec.cli_args_template.iter().map(|s| s.to_string()).collect(),
             ),
+            acp_client_id: spec.acp_client_id.map(|s| s.to_string()),
+            available_models: Vec::new(),
         });
     }
     out

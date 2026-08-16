@@ -100,6 +100,18 @@ pub async fn rr_register_upstream(
     registry.register_upstream(request).await
 }
 
+/// Discover model id + available models for an ACP provider the way the exe
+/// does (open a real ACP session, read `models`). Returns the refreshed
+/// snapshot so the UI can re-render immediately.
+#[tauri::command]
+pub async fn rr_discover_models(
+    registry: tauri::State<'_, RuntimeRegistry>,
+    provider_id: String,
+) -> Result<RuntimeRegistrySnapshot, String> {
+    registry.discover_models(&provider_id).await?;
+    Ok(registry.snapshot().await)
+}
+
 #[tauri::command]
 pub async fn rr_invoke_subagent(
     registry: tauri::State<'_, RuntimeRegistry>,

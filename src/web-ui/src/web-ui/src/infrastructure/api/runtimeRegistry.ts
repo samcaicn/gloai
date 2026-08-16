@@ -19,6 +19,12 @@ export interface RuntimeInstance {
   version?: string | null;
   model?: string | null;
   hasApiKey?: boolean;
+  /** CliRun / Upstream subprocess argv template ({prompt}/{cwd}). The "task". */
+  cliArgsTemplate?: string[] | null;
+  /** ACP only: preset client id that drives this provider (e.g. "claude-code"). */
+  acpClientId?: string | null;
+  /** ACP only: model ids reported by the CLI at session/new. */
+  availableModels?: string[];
 }
 
 export interface SubAgent {
@@ -28,6 +34,10 @@ export interface SubAgent {
   providerId: string;
   kind: RuntimeKind;
   status: SubAgentStatus;
+  /** ACP only: model id discovered via session/new (how the exe gets it). */
+  model?: string | null;
+  /** ACP only: candidate model ids reported by the CLI. */
+  availableModels?: string[];
 }
 
 export interface RuntimeRegistrySnapshot {
@@ -82,5 +92,15 @@ export const runtimeRegistryAPI = {
     req: InvokeSubagentRequest,
   ): Promise<InvokeSubagentResponse> {
     return invoke('rr_invoke_subagent', { request: req });
+  },
+  /**
+   * Discover model id + available models for an ACP provider the way the exe
+   * does (open a real ACP session, read `models`). Returns the refreshed
+   * snapshot so the caller can re-render immediately.
+   */
+  async discoverModels(
+    providerId: string,
+  ): Promise<RuntimeRegistrySnapshot> {
+    return invoke('rr_discover_models', { providerId });
   },
 };

@@ -930,6 +930,64 @@ impl AcpClientService {
         }
     }
 
+    /// Discover the CLI's model id + available models the same way the exe
+    /// does: spin up the ACP client, open a session (`session/new`), and read
+    /// the `models` field from the response. No prompt is sent. The temporary
+    /// connection is torn down afterwards so we don't leave a CLI process
+    /// running purely for a probe.
+    ///
+    /// This mirrors exactly what `claude`/`codex`/`opencode` do at startup to
+    /// learn which model they're on — so the runtime registry reports the
+    /// model id the exe itself would report, not a hardcoded guess.
+    pub async fn discover_client_models(
+        &self,
+        client_id: &str,
+        cwd: &Path,
+    ) -> Result<AcpSessionOptions, String> {
+        let connection_id = format!("{}::discover::{}", client_id, uuid::Uuid::new_v4());
+        let conn = self
+            .ensure_client_connection(&connection_id, client_id, cwd)
+            .await?;
+
+        let result: Result<AcpSessionOptions, String> = async {
+            let cx = conn.connection().await?;
+            let new_session_response = cx
+                .send_request(NewSessionRequest::new(cwd))
+                .block_task()
+                .await
+                .map_err(|e| format!("ACP newSession failed: {e}"))?;
+            let options = if let Some(models) = &new_session_response.models {
+                AcpSessionOptions {
+                    current_model_id: Some(models.current_model_id.0.to_string()),
+                    available_models: models
+                        .available_models
+                        .iter()
+                        .map(|m| AcpSessionModelOption {
+                            id: m.model_id.0.to_string(),
+                            name: m.name.clone(),
+                            description: m.description.clone(),
+                        })
+                        .collect(),
+                    model_config_id: None,
+                    context_usage: None,
+                }
+            } else {
+                AcpSessionOptions {
+                    current_model_id: None,
+                    available_models: Vec::new(),
+                    model_config_id: None,
+                    context_usage: None,
+                }
+            };
+            Ok(options)
+        }
+        .await;
+
+        // 探针连接不应保留 CLI 进程；及时清理。
+        let _ = self.stop_connection(&connection_id).await;
+        result
+    }
+
     // --- 权限处理 ---
 
     pub async fn submit_permission_response(

@@ -20,7 +20,13 @@ pub struct AcpAdapter {
 
 impl AcpAdapter {
     pub fn new(instance: RuntimeInstance, acp: Arc<AcpClientService>) -> Self {
-        let client_id = instance.provider_id.clone();
+        // Drive the ACP client by its preset id (e.g. "claude-code"), not the
+        // registry `provider_id` ("claude") — `default_config_for_builtin`
+        // matches presets by exact id, so the provider_id would never resolve.
+        let client_id = instance
+            .acp_client_id
+            .clone()
+            .unwrap_or_else(|| instance.provider_id.clone());
         Self { instance, acp, client_id }
     }
 }

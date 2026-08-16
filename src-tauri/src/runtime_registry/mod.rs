@@ -100,6 +100,17 @@ pub struct RuntimeInstance {
     /// substituted at invoke. Authoritative source is `detect`/`register`.
     #[serde(default)]
     pub cli_args_template: Option<Vec<String>>,
+    /// ACP only: the `crate::acp` client id that actually drives this
+    /// provider (e.g. built-in preset `claude-code`). Mirrors the preset
+    /// id, NOT the registry `provider_id` (`claude`). Used to spin up the
+    /// right CLI when discovering models / invoking.
+    #[serde(default)]
+    pub acp_client_id: Option<String>,
+    /// ACP only: model ids reported by the CLI at `session/new` — exactly
+    /// how the exe discovers its own model list. Populated by
+    /// `RuntimeRegistry::discover_models`. Empty until discovered.
+    #[serde(default)]
+    pub available_models: Vec<String>,
 }
 
 /// A callable sub-agent surfaced to the chat UI, named `<app><n>`.
@@ -114,6 +125,14 @@ pub struct SubAgent {
     pub provider_id: String,
     pub kind: RuntimeKind,
     pub status: SubAgentStatus,
+    /// ACP only: model id discovered the same way the exe does — via
+    /// `session/new` `models.current_model_id`. `None` until discovered.
+    #[serde(default)]
+    pub model: Option<String>,
+    /// ACP only: candidate model ids reported by the CLI. Mirrors
+    /// `RuntimeInstance::available_models`.
+    #[serde(default)]
+    pub available_models: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]

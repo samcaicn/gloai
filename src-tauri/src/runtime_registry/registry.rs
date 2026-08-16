@@ -67,6 +67,8 @@ impl RuntimeRegistry {
                     provider_id: inst.provider_id.clone(),
                     kind: inst.kind,
                     status: SubAgentStatus::Available,
+                    model: None,
+                    available_models: Vec::new(),
                 });
             }
         }
@@ -91,6 +93,8 @@ impl RuntimeRegistry {
             provider_id: provider_id.to_string(),
             kind: inst.kind,
             status: SubAgentStatus::Available,
+            model: None,
+            available_models: Vec::new(),
         };
         self.subagents.write().await.push(sa.clone());
         Some(sa)
@@ -118,6 +122,8 @@ impl RuntimeRegistry {
             model: req.model.clone(),
             has_api_key: req.api_key.is_some(),
             cli_args_template: None,
+            acp_client_id: None,
+            available_models: Vec::new(),
         };
         self.instances.write().await.push(inst);
         let sa = SubAgent {
@@ -127,6 +133,8 @@ impl RuntimeRegistry {
             provider_id: req.name.clone(),
             kind: RuntimeKind::CustomApi,
             status: SubAgentStatus::Available,
+            model: None,
+            available_models: Vec::new(),
         };
         self.subagents.write().await.push(sa.clone());
         // API key is held out-of-band (env var), never serialized to disk.
@@ -183,6 +191,8 @@ impl RuntimeRegistry {
             model: req.model.clone(),
             has_api_key: req.api_key.is_some(),
             cli_args_template: req.cli_args_template.clone(),
+            acp_client_id: None,
+            available_models: Vec::new(),
         };
         self.instances.write().await.push(inst);
         let sa = SubAgent {
@@ -192,6 +202,8 @@ impl RuntimeRegistry {
             provider_id: req.id.clone(),
             kind: RuntimeKind::Upstream,
             status: SubAgentStatus::Available,
+            model: None,
+            available_models: Vec::new(),
         };
         self.subagents.write().await.push(sa.clone());
         if let Some(key) = req.api_key {
@@ -210,6 +222,63 @@ impl RuntimeRegistry {
 
     pub async fn list_subagents(&self) -> Vec<SubAgent> {
         self.subagents.read().await.clone()
+    }
+
+    /// Discover model id + available models for an ACP provider the way the
+    /// exe itself does — by opening a real ACP session and reading the
+    /// `models` field from `session/new`. Updates the backing instance and
+    /// its sub-agents. Best-effort and bounded by a timeout, so a
+    /// missing/unauthed CLI never hangs the caller (the model simply stays
+    /// `None` until discovered).
+    pub async fn discover_models(&self, provider_id: &str) -> Result<(), String> {
+        let acp = self
+            .acp
+            .clone()
+            .ok_or_else(|| "ACP is not available".to_string())?;
+
+        let (instance_id, client_id, cwd) = {
+            let instances = self.instances.read().await;
+            let inst = instances
+                .iter()
+                .find(|i| {
+                    i.provider_id == provider_id
+                        && i.kind == RuntimeKind::Acp
+                        && i.installed
+                })
+                .ok_or_else(|| format!("no installed ACP provider '{provider_id}'"))?;
+            let client_id = inst
+                .acp_client_id
+                .clone()
+                .unwrap_or_else(|| inst.provider_id.clone());
+            let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+            (inst.id.clone(), client_id, cwd)
+        };
+
+        let opts = tokio::time::timeout(
+            std::time::Duration::from_secs(45),
+            acp.discover_client_models(&client_id, &cwd),
+        )
+        .await
+        .map_err(|_| format!("model discovery for '{provider_id}' timed out"))??;
+
+        {
+            let mut instances = self.instances.write().await;
+            if let Some(i) = instances.iter_mut().find(|i| i.id == instance_id) {
+                i.model = opts.current_model_id.clone();
+                i.available_models = opts.available_models.iter().map(|m| m.id.clone()).collect();
+            }
+        }
+        {
+            let mut subagents = self.subagents.write().await;
+            for s in subagents
+                .iter_mut()
+                .filter(|s| s.instance_id == instance_id)
+            {
+                s.model = opts.current_model_id.clone();
+                s.available_models = opts.available_models.iter().map(|m| m.id.clone()).collect();
+            }
+        }
+        Ok(())
     }
 
     /// Resolve a sub-agent id → (instance, adapter).

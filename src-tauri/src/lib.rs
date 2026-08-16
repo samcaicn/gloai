@@ -831,6 +831,7 @@ commands::floating_window::fw_chat_to_main,
             runtime_registry::commands::rr_remove_agent,
             runtime_registry::commands::rr_invoke_subagent,
             runtime_registry::commands::rr_register_upstream,
+            runtime_registry::commands::rr_discover_models,
         ]);
     startup_stage!("15i2-after-runtime-registry-handler");
     #[cfg(feature = "mesh")]
