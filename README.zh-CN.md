@@ -15,8 +15,6 @@
   <img alt="Office UI" src="https://img.shields.io/badge/Office%20UI-React%20%2B%20Phaser-14b8a6?style=flat-square">
   <img alt="CLI and UI" src="https://img.shields.io/badge/interface-CLI%20%2B%20Office%20UI-64748b?style=flat-square">
   <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-111827?style=flat-square">
-  <a href="https://github.com/samcaicn/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat-square&logo=feishu&logoColor=white" alt="Feishu" /></a>
-  <a href="https://github.com/samcaicn/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat-square&logo=wechat&logoColor=white" alt="WeChat" /></a>
 </p>
 
 ![SafeOPC hero banner](docs/assets/chat.png)
