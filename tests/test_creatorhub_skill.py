@@ -103,3 +103,30 @@ def test_cli_config_command_prints_effective_config(tmp_path, capsys, monkeypatc
     parsed = json.loads(out)
     assert parsed["port"] == 8000
     assert parsed["platform"] == "xhs"
+
+
+def test_discover_office_ui_port_prefers_port_file(tmp_path, monkeypatch):
+    import opc.cli_creatorhub as mod
+
+    monkeypatch.setattr(mod, "get_opc_home", lambda: tmp_path)
+    # 1) explicit port file wins
+    (tmp_path / "office_ui.port").write_text("9123", encoding="utf-8")
+    assert mod._discover_office_ui_port(tmp_path) == 9123
+
+    # 2) no file -> falls back to SAFEOPC_PORT env
+    (tmp_path / "office_ui.port").unlink()
+    monkeypatch.setenv("SAFEOPC_PORT", "7777")
+    assert mod._discover_office_ui_port(tmp_path) == 7777
+
+    # 3) neither -> default 8765
+    monkeypatch.delenv("SAFEOPC_PORT", raising=False)
+    assert mod._discover_office_ui_port(tmp_path) == 8765
+
+
+def test_open_in_app_browser_returns_false_when_no_server(tmp_path, monkeypatch):
+    import opc.cli_creatorhub as mod
+
+    monkeypatch.setattr(mod, "get_opc_home", lambda: tmp_path)
+    # No office_ui.port and nothing listening -> graceful fallback (False).
+    assert mod._open_in_app_browser("http://127.0.0.1:8000", "CreatorHub", tmp_path) is False
+

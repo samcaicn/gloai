@@ -26,6 +26,8 @@ import json
 import os
 import sys
 import time
+import urllib.error
+import urllib.request
 import webbrowser
 from pathlib import Path
 from typing import Any
@@ -123,6 +125,50 @@ def _cmd_config(cfg: dict[str, Any]) -> int:
     return 0
 
 
+def _discover_office_ui_port(opc_home: Path) -> int:
+    """Find the port the SafeOPC office-UI server is listening on.
+
+    The server writes its bound port to ``<opc_home>/office_ui.port`` on
+    startup; falling back to the ``SAFEOPC_PORT`` env var, then the default.
+    """
+    port_file = opc_home / "office_ui.port"
+    if port_file.exists():
+        try:
+            return int(port_file.read_text(encoding="utf-8").strip())
+        except Exception:
+            pass
+    env_port = os.environ.get("SAFEOPC_PORT")
+    if env_port:
+        try:
+            return int(env_port)
+        except Exception:
+            pass
+    return 8765
+
+
+def _open_in_app_browser(url: str, title: str, opc_home: Path) -> bool:
+    """Ask SafeOPC's built-in browser to open ``url``.
+
+    Returns True if the request was accepted by a running office-UI server,
+    False if no server is reachable (caller should fall back to the OS browser).
+    """
+    port = _discover_office_ui_port(opc_home)
+    endpoint = f"http://127.0.0.1:{port}/api/ui/open-browser"
+    payload = json.dumps({"url": url, "title": title}).encode("utf-8")
+    req = urllib.request.Request(
+        endpoint,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return bool(data.get("ok"))
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError):
+        return False
+
+
 def _cmd_open(cfg: dict[str, Any], no_browser: bool, force: bool = False) -> int:
     launcher = _build_launcher(cfg)
     url = f"http://{launcher.host}:{launcher.port}"
@@ -157,6 +203,13 @@ def _cmd_open(cfg: dict[str, Any], no_browser: bool, force: bool = False) -> int
     print(f"CreatorHub is live at {url}")
     if no_browser or not cfg.get("open_page", True):
         print(f"Open this URL in your browser: {url}")
+        return 0
+
+    # Prefer SafeOPC's built-in (in-app) browser when the desktop app is
+    # running; fall back to the OS default browser otherwise.
+    opc_home = get_opc_home()
+    if _open_in_app_browser(url, "CreatorHub", opc_home):
+        print("Opened the page in SafeOPC's built-in browser.")
         return 0
 
     try:

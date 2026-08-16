@@ -163,6 +163,11 @@ async def create_app(
     # ── Routes ────────────────────────────────────────────────────────
     app.router.add_get("/ws", ws_handler.handle_ws)
 
+    # Open a URL inside SafeOPC's built-in (in-app) browser. Companion CLIs
+    # (e.g. `opc-creatorhub open`) POST here; the event is broadcast to every
+    # connected SPA client, which opens an in-app browser overlay.
+    app.router.add_post("/api/ui/open-browser", _make_open_browser_handler())
+
     # Attachment download (must be registered before the SPA catch-all)
     app.router.add_get(
         "/api/attachments/{attachment_id}/{filename}",
@@ -213,6 +218,39 @@ async def _serve_spa_fallback(request: aiohttp.web.Request) -> aiohttp.web.Respo
         return aiohttp.web.FileResponse(file_path, headers=_FRONTEND_NO_STORE_HEADERS)
     # SPA fallback
     return aiohttp.web.FileResponse(_STATIC_DIR / "index.html", headers=_FRONTEND_NO_STORE_HEADERS)
+
+
+def _make_open_browser_handler():
+    """Factory returning the HTTP handler for the in-app (built-in) browser.
+
+    Body: ``{"url": str, "title"?: str}``. Broadcasts a ``ui_open_browser``
+    event to all connected SPA clients so they open the URL in an overlay.
+    """
+
+    async def _handle(request: aiohttp.web.Request) -> aiohttp.web.Response:
+        ws_handler = request.app.get("ws_handler")
+        try:
+            body = await request.json()
+        except Exception:
+            return aiohttp.web.json_response(
+                {"ok": False, "error": "invalid JSON body"}, status=400
+            )
+        url = body.get("url") if isinstance(body, dict) else None
+        if not isinstance(url, str) or not url:
+            return aiohttp.web.json_response(
+                {"ok": False, "error": "url (string) is required"}, status=400
+            )
+        title = body.get("title") if isinstance(body.get("title"), str) else "内置浏览器"
+        if ws_handler is None:
+            return aiohttp.web.json_response(
+                {"ok": False, "error": "ui websocket handler unavailable"}, status=503
+            )
+        await ws_handler.broadcast(
+            {"type": "ui_open_browser", "payload": {"url": url, "title": title}}
+        )
+        return aiohttp.web.json_response({"ok": True})
+
+    return _handle
 
 
 def _make_attachment_handler(engine: OPCEngine):
@@ -286,6 +324,13 @@ def run_server(
         site = aiohttp.web.TCPSite(runner, host, port)
         await site.start()
         logger.info(f"Office-UI running at http://{host}:{port}")
+        # Record the bound port so companion CLIs (e.g. `opc-creatorhub open`)
+        # can locate the in-app browser endpoint without guessing.
+        try:
+            _port_file = get_opc_home() / "office_ui.port"
+            _port_file.write_text(str(port), encoding="utf-8")
+        except Exception as _pf_err:  # pragma: no cover - best effort
+            logger.debug("could not write office_ui.port: %s", _pf_err)
         server_banner(host=host, port=port, project_id=project_id)
         # Keep running until interrupted
         try:

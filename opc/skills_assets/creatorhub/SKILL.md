@@ -46,7 +46,9 @@ This command:
    venv (no browser download) and starts the FastAPI service on
    `http://{host}:{port}`.
 3. Waits for `/health`.
-4. Opens `http://{host}:{port}` in the default browser (skipped with `--no-browser`).
+4. Opens `http://{host}:{port}` in **SafeOPC's built-in (in-app) browser** when the
+   desktop app is running; otherwise falls back to the system default browser.
+   Skipped with `--no-browser`.
 
 On Windows external-agent runs, prefer not relying on auto-open — write the URL
 out and open it yourself:

@@ -18,6 +18,7 @@ import { ExecutionPanel } from './kanban/ExecutionPanel'
 import { ProjectSelector } from './components/ProjectSelector'
 import { OrgTab } from './org/OrgTab'
 import { notifyTaskAssigned } from './lib/taskChatBridge'
+import { InAppBrowser } from './components/InAppBrowser'
 import { mapCollabSyncPayload, mapBackendMessage, mapBackendChannel, mapBackendSession, mapBackendBoard, mapBackendColumn, mapBackendTask, mergeSessionDetailHasMore } from './lib/collabSync'
 import { normalizeOrgInfoPayload } from './lib/runtimeOrg'
 import { companyRuntimeControlPatchForBoardStatus } from './lib/sessionRuntime'
@@ -498,6 +499,7 @@ export default function App() {
   const [orgCreatePending, setOrgCreatePending] = useState(false)
   const [orgCreateResult, setOrgCreateResult] = useState<(OrgSavedCreatePayload & { nonce: number }) | null>(null)
   const [orgToast, setOrgToast] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const [inAppBrowser, setInAppBrowser] = useState<{ url: string; title: string } | null>(null)
   const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
   const replayedEventIds = useRef<Set<string>>(new Set())
   const swarmAgentsRef = useRef<AgentInfo[]>([])
@@ -1031,6 +1033,13 @@ export default function App() {
 
           bumpUiTickThrottled()
         } catch (e) { console.error('[onEvent] Error:', e, evt) }
+      },
+      onUiOpenBrowser: (payload) => {
+        try {
+          if (payload && typeof payload.url === 'string' && payload.url) {
+            setInAppBrowser({ url: payload.url, title: payload.title || '内置浏览器' })
+          }
+        } catch (e) { console.error('[onUiOpenBrowser] Error:', e, payload) }
       },
       onAck: (payload) => {
         try {
@@ -2381,6 +2390,13 @@ export default function App() {
         <div className={`org-toast org-toast--${orgToast.kind}`} role="status" aria-live="polite">
           {orgToast.text}
         </div>
+      )}
+      {inAppBrowser && (
+        <InAppBrowser
+          url={inAppBrowser.url}
+          title={inAppBrowser.title}
+          onClose={() => setInAppBrowser(null)}
+        />
       )}
       {/* Topbar */}
       <header className="topbar">

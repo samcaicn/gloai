@@ -59,6 +59,7 @@ interface SocketHandlers {
   onOrgSavedDelete?: (payload: { ok: boolean; name: string; error?: string }) => void
   onCommsState?: (payload: CommsStatePayload) => void
   onCommsMessage?: (payload: CommsMessagePayload) => void
+  onUiOpenBrowser?: (payload: { url: string; title?: string }) => void
 }
 
 export interface RuntimeStatusSyncPayload {
@@ -817,6 +818,9 @@ export class VisualSocketClient {
         break
       case 'comms_message':
         this.handlers.onCommsMessage?.(parsed.payload as unknown as CommsMessagePayload)
+        break
+      case 'ui_open_browser':
+        this.handlers.onUiOpenBrowser?.(parsed.payload as { url: string; title?: string })
         break
       case 'comms_state_dirty':
         // Server pushed a "something changed" hint after a comms message
