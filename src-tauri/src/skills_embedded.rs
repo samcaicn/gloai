@@ -174,7 +174,7 @@ pub fn get_builtin_skills(gateway_url: &str) -> Vec<EmbeddedSkill> {
         },
         EmbeddedSkill {
             id: "builtin-trace-auto".to_string(),
-            name: "Trace Auto".to_string(),
+            name: "AIMarketing".to_string(),
             version: "4.0.0".to_string(),
             description: "Trae 自动化：自动循环(start) / 查状态(status) / 设置回复条件(chat) / 执行步骤(run_steps)".to_string(),
             category: Some("自动化".to_string()),

@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P0 §1 — Compiler round-trip tests.
+// AIMarketing P0 §1 — Compiler round-trip tests.
 //
 // These tests live in a dedicated file (per the project
 // `plan.md §3.2` task spec) so the engine's behavioural tests in
@@ -24,12 +24,12 @@ steps:
     visual_target: Editor
     input:
       type: type
-      text: "Hello from tupAI"
+      text: "Hello from AIMarketing"
 "#;
 
 const SAMPLE_BROWSER: &str = r#"
 name: open-docs
-description: Open the tupAI docs page
+description: Open the AIMarketing docs page
 preferred_execution_type: browser
 browser_url: https://example.com/docs
 steps:

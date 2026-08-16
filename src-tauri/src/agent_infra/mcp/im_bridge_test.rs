@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // P3 G18 — im_bridge 单元测试。
 //

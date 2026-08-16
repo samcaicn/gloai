@@ -37,7 +37,7 @@ const CACHE_FILENAME: &str = ".hardware_id";
 // ── Brand-conditional names (P2-4) ──────────────────────────────────────
 //
 // The safeopc OEM build (feature `safeopc-brand`) uses a different
-// publisher / bundle id from the tupAI build, so its persistent cache
+// publisher / bundle id from the AIMarketing build, so its persistent cache
 // paths MUST also differ — otherwise a user who installs both would
 // share the same hardware_id cache and confuse device-registration
 // telemetry. Cfg-gated `const`s compile to the right value per brand

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Module-scoped logger for pc_automation. Thin facade over the
 // `log` crate so callers do not have to spell out the target /

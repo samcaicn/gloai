@@ -325,12 +325,12 @@
     }
   },
   "tupaiCloud": {
-    "sectionTitle": "tupAI Cloud Models",
+    "sectionTitle": "AIMarketing Cloud Models",
     "sectionDescription": "Read-only catalog of models currently supported by ai.tuptup.top, proxied via the local Hermes gateway.",
     "refresh": "Refresh",
     "active": "Currently selected",
     "empty": "No models returned. Try again later or check the gateway state.",
-    "loadFailed": "Failed to load tupAI cloud models: {{error}}",
+    "loadFailed": "Failed to load AIMarketing cloud models: {{error}}",
     "providerGroup": "{{provider}} · {{count}} models",
     "noProvider": "Other"
   },

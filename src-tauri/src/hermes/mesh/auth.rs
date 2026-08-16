@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // mesh 消息签名与重放保护。
 //

@@ -132,7 +132,7 @@ async function handler(params, complete) {
         { id: 'builtin-wechat-publisher', name: '公众号文章技能' },
         { id: 'builtin-xiaohongshu-publisher', name: '小红书文案技能' },
         { id: 'builtin-auto-product-comm', name: '自动选品智能沟通' },
-        { id: 'builtin-trace-auto', name: 'Trace Auto' },
+        { id: 'builtin-trace-auto', name: 'AIMarketing' },
       ]
     }
 

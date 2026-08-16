@@ -3,7 +3,7 @@ id: "wechat-publisher"
 name: wechat-publisher
 description: 公众号文章撰写与发布 — 交互式配置、热点监测、7种写作框架、风格学习、质量检查、去AI化、一键发布到微信公众号草稿箱
 version: 3.0.0
-author: tupAI
+author: AIMarketing
 tags: [wechat, writing, publishing, content-creation, weixin, social-media, automation, copywriting, marketing]
 entrypoints: [main]
 inputs:

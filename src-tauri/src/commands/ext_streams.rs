@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // 扩展流式 / 整体执行 / IM 连接状态命令。
 //
@@ -69,7 +69,7 @@ fn build_stream_client() -> Result<reqwest::Client, String> {
         .no_proxy()
         .connect_timeout(Duration::from_secs(STREAM_CONNECT_TIMEOUT_SECS))
         .timeout(Duration::from_secs(STREAM_REQUEST_TIMEOUT_SECS))
-        .user_agent(concat!("TraceAuto-Tauri/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("AIMarketing-Tauri/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| format!("reqwest client build failed: {e}"))
 }

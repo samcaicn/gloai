@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // IPC surface for the Profile patch layer. Frontend uses these to read the
 // active profile (display brand, skill allow/deny lists, config overrides)

@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.listing-translator"
 name: "Listing多语言翻译"
 name_en: "Listing Multilingual Translator"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

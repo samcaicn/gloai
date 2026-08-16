@@ -1,4 +1,4 @@
-// Trace Auto — Trae 自动化全部功能
+// AIMarketing — Trae 自动化全部功能
 async function handler(params, complete) {
   const { action, goal } = params
   const MAX_ROUNDS = params.maxRounds || 50

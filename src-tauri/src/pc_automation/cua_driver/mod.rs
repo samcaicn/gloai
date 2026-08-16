@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // ============================================================================
 // Cua Driver 集成层 — Sidecar MCP over stdio

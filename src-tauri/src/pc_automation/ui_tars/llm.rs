@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.1 — 云端 LLM 共享层。
+// AIMarketing v5 §6.1 — 云端 LLM 共享层。
 //
 // 本文件统一了 3 个原本独立的"if llm
 // { try { ... } else fallback }"模板到 `try_call_llm`:

@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 — 三级记忆架构中的「情景记忆(episodic memory)」层。
+// AIMarketing v5 — 三级记忆架构中的「情景记忆(episodic memory)」层。
 //
 // 父模块: `pc_automation::episodic`
 // 子模块:
@@ -9,7 +9,7 @@
 //                `SqliteEpisodicStore`(stub)
 //   * `query`  — 4 个查询 API 自由函数
 //
-// 三级记忆(tupAI v5 §1.4 路线图):
+// 三级记忆(AIMarketing v5 §1.4 路线图):
 //   * episodic(本模块) — "某次执行某一步实际发生了什么"
 //   * semantic          — "从 episodic 提炼出的 skill 模式" (后续 v6)
 //   * procedural        — "用户的工作流偏好" (后续 v6)

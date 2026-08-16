@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — 失败聚类(自进化层的"聚类"环节)。
+// AIMarketing v5 §6.2 — 失败聚类(自进化层的"聚类"环节)。
 //
 // 设计决策(doc comment):
 //   * 本期采用**简单启发式**聚类:按 `(app_profile, error_pattern 头 100 字符)`

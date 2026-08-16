@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 §3.4 — CDP step primitives.
+// AIMarketing P1 §3.4 — CDP step primitives.
 //
 // Each function takes a `&Page` (from chromiumoxide) and runs a single
 // CDP command. They are intentionally side-effect-only and return

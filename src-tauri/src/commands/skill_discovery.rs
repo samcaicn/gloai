@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Skill discovery pipeline: search a remote MCP-style skill server,
 // evaluate each candidate locally, adopt the promising ones, and

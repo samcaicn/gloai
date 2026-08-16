@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 //
-// tupAI P1 §5 — 后台静默监测与记忆沉淀
+// AIMarketing P1 §5 — 后台静默监测与记忆沉淀
 //
 // The full CDP-based monitor is a future task; for the staged
 // rollout we expose a tiny stub that writes the events the

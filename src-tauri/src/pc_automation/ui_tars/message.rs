@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 — UI-TARS 训练数据格式的"一行"消息(详见
+// AIMarketing v5 — UI-TARS 训练数据格式的"一行"消息(详见
 // deepwiki.com/bytedance/UI-TARS/7-training-data-format)。
 //
 // 设计决策(doc comment):

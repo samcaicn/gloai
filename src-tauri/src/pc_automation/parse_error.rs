@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Selector / anchor parser error type shared by every pc_automation
 // sub-module (UIA selector, CDP selector, OCR anchor). Keeping the

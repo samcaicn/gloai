@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Tauri commands — Skill compilation & execution,
 // and the ClientAdopt inbox surface.

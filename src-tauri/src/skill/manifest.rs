@@ -1,9 +1,9 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P0 §1 — Skill metadata (skill.md ↔ MCP)
+// AIMarketing P0 §1 — Skill metadata (skill.md ↔ MCP)
 //
 // `SkillManifest` mirrors the YAML front-matter / body shape that
-// tupAI / Hermes use to describe a skill. The original
+// AIMarketing / Hermes use to describe a skill. The original
 // `hermes::skill_manifest` covers the marketplace-facing fields
 // (name, version, tags, entrypoints, IO, dependencies). The
 // automation-driven `SkillManifest` here adds the *executable* layer
@@ -214,7 +214,7 @@ impl SkillPlatform {
 ///     description: Type greeting
 ///     dom_selector: null
 ///     visual_target: "Editor"
-///     input: { type: type, text: "Hello from tupAI" }
+///     input: { type: type, text: "Hello from AIMarketing" }
 /// ```
 #[derive(
     Debug,

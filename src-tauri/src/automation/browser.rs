@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 §3.4 — CDP-backed browser session management.
+// AIMarketing P1 §3.4 — CDP-backed browser session management.
 //
 // We wrap `chromiumoxide::Browser` into a `BrowserSession` so the rest
 // of the codebase can reason about "the browser I am currently driving"

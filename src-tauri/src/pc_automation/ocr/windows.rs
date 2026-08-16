@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // OCR backend — real implementation on Windows backed by
 // `Windows.Media.Ocr` (the OS's built-in OCR engine, available

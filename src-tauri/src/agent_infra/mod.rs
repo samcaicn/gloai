@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // `agent_infra` aggregates the Rust port of `gloai` agent-infra
 // packages. The browser automation, search providers, generic MCP

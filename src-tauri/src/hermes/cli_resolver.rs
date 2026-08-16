@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // CLI tool resolver — find local executables by name using multiple strategies.
 //

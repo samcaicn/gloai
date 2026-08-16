@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 //
-// tupAI P1 §5 — tray 常驻
+// AIMarketing P1 §5 — tray 常驻
 //
 // We deliberately keep the tray menu *tiny* (4 entries, per
 // plan.md §3.5). The Tauri 2 tray API requires the `tray-icon`
@@ -101,7 +101,7 @@ pub fn setup_tray(app: &AppHandle<Wry>) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let _tray = TrayIconBuilder::with_id("tupai-tray")
-        .tooltip("tupAI")
+        .tooltip("AIMarketing")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .icon(app.default_window_icon().cloned().unwrap_or_else(|| {
@@ -126,7 +126,7 @@ pub fn setup_tray(app: &AppHandle<Wry>) -> Result<(), String> {
                     // `silent_download_upgrade` 真实走 检查→下载→写marker 流程。
                     let _ = app.emit("tray:check-updates-requested", ());
                     if let Some(tray) = app.tray_by_id("tupai-tray") {
-                        let _ = tray.set_tooltip(Some("tupAI · 正在检查更新…"));
+                        let _ = tray.set_tooltip(Some("AIMarketing · 正在检查更新…"));
                     }
                 }
                 "quit" => {

@@ -1,7 +1,7 @@
 {
   "name": "@tupai/mcp-server-commands",
   "version": "0.1.0",
-  "description": "tupAI MCP server for running arbitrary commands (Node sidecar)",
+  "description": "AIMarketing MCP server for running arbitrary commands (Node sidecar)",
   "license": "MIT",
   "type": "module",
   "private": true,

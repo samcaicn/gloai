@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Surface is reserved for the main thread; allow dead_code until wired up.
 #![allow(dead_code)]
@@ -18,7 +18,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use walkdir::WalkDir;
 
 /// Windows process-creation flags applied to every child process the
-/// Rust side of tupAI spawns. Without these, `Command::new("hermes.exe")`
+/// Rust side of AIMarketing spawns. Without these, `Command::new("hermes.exe")`
 /// or `Command::new("cmd.exe")` flashes a console window for a few
 /// hundred milliseconds — visible to the user as a black/white
 /// "PowerShell 窗口" popping up over the WebView. The flags together
@@ -1331,7 +1331,7 @@ static MEMORIES: std::sync::LazyLock<Mutex<Vec<MemoryEntry>>> = std::sync::LazyL
         MemoryEntry {
             id: "mem_2".to_string(),
             summary: "当前项目".to_string(),
-            content: "tupAI — Tauri + React 桌面客户端，连接本地 Hermes agent HTTP API (localhost:8642)。".to_string(),
+            content: "AIMarketing — Tauri + React 桌面客户端，连接本地 Hermes agent HTTP API (localhost:8642)。".to_string(),
             source: Some("对话".to_string()),
             created_at: "2026-04-15".to_string(),
             updated_at: "2026-04-15".to_string(),
@@ -1380,7 +1380,7 @@ static TASKS: std::sync::LazyLock<Mutex<Vec<Task>>> = std::sync::LazyLock::new(|
     Mutex::new(vec![
         Task {
             id: "task_1".to_string(),
-            title: "完成 tupAI SSE 流式响应".to_string(),
+            title: "完成 AIMarketing SSE 流式响应".to_string(),
             description: "实现 chat_stream 命令，支持逐 token 流式输出到前端".to_string(),
             status: "in_progress".to_string(),
             due_date: Some("2026-04-15".to_string()),
@@ -3805,7 +3805,7 @@ pub fn resolve_hermes_runtime() -> Option<HermesRuntime> {
 /// resolved separately by [`resolve_hermes_cli_source`].
 ///
 /// Cross-platform resolution strategy:
-/// 0. **Bundled sidecar** (`<exe-dir>/node(.exe)`) — when tupAI
+/// 0. **Bundled sidecar** (`<exe-dir>/node(.exe)`) — when AIMarketing
 ///    is installed via the NSIS / .dmg / .deb bundle, the Node
 ///    runtime lives next to `tupai(.exe)` as a Tauri 2 sidecar
 ///    (`bundle.externalBin: ["binaries/node"]` in
@@ -4422,7 +4422,7 @@ fn get_hermes_home_dir() -> PathBuf {
     PathBuf::from(".hermes")
 }
 
-/// 暴露给前端：`~` 展开、tupAI 默认工作区解析、
+/// 暴露给前端：`~` 展开、AIMarketing 默认工作区解析、
 /// 终端 cwd fallback 都依赖这个。renderer 里 `process.env` 拿不到
 /// 真实 home（没有 Node 主进程），必须由 Rust 端代为查询。
 #[tauri::command]

@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 §2 — Automation engine + smart retry state machine.
+// AIMarketing P1 §2 — Automation engine + smart retry state machine.
 //
 // The engine drives a `SkillManifest` step-by-step, retrying each
 // step up to 3 times (DOM -> Visual -> Mixed) before pausing for
@@ -47,11 +47,11 @@ pub const EVENT_PAUSED: &str = "automation_paused";
 pub const EVENT_RESUMED: &str = "automation_resumed";
 pub const EVENT_COMPLETED: &str = "automation_completed";
 pub const EVENT_FAILED: &str = "automation_failed";
-/// tupAI P1 §2 — emitted right before each retry attempt. The
+/// AIMarketing P1 §2 — emitted right before each retry attempt. The
 /// frontend uses it to surface "trying DOM" / "trying Visual" /
 /// "trying Mixed" in the floating panel.
 pub const EVENT_STRATEGY_CHANGED: &str = "automation_strategy_changed";
-/// tupAI P1 §2 — emitted when all 3 strategies (DOM → Visual →
+/// AIMarketing P1 §2 — emitted when all 3 strategies (DOM → Visual →
 /// Mixed) fail. The frontend uses it to pop the *modal* takeover
 /// dialog that is not closeable until the user clicks "继续" or
 /// "取消执行". This is intentionally a separate event from
@@ -59,7 +59,7 @@ pub const EVENT_STRATEGY_CHANGED: &str = "automation_strategy_changed";
 /// frontend can wire the modal without having to introspect
 /// `phase === "paused_for_user"`.
 pub const EVENT_PAUSED_FOR_USER: &str = "automation_paused_for_user";
-/// tupAI single-step debug — emitted when the engine pauses before
+/// AIMarketing single-step debug — emitted when the engine pauses before
 /// a step because step mode is enabled or a breakpoint was hit.
 pub const EVENT_PAUSED_FOR_DEBUG: &str = "automation_paused_for_debug";
 
@@ -426,7 +426,7 @@ impl AutomationEngine {
                     },
                 );
 
-                // tupAI P1 §2 — frontend takeover dialog trigger.
+                // AIMarketing P1 §2 — frontend takeover dialog trigger.
                 // Emitted alongside `EVENT_PAUSED` so the floating
                 // panel can pop a non-dismissable modal that
                 // requires the user to either "继续" or "取消".
@@ -539,7 +539,7 @@ impl AutomationEngine {
                 return false;
             }
 
-            // tupAI P1 §2 — tell the UI which strategy this
+            // AIMarketing P1 §2 — tell the UI which strategy this
             // attempt is going to use *before* we actually run
             // it, so the panel can show "尝试 2/4 — 视觉定位".
             let strategy = RetryStrategy::for_attempt(attempt as u32);

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // UIA 窗口焦点 + 元素轮询器
 //
@@ -388,7 +388,7 @@ mod tests {
     #[test]
     fn test_extract_app_name_from_title() {
         assert_eq!(extract_app_name_from_title("同花顺 iFinD - 沪深300"), "同花顺 iFinD");
-        assert_eq!(extract_app_name_from_title("Trace Auto - tupAI"), "Trace Auto");
+        assert_eq!(extract_app_name_from_title("AIMarketing - AIMarketing"), "AIMarketing");
         assert_eq!(extract_app_name_from_title("记事本"), "记事本");
         assert_eq!(extract_app_name_from_title(""), "unknown_app");
     }

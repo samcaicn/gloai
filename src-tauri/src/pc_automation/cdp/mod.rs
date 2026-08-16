@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // CDP (Chrome DevTools Protocol) sub-module. The browser automation
 // tier — covers every renderer-based target (Electron apps, in-app

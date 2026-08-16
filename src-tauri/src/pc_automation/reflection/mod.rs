@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — 「技能 + 反思」双层自进化(中期 6)。
+// AIMarketing v5 §6.2 — 「技能 + 反思」双层自进化(中期 6)。
 //
 // 父模块: `pc_automation::reflection`
 // 子模块:

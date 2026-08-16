@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.tiktok-trend-tracker"
 name: "TikTok热品追踪"
 name_en: "TikTok Trend Tracker"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

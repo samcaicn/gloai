@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.1 — VLM 救援主流程。
+// AIMarketing v5 §6.1 — VLM 救援主流程。
 //
 // uirap v2 合并精简后,本文件只保留"VLM 救援"的主流程相关
 // 符号:救援上下文(RescueContext)、救援策略(DynamicPromptConfig /

@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 
-// tupAI P0 §4 — Encrypted local storage
+// AIMarketing P0 §4 — Encrypted local storage
 //
 // On-disk format:
 //   [ 4 bytes : version (little-endian u32; always 1) ]

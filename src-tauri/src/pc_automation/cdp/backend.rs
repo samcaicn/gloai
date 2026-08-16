@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // CDP backend trait + result envelope. The trait is intentionally
 // minimal (3 methods) so a hand-rolled WS client can satisfy it

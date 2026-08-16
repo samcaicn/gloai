@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Trace Auto
+// Copyright (c) 2026 AIMarketing
 //
 // IM 对象选择命令：列出好友/群组/文档等可发送目标。
 //
@@ -127,7 +127,7 @@ async fn feishu_list_chats(binding: &crate::hermes::im::adapter_base::IMBinding,
         .connect_timeout(std::time::Duration::from_secs(8))
         .timeout(std::time::Duration::from_secs(15))
         .no_proxy()
-        .user_agent(concat!("tupAI/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("AIMarketing/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| format!("http client build failed: {}", e))?;
 
@@ -197,7 +197,7 @@ async fn feishu_get_app_access_token(domain: &str, app_id: &str, app_secret: &st
         .connect_timeout(std::time::Duration::from_secs(5))
         .timeout(std::time::Duration::from_secs(10))
         .no_proxy()
-        .user_agent(concat!("tupAI/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("AIMarketing/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| format!("http client build failed: {}", e))?;
 

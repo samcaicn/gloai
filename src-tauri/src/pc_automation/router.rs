@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // ============================================================================
 // Domain-aware router. v5 §1.4 / uirap改造技术方案.md §4.

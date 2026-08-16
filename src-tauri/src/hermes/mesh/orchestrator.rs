@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // AINL 协调者角色（P2P 下的去中心化编排）。
 //

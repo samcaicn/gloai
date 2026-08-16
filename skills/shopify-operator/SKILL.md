@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.shopify-operator"
 name: "Shopify店铺运营"
 name_en: "Shopify Store Operator"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

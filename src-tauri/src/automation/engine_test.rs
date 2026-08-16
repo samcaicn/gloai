@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 §2 — Engine tests.
+// AIMarketing P1 §2 — Engine tests.
 //
 // These tests live in a dedicated file (per the project
 // `plan.md §3.2` task spec) so the binary's behaviour is
@@ -251,7 +251,7 @@ fn _engine_constructor_takes_state_and_app(_state: Arc<AutomationState>, _app: t
 }
 
 // =============================================================
-// tupAI P1 §2 — RetryStrategy mapping tests
+// AIMarketing P1 §2 — RetryStrategy mapping tests
 // =============================================================
 //
 // The 4-tier strategy ladder is a public contract: the engine

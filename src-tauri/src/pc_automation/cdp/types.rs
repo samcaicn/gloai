@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // CDP selector / action vocabulary. Mirrors the small subset of the
 // DevTools Protocol that the v5 router needs — anything more

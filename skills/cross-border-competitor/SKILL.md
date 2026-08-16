@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.cross-border-competitor"
 name: "跨境竞品分析"
 name_en: "Cross-border Competitor Analysis"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

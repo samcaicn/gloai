@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §5.2 — screenshot capture for the VLM rescue pipeline.
+// AIMarketing v5 §5.2 — screenshot capture for the VLM rescue pipeline.
 //
 // The production path is platform-native:
 //   * Windows — `windows` crate (GDI: GetDC / CreateCompatibleDC / BitBlt

@@ -5,9 +5,9 @@
 import { invoke } from '@tauri-apps/api/core';
 
 export interface BrandInfo {
-  /** Product name shown in UI (e.g., "tupai", "safeopc") */
+  /** Product name shown in UI (e.g., "AIMarketing") */
   product_name: string;
-  /** Unique identifier (e.g., "ai.tupai.desktop", "com.safeopc.desktop") */
+  /** Unique identifier (e.g., "ai.aimarketing.desktop", "com.aimarketing.desktop") */
   identifier: string;
   /** Version from Cargo.toml / tauri.conf.json */
   version: string;
@@ -17,7 +17,7 @@ export interface BrandInfo {
   short_description: string;
   /** Homepage URL */
   homepage: string;
-  /** Deep-link scheme (e.g., "tupai", "safeopc") */
+  /** Deep-link scheme (e.g., "aimarketing") */
   deep_link_scheme: string;
   /** Whether this is an OEM/safeopc build */
   is_oem: boolean;
@@ -60,15 +60,15 @@ export async function initBrandInfo(): Promise<BrandInfo> {
  */
 export function getBrandInfoSync(): BrandInfo {
   if (_brandInfo) return _brandInfo;
-  // Safe defaults — matches tupai brand
+  // Safe defaults — matches AIMarketing brand
   return {
-    product_name: 'tupai',
-    identifier: 'ai.tupai.desktop',
+    product_name: 'AIMarketing',
+    identifier: 'ai.aimarketing.desktop',
     version: '1.8.9',
-    publisher: 'tupAI',
-    short_description: 'tupAI - Self-Evolving AI Workspace',
-    homepage: 'https://tuptup.top',
-    deep_link_scheme: 'tupai',
+    publisher: 'AIMarketing',
+    short_description: 'AIMarketing - Self-Evolving AI Workspace',
+    homepage: 'https://aimarketing.example.com',
+    deep_link_scheme: 'aimarketing',
     is_oem: false,
   };
 }

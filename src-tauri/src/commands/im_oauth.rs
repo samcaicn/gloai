@@ -65,7 +65,7 @@ static SHARED_HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
         .connect_timeout(Duration::from_secs(5))
         .timeout(Duration::from_secs(15))
         .no_proxy()
-        .user_agent(concat!("tupAI/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("AIMarketing/", env!("CARGO_PKG_VERSION")))
         .build()
         .unwrap_or_else(|_| Client::new())
 });

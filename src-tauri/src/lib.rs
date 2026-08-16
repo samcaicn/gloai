@@ -25,7 +25,7 @@ mod models;
 mod tray;
 mod upgrade;
 
-// tupAI 本地定时任务调度器 shutdown 信号. setup hook 注册 watch sender,
+// AIMarketing 本地定时任务调度器 shutdown 信号. setup hook 注册 watch sender,
 // 未来退出主窗口时调用 `tx.send(true)` 让后台 tick 循环优雅退出.
 pub struct CronLocalShutdownTx(pub tokio::sync::watch::Sender<bool>);
 mod monitoring;
@@ -335,7 +335,7 @@ pub fn run() {
             commands::write_file,
             commands::delete_file,
             commands::create_directory,
-            // tupAI P1 §5 — 在指定目录派生独立进程副本
+            // AIMarketing P1 §5 — 在指定目录派生独立进程副本
             commands::launch_new_instance,
             // notebook
             commands::list_notebook_tree,
@@ -524,7 +524,7 @@ commands::computer_use::computer_use_open_system_settings,
             commands::models::change_model_path,
             commands::models::scan_models,
             commands::models::delete_model,
-            // Model source catalog (tupAI cloud) surfaced to the Settings model page.
+            // Model source catalog (AIMarketing cloud) surfaced to the Settings model page.
             commands::model_sources::list_tupai_cloud_models,
             // skill execution + automation commands.
             commands::skill::compile_skill,
@@ -1413,7 +1413,7 @@ commands::floating_window::fw_chat_to_main,
             }
 
             log::info!(
-                "[startup] tupAI {} on {} {}",
+                "[startup] AIMarketing {} on {} {}",
                 env!("CARGO_PKG_VERSION"),
                 std::env::consts::OS,
                 std::env::consts::ARCH
@@ -1643,9 +1643,9 @@ commands::floating_window::fw_chat_to_main,
                 use windows::Win32::UI::WindowsAndMessaging::{
                     MessageBoxW, MB_OK, MB_ICONERROR,
                 };
-                let title = windows::core::HSTRING::from("tupAI 启动失败");
+                let title = windows::core::HSTRING::from("AIMarketing 启动失败");
                 let body = windows::core::HSTRING::from(format!(
-                    "tupAI 启动时遇到错误，无法创建窗口。\n\
+                    "AIMarketing 启动时遇到错误，无法创建窗口。\n\
                      详细信息已记录到日志文件。\n\n\
                      错误: {}",
                     e
@@ -1676,7 +1676,7 @@ commands::floating_window::fw_chat_to_main,
                     // Escape double quotes for AppleScript string literal.
                     let escaped = format!("{}", e).replace('"', "\\\"");
                     let script = format!(
-                        "display dialog \"tupAI 启动失败\\n\\n遇到错误，无法创建窗口。\\n详细信息已记录到日志文件。\\n\\n错误: {}\" buttons {{\"OK\"}} with icon stop",
+                        "display dialog \"AIMarketing 启动失败\\n\\n遇到错误，无法创建窗口。\\n详细信息已记录到日志文件。\\n\\n错误: {}\" buttons {{\"OK\"}} with icon stop",
                         escaped
                     );
                     let _ = std::process::Command::new("osascript")

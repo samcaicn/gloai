@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // OCR sub-module. The third / fallback tier in the v5 stack:
 // PP-OCRv5 (fast path, ~30ms on CPU) plus PaddleOCR-VL-1.6 (deep

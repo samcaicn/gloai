@@ -135,7 +135,7 @@ const FLOWCHART = {
     autoEvolve:      { type: 'boolean',default: true },
     recognition:     { type: 'array',  items: 'string', default: ['cdp', 'uia', 'ocr', 'vlm'] },
   },
-  metadata: { createdAt: '2026-07-17T00:00:00Z', updatedAt: '2026-07-17T18:00:00Z', author: 'tupAI', version: '3.0.0' },
+  metadata: { createdAt: '2026-07-17T00:00:00Z', updatedAt: '2026-07-17T18:00:00Z', author: 'AIMarketing', version: '3.0.0' },
 }
 
 // ── 常量 ─────────────────────────────────────────────────────────────────

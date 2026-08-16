@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI — automation module (skill execution + system_software + browser).
+// AIMarketing — automation module (skill execution + system_software + browser).
 //
 // The split between `state.rs` and `engine.rs` is intentional:
 //   * `state` is data-only and can be reasoned about without the

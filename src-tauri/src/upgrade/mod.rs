@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 //
-// tupAI P1 §1 — 增量式静默自动升级
+// AIMarketing P1 §1 — 增量式静默自动升级
 //
 // This module is a self-contained façade over `tauri-plugin-updater`.
 // The plugin's `Updater` trait is heavy and lives behind dynamic

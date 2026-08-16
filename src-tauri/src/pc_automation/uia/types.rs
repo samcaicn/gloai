@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // UIA types: the in-memory representation of a Windows UI Automation
 // node, plus the selector grammar used to address one. The selector

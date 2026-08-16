@@ -3,7 +3,7 @@ id: "seedance"
 name: seedance
 description: Seedance 2.0 AI 视频生成 — 文生视频、图生视频、参考视频生成，支持同步音频，最高 1080p，4-15 秒短片
 version: 1.0.0
-author: tupAI
+author: AIMarketing
 tags: [seedance, video-generation, ai-video, bytedance, text-to-video, image-to-video, content-creation]
 entrypoints: [main]
 inputs:

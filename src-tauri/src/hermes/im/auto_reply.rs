@@ -41,7 +41,7 @@ const MAX_CONTEXT_TURNS: usize = 20;
 /// system prompt：提示 agent 处于 IM 场景，可按会话内容意图调用通用工具
 /// （execute_skill / mcp_call / memory_search / vlm_query 等，由 ToolRegistry2 注册）。
 const SYSTEM_PROMPT: &str = "\
-你是 tupAI 桌面助手，通过 IM 与用户对话。请直接、简洁地回答用户的问题。\
+你是 AIMarketing 桌面助手，通过 IM 与用户对话。请直接、简洁地回答用户的问题。\
 如果你判断用户的问题需要执行技能、查询记忆、调用系统能力，可以调用下方提供的工具来达成目标，\
 不要凭猜测编造结果。纯聊天问题时直接回答。";
 

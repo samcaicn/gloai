@@ -25,11 +25,11 @@
 #   .\build.ps1 -Clean -SkipBuild     # 仅做全量清理（强制下次全量重编译）
 #   .\build.ps1 -Aggressive -SkipBuild # 仅做激进清理（释放 ~15GB）
 #
-# SafeOPC 品牌（Windows NSIS，使用 tauri.safeopc.conf.json 覆盖图标/名称/标识）:
-#   .\build.ps1 -Nsis -Brand safeopc            # 标准构建 SafeOPC NSIS
-#   .\build.ps1 -Nsis -Full -Brand safeopc      # 完整优化构建 SafeOPC（正式发布）
+# AIMarketing 品牌（Windows NSIS，使用 tauri.safeopc.conf.json 覆盖图标/名称/标识）:
+#   .\build.ps1 -Nsis -Brand safeopc            # 标准构建 AIMarketing NSIS
+#   .\build.ps1 -Nsis -Full -Brand safeopc      # 完整优化构建 AIMarketing（正式发布）
 #   pnpm build:nsis:safeopc                     # 等价 npm 脚本
-#   pnpm build:mac:safeopc                      # macOS app+dmg 构建 SafeOPC（macOS 上运行）
+#   pnpm build:mac:safeopc                      # macOS app+dmg 构建 AIMarketing（macOS 上运行）
 #
 # 不常用参数（正式发布/CI）:
 #   .\build.ps1 -Nsis -Full           # 完整优化构建（release-ci + 最大优化，~10 min，正式发布用）

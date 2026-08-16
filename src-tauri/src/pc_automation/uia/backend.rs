@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // UIA backend trait. Implemented per platform (Windows today; macOS
 // `accessibility` and Linux AT-SPI shims land in follow-up PRs).

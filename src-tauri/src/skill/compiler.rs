@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P0 §1 — Skill compiler: skill.md (YAML) <-> MCP (binary)
+// AIMarketing P0 §1 — Skill compiler: skill.md (YAML) <-> MCP (binary)
 //
 // The MCP (Meta-Compilation Package) is the binary distribution
 // format for a compiled skill. Layout (v1):

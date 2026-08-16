@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // 租户信息命令 — tenant_get / tenant_register / tenant_info。
 //
@@ -139,7 +139,7 @@ async fn fetch_tenant_metadata_via_mcp(token: Option<&str>) -> TenantMetadata {
         .no_proxy()
         .connect_timeout(Duration::from_secs(5))
         .timeout(Duration::from_secs(MCP_TENANT_GET_TIMEOUT_SECS))
-        .user_agent(concat!("tupAI/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("AIMarketing/", env!("CARGO_PKG_VERSION")))
         .build()
     {
         Ok(c) => c,

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // 设备注册 / 续期命令 - 两步架构：fingerprint 网关 + MCP 业务。
 //
@@ -246,7 +246,7 @@ fn build_http_client(use_proxy: bool, timeout_secs: u64) -> Result<Client, Regis
     let mut b = Client::builder()
         .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
         .timeout(Duration::from_secs(timeout_secs))
-        .user_agent(concat!("tupAI/", env!("CARGO_PKG_VERSION")));
+        .user_agent(concat!("AIMarketing/", env!("CARGO_PKG_VERSION")));
     if !use_proxy {
         b = b.no_proxy();
     }

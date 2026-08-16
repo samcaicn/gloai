@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // OCR types: regions, matches, anchors, engine choice. Kept in
 // their own file so the engine-agnostic healing code can pull them

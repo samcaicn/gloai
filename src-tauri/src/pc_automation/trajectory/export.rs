@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 — trajectory.jsonl 导出 (UI-TARS 训练数据格式)。
+// AIMarketing v5 — trajectory.jsonl 导出 (UI-TARS 训练数据格式)。
 //
 // 设计决策(doc comment):
 //   * `build_trajectory` 是事件 → 消息的核心转换:

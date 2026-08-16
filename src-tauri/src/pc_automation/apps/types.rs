@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // App-profile types. All fields are `&'static str` / `&'static
 // [...]` so the entire registry is a literal — no `String`

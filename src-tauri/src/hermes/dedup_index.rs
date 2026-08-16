@@ -1,10 +1,10 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // ServerEval: lightweight de-duplication
 // index for skill proposals.
 //
 // We use plain token-set Jaccard similarity (no embedding model). For
-// the proposal volumes tupAI is expected to see (single-digit per
+// the proposal volumes AIMarketing is expected to see (single-digit per
 // session, low thousands total) Jaccard over whitespace + symbol
 // tokens is a defensible, deterministic, zero-dependency proxy for
 // "are these two skills doing the same thing".

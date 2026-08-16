@@ -184,7 +184,7 @@ src/
 #### 3.1.1 新建 `hermes/tool_schemas.rs`
 
 ```rust
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Tool schema compiler — 把所有可用能力翻译成 OpenAI function calling schema。
 // AgentLoop 在每次 LLM 调用前用这些 schema 注入 tools 字段。
@@ -394,7 +394,7 @@ pub fn builtin_tool_schemas() -> Vec<serde_json::Value> {
 #### 3.1.2 新建 `hermes/agent_loop.rs`
 
 ```rust
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Hermes ReAct Agent Loop — 工具调用主循环。
 //
@@ -852,7 +852,7 @@ log::info!("[setup] Hermes AgentLoop 初始化完成，已注册 {} 个工具", 
 #### 3.4.1 新建 `hermes/intent_router.rs`
 
 ```rust
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // 运行时意图发现 — 在 ReAct Loop 之前运行（可选，非阻塞）。
 

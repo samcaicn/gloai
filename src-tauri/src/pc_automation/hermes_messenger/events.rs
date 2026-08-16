@@ -1,9 +1,9 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — Hermes messenger protocol types.
+// AIMarketing v5 §6.2 — Hermes messenger protocol types.
 //
 // The original Doc1 design had the desktop client talk to a remote
-// server over RabbitMQ (`pika.BlockingConnection`). tupAI has no
+// server over RabbitMQ (`pika.BlockingConnection`). AIMarketing has no
 // remote server, so we keep the **wire shape** (`ClientRequest` /
 // `ServerResponse`) but back the transport with a local
 // `tokio::sync::mpsc` channel + an in-process response log

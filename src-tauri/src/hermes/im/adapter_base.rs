@@ -6,7 +6,7 @@
 // `IMProvider::LongConn` 长连接变体：客户端作为 WS 客户端，**直连**到
 // 用户配置的目标 IM 服务器（企业微信长连接网关 / 飞书开放平台 / 钉钉
 // Stream / 微信协议网关 / QQ Bot / 用户自建的中继）。铁律：客户端→IM
-// 服务器之间不经过我们（tupAI）平台任何中转，endpoint URL 完全由
+// 服务器之间不经过我们（AIMarketing）平台任何中转，endpoint URL 完全由
 // 用户在配置里提供。**禁止使用一次性 HTTP POST (Webhook)**，所有渠道
 // 必须通过长连接收发。
 
@@ -36,13 +36,13 @@ pub struct IMBinding {
 
 /// 平台/通道类型。
 ///
-/// 所有渠道统一通过 `endpoint` 字段（WS URL）建立长连接，连接到 tupAI IM 中继网关。
+/// 所有渠道统一通过 `endpoint` 字段（WS URL）建立长连接，连接到 AIMarketing IM 中继网关。
 /// 不同平台变体（WeCom/Feishu/DingTalk）用于让中继网关识别目标平台并做相应路由。
 /// **禁止使用一次性 HTTP POST (Webhook)**。
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum IMProvider {
-    /// 通用长连接渠道。`endpoint` 是 tupAI IM 中继网关的 WS URL。
+    /// 通用长连接渠道。`endpoint` 是 AIMarketing IM 中继网关的 WS URL。
     LongConn {
         endpoint: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]

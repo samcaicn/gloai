@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // AINL 执行者角色：接收协调者 Dispatch → 本机执行 TaskNode → 广播回执。
 //

@@ -225,7 +225,7 @@ pub fn auto_fix_hermes_connection() -> Result<AutoFixResult, String> {
         }
         None => {
             let msg =
-                "`hermes` binary not on PATH. Install Hermes Agent and restart tupAI."
+                "`hermes` binary not on PATH. Install Hermes Agent and restart AIMarketing."
                     .to_string();
             log::error!("[autofix] {}", msg);
             actions.push(msg.clone());
@@ -460,7 +460,7 @@ fn error_catalogue() -> &'static [ErrorRule] {
             signature: "hermes_not_on_path",
             severity: ErrorSeverity::Critical,
             action: FixAction::Manual,
-            hint: "`hermes` is not on PATH. Install Hermes Agent and restart tupAI.",
+            hint: "`hermes` is not on PATH. Install Hermes Agent and restart AIMarketing.",
             // Use a specific Windows cmd.exe error signature rather than
             // the bare token "hermes" (which would match every log line
             // that mentions the binary by name).
@@ -470,7 +470,7 @@ fn error_catalogue() -> &'static [ErrorRule] {
             signature: "hermes_not_on_path_diag",
             severity: ErrorSeverity::Critical,
             action: FixAction::Manual,
-            hint: "`hermes` binary missing on PATH. Install Hermes Agent and restart tupAI.",
+            hint: "`hermes` binary missing on PATH. Install Hermes Agent and restart AIMarketing.",
             needle: "`hermes` is not on path",
         },
         ErrorRule {
@@ -534,7 +534,7 @@ fn error_catalogue() -> &'static [ErrorRule] {
             signature: "db_locked",
             severity: ErrorSeverity::Error,
             action: FixAction::Manual,
-            hint: "SQLite database is locked by another process. Close other tupAI instances.",
+            hint: "SQLite database is locked by another process. Close other AIMarketing instances.",
             needle: "database is locked",
         },
         ErrorRule {

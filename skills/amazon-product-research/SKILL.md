@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.amazon-product-research"
 name: "亚马逊选品调研"
 name_en: "Amazon Product Research"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

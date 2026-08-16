@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // EvolutionGate — 统一进化评估门控 (Phase 1)。
 //

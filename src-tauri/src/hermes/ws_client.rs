@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // TransportLayer — WebSocket 客户端到 127.0.0.1:8642 Hermes.
 //

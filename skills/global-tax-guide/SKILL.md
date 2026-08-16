@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.global-tax-guide"
 name: "全球税务合规指南"
 name_en: "Global Tax Compliance Guide"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

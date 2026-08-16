@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // mesh Tauri IPC 命令。前端通过 invoke('mesh_*') 调用。
 //

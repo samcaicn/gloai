@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Tauri commands — PCUI 路线（UIA + CDP + OCR 路由器 + 券商 API）
 //

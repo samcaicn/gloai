@@ -1,14 +1,14 @@
 // Copyright (c) 2026 MeeJoy
 
-// tupAI P0 §2 — Hardware detection
+// AIMarketing P0 §2 — Hardware detection
 //
-// Cross-platform hardware probe used to pick the appropriate tupAI
+// Cross-platform hardware probe used to pick the appropriate AIMarketing
 // distribution (pure CPU / integrated GPU / discrete GPU) and to derive a
 // stable hardware fingerprint that anchors the `crypto::storage` key.
 //
 // The public surface is intentionally small:
 // * `HardwareDetector::detect`  — full probe (CPU, memory, GPU, OS)
-// * `match_hardware_version`    — maps the probe to a tupAI variant
+// * `match_hardware_version`    — maps the probe to a AIMarketing variant
 // * `build_fingerprint`         — stable hash input for crypto layer
 //
 // We rely on `sysinfo` for the cross-platform basics (CPU brand / cores /

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // build-cua-driver.mjs — 开发期 cua-driver 二进制构建助手
 //

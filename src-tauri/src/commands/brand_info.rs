@@ -6,12 +6,12 @@ use serde::{Deserialize, Serialize};
 
 /// Product branding info exposed to the frontend at runtime.
 /// This allows the same binary to report different names/icons
-/// depending on the tauri.conf.json overlay (tupai vs safeopc).
+/// depending on the tauri.conf.json overlay (AIMarketing variants).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrandInfo {
-    /// Product name shown in UI (e.g., "tupai", "safeopc")
+    /// Product name shown in UI (e.g., "AIMarketing")
     pub product_name: String,
-    /// Unique identifier (e.g., "ai.tupai.desktop", "com.safeopc.desktop")
+    /// Unique identifier (e.g., "ai.aimarketing.desktop", "com.aimarketing.desktop")
     pub identifier: String,
     /// Version from Cargo.toml / tauri.conf.json
     pub version: String,
@@ -21,9 +21,9 @@ pub struct BrandInfo {
     pub short_description: String,
     /// Homepage URL
     pub homepage: String,
-    /// Deep-link scheme (e.g., "tupai", "safeopc")
+    /// Deep-link scheme (e.g., "aimarketing")
     pub deep_link_scheme: String,
-    /// Whether this is an OEM/safeopc build
+    /// Whether this is an OEM build
     pub is_oem: bool,
 }
 
@@ -33,7 +33,7 @@ pub struct BrandInfo {
 pub fn get_brand_info() -> BrandInfo {
     // These values are injected at compile time from tauri.conf.json
     // via the Tauri build process. They reflect the active brand overlay.
-    let product_name = env!("CARGO_PKG_NAME").to_string();
+    let product_name = "AIMarketing".to_string();
     let version = env!("CARGO_PKG_VERSION").to_string();
 
     // Detect OEM mode by checking if we're in safeopc config
@@ -41,20 +41,20 @@ pub fn get_brand_info() -> BrandInfo {
     let (identifier, publisher, short_description, homepage, deep_link_scheme, is_oem) =
         if cfg!(feature = "safeopc-brand") {
             (
-                "com.safeopc.desktop".to_string(),
-                "SafeOPC".to_string(),
-                "SafeOPC - Industrial-Grade AI Desktop Workspace".to_string(),
-                "https://safeopc.example.com".to_string(),
-                "safeopc".to_string(),
+                "com.aimarketing.desktop".to_string(),
+                "AIMarketing".to_string(),
+                "AIMarketing - Industrial-Grade AI Desktop Workspace".to_string(),
+                "https://aimarketing.example.com".to_string(),
+                "aimarketing".to_string(),
                 true,
             )
         } else {
             (
-                "ai.tupai.desktop".to_string(),
-                "tupAI".to_string(),
-                "tupAI - Self-Evolving AI Workspace".to_string(),
-                "https://tuptup.top".to_string(),
-                "tupai".to_string(),
+                "ai.aimarketing.desktop".to_string(),
+                "AIMarketing".to_string(),
+                "AIMarketing - Self-Evolving AI Workspace".to_string(),
+                "https://aimarketing.example.com".to_string(),
+                "aimarketing".to_string(),
                 false,
             )
         };

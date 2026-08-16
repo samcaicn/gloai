@@ -3,7 +3,7 @@ id: "xiaohongshu-publisher"
 name: xiaohongshu-publisher
 description: 小红书文案技能 — 全网热点监测 → 自动撰写 → 配图 → 发布到微信公众号草稿箱备份。输入品牌词+目标关键词+监测间隔+输出间隔即可全自动运行
 version: 1.0.0
-author: tupAI
+author: AIMarketing
 tags: [xiaohongshu, redbook, content-creation, social-media, monitor, auto-writing, marketing]
 entrypoints: [main]
 inputs:
@@ -59,7 +59,7 @@ dependencies: []
 ## 使用示例
 
 ```json
-{ "action": "monitor", "brandKeywords": "tupAI,TraceAuto", "targetKeywords": "AI 自动化,RPA,智能体", "monitorInterval": 120, "outputInterval": 1440 }
+{ "action": "monitor", "brandKeywords": "AIMarketing,AIMarketing", "targetKeywords": "AI 自动化,RPA,智能体", "monitorInterval": 120, "outputInterval": 1440 }
 { "action": "status" }
 { "action": "stop" }
 ```

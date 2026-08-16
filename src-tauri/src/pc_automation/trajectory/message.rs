@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 — `trajectory::message` 现在的内容是 UI-TARS 协议的
+// AIMarketing v5 — `trajectory::message` 现在的内容是 UI-TARS 协议的
 // "半结构化事件"层(`UiTarsMessage` 已被下沉到
 // `pc_automation::ui_tars::message`)。
 //

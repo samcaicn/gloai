@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // AINL (AI 协同生产) 任务流数据契约 — mesh 子模块。
 //

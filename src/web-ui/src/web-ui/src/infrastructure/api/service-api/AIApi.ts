@@ -30,7 +30,7 @@ export interface RemoteModelInfo {
 }
 
 /**
- * One tupAI cloud model entry surfaced by the
+ * One AIMarketing cloud model entry surfaced by the
  * `list_tupai_cloud_models` Tauri command. The command proxies to
  * the local embedded Hermes gateway's `/v1/models` endpoint, which
  * in turn sources its catalog from
@@ -220,7 +220,7 @@ export class AIApi {
   }
 
   /**
-   * Fetch the curated tupAI cloud model catalog from the local
+   * Fetch the curated AIMarketing cloud model catalog from the local
    * embedded Hermes gateway. See
    * `commands::model_sources::list_tupai_cloud_models` for the
    * backend shape.

@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.alibaba-1688-sourcing"
 name: "1688货源搜索"
 name_en: "1688 Sourcing Search"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

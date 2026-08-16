@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Tauri commands — UIRPA（技能驱动 + 自适应执行 + 加密落盘）
 //

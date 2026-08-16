@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Retry policy used between attempts of a single step or
 // between iterations of an `ErrorHandler` chain. Doc1 §2.3

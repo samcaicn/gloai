@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 
-// Hardware detection for tupAI version selection.
+// Hardware detection for AIMarketing version selection.
 //
 // The full Windows WMI / macOS system_profiler / Linux lspci probe is
 // intentionally not implemented in P0 — the routing only needs a coarse
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use sysinfo::{Disks, System};
 
-/// Coarse hardware tier used to pick the tupAI distribution.
+/// Coarse hardware tier used to pick the AIMarketing distribution.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HardwareVersion {
@@ -218,7 +218,7 @@ impl HardwareDetector {
     }
 }
 
-/// Map a hardware probe to the tupAI variant we should run.
+/// Map a hardware probe to the AIMarketing variant we should run.
 ///
 /// Rules:
 /// 1. < 2 GiB of RAM or no usable CPU → `Unsupported`.

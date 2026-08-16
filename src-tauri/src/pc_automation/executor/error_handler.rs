@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Error-handler chain. Doc1 §2.3 / §3.4.
 //

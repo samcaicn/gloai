@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 //
-// UpgradeManager — the entry point for tupAI P1 §1 (静默升级).
+// UpgradeManager — the entry point for AIMarketing P1 §1 (静默升级).
 //
 // The state machine lives in `UpgradeStatus`. The manager is a
 // standalone struct (no `tauri::State`) so callers can either
@@ -35,13 +35,13 @@ const PENDING_EVENT: &str = "upgrade_pending";
 #[allow(dead_code)]
 const FAILED_EVENT: &str = "upgrade_failed";
 
-/// tupAI P1 §1 — version priority order (low → high). Used by
+/// AIMarketing P1 §1 — version priority order (low → high). Used by
 /// `target_version_for_hardware` / `should_trigger_silent_upgrade` to
 /// decide whether a hardware upgrade qualifies for a re-download of
 /// the binary.
 pub const VERSION_PRIORITY: &[&str] = &["cpu_only", "integrated", "discrete"];
 
-/// tupAI P1 §1 — upgrade target version for the given hardware tier.
+/// AIMarketing P1 §1 — upgrade target version for the given hardware tier.
 ///
 /// Rules:
 ///   * Discrete GPU → `"discrete"`
@@ -58,7 +58,7 @@ pub fn target_version_for_hardware(hardware: &HardwareVersion) -> Option<&'stati
     }
 }
 
-/// tupAI P1 §1 — should the background loop kick off a silent
+/// AIMarketing P1 §1 — should the background loop kick off a silent
 /// download right now?
 ///
 /// Returns `true` when ALL of the following hold:
@@ -69,7 +69,7 @@ pub fn target_version_for_hardware(hardware: &HardwareVersion) -> Option<&'stati
 ///   * the target volume has ≥ 5 GiB × 1.5 = 7.5 GiB of free space.
 ///
 /// The 5 GiB estimate is a conservative upper bound on the size of a
-/// tupAI incremental package; the real delta size is read from the
+/// AIMarketing incremental package; the real delta size is read from the
 /// updater manifest at download time.
 #[allow(dead_code)]
 pub async fn should_trigger_silent_upgrade(
@@ -103,7 +103,7 @@ pub async fn should_trigger_silent_upgrade(
     true
 }
 
-/// tupAI P1 §1 — structured response returned by
+/// AIMarketing P1 §1 — structured response returned by
 /// `commands::system::get_silent_upgrade_plan`. The frontend
 /// (`UpgradePanel.jsx`) renders the `reason` / `diskFreeGb` / `idle`
 /// fields so the user can see *why* the loop is (not) running.

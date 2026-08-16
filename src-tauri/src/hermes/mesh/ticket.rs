@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // mesh 入场凭据：MeshTicket / join_code 派生。
 //

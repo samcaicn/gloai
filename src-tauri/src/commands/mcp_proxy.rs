@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Trace Auto
+// Copyright (c) 2026 AIMarketing
 //
 // MCP v2 + API proxy commands. The webview used to call
 // `https://api.tuptup.top/api/v2/mcp` and `https://api.tuptup.top/api/v1/...`
@@ -54,7 +54,7 @@ fn build_client() -> Result<Client, String> {
         .no_proxy()
         .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
         .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .user_agent(concat!("TraceAuto-Tauri/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("AIMarketing-Tauri/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| format!("reqwest client build failed: {e}"))
 }
@@ -64,7 +64,7 @@ fn build_client_with_timeout(timeout_secs: u64) -> Result<Client, String> {
         .no_proxy()
         .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
         .timeout(Duration::from_secs(timeout_secs))
-        .user_agent(concat!("TraceAuto-Tauri/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("AIMarketing-Tauri/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| format!("reqwest client build failed: {e}"))
 }

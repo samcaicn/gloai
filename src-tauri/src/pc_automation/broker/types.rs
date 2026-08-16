@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Broker types: order request / ack, position, balance, health.
 // Kept deliberately small and independent of any specific broker

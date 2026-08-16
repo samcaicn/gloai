@@ -7,8 +7,8 @@
 //
 // Why hand-rolled instead of `env_logger` / `simplelog`? Two reasons:
 //   1. We want the log next to the binary, not under
-//      `%APPDATA%\tupAI\logs`. The packaged NSIS installer drops
-//      `tupai.exe` in `C:\Program Files\tupAI\` and the user
+//      `%APPDATA%\AIMarketing\logs`. The packaged NSIS installer drops
+//      `tupai.exe` in `C:\Program Files\AIMarketing\` and the user
 //      expects `tupai.log` to land right there.
 //   2. The `log` crate is already in the dependency graph; the
 //      only thing we need to add is this small file and one
@@ -37,7 +37,7 @@ impl FileLogger {
     /// the documented "tupai.log beside tupai.exe" contract), then
     /// fall back to `%LOCALAPPDATA%\ai.tupai.desktop\tupai.log` if
     /// the install directory isn't writable — NSIS drops the app
-    /// into `C:\Program Files\Trace Auto\`, which non-admin
+    /// into `C:\Program Files\AIMarketing\`, which non-admin
     /// processes can't write to. Without the fallback the logger
     /// silently dropped every line and there was no way to diagnose
     /// runtime issues on user machines.
@@ -223,7 +223,7 @@ fn resolve_log_path() -> PathBuf {
 /// next-to-binary first (matches the documented "log beside
 /// tupai.exe" contract) and fall back to `%LOCALAPPDATA%` when
 /// the install directory isn't writable — NSIS drops the app
-/// into `C:\Program Files\Trace Auto\` which non-admin processes
+/// into `C:\Program Files\AIMarketing\` which non-admin processes
 /// can't write to, and without the fallback the panic log is
 /// silently dropped (the user only sees a brief window flash with
 /// no way to diagnose the crash).

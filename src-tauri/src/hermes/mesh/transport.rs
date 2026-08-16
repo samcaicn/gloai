@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // 安全 P2P 传输层封装：Endpoint（QUIC + NAT 穿透 + dial-by-public-key）+ Gossip（广播树）
 // + Router（协议分发）+ MemoryLookup（对端地址簿）。

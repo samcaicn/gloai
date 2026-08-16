@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — 原则库(PrincipleStore)的数据类型。
+// AIMarketing v5 §6.2 — 原则库(PrincipleStore)的数据类型。
 //
 // 设计决策(doc comment):
 //   * `Principle` 是一条"经过反思提炼、可供后续 executor 在路由前

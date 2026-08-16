@@ -1,7 +1,7 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // ============================================================================
-// 可 checkpoint 的执行图 (StateGraph) — tupAI v5 中期 8
+// 可 checkpoint 的执行图 (StateGraph) — AIMarketing v5 中期 8
 // ============================================================================
 //
 // StateGraph 是 AdaptiveExecutor 主循环的"投影":把当前 Skill 的

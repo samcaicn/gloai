@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.cross-border-expansion"
 name: "跨境市场扩张战略"
 name_en: "Cross-Border Expansion Strategy"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

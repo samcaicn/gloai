@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Tool schema compiler — 把所有可用能力翻译成 OpenAI function calling schema。
 // AgentLoop 在每次 LLM 调用前用这些 schema 注入 tools 字段。

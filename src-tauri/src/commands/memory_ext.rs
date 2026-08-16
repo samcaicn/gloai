@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // memory_clear 命令 — 清空当前应用数据库中的所有长记忆条目。
 //

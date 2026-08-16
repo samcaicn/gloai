@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Trace Auto
+// Copyright (c) 2026 AIMarketing
 //
 // Upload guard — intercepts POST requests to external URLs and
 // prompts the user for confirmation via a dialog.

@@ -109,7 +109,7 @@ fn history_records_heal_outcomes() {
     assert_eq!(history[0].step_index, 1);
 }
 
-// tupAI P2 §2 — deep 模式路由 + 凌晨 2 点归集支撑
+// AIMarketing P2 §2 — deep 模式路由 + 凌晨 2 点归集支撑
 
 #[test]
 fn set_mode_deep_round_trips_through_current_mode() {

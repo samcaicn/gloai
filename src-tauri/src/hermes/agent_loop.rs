@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Hermes ReAct Agent Loop — 工具调用主循环。
 //

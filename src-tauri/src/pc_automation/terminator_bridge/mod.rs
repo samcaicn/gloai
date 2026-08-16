@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // terminator_bridge — adapter module that bridges terminator's
 // `Desktop` / `AccessibilityEngine` to tupai's existing `UiaBackend`

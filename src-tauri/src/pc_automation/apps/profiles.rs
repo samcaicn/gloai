@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // v5 broker / finance app registry. Pure `static` data — no
 // `lazy_static`, no `OnceCell`, no runtime config. Adding a new

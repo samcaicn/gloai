@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 §3.3 — Cross-platform installed-software detection and launch.
+// AIMarketing P1 §3.3 — Cross-platform installed-software detection and launch.
 //
 // Detection strategy per platform (matches plan §3.3):
 // - Windows: enumerate HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall

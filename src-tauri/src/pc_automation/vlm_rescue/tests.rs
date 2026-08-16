@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.1 — unit tests for `vlm_rescue`.
+// AIMarketing v5 §6.1 — unit tests for `vlm_rescue`.
 //
 // Coverage:
 //   1. Fixed-template prompt assembly contains intent + step_json

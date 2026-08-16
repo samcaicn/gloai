@@ -127,7 +127,7 @@ return { cap, mid }
 // 这些是 ESM 语法在 vm.runInContext（CJS 模式）下无法解析，会报 "Unexpected token 'export'"。
 // 此处通过预处理把 `export ` 关键字剥离，把 `export default X` 转成 `__defaultExport = X`，
 // 不影响被测代码本身的运行逻辑，仅是为了在测试沙箱里能加载。
-export function loadTraceAuto(sandbox) {
+export function loadAIMarketing(sandbox) {
   let src = readProjectFile('skills/trace-auto/index.js')
   // 剥离 ESM export 语法：
   //   `export const X = ...`  → `const X = ...`（X 仍可在 IIFE 内部访问，必要时 return 出来）
@@ -177,7 +177,7 @@ return {
 export function loadFullStack() {
   const env = setupSandbox()
   loadCapabilities(env.sandbox)
-  const traceExports = loadTraceAuto(env.sandbox)
+  const traceExports = loadAIMarketing(env.sandbox)
   // capabilities.js 内部用 `const cap = {}` 重新赋值，sandbox.cap 已是新对象；
   // 重新从 sandbox 取，避免 env.cap 仍指向最初的空占位
   env.cap = env.sandbox.cap

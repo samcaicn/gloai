@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.mini-program-helper"
 name: "微信小程序开发助手"
 name_en: "WeChat Mini Program Helper"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

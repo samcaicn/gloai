@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // TerminatorOcrBackend — basic OCR backend using terminator's
 // `Desktop::ocr_screenshot` / `ocr_image_path` APIs.

@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P0 §1 — Skill execution engine (skill.md ↔ MCP)
+// AIMarketing P0 §1 — Skill execution engine (skill.md ↔ MCP)
 //
 // Re-exports the four sub-modules so the rest of the codebase can
 // reach them via `crate::skill::*` rather than the long form.

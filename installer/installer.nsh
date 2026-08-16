@@ -1,4 +1,4 @@
-; ── NSIS installer hooks for tupAI / SafeOPC ──────────────────────────
+; ── NSIS installer hooks for AIMarketing / AIMarketing ──────────────────────────
 ;
 ; Anti-false-positive measures for Windows Defender and other AVs:
 ;
@@ -79,12 +79,12 @@
   ; vendor.txt matches the actual product (tupai vs safeopc).
   FileOpen $0 "$INSTDIR\vendor.txt" w
   IfFileExists "$INSTDIR\safeopc.exe" 0 +3
-  FileWrite $0 "ProductName=SafeOPC$\r$\n"
-  FileWrite $0 "Publisher=SafeOPC$\r$\n"
+  FileWrite $0 "ProductName=AIMarketing$\r$\n"
+  FileWrite $0 "Publisher=AIMarketing$\r$\n"
   FileWrite $0 "Support=https://safeopc.example.com$\r$\n"
   Goto +4
-  FileWrite $0 "ProductName=tupAI$\r$\n"
-  FileWrite $0 "Publisher=Trace Auto$\r$\n"
+  FileWrite $0 "ProductName=AIMarketing$\r$\n"
+  FileWrite $0 "Publisher=AIMarketing$\r$\n"
   FileWrite $0 "Support=https://trace-auto.example.com$\r$\n"
   FileClose $0
 !macroend

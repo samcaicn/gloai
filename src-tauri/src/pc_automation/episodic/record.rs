@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 — 三级记忆架构的「情景记忆(episodic memory)」层。
+// AIMarketing v5 — 三级记忆架构的「情景记忆(episodic memory)」层。
 //
 // 设计决策(doc comment):
 //   * 单条 `EpRecord` 描述"某次 skill 执行中某一步的实际发生了什么":

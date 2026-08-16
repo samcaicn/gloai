@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Cua Driver UIA 增强 — 使用 Cua Driver 的 get_accessibility_tree /
 // get_window_state 作为现有 terminator UIA backend 的补充。

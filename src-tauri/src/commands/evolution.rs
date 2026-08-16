@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Hermes 自进化 IPC 命令层 (Phase 1)。
 //

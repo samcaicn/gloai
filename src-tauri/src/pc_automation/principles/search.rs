@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — 原则检索(在执行某步前快速命中相关经验)。
+// AIMarketing v5 §6.2 — 原则检索(在执行某步前快速命中相关经验)。
 //
 // 设计决策(doc comment):
 //   * 简单实现:**category 一致 + statement 子串匹配**。

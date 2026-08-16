@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Hermes 自进化 — 统一进化信号类型 (Phase 1)。
 //

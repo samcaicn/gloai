@@ -3,7 +3,7 @@ id: "kuaiju-viewer"
 name: kuaiju-viewer
 description: 快剧快捷入口 — 一键打开快剧（快捷键视频）网页 https://kuaiju2c.tuptup.top
 version: 1.0.0
-author: tupAI
+author: AIMarketing
 tags: [kuaiju, video, short-video, viewer, iframe, shortcut]
 entrypoints: [main]
 inputs:

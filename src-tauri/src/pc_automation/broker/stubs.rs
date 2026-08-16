@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Stub broker adapters. Five brokers are pre-registered by the
 // v5 router: CTP (通用), OpenD (华泰 OpenAPI), iFinD (同花顺

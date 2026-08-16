@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 — PCUI 路线（UIA + CDP + OCR 三层路由器 + 券商 API）
+// AIMarketing v5 — PCUI 路线（UIA + CDP + OCR 三层路由器 + 券商 API）
 //
 // Three-strategy router for desktop / browser automation:
 //   1. CDP   — Chrome DevTools Protocol (browser / Electron) — primary for Web domain
@@ -14,7 +14,7 @@
 // `Result<_, String>` so the public IPC surface can ferry
 // errors to the front-end verbatim without re-encoding them.
 //
-// See `tupAI 完整开发文档.md` §1.4 for the tier ordering and the
+// See `AIMarketing 完整开发文档.md` §1.4 for the tier ordering and the
 // rationale for dropping the v3 YOLO / TinyClick / ScreenParser
 // stack.
 
@@ -33,14 +33,14 @@ pub mod cua_driver;
 // `router` / `step` / backends and on
 // `pc_automation::skill::types`.
 pub mod executor;
-// tupAI v5 — 三级记忆架构(episodic 层)。
+// AIMarketing v5 — 三级记忆架构(episodic 层)。
 // 详见 `pc_automation/episodic/mod.rs`。
 // 当前: in-memory `InMemoryEpisodicStore` + SQLite stub。
 pub mod episodic;
 pub mod logger;
 pub mod ocr;
 pub mod parse_error;
-// tupAI v5 — terminator_bridge: cross-platform automation adapter.
+// AIMarketing v5 — terminator_bridge: cross-platform automation adapter.
 // Bridges terminator's `Desktop` / `UIElement` to tupai's existing
 // `UiaBackend` / `OcrBackend` traits. Replaces the Windows-only
 // `WindowsUiaBackend` with a cross-platform implementation that
@@ -48,7 +48,7 @@ pub mod parse_error;
 // (AT-SPI). See `terminator_bridge/mod.rs` for architecture details
 // and `docs/集成规范.md` for the integration specification.
 pub mod terminator_bridge;
-// tupAI v5 §6.2 — 「技能 + 反思」双层自进化(中期 6 + 7)。
+// AIMarketing v5 §6.2 — 「技能 + 反思」双层自进化(中期 6 + 7)。
 //   * `principles` — 原则库(PrincipleStore / search_relevant /
 //                    distill_from_records),自进化的"经验沉淀"层。
 //   * `reflection` — 失败聚类 + 修复建议(FailureCluster /
@@ -58,7 +58,7 @@ pub mod terminator_bridge;
 pub mod principles;
 pub mod reflection;
 pub mod router;
-// tupAI v5 — flat screen-content parser. Composes UIA + OCR
+// AIMarketing v5 — flat screen-content parser. Composes UIA + OCR
 // (Windows; macOS / Linux ship a stub) into a single
 // `Vec<ScreenElement>` for the front-end / VLM consumer.
 // See `pc_automation/screen_parser/mod.rs` for the public
@@ -75,11 +75,11 @@ pub mod screen_parser;
 // three-strategy router.
 pub mod skill;
 pub mod step;
-// tupAI v5 — UI-TARS 训练数据格式的 trajectory.jsonl 导出。
+// AIMarketing v5 — UI-TARS 训练数据格式的 trajectory.jsonl 导出。
 // 详见 `pc_automation/trajectory/mod.rs`。
 // 当前: `build_trajectory` / `export_jsonl` / `from_episodic` / `from_receipt`。
 pub mod trajectory;
-// tupAI v5 — UI-TARS 协议共享层(`UiTarsMessage` / 模板 / 解析器 /
+// AIMarketing v5 — UI-TARS 协议共享层(`UiTarsMessage` / 模板 / 解析器 /
 // LLM fallback 助手)。3 个原本各复制一份 LLM 调用模板的模块
 // (vlm_rescue / reflection / principles)现在都通过本模块的
 // `try_call_llm` 调用,uirap v2 合并精简产物。
@@ -108,7 +108,7 @@ pub mod uia;
 pub mod vlm_rescue;
 pub mod hermes_messenger;
 
-// tupAI v5 §5.4 — unit tests. Sibling-file pattern so the
+// AIMarketing v5 §5.4 — unit tests. Sibling-file pattern so the
 // main barrel stays free of `#[cfg(test)]` noise.
 #[cfg(test)]
 #[path = "pc_automation_tests.rs"]

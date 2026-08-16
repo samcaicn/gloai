@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 §3.3 — Unit tests for the cross-platform software detection
+// AIMarketing P1 §3.3 — Unit tests for the cross-platform software detection
 // helpers. The tests live in a dedicated file (per `plan.md §3.3`)
 // so the binary's behaviour is separated from the renderer /
 // dispatcher logic that consumes it.

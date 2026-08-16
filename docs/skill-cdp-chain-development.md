@@ -1,7 +1,7 @@
 # 技能 CDP→UIA→OCR→VLM 优先级链 开发说明
 
 > 版本: v1.0.0
-> 适用范围: 所有 tupAI 内置技能 + 市场下载技能
+> 适用范围: 所有 AIMarketing 内置技能 + 市场下载技能
 > 关联文档: [`src/pc_automation/router.rs`](../src-tauri/src/pc_automation/router.rs)、[`src/pc_automation/executor/selector.rs`](../src-tauri/src/pc_automation/executor/selector.rs)、[`skills/manifest.json`](../skills/manifest.json)、[`src/tauri/src/skills_embedded.rs`]
 
 ---
@@ -10,7 +10,7 @@
 
 ### 1.1 四层识别能力链
 
-tupAI 的自动化能力按性能+效果排序，形成 **CDP → UIA → OCR → VLM** 优先级链：
+AIMarketing 的自动化能力按性能+效果排序，形成 **CDP → UIA → OCR → VLM** 优先级链：
 
 | 层级 | 能力 | 速度 | 准确度 | 适用场景 | 模块 |
 |------|------|------|--------|----------|------|
@@ -314,7 +314,7 @@ id: "com.tupautochrome.skills.xxx"   # 反域名，全局唯一
 name: "技能中文名"
 name_en: "Skill English Name"
 version: "1.0.0"                      # SemVer
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 category: "mobile"                     # web | desktop | mobile | data | misc
 software_names: ["微信小程序", "WeChat DevTools"]

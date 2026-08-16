@@ -45,10 +45,10 @@
     ; Syntax: IntCmp val1 val2 jump_if_equal jump_if_val1_less jump_if_val1_greater
     IntCmp $0 19041 build_ok build_too_old build_ok
     build_too_old:
-      MessageBox MB_ICONSTOP|MB_OK "tupAI 需要 Windows 10 2004 (build 19041) 或更高版本。$\r$\n$\r$\n当前 build: $0$\r$\n$\r$\n请先升级 Windows 后再安装。"
+      MessageBox MB_ICONSTOP|MB_OK "AIMarketing 需要 Windows 10 2004 (build 19041) 或更高版本。$\r$\n$\r$\n当前 build: $0$\r$\n$\r$\n请先升级 Windows 后再安装。"
       Abort
     build_ok:
-      DetailPrint "tupAI install: Windows build $0 OK (≥ 19041)"
+      DetailPrint "AIMarketing install: Windows build $0 OK (≥ 19041)"
   ${EndIf}
 
   ; --- WebView2 runtime detection (informational) ---
@@ -57,9 +57,9 @@
     ReadRegStr $0 HKCU "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
   ${EndIf}
   ${If} $0 == ""
-    DetailPrint "tupAI install: WebView2 runtime not detected — embedBootstrapper will download it (requires internet)."
+    DetailPrint "AIMarketing install: WebView2 runtime not detected — embedBootstrapper will download it (requires internet)."
   ${Else}
-    DetailPrint "tupAI install: WebView2 runtime detected (version $0)."
+    DetailPrint "AIMarketing install: WebView2 runtime detected (version $0)."
   ${EndIf}
 !macroend
 
@@ -95,12 +95,12 @@
   ; ── Write vendor metadata file ─────────────────────────────────────
   FileOpen $0 "$INSTDIR\vendor.txt" w
   IfFileExists "$INSTDIR\safeopc.exe" 0 +3
-  FileWrite $0 "ProductName=SafeOPC$\r$\n"
-  FileWrite $0 "Publisher=SafeOPC$\r$\n"
+  FileWrite $0 "ProductName=AIMarketing$\r$\n"
+  FileWrite $0 "Publisher=AIMarketing$\r$\n"
   FileWrite $0 "Support=https://safeopc.example.com$\r$\n"
   Goto +4
-  FileWrite $0 "ProductName=tupAI$\r$\n"
-  FileWrite $0 "Publisher=Trace Auto$\r$\n"
+  FileWrite $0 "ProductName=AIMarketing$\r$\n"
+  FileWrite $0 "Publisher=AIMarketing$\r$\n"
   FileWrite $0 "Support=https://trace-auto.example.com$\r$\n"
   FileClose $0
 !macroend

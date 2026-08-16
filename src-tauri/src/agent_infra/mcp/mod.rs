@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Aggregate module for `@agent-infra/mcp/*` (Rust port).
 // Only `im_bridge` remains wired into the Tauri invoke layer; the

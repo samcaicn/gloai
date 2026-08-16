@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // 录制器核心实现
 //
@@ -314,7 +314,7 @@ impl Recorder {
 fn extract_app_name(title: &str, url: &str) -> String {
     // 优先从title提取
     // 例如: "同花顺 iFinD - ..." -> "同花顺 iFinD"
-    // 例如: "Trace Auto - tupAI" -> "Trace Auto"
+    // 例如: "AIMarketing - AIMarketing" -> "AIMarketing"
     if !title.is_empty() {
         // 取第一个"-"之前的部分
         let parts: Vec<&str> = title.splitn(2, '-').collect();

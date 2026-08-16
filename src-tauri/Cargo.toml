@@ -1,11 +1,11 @@
 [package]
 name = "tupai"
 version = "1.9.6"
-description = "tupAI - AI-Powered Desktop Workspace"
-authors = ["tupAI"]
+description = "AIMarketing - AI-Powered Desktop Workspace"
+authors = ["AIMarketing"]
 license = "Proprietary"
 repository = "https://github.com/meespace/hermes-slate-desk"
-homepage = "https://tupai.example.com"
+homepage = "https://aimarketing.example.com"
 edition = "2021"
 rust-version = "1.91"
 
@@ -171,7 +171,7 @@ socket2 = "0.5"
 # (POST /api/v2/mcp action=update.check) — no more direct /api/update/ HTTP
 # calls that caused 401 Unauthorized due to missing Bearer token injection.
 tauri-plugin-store = "2"
-# tauri-plugin-screenshots removed in tupAI v5 §5.2 (vision pipeline
+# tauri-plugin-screenshots removed in AIMarketing v5 §5.2 (vision pipeline
 # retired; PCUI route captures via OS-native APIs in pc_automation)
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-os = "2"
@@ -247,7 +247,7 @@ tauri-plugin-single-instance = "2"
 # for enumerating installed software via the registry.
 #
 # Windows idle detection only (vision pipeline
-# has been replaced by `pc_automation` per tupAI v5 §1.1; only the
+# has been replaced by `pc_automation` per AIMarketing v5 §1.1; only the
 # idle-detect side-channel remains)
 [target.'cfg(target_os = "windows")'.dependencies]
 winreg = "0.52"

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Skill registry: atomically swap a running skill
 // to a newer, server-evaluated version, with inbox buffering for

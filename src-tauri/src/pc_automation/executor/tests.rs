@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Unit tests for the executor tree. Sibling-file pattern (this
 // file is `#[path]`-included from `executor/mod.rs` so the

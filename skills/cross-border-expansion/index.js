@@ -38,7 +38,7 @@ const FLOWCHART = {
   judgments: [],
   selectors: {},
   variables: { input: { type: 'object' } },
-  metadata: { createdAt: '2026-07-26T00:00:00Z', updatedAt: '2026-07-26T00:00:00Z', author: 'tupAI' },
+  metadata: { createdAt: '2026-07-26T00:00:00Z', updatedAt: '2026-07-26T00:00:00Z', author: 'AIMarketing' },
 }
 
 const MARKET_DATA = {

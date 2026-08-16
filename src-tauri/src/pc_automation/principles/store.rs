@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — `PrincipleStore` 抽象 + `InMemoryPrincipleStore` 默认实现。
+// AIMarketing v5 §6.2 — `PrincipleStore` 抽象 + `InMemoryPrincipleStore` 默认实现。
 //
 // 设计决策(doc comment):
 //   * trait 暴露 4 个方法:`list` / `get` / `add` / `validate`。

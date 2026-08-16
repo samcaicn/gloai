@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // HermesDb — unified sqlite persistence layer for the hermes core
 // modules (memory_ops / evolution_stats / trajectory_store /

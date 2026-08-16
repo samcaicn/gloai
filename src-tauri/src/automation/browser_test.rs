@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 §3.4 — Unit tests for the CDP browser-automation surface.
+// AIMarketing P1 §3.4 — Unit tests for the CDP browser-automation surface.
 //
 // The tests deliberately do NOT launch a real browser; chromiumoxide
 // requires Chrome to be installed and would make the unit-test suite

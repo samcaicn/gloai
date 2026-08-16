@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // hermes::mesh —— 基于安全设计的 P2P 组网子模块。
 //

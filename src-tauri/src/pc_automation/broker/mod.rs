@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Broker integration sub-module. This is the *real money* tier:
 // every type here is part of the trading surface area, and the

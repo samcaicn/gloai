@@ -89,19 +89,19 @@ pub async fn list_tupai_cloud_models() -> Result<TupaiCloudModelList, String> {
         .get(&url)
         .send()
         .await
-        .map_err(|e| format!("tupAI 云端模型列表请求失败 ({url}): {e}"))?;
+        .map_err(|e| format!("AIMarketing 云端模型列表请求失败 ({url}): {e}"))?;
 
     if !response.status().is_success() {
         let status = response.status();
         return Err(format!(
-            "tupAI 云端模型列表返回非 2xx 状态: {status} ({url})"
+            "AIMarketing 云端模型列表返回非 2xx 状态: {status} ({url})"
         ));
     }
 
     let envelope: HermesListModelsEnvelope = response
         .json()
         .await
-        .map_err(|e| format!("tupAI 云端模型列表响应解析失败: {e}"))?;
+        .map_err(|e| format!("AIMarketing 云端模型列表响应解析失败: {e}"))?;
 
     let mut out: Vec<TupaiCloudModel> = Vec::new();
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();

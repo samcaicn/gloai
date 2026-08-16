@@ -1,10 +1,10 @@
 {
-  "productName": "tupai",
-  "identifier": "ai.tupai.desktop",
+  "productName": "AIMarketing",
+  "identifier": "ai.aimarketing.desktop",
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["tupai"]
+        "schemes": ["aimarketing"]
       }
     }
   },
@@ -12,11 +12,11 @@
     "macOSPrivateApi": true
   },
   "bundle": {
-    "publisher": "tupAI",
-    "shortDescription": "tupAI - AI-Powered Desktop Workspace",
-    "longDescription": "tupAI is an AI-powered desktop workspace integrating a multi-agent Hermes backend, an extensible terminal, notebook, and a self-healing skill engine into a single transparent Tauri shell.",
-    "copyright": "Copyright (c) 2026 tupAI",
-    "homepage": "https://tupai.example.com",
+    "publisher": "AIMarketing",
+    "shortDescription": "AIMarketing - AI-Powered Desktop Workspace",
+    "longDescription": "AIMarketing is an AI-powered desktop workspace integrating a multi-agent Hermes backend, an extensible terminal, notebook, and a self-healing skill engine into a single transparent Tauri shell.",
+    "copyright": "Copyright (c) 2026 AIMarketing",
+    "homepage": "https://aimarketing.example.com",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

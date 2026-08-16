@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Profile patch layer (deepseek-harness style "bundle + user patch").
 //

@@ -268,7 +268,7 @@ impl DingTalkAdapter {
             .connect_timeout(Duration::from_secs(5))
             .timeout(Duration::from_secs(10))
             .no_proxy()
-            .user_agent(concat!("tupAI/", env!("CARGO_PKG_VERSION")))
+            .user_agent(concat!("AIMarketing/", env!("CARGO_PKG_VERSION")))
             .build()
             .map_err(|e| format!("dingtalk access_token http client build: {}", e))?;
 
@@ -361,7 +361,7 @@ impl DingTalkAdapter {
             .connect_timeout(Duration::from_secs(5))
             .timeout(bootstrap_timeout)
             .no_proxy()
-            .user_agent(concat!("tupAI/", env!("CARGO_PKG_VERSION")))
+            .user_agent(concat!("AIMarketing/", env!("CARGO_PKG_VERSION")))
             .build()
             .map_err(|e| format!("http client build: {}", e))?;
 
@@ -593,7 +593,7 @@ impl IMAdapter for DingTalkAdapter {
                             .connect_timeout(Duration::from_secs(5))
                             .timeout(bootstrap_timeout)
                             .no_proxy()
-                            .user_agent(concat!("tupAI/", env!("CARGO_PKG_VERSION")))
+                            .user_agent(concat!("AIMarketing/", env!("CARGO_PKG_VERSION")))
                             .build()
                         {
                             Ok(c) => c,
@@ -1123,7 +1123,7 @@ impl IMAdapter for DingTalkAdapter {
             .connect_timeout(Duration::from_secs(5))
             .timeout(Duration::from_secs(15))
             .no_proxy()
-            .user_agent(concat!("tupAI/", env!("CARGO_PKG_VERSION")))
+            .user_agent(concat!("AIMarketing/", env!("CARGO_PKG_VERSION")))
             .build()
             .map_err(|e| format!("dingtalk send http client build: {}", e))?;
 

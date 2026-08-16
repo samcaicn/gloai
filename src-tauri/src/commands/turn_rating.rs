@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Turn Rating Commands — Hermes 自动升级机制 IPC 层。
 //

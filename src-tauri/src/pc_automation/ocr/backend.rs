@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // OCR backend trait + health envelope. The health struct is what
 // the IPC layer surfaces to the front-end so the Settings screen

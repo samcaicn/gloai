@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.1 — VLM rescue facade.
+// AIMarketing v5 §6.1 — VLM rescue facade.
 //
 // v2 model (uirap改造技术方案.md §6.1):
 //   The rescue is the **pre-error escalation** path. The router

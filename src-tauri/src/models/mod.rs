@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 
-// tupAI P0 §3 — Model path management
+// AIMarketing P0 §3 — Model path management
 //
 // The model directory holds the `.gguf` (and friends) checkpoints the
 // local model server loads. Two operations are the user-facing surface:

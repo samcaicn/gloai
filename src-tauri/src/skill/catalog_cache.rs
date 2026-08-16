@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Skill catalog cache — a local mirror of the remote skill
 // marketplace, used as a fallback when the upstream MCP server
@@ -14,7 +14,7 @@
 //   "version": 1,
 //   "last_refresh_at": 1700000000,
 //   "entries": [
-//     { "skillId": "trace-auto", "name": "Trace Auto",
+//     { "skillId": "trace-auto", "name": "AIMarketing",
 //       "version": "6.0.0", "tags": ["trae","automation"],
 //       "description": "...",
 //       "lastSeenAt": 1700000000, "source": "community" }

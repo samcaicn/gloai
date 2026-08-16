@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P0 §1 — In-memory MCP runtime.
+// AIMarketing P0 §1 — In-memory MCP runtime.
 //
 // The `McpRuntime` owns a decrypted `SkillManifest` in process memory
 // and is the only place that does so. Once dropped, the manifest

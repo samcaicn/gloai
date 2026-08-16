@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 //
-// Pre-conditions for silent upgrade (tupAI P1 §1):
+// Pre-conditions for silent upgrade (AIMarketing P1 §1):
 //   1. system is idle (CPU < 30% & mem < 60%) — uses `wmic` on
 //      Windows, falls back to `ps` on macOS / Linux. If hardware
 //      detection wires `sysinfo` later, swap to it.
@@ -108,7 +108,7 @@ pub(crate) fn is_system_idle_blocking() -> bool {
     // Cross-platform memory pressure probe via `sysinfo`
     // (already in Cargo.toml). When used/total exceeds 80% we
     // treat the system as "not idle" and refuse the upgrade
-    // (tupAI P1 §1). Probe is sync but cheap.
+    // (AIMarketing P1 §1). Probe is sync but cheap.
     let mut sys = sysinfo::System::new();
     sys.refresh_memory();
     let total = sys.total_memory();
@@ -122,7 +122,7 @@ pub(crate) fn is_system_idle_blocking() -> bool {
 // public API for upgrade preconditions; invoked from JS in next PR
 #[allow(dead_code)]
 /// Returns true when the system is considered idle enough to silently
-/// download an upgrade (tupAI P1 §1). The thresholds match
+/// download an upgrade (AIMarketing P1 §1). The thresholds match
 /// `plan.md §3.5`:
 ///   - average CPU usage < 30%
 ///   - physical memory in use < 60%
@@ -135,7 +135,7 @@ pub(crate) fn is_system_idle_blocking() -> bool {
 /// the side of allowing the upgrade so the auto-upgrade path stays
 /// unblocked.
 pub async fn is_system_idle() -> bool {
-    // TODO(tupAI P1 §1): swap the shell-based probe for a Rust
+    // TODO(AIMarketing P1 §1): swap the shell-based probe for a Rust
     // implementation that reads `/proc/stat` (Linux), `sysctl` (macOS)
     // or PDH (Windows) directly via `std::process` / `windows` crate.
     // We deliberately avoid pulling in `sysinfo` here so the upgrade
@@ -162,7 +162,7 @@ pub async fn is_system_idle() -> bool {
 /// `Ok(0)`) is treated as "unknown, assume enough" so the user is
 /// not blocked by a missing `wmic` / `df` binary in dev containers.
 pub async fn has_enough_disk_for_upgrade(required_gb: f64, path: &Path) -> bool {
-    // TODO(tupAI P1 §1): cross-platform `statvfs` / `GetDiskFreeSpaceExW`
+    // TODO(AIMarketing P1 §1): cross-platform `statvfs` / `GetDiskFreeSpaceExW`
     // probe. The shell-based `df` / `Get-PSDrive` calls are good
     // enough for Windows + macOS + Linux today; on a stripped
     // container (no `df` binary) we just return `true` so the upgrade

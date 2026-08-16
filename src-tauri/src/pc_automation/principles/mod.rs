@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — 「技能 + 反思」双层自进化(中期 7):原则库。
+// AIMarketing v5 §6.2 — 「技能 + 反思」双层自进化(中期 7):原则库。
 //
 // 父模块: `pc_automation::principles`
 // 子模块:

@@ -1,9 +1,9 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // UIA (Windows UI Automation) sub-module. The structured automation
 // tier in the v5 stack — fastest (<1ms) and 100% accurate when the
 // target process exposes AutomationId / Name. See
-// `tupAI 完整开发文档.md` §0 / §1 for the tier ordering.
+// `AIMarketing 完整开发文档.md` §0 / §1 for the tier ordering.
 
 pub mod backend;
 pub mod stub;

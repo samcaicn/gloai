@@ -325,12 +325,12 @@
     }
   },
   "tupaiCloud": {
-    "sectionTitle": "tupAI 云端模型",
+    "sectionTitle": "AIMarketing 云端模型",
     "sectionDescription": "展示 ai.tuptup.top 当前支持的模型列表（只读），由本地 Hermes 网关代理返回",
     "refresh": "刷新",
     "active": "当前已选",
     "empty": "未拉到任何模型，请稍后重试或检查网关状态",
-    "loadFailed": "拉取 tupAI 云端模型失败：{{error}}",
+    "loadFailed": "拉取 AIMarketing 云端模型失败：{{error}}",
     "providerGroup": "{{provider}} · {{count}} 个模型",
     "noProvider": "其他"
   },

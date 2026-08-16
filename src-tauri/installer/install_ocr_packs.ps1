@@ -1,4 +1,4 @@
-# Copyright (c) 2026 tupAI
+# Copyright (c) 2026 AIMarketing
 #
 # install_ocr_packs.ps1 — silently installs the Windows OCR
 # language pack(s) that the Windows.Media.Ocr runtime needs.

@@ -1,10 +1,10 @@
 {
-  "productName": "safeopc",
-  "identifier": "com.safeopc.desktop",
+  "productName": "AIMarketing",
+  "identifier": "com.aimarketing.desktop",
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["safeopc"]
+        "schemes": ["aimarketing"]
       }
     }
   },
@@ -12,11 +12,11 @@
     "macOSPrivateApi": true
   },
   "bundle": {
-    "publisher": "SafeOPC",
-    "shortDescription": "SafeOPC - Industrial-Grade AI Desktop Workspace",
-    "longDescription": "SafeOPC is the OEM edition of the tupAI workspace: a multi-agent Hermes backend, an extensible terminal, notebook, and a self-healing skill engine, packaged for SafeOPC production tenants.",
-    "copyright": "Copyright (c) 2026 SafeOPC",
-    "homepage": "https://safeopc.example.com",
+    "publisher": "AIMarketing",
+    "shortDescription": "AIMarketing - Industrial-Grade AI Desktop Workspace",
+    "longDescription": "AIMarketing is the OEM edition of the AIMarketing workspace: a multi-agent Hermes backend, an extensible terminal, notebook, and a self-healing skill engine, packaged for AIMarketing production tenants.",
+    "copyright": "Copyright (c) 2026 AIMarketing",
+    "homepage": "https://aimarketing.example.com",
     "icon": [
       "icons-safeopc/32x32.png",
       "icons-safeopc/128x128.png",
@@ -30,7 +30,7 @@
       },
       "nsis": {
         "installerIcon": "icons-safeopc/icon.ico",
-        "startMenuFolder": "SafeOPC",
+        "startMenuFolder": "AIMarketing",
         "compression": "lzma",
         "installMode": "currentUser",
         "installerHooks": "installer/installer.nsh"

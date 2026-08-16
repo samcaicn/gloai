@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // UIRPA public API for the `pc_automation::skill`
 // tree. Mirrors the `pc_automation/mod.rs` barrel pattern: the

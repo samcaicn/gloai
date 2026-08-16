@@ -116,7 +116,7 @@ skills/
 ```json
 {
   "id": "trace-auto",
-  "name": "Trace Auto",
+  "name": "AIMarketing",
   "version": "6.0.0",
   "standard": "v1",
   "file": "trace-auto/index.js",
@@ -130,7 +130,7 @@ skills/
 
 | id | 名称 | 版本 | standard | 说明 |
 |----|------|------|----------|------|
-| `trace-auto` | Trace Auto | 6.0.0 | v1 | Trae IDE 自动化（参考实例） |
+| `trace-auto` | AIMarketing | 6.0.0 | v1 | Trae IDE 自动化（参考实例） |
 | `wechat-publisher` | 公众号文章技能 | 3.0.0 | — | 7 种写作框架 + 发布 |
 | `xiaohongshu-publisher` | 小红书文案技能 | 1.0.0 | — | 热点监测 + 小红书文案 |
 | `kuaiju-viewer` | 快剧 | 1.0.0 | — | 快捷键视频打开 |

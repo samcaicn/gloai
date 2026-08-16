@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.1 — UI-TARS 协议共享层。
+// AIMarketing v5 §6.1 — UI-TARS 协议共享层。
 //
 // 父模块: `pc_automation::ui_tars`
 // 子模块:

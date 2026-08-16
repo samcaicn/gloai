@@ -1,7 +1,7 @@
 /**
  * TupaiCloudModelsSection
  *
- * Read-only catalog of the tupAI cloud models that the local
+ * Read-only catalog of the AIMarketing cloud models that the local
  * embedded Hermes gateway exposes via `/v1/models`. The catalog
  * is the curated list baked into `hermes::model_catalog`, so
  * anything we render here is guaranteed to be a model the
@@ -59,7 +59,7 @@ export const TupaiCloudModelsSection: React.FC = () => {
       setSource(result.source ?? '');
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      log.warn('Failed to fetch tupAI cloud models', { error: message });
+      log.warn('Failed to fetch AIMarketing cloud models', { error: message });
       setError(message);
     } finally {
       setLoading(false);

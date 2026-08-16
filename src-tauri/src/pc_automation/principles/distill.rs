@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — 离线原则提炼器(v6 第一阶段落地)。
+// AIMarketing v5 §6.2 — 离线原则提炼器(v6 第一阶段落地)。
 //
 // 设计决策(doc comment):
 //   * 本期真正打通"输入 → 调 LLM → 解析

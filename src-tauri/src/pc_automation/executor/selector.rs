@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Multi-priority selector. Doc1 §2.2 / §5 / uirap改造技术方案.md §4.
 //

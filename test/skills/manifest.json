@@ -5,7 +5,7 @@
   "skills": [
     {
       "id": "trace-auto",
-      "name": "Trace Auto",
+      "name": "AIMarketing",
       "version": "5.0.0",
       "file": "trace-auto.js",
       "description": "Trae IDE 自动化全部功能：驱动循环(start/stop/status) + CDP检测(ensure_cdp/targets) + 页面读取(read_state/wait_idle) + 页面操作(click/type_and_send) + 条件回复(set_conditions/check_and_reply)",

@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 — 后台录制模块
+// AIMarketing P1 — 后台录制模块
 //
 // 自动监测本地支持CDP/UIA的软件，录制用户操作步骤，
 // 每5秒自动去重后存储在软件名的活动入口目录。

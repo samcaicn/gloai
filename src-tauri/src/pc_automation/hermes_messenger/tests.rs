@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — unit tests for `hermes_messenger`.
+// AIMarketing v5 §6.2 — unit tests for `hermes_messenger`.
 //
 // At least 3 tests, as required:
 //   1. ClientRequest serialize / deserialize round-trip — the wire

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Stub CDP backend. The real implementation will be wired in a
 // follow-up PR that adds the `chromiumoxide` glue to

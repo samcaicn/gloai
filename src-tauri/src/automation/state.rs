@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 §2 — Automation execution state machine.
+// AIMarketing P1 §2 — Automation execution state machine.
 //
 // `ExecutionStatus` is the canonical state for an in-flight skill
 // execution. The state is shared across the engine, the floating

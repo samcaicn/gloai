@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 — `EpisodicStore` 抽象 + `InMemoryEpisodicStore` 实现 +
+// AIMarketing v5 — `EpisodicStore` 抽象 + `InMemoryEpisodicStore` 实现 +
 // `SqliteEpisodicStore` 桩。
 //
 // 设计决策(doc comment):

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Stub OCR backend. The real implementation will be wired in a
 // follow-up PR that adds `paddleocr` / `paddlepaddle` (Rust

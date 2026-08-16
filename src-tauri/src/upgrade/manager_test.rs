@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 //
-// Unit tests for tupAI P1 §1 — upgrade manager.
+// Unit tests for AIMarketing P1 §1 — upgrade manager.
 //
 // We intentionally avoid touching the network or disk in these
 // tests. The manager's preconditions are pure functions on the

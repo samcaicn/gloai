@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // 运行时意图发现 — 在 ReAct Loop 之前运行（可选，非阻塞）。
 //

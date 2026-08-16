@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Per-application profiles. Each profile tells the router which
 // tier to prefer and what string to match against when the

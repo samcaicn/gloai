@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 — `EpisodicStore` 之上的查询 API 自由函数集合。
+// AIMarketing v5 — `EpisodicStore` 之上的查询 API 自由函数集合。
 //
 // 设计决策(doc comment):
 //   * query 是「读」操作,实现为模块级自由函数,而不是 trait 方法。

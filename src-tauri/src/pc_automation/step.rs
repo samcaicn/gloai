@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Step / outcome / error vocabulary used by the domain-aware
 // router. Pure data — no I/O — so it can be freely shared

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Broker adapter trait. Object-safe (no associated types, no
 // generic methods) so the router can stash adapters behind

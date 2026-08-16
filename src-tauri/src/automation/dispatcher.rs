@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI P1 §3 — Router for `preferred_execution_type`.
+// AIMarketing P1 §3 — Router for `preferred_execution_type`.
 //
 // Given a `SkillManifest` (from A2's `skill::manifest`), pick the right
 // executor: either launch a system binary or drive a CDP browser.

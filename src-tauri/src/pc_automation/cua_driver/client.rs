@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // CuaDriverClient — MCP JSON-RPC 2.0 客户端，通过 stdio 与 cua-driver
 // sidecar 进程通信。

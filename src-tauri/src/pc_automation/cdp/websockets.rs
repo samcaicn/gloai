@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // CDP backend — real implementation over the Chrome DevTools
 // Protocol. Talks raw WebSocket to a Chromium-based browser

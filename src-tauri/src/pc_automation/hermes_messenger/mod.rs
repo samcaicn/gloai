@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — Hermes messenger public surface.
+// AIMarketing v5 §6.2 — Hermes messenger public surface.
 //
 // Re-exports the protocol types + the in-process bus. The follow-up
 // PR that adds the dispatch task will live entirely inside

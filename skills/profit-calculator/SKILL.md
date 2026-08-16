@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.profit-calculator"
 name: "跨境利润计算器"
 name_en: "Cross-Border Profit Calculator"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

@@ -2,7 +2,7 @@
 
 // Encrypted local storage with AES-256-GCM + Argon2id key derivation.
 //
-// This is the P0 §4 layer that the rest of tupAI (skill runtime, model
+// This is the P0 §4 layer that the rest of AIMarketing (skill runtime, model
 // catalog, ...) will read/write through. We intentionally keep the API
 // surface tiny:
 //

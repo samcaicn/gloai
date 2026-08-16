@@ -1,4 +1,4 @@
-// Trace Auto v6 — 标准化为模板参考实例
+// AIMarketing v6 — 标准化为模板参考实例
 // =============================================================================
 // 关键升级（v6 标准化）：
 //   1. 移除 cap.recognize / cap.flowchart / _control 临时桩 → 改用 capabilities.js 标准能力
@@ -68,7 +68,7 @@ const FLOWCHART = {
     maxRounds: { type: 'number', default: 50 },
     recognition: { type: 'array', items: 'string', default: ['cdp', 'uia', 'ocr', 'vlm'] },
   },
-  metadata: { createdAt: '2026-06-29T00:00:00Z', updatedAt: '2026-06-29T00:00:00Z', author: 'tupAI' },
+  metadata: { createdAt: '2026-06-29T00:00:00Z', updatedAt: '2026-06-29T00:00:00Z', author: 'AIMarketing' },
 }
 
 // ── 默认识别降级链顺序（与 FLOWCHART.recognition 一致） ───────────────────
@@ -107,7 +107,7 @@ async function searchSoftware(params) {
     query: q,
     skills: [{
       skill_id: 'trace-auto',
-      name: 'Trace Auto',
+      name: 'AIMarketing',
       version: FLOWCHART.version,
       description: '内置回退：服务器未返回结果，使用本地 trace-auto 技能',
     }],

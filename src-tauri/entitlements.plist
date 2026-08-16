@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  macOS Entitlements for tupAI / SafeOPC desktop app.
+  macOS Entitlements for AIMarketing / AIMarketing desktop app.
 
   Referenced from tauri.safeopc.conf.json `bundle.macOS.entitlements`.
   Without these entitlements, Hardened Runtime

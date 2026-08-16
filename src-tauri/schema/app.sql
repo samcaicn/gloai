@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE INDEX IF NOT EXISTS idx_memories_id ON memories (id);
 CREATE INDEX IF NOT EXISTS idx_tasks_id ON tasks (id);
 
--- === tupAI v5 — skill family-tree / run history / adoption rate ===
+-- === AIMarketing v5 — skill family-tree / run history / adoption rate ===
 
 CREATE TABLE IF NOT EXISTS skill_versions (
   skill_id        TEXT NOT NULL,

@@ -1,6 +1,6 @@
 // Copyright (c) 2026 MeeJoy
 //
-// tupAI P1 — 本地定时任务 store + 调度器
+// AIMarketing P1 — 本地定时任务 store + 调度器
 //
 // 设计目标: 应用进程内自管 cron 任务, 不依赖远端 Dashboard
 //   - 任务 + 执行历史持久化到 `<app_data>/tupai/cron/` (jobs.json + runs/<id>.jsonl)
@@ -736,7 +736,7 @@ async fn run_cron_react(
     // 优先走 AgentLoop ReAct 循环（支持 tooling call）。
     if let Some(agent_loop) = app.try_state::<Arc<AgentLoop>>() {
         let agent_loop = agent_loop.inner().clone();
-        let system_prompt = "你是 tupAI 桌面助手，正在执行定时任务。请根据指令内容判断是否需要调用工具（execute_skill 执行技能 / mcp_call 调用 MCP / memory_search 搜索记忆 / vlm_query 视觉查询等）。如果指令需要执行技能或查询信息，请主动调用工具完成；如果是纯文本回复，直接回答。";
+        let system_prompt = "你是 AIMarketing 桌面助手，正在执行定时任务。请根据指令内容判断是否需要调用工具（execute_skill 执行技能 / mcp_call 调用 MCP / memory_search 搜索记忆 / vlm_query 视觉查询等）。如果指令需要执行技能或查询信息，请主动调用工具完成；如果是纯文本回复，直接回答。";
         let mut messages = vec![
             VLMMessage {
                 role: "system".to_string(),

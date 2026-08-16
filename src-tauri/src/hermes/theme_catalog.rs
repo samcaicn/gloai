@@ -32,8 +32,8 @@ pub static THEMES: Lazy<Vec<ThemeEntry>> = Lazy::new(|| {
         ThemeEntry { id: "hermes-light".to_string(), name: "Hermes Light".to_string(), accent: "#0a84ff".to_string(), mode: ThemeMode::Light },
         ThemeEntry { id: "hermes-dark".to_string(), name: "Hermes Dark".to_string(), accent: "#5e5ce6".to_string(), mode: ThemeMode::Dark },
         ThemeEntry { id: "hermes-auto".to_string(), name: "System".to_string(), accent: "#34c759".to_string(), mode: ThemeMode::Auto },
-        ThemeEntry { id: "tupai-aurora".to_string(), name: "tupAI Aurora".to_string(), accent: "#bf5af2".to_string(), mode: ThemeMode::Dark },
-        ThemeEntry { id: "tupai-paper".to_string(), name: "tupAI Paper".to_string(), accent: "#ff9f0a".to_string(), mode: ThemeMode::Light },
+        ThemeEntry { id: "tupai-aurora".to_string(), name: "AIMarketing Aurora".to_string(), accent: "#bf5af2".to_string(), mode: ThemeMode::Dark },
+        ThemeEntry { id: "tupai-paper".to_string(), name: "AIMarketing Paper".to_string(), accent: "#ff9f0a".to_string(), mode: ThemeMode::Light },
     ]
 });
 

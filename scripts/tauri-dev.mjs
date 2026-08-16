@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // tauri-dev.mjs — tauri dev / build 调用的 sccache 加速包装
 //

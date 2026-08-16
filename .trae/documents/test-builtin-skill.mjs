@@ -60,7 +60,7 @@ globalThis.window = {
           { id: 'builtin-wechat-publisher', name: '公众号文章技能', code: 'async function handler(){return {ok:true}}' },
           { id: 'builtin-xiaohongshu-publisher', name: '小红书文案技能', code: 'async function handler(){return {ok:true}}' },
           { id: 'builtin-auto-product-comm', name: '自动选品智能沟通', code: 'async function handler(){return {ok:true}}' },
-          { id: 'builtin-trace-auto', name: 'Trace Auto', code: 'async function handler(){return {ok:true}}' },
+          { id: 'builtin-trace-auto', name: 'AIMarketing', code: 'async function handler(){return {ok:true}}' },
           { id: 'builtin-safeopc-skill-tester', name: '技能自动测试器', code: 'async function handler(){return {ok:true}}' },
         ];
         return skills;

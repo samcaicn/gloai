@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — 为失败聚类生成修复建议 selector。
+// AIMarketing v5 §6.2 — 为失败聚类生成修复建议 selector。
 //
 // 设计决策(doc comment):
 //   * 调用风格与 `vlm_rescue::analyzer::build_dynamic_prompt` 一致:

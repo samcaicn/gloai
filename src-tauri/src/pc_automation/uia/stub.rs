@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Stub UIA backend for non-Windows platforms (macOS, Linux).
 // The real implementation lives in `uia/windows.rs` and is gated

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Tauri commands — 嵌入式浏览器面板（BrowserPanel）后端桥接。
 //

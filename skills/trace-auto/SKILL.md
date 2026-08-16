@@ -1,11 +1,11 @@
 ---
 id: "com.tupautochrome.skills.trace-auto"   # 反域名，全局唯一
-name: "Trace Auto 自动化"
-name_en: "Trace Auto"
+name: "AIMarketing 自动化"
+name_en: "AIMarketing"
 version: "6.0.0"                              # SemVer
-author: "tupAI"
+author: "AIMarketing"
 license: "Apache-2.0"
-homepage: "https://github.com/tupAI/tupautochrome"
+homepage: "https://github.com/AIMarketing/tupautochrome"
 icon: "assets/icon.png"
 
 # 分类与搜索
@@ -85,7 +85,7 @@ signing:
   publicKey: ""
 ---
 
-# Trace Auto (v6)
+# AIMarketing (v6)
 
 Trae IDE 自动化技能。把「软件搜索 → 执行 → 迷你悬浮窗 → 单步/暂停/停止 → 回看流程图」整条线封装为一份标准技能文件。识别能力按 `CDP > UIA > OCR > VLM` 链式降级，并对外暴露流程图与判断节点，方便 UI 端在停止后完整重放。
 

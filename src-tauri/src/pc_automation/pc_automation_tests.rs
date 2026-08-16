@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §5.4 — unit tests for the `pc_automation` module
+// AIMarketing v5 §5.4 — unit tests for the `pc_automation` module
 // tree. Covers the v5 PCUI route acceptance criteria:
 //   * UIA selector parser — strict, prefix-required, all
 //     fields optional but validated

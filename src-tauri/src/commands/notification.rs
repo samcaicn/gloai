@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // 系统通知命令 — 任务完成展示（OS 级桌面通知）。
 //

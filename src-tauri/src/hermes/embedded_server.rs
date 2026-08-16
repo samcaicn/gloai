@@ -87,7 +87,7 @@ const HERMES_VERSION: &str = env!("CARGO_PKG_VERSION");
 const DEFAULT_GATEWAY_PORT: u16 = 8642;
 const DEFAULT_DASHBOARD_PORT: u16 = 9119;
 
-/// tupAI 云端基址(单一来源:跟 tauri.conf.json / tauri.tupai.conf.json
+/// AIMarketing 云端基址(单一来源:跟 tauri.conf.json / tauri.tupai.conf.json
 /// / tauri.safeopc.conf.json 的 `updater.endpoints` 共用 `ai.tuptup.top` 域)。
 /// 允许 `TUPAI_CLOUD_BASE_URL` 环境变量覆盖(CI / staging 场景)。
 /// 所有要"真打云端"的地方都从这里拿 URL,不要在文件里再写第二份。
@@ -3850,7 +3850,7 @@ async fn logs(
     Json(body).into_response()
 }
 
-/// `GET /agents-md` — Trace Auto 自进化系统提示 (Markdown 原文)
+/// `GET /agents-md` — AIMarketing 自进化系统提示 (Markdown 原文)
 ///
 /// agents.md 体积 ~25KB,编译期 include_str! 进来,不占运行时内存
 /// 也不会触发路径解析问题。`include_str!` 在 CARGO_MANIFEST_DIR

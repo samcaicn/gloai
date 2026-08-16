@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.2 — Hermes messenger in-process transport.
+// AIMarketing v5 §6.2 — Hermes messenger in-process transport.
 //
 // The Doc1 design's "client → remote server over RabbitMQ" is
 // replaced with a *local* in-process bus:

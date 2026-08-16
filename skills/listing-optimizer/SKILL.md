@@ -3,7 +3,7 @@ id: "com.tupautochrome.skills.listing-optimizer"
 name: "Listing优化器"
 name_en: "Listing Optimizer"
 version: "1.0.0"
-author: "tupAI"
+author: "AIMarketing"
 license: "MIT"
 icon: ""
 

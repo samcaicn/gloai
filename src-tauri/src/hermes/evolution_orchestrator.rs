@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // EvolutionOrchestrator — Hermes 自进化编排器 (Phase 1)。
 //

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // ============================================================================
 // AdaptiveExecutor — main loop for skill-driven execution (Doc1 §5)
@@ -1142,7 +1142,7 @@ fn vlm_action_to_located(action: &VlmAction) -> LocatedElement {
     }
 }
 
-// tupAI v5 §5.4 — sibling-file test pattern so the main barrel
+// AIMarketing v5 §5.4 — sibling-file test pattern so the main barrel
 // stays free of `#[cfg(test)]` noise.
 #[cfg(test)]
 #[path = "tests.rs"]

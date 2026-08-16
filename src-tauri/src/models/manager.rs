@@ -1,7 +1,7 @@
 // Copyright (c) 2026 MeeJoy
 
 // Model path manager. The manager holds a `download_dir` pointer that
-// the rest of tupAI (and the dashboard) reads to find `.gguf` files.
+// the rest of AIMarketing (and the dashboard) reads to find `.gguf` files.
 //
 // We deliberately keep state out of the manager itself: the active path
 // is persisted to a JSON file in the app data directory

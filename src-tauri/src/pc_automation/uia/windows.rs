@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // Windows UIA backend — real implementation backed by the
 // `uiautomation` crate (which wraps the Win32 IUIAutomation COM

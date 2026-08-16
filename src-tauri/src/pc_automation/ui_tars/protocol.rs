@@ -1,6 +1,6 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
-// tupAI v5 §6.1 — UI-TARS 协议层(prompt 模板 + 响应解析)。
+// AIMarketing v5 §6.1 — UI-TARS 协议层(prompt 模板 + 响应解析)。
 //
 // 本文件提供 UI-TARS 协议层的不依赖 VLM 救援主流程的"协议工具":
 //   * `COMPUTER_USE_TEMPLATE` — UI-TARS 事实标准

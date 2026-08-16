@@ -1,4 +1,4 @@
-// Copyright (c) 2026 tupAI
+// Copyright (c) 2026 AIMarketing
 //
 // TerminatorUiaBackend — adapts terminator's cross-platform
 // `Desktop` / `UIElement` to tupai's `UiaBackend` trait.
