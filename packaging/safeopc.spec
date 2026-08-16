@@ -35,12 +35,12 @@ datas = [
 ]
 
 # builtin-integration skills: vendored server + requirements + config must
-# ship with the exe so `opc-raphael-web2api setup` / `opc-jimeng2api` can
+# ship with the exe so `opc-jimeng2api setup` can
 # copy them into <opc_home>/integrations at runtime. These subdirs are NOT
 # Python packages, so collect_all("opc") may miss them — pin them explicitly.
 # Guarded by isdir: an uncommitted skill dir (e.g. a still-local WIP) must
 # not break the build; it is bundled automatically once committed.
-for _sa in ("raphael-web2api", "jimeng2api"):
+for _sa in ("jimeng2api",):
     _sa_src = os.path.join(REPO_ROOT, "opc", "skills_assets", _sa)
     if os.path.isdir(_sa_src):
         datas.append((_sa_src, os.path.join("opc", "skills_assets", _sa)))
@@ -80,7 +80,6 @@ datas = [
     (src, dst)
     for (src, dst) in datas
     if "frontend_src" not in src.replace("\\", "/")
-    and not dst.replace("\\", "/").startswith("opc/skills_assets/raphael-web2api/")
     and not dst.replace("\\", "/").startswith("opc/skills_assets/jimeng2api/")
 ]
 
