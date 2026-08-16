@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tauri::AppHandle;
+use tauri::Manager;
 
 use crate::profile::ProfileStore;
 
