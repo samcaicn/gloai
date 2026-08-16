@@ -32,15 +32,18 @@ datas = [
     # Skill assets, matching the wheel force-include mapping.
     (os.path.join(REPO_ROOT, "skills", "core"),
      os.path.join("opc", "skills_assets", "core")),
-    # builtin-integration skills: vendored server + requirements + config must
-    # ship with the exe so `opc-raphael-web2api setup` / `opc-jimeng2api` can
-    # copy them into <opc_home>/integrations at runtime. These subdirs are NOT
-    # Python packages, so collect_all("opc") may miss them — pin them explicitly.
-    (os.path.join(REPO_ROOT, "opc", "skills_assets", "raphael-web2api"),
-     os.path.join("opc", "skills_assets", "raphael-web2api")),
-    (os.path.join(REPO_ROOT, "opc", "skills_assets", "jimeng2api"),
-     os.path.join("opc", "skills_assets", "jimeng2api")),
 ]
+
+# builtin-integration skills: vendored server + requirements + config must
+# ship with the exe so `opc-raphael-web2api setup` / `opc-jimeng2api` can
+# copy them into <opc_home>/integrations at runtime. These subdirs are NOT
+# Python packages, so collect_all("opc") may miss them — pin them explicitly.
+# Guarded by isdir: an uncommitted skill dir (e.g. a still-local WIP) must
+# not break the build; it is bundled automatically once committed.
+for _sa in ("raphael-web2api", "jimeng2api"):
+    _sa_src = os.path.join(REPO_ROOT, "opc", "skills_assets", _sa)
+    if os.path.isdir(_sa_src):
+        datas.append((_sa_src, os.path.join("opc", "skills_assets", _sa)))
 
 # CreatorHub integration app — lives at the repo ROOT (integrations/creatorhub),
 # so it is NOT captured by collect_all("opc"). Ship its source (app/, config,
