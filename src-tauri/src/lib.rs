@@ -838,6 +838,11 @@ commands::floating_window::fw_chat_to_main,
             runtime_registry::commands::rr_invoke_subagent,
             runtime_registry::commands::rr_register_upstream,
             runtime_registry::commands::rr_discover_models,
+            // DSH upstream management (profile-backed runtime-registry Upstream).
+            commands::dsh::dsh_list_upstreams,
+            commands::dsh::dsh_upsert_upstream,
+            commands::dsh::dsh_remove_upstream,
+            commands::dsh::dsh_set_upstream_enabled,
         ]);
     startup_stage!("15i2-after-runtime-registry-handler");
     #[cfg(feature = "mesh")]
@@ -1415,9 +1420,14 @@ commands::floating_window::fw_chat_to_main,
                 let data_dir = app.path().app_data_dir().ok();
                 tauri::async_runtime::spawn(async move {
                     if let Some(dir) = data_dir {
-                        runtime_registry.set_data_dir(dir).await;
+                        runtime_registry.set_data_dir(dir.clone()).await;
                         runtime_registry.load_custom_agents().await;
                         runtime_registry.load_upstream_runtimes().await;
+                        // Seed DSH upstreams from the active profile (profile-backed
+                        // single source of truth for DSH config).
+                        if let Ok(store) = crate::profile::ProfileStore::load(&dir) {
+                            runtime_registry.sync_dsh_upstreams(&store.dsh_upstreams()).await;
+                        }
                     }
                     runtime_registry.scan().await;
                     log::info!("[startup] runtime-registry scan complete");

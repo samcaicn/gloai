@@ -1,0 +1,51 @@
+{
+  "title": "DSH 上游",
+  "subtitle": "配置并管理 DSH 外部运行时（上游），随当前 Profile 切换并持久化。",
+  "actions": {
+    "add": "添加上游",
+    "refresh": "刷新",
+    "edit": "编辑",
+    "remove": "删除",
+    "cancel": "取消",
+    "save": "保存"
+  },
+  "section": {
+    "list": "上游列表",
+    "listDesc": "已配置的 DSH 上游会作为受管运行时接入 runtime-registry，并在状态栏显示接入状态。"
+  },
+  "list": {
+    "loading": "加载中…",
+    "empty": "暂无 DSH 上游，点击「添加上游」开始配置。",
+    "statusOk": "已接入",
+    "statusBad": "未接入"
+  },
+  "form": {
+    "titleEdit": "编辑 DSH 上游",
+    "titleAdd": "添加 DSH 上游",
+    "desc": "DSH 上游可以是 HTTP(S) 兼容的 OpenAI 接口，或本地可执行文件（通过命令行子进程接入）。",
+    "id": "标识",
+    "idHint": "唯一标识，例如 local-dsh，仅支持字母、数字与连字符",
+    "displayName": "显示名称",
+    "endpoint": "接入地址 / 命令",
+    "endpointHint": "HTTP(S) 填入接口地址；本地二进制填入可执行文件完整路径",
+    "transportHttp": "HTTP",
+    "transportCmd": "命令",
+    "cliArgsTemplate": "命令行参数模板",
+    "cliArgsTemplateHint": "每行一个参数，支持 {prompt} 与 {cwd} 占位符；本地二进制接入时必填",
+    "model": "模型",
+    "apiKey": "API 密钥",
+    "apiKeyHint": "留空表示沿用已有密钥，不会覆盖已保存的值",
+    "enabled": "启用",
+    "idRequired": "请填写标识",
+    "endpointRequired": "请填写接入地址或命令",
+    "binaryNeedsTemplate": "本地二进制接入必须填写命令行参数模板"
+  },
+  "notifications": {
+    "loadFailed": "加载 DSH 上游失败",
+    "saved": "DSH 上游已保存",
+    "saveFailed": "保存 DSH 上游失败",
+    "removed": "DSH 上游已删除",
+    "removeFailed": "删除 DSH 上游失败",
+    "toggleFailed": "切换 DSH 上游状态失败"
+  }
+}

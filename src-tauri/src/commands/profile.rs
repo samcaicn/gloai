@@ -53,7 +53,7 @@ pub fn get_profile(app: AppHandle) -> ProfileView {
 
 /// Switches the active profile and persists it to `profile.json`.
 #[tauri::command]
-pub fn set_active_profile(app: AppHandle, id: String) -> Result<ProfileView, String> {
+pub async fn set_active_profile(app: AppHandle, id: String) -> Result<ProfileView, String> {
     let dir = app_data_dir(&app)?;
     let mut store = load_store(&app);
     if !store.profiles.contains_key(&id) {
@@ -61,6 +61,13 @@ pub fn set_active_profile(app: AppHandle, id: String) -> Result<ProfileView, Str
     }
     store.active = id;
     store.save(&dir)?;
+    // Re-seed profile-backed runtime integrations (DSH upstreams) so the
+    // newly active profile's DSH config takes effect immediately.
+    if let Some(reg) =
+        app.try_state::<crate::runtime_registry::registry::RuntimeRegistry>()
+    {
+        reg.sync_dsh_upstreams(&store.dsh_upstreams()).await;
+    }
     Ok(view_of(&store))
 }
 

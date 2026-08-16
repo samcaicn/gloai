@@ -16,6 +16,7 @@ export type ConfigTab =
   | 'review'
   | 'mcp-tools'
   | 'acp-agents'
+  | 'dsh'
   // | 'lsp' // temporarily hidden from config center
   | 'editor'
   | 'keyboard'
@@ -264,6 +265,21 @@ export const SETTINGS_CATEGORIES: ConfigCategoryDef[] = [
           'claude code',
           'codex',
           'stdio',
+        ],
+      },
+      {
+        id: 'dsh',
+        labelKey: 'configCenter.tabs.dsh',
+        descriptionKey: 'configCenter.tabDescriptions.dsh',
+        keywords: [
+          'dsh',
+          'upstream',
+          '上游',
+          'runtime',
+          '外部运行时',
+          'endpoint',
+          '端点',
+          'agent',
         ],
       },
     ],

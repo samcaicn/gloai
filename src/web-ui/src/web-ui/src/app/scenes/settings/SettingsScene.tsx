@@ -15,6 +15,7 @@ import './SettingsScene.scss';
 const AIModelConfig = lazy(() => import('../../../infrastructure/config/components/AIModelConfig'));
 const McpToolsConfig = lazy(() => import('../../../infrastructure/config/components/McpToolsConfig'));
 const AcpAgentsConfig = lazy(() => import('../../../infrastructure/config/components/AcpAgentsConfig'));
+const DshConfigTab = lazy(() => import('../../../infrastructure/config/components/DshConfigTab'));
 const EditorConfig = lazy(() => import('../../../infrastructure/config/components/EditorConfig'));
 const BasicsConfig = lazy(() => import('../../../infrastructure/config/components/BasicsConfig'));
 const AppearanceConfig = lazy(() => import('../../../infrastructure/config/components/AppearanceConfig'));
@@ -80,6 +81,7 @@ const SettingsScene: React.FC = () => {
     case 'review':           Content = ReviewConfig;         break;
     case 'mcp-tools':        Content = McpToolsConfig;      break;
     case 'acp-agents':       Content = AcpAgentsConfig;     break;
+    case 'dsh':              Content = DshConfigTab;        break;
     case 'editor':           Content = EditorConfig;         break;
     case 'keyboard':         Content = KeyboardShortcutsTab; break;
     case 'tupai':            Content = TupaiSettingsTab;      break;

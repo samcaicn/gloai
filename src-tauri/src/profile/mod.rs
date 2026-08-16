@@ -34,6 +34,47 @@ pub struct Profile {
     /// Config overrides applied on top of built-in defaults.
     #[serde(default)]
     pub config_overrides: HashMap<String, serde_json::Value>,
+    /// DSH upstream runtimes managed in the Settings UI (profile-scoped).
+    /// Single source of truth = this profile; the runtime-registry is just a
+    /// runtime view seeded from here (see `runtime_registry::sync_dsh_upstreams`).
+    #[serde(default)]
+    pub dsh: DshConfig,
+}
+
+/// A single DSH upstream runtime. DSH is an external runtime wired into the
+/// runtime-registry via the `Upstream` seam (`adapters/upstream.rs`). Each
+/// entry is profile-scoped, so switching profiles swaps the DSH config.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DshUpstreamConfig {
+    /// Stable id; also used as the sub-agent prefix (`dsh<id>`).
+    pub id: String,
+    pub display_name: String,
+    /// http(s) URL (OpenAI-compatible /chat/completions) OR an existing binary path.
+    pub endpoint: String,
+    /// When `endpoint` is a binary, the subprocess argv template ({prompt}/{cwd}).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cli_args_template: Option<Vec<String>>,
+    /// Optional model id; falls back to the instance default / "default".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    /// Optional API key. Stored only in the local profile.json (never logged
+    /// or re-serialized by the registry); injected at runtime via an env var.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DshConfig {
+    #[serde(default)]
+    pub upstreams: Vec<DshUpstreamConfig>,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -57,6 +98,7 @@ impl ProfileStore {
                 enabled_skills: None,
                 disabled_skills: vec![],
                 config_overrides: HashMap::new(),
+                dsh: DshConfig::default(),
             },
         );
 
@@ -70,6 +112,7 @@ impl ProfileStore {
                 enabled_skills: None,
                 disabled_skills: vec![],
                 config_overrides: safeopc_overrides,
+                dsh: DshConfig::default(),
             },
         );
 
@@ -101,6 +144,19 @@ impl ProfileStore {
             .expect("builtin tupai profile must always exist")
     }
 
+    /// Mutable variant of `active_profile` (panics if the active or built-in
+    /// `tupai` profile is missing, which should never happen).
+    pub fn active_profile_mut(&mut self) -> &mut Profile {
+        let active = self.active.clone();
+        if self.profiles.contains_key(&active) {
+            self.profiles.get_mut(&active).unwrap()
+        } else {
+            self.profiles
+                .get_mut("tupai")
+                .expect("builtin tupai profile must always exist")
+        }
+    }
+
     /// Resolve whether a skill is enabled under the active profile.
     /// `builtin_enabled` is the skill's default-enabled flag (used when the
     /// profile does not pin an allow-list).
@@ -124,6 +180,16 @@ impl ProfileStore {
             .cloned()
             .unwrap_or(builtin)
     }
+
+    /// DSH upstreams of the active profile (cloned for cheap sharing).
+    pub fn dsh_upstreams(&self) -> Vec<DshUpstreamConfig> {
+        self.active_profile().dsh.upstreams.clone()
+    }
+
+    /// Replace the active profile's DSH upstream list.
+    pub fn set_dsh_upstreams(&mut self, upstreams: Vec<DshUpstreamConfig>) {
+        self.active_profile_mut().dsh.upstreams = upstreams;
+    }
 }
 
 #[cfg(test)]
@@ -141,12 +207,13 @@ mod tests {
     #[test]
     fn disabled_wins_over_allow_list() {
         let mut s = ProfileStore::builtin_default();
-        let mut p = Profile {
+        let p = Profile {
             id: "custom".into(),
             display_brand: "custom".into(),
             enabled_skills: Some(vec!["a".into(), "b".into()]),
             disabled_skills: vec!["b".into()],
             config_overrides: HashMap::new(),
+            dsh: DshConfig::default(),
         };
         s.profiles.insert("custom".into(), p);
         s.active = "custom".into();
@@ -172,6 +239,7 @@ mod tests {
             enabled_skills: None,
             disabled_skills: vec![],
             config_overrides: HashMap::new(),
+            dsh: DshConfig::default(),
         };
         p.config_overrides
             .insert("max_tokens".into(), serde_json::json!(4096));

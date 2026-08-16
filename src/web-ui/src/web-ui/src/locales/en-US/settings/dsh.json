@@ -1,0 +1,51 @@
+{
+  "title": "DSH Upstream",
+  "subtitle": "Configure and manage DSH external runtimes (upstreams). They follow the active Profile and persist across sessions.",
+  "actions": {
+    "add": "Add Upstream",
+    "refresh": "Refresh",
+    "edit": "Edit",
+    "remove": "Remove",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "section": {
+    "list": "Upstream List",
+    "listDesc": "Configured DSH upstreams are registered as managed runtimes in the runtime-registry and show their connection status in the status bar."
+  },
+  "list": {
+    "loading": "Loading…",
+    "empty": "No DSH upstreams yet. Click \"Add Upstream\" to get started.",
+    "statusOk": "Connected",
+    "statusBad": "Not Connected"
+  },
+  "form": {
+    "titleEdit": "Edit DSH Upstream",
+    "titleAdd": "Add DSH Upstream",
+    "desc": "A DSH upstream can be an HTTP(S) OpenAI-compatible endpoint or a local executable launched as a subprocess.",
+    "id": "ID",
+    "idHint": "Unique identifier, e.g. local-dsh. Letters, digits and hyphens only",
+    "displayName": "Display Name",
+    "endpoint": "Endpoint / Command",
+    "endpointHint": "For HTTP(S) enter the endpoint URL; for a local binary enter the full executable path",
+    "transportHttp": "HTTP",
+    "transportCmd": "Command",
+    "cliArgsTemplate": "CLI Args Template",
+    "cliArgsTemplateHint": "One argument per line. Supports {prompt} and {cwd} placeholders. Required for local binaries",
+    "model": "Model",
+    "apiKey": "API Key",
+    "apiKeyHint": "Leave blank to keep the existing key; it will not overwrite the saved value",
+    "enabled": "Enabled",
+    "idRequired": "ID is required",
+    "endpointRequired": "Endpoint or command is required",
+    "binaryNeedsTemplate": "A local binary upstream requires a CLI args template"
+  },
+  "notifications": {
+    "loadFailed": "Failed to load DSH upstreams",
+    "saved": "DSH upstream saved",
+    "saveFailed": "Failed to save DSH upstream",
+    "removed": "DSH upstream removed",
+    "removeFailed": "Failed to remove DSH upstream",
+    "toggleFailed": "Failed to toggle DSH upstream"
+  }
+}

@@ -56,6 +56,9 @@ pub mod brand_info;
 // Profile patch layer (deepseek-harness style: skill set + config + display brand).
 pub mod profile;
 
+// DSH upstream management (profile-backed runtime-registry Upstream).
+pub mod dsh;
+
 // P2 §3 — multi-GPU status + skill/MCP task queue.
 // First cut — commands are wired into the invoke layer; the real
 // parallel worker + SQLite-backed queue are not yet implemented.

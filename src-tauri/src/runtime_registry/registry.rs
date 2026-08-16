@@ -10,6 +10,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::acp::AcpClientService;
+use crate::profile::DshUpstreamConfig;
 use crate::runtime_registry::adapter::AgentProviderAdapter;
 use crate::runtime_registry::adapters::build_adapter;
 use crate::runtime_registry::commands::{AddCustomAgentRequest, RegisterUpstreamRequest};
@@ -213,6 +214,75 @@ impl RuntimeRegistry {
         Ok(sa)
     }
 
+    /// Re-seed the DSH-managed upstreams from the active profile's DSH config.
+    ///
+    /// DSH upstreams are profile-backed (single source of truth =
+    /// `profile.json`); the registry is just a runtime view, rebuilt on
+    /// startup and on every DSH config change or profile switch. This keeps
+    /// DSH configurable + persisted in the Settings UI without a second
+    /// JSON file, and lets the config follow the active profile.
+    pub async fn sync_dsh_upstreams(&self, items: &[DshUpstreamConfig]) {
+        // 1) Drop existing DSH instances + their sub-agents, then rebuild.
+        {
+            let mut instances = self.instances.write().await;
+            instances.retain(|i| !i.id.starts_with("rt-dsh-"));
+        }
+        {
+            let mut subagents = self.subagents.write().await;
+            subagents.retain(|s| !s.instance_id.starts_with("rt-dsh-"));
+        }
+        // 2) Reset DSH counters so re-seeded sub-agent ids stay stable (dsh<id>1).
+        {
+            let mut counters = self.counters.write().await;
+            counters.retain(|k, _| !k.starts_with("dsh:"));
+        }
+        // 3) Seed enabled upstreams as Upstream runtime instances + sub-agents.
+        for item in items.iter().filter(|i| i.enabled) {
+            let endpoint = item.endpoint.trim().to_string();
+            let is_http = endpoint.starts_with("http://") || endpoint.starts_with("https://");
+            let is_bin = !is_http
+                && !endpoint.is_empty()
+                && std::path::Path::new(&endpoint).is_file();
+            let installed = is_http || is_bin;
+            let provider_id = format!("dsh:{}", item.id);
+            let instance_id = format!("rt-dsh-{}", item.id);
+            let idx = {
+                let mut counters = self.counters.write().await;
+                next_index(&mut counters, &provider_id)
+            };
+            let sub_id = format!("{}{}", provider_id, idx);
+            let inst = RuntimeInstance {
+                id: instance_id.clone(),
+                provider_id: provider_id.clone(),
+                kind: RuntimeKind::Upstream,
+                display_name: item.display_name.clone(),
+                endpoint,
+                installed,
+                version: None,
+                model: item.model.clone(),
+                has_api_key: item.api_key.is_some(),
+                cli_args_template: item.cli_args_template.clone(),
+                acp_client_id: None,
+                available_models: Vec::new(),
+            };
+            self.instances.write().await.push(inst);
+            let sa = SubAgent {
+                id: sub_id.clone(),
+                display_name: format!("{} #{}", item.display_name, idx),
+                instance_id: instance_id.clone(),
+                provider_id: provider_id.clone(),
+                kind: RuntimeKind::Upstream,
+                status: SubAgentStatus::Available,
+                model: item.model.clone(),
+                available_models: Vec::new(),
+            };
+            self.subagents.write().await.push(sa);
+            if let Some(key) = item.api_key.clone() {
+                std::env::set_var(api_key_env(&instance_id), key);
+            }
+        }
+    }
+
     pub async fn snapshot(&self) -> RuntimeRegistrySnapshot {
         RuntimeRegistrySnapshot {
             instances: self.instances.read().await.clone(),
@@ -333,9 +403,12 @@ fn api_key_env(instance_id: &str) -> String {
 }
 
 /// Instances the registry manages itself (vs. built-in detected CLIs).
-/// Built-in ids are `rt-<provider>`; managed ids are `rt-user-*` / `rt-upstream-*`.
+/// Built-in ids are `rt-<provider>`; managed ids are `rt-user-*` /
+/// `rt-upstream-*` / `rt-dsh-*` (DSH upstreams are profile-backed).
 fn is_managed_instance(id: &str) -> bool {
-    id.starts_with("rt-user-") || id.starts_with("rt-upstream-")
+    id.starts_with("rt-user-")
+        || id.starts_with("rt-upstream-")
+        || id.starts_with("rt-dsh-")
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

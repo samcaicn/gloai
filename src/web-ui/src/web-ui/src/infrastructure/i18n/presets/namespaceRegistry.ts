@@ -28,6 +28,7 @@ export const ALL_NAMESPACES = [
   'settings/basics',
   'settings/debug',
   'settings/default-model',
+  'settings/dsh',
   'settings/editor',
   'settings/lsp',
   'settings/mcp',
