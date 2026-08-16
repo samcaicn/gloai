@@ -80,6 +80,7 @@ dev = [
 
 [project.scripts]
 opc = "opc.cli.app:main"
+opc-jimeng2api = "opc.cli_jimeng2api:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["opc"]

@@ -127,6 +127,12 @@ def ensure_external_agent_surfaces(
             continue
         home, bin_dir = install_collab_surface(slug, opc_home=base_home)
         adapter.post_install_agent_home(str(home))
+        try:
+            from opc.layer3_agent.skill_installer import install_jimeng2api_surface
+
+            install_jimeng2api_surface(slug, opc_home=base_home)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(f"Failed to install jimeng2api surface for {slug}: {exc}")
         surfaces[agent_name] = {
             "home": str(home),
             "bin_dir": str(bin_dir),

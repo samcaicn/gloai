@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://safeopc.dev/schemas/jimeng2api.config.json",
+  "title": "jimeng2api built-in skill configuration",
+  "description": "Configuration items for the jimeng2api Jimeng/Dreamina image & video generation proxy. Effective config = defaults -> user file (<opc_home>/config/jimeng2api.yaml) -> CLI flags.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "host": {
+      "type": "string",
+      "default": "127.0.0.1",
+      "description": "Proxy bind host."
+    },
+    "port": {
+      "type": "integer",
+      "default": 5100,
+      "minimum": 1,
+      "maximum": 65535,
+      "description": "Proxy bind port."
+    },
+    "install_dir": {
+      "type": "string",
+      "default": "",
+      "description": "Where the jimeng2api repo is cloned and run from. Empty string resolves to <opc_home>/integrations/jimeng2api at runtime."
+    },
+    "repo_url": {
+      "type": "string",
+      "default": "https://github.com/carzygod/jimeng2api.git",
+      "description": "Source repository cloned on first start."
+    },
+    "admin_key": {
+      "type": "string",
+      "default": "",
+      "description": "JIMENG_ADMIN_KEY for the proxy. Empty = auto-generate a random key on first run."
+    },
+    "api_key": {
+      "type": "string",
+      "default": "",
+      "description": "Proxy-issued API key sent as 'Authorization: Bearer' for gen-image / gen-video calls. Required for generation."
+    },
+    "auto_launch": {
+      "type": "boolean",
+      "default": true,
+      "description": "Launch the proxy automatically when 'opc-jimeng2api start' runs."
+    },
+    "open_page": {
+      "type": "boolean",
+      "default": true,
+      "description": "Open the admin page in the browser after launch."
+    },
+    "log_level": {
+      "type": "string",
+      "enum": ["DEBUG", "INFO", "WARNING", "ERROR"],
+      "default": "INFO",
+      "description": "CLI log level."
+    }
+  },
+  "required": [
+    "host",
+    "port",
+    "install_dir",
+    "repo_url",
+    "admin_key",
+    "api_key",
+    "auto_launch",
+    "open_page",
+    "log_level"
+  ]
+}

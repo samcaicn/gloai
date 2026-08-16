@@ -183,6 +183,21 @@ def _create_default_skills(opc_home: Path) -> None:
         except Exception:
             pass
 
+    # Built-in packaged skills (jimeng2api) — Jimeng image/video generation.
+    try:
+        from opc.layer3_agent.skill_installer import (
+            install_jimeng2api_skill,
+            ensure_jimeng2api_bin,
+        )
+
+        install_jimeng2api_skill(opc_home)
+        ensure_jimeng2api_bin(opc_home)
+    except Exception as exc:  # pragma: no cover - defensive
+        try:
+            console.print(f"[warning]Failed to install jimeng2api built-in skill: {exc}[/warning]")
+        except Exception:
+            pass
+
 
 def _progress_callback():
     """Create an async progress callback for streaming agent output."""
