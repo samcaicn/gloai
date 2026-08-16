@@ -183,6 +183,21 @@ impl AutoSkillEngine {
             None,
         )?;
 
+        // 5. 注册可逆效应: 观察期由全局 EffectLedger 统一看管
+        //    (与 automation 采纳共用同一决策引擎)。
+        let _ = crate::effects::register_effect(
+            &format!("skill_upgrade:{}:{}", scene, skill_id),
+            crate::effects::EffectKind::SkillUpgrade,
+            &old_active
+                .as_ref()
+                .map(|o| o.version.clone())
+                .unwrap_or_else(|| "none".to_string()),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs() as i64)
+                .unwrap_or(0),
+        );
+
         Ok(())
     }
 
@@ -241,6 +256,13 @@ impl AutoSkillEngine {
         if old_score - new_score <= threshold {
             return Ok(false);
         }
+
+        // 2.5 统一冷却: 通过全局 ledger 标记回滚, 30 分钟内禁止同技能再次升级,
+        //     与 automation 采纳回滚共用同一套看门狗逻辑 (消除独立冷却实现)。
+        let _ = crate::effects::force_undo_effect(
+            &format!("skill_upgrade:{}:{}", scene, skill_id),
+            &format!("score dropped {}->{}", old_score, new_score),
+        );
 
         // 3. 回滚：查询最近备份的 rollback 版本并恢复
         let rollback_version = {

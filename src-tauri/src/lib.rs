@@ -8,6 +8,10 @@ mod sse;
 mod markdown;
 mod hermes;
 mod build_info;
+// Generic reversible-effect ledger (deepseek-harness "reversible effects").
+mod effects;
+// Profile patch layer (deepseek-harness "bundle + user patch").
+mod profile;
 mod logging;
 // PCUI 路线 (UIA + CDP + OCR) is the primary desktop automation stack.
 // `pc_automation` owns the three-strategy router; the front-end drives it
@@ -510,6 +514,10 @@ commands::computer_use::computer_use_open_system_settings,
             // Runtime brand info — replaces hard-coded VITE_APP_* env vars.
             commands::brand_info::get_brand_info,
             commands::brand_info::is_oem_build,
+            // Profile patch layer (skill set + config + display brand).
+            commands::profile::get_profile,
+            commands::profile::set_active_profile,
+            commands::profile::list_profiles,
             commands::crypto::wipe_all_local_data,
             commands::crypto::encrypt_data,
             commands::crypto::decrypt_data,
