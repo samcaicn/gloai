@@ -216,6 +216,73 @@ def _wait_for_server(port: int, timeout: float = 60.0) -> bool:
     return False
 
 
+# ── CreatorHub sidecar (optional in-app integration) ─────────────────────────
+
+def _creatorhub_app_dir() -> Path | None:
+    """Locate the bundled CreatorHub FastAPI app.
+
+    Dev: repo_root/integrations/creatorhub. Frozen: _MEIPASS/integrations/creatorhub
+    (added as a datas entry in safeopc.spec).
+    """
+    if getattr(sys, "frozen", False):
+        cand = Path(sys._MEIPASS) / "integrations" / "creatorhub"
+        if cand.is_dir():
+            return cand
+    # packaging/desktop_app.py -> repo root
+    dev = Path(__file__).resolve().parents[1] / "integrations" / "creatorhub"
+    if dev.is_dir():
+        return dev
+    return None
+
+
+def _maybe_launch_creatorhub() -> None:
+    """Auto-launch the CreatorHub sidecar (uvicorn on :8000) in a daemon thread.
+
+    Gated by ``SAFEOPC_CREATORHUB_AUTOSTART`` (default "1"; set "0" to disable).
+    The sidecar runs in its own isolated venv (see creatorhub_adapter.launcher)
+    so its FastAPI / Patchright deps never clash with SafeOPC's environment.
+    """
+    if os.environ.get("SAFEOPC_CREATORHUB_AUTOSTART", "1") == "0":
+        LOG.info("CreatorHub autostart disabled via SAFEOPC_CREATORHUB_AUTOSTART=0")
+        return
+    app_dir = _creatorhub_app_dir()
+    if app_dir is None:
+        LOG.warning("CreatorHub app dir not found; skipping autostart.")
+        return
+    try:
+        from opc.integrations.creatorhub_adapter.launcher import CreatorHubLauncher
+    except Exception as exc:  # pragma: no cover - import guard
+        LOG.warning("CreatorHub launcher import failed; skipping autostart: %s", exc)
+        return
+
+    opc_home = resolve_opc_home()
+    data_root = opc_home / "integrations" / "creatorhub"
+    venv_dir = data_root / ".venv"
+
+    def _bg() -> None:
+        try:
+            launcher = CreatorHubLauncher(
+                creatorhub_dir=app_dir,
+                data_root=data_root,
+                port=8000,
+                host="127.0.0.1",
+            )
+            # The bundled app dir is read-only (under _MEIPASS when frozen), so
+            # the sidecar venv must live in the writable opc_home, not inside
+            # creatorhub_dir. Override both derived paths.
+            launcher.venv_dir = venv_dir
+            launcher.provision_marker = venv_dir / ".creatorhub_provisioned"
+            launcher.ensure_venv()
+            launcher.write_config()
+            if not launcher.is_running():
+                launcher.start()
+            LOG.info("CreatorHub sidecar launched (pid file: %s)", launcher.pid_file)
+        except Exception as exc:  # never crash the desktop app on sidecar failure
+            LOG.exception("CreatorHub sidecar launch failed: %s", exc)
+
+    threading.Thread(target=_bg, name="creatorhub-sidecar", daemon=True).start()
+
+
 def show_loading(window) -> None:
     """Placeholder kept for API symmetry; splash is now a native Tk window."""
     pass
@@ -695,6 +762,10 @@ def run_gui(port: int) -> None:
 
     # 2) Boot the backend in a daemon thread in parallel with the splash.
     _start_server_thread(port)
+
+    # 2.5) Auto-launch the CreatorHub sidecar (if enabled) so its in-app page
+    #      is ready when the user opens it from the sidebar.
+    _maybe_launch_creatorhub()
 
     # 3) Create the WebView window HIDDEN first; it is revealed by the swap
     #    thread once the real UI is ready (so it never covers the splash or

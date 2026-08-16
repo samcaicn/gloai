@@ -2450,6 +2450,13 @@ export default function App() {
             </button>
             <button className={`page-nav-btn${activePage === 'office' ? ' active' : ''}`} onClick={() => setActivePage('office')}>{t('app.page.office')}</button>
             <button className={`page-nav-btn${activePage === 'org' ? ' active' : ''}`} onClick={() => setActivePage('org')}>{t('app.page.org')}</button>
+            <button
+              className="page-nav-btn creatorhub-nav-btn"
+              onClick={() => setInAppBrowser({ url: 'http://127.0.0.1:8000', title: 'CreatorHub' })}
+              title="打开 CreatorHub（多平台内容监控·采集·搬运）"
+            >
+              CreatorHub
+            </button>
           </div>
           <div className="stat-chips">
             <span className="stat-chip"><b>{metrics.totalAgents}</b> {t('app.metric.agents')}</span>

@@ -32,7 +32,28 @@ datas = [
     # Skill assets, matching the wheel force-include mapping.
     (os.path.join(REPO_ROOT, "skills", "core"),
      os.path.join("opc", "skills_assets", "core")),
+    # builtin-integration skills: vendored server + requirements + config must
+    # ship with the exe so `opc-raphael-web2api setup` / `opc-jimeng2api` can
+    # copy them into <opc_home>/integrations at runtime. These subdirs are NOT
+    # Python packages, so collect_all("opc") may miss them — pin them explicitly.
+    (os.path.join(REPO_ROOT, "opc", "skills_assets", "raphael-web2api"),
+     os.path.join("opc", "skills_assets", "raphael-web2api")),
+    (os.path.join(REPO_ROOT, "opc", "skills_assets", "jimeng2api"),
+     os.path.join("opc", "skills_assets", "jimeng2api")),
 ]
+
+# CreatorHub integration app — lives at the repo ROOT (integrations/creatorhub),
+# so it is NOT captured by collect_all("opc"). Ship its source (app/, config,
+# requirements, scripts, preview) but exclude heavy/volatile dirs.
+_chub_root = os.path.join(REPO_ROOT, "integrations", "creatorhub")
+_chub_exclude_dirs = {".venv", "data", "node_modules", "__pycache__", ".git"}
+if os.path.isdir(_chub_root):
+    for _cr, _cd, _cf in os.walk(_chub_root):
+        _cd[:] = [d for d in _cd if d not in _chub_exclude_dirs]
+        for _fn in _cf:
+            _src = os.path.join(_cr, _fn)
+            _rel = os.path.relpath(_src, REPO_ROOT).replace(os.sep, "/")
+            datas.append((_src, _rel))
 
 # ── Pull heavy packages in full (submodules + native binaries + data) ───────
 binaries = []
@@ -49,11 +70,15 @@ for pkg in _collected_pkgs:
 
 # collect_all("opc") grabs everything under opc/, including the heavy frontend
 # source tree (frontend_src/node_modules, 200MB+ of JS). Drop it — only the
-# built frontend_dist (added explicitly above) belongs in the bundle.
+# built frontend_dist (added explicitly above) belongs in the bundle. Also drop
+# the two builtin-integration skill dirs collected here, since they are pinned
+# explicitly above (avoids duplicate-datas destination conflicts).
 datas = [
     (src, dst)
     for (src, dst) in datas
     if "frontend_src" not in src.replace("\\", "/")
+    and not dst.replace("\\", "/").startswith("opc/skills_assets/raphael-web2api/")
+    and not dst.replace("\\", "/").startswith("opc/skills_assets/jimeng2api/")
 ]
 
 # Explicit safety net for commonly-missed optional imports.
