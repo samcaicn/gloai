@@ -133,6 +133,12 @@ def ensure_external_agent_surfaces(
             install_jimeng2api_surface(slug, opc_home=base_home)
         except Exception as exc:  # pragma: no cover - defensive
             logger.warning(f"Failed to install jimeng2api surface for {slug}: {exc}")
+        try:
+            from opc.layer3_agent.skill_installer import install_raphael_web2api_surface
+
+            install_raphael_web2api_surface(slug, opc_home=base_home)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(f"Failed to install raphael-web2api surface for {slug}: {exc}")
         surfaces[agent_name] = {
             "home": str(home),
             "bin_dir": str(bin_dir),

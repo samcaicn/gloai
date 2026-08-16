@@ -1,0 +1,17 @@
+host: 127.0.0.1
+port: 8771
+install_dir: ""
+headless: true
+cookies_path: ""
+pw_browsers_path: ""
+# Bypass for the anonymous ~2 images/day cap, which is keyed PER SOURCE IP
+# (not per session). Supply a pool of upstream proxies (each a distinct egress
+# IP); the proxy round-robins over them and auto-retries on ANON_DAILY_LIMIT by
+# switching to the next proxy. Use "direct" to mean "no proxy". Empty = use the
+# system proxy (single egress, i.e. the original 2/day behavior).
+proxies: []
+rotate_proxies: true
+max_proxy_retries: 8
+auto_launch: true
+open_page: true
+log_level: INFO

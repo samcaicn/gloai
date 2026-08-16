@@ -198,6 +198,21 @@ def _create_default_skills(opc_home: Path) -> None:
         except Exception:
             pass
 
+    # Built-in packaged skills (raphael-web2api) — Raphael AI image generation.
+    try:
+        from opc.layer3_agent.skill_installer import (
+            install_raphael_web2api_skill,
+            ensure_raphael_web2api_bin,
+        )
+
+        install_raphael_web2api_skill(opc_home)
+        ensure_raphael_web2api_bin(opc_home)
+    except Exception as exc:  # pragma: no cover - defensive
+        try:
+            console.print(f"[warning]Failed to install raphael-web2api built-in skill: {exc}[/warning]")
+        except Exception:
+            pass
+
 
 def _progress_callback():
     """Create an async progress callback for streaming agent output."""

@@ -871,6 +871,12 @@ class ExternalAgentBroker:
                 install_jimeng2api_surface(slug)
             except Exception as exc:  # pragma: no cover - defensive
                 logger.warning(f"Failed to install jimeng2api surface for {slug}: {exc}")
+            try:
+                from opc.layer3_agent.skill_installer import install_raphael_web2api_surface
+
+                install_raphael_web2api_surface(slug)
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(f"Failed to install raphael-web2api surface for {slug}: {exc}")
             repo_root = str(Path(__file__).resolve().parents[2])
             existing_pythonpath = comms_env.get("PYTHONPATH") or os.environ.get("PYTHONPATH", "")
             pythonpath_parts = [part for part in existing_pythonpath.split(os.pathsep) if part]

@@ -39,3 +39,12 @@
 - **语言栈：TypeScript / Node 为主（Electron），不是 Python**。`C:\code\gloai` = Electron 42 + React 19 + Vite 8 + Tailwind 4 + @opencode-ai/sdk(1.18.10) + @oomol/connection-electron-adapter + electron-updater + pnpm；仓库内 depth-3 无 `*.py`/`requirements.txt`/`pyproject.toml`，即无 Python 后端。
 - hermes 与 **wanta 同栈同生态**（同为 OOMOL 系：Electron+React+Vite+OpenCode+oxlint/oxfmt+@oomol/connection）；与 **SafeOPC 异栈**（SafeOPC=Python+pywebview/WebView2+PyInstaller）。
 - 结论：用户问 "hermes 是 python 还是 ts node" → **TS/Node (Electron)**。勿把 SafeOPC 的 Python 经验套到 hermes 上。
+
+## builtin-integration 外部服务接入标准形态（jimeng2api / raphael-web2api 范式）
+- **标准形态（加同类外部服务照抄）**：`opc/skills_assets/<name>/`（`SKILL.md` frontmatter `kind: builtin-integration` + `cli: opc-<name>` + `config.default.yaml`/`config.schema.json`/`page_url_template`） + `opc/cli_<name>.py`（`main()`，子命令 `status/setup/start/stop/config` + 业务命令；独立 venv 装依赖，不在项目 venv） + `opc/layer3_agent/skill_installer.py` 加 `*_shim`/`*_bin`/`*_surface`（与 creatorhub 同构） + `opc/cli/app.py`、`external_broker.py`、`preflight.py` 三处**防御式 try/except**调用（单技能失败不拖垮其他 agent 启动） + `pyproject.toml` `[project.scripts]` 加 `opc-<name> = "opc.cli_<name>:main"`。
+- **Windows 进程/编码坑（必看，否则 stop 杀不掉、端口被孤儿占）**：
+  1. `tasklist` / `netstat` 在中文 Windows 输出 **GBK**；`subprocess.run(..., text=True)` 会解码崩溃使 `stdout=None`。务必 `capture_output=True` 取 bytes，再 `decode("gbk","replace")` 后解析。
+  2. uvicorn/Node 服务在 Windows 用 `multiprocessing`/`child_process` spawn **worker(grandchild)**，supervisor 退出后 worker 仍占端口 → 单靠 pidfile 的 pid 杀不掉。**`stop` 必须兜底：端口仍被占就按端口持有者 `taskkill /F /T /PID <holder>` 杀整棵树**；`start` 也应先清「端口被孤儿占用」再绑。
+  3. pidfile 删除包 `_safe_unlink`（try/except OSError），因某些沙箱拦截 unlink（回收站不可用）会抛错。
+  4. Playwright 驱动网页时，**切勿在 response listener 里调 `response.body()`**（会 drain 流，网页本身收不到数据）；改注入 `window.fetch` hook 用 `resp.clone().text()` 旁路读取。Chromium 必须显式传 proxy（`chromium.launch(proxy={"server": HTTPS_PROXY})`），否则连不上外网。
+  5. **免费 AI 图站的匿名日限通常是「按出口 IP」计，不是 session/cookie**（raphael.app 实测：同出口 IP 的两个全新 context 都 `ANON_DAILY_LIMIT(used:2)`，清 cookie 无效）。绕过 = **出口 IP 轮换（代理池）**：每 worker 一个 Chromium/代理，轮询选未耗尽的，遇 `ANON_DAILY_LIMIT` 标记 exhausted 并轮换下一个；账号 cookies 作兜底。单 IP 永远只有 ~2/天，必须给用户留「代理池」配置入口，否则「绕过」是空话。
