@@ -39,3 +39,19 @@
 - **语言栈：TypeScript / Node 为主（Electron），不是 Python**。`C:\code\gloai` = Electron 42 + React 19 + Vite 8 + Tailwind 4 + @opencode-ai/sdk(1.18.10) + @oomol/connection-electron-adapter + electron-updater + pnpm；仓库内 depth-3 无 `*.py`/`requirements.txt`/`pyproject.toml`，即无 Python 后端。
 - hermes 与 **wanta 同栈同生态**（同为 OOMOL 系：Electron+React+Vite+OpenCode+oxlint/oxfmt+@oomol/connection）；与 **SafeOPC 异栈**（SafeOPC=Python+pywebview/WebView2+PyInstaller）。
 - 结论：用户问 "hermes 是 python 还是 ts node" → **TS/Node (Electron)**。勿把 SafeOPC 的 Python 经验套到 hermes 上。
+
+## BrowserSkill（腾讯，bsk）集成安装策略（SafeOPC layer4）
+- 定位：`bsk` CLI + 浏览器扩展桥接，驱动用户**已登录**的真实浏览器，补 CDP 拿不到登录态的缺口；与 `browser_*`(CDP/Playwright) **并列互补**，不进感知级联、不替换 CDP。
+- 两路安装策略（用户拍板，不可混淆）：
+  - **bsk CLI + 守护进程：能自动装**。`opc/layer4_tools/browser_skill_setup.py` 的 `ensure_bsk_installed()` 幂等：先探测 PATH + `~/.local/bin`（安装脚本写给未来进程 PATH，当前进程需直查安装目录）→ 缺失时跑官方一键脚本（Windows `powershell irm|iex install.ps1`；unix `sh -c curl|sh install.sh`），再复探。
+  - **浏览器扩展：不能自动装**（Chrome/Edge 禁止桌面应用静默注入）。只做 `detect_extension()` 检测 + `extension_guidance()` 深链商店（`bsk install-extension` 自动弹页 + Chrome Web Store / Edge 加载项 / GitHub zip 三路）+ 引导用户手动点「添加」。绝不尝试自动注入扩展。
+- 工具入口：`browser_skill_ensure_installed` / `browser_skill_extension_guidance` / `browser_skill_readiness`（经 `registry.collect_layer4_*` 暴露）。`browser_skill.py` 的 `is_available` 缺失消息已指向这俩。
+- 待核实风险：`bsk status/browsers` 的 JSON 字段名 0.1.x 快速变，`detect_extension` 用容错启发式（浏览器列表非空 / extension_connected 布尔 / "not detected" 字符串 / 不确定按未装），待真实二进制验证后微调。
+
+## 操作护栏 / 项目规则（2026-08-17 用户明确，须严格遵守）
+- ① 验证即落地：验证通过的东西立刻 commit，别停在工作区。对了就落，别拖。
+- ③ 范围护栏 / 零分支切换：只在**当前分支**上操作，**零分支切换**。别借「清理 / 提交」之名去碰 gloai 其他 branch、feature 分支、做 PR、搞分支杂技。当前分支就是终点。深层目的：堵「AI 容易自作主张扩大动作面」的坑。
+- ④ GitHub 只起 CI 作用（最关键一截）：
+  - 目的：commit / push 不为协作、不为给人 review、不为留漂亮历史。唯一目的 = 让 CI 跑一遍验证能否构建，跑完立即删分支 + release，保留 action 成品供手工下载验证。
+  - 尺度：别在 commit 信息洁癖、分支策略、PR 流程上浪费动作。正因 GitHub 只是验证机，**push 不是可选项、是必选项**——代码在 GitHub 上的价值 = 能否触发一次绿色 CI。
+  - 心智模型：本地仓库 = 工作台，GitHub = 验证机。
