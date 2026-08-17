@@ -5,7 +5,8 @@
   "tabs": {
     "skills": "Network Skills",
     "dsh": "DSH Plugins",
-    "builtin": "Built-in"
+    "builtin": "Built-in",
+    "runtime": "Runtime"
   },
   "skills": {
     "searchPlaceholder": "Search network skills…",
@@ -34,5 +35,30 @@
     "loadFailed": "Failed to load built-in plugins: {{error}}",
     "toggleFailed": "Toggle failed: {{error}}",
     "title": "Built-in capabilities (compiled plugins)"
+  },
+  "runtime": {
+    "loadFailed": "Failed to load runtimes: {{error}}",
+    "detectedTitle": "Detected CLI runtimes",
+    "detectedEmpty": "No local CLI found (ensure opencode/claude/codex/kimi/trae are installed and on PATH)",
+    "installed": "Installed",
+    "notInstalled": "Not installed",
+    "agentId": "Sub-agent: {{id}}",
+    "rescan": "Re-detect",
+    "rescanned": "Re-detected local CLIs",
+    "rescanFailed": "Re-detect failed: {{error}}",
+    "toggleFailed": "Toggle failed: {{error}}",
+    "customTitle": "Custom Agent API",
+    "custom": "Custom",
+    "customEmpty": "No custom agent added yet",
+    "customAdded": "Added custom agent: {{name}}",
+    "add": "Add",
+    "remove": "Remove",
+    "addFailed": "Add failed: {{error}}",
+    "removeFailed": "Remove failed: {{error}}",
+    "formIncomplete": "Name and endpoint are required",
+    "namePlaceholder": "Name (e.g. myagent)",
+    "endpointPlaceholder": "Endpoint (https://.../v1)",
+    "modelPlaceholder": "Model (optional)",
+    "apiKeyPlaceholder": "API Key (optional)"
   }
 }

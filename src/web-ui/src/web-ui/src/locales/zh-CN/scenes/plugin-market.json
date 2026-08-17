@@ -5,7 +5,8 @@
   "tabs": {
     "skills": "全网技能",
     "dsh": "DSH 插件",
-    "builtin": "内置能力"
+    "builtin": "内置能力",
+    "runtime": "运行时"
   },
   "skills": {
     "searchPlaceholder": "搜索全网技能…",
@@ -34,5 +35,30 @@
     "loadFailed": "加载内置能力失败：{{error}}",
     "toggleFailed": "切换失败：{{error}}",
     "title": "内置能力（编译内置插件）"
+  },
+  "runtime": {
+    "loadFailed": "加载运行时失败：{{error}}",
+    "detectedTitle": "检测到的 CLI 运行时",
+    "detectedEmpty": "未发现本机 CLI（请确认 opencode/claude/codex/kimi/trae 已安装并在 PATH 中）",
+    "installed": "已安装",
+    "notInstalled": "未安装",
+    "agentId": "子 agent：{{id}}",
+    "rescan": "重新检测",
+    "rescanned": "已重新检测本机 CLI",
+    "rescanFailed": "重新检测失败：{{error}}",
+    "toggleFailed": "切换失败：{{error}}",
+    "customTitle": "自定义 Agent API",
+    "custom": "自定义",
+    "customEmpty": "尚未添加自定义 Agent",
+    "customAdded": "已添加自定义 Agent：{{name}}",
+    "add": "添加",
+    "remove": "移除",
+    "addFailed": "添加失败：{{error}}",
+    "removeFailed": "移除失败：{{error}}",
+    "formIncomplete": "请填写名称与端点",
+    "namePlaceholder": "名称（如 myagent）",
+    "endpointPlaceholder": "端点（https://.../v1）",
+    "modelPlaceholder": "模型（可选）",
+    "apiKeyPlaceholder": "API Key（可选）"
   }
 }

@@ -838,6 +838,7 @@ commands::floating_window::fw_chat_to_main,
             runtime_registry::commands::rr_invoke_subagent,
             runtime_registry::commands::rr_register_upstream,
             runtime_registry::commands::rr_discover_models,
+            runtime_registry::commands::rr_set_runtime_enabled,
             // DSH upstream management (profile-backed runtime-registry Upstream).
             commands::dsh::dsh_list_upstreams,
             commands::dsh::dsh_upsert_upstream,

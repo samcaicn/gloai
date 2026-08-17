@@ -4,7 +4,7 @@
 // auto-generated sub-agents (`<app><n>`). Mirrors the structure of
 // `hermes::im::channel_registry::{ChannelRegistry, AdapterPool}`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -31,6 +31,11 @@ pub struct RuntimeRegistry {
     /// App data dir for persisting user-added custom agents. Set at
     /// startup via `set_data_dir`; `None` disables persistence.
     data_dir: RwLock<Option<PathBuf>>,
+    /// Built-in detected providers the user has disabled as callable agents.
+    /// Absent = enabled. This is the "plugin switch" seam that lets the
+    /// plugin-market toggle a detected CLI on/off without touching the
+    /// immutable `builtin_provider_specs` table.
+    disabled_providers: RwLock<HashSet<String>>,
 }
 
 impl RuntimeRegistry {
@@ -41,13 +46,18 @@ impl RuntimeRegistry {
             subagents: RwLock::new(Vec::new()),
             counters: RwLock::new(HashMap::new()),
             data_dir: RwLock::new(None),
+            disabled_providers: RwLock::new(HashSet::new()),
         }
     }
 
     /// Re-scan PATH for built-in CLIs and (re)build sub-agents.
     /// Built-in sub-agents are named `<app>1` (one per detected provider).
+    /// A detected provider that the user disabled (see `disabled_providers`)
+    /// stays listed as detected/installed but does NOT become a callable
+    /// agent — that's the plugin on/off switch surfaced in the plugin-market.
     pub async fn scan(&self) {
         let detected = detect_builtins();
+        let disabled = self.disabled_providers.read().await.clone();
         let mut instances = self.instances.write().await;
         // keep user-managed instances (custom-api + upstream); refresh built-ins
         instances.retain(|i| is_managed_instance(&i.id));
@@ -60,7 +70,8 @@ impl RuntimeRegistry {
             let idx = next_index(&mut counters, &inst.provider_id);
             let sub_id = format!("{}{}", inst.provider_id, idx);
             instances.push(inst.clone());
-            if inst.installed {
+            let enabled = !disabled.contains(&inst.provider_id);
+            if inst.installed && enabled {
                 subagents.push(SubAgent {
                     id: sub_id,
                     display_name: format!("{} #{}", inst.display_name, idx),
@@ -72,6 +83,28 @@ impl RuntimeRegistry {
                     available_models: Vec::new(),
                 });
             }
+        }
+    }
+
+    /// Enable/disable a built-in detected provider as a callable agent.
+    /// Disabling removes its sub-agent(s) but keeps the instance listed
+    /// (still shows as detected in the plugin-market); enabling re-runs the
+    /// scan so the `<app><n>` sub-agent is recreated.
+    pub async fn set_runtime_enabled(&self, provider_id: &str, enabled: bool) {
+        {
+            let mut set = self.disabled_providers.write().await;
+            if enabled {
+                set.remove(provider_id);
+            } else {
+                set.insert(provider_id.to_string());
+            }
+        }
+        if enabled {
+            self.scan().await;
+        } else {
+            let instance_id = format!("rt-{}", provider_id);
+            let mut subagents = self.subagents.write().await;
+            subagents.retain(|s| s.instance_id != instance_id);
         }
     }
 

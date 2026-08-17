@@ -88,6 +88,14 @@ export const runtimeRegistryAPI = {
   async removeAgent(subagentId: string): Promise<boolean> {
     return invoke('rr_remove_agent', { subagentId });
   },
+  /**
+   * Enable/disable a built-in detected CLI provider as a callable agent.
+   * The plugin-market surfaces this as a plugin on/off switch so a detected
+   * runtime behaves exactly like any other plugin.
+   */
+  async setRuntimeEnabled(providerId: string, enabled: boolean): Promise<void> {
+    return invoke('rr_set_runtime_enabled', { providerId, enabled });
+  },
   async invokeSubagent(
     req: InvokeSubagentRequest,
   ): Promise<InvokeSubagentResponse> {

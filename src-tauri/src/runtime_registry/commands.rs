@@ -76,6 +76,19 @@ pub async fn rr_spawn_instance(
     Ok(registry.spawn_instance(&provider_id).await)
 }
 
+/// Enable/disable a built-in detected CLI provider as a callable agent.
+/// Mirrors the plugin-market's built-in-plugin toggle (everything is a
+/// plugin): a detected CLI is a plugin you can switch on/off.
+#[tauri::command]
+pub async fn rr_set_runtime_enabled(
+    registry: tauri::State<'_, RuntimeRegistry>,
+    provider_id: String,
+    enabled: bool,
+) -> Result<(), String> {
+    registry.set_runtime_enabled(&provider_id, enabled).await;
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn rr_add_custom_agent(
     registry: tauri::State<'_, RuntimeRegistry>,
