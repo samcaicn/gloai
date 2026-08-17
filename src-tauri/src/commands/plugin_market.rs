@@ -25,7 +25,7 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::hermes::{event_bus, HermesAppState};
-use crate::profile::{DshPluginRef, ProfileStore};
+use crate::profile::{DshPluginRef, DshUpstreamConfig, ProfileStore};
 use crate::runtime_registry::registry::RuntimeRegistry;
 
 // ── shared load/save helpers (mirrors commands/dsh.rs) ─────────────────────
@@ -303,6 +303,26 @@ pub async fn dsh_list_plugins(app: AppHandle) -> Result<Vec<DshPluginSearchItem>
     let upstreams = store.dsh_upstreams();
     let mut out: Vec<DshPluginSearchItem> = Vec::new();
     let mut had_http = false;
+
+    // In debug builds (i.e. `tauri dev`), if the user hasn't configured any DSH
+    // runtime yet, fall back to a local mock endpoint so the plugin market's DSH
+    // tab shows real data out of the box for development/testing. Release builds
+    // stay clean — no localhost endpoint is ever injected there.
+    #[cfg(debug_assertions)]
+    let upstreams: Vec<DshUpstreamConfig> = if upstreams.iter().any(|u| u.enabled && u.endpoint.starts_with("http")) {
+        upstreams
+    } else {
+        warn!("DSH 调试模式：未配置 DSH 运行时，注入本地 mock endpoint http://localhost:8787 用于开发测试");
+        vec![DshUpstreamConfig {
+            id: "local-dev".to_string(),
+            display_name: "本地 Mock DSH (dev)".to_string(),
+            endpoint: "http://127.0.0.1:8787".to_string(),
+            cli_args_template: None,
+            model: None,
+            api_key: None,
+            enabled: true,
+        }]
+    };
 
     for up in upstreams.iter().filter(|u| u.enabled) {
         let endpoint = up.endpoint.trim();
