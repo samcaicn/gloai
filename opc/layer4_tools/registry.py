@@ -53,6 +53,13 @@ from typing import Any, Awaitable, Callable  # noqa: E402
 
 import inspect  # noqa: E402
 
+from opc.layer4_tools.output_budget import budget_tool_output  # noqa: E402
+
+# Maximum serialized tool output size (characters). Outputs exceeding this
+# limit are previewed before being returned to the agent loop; recoverable
+# tools persist full output to disk.
+_OUTPUT_LIMIT = 20_000
+
 
 @dataclass
 class ToolDefinition:
@@ -76,6 +83,13 @@ class ToolDefinition:
     runtime_managed: bool = False
     plugin_id: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
+    # Output-budget tuning (consumed by ToolRegistry.execute via
+    # budget_tool_output). Kept on the descriptor so per-tool limits survive
+    # plugin refresh and the native planner can read them.
+    max_result_chars: int = _OUTPUT_LIMIT
+    persist_large_results: bool = True
+    self_bounded_output: bool = False
+    preview_chars: int | None = None
 
     def to_schema(self) -> dict[str, Any]:
         """OpenAI-style function-calling schema used by the LLM layer."""
@@ -214,9 +228,20 @@ class ToolRegistry:
             )
         except Exception as exc:  # noqa: BLE001
             return {"success": False, "error": f"{type(exc).__name__}: {exc}"}
-        if isinstance(result, dict):
-            return result
-        return {"success": True, "result": result}
+
+        # Recoverable registry-level output budget (per-tool tuning). The
+        # budget helper expects the canonical {"result": <payload>, "success":
+        # True} envelope, so wrap non-enveloped tool returns before budgeting.
+        envelope = {"result": result, "success": True}
+        return budget_tool_output(
+            envelope,
+            tool_name=tool.name,
+            task=task,
+            max_chars=int(tool.max_result_chars or _OUTPUT_LIMIT),
+            preview_chars=tool.preview_chars,
+            persist_large_results=bool(tool.persist_large_results),
+            self_bounded_output=bool(tool.self_bounded_output),
+        )
 
     # ---- plugin integration ---------------------------------------------
     def refresh_plugins(self) -> int:
