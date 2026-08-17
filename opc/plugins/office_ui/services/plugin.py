@@ -118,6 +118,10 @@ class PluginService:
 
     async def refresh(self) -> ServiceResult:
         r = self._registry()
+        # Re-apply the layered override cascade (bundle→preset→profile→home→cli)
+        # into the flat profile so the runtime honors preset composition and
+        # user overrides, then reload + re-load entries.
+        r.sync_effective()
         r.refresh()
         runtime_added = self._propagate_to_runtime()
         return ServiceResult(
@@ -131,6 +135,10 @@ class PluginService:
             st = r.install(source)
             st.enabled = enabled
             r.add(st)
+            # A freshly installed DSH preset composes the runtime via its
+            # preset/agent.cordis.yml — re-sync the cascade so composed
+            # plugins are enabled/loaded immediately (no restart).
+            r.sync_effective()
         except PluginError as e:
             raise self._translate(e)
         # Reload the plugin entry into the live runtime tool registry so the
@@ -145,10 +153,68 @@ class PluginService:
         r = self._registry()
         try:
             r.remove(plugin_id)
+            # A removed agent preset drops its composition from the cascade.
+            r.sync_effective()
         except PluginError as e:
             raise self._translate(e)
         return ServiceResult(
             {"ok": True, "action": "plugin_removed", "plugin_id": plugin_id},
+            events=[self._refresh_event(r)],
+        )
+
+    # ------------------------------------------------------------------
+    # Cordis-style layered override cascade (faithful port of
+    # cordis.patch.yml layering: bundle/preset/profile/home/cli).
+    # ------------------------------------------------------------------
+    async def cascade_get(self) -> ServiceResult:
+        r = self._registry()
+        return ServiceResult(r.resolve_effective())
+
+    async def cascade_patch(self, tree: dict, layer: str = "home") -> ServiceResult:
+        """Write an override into the user-writable ``home`` layer.
+
+        Only ``home`` is user-writable; bundle/preset/profile/cli are managed.
+        The override is deep-merged into the existing home layer, then the
+        cascade is re-synced into the flat profile and the runtime refreshes.
+        """
+        if layer != "home":
+            raise PluginError(
+                "cascade_layer_readonly",
+                f"Only the 'home' layer is user-writable; '{layer}' is managed.",
+            )
+        if not isinstance(tree, dict) or "plugins" not in tree:
+            raise PluginError(
+                "cascade_bad_tree",
+                "Override tree must be a dict with a 'plugins' list, e.g. "
+                "{'plugins': [{'id': 'x', 'enabled': false}]}.",
+            )
+        from opc.plugin_core.cascade import CascadeResolver
+
+        r = self._registry()
+        resolver = CascadeResolver(Path(get_opc_home()), registry=r)
+        resolver.write_home_layer(tree)
+        r.sync_effective()
+        self._propagate_to_runtime()
+        return ServiceResult(
+            {"ok": True, "action": "cascade_patched", "cascade": r.resolve_effective()},
+            events=[self._refresh_event(r)],
+        )
+
+    async def cascade_reset(self, layer: str = "home") -> ServiceResult:
+        if layer != "home":
+            raise PluginError(
+                "cascade_layer_readonly",
+                f"Only the 'home' layer is user-writable; '{layer}' is managed.",
+            )
+        from opc.plugin_core.cascade import CascadeResolver
+
+        r = self._registry()
+        resolver = CascadeResolver(Path(get_opc_home()), registry=r)
+        resolver.reset_home_layer()
+        r.sync_effective()
+        self._propagate_to_runtime()
+        return ServiceResult(
+            {"ok": True, "action": "cascade_reset", "cascade": r.resolve_effective()},
             events=[self._refresh_event(r)],
         )
 

@@ -643,6 +643,15 @@ export class VisualSocketClient {
   pluginExport(pluginId: string): void {
     this.send({ type: 'plugin_export', plugin_id: pluginId })
   }
+  pluginCascadeGet(): void {
+    this.send({ type: 'plugin_cascade' })
+  }
+  pluginCascadePatch(tree: Record<string, unknown>, layer: string = 'home'): void {
+    this.send({ type: 'plugin_cascade_patch', tree, layer })
+  }
+  pluginCascadeReset(layer: string = 'home'): void {
+    this.send({ type: 'plugin_cascade_reset', layer })
+  }
 
   // ── Org Editing ───────────────────────────────────────────────────────
 

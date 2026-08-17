@@ -27,6 +27,13 @@ export interface PluginsPageProps {
   pluginPreviewData: any | null
   pluginPreviewLoading: boolean
   pluginPreviewError: string | null
+  // Cordis-style layered override cascade (bundle/preset/profile/home/cli)
+  onCascadeGet: () => void
+  onCascadePatch: (tree: Record<string, unknown>, layer?: string) => void
+  onCascadeReset: (layer?: string) => void
+  cascadeData: any | null
+  cascadeLoading: boolean
+  cascadeError: string | null
 }
 
 function parseSource(value: string): { kind: string; label: string } {
@@ -357,6 +364,12 @@ export function PluginsPage(props: PluginsPageProps) {
     pluginPreviewData,
     pluginPreviewLoading,
     pluginPreviewError,
+    onCascadeGet,
+    onCascadePatch,
+    onCascadeReset,
+    cascadeData,
+    cascadeLoading,
+    cascadeError,
   } = props
 
   const [source, setSource] = useState('')
@@ -369,6 +382,12 @@ export function PluginsPage(props: PluginsPageProps) {
   const [installingIds, setInstallingIds] = useState<Record<string, boolean>>({})
   // DSH preset install-confirm modal (holds the candidate being previewed).
   const [confirmPreset, setConfirmPreset] = useState<any | null>(null)
+  // Cordis-style layered override cascade state + home-override editor state.
+  const [cascadeOpen, setCascadeOpen] = useState(true)
+  const [ovPlugin, setOvPlugin] = useState('')
+  const [ovEnabled, setOvEnabled] = useState(false)
+  const [ovConfigText, setOvConfigText] = useState('{}')
+  const [ovError, setOvError] = useState<string | null>(null)
 
   const handleDiscover = () => {
     if (!discoverQuery.trim()) return
@@ -424,6 +443,14 @@ export function PluginsPage(props: PluginsPageProps) {
     }, 2500)
     return () => clearInterval(t)
   }, [configTarget])
+
+  // Fetch the layered override cascade when the page opens.
+  const onCascadeGetRef = useRef(onCascadeGet)
+  onCascadeGetRef.current = onCascadeGet
+  useEffect(() => {
+    onCascadeGetRef.current()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const sourceInfo = parseSource(source)
 
@@ -628,6 +655,132 @@ export function PluginsPage(props: PluginsPageProps) {
             </div>
           )
         })}
+      </div>
+
+      {/* Cordis-style layered override cascade (bundle/preset/profile/home/cli) */}
+      <div className="plugins-cascade">
+        <div className="plugins-discover-head">
+          <h3>分层覆盖（Cordis cascade）</h3>
+          <p className="plugins-sub">
+            忠实移植 dsh-desktop 的 <code>cordis.patch.yml</code> 分层覆盖：配置像 CSS 级联一样从
+            <code>bundle → preset → profile → home → cli</code> 逐层叠加，后层胜出。安装 DSH 预设会自动从其
+            <code>preset/agent.cordis.yml</code> 组合出插件集（preset 层）；<code>home</code> 层是你可在线编辑的覆盖层。
+          </p>
+          <div className="plugins-cascade-actions">
+            <button className="plugin-btn plugin-btn-ghost" onClick={() => onCascadeGet()}>
+              {cascadeLoading ? '加载中…' : '刷新'}
+            </button>
+            <button className="plugin-btn plugin-btn-ghost" onClick={() => { onCascadeReset('home'); onCascadeGet() }}>
+              重置 home 层
+            </button>
+            <button className="plugin-btn plugin-btn-primary" onClick={() => setCascadeOpen((v) => !v)}>
+              {cascadeOpen ? '收起' : '展开'}
+            </button>
+          </div>
+        </div>
+
+        {cascadeError && <div className="plugin-banner plugin-banner-error">{cascadeError}</div>}
+
+        {cascadeOpen && cascadeData && (
+          <div className="cascade-body">
+            {/* Layer stack */}
+            <div className="cascade-layers">
+              <div className="cascade-layers-title">层级（base → top）</div>
+              {(cascadeData.layers ?? []).map((layer: any) => {
+                const pls = (layer.tree?.plugins ?? []) as any[]
+                const touched = pls.filter((p) => p && (p.enabled !== undefined || (p.config && Object.keys(p.config).length)))
+                return (
+                  <div key={layer.name} className="cascade-layer-row">
+                    <span className={`cascade-layer-name layer-${layer.name}`}>{layer.name}</span>
+                    <span className="cascade-layer-src" title={layer.source}>{layer.source}</span>
+                    <span className="cascade-layer-count">{touched.length} 处覆盖</span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Effective per-plugin resolution + trace */}
+            <div className="cascade-effective">
+              <div className="cascade-layers-title">生效结果（含级联轨迹）</div>
+              <table className="cascade-table">
+                <thead>
+                  <tr>
+                    <th>插件</th>
+                    <th>生效启用</th>
+                    <th>被覆盖</th>
+                    <th>级联轨迹（base → top）</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(cascadeData.plugins ?? []).map((eff: any) => (
+                    <tr key={eff.id} className={eff.missing ? 'cascade-row-missing' : ''}>
+                      <td>
+                        <span className="plugin-card-name">{eff.name ?? eff.id}</span>
+                        <span className="plugin-card-id">{eff.id}</span>
+                        {eff.missing && <span className="plugin-badge plugin-badge-danger">未安装</span>}
+                      </td>
+                      <td>{eff.enabled ? '✓' : '—'}</td>
+                      <td>{eff.overridden ? '是' : '否'}</td>
+                      <td className="cascade-trace">
+                        {(eff.trace ?? []).map((tr: any, i: number) => (
+                          <span key={i} className={`cascade-trace-chip layer-${tr.layer}`}>
+                            {tr.layer}
+                            {tr.enabled !== undefined && (tr.enabled ? ':开' : ':关')}
+                            {tr.config && Object.keys(tr.config).length > 0 && ':配置'}
+                          </span>
+                        ))}
+                        {(eff.trace ?? []).length === 0 && <span className="cascade-trace-none">（无，使用基础值）</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Home-layer override editor */}
+            <div className="cascade-editor">
+              <div className="cascade-layers-title">编辑 home 覆盖层</div>
+              <div className="cascade-editor-row">
+                <select className="plugin-select" value={ovPlugin} onChange={(e) => setOvPlugin(e.target.value)}>
+                  <option value="">选择已安装插件…</option>
+                  {plugins.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name ?? p.id} ({p.id})</option>
+                  ))}
+                </select>
+                <label className="plugins-enable-toggle">
+                  <input type="checkbox" checked={ovEnabled} onChange={(e) => setOvEnabled(e.target.checked)} />
+                  启用
+                </label>
+                <input
+                  className="plugin-input plugin-input-wide"
+                  placeholder='config JSON，如 {"timeout": 30}'
+                  value={ovConfigText}
+                  onChange={(e) => setOvConfigText(e.target.value)}
+                />
+                <button
+                  className="plugin-btn plugin-btn-primary"
+                  disabled={!ovPlugin}
+                  onClick={() => {
+                    let cfg: Record<string, unknown> = {}
+                    if (ovConfigText.trim()) {
+                      try { cfg = JSON.parse(ovConfigText) } catch (e: any) {
+                        setOvError('config 不是合法 JSON: ' + (e?.message ?? ''))
+                        return
+                      }
+                    }
+                    setOvError(null)
+                    onCascadePatch({ plugins: [{ id: ovPlugin, enabled: ovEnabled, config: cfg }] })
+                    onCascadeGet()
+                  }}
+                >
+                  应用覆盖
+                </button>
+              </div>
+              {ovError && <div className="plugin-banner plugin-banner-error">{ovError}</div>}
+              <div className="plugins-sub">覆盖写入 <code>{'<opc_home>/config/plugins_override.yaml'}</code>，立即同步到运行时（无需重启）。</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {configTarget && (

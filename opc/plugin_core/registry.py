@@ -197,3 +197,37 @@ class PluginRegistry:
         """
         self.load()
         return self.load_all()
+
+    # ---- Cordis-style layered override cascade ---------------------------
+    def resolve_effective(self) -> dict:
+        """Resolve the layered override cascade (bundle→preset→profile→home→cli).
+
+        Joins the merged cascade tree with the installed plugin universe and
+        returns the effective per-plugin enabled/config plus a per-layer trace
+        (the CSS-cascade view). See :mod:`opc.plugin_core.cascade`.
+        """
+        from .cascade import CascadeResolver
+
+        resolver = CascadeResolver(self.opc_home, registry=self)
+        return resolver.resolve_effective(self)
+
+    def sync_effective(self) -> dict:
+        """Re-resolve the cascade and write resolved enabled/config back into the
+        flat profile so the runtime loader honors the overrides.
+
+        The flat profile stays the *installation universe + base settings*; the
+        cascade layers are *overrides* layered on top and re-synced here on
+        every refresh / install / override change.
+        """
+        data = self.resolve_effective()
+        for eff in data.get("plugins", []):
+            if eff.get("missing"):
+                continue
+            p = self.get_plugin(eff["id"])
+            if p is None:
+                continue
+            p.enabled = bool(eff["enabled"])
+            if eff.get("config") is not None:
+                p.config = dict(eff["config"])
+        self.save()
+        return data

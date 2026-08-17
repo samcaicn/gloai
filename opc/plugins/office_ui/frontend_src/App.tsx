@@ -511,6 +511,9 @@ export default function App() {
   const [pluginPreviewData, setPluginPreviewData] = useState<any | null>(null)
   const [pluginPreviewLoading, setPluginPreviewLoading] = useState(false)
   const [pluginPreviewError, setPluginPreviewError] = useState<string | null>(null)
+  const [cascadeData, setCascadeData] = useState<any | null>(null)
+  const [cascadeLoading, setCascadeLoading] = useState(false)
+  const [cascadeError, setCascadeError] = useState<string | null>(null)
   const [configExportYaml, setConfigExportYaml] = useState<string | null>(null)
   const [configImportPreview, setConfigImportPreview] = useState<{ roles_added: number; roles_removed: number; employees_changed: number } | null>(null)
   const [configImportError, setConfigImportError] = useState<string | null>(null)
@@ -2017,6 +2020,11 @@ export default function App() {
         setPluginConfigSchema(p.config_schema ?? null)
         setPluginConfigError(null)
       },
+      onCascade: (payload) => {
+        setCascadeLoading(false)
+        setCascadeError((payload as any)?.error ?? null)
+        setCascadeData(payload as any)
+      },
       onChildSessionCreated: (payload) => {
         if (!payloadMatchesActiveProject(payload as unknown as Record<string, unknown>, false)) return
         const ss = sessionStoreRef.current
@@ -2803,6 +2811,16 @@ export default function App() {
           pluginPreviewData={pluginPreviewData}
           pluginPreviewLoading={pluginPreviewLoading}
           pluginPreviewError={pluginPreviewError}
+          onCascadeGet={() => {
+            setCascadeLoading(true)
+            setCascadeError(null)
+            clientRef.current?.pluginCascadeGet()
+          }}
+          onCascadePatch={(tree, layer) => clientRef.current?.pluginCascadePatch(tree, layer)}
+          onCascadeReset={(layer) => clientRef.current?.pluginCascadeReset(layer)}
+          cascadeData={cascadeData}
+          cascadeLoading={cascadeLoading}
+          cascadeError={cascadeError}
         />
       )}
 

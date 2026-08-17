@@ -1,0 +1,8 @@
+# SafeOPC plugin cascade — "bundle" layer (shipped defaults).
+#
+# This is the base of the Cordis-style override cascade
+# (bundle -> preset -> profile -> home -> cli). It ships empty: the real
+# composition comes from installed presets (preset layer) and user overrides
+# (home layer). Ship core, always-on plugin declarations here if/when SafeOPC
+# itself becomes plugin-based.
+plugins: []

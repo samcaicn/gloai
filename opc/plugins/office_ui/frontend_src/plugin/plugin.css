@@ -563,3 +563,124 @@
   background: rgba(214, 140, 255, 0.18);
   color: #d9a6ff;
 }
+
+/* ── Cordis-style layered override cascade ───────────────────────────── */
+.plugins-cascade {
+  margin-top: 22px;
+  padding: 16px 18px;
+  background: rgba(20, 26, 38, 0.55);
+  border: 1px solid rgba(120, 150, 220, 0.18);
+  border-radius: 12px;
+}
+.plugins-cascade-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.cascade-body {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cascade-layers-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #9fb3d9;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.cascade-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cascade-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(12, 16, 26, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.cascade-layer-name {
+  font-weight: 700;
+  font-size: 13px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  min-width: 64px;
+  text-align: center;
+}
+.layer-bundle  { background: rgba(120, 130, 150, 0.25); color: #c7d0de; }
+.layer-preset  { background: rgba(214, 140, 255, 0.22); color: #e0b3ff; }
+.layer-profile { background: rgba(110, 168, 254, 0.22); color: #9cc2ff; }
+.layer-home    { background: rgba(96, 214, 140, 0.22); color: #7fe6a3; }
+.layer-cli     { background: rgba(255, 190, 110, 0.22); color: #ffd08a; }
+.cascade-layer-src {
+  flex: 1;
+  font-size: 11.5px;
+  color: #8b97ad;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cascade-layer-count {
+  font-size: 11.5px;
+  color: #b9c4d8;
+}
+.cascade-effective {
+  overflow-x: auto;
+}
+.cascade-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.cascade-table th,
+.cascade-table td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: top;
+}
+.cascade-table th {
+  color: #9fb3d9;
+  font-weight: 600;
+}
+.cascade-row-missing td {
+  opacity: 0.6;
+}
+.plugin-badge-danger {
+  background: rgba(255, 120, 120, 0.18);
+  color: #ff9b9b;
+}
+.cascade-trace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.cascade-trace-chip {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.cascade-trace-none {
+  font-size: 11.5px;
+  color: #7f8aa0;
+}
+.cascade-editor {
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(12, 16, 26, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.cascade-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}

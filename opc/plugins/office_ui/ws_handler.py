@@ -10510,6 +10510,43 @@ class WSHandler:
             logger.warning(f"Plugin export failed: {exc}")
             await self._send_ack(ws, ok=False, error=str(exc))
 
+    async def _handle_plugin_cascade_get(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.cascade_get()
+            await ws.send_json({"type": "plugin_cascade", "payload": result.payload})
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_cascade")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Plugin cascade get failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_cascade_patch(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.cascade_patch(
+                tree=data.get("tree", {}) or {},
+                layer=str(data.get("layer", "home") or "home"),
+            )
+            await self._publish_service_result(result)
+            await self._send_service_ack(ws, result)
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_cascade_patch")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Plugin cascade patch failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_cascade_reset(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.cascade_reset(
+                layer=str(data.get("layer", "home") or "home"),
+            )
+            await self._publish_service_result(result)
+            await self._send_service_ack(ws, result)
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_cascade_reset")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Plugin cascade reset failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
     # ------------------------------------------------------------------
     # Org editing handlers (custom mode)
     # ------------------------------------------------------------------
@@ -10697,6 +10734,9 @@ class WSHandler:
         "plugin_export":       _handle_plugin_export,
         "plugin_discover":     _handle_plugin_discover,
         "plugin_refresh":      _handle_plugin_refresh,
+        "plugin_cascade":      _handle_plugin_cascade_get,
+        "plugin_cascade_patch": _handle_plugin_cascade_patch,
+        "plugin_cascade_reset": _handle_plugin_cascade_reset,
         # Org config import/export
         "org_config_export":   _handle_org_config_export,
         "org_config_import":   _handle_org_config_import,
