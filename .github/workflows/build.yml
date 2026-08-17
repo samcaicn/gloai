@@ -7,7 +7,7 @@ concurrency:
 on:
   push:
     tags: ["v*"]
-    branches: [safeopc, aim]
+    branches: [safeopc, aim, pks]
   workflow_dispatch:
     inputs:
       brand:
@@ -24,7 +24,7 @@ permissions:
 
 env:
   # workflow_dispatch 鈫?use input; push to safeopc/aim branch 鈫?safeopc (AIMarketing OEM); tag push 鈫?tupai
-  BRAND: ${{ inputs.brand || ((github.ref == 'refs/heads/safeopc' || github.ref == 'refs/heads/aim') && 'safeopc') || 'tupai' }}
+  BRAND: ${{ inputs.brand || ((github.ref == 'refs/heads/safeopc' || github.ref == 'refs/heads/aim' || github.ref == 'refs/heads/pks') && 'safeopc') || 'tupai' }}
   # Only create a GitHub release for tag pushes; empty for branch pushes
   TAG_NAME: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
 
