@@ -2,17 +2,32 @@ name: CI
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches: [dshmcp]
+  workflow_dispatch:
 
 jobs:
-  check:
+  build-test:
+    name: Build & test (node)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: npm
-      - run: npm ci
-      - run: npm run check
+          node-version: 22
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-plugin-mcp-dist
+          path: dist
