@@ -11,7 +11,6 @@ import {
   Puzzle,
   Search as SearchIcon,
   Send,
-  Server,
   Star,
   Trash2,
   TrendingUp,
@@ -29,8 +28,8 @@ import {
   installDshPlugin,
   listBuiltinPlugins,
   listDshPlugins,
-  dshListPlugins,
   removeDshPlugin,
+  searchDshPlugins,
   setBuiltinPluginEnabled,
   setDshPluginEnabled,
   type BuiltinPluginInfo,
@@ -73,9 +72,6 @@ const PluginMarketScene: React.FC = () => {
   const [dshLoading, setDshLoading] = useState(false);
   const [dshSearching, setDshSearching] = useState(false);
   const [dshBusyId, setDshBusyId] = useState<string | null>(null);
-  // True when no DSH runtime (http upstream) is configured — the discover
-  // section then shows a "去 设置 → DSH 配置" CTA instead of a silent empty.
-  const [dshNoUpstream, setDshNoUpstream] = useState(false);
 
   const loadDshInstalled = useCallback(async () => {
     try {
@@ -90,24 +86,18 @@ const PluginMarketScene: React.FC = () => {
     }
   }, [notification, t]);
 
-  // Real "接通 DSH 插件服务": pull the live catalog from every configured DSH
-  // upstream (Settings → DSH). Filtering by the search box is done client-side
-  // below, so one fetch serves all queries.
-  const loadDshDiscover = useCallback(async () => {
+  // 真正接通 DSH 插件服务：从 GitHub `topic:dsh-plugin` 拉取真实 DSH 插件目录
+  // （DeepSeek Harness 生态插件以 GitHub 仓库形式存在）。后端已做直连 + 镜像
+  // 兜底 + 可选 token，保证发现区开箱即见真实插件。搜索框过滤在客户端完成。
+  const loadDshDiscover = useCallback(async (q?: string) => {
     try {
       setDshSearching(true);
-      setDshNoUpstream(false);
-      const items = await dshListPlugins();
+      const items = await searchDshPlugins(q && q.trim() ? q.trim() : undefined);
       setDshResults(items);
     } catch (err) {
       const msg = String(err);
-      if (msg.includes('未配置 DSH 运行时')) {
-        setDshNoUpstream(true);
-        setDshResults([]);
-      } else {
-        log.error('Failed to fetch DSH plugins', err);
-        notification.error(t('dsh.searchFailed', { error: msg }));
-      }
+      log.error('Failed to fetch DSH plugins from GitHub', err);
+      notification.error(t('dsh.searchFailed', { error: msg }));
     } finally {
       setDshSearching(false);
     }
@@ -714,8 +704,11 @@ const PluginMarketScene: React.FC = () => {
               <Search
                 value={dshQuery}
                 onChange={setDshQuery}
-                onSearch={() => {}}
-                onClear={() => setDshQuery('')}
+                onSearch={() => void loadDshDiscover(dshQuery)}
+                onClear={() => {
+                  setDshQuery('');
+                  void loadDshDiscover('');
+                }}
                 placeholder={t('dsh.searchPlaceholder')}
                 size="medium"
                 clearable
@@ -796,11 +789,6 @@ const PluginMarketScene: React.FC = () => {
                   {Array.from({ length: 8 }).map((_, i) => (
                     <div key={`dr-${i}`} className="plugin-market-scene__skeleton" />
                   ))}
-                </div>
-              ) : dshNoUpstream ? (
-                <div className="plugin-market-scene__empty plugin-market-scene__empty--info">
-                  <Server size={24} />
-                  <span>{t('dsh.noUpstream')}</span>
                 </div>
               ) : dshVisible.length === 0 ? (
                 <div className="plugin-market-scene__empty">

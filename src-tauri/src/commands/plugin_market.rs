@@ -123,57 +123,95 @@ struct GithubLicense {
     spdx_id: Option<String>,
 }
 
+/// Candidate GitHub API bases, tried in order. The first is the official
+/// endpoint; the rest are public reverse proxies that help when
+/// `api.github.com` is unreachable (e.g. GFW). The first success wins.
+const GITHUB_API_BASES: &[&str] = &[
+    "https://api.github.com",
+    "https://gh-proxy.com/https://api.github.com",
+];
+
 /// Search the network-wide DSH plugin ecosystem on GitHub (repositories tagged
 /// with the `dsh-plugin` topic, sorted by stars). `query` narrows the results.
+///
+/// This is the real discover source — DeepSeek Harness (DSH) plugins live as
+/// GitHub repos under the `dsh-plugin` topic. The request is authenticated when
+/// a `GITHUB_TOKEN`/`GH_TOKEN` env var is present (lifts the 60 req/h anonymous
+/// rate limit); it falls back through the proxy list when the direct endpoint
+/// is blocked so the discover tab is never silently empty.
 #[tauri::command]
 pub async fn search_dsh_plugins(query: Option<String>) -> Result<Vec<DshPluginSearchItem>, String> {
     let q = match query.as_deref().unwrap_or("").trim() {
         "" => "topic:dsh-plugin".to_string(),
         q => format!("topic:dsh-plugin {}", q),
     };
-    let url = format!(
-        "https://api.github.com/search/repositories?q={}&sort=stars&order=desc&per_page=30",
-        urlencoding(&q)
-    );
+    let q_enc = urlencoding(&q);
 
-    let client = reqwest::Client::new();
-    let resp = client
-        .get(&url)
-        .header("User-Agent", "safeopcAPP")
-        .header("Accept", "application/vnd.github+json")
-        .send()
-        .await
-        .map_err(|e| format!("GitHub 搜索请求失败: {}", e))?;
+    // Optional auth — never hard-coded; read from the environment if present.
+    let token = std::env::var("GITHUB_TOKEN")
+        .or_else(|_| std::env::var("GH_TOKEN"))
+        .ok();
 
-    if !resp.status().is_success() {
-        return Err(format!("GitHub 搜索返回 {}（可能触发未认证限流）", resp.status()));
-    }
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(12))
+        .build()
+        .map_err(|e| format!("HTTP 客户端初始化失败: {}", e))?;
 
-    let body: GithubSearchResponse = resp
-        .json()
-        .await
-        .map_err(|e| format!("解析 GitHub 响应失败: {}", e))?;
-
-    let items = body
-        .items
-        .into_iter()
-        .map(|r| {
-            let id = r.full_name.replace('/', "-");
-            DshPluginSearchItem {
-                id: id.clone(),
-                repo: r.full_name.clone(),
-                name: r.full_name.clone(),
-                description: r.description,
-                stars: r.stargazers_count,
-                url: r.html_url,
-                language: r.language,
-                license: r.license.and_then(|l| l.spdx_id),
-                updated_at: r.updated_at,
-                install_ref: format!("github:{}", r.full_name),
+    let mut last_err = String::new();
+    for base in GITHUB_API_BASES {
+        let url = format!(
+            "{}/search/repositories?q={}&sort=stars&order=desc&per_page=30",
+            base, q_enc
+        );
+        let mut req = client
+            .get(&url)
+            .header("User-Agent", "safeopcAPP")
+            .header("Accept", "application/vnd.github+json");
+        if let Some(t) = &token {
+            req = req.header("Authorization", format!("Bearer {}", t));
+        }
+        match req.send().await {
+            Ok(resp) => {
+                if !resp.status().is_success() {
+                    last_err = format!("GitHub 返回 {}（可能触发未认证限流）", resp.status());
+                    continue;
+                }
+                match resp.json::<GithubSearchResponse>().await {
+                    Ok(body) => {
+                        let items = body
+                            .items
+                            .into_iter()
+                            .map(|r| {
+                                let id = r.full_name.replace('/', "-");
+                                DshPluginSearchItem {
+                                    id: id.clone(),
+                                    repo: r.full_name.clone(),
+                                    name: r.full_name.clone(),
+                                    description: r.description,
+                                    stars: r.stargazers_count,
+                                    url: r.html_url,
+                                    language: r.language,
+                                    license: r.license.and_then(|l| l.spdx_id),
+                                    updated_at: r.updated_at,
+                                    install_ref: format!("github:{}", r.full_name),
+                                }
+                            })
+                            .collect();
+                        return Ok(items);
+                    }
+                    Err(e) => {
+                        last_err = format!("解析 GitHub 响应失败: {}", e);
+                        continue;
+                    }
+                }
             }
-        })
-        .collect();
-    Ok(items)
+            Err(e) => {
+                last_err = format!("请求失败 ({}): {}", base, e);
+                continue;
+            }
+        }
+    }
+    Err(format!("无法从 GitHub 获取 DSH 插件目录：{}", last_err))
 }
 
 // ── DSH plugin service: live catalog from configured upstreams ────────────
