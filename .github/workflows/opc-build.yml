@@ -8,7 +8,7 @@ name: OPC Build (self-cleaning)
 
 on:
   push:
-    branches: [opc]
+    branches: [opc, open]
   workflow_dispatch:
 
 permissions:
