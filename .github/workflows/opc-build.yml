@@ -40,6 +40,22 @@ jobs:
           python -m pip install pyinstaller pywebview
           python -m pip install -e ".[dev]"
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build frontend (vite)
+        # Local builds are banned (project rule): the frontend is built here in
+        # CI, never on a dev machine. Output lands in opc/plugins/office_ui/
+        # frontend_dist, which safeopc.spec bundles into the exe.
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd opc/plugins/office_ui/frontend_src
+          npm ci
+          npm run build
+
       - name: Build with PyInstaller
         shell: bash
         run: |

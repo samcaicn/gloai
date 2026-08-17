@@ -44,6 +44,10 @@ uv.lock
 *.egg
 dist/
 build/
+# CI-built artifacts — local builds are banned (CI only, see project rules)
+opc/plugins/office_ui/frontend_dist/
+tests/_tmp_*/
+.test_*/
 .venv/
 venv/
 env/
