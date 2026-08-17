@@ -853,6 +853,13 @@ commands::floating_window::fw_chat_to_main,
             commands::plugin_market::set_dsh_plugin_enabled,
             commands::plugin_market::list_builtin_plugins,
             commands::plugin_market::set_builtin_plugin_enabled,
+            // Preset packages — dsh-equivalent portable agent mechanism
+            // (.dshpreset import/export + safe atomic install).
+            commands::preset_pack::preset_list,
+            commands::preset_pack::preset_preview,
+            commands::preset_pack::preset_import,
+            commands::preset_pack::preset_export,
+            commands::preset_pack::preset_delete,
         ]);
     startup_stage!("15i2-after-runtime-registry-handler");
     #[cfg(feature = "mesh")]

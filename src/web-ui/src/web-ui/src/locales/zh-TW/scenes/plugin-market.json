@@ -6,7 +6,8 @@
     "skills": "全网技能",
     "dsh": "DSH 插件",
     "builtin": "內置能力",
-    "runtime": "執行期"
+    "runtime": "執行期",
+    "preset": "預設"
   },
   "skills": {
     "searchPlaceholder": "搜尋全网技能…",
@@ -60,5 +61,39 @@
     "endpointPlaceholder": "端點（https://.../v1）",
     "modelPlaceholder": "模型（可選）",
     "apiKeyPlaceholder": "API Key（可選）"
+  },
+  "preset": {
+    "title": "預設包（可移植 Agent）",
+    "empty": "尚未導入任何預設包",
+    "export": "匯出",
+    "importPreset": "導入預設包",
+    "reading": "正在讀取壓縮包…",
+    "loadFailed": "載入預設失敗：{{error}}",
+    "previewFailed": "預覽失敗：{{error}}",
+    "imported": "已導入預設：{{id}}",
+    "importFailed": "導入失敗：{{error}}",
+    "exported": "已匯出預設：{{id}}",
+    "exportFailed": "匯出失敗：{{error}}",
+    "deleted": "已刪除預設：{{id}}",
+    "deleteFailed": "刪除失敗：{{error}}",
+    "remove": "刪除",
+    "count": "{{count}} 個檔案",
+    "idEmpty": "請填寫目標識別符",
+    "importTitle": "確認預設包",
+    "importIntro": "導入前請確認壓縮包資訊，並選擇它在本機使用的識別符。",
+    "importSecurity": "自定義預設可以使用與 Agent 相同權限的工具和命令。請只導入來自可信來源的預設包。",
+    "packageName": "名稱",
+    "packageContents": "內容",
+    "packageContentsValue": "{{count}} 個檔案",
+    "packageVersion": "版本",
+    "packageVersionValue": "由 {{version}} 建立",
+    "importWarningPossibleSecrets": "部分檔案可能包含 API Key、Token 或其他密鑰，請在導入後檢查。",
+    "importWarningAbsolutePaths": "部分檔案包含絕對路徑，換到這台電腦後可能需要調整。",
+    "importWarningVersionMismatch": "該壓縮包由另一個版本（{{packageVersion}}，目前 {{appVersion}}）建立，可能需要調整。",
+    "targetId": "本機識別符",
+    "targetIdPlaceholder": "本機使用的預設 ID（字母、數字、- _ .）",
+    "cancel": "取消",
+    "importConfirm": "導入",
+    "importing": "正在導入…"
   }
 }

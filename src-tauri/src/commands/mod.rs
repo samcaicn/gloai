@@ -63,6 +63,11 @@ pub mod dsh;
 // search + DSH plugin CRUD + built-in plugin toggles (profile-backed).
 pub mod plugin_market;
 
+// Preset packages — the dsh-equivalent portable agent mechanism: import/export
+// shareable `.dshpreset` files with safe preview + atomic (never-overwrite-ID)
+// install. Mirrors dsh-desktop's Agent Preset UX in our Tauri+Rust stack.
+pub mod preset_pack;
+
 // P2 §3 — multi-GPU status + skill/MCP task queue.
 // First cut — commands are wired into the invoke layer; the real
 // parallel worker + SQLite-backed queue are not yet implemented.

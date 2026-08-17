@@ -4,12 +4,15 @@ import {
   CheckCircle2,
   Cpu,
   Download,
+  FileArchive,
+  FileDown,
   Package,
   Puzzle,
   Search as SearchIcon,
   Star,
   Trash2,
   TrendingUp,
+  Upload,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Badge, Button, Input, Search, Switch } from '@/component-library';
@@ -36,11 +39,16 @@ import {
   type RuntimeInstance,
   type SubAgent,
 } from '@/infrastructure/api/runtimeRegistry';
+import {
+  presetPackAPI,
+  type PackagePreview,
+  type PresetInfo,
+} from '@/infrastructure/api/presetPack';
 import './PluginMarketScene.scss';
 
 const log = createLogger('PluginMarketScene');
 
-type MarketTab = 'skills' | 'dsh' | 'builtin' | 'runtime';
+type MarketTab = 'skills' | 'dsh' | 'builtin' | 'runtime' | 'preset';
 
 const PluginMarketScene: React.FC = () => {
   const { t } = useTranslation('scenes/plugin-market');
@@ -190,6 +198,107 @@ const PluginMarketScene: React.FC = () => {
     [loadBuiltins, notification, t],
   );
 
+  // ── 预设包（dsh 等价的可移植 agent 机制）─────────────────────
+  // 镜像 dsh-desktop 的 Agent Preset：本地预设可导出为 .dshpreset 分享，
+  // 导入时先预览（清单 / 文件数 / 安全警告）再原子安装，绝不覆盖已有 ID。
+  const [presets, setPresets] = useState<PresetInfo[]>([]);
+  const [presetLoading, setPresetLoading] = useState(false);
+  const [importPreview, setImportPreview] = useState<PackagePreview | null>(null);
+  const [importBytes, setImportBytes] = useState<Uint8Array | null>(null);
+  const [importTargetId, setImportTargetId] = useState('');
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const loadPresets = useCallback(async () => {
+    try {
+      setPresetLoading(true);
+      setPresets(await presetPackAPI.list());
+    } catch (err) {
+      log.error('Failed to load presets', err);
+      notification.error(t('preset.loadFailed', { error: String(err) }));
+    } finally {
+      setPresetLoading(false);
+    }
+  }, [notification, t]);
+
+  useEffect(() => {
+    if (activeTab === 'preset') {
+      void loadPresets();
+    }
+  }, [activeTab, loadPresets]);
+
+  const handleImportFile = useCallback(
+    async (file: File) => {
+      try {
+        setImportError(null);
+        setImportBusy(true);
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        const preview = await presetPackAPI.preview(bytes);
+        setImportBytes(bytes);
+        setImportTargetId(preview.suggestedTargetId);
+        setImportPreview(preview);
+      } catch (err) {
+        setImportError(String(err));
+        notification.error(t('preset.previewFailed', { error: String(err) }));
+      } finally {
+        setImportBusy(false);
+      }
+    },
+    [notification, t],
+  );
+
+  const handleConfirmImport = useCallback(
+    async () => {
+      if (!importBytes) return;
+      const target = importTargetId.trim();
+      if (!target) {
+        notification.error(t('preset.idEmpty'));
+        return;
+      }
+      try {
+        setImportBusy(true);
+        await presetPackAPI.import(importBytes, target);
+        notification.success(t('preset.imported', { id: target }));
+        setImportPreview(null);
+        setImportBytes(null);
+        setImportTargetId('');
+        await loadPresets();
+      } catch (err) {
+        setImportError(String(err));
+        notification.error(t('preset.importFailed', { error: String(err) }));
+      } finally {
+        setImportBusy(false);
+      }
+    },
+    [importBytes, importTargetId, loadPresets, notification, t],
+  );
+
+  const handleExportPreset = useCallback(
+    async (id: string) => {
+      try {
+        await presetPackAPI.download(id, id);
+        notification.success(t('preset.exported', { id }));
+      } catch (err) {
+        notification.error(t('preset.exportFailed', { error: String(err) }));
+      }
+    },
+    [notification, t],
+  );
+
+  const handleDeletePreset = useCallback(
+    async (id: string) => {
+      try {
+        await presetPackAPI.remove(id);
+        notification.success(t('preset.deleted', { id }));
+        await loadPresets();
+      } catch (err) {
+        notification.error(t('preset.deleteFailed', { error: String(err) }));
+      }
+    },
+    [loadPresets, notification, t],
+  );
+
   // ── 界面自动根据插件刷新 ───────────────────────────────────────
   // 订阅后端 emit 的 `plugins-changed` Tauri 事件 (由 notify_plugins_changed
   // 在任意 catalog 变更后广播, 含本场景操作和 DSH 运行时 Cordis 热加载回写)。
@@ -200,9 +309,11 @@ const PluginMarketScene: React.FC = () => {
       // 已安装 DSH 插件 + 内置能力均重拉 (廉价本地 IPC, 不影响 GitHub 搜索结果)。
       void loadDshInstalled();
       void loadBuiltins();
+      // 预设包变更也会广播 kind=preset —— 自动刷新预设列表。
+      void loadPresets();
     });
     return () => unlisten();
-  }, [loadDshInstalled, loadBuiltins]);
+  }, [loadDshInstalled, loadBuiltins, loadPresets]);
 
   // ── 运行时（CLI 智能体，一切皆插件）──────────────────────────
   // 复用 runtime-registry：本机 CLI (opencode/claude/codex/kimi/trae) 自动探测
@@ -397,6 +508,14 @@ const PluginMarketScene: React.FC = () => {
         >
           <Cpu size={14} />
           <span>{t('tabs.runtime')}</span>
+        </button>
+        <button
+          type="button"
+          className={`plugin-market-scene__tab ${activeTab === 'preset' ? 'is-active' : ''}`}
+          onClick={() => setActiveTab('preset')}
+        >
+          <FileArchive size={14} />
+          <span>{t('tabs.preset')}</span>
         </button>
       </div>
 
@@ -839,6 +958,186 @@ const PluginMarketScene: React.FC = () => {
                 </Button>
               </div>
             </section>
+          </div>
+        )}
+
+        {/* ── 预设包（可移植 agent）────────────────────────────── */}
+        {activeTab === 'preset' && (
+          <div className="plugin-market-scene__panel">
+            <div className="plugin-market-scene__search-bar">
+              <label className="plugin-market-scene__file-btn">
+                <input
+                  type="file"
+                  accept=".dshpreset,.zip,application/zip"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handleImportFile(f);
+                    e.target.value = '';
+                  }}
+                  hidden
+                />
+                <Upload size={13} />
+                {importBusy ? t('preset.reading') : t('preset.importPreset')}
+              </label>
+            </div>
+
+            <section className="plugin-market-scene__section">
+              <h2 className="plugin-market-scene__section-title">
+                {t('preset.title')}
+              </h2>
+              {importError && (
+                <div className="plugin-market-scene__empty plugin-market-scene__empty--error">
+                  <FileArchive size={24} />
+                  <span>{importError}</span>
+                </div>
+              )}
+              {presetLoading ? (
+                <div className="plugin-market-scene__grid" aria-busy="true">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={`p-${i}`} className="plugin-market-scene__skeleton" />
+                  ))}
+                </div>
+              ) : presets.length === 0 ? (
+                <div className="plugin-market-scene__empty">
+                  <FileArchive size={24} />
+                  <span>{t('preset.empty')}</span>
+                </div>
+              ) : (
+                <div className="plugin-market-scene__list">
+                  {presets.map((p) => (
+                    <div key={p.id} className="plugin-market-scene__row">
+                      <div className="plugin-market-scene__row-main">
+                        <span className="plugin-market-scene__row-name">
+                          {p.name || p.id}
+                        </span>
+                        <span className="plugin-market-scene__row-desc">
+                          {p.id}
+                          {p.description ? ` · ${p.description}` : ''}
+                        </span>
+                        <Badge variant="purple">
+                          {t('preset.count', { count: p.fileCount })}
+                        </Badge>
+                      </div>
+                      <div className="plugin-market-scene__row-actions">
+                        <button
+                          type="button"
+                          className="plugin-market-scene__icon-btn"
+                          aria-label={t('preset.export')}
+                          onClick={() => void handleExportPreset(p.id)}
+                        >
+                          <FileDown size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="plugin-market-scene__icon-btn"
+                          aria-label={t('preset.remove')}
+                          onClick={() => void handleDeletePreset(p.id)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* 导入预览：确认前的安全检查 + 目标 ID 选择 */}
+            {importPreview && (
+              <div className="plugin-market-scene__preset-overlay">
+                <div className="plugin-market-scene__preset-import">
+                  <h3>{t('preset.importTitle')}</h3>
+                  <p className="plugin-market-scene__preset-intro">
+                    {t('preset.importIntro')}
+                  </p>
+                  <p className="plugin-market-scene__preset-security">
+                    {t('preset.importSecurity')}
+                  </p>
+                  <div className="plugin-market-scene__preset-meta">
+                    <div>
+                      <span className="plugin-market-scene__preset-label">
+                        {t('preset.packageName')}
+                      </span>
+                      <span>
+                        {importPreview.manifest.name || importPreview.manifest.id}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="plugin-market-scene__preset-label">
+                        {t('preset.packageContents')}
+                      </span>
+                      <span>
+                        {t('preset.packageContentsValue', {
+                          count: importPreview.fileCount,
+                        })}
+                      </span>
+                    </div>
+                    {importPreview.manifest.sourceDshVersion && (
+                      <div>
+                        <span className="plugin-market-scene__preset-label">
+                          {t('preset.packageVersion')}
+                        </span>
+                        <span>
+                          {t('preset.packageVersionValue', {
+                            version: importPreview.manifest.sourceDshVersion,
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {importPreview.warnings.length > 0 && (
+                    <ul className="plugin-market-scene__preset-warnings">
+                      {importPreview.warnings.map((w, i) => (
+                        <li key={i}>
+                          {w.warningType === 'possibleSecrets'
+                            ? t('preset.importWarningPossibleSecrets')
+                            : w.warningType === 'absolutePaths'
+                            ? t('preset.importWarningAbsolutePaths')
+                            : t('preset.importWarningVersionMismatch', {
+                                packageVersion: w.packageVersion ?? '',
+                                appVersion: w.appVersion ?? '',
+                              })}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <label className="plugin-market-scene__preset-field">
+                    <span>{t('preset.targetId')}</span>
+                    <Input
+                      value={importTargetId}
+                      onChange={setImportTargetId}
+                      placeholder={t('preset.targetIdPlaceholder')}
+                      size="small"
+                    />
+                  </label>
+
+                  <div className="plugin-market-scene__preset-actions">
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onClick={() => {
+                        setImportPreview(null);
+                        setImportBytes(null);
+                        setImportTargetId('');
+                        setImportError(null);
+                      }}
+                    >
+                      {t('preset.cancel')}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="small"
+                      disabled={importBusy}
+                      onClick={() => void handleConfirmImport()}
+                    >
+                      {importBusy ? t('preset.importing') : t('preset.importConfirm')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

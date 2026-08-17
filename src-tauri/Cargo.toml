@@ -221,6 +221,10 @@ sysinfo = { version = "0.31", features = ["disk"] }
 argon2 = "0.5"
 zeroize = { version = "1.7", features = ["derive"] }
 sha2 = "0.10"
+# Preset packages (.dshpreset) — read/validate imported packages (incl.
+# deflate-compressed). The STORED-method writer is hand-rolled below, so no
+# zip-writer version-API risk; zip is only used for reading/inflating.
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 # --- mesh P2P 组网 (Phase 3: 安全设计 P2P + gossip) ---
 # MSRV 1.91+ 已在 Cargo.toml rust-version 声明 (见下方 override)。

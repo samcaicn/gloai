@@ -6,7 +6,8 @@
     "skills": "Network Skills",
     "dsh": "DSH Plugins",
     "builtin": "Built-in",
-    "runtime": "Runtime"
+    "runtime": "Runtime",
+    "preset": "Presets"
   },
   "skills": {
     "searchPlaceholder": "Search network skills…",
@@ -60,5 +61,39 @@
     "endpointPlaceholder": "Endpoint (https://.../v1)",
     "modelPlaceholder": "Model (optional)",
     "apiKeyPlaceholder": "API Key (optional)"
+  },
+  "preset": {
+    "title": "Preset packages (portable agents)",
+    "empty": "No preset packages imported yet",
+    "export": "Export",
+    "importPreset": "Import preset",
+    "reading": "Reading package…",
+    "loadFailed": "Failed to load presets: {{error}}",
+    "previewFailed": "Preview failed: {{error}}",
+    "imported": "Imported preset: {{id}}",
+    "importFailed": "Import failed: {{error}}",
+    "exported": "Exported preset: {{id}}",
+    "exportFailed": "Export failed: {{error}}",
+    "deleted": "Deleted preset: {{id}}",
+    "deleteFailed": "Delete failed: {{error}}",
+    "remove": "Delete",
+    "count": "{{count}} files",
+    "idEmpty": "Please enter a target identifier",
+    "importTitle": "Review preset package",
+    "importIntro": "Check the package details and choose the local identifier before importing it.",
+    "importSecurity": "Custom presets can run tools and commands with the same access as the agent. Import packages only from people you trust.",
+    "packageName": "Name",
+    "packageContents": "Contents",
+    "packageContentsValue": "{{count}} files",
+    "packageVersion": "Version",
+    "packageVersionValue": "Created with {{version}}",
+    "importWarningPossibleSecrets": "Some files may contain API keys, tokens, or other secrets. Review them after importing.",
+    "importWarningAbsolutePaths": "Some files contain absolute paths and may need editing on this computer.",
+    "importWarningVersionMismatch": "This package was created with another version ({{packageVersion}}, current {{appVersion}}) and may need changes.",
+    "targetId": "Local identifier",
+    "targetIdPlaceholder": "Local preset ID (letters, digits, - _ .)",
+    "cancel": "Cancel",
+    "importConfirm": "Import",
+    "importing": "Importing…"
   }
 }
