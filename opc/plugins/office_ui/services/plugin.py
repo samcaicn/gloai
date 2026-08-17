@@ -18,6 +18,14 @@ from .context import OfficeServiceContext
 from .models import ServiceError, ServiceEvent, ServiceResult
 
 
+def _norm_source(s: str) -> str:
+    """Normalize a git/source URL for comparison (lowercase, drop .git + trailing /)."""
+    s = (s or "").strip().lower()
+    if s.endswith(".git"):
+        s = s[:-4]
+    return s.rstrip("/")
+
+
 class PluginService:
     def __init__(self, context: OfficeServiceContext) -> None:
         self.context = context
@@ -49,9 +57,15 @@ class PluginService:
         from opc.plugin_core.discovery import discover_plugins
 
         result = discover_plugins(query, provider=provider)
-        installed_ids = {p.id for p in self._registry().list_plugins()}
+        # Match by normalized source URL, not manifest id: the discovery
+        # candidate id is the repo full_name (e.g. "acme/my-plugin") whereas an
+        # installed plugin's id comes from its manifest. Their `source` (the git
+        # URL) is the stable join key, so install/remove flips the badge.
+        installed_sources = {
+            _norm_source(p.source) for p in self._registry().list_plugins() if p.source
+        }
         for cand in result.get("candidates", []):
-            cand["installed"] = cand.get("id") in installed_ids
+            cand["installed"] = _norm_source(cand.get("source")) in installed_sources
         return ServiceResult(result)
 
     # ------------------------------------------------------------------

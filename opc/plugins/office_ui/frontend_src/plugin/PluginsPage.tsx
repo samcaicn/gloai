@@ -272,6 +272,11 @@ export function PluginsPage(props: PluginsPageProps) {
     const id = cand?.id
     if (!id || !cand?.source) return
     setInstallingIds((prev) => ({ ...prev, [id]: true }))
+    // Optimistic flip: show "✓ 已安装" instantly; the plugin_list broadcast
+    // (onPluginList) will reconcile the real installed state shortly after.
+    setDiscoverResults((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, installed: true } : c)),
+    )
     onAdd(cand.source, true)
     // Reload runtime tools + list so the new plugin is live immediately.
     onRefresh()

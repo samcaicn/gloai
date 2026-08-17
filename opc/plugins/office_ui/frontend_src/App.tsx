@@ -1952,7 +1952,26 @@ export default function App() {
         setMarketPreviewData(payload as any)
       },
       onPluginList: (payload) => {
-        setPlugins((payload as any).plugins ?? [])
+        const pls = (payload as any).plugins ?? []
+        setPlugins(pls)
+        // Keep the discovery grid's "installed" badges in sync with the live
+        // plugin set, so installing OR removing a plugin from anywhere (this
+        // UI, the add-bar, or an external `dsh plugin add`) immediately flips
+        // the "✓ 已安装 · 立即可用" state without re-searching.
+        // Join on the normalized source URL (git url), not manifest id: a
+        // discovered candidate's id is the repo full_name while an installed
+        // plugin's id comes from its manifest — their source URL is stable.
+        const norm = (s: string) =>
+          (s || "").trim().toLowerCase().replace(/\.git$/, "").replace(/\/+$/, "")
+        const installedSources = new Set(
+          pls.filter((p: any) => p.source).map((p: any) => norm(p.source)),
+        )
+        setDiscoverResults((prev) =>
+          prev.map((c: any) => ({
+            ...c,
+            installed: Boolean(c.source) && installedSources.has(norm(c.source)),
+          })),
+        )
       },
       onPluginDiscover: (payload) => {
         setDiscoverResults((payload as any).candidates ?? [])
