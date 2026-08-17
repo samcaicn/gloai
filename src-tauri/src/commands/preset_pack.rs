@@ -301,12 +301,14 @@ pub fn preview_package(bytes: &[u8], app_version: &str) -> Result<PackagePreview
         });
     }
 
+    let suggested_target_id = sanitize_id(&manifest.id);
+
     Ok(PackagePreview {
         manifest,
         file_count,
         total_bytes: total_uncompressed,
         warnings,
-        suggested_target_id: sanitize_id(&manifest.id),
+        suggested_target_id,
     })
 }
 
