@@ -60,7 +60,20 @@
     "namePlaceholder": "Name (e.g. myagent)",
     "endpointPlaceholder": "Endpoint (https://.../v1)",
     "modelPlaceholder": "Model (optional)",
-    "apiKeyPlaceholder": "API Key (optional)"
+    "apiKeyPlaceholder": "API Key (optional)",
+    "discover": "Discover models",
+    "discovering": "Discovering…",
+    "spawn": "Spawn instance",
+    "subagentsTitle": "Sub-agents (invokable teammates)",
+    "subagentsEmpty": "No sub-agents yet — enable a detected CLI or add a custom agent",
+    "promptRequired": "Enter a task prompt first",
+    "promptPlaceholder": "Send a task to {{id}}…",
+    "invoke": "Invoke",
+    "running": "Running…",
+    "discovered": "Discovered {{count}} model(s) for {{id}}",
+    "discoveredNone": "No models returned for {{id}}",
+    "discoverFailed": "Discover failed: {{error}}",
+    "spawnFailed": "Spawn failed: {{error}}"
   },
   "preset": {
     "title": "Preset packages (portable agents)",

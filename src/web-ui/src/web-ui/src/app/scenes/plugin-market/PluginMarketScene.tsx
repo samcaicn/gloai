@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Bot,
   Boxes,
   CheckCircle2,
   Cpu,
@@ -9,13 +10,14 @@ import {
   Package,
   Puzzle,
   Search as SearchIcon,
+  Send,
   Star,
   Trash2,
   TrendingUp,
   Upload,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, Input, Search, Switch } from '@/component-library';
+import { Badge, Button, Input, Search, Switch, Textarea } from '@/component-library';
 import { useNotification } from '@/shared/notification-system';
 import { createLogger } from '@/shared/utils/logger';
 import { useSkillMarket } from '@/app/scenes/skills/hooks/useSkillMarket';
@@ -331,6 +333,14 @@ const PluginMarketScene: React.FC = () => {
   const [customApiKey, setCustomApiKey] = useState('');
   const [customAdding, setCustomAdding] = useState(false);
 
+  // 子 agent 调用 / 模型发现 状态（吸收自 AgentsScene 的 RuntimeAgentsPanel）
+  const [prompts, setPrompts] = useState<Record<string, string>>({});
+  const [invoking, setInvoking] = useState<Record<string, boolean>>({});
+  const [invokeResults, setInvokeResults] = useState<
+    Record<string, { output: string; error?: string }>
+  >({});
+  const [discovering, setDiscovering] = useState<Record<string, boolean>>({});
+
   /// 仅保留"本机检测到的内置 CLI"（排除用户自定义 / 上游 / DSH）。
   const detectedRuntimes = useMemo(
     () =>
@@ -356,11 +366,6 @@ const PluginMarketScene: React.FC = () => {
   const runtimeAgentId = useCallback(
     (providerId: string) =>
       subagents.find((s) => s.providerId === providerId)?.id ?? null,
-    [subagents],
-  );
-
-  const customAgents = useMemo(
-    () => subagents.filter((s) => s.kind === 'customApi'),
     [subagents],
   );
 
@@ -459,6 +464,85 @@ const PluginMarketScene: React.FC = () => {
         await loadRuntimes();
       } catch (err) {
         notification.error(t('runtime.removeFailed', { error: String(err) }));
+      } finally {
+        setRuntimeBusy(null);
+      }
+    },
+    [loadRuntimes, notification, t],
+  );
+
+  // 调用子 agent（发任务，展示输出）—— 来自原 AgentsScene RuntimeAgentsPanel
+  const handleInvoke = useCallback(
+    async (sa: SubAgent) => {
+      const prompt = (prompts[sa.id] ?? '').trim();
+      if (!prompt) {
+        notification.error(t('runtime.promptRequired'));
+        return;
+      }
+      setInvoking((m) => ({ ...m, [sa.id]: true }));
+      try {
+        const resp = await runtimeRegistryAPI.invokeSubagent({
+          subagentId: sa.id,
+          prompt,
+        });
+        setInvokeResults((m) => ({
+          ...m,
+          [sa.id]: { output: resp.output, error: resp.error },
+        }));
+      } catch (e) {
+        setInvokeResults((m) => ({
+          ...m,
+          [sa.id]: {
+            output: '',
+            error: e instanceof Error ? e.message : String(e),
+          },
+        }));
+      } finally {
+        setInvoking((m) => ({ ...m, [sa.id]: false }));
+      }
+    },
+    [prompts, notification, t],
+  );
+
+  // 发现某 ACP provider 的可用模型
+  const handleDiscover = useCallback(
+    async (providerId: string) => {
+      setDiscovering((m) => ({ ...m, [providerId]: true }));
+      try {
+        const snap = await runtimeRegistryAPI.discoverModels(providerId);
+        setRuntimes(snap.instances);
+        setSubagents(snap.subagents);
+        const inst = snap.instances.find(
+          (i) => i.providerId === providerId && i.kind === 'acp',
+        );
+        const n = inst?.availableModels?.length ?? 0;
+        notification.success(
+          n > 0
+            ? t('runtime.discovered', { count: n, id: providerId })
+            : t('runtime.discoveredNone', { id: providerId }),
+        );
+      } catch (e) {
+        notification.error(
+          t('runtime.discoverFailed', { error: e instanceof Error ? e.message : String(e) }),
+        );
+      } finally {
+        setDiscovering((m) => ({ ...m, [providerId]: false }));
+      }
+    },
+    [notification, t],
+  );
+
+  // 为某非 ACP provider 启动一个并行实例
+  const handleSpawn = useCallback(
+    async (providerId: string) => {
+      try {
+        setRuntimeBusy(providerId);
+        await runtimeRegistryAPI.spawnInstance(providerId);
+        await loadRuntimes();
+      } catch (e) {
+        notification.error(
+          t('runtime.spawnFailed', { error: e instanceof Error ? e.message : String(e) }),
+        );
       } finally {
         setRuntimeBusy(null);
       }
@@ -876,6 +960,31 @@ const PluginMarketScene: React.FC = () => {
                             }
                             disabled={!r.installed || runtimeBusy === r.providerId}
                           />
+                          {r.installed && r.kind === 'acp' && (
+                            <Button
+                              variant="ghost"
+                              size="small"
+                              onClick={() => void handleDiscover(r.providerId)}
+                              disabled={
+                                discovering[r.providerId] ||
+                                runtimeBusy === r.providerId
+                              }
+                            >
+                              {discovering[r.providerId]
+                                ? t('runtime.discovering')
+                                : t('runtime.discover')}
+                            </Button>
+                          )}
+                          {r.installed && r.kind !== 'acp' && (
+                            <Button
+                              variant="ghost"
+                              size="small"
+                              onClick={() => void handleSpawn(r.providerId)}
+                              disabled={runtimeBusy === r.providerId}
+                            >
+                              {t('runtime.spawn')}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
@@ -884,42 +993,84 @@ const PluginMarketScene: React.FC = () => {
               )}
             </section>
 
-            {/* 自定义 Agent API（用户自己添加） */}
+            {/* 子 Agent（可调用的队友）—— 吸收自 AgentsScene 的 RuntimeAgentsPanel */}
             <section className="plugin-market-scene__section">
               <h2 className="plugin-market-scene__section-title">
-                {t('runtime.customTitle')}
+                {t('runtime.subagentsTitle')}
               </h2>
-              {customAgents.length === 0 ? (
+              {subagents.length === 0 ? (
                 <div className="plugin-market-scene__empty">
-                  <Cpu size={24} />
-                  <span>{t('runtime.customEmpty')}</span>
+                  <Bot size={24} />
+                  <span>{t('runtime.subagentsEmpty')}</span>
                 </div>
               ) : (
                 <div className="plugin-market-scene__list">
-                  {customAgents.map((s) => (
-                    <div key={s.id} className="plugin-market-scene__row">
-                      <div className="plugin-market-scene__row-main">
-                        <span className="plugin-market-scene__row-name">{s.id}</span>
-                        <span className="plugin-market-scene__row-desc">
-                          {s.providerId}
-                        </span>
-                        <Badge variant="info">{t('runtime.custom')}</Badge>
+                  {subagents.map((sa) => (
+                    <div key={sa.id} className="plugin-market-scene__subagent">
+                      <div className="plugin-market-scene__row">
+                        <div className="plugin-market-scene__row-main">
+                          <span className="plugin-market-scene__row-name">
+                            {sa.displayName ?? sa.id}
+                          </span>
+                          <span className="plugin-market-scene__row-desc">
+                            {sa.id}
+                          </span>
+                          <Badge variant="info">{sa.status}</Badge>
+                          {sa.kind === 'customApi' && (
+                            <Badge variant="purple">{t('runtime.custom')}</Badge>
+                          )}
+                        </div>
+                        <div className="plugin-market-scene__row-actions">
+                          {sa.kind === 'customApi' && (
+                            <button
+                              type="button"
+                              className="plugin-market-scene__icon-btn"
+                              aria-label={t('runtime.remove')}
+                              onClick={() => void handleRemoveCustom(sa.id)}
+                              disabled={runtimeBusy === sa.id}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="plugin-market-scene__row-actions">
-                        <button
-                          type="button"
-                          className="plugin-market-scene__icon-btn"
-                          aria-label={t('runtime.remove')}
-                          onClick={() => void handleRemoveCustom(s.id)}
-                          disabled={runtimeBusy === s.id}
+                      <div className="plugin-market-scene__invoke">
+                        <Textarea
+                          value={prompts[sa.id] ?? ''}
+                          onChange={(e) =>
+                            setPrompts((m) => ({ ...m, [sa.id]: e.target.value }))
+                          }
+                          placeholder={t('runtime.promptPlaceholder', { id: sa.id })}
+                          rows={2}
+                        />
+                        <Button
+                          variant="primary"
+                          size="small"
+                          onClick={() => void handleInvoke(sa)}
+                          disabled={invoking[sa.id]}
                         >
-                          <Trash2 size={14} />
-                        </button>
+                          <Send size={13} />
+                          {invoking[sa.id] ? t('runtime.running') : t('runtime.invoke')}
+                        </Button>
+                        {invokeResults[sa.id] && (
+                          <pre className="plugin-market-scene__result">
+                            {invokeResults[sa.id].error
+                              ? `ERROR: ${invokeResults[sa.id].error}`
+                              : invokeResults[sa.id].output}
+                          </pre>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
+            </section>
+
+            {/* 自定义 Agent API（用户自己添加；已添加的会出现在上方「子 Agent」区） */}
+            <section className="plugin-market-scene__section">
+              <h2 className="plugin-market-scene__section-title">
+                {t('runtime.customTitle')}
+              </h2>
 
               <div className="plugin-market-scene__custom-form">
                 <Input

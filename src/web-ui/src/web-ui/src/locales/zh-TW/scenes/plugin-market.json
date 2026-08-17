@@ -60,7 +60,20 @@
     "namePlaceholder": "名稱（如 myagent）",
     "endpointPlaceholder": "端點（https://.../v1）",
     "modelPlaceholder": "模型（可選）",
-    "apiKeyPlaceholder": "API Key（可選）"
+    "apiKeyPlaceholder": "API Key（可選）",
+    "discover": "發現模型",
+    "discovering": "發現中…",
+    "spawn": "啟動實例",
+    "subagentsTitle": "子 Agent（可調用的隊友）",
+    "subagentsEmpty": "暫無子 Agent — 啟用檢測到的 CLI 或添加自定義 Agent",
+    "promptRequired": "請先輸入任務指令",
+    "promptPlaceholder": "向 {{id}} 發送任務…",
+    "invoke": "呼叫",
+    "running": "執行中…",
+    "discovered": "已為 {{id}} 發現 {{count}} 個模型",
+    "discoveredNone": "{{id}} 未返回模型",
+    "discoverFailed": "發現失敗：{{error}}",
+    "spawnFailed": "啟動實例失敗：{{error}}"
   },
   "preset": {
     "title": "預設包（可移植 Agent）",
