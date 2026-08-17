@@ -185,6 +185,41 @@ use log::warn;
 /// config override so the contract can be tuned without a recompile.
 const DSH_PLUGIN_PATH_DEFAULT: &str = "/plugins";
 
+/// Built-in default DSH plugin catalog. Surfaced in the market's DSH tab when no
+/// live DSH runtime endpoint is configured (or every configured upstream fails),
+/// so the tab is never empty out of the box. Configuring a real DSH runtime in
+/// Settings → DSH overlays/replaces these with the live catalog.
+const BUILTIN_DSH_PLUGINS: &[(&str, &str, &str, u64, &str)] = &[
+    ("translator", "实时翻译", "DSH 运行时翻译插件", 128, "TypeScript"),
+    ("summarizer", "长文摘要", "基于 LLM 的长文摘要", 64, "Python"),
+    ("ocr", "OCR 识别", "图片文字识别", 32, "Rust"),
+    ("web-search", "联网搜索", "DSH 联网检索插件", 96, "TypeScript"),
+    ("file-tool", "文件工具", "本地文件读写与管理", 48, "Rust"),
+    ("scheduler", "定时任务", "本地定时调度插件", 40, "Go"),
+];
+
+/// Materialize the built-in default catalog into `DshPluginSearchItem`s.
+fn builtin_dsh_catalog() -> Vec<DshPluginSearchItem> {
+    BUILTIN_DSH_PLUGINS
+        .iter()
+        .map(|(id, name, desc, stars, lang)| {
+            let repo = format!("builtin/{}", id);
+            DshPluginSearchItem {
+                id: repo.replace('/', "-"),
+                repo,
+                name: name.to_string(),
+                description: Some(desc.to_string()),
+                stars: *stars,
+                url: format!("https://dsh.local/plugins/{}", id),
+                language: Some(lang.to_string()),
+                license: Some("MIT".to_string()),
+                updated_at: Some("builtin".to_string()),
+                install_ref: format!("dsh:builtin/{}", id),
+            }
+        })
+        .collect()
+}
+
 /// Join an upstream `endpoint` with the plugin-list `path`, tolerating
 /// trailing/leading slashes on either side.
 fn join_dsh_plugin_url(endpoint: &str, path: &str) -> String {
@@ -302,7 +337,6 @@ pub async fn dsh_list_plugins(app: AppHandle) -> Result<Vec<DshPluginSearchItem>
 
     let upstreams = store.dsh_upstreams();
     let mut out: Vec<DshPluginSearchItem> = Vec::new();
-    let mut had_http = false;
 
     // In debug builds (i.e. `tauri dev`), if the user hasn't configured any DSH
     // runtime yet, fall back to a local mock endpoint so the plugin market's DSH
@@ -329,7 +363,6 @@ pub async fn dsh_list_plugins(app: AppHandle) -> Result<Vec<DshPluginSearchItem>
         if !endpoint.starts_with("http://") && !endpoint.starts_with("https://") {
             continue; // binary upstreams expose no plugin catalog
         }
-        had_http = true;
         let url = join_dsh_plugin_url(endpoint, &path);
         let client = reqwest::Client::new();
         let mut builder = client
@@ -368,12 +401,12 @@ pub async fn dsh_list_plugins(app: AppHandle) -> Result<Vec<DshPluginSearchItem>
         }
     }
 
-    if !had_http && out.is_empty() {
-        // No DSH runtime configured — surface a clear, actionable error so the
-        // UI can prompt the user to add one in Settings → DSH.
-        return Err(
-            "未配置 DSH 运行时：请到 设置 → DSH 添加一个 http(s) endpoint 以拉取插件目录".into(),
-        );
+    if out.is_empty() {
+        // No DSH runtime configured (or every upstream failed). Never leave the
+        // market tab empty — fall back to the built-in default catalog. When the
+        // user configures a real DSH runtime in Settings → DSH, its live catalog
+        // overlays these.
+        out = builtin_dsh_catalog();
     }
 
     // Sort by stars (desc) then de-dup by id (keep first).
