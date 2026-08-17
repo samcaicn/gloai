@@ -843,6 +843,15 @@ commands::floating_window::fw_chat_to_main,
             commands::dsh::dsh_upsert_upstream,
             commands::dsh::dsh_remove_upstream,
             commands::dsh::dsh_set_upstream_enabled,
+            // Plugin Market — "everything is a plugin": network-wide DSH plugin
+            // search + DSH plugin CRUD + built-in plugin toggles.
+            commands::plugin_market::search_dsh_plugins,
+            commands::plugin_market::list_dsh_plugins,
+            commands::plugin_market::install_dsh_plugin,
+            commands::plugin_market::remove_dsh_plugin,
+            commands::plugin_market::set_dsh_plugin_enabled,
+            commands::plugin_market::list_builtin_plugins,
+            commands::plugin_market::set_builtin_plugin_enabled,
         ]);
     startup_stage!("15i2-after-runtime-registry-handler");
     #[cfg(feature = "mesh")]

@@ -1,0 +1,38 @@
+{
+  "title": "插件市场",
+  "subtitle": "一切皆插件：探索并安装全网技能、DSH 插件与内置能力。",
+  "navLabel": "插件市场",
+  "tabs": {
+    "skills": "全网技能",
+    "dsh": "DSH 插件",
+    "builtin": "内置能力"
+  },
+  "skills": {
+    "searchPlaceholder": "搜索全网技能…",
+    "empty": "未找到技能",
+    "installed": "已安装",
+    "download": "下载",
+    "downloading": "下载中…"
+  },
+  "dsh": {
+    "searchPlaceholder": "搜索 DSH 插件（GitHub）…",
+    "loadFailed": "加载 DSH 插件失败：{{error}}",
+    "searchFailed": "搜索 DSH 插件失败：{{error}}",
+    "installed": "已安装",
+    "installFailed": "安装失败：{{error}}",
+    "removed": "已移除 DSH 插件",
+    "removeFailed": "移除失败：{{error}}",
+    "toggleFailed": "切换失败：{{error}}",
+    "installedTitle": "已安装的 DSH 插件",
+    "installedEmpty": "尚未安装任何 DSH 插件",
+    "discoverTitle": "发现 DSH 插件",
+    "discoverEmpty": "未找到 DSH 插件，换个关键词试试",
+    "install": "安装",
+    "remove": "移除"
+  },
+  "builtin": {
+    "loadFailed": "加载内置能力失败：{{error}}",
+    "toggleFailed": "切换失败：{{error}}",
+    "title": "内置能力（编译内置插件）"
+  }
+}

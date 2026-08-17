@@ -39,6 +39,11 @@ pub struct Profile {
     /// runtime view seeded from here (see `runtime_registry::sync_dsh_upstreams`).
     #[serde(default)]
     pub dsh: DshConfig,
+    /// Built-in app plugins (cdp/mcp/memory/pc_automation/skill/system) that are
+    /// explicitly disabled for this profile. Absent = enabled. "Everything is a
+    /// plugin": these built-ins are toggled through the same seam as DSH plugins.
+    #[serde(default)]
+    pub disabled_plugins: Vec<String>,
 }
 
 /// A single DSH upstream runtime. DSH is an external runtime wired into the
@@ -66,11 +71,40 @@ pub struct DshUpstreamConfig {
     pub enabled: bool,
 }
 
+/// A desired DSH plugin (Cordis plugin for the external DSH runtime), tracked
+/// by safeopcAPP and reflected into the connected DSH runtime's config so it
+/// hot-loads via Cordis reversible side-effects. safeopcAPP does NOT spawn the
+/// dsh process itself — it only records the desired plugin set and broadcasts
+/// `plugins.changed`; the actual load/unload happens in the DSH runtime when it
+/// reads the config safeopcAPP wrote.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DshPluginRef {
+    /// Stable id (derived from repo, e.g. "owner-repo").
+    pub id: String,
+    /// GitHub `owner/repo` (or any `github:<owner>/<repo>` style reference).
+    pub repo: String,
+    /// Optional human label (defaults to repo when absent).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    /// Optional description surfaced in the market UI.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// Cached star count for display.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stars: Option<u64>,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DshConfig {
     #[serde(default)]
     pub upstreams: Vec<DshUpstreamConfig>,
+    /// Desired DSH plugins (Cordis plugins) tracked for the active profile.
+    #[serde(default)]
+    pub plugins: Vec<DshPluginRef>,
 }
 
 fn default_true() -> bool {
@@ -99,6 +133,7 @@ impl ProfileStore {
                 disabled_skills: vec![],
                 config_overrides: HashMap::new(),
                 dsh: DshConfig::default(),
+                disabled_plugins: vec![],
             },
         );
 
@@ -113,6 +148,7 @@ impl ProfileStore {
                 disabled_skills: vec![],
                 config_overrides: safeopc_overrides,
                 dsh: DshConfig::default(),
+                disabled_plugins: vec![],
             },
         );
 
@@ -190,6 +226,31 @@ impl ProfileStore {
     pub fn set_dsh_upstreams(&mut self, upstreams: Vec<DshUpstreamConfig>) {
         self.active_profile_mut().dsh.upstreams = upstreams;
     }
+
+    /// DSH plugins (Cordis plugins) of the active profile.
+    pub fn dsh_plugins(&self) -> Vec<DshPluginRef> {
+        self.active_profile().dsh.plugins.clone()
+    }
+
+    /// Replace the active profile's DSH plugin list.
+    pub fn set_dsh_plugins(&mut self, plugins: Vec<DshPluginRef>) {
+        self.active_profile_mut().dsh.plugins = plugins;
+    }
+
+    /// Whether a built-in app plugin is enabled under the active profile.
+    pub fn is_builtin_plugin_enabled(&self, name: &str) -> bool {
+        !self.active_profile().disabled_plugins.iter().any(|p| p == name)
+    }
+
+    /// Enable/disable a built-in app plugin for the active profile.
+    pub fn set_builtin_plugin_enabled(&mut self, name: &str, enabled: bool) {
+        let disabled = &mut self.active_profile_mut().disabled_plugins;
+        if enabled {
+            disabled.retain(|p| p != name);
+        } else if !disabled.iter().any(|p| p == name) {
+            disabled.push(name.to_string());
+        }
+    }
 }
 
 #[cfg(test)]
@@ -214,6 +275,7 @@ mod tests {
             disabled_skills: vec!["b".into()],
             config_overrides: HashMap::new(),
             dsh: DshConfig::default(),
+            disabled_plugins: vec![],
         };
         s.profiles.insert("custom".into(), p);
         s.active = "custom".into();
@@ -240,6 +302,7 @@ mod tests {
             disabled_skills: vec![],
             config_overrides: HashMap::new(),
             dsh: DshConfig::default(),
+            disabled_plugins: vec![],
         };
         p.config_overrides
             .insert("max_tokens".into(), serde_json::json!(4096));

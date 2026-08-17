@@ -59,6 +59,10 @@ pub mod profile;
 // DSH upstream management (profile-backed runtime-registry Upstream).
 pub mod dsh;
 
+// Plugin Market — "everything is a plugin" surface: network-wide DSH plugin
+// search + DSH plugin CRUD + built-in plugin toggles (profile-backed).
+pub mod plugin_market;
+
 // P2 §3 — multi-GPU status + skill/MCP task queue.
 // First cut — commands are wired into the invoke layer; the real
 // parallel worker + SQLite-backed queue are not yet implemented.

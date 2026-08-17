@@ -119,6 +119,10 @@ pub mod topics {
     pub const PROFILE_CHANGED: &str = "profile.changed";
     pub const PERSONA_CHANGED: &str = "persona.changed";
     pub const LIFECYCLE_PHASE: &str = "lifecycle.phase";
+    /// Plugin catalog changed (install / remove / enable / disable of a DSH
+    /// plugin or a built-in app plugin). Subscribers re-read the catalog and
+    /// re-seed the runtime-registry so the change takes effect immediately.
+    pub const PLUGINS_CHANGED: &str = "plugins.changed";
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

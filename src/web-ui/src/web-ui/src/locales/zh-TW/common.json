@@ -923,7 +923,8 @@
     "flowchart": "流程圖",
     "autoskill": "自進化",
     "tasks": "定時任務",
-    "pipelines": "流水線"
+    "pipelines": "流水線",
+    "pluginMarket": "插件市場"
   },
   "loading": {
     "app": "正在啟動本應用...",

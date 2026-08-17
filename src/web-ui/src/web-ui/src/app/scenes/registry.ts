@@ -23,6 +23,7 @@ import {
   MessageSquare,
   Clock,
   IterationCw,
+  Boxes,
 } from 'lucide-react';
 import type { SceneTabDef, SceneTabId } from '../components/SceneBar/types';
 
@@ -99,6 +100,15 @@ export const SCENE_TAB_REGISTRY: SceneTabDef[] = [
     label: 'Pipelines',
     labelKey: 'scenes.pipelines',
     Icon: IterationCw,
+    pinned: false,
+    singleton: true,
+    defaultOpen: false,
+  },
+  {
+    id: 'plugin-market' as SceneTabId,
+    label: 'Plugin Market',
+    labelKey: 'scenes.pluginMarket',
+    Icon: Boxes,
     pinned: false,
     singleton: true,
     defaultOpen: false,

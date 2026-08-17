@@ -1,0 +1,38 @@
+{
+  "title": "Plugin Market",
+  "subtitle": "Everything is a plugin: discover and install network skills, DSH plugins, and built-in capabilities.",
+  "navLabel": "Plugin Market",
+  "tabs": {
+    "skills": "Network Skills",
+    "dsh": "DSH Plugins",
+    "builtin": "Built-in"
+  },
+  "skills": {
+    "searchPlaceholder": "Search network skills…",
+    "empty": "No skills found",
+    "installed": "Installed",
+    "download": "Download",
+    "downloading": "Downloading…"
+  },
+  "dsh": {
+    "searchPlaceholder": "Search DSH plugins (GitHub)…",
+    "loadFailed": "Failed to load DSH plugins: {{error}}",
+    "searchFailed": "Failed to search DSH plugins: {{error}}",
+    "installed": "Installed",
+    "installFailed": "Install failed: {{error}}",
+    "removed": "DSH plugin removed",
+    "removeFailed": "Remove failed: {{error}}",
+    "toggleFailed": "Toggle failed: {{error}}",
+    "installedTitle": "Installed DSH plugins",
+    "installedEmpty": "No DSH plugins installed yet",
+    "discoverTitle": "Discover DSH plugins",
+    "discoverEmpty": "No DSH plugins found — try another keyword",
+    "install": "Install",
+    "remove": "Remove"
+  },
+  "builtin": {
+    "loadFailed": "Failed to load built-in plugins: {{error}}",
+    "toggleFailed": "Toggle failed: {{error}}",
+    "title": "Built-in capabilities (compiled plugins)"
+  }
+}

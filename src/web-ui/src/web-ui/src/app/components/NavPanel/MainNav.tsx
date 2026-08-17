@@ -36,6 +36,7 @@ import type { TeachingStopResult, TenantInfo } from '@/infrastructure/api/tupai'
 import { getBrandInfo } from '@/infrastructure/api/tupai/brand';
 import { notificationService } from '@/shared/notification-system';
 import SkillsNavSection from './sections/skills/SkillsNavSection';
+import PluginMarketNavSection from './sections/plugin-market/PluginMarketNavSection';
 import AutoskillNavSection from './sections/autoskill/AutoskillNavSection';
 import './NavPanel.scss';
 
@@ -650,6 +651,9 @@ const MainNav: React.FC<MainNavProps> = ({
 
       {/* ── Skills section (always visible, no outer folding) ─── */}
       <SkillsNavSection isOpen={true} onToggle={() => {}} />
+
+      {/* ── Plugin Market section (everything is a plugin) ─── */}
+      <PluginMarketNavSection />
 
       {/* ── Autoskill entry (auto-suggestions with pending badge) ─── */}
       <AutoskillNavSection />

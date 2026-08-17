@@ -1,0 +1,73 @@
+/**
+ * PluginMarketNavSection — styles for the sidebar Plugin Market entry button.
+ * Mirrors SkillsNavSection's visual language.
+ */
+
+@use '../../../../../component-library/styles/tokens.scss' as *;
+
+.bitfun-pluginmarket-nav {
+  flex-shrink: 0;
+  margin: 0 $size-gap-2;
+  padding-top: $size-gap-2;
+
+  &__entry {
+    display: flex;
+    align-items: center;
+    gap: $size-gap-2;
+    width: 100%;
+    height: 30px;
+    padding: 0 $size-gap-2;
+    border: none;
+    border-radius: $size-radius-base;
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    user-select: none;
+    text-align: left;
+    font-family: inherit;
+    transition: background $motion-fast $easing-standard,
+                color $motion-fast $easing-standard;
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--color-accent-500);
+      outline-offset: -1px;
+    }
+
+    &.is-active {
+      background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+      color: var(--color-primary);
+    }
+  }
+
+  &__entry-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--color-primary);
+    opacity: 0.9;
+  }
+
+  &__entry-label {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// ── Reduced motion ────────────────────────────
+@media (prefers-reduced-motion: reduce) {
+  .bitfun-pluginmarket-nav {
+    &__entry {
+      transition: none;
+    }
+  }
+}
