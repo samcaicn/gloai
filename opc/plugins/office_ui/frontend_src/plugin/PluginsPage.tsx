@@ -21,6 +21,12 @@ export interface PluginsPageProps {
   discoverResults: any[]
   discoverLoading: boolean
   discoverError: string | null
+  // DSH preset lifecycle (faithful port of dsh-desktop .dshpreset handling)
+  onPreview: (source: string) => void
+  onExport: (pluginId: string) => void
+  pluginPreviewData: any | null
+  pluginPreviewLoading: boolean
+  pluginPreviewError: string | null
 }
 
 function parseSource(value: string): { kind: string; label: string } {
@@ -232,6 +238,100 @@ function ConfigEditor({
   )
 }
 
+function PresetPreviewModal({
+  candidate,
+  previewData,
+  loading,
+  error,
+  onConfirm,
+  onClose,
+}: {
+  candidate: any
+  previewData: any | null
+  loading: boolean
+  error: string | null
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  const warnings = previewData?.warnings ?? {}
+  const errors = previewData?.errors ?? []
+  const ok = Boolean(previewData?.ok)
+  const meta = previewData?.manifest ?? {}
+
+  return (
+    <div className="plugin-modal-backdrop" onClick={onClose}>
+      <div className="plugin-modal preset-preview-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="plugin-modal-head">
+          <h3>安装 DSH 预设前校验</h3>
+          <button className="plugin-icon-btn" onClick={onClose} title="关闭">✕</button>
+        </div>
+
+        <div className="plugin-modal-body">
+          <div className="preset-preview-meta">
+            <div><b>{candidate?.name ?? candidate?.id}</b> <span className="plugin-card-id">{candidate?.id}</span></div>
+            {candidate?.source && <div className="plugin-disc-link">{candidate.source}</div>}
+            {meta?.sourceDshVersion && (
+              <div className="plugin-badge">DSH {meta.sourceDshVersion}</div>
+            )}
+          </div>
+
+          {loading && <div className="plugin-banner plugin-banner-info">正在校验安装包安全性…</div>}
+          {error && !loading && (
+            <div className="plugin-banner plugin-banner-error">校验失败：{error}</div>
+          )}
+
+          {!loading && previewData && (
+            <>
+              {errors.length > 0 && (
+                <div className="plugin-banner plugin-banner-error">
+                  安装包存在以下问题，无法安装：
+                  <ul className="preset-warn-list">
+                    {errors.map((e: any, i: number) => (
+                      <li key={i}>{e.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {(warnings.possible_secrets?.length > 0 || warnings.absolute_paths?.length > 0 || warnings.version_note) && (
+                <div className="plugin-banner plugin-banner-warn">
+                  <div>安全提示（仍可安装，请确认来源可信）：</div>
+                  {warnings.possible_secrets?.length > 0 && (
+                    <div className="preset-warn-row">· 可能包含密钥：{warnings.possible_secrets.join('、')}</div>
+                  )}
+                  {warnings.absolute_paths?.length > 0 && (
+                    <div className="preset-warn-row">· 包含绝对路径引用：{warnings.absolute_paths.length} 处</div>
+                  )}
+                  {warnings.version_note && (
+                    <div className="preset-warn-row">· {warnings.version_note}</div>
+                  )}
+                </div>
+              )}
+
+              {ok && errors.length === 0 && (
+                <div className="plugin-banner plugin-banner-info">
+                  校验通过。该预设将安装为 <code>agent</code> 插件，无需重启即可生效。
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="plugin-modal-foot">
+          <div className="plugin-foot-right">
+            <button className="plugin-btn plugin-btn-ghost" onClick={onClose}>取消</button>
+            {!loading && ok && errors.length === 0 && (
+              <button className="plugin-btn plugin-btn-primary" onClick={onConfirm}>
+                确认安装
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function PluginsPage(props: PluginsPageProps) {
   const {
     plugins,
@@ -252,6 +352,11 @@ export function PluginsPage(props: PluginsPageProps) {
     discoverResults,
     discoverLoading,
     discoverError,
+    onPreview,
+    onExport,
+    pluginPreviewData,
+    pluginPreviewLoading,
+    pluginPreviewError,
   } = props
 
   const [source, setSource] = useState('')
@@ -262,6 +367,8 @@ export function PluginsPage(props: PluginsPageProps) {
   const [discoverQuery, setDiscoverQuery] = useState('')
   const [discoverProvider, setDiscoverProvider] = useState<'github' | 'dsh'>('github')
   const [installingIds, setInstallingIds] = useState<Record<string, boolean>>({})
+  // DSH preset install-confirm modal (holds the candidate being previewed).
+  const [confirmPreset, setConfirmPreset] = useState<any | null>(null)
 
   const handleDiscover = () => {
     if (!discoverQuery.trim()) return
@@ -269,6 +376,19 @@ export function PluginsPage(props: PluginsPageProps) {
   }
 
   const handleDiscoverInstall = (cand: any) => {
+    const id = cand?.id
+    if (!id || !cand?.source) return
+    // DSH presets go through the import-preview gate (security warnings /
+    // errors) before install, mirroring dsh-desktop's two-step import.
+    if (cand.provider === 'dsh') {
+      setConfirmPreset(cand)
+      onPreview(cand.source)
+      return
+    }
+    doInstall(cand)
+  }
+
+  const doInstall = (cand: any) => {
     const id = cand?.id
     if (!id || !cand?.source) return
     setInstallingIds((prev) => ({ ...prev, [id]: true }))
@@ -497,6 +617,10 @@ export function PluginsPage(props: PluginsPageProps) {
                     配置
                   </button>
                 )}
+                {/* Export this agent preset as a .dshpreset (dsh-desktop parity). */}
+                <button className="plugin-btn plugin-btn-ghost" onClick={() => onExport(id)} title="导出为 .dshpreset">
+                  导出预设
+                </button>
                 <button className="plugin-btn plugin-btn-danger" onClick={() => handleRemove(id)}>
                   卸载
                 </button>
@@ -514,6 +638,21 @@ export function PluginsPage(props: PluginsPageProps) {
           error={configError}
           onSave={(cfg) => { onConfigSet(configTarget, cfg); refresh() }}
           onClose={onConfigClose}
+        />
+      )}
+
+      {confirmPreset && (
+        <PresetPreviewModal
+          candidate={confirmPreset}
+          previewData={pluginPreviewData}
+          loading={pluginPreviewLoading}
+          error={pluginPreviewError}
+          onConfirm={() => {
+            const cand = confirmPreset
+            setConfirmPreset(null)
+            doInstall(cand)
+          }}
+          onClose={() => setConfirmPreset(null)}
         />
       )}
     </div>

@@ -10486,6 +10486,30 @@ class WSHandler:
             logger.warning(f"Plugin refresh failed: {exc}")
             await self._send_ack(ws, ok=False, error=str(exc))
 
+    async def _handle_plugin_preview(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.preview(
+                source=str(data.get("source", "") or "")
+            )
+            await ws.send_json({"type": "plugin_preview", "payload": result.payload})
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_preview")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Plugin preview failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
+    async def _handle_plugin_export(self, ws: Any, data: dict) -> None:
+        try:
+            result = await self._ensure_office_services().plugin.export(
+                plugin_id=str(data.get("plugin_id", "") or "")
+            )
+            await ws.send_json({"type": "plugin_export", "payload": result.payload})
+        except ServiceError as exc:
+            await self._send_service_error(ws, exc, action="plugin_export")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Plugin export failed: {exc}")
+            await self._send_ack(ws, ok=False, error=str(exc))
+
     # ------------------------------------------------------------------
     # Org editing handlers (custom mode)
     # ------------------------------------------------------------------
@@ -10669,6 +10693,8 @@ class WSHandler:
         "plugin_disable":      _handle_plugin_disable,
         "plugin_config_get":   _handle_plugin_config_get,
         "plugin_config_set":   _handle_plugin_config_set,
+        "plugin_preview":      _handle_plugin_preview,
+        "plugin_export":       _handle_plugin_export,
         "plugin_discover":     _handle_plugin_discover,
         "plugin_refresh":      _handle_plugin_refresh,
         # Org config import/export

@@ -86,7 +86,24 @@ class PluginRegistry:
         return state
 
     def install(self, source: str) -> PluginState:
+        # Materialize first (writes the plugin dir, resolves the manifest id).
         state = install_plugin(source, self.opc_home, self.plugin_dir_name)
+        # Genuine ID collision: a *different* source already owns this id. dsh
+        # refuses to overwrite an existing preset identifier -- the operator
+        # must choose a new id. A re-pull from the same source is idempotent
+        # and allowed. Check before persisting so the profile stays clean.
+        norm = lambda s: (s or "").strip().lower().replace(".git", "").rstrip("/")  # noqa: E731
+        existing = self.get_plugin(state.id)
+        if existing is not None and existing.source and norm(existing.source) != norm(source):
+            # Revert the just-written dir; nothing was saved to the profile.
+            target = self.opc_home / self.plugin_dir_name / state.id
+            if target.exists():
+                shutil.rmtree(target, ignore_errors=True)
+            raise PluginError(
+                "plugin_id_conflict",
+                f"A plugin '{state.id}' is already installed from a different "
+                f"source ({existing.source}). Choose a different id or remove it first.",
+            )
         return self.add(state)
 
     def remove(self, plugin_id: str) -> None:

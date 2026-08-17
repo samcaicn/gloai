@@ -637,6 +637,12 @@ export class VisualSocketClient {
   pluginRefresh(): void {
     this.send({ type: 'plugin_refresh' })
   }
+  pluginPreview(source: string): void {
+    this.send({ type: 'plugin_preview', source })
+  }
+  pluginExport(pluginId: string): void {
+    this.send({ type: 'plugin_export', plugin_id: pluginId })
+  }
 
   // ── Org Editing ───────────────────────────────────────────────────────
 

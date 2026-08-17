@@ -360,6 +360,42 @@
   color: #ff9b9b;
 }
 
+.plugin-banner-warn {
+  background: rgba(255, 196, 0, 0.12);
+  color: #ffd766;
+}
+
+.preset-preview-modal {
+  max-width: 520px;
+}
+
+.preset-preview-meta {
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--text, #cfd8e3);
+}
+
+.preset-preview-meta .plugin-card-id {
+  margin-left: 8px;
+  opacity: 0.7;
+}
+
+.preset-preview-meta .plugin-disc-link {
+  font-size: 12px;
+  opacity: 0.6;
+  word-break: break-all;
+  margin-top: 4px;
+}
+
+.preset-warn-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.preset-warn-row {
+  margin-top: 4px;
+}
+
 .plugin-fields {
   display: flex;
   flex-direction: column;

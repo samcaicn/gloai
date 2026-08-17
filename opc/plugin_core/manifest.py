@@ -109,9 +109,15 @@ class PluginState(BaseModel):
     config_schema: dict[str, Any] = Field(default_factory=dict)
     config: dict[str, Any] = Field(default_factory=dict)
     installed_at: str = ""
+    # Free-form metadata kept verbatim from the source package (e.g. DSH
+    # preset origin: format, sourceDshVersion, exportedAt). Extra vs the
+    # manifest schema so it never breaks validation.
+    meta: dict[str, Any] = Field(default_factory=dict)
 
     @classmethod
-    def from_manifest(cls, manifest: PluginManifest, *, source: str) -> "PluginState":
+    def from_manifest(
+        cls, manifest: PluginManifest, *, source: str, meta: dict[str, Any] | None = None
+    ) -> "PluginState":
         return cls(
             id=manifest.id,
             name=manifest.name or manifest.id,
@@ -127,6 +133,7 @@ class PluginState(BaseModel):
             dependencies=list(manifest.dependencies),
             permissions=dict(manifest.permissions),
             config_schema=dict(manifest.config_schema),
+            meta=dict(meta or {}),
             installed_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         )
 

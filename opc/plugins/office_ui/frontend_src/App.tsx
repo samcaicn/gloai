@@ -508,6 +508,9 @@ export default function App() {
   const [discoverResults, setDiscoverResults] = useState<any[]>([])
   const [discoverLoading, setDiscoverLoading] = useState(false)
   const [discoverError, setDiscoverError] = useState<string | null>(null)
+  const [pluginPreviewData, setPluginPreviewData] = useState<any | null>(null)
+  const [pluginPreviewLoading, setPluginPreviewLoading] = useState(false)
+  const [pluginPreviewError, setPluginPreviewError] = useState<string | null>(null)
   const [configExportYaml, setConfigExportYaml] = useState<string | null>(null)
   const [configImportPreview, setConfigImportPreview] = useState<{ roles_added: number; roles_removed: number; employees_changed: number } | null>(null)
   const [configImportError, setConfigImportError] = useState<string | null>(null)
@@ -1981,6 +1984,32 @@ export default function App() {
       onPluginRefresh: () => {
         clientRef.current?.pluginRefresh()
       },
+      onPluginPreview: (payload) => {
+        setPluginPreviewLoading(false)
+        setPluginPreviewData(payload as any)
+        const errs = (payload as any)?.errors ?? []
+        setPluginPreviewError(errs.length ? errs[0].message : null)
+      },
+      onPluginExport: (payload) => {
+        const p = payload as any
+        if (!p || !p.data_base64) return
+        try {
+          const binary = atob(p.data_base64)
+          const bytes = new Uint8Array(binary.length)
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+          const blob = new Blob([bytes], { type: 'application/vnd.dsh.preset+zip' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = p.filename || `${p.plugin_id}.dshpreset`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+        } catch (e: any) {
+          console.warn('plugin export download failed', e)
+        }
+      },
       onPluginConfigGet: (payload) => {
         const p = payload as any
         setPluginConfigTarget(p.plugin_id ?? null)
@@ -2764,6 +2793,16 @@ export default function App() {
           discoverResults={discoverResults}
           discoverLoading={discoverLoading}
           discoverError={discoverError}
+          onPreview={(source) => {
+            setPluginPreviewLoading(true)
+            setPluginPreviewError(null)
+            setPluginPreviewData(null)
+            clientRef.current?.pluginPreview(source)
+          }}
+          onExport={(pluginId) => clientRef.current?.pluginExport(pluginId)}
+          pluginPreviewData={pluginPreviewData}
+          pluginPreviewLoading={pluginPreviewLoading}
+          pluginPreviewError={pluginPreviewError}
         />
       )}
 

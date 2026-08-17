@@ -45,6 +45,17 @@ def _detect_source_kind(source: str) -> str:
     return "unknown"
 
 
+def _read_meta(plugin_dir: Path) -> dict[str, Any]:
+    """Read the ``.dsh_meta.json`` sidecar (set by ``_convert_dsh_preset``)."""
+    fp = plugin_dir / ".dsh_meta.json"
+    if fp.exists():
+        try:
+            return json.loads(fp.read_text(encoding="utf-8")) or {}
+        except Exception:  # noqa: BLE001 - meta is best-effort
+            return {}
+    return {}
+
+
 def _read_manifest(plugin_dir: Path) -> PluginManifest:
     for name in ("plugin.yaml", "plugin.yml", "manifest.yaml", "plugin.json", "manifest.json"):
         fp = plugin_dir / name
@@ -102,26 +113,27 @@ def _find_plugin_root(extracted: Path) -> Path:
 def _convert_dsh_preset(preset_root: Path, dest_plugin_dir: Path) -> None:
     """Convert a DSH ``.dshpreset`` (manifest.json + preset/) into a plugin.
 
-    Writes a ``plugin.yaml`` capturing the preset metadata and keeps the
-    original ``preset/`` directory so the artifact is installed and inspectable.
+    Maps the **``.dshpreset`` manifest v1 schema** (``id`` / ``name`` /
+    ``description`` / ``version`` / ``sourceDshVersion`` / ``exportedAt``),
+    not the Preset-Square *server* schema. The original ``manifest.json`` is
+    preserved verbatim as ``dsh_manifest.json`` and its DSH-specific fields are
+    also carried into ``PluginState.meta`` so export can round-trip it.
     """
     manifest_path = preset_root / "manifest.json"
     if not manifest_path.exists():
         raise PluginError("dsh_manifest_missing", f"No manifest.json in preset: {preset_root}")
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-    def _pick(key: str, fallback: str = "") -> str:
-        v = data.get(key)
-        if isinstance(v, dict):
-            return str(next(iter(v.values()), fallback))
-        return str(v or fallback)
+    raw_id = str(data.get("id") or preset_root.name).strip().lower()
+    if not raw_id or not raw_id[0].isalnum():
+        raw_id = "dsh-" + preset_root.name.lower()
 
     plugin_manifest = {
-        "id": str(data.get("slug") or preset_root.name).strip().lower(),
-        "name": _pick("title_key", _pick("title", preset_root.name)),
+        "id": raw_id,
+        "name": str(data.get("name") or preset_root.name),
         "version": str(data.get("version") or "0.0.0"),
-        "description": _pick("description_key", _pick("description", "")),
-        "author": _pick("author", ""),
+        "description": str(data.get("description") or ""),
+        "author": str(data.get("author") or ""),
         "homepage": str(data.get("homepage") or data.get("repository") or ""),
         "kind": "agent",
         "entry": "",
@@ -129,8 +141,14 @@ def _convert_dsh_preset(preset_root: Path, dest_plugin_dir: Path) -> None:
         "permissions": {},
         "config_schema": {},
     }
-    if not plugin_manifest["id"] or not plugin_manifest["id"][0].isalnum():
-        plugin_manifest["id"] = "dsh-" + preset_root.name.lower()
+
+    meta = {
+        "format": str(data.get("format") or "dsh-preset"),
+        "sourceDshVersion": str(data.get("sourceDshVersion") or ""),
+        "exportedAt": str(data.get("exportedAt") or ""),
+        "converted_from": "dsh-preset",
+    }
+
     (dest_plugin_dir / "dsh_manifest.json").write_text(
         json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -140,6 +158,10 @@ def _convert_dsh_preset(preset_root: Path, dest_plugin_dir: Path) -> None:
     (dest_plugin_dir / "plugin.yaml").write_text(
         yaml.safe_dump(plugin_manifest, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
+    )
+    # Stash meta for the caller (install_plugin) to attach to PluginState.
+    (dest_plugin_dir / ".dsh_meta.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
 
@@ -167,6 +189,13 @@ def _install_from_archive(source: str, opc_home: Path, plugin_dir_name: str) -> 
             else:
                 _convert_dsh_preset(preset_root, staged)
                 manifest = _read_manifest(staged)
+            # dsh import-preview gate: refuse malformed/unsafe presets.
+            from .preset import validate_preset_package
+
+            report = validate_preset_package(staged)
+            if not report["ok"]:
+                first = report["errors"][0]
+                raise PluginError(first["code"], first["message"])
         else:
             plugin_root = _find_plugin_root(extracted)
             shutil.copytree(plugin_root, staged, dirs_exist_ok=True)
@@ -176,7 +205,7 @@ def _install_from_archive(source: str, opc_home: Path, plugin_dir_name: str) -> 
         if dest.exists():
             shutil.rmtree(dest)
         shutil.copytree(staged, dest)
-        return PluginState.from_manifest(manifest, source=source)
+        return PluginState.from_manifest(manifest, source=source, meta=_read_meta(staged))
 
 
 def install_plugin(
@@ -206,7 +235,7 @@ def install_plugin(
         if dest.exists():
             shutil.rmtree(dest)
         shutil.copytree(src, dest)
-        return PluginState.from_manifest(manifest, source=source)
+        return PluginState.from_manifest(manifest, source=source, meta=_read_meta(src))
 
     if kind == "git":
         with tempfile.TemporaryDirectory() as td:
@@ -226,7 +255,81 @@ def install_plugin(
             if dest.exists():
                 shutil.rmtree(dest)
             shutil.copytree(Path(td), dest)
-            return PluginState.from_manifest(manifest, source=source)
+            return PluginState.from_manifest(manifest, source=source, meta=_read_meta(Path(td)))
 
     # kind == "url"
     return _install_from_archive(source, opc_home, plugin_dir_name)
+
+
+def preview_install(
+    source: str,
+    opc_home: Path,
+    plugin_dir_name: str = "plugins",
+) -> dict[str, Any]:
+    """Two-step install: validate a source without writing it to the profile.
+
+    Mirrors dsh-desktop's ``POST /api/agent-preset.import`` preview. Downloads
+    / clones / inspects ``source`` into a temp area, runs
+    :func:`validate_preset_package` when it is a ``.dshpreset``, and returns the
+    validation report (or a generic ``{ok, preset:False}`` preview for native
+    plugins). Never mutates ``<opc_home>``.
+    """
+    from .preset import validate_preset_package
+
+    kind = _detect_source_kind(source)
+    if kind == "unknown":
+        return {
+            "ok": False,
+            "preset": False,
+            "errors": [{"code": "unsupported_source", "message": f"Cannot preview '{source}'."}],
+            "warnings": {},
+        }
+
+    if kind == "local":
+        src = Path(source).resolve()
+        if not src.is_dir():
+            return {
+                "ok": False,
+                "preset": False,
+                "errors": [{"code": "source_not_dir", "message": f"Local source is not a directory: {src}"}],
+                "warnings": {},
+            }
+        if (src / "manifest.json").exists():
+            return dict(validate_preset_package(src), preset=True)
+        return {"ok": True, "preset": False, "errors": [], "warnings": {}}
+
+    if kind == "git":
+        with tempfile.TemporaryDirectory() as td:
+            try:
+                subprocess.run(
+                    ["git", "clone", "--depth", "1", source.strip(), td],
+                    check=True,
+                    capture_output=True,
+                )
+            except subprocess.CalledProcessError as exc:
+                stderr = exc.stderr.decode("utf-8", "replace") if exc.stderr else ""
+                return {
+                    "ok": False,
+                    "preset": False,
+                    "errors": [{"code": "git_clone_failed", "message": f"git clone failed: {stderr}"}],
+                    "warnings": {},
+                }
+            if (Path(td) / "manifest.json").exists():
+                return dict(validate_preset_package(Path(td)), preset=True)
+            return {"ok": True, "preset": False, "errors": [], "warnings": {}}
+
+    # kind == "url"
+    with tempfile.TemporaryDirectory() as td:
+        td_path = Path(td)
+        is_dsh = source.strip().lower().endswith(_DSHPRESET_SUFFIX)
+        archive = td_path / ("preset.dshpreset" if is_dsh else "archive.zip")
+        try:
+            _download(source, archive)
+        except PluginError as e:
+            return {"ok": False, "preset": is_dsh, "errors": [{"code": e.code, "message": e.message}], "warnings": {}}
+        extracted = td_path / "extracted"
+        _safe_extract(archive, extracted)
+        if is_dsh or (extracted / "manifest.json").exists():
+            preset_root = _find_plugin_root(extracted)
+            return dict(validate_preset_package(preset_root), preset=True)
+        return {"ok": True, "preset": False, "errors": [], "warnings": {}}

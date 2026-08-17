@@ -69,6 +69,40 @@ class PluginService:
         return ServiceResult(result)
 
     # ------------------------------------------------------------------
+    # Preset lifecycle (faithful port of dsh-desktop .dshpreset handling)
+    # ------------------------------------------------------------------
+    async def preview(self, source: str) -> ServiceResult:
+        """Validate a source without installing it (import-preview step)."""
+        from opc.plugin_core.installer import preview_install
+
+        report = preview_install(source, Path(get_opc_home()))
+        return ServiceResult(report)
+
+    async def export(self, plugin_id: str) -> ServiceResult:
+        """Export an installed agent plugin as a ``.dshpreset`` (downloadable)."""
+        import base64
+
+        from opc.plugin_core.preset import build_dsh_preset
+
+        r = self._registry()
+        st = r.get_plugin(plugin_id)
+        if st is None:
+            raise PluginError("plugin_not_found", f"Plugin '{plugin_id}' is not installed")
+        plugin_dir = Path(get_opc_home()) / r.plugin_dir_name / plugin_id
+        if not plugin_dir.is_dir():
+            raise PluginError("plugin_dir_missing", f"Plugin directory missing: {plugin_dir}")
+        blob = build_dsh_preset(st, plugin_dir)
+        filename = f"{plugin_id}.dshpreset"
+        return ServiceResult(
+            {
+                "plugin_id": plugin_id,
+                "filename": filename,
+                "size": len(blob),
+                "data_base64": base64.b64encode(blob).decode("ascii"),
+            }
+        )
+
+    # ------------------------------------------------------------------
     # Runtime refresh — re-load plugins into the live tool registry so a
     # freshly installed plugin is executable on the next turn (no restart).
     # ------------------------------------------------------------------
