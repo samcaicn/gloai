@@ -1,0 +1,25 @@
+[package]
+name = "dsh-agent-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Agent handle, inbox projection, and live registry"
+
+[lints]
+workspace = true
+
+[dependencies]
+dsh-core-types = { workspace = true }
+dsh-events = { workspace = true }
+dsh-session = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros", "sync"] }
+tokio-util = { workspace = true, features = ["rt"] }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

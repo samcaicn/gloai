@@ -1,0 +1,27 @@
+[package]
+name = "dsh-tool-contracts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Tool registry, JSON Schema argument validation, and execute pipeline"
+
+[lints]
+workspace = true
+
+[dependencies]
+dsh-core-types = { workspace = true }
+dsh-events = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+jsonschema = { workspace = true }
+indexmap = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt"] }
+serde_json = { workspace = true }

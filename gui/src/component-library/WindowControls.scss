@@ -1,0 +1,29 @@
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--dshg-radius-sm);
+    color: var(--dshg-ghost);
+
+    &:hover {
+      background: var(--dshg-element-soft);
+      color: var(--dshg-text-primary);
+    }
+
+    &--close:hover {
+      background: var(--dshg-error);
+      color: var(--dshg-static-white);
+    }
+  }
+}

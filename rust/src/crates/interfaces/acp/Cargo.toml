@@ -1,0 +1,29 @@
+[package]
+name = "dsh-acp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Automation-only Agent Client Protocol server over JSON-RPC NDJSON stdio"
+
+[lints]
+workspace = true
+
+[dependencies]
+dsh-core = { workspace = true, features = ["headless", "llm-mock"] }
+dsh-core-types = { workspace = true }
+dsh-events = { workspace = true }
+dsh-agent-runtime = { workspace = true }
+dsh-agent-loop = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["io-util", "io-std", "macros", "rt", "sync", "time"] }
+
+[dev-dependencies]
+dsh-llm-mock = { workspace = true }
+dsh-testkit = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["io-util", "macros", "net", "rt-multi-thread", "time"] }

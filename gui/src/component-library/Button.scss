@@ -1,0 +1,42 @@
+.dshg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dshg-gap-2);
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--dshg-radius-sm);
+  border: 1px solid transparent;
+  transition: background var(--dshg-motion), border-color var(--dshg-motion), color var(--dshg-motion);
+
+  &--primary {
+    background: var(--dshg-accent-strong);
+    color: var(--dshg-static-white);
+    border-color: color-mix(in srgb, var(--dshg-accent) 40%, transparent);
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+  }
+
+  &--ghost {
+    background: var(--dshg-element-subtle);
+    color: var(--dshg-text-primary);
+    border-color: var(--dshg-border-subtle);
+
+    &:hover:not(:disabled) {
+      background: var(--dshg-element-soft);
+    }
+  }
+
+  &--danger {
+    background: transparent;
+    color: var(--dshg-error);
+    border-color: color-mix(in srgb, var(--dshg-error) 35%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+}

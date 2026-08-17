@@ -1,0 +1,85 @@
+:root,
+[data-theme="dark"] {
+  --dshg-bg-primary: #121214;
+  --dshg-bg-secondary: #1a1c1e;
+  --dshg-bg-scene: #161618;
+  --dshg-text-primary: #e8e8e8;
+  --dshg-text-secondary: #b0b0b0;
+  --dshg-text-muted: #858585;
+  --dshg-accent: #60a5fa;
+  --dshg-accent-strong: #3b82f6;
+  --dshg-success: #34d399;
+  --dshg-warning: #f59e0b;
+  --dshg-error: #ef4444;
+  --dshg-element-subtle: rgba(255, 255, 255, 0.06);
+  --dshg-element-soft: rgba(255, 255, 255, 0.12);
+  --dshg-element-medium: rgba(255, 255, 255, 0.18);
+  --dshg-border-subtle: rgba(255, 255, 255, 0.12);
+  --dshg-border-base: rgba(255, 255, 255, 0.18);
+  --dshg-overlay-black: rgba(0, 0, 0, 0.3);
+  --dshg-static-white: #ffffff;
+  --dshg-ghost: #c5c5c5;
+}
+
+[data-theme="light"] {
+  --dshg-bg-primary: #f4f4f5;
+  --dshg-bg-secondary: #ffffff;
+  --dshg-bg-scene: #ececee;
+  --dshg-text-primary: #18181b;
+  --dshg-text-secondary: #3f3f46;
+  --dshg-text-muted: #71717a;
+  --dshg-accent: #2563eb;
+  --dshg-accent-strong: #1d4ed8;
+  --dshg-success: #059669;
+  --dshg-warning: #d97706;
+  --dshg-error: #dc2626;
+  --dshg-element-subtle: rgba(24, 24, 27, 0.04);
+  --dshg-element-soft: rgba(24, 24, 27, 0.08);
+  --dshg-element-medium: rgba(24, 24, 27, 0.12);
+  --dshg-border-subtle: rgba(24, 24, 27, 0.1);
+  --dshg-border-base: rgba(24, 24, 27, 0.16);
+  --dshg-overlay-black: rgba(0, 0, 0, 0.12);
+  --dshg-static-white: #ffffff;
+  --dshg-ghost: #52525b;
+}
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    --dshg-bg-primary: #f4f4f5;
+    --dshg-bg-secondary: #ffffff;
+    --dshg-bg-scene: #ececee;
+    --dshg-text-primary: #18181b;
+    --dshg-text-secondary: #3f3f46;
+    --dshg-text-muted: #71717a;
+    --dshg-accent: #2563eb;
+    --dshg-accent-strong: #1d4ed8;
+    --dshg-success: #059669;
+    --dshg-warning: #d97706;
+    --dshg-error: #dc2626;
+    --dshg-element-subtle: rgba(24, 24, 27, 0.04);
+    --dshg-element-soft: rgba(24, 24, 27, 0.08);
+    --dshg-element-medium: rgba(24, 24, 27, 0.12);
+    --dshg-border-subtle: rgba(24, 24, 27, 0.1);
+    --dshg-border-base: rgba(24, 24, 27, 0.16);
+    --dshg-overlay-black: rgba(0, 0, 0, 0.12);
+    --dshg-static-white: #ffffff;
+    --dshg-ghost: #52525b;
+  }
+}
+
+:root {
+  --dshg-radius-sm: 6px;
+  --dshg-radius-lg: 12px;
+  --dshg-gap-1: 4px;
+  --dshg-gap-2: 8px;
+  --dshg-gap-3: 12px;
+  --dshg-gap-4: 16px;
+  --dshg-gap-6: 24px;
+  --dshg-gap-8: 32px;
+  --dshg-font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --dshg-font-mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --dshg-motion: 150ms cubic-bezier(0.23, 1, 0.32, 1);
+  --dshg-chrome: 38px;
+  --dshg-nav: 240px;
+}

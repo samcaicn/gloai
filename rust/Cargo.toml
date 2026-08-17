@@ -1,0 +1,111 @@
+[workspace]
+resolver = "2"
+members = [
+    "src/crates/contracts/core-types",
+    "src/crates/contracts/events",
+    "src/crates/contracts/runtime-ports",
+    "src/crates/execution/agent-stream",
+    "src/crates/execution/session",
+    "src/crates/execution/system-prompt",
+    "src/crates/execution/tool-contracts",
+    "src/crates/execution/agent-runtime",
+    "src/crates/execution/agent-loop",
+    "src/crates/services/credentials",
+    "src/crates/services/persist",
+    "src/crates/services/fs",
+    "src/crates/services/subprocess",
+    "src/crates/services/shell",
+    "src/crates/adapters/llm-deepseek",
+    "src/crates/adapters/llm-mock",
+    "src/crates/assembly/core",
+    "src/crates/interfaces/acp",
+    "src/crates/support/testkit",
+    "src/apps/cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["DeepSeek"]
+edition = "2021"
+license = "MIT"
+rust-version = "1.88"
+repository = "https://github.com/bobleer/deepseek-harness-rust"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+unreachable_pub = "warn"
+unused_lifetimes = "warn"
+
+[workspace.lints.clippy]
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+perf = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+undocumented_unsafe_blocks = "warn"
+
+[workspace.dependencies]
+dsh-core-types = { path = "src/crates/contracts/core-types" }
+dsh-events = { path = "src/crates/contracts/events" }
+dsh-runtime-ports = { path = "src/crates/contracts/runtime-ports" }
+dsh-agent-stream = { path = "src/crates/execution/agent-stream" }
+dsh-session = { path = "src/crates/execution/session" }
+dsh-system-prompt = { path = "src/crates/execution/system-prompt" }
+dsh-tool-contracts = { path = "src/crates/execution/tool-contracts" }
+dsh-agent-runtime = { path = "src/crates/execution/agent-runtime" }
+dsh-agent-loop = { path = "src/crates/execution/agent-loop" }
+dsh-credentials = { path = "src/crates/services/credentials" }
+dsh-persist = { path = "src/crates/services/persist" }
+dsh-fs = { path = "src/crates/services/fs" }
+dsh-subprocess = { path = "src/crates/services/subprocess" }
+dsh-shell = { path = "src/crates/services/shell" }
+dsh-llm-deepseek = { path = "src/crates/adapters/llm-deepseek" }
+dsh-llm-mock = { path = "src/crates/adapters/llm-mock" }
+dsh-core = { path = "src/crates/assembly/core" }
+dsh-acp = { path = "src/crates/interfaces/acp" }
+dsh-testkit = { path = "src/crates/support/testkit" }
+dsh-cli = { path = "src/apps/cli" }
+
+tokio = { version = "1.47", default-features = false }
+tokio-util = { version = "0.7", default-features = false }
+async-trait = "0.1"
+futures = { version = "0.3", default-features = false, features = ["std"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+thiserror = "2"
+anyhow = "1.0"
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+reqwest = { version = "0.12", default-features = false }
+bytes = "1"
+eventsource-stream = "0.2"
+clap = { version = "4", features = ["derive", "env"] }
+dirs = "6"
+regex = "1"
+globset = "0.4"
+ignore = "0.4"
+walkdir = "2"
+similar = "2"
+shlex = "1"
+which = "7"
+tempfile = "3"
+pretty_assertions = "1"
+httpmock = "0.7"
+tokio-stream = { version = "0.1", default-features = false }
+pin-project-lite = "0.2"
+indexmap = { version = "2", features = ["serde"] }
+parking_lot = "0.12"
+async-stream = "0.3"
+dotenvy = "0.15"
+jsonschema = "0.28"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

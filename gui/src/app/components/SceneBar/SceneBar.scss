@@ -1,0 +1,35 @@
+.dshg-scene-bar {
+  display: flex;
+  align-items: center;
+  height: var(--dshg-chrome);
+  gap: 4px;
+  padding: 0 var(--dshg-gap-3);
+  background: var(--dshg-bg-primary);
+  border-bottom: 1px solid var(--dshg-border-subtle);
+  user-select: none;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: none;
+    border-radius: var(--dshg-radius-sm);
+    background: transparent;
+    color: var(--dshg-text-muted);
+
+    &:hover,
+    &.is-active {
+      color: var(--dshg-text-primary);
+      background: var(--dshg-element-soft);
+    }
+  }
+
+  &__drag {
+    flex: 1;
+    height: 100%;
+    min-width: 24px;
+    cursor: default;
+  }
+}

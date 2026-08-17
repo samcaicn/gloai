@@ -1,0 +1,36 @@
+.dshg-session {
+  height: 100%;
+  background: var(--dshg-bg-scene);
+
+  &__frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: var(--dshg-bg-scene);
+  }
+
+  &--empty,
+  &--status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 16px;
+    padding: 32px;
+    color: var(--dshg-text-secondary);
+
+    pre {
+      max-width: 100%;
+      max-height: 240px;
+      overflow: auto;
+      padding: 12px;
+      border-radius: var(--dshg-radius-sm);
+      background: var(--dshg-bg-secondary);
+      border: 1px solid var(--dshg-border-subtle);
+      color: var(--dshg-text-muted);
+      font-family: var(--dshg-font-mono);
+      font-size: 11px;
+      white-space: pre-wrap;
+    }
+  }
+}

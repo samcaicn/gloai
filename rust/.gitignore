@@ -1,0 +1,12 @@
+/target/
+**/*.rs.bk
+.idea/
+.vscode/
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+.worktrees/
+worktrees/
+/tmp/

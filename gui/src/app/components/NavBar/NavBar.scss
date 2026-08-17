@@ -1,0 +1,43 @@
+.dshg-nav-bar {
+  display: flex;
+  align-items: center;
+  height: var(--dshg-chrome);
+  flex-shrink: 0;
+  padding: 0 var(--dshg-gap-2);
+  gap: var(--dshg-gap-1);
+  background: var(--dshg-bg-primary);
+  user-select: none;
+
+  &--macos {
+    padding-left: 78px;
+    padding-right: 2px;
+  }
+
+  &--collapsed {
+    justify-content: flex-start;
+  }
+
+  &__drag {
+    flex: 1;
+    height: 100%;
+    min-width: 24px;
+    cursor: default;
+  }
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: var(--dshg-radius-sm);
+    background: transparent;
+    color: var(--dshg-text-muted);
+
+    &:hover {
+      color: var(--dshg-text-primary);
+      background: var(--dshg-element-soft);
+    }
+  }
+}

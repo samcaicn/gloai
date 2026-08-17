@@ -1,0 +1,20 @@
+[package]
+name = "dsh-subprocess"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Local process-tree subprocess provider"
+
+[lints]
+workspace = true
+
+[dependencies]
+dsh-runtime-ports = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true, features = ["process", "time", "rt", "io-util"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

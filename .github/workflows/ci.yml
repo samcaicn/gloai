@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [dsh-unified]
+  workflow_dispatch:
+
+jobs:
+  rust:
+    name: Build dsh CLI (windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust 1.88.0
+        uses: dtolnay/rust-toolchain@1.88.0
+
+      - name: Build release (static CRT, no VC++ redist needed)
+        run: cargo build --release
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+
+      - name: Upload dsh.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-windows-x86_64
+          path: rust/target/release/dsh.exe
+
+  gui:
+    name: Build Tauri bundle (windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: gui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      # WebView2 is bundled via tauri.conf.json `bundle.windows.webviewInstallMode: embedBootstrapper`
+      # (set in gui/src-tauri/tauri.conf.json). The installer embeds the WebView2 bootstrapper and
+      # installs it on first launch, fixing the "launch crash" on clean Windows machines.
+
+      - name: Tauri build
+        run: pnpm tauri build
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-gui-windows
+          path: gui/src-tauri/target/release/bundle/**/*
+
+  mcp:
+    name: Build & test dsh-plugin-mcp (ubuntu)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install (also builds dist via prepare)
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-plugin-mcp-dist
+          path: mcp/dist/**

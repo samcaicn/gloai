@@ -1,0 +1,19 @@
+[package]
+name = "dsh-agent-stream"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Incremental StreamChunk to ContentBlock assembler"
+
+[lints]
+workspace = true
+
+[dependencies]
+dsh-core-types = { workspace = true }
+indexmap = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
