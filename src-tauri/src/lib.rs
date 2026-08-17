@@ -848,6 +848,7 @@ commands::floating_window::fw_chat_to_main,
             // search + DSH plugin CRUD + built-in plugin toggles.
             commands::plugin_market::search_dsh_plugins,
             commands::plugin_market::list_dsh_plugins,
+            commands::plugin_market::dsh_list_plugins,
             commands::plugin_market::install_dsh_plugin,
             commands::plugin_market::remove_dsh_plugin,
             commands::plugin_market::set_dsh_plugin_enabled,

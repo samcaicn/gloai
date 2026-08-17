@@ -17,7 +17,7 @@
     "downloading": "下載中…"
   },
   "dsh": {
-    "searchPlaceholder": "搜尋 DSH 插件（GitHub）…",
+    "searchPlaceholder": "搜尋 DSH 插件…",
     "loadFailed": "載入 DSH 插件失敗：{{error}}",
     "searchFailed": "搜尋 DSH 插件失敗：{{error}}",
     "installed": "已安裝",
@@ -29,6 +29,8 @@
     "installedEmpty": "尚未安裝任何 DSH 插件",
     "discoverTitle": "發現 DSH 插件",
     "discoverEmpty": "未找到 DSH 插件，換個關鍵字試試",
+    "noUpstream": "未配置 DSH 執行時：請到 設定 → DSH 新增一個 http(s) 端點以拉取插件目錄",
+    "noMatch": "沒有匹配的 DSH 插件",
     "install": "安裝",
     "remove": "移除"
   },

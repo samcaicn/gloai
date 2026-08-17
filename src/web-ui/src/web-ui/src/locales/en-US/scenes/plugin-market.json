@@ -17,7 +17,7 @@
     "downloading": "Downloading…"
   },
   "dsh": {
-    "searchPlaceholder": "Search DSH plugins (GitHub)…",
+    "searchPlaceholder": "Search DSH plugins…",
     "loadFailed": "Failed to load DSH plugins: {{error}}",
     "searchFailed": "Failed to search DSH plugins: {{error}}",
     "installed": "Installed",
@@ -29,6 +29,8 @@
     "installedEmpty": "No DSH plugins installed yet",
     "discoverTitle": "Discover DSH plugins",
     "discoverEmpty": "No DSH plugins found — try another keyword",
+    "noUpstream": "No DSH runtime configured: add an http(s) endpoint in Settings → DSH to fetch the plugin catalog",
+    "noMatch": "No matching DSH plugins",
     "install": "Install",
     "remove": "Remove"
   },

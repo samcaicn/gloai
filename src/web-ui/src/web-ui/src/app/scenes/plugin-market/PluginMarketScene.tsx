@@ -11,6 +11,7 @@ import {
   Puzzle,
   Search as SearchIcon,
   Send,
+  Server,
   Star,
   Trash2,
   TrendingUp,
@@ -28,8 +29,8 @@ import {
   installDshPlugin,
   listBuiltinPlugins,
   listDshPlugins,
+  dshListPlugins,
   removeDshPlugin,
-  searchDshPlugins,
   setBuiltinPluginEnabled,
   setDshPluginEnabled,
   type BuiltinPluginInfo,
@@ -72,6 +73,9 @@ const PluginMarketScene: React.FC = () => {
   const [dshLoading, setDshLoading] = useState(false);
   const [dshSearching, setDshSearching] = useState(false);
   const [dshBusyId, setDshBusyId] = useState<string | null>(null);
+  // True when no DSH runtime (http upstream) is configured — the discover
+  // section then shows a "去 设置 → DSH 配置" CTA instead of a silent empty.
+  const [dshNoUpstream, setDshNoUpstream] = useState(false);
 
   const loadDshInstalled = useCallback(async () => {
     try {
@@ -86,23 +90,44 @@ const PluginMarketScene: React.FC = () => {
     }
   }, [notification, t]);
 
-  const runDshSearch = useCallback(async () => {
+  // Real "接通 DSH 插件服务": pull the live catalog from every configured DSH
+  // upstream (Settings → DSH). Filtering by the search box is done client-side
+  // below, so one fetch serves all queries.
+  const loadDshDiscover = useCallback(async () => {
     try {
       setDshSearching(true);
-      const items = await searchDshPlugins(dshQuery.trim() || undefined);
+      setDshNoUpstream(false);
+      const items = await dshListPlugins();
       setDshResults(items);
     } catch (err) {
-      log.error('Failed to search DSH plugins', err);
-      notification.error(t('dsh.searchFailed', { error: String(err) }));
+      const msg = String(err);
+      if (msg.includes('未配置 DSH 运行时')) {
+        setDshNoUpstream(true);
+        setDshResults([]);
+      } else {
+        log.error('Failed to fetch DSH plugins', err);
+        notification.error(t('dsh.searchFailed', { error: msg }));
+      }
     } finally {
       setDshSearching(false);
     }
-  }, [dshQuery, notification, t]);
+  }, [notification, t]);
+
+  // Client-side filter of the fetched DSH catalog by the search box.
+  const dshVisible = useMemo(() => {
+    const q = dshQuery.trim().toLowerCase();
+    if (!q) return dshResults;
+    return dshResults.filter(
+      (p) =>
+        (p.name ?? '').toLowerCase().includes(q) ||
+        (p.description ?? '').toLowerCase().includes(q),
+    );
+  }, [dshResults, dshQuery]);
 
   useEffect(() => {
     void loadDshInstalled();
-    void runDshSearch();
-  }, [loadDshInstalled, runDshSearch]);
+    void loadDshDiscover();
+  }, [loadDshInstalled, loadDshDiscover]);
 
   const installedRepoIds = useMemo(
     () => new Set(dshInstalled.map((p) => p.id)),
@@ -689,11 +714,8 @@ const PluginMarketScene: React.FC = () => {
               <Search
                 value={dshQuery}
                 onChange={setDshQuery}
-                onSearch={() => void runDshSearch()}
-                onClear={() => {
-                  setDshQuery('');
-                  void runDshSearch();
-                }}
+                onSearch={() => {}}
+                onClear={() => setDshQuery('')}
                 placeholder={t('dsh.searchPlaceholder')}
                 size="medium"
                 clearable
@@ -764,7 +786,7 @@ const PluginMarketScene: React.FC = () => {
               )}
             </section>
 
-            {/* 全网 DSH 插件搜索结果 */}
+            {/* DSH 运行时真实插件目录 */}
             <section className="plugin-market-scene__section">
               <h2 className="plugin-market-scene__section-title">
                 {t('dsh.discoverTitle')}
@@ -775,14 +797,19 @@ const PluginMarketScene: React.FC = () => {
                     <div key={`dr-${i}`} className="plugin-market-scene__skeleton" />
                   ))}
                 </div>
-              ) : dshResults.length === 0 ? (
+              ) : dshNoUpstream ? (
+                <div className="plugin-market-scene__empty plugin-market-scene__empty--info">
+                  <Server size={24} />
+                  <span>{t('dsh.noUpstream')}</span>
+                </div>
+              ) : dshVisible.length === 0 ? (
                 <div className="plugin-market-scene__empty">
                   <SearchIcon size={24} />
                   <span>{t('dsh.discoverEmpty')}</span>
                 </div>
               ) : (
                 <div className="plugin-market-scene__grid">
-                  {dshResults.map((item, index) => {
+                  {dshVisible.map((item, index) => {
                     const isInstalled = installedRepoIds.has(item.id);
                     const busy = dshBusyId === item.id;
                     return (

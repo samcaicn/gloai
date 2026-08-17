@@ -48,6 +48,13 @@ export async function searchDshPlugins(query?: string): Promise<DshPluginSearchI
   return invoke<DshPluginSearchItem[]>('search_dsh_plugins', { query: query ?? null });
 }
 
+/// Pull the live plugin catalog from every configured DSH upstream (Settings →
+/// DSH). This is the real "接通 DSH 插件服务" path; the catalog is served by
+/// the DSH runtime itself, not GitHub.
+export async function dshListPlugins(): Promise<DshPluginSearchItem[]> {
+  return invoke<DshPluginSearchItem[]>('dsh_list_plugins');
+}
+
 export async function listDshPlugins(): Promise<DshPluginRef[]> {
   return invoke<DshPluginRef[]>('list_dsh_plugins');
 }

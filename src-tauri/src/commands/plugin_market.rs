@@ -176,6 +176,192 @@ pub async fn search_dsh_plugins(query: Option<String>) -> Result<Vec<DshPluginSe
     Ok(items)
 }
 
+// ── DSH plugin service: live catalog from configured upstreams ────────────
+
+use log::warn;
+
+/// Default path (relative to a DSH upstream's `endpoint`) used to fetch its
+/// plugin catalog. Overridable per active profile via the `dshPluginPath`
+/// config override so the contract can be tuned without a recompile.
+const DSH_PLUGIN_PATH_DEFAULT: &str = "/plugins";
+
+/// Join an upstream `endpoint` with the plugin-list `path`, tolerating
+/// trailing/leading slashes on either side.
+fn join_dsh_plugin_url(endpoint: &str, path: &str) -> String {
+    let e = endpoint.trim_end_matches('/');
+    let p = path.trim();
+    let p = if p.is_empty() {
+        DSH_PLUGIN_PATH_DEFAULT.to_string()
+    } else if p.starts_with('/') {
+        p.to_string()
+    } else {
+        format!("/{}", p)
+    };
+    format!("{}{}", e, p)
+}
+
+/// Extract the plugin array from a flexible DSH plugin-service response.
+/// Accepts a top-level JSON array, or an object wrapping the array under one
+/// of `plugins` / `data` / `items` / `result` / `results`.
+fn dsh_plugin_array(payload: &serde_json::Value) -> Option<Vec<&serde_json::Value>> {
+    match payload {
+        serde_json::Value::Array(a) => Some(a.iter().collect()),
+        serde_json::Value::Object(_) => {
+            for key in ["plugins", "data", "items", "result", "results"] {
+                if let Some(serde_json::Value::Array(a)) = payload.get(key) {
+                    return Some(a.iter().collect());
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+/// Normalize one raw plugin object (from a DSH runtime's catalog) into the
+/// camelCase `DshPluginSearchItem` the frontend consumes. `upstream_id` scopes
+/// the id so plugins surfaced by different runtimes never collide.
+fn normalize_dsh_plugin(
+    raw: &serde_json::Value,
+    upstream_id: &str,
+    endpoint: &str,
+) -> Option<DshPluginSearchItem> {
+    let plugin_id = raw
+        .get("id")
+        .and_then(|v| v.as_str())
+        .or_else(|| raw.get("pluginId").and_then(|v| v.as_str()))
+        .or_else(|| raw.get("name").and_then(|v| v.as_str()))?
+        .to_string();
+    if plugin_id.trim().is_empty() {
+        return None;
+    }
+    let name = raw
+        .get("name")
+        .and_then(|v| v.as_str())
+        .or_else(|| raw.get("title").and_then(|v| v.as_str()))
+        .unwrap_or(&plugin_id)
+        .to_string();
+    let description = raw
+        .get("description")
+        .and_then(|v| v.as_str())
+        .or_else(|| raw.get("summary").and_then(|v| v.as_str()))
+        .or_else(|| raw.get("desc").and_then(|v| v.as_str()))
+        .map(|s| s.to_string());
+    let stars = raw
+        .get("stars")
+        .and_then(|v| v.as_u64())
+        .or_else(|| raw.get("downloads").and_then(|v| v.as_u64()))
+        .unwrap_or(0);
+    let url = raw
+        .get("homepage")
+        .and_then(|v| v.as_str())
+        .or_else(|| raw.get("url").and_then(|v| v.as_str()))
+        .or_else(|| raw.get("link").and_then(|v| v.as_str()))
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("{}/plugins/{}", endpoint.trim_end_matches('/'), plugin_id));
+    let language = raw.get("language").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let license = raw.get("license").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let updated_at = raw
+        .get("updatedAt")
+        .or_else(|| raw.get("updated_at"))
+        .or_else(|| raw.get("version"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    let repo = format!("{}/{}", upstream_id, plugin_id);
+    let id = repo.replace('/', "-");
+    Some(DshPluginSearchItem {
+        id,
+        repo,
+        name,
+        description,
+        stars,
+        url,
+        language,
+        license,
+        updated_at,
+        install_ref: format!("dsh:{}/{}", upstream_id, plugin_id),
+    })
+}
+
+/// Pull the live plugin catalog from every enabled http(s) DSH upstream
+/// configured in Settings → DSH, and normalize into the market shape. This is
+/// the real "接通 DSH 插件服务" path (the old `search_dsh_plugins` only hit
+/// GitHub). A misbehaving upstream is skipped (its error is logged) so one bad
+/// runtime never blanks the whole catalog.
+#[tauri::command]
+pub async fn dsh_list_plugins(app: AppHandle) -> Result<Vec<DshPluginSearchItem>, String> {
+    let store = load_store(&app);
+    let path = store
+        .resolve_config(
+            "dshPluginPath",
+            serde_json::Value::String(DSH_PLUGIN_PATH_DEFAULT.to_string()),
+        )
+        .as_str()
+        .unwrap_or(DSH_PLUGIN_PATH_DEFAULT)
+        .to_string();
+
+    let upstreams = store.dsh_upstreams();
+    let mut out: Vec<DshPluginSearchItem> = Vec::new();
+    let mut had_http = false;
+
+    for up in upstreams.iter().filter(|u| u.enabled) {
+        let endpoint = up.endpoint.trim();
+        if !endpoint.starts_with("http://") && !endpoint.starts_with("https://") {
+            continue; // binary upstreams expose no plugin catalog
+        }
+        had_http = true;
+        let url = join_dsh_plugin_url(endpoint, &path);
+        let client = reqwest::Client::new();
+        let mut builder = client
+            .get(&url)
+            .header("User-Agent", "safeopcAPP")
+            .header("Accept", "application/json");
+        if let Some(key) = up.api_key.as_ref() {
+            if let Ok(v) = reqwest::header::HeaderValue::from_str(&format!("Bearer {}", key)) {
+                builder = builder.header(reqwest::header::AUTHORIZATION, v);
+            }
+        }
+        let resp = match builder.send().await {
+            Ok(r) => r,
+            Err(e) => {
+                warn!("DSH upstream '{}' 插件拉取失败: {}", up.id, e);
+                continue;
+            }
+        };
+        if !resp.status().is_success() {
+            warn!("DSH upstream '{}' 插件接口返回 {}", up.id, resp.status());
+            continue;
+        }
+        let body: serde_json::Value = match resp.json().await {
+            Ok(b) => b,
+            Err(e) => {
+                warn!("DSH upstream '{}' 插件响应解析失败: {}", up.id, e);
+                continue;
+            }
+        };
+        if let Some(arr) = dsh_plugin_array(&body) {
+            for item in arr {
+                if let Some(norm) = normalize_dsh_plugin(item, &up.id, endpoint) {
+                    out.push(norm);
+                }
+            }
+        }
+    }
+
+    if !had_http && out.is_empty() {
+        // No DSH runtime configured — surface a clear, actionable error so the
+        // UI can prompt the user to add one in Settings → DSH.
+        return Err(
+            "未配置 DSH 运行时：请到 设置 → DSH 添加一个 http(s) endpoint 以拉取插件目录".into(),
+        );
+    }
+
+    // Sort by stars (desc) then de-dup by id (keep first).
+    out.sort_by(|a, b| b.stars.cmp(&a.stars));
+    out.dedup_by(|a, b| a.id == b.id);
+    Ok(out)
+}
+
 /// Minimal URL-query-component encoder (no external crate dependency).
 fn urlencoding(input: &str) -> String {
     let mut out = String::with_capacity(input.len());
@@ -365,4 +551,106 @@ pub async fn set_builtin_plugin_enabled(
             enabled: store.is_builtin_plugin_enabled(n),
         })
         .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn join_url_tolerates_slashes() {
+        assert_eq!(
+            join_dsh_plugin_url("https://dsh.test/", "/plugins"),
+            "https://dsh.test/plugins"
+        );
+        assert_eq!(
+            join_dsh_plugin_url("https://dsh.test", "plugins"),
+            "https://dsh.test/plugins"
+        );
+        assert_eq!(
+            join_dsh_plugin_url("https://dsh.test/", "plugins/"),
+            "https://dsh.test/plugins/"
+        );
+    }
+
+    #[test]
+    fn accepts_top_level_array() {
+        let v = serde_json::json!([{"id": "a"}, {"id": "b"}]);
+        assert_eq!(dsh_plugin_array(&v).map(|a| a.len()), Some(2));
+    }
+
+    #[test]
+    fn accepts_object_wrapped_array() {
+        for key in ["plugins", "data", "items", "result", "results"] {
+            let v = serde_json::json!({ key: [{"id": "x"}] });
+            assert_eq!(dsh_plugin_array(&v).map(|a| a.len()), Some(1), "key={}", key);
+        }
+    }
+
+    #[test]
+    fn rejects_scalar_payload() {
+        assert_eq!(dsh_plugin_array(&serde_json::json!("nope")), None);
+        assert_eq!(dsh_plugin_array(&serde_json::json!({"foo": 1})), None);
+    }
+
+    #[test]
+    fn normalizes_realistic_plugin() {
+        let raw = serde_json::json!({
+            "id": "translator",
+            "name": "实时翻译",
+            "description": "DSH 运行时翻译插件",
+            "stars": 42,
+            "homepage": "https://dsh.test/plugins/translator",
+            "language": "TypeScript",
+            "license": "MIT",
+            "version": "1.2.3"
+        });
+        let p = normalize_dsh_plugin(&raw, "local", "https://dsh.test").unwrap();
+        assert_eq!(p.id, "local-translator");
+        assert_eq!(p.repo, "local/translator");
+        assert_eq!(p.name, "实时翻译");
+        assert_eq!(p.stars, 42);
+        assert_eq!(p.url, "https://dsh.test/plugins/translator");
+        assert_eq!(p.language.as_deref(), Some("TypeScript"));
+        assert_eq!(p.license.as_deref(), Some("MIT"));
+        assert_eq!(p.updated_at.as_deref(), Some("1.2.3"));
+        assert_eq!(p.install_ref, "dsh:local/translator");
+    }
+
+    #[test]
+    fn normalizes_missing_optional_fields() {
+        let raw = serde_json::json!({ "name": "bare" });
+        let p = normalize_dsh_plugin(&raw, "u1", "https://h").unwrap();
+        assert_eq!(p.id, "u1-bare");
+        assert_eq!(p.name, "bare");
+        assert_eq!(p.stars, 0);
+        assert_eq!(p.url, "https://h/plugins/bare");
+        assert!(p.description.is_none());
+    }
+
+    #[test]
+    fn rejects_plugin_without_id() {
+        let raw = serde_json::json!({ "description": "no id" });
+        assert!(normalize_dsh_plugin(&raw, "u", "https://h").is_none());
+    }
+
+    #[test]
+    fn full_parse_pipeline() {
+        let body = serde_json::json!({
+            "plugins": [
+                {"id": "p1", "name": "One", "stars": 10},
+                {"id": "p2", "name": "Two"}
+            ]
+        });
+        let arr = dsh_plugin_array(&body).unwrap();
+        let mut out: Vec<DshPluginSearchItem> = arr
+            .iter()
+            .filter_map(|it| normalize_dsh_plugin(it, "rt", "https://rt"))
+            .collect();
+        out.sort_by(|a, b| b.stars.cmp(&a.stars));
+        out.dedup_by(|a, b| a.id == b.id);
+        assert_eq!(out.len(), 2);
+        assert_eq!(out[0].id, "rt-p1");
+        assert_eq!(out[1].id, "rt-p2");
+    }
 }
