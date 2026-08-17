@@ -79,6 +79,49 @@ def _show_error(title: str, message: str) -> None:
         pass
 
 
+# ── Single-instance guard ───────────────────────────────────────────────────
+# Without this, every launch (double-click, crash-restart, dev re-run, …) opens
+# yet another window. We hold a Windows named mutex for the whole process life;
+# a second instance that cannot acquire it exits immediately with a friendly
+# "already running" notice instead of stacking another window on top.
+_SINGLE_INSTANCE_MUTEX_NAME = "Global\\SafeOPC_SingleInstance_8F3A1C4D"
+_SINGLE_INSTANCE_HANDLE = None  # kept alive for the process lifetime
+
+
+def _acquire_single_instance() -> bool:
+    """Return True if this is the only SafeOPC instance; False otherwise.
+
+    Falls open (returns True) on any unexpected error so we never hard-block
+    startup on a guard failure.
+    """
+    if sys.platform != "win32":
+        # Non-Windows: best-effort lock file. Kept simple — desktop target is Windows.
+        try:
+            import fcntl
+
+            lock_path = Path.home() / ".safeopc_instance.lock"
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR)
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                _SINGLE_INSTANCE_HANDLE = fd
+                return True
+            except OSError:
+                os.close(fd)
+                return False
+        except Exception:
+            return True
+    try:
+        kernel32 = ctypes.windll.kernel32
+        mutex = kernel32.CreateMutexW(None, 1, _SINGLE_INSTANCE_MUTEX_NAME)
+        # ERROR_ALREADY_EXISTS == 183: a previous instance owns it.
+        if ctypes.GetLastError() == 183:
+            return False
+        _SINGLE_INSTANCE_HANDLE = mutex  # keep alive -> released on process exit
+        return True
+    except Exception:
+        return True
+
+
 def find_free_port(preferred: int, max_tries: int = 50) -> int:
     """Return `preferred` if free, otherwise the next free TCP port.
 
@@ -790,7 +833,18 @@ def run_gui(port: int) -> None:
     ).start()
 
     # 5) Enter the webview event loop (splash is already visible on top).
-    webview.start()
+    #    Give WebView2 a stable, dedicated user-data dir. Without this, every
+    #    launch competes over the default temp profile; a leftover/locked dir
+    #    makes the renderer process die immediately ("Failed to delete user
+    #    data folder") and the window closes within ~1s, feeding the restart
+    #    loop. A fixed dir also preserves cookies/sessions across restarts.
+    try:
+        _profile_dir = resolve_opc_home() / "webview_profile"
+        _profile_dir.mkdir(parents=True, exist_ok=True)
+        webview.start(storage_path=str(_profile_dir))
+    except Exception as exc:
+        LOG.warning("webview.start with storage_path failed (%s); falling back", exc)
+        webview.start()
     # Window closed -> exit the whole process (server thread is daemon).
     LOG.info("Window closed; exiting.")
     os._exit(0)
@@ -824,6 +878,18 @@ def _apply_litellm_speedups() -> None:
 
 
 def _real_main() -> None:
+    # Single-instance guard MUST run before anything visual (splash/webview)
+    # so a second launch never flashes a window. If another instance holds the
+    # mutex, just tell the user and exit — no second window, no restart loop.
+    if not _acquire_single_instance():
+        try:
+            ctypes.windll.user32.MessageBoxW(
+                0, "SafeOPC 已经在运行中。", "SafeOPC", 0x40  # MB_ICONINFORMATION
+            )
+        except Exception:
+            pass
+        os._exit(0)
+
     _apply_litellm_speedups()
     port = int(os.environ.get("SAFEOPC_PORT", DEFAULT_PORT))
     opc_home = resolve_opc_home()
