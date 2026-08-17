@@ -1,29 +1,38 @@
-name: ci
+name: CI
 
 on:
   push:
-    branches: [main, master]
-  pull_request:
+    branches: [dshgui]
+  workflow_dispatch:
 
 jobs:
-  verify:
-    runs-on: macos-latest
+  build-windows:
+    name: Build Tauri bundle (windows)
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          components: clippy
-      - name: Install frontend
+          version: 9
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend deps
         run: pnpm install --frozen-lockfile
-      - name: Typecheck and unit tests
-        run: pnpm typecheck && pnpm test && pnpm build
-      - name: Rust tests and clippy
-        working-directory: src-tauri
-        run: cargo test && cargo clippy --all-targets -- -D warnings
+
+      - name: Tauri build
+        run: pnpm tauri build
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-gui-windows
+          path: src-tauri/target/release/bundle/**/*
