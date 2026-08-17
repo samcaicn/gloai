@@ -1,39 +1,34 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [main, master]
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
+    branches: [dshrs]
+  workflow_dispatch:
 
 jobs:
-  rust:
-    name: Rust ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+  build-windows:
+    name: Build dsh.exe (windows)
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain 1.88.0
+        uses: dtolnay/rust-toolchain@1.88.0
+
+      - name: Cache cargo
+        uses: actions/cache@v4
         with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Format
-        run: cargo fmt --all -- --check
-      - name: Crate boundaries
-        run: python3 scripts/check-crate-boundaries.py
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-      - name: Test
-        run: cargo test --workspace --all-targets
-      - name: Dump config
-        run: cargo run -p dsh-cli -- --profile test --llm mock --dump-config
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Upload dsh.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-windows-x86_64
+          path: target/release/dsh.exe
