@@ -81,6 +81,8 @@ dev = [
 [project.scripts]
 opc = "opc.cli.app:main"
 opc-jimeng2api = "opc.cli_jimeng2api:main"
+opc-plugin = "opc.cli_plugin:main"
+dsh = "opc.cli_plugin:dsh_main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["opc"]

@@ -985,6 +985,27 @@ def init(
                 "browser_take_screenshot",
                 "browser_close",
             ]
+            # BrowserSkill: 互补能力，驱动用户已登录的真实浏览器（bsk CLI + 扩展桥）。
+            # 与 browser_tools(CDP/Playwright) 并列，不进感知级联、不替换 CDP。
+            browser_skill_tools = [
+                "browser_skill_status",
+                "browser_skill_browsers",
+                "browser_skill_session_start",
+                "browser_skill_session_stop",
+                "browser_skill_session_list",
+                "browser_skill_navigate",
+                "browser_skill_navigate_back",
+                "browser_skill_navigate_forward",
+                "browser_skill_reload",
+                "browser_skill_snapshot",
+                "browser_skill_click",
+                "browser_skill_input",
+                "browser_skill_select",
+                "browser_skill_press",
+                "browser_skill_extract",
+                "browser_skill_screenshot",
+                "browser_skill_exec",
+            ]
             planning_tools = [
                 "file_read",
                 "file_search",
@@ -1004,6 +1025,7 @@ def init(
                 "todo_write",
                 "todo_read",
                 *browser_tools,
+                *browser_skill_tools,
             ]
             review_tools = [
                 "file_read",
@@ -1017,6 +1039,7 @@ def init(
                 "browser_scroll",
                 "browser_select_option",
                 "browser_take_screenshot",
+                *browser_skill_tools,
             ]
             config.org.roles = [
                 RoleConfig(
@@ -1054,6 +1077,7 @@ def init(
                         "browser_wait_for",
                         "browser_scroll",
                         "browser_take_screenshot",
+                        *browser_skill_tools,
                     ],
                 ),
                 RoleConfig(
@@ -1072,6 +1096,7 @@ def init(
                         "browser_wait_for",
                         "browser_scroll",
                         "browser_take_screenshot",
+                        *browser_skill_tools,
                     ],
                 ),
                 RoleConfig(
@@ -1109,6 +1134,7 @@ def init(
                         "todo_write",
                         "todo_read",
                         *browser_tools,
+                        *browser_skill_tools,
                     ],
                 ),
                 RoleConfig(
@@ -1128,6 +1154,7 @@ def init(
                         "todo_write",
                         "todo_read",
                         *browser_tools,
+                        *browser_skill_tools,
                     ],
                 ),
                 RoleConfig(
@@ -2332,8 +2359,13 @@ def talent_employee_import_agent(employee_id: str = typer.Argument(...), project
 # ---------------------------------------------------------------------------
 # Market subcommands
 # ---------------------------------------------------------------------------
+from opc.cli_plugin import plugin_app
+
 market_app = typer.Typer(help="OPC Market — export, import, and manage architecture packages")
 app.add_typer(market_app, name="market")
+
+plugin_app = typer.Typer(help="Manage plugins (deepseek-harness style)")
+app.add_typer(plugin_app, name="plugin")
 
 
 def _render_architecture_presets(presets: list[Any]) -> None:

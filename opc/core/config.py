@@ -1678,6 +1678,9 @@ def load_active_company_org_payload(config_dir: Path) -> tuple[dict[str, Any], P
     return _validate_company_org_payload(path, payload), path
 
 
+from opc.plugin_core.manifest import PluginsConfig
+
+
 class OPCConfig(BaseModel):
     system: SystemConfig = Field(default_factory=SystemConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
@@ -1686,6 +1689,7 @@ class OPCConfig(BaseModel):
     channels: ChannelsConfig = Field(default_factory=ChannelsConfig)
     autonomy: AutonomyConfig = Field(default_factory=AutonomyConfig)
     capabilities: CapabilityConfig = Field(default_factory=CapabilityConfig)
+    plugins: PluginsConfig = Field(default_factory=PluginsConfig)
 
     @classmethod
     def load(cls, config_dir: Path | None = None) -> "OPCConfig":
@@ -1730,6 +1734,15 @@ class OPCConfig(BaseModel):
             mapping["autonomy"] = merged["autonomy"]
         if "capabilities" in merged:
             mapping["capabilities"] = merged["capabilities"]
+        # Plugins profile — owned/written by PluginRegistry; mirrored here read-only
+        # so the engine can see installed plugins without clobbering live state.
+        plugins_path = config_dir / "plugins_config.yaml"
+        if plugins_path.exists():
+            try:
+                _pdata = yaml.safe_load(plugins_path.read_text(encoding="utf-8")) or {}
+                mapping["plugins"] = _pdata
+            except Exception:
+                pass
         if "mcp_servers" in merged:
             system_data = mapping.get("system", {})
             if isinstance(system_data, dict):
