@@ -56,3 +56,10 @@
   - 目的：commit / push 不为协作、不为给人 review、不为留漂亮历史。唯一目的 = 让 CI 跑一遍验证能否构建，跑完立即删分支 + release，保留 action 成品供手工下载验证。
   - 尺度：别在 commit 信息洁癖、分支策略、PR 流程上浪费动作。正因 GitHub 只是验证机，**push 不是可选项、是必选项**——代码在 GitHub 上的价值 = 能否触发一次绿色 CI。
   - 心智模型：本地仓库 = 工作台，GitHub = 验证机。
+
+## 环境坑：git push github 被本机死代理挡（2026-08-18 实测）
+- `C:/Users/User/.gitconfig` 全局代理：`http.proxy`/`https.proxy`=`http://127.0.0.1:1082`，且 **`http.https://github.com.proxy`=`socks5://127.0.0.1:1081`**（github 专用，Clash/VPN 提供）。
+- 现象：VPN 关闭时 1081/1082 超时，`git push` 报 `Failed to connect to github.com:443 over proxy 127.0.0.1`。只清 `http.proxy`/`https.proxy` 不够，**必须连 `http.https://github.com.proxy` 一起清**；清掉后直连会丢 CA 链，需加 `http.sslVerify=false`。
+- 一次性推送（绕过代理直连）：
+  `git -c http.proxy= -c https.proxy= -c http.https://github.com.proxy= -c http.sslVerify=false push https://x-access-token:$TOKEN@github.com/samcaicn/gloai.git main:open --force`
+- 省事做法：先让用户把 Clash/VPN 打开，代理通了直接 `git push gloai main:open --force` 即可。
