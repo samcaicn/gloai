@@ -838,13 +838,32 @@ def run_gui(port: int) -> None:
     #    makes the renderer process die immediately ("Failed to delete user
     #    data folder") and the window closes within ~1s, feeding the restart
     #    loop. A fixed dir also preserves cookies/sessions across restarts.
+    _profile_dir = resolve_opc_home() / "webview_profile"
     try:
-        _profile_dir = resolve_opc_home() / "webview_profile"
         _profile_dir.mkdir(parents=True, exist_ok=True)
         webview.start(storage_path=str(_profile_dir))
     except Exception as exc:
-        LOG.warning("webview.start with storage_path failed (%s); falling back", exc)
-        webview.start()
+        LOG.warning("webview.start with storage_path failed (%s)", exc)
+        # The fixed profile dir may be locked/corrupt from a prior crash.
+        # Clear it ONCE and retry — do NOT fall back to pywebview's default
+        # temp profile, which is exactly what fed the "Failed to delete user
+        # data folder" crash loop before we pinned storage_path.
+        try:
+            import shutil as _shutil
+
+            _shutil.rmtree(_profile_dir, ignore_errors=True)
+            _profile_dir.mkdir(parents=True, exist_ok=True)
+            LOG.info("Cleared corrupt WebView2 profile; retrying once.")
+            webview.start(storage_path=str(_profile_dir))
+        except Exception as exc2:
+            LOG.exception("webview.start failed even after profile reset")
+            _show_error(
+                "SafeOPC 无法启动",
+                "窗口组件初始化失败，已尝试重置用户数据目录仍无效。\n"
+                "请确认系统已安装 Microsoft Edge WebView2 运行时，或手动删除目录：\n"
+                f"{_profile_dir}\n\n{exc2}",
+            )
+            os._exit(1)
     # Window closed -> exit the whole process (server thread is daemon).
     LOG.info("Window closed; exiting.")
     os._exit(0)
