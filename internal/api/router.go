@@ -147,6 +147,9 @@ func (s *Server) Handler() http.Handler {
 	protected.HandleFunc("PUT /api/me/username", authH.HandleUpdateUsername)
 	protected.HandleFunc("PUT /api/me/password", authH.HandleChangePassword)
 
+	// Multica 内置应用：租户登录 SSO token 签发（浏览器经 hub 会话调用）
+	protected.HandleFunc("GET /api/apps/multica/sso", authH.HandleMulticaSSO)
+
 	// My plugins
 	protected.HandleFunc("GET /api/me/plugins", appH.HandleMyPlugins)
 

@@ -57,6 +57,10 @@ type Config struct {
 
 	// AppProxies maps app slug to upstream URL for reverse proxy mount
 	AppProxies map[string]string
+
+	// MulticaSSOSecret 与内置 multica 应用共享的 HMAC 密钥，
+	// 用于签发/校验「租户登录」SSO token（GET /api/apps/multica/sso）。
+	MulticaSSOSecret string
 }
 
 // OIDCProviderConfig holds configuration for an OIDC/OAuth login provider.
@@ -126,6 +130,9 @@ func Load() *Config {
 
 	// App proxies
 	cfg.AppProxies = ParseCustomHeaders(getenv("APP_PROXIES", ""))
+
+	// Multica 租户登录 SSO 共享密钥（与 multica 服务端一致）
+	cfg.MulticaSSOSecret = getenv("MULTICA_SSO_SECRET", "change-me-multica-sso")
 
 	if cfg.DataDir == "" {
 		cfg.DataDir = DataDir()

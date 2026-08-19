@@ -71,6 +71,10 @@ RUN git init -q /src/multica \
             || { echo "git fetch attempt $i failed, retrying..." >&2; sleep 10; }; \
       done \
     && git checkout -q FETCH_HEAD
+# Hub 租户登录 SSO: 注入 tenant_auth.go handler 并在 router.go 注册 /auth/tenant 路由
+COPY deploy/multica-patches/server-internal-handler-tenant_auth.go /src/multica/server/internal/handler/tenant_auth.go
+RUN sed -i 's|r.With(authRL).Post("/auth/google", h.GoogleLogin)|&\n\tr.With(authRL).Post("/auth/tenant", h.TenantAuth)|' /src/multica/server/cmd/server/router.go \
+    && grep -n 'auth/tenant' /src/multica/server/cmd/server/router.go
 WORKDIR /src/multica/server
 RUN go mod download && \
     CGO_ENABLED=0 go build -ldflags "-s -w" -o /multica-server ./cmd/server && \
@@ -98,6 +102,15 @@ RUN corepack enable && \
     corepack prepare "$PNPM_VERSION" --activate
 COPY --from=multica-builder /src/multica/apps/web/ apps/web/
 COPY --from=multica-builder /src/multica/packages/ packages/
+# Hub 租户登录 SSO: 覆盖 web 登录页(去掉邮箱验证码)、Provider(ws 走 basePath)与语言文件，
+# 并给 core 的 api client / auth store 注入 tenantLogin / loginWithTenant 方法。
+COPY deploy/multica-patches/views-login-page.tsx /src/multica/packages/views/auth/login-page.tsx
+COPY deploy/multica-patches/web-providers.tsx /src/multica/apps/web/components/web-providers.tsx
+COPY deploy/multica-patches/en-auth.json /src/multica/packages/views/locales/en/auth.json
+RUN sed -i 's|  async verifyCode(email: string, code: string): Promise<LoginResponse> {|  async tenantLogin(input: { email: string; name?: string; exp: number; sig: string }): Promise<LoginResponse> {\n    return this.fetch("/auth/tenant", {\n      method: "POST",\n      body: JSON.stringify(input),\n    });\n  }\n\n&|' /src/multica/packages/core/api/client.ts \
+    && sed -i 's|  verifyCode: (email: string, code: string) => Promise<User>;|  loginWithTenant: (input: { email: string; name?: string; exp: number; sig: string }) => Promise<User>;\n  verifyCode: (email: string, code: string) => Promise<User>;|' /src/multica/packages/core/auth/store.ts \
+    && sed -i 's|    verifyCode: async (email: string, code: string) => {|    loginWithTenant: async (input: { email: string; name?: string; exp: number; sig: string }) => {\n      const { token, user } = await api.tenantLogin(input);\n      if (!cookieAuth) {\n        storage.setItem("multica_token", token);\n        api.setToken(token);\n      }\n      onLogin?.();\n      identifyAnalytics(user.id, { email: user.email, name: user.name });\n      set({ user });\n      return user;\n    },\n\n    verifyCode: async (email: string, code: string) => {|' /src/multica/packages/core/auth/store.ts \
+    && grep -n 'tenantLogin\|loginWithTenant' /src/multica/packages/core/api/client.ts /src/multica/packages/core/auth/store.ts
 # 注入 basePath=/apps/multica：hub 以 /apps/multica 反向代理本 web，
 # Next.js 需以该子路径为 basePath 生成页面/资源/rewrite，前端才不会直跳 localhost:3001。
 RUN sed -i 's|  transpilePackages: \["@multica/core", "@multica/ui", "@multica/views"\],|  basePath: "/apps/multica",\n  transpilePackages: ["@multica/core", "@multica/ui", "@multica/views"],|' apps/web/next.config.ts \
@@ -157,6 +170,8 @@ COPY deploy/hub-entrypoint.sh /usr/local/bin/hub-entrypoint.sh
 RUN chmod +x /usr/local/bin/hub-entrypoint.sh
 # hub 内置应用反向代理：golershop、multica web 都通过 hub 子路径访问（无需对外暴露独立端口）
 ENV APP_PROXIES="golershop=http://localhost:8000,multica=http://localhost:3001"
+# Hub 租户登录 SSO 共享密钥（oih 与 multica-server 都会读，生产必须覆盖）
+ENV MULTICA_SSO_SECRET=change-me-multica-sso
 EXPOSE 9800 7891 8000 8080 3001
 ENTRYPOINT ["/usr/local/bin/hub-entrypoint.sh"]
 CMD ["-listen", "0.0.0.0:9800"]

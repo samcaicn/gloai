@@ -77,13 +77,18 @@ if [ "${MULTICA_DISABLED:-0}" != "1" ]; then
   PORT="$MULTICA_PORT" \
     DATABASE_URL="$MULTICA_DATABASE_URL" \
     JWT_SECRET="$MULTICA_JWT_SECRET" \
+    MULTICA_SSO_SECRET="${MULTICA_SSO_SECRET:-change-me-multica-sso}" \
     multica-server &
 
   echo "Starting multica web on port ${MULTICA_WEB_PORT}..."
   cd "$MULTICA_WEB_DIR"
+  # NEXT_PUBLIC_API_URL=/apps/multica：multica web 挂载在 hub 的 /apps/multica 子路径下，
+  # 浏览器侧 api baseUrl 必须带上该前缀，fetch(/apps/multica/auth/*) 才会经 hub 代理
+  # → Next runtime rewrite → multica server。
   PORT="$MULTICA_WEB_PORT" \
     HOSTNAME=0.0.0.0 \
     REMOTE_API_URL="http://localhost:${MULTICA_PORT}" \
+    NEXT_PUBLIC_API_URL="/apps/multica" \
     node apps/web/server.js &
   cd /
 fi

@@ -40,6 +40,8 @@ services:
       MULTICA_PORT: "8080"
       MULTICA_WEB_PORT: "3001"
       MULTICA_JWT_SECRET: ${MULTICA_JWT_SECRET:-change-me-in-production}
+      # Hub 租户登录 SSO 共享密钥（与 hub 的 MULTICA_SSO_SECRET 一致，生产必须覆盖）
+      MULTICA_SSO_SECRET: ${MULTICA_SSO_SECRET:-change-me-multica-sso}
       # GITHUB_CLIENT_ID:
       # GITHUB_CLIENT_SECRET:
       # LINUXDO_CLIENT_ID:

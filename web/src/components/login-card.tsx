@@ -35,6 +35,17 @@ function QrCanvas({ url }: { url: string }) {
 export function LoginCard() {
   const navigate = useNavigate();
 
+  // 登录成功后跳转：优先 `?next=`（同源相对路径，防开放重定向），否则回 dashboard。
+  const go = (fallback: string) => {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      navigate(next);
+      return;
+    }
+    navigate(fallback);
+  };
+
   // Scan login state
   const [qrUrl, setQrUrl] = useState("");
   const [scanStatus, setScanStatus] = useState<"idle" | "loading" | "wait" | "scanned" | "error">("idle");
@@ -121,7 +132,7 @@ export function LoginCard() {
             document.cookie = `session=${d.session_token}; path=/; max-age=${7*24*3600}; samesite=lax`;
           }
           ws.close();
-          navigate(d.is_new && d.bot_id ? `/dashboard/onboarding?bot_id=${d.bot_id}` : "/dashboard");
+          go(d.is_new && d.bot_id ? `/dashboard/onboarding?bot_id=${d.bot_id}` : "/dashboard");
         }
       } else if (d.event === "error") {
         settled = true;
@@ -155,7 +166,7 @@ export function LoginCard() {
       } else {
         await api.login(username, password);
       }
-      navigate("/dashboard");
+      go("/dashboard");
     } catch (err: any) {
       setError(err.message);
     }
@@ -221,7 +232,7 @@ export function LoginCard() {
         const data = await res.json();
         throw new Error(data.error || "登录失败");
       }
-      navigate("/dashboard");
+      go("/dashboard");
     } catch (err: any) {
       if (err.name !== "NotAllowedError") setError(err.message || "Passkey 登录失败");
     }
