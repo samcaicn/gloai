@@ -28,6 +28,9 @@ import (
 	// Register 甲乙方 AI 对聊 builtin app
 	_ "github.com/ceoadmin/CEOadmin/internal/builtin/tenantchat"
 
+	// Register Multica 智能体看板 builtin app
+	_ "github.com/ceoadmin/CEOadmin/internal/builtin/multica"
+
 	// Register EDICT 御前奏对 builtin app (Go 版后端，源码在 edict/)
 	_ "github.com/ceoadmin/CEOadmin/internal/builtin/edict"
 

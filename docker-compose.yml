@@ -2,22 +2,30 @@
 #   HUB_PORT           - hub listen port on host (default: 9800)
 #   EDICT_PORT         - edict(Go 版) 端口在宿主机的映射（默认 7891，与 hub 同容器）
 #   GOLERSHOP_PORT     - golershop(商城) 端口在宿主机的映射（默认 8000，与 hub 同容器）
+#   MULTICA_PORT       - multica 后端端口在宿主机的映射（默认 8080，与 hub 同容器）
+#   MULTICA_WEB_PORT   - multica web 端口在宿主机的映射（默认 3001，与 hub 同容器）
 #   RP_ORIGIN / RP_ID  - WebAuthn origin and relying party ID (default: localhost)
 #   ANTHROPIC_*        - AI 转型驾驶舱 (cockpit) 所需的 Claude 网关配置（部署 cockpit 服务时必填）
 #                        ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN / ANTHROPIC_MODEL
 #
-# 单容器部署：hub 镜像内同时运行 oih (ceoadmin)、edict-go、golershop 三个进程，
-# 全部使用 SQLite + 本地文件存储，数据统一落在 /var/lib/CEOadmin (hub-data 卷)，
-# 无需 PostgreSQL / MinIO 等外部依赖。
+# 单容器部署：hub 镜像内同时运行 oih (ceoadmin)、edict-go、golershop、multica 进程，
+# 前三个使用 SQLite + 本地文件存储，multica 使用 PostgreSQL 17 + pgvector（multica-db 服务），
+# 数据统一落在 /var/lib/CEOadmin (hub-data 卷) 与 multica-pgdata 卷。
+# 若不需要 multica，可设置 MULTICA_DATABASE_URL 为空并在 hub 端口映射中删除 8080/3001。
 
 services:
   hub:
-    build: .
+    image: ccr.ccs.tencentyun.com/tuptup/ceoadmin:latest
     restart: on-failure
+    depends_on:
+      multica-db:
+        condition: service_started
     ports:
       - "${HUB_PORT:-9800}:9800"
       - "${EDICT_PORT:-7891}:7891"
       - "${GOLERSHOP_PORT:-8000}:8000"
+      - "${MULTICA_PORT:-8080}:8080"
+      - "${MULTICA_WEB_PORT:-3001}:3001"
     volumes:
       - hub-data:/var/lib/CEOadmin
       - ./deploy/hub-entrypoint.sh:/usr/local/bin/hub-entrypoint.sh:ro
@@ -30,10 +38,31 @@ services:
       RP_ID: ${RP_ID:-localhost}
       # APP_PROXIES 配置 golershop 反向代理挂载
       APP_PROXIES: "golershop=http://localhost:8000"
+      # multica：PostgreSQL 17 + pgvector（multica-db 服务）
+      MULTICA_DATABASE_URL: ${MULTICA_DATABASE_URL:-postgres://multica:multica@multica-db:5432/multica?sslmode=disable}
+      MULTICA_PORT: "8080"
+      MULTICA_WEB_PORT: "3001"
+      MULTICA_JWT_SECRET: ${MULTICA_JWT_SECRET:-change-me-in-production}
       # GITHUB_CLIENT_ID:
       # GITHUB_CLIENT_SECRET:
       # LINUXDO_CLIENT_ID:
       # LINUXDO_CLIENT_SECRET:
+
+  # multica 数据库：PostgreSQL 17 + pgvector（仅 multica 使用）
+  multica-db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${MULTICA_PG_DB:-multica}
+      POSTGRES_USER: ${MULTICA_PG_USER:-multica}
+      POSTGRES_PASSWORD: ${MULTICA_PG_PASSWORD:-multica}
+    volumes:
+      - multica-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MULTICA_PG_USER:-multica} -d ${MULTICA_PG_DB:-multica}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # AI 转型驾驶舱：独立 Next.js 前端（内置 App，源码已落地在仓库 cockpit/ 目录）。
   # 不直接依赖 hub 后端，需配置 Anthropic API Key 才能生成 AI 内容。
@@ -53,3 +82,4 @@ services:
 
 volumes:
   hub-data:
+  multica-pgdata:
