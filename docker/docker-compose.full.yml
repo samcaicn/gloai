@@ -1,0 +1,44 @@
+services:
+  # ─────────────────────────────────────────────
+  # colearn Agent (one-shot query) - Full MCP Support
+  #   docker compose -f docker/docker-compose.full.yml run --rm colearn-agent -m "Hello"
+  # ─────────────────────────────────────────────
+  colearn-agent:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.full
+    container_name: colearn-agent-full
+    profiles:
+      - agent
+    volumes:
+      - ../config/config.json:/root/.colearn/config.json:ro
+      - colearn-workspace:/root/.colearn/workspace
+      - colearn-npm-cache:/root/.npm # npm cache for faster MCP server installs
+    entrypoint: ["colearn", "agent"]
+    stdin_open: true
+    tty: true
+
+  # ─────────────────────────────────────────────
+  # colearn Gateway (Long-running Bot) - Full MCP Support
+  #   docker compose -f docker/docker-compose.full.yml --profile gateway up
+  # ─────────────────────────────────────────────
+  colearn-gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.full
+    container_name: colearn-gateway-full
+    restart: unless-stopped
+    profiles:
+      - gateway
+    volumes:
+      # Configuration file
+      - ../config/config.json:/root/.colearn/config.json:ro
+      # Persistent workspace (sessions, memory, logs)
+      - colearn-workspace:/root/.colearn/workspace
+      # NPM cache for faster MCP server installs
+      - colearn-npm-cache:/root/.npm
+    command: ["gateway"]
+
+volumes:
+  colearn-workspace:
+  colearn-npm-cache: # Cache npm packages to speed up MCP server installations

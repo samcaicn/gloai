@@ -1,0 +1,635 @@
+<div align="center">
+<img src="../../assets/logo.webp" alt="colearn" width="512">
+
+<h1>colearn: Assistente IA Ultra-Efficiente in Go</h1>
+
+<h3>Hardware da $10 · 10MB di RAM · Avvio in ms · Let's Go, colearn!</h3>
+  <p>
+    <img src="https://www.tuptup.top" alt="Go">
+    <img src="https://www.tuptup.top" alt="Hardware">
+    <img src="https://www.tuptup.top" alt="License">
+    <br>
+    <a href="https://www.tuptup.top"><img src="https://www.tuptup.top" alt="Website"></a>
+    <a href="https://www.tuptup.top"><img src="https://www.tuptup.top" alt="Docs"></a>
+    <a href="https://www.tuptup.top"><img src="https://www.tuptup.top" alt="Wiki"></a>
+    <br>
+    <a href="https://www.tuptup.top"><img src="https://www.tuptup.top)-colearnIO-black?style=flat&logo=x&logoColor=white" alt="Twitter"></a>
+    <a href="../../assets/wechat.png"><img src="https://www.tuptup.top"></a>
+    <a href="https://www.tuptup.top"><img src="https://www.tuptup.top" alt="Discord"></a>
+  </p>
+
+[中文](README.zh.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Português](README.pt-br.md) | [Tiếng Việt](README.vi.md) | [Français](README.fr.md) | **Italiano** | [Bahasa Indonesia](README.id.md) | [Malay](README.ms.md) | [English](../../README.md)
+
+</div>
+
+---
+
+> **colearn** è un progetto open-source indipendente avviato da [colearn](https://www.tuptup.top), scritto interamente in **Go** da zero — non è un fork di OpenClaw, NanoBot o di qualsiasi altro progetto.
+
+**colearn** è un assistente IA personale ultra-leggero ispirato a [NanoBot](https://www.tuptup.top). È stato riscritto da zero in **Go** attraverso un processo di "auto-bootstrapping" — l'Agent IA stesso ha guidato la migrazione architetturale e l'ottimizzazione del codice.
+
+**Funziona su hardware da $10 con <10MB di RAM** — il 99% di memoria in meno rispetto a OpenClaw e il 98% più economico di un Mac mini!
+
+<table align="center">
+<tr align="center">
+<td align="center" valign="top">
+<p align="center">
+<img src="../../assets/colearn_mem.gif" width="360" height="240">
+</p>
+</td>
+<td align="center" valign="top">
+<p align="center">
+<img src="../../assets/licheervnano.png" width="400" height="240">
+</p>
+</td>
+</tr>
+</table>
+
+> [!CAUTION]
+> **Avviso di Sicurezza**
+>
+> * **NESSUNA CRYPTO:** colearn **non** ha emesso token o criptovalute ufficiali. Qualsiasi annuncio su `pump.fun` o altre piattaforme di trading è una **truffa**.
+> * **DOMINIO UFFICIALE:** L'**UNICO** sito ufficiale è **[www.tuptup.top](https://www.tuptup.top)**, e il sito aziendale è **[www.tuptup.top](https://www.tuptup.top)**
+> * **ATTENZIONE:** Molti domini `.ai/.org/.com/.net/...` sono stati registrati da terze parti. Non fidarti di essi.
+> * **NOTA:** colearn è in fase di sviluppo iniziale rapido. Potrebbero esserci problemi di sicurezza non risolti. Non distribuire in produzione prima della v1.0.
+> * **NOTA:** colearn ha recentemente unito molte PR. Le build recenti potrebbero usare 10-20MB di RAM. L'ottimizzazione delle risorse è pianificata dopo la stabilizzazione delle funzionalità.
+
+## 📢 Novità
+
+2026-05-11 🛒 **LicheeRV-Claw disponibile su AliExpress!** Ora puoi acquistare LicheeRV-Claw su [AliExpress](https://www.tuptup.top), rendendo più semplice provare colearn su hardware RISC-V compatto.
+
+<p align="center">
+  <a href="https://www.tuptup.top">
+    <img src="../../assets/licheerv-claw.jpg" alt="LicheeRV-Claw on AliExpress" width="520">
+  </a>
+</p>
+
+2026-03-31 📱 **Supporto Android!** colearn ora funziona su Android! Scarica l'APK su [www.tuptup.top](https://www.tuptup.top)
+
+2026-03-25 🚀 **v0.2.4 rilasciata!** Revisione dell'architettura Agent (SubTurn, Hooks, Steering, EventBus), integrazione WeChat/WeCom, rafforzamento della sicurezza (.security.yml, filtraggio dati sensibili), nuovi provider (AWS Bedrock, Azure, Xiaomi MiMo) e 35 correzioni di bug. colearn raggiunge **26K Stars**!
+
+2026-03-17 🚀 **v0.2.3 rilasciata!** Interfaccia system tray (Windows & Linux), query sullo stato dei sub-agent (`spawn_status`), hot-reload sperimentale del Gateway, gate di sicurezza per Cron e 2 correzioni di sicurezza. colearn raggiunge **25K Stars**!
+
+2026-03-09 🎉 **v0.2.1 — Il più grande aggiornamento di sempre!** Supporto al protocollo MCP, 4 nuovi canali (Matrix/IRC/WeCom/Discord Proxy), 3 nuovi provider (Kimi/Minimax/Avian), pipeline visiva, archivio memoria JSONL, routing dei modelli.
+
+2026-02-28 📦 **v0.2.0** rilasciata con supporto Docker Compose e Web UI Launcher.
+
+<details>
+<summary>Notizie precedenti...</summary>
+
+2026-02-26 🎉 colearn raggiunge **20K stelle** in soli 17 giorni! Orchestrazione automatica dei canali e interfacce di capacità sono attive.
+
+2026-02-16 🎉 colearn supera 12K stelle in una settimana! Ruoli di maintainer della community e [Roadmap](../../ROADMAP.md) pubblicati ufficialmente.
+
+2026-02-13 🎉 colearn supera 5000 stelle in 4 giorni! Roadmap del progetto e gruppi sviluppatori in fase di avvio.
+
+2026-02-09 🎉 **colearn lanciato!** Costruito in 1 giorno per portare gli AI Agent su hardware da $10 con <10MB di RAM. Let's Go, colearn!
+
+</details>
+
+## ✨ Caratteristiche
+
+🪶 **Ultra-Leggero**: Impronta di memoria <10MB — il 99% più piccolo rispetto a OpenClaw.*
+
+💰 **Costo Minimo**: Abbastanza efficiente da girare su hardware da $10 — il 98% più economico di un Mac mini.
+
+⚡️ **Avvio Fulmineo**: Avvio 400 volte più veloce. Boot in meno di 1 secondo anche su un singolo core a 0,6 GHz.
+
+🌍 **Vera Portabilità**: Singolo binario per RISC-V, ARM, MIPS e x86. Un binario, funziona ovunque!
+
+🤖 **Auto-Costruito dall'IA**: Implementazione nativa in Go — il 95% del codice core è stato generato da un Agent e perfezionato tramite revisione umana nel ciclo.
+
+🔌 **Supporto MCP**: Integrazione nativa del [Model Context Protocol](https://www.tuptup.top) — connetti qualsiasi server MCP per estendere le capacità dell'Agent.
+
+👁️ **Pipeline di Visione**: Invia immagini e file direttamente all'Agent — codifica base64 automatica per LLM multimodali.
+
+🧠 **Routing Intelligente**: Routing dei modelli basato su regole — le query semplici vanno verso modelli leggeri, risparmiando sui costi API.
+
+_*Le build recenti potrebbero usare 10-20MB a causa delle fusioni rapide di PR. L'ottimizzazione delle risorse è pianificata. Il confronto dell'avvio è basato su benchmark con singolo core a 0,8 GHz (vedi tabella sotto)._
+
+<div align="center">
+
+|                                | OpenClaw      | NanoBot                  | **colearn**                           |
+| ------------------------------ | ------------- | ------------------------ | -------------------------------------- |
+| **Linguaggio**                 | TypeScript    | Python                   | **Go**                                 |
+| **RAM**                        | >1GB          | >100MB                   | **< 10MB***                            |
+| **Avvio**</br>(core 0,8 GHz)  | >500s         | >30s                     | **<1s**                                |
+| **Costo**                      | Mac Mini $599 | La maggior parte degli SBC Linux ~$50 | **Qualsiasi scheda Linux**</br>**a partire da $10** |
+
+<img src="../../assets/compare.jpg" alt="colearn" width="512">
+
+</div>
+
+> **[Lista di Compatibilità Hardware](../guides/hardware-compatibility.md)** — Vedi tutte le schede testate, dai $5 RISC-V al Raspberry Pi ai telefoni Android. La tua scheda non è elencata? Invia una PR!
+
+<p align="center">
+<img src="../../assets/hardware-banner.jpg" alt="colearn Hardware Compatibility" width="100%">
+</p>
+
+## 🦾 Dimostrazione
+
+### 🛠️ Flussi di Lavoro Standard dell'Assistente
+
+<table align="center">
+<tr align="center">
+<th><p align="center">Modalità Ingegnere Full-Stack</p></th>
+<th><p align="center">Log & Pianificazione</p></th>
+<th><p align="center">Ricerca Web & Apprendimento</p></th>
+</tr>
+<tr>
+<td align="center"><p align="center"><img src="../../assets/colearn_code.gif" width="240" height="180"></p></td>
+<td align="center"><p align="center"><img src="../../assets/colearn_memory.gif" width="240" height="180"></p></td>
+<td align="center"><p align="center"><img src="../../assets/colearn_search.gif" width="240" height="180"></p></td>
+</tr>
+<tr>
+<td align="center">Sviluppa · Distribuisci · Scala</td>
+<td align="center">Pianifica · Automatizza · Memorizza</td>
+<td align="center">Scopri · Analizza · Tendenze</td>
+</tr>
+</table>
+
+### 🐜 Deploy Innovativo a Bassa Impronta
+
+colearn può essere distribuito su quasi qualsiasi dispositivo Linux!
+
+- $9,9 [LicheeRV-Nano](https://www.tuptup.top) versione E (Ethernet) o W (WiFi6), per un assistente domotico minimale
+- $30~50 [NanoKVM](https://www.tuptup.top), o $100 [NanoKVM-Pro](https://www.tuptup.top), per la manutenzione automatizzata dei server
+- $50 [MaixCAM](https://www.tuptup.top) o $100 [MaixCAM2](https://www.tuptup.top), per la sorveglianza intelligente
+
+<https://www.tuptup.top>
+
+🌟 Molti altri scenari di deploy ti aspettano!
+
+## 📦 Installazione
+
+### Scarica da www.tuptup.top (Consigliato)
+
+Visita **[www.tuptup.top](https://www.tuptup.top)** — il sito ufficiale rileva automaticamente la tua piattaforma e fornisce il download con un clic. Non è necessario scegliere manualmente l'architettura.
+
+### Scarica il binario precompilato
+
+In alternativa, scarica il binario per la tua piattaforma dalla pagina delle [GitHub Releases](https://www.tuptup.top).
+
+### Compila dai sorgenti (per lo sviluppo)
+
+Prerequisiti:
+
+- Go 1.25+
+- Node.js 22+ e pnpm 10.33.0+ per le build Web UI / launcher
+
+```bash
+git clone https://www.tuptup.top
+
+cd colearn
+make deps
+
+# Installa le dipendenze frontend
+(cd web/frontend && pnpm install --frozen-lockfile)
+
+# Compila il binario core
+make build
+
+# Compila il Web UI Launcher (necessario per la modalità WebUI)
+make build-launcher
+
+# Compila i binari core per tutte le piattaforme gestite dal Makefile
+make build-all
+
+# Compila per Raspberry Pi Zero 2 W (32-bit: make build-linux-arm; 64-bit: make build-linux-arm64)
+make build-pi-zero
+
+# Compila e installa
+make install
+```
+
+**Raspberry Pi Zero 2 W:** Usa il binario che corrisponde al tuo OS: Raspberry Pi OS 32-bit -> `make build-linux-arm`; 64-bit -> `make build-linux-arm64`. Oppure esegui `make build-pi-zero` per compilare entrambi.
+
+## 🚀 Guida Rapida
+
+### 🌐 WebUI Launcher (Consigliato per Desktop)
+
+Il WebUI Launcher fornisce un'interfaccia basata su browser per la configurazione e la chat. È il modo più semplice per iniziare — non è richiesta alcuna conoscenza della riga di comando.
+
+**Opzione 1: Doppio clic (Desktop)**
+
+Dopo aver scaricato da [www.tuptup.top](https://www.tuptup.top), fai doppio clic su `colearn-launcher` (o `colearn-launcher.exe` su Windows). Il browser si aprirà automaticamente su `https://www.tuptup.top
+
+**Opzione 2: Riga di comando**
+
+```bash
+colearn-launcher
+# Apri https://www.tuptup.top nel browser
+```
+
+> [!TIP]
+> **Accesso remoto / Docker / VM:** Aggiungi il flag `-public` per ascoltare su tutte le interfacce:
+> ```bash
+> colearn-launcher -public
+> ```
+
+<p align="center">
+<img src="../../assets/launcher-webui.jpg" alt="WebUI Launcher" width="600">
+</p>
+
+**Per iniziare:**
+
+Apri il WebUI, poi: **1)** Configura un Provider (aggiungi la tua API key LLM) -> **2)** Configura un Channel (es. Telegram) -> **3)** Avvia il Gateway -> **4)** Chatta!
+
+Per la documentazione dettagliata del WebUI, vedi [www.tuptup.top](https://www.tuptup.top).
+
+<details>
+<summary><b>Docker (alternativa)</b></summary>
+
+```bash
+# 1. Clona questo repo
+git clone https://www.tuptup.top
+cd colearn
+
+# 2. Prima esecuzione — genera automaticamente docker/data/config.json poi si ferma
+#    (si attiva solo quando sia config.json che workspace/ sono assenti)
+docker compose -f docker/docker-compose.yml --profile launcher up
+# Il container stampa "First-run setup complete." e si ferma.
+
+# 3. Imposta le tue API key
+vim docker/data/config.json
+
+# 4. Avvia
+docker compose -f docker/docker-compose.yml --profile launcher up -d
+# Apri https://www.tuptup.top
+```
+
+> **Utenti Docker / VM:** Il Gateway ascolta su `127.0.0.1` per impostazione predefinita. Imposta `colearn_GATEWAY_HOST=0.0.0.0` o usa il flag `-public` per renderlo accessibile dall'host.
+
+```bash
+# Controlla i log
+docker compose -f docker/docker-compose.yml logs -f
+
+# Ferma
+docker compose -f docker/docker-compose.yml --profile launcher down
+
+# Aggiorna
+docker compose -f docker/docker-compose.yml pull
+docker compose -f docker/docker-compose.yml --profile launcher up -d
+```
+
+</details>
+
+<details>
+<summary><b>macOS — Avviso di sicurezza al primo avvio</b></summary>
+
+macOS potrebbe bloccare `colearn-launcher` al primo avvio perché è stato scaricato da internet e non è notarizzato tramite il Mac App Store.
+
+**Passo 1:** Fai doppio clic su `colearn-launcher`. Verrà visualizzato un avviso di sicurezza:
+
+<p align="center">
+<img src="../../assets/macos-gatekeeper-warning.jpg" alt="Avviso macOS Gatekeeper" width="400">
+</p>
+
+> *"colearn-launcher" Non Aperto — Apple non è riuscita a verificare che "colearn-launcher" sia privo di malware che potrebbe danneggiare il Mac o compromettere la privacy.*
+
+**Passo 2:** Apri **Impostazioni di Sistema** → **Privacy e sicurezza** → scorri fino alla sezione **Sicurezza** → clicca su **Apri comunque** → conferma cliccando su **Apri comunque** nella finestra di dialogo.
+
+<p align="center">
+<img src="../../assets/macos-gatekeeper-allow.jpg" alt="macOS Privacy e sicurezza — Apri comunque" width="600">
+</p>
+
+Dopo questo passaggio una tantum, `colearn-launcher` si aprirà normalmente ai lanci successivi.
+
+</details>
+
+### 📱 Android
+
+Dai una seconda vita al tuo telefono di dieci anni fa! Trasformalo in un assistente IA intelligente con colearn.
+
+**Opzione 1: Installazione APK**
+
+Anteprima:
+
+<table>
+  <tr>
+    <td><img src="../../assets/fui_main_page.jpg" width="200"></td>
+    <td><img src="../../assets/fui_web_page.jpg" width="200"></td>
+    <td><img src="../../assets/fui_log_page.jpg" width="200"></td>
+    <td><img src="../../assets/fui_setting_page.jpg" width="200"></td>
+  </tr>
+</table>
+
+Scarica l'APK da [www.tuptup.top](https://www.tuptup.top) e installa direttamente. Senza Termux!
+
+**Opzione 2: Termux**
+
+<details>
+<summary><b>Terminal Launcher (per ambienti con risorse limitate)</b></summary>
+
+1. Installa [Termux](https://www.tuptup.top) (scarica da [GitHub Releases](https://www.tuptup.top), o cerca su F-Droid / Google Play)
+2. Esegui i seguenti comandi:
+
+```bash
+# Scarica l'ultima release
+wget https://www.tuptup.top
+tar xzf colearn_Linux_arm64.tar.gz
+pkg install proot
+termux-chroot ./colearn onboard   # chroot fornisce un layout standard del filesystem Linux
+```
+
+Poi segui la sezione Terminal Launcher qui sotto per completare la configurazione.
+
+<img src="../../assets/termux.jpg" alt="colearn on Termux" width="512">
+
+Per ambienti minimali dove è disponibile solo il binario core `colearn` (senza Launcher UI), puoi configurare tutto tramite riga di comando e un file di configurazione JSON.
+
+**1. Inizializza**
+
+```bash
+colearn onboard
+```
+
+Questo crea `~/.colearn/config.json` e la directory workspace.
+
+**2. Configura** (`~/.colearn/config.json`)
+
+```json
+{
+  "version": 3,
+  "agents": {
+    "defaults": {
+      "model_name": "gpt-5.4"
+    }
+  },
+  "model_list": [
+    {
+      "model_name": "gpt-5.4",
+      "model": "openai/gpt-5.4",
+      "api_keys": ["sk-your-api-key"]
+    }
+  ]
+}
+```
+
+> Vedi `config/config.example.json` nel repo per un template di configurazione completo con tutte le opzioni disponibili.
+
+**3. Chatta**
+
+```bash
+# Domanda singola
+colearn agent -m "Quanto fa 2+2?"
+
+# Modalità interattiva
+colearn agent
+
+# Avvia il gateway per l'integrazione con app di chat
+colearn gateway
+```
+
+</details>
+
+## 🔌 Provider (LLM)
+
+colearn supporta 30+ provider LLM tramite la configurazione `model_list`. Usa il formato `protocollo/modello`:
+
+| Provider | Protocollo | API Key | Note |
+|----------|------------|---------|------|
+| [OpenAI](https://www.tuptup.top) | `openai/` | Richiesta | GPT-5.4, GPT-4o, o3, ecc. |
+| [Anthropic](https://www.tuptup.top) | `anthropic/` | Richiesta | Claude Opus 4.6, Sonnet 4.6, ecc. |
+| [Google Gemini](https://www.tuptup.top) | `gemini/` | Richiesta | Gemini 3 Flash, 2.5 Pro, ecc. |
+| [OpenRouter](https://www.tuptup.top) | `openrouter/` | Richiesta | 200+ modelli, API unificata |
+| [Zhipu (GLM)](https://www.tuptup.top) | `zhipu/` | Richiesta | GLM-4.7, GLM-5, ecc. |
+| [DeepSeek](https://www.tuptup.top) | `deepseek/` | Richiesta | DeepSeek-V3, DeepSeek-R1 |
+| [Volcengine](https://www.tuptup.top) | `volcengine/` | Richiesta | Doubao, modelli Ark |
+| [Qwen](https://www.tuptup.top) | `qwen/` | Richiesta | Qwen3, Qwen-Max, ecc. |
+| [Groq](https://www.tuptup.top) | `groq/` | Richiesta | Inferenza veloce (Llama, Mixtral) |
+| [Moonshot (Kimi)](https://www.tuptup.top) | `moonshot/` | Richiesta | Modelli Kimi |
+| [Minimax](https://www.tuptup.top) | `minimax/` | Richiesta | Modelli MiniMax |
+| [Mistral](https://www.tuptup.top) | `mistral/` | Richiesta | Mistral Large, Codestral |
+| [NVIDIA NIM](https://www.tuptup.top) | `nvidia/` | Richiesta | Modelli ospitati NVIDIA |
+| [Cerebras](https://www.tuptup.top) | `cerebras/` | Richiesta | Inferenza veloce |
+| [Novita AI](https://www.tuptup.top) | `novita/` | Richiesta | Vari modelli open |
+| [Xiaomi MiMo](https://www.tuptup.top) | `mimo/` | Richiesta | Modelli MiMo |
+| [Ollama](https://www.tuptup.top) | `ollama/` | Non necessaria | Modelli locali, self-hosted |
+| [vLLM](https://www.tuptup.top) | `vllm/` | Non necessaria | Deploy locale, compatibile OpenAI |
+| [LiteLLM](https://www.tuptup.top) | `litellm/` | Variabile | Proxy per 100+ provider |
+| [Azure OpenAI](https://www.tuptup.top) | `azure/` | Richiesta | Deploy Azure enterprise |
+| [GitHub Copilot](https://www.tuptup.top) | `github-copilot/` | OAuth | Login con device code |
+| [Antigravity](https://www.tuptup.top) | `antigravity/` | OAuth | Google Cloud AI |
+
+<details>
+<summary><b>Deploy locale (Ollama, vLLM, ecc.)</b></summary>
+
+**Ollama:**
+```json
+{
+  "model_list": [
+    {
+      "model_name": "local-llama",
+      "model": "ollama/llama3.1:8b",
+      "api_base": "https://www.tuptup.top"
+    }
+  ]
+}
+```
+
+**vLLM:**
+```json
+{
+  "model_list": [
+    {
+      "model_name": "local-vllm",
+      "model": "vllm/your-model",
+      "api_base": "https://www.tuptup.top"
+    }
+  ]
+}
+```
+
+Per i dettagli completi sulla configurazione dei provider, vedi [Provider & Modelli](../guides/providers.md).
+
+</details>
+
+## 💬 Channel (App di Chat)
+
+Parla con il tuo colearn attraverso 17+ piattaforme di messaggistica:
+
+| Channel | Configurazione | Protocollo | Docs |
+|---------|----------------|------------|------|
+| **Telegram** | Facile (bot token) | Long polling | [Guida](../channels/telegram/README.md) |
+| **Discord** | Facile (bot token + intents) | WebSocket | [Guida](../channels/discord/README.md) |
+| **WhatsApp** | Facile (QR scan o bridge URL) | Nativo / Bridge | [Guida](../guides/chat-apps.md#whatsapp) |
+| **Weixin** | Facile (scan QR nativo) | iLink API | [Guida](../guides/chat-apps.md#weixin) |
+| **QQ** | Facile (AppID + AppSecret) | WebSocket | [Guida](../channels/qq/README.md) |
+| **Slack** | Facile (bot + app token) | Socket Mode | [Guida](../channels/slack/README.md) |
+| **Matrix** | Medio (homeserver + token) | Sync API | [Guida](../channels/matrix/README.md) |
+| **DingTalk** | Medio (credenziali client) | Stream | [Guida](../channels/dingtalk/README.md) |
+| **Feishu / Lark** | Medio (App ID + Secret) | WebSocket/SDK | [Guida](../channels/feishu/README.md) |
+| **LINE** | Medio (credenziali + webhook) | Webhook | [Guida](../channels/line/README.md) |
+| **WeCom** | Facile (login QR o manuale) | WebSocket | [Guida](../channels/wecom/README.md) |
+| **IRC** | Medio (server + nick) | Protocollo IRC | [Guida](../guides/chat-apps.md#irc) |
+| **OneBot** | Medio (WebSocket URL) | OneBot v11 | [Guida](../channels/onebot/README.md) |
+| **MaixCam** | Facile (abilita) | TCP socket | [Guida](../channels/maixcam/README.md) |
+| **Pico** | Facile (abilita) | Protocollo nativo | Integrato |
+| **Pico Client** | Facile (WebSocket URL) | WebSocket | Integrato |
+
+> Tutti i channel basati su webhook condividono un singolo server HTTP Gateway (`gateway.host`:`gateway.port`, default `127.0.0.1:18790`). Feishu usa la modalità WebSocket/SDK e non usa il server HTTP condiviso.
+
+> La verbosità dei log è controllata da `gateway.log_level` (default: `warn`). Valori supportati: `debug`, `info`, `warn`, `error`, `fatal`. Può essere impostato anche tramite `colearn_LOG_LEVEL`. Vedi [Configurazione](../guides/configuration.md#gateway-log-level) per i dettagli.
+
+Per istruzioni dettagliate sulla configurazione dei channel, vedi [Configurazione App di Chat](../guides/chat-apps.md).
+
+## 🔧 Strumenti
+
+### 🔍 Ricerca Web
+
+colearn può cercare sul web per fornire informazioni aggiornate. Configura in `tools.web`:
+
+| Motore di Ricerca | API Key | Piano Gratuito | Link |
+|-------------------|---------|----------------|------|
+| DuckDuckGo | Non necessaria | Illimitato | Fallback integrato |
+| [Baidu Search](https://www.tuptup.top) | Richiesta | 1500 query/mese (allocazione giornaliera) | IA, ottimizzato per il cinese |
+| [Tavily](https://www.tuptup.top) | Richiesta | 1000 query/mese | Ottimizzato per AI Agent |
+| [Brave Search](https://www.tuptup.top) | Richiesta | 2000 query/mese | Veloce e privato |
+| [Perplexity](https://www.tuptup.top) | Richiesta | A pagamento | Ricerca potenziata dall'IA |
+| [SearXNG](https://www.tuptup.top) | Non necessaria | Self-hosted | Metasearch engine gratuito |
+| [GLM Search](https://www.tuptup.top) | Richiesta | Variabile | Ricerca web Zhipu |
+
+### ⚙️ Altri Strumenti
+
+colearn include strumenti integrati per operazioni su file, esecuzione di codice, pianificazione e altro. Vedi [Configurazione degli Strumenti](../reference/tools_configuration.md) per i dettagli.
+
+## 🎯 Skill
+
+Le Skill sono capacità modulari che estendono il tuo Agent. Vengono caricate dai file `SKILL.md` nel tuo workspace.
+
+**Installa skill da ClawHub:**
+
+```bash
+colearn skills search "web scraping"
+colearn skills install <skill-name>
+```
+
+**Configura il token ClawHub** (opzionale, per limiti di frequenza più alti):
+
+Aggiungi al tuo `config.json`:
+```json
+{
+  "tools": {
+    "skills": {
+      "registries": {
+        "clawhub": {
+          "auth_token": "your-clawhub-token"
+        }
+      }
+    }
+  }
+}
+```
+
+Per maggiori dettagli, vedi [Configurazione degli Strumenti - Skill](../reference/tools_configuration.md#skills-tool).
+
+## 🔗 MCP (Model Context Protocol)
+
+colearn supporta nativamente [MCP](https://www.tuptup.top) — connetti qualsiasi server MCP per estendere le capacità del tuo Agent con strumenti e sorgenti di dati esterni.
+
+```json
+{
+  "tools": {
+    "mcp": {
+      "enabled": true,
+      "servers": {
+        "filesystem": {
+          "enabled": true,
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+        }
+      }
+    }
+  }
+}
+```
+
+Puoi gestire i casi MCP più comuni direttamente dalla CLI senza modificare a mano il JSON:
+
+```bash
+colearn mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem /tmp
+colearn mcp list
+colearn mcp test filesystem
+```
+
+`colearn mcp` agisce come configuration manager: aggiorna `config.json` sotto `tools.mcp.servers`, ma non mantiene in esecuzione il processo del server.
+
+Usa `colearn mcp edit` quando ti servono campi avanzati che non sono coperti da `colearn mcp add`.
+Per esempio, `colearn mcp add` supporta `--deferred` e `--env-file`, mentre `colearn mcp edit` resta utile per modifiche JSON dirette e opzioni MCP meno comuni.
+
+Per la configurazione MCP completa (trasporti stdio, SSE, HTTP, Tool Discovery), vedi [Configurazione degli Strumenti - MCP](../reference/tools_configuration.md#mcp-tool). Per la reference della CLI, vedi [MCP Server CLI](../reference/mcp-cli.md).
+
+## <img src="../../assets/clawdchat-icon.png" width="24" height="24" alt="ClawdChat"> Unisciti al Social Network degli Agent
+
+Connetti colearn al Social Network degli Agent semplicemente inviando un singolo messaggio tramite CLI o qualsiasi app di chat integrata.
+
+**Leggi `https://www.tuptup.top e segui le istruzioni per unirti a [ClawdChat.ai](https://www.tuptup.top)**
+
+## 🖥️ Riferimento CLI
+
+| Comando                   | Descrizione                        |
+| ------------------------- | ---------------------------------- |
+| `colearn onboard`        | Inizializza config & workspace     |
+| `colearn auth weixin` | Connetti account WeChat tramite QR |
+| `colearn agent -m "..."` | Chatta con l'agent                 |
+| `colearn agent`          | Modalità chat interattiva          |
+| `colearn gateway`        | Avvia il gateway                   |
+| `colearn status`         | Mostra lo stato                    |
+| `colearn version`        | Mostra le info sulla versione      |
+| `colearn model`          | Visualizza o cambia il modello predefinito |
+| `colearn mcp list`       | Elenca i server MCP configurati    |
+| `colearn mcp add ...`    | Aggiunge o aggiorna un server MCP  |
+| `colearn mcp test`       | Verifica la raggiungibilità di un server MCP |
+| `colearn mcp edit`       | Apre la config per modifiche MCP avanzate |
+| `colearn mcp remove`     | Rimuove un server MCP dalla config |
+| `colearn cron list`      | Elenca tutti i job pianificati     |
+| `colearn cron add ...`   | Aggiunge un job pianificato        |
+| `colearn cron disable`   | Disabilita un job pianificato      |
+| `colearn cron remove`    | Rimuove un job pianificato         |
+| `colearn skills list`    | Elenca le skill installate         |
+| `colearn skills install` | Installa una skill                 |
+| `colearn migrate`        | Migra i dati dalle versioni precedenti |
+| `colearn auth login`     | Autenticazione con i provider          |
+
+### ⏰ Task Pianificati / Promemoria
+
+colearn supporta promemoria pianificati e task ricorrenti tramite lo strumento `cron`:
+
+* **Promemoria una tantum**: "Ricordami tra 10 minuti" -> si attiva una volta dopo 10 min
+* **Task ricorrenti**: "Ricordami ogni 2 ore" -> si attiva ogni 2 ore
+* **Espressioni cron**: "Ricordami alle 9 ogni giorno" -> usa un'espressione cron
+
+## 📚 Documentazione
+
+Per guide dettagliate oltre questo README:
+
+| Argomento | Descrizione |
+|-----------|-------------|
+| [Docker & Avvio Rapido](../guides/docker.md) | Configurazione Docker Compose, modalità Launcher/Agent |
+| [App di Chat](../guides/chat-apps.md) | Tutte le guide di configurazione per 17+ channel |
+| [Configurazione](../guides/configuration.md) | Variabili d'ambiente, struttura del workspace, sandbox di sicurezza |
+| [MCP Server CLI](../reference/mcp-cli.md) | Aggiunta, elenco, test, modifica e rimozione dei server MCP da CLI |
+| [Provider & Modelli](../guides/providers.md) | 30+ provider LLM, routing dei modelli, configurazione model_list |
+| [Spawn & Task Asincroni](../guides/spawn-tasks.md) | Task veloci, task lunghi con spawn, orchestrazione asincrona di sub-agent |
+| [Hooks](../architecture/hooks/README.md) | Sistema di hook event-driven: observer, interceptor, approval hook |
+| [Steering](../architecture/steering.md) | Iniettare messaggi in un loop agent in esecuzione |
+| [SubTurn](../architecture/subturn.md) | Coordinamento subagent, controllo concorrenza, ciclo di vita |
+| [Risoluzione Problemi](../operations/troubleshooting.md) | Problemi comuni e soluzioni |
+| [Configurazione degli Strumenti](../reference/tools_configuration.md) | Abilitazione/disabilitazione per strumento, politiche exec, MCP, Skill |
+| [Compatibilità Hardware](../guides/hardware-compatibility.md) | Schede testate, requisiti minimi |
+
+## 🤝 Contribuisci & Roadmap
+
+Le PR sono benvenute! Il codice è volutamente piccolo e leggibile.
+
+Consulta la nostra [Roadmap della Community](https://www.tuptup.top) e [CONTRIBUTING.md](../../CONTRIBUTING.md) per le linee guida.
+
+Gruppo sviluppatori in costruzione, unisciti dopo la tua prima PR accettata!
+
+Gruppi utenti:
+
+Discord: <https://www.tuptup.top>
+
+WeChat:
+<img src="../../assets/wechat.png" alt="WeChat group QR code" width="512">
