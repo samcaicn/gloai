@@ -104,11 +104,32 @@ RUN printf 'registry=https://registry.npmmirror.com\nshamefully-hoist=true\n' > 
     pnpm --filter @multica/web build && \
     rm -rf node_modules .pnpm-store /root/.local/share/pnpm/store /src/multica/.next/cache /root/.cache
 
+# --- Build pgvector (alpine 社区无 pgvector 包，需源码编译) ---
+# multica 需要 postgres 的 vector 扩展做向量检索，捆绑进同一镜像实现单容器部署。
+FROM alpine:3.21 AS pgvector-builder
+ARG PGVECTOR_VERSION=v0.8.0
+RUN echo "https://mirrors.aliyun.com/alpine/v$(cut -d. -f1,2 /etc/alpine-release)/main" > /etc/apk/repositories && \
+    echo "https://mirrors.aliyun.com/alpine/v$(cut -d. -f1,2 /etc/alpine-release)/community" >> /etc/apk/repositories && \
+    apk add --no-cache build-base git postgresql17-dev
+RUN git init -q /pgvector-src && cd /pgvector-src \
+    && git remote add origin https://github.com/pgvector/pgvector.git \
+    && for i in $(seq 1 20); do \
+        git -c http.connectTimeout=15 -c http.lowSpeedLimit=1 -c http.lowSpeedTime=5 -c http.timeout=60 fetch --depth 1 origin tag "$PGVECTOR_VERSION" && break \
+            || { echo "pgvector fetch attempt $i failed, retrying..." >&2; sleep 10; }; \
+      done \
+    && git checkout -q FETCH_HEAD
+WORKDIR /pgvector-src
+RUN make && make install
+
 # --- Runtime ---
 FROM alpine:3.21
 RUN echo "https://mirrors.aliyun.com/alpine/v$(cut -d. -f1,2 /etc/alpine-release)/main" > /etc/apk/repositories && \
     echo "https://mirrors.aliyun.com/alpine/v$(cut -d. -f1,2 /etc/alpine-release)/community" >> /etc/apk/repositories && \
-    apk add --no-cache ca-certificates curl libgcc nodejs
+    apk add --no-cache ca-certificates curl libgcc nodejs postgresql17 postgresql17-contrib && \
+    mkdir -p /var/lib/postgresql && chown -R postgres:postgres /var/lib/postgresql
+# pgvector 编译产物拷入运行时（pg_config 路径与 postgresql17 包一致）
+COPY --from=pgvector-builder /usr/lib/postgresql17/lib/vector.so /usr/lib/postgresql17/lib/
+COPY --from=pgvector-builder /usr/share/postgresql17/extension/vector* /usr/share/postgresql17/extension/
 COPY --from=backend /oih /usr/local/bin/oih
 COPY --from=backend /edict-go /usr/local/bin/edict-go
 RUN mkdir -p /app/golershop

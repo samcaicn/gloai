@@ -8,25 +8,59 @@
 #   EDICT_WEB         edict 前端 dist 目录，默认 /app/edict/edict/frontend/dist
 #   HUB_LISTEN        oih 监听地址，默认 0.0.0.0:9800
 #   GOLERSHOP_PORT    golershop 端口，默认 8000
-#   MULTICA_DATABASE_URL  multica postgres(pgvector) 连接串；为空则跳过 multica
+#   MULTICA_DISABLED   设为 1 则跳过 multica；默认启用（内置 PostgreSQL）
+#   MULTICA_DATABASE_URL  multica postgres(pgvector) 连接串；
+#                         留空或指向本机(127.0.0.1/localhost)则用容器内置 PostgreSQL，
+#                         指向外部地址则用外部库
 #   MULTICA_PORT      multica 后端端口，默认 8080
 #   MULTICA_WEB_PORT  multica web 端口，默认 3001
 #   MULTICA_JWT_SECRET multica JWT 密钥，默认 change-me-in-production
 set -e
 
-# --- multica (需要外部 postgres) ---
-if [ -n "${MULTICA_DATABASE_URL:-}" ]; then
-  echo "Starting multica (postgres: ${MULTICA_DATABASE_URL})..."
+# --- multica (agents 管理平台；PostgreSQL 17 + pgvector 已捆绑进镜像，单容器部署) ---
+if [ "${MULTICA_DISABLED:-0}" != "1" ]; then
   MULTICA_PORT="${MULTICA_PORT:-8080}"
   MULTICA_WEB_PORT="${MULTICA_WEB_PORT:-3001}"
   MULTICA_JWT_SECRET="${MULTICA_JWT_SECRET:-change-me-in-production}"
   MULTICA_WEB_DIR="${MULTICA_WEB_DIR:-/app/multica/web}"
 
+  # 显式给了非本机数据库连接串时使用外部库；否则用容器内捆绑的 PostgreSQL
+  if [ -n "${MULTICA_DATABASE_URL:-}" ] && ! echo "$MULTICA_DATABASE_URL" | grep -qE "@(localhost|127\.0\.0\.1)[:/]"; then
+    echo "Using external multica database: ${MULTICA_DATABASE_URL}"
+    MULTICA_DB_URL="$MULTICA_DATABASE_URL"
+  else
+    PGDATA="${PGDATA:-/var/lib/CEOadmin/pgdata}"
+    PGLOG="${PGDATA}/postgres.log"
+    mkdir -p "$PGDATA"
+    chown -R postgres:postgres "$PGDATA"
+    if [ ! -s "$PGDATA/PG_VERSION" ]; then
+      echo "Initializing bundled PostgreSQL (${PGDATA})..."
+      su postgres -c "initdb -D '$PGDATA' -E UTF8 --locale=C.UTF-8" >/dev/null 2>&1 \
+        || su postgres -c "initdb -D '$PGDATA' -E UTF8" >/dev/null
+    fi
+    su postgres -c "pg_ctl -D '$PGDATA' -o '-p 5432 -c listen_addresses=127.0.0.1 -c unix_socket_directories=/tmp' -l '$PGLOG' -w start" >/dev/null
+    for i in $(seq 1 30); do
+      if su postgres -c "pg_isready -h 127.0.0.1 -p 5432 -U postgres" >/dev/null 2>&1; then
+        break
+      fi
+      sleep 1
+    done
+    if ! su postgres -c "psql -h 127.0.0.1 -p 5432 -tAc \"SELECT 1 FROM pg_roles WHERE rolname='multica'\"" | grep -q 1; then
+      su postgres -c "psql -h 127.0.0.1 -p 5432 -c \"CREATE ROLE multica LOGIN PASSWORD 'multica'\"" >/dev/null
+    fi
+    if ! su postgres -c "psql -h 127.0.0.1 -p 5432 -tAc \"SELECT 1 FROM pg_database WHERE datname='multica'\"" | grep -q 1; then
+      su postgres -c "psql -h 127.0.0.1 -p 5432 -c 'CREATE DATABASE multica OWNER multica'" >/dev/null
+    fi
+    su postgres -c "psql -h 127.0.0.1 -p 5432 -d multica -c 'CREATE EXTENSION IF NOT EXISTS vector'" >/dev/null
+    MULTICA_DB_URL="postgres://multica:multica@127.0.0.1:5432/multica?sslmode=disable"
+    echo "Bundled PostgreSQL ready: ${MULTICA_DB_URL}"
+  fi
+
   echo "Running multica migrations (retrying until database is ready)..."
   cd /app/multica
   MIGRATED=false
   for i in $(seq 1 60); do
-    if DATABASE_URL="$MULTICA_DATABASE_URL" multica-migrate up; then
+    if DATABASE_URL="$MULTICA_DB_URL" multica-migrate up; then
       MIGRATED=true
       break
     fi
@@ -35,7 +69,7 @@ if [ -n "${MULTICA_DATABASE_URL:-}" ]; then
   done
   cd /
   if [ "$MIGRATED" != "true" ]; then
-    echo "ERROR: multica database at ${MULTICA_DATABASE_URL} not reachable after 60s"
+    echo "ERROR: multica database at ${MULTICA_DB_URL} not reachable after 60s"
     exit 1
   fi
 
