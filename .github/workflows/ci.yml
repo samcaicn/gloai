@@ -83,12 +83,11 @@ jobs:
     steps:
       - name: Extract build duration
         run: |
-          DURATION=$(( ${{ job-status }} == 'success' ? 0 : 1 ))
-          echo "ci_duration_seconds=${{ github.event.workflow_run.run_number }}" >> $GITHUB_OUTPUT
-          echo "ci_status=${{ job-status }}" >> $GITHUB_OUTPUT
+          echo "ci_duration_seconds=${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "ci_status=${{ job.status }}" >> $GITHUB_OUTPUT
         id: metrics
       - name: Push to Prometheus Pushgateway (optional)
-        if: env.PROMETHEUS_PUSHGATEWAY_URL != ''
+        if: ${{ secrets.PROMETHEUS_PUSHGATEWAY_URL != '' }}
         run: |
           cat <<EOF | curl --data-binary @- ${PROMETHEUS_PUSHGATEWAY_URL}/metrics/job/ci/instance/${GITHUB_REPOSITORY}
           ci_build_duration_seconds{repo="${GITHUB_REPOSITORY}",branch="${GITHUB_REF_NAME}"} ${{ steps.metrics.outputs.ci_duration_seconds }}
