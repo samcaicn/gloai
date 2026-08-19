@@ -119,7 +119,9 @@ RUN git init -q /pgvector-src && cd /pgvector-src \
       done \
     && git checkout -q FETCH_HEAD
 WORKDIR /pgvector-src
-RUN make && make install
+# OPTFLAGS="" 去掉 Makefile 默认的 -march=native：避免用 CI runner 的 CPU 指令集
+# 编译出不兼容其他机器的 vector.so（否则加载时 SIGILL/Illegal instruction）
+RUN make OPTFLAGS="" && make install
 
 # --- Runtime ---
 FROM alpine:3.21
