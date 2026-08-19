@@ -127,8 +127,8 @@ RUN echo "https://mirrors.aliyun.com/alpine/v$(cut -d. -f1,2 /etc/alpine-release
     echo "https://mirrors.aliyun.com/alpine/v$(cut -d. -f1,2 /etc/alpine-release)/community" >> /etc/apk/repositories && \
     apk add --no-cache ca-certificates curl libgcc nodejs postgresql17 postgresql17-contrib && \
     mkdir -p /var/lib/postgresql && chown -R postgres:postgres /var/lib/postgresql
-# pgvector 编译产物拷入运行时（pg_config 路径与 postgresql17 包一致）
-COPY --from=pgvector-builder /usr/lib/postgresql17/lib/vector.so /usr/lib/postgresql17/lib/
+# pgvector 编译产物拷入运行时（alpine postgresql17 的 pkglibdir=/usr/lib/postgresql17）
+COPY --from=pgvector-builder /usr/lib/postgresql17/vector.so /usr/lib/postgresql17/
 COPY --from=pgvector-builder /usr/share/postgresql17/extension/vector* /usr/share/postgresql17/extension/
 COPY --from=backend /oih /usr/local/bin/oih
 COPY --from=backend /edict-go /usr/local/bin/edict-go
