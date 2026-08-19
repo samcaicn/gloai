@@ -99,9 +99,7 @@ RUN corepack enable && \
 COPY --from=multica-builder /src/multica/apps/web/ apps/web/
 COPY --from=multica-builder /src/multica/packages/ packages/
 RUN printf 'registry=https://registry.npmmirror.com\nshamefully-hoist=true\n' > .npmrc && \
-    ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
-    NEXT_FONT_GOOGLE_MOCKED_RESPONSES=/app/multica/mock-google-fonts.js \
-    STANDALONE=true \
+    export ELECTRON_SKIP_BINARY_DOWNLOAD=1 NEXT_FONT_GOOGLE_MOCKED_RESPONSES=/app/multica/mock-google-fonts.js STANDALONE=true && \
     pnpm install --frozen-lockfile && \
     pnpm --filter @multica/web build && \
     rm -rf node_modules .pnpm-store /root/.local/share/pnpm/store /src/multica/.next/cache /root/.cache
