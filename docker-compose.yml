@@ -33,8 +33,8 @@ services:
       STORAGE_PATH: /var/lib/CEOadmin/media
       RP_ORIGIN: ${RP_ORIGIN:-http://localhost:${HUB_PORT:-9800}}
       RP_ID: ${RP_ID:-localhost}
-      # APP_PROXIES 配置 golershop 反向代理挂载
-      APP_PROXIES: "golershop=http://localhost:8000"
+      # APP_PROXIES 配置内置应用反向代理（golershop 商城、multica 看板）
+      APP_PROXIES: "golershop=http://localhost:8000,multica=http://localhost:3001"
       # multica：容器内置 PostgreSQL 17 + pgvector（数据在 hub-data 卷的 pgdata 下）
       MULTICA_DATABASE_URL: ${MULTICA_DATABASE_URL:-}
       MULTICA_PORT: "8080"

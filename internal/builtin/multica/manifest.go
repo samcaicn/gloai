@@ -14,7 +14,7 @@ func init() {
 		Icon:         "🎯",
 		Readme:       "",
 		Guide:        "",
-		Homepage:     "http://localhost:3001",
+		Homepage:     "/apps/multica",
 		Scopes:       []string{},
 		Events:       []string{},
 		ConfigSchema: json.RawMessage(`{}`),

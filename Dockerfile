@@ -98,6 +98,10 @@ RUN corepack enable && \
     corepack prepare "$PNPM_VERSION" --activate
 COPY --from=multica-builder /src/multica/apps/web/ apps/web/
 COPY --from=multica-builder /src/multica/packages/ packages/
+# 注入 basePath=/apps/multica：hub 以 /apps/multica 反向代理本 web，
+# Next.js 需以该子路径为 basePath 生成页面/资源/rewrite，前端才不会直跳 localhost:3001。
+RUN sed -i 's|  transpilePackages: \["@multica/core", "@multica/ui", "@multica/views"\],|  basePath: "/apps/multica",\n  transpilePackages: ["@multica/core", "@multica/ui", "@multica/views"],|' apps/web/next.config.ts \
+    && grep -n "basePath" apps/web/next.config.ts
 RUN printf 'registry=https://registry.npmmirror.com\nshamefully-hoist=true\n' > .npmrc && \
     export ELECTRON_SKIP_BINARY_DOWNLOAD=1 NEXT_FONT_GOOGLE_MOCKED_RESPONSES=/app/multica/mock-google-fonts.js STANDALONE=true && \
     pnpm install --frozen-lockfile && \
@@ -151,6 +155,8 @@ COPY --from=multica-web-builder /src/multica/apps/web/public /app/multica/web/ap
 COPY deploy/multica-fonts/fonts /app/multica/fonts
 COPY deploy/hub-entrypoint.sh /usr/local/bin/hub-entrypoint.sh
 RUN chmod +x /usr/local/bin/hub-entrypoint.sh
+# hub 内置应用反向代理：golershop、multica web 都通过 hub 子路径访问（无需对外暴露独立端口）
+ENV APP_PROXIES="golershop=http://localhost:8000,multica=http://localhost:3001"
 EXPOSE 9800 7891 8000 8080 3001
 ENTRYPOINT ["/usr/local/bin/hub-entrypoint.sh"]
 CMD ["-listen", "0.0.0.0:9800"]
