@@ -80,6 +80,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, build, lint]
     if: always()
+    env:
+      PROMETHEUS_PUSHGATEWAY_URL: ${{ secrets.PROMETHEUS_PUSHGATEWAY_URL }}
     steps:
       - name: Extract build duration
         run: |
@@ -87,11 +89,9 @@ jobs:
           echo "ci_status=${{ job.status }}" >> $GITHUB_OUTPUT
         id: metrics
       - name: Push to Prometheus Pushgateway (optional)
-        if: ${{ secrets.PROMETHEUS_PUSHGATEWAY_URL != '' }}
+        if: env.PROMETHEUS_PUSHGATEWAY_URL != ''
         run: |
           cat <<EOF | curl --data-binary @- ${PROMETHEUS_PUSHGATEWAY_URL}/metrics/job/ci/instance/${GITHUB_REPOSITORY}
           ci_build_duration_seconds{repo="${GITHUB_REPOSITORY}",branch="${GITHUB_REF_NAME}"} ${{ steps.metrics.outputs.ci_duration_seconds }}
           ci_build_status{repo="${GITHUB_REPOSITORY}",branch="${GITHUB_REF_NAME}"} ${{ steps.metrics.outputs.ci_status }}
           EOF
-        env:
-          PROMETHEUS_PUSHGATEWAY_URL: ${{ secrets.PROMETHEUS_PUSHGATEWAY_URL }}
