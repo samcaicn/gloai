@@ -83,6 +83,11 @@ jobs:
         run: |
           pnpm -C web install --frozen-lockfile
           pnpm -C web run build
+      - name: Debug go context
+        run: |
+          echo "PWD=$(pwd)"
+          echo "GOMOD=$(go env GOMOD)"
+          go list ./... 2>&1 | head -5
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         env:
