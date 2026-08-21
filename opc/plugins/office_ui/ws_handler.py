@@ -10548,6 +10548,83 @@ class WSHandler:
             await self._send_ack(ws, ok=False, error=str(exc))
 
     # ------------------------------------------------------------------
+    # CreatorHub sidecar (lazy launch on demand)
+    # ------------------------------------------------------------------
+
+    async def _handle_creatorhub_open(self, ws: Any, data: dict) -> None:
+        """Lazily launch the CreatorHub sidecar and return its URL once healthy.
+
+        The sidecar is only started when the user actually opens CreatorHub,
+        avoiding a slow dependency install at app boot. Health is probed with
+        stdlib urllib (no extra dependency on the SafeOPC process).
+        """
+        try:
+            import asyncio
+
+            result = await asyncio.to_thread(self._launch_creatorhub_sync)
+            await ws.send_json({"type": "creatorhub_open", "payload": result})
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"CreatorHub open failed: {exc}")
+            await ws.send_json(
+                {"type": "creatorhub_open", "payload": {"ok": False, "error": str(exc)}}
+            )
+
+    @staticmethod
+    def _launch_creatorhub_sync() -> dict:
+        import os
+        import sys
+        import time
+        import urllib.request
+        from pathlib import Path
+
+        if getattr(sys, "frozen", False):
+            cand = Path(getattr(sys, "_MEIPASS", "")) / "integrations" / "creatorhub"
+        else:
+            cand = Path(__file__).resolve().parents[3] / "integrations" / "creatorhub"
+        if not cand.is_dir():
+            return {"ok": False, "error": "CreatorHub app 未打包进本程序"}
+
+        try:
+            from opc.integrations.creatorhub_adapter.launcher import CreatorHubLauncher
+        except Exception as exc:  # pragma: no cover - import guard
+            return {"ok": False, "error": f"launcher 导入失败: {exc}"}
+
+        appdata = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+        data_root = Path(appdata) / "SafeOPC" / "integrations" / "creatorhub"
+        launcher = CreatorHubLauncher(
+            creatorhub_dir=cand, data_root=data_root, port=8000, host="127.0.0.1"
+        )
+        url = "http://127.0.0.1:8000"
+
+        def probe() -> bool:
+            try:
+                with urllib.request.urlopen(url + "/health", timeout=2) as resp:
+                    return resp.status == 200
+            except Exception:
+                return False
+
+        if launcher.is_running() and probe():
+            return {"ok": True, "url": url}
+
+        try:
+            launcher.ensure_venv()
+            launcher.write_config()
+        except Exception as exc:  # pragma: no cover - environment dependent
+            return {"ok": False, "error": f"CreatorHub 环境准备失败: {exc}"}
+
+        if not launcher.is_running():
+            try:
+                launcher.start()
+            except Exception as exc:  # pragma: no cover - environment dependent
+                return {"ok": False, "error": f"CreatorHub 启动失败: {exc}"}
+
+        for _ in range(60):
+            if probe():
+                return {"ok": True, "url": url}
+            time.sleep(0.5)
+        return {"ok": False, "error": "CreatorHub 30 秒内未就绪"}
+
+    # ------------------------------------------------------------------
     # Org editing handlers (custom mode)
     # ------------------------------------------------------------------
 
@@ -10790,3 +10867,4 @@ class WSHandler:
     # Register handlers defined after _HANDLERS class-level dict
     _HANDLERS["comms_state"] = _handle_comms_state
     _HANDLERS["comms_read_message"] = _handle_comms_read_message
+    _HANDLERS["creatorhub_open"] = _handle_creatorhub_open

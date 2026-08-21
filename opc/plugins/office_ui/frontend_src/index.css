@@ -34,7 +34,11 @@ html, body, #root {
   height: 100vh;
   max-height: 100vh;
   display: grid;
+  grid-template-columns: 76px 1fr;
   grid-template-rows: 48px minmax(0, 1fr);
+  grid-template-areas:
+    "topbar topbar"
+    "rail   content";
   gap: 0;
   color: var(--text);
   overflow: hidden;
@@ -304,6 +308,7 @@ html, body, #root {
 /* ── Topbar ─────────────────────────────────────────── */
 
 .topbar {
+  grid-area: topbar;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -348,6 +353,86 @@ html, body, #root {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* ── Left rail (plugins + CreatorHub) ───────────────────────────── */
+.left-rail {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px 8px;
+  background: var(--bg-elevated, var(--bg));
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.left-rail-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+
+.left-rail-btn:hover {
+  background: var(--surface-hover, rgba(255, 255, 255, 0.06));
+  color: var(--text);
+}
+
+.left-rail-btn.active {
+  background: var(--surface, rgba(255, 255, 255, 0.08));
+  color: var(--accent, #6ea8fe);
+  border-color: var(--border-hover, rgba(255, 255, 255, 0.14));
+}
+
+.left-rail-btn.loading {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.left-rail-ico {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.left-rail-label {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.left-rail-spin {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--text-secondary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: left-rail-spin 0.7s linear infinite;
+}
+
+@keyframes left-rail-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Content area (pages) ───────────────────────────────────────── */
+.app-content {
+  grid-area: content;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Page navigation buttons in topbar */

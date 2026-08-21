@@ -38,9 +38,16 @@ except ImportError:  # pragma: no cover - yaml is a SafeOPC dependency
 
 
 # integrations/creatorhub lives at <repo>/integrations/creatorhub
-REPO_ROOT = Path(__file__).resolve().parents[3]
-CREATORHUB_DIR = REPO_ROOT / "integrations" / "creatorhub"
-DEFAULT_DATA_ROOT = REPO_ROOT / ".opc" / "integrations" / "creatorhub"
+if getattr(sys, "frozen", False):
+    # PyInstaller one-dir bundle: the app lives under the unpacked _MEIPASS dir.
+    _MEI = Path(getattr(sys, "_MEIPASS", str(Path(sys.executable).parent)))
+    CREATORHUB_DIR = _MEI / "integrations" / "creatorhub"
+    _APPDATA = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+    DEFAULT_DATA_ROOT = Path(_APPDATA) / "SafeOPC" / "integrations" / "creatorhub"
+else:
+    REPO_ROOT = Path(__file__).resolve().parents[3]
+    CREATORHUB_DIR = REPO_ROOT / "integrations" / "creatorhub"
+    DEFAULT_DATA_ROOT = REPO_ROOT / ".opc" / "integrations" / "creatorhub"
 DEFAULT_PORT = 8000
 DEFAULT_HOST = "127.0.0.1"
 
@@ -69,6 +76,11 @@ class CreatorHubLauncher:
         # subsequent launches skip the (slow, no-op) pip pass. Stores the
         # sha256 of requirements.txt; if requirements change, we reinstall.
         self.provision_marker = self.venv_dir / ".creatorhub_provisioned"
+        # Under PyInstaller the bundled app dir is read-only, so the venv must
+        # live in the writable data root instead of inside creatorhub_dir.
+        if getattr(sys, "frozen", False):
+            self.venv_dir = self.data_root / ".venv"
+            self.provision_marker = self.venv_dir / ".creatorhub_provisioned"
 
     # ── paths ───────────────────────────────────────────────────
     @property
@@ -97,6 +109,20 @@ class CreatorHubLauncher:
         self.venv_dir.mkdir(parents=True, exist_ok=True)
         self.provision_marker.write_text(self._requirements_hash(), encoding="utf-8")
 
+    def _resolve_base_python(self) -> Path:
+        """Python interpreter used to *bootstrap* the venv.
+
+        When frozen (PyInstaller), ``sys.executable`` is SafeOPC.exe, which
+        cannot run ``-m venv``. The real CPython runtime is unpacked under
+        ``sys._MEIPASS`` and works fine for bootstrapping the venv.
+        """
+        if getattr(sys, "frozen", False):
+            mei = Path(getattr(sys, "_MEIPASS", str(Path(sys.executable).parent)))
+            exe = mei / "python.exe" if os.name == "nt" else mei / "bin" / "python"
+            if exe.exists():
+                return exe
+        return Path(sys.executable)
+
     def ensure_venv(self, force: bool = False) -> None:
         """Create the isolated venv and install CreatorHub deps.
 
@@ -108,9 +134,10 @@ class CreatorHubLauncher:
         Pass ``force=True`` to reinstall regardless (used by ``setup --force``
         and as an escape hatch when deps drift).
         """
+        base_python = str(self._resolve_base_python())
         fresh = not self.venv_dir.exists()
         if fresh:
-            subprocess.run([sys.executable, "-m", "venv", str(self.venv_dir)], check=True)
+            subprocess.run([base_python, "-m", "venv", str(self.venv_dir)], check=True)
 
         if self._is_provisioned() and not force:
             print("CreatorHub venv already provisioned — skipping install.")

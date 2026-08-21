@@ -524,6 +524,7 @@ export default function App() {
   const [orgCreateResult, setOrgCreateResult] = useState<(OrgSavedCreatePayload & { nonce: number }) | null>(null)
   const [orgToast, setOrgToast] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
   const [inAppBrowser, setInAppBrowser] = useState<{ url: string; title: string } | null>(null)
+  const [creatorhubLoading, setCreatorHubLoading] = useState(false)
   const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
   const replayedEventIds = useRef<Set<string>>(new Set())
   const swarmAgentsRef = useRef<AgentInfo[]>([])
@@ -2020,6 +2021,16 @@ export default function App() {
         setPluginConfigSchema(p.config_schema ?? null)
         setPluginConfigError(null)
       },
+      onCreatorHubOpen: (payload) => {
+        setCreatorHubLoading(false)
+        const p = payload as any
+        if (p && p.ok && p.url) {
+          setInAppBrowser({ url: p.url, title: 'CreatorHub' })
+        } else {
+          setOrgToast({ kind: 'error', text: `CreatorHub 启动失败：${p?.error ?? '未知错误'}` })
+          setTimeout(() => setOrgToast(null), 6000)
+        }
+      },
       onCascade: (payload) => {
         setCascadeLoading(false)
         setCascadeError((payload as any)?.error ?? null)
@@ -2533,14 +2544,6 @@ export default function App() {
             </button>
             <button className={`page-nav-btn${activePage === 'office' ? ' active' : ''}`} onClick={() => setActivePage('office')}>{t('app.page.office')}</button>
             <button className={`page-nav-btn${activePage === 'org' ? ' active' : ''}`} onClick={() => setActivePage('org')}>{t('app.page.org')}</button>
-            <button className={`page-nav-btn${activePage === 'plugins' ? ' active' : ''}`} onClick={() => { setActivePage('plugins'); clientRef.current?.pluginList() }}>{t('app.page.plugins')}</button>
-            <button
-              className="page-nav-btn creatorhub-nav-btn"
-              onClick={() => setInAppBrowser({ url: 'http://127.0.0.1:8000', title: 'CreatorHub' })}
-              title="打开 CreatorHub（多平台内容监控·采集·搬运）"
-            >
-              CreatorHub
-            </button>
           </div>
           <div className="stat-chips">
             <span className="stat-chip"><b>{metrics.totalAgents}</b> {t('app.metric.agents')}</span>
@@ -2626,6 +2629,28 @@ export default function App() {
           )}
         </div>
       </header>
+
+      <nav className="left-rail" aria-label="侧边导航">
+        <button
+          className={`left-rail-btn${activePage === 'plugins' ? ' active' : ''}`}
+          title="插件"
+          onClick={() => { setActivePage('plugins'); clientRef.current?.pluginList() }}
+        >
+          <span className="left-rail-ico">🧩</span>
+          <span className="left-rail-label">{t('app.page.plugins')}</span>
+        </button>
+        <button
+          className={`left-rail-btn${creatorhubLoading ? ' loading' : ''}`}
+          title="打开 CreatorHub（多平台内容监控·采集·搬运）"
+          onClick={() => { setCreatorHubLoading(true); clientRef.current?.creatorhubOpen() }}
+        >
+          <span className="left-rail-ico">📡</span>
+          <span className="left-rail-label">CreatorHub</span>
+          {creatorhubLoading && <span className="left-rail-spin" />}
+        </button>
+      </nav>
+
+      <div className="app-content">
 
       {/* Workspace Page (unified Chat + Kanban) */}
       {activePage === 'workspace' && (
@@ -3072,6 +3097,8 @@ export default function App() {
           )}
         </div>
       )}
+      </div>
+
       {toastMessage && <div className={toastType === 'error' ? 'toast-error' : 'toast-success'}>{toastMessage}</div>}
       {/* ── Global Execution Panel (accessible from any page) ── */}
       <MaybeExecutionPanel

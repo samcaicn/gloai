@@ -58,6 +58,7 @@ interface SocketHandlers {
   onOrgSavedLoad?: (payload: { ok: boolean; name: string; error?: string }) => void
   onOrgSavedDelete?: (payload: { ok: boolean; name: string; error?: string }) => void
   onCommsState?: (payload: CommsStatePayload) => void
+  onCreatorHubOpen?: (payload: { ok: boolean; url?: string; error?: string }) => void
   onCommsMessage?: (payload: CommsMessagePayload) => void
   onUiOpenBrowser?: (payload: { url: string; title?: string }) => void
   onPluginList?: (payload: { plugins: Array<Record<string, unknown>> }) => void
@@ -541,6 +542,10 @@ export class VisualSocketClient {
     this.send({ type: 'org_info' })
   }
 
+  creatorhubOpen(): void {
+    this.send({ type: 'creatorhub_open' })
+  }
+
   // ── Phase 4: Talent Market, Employee Detail, Reorg ───────────────────
 
   talentImport(repoPath: string): void {
@@ -864,6 +869,8 @@ export class VisualSocketClient {
         break
       case 'comms_message':
         this.handlers.onCommsMessage?.(parsed.payload as unknown as CommsMessagePayload)
+      case 'creatorhub_open':
+        this.handlers.onCreatorHubOpen?.(parsed.payload as unknown as { ok: boolean; url?: string; error?: string })
         break
       case 'ui_open_browser':
         this.handlers.onUiOpenBrowser?.(parsed.payload as { url: string; title?: string })
