@@ -51,9 +51,8 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
       - name: Build frontend (internal/web/dist)
         run: |
-          cd web
-          pnpm install --frozen-lockfile
-          pnpm run build
+          pnpm -C web install --frozen-lockfile
+          pnpm -C web run build
       - name: Build binary
         run: go build -o oih .
       - name: Upload binary
@@ -82,9 +81,8 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
       - name: Build frontend (internal/web/dist)
         run: |
-          cd web
-          pnpm install --frozen-lockfile
-          pnpm run build
+          pnpm -C web install --frozen-lockfile
+          pnpm -C web run build
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
