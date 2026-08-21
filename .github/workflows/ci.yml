@@ -14,6 +14,8 @@ jobs:
   test:
     name: Test (Go)
     runs-on: ubuntu-latest
+    env:
+      GOPROXY: https://goproxy.cn,direct
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -27,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           # 只分析 oih 主程序可达的包;引用私有模块 github.com/colearn/colearn 的悬空包(非本项目可构建代码)排除
-          ALL=$(go list -deps -f '{{.ImportPath}}' github.com/ceoadmin/CEOadmin 2>/dev/null | grep 'github.com/ceoadmin/CEOadmin/')
+          ALL=$(go list -deps -f '{{.ImportPath}}' github.com/ceoadmin/CEOadmin | grep 'github.com/ceoadmin/CEOadmin/')
           KEEP=()
           for p in $ALL; do
             dir="./${p#github.com/ceoadmin/CEOadmin/}"
@@ -55,6 +57,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: test
+    env:
+      GOPROXY: https://goproxy.cn,direct
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -85,6 +89,8 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    env:
+      GOPROXY: https://goproxy.cn,direct
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -98,7 +104,7 @@ jobs:
         run: |
           set -euo pipefail
           # 只分析 oih 主程序可达的包;引用私有模块 github.com/colearn/colearn 的悬空包(非本项目可构建代码)排除
-          ALL=$(go list -deps -f '{{.ImportPath}}' github.com/ceoadmin/CEOadmin 2>/dev/null | grep 'github.com/ceoadmin/CEOadmin/')
+          ALL=$(go list -deps -f '{{.ImportPath}}' github.com/ceoadmin/CEOadmin | grep 'github.com/ceoadmin/CEOadmin/')
           KEEP=()
           for p in $ALL; do
             dir="./${p#github.com/ceoadmin/CEOadmin/}"
