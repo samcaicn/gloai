@@ -48,7 +48,7 @@ jobs:
             if compgen -G "$dir"/*_test.go >/dev/null && grep -rq "github.com/colearn/colearn" "$dir"/*_test.go 2>/dev/null; then
               echo "skip (colearn in tests): $p"
             else
-              KEEP+=("$p")
+              KEEP+=("$dir")
             fi
           done
           printf '%s\n' "${KEEP[@]}" > pkgs.txt
@@ -135,7 +135,7 @@ jobs:
             if compgen -G "$dir"/*_test.go >/dev/null && grep -rq "github.com/colearn/colearn" "$dir"/*_test.go 2>/dev/null; then
               echo "skip (colearn in tests): $p"
             else
-              KEEP+=("$p")
+              KEEP+=("$dir")
             fi
           done
           printf '%s\n' "${KEEP[@]}" > pkgs.txt
