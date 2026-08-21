@@ -20,9 +20,29 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+      - name: Compute buildable packages (exclude colearn-dependent orphans)
+        id: pkgs
+        env:
+          GOFLAGS: -mod=mod
+        run: |
+          set -euo pipefail
+          # 只分析 oih 主程序可达的包;引用私有模块 github.com/colearn/colearn 的悬空包(非本项目可构建代码)排除
+          ALL=$(go list -deps -f '{{.ImportPath}}' github.com/ceoadmin/CEOadmin 2>/dev/null | grep 'github.com/ceoadmin/CEOadmin/')
+          KEEP=()
+          for p in $ALL; do
+            dir="./${p#github.com/ceoadmin/CEOadmin/}"
+            if compgen -G "$dir"/*_test.go >/dev/null && grep -rq "github.com/colearn/colearn" "$dir"/*_test.go 2>/dev/null; then
+              echo "skip (colearn in tests): $p"
+            else
+              KEEP+=("$p")
+            fi
+          done
+          printf '%s\n' "${KEEP[@]}" > pkgs.txt
+          echo "list=${KEEP[*]}" >> "$GITHUB_OUTPUT"
       - name: Run tests
         run: |
-          go test ./... -v -json 2>&1 | tee test-results.json
+          set -euo pipefail
+          go test $(cat pkgs.txt) -v -json > test-results.json
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,24 +91,32 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-      - uses: pnpm/action-setup@v4
-        with:
-          version: latest
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: pnpm
-          cache-dependency-path: web/pnpm-lock.yaml
-      - name: Build frontend (internal/web/dist)
+      - name: Compute buildable packages (exclude colearn-dependent orphans)
+        id: pkgs
+        env:
+          GOFLAGS: -mod=mod
         run: |
-          pnpm -C web install --frozen-lockfile
-          pnpm -C web run build
+          set -euo pipefail
+          # 只分析 oih 主程序可达的包;引用私有模块 github.com/colearn/colearn 的悬空包(非本项目可构建代码)排除
+          ALL=$(go list -deps -f '{{.ImportPath}}' github.com/ceoadmin/CEOadmin 2>/dev/null | grep 'github.com/ceoadmin/CEOadmin/')
+          KEEP=()
+          for p in $ALL; do
+            dir="./${p#github.com/ceoadmin/CEOadmin/}"
+            if compgen -G "$dir"/*_test.go >/dev/null && grep -rq "github.com/colearn/colearn" "$dir"/*_test.go 2>/dev/null; then
+              echo "skip (colearn in tests): $p"
+            else
+              KEEP+=("$p")
+            fi
+          done
+          printf '%s\n' "${KEEP[@]}" > pkgs.txt
+          echo "list=${KEEP[*]}" >> "$GITHUB_OUTPUT"
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         env:
           GOFLAGS: -mod=mod
         with:
           version: v2.13.0
+          args: ${{ steps.pkgs.outputs.list }}
 
   notify:
     name: Notify on failure
