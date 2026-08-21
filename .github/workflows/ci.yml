@@ -83,15 +83,10 @@ jobs:
         run: |
           pnpm -C web install --frozen-lockfile
           pnpm -C web run build
-      - name: Debug go context
-        run: |
-          echo "PWD=$(pwd)"
-          ls -la go.mod 2>&1
-          go version
-          go env GOPATH GOMODCACHE GOFLAGS
-          go list ./... 2>&1 | head -3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
+        env:
+          GOFLAGS: -mod=mod
         with:
           version: v2.13.0
 
