@@ -72,8 +72,6 @@ linters:
     - nakedret
     - dupl
     - prealloc
-    - t
-    - logs
     - wastedassign
     - gomoddirectives
     - canonicalheader
