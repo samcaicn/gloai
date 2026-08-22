@@ -28,6 +28,12 @@ export interface DshPluginRef {
   description?: string | null;
   stars?: number | null;
   enabled: boolean;
+  /** Whether the plugin source has been downloaded locally (a real install). */
+  installed: boolean;
+  /** Local path where the plugin source was extracted (real installs only). */
+  localPath?: string | null;
+  /** ISO-8601 timestamp of the last successful local install. */
+  installedAt?: string | null;
 }
 
 export interface BuiltinPluginInfo {
@@ -69,6 +75,11 @@ export async function removeDshPlugin(id: string): Promise<DshPluginRef[]> {
 
 export async function setDshPluginEnabled(id: string, enabled: boolean): Promise<DshPluginRef[]> {
   return invoke<DshPluginRef[]>('set_dsh_plugin_enabled', { id, enabled });
+}
+
+/** Open a filesystem path in the OS file manager (cross-platform). */
+export async function openPath(path: string): Promise<void> {
+  return invoke<void>('open_path', { path });
 }
 
 export async function listBuiltinPlugins(): Promise<BuiltinPluginInfo[]> {

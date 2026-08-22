@@ -93,6 +93,18 @@ pub struct DshPluginRef {
     /// Cached star count for display.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stars: Option<u64>,
+    /// Whether the plugin source has been downloaded and extracted locally
+    /// (a real install), as opposed to merely being tracked (ref-only).
+    #[serde(default)]
+    pub installed: bool,
+    /// Local filesystem path where the plugin source was extracted. `None`
+    /// when the plugin is tracked-only (e.g. a built-in or a DSH runtime that
+    /// hot-loads it remotely).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub local_path: Option<String>,
+    /// ISO-8601 timestamp of the last successful local install.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub installed_at: Option<String>,
     #[serde(default = "default_true")]
     pub enabled: bool,
 }

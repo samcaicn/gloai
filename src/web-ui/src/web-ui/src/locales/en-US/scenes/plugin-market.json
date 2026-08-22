@@ -32,7 +32,9 @@
     "noUpstream": "No DSH runtime configured: add an http(s) endpoint in Settings → DSH to fetch the plugin catalog",
     "noMatch": "No matching DSH plugins",
     "install": "Install",
-    "remove": "Remove"
+    "remove": "Remove",
+    "downloaded": "Downloaded",
+    "openFolder": "Open folder"
   },
   "builtin": {
     "loadFailed": "Failed to load built-in plugins: {{error}}",

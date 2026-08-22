@@ -32,7 +32,9 @@
     "noUpstream": "未配置 DSH 运行时：请到 设置 → DSH 添加一个 http(s) 端点以拉取插件目录",
     "noMatch": "没有匹配的 DSH 插件",
     "install": "安装",
-    "remove": "移除"
+    "remove": "移除",
+    "downloaded": "已下载",
+    "openFolder": "打开目录"
   },
   "builtin": {
     "loadFailed": "加载内置能力失败：{{error}}",

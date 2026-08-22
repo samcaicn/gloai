@@ -20,8 +20,11 @@
 // and re-seeds the runtime-registry, so an install takes effect immediately
 // without restarting the app — the core of the "安装后立即刷新执行机制" ask.
 
+use chrono::Utc;
 use serde::Deserialize;
+use std::io::{Cursor, Read, Write};
 use std::path::PathBuf;
+use std::process::Command;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::hermes::{event_bus, HermesAppState};
@@ -468,6 +471,137 @@ fn urlencoding(input: &str) -> String {
     out
 }
 
+// ── DSH plugin install (real local download + extract) ────────────────────
+
+/// Directory under `app_data_dir` where installed DSH plugin sources live.
+const DSH_PLUGIN_INSTALL_DIR: &str = "dsh_plugins";
+
+/// Resolve the directory that holds locally-installed DSH plugin sources.
+fn dsh_install_root(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(app_data_dir(app)?.join(DSH_PLUGIN_INSTALL_DIR))
+}
+
+/// A GitHub `owner/repo` we can actually download. Built-in / upstream-only
+/// refs (`builtin/...`, `dsh:...`) have no downloadable source — they are
+/// tracked only.
+fn is_downloadable_repo(repo: &str) -> bool {
+    !repo.starts_with("builtin/")
+        && !repo.starts_with("dsh:")
+        && repo.matches('/').count() == 1
+}
+
+/// Extract a GitHub archive (zip) into `dest`, stripping the single
+/// top-level directory GitHub wraps every archive in (e.g. `repo-main-abc123/`).
+/// Unsafe (escaping) entry paths are skipped.
+fn extract_dsh_archive(bytes: &[u8], dest: &Path) -> Result<(), String> {
+    let reader = Cursor::new(bytes);
+    let mut archive =
+        zip::ZipArchive::new(reader).map_err(|e| format!("插件压缩包解析失败: {}", e))?;
+    std::fs::create_dir_all(dest).map_err(|e| e.to_string())?;
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
+        let name = match file.enclosed_name() {
+            Some(p) => p.to_path_buf(),
+            None => continue, // unsafe path, skip
+        };
+        // Drop the top-level directory component GitHub injects.
+        let mut comps = name.components();
+        comps.next();
+        let rel = comps.as_path().to_path_buf();
+        if rel.as_os_str().is_empty() {
+            continue;
+        }
+        let out_path = dest.join(&rel);
+        let fname = file.name().to_string();
+        if fname.ends_with('/') {
+            std::fs::create_dir_all(&out_path).map_err(|e| e.to_string())?;
+        } else {
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            let mut buf = Vec::with_capacity(file.size() as usize);
+            file.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+            let mut out = std::fs::File::create(&out_path).map_err(|e| e.to_string())?;
+            out.write_all(&buf).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+/// Download a DSH plugin repo and extract it locally. Returns the install path
+/// on success. Tries the official GitHub endpoints first, then the public
+/// reverse proxies (so installs work even when `github.com` is blocked).
+async fn download_and_install_dsh_plugin(
+    repo: &str,
+    app: &AppHandle,
+) -> Result<String, String> {
+    let token = std::env::var("GITHUB_TOKEN")
+        .or_else(|_| std::env::var("GH_TOKEN"))
+        .ok();
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| format!("HTTP 客户端初始化失败: {}", e))?;
+
+    // Candidate archive URLs, tried in order. The api.github.com zipball
+    // resolves to the default branch; the gh-proxy variants help behind GFW.
+    let candidates: Vec<String> = {
+        let mut v = Vec::new();
+        for base in [
+            "https://api.github.com/repos/",
+            "https://gh-proxy.com/https://api.github.com/repos/",
+        ] {
+            v.push(format!("{}{}/zipball", base, repo));
+        }
+        for base in [
+            "https://github.com/",
+            "https://gh-proxy.com/https://github.com/",
+        ] {
+            v.push(format!("{}{}/archive/refs/heads/main.zip", base, repo));
+        }
+        v
+    };
+
+    let mut last_err = String::new();
+    for url in candidates {
+        let mut req = client
+            .get(&url)
+            .header("User-Agent", "safeopcAPP")
+            .header("Accept", "application/vnd.github+json");
+        if let Some(t) = &token {
+            req = req.header("Authorization", format!("Bearer {}", t));
+        }
+        let resp = match req.send().await {
+            Ok(r) => r,
+            Err(e) => {
+                last_err = format!("请求失败 ({}): {}", url, e);
+                continue;
+            }
+        };
+        if !resp.status().is_success() {
+            last_err = format!("下载返回 {} ({})", resp.status(), url);
+            continue;
+        }
+        let bytes = match resp.bytes().await {
+            Ok(b) => b,
+            Err(e) => {
+                last_err = format!("读取下载内容失败: {}", e);
+                continue;
+            }
+        };
+        let id = repo.replace('/', "-");
+        let dest = dsh_install_root(app)?.join(&id);
+        let _ = std::fs::remove_dir_all(&dest);
+        if let Err(e) = extract_dsh_archive(&bytes, &dest) {
+            let _ = std::fs::remove_dir_all(&dest);
+            last_err = e;
+            continue;
+        }
+        return Ok(dest.to_string_lossy().to_string());
+    }
+    Err(format!("无法下载 DSH 插件 {}: {}", repo, last_err))
+}
+
 // ── DSH plugin CRUD (profile-backed) ───────────────────────────────────────
 
 /// Request to install a DSH plugin. `repo` is the GitHub `owner/repo`.
@@ -504,6 +638,19 @@ pub async fn install_dsh_plugin(
     }
     let id = repo.replace('/', "-");
 
+    // Real install: download + extract the plugin source locally when it is a
+    // downloadable GitHub repo. Built-in / upstream-only refs are tracked only.
+    let local_path = if is_downloadable_repo(&repo) {
+        Some(download_and_install_dsh_plugin(&repo, &app).await?)
+    } else {
+        None
+    };
+    let installed_at = if local_path.is_some() {
+        Some(Utc::now().to_rfc3339())
+    } else {
+        None
+    };
+
     let mut store = load_store(&app);
     let mut plugins = store.dsh_plugins();
     match plugins.iter_mut().find(|p| p.id == id) {
@@ -518,6 +665,13 @@ pub async fn install_dsh_plugin(
                 existing.stars = request.stars;
             }
             existing.enabled = true;
+            // Only overwrite install state for downloadable repos — a re-install
+            // of a tracked-only ref must not wipe a previous real install.
+            if is_downloadable_repo(&repo) {
+                existing.installed = local_path.is_some();
+                existing.local_path = local_path.clone();
+                existing.installed_at = installed_at.clone();
+            }
         }
         None => {
             plugins.push(DshPluginRef {
@@ -526,6 +680,9 @@ pub async fn install_dsh_plugin(
                 display_name: request.display_name.clone(),
                 description: request.description.clone(),
                 stars: request.stars,
+                installed: local_path.is_some(),
+                local_path: local_path.clone(),
+                installed_at: installed_at.clone(),
                 enabled: true,
             });
         }
@@ -547,6 +704,10 @@ pub async fn remove_dsh_plugin(
     let mut plugins = store.dsh_plugins();
     if !plugins.iter().any(|p| p.id == id) {
         return Err(format!("DSH 插件 '{}' 不存在", id));
+    }
+    // Best-effort delete of locally installed source before un-tracking.
+    if let Some(p) = plugins.iter().find(|p| p.id == id).and_then(|p| p.local_path.clone()) {
+        let _ = std::fs::remove_dir_all(PathBuf::from(p));
     }
     plugins.retain(|p| p.id != id);
     store.set_dsh_plugins(plugins.clone());
@@ -573,6 +734,31 @@ pub async fn set_dsh_plugin_enabled(
     save_store(&app, &store)?;
     notify_plugins_changed(&app, &registry, "dsh").await;
     Ok(plugins)
+}
+
+/// Open a filesystem path in the OS file manager (cross-platform). Used by the
+/// market's "打开目录" action so users can inspect an installed plugin's source.
+#[tauri::command]
+pub fn open_path(path: String) -> Result<(), String> {
+    if path.trim().is_empty() {
+        return Err("路径为空".into());
+    }
+    #[cfg(target_os = "windows")]
+    let status = Command::new("cmd").args(["/C", "start", "", &path]).status();
+    #[cfg(target_os = "macos")]
+    let status = Command::new("open").arg(&path).status();
+    #[cfg(target_os = "linux")]
+    let status = Command::new("xdg-open").arg(&path).status();
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let status: Result<std::process::ExitStatus, std::io::Error> = Err(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        "unsupported platform",
+    ));
+    match status {
+        Ok(s) if s.success() => Ok(()),
+        Ok(s) => Err(format!("打开路径失败（退出码 {:?}）", s.code())),
+        Err(e) => Err(format!("打开路径失败: {}", e)),
+    }
 }
 
 // ── Built-in app plugins (everything is a plugin) ──────────────────────────
@@ -743,5 +929,37 @@ mod tests {
         assert_eq!(out.len(), 2);
         assert_eq!(out[0].id, "rt-p1");
         assert_eq!(out[1].id, "rt-p2");
+    }
+
+    #[test]
+    fn downloadable_repo_classification() {
+        assert!(is_downloadable_repo("owner/repo"));
+        assert!(!is_downloadable_repo("builtin/translator"));
+        assert!(!is_downloadable_repo("dsh:local/x"));
+        assert!(!is_downloadable_repo("owner/repo/extra"));
+        assert!(!is_downloadable_repo("justone"));
+    }
+
+    #[test]
+    fn extract_strips_top_dir() {
+        let mut buf: Vec<u8> = Vec::new();
+        {
+            let mut w = Cursor::new(&mut buf);
+            let mut z = zip::ZipWriter::new(&mut w);
+            let opts = zip::write::FileOptions::default();
+            z.start_file("repo-main-abc/src/index.js", opts).unwrap();
+            z.write_all(b"console.log('hi')").unwrap();
+            z.start_file("repo-main-abc/README.md", opts).unwrap();
+            z.write_all(b"# readme").unwrap();
+            z.finish().unwrap();
+        }
+        let tmp = std::env::temp_dir().join(format!("dsh_extract_test_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&tmp);
+        extract_dsh_archive(&buf, &tmp).expect("extract");
+        let idx = tmp.join("src").join("index.js");
+        assert!(idx.exists(), "stripped file should exist at src/index.js");
+        let content = std::fs::read_to_string(&idx).unwrap();
+        assert_eq!(content, "console.log('hi')");
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

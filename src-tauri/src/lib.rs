@@ -852,6 +852,7 @@ commands::floating_window::fw_chat_to_main,
             commands::plugin_market::install_dsh_plugin,
             commands::plugin_market::remove_dsh_plugin,
             commands::plugin_market::set_dsh_plugin_enabled,
+            commands::plugin_market::open_path,
             commands::plugin_market::list_builtin_plugins,
             commands::plugin_market::set_builtin_plugin_enabled,
             // Preset packages — dsh-equivalent portable agent mechanism

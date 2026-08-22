@@ -7,6 +7,7 @@ import {
   Download,
   FileArchive,
   FileDown,
+  FolderOpen,
   Package,
   Puzzle,
   Search as SearchIcon,
@@ -28,6 +29,7 @@ import {
   installDshPlugin,
   listBuiltinPlugins,
   listDshPlugins,
+  openPath,
   removeDshPlugin,
   searchDshPlugins,
   setBuiltinPluginEnabled,
@@ -742,10 +744,22 @@ const PluginMarketScene: React.FC = () => {
                       <div className="plugin-market-scene__row-main">
                         <span className="plugin-market-scene__row-name">
                           {p.displayName ?? p.repo}
+                          {p.installed && (
+                            <Badge variant="success">
+                              <Download size={11} />
+                              {t('dsh.downloaded')}
+                            </Badge>
+                          )}
                         </span>
                         {p.description && (
                           <span className="plugin-market-scene__row-desc">
                             {p.description}
+                          </span>
+                        )}
+                        {p.localPath && (
+                          <span className="plugin-market-scene__row-desc plugin-market-scene__meta-path">
+                            <FolderOpen size={11} />
+                            {p.localPath}
                           </span>
                         )}
                         {p.stars ? (
@@ -756,6 +770,18 @@ const PluginMarketScene: React.FC = () => {
                         ) : null}
                       </div>
                       <div className="plugin-market-scene__row-actions">
+                        {p.localPath && (
+                          <button
+                            type="button"
+                            className="plugin-market-scene__icon-btn"
+                            aria-label={t('dsh.openFolder')}
+                            title={t('dsh.openFolder')}
+                            onClick={() => void openPath(p.localPath!)}
+                            disabled={dshBusyId === p.id}
+                          >
+                            <FolderOpen size={14} />
+                          </button>
+                        )}
                         <Switch
                           checked={p.enabled}
                           onChange={(e) =>
