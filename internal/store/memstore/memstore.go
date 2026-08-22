@@ -3,6 +3,7 @@ package memstore
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"sync"
 	"time"
 
@@ -182,14 +183,47 @@ func (s *Store) InstallApp(appID, botID string) (*store.AppInstallation, error) 
 func (s *Store) GetInstallation(id string) (*store.AppInstallation, error)           { return nil, nil }
 func (s *Store) GetInstallationByToken(token string) (*store.AppInstallation, error) { return nil, nil }
 func (s *Store) GetInstallationByHandle(botID, handle string) (*store.AppInstallation, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, inst := range s.installs {
+		if inst.BotID == botID && strings.EqualFold(inst.Handle, handle) {
+			return inst, nil
+		}
+	}
 	return nil, nil
 }
-func (s *Store) InstalledAppIDs(userID string) (map[string]bool, error) { return nil, nil }
+func (s *Store) InstalledAppIDs(userID string) (map[string]bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ids := make(map[string]bool)
+	for _, inst := range s.installs {
+		if b, ok := s.bots[inst.BotID]; ok && b.UserID == userID {
+			ids[inst.AppID] = true
+		}
+	}
+	return ids, nil
+}
 func (s *Store) ListInstallationsByApp(appID string) ([]store.AppInstallation, error) {
-	return nil, nil
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]store.AppInstallation, 0, len(s.installs))
+	for _, inst := range s.installs {
+		if inst.AppID == appID {
+			out = append(out, *inst)
+		}
+	}
+	return out, nil
 }
 func (s *Store) ListInstallationsByBot(botID string) ([]store.AppInstallation, error) {
-	return nil, nil
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]store.AppInstallation, 0, len(s.installs))
+	for _, inst := range s.installs {
+		if inst.BotID == botID {
+			out = append(out, *inst)
+		}
+	}
+	return out, nil
 }
 func (s *Store) UpdateInstallation(id, handle string, config, scopes json.RawMessage, enabled bool) error {
 	return nil
