@@ -23,7 +23,7 @@
 use chrono::Utc;
 use serde::Deserialize;
 use std::io::{Cursor, Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use tauri::{AppHandle, Emitter, Manager, State};
 
