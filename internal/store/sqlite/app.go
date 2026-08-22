@@ -318,8 +318,7 @@ func (db *DB) GetInstallation(id string) (*store.AppInstallation, error) {
 		&i.CreatedAt, &i.UpdatedAt,
 		&i.AppName, &i.AppSlug, &i.AppIcon, &i.AppIconURL,
 		&i.AppWebhookURL, &i.AppWebhookSecret,
-		&i.AppRegistry, &i.AppReadme, &i.AppGuide,
-		&i.TenantID, &i.ClientID)
+		&i.AppRegistry, &i.AppReadme, &i.AppGuide)
 	if err != nil {
 		return nil, err
 	}
@@ -341,8 +340,7 @@ func (db *DB) GetInstallationByToken(token string) (*store.AppInstallation, erro
 		&i.CreatedAt, &i.UpdatedAt,
 		&i.AppName, &i.AppSlug, &i.AppIcon, &i.AppIconURL,
 		&i.AppWebhookURL, &i.AppWebhookSecret,
-		&i.AppRegistry, &i.AppReadme, &i.AppGuide,
-		&i.TenantID, &i.ClientID)
+		&i.AppRegistry, &i.AppReadme, &i.AppGuide)
 	if err != nil {
 		return nil, err
 	}
@@ -441,8 +439,7 @@ func (db *DB) GetInstallationByHandle(botID, handle string) (*store.AppInstallat
 		&i.CreatedAt, &i.UpdatedAt,
 		&i.AppName, &i.AppSlug, &i.AppIcon, &i.AppIconURL,
 		&i.AppWebhookURL, &i.AppWebhookSecret,
-		&i.AppRegistry, &i.AppReadme, &i.AppGuide,
-		&i.TenantID, &i.ClientID)
+		&i.AppRegistry, &i.AppReadme, &i.AppGuide)
 	if err != nil {
 		return nil, err
 	}
