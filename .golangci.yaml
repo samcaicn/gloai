@@ -65,7 +65,6 @@ linters:
     # v2 renamed / extra-strict linters that require large churn; disable for now
     - exhaustruct_v5
     - godoclint
-    - golines
     - dogsled
     - inamedparam
     - interfacebloat
