@@ -165,8 +165,24 @@ func (s *Store) UpdateMediaStatusByID(id int64, status string, keys json.RawMess
 }
 func (s *Store) UpdateMediaPayloads(botID, eqp string, newPayload json.RawMessage) error { return nil }
 
-func (s *Store) GetApp(id string) (*store.App, error)                   { return nil, nil }
-func (s *Store) GetAppBySlug(slug, registry string) (*store.App, error) { return nil, nil }
+func (s *Store) GetApp(id string) (*store.App, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if a, ok := s.apps[id]; ok {
+		return a, nil
+	}
+	return nil, nil
+}
+func (s *Store) GetAppBySlug(slug, registry string) (*store.App, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, a := range s.apps {
+		if a.Slug == slug && (registry == "" || a.Registry == registry) {
+			return a, nil
+		}
+	}
+	return nil, nil
+}
 func (s *Store) ListAllApps() ([]store.App, error)                      { return nil, nil }
 func (s *Store) ListAppsByOwner(ownerID string) ([]store.App, error)    { return nil, nil }
 func (s *Store) ListListedApps() ([]store.App, error)                   { return nil, nil }
