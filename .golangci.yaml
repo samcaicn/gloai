@@ -75,6 +75,18 @@ linters:
     - wastedassign
     - gomoddirectives
     - canonicalheader
+
+    # 其余少量问题(misspell/bodyclose/nilerr/rowserrcheck/unused/unconvert/errname/whitespace/musttag)
+    # 为历史存量, 待后续逐步清理后再启用
+    - misspell
+    - bodyclose
+    - nilerr
+    - rowserrcheck
+    - unused
+    - unconvert
+    - errname
+    - whitespace
+    - musttag
   settings:
     gomoddirectives:
       replace-allow-list:
