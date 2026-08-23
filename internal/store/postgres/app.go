@@ -591,7 +591,7 @@ func (db *DB) CreateAppPurchase(appID, userID string) (*store.AppPurchase, error
 		CreatedAt: db.now(),
 	}
 	_, err := db.Exec(`INSERT INTO app_purchases (id, app_id, user_id, created_at)
-		VALUES ($1,$2,$3,$4)
+		VALUES ($1,$2,$3, EXTRACT(EPOCH FROM $4::TIMESTAMPTZ)::BIGINT)
 		ON CONFLICT (app_id, user_id) DO NOTHING`, p.ID, p.AppID, p.UserID, p.CreatedAt)
 	if err != nil {
 		return nil, err
