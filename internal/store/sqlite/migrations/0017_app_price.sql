@@ -1,3 +1,4 @@
+-- +goose Up
 -- App pricing + purchase/entitlement records (for paid apps).
 ALTER TABLE apps ADD COLUMN price REAL NOT NULL DEFAULT 0;
 ALTER TABLE apps ADD COLUMN currency TEXT NOT NULL DEFAULT 'CNY';

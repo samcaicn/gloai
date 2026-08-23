@@ -123,6 +123,10 @@ type Store interface {
 	CreateApp(app *App) (*App, error)
 	CreateAppReview(review *AppReview) error
 	ListAppReviews(appID string) ([]AppReview, error)
+	UpdateAppPrice(appID string, price float64, currency string) error
+	CreateAppPurchase(appID, userID string) (*AppPurchase, error)
+	GetAppPurchase(appID, userID string) (*AppPurchase, error)
+	ListAppPurchasesByUser(userID string) ([]AppPurchase, error)
 
 	// Registry
 	ListRegistries() ([]Registry, error)
