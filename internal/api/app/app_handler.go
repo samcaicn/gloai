@@ -743,15 +743,12 @@ func (s *AppHandler) requireAppForInstall(w http.ResponseWriter, r *http.Request
 func (s *AppHandler) HandleAdminSetListing(w http.ResponseWriter, r *http.Request) {
 	appID := r.PathValue("id")
 	var req struct {
-		Listing string `json:"listing"`
+		Listing  string   `json:"listing"`
+		Price    *float64 `json:"price"`
+		Currency string   `json:"currency"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		shared.JSONError(w, "invalid request", http.StatusBadRequest)
-		return
-	}
-	validListings := map[string]bool{"listed": true, "unlisted": true}
-	if !validListings[req.Listing] {
-		shared.JSONError(w, "listing must be 'listed' or 'unlisted'", http.StatusBadRequest)
 		return
 	}
 	app, err := s.Store.GetApp(appID)
@@ -759,12 +756,28 @@ func (s *AppHandler) HandleAdminSetListing(w http.ResponseWriter, r *http.Reques
 		shared.JSONError(w, "app not found", http.StatusNotFound)
 		return
 	}
-	if err := s.transitionAppAwayFromListed(appID, req.Listing); err != nil {
+	// Admin may configure price/currency for paid apps.
+	if req.Price != nil {
+		if err := s.Store.UpdateAppPrice(appID, *req.Price, req.Currency); err != nil {
+			slog.Error("set app price failed", "err", err)
+			shared.JSONError(w, "set price failed", http.StatusInternalServerError)
+			return
+		}
+		slog.Info("admin set app price", "app_id", appID, "price", *req.Price, "currency", req.Currency)
+	}
+	if req.Listing != "" {
+		validListings := map[string]bool{"listed": true, "unlisted": true}
+		if !validListings[req.Listing] {
+			shared.JSONError(w, "listing must be 'listed' or 'unlisted'", http.StatusBadRequest)
+			return
+		}
+		if err := s.transitionAppAwayFromListed(appID, req.Listing); err != nil {
 		slog.Error("set listing failed", "err", err)
 		shared.JSONError(w, "set listing failed", http.StatusInternalServerError)
 		return
 	}
-	slog.Info("admin set listing", "app_id", appID, "listing", req.Listing)
+		slog.Info("admin set listing", "app_id", appID, "listing", req.Listing)
+	}
 	app, _ = s.Store.GetApp(appID)
 	if app != nil {
 		if err := s.Store.CreateAppReview(&store.AppReview{
@@ -841,4 +854,27 @@ func (s *AppHandler) requireInstallation(w http.ResponseWriter, r *http.Request,
 		}
 	}
 	return inst
+}
+
+// POST /api/apps/{id}/purchase — record a purchase/entitlement for the current
+// user. This is the stand-in for real payment: when a payment gateway is wired
+// later, this endpoint is where the confirmed order creates the entitlement.
+// Paid apps require this record before installation (see HandleInstallApp).
+func (s *AppHandler) HandlePurchaseApp(w http.ResponseWriter, r *http.Request) {
+	userID := auth.UserIDFromContext(r.Context())
+	appID := r.PathValue("id")
+	app, err := s.Store.GetApp(appID)
+	if err != nil || app == nil {
+		shared.JSONError(w, "app not found", http.StatusNotFound)
+		return
+	}
+	p, err := s.Store.CreateAppPurchase(appID, userID)
+	if err != nil {
+		slog.Error("purchase app failed", "app", appID, "user", userID, "err", err)
+		shared.JSONError(w, "purchase failed", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(p)
 }

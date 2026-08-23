@@ -33,6 +33,9 @@ func (db *DB) CreateApp(app *store.App) (*store.App, error) {
 	if app.Listing == "" {
 		app.Listing = "unlisted"
 	}
+	if app.Currency == "" {
+		app.Currency = "CNY"
+	}
 	if app.ConfigSchema == "" {
 		app.ConfigSchema = "{}"
 	}
@@ -40,14 +43,14 @@ func (db *DB) CreateApp(app *store.App) (*store.App, error) {
 		tools, events, scopes, oauth_setup_url, oauth_redirect_url,
 		webhook_url, webhook_secret, webhook_verified,
 		registry, version, readme, guide, config_schema,
-		listing, listing_reject_reason)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+		listing, listing_reject_reason, price, currency)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
 		RETURNING EXTRACT(EPOCH FROM created_at)::BIGINT, EXTRACT(EPOCH FROM updated_at)::BIGINT`,
 		app.ID, app.OwnerID, app.Name, app.Slug, app.Description, app.Icon, app.IconURL, app.Homepage,
 		app.Tools, app.Events, app.Scopes, app.OAuthSetupURL, app.OAuthRedirectURL,
 		app.WebhookURL, app.WebhookSecret, app.WebhookVerified,
 		app.Registry, app.Version, app.Readme, app.Guide, app.ConfigSchema,
-		app.Listing, app.ListingRejectReason,
+		app.Listing, app.ListingRejectReason, app.Price, app.Currency,
 	).Scan(&app.CreatedAt, &app.UpdatedAt)
 	app.Status = "active"
 	return app, err
@@ -60,6 +63,7 @@ func (db *DB) GetApp(id string) (*store.App, error) {
 		a.webhook_url, a.webhook_secret, a.webhook_verified,
 		a.registry, a.version, a.readme, a.guide, a.config_schema,
 		a.listing, a.listing_reject_reason, a.status,
+		a.price, a.currency,
 		EXTRACT(EPOCH FROM a.created_at)::BIGINT, EXTRACT(EPOCH FROM a.updated_at)::BIGINT,
 		COALESCE(u.username, '')
 		FROM apps a LEFT JOIN users u ON u.id = a.owner_id
@@ -69,6 +73,7 @@ func (db *DB) GetApp(id string) (*store.App, error) {
 		&a.WebhookURL, &a.WebhookSecret, &a.WebhookVerified,
 		&a.Registry, &a.Version, &a.Readme, &a.Guide, &a.ConfigSchema,
 		&a.Listing, &a.ListingRejectReason, &a.Status,
+		&a.Price, &a.Currency,
 		&a.CreatedAt, &a.UpdatedAt, &a.OwnerName)
 	if err != nil {
 		return nil, err
@@ -83,6 +88,7 @@ func (db *DB) GetAppBySlug(slug, registry string) (*store.App, error) {
 		webhook_url, webhook_secret, webhook_verified,
 		registry, version, readme, guide, config_schema,
 		listing, listing_reject_reason, status,
+		price, currency,
 		EXTRACT(EPOCH FROM created_at)::BIGINT, EXTRACT(EPOCH FROM updated_at)::BIGINT
 		FROM apps WHERE slug = $1 AND registry = $2`, slug, registry).Scan(
 		&a.ID, &a.OwnerID, &a.Name, &a.Slug, &a.Description, &a.Icon, &a.IconURL, &a.Homepage,
@@ -90,6 +96,7 @@ func (db *DB) GetAppBySlug(slug, registry string) (*store.App, error) {
 		&a.WebhookURL, &a.WebhookSecret, &a.WebhookVerified,
 		&a.Registry, &a.Version, &a.Readme, &a.Guide, &a.ConfigSchema,
 		&a.Listing, &a.ListingRejectReason, &a.Status,
+		&a.Price, &a.Currency,
 		&a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -103,6 +110,7 @@ func (db *DB) ListAppsByOwner(ownerID string) ([]store.App, error) {
 		webhook_url, webhook_secret, webhook_verified,
 		registry, version, readme, guide, config_schema,
 		listing, listing_reject_reason, status,
+		price, currency,
 		EXTRACT(EPOCH FROM created_at)::BIGINT, EXTRACT(EPOCH FROM updated_at)::BIGINT
 		FROM apps WHERE owner_id = $1 ORDER BY created_at DESC`, ownerID)
 	if err != nil {
@@ -117,6 +125,7 @@ func (db *DB) ListAppsByOwner(ownerID string) ([]store.App, error) {
 			&a.WebhookURL, &a.WebhookSecret, &a.WebhookVerified,
 			&a.Registry, &a.Version, &a.Readme, &a.Guide, &a.ConfigSchema,
 			&a.Listing, &a.ListingRejectReason, &a.Status,
+			&a.Price, &a.Currency,
 			&a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
@@ -131,10 +140,11 @@ func (db *DB) ListListedApps() ([]store.App, error) {
 		a.webhook_url, '', a.webhook_verified,
 		a.registry, a.version, a.readme, a.guide, a.config_schema,
 		a.listing, a.listing_reject_reason, a.status,
+		a.price, a.currency,
 		EXTRACT(EPOCH FROM a.created_at)::BIGINT, EXTRACT(EPOCH FROM a.updated_at)::BIGINT,
 		COALESCE(u.username, '')
 		FROM apps a LEFT JOIN users u ON u.id = a.owner_id
-		WHERE a.listing = 'listed' AND a.status = 'active' ORDER BY a.name`)
+		WHERE a.status = 'active' ORDER BY a.name`)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +157,7 @@ func (db *DB) ListListedApps() ([]store.App, error) {
 			&a.WebhookURL, &a.WebhookSecret, &a.WebhookVerified,
 			&a.Registry, &a.Version, &a.Readme, &a.Guide, &a.ConfigSchema,
 			&a.Listing, &a.ListingRejectReason, &a.Status,
+			&a.Price, &a.Currency,
 			&a.CreatedAt, &a.UpdatedAt, &a.OwnerName); err != nil {
 			return nil, err
 		}
@@ -161,6 +172,7 @@ func (db *DB) ListAllApps() ([]store.App, error) {
 		a.webhook_url, '', a.webhook_verified,
 		a.registry, a.version, a.readme, a.guide, a.config_schema,
 		a.listing, a.listing_reject_reason, a.status,
+		a.price, a.currency,
 		EXTRACT(EPOCH FROM a.created_at)::BIGINT, EXTRACT(EPOCH FROM a.updated_at)::BIGINT,
 		COALESCE(u.username, '')
 		FROM apps a LEFT JOIN users u ON u.id = a.owner_id
@@ -177,6 +189,7 @@ func (db *DB) ListAllApps() ([]store.App, error) {
 			&a.WebhookURL, &a.WebhookSecret, &a.WebhookVerified,
 			&a.Registry, &a.Version, &a.Readme, &a.Guide, &a.ConfigSchema,
 			&a.Listing, &a.ListingRejectReason, &a.Status,
+			&a.Price, &a.Currency,
 			&a.CreatedAt, &a.UpdatedAt, &a.OwnerName); err != nil {
 			return nil, err
 		}
@@ -191,6 +204,7 @@ func (db *DB) ListMarketplaceApps() ([]store.App, error) {
 		a.webhook_url, '', a.webhook_verified,
 		a.registry, a.version, a.readme, a.guide, a.config_schema,
 		a.listing, a.listing_reject_reason, a.status,
+		a.price, a.currency,
 		EXTRACT(EPOCH FROM a.created_at)::BIGINT, EXTRACT(EPOCH FROM a.updated_at)::BIGINT,
 		COALESCE(u.username, '')
 		FROM apps a LEFT JOIN users u ON u.id = a.owner_id
@@ -207,6 +221,7 @@ func (db *DB) ListMarketplaceApps() ([]store.App, error) {
 			&a.WebhookURL, &a.WebhookSecret, &a.WebhookVerified,
 			&a.Registry, &a.Version, &a.Readme, &a.Guide, &a.ConfigSchema,
 			&a.Listing, &a.ListingRejectReason, &a.Status,
+			&a.Price, &a.Currency,
 			&a.CreatedAt, &a.UpdatedAt, &a.OwnerName); err != nil {
 			return nil, err
 		}
@@ -554,4 +569,59 @@ func (db *DB) ListAppReviews(appID string) ([]store.AppReview, error) {
 		reviews = append(reviews, r)
 	}
 	return reviews, rows.Err()
+}
+
+// UpdateAppPrice sets the price/currency of an app. Only admins should call
+// this — ordinary owners edit other fields via UpdateApp.
+func (db *DB) UpdateAppPrice(appID string, price float64, currency string) error {
+	if currency == "" {
+		currency = "CNY"
+	}
+	_, err := db.Exec(`UPDATE apps SET price=$1, currency=$2, updated_at=$3 WHERE id=$4`, price, currency, db.now(), appID)
+	return err
+}
+
+// --- App purchase / entitlement records (paid apps) ---
+
+func (db *DB) CreateAppPurchase(appID, userID string) (*store.AppPurchase, error) {
+	p := &store.AppPurchase{
+		ID:        uuid.New().String(),
+		AppID:     appID,
+		UserID:    userID,
+		CreatedAt: db.now(),
+	}
+	_, err := db.Exec(`INSERT INTO app_purchases (id, app_id, user_id, created_at)
+		VALUES ($1,$2,$3,$4)
+		ON CONFLICT (app_id, user_id) DO NOTHING`, p.ID, p.AppID, p.UserID, p.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func (db *DB) GetAppPurchase(appID, userID string) (*store.AppPurchase, error) {
+	p := &store.AppPurchase{}
+	err := db.QueryRow(`SELECT id, app_id, user_id, created_at FROM app_purchases WHERE app_id = $1 AND user_id = $2`, appID, userID).
+		Scan(&p.ID, &p.AppID, &p.UserID, &p.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func (db *DB) ListAppPurchasesByUser(userID string) ([]store.AppPurchase, error) {
+	rows, err := db.Query(`SELECT id, app_id, user_id, created_at FROM app_purchases WHERE user_id = $1 ORDER BY created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []store.AppPurchase
+	for rows.Next() {
+		var p store.AppPurchase
+		if err := rows.Scan(&p.ID, &p.AppID, &p.UserID, &p.CreatedAt); err != nil {
+			return nil, err
+		}
+		list = append(list, p)
+	}
+	return list, rows.Err()
 }

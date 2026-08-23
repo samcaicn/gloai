@@ -27,11 +27,22 @@ type App struct {
 	Listing             string          `json:"listing"`
 	ListingRejectReason string          `json:"listing_reject_reason,omitempty"`
 	Status              string          `json:"status"`
+	Price               float64         `json:"price"`
+	Currency            string          `json:"currency,omitempty"`
 	CreatedAt           int64           `json:"created_at"`
 	UpdatedAt           int64           `json:"updated_at"`
 
 	// Joined
 	OwnerName string `json:"owner_name,omitempty"`
+}
+
+// AppPurchase records that a user has purchased/been granted access to a
+// (paid) app. Free apps (Price == 0) do not require a purchase record.
+type AppPurchase struct {
+	ID        string `json:"id"`
+	AppID     string `json:"app_id"`
+	UserID    string `json:"user_id"`
+	CreatedAt int64  `json:"created_at"`
 }
 
 type AppTool struct {
@@ -141,4 +152,10 @@ type AppStore interface {
 	UpdateInstallationTools(id string, tools json.RawMessage) error
 	CreateAppReview(review *AppReview) error
 	ListAppReviews(appID string) ([]AppReview, error)
+
+	// App purchase / entitlement records (for paid apps).
+	UpdateAppPrice(appID string, price float64, currency string) error
+	CreateAppPurchase(appID, userID string) (*AppPurchase, error)
+	GetAppPurchase(appID, userID string) (*AppPurchase, error)
+	ListAppPurchasesByUser(userID string) ([]AppPurchase, error)
 }

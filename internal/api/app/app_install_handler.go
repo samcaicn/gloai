@@ -387,6 +387,15 @@ func (s *AppHandler) HandleInstallApp(w http.ResponseWriter, r *http.Request) {
 	}
 	userID := auth.UserIDFromContext(r.Context())
 
+	// Paid apps require a purchase/entitlement record before installation.
+	// The app owner is exempt (they may install their own paid app).
+	if app.Price > 0 && app.OwnerID != userID {
+		if _, err := s.Store.GetAppPurchase(app.ID, userID); err != nil {
+			shared.JSONError(w, "该应用为付费应用,请先购买后再安装", http.StatusPaymentRequired)
+			return
+		}
+	}
+
 	var req struct {
 		BotID  string          `json:"bot_id"`
 		Handle string          `json:"handle"`

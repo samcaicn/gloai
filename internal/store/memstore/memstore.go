@@ -13,11 +13,12 @@ import (
 // Store is an in-memory implementation of store.Store for testing.
 type Store struct {
 	mu       sync.Mutex
-	bots     map[string]*store.Bot
-	apps     map[string]*store.App
-	installs map[string]*store.AppInstallation
-	contacts []store.RecentContact
-	sentMsgs []store.Message
+	bots      map[string]*store.Bot
+	apps      map[string]*store.App
+	installs  map[string]*store.AppInstallation
+	purchases map[string]*store.AppPurchase
+	contacts  []store.RecentContact
+	sentMsgs  []store.Message
 }
 
 func New() *Store {
@@ -25,6 +26,7 @@ func New() *Store {
 		bots:     make(map[string]*store.Bot),
 		apps:     make(map[string]*store.App),
 		installs: make(map[string]*store.AppInstallation),
+		purchases: make(map[string]*store.AppPurchase),
 	}
 }
 
@@ -185,6 +187,56 @@ func (s *Store) GetAppBySlug(slug, registry string) (*store.App, error) {
 }
 func (s *Store) ListAllApps() ([]store.App, error)                      { return nil, nil }
 func (s *Store) ListAppsByOwner(ownerID string) ([]store.App, error)    { return nil, nil }
+
+func (s *Store) UpdateAppPrice(appID string, price float64, currency string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if a, ok := s.apps[appID]; ok {
+		a.Price = price
+		if currency != "" {
+			a.Currency = currency
+		}
+	}
+	return nil
+}
+
+func (s *Store) CreateAppPurchase(appID, userID string) (*store.AppPurchase, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	key := appID + ":" + userID
+	if p, ok := s.purchases[key]; ok {
+		return p, nil
+	}
+	p := &store.AppPurchase{
+		ID:        "pur_" + appID + "_" + userID,
+		AppID:     appID,
+		UserID:    userID,
+		CreatedAt: time.Now().Unix(),
+	}
+	s.purchases[key] = p
+	return p, nil
+}
+
+func (s *Store) GetAppPurchase(appID, userID string) (*store.AppPurchase, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if p, ok := s.purchases[appID+":"+userID]; ok {
+		return p, nil
+	}
+	return nil, nil
+}
+
+func (s *Store) ListAppPurchasesByUser(userID string) ([]store.AppPurchase, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]store.AppPurchase, 0, len(s.purchases))
+	for _, p := range s.purchases {
+		if p.UserID == userID {
+			out = append(out, *p)
+		}
+	}
+	return out, nil
+}
 func (s *Store) ListListedApps() ([]store.App, error)                   { return nil, nil }
 func (s *Store) ListMarketplaceApps() ([]store.App, error)              { return nil, nil }
 func (s *Store) UpdateApp(id string, name, description, icon, iconURL, homepage, oauthSetupURL, oauthRedirectURL, configSchema, version, readme, guide string, tools, events, scopes json.RawMessage) error {
