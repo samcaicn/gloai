@@ -606,7 +606,7 @@ func (db *DB) CreateAppPurchase(appID, userID string) (*store.AppPurchase, error
 		ID:        uuid.New().String(),
 		AppID:     appID,
 		UserID:    userID,
-		CreatedAt: db.now().Unix(),
+		CreatedAt: db.now(),
 	}
 	_, err := db.Exec(`INSERT INTO app_purchases (id, app_id, user_id, created_at) VALUES (?,?,?,?)
 		ON CONFLICT(app_id, user_id) DO NOTHING`, p.ID, p.AppID, p.UserID, p.CreatedAt)
