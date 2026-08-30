@@ -28,7 +28,6 @@ log = { workspace = true }
 rusqlite = { workspace = true }
 url = { workspace = true }
 reqwest = { workspace = true }
-openssl = { workspace = true }
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]
