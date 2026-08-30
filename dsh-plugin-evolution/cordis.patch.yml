@@ -1,0 +1,9 @@
+# DSH Plugin: dsh-plugin-evolution
+# Evolution tracker with sliding-window trend analysis
+# 【铁律】UI 入口通过 slots 系统注册，不在此处配置
+- insert:
+    - id: dsh-plugin-evolution
+      name: dsh-plugin-evolution
+      config:
+        # Sliding window size (days)
+        windowSize: 7

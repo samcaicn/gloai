@@ -1,0 +1,12 @@
+# DSH Plugin: dsh-plugin-memory
+# Memory system with hot/warm/cold decay
+# 【铁律】UI 入口通过 slots 系统注册，不在此处配置
+- insert:
+    - id: dsh-plugin-memory
+      name: dsh-plugin-memory
+      config:
+        # Decay settings
+        decay:
+          hot: 0
+          warm: 0.1
+          cold: 0.5

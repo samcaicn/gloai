@@ -1,0 +1,120 @@
+# Rust
+target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# Tauri
+dsh-desktop/src-tauri/icons/
+
+# Frontend
+node_modules/
+dist/
+.vite/
+pnpm-lock.yaml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Tauri binaries
+dsh-desktop/src-tauri/binaries/
+
+# Logs & debugging
+*.log
+app_*.log
+out.log
+err.log
+stdout.log
+stderr.log
+
+# Screenshots / test images
+*.png
+!**/icons/*.png
+!**/icons/**/*.png
+
+# Test videos
+*.mp4
+*.avi
+*.mov
+!**/examples/*.mp4
+
+# Temp files
+%TEMP%/
+test_*.js
+test_*.png
+tmp_frames/
+tmp_frames2/
+wechat_test/
+wechat_test2/
+wechat_result/
+
+# Debug HTML
+*.html
+!dsh-desktop/web/index.html
+!deepseek-webui-src/out/**/*.html
+!deepseek-webui-src/.next/**/*.html
+
+# FFmpeg archives (keep extracted folder)
+ffmpeg.7z
+ffmpeg.zip
+
+# Old/deprecated
+video-watermark-removal-src/
+_smoke_install/
+exe-inspect/
+.dsh-portable/
+
+# External / embedded archives (包含独立 git 仓库)
+archive/
+
+# Portable installation (全部排除) - already listed above
+
+# CatPaw memos
+.meituan-catpaw/
+
+# node_modules everywhere
+**/node_modules/
+
+# dsh-app (deprecated, minimal placeholder)
+dsh-app/assets/
+
+# embedded .git dirs
+**/.git/
+
+# Keep this file
+!.gitignore
+
+# deepseek-webui source (external repo) - ignore all except watermark UI
+deepseek-webui-src/**
+!deepseek-webui-src/src/
+!deepseek-webui-src/src/app/
+!deepseek-webui-src/src/app/(main)/
+!deepseek-webui-src/src/app/(main)/watermark/
+!deepseek-webui-src/src/components/
+!deepseek-webui-src/src/components/watermark/
+!deepseek-webui-src/src/components/layout/
+!deepseek-webui-src/src/components/layout/nav-menu.tsx
+!deepseek-webui-src/src/types/
+!deepseek-webui-src/src/types/tauri.d.ts
+!deepseek-webui-src/next.config.js
+!deepseek-webui-src/package.json
+!deepseek-webui-src/package-lock.json
+!deepseek-webui-src/tailwind.config.ts
+!deepseek-webui-src/tsconfig.json
+!deepseek-webui-src/postcss.config.mjs
+!deepseek-webui-src/src/styles/
+!deepseek-webui-src/src/config/
+!deepseek-webui-src/public/

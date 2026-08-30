@@ -1,0 +1,45 @@
+name: Build Windows NSIS
+
+on:
+  push:
+    branches: [dsh]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-nsis:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            dsh-desktop/src-tauri -> ../target
+            dsh-core -> ../target
+
+      - name: Build Tauri (NSIS)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: aimarketing-v__VERSION__
+          releaseName: "AiMarketing v__VERSION__"
+          releaseBody: "AiMarketing Windows NSIS installer"
+          releaseDraft: false
+          prerelease: false
+          projectPath: dsh-desktop
+          distPath: ../web
+          args: --target x86_64-pc-windows-msvc

@@ -1,0 +1,51 @@
+{
+  "productName": "AiMarketing",
+  "version": "1.0.0",
+  "identifier": "com.aimarketing.desktop",
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "devUrl": "http://127.0.0.1:3080",
+    "frontendDist": "../web"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "AiMarketing",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "decorations": true,
+        "theme": "Dark",
+        "visible": true,
+        "url": "index.html"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' file: data: blob: http://localhost:* http://127.0.0.1:* https://aiapi.tuptup.top https://api.deepseek.com https://chat.deepseek.com; frame-src 'self' http://localhost:* http://127.0.0.1:* data: blob:; child-src 'self' http://localhost:* http://127.0.0.1:*; connect-src 'self' file: data: blob: ws://localhost:* wss://localhost:* http://localhost:* http://127.0.0.1:* https://aiapi.tuptup.top https://api.deepseek.com https://chat.deepseek.com wss: ws:; img-src 'self' data: file: blob: http: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' file: http://localhost:* http://127.0.0.1:*; script-src-attr 'unsafe-inline'"
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis",
+      "dmg"
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "AiMarketing - AI 营销助手桌面客户端",
+    "longDescription": "AiMarketing: 基于 Tauri 2 的 AI 营销助手桌面客户端，原生嵌入 DSH WebUI，完整支持 Cordis 插件系统。",
+    "copyright": "AiMarketing Team",
+    "license": "MIT",
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.15",
+      "exceptionDomain": "",
+      "signingIdentity": null,
+      "providerShortName": null,
+      "entitlements": null
+    }
+  }
+}

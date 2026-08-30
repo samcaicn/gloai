@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>AiMarketing</title>
+<script>
+(function(){
+  var logoImg = new Image();
+  logoImg.src = './assets/aimarketing-logo.png';
+  function replaceLogos() {
+    var imgs = document.querySelectorAll('img');
+    for (var i = 0; i < imgs.length; i++) {
+      var src = imgs[i].getAttribute('src') || '';
+      var alt = imgs[i].getAttribute('alt') || '';
+      if (src.toLowerCase().indexOf('deepseek') !== -1 || alt.toLowerCase().indexOf('deepseek') !== -1 || alt.toLowerCase().indexOf('logo') !== -1) {
+        if (imgs[i].complete && imgs[i].naturalWidth === 0) return;
+        imgs[i].src = './assets/aimarketing-logo.png';
+        imgs[i].alt = 'AiMarketing';
+        imgs[i].style.objectFit = 'contain';
+      }
+    }
+  }
+  setInterval(replaceLogos, 500);
+  document.addEventListener('DOMContentLoaded', replaceLogos);
+  var observer = new MutationObserver(replaceLogos);
+  observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+})();
+</script>
+    <script type="module" crossorigin src="./assets/index-D-eoFxDP.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/vendor-CCJJTK99.js">
+    <link rel="stylesheet" crossorigin href="./assets/vendor-BNsW4eBh.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-CsBy6quH.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

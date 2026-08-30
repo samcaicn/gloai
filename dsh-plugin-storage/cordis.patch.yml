@@ -1,0 +1,11 @@
+# DSH Plugin: dsh-plugin-storage
+# 数据存储与记忆管理
+# 【铁律】UI 入口通过 slots 系统注册，不在此处配置
+- insert:
+    - id: dsh-plugin-storage
+      name: dsh-plugin-storage
+      config:
+        # 存储路径
+        dataPath: ~/.dsh/storage
+        # 数据库类型：sqlite | duckdb | json
+        engine: sqlite

@@ -1,0 +1,3 @@
+packages:
+  - upstream/deepseek-harness-gui
+  - upstream/deepseek-harness-plugin-mcp

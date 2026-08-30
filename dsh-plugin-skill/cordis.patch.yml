@@ -1,0 +1,12 @@
+# Skill 系统插件 — 技能注册、编译、评估
+# 【铁律】UI 入口通过 slots 系统注册，不在此处配置
+- insert:
+    - id: dsh-plugin-skill
+      name: dsh-plugin-skill
+      config:
+        # 技能注册表路径
+        registryPath: ~/.dsh/skills
+        # 是否启用编译器
+        compilerEnabled: true
+        # 是否启用评估引擎
+        evalEnabled: true

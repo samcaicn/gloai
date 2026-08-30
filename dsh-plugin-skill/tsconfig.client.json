@@ -1,0 +1,29 @@
+{
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "include": [
+    "src/client/**"
+  ],
+  "compilerOptions": {
+    "module": "ESNext",
+    "esInterop": true,
+    "target": "ES2022",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "moduleResolution": "bundler",
+    "declarationMap": true,
+    "outDir": "./dist",
+    "declaration": true,
+    "skipLibCheck": true,
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "rootDir": "./src/client"
+  }
+}

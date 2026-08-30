@@ -1,0 +1,14 @@
+# DSH Plugin: dsh-plugin-autoskill
+# AutoSkill self-evolution engine
+# 【铁律】UI 入口通过 slots 系统注册，不在此处配置
+- insert:
+    - id: dsh-plugin-autoskill
+      name: dsh-plugin-autoskill
+      config:
+        # 5-step pipeline configuration
+        pipeline:
+          - param_generalizer
+          - pattern_miner
+          - state_machine
+          - compiler
+          - evaluator

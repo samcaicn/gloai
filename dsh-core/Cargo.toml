@@ -1,0 +1,28 @@
+[package]
+name = "dsh-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "DSH Skill Platform - shared core library (autoskill, memory, skill, evolution)"
+
+[dependencies]
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+rusqlite.workspace = true
+log.workspace = true
+regex.workspace = true
+sha2.workspace = true
+rand.workspace = true
+reqwest.workspace = true
+dirs.workspace = true
+
+[lib]
+name = "dsh_core"
+path = "src/lib.rs"

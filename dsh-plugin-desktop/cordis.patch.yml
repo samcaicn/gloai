@@ -1,0 +1,26 @@
+# dsh-plugin-desktop - Tauri 桌面客户端插件
+# 通过 Cordis 注册桌面窗口管理和后端启动服务
+- insert:
+    - id: dsh-plugin-desktop
+      name: dsh-plugin-desktop
+      config:
+        # 后端配置
+        backend:
+          host: "127.0.0.1"
+          port: 3080
+          profile: "aimarketing"
+          noOpen: true
+        # 窗口配置
+        window:
+          title: "AiMarketing"
+          width: 1200
+          height: 800
+          minWidth: 800
+          minHeight: 600
+          decorations: true
+          theme: "Dark"
+        # 产物配置
+        product:
+          name: "AiMarketing"
+          version: "1.0.0"
+          identifier: "com.aimarketing.desktop"

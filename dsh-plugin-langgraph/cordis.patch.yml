@@ -1,0 +1,19 @@
+# LangGraph 多 Agent 调度器 + pi-mail 联邦邮件
+# 默认配置开箱即用，无需修改任何内容
+- insert:
+    - id: dsh-plugin-langgraph
+      name: dsh-plugin-langgraph
+      config:
+        # 端口默认 8766，如需修改取消下行注释
+        # port: 8766
+        # 协调模式：supervisor（协调者）或 handoff（转交），两种都启用
+        allowSupervisor: true
+        allowHandoff: true
+        # 最大并发 Agent 数
+        maxAgents: 10
+        # pi-mail 联邦邮件系统（可选）
+        # pimail:
+        #   enabled: true
+        #   path: ~/.dsh-langgraph/pi-mail/extensions
+        #   host: 127.0.0.1
+        #   port: 1994

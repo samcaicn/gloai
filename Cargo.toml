@@ -1,0 +1,51 @@
+[workspace]
+members = ["dsh-core", "dsh-desktop/src-tauri", "dsh-cli"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["DSH Skill Platform Team"]
+
+[workspace.dependencies]
+# Core async + serialization
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+thiserror = "1"
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled", "chrono", "serde_json"] }
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Utilities
+regex = "1"
+sha2 = "0.10"
+base64 = "0.22"
+
+# Tauri
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+
+# Skill evaluation
+rand = "0.8"
+
+# HTTP client (optional, for skill HttpGet action)
+reqwest = { version = "0.12", features = ["json"] }
+
+# URL parsing (for open_web_window)
+url = "2"
+
+# Filesystem directories (for skill loader)
+dirs = "5"
+

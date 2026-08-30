@@ -1,0 +1,94 @@
+{
+  "name": "dsh-plugin-langgraph",
+  "version": "0.1.0",
+  "description": "LangGraph-based multi-agent scheduler plugin for DeepSeek Harness. Provides Supervisor and Handoff coordination patterns, replacing the built-in ReactLoopAgent scheduler.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "langgraph",
+    "langchain",
+    "multi-agent",
+    "orchestration",
+    "supervisor",
+    "handoff"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "bin": {
+    "dsh-langgraph": "./dist/cli.js",
+    "dsh-plugin-langgraph": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./plugin": {
+      "types": "./dist/dsh-plugin.d.ts",
+      "default": "./dist/dsh-plugin.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": ["tools", "clientModules"]
+    }
+  },
+  "files": [
+    "dist",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "local"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.client.json",
+    "prepare": "npm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src tests",
+    "check": "npm run typecheck && npm run lint && npm run build && npm test"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.40",
+    "@langchain/langgraph": "^0.2.45",
+    "@langchain/langgraph-checkpoint": "^0.0.15",
+    "@modelcontextprotocol/sdk": "^1.25.0",
+    "express": "^5.2.1",
+    "nanoid": "^5.0.9",
+    "yaml": "^2.8.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^3.2.4"
+  }
+}

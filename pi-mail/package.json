@@ -1,0 +1,33 @@
+{
+  "name": "pi-mail",
+  "version": "1.0.0",
+  "description": "Federated agent mail for pi — peer-to-peer mailbox daemon plus the mail-orchestrator skill.",
+  "keywords": ["pi-package", "pi-mail", "federation", "orchestrator", "mcp"],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "pi-mail-board-mcp": "./mcp/build/index.js"
+  },
+  "scripts": {
+    "build:mcp": "tsc -p mcp/tsconfig.json",
+    "start:mcp:stdio": "node ./mcp/build/index.js --stdio",
+    "test": "node --test --test-timeout=15000 test/*.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": ["./extensions/index.ts"],
+    "skills": ["./skills"]
+  }
+}
