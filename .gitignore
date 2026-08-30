@@ -5,7 +5,7 @@ target/
 Cargo.lock
 
 # Tauri
-dsh-desktop/src-tauri/icons/
+# dsh-desktop/src-tauri/icons/  (removed - icons are now committed)
 
 # Frontend
 node_modules/
