@@ -23,6 +23,9 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Install cargo-tauri
+        run: cargo install cargo-tauri || true
+
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:

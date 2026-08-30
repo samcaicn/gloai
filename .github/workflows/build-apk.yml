@@ -24,6 +24,9 @@ jobs:
           toolchain: stable
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
+      - name: Install cargo-tauri
+        run: cargo install cargo-tauri
+
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
@@ -47,12 +50,7 @@ jobs:
           sdkmanager --install "ndk;27.0.12077973"
           echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Init Tauri Android
+      - name: Init & Build Tauri Android
         working-directory: dsh-desktop/src-tauri
         run: |
           cargo tauri android init
