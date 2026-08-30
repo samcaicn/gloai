@@ -43,9 +43,6 @@ rand = "0.8"
 # HTTP client (optional, for skill HttpGet action)
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 
-# OpenSSL (vendored for cross-compilation)
-openssl = { version = "0.10", features = ["vendored"] }
-
 # URL parsing (for open_web_window)
 url = "2"
 
