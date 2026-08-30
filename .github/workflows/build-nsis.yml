@@ -38,11 +38,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: aimarketing-v__VERSION__
-          releaseName: "AiMarketing v__VERSION__"
-          releaseBody: "AiMarketing Windows NSIS installer"
-          releaseDraft: false
-          prerelease: false
           projectPath: dsh-desktop
           distPath: ../web
           args: --target x86_64-pc-windows-msvc
+
+      - name: Upload NSIS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: aimarketing-nsis-installer
+          path: |
+            dsh-desktop/src-tauri/target/release/bundle/nsis/**/*.exe
+            target/release/bundle/nsis/**/*.exe
