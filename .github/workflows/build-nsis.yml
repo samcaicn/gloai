@@ -47,7 +47,5 @@ jobs:
         with:
           name: aimarketing-nsis-installer
           path: |
-            dsh-desktop/src-tauri/target/release/bundle/**/*.exe
-            target/release/bundle/**/*.exe
-            dsh-desktop/src-tauri/target/release/bundle/**/*.msi
-            target/release/bundle/**/*.msi
+            target/x86_64-pc-windows-msvc/release/bundle/**/*.exe
+            target/x86_64-pc-windows-msvc/release/bundle/**/*.msi
