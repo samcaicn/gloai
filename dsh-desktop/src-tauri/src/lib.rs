@@ -422,6 +422,7 @@ fn ensure_task_board_installed() -> Result<(), String> {
 // Tauri entry point
 // ============================================================
 
+#[tauri::mobile_entry_point]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
