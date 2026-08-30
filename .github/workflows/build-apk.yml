@@ -24,6 +24,11 @@ jobs:
           toolchain: stable
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+
       - name: Install tauri-cli
         run: cargo install tauri-cli
 
@@ -59,6 +64,8 @@ jobs:
           NDK_HOME: ${{ env.NDK_HOME }}
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           JAVA_HOME: ${{ env.JAVA_HOME }}
+          OPENSSL_NO_VENDOR: 1
+          PKG_CONFIG_ALLOW_CROSS: 1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
