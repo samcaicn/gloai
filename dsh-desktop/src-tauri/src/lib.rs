@@ -235,23 +235,23 @@ impl AppState {
 
         self.ensure_web_profile()?;
 
+        let port_str = fixed_port.to_string();
+        let mut cmd = std::process::Command::new(&node_exe);
+        cmd.arg(&dsh_bin_resolved)
+            .arg("--profile").arg("web")
+            .arg("--host").arg("127.0.0.1")
+            .arg("--port").arg(&port_str)
+            .arg("--no-open")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .current_dir(dsh_bin_resolved.parent().and_then(|p| p.parent()).unwrap_or(std::path::Path::new(".")));
+        
         #[cfg(windows)]
-        let mut child = {
-            let port_str = fixed_port.to_string();
-            std::process::Command::new(&node_exe)
-                .arg(&dsh_bin_resolved)
-                .arg("--profile").arg("web")
-                .arg("--host").arg("127.0.0.1")
-                .arg("--port").arg(&port_str)
-                .arg("--no-open")
-                .stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::null())
-                .current_dir(dsh_bin_resolved.parent().and_then(|p| p.parent()).unwrap_or(std::path::Path::new(".")))
-                .creation_flags(0x00000008 | 0x00000200)
-                .spawn()
-                .map_err(|e| format!("Failed to start DSH backend: {}", e))?
-        };
+        cmd.creation_flags(0x00000008 | 0x00000200);
+        
+        let mut child = cmd.spawn()
+            .map_err(|e| format!("Failed to start DSH backend: {}", e))?;
 
         log::info!("[dsh] backend starting on 127.0.0.1:{}", fixed_port);
 
