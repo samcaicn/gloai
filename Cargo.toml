@@ -40,8 +40,11 @@ tauri-plugin-fs = "2"
 # Skill evaluation
 rand = "0.8"
 
-# HTTP client (optional, for skill HttpGet action)
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+# HTTP client (skill HttpGet action & DSH backend download)
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
+
+# futures utilities
+futures-util = "0.3"
 
 # URL parsing (for open_web_window)
 url = "2"

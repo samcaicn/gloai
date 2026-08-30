@@ -372,26 +372,8 @@ async fn download_dsh_backend(
 // Window control commands
 // ============================================================
 
-#[tauri::command]
-fn minimize_window(win: tauri::WebviewWindow) -> Result<(), String> {
-    win.hide().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn toggle_maximize(win: tauri::WebviewWindow) -> Result<(), String> {
-    let is_full = win.is_fullscreen().map_err(|e| e.to_string())?;
-    if is_full {
-        win.set_fullscreen(false)
-    } else {
-        win.set_fullscreen(true)
-    }
-    .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn close_window(win: tauri::WebviewWindow) -> Result<(), String> {
-    win.close().map_err(|e| e.to_string())
-}
+// Window control is handled by the browser via CSS/JS
+// These Tauri commands are disabled due to API compatibility issues
 
 // ============================================================
 // Task-board plugin auto-install (NSIS integration)
@@ -503,10 +485,6 @@ pub fn run() {
             get_dsh_url,
             check_dsh_available,
             download_dsh_backend,
-            // Window control only - all business logic is in plugins
-            minimize_window,
-            toggle_maximize,
-            close_window,
         ])
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {

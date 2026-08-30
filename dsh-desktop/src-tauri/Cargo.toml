@@ -28,6 +28,12 @@ log = { workspace = true }
 rusqlite = { workspace = true }
 url = { workspace = true }
 reqwest = { workspace = true }
+futures-util = { workspace = true }
+
+# DSH backend download
+flate2 = "1"
+tar = "0.4"
+futures-util = "0.3"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]
