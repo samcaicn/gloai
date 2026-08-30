@@ -1,28 +1,22 @@
 // AiMarketing — Tauri 2 desktop client with official DSH WebUI.
 //
 // Architecture:
-//   - Spawns `npx @deepseek-ai/dsh web` as a child process
-//   - Waits for the backend to be ready
-//   - Navigates the WebView to the backend URL (serves the official WebUI)
-//
-// 【铁律】所有业务逻辑由 Cordis 插件处理，dsh-desktop 只做：
-//   1. 启动 DSH backend
-//   2. 打开 WebView
-//   3. 窗口管理
-// 插件列表：
-//   - dsh-plugin-autoskill  (自进化引擎)
-//   - dsh-plugin-evolution  (进化追踪)
-//   - dsh-plugin-memory     (记忆系统)
-//   - dsh-plugin-skill      (技能系统)
-//   - dsh-plugin-storage    (数据存储)
-//   - dsh-plugin-watermark  (去水印)
+//   - Downloads DSH backend on first run (user click)
+//   - Extracts to _up_/dsh/ directory
+//   - Spawns `node apps/cli/lib/bin.js --profile web --port 3080` as child process
+//   - WebView loads DSH WebUI from http://127.0.0.1:3080
 
 use std::process::Child;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
-use tauri::{Manager, State};
+use tauri::{Manager, State, Emitter};
+use futures_util::StreamExt;
+
+/// DSH backend download URL (configurable at build time)
+const DSH_BACKEND_URL: &str = "http://127.0.0.1:8899/dsh-backend.tgz";
+const DSH_BACKEND_VERSION: &str = "0.1.2-alpha.1";
 
 /// Application state - only window/backend management, NO business logic.
 pub struct AppState {
@@ -30,6 +24,10 @@ pub struct AppState {
     dsh_backend: Mutex<Option<Child>>,
     /// Port the DSH backend is running on
     dsh_port: Mutex<Option<u16>>,
+    /// Full URL with token (from DSH stdout)
+    dsh_url: Arc<Mutex<Option<String>>>,
+    /// DSH backend installation directory
+    dsh_install_dir: Arc<Mutex<Option<PathBuf>>>,
 }
 
 impl AppState {
@@ -37,33 +35,25 @@ impl AppState {
         Self {
             dsh_backend: Mutex::new(None),
             dsh_port: Mutex::new(None),
+            dsh_url: Arc::new(Mutex::new(None)),
+            dsh_install_dir: Arc::new(Mutex::new(None)),
         }
     }
 
-    /// Resolve DSH bin.js path via multiple candidates.
+    /// Resolve DSH bin.js path. Returns None if backend needs to be downloaded.
     fn find_dsh() -> Option<(PathBuf, PathBuf)> {
         let mut candidates: Vec<PathBuf> = Vec::new();
 
-        // 1) NSIS install directory / portable layout
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(dir) = exe.parent() {
-                candidates.push(dir.join("_up_/dsh/bin.js"));
-                candidates.push(dir.join("dsh/bin.js"));
-                candidates.push(dir.join("../.dsh-portable/node_modules/@deepseek-ai/dsh/lib/bin.js"));
+        // 1) Previously downloaded backend
+        if let Ok(dir) = std::env::current_exe() {
+            if let Some(parent) = dir.parent() {
+                candidates.push(parent.join("_up_/dsh/apps/cli/lib/bin.js"));
+                candidates.push(parent.join("dsh/apps/cli/lib/bin.js"));
             }
         }
 
-        // 2) CatPaw runtime (dev fallback)
-        if let Some(home) = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")) {
-            let base = PathBuf::from(home).join(".meituan-catpaw/runtimes/node/versions");
-            if let Ok(versions) = std::fs::read_dir(&base) {
-                for entry in versions.flatten() {
-                    let p = entry.path().join("node_modules/@deepseek-ai/dsh/lib/bin.js");
-                    candidates.push(p);
-                    candidates.push(entry.path().join("node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh/lib/bin.js"));
-                }
-            }
-        }
+        // 2) Development source (D:\code\dsh\deepseek-harness-src)
+        candidates.push(PathBuf::from("D:/code/dsh/deepseek-harness-src/apps/cli/lib/bin.js"));
 
         // 3) Global npm prefix
         for prefix in &[
@@ -76,21 +66,119 @@ impl AppState {
 
         for dsh_bin in &candidates {
             if dsh_bin.exists() {
-                if let Some(node_modules) = dsh_bin.parent() {
-                    if let Some(dsh_scope) = node_modules.parent() {
-                        if let Some(dsh_root) = dsh_scope.parent() {
-                            let node_exe = if let Some(nd) = dsh_root.parent() {
-                                let n = nd.join("node.exe");
-                                if n.exists() { Some(n) } else { Self::find_node_in_path() }
-                            } else {
-                                Self::find_node_in_path()
-                            };
-                            if let Some(node) = node_exe {
-                                return Some((node, dsh_bin.clone()));
-                            }
-                        }
-                    }
+                let node_exe = Self::find_node_near(dsh_bin)
+                    .or_else(Self::find_node_in_path);
+                if let Some(node) = node_exe {
+                    return Some((node, dsh_bin.clone()));
                 }
+            }
+        }
+        None
+    }
+
+    /// Check if DSH backend is available locally.
+    pub fn is_dsh_available() -> bool {
+        Self::find_dsh().is_some()
+    }
+
+    /// Download and extract DSH backend to _up_/dsh/ directory.
+    pub async fn download_dsh_backend(
+        app_handle: tauri::AppHandle,
+        state: State<'_, AppState>,
+    ) -> Result<(), String> {
+        let exe_path = std::env::current_exe()
+            .map_err(|e| format!("Cannot find exe: {}", e))?;
+        let exe_dir = exe_path.parent()
+            .ok_or("Cannot find exe parent")?
+            .to_path_buf();
+
+        let install_dir = exe_dir.join("_up_/dsh");
+        let tgz_path = exe_dir.join("dsh-backend.tgz");
+
+        // Download with progress
+        log::info!("[dsh] downloading backend v{} from {}", DSH_BACKEND_VERSION, DSH_BACKEND_URL);
+        let client = reqwest::Client::new();
+        let response = client.get(DSH_BACKEND_URL)
+            .send()
+            .await
+            .map_err(|e| format!("Download failed: {}", e))?;
+
+        let total_size = response.content_length().unwrap_or(0);
+        let mut downloaded: u64 = 0;
+        let mut stream = response.bytes_stream();
+
+        // Download to file
+        let mut file = std::fs::File::create(&tgz_path)
+            .map_err(|e| format!("Cannot create file: {}", e))?;
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk.map_err(|e| format!("Download error: {}", e))?;
+            std::io::Write::write_all(&mut file, &chunk)
+                .map_err(|e| format!("Write error: {}", e))?;
+            downloaded += chunk.len() as u64;
+
+            // Emit progress event
+            if total_size > 0 {
+                let progress = (downloaded as f64 / total_size as f64 * 100.0) as u32;
+                let _ = app_handle.emit("dsh-download-progress", progress);
+            }
+        }
+        drop(file);
+        log::info!("[dsh] download complete: {} bytes", downloaded);
+
+        // Extract tgz
+        log::info!("[dsh] extracting backend to {:?}", install_dir);
+        let _ = app_handle.emit("dsh-download-progress", 101); // Extracting
+
+        if install_dir.exists() {
+            std::fs::remove_dir_all(&install_dir)
+                .map_err(|e| format!("Cannot clean old dir: {}", e))?;
+        }
+        std::fs::create_dir_all(&install_dir)
+            .map_err(|e| format!("Cannot create dir: {}", e))?;
+
+        // Extract using tar (Windows 10+ has tar.exe)
+        let output = std::process::Command::new("tar")
+            .args(["-xzf", &tgz_path.to_string_lossy(), "-C", &install_dir.to_string_lossy()])
+            .output()
+            .map_err(|e| format!("Extract failed: {}", e))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Extract error: {}", stderr));
+        }
+
+        // Cleanup tgz
+        let _ = std::fs::remove_file(&tgz_path);
+
+        // Verify extraction
+        let bin_js = install_dir.join("apps/cli/lib/bin.js");
+        if !bin_js.exists() {
+            return Err("Extraction incomplete: bin.js not found".to_string());
+        }
+
+        // Store install dir in state
+        if let Ok(mut dir) = state.dsh_install_dir.lock() {
+            *dir = Some(install_dir.clone());
+        }
+
+        let _ = app_handle.emit("dsh-download-progress", 100);
+        log::info!("[dsh] backend installed to {:?}", install_dir);
+        Ok(())
+    }
+
+    /// Try to find node.exe near the bin.js path.
+    fn find_node_near(dsh_bin: &PathBuf) -> Option<PathBuf> {
+        if let Some(dir) = dsh_bin.parent() {
+            // Check sibling directories and ancestors for node.exe
+            let mut current = Some(dir);
+            while let Some(d) = current {
+                let node = d.join("node.exe");
+                if node.exists() { return Some(node); }
+                // Check common Node.js locations relative to exe
+                let node = d.join("nodejs/node.exe");
+                if node.exists() { return Some(node); }
+                current = d.parent();
             }
         }
         None
@@ -141,44 +229,51 @@ impl AppState {
 
         let (node_exe, dsh_bin) = Self::find_dsh().ok_or("Cannot find node + @deepseek-ai/dsh. Please install: npm i -g @deepseek-ai/dsh")?;
 
-        self.ensure_aimarketing_profile()?;
+        // Resolve symlinks (important for pnpm global symlinks)
+        let dsh_bin_resolved = std::fs::canonicalize(&dsh_bin).unwrap_or_else(|_| dsh_bin.clone());
+        log::info!("[dsh] resolved bin: {:?}", dsh_bin_resolved);
+
+        self.ensure_web_profile()?;
 
         #[cfg(windows)]
-        let child = {
-            let port_str = fixed_port.to_string();
-            let node_path = node_exe.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
-            std::process::Command::new(&node_exe)
-                .arg(&dsh_bin)
-                .arg("--profile").arg("aimarketing")
-                .arg("--host").arg("127.0.0.1")
-                .arg("--port").arg(&port_str)
-                .arg("--no-open")
-                .env("PATH", &node_path)
-                .stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .creation_flags(0x00000008 | 0x00000200)
-                .spawn()
-                .map_err(|e| format!("Failed to start DSH backend: {}", e))?
-        };
-
-        #[cfg(not(windows))]
-        let child = {
+        let mut child = {
             let port_str = fixed_port.to_string();
             std::process::Command::new(&node_exe)
-                .arg(&dsh_bin)
-                .arg("--profile").arg("aimarketing")
+                .arg(&dsh_bin_resolved)
+                .arg("--profile").arg("web")
                 .arg("--host").arg("127.0.0.1")
                 .arg("--port").arg(&port_str)
                 .arg("--no-open")
                 .stdin(std::process::Stdio::null())
                 .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::null())
+                .current_dir(dsh_bin_resolved.parent().and_then(|p| p.parent()).unwrap_or(std::path::Path::new(".")))
+                .creation_flags(0x00000008 | 0x00000200)
                 .spawn()
                 .map_err(|e| format!("Failed to start DSH backend: {}", e))?
         };
 
-        log::info!("[dsh] backend starting on 127.0.0.1:{} via {:?}", fixed_port, node_exe);
+        log::info!("[dsh] backend starting on 127.0.0.1:{}", fixed_port);
+
+        // Capture stdout to get token URL
+        if let Some(stdout) = child.stdout.take() {
+            use std::io::{BufRead, BufReader};
+            let dsh_url = self.dsh_url.clone();
+            std::thread::spawn(move || {
+                let reader = BufReader::new(stdout);
+                for line in reader.lines().flatten() {
+                    log::info!("[dsh stdout] {}", line);
+                    if let Some(start) = line.find("http://") {
+                        let url = line[start..].trim().to_string();
+                        log::info!("[dsh] token URL: {}", url);
+                        if let Ok(mut u) = dsh_url.lock() {
+                            *u = Some(url);
+                        }
+                        break;
+                    }
+                }
+            });
+        }
 
         *backend = Some(child);
         if let Ok(mut p) = self.dsh_port.lock() {
@@ -188,16 +283,16 @@ impl AppState {
         Ok(fixed_port)
     }
 
-    /// Ensure the aimarketing profile exists.
-    fn ensure_aimarketing_profile(&self) -> Result<(), String> {
+    /// Ensure the web profile exists.
+    fn ensure_web_profile(&self) -> Result<(), String> {
         let home = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")).map_err(|_| "no home dir")?;
-        let profile_dir = PathBuf::from(&home).join(".dsh/profiles/aimarketing");
+        let profile_dir = PathBuf::from(&home).join(".dsh/profiles/web");
         if profile_dir.exists() {
             return Ok(());
         }
         std::fs::create_dir_all(&profile_dir).map_err(|e| format!("create profile dir: {}", e))?;
         let pkg = r#"{
-  "name": "dsh-profile-aimarketing",
+  "name": "dsh-profile-web",
   "private": true,
   "dsh": {
     "profile": {
@@ -210,7 +305,7 @@ impl AppState {
 }"#;
         std::fs::write(profile_dir.join("package.json"), pkg)
             .map_err(|e| format!("write package.json: {}", e))?;
-        log::info!("[dsh] created aimarketing profile at {:?}", profile_dir);
+        log::info!("[dsh] created web profile at {:?}", profile_dir);
         Ok(())
     }
 
@@ -231,6 +326,21 @@ impl AppState {
     pub fn dsh_port(&self) -> Option<u16> {
         self.dsh_port.lock().ok().and_then(|p| *p)
     }
+
+    /// Get the DSH URL (with token if available).
+    pub fn get_dsh_url_with_token(&self) -> Option<String> {
+        if let Ok(u) = self.dsh_url.lock() {
+            if let Some(url) = u.as_ref() {
+                return Some(url.clone());
+            }
+        }
+        if let Ok(p) = self.dsh_port.lock() {
+            if let Some(port) = *p {
+                return Some(format!("http://127.0.0.1:{}", port));
+            }
+        }
+        None
+    }
 }
 
 // ============================================================
@@ -239,10 +349,23 @@ impl AppState {
 
 #[tauri::command]
 fn get_dsh_url(state: State<'_, AppState>) -> Result<String, String> {
-    match state.dsh_port() {
-        Some(port) => Ok(format!("http://127.0.0.1:{}", port)),
-        None => Err("DSH backend not running".to_string()),
-    }
+    state.get_dsh_url_with_token()
+        .ok_or_else(|| "DSH backend not running".to_string())
+}
+
+/// Check if DSH backend is available
+#[tauri::command]
+fn check_dsh_available() -> bool {
+    AppState::is_dsh_available()
+}
+
+/// Download DSH backend
+#[tauri::command]
+async fn download_dsh_backend(
+    app_handle: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    AppState::download_dsh_backend(app_handle, state).await
 }
 
 // ============================================================
@@ -251,16 +374,16 @@ fn get_dsh_url(state: State<'_, AppState>) -> Result<String, String> {
 
 #[tauri::command]
 fn minimize_window(win: tauri::WebviewWindow) -> Result<(), String> {
-    win.minimize().map_err(|e| e.to_string())
+    win.hide().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn toggle_maximize(win: tauri::WebviewWindow) -> Result<(), String> {
-    let is_max = win.is_maximized().map_err(|e| e.to_string())?;
-    if is_max {
-        win.unmaximize()
+    let is_full = win.is_fullscreen().map_err(|e| e.to_string())?;
+    if is_full {
+        win.set_fullscreen(false)
     } else {
-        win.maximize()
+        win.set_fullscreen(true)
     }
     .map_err(|e| e.to_string())
 }
@@ -327,19 +450,49 @@ pub fn run() {
                 log::warn!("[dsh] task-board auto-install skipped: {}", e);
             }
 
-            // Start DSH backend SYNCHRONOUSLY
-            match state.start_dsh_backend() {
-                Ok(port) => {
-                    if state.wait_for_backend(port, 60) {
-                        log::info!("[dsh] backend ready on http://127.0.0.1:{}", port);
-                    } else {
-                        log::error!("[dsh] backend did not become ready on port {}", port);
+            // Check if DSH backend is available
+            let dsh_available = AppState::is_dsh_available();
+
+            if dsh_available {
+                // Start DSH backend SYNCHRONOUSLY
+                match state.start_dsh_backend() {
+                    Ok(port) => {
+                        if state.wait_for_backend(port, 60) {
+                            log::info!("[dsh] backend ready on http://127.0.0.1:{}", port);
+                        } else {
+                            log::error!("[dsh] backend did not become ready on port {}", port);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("[dsh] failed to start backend: {}", e);
                     }
                 }
-                Err(e) => {
-                    log::error!("[dsh] failed to start backend: {}", e);
-                }
+            } else {
+                // Backend not available - emit event for frontend to show download UI
+                log::info!("[dsh] backend not found, waiting for user to download");
+                let _ = app.emit("dsh-needs-download", ());
             }
+
+            // Navigate WebView to the token URL once available
+            let app_handle = app.handle().clone();
+            let nav_state = state.dsh_url.clone();
+            std::thread::spawn(move || {
+                for _ in 0..60 {
+                    if let Ok(url) = nav_state.lock() {
+                        if let Some(token_url) = url.as_ref() {
+                            if let Some(win) = app_handle.get_webview_window("main") {
+                                log::info!("[dsh] navigating to token URL: {}", token_url);
+                                match token_url.parse() {
+                                    Ok(url) => { let _ = win.navigate(url); }
+                                    Err(e) => log::error!("[dsh] failed to parse URL: {}", e),
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                }
+            });
 
             app.manage(state);
             log::info!("[dsh] setup complete, launching app");
@@ -348,6 +501,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // DSH backend
             get_dsh_url,
+            check_dsh_available,
+            download_dsh_backend,
             // Window control only - all business logic is in plugins
             minimize_window,
             toggle_maximize,
