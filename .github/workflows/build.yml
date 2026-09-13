@@ -15,9 +15,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          # PyInstaller 6.22.3 要求 Python <3.13，且与最新 3.12 补丁存在兼容问题；
-          # 本地 3.10/3.11 + 6.22.3 构建已验证成功，CI 对齐使用 3.11。
-          python-version: '3.11'
+          # 本地实测：PyInstaller 6.22.3 在 Python 3.10 上构建成功，在 3.11/3.12 上失败
+          # （6.22.3 要求 Python <3.13，且与 ≥3.11 的导入机制不兼容）。
+          # 对齐本地已验证成功的 3.10 环境；产物为自包含 exe，运行不依赖宿主机 Python 版本。
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
