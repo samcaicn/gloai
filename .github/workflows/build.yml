@@ -46,41 +46,53 @@ jobs:
         id: build
         shell: bash
         run: |
-          set -o pipefail
-          # 防御性 add-data：只打包真实存在的资源，避免缺失目录导致构建中断
-          add_data() { [ -e "$1" ] && ARGS+=(--add-data "$1;$2"); }
-          # 使用极短的工作/输出路径（C:/_wb、C:/_wd）规避 windows-2022 runner
-          # 未开启长路径支持时 PyInstaller --collect-all 产生的深路径超过 MAX_PATH(260)
-          # 导致 FileNotFoundError / WinError 206 的构建失败（本地 Win11 默认支持长路径故不报错）。
-          ARGS=(--name WeAuto --onefile --noupx --paths vendor
-                --workpath C:/_wb --distpath C:/_wd
-                --hidden-import bot --hidden-import wxauto_compat --hidden-import wechatauto
-                --collect-all wechatauto)
-          add_data config.py "."
-          add_data templates templates
-          add_data emojis emojis
-          add_data prompts prompts
-          add_data static static
-          add_data Demo_Image Demo_Image
-          # PyInstaller 6.x 已移除 --key 字节码加密（v6.0 起）；用 python -m 规避 PATH 问题。
-          python -m PyInstaller --noconfirm --clean "${ARGS[@]}" config_editor.py 2>&1 | tee build.log
-          rc=${PIPESTATUS[0]}
+          # 整个构建块的输出（含 set -x 跟踪 + PyInstaller 全部输出）重定向到 build.log，
+          # 避免此前 `| tee` 在 headless runner 上 SIGPIPE 导致 build.log 为空、报错丢失。
+          {
+            set -x
+            # 防御性 add-data：只打包真实存在的资源，避免缺失目录导致构建中断
+            add_data() { [ -e "$1" ] && ARGS+=(--add-data "$1;$2"); }
+            # 使用极短的工作/输出路径（C:/_wb、C:/_wd）规避 windows-2022 runner
+            # 未开启长路径支持时 PyInstaller --collect-all 产生的深路径超过 MAX_PATH(260)
+            # 导致 FileNotFoundError / WinError 206 的构建失败（本地 Win11 默认支持长路径故不报错）。
+            ARGS=(--name WeAuto --onefile --noupx --paths vendor
+                  --workpath C:/_wb --distpath C:/_wd
+                  --hidden-import bot --hidden-import wxauto_compat --hidden-import wechatauto
+                  # vendor/wechatauto 顶层硬依赖（__init__/logger/uia_driver 直接 import），
+                  # 显式 hidden-import 兜底，避免 --collect-all 在某些子模块导入失败时被漏掉。
+                  --hidden-import uiautomation --hidden-import comtypes --hidden-import colorama
+                  --collect-all wechatauto)
+            add_data config.py "."
+            add_data templates templates
+            add_data emojis emojis
+            add_data prompts prompts
+            add_data static static
+            add_data Demo_Image Demo_Image
+            # PyInstaller 6.x 已移除 --key 字节码加密（v6.0 起）；用 python -m 规避 PATH 问题。
+            python -m PyInstaller --noconfirm --clean "${ARGS[@]}" config_editor.py
+          } > build.log 2>&1
+          rc=$?
           echo "BUILD_RC=$rc"
           exit $rc
 
-      - name: Report build failure (upload log to predictable URL)
+      - name: Report build failure (publish build.log to issue)
         if: failure()
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          { tail -n 600 build.log 2>/dev/null || true; echo; echo "===== pip list ====="; pip list; } > _diag.txt
-          echo "===== build.log tail ====="
-          tail -n 200 build.log 2>/dev/null || echo "(no build.log captured)"
-          # transfer.sh 保留上传文件名 → URL 可预测，便于无 token 也能取回报错文本
-          URL=$(curl -s --max-time 60 -T _diag.txt "https://transfer.sh/weauto-diag-${{ github.run_number }}.txt" 2>/dev/null || true)
-          echo "DIAG_URL=$URL"
-          gh issue create --repo samcaicn/gloai --title "WeAuto CI Build Failure (run ${{ github.run_number }})" --body-file _diag.txt || true
+          # 把真实报错（build.log 尾部 60k + pip list）写进公开 Issue 正文，
+          # 这样即使没有 token 也能通过公开 API/网页读到 CI 真实报错。
+          {
+            echo "===== build.log (tail 60k) ====="
+            tail -c 60000 build.log 2>/dev/null || echo "(build.log missing/empty)"
+            echo
+            echo "===== pip list ====="
+            pip list 2>/dev/null
+          } > _diag.txt
+          gh issue create --repo samcaicn/gloai \
+            --title "WeAuto CI Build Failure (run ${{ github.run_number }})" \
+            --body-file _diag.txt || true
 
       - name: Verify EXE
         shell: bash
