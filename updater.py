@@ -44,6 +44,11 @@ class Updater:
     GITHUB_API = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}"
     ARTIFACT_NAME = "weauto-windows-exe"   # CI 上传的加密 exe 构件名
 
+    # 只读令牌（可选）：用于访问私有仓库的 Actions Artifact / Release。
+    # 仅需 read-only 权限（actions:read、contents:read）。
+    # 解析顺序：环境变量 GITHUB_TOKEN/GH_TOKEN → 本地文件 .weauto_gh_token → gh CLI。
+    GH_TOKEN_FILE = ".weauto_gh_token"
+
     # Gitee 备选源（同源镜像，失败回退）
     GITEE_REPO_OWNER = "samcaicn"
     GITEE_REPO_NAME = "gloai"
@@ -189,12 +194,52 @@ class Updater:
             output += f": {details}"
         return output
 
+    # ------------------------------------------------------------------
+    # 只读 GitHub 令牌（可选）：让 Actions Artifact / Release 通道在私有仓库下
+    # 也能自动更新。仅需 read-only 权限（actions:read、contents:read）。
+    # ------------------------------------------------------------------
+    def _resolve_github_token(self):
+        """按顺序解析只读令牌：环境变量 → 本地文件 → gh CLI。"""
+        for env in ("GITHUB_TOKEN", "GH_TOKEN"):
+            val = os.environ.get(env)
+            if val and val.strip():
+                return val.strip()
+        try:
+            p = os.path.join(self.root_dir, self.GH_TOKEN_FILE)
+            if os.path.exists(p):
+                with open(p, encoding="utf-8") as f:
+                    val = f.read().strip()
+                    if val:
+                        return val
+        except Exception:
+            pass
+        try:
+            import subprocess
+            out = subprocess.run(
+                ["gh", "auth", "token"], capture_output=True, text=True, timeout=10
+            )
+            if out.returncode == 0:
+                val = out.stdout.strip()
+                if val:
+                    return val
+        except Exception:
+            pass
+        return None
+
+    def _auth_headers(self, base=None):
+        """在基础请求头上追加 Bearer 令牌（若有）。"""
+        headers = dict(base) if base else {}
+        token = self._resolve_github_token()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        return headers
+
     def check_for_updates(self) -> dict:
         """检查更新"""
-        headers = {
+        headers = self._auth_headers({
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': f'{self.REPO_NAME}-UpdateChecker'
-        }
+        })
 
         # 优先从 GitHub Actions Artifact 获取（CI 构建产物，保留 90 天；分支/release 已清理）
         artifact_result = self._check_artifact_updates()
@@ -235,10 +280,10 @@ class Updater:
         """从 GitHub Actions Artifact 获取最新加密 exe 构件（保留 90 天）。"""
         try:
             url = f"https://api.github.com/repos/{self.REPO_OWNER}/{self.REPO_NAME}/actions/artifacts?per_page=100"
-            headers = {
+            headers = self._auth_headers({
                 "Accept": "application/vnd.github+json",
                 "User-Agent": f"{self.REPO_NAME}-UpdateChecker",
-            }
+            })
             resp = requests.get(url, headers=headers, timeout=15)
             if resp.status_code in (401, 403, 404):
                 return {"has_update": False, "error": f"无法访问 Actions Artifact (HTTP {resp.status_code})，请确认仓库为公开或配置令牌"}
@@ -270,7 +315,7 @@ class Updater:
         import subprocess
         progress = []
         try:
-            headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
+            headers = self._auth_headers({"User-Agent": f"{self.REPO_NAME}-UpdateChecker"})
             log_progress = lambda s: progress.append(s)
             log_progress("开始下载加密 exe 构件...")
 
