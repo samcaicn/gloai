@@ -5,6 +5,14 @@ name: Build WeAuto EXE (obfuscated)
     branches: [weauto]
   workflow_dispatch:
 
+# 若仓库 Settings → Actions → General → Workflow permissions 被设为 Read-only，
+# 则下面的 write 权限会被忽略，upload-artifact / Create Release / issue 诊断都会失败。
+# 需要 Read and write 才能真正产出 Artifact(90天)。
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -15,10 +23,18 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          # 本地实测：PyInstaller 6.22.3 在 Python 3.10 上构建成功，在 3.11/3.12 上失败
-          # （6.22.3 要求 Python <3.13，且与 ≥3.11 的导入机制不兼容）。
-          # 对齐本地已验证成功的 3.10 环境；产物为自包含 exe，运行不依赖宿主机 Python 版本。
+          # 本地实测：PyInstaller 6.22.3 在 Python 3.10 上构建成功；对齐该环境。
           python-version: '3.10'
+
+      - name: Enable long paths (Windows MAX_PATH=260 workaround)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          try {
+            New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+            Write-Host "LongPathsEnabled=1 applied"
+          } catch { Write-Host "LongPathsEnabled set skipped: $_" }
 
       - name: Install dependencies
         run: |
@@ -33,7 +49,11 @@ jobs:
           set -o pipefail
           # 防御性 add-data：只打包真实存在的资源，避免缺失目录导致构建中断
           add_data() { [ -e "$1" ] && ARGS+=(--add-data "$1;$2"); }
+          # 使用极短的工作/输出路径（C:/_wb、C:/_wd）规避 windows-2022 runner
+          # 未开启长路径支持时 PyInstaller --collect-all 产生的深路径超过 MAX_PATH(260)
+          # 导致 FileNotFoundError / WinError 206 的构建失败（本地 Win11 默认支持长路径故不报错）。
           ARGS=(--name WeAuto --onefile --noupx --paths vendor
+                --workpath C:/_wb --distpath C:/_wd
                 --hidden-import bot --hidden-import wxauto_compat --hidden-import wechatauto
                 --collect-all wechatauto)
           add_data config.py "."
@@ -42,59 +62,44 @@ jobs:
           add_data prompts prompts
           add_data static static
           add_data Demo_Image Demo_Image
-          # 注意：PyInstaller 6.x 已移除 --key 字节码加密（v6.0 起），传 --key 会直接报错；
-          # 若需强加密请改用 pyarmor 等方案，此处不再使用 --key。
-          # 用 `python -m PyInstaller` 而非裸 `pyinstaller`，避免 CI 的 bash 步骤 PATH 未含 Scripts 导致 command not found。
+          # PyInstaller 6.x 已移除 --key 字节码加密（v6.0 起）；用 python -m 规避 PATH 问题。
           python -m PyInstaller --noconfirm --clean "${ARGS[@]}" config_editor.py 2>&1 | tee build.log
           rc=${PIPESTATUS[0]}
           echo "BUILD_RC=$rc"
           exit $rc
 
-      - name: Report build failure (diagnostics → GitHub Issue)
+      - name: Report build failure (echo full log + open issue)
         if: failure()
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          { tail -n 300 build.log 2>/dev/null || echo "(no build.log captured)"; } > diag.txt
-          echo "=== diag.txt head ==="
-          head -c 1500 diag.txt
-          gh issue create --repo samcaicn/gloai --title "WeAuto CI Build Failure (run ${{ github.run_number }})" --body-file diag.txt || true
+          echo "===== FULL build.log (tail 400) ====="
+          tail -n 400 build.log 2>/dev/null || echo "(no build.log captured)"
+          { tail -n 400 build.log 2>/dev/null; echo; echo "===== pip list ====="; pip list; } > _diag.txt
+          gh issue create --repo samcaicn/gloai --title "WeAuto CI Build Failure (run ${{ github.run_number }})" --body-file _diag.txt || true
 
       - name: Verify EXE
         shell: bash
         run: |
-          ls -lh dist/WeAuto.exe
-          if [ ! -s dist/WeAuto.exe ]; then echo "EXE missing"; exit 1; fi
-          echo "exe built: $(stat -c%s dist/WeAuto.exe) bytes"
+          ls -lh C:/_wd/WeAuto.exe
+          if [ ! -s C:/_wd/WeAuto.exe ]; then echo "EXE missing"; exit 1; fi
+          echo "exe built: $(stat -c%s C:/_wd/WeAuto.exe) bytes"
 
       - name: Upload Artifact (90d)
         uses: actions/upload-artifact@v4
         with:
           name: weauto-windows-exe
-          path: dist/WeAuto.exe
+          path: C:/_wd/WeAuto.exe
           retention-days: 90
 
       - name: Create Release
         id: release
+        continue-on-error: true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: weauto-build-${{ github.run_number }}
           name: WeAuto Build ${{ github.run_number }}
-          files: dist/WeAuto.exe
+          files: C:/_wd/WeAuto.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  cleanup:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete release / tag / weauto branch (keep artifact 90d)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: weauto-build-${{ github.run_number }}
-        run: |
-          gh release delete "$TAG" --yes || true
-          gh api -X DELETE "repos/samcaicn/gloai/git/refs/tags/$TAG" || true
-          gh api -X DELETE "repos/samcaicn/gloai/git/refs/heads/weauto" || true
-          echo "已删除 release 与 weauto 分支；Actions Artifact(weauto-windows-exe) 保留 90 天用于下载/自动更新"
