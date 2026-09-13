@@ -2,8 +2,6 @@
 
 智能微信聊天机器人 —— **WeAuto**（**已支持微信 4.x**）。
 
-- 原项目（上游）：[KouriChat](https://github.com/KouriChat/KouriChat)（作者 umaru）
-- 本项目仓库：https://git.code.tencent.com/AImarketing/weauto
 - 由原 `WeChatBot_WXAUTO_SE`（作者 iwyxdxl）升级改造而来，并重新命名为 **WeAuto**。
 - 微信收发基于 **wechatauto 引擎**（替代旧版 `wxauto` / `wxautox`），已通过微信 4.x 实测。
 - 调用 DeepSeek、GPT、Gemini 等大语言模型生成拟人化回复。
@@ -51,17 +49,6 @@
 # 联系我
 1. 邮箱 iwyxdxl@gmail.com
 2. QQ 2025128651
-
-# 声明
-- 本项目基于 [KouriChat](https://github.com/KouriChat/KouriChat) 修改（原 My-Dream-Moments 项目），遵循 **GNU GPL-3.0 或更高版本** 许可证，原项目版权归属：umaru (2025)。
-- **修改说明**：本项目在 2025 年期间对原始代码进行了大量修改和重构，包括但不限于：
-  - 完全重写了用户界面和配置系统
-  - 大幅扩展了机器人功能和 AI 集成
-  - 重构了消息处理和自动化逻辑
-  - 添加了大量新特性如情绪识别、定时任务、联网搜索等
-  - 将微信接入层升级为 wechatauto 引擎，支持微信 4.x
-- 由于修改范围广泛且深入，无法精确标注每处修改的具体日期，但所有修改均在上述时间段内完成。
-- 本修改版本保持与原项目相同的 GPL-3.0 许可证，确保用户享有相同的自由软件权利。
 
 ## 许可证和依赖说明
 - **主许可证**：GNU GPL-3.0 或更高版本

@@ -29,6 +29,35 @@ except Exception:  # noqa: BLE001
 import shutil
 import re
 import ast
+
+# --- 冻结(单文件exe)模式引导（与 config_editor.py 一致）---
+if getattr(sys, "frozen", False):
+    import os as _os
+    import shutil as _shutil
+    _exe_dir = _os.path.dirname(_os.path.abspath(sys.executable))
+    _meipass = getattr(sys, "_MEIPASS", None)
+    if _exe_dir not in sys.path:
+        sys.path.insert(0, _exe_dir)
+    if _meipass:
+        for _item in ("config.py", "templates", "emojis", "prompts", "static", "Demo_Image"):
+            _src = _os.path.join(_meipass, _item)
+            _dst = _os.path.join(_exe_dir, _item)
+            if _os.path.exists(_src) and not _os.path.exists(_dst):
+                try:
+                    if _os.path.isdir(_src):
+                        _shutil.copytree(_src, _dst)
+                    else:
+                        _shutil.copy(_src, _dst)
+                except Exception:
+                    pass
+        _orig_abspath = _os.path.abspath
+        def _patched_abspath(p):
+            r = _orig_abspath(p)
+            if r.startswith(_meipass):
+                r = _exe_dir + r[len(_meipass):]
+            return r
+        _os.path.abspath = _patched_abspath
+    _os.chdir(_exe_dir)
 from config import *
 import queue
 import json

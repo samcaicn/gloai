@@ -29,6 +29,38 @@ import re
 import ast
 import os
 import sys
+
+# --- 冻结(单文件exe)模式引导 ---
+# 将资源/配置外置到 exe 同目录（可写、跨运行持久），并把所有基于 __file__ 的
+# 路径从临时解压目录(_MEIPASS)映射到 exe 同目录，使 web UI 与 bot 在冻结态下
+# 行为与源码运行完全一致。
+if getattr(sys, "frozen", False):
+    import os as _os
+    import shutil as _shutil
+    _exe_dir = _os.path.dirname(_os.path.abspath(sys.executable))
+    _meipass = getattr(sys, "_MEIPASS", None)
+    if _exe_dir not in sys.path:
+        sys.path.insert(0, _exe_dir)
+    if _meipass:
+        for _item in ("config.py", "templates", "emojis", "prompts", "static", "Demo_Image"):
+            _src = _os.path.join(_meipass, _item)
+            _dst = _os.path.join(_exe_dir, _item)
+            if _os.path.exists(_src) and not _os.path.exists(_dst):
+                try:
+                    if _os.path.isdir(_src):
+                        _shutil.copytree(_src, _dst)
+                    else:
+                        _shutil.copy(_src, _dst)
+                except Exception:
+                    pass
+        _orig_abspath = _os.path.abspath
+        def _patched_abspath(p):
+            r = _orig_abspath(p)
+            if r.startswith(_meipass):
+                r = _exe_dir + r[len(_meipass):]
+            return r
+        _os.path.abspath = _patched_abspath
+    _os.chdir(_exe_dir)
 import subprocess
 import psutil
 import openai
@@ -615,17 +647,21 @@ def start_bot():
             except Exception as e:
                 app.logger.warning(f"重置主动消息定时器失败: {e}")
 
-        bot_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        bot_py = os.path.join(bot_dir, 'bot.py')
-        bot_exe = os.path.join(bot_dir, 'bot.exe')
-        
-        if os.path.exists(bot_py):
-            cmd = [sys.executable, bot_py]
-        elif os.path.exists(bot_exe):
-            cmd = [bot_exe]
+        # 单文件 exe（PyInstaller 冻结）模式下，bot 已随 exe 打包，
+        # 通过自重启并带 --bot 参数来启动机器人子进程。
+        if getattr(sys, 'frozen', False):
+            cmd = [sys.executable, '--bot']
         else:
-            return {'error': 'No bot executable found'}, 404
+            bot_dir = os.path.dirname(os.path.abspath(__file__))
+            bot_py = os.path.join(bot_dir, 'bot.py')
+            bot_exe = os.path.join(bot_dir, 'bot.exe')
+
+            if os.path.exists(bot_py):
+                cmd = [sys.executable, bot_py]
+            elif os.path.exists(bot_exe):
+                cmd = [bot_exe]
+            else:
+                return {'error': 'No bot executable found'}, 404
 
         creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
         bot_process = subprocess.Popen(
@@ -4421,6 +4457,12 @@ def kill_process_using_port(port):
                     print(f"结束进程 {conn.pid} 时出现异常：{e}")
 
 if __name__ == '__main__':
+    # 冻结模式自重启：以 --bot 参数运行时直接进入机器人主循环
+    if '--bot' in sys.argv:
+        import bot
+        bot.main()
+        raise SystemExit(0)
+
     # 配置应用日志级别
     app.logger.setLevel(logging.INFO)
     

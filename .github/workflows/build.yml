@@ -1,0 +1,75 @@
+name: Build WeAuto EXE (obfuscated)
+
+"on":
+  push:
+    branches: [weauto]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build obfuscated onefile EXE
+        shell: bash
+        env:
+          KEY: ${{ secrets.PYINSTALLER_KEY }}
+        run: |
+          ARGS=(--name WeAuto --onefile --paths vendor
+                --hidden-import bot --hidden-import wxauto_compat --hidden-import wechatauto
+                --add-data "config.py;." --add-data "templates;templates"
+                --add-data "emojis;emojis" --add-data "prompts;prompts"
+                --add-data "static;static" --add-data "Demo_Image;Demo_Image")
+          if [ -n "$KEY" ]; then ARGS+=(--key "$KEY"); fi
+          pyinstaller --noconfirm --clean "${ARGS[@]}" config_editor.py
+
+      - name: Verify EXE
+        shell: bash
+        run: |
+          ls -lh dist/WeAuto.exe
+          if [ ! -s dist/WeAuto.exe ]; then echo "EXE missing"; exit 1; fi
+          echo "exe built: $(stat -c%s dist/WeAuto.exe) bytes"
+
+      - name: Upload Artifact (90d)
+        uses: actions/upload-artifact@v4
+        with:
+          name: weauto-windows-exe
+          path: dist/WeAuto.exe
+          retention-days: 90
+
+      - name: Create Release
+        id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: weauto-build-${{ github.run_number }}
+          name: WeAuto Build ${{ github.run_number }}
+          files: dist/WeAuto.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete release / tag / weauto branch (keep artifact 90d)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: weauto-build-${{ github.run_number }}
+        run: |
+          gh release delete "$TAG" --yes || true
+          gh api -X DELETE "repos/samcaicn/gloai/git/refs/tags/$TAG" || true
+          gh api -X DELETE "repos/samcaicn/gloai/git/refs/heads/weauto" || true
+          echo "已删除 release 与 weauto 分支；Actions Artifact(weauto-windows-exe) 保留 90 天用于下载/自动更新"

@@ -37,15 +37,16 @@ import time
 logger = logging.getLogger(__name__)
 
 class Updater:
-    # GitHub仓库信息
-    REPO_OWNER = "onebai123"
-    REPO_NAME = "WeAuto"
-    REPO_BRANCH = "main"
+    # GitHub 仓库信息（分发源：samcaicn/gloai 的 weauto 分支，CI 构建加密 exe 并保留 90 天 Artifact）
+    REPO_OWNER = "samcaicn"
+    REPO_NAME = "gloai"
+    REPO_BRANCH = "weauto"
     GITHUB_API = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}"
-    
-    # Gitee备选源
-    GITEE_REPO_OWNER = "onebai123"
-    GITEE_REPO_NAME = "WeAuto"
+    ARTIFACT_NAME = "weauto-windows-exe"   # CI 上传的加密 exe 构件名
+
+    # Gitee 备选源（同源镜像，失败回退）
+    GITEE_REPO_OWNER = "samcaicn"
+    GITEE_REPO_NAME = "gloai"
     GITEE_API = f"https://gitee.com/api/v5/repos/{GITEE_REPO_OWNER}/{GITEE_REPO_NAME}"
     
     # 需要跳过的文件和文件夹（不会被更新）
@@ -194,16 +195,123 @@ class Updater:
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': f'{self.REPO_NAME}-UpdateChecker'
         }
-        
-        # 首先尝试从GitHub获取更新
+
+        # 优先从 GitHub Actions Artifact 获取（CI 构建产物，保留 90 天；分支/release 已清理）
+        artifact_result = self._check_artifact_updates()
+        if artifact_result.get('has_update') or not artifact_result.get('error'):
+            return artifact_result
+
+        # 回退：从版本文件 / Gitee 检查
         github_result = self._check_github_updates(headers)
         if github_result['has_update'] or not github_result.get('error'):
             return github_result
-            
+
         # 如果GitHub失败，尝试从Gitee获取更新
         logger.info("GitHub检查失败，尝试从Gitee获取更新...")
         return self._check_gitee_updates()
     
+    # ------------------------------------------------------------------
+    # GitHub Actions Artifact 更新通道（CI 构建的加密 exe，保留 90 天）
+    # 分支与 release 在构建成功后会被清理，因此自动更新以 Artifact 为准。
+    # ------------------------------------------------------------------
+    def _artifact_state_path(self):
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), ".weauto_artifact.json")
+
+    def _get_local_artifact_updated_at(self):
+        try:
+            with open(self._artifact_state_path(), encoding="utf-8") as f:
+                return json.load(f).get("updated_at")
+        except Exception:
+            return None
+
+    def _save_local_artifact_updated_at(self, updated_at, artifact_id):
+        try:
+            with open(self._artifact_state_path(), "w", encoding="utf-8") as f:
+                json.dump({"updated_at": updated_at, "artifact_id": artifact_id}, f)
+        except Exception:
+            pass
+
+    def _check_artifact_updates(self) -> dict:
+        """从 GitHub Actions Artifact 获取最新加密 exe 构件（保留 90 天）。"""
+        try:
+            url = f"https://api.github.com/repos/{self.REPO_OWNER}/{self.REPO_NAME}/actions/artifacts?per_page=100"
+            headers = {
+                "Accept": "application/vnd.github+json",
+                "User-Agent": f"{self.REPO_NAME}-UpdateChecker",
+            }
+            resp = requests.get(url, headers=headers, timeout=15)
+            if resp.status_code in (401, 403, 404):
+                return {"has_update": False, "error": f"无法访问 Actions Artifact (HTTP {resp.status_code})，请确认仓库为公开或配置令牌"}
+            resp.raise_for_status()
+            artifacts = resp.json().get("artifacts", [])
+            target = next(
+                (a for a in artifacts if a.get("name") == self.ARTIFACT_NAME and not a.get("expired")),
+                None,
+            )
+            if not target:
+                return {"has_update": False, "error": "未找到可用的加密 exe 构件"}
+            latest_updated = target.get("updated_at")
+            local_updated = self._get_local_artifact_updated_at()
+            has_update = (local_updated is None) or bool(latest_updated and latest_updated > local_updated)
+            return {
+                "has_update": bool(has_update),
+                "version": latest_updated or "",
+                "download_url": target.get("archive_download_url"),
+                "artifact_id": target.get("id"),
+                "description": "GitHub Actions 构建的加密混淆 WeAuto.exe",
+                "source": "GitHub Actions Artifact",
+                "output": f"最新构建: {latest_updated}",
+            }
+        except requests.RequestException as e:
+            return {"has_update": False, "error": f"检查 Actions Artifact 失败: {e}"}
+
+    def apply_artifact_update(self, update_info: dict) -> dict:
+        """下载加密 exe 构件并自替换（自更新通道，不经源码补丁逻辑）。"""
+        import subprocess
+        progress = []
+        try:
+            headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
+            log_progress = lambda s: progress.append(s)
+            log_progress("开始下载加密 exe 构件...")
+
+            r = requests.get(update_info["download_url"], headers=headers, timeout=60, stream=True)
+            r.raise_for_status()
+
+            os.makedirs(self.temp_dir, exist_ok=True)
+            zip_path = os.path.join(self.temp_dir, "weauto_artifact.zip")
+            with open(zip_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            log_progress("下载完成，正在解压 WeAuto.exe...")
+
+            extract_dir = os.path.join(self.temp_dir, "weauto_exe")
+            os.makedirs(extract_dir, exist_ok=True)
+            with zipfile.ZipFile(zip_path) as z:
+                cand = [n for n in z.namelist() if n.lower().endswith("weauto.exe")]
+                if not cand:
+                    return {"success": False, "output": "\n".join(progress) + "\n构件中未找到 WeAuto.exe"}
+                z.extract(cand[0], extract_dir)
+                src = os.path.join(extract_dir, cand[0])
+
+            current = os.path.abspath(sys.executable)
+            if not current.lower().endswith(".exe"):
+                return {"success": False, "output": "\n".join(progress) + "\n当前非 exe 运行环境，无法自更新"}
+
+            # 生成自替换批处理：等待本进程退出后覆盖并重启
+            bat = os.path.join(self.temp_dir, "apply_update.bat")
+            with open(bat, "w", encoding="utf-8") as f:
+                f.write("@echo off\n")
+                f.write("timeout /t 2 /nobreak >nul\n")
+                f.write(f'copy /Y "{os.path.abspath(src)}" "{current}"\n')
+                f.write(f'start "" "{current}"\n')
+                f.write('del "%~f0"\n')
+            subprocess.Popen(["cmd", "/c", bat], shell=False)
+            self._save_local_artifact_updated_at(update_info.get("version"), update_info.get("artifact_id"))
+            return {"success": True, "output": "\n".join(progress) + "\n已下载新版本，将在退出后自动替换并重启"}
+        except Exception as e:
+            return {"success": False, "output": "\n".join(progress) + f"\n更新失败: {e}"}
+
     def _check_github_updates(self, headers: dict) -> dict:
         """从GitHub检查更新"""
         while True:
@@ -707,7 +815,13 @@ class Updater:
                 log_progress("提示用户是否更新", True, "用户取消更新")
                 print("\n已取消更新")
                 return {'success': True, 'output': '\n'.join(progress)}
-                    
+
+            # 加密 exe 构件：走自更新通道，跳过源码补丁逻辑
+            if update_info.get('source') == 'GitHub Actions Artifact':
+                result = self.apply_artifact_update(update_info)
+                result['output'] = '\n'.join(progress) + "\n" + result.get('output', '')
+                return result
+
             log_progress(f"开始更新到版本: {update_info['version']}")
             
             # 添加重要文件备份步骤

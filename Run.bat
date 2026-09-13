@@ -163,15 +163,12 @@ echo ✅ 所有依赖安装成功！
 cls
 
 :: ---------------------------
-:: 检查程序更新（默认关闭）
+:: 检查程序更新（指向 GitHub samcaicn/gloai 的 weauto 分支）
+:: CI 在该分支构建加密混淆的 WeAuto.exe，产物以 GitHub Actions Artifact
+:: 形式保留 90 天，供本机下载与自动更新使用。
 :: ---------------------------
-:: 说明：本仓库已迁移至腾讯工蜂 git.code.tencent.com/AImarketing/weauto，
-::      而 updater.py 仍指向旧上游 GitHub 的 onebai123/WeAuto。在访问
-::      不到 GitHub 的网络环境下会卡顿数十秒，且找不到本仓库的更新，无意义。
-::      如需自动更新，请把 updater.py 的 REPO_OWNER / REPO_NAME 与 API 基地址
-::      改为腾讯工蜂对应仓库后，取消下方注释启用：
-:: python updater.py
-echo ℹ️ 已跳过自动更新检查（updater.py 仍指向旧 GitHub 仓库，未对接腾讯工蜂）
+echo 🟢 检查程序更新...
+python updater.py
 
 :: 清屏
 cls
