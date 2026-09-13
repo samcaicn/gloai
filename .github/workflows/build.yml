@@ -29,8 +29,6 @@ jobs:
       - name: Build obfuscated onefile EXE
         id: build
         shell: bash
-        env:
-          KEY: ${{ secrets.PYINSTALLER_KEY }}
         run: |
           set -o pipefail
           # 防御性 add-data：只打包真实存在的资源，避免缺失目录导致构建中断
@@ -43,7 +41,8 @@ jobs:
           add_data prompts prompts
           add_data static static
           add_data Demo_Image Demo_Image
-          if [ -n "$KEY" ]; then ARGS+=(--key "$KEY"); fi
+          # 注意：PyInstaller 6.x 已移除 --key 字节码加密（v6.0 起），传 --key 会直接报错；
+          # 若需强加密请改用 pyarmor 等方案，此处不再使用 --key。
           pyinstaller --noconfirm --clean "${ARGS[@]}" config_editor.py 2>&1 | tee build.log
           rc=${PIPESTATUS[0]}
           echo "BUILD_RC=$rc"
