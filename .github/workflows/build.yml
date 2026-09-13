@@ -21,13 +21,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller==6.22.3
 
       - name: Build obfuscated onefile EXE
+        id: build
         shell: bash
         env:
           KEY: ${{ secrets.PYINSTALLER_KEY }}
         run: |
+          set -o pipefail
           # 防御性 add-data：只打包真实存在的资源，避免缺失目录导致构建中断
           add_data() { [ -e "$1" ] && ARGS+=(--add-data "$1;$2"); }
           ARGS=(--name WeAuto --onefile --paths vendor
@@ -39,7 +41,25 @@ jobs:
           add_data static static
           add_data Demo_Image Demo_Image
           if [ -n "$KEY" ]; then ARGS+=(--key "$KEY"); fi
-          pyinstaller --noconfirm --clean "${ARGS[@]}" config_editor.py
+          pyinstaller --noconfirm --clean "${ARGS[@]}" config_editor.py 2>&1 | tee build.log
+          rc=${PIPESTATUS[0]}
+          echo "BUILD_RC=$rc"
+          exit $rc
+
+      - name: Report build failure (diagnostics → GitHub Issue)
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tail -n 200 build.log > diag.txt
+          TITLE="WeAuto CI Build Failure"
+          NUM=$(gh issue list --repo samcaicn/gloai --state open --search "WeAuto CI Build Failure in:title" --json number -q '.[0].number' 2>/dev/null || true)
+          if [ -n "$NUM" ]; then
+            gh issue comment "$NUM" --repo samcaicn/gloai --body-file diag.txt || true
+          else
+            gh issue create --repo samcaicn/gloai --title "$TITLE" --body-file diag.txt --label CI || true
+          fi
 
       - name: Verify EXE
         shell: bash
