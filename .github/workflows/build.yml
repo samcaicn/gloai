@@ -68,15 +68,18 @@ jobs:
           echo "BUILD_RC=$rc"
           exit $rc
 
-      - name: Report build failure (echo full log + open issue)
+      - name: Report build failure (upload log to predictable URL)
         if: failure()
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "===== FULL build.log (tail 400) ====="
-          tail -n 400 build.log 2>/dev/null || echo "(no build.log captured)"
-          { tail -n 400 build.log 2>/dev/null; echo; echo "===== pip list ====="; pip list; } > _diag.txt
+          { tail -n 600 build.log 2>/dev/null; echo; echo "===== pip list ====="; pip list; } > _diag.txt
+          echo "===== build.log tail ====="
+          tail -n 200 build.log 2>/dev/null || echo "(no build.log captured)"
+          # transfer.sh 保留上传文件名 → URL 可预测，便于无 token 也能取回报错文本
+          URL=$(curl -s --max-time 60 -T _diag.txt "https://transfer.sh/weauto-diag-${{ github.run_number }}.txt" 2>/dev/null || true)
+          echo "DIAG_URL=$URL"
           gh issue create --repo samcaicn/gloai --title "WeAuto CI Build Failure (run ${{ github.run_number }})" --body-file _diag.txt || true
 
       - name: Verify EXE
