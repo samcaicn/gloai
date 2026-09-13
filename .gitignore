@@ -1,0 +1,31 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ---- Virtual environments ----
+venv/
+.venv/
+env/
+ENV/
+
+# ---- Logs ----
+wechatauto_logs/
+*.log
+
+# ---- Runtime state / user data (do not commit) ----
+config.json
+config_backups/
+Memory_Temp/
+CoreMemory/
+chat_contexts.json
+
+# ---- Legacy offline wheel bundle (cp39 wheels, unused; project requires Python 3.12+) ----
+libs/
+
+# ---- Editor / OS ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini

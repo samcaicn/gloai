@@ -1,0 +1,30 @@
+# Normalize text files to LF in the repository
+* text=auto
+
+# Windows batch/shell scripts must keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Source code / docs -> LF (keeps Linux/麒麟 deployment clean)
+*.py  text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js  text eol=lf
+*.json text eol=lf
+*.md  text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+
+# Binary assets
+*.png binary
+*.gif binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.whl binary
+*.zip binary
+*.exe binary
+*.dll binary

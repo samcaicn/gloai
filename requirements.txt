@@ -1,0 +1,37 @@
+# WeAuto v3.25.1 — 依赖清单（已升级支持微信 4.x）
+# 安装：venv\Scripts\python -m pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+# 注意：全部走二进制 wheel（--only-binary=:all:），不本地编译。
+
+# ===== Web 配置后台 (config_editor.py, 端口 5001) =====
+flask
+flask-cors
+flask-wtf
+flask-limiter
+sqlalchemy~=2.0.37
+werkzeug
+waitress
+psutil
+filelock
+requests
+beautifulsoup4
+lxml
+
+# ===== LLM / 辅助 =====
+openai==1.84.0
+
+# ===== 微信 4.x 引擎原生依赖（wechatauto，vendor/ 内已打 WAL/方向补丁）=====
+# 缺一个都跑不起来
+cryptography      # 解密微信 4.x 加密 SQLite 聊天记录
+zstandard         # WAL 日志解压
+winsdk            # Windows API 绑定（读进程/窗口）
+pypinyin          # 联系人拼音/搜索
+uiautomation      # UI 自动化（发消息/控窗口核心）
+comtypes          # uiautomation 依赖（COM）
+pyperclip         # 剪贴板读写（发消息走剪贴板）
+pywin32           # 发送前把微信窗口置前/聚焦
+Pillow            # 图片处理
+typing-extensions
+
+# ===== 可选（缺失自动降级，不影响核心收发）=====
+# pyautogui : 旧版表情截图识别（bot.py 已改为可选导入，未使用）
+# winsdk    : 图片 OCR 文字识别（仅 wechatauto.guia.ScreenOCR 用到）

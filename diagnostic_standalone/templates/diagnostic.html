@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信机器人一键诊断工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 50% 50%;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        .test-panel {
+            padding: 30px;
+            border-right: 1px solid #eee;
+        }
+
+        .log-panel {
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .start-button {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .start-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            background: white;
+            border: 2px solid #f0f0f0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .test-item.running {
+            border-color: #4facfe;
+            background: #f0f9ff;
+        }
+
+        .test-item.success {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .test-item.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .test-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .test-item.running .test-number {
+            background: #4facfe;
+            color: white;
+        }
+
+        .test-item.success .test-number {
+            background: #10b981;
+            color: white;
+        }
+
+        .test-item.error .test-number {
+            background: #ef4444;
+            color: white;
+        }
+
+        .test-info {
+            flex: 1;
+        }
+
+        .test-name {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .test-message {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .test-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-status {
+            width: 30px;
+            height: 30px;
+        }
+
+        .retest-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .retest-btn:hover {
+            background: #4facfe;
+            color: white;
+            opacity: 1;
+            transform: rotate(180deg);
+        }
+
+        .retest-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.3;
+        }
+
+        .retest-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4facfe;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .check-icon {
+            color: #10b981;
+            font-size: 1.5em;
+        }
+
+        .error-icon {
+            color: #ef4444;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .log-container {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .log-timestamp {
+            color: #888;
+            margin-right: 10px;
+        }
+
+        .log-info {
+            color: #4facfe;
+        }
+
+        .log-success {
+            color: #10b981;
+        }
+
+        .log-error {
+            color: #ef4444;
+        }
+
+        .log-warning {
+            color: #f59e0b;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .solution-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .solution-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .legal-notice {
+            margin: 30px auto 0;
+            padding: 16px 20px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eef2ff;
+            text-align: left;
+            font-size: 0.9em;
+            color: #4b5563;
+            line-height: 1.7;
+            width: 100%;
+            max-width: 1200px;
+            position: relative;
+            box-sizing: border-box;
+        }
+        .legal-notice::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+        .legal-notice .legal-toggle {
+            cursor: pointer;
+            color: #111827;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            -webkit-user-select: none; /* Safari */
+            transition: color 0.2s ease;
+        }
+        .legal-notice .legal-toggle::before {
+            content: "ℹ️";
+            font-size: 1em;
+        }
+        .legal-notice .legal-toggle::after {
+            content: "▾";
+            margin-left: 4px;
+            color: #4facfe;
+            transition: transform 0.25s ease;
+            font-weight: 700;
+        }
+        .legal-notice.open .legal-toggle::after {
+            transform: rotate(180deg);
+        }
+        .legal-notice .legal-toggle:hover {
+            color: #1f2937;
+        }
+        .legal-notice .legal-content {
+            display: block;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.35s ease, opacity 0.3s ease, padding-top 0.2s ease;
+            padding-top: 0;
+            font-size: 0.95em;
+        }
+        .legal-notice.open .legal-content {
+            max-height: 800px;
+            opacity: 1;
+            padding-top: 12px;
+        }
+        .legal-notice .legal-content p {
+            margin: 8px 0;
+        }
+        .legal-notice .legal-content a {
+            color: #4facfe;
+            text-decoration: none;
+        }
+        .legal-notice .legal-content a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .test-panel {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+            
+            .legal-notice {
+                font-size: 0.85em;
+                padding: 12px 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 微信机器人一键诊断</h1>
+            <p>全面检测机器人各项功能状态，快速定位异常问题</p>
+            <p>注:为防止干扰主程序，3分钟后检测程序自动关闭</p>
+        </div>
+        <div class="main-content">
+            <div class="test-panel">
+                <button id="startBtn" class="start-button">开始诊断</button>
+                
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                
+                <div id="testList">
+                    <div class="test-item" data-test="1">
+                        <div class="test-number">1</div>
+                        <div class="test-info">
+                            <div class="test-name">🌐 网络连通性测试</div>
+                            <div class="test-message">测试访问百度、接口站点连通性</div>
+                        </div>
+                        <div class="test-actions">
+                            <button class="retest-btn" onclick="retestSingle(1)" title="重新检测">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                </svg>
+                            </button>
+                            <div class="test-status"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-item" data-test="2">
+                        <div class="test-number">2</div>
+                        <div class="test-info">
+                            <div class="test-name">💬 对话测试</div>
+                            <div class="test-message">发送测试消息验证AI对话功能</div>
+                        </div>
+                        <div class="test-actions">
+                            <button class="retest-btn" onclick="retestSingle(2)" title="重新检测">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                </svg>
+                            </button>
+                            <div class="test-status"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-item" data-test="3">
+                        <div class="test-number">3</div>
+                        <div class="test-info">
+                            <div class="test-name">🤖 模型测试</div>
+                            <div class="test-message">检查配置文件、验证参数范围、确认模型设置</div>
+                        </div>
+                        <div class="test-actions">
+                            <button class="retest-btn" onclick="retestSingle(3)" title="重新检测">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                </svg>
+                            </button>
+                            <div class="test-status"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-item" data-test="4">
+                        <div class="test-number">4</div>
+                        <div class="test-info">
+                            <div class="test-name">🧠 记忆整理测试</div>
+                            <div class="test-message">检查记忆配置、验证目录结构、测试文件权限</div>
+                        </div>
+                        <div class="test-actions">
+                            <button class="retest-btn" onclick="retestSingle(4)" title="重新检测">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                </svg>
+                            </button>
+                            <div class="test-status"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-item" data-test="5">
+                        <div class="test-number">5</div>
+                        <div class="test-info">
+                            <div class="test-name">⚙️ 基本功能测试</div>
+                            <div class="test-message">扫描微信进程、测试模块导入、检查运行环境</div>
+                        </div>
+                        <div class="test-actions">
+                            <button class="retest-btn" onclick="retestSingle(5)" title="重新检测">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                </svg>
+                            </button>
+                            <div class="test-status"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-item" data-test="6">
+                        <div class="test-number">6</div>
+                        <div class="test-info">
+                            <div class="test-name">👥 用户获取测试</div>
+                            <div class="test-message">验证监听配置、测试微信接口、检查用户信息</div>
+                        </div>
+                        <div class="test-actions">
+                            <button class="retest-btn" onclick="retestSingle(6)" title="重新检测">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                </svg>
+                            </button>
+                            <div class="test-status"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-item" data-test="7">
+                        <div class="test-number">7</div>
+                        <div class="test-info">
+                            <div class="test-name">💫 微信交互测试</div>
+                            <div class="test-message">打开聊天窗口、测试输入框表情输入、验证完整交互流程</div>
+                            <div class="test-options" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 12px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="send-test-message" style="margin: 0;">
+                                    <span style="color: #e67e22; font-weight: 500;">⚠️ 发送真实测试消息（将向配置的第一个联系人发送一个表情）</span>
+                                </label>
+                                <div style="color: #666; margin-top: 5px; font-size: 11px;">
+                                    注意：勾选此项将实际发送消息，请确保联系人配置正确且愿意接收测试消息
+                                </div>
+                            </div>
+                        </div>
+                        <div class="test-actions">
+                            <button class="retest-btn" onclick="retestSingle(7)" title="重新检测">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                </svg>
+                            </button>
+                            <div class="test-status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="log-panel">
+                    <!--常见报错提示块 -->
+                    <div class="common-errors" style="margin-bottom: 20px; padding: 15px; background: #fff8e1; border-left: 4px solid #ffc107; border-radius: 4px; font-size: 0.95em;">
+                    <h4 style="margin-bottom: 10px; color: #d97706; font-weight:600;">⚠️常见报错解决方案</h4>
+                    <ul style="padding-left: 20px; margin-bottom: 0;">
+                    <li style="margin-bottom: 8px;"><strong>1 常见问题：日志有空回复/记忆整理报错/敏感词 等</strong> -
+                        <a href="https://f090tk8160.apifox.cn/6947869m0" target="_blank" style="color: #2563eb; text-decoration: underline;">查看常见问题文档</a>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        <strong>2 全流程文档：其他报错</strong> -<a href="https://ciu4ws3raf1.feishu.cn/docx/EgE7d5JvtopzmIxYZMKcLU2xnge?from=from_copylink" target="_blank" style="color: #2563eb; text-decoration: underline;">见首页帮助文档</a>
+                    </li>
+                    <li style="margin-bottom: 8px;">  
+                        <strong>解决不了，点文档2，进Q群</strong> -<a href="https://ciu4ws3raf1.feishu.cn/docx/EgE7d5JvtopzmIxYZMKcLU2xnge?from=from_copylink" target="_blank" style="color: #2563eb; text-decoration: underline;">见网站帮助文档</a>
+                    </li>
+                </ul>
+            </div>
+                <h3 style="margin-bottom: 20px; color: #333;">📋诊断日志</h3>
+                
+            
+                <div id="logContainer" class="log-container">
+                    <div class="log-entry">
+                        <span class="log-timestamp">--:--:--</span>
+                        <span class="log-info">等待开始诊断...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="legal-notice">
+        <div class="legal-toggle" id="toggleLegal">显示法律声明</div>
+        <div class="legal-content" id="legalContent" style="display:none;">
+            <p>
+                Modified based on the <strong>KouriChat</strong> project.<br>
+                原项目版权: Copyright (C) 2025, umaru<br>
+                修改版本版权: Copyright (C) 2025, iwyxdxl
+            </p>
+            <p>
+                本软件是自由软件，您可以根据 <a href="https://www.gnu.org/licenses/gpl-3.0.zh-cn.html" target="_blank">
+                GNU 通用公共许可证 第3版（或更高版本）</a> 的条款重新发布和修改本软件。
+            </p>
+            <p>
+                本软件按"现状"提供，不提供任何明示或暗示的担保（包括适销性或特定用途适用性）。<br>
+                如您未收到完整的许可证副本，请访问 <a href="https://www.gnu.org/licenses/gpl-3.0.zh-cn.html" target="_blank">
+                GNU GPL 3.0 中文版</a> 获取。
+            </p>
+            <p>
+                源代码获取：<br>
+                原项目源代码：<a href="https://github.com/KouriChat/KouriChat" target="_blank">https://github.com/KouriChat/KouriChat</a><br>
+                本项目源代码：<a href="https://git.code.tencent.com/AImarketing/weauto" target="_blank">https://git.code.tencent.com/AImarketing/weauto</a>
+            </p>
+            <p>
+                本软件仅供学习和娱乐使用，请勿用于违法用途，否则产生的一切法律责任均与任何作者无关。
+            </p>
+        </div>
+    </div>
+    
+    <!-- 解决方案弹窗 -->
+    <div id="solutionModal" class="solution-modal">
+        <div class="solution-content">
+            <span class="close-modal">&times;</span>
+            <h3>解决方案</h3>
+            <div id="solutionText"></div>
+        </div>
+    </div>
+
+    <script>
+        const DIAG_TOKEN = "{{ token or '' }}";
+        let isRunning = false;
+        let currentTests = {};
+        let statusPollingInterval = null;
+        
+        // 开始诊断
+        document.getElementById('startBtn').addEventListener('click', function() {
+            if (isRunning) return;
+            
+            // 检查测试7的复选框状态
+            let requestBody = {};
+            const sendTestMessage = document.getElementById('send-test-message');
+            if (sendTestMessage && sendTestMessage.checked) {
+                requestBody.send_real_message_for_test7 = true;
+            }
+            
+            fetch('/api/start_test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Diagnostic-Token': DIAG_TOKEN
+                },
+                body: JSON.stringify(requestBody)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    isRunning = true;
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('startBtn').textContent = '诊断进行中...';
+                    startStatusPolling();
+                } else {
+                    alert(data.message || data.error || '操作失败');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('诊断工具3分钟已自动关闭！\n 请回主页面 重新启动 ');
+            });
+        });
+        
+        // 轮询状态
+        function startStatusPolling() {
+            // 清除已存在的轮询间隔，防止重复轮询
+            if (statusPollingInterval) {
+                clearInterval(statusPollingInterval);
+            }
+            
+            statusPollingInterval = setInterval(() => {
+                fetch('/api/status', {
+                    headers: {
+                        'X-Diagnostic-Token': DIAG_TOKEN
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    updateUI(data);
+                    
+                    if (!data.is_testing) {
+                        clearInterval(statusPollingInterval);
+                        statusPollingInterval = null;
+                        isRunning = false;
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('startBtn').textContent = '重新诊断';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    clearInterval(statusPollingInterval);
+                    statusPollingInterval = null;
+                    isRunning = false;
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('startBtn').textContent = '开始诊断';
+                });
+            }, 1000);
+        }
+        
+        // 更新UI
+        function updateUI(data) {
+            // 更新进度条
+            const completedTests = Object.values(data.tests).filter(test => test.completed).length;
+            const progress = (completedTests / 7) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            
+            // 更新测试项状态
+            Object.keys(data.tests).forEach(testId => {
+                const test = data.tests[testId];
+                const testItem = document.querySelector(`[data-test="${testId}"]`);
+                
+                // 移除所有状态类
+                testItem.classList.remove('running', 'success', 'error');
+                
+                // 添加当前状态类
+                if (test.status !== 'pending') {
+                    testItem.classList.add(test.status);
+                }
+                
+                // 更新消息
+                testItem.querySelector('.test-message').textContent = test.message;
+                
+                // 更新状态图标
+                const statusElement = testItem.querySelector('.test-status');
+                statusElement.innerHTML = '';
+                
+                if (test.status === 'running') {
+                    statusElement.innerHTML = '<div class="spinner"></div>';
+                } else if (test.status === 'success') {
+                    statusElement.innerHTML = '<span class="check-icon">✓</span>';
+                } else if (test.status === 'error') {
+                    statusElement.innerHTML = '<span class="error-icon" onclick="showSolution(' + testId + ')">❌</span>';
+                }
+                
+                // 更新重新测试按钮状态
+                const retestBtn = testItem.querySelector('.retest-btn');
+                if (retestBtn) {
+                    retestBtn.disabled = test.status === 'running';
+                }
+            });
+            
+            // 更新日志
+            updateLogs(data.logs);
+        }
+        
+        // 更新日志
+        function updateLogs(logs) {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '';
+            
+            logs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = `
+                    <span class="log-timestamp">${log.timestamp}</span>
+                    <span class="log-${log.level}">${log.message}</span>
+                `;
+                logContainer.appendChild(logEntry);
+            });
+            
+            // 滚动到底部
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // 重新测试单个项目
+        function retestSingle(testId) {
+            if (isRunning) {
+                alert('诊断正在进行中，请等待完成后再试');
+                return;
+            }
+            
+            // 禁用重新测试按钮
+            const retestBtn = document.querySelector(`[data-test="${testId}"] .retest-btn`);
+            if (retestBtn) {
+                retestBtn.disabled = true;
+            }
+            
+            // 检查是否为测试7且勾选了发送消息选项
+            let requestBody = {};
+            if (testId == 7) {
+                const sendTestMessage = document.getElementById('send-test-message');
+                if (sendTestMessage && sendTestMessage.checked) {
+                    requestBody.send_real_message = true;
+                }
+            }
+            
+            fetch(`/api/retest/${testId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Diagnostic-Token': DIAG_TOKEN
+                },
+                body: JSON.stringify(requestBody)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 开始轮询状态更新
+                    startStatusPolling();
+                } else {
+                    alert(data.message || data.error || '操作失败');
+                    if (retestBtn) {
+                        retestBtn.disabled = false;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('重新测试失败');
+                if (retestBtn) {
+                    retestBtn.disabled = false;
+                }
+            });
+        }
+        
+        // 显示解决方案
+        function showSolution(testId) {
+            fetch(`/api/solutions/${testId}`, {
+                headers: {
+                    'X-Diagnostic-Token': DIAG_TOKEN
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('solutionText').innerHTML = data.solution.replace(/\n/g, '<br>');
+                document.getElementById('solutionModal').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('获取解决方案失败');
+            });
+        }
+        
+        // 关闭弹窗
+        document.querySelector('.close-modal').addEventListener('click', function() {
+            document.getElementById('solutionModal').style.display = 'none';
+        });
+        
+        // 点击弹窗外部关闭
+        document.getElementById('solutionModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+        
+        // 页面加载时获取初始状态
+        window.addEventListener('load', function() {
+            fetch('/api/status', {
+                headers: {
+                    'X-Diagnostic-Token': DIAG_TOKEN
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateUI(data);
+                if (data.is_testing) {
+                    isRunning = true;
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('startBtn').textContent = '诊断进行中...';
+                    startStatusPolling();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+        
+        // 法律声明切换
+        document.getElementById('toggleLegal').addEventListener('click', function() {
+            var wrapper = document.querySelector('.legal-notice');
+            var content = document.getElementById('legalContent');
+            var opening = !wrapper.classList.contains('open');
+            if (opening) {
+                wrapper.classList.add('open');
+                content.style.display = 'block';
+                this.textContent = '隐藏法律声明';
+            } else {
+                wrapper.classList.remove('open');
+                // 延迟到过渡结束后再隐藏 display
+                setTimeout(function(){
+                    if (!wrapper.classList.contains('open')) {
+                        content.style.display = 'none';
+                    }
+                }, 350);
+                this.textContent = '显示法律声明';
+            }
+        });
+    </script>
+</body>
+</html>
