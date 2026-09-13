@@ -44,7 +44,8 @@ jobs:
           add_data Demo_Image Demo_Image
           # 注意：PyInstaller 6.x 已移除 --key 字节码加密（v6.0 起），传 --key 会直接报错；
           # 若需强加密请改用 pyarmor 等方案，此处不再使用 --key。
-          pyinstaller --noconfirm --clean "${ARGS[@]}" config_editor.py 2>&1 | tee build.log
+          # 用 `python -m PyInstaller` 而非裸 `pyinstaller`，避免 CI 的 bash 步骤 PATH 未含 Scripts 导致 command not found。
+          python -m PyInstaller --noconfirm --clean "${ARGS[@]}" config_editor.py 2>&1 | tee build.log
           rc=${PIPESTATUS[0]}
           echo "BUILD_RC=$rc"
           exit $rc
