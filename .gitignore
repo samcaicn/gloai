@@ -29,3 +29,8 @@ libs/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ---- Local UI preview / dev scaffolding (never shipped) ----
+_preview.py
+_preview/
+_cleanup_junk.py

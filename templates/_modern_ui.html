@@ -1,0 +1,393 @@
+{#
+  WeAuto - Modern UI layer (shared partial)
+  ------------------------------------------------------------------
+  Included by every template immediately before </head>, so it always
+  layers on top of that page's own inline <style>.
+
+  Design goals:
+    * introduce a proper design-token system (:root variables)
+    * consistent, calmer colour language (no more 6 clashing Material
+      blocks in the header, no more green "delete"/"cancel" buttons)
+    * real Chinese font stack (Arial fell back badly for CJK)
+    * dark mode + a manual theme toggle (persisted in localStorage)
+    * modern components: cards, inputs, switches, alerts, scrollbars
+
+  Constraint: fully offline. The EXE ships without any `static/` dir and
+  must never depend on a CDN, so everything is inlined here.
+#}
+<style id="weauto-modern-ui">
+/* ---------- design tokens : light ---------- */
+:root{
+  --brand:#4f46e5; --brand-600:#4338ca; --brand-700:#3730a3;
+  --brand-soft:#eef2ff; --brand-ring:rgba(79,70,229,.20);
+  --ok:#10b981;  --ok-soft:#ecfdf5;   --ok-text:#047857;
+  --warn:#f59e0b; --warn-soft:#fffbeb; --warn-text:#b45309;
+  --danger:#ef4444; --danger-soft:#fef2f2; --danger-text:#b91c1c;
+  --info:#3b82f6; --info-soft:#eff6ff; --info-text:#1d4ed8;
+
+  --bg:#f5f6fa; --surface:#ffffff; --surface-2:#f3f4f8; --surface-3:#eef0f5;
+  --border:#e6e8ef; --border-strong:#d5d8e2;
+  --text:#111827; --text-2:#4b5563; --text-3:#9ca3af;
+
+  --header-bg:#ffffff; --header-text:#111827;
+  --sidebar-bg:#ffffff; --input-bg:#ffffff;
+
+  --r-xs:6px; --r-sm:8px; --r:10px; --r-lg:14px;
+  --sh-1:0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
+  --sh-2:0 4px 14px rgba(16,24,40,.07), 0 1px 3px rgba(16,24,40,.05);
+  --sh-3:0 12px 32px rgba(16,24,40,.12);
+  --ease:cubic-bezier(.4,0,.2,1);
+  --font-ui:system-ui,-apple-system,"Segoe UI","Microsoft YaHei UI","Microsoft YaHei",
+            "PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;
+  --font-mono:ui-monospace,"Cascadia Mono","Consolas","Courier New",monospace;
+}
+
+/* ---------- design tokens : dark ---------- */
+html[data-theme="dark"]{
+  --brand:#818cf8; --brand-600:#6366f1; --brand-700:#4f46e5;
+  --brand-soft:#232447; --brand-ring:rgba(129,140,248,.28);
+  --ok:#34d399;  --ok-soft:#0f2a22;   --ok-text:#6ee7b7;
+  --warn:#fbbf24; --warn-soft:#2b2410; --warn-text:#fcd34d;
+  --danger:#f87171; --danger-soft:#2c1618; --danger-text:#fca5a5;
+  --info:#60a5fa; --info-soft:#122036; --info-text:#93c5fd;
+
+  --bg:#0f1115; --surface:#171a21; --surface-2:#1e222b; --surface-3:#232833;
+  --border:#2a2f3a; --border-strong:#3a4150;
+  --text:#e8eaf0; --text-2:#a8b0be; --text-3:#6b7280;
+
+  --header-bg:#151821; --header-text:#e8eaf0;
+  --sidebar-bg:#151821; --input-bg:#1b1f28;
+
+  --sh-1:0 1px 2px rgba(0,0,0,.4);
+  --sh-2:0 4px 16px rgba(0,0,0,.45);
+  --sh-3:0 12px 34px rgba(0,0,0,.55);
+}
+
+/* ---------- base ---------- */
+body{
+  background-color:var(--bg) !important;
+  color:var(--text);
+  font-family:var(--font-ui) !important;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+h1,h2,h3,h4,h5,h6,button,input,select,textarea,label,small,span,div{ font-family:var(--font-ui); }
+h1,h2,h3,h4{ color:var(--text); letter-spacing:-.01em; }
+h2{ border-bottom:1px solid var(--border) !important; color:var(--text) !important; }
+h3{ color:var(--text) !important; }
+small,.form-group small{ color:var(--text-3) !important; }
+label{ color:var(--text-2); }
+code,pre,.mono,textarea.mono{ font-family:var(--font-mono); }
+
+/* ---------- header ---------- */
+.header-bar{
+  background:var(--header-bg) !important;
+  border-bottom:1px solid var(--border) !important;
+  box-shadow:var(--sh-1) !important;
+  padding:10px 22px !important;
+  min-height:58px;
+}
+.header-bar .header-title h1{
+  font-size:18.5px !important;
+  font-weight:650 !important;
+  letter-spacing:-.015em;
+  color:var(--header-text) !important;
+  margin:0;
+}
+.header-bar .header-title h1::before{
+  content:"";
+  display:inline-block;
+  width:6px; height:19px;
+  margin-right:10px;
+  vertical-align:-3px;
+  border-radius:3px;
+  background:linear-gradient(180deg,var(--brand),var(--brand-700));
+}
+.header-bar .buttons{ gap:8px; }
+
+/* ---------- buttons : base ---------- */
+.nav-button,button,a.nav-button{
+  border-radius:var(--r-sm) !important;
+  font-weight:560 !important;
+  letter-spacing:.01em;
+  box-shadow:var(--sh-1);
+  transition:background-color .18s var(--ease), color .18s var(--ease),
+             border-color .18s var(--ease), box-shadow .18s var(--ease),
+             transform .12s var(--ease) !important;
+}
+.nav-button:active,button:active,a.nav-button:active{ transform:translateY(1px); }
+.nav-button:focus-visible,button:focus-visible,a.nav-button:focus-visible,
+input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:none !important;
+  box-shadow:0 0 0 3px var(--brand-ring) !important;
+}
+
+/* buttons : semantic variants ------------------------------------- */
+/* primary (default action) - covers every button-ish control the pages use:
+   bare <button>, <input type=submit|button>, and the per-page classes
+   .btn / a.button-like that login & quick_start define themselves. */
+.nav-button,button,a.nav-button,.btn,a.button-like,
+input[type=submit],input[type=button],
+.btn-primary{
+  background-color:var(--brand) !important;
+  border:1px solid var(--brand) !important;
+  color:#fff !important;
+}
+.nav-button:hover,button:hover,a.nav-button:hover,.btn:hover,a.button-like:hover,
+input[type=submit]:hover,input[type=button]:hover,
+.btn-primary:hover{
+  background-color:var(--brand-600) !important;
+  border-color:var(--brand-600) !important;
+}
+/* secondary / skip links inside quick_start */
+a.button-like.secondary,a.button-like.skip,.btn-secondary{
+  background-color:var(--surface) !important;
+  border:1px solid var(--border-strong) !important;
+  color:var(--text-2) !important;
+  box-shadow:none !important;
+}
+a.button-like.secondary:hover,a.button-like.skip:hover,.btn-secondary:hover{
+  background-color:var(--surface-2) !important;
+  border-color:var(--brand) !important;
+  color:var(--brand) !important;
+}
+/* status / success */
+.btn-success{ background-color:var(--ok) !important; border:1px solid var(--ok) !important; color:#fff !important; }
+.btn-success:hover{ filter:brightness(.94); }
+/* "stop" state keeps a strong danger look (driven by existing JS) */
+.nav-button.stop{ background-color:var(--danger) !important; border-color:var(--danger) !important; color:#fff !important; }
+.nav-button.stop:hover{ filter:brightness(.94); }
+/* quiet / secondary */
+.btn-soft{
+  background-color:var(--surface) !important;
+  border:1px solid var(--border-strong) !important;
+  color:var(--text-2) !important;
+  box-shadow:none !important;
+}
+.btn-soft:hover{ background-color:var(--surface-2) !important; color:var(--text) !important; border-color:var(--brand) !important; }
+/* tonal accents (kept, but muted) */
+.btn-warn{ background-color:var(--warn-soft) !important; border:1px solid transparent !important; color:var(--warn-text) !important; }
+.btn-warn:hover{ background-color:var(--warn) !important; color:#fff !important; }
+.btn-info{ background-color:var(--info-soft) !important; border:1px solid transparent !important; color:var(--info-text) !important; }
+.btn-info:hover{ background-color:var(--info) !important; color:#fff !important; }
+.btn-danger{ background-color:var(--danger-soft) !important; border:1px solid transparent !important; color:var(--danger-text) !important; }
+.btn-danger:hover{ background-color:var(--danger) !important; color:#fff !important; }
+
+/* destructive inline handlers -> never look like a primary CTA */
+button[onclick*="removeEntry"],button[onclick*="deleteEntry"],
+button[onclick*="remove"],button[onclick*="delete"],
+#cancelCreateBtn,#cancelEditBtn,.btn-cancel{
+  background-color:var(--surface) !important;
+  border:1px solid var(--border-strong) !important;
+  color:var(--text-2) !important;
+  box-shadow:none !important;
+}
+button[onclick*="removeEntry"]:hover,button[onclick*="deleteEntry"]:hover,
+button[onclick*="remove"]:hover,button[onclick*="delete"]:hover,
+#cancelCreateBtn:hover,#cancelEditBtn:hover,.btn-cancel:hover{
+  background-color:var(--danger-soft) !important;
+  border-color:var(--danger) !important;
+  color:var(--danger-text) !important;
+}
+
+/* ---------- header button mapping (was inline Material colours) ---------- */
+/* the six header CTAs become one primary + quiet peers + one soft danger */
+/* run/stop control keeps its semantic green/red (JS toggles .stop) */
+#botButton{ background-color:var(--ok) !important; border:1px solid var(--ok) !important; color:#fff !important; }
+#botButton:hover{ background-color:var(--ok) !important; filter:brightness(.93); }
+#botButton.stop{ background-color:var(--danger) !important; border-color:var(--danger) !important; }
+#botButton.stop:hover{ background-color:var(--danger) !important; filter:brightness(.93); }
+#saveConfigButton{ background-color:var(--brand) !important; border:1px solid var(--brand) !important; color:#fff !important; }
+#saveConfigButton:hover{ background-color:var(--brand-600) !important; }
+#importButton{ background-color:var(--surface) !important; border:1px solid var(--border-strong) !important; color:var(--text-2) !important; box-shadow:none !important; }
+#importButton:hover{ border-color:var(--brand) !important; color:var(--brand) !important; }
+#oneKeyDiagnosticButton{ background-color:var(--danger-soft) !important; border:1px solid transparent !important; color:var(--danger-text) !important; box-shadow:none !important; }
+#oneKeyDiagnosticButton:hover{ background-color:var(--danger) !important; color:#fff !important; }
+a.nav-button[style*="ff9800"],a.nav-button[style*="FF9800"]{ background-color:var(--surface) !important; border:1px solid var(--border-strong) !important; color:var(--text-2) !important; box-shadow:none !important; }
+a.nav-button[style*="ff9800"]:hover{ border-color:var(--brand) !important; color:var(--brand) !important; }
+a.nav-button[style*="03A9F4"],a.nav-button[style*="03a9f4"]{ background-color:var(--surface) !important; border:1px solid var(--border-strong) !important; color:var(--text-2) !important; box-shadow:none !important; }
+a.nav-button[style*="03A9F4"]:hover{ border-color:var(--brand) !important; color:var(--brand) !important; }
+a.nav-button[style*="2196F3"],button[style*="2196F3"]{ background-color:var(--surface) !important; border:1px solid var(--border-strong) !important; color:var(--text-2) !important; box-shadow:none !important; }
+a.nav-button[style*="2196F3"]:hover{ border-color:var(--brand) !important; color:var(--brand) !important; }
+
+/* ---------- sidebar ---------- */
+.sidebar{
+  background-color:var(--sidebar-bg) !important;
+  border-right:1px solid var(--border) !important;
+  box-shadow:none !important;
+  padding:12px 0 !important;
+}
+.sidebar ul{ padding:0 10px !important; }
+.sidebar li a{
+  color:var(--text-2) !important;
+  border-left:3px solid transparent !important;
+  border-radius:0 var(--r-sm) var(--r-sm) 0;
+  padding:10px 14px !important;
+  font-size:14px !important;
+  transition:background-color .16s var(--ease), color .16s var(--ease), border-color .16s var(--ease) !important;
+}
+.sidebar li a:hover{
+  background-color:var(--surface-2) !important;
+  color:var(--text) !important;
+}
+.sidebar li a.active{
+  background-color:var(--brand-soft) !important;
+  color:var(--brand) !important;
+  font-weight:600 !important;
+  border-left-color:var(--brand) !important;
+}
+
+/* ---------- content ---------- */
+.content-area{ background-color:var(--bg) !important; }
+.content-panel{
+  background:var(--surface) !important;
+  border:1px solid var(--border) !important;
+  border-radius:var(--r-lg) !important;
+  box-shadow:var(--sh-2) !important;
+  padding:24px 26px !important;
+}
+#configForm,.peek-section,.form-group{ color:var(--text); }
+
+/* ---------- form controls ---------- */
+input[type=text],input[type=password],input[type=number],input[type=url],
+input[type=email],input[type=search],select,textarea,
+input:not([type]){
+  background-color:var(--input-bg) !important;
+  color:var(--text) !important;
+  border:1px solid var(--border) !important;
+  border-radius:var(--r-sm) !important;
+  transition:border-color .16s var(--ease), box-shadow .16s var(--ease) !important;
+}
+input[type=text]:focus,input[type=password]:focus,input[type=number]:focus,
+input[type=url]:focus,input[type=email]:focus,input[type=search]:focus,
+select:focus,textarea:focus,input:not([type]):focus{
+  border-color:var(--brand) !important;
+  box-shadow:0 0 0 3px var(--brand-ring) !important;
+  outline:none !important;
+}
+input::placeholder,textarea::placeholder{ color:var(--text-3) !important; }
+input[type=checkbox],input[type=radio]{ accent-color:var(--brand); }
+
+/* ---------- switches ---------- */
+.switch{ background-color:var(--border-strong) !important; }
+.switch-item{ color:var(--text-2); }
+
+/* ---------- alerts / toasts ---------- */
+.success-alert,#config-alert{
+  border-radius:var(--r) !important;
+  box-shadow:var(--sh-3) !important;
+  border:1px solid var(--border) !important;
+}
+.backend-closed-alert{
+  border-radius:var(--r) !important;
+  box-shadow:var(--sh-3) !important;
+  background:linear-gradient(135deg,#ef4444,#dc2626) !important;
+  color:#fff !important;
+  font-weight:560;
+}
+
+/* ---------- misc surfaces that were hard-coded white ---------- */
+.peek-content,.peek-section,.generator-box,.npc-config,.npc-settings,
+.forum-selector,.chat-round-label,.memory-item-label,.word-counter,
+.file-info,.file-actions,.textarea-container,.content-panel > *{
+  color:inherit;
+}
+.peek-section h4{ border-bottom-color:var(--brand) !important; color:var(--text) !important; }
+
+/* ---------- scrollbars ---------- */
+*{ scrollbar-width:thin; scrollbar-color:var(--border-strong) transparent; }
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{
+  background:var(--border-strong);
+  border-radius:8px;
+  border:2px solid transparent;
+  background-clip:content-box;
+}
+::-webkit-scrollbar-thumb:hover{ background:var(--text-3); background-clip:content-box; }
+
+/* ---------- theme toggle ---------- */
+#weauto-theme-toggle{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px; margin-left:6px;
+  border-radius:var(--r-sm);
+  border:1px solid var(--border-strong) !important;
+  background:var(--surface) !important;
+  color:var(--text-2) !important;
+  cursor:pointer; font-size:15px; line-height:1;
+  box-shadow:none !important; transition:all .18s var(--ease);
+  flex:0 0 auto;
+}
+#weauto-theme-toggle:hover{
+  border-color:var(--brand) !important;
+  color:var(--brand) !important;
+  background:var(--surface) !important;
+  filter:none !important;
+}
+#weauto-theme-toggle.floating{ position:fixed; top:12px; right:12px; z-index:2000; }
+
+/* ---------- narrow screens ---------- */
+@media (max-width:820px){
+  .header-bar{ padding:10px 14px !important; flex-wrap:wrap; gap:8px; }
+  .header-bar .buttons{ flex-wrap:wrap; gap:6px; }
+  .content-panel{ padding:18px !important; border-radius:var(--r) !important; }
+}
+</style>
+<script>
+/* Theme bootstrap: apply a stored preference before paint to avoid a flash. */
+(function () {
+  try {
+    var saved = localStorage.getItem('weauto-theme');
+    if (saved === 'dark' || saved === 'light') {
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+  } catch (e) { /* private mode / storage disabled - ignore */ }
+})();
+
+/* Inject a theme toggle once the DOM is ready (works on every page). */
+document.addEventListener('DOMContentLoaded', function () {
+  if (document.getElementById('weauto-theme-toggle')) return;
+
+  var root = document.documentElement;
+  function currentTheme() {
+    var explicit = root.getAttribute('data-theme');
+    if (explicit) return explicit;
+    try {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (e) { return 'light'; }
+  }
+  function paint(btn) {
+    var dark = currentTheme() === 'dark';
+    btn.textContent = dark ? '\u2600' : '\u263E'; /* sun / moon */
+    btn.title = dark ? '切换到浅色模式' : '切换到深色模式';
+    btn.setAttribute('aria-label', btn.title);
+  }
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'weauto-theme-toggle';
+  btn.addEventListener('click', function () {
+    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('weauto-theme', next); } catch (e) {}
+    paint(btn);
+  });
+
+  var host = document.querySelector('.header-bar .buttons') ||
+             document.querySelector('.header-bar') ||
+             document.querySelector('header');
+  if (host) {
+    host.appendChild(btn);
+  } else {
+    btn.classList.add('floating');
+    document.body.appendChild(btn);
+  }
+  paint(btn);
+
+  try {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+      if (!root.getAttribute('data-theme')) paint(btn);
+    });
+  } catch (e) {}
+});
+</script>
