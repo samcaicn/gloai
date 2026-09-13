@@ -15,7 +15,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          # PyInstaller 6.22.3 要求 Python <3.13，且与最新 3.12 补丁存在兼容问题；
+          # 本地 3.10/3.11 + 6.22.3 构建已验证成功，CI 对齐使用 3.11。
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
@@ -52,7 +54,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tail -n 200 build.log > diag.txt
+          { tail -n 200 build.log 2>/dev/null || echo "(no build.log captured)"; } > diag.txt
           TITLE="WeAuto CI Build Failure"
           NUM=$(gh issue list --repo samcaicn/gloai --state open --search "WeAuto CI Build Failure in:title" --json number -q '.[0].number' 2>/dev/null || true)
           if [ -n "$NUM" ]; then
