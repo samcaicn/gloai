@@ -50,8 +50,13 @@ jobs:
           # 避免此前 `| tee` 在 headless runner 上 SIGPIPE 导致 build.log 为空、报错丢失。
           {
             set -x
-            # 防御性 add-data：只打包真实存在的资源，避免缺失目录导致构建中断
-            add_data() { [ -e "$1" ] && ARGS+=(--add-data "$1;$2"); }
+            set +e  # 关闭 GitHub 自动加的 errexit：任何命令非 0 退出都不中断脚本，
+                    # 由末尾 `exit $rc` 依据 PyInstaller 真实返回码决定构建成败。
+            # 防御性 add-data：只打包真实存在的资源。
+            # 用 if 块确保函数始终返回 0 —— GitHub Actions 给 bash 步骤自动加 set -e，
+            # 若用 `[ -e x ] && ARGS+=(...)` 这种写法，目录缺失时函数返回非 0 会触发
+            # set -e 直接终止整个脚本（跑不到 PyInstaller），这是此前 11 次构建秒失败的真正根因。
+            add_data() { if [ -e "$1" ]; then ARGS+=(--add-data "$1;$2"); fi; }
             # 使用极短的工作/输出路径（C:/_wb、C:/_wd）规避 windows-2022 runner
             # 未开启长路径支持时 PyInstaller --collect-all 产生的深路径超过 MAX_PATH(260)
             # 导致 FileNotFoundError / WinError 206 的构建失败（本地 Win11 默认支持长路径故不报错）。
