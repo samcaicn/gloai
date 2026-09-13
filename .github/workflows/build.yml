@@ -54,14 +54,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          { tail -n 200 build.log 2>/dev/null || echo "(no build.log captured)"; } > diag.txt
-          TITLE="WeAuto CI Build Failure"
-          NUM=$(gh issue list --repo samcaicn/gloai --state open --search "WeAuto CI Build Failure in:title" --json number -q '.[0].number' 2>/dev/null || true)
-          if [ -n "$NUM" ]; then
-            gh issue comment "$NUM" --repo samcaicn/gloai --body-file diag.txt || true
-          else
-            gh issue create --repo samcaicn/gloai --title "$TITLE" --body-file diag.txt --label CI || true
-          fi
+          { tail -n 300 build.log 2>/dev/null || echo "(no build.log captured)"; } > diag.txt
+          echo "=== diag.txt head ==="
+          head -c 1500 diag.txt
+          gh issue create --repo samcaicn/gloai --title "WeAuto CI Build Failure (run ${{ github.run_number }})" --body-file diag.txt || true
 
       - name: Verify EXE
         shell: bash
