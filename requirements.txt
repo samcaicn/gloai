@@ -30,6 +30,8 @@ pyperclip         # 剪贴板读写（发消息走剪贴板）
 pywin32           # 发送前把微信窗口置前/聚焦
 Pillow            # 图片处理
 typing-extensions
+colorama          # wechatauto/logger.py 顶层 import（CI 干净 venv 缺失会直接导致 PyInstaller 分析期 ModuleNotFoundError 构建失败）
+imageio-ffmpeg    # wechatauto/media.py 用 ffmpeg 处理音视频（可选但建议装，避免运行时缺 ffmpeg）
 
 # ===== 可选（缺失自动降级，不影响核心收发）=====
 # winsdk : 图片 OCR 文字识别（仅 wechatauto.guia.ScreenOCR 用到，且为懒加载 import）。
