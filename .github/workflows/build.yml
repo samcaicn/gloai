@@ -28,11 +28,16 @@ jobs:
         env:
           KEY: ${{ secrets.PYINSTALLER_KEY }}
         run: |
+          # 防御性 add-data：只打包真实存在的资源，避免缺失目录导致构建中断
+          add_data() { [ -e "$1" ] && ARGS+=(--add-data "$1;$2"); }
           ARGS=(--name WeAuto --onefile --paths vendor
-                --hidden-import bot --hidden-import wxauto_compat --hidden-import wechatauto
-                --add-data "config.py;." --add-data "templates;templates"
-                --add-data "emojis;emojis" --add-data "prompts;prompts"
-                --add-data "static;static" --add-data "Demo_Image;Demo_Image")
+                --hidden-import bot --hidden-import wxauto_compat --hidden-import wechatauto)
+          add_data config.py "."
+          add_data templates templates
+          add_data emojis emojis
+          add_data prompts prompts
+          add_data static static
+          add_data Demo_Image Demo_Image
           if [ -n "$KEY" ]; then ARGS+=(--key "$KEY"); fi
           pyinstaller --noconfirm --clean "${ARGS[@]}" config_editor.py
 
