@@ -26,9 +26,35 @@
 | 当前版本 | v3.25.1 |
 | 最后更新 | 2025-10-16 |
 | Python 要求 | 3.9 ~ 3.13 |
-| 微信要求 | 3.9 / 4.x |
+| 微信要求 | 3.9 / 4.x（仅 Windows 桌面客户端） |
+| 支持平台 | Windows 10 / 11（64 位）**；macOS / Linux 暂不支持** |
 | Web 配置后台端口 | 5001 |
 | 许可证 | GNU GPL-3.0（或更高版本） |
+
+---
+
+## 平台支持（Platform Support）
+
+| 平台 | 状态 | 说明 |
+| --- | --- | --- |
+| **Windows 10 / 11（64 位）** | ✅ 支持 | 唯一受支持的运行平台，需安装微信 3.9 / 4.x 桌面客户端 |
+| **macOS** | ❌ 不支持 | 无实现 |
+| **Linux** | ❌ 不支持 | 无实现 |
+
+**为什么仅支持 Windows（实测依据）：**
+
+1. 微信收发引擎 `vendor/wechatauto` 通过 **Windows UI Automation**（`uiautomation`）+ **Win32 API**（`ctypes.windll` / `user32`、剪贴板读写、窗口置前聚焦）直接驱动**微信 Windows 桌面客户端**。这些能力是 Windows 独占的（`wx.py` / `sender.py` / `uia_driver.py` 中大量 `ctypes.windll`、`user32` 调用）。
+2. 硬性依赖 `pywin32`、`comtypes`、`uiautomation` 仅提供 Windows wheel，`requirements.txt` 未加平台标记，在 macOS / Linux 上 `pip install` 会直接失败。
+3. 启动器 `Run.bat` 为 Windows 批处理；CI 构建运行于 `windows-latest`。
+
+**macOS / Linux 现状与移植说明（未实现）：**
+
+- **macOS**：微信 macOS 客户端存在，但其 UI 框架（Accessibility / AppleScript）与 Windows 完全不同，`wechatauto` 无法驱动；且上述 Windows 专属依赖无法在 macOS 安装。**当前无 macOS 实现。**
+- **Linux**：微信官方无 Linux 桌面客户端（仅有 Wine 方案或网页版，均非 `wechatauto` 所依赖的 Windows UI 自动化目标）。**当前无 Linux 实现。**
+- **若要移植**，需替换微信 I/O 层（而非业务逻辑）：
+  - 抽象出与平台无关的微信收发接口，替换 `vendor/wechatauto`：macOS 走辅助功能 API（AXUIElement）/ AppleScript 引擎，Linux 走 Wine + Windows 客户端或对接网页版 / 其他协议引擎。
+  - 将 `pywin32` / `comtypes` / `uiautomation` 改为**可选依赖**并加平台分支（如 `requirements.txt` 使用 `; sys_platform == "win32"` 标记）。
+  - `bot.py` 中的 LLM 调用、记忆、定时、指令等业务逻辑本身是跨平台的，理论上可直接复用，仅需重写微信收发层。
 
 ---
 
@@ -74,7 +100,10 @@ WeChatBot_WXAUTO_SE-3.25.1/
 ├── Run.bat                # 一键启动器（检查环境→装依赖→更新→启动）
 ├── 一键检测.bat           # 一键排查程序问题
 ├── WeAuto.spec            # PyInstaller 打包配置
+├── .github/
+│   └── workflows/build.yml  # CI：PyInstaller 单文件构建（windows-latest）
 ├── CHANGELOG.md           # 更新日志
+├── LICENSE                # GNU GPL-3.0 全文
 └── DEPENDENCIES.txt       # 第三方依赖许可证说明
 ```
 
@@ -93,7 +122,7 @@ WeChatBot_WXAUTO_SE-3.25.1/
 ## 快速上手
 
 1. 登录电脑微信（支持 4.x），保持后台运行。
-2. 双击运行 **`Run.bat`**：自动检查微信 / Python 版本 → 安装依赖（或手动 `venv\Scripts\python -m pip install -r requirements.txt`）→ 检查更新 → 启动 Web 后台。
+2. 双击运行 **`Run.bat`**：自动检查微信 / Python 版本 → 安装依赖（或手动 `python -m pip install -r requirements.txt --only-binary=:all:`）→ 检查更新 → 启动 Web 后台。
 3. 浏览器打开配置后台（默认 `http://127.0.0.1:5001`），修改配置：选择 API 服务商 / 模型，填入 API Key（网页端已隐藏避免泄露）。
 4. 左侧点击 **「Prompt 管理」**，参考自带提示词编写，或用提示词生成器生成。
 5. 回到配置编辑器，填入微信昵称 / 群聊名称，并选择对应提示词。
@@ -120,8 +149,10 @@ pyinstaller WeAuto.spec
 
 ## 自动更新与 CI
 
-- `updater.py` 指向 GitHub `samcaicn/gloai` 的 `weauto` 分支检查更新。
-- CI（`.github/workflows/build.yml`）在该分支构建**加密混淆**的 `WeAuto.exe`，产物以 GitHub Actions Artifact 保留 **90 天**，供本机下载与自动更新使用。
+- `updater.py` 指向 GitHub `samcaicn/gloai` 的 `weauto` 分支检查更新（支持国内更新源兜底），下载 GitHub Actions Artifact / Release 中的 `WeAuto.exe` 用于自动更新。
+- CI（`.github/workflows/build.yml`）在 `windows-latest` + **Python 3.10** 上用 **PyInstaller 6.x** 打包**单文件** `WeAuto.exe`（`--onefile --collect-all wechatauto`，关闭 UPX）：
+  - ⚠️ PyInstaller 6.x 已移除 `--key` 字节码加密，CI 仅做单文件打包，**并非加密 / 混淆**。
+  - 产物同时发布为 GitHub Release 标签 `weauto-build-<run>` 并上传 Actions Artifact（保留 **90 天**），供本机下载与自动更新。
 
 ---
 
