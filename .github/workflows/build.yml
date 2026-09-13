@@ -33,8 +33,9 @@ jobs:
           set -o pipefail
           # 防御性 add-data：只打包真实存在的资源，避免缺失目录导致构建中断
           add_data() { [ -e "$1" ] && ARGS+=(--add-data "$1;$2"); }
-          ARGS=(--name WeAuto --onefile --paths vendor
-                --hidden-import bot --hidden-import wxauto_compat --hidden-import wechatauto)
+          ARGS=(--name WeAuto --onefile --noupx --paths vendor
+                --hidden-import bot --hidden-import wxauto_compat --hidden-import wechatauto
+                --collect-all wechatauto)
           add_data config.py "."
           add_data templates templates
           add_data emojis emojis
