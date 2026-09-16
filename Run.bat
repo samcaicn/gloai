@@ -2,6 +2,10 @@
 setlocal enabledelayedexpansion
 chcp 65001 >nul
 
+:: 优先使用本项目已配置好的虚拟环境(.venv_bot)，避免系统 Python 缺依赖导致启动失败
+set "PY=python"
+if exist ".venv_bot\Scripts\python.exe" set "PY=.venv_bot\Scripts\python.exe"
+
 :: =========================================================
 :: WeAuto 启动器 (v3.25.1) — 已升级支持微信 4.x
 :: 微信 3.9 / 4.x 均支持；Python 3.9 ~ 3.13
@@ -55,7 +59,7 @@ echo ✅ 微信版本检查通过：!wxversion!（WeAuto 已支持微信 4.x）
 :: 检查 Python 是否安装（支持 3.9 ~ 3.13）
 :: ---------------------------
 echo 🔍 检查Python环境...
-python --version >nul 2>&1
+%PY% --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo ❌ Python 未安装或未添加到系统PATH！
     echo 请前往官网下载并安装 Python 3.9-3.13 版本
@@ -65,7 +69,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-for /f "tokens=2,*" %%i in ('python --version 2^>^&1') do set "pyversion=%%i"
+for /f "tokens=2,*" %%i in ('%PY% --version 2^>^&1') do set "pyversion=%%i"
 echo 检测到Python版本：%pyversion%
 
 for /f "tokens=1,2,3 delims=." %%a in ("%pyversion%") do (
@@ -96,7 +100,7 @@ echo ✅ Python版本检查通过：%pyversion% (满足 3.9-3.13 要求)
 :: ---------------------------
 :: 检查 pip 是否存在
 :: ---------------------------
-python -m pip --version >nul 2>&1
+%PY% -m pip --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo ❌ pip 未安装，请先安装 pip。
     pause
@@ -107,21 +111,21 @@ if %errorlevel% neq 0 (
 :: 选择最快的 pip 源
 :: ---------------------------
 echo 🚀 正在检测可用镜像源...
-python -m pip install --upgrade pip --only-binary=:all: --index-url https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com >nul 2>&1
+%PY% -m pip install --upgrade pip --only-binary=:all: --index-url https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com >nul 2>&1
 if !errorlevel! equ 0 (
     set "SOURCE_URL=https://mirrors.aliyun.com/pypi/simple/"
     set "TRUSTED_HOST=mirrors.aliyun.com"
     echo ✅ 使用阿里源
     goto :INSTALL
 )
-python -m pip install --upgrade pip --only-binary=:all: --index-url https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn >nul 2>&1
+%PY% -m pip install --upgrade pip --only-binary=:all: --index-url https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn >nul 2>&1
 if !errorlevel! equ 0 (
     set "SOURCE_URL=https://pypi.tuna.tsinghua.edu.cn/simple"
     set "TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn"
     echo ✅ 使用清华源
     goto :INSTALL
 )
-python -m pip install --upgrade pip --only-binary=:all: --index-url https://pypi.org/simple >nul 2>&1
+%PY% -m pip install --upgrade pip --only-binary=:all: --index-url https://pypi.org/simple >nul 2>&1
 if !errorlevel! equ 0 (
     set "SOURCE_URL=https://pypi.org/simple"
     set "TRUSTED_HOST="
@@ -143,13 +147,13 @@ if "!TRUSTED_HOST!"=="" (
 
 :: 微信 4.x 引擎已内置为 vendor/wechatauto，无需再 pip 安装 wxauto / wxautox-wechatbot。
 :: 优先在线安装（能拿到与当前 Python 版本匹配的 wheel，如 cp313）。
-python -m pip install -r requirements.txt --only-binary=:all: --index-url !IDX!
+%PY% -m pip install -r requirements.txt --only-binary=:all: --index-url !IDX!
 if !errorlevel! neq 0 (
     echo ⚠️ 在线安装失败，尝试回退本地 libs 离线安装（适用于 Python 3.9~3.12）...
     if "!TRUSTED_HOST!"=="" (
-        python -m pip install -r requirements.txt -f ./libs --index-url !SOURCE_URL!
+        %PY% -m pip install -r requirements.txt -f ./libs --index-url !SOURCE_URL!
     ) else (
-        python -m pip install -r requirements.txt -f ./libs --index-url !SOURCE_URL! --trusted-host !TRUSTED_HOST!
+        %PY% -m pip install -r requirements.txt -f ./libs --index-url !SOURCE_URL! --trusted-host !TRUSTED_HOST!
     )
     if !errorlevel! neq 0 (
         echo ❌ 安装依赖失败，请检查网络或 requirements.txt 是否存在
@@ -168,7 +172,7 @@ cls
 :: 形式保留 90 天，供本机下载与自动更新使用。
 :: ---------------------------
 echo 🟢 检查程序更新...
-python updater.py
+%PY% updater.py
 
 :: 清屏
 cls
@@ -177,4 +181,4 @@ cls
 :: 启动程序（Web 配置后台，端口 5001）
 :: ---------------------------
 echo 🟢 启动主程序...
-python config_editor.py
+%PY% config_editor.py

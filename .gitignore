@@ -34,3 +34,16 @@ desktop.ini
 _preview.py
 _preview/
 _cleanup_junk.py
+
+# ---- Project-local venv (NOT covered by generic venv/ or .venv/ patterns) ----
+.venv_bot/
+
+# ---- Local runtime state / secrets (never commit) ----
+.restart_stamp
+.secret_key
+weauto_chat.db
+weauto_chat.db-shm
+weauto_chat.db-wal
+user_timers.json
+style_settings.json
+style_profile.json

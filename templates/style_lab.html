@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="R8HnRlJRIScicXZu3ONwGH">
+<head data-page-node-id="pq8U8ENOxhjQC4TK6MkyGR">
+    <meta charset="UTF-8" data-page-node-id="xAu3MFUoZvkrl44CBpv6qk">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="9G1hE0uc5TH5NR583KCrIO">
+    <meta name="csrf-token" content="{{ csrf_token() }}" data-page-node-id="4fGicgvFcuvAXYM8E2rJo0">
+    <title>风格模仿 · 学习主人的说话方式</title>
+    <style>
+        body{ margin:0; }
+        .wrap{ max-width:1180px; margin:0 auto; padding:22px 20px 60px; }
+        .panel{
+            background:var(--surface);
+            border:1px solid var(--border);
+            border-radius:var(--r-lg);
+            box-shadow:var(--sh-2);
+            padding:20px 22px;
+            margin-bottom:18px;
+        }
+        .panel h2{
+            margin:0 0 14px; font-size:16.5px; font-weight:650;
+            padding-bottom:10px; border-bottom:1px solid var(--border);
+        }
+        .hint{ color:var(--text-3); font-size:13px; line-height:1.7; margin:8px 0 0; }
+        .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+        .stat-card{
+            background:var(--surface-2);
+            border:1px solid var(--border);
+            border-radius:var(--r);
+            padding:14px 16px;
+        }
+        .stat-card .k{ color:var(--text-3); font-size:12.5px; margin-bottom:6px; }
+        .stat-card .v{ font-size:22px; font-weight:680; color:var(--text); letter-spacing:-.02em; }
+        .stat-card .u{ font-size:12px; color:var(--text-3); margin-left:3px; font-weight:500; }
+        .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .chip{
+            background:var(--brand-soft); color:var(--brand);
+            border:1px solid var(--brand-ring);
+            border-radius:999px; padding:4px 12px; font-size:12.5px;
+        }
+        .chip.muted{ background:var(--surface-2); color:var(--text-3); border-color:var(--border); }
+        .row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .switch-line{
+            display:flex; align-items:center; justify-content:space-between;
+            gap:16px; flex-wrap:wrap;
+            background:var(--surface-2); border:1px solid var(--border);
+            border-radius:var(--r); padding:14px 16px;
+        }
+        .switch-line .txt strong{ display:block; font-size:14.5px; color:var(--text); }
+        .switch-line .txt span{ font-size:12.5px; color:var(--text-3); }
+        .badge{
+            display:inline-block; padding:3px 10px; border-radius:999px;
+            font-size:12px; font-weight:600;
+        }
+        .badge.on{ background:var(--ok-soft); color:var(--ok-text); }
+        .badge.off{ background:var(--surface-3); color:var(--text-3); }
+        textarea{
+            width:100%; min-height:260px; box-sizing:border-box;
+            background:var(--input-bg) !important;
+            color:var(--text) !important;
+            border:1px solid var(--border) !important;
+            border-radius:var(--r-sm) !important;
+            padding:12px 14px; line-height:1.75; font-size:13.5px;
+        }
+        .msg{
+            background:var(--info-soft); color:var(--info-text);
+            border:1px solid var(--brand-ring);
+            border-radius:var(--r); padding:10px 14px; margin-bottom:16px; font-size:13.5px;
+        }
+        table{ width:100%; border-collapse:collapse; font-size:13px; }
+        th,td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); }
+        th{ color:var(--text-3); font-weight:600; font-size:12.5px; }
+        td.c{ color:var(--text-2); }
+        .src{ font-size:11.5px; padding:2px 8px; border-radius:999px; }
+        .src.owner{ background:var(--brand-soft); color:var(--brand); }
+        .src.bot{ background:var(--warn-soft); color:var(--warn-text); }
+        .src.friend{ background:var(--surface-3); color:var(--text-3); }
+        .src.group{ background:var(--info-soft); color:var(--info-text); }
+        .danger-zone{ border-color:var(--danger); }
+        .danger-zone h2{ border-bottom-color:var(--danger); color:var(--danger-text); }
+    </style>
+    {% include '_modern_ui.html' %}
+</head>
+<body data-page-node-id="ujWVDY6hfbfAE6E0tK7LPI">
+    <div class="header-bar" data-page-node-id="DXj6uIHhDsYdkkTv67gYUF">
+        <div class="header-title" data-page-node-id="56TX0oydS5EC38i6RzPXna"><h1 data-page-node-id="uFcxbR3scCvMIpksow2oXy">风格模仿 · 让 bot 像你一样说话</h1></div>
+        <div class="buttons" data-page-node-id="CXMIXXzm09fPEtF1wfwD2j">
+            <a href="{{ url_for('index') }}" class="nav-button" data-page-node-id="ZZjOfF5QvVLHlTYlZPVOJM">返回配置</a>
+        </div>
+    </div>
+
+    <div class="wrap content-area" data-page-node-id="vjMu0nn1GJLetFbXISolxm">
+        {% if message %}<div class="msg" data-page-node-id="VEJPItOuTjuTkY2aYwuW1J">{{ message }}</div>{% endif %}
+
+        <!-- 数据概览 -->
+        <div class="panel" data-page-node-id="WS3DT57Fs8XRED1yByjzK4">
+            <h2 data-page-node-id="eSMnYSAKUzHdoGx4cgqKhj">聊天记录概览</h2>
+            <div class="stat-grid" data-page-node-id="XVlJsxnOb9IR3VbijIOcB9">
+                <div class="stat-card" data-page-node-id="YbpX8Vnb8Bs9TVXyVWRgBq">
+                    <div class="k" data-page-node-id="fBxADKcIOidls1YvshqhLE">累计记录</div>
+                    <div class="v" data-page-node-id="sgKMBtiAB6ayPGern5dX3M">{{ stats.get('total', 0) }}<span class="u" data-page-node-id="p4mwqeisNu5eTDW3QrOBDk">条</span></div>
+                </div>
+                <div class="stat-card" data-page-node-id="oiOpT92hsWbj4oVJPYTeHE">
+                    <div class="k" data-page-node-id="n7PLjDVM1DoceyzcpsbdIb">主人亲手发的（学习源）</div>
+                    <div class="v" data-page-node-id="zIhrHGcDjLSqmd8PAcfoz0">{{ stats.get('by_source', {}).get('owner', 0) }}<span class="u" data-page-node-id="XGGPzaCZr8rOGwdpvcPGsn">条</span></div>
+                </div>
+                <div class="stat-card" data-page-node-id="GyyYTrWBUgAVwiMdkNyMhd">
+                    <div class="k" data-page-node-id="RrRBsb76ZAKIUYLVFegSZm">bot 代发（不参与学习）</div>
+                    <div class="v" data-page-node-id="MP9B4PIurYxkhuqViiAieJ">{{ stats.get('by_source', {}).get('bot', 0) }}<span class="u" data-page-node-id="lF2EHBQnDyoXGjkO6m7e6d">条</span></div>
+                </div>
+                <div class="stat-card" data-page-node-id="7KCkxKzROqibE9JL0tpPtU">
+                    <div class="k" data-page-node-id="OSZTiR4QwAE5RQ3WT8gBro">收到的消息</div>
+                    <div class="v" data-page-node-id="c6SesJ6EMD2HehWdGdacEt">{{ stats.get('by_source', {}).get('friend', 0) + stats.get('by_source', {}).get('group', 0) }}<span class="u" data-page-node-id="ffEl5cZxVFDau62AeZpcuj">条</span></div>
+                </div>
+            </div>
+            <p class="hint" data-page-node-id="R8kCx2BH2MTdPHR2X7pxyd">
+                只有<b data-page-node-id="MopvgzQGGByBt0GhO0a9MR">主人亲手发的消息</b>才会被用来学习风格；bot 代发的会被自动识别并排除，
+                否则学到的就是 AI 腔而不是你的风格。记录会随 bot 运行持续累积。
+            </p>
+        </div>
+
+        <!-- 开关 -->
+        <div class="panel" data-page-node-id="V0XYJNwusDRu9BOnWIAYKI">
+            <h2 data-page-node-id="0wjYTl6z2lSlwDAjt4Rpto">模仿开关</h2>
+            <form method="post" class="switch-line" data-page-node-id="41tt1dZTGontIUmZNKrQxa">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" data-page-node-id="35laDApyx1ZkC55teNEFrV"/>
+                <input type="hidden" name="action" value="toggle" data-page-node-id="rczmACxVGK8mHIxpMe5AlA"/>
+                <div class="txt" data-page-node-id="CkywFpIYDjcd4lUvU7frSn">
+                    <strong data-page-node-id="4T7NGIaMUxISpy2AqhhDP7">启用风格模仿
+                        {% if settings.get('enabled') %}<span class="badge on" data-page-node-id="EiyBYOBgVGyC9fIhjDjfY7">已启用</span>
+                        {% else %}<span class="badge off" data-page-node-id="6oPCNfzWpA2XbKJzUaMEqw">已停用</span>{% endif %}
+                    </strong>
+                    <span data-page-node-id="SQVfD4S6dkpiSfZYYzY6VH">启用后，学习到的风格画像会追加到每次对话的系统提示词中</span>
+                </div>
+                <div class="row" data-page-node-id="Cc7GTEXIkp3vkMSRrd99Cu">
+                    <label style="display:flex;align-items:center;gap:6px;" data-page-node-id="LFwLSzYs05DmL1VMijJ7Cd">
+                        <input type="checkbox" name="enabled" value="1"
+                               {% if settings.get('enabled') %}checked{% endif %} data-page-node-id="VSMb68jk8PC1wTrYkklGh7"/>
+                        <span data-page-node-id="VONnVzqsYOwghzC1iNp5XS">启用</span>
+                    </label>
+                    <button type="submit" class="nav-button" data-page-node-id="KsCEDdFSkoaZIE0HskOxk8">保存开关</button>
+                </div>
+            </form>
+            <p class="hint" data-page-node-id="MohCKMClSAdvjDIXDrf0Eo">
+                {% if profile.get('ok') %}
+                    当前画像：{{ profile.get('sample_count', 0) }} 条样本{% if updated_str %}，生成于 {{ updated_str }}{% endif %}
+                {% else %}
+                    尚无可用画像（{{ profile.get('reason', '未生成') }}）
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- 风格画像 -->
+        <div class="panel" data-page-node-id="DRG97zgCaE4xIATnE2ixzu">
+            <h2 data-page-node-id="FethIJYdSj5lM7xObpgmi6">风格画像（可直接编辑微调）</h2>
+            {% if profile.get('features') %}
+                {% set f = profile.get('features') %}
+                <div class="stat-grid" data-page-node-id="29fVkNvRJQLTlUybDlMHrG">
+                    <div class="stat-card" data-page-node-id="voqeEEUqvhALtPC1boFyk1">
+                        <div class="k" data-page-node-id="ZJTT5JsadP2dygk2AHHZUo">平均句长</div>
+                        <div class="v" data-page-node-id="JOuFiNAUb5hCXELfZI2B6d">{{ f.get('avg_len', 0) }}<span class="u" data-page-node-id="nZPn8doY9eXINhCAncoqm9">字</span></div>
+                    </div>
+                    <div class="stat-card" data-page-node-id="lcrLwVmi8LEJ75JMsToJx5">
+                        <div class="k" data-page-node-id="TQZb5f4HpZHLyrHH3mdw7E">句长中位数</div>
+                        <div class="v" data-page-node-id="BdzflMGBUvmy6CdjzMCk3R">{{ f.get('median_len', 0) }}<span class="u" data-page-node-id="48cp6X1KUSjbBO072D3S4p">字</span></div>
+                    </div>
+                    <div class="stat-card" data-page-node-id="ULAaVB6urjqN38vUGOsiMc">
+                        <div class="k" data-page-node-id="g1H3688jJqUhRVceaTt0Pb">短句（≤5字）占比</div>
+                        <div class="v" data-page-node-id="W6sYgB6ki4W0qoyJM91JNs">{{ f.get('short_pct', 0) }}<span class="u" data-page-node-id="BMs890dbipFRxha4a0sAIM">%</span></div>
+                    </div>
+                    <div class="stat-card" data-page-node-id="xeGtJRdKKUKbqc2u2fmE2s">
+                        <div class="k" data-page-node-id="sSHkV37CTNBPKCJVu8brM5">表情使用率</div>
+                        <div class="v" data-page-node-id="vuz4lscZIMr70OZPW2zd7h">{{ (f.get('emoji') or {}).get('usage_pct', 0) }}<span class="u" data-page-node-id="8nteTqgUhKLURE3fJOFC32">%</span></div>
+                    </div>
+                </div>
+
+                {% if f.get('endings') %}
+                    <h3 style="font-size:13.5px;margin:18px 0 0;" data-page-node-id="xG0BZpJSKZHc3ueXOTyIqm">句末习惯</h3>
+                    <div class="chips" data-page-node-id="IqAGCNF2ZJ7dthaWBvZEz6">
+                        {% for k, v in f.get('endings').items() %}
+                            <span class="chip" data-page-node-id="UnXihT8NzmRKHUxbLhGZEk">{{ k }} {{ v.pct }}%</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if f.get('fillers') %}
+                    <h3 style="font-size:13.5px;margin:18px 0 0;" data-page-node-id="EjnqZmgB2PzSuZo46VOdGZ">口头禅 / 叠词</h3>
+                    <div class="chips" data-page-node-id="Bz2EVDSRt9J1PIJjdAcwpy">
+                        {% for x in f.get('fillers') %}
+                            <span class="chip" data-page-node-id="ODLcUaJ8TGA0pCPpwBCqOA">{{ x.phrase }} {{ x.pct }}%</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if f.get('ngrams') %}
+                    <h3 style="font-size:13.5px;margin:18px 0 0;" data-page-node-id="ZCKUGeCzHAyIYpWpIMn91Y">高频词块</h3>
+                    <div class="chips" data-page-node-id="B0e5Q7QVgyhFHUX3xVIY1F">
+                        {% for g in f.get('ngrams') %}
+                            <span class="chip muted" data-page-node-id="OFaEs0INmxIK96LkejJ5yI">{{ g.gram }} ×{{ g.count }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if f.get('tone_words') %}
+                    <h3 style="font-size:13.5px;margin:18px 0 0;" data-page-node-id="Z389Au1piFHEMkOHG4eDw7">语气词</h3>
+                    <div class="chips" data-page-node-id="uyoxPLtor8LlDgsDH4pXYh">
+                        {% for x in f.get('tone_words') %}
+                            <span class="chip muted" data-page-node-id="2hFqYZgyKBFmoKCRgiBm0C">{{ x.word }} {{ x.pct }}%</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <p class="hint" data-page-node-id="XaQevYYWbX0QosD10sNMYY">还没有特征数据。先让 bot 跑一会儿、你亲手发些消息，再点下方「重新分析」。</p>
+            {% endif %}
+
+            <form method="post" style="margin-top:18px;" data-page-node-id="sfVQhB5T6OaVEI97mgPTCn">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" data-page-node-id="27JDu5qBrIeG8Hiprj1flM"/>
+                <input type="hidden" name="action" value="save_text" data-page-node-id="gEPLnPVhowRXs3S2naYPrt"/>
+                <textarea name="profile_text" placeholder="点击「重新分析」自动生成，也可手工撰写风格要求…">{{ profile.get('profile_text', '') }}</textarea>
+                <div class="row" style="margin-top:12px;" data-page-node-id="PfHAd2FOv7EiX50RaXPEDC">
+                    <button type="submit" class="nav-button" data-page-node-id="Q77MBpKiSRSg3JqEclWETm">保存画像</button>
+                </div>
+            </form>
+
+            <form method="post" style="margin-top:10px;" data-page-node-id="o4AFGclXkMvpvILBCYW8m5">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" data-page-node-id="PGErRUNSrmFbtqUDBHOXGc"/>
+                <input type="hidden" name="action" value="analyze" data-page-node-id="HUCOOg8Eu5eVAz0r5p9Ht6"/>
+                <button type="submit" class="btn-soft nav-button" data-page-node-id="w4ZgxYvvrnNfYCNCUP5AUT">重新分析</button>
+            </form>
+        </div>
+
+        <!-- 最近记录 -->
+        <div class="panel" data-page-node-id="dpDvTYGmFuQtS9PGcIVAHS">
+            <h2 data-page-node-id="YtKZ56sAY7hRbhJkohPgiH">最近聊天记录（最新 30 条）</h2>
+            {% if recent %}
+                <table data-page-node-id="E07SgfFTHHHM8NwnMLJNok">
+                    <thead data-page-node-id="BZQ2LxSxRDOOmuRP7lxaM1"><tr data-page-node-id="ErrgK76LYHPjR6APMt14VW"><th data-page-node-id="uv1y4rl6trN2kLyJlN9G46">时间</th><th data-page-node-id="IlV1V35FAWFFpGulIx6Ow0">对象</th><th data-page-node-id="A7NWZ2eWfYFIpn9Fj7dDkq">来源</th><th data-page-node-id="kb041SkaiUcBBjR0YavNKe">内容</th></tr></thead>
+                    <tbody data-page-node-id="JTNTM0BL9HiZaAl5krNVUW">
+                    {% for ts, who, direction, source, content in recent %}
+                        <tr data-page-node-id="Jo0qIVV8N0w8zwhfYCcowo">
+                            <td class="c" data-page-node-id="AxksD9Q8KdljrUtlKZNCQf">{{ ts }}</td>
+                            <td class="c" data-page-node-id="I2tfypU1oNGMiuDSwkX7Kq">{{ who }}</td>
+                            <td data-page-node-id="MfzpTa2sTdjA9WYQriPji0"><span class="src {{ source }}" data-page-node-id="gIqKyPTCeJTEZYTxgz56PW">{{ source }}</span></td>
+                            <td class="c" data-page-node-id="qMyZ6FAiHoEkGWNPAbapRe">{{ content }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="hint" data-page-node-id="Y7n0b93kcQkcl4fHI7uG4A">暂无记录。bot 运行后，收发消息会自动入库。</p>
+            {% endif %}
+        </div>
+
+        <!-- 危险操作 -->
+        <div class="panel danger-zone" data-page-node-id="HL92oOT1syUrb3Us21FI06">
+            <h2 data-page-node-id="dCUwMoNHrTnMhNnrvPH5TY">危险操作</h2>
+            <div class="row" data-page-node-id="TXUijeMjHELpU6eaEnSQvD">
+                <form method="post" onsubmit="return confirm('确定清空风格画像？（聊天记录保留）');" data-page-node-id="DAgn6Q2gHfPTVK1UBPKpcM">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" data-page-node-id="IbzL6xR1wl26bcqQWJZUKt"/>
+                    <input type="hidden" name="action" value="clear" data-page-node-id="9VzzOZnD7cMEwSk6EnGdIG"/>
+                    <button type="submit" class="btn-danger nav-button" data-page-node-id="ceinVJ9iX6PkTDz298mkpw">清空风格画像</button>
+                </form>
+                <form method="post" onsubmit="return confirm('确定清空全部聊天记录？此操作不可恢复。');" data-page-node-id="ZTxjZKmBHctihacZ0UGkpA">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" data-page-node-id="CtbHmp0hdaWvSevCzY5Z0x"/>
+                    <input type="hidden" name="action" value="clear_history" data-page-node-id="OmjRZ3IhdjqBctlD1AKUkF"/>
+                    <button type="submit" class="btn-danger nav-button" data-page-node-id="71iLd97QemiCRPibKqiOGQ">清空聊天记录</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

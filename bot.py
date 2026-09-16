@@ -14,6 +14,7 @@ import sys
 import base64
 import requests
 import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
 import datetime as dt
 import threading
@@ -29,6 +30,21 @@ except Exception:  # noqa: BLE001
 import shutil
 import re
 import ast
+
+# 聊天记录持久化（「模仿主人对话风格」的数据底座）。
+# 导入失败绝不阻断主流程：风格功能只是增强，不是收发必需。
+try:
+    import chat_history
+except Exception as _che:  # noqa: BLE001
+    chat_history = None
+    logging.getLogger(__name__).warning(f"chat_history 模块不可用，风格学习将被禁用: {_che}")
+
+# 主人风格学习/模仿（把学到的说话风格注入提示词，让 bot 像主人一样说话）
+try:
+    import style_learner
+except Exception as _sle:  # noqa: BLE001
+    style_learner = None
+    logging.getLogger(__name__).warning(f"style_learner 模块不可用，风格模仿将被禁用: {_sle}")
 
 # --- 冻结(单文件exe)模式引导（与 config_editor.py 一致）---
 if getattr(sys, "frozen", False):
@@ -71,6 +87,9 @@ os.environ["PROJECT_NAME"] = 'WeAuto'
 # 生成用户昵称列表和prompt映射字典
 user_names = [entry[0] for entry in LISTEN_LIST]
 prompt_mapping = {entry[0]: entry[1] for entry in LISTEN_LIST}
+
+# 自动添加但未设置提示词的用户回退使用的默认人格文件名（对应 prompts/默认.md）
+DEFAULT_PROMPT_NAME = '默认'
 
 # 编码检测和处理辅助函数
 def safe_read_file_with_encoding(file_path, fallback_content=""):
@@ -246,6 +265,7 @@ class AsyncHTTPHandler(logging.Handler):
         self.circuit_breaker_reset_time = None  # 断路器重置时间
         self.CIRCUIT_BREAKER_THRESHOLD = 5  # 触发断路器的连续失败次数
         self.CIRCUIT_BREAKER_RESET_TIMEOUT = 60  # 断路器重置时间（秒）
+        self._webui_up = True  # WebUI 可达状态（用于降级日志，避免刷屏）
         
         # 新增: HTTP请求统计
         self.total_requests = 0
@@ -269,6 +289,9 @@ class AsyncHTTPHandler(logging.Handler):
             'Connection': 'keep-alive',  # 启用HTTP Keep-Alive
             'Accept-Encoding': 'gzip, deflate'  # 支持压缩
         })
+        # 关键: 禁用系统代理(本机常驻 Clash)，否则 localhost:5001 会被转发到 Clash
+        # 导致 502 Bad Gateway / 连接失败，且网页端永远收不到日志。WebUI 只在本机，必须直连。
+        self.session.trust_env = False
         
         # 后台线程用于处理日志队列
         self.worker = threading.Thread(target=self._process_queue, daemon=True)
@@ -331,6 +354,18 @@ class AsyncHTTPHandler(logging.Handler):
             return True
         
         return False
+
+    def _note_webui_state(self, reachable):
+        """WebUI 可达性变化时只提示一次，避免长运行刷屏。"""
+        if reachable and not self._webui_up:
+            self._webui_up = True
+            logging.getLogger(__name__).info("配置编辑器(WebUI)已恢复，日志恢复实时上传到网页端。")
+        elif (not reachable) and self._webui_up:
+            self._webui_up = False
+            logging.getLogger(__name__).warning(
+                "配置编辑器(WebUI)不可达，日志仅写入本地 weauto_bot.log；"
+                "恢复后自动重连（bot 自身运行不受影响）。"
+            )
 
     def _process_queue(self):
         """
@@ -437,8 +472,10 @@ class AsyncHTTPHandler(logging.Handler):
                 return True  # 成功返回
                 
             except requests.exceptions.Timeout as e:
-                # Waitress超时处理（通常意味着服务器负载高）
-                logging.warning(f"日志发送超时 (尝试 {attempt+1}/{self.retry_attempts}) - Waitress可能繁忙")
+                # 超时（WebUI 繁忙或未启动）
+                if self._webui_up:
+                    logging.warning(f"日志发送超时 (尝试 {attempt+1}/{self.retry_attempts}) - WebUI可能繁忙或未启动")
+                self._note_webui_state(False)
                 delay = min(BASE_DELAY * 1.2, MAX_RETRY_DELAY)  # 轻微延迟
                 
             except requests.exceptions.ConnectionError as e:
@@ -455,7 +492,9 @@ class AsyncHTTPHandler(logging.Handler):
                 
             except requests.exceptions.HTTPError as e:
                 # HTTP错误（4xx, 5xx）
-                status_code = e.response.status_code if e.response else 'Unknown'
+                # e.response 可能缺失(代理/网络层错误)，且 status_code 必须为 int
+                # 否则 'Unknown'(str) >= 500 会抛 TypeError 并拖垮整个日志处理线程
+                status_code = int(e.response.status_code) if e.response is not None else 0
                 if status_code >= 500:
                     # 服务器错误，可以重试
                     logging.warning(f"Waitress服务器错误 {status_code} (尝试 {attempt+1}/{self.retry_attempts})")
@@ -467,7 +506,9 @@ class AsyncHTTPHandler(logging.Handler):
                     
             except requests.exceptions.RequestException as e:
                 # 其他请求异常
-                logging.warning(f"日志发送异常 (尝试 {attempt+1}/{self.retry_attempts}): {str(e)[:100]}")
+                if self._webui_up:
+                    logging.warning(f"日志发送异常 (尝试 {attempt+1}/{self.retry_attempts}): {str(e)[:100]}")
+                self._note_webui_state(False)
                 delay = min(BASE_DELAY * (1.5 ** attempt), MAX_RETRY_DELAY)
                 
             except Exception as e:
@@ -549,6 +590,20 @@ console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+# 本地滚动日志：保证 24h 长运行时日志有界且跨重启留存，
+# 不依赖 WebUI 的 HTTP 日志通道（该通道在 bot 独立运行/WebUI 未起时不可用）。
+try:
+    _log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'weauto_bot.log')
+    _file_handler = RotatingFileHandler(
+        _log_path, maxBytes=5 * 1024 * 1024, backupCount=4,
+        encoding='utf-8'
+    )
+    _file_handler.setFormatter(formatter)
+    logger.addHandler(_file_handler)
+    logger.info(f"本地滚动日志已启用: {_log_path} (单文件上限 5MB, 保留 4 个备份)")
+except Exception as e:
+    logger.warning(f"初始化本地滚动日志失败（仅影响本地日志文件，不影响运行）: {e}")
+
 # 获取微信窗口对象
 try:
     wx = WeChat()
@@ -612,6 +667,15 @@ client = OpenAI(
     api_key=DEEPSEEK_API_KEY,
     base_url=DEEPSEEK_BASE_URL
 )
+
+# 启动期显式告警：占位/无效 key 会导致所有 AI 调用 401、bot 只能回固定话术。
+# 以前这个错很隐蔽（被重试逻辑吞掉，表现为"没反应"），这里直接打 CRITICAL 让问题一眼可见。
+_K = (DEEPSEEK_API_KEY or "").strip()
+if not _K or "dummy" in _K.lower() or "placeholder" in _K.lower() or _K == "sk-":
+    logger.critical(
+        "⚠️ DEEPSEEK_API_KEY 仍是占位/无效值（config.py），AI 回复将全部失败并退回固定话术。"
+        "请在 config.py:18 填入真实 key 后重启 bot。"
+    )
 
 #初始化在线 AI 客户端 (如果启用)
 online_client: Optional[OpenAI] = None
@@ -728,6 +792,48 @@ def parse_time(time_str):
 quiet_time_start = parse_time(QUIET_TIME_START)
 quiet_time_end = parse_time(QUIET_TIME_END)
 
+# 主动聊天白名单缓存：wxid -> 显示名 的反查结果（避免每轮都打微信）
+_auto_msg_name_cache = {}
+
+def _resolve_auto_message_candidates(user):
+    """将 user（可能是 wxid / 显示名 / 群id）解析为用于白名单比对的候选名集合（小写）。"""
+    candidates = {(user or '').strip().lower()}
+    u = user or ''
+    if not u or '@chatroom' in u:
+        return candidates
+    # 仅对疑似 wxid 的私聊做显示名反查（带缓存，避免每轮 I/O）
+    if u.startswith('wxid_') or re.match(r'^[a-z0-9_-]{10,}$', u):
+        cached = _auto_msg_name_cache.get(u)
+        if cached is None:
+            try:
+                wx_obj = globals().get('wx', None)
+                if wx_obj is not None and hasattr(wx_obj, '_display_name'):
+                    cached = wx_obj._display_name(u)
+                else:
+                    cached = u
+            except Exception:
+                cached = u
+            _auto_msg_name_cache[u] = cached
+        if cached and cached != u:
+            candidates.add(cached.strip().lower())
+    return candidates
+
+def user_allowed_auto_message(user):
+    """主动聊天白名单判定：空列表 = 不主动给任何人发消息；否则仅列表内允许。
+
+    对 user 与列表项都做「wxid <-> 显示名」候选集解析，二者指向同一人即放行，
+    因此列表里填显示名或 wxid 都能匹配到正确对象。
+    """
+    allow = get_dynamic_config('AUTO_MESSAGE_USER_LIST', AUTO_MESSAGE_USER_LIST)
+    if not allow:
+        return False
+    user_candidates = _resolve_auto_message_candidates(user)
+    for entry in allow:
+        entry_candidates = _resolve_auto_message_candidates(entry)
+        if user_candidates & entry_candidates:
+            return True
+    return False
+
 def check_user_timeouts():
     """
     检查用户是否超时未活动，并将主动消息加入队列以触发联网检查流程。
@@ -750,6 +856,11 @@ def check_user_timeouts():
 
                 if isinstance(last_active, (int, float)) and isinstance(wait_time, (int, float)):
                     if current_epoch_time - last_active >= wait_time and not is_quiet_time():
+                        # 主动聊天白名单：空列表 = 不给任何人主动发；非空则仅名单内允许
+                        if not user_allowed_auto_message(user):
+                            reset_user_timer(user)
+                            continue
+
                         # 检查是否启用了忽略群聊主动消息的配置
                         if IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE and is_user_group_chat(user):
                             logger.info(f"用户 {user} 是群聊且配置为忽略群聊主动消息，跳过发送主动消息")
@@ -801,9 +912,12 @@ def on_user_message(user):
     reset_user_timer(user)
 
 # 修改get_user_prompt函数（增强路径验证）
-def get_user_prompt(user_id):
+def _get_user_prompt_core(user_id):
     # 查找映射中的文件名，若不存在则使用user_id
     prompt_file = prompt_mapping.get(user_id, user_id)
+    # 若角色为空（待设置提示词 / 自动添加的联系人），回退到内置默认人格
+    if not prompt_file or not str(prompt_file).strip():
+        prompt_file = DEFAULT_PROMPT_NAME
     
     # 双重清理文件名
     safe_prompt_file = sanitize_user_id_for_filename(prompt_file)
@@ -884,6 +998,24 @@ def get_user_prompt(user_id):
     else:
         # 没有JSON记忆，直接返回原始prompt内容
         return prompt_content
+
+
+def get_user_prompt(user_id):
+    """对外入口：人格 prompt（+记忆）再追加「主人风格画像」。
+
+    风格画像是最后追加的，不会破坏人格设定本身；
+    未启用风格模仿或尚无画像时，返回值与改造前完全一致。
+    """
+    content = _get_user_prompt_core(user_id)
+    if style_learner is not None:
+        try:
+            injection = style_learner.get_style_injection()
+            if injection:
+                content = content + injection
+                logger.debug("已将主人风格画像注入 prompt")
+        except Exception as _sie:
+            logger.debug(f"注入主人风格画像失败（已忽略）: {_sie}")
+    return content
              
 # 加载聊天上下文
 def load_chat_contexts():
@@ -984,8 +1116,10 @@ def get_deepseek_response(message, user_id, store_context=True, is_summary=False
             try:
                 user_prompt = get_user_prompt(user_id)
                 messages_to_send.append({"role": "system", "content": user_prompt})
-            except FileNotFoundError as e:
-                logger.error(f"用户 {user_id} 的提示文件错误: {e}，使用默认提示。")
+            except Exception as e:
+                # 任何 prompt 加载/风格注入异常都降级为默认助手提示，
+                # 绝不让一条坏 prompt 文件吞掉用户本应收到的回复（24h 鲁棒性）。
+                logger.error(f"用户 {user_id} 的提示词加载失败（已降级为默认提示）: {e}", exc_info=True)
                 messages_to_send.append({"role": "system", "content": "你是一个乐于助人的助手。"})
 
             # 2. 管理并检索聊天历史记录
@@ -1269,48 +1403,266 @@ def call_assistant_api_with_retry(messages_to_send, user_id, max_retries=2, is_s
 
     raise RuntimeError("抱歉，辅助模型现在有点忙，稍后再试吧。")
 
+def _try_recover_wx():
+    """微信接口疑似失效时的自愈：重建 WeChat 连接并为已配置用户重建监听。
+
+    仅在连续多次失败且过了冷却期后由 keep_alive 调用；全程异常隔离，
+    失败不影响主循环（期间依赖定时重启兜底恢复）。
+    """
+    global wx
+    try:
+        logger.warning("微信接口疑似失效，尝试重建连接（自愈）...")
+        new_wx = WeChat()
+        new_wx.Show()
+        for u in list(user_names):
+            try:
+                new_wx.AddListenChat(nickname=u, callback=message_listener)
+            except Exception:
+                pass
+        wx = new_wx
+        logger.info("微信接口连接已重建，监听已恢复。")
+        return True
+    except Exception as e:
+        logger.error(f"重建微信接口连接失败（将在冷却后重试，期间依赖定时重启兜底）: {e}", exc_info=True)
+        return False
+
+
 def keep_alive():
     """
     定期检查监听列表，确保所有在 user_names 中的用户都被持续监听。
-    如果发现有用户从监听列表中丢失，则会尝试重新添加。
-    这是一个守护线程，用于增强程序的健壮性。
+    如果发现有用户从监听列表中丢失，则会尝试重新添加；若微信接口整体失效
+    （如微信异常退出 / UIAutomation 状态丢失），在连续多次失败且过冷却期后
+    尝试重建连接（_try_recover_wx）。这是一个守护线程，用于增强程序的健壮性。
     """
-    check_interval = 5  # 每30秒检查一次，避免过于频繁
+    check_interval = 5  # 每 5 秒检查一次监听状态
     logger.info(f"窗口保活/监听守护线程已启动，每 {check_interval} 秒检查一次监听状态。")
-    
+
+    _consec_fail = 0
+    _recover_cooldown_until = 0.0
+
     while True:
         try:
+            wx_obj = globals().get('wx', None)
+            if wx_obj is None:
+                # 微信接口对象丢失，尝试重建
+                _consec_fail += 1
+                if _consec_fail >= 6 and time.time() > _recover_cooldown_until:
+                    if _try_recover_wx():
+                        _consec_fail = 0
+                    else:
+                        _recover_cooldown_until = time.time() + 300  # 5 分钟内不再重试
+                time.sleep(check_interval)
+                continue
+
             # 获取当前所有正在监听的用户昵称集合
-            current_listening_users = set(wx.listen.keys())
-            
+            current_listening_users = set(wx_obj.listen.keys())
+
             # 获取应该被监听的用户昵称集合
             expected_users_to_listen = set(user_names)
-            
+
             # 找出配置中应该监听但当前未在监听列表中的用户
             missing_users = expected_users_to_listen - current_listening_users
-            
+
             if missing_users:
                 logger.warning(f"检测到 {len(missing_users)} 个用户从监听列表中丢失: {', '.join(missing_users)}")
                 for user in missing_users:
                     try:
                         logger.info(f"正在尝试重新添加用户 '{user}' 到监听列表...")
                         # 使用与程序启动时相同的回调函数 `message_listener` 重新添加监听
-                        wx.AddListenChat(nickname=user, callback=message_listener)
+                        wx_obj.AddListenChat(nickname=user, callback=message_listener)
                         logger.info(f"已成功将用户 '{user}' 重新添加回监听列表。")
                     except Exception as e:
                         logger.error(f"重新添加用户 '{user}' 到监听列表时失败: {e}", exc_info=True)
+                        _consec_fail += 1
+                # 重建监听连续失败过多时，尝试整体重建微信连接
+                if _consec_fail >= 6 and time.time() > _recover_cooldown_until:
+                    if _try_recover_wx():
+                        _consec_fail = 0
+                    else:
+                        _recover_cooldown_until = time.time() + 300
             else:
                 # 使用 debug 级别，因为正常情况下这条日志会频繁出现，避免刷屏
                 logger.debug(f"监听列表状态正常，所有 {len(expected_users_to_listen)} 个目标用户都在监听中。")
+                _consec_fail = 0
 
         except Exception as e:
             # 捕获在检查过程中可能发生的任何意外错误，使线程能继续运行
-            logger.error(f"keep_alive 线程在检查监听列表时发生未知错误: {e}", exc_info=True)
-            
+            _consec_fail += 1
+            logger.error(f"keep_alive 线程在检查监听列表时发生未知错误（连续第 {_consec_fail} 次）: {e}", exc_info=True)
+            if _consec_fail >= 6 and time.time() > _recover_cooldown_until:
+                if _try_recover_wx():
+                    _consec_fail = 0
+                else:
+                    _recover_cooldown_until = time.time() + 300
+
         # 等待指定间隔后再进行下一次检查
         time.sleep(check_interval)
 
+
+# ---------------------------------------------------------------------------
+# 自动发现并添加新联系人到用户列表（待设置提示词）
+# 定期枚举微信好友会话：把尚未在 LISTEN_LIST 中的私聊联系人自动加入，角色留空
+# （= 待设置提示词），由 keep_alive 线程接管监听，并把变更持久化到 config.py，
+# 使其在 WebUI 与重启后依然可见。设为 False 即可关闭此行为。
+# ---------------------------------------------------------------------------
+AUTO_ADD_USERS = True
+AUTO_ADD_INTERVAL = 30  # 轮询间隔（秒）
+_auto_add_lock = threading.Lock()
+
+
+def persist_listen_list():
+    """把当前内存中的 LISTEN_LIST 安全写回 config.py（仅替换 LISTEN_LIST 这一行，保留其余内容）。
+
+    用 _auto_add_lock 与 record_user_interaction 的 LISTEN_LIST 改写在同一个锁下，
+    避免「读取内存列表→写盘」之间被另一线程的 append 插断，导致 config.py 写坏或丢条目。
+    """
+    global LISTEN_LIST
+    with _auto_add_lock:
+        try:
+            config_path = os.path.join(root_dir, 'config.py')
+            with open(config_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+            # 锚定行首 (?!m) 多行模式，只匹配真正赋值的 LISTEN_LIST 行，
+            # 避免误改到第 14 行那样的注释示例（# 例如：LISTEN_LIST = ...）
+            m = re.search(r'(?m)^LISTEN_LIST\s*=\s*', text)
+            if not m:
+                # 配置文件中没有该行，追加到末尾
+                new_text = text.rstrip() + '\n\nLISTEN_LIST = ' + json.dumps(LISTEN_LIST, ensure_ascii=False) + '\n'
+            else:
+                start = m.end()
+                i = text.find('[', start)
+                if i == -1:
+                    logger.error("persist_listen_list: 未在 config.py 中找到 LISTEN_LIST 的列表起始符，跳过写入。")
+                    return
+                depth = 0
+                j = i
+                while j < len(text):
+                    c = text[j]
+                    if c == '[':
+                        depth += 1
+                    elif c == ']':
+                        depth -= 1
+                        if depth == 0:
+                            break
+                    j += 1
+                # ensure_ascii=False 保留中文可读；生成的仍是合法 Python 列表字面量
+                new_assignment = 'LISTEN_LIST = ' + json.dumps(LISTEN_LIST, ensure_ascii=False)
+                new_text = text[:m.start()] + new_assignment + text[j + 1:]
+            tmp_path = config_path + '.tmp'
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                f.write(new_text)
+            os.replace(tmp_path, config_path)  # 原子替换，避免半写导致配置损坏
+            logger.info("已将更新后的 LISTEN_LIST 持久化到 config.py。")
+        except Exception as e:
+            logger.error(f"persist_listen_list 失败: {e}", exc_info=True)
+
+
+# 自动加人时跳过的系统 / 非真人账号（文件传输助手有中英文两种标识；
+# weixin=微信团队、notifymessage=系统通知、brandsessionholder=品牌会话均由微信内部使用）
+_AUTO_ADD_SKIP = {
+    ROBOT_WX_NAME, '文件传输助手', 'filehelper', 'weixin',
+    'notifymessage', 'brandsessionholder',
+}
+
+
+def record_user_interaction(who, chat_type=None):
+    """收到或发出消息时调用：把首次互动的联系人 / 群聊加入用户列表（待设置提示词）。
+
+    仅在 AUTO_ADD_USERS 开启、who 为私聊好友或群聊、且尚未在 LISTEN_LIST 时生效。
+    公众号 / 文件传输助手 / 自己 / 系统账号 不会被加入。线程安全（加锁 + 去重）。
+
+    Args:
+        who: 好友昵称或群名。
+        chat_type: 'friend' 私聊好友 / 'group' 群聊 / None 未知（发送侧），
+                   非以上类型（公众号等）一律跳过。
+    """
+    if not AUTO_ADD_USERS or not who:
+        return
+    if who in _AUTO_ADD_SKIP:
+        return
+    if chat_type not in (None, 'friend', 'group'):
+        return
+    with _auto_add_lock:
+        global user_names, prompt_mapping
+        if who in user_names:
+            return
+        # 角色留空 = 待设置提示词（get_user_prompt 会回退到 prompts/默认.md）
+        LISTEN_LIST.append([who, ''])
+        user_names.append(who)
+        prompt_mapping[who] = ''
+    label = '群聊' if chat_type == 'group' else '联系人'
+    logger.info(f"自动添加新{label}到用户列表（待设置提示词）: {who}")
+    persist_listen_list()
+
+
+def auto_add_discovered_users():
+    """守护线程：枚举微信好友会话并 AddListenChat，确保新联系人发来消息时能被接收。
+
+    注意：本线程只负责「监听」，不会把未互动的联系人写入 LISTEN_LIST；
+    真正写入发生在 message_listener 收到其消息（record_user_interaction）时，
+    因此从未互动（仅存在于好友列表）的联系人不会出现在用户列表中。
+    """
+    logger.info(f"自动监听好友会话线程已启动（间隔 {AUTO_ADD_INTERVAL}s，开关={AUTO_ADD_USERS}）。")
+    while True:
+        try:
+            if not AUTO_ADD_USERS:
+                time.sleep(AUTO_ADD_INTERVAL)
+                continue
+            wx_obj = globals().get('wx', None)
+            if wx_obj is None:
+                time.sleep(AUTO_ADD_INTERVAL)
+                continue
+            try:
+                chats = wx_obj.GetAllSubWindow()
+            except Exception as e:
+                logger.debug(f"自动监听：获取会话列表失败，稍后重试: {e}")
+                time.sleep(AUTO_ADD_INTERVAL)
+                continue
+            listening = set(getattr(wx_obj, 'listen', {}).keys())
+            added = []
+            for chat in chats:
+                try:
+                    who = getattr(chat, 'who', None)
+                    info = chat.ChatInfo()
+                    if not who:
+                        who = info.get('who')
+                    if not who:
+                        continue
+                    # 监听私聊好友与群聊；公众号 / 订阅号等非聊天对象跳过
+                    chat_type = info.get('chat_type')
+                    if who in _AUTO_ADD_SKIP:
+                        continue
+                    if chat_type not in ('friend', 'group'):
+                        continue
+                    if who in listening:
+                        continue
+                    wx_obj.AddListenChat(nickname=who, callback=message_listener)
+                    listening.add(who)
+                    added.append(who)
+                except Exception as e:
+                    logger.debug(f"自动监听：处理单个会话出错，已忽略: {e}")
+                    continue
+            if added:
+                logger.info(f"已为 {len(added)} 个好友会话开启监听（未互动前不写入用户列表）: {', '.join(added)}")
+        except Exception as e:
+            logger.error(f"auto_add_discovered_users 线程发生未知错误: {e}", exc_info=True)
+        time.sleep(AUTO_ADD_INTERVAL)
+
+
 def message_listener(msg, chat):
+    """对外回调：包裹实现层，确保单条消息处理异常不会中断整个消息接收循环（24h 鲁棒性）。
+
+    wechatauto 引擎在消息泵中同步调用本回调；若实现层抛出未捕获异常，
+    会冒泡到引擎并导致其停止派发后续消息——进程虽仍在，却“活但失聪”。
+    因此所有异常都在本层兜底，绝不让其外泄。
+    """
+    try:
+        _message_listener_impl(msg, chat)
+    except Exception as e:
+        logger.error(f"message_listener 处理消息时发生未捕获异常（已隔离，消息循环继续）: {e}", exc_info=True)
+
+
+def _message_listener_impl(msg, chat):
     global can_send_messages
     who = chat.who 
     msgtype = msg.type
@@ -1318,6 +1670,20 @@ def message_listener(msg, chat):
     sender = msg.sender
     msgattr = msg.attr
     logger.info(f'收到来自聊天窗口 "{who}" 中用户 "{sender}" 的原始消息 (类型: {msgtype}, 属性: {msgattr}): {original_content[:100]}')
+
+    # --- 聊天记录持久化（供「模仿主人对话风格」学习）---
+    # 只在有文本内容时记录：语音/图片等对风格统计无意义，且会污染样本。
+    if chat_history is not None and original_content:
+        try:
+            if msgattr == 'self':
+                # 账号侧发出的：由 chat_history 判定是主人亲手敲的还是 bot 代发的回显
+                chat_history.record_outgoing_self(who, sender, original_content, msgtype)
+            elif msgattr == 'friend':
+                chat_history.record_incoming(who, sender, original_content, msgtype, is_group=False)
+            elif msgattr == 'group' or (who and '@chatroom' in who):
+                chat_history.record_incoming(who, sender, original_content, msgtype, is_group=True)
+        except Exception as _chr:
+            logger.debug(f"记录聊天历史失败（已忽略，不影响收发）: {_chr}")
 
     if msgattr == 'tickle':
         if "我拍了拍" in original_content:
@@ -1336,8 +1702,17 @@ def message_listener(msg, chat):
             logger.debug(f"非文本消息，已忽略。")
             return
     elif msgattr != 'friend':
-        logger.info(f"非好友消息，已忽略。")
+        # 群聊消息：记录群名到用户列表（待设置提示词），但默认不自动回复群消息。
+        # 以 msgattr=='group' 或 who 含 @chatroom（微信群标识）双重判断，避免漏加。
+        if msgattr == 'group' or (who and '@chatroom' in who):
+            record_user_interaction(who, 'group')
+            logger.info(f"已记录群聊 '{who}' 到用户列表（待设置提示词）；按当前配置不自动回复群消息。")
+        else:
+            logger.info(f"非好友/群消息（类型 {msgattr}），已忽略。")
         return
+
+    # 自动添加：收到好友消息即视为已互动，加入用户列表（待设置提示词）
+    record_user_interaction(who)
 
     if msgtype == 'voice':
         voicetext = msg.to_text()
@@ -1891,7 +2266,9 @@ def _schedule_restart(reason: str = "指令触发"):
                 cwd=os.path.dirname(current_script)
             )
             logger.info("新进程已启动，当前进程即将退出")
-            sys.exit(0)
+            # 同定时重启：本函数运行在 threading.Timer 线程中，sys.exit() 只终止该线程，
+            # 必须用 os._exit 才能真正结束旧进程，避免残留多实例抢微信监听。
+            os._exit(0)
         except Exception as e:
             logger.error(f"执行重启失败: {e}", exc_info=True)
     threading.Timer(1.5, _do_restart).start()
@@ -2169,18 +2546,28 @@ def handle_wxauto_message(msg, who):
 
 def check_inactive_users():
     global can_send_messages
+    _consec_errors = 0
     while True:
-        current_time = time.time()
-        inactive_users = []
-        with queue_lock:
-            for username, user_data in user_queues.items():
-                last_time = user_data.get('last_message_time', 0)
-                if current_time - last_time > QUEUE_WAITING_TIME and can_send_messages and not is_sending_message: 
-                    inactive_users.append(username)
+        try:
+            current_time = time.time()
+            inactive_users = []
+            with queue_lock:
+                for username, user_data in user_queues.items():
+                    last_time = user_data.get('last_message_time', 0)
+                    if current_time - last_time > QUEUE_WAITING_TIME and can_send_messages and not is_sending_message: 
+                        inactive_users.append(username)
 
-        for username in inactive_users:
-            process_user_messages(username)
-
+            for username in inactive_users:
+                try:
+                    process_user_messages(username)
+                except Exception as e:
+                    # 单用户消息处理失败（如 API 报错、发送异常）不应拖垮整个检查线程，
+                    # 否则消息队列会无限堆积、所有用户都收不到回复。
+                    logger.error(f"处理用户 {username} 的消息队列失败（已跳过，线程继续运行）: {e}", exc_info=True)
+            _consec_errors = 0
+        except Exception as e:
+            _consec_errors += 1
+            logger.error(f"check_inactive_users 循环异常（线程继续运行，连续第 {_consec_errors} 次）: {e}", exc_info=True)
         time.sleep(1)  # 每秒检查一次
 
 def process_user_messages(user_id):
@@ -4211,16 +4598,85 @@ def get_online_model_response(query: str, user_id: str) -> Optional[str]:
 
 def monitor_memory_usage():
     import psutil
+    import gc
     MEMORY_THRESHOLD = 328  # 内存使用阈值328MB
     while True:
-        process = psutil.Process(os.getpid())
-        memory_usage = process.memory_info().rss / 1024 / 1024  # MB
-        logger.info(f"当前内存使用: {memory_usage:.2f} MB")
-        if memory_usage > MEMORY_THRESHOLD:
-            logger.warning(f"内存使用超过阈值 ({MEMORY_THRESHOLD} MB)，执行垃圾回收")
-            import gc
-            gc.collect()
+        try:
+            process = psutil.Process(os.getpid())
+            memory_usage = process.memory_info().rss / 1024 / 1024  # MB
+            logger.info(f"当前内存使用: {memory_usage:.2f} MB")
+            if memory_usage > MEMORY_THRESHOLD:
+                logger.warning(f"内存使用超过阈值 ({MEMORY_THRESHOLD} MB)，执行垃圾回收")
+                gc.collect()
+        except Exception as e:
+            logger.error(f"内存监控线程异常（线程继续运行）: {e}", exc_info=True)
         time.sleep(600)
+
+def request_self_restart(reason="未知原因", cooldown=0):
+    """拉起一个新的 bot.py 进程后硬退出当前进程，用于自我恢复。
+
+    注意：本函数可能在 daemon 线程或主线程被调用。
+    - 在 daemon 线程中必须用 os._exit：sys.exit() 只终止当前线程，主进程残留
+      会导致每次重启都多出一个监听微信的旧进程（多实例抢监听、写文件冲突）。
+    - 在主线程中 os._exit 同样安全（跳过 finally，由新进程重新加载状态）。
+    调用方负责在调用前保存关键状态（上下文 / 提醒 / 计时器）。
+
+    cooldown: 重新拉起前额外等待的秒数。用于崩溃自愈时做退避，避免确定性
+    崩溃导致高频 fork 循环（fork bomb）把 CPU / 微信监听打爆。
+    """
+    # --- 崩溃循环防护：统计近 60s 内的重启次数，超过阈值则强制退避 ---
+    try:
+        stamp_path = os.path.join(root_dir, '.restart_stamp')
+        now = time.time()
+        # 追加本次重启时间戳
+        try:
+            with open(stamp_path, 'a', encoding='utf-8') as _sf:
+                _sf.write(f"{now}\n")
+        except Exception:
+            pass
+        # 读取并统计近期重启
+        try:
+            with open(stamp_path, 'r', encoding='utf-8') as _sf:
+                _stamps = [float(x) for x in _sf.read().split() if x.strip()]
+            _recent = [t for t in _stamps if now - t < 60]
+            if len(_recent) > 5:
+                # 60 秒内重启超过 5 次，判定为崩溃循环，强制退避 30s
+                cooldown = max(cooldown, 30)
+            # 只保留最近 50 条，防止文件无限增长
+            if len(_stamps) > 50:
+                with open(stamp_path, 'w', encoding='utf-8') as _sf:
+                    _sf.write("\n".join(str(t) for t in _stamps[-20:]) + "\n")
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+    if cooldown > 0:
+        try:
+            logger.warning(f"自我重启前退避 {cooldown}s（崩溃循环防护）...")
+            time.sleep(cooldown)
+        except Exception:
+            pass
+
+    try:
+        logger.warning(f"请求自我重启（原因：{reason}），正在拉起新进程...")
+        import subprocess
+        current_script = os.path.abspath(__file__)
+        # 校验解释器存在：sys.executable 在某些被注入/打包场景可能失效，
+        # 失效时 Popen 会抛 FileNotFoundError，这里提前给出明确告警而非静默消失。
+        exe = sys.executable
+        if not exe or not os.path.isfile(exe):
+            logger.error(f"自我重启失败：解释器路径无效（sys.executable={exe!r}），无法拉起新进程。")
+        else:
+            # 只传递脚本路径，不传递 sys.argv 中可能存在的危险参数
+            subprocess.Popen([exe, current_script], cwd=os.path.dirname(current_script))
+            logger.info("新进程已启动，当前进程即将硬退出。")
+    except Exception as e:
+        logger.error(f"自我重启失败: {e}", exc_info=True)
+    finally:
+        # 无论新进程是否拉起成功，都硬退出当前进程，避免残留僵尸 / 多实例。
+        os._exit(0)
+
 
 def scheduled_restart_checker():
     """
@@ -4336,16 +4792,7 @@ def scheduled_restart_checker():
                     clean_up_temp_files()
                     
                     logger.info("正在执行重启...")
-                    # 使用subprocess.Popen而不是os.execv，避免命令注入风险
-                    import subprocess
-                    current_script = os.path.abspath(__file__)
-                    # 只传递脚本路径，不传递sys.argv中可能存在的危险参数
-                    subprocess.Popen(
-                        [sys.executable, current_script],
-                        cwd=os.path.dirname(current_script)
-                    )
-                    logger.info("新进程已启动，当前进程即将退出")
-                    sys.exit(0)
+                    request_self_restart("定时重启")
                 except Exception as e:
                     logger.error(f"执行重启操作时发生错误: {e}", exc_info=True)
                     # 如果重启失败，推迟下一次检查，避免短时间内连续尝试
@@ -4378,6 +4825,18 @@ def scheduled_restart_checker():
 # 发送心跳的函数
 # Waitress优化：创建心跳专用session，复用连接
 _heartbeat_session = None
+_hb_webui_ok = True  # WebUI 心跳可达状态（降级日志，避免刷屏）
+
+def _note_hb_state(reachable):
+    """心跳 WebUI 可达性变化时只提示一次，避免长运行刷屏。"""
+    global _hb_webui_ok
+    if reachable and not _hb_webui_ok:
+        _hb_webui_ok = True
+        logger.info("配置编辑器(WebUI)已恢复，心跳正常。")
+    elif (not reachable) and _hb_webui_ok:
+        _hb_webui_ok = False
+        logger.warning("配置编辑器(WebUI)不可达，心跳暂停(仅影响网页端在线状态)；bot 自身正常运行。")
+
 
 def _init_heartbeat_session():
     """初始化心跳专用Session（连接池复用）"""
@@ -4399,6 +4858,8 @@ def _init_heartbeat_session():
             'Connection': 'keep-alive',
             'Content-Type': 'application/json'
         })
+        # 关键: 禁用系统代理(本机常驻 Clash)，localhost:5001 必须直连 WebUI
+        _heartbeat_session.trust_env = False
     return _heartbeat_session
 
 def send_heartbeat():
@@ -4416,21 +4877,33 @@ def send_heartbeat():
         
         if response.status_code == 200:
             logger.debug(f"心跳发送成功至Waitress服务器 (PID: {os.getpid()})")
+            _note_hb_state(True)
+        elif response.status_code >= 500:
+            if _hb_webui_ok:
+                logger.warning(f"心跳响应异常，状态码: {response.status_code} (PID: {os.getpid()})")
+            _note_hb_state(False)
         else:
-            logger.warning(f"心跳响应异常，状态码: {response.status_code} (PID: {os.getpid()})")
+            if _hb_webui_ok:
+                logger.warning(f"心跳响应异常，状态码: {response.status_code} (PID: {os.getpid()})")
             
     except requests.exceptions.Timeout:
-        logger.warning(f"心跳发送超时 - Waitress服务器可能繁忙 (PID: {os.getpid()})")
-        
+        if _hb_webui_ok:
+            logger.warning(f"心跳发送超时 - WebUI可能繁忙或未启动 (PID: {os.getpid()})")
+        _note_hb_state(False)
+
     except requests.exceptions.ConnectionError as e:
         error_msg = str(e)
-        if 'Connection refused' in error_msg:
-            logger.error(f"无法连接到Waitress服务器 - 服务器可能未启动 (PID: {os.getpid()})")
-        else:
-            logger.error(f"心跳发送连接错误: {error_msg[:100]} (PID: {os.getpid()})")
-            
+        if _hb_webui_ok:
+            if 'Connection refused' in error_msg:
+                logger.error(f"无法连接到Waitress服务器 - 服务器可能未启动 (PID: {os.getpid()})")
+            else:
+                logger.error(f"心跳发送连接错误: {error_msg[:100]} (PID: {os.getpid()})")
+        _note_hb_state(False)
+
     except requests.exceptions.RequestException as e:
-        logger.error(f"心跳发送网络错误: {str(e)[:100]} (PID: {os.getpid()})")
+        if _hb_webui_ok:
+            logger.error(f"心跳发送网络错误: {str(e)[:100]} (PID: {os.getpid()})")
+        _note_hb_state(False)
         
     except Exception as e:
         logger.error(f"心跳发送未知错误: {str(e)[:100]} (PID: {os.getpid()})", exc_info=True)
@@ -4515,15 +4988,20 @@ def initialize_all_user_timers():
 
 def main():
     try:
+        started_running = False  # 标记是否已真正进入消息循环；用于区分“启动期确定性错误”与“运行期可自愈崩溃”
         # --- 启动前检查 ---
         logger.info("\033[32m进行启动前检查...\033[0m")
 
-        # 预检查所有用户prompt文件
+        # 预检查所有用户prompt文件（解析逻辑需与 get_user_prompt 一致：
+        # 自动添加但尚未设置提示词的联系人 role 为空，回退到默认人格 默认.md）
         for user in user_names:
-            prompt_file = prompt_mapping.get(user, user)
-            prompt_path = os.path.join(root_dir, 'prompts', f'{prompt_file}.md')
+            role = prompt_mapping.get(user, user)
+            if not role or not str(role).strip():
+                role = DEFAULT_PROMPT_NAME
+            safe_role = sanitize_user_id_for_filename(role)
+            prompt_path = os.path.join(root_dir, 'prompts', f'{safe_role}.md')
             if not os.path.exists(prompt_path):
-                raise FileNotFoundError(f"用户 {user} 的prompt文件 {prompt_file}.md 不存在")
+                raise FileNotFoundError(f"用户 {user} 的prompt文件 {safe_role}.md 不存在（请检查 prompts 目录，或为自动添加的联系人保留 默认.md 兜底人格）")
 
         # 确保临时目录存在
         memory_temp_dir = os.path.join(root_dir, MEMORY_TEMP_DIR)
@@ -4553,6 +5031,34 @@ def main():
         try:
             wx = WeChat()
             wx.Show()
+            # 发送消息时也视为互动：把发送对象（好友）自动加入用户列表（待设置提示词）
+            import inspect
+            _orig_sendmsg = wx.SendMsg
+            def _auto_add_sendmsg(msg, who=None, clear=True, at=None, exact=False, **kwargs):
+                if who:
+                    # 主动发消息也视为互动：好友 / 群都加入用户列表（待设置提示词）
+                    _ctype = 'group' if (who and '@chatroom' in who) else None
+                    record_user_interaction(who, _ctype)
+                # 兼容底层引擎签名：wxauto_compat 仅支持 (msg, who)，
+                # wechatauto 还支持 clear/at/exact。只传底层实际接受的参数，避免 TypeError。
+                try:
+                    accepted = set(inspect.signature(_orig_sendmsg).parameters.keys())
+                except (ValueError, TypeError):
+                    accepted = {'msg', 'who'}
+                call = {'msg': msg, 'who': who}
+                for _k, _v in (('clear', clear), ('at', at), ('exact', exact)):
+                    if _k in accepted:
+                        call[_k] = _v
+                call.update(kwargs)
+                # bot 代发登记：必须在真正发送前，用于回声去重，
+                # 否则微信回显会把 AI 的话误判成主人的话，风格就学成 AI 腔了。
+                if chat_history is not None:
+                    try:
+                        chat_history.record_outgoing_bot(who, msg)
+                    except Exception as _chs:
+                        logger.debug(f"记录 bot 发送失败（已忽略）: {_chs}")
+                return _orig_sendmsg(**call)
+            wx.SendMsg = _auto_add_sendmsg
         except:
             logger.error(f"\033[31m无法初始化微信接口，请确保您安装的是微信3.9版本，并且已经登录！\033[0m")
             exit(1)
@@ -4588,6 +5094,12 @@ def main():
         listener_thread.daemon = True
         listener_thread.start()
         logger.info("消息窗口保活已启动。")
+
+        # --- 启动自动添加用户线程（收到/发出消息的好友自动入列，待设置提示词）---
+        auto_add_thread = threading.Thread(target=auto_add_discovered_users, name="AutoAddUsers")
+        auto_add_thread.daemon = True
+        auto_add_thread.start()
+        logger.info("自动添加用户线程已启动。")
 
         checker_thread = threading.Thread(target=check_inactive_users, name="InactiveUserChecker")
         checker_thread.daemon = True
@@ -4625,6 +5137,11 @@ def main():
         auto_message_thread.start()
         current_auto_msg_status = get_dynamic_config('ENABLE_AUTO_MESSAGE', ENABLE_AUTO_MESSAGE)
         logger.info(f"主动消息检查线程已启动 (当前状态: {'启用' if current_auto_msg_status else '禁用'})。")
+        _auto_allow = get_dynamic_config('AUTO_MESSAGE_USER_LIST', AUTO_MESSAGE_USER_LIST)
+        if _auto_allow:
+            logger.info(f"主动聊天白名单已生效，仅以下对象会收到主动消息: {_auto_allow}")
+        else:
+            logger.info("\033[33m主动聊天白名单为空：将不会向任何人主动发送消息（最安全默认）。如需主动聊天，请在配置编辑器填写 AUTO_MESSAGE_USER_LIST。\033[0m")
         
         # 启动心跳线程
         heartbeat_th = threading.Thread(target=heartbeat_thread_func, name="BotHeartbeatThread", daemon=True)
@@ -4638,16 +5155,46 @@ def main():
         monitor_memory_usage_thread.start()
         logger.info("内存使用监控线程已启动。")
 
+        started_running = True  # 已进入消息循环，此后任何未捕获异常都按“运行期崩溃”处理（自愈重启）
         wx.KeepRunning()
 
-        while True:
-            time.sleep(60)
+        # KeepRunning 正常不会返回；若返回说明消息循环已意外终止（如微信异常退出）。
+        # 直接自我重启以恢复服务，避免进程残留为“活但失聪”的僵尸。
+        logger.critical("wx.KeepRunning() 意外返回，消息循环已终止，准备自我重启以恢复服务...")
+        try:
+            with queue_lock:
+                save_chat_contexts()
+            if get_dynamic_config('ENABLE_AUTO_MESSAGE', ENABLE_AUTO_MESSAGE):
+                save_user_timers()
+            if ENABLE_REMINDERS:
+                with recurring_reminder_lock:
+                    save_recurring_reminders()
+        except Exception as e:
+            logger.error(f"重启前保存状态失败: {e}", exc_info=True)
+        request_self_restart("消息循环结束")
 
     except FileNotFoundError as e:
         logger.critical(f"初始化失败: 缺少必要的文件或目录 - {str(e)}")
         logger.error(f"\033[31m错误：{str(e)}\033[0m")
     except Exception as e:
-        logger.critical(f"主程序发生严重错误: {str(e)}", exc_info=True)
+        # 区分“启动期确定性错误”与“运行期意外崩溃”：
+        # - 启动期（started_running=False）多为配置/文件缺失，重启无意义，直接退出等待人工修复；
+        # - 运行期（started_running=True）视为可自愈的异常，保存状态后自我重启，保障 24h 不中断。
+        if started_running:
+            logger.critical(f"运行期发生严重错误，触发崩溃自愈: {str(e)}", exc_info=True)
+            try:
+                with queue_lock:
+                    save_chat_contexts()
+                if ENABLE_REMINDERS:
+                    with recurring_reminder_lock:
+                        save_recurring_reminders()
+                if get_dynamic_config('ENABLE_AUTO_MESSAGE', ENABLE_AUTO_MESSAGE):
+                    save_user_timers()
+            except Exception as _se:
+                logger.error(f"崩溃自愈前保存状态失败: {_se}", exc_info=True)
+            request_self_restart(f"运行期崩溃: {str(e)[:120]}", cooldown=5)
+        else:
+            logger.critical(f"初始化失败(主程序严重错误): {str(e)}", exc_info=True)
     finally:
         logger.info("程序准备退出，执行清理操作...")
 

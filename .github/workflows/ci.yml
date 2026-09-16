@@ -1,0 +1,40 @@
+name: CI — Python 语法体检
+
+# 与 build.yml（仅 weauto 分支的 PyInstaller 构建）分离：
+# 本流水线在「每次 push / 任意分支 PR」上跑一遍全量编译，尽早抓回归。
+# 不依赖任何第三方包、不装微信引擎，纯语法门禁，几秒出结果。
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    name: Compile all .py (compileall)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Compile-check every Python file (exclude venv / git / caches)
+        shell: bash
+        run: |
+          # compileall 对任一语法错误返回非 0；-q 静默，只在出错时打印。
+          # 排除：.venv_bot(本地 venv，含大量无关第三方源码)、.git、__pycache__、node_modules。
+          python -m compileall -q \
+            -x '(\.venv_bot|__pycache__|\.git|node_modules)' \
+            .
+
+      - name: Report
+        if: success()
+        run: echo "✅ 全部 Python 文件编译通过，无语法/缩进错误。"

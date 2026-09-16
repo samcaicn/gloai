@@ -3634,6 +3634,7 @@
             <button id="botButton" class="nav-button">Start Bot</button>
             <button type="submit" form="configForm" id="saveConfigButton" class="nav-button" style="background-color: #4CAF50;">保存配置</button>
                         <a href="{{ url_for('quick_start') }}" class="nav-button" style="background-color: #ff9800;">快速上手</a>
+            <a href="{{ url_for('style_lab') }}" class="nav-button">风格模仿</a>
             <button type="button" id="importButton" class="nav-button" style="background-color: #2196F3;">导入配置</button>      
             <a href="https://ciu4ws3raf1.feishu.cn/docx/EgE7d5JvtopzmIxYZMKcLU2xnge?from=from_copylink"
                class="nav-button" target="_blank" style="background-color: #03A9F4;">帮助文档</a>
@@ -4237,6 +4238,12 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                             <label>启用主动消息功能</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_AUTO_MESSAGE" {% if config.ENABLE_AUTO_MESSAGE %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label>主动聊天白名单(仅名单内会收到主动消息):</label>
+                        <input type="text" name="AUTO_MESSAGE_USER_LIST" value="{{ config.AUTO_MESSAGE_USER_LIST }}" placeholder="[]">
+                        <small>Python 列表格式，例如 <code>['SamCai_', 'wxid_9ivay0f1tt9322', '45158227848@chatroom']</code>。<br>
+                        <b>留空 <code>[]</code> 表示不主动向任何人发消息</b>（最安全默认）；只有写进本列表的用户/群才会收到「主动发消息」。标识符填写方式与用户列表一致（显示名或 wxid，群聊用 <code>xxx@chatroom</code>）。</small>
                     </div>
                     <div class="form-group">
                         <label>主动消息内容(发送给ai获取回复):</label>

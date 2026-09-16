@@ -11,8 +11,8 @@
 # ***********************************************************************
 
 # 用户列表(请配置要和bot说话的账号的微信昵称！)
-# 例如：LISTEN_LIST = [['微信名1', '角色1'],['微信名2', '角色2']]
-LISTEN_LIST = [['微信名1', '角色1']]
+# 例如：LISTEN_LIST = [["微信名1", "角色1"], ["微信ID@chatroom", ""]]
+LISTEN_LIST = [["SamCai_", "角色1"], ["45158227848@chatroom", "角色1"], ["58550599600@chatroom", ""], ["18712200430@chatroom", ""], ["45882134652@chatroom", ""], ["wxid_9ivay0f1tt9322", ""], ["44222621566@chatroom", ""]]
 
 # DeepSeek API 配置
 DEEPSEEK_API_KEY = 'sk-dummy-placeholder'
@@ -53,6 +53,8 @@ EMOJI_SENDING_PROBABILITY = 25
 # 自动消息配置
 AUTO_MESSAGE = '请你模拟系统设置的角色，在微信上找对方继续刚刚的话题或者询问对方在做什么'
 ENABLE_AUTO_MESSAGE = True
+# 主动聊天白名单：仅本列表内的用户/群会收到「主动发消息」；留空 = 不主动向任何人发消息（最安全默认）
+AUTO_MESSAGE_USER_LIST = []
 # 等待时间
 MIN_COUNTDOWN_HOURS = 1.0
 MAX_COUNTDOWN_HOURS = 2.0
@@ -92,7 +94,7 @@ GROUP_CHAT_RESPONSE_PROBABILITY = 100
 GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY = True
 
 # 配置编辑器设置
-ALLOW_OPEN_PORT = False  # 允许开放端口，True时使用0.0.0.0启动，False时使用127.0.0.1启动
+ALLOW_OPEN_PORT = False
 LOGIN_PASSWORD = '123456'  # 登录密码
 PASSWORD_IS_VALID = True  # 密码是否合法（用于适配旧版本，开放端口时必须重新设置密码）
 PORT = 5001
@@ -156,7 +158,7 @@ ENABLE_SENSITIVE_CONTENT_CLEARING = True
 # 论坛自定义模型配置（可选）
 ENABLE_FORUM_CUSTOM_MODEL = False
 FORUM_BASE_URL = 'https://vg.v1api.cc/v1'
-FORUM_MODEL = ''
+FORUM_MODEL = 'deepseek-ai/DeepSeek-V3'
 FORUM_API_KEY = ''
 FORUM_TEMPERATURE = 1.0
 FORUM_MAX_TOKEN = 1200

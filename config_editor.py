@@ -429,8 +429,42 @@ def validate_config_types(config_path):
         app.logger.error(f"配置文件类型验证失败: {e}")
         return False
 
-# 会话密钥配置（每次重启生成新密钥，适合个人使用）
-app.secret_key = os.urandom(24).hex()
+# 会话密钥配置：持久化固定值，避免进程重启导致浏览器已有会话(含 CSRF token)失效。
+# 首次运行时随机生成并写入 .secret_key 文件，之后每次启动复用同一密钥。
+# 不放在 config.py，以免被 WebUI 保存逻辑覆盖、也不与 API Key 混在一起。
+def _get_persistent_key_dir():
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
+def load_secret_key():
+    key_file = os.path.join(_get_persistent_key_dir(), '.secret_key')
+    try:
+        if os.path.exists(key_file):
+            with open(key_file, 'r', encoding='utf-8') as f:
+                k = f.read().strip()
+            if k:
+                return k
+    except Exception:
+        pass
+    # 首次运行（或读取失败）：生成并持久化
+    k = os.urandom(24).hex()
+    try:
+        with open(key_file, 'w', encoding='utf-8') as f:
+            f.write(k)
+        try:
+            os.chmod(key_file, 0o600)
+        except Exception:
+            pass
+    except Exception:
+        if 'app' in globals():
+            app.logger.warning("无法写入 .secret_key，将使用临时随机密钥（重启会使已有会话失效）")
+    return k
+
+app.secret_key = load_secret_key()
+
+# ===== 调试开关：跳过密码登录（便于本地调试 WebUI，调试完成后务必改回 False）=====
+BYPASS_LOGIN = True
 bot_process = None
 
 # 简易500错误处理，便于快速定位问题
@@ -522,7 +556,12 @@ def get_chat_context_users():
 def login():
     config = parse_config()
     client_ip = request.remote_addr
-    
+
+    # 调试模式：跳过密码登录直接进入（调试完成后将 BYPASS_LOGIN 改回 False）
+    if BYPASS_LOGIN:
+        session['logged_in'] = True
+        return redirect(url_for('index'))
+
     password_is_valid = config.get('PASSWORD_IS_VALID', False)
     
     # 未设置密码时，强制跳转到密码设置页面
@@ -619,6 +658,9 @@ def password_setup():
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # 调试模式：跳过登录校验（调试完成后将 BYPASS_LOGIN 改回 False）
+        if BYPASS_LOGIN:
+            return f(*args, **kwargs)
         config = parse_config()
         password_is_valid = config.get('PASSWORD_IS_VALID', False)
         
@@ -4240,6 +4282,7 @@ def get_default_config():
         "EMOJI_SENDING_PROBABILITY": 25,
         "AUTO_MESSAGE": '请你模拟系统设置的角色，在微信上找对方继续刚刚的话题或者询问对方在做什么',
         "ENABLE_AUTO_MESSAGE": True,
+        "AUTO_MESSAGE_USER_LIST": [],
         "MIN_COUNTDOWN_HOURS": 1.0,
         "MAX_COUNTDOWN_HOURS": 2.0,
         "QUIET_TIME_START": '22:00',
@@ -4455,6 +4498,74 @@ def kill_process_using_port(port):
                     print(f"进程 {conn.pid} 已被成功结束。")
                 except Exception as e:
                     print(f"结束进程 {conn.pid} 时出现异常：{e}")
+
+# ---------------------------------------------------------------------------
+# 风格模仿：通过聊天记录学习主人的说话方式，并可注入提示词让 bot 模仿
+# ---------------------------------------------------------------------------
+@app.route('/style_lab', methods=['GET', 'POST'])
+@login_required
+def style_lab():
+    """主人风格学习面板：聊天记录统计 / 风格画像 / 启停模仿。"""
+    # 惰性导入：模块缺失（或打包遗漏）时只禁用本页，不影响配置编辑器主体
+    try:
+        import style_learner
+    except Exception as _e:  # noqa: BLE001
+        style_learner = None
+        app.logger.warning(f"style_learner 不可用，风格面板降级: {_e}")
+    try:
+        import chat_history
+    except Exception as _e:  # noqa: BLE001
+        chat_history = None
+        app.logger.warning(f"chat_history 不可用，风格面板降级: {_e}")
+
+    message = ''
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+        try:
+            if action == 'analyze' and style_learner is not None:
+                prof = style_learner.analyze()
+                message = ('分析完成，已生成风格画像。' if prof.get('ok')
+                           else f"分析未成功：{prof.get('reason')}")
+            elif action == 'toggle' and style_learner is not None:
+                enabled = request.form.get('enabled') in ('1', 'true', 'on', 'yes')
+                style_learner.set_enabled(enabled)
+                message = f"已{'启用' if enabled else '停用'}风格模仿。"
+            elif action == 'save_text' and style_learner is not None:
+                text = request.form.get('profile_text', '')
+                prof = style_learner.load_profile()
+                prof['profile_text'] = text
+                prof['ok'] = bool(text.strip())
+                prof['updated_at'] = time.time()
+                style_learner.save_profile(prof)
+                message = '风格画像已保存（人工微调生效）。'
+            elif action == 'clear' and style_learner is not None:
+                style_learner.clear_profile()
+                message = '风格画像已清空。'
+            elif action == 'clear_history' and chat_history is not None:
+                chat_history.clear_all()
+                message = '聊天记录已清空。'
+        except Exception as _e:  # noqa: BLE001
+            message = f'操作失败：{_e}'
+            app.logger.error(f"style_lab 操作失败: {_e}", exc_info=True)
+
+    settings = style_learner.load_settings() if style_learner is not None else {}
+    profile = style_learner.load_profile() if style_learner is not None else {}
+    stats = chat_history.stats() if chat_history is not None else {}
+    recent = chat_history.fetch_recent(30) if chat_history is not None else []
+
+    def _fmt(ts):
+        try:
+            return time.strftime('%m-%d %H:%M', time.localtime(ts))
+        except Exception:
+            return ''
+
+    updated_str = _fmt(profile.get('updated_at')) if profile.get('updated_at') else ''
+    recent_fmt = [( _fmt(r[0]), r[1], r[2], r[3], (r[4] or '')[:80]) for r in recent]
+
+    return render_template('style_lab.html',
+                           settings=settings, profile=profile, stats=stats,
+                           recent=recent_fmt, message=message, updated_str=updated_str)
+
 
 if __name__ == '__main__':
     # 冻结模式自重启：以 --bot 参数运行时直接进入机器人主循环

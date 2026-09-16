@@ -195,17 +195,24 @@ def _clean_text(content):
 
 def _parse(row, who, username, member_resolver=None):
     """把 wechatauto 的原始消息 row 解析成 v3.25.1 的 Msg（两轴模型）。"""
-    content = row.get("content") or ""
-    if isinstance(content, bytes):
+    content = row.get("content")
+    if content is None:
+        content = ""
+    elif isinstance(content, bytes):
         try:
             content = content.decode("utf-8", "ignore")
         except Exception:
             content = str(content)
+    elif not isinstance(content, str):
+        # wechatauto 偶尔把纯数字/其它类型消息以非 str 传入，统一转 str，
+        # 否则后续 .strip()/re.sub 会抛 AttributeError('int' object has no attribute 'strip')
+        content = str(content)
     sender_id = row.get("sender_id")
     is_self = (sender_id == SELF_SENDER_ID) or (
         bool(row.get("self_wxid")) and str(sender_id) == str(row.get("self_wxid"))
     )
-    mtype = (row.get("type") or "").strip()
+    # type 同样可能以 int(如 1) 传入，先转 str 再 strip
+    mtype = str(row.get("type") or "").strip()
     is_group = str(username).endswith("@chatroom")
 
     # 系统消息
@@ -313,15 +320,66 @@ class WeChat:
 
     # ---- 名称解析 ----
     def _resolve_username(self, name):
+        """把显示名/备注/群名解析成 wechatauto 可用的 username（好友 wxid 或 群 wxid@chatroom）。
+
+        这是「找不到人/找不到群」bug 的根因所在：原实现只精确匹配好友表的
+        nick_name/remark，匹配不上就原样返回显示名，导致：
+          - 群名：search_contact 只查好友表、查不到群，于是用群显示名而非
+            wxid@chatroom 去注册监听 → 群消息永不被监听（“找不到群”）。
+          - 备注≠昵称 或 无精确命中：同样用显示名注册 → 监听失效。
+        修复：好友精确→群解析→好友子串兜底→首个命中，均失败才 best-effort 返回原名。
+        """
+        if not name:
+            return name
         if name in ("filehelper", "文件传输助手"):
             return "filehelper"
+        # 已经是 username（好友/群 wxid 或文件传输助手）直接复用，避免二次误解析
+        if "@" in name or name.startswith("wxid_"):
+            return name
+        # 1) 好友：search_contact 精确匹配 nick_name / remark
         try:
-            for hit in self._db.search_contact(name):
-                if name in (hit.get("nick_name"), hit.get("remark")):
-                    return hit["username"]
+            hits = list(self._db.search_contact(name))
+        except Exception:
+            hits = []
+        for h in hits:
+            if name in (h.get("nick_name"), h.get("remark")):
+                return h["username"]
+        # 2) 群：群不在好友表，需单独按群名解析（精确优先、子串兜底）
+        try:
+            gid = self._db.group_name_to_id(name)
+            if gid:
+                return gid
         except Exception:
             pass
+        # 3) 好友：子串包含兜底（备注/昵称含目标名）
+        for h in hits:
+            disp = h.get("remark") or h.get("nick_name") or ""
+            if name and name in disp:
+                return h["username"]
+        # 4) 好友：实在不行取首个命中
+        if hits:
+            return hits[0]["username"]
+        # 5) 全部失败：best-effort 返回原名，让上层决定（通常仍能 UI 侧栏/搜索兜底）
         return name
+
+    def _display_name(self, who):
+        """open_chat 需要显示名（侧栏标题），若传入的是 wxid 则反查显示名。
+
+        这是「回复时找不到人」bug 的另一半：bot 的回调 who 有时是 wxid
+        （如联系人微信号本身就是 SamCai_，或 LISTEN_LIST 配了 wxid，或群 wxid），
+        open_chat 按显示名搜侧栏必然落空 → 发送失败“找不到人”。
+        反向解析用 wechatauto 的 get_nickname（username -> remark/nick_name）。
+        显示名查不到时会原样返回自身，因此无条件反查是安全的。
+        """
+        if not who:
+            return who
+        try:
+            nm = self._db.get_nickname(who)
+            if nm and nm != who:
+                return nm
+        except Exception:
+            pass
+        return who
 
     def _resolve_member(self, group_username, member_wxid):
         try:
@@ -410,15 +468,15 @@ class WeChat:
     # ---- 发送 ----
     def SendMsg(self, msg, who):
         self._init()
-        return self._quick_send(msg, who, verify=False)
+        return self._quick_send(msg, self._display_name(who), verify=False)
 
     def SendFiles(self, filepath, who):
         self._init()
-        return self._quick_send_file(filepath, who, verify=False)
+        return self._quick_send_file(filepath, self._display_name(who), verify=False)
 
     def SendImage(self, filepath, who):
         self._init()
-        return self._quick_send_image(filepath, who, verify=False)
+        return self._quick_send_image(filepath, self._display_name(who), verify=False)
 
     def ChatWith(self, who):
         # wechatauto 通过 quick_send 直接搜索侧栏发送，无需预先 ChatWith
