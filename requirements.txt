@@ -21,7 +21,9 @@ openai==1.84.0
 
 # ===== MCP（供 Codex / WorkBuddy 等 agent 以 MCP 协议调用 WeAuto）=====
 # 注意：固定 <2，v2 把 FastMCP 改名为 MCPServer 且 API 大改；本项目的 weauto_mcp.py 基于 v1 FastMCP。
-mcp>=1.9,<2
+# 注意：mcp[cli] 才会带 typer —— PyInstaller 的 --collect-all mcp 会 import mcp.cli，
+# 而 mcp.cli 强依赖 typer，缺它构建直接失败（"Error: typer is required"）。
+mcp[cli]>=1.9,<2
 
 # ===== 微信 4.x 引擎原生依赖（wechatauto，vendor/ 内已打 WAL/方向补丁）=====
 # 缺一个都跑不起来
