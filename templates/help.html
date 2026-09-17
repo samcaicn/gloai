@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="helpPage">
+<head data-page-node-id="helpHead">
+    <meta charset="UTF-8" data-page-node-id="helpMeta1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="helpMeta2">
+    <title>帮助中心 · WeAuto 离线使用文档</title>
+    <style>
+        body{ margin:0; }
+        .wrap{ max-width:1180px; margin:0 auto; padding:22px 20px 60px; }
+        .panel{
+            background:var(--surface); border:1px solid var(--border);
+            border-radius:var(--r-lg); box-shadow:var(--sh-2);
+            padding:20px 22px; margin-bottom:18px;
+        }
+        .panel h2{ margin:0 0 14px; font-size:16.5px; font-weight:650; padding-bottom:10px; border-bottom:1px solid var(--border); }
+        .panel h3{ margin:18px 0 8px; font-size:14.5px; font-weight:620; color:var(--text-2); }
+        .hint{ color:var(--text-3); font-size:13px; line-height:1.8; margin:8px 0 0; }
+        .hint li{ margin:4px 0; }
+        .codeblock{
+            position:relative; background:var(--input-bg); color:var(--text);
+            border:1px solid var(--border); border-radius:var(--r);
+            padding:14px 16px; font-family:ui-monospace,Menlo,Consolas,monospace;
+            font-size:12.5px; white-space:pre; overflow-x:auto; margin:8px 0;
+        }
+        .copy-btn{
+            position:absolute; top:8px; right:8px; cursor:pointer;
+            background:var(--surface-3); color:var(--text-2);
+            border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-size:12px;
+        }
+        .copy-btn:hover{ background:var(--brand-soft); color:var(--brand); }
+        table{ width:100%; border-collapse:collapse; font-size:13px; }
+        th,td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+        th{ color:var(--text-3); font-weight:600; font-size:12.5px; }
+        td.c{ color:var(--text-2); }
+        .tag{ font-size:11.5px; padding:2px 8px; border-radius:999px; background:var(--brand-soft); color:var(--brand); }
+        .tag.yes{ background:var(--warn-soft); color:var(--warn-text); }
+        .msg{ background:var(--info-soft); color:var(--info-text); border:1px solid var(--brand-ring); border-radius:var(--r); padding:10px 14px; margin-bottom:16px; font-size:13.5px; line-height:1.8; }
+        .toc{ display:flex; flex-wrap:wrap; gap:8px; }
+        .toc a{ font-size:13px; padding:6px 12px; border:1px solid var(--border); border-radius:999px; text-decoration:none; color:var(--text-2); background:var(--surface-2); }
+        .toc a:hover{ background:var(--brand-soft); color:var(--brand); border-color:var(--brand-ring); }
+        .kbd{ font-family:ui-monospace,monospace; background:var(--surface-3); border:1px solid var(--border); border-radius:5px; padding:1px 7px; font-size:12px; }
+    </style>
+    {% include '_modern_ui.html' %}
+</head>
+<body data-page-node-id="helpBody">
+    <div class="header-bar" data-page-node-id="helpHdr">
+        <div class="header-title" data-page-node-id="helpHdrT"><h1 data-page-node-id="helpHdrH">帮助中心 · WeAuto 离线使用文档</h1></div>
+        <div class="buttons" data-page-node-id="helpHdrB">
+            <a href="{{ url_for('index') }}" class="nav-button" data-page-node-id="helpBack">返回配置</a>
+        </div>
+    </div>
+
+    <div class="wrap content-area" data-page-node-id="helpWrap">
+        <div class="msg" data-page-node-id="helpMsg">
+            本页为 <b>离线</b> 帮助文档，内置于管理后台，无需联网即可查阅。涵盖运行方式、Web 后台、主动消息白名单、风格模仿、CLI 与 MCP 的完整用法。
+        </div>
+
+        <div class="panel" data-page-node-id="helpToc">
+            <h2>目录</h2>
+            <div class="toc">
+                <a href="#intro">① 简介</a>
+                <a href="#start">② 快速开始</a>
+                <a href="#webui">③ 配置后台</a>
+                <a href="#allowlist">④ 主动消息白名单</a>
+                <a href="#style">⑤ 风格模仿</a>
+                <a href="#cli">⑥ CLI 命令行</a>
+                <a href="#mcp">⑦ MCP 协议</a>
+                <a href="#faq">⑧ 常见问题</a>
+            </div>
+        </div>
+
+        <!-- ① 简介 -->
+        <div class="panel" id="intro" data-page-node-id="helpIntro">
+            <h2>① 简介</h2>
+            <p class="hint">
+                <b>WeAuto</b>（原 WeChatBot_WXAUTO_SE）是运行在 <b>Windows 10/11 桌面端</b>的智能微信聊天机器人，基于内置 <code>wechatauto</code> 引擎驱动微信 4.x（兼容 3.9），调用大模型生成拟人化回复。
+            </p>
+            <ul class="hint">
+                <li>支持微信 4.x / 3.9（仅 Windows 桌面客户端），<b>macOS / Linux 暂不支持</b>。</li>
+                <li>Web 配置后台端口：<span class="kbd">5001</span>（默认 <code>http://127.0.0.1:5001</code>）。</li>
+                <li>支持以 <b>CLI</b>（命令行）和 <b>MCP</b>（标准协议）被 Codex / WorkBuddy 等 agent 工具驱动。</li>
+                <li>许可证：GNU GPL-3.0。</li>
+            </ul>
+        </div>
+
+        <!-- ② 快速开始 -->
+        <div class="panel" id="start" data-page-node-id="helpStart">
+            <h2>② 快速开始</h2>
+            <h3>方式一：一键启动器（推荐）</h3>
+            <ol class="hint">
+                <li>登录电脑微信（支持 4.x），保持后台运行。</li>
+                <li>双击 <span class="kbd">Run.bat</span>：自动检查环境 → 安装依赖 → 检查更新 → 启动 Web 后台。</li>
+                <li>浏览器打开 <code>http://127.0.0.1:5001</code>，填写 API Key / 模型，配置监听名单，点击 <b>Start Bot</b>。</li>
+            </ol>
+            <h3>方式二：源码运行</h3>
+            <div class="codeblock" data-page-node-id="helpStartCode">python -m pip install -r requirements.txt --only-binary=:all:
+.venv_bot\Scripts\python.exe config_editor.py</div>
+            <h3>方式三：打包 EXE</h3>
+            <p class="hint">从 Release 下载 <code>WeAuto.exe</code> 双击即可（资源自动释放到同目录）；<code>weauto_mcp.exe</code> 为 MCP 服务独立可执行文件。</p>
+        </div>
+
+        <!-- ③ 配置后台 -->
+        <div class="panel" id="webui" data-page-node-id="helpWebui">
+            <h2>③ 配置后台导航说明</h2>
+            <table data-page-node-id="helpWebuiTbl">
+                <thead><tr><th>入口</th><th>说明</th></tr></thead>
+                <tbody>
+                    <tr><td>快速上手</td><td class="c">向导式配置：选服务商 / 模型、填 Key、配监听对象、启动。</td></tr>
+                    <tr><td>风格模仿</td><td class="c">统计主人历史聊天风格（句长、语气词、口头禅等）并注入回复，使 AI 更像本人。</td></tr>
+                    <tr><td>MCP</td><td class="c">让 agent 工具通过 MCP 协议驱动本机器人（能力检测 + 客户端配置）。</td></tr>
+                    <tr><td>CLI</td><td class="c">让 agent 用 <code>python cli.py &lt;cmd&gt;</code> 命令行驱动本机器人（命令参考 + 在线只读测试）。</td></tr>
+                    <tr><td>导入配置</td><td class="c">从备份或他人配置快速导入 <code>config.py</code>。</td></tr>
+                    <tr><td>报错一键检测</td><td class="c">自动排查微信 / 依赖 / 端口等常见问题。</td></tr>
+                    <tr><td>帮助文档</td><td class="c">本页（离线帮助中心）。</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ④ 主动消息白名单 -->
+        <div class="panel" id="allowlist" data-page-node-id="helpAllow">
+            <h2>④ 主动消息白名单</h2>
+            <p class="hint">
+                为防止机器人对陌生人主动发消息，主动消息仅向 <code>AUTO_MESSAGE_USER_LIST</code> 中的对象发送。<b>空列表 = 不主动给任何人发消息</b>。
+            </p>
+            <ul class="hint">
+                <li>配置项为 <span class="kbd">AUTO_MESSAGE_USER_LIST</span>，值为微信显示名 / wxid 列表，例如 <code>['SamCai_', '文件传输助手']</code>。</li>
+                <li>匹配为双向：显示名或 wxid 任一命中即可。</li>
+                <li>在「快速上手」或「配置编辑器」中设置；也可经 CLI <code>config set AUTO_MESSAGE_USER_LIST</code> 或 MCP <code>config_set</code> 写入。</li>
+                <li>总开关 <code>ENABLE_AUTO_MESSAGE</code> 控制主动消息功能是否启用。</li>
+            </ul>
+        </div>
+
+        <!-- ⑤ 风格模仿 -->
+        <div class="panel" id="style" data-page-node-id="helpStyle">
+            <h2>⑤ 风格模仿（Style Lab）</h2>
+            <p class="hint">
+                基于本地聊天历史（<code>weauto_chat.db</code>）统计主人的说话习惯，生成风格画像并注入 AI 回复。仅学习 <code>source='owner'</code>（主人亲发）消息，自动排除机器人代发内容。
+            </p>
+            <ul class="hint">
+                <li>统计维度：句长、句末标点、emoji、语气词、口头禅、字级 n-gram、中英混用等。</li>
+                <li>样本不足（&lt;10 条）会提示数据不足，需先积累聊天记录。</li>
+                <li>在「风格模仿」页可重新分析、开关、手工微调画像、清空画像 / 记录。</li>
+                <li>CLI：<code>cli.py style --analyze</code> / <code>--enable</code> / <code>--disable</code>；MCP：<code>style</code> 工具。</li>
+            </ul>
+        </div>
+
+        <!-- ⑥ CLI -->
+        <div class="panel" id="cli" data-page-node-id="helpCli">
+            <h2>⑥ CLI 命令行</h2>
+            <p class="hint">用项目自带 Python 运行（含 openai / wechatauto 等依赖），默认输出 JSON，加 <span class="kbd">--text</span> 转人读格式。需微信的命令在微信未登录时返回清晰错误，不崩溃。</p>
+            <table data-page-node-id="helpCliTbl">
+                <thead><tr><th>命令</th><th>说明</th><th class="c">需微信</th><th class="c">示例</th></tr></thead>
+                <tbody>
+                    <tr><td><code>version</code></td><td class="c">打印版本</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py version</code></td></tr>
+                    <tr><td><code>status</code></td><td class="c">运行/配置摘要（白名单、监听、风格样本数等）</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py status</code></td></tr>
+                    <tr><td><code>history</code></td><td class="c">读聊天记录（--source all|owner|bot|friend|group）</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py history --source owner --limit 20</code></td></tr>
+                    <tr><td><code>style</code></td><td class="c">风格画像（--analyze/--enable/--disable/--profile）</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py style --analyze</code></td></tr>
+                    <tr><td><code>config get|set</code></td><td class="c">读写配置项（密钥脱敏）</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py config get ENABLE_AUTO_MESSAGE</code></td></tr>
+                    <tr><td><code>listen list|add|remove</code></td><td class="c">管理监听名单 LISTEN_LIST</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py listen add "SamCai_" "朋友"</code></td></tr>
+                    <tr><td><code>send</code></td><td class="c">发消息（--type text|file|image，file/image 需 --path）</td><td class="c"><span class="tag yes">是</span></td><td class="c"><code>cli.py send --who 文件传输助手 --msg 你好</code></td></tr>
+                    <tr><td><code>whois</code></td><td class="c">解析名字/wxid → username / display_name</td><td class="c"><span class="tag yes">是</span></td><td class="c"><code>cli.py whois --name SamCai_</code></td></tr>
+                    <tr><td><code>serve</code></td><td class="c">前台启动 bot（长驻）</td><td class="c"><span class="tag yes">是</span></td><td class="c"><code>cli.py serve</code></td></tr>
+                </tbody>
+            </table>
+            <div class="codeblock" data-page-node-id="helpCliEx"># 经 agent 调用（示例）
+.venv_bot\Scripts\python.exe cli.py status
+.venv_bot\Scripts\python.exe cli.py config set AUTO_MESSAGE_USER_LIST "['SamCai_']"
+.venv_bot\Scripts\python.exe cli.py listen list</div>
+        </div>
+
+        <!-- ⑦ MCP -->
+        <div class="panel" id="mcp" data-page-node-id="helpMcp">
+            <h2>⑦ MCP 协议</h2>
+            <p class="hint">MCP（Model Context Protocol）让 Codex / WorkBuddy 等 agent 以标准协议驱动本机器人。stdio 传输，启动时按需懒加载，不触发微信 GUI。</p>
+            <h3>客户端配置（mcp.json）</h3>
+            <div class="codeblock" data-page-node-id="helpMcpJson">{
+  "mcpServers": {
+    "weauto": {
+      "command": "C:/path/to/weauto_mcp.exe",
+      "args": [],
+      "env": {}
+    }
+  }
+}
+// 源码运行：command 改为 ".venv_bot/Scripts/python.exe"，args: ["weauto_mcp.py"]</div>
+            <h3>工具清单（10 个）</h3>
+            <table data-page-node-id="helpMcpTbl">
+                <thead><tr><th>工具</th><th>说明</th><th class="c">需微信</th></tr></thead>
+                <tbody>
+                    <tr><td><code>status</code></td><td class="c">运行/配置摘要</td><td class="c"><span class="tag">否</span></td></tr>
+                    <tr><td><code>history</code></td><td class="c">读聊天记录（source/limit/order）</td><td class="c"><span class="tag">否</span></td></tr>
+                    <tr><td><code>style</code></td><td class="c">风格画像（show/analyze/enable/disable）</td><td class="c"><span class="tag">否</span></td></tr>
+                    <tr><td><code>config_get</code></td><td class="c">读配置（密钥脱敏）</td><td class="c"><span class="tag">否</span></td></tr>
+                    <tr><td><code>config_set</code></td><td class="c">写配置（原子回写 config.py）</td><td class="c"><span class="tag">否</span></td></tr>
+                    <tr><td><code>listen_list</code></td><td class="c">列出监听名单</td><td class="c"><span class="tag">否</span></td></tr>
+                    <tr><td><code>listen_add</code></td><td class="c">加监听对象</td><td class="c"><span class="tag">否</span></td></tr>
+                    <tr><td><code>listen_remove</code></td><td class="c">移出监听对象</td><td class="c"><span class="tag">否</span></td></tr>
+                    <tr><td><code>send_message</code></td><td class="c">发消息（text/file/image）</td><td class="c"><span class="tag yes">是</span></td></tr>
+                    <tr><td><code>whois</code></td><td class="c">解析名字/wxid</td><td class="c"><span class="tag yes">是</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ⑧ FAQ -->
+        <div class="panel" id="faq" data-page-node-id="helpFaq">
+            <h2>⑧ 常见问题 / 排障</h2>
+            <ul class="hint">
+                <li><b>机器人不回复？</b> 确认微信已登录、监听名单已含对方、Start Bot 已启动；用「报错一键检测」自查。</li>
+                <li><b>API Key 无效（401）？</b> 确认 Key 对应 <code>BASE_URL</code>（默认 <code>vg.v1api.cc/v1</code>），Key 需在该网关有效。</li>
+                <li><b>CLI/MCP 报缺依赖？</b> 用项目自带 <code>.venv_bot/Scripts/python.exe</code> 运行；MCP 需要 <code>mcp[cli]</code>（含 typer）。</li>
+                <li><b>主动消息发不出去？</b> 检查 <code>ENABLE_AUTO_MESSAGE</code> 与 <code>AUTO_MESSAGE_USER_LIST</code> 白名单。</li>
+                <li><b>换电脑 / 更新？</b> 双击 <code>Run.bat</code> 自动检查更新；或用 <code>updater.py</code> 下载 Release 中的 <code>WeAuto.exe</code>。</li>
+                <li><b>密钥安全？</b> 源码 <code>config.py</code> 仅占位；真 Key 在运行时副本，已被 <code>.gitignore</code> 屏蔽，不会进入仓库。</li>
+            </ul>
+        </div>
+    </div>
+
+    <script data-page-node-id="helpScript">
+        document.querySelectorAll('.codeblock').forEach(function(block){
+            var btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = '复制';
+            btn.addEventListener('click', function(){
+                navigator.clipboard.writeText(block.innerText).then(function(){
+                    btn.textContent = '已复制';
+                    setTimeout(function(){ btn.textContent = '复制'; }, 1500);
+                });
+            });
+            block.appendChild(btn);
+        });
+    </script>
+</body>
+</html>

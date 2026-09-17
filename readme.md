@@ -78,6 +78,11 @@
 16. **群聊精细化**：可设触发关键词、回复概率、备注识别。
 17. **稳定性 / 运维**：定时重启、内存监控自动清理、上下文自动保留、敏感词自动清上下文、失败自动重试、密码登录 + 随机端口。
 18. **自动加人（待设置提示词）**：仅把**真正收发过消息**的好友加入用户列表，从未互动（仅存在于好友列表）的联系人不会被加入。实现上：守护线程每 30 秒枚举好友会话并 `AddListenChat`（只负责监听，不写列表），确保新联系人发来消息时能被接收；当 `message_listener` 收到好友消息、或 `wx.SendMsg` 向某好友发出消息时，调用 `record_user_interaction` 把该好友加入 `LISTEN_LIST`（角色留空 = 待设置提示词）并写回 `config.py` 持久化。未单独配置角色的联系人使用内置默认人格 `prompts/默认.md`。可通过 `bot.py` 中的 `AUTO_ADD_USERS = False` 关闭（退化为只监听已配置用户）。
+19. **主动消息白名单**：主动消息仅向 `AUTO_MESSAGE_USER_LIST` 中的对象发送，空列表 = 不主动给任何人发消息。
+20. **风格模仿（Style Lab）**：基于本地聊天历史统计主人说话习惯并注入回复，使 AI 更像本人。
+21. **CLI 命令行**：`cli.py` 供 Codex / WorkBuddy 等 agent 工具以命令行驱动（9 个子命令，JSON 输出）。
+22. **MCP 协议**：`weauto_mcp.py` 以标准 MCP 协议暴露 10 个工具，被 agent 工具直接调用。
+23. **离线帮助中心**：管理后台内置 `/help` 中文帮助页（运行方式 / Web 后台 / 白名单 / 风格 / CLI / MCP / 排障），无需联网。
 
 ---
 
@@ -88,11 +93,13 @@ WeChatBot_WXAUTO_SE-3.25.1/
 ├── bot.py                 # 核心机器人逻辑（监听/回复/记忆/表情/指令）
 ├── config_editor.py       # Flask Web 配置后台（端口 5001，程序入口）
 ├── config.py              # 运行配置（含 API Key，敏感，勿外传）
+├── cli.py                 # 命令行接口（供 agent 工具驱动：version/status/history/style/config/listen/send/whois/serve）
+├── weauto_mcp.py          # MCP stdio 服务（供 agent 工具以 MCP 协议驱动，含 10 个工具）
 ├── updater.py             # 自动更新器
 ├── wxauto_compat.py       # 旧版 wxauto 兼容层
 ├── vendor/
 │   └── wechatauto/        # 微信 4.x 引擎（内置，已打补丁）
-├── templates/             # WebUI 页面（config_editor / login / quick_start / character_forum）
+├── templates/             # WebUI 页面（config_editor / login / quick_start / character_forum / style_lab / mcp / cli / help 帮助中心）
 ├── prompts/               # 角色 / 提示词（角色1.md、角色2.md…）
 ├── emojis/                # 自定义表情包（按情绪分类目录）
 ├── Demo_Image/            # 效果图
@@ -170,6 +177,16 @@ pyinstaller WeAuto.spec
 
 - 邮箱：iwyxdxl@gmail.com
 - QQ：2025128651
+
+---
+
+## 近期本地迭代（仓库内新增，尚未进入正式发版日志）
+
+- **CLI / MCP 接口**：新增 `cli.py` 与 `weauto_mcp.py`，让 Codex / WorkBuddy 等 agent 工具以命令行或 MCP 协议驱动微信机器人（状态查询、聊天记录、风格画像、配置读写、监听名单管理、发消息）。
+- **主动消息白名单**：新增 `AUTO_MESSAGE_USER_LIST`，主动消息仅向白名单对象发送，空列表则不主动给任何人。
+- **风格模仿（Style Lab）**：新增本地风格统计与注入，使 AI 回复更像主人本人。
+- **离线帮助中心**：管理后台「帮助文档」入口由外部在线文档改为内置 `/help` 离线中文帮助页。
+- 详见分支 `weauto` 的提交历史。
 
 ---
 

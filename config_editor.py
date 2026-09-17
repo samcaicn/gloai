@@ -4628,6 +4628,13 @@ def cli_page():
     return render_template('cli.html', diag=_weauto_agent_diag())
 
 
+@app.route('/help')
+@login_required
+def help_page():
+    """离线中文帮助中心：聚合运行方式 / Web 后台 / 白名单 / 风格模仿 / CLI / MCP / 排障。"""
+    return render_template('help.html')
+
+
 @app.route('/api/mcp/check')
 @login_required
 def api_mcp_check():
