@@ -3755,7 +3755,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                                 <select id="forumApiProvider" name="temp_FORUM_BASE_URL" title="论坛API服务商">
                                     <option value="https://api.siliconflow.cn/v1/" {% if config.FORUM_BASE_URL == 'https://api.siliconflow.cn/v1/' %}selected{% endif %}>硅基流动</option>
                                     <option value="https://api.deepseek.com" {% if config.FORUM_BASE_URL == 'https://api.deepseek.com' %}selected{% endif %}>DeepSeek官方API</option>
-                                    <option value="https://vg.v1api.cc/v1" {% if config.FORUM_BASE_URL == 'https://vg.v1api.cc/v1' %}selected{% endif %}>WeAPIs</option>
+                                    <option value="https://vg.v1api.cc/v1" {% if config.FORUM_BASE_URL == 'https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
                                     <option value="other" {% if config.FORUM_BASE_URL not in ['https://api.siliconflow.cn/v1/','https://api.deepseek.com','https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
                                 </select>
                                 <input type="text" id="customForumApiUrl" placeholder="请输入自定义API地址" class="custom-input" {% if config.FORUM_BASE_URL not in ['https://api.siliconflow.cn/v1/','https://api.deepseek.com','https://vg.v1api.cc/v1'] %} value="{{ config.FORUM_BASE_URL }}" style="display:block;" {% endif %}>
@@ -3796,7 +3796,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                     <h2>Prompt管理</h2>
                     <div id="prompt-list-view">
                         <a href="#" class="nav-button" id="createPromptBtn">新建Prompt</a>
-                        <a href="https://role.a3e.top" class="nav-button" target="_blank" style="background-color: #03A9F4; margin-left: 10px;">在线角色库</a>
+                        <!-- 在线角色库外部链接已按需求移除 -->
                         <ul class="file-list" id="prompt-files">
                             {% for file in prompt_files %}
                             <li class="file-item">
@@ -3859,11 +3859,11 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                 <div id="section-chat-model" class="content-panel">
                     <h2>Chat 模型配置</h2>
                     <div class="form-group">
-                        <label>API 服务商: (推荐WeAPIs 注册地址 <a href="https://linkvg.v1chat.cc/register?aff=Rf3h" target="_blank">https://vg.v1api.cc/register?aff=Rf3h</a> 教程：<a href="https://www.bilibili.com/video/BV1JNJczqEd9/?share_source=copy_web&vd_source=2739a8fcd01af470894edf97af25f655&t=103" target="_blank">[查看使用教程]</a> )</label>
+                        <label>API 服务商:（推荐默认网关，注册与接入方式请参见随附说明文档，无需跳转外部站点）</label>
                         <select id="apiProvider" name="temp_DEEPSEEK_BASE_URL" title="聊天API服务商">
                             <option value="https://api.siliconflow.cn/v1/" {% if config.DEEPSEEK_BASE_URL == 'https://api.siliconflow.cn/v1/' %}selected{% endif %}>硅基流动</option>
                             <option value="https://api.deepseek.com" {% if config.DEEPSEEK_BASE_URL == 'https://api.deepseek.com' %}selected{% endif %}>DeepSeek官方API</option>
-                            <option value="https://vg.v1api.cc/v1" {% if config.DEEPSEEK_BASE_URL == 'https://vg.v1api.cc/v1' %}selected{% endif %}>WeAPIs</option>
+                            <option value="https://vg.v1api.cc/v1" {% if config.DEEPSEEK_BASE_URL == 'https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
                             <option value="other" {% if config.DEEPSEEK_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
                         </select>
                         <input type="text" id="customApiUrl" placeholder="请输入自定义API地址" class="custom-input" {% if config.DEEPSEEK_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://vg.v1api.cc/v1'] %} value="{{ config.DEEPSEEK_BASE_URL }}" style="display:block;" {% endif %}>
@@ -3921,7 +3921,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                             <select id="assistantApiProvider" name="temp_ASSISTANT_BASE_URL" title="辅助模型API服务商">
                                 <option value="https://api.siliconflow.cn/v1/" {% if config.ASSISTANT_BASE_URL == 'https://api.siliconflow.cn/v1/' %}selected{% endif %}>硅基流动</option>
                                 <option value="https://api.deepseek.com" {% if config.ASSISTANT_BASE_URL == 'https://api.deepseek.com' %}selected{% endif %}>DeepSeek官方API</option>
-                                <option value="https://vg.v1api.cc/v1" {% if config.ASSISTANT_BASE_URL == 'https://vg.v1api.cc/v1' %}selected{% endif %}>WeAPIs</option>
+                                <option value="https://vg.v1api.cc/v1" {% if config.ASSISTANT_BASE_URL == 'https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
                                 <option value="other" {% if config.ASSISTANT_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
                             </select>
                             <input type="text" id="customAssistantApiUrl" placeholder="请输入自定义辅助模型API地址" class="custom-input" {% if config.ASSISTANT_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://vg.v1api.cc/v1'] %} value="{{ config.ASSISTANT_BASE_URL }}" style="display:block;" {% endif %}>
@@ -3977,14 +3977,14 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                     <div class="form-group">
                         <label>图像识别API服务商：</label>
                         <select id="imageApiProvider" name="temp_IMAGE_BASE_URL" title="图像识别API服务商">
-                            <option value="https://api.moonshot.cn/v1" {% if config.MOONSHOT_BASE_URL=='https://api.moonshot.cn/v1' %}selected{% endif %}>MOONSHOT月之暗面</option>
-                            <option value="https://vg.v1api.cc/v1" {% if config.MOONSHOT_BASE_URL=='https://vg.v1api.cc/v1' %}selected{% endif %}>WeAPIs</option>
+                            <option value="https://api.moonshot.cn/v1" {% if config.MOONSHOT_BASE_URL=='https://api.moonshot.cn/v1' %}selected{% endif %}>月之暗面 Moonshot</option>
+                            <option value="https://vg.v1api.cc/v1" {% if config.MOONSHOT_BASE_URL=='https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
                             <option value="other" {% if config.MOONSHOT_BASE_URL not in ['https://api.moonshot.cn/v1','https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
                         </select>
                         <input type="text" id="customImageApiUrl" class="custom-input" placeholder="请输入自定义API地址" {% if config.MOONSHOT_BASE_URL not in ['https://api.moonshot.cn/v1','https://vg.v1api.cc/v1'] %} value="{{ config.MOONSHOT_BASE_URL }}" style="display:block;" {% endif %}>
                         <input type="hidden" id="finalImageApiUrl" name="MOONSHOT_BASE_URL" value="{{ config.MOONSHOT_BASE_URL }}">
-                        <small>推荐使用WeAPIs，API Key可与Chat模型配置保持一致。<a href="https://linkvg.v1chat.cc/register?aff=Rf3h" target="_blank">[点击注册]</a></small>
-                        <small>MOONSHOT月之暗面注册地址：<a href="https://platform.moonshot.cn/" target="_blank">[点击注册]</a></small>
+                        <small>推荐使用默认网关，API Key 可与 Chat 模型配置保持一致（请前往对应服务商官网注册）。</small>
+                        <small>月之暗面 Moonshot 注册：请前往其官网申请（platform.moonshot.cn）。</small>
                     </div>
                     <div class="form-group">
                         <label>识图模型选择：</label>
@@ -4018,12 +4018,12 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                     <div class="form-group">
                         <label>联网API服务商：</label>
                         <select id="onlineApiProvider" name="temp_ONLINE_BASE_URL" title="联网API服务商">
-                            <option value="https://vg.v1api.cc/v1" {% if config.ONLINE_BASE_URL=='https://vg.v1api.cc/v1' %}selected{% endif %}>WeAPIs</option>
+                            <option value="https://vg.v1api.cc/v1" {% if config.ONLINE_BASE_URL=='https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
                             <option value="other" {% if config.ONLINE_BASE_URL not in ['https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
                         </select>
                         <input type="text" id="customOnlineApiUrl" class="custom-input" placeholder="请输入自定义联网API地址" {% if config.ONLINE_BASE_URL not in ['https://vg.v1api.cc/v1'] %} value="{{ config.ONLINE_BASE_URL }}" style="display:block;" {% endif %}>
                         <input type="hidden" id="finalOnlineApiUrl" name="ONLINE_BASE_URL" value="{{ config.ONLINE_BASE_URL }}">
-                        <small>推荐使用WeAPIs，API Key可与Chat模型配置保持一致。<a href="https://linkvg.v1chat.cc/register?aff=Rf3h" target="_blank">[点击注册]</a></small>
+                        <small>推荐使用默认网关，API Key 可与 Chat 模型配置保持一致（请前往对应服务商官网注册）。</small>
                     </div>
                     <div class="form-group">
                         <label>联网搜索模型：</label>
@@ -4288,7 +4288,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                     开启后，您可以给AI发送指令如"15分钟后提醒我出门"、"下午3点叫我开会"、"每天早上8点跟我道早安"来生成临时一次性定时/重复定时消息。<br>
                     如果开启了联网搜索功能，你还可以通过指令如"每天早上10点跟我讲讲今天的新闻"来生成定时联网消息。<br>
                     定时消息将储存在目录下的<code>recurring_reminders.json</code> 文件中并在程序运行时调用。<br>
-                    推荐使用云部署的方式来运行本程序，这样可以保持程序24h运行以获得更好的体验：<a href="https://www.bilibili.com/video/BV11x9vYnEbC/" target="_blank">[查看教程]</a>
+                    推荐使用云部署的方式来运行本程序，这样可以保持程序 24h 运行以获得更好的体验（部署教程请参见随附文档）。
                     </p>
                     <div class="form-group">
                         <div class="switch-container">

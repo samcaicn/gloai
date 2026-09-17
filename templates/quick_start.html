@@ -280,12 +280,12 @@
             <div class="form-group">
                 <label for="quick_start_api_provider">API 服务商:</label>
                 <select id="quick_start_api_provider" name="quick_start_api_provider" title="API 服务商">
-                    <option value="weapis" {% if current_api_provider == 'weapis' %}selected{% endif %}>WeAPIs (推荐, 支持聊天/识图/联网)</option>
+                    <option value="weapis" {% if current_api_provider == 'weapis' %}selected{% endif %}>默认网关 (推荐, 支持聊天/识图/联网)</option>
                     <option value="siliconflow" {% if current_api_provider == 'siliconflow' %}selected{% endif %}>硅基流动 (仅聊天)</option>
                     <option value="deepseek_official" {% if current_api_provider == 'deepseek_official' %}selected{% endif %}>DeepSeek官方 (仅聊天)</option>
                     <option value="other" {% if current_api_provider == 'other' %}selected{% endif %}>其它 (仅聊天, 自定义URL)</option>
                 </select>
-                <a href="https://linkvg.v1chat.cc/register?aff=Rf3h" target="_blank" class="button-like secondary" id="weapis_register_link" style="margin-top: 10px; display: block; width: fit-content;">点击申请 WeAPIs 密钥</a>
+                <a class="button-like secondary" id="weapis_register_link" style="margin-top: 10px; display: block; width: fit-content; opacity:.85; cursor:default;">请前往 API 服务商官网申请密钥</a>
             </div>
 
             <div class="form-group" id="custom_base_url_group" style="display: none;">
@@ -297,7 +297,7 @@
                 <label for="quick_start_api_key">API Key:</label>
                 <input type="text" id="quick_start_api_key" name="quick_start_api_key" value="{{ config.DEEPSEEK_API_KEY or '' }}" placeholder="请输入 API Key" class="api-key-input">
                 <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in (config.DEEPSEEK_API_KEY or '') else "" }}</small>
-                <small id="api_key_note">申请 WeAPIs 密钥后，聊天、图片识别、联网搜索功能将使用此 Key 和推荐配置。</small>
+                <small id="api_key_note">申请 API 密钥后，聊天、图片识别、联网搜索功能将使用此 Key 和推荐配置。</small>
             </div>
 
             <div class="form-group" id="non_weapis_note" style="display: none;">
@@ -435,13 +435,13 @@
                 }
 
                 if (selectedProvider === 'weapis') {
-                    apiKeyNote.textContent = '申请 WeAPIs 密钥后，聊天、图片识别、联网搜索功能将使用此 Key 和推荐配置。';
+                    apiKeyNote.textContent = '申请 API 密钥后，聊天、图片识别、联网搜索功能将使用此 Key 和推荐配置。';
                     apiKeyNote.style.color = '#666';
                     nonWeapisNote.style.display = 'none';
                     onlineSearchSwitchGroup.style.display = 'block';
                     if(onlineApiSwitch) onlineApiSwitch.disabled = false;
                     weapisRegisterLink.style.display = 'block';
-                    apiKeyInput.placeholder = "请输入从 WeAPIs 获取的 API Key";
+                    apiKeyInput.placeholder = "请输入从默认网关获取的 API Key";
                 } else {
                     apiKeyNote.textContent = '请输入您选择的服务商的 API Key。';
                     apiKeyNote.style.color = '#555';

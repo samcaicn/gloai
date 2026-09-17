@@ -3,7 +3,7 @@
 智能微信聊天机器人 —— **WeAuto**，已支持 **微信 4.x**（同时兼容微信 3.9）。
 
 - 由 `WeChatBot_WXAUTO_SE`（作者 **iwyxdxl**）升级改造而来，并重新命名为 **WeAuto**。
-- 基于 [KouriChat](https://github.com/57u/KouriChat) 项目进行大量修改与重构，遵循 GPL-3.0 许可证。
+- 基于 KouriChat 项目进行大量修改与重构，遵循 GPL-3.0 许可证。
 - 微信收发基于内置的 **wechatauto 引擎**（位于 `vendor/wechatauto`，已打 WAL 日志 / 方向补丁），替代旧版 `wxauto` / `wxautox`，已通过微信 4.x 实测。
 - 调用 DeepSeek、GPT、Gemini、Claude、Grok 等大语言模型，生成拟人化回复（通过 OpenAI 兼容接口）。
 
@@ -121,7 +121,7 @@ WeChatBot_WXAUTO_SE-3.25.1/
 
 1. 安装 **Python 3.9 ~ 3.13**（建议勾选「Add to PATH」），并确认 `pip` 可用。
 2. 安装 **微信 3.9 或 4.x** 并保持后台登录运行。
-3. 申请大模型 API Key（推荐 WeAPIs：<https://vg.v1api.cc/register?aff=Rf3h>，支持 GPT / Grok / Claude / Gemini / DeepSeek-R1 联网版等）。
+3. 申请大模型 API Key（推荐默认网关 vg.v1api.cc，支持 GPT / Grok / Claude / Gemini / DeepSeek-R1 联网版等，注册请前往对应服务商官网）。
 
 > 依赖安装全部走二进制 wheel（`--only-binary=:all:`，不本地编译）；`Run.bat` 会按 **阿里云 → 清华 → 官方** 顺序自动选择最快镜像源。
 
