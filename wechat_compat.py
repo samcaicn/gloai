@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-wxauto_compat.py — 微信 4.x 引擎兼容层（WeAuto v3.25.1 专用）
+wechat_compat.py — 微信 4.x 引擎兼容层（WeAuto v3.25.1 专用）
 
 背景
 ----
-本项目 v3.25.1 的 bot.py 基于旧版 ``wxauto`` 3.x 的 API 编写（依赖 UIA 自动化，
+本项目 v3.25.1 的 bot.py 基于旧版 UIA 引擎 3.x 的 API 编写（依赖 UIA 自动化，
 只能驱动微信 3.x）。微信 4.x 后 UIA 外壳失效，旧方案彻底不可用。
 
-本模块把 bot.py 实际用到的旧版 ``wxauto.WeChat`` API 契约**完整复刻**到微信 4.x
+本模块把 bot.py 实际用到的旧版 UIA 引擎 ``WeChat`` API 契约**完整复刻**到微信 4.x
 引擎 ``wechatauto``（解密本地数据库 + guia 侧栏搜索发送）之上，使 bot.py 的全部
 业务逻辑（17 项菜单功能：群聊/表情/私聊/API模型 等）**完全不用改**即可跑在微信 4.x 上。
 
-复刻的旧 wxauto API（bot.py 用到者）
+复刻的旧版引擎 API（bot.py 用到者）
 -----------------------------------
 - ``WeChat()``                         构造（懒初始化，import 不依赖微信运行）
 - ``wx.nickname``                      自己的微信昵称
@@ -40,7 +40,7 @@ import threading
 import time
 import logging
 
-logger = logging.getLogger("wxauto_compat")
+logger = logging.getLogger("wechat_compat")
 
 # 本机方向：sender_id == 1 才是“我”，== 2 是对方（与 wechatauto 库默认相反）
 SELF_SENDER_ID = 1
@@ -64,7 +64,7 @@ _MEDIA = {
 
 
 class Msg:
-    """复刻 wxauto 的 Message 对象，暴露 v3.25.1 bot.py 用到的全部字段与方法。
+    """复刻旧版引擎的 Message 对象，暴露 v3.25.1 bot.py 用到的全部字段与方法。
 
     v3.25.1 同时使用两个维度：
       - ``.type``   内容类型：text / voice / link / quote / merge / image / file / sys ...
@@ -272,7 +272,7 @@ def _parse(row, who, username, member_resolver=None):
 
 
 class WeChat:
-    """复刻 wxauto.WeChat 的微信 4.x 兼容实现。"""
+    """复刻旧版引擎 WeChat 的微信 4.x 兼容实现。"""
 
     def __init__(self):
         self._wa_db = None
@@ -426,12 +426,12 @@ class WeChat:
                     try:
                         user_callback(msg, _Chat(who))
                     except Exception as e:
-                        logger.error("wxauto_compat 用户回调异常: %r", e, exc_info=True)
+                        logger.error("wechat_compat 用户回调异常: %r", e, exc_info=True)
                 else:
                     with self._lock:
                         self._queue.append((_Chat(who), msg))
             except Exception as e:
-                logger.error("wxauto_compat 内部回调异常: %r", e)
+                logger.error("wechat_compat 内部回调异常: %r", e)
         return cb
 
     def GetListenMessage(self):
@@ -484,17 +484,17 @@ class WeChat:
 
     def Show(self):
         """兼容占位：4.x 引擎无需置顶窗口。"""
-        logger.debug("wxauto_compat: Show() 在微信4.x引擎下为兼容空操作")
+        logger.debug("wechat_compat: Show() 在微信4.x引擎下为兼容空操作")
         return True
 
     def VoiceCall(self, who):
         """4.x 引擎(wechatauto)暂不支持语音通话，降级为日志告警以免崩溃。"""
-        logger.warning("wxauto_compat: VoiceCall 在微信4.x引擎(wechatauto)下暂不支持，已忽略 (who=%s)", who)
+        logger.warning("wechat_compat: VoiceCall 在微信4.x引擎(wechatauto)下暂不支持，已忽略 (who=%s)", who)
         return None
 
     def KeepRunning(self):
         """阻塞保活（引擎监听在后台线程运行）。"""
-        logger.info("wxauto_compat: KeepRunning 进入阻塞保活（微信4.x引擎监听在后台线程）")
+        logger.info("wechat_compat: KeepRunning 进入阻塞保活（微信4.x引擎监听在后台线程）")
         try:
             while True:
                 time.sleep(1)

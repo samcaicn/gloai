@@ -8,7 +8,7 @@
     {"mcpServers": {"weauto": {"command": "C:/.../weauto_mcp.exe", "args": []}}}
 
   或用本项目 venv 的 python 直接跑脚本：
-    {"mcpServers": {"weauto": {"command": "C:/.../WeChatBot_WXAUTO_SE-3.25.1/.venv_bot/Scripts/python.exe",
+    {"mcpServers": {"weauto": {"command": "C:/.../WeAuto/.venv_bot/Scripts/python.exe",
                                "args": ["C:/.../weauto_mcp.py"]}}}
 
 对外暴露的工具（与 cli.py 一一对应）：
@@ -41,7 +41,7 @@ if ROOT_DIR not in sys.path:
 
 # --- 冻结(单文件exe)模式引导（与 bot.py / config_editor.py 一致）---
 # 把 config.py 外置到 exe 同目录（可写、跨运行持久），使 config_get/set 在冻结态下
-# 也能读写同一份配置；其余本地模块(chat_history/style_learner/wxauto_compat)由 PyInstaller
+# 也能读写同一份配置；其余本地模块(chat_history/style_learner/wechat_compat)由 PyInstaller
 # 直接打包进 exe 内部，无需外置。
 if getattr(sys, "frozen", False):
     import shutil as _shutil
@@ -131,7 +131,7 @@ def _get_wx():
     """懒加载并复用微信连接；失败抛清晰异常。"""
     global _wx
     if _wx is None:
-        from wxauto_compat import WeChat
+        from wechat_compat import WeChat
         _wx = WeChat()
     return _wx
 

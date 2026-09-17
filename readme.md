@@ -1,10 +1,10 @@
-# WeAuto（原 WeChatBot_WXAUTO_SE）
+# WeAuto
 
 智能微信聊天机器人 —— **WeAuto**，已支持 **微信 4.x**（同时兼容微信 3.9）。
 
-- 由 `WeChatBot_WXAUTO_SE`（作者 **iwyxdxl**）升级改造而来，并重新命名为 **WeAuto**。
-- 基于 KouriChat 项目进行大量修改与重构，遵循 GPL-3.0 许可证。
-- 微信收发基于内置的 **wechatauto 引擎**（位于 `vendor/wechatauto`，已打 WAL 日志 / 方向补丁），替代旧版 `wxauto` / `wxautox`，已通过微信 4.x 实测。
+- 由早期开源微信机器人项目（原作者 **iwyxdxl**）升级改造而来，并重新命名为 **WeAuto**。
+- 在早期开源项目基础上进行大量修改与重构，遵循 GPL-3.0 许可证。
+- 微信收发基于内置的 **wechatauto 引擎**（位于 `vendor/wechatauto`，已打 WAL 日志 / 方向补丁），替代旧版 UIA 自动化方案，已通过微信 4.x 实测。
 - 调用 DeepSeek、GPT、Gemini、Claude、Grok 等大语言模型，生成拟人化回复（通过 OpenAI 兼容接口）。
 
 ---
@@ -89,14 +89,14 @@
 ## 目录结构
 
 ```
-WeChatBot_WXAUTO_SE-3.25.1/
+WeAuto/
 ├── bot.py                 # 核心机器人逻辑（监听/回复/记忆/表情/指令）
 ├── config_editor.py       # Flask Web 配置后台（端口 5001，程序入口）
 ├── config.py              # 运行配置（含 API Key，敏感，勿外传）
 ├── cli.py                 # 命令行接口（供 agent 工具驱动：version/status/history/style/config/listen/send/whois/serve）
 ├── weauto_mcp.py          # MCP stdio 服务（供 agent 工具以 MCP 协议驱动，含 10 个工具）
 ├── updater.py             # 自动更新器
-├── wxauto_compat.py       # 旧版 wxauto 兼容层
+├── wechat_compat.py       # 微信 4.x 引擎兼容层
 ├── vendor/
 │   └── wechatauto/        # 微信 4.x 引擎（内置，已打补丁）
 ├── templates/             # WebUI 页面（config_editor / login / quick_start / character_forum / style_lab / mcp / cli / help 帮助中心）
@@ -167,7 +167,7 @@ pyinstaller WeAuto.spec
 ## 许可证与依赖说明
 
 - **主许可证**：GNU GPL-3.0 或更高版本（详见 `LICENSE`）。
-- **微信自动化引擎**：采用内置 `vendor/wechatauto`（已获授权）；旧版 `wxauto`（Apache-2.0）作为开源备选，动态导入 + fallback 机制，任何情况下均有 GPL-3.0 兼容实现可用。
+- **微信自动化引擎**：采用内置 `vendor/wechatauto`（已获授权）；旧版 UIA 自动化库（Apache-2.0）作为开源备选，动态导入 + fallback 机制，任何情况下均有 GPL-3.0 兼容实现可用。
 - **依赖清单与许可证**：详见 [DEPENDENCIES.txt](DEPENDENCIES.txt)。
 - **用户权利**：无论使用哪种依赖库，用户均享有完整的 GPL-3.0 自由软件权利。
 

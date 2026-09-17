@@ -151,7 +151,7 @@ class WeChatUIA:
     def __init__(self, timeout: float = 15.0, search_timeout: float = 2.0):
         self.timeout = timeout
         self._win = None
-        # 线程安全：WeChatBot 等宿主可能在后台线程实例化本驱动，COM 未初始化
+        # 线程安全：WeAuto 等宿主可能在后台线程实例化本驱动，COM 未初始化
         # 时 uiautomation 会报「尚未调用 CoInitialize / 无法加载
         # UIAutomationCore.dll」。CoInitializeEx 幂等，主线程重复调用无害。
         try:

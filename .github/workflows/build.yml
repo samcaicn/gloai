@@ -62,7 +62,7 @@ jobs:
             # 导致 FileNotFoundError / WinError 206 的构建失败（本地 Win11 默认支持长路径故不报错）。
             ARGS=(--name WeAuto --onefile --noupx --paths vendor
                   --workpath C:/_wb --distpath C:/_wd
-                  --hidden-import bot --hidden-import wxauto_compat --hidden-import wechatauto
+                  --hidden-import bot --hidden-import wechat_compat --hidden-import wechatauto
                   # vendor/wechatauto 顶层硬依赖（__init__/logger/uia_driver 直接 import），
                   # 显式 hidden-import 兜底，避免 --collect-all 在某些子模块导入失败时被漏掉。
                   --hidden-import uiautomation --hidden-import comtypes --hidden-import colorama
@@ -92,7 +92,7 @@ jobs:
                   --workpath C:/_wb_mcp --distpath C:/_wd_mcp
                   # MCP 协议栈（FastMCP 基于 mcp<2）：显式收集，避免动态 import 漏模块
                   --hidden-import mcp --collect-all mcp
-                  --hidden-import wxauto_compat --hidden-import wechatauto
+                  --hidden-import wechat_compat --hidden-import wechatauto
                   --hidden-import uiautomation --hidden-import comtypes --hidden-import colorama
                   --collect-all wechatauto)
             add_data config.py "."

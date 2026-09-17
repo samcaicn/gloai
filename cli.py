@@ -209,7 +209,7 @@ def cmd_listen(args):
 
 
 def cmd_send(args):
-    from wxauto_compat import WeChat
+    from wechat_compat import WeChat
     wx = None
     try:
         wx = WeChat()
@@ -240,7 +240,7 @@ def cmd_send(args):
 
 
 def cmd_whois(args):
-    from wxauto_compat import WeChat
+    from wechat_compat import WeChat
     wx = None
     try:
         wx = WeChat()

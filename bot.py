@@ -81,7 +81,7 @@ from threading import Timer
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import os
-from wxauto_compat import WeChat  # 微信4.x 引擎兼容层（替代旧 wxauto/wxautox，驱动微信4.x）
+from wechat_compat import WeChat  # 微信 4.x 引擎兼容层（替代旧版 UIA 自动化方案）
 os.environ["PROJECT_NAME"] = 'WeAuto'
 
 # 生成用户昵称列表和prompt映射字典
@@ -1898,7 +1898,7 @@ def _message_listener_impl(msg, chat):
         if is_animation_emoji_in_original and ENABLE_EMOJI_RECOGNITION:
             handle_emoji_message(msg, who)
         else:
-            handle_wxauto_message(msg, who)
+            handle_wechat_message(msg, who)
 
 def recognize_image_with_moonshot(image_path, is_emoji=False):
     # 先暂停向API发送消息队列
@@ -1973,7 +1973,7 @@ def handle_emoji_message(msg, who):
 
     def timer_callback():
         with emoji_timer_lock:           
-            handle_wxauto_message(msg, who)   
+            handle_wechat_message(msg, who)   
             emoji_timer = None       
 
     with emoji_timer_lock:
@@ -2369,9 +2369,9 @@ def _handle_text_command_if_any(original_content: str, user_id: str) -> bool:
         logger.error(f"处理文本命令失败: {e}", exc_info=True)
         return False
 
-def handle_wxauto_message(msg, who):
+def handle_wechat_message(msg, who):
     """
-    处理来自Wxauto的消息，包括可能的提醒、图片/表情、链接内容获取和常规聊天。
+    处理来自微信引擎的消息，包括可能的提醒、图片/表情、链接内容获取和常规聊天。
     """
     global can_send_messages # 引用全局变量以控制发送状态
     global last_received_message_timestamp # 引用全局变量以更新活动时间
@@ -2542,7 +2542,7 @@ def handle_wxauto_message(msg, who):
 
     except Exception as e:
         can_send_messages = True # 确保发生错误时可以恢复发送消息
-        logger.error(f"消息处理失败 (handle_wxauto_message): {str(e)}", exc_info=True)
+        logger.error(f"消息处理失败 (handle_wechat_message): {str(e)}", exc_info=True)
 
 def check_inactive_users():
     global can_send_messages
@@ -3059,15 +3059,15 @@ def send_emoji(emotion: str) -> Optional[str]:
     return None
 
 def clean_up_temp_files ():
-    if os.path.isdir("wxautox文件下载"):
+    if os.path.isdir("wechatauto文件下载"):
         try:
-            shutil.rmtree("wxautox文件下载")
+            shutil.rmtree("wechatauto文件下载")
         except Exception as e:
-            logger.error(f"删除目录 wxautox文件下载 失败: {str(e)}")
+            logger.error(f"删除目录 wechatauto文件下载 失败: {str(e)}")
             return
-        logger.info(f"目录 wxautox文件下载 已成功删除")
+        logger.info(f"目录 wechatauto文件下载 已成功删除")
     else:
-        logger.info(f"目录 wxautox文件下载 不存在，无需删除")
+        logger.info(f"目录 wechatauto文件下载 不存在，无需删除")
 
 def is_quiet_time():
     current_time = datetime.now().time()
@@ -5039,7 +5039,7 @@ def main():
                     # 主动发消息也视为互动：好友 / 群都加入用户列表（待设置提示词）
                     _ctype = 'group' if (who and '@chatroom' in who) else None
                     record_user_interaction(who, _ctype)
-                # 兼容底层引擎签名：wxauto_compat 仅支持 (msg, who)，
+                # 兼容底层引擎签名：wechat_compat 仅支持 (msg, who)，
                 # wechatauto 还支持 clear/at/exact。只传底层实际接受的参数，避免 TypeError。
                 try:
                     accepted = set(inspect.signature(_orig_sendmsg).parameters.keys())
