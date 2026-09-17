@@ -80,6 +80,33 @@ jobs:
           echo "BUILD_RC=$rc"
           exit $rc
 
+      - name: Build weauto_mcp EXE (MCP stdio server for Codex/WorkBuddy)
+        id: build_mcp
+        shell: bash
+        run: |
+          {
+            set -x
+            set +e
+            add_data() { if [ -e "$1" ]; then ARGS+=(--add-data "$1;$2"); fi; }
+            ARGS=(--name weauto_mcp --onefile --noupx --paths vendor
+                  --workpath C:/_wb_mcp --distpath C:/_wd_mcp
+                  # MCP 协议栈（FastMCP 基于 mcp<2）：显式收集，避免动态 import 漏模块
+                  --hidden-import mcp --collect-all mcp
+                  --hidden-import wxauto_compat --hidden-import wechatauto
+                  --hidden-import uiautomation --hidden-import comtypes --hidden-import colorama
+                  --collect-all wechatauto)
+            add_data config.py "."
+            add_data templates templates
+            add_data emojis emojis
+            add_data prompts prompts
+            add_data static static
+            add_data Demo_Image Demo_Image
+            python -m PyInstaller --noconfirm --clean "${ARGS[@]}" weauto_mcp.py
+          } > build_mcp.log 2>&1
+          rc=$?
+          echo "BUILD_MCP_RC=$rc"
+          exit $rc
+
       - name: Report build failure (publish build.log to issue)
         if: failure()
         shell: bash
@@ -92,6 +119,9 @@ jobs:
             echo "===== build.log (tail 60k) ====="
             tail -c 60000 build.log 2>/dev/null || echo "(build.log missing/empty)"
             echo
+            echo "===== build_mcp.log (tail 40k) ====="
+            tail -c 40000 build_mcp.log 2>/dev/null || echo "(build_mcp.log missing/empty)"
+            echo
             echo "===== pip list ====="
             pip list 2>/dev/null
           } > _diag.txt
@@ -102,9 +132,11 @@ jobs:
       - name: Verify EXE
         shell: bash
         run: |
-          ls -lh C:/_wd/WeAuto.exe
-          if [ ! -s C:/_wd/WeAuto.exe ]; then echo "EXE missing"; exit 1; fi
-          echo "exe built: $(stat -c%s C:/_wd/WeAuto.exe) bytes"
+          ls -lh C:/_wd/WeAuto.exe C:/_wd_mcp/weauto_mcp.exe
+          if [ ! -s C:/_wd/WeAuto.exe ]; then echo "WeAuto.exe missing"; exit 1; fi
+          if [ ! -s C:/_wd_mcp/weauto_mcp.exe ]; then echo "weauto_mcp.exe missing"; exit 1; fi
+          echo "WeAuto.exe built: $(stat -c%s C:/_wd/WeAuto.exe) bytes"
+          echo "weauto_mcp.exe built: $(stat -c%s C:/_wd_mcp/weauto_mcp.exe) bytes"
 
       - name: Upload Artifact (90d)
         uses: actions/upload-artifact@v4
@@ -120,6 +152,8 @@ jobs:
         with:
           tag_name: weauto-build-${{ github.run_number }}
           name: WeAuto Build ${{ github.run_number }}
-          files: C:/_wd/WeAuto.exe
+          files: |
+            C:/_wd/WeAuto.exe
+            C:/_wd_mcp/weauto_mcp.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
