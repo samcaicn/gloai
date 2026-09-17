@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="mcpPage">
+<head data-page-node-id="mcpHead">
+    <meta charset="UTF-8" data-page-node-id="mcpMeta1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="mcpMeta2">
+    <meta name="csrf-token" content="{{ csrf_token() }}" data-page-node-id="mcpCsrf">
+    <title>MCP 服务 · 让 agent 驱动微信机器人</title>
+    <style>
+        body{ margin:0; }
+        .wrap{ max-width:1180px; margin:0 auto; padding:22px 20px 60px; }
+        .panel{
+            background:var(--surface); border:1px solid var(--border);
+            border-radius:var(--r-lg); box-shadow:var(--sh-2);
+            padding:20px 22px; margin-bottom:18px;
+        }
+        .panel h2{ margin:0 0 14px; font-size:16.5px; font-weight:650; padding-bottom:10px; border-bottom:1px solid var(--border); }
+        .hint{ color:var(--text-3); font-size:13px; line-height:1.75; margin:8px 0 0; }
+        .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+        .stat-card{ background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; }
+        .stat-card .k{ color:var(--text-3); font-size:12.5px; margin-bottom:6px; }
+        .stat-card .v{ font-size:18px; font-weight:680; color:var(--text); letter-spacing:-.02em; }
+        .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+        .badge.on{ background:var(--ok-soft); color:var(--ok-text); }
+        .badge.off{ background:var(--surface-3); color:var(--text-3); }
+        .codeblock{
+            position:relative; background:var(--input-bg); color:var(--text);
+            border:1px solid var(--border); border-radius:var(--r);
+            padding:14px 16px; font-family:ui-monospace,Menlo,Consolas,monospace;
+            font-size:12.5px; white-space:pre; overflow-x:auto; margin:0;
+        }
+        .copy-btn{
+            position:absolute; top:8px; right:8px; cursor:pointer;
+            background:var(--surface-3); color:var(--text-2);
+            border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-size:12px;
+        }
+        .copy-btn:hover{ background:var(--brand-soft); color:var(--brand); }
+        table{ width:100%; border-collapse:collapse; font-size:13px; }
+        th,td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+        th{ color:var(--text-3); font-weight:600; font-size:12.5px; }
+        td.c{ color:var(--text-2); }
+        .req{ font-size:11.5px; padding:2px 8px; border-radius:999px; }
+        .req.no{ background:var(--brand-soft); color:var(--brand); }
+        .req.yes{ background:var(--warn-soft); color:var(--warn-text); }
+        .row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .msg{ background:var(--info-soft); color:var(--info-text); border:1px solid var(--brand-ring); border-radius:var(--r); padding:10px 14px; margin-bottom:16px; font-size:13.5px; }
+    </style>
+    {% include '_modern_ui.html' %}
+</head>
+<body data-page-node-id="mcpBody">
+    <div class="header-bar" data-page-node-id="mcpHdr">
+        <div class="header-title" data-page-node-id="mcpHdrT"><h1 data-page-node-id="mcpHdrH">MCP 服务 · 让 Codex / WorkBuddy 直接驱动微信机器人</h1></div>
+        <div class="buttons" data-page-node-id="mcpHdrB">
+            <a href="{{ url_for('index') }}" class="nav-button" data-page-node-id="mcpBack">返回配置</a>
+        </div>
+    </div>
+
+    <div class="wrap content-area" data-page-node-id="mcpWrap">
+        <div class="msg" data-page-node-id="mcpMsg">
+            MCP（Model Context Protocol）让 agent 工具以标准协议调用 WeAuto：查聊天、读风格、改配置、发消息，全部无需手动操作网页。
+        </div>
+
+        <!-- 能力检测 -->
+        <div class="panel" data-page-node-id="mcpDiag">
+            <h2 data-page-node-id="mcpDiagH">本地能力检测</h2>
+            <div class="stat-grid" data-page-node-id="mcpDiagG">
+                <div class="stat-card" data-page-node-id="mcpD1">
+                    <div class="k" data-page-node-id="mcpD1k">mcp 依赖</div>
+                    <div class="v" data-page-node-id="mcpD1v">
+                        {% if diag.mcp_available %}<span class="badge on">已安装 {{ diag.mcp_version }}</span>
+                        {% else %}<span class="badge off">未安装</span>{% endif %}
+                    </div>
+                </div>
+                <div class="stat-card" data-page-node-id="mcpD2">
+                    <div class="k" data-page-node-id="mcpD2k">weauto_mcp.py</div>
+                    <div class="v" data-page-node-id="mcpD2v">
+                        {% if diag.weauto_mcp_exists %}<span class="badge on">存在</span>{% else %}<span class="badge off">缺失</span>{% endif %}
+                    </div>
+                </div>
+                <div class="stat-card" data-page-node-id="mcpD3">
+                    <div class="k" data-page-node-id="mcpD3k">config.py</div>
+                    <div class="v" data-page-node-id="mcpD3v">
+                        {% if diag.config_found %}<span class="badge on">已找到</span>{% else %}<span class="badge off">缺失</span>{% endif %}
+                    </div>
+                </div>
+                <div class="stat-card" data-page-node-id="mcpD4">
+                    <div class="k" data-page-node-id="mcpD4k">运行形态</div>
+                    <div class="v" data-page-node-id="mcpD4v">
+                        {% if diag.running_as_exe %}打包 EXE{% else %}源码运行{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="row" style="margin-top:14px;" data-page-node-id="mcpDiagBtn">
+                <button type="button" class="nav-button" id="mcpCheckBtn">重新检测</button>
+                <span id="mcpCheckMsg" class="hint" data-page-node-id="mcpCheckMsg"></span>
+            </div>
+        </div>
+
+        <!-- 客户端配置 -->
+        <div class="panel" data-page-node-id="mcpCfg">
+            <h2 data-page-node-id="mcpCfgH">客户端配置（复制到 agent 的 mcp.json）</h2>
+            <p class="hint" data-page-node-id="mcpCfgHint">
+                把下面任意一段写进 agent 的 MCP 配置文件（如 WorkBuddy 的 <code>mcp.json</code> 或 Codex 的
+                <code>settings.json &gt; mcpServers</code>），agent 即可发现 <b>weauto</b> 服务器。
+            </p>
+            {% if diag.mcp_cfg_exe %}
+            <h3 style="font-size:13.5px;margin:16px 0 6px;" data-page-node-id="mcpCfgExeT">方式一：自包含 exe（推荐，打包版自带）</h3>
+            <div class="codeblock" data-page-node-id="mcpCfgExe"><button class="copy-btn" data-copy="mcpCfgExe">复制</button>{{ diag.mcp_cfg_exe }}</div>
+            {% endif %}
+            <h3 style="font-size:13.5px;margin:16px 0 6px;" data-page-node-id="mcpCfgScrT">方式二：用项目 venv 的 python 跑脚本（源码开发用）</h3>
+            <div class="codeblock" data-page-node-id="mcpCfgScr"><button class="copy-btn" data-copy="mcpCfgScr">复制</button>{{ diag.mcp_cfg_script }}</div>
+            <p class="hint" data-page-node-id="mcpCfgNote">
+                传输方式默认 stdio。纯本地工具（status / history / style / config_* / listen_*）无需微信即可调用；
+                send_message / whois 需微信已登录，未登录时返回明确错误而非崩溃。
+            </p>
+        </div>
+
+        <!-- 暴露的工具 -->
+        <div class="panel" data-page-node-id="mcpTools">
+            <h2 data-page-node-id="mcpToolsH">暴露的工具（10 个）</h2>
+            <table data-page-node-id="mcpToolsTbl">
+                <thead data-page-node-id="mcpToolsTh"><tr data-page-node-id="mcpToolsTr">
+                    <th data-page-node-id="mcpT1">工具</th><th data-page-node-id="mcpT2">需微信</th><th data-page-node-id="mcpT3">说明</th>
+                </tr></thead>
+                <tbody data-page-node-id="mcpToolsTb">
+                    <tr data-page-node-id="m1"><td><code>status</code></td><td><span class="req no">否</span></td><td class="c">运行状态与配置摘要（版本/登录开关/白名单/监听名单/风格样本/聊天统计）</td></tr>
+                    <tr data-page-node-id="m2"><td><code>history</code></td><td><span class="req no">否</span></td><td class="c">读取本地聊天记录（SQLite），source: all/owner/bot/friend/group</td></tr>
+                    <tr data-page-node-id="m3"><td><code>style</code></td><td><span class="req no">否</span></td><td class="c">主人对话风格画像（本地统计），action: show/analyze/enable/disable</td></tr>
+                    <tr data-page-node-id="m4"><td><code>config_get</code></td><td><span class="req no">否</span></td><td class="c">读取配置项；密钥类（KEY/SECRET/TOKEN/PASSWORD）自动脱敏</td></tr>
+                    <tr data-page-node-id="m5"><td><code>config_set</code></td><td><span class="req no">否</span></td><td class="c">写入配置项，原子写回 config.py</td></tr>
+                    <tr data-page-node-id="m6"><td><code>listen_list</code></td><td><span class="req no">否</span></td><td class="c">列出当前监听名单 LISTEN_LIST</td></tr>
+                    <tr data-page-node-id="m7"><td><code>listen_add</code></td><td><span class="req no">否</span></td><td class="c">加入监听名单（原子写回，首次自动清占位项）</td></tr>
+                    <tr data-page-node-id="m8"><td><code>listen_remove</code></td><td><span class="req no">否</span></td><td class="c">移出监听名单（原子写回）</td></tr>
+                    <tr data-page-node-id="m9"><td><code>send_message</code></td><td><span class="req yes">是</span></td><td class="c">发微信消息；who 可为显示名/wxid/群wxid@chatroom；type: text/file/image</td></tr>
+                    <tr data-page-node-id="m10"><td><code>whois</code></td><td><span class="req yes">是</span></td><td class="c">解析名字/微信ID，返回 username 与 display_name</td></tr>
+                </tbody>
+            </table>
+            <p class="hint" data-page-node-id="mcpToolsNote">
+                安全默认：<b>不主动向任何人发消息</b>（AUTO_MESSAGE_USER_LIST 为空）。要让 bot 主动聊天，须先用
+                config_set / listen_add 显式加入白名单。
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function getCSRFHeaders(extra){
+            var t = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+            var h = extra || {}; h['X-CSRFToken'] = t;
+            return h;
+        }
+        document.querySelectorAll('.copy-btn').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                var id = btn.getAttribute('data-copy');
+                var el = document.getElementById(id);
+                if(!el) return;
+                navigator.clipboard.writeText(el.innerText.replace(/^复制$/, '')).then(function(){
+                    var old = btn.textContent; btn.textContent = '已复制';
+                    setTimeout(function(){ btn.textContent = old; }, 1200);
+                });
+            });
+        });
+        var checkBtn = document.getElementById('mcpCheckBtn');
+        if (checkBtn){
+            checkBtn.addEventListener('click', function(){
+                var msg = document.getElementById('mcpCheckMsg');
+                msg.textContent = '检测中…';
+                fetch('{{ url_for("api_mcp_check") }}', {headers: getCSRFHeaders()})
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){
+                        var ok = d.mcp_available && d.weauto_mcp_exists && d.config_found;
+                        msg.textContent = ok ? '检测通过：MCP 服务可用。' : '存在问题：mcp=' + d.mcp_available + ' / 脚本=' + d.weauto_mcp_exists + ' / config=' + d.config_found;
+                    })
+                    .catch(function(e){ msg.textContent = '检测失败：' + e; });
+            });
+        }
+    </script>
+</body>
+</html>

@@ -29,6 +29,7 @@ import re
 import ast
 import os
 import sys
+import shlex
 
 # --- 冻结(单文件exe)模式引导 ---
 # 将资源/配置外置到 exe 同目录（可写、跨运行持久），并把所有基于 __file__ 的
@@ -4565,6 +4566,121 @@ def style_lab():
     return render_template('style_lab.html',
                            settings=settings, profile=profile, stats=stats,
                            recent=recent_fmt, message=message, updated_str=updated_str)
+
+
+# ================================================================= 工具接口诊断（MCP / CLI，供 agent 调用）
+def _weauto_agent_diag():
+    """汇总 agent 接口（MCP / CLI）的本地能力，供管理后台页面与接口展示。"""
+    base = os.path.dirname(os.path.abspath(__file__))
+    frozen = getattr(sys, "frozen", False)
+    exe_dir = os.path.dirname(os.path.abspath(sys.executable)) if frozen else base
+    diag = {
+        "running_as_exe": frozen,
+        "base_dir": base,
+        "venv_python": os.path.join(base, ".venv_bot", "Scripts", "python.exe"),
+        "mcp_script": os.path.join(base, "weauto_mcp.py"),
+        "mcp_exe": os.path.join(exe_dir, "weauto_mcp.exe") if frozen else None,
+        "cli_script": os.path.join(base, "cli.py"),
+        "config_found": os.path.exists(os.path.join(base, "config.py")),
+        "mcp_available": False,
+        "mcp_version": None,
+        "weauto_mcp_exists": False,
+        "cli_exists": False,
+    }
+    try:
+        try:
+            from importlib.metadata import version as _pkg_ver
+            diag["mcp_version"] = _pkg_ver("mcp")
+        except Exception:
+            import mcp as _mcp
+            diag["mcp_version"] = getattr(_mcp, "__version__", "installed")
+        diag["mcp_available"] = True
+    except Exception:
+        diag["mcp_available"] = False
+    diag["weauto_mcp_exists"] = os.path.exists(diag["mcp_script"])
+    diag["cli_exists"] = os.path.exists(diag["cli_script"])
+    # 客户端配置片段
+    py = diag["venv_python"]
+    script = diag["mcp_script"]
+    diag["mcp_cfg_script"] = json.dumps(
+        {"mcpServers": {"weauto": {"command": py, "args": [script]}}},
+        ensure_ascii=False, indent=2)
+    if frozen and diag.get("mcp_exe"):
+        diag["mcp_cfg_exe"] = json.dumps(
+            {"mcpServers": {"weauto": {"command": diag["mcp_exe"], "args": []}}},
+            ensure_ascii=False, indent=2)
+    else:
+        diag["mcp_cfg_exe"] = None
+    return diag
+
+
+@app.route('/mcp')
+@login_required
+def mcp_page():
+    """MCP 服务说明页：让 Codex / WorkBuddy 等 agent 通过 MCP 协议驱动微信机器人。"""
+    return render_template('mcp.html', diag=_weauto_agent_diag())
+
+
+@app.route('/cli')
+@login_required
+def cli_page():
+    """CLI 命令行说明页：让 agent 用 `python cli.py <cmd>` 驱动微信机器人。"""
+    return render_template('cli.html', diag=_weauto_agent_diag())
+
+
+@app.route('/api/mcp/check')
+@login_required
+def api_mcp_check():
+    return jsonify(_weauto_agent_diag())
+
+
+# 网页端只允许只读类 CLI 子命令，避免管理后台变成任意写配置/发消息的入口
+_SAFE_CLI_SUBCMD = {
+    "version": True,
+    "status": True,
+    "history": True,
+    "style": True,
+    "config": lambda parts: len(parts) >= 2 and parts[1] == "get",
+    "listen": lambda parts: len(parts) >= 2 and parts[1] == "list",
+}
+
+
+@app.route('/api/cli/run', methods=['POST'])
+@login_required
+def api_cli_run():
+    """在后端安全执行只读 CLI 命令并回显（网页端演示用）。"""
+    cmd = ((request.get_json(silent=True) or {}).get("cmd") or "").strip()
+    if not cmd:
+        return jsonify(ok=False, error="cmd 为空")
+    try:
+        parts = shlex.split(cmd)
+    except Exception as e:
+        return jsonify(ok=False, error="命令解析失败: %s" % e)
+    if not parts:
+        return jsonify(ok=False, error="cmd 为空")
+    sub = parts[0]
+    rule = _SAFE_CLI_SUBCMD.get(sub)
+    allow = rule(parts) if callable(rule) else bool(rule)
+    if not allow:
+        return jsonify(ok=False, error="出于安全，网页端仅允许只读命令："
+                                     "version / status / history / style / 'config get <KEY>' / 'listen list'")
+    base = os.path.dirname(os.path.abspath(__file__))
+    py = os.path.join(base, ".venv_bot", "Scripts", "python.exe")
+    if not os.path.exists(py):
+        py = sys.executable
+    cli = os.path.join(base, "cli.py")
+    if not os.path.exists(cli):
+        return jsonify(ok=False, error="cli.py 不存在（打包版可能未内置，请在源码环境使用）")
+    try:
+        proc = subprocess.run([py, cli, *parts], cwd=base, capture_output=True,
+                              text=True, timeout=60,
+                              env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+        return jsonify(ok=proc.returncode == 0, rc=proc.returncode,
+                       stdout=proc.stdout, stderr=proc.stderr)
+    except subprocess.TimeoutExpired:
+        return jsonify(ok=False, error="命令执行超时（>60s）")
+    except Exception as e:
+        return jsonify(ok=False, error="执行失败: %s" % e)
 
 
 if __name__ == '__main__':

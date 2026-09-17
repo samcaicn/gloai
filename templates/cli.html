@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="cliPage">
+<head data-page-node-id="cliHead">
+    <meta charset="UTF-8" data-page-node-id="cliMeta1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="cliMeta2">
+    <meta name="csrf-token" content="{{ csrf_token() }}" data-page-node-id="cliCsrf">
+    <title>CLI 命令行 · 让 agent 用命令行驱动微信机器人</title>
+    <style>
+        body{ margin:0; }
+        .wrap{ max-width:1180px; margin:0 auto; padding:22px 20px 60px; }
+        .panel{
+            background:var(--surface); border:1px solid var(--border);
+            border-radius:var(--r-lg); box-shadow:var(--sh-2);
+            padding:20px 22px; margin-bottom:18px;
+        }
+        .panel h2{ margin:0 0 14px; font-size:16.5px; font-weight:650; padding-bottom:10px; border-bottom:1px solid var(--border); }
+        .hint{ color:var(--text-3); font-size:13px; line-height:1.75; margin:8px 0 0; }
+        .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+        .stat-card{ background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; }
+        .stat-card .k{ color:var(--text-3); font-size:12.5px; margin-bottom:6px; }
+        .stat-card .v{ font-size:18px; font-weight:680; color:var(--text); letter-spacing:-.02em; }
+        .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+        .badge.on{ background:var(--ok-soft); color:var(--ok-text); }
+        .badge.off{ background:var(--surface-3); color:var(--text-3); }
+        .codeblock{
+            position:relative; background:var(--input-bg); color:var(--text);
+            border:1px solid var(--border); border-radius:var(--r);
+            padding:14px 16px; font-family:ui-monospace,Menlo,Consolas,monospace;
+            font-size:12.5px; white-space:pre; overflow-x:auto; margin:0;
+        }
+        .copy-btn{
+            position:absolute; top:8px; right:8px; cursor:pointer;
+            background:var(--surface-3); color:var(--text-2);
+            border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-size:12px;
+        }
+        .copy-btn:hover{ background:var(--brand-soft); color:var(--brand); }
+        table{ width:100%; border-collapse:collapse; font-size:13px; }
+        th,td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+        th{ color:var(--text-3); font-weight:600; font-size:12.5px; }
+        td.c{ color:var(--text-2); }
+        .req{ font-size:11.5px; padding:2px 8px; border-radius:999px; }
+        .req.no{ background:var(--brand-soft); color:var(--brand); }
+        .req.yes{ background:var(--warn-soft); color:var(--warn-text); }
+        .row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .msg{ background:var(--info-soft); color:var(--info-text); border:1px solid var(--brand-ring); border-radius:var(--r); padding:10px 14px; margin-bottom:16px; font-size:13.5px; }
+        .cmd-input{
+            flex:1; min-width:260px; background:var(--input-bg); color:var(--text);
+            border:1px solid var(--border); border-radius:var(--r-sm);
+            padding:10px 12px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px;
+        }
+        pre.out{
+            background:var(--input-bg); color:var(--text); border:1px solid var(--border);
+            border-radius:var(--r); padding:12px 14px; font-size:12.5px;
+            white-space:pre-wrap; word-break:break-word; min-height:48px; max-height:380px; overflow:auto; margin:12px 0 0;
+        }
+        .out-err{ color:var(--danger-text); }
+        .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .chip{ background:var(--brand-soft); color:var(--brand); border:1px solid var(--brand-ring); border-radius:999px; padding:4px 12px; font-size:12.5px; cursor:pointer; }
+        .chip:hover{ filter:brightness(0.96); }
+    </style>
+    {% include '_modern_ui.html' %}
+</head>
+<body data-page-node-id="cliBody">
+    <div class="header-bar" data-page-node-id="cliHdr">
+        <div class="header-title" data-page-node-id="cliHdrT"><h1 data-page-node-id="cliHdrH">CLI 命令行 · 用命令行驱动微信机器人</h1></div>
+        <div class="buttons" data-page-node-id="cliHdrB">
+            <a href="{{ url_for('index') }}" class="nav-button" data-page-node-id="cliBack">返回配置</a>
+        </div>
+    </div>
+
+    <div class="wrap content-area" data-page-node-id="cliWrap">
+        <div class="msg" data-page-node-id="cliMsg">
+            除了 MCP，WeAuto 还提供命令行入口 <code>cli.py</code>：agent 直接执行
+            <code>python cli.py &lt;命令&gt;</code> 即可查询/配置，默认输出 JSON，便于机器解析。
+        </div>
+
+        <div class="panel" data-page-node-id="cliDiag">
+            <h2 data-page-node-id="cliDiagH">本地能力检测</h2>
+            <div class="stat-grid" data-page-node-id="cliDiagG">
+                <div class="stat-card" data-page-node-id="cliD1">
+                    <div class="k" data-page-node-id="cliD1k">cli.py</div>
+                    <div class="v" data-page-node-id="cliD1v">
+                        {% if diag.cli_exists %}<span class="badge on">存在</span>{% else %}<span class="badge off">缺失</span>{% endif %}
+                    </div>
+                </div>
+                <div class="stat-card" data-page-node-id="cliD2">
+                    <div class="k" data-page-node-id="cliD2k">项目 venv</div>
+                    <div class="v" data-page-node-id="cliD2v">
+                        {% if diag.cli_exists %}<span class="badge on">就绪</span>{% else %}<span class="badge off">缺失</span>{% endif %}
+                    </div>
+                </div>
+                <div class="stat-card" data-page-node-id="cliD3">
+                    <div class="k" data-page-node-id="cliD3k">config.py</div>
+                    <div class="v" data-page-node-id="cliD3v">
+                        {% if diag.config_found %}<span class="badge on">已找到</span>{% else %}<span class="badge off">缺失</span>{% endif %}
+                    </div>
+                </div>
+                <div class="stat-card" data-page-node-id="cliD4">
+                    <div class="k" data-page-node-id="cliD4k">运行形态</div>
+                    <div class="v" data-page-node-id="cliD4v">
+                        {% if diag.running_as_exe %}打包 EXE{% else %}源码运行{% endif %}
+                    </div>
+                </div>
+            </div>
+            <p class="hint" data-page-node-id="cliDiagHint">
+                须用<b>项目 venv</b> 的 python 运行（含 wechatauto / openai / mcp）：
+                <code>{{ diag.venv_python }}</code>
+            </p>
+        </div>
+
+        <div class="panel" data-page-node-id="cliRun">
+            <h2 data-page-node-id="cliRunH">如何运行</h2>
+            <h3 style="font-size:13.5px;margin:6px 0;" data-page-node-id="cliRunT1">基础调用</h3>
+            <div class="codeblock" data-page-node-id="cliRunC1"><button class="copy-btn" data-copy="cliRunC1">复制</button>{{ diag.venv_python }} cli.py &lt;命令&gt; [参数]</div>
+            <h3 style="font-size:13.5px;margin:16px 0 6px;" data-page-node-id="cliRunT2">示例</h3>
+            <div class="codeblock" data-page-node-id="cliRunC2"><button class="copy-btn" data-copy="cliRunC2">复制</button>{{ diag.venv_python }} cli.py status
+{{ diag.venv_python }} cli.py history --source owner --limit 5
+{{ diag.venv_python }} cli.py config get ENABLE_AUTO_MESSAGE
+{{ diag.venv_python }} cli.py listen add SamCai_ 老板
+{{ diag.venv_python }} cli.py send --who 文件传输助手 --msg 你好</div>
+            <p class="hint" data-page-node-id="cliRunHint">
+                加 <code>--text</code> 可切换为人读格式（如 <code>cli.py history --source owner --limit 3 --text</code>）。
+                需微信的命令（send / whois）在微信未登录时返回错误 JSON 并退出码 1，不会崩溃。
+            </p>
+        </div>
+
+        <div class="panel" data-page-node-id="cliRef">
+            <h2 data-page-node-id="cliRefH">命令参考（9 个）</h2>
+            <table data-page-node-id="cliRefTbl">
+                <thead data-page-node-id="cliRefTh"><tr data-page-node-id="cliRefTr">
+                    <th data-page-node-id="cT1">命令</th><th data-page-node-id="cT2">需微信</th><th data-page-node-id="cT3">说明</th>
+                </tr></thead>
+                <tbody data-page-node-id="cliRefTb">
+                    <tr data-page-node-id="c1"><td><code>version</code></td><td><span class="req no">否</span></td><td class="c">打印版本号</td></tr>
+                    <tr data-page-node-id="c2"><td><code>status</code></td><td><span class="req no">否</span></td><td class="c">运行/配置摘要（监听名单、白名单、风格样本、聊天统计）</td></tr>
+                    <tr data-page-node-id="c3"><td><code>history</code></td><td><span class="req no">否</span></td><td class="c">读聊天记录；--source owner|bot|friend|group|all --limit N</td></tr>
+                    <tr data-page-node-id="c4"><td><code>style</code></td><td><span class="req no">否</span></td><td class="c">风格画像；--analyze / --profile / --enable / --disable</td></tr>
+                    <tr data-page-node-id="c5"><td><code>config get/set</code></td><td><span class="req no">否</span></td><td class="c">读写配置项（原子写回 config.py；密钥脱敏）</td></tr>
+                    <tr data-page-node-id="c6"><td><code>listen list/add/remove</code></td><td><span class="req no">否</span></td><td class="c">管理监听名单 LISTEN_LIST</td></tr>
+                    <tr data-page-node-id="c7"><td><code>send</code></td><td><span class="req yes">是</span></td><td class="c">发微信消息；--who --msg [--type file|image --path F]</td></tr>
+                    <tr data-page-node-id="c8"><td><code>whois</code></td><td><span class="req yes">是</span></td><td class="c">解析名字/微信ID</td></tr>
+                    <tr data-page-node-id="c9"><td><code>serve</code></td><td><span class="req yes">是</span></td><td class="c">前台启动 bot（长驻）</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="panel" data-page-node-id="cliTest">
+            <h2 data-page-node-id="cliTestH">在线测试（只读命令实时执行）</h2>
+            <p class="hint" data-page-node-id="cliTestHint">
+                网页端出于安全仅允许只读命令：<code>version</code> / <code>status</code> / <code>history</code> /
+                <code>style</code> / <code>config get &lt;KEY&gt;</code> / <code>listen list</code>。
+            </p>
+            <div class="row" data-page-node-id="cliTestRow">
+                <input class="cmd-input" id="cliInput" value="status" data-page-node-id="cliInput" />
+                <button type="button" class="nav-button" id="cliRunBtn" data-page-node-id="cliRunBtn">运行</button>
+            </div>
+            <div class="chips" data-page-node-id="cliChips">
+                <span class="chip" data-cmd="version">version</span>
+                <span class="chip" data-cmd="status">status</span>
+                <span class="chip" data-cmd="history --source owner --limit 3">history --source owner --limit 3</span>
+                <span class="chip" data-cmd="config get ENABLE_AUTO_MESSAGE">config get ENABLE_AUTO_MESSAGE</span>
+                <span class="chip" data-cmd="listen list">listen list</span>
+            </div>
+            <pre class="out" id="cliOut" data-page-node-id="cliOut">（点击「运行」或上方示例查看输出）</pre>
+        </div>
+    </div>
+
+    <script>
+        function getCSRFHeaders(extra){
+            var t = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+            var h = extra || {}; h['X-CSRFToken'] = t; h['Content-Type'] = 'application/json';
+            return h;
+        }
+        document.querySelectorAll('.copy-btn').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                var el = document.getElementById(btn.getAttribute('data-copy'));
+                if(!el) return;
+                navigator.clipboard.writeText(el.innerText.replace(/^复制$/, '')).then(function(){
+                    var old = btn.textContent; btn.textContent = '已复制';
+                    setTimeout(function(){ btn.textContent = old; }, 1200);
+                });
+            });
+        });
+        var input = document.getElementById('cliInput');
+        var out = document.getElementById('cliOut');
+        var runBtn = document.getElementById('cliRunBtn');
+        document.querySelectorAll('.chip[data-cmd]').forEach(function(ch){
+            ch.addEventListener('click', function(){ input.value = ch.getAttribute('data-cmd'); runCli(); });
+        });
+        if (runBtn) runBtn.addEventListener('click', runCli);
+        function runCli(){
+            var cmd = input.value.trim();
+            if(!cmd){ out.textContent = '（命令为空）'; return; }
+            out.textContent = '执行中…';
+            out.className = 'out';
+            fetch('{{ url_for("api_cli_run") }}', {
+                method:'POST',
+                headers: getCSRFHeaders(),
+                body: JSON.stringify({cmd: cmd})
+            }).then(function(r){ return r.json(); }).then(function(d){
+                if(d.ok){
+                    out.textContent = (d.stdout || '') + (d.stderr ? '\n[stderr]\n' + d.stderr : '');
+                } else {
+                    out.className = 'out out-err';
+                    out.textContent = '错误：' + (d.error || ('退出码 ' + d.rc)) + (d.stderr ? '\n' + d.stderr : '');
+                }
+            }).catch(function(e){ out.className = 'out out-err'; out.textContent = '请求失败：' + e; });
+        }
+    </script>
+</body>
+</html>
