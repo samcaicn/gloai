@@ -73,7 +73,10 @@ jobs:
                   # vendor/wechatauto 顶层硬依赖（__init__/logger/uia_driver 直接 import），
                   # 显式 hidden-import 兜底，避免 --collect-all 在某些子模块导入失败时被漏掉。
                   --hidden-import uiautomation --hidden-import comtypes --hidden-import colorama
-                  --collect-all wechatauto)
+                  --collect-all wechatauto
+                  # 写入合法的版本信息资源 + 显式 manifest（asInvoker，不请求管理员）：
+                  # 降低杀软对「无数字签名 + 未知发布者」的启发式误报评分。根治仍需 EV 代码签名证书。
+                  --version-file version_info.txt --manifest manifest.xml)
             add_data config.py "."
             add_data templates templates
             add_data emojis emojis

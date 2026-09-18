@@ -66,6 +66,7 @@
                 <a href="#cli">⑥ CLI 命令行</a>
                 <a href="#mcp">⑦ MCP 协议</a>
                 <a href="#faq">⑧ 常见问题</a>
+                <a href="#av">⑨ 杀软误报处理</a>
             </div>
         </div>
 
@@ -211,6 +212,7 @@
                 <li><b>主动消息发不出去？</b> 检查 <code>ENABLE_AUTO_MESSAGE</code> 与 <code>AUTO_MESSAGE_USER_LIST</code> 白名单。</li>
                 <li><b>换电脑 / 更新？</b> 双击 <code>Run.bat</code> 自动检查更新；或用 <code>updater.py</code> 下载 Release 中的 <code>WeAuto.exe</code>。</li>
                 <li><b>密钥安全？</b> 源码 <code>config.py</code> 仅占位；真 Key 在运行时副本，已被 <code>.gitignore</code> 屏蔽，不会进入仓库。</li>
+                <li><b>被杀毒软件（火绒等）报毒 / 拦截？</b> 单文件 EXE 由 PyInstaller 打包，启动时会把运行库解压到临时目录再执行，该行为常被「无数字签名 + 未知发布者」的启发式引擎误判为风险程序（并非真病毒）。处理：① 把 <code>WeAuto.exe</code> 加入杀软「信任区 / 白名单」（火绒：设置 → 病毒防护 → 信任区 → 添加文件）；② 到火绒官网「样本提交 / 误报申诉」上传本 exe，申请加入官方白名单；③ 加信任区后同时避免实时扫描解包目录，启动速度也会明显提升。彻底根治需 EV 代码签名证书（本项目未采购）。</li>
             </ul>
         </div>
     </div>
