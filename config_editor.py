@@ -46,9 +46,23 @@ if getattr(sys, "frozen", False):
         for _item in ("config.py", "templates", "emojis", "prompts", "static", "Demo_Image"):
             _src = _os.path.join(_meipass, _item)
             _dst = _os.path.join(_exe_dir, _item)
-            if _os.path.exists(_src) and not _os.path.exists(_dst):
+            if not _os.path.exists(_src):
+                continue
+            if _item == "config.py":
+                # 用户运行时配置：仅首次创建，后续升级保留用户修改
+                if _os.path.exists(_dst):
+                    continue
+                try:
+                    _shutil.copy(_src, _dst)
+                except Exception:
+                    pass
+            else:
+                # 应用资源（模板/静态等）：每次启动都从 _MEIPASS 刷新，
+                # 避免 exe 升级后旧目录残留导致新模板/资源缺失（如 /help 的 help.html）。
                 try:
                     if _os.path.isdir(_src):
+                        if _os.path.exists(_dst):
+                            _shutil.rmtree(_dst, ignore_errors=True)
                         _shutil.copytree(_src, _dst)
                     else:
                         _shutil.copy(_src, _dst)
