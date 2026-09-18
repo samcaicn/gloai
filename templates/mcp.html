@@ -103,7 +103,10 @@
                 <code>settings.json &gt; mcpServers</code>），agent 即可发现 <b>weauto</b> 服务器。
             </p>
             {% if diag.mcp_cfg_exe %}
-            <h3 style="font-size:13.5px;margin:16px 0 6px;" data-page-node-id="mcpCfgExeT">方式一：自包含 exe（推荐，打包版自带）</h3>
+            <h3 style="font-size:13.5px;margin:16px 0 6px;" data-page-node-id="mcpCfgExeT">方式一：单 EXE 全功能（推荐）</h3>
+            <p class="hint" data-page-node-id="mcpCfgExeHint">
+                MCP 已内置在同一个 exe 中，靠 <code>--mcp</code> 参数切换为 stdio 服务形态，<b>无需额外下载 weauto_mcp.exe</b>。
+            </p>
             <div class="codeblock" data-page-node-id="mcpCfgExe"><button class="copy-btn" data-copy="mcpCfgExe">复制</button>{{ diag.mcp_cfg_exe }}</div>
             {% endif %}
             <h3 style="font-size:13.5px;margin:16px 0 6px;" data-page-node-id="mcpCfgScrT">方式二：用项目 venv 的 python 跑脚本（源码开发用）</h3>

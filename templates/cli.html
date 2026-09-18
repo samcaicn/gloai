@@ -108,6 +108,22 @@
             </p>
         </div>
 
+        {% if diag.running_as_exe %}
+        <div class="panel" data-page-node-id="cliExe">
+            <h2 data-page-node-id="cliExeH">单 EXE 模式（推荐）</h2>
+            <p class="hint" data-page-node-id="cliExeHint">
+                当前为打包形态，<b>CLI 已内置在同一个 exe 里</b>，无需单独的 cli.py：加 <code>--cli</code> 即可。
+            </p>
+            <div class="codeblock" data-page-node-id="cliExeC1"><button class="copy-btn" data-copy="cliExeC1">复制</button>{{ diag.exe_path }} --cli &lt;命令&gt; [参数]</div>
+            <div class="codeblock" data-page-node-id="cliExeC2"><button class="copy-btn" data-copy="cliExeC2">复制</button>{{ diag.exe_path }} --cli version
+{{ diag.exe_path }} --cli status
+{{ diag.exe_path }} --cli history --source owner --limit 5 --text
+{{ diag.exe_path }} --cli config get ENABLE_AUTO_MESSAGE
+{{ diag.exe_path }} --cli listen add SamCai_ 老板
+{{ diag.exe_path }} --cli send --who 文件传输助手 --msg 你好</div>
+        </div>
+        {% endif %}
+
         <div class="panel" data-page-node-id="cliRun">
             <h2 data-page-node-id="cliRunH">如何运行</h2>
             <h3 style="font-size:13.5px;margin:6px 0;" data-page-node-id="cliRunT1">基础调用</h3>

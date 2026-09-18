@@ -4574,12 +4574,15 @@ def _weauto_agent_diag():
     base = os.path.dirname(os.path.abspath(__file__))
     frozen = getattr(sys, "frozen", False)
     exe_dir = os.path.dirname(os.path.abspath(sys.executable)) if frozen else base
+    self_exe = sys.executable if frozen else None
     diag = {
         "running_as_exe": frozen,
         "base_dir": base,
         "venv_python": os.path.join(base, ".venv_bot", "Scripts", "python.exe"),
         "mcp_script": os.path.join(base, "weauto_mcp.py"),
-        "mcp_exe": os.path.join(exe_dir, "weauto_mcp.exe") if frozen else None,
+        # 单 EXE 全功能：exe 自身即 MCP 载体，靠 --mcp 参数切换模式
+        "exe_path": self_exe,
+        "mcp_exe": self_exe,
         "cli_script": os.path.join(base, "cli.py"),
         "config_found": os.path.exists(os.path.join(base, "config.py")),
         "mcp_available": False,
@@ -4605,9 +4608,11 @@ def _weauto_agent_diag():
     diag["mcp_cfg_script"] = json.dumps(
         {"mcpServers": {"weauto": {"command": py, "args": [script]}}},
         ensure_ascii=False, indent=2)
+    diag["cli_cfg_exe"] = ("%s --cli <命令> [参数]" % self_exe) if frozen else None
     if frozen and diag.get("mcp_exe"):
+        # 单 EXE：MCP / CLI / bot / WebUI 全部由同一个 exe 承担，用参数区分
         diag["mcp_cfg_exe"] = json.dumps(
-            {"mcpServers": {"weauto": {"command": diag["mcp_exe"], "args": []}}},
+            {"mcpServers": {"weauto": {"command": diag["mcp_exe"], "args": ["--mcp"]}}},
             ensure_ascii=False, indent=2)
     else:
         diag["mcp_cfg_exe"] = None
@@ -4695,6 +4700,23 @@ if __name__ == '__main__':
     if '--bot' in sys.argv:
         import bot
         bot.main()
+        raise SystemExit(0)
+
+    # 单 EXE 全功能：同一个 WeAuto.exe 通过参数切换运行模式
+    #   WeAuto.exe            -> 管理后台（WebUI，并可拉起 bot）
+    #   WeAuto.exe --bot      -> 机器人主循环
+    #   WeAuto.exe --mcp      -> MCP stdio 服务（供 Codex / WorkBuddy 等 agent 调用）
+    #   WeAuto.exe --cli ...  -> 命令行接口（其余参数原样透传给 cli.py）
+    if '--mcp' in sys.argv:
+        from weauto_mcp import main as _mcp_main
+        _mcp_main()
+        raise SystemExit(0)
+
+    if '--cli' in sys.argv:
+        # 去掉 --cli 本身，其余参数按 cli.py 的 argparse 约定透传
+        sys.argv = ['weauto'] + [a for a in sys.argv[1:] if a != '--cli']
+        from cli import main as _cli_main
+        _cli_main()
         raise SystemExit(0)
 
     # 配置应用日志级别

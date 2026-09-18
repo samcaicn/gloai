@@ -158,9 +158,26 @@ pyinstaller WeAuto.spec
 ## 自动更新与 CI
 
 - `updater.py` 指向 GitHub `samcaicn/gloai` 的 `weauto` 分支检查更新（支持国内更新源兜底），下载 GitHub Actions Artifact / Release 中的 `WeAuto.exe` 用于自动更新。
-- CI（`.github/workflows/build.yml`）在 `windows-latest` + **Python 3.10** 上用 **PyInstaller 6.x** 打包**单文件** `WeAuto.exe`（`--onefile --collect-all wechatauto`，关闭 UPX）：
+- CI（`.github/workflows/build.yml`）在 `windows-latest` + **Python 3.10** 上用 **PyInstaller 6.x** 打包**单个一体化** `WeAuto.exe`（`--onefile --collect-all wechatauto --collect-all mcp`，关闭 UPX）：
   - ⚠️ PyInstaller 6.x 已移除 `--key` 字节码加密，CI 仅做单文件打包，**并非加密 / 混淆**。
   - 产物同时发布为 GitHub Release 标签 `weauto-build-<run>` 并上传 Actions Artifact（保留 **90 天**），供本机下载与自动更新。
+
+### 单 EXE 全功能（四合一）
+
+打包产物**只有一个 `WeAuto.exe`**，通过命令行参数切换运行形态（派发逻辑在 `config_editor.py` 的 `__main__`）：
+
+| 形态 | 命令 | 说明 |
+|---|---|---|
+| 管理后台（默认） | `WeAuto.exe` | Flask + Waitress WebUI，端口 5001，可在页面内拉起 bot |
+| 机器人主循环 | `WeAuto.exe --bot` | 微信监听与回复（WebUI 在冻结模式下用此参数自拉起子进程） |
+| 命令行 CLI | `WeAuto.exe --cli <命令> [参数]` | 9 个子命令，默认输出 JSON，供 agent 解析 |
+| MCP 服务 | `WeAuto.exe --mcp` | stdio 传输的 MCP server（10 个工具），供 Codex / WorkBuddy 调用 |
+
+客户端 `mcp.json` 配置示例：
+
+```json
+{ "mcpServers": { "weauto": { "command": "C:/path/to/WeAuto.exe", "args": ["--mcp"] } } }
+```
 
 ---
 

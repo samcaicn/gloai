@@ -96,7 +96,7 @@
             <div class="codeblock" data-page-node-id="helpStartCode">python -m pip install -r requirements.txt --only-binary=:all:
 .venv_bot\Scripts\python.exe config_editor.py</div>
             <h3>方式三：打包 EXE</h3>
-            <p class="hint">从 Release 下载 <code>WeAuto.exe</code> 双击即可（资源自动释放到同目录）；<code>weauto_mcp.exe</code> 为 MCP 服务独立可执行文件。</p>
+            <p class="hint">从 Release 下载 <code>WeAuto.exe</code> 双击即可（资源自动释放到同目录）。<b>只有一个 exe，即是全功能</b>：管理后台、机器人主循环、命令行、MCP 服务四合一，用参数切换 —— 默认启动后台，<code>--cli</code> 走命令行，<code>--mcp</code> 变 MCP stdio 服务。</p>
         </div>
 
         <!-- ③ 配置后台 -->
@@ -176,8 +176,8 @@
             <div class="codeblock" data-page-node-id="helpMcpJson">{
   "mcpServers": {
     "weauto": {
-      "command": "C:/path/to/weauto_mcp.exe",
-      "args": [],
+      "command": "C:/path/to/WeAuto.exe",
+      "args": ["--mcp"],
       "env": {}
     }
   }
