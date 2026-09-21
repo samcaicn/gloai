@@ -163,4 +163,14 @@ FORUM_API_KEY = ''
 FORUM_TEMPERATURE = 1.0
 FORUM_MAX_TOKEN = 1200
 
+# ===== 对话体验优化 =====
+# 1) 思考中占位提示：AI 生成回复前先发一条轻量占位，消除“对方长时间无反应”的空窗焦虑
+#    （像真人聊天的“在想…”，不写入对话上下文，不影响记忆/风格学习）
+ENABLE_THINKING_PLACEHOLDER = True
+THINKING_PLACEHOLDERS = ["在想…", "嗯，让我想想", "稍等，我琢磨一下", "收到，思考中…", "让我理理思路~"]
+
+# 2) 单条消息最大字数：超过自动分段发送，避免被微信单条上限（约 2000 字）截断，
+#    或单条过长导致 SendMsg 失败、用户收不到完整回复
+MAX_SINGLE_MSG_LEN = 800
+
 

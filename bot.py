@@ -1176,7 +1176,8 @@ def get_deepseek_response(message, user_id, store_context=True, is_summary=False
 
     except Exception as e:
         logger.error(f"Chat 调用失败 (ID: {user_id}): {str(e)}", exc_info=True)
-        return "抱歉，我现在有点忙，稍后再聊吧。"
+        # call_chat_api_with_retry 抛出的 RuntimeError 已带友好文案；其余意外异常用通用兜底
+        return str(e) if (isinstance(e, RuntimeError) and str(e)) else "抱歉，我这边出了点小状况，稍后再聊吧~"
 
 
 def strip_before_thought_tags(text):
@@ -1188,6 +1189,28 @@ def strip_before_thought_tags(text):
         return match.group(1)
     else:
         return text
+
+def _friendly_api_error(error_info):
+    """把 API 异常信息翻译成口语化兜底话术，避免对用户暴露技术细节、也更像真人。"""
+    if not error_info:
+        return "抱歉，我这边出了点小状况，稍后再聊吧~"
+    e = error_info.lower()
+    if "real name verification" in e:
+        return "我的 AI 密钥还差实名认证，得让主人去弄一下~"
+    if "rate limit" in e:
+        return "最近问的人有点多，我喘口气再回你哈~"
+    if "payment required" in e:
+        return "我的额度用完啦，等主人给我充个值就好~"
+    if "user quota" in e or "is not enough" in e or "unlimitedquota" in e:
+        return "我的额度不够用啦，等主人充个值就好~"
+    if "api key is invalid" in e:
+        return "我的密钥好像失效了，得让主人看看~"
+    if "service unavailable" in e:
+        return "服务器有点忙，我待会儿再回你~"
+    if "sensitive" in e:
+        return "刚才那句可能踩到敏感词了，换个说法试试？"
+    return "抱歉，我这边出了点小状况，稍后再聊吧~"
+
 
 def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summary=False):
     """
@@ -1206,6 +1229,7 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
         raise RuntimeError("抱歉，您所使用的API服务商不受信任，请联系网站管理员")
 
     attempt = 0
+    last_error_info = None
     while attempt <= max_retries:
         try:
             logger.debug(f"发送给 API 的消息 (ID: {user_id}): {messages_to_send}")
@@ -1249,6 +1273,7 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
             logger.error(f"错误请求消息体: {MODEL}")
             logger.error(json.dumps(messages_to_send, ensure_ascii=False, indent=2))
             error_info = str(e)
+            last_error_info = error_info
             logger.error(f"自动重试：第 {attempt + 1} 次调用 {MODEL}失败 (ID: {user_id}) 原因: {error_info}", exc_info=False)
 
             # 细化错误分类
@@ -1279,7 +1304,7 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
 
         attempt += 1
 
-    raise RuntimeError("抱歉，我现在有点忙，稍后再聊吧。")
+    raise RuntimeError(_friendly_api_error(last_error_info))
 
 def get_assistant_response(message, user_id, is_summary=False):
     """
@@ -2594,6 +2619,10 @@ def process_user_messages(user_id):
     online_info = None
 
     try:
+        # 思考占位：AI 生成回复前先给轻量反馈，消除“对方长时间无反应”的空窗焦虑（不写入上下文）
+        if not is_auto_message:
+            _send_thinking_placeholder(user_id)
+
         # --- 新增：联网搜索逻辑 ---
         if ENABLE_ONLINE_API:
             # 1. 检测是否需要联网
@@ -2661,6 +2690,22 @@ def process_user_messages(user_id):
             logger.error(f"用户消息处理失败 (用户: {user_id}): {str(e)}")
             raise
         
+def _send_thinking_placeholder(user_id):
+    """AI 生成回复前发一条轻量占位，消除“对方长时间无反应”的空窗焦虑。
+
+    像真人聊天的“在想…”，直接发送、不写入对话上下文，不影响记忆 / 风格学习。
+    发送失败静默忽略（绝不因此阻断正常回复）。
+    """
+    if not ENABLE_THINKING_PLACEHOLDER or not THINKING_PLACEHOLDERS:
+        return
+    try:
+        text = random.choice(THINKING_PLACEHOLDERS)
+        wx.SendMsg(msg=text, who=user_id)
+        logger.info(f"已向 {user_id} 发送思考占位: {text}")
+    except Exception as e:
+        logger.debug(f"发送思考占位失败（已忽略，不影响正常回复）: {e}")
+
+
 def send_reply(user_id, sender_name, username, original_merged_message, reply, is_system_message=False):
     """发送回复消息，可能分段发送，并管理发送标志。
     
@@ -2824,6 +2869,40 @@ def send_reply(user_id, sender_name, username, original_merged_message, reply, i
     finally:
         is_sending_message = False
 
+def _chunk_by_len(text, limit=MAX_SINGLE_MSG_LEN):
+    """把过长文本按字数切成多段，优先在句末标点处断开，找不到断点再硬切。
+
+    用于避免微信单条消息上限（约 2000 字）导致的截断或 SendMsg 发送失败，
+    让用户能完整收到长回复。
+    """
+    if len(text) <= limit:
+        return [text]
+    chunks = []
+    start = 0
+    n = len(text)
+    cut_marks = set('。！？!?；;\n')
+    # 至少保留 1/3 长度，避免极端情况死循环
+    min_seg = max(limit // 3, 1)
+    while start < n:
+        end = start + limit
+        if end >= n:
+            chunks.append(text[start:])
+            break
+        # 在 [start+min_seg, end] 区间内从后往前找最近断句点
+        cut = -1
+        for i in range(end - 1, start + min_seg - 1, -1):
+            if text[i] in cut_marks:
+                cut = i + 1
+                break
+        if cut == -1:
+            cut = end  # 无断点，硬切
+        seg = text[start:cut]
+        if seg:
+            chunks.append(seg)
+        start = cut
+    return [c for c in chunks if c]
+
+
 def split_message_with_context(text):
     """
     将消息文本分割为多个部分，处理换行符、转义字符、$符号和[tickle]/[tickle_self]/[recall]标记。
@@ -2930,7 +3009,14 @@ def split_message_with_context(text):
                 elif not segments and part:
                     result_parts.append(part)
                 
-    return [p for p in result_parts if p]
+    # 超长段落按字数安全切分（防微信单条约 2000 字上限被截断 / SendMsg 发送失败）
+    final_parts = []
+    for p in result_parts:
+        if len(p) > MAX_SINGLE_MSG_LEN:
+            final_parts.extend(_chunk_by_len(p, MAX_SINGLE_MSG_LEN))
+        else:
+            final_parts.append(p)
+    return [p for p in final_parts if p]
 
 def remove_timestamps(text):
     """
