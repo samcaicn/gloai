@@ -128,13 +128,14 @@ def _post(path: str, payload: dict) -> dict:
 
 
 def _buy_prompt(reason):
-    print("=" * 56)
-    print("  WeAuto 未激活 / 激活失效")
-    print("  原因: " + str(reason))
+    # flush=True：冻结态(onefile) stdout 为 block-buffering，不 flush 用户看不到提示
+    print("=" * 56, flush=True)
+    print("  WeAuto 未激活 / 激活失效", flush=True)
+    print("  原因: " + str(reason), flush=True)
     w = worker_url()
-    print("  购买: " + (w + "/buy" if w else "(未配置 CREEM_WORKER_URL)"))
-    print("  然后: 在 config.py 填入 CREEM_LICENSE_KEY 后重启")
-    print("=" * 56)
+    print("  购买: " + (w + "/buy" if w else "(未配置 CREEM_WORKER_URL)"), flush=True)
+    print("  然后: 在 config.py 填入 CREEM_LICENSE_KEY 后重启", flush=True)
+    print("=" * 56, flush=True)
 
 
 def ensure_license(strict: bool = True) -> bool:
@@ -183,7 +184,7 @@ def ensure_license(strict: bool = True) -> bool:
         # 联网失败：缓存仍在 grace 期内 → 离线放行
         if (cache.get("key") == key and cache.get("instance_id")
                 and now < cache.get("expire_at", 0) + OFFLINE_GRACE_SECONDS):
-            print("[License] 联网校验失败（%s），离线宽限内放行。" % e)
+            print("[License] 联网校验失败（%s），离线宽限内放行。" % e, flush=True)
             return True
         _buy_prompt("联网校验失败: %s" % e)
         return False

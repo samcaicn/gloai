@@ -51,3 +51,9 @@ style_profile.json
 
 # ---- Runtime download copy of config.py (may contain live API key) ----
 _downloads/
+
+# ---- Local debug / CI helper scripts (not shipped) ----
+_debug_exe.py
+_mock_worker.py
+_ci_wait_dl.py
+_smoke_guard.py
