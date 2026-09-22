@@ -126,14 +126,15 @@ jobs:
           path: C:/_wd/WeAuto.exe
           retention-days: 90
 
-      - name: Create Release
-        id: release
-        continue-on-error: true
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: weauto-build-${{ github.run_number }}
-          name: WeAuto Build ${{ github.run_number }}
-          files: |
-            C:/_wd/WeAuto.exe
+      - name: Create Release (gh CLI)
+        # 改用 runner 自带的 gh：GITHUB_TOKEN 自动可用，且对 Windows 绝对路径更稳。
+        # 去掉 continue-on-error，让发版失败直接暴露（不再被伪装成绿）。
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "weauto-build-${{ github.run_number }}" \
+            --repo samcaicn/gloai \
+            --title "WeAuto Build ${{ github.run_number }}" \
+            --notes "Automated WeAuto EXE build (single all-in-one)." \
+            "C:/_wd/WeAuto.exe"
