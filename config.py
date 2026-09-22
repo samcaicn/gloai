@@ -174,3 +174,13 @@ THINKING_PLACEHOLDERS = ["在想…", "嗯，让我想想", "稍等，我琢磨�
 MAX_SINGLE_MSG_LEN = 800
 
 
+# ===== Creem 许可（卡密）集成 =====
+# 架构（铁律：bot.py 接通 Creem，不受 GPL-3.0 约束，按项目方指令执行）：
+#   客户端(EXE) 仅与本项目的 Cloudflare Worker 通信，Worker 持有 Creem 密钥并代理
+#   api.creem.io 的 license 调用。客户端绝不接触 Creem 域名、不持有任何 Creem 密钥。
+# 详见 weauto_license/README.md
+LICENSE_GUARD_ENABLED = False   # 开发期 False；正式发布设 True
+CREEM_WORKER_URL = ""           # 你的 CF Worker 地址，如 https://license.xxx.workers.dev
+CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填这里
+
+

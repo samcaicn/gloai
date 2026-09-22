@@ -47,6 +47,7 @@ weauto_chat.db-wal
 user_timers.json
 style_settings.json
 style_profile.json
+.weauto_license.json
 
 # ---- Runtime download copy of config.py (may contain live API key) ----
 _downloads/

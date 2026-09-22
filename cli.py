@@ -268,6 +268,19 @@ def cmd_serve(args):
         pass
 
 
+def cmd_license(args):
+    from weauto_license.guard import activate, deactivate
+    sub = getattr(args, "license_cmd", None)
+    if sub == "activate":
+        ok, msg = activate(args.key)
+        print(("成功" if ok else "失败") + ": " + msg)
+    elif sub == "deactivate":
+        ok, msg = deactivate()
+        print(("成功" if ok else "失败") + ": " + msg)
+    else:
+        print("用法: cli.py license activate <卡密> | cli.py license deactivate")
+
+
 # --------------------------------------------------------------------- 入口
 def build_parser():
     parent = argparse.ArgumentParser(add_help=False)
@@ -327,12 +340,29 @@ def build_parser():
 
     sub.add_parser("serve", parents=[parent], help="前台启动 bot（长驻）").set_defaults(func=cmd_serve)
 
+    lic = sub.add_parser("license", parents=[parent], help="许可证管理（Creem 卡密）")
+    licsub = lic.add_subparsers(dest="license_cmd", required=True)
+    la_act = licsub.add_parser("activate", parents=[parent], help="激活卡密")
+    la_act.add_argument("key", help="购买的卡密")
+    licsub.add_parser("deactivate", parents=[parent], help="释放本机激活（换机前）")
+    lic.set_defaults(func=cmd_license)
+
     return p
 
 
 def main():
     parser = build_parser()
     args = parser.parse_args()
+    # License 子命令用于初始激活/释放，跳过门禁
+    if getattr(args, "cmd", None) != "license":
+        # License 门禁（Creem 卡密，经自有 CF Worker 代理）
+        try:
+            from weauto_license.guard import ensure_license
+            if not ensure_license():
+                import sys
+                sys.exit(1)
+        except Exception as _lg:
+            print(f"[License] 门禁检查异常（已放行）: {_lg}")
     args.func(args)
 
 

@@ -5075,6 +5075,21 @@ def initialize_all_user_timers():
 def main():
     try:
         started_running = False  # 标记是否已真正进入消息循环；用于区分“启动期确定性错误”与“运行期可自愈崩溃”
+
+        # --- License 门禁（Creem 卡密，经自有 CF Worker 代理）---
+        try:
+            from weauto_license.guard import ensure_license
+            if not ensure_license(strict=True):
+                logger.error("\033[31mLicense 校验未通过，bot 拒绝启动。\033[0m")
+                exit(1)
+        except Exception as _lg:
+            # 门禁自身异常：已启用则拒绝（避免误放行），未启用（开发期）放行
+            if str(getattr(config, 'LICENSE_GUARD_ENABLED', False)).lower() in ('1', 'true', 'yes', 'on'):
+                logger.critical(f"License 门禁异常，拒绝启动: {_lg}")
+                exit(1)
+            else:
+                logger.warning(f"License 门禁检查异常（开发模式已放行）: {_lg}")
+
         # --- 启动前检查 ---
         logger.info("\033[32m进行启动前检查...\033[0m")
 

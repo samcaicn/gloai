@@ -312,6 +312,14 @@ def whois(name: str) -> str:
 
 
 def main():
+    # License 门禁（Creem 卡密）。MCP 走 stdio，先离线缓存放行，避免阻塞协议启动。
+    try:
+        from weauto_license.guard import ensure_license
+        if not ensure_license():
+            import sys
+            sys.exit(1)
+    except Exception as _lg:
+        print(f"[License] 门禁检查异常（已放行）: {_lg}", file=sys.stderr)
     # 默认 stdio 传输；保持 stdin=协议通道，日志走 stderr。
     mcp.run(transport="stdio")
 

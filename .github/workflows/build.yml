@@ -67,6 +67,9 @@ jobs:
                   # 靠命令行参数（默认 / --bot / --cli / --mcp）在 __main__ 派发。
                   # 这几个入口是运行时动态 import，必须显式 hidden-import 才会被打进包。
                   --hidden-import cli --hidden-import weauto_mcp
+                  # License 门禁（Creem 卡密，仅与自有 CF Worker 通信，不持密钥）：
+                  # weauto_license 包是运行期动态 import，必须显式 hidden-import 才会打进包。
+                  --hidden-import weauto_license --hidden-import weauto_license.guard
                   # MCP 协议栈（FastMCP 基于 mcp<2）：显式收集，避免动态 import 漏模块。
                   # 注意 requirements.txt 里必须是 mcp[cli]，否则 mcp.cli 需要 typer 会构建失败。
                   --hidden-import mcp --collect-all mcp
