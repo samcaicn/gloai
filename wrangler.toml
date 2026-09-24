@@ -7,6 +7,13 @@ compatibility_date = "2024-09-23"
 # 注意：*.workers.dev 在中国大陆可能不可达，买家需自行代理；如需大陆直连再绑自定义域名。
 
 [vars]
+# ---- Creem ----
 CREEM_MODE = "test"                       # 上线切 "prod"
 CREEM_PRODUCT_ID = "prod_xxx"             # Creem 后台 License 产品 ID
-CREEM_CHECKOUT_URL = "https://www.creem.io/checkout/xxxx"  # 后台「复制结账链接」粘贴这里（买家点开即收银台，支持支付宝）
+CREEM_CHECKOUT_URL = "https://www.creem.io/checkout/xxxx"  # 后台「复制结账链接」粘贴这里（买家点开即收银台）
+
+# ---- 卡密网站文案（/buy 页面显示，随手改）----
+PRODUCT_NAME  = "WeAuto 专业版"
+PRODUCT_PRICE = "¥99"
+PRODUCT_DESC  = "一次购买，解锁全部功能"
+SUPPORT_EMAIL = ""                        # 售后邮箱，留空则不显示

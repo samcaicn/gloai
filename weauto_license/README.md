@@ -38,6 +38,24 @@
 4. **Developers > Webhooks** 填 `https://weauto-license.<你的cf子域>.workers.dev/webhook`（先用占位，deploy 后换成真实地址），记下 Webhook Secret。
 5. 本地测试用 `creem_test_` key + 测试卡 `4242 4242 4242 4242`。
 
+## 支付宝：两个必须分清的概念（最容易踩坑）
+
+很多人把这两件事混为一谈，结果配置了半天发现没生效。它们是**完全独立的两条链路**：
+
+| | 是什么 | 谁在用 | 状态 | 在哪配 |
+|---|---|---|---|---|
+| **① 买家付款方式** | 买家结账时选择「支付宝」付钱 | 你的买家 | Creem 2.0 已新增 AliPay 作为收银台支付方式 | Creem 自动提供，**你无需配置**；买家在收银台自己选 |
+| **② 商家收款（Payout）** | Creem 把钱打进**你的**支付宝 | 你自己 | 中国商户**已支持**，单笔上限 5 万 CNY | Creem → Balance → Payout Account → 添加支付宝 |
+
+- **① 不用你做任何开发**：收银台会自动列出可用方式，买家选支付宝即可。
+  > 注：Creem 文档 FAQ 某页仍写「Alipay support coming soon」，属旧文案；以 Creem 2.0 发布说明（已上线 AliPay）为准。
+- **② 必须你自己去后台绑定**，否则你收不到钱：
+  1. Creem 后台 → **Balance → Payout Account** → Add。
+  2. 国家选 **China**，币种 **CNY**，方式选 **支付宝**。
+  3. 按「支付宝闪速收款」给的账号 + 账户持有人名称填写（姓名用**英文大写：姓 空格 名**）。
+  4. 提交后等 Creem 审核（通常 1–2 天），审核通过才能开启真实收款。
+- 提现节奏：每月 1 号 / 15 号两个窗口，余额满 **$50** 才能申请提现。
+
 ## 部署 Worker（使用 CF 默认域名，不绑自定义域名）
 
 ```bash
@@ -58,7 +76,30 @@ compatibility_date = "2024-09-23"
 CREEM_MODE = "test"                 # 上线改 "prod"
 CREEM_PRODUCT_ID = "prod_xxx"
 CREEM_CHECKOUT_URL = "https://www.creem.io/checkout/xxxx"
+PRODUCT_NAME  = "WeAuto 专业版"
+PRODUCT_PRICE = "¥99"
+PRODUCT_DESC  = "一次购买，解锁全部功能"
+SUPPORT_EMAIL = ""
 ```
+
+### 部署后自检（必做）
+
+```bash
+# 1) 看配置是否齐全（不泄露密钥）
+curl https://weauto-license.<子域>.workers.dev/health
+# 期望：{"ok":true,...,"has_api_key":true,"checkout_ready":true}
+
+# 2) 看卡密网站是否出来
+curl https://weauto-license.<子域>.workers.dev/buy | head
+# 期望：一段含「支付宝付款」的中文 HTML
+
+# 3) 一键购买直跳（EXE 的购买按钮实际走的链接）
+curl -I "https://weauto-license.<子域>.workers.dev/buy?go=1"
+# 期望：302 → Location 指向 creem.io
+```
+
+`/health` 返回 `checkout_ready:false` 说明 `CREEM_CHECKOUT_URL`/`CREEM_PRODUCT_ID` 没填，
+`/buy` 会显示「暂未开放购买」页（不再是丑陋的 500）。
 
 > ⚠️ **大陆访问约束**：Cloudflare 的 `*.workers.dev` 默认域名在中国大陆**可能被墙**，买家可能打不开。
 > 本项目当前按指令**使用 CF 默认域名、不绑自定义域名**。若日后需大陆直连，再绑自定义域名
@@ -80,11 +121,12 @@ CREEM_LICENSE_KEY = ""          # 用户购买后填入自己的卡密
 
 把下面这段原样放进你随 EXE 附带的使用说明（README / 说明.txt / 群公告）。买家全程只需一次点击：
 
-1. 运行 WeAuto，若提示「WeAuto 未激活」——屏幕会打印一行 **购买链接**（形如 `https://weauto-license.<你的cf子域>.workers.dev/buy`）。
-2. 浏览器打开该链接 → 跳转 Creem 收银台 → **用支付宝完成付款**（普通用户无需信用卡）。
-3. 付款成功后 Creem 会显示 **License Key（卡密）**，复制它。
-4. 打开 `config.py`，把卡密填进 `CREEM_LICENSE_KEY = "这里"`，保存。
-5. 重启 WeAuto，自动激活，功能解锁。
+1. 运行 WeAuto，若提示「WeAuto 未激活」——会打印一行 **购买链接**（形如 `https://weauto-license.<你的cf子域>.workers.dev/buy`）。
+2. 浏览器打开该链接 → 进入**购买页** → 点「**支付宝付款 · 立即购买**」→ 在 Creem 收银台用**支付宝**完成付款（无需信用卡）。
+3. 付款成功后 Creem 会显示 **License Key（卡密）**（也会发到付款邮箱），复制它。
+4. 打开 WeAuto 网页后台 →「**授权管理**」→ 粘贴卡密 → 点「**激活 / 保存**」。
+5. 点「**重启机器人使授权生效**」，即可正常使用。
+   （旧的手动方式仍可用：直接改 `config.py` 的 `CREEM_LICENSE_KEY` 再重启，但推荐用网页后台。）
 
 > 换机 / 退订前执行 `python cli.py license deactivate` 释放本机激活额度，否则新机器会因超设备数被拦。
 > 激活一般 1–2 台设备，具体看你 Creem 产品设置的 Activation limit。
