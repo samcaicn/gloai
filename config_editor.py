@@ -4709,6 +4709,104 @@ def api_cli_run():
         return jsonify(ok=False, error="执行失败: %s" % e)
 
 
+# ===== WeAuto 许可（卡密 / 付费）管理 API =====
+# 让买家无需手改 config.py 即可：查看授权状态、一键激活、跳转购买、释放本机、开关门禁。
+try:
+    from weauto_license import guard as _guard
+except Exception as _guard_err:
+    app.logger.warning(f"weauto_license 导入失败: {_guard_err}")
+    _guard = None
+
+
+def _license_status():
+    """汇总授权状态（不强制校验，仅供 UI 展示）。"""
+    if not _guard:
+        return {"available": False, "error": "weauto_license 模块不可用"}
+    enabled = _guard.guard_enabled()
+    w = _guard.worker_url()
+    cfg = parse_config()
+    key = (cfg.get("CREEM_LICENSE_KEY", "") or "")
+    cache = _guard._read_cache()
+    now = time.time()
+    activated = bool(cache.get("instance_id") and cache.get("key") == key
+                    and now < cache.get("expire_at", 0))
+    expired = bool(cache.get("expire_at") and now >= cache.get("expire_at", 0))
+    key_hint = ("****" + key[-4:]) if key else ""
+    return {
+        "available": True,
+        "guard_enabled": enabled,
+        "worker_url_set": bool(w),
+        "worker_url": w,
+        "key_set": bool(key),
+        "key_hint": key_hint,
+        "activated": activated,
+        "expired": expired,
+        "expire_at": cache.get("expire_at"),
+    }
+
+
+@app.route('/api/license/status', methods=['GET'])
+@login_required
+def api_license_status():
+    return jsonify(_license_status())
+
+
+@app.route('/api/license/buy_url', methods=['GET'])
+@login_required
+def api_license_buy_url():
+    if not _guard:
+        return jsonify({"url": ""})
+    w = _guard.worker_url()
+    return jsonify({"url": (w + "/buy") if w else ""})
+
+
+@app.route('/api/license/activate', methods=['POST'])
+@login_required
+def api_license_activate():
+    """激活并持久化卡密：写本地缓存 + 写回 config.py（重启仍有效），默认开启门禁。"""
+    if not _guard:
+        return jsonify(ok=False, msg="weauto_license 模块不可用"), 500
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+    except Exception:
+        data = {}
+    key = (data.get("key") or "").strip()
+    if not key:
+        return jsonify(ok=False, msg="请输入卡密（License Key）")
+    ok, msg = _guard.activate(key)
+    if ok:
+        try:
+            update_config({"CREEM_LICENSE_KEY": key, "LICENSE_GUARD_ENABLED": True})
+        except Exception as e:
+            app.logger.warning(f"激活成功但写入 config.py 失败: {e}")
+        return jsonify(ok=True, msg=msg, status=_license_status())
+    return jsonify(ok=False, msg=msg)
+
+
+@app.route('/api/license/deactivate', methods=['POST'])
+@login_required
+def api_license_deactivate():
+    if not _guard:
+        return jsonify(ok=False, msg="weauto_license 模块不可用"), 500
+    ok, msg = _guard.deactivate()
+    return jsonify(ok=ok, msg=msg, status=_license_status())
+
+
+@app.route('/api/license/set_guard', methods=['POST'])
+@login_required
+def api_license_set_guard():
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+    except Exception:
+        data = {}
+    enabled = bool(data.get("enabled", False))
+    try:
+        update_config({"LICENSE_GUARD_ENABLED": enabled})
+    except Exception as e:
+        return jsonify(ok=False, msg=f"写入失败: {e}"), 500
+    return jsonify(ok=True, enabled=enabled, status=_license_status())
+
+
 if __name__ == '__main__':
     # 冻结模式自重启：以 --bot 参数运行时直接进入机器人主循环
     if '--bot' in sys.argv:

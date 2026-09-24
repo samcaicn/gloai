@@ -3683,6 +3683,7 @@
                 <li><a href="#" data-target="section-memory">记忆管理</a></li>
                 <li><a href="#" data-target="section-reminders">定时器与提醒</a></li>
                 <li><a href="#" data-target="section-logs">程序运行日志</a></li>
+                <li><a href="#" data-target="section-license">授权管理</a></li>
             </ul>
             <button type="button" id="toggleAdvancedSidebar" class="advanced-toggle">⚙ 高级设置 ▾</button>
             <ul class="sidebar-advanced" id="sidebarAdvanced" style="display:none;">
@@ -4483,6 +4484,121 @@
                     </div>
                 </div>
             </form>
+
+            <!-- 授权管理（付费 / 卡密）：买家在此查看状态、一键激活、购买、释放本机 -->
+            <div id="section-license" class="content-panel">
+                <h2>授权管理（付费 / 卡密）</h2>
+                <div class="form-group">
+                    <span id="licenseBadge" style="display:inline-block;padding:4px 12px;border-radius:12px;background:#eee;color:#555;font-weight:bold;">检测中…</span>
+                    <span id="licenseExpire" style="margin-left:10px;color:#888;font-size:13px;"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>License Key（卡密）：</label>
+                    <input type="text" id="licenseKeyInput" placeholder="粘贴你在 Creem 购买后获得的卡密" class="api-key-input" style="width:100%;">
+                    <small id="licenseKeyHint" class="api-key-hint"></small>
+                </div>
+
+                <div class="form-group" style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button type="button" id="licenseActivateBtn" style="background:#1976d2;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">激活 / 保存</button>
+                    <button type="button" id="licenseBuyBtn" style="background:#4caf50;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">购买许可证</button>
+                    <button type="button" id="licenseDeactivateBtn" style="background:#9e9e9e;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">释放本机</button>
+                </div>
+
+                <details class="advanced-block">
+                    <summary>高级设置</summary>
+                    <div class="form-group">
+                        <div class="switch-item">
+                            <label>启用授权门禁（正式发布请开启；关闭则不限使用）</label>
+                            <div class="switch"><label class="switch-label"><input type="checkbox" id="licenseGuardToggle"><span class="slider round"></span></label></div>
+                        </div>
+                        <small id="licenseWorkerHint"></small>
+                    </div>
+                </details>
+
+                <div id="licenseMsg" style="margin-top:10px;font-size:14px;"></div>
+            </div>
+
+            <script>
+            (function(){
+                var badge = document.getElementById('licenseBadge');
+                var expireEl = document.getElementById('licenseExpire');
+                var keyInput = document.getElementById('licenseKeyInput');
+                var keyHint = document.getElementById('licenseKeyHint');
+                var msg = document.getElementById('licenseMsg');
+                var guardToggle = document.getElementById('licenseGuardToggle');
+                var workerHint = document.getElementById('licenseWorkerHint');
+
+                function setBadge(state, text){
+                    var colors = {ok:['#e6f4ea','#1e7e34'], bad:['#fdecea','#c62828'], warn:['#fff4e5','#b26a00']};
+                    var c = colors[state] || colors.warn;
+                    badge.style.background = c[0]; badge.style.color = c[1];
+                    badge.textContent = text;
+                }
+                function csrfToken(){ var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.content : ''; }
+                async function postJSON(url, body){
+                    var r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken()}, body: JSON.stringify(body||{})});
+                    return r.json();
+                }
+                async function loadStatus(){
+                    try{
+                        var r = await fetch('/api/license/status');
+                        if(!r.ok) throw new Error('status '+r.status);
+                        var s = await r.json();
+                        if(!s.available){ setBadge('warn','模块不可用'); return; }
+                        if(s.activated){ setBadge('ok','已激活'); expireEl.textContent = s.expire_at ? ('到期: ' + new Date(s.expire_at*1000).toLocaleString()) : ''; }
+                        else if(s.expired){ setBadge('bad','已过期'); }
+                        else { setBadge(s.key_set?'warn':'bad', s.key_set?'已保存但未激活':'未激活'); }
+                        keyHint.textContent = s.key_set ? ('当前卡密: ' + (s.key_hint||'****') + '（重新输入可替换）') : '尚未配置卡密';
+                        guardToggle.checked = !!s.guard_enabled;
+                        workerHint.textContent = s.worker_url_set ? ('授权服务: ' + s.worker_url) : '未配置授权服务地址（CREEM_WORKER_URL 为空，激活/购买将不可用）';
+                        workerHint.style.color = s.worker_url_set ? '#1e7e34' : '#c62828';
+                    }catch(e){ setBadge('warn','加载失败'); console.error(e); }
+                }
+
+                document.getElementById('licenseActivateBtn').addEventListener('click', async function(){
+                    var key = keyInput.value.trim();
+                    if(!key){ msg.style.color='#c62828'; msg.textContent='请先粘贴卡密'; return; }
+                    msg.style.color='#1976d2'; msg.textContent='正在激活…';
+                    try{
+                        var res = await postJSON('/api/license/activate', {key:key});
+                        msg.style.color = res.ok ? '#1e7e34' : '#c62828';
+                        msg.textContent = res.msg || (res.ok?'激活成功':'激活失败');
+                        loadStatus();
+                    }catch(e){ msg.style.color='#c62828'; msg.textContent='请求失败: '+e; }
+                });
+
+                document.getElementById('licenseBuyBtn').addEventListener('click', async function(){
+                    var win = window.open('', '_blank');
+                    try{
+                        var r = await fetch('/api/license/buy_url'); var d = await r.json();
+                        if(d.url){ win.location = d.url; }
+                        else { if(win) win.close(); msg.style.color='#c62828'; msg.textContent='未配置授权服务地址，无法跳转购买'; }
+                    }catch(e){ if(win) win.close(); msg.style.color='#c62828'; msg.textContent='请求失败: '+e; }
+                });
+
+                document.getElementById('licenseDeactivateBtn').addEventListener('click', async function(){
+                    if(!confirm('确定释放本机激活？释放后需重新激活才能使用。')) return;
+                    try{
+                        var res = await postJSON('/api/license/deactivate', {});
+                        msg.style.color = res.ok ? '#1e7e34' : '#c62828';
+                        msg.textContent = res.msg || (res.ok?'已释放':'释放失败');
+                        loadStatus();
+                    }catch(e){ msg.style.color='#c62828'; msg.textContent='请求失败: '+e; }
+                });
+
+                guardToggle.addEventListener('change', async function(){
+                    try{
+                        var res = await postJSON('/api/license/set_guard', {enabled: guardToggle.checked});
+                        if(!res.ok){ msg.style.color='#c62828'; msg.textContent='门禁设置失败: '+(res.msg||''); }
+                    }catch(e){ msg.style.color='#c62828'; msg.textContent='请求失败: '+e; }
+                });
+
+                var navLink = document.querySelector('.sidebar a[data-target="section-license"]');
+                if(navLink){ navLink.addEventListener('click', function(){ setTimeout(loadStatus, 50); }); }
+                loadStatus();
+            })();
+            </script>
         </div>
     </div>
 
