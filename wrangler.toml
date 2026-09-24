@@ -1,0 +1,20 @@
+name = "weauto-license"
+main = "weauto_license/cf_worker.js"
+compatibility_date = "2024-09-23"
+
+# ---------------------------------------------------------------------------
+# 自定义域名：买家在中国大陆打开 https://weauto.safeopc.cn/buy
+#
+# ✅ safeopc.cn 的 NS 已在 Cloudflare（mira.ns.cloudflare.com / jim.ns.cloudflare.com），
+#   zone 由 CF 托管，所以可直接用 [[routes]] custom_domain 绑子域，
+#   无需 Cloudflare for SaaS，也无需迁 NS。
+#   wrangler deploy 会自动建好 weauto.safeopc.cn 的路由与 DNS 记录。
+# ---------------------------------------------------------------------------
+
+[vars]
+CREEM_MODE = "test"                       # 上线切 "prod"
+CREEM_PRODUCT_ID = "prod_xxx"             # Creem 后台 License 产品 ID
+CREEM_CHECKOUT_URL = "https://www.creem.io/checkout/xxxx"  # 后台「复制结账链接」粘贴这里（买家点开即收银台，支持支付宝）
+
+[[routes]]
+custom_domain = "weauto.safeopc.cn"       # safeopc.cn zone 在 Cloudflare，直接绑

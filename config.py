@@ -180,7 +180,7 @@ MAX_SINGLE_MSG_LEN = 800
 #   api.creem.io 的 license 调用。客户端绝不接触 Creem 域名、不持有任何 Creem 密钥。
 # 详见 weauto_license/README.md
 LICENSE_GUARD_ENABLED = False   # 开发期 False；正式发布设 True
-CREEM_WORKER_URL = ""           # 你的 CF Worker 地址，如 https://license.xxx.workers.dev
+CREEM_WORKER_URL = "https://weauto.safeopc.cn"   # 已绑 safeopc.cn（zone 在 Cloudflare），买家入口 https://weauto.safeopc.cn/buy
 CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填这里
 
 

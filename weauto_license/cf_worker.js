@@ -21,13 +21,18 @@
  *   #   [vars]
  *   #   CREEM_MODE = "test"          # 上线切 "prod"
  *   #   CREEM_PRODUCT_ID = "prod_xxx"
+ *   #   CREEM_CHECKOUT_URL = "https://www.creem.io/checkout/xxxx"  # 后台「复制结账链接」粘贴这里
+ *   # routes（必须绑自定义域名 weauto.safeopc.cn，否则 .workers.dev 在中国大陆不可达）：
+ *   #   [[routes]]
+ *   #   custom_domain = "buy.你的域名.com"
  *   wrangler deploy
  *
  * 需注入的变量/密钥：
  *   CREEM_API_KEY        Creem API key（secret）
  *   CREEM_WEBHOOK_SECRET Creem webhook secret（secret）
  *   CREEM_MODE           "test" | "prod"
- *   CREEM_PRODUCT_ID     License 产品 ID（/buy 落地页用）
+ *   CREEM_PRODUCT_ID     License 产品 ID（兜底 /buy 用）
+ *   CREEM_CHECKOUT_URL   后台复制的结账链接（优先，买家点开即收银台；支持支付宝）
  */
 
 const creemBase = (mode) =>
@@ -163,18 +168,35 @@ export default {
       return json({ ok: status >= 200 && status < 300 }, status);
     }
 
-    // ---- 购买落地页 ----
+    // ---- 购买落地页：302 跳转到 Creem 收银台（买家点开即付款，支持支付宝）----
+    // 买家入口的唯一来源就是本端点：客户端未激活时打印的 (WORKER_URL)/buy 即指向这里。
+    // 部署时必须让 WORKER 绑定自定义域名（.workers.dev 在中国大陆不可达）。
     if (p === "/buy" && req.method === "GET") {
-      const redirect =
-        url.searchParams.get("redirect") ||
-        `https://www.creem.io/products/${env.CREEM_PRODUCT_ID}`;
+      // 1) 最稳：开发者在 Creem 后台「复制结账链接」后填入 wrangler.toml 的 CREEM_CHECKOUT_URL
+      if (env.CREEM_CHECKOUT_URL) {
+        return Response.redirect(env.CREEM_CHECKOUT_URL, 302);
+      }
+      // 2) 次选：动态创建 checkout session（带 redirect 回本页激活引导），失败自动降级
+      if (env.CREEM_API_KEY && env.CREEM_PRODUCT_ID) {
+        try {
+          const { status, data } = await creemPost(env, "/checkout", {
+            product_id: env.CREEM_PRODUCT_ID,
+            redirect_url: url.origin + "/buy?done=1",
+          });
+          if (status >= 200 && status < 300 && data.checkout_url) {
+            return Response.redirect(data.checkout_url, 302);
+          }
+        } catch (e) {
+          /* 字段不符则 fallthrough 到兜底 */
+        }
+      }
+      // 3) 兜底：Creem 产品页（买家还需再点一次 Checkout）
+      if (env.CREEM_PRODUCT_ID) {
+        return Response.redirect(
+          `https://www.creem.io/products/${env.CREEM_PRODUCT_ID}`, 302);
+      }
       return new Response(
-        `<!doctype html><meta charset="utf-8"><title>WeAuto 激活</title>` +
-          `<h1>WeAuto 许可证</h1>` +
-          `<p>在 Creem 完成支付后，复制卡密填入 config.py 的 <code>CREEM_LICENSE_KEY</code> 并重启。</p>` +
-          `<a href="${redirect}">前往 Creem 购买</a>`,
-        { headers: { "content-type": "text/html; charset=utf-8" } }
-      );
+        "未配置 CREEM_CHECKOUT_URL 或 CREEM_PRODUCT_ID", { status: 500 });
     }
 
     // ---- Webhook（Creem 支付成功回调）----
