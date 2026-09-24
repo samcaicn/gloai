@@ -4742,6 +4742,7 @@ def _license_status():
         "activated": activated,
         "expired": expired,
         "expire_at": cache.get("expire_at"),
+        "machine_id": _guard.get_machine_id() if _guard else "",
     }
 
 
@@ -4805,6 +4806,49 @@ def api_license_set_guard():
     except Exception as e:
         return jsonify(ok=False, msg=f"写入失败: {e}"), 500
     return jsonify(ok=True, enabled=enabled, status=_license_status())
+
+
+@app.route('/api/license/restart', methods=['POST'])
+@login_required
+@limiter.limit("5 per minute")
+def api_license_restart():
+    """激活/改门禁后重启机器人，使授权配置即时生效（不重启则仍在跑旧配置）。"""
+    global bot_process, last_heartbeat_time, current_bot_pid
+    import time as _t
+    # 1) 先停（尽力）
+    try:
+        pids = set()
+        if current_bot_pid:
+            pids.add(current_bot_pid)
+        if bot_process and bot_process.poll() is None:
+            pids.add(bot_process.pid)
+        for pid in pids:
+            try:
+                stop_bot_process(pid_to_kill=pid)
+            except Exception as _e:
+                app.logger.warning(f"重启时停止 PID {pid} 异常: {_e}")
+    except Exception as e:
+        app.logger.warning(f"重启时停止机器人异常: {e}")
+    _t.sleep(1.5)
+    # 2) 再启动
+    try:
+        if getattr(sys, "frozen", False):
+            cmd = [sys.executable, "--bot"]
+        else:
+            bot_dir = os.path.dirname(os.path.abspath(__file__))
+            bot_py = os.path.join(bot_dir, "bot.py")
+            bot_exe = os.path.join(bot_dir, "bot.exe")
+            if os.path.exists(bot_py):
+                cmd = [sys.executable, bot_py]
+            elif os.path.exists(bot_exe):
+                cmd = [bot_exe]
+            else:
+                return jsonify(ok=False, msg="未找到机器人可执行文件"), 404
+        creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+        subprocess.Popen(cmd, creationflags=creation_flags)
+        return jsonify(ok=True, msg="机器人正在重启（约数秒后生效，重启后授权即生效）")
+    except Exception as e:
+        return jsonify(ok=False, msg=f"重启启动失败: {e}"), 500
 
 
 if __name__ == '__main__':
