@@ -13,7 +13,7 @@
  Creem API  (MoR：买家付款给 Creem，与微信本体无关联)
 ```
 
-- **客户端（EXE）** 只跟**你自己的 Worker 域名**对话，请求 `/activate`、`/validate`、`/deactivate`。
+- **客户端（EXE）** 只跟 **Worker 域名**对话，请求 `/activate`、`/validate`、`/deactivate`。
 - **Worker（CF）** 是唯一持有 Creem 密钥的服务端，代理 `api.creem.io` 的 license 调用，并接收 Creem webhook。
 - 顺带把「微信本体」与「支付」隔离：腾讯看不到你的 Creem 交易。
 
@@ -35,20 +35,20 @@
    - 价格（支持普通用户**支付宝**付款，Creem 已上线）
    - 记下 `Product ID`（`prod_xxx`）
 3. **Settings > API Keys** 生成 API key（`creem_test_...` / `creem_live_...`）。
-4. **Developers > Webhooks** 填 `https://weauto.safeopc.cn/webhook`，记下 Webhook Secret。
+4. **Developers > Webhooks** 填 `https://weauto-license.<你的cf子域>.workers.dev/webhook`（先用占位，deploy 后换成真实地址），记下 Webhook Secret。
 5. 本地测试用 `creem_test_` key + 测试卡 `4242 4242 4242 4242`。
 
-## 部署 Worker
+## 部署 Worker（使用 CF 默认域名，不绑自定义域名）
 
 ```bash
 npm i -g wrangler
-wrangler login            # 用 safeopc.cn 所在的 Cloudflare 账号登录
+wrangler login            # 用你的 Cloudflare 账号登录
 wrangler secret put CREEM_API_KEY         # 粘贴第 3 步的 key
 wrangler secret put CREEM_WEBHOOK_SECRET   # 粘贴第 4 步的 secret
-wrangler deploy           # 自动把 weauto.safeopc.cn 绑到本 Worker 并建 DNS 记录
+wrangler deploy           # 终端会输出实际地址，形如 https://weauto-license.<子域>.workers.dev
 ```
 
-`wrangler.toml` 已配好：
+`wrangler.toml` 已配好（**无 `[[routes]]`，即用 CF 默认 `*.workers.dev` 域名**）：
 
 ```toml
 name = "weauto-license"
@@ -58,22 +58,19 @@ compatibility_date = "2024-09-23"
 CREEM_MODE = "test"                 # 上线改 "prod"
 CREEM_PRODUCT_ID = "prod_xxx"
 CREEM_CHECKOUT_URL = "https://www.creem.io/checkout/xxxx"
-[[routes]]
-custom_domain = "weauto.safeopc.cn" # safeopc.cn 的 NS 已在 Cloudflare，直接绑子域
 ```
 
-> ⚠️ **大陆访问约束**：Cloudflare 的 `*.workers.dev` 默认域名在中国大陆被墙，买家打不开。
-> 必须绑**你自己的自定义域名**。`safeopc.cn` 的 NS 实测已在 Cloudflare
-> （`mira.ns.cloudflare.com` / `jim.ns.cloudflare.com`），zone 由 CF 托管，
-> 故 `wrangler deploy` 会直接用 `[[routes]] custom_domain` 把 `weauto.safeopc.cn`
-> 绑到本 Worker，并自动建好对应 DNS 记录——**无需 Cloudflare for SaaS，也无需迁 NS**。
-> `config.py` 里的 `CREEM_WORKER_URL` 已填 `https://weauto.safeopc.cn`。
+> ⚠️ **大陆访问约束**：Cloudflare 的 `*.workers.dev` 默认域名在中国大陆**可能被墙**，买家可能打不开。
+> 本项目当前按指令**使用 CF 默认域名、不绑自定义域名**。若日后需大陆直连，再绑自定义域名
+> （例如 `weauto.safeopc.cn`，其 NS 已在 Cloudflare，可直接 `[[routes]] custom_domain` 绑）。
+> `config.py` 的 `CREEM_WORKER_URL` 必须填 `wrangler deploy` 后终端显示的
+> `https://weauto-license.<子域>.workers.dev`，不能用占位。
 
 ## 配置 config.py
 
 ```python
 LICENSE_GUARD_ENABLED = True    # 正式发布设 True；开发期 False
-CREEM_WORKER_URL = "https://weauto.safeopc.cn"   # 已绑定的自定义域名，勿用 .workers.dev
+CREEM_WORKER_URL = "https://weauto-license.<你的cf子域>.workers.dev"   # wrangler deploy 后终端显示的地址
 CREEM_LICENSE_KEY = ""          # 用户购买后填入自己的卡密
 ```
 
@@ -83,7 +80,7 @@ CREEM_LICENSE_KEY = ""          # 用户购买后填入自己的卡密
 
 把下面这段原样放进你随 EXE 附带的使用说明（README / 说明.txt / 群公告）。买家全程只需一次点击：
 
-1. 运行 WeAuto，若提示「WeAuto 未激活」——屏幕会打印一行 **购买链接**（形如 `https://weauto.safeopc.cn/buy`）。
+1. 运行 WeAuto，若提示「WeAuto 未激活」——屏幕会打印一行 **购买链接**（形如 `https://weauto-license.<你的cf子域>.workers.dev/buy`）。
 2. 浏览器打开该链接 → 跳转 Creem 收银台 → **用支付宝完成付款**（普通用户无需信用卡）。
 3. 付款成功后 Creem 会显示 **License Key（卡密）**，复制它。
 4. 打开 `config.py`，把卡密填进 `CREEM_LICENSE_KEY = "这里"`，保存。
@@ -91,8 +88,10 @@ CREEM_LICENSE_KEY = ""          # 用户购买后填入自己的卡密
 
 > 换机 / 退订前执行 `python cli.py license deactivate` 释放本机激活额度，否则新机器会因超设备数被拦。
 > 激活一般 1–2 台设备，具体看你 Creem 产品设置的 Activation limit。
+> 若买家在中国大陆打不开 `.workers.dev`，需自备代理；或等日后绑自定义域名走大陆直连。
 
-**你（开发者）对外只暴露一个链接**：`https://weauto.safeopc.cn/buy`。
+**你（开发者）对外只暴露一个链接**：`https://weauto-license.<你的cf子域>.workers.dev/buy`
+（`<你的cf子域>` 为 `wrangler deploy` 后终端显示的实际子域）。
 客户端未激活时也会自动打印它，所以买家无需你手动发——运行即见。
 但建议仍随包附一份上述说明，降低答疑成本。
 

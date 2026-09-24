@@ -22,7 +22,7 @@
  *   #   CREEM_MODE = "test"          # 上线切 "prod"
  *   #   CREEM_PRODUCT_ID = "prod_xxx"
  *   #   CREEM_CHECKOUT_URL = "https://www.creem.io/checkout/xxxx"  # 后台「复制结账链接」粘贴这里
- *   # routes（必须绑自定义域名 weauto.safeopc.cn，否则 .workers.dev 在中国大陆不可达）：
+ *   # routes（可绑自定义域名；不绑则用默认 https://<worker>.<子域>.workers.dev）：
  *   #   [[routes]]
  *   #   custom_domain = "buy.你的域名.com"
  *   wrangler deploy
