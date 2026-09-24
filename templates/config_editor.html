@@ -2159,12 +2159,9 @@
                     activatePanel(targetId);
                     localStorage.setItem('activeConfigTab', targetId);
 
-                    if (targetId === 'section-memory') { // 如果切换到临时记忆tab
-                        pollAndUpdateChatContextUsers(); // 立即更新列表
-                    }
-                    
-                    if (targetId === 'section-core-memory') { // 如果切换到核心记忆tab
-                        pollAndUpdateCoreMemoryFiles(); // 立即更新列表
+                    if (targetId === 'section-memory') { // 如果切换到记忆tab
+                        pollAndUpdateChatContextUsers(); // 立即更新临时记忆列表
+                        pollAndUpdateCoreMemoryFiles();   // 立即更新核心记忆列表
                     }
 
                     if (sidebarElement && sidebarOverlayElement && window.innerWidth <= 768) {
@@ -2182,6 +2179,7 @@
                     const activeMemoryTab = document.querySelector('.sidebar a.active[data-target="section-memory"]');
                     if (activeMemoryTab) {
                         pollAndUpdateChatContextUsers();
+                        pollAndUpdateCoreMemoryFiles();
                     }
                 }
             });
@@ -2976,10 +2974,6 @@
                 const activeMemoryTab = document.querySelector('.sidebar a.active[data-target="section-memory"]');
                 if (activeMemoryTab) {
                     pollAndUpdateChatContextUsers();
-                }
-                // 如果核心记忆tab是激活的，也立即轮询一次
-                const activeCoreMemoryTab = document.querySelector('.sidebar a.active[data-target="section-core-memory"]');
-                if (activeCoreMemoryTab) {
                     pollAndUpdateCoreMemoryFiles();
                 }
             }
@@ -3007,8 +3001,8 @@
         
         // 更新核心记忆文件列表显示
         function updateCoreMemoryFileListOnPage(filesFromServer) {
-            const listContainer = document.querySelector('#section-core-memory .core-memory-file-list');
-            const noDataDiv = document.querySelector('#section-core-memory .no-core-memory-data');
+            const listContainer = document.querySelector('#section-memory .core-memory-file-list');
+            const noDataDiv = document.querySelector('#section-memory .no-core-memory-data');
             
             if (!listContainer || !noDataDiv) {
                 console.error('核心记忆文件列表容器或"无数据"提示元素未找到!');
@@ -3051,7 +3045,7 @@
             if (document.hidden) {
                 return;
             }
-            const activeCoreMemoryTab = document.querySelector('.sidebar a.active[data-target="section-core-memory"]');
+            const activeCoreMemoryTab = document.querySelector('.sidebar a.active[data-target="section-memory"]');
             if (activeCoreMemoryTab) {
                 const files = await fetchCoreMemoryFilesFromServer();
                 if (files !== null) {
@@ -3065,7 +3059,7 @@
             if (coreMemoryPollInterval) {
                 clearInterval(coreMemoryPollInterval);
             }
-            const activeCoreMemoryTabInitial = document.querySelector('.sidebar a.active[data-target="section-core-memory"]');
+            const activeCoreMemoryTabInitial = document.querySelector('.sidebar a.active[data-target="section-memory"]');
             if (activeCoreMemoryTabInitial) {
                 pollAndUpdateCoreMemoryFiles();
             }
@@ -3635,8 +3629,6 @@
             <button type="submit" form="configForm" id="saveConfigButton" class="nav-button" style="background-color: #4CAF50;">保存配置</button>
                         <a href="{{ url_for('quick_start') }}" class="nav-button" style="background-color: #ff9800;">快速上手</a>
             <a href="{{ url_for('style_lab') }}" class="nav-button">风格模仿</a>
-            <a href="{{ url_for('mcp_page') }}" class="nav-button" style="background-color: #9C27B0;">MCP</a>
-            <a href="{{ url_for('cli_page') }}" class="nav-button" style="background-color: #009688;">CLI</a>
             <button type="button" id="importButton" class="nav-button" style="background-color: #2196F3;">导入配置</button>      
             <a href="{{ url_for('help_page') }}" class="nav-button" style="background-color: #03A9F4;">帮助文档</a>
            <button id="oneKeyDiagnosticButton" class="nav-button" style="background-color:#f44336;">报错一键检测</button>
@@ -3667,8 +3659,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                 <li><a href="#" data-target="section-active-emoji">主动表情包配置</a></li>
                 <li><a href="#" data-target="section-group-chat">群聊消息接收</a></li>
                 <li><a href="#" data-target="section-reply-interval">回复间隔配置</a></li>
-                <li><a href="#" data-target="section-memory">临时记忆配置</a></li>
-                <li><a href="#" data-target="section-core-memory">核心记忆管理</a></li>
+                <li><a href="#" data-target="section-memory">记忆管理</a></li>
                 <li><a href="#" data-target="section-active-message">主动消息配置</a></li>
                 <li><a href="#" data-target="section-reminders">定时器与提醒</a></li>
                 <li><a href="#" data-target="section-text-commands">指令设置</a></li>
@@ -4154,20 +4145,25 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                 </div>
 
                 <div id="section-memory" class="content-panel">
-                    <h2>临时记忆配置</h2>
+                    <h2>记忆管理</h2>
+                    <small>这里控制 AI 能记住多少关于你和好友的对话信息。绝大多数用户保持默认即可，无需改动。</small>
+
+                    <div class="form-group">
+                        <label>AI 记忆深度（对话轮数）</label>
+                        <input type="number" step="1" name="MAX_GROUPS" value="{{ config.MAX_GROUPS }}">
+                        <small>每次对话时 AI 会参考的最近聊天轮数。数值越大记得越清楚，但更耗费额度。</small>
+                    </div>
+
                     <div class="form-group">
                         <div class="switch-item">
-                            <label>启用敏感词清除功能 (遇到敏感词时自动清除Memory_Temp文件和聊天上下文)</label>
-                            <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_SENSITIVE_CONTENT_CLEARING" {% if config.ENABLE_SENSITIVE_CONTENT_CLEARING %}checked{% endif %}><span class="slider round"></span></label></div>
+                            <label>启用长期记忆（让 AI 记住重要信息）</label>
+                            <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_MEMORY" {% if config.ENABLE_MEMORY %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
+                        <small>开启后，AI 会自动把聊天里的重要信息整理成长期记忆，跨多次对话都记得。</small>
                     </div>
-                    <div class="form-group">
-                        <label>用户与AI的对话上下文轮数 (保存在 <code>chat_contexts.json</code>):</label>
-                        <input type="number" step="1" name="MAX_GROUPS" value="{{ config.MAX_GROUPS }}">
-                        <small>设置每次上传给AI的历史对话轮数，数值越大，AI记忆的上下文越多，但可能增加消耗。</small>
-                    </div>
+
                     <div class="form-group" style="margin-top: 30px;">
-                        <h3>聊天上下文管理 (chat_contexts.json)</h3>
+                        <h3>清除某人聊天记录</h3>
                         <ul class="context-user-list" {% if not chat_context_users %}style="display: none;"{% endif %}>
                             {% if chat_context_users %}
                                 {% for user in chat_context_users %}
@@ -4175,61 +4171,58 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                                     <span>{{ user }}</span>
                                     <div class="context-user-actions">
                                         <button type="button" onclick="editUserChatContext('{{ user }}')">编辑</button>
-                                        <button type="button" onclick="clearUserChatContext('{{ user }}')">清除临时记忆</button>
+                                        <button type="button" onclick="clearUserChatContext('{{ user }}')">清除</button>
                                     </div>
                                 </li>
                                 {% endfor %}
                             {% endif %}
                         </ul>
-                        <p class="no-context-data" style="font-size: 14px; color: #777;" {% if chat_context_users %}style="display: none;"{% else %}style="display: block;"{% endif %}>暂无聊天上下文记录。</p>
-                        <small>此处的"临时记忆"指的是保存在 <code>chat_contexts.json</code> 文件中的短期对话历史，用于维持对话的连贯性。清除后，与该用户的下一次对话将不包含之前的短期上下文，但不会影响核心记忆。</small>
-                    </div>                 
-                </div>
+                        <p class="no-context-data" style="font-size: 14px; color: #777;" {% if chat_context_users %}style="display: none;"{% else %}style="display: block;"{% endif %}>暂无聊天记录。</p>
+                        <small>当 AI 回复异常（如乱码、重复、答非所问）时，可清除对应好友的聊天记录让其"重新认识"你。这不影响上面的长期记忆。</small>
+                    </div>
 
-                <div id="section-core-memory" class="content-panel">
-                    <h2>核心记忆管理</h2>
-                    <div class="form-group">
-                        <div class="switch-item">
-                            <label>启用记忆记录功能</label>
-                            <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_MEMORY" {% if config.ENABLE_MEMORY %}checked{% endif %}><span class="slider round"></span></label></div>
+                    <details class="advanced-block" style="margin-top: 30px;">
+                        <summary>高级设置</summary>
+                        <div class="form-group">
+                            <div class="switch-item">
+                                <label>允许 AI 参考已记住的信息</label>
+                                <div class="switch"><label class="switch-label"><input type="checkbox" name="UPLOAD_MEMORY_TO_AI" {% if config.UPLOAD_MEMORY_TO_AI %}checked{% endif %}><span class="slider round"></span></label></div>
+                            </div>
+                            <small>关闭后 AI 不会读取任何长期记忆（仅影响长期记忆，不影响上方"记忆深度"）。</small>
                         </div>
-                        <small>启用后，系统会自动将聊天记录总结为记忆片段，用于长期保存重要信息。</small>
-                    </div>
-                    <div class="form-group">
-                        <div class="switch-item">
-                            <label>允许AI读取记忆片段</label>
-                            <div class="switch"><label class="switch-label"><input type="checkbox" name="UPLOAD_MEMORY_TO_AI" {% if config.UPLOAD_MEMORY_TO_AI %}checked{% endif %}><span class="slider round"></span></label></div>
+                        <div class="form-group">
+                            <div class="switch-item">
+                                <label>记忆独立存档（不写入人设文件）</label>
+                                <div class="switch"><label class="switch-label"><input type="checkbox" name="SAVE_MEMORY_TO_SEPARATE_FILE" {% if config.SAVE_MEMORY_TO_SEPARATE_FILE %}checked{% endif %}><span class="slider round"></span></label></div>
+                            </div>
                         </div>
-                        <small>启用后，AI将可以读取临时记忆和核心记忆中的记忆片段。关闭后，AI将无法读取任何记忆片段。</small>
-                    </div>
-                    <div class="form-group">
-                        <div class="switch-item">
-                            <label>将记忆片段保存到独立文件而非Prompt文件（保存在CoreMemory文件夹下）</label>
-                            <div class="switch"><label class="switch-label"><input type="checkbox" name="SAVE_MEMORY_TO_SEPARATE_FILE" {% if config.SAVE_MEMORY_TO_SEPARATE_FILE %}checked{% endif %}><span class="slider round"></span></label></div>
+                        <div class="form-group">
+                            <label>自动总结触发条数</label>
+                            <input type="number" step="1" name="MAX_MESSAGE_LOG_ENTRIES" value="{{ config.MAX_MESSAGE_LOG_ENTRIES }}">
+                            <small>聊天达到这么多条后，自动把内容总结进长期记忆。</small>
                         </div>
-                        <small>启用后，记忆片段将保存到CoreMemory目录下的独立JSON文件中，而不是直接写入Prompt文件。无论采用何种保存方式，AI都会读取到所有记忆片段。</small>
-                    </div>
-                    <div class="form-group">
-                        <label>触发聊天记录总结进记忆的阈值数量 (条):</label>
-                        <input type="number" step="1" name="MAX_MESSAGE_LOG_ENTRIES" value="{{ config.MAX_MESSAGE_LOG_ENTRIES }}">
-                        <small>当聊天记录达到此数量时，系统会自动将聊天记录总结为记忆片段。</small>
-                    </div>
-                    <div class="form-group">
-                        <label>储存在记忆中的记忆片段的最大数量 (条):</label>
-                        <input type="number" step="1" name="MAX_MEMORY_NUMBER" value="{{ config.MAX_MEMORY_NUMBER }}">
-                        <small>当记忆片段数量超过此限制时，系统会根据时间和重要度自动清理旧的记忆片段。</small>
-                    </div>
-                    <!-- 隐藏字段，保留目录配置但不显示给用户 -->
+                        <div class="form-group">
+                            <label>最多保留记忆条数</label>
+                            <input type="number" step="1" name="MAX_MEMORY_NUMBER" value="{{ config.MAX_MEMORY_NUMBER }}">
+                            <small>超过后系统按时间+重要度自动清理旧记忆。</small>
+                        </div>
+                        <div class="form-group">
+                            <div class="switch-item">
+                                <label>敏感词时自动清除聊天记录</label>
+                                <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_SENSITIVE_CONTENT_CLEARING" {% if config.ENABLE_SENSITIVE_CONTENT_CLEARING %}checked{% endif %}><span class="slider round"></span></label></div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 30px;">
+                            <h3>记忆档案管理</h3>
+                            <ul class="core-memory-file-list" style="display: none;">
+                            </ul>
+                            <p class="no-core-memory-data" style="font-size: 14px; color: #777; display: block;">暂无长期记忆档案。</p>
+                            <small>每个好友对应一份长期记忆档案，可手动编辑或删除。</small>
+                        </div>
+                    </details>
+
                     <input type="hidden" name="CORE_MEMORY_DIR" value="{{ config.CORE_MEMORY_DIR }}">
                     <input type="hidden" name="MEMORY_TEMP_DIR" value="{{ config.MEMORY_TEMP_DIR }}">
-                    
-                    <div class="form-group" style="margin-top: 30px;">
-                        <h3>核心记忆文件管理</h3>
-                        <ul class="core-memory-file-list" style="display: none;">
-                        </ul>
-                        <p class="no-core-memory-data" style="font-size: 14px; color: #777; display: block;">暂无核心记忆文件。</p>
-                        <small>此处显示所有核心记忆文件。每个文件对应一个用户的核心记忆，包含时间、记忆摘要和重要度信息。点击"编辑"可以手动编辑记忆片段内容。</small>
-                    </div>
                 </div>
 
                 <div id="section-active-message" class="content-panel">
