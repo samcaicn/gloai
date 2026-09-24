@@ -17,3 +17,10 @@ PRODUCT_NAME  = "WeAuto 专业版"
 PRODUCT_PRICE = "¥99"
 PRODUCT_DESC  = "一次购买，解锁全部功能"
 SUPPORT_EMAIL = ""                        # 售后邮箱，留空则不显示
+
+# ---- 自定义域名（必须绑定）----
+# 实测：*.workers.dev 在中国大陆不可达（DNS 被污染到 Facebook 段 IP，代理亦 502），
+# 导致买家打不开购买页、且首次激活无法联网。绑定自有域名后国内可直连。
+[[routes]]
+pattern = "weauto.safeopc.cn"
+custom_domain = true
