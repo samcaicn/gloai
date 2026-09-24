@@ -170,6 +170,42 @@
             font-weight: 500;
             border-left-color: #4caf50;
         }
+        /* 高级设置折叠按钮 */
+        .advanced-toggle {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 11px 20px;
+            background: #fafafa;
+            border: none;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .advanced-toggle:hover { background: #f0f0f0; color: #333; }
+        .sidebar-advanced { background: #fcfcfc; }
+        .sidebar-advanced li a { color: #777; font-size: 13.5px; padding: 9px 20px 9px 28px; }
+        .sidebar-advanced li a.active { background-color: #fff3e0; color: #ef6c00; border-left-color: #ff9800; }
+
+        /* 区块内高级参数折叠 */
+        details.advanced-block {
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 4px 14px 10px 14px;
+            background: #fafafa;
+            margin-top: 14px;
+        }
+        details.advanced-block > summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #555;
+            padding: 8px 0;
+            outline: none;
+            user-select: none;
+        }
+        details.advanced-block > summary:hover { color: #333; }
 
         .content-area {
             flex-grow: 1;
@@ -808,8 +844,8 @@
             }
         }
         @media (max-width: 480px) {
-            #oneKeyDiagnosticButton {
-                display: none !important;
+            .advanced-toggle {
+                display: block;
             }
         }
         .file-list {
@@ -2156,6 +2192,7 @@
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
                     const targetId = this.dataset.target;
+                    if (!targetId) return; // 一键检测报错等无目标链接直接返回
                     activatePanel(targetId);
                     localStorage.setItem('activeConfigTab', targetId);
 
@@ -3631,43 +3668,61 @@
             <a href="{{ url_for('style_lab') }}" class="nav-button">风格模仿</a>
             <button type="button" id="importButton" class="nav-button" style="background-color: #2196F3;">导入配置</button>      
             <a href="{{ url_for('help_page') }}" class="nav-button" style="background-color: #03A9F4;">帮助文档</a>
-           <button id="oneKeyDiagnosticButton" class="nav-button" style="background-color:#f44336;">报错一键检测</button>
-<script>
-document.getElementById('oneKeyDiagnosticButton').addEventListener('click', async function() {
-    try {
-        const response = await fetch('/run_one_key_detection');
-        if (!response.ok) throw new Error('检测失败，请稍后重试。');
-        const result = await response.text();
-        console.log(result || '检测工具启动中');
-    } catch (error) {
-        console.error('检测出现错误:', error);
-    }
-});
-</script>
         </div>
     </div>
     <div id="sidebarOverlay"></div>
 
     <div class="main-container">
         <nav class="sidebar">
-            <ul>
+            <ul class="sidebar-common">
                 <li><a href="#" data-target="section-user-list">用户列表</a></li>
                 <li><a href="#" data-target="section-prompt-management">Prompt管理</a></li>
                 <li><a href="#" data-target="section-chat-model">Chat 模型配置</a></li>
                 <li><a href="#" data-target="section-image-recognition">图片/表情包识别</a></li>
-                <li><a href="#" data-target="section-online-search">联网搜索配置</a></li>
-                <li><a href="#" data-target="section-active-emoji">主动表情包配置</a></li>
                 <li><a href="#" data-target="section-group-chat">群聊消息接收</a></li>
-                <li><a href="#" data-target="section-reply-interval">回复间隔配置</a></li>
                 <li><a href="#" data-target="section-memory">记忆管理</a></li>
-                <li><a href="#" data-target="section-active-message">主动消息配置</a></li>
                 <li><a href="#" data-target="section-reminders">定时器与提醒</a></li>
-                <li><a href="#" data-target="section-text-commands">指令设置</a></li>
-                <li><a href="#" data-target="section-scheduled-restart">定时重启Bot配置</a></li>
-                <li><a href="#" data-target="section-fun-lab">趣味实验室</a></li>
-                <li><a href="#" data-target="section-web-editor">网页编辑器配置</a></li>
                 <li><a href="#" data-target="section-logs">程序运行日志</a></li>
             </ul>
+            <button type="button" id="toggleAdvancedSidebar" class="advanced-toggle">⚙ 高级设置 ▾</button>
+            <ul class="sidebar-advanced" id="sidebarAdvanced" style="display:none;">
+                <li><a href="#" data-target="section-active-emoji">主动表情包配置</a></li>
+                <li><a href="#" data-target="section-online-search">联网搜索配置</a></li>
+                <li><a href="#" data-target="section-active-message">主动消息配置</a></li>
+                <li><a href="#" data-target="section-text-commands">指令设置</a></li>
+                <li><a href="#" data-target="section-reply-interval">回复间隔配置</a></li>
+                <li><a href="#" data-target="section-fun-lab">趣味实验室</a></li>
+                <li><a href="#" data-target="section-scheduled-restart">定时重启Bot配置</a></li>
+                <li><a href="#" data-target="section-web-editor">网页编辑器配置</a></li>
+                <li><a href="#" id="oneKeyDetectLink" style="color:#f44336;">🔧 一键检测报错</a></li>
+            </ul>
+            <script>
+                (function(){
+                    var btn = document.getElementById('toggleAdvancedSidebar');
+                    var adv = document.getElementById('sidebarAdvanced');
+                    if (btn && adv) {
+                        btn.addEventListener('click', function(){
+                            var hidden = adv.style.display === 'none';
+                            adv.style.display = hidden ? 'block' : 'none';
+                            btn.textContent = hidden ? '⚙ 高级设置 ▴' : '⚙ 高级设置 ▾';
+                        });
+                    }
+                    var detect = document.getElementById('oneKeyDetectLink');
+                    if (detect) {
+                        detect.addEventListener('click', async function(e){
+                            e.preventDefault();
+                            try {
+                                const response = await fetch('/run_one_key_detection');
+                                if (!response.ok) throw new Error('检测失败，请稍后重试。');
+                                const result = await response.text();
+                                console.log(result || '检测工具启动中');
+                            } catch (error) {
+                                console.error('检测出现错误:', error);
+                            }
+                        });
+                    }
+                })();
+            </script>
         </nav>
         
 
@@ -3872,6 +3927,8 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                         <input type="text" placeholder="sk-xxxxxxxxxx" name="DEEPSEEK_API_KEY" value="{{ config.DEEPSEEK_API_KEY }}" class="api-key-input">
                         <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in config.DEEPSEEK_API_KEY else "" }}</small>
                     </div>
+                    <details class="advanced-block">
+                        <summary>高级参数（一般无需改动）</summary>
                     <div class="form-group">
                         <label>回复最大Token:</label>
                         <input type="number" step="100" name="MAX_TOKEN" value="{{ config.MAX_TOKEN }}">
@@ -3880,7 +3937,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                         <label>温度 (0-2):</label>
                         <input type="number" step="0.1" name="TEMPERATURE" value="{{ config.TEMPERATURE }}">
                         <small>如果回复出现乱码请将温度调到1.1或0.7以下。温度越高，ai思维越发散，但是温度过高可能导致ai胡言乱语。</small>
-                    </div>             
+                    </div>
                     <div class="form-group">
                         <div class="switch-item">
                             <label>强制移除消息中的括号及其内容</label>
@@ -3949,6 +4006,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                             <small>启用后，记忆总结和重要性评估也将使用辅助模型，进一步降低主模型调用成本，但可能降低总结质量。</small>
                         </div>
                     </div>
+                    </details>
                 </div>
 
                 <div id="section-image-recognition" class="content-panel">
@@ -3965,6 +4023,8 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                             </div>
                         </div>
                     </div>
+                    <details class="advanced-block">
+                        <summary>识别服务商与模型（默认即可）</summary>
                     <div class="form-group">
                         <label>图像识别API服务商：</label>
                         <select id="imageApiProvider" name="temp_IMAGE_BASE_URL" title="图像识别API服务商">
@@ -3983,16 +4043,20 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                         <input type="text" id="customImageModel" class="custom-input" placeholder="请输入自定义模型名称" {% if config.MOONSHOT_MODEL not in ['moonshot-v1-128k-vision-preview','moonshot-v1-32k-vision-preview','moonshot-v1-8k-vision-preview','gpt-4o'] %} value="{{ config.MOONSHOT_MODEL }}" style="display:block;" {% endif %}>
                         <input type="hidden" id="finalImageModel" name="MOONSHOT_MODEL" value="{{ config.MOONSHOT_MODEL }}">
                     </div>
+                    </details>
                     <div class="form-group">
                         <label>API Key:</label>
                         <input type="text" placeholder="sk-xxxxxxxxxx" name="MOONSHOT_API_KEY" value="{{ config.MOONSHOT_API_KEY }}" class="api-key-input">
                         <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in config.MOONSHOT_API_KEY else "" }}</small>
                     </div>
+                    <details class="advanced-block">
+                        <summary>温度参数（默认即可）</summary>
                     <div class="form-group">
                         <label>温度 (0-1):</label>
                         <input type="number" step="0.1" name="MOONSHOT_TEMPERATURE" value="{{ config.MOONSHOT_TEMPERATURE }}">
                         <small>温度越高，ai思维越发散，但是温度过高可能导致ai胡言乱语。</small>
                     </div>
+                    </details>
                 </div>
 
                 <div id="section-online-search" class="content-panel">
@@ -4060,10 +4124,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                         <label>主动表情包触发概率(0-100):</label>
                         <input type="number" step="1" name="EMOJI_SENDING_PROBABILITY" value="{{ config.EMOJI_SENDING_PROBABILITY }}">
                     </div>
-                    <div class="form-group">
-                        <label>表情包存放目录:</label>
-                        <input type="text" name="EMOJI_DIR" value="{{ config.EMOJI_DIR }}">
-                    </div>
+                    <input type="hidden" name="EMOJI_DIR" value="{{ config.EMOJI_DIR }}">
                 </div>
 
                 <div id="section-group-chat" class="content-panel">
@@ -4102,6 +4163,8 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                         </div>
                     </div>
 
+                    <details class="advanced-block">
+                        <summary>高级回复控制</summary>
                     <div class="form-group">
                         <label for="groupChatResponseProbabilityInput">群聊回复概率 (0-100):</label>
                         <input type="number" id="groupChatResponseProbabilityInput" name="GROUP_CHAT_RESPONSE_PROBABILITY"
@@ -4116,6 +4179,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                         </div>
                         <small>启用后，如果群聊消息触发了关键词回复，将无视上方设置的"群聊回复概率"，必定进行回复。此选项优先于"群聊回复概率"。</small>
                     </div>
+                    </details>
                 </div>
 
                 <div id="section-reply-interval" class="content-panel">
@@ -4283,6 +4347,8 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                     定时消息将储存在目录下的<code>recurring_reminders.json</code> 文件中并在程序运行时调用。<br>
                     推荐使用云部署的方式来运行本程序，这样可以保持程序 24h 运行以获得更好的体验（部署教程请参见随附文档）。
                     </p>
+                    <details class="advanced-block">
+                        <summary>提醒方式高级选项</summary>
                     <div class="form-group">
                         <div class="switch-container">
                             <div class="switch-item">
@@ -4295,6 +4361,7 @@ document.getElementById('oneKeyDiagnosticButton').addEventListener('click', asyn
                             </div>
                         </div>
                     </div>
+                    </details>
                     <h3>提醒管理 (修改后重启Bot生效)</h3>
                     <div class="form-group">
                         <label>配置定时提醒：</label>
