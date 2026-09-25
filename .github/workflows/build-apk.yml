@@ -51,6 +51,8 @@ jobs:
         run: |
           set -e
           rm -rf /tmp/wrapgen && mkdir -p /tmp/wrapgen && cd /tmp/wrapgen
+          # gradle 要求目录里存在 settings 文件，否则报 "does not contain a Gradle build"
+          printf "rootProject.name = 'wrapgen'\n" > settings.gradle
           gradle wrapper --gradle-version 8.4 --distribution-type bin
           mkdir -p "$GITHUB_WORKSPACE/android/gradle/wrapper"
           cp gradlew gradlew.bat "$GITHUB_WORKSPACE/android/"
