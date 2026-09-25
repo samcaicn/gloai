@@ -43,5 +43,11 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- 必须声明：Flutter Android v2 embedding。
+             缺失会导致 flutter build 报 "deleted Android v1 embedding"。 -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
     </application>
 </manifest>
