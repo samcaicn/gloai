@@ -41,7 +41,11 @@ android {
 
     buildTypes {
         release {
+            // ⚠️ AGP 要求 shrinkResources 必须搭配 minifyEnabled=true，
+            // 否则配置期直接报 "Removing unused resources requires unused code shrinking"。
+            // 本工程不做代码/资源裁剪（Dart 已 AOT，Java 层极薄），两者都保持 false。
             isMinifyEnabled = false
+            isShrinkResources = false
             val ks = System.getenv("KEYSTORE_FILE")
             signingConfig = if (!ks.isNullOrBlank() && file(ks).exists()) {
                 signingConfigs.getByName("release")
