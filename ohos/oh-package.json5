@@ -1,0 +1,12 @@
+{
+  "name": "camhub_store",
+  "version": "1.0.0",
+  "description": "店长自查 APK（OpenHarmony / HarmonyOS NEXT 适配）",
+  "main": "",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:./flutter_ohos/har/flutter.har"
+  },
+  "devDependencies": {}
+}

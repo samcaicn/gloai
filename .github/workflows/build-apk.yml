@@ -1,0 +1,118 @@
+name: Build Flutter APK (di)
+
+# 说明：本 workflow 专为「店长自查」Flutter 工程（facemarkcloud/android）构建 release APK。
+# 使用仓库已配置的 Android keystore 密钥：ANDROID_KEYSTORE / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_PASSWORD。
+# key alias 不单独存密钥，构建时用 keytool 从 keystore 里自动探测，避免硬编码别名导致签名失败。
+on:
+  push:
+    branches: ["di"]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build signed release APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.24.5"
+          cache: true
+
+      - name: Accept Android SDK licenses
+        continue-on-error: true
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+
+      # Flutter 构建必须走 gradlew；本工程不提交 wrapper（含二进制 jar），在 CI 现场生成。
+      - name: Install Gradle 8.4
+        run: |
+          set -e
+          curl -sSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.4-bin.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt/gradle
+          echo "/opt/gradle/gradle-8.4/bin" >> "$GITHUB_PATH"
+
+      - name: Generate Gradle wrapper
+        working-directory: android
+        run: gradle wrapper --gradle-version 8.4 --distribution-type bin
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Decode signing keystore
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -e
+          mkdir -p "$RUNNER_TEMP/ks"
+          printf '%s' "$ANDROID_KEYSTORE" | base64 -d > "$RUNNER_TEMP/ks/keystore.jks"
+          ls -l "$RUNNER_TEMP/ks/keystore.jks"
+          keytool -list -keystore "$RUNNER_TEMP/ks/keystore.jks" -storepass "$KS_PASS" > /dev/null
+          echo "keystore 解码并校验通过"
+
+      - name: Detect key alias
+        id: alias
+        env:
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -e
+          ALIAS=$(keytool -list -v -keystore "$RUNNER_TEMP/ks/keystore.jks" -storepass "$KS_PASS" 2>/dev/null \
+            | grep -i "Alias name" | head -1 | sed 's/.*: //' | tr -d '\r')
+          if [ -z "$ALIAS" ]; then echo "未在 keystore 中找到私钥别名"; exit 1; fi
+          echo "探测到 key alias: $ALIAS"
+          echo "alias=$ALIAS" >> "$GITHUB_OUTPUT"
+
+      - name: Build release APK
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/ks/keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ steps.alias.outputs.alias }}
+        run: flutter build apk --release
+
+      - name: Collect APK
+        run: |
+          set -e
+          mkdir -p dist
+          APK=$(find build/app/outputs -name "app-release.apk" | head -1)
+          if [ -z "$APK" ]; then echo "未找到 release APK"; find build -name "*.apk" || true; exit 1; fi
+          cp "$APK" dist/camhub-store-release.apk
+          ls -l dist
+
+      - name: Verify signature
+        run: |
+          set -e
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs dist/camhub-store-release.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: camhub-store-apk
+          path: dist/camhub-store-release.apk
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-di-${{ github.sha }}
+          name: 店长自查 APK (di)
+          body: |
+            Branch `di` 自动构建的 release APK。
+            Commit: ${{ github.sha }}
+            签名：使用仓库已配置的 ANDROID_KEYSTORE。
+          files: dist/camhub-store-release.apk
+          fail_on_unmatched_files: true
