@@ -44,9 +44,20 @@ jobs:
           sudo unzip -q /tmp/gradle.zip -d /opt/gradle
           echo "/opt/gradle/gradle-8.4/bin" >> "$GITHUB_PATH"
 
+      # ⚠️ 不能在 android/ 里跑 `gradle wrapper`：settings.gradle.kts 第 4 行要读
+      # local.properties，而它得等 flutter 才生成，此时必然 No such file。
+      # 所以在空目录生成 wrapper，再拷进 android/。
       - name: Generate Gradle wrapper
-        working-directory: android
-        run: gradle wrapper --gradle-version 8.4 --distribution-type bin
+        run: |
+          set -e
+          rm -rf /tmp/wrapgen && mkdir -p /tmp/wrapgen && cd /tmp/wrapgen
+          gradle wrapper --gradle-version 8.4 --distribution-type bin
+          mkdir -p "$GITHUB_WORKSPACE/android/gradle/wrapper"
+          cp gradlew gradlew.bat "$GITHUB_WORKSPACE/android/"
+          cp gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties \
+             "$GITHUB_WORKSPACE/android/gradle/wrapper/"
+          chmod +x "$GITHUB_WORKSPACE/android/gradlew"
+          ls -l "$GITHUB_WORKSPACE/android/gradlew" "$GITHUB_WORKSPACE/android/gradle/wrapper/"
 
       - name: Flutter pub get
         run: flutter pub get
