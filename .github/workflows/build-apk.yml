@@ -61,6 +61,10 @@ jobs:
           chmod +x "$GITHUB_WORKSPACE/android/gradlew"
           ls -l "$GITHUB_WORKSPACE/android/gradlew" "$GITHUB_WORKSPACE/android/gradle/wrapper/"
 
+      # 清掉 wrapper 步骤留下的 daemon，避免与后面 flutter build 的 gradle 抢文件监听
+      - name: Stop Gradle daemons
+        run: gradle --stop || true
+
       - name: Flutter pub get
         run: flutter pub get
 
