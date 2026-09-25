@@ -82,6 +82,12 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import os
 from wechat_compat import WeChat  # 微信 4.x 引擎兼容层（替代旧版 UIA 自动化方案）
+
+# 固定转发引擎（零 bot 依赖；导入失败仅禁用本功能，不影响主体）
+try:
+    import forward_hub
+except Exception:  # noqa: BLE001
+    forward_hub = None
 os.environ["PROJECT_NAME"] = 'WeAuto'
 
 # 生成用户昵称列表和prompt映射字典
@@ -662,16 +668,32 @@ def _is_base_url_untrusted(base_url: str) -> bool:
     url_lower = str(base_url).lower()
     return any((s in url_lower) for s in bl)
 
+# ---- LLM 统一走自有 Worker AI 代理（反破解核心）----
+# 门禁启用时：base_url = <worker>/ai/v1、api_key = 卡密（Worker 验证后注入真实
+# upstream key）→ 反编译/patch 掉本地门禁也白嫖不了 AI：Worker 对无卡密请求直接 401。
+# 开发态（门禁关）回落到 config.py 的本地配置，行为与旧版一致。
+def _ai_proxy_opts():
+    try:
+        from weauto_license.guard import ai_endpoint
+        return ai_endpoint() or {}
+    except Exception:
+        return {}
+
+_AI_PROXY = _ai_proxy_opts()
+_AI_HEADERS = _AI_PROXY.get("headers") or None
+
 # 初始化OpenAI客户端
 client = OpenAI(
-    api_key=DEEPSEEK_API_KEY,
-    base_url=DEEPSEEK_BASE_URL
+    api_key=_AI_PROXY.get("api_key") or DEEPSEEK_API_KEY,
+    base_url=_AI_PROXY.get("base_url") or DEEPSEEK_BASE_URL,
+    default_headers=_AI_HEADERS,
 )
 
 # 启动期显式告警：占位/无效 key 会导致所有 AI 调用 401、bot 只能回固定话术。
 # 以前这个错很隐蔽（被重试逻辑吞掉，表现为"没反应"），这里直接打 CRITICAL 让问题一眼可见。
+# （走 Worker 代理时本地 key 不参与鉴权，无需告警）
 _K = (DEEPSEEK_API_KEY or "").strip()
-if not _K or "dummy" in _K.lower() or "placeholder" in _K.lower() or _K == "sk-":
+if not _AI_PROXY and (not _K or "dummy" in _K.lower() or "placeholder" in _K.lower() or _K == "sk-"):
     logger.critical(
         "⚠️ DEEPSEEK_API_KEY 仍是占位/无效值（config.py），AI 回复将全部失败并退回固定话术。"
         "请在 config.py:18 填入真实 key 后重启 bot。"
@@ -682,8 +704,9 @@ online_client: Optional[OpenAI] = None
 if ENABLE_ONLINE_API:
     try:
         online_client = OpenAI(
-            api_key=ONLINE_API_KEY,
-            base_url=ONLINE_BASE_URL
+            api_key=_AI_PROXY.get("api_key") or ONLINE_API_KEY,
+            base_url=_AI_PROXY.get("base_url") or ONLINE_BASE_URL,
+            default_headers=_AI_HEADERS,
         )
         logger.info("联网搜索 API 客户端已初始化。")
     except Exception as e:
@@ -696,8 +719,9 @@ assistant_client: Optional[OpenAI] = None
 if ENABLE_ASSISTANT_MODEL:
     try:
         assistant_client = OpenAI(
-            api_key=ASSISTANT_API_KEY,
-            base_url=ASSISTANT_BASE_URL
+            api_key=_AI_PROXY.get("api_key") or ASSISTANT_API_KEY,
+            base_url=_AI_PROXY.get("base_url") or ASSISTANT_BASE_URL,
+            default_headers=_AI_HEADERS,
         )
         logger.info("辅助模型 API 客户端已初始化。")
     except Exception as e:
@@ -1102,9 +1126,8 @@ def get_deepseek_response(message, user_id, store_context=True, is_summary=False
                               对于工具调用（如解析或总结），设置为 False。
     """
     try:
-        # 每次调用都重新加载聊天上下文，以应对文件被外部修改的情况
-        load_chat_contexts()
-        
+        # 注意：不再在锁外整体 reload 全局 chat_contexts（见下方 queue_lock 内），
+        # 否则会与锁内的“读-改-写”形成竞态，导致并发保存互相覆盖、丢失上下文历史。
         logger.info(f"调用 Chat API - ID: {user_id}, 是否存储上下文: {store_context}, 消息: {message[:100]}...") # 日志记录消息片段
 
         messages_to_send = []
@@ -1124,6 +1147,8 @@ def get_deepseek_response(message, user_id, store_context=True, is_summary=False
 
             # 2. 管理并检索聊天历史记录
             with queue_lock: # 确保对 chat_contexts 的访问是线程安全的
+                # 在锁内 reload，与后续读-改-写保持原子，避免并发保存互相覆盖
+                load_chat_contexts()
                 if user_id not in chat_contexts:
                     chat_contexts[user_id] = []
 
@@ -1710,6 +1735,17 @@ def _message_listener_impl(msg, chat):
         except Exception as _chr:
             logger.debug(f"记录聊天历史失败（已忽略，不影响收发）: {_chr}")
 
+    # === 固定转发拦截（必须在群聊早退/AI 判定之前，才能同时覆盖好友与群源）===
+    # handle_incoming 返回 True 表示消息已被转发消费，需跳过后续 AI 处理；
+    # 返回 False 则原样放行（群消息继续走早退、好友消息继续走归一化与 AI）。
+    if forward_hub is not None:
+        try:
+            if forward_hub.handle_incoming(who, sender, msgtype, msgattr, msg):
+                logger.info(f"固定转发已消费窗口 {who} 的消息，跳过后续处理。")
+                return
+        except Exception as _fhe:
+            logger.error(f"固定转发处理异常（已隔离，继续原流程）: {_fhe}", exc_info=True)
+
     if msgattr == 'tickle':
         if "我拍了拍" in original_content:
             logger.info("检测到自己触发的拍一拍，已忽略。")
@@ -1926,11 +1962,10 @@ def _message_listener_impl(msg, chat):
             handle_wechat_message(msg, who)
 
 def recognize_image_with_moonshot(image_path, is_emoji=False):
+    """使用AI识别图片内容并返回文本"""
     # 先暂停向API发送消息队列
     global can_send_messages
     can_send_messages = False
-
-    """使用AI识别图片内容并返回文本"""
     try:
 
         processed_image_path = image_path
@@ -1958,7 +1993,7 @@ def recognize_image_with_moonshot(image_path, is_emoji=False):
             "temperature": MOONSHOT_TEMPERATURE
         }
         
-        response = requests.post(f"{MOONSHOT_BASE_URL}/chat/completions", headers=headers, json=data)
+        response = requests.post(f"{MOONSHOT_BASE_URL}/chat/completions", headers=headers, json=data, timeout=(10, 30))
         response.raise_for_status()
         result = response.json()
         recognized_text = result['choices'][0]['message']['content']
@@ -1972,7 +2007,7 @@ def recognize_image_with_moonshot(image_path, is_emoji=False):
             recognized_text = "发送了图片：" + recognized_text
             
         logger.info(f"AI图片识别结果: {recognized_text}")
-        
+
         # 清理临时文件
         if is_emoji and os.path.exists(processed_image_path):
             try:
@@ -1980,16 +2015,15 @@ def recognize_image_with_moonshot(image_path, is_emoji=False):
                 logger.debug(f"已清理临时表情: {processed_image_path}")
             except Exception as clean_err:
                 logger.warning(f"清理临时表情图片失败: {clean_err}")
-                
-        # 恢复向Deepseek发送消息队列
-        can_send_messages = True
+
         return recognized_text
 
     except Exception as e:
         logger.error(f"调用AI识别图片失败: {str(e)}", exc_info=True)
-        # 恢复向Deepseek发送消息队列
-        can_send_messages = True
         return ""
+    finally:
+        # 无论成功/失败/异常，都恢复消息队列，避免永久失声
+        can_send_messages = True
 
 def handle_emoji_message(msg, who):
     global emoji_timer
@@ -2092,6 +2126,7 @@ def fetch_and_extract_text(url: str) -> Optional[str]:
     Returns:
         Optional[str]: 提取并清理后的网页文本内容（限制了最大长度），如果失败则返回 None。
     """
+    session = requests.Session()
     try:
         # SSRF防护 - 验证URL安全性
         if not is_safe_url(url):
@@ -2108,7 +2143,6 @@ def fetch_and_extract_text(url: str) -> Optional[str]:
         logger.info(f"开始抓取链接内容: {url}")
         
         # 使用自定义Session处理跳转，验证每个跳转目标的安全性
-        session = requests.Session()
         session.headers.update(headers)
         session.max_redirects = 5  # 限制最大跳转次数
         
@@ -2185,6 +2219,9 @@ def fetch_and_extract_text(url: str) -> Optional[str]:
         # 捕获其他可能的错误，例如 BS 解析错误
         logger.error(f"处理链接时发生未知错误: {url}, 错误: {e}", exc_info=True)
         return None
+    finally:
+        # 确保 Session 连接池被关闭，避免长期运行文件描述符泄漏
+        session.close()
 
 # 辅助函数：将用户消息记录到记忆日志 (如果启用)
 def log_user_message_to_memory(username, original_content):
@@ -5084,11 +5121,27 @@ def main():
                 exit(1)
         except Exception as _lg:
             # 门禁自身异常：已启用则拒绝（避免误放行），未启用（开发期）放行
-            if str(getattr(config, 'LICENSE_GUARD_ENABLED', False)).lower() in ('1', 'true', 'yes', 'on'):
+            if str(LICENSE_GUARD_ENABLED).lower() in ('1', 'true', 'yes', 'on'):
                 logger.critical(f"License 门禁异常，拒绝启动: {_lg}")
                 exit(1)
             else:
                 logger.warning(f"License 门禁检查异常（开发模式已放行）: {_lg}")
+
+        # --- 运行期周期复检（防 patch 掉启动检查；失效立即停机）---
+        try:
+            from weauto_license.guard import start_periodic_recheck, worker_url as _gw
+
+            def _license_dead(reason: str):
+                buy = (_gw() + "/buy") if _gw() else "(未配置 CREEM_WORKER_URL)"
+                logger.critical(
+                    f"\033[31m[License] 授权失效：{reason} —— bot 停止运行。"
+                    f"购买/重新激活：{buy}（或网页后台「授权管理」）\033[0m"
+                )
+                os._exit(1)  # 线程回调里必须 os._exit；sys.exit 只杀线程
+
+            start_periodic_recheck(on_invalid=_license_dead)
+        except Exception as _lg2:
+            logger.warning(f"License 周期复检未启动: {_lg2}")
 
         # --- 启动前检查 ---
         logger.info("\033[32m进行启动前检查...\033[0m")
@@ -5175,6 +5228,22 @@ def main():
                 logger.error(f"\033[31m添加监听用户{user_name}失败，请确保您在用户列表填写的微信昵称/备注与实际完全匹配，并且不要包含表情符号和特殊符号，注意填写的不是自己登录的微信昵称!\033[0m")
                 exit(1)
         logger.info("监听用户添加完成")
+
+        # 固定转发：挂载引擎，并为所有「源/目标」额外注册监听。
+        # 注意：这些会话不写入 LISTEN_LIST（避免触发 prompt 文件校验、被 AI 主动聊天命中）；
+        # 仅额外 AddListenChat 才能收到它们的消息。
+        if forward_hub is not None:
+            try:
+                forward_hub.attach(wx, logger, robot_name=ROBOT_WX_NAME)
+                for _who in forward_hub.all_chats():
+                    if _who and _who != ROBOT_WX_NAME and _who not in user_names:
+                        try:
+                            wx.AddListenChat(nickname=_who, callback=message_listener)
+                            logger.info(f"固定转发：已额外监听 {_who}")
+                        except Exception as _e:
+                            logger.warning(f"固定转发：监听 {_who} 失败（会话可能不存在/重名）: {_e}")
+            except Exception as _fe:
+                logger.warning(f"固定转发引擎挂载失败（不影响主体功能）: {_fe}")
         
         # 初始化所有用户的自动消息计时器 - 总是初始化，以便功能开启时立即可用
         logger.info("正在加载用户自动消息计时器状态...")

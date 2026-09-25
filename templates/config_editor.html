@@ -3666,6 +3666,7 @@
             <button type="submit" form="configForm" id="saveConfigButton" class="nav-button" style="background-color: #4CAF50;">保存配置</button>
                         <a href="{{ url_for('quick_start') }}" class="nav-button" style="background-color: #ff9800;">快速上手</a>
             <a href="{{ url_for('style_lab') }}" class="nav-button">风格模仿</a>
+            <a href="{{ url_for('forward_page') }}" class="nav-button">固定转发</a>
             <button type="button" id="importButton" class="nav-button" style="background-color: #2196F3;">导入配置</button>      
             <a href="{{ url_for('help_page') }}" class="nav-button" style="background-color: #03A9F4;">帮助文档</a>
         </div>
@@ -4497,9 +4498,9 @@
                 <div id="licenseBanner" style="display:none;margin:8px 0;padding:10px 12px;border-radius:6px;background:#e6f4ea;color:#1e7e34;font-size:14px;"></div>
 
                 <ol style="margin:6px 0 14px 18px;color:#555;font-size:13px;line-height:1.7;">
-                    <li>点「购买许可证」完成付款（支持支付宝），把邮件里的卡密复制下来。</li>
-                    <li>把卡密粘贴到下方输入框，点「激活」——自动保存并开启授权门禁。</li>
-                    <li>点「重启机器人使授权生效」，bot 下次启动即受授权保护。</li>
+                    <li>点「购买许可证」完成付款（支持支付宝）。付款后卡密会<b>自动同步</b>到本页并一键激活 + 重启，无需手动复制粘贴。</li>
+                    <li>若因网络未自动同步，再把邮件里的卡密粘贴到下方输入框，点「激活 / 保存」手动核销。</li>
+                    <li>点「重启机器人使授权生效」（自动流程会替你点）；bot 下次启动即受授权保护。</li>
                 </ol>
 
                 <div class="form-group">
@@ -4553,6 +4554,53 @@
                 var buyRow = document.getElementById('licenseBuyRow');
                 var buyUrlInput = document.getElementById('licenseBuyUrl');
 
+                // ---- 本机能力令牌 mid：高熵随机，贯穿「购买页→收银台 metadata→webhook→自动核销」 ----
+                var MID_KEY = 'weauto_license_mid';
+                function getMid(){
+                    var m = localStorage.getItem(MID_KEY);
+                    if(!m){
+                        var buf = new Uint8Array(32);
+                        (window.crypto || window.msCrypto).getRandomValues(buf);
+                        m = Array.prototype.map.call(buf, function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+                        localStorage.setItem(MID_KEY, m);
+                    }
+                    return m;
+                }
+                var mid = getMid();
+
+                // ---- 付款后自动轮询核销：取到卡密 → 激活 → 重启 ----
+                var _redeemTimer = null;
+                function startAutoRedeem(){
+                    if(_redeemTimer) return; // 已在轮询
+                    var tries = 0;
+                    showMsg('已打开购买页，正在等待付款…（付款成功后自动核销，无需粘贴）', '#1976d2');
+                    _redeemTimer = setInterval(async function(){
+                        tries++;
+                        try{
+                            var r = await fetch('/api/license/poll?mid=' + encodeURIComponent(mid));
+                            var d = await r.json();
+                            if(d.key){
+                                clearInterval(_redeemTimer); _redeemTimer = null;
+                                showMsg('已自动获取卡密，正在激活…');
+                                var res = await postJSON('/api/license/activate', {key: d.key});
+                                if(res.ok){
+                                    showMsg('卡密已激活，正在重启机器人使授权生效…');
+                                    await postJSON('/api/license/restart', {});
+                                    showMsg('✅ 已自动激活并重启，授权立即生效（全程无需手动粘贴）', '#1e7e34');
+                                    loadStatus();
+                                } else {
+                                    showMsg('自动激活失败：' + (res.msg || '') + '，请手动粘贴卡密', '#c62828');
+                                }
+                                return;
+                            }
+                        }catch(e){ /* 网络抖动，继续轮询 */ }
+                        if(tries > 120){ // 约 6 分钟 @3s 仍未同步
+                            clearInterval(_redeemTimer); _redeemTimer = null;
+                            showMsg('超过等待时间仍未自动同步卡密（可能 Webhook 尚未配置）。请手动把邮件里的卡密粘贴到下方输入框激活。', '#b26a00');
+                        }
+                    }, 3000);
+                }
+
                 function setBadge(state, text){
                     var colors = {ok:['#e6f4ea','#1e7e34'], bad:['#fdecea','#c62828'], warn:['#fff4e5','#b26a00']};
                     var c = colors[state] || colors.warn;
@@ -4576,6 +4624,7 @@
                         else { setBadge(s.key_set?'warn':'bad', s.key_set?'已保存但未激活':'未激活'); }
                         keyHint.textContent = s.key_set ? ('当前卡密: ' + (s.key_hint||'****') + '（重新输入可替换）') : '尚未配置卡密';
                         guardToggle.checked = !!s.guard_enabled;
+                        if (s.release_build) { guardToggle.disabled = true; guardToggle.title = '发行版固定启用授权门禁，不可关闭'; }
                         workerHint.textContent = s.worker_url_set ? ('授权服务: ' + s.worker_url) : '未配置授权服务地址（CREEM_WORKER_URL 为空，激活/购买将不可用）';
                         workerHint.style.color = s.worker_url_set ? '#1e7e34' : '#c62828';
                         machineHint.textContent = s.machine_id ? ('本机指纹: ' + s.machine_id) : '';
@@ -4615,8 +4664,14 @@
                 document.getElementById('licenseBuyBtn').addEventListener('click', async function(){
                     var url = await refreshBuyUrl();
                     if(!url){ showMsg('未配置授权服务地址，无法跳转购买', '#c62828'); return; }
-                    var win = window.open(url, '_blank');
+                    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+                    var buyUrl = url + sep + 'mid=' + encodeURIComponent(mid);
+                    var win = window.open(buyUrl, '_blank');
                     if(!win){ showMsg('浏览器拦截了弹窗，请从下方链接手动打开', '#b26a00'); }
+                    else {
+                        showMsg('已打开购买页，付款成功后将自动同步卡密并激活（无需手动粘贴）…', '#1e7e34');
+                        startAutoRedeem();
+                    }
                 });
                 document.getElementById('licenseCopyBuyBtn').addEventListener('click', function(){
                     buyUrlInput.select();

@@ -1386,8 +1386,15 @@ def index():
     was_skipped = request.args.get('skipped') == 'true'
 
     if not current_config_check.get('DEEPSEEK_API_KEY', '').strip():
+        # 门禁启用时 LLM 走 Worker AI 代理（真实 key 在服务端），本地无需填 key → 不强跳快速开始
+        _guard_on = False
+        try:
+            import weauto_license.guard as _g_mod
+            _guard_on = _g_mod.guard_enabled()
+        except Exception:
+            _guard_on = False
         # 只有当不是明确跳过，并且是GET请求时，才重定向到 quick_start
-        if request.method == 'GET' and not was_skipped:
+        if request.method == 'GET' and not was_skipped and not _guard_on:
              return redirect(url_for('quick_start'))
 
     if request.method == 'POST':
@@ -4735,6 +4742,7 @@ def _license_status():
     return {
         "available": True,
         "guard_enabled": enabled,
+        "release_build": bool(getattr(_guard, "RELEASE_BUILD", False)),
         "worker_url_set": bool(w),
         "worker_url": w,
         "key_set": bool(key),
@@ -4743,6 +4751,7 @@ def _license_status():
         "expired": expired,
         "expire_at": cache.get("expire_at"),
         "machine_id": _guard.get_machine_id() if _guard else "",
+        "tier": _guard.license_tier() if _guard else "",
     }
 
 
@@ -4759,6 +4768,37 @@ def api_license_buy_url():
         return jsonify({"url": ""})
     w = _guard.worker_url()
     return jsonify({"url": (w + "/buy") if w else ""})
+
+
+@app.route('/api/license/poll', methods=['GET'])
+@login_required
+def api_license_poll():
+    """服务端代理轮询 Worker /license?mid=：付款后卡密由 webhook 写入 KV，前端据此自动核销。
+
+    放在服务端代理而非前端直连 Worker，是为了避免浏览器跨域（前端 localhost 无法直接
+    fetch Worker 域名）；同时不暴露任何密钥。
+    """
+    if not _guard:
+        return jsonify(pending=True)
+    w = _guard.worker_url()
+    mid = request.args.get("mid", "")
+    if not w or not mid:
+        return jsonify(pending=True, error="no_mid")
+    try:
+        import urllib.request as _ur, json as _json
+        u = w + "/license?mid=" + mid
+        req = _ur.Request(u, headers={"accept": "application/json"})
+        with _ur.urlopen(req, timeout=10) as r:
+            d = _json.loads(r.read().decode("utf-8"))
+        if d.get("key"):
+            return jsonify(pending=False, key=d["key"], tier=d.get("tier", ""))
+        return jsonify(pending=True)
+    except _ur.HTTPError as e:
+        if e.code == 404:
+            return jsonify(pending=True)
+        return jsonify(pending=True, error="http_" + str(e.code))
+    except Exception as e:
+        return jsonify(pending=True, error=str(e)[:120])
 
 
 @app.route('/api/license/activate', methods=['POST'])
@@ -4801,6 +4841,9 @@ def api_license_set_guard():
     except Exception:
         data = {}
     enabled = bool(data.get("enabled", False))
+    # 发行版固杀：门禁强制开启，config/UI 都关不掉（反破解）
+    if _guard and getattr(_guard, "RELEASE_BUILD", False) and not enabled:
+        return jsonify(ok=False, msg="发行版已强制启用授权门禁，不可关闭"), 400
     try:
         update_config({"LICENSE_GUARD_ENABLED": enabled})
     except Exception as e:
@@ -4849,6 +4892,77 @@ def api_license_restart():
         return jsonify(ok=True, msg="机器人正在重启（约数秒后生效，重启后授权即生效）")
     except Exception as e:
         return jsonify(ok=False, msg=f"重启启动失败: {e}"), 500
+
+
+# ---------------------------------------------------------------------------
+# 固定转发：规则管理（引擎逻辑在 forward_hub，本模块只负责 Web 读写）
+# ---------------------------------------------------------------------------
+def _fh():
+    """惰性导入 forward_hub，导入失败则本功能降级（不影响配置编辑器主体）。"""
+    try:
+        import forward_hub as m
+        m.ensure_files()
+        return m
+    except Exception as _e:  # noqa: BLE001
+        app.logger.warning(f"forward_hub 不可用，固定转发面板降级: {_e}")
+        return None
+
+
+@app.route('/forward', methods=['GET'])
+@login_required
+def forward_page():
+    m = _fh()
+    data = {
+        "enabled": False,
+        "rules": [],
+        "log": [],
+        "rate_limit": {"window_sec": 10, "max_msgs": 15},
+        "available": m is not None,
+    }
+    if m is not None:
+        cfg = m.get_rules()
+        data["enabled"] = cfg.get("enabled", False)
+        data["rules"] = cfg.get("rules", [])
+        data["rate_limit"] = cfg.get("rate_limit", data["rate_limit"])
+        data["log"] = m.get_log(50)
+    return render_template('forward.html', data=data)
+
+
+@app.route('/api/forward/rules', methods=['GET'])
+@login_required
+def api_forward_rules_get():
+    m = _fh()
+    if m is None:
+        return jsonify(ok=False, msg="forward_hub 不可用"), 500
+    cfg = m.get_rules()
+    return jsonify(ok=True, enabled=cfg.get("enabled", False),
+                   rate_limit=cfg.get("rate_limit", {"window_sec": 10, "max_msgs": 15}),
+                   rules=cfg.get("rules", []))
+
+
+@app.route('/api/forward/rules', methods=['POST'])
+@login_required
+def api_forward_rules_post():
+    m = _fh()
+    if m is None:
+        return jsonify(ok=False, msg="forward_hub 不可用"), 500
+    try:
+        payload = request.get_json(force=True, silent=True) or {}
+    except Exception:
+        payload = {}
+    ok, errors = m.save_rules(payload)
+    if not ok:
+        return jsonify(ok=False, errors=errors), 400
+    return jsonify(ok=True, msg="已保存，机器人将在 60 秒内（或写盘即）热加载生效")
+
+
+@app.route('/api/forward/log', methods=['GET'])
+@login_required
+def api_forward_log():
+    m = _fh()
+    if m is None:
+        return jsonify(ok=False, msg="forward_hub 不可用"), 500
+    return jsonify(ok=True, log=m.get_log(50))
 
 
 if __name__ == '__main__':

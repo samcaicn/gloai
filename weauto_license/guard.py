@@ -17,9 +17,11 @@ import os
 import sys
 import json
 import time
+import hmac
 import hashlib
 import uuid
 import platform
+import threading
 import urllib.request
 import urllib.error
 
@@ -29,6 +31,19 @@ except Exception:
     _cfg_mod = None
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# ---- 发行版固杀标记（反破解第一道） ----
+# CI 构建正式 EXE 前会生成 weauto_license/_release.py（内容 RELEASE = True）。
+# 发行版里门禁**强制开启**：即使用户把 config.py 的 LICENSE_GUARD_ENABLED 改成
+# False、甚至删掉这行，也无法关掉校验。本地开发无该文件 = 开发态，不受影响。
+try:
+    from weauto_license import _release as _release_mod
+    RELEASE_BUILD = bool(getattr(_release_mod, "RELEASE", False))
+except Exception:
+    RELEASE_BUILD = os.environ.get("WEAUTO_RELEASE_BUILD", "") == "1"
+
+# 激活缓存签名盐（配合 _release 注入；防手写 APPDATA 里的 JSON 伪造激活记录）
+_CACHE_SIG_SALT = "weauto-license-cache-v1"
 
 
 def _cache_file() -> str:
@@ -63,6 +78,9 @@ def _cfg(name, default=None):
 
 
 def guard_enabled() -> bool:
+    """门禁开关。发行版（_release.py 存在）下**恒为 True**，config 关不掉。"""
+    if RELEASE_BUILD:
+        return True
     return str(_cfg("LICENSE_GUARD_ENABLED", "False")).lower() in ("1", "true", "yes", "on")
 
 
@@ -100,18 +118,44 @@ def get_machine_id() -> str:
     return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:32]
 
 
+def _cache_sig_material(key: str, machine: str, body: dict) -> bytes:
+    blob = json.dumps(body, sort_keys=True, ensure_ascii=False)
+    mac_key = hashlib.sha256(
+        "|".join([key or "", machine or "", _CACHE_SIG_SALT]).encode("utf-8")
+    ).digest()
+    return hmac.new(mac_key, blob.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
 def _read_cache() -> dict:
+    """读激活缓存。带 HMAC 校验：签名不符/缺签名（旧版或手写伪造）一律视为空。"""
     try:
         with open(CACHE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            d = json.load(f)
     except Exception:
         return {}
+    if not isinstance(d, dict):
+        return {}
+    sig = d.pop("sig", None)
+    key = d.get("key")
+    if not (key and sig):
+        return {}
+    try:
+        want = _cache_sig_material(key, d.get("machine") or get_machine_id(), d)
+        if not hmac.compare_digest(sig, want):
+            return {}
+    except Exception:
+        return {}
+    return d
 
 
 def _write_cache(d: dict) -> None:
+    """写激活缓存并附 HMAC 签名（key + machine 绑定，换机/篡改即失效）。"""
     try:
+        body = {k: v for k, v in d.items() if k != "sig"}
+        body["machine"] = get_machine_id()
+        body["sig"] = _cache_sig_material(body.get("key"), body["machine"], body)
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump(d, f)
+            json.dump(body, f)
     except Exception:
         pass
 
@@ -176,6 +220,7 @@ def ensure_license(strict: bool = True) -> bool:
                 "key": key,
                 "instance_id": resp.get("instance_id"),
                 "expire_at": resp.get("expires_at") or (now + 30 * 86400),
+                "tier": resp.get("tier"),
             })
             return True
         _buy_prompt(resp.get("reason", "未知原因"))
@@ -199,6 +244,7 @@ def activate(license_key: str):
                 "key": license_key,
                 "instance_id": resp.get("instance_id"),
                 "expire_at": resp.get("expires_at") or (time.time() + 30 * 86400),
+                "tier": resp.get("tier"),
             })
             return True, "激活成功（请把该 key 写入 config.py 的 CREEM_LICENSE_KEY 以持久化）"
         return False, "激活失败: " + str(resp.get("reason", ""))
@@ -224,3 +270,83 @@ def deactivate(license_key: str = None):
         return False, "释放失败: " + str(resp.get("reason", ""))
     except Exception as e:
         return False, "释放异常: %s" % e
+
+
+def license_tier() -> str:
+    """返回当前激活档位（normal/premium/lifetime），未激活或无法解析返回空串。"""
+    try:
+        return (_read_cache().get("tier") or "").strip()
+    except Exception:
+        return ""
+
+
+def ai_endpoint():
+    """LLM 统一走自有 Worker 代理时的端点信息；门禁未启用返回 None（走本地 config）。
+
+    返回 {"base_url", "api_key", "headers"}：
+      - base_url: <worker>/ai/v1 —— Worker 验完卡密后透传到真正的 upstream，
+                  并注入商家持有的 AI_UPSTREAM_KEY；客户端永远拿不到真实 key，
+                  反编译/patch 门禁也白嫖不了（无有效卡密 Worker 直接 401）。
+      - api_key:  用户的 license key（作为 Bearer 凭证传给 Worker 验证）
+      - headers:  X-WeAuto-Instance（实例绑定，供 Worker 做设备级校验）
+    """
+    if not guard_enabled():
+        return None
+    w = worker_url()
+    if not w:
+        return None
+    inst = ""
+    try:
+        inst = _read_cache().get("instance_id") or ""
+    except Exception:
+        pass
+    key = _cfg("CREEM_LICENSE_KEY", "") or ""
+    return {
+        "base_url": w + "/ai/v1",
+        "api_key": key or "license-pending",
+        "headers": {"X-WeAuto-Instance": inst} if inst else {},
+    }
+
+
+def start_periodic_recheck(interval_seconds=None, on_invalid=None):
+    """运行期周期复检线程（防『只堵启动一处』：patch 掉启动检查也逃不过运行中复检）。
+
+    - 网络异常/服务端异常：静默跳过（走离线宽限），不打扰运行中的 bot
+    - 显式失效（key 无效/实例被释放/宽限期已过）：调用 on_invalid(reason)
+      bot.py 的回调会用 os._exit(1) —— 线程里必须 os._exit，sys.exit 只杀线程
+    - 门禁未启用（开发态）时线程空转，零开销
+    """
+    def _loop():
+        iv = interval_seconds or int(os.environ.get("WEAUTO_LICENSE_RECHECK_SECONDS", 6 * 3600))
+        while True:
+            time.sleep(iv)
+            try:
+                if not guard_enabled() or not on_invalid:
+                    continue
+                key = _cfg("CREEM_LICENSE_KEY", "") or ""
+                if not key:
+                    on_invalid("卡密被清空")
+                    continue
+                cache = _read_cache()
+                now = time.time()
+                inst = cache.get("instance_id")
+                if cache.get("key") == key and inst:
+                    if now >= cache.get("expire_at", 0) + OFFLINE_GRACE_SECONDS:
+                        on_invalid("离线宽限期已过且未通过校验")
+                        continue
+                    try:
+                        resp = _post("/validate", {"key": key, "instance_id": inst})
+                    except Exception:
+                        continue  # 网络/服务异常 → 离线宽限
+                    if resp.get("ok"):
+                        _write_cache({"key": key, "instance_id": inst,
+                                      "expire_at": resp.get("expires_at") or (now + 30 * 86400),
+                                      "tier": resp.get("tier")})
+                    else:
+                        on_invalid(str(resp.get("reason", "校验未通过")))
+                # 无 instance 记录 → 运行期不判定，交给下次启动的 ensure_license
+            except Exception:
+                pass
+    t = threading.Thread(target=_loop, name="weauto-license-recheck", daemon=True)
+    t.start()
+    return t

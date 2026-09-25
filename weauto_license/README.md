@@ -35,7 +35,8 @@
    - 价格（支持普通用户**支付宝**付款，Creem 已上线）
    - 记下 `Product ID`（`prod_xxx`）
 3. **Settings > API Keys** 生成 API key（`creem_test_...` / `creem_live_...`）。
-4. **Developers > Webhooks** 填 `https://weauto-license.<你的cf子域>.workers.dev/webhook`（先用占位，deploy 后换成真实地址），记下 Webhook Secret。
+4. **Developers > Webhooks** 填 `https://weauto-license.tuptup-workbuddy.workers.dev/webhook`（CF 原始链接，已部署并经 CF API 确认 enabled），记下 Webhook Secret。
+   - 为什么 Webhook 用 workers.dev 而购买页用自定义域名：Webhook 是 **Creem 海外服务器 → CF** 的服务器间回调，不受大陆 workers.dev 被墙影响；而 `/buy`、`/ai/v1` 是大陆买家/bot 访问，必须走 `weauto.safeopc.cn`。
 5. 本地测试用 `creem_test_` key + 测试卡 `4242 4242 4242 4242`。
 
 ## 支付宝：两个必须分清的概念（最容易踩坑）
@@ -156,3 +157,50 @@ python cli.py license deactivate   # 换机前释放本机激活
 - Creem API key / webhook secret **只在 CF Worker（Secrets）**，绝不进客户端、不进 git。
 - 客户端仅传 `HMAC/机器指纹` 与用户卡密，服务端拿不到原始硬件 PII。
 - Webhook 必须验签（`creem-signature` HMAC-SHA256），否则会被伪造回调。
+
+## LLM 统一走 Worker AI 代理（反破解核心，2026-09-25）
+
+客户端所有 LLM 调用不再直连第三方，全部经自有 Worker 中转：
+
+```
+bot.py (base_url=<worker>/ai/v1, api_key=卡密, X-WeAuto-Instance=实例ID)
+   └─> CF Worker /ai/v1/*  ──验证卡密(Creem /licenses/validate, isolate 缓存10min)──┐
+           │ 有效：透传请求 -> AI_UPSTREAM_URL（注入真实 key = Secret AI_UPSTREAM_KEY）│
+           │ 无效：401 license_required（fail-close）<──────────────────────────────┘
+```
+
+- **反编译跳过支付为何失效**：upstream 真实 key 只存在 Worker Secret 里；破解者 patch
+  掉本地门禁后，Worker 仍会因无有效卡密拒绝 AI 请求 → bot 无 AI 可用 = 废物。
+- 配置（一次性）：`wrangler secret put AI_UPSTREAM_KEY`（vg.v1api.cc 的 key）；
+  `AI_UPSTREAM_URL` 已在 wrangler.toml `[vars]`（需带 /v1 后缀）。
+- **表情 API（MOONSHOT 图像识别）按项目方要求保留直连**，不走 Worker、不受门禁影响。
+- 开发态（无 `weauto_license/_release.py`）门禁可关、LLM 走本地 config；
+  CI 发行版注入 `_release.py` → 门禁强制开启 + LLM 强制走 Worker。
+- 其余加固：激活缓存 HMAC 签名（改 JSON/换机即失效）、运行期每 6h 复检
+  （失效 `os._exit`）、发行版 WebUI 门禁开关锁定。
+
+## 多档套餐（2026-09-25 改版）
+
+3 档套餐，全部用 `creem_5fHTWBhssHvCVQ3lsbPzod`（prod key）建好：
+
+| 档位 | 计费 | 人民币 | Creem 产品（USD） |
+|---|---|---|---|
+| normal 普通版（月租） | 订阅 recurring/every-month | ¥29.9/月 | `prod_3PRueiU3wkoI0MiOfH7gJI` ($4.45) |
+| premium 高级版（月租） | 订阅 recurring/every-month | ¥39.9/月 | `prod_1FGMYGoMeSg1PFiT91mZ6N` ($5.94) |
+| lifetime 永久授权 | 一次性 onetime | ¥199（自愿支持） | `prod_7by0YHsTNBleF1uOE2qAao` ($29.65) |
+
+- **wrangler.toml 用 `CREEM_PRODUCTS`（TOML 单引号字面量包裹的 JSON 数组）** 描述各档，
+  Worker 解析后 /buy 渲染三张卡片、/buy?go=1&tier=<档> 跳对应收银台。
+  ⚠️ 不能直接写「行内数组 of 内联表」（wrangler TOML 解析器报 "extra tokens after string part"），
+  必须单引号字面量。
+- 自动建品：`python weauto_license/create_creem_product.py --mode prod --apply`
+  （含汇率自动换算 USD、Idempotency-Key 幂等防重复；`--dry-run` 只算钱）。
+- `/validate` 会尽力从 Creem 响应解析 product → 返回 `tier`，客户端缓存并在 WebUI 展示。
+
+### 两个 Creem 限制（实测，非代码 bug）
+1. **月租订阅可能无支付宝入口**：Creem 的 Alipay 已知只在一次性（onetime）收银台出现，
+   订阅档大概率只有信用卡等。若你要月租也走支付宝，需改成「一次性可续费」方案（告知即可改）。
+2. **「自愿付款」只能后台开**：`pay_what_you_want` 经 API 创建/PATCH 均被 Creem 忽略
+   （返回 null），只能在 Creem 后台产品页手动开启；当前 lifetime 已设为固定最低 ¥199 一次性（带支付宝）。
+   后台开启后 price 即最低价、买家可付更多。
+

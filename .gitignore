@@ -57,3 +57,12 @@ _debug_exe.py
 _mock_worker.py
 _ci_wait_dl.py
 _smoke_guard.py
+
+# ---- 发行版标记（CI 生成，不提交；存在即门禁强制开启）----
+weauto_license/_release.py
+
+# ---- 本地 CF 部署工具链（含 node_modules，不提交）----
+_cfdeploy/
+
+# ---- wrangler 本地状态（非仓库内容）----
+.wrangler/

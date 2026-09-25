@@ -2,21 +2,36 @@ name = "weauto-license"
 main = "weauto_license/cf_worker.js"
 compatibility_date = "2024-09-23"
 
-# 使用 Cloudflare 默认域名 https://weauto-license.<你的cf子域>.workers.dev
-# （不绑自定义域名）。wrangler deploy 后终端会打印实际地址，填进 config.py 的 CREEM_WORKER_URL。
-# 注意：*.workers.dev 在中国大陆可能不可达，买家需自行代理；如需大陆直连再绑自定义域名。
+# workers.dev 显式开启：仅供 Creem 官方回调 Webhook 用（服务器在海外，可达 workers.dev）；
+# 买家页面(/buy)和 bot 的 AI 代理(/ai/v1)必须走自定义域名 weauto.safeopc.cn（大陆可达）。
+workers_dev = true
+
+# 已绑定自定义域名 weauto.safeopc.cn（见下方 [[routes]]）。
+# 原因：实测 *.workers.dev 在中国大陆不可达（DNS 被污染 + 代理 502），买家打不开购买页、也无法激活。
+# config.py 的 CREEM_WORKER_URL 已指向 https://weauto.safeopc.cn
 
 [vars]
-# ---- Creem ----
-CREEM_MODE = "test"                       # 上线切 "prod"
-CREEM_PRODUCT_ID = "prod_xxx"             # Creem 后台 License 产品 ID
-CREEM_CHECKOUT_URL = "https://www.creem.io/checkout/xxxx"  # 后台「复制结账链接」粘贴这里（买家点开即收银台）
+CREEM_PRODUCTS = '[{"tier": "normal", "label": "普通版（月租）", "price_text": "¥29.9 / 月", "product_id": "prod_3PRueiU3wkoI0MiOfH7gJI", "billing": "monthly", "features": "基础自动回复 + 授权管理 + 标准 AI 额度"}, {"tier": "premium", "label": "高级版（月租）", "price_text": "¥39.9 / 月", "product_id": "prod_1FGMYGoMeSg1PFiT91mZ6N", "billing": "monthly", "features": "全部功能 + 优先支持 + 更高 AI 额度"}, {"tier": "lifetime", "label": "永久授权", "price_text": "¥199（自愿支持）", "product_id": "prod_7by0YHsTNBleF1uOE2qAao", "billing": "once", "features": "一次买断 · 永久可用 · 全功能"}]'
+
+# ---- Creem 模式：prod = 真实收款；test = 沙箱 ----
+CREEM_MODE = "prod"                       # 3 档套餐已用 prod key 建好（normal / premium / lifetime）
 
 # ---- 卡密网站文案（/buy 页面显示，随手改）----
-PRODUCT_NAME  = "WeAuto 专业版"
-PRODUCT_PRICE = "¥99"
-PRODUCT_DESC  = "一次购买，解锁全部功能"
+SITE_TITLE    = "WeAuto 授权中心"
 SUPPORT_EMAIL = ""                        # 售后邮箱，留空则不显示
+
+# ---- LLM 代理 upstream（反破解核心：真实 key 放 Worker secret，客户端只拿卡密）----
+#   客户端所有 LLM 调用 -> <worker>/ai/v1/* -> 这里配置的 upstream。
+#   upstream 的真实 key 用 secret 注入（不入仓库）：
+#     wrangler secret put AI_UPSTREAM_KEY     # 粘贴 vg.v1api.cc 的 key
+#   未配置 AI_UPSTREAM_KEY 时 /ai 一律 401（fail-close）。
+AI_UPSTREAM_URL = "https://vg.v1api.cc/v1"
+
+# ---- KV：付款后卡密暂存（webhook 写入，本机轮询读取，7 天自动过期）----
+# 命名空间 ID 由 `wrangler kv namespace create LICENSE_KV` 生成后回填到 id 字段。
+[[kv_namespaces]]
+binding = "LICENSE_KV"
+id = "b9359d143ab04b549500066b467e3011"
 
 # ---- 自定义域名（必须绑定）----
 # 实测：*.workers.dev 在中国大陆不可达（DNS 被污染到 Facebook 段 IP，代理亦 502），

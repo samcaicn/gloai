@@ -42,6 +42,15 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller==6.22.3
 
+      - name: Stamp release build marker (license guard forced on)
+        shell: bash
+        run: |
+          # 发行版固杀：正式 EXE 里授权门禁强制开启（guard_enabled() 恒 True），
+          # 用户改 config.py 的 LICENSE_GUARD_ENABLED=False 也无效。
+          # 本地开发无此文件 = 开发态；该文件由 CI 生成、不提交仓库（见 .gitignore）。
+          printf 'RELEASE = True  # CI generated release marker: license guard forced on\n' > weauto_license/_release.py
+          cat weauto_license/_release.py
+
       - name: Build obfuscated onefile EXE
         id: build
         shell: bash
