@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'theme.dart';
 import '../state/session.dart';
 import '../ui/login_page.dart';
 import '../ui/home_page.dart';

@@ -32,10 +32,14 @@ class _InspectPageState extends State<InspectPage> {
   CameraSource _sourceFor(CameraDevice d) {
     if (d.source == CameraSourceKind.cloudProxy) {
       final repo = context.read<Session>().repo;
-      return CloudCameraSource((id) => repo.captureCloudBytes(
-            context.read<Session>().store!.id,
-            d,
-          ));
+      // repo 返回 Future<List<int>>，统一转成 Uint8List 以符合 CameraSource 契约
+      return CloudCameraSource((id) async {
+        final bytes = await repo.captureCloudBytes(
+          context.read<Session>().store!.id,
+          d,
+        );
+        return Uint8List.fromList(bytes);
+      });
     }
     return LocalCameraSource();
   }

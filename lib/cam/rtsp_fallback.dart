@@ -7,7 +7,7 @@ library;
 
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
-import 'models.dart';
+import '../data/models.dart';
 import '../platform/channels.dart';
 
 /// 通过原生通道从 RTSP 取一帧 JPEG。MVP 阶段为占位，未接原生时抛 UnsupportedError。

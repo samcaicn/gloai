@@ -1,6 +1,7 @@
 /// camera_manage_page.dart — 摄像头管理：发现 / 手动添加 / 测试抓图 / 命名。
 library;
 
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../state/session.dart';

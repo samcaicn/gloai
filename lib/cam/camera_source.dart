@@ -5,7 +5,7 @@
 library;
 
 import 'dart:typed_data';
-import 'models.dart';
+import '../data/models.dart';
 import 'onvif_client.dart';
 import 'snapshot_fetcher.dart';
 import 'vendor_preset.dart';
@@ -41,7 +41,7 @@ class LocalCameraSource implements CameraSource {
       return SnapshotFetcher.fetch(
         profile.snapshotUri,
         username: device.username,
-        passwordEnc: device.passwordEnc,
+        password: _decrypt(device.passwordEnc),
       );
     } catch (_) {
       // 降级：厂商私有路径
