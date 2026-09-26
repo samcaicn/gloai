@@ -1,0 +1,91 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environment
+.env
+.env.local
+.env.xhs
+
+# Docker
+docker/data/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# OpenClaw runtime
+.openclaw/
+
+# Outputs (keep directory structure via .gitkeep, ignore actual content)
+outputs/**/*
+!outputs/**/.gitkeep
+
+# Assets (user materials are not tracked; curated brand/README media is)
+assets/**/*
+!assets/**/.gitkeep
+!assets/icon.png
+!assets/icon-transparent.png
+!assets/icon-noword.png
+!assets/readme/
+!assets/readme/**
+
+# Session files
+*.jsonl
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+*.egg-info/
+.last-session
+.pytest_cache/
+
+# 登录态 / 凭证（绝不入库——含 SESSDATA 等 token）
+cookies.json
+
+# Local account profiles (publish only the reusable template)
+profiles/*/
+!profiles/_template/
+!profiles/_template/**
+
+# 临时 / scratch（ad-hoc 运行残留）
+.scratch/
+.drama_run/
+.drama_tmp/
+.claude/
+
+# SKILL 自研原始版本（保留备查，含嵌套 git 仓库，不入库）
+skill-test/
+
+# 备份/临时文件
+*.bak
+*.orig
+*.tmp
+*.swp
+
+# 公众号发布器用户凭证配置（含 AppID/AppSecret），只提交 .example 模板
+skills/openclaw/skill-wechat-publisher/wechat-publisher.yaml
+
+# 视频产线内置 SDK：源码+资产入库，但重依赖/缓存/模型不入库（bootstrap.sh 本地还原）
+skills/openclaw/video-production/vendor/**/node_modules/
+skills/openclaw/video-production/vendor/**/.remotion/
+skills/openclaw/video-production/vendor/**/models/
+skills/openclaw/video-production/vendor/**/*large-v3*
+
+# AiMarketing: keep the pulled Easel source, never commit its venv or runtime scratch
+.venv/
+.openclaw-easel/

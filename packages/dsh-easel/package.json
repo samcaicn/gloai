@@ -1,0 +1,27 @@
+{
+  "name": "dsh-easel",
+  "version": "0.1.0",
+  "description": "AiMarketing entry that launches and surfaces the Easel social-media agent (packages/easel) in a dedicated desktop window.",
+  "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-ui-settings": "^0.1.5-rc.1"
+  }
+}

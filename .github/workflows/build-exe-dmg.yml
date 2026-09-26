@@ -1,0 +1,99 @@
+name: Build AiMarketing exe & dmg
+
+on:
+  push:
+    branches:
+      - aim
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag for the built installers (must be unique)'
+        required: true
+        default: 'aimarketing-0.1.1'
+      product_version:
+        description: 'Product version stamped into the build'
+        required: false
+        default: '0.1.1'
+
+permissions:
+  contents: write
+
+env:
+  NPM_CONFIG_REGISTRY: https://registry.npmmirror.com
+  NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
+
+jobs:
+  create-release:
+    name: Create empty release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.rel.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub release (assets uploaded by build jobs)
+        id: rel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag || format('aimarketing-{0}', github.run_id) }}
+        run: |
+          gh release create "$TAG" \
+            --title "AiMarketing ${TAG}" \
+            --notes "Automated build of the AiMarketing desktop installers (Windows nsis + macOS dmg)." \
+            --prerelease
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  build-win:
+    name: Build Windows installer (exe)
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build renderer/main bundles
+        run: npm run build
+      - name: Package Windows installer (unsigned nsis)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --x64 --publish never
+      - name: List dist
+        run: dir dist
+      - name: Upload exe to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $exe = Get-ChildItem dist -Filter aimarketing-desktop-windows-x64-setup.exe | Select-Object -First 1
+          if (-not $exe) { Write-Error "exe not found"; exit 1 }
+          gh release upload "${{ needs.create-release.outputs.tag }}" $exe.FullName --clobber
+
+  build-mac:
+    name: Build macOS disk image (dmg)
+    needs: create-release
+    runs-on: macos-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build renderer/main bundles
+        run: npm run build
+      - name: Package macOS disk images (unsigned dmg + zip, both arches)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --mac --x64 --arm64 --publish never
+      - name: List dist
+        run: ls -la dist
+      - name: Upload dmg/zip to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          files=$(ls dist/aimarketing-desktop-mac-*.dmg dist/aimarketing-desktop-mac-*.zip 2>/dev/null)
+          if [ -z "$files" ]; then echo "no dmg/zip found"; exit 1; fi
+          gh release upload "${{ needs.create-release.outputs.tag }}" $files --clobber
