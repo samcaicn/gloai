@@ -51,6 +51,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Fetch dsh-ppt tgz (exceeds Git Data API 10MB blob limit; hosted as release asset)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download ppt-deps --repo samcaicn/gloai `
+            --pattern "dsh-ppt-0.1.1-rc.2-desktop-20260906.tgz" `
+            --dir packages/ppt-bundles --clobber
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Build renderer/main bundles
@@ -80,6 +87,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Fetch dsh-ppt tgz (exceeds Git Data API 10MB blob limit; hosted as release asset)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download ppt-deps --repo samcaicn/gloai \
+            --pattern "dsh-ppt-0.1.1-rc.2-desktop-20260906.tgz" \
+            --dir packages/ppt-bundles --clobber
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Build renderer/main bundles
