@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>固定转发 · 多对多 / 甲方乙方对称双向</title>
+    <style>
+        body{ margin:0; }
+        .wrap{ max-width:1180px; margin:0 auto; padding:22px 20px 60px; }
+        .panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--sh-2); padding:20px 22px; margin-bottom:18px; }
+        .panel h2{ margin:0 0 14px; font-size:16.5px; font-weight:650; padding-bottom:10px; border-bottom:1px solid var(--border); }
+        .hint{ color:var(--text-3); font-size:13px; line-height:1.7; margin:8px 0 0; }
+        .row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .switch-line{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; }
+        .switch-line .txt strong{ display:block; font-size:14.5px; color:var(--text); }
+        .switch-line .txt span{ font-size:12.5px; color:var(--text-3); }
+        .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+        .badge.on{ background:var(--ok-soft); color:var(--ok-text); }
+        .badge.off{ background:var(--surface-3); color:var(--text-3); }
+        .badge.bad{ background:var(--danger-soft); color:var(--danger-text); }
+        .badge.ok{ background:var(--ok-soft); color:var(--ok-text); }
+        .badge.skip{ background:var(--surface-3); color:var(--text-3); }
+        .badge.err{ background:var(--danger-soft); color:var(--danger-text); }
+        input[type=text], input[type=number], textarea, select{ background:var(--input-bg); color:var(--text); border:1px solid var(--border); border-radius:var(--r-sm); padding:8px 10px; font-size:13.5px; box-sizing:border-box; width:100%; }
+        textarea{ min-height:60px; line-height:1.6; }
+        label.fld{ display:block; font-size:12.5px; color:var(--text-3); margin:10px 0 4px; }
+        .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+        .party-label{ font-weight:600; font-size:13px; margin:4px 0 2px; }
+        .party-label.a{ color:var(--brand); }
+        .party-label.b{ color:var(--ok-text); }
+        .rule-card{ border:1px solid var(--border); border-radius:var(--r); padding:16px; margin-bottom:14px; background:var(--surface-2); }
+        .rule-card.invalid{ border-color:var(--danger); }
+        .rule-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+        .rule-head .name{ font-size:15px; font-weight:600; color:var(--text); }
+        .chk{ display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-2); }
+        .types-wrap{ display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:6px; padding:8px 10px; background:var(--bg-2); border:1px solid var(--border); border-radius:8px; }
+        table{ width:100%; border-collapse:collapse; font-size:13px; }
+        th,td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); }
+        th{ color:var(--text-3); font-weight:600; font-size:12.5px; }
+        td.c{ color:var(--text-2); }
+        .msg{ background:var(--info-soft); color:var(--info-text); border:1px solid var(--brand-ring); border-radius:var(--r); padding:10px 14px; margin-bottom:16px; font-size:13.5px; }
+        .msg.err{ background:var(--danger-soft); color:var(--danger-text); border-color:var(--danger); }
+        .muted{ color:var(--text-3); }
+        .del{ color:var(--danger-text); border-color:var(--danger); }
+        @media(max-width:760px){ .grid2,.grid3,.grid4{ grid-template-columns:1fr; } }
+    </style>
+    {% include '_modern_ui.html' %}
+</head>
+<body>
+    <div class="header-bar">
+        <div class="header-title"><h1>固定转发 · 多对多、甲乙对称双向（纯配置路由）</h1></div>
+        <div class="buttons">
+            <a href="{{ url_for('index') }}" class="nav-button">返回配置</a>
+        </div>
+    </div>
+    <div class="wrap content-area">
+        <div id="msgbox"></div>
+        {% if not data.get('available') %}
+            <div class="msg err">转发引擎（forward_hub）当前不可用，功能已降级。请确认 forward_hub.py 与本程序在同一目录。</div>
+        {% endif %}
+        <div class="panel">
+            <h2>全局开关与限流</h2>
+            <div class="switch-line">
+                <div class="txt">
+                    <strong>启用固定转发 <span id="masterBadge" class="badge off">已停用</span></strong>
+                    <span>关闭后所有规则暂停，消息回到普通 AI 流程</span>
+                </div>
+                <div class="row">
+                    <label class="chk"><input type="checkbox" id="masterEnabled"> 启用</label>
+                    <button class="nav-button" onclick="saveConfig()">保存设置</button>
+                </div>
+            </div>
+            <div class="grid3" style="margin-top:14px;">
+                <div><label class="fld">限流窗口（秒）</label><input type="number" id="rlWindow" value="10" min="1"></div>
+                <div><label class="fld">窗口内最大条数</label><input type="number" id="rlMax" value="15" min="1"></div>
+                <div class="muted" style="align-self:flex-end;font-size:12px;">超过上限的消息会被丢弃并告警，避免刷屏。</div>
+            </div>
+            <p class="hint">甲、乙双方消息默认 <b>只转发、不触发 AI 回复</b>；勾选「同时让 AI 回复源」可改为转发+AI 双发。</p>
+        </div>
+        <div class="panel">
+            <h2>转发对（甲方 ↔ 乙方，多对多）</h2>
+            <div id="rulesBox"></div>
+            <div class="row" style="margin-top:14px;">
+                <button class="nav-button" onclick="addRule()">+ 新增转发对</button>
+                <button class="nav-button" onclick="saveConfig()">保存全部</button>
+            </div>
+            <p class="hint">
+                每个转发对包含 <b>甲方（party_a）</b> 与 <b>乙方（party_b）</b>，<b>每行一个</b>会话名（好友备注名或群名），<b>双方都可以填多个人/群</b>。<br>
+                <b>称呼</b>：写作 <code>会话名=我对他的称呼</code>，如 <code>张三=张总</code>（职位头衔）、<code>王五=二舅</code>（亲戚关系）。
+                这是<b>主人视角</b>的叫法，转发时用来改写消息里的称呼。<br>
+                <b>句首称呼处理</b>：消息开头的称呼（<code>张总，</code>／<code>李经理：</code>／<code>二舅 你好</code>）是发件人视角，转发给对端后大概率不适用。
+                引擎会先认这个称呼指的是谁：<b>认出来</b> → 换成「我对他的称呼」；<b>认不出</b>（泛称如「老师，」「各位，」） → 直接去掉。
+                识别先用本地规则（姓氏+称谓/亲戚词/问候语，零延迟），拿不准时才问 AI（<code>自动</code>模式）。<br>
+                <b>正文本名替换为称呼</b>：正文其余位置出现的成员本名也一并换成「我对他的称呼」。来源标签同样用称呼，显示为 <code>[来自 张总]</code>。<br>
+                路由<b>只看会话归属、不解析消息内容</b>：甲方任一会话来消息 → 转发给乙方全体；乙方任一会话来消息 → 转发给甲方全体（双向时）。<br>
+                甲方乙方不能重叠、不能填机器人自己。成员重复填写时以第一个为准；称呼留空即原样转发。<br>
+                <b>监测内容</b>：默认<b>全部内容</b>都转发；可改为「指定类型」只转发勾选的消息类型，或「关键字」只转发含指定关键字的消息。不匹配的内容<b>不转发、也不触发 AI 回复</b>（即不回应）。<br>
+                <b>媒体转发</b>：默认「原文件转发」——从微信本地媒体库提取原文件再发给对端，覆盖<b>图片 / 视频 / 文件 / 语音</b>。
+                语音以<b>单条原文件</b>发送，转写文本写入文件名（如 <code>语音_你好世界.silk</code>），不再额外发一条文字气泡（微信不支持直接转发语音，SILK 以文件形式发送）。提取失败会自动降级为 <code>[语音]</code> 等占位，绝不丢消息。
+            </p>
+        </div>
+        <div class="panel">
+            <h2>最近转发流水（最新 10 条）</h2>
+            <div id="logBox"><p class="hint">暂无记录。</p></div>
+        </div>
+    </div>
+<script>
+const csrf = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+let CONFIG = { enabled:false, rate_limit:{window_sec:10,max_msgs:15}, rules:[] };
+let LOG = [];
+function showMsg(text, isErr){
+    const b = document.getElementById('msgbox');
+    b.innerHTML = '<div class="msg'+(isErr?' err':'')+'">'+escapeHtml(text)+'</div>';
+    setTimeout(function(){ b.innerHTML=''; }, 4000);
+}
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
+async function api(url, method, body){
+    const opt = { method:method, headers:{ 'X-CSRFToken': csrf, 'Content-Type':'application/json' } };
+    if(body!==undefined) opt.body = JSON.stringify(body);
+    const r = await fetch(url, opt);
+    return await r.json();
+}
+async function loadAll(){
+    try{
+        const r1 = await api('/api/forward/rules','GET');
+        const r3 = await api('/api/forward/log','GET');
+        if(r1.ok){ CONFIG = { enabled:r1.enabled, rate_limit:r1.rate_limit, rules:r1.rules }; }
+        if(r3.ok){ LOG = r3.log || []; }
+        renderConfig(); renderRules(); renderLog();
+    }catch(e){ showMsg('加载失败：'+e, true); }
+}
+function renderConfig(){
+    document.getElementById('masterEnabled').checked = !!CONFIG.enabled;
+    document.getElementById('rlWindow').value = CONFIG.rate_limit.window_sec;
+    document.getElementById('rlMax').value = CONFIG.rate_limit.max_msgs;
+    const badge = document.getElementById('masterBadge');
+    badge.className = 'badge '+(CONFIG.enabled?'on':'off');
+    badge.textContent = CONFIG.enabled?'已启用':'已停用';
+}
+function renderRules(){
+    const box = document.getElementById('rulesBox');
+    box.innerHTML='';
+    (CONFIG.rules||[]).forEach(function(rule, idx){
+        const invalid = (rule.invalid||[]).length>0;
+        const card = document.createElement('div');
+        card.className = 'rule-card'+(invalid?' invalid':'');
+        card.innerHTML = ''
+            + '<div class="rule-head">'
+            +   '<span class="name">'+escapeHtml(rule.name||rule.id||('转发对'+(idx+1)))+'</span>'
+            +   '<div class="row">'
+            +     (invalid?'<span class="badge bad">配置有误</span>':'<span class="badge '+(rule.enabled?'on':'off')+'">'+(rule.enabled?'启用':'停用')+'</span>')
+            +     '<label class="chk"><input type="checkbox" data-f="enabled" '+(rule.enabled?'checked':'')+'> 启用</label>'
+            +     '<button class="nav-button del" data-act="del">删除</button>'
+            +   '</div>'
+            + '</div>'
+            + (invalid?'<p class="hint" style="color:var(--danger-text)">问题：'+escapeHtml((rule.invalid||[]).join('；'))+'</p>':'')
+            + '<div class="grid2">'
+            +   '<div>'
+            +     '<div class="party-label a">甲方（每行一个：会话名 或 会话名=我对他的称呼）</div>'
+            +     '<textarea data-f="party_a" rows="3" placeholder="张三=张总&#10;王五=二舅">'+escapeHtml(serializeMembers(rule.party_a))+'</textarea>'
+            +   '</div>'
+            +   '<div>'
+            +     '<div class="party-label b">乙方（每行一个：会话名 或 会话名=我对他的称呼）</div>'
+            +     '<textarea data-f="party_b" rows="3" placeholder="李四=李经理&#10;赵六=三姨">'+escapeHtml(serializeMembers(rule.party_b))+'</textarea>'
+            +   '</div>'
+            + '</div>'
+            + '<div><label class="fld">规则名称（可选）</label><input type="text" data-f="name" value="'+escapeHtml(rule.name||'')+'"></div>'
+            + '<div class="grid2" style="margin-top:10px;">'
+            +   '<div><label class="fld">句首称呼处理</label><select data-f="salutation_mode">'
+            +     '<option value="auto" '+((!rule.salutation_mode||rule.salutation_mode==='auto')?'selected':'')+'>自动（本地规则优先，拿不准问 AI）</option>'
+            +     '<option value="rule" '+(rule.salutation_mode==='rule'?'selected':'')+'>仅本地规则（零延迟，不调 AI）</option>'
+            +     '<option value="ai" '+(rule.salutation_mode==='ai'?'selected':'')+'>仅 AI 判断（每条都问）</option>'
+            +     '<option value="off" '+(rule.salutation_mode==='off'?'selected':'')+'>不处理</option>'
+            +   '</select></div>'
+            +   '<div><label class="fld">监测内容（默认全部内容）</label><select data-f="monitor_content">'
+            +     '<option value="all" '+((!rule.monitor_content||rule.monitor_content==='all')?'selected':'')+'>全部内容</option>'
+            +     '<option value="types" '+(rule.monitor_content==='types'?'selected':'')+'>指定类型</option>'
+            +     '<option value="keywords" '+(rule.monitor_content==='keywords'?'selected':'')+'>关键字</option>'
+            +   '</select></div>'
+            + '</div>'
+            + '<div id="mc-types-'+idx+'" style="'+((rule.monitor_content==='types')?'':'display:none;')+'margin-top:6px;">'
+            +   '<label class="fld">仅转发以下类型（不勾=全部）</label><div class="types-wrap">'
+            +     (function(){ var L={text:'文字',image:'图片',video:'视频',file:'文件',voice:'语音',link:'链接',quote:'引用',merge:'合并转发',emotion:'表情'}; var cur=rule.monitor_types||[]; return Object.keys(L).map(function(t){ return '<label class="chk"><input type="checkbox" data-type="'+t+'" '+(cur.indexOf(t)>=0?'checked':'')+'> '+L[t]+'</label>'; }).join(''); })()
+            +   '</div></div>'
+            + '<div id="mc-kw-'+idx+'" style="'+((rule.monitor_content==='keywords')?'':'display:none;')+'margin-top:6px;">'
+            +   '<label class="fld">仅转发含以下关键字的消息（逗号分隔，空=全部）</label><input type="text" data-f="monitor_keywords" value="'+escapeHtml((rule.monitor_keywords||[]).join(', '))+'"></div>'
+            + '<div class="row" style="margin-top:12px;">'
+            +   '<label class="chk"><input type="checkbox" data-f="bidirectional" '+(rule.bidirectional?'checked':'')+'> 双向（乙方可回传甲方）</label>'
+            +   '<label class="chk"><input type="checkbox" data-f="source_label" '+(rule.source_label?'checked':'')+'> 转发加来源标签</label>'
+            +   '<label class="chk"><input type="checkbox" data-f="replace_alias" '+((rule.replace_alias===false)?'':'checked')+'> 正文本名替换为称呼</label>'
+            +   '<label class="chk"><input type="checkbox" data-f="ai_reply_to_source" '+(rule.ai_reply_to_source?'checked':'')+'> 同时让 AI 回复源</label>'
+            +   '<label class="chk"><input type="checkbox" data-f="respect_quiet_time" '+(rule.respect_quiet_time?'checked':'')+'> 受静默期限制</label>'
+            + '</div>';
+        card.querySelectorAll('[data-f]').forEach(function(el){
+            el.addEventListener('change', function(){ collectRule(rule, card); });
+            el.addEventListener('input', function(){ collectRule(rule, card); });
+        });
+        var mcSel = card.querySelector('[data-f=monitor_content]');
+        if(mcSel){
+            mcSel.addEventListener('change', function(){
+                collectRule(rule, card);
+                var t = card.querySelector('#mc-types-'+idx), k = card.querySelector('#mc-kw-'+idx);
+                if(t) t.style.display = (mcSel.value==='types') ? '' : 'none';
+                if(k) k.style.display = (mcSel.value==='keywords') ? '' : 'none';
+            });
+        }
+        card.querySelector('[data-act=del]').addEventListener('click', function(){
+            CONFIG.rules.splice(idx,1); renderRules();
+        });
+        box.appendChild(card);
+    });
+    if(!(CONFIG.rules||[]).length){
+        box.innerHTML = '<p class="hint">还没有转发对。点「+ 新增转发对」添加第一条。</p>';
+    }
+}
+function collectRule(rule, card){
+    card.querySelectorAll('[data-f]').forEach(function(el){
+        const f = el.getAttribute('data-f');
+        if(el.type==='checkbox'){ rule[f] = el.checked; }
+        else if(f==='party_a'){ rule.party_a = parseMembers(el.value); }
+        else if(f==='party_b'){ rule.party_b = parseMembers(el.value); }
+        else if(f==='monitor_keywords'){ rule.monitor_keywords = splitList(el.value); }
+        else if(f==='monitor_content'){ rule.monitor_content = el.value; }
+        else { rule[f] = el.value; }
+    });
+    // 收集「指定类型」勾选（checkbox 用 data-type，避免被上面的布尔赋值覆盖）
+    const types = [];
+    card.querySelectorAll('input[data-type]').forEach(function(cb){ if(cb.checked) types.push(cb.getAttribute('data-type')); });
+    rule.monitor_types = types;
+}
+function splitList(s){ return (s||'').split(/[,，、\s]+/).map(function(x){return x.trim();}).filter(Boolean); }
+/* 成员行格式：每行一个，支持 "会话名" 或 "会话名=称呼"；同一行内也允许逗号分隔 */
+function parseMembers(s){
+    const out = [];
+    (s||'').split(/[\r\n]+/).forEach(function(line){
+        line.split(/[,，、]+/).forEach(function(seg){
+            seg = (seg||'').trim();
+            if(!seg) return;
+            const parts = seg.split(/\s*[=＝:：]\s*/);
+            const name = (parts[0]||'').trim();
+            const alias = (parts[1]||'').trim();
+            if(name) out.push({ name:name, alias:alias });
+        });
+    });
+    return out;
+}
+function serializeMembers(list){
+    return (list||[]).map(function(m){
+        if(typeof m === 'string') return m;
+        const n = (m && m.name) || '';
+        const a = (m && m.alias) || '';
+        return (n && a) ? (n + '=' + a) : n;
+    }).filter(Boolean).join('\n');
+}
+function addRule(){
+    CONFIG.rules.push({
+        id:'r'+(Date.now()), name:'', enabled:true, party_a:[], party_b:[],
+        bidirectional:true, source_label:true, replace_alias:true,
+        salutation_mode:'auto',
+        ai_reply_to_source:false,
+        monitor_content:'all', monitor_types:[], monitor_keywords:[],
+        respect_quiet_time:false, invalid:[]
+    });
+    renderRules();
+}
+function renderLog(){
+    const box = document.getElementById('logBox');
+    if(!LOG.length){ box.innerHTML='<p class="hint">暂无记录。</p>'; return; }
+    let rows='';
+    LOG.forEach(function(e){
+        let dir = '—';
+        if(e.direction==='a_to_b') dir = '甲方→乙方';
+        else if(e.direction==='b_to_a') dir = '乙方→甲方';
+        const rcls = e.result==='ok'?'ok':(e.result==='error'?'err':'skip');
+        rows += '<tr><td class="c">'+escapeHtml(e.time||'')+'</td>'
+            + '<td class="c">'+dir+'</td>'
+            + '<td class="c">'+escapeHtml(e.src||'')+' → '+escapeHtml(e.dst||'')+'</td>'
+            + '<td class="c">'+escapeHtml(e.summary||'')+'</td>'
+            + '<td><span class="badge '+rcls+'">'+escapeHtml(e.result||'')+'</span></td></tr>';
+    });
+    box.innerHTML = '<table><thead><tr><th>时间</th><th>方向</th><th>源 → 目标</th><th>摘要</th><th>结果</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+async function saveConfig(){
+    CONFIG.enabled = document.getElementById('masterEnabled').checked;
+    CONFIG.rate_limit = {
+        window_sec: parseInt(document.getElementById('rlWindow').value)||10,
+        max_msgs: parseInt(document.getElementById('rlMax').value)||15,
+    };
+    document.querySelectorAll('.rule-card').forEach(function(card, idx){
+        if(CONFIG.rules[idx]) collectRule(CONFIG.rules[idx], card);
+    });
+    const r = await api('/api/forward/rules','POST', CONFIG);
+    if(r.ok){ showMsg(r.msg||'已保存'); loadAll(); }
+    else{ showMsg('保存失败：'+(r.errors||[]).join('；'), true); }
+}
+loadAll();
+setInterval(function(){
+    api('/api/forward/log','GET').then(function(r){ if(r.ok){ LOG=r.log||[]; renderLog(); }});
+}, 15000);
+</script>
+</body>
+</html>

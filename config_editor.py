@@ -85,12 +85,14 @@ from filelock import FileLock
 from functools import wraps
 import webbrowser
 from threading import Timer
+import threading  # 用于全局状态锁（心跳 120/min + threads=4 会并发读写 bot 状态）
 import logging
 from queue import Queue, Empty
 import time
 import json
 from werkzeug.utils import secure_filename
 import uuid
+import hashlib
 import base64
 import mimetypes
 from datetime import datetime
@@ -550,6 +552,10 @@ def clear_login_attempts(ip):
 CHAT_CONTEXTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chat_contexts.json')
 CHAT_CONTEXTS_LOCK_FILE = CHAT_CONTEXTS_FILE + '.lock'
 
+# 全局机器人状态锁：心跳(120/min)与多线程(threads=4)会并发读写下面三个全局量，
+# 统一用 state_lock 保护，避免读到撕裂状态或重复启动/重复清理。
+state_lock = threading.Lock()
+
 last_heartbeat_time = 0  # 上次收到心跳的时间戳
 HEARTBEAT_TIMEOUT = 15   # 心跳超时阈值（秒），应大于 bot.py 的 HEARTBEAT_INTERVAL
 current_bot_pid = None
@@ -690,71 +696,133 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def _reap_bot_process():
+    """回收已退出的 bot 子进程并清理失效 PID（僵尸进程回收）。
+    poll() 运行中返回 None、退出后返回退出码；退出后必须 wait() 才能真正回收。
+    注意：本函数只做极短操作，调用方不要持 state_lock 调用，以免嵌套死锁。"""
+    global bot_process, current_bot_pid
+    with state_lock:
+        if bot_process is not None:
+            rc = bot_process.poll()
+            if rc is not None:
+                try:
+                    bot_process.wait(timeout=1)
+                except Exception:
+                    pass
+                app.logger.info(f"回收已退出的 bot 进程对象 (PID {bot_process.pid}, 退出码 {rc})")
+                bot_process = None
+        # current_bot_pid 指向的进程若已不存在（bot 自行崩溃/退出），一并清空
+        if current_bot_pid is not None:
+            try:
+                if not psutil.pid_exists(current_bot_pid):
+                    app.logger.info(f"清理失效的 current_bot_pid: {current_bot_pid}")
+                    current_bot_pid = None
+            except Exception:
+                current_bot_pid = None
+
 @app.route('/start_bot', methods=['POST'])
 @login_required
 @limiter.limit("10 per minute")  # 速率限制：防止频繁启动
 def start_bot():
-    global bot_process
-    if bot_process is None or bot_process.poll() is not None:
-        # 如果目录下存在 user_timers.json 则删除
-        user_timers_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'user_timers.json')
-        if os.path.exists(user_timers_path):
+    global bot_process, current_bot_pid, last_heartbeat_time
+
+    # 先回收已退出的旧进程对象，避免僵尸进程与失效 PID 残留（P1-2）
+    _reap_bot_process()
+
+    # 启动前同时检查 current_bot_pid（P1-4）：只看 bot_process 会漏掉
+    # 非本进程启动（外部启动/心跳上报）的 bot，从而出现双 bot。
+    alive_pid = None
+    with state_lock:
+        if bot_process is not None and bot_process.poll() is None:
+            alive_pid = bot_process.pid
+        elif current_bot_pid is not None:
             try:
-                os.remove(user_timers_path)
-            except Exception as e:
-                app.logger.warning(f"重置主动消息定时器失败: {e}")
+                if psutil.pid_exists(current_bot_pid):
+                    alive_pid = current_bot_pid
+            except Exception:
+                alive_pid = None
 
-        # 单文件 exe（PyInstaller 冻结）模式下，bot 已随 exe 打包，
-        # 通过自重启并带 --bot 参数来启动机器人子进程。
-        if getattr(sys, 'frozen', False):
-            cmd = [sys.executable, '--bot']
+    if alive_pid is not None:
+        app.logger.info(f"启动前检测到仍在运行的机器人(PID {alive_pid})，先停止再启动，避免双开")
+        stop_bot_process(pid_to_kill=alive_pid)
+        time.sleep(1.0)  # 给进程树退出留出时间
+
+    # 如果目录下存在 user_timers.json 则删除
+    user_timers_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'user_timers.json')
+    if os.path.exists(user_timers_path):
+        try:
+            os.remove(user_timers_path)
+        except Exception as e:
+            app.logger.warning(f"重置主动消息定时器失败: {e}")
+
+    # 单文件 exe（PyInstaller 冻结）模式下，bot 已随 exe 打包，
+    # 通过自重启并带 --bot 参数来启动机器人子进程。
+    if getattr(sys, 'frozen', False):
+        cmd = [sys.executable, '--bot']
+    else:
+        bot_dir = os.path.dirname(os.path.abspath(__file__))
+        bot_py = os.path.join(bot_dir, 'bot.py')
+        bot_exe = os.path.join(bot_dir, 'bot.exe')
+
+        if os.path.exists(bot_py):
+            cmd = [sys.executable, bot_py]
+        elif os.path.exists(bot_exe):
+            cmd = [bot_exe]
         else:
-            bot_dir = os.path.dirname(os.path.abspath(__file__))
-            bot_py = os.path.join(bot_dir, 'bot.py')
-            bot_exe = os.path.join(bot_dir, 'bot.exe')
+            return {'error': 'No bot executable found'}, 404
 
-            if os.path.exists(bot_py):
-                cmd = [sys.executable, bot_py]
-            elif os.path.exists(bot_exe):
-                cmd = [bot_exe]
-            else:
-                return {'error': 'No bot executable found'}, 404
-
-        creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
-        bot_process = subprocess.Popen(
-            cmd,
-            creationflags=creation_flags
-        )
+    creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+    proc = subprocess.Popen(
+        cmd,
+        creationflags=creation_flags
+    )
+    # 启动后同步记录 PID 并重置心跳，避免旧心跳/旧 PID 让状态接口误判（P1-4）
+    with state_lock:
+        bot_process = proc
+        current_bot_pid = proc.pid
+        last_heartbeat_time = 0
+    app.logger.info(f"机器人已启动 (PID {proc.pid})")
     return {'status': 'started'}, 200
 
 @app.route('/stop_bot', methods=['POST'])
 @login_required
 @limiter.limit("10 per minute")  # 速率限制：防止频繁停止
 def stop_bot():
-    global bot_process, last_heartbeat_time, current_bot_pid
+
+    # 先回收已退出的进程对象并清理失效 PID（P1-2），避免按死 PID 反复尝试停止
+    _reap_bot_process()
+
+    # 读取状态必须在锁内（心跳线程会并发写 last_heartbeat_time / current_bot_pid）
+    with state_lock:
+        _bp = bot_process
+        _pid = current_bot_pid
+        _hb = last_heartbeat_time
+        _bp_alive = _bp is not None and _bp.poll() is None
+
     # 检查状态时，也考虑 current_bot_pid 是否指示有活跃进程
     is_considered_running = False
-    if bot_process and bot_process.poll() is None:
+    if _bp_alive:
         is_considered_running = True
-    elif (time.time() - last_heartbeat_time) < HEARTBEAT_TIMEOUT and current_bot_pid is not None:
+    elif (time.time() - _hb) < HEARTBEAT_TIMEOUT and _pid is not None:
         try:
-            if psutil.pid_exists(current_bot_pid): # 确保PID对应的进程还存在
+            if psutil.pid_exists(_pid): # 确保PID对应的进程还存在
                  is_considered_running = True
         except Exception: # psutil.pid_exists 可能会抛出异常，例如权限问题
             pass
 
+    # 注意：下面调用 stop_bot_process 前已释放 state_lock，避免与它的内部锁嵌套死锁
     if not is_considered_running:
         app.logger.info("尝试停止机器人，但根据进程对象和心跳判断，机器人似乎已停止。")
         # 即使如此，也调用stop_bot_process来清理状态
-        stop_bot_process(pid_to_kill=current_bot_pid if current_bot_pid else (bot_process.pid if bot_process else None))
+        stop_bot_process(pid_to_kill=_pid if _pid else (_bp.pid if _bp else None))
         return {'status': 'stopped'}, 200
     else:
-        pid_from_flask_process = bot_process.pid if bot_process else None
+        pid_from_flask_process = _bp.pid if _bp else None
         # 优先使用 current_bot_pid，因为它更可能是最新的
         # 如果 current_bot_pid 和 flask 记录的 pid 不同，且 flask 的 pid 进程也存在，都尝试杀掉
         pids_to_attempt_kill = set()
-        if current_bot_pid:
-            pids_to_attempt_kill.add(current_bot_pid)
+        if _pid:
+            pids_to_attempt_kill.add(_pid)
         if pid_from_flask_process:
             pids_to_attempt_kill.add(pid_from_flask_process)
 
@@ -769,16 +837,21 @@ def stop_bot():
 @limiter.exempt  # 豁免速率限制：前端频繁轮询，只读操作
 @login_required
 def bot_status():
-    global bot_process, last_heartbeat_time, current_bot_pid
-    
-    process_alive_via_flask_obj = bot_process is not None and bot_process.poll() is None
-    heartbeat_is_recent = (time.time() - last_heartbeat_time) < HEARTBEAT_TIMEOUT
+
+    # 心跳线程会并发写这三个全局量，读取时统一加锁（P2-3）
+    with state_lock:
+        _bp = bot_process
+        _hb = last_heartbeat_time
+        _pid = current_bot_pid
+
+    process_alive_via_flask_obj = _bp is not None and _bp.poll() is None
+    heartbeat_is_recent = (time.time() - _hb) < HEARTBEAT_TIMEOUT
     
     # 新增：检查 current_bot_pid 对应的进程是否实际存活
     process_alive_via_current_pid = False
-    if current_bot_pid is not None:
+    if _pid is not None:
         try:
-            if psutil.pid_exists(current_bot_pid):
+            if psutil.pid_exists(_pid):
                 process_alive_via_current_pid = True 
         except psutil.Error:
             pass
@@ -789,8 +862,8 @@ def bot_status():
         current_status = "running"
     elif heartbeat_is_recent and process_alive_via_current_pid: # 优先检查通过PID确认的存活
         current_status = "running"
-    elif heartbeat_is_recent and not process_alive_via_current_pid and current_bot_pid is not None:
-        app.logger.warning(f"Bot status: Heartbeat recent, but PID {current_bot_pid} does not exist. Marking as stopped for now. Last heartbeat: {time.time() - last_heartbeat_time:.1f}s ago")
+    elif heartbeat_is_recent and not process_alive_via_current_pid and _pid is not None:
+        app.logger.warning("Bot status: Heartbeat recent, but PID {_pid} does not exist. Marking as stopped for now. Last heartbeat: {time.time() - _hb:.1f}s ago")
         current_status = "stopped" # 倾向于保守
     elif heartbeat_is_recent : # 心跳最近，但没有 current_bot_pid 信息 (例如 bot.py 未发送PID)
         current_status = "running" # 保持原逻辑：心跳最近则认为运行
@@ -860,12 +933,135 @@ def proxy_weapis_models():
         app.logger.error(f"处理WeAPIs模型列表请求时出错: {str(e)}")
         return jsonify({'error': '服务器内部错误'}), 500
 
+# --------------------------------------------------------------------------
+# 用户列表扩展：监测内容 + 固定转发（LISTEN_LIST 第三列，可选）
+#   条目结构: [昵称, Prompt文件] 或 [昵称, Prompt文件, 设置dict]
+#   设置dict: {
+#       "monitor": {"types": [...], "keywords": [...],
+#                    "action": "prompt"|"ignore", "prompt_file": ""},
+#       "forward": ["联系人/群名", ...]
+#   }
+# --------------------------------------------------------------------------
+LISTEN_SETTING_RULE_PREFIX = 'listen_'   # 由用户列表生成的固定转发规则 id 前缀
+
+
+def _listen_settings_is_empty(st):
+    """判断设置 dict 是否为空配置（未配置监测、未配置转发）。"""
+    if not isinstance(st, dict):
+        return True
+    mon = st.get('monitor') or {}
+    if not isinstance(mon, dict):
+        mon = {}
+    if (mon.get('types') or mon.get('keywords')):
+        return False
+    if (st.get('forward') or []):
+        return False
+    return True
+
+
+def _build_listen_list_from_form(form, old_config=None):
+    """从表单构建 LISTEN_LIST，兼容第三列设置。
+
+    - 表单含 listen_settings 隐藏字段（完整配置页）时逐行解析 JSON；
+    - 表单不含 listen_settings（快速上手/旧表单）时按昵称保留旧设置；
+    - 空设置的行退化为两元素条目，保持 config.py 简洁。
+    """
+    old_settings_map = {}
+    for item in (old_config or {}).get('LISTEN_LIST', []):
+        try:
+            if isinstance(item, (list, tuple)) and len(item) >= 3 \
+                    and isinstance(item[2], dict) and item[0]:
+                old_settings_map[item[0]] = item[2]
+        except Exception:
+            continue
+
+    nicknames = form.getlist('nickname')
+    prompt_files = form.getlist('prompt_file')
+    settings_raw = form.getlist('listen_settings')
+
+    out = []
+    for i, (nick, pf) in enumerate(zip(nicknames, prompt_files)):
+        nick_s = (nick or '').strip()
+        pf_s = (pf or '').strip()
+        if not nick_s or not pf_s:
+            continue
+        st = {}
+        if settings_raw:
+            # 完整配置页：每行都提交了一个 listen_settings
+            if i < len(settings_raw):
+                try:
+                    obj = json.loads(settings_raw[i])
+                    if isinstance(obj, dict):
+                        st = obj
+                except Exception:
+                    st = {}
+        else:
+            # 旧表单（无设置字段）：昵称未变则保留旧设置
+            st = old_settings_map.get(nick_s, {})
+        if _listen_settings_is_empty(st):
+            out.append([nick_s, pf_s])
+        else:
+            out.append([nick_s, pf_s, st])
+    return out
+
+
+def _sync_listen_forward_rules(listen_list):
+    """把用户列表每行的「固定转发」设置同步到 forward_hub 规则库。
+
+    - 每个配置了转发目标的行生成一条规则（id=listen_<md5>，双向）；
+    - 清空目标的行删除其生成规则；
+    - 手动在固定转发页创建的规则（非 listen_ 前缀）不受影响。
+    """
+    try:
+        import forward_hub
+    except Exception:
+        return
+    if forward_hub is None:
+        return
+    try:
+        cfg = forward_hub.get_rules()
+        if not isinstance(cfg, dict):
+            return
+        kept = [r for r in (cfg.get('rules') or [])
+                if not str(r.get('id', '')).startswith(LISTEN_SETTING_RULE_PREFIX)]
+        generated = []
+        for item in listen_list:
+            if not (isinstance(item, (list, tuple)) and len(item) >= 3):
+                continue
+            nick = item[0]
+            targets = item[2].get('forward') or []
+            targets = [str(t).strip() for t in targets if str(t).strip()]
+            # 去重并防止自己转给自己（回环）
+            seen = set()
+            deduped = []
+            for t in targets:
+                if t != nick and t not in seen:
+                    seen.add(t)
+                    deduped.append(t)
+            if not deduped:
+                continue
+            generated.append({
+                'id': LISTEN_SETTING_RULE_PREFIX + hashlib.md5(
+                    nick.encode('utf-8')).hexdigest()[:12],
+                'name': f'用户列表: {nick}',
+                'enabled': True,
+                'party_a': [nick],
+                'party_b': deduped,
+                'bidirectional': True,
+            })
+        cfg['rules'] = kept + generated
+        forward_hub.save_rules(cfg)
+    except Exception as e:
+        app.logger.error(f"同步用户列表固定转发规则失败: {e}")
+
+
 @app.route('/submit_config', methods=['POST'])
 @login_required
 @limiter.limit("30 per minute")  # 速率限制：防止频繁提交配置
 def submit_config():
-    global bot_process
-    if bot_process and bot_process.poll() is None:
+    with state_lock:  # 运行态判断加锁，避免与心跳/启停竞争（P2-3）
+        _bot_running = bot_process is not None and bot_process.poll() is None
+    if _bot_running:
         return jsonify({'error': '程序正在运行，请先停止再保存配置'}), 400
     try:
         if not request.form:
@@ -888,17 +1084,22 @@ def submit_config():
                     # 如果提交的是新值，使用新值
                     new_values_for_config_py[field] = submitted_value
 
+        # 修复：昵称与提示词文件数量不一致时返回明确错误，而不是静默把整个监听名单清空（P2-4）
         nicknames_from_form = request.form.getlist('nickname')
         prompt_files_from_form = request.form.getlist('prompt_file')
-        
-        processed_listen_list = []
-        if nicknames_from_form and prompt_files_from_form and len(nicknames_from_form) == len(prompt_files_from_form):
-            for nick, pf in zip(nicknames_from_form, prompt_files_from_form):
-                nick_stripped = nick.strip()
-                pf_stripped = pf.strip()
-                if nick_stripped and pf_stripped: 
-                    processed_listen_list.append([nick_stripped, pf_stripped])
-        new_values_for_config_py['LISTEN_LIST'] = processed_listen_list
+
+        # 只有表单确实提交了这两个字段时才更新 LISTEN_LIST，否则保留原配置，避免被清空
+        if 'nickname' in request.form or 'prompt_file' in request.form:
+            if len(nicknames_from_form) != len(prompt_files_from_form):
+                return jsonify({
+                    'error': f'监听名单数据不一致：昵称 {len(nicknames_from_form)} 条、提示词文件 {len(prompt_files_from_form)} 条，已取消本次保存'
+                }), 400
+            processed_listen_list = _build_listen_list_from_form(
+                request.form, current_config_before_update)
+            new_values_for_config_py['LISTEN_LIST'] = processed_listen_list
+        else:
+            # 表单未提交这两个字段（例如其它配置页提交），保持原监听名单不变
+            processed_listen_list = current_config_before_update.get('LISTEN_LIST', [])
         
         new_listen_list_map = {item[0]: item[1] for item in processed_listen_list}
         
@@ -1052,7 +1253,10 @@ def submit_config():
                     new_values_for_config_py[key_from_form] = value_from_form
         
         update_config(new_values_for_config_py)
-        
+
+        # 用户列表每行的「固定转发」同步到 forward_hub 规则库
+        _sync_listen_forward_rules(processed_listen_list)
+
         # 验证配置文件类型正确性
         script_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.join(script_dir, 'config.py')
@@ -1091,49 +1295,61 @@ def stop_bot_process(pid_to_kill=None):
         try:
             if psutil.pid_exists(pid_to_kill):
                 bot_psutil = psutil.Process(pid_to_kill)
-                app.logger.info(f"尝试终止PID为 {pid_to_kill} 的机器人进程...")
-                bot_psutil.terminate()
-                bot_psutil.wait(timeout=5) # 等待进程终止
-                app.logger.info(f"通过 terminate 成功停止了PID {pid_to_kill}。")
-                process_killed_successfully = True
+                app.logger.info(f"尝试终止PID为 {pid_to_kill} 的机器人进程及其子进程树...")
+                # 先递归杀掉子进程（含孙子进程）：只杀单一进程会让子进程残留，
+                # 占着端口/文件导致机器人重启冲突（P1-3）。枚举失败也不能中断主流程。
+                try:
+                    for child in bot_psutil.children(recursive=True):
+                        try:
+                            child.kill()
+                        except Exception:
+                            pass
+                except Exception as e_children:
+                    app.logger.warning(f"枚举/终止子进程失败 (PID {pid_to_kill}): {e_children}")
+                try:
+                    bot_psutil.terminate()  # 子进程已清理，再优雅终止父进程
+                    bot_psutil.wait(timeout=5) # 等待进程终止
+                    app.logger.info(f"通过 terminate 成功停止了PID {pid_to_kill}。")
+                    process_killed_successfully = True
+                except psutil.NoSuchProcess:
+                    app.logger.info(f"尝试终止PID {pid_to_kill} 时，进程已不存在。")
+                    process_killed_successfully = True # 认为已停止
+                except psutil.TimeoutExpired: # psutil.TimeoutExpired
+                    app.logger.warning(f"Terminate PID {pid_to_kill} 超时，尝试 kill。")
+                    bot_psutil.kill()
+                    bot_psutil.wait(timeout=3)
+                    app.logger.info(f"通过 kill 成功停止了PID {pid_to_kill}。")
+                    process_killed_successfully = True
             else:
                 app.logger.info(f"PID {pid_to_kill} 指定的进程不存在。")
                 process_killed_successfully = True # 认为已停止
         except psutil.NoSuchProcess:
             app.logger.info(f"尝试终止PID {pid_to_kill} 时，进程已不存在。")
             process_killed_successfully = True # 认为已停止
-        except psutil.TimeoutExpired: # psutil.TimeoutExpired
-            app.logger.warning(f"Terminate PID {pid_to_kill} 超时，尝试 kill。")
-            try:
-                if psutil.pid_exists(pid_to_kill): # 再次确认存在
-                    bot_psutil_kill = psutil.Process(pid_to_kill)
-                    bot_psutil_kill.kill()
-                    bot_psutil_kill.wait(timeout=3)
-                    app.logger.info(f"通过 kill 成功停止了PID {pid_to_kill}。")
-                    process_killed_successfully = True
-            except psutil.NoSuchProcess:
-                 app.logger.info(f"尝试 kill PID {pid_to_kill} 时，进程已不存在。")
-                 process_killed_successfully = True
-            except Exception as e_kill:
-                app.logger.error(f"Kill PID {pid_to_kill} 失败: {e_kill}")
         except Exception as e:
             app.logger.error(f"停止PID {pid_to_kill} 时发生错误: {e}")
 
-    # 如果被杀死的PID是Flask自己启动的进程，则清空bot_process
-    if bot_process and pid_to_kill == bot_process.pid and process_killed_successfully:
-        app.logger.info(f"清空 Flask 维护的 bot_process 对象 (原PID: {bot_process.pid})。")
-        bot_process = None
-    
-    # 如果被杀死的PID是当前记录的机器人PID，则清空current_bot_pid
-    if current_bot_pid and pid_to_kill == current_bot_pid and process_killed_successfully:
-        app.logger.info(f"清空 current_bot_pid (原PID: {current_bot_pid})。")
-        current_bot_pid = None
+    # 全局状态读写必须与心跳线程互斥（P2-3），且只包住临界区
+    with state_lock:
+        # 如果被杀死的PID是Flask自己启动的进程，则回收并清空bot_process
+        if bot_process and pid_to_kill == bot_process.pid and process_killed_successfully:
+            try:
+                bot_process.wait(timeout=1)  # 回收子进程，避免僵尸进程残留
+            except Exception:
+                pass
+            app.logger.info(f"清空 Flask 维护的 bot_process 对象 (原PID: {bot_process.pid})。")
+            bot_process = None
+        
+        # 如果被杀死的PID是当前记录的机器人PID，则清空current_bot_pid
+        if current_bot_pid and pid_to_kill == current_bot_pid and process_killed_successfully:
+            app.logger.info(f"清空 current_bot_pid (原PID: {current_bot_pid})。")
+            current_bot_pid = None
 
-    last_heartbeat_time = 0
-    if not current_bot_pid and not bot_process: # 确保如果所有已知进程句柄都清了，才彻底标记
-        app.logger.info("所有已知的机器人进程句柄均已清理。重置心跳时间。")
-    elif current_bot_pid:
-        app.logger.warning(f"调用 stop_bot_process 后，current_bot_pid ({current_bot_pid}) 仍有值。可能存在未完全停止的实例或状态不同步。但心跳已重置。")
+        last_heartbeat_time = 0
+        if not current_bot_pid and not bot_process: # 确保如果所有已知进程句柄都清了，才彻底标记
+            app.logger.info("所有已知的机器人进程句柄均已清理。重置心跳时间。")
+        elif current_bot_pid:
+            app.logger.warning(f"调用 stop_bot_process 后，current_bot_pid ({current_bot_pid}) 仍有值。可能存在未完全停止的实例或状态不同步。但心跳已重置。")
 
 @app.route('/bot_heartbeat', methods=['POST'])
 @csrf.exempt  # CSRF豁免：bot.py的心跳请求，使用其他验证方式
@@ -1159,7 +1375,9 @@ def bot_heartbeat():
                     app.logger.warning(f"未授权的心跳请求来自: {client_ip}")
                     return jsonify({'error': 'Unauthorized'}), 401
         
-        last_heartbeat_time = time.time()
+        # 心跳高频(120/min)写入，必须加锁，否则与状态读取/停止操作竞争（P2-3）
+        with state_lock:
+            last_heartbeat_time = time.time()
         data = request.get_json()
         
         if data and 'pid' in data:
@@ -1170,9 +1388,10 @@ def bot_heartbeat():
                 # 验证PID是否真实存在（可选）
                 try:
                     if psutil.pid_exists(received_pid):
-                        if current_bot_pid != received_pid:
-                            app.logger.info(f"Bot PID updated via heartbeat: old={current_bot_pid}, new={received_pid}")
-                            current_bot_pid = received_pid
+                        with state_lock:  # PID 写入同样需要互斥（P2-3）
+                            if current_bot_pid != received_pid:
+                                app.logger.info(f"Bot PID updated via heartbeat: old={current_bot_pid}, new={received_pid}")
+                                current_bot_pid = received_pid
                     else:
                         app.logger.warning(f"收到的PID {received_pid} 不存在")
                         return jsonify({'error': 'Invalid PID'}), 400
@@ -1318,16 +1537,12 @@ def quick_start():
                     new_values[key_to_clear] = "" 
                 new_values['ENABLE_ONLINE_API'] = False
 
-            nicknames = request.form.getlist('nickname')
-            prompt_files_form = request.form.getlist('prompt_file')
-            new_values['LISTEN_LIST'] = [
-                [nick.strip(), pf.strip()]
-                for nick, pf in zip(nicknames, prompt_files_form)
-                if nick.strip() and pf.strip()
-            ]
+            # 快速上手表单不含 listen_settings 字段：按昵称保留旧设置
+            new_values['LISTEN_LIST'] = _build_listen_list_from_form(request.form, config)
             new_values['ENABLE_AUTO_MESSAGE'] = 'ENABLE_AUTO_MESSAGE' in request.form
-            
+
             update_config(new_values)
+            _sync_listen_forward_rules(new_values['LISTEN_LIST'])
             return redirect(url_for('index'))
         except Exception as e:
             app.logger.error(f"快速配置保存错误: {e}")
@@ -1402,17 +1617,10 @@ def index():
             config = parse_config()
             new_values = {}
 
-             # 处理二维数组的LISTEN_LIST
-            nicknames = request.form.getlist('nickname')
-            prompt_files = request.form.getlist('prompt_file')
-            new_values['LISTEN_LIST'] = [
-                [nick.strip(), pf.strip()] 
-                for nick, pf in zip(nicknames, prompt_files) 
-                if nick.strip() and pf.strip()
-            ]
+             # 处理二维数组的LISTEN_LIST（兼容第三列：监测内容/固定转发设置）
+            new_values['LISTEN_LIST'] = _build_listen_list_from_form(request.form, config)
 
-            # 处理其他字段
-            submitted_fields = set(request.form.keys()) - {'listen_list'} # listen_list 已处理
+            # 处理其他字段（剔除已单独处理的 LISTEN_LIST 组成部分）
             # 修正: submitted_fields应为 {'nickname', 'prompt_file'}
             submitted_fields = set(request.form.keys()) - {'nickname', 'prompt_file'}
 
@@ -1497,12 +1705,15 @@ def index():
                     new_values[field] = field in request.form # 统一处理，在表单中出现即为True
 
             update_config(new_values)
-            
+
+            # 用户列表每行的「固定转发」同步到 forward_hub 规则库
+            _sync_listen_forward_rules(new_values.get('LISTEN_LIST', []))
+
             # 验证配置文件类型正确性
             script_dir = os.path.dirname(os.path.abspath(__file__))
             config_path = os.path.join(script_dir, 'config.py')
             validate_config_types(config_path)
-            
+
             return redirect(url_for('index')) # 保存后重定向到自身以刷新GET请求
         except Exception as e:
             app.logger.error(f"主配置页保存配置错误: {e}")
@@ -1665,8 +1876,13 @@ def delete_prompt(filename):
 @login_required
 def generate_prompt():
     try:
-        # 从config.py获取配置
-        from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL
+        # 从config.py获取配置。
+        # 修复：原来直接 from config import ...，一旦配置项缺失/被改名就直接 500；
+        # 改用具容错的 parse_config() 并提供默认值（P2-7）
+        _cfg = parse_config()
+        DEEPSEEK_API_KEY = _cfg.get('DEEPSEEK_API_KEY', '') or ''
+        DEEPSEEK_BASE_URL = _cfg.get('DEEPSEEK_BASE_URL', '') or 'https://api.deepseek.com'
+        MODEL = _cfg.get('MODEL', '') or 'deepseek-chat'
         
         client = openai.OpenAI(
             base_url=DEEPSEEK_BASE_URL,
@@ -1742,7 +1958,7 @@ def get_all_reminders():
         return jsonify(all_reminders) # <--- 返回所有提醒
 
     except json.JSONDecodeError:
-        app.logger.error(f"文件 recurring_reminders.json 格式错误，无法解析。")
+        app.logger.error("文件 recurring_reminders.json 格式错误，无法解析。")
         return jsonify([]) # 格式错误也返回空列表
     except Exception as e:
         app.logger.error(f"获取所有提醒失败: {str(e)}")
@@ -1839,9 +2055,10 @@ def save_all_reminders():
 @login_required
 @limiter.limit("5 per hour")  # 速率限制：导入操作限制更严格
 def import_config():
-    global bot_process
-    # 如果 bot 正在运行，则不允许导入配置
-    if bot_process and bot_process.poll() is None:
+    # 如果 bot 正在运行，则不允许导入配置（读取运行态加锁，P2-3）
+    with state_lock:
+        _bot_running = bot_process is not None and bot_process.poll() is None
+    if _bot_running:
         return jsonify({'error': '程序正在运行，请先停止再导入配置'}), 400
 
     try:
@@ -2185,10 +2402,11 @@ def import_files_data(files_dict):
 @limiter.limit("3 per hour")  # 速率限制：完整目录导入限制非常严格
 def import_full_directory():
     """导入完整的旧版本程序目录"""
-    global bot_process
     
-    # 如果 bot 正在运行，则不允许导入
-    if bot_process and bot_process.poll() is None:
+    # 如果 bot 正在运行，则不允许导入（读取运行态加锁，P2-3）
+    with state_lock:
+        _bot_running = bot_process is not None and bot_process.poll() is None
+    if _bot_running:
         return jsonify({'error': '程序正在运行，请先停止再导入数据'}), 400
 
     try:
@@ -2249,7 +2467,7 @@ def import_full_directory():
         imported_items = import_files_data(files_dict)
         
         # 构建结果消息
-        message = f"完整目录导入成功！\n"
+        message = "完整目录导入成功！\n"
         message += f"共处理了 {len(uploaded_files)} 个文件\n"
         if backed_up_items:
             message += f"已备份的数据: {', '.join(backed_up_items)}\n"
@@ -2273,8 +2491,9 @@ def import_full_directory():
 @app.route('/reset_default_config', methods=['POST'])
 @login_required
 def reset_default_config():
-    global bot_process
-    if bot_process and bot_process.poll() is None:
+    with state_lock:  # 读取运行态加锁（P2-3）
+        _bot_running = bot_process is not None and bot_process.poll() is None
+    if _bot_running:
         return jsonify({'error': '程序正在运行，请先停止再恢复默认配置'}), 400
     
     try:
@@ -2401,9 +2620,12 @@ def receive_bot_log():
             app.logger.warning(f"收到非JSON请求，Content-Type: {request.content_type}")
             return jsonify({'error': 'Unsupported Media Type'}), 415
 
+        # body 为空时 request.json 为 None，直接用 'in' 判断会抛 TypeError（P2-6）
+        data = request.get_json(silent=True) or {}
+
         # 支持两种格式：单个日志或日志数组
-        if 'logs' in request.json:  # 批量日志
-            logs_data = request.json.get('logs', [])
+        if 'logs' in data:  # 批量日志
+            logs_data = data.get('logs', [])
             if isinstance(logs_data, list):
                 processed_count = 0
                 for log_entry in logs_data:
@@ -2415,7 +2637,7 @@ def receive_bot_log():
                             processed_count += 1
                         except:
                             # 队列满时，记录警告但不中断
-                            app.logger.warning(f"日志队列已满，丢弃日志")
+                            app.logger.warning("日志队列已满，丢弃日志")
                             pass
                 # 定期输出接收统计（每收到100条日志输出一次）
                 if processed_count > 0 and processed_count % 100 == 0:
@@ -2423,15 +2645,15 @@ def receive_bot_log():
                 return jsonify({'status': 'success', 'processed': processed_count})
             return jsonify({'error': 'Invalid logs format'}), 400
             
-        elif 'log' in request.json:  # 兼容单条日志格式
-            log_data = request.json.get('log')
+        elif 'log' in data:  # 兼容单条日志格式
+            log_data = data.get('log')
             if log_data:
                 # 添加进程标识和颜色标记
                 colored_log = f"[BOT] \033[34m{log_data.strip()}\033[0m"
                 try:
                     log_queue.put(colored_log, block=False)
                 except:
-                    app.logger.warning(f"日志队列已满，丢弃日志")
+                    app.logger.warning("日志队列已满，丢弃日志")
             return jsonify({'status': 'success'})
             
         else:
@@ -2518,7 +2740,11 @@ def save_user_chat_context(username):
         app.logger.warning(f"无效的用户名: {username}, 错误: {e}")
         return jsonify({'status': 'error', 'message': f'无效的用户名: {str(e)}'}), 400
     
-    if bot_process and bot_process.poll() is not None:
+    # 修复：Popen.poll() 运行中返回 None、退出后返回退出码，
+    # 原来写成 "is not None" 会导致"进程已退出才拦截、运行中反而放行"（P1-1）
+    with state_lock:  # 读取运行态加锁（P2-3）
+        _bot_running = bot_process is not None and bot_process.poll() is None
+    if _bot_running:
         return jsonify({'error': '程序正在运行，请先停止再保存上下文'}), 400
     data = request.get_json()
     if not data or 'context' not in data:
@@ -3136,7 +3362,7 @@ def check_should_post_forum(character_name):
 
             if online_api_key:
                 try:
-                    app.logger.info(f"尝试使用联网模型获取实时热点信息")
+                    app.logger.info("尝试使用联网模型获取实时热点信息")
                     online_prompt = (
                         "请用简洁要点汇总'今天'中文互联网主要新闻与热点（3-5条），不要涉及政治敏感话题和政治人物。"
                         "偏向话题与趋势，不要细节长文；每条不超过30字；"
@@ -3236,7 +3462,7 @@ def check_should_post_forum(character_name):
         print("\n" + "="*80)
         print(f"🎯 论坛拉取请求 - 角色: {character_name}")
         print("="*80)
-        print(f"📊 提示词统计:")
+        print("📊 提示词统计:")
         print(f"   角色设定长度: {len(character_prompt)} 字符")
         print(f"   总提示词长度: {len(prompt)} 字符")
         print(f"   当前时间: {time_str}")
@@ -3290,7 +3516,7 @@ def check_should_post_forum(character_name):
         app.logger.info(f"AI回复: {reply}")
         
         # 打印AI响应到控制台，方便调试
-        print(f"🤖 AI模型响应:")
+        print("🤖 AI模型响应:")
         print(f"   模型: {model}")
         print(f"   联网热点: {'已使用' if online_hot_brief else '未使用'}")
         print(f"   响应内容: '{reply}'")
@@ -3382,11 +3608,23 @@ def load_forum_data(character_name):
             return {'posts': [], 'npcs': []}
     return {'posts': [], 'npcs': []}
 
-def save_forum_data(character_name, data):
-    """保存论坛数据文件（覆盖写入）"""
-    forum_file = _forum_file_path(character_name)
-    with open(forum_file, 'w', encoding='utf-8') as f:
+def _forum_lock_file(character_name):
+    """论坛数据文件对应的文件锁路径（并发刷新/点赞时防止互相覆盖）"""
+    return _forum_file_path(character_name) + '.lock'
+
+def _atomic_write_json(file_path, data):
+    """原子写 JSON：先写临时文件再 os.replace 替换，避免写入中途崩溃写坏文件"""
+    tmp_path = file_path + '.tmp'
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_path, file_path)
+
+def save_forum_data(character_name, data):
+    """保存论坛数据文件（覆盖写入）。
+    修复：改用临时文件 + os.replace 原子写，并加文件锁防止并发写互相覆盖（P2-8）"""
+    forum_file = _forum_file_path(character_name)
+    with FileLock(_forum_lock_file(character_name)):
+        _atomic_write_json(forum_file, data)
 
 def _find_post_by_id(posts, post_id):
     for post in posts:
@@ -3954,13 +4192,6 @@ def add_forum_post(character_name, content):
     try:
         forum_file = _forum_file_path(character_name)
         
-        # 读取现有数据
-        if os.path.exists(forum_file):
-            with open(forum_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        else:
-            data = {'posts': [], 'npcs': []}
-        
         # 创建新帖子
         now = datetime.now()
         new_post = {
@@ -3972,19 +4203,28 @@ def add_forum_post(character_name, content):
         }
         
         # 生成NPC评论：在生成函数内部对每个NPC进行独立概率判定
+        # 该操作可能较慢（可能调用模型），放在文件锁之外执行，避免长时间占锁（P2-8）
         npc_comments = generate_npc_comments(character_name, content)
         new_post['comments'] = npc_comments
         
-        # 添加到数据中
-        data['posts'].append(new_post)
-        
-        # 保持最多100条帖子
-        if len(data['posts']) > 100:
-            data['posts'] = data['posts'][-100:]
-        
-        # 保存数据
-        with open(forum_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        # 读-改-写必须在同一把文件锁内完成，否则并发发贴会互相覆盖；
+        # 写入用临时文件 + os.replace 保证原子性，中途崩溃也不会写坏 JSON（P2-8）
+        with FileLock(_forum_lock_file(character_name)):
+            # 读取现有数据
+            if os.path.exists(forum_file):
+                with open(forum_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            else:
+                data = {'posts': [], 'npcs': []}
+            
+            # 添加到数据中
+            data['posts'].append(new_post)
+            
+            # 保持最多100条帖子
+            if len(data['posts']) > 100:
+                data['posts'] = data['posts'][-100:]
+            
+            _atomic_write_json(forum_file, data)
         
         return new_post
     
@@ -4158,7 +4398,7 @@ NPC设定：
             return generate_fallback_reply(npc_name, language_style, relationship)
         
         if not api_key:
-            app.logger.warning(f"API密钥未配置，使用默认回复")
+            app.logger.warning("API密钥未配置，使用默认回复")
             return generate_fallback_reply(npc_name, language_style, relationship)
         
         client = openai.OpenAI(
@@ -4858,13 +5098,15 @@ def api_license_restart():
     """激活/改门禁后重启机器人，使授权配置即时生效（不重启则仍在跑旧配置）。"""
     global bot_process, last_heartbeat_time, current_bot_pid
     import time as _t
-    # 1) 先停（尽力）
+    # 1) 先停（尽力）：先回收僵尸进程，再在锁内取出需要停止的 PID（P1-2/P2-3）
+    _reap_bot_process()
     try:
         pids = set()
-        if current_bot_pid:
-            pids.add(current_bot_pid)
-        if bot_process and bot_process.poll() is None:
-            pids.add(bot_process.pid)
+        with state_lock:
+            if current_bot_pid:
+                pids.add(current_bot_pid)
+            if bot_process and bot_process.poll() is None:
+                pids.add(bot_process.pid)
         for pid in pids:
             try:
                 stop_bot_process(pid_to_kill=pid)
@@ -4888,7 +5130,14 @@ def api_license_restart():
             else:
                 return jsonify(ok=False, msg="未找到机器人可执行文件"), 404
         creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
-        subprocess.Popen(cmd, creationflags=creation_flags)
+        # 修复：原来用裸 Popen 不赋值给全局 bot_process，导致重启后的进程游离于管理之外
+        # （状态显示停止、无法再次停止、可能双开）。这里同步登记并重置心跳（P1-4）
+        _proc = subprocess.Popen(cmd, creationflags=creation_flags)
+        with state_lock:
+            bot_process = _proc
+            current_bot_pid = _proc.pid
+            last_heartbeat_time = 0
+        app.logger.info(f"机器人已重启 (PID {_proc.pid})")
         return jsonify(ok=True, msg="机器人正在重启（约数秒后生效，重启后授权即生效）")
     except Exception as e:
         return jsonify(ok=False, msg=f"重启启动失败: {e}"), 500
@@ -4924,7 +5173,7 @@ def forward_page():
         data["enabled"] = cfg.get("enabled", False)
         data["rules"] = cfg.get("rules", [])
         data["rate_limit"] = cfg.get("rate_limit", data["rate_limit"])
-        data["log"] = m.get_log(50)
+        data["log"] = m.get_log()
     return render_template('forward.html', data=data)
 
 
@@ -4962,7 +5211,7 @@ def api_forward_log():
     m = _fh()
     if m is None:
         return jsonify(ok=False, msg="forward_hub 不可用"), 500
-    return jsonify(ok=True, log=m.get_log(50))
+    return jsonify(ok=True, log=m.get_log())
 
 
 if __name__ == '__main__':
@@ -5032,7 +5281,7 @@ if __name__ == '__main__':
     
     # 如果端口为默认的5000，则自动修改为5001-5998之间的随机可用端口
     if PORT == 5000 or PORT == '5000':
-        print(f"\033[33m检测到使用默认端口 5000，正在自动切换到随机端口...\033[0m")
+        print("\033[33m检测到使用默认端口 5000，正在自动切换到随机端口...\033[0m")
         new_port = get_random_available_port(5001, 5998)
         
         if new_port:
@@ -5046,7 +5295,7 @@ if __name__ == '__main__':
                 print(f"\033[31m更新配置文件失败: {e}，将继续使用端口 5000\033[0m")
                 PORT = 5000
         else:
-            print(f"\033[31m警告: 无法找到5001-5998之间的可用端口，将继续使用端口 5000\033[0m")
+            print("\033[31m警告: 无法找到5001-5998之间的可用端口，将继续使用端口 5000\033[0m")
             PORT = 5000
     
     # 确保PORT是整数类型
@@ -5059,22 +5308,22 @@ if __name__ == '__main__':
     allow_open_port = config.get('ALLOW_OPEN_PORT', False)
     password_is_valid = config.get('PASSWORD_IS_VALID', False)
     if password_is_valid:
-        print(f"\033[32m已启用登录保护：访问网页需输入已设置的密码。\r\n \033[0m")
+        print("\033[32m已启用登录保护：访问网页需输入已设置的密码。\r\n \033[0m")
     else:
-        print(f"\033[31m检测到尚未设置登录密码：首次访问将跳转到密码设置页面。\r\n \033[0m")
+        print("\033[31m检测到尚未设置登录密码：首次访问将跳转到密码设置页面。\r\n \033[0m")
     if allow_open_port:
-        print(f"\033[33m外网访问已开启，请务必妥善保管您的登录密码。\r\n \033[0m")
+        print("\033[33m外网访问已开启，请务必妥善保管您的登录密码。\r\n \033[0m")
     
     # 根据配置决定绑定地址
     host = "0.0.0.0" if allow_open_port else "127.0.0.1"
     
-    print(f"\033[36m")
-    print(f"============================================================")
-    print(f"  WeAuto 配置管理器")
+    print("\033[36m")
+    print("============================================================")
+    print("  WeAuto 配置管理器")
     print(f"监听地址: {host}:{PORT}")
     print(f"访问地址: http://localhost:{PORT}/")
-    print(f"============================================================")
-    print(f"\033[0m")
+    print("============================================================")
+    print("\033[0m")
     
     # 在启动服务器前设置定时器打开浏览器
     def open_browser():

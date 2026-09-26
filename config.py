@@ -127,6 +127,10 @@ ONLINE_FIXED_PROMPT = ''
 ENABLE_URL_FETCHING = True
 # 网络请求超时时间 (秒)
 REQUESTS_TIMEOUT = 10
+# Chat API（AI 对话 / 提醒解析）调用超时时间 (秒)
+# 消息泵线程会同步调用 AI（如提醒解析），若不限制超时，
+# 一次慢请求会长期占用消息泵，导致 bot “活着但收不到消息”。
+CHAT_API_TIMEOUT = 60
 # 抓取网页时使用的 User-Agent，模拟浏览器防止被屏蔽
 # REQUESTS_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 # REQUESTS_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1'

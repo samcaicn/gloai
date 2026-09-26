@@ -3,6 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# ---- WeAuto runtime state / scratch (not source) ----
+forward_rules.json
+forward_log.json
+_preview_server.py
+_fw_check.js
+FIX_PLAN.md
+.workbuddy/
+
+
 # ---- Virtual environments ----
 venv/
 .venv/

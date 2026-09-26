@@ -45,23 +45,55 @@ const creemBase = (mode) =>
   mode === "prod" ? "https://api.creem.io/v1" : "https://test-api.creem.io/v1";
 
 async function creemPost(env, path, body) {
-  const r = await fetch(creemBase(env.CREEM_MODE) + path, {
-    method: "POST",
-    headers: {
-      "x-api-key": env.CREEM_API_KEY,
-      "Content-Type": "application/json",
-      accept: "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  const txt = await r.text();
-  let data = {};
   try {
-    data = JSON.parse(txt);
+    const r = await fetch(creemBase(env.CREEM_MODE) + path, {
+      method: "POST",
+      headers: {
+        "x-api-key": env.CREEM_API_KEY,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    const txt = await r.text();
+    let data = {};
+    try {
+      data = JSON.parse(txt);
+    } catch (e) {
+      /* 非 JSON 响应（如错误页）忽略正文 */
+    }
+    return { status: r.status, data };
   } catch (e) {
-    /* 非 JSON 响应（如错误页）忽略正文 */
+    // 网络层异常（DNS 失败 / 连接重置 / 超时 / 上游被 WAF 挡）统一归一化，
+    // 不让异常冒泡成 Worker 500；调用方按 status:0 + neterr 返回 503。
+    console.error("creem upstream unreachable:", path, e && e.message);
+    return { status: 0, data: { message: "upstream_unreachable" }, neterr: true };
   }
-  return { status: r.status, data };
+}
+
+/** 上游不可用判定：网络层异常 或 Creem 自身 5xx（临时故障，不是买家的错）。 */
+function upstreamError(res) {
+  return !res || res.neterr === true || (res.status >= 500 && res.status <= 599);
+}
+
+/** 上游不可用时的统一 503 响应（替代原来的裸 500）。 */
+function upstreamUnavailable(res) {
+  const reason = (res && res.data && res.data.message) || "upstream_unreachable";
+  return json({ ok: false, reason, upstream_status: (res && res.status) || 0 }, 503);
+}
+
+/** 判定 Creem 响应是否表示「已激活/有效」，供 /activate 做业务层校验。 */
+function isActiveLike(data) {
+  if (!data) return false;
+  if (typeof data.status === "string") return data.status.toLowerCase() === "active";
+  if (data.active === true) return true;
+  const lic = data.license || data.license_key_object;
+  if (lic && typeof lic === "object") {
+    if (typeof lic.status === "string") return lic.status.toLowerCase() === "active";
+    if (lic.active === true) return true;
+  }
+  // 响应里没有 status 字段（部分 Creem 版本）：有实例/id 即视为激活成功
+  return !!(data.instance || data.id);
 }
 
 function extractInstanceId(data) {
@@ -77,9 +109,42 @@ function expiresToUnix(expiresAt) {
   return Number.isNaN(t) ? null : Math.floor(t / 1000);
 }
 
+/**
+ * 解析 creem-signature 请求头。
+ * 实际格式是 `t=<时间戳>,s=<hex摘要>`（也可能是纯 hex），
+ * 不能把整串当 hex 直接比较（长度必不相等 → 合法回调一律被拒）。
+ */
+function parseSig(header) {
+  if (!header) return { sig: "", ts: null };
+  if (header.includes("s=")) {
+    const parts = header.split(",").map((s) => s.trim());
+    let sig = "", ts = null;
+    for (const p of parts) {
+      if (p.startsWith("s=")) sig = p.slice(2);
+      else if (p.startsWith("t=")) ts = Number(p.slice(2));
+    }
+    return { sig, ts };
+  }
+  return { sig: header.trim(), ts: null }; // 纯 hex 兜底
+}
+
+// 重放窗口：超过 300s 的旧回调一律拒绝（时间戳单位兼容秒/毫秒）
+const REPLAY_WINDOW_SEC = 300;
+
 // HMAC-SHA256 验签，常量时间比较
 async function verifySignature(secret, rawBody, signature) {
   if (!secret || !signature) return false;
+  const { sig, ts } = parseSig(signature);
+  if (!sig) return false;
+  // 重放防护：有 t= 且已超过窗口 → 拒绝
+  if (ts !== null && Number.isFinite(ts)) {
+    const tsSec = ts > 1e12 ? Math.floor(ts / 1000) : Math.floor(ts);
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (nowSec - tsSec > REPLAY_WINDOW_SEC) {
+      console.warn("webhook signature too old, rejected:", nowSec - tsSec, "s");
+      return false;
+    }
+  }
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw", enc.encode(secret),
@@ -89,10 +154,11 @@ async function verifySignature(secret, rawBody, signature) {
   const computed = [...new Uint8Array(buf)]
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  if (computed.length !== signature.length) return false;
+  const given = sig.trim().toLowerCase(); // 大小写无关
+  if (computed.length !== given.length) return false;
   let diff = 0;
   for (let i = 0; i < computed.length; i++) {
-    diff |= computed.charCodeAt(i) ^ signature.charCodeAt(i);
+    diff |= computed.charCodeAt(i) ^ given.charCodeAt(i);
   }
   return diff === 0;
 }
@@ -339,50 +405,51 @@ function successPage(env) {
 <div class="foot">支付与开票由 Creem 处理</div>`);
 }
 
-/** 商家还没配置好时的友好提示（替代原来的 500 裸文本）。返回 Response，状态码 503。 */
-function notConfiguredPage() {
+/** 商家还没配置好 / 上游不可用时的友好提示（替代原来的 500 裸文本）。返回 Response，状态码 503。
+ *  @param {string} note  可选的额外说明（如上游临时不可达），展示给买家看。
+ */
+function notConfiguredPage(note) {
+  const extra = note
+    ? `<p style="color:#874d00">${esc(note)}</p>`
+    : "";
   return html(layout("暂未开放购买", `
 <div class="hd"><h1>暂未开放购买</h1><p>商家正在配置支付</p></div>
 <div class="card">
   <p>本授权站点尚未完成支付配置，暂时无法购买。</p>
+  ${extra}
   <p style="color:#6b7280;font-size:14px">如果你是站点管理员：请在 <code>wrangler.toml</code> 的
   <code>[vars]</code> 中配置 <code>CREEM_PRODUCTS</code>（JSON 数组，含各档 product_id），
+  并用 <code>wrangler secret put CREEM_API_KEY</code> 注入 API key，
   然后重新 <code>wrangler deploy</code>。</p>
 </div>`), 503);
 }
 
-// 每个产品一个 60s 缓存：避免每次 /buy?go=1 都新建 checkout 会话（会累积过期单）
-const checkoutCache = new Map();
-const CHECKOUT_TTL = 60_000;
-
 /** 按档位解析收银台地址（动态创建 checkout 会话，用 Creem 原生页）。
  *  @param {string} mid  本机能力令牌，写入 checkout metadata，使付款回调能关联到这台机器。
+ *
+ *  注意：**不做跨请求缓存**。checkout 会话是「一次性的买家私有资源」，
+ *  早先的 60s 全局缓存会让第二个买家拿到第一个人的 checkout（提示已使用/串号）。
+ *  每次请求现建（成本只是一次 API 调用）；若商家配了静态 CREEM_CHECKOUT_URL 则直接复用它。
  */
 async function resolveCheckout(env, tier, mid) {
+  // 静态收银台链接：无需 API、无需新建，直接跳转
+  if (env.CREEM_CHECKOUT_URL) return env.CREEM_CHECKOUT_URL;
   const products = parseProducts(env);
   const p = products.find((x) => x.tier === tier) || products[0];
   if (!p || !p.product_id || !env.CREEM_API_KEY) return null;
-  const now = Date.now();
-  // 缓存键带 mid：不同机器用各自的 checkout（metadata 各自携带 mid），避免串号
-  const cacheKey = p.product_id + (mid ? "|" + mid : "");
-  const cached = checkoutCache.get(cacheKey);
-  if (cached && now - cached.ts < CHECKOUT_TTL) return cached.url;
-  try {
-    // 不传 success_url：用 Creem 原始链接/原生成功页（用户要求，不做自定义跳转）。
-    // 通过 metadata.mid 把「这台机器」带进支付流，付款后 webhook 回带 mid → 自动核销。
-    const metadata = { source: "weauto-license-worker", tier: p.tier };
-    if (mid) metadata.mid = mid;
-    const { status, data } = await creemPost(env, "/checkouts", {
-      product_id: p.product_id,
-      metadata,
-    });
-    if (status >= 200 && status < 300 && data.checkout_url) {
-      checkoutCache.set(cacheKey, { url: data.checkout_url, ts: now });
-      return data.checkout_url;
-    }
-  } catch (e) {
-    /* fallthrough 到未配置页 */
+  // 不传 success_url：用 Creem 原始链接/原生成功页（用户要求，不做自定义跳转）。
+  // 通过 metadata.mid 把「这台机器」带进支付流，付款后 webhook 回带 mid → 自动核销。
+  const metadata = { source: "weauto-license-worker", tier: p.tier };
+  if (mid) metadata.mid = mid;
+  const res = await creemPost(env, "/checkouts", {
+    product_id: p.product_id,
+    metadata,
+  });
+  if (upstreamError(res)) return null; // 路由层兜底成 503
+  if (res.status >= 200 && res.status < 300 && res.data && res.data.checkout_url) {
+    return res.data.checkout_url;
   }
+  console.error("create checkout failed:", res.status, JSON.stringify(res.data).slice(0, 200));
   return null;
 }
 
@@ -426,8 +493,12 @@ export default {
         if (!target) return notConfiguredPage();
         return Response.redirect(target, 302);
       }
-      // 默认：展示多档购买站（买家先看清楚再付款，转化率更好）
-      if (!parseProducts(env).length) {
+      // 默认：展示多档购买站（买家先看清楚再付款，转化率更好）。
+      // 这里必须与 ?go=1 用同一套「能不能真的付款」判定：光有产品没 API key，
+      // 列表页会显示「立即购买」而点进去才提示未开放，体验不一致。
+      const products = parseProducts(env);
+      const payable = !!env.CREEM_API_KEY || !!env.CREEM_CHECKOUT_URL;
+      if (!products.length || !payable) {
         return notConfiguredPage();
       }
       return html(buyPage(env, url.origin, mid));
@@ -445,11 +516,20 @@ export default {
       if (!key || !instance_name) {
         return json({ ok: false, reason: "missing_fields" }, 400);
       }
-      const { status, data } = await creemPost(env, "/licenses/activate", {
+      const res = await creemPost(env, "/licenses/activate", {
         key,
         instance_name,
       });
+      if (upstreamError(res)) return upstreamUnavailable(res);
+      const { status, data } = res;
       if (status >= 200 && status < 300) {
+        // 不能只看 HTTP 状态码：Creem 可能 200 返回 status!="active"（已停用/已退订/设备超限）
+        if (!isActiveLike(data)) {
+          return json({
+            ok: false,
+            reason: (data && data.message) || (data && data.status) || "license_not_active",
+          }, 403);
+        }
         return json({
           ok: true,
           instance_id: extractInstanceId(data),
@@ -471,10 +551,12 @@ export default {
       if (!key || !instance_id) {
         return json({ ok: false, reason: "missing_fields" }, 400);
       }
-      const { status, data } = await creemPost(env, "/licenses/validate", {
+      const res = await creemPost(env, "/licenses/validate", {
         key,
         instance_id,
       });
+      if (upstreamError(res)) return upstreamUnavailable(res);
+      const { status, data } = res;
       if (status >= 200 && status < 300 && data && data.status === "active") {
         return json({ ok: true, expires_at: expiresToUnix(data.expires_at), tier: mapTier(env, data) });
       }
@@ -490,15 +572,27 @@ export default {
         return json({ ok: false, reason: "bad_json" }, 400);
       }
       const { key, instance_id } = body;
-      const { status } = await creemPost(env, "/licenses/deactivate", {
+      // 与 /activate、/validate 一致：缺必填字段直接 400，不发出站请求
+      if (!key || !instance_id) {
+        return json({ ok: false, reason: "missing_fields" }, 400);
+      }
+      const res = await creemPost(env, "/licenses/deactivate", {
         key,
         instance_id,
       });
-      return json({ ok: status >= 200 && status < 300 }, status);
+      if (upstreamError(res)) return upstreamUnavailable(res);
+      return json({ ok: res.status >= 200 && res.status < 300 }, res.status);
     }
 
     // ---- Webhook（Creem 支付回调）----
     if (p === "/webhook" && req.method === "POST") {
+      // secret 缺失 = 部署漏配，必须明确报错（500 + 日志），
+      // 否则会静默 401，支付事件悄悄全丢、账单对不上却无人知晓。
+      if (!env.CREEM_WEBHOOK_SECRET) {
+        console.error("CREEM_WEBHOOK_SECRET 未配置：/webhook 无法验签，支付事件将全部丢失。" +
+          "请执行 wrangler secret put CREEM_WEBHOOK_SECRET 后重新部署。");
+        return json({ ok: false, error: "webhook_secret_missing" }, 500);
+      }
       const raw = await req.text();
       const sig = req.headers.get("creem-signature") || req.headers.get("x-creem-signature") || "";
       const okSig = await verifySignature(env.CREEM_WEBHOOK_SECRET, raw, sig);

@@ -180,28 +180,52 @@ def build_body(tier, cents):
 
 
 def apply_wrangler(products):
-    """把 CREEM_PRODUCTS（JSON 数组）写回 wrangler.toml 的 [vars]，并清掉旧的单产品变量。"""
+    """把 CREEM_PRODUCTS（JSON 数组）写回 wrangler.toml 的 [vars]，并清掉旧的单产品变量。
+
+    返回 (ok, msg)：**ok=False 表示没有真正写入**。以前无论正则有没有命中都打印
+    「已更新」，用户以为配置生效了、实际没写进去（部署后 /buy 一直未开放）。
+    """
     p = os.path.normpath(os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "..", "wrangler.toml"))
     if not os.path.exists(p):
-        return "未找到 " + p
-    txt = open(p, encoding="utf-8").read()
-    # 清掉旧的单产品变量行（已被 CREEM_PRODUCTS 取代）
+        return False, "未找到 " + p
+    try:
+        txt = open(p, encoding="utf-8").read()
+    except Exception as e:
+        return False, "读取 %s 失败: %s" % (p, e)
+    # 清掉旧的单产品变量行（已被 CREEM_PRODUCTS 取代）；单引号与双引号都要匹配
     for var in ("CREEM_PRODUCT_ID", "CREEM_CHECKOUT_URL", "PRODUCT_NAME",
                 "PRODUCT_PRICE", "PRODUCT_DESC"):
-        txt = re.sub(r'^\s*' + var + r'\s*=\s*"[^"]*"\s*\n', "", txt, flags=re.M)
+        txt = re.sub(r'^\s*' + var + r'\s*=\s*(?:"[^"]*"|\'[^\']*\')\s*(?:\n|$)',
+                     "", txt, flags=re.M)
     arr = json.dumps(products, ensure_ascii=False)
     # 用 TOML 字面量字符串（单引号）包裹 JSON：内部双引号/中文无需转义，
     # 绕开 wrangler TOML 解析器对「行内数组 of 内联表」的报错。
     line = "CREEM_PRODUCTS = '%s'\n" % arr
     if re.search(r'^\s*CREEM_PRODUCTS\s*=', txt, flags=re.M):
         txt, n = re.subn(r'^\s*CREEM_PRODUCTS\s*=\s*.*(\n|$)',
-                          lambda m: line, txt, count=1, flags=re.M)
+                         lambda m: line, txt, count=1, flags=re.M)
+        if n != 1:
+            return False, "替换 CREEM_PRODUCTS 失败：正则未命中（n=%d），文件未改动" % n
     else:
-        # 插到 [vars] 段首行之后
-        txt = re.sub(r'(\[vars\])', lambda m: m.group(1) + "\n" + line, txt, count=1)
-    open(p, "w", encoding="utf-8").write(txt)
-    return "wrangler.toml 已更新 CREEM_PRODUCTS（%d 档）" % len(products)
+        # key 完全缺失：插到 [vars] 段首行之后；连 [vars] 都没有就整段追加
+        txt, n = re.subn(r'(\[vars\])', lambda m: m.group(1) + "\n" + line,
+                         txt, count=1)
+        if n != 1:
+            txt = txt.rstrip("\n") + "\n\n[vars]\n" + line
+    try:
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(txt)
+    except Exception as e:
+        return False, "写入 %s 失败: %s" % (p, e)
+    # 回读校验：确认真的落盘（防止正则/写入失败导致「谎报成功」）
+    try:
+        back = open(p, encoding="utf-8").read()
+    except Exception as e:
+        return False, "写入后回读失败: %s" % e
+    if arr not in back:
+        return False, "写入后校验失败：%s 中未找到新的 CREEM_PRODUCTS 内容，请手动检查" % p
+    return True, "wrangler.toml 已更新 CREEM_PRODUCTS（%d 档）" % len(products)
 
 
 def main():
@@ -271,7 +295,11 @@ def main():
     print("=" * 64)
 
     if a.apply:
-        print("  ", apply_wrangler(created))
+        ok, msg = apply_wrangler(created)
+        print("  ", msg)
+        if not ok:
+            print("[x] 写回 wrangler.toml 失败，配置未生效（上面已创建的产品仍需手动填 CREEM_PRODUCTS）")
+            return 1
 
     print("""
 必做的后台操作（API 做不了）：

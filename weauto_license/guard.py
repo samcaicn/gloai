@@ -160,15 +160,39 @@ def _write_cache(d: dict) -> None:
         pass
 
 
-def _post(path: str, payload: dict) -> dict:
+def _json_body(r) -> dict:
+    """从响应/HTTPError 里尽力解析 JSON；非 JSON 或空正文返回带 ok:False 的占位。"""
+    try:
+        raw = r.read().decode("utf-8", "replace")
+    except Exception:
+        return {"ok": False, "reason": "unreadable_response"}
+    try:
+        d = json.loads(raw)
+    except Exception:
+        return {"ok": False, "reason": "bad_response"}
+    return d if isinstance(d, dict) else {"ok": False, "reason": "bad_response"}
+
+
+def _post(path: str, payload: dict):
+    """POST JSON 到 Worker，返回 (resp_dict, http_status)。
+
+    - 2xx：正常解析 JSON
+    - 4xx/5xx：urllib 会抛 HTTPError，这里归一化为 (dict, status) 而**不再抛出**，
+      这样调用方才能区分「服务端临时故障 5xx」与「卡密真的无效 4xx/ok:false」；
+      否则 5xx 混进网络异常分支，服务端抖一下就可能把合法用户判成未授权。
+    - 网络层异常（DNS/超时/连接重置）照旧抛出，交给上层离线宽限处理。
+    """
     url = worker_url() + path
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         url, data=data,
         headers={"Content-Type": "application/json"}, method="POST",
     )
-    with urllib.request.urlopen(req, timeout=10) as r:
-        return json.loads(r.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return _json_body(r), int(getattr(r, "status", 0) or 0)
+    except urllib.error.HTTPError as e:
+        return _json_body(e), int(e.code or 0)
 
 
 def _buy_prompt(reason):
@@ -212,9 +236,9 @@ def ensure_license(strict: bool = True) -> bool:
 
     try:
         if cache.get("key") == key and cache.get("instance_id"):
-            resp = _post("/validate", {"key": key, "instance_id": cache["instance_id"]})
+            resp, http_status = _post("/validate", {"key": key, "instance_id": cache["instance_id"]})
         else:
-            resp = _post("/activate", {"key": key, "instance_name": machine})
+            resp, http_status = _post("/activate", {"key": key, "instance_name": machine})
         if resp.get("ok"):
             _write_cache({
                 "key": key,
@@ -222,6 +246,12 @@ def ensure_license(strict: bool = True) -> bool:
                 "expire_at": resp.get("expires_at") or (now + 30 * 86400),
                 "tier": resp.get("tier"),
             })
+            return True
+        # 5xx：Worker / Creem 临时故障，不等于卡密失效。本地有同一 key 的历史成功
+        # 记录时按「服务暂时不可用、按最近缓存放行」处理，避免服务端抖一下就踢掉合法用户。
+        if 500 <= http_status < 600 and cache.get("key") == key and cache.get("instance_id"):
+            print("[License] 授权服务暂时不可用（HTTP %d），按本机最近一次成功记录放行。"
+                  % http_status, flush=True)
             return True
         _buy_prompt(resp.get("reason", "未知原因"))
         return False
@@ -238,7 +268,7 @@ def ensure_license(strict: bool = True) -> bool:
 def activate(license_key: str):
     """手动激活（CLI 子命令用）：写缓存并返回结果，提示用户把 key 存进 config.py。"""
     try:
-        resp = _post("/activate", {"key": license_key, "instance_name": get_machine_id()})
+        resp, _status = _post("/activate", {"key": license_key, "instance_name": get_machine_id()})
         if resp.get("ok"):
             _write_cache({
                 "key": license_key,
@@ -260,7 +290,7 @@ def deactivate(license_key: str = None):
     if not (key and inst):
         return False, "本地无激活记录"
     try:
-        resp = _post("/deactivate", {"key": key, "instance_id": inst})
+        resp, _status = _post("/deactivate", {"key": key, "instance_id": inst})
         if resp.get("ok"):
             try:
                 os.remove(CACHE_FILE)
@@ -335,9 +365,11 @@ def start_periodic_recheck(interval_seconds=None, on_invalid=None):
                         on_invalid("离线宽限期已过且未通过校验")
                         continue
                     try:
-                        resp = _post("/validate", {"key": key, "instance_id": inst})
+                        resp, http_status = _post("/validate", {"key": key, "instance_id": inst})
                     except Exception:
-                        continue  # 网络/服务异常 → 离线宽限
+                        continue  # 网络异常 → 离线宽限
+                    if 500 <= http_status < 600:
+                        continue  # 服务端临时故障 → 离线宽限，不能据此判定卡密失效
                     if resp.get("ok"):
                         _write_cache({"key": key, "instance_id": inst,
                                       "expire_at": resp.get("expires_at") or (now + 30 * 86400),

@@ -102,15 +102,23 @@ def _read_config():
 
 
 def _set_config_value(key, raw_value):
+    if raw_value is None:
+        raise ValueError("config set 必须提供值")
     try:
         val = ast.literal_eval(raw_value)
     except Exception:
         val = raw_value
-    lit = json.dumps(val, ensure_ascii=False)
+    # repr() 对 str/bool/int/float/list/dict/tuple/None 均产出合法 Python 字面量；
+    # json.dumps 不行（bool→true、None→null 是非法 Python），会写坏 config.py。
+    lit = repr(val)
     cfg_path = os.path.join(ROOT_DIR, "config.py")
     if not os.path.exists(cfg_path):
         raise FileNotFoundError("找不到 config.py: %s" % cfg_path)
-    text = open(cfg_path, encoding="utf-8").read()
+    try:
+        with open(cfg_path, encoding="utf-8") as f:
+            text = f.read()
+    except (OSError, UnicodeDecodeError) as e:
+        raise FileNotFoundError("读取 config.py 失败: %s" % e)
     pat = re.compile(r"^(%s\s*=\s*).*$" % re.escape(key), re.M)
     if pat.search(text):
         new_text = pat.sub(lambda m: m.group(1) + lit, text)

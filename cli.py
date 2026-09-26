@@ -77,17 +77,23 @@ def err(msg, code=1):
 # --------------------------------------------------------------------- 配置读写
 def _set_config_value(key, raw_value):
     """把 KEY = <value> 原子写回 config.py（保留其余内容）。"""
+    if raw_value is None:
+        raise ValueError("config set 必须提供值")
     try:
         val = ast.literal_eval(raw_value)
     except Exception:
         val = raw_value  # 非法字面量 → 按字符串处理
-    # json.dumps(ensure_ascii=False) 对 str/int/bool/list/dict 都产出合法 Python 字面量，
-    # 且中文保持可读（与 bot.persist_listen_list 的书写风格一致）。
-    lit = json.dumps(val, ensure_ascii=False)
+    # repr() 对 str/bool/int/float/list/dict/tuple/None 均产出合法 Python 字面量；
+    # json.dumps 不行（bool→true、None→null 是非法 Python），会写坏 config.py。
+    lit = repr(val)
     cfg_path = os.path.join(ROOT_DIR, "config.py")
     if not os.path.exists(cfg_path):
         raise FileNotFoundError(f"找不到 config.py: {cfg_path}")
-    text = open(cfg_path, encoding="utf-8").read()
+    try:
+        with open(cfg_path, encoding="utf-8") as f:
+            text = f.read()
+    except (OSError, UnicodeDecodeError) as e:
+        raise FileNotFoundError(f"读取 config.py 失败: {e}")
     pat = re.compile(r"^(%s\s*=\s*).*$" % re.escape(key), re.M)
     if pat.search(text):
         new_text = pat.sub(lambda m: m.group(1) + lit, text)

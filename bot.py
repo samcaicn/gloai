@@ -94,6 +94,85 @@ os.environ["PROJECT_NAME"] = 'WeAuto'
 user_names = [entry[0] for entry in LISTEN_LIST]
 prompt_mapping = {entry[0]: entry[1] for entry in LISTEN_LIST}
 
+# --------------------------------------------------------------------------
+# 监测内容设置（LISTEN_LIST 第三列，可选）：
+#   [昵称, Prompt文件, {"monitor": {"types": [...], "keywords": [...],
+#                                   "action": "prompt"|"ignore", "prompt_file": ""},
+#                      "forward": [...]}]
+# 语义：
+#   - 未配置（types/keywords 全空）= 监测全部内容，走原流程（行 Prompt 正常回复）
+#   - 配置后：命中（类型匹配 且 关键字命中）才处理；未命中一律不回应
+#   - action=prompt：命中后用 monitor.prompt_file 回复（留空则用该行 Prompt）
+#   - action=ignore：命中后不回应（配合"全部内容"即可整体屏蔽某人/某群）
+# --------------------------------------------------------------------------
+def _build_monitor_settings():
+    """从 LISTEN_LIST 第三列解析每个会话的监测内容设置。
+
+    注意：模块导入早期（logger 尚未定义）执行，此处不得引用 logger。
+    """
+    out = {}
+    for entry in LISTEN_LIST:
+        try:
+            if not (isinstance(entry, (list, tuple)) and len(entry) >= 3
+                    and isinstance(entry[2], dict)):
+                continue
+            who = entry[0]
+            mon = entry[2].get('monitor') or {}
+            if not isinstance(mon, dict):
+                mon = {}
+            types = mon.get('types') or []
+            keywords = mon.get('keywords') or []
+            if not isinstance(types, list):
+                types = []
+            if not isinstance(keywords, list):
+                keywords = []
+            action = mon.get('action') if mon.get('action') in ('prompt', 'ignore') else 'prompt'
+            out[who] = {
+                'types': [str(t).strip() for t in types if str(t).strip()],
+                'keywords': [str(k).strip() for k in keywords if str(k).strip()],
+                'action': action,
+                'prompt_file': str(mon.get('prompt_file') or '').strip(),
+            }
+        except Exception:  # noqa: BLE001
+            continue
+    return out
+
+
+monitor_settings = _build_monitor_settings()
+
+# 监测内容命中且指定了专用 Prompt 的用户 -> Prompt 文件名（静态覆盖，命中才可能走到 AI）
+_monitor_prompt_override = {
+    who: cfg['prompt_file'] for who, cfg in monitor_settings.items()
+    if cfg['action'] == 'prompt' and cfg['prompt_file']
+}
+
+
+def check_monitor_content(who, msgtype, content):
+    """监测内容判定（联系人和群通用）。
+
+    返回:
+      'normal' — 未配置监测，走原流程
+      'ignore' — 不回应（未命中监测条件，或命中但配置为不回应）
+      'prompt' — 命中且需处理（Prompt 已由 _monitor_prompt_override 静态覆盖，若配置了专用 Prompt）
+    """
+    cfg = monitor_settings.get(who)
+    if not cfg:
+        return 'normal'
+    types = cfg['types']
+    keywords = cfg['keywords']
+    # 归一化消息类型（wechatauto 类型串理论上为小写，但做防御性处理，避免大小写/空白导致过滤静默失效）
+    mt = (str(msgtype).strip().lower()) if msgtype is not None else ''
+    if types and mt not in [t.lower() for t in types]:
+        return 'ignore'
+    if keywords:
+        hay = content if isinstance(content, str) else ''
+        if not any(k in hay for k in keywords):
+            return 'ignore'
+    # 命中监测条件
+    if cfg['action'] == 'ignore':
+        return 'ignore'
+    return 'prompt'
+
 # 自动添加但未设置提示词的用户回退使用的默认人格文件名（对应 prompts/默认.md）
 DEFAULT_PROMPT_NAME = '默认'
 
@@ -316,13 +395,13 @@ class AsyncHTTPHandler(logging.Handler):
             )
             if resp.status_code == 200:
                 print(f"\033[32m✓ 成功连接到配置编辑器服务器 (端口 {PORT})\033[0m")
-                print(f"\033[32m✓ 日志将实时发送到网页端\033[0m")
+                print("\033[32m✓ 日志将实时发送到网页端\033[0m")
             else:
                 print(f"\033[33m警告: 配置编辑器服务器响应异常 (状态码 {resp.status_code})\033[0m")
         except requests.exceptions.ConnectionError:
             print(f"\033[33m警告: 无法连接到配置编辑器服务器 (端口 {PORT})\033[0m")
-            print(f"\033[33m提示: 日志只会显示在控制台，不会发送到网页端\033[0m")
-            print(f"\033[33m解决: 如需网页端查看日志，请先启动 config_editor.py\033[0m")
+            print("\033[33m提示: 日志只会显示在控制台，不会发送到网页端\033[0m")
+            print("\033[33m解决: 如需网页端查看日志，请先启动 config_editor.py\033[0m")
         except Exception as e:
             print(f"\033[33m警告: 连接测试失败: {str(e)[:50]}\033[0m")
     
@@ -428,7 +507,7 @@ class AsyncHTTPHandler(logging.Handler):
                         # 断路器开启，只在特定时间输出警告，避免刷屏
                         if len(batch) >= self.batch_size:  # 只在批次满时才输出
                             reset_remaining = self.circuit_breaker_reset_time - time.time() if self.circuit_breaker_reset_time else 0
-                            print(f"\033[33m断路器开启中，暂不发送 {len(batch)} 条日志，将在 {reset_remaining:.1f} 秒后尝试恢复\033[0m")
+                            print("\033[33m断路器开启中，暂不发送 {len(batch)} 条日志，将在 {reset_remaining:.1f} 秒后尝试恢复\033[0m")
                         # 断路器开启时，清空批次以避免内存积累
                         batch = []
                         last_batch_time = current_time
@@ -477,7 +556,7 @@ class AsyncHTTPHandler(logging.Handler):
                     logging.debug(f"成功批量发送 {len(batch)} 条日志 [Waitress]")
                 return True  # 成功返回
                 
-            except requests.exceptions.Timeout as e:
+            except requests.exceptions.Timeout:
                 # 超时（WebUI 繁忙或未启动）
                 if self._webui_up:
                     logging.warning(f"日志发送超时 (尝试 {attempt+1}/{self.retry_attempts}) - WebUI可能繁忙或未启动")
@@ -490,7 +569,7 @@ class AsyncHTTPHandler(logging.Handler):
                 if 'Connection refused' in error_msg or 'Connection aborted' in error_msg:
                     if attempt == 0:  # 只在第一次尝试时输出到控制台
                         print(f"\033[33m警告: 无法连接到配置编辑器服务器 (端口 {PORT})\033[0m")
-                        print(f"\033[33m提示: 请确保 config_editor.py 正在运行\033[0m")
+                        print("\033[33m提示: 请确保 config_editor.py 正在运行\033[0m")
                     logging.warning(f"无法连接到Waitress服务器 (尝试 {attempt+1}/{self.retry_attempts})")
                 else:
                     logging.warning(f"日志发送连接错误 (尝试 {attempt+1}/{self.retry_attempts}): {error_msg[:100]}")
@@ -528,7 +607,7 @@ class AsyncHTTPHandler(logging.Handler):
         
         # 所有重试都失败
         downtime = time.time() - self.last_success_time
-        logging.error(f"发送日志批次失败，已达到最大重试次数 ({self.retry_attempts})，丢弃 {len(batch)} 条日志 [连续失败: {self.consecutive_failures+1}, 持续时间: {downtime:.1f}秒]")
+        logging.error("发送日志批次失败，已达到最大重试次数 ({self.retry_attempts})，丢弃 {len(batch)} 条日志 [连续失败: {self.consecutive_failures+1}, 持续时间: {downtime:.1f}秒]")
         return False  # 返回失败状态
     
     def get_stats(self):
@@ -614,7 +693,7 @@ except Exception as e:
 try:
     wx = WeChat()
 except:
-    logger.error(f"\033[31m无法初始化微信接口，请确保您安装的是微信3.9版本，并且已经登录！\033[0m")
+    logger.error("\033[31m无法初始化微信接口，请确保您安装的是微信3.9版本，并且已经登录！\033[0m")
     logger.error("\033[31m微信3.9版本下载地址：https://dldir1v6.qq.com/weixin/Windows/WeChatSetup.exe \033[0m")
     exit(1)
 # 获取登录用户的名字
@@ -628,6 +707,10 @@ emoji_timer_lock = threading.Lock()
 # 全局变量，控制消息发送状态
 can_send_messages = True
 is_sending_message = False
+# 发送串行化锁：保护 is_sending_message 的“检查-设置”，
+# 避免两个线程同时判定为 False 而并发发送导致回复交错。
+# 用 RLock（可重入）以保证同线程内的重入调用不会自锁死。
+send_lock = threading.RLock()
 
 # 用于拍一拍功能的全局变量
 user_last_msg = {}  # {user_id: msg对象} 存储每个用户最后发送的消息对象
@@ -653,7 +736,7 @@ def _fetch_untrusted_providers():
             _BLACKLIST_STRINGS = [str(x).lower() for x in items if x]
         else:
             _BLACKLIST_STRINGS = []
-    except Exception as e:
+    except Exception:
         _BLACKLIST_STRINGS = None
     finally:
         _BLACKLIST_FETCHED = True
@@ -765,7 +848,6 @@ def update_group_chat_cache():
     """
     更新群聊缓存信息
     """
-    global group_chat_cache
     
     try:
         with group_cache_lock:
@@ -810,8 +892,11 @@ def parse_time(time_str):
     try:
         TimeResult = datetime.strptime(time_str, "%H:%M").time()
         return TimeResult
-    except Exception as e:
+    except Exception:
         logger.error("\033[31m错误：主动消息安静时间设置有误！请填00:00-23:59 不要填24:00,并请注意中间的符号为英文冒号！\033[0m")
+        # 明确返回 None（原实现此处无 return，会隐式返回 None；
+        # 显式返回并在 is_quiet_time 中判空，避免非法配置导致 TypeError 崩溃）
+        return None
 
 quiet_time_start = parse_time(QUIET_TIME_START)
 quiet_time_end = parse_time(QUIET_TIME_END)
@@ -938,7 +1023,8 @@ def on_user_message(user):
 # 修改get_user_prompt函数（增强路径验证）
 def _get_user_prompt_core(user_id):
     # 查找映射中的文件名，若不存在则使用user_id
-    prompt_file = prompt_mapping.get(user_id, user_id)
+    # 监测内容命中专用 Prompt 优先（仅配置了监测+专用Prompt的用户生效）
+    prompt_file = _monitor_prompt_override.get(user_id) or prompt_mapping.get(user_id, user_id)
     # 若角色为空（待设置提示词 / 自动添加的联系人），回退到内置默认人格
     if not prompt_file or not str(prompt_file).strip():
         prompt_file = DEFAULT_PROMPT_NAME
@@ -953,7 +1039,7 @@ def _get_user_prompt_core(user_id):
     # 验证最终路径是否在预期目录内，防止路径遍历
     if not prompt_path.startswith(prompts_dir + os.sep):
         logger.error(f"检测到路径遍历尝试: user_id={user_id}, prompt_file={prompt_file}, path={prompt_path}")
-        raise ValueError(f"非法的prompt文件路径访问尝试")
+        raise ValueError("非法的prompt文件路径访问尝试")
     
     if not os.path.exists(prompt_path):
         logger.error(f"Prompt文件不存在: {prompt_path}")
@@ -1093,7 +1179,6 @@ def merge_context(context_list):
 # 保存聊天上下文
 def save_chat_contexts():
     """将当前聊天上下文保存到文件。"""
-    global chat_contexts
     temp_file_path = CHAT_CONTEXTS_FILE + ".tmp"
     try:
         # 创建要保存的上下文副本，以防在写入时被其他线程修改
@@ -1264,7 +1349,8 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
                 messages=messages_to_send,
                 temperature=TEMPERATURE,
                 max_tokens=MAX_TOKEN,
-                stream=False
+                stream=False,
+                timeout=CHAT_API_TIMEOUT
             )
 
             if response.choices:
@@ -1386,7 +1472,8 @@ def call_assistant_api_with_retry(messages_to_send, user_id, max_retries=2, is_s
                 messages=messages_to_send,
                 temperature=ASSISTANT_TEMPERATURE,
                 max_tokens=ASSISTANT_MAX_TOKEN,
-                stream=False
+                stream=False,
+                timeout=CHAT_API_TIMEOUT
             )
 
             if response.choices:
@@ -1566,7 +1653,6 @@ def persist_listen_list():
     用 _auto_add_lock 与 record_user_interaction 的 LISTEN_LIST 改写在同一个锁下，
     避免「读取内存列表→写盘」之间被另一线程的 append 插断，导致 config.py 写坏或丢条目。
     """
-    global LISTEN_LIST
     with _auto_add_lock:
         try:
             config_path = os.path.join(root_dir, 'config.py')
@@ -1633,7 +1719,6 @@ def record_user_interaction(who, chat_type=None):
     if chat_type not in (None, 'friend', 'group'):
         return
     with _auto_add_lock:
-        global user_names, prompt_mapping
         if who in user_names:
             return
         # 角色留空 = 待设置提示词（get_user_prompt 会回退到 prompts/默认.md）
@@ -1755,12 +1840,11 @@ def _message_listener_impl(msg, chat):
     elif msgattr == 'self':
         # 保存机器人自己发送的消息，用于拍一拍自己和撤回功能
         if msgtype == 'text':
-            global bot_last_sent_msg
             bot_last_sent_msg[who] = msg
             logger.debug(f"已保存机器人发送给 {who} 的最后消息对象")
             return
         else:
-            logger.debug(f"非文本消息，已忽略。")
+            logger.debug("非文本消息，已忽略。")
             return
     elif msgattr != 'friend':
         # 群聊消息：记录群名到用户列表（待设置提示词），但默认不自动回复群消息。
@@ -1792,9 +1876,9 @@ def _message_listener_impl(msg, chat):
             original_content = msg.content
     
     if msgtype == 'merge':
-        logger.info(f"收到合并转发消息，开始处理")
+        logger.info("收到合并转发消息，开始处理")
         mergecontent = msg.get_messages()
-        logger.info(f"收到合并转发消息，处理完成")
+        logger.info("收到合并转发消息，处理完成")
         # mergecontent 是一个列表，每个元素是 [发送者, 内容, 时间]
         # 转换为多行文本，每行格式: [时间] 发送者: 内容
         if isinstance(mergecontent, list):
@@ -1864,7 +1948,15 @@ def _message_listener_impl(msg, chat):
     if not original_content:
         logger.info("消息内容为空，已忽略。")
         return
-        
+
+    # --- 监测内容过滤（联系人和群通用，LISTEN_LIST 第三列 monitor 配置）---
+    # 'ignore' = 未命中监测条件 或 命中但配置为不回应 -> 本条消息到此为止；
+    # 'prompt' = 命中且需处理（若配置了专用 Prompt，_get_user_prompt_core 已静态覆盖）。
+    monitor_decision = check_monitor_content(who, msgtype, original_content)
+    if monitor_decision == 'ignore':
+        logger.info(f"窗口 {who} 的消息未命中监测内容配置（或配置为不回应），已忽略。")
+        return
+
     should_process_this_message = False
     content_for_handler = original_content 
 
@@ -1881,7 +1973,13 @@ def _message_listener_impl(msg, chat):
         at_triggered = False
         keyword_triggered = False
 
-        if not ACCEPT_ALL_GROUP_CHAT_MESSAGES and ENABLE_GROUP_AT_REPLY and ROBOT_WX_NAME:
+        # 监测内容命中的群（action=prompt）：直接处理，不再要求 @/关键词/全局开关，也不吃回复概率
+        monitor_group_hit = (monitor_decision == 'prompt') and (who in monitor_settings)
+        if monitor_group_hit:
+            should_process_this_message = True
+            logger.info(f"群聊 '{who}' 消息命中监测内容配置，直接处理（跳过 @/关键词触发与回复概率）。")
+
+        if not monitor_group_hit and not ACCEPT_ALL_GROUP_CHAT_MESSAGES and ENABLE_GROUP_AT_REPLY and ROBOT_WX_NAME:
             temp_content_after_at_check = processed_group_content
             
             unicode_at_pattern = f'@{re.escape(ROBOT_WX_NAME)}\u2005'
@@ -1902,15 +2000,17 @@ def _message_listener_impl(msg, chat):
                 logger.info(f"群聊 '{who}' 中检测到 @机器人。")
                 processed_group_content = temp_content_after_at_check
 
-        if ENABLE_GROUP_KEYWORD_REPLY:
+        if ENABLE_GROUP_KEYWORD_REPLY and not monitor_group_hit:
             if any(keyword in processed_group_content for keyword in GROUP_KEYWORD_LIST):
                 keyword_triggered = True
                 logger.info(f"群聊 '{who}' 中检测到关键词。")
         
-        basic_trigger_met = ACCEPT_ALL_GROUP_CHAT_MESSAGES or at_triggered or keyword_triggered
+        basic_trigger_met = monitor_group_hit or ACCEPT_ALL_GROUP_CHAT_MESSAGES or at_triggered or keyword_triggered
 
         if basic_trigger_met:
-            if not ACCEPT_ALL_GROUP_CHAT_MESSAGES:
+            if monitor_group_hit:
+                should_process_this_message = True  # 已在上方记录日志
+            elif not ACCEPT_ALL_GROUP_CHAT_MESSAGES:
                 if at_triggered and keyword_triggered:
                     logger.info(f"群聊 '{who}' 消息因 @机器人 和关键词触发基本处理条件。")
                 elif at_triggered:
@@ -1920,7 +2020,9 @@ def _message_listener_impl(msg, chat):
             else:
                 logger.info(f"群聊 '{who}' 消息符合全局接收条件，触发基本处理条件。")
 
-            if keyword_triggered and GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY:
+            if monitor_group_hit:
+                pass  # 监测命中：必定处理，不参与回复概率
+            elif keyword_triggered and GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY:
                 should_process_this_message = True
                 logger.info(f"群聊 '{who}' 消息因触发关键词且配置为忽略回复概率，将进行处理。")
             elif random.randint(1, 100) <= GROUP_CHAT_RESPONSE_PROBABILITY:
@@ -1947,7 +2049,6 @@ def _message_listener_impl(msg, chat):
         logger.info(f'最终准备处理消息 from chat "{who}" by sender "{sender}": {msg.content[:100]}')
         
         # 保存用户最后发送的消息对象，用于拍一拍功能
-        global user_last_msg
         if not is_user_group_chat(who):  # 只在个人聊天中保存用户消息
             user_last_msg[who] = msg
             logger.debug(f"已保存用户 {who} 的最后消息对象")
@@ -2607,7 +2708,6 @@ def handle_wechat_message(msg, who):
         logger.error(f"消息处理失败 (handle_wechat_message): {str(e)}", exc_info=True)
 
 def check_inactive_users():
-    global can_send_messages
     _consec_errors = 0
     while True:
         try:
@@ -2754,15 +2854,14 @@ def send_reply(user_id, sender_name, username, original_merged_message, reply, i
         logger.warning(f"尝试向 {user_id} 发送空回复。")
         return
 
-    # --- 如果正在发送，等待 ---
-    wait_start_time = time.time()
+    # --- 串行化发送过程 ---
+    # 原实现仅用裸 bool 标志忙等，两个线程可能同时判定为 False 而并发发送，
+    # 导致回复交错/顺序错乱。这里改用可重入锁保护“检查-设置”：
+    # RLock 保证同线程内的重入调用（如发送失败路径）不会把自己锁死。
     MAX_WAIT_SENDING = 15.0  # 最大等待时间（秒）
-    while is_sending_message:
-        if time.time() - wait_start_time > MAX_WAIT_SENDING:
-            logger.warning(f"等待 is_sending_message 标志超时，准备向 {user_id} 发送回复，继续执行。")
-            break  # 避免无限等待
-        logger.debug(f"等待向 {user_id} 发送回复，另一个发送正在进行中。")
-        time.sleep(0.5)  # 短暂等待
+    acquired = send_lock.acquire(timeout=MAX_WAIT_SENDING)
+    if not acquired:
+        logger.warning(f"等待发送锁超时（{MAX_WAIT_SENDING}s），为 {user_id} 继续发送（可能与另一发送交错）。")
 
     try:
         is_sending_message = True  # <<< 在发送前设置标志
@@ -2824,13 +2923,12 @@ def send_reply(user_id, sender_name, username, original_merged_message, reply, i
                         time.sleep(0.5)  # 短暂等待后重试
                 
                 if not success:
-                    logger.error(f"表情包发送失败，已重试3次")
+                    logger.error("表情包发送失败，已重试3次")
                 else:
                     time.sleep(random.uniform(0.5, 1.5))  # 表情包发送后随机延迟
             elif action_type == 'tickle':
                 # 处理[tickle] - 拍一拍用户
                 try:
-                    global user_last_msg
                     if user_id in user_last_msg and user_last_msg[user_id]:
                         user_last_msg[user_id].tickle()
                         logger.info(f"已拍一拍用户 {user_id}")
@@ -2842,7 +2940,6 @@ def send_reply(user_id, sender_name, username, original_merged_message, reply, i
             elif action_type == 'tickle_self':
                 # 处理[tickle_self] - 拍一拍机器人自己的消息
                 try:
-                    global bot_last_sent_msg
                     if bot_last_sent_msg and user_id in bot_last_sent_msg and bot_last_sent_msg[user_id]:
                         bot_last_sent_msg[user_id].tickle()
                         logger.info(f"已拍一拍机器人发送给 {user_id} 的消息")
@@ -2905,6 +3002,8 @@ def send_reply(user_id, sender_name, username, original_merged_message, reply, i
         logger.error(f"向 {user_id} 发送回复失败: {str(e)}", exc_info=True)
     finally:
         is_sending_message = False
+        if acquired:
+            send_lock.release()
 
 def _chunk_by_len(text, limit=MAX_SINGLE_MSG_LEN):
     """把过长文本按字数切成多段，优先在句末标点处断开，找不到断点再硬切。
@@ -3188,12 +3287,16 @@ def clean_up_temp_files ():
         except Exception as e:
             logger.error(f"删除目录 wechatauto文件下载 失败: {str(e)}")
             return
-        logger.info(f"目录 wechatauto文件下载 已成功删除")
+        logger.info("目录 wechatauto文件下载 已成功删除")
     else:
-        logger.info(f"目录 wechatauto文件下载 不存在，无需删除")
+        logger.info("目录 wechatauto文件下载 不存在，无需删除")
 
 def is_quiet_time():
     current_time = datetime.now().time()
+    # 安静时间配置非法（parse_time 解析失败返回 None）时按“不限制”处理，
+    # 避免 None 参与比较导致 TypeError 使主动消息线程崩溃。
+    if quiet_time_start is None or quiet_time_end is None:
+        return False
     if quiet_time_start <= quiet_time_end:
         return quiet_time_start <= current_time <= quiet_time_end
     else:
@@ -3205,7 +3308,6 @@ def sanitize_user_id_for_filename(user_id):
     将user_id转换为安全的文件名，支持中文字符。
     """
     import re
-    import string
     
     # 如果输入为空或None，返回默认值
     if not user_id:
@@ -3584,7 +3686,7 @@ def summarize_and_save(user_id, skip_check=False):
                 # 步骤3：替换文件
                 shutil.move(temp_file, user_prompt_file)
 
-            except Exception as e:
+            except Exception:
                 # 异常恢复流程
                 if os.path.exists(backup_file):
                     shutil.move(backup_file, user_prompt_file)
@@ -3773,7 +3875,7 @@ def manage_memory_capacity(user_file):
             f.write(''.join(new_content).strip())
         
         shutil.move(f"{user_file}.tmp", user_file)
-        logger.info(f"成功清理prompt文件中的记忆")
+        logger.info("成功清理prompt文件中的记忆")
 
     except Exception as e:
         logger.error(f"记忆整理失败: {str(e)}")
@@ -3892,7 +3994,7 @@ def try_parse_and_set_reminder(message_content, user_id):
         # 如果已经达到任一限制，先提示用户（具体类型限制在后面再次检查）
         if user_recurring_count >= MAX_RECURRING_REMINDERS_PER_USER and user_oneoff_count >= MAX_ONEOFF_REMINDERS_PER_USER:
             logger.warning(f"用户 {user_id} 的所有类型提醒都已达上限")
-            error_msg = f"你的提醒数量已经很多啦，可以先删除一些再添加新的哦~"
+            error_msg = "你的提醒数量已经很多啦，可以先删除一些再添加新的哦~"
             send_reply(user_id, user_id, user_id, "[提醒限制]", error_msg, is_system_message=True)
             return False
 
@@ -4000,7 +4102,7 @@ D) **非提醒请求**：例如 "今天天气怎么样?", "取消提醒"。
                 confirmation_time_str = target_dt.strftime('%Y-%m-%d %H:%M:%S')
                 delay_str_approx = format_delay_approx(delay_seconds, target_dt)
 
-                logger.info(f"准备为用户 {user_id} 设置【短期一次性】提醒 (<=10min)，计划触发时间: {confirmation_time_str} (延迟 {delay_seconds:.2f} 秒)，内容: '{reminder_msg}'")
+                logger.info("准备为用户 {user_id} 设置【短期一次性】提醒 (<=10min)，计划触发时间: {confirmation_time_str} (延迟 {delay_seconds:.2f} 秒)，内容: '{reminder_msg}'")
 
                 with timer_lock:
                     timer_id = next_timer_id
@@ -4286,7 +4388,6 @@ def send_confirmation_reply(user_id, confirmation_prompt, log_context, fallback_
     
 def trigger_reminder(user_id, timer_id, reminder_message):
     """当短期提醒到期时由 threading.Timer 调用的函数。"""
-    global is_sending_message
 
     timer_key = (user_id, timer_id)
     logger.info(f"触发【短期】提醒 (ID: {timer_id})，用户 {user_id}，内容: {reminder_message}")
@@ -4466,7 +4567,6 @@ def load_recurring_reminders():
 
 def save_recurring_reminders():
     """将内存中的当前提醒列表（重复和长期一次性）保存到 JSON 文件。"""
-    global recurring_reminders
     with recurring_reminder_lock: # 获取锁保证线程安全
         temp_file_path = RECURRING_REMINDERS_FILE + ".tmp"
         # 创建要保存的列表副本，以防在写入时列表被其他线程修改
@@ -4695,7 +4795,8 @@ def get_online_model_response(query: str, user_id: str) -> Optional[str]:
             messages=[{"role": "user", "content": online_query_prompt}],
             temperature=ONLINE_API_TEMPERATURE,
             max_tokens=ONLINE_API_MAX_TOKEN,
-            stream=False
+            stream=False,
+            timeout=CHAT_API_TIMEOUT
         )
 
         if not response.choices:
@@ -4727,7 +4828,7 @@ def monitor_memory_usage():
         try:
             process = psutil.Process(os.getpid())
             memory_usage = process.memory_info().rss / 1024 / 1024  # MB
-            logger.info(f"当前内存使用: {memory_usage:.2f} MB")
+            logger.info("当前内存使用: {memory_usage:.2f} MB")
             if memory_usage > MEMORY_THRESHOLD:
                 logger.warning(f"内存使用超过阈值 ({MEMORY_THRESHOLD} MB)，执行垃圾回收")
                 gc.collect()
@@ -4889,7 +4990,7 @@ def scheduled_restart_checker():
             
             # 如果没有提醒阻碍，则可以重启
             if not has_active_short_reminders and not has_upcoming_reminders:
-                logger.warning(f"满足重启条件：已运行约 {(current_time - program_start_time)/3600:.2f} 小时，已持续 {time_since_last_activity/60:.1f} 分钟无活动，且没有即将执行的提醒。准备重启程序...")
+                logger.warning("满足重启条件：已运行约 {(current_time - program_start_time)/3600:.2f} 小时，已持续 {time_since_last_activity/60:.1f} 分钟无活动，且没有即将执行的提醒。准备重启程序...")
                 try:
                     # --- 执行重启前的清理操作 ---
                     logger.info("定时重启前：保存聊天上下文...")
@@ -4924,22 +5025,22 @@ def scheduled_restart_checker():
                     logger.info(f"重启失败，下一次重启检查时间推迟到: {datetime.fromtimestamp(next_restart_time).strftime('%Y-%m-%d %H:%M:%S')}")
             elif has_upcoming_reminders:
                 # 有提醒即将执行，延长10分钟后再检查
-                logger.info(f"由于5分钟内有提醒将执行，延长重启时间10分钟。")
+                logger.info("由于5分钟内有提醒将执行，延长重启时间10分钟。")
                 next_restart_time = current_time + 600  # 延长10分钟
                 restart_pending = True  # 保持待重启状态
             else:
                 # 有短期提醒正在进行，稍后再检查
-                logger.info(f"由于有短期提醒正在进行，将在下一轮检查是否可以重启。")
+                logger.info("由于有短期提醒正在进行，将在下一轮检查是否可以重启。")
                 restart_pending = True  # 保持待重启状态
         elif interval_reached and not inactive_enough:
             # 已达到间隔时间但最近有活动，设置待重启状态
             if not restart_pending:
-                logger.info(f"已达到重启间隔({RESTART_INTERVAL_HOURS}小时)，但最近 {time_since_last_activity/60:.1f} 分钟内有活动，将在 {RESTART_INACTIVITY_MINUTES} 分钟无活动后重启。")
+                logger.info("已达到重启间隔({RESTART_INTERVAL_HOURS}小时)，但最近 {time_since_last_activity/60:.1f} 分钟内有活动，将在 {RESTART_INACTIVITY_MINUTES} 分钟无活动后重启。")
                 restart_pending = True
             # 不更新next_restart_time，因为我们现在是等待不活跃期
         elif current_time >= next_restart_time and not restart_pending:
             # 第一次达到重启时间点
-            logger.info(f"已达到计划重启检查点 ({RESTART_INTERVAL_HOURS}小时)。距离上次活动: {time_since_last_activity/60:.1f}分钟 (不活跃阈值: {RESTART_INACTIVITY_MINUTES}分钟)。")
+            logger.info("已达到计划重启检查点 ({RESTART_INTERVAL_HOURS}小时)。距离上次活动: {time_since_last_activity/60:.1f}分钟 (不活跃阈值: {RESTART_INACTIVITY_MINUTES}分钟)。")
             restart_pending = True  # 进入待重启状态
         
         # 每分钟检查一次条件
@@ -5064,7 +5165,6 @@ def save_user_timers():
 # 加载用户计时器状态的函数
 def load_user_timers():
     """从文件加载用户计时器状态"""
-    global user_timers, user_wait_times
     try:
         if os.path.exists(USER_TIMERS_FILE):
             with open(USER_TIMERS_FILE, 'r', encoding='utf-8') as f:
@@ -5107,6 +5207,26 @@ def initialize_all_user_timers():
     for user in user_names:
         reset_user_timer(user)
     logger.info("所有用户计时器已重新初始化")
+
+
+def forward_ai_salutation(text, roster, source=None):
+    """供固定转发引擎调用：让 AI 判断消息开头的称呼归属并改写。
+
+    roster: [{'name': 会话名, 'alias': 我(主人)对他的称呼}, ...]
+    source: 消息来源会话名（用于提示 AI 不要把自称当称呼）
+    返回改写后的文本；失败/异常一律返回 None，由引擎降级为本地规则结果。
+    引擎侧在守护线程里调用并带 8s 超时，绝不会卡住消息回调。
+    """
+    try:
+        prompt = forward_hub.build_salutation_prompt(text, roster, source=source)
+        return call_chat_api_with_retry(
+            [{"role": "user", "content": prompt}],
+            "forward_salutation",
+            max_retries=0,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.debug(f"固定转发：AI 称呼判断失败（降级为本地规则）: {e}")
+        return None
 
 
 def main():
@@ -5214,12 +5334,12 @@ def main():
                 return _orig_sendmsg(**call)
             wx.SendMsg = _auto_add_sendmsg
         except:
-            logger.error(f"\033[31m无法初始化微信接口，请确保您安装的是微信3.9版本，并且已经登录！\033[0m")
+            logger.error("\033[31m无法初始化微信接口，请确保您安装的是微信3.9版本，并且已经登录！\033[0m")
             exit(1)
 
         for user_name in user_names:
             if user_name == ROBOT_WX_NAME:
-                logger.error(f"\033[31m您填写的用户列表中包含自己登录的微信昵称，请删除后再试！\033[0m")
+                logger.error("\033[31m您填写的用户列表中包含自己登录的微信昵称，请删除后再试！\033[0m")
                 exit(1)
             ListenChat = wx.AddListenChat(nickname=user_name, callback=message_listener)
             if ListenChat:
@@ -5229,12 +5349,13 @@ def main():
                 exit(1)
         logger.info("监听用户添加完成")
 
-        # 固定转发：挂载引擎，并为所有「源/目标」额外注册监听。
+        # 固定转发：挂载引擎，并为所有「甲方/乙方」会话额外注册监听。
         # 注意：这些会话不写入 LISTEN_LIST（避免触发 prompt 文件校验、被 AI 主动聊天命中）；
         # 仅额外 AddListenChat 才能收到它们的消息。
         if forward_hub is not None:
             try:
-                forward_hub.attach(wx, logger, robot_name=ROBOT_WX_NAME)
+                forward_hub.attach(wx, logger, robot_name=ROBOT_WX_NAME,
+                                   ai_resolver=forward_ai_salutation)
                 for _who in forward_hub.all_chats():
                     if _who and _who != ROBOT_WX_NAME and _who not in user_names:
                         try:
@@ -5399,7 +5520,6 @@ def main():
                  logger.error(f"关闭异步日志处理器时出错: {log_close_err}")
         
         # 关闭心跳Session，释放Waitress连接
-        global _heartbeat_session
         if _heartbeat_session is not None:
             logger.info("正在关闭心跳连接池...")
             try:

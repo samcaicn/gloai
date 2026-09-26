@@ -575,6 +575,28 @@
             margin-bottom: 10px;
             align-items: center;
         }
+        /* 用户列表条目：昵称/Prompt/设置/删除 四列 + 可展开设置抽屉（监测内容/固定转发） */
+        #listen-list .entry {
+            grid-template-columns: 2fr 3fr auto auto;
+        }
+        #listen-list .listen-extra {
+            grid-column: 1 / -1;
+        }
+        #listen-list .listen-extra input,
+        #listen-list .listen-extra select {
+            height: 34px;
+        }
+        #listen-list .listen-extra .chk {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        #listen-list .listen-extra .chk input {
+            width: auto;
+            min-width: 0;
+            height: auto;
+        }
         .entry input,
         .entry select {
             box-sizing: border-box;
@@ -1791,6 +1813,102 @@
                 });
             }
 
+            // ---- 用户列表扩展：监测内容 + 固定转发 ----
+            function listenExtraHTML() {
+                let promptOptions = '';
+                {% for file in prompt_files %}
+                promptOptions += '<option value="{{ file }}">{{ file }}</option>';
+                {% endfor %}
+                const typeDefs = [['text','文字'],['image','图片'],['voice','语音'],['video','视频'],
+                                  ['file','文件'],['link','链接'],['quote','引用'],['merge','合并转发'],['emotion','表情']];
+                const typeBoxes = typeDefs.map(t =>
+                    `<label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="${t[0]}"> ${t[1]}</label>`).join('');
+                return `
+                    <div style="margin-bottom:8px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测内容类型（全不勾 = 全部内容）</label>
+                        <span class="mon-types">${typeBoxes}</span>
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测关键字（逗号分隔，空 = 不限）</label>
+                        <input type="text" class="mon-keywords" placeholder="如：订单, 退款" style="width:90%;">
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:4px;">命中后</label>
+                        <select class="mon-action" title="命中监测内容后的处理方式">
+                            <option value="prompt">使用Prompt回复</option>
+                            <option value="ignore">不回应</option>
+                        </select>
+                        <select class="mon-prompt" title="命中后使用的专用 Prompt（留空 = 用该行 Prompt）" style="max-width:260px;">
+                            <option value="">-- 用该行Prompt --</option>
+                            ${promptOptions}
+                        </select>
+                        <small style="display:block; color:#777; margin-top:4px;">配置了监测类型/关键字后：仅命中的内容会处理，未命中一律不回应。</small>
+                    </div>
+                    <div>
+                        <label style="display:block; font-weight:bold; margin-bottom:4px;">固定转发给（联系人/群名，逗号分隔，双向转发）</label>
+                        <input type="text" class="fwd-targets" placeholder="如：李四, 销售群" style="width:90%;">
+                        <small style="display:block; color:#777; margin-top:4px;">该会话的消息自动转发给对端，对端回复也会转回来；留空 = 不转发。</small>
+                    </div>`;
+            }
+
+            function toggleListenSettings(button) {
+                const entry = button.parentElement;
+                const extra = entry.querySelector('.listen-extra');
+                if (extra) {
+                    extra.style.display = (extra.style.display === 'none') ? 'flex' : 'none';
+                    if (extra.style.display !== 'none') {
+                        extra.style.flexDirection = 'column';
+                        applyListenSettings(entry);
+                    }
+                }
+            }
+            window.toggleListenSettings = toggleListenSettings;
+
+            // 把隐藏 JSON 设置回填到展开面板控件
+            function applyListenSettings(entry) {
+                const hid = entry.querySelector('.listen-settings-json');
+                const extra = entry.querySelector('.listen-extra');
+                if (!hid || !extra) return;
+                let st = {};
+                try { st = JSON.parse(hid.value || '{}') || {}; } catch (e) { st = {}; }
+                const mon = (st.monitor && typeof st.monitor === 'object') ? st.monitor : {};
+                extra.querySelectorAll('.mon-type').forEach(cb => {
+                    cb.checked = (mon.types || []).indexOf(cb.value) >= 0;
+                });
+                extra.querySelector('.mon-keywords').value = (mon.keywords || []).join(', ');
+                extra.querySelector('.mon-action').value = (mon.action === 'ignore') ? 'ignore' : 'prompt';
+                extra.querySelector('.mon-prompt').value = mon.prompt_file || '';
+                extra.querySelector('.fwd-targets').value = (st.forward || []).join(', ');
+            }
+            window.applyListenSettings = applyListenSettings;
+
+            // 保存前：把每行展开面板控件序列化回隐藏 JSON 字段
+            function serializeListenSettings() {
+                document.querySelectorAll('#listen-list .entry').forEach(function(entry) {
+                    const hid = entry.querySelector('.listen-settings-json');
+                    if (!hid) return;
+                    const extra = entry.querySelector('.listen-extra');
+                    if (!extra) { hid.value = '{}'; return; }
+                    const types = [];
+                    extra.querySelectorAll('.mon-type:checked').forEach(cb => types.push(cb.value));
+                    const kws = (extra.querySelector('.mon-keywords').value || '')
+                        .split(/[,，\s]+/).map(s => s.trim()).filter(Boolean);
+                    const action = extra.querySelector('.mon-action').value || 'prompt';
+                    const mprompt = extra.querySelector('.mon-prompt').value || '';
+                    const fwd = (extra.querySelector('.fwd-targets').value || '')
+                        .split(/[,，\s]+/).map(s => s.trim()).filter(Boolean);
+                    const st = {};
+                    if (types.length || kws.length || action === 'ignore' || mprompt) {
+                        st.monitor = { types: types, keywords: kws, action: action, prompt_file: mprompt };
+                    }
+                    if (fwd.length) st.forward = fwd;
+                    hid.value = JSON.stringify(st);
+                });
+            }
+            window.serializeListenSettings = serializeListenSettings;
+
+            // 页面加载：隐藏 JSON 不需要回填（展开时才 applyListenSettings）
+
             function addEntry() {
                 const container = document.getElementById('listen-list');
                 const div = document.createElement('div');
@@ -1803,7 +1921,10 @@
                         <option value="{{ file }}">{{ file }}</option>
                         {% endfor %}
                     </select>
+                    <input type="hidden" name="listen_settings" class="listen-settings-json" value="{}">
+                    <button type="button" onclick="toggleListenSettings(this)" style="background-color:#607d8b;">⚙ 设置</button>
                     <button type="button" onclick="removeEntry(this)">删除</button>
+                    <div class="listen-extra" style="display:none; width:100%; border:1px solid #ddd; border-radius:6px; padding:10px; margin-top:8px; background:#fafafa;">${listenExtraHTML()}</div>
                 `;
                 container.appendChild(div);
             }
@@ -1864,6 +1985,8 @@
                     showAlert("表单错误，无法保存配置。", false);
                     return false;
                 }
+                // 保存前把用户列表每行的监测内容/固定转发设置序列化进隐藏字段
+                try { serializeListenSettings(); } catch (e) { console.error('序列化用户列表设置失败:', e); }
                 const formData = new FormData(form);
 
                 try {
@@ -3665,9 +3788,8 @@
             <button id="botButton" class="nav-button">Start Bot</button>
             <button type="submit" form="configForm" id="saveConfigButton" class="nav-button" style="background-color: #4CAF50;">保存配置</button>
                         <a href="{{ url_for('quick_start') }}" class="nav-button" style="background-color: #ff9800;">快速上手</a>
-            <a href="{{ url_for('style_lab') }}" class="nav-button">风格模仿</a>
-            <a href="{{ url_for('forward_page') }}" class="nav-button">固定转发</a>
-            <button type="button" id="importButton" class="nav-button" style="background-color: #2196F3;">导入配置</button>      
+                        <a href="{{ url_for('style_lab') }}" class="nav-button">风格模仿</a>
+                        <button type="button" id="importButton" class="nav-button" style="background-color: #2196F3;">导入配置</button>      
             <a href="{{ url_for('help_page') }}" class="nav-button" style="background-color: #03A9F4;">帮助文档</a>
         </div>
     </div>
@@ -3745,13 +3867,55 @@
                                     <option value="{{ file }}" {% if item[1] == file %}selected{% endif %}>{{ file }}</option>
                                     {% endfor %}
                                 </select>
+                                <input type="hidden" name="listen_settings" class="listen-settings-json" value='{{ (item[2] if item|length > 2 else {}) | tojson | replace("'", "&#39;") }}'>
+                                <button type="button" onclick="toggleListenSettings(this)" style="background-color:#607d8b;">⚙ 设置</button>
                                 <button type="button" onclick="removeEntry(this)">删除</button>
+                                <div class="listen-extra" style="display:none; width:100%; border:1px solid #ddd; border-radius:6px; padding:10px; margin-top:8px; background:#fafafa;">
+                                    <div style="margin-bottom:8px;">
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测内容类型（全不勾 = 全部内容）</label>
+                                        <span class="mon-types">
+                                            <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="text"> 文字</label>
+                                            <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="image"> 图片</label>
+                                            <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="voice"> 语音</label>
+                                            <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="video"> 视频</label>
+                                            <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="file"> 文件</label>
+                                            <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="link"> 链接</label>
+                                            <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="quote"> 引用</label>
+                                            <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="merge"> 合并转发</label>
+                                            <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="emotion"> 表情</label>
+                                        </span>
+                                    </div>
+                                    <div style="margin-bottom:8px;">
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测关键字（逗号分隔，空 = 不限）</label>
+                                        <input type="text" class="mon-keywords" placeholder="如：订单, 退款" style="width:90%;">
+                                    </div>
+                                    <div style="margin-bottom:8px;">
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">命中后</label>
+                                        <select class="mon-action" title="命中监测内容后的处理方式">
+                                            <option value="prompt">使用Prompt回复</option>
+                                            <option value="ignore">不回应</option>
+                                        </select>
+                                        <select class="mon-prompt" title="命中后使用的专用 Prompt（留空 = 用该行 Prompt）" style="max-width:260px;">
+                                            <option value="">-- 用该行Prompt --</option>
+                                            {% for file in prompt_files %}
+                                            <option value="{{ file }}">{{ file }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <small style="display:block; color:#777; margin-top:4px;">配置了监测类型/关键字后：仅命中的内容会处理，未命中一律不回应。</small>
+                                    </div>
+                                    <div>
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">固定转发给（联系人/群名，逗号分隔，双向转发）</label>
+                                        <input type="text" class="fwd-targets" placeholder="如：李四, 销售群" style="width:90%;">
+                                        <small style="display:block; color:#777; margin-top:4px;">该会话的消息自动转发给对端，对端回复也会转回来；留空 = 不转发。</small>
+                                    </div>
+                                </div>
                             </div>
                             {% endfor %}
                         </div>
                         <button type="button" onclick="addEntry()" style="margin-top:10px;">添加用户</button>
                     </div>
-                    <small>提示：修改了用户对应的Prompt文件后保存配置时将自动清除该用户的上下文记忆。</small>
+                    <small>提示：修改了用户对应的Prompt文件后保存配置时将自动清除该用户的上下文记忆。<br>
+                    「⚙ 设置」里可配置监测内容（某些消息类型或关键字，默认全部内容；命中后用指定Prompt回复或不回应）和固定转发目标。</small>
                 </div>
 
                 <div id="section-fun-lab" class="content-panel">

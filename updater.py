@@ -319,15 +319,15 @@ class Updater:
             log_progress = lambda s: progress.append(s)
             log_progress("开始下载加密 exe 构件...")
 
-            r = requests.get(update_info["download_url"], headers=headers, timeout=60, stream=True)
-            r.raise_for_status()
+            with requests.get(update_info["download_url"], headers=headers, timeout=60, stream=True) as r:
+                r.raise_for_status()
 
-            os.makedirs(self.temp_dir, exist_ok=True)
-            zip_path = os.path.join(self.temp_dir, "weauto_artifact.zip")
-            with open(zip_path, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
+                os.makedirs(self.temp_dir, exist_ok=True)
+                zip_path = os.path.join(self.temp_dir, "weauto_artifact.zip")
+                with open(zip_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
             log_progress("下载完成，正在解压 WeAuto.exe...")
 
             extract_dir = os.path.join(self.temp_dir, "weauto_exe")
@@ -448,7 +448,7 @@ class Updater:
                     'output': self.format_version_info(current_version)
                 }
                 
-            except (requests.RequestException, json.JSONDecodeError) as e:
+            except (requests.RequestException, json.JSONDecodeError):
                 if self.try_next_proxy():
                     logger.info("正在切换到下一个代理服务器检查更新，请稍候...")
                     continue
@@ -571,7 +571,7 @@ class Updater:
                 logger.info(f"重要文件已备份到: {backup_dir}")
                 logger.info(f"备份项目: {', '.join(backed_up_items)}")
             else:
-                logger.info(f"没有找到需要备份的文件或文件夹")
+                logger.info("没有找到需要备份的文件或文件夹")
                 
             return True
         except Exception as e:
@@ -579,8 +579,22 @@ class Updater:
             return False
 
     def should_skip_file(self, file_path: str) -> bool:
-        """检查是否应该跳过更新某个文件"""
-        return any(skip_file in file_path for skip_file in self.SKIP_FILES)
+        """检查是否应该跳过更新某个文件
+
+        调用方传入的可能是 basename 也可能是相对/绝对路径，因此同时处理：
+        - "*" 通配全部
+        - "*.pyc" 这类前缀通配（按后缀匹配，子串匹配对 "*.pyc" 永远不生效）
+        - 精确文件名相等 / 原路径子串包含（保留目录规则如 "__pycache__"）
+        """
+        base = os.path.basename(file_path)
+        for skip_file in self.SKIP_FILES:
+            if skip_file == "*":
+                return True
+            if skip_file.startswith("*") and base.endswith(skip_file[1:]):
+                return True
+            if skip_file == base or skip_file in file_path:
+                return True
+        return False
 
     def _safe_remove_tree(self, path: str) -> bool:
         """安全地删除目录树，处理权限问题"""
@@ -763,7 +777,7 @@ class Updater:
                 if is_gitee:
                     # Gitee链接直接使用，不应用代理
                     proxied_url = download_url
-                    msg = f"[下载更新] 使用Gitee源"
+                    msg = "[下载更新] 使用Gitee源"
                     print(msg)
                     logger.info(msg)
                 else:
@@ -785,40 +799,40 @@ class Updater:
                     
                     proxied_url = self.get_proxy_url(download_url, log_info=False)  # 不重复打印日志
                 
-                response = requests.get(
+                with requests.get(
                     proxied_url,
                     headers=headers,
                     timeout=30,
                     stream=True
-                )
-                response.raise_for_status()
-                
-                os.makedirs(self.temp_dir, exist_ok=True)
-                zip_path = os.path.join(self.temp_dir, 'update.zip')
-                
-                total_length = response.headers.get("Content-Length")
-                if total_length is not None:
-                    total_length = int(total_length)
-                downloaded = 0
-            
-                with open(zip_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-                            downloaded += len(chunk)
-                            if total_length:
-                                percent = downloaded / total_length * 100
-                                # 添加进度条显示
-                                bar_length = 30
-                                filled = int(bar_length * downloaded // total_length)
-                                bar = '█' * filled + ' ' * (bar_length - filled)
-                                sys.stdout.write(f"\r下载进度 |{bar}| {percent:.1f}% ({downloaded/1024/1024:.1f}MB/{total_length/1024/1024:.1f}MB)")
-                            else:
-                                sys.stdout.write(f"\r已下载: {downloaded/1024/1024:.1f} MB")
-                            sys.stdout.flush()
-                print("\n下载完成")  # 换行确保后续输出不混乱
-                
-                return True
+                ) as response:
+                    response.raise_for_status()
+
+                    os.makedirs(self.temp_dir, exist_ok=True)
+                    zip_path = os.path.join(self.temp_dir, 'update.zip')
+
+                    total_length = response.headers.get("Content-Length")
+                    if total_length is not None:
+                        total_length = int(total_length)
+                    downloaded = 0
+
+                    with open(zip_path, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+                                downloaded += len(chunk)
+                                if total_length:
+                                    percent = downloaded / total_length * 100
+                                    # 添加进度条显示
+                                    bar_length = 30
+                                    filled = int(bar_length * downloaded // total_length)
+                                    bar = '█' * filled + ' ' * (bar_length - filled)
+                                    sys.stdout.write("\r下载进度 |{bar}| {percent:.1f}% ({downloaded/1024/1024:.1f}MB/{total_length/1024/1024:.1f}MB)")
+                                else:
+                                    sys.stdout.write("\r已下载: {downloaded/1024/1024:.1f} MB")
+                                sys.stdout.flush()
+                    print("\n下载完成")  # 换行确保后续输出不混乱
+
+                    return True
                     
             except requests.RequestException as e:
                 if is_gitee:
@@ -854,7 +868,7 @@ class Updater:
             
             # 显示更新源信息
             update_source = update_info.get('source', 'Unknown')
-            log_progress(f"发现新版本", True, f"来源: {update_source}")
+            log_progress("发现新版本", True, f"来源: {update_source}")
             
             if not self.prompt_update(update_info):
                 log_progress("提示用户是否更新", True, "用户取消更新")
@@ -965,12 +979,14 @@ class Updater:
                 print("\033[32m\n更新成功!请关闭此窗口并重新运行Run.bat以应用更新。\n\033[0m")
 
                 print("="*50 + "\n")
-                # 使用while循环阻止程序退出,直到用户手动关闭窗口
-                while True:
-                    try:
-                        time.sleep(1)
-                    except KeyboardInterrupt:
-                        continue
+                # 仅在交互式入口（__main__ 会设置该环境变量）阻塞等待用户关窗口；
+                # 以库方式调用 update() 时直接返回，避免调用线程永久挂起。
+                if os.environ.get("WEAUTO_BLOCK_ON_UPDATE"):
+                    while True:
+                        try:
+                            time.sleep(1)
+                        except KeyboardInterrupt:
+                            break
 
             return {'success': True, 'output': '\n'.join(progress)}
 
@@ -1064,6 +1080,8 @@ def check_and_update():
 
 if __name__ == "__main__":
     try:
+        # 交互式入口（Run.bat 直接运行 updater.py）：更新成功后阻塞等待用户关闭窗口
+        os.environ["WEAUTO_BLOCK_ON_UPDATE"] = "1"
         result = check_and_update()
         if not result['success']:
             print("\n更新失败，请查看日志")

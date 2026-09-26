@@ -75,11 +75,14 @@ class Msg:
         "type", "content", "sender", "attr", "sender_remark",
         "_url", "_quote_content", "_messages", "_voice_text",
         "local_id", "create_time",
+        # 媒体定位三件套：转发原文件（图片/视频/文件/语音）时用于从本地媒体库提取
+        "chat_username", "type_code",
     )
 
     def __init__(self, mtype, content, sender, attr="friend", sender_remark="",
                  url="", quote_content="", messages=None, voice_text="",
-                 local_id=None, create_time=None):
+                 local_id=None, create_time=None,
+                 chat_username="", type_code=None):
         self.type = mtype
         self.content = content
         self.sender = sender
@@ -91,6 +94,10 @@ class Msg:
         self._voice_text = voice_text
         self.local_id = local_id
         self.create_time = create_time
+        # chat_username = 会话原始 username（media_0.db 按会话分组，下载媒体必填）
+        # type_code     = wechatauto 的 local_type（3图片/34语音/43视频/49文件）
+        self.chat_username = chat_username
+        self.type_code = type_code
 
     def to_text(self):
         """语音消息转文本（尽力而为）。"""
@@ -171,7 +178,6 @@ def _ensure_wechatauto():
         if _m == "wechatauto" or _m.startswith("wechatauto."):
             del sys.modules[_m]
     try:
-        import wechatauto                                   # noqa: F401
         from wechatauto import db as wa_db
         from wechatauto.guia import (quick_send, quick_send_file, quick_send_image)
     except Exception as e:  # pragma: no cover - 环境缺失时给出可操作提示
@@ -181,6 +187,11 @@ def _ensure_wechatauto():
             "原始错误: %r" % e
         )
     return wa_db, quick_send, quick_send_file, quick_send_image
+
+
+# 媒体提取串行锁：MediaDownloader 与 Listener 轮询共用同一个 sqlite 连接，
+# 并行下载易触发锁竞争/解密态互相污染，故同一时刻只允许一个下载在跑。
+_MEDIA_LOCK = threading.Lock()
 
 
 def _clean_text(content):
@@ -211,6 +222,14 @@ def _parse(row, who, username, member_resolver=None):
     is_self = (sender_id == SELF_SENDER_ID) or (
         bool(row.get("self_wxid")) and str(sender_id) == str(row.get("self_wxid"))
     )
+    # 媒体定位信息：转发原文件时需用 local_id + 会话 username 从本地媒体库提取。
+    # 对文本消息同样附带，保持 Msg 字段一致（不影响既有逻辑）。
+    _media_keys = {
+        "local_id": row.get("local_id"),
+        "create_time": row.get("create_time"),
+        "chat_username": username,
+        "type_code": row.get("type_code"),
+    }
     # type 同样可能以 int(如 1) 传入，先转 str 再 strip
     mtype = str(row.get("type") or "").strip()
     is_group = str(username).endswith("@chatroom")
@@ -248,27 +267,30 @@ def _parse(row, who, username, member_resolver=None):
         else:
             sender = who
         url = row.get("url") or ""
-        quote = row.get("quote_content") or row.get("refermsg") or ""
+        # refermsg 在微信原始数据里常为 dict/嵌套结构，直接当 str 用会让下游拼接/比较抛 TypeError
+        raw_quote = row.get("quote_content") or row.get("refermsg") or ""
+        quote = raw_quote if isinstance(raw_quote, str) else ""
         messages = row.get("messages") or []
         voice_text = row.get("text") or ""
         return Msg(ctype, marker, sender, attr=attr,
-                   url=url, quote_content=quote, messages=messages, voice_text=voice_text)
+                   url=url, quote_content=quote, messages=messages, voice_text=voice_text,
+                   **_media_keys)
 
     # 文本消息
     if is_group:
         if is_self:
-            return Msg("text", _clean_text(text_body), who, attr="self")
+            return Msg("text", _clean_text(text_body), who, attr="self", **_media_keys)
         if member_wxid and member_resolver:
             sender = member_resolver(member_wxid) or member_wxid
         elif member_wxid:
             sender = member_wxid
         else:
             sender = who
-        return Msg("text", _clean_text(text_body), sender, attr="friend")
+        return Msg("text", _clean_text(text_body), sender, attr="friend", **_media_keys)
     else:
         if is_self:
-            return Msg("text", _clean_text(text_body), who, attr="self")
-        return Msg("text", _clean_text(text_body), who, attr="friend")
+            return Msg("text", _clean_text(text_body), who, attr="self", **_media_keys)
+        return Msg("text", _clean_text(text_body), who, attr="friend", **_media_keys)
 
 
 class WeChat:
@@ -478,6 +500,61 @@ class WeChat:
         self._init()
         return self._quick_send_image(filepath, self._display_name(who), verify=False)
 
+    def DownloadMedia(self, msg, save_dir=None, timeout=20.0):
+        """尽力而为地把消息里的媒体提取到本地文件，返回路径；失败返回 None。
+
+        用于「原文件转发」：固定转发拿到本地路径后再 SendFiles/SendImage 给目标，
+        从而实现图片/视频/文件/语音的**真实转发**（而非只发 [图片] 占位）。
+
+        依赖 wechatauto 的 ``MediaDownloader.download_media``，它按 local_type 自动分发：
+            3=图片 / 34=语音(导出 SILK) / 43=视频 / 49=文件
+        所需参数正是 Msg 上新增的 ``chat_username``（会话 username）与 ``local_id``。
+
+        设计约束：
+          * 监听回调线程里调用，绝不能卡死 -> 用守护线程 + join 超时，超时即放弃；
+          * 图片解密可能需要扫描 AES 密钥（首次较慢），故默认超时 20s；
+          * 任何异常一律吞掉并返回 None，由调用方降级为占位文本。
+        """
+        try:
+            self._init()
+        except Exception as e:  # noqa: BLE001
+            logger.debug("wechat_compat: DownloadMedia 初始化失败，跳过: %r", e)
+            return None
+        local_id = getattr(msg, "local_id", None)
+        user = getattr(msg, "chat_username", "") or ""
+        if not local_id or not user or self._db is None:
+            return None
+        try:
+            lid = int(local_id)
+        except (TypeError, ValueError):
+            return None
+
+        box = {}
+
+        def _run():
+            try:
+                from wechatauto.media import MediaDownloader
+                with _MEDIA_LOCK:   # 与监听轮询串行，避免 sqlite 锁竞争
+                    md = MediaDownloader(self._db, save_dir=save_dir)
+                    box["path"] = md.download_media(str(user), lid, save_dir=save_dir)
+            except Exception as e:  # noqa: BLE001
+                box["err"] = e
+
+        th = threading.Thread(target=_run, daemon=True)
+        th.start()
+        th.join(timeout)
+        if th.is_alive():
+            logger.warning(
+                "wechat_compat: 媒体下载超时(%.0fs)，降级为占位 (local_id=%s)", timeout, lid)
+            return None
+        if box.get("err") is not None:
+            logger.debug("wechat_compat: 媒体下载失败(local_id=%s): %r", lid, box.get("err"))
+            return None
+        path = box.get("path")
+        if path and os.path.exists(path):
+            return path
+        return None
+
     def ChatWith(self, who):
         # wechatauto 通过 quick_send 直接搜索侧栏发送，无需预先 ChatWith
         return True
@@ -518,7 +595,6 @@ class WeChat:
 
 
 if __name__ == "__main__":
-    import json
     print("== 单聊-对方发 ==")
     print(_parse({"content": "你好", "type": "文本", "sender_id": 2, "username": "wxid_friend"},
                  "张三", "wxid_friend"))

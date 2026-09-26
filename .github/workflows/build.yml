@@ -72,6 +72,9 @@ jobs:
             ARGS=(--name WeAuto --onefile --noupx --paths vendor
                   --workpath C:/_wb --distpath C:/_wd
                   --hidden-import bot --hidden-import wechat_compat --hidden-import wechatauto
+                  # 固定转发引擎（bot.py / config_editor.py 静态 + 运行期 import），
+                  # 显式 hidden-import 兜底，避免后续改为纯动态 import 时被漏打包。
+                  --hidden-import forward_hub
                   # 单 EXE 全功能：WebUI / bot / CLI / MCP 四种形态共用同一个 exe，
                   # 靠命令行参数（默认 / --bot / --cli / --mcp）在 __main__ 派发。
                   # 这几个入口是运行时动态 import，必须显式 hidden-import 才会被打进包。
