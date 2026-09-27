@@ -22,18 +22,20 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # ubuntu-latest runners ship a preinstalled Android SDK with licenses
-      # accepted; android-actions/setup-android@v3 failed on this runner, so
-      # we rely on ANDROID_HOME being present instead.
+      # android-actions/setup-android@v3 failed on this runner; ubuntu-latest
+      # ships a preinstalled Android SDK instead. Just make sure every license
+      # is accepted so AGP can pull missing platforms/build-tools on demand.
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
 
       - name: Set up Gradle (cache)
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build debug APK (installable)
-        run: ./gradlew :app:assembleDebug --stacktrace
+        run: ./gradlew :app:assembleDebug --stacktrace > build_debug.log 2>&1
 
       - name: Build release APK (unsigned, no keystore in CI)
-        run: ./gradlew :app:assembleRelease --stacktrace
+        run: ./gradlew :app:assembleRelease --stacktrace > build_release.log 2>&1
 
       - name: Collect APKs
         run: |
@@ -47,6 +49,24 @@ jobs:
           name: jev-chat-jarvis-apk-${{ github.run_number }}
           path: dist/*.apk
           retention-days: 30
+
+      - name: Report failure log to public issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BODY=$(mktemp)
+          {
+            echo "## jev-chat-jarvis APK build failure (run ${{ github.run_number }})"
+            echo "Commit: ${{ github.sha }}"
+            echo '```'
+            tail -150 build_debug.log 2>/dev/null || true
+            tail -150 build_release.log 2>/dev/null || true
+            echo '```'
+          } > "$BODY"
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "jev-chat-jarvis APK build failure (run ${{ github.run_number }})" \
+            --body-file "$BODY" || true
 
       - name: Release APK (tagged builds only)
         if: startsWith(github.ref, 'refs/tags/')
