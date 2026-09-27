@@ -1,0 +1,54 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, jev-chat-jarvis]
+    paths-ignore:
+      - 'site/**'
+      - 'docs/**'
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle (cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK (installable)
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Build release APK (unsigned, no keystore in CI)
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Collect APKs
+        run: |
+          mkdir -p dist
+          find app/build/outputs/apk -name '*.apk' -exec cp {} dist/ \;
+          ls -la dist/
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jev-chat-jarvis-apk-${{ github.run_number }}
+          path: dist/*.apk
+          retention-days: 30
+
+      - name: Release APK (tagged builds only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.apk
