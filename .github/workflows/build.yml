@@ -22,8 +22,9 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # ubuntu-latest runners ship a preinstalled Android SDK with licenses
+      # accepted; android-actions/setup-android@v3 failed on this runner, so
+      # we rely on ANDROID_HOME being present instead.
 
       - name: Set up Gradle (cache)
         uses: gradle/actions/setup-gradle@v4
