@@ -77,6 +77,11 @@ def setup_module(module):
 
 def teardown_module(module):
     shutil.rmtree(TMP, ignore_errors=True)
+    # 恢复单例默认路径与缓存：reset() 把 _base/_rules_path/_log_path 指到了临时目录，
+    # 若只删目录不还原，同进程内后续测试文件（如 test_listen_monitor.py 直接用
+    # 项目目录的 forward_rules.json）会写盘静默失败、读到旧缓存（曾致
+    # test_sync_forward_rules 全量跑时 'manual1' 莫名变成 'r1'）。
+    _HUB.__init__()
 
 
 def reset():

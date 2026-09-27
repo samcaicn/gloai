@@ -89,6 +89,11 @@ jobs:
                   # 显式 hidden-import 兜底，避免 --collect-all 在某些子模块导入失败时被漏掉。
                   --hidden-import uiautomation --hidden-import comtypes --hidden-import colorama
                   --collect-all wechatauto
+                  # 桌面窗口模式（pywebview / WebView2，config_editor.py 运行期 import webview）：
+                  # collect-all 打包 webview 的 lib（WebView2Loader 等）与 pythonnet/clr_loader
+                  # 的运行时 DLL（Python.Runtime 等），缺一个桌面窗口就起不来。
+                  --collect-all webview --collect-all clr_loader --collect-all pythonnet
+                  --hidden-import webview.platforms.edgechromium --hidden-import webview.platforms.winforms
                   # 写入合法的版本信息资源 + 显式 manifest（asInvoker，不请求管理员）：
                   # 降低杀软对「无数字签名 + 未知发布者」的启发式误报评分。根治仍需 EV 代码签名证书。
                   --version-file version_info.txt --manifest manifest.xml)

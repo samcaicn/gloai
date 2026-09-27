@@ -15,6 +15,7 @@ filelock
 requests
 beautifulsoup4
 lxml
+pywebview>=5.0     # 桌面窗口模式（内嵌 WebView2；Windows 依赖 pythonnet/clr_loader，均有 wheel）
 
 # ===== LLM / 辅助 =====
 openai==1.84.0

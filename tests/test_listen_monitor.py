@@ -19,11 +19,21 @@ from werkzeug.datastructures import ImmutableMultiDict
 # 先隔离 forward_hub 的存储目录，避免污染真实 forward_rules.json
 import forward_hub
 _TMP = tempfile.mkdtemp()
-forward_hub._HUB._base = _TMP
-forward_hub._HUB._rules_path = os.path.join(_TMP, 'forward_rules.json')
-forward_hub._HUB._log_path = os.path.join(_TMP, 'forward_log.json')
-forward_hub._HUB._ensure_files()
-forward_hub._HUB._load_rules(force=True)
+
+def _redirect_hub_tmp():
+    forward_hub._HUB._base = _TMP
+    forward_hub._HUB._rules_path = os.path.join(_TMP, 'forward_rules.json')
+    forward_hub._HUB._log_path = os.path.join(_TMP, 'forward_log.json')
+    forward_hub._HUB._ensure_files()
+    forward_hub._HUB._load_rules(force=True)
+
+_redirect_hub_tmp()
+
+def setup_module(module):
+    # pytest 全量跑时，本模块的重定向发生在收集期（import），会先被
+    # test_forward_hub 的 teardown_module（恢复单例默认路径）覆盖，
+    # 导致本模块测试写盘到真实项目目录。这里在测试开始前重新隔离。
+    _redirect_hub_tmp()
 
 import config_editor
 from config_editor import (_build_listen_list_from_form,

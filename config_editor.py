@@ -572,6 +572,11 @@ def get_chat_context_users():
         app.logger.error(f"读取 chat_contexts.json 失败: {e}")
         return []
 
+@app.route('/api/ping')
+def api_ping():
+    """轻量探活端点（无需登录）：用于单实例检测，桌面窗口模式据此 attach 已运行实例。"""
+    return jsonify({'app': 'WeAuto', 'ok': True})
+
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")  # 速率限制：每分钟最多10次登录尝试
 def login():
@@ -5214,6 +5219,75 @@ def api_forward_log():
     return jsonify(ok=True, log=m.get_log())
 
 
+def _webview2_runtime_available():
+    """检测系统是否安装了 Microsoft WebView2 运行时（Evergreen / Fixed Version）。"""
+    try:
+        import winreg
+    except Exception:
+        return False
+    # WebView2 Runtime 的固定产品 GUID
+    guid = '{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+    key_paths = (
+        (winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients' + '\\' + guid),
+        (winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\EdgeUpdate\Clients' + '\\' + guid),
+        (winreg.HKEY_CURRENT_USER, r'Software\Microsoft\EdgeUpdate\Clients' + '\\' + guid),
+    )
+    for hive, path in key_paths:
+        try:
+            with winreg.OpenKey(hive, path):
+                return True
+        except OSError:
+            continue
+    # Fixed Version 部署：通过环境变量指定运行时目录
+    if os.environ.get('WEBVIEW2_BROWSER_EXECUTABLE_FOLDER'):
+        return True
+    prog = os.environ.get('PROGRAMFILES(X86)', r'C:\Program Files (x86)')
+    return os.path.isdir(os.path.join(prog, r'Microsoft\EdgeWebView\Application'))
+
+def _run_desktop_window(web_url, attach_mode, start_waitress):
+    """内嵌 WebView2 桌面窗口模式（默认）。pywebview / WebView2 不可用时自动回退系统浏览器。"""
+    url = web_url
+
+    def _fallback_browser(reason):
+        print(f"\033[33m{reason}，已回退到系统浏览器模式\033[0m")
+        print("\033[33m如需桌面窗口，请安装 Microsoft WebView2 Runtime:\033[0m")
+        print("\033[33mhttps://developer.microsoft.com/microsoft-edge/webview2/\033[0m")
+        webbrowser.open(url)
+
+    if not attach_mode:
+        # waitress 放后台线程，主线程交给 webview 事件循环
+        if not start_waitress(background=True):
+            print("\033[31mWebUI 服务启动失败，即将退出\033[0m")
+            raise SystemExit(1)
+
+    try:
+        import webview  # pywebview
+    except Exception as _e:
+        _fallback_browser(f"未找到 pywebview ({_e})")
+        if not attach_mode:
+            threading.Event().wait()  # 服务在后台线程，需阻塞主线程保活
+        return
+
+    if not _webview2_runtime_available():
+        _fallback_browser("未检测到 Microsoft WebView2 运行时")
+        if not attach_mode:
+            threading.Event().wait()
+        return
+
+    try:
+        # target=_blank / window.open 的外链（如购买页）统一用系统浏览器打开
+        webview.settings['OPEN_EXTERNAL_LINKS_IN_BROWSER'] = True
+        webview.create_window('WeAuto', url, width=1280, height=860, min_size=(960, 640))
+        print("\033[32m桌面窗口已打开，关闭窗口即退出（不影响已运行的其他实例）\033[0m")
+        webview.start()
+    except Exception as _e:
+        _fallback_browser(f"桌面窗口启动失败 ({_e})")
+        if not attach_mode:
+            threading.Event().wait()
+        return
+    # 窗口已关闭：waitress 为 daemon 线程，直接结束进程（须用 os._exit 清理线程）
+    os._exit(0)
+
 if __name__ == '__main__':
     # 冻结模式自重启：以 --bot 参数运行时直接进入机器人主循环
     if '--bot' in sys.argv:
@@ -5222,7 +5296,8 @@ if __name__ == '__main__':
         raise SystemExit(0)
 
     # 单 EXE 全功能：同一个 WeAuto.exe 通过参数切换运行模式
-    #   WeAuto.exe            -> 管理后台（WebUI，并可拉起 bot）
+    #   WeAuto.exe            -> 桌面窗口（内嵌 WebView2，可拉起 bot）
+    #   WeAuto.exe --web      -> 管理后台（浏览器模式，行为与旧版一致）
     #   WeAuto.exe --bot      -> 机器人主循环
     #   WeAuto.exe --mcp      -> MCP stdio 服务（供 Codex / WorkBuddy 等 agent 调用）
     #   WeAuto.exe --cli ...  -> 命令行接口（其余参数原样透传给 cli.py）
@@ -5240,14 +5315,14 @@ if __name__ == '__main__':
 
     # 配置应用日志级别
     app.logger.setLevel(logging.INFO)
-    
+
     # 添加控制台处理器确保论坛相关日志显示
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     console_handler.setFormatter(formatter)
     app.logger.addHandler(console_handler)
-    
+
     class BotStatusFilter(logging.Filter):
         def filter(self, record):
             msg = record.getMessage()
@@ -5275,15 +5350,17 @@ if __name__ == '__main__':
     config_path = os.path.join(os.path.dirname(__file__), 'config.py')
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"核心配置文件缺失: {config_path}")
-    
+
+    WEB_MODE = '--web' in sys.argv  # 旧版浏览器模式（桌面窗口为默认）
+
     config = parse_config()
     PORT = config.get('PORT', '5000')
-    
+
     # 如果端口为默认的5000，则自动修改为5001-5998之间的随机可用端口
     if PORT == 5000 or PORT == '5000':
         print("\033[33m检测到使用默认端口 5000，正在自动切换到随机端口...\033[0m")
         new_port = get_random_available_port(5001, 5998)
-        
+
         if new_port:
             print(f"\033[32m已分配新端口: {new_port}\033[0m")
             # 更新配置文件
@@ -5297,49 +5374,97 @@ if __name__ == '__main__':
         else:
             print("\033[31m警告: 无法找到5001-5998之间的可用端口，将继续使用端口 5000\033[0m")
             PORT = 5000
-    
+
     # 确保PORT是整数类型
     PORT = int(PORT)
 
-    # 在启动服务器前检查端口是否被占用，若占用则结束该进程
-    kill_process_using_port(PORT)
+    # ---------- 端口占用处理（不再 kill 占用进程，避免误杀其他程序/实例） ----------
+    # 端口被本应用占用 -> attach 已运行实例（单实例行为，只开窗不重复起服务）
+    # 端口被其他程序占用 -> 自动换 5001-5998 的随机可用端口
+    def _port_in_use(port):
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)
+            return s.connect_ex(('127.0.0.1', port)) == 0
 
-    print(f"\033[31m重要提示：\r\n若您的浏览器没有自动打开网页端，请手动访问 http://localhost:{PORT}/ \r\n \033[0m")
+    def _is_weauto_serving(port):
+        """检测 port 上是否已有本应用在运行（/api/ping 无需登录）"""
+        try:
+            import urllib.request
+            with urllib.request.urlopen(f'http://127.0.0.1:{port}/api/ping', timeout=2) as resp:
+                return resp.status == 200
+        except Exception:
+            return False
+
+    ATTACH_MODE = False
+    if _port_in_use(PORT):
+        if _is_weauto_serving(PORT):
+            ATTACH_MODE = True
+            print(f"\033[32m检测到 WeAuto 已在运行（端口 {PORT}），直接打开管理窗口\033[0m")
+        else:
+            new_port = get_random_available_port(5001, 5998)
+            if new_port:
+                print(f"\033[33m端口 {PORT} 被其他程序占用，已自动切换到 {new_port}\033[0m")
+                PORT = new_port
+            else:
+                print("\033[31m端口被占用且 5001-5998 无可用端口，即将退出\033[0m")
+                raise SystemExit(1)
+
     allow_open_port = config.get('ALLOW_OPEN_PORT', False)
     password_is_valid = config.get('PASSWORD_IS_VALID', False)
+    host = "0.0.0.0" if allow_open_port else "127.0.0.1"
+    WEB_URL = f'http://localhost:{PORT}/'
+
+    print("\033[36m")
+    print("============================================================")
+    print("  WeAuto 配置管理器")
+    print(f"监听地址: {host}:{PORT}")
+    print(f"访问地址: {WEB_URL}")
+    print("============================================================")
+    print("\033[0m")
+
     if password_is_valid:
         print("\033[32m已启用登录保护：访问网页需输入已设置的密码。\r\n \033[0m")
     else:
         print("\033[31m检测到尚未设置登录密码：首次访问将跳转到密码设置页面。\r\n \033[0m")
     if allow_open_port:
         print("\033[33m外网访问已开启，请务必妥善保管您的登录密码。\r\n \033[0m")
-    
-    # 根据配置决定绑定地址
-    host = "0.0.0.0" if allow_open_port else "127.0.0.1"
-    
-    print("\033[36m")
-    print("============================================================")
-    print("  WeAuto 配置管理器")
-    print(f"监听地址: {host}:{PORT}")
-    print(f"访问地址: http://localhost:{PORT}/")
-    print("============================================================")
-    print("\033[0m")
-    
-    # 在启动服务器前设置定时器打开浏览器
-    def open_browser():
-        webbrowser.open(f'http://localhost:{PORT}/')
-    
-    Timer(1, open_browser).start()  # 延迟1秒确保服务器已启动
-    
-    # 使用Waitress生产级WSGI服务器
-    serve(
-        app, 
-        host=host, 
-        port=PORT,
-        threads=4,              # 线程数
-        channel_timeout=60,     # 通道超时
-        connection_limit=1000,  # 最大连接数
-        cleanup_interval=30,    # 清理间隔
-        asyncore_use_poll=True  # 使用poll而不是select（Windows下更稳定）
-    )
+
+    def _start_waitress(background=False):
+        kwargs = dict(
+            host=host,
+            port=PORT,
+            threads=4,              # 线程数
+            channel_timeout=60,     # 通道超时
+            connection_limit=1000,  # 最大连接数
+            cleanup_interval=30,    # 清理间隔
+            asyncore_use_poll=True  # 使用poll而不是select（Windows下更稳定）
+        )
+        if background:
+            t = threading.Thread(target=serve, args=(app,), kwargs=kwargs, daemon=True, name='waitress')
+            t.start()
+            # 等待服务就绪（最多 10 秒）
+            for _ in range(50):
+                if _port_in_use(PORT):
+                    return True
+                time.sleep(0.2)
+            return False
+        serve(app, **kwargs)
+
+    if not WEB_MODE:
+        # 默认：内嵌 WebView2 桌面窗口
+        try:
+            _run_desktop_window(WEB_URL, ATTACH_MODE, _start_waitress)
+        except KeyboardInterrupt:
+            pass
+        os._exit(0)
+    else:
+        # --web：浏览器模式（旧版行为）
+        if ATTACH_MODE:
+            webbrowser.open(WEB_URL)
+            raise SystemExit(0)
+        def open_browser():
+            webbrowser.open(WEB_URL)
+        Timer(1, open_browser).start()  # 延迟1秒确保服务器已启动
+        _start_waitress()
     
