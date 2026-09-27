@@ -218,10 +218,13 @@ function mapTier(env, data) {
 const licenseCache = new Map();
 const LICENSE_TTL = 10 * 60 * 1000;
 
-async function licenseOk(env, key, instanceId) {
-  // fail-close：Worker 自身没配好（无 Creem key / 无 upstream）一律拒绝
+async function licenseOk(env, key, instanceId, requireUpstream = true) {
+  // fail-close：Worker 自身没配好（无 Creem key）一律拒绝。
+  // requireUpstream=false 供 Jev 用：Jev 走 Workers AI（env.AI），不依赖 LLM upstream，
+  // 不能因为商家没配 AI_UPSTREAM_KEY 就把 Jev 也一起封死。
   if (!key || !instanceId) return false;
-  if (!env.CREEM_API_KEY || !env.AI_UPSTREAM_URL || !env.AI_UPSTREAM_KEY) return false;
+  if (!env.CREEM_API_KEY) return false;
+  if (requireUpstream && (!env.AI_UPSTREAM_URL || !env.AI_UPSTREAM_KEY)) return false;
   const now = Date.now();
   const ck = key + "|" + instanceId;
   const hit = licenseCache.get(ck);
@@ -453,6 +456,214 @@ async function resolveCheckout(env, tier, mid) {
   return null;
 }
 
+/* ---------------- Jev 判断式 AI（Workers AI JSON Mode，不走 OpenRouter） ----------------
+ *
+ * 技术来源：TypeSafe Jev（jev-chat-jarvis 的 tools/jev）。Jev 不是聊天模型，
+ * 而是「判断模型」：喂 state + questions，返回结构化判断，题型只有三种：
+ *   noul   是非    -> { noul: 0..1 }
+ *   choice 单选    -> { choice: "<criteria 里的 key>" }
+ *   score  打分    -> { score: 0..bins-1 }
+ * 原实现走 OpenRouter 的 /alpha/decisions；本项目改为在 Worker 内部用
+ * Cloudflare Workers AI 的 JSON Mode（response_format.json_schema）跑同一套题目，
+ * 返回结构维持 { answers: {...} } 兼容，客户端解析逻辑零改动。
+ * 好处：不出 Cloudflare、不需要 OpenRouter 账号与美元结算、延迟低。
+ *
+ * 端点：POST /ai/jev/decisions
+ *   鉴权：Authorization: Bearer <卡密>（与 /ai/v1 同一套 licenseOk 凭证）
+ *   body：{ model?, state:{chat:{relationship,messages:[{from,text}],latest_from}},
+ *           questions:{ <key>: {type,instructions,criteria} } }
+ *   响应：{ answers:{...}, model, provider:"cloudflare-workers-ai" }
+ */
+
+const JEV_MODEL_DEFAULT = "@cf/meta/llama-3.1-8b-instruct";
+
+/** Jev questions -> JSON Schema（Workers AI JSON Mode 要求合法 schema） */
+function jevJsonSchema(questions) {
+  const properties = {};
+  const required = [];
+  for (const key of Object.keys(questions || {})) {
+    const q = questions[key] || {};
+    const desc = String(q.instructions || key).slice(0, 900);
+    if (q.type === "noul") {
+      properties[key] = { type: "boolean", description: desc };
+    } else if (q.type === "choice") {
+      const opts = Object.keys(q.criteria || {});
+      if (!opts.length) continue;
+      properties[key] = { type: "string", enum: opts, description: desc };
+    } else if (q.type === "score") {
+      const bins = Array.isArray(q.criteria) ? q.criteria.length : 10;
+      properties[key] = {
+        type: "integer",
+        minimum: 0,
+        maximum: Math.max(1, bins - 1),
+        description: desc,
+      };
+    } else {
+      continue; // 未知题型直接跳过，绝不因此让整批判断全部失败
+    }
+    required.push(key);
+  }
+  return { type: "object", properties, required };
+}
+
+/** system 提示：题型 + 判定标准（criteria 原文照抄；聊天正文保持中文原样） */
+function jevSystemPrompt(questions, state) {
+  const rel = (state && state.chat && state.chat.relationship) || "unknown";
+  const lines = [
+    "You are a judgement model. You NEVER write replies or chat text.",
+    "Answer every question strictly from the conversation, using the criteria given.",
+    "Instructions and criteria are authoritative; even when uncertain, answer with the closest option.",
+    "",
+    "Relationship: " + rel,
+    "",
+    "Questions (answer every one):",
+  ];
+  for (const key of Object.keys(questions || {})) {
+    const q = questions[key] || {};
+    lines.push("", `[${key}] type=${q.type}`, "instructions: " + String(q.instructions || ""));
+    const c = q.criteria;
+    if (q.type === "score" && Array.isArray(c)) {
+      lines.push("bins (index -> meaning):");
+      c.forEach((b, i) => lines.push(`  ${i}: ${b}`));
+    } else if (c && typeof c === "object") {
+      lines.push("options (value -> meaning):");
+      for (const k of Object.keys(c)) lines.push(`  ${k}: ${c[k]}`);
+    }
+  }
+  return lines.join("\n");
+}
+
+function jevUserPrompt(state) {
+  const chat = (state && state.chat) || {};
+  const msgs = Array.isArray(chat.messages) ? chat.messages.slice(-20) : [];
+  const out = msgs
+    .map((m) => `${m && m.from === "me" ? "ME" : "THEM"}: ${String((m && m.text) || "")}`)
+    .join("\n");
+  return (
+    "Conversation (oldest first):\n" +
+    out +
+    "\n\nLatest message is from: " +
+    String(chat.latest_from || "them")
+  );
+}
+
+/** Workers AI 的返回形态不止一种，实测见到过三种，必须都能吃下：
+ *   a) { response: {...} }                              —— JSON Mode 典型返回
+ *   b) { choices: [{ message: { content: "<json>" } }] } —— chat completions 风格
+ *      （部分模型/路由即使传了 response_format 也走这个形态，实测 8B 如此）
+ *   c) 直接就是答案对象
+ * 返回解析后的对象；实在解析不出来返回 null。
+ */
+function jevExtractAnswers(res) {
+  if (!res || typeof res !== "object") return null;
+  let raw = res;
+  if (res.response !== undefined) raw = res.response;
+  else if (res.choices && res.choices[0] && res.choices[0].message) {
+    raw = res.choices[0].message.content;
+  }
+  if (typeof raw !== "string") return raw && typeof raw === "object" ? raw : null;
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    const m = raw.match(/\{[\s\S]*\}/); // 少数模型会裹一层 ```json 代码块
+    if (!m) return null;
+    try {
+      return JSON.parse(m[0]);
+    } catch (_2) {
+      return null;
+    }
+  }
+}
+
+async function jevDecisions(req, env) {
+  if (req.method !== "POST") {
+    return json({ error: { message: "POST required", type: "invalid_request", code: "method_not_allowed" } }, 405);
+  }
+  const auth = req.headers.get("authorization") || "";
+  const key = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const instanceId = req.headers.get("x-weauto-instance") || "";
+  // Jev 走 Workers AI，不要求商家配置 LLM upstream（requireUpstream=false）
+  if (!(await licenseOk(env, key, instanceId, false))) {
+    return json(
+      {
+        error: {
+          message: "无效授权：请先在 WeAuto 后台「授权管理」激活卡密后再使用 Jev 判断",
+          type: "weauto_license_error",
+          code: "license_required",
+        },
+      },
+      401
+    );
+  }
+  if (!env.AI) {
+    return json(
+      {
+        error: {
+          message: "Worker 未绑定 Workers AI：wrangler.toml 需加 [ai] binding = \"AI\" 后重新 deploy",
+          type: "server_misconfigured",
+          code: "ai_binding_missing",
+        },
+      },
+      503
+    );
+  }
+
+  let body = null;
+  try {
+    body = await req.json();
+  } catch (_) {
+    return json({ error: { message: "body 不是合法 JSON", type: "invalid_request", code: "bad_json" } }, 400);
+  }
+  const questions = (body && body.questions) || {};
+  const state = (body && body.state) || {};
+  const schema = jevJsonSchema(questions);
+  if (!schema.required.length) {
+    return json(
+      { error: { message: "questions 为空或题型不支持（只支持 noul/choice/score）", type: "invalid_request", code: "bad_questions" } },
+      400
+    );
+  }
+
+  const model = (body && body.model) || env.JEV_MODEL || JEV_MODEL_DEFAULT;
+  let out = null;
+  try {
+    const res = await env.AI.run(model, {
+      messages: [
+        { role: "system", content: jevSystemPrompt(questions, state) },
+        { role: "user", content: jevUserPrompt(state) },
+      ],
+      response_format: { type: "json_schema", json_schema: schema },
+    });
+    out = jevExtractAnswers(res);
+  } catch (e) {
+    return json(
+      { error: { message: "Workers AI 调用失败：" + String((e && e.message) || e), type: "upstream_error", code: "ai_run_failed" } },
+      502
+    );
+  }
+  if (!out || typeof out !== "object") {
+    return json(
+      { error: { message: "Workers AI 未返回可解析的 JSON（JSON Mode 未满足）", type: "upstream_error", code: "unparsable" } },
+      502
+    );
+  }
+
+  // 归一成 Jev 原版的 answers 结构，客户端解析逻辑无需区分后端
+  const answers = {};
+  for (const k of Object.keys(questions)) {
+    const q = questions[k] || {};
+    const v = out[k];
+    if (v === undefined || v === null) continue;
+    if (q.type === "noul") answers[k] = { noul: v === true || v === "true" ? 1 : 0 };
+    else if (q.type === "choice") answers[k] = { choice: String(v) };
+    else if (q.type === "score") {
+      const n = Number(v);
+      if (Number.isFinite(n)) answers[k] = { score: n };
+    }
+  }
+  return json({ answers, model, provider: "cloudflare-workers-ai" });
+}
+
 /* ---------------- 路由 ---------------- */
 
 export default {
@@ -474,7 +685,15 @@ export default {
         checkout_ready: ready,
         has_ai_upstream: !!(env.AI_UPSTREAM_URL && env.AI_UPSTREAM_KEY),
         ai_ready: !!(env.CREEM_API_KEY && env.AI_UPSTREAM_URL && env.AI_UPSTREAM_KEY),
+        // Jev 判断：Workers AI binding + 模型（binding 由 wrangler 注入，不在 vars 里）
+        jev_ready: !!env.AI,
+        jev_model: env.JEV_MODEL || JEV_MODEL_DEFAULT,
       });
+    }
+
+    // ---- Jev 判断式 AI：/ai/jev/decisions（Workers AI JSON Mode，必须排在 /ai/ 通配之前）----
+    if (p === "/ai/jev/decisions") {
+      return jevDecisions(req, env);
     }
 
     // ---- AI 代理：/ai/v1/* -> upstream（卡密即凭证，反破解核心）----

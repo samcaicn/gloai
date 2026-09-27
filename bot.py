@@ -88,6 +88,13 @@ try:
     import forward_hub
 except Exception:  # noqa: BLE001
     forward_hub = None
+
+# Jev 判断式 AI 闸门（回复前的「对话体检」，跑在 CF Worker + Workers AI 上）。
+# 导入失败仅禁用本功能，不影响收发主体；默认开关也是关闭的（config.ENABLE_JEV_GUARD）。
+try:
+    import jev_guard
+except Exception:  # noqa: BLE001
+    jev_guard = None
 os.environ["PROJECT_NAME"] = 'WeAuto'
 
 # 生成用户昵称列表和prompt映射字典
@@ -1200,7 +1207,7 @@ def save_chat_contexts():
             except OSError:
                 pass # 忽略清理错误
 
-def get_deepseek_response(message, user_id, store_context=True, is_summary=False):
+def get_deepseek_response(message, user_id, store_context=True, is_summary=False, jev_verdict=None):
     """
     从 DeepSeek API 获取响应，确保正确的上下文处理，并持久化上下文。
 
@@ -1209,6 +1216,8 @@ def get_deepseek_response(message, user_id, store_context=True, is_summary=False
         user_id (str): 用户或系统组件的标识符。
         store_context (bool): 是否将此交互存储到聊天上下文中。
                               对于工具调用（如解析或总结），设置为 False。
+        jev_verdict (dict | None): Jev 判断结论；传入且开启注入时作为 system 提示附加上，
+                              用来约束这一轮的语气与内容。None = 不注入（其余调用点不受影响）。
     """
     try:
         # 注意：不再在锁外整体 reload 全局 chat_contexts（见下方 queue_lock 内），
@@ -1229,6 +1238,16 @@ def get_deepseek_response(message, user_id, store_context=True, is_summary=False
                 # 绝不让一条坏 prompt 文件吞掉用户本应收到的回复（24h 鲁棒性）。
                 logger.error(f"用户 {user_id} 的提示词加载失败（已降级为默认提示）: {e}", exc_info=True)
                 messages_to_send.append({"role": "system", "content": "你是一个乐于助人的助手。"})
+
+            # 1.5 Jev 判断结论注入（可选；异常一律忽略，绝不让一段附加提示吞掉回复）
+            if jev_verdict and jev_guard is not None:
+                try:
+                    _guidance = jev_guard.guidance_text(jev_verdict)
+                    if _guidance:
+                        messages_to_send.append({"role": "system", "content": _guidance})
+                        logger.info(f"Jev 判断已注入本轮提示 (ID: {user_id})")
+                except Exception as _je:
+                    logger.warning(f"Jev 结论注入失败（已忽略，按原提示继续）: {_je}")
 
             # 2. 管理并检索聊天历史记录
             with queue_lock: # 确保对 chat_contexts 的访问是线程安全的
@@ -2760,8 +2779,32 @@ def process_user_messages(user_id):
         if not is_auto_message:
             _send_thinking_placeholder(user_id)
 
+        # --- Jev 判断式闸门（可选，默认关闭）---
+        # 生成回复前先体检这段对话：对方真实意图 / 危险度 / 需要什么 / 最佳动作。
+        # 结论注入提示词约束语气；危险度过高时可收声（JEV_HOLD_ON_DANGER）交给真人。
+        # 红线：这里任何异常、超时、失败都必须降级为「照常回复」，绝不让 bot 变哑巴。
+        jev_verdict = None
+        jev_hold = False
+        try:
+            if jev_guard is not None and jev_guard.enabled():
+                with queue_lock:
+                    _hist = list(chat_contexts.get(user_id, []))
+                jev_verdict = jev_guard.judge(user_id, merged_message, _hist)
+                if jev_verdict:
+                    logger.info(f"Jev 判断 (ID: {user_id}): {jev_verdict}")
+                    jev_hold = jev_guard.should_hold(jev_verdict)
+                    if jev_hold:
+                        logger.warning(
+                            f"Jev 收声：危险度 {jev_verdict.get('danger_level')} 已达阈值，"
+                            f"本条不自动回复，交给真人处理 (ID: {user_id})"
+                        )
+        except Exception as _je:
+            logger.warning(f"Jev 闸门异常（已降级为照常回复）: {_je}")
+            jev_verdict = None
+            jev_hold = False
+
         # --- 新增：联网搜索逻辑 ---
-        if ENABLE_ONLINE_API:
+        if ENABLE_ONLINE_API and not jev_hold:
             # 1. 检测是否需要联网
             search_content = needs_online_search(merged_message, user_id)
             if search_content:
@@ -2787,7 +2830,7 @@ def process_user_messages(user_id):
 请结合你的角色设定，以自然的方式回答用户的原始问题。请直接给出回答内容，不要提及你是联网搜索的。
 """
                     # 调用主 AI 生成最终回复，存储上下文
-                    reply = get_deepseek_response(final_prompt, user_id, store_context=True)
+                    reply = get_deepseek_response(final_prompt, user_id, store_context=True, jev_verdict=jev_verdict)
                     # 这里可以考虑如果在线信息是错误消息（如"在线搜索有点忙..."），是否要特殊处理
                     # 当前逻辑是：即使在线搜索返回错误信息，也会让主AI尝试基于这个错误信息来回复
 
@@ -2799,9 +2842,9 @@ def process_user_messages(user_id):
                     pass # 继续执行下面的常规流程
 
         # --- 常规回复逻辑 (如果未启用联网、检测不需要联网、或联网失败) ---
-        if reply is None: # 只有在尚未通过联网逻辑生成回复时才执行
+        if reply is None and not jev_hold: # 只有在尚未通过联网逻辑生成回复、且 Jev 未要求收声时才执行
             logger.info(f"为用户 {user_id} 执行常规回复（无联网信息）。")
-            reply = get_deepseek_response(merged_message, user_id, store_context=True)
+            reply = get_deepseek_response(merged_message, user_id, store_context=True, jev_verdict=jev_verdict)
 
         # --- 发送最终回复 ---
         if reply:

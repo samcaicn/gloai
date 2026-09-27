@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jev 判断式 AI · 回复前的对话体检</title>
+    <style>
+        body{ margin:0; }
+        .wrap{ max-width:1000px; margin:0 auto; padding:22px 20px 60px; }
+        .panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--sh-2); padding:20px 22px; margin-bottom:18px; }
+        .panel h2{ margin:0 0 14px; font-size:16.5px; font-weight:650; padding-bottom:10px; border-bottom:1px solid var(--border); }
+        .hint{ color:var(--text-3); font-size:13px; line-height:1.75; margin:8px 0 0; }
+        .switch-line{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; }
+        .switch-line .txt strong{ display:block; font-size:14.5px; color:var(--text); }
+        .switch-line .txt span{ font-size:12.5px; color:var(--text-3); }
+        .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+        .badge.on{ background:var(--ok-soft); color:var(--ok-text); }
+        .badge.off{ background:var(--surface-3); color:var(--text-3); }
+        .badge.bad{ background:var(--danger-soft); color:var(--danger-text); }
+        input[type=text], input[type=number], textarea{ background:var(--input-bg); color:var(--text); border:1px solid var(--border); border-radius:var(--r-sm); padding:8px 10px; font-size:13.5px; box-sizing:border-box; width:100%; }
+        label.fld{ display:block; font-size:12.5px; color:var(--text-3); margin:12px 0 4px; }
+        .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+        .chk{ display:flex; align-items:center; gap:7px; font-size:13.5px; color:var(--text-2); margin-top:10px; }
+        .btn{ background:var(--brand); color:#fff; border:0; border-radius:var(--r-sm); padding:9px 18px; font-size:13.5px; font-weight:600; cursor:pointer; }
+        .btn.ghost{ background:var(--surface-3); color:var(--text-2); }
+        .btn:disabled{ opacity:.55; cursor:not-allowed; }
+        .msg{ background:var(--info-soft); color:var(--info-text); border:1px solid var(--brand-ring); border-radius:var(--r); padding:10px 14px; margin-bottom:16px; font-size:13.5px; }
+        .msg.err{ background:var(--danger-soft); color:var(--danger-text); border-color:var(--danger); }
+        .msg.ok{ background:var(--ok-soft); color:var(--ok-text); border-color:var(--ok-text); }
+        pre{ background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-sm); padding:12px 14px; font-size:12.5px; line-height:1.65; white-space:pre-wrap; word-break:break-all; margin:10px 0 0; max-height:340px; overflow:auto; }
+        table{ width:100%; border-collapse:collapse; font-size:13px; }
+        th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); }
+        th{ color:var(--text-3); font-weight:600; font-size:12.5px; }
+        .muted{ color:var(--text-3); }
+        .row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <div class="panel">
+        <h2>Jev 判断式 AI · 回复前的「对话体检」</h2>
+        <div id="msg" class="msg" style="display:none"></div>
+
+        <div class="switch-line">
+            <div class="txt">
+                <strong>启用 Jev 判断</strong>
+                <span>每条待回复消息先判断：对方真实意图 / 关系危险度 / 需要什么 / 最佳动作，再据此约束主模型的语气与内容</span>
+            </div>
+            <div class="row">
+                <span id="keyBadge" class="badge {{ 'on' if data.has_key else 'bad' }}">
+                    {{ '卡密已配置' if data.has_key else '未配置卡密' }}
+                </span>
+                <label class="chk"><input type="checkbox" id="f_enable"> 开启</label>
+            </div>
+        </div>
+        <p class="hint">
+            技术来源 <b>jev-chat-jarvis</b>（MIT）。判断跑在自建 Cloudflare Worker 上，Worker 内部用
+            <b>Workers AI</b> 的 JSON Mode 跑同一套题目 —— 不走 OpenRouter、不需要境外账号与美元结算。
+            鉴权复用你的卡密（与 AI 代理同一张）。<br>
+            <b>安全设计</b>：判断失败 / 超时 / 未开启，一律降级为「照常回复」，绝不会让机器人变哑巴。
+        </p>
+    </div>
+
+    <div class="panel">
+        <h2>参数</h2>
+        <label class="fld">关系描述（判断准确度很大程度取决于它，写得越具体越好）</label>
+        <input type="text" id="f_rel" placeholder="微信联系人">
+
+        <div class="grid3">
+            <div>
+                <label class="fld">超时（秒）</label>
+                <input type="number" id="f_timeout" step="0.5" min="1" max="30">
+            </div>
+            <div>
+                <label class="fld">带进判断的对话轮数</label>
+                <input type="number" id="f_turns" step="1" min="0" max="20">
+            </div>
+            <div>
+                <label class="fld">收声阈值（危险度 0-9）</label>
+                <input type="number" id="f_hold" step="1" min="0" max="9">
+            </div>
+        </div>
+
+        <label class="chk"><input type="checkbox" id="f_inject"> 把判断结论注入提示词，指导主模型语气与内容</label>
+        <label class="chk"><input type="checkbox" id="f_holdon"> 危险度达到阈值时机器人收声不回（交给真人处理）</label>
+
+        <div class="grid2" style="margin-top:14px">
+            <div>
+                <label class="fld">Worker 端点</label>
+                <input type="text" id="f_url">
+            </div>
+            <div>
+                <label class="fld">判断模型（留空 = 用 Worker 默认）</label>
+                <input type="text" id="f_model" placeholder="@cf/meta/llama-3.1-8b-instruct">
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:18px">
+            <button class="btn" id="btnSave">保存</button>
+            <span class="muted" style="font-size:12.5px">保存会写入 config.py</span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>连通性自检</h2>
+        <label class="fld">用一句话试跑（会真的发一次判断请求）</label>
+        <input type="text" id="t_text" value="你又忘了吧，算了">
+        <div class="row" style="margin-top:12px">
+            <button class="btn ghost" id="btnTest">跑一次判断</button>
+            <span class="muted" style="font-size:12.5px">需要先开启并保存</span>
+        </div>
+        <pre id="t_out" style="display:none"></pre>
+    </div>
+
+    <div class="panel">
+        <h2>判断项说明</h2>
+        <table>
+            <thead><tr><th style="width:150px">判断项</th><th>含义</th></tr></thead>
+            <tbody>
+                <tr><td>true_intent</td><td>对方真实意图：试探你是否在意 / 发泄情绪 / 要具体行动 / 想知道原因 / 轻松闲聊 / 已收尾</td></tr>
+                <tr><td>danger_level</td><td>关系危险度 0-9，越高越接近吵架或关系受损</td></tr>
+                <tr><td>she_needs</td><td>对方现在需要：道歉 / 行动 / 解释 / 在意他的证明 / 什么都不需要</td></tr>
+                <tr><td>best_action</td><td>建议动作：先查记录 / 道歉 / 给承诺 / 解释 / 表达在意 / 少说 / 定安排</td></tr>
+                <tr><td>should_reply_now</td><td>下一条是否需要实质内容（否 = 别硬凑）</td></tr>
+                <tr><td>literal_question</td><td>是否为字面意思（否 = 话里有话）</td></tr>
+                <tr><td>tension_resolved</td><td>紧张是否已化解</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+const cfg = {{ data.cfg | tojson }};
+const $ = (id) => document.getElementById(id);
+
+function fill() {
+    $('f_enable').checked = !!cfg.ENABLE_JEV_GUARD;
+    $('f_inject').checked = !!cfg.JEV_INJECT_GUIDANCE;
+    $('f_holdon').checked = !!cfg.JEV_HOLD_ON_DANGER;
+    $('f_rel').value = cfg.JEV_RELATIONSHIP || '';
+    $('f_timeout').value = cfg.JEV_TIMEOUT;
+    $('f_turns').value = cfg.JEV_CONTEXT_TURNS;
+    $('f_hold').value = cfg.JEV_DANGER_HOLD_LEVEL;
+    $('f_url').value = cfg.JEV_BASE_URL || '';
+    $('f_model').value = cfg.JEV_MODEL || '';
+}
+
+function showMsg(text, kind) {
+    const el = $('msg');
+    el.textContent = text;
+    el.className = 'msg' + (kind ? ' ' + kind : '');
+    el.style.display = 'block';
+}
+
+async function post(url, body) {
+    const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
+    });
+    return await r.json();
+}
+
+$('btnSave').onclick = async () => {
+    $('btnSave').disabled = true;
+    try {
+        const res = await post('/api/jev/save', {
+            ENABLE_JEV_GUARD: $('f_enable').checked,
+            JEV_INJECT_GUIDANCE: $('f_inject').checked,
+            JEV_HOLD_ON_DANGER: $('f_holdon').checked,
+            JEV_RELATIONSHIP: $('f_rel').value,
+            JEV_TIMEOUT: $('f_timeout').value,
+            JEV_CONTEXT_TURNS: $('f_turns').value,
+            JEV_DANGER_HOLD_LEVEL: $('f_hold').value,
+            JEV_BASE_URL: $('f_url').value,
+            JEV_MODEL: $('f_model').value,
+        });
+        if (res.ok) {
+            showMsg(res.msg, 'ok');
+            Object.assign(cfg, {
+                ENABLE_JEV_GUARD: $('f_enable').checked,
+                JEV_INJECT_GUIDANCE: $('f_inject').checked,
+                JEV_HOLD_ON_DANGER: $('f_holdon').checked,
+                JEV_RELATIONSHIP: $('f_rel').value,
+                JEV_TIMEOUT: $('f_timeout').value,
+                JEV_CONTEXT_TURNS: $('f_turns').value,
+                JEV_DANGER_HOLD_LEVEL: $('f_hold').value,
+                JEV_BASE_URL: $('f_url').value,
+                JEV_MODEL: $('f_model').value,
+            });
+        } else {
+            showMsg((res.errors || [res.msg || '保存失败']).join('；'), 'err');
+        }
+    } catch (e) {
+        showMsg('保存请求失败：' + e, 'err');
+    } finally {
+        $('btnSave').disabled = false;
+    }
+};
+
+$('btnTest').onclick = async () => {
+    $('btnTest').disabled = true;
+    $('t_out').style.display = 'block';
+    $('t_out').textContent = '正在判断…';
+    try {
+        const res = await post('/api/jev/test', { text: $('t_text').value });
+        if (res.ok) {
+            $('t_out').textContent =
+                res.msg + '\n\n判断结果：\n' + JSON.stringify(res.verdict, null, 2) +
+                '\n\n注入给主模型的提示：\n' + (res.guidance || '（空）');
+            showMsg(res.msg, 'ok');
+        } else {
+            $('t_out').textContent = res.msg || '失败';
+            showMsg(res.msg || '自检失败', 'err');
+        }
+    } catch (e) {
+        $('t_out').textContent = '请求失败：' + e;
+    } finally {
+        $('btnTest').disabled = false;
+    }
+};
+
+fill();
+</script>
+</body>
+</html>

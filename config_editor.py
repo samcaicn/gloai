@@ -5225,6 +5225,116 @@ def api_forward_log():
     return jsonify(ok=True, log=m.get_log())
 
 
+# ==================== Jev 判断式 AI（回复前的「对话体检」） ====================
+# 技术来源：jev-chat-jarvis（MIT）。判断跑在自建 Cloudflare Worker + Workers AI 上，
+# 不走 OpenRouter；鉴权复用卡密。任何失败都降级为「照常回复」。
+
+def _jev():
+    try:
+        import jev_guard
+        return jev_guard
+    except Exception:  # noqa: BLE001
+        return None
+
+
+@app.route('/jev', methods=['GET'])
+@login_required
+def jev_page():
+    m = _jev()
+    cfg = parse_config()
+    return render_template('jev.html', data={
+        "available": m is not None,
+        "has_key": bool((cfg.get("CREEM_LICENSE_KEY", "") or cfg.get("JEV_API_KEY", "")).strip()),
+        "cfg": {
+            "ENABLE_JEV_GUARD": bool(cfg.get("ENABLE_JEV_GUARD", False)),
+            "JEV_BASE_URL": cfg.get("JEV_BASE_URL", "https://weauto.safeopc.cn/ai/jev/decisions"),
+            "JEV_MODEL": cfg.get("JEV_MODEL", ""),
+            "JEV_TIMEOUT": cfg.get("JEV_TIMEOUT", 8.0),
+            "JEV_RELATIONSHIP": cfg.get("JEV_RELATIONSHIP", "微信联系人"),
+            "JEV_CONTEXT_TURNS": cfg.get("JEV_CONTEXT_TURNS", 6),
+            "JEV_INJECT_GUIDANCE": bool(cfg.get("JEV_INJECT_GUIDANCE", True)),
+            "JEV_HOLD_ON_DANGER": bool(cfg.get("JEV_HOLD_ON_DANGER", False)),
+            "JEV_DANGER_HOLD_LEVEL": cfg.get("JEV_DANGER_HOLD_LEVEL", 8),
+        },
+    })
+
+
+@app.route('/api/jev/save', methods=['POST'])
+@login_required
+def api_jev_save():
+    payload = request.get_json(force=True, silent=True) or {}
+    new = {}
+    errors = []
+    for k in ("ENABLE_JEV_GUARD", "JEV_INJECT_GUIDANCE", "JEV_HOLD_ON_DANGER"):
+        if k in payload:
+            new[k] = bool(payload[k])
+    for k in ("JEV_BASE_URL", "JEV_MODEL", "JEV_RELATIONSHIP"):
+        if k in payload:
+            new[k] = str(payload[k]).strip()
+    for k in ("JEV_TIMEOUT",):
+        if k in payload:
+            try:
+                new[k] = float(payload[k])
+            except (TypeError, ValueError):
+                errors.append(f"{k} 不是合法数字")
+    for k in ("JEV_CONTEXT_TURNS", "JEV_DANGER_HOLD_LEVEL"):
+        if k in payload:
+            try:
+                new[k] = int(payload[k])
+            except (TypeError, ValueError):
+                errors.append(f"{k} 不是合法整数")
+    if "JEV_TIMEOUT" in new and not (1.0 <= new["JEV_TIMEOUT"] <= 30.0):
+        errors.append("超时需在 1~30 秒之间")
+    if "JEV_CONTEXT_TURNS" in new and not (0 <= new["JEV_CONTEXT_TURNS"] <= 20):
+        errors.append("上下文轮数需在 0~20 之间")
+    if "JEV_DANGER_HOLD_LEVEL" in new and not (0 <= new["JEV_DANGER_HOLD_LEVEL"] <= 9):
+        errors.append("收声阈值需在 0~9 之间")
+    if errors:
+        return jsonify(ok=False, errors=errors), 400
+    if not new:
+        return jsonify(ok=True, msg="没有需要保存的改动")
+    try:
+        update_config(new)
+    except Exception as e:  # noqa: BLE001
+        return jsonify(ok=False, msg=f"写入 config.py 失败：{e}"), 500
+    m = _jev()
+    if m is not None:
+        try:
+            m.reload_config()   # 让正在运行的 bot 尽快读到新配置
+        except Exception:  # noqa: BLE001
+            pass
+    return jsonify(ok=True, msg="已保存，约 30 秒内（或下次判断时）生效")
+
+
+@app.route('/api/jev/test', methods=['POST'])
+@login_required
+def api_jev_test():
+    """连通性自检：真跑一次判断，把结论和注入提示回显出来。"""
+    m = _jev()
+    if m is None:
+        return jsonify(ok=False, msg="jev_guard 模块不可用"), 500
+    payload = request.get_json(force=True, silent=True) or {}
+    text = str(payload.get("text", "") or "在吗").strip()[:500] or "在吗"
+    cfg = parse_config()
+    if not bool(cfg.get("ENABLE_JEV_GUARD", False)):
+        return jsonify(ok=False, msg="未开启：请先把「启用 Jev 判断」打开并保存")
+    if not bool((cfg.get("CREEM_LICENSE_KEY", "") or cfg.get("JEV_API_KEY", "")).strip()):
+        return jsonify(ok=False, msg="未配置卡密：请先在「授权管理」激活卡密（Jev 与 AI 共用同一张卡密）")
+    try:
+        t0 = time.time()
+        verdict = m.judge("__jev_self_test__", text, [])
+        ms = int((time.time() - t0) * 1000)
+    except Exception as e:  # noqa: BLE001
+        return jsonify(ok=False, msg=f"自检异常：{e}"), 500
+    if not verdict:
+        return jsonify(ok=False, msg=f"未拿到判断结果（{ms}ms）：详情见 weauto_bot.log 里 Jev 相关日志"), 502
+    try:
+        guidance = m.guidance_text(verdict)
+    except Exception:  # noqa: BLE001
+        guidance = ""
+    return jsonify(ok=True, msg=f"OK（{ms}ms）", verdict=verdict, guidance=guidance)
+
+
 def _webview2_runtime_available():
     """检测系统是否安装了 Microsoft WebView2 运行时（Evergreen / Fixed Version）。"""
     try:

@@ -188,3 +188,22 @@ CREEM_WORKER_URL = "https://weauto.safeopc.cn"   # 已部署的 Worker（绑定�
 CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填这里
 
 
+# ===== Jev 判断式 AI（回复前的"对话体检"，跑在 Cloudflare Worker + Workers AI 上）=====
+# 技术来源：jev-chat-jarvis（MIT）。Jev 不生成回复文字，只做结构化判断
+#   （对方真实意图 / 关系危险度 0-9 / 对方现在需要什么 / 下一步最佳动作 / 是否该给实质内容），
+#   结论注入 system 提示，让主模型照着判。原版走 OpenRouter（需境外账号+美元结算），
+#   本项目改走自建 Worker /ai/jev/decisions —— Worker 内用 Cloudflare Workers AI 的
+#   JSON Mode 跑同一套题目，返回结构兼容，不出 CF、无需 OpenRouter。
+# 鉴权复用上面的 CREEM_LICENSE_KEY（卡密即凭证，与 /ai/v1 同一套）。
+ENABLE_JEV_GUARD = False        # 默认关闭；打开后每条待回复消息先跑一次判断（约 1s）
+JEV_BASE_URL = "https://weauto.safeopc.cn/ai/jev/decisions"   # Worker 端点，一般不用改
+JEV_MODEL = ""                  # 留空 = 用 Worker 端默认模型（实测 8B 判不准，已默认 70B）
+JEV_API_KEY = ""                # 留空 = 用 CREEM_LICENSE_KEY（推荐）
+JEV_TIMEOUT = 8.0               # 单次判断超时（秒）；超时/失败一律降级为照常回复
+JEV_RELATIONSHIP = "微信联系人"  # 填进判断的"我和对方是什么关系"，写得越准判断越准
+JEV_CONTEXT_TURNS = 6           # 带进判断的最近对话轮数（一问一答算 2 条）
+JEV_INJECT_GUIDANCE = True      # 把判断结论注入 system 提示，指导主模型的语气和内容
+JEV_HOLD_ON_DANGER = False      # 危险度过高时 bot 收声不回（交给真人处理）
+JEV_DANGER_HOLD_LEVEL = 8       # 收声阈值 0..9（8 = 最后通牒级别）
+
+

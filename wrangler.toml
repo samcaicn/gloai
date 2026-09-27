@@ -27,6 +27,19 @@ SUPPORT_EMAIL = ""                        # 售后邮箱，留空则不显示
 #   未配置 AI_UPSTREAM_KEY 时 /ai 一律 401（fail-close）。
 AI_UPSTREAM_URL = "https://vg.v1api.cc/v1"
 
+# ---- Jev 判断模型（/ai/jev/decisions 默认模型，客户端可在 body 里覆盖）----
+# 实测对比（2026-09-28，同一句"算了，我习惯了"）：
+#   8B   llama-3.1-8b-instruct          -> danger 0 / casual_chat  ← 判错，话里有话没读出来
+#   70B  llama-3.3-70b-instruct-fp8-fast -> danger 2 / vent_anger  ← 意图判对，1.4s
+# 判断质量是本功能的核心，8B 省下的几百毫秒不值当，默认用 70B。
+JEV_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+
+# ---- Workers AI：Jev 判断式 AI 的推理后端（/ai/jev/decisions）----
+# 走 Cloudflare 自有推理，不出 CF、不依赖 OpenRouter（免美元结算）。
+# 免费额度：Workers AI 每天 10,000 Neurons（见 Cloudflare 控制台）。
+[ai]
+binding = "AI"
+
 # ---- KV：付款后卡密暂存（webhook 写入，本机轮询读取，7 天自动过期）----
 # 命名空间 ID 由 `wrangler kv namespace create LICENSE_KV` 生成后回填到 id 字段。
 [[kv_namespaces]]

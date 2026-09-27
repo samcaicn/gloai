@@ -75,6 +75,9 @@ jobs:
                   # 固定转发引擎（bot.py / config_editor.py 静态 + 运行期 import），
                   # 显式 hidden-import 兜底，避免后续改为纯动态 import 时被漏打包。
                   --hidden-import forward_hub
+                  # Jev 判断式 AI 闸门（回复前的对话体检，跑在自有 CF Worker + Workers AI 上）：
+                  # bot.py 顶层 try-import、config_editor.py 运行期 import，显式兜底防漏打包。
+                  --hidden-import jev_guard
                   # 单 EXE 全功能：WebUI / bot / CLI / MCP 四种形态共用同一个 exe，
                   # 靠命令行参数（默认 / --bot / --cli / --mcp）在 __main__ 派发。
                   # 这几个入口是运行时动态 import，必须显式 hidden-import 才会被打进包。
