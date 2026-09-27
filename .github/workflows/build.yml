@@ -63,10 +63,13 @@ jobs:
           {
             echo "## jev-chat-jarvis APK build failure (run ${{ github.run_number }})"
             echo "Commit: ${{ github.sha }}"
-            echo '```'
-            tail -150 build_debug.log 2>/dev/null || true
-            tail -150 build_release.log 2>/dev/null || true
-            echo '```'
+            echo '### key lines'
+            grep -nE "FAILURE:|What went wrong|Caused by:|error:|Error:|FAILED" build_debug.log build_release.log 2>/dev/null | head -40 || true
+            echo '### What went wrong section'
+            L=$(grep -n "What went wrong" build_debug.log 2>/dev/null | head -1 | cut -d: -f1)
+            [ -n "$L" ] && sed -n "${L},$((L+30))p" build_debug.log
+            echo '### last 60 lines'
+            tail -60 build_debug.log 2>/dev/null || true
           } > "$BODY"
           gh issue create --repo "$GITHUB_REPOSITORY" \
             --title "jev-chat-jarvis APK build failure (run ${{ github.run_number }})" \
