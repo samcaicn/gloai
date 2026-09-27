@@ -777,6 +777,9 @@ def start_bot():
             return {'error': 'No bot executable found'}, 404
 
     creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+    # 冻结模式下 --bot 子进程是控制台程序，加 CREATE_NO_WINDOW 避免弹出黑框（与桌面窗口合并为单窗口）
+    if getattr(sys, 'frozen', False) and os.name == 'nt':
+        creation_flags |= getattr(subprocess, 'CREATE_NO_WINDOW', 0)
     proc = subprocess.Popen(
         cmd,
         creationflags=creation_flags
@@ -5135,6 +5138,9 @@ def api_license_restart():
             else:
                 return jsonify(ok=False, msg="未找到机器人可执行文件"), 404
         creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+        # 冻结模式下 --bot 子进程是控制台程序，加 CREATE_NO_WINDOW 避免弹出黑框（与桌面窗口合并为单窗口）
+        if getattr(sys, "frozen", False) and os.name == "nt":
+            creation_flags |= getattr(subprocess, "CREATE_NO_WINDOW", 0)
         # 修复：原来用裸 Popen 不赋值给全局 bot_process，导致重启后的进程游离于管理之外
         # （状态显示停止、无法再次停止、可能双开）。这里同步登记并重置心跳（P1-4）
         _proc = subprocess.Popen(cmd, creationflags=creation_flags)
@@ -5312,6 +5318,18 @@ if __name__ == '__main__':
         from cli import main as _cli_main
         _cli_main()
         raise SystemExit(0)
+
+    # 桌面窗口模式下隐藏启动用的控制台窗口，避免「黑框 + webview」双窗口。
+    # 仅冻结后的 Windows GUI 形态隐藏；--bot/--cli/--mcp 等需要控制台的形态不隐藏，
+    # 否则会破坏 MCP 的 stdio 传输与 CLI 输出（合并为单窗口仍以保留功能为前提）。
+    if getattr(sys, 'frozen', False) and os.name == 'nt':
+        try:
+            import ctypes
+            _hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+            if _hwnd:
+                ctypes.windll.user32.ShowWindow(_hwnd, 0)  # SW_HIDE = 0
+        except Exception:
+            pass
 
     # 配置应用日志级别
     app.logger.setLevel(logging.INFO)
