@@ -10,7 +10,11 @@ plugins {
 // (storeFile / storePassword / keyAlias / keyPassword). Override the path with
 // the JEV_KEYSTORE_PROPS env var. Without it, release builds are unsigned.
 val releaseProps = Properties().apply {
-    val f = file(System.getenv("JEV_KEYSTORE_PROPS") ?: "H:/android/keys/jev-release.properties")
+    // File(...) instead of file(...): the Kotlin DSL file() helper treats the
+    // "H:" prefix as a URL scheme and throws on hosts where the env var is
+    // unset (e.g. CI). File(...) just yields a non-existent path here, which
+    // the exists() guard below handles by leaving release builds unsigned.
+    val f = File(System.getenv("JEV_KEYSTORE_PROPS") ?: "H:/android/keys/jev-release.properties")
     if (f.exists()) FileInputStream(f).use { load(it) }
 }
 
