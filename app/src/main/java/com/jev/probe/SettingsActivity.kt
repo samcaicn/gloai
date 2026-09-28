@@ -19,16 +19,10 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.jev.probe.core.ChatSnapshot
-import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.kb.KbSelfCheck
 import com.jev.probe.core.kb.KbStore
-import com.jev.probe.jev.JudgeClient
-import com.jev.probe.jev.Route
-import java.net.URLEncoder
 import java.util.concurrent.Executors
-import kotlin.math.roundToInt
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -47,7 +41,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
-        Log.i(TAG, "settings opened workerMode=${prefs.isWorkerMode} accountToken.len=${prefs.accountToken.length}")
+        Log.i(TAG, "settings opened workerMode=${prefs.isWorkerMode}")
         window.decorView.setBackgroundColor(Color.parseColor("#F2F3F5"))
 
         val scroll = ScrollView(this)
@@ -60,101 +54,20 @@ class SettingsActivity : AppCompatActivity() {
 
         root.addView(header("设置"))
 
-        // =================== 账户（WeAuto 云端，统一管理） ===================
-        root.addView(section("账户 · WeAuto 云端"))
-
-        val accountCard = card()
-        accountCard.addView(cardTitle("WeAuto 云端账户"))
-        accountCard.addView(text(
-            "判断 / 回复模型接口统一由 WeAuto 云端（weauto.safeopc.cn）提供，无需配置地址与密钥。" +
-                "填入账户令牌即可使用，令牌在本地加密保存。用量按 token 实时计费。" +
-                "视觉接口默认也走云端，如需自配请在下方「视觉接口」开启自定义。",
-            12f, sub))
-
-        // 当前状态
-        val statusText = resultText()
-        fun refreshStatus() {
-            if (prefs.accountToken.isBlank()) {
-                statusText.text = "未激活：请粘贴账户令牌后点「激活 / 校验」"
-            } else {
-                val name = tierName(prefs.billingTier)
-                val quota = prefs.billingQuota
-                val used = prefs.billingUsed
-                statusText.text = if (quota > 0)
-                    "已激活 · $name · 本月已用 ${fmt(used)} / ${fmt(quota)} · 剩余 ${fmt((quota - used).coerceAtLeast(0))}"
-                else "已激活 · $name（额度信息待下次请求刷新）"
-            }
-        }
-        refreshStatus()
-        accountCard.addView(statusText)
-
-        val tokenEdit = edit("", "粘贴账户令牌（形如 xxxx.yyyy）", password = true)
-        accountCard.addView(label("账户令牌"))
-        accountCard.addView(tokenEdit)
-        accountCard.addView(text("令牌只保存在本机（加密），不会上传、不会显示在界面明文。", 11f, sub))
-
-        accountCard.addView(cardBtn("激活 / 校验") {
-            val tok = tokenEdit.text.toString().trim()
-            if (tok.isBlank()) { statusText.text = "请先粘贴账户令牌"; return@cardBtn }
-            statusText.text = "校验中…"
-            worker.execute {
-                val r = checkToken(tok)
-                main.post {
-                    if (r.ok) {
-                        prefs.accountToken = tok
-                        prefs.billingTier = r.tier
-                        prefs.billingUsed = r.used
-                        prefs.billingQuota = r.quota
-                        statusText.text = "已激活 · ${tierName(r.tier)} · 已用 ${fmt(r.used)} / ${fmt(r.quota)} · 剩余 ${fmt(r.remain)}"
-                        Toast.makeText(this@SettingsActivity, "激活成功", Toast.LENGTH_SHORT).show()
-                    } else {
-                        statusText.text = "校验失败：${r.err}"
-                    }
-                }
-            }
-        })
-
-        val testResult = resultText()
-
-        accountCard.addView(cardBtn("测试判断（连通性）") {
-            if (prefs.accountToken.isBlank()) { testResult.text = "请先激活账户"; return@cardBtn }
-            testResult.text = "测试中…"
-            worker.execute {
-                val demo = ChatSnapshot("连通测试", listOf(Msg("other", "在吗？"), Msg("me", "在")))
-                val a = JudgeClient(prefs).judge(demo, prefs.relationship)
-                main.post {
-                    testResult.text = if (a.error != null) "失败（${a.latencyMs}ms）：${a.error}"
-                    else "成功 ${a.latencyMs}ms · 意图=${a.trueIntent?.choice ?: "?"}（置信 ${pct(a.trueIntent?.confidence)}）"
-                }
-            }
-        })
-        accountCard.addView(testResult)
-
-        accountCard.addView(cardBtn("退出登录") {
-            prefs.accountToken = ""
-            prefs.billingTier = ""
-            prefs.billingUsed = 0
-            prefs.billingQuota = 0
-            tokenEdit.setText("")
-            refreshStatus()
-            statusText.text = "已退出，请粘贴新的账户令牌"
-        })
-        root.addView(accountCard)
-
         // =================== 视觉接口（可选自定义） ===================
         root.addView(section("视觉接口"))
         val visionCard = card()
         visionCard.addView(cardTitle("视觉模型接口"))
         visionCard.addView(text(
-            "默认走 WeAuto 云端（与账户令牌共用计费）。开启自定义后，视觉请求改发你填的 " +
-                "OpenAI 兼容接口（需支持 image_url），不再经过云端、不消耗算力；判断与回复不受影响。",
+            "默认使用内置视觉模型接口。开启自定义后，视觉请求改发你填的 " +
+                "OpenAI 兼容接口（需支持 image_url），判断与回复不受影响。",
             12f, sub))
         val visionCustomRow = toggleRow("自定义视觉接口（不走云端）", prefs.visionCustom)
         visionCard.addView(visionCustomRow)
         visionCard.addView(label("Base URL（OpenAI 兼容，如 https://api.xxx.com/v1）"))
         val visionBaseEdit = edit(prefs.visionBaseUrl, "留空则始终走云端")
         visionCard.addView(visionBaseEdit)
-        visionCard.addView(label("API Key（自定义接口的密钥，留空则用账户令牌）"))
+        visionCard.addView(label("API Key（自定义接口的密钥，留空则用内置）"))
         val visionKeyEdit = edit(prefs.visionKey, "sk-…", password = true)
         visionCard.addView(visionKeyEdit)
         visionCard.addView(label("模型名（如 qwen-vl-max / gpt-4o-mini）"))
@@ -198,7 +111,7 @@ class SettingsActivity : AppCompatActivity() {
             androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("清空知识库与历史")
                 .setMessage("将删除 ${c.notes} 条笔记、${c.contacts} 个联系人、${c.logLines} 条聊天历史。" +
-                    "账户令牌、白名单等设置不受影响。不可恢复。")
+                    "白名单等设置不受影响。不可恢复。")
                 .setPositiveButton("清空") { _, _ ->
                     KbStore.get(this).clearAll()
                     kbResult.text = "已清空知识库与历史"
@@ -239,15 +152,9 @@ class SettingsActivity : AppCompatActivity() {
         card3.addView(seek)
         root.addView(card3)
 
-        // =================== 关于与隐私 ===================
-        root.addView(section("关于与隐私"))
+        // =================== 关于 ===================
+        root.addView(section("关于"))
         val aboutCard = card()
-        aboutCard.addView(text(
-            "本应用的模型接口由 WeAuto 云端（weauto.safeopc.cn）统一提供并按 token 计费。" +
-                "聊天内容仅在本地做判断与起草，密钥与账户令牌仅保存在本机（加密）。",
-            12f, sub))
-        aboutCard.addView(cardBtn("隐私政策") { openUrl(PRIVACY_URL) })
-        aboutCard.addView(cardBtn("开源仓库") { openUrl(REPO_URL) })
         aboutCard.addView(text(versionLabel(), 11f, sub).apply { setPadding(0, dp(10), 0, dp(2)) })
         root.addView(aboutCard)
 
@@ -271,43 +178,6 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         setContentView(scroll)
-    }
-
-    /** 校验账户令牌：调 /token/status，成功返回档位与额度。 */
-    private fun checkToken(tok: String): TokenResult {
-        return try {
-            val u = Prefs.WORKER_BASE.trimEnd('/') + "/token/status?token=" +
-                URLEncoder.encode(tok, "UTF-8")
-            val j = com.jev.probe.jev.HttpJson.getJson(u, tok, Route.ACCOUNT)
-            if (j.optBoolean("ok")) {
-                TokenResult(
-                    true,
-                    j.optString("tier", ""),
-                    j.optLong("used", 0),
-                    j.optLong("quota", 0),
-                    j.optLong("remain", 0)
-                )
-            } else {
-                TokenResult(false, err = j.optString("error", "校验失败"))
-            }
-        } catch (e: Exception) {
-            TokenResult(false, err = e.message ?: "网络错误")
-        }
-    }
-
-    private fun tierName(tier: String): String = when (tier) {
-        "basic" -> "基础版"
-        "standard" -> "标准版"
-        "pro" -> "旗舰版"
-        else -> if (tier.isBlank()) "未激活" else tier
-    }
-
-    /** token 数 -> 人类可读（万 / 亿）。 */
-    private fun fmt(n: Long): String {
-        val wan = n / 10000.0
-        return if (wan >= 10000) "%.2f亿".format(wan / 10000.0)
-        else if (wan >= 1) "%.1f万".format(wan)
-        else "$n"
     }
 
     override fun onDestroy() { super.onDestroy(); worker.shutdownNow() }
@@ -389,17 +259,6 @@ class SettingsActivity : AppCompatActivity() {
         return row
     }
 
-    private fun openUrl(url: String) {
-        runCatching {
-            startActivity(
-                android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-        }.onFailure {
-            Toast.makeText(this, "打不开浏览器", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun versionLabel(): String = try {
         val pi = packageManager.getPackageInfo(packageName, 0)
         "版本 v${pi.versionName}（${pi.longVersionCode}）"
@@ -407,22 +266,7 @@ class SettingsActivity : AppCompatActivity() {
         "版本 —"
     }
 
-    private fun pct(d: Double?): String =
-        if (d == null) "?" else "${(d * 100).roundToInt()}%"
-
     companion object {
         private const val TAG = "JEVASSIST"
-        private const val PRIVACY_URL = "https://chatjevs.com/privacy.html"
-        private const val REPO_URL = "https://github.com/jev-chat/jev-chat-jarvis"
     }
 }
-
-/** /token/status 校验结果。 */
-private data class TokenResult(
-    val ok: Boolean,
-    val tier: String = "",
-    val used: Long = 0,
-    val quota: Long = 0,
-    val remain: Long = 0,
-    val err: String = ""
-)
