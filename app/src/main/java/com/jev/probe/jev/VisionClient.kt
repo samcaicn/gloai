@@ -53,8 +53,10 @@ class VisionClient(private val prefs: Prefs) {
             .put("model", prefs.visionModel)
             .put("messages", messages)
             .put("temperature", 0.0)
-        val billing = if (prefs.isWorkerMode) BillingState() else null
-        val auth = if (prefs.isWorkerMode) prefs.accountToken else prefs.effectiveVisionKey()
+        // 自定义视觉接口（用户自配 base url）优先于 worker 模式：不走云端、不计量
+        val useWorker = prefs.isWorkerMode && !prefs.isVisionCustom()
+        val billing = if (useWorker) BillingState() else null
+        val auth = prefs.effectiveVisionKey()
         val resp = HttpJson.post(
             url, "", body, Route.VISION, HttpJson.headersFor(url),
             authToken = auth, instanceId = prefs.instanceId, billing = billing

@@ -122,8 +122,26 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getString(K_VISION_KEY, "") ?: ""
         set(v) = sp.edit().putString(K_VISION_KEY, v.trim()).apply()
 
+    /**
+     * 视觉接口自定义开关：开启后视觉请求改发用户自配的 OpenAI 兼容接口
+     * （visionBaseUrl + visionKey + visionModel），不再经过 WeAuto 云端、不计量。
+     * 优先级高于 worker 模式；判断/回复不受影响，仍走云端。
+     */
+    var visionCustom: Boolean
+        get() = sp.getBoolean(K_VISION_CUSTOM, false)
+        set(v) = sp.edit().putBoolean(K_VISION_CUSTOM, v).apply()
+
+    /** 视觉是否实际走自定义接口（开关开着且 base url 非空）。 */
+    fun isVisionCustom(): Boolean = visionCustom && visionBaseUrl.isNotBlank()
+
+    /** 视觉模型名的原始存储值（设置页展示用，不受 worker/custom 分流影响）。 */
+    fun visionModelStored(): String =
+        sp.getString(K_VISION_MODEL, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL
+
     var visionModel: String
-        get() = if (isWorkerMode) "" else (sp.getString(K_VISION_MODEL, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL)
+        get() = if (isVisionCustom() || !isWorkerMode)
+            (sp.getString(K_VISION_MODEL, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL)
+        else ""
         set(v) = sp.edit().putString(K_VISION_MODEL, v.trim()).apply()
 
     // ----------------------------------------------------- 账户 / 计费（加密）
@@ -225,7 +243,13 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     // ------------------------------------------------------------- helpers
 
     fun effectiveReplyKey(): String = if (isWorkerMode) accountToken else replyKey.ifBlank { judgeKey }
-    fun effectiveVisionKey(): String = if (isWorkerMode) accountToken else visionKey.ifBlank { effectiveReplyKey() }
+
+    /** 视觉鉴权：自定义接口用自配 key（留空则退回账户令牌）；云端模式用账户令牌。 */
+    fun effectiveVisionKey(): String = when {
+        isVisionCustom() -> visionKey.ifBlank { accountToken }
+        isWorkerMode -> accountToken
+        else -> visionKey.ifBlank { effectiveReplyKey() }
+    }
 
     /** Full POST URL for the Jev decisions call. Worker 模式走云端 /ai/jev/decisions。 */
     fun judgeEndpoint(): String {
@@ -246,12 +270,15 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         if (isWorkerMode) WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
         else "${replyBaseUrl.trim().trimEnd('/')}/chat/completions"
 
-    fun visionEndpoint(): String =
-        if (isWorkerMode) WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
-        else {
-            val base = visionBaseUrl.trim().ifBlank { DEFAULT_VISION_BASE }
-            "${base.trimEnd('/')}/chat/completions"
+    fun visionEndpoint(): String {
+        if (isVisionCustom()) {
+            val base = visionBaseUrl.trim().trimEnd('/')
+            return if (base.endsWith("/chat/completions")) base else "$base/chat/completions"
         }
+        if (isWorkerMode) return WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
+        val base = visionBaseUrl.trim().ifBlank { DEFAULT_VISION_BASE }
+        return "${base.trimEnd('/')}/chat/completions"
+    }
 
     fun isAllowed(title: String?): Boolean {
         val wl = whitelist
@@ -281,6 +308,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_VISION_BASE = "vision_base_url"
         private const val K_VISION_KEY = "vision_key"
         private const val K_VISION_MODEL = "vision_model"
+        private const val K_VISION_CUSTOM = "vision_custom"
         private const val K_ACCOUNT_TOKEN = "account_token_enc"
         private const val K_BILLING_TIER = "billing_tier"
         private const val K_BILLING_USED = "billing_used"

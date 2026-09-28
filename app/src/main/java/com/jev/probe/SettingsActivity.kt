@@ -66,8 +66,9 @@ class SettingsActivity : AppCompatActivity() {
         val accountCard = card()
         accountCard.addView(cardTitle("WeAuto 云端账户"))
         accountCard.addView(text(
-            "判断 / 回复 / 视觉三个模型接口统一由 WeAuto 云端（weauto.safeopc.cn）提供，无需配置地址与密钥。" +
-                "填入账户令牌即可使用，令牌在本地加密保存。用量按 token 实时计费，详见档位套餐。",
+            "判断 / 回复模型接口统一由 WeAuto 云端（weauto.safeopc.cn）提供，无需配置地址与密钥。" +
+                "填入账户令牌即可使用，令牌在本地加密保存。用量按 token 实时计费。" +
+                "视觉接口默认也走云端，如需自配请在下方「视觉接口」开启自定义。",
             12f, sub))
 
         // 当前状态
@@ -139,6 +140,27 @@ class SettingsActivity : AppCompatActivity() {
             statusText.text = "已退出，请粘贴新的账户令牌"
         })
         root.addView(accountCard)
+
+        // =================== 视觉接口（可选自定义） ===================
+        root.addView(section("视觉接口"))
+        val visionCard = card()
+        visionCard.addView(cardTitle("视觉模型接口"))
+        visionCard.addView(text(
+            "默认走 WeAuto 云端（与账户令牌共用计费）。开启自定义后，视觉请求改发你填的 " +
+                "OpenAI 兼容接口（需支持 image_url），不再经过云端、不消耗算力；判断与回复不受影响。",
+            12f, sub))
+        val visionCustomRow = toggleRow("自定义视觉接口（不走云端）", prefs.visionCustom)
+        visionCard.addView(visionCustomRow)
+        visionCard.addView(label("Base URL（OpenAI 兼容，如 https://api.xxx.com/v1）"))
+        val visionBaseEdit = edit(prefs.visionBaseUrl, "留空则始终走云端")
+        visionCard.addView(visionBaseEdit)
+        visionCard.addView(label("API Key（自定义接口的密钥，留空则用账户令牌）"))
+        val visionKeyEdit = edit(prefs.visionKey, "sk-…", password = true)
+        visionCard.addView(visionKeyEdit)
+        visionCard.addView(label("模型名（如 qwen-vl-max / gpt-4o-mini）"))
+        val visionModelEdit = edit(prefs.visionModelStored(), Prefs.DEFAULT_VISION_MODEL)
+        visionCard.addView(visionModelEdit)
+        root.addView(visionCard)
 
         // =================== 分析 ===================
         root.addView(section("分析"))
@@ -238,6 +260,10 @@ class SettingsActivity : AppCompatActivity() {
             prefs.ocrFallback = (ocrFallbackRow.tag as? Boolean) ?: true
             prefs.ocrAutoAnalyze = (ocrAutoRow.tag as? Boolean) ?: false
             prefs.contextEnabled = (ctxRow.tag as? Boolean) ?: false
+            prefs.visionCustom = (visionCustomRow.tag as? Boolean) ?: false
+            prefs.visionBaseUrl = visionBaseEdit.text.toString()
+            prefs.visionKey = visionKeyEdit.text.toString()
+            prefs.visionModel = visionModelEdit.text.toString()
             prefs.contextHistoryCount =
                 ctxCountEdit.text.toString().trim().toIntOrNull()?.coerceIn(0, 100) ?: 30
             prefs.overlayOpacity = seek.progress + 60
