@@ -71,6 +71,8 @@ class ReplyClient(private val prefs: Prefs) {
     /** One chat-completions round trip; returns the assistant message content. */
     private fun chat(system: String, user: String, temperature: Double): String {
         val url = prefs.replyEndpoint()
+        val billing = if (prefs.isWorkerMode) BillingState() else null
+        val auth = if (prefs.isWorkerMode) prefs.accountToken else prefs.effectiveReplyKey()
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", system))
             .put(JSONObject().put("role", "user").put("content", user))
@@ -78,7 +80,11 @@ class ReplyClient(private val prefs: Prefs) {
             .put("model", prefs.replyModel)
             .put("messages", messages)
             .put("temperature", temperature)
-        val resp = HttpJson.post(url, prefs.effectiveReplyKey(), body, Route.REPLY, HttpJson.headersFor(url))
+        val resp = HttpJson.post(
+            url, "", body, Route.REPLY, HttpJson.headersFor(url),
+            authToken = auth, instanceId = prefs.instanceId, billing = billing
+        )
+        prefs.recordBilling(billing)
         return resp.optJSONArray("choices")?.optJSONObject(0)
             ?.optJSONObject("message")?.optString("content") ?: ""
     }

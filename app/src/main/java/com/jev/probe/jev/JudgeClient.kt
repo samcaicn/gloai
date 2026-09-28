@@ -91,11 +91,18 @@ class JudgeClient(private val prefs: Prefs) {
 
     private fun send(state: JSONObject, questions: JSONObject): JSONObject {
         val url = prefs.judgeEndpoint()
+        // worker 模式：账户令牌鉴权 + 计费回传；legacy：原 judge key。
+        val billing = if (prefs.isWorkerMode) BillingState() else null
+        val auth = if (prefs.isWorkerMode) prefs.accountToken else prefs.judgeKey
         val body = JSONObject()
             .put("model", prefs.judgeModel)
             .put("state", state)
             .put("questions", questions)
-        val resp = HttpJson.post(url, prefs.judgeKey, body, Route.JUDGE, HttpJson.headersFor(url))
+        val resp = HttpJson.post(
+            url, "", body, Route.JUDGE, HttpJson.headersFor(url),
+            authToken = auth, instanceId = prefs.instanceId, billing = billing
+        )
+        prefs.recordBilling(billing)
         return resp.optJSONObject("answers") ?: JSONObject()
     }
 

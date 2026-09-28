@@ -1,5 +1,6 @@
 package com.jev.probe.jev
 
+import com.jev.probe.core.BillingState
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -8,18 +9,17 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Which of the three API routes a failure came from. Used to build error text
- * the user can act on ("判断接口 HTTP 401：…" vs "回复接口 …").
+ * 路由标识：仅用于拼错误信息（"判断接口 HTTP 401" vs "回复接口"）。
  */
 object Route {
     const val JUDGE = "判断接口"
     const val REPLY = "回复接口"
     const val VISION = "视觉接口"
+    const val ACCOUNT = "账户接口"
 }
 
 /**
- * Carries the route, the HTTP status (null = transport failure) and the first
- * 120 chars of the response body so the settings page can show the real reason.
+ * 携带路由、HTTP 状态码（null=传输失败）和响应体前 120 字，便于设置页展示真实原因。
  */
 class ApiException(
     val route: String,
@@ -35,24 +35,26 @@ class ApiException(
 }
 
 /**
- * Shared POST-JSON helper: UTF-8 body, exponential backoff on 429/529, no retry
- * on other 4xx, and every failure normalized to [ApiException]. Keys are passed
- * in per call and never logged.
+ * 共享 POST-JSON 工具：UTF-8 body、429/529 指数退避、其它 4xx 不重试，
+ * 所有失败归一化为 [ApiException]。token 与密钥均按调用传入、绝不记录内容。
+ *
+ * worker 模式下调用方传入 [authToken]（账户令牌）与 [instanceId]，本函数自动带上
+ * `Authorization: Bearer` 与 `X-WeAuto-Instance`，并在成功后读取 `X-Billing-*` 响应头
+ * 填入 [billing]，供上层刷新本地额度展示。
  */
 object HttpJson {
 
     private const val MAX_ATTEMPTS = 3
 
-    /**
-     * @param route one of [Route], used only for error text.
-     * @param extraHeaders additional request headers (e.g. OpenRouter attribution).
-     */
     fun post(
         url: String,
         key: String,
         body: JSONObject,
         route: String,
-        extraHeaders: Map<String, String> = emptyMap()
+        extraHeaders: Map<String, String> = emptyMap(),
+        authToken: String = "",
+        instanceId: String = "",
+        billing: BillingState? = null
     ): JSONObject {
         var attempt = 0
         var last: ApiException? = null
@@ -65,7 +67,13 @@ object HttpJson {
                     connectTimeout = 15000
                     readTimeout = 40000
                     doOutput = true
-                    setRequestProperty("Authorization", "Bearer $key")
+                    // worker 模式用账户令牌；legacy 模式用 provider key。两者都是 Bearer。
+                    if (authToken.isNotBlank()) {
+                        setRequestProperty("Authorization", "Bearer $authToken")
+                    } else if (key.isNotBlank()) {
+                        setRequestProperty("Authorization", "Bearer $key")
+                    }
+                    if (instanceId.isNotBlank()) setRequestProperty("X-WeAuto-Instance", instanceId)
                     setRequestProperty("Content-Type", "application/json; charset=utf-8")
                     extraHeaders.forEach { (k, v) -> setRequestProperty(k, v) }
                 }
@@ -78,23 +86,20 @@ object HttpJson {
                     if (attempt < MAX_ATTEMPTS) Thread.sleep(500L * (1L shl attempt))
                     continue
                 }
-                // Branch on the status code FIRST. Reading the body must never be
-                // able to lose it: errorStream is null on some failures (and on
-                // some OEM stacks), and a read can throw on a truncated response —
-                // either way this used to surface as a transport failure with no
-                // status, which then got retried even for a 401.
                 if (code !in 200..299) {
                     val errText = readBody(conn.errorStream)
                     throw ApiException(route, code, errText.ifBlank { "（响应体为空）" })
                 }
                 val text = readBody(conn.inputStream)
                 if (text.isBlank()) throw ApiException(route, code, "响应体为空")
+                // 成功：抓取计费头
+                captureBilling(conn, billing)
                 return JSONObject(text)
             } catch (e: InterruptedException) {
                 Thread.currentThread().interrupt()
                 throw e
             } catch (e: ApiException) {
-                if (e.status != null && e.status in 400..499) throw e  // client error: no retry
+                if (e.status != null && e.status in 400..499) throw e
                 last = e
                 attempt++
                 if (attempt < MAX_ATTEMPTS) Thread.sleep(500L * (1L shl attempt))
@@ -109,21 +114,62 @@ object HttpJson {
         throw last ?: ApiException(route, null, "请求失败")
     }
 
-    /** Body text, or "" — a null stream or a read failure never costs us the status code. */
+    /** 简单 GET-JSON（用于 /token/status 等无 body 端点）。 */
+    fun getJson(url: String, token: String = "", route: String = Route.ACCOUNT): JSONObject {
+        var conn: HttpURLConnection? = null
+        try {
+            conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 15000
+                readTimeout = 20000
+                setRequestProperty("Accept", "application/json")
+                if (token.isNotBlank()) setRequestProperty("Authorization", "Bearer $token")
+                // 部分网关对无 UA 请求 403（含自家域名）
+                setRequestProperty("User-Agent", "jev-assistant-android")
+            }
+            val code = conn.responseCode
+            if (code !in 200..299) {
+                val err = readBody(conn.errorStream)
+                throw ApiException(route, code, err.ifBlank { "（空）" })
+            }
+            val text = readBody(conn.inputStream)
+            if (text.isBlank()) throw ApiException(route, code, "响应体为空")
+            return JSONObject(text)
+        } catch (e: ApiException) {
+            throw e
+        } catch (e: Exception) {
+            throw ApiException(route, null, describe(e))
+        } finally {
+            conn?.disconnect()
+        }
+    }
+
+    /** 读取 `X-Billing-*` 响应头，写入 [billing]（云端计费权威，客户端只展示）。 */
+    private fun captureBilling(conn: HttpURLConnection, billing: BillingState?) {
+        if (billing == null) return
+        conn.getHeaderField("X-Billing-Tier")?.let { if (it.isNotBlank()) billing.tier = it }
+        conn.getHeaderField("X-Billing-Used")?.toLongOrNull()?.let { billing.used = it }
+        conn.getHeaderField("X-Billing-Quota")?.toLongOrNull()?.let { billing.quota = it }
+        conn.getHeaderField("X-Billing-Remain")?.toLongOrNull()?.let { billing.remain = it }
+    }
+
+    private fun String.toLongOrNull(): Long? = try { this.toLong() } catch (_: Exception) { null }
+
     private fun readBody(stream: java.io.InputStream?): String {
         stream ?: return ""
         return try {
             BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { it.readText() }
-        } catch (_: Exception) { "" }
+        } catch (_: Exception) {
+            ""
+        }
     }
 
-    /** OpenRouter wants attribution headers; other hosts reject unknown ones politely. */
+    /** OpenRouter 需要归因头；其它 host 礼貌地忽略未知头。 */
     fun headersFor(url: String): Map<String, String> =
         if (url.contains("openrouter.ai", ignoreCase = true))
             mapOf("HTTP-Referer" to "https://jev-assistant.local", "X-Title" to "Jev Assistant")
         else emptyMap()
 
-    /** Human-readable transport failures (no key material ever appears here). */
     private fun describe(e: Exception): String {
         val m = e.message ?: e.javaClass.simpleName
         return when {
