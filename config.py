@@ -205,4 +205,12 @@ JEV_INJECT_GUIDANCE = True      # 把判断结论注入 system 提示，指导�
 JEV_HOLD_ON_DANGER = False      # 危险度过高时 bot 收声不回（交给真人处理）
 JEV_DANGER_HOLD_LEVEL = 8       # 收声阈值 0..9（8 = 最后通牒级别）
 
+# 客户端 <-> CF 后台通信密钥（防白嫖 Workers AI 额度）。
+# 与 Creem 卡密无关！这是「自己的 EXE <-> 自己的 Worker」之间的 HMAC 签名密钥。
+# 留空 = Jev 端点公开（开发/向后兼容）。要真防白嫖：
+#   1) 在本行填一个长随机串（如 python -c "import secrets;print(secrets.token_hex(32))"）
+#   2) 在 Cloudflare 注入同值：cd weauto_license && wrangler secret put WEAUATO_CLIENT_SECRET
+# 两端必须一致，否则请求会被 401 拒绝。
+WEAUATO_CLIENT_SECRET = "e3471d8e67bfbcb8823b038d7a2af30d4b15d91e480c98c2"
+
 

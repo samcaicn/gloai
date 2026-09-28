@@ -220,6 +220,59 @@ const aiEnv = (mockFn) => ({ ...baseEnv, AI: { run: mockFn } });
   ok("GET -> 405", res.status === 405);
 }
 
+
+// 3.9 客户端签名校验（防白嫖）：Worker 配了 WEAUATO_CLIENT_SECRET 时强制 HMAC
+{
+  const SEC = "test-client-secret-123";
+  const env = {
+    ...baseEnv,
+    WEAUATO_CLIENT_SECRET: SEC,
+    AI: { run: async () => ({ choices: [{ message: { content: JSON.stringify({ true_intent: "casual_chat" }) } }] }) },
+  };
+  const crypto = await import("node:crypto");
+  const sign = (bodyStr, ts, nonce) =>
+    crypto.createHmac("sha256", SEC).update(Buffer.from("POST\n/ai/jev/decisions\n" + ts + "\n" + nonce + "\n" + bodyStr, "utf8")).digest("hex");
+  const bodyStr = JSON.stringify({ state, questions });
+  const url = "https://weauto.safeopc.cn/ai/jev/decisions";
+  const mk = (headers, body) => new Request(url, { method: "POST", headers: { "content-type": "application/json", ...headers }, body });
+  // 3.9a 无签名 -> 401
+  {
+    const res = await M.jevDecisions(mk({}, bodyStr), env);
+    ok("签名校验: 无签名头 -> 401", res.status === 401, String(res.status));
+  }
+  // 3.9b 错误签名 -> 401
+  {
+    const ts = String(Math.floor(Date.now() / 1000));
+    const nonce = crypto.randomBytes(8).toString("hex");
+    const res = await M.jevDecisions(mk({ "x-weauto-ts": ts, "x-weauto-nonce": nonce, "x-weauto-sig": "deadbeef" }, bodyStr), env);
+    ok("签名校验: 错误签名 -> 401", res.status === 401, String(res.status));
+  }
+  // 3.9c 过期时间戳 -> 401
+  {
+    const ts = String(Math.floor(Date.now() / 1000) - 120);
+    const nonce = crypto.randomBytes(8).toString("hex");
+    const sig = sign(bodyStr, ts, nonce);
+    const res = await M.jevDecisions(mk({ "x-weauto-ts": ts, "x-weauto-nonce": nonce, "x-weauto-sig": sig }, bodyStr), env);
+    ok("签名校验: 过期时间戳 -> 401", res.status === 401, String(res.status));
+  }
+  // 3.9d 正确签名 -> 200
+  {
+    const ts = String(Math.floor(Date.now() / 1000));
+    const nonce = crypto.randomBytes(8).toString("hex");
+    const sig = sign(bodyStr, ts, nonce);
+    const res = await M.jevDecisions(mk({ "x-weauto-ts": ts, "x-weauto-nonce": nonce, "x-weauto-sig": sig }, bodyStr), env);
+    const data = await res.json();
+    ok("签名校验: 正确签名 -> 200", res.status === 200, String(res.status));
+    ok("签名校验: 返回真实判断", data.answers.true_intent.choice === "casual_chat");
+  }
+  // 3.9e 端点未配 secret 时仍公开（向后兼容）
+  {
+    const envPub = { ...env, WEAUATO_CLIENT_SECRET: undefined };
+    const res = await M.jevDecisions(mk({}, bodyStr), envPub);
+    ok("未配 secret -> 公开 200", res.status === 200, String(res.status));
+  }
+}
+
 fs.unlinkSync(TMP);
 console.log(`\n结果: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

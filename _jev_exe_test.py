@@ -7,7 +7,7 @@ import os
 import sys
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 os.environ["no_proxy"] = "127.0.0.1,localhost"
 os.environ["NO_PROXY"] = "127.0.0.1,localhost"
@@ -46,6 +46,26 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_POST(self):
+        if self.path == "/auth":
+            import hmac as _h, hashlib as _hl2
+            ts = self.headers.get("x-weauto-ts")
+            nonce = self.headers.get("x-weauto-nonce")
+            sig = self.headers.get("x-weauto-sig")
+            length = int((self.headers.get("content-length", "0") or "0"))
+            raw = self.rfile.read(length) if length else b""
+            expect = _h.new(b"s3cr3t", b"POST\n/auth\n" + (ts or "").encode() + b"\n" + (nonce or "").encode() + b"\n" + raw, _hl2.sha256).hexdigest()
+            if ts and nonce and sig and _h.compare_digest(expect, sig):
+                payload = {"answers": GOOD_ANSWERS}
+                body = json.dumps(payload).encode("utf-8")
+                self.send_response(200)
+                self.send_header("content-type", "application/json")
+                self.send_header("content-length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_response(401)
+                self.end_headers()
+            return
         if self.path == "/slow":
             time.sleep(30)
             return
@@ -74,7 +94,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
-srv = HTTPServer(("127.0.0.1", 0), Handler)
+srv = ThreadingHTTPServer(("127.0.0.1", 0), Handler)  # 多线程：/slow 不得阻塞后续请求
 PORT = srv.server_address[1]
 threading.Thread(target=srv.serve_forever, daemon=True).start()
 BASE = f"http://127.0.0.1:{PORT}"
@@ -160,6 +180,24 @@ ok("rank: 非 3 条候选 -> None", jev_guard.rank("u", "x", ["a", "b"]) is None
 # ---------- 8. 脱敏 ----------
 set_cfg(ENABLE_JEV_GUARD=True, CREEM_LICENSE_KEY="secret-key-123456", JEV_BASE_URL=BASE + "/ok")
 ok("密钥被脱敏", "secret-key-123456" not in jev_guard._redact("key=secret-key-123456"))
+
+
+# ---------- 9. 签名单测 ----------
+import hmac as _hmac, hashlib as _hl
+set_cfg(ENABLE_JEV_GUARD=True, JEV_BASE_URL=BASE + "/ok", WEAUATO_CLIENT_SECRET="s3cr3t")
+_body = json.dumps({"state": {}, "questions": {}}).encode("utf-8")
+_sig = jev_guard._sign("s3cr3t", "/ai/jev/decisions", "100", "nonce", _body)
+_exp = _hmac.new(b"s3cr3t", b"POST\n/ai/jev/decisions\n100\nnonce\n" + _body, _hl.sha256).hexdigest()
+ok("_sign 与手算 HMAC 一致", _sig == _exp)
+
+# ---------- 10. 签名端到端（mock 后端强制校验）----------
+# 配了密钥 -> 自动带签名 -> /auth 接受
+set_cfg(ENABLE_JEV_GUARD=True, JEV_BASE_URL=BASE + "/auth", WEAUATO_CLIENT_SECRET="s3cr3t")
+v_auth = jev_guard.judge("u", "x")
+ok("配了密钥 -> 签名被后端接受", isinstance(v_auth, dict) and len(v_auth) > 0, v_auth)
+# 未配密钥 -> 不带签名 -> /auth 拒绝 -> 降级 None
+set_cfg(ENABLE_JEV_GUARD=True, JEV_BASE_URL=BASE + "/auth", WEAUATO_CLIENT_SECRET="")
+ok("未配密钥 -> 无签名 -> 后端拒 -> None", jev_guard.judge("u", "x") is None)
 
 srv.shutdown()
 print(f"\n结果: {PASS} passed, {FAIL} failed")

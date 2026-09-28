@@ -5255,7 +5255,9 @@ def jev_page():
             "JEV_INJECT_GUIDANCE": bool(cfg.get("JEV_INJECT_GUIDANCE", True)),
             "JEV_HOLD_ON_DANGER": bool(cfg.get("JEV_HOLD_ON_DANGER", False)),
             "JEV_DANGER_HOLD_LEVEL": cfg.get("JEV_DANGER_HOLD_LEVEL", 8),
+            "WEAUATO_CLIENT_SECRET": cfg.get("WEAUATO_CLIENT_SECRET", ""),
         },
+        "auth_enabled": bool(cfg.get("WEAUATO_CLIENT_SECRET", "")),
     })
 
 
@@ -5268,7 +5270,7 @@ def api_jev_save():
     for k in ("ENABLE_JEV_GUARD", "JEV_INJECT_GUIDANCE", "JEV_HOLD_ON_DANGER"):
         if k in payload:
             new[k] = bool(payload[k])
-    for k in ("JEV_BASE_URL", "JEV_MODEL", "JEV_RELATIONSHIP"):
+    for k in ("JEV_BASE_URL", "JEV_MODEL", "JEV_RELATIONSHIP", "WEAUATO_CLIENT_SECRET"):
         if k in payload:
             new[k] = str(payload[k]).strip()
     for k in ("JEV_TIMEOUT",):

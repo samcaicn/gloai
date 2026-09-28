@@ -46,6 +46,11 @@ binding = "AI"
 binding = "LICENSE_KV"
 id = "b9359d143ab04b549500066b467e3011"
 
+# ---- KV：token 计费记账（APK 账户令牌的用量/账户档案，跨月自动归零）----
+[[kv_namespaces]]
+binding = "BILLING_KV"
+id = "8d92f8ae61f948b9a17fdfd6239c8dd0"
+
 # ---- 自定义域名（必须绑定）----
 # 实测：*.workers.dev 在中国大陆不可达（DNS 被污染到 Facebook 段 IP，代理亦 502），
 # 导致买家打不开购买页、且首次激活无法联网。绑定自有域名后国内可直连。

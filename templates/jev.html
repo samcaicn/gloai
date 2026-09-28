@@ -49,8 +49,8 @@
                 <span>每条待回复消息先判断：对方真实意图 / 关系危险度 / 需要什么 / 最佳动作，再据此约束主模型的语气与内容</span>
             </div>
             <div class="row">
-                <span id="keyBadge" class="badge on">
-                    公开可用 · 无需卡密
+                <span id="keyBadge" class="badge {{ 'on' if data.auth_enabled else 'bad' }}">
+                    {{ '已启用客户端鉴权（防白嫖）' if data.auth_enabled else '公开模式：任何人可调用，Workers AI 额度可能被盗用' }}
                 </span>
                 <label class="chk"><input type="checkbox" id="f_enable"> 开启</label>
             </div>
@@ -58,7 +58,8 @@
         <p class="hint">
             技术来源 <b>jev-chat-jarvis</b>（MIT）。判断跑在自建 Cloudflare Worker 上，Worker 内部用
             <b>Workers AI</b> 的 JSON Mode 跑同一套题目 —— 不走 OpenRouter、不需要境外账号与美元结算，
-            <b>也不需要卡密</b>（卡密仅用于 Creem 支付授权与 AI 代理）。<br>
+            判断是 Workers AI 推理能力，<b>与 Creem 卡密无关</b>；EXE 与 CF 后台之间另有
+            <b>共享密钥 HMAC 签名</b>防白嫖（见下方「客户端通信密钥」）。<br>
             <b>安全设计</b>：判断失败 / 超时 / 未开启，一律降级为「照常回复」，绝不会让机器人变哑巴。
         </p>
     </div>
@@ -94,6 +95,16 @@
             <div>
                 <label class="fld">判断模型（留空 = 用 Worker 默认）</label>
                 <input type="text" id="f_model" placeholder="@cf/meta/llama-3.1-8b-instruct">
+            </div>
+        </div>
+
+        <div class="grid2" style="margin-top:14px">
+            <div>
+                <label class="fld">客户端通信密钥（防白嫖 · 与卡密无关）</label>
+                <input type="password" id="f_secret" placeholder="留空 = 公开模式" autocomplete="off">
+            </div>
+            <div style="align-self:end">
+                <span class="muted" style="font-size:12.5px">EXE↔CF 后台 HMAC 签名密钥。要真防白嫖：本框填长随机串，并在 Cloudflare 用 <code>wrangler secret put WEAUATO_CLIENT_SECRET</code> 注入<strong>同一串</strong>。</span>
             </div>
         </div>
 
@@ -146,6 +157,7 @@ function fill() {
     $('f_hold').value = cfg.JEV_DANGER_HOLD_LEVEL;
     $('f_url').value = cfg.JEV_BASE_URL || '';
     $('f_model').value = cfg.JEV_MODEL || '';
+    $('f_secret').value = cfg.WEAUATO_CLIENT_SECRET || '';
 }
 
 function showMsg(text, kind) {
@@ -177,6 +189,7 @@ $('btnSave').onclick = async () => {
             JEV_DANGER_HOLD_LEVEL: $('f_hold').value,
             JEV_BASE_URL: $('f_url').value,
             JEV_MODEL: $('f_model').value,
+            WEAUATO_CLIENT_SECRET: $('f_secret').value,
         });
         if (res.ok) {
             showMsg(res.msg, 'ok');
@@ -190,6 +203,7 @@ $('btnSave').onclick = async () => {
                 JEV_DANGER_HOLD_LEVEL: $('f_hold').value,
                 JEV_BASE_URL: $('f_url').value,
                 JEV_MODEL: $('f_model').value,
+                WEAUATO_CLIENT_SECRET: $('f_secret').value,
             });
         } else {
             showMsg((res.errors || [res.msg || '保存失败']).join('；'), 'err');

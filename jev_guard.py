@@ -21,7 +21,18 @@ Jev 不是聊天模型，是「判断模型」：喂 state + questions，返回�
 原实现调 OpenRouter /alpha/decisions（需境外账号 + 美元结算）。本项目改为调自建 Worker
 的 /ai/jev/decisions：Worker 内部用 Cloudflare Workers AI 的 JSON Mode（json_schema）跑
 同一套题目，返回结构保持 {answers:{...}} 兼容 —— 不出 Cloudflare、无需 OpenRouter。
-Jev 判断是 Workers AI 推理能力，公开可用，不需要卡密（卡密仅服务 Creem 支付授权）。
+Jev 判断是 Workers AI 推理能力，与 Creem 卡密无关。
+
+客户端 ↔ CF 后台的通信鉴权（防白嫖 Workers AI 额度）
+----------------------------------------------------
+Jev 端点默认在 Worker 端「配置即启用」HMAC-SHA256 客户端签名：两端（EXE 配置
+WEAUATO_CLIENT_SECRET 与 Worker 端 env.WEAUATO_CLIENT_SECRET）填入相同密钥后，
+每次请求携带：
+    X-WeAuto-Ts    unix 秒（±60s 有效，防重放）
+    X-WeAuto-Nonce 随机 hex
+    X-WeAuto-Sig   HMAC_SHA256(密钥, "POST\n<path>\n<ts>\n<nonce>\n<body>")
+Worker 端未配置该密钥时端点保持公开（开发/向后兼容）。这不是支付卡密，
+是「自己的客户端 ↔ 自己的后台」之间的通信密钥，密钥不进公开仓库（用 wrangler secret 注入）。
 
 在 WeAuto 里的作用
 ------------------
@@ -38,12 +49,16 @@ Jev 判断是 Workers AI 推理能力，公开可用，不需要卡密（卡密�
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import re
+import secrets
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 # ---------------------------------------------------------------- 题目集（MIT，来自 jev-chat-jarvis）
@@ -256,6 +271,7 @@ _DEFAULTS = {
     "JEV_HOLD_ON_DANGER": False,     # 危险度过高时收声不回
     "JEV_DANGER_HOLD_LEVEL": 8,      # 收声阈值（0..9）
     "CREEM_LICENSE_KEY": "",
+    "WEAUATO_CLIENT_SECRET": "",     # 客户端↔后台通信密钥（防白嫖）；留空=公开模式
 }
 
 
@@ -301,13 +317,30 @@ def reload_config():
 
 
 def _redact(text):
-    """日志/异常里抹掉卡密。"""
+    """日志/异常里抹掉卡密与客户端通信密钥。"""
     if not isinstance(text, str):
         text = str(text)
-    for k in (_cfg("CREEM_LICENSE_KEY", "") or "",):
+    for k in (_cfg("CREEM_LICENSE_KEY", "") or "", _cfg("WEAUATO_CLIENT_SECRET", "") or ""):
         if k and len(k) >= 6:
             text = text.replace(k, "[REDACTED]")
     return text
+
+
+def _client_secret():
+    """取客户端↔后台通信密钥（WEAUATO_CLIENT_SECRET）；空串=公开模式。"""
+    try:
+        return (_cfg("WEAUATO_CLIENT_SECRET", "") or "").strip()
+    except Exception:
+        return ""
+
+
+def _sign(secret, path, ts, nonce, body_bytes):
+    """HMAC-SHA256 签名，与 Worker 端算法一致。
+
+    msg = "POST\\n<path>\\n<ts>\\n<nonce>\\n" + body_bytes
+    """
+    msg = ("POST\n" + path + "\n" + ts + "\n" + nonce + "\n").encode("utf-8") + body_bytes
+    return hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
 
 
 def _instance_id():
@@ -398,6 +431,23 @@ def _post_decisions(questions, state, timeout=None, model=None):
     if model:
         payload["model"] = model
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    # 客户端↔后台通信签名（防白嫖）：填了 WEAUATO_CLIENT_SECRET 才带，否则公开模式
+    auth_headers = {}
+    secret = _client_secret()
+    if secret:
+        try:
+            parsed = urllib.parse.urlparse(_cfg("JEV_BASE_URL", _DEFAULTS["JEV_BASE_URL"]))
+            path = parsed.path or "/ai/jev/decisions"
+            ts = str(int(time.time()))
+            nonce = secrets.token_hex(16)
+            sig = _sign(secret, path, ts, nonce, body)
+            auth_headers = {
+                "X-WeAuto-Ts": ts,
+                "X-WeAuto-Nonce": nonce,
+                "X-WeAuto-Sig": sig,
+            }
+        except Exception:
+            auth_headers = {}
     box = {"res": None, "err": None}
 
     def _work():
@@ -413,6 +463,7 @@ def _post_decisions(questions, state, timeout=None, model=None):
                     # Cloudflare WAF 会把 Python-urllib 的默认 UA 挡成 403（实测 same as creem 直连），
                     # 必须带浏览器 UA，否则请求根本到不了 Worker。
                     "User-Agent": _UA,
+                    **auth_headers,
                 },
             )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
