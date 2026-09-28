@@ -2,6 +2,7 @@ package com.jev.probe.jev
 
 import android.graphics.Bitmap
 import android.util.Base64
+import com.jev.probe.core.BillingState
 import com.jev.probe.core.Prefs
 import java.io.ByteArrayOutputStream
 import org.json.JSONArray

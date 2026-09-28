@@ -113,6 +113,8 @@ class SettingsActivity : AppCompatActivity() {
             }
         })
 
+        val testResult = resultText()
+
         accountCard.addView(cardBtn("测试判断（连通性）") {
             if (prefs.accountToken.isBlank()) { testResult.text = "请先激活账户"; return@cardBtn }
             testResult.text = "测试中…"
@@ -125,7 +127,6 @@ class SettingsActivity : AppCompatActivity() {
                 }
             }
         })
-        val testResult = resultText()
         accountCard.addView(testResult)
 
         accountCard.addView(cardBtn("退出登录") {

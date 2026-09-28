@@ -1,5 +1,6 @@
 package com.jev.probe.jev
 
+import com.jev.probe.core.BillingState
 import com.jev.probe.core.ChatSnapshot
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.kb.ChatContext

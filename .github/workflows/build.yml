@@ -65,6 +65,9 @@ jobs:
             echo "Commit: ${{ github.sha }}"
             echo '### key lines'
             grep -nE "FAILURE:|What went wrong|Caused by:|error:|Error:|FAILED" build_debug.log build_release.log 2>/dev/null | head -40 || true
+            echo '### Kotlin compiler errors'
+            grep -hE "^e: " build_debug.log build_release.log 2>/dev/null | head -40 || true
+grep -E "^e: " build_debug.log build_release.log 2>/dev/null | head -40 || true
             echo '### What went wrong section'
             L=$(grep -n "What went wrong" build_debug.log 2>/dev/null | head -1 | cut -d: -f1)
             [ -n "$L" ] && sed -n "${L},$((L+30))p" build_debug.log
