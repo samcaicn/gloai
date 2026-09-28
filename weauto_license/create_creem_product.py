@@ -116,6 +116,10 @@ def fetch_rate(auto):
 
 def opener():
     """强制直连（绕开本机 Clash 127.0.0.1:17890，它对 api.creem.io 不通）。"""
+    # CREEM_PROXY=http://127.0.0.1:10808 可强制走本机代理（直连被墙时用）
+    px = os.environ.get("CREEM_PROXY", "")
+    if px:
+        return urllib.request.build_opener(urllib.request.ProxyHandler({"http": px, "https": px}))
     return urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
