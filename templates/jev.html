@@ -49,16 +49,16 @@
                 <span>每条待回复消息先判断：对方真实意图 / 关系危险度 / 需要什么 / 最佳动作，再据此约束主模型的语气与内容</span>
             </div>
             <div class="row">
-                <span id="keyBadge" class="badge {{ 'on' if data.has_key else 'bad' }}">
-                    {{ '卡密已配置' if data.has_key else '未配置卡密' }}
+                <span id="keyBadge" class="badge on">
+                    公开可用 · 无需卡密
                 </span>
                 <label class="chk"><input type="checkbox" id="f_enable"> 开启</label>
             </div>
         </div>
         <p class="hint">
             技术来源 <b>jev-chat-jarvis</b>（MIT）。判断跑在自建 Cloudflare Worker 上，Worker 内部用
-            <b>Workers AI</b> 的 JSON Mode 跑同一套题目 —— 不走 OpenRouter、不需要境外账号与美元结算。
-            鉴权复用你的卡密（与 AI 代理同一张）。<br>
+            <b>Workers AI</b> 的 JSON Mode 跑同一套题目 —— 不走 OpenRouter、不需要境外账号与美元结算，
+            <b>也不需要卡密</b>（卡密仅用于 Creem 支付授权与 AI 代理）。<br>
             <b>安全设计</b>：判断失败 / 超时 / 未开启，一律降级为「照常回复」，绝不会让机器人变哑巴。
         </p>
     </div>

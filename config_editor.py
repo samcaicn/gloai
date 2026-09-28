@@ -5227,7 +5227,7 @@ def api_forward_log():
 
 # ==================== Jev 判断式 AI（回复前的「对话体检」） ====================
 # 技术来源：jev-chat-jarvis（MIT）。判断跑在自建 Cloudflare Worker + Workers AI 上，
-# 不走 OpenRouter；鉴权复用卡密。任何失败都降级为「照常回复」。
+# 不走 OpenRouter；判断是 Workers AI 推理能力，公开可用，不需要卡密。任何失败都降级为「照常回复」。
 
 def _jev():
     try:
@@ -5244,7 +5244,7 @@ def jev_page():
     cfg = parse_config()
     return render_template('jev.html', data={
         "available": m is not None,
-        "has_key": bool((cfg.get("CREEM_LICENSE_KEY", "") or cfg.get("JEV_API_KEY", "")).strip()),
+        "needs_key": False,
         "cfg": {
             "ENABLE_JEV_GUARD": bool(cfg.get("ENABLE_JEV_GUARD", False)),
             "JEV_BASE_URL": cfg.get("JEV_BASE_URL", "https://weauto.safeopc.cn/ai/jev/decisions"),
@@ -5318,8 +5318,6 @@ def api_jev_test():
     cfg = parse_config()
     if not bool(cfg.get("ENABLE_JEV_GUARD", False)):
         return jsonify(ok=False, msg="未开启：请先把「启用 Jev 判断」打开并保存")
-    if not bool((cfg.get("CREEM_LICENSE_KEY", "") or cfg.get("JEV_API_KEY", "")).strip()):
-        return jsonify(ok=False, msg="未配置卡密：请先在「授权管理」激活卡密（Jev 与 AI 共用同一张卡密）")
     try:
         t0 = time.time()
         verdict = m.judge("__jev_self_test__", text, [])

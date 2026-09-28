@@ -194,11 +194,10 @@ CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填
 #   结论注入 system 提示，让主模型照着判。原版走 OpenRouter（需境外账号+美元结算），
 #   本项目改走自建 Worker /ai/jev/decisions —— Worker 内用 Cloudflare Workers AI 的
 #   JSON Mode 跑同一套题目，返回结构兼容，不出 CF、无需 OpenRouter。
-# 鉴权复用上面的 CREEM_LICENSE_KEY（卡密即凭证，与 /ai/v1 同一套）。
+# Jev 判断是 Workers AI 推理能力，公开可用，不需要卡密（卡密仅服务 Creem 支付授权）。
 ENABLE_JEV_GUARD = False        # 默认关闭；打开后每条待回复消息先跑一次判断（约 1s）
 JEV_BASE_URL = "https://weauto.safeopc.cn/ai/jev/decisions"   # Worker 端点，一般不用改
 JEV_MODEL = ""                  # 留空 = 用 Worker 端默认模型（实测 8B 判不准，已默认 70B）
-JEV_API_KEY = ""                # 留空 = 用 CREEM_LICENSE_KEY（推荐）
 JEV_TIMEOUT = 8.0               # 单次判断超时（秒）；超时/失败一律降级为照常回复
 JEV_RELATIONSHIP = "微信联系人"  # 填进判断的"我和对方是什么关系"，写得越准判断越准
 JEV_CONTEXT_TURNS = 6           # 带进判断的最近对话轮数（一问一答算 2 条）

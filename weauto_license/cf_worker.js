@@ -469,7 +469,9 @@ async function resolveCheckout(env, tier, mid) {
  * 好处：不出 Cloudflare、不需要 OpenRouter 账号与美元结算、延迟低。
  *
  * 端点：POST /ai/jev/decisions
- *   鉴权：Authorization: Bearer <卡密>（与 /ai/v1 同一套 licenseOk 凭证）
+ *   鉴权：无。Jev 判断是 Workers AI 推理能力，公开可用，不需要卡密。
+ *        卡密（CREEM_LICENSE_KEY）仅用于 Creem 支付授权与 /ai/v1 代理。
+ *        若需防止他人白嫖 Workers AI 额度，后续可加 Jev 专用令牌，但不应是支付卡密。
  *   body：{ model?, state:{chat:{relationship,messages:[{from,text}],latest_from}},
  *           questions:{ <key>: {type,instructions,criteria} } }
  *   响应：{ answers:{...}, model, provider:"cloudflare-workers-ai" }
@@ -579,22 +581,8 @@ async function jevDecisions(req, env) {
   if (req.method !== "POST") {
     return json({ error: { message: "POST required", type: "invalid_request", code: "method_not_allowed" } }, 405);
   }
-  const auth = req.headers.get("authorization") || "";
-  const key = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  const instanceId = req.headers.get("x-weauto-instance") || "";
-  // Jev 走 Workers AI，不要求商家配置 LLM upstream（requireUpstream=false）
-  if (!(await licenseOk(env, key, instanceId, false))) {
-    return json(
-      {
-        error: {
-          message: "无效授权：请先在 WeAuto 后台「授权管理」激活卡密后再使用 Jev 判断",
-          type: "weauto_license_error",
-          code: "license_required",
-        },
-      },
-      401
-    );
-  }
+  // Jev 判断走 Workers AI，公开可用，不需要卡密（卡密仅服务 Creem 支付授权）。
+  // 任何人都可直接 POST；若需限制他人白嫖 Workers AI 额度，后续可加 Jev 专用令牌。
   if (!env.AI) {
     return json(
       {

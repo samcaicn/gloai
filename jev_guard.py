@@ -21,7 +21,7 @@ Jev 不是聊天模型，是「判断模型」：喂 state + questions，返回�
 原实现调 OpenRouter /alpha/decisions（需境外账号 + 美元结算）。本项目改为调自建 Worker
 的 /ai/jev/decisions：Worker 内部用 Cloudflare Workers AI 的 JSON Mode（json_schema）跑
 同一套题目，返回结构保持 {answers:{...}} 兼容 —— 不出 Cloudflare、无需 OpenRouter。
-鉴权复用卡密（与 /ai/v1 同一套 licenseOk）：Authorization: Bearer <CREEM_LICENSE_KEY>。
+Jev 判断是 Workers AI 推理能力，公开可用，不需要卡密（卡密仅服务 Creem 支付授权）。
 
 在 WeAuto 里的作用
 ------------------
@@ -32,7 +32,7 @@ Jev 不是聊天模型，是「判断模型」：喂 state + questions，返回�
 设计红线（24h 鲁棒性）
 ----------------------
 - 纯标准库，不引第三方依赖。
-- 默认关闭（ENABLE_JEV_GUARD=False）；没卡密自动关闭，绝不因此让 bot 变哑巴或变慢。
+- 默认关闭（ENABLE_JEV_GUARD=False）；开启即用，绝不因此让 bot 变哑巴或变慢。
 - 任何异常、超时、非 200、解析失败一律返回 None / False —— 降级为"照常回复"。
 - 密钥不落日志（_redact）。
 """
@@ -249,7 +249,6 @@ _DEFAULTS = {
     "ENABLE_JEV_GUARD": False,
     "JEV_BASE_URL": "https://weauto.safeopc.cn/ai/jev/decisions",
     "JEV_MODEL": "",                 # 留空 = 用 Worker 端 wrangler.toml 的默认模型
-    "JEV_API_KEY": "",               # 留空 = 用 CREEM_LICENSE_KEY（推荐）
     "JEV_TIMEOUT": 8.0,
     "JEV_RELATIONSHIP": "微信联系人",
     "JEV_CONTEXT_TURNS": 6,          # 带进判断的最近对话轮数（一问一答算 2 条）
@@ -305,14 +304,10 @@ def _redact(text):
     """日志/异常里抹掉卡密。"""
     if not isinstance(text, str):
         text = str(text)
-    for k in (_cfg("JEV_API_KEY", "") or "", _cfg("CREEM_LICENSE_KEY", "") or ""):
+    for k in (_cfg("CREEM_LICENSE_KEY", "") or "",):
         if k and len(k) >= 6:
             text = text.replace(k, "[REDACTED]")
     return text
-
-
-def _auth_key():
-    return (_cfg("JEV_API_KEY", "") or _cfg("CREEM_LICENSE_KEY", "") or "").strip()
 
 
 def _instance_id():
@@ -331,11 +326,9 @@ def _instance_id():
 
 
 def enabled():
-    """闸门是否生效。没卡密 / 没开关 -> False（此时调用方直接跳过，零开销）。"""
+    """闸门是否生效。只看 ENABLE_JEV_GUARD 开关（无需卡密，公开可用）。"""
     try:
-        if not _cfg("ENABLE_JEV_GUARD", False):
-            return False
-        return bool(_auth_key())
+        return bool(_cfg("ENABLE_JEV_GUARD", False))
     except Exception:
         return False
 
@@ -414,7 +407,6 @@ def _post_decisions(questions, state, timeout=None, model=None):
                 data=body,
                 method="POST",
                 headers={
-                    "Authorization": "Bearer " + _auth_key(),
                     "Content-Type": "application/json; charset=utf-8",
                     "Accept": "application/json",
                     "X-WeAuto-Instance": _instance_id(),
@@ -601,8 +593,6 @@ def self_test(timeout=None):
     """连通性自检（WebUI「测试 Jev」按钮用）。返回 (ok: bool, message: str)。"""
     if not _cfg("ENABLE_JEV_GUARD", False):
         return False, "未开启（config.py 的 ENABLE_JEV_GUARD = False）"
-    if not _auth_key():
-        return False, "未配置卡密：请在「授权管理」激活卡密，或填 JEV_API_KEY"
     t0 = time.time()
     answers, err = _post_decisions(
         JUDGE_QUESTIONS,

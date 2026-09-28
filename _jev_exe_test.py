@@ -87,13 +87,13 @@ def set_cfg(**kw):
     jev_guard._CFG_CACHE["values"] = values
 
 
-# ---------- 1. 开关 ----------
-set_cfg(ENABLE_JEV_GUARD=False, CREEM_LICENSE_KEY="dummy-key")
+# ---------- 1. 开关（Jev 无需卡密，只看 ENABLE_JEV_GUARD）----------
+set_cfg(ENABLE_JEV_GUARD=False)
 ok("默认关闭时 enabled()=False", jev_guard.enabled() is False)
-set_cfg(ENABLE_JEV_GUARD=True, CREEM_LICENSE_KEY="")
-ok("开启但无卡密 -> enabled()=False", jev_guard.enabled() is False)
-set_cfg(ENABLE_JEV_GUARD=True, CREEM_LICENSE_KEY="dummy-key", JEV_BASE_URL=BASE + "/ok")
-ok("开启且有卡密 -> enabled()=True", jev_guard.enabled() is True)
+set_cfg(ENABLE_JEV_GUARD=True)
+ok("开启即生效（无需卡密）-> enabled()=True", jev_guard.enabled() is True)
+set_cfg(ENABLE_JEV_GUARD=True, JEV_BASE_URL=BASE + "/ok")
+ok("开启且端点可达 -> enabled()=True", jev_guard.enabled() is True)
 
 # ---------- 2. 正常解析 ----------
 v = jev_guard.judge("u1", "算了，我习惯了", [{"role": "user", "content": "你又忘了吧"},

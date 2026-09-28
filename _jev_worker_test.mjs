@@ -173,9 +173,9 @@ const aiEnv = (mockFn) => ({ ...baseEnv, AI: { run: mockFn } });
   ok("非 JSON 输出 -> 502", res.status === 502, String(res.status));
 }
 
-// 3.4 无卡密 -> 401
+// 3.4 无卡密 -> 公开可用（不带 Authorization 也返回 200；卡密仅服务 Creem 支付授权）
 {
-  const env = aiEnv(async () => ({ response: {} }));
+  const env = aiEnv(async () => ({ choices: [{ message: { content: JSON.stringify({ true_intent: "casual_chat" }) } }] }));
   const res = await M.jevDecisions(
     new Request("https://weauto.safeopc.cn/ai/jev/decisions", {
       method: "POST",
@@ -184,7 +184,7 @@ const aiEnv = (mockFn) => ({ ...baseEnv, AI: { run: mockFn } });
     }),
     env
   );
-  ok("无卡密 -> 401", res.status === 401);
+  ok("无卡密 -> 公开可用 200（不需要授权）", res.status === 200, String(res.status));
 }
 
 // 3.5 未绑定 AI -> 503
