@@ -37,21 +37,27 @@ jobs:
 
       # Decode the signing keystore from the GitHub secret (base64) when present.
       # Without SIGNING_KEY the release build stays unsigned — CI still succeeds.
+      # NOTE: the guard lives INSIDE the shell (not in `if:`) because the
+      # `secrets` context is not reliably available in `if:` at workflow startup.
       - name: Decode signing keystore
-        if: ${{ secrets.SIGNING_KEY != '' }}
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
         run: |
-          echo "$SIGNING_KEY" | base64 -d > "$RUNNER_TEMP/keystore.p12"
-          {
-            echo "SIGNING_STORE_FILE=$RUNNER_TEMP/keystore.p12"
-            echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS"
-            echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD"
-            echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD"
-          } >> "$GITHUB_ENV"
+          if [ -n "$SIGNING_KEY" ]; then
+            echo "$SIGNING_KEY" | base64 -d > "$RUNNER_TEMP/keystore.p12"
+            {
+              echo "SIGNING_STORE_FILE=$RUNNER_TEMP/keystore.p12"
+              echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS"
+              echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD"
+              echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD"
+            } >> "$GITHUB_ENV"
+            echo "signing keystore decoded"
+          else
+            echo "no SIGNING_KEY secret — release build will be unsigned"
+          fi
 
       - name: Build debug APK (installable)
         run: ./gradlew :app:assembleDebug --stacktrace > build_debug.log 2>&1
