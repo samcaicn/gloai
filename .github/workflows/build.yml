@@ -48,6 +48,10 @@ jobs:
         run: |
           if [ -n "$SIGNING_KEY" ]; then
             echo "$SIGNING_KEY" | base64 -d > "$RUNNER_TEMP/keystore.p12"
+            if [ ! -s "$RUNNER_TEMP/keystore.p12" ]; then
+              echo "::error::SIGNING_KEY decoded to an empty/invalid keystore"
+              exit 1
+            fi
             {
               echo "SIGNING_STORE_FILE=$RUNNER_TEMP/keystore.p12"
               echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS"
@@ -70,6 +74,29 @@ jobs:
           mkdir -p dist
           find app/build/outputs/apk -name '*.apk' -exec cp {} dist/ \;
           ls -la dist/
+
+      # Safety net: a "successful" release build that is actually unsigned must
+      # never ship. v1 signing is enabled in build.gradle, so a signed release
+      # APK carries a META-INF/*.RSA (or .EC/.DSA) entry. Fail the job if absent.
+      - name: Verify release APK is signed
+        run: |
+          python3 - <<'PY'
+          import zipfile, sys
+          apk = 'dist/app-release.apk'
+          try:
+              z = zipfile.ZipFile(apk)
+          except FileNotFoundError:
+              print('::error::dist/app-release.apk not found')
+              sys.exit(1)
+          sigs = [n for n in z.namelist()
+                  if n.startswith('META-INF/') and (
+                     n.endswith('.RSA') or n.endswith('.EC') or n.endswith('.DSA'))]
+          print('signature entries:', sigs)
+          if not sigs:
+              print('::error::release APK is NOT signed (no META-INF signature)')
+              sys.exit(1)
+          print('release APK is signed OK')
+          PY
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
