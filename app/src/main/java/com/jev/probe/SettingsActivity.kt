@@ -20,6 +20,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.jev.probe.core.Prefs
+import kotlin.math.roundToInt
 import com.jev.probe.core.kb.KbSelfCheck
 import com.jev.probe.core.kb.KbStore
 import java.util.concurrent.Executors
