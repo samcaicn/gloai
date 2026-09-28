@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
 jobs:
@@ -35,10 +35,28 @@ jobs:
       - name: Set up Gradle (cache)
         uses: gradle/actions/setup-gradle@v4
 
+      # Decode the signing keystore from the GitHub secret (base64) when present.
+      # Without SIGNING_KEY the release build stays unsigned — CI still succeeds.
+      - name: Decode signing keystore
+        if: ${{ secrets.SIGNING_KEY != '' }}
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          echo "$SIGNING_KEY" | base64 -d > "$RUNNER_TEMP/keystore.p12"
+          {
+            echo "SIGNING_STORE_FILE=$RUNNER_TEMP/keystore.p12"
+            echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS"
+            echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD"
+            echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD"
+          } >> "$GITHUB_ENV"
+
       - name: Build debug APK (installable)
         run: ./gradlew :app:assembleDebug --stacktrace > build_debug.log 2>&1
 
-      - name: Build release APK (unsigned, no keystore in CI)
+      - name: Build release APK (signed if keystore secret set, else unsigned)
         run: ./gradlew :app:assembleRelease --stacktrace > build_release.log 2>&1
 
       - name: Collect APKs

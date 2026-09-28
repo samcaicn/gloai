@@ -6,9 +6,20 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-// Release signing: reads a properties file kept OUTSIDE the repo
-// (storeFile / storePassword / keyAlias / keyPassword). Override the path with
-// the JEV_KEYSTORE_PROPS env var. Without it, release builds are unsigned.
+// Release signing. Two sources, tried in order:
+//   1) GitHub Actions: a keystore decoded from the base64 secret SIGNING_KEY into
+//      $SIGNING_STORE_FILE, with alias / passwords in SIGNING_KEY_ALIAS /
+//      SIGNING_KEY_PASSWORD / SIGNING_STORE_PASSWORD. The CI workflow decodes the
+//      secret and exports these before assembling the release.
+//   2) Local dev: a .properties file at JEV_KEYSTORE_PROPS (default
+//      H:/android/keys/jev-release.properties).
+// If neither is present, release builds stay UNSIGNED (so CI without the secret
+// still compiles and the debug APK remains installable).
+val signStoreFile = System.getenv("SIGNING_STORE_FILE")?.takeIf { File(it).exists() }
+val signAlias = System.getenv("SIGNING_KEY_ALIAS")
+val signKeyPass = System.getenv("SIGNING_KEY_PASSWORD")
+val signStorePass = System.getenv("SIGNING_STORE_PASSWORD")
+
 val releaseProps = Properties().apply {
     // File(...) instead of file(...): the Kotlin DSL file() helper treats the
     // "H:" prefix as a URL scheme and throws on hosts where the env var is
@@ -38,7 +49,15 @@ android {
     }
 
     signingConfigs {
-        if (releaseProps.isNotEmpty()) {
+        if (signStoreFile != null && !signAlias.isNullOrBlank()
+            && !signKeyPass.isNullOrBlank() && !signStorePass.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(signStoreFile)
+                storePassword = signStorePass
+                keyAlias = signAlias
+                keyPassword = signKeyPass
+            }
+        } else if (releaseProps.isNotEmpty()) {
             create("release") {
                 storeFile = file(releaseProps.getProperty("storeFile"))
                 storePassword = releaseProps.getProperty("storePassword")
