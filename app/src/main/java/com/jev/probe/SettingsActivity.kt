@@ -283,6 +283,27 @@ class SettingsActivity : AppCompatActivity() {
         return row
     }
 
+    /** A permission card: title + description + a "去开启" button. Mirrors the
+     *  same-named helper in MainActivity (kept separate because the two activities
+     *  use different private UI atoms). */
+    private fun permCard(title: String, desc: String, granted: Boolean?, onClick: () -> Unit): View {
+        val c = card()
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        }
+        val left = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        left.addView(text(title, 15f, ink, bold = true))
+        left.addView(text(desc, 12f, sub).apply { setPadding(0, dp(3), 0, 0) })
+        if (granted == true) left.addView(text("✓ 已开启", 12f, accent, bold = true).apply { setPadding(0, dp(4), 0, 0) })
+        row.addView(left)
+        row.addView(cardBtn(if (granted == true) "已开启" else "去开启", onClick))
+        c.addView(row)
+        return c
+    }
+
     private fun versionLabel(): String = try {
         val pi = packageManager.getPackageInfo(packageName, 0)
         "版本 v${pi.versionName}（${pi.longVersionCode}）"
