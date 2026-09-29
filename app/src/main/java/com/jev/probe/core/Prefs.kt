@@ -240,6 +240,32 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getBoolean(K_AUTO, true)
         set(v) = sp.edit().putBoolean(K_AUTO, v).apply()
 
+    // --------------------------------------------------- 无人值守（微信）
+
+    /**
+     * 填入回复后是否自动点「发送」。仅作用于微信（用户要求"要填也要自动发"）。
+     * 注意：自动发送的是用户已从候选里选定的那一条，不是 AI 擅自决定发什么。
+     */
+    var autoSend: Boolean
+        get() = sp.getBoolean(K_AUTO_SEND, true)
+        set(v) = sp.edit().putBoolean(K_AUTO_SEND, v).apply()
+
+    /**
+     * 收到微信消息时，若微信不在前台，是否自动点开该会话（通过通知的 contentIntent）。
+     * 开启后才能做到真正"不在手机旁"也自动接管；默认关，避免打扰。
+     */
+    var autoOpenChat: Boolean
+        get() = sp.getBoolean(K_AUTO_OPEN, false)
+        set(v) = sp.edit().putBoolean(K_AUTO_OPEN, v).apply()
+
+    /**
+     * 对方发来图片消息（节点树读不到字）时，是否截一次屏用 OCR 读图里文字作为补充。
+     * 仅这一步才在微信内截屏（避开其风控最严的"手动截图"路径，走无障碍截屏 API）。
+     */
+    var ocrImages: Boolean
+        get() = sp.getBoolean(K_OCR_IMAGES, true)
+        set(v) = sp.edit().putBoolean(K_OCR_IMAGES, v).apply()
+
     // ------------------------------------------------------------- helpers
 
     fun effectiveReplyKey(): String = if (isWorkerMode) accountToken else replyKey.ifBlank { judgeKey }
@@ -327,6 +353,9 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_BUBBLE_Y = "bubble_y"
         private const val K_BUBBLE_X = "bubble_x"
         private const val K_AUTO = "auto_analyze"
+        private const val K_AUTO_SEND = "auto_send"
+        private const val K_AUTO_OPEN = "auto_open_chat"
+        private const val K_OCR_IMAGES = "ocr_images"
 
         // ---- provider ----
         const val PROVIDER_WORKER = "worker"

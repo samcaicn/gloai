@@ -142,6 +142,7 @@ class WeChatAdapter : ChatAppAdapter {
     override fun extract(root: AccessibilityNodeInfo, res: Resources): ChatSnapshot? {
         val width = res.displayMetrics.widthPixels
         val bubbles = ArrayList<Triple<Int, Int, String>>() // top, centerX, text
+        val imageBubbles = ArrayList<Triple<Int, BubbleRect, String>>() // top, rect, side
         var firstBubbleTop = Int.MAX_VALUE
         var isChat = false
 
@@ -155,26 +156,61 @@ class WeChatAdapter : ChatAppAdapter {
             val text = node.text?.toString()
             if (id == BUBBLE_ID) {
                 isChat = true
+                val b = Rect(); node.getBoundsInScreen(b)
                 if (!text.isNullOrBlank()) {
-                    val b = Rect(); node.getBoundsInScreen(b)
                     bubbles.add(Triple(b.top, b.centerX(), text))
                     if (b.top < firstBubbleTop) firstBubbleTop = b.top
+                } else if (hasImageChild(node)) {
+                    // An image / screenshot / sticker: no text in the tree, but the
+                    // picture may carry text worth reading. Record it so the service
+                    // can OCR that region (the only case we screenshot inside WeChat).
+                    val side = if (b.centerX() > width / 2) "me" else "other"
+                    imageBubbles.add(Triple(b.top, BubbleRect(Rect(b), side), side))
                 }
             }
             for (i in node.childCount - 1 downTo 0) node.getChild(i)?.let { stack.addLast(it) }
         }
         val title = findWeChatTitle(root, firstBubbleTop, width, res)
         // In a chat but nothing readable → empty snapshot, the OCR fallback cue.
-        if (bubbles.isEmpty()) return if (isChat) ChatSnapshot(title, emptyList()) else null
+        if (bubbles.isEmpty() && imageBubbles.isEmpty()) {
+            return if (isChat) ChatSnapshot(title, emptyList()) else null
+        }
+        // The latest "other" image bubble is the one to OCR when the newest message
+        // from the other person is a picture.
+        val otherImages = imageBubbles.filter { it.third == "other" }
+        val imageMessage = otherImages.maxByOrNull { it.first }?.second
+        // Is that image the newest bubble overall (text or image)?
+        val latestTop = maxOf(
+            bubbles.maxOfOrNull { it.first } ?: Int.MIN_VALUE,
+            imageBubbles.maxOfOrNull { it.first } ?: Int.MIN_VALUE)
+        val imageIsLatest = imageMessage != null && imageBubbles
+            .maxByOrNull { it.first }?.first == latestTop
         bubbles.sortBy { it.first }
         val msgs = bubbles.map { (_, cx, text) ->
             Msg(if (cx > width / 2) "me" else "other", text)
         }
-        return ChatSnapshot(title, msgs)
+        return ChatSnapshot(title, msgs, imageMessage = imageMessage, imageIsLatest = imageIsLatest)
+    }
+
+    /** Does this bubble node contain an ImageView descendant (i.e. it is a picture)? */
+    private fun hasImageChild(node: AccessibilityNodeInfo): Boolean {
+        val stack = ArrayDeque<AccessibilityNodeInfo>()
+        stack.addLast(node)
+        var guard = 0
+        while (stack.isNotEmpty() && guard < 400) {
+            guard++
+            val n = stack.removeLast()
+            if (n.className?.toString() == "android.widget.ImageView") return true
+            for (i in n.childCount - 1 downTo 0) n.getChild(i)?.let { stack.addLast(it) }
+        }
+        return false
     }
 
     companion object {
         private const val BUBBLE_ID = "com.tencent.mm:id/bkl"
+
+        /** WeChat's "send" button (the blue arrow) — shown only once the input has text. */
+        const val SEND_ID = "com.tencent.mm:id/bql"
     }
 }
 

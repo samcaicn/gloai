@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">AI聊天助手</string>
-    <string name="a11y_desc_disguised">读取当前聊天窗口文字，用于生成回复建议。不会自动发送消息。</string>
+    <string name="a11y_desc_disguised">读取微信等聊天窗口文字，生成回复建议，可按配置自动填入并由你选定的回复发送。所有判断与回复均经云端接口。</string>
 </resources>

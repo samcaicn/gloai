@@ -134,6 +134,26 @@ class SettingsActivity : AppCompatActivity() {
         card2.addView(kbResult)
         root.addView(card2)
 
+        // =================== 无人值守（微信 · 脱离电脑） ===================
+        root.addView(section("无人值守（微信 · 脱离电脑）"))
+        root.addView(permCard("通知读取权限（微信）", "监听微信新消息，触发自动分析/回复", isNotifListenerEnabled()) {
+            startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+        })
+        val unattendedCard = card()
+        unattendedCard.addView(cardTitle("微信自动收发"))
+        unattendedCard.addView(text(
+            "无障碍读取 + 通知监听驱动：收到消息自动分析并填入回复；开启自动发送后，由你从候选里选定的那一条会自动发出。" +
+            "对方发图片时用 OCR 读图里文字（不上传）。",
+            12f, sub))
+        val autoSendRow = toggleRow("填入后自动发送回复", prefs.autoSend)
+        unattendedCard.addView(autoSendRow)
+        val ocrImgRow = toggleRow("对方发图片时按图 OCR 读字", prefs.ocrImages)
+        unattendedCard.addView(ocrImgRow)
+        val autoOpenRow = toggleRow("收到消息自动打开会话（真·无人值守）", prefs.autoOpenChat)
+        unattendedCard.addView(autoOpenRow)
+        unattendedCard.addView(text("自动打开会话会直接点开微信聊天界面，仅无人值守时用；默认关。", 11f, sub))
+        root.addView(unattendedCard)
+
         // =================== 外观 ===================
         root.addView(section("外观"))
         val card3 = card()
@@ -168,6 +188,9 @@ class SettingsActivity : AppCompatActivity() {
             prefs.ocrFallback = (ocrFallbackRow.tag as? Boolean) ?: true
             prefs.ocrAutoAnalyze = (ocrAutoRow.tag as? Boolean) ?: false
             prefs.contextEnabled = (ctxRow.tag as? Boolean) ?: false
+            prefs.autoSend = (autoSendRow.tag as? Boolean) ?: true
+            prefs.ocrImages = (ocrImgRow.tag as? Boolean) ?: true
+            prefs.autoOpenChat = (autoOpenRow.tag as? Boolean) ?: false
             prefs.visionCustom = (visionCustomRow.tag as? Boolean) ?: false
             prefs.visionBaseUrl = visionBaseEdit.text.toString()
             prefs.visionKey = visionKeyEdit.text.toString()
@@ -265,6 +288,16 @@ class SettingsActivity : AppCompatActivity() {
         "版本 v${pi.versionName}（${pi.longVersionCode}）"
     } catch (e: Exception) {
         "版本 —"
+    }
+
+    /** Whether our WeChat notification listener is enabled in system settings. */
+    private fun isNotifListenerEnabled(): Boolean {
+        val enabled = android.provider.Settings.Secure.getString(
+            contentResolver, "enabled_notification_listeners") ?: return false
+        return enabled.split(":").any {
+            it.equals("$packageName/com.jev.probe.capture.WxNotificationListener", ignoreCase = true) ||
+                it.endsWith("WxNotificationListener", ignoreCase = true)
+        }
     }
 
     companion object {

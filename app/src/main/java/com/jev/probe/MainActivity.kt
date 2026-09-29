@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity() {
         container.removeAllViews()
 
         container.addView(text("Jev 聊天助手", 24f, ink, bold = true))
-        container.addView(text("在聊天 App 旁读对方消息（已支持 QQ、X、飞书），给出判断和候选回复。发送始终由你手动点。",
+        container.addView(text("在聊天 App 旁读对方消息（已支持 QQ、X、飞书、微信），给出判断和候选回复。微信开启后可在手机端无人值守收发。",
             13f, sub).apply { setPadding(0, dp(6), 0, dp(16)) })
 
         val a11y = isA11yEnabled()
@@ -88,6 +88,9 @@ class MainActivity : AppCompatActivity() {
             runCatching {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             }
+        })
+        container.addView(permCard("通知读取（微信）", "监听微信新消息，触发自动收发；必开", isNotifListenerEnabled()) {
+            startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
         })
 
         // Actions
@@ -241,6 +244,14 @@ class MainActivity : AppCompatActivity() {
         val enabled = Settings.Secure.getString(contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: return false
         return enabled.contains(a11yComponent)
+    }
+
+    private fun isNotifListenerEnabled(): Boolean {
+        val enabled = Settings.Secure.getString(contentResolver,
+            "enabled_notification_listeners") ?: return false
+        return enabled.split(":").any {
+            it.endsWith("WxNotificationListener", ignoreCase = true)
+        }
     }
 
     companion object {

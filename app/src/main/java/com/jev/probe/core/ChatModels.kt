@@ -28,6 +28,14 @@ data class ChatSnapshot(
     val title: String?,
     val messages: List<Msg>,
     val bubbleRects: List<BubbleRect> = emptyList(),
+    /** Most recent "other" bubble that is an image (no extractable text, but an
+     *  ImageView child) — its screen rect, so the service can OCR the picture to
+     *  read the text inside it. Null when the latest other message is normal text. */
+    val imageMessage: BubbleRect? = null,
+    /** True when the newest bubble in the window is that image (vs. a newer text
+     *  message below it). The service only OCRs when this holds, so a chat that
+     *  already has text is never hijacked into image-OCR mode. */
+    val imageIsLatest: Boolean = false,
     val note: String? = null
 ) {
     val latestFrom: String? get() = messages.lastOrNull()?.side

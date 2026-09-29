@@ -1,9 +1,14 @@
 package com.jev.probe.capture
 
 import android.accessibilityservice.AccessibilityService
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Rect
+import androidx.core.content.ContextCompat
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -152,6 +157,27 @@ open class ChatCaptureService : AccessibilityService() {
     private val ocr = MlKitOcr()
     private var ocrBusy = false
 
+    /** Set by [wxMsgReceiver] when a WeChat notification reports an image message,
+     *  so the next capture OCRs the latest picture even if the tree missed it.
+     *  Consumed (reset to false) once an image OCR is dispatched. */
+    private var imageOcrRequested = false
+    /** Dedupe key for image OCR: title + image rect, so we shoot each picture once. */
+    private var lastImageOcrSig: String = ""
+
+    /** Bridge from [WxNotificationListener]: a new WeChat message arrived. Re-runs
+     *  capture when WeChat is foreground; flags image OCR when the message was a
+     *  picture. Registered NOT_EXPORTED — only our own app sends this. */
+    private val wxMsgReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context?, intent: Intent?) {
+            if (intent?.action != ACTION_WX_MSG) return
+            if (intent.getBooleanExtra("image", false)) imageOcrRequested = true
+            val fg = rootInActiveWindow?.packageName?.toString()
+            if (fg == PKG_WECHAT) {
+                main.post { if (prefs.enabled) runCatching { maybeCapture() } }
+            }
+        }
+    }
+
     /** What the screen looked like the last time we fired an automatic shot.
      *  See [ocrSignature]: this is the brake on the OCR path. */
     private var lastOcrSignature: String = ""
@@ -188,6 +214,12 @@ open class ChatCaptureService : AccessibilityService() {
         // Load the bundled OCR model now, off the main thread: the first
         // recognize() otherwise pays for it inside the screenshot callback.
         submit { MlKitOcr.warmUp() }
+        // Listen for new WeChat messages from the NotificationListenerService.
+        runCatching {
+            ContextCompat.registerReceiver(
+                this, wxMsgReceiver, IntentFilter(ACTION_WX_MSG),
+                ContextCompat.RECEIVER_NOT_EXPORTED)
+        }
         // HyperOS may kill and restart us. On (re)connect, proactively re-show the
         // bubble for whatever chat is already open, so it comes back on its own
         // instead of waiting for the user to scroll.
@@ -197,6 +229,8 @@ open class ChatCaptureService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
+        // Live foreground state for the notification listener (reliable, no extra perms).
+        weChatForeground = rootInActiveWindow?.packageName?.toString() == PKG_WECHAT
         if (!prefs.enabled) { leaveConversation(); overlay?.hide(); return }
 
         val type = event.eventType
@@ -289,6 +323,21 @@ open class ChatCaptureService : AccessibilityService() {
         if (pkg != activePkg) { activePkg = pkg; lastSignature = "" }
 
         currentSnapshot = snapshot
+        // Image message from the other person: OCR the picture to read its text,
+        // then analyze. This is the ONLY screenshot we take inside WeChat (a normal
+        // screenshot there trips its risk control; the accessibility screenshot API
+        // is a separate path). Dedupe by image rect so we don't re-shoot per event.
+        if (pkg == PKG_WECHAT && prefs.ocrFallback && prefs.ocrImages &&
+            snapshot.imageMessage != null && (snapshot.imageIsLatest || imageOcrRequested)
+        ) {
+            val img = snapshot.imageMessage!!
+            val sig2 = "${snapshot.title}|${img.rect.left},${img.rect.top},${img.rect.right},${img.rect.bottom}"
+            if (sig2 != lastImageOcrSig && !ocrBusy) {
+                lastImageOcrSig = sig2
+                imageOcr(img, snapshot.title, pkg)
+                return
+            }
+        }
         val sig = snapshot.signature()
         val showing = overlay?.isShowing() == true
         // Same content and the bubble is already up → nothing to do.
@@ -610,8 +659,14 @@ open class ChatCaptureService : AccessibilityService() {
     private fun fillInput(token: ConversationSession.Token, text: String) {
         fun finish(ok: Boolean) {
             if (!isCurrent(token)) return
-            if (ok) overlay?.toast("已填入，确认后自己发送")
-            else { copyToClipboard(text); overlay?.toast("已复制，长按输入框粘贴") }
+            if (ok) {
+                if (prefs.autoSend) {
+                    overlay?.toast("已填入，正在发送…")
+                    sendFor(token)
+                } else {
+                    overlay?.toast("已填入，确认后自己发送")
+                }
+            } else { copyToClipboard(text); overlay?.toast("已复制，长按输入框粘贴") }
         }
         if (!isCurrent(token)) { overlay?.toast("会话已变化，请重新分析后填入"); return }
         if (inputFor(token) == null) { finish(false); return }
@@ -661,6 +716,108 @@ open class ChatCaptureService : AccessibilityService() {
         cm.setPrimaryClip(android.content.ClipData.newPlainText("jev_reply", text))
     }
 
+    /**
+     * Click the chat's send button after a successful fill. Called only when
+     * [Prefs.autoSend] is on — the reply text itself is still the one the user
+     * picked from the candidates, so this sends what they chose, not something the
+     * AI decided on its own.
+     */
+    private fun sendFor(token: ConversationSession.Token) {
+        main.postDelayed({
+            if (!isCurrent(token)) return@postDelayed
+            val root = rootInActiveWindow ?: return@postDelayed
+            if (targetFor(root) != token.target) return@postDelayed
+            val send = findSendButton(root, token.target.pkg) ?: run {
+                overlay?.toast("已填入，未能自动发送，请手动点发送"); return@postDelayed
+            }
+            if (!(send.refresh() && send.isVisibleToUser && send.isEnabled)) {
+                overlay?.toast("已填入，请手动点发送"); return@postDelayed
+            }
+            send.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            // Confirm the input cleared (message actually went out); retry once if not.
+            main.postDelayed({
+                if (!isCurrent(token)) return@postDelayed
+                val input = inputFor(token)
+                if (input != null && !input.text.isNullOrBlank()) {
+                    findSendButton(rootInActiveWindow ?: return@postDelayed, token.target.pkg)
+                        ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                }
+            }, 600L)
+        }, 300L)
+    }
+
+    /** The chat's send control. WeChat uses a stable view-id; others fall back to a
+     *  clickable node whose description reads "发送" / "Send". */
+    private fun findSendButton(root: AccessibilityNodeInfo, pkg: String): AccessibilityNodeInfo? {
+        if (pkg == PKG_WECHAT) {
+            root.findAccessibilityNodeInfosByViewId(WeChatAdapter.SEND_ID)
+                .firstOrNull()?.takeIf { it.refresh() }?.let { return it }
+        }
+        val stack = ArrayDeque<AccessibilityNodeInfo>()
+        stack.addLast(root)
+        var guard = 0
+        while (stack.isNotEmpty() && guard < 5000) {
+            guard++
+            val node = stack.removeLast()
+            val cd = node.contentDescription?.toString().orEmpty()
+            if (node.isClickable && (cd.contains("发送") || cd.contains("Send", true))) {
+                if (node.refresh()) return node
+            }
+            for (i in node.childCount - 1 downTo 0) node.getChild(i)?.let { stack.addLast(it) }
+        }
+        return null
+    }
+
+    /**
+     * OCR a single image message to read the text inside the picture (the only
+     * place we screenshot inside WeChat). On success the recognized text is merged
+     * into the current snapshot as an "other" message and analysis runs; an empty
+     * picture (sticker, no text) is silently ignored.
+     */
+    private fun imageOcr(rect: BubbleRect, title: String?, pkg: String) {
+        if (ocrBusy || destroyed || !prefs.enabled) return
+        imageOcrRequested = false // consumed now; re-armed by the next notification
+        val token = session.token() ?: return
+        if (!isCurrent(token)) return
+        ocrBusy = true
+        screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
+            if (!isCurrent(token)) {
+                if (res is ScreenCapture.Result.Ok) runCatching { res.bitmap.recycle() }
+                ocrBusy = false; return@capture
+            }
+            when (res) {
+                is ScreenCapture.Result.Failed -> {
+                    ocrBusy = false
+                    Log.i(TAG, "imgOcr: screenshot failed code=${res.code}")
+                }
+                is ScreenCapture.Result.Ok -> {
+                    ocr.scaleX = res.scaleX; ocr.scaleY = res.scaleY
+                    ocr.originX = res.originX; ocr.originY = res.originY
+                    val sx = if (ocr.scaleX > 0f) ocr.scaleX else 1f
+                    val sy = if (ocr.scaleY > 0f) ocr.scaleY else 1f
+                    val region = Rect(
+                        ((rect.rect.left - ocr.originX) * sx).toInt(),
+                        ((rect.rect.top - ocr.originY) * sy).toInt(),
+                        ((rect.rect.right - ocr.originX) * sx).toInt(),
+                        ((rect.rect.bottom - ocr.originY) * sy).toInt())
+                    ocr.recognize(res.bitmap, region) { lines ->
+                        runCatching { res.bitmap.recycle() }
+                        ocrBusy = false
+                        val text = lines.joinToString("\n") { it.text }.trim()
+                        if (text.isEmpty()) { Log.i(TAG, "imgOcr: no text in picture"); return@recognize }
+                        val base = currentSnapshot ?: ChatSnapshot(title, emptyList())
+                        val merged = base.copy(
+                            messages = base.messages + Msg("other", "【图片】$text"),
+                            note = "图片里的文字已用 OCR 读取")
+                        pendingSnapshot = merged
+                        main.removeCallbacks(debounce)
+                        runAnalysis()
+                    }
+                }
+            }
+        }
+    }
+
     override fun onInterrupt() {
         leaveConversation()
         overlay?.hide()
@@ -668,6 +825,7 @@ open class ChatCaptureService : AccessibilityService() {
 
     override fun onDestroy() {
         destroyed = true
+        runCatching { unregisterReceiver(wxMsgReceiver) }
         getSharedPreferences(Prefs.PREFS_MAIN, MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(preferencesListener)
         leaveConversation()
@@ -685,6 +843,14 @@ open class ChatCaptureService : AccessibilityService() {
 
     companion object {
         private const val TAG = "JEVASSIST"
+
+        /** Sent by [WxNotificationListener] when a new WeChat message arrives. */
+        const val ACTION_WX_MSG = "com.jev.probe.action.WX_MSG"
+
+        /** Live: is WeChat the foreground app right now? Updated every accessibility
+         *  event so [WxNotificationListener] can decide whether to auto-open a chat
+         *  without needing a restricted usage/running-tasks permission. */
+        @Volatile var weChatForeground: Boolean = false
 
         /** WeChat's package. Now wired in via [WeChatAdapter]; the capture service
          *  is disguised as SelectToSpeakService so WeChat exposes its node tree.
