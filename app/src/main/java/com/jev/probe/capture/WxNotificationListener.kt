@@ -2,7 +2,6 @@ package com.jev.probe.capture
 
 import android.app.Notification
 import android.content.Intent
-import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.jev.probe.core.Prefs
@@ -48,7 +47,7 @@ class WxNotificationListener : NotificationListenerService() {
             repeat(seen.size - 100) { iter.next(); iter.remove() }
         }
 
-        val isImage = isImageMessage(extras, text)
+        val isImage = isImageMessage(text)
 
         // Tell the capture service a message arrived; it re-reads the live chat.
         runCatching {
@@ -82,7 +81,7 @@ class WxNotificationListener : NotificationListenerService() {
      *  probe is intentionally avoided (it depends on an API level where
      *  Notification.MessagingStyle.Message exposes a `data` member and is fragile
      *  across Android versions). */
-    private fun isImageMessage(extras: Bundle, text: String?): Boolean {
+    private fun isImageMessage(text: String?): Boolean {
         val t = text ?: ""
         return t.contains("[图片]") || t.contains("[图像]") || t.contains("[视频]") ||
             t.contains("[相册]") || t.contains("[照片]") || t.contains("[Image]") ||

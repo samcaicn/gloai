@@ -142,7 +142,7 @@ class WeChatAdapter : ChatAppAdapter {
     override fun extract(root: AccessibilityNodeInfo, res: Resources): ChatSnapshot? {
         val width = res.displayMetrics.widthPixels
         val bubbles = ArrayList<Triple<Int, Int, String>>() // top, centerX, text
-        val imageBubbles = ArrayList<Triple<Int, BubbleRect, String>>() // top, rect, side
+        val imageBubbles = ArrayList<Pair<Int, BubbleRect>>() // top, rect (side is in the rect)
         var firstBubbleTop = Int.MAX_VALUE
         var isChat = false
 
@@ -165,7 +165,7 @@ class WeChatAdapter : ChatAppAdapter {
                     // picture may carry text worth reading. Record it so the service
                     // can OCR that region (the only case we screenshot inside WeChat).
                     val side = if (b.centerX() > width / 2) "me" else "other"
-                    imageBubbles.add(Triple(b.top, BubbleRect(Rect(b), side), side))
+                    imageBubbles.add(b.top to BubbleRect(Rect(b), side))
                 }
             }
             for (i in node.childCount - 1 downTo 0) node.getChild(i)?.let { stack.addLast(it) }
@@ -177,14 +177,18 @@ class WeChatAdapter : ChatAppAdapter {
         }
         // The latest "other" image bubble is the one to OCR when the newest message
         // from the other person is a picture.
-        val otherImages = imageBubbles.filter { it.third == "other" }
-        val imageMessage = otherImages.maxByOrNull { it.first }?.second
-        // Is that image the newest bubble overall (text or image)?
+        val latestOtherImage = imageBubbles
+            .filter { it.second.side == "other" }
+            .maxByOrNull { it.first }
+        val imageMessage = latestOtherImage?.second
+        // Is THAT image the newest bubble overall (text or image)?
+        // Compare the chosen bubble's own top, not the top of the newest image
+        // overall: otherwise a picture I sent after theirs would still mark their
+        // (already older) image as "latest" and OCR it for nothing.
         val latestTop = maxOf(
             bubbles.maxOfOrNull { it.first } ?: Int.MIN_VALUE,
             imageBubbles.maxOfOrNull { it.first } ?: Int.MIN_VALUE)
-        val imageIsLatest = imageMessage != null && imageBubbles
-            .maxByOrNull { it.first }?.first == latestTop
+        val imageIsLatest = latestOtherImage?.first == latestTop
         bubbles.sortBy { it.first }
         val msgs = bubbles.map { (_, cx, text) ->
             Msg(if (cx > width / 2) "me" else "other", text)

@@ -789,6 +789,9 @@ open class ChatCaptureService : AccessibilityService() {
                 is ScreenCapture.Result.Failed -> {
                     ocrBusy = false
                     Log.i(TAG, "imgOcr: screenshot failed code=${res.code}")
+                    // maybeCapture returned early to get here, so nothing else would
+                    // put the bubble back on screen — do it ourselves.
+                    overlay?.showIdle(title)
                 }
                 is ScreenCapture.Result.Ok -> {
                     ocr.scaleX = res.scaleX; ocr.scaleY = res.scaleY
@@ -804,14 +807,30 @@ open class ChatCaptureService : AccessibilityService() {
                         runCatching { res.bitmap.recycle() }
                         ocrBusy = false
                         val text = lines.joinToString("\n") { it.text }.trim()
-                        if (text.isEmpty()) { Log.i(TAG, "imgOcr: no text in picture"); return@recognize }
+                        if (text.isEmpty()) {
+                            Log.i(TAG, "imgOcr: no text in picture")
+                            overlay?.showIdle(title) // see the Failed branch
+                            return@recognize
+                        }
                         val base = currentSnapshot ?: ChatSnapshot(title, emptyList())
                         val merged = base.copy(
                             messages = base.messages + Msg("other", "【图片】$text"),
                             note = "图片里的文字已用 OCR 读取")
-                        pendingSnapshot = merged
-                        main.removeCallbacks(debounce)
-                        runAnalysis()
+                        // Keep the OCR'd text on the live snapshot so a later fill /
+                        // send sees it, not just the analysis that follows.
+                        currentSnapshot = merged
+                        // Same gate as the tree path instead of analyzing
+                        // unconditionally: only when this is a new message from the
+                        // other person and auto-analysis is on. Otherwise park the
+                        // bubble carrying the OCR'd text.
+                        if (prefs.autoAnalyze && merged.latestFrom == "other") {
+                            pendingSnapshot = merged
+                            main.removeCallbacks(debounce)
+                            runAnalysis()
+                        } else {
+                            overlay?.setNote(merged.note)
+                            overlay?.showIdle(merged.title)
+                        }
                     }
                 }
             }
