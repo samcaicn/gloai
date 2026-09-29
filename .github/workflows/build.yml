@@ -1,0 +1,58 @@
+name: Build GLOAI Mirror
+
+# 作用：CI 自动构建。Android 端可在此真实编译出 APK；
+# WinCE 端因需要 ARM CE 交叉工具链（Windows+VS2008+CE6 SDK），仅在 CI 做源/配置校验，
+# 真编译见 wince/README.md。本 workflow 即项目核心自动化资产。
+
+on:
+  push:
+    branches: [wince, main, master]
+  pull_request:
+    branches: [wince, main, master]
+
+jobs:
+  android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Build release APK
+        uses: gradle/gradle-build-action@v3
+        with:
+          build-root-directory: android
+          gradle-version: "8.6"
+          arguments: assembleRelease
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gloai-mirror-android-apk
+          path: android/app/build/outputs/apk/release/*.apk
+
+  wince-check:
+    name: WinCE source check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify WinCE sources present
+        run: |
+          test -f wince/src/main.cpp
+          test -f wince/src/net.cpp
+          test -f wince/src/renderer.cpp
+          test -f wince/src/decoder.cpp
+          test -f wince/CMakeLists.txt
+          echo "WinCE sources OK."
+          echo "Native ARM build requires Windows + VS2008 + CE6 SDK (see wince/README.md)."
