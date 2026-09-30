@@ -152,6 +152,12 @@ class SettingsActivity : AppCompatActivity() {
         val autoOpenRow = toggleRow("收到消息自动打开会话（真·无人值守）", prefs.autoOpenChat)
         unattendedCard.addView(autoOpenRow)
         unattendedCard.addView(text("自动打开会话会直接点开微信聊天界面，仅无人值守时用；默认关。", 11f, sub))
+        val autoFillRow = toggleRow("自动填入最佳候选（配合上两项＝全自动）", prefs.autoFillBest)
+        unattendedCard.addView(autoFillRow)
+        unattendedCard.addView(text(
+            "开后不再等你点选：直接按打分最高的候选填入（并在自动发送开启时发出）。" +
+            "只在微信生效，只填候选原文。请确认你接受 AI 不经确认就回话。",
+            11f, sub))
         root.addView(unattendedCard)
 
         // =================== 外观 ===================
@@ -191,6 +197,7 @@ class SettingsActivity : AppCompatActivity() {
             prefs.autoSend = (autoSendRow.tag as? Boolean) ?: true
             prefs.ocrImages = (ocrImgRow.tag as? Boolean) ?: true
             prefs.autoOpenChat = (autoOpenRow.tag as? Boolean) ?: false
+            prefs.autoFillBest = (autoFillRow.tag as? Boolean) ?: false
             prefs.visionCustom = (visionCustomRow.tag as? Boolean) ?: false
             prefs.visionBaseUrl = visionBaseEdit.text.toString()
             prefs.visionKey = visionKeyEdit.text.toString()

@@ -266,6 +266,15 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getBoolean(K_OCR_IMAGES, true)
         set(v) = sp.edit().putBoolean(K_OCR_IMAGES, v).apply()
 
+    /**
+     * 分析完成后是否直接按排名第一的候选填入（配合 [autoSend] 即全自动收发）。
+     * 默认关：让 AI 不经人眼就决定发出什么内容风险太高，必须显式打开。
+     * 仅作用于微信；开启后仍只会填/发候选里的原文，不会改写。
+     */
+    var autoFillBest: Boolean
+        get() = sp.getBoolean(K_AUTO_FILL, false)
+        set(v) = sp.edit().putBoolean(K_AUTO_FILL, v).apply()
+
     // ------------------------------------------------------------- helpers
 
     fun effectiveReplyKey(): String = if (isWorkerMode) accountToken else replyKey.ifBlank { judgeKey }
@@ -356,6 +365,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_AUTO_SEND = "auto_send"
         private const val K_AUTO_OPEN = "auto_open_chat"
         private const val K_OCR_IMAGES = "ocr_images"
+        private const val K_AUTO_FILL = "auto_fill_best"
 
         // ---- provider ----
         const val PROVIDER_WORKER = "worker"

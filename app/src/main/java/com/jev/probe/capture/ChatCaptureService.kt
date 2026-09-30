@@ -40,9 +40,11 @@ import java.util.concurrent.RejectedExecutionException
  * Per-app node rules live in [ChatAppAdapter] implementations; everything here
  * is app-agnostic.
  *
- * It never sends a message. The only write action is ACTION_SET_TEXT (or a
- * clipboard PASTE fallback) to fill the chat input box when the user taps
- * "填入"; the user still presses send.
+ * Write actions are deliberately narrow: ACTION_SET_TEXT (or a clipboard PASTE
+ * fallback) fills the chat input box when the user taps "填入", and — only with
+ * [Prefs.autoSend] on — the chat's own send button is clicked immediately after.
+ * The text is always a candidate the user picked, never something decided here,
+ * and nothing is ever sent without a successful fill first.
  */
 open class ChatCaptureService : AccessibilityService() {
 
@@ -423,6 +425,15 @@ open class ChatCaptureService : AccessibilityService() {
                     main.post {
                         if (isCurrent(token)) {
                             overlay?.showReplies(ranked, replyError) { text -> fillInput(token, text) }
+                            // 真·无人值守（微信）：用户显式开启后，直接按打分最高的候选
+                            // 填入；配合 autoSend 就形成完整的自动收发闭环。默认关，
+                            // 且只填候选原文、不改写，只在微信生效。
+                            if (prefs.autoFillBest && token.target.pkg == PKG_WECHAT &&
+                                replyError == null && ranked.isNotEmpty()
+                            ) {
+                                val best = ranked.maxByOrNull { it.prob } ?: ranked.first()
+                                main.postDelayed({ fillInput(token, best.text) }, 400L)
+                            }
                             completed()
                         }
                     }
@@ -776,19 +787,34 @@ open class ChatCaptureService : AccessibilityService() {
      */
     private fun imageOcr(rect: BubbleRect, title: String?, pkg: String) {
         if (ocrBusy || destroyed || !prefs.enabled) return
-        imageOcrRequested = false // consumed now; re-armed by the next notification
         val token = session.token() ?: return
         if (!isCurrent(token)) return
+        // Consume the notification flag only once we are really shooting: bailing
+        // out above must not swallow it, or the next image would never be OCR'd.
+        imageOcrRequested = false
         ocrBusy = true
+        // Which dedupe key to roll back if this attempt fails. A failed screenshot
+        // is transient (WeChat was mid-transition, capture got cancelled), so the
+        // same picture must stay eligible for a retry — otherwise one bad shot
+        // disables image OCR for that bubble forever. An EMPTY result is different:
+        // the picture genuinely carries no text, so keep it marked as done.
+        val sig = lastImageOcrSig
         screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
             if (!isCurrent(token)) {
                 if (res is ScreenCapture.Result.Ok) runCatching { res.bitmap.recycle() }
-                ocrBusy = false; return@capture
+                ocrBusy = false
+                // We left the chat mid-shot: nothing was read, so let a later
+                // return to this conversation retry it.
+                if (lastImageOcrSig == sig) lastImageOcrSig = ""
+                return@capture
             }
             when (res) {
                 is ScreenCapture.Result.Failed -> {
                     ocrBusy = false
                     Log.i(TAG, "imgOcr: screenshot failed code=${res.code}")
+                    // Transient failure (capture cancelled, screen mid-transition)
+                    // → allow a retry instead of blacklisting this picture for good.
+                    if (lastImageOcrSig == sig) lastImageOcrSig = ""
                     // maybeCapture returned early to get here, so nothing else would
                     // put the bubble back on screen — do it ourselves.
                     overlay?.showIdle(title)
@@ -844,6 +870,10 @@ open class ChatCaptureService : AccessibilityService() {
 
     override fun onDestroy() {
         destroyed = true
+        // The flag lives in the companion, so it outlives this instance. Left true
+        // it would tell the notification listener "WeChat is already open" and
+        // silently disable auto-opening the chat for good.
+        weChatForeground = false
         runCatching { unregisterReceiver(wxMsgReceiver) }
         getSharedPreferences(Prefs.PREFS_MAIN, MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(preferencesListener)

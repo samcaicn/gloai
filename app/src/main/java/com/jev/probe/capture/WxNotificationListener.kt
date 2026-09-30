@@ -50,8 +50,11 @@ class WxNotificationListener : NotificationListenerService() {
         val isImage = isImageMessage(text)
 
         // Tell the capture service a message arrived; it re-reads the live chat.
+        // Explicit package: keeps the broadcast inside our own app instead of
+        // relying on the receiver's NOT_EXPORTED flag alone.
         runCatching {
             sendBroadcast(Intent(ChatCaptureService.ACTION_WX_MSG).apply {
+                setPackage(packageName)
                 putExtra("sender", title)
                 putExtra("text", text)
                 putExtra("image", isImage)
@@ -60,6 +63,8 @@ class WxNotificationListener : NotificationListenerService() {
 
         // Unattended mode: if enabled, bring the conversation to the foreground so
         // the accessibility service can read + reply even when the phone is idle.
+        // The tree read still gates on the live chat, so if this fails to open we
+        // simply do nothing rather than acting on a stale conversation.
         if (Prefs(this).autoOpenChat && !isWeChatForeground()) {
             runCatching { n.contentIntent?.send() }
         }
