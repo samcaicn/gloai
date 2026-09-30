@@ -39,3 +39,6 @@ secrets.*
 *.jks
 *.keystore
 keystore.properties
+
+# WorkBuddy agent working notes (never part of the app)
+.workbuddy/
