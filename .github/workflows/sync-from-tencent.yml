@@ -71,7 +71,10 @@ jobs:
         if: steps.cmp.outputs.in_sync == 'false'
         run: |
           cd _tencent
+          # 必须用 PAT（而非 GITHUB_TOKEN）推送：GitHub 规定用 GITHUB_TOKEN
+          # 发起的 push 不会再触发任何工作流（防死循环），只有 PAT 的 push
+          # 才会真正触发下游的 Build APK 构建。
           git remote add github \
-            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/samcaicn/gloai.git
+            https://x-access-token:${{ secrets.SYNC_PAT }}@github.com/samcaicn/gloai.git
           git push github android:jev-chat-jarvis --force
-          echo "synced -> triggered Build APK workflow"
+          echo "synced -> Build APK should now be triggered"
