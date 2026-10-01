@@ -13,9 +13,16 @@ permissions:
   contents: write
   issues: write
 
+# 同一分支连续推送时只保留最新一次构建，避免排队烧分钟数
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Gradle 卡死（SDK 下载/守护进程）时不设上限会一直占着 runner 到 6h 硬超时
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
