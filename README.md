@@ -294,3 +294,14 @@ Copyright © 2026 Finderchangchang 与 jev-chat 贡献者。代码以 [MIT](LICE
 
 **隐私与免责声明**：触发分析时，聊天文字和启用的背景信息会发送到你自行配置的第三方模型服务商；截图仅在本机 OCR。请阅读[隐私政策](PRIVACY.md)以及所选服务商的政策，并遵守 QQ、X、飞书等软件的许可协议与当地法律法规。作者不对第三方服务商的数据处理行为或使用后果负责。
 
+
+## 构建与自动同步
+
+源码主干托管在腾讯工蜂：
+
+```
+git@git.code.tencent.com:AImarketing/weauto.git  （android 分支）
+```
+
+推送到该分支后，GitHub Actions 的同步工作流会周期性把新提交镜像到 `gloai` 仓库的
+`jev-chat-jarvis` 分支，从而自动触发 APK 构建。
