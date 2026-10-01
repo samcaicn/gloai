@@ -11,6 +11,10 @@ name: Sync Tencent → GitHub CI
 #
 # 需要的仓库密钥（在 GitHub 仓库 Settings → Secrets 添加）：
 #   TENCENT_SSH_KEY = 本地 ~/.ssh/id_rsa_tencent 的私钥全文（含 BEGIN/END 行）
+#   SYNC_PAT       = 有 repo/workflow 权限的 GitHub PAT（用于推送以触发下游构建）
+#
+# 关于「同步了但没触发构建」：下游 build.yml 带 paths-ignore（'**.md'、'site/**'、'docs/**'），
+# 只改文档/站点文件的提交不会触发 Build APK，这是预期行为，不是同步失败。
 
 on:
   schedule:
