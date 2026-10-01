@@ -1,15 +1,21 @@
 name: Sync Tencent → GitHub CI
 
 # 自动同步：推到 git.code.tencent.com/AImarketing/weauto 的 android 分支后，
-# 本工作流周期性把该分支镜像到 GitHub 的 jev-chat-jarvis 分支，从而自动触发
+# 本工作流把该分支镜像到 GitHub 的 jev-chat-jarvis 分支，从而自动触发
 # build.yml 构建 APK。
 #
 # 触发方式：
 #   - 定时（每 10 分钟轮询一次，发现有新提交即同步）
 #   - 手动 workflow_dispatch（立即可跑一次）
+#   - repository_dispatch（type=tencent-sync）：
+#     预留给腾讯工蜂的 Webhook 直接回调，可去掉轮询延迟。
+#     配置方式：工蜂项目 → Webhooks → 填
+#       https://api.github.com/repos/samcaicn/gloai/dispatches
+#     并用 PAT 做 Bearer 鉴权，body = {"event_type":"tencent-sync"}
 # 注意：刻意不监听 push，避免「同步 push → 触发本工作流」的死循环。
+# 另外：schedule 只在**默认分支**生效，本工作流必须留在默认分支 tmp-empty 上。
 #
-# 需要的仓库密钥（在 GitHub 仓库 Settings → Secrets 添加）：
+# 需要的仓库密钥（GitHub 仓库 Settings → Secrets）：
 #   TENCENT_SSH_KEY = 本地 ~/.ssh/id_rsa_tencent 的私钥全文（含 BEGIN/END 行）
 #   SYNC_PAT       = 有 repo/workflow 权限的 GitHub PAT（用于推送以触发下游构建）
 #
@@ -20,24 +26,52 @@ on:
   schedule:
     - cron: '*/10 * * * *'
   workflow_dispatch:
+  repository_dispatch:
+    types: [tencent-sync]
 
 permissions:
   contents: write
 
+# 同一时刻只允许一个同步任务（避免两次 cron 重叠时并发 force-push 互相打架）
+concurrency:
+  group: sync-tencent-to-github
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
+      - name: Check required secrets
+        env:
+          TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
+          SYNC_PAT: ${{ secrets.SYNC_PAT }}
+        run: |
+          set -u
+          missing=0
+          if [ -z "${TENCENT_SSH_KEY:-}" ]; then
+            echo "::error::仓库密钥 TENCENT_SSH_KEY 未配置，无法 clone 腾讯工蜂"
+            missing=1
+          fi
+          if [ -z "${SYNC_PAT:-}" ]; then
+            echo "::error::仓库密钥 SYNC_PAT 未配置，无法推送到 GitHub（GITHUB_TOKEN 的 push 不会触发下游构建）"
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then exit 1; fi
+          echo "两个密钥均已配置"
+
       - name: Prepare SSH for Tencent
         run: |
+          set -eu
           mkdir -p ~/.ssh
-          ssh-keyscan -H git.code.tencent.com >> ~/.ssh/known_hosts 2>/dev/null || true
-          printf '%s\n' "$TENCENT_SSH_KEY" > ~/.ssh/id_rsa_tencent
-          chmod 600 ~/.ssh/id_rsa_tencent
-          # Tencent git 服务器只提供 ssh-rsa 主机密钥；现代 OpenSSH（含 GitHub
+          # 腾讯 git 服务器只提供 ssh-rsa 主机密钥；现代 OpenSSH（含 GitHub
           # runner）默认禁用了该算法，必须显式重新开启，否则 clone 协商失败：
           #   no matching host key type found. Their offer: ssh-rsa
+          ssh-keyscan -H -t rsa git.code.tencent.com >> ~/.ssh/known_hosts 2>/dev/null || true
+          printf '%s\n' "$TENCENT_SSH_KEY" > ~/.ssh/id_rsa_tencent
+          chmod 600 ~/.ssh/id_rsa_tencent
+          # IdentityFile 必须显式写：密钥文件名不是 ssh 默认尝试的 id_rsa/id_ed25519，
+          # 不指定会导致无密钥可提供 → Permission denied (publickey)。
           cat > ~/.ssh/config <<'EOF'
           Host git.code.tencent.com
               IdentityFile ~/.ssh/id_rsa_tencent
@@ -51,18 +85,30 @@ jobs:
 
       - name: Clone Tencent android branch (shallow)
         run: |
+          set -eu
           git clone --branch android --single-branch --depth 1 \
             git@git.code.tencent.com:AImarketing/weauto.git _tencent
           echo "TENCENT_HEAD=$(git -C _tencent rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Compare with GitHub jev-chat-jarvis HEAD
         id: cmp
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -eu
           GH_HEAD=$(git ls-remote \
-            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/samcaicn/gloai.git \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/samcaicn/gloai.git" \
             refs/heads/jev-chat-jarvis | cut -f1)
           echo "github_head=$GH_HEAD"
           echo "tencent_head=$TENCENT_HEAD"
+          {
+            echo "### 同步比对"
+            echo ""
+            echo "| 端 | HEAD |"
+            echo "|---|---|"
+            echo "| 腾讯 android | \`$TENCENT_HEAD\` |"
+            echo "| GitHub jev-chat-jarvis | \`$GH_HEAD\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
           if [ "$GH_HEAD" = "$TENCENT_HEAD" ]; then
             echo "in_sync=true" >> "$GITHUB_OUTPUT"
             echo "already in sync, nothing to do"
@@ -73,12 +119,43 @@ jobs:
 
       - name: Push Tencent android → GitHub jev-chat-jarvis
         if: steps.cmp.outputs.in_sync == 'false'
+        env:
+          SYNC_PAT: ${{ secrets.SYNC_PAT }}
         run: |
+          set -eu
           cd _tencent
           # 必须用 PAT（而非 GITHUB_TOKEN）推送：GitHub 规定用 GITHUB_TOKEN
           # 发起的 push 不会再触发任何工作流（防死循环），只有 PAT 的 push
           # 才会真正触发下游的 Build APK 构建。
           git remote add github \
-            https://x-access-token:${{ secrets.SYNC_PAT }}@github.com/samcaicn/gloai.git
-          git push github android:jev-chat-jarvis --force
+            "https://x-access-token:${SYNC_PAT}@github.com/samcaicn/gloai.git"
+          # 浅克隆推送在「GitHub 缺少父提交」时会失败（两端历史分叉 / 分支被回退过），
+          # 这时补齐完整历史再推一次即可。
+          if ! git push github android:jev-chat-jarvis --force; then
+            echo "::warning::浅克隆推送失败，补齐完整历史后重试"
+            git fetch --unshallow origin || true
+            git push github android:jev-chat-jarvis --force
+          fi
           echo "synced -> Build APK should now be triggered"
+
+      - name: Verify GitHub branch matches Tencent
+        if: steps.cmp.outputs.in_sync == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          # 推送是异步可见的，最多等 60s 让 GitHub 更新分支引用
+          for i in $(seq 1 12); do
+            GH=$(git ls-remote \
+              "https://x-access-token:${GITHUB_TOKEN}@github.com/samcaicn/gloai.git" \
+              refs/heads/jev-chat-jarvis | cut -f1)
+            if [ "$GH" = "$TENCENT_HEAD" ]; then
+              echo "同步校验通过：$GH"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "✅ 已同步到 \`$GH\`，下游 Build APK 会被触发（若改动命中 build.yml 的 paths-ignore 则不会）" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::同步后 GitHub HEAD($GH) 与腾讯 HEAD($TENCENT_HEAD) 不一致"
+          exit 1
