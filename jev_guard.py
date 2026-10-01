@@ -414,10 +414,29 @@ def build_rank_question(candidates):
 
 # ---------------------------------------------------------------- HTTP
 
+def _jev_candidate_urls():
+    """返回候选 Worker 域名列表（主 + 备），用于单域名抖动时 failover。
+
+    默认域名按配置顺序在前；两个对外域名（wetech.jukuai.net 主用、
+    weauto.safeopc.cn 备用）都会尝试，path 完全一致，签名可复用。
+    """
+    known = ["wetech.jukuai.net", "weauto.safeopc.cn"]
+    try:
+        p = urllib.parse.urlparse(_cfg("JEV_BASE_URL", _DEFAULTS["JEV_BASE_URL"]))
+        path = p.path or "/ai/jev/decisions"
+        scheme = p.scheme or "https"
+        host = p.hostname or known[1]
+    except Exception:
+        scheme, host, path = "https", known[1], "/ai/jev/decisions"
+    hosts = [host] + [h for h in known if h != host]
+    return [f"{scheme}://{h}{path}" for h in hosts]
+
+
 def _post_decisions(questions, state, timeout=None, model=None):
     """POST 到 Worker 的 /ai/jev/decisions。返回 ( answers_dict | None, 错误信息|None )。
 
     用守护线程 + join 兜底：即使 urllib 卡死也不会拖住消息回调线程。
+    内部按 _jev_candidate_urls() 顺序 failover：主域名失败（网络/5xx）自动试备用域名。
     """
     if timeout is None:
         try:
@@ -431,13 +450,14 @@ def _post_decisions(questions, state, timeout=None, model=None):
     if model:
         payload["model"] = model
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    # 客户端↔后台通信签名（防白嫖）：填了 WEAUATO_CLIENT_SECRET 才带，否则公开模式
+    # 客户端↔后台通信签名（防白嫖）：填了 WEAUATO_CLIENT_SECRET 才带，否则公开模式。
+    # 两个域名 path 相同，签名一次即可复用。
     auth_headers = {}
     secret = _client_secret()
+    urls = _jev_candidate_urls()
     if secret:
         try:
-            parsed = urllib.parse.urlparse(_cfg("JEV_BASE_URL", _DEFAULTS["JEV_BASE_URL"]))
-            path = parsed.path or "/ai/jev/decisions"
+            path = urllib.parse.urlparse(urls[0]).path or "/ai/jev/decisions"
             ts = str(int(time.time()))
             nonce = secrets.token_hex(16)
             sig = _sign(secret, path, ts, nonce, body)
@@ -451,42 +471,45 @@ def _post_decisions(questions, state, timeout=None, model=None):
     box = {"res": None, "err": None}
 
     def _work():
-        try:
-            req = urllib.request.Request(
-                _cfg("JEV_BASE_URL", _DEFAULTS["JEV_BASE_URL"]),
-                data=body,
-                method="POST",
-                headers={
-                    "Content-Type": "application/json; charset=utf-8",
-                    "Accept": "application/json",
-                    "X-WeAuto-Instance": _instance_id(),
-                    # Cloudflare WAF 会把 Python-urllib 的默认 UA 挡成 403（实测 same as creem 直连），
-                    # 必须带浏览器 UA，否则请求根本到不了 Worker。
-                    "User-Agent": _UA,
-                    **auth_headers,
-                },
-            )
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8", errors="replace"))
-            answers = data.get("answers") if isinstance(data, dict) else None
-            if not isinstance(answers, dict):
-                box["err"] = "响应缺少 answers"
-                return
-            box["res"] = answers
-        except urllib.error.HTTPError as e:
+        last_err = "无可用域名"
+        for url in urls:
             try:
-                detail = e.read().decode("utf-8", errors="replace")[:300]
-            except Exception:
-                detail = ""
-            box["err"] = f"HTTP {e.code}: {_redact(detail)}"
-        except Exception as e:
-            box["err"] = _redact(f"{type(e).__name__}: {e}")
+                req = urllib.request.Request(
+                    url,
+                    data=body,
+                    method="POST",
+                    headers={
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Accept": "application/json",
+                        "X-WeAuto-Instance": _instance_id(),
+                        # Cloudflare WAF 会把 Python-urllib 的默认 UA 挡成 403（实测 same as creem 直连），
+                        # 必须带浏览器 UA，否则请求根本到不了 Worker。
+                        "User-Agent": _UA,
+                        **auth_headers,
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                answers = data.get("answers") if isinstance(data, dict) else None
+                if isinstance(answers, dict):
+                    box["res"] = answers
+                    return
+                last_err = "响应缺少 answers"
+            except urllib.error.HTTPError as e:
+                try:
+                    detail = e.read().decode("utf-8", errors="replace")[:300]
+                except Exception:
+                    detail = ""
+                last_err = f"HTTP {e.code}: {_redact(detail)}"
+            except Exception as e:
+                last_err = _redact(f"{type(e).__name__}: {e}")
+        box["err"] = last_err
 
     t = threading.Thread(target=_work, daemon=True)
     t.start()
-    t.join(timeout + 2)
+    t.join(timeout * len(urls) + 2)
     if t.is_alive():
-        return None, f"超时（>{timeout + 2:.0f}s）未返回"
+        return None, f"超时（>{timeout * len(urls) + 2:.0f}s）未返回"
     return box["res"], box["err"]
 
 
