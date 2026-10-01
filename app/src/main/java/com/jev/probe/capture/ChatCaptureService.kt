@@ -270,12 +270,76 @@ open class ChatCaptureService : AccessibilityService() {
         }
     }
 
+    // -------------------------------------------------------------- DIAG
+    // TEMPORARY node-visibility probe: answers "is the target app's tree empty,
+    // or is it there with its resource-ids stripped?". Throttled to one report
+    // per 3 s so a chatty window cannot flood logcat. Prints counts, booleans and
+    // resource-ids only — never message text.
+    private var lastDiagAt = 0L
+
+    /** One-line diag for the paths that never reach [diagReport] (root null, or a
+     *  foreground package with no adapter). Shares the same throttle. */
+    private fun diagSimple(msg: String) {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastDiagAt < 3000) return
+        lastDiagAt = now
+        Log.d(TAG, "diag[$msg] focus=${rootInActiveWindow?.packageName}")
+    }
+
+    private fun diagReport(root: AccessibilityNodeInfo, pkg: String, snap: ChatSnapshot?) {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastDiagAt < 3000) return
+        lastDiagAt = now
+        Log.d(TAG, "diag[active] pkg=$pkg rootPkg=${root.packageName} rootCls=${root.className} " +
+            "rootChildren=${root.childCount} extract=" +
+            (snap?.let { "title=${it.title} n=${it.messages.size} img=${it.imageMessage != null}" } ?: "null"))
+        Log.d(TAG, "diag[active] ${describeTree(root)}")
+        val ws = windows
+        if (ws == null) { Log.d(TAG, "diag[windows] null"); return }
+        Log.d(TAG, "diag[windows] count=${ws.size}")
+        for (w in ws) {
+            val r = w.root
+            if (r == null) {
+                Log.d(TAG, "diag[win] type=${w.type} active=${w.isActive} focused=${w.isFocused} root=null")
+                continue
+            }
+            Log.d(TAG, "diag[win] type=${w.type} active=${w.isActive} focused=${w.isFocused} " +
+                "pkg=${r.packageName} ${describeTree(r)}")
+        }
+    }
+
+    /** Walks a tree once and summarises it: node count, how many carry a
+     *  resource-id / text, how many WeChat bubbles and editable fields exist, plus
+     *  a sample of ids — enough to tell "empty tree" from "ids stripped" from
+     *  "wrong root". */
+    private fun describeTree(root: AccessibilityNodeInfo): String {
+        var total = 0; var withId = 0; var withText = 0; var bkl = 0; var editable = 0
+        val ids = LinkedHashSet<String>()
+        val stack = ArrayDeque<AccessibilityNodeInfo>()
+        stack.addLast(root)
+        var guard = 0
+        while (stack.isNotEmpty() && guard < 8000) {
+            guard++
+            val n = stack.removeLast()
+            total++
+            val id = n.viewIdResourceName
+            if (!id.isNullOrBlank()) { withId++; if (ids.size < 24) ids.add(id) }
+            if (!n.text.isNullOrEmpty()) withText++
+            if (id == "com.tencent.mm:id/bkl") bkl++
+            if (n.isEditable) editable++
+            for (i in n.childCount - 1 downTo 0) n.getChild(i)?.let { stack.addLast(it) }
+        }
+        return "nodes=$total withId=$withId withText=$withText bkl=$bkl editable=$editable " +
+            "ids=[${ids.joinToString(",")}]"
+    }
+
     private fun maybeCapture() {
-        val root = rootInActiveWindow ?: run { leaveConversation(); overlay?.hide(); return }
+        val root = rootInActiveWindow ?: run { diagSimple("root=null"); leaveConversation(); overlay?.hide(); return }
         val pkg = root.packageName?.toString()
         // Apps with no adapter are never handled automatically (v1.3 revision):
         // the only way in for them is the bubble menu's "截屏识别一次".
         val adapter = adapters[pkg] ?: run {
+            diagSimple("no-adapter fg=$pkg")
             if (session.target != null && session.target != targetFor(root)) leaveConversation()
             return
         }
@@ -285,6 +349,7 @@ open class ChatCaptureService : AccessibilityService() {
         // bubble so the menu stays reachable. Without this, opening QQ / Feishu on
         // their list screen produced no bubble at all.
         val rawSnapshot = adapter.extract(root, resources)
+        diagReport(root, pkg ?: "", rawSnapshot)
         if (rawSnapshot == null) { leaveConversation(); overlay?.showIdle(null); return }
         val target = targetFor(root)
         if (target == null) { leaveConversation(); overlay?.showIdle(null); return }
