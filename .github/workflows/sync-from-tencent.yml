@@ -11,6 +11,10 @@ name: Sync Tencent → GitHub CI
 #
 # 需要的仓库密钥（在 GitHub 仓库 Settings → Secrets 添加）：
 #   TENCENT_SSH_KEY = 本地 ~/.ssh/id_rsa_tencent 的私钥全文（含 BEGIN/END 行）
+#   SYNC_PAT       = 有 repo/workflow 权限的 GitHub PAT（用于推送以触发下游构建）
+#
+# 关于「同步了但没触发构建」：下游 build.yml 带 paths-ignore（'**.md'、'site/**'、'docs/**'），
+# 只改文档/站点文件的提交不会触发 Build APK，这是预期行为，不是同步失败。
 
 on:
   schedule:
@@ -31,6 +35,17 @@ jobs:
           ssh-keyscan -H git.code.tencent.com >> ~/.ssh/known_hosts 2>/dev/null || true
           printf '%s\n' "$TENCENT_SSH_KEY" > ~/.ssh/id_rsa_tencent
           chmod 600 ~/.ssh/id_rsa_tencent
+          # Tencent git 服务器只提供 ssh-rsa 主机密钥；现代 OpenSSH（含 GitHub
+          # runner）默认禁用了该算法，必须显式重新开启，否则 clone 协商失败：
+          #   no matching host key type found. Their offer: ssh-rsa
+          cat > ~/.ssh/config <<'EOF'
+          Host git.code.tencent.com
+              IdentityFile ~/.ssh/id_rsa_tencent
+              IdentitiesOnly yes
+              HostKeyAlgorithms +ssh-rsa
+              PubkeyAcceptedAlgorithms +ssh-rsa,ssh-ed25519
+          EOF
+          chmod 600 ~/.ssh/config
         env:
           TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
 
@@ -60,7 +75,10 @@ jobs:
         if: steps.cmp.outputs.in_sync == 'false'
         run: |
           cd _tencent
+          # 必须用 PAT（而非 GITHUB_TOKEN）推送：GitHub 规定用 GITHUB_TOKEN
+          # 发起的 push 不会再触发任何工作流（防死循环），只有 PAT 的 push
+          # 才会真正触发下游的 Build APK 构建。
           git remote add github \
-            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/samcaicn/gloai.git
+            https://x-access-token:${{ secrets.SYNC_PAT }}@github.com/samcaicn/gloai.git
           git push github android:jev-chat-jarvis --force
-          echo "synced -> triggered Build APK workflow"
+          echo "synced -> Build APK should now be triggered"
