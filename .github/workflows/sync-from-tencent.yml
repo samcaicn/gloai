@@ -1,0 +1,66 @@
+name: Sync Tencent → GitHub CI
+
+# 自动同步：推到 git.code.tencent.com/AImarketing/weauto 的 android 分支后，
+# 本工作流周期性把该分支镜像到 GitHub 的 jev-chat-jarvis 分支，从而自动触发
+# build.yml 构建 APK。
+#
+# 触发方式：
+#   - 定时（每 10 分钟轮询一次，发现有新提交即同步）
+#   - 手动 workflow_dispatch（立即可跑一次）
+# 注意：刻意不监听 push，避免「同步 push → 触发本工作流」的死循环。
+#
+# 需要的仓库密钥（在 GitHub 仓库 Settings → Secrets 添加）：
+#   TENCENT_SSH_KEY = 本地 ~/.ssh/id_rsa_tencent 的私钥全文（含 BEGIN/END 行）
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Prepare SSH for Tencent
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H git.code.tencent.com >> ~/.ssh/known_hosts 2>/dev/null || true
+          printf '%s\n' "$TENCENT_SSH_KEY" > ~/.ssh/id_rsa_tencent
+          chmod 600 ~/.ssh/id_rsa_tencent
+        env:
+          TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
+
+      - name: Clone Tencent android branch (shallow)
+        run: |
+          git clone --branch android --single-branch --depth 1 \
+            git@git.code.tencent.com:AImarketing/weauto.git _tencent
+          echo "TENCENT_HEAD=$(git -C _tencent rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Compare with GitHub jev-chat-jarvis HEAD
+        id: cmp
+        run: |
+          GH_HEAD=$(git ls-remote \
+            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/samcaicn/gloai.git \
+            refs/heads/jev-chat-jarvis | cut -f1)
+          echo "github_head=$GH_HEAD"
+          echo "tencent_head=$TENCENT_HEAD"
+          if [ "$GH_HEAD" = "$TENCENT_HEAD" ]; then
+            echo "in_sync=true" >> "$GITHUB_OUTPUT"
+            echo "already in sync, nothing to do"
+          else
+            echo "in_sync=false" >> "$GITHUB_OUTPUT"
+            echo "diff detected, will sync"
+          fi
+
+      - name: Push Tencent android → GitHub jev-chat-jarvis
+        if: steps.cmp.outputs.in_sync == 'false'
+        run: |
+          cd _tencent
+          git remote add github \
+            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/samcaicn/gloai.git
+          git push github android:jev-chat-jarvis --force
+          echo "synced -> triggered Build APK workflow"
