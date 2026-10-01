@@ -119,8 +119,16 @@ open class ChatCaptureService : AccessibilityService() {
         val title = if (adapter != null) {
             val snapshot = adapter.extract(root, resources) ?: return null
             messagesSignature = snapshot.takeIf { it.messages.isNotEmpty() }?.signature()
-            // A loading/unknown title cannot prove which conversation is open.
-            snapshot.title?.takeUnless { isTransientTitle(it) } ?: return null
+            // A title we cannot read must not abort the capture. A non-empty
+            // message list already proves we are inside a chat window, and some
+            // builds never expose the action-bar title at all (WeChat 8.0.78 on
+            // ColorOS: the title node is simply absent from the tree), which used
+            // to leave the assistant dead on arrival — every event returned here
+            // and only the idle bubble was ever shown. Keep the target with a
+            // null title: it is a label for the overlay/KB, never the proof.
+            val good = snapshot.title?.takeUnless { isTransientTitle(it) }
+            if (good == null && messagesSignature == null) return null
+            good
         } else {
             findTitleInActionBar(root, Int.MAX_VALUE, resources.displayMetrics.widthPixels,
                 resources, 0.15, 0.85)
