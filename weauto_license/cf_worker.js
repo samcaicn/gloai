@@ -962,6 +962,14 @@ export default {
       });
     }
 
+    // ---- EXE 自动更新代理：/api/update ----
+    // EXE 只问本端点；本端点用 secret 里的 GITHUB_TOKEN 查最新 CI 构件，
+    // 并返回一个「免 GitHub 鉴权」的直链（GitHub 重定向到的 azure SAS URL）。
+    // EXE 零密钥即可升级，GitHub token 仅在服务端，可随时轮换、不重发 EXE。
+    if (p === "/api/update") {
+      return updateProxy(req, env);
+    }
+
     // ---- Jev 判断式 AI：/ai/jev/decisions（Workers AI JSON Mode，必须排在 /ai/ 通配之前）----
     if (p === "/ai/jev/decisions") {
       return jevDecisions(req, env);
@@ -1184,6 +1192,49 @@ export default {
     // 根路径：跳购买页，方便直接访问域名
     if (p === "/" && req.method === "GET") {
       return Response.redirect(url.origin + "/buy", 302);
+    }
+
+    // ---- EXE 自动更新代理实现 ----
+    // 查询 repo 的最新 CI 构件（actions/artifacts），解析出无需 GitHub 鉴权的 azure SAS 直链。
+    async function updateProxy(req, env) {
+      const token = env.GITHUB_TOKEN;
+      if (!token) return json({ ok: false, error: "github_token_missing" }, 503);
+      const owner = env.UPDATE_REPO_OWNER || "samcaicn";
+      const repo = env.UPDATE_REPO_NAME || "gloai";
+      const artifactName = env.UPDATE_ARTIFACT_NAME || "weauto-windows-exe";
+      const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0 Safari/537.36";
+      try {
+        const api = `https://api.github.com/repos/${owner}/${repo}/actions/artifacts?per_page=100`;
+        const r = await fetch(api, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "user-agent": UA },
+        });
+        if (!r.ok) return json({ ok: false, error: "github_api_error", status: r.status }, 502);
+        const data = await r.json();
+        const arts = (data.artifacts || []).filter((a) => a.name === artifactName && !a.expired);
+        if (!arts.length) return json({ ok: false, error: "no_artifact" }, 404);
+        arts.sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1));
+        const target = arts[0];
+        // GitHub 的 archive_download_url 会 302 到 azure SAS URL（公开可读，无需 GitHub 鉴权）
+        const dl = await fetch(target.archive_download_url, {
+          headers: { Authorization: `Bearer ${token}`, "user-agent": UA },
+          redirect: "manual",
+        });
+        let directUrl = target.archive_download_url;
+        if (dl.status === 301 || dl.status === 302) {
+          const loc = dl.headers.get("location");
+          if (loc) directUrl = loc;
+        }
+        return json({
+          ok: true,
+          version: target.updated_at,
+          download_url: directUrl,
+          artifact_id: target.id,
+          size_in_bytes: target.size_in_bytes,
+          source: "WeAuto Worker Update Proxy",
+        });
+      } catch (e) {
+        return json({ ok: false, error: "proxy_failed", detail: String((e && e.message) || e) }, 502);
+      }
     }
 
     return new Response("Not found", { status: 404 });

@@ -44,6 +44,10 @@ class Updater:
     GITHUB_API = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}"
     ARTIFACT_NAME = "weauto-windows-exe"   # CI 上传的加密 exe 构件名
 
+    # EXE 自动更新代理（Cloudflare Worker）：EXE 只问本端点，Worker 用服务端 GITHUB_TOKEN
+    # 解析出免鉴权的 azure 直链返回。EXE 零密钥升级，GitHub token 仅在服务端、可随时轮换。
+    UPDATE_WORKER_URL = "https://wetech.jukuai.net"
+
     # 只读令牌（可选）：用于访问私有仓库的 Actions Artifact / Release。
     # 仅需 read-only 权限（actions:read、contents:read）。
     # 解析顺序：环境变量 GITHUB_TOKEN/GH_TOKEN → 本地文件 .weauto_gh_token → gh CLI。
@@ -277,49 +281,51 @@ class Updater:
             pass
 
     def _check_artifact_updates(self) -> dict:
-        """从 GitHub Actions Artifact 获取最新加密 exe 构件（保留 90 天）。"""
+        """向 Worker 更新代理查询最新 CI 构件（EXE 零密钥）。"""
         try:
-            url = f"https://api.github.com/repos/{self.REPO_OWNER}/{self.REPO_NAME}/actions/artifacts?per_page=100"
-            headers = self._auth_headers({
-                "Accept": "application/vnd.github+json",
-                "User-Agent": f"{self.REPO_NAME}-UpdateChecker",
-            })
+            url = f"{self.UPDATE_WORKER_URL.rstrip('/')}/api/update"
+            headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
             resp = requests.get(url, headers=headers, timeout=15)
-            if resp.status_code in (401, 403, 404):
-                return {"has_update": False, "error": f"无法访问 Actions Artifact (HTTP {resp.status_code})，请确认仓库为公开或配置令牌"}
+            if resp.status_code in (401, 403, 404, 503):
+                try:
+                    err = resp.json().get("error", "")
+                except Exception:
+                    err = ""
+                return {"has_update": False, "error": f"更新代理不可用 (HTTP {resp.status_code} {err})"}
             resp.raise_for_status()
-            artifacts = resp.json().get("artifacts", [])
-            target = next(
-                (a for a in artifacts if a.get("name") == self.ARTIFACT_NAME and not a.get("expired")),
-                None,
-            )
-            if not target:
-                return {"has_update": False, "error": "未找到可用的加密 exe 构件"}
-            latest_updated = target.get("updated_at")
+            data = resp.json()
+            if not data.get("ok"):
+                return {"has_update": False, "error": f"更新代理返回: {data.get('error')}"}
+            latest_updated = data.get("version")  # updated_at 时间戳
             local_updated = self._get_local_artifact_updated_at()
             has_update = (local_updated is None) or bool(latest_updated and latest_updated > local_updated)
             return {
                 "has_update": bool(has_update),
                 "version": latest_updated or "",
-                "download_url": target.get("archive_download_url"),
-                "artifact_id": target.get("id"),
-                "description": "GitHub Actions 构建的加密混淆 WeAuto.exe",
-                "source": "GitHub Actions Artifact",
+                "download_url": data.get("download_url"),
+                "artifact_id": data.get("artifact_id"),
+                "description": "WeAuto 自动更新（CI 构建的加密混淆 WeAuto.exe）",
+                "source": "WeAuto Worker Update Proxy",
                 "output": f"最新构建: {latest_updated}",
             }
         except requests.RequestException as e:
-            return {"has_update": False, "error": f"检查 Actions Artifact 失败: {e}"}
+            return {"has_update": False, "error": f"检查更新代理失败: {e}"}
 
     def apply_artifact_update(self, update_info: dict) -> dict:
         """下载加密 exe 构件并自替换（自更新通道，不经源码补丁逻辑）。"""
         import subprocess
         progress = []
         try:
-            headers = self._auth_headers({"User-Agent": f"{self.REPO_NAME}-UpdateChecker"})
+            download_url = update_info["download_url"]
+            # Worker 已解析为免鉴权直链（azure SAS），不再附加 GitHub token；
+            # 仅当链接仍是 github 域名时才补 token（兼容旧行为）。
+            headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
+            if "github.com" in download_url or "api.github.com" in download_url:
+                headers = self._auth_headers(headers)
             log_progress = lambda s: progress.append(s)
             log_progress("开始下载加密 exe 构件...")
 
-            with requests.get(update_info["download_url"], headers=headers, timeout=60, stream=True) as r:
+            with requests.get(download_url, headers=headers, timeout=120, stream=True) as r:
                 r.raise_for_status()
 
                 os.makedirs(self.temp_dir, exist_ok=True)
@@ -876,7 +882,7 @@ class Updater:
                 return {'success': True, 'output': '\n'.join(progress)}
 
             # 加密 exe 构件：走自更新通道，跳过源码补丁逻辑
-            if update_info.get('source') == 'GitHub Actions Artifact':
+            if update_info.get('source') in ('GitHub Actions Artifact', 'WeAuto Worker Update Proxy'):
                 result = self.apply_artifact_update(update_info)
                 result['output'] = '\n'.join(progress) + "\n" + result.get('output', '')
                 return result
