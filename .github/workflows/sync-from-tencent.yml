@@ -36,6 +36,8 @@ jobs:
           #   no matching host key type found. Their offer: ssh-rsa
           cat > ~/.ssh/config <<'EOF'
           Host git.code.tencent.com
+              IdentityFile ~/.ssh/id_rsa_tencent
+              IdentitiesOnly yes
               HostKeyAlgorithms +ssh-rsa
               PubkeyAcceptedAlgorithms +ssh-rsa,ssh-ed25519
           EOF
