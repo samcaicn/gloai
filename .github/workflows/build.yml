@@ -146,15 +146,9 @@ jobs:
           path: C:/_wd/WeAuto.exe
           retention-days: 90
 
-      - name: Create Release (gh CLI)
-        # 改用 runner 自带的 gh：GITHUB_TOKEN 自动可用，且对 Windows 绝对路径更稳。
-        # 去掉 continue-on-error，让发版失败直接暴露（不再被伪装成绿）。
+      # 不再发布公开 Release：EXE 分发改由 GitHub Actions Artifact（保留 90 天）承担，
+      # 客户端 updater.py 以 Artifact 为首选升级通道（见 updater.py 注释）。
+      # 这样去掉了「公开 Release 托着 EXE」这一暴露面；源码私有化另见仓库可见性设置。
+      - name: Skip public Release (rely on Actions Artifact)
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "weauto-build-${{ github.run_number }}" \
-            --repo samcaicn/gloai \
-            --title "WeAuto Build ${{ github.run_number }}" \
-            --notes "Automated WeAuto EXE build (single all-in-one)." \
-            "C:/_wd/WeAuto.exe"
+        run: echo "Public Release skipped; distribution via Actions Artifact (90d)."

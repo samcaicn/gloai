@@ -257,7 +257,7 @@ class Updater:
     
     # ------------------------------------------------------------------
     # GitHub Actions Artifact 更新通道（CI 构建的加密 exe，保留 90 天）
-    # 分支与 release 在构建成功后会被清理，因此自动更新以 Artifact 为准。
+    # CI 已不再发布公开 Release，自动更新以 Artifact 为准（见 build.yml）。
     # ------------------------------------------------------------------
     def _artifact_state_path(self):
         return os.path.join(os.path.dirname(os.path.abspath(__file__)), ".weauto_artifact.json")
