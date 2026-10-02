@@ -15,7 +15,7 @@ import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import com.jev.probe.capture.ocr.MlKitOcr
+import com.jev.probe.capture.ocr.PaddleOcr
 import com.jev.probe.capture.ocr.OcrLine
 import com.jev.probe.capture.ocr.ScreenCapture
 import com.jev.probe.core.BubbleRect
@@ -164,7 +164,7 @@ open class ChatCaptureService : AccessibilityService() {
             hideOverlay = { overlay?.setHiddenForShot(true) },
             restoreOverlay = { overlay?.setHiddenForShot(false) })
     }
-    private val ocr = MlKitOcr()
+    private val ocr = PaddleOcr
     private var ocrBusy = false
 
     /** Set by [wxMsgReceiver] when a WeChat notification reports an image message,
@@ -223,7 +223,7 @@ open class ChatCaptureService : AccessibilityService() {
         runCatching { KeepAliveService.start(this) }
         // Load the bundled OCR model now, off the main thread: the first
         // recognize() otherwise pays for it inside the screenshot callback.
-        submit { MlKitOcr.warmUp() }
+        submit { PaddleOcr.warmUp(this) }
         // Listen for new WeChat messages from the NotificationListenerService.
         runCatching {
             ContextCompat.registerReceiver(

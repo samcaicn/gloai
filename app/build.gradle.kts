@@ -111,7 +111,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    // On-device OCR. The *bundled* Chinese model (not the play-services variant):
-    // it works on phones with no Google Play services and needs no model download.
-    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
+    // On-device OCR: PaddleOCR (PP-OCRv6, ONNX Runtime + OpenCV, models bundled
+    // in :ppocr-sdk assets). Fully offline, no Google Play services needed.
+    implementation(project(":ppocr-sdk"))
 }
