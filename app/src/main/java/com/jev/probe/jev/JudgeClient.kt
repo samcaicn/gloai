@@ -26,6 +26,11 @@ class JudgeClient(private val prefs: Prefs) {
      */
     fun judge(snapshot: ChatSnapshot, relationship: String, ctx: ChatContext? = null): Analysis {
         val start = System.currentTimeMillis()
+        // tuptup 是 OpenAI 兼容网关，跑不了 Jev 自定义协议：直接走 LLM 版判断。
+        if (prefs.judgeProvider == Prefs.PROVIDER_TUPTUP) {
+            return LlmJudge(prefs).judge(snapshot, relationship, ctx)
+        }
+        // 其余 provider（worker / 自建 Jev）：先打 Jev 决策服务，失败再退回 LLM 兜底。
         return try {
             val answers = postDecisions(
                 snapshot, relationship, ctx,
@@ -43,9 +48,8 @@ class JudgeClient(private val prefs: Prefs) {
                 latencyMs = System.currentTimeMillis() - start
             )
         } catch (e: Exception) {
-            Log.w(TAG, "judge failed: ${e.message}")
-            Analysis(null, null, null, null, null, null, null, emptyList(),
-                System.currentTimeMillis() - start, error = e.message ?: "判断接口请求失败")
+            Log.w(TAG, "jev judge failed -> llm fallback: ${e.message}")
+            LlmJudge(prefs).judge(snapshot, relationship, ctx)
         }
     }
 
@@ -56,10 +60,18 @@ class JudgeClient(private val prefs: Prefs) {
         candidates: List<String>,
         ctx: ChatContext? = null
     ): List<RankedReply> {
-        val questions = JSONObject().put("best_reply",
-            JevQuestions.rankQuestion(candidates).getJSONObject("best_reply"))
-        val answers = postDecisions(snapshot, relationship, ctx, questions)
-        return parseRanked(answers.optJSONObject("best_reply"), candidates)
+        if (prefs.judgeProvider == Prefs.PROVIDER_TUPTUP) {
+            return LlmJudge(prefs).rank(snapshot, relationship, candidates, ctx)
+        }
+        return try {
+            val questions = JSONObject().put("best_reply",
+                JevQuestions.rankQuestion(candidates).getJSONObject("best_reply"))
+            val answers = postDecisions(snapshot, relationship, ctx, questions)
+            parseRanked(answers.optJSONObject("best_reply"), candidates)
+        } catch (e: Exception) {
+            Log.w(TAG, "jev rank failed -> llm fallback: ${e.message}")
+            LlmJudge(prefs).rank(snapshot, relationship, candidates, ctx)
+        }
     }
 
     /**

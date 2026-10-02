@@ -76,6 +76,22 @@ class SettingsActivity : AppCompatActivity() {
         visionCard.addView(visionModelEdit)
         root.addView(visionCard)
 
+        // =================== 接口（当前） ===================
+        root.addView(section("接口（当前）"))
+        val ifaceCard = card()
+        ifaceCard.addView(cardTitle("LLM 后端"))
+        val providerLabel = when (prefs.judgeProvider) {
+            Prefs.PROVIDER_TUPTUP -> "tuptup.top（OpenAI 兼容，内置密钥）"
+            Prefs.PROVIDER_WORKER -> "WeAuto 云端（账户令牌）"
+            else -> "自定义 / ${prefs.judgeProvider}"
+        }
+        ifaceCard.addView(text("判断 / 回复 / 视觉统一走：$providerLabel", 12f, sub))
+        ifaceCard.addView(text(
+            "本机读取（无障碍 + ML Kit 离线 OCR）优先；仅在需要 AI 判断/生成时才调用上述接口，" +
+                "对方发图片也只在本机 OCR 读字、不上传。",
+            11f, sub))
+        root.addView(ifaceCard)
+
         // =================== 分析 ===================
         root.addView(section("分析"))
         val card2 = card()

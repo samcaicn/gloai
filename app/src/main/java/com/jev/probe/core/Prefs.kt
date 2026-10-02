@@ -74,7 +74,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     // ---------------------------------------------------------------- judge
 
     var judgeProvider: String
-        get() = sp.getString(K_JUDGE_PROVIDER, PROVIDER_WORKER) ?: PROVIDER_WORKER
+        get() = sp.getString(K_JUDGE_PROVIDER, PROVIDER_TUPTUP) ?: PROVIDER_TUPTUP
         set(v) = sp.edit().putString(K_JUDGE_PROVIDER, v.trim()).apply()
 
     var judgeBaseUrl: String
@@ -91,7 +91,11 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
      * 不把客户端的旧 OpenRouter 模型名（如 typesafe/jev-1.13）误发给 Workers AI。
      */
     var judgeModel: String
-        get() = if (isWorkerMode) "" else (sp.getString(K_JUDGE_MODEL, DEFAULT_JUDGE_MODEL_OPENROUTER) ?: DEFAULT_JUDGE_MODEL_OPENROUTER)
+        get() = when {
+            isWorkerMode -> ""
+            judgeProvider == PROVIDER_TUPTUP -> TUPTUP_MODEL
+            else -> sp.getString(K_JUDGE_MODEL, DEFAULT_JUDGE_MODEL_OPENROUTER) ?: DEFAULT_JUDGE_MODEL_OPENROUTER
+        }
         set(v) = sp.edit().putString(K_JUDGE_MODEL, v.trim()).apply()
 
     var openRouterKey: String
@@ -109,7 +113,11 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         set(v) = sp.edit().putString(K_REPLY_KEY, v.trim()).apply()
 
     var replyModel: String
-        get() = if (isWorkerMode) "" else (sp.getString(K_REPLY_MODEL, DEFAULT_REPLY_MODEL) ?: DEFAULT_REPLY_MODEL)
+        get() = when {
+            isWorkerMode -> ""
+            judgeProvider == PROVIDER_TUPTUP -> TUPTUP_MODEL
+            else -> sp.getString(K_REPLY_MODEL, DEFAULT_REPLY_MODEL) ?: DEFAULT_REPLY_MODEL
+        }
         set(v) = sp.edit().putString(K_REPLY_MODEL, v.trim()).apply()
 
     // --------------------------------------------------------------- vision
@@ -139,7 +147,11 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         sp.getString(K_VISION_MODEL, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL
 
     var visionModel: String
-        get() = if (isVisionCustom() || !isWorkerMode)
+        get() = if (isVisionCustom())
+            (sp.getString(K_VISION_MODEL, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL)
+        else if (judgeProvider == PROVIDER_TUPTUP)
+            TUPTUP_MODEL
+        else if (!isWorkerMode)
             (sp.getString(K_VISION_MODEL, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL)
         else ""
         set(v) = sp.edit().putString(K_VISION_MODEL, v.trim()).apply()
@@ -277,18 +289,24 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
     // ------------------------------------------------------------- helpers
 
-    fun effectiveReplyKey(): String = if (isWorkerMode) accountToken else replyKey.ifBlank { judgeKey }
+    fun effectiveReplyKey(): String = when {
+        isWorkerMode -> accountToken
+        judgeProvider == PROVIDER_TUPTUP -> TUPTUP_KEY
+        else -> replyKey.ifBlank { judgeKey }
+    }
 
     /** 视觉鉴权：自定义接口用自配 key（留空则退回账户令牌）；云端模式用账户令牌。 */
     fun effectiveVisionKey(): String = when {
         isVisionCustom() -> visionKey.ifBlank { accountToken }
         isWorkerMode -> accountToken
+        judgeProvider == PROVIDER_TUPTUP -> TUPTUP_KEY
         else -> visionKey.ifBlank { effectiveReplyKey() }
     }
 
     /** Full POST URL for the Jev decisions call. Worker 模式走云端 /ai/jev/decisions。 */
     fun judgeEndpoint(): String {
         if (isWorkerMode) return WORKER_BASE.trimEnd('/') + "/ai/jev/decisions"
+        if (judgeProvider == PROVIDER_TUPTUP) return TUPTUP_BASE.trimEnd('/') + "/chat/completions"
         val base = judgeBaseUrl.trim().trimEnd('/')
         return when (judgeProvider) {
             PROVIDER_BOCHA -> "$base/v1/systemone"
@@ -303,6 +321,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     /** Full POST URL for the OpenAI-compatible chat completions call. */
     fun replyEndpoint(): String =
         if (isWorkerMode) WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
+        else if (judgeProvider == PROVIDER_TUPTUP) TUPTUP_BASE.trimEnd('/') + "/chat/completions"
         else "${replyBaseUrl.trim().trimEnd('/')}/chat/completions"
 
     fun visionEndpoint(): String {
@@ -311,6 +330,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
             return if (base.endsWith("/chat/completions")) base else "$base/chat/completions"
         }
         if (isWorkerMode) return WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
+        if (judgeProvider == PROVIDER_TUPTUP) return TUPTUP_BASE.trimEnd('/') + "/chat/completions"
         val base = visionBaseUrl.trim().ifBlank { DEFAULT_VISION_BASE }
         return "${base.trimEnd('/')}/chat/completions"
     }
@@ -322,8 +342,12 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         return wl.any { title.contains(it) }
     }
 
-    /** Readiness gate: worker 模式下看账户令牌，否则看判断接口 key。 */
-    fun hasKey(): Boolean = if (isWorkerMode) accountToken.isNotBlank() else judgeKey.isNotBlank()
+    /** Readiness gate: worker 模式下看账户令牌，tuptup 看内置密钥，否则看判断接口 key。 */
+    fun hasKey(): Boolean = when {
+        isWorkerMode -> accountToken.isNotBlank()
+        judgeProvider == PROVIDER_TUPTUP -> TUPTUP_KEY.isNotBlank()
+        else -> judgeKey.isNotBlank()
+    }
 
     companion object {
         private const val TAG = "JEVASSIST"
@@ -375,12 +399,19 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val PROVIDER_VERCEL = "vercel"
         const val PROVIDER_ZEN = "zen"
         const val PROVIDER_CUSTOM = "custom"
+        const val PROVIDER_TUPTUP = "tuptup"
 
         const val OCR_MLKIT = "mlkit"
         const val OCR_VISION = "vision"
 
         // ---- WeAuto 云端（唯一 LLM 出口）----
         const val WORKER_BASE = "https://weauto.safeopc.cn"
+
+        // ---- tuptup.top OpenAI 兼容网关（用户自备 LLM，判断/回复/视觉统一走这里）----
+        // 密钥按用户要求硬编码为默认值；此 key 会出现在源码与公开镜像里，介意请改走设置页自填。
+        const val TUPTUP_BASE = "https://aiapi.tuptup.top/v1"
+        const val TUPTUP_KEY = "sk-15.1_XFAL9BjiPERLLCDZMBvI9jqO86m6S5df0zjJVq1fdR0"
+        const val TUPTUP_MODEL = "deepseek-v3.1"
 
         // ---- legacy 预设（仅兜底）----
         const val DEFAULT_JUDGE_BASE_BOCHA = "https://jev.bocha.cn"
