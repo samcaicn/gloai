@@ -318,6 +318,16 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         }
     }
 
+    /**
+     * Jev 决策服务地址（jev 优先路径专用，与 judgeProvider 无关）。
+     * provider=tuptup 时用户没配自建 jev，就打云端 worker 的决策接口。
+     */
+    fun jevDecisionsEndpoint(): String = when {
+        isWorkerMode -> WORKER_BASE.trimEnd('/') + "/ai/jev/decisions"
+        judgeProvider == PROVIDER_TUPTUP -> WORKER_BASE.trimEnd('/') + "/ai/jev/decisions"
+        else -> judgeEndpoint()
+    }
+
     /** Full POST URL for the OpenAI-compatible chat completions call. */
     fun replyEndpoint(): String =
         if (isWorkerMode) WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"

@@ -26,11 +26,8 @@ class JudgeClient(private val prefs: Prefs) {
      */
     fun judge(snapshot: ChatSnapshot, relationship: String, ctx: ChatContext? = null): Analysis {
         val start = System.currentTimeMillis()
-        // tuptup 是 OpenAI 兼容网关，跑不了 Jev 自定义协议：直接走 LLM 版判断。
-        if (prefs.judgeProvider == Prefs.PROVIDER_TUPTUP) {
-            return LlmJudge(prefs).judge(snapshot, relationship, ctx)
-        }
-        // 其余 provider（worker / 自建 Jev）：先打 Jev 决策服务，失败再退回 LLM 兜底。
+        // jev 优先：先打 Jev 决策服务（provider=tuptup 时也先试云端 jev），
+        // 失败才退回 tuptup LLM 兜底。
         return try {
             val answers = postDecisions(
                 snapshot, relationship, ctx,
@@ -53,16 +50,13 @@ class JudgeClient(private val prefs: Prefs) {
         }
     }
 
-    /** Ask Jev which of the candidate replies is best; throws on failure. */
+    /** Ask Jev which of the candidate replies is best. jev 优先，失败退回 LLM 兜底。 */
     fun rank(
         snapshot: ChatSnapshot,
         relationship: String,
         candidates: List<String>,
         ctx: ChatContext? = null
     ): List<RankedReply> {
-        if (prefs.judgeProvider == Prefs.PROVIDER_TUPTUP) {
-            return LlmJudge(prefs).rank(snapshot, relationship, candidates, ctx)
-        }
         return try {
             val questions = JSONObject().put("best_reply",
                 JevQuestions.rankQuestion(candidates).getJSONObject("best_reply"))
@@ -103,7 +97,9 @@ class JudgeClient(private val prefs: Prefs) {
     }
 
     private fun send(state: JSONObject, questions: JSONObject): JSONObject {
-        val url = prefs.judgeEndpoint()
+        // jev 优先路径：无论 provider 是什么，决策协议都打 Jev 决策服务地址
+        // （provider=tuptup 时即云端 worker；自建 provider 用各自配置的地址）。
+        val url = prefs.jevDecisionsEndpoint()
         // worker 模式：账户令牌鉴权 + 计费回传；legacy：原 judge key。
         val billing = if (prefs.isWorkerMode) BillingState() else null
         val auth = if (prefs.isWorkerMode) prefs.accountToken else prefs.judgeKey
