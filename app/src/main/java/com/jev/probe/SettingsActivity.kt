@@ -170,7 +170,7 @@ class SettingsActivity : AppCompatActivity() {
         unattendedCard.addView(ocrImgRow)
         val autoOpenRow = toggleRow("收到消息自动打开会话（真·无人值守）", prefs.autoOpenChat)
         unattendedCard.addView(autoOpenRow)
-        unattendedCard.addView(text("自动打开会话会直接点开微信聊天界面，仅无人值守时用；默认关。", 11f, sub))
+        unattendedCard.addView(text("自动打开会话会直接点开微信聊天界面，仅无人值守时用；默认开（自动监听）。", 11f, sub))
         val autoFillRow = toggleRow("自动填入最佳候选（配合上两项＝全自动）", prefs.autoFillBest)
         unattendedCard.addView(autoFillRow)
         unattendedCard.addView(text(

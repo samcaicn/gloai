@@ -20,6 +20,7 @@ import com.jev.probe.capture.ocr.OcrLine
 import com.jev.probe.capture.ocr.ScreenCapture
 import com.jev.probe.core.BubbleRect
 import com.jev.probe.core.ChatSnapshot
+import com.jev.probe.core.ConversationHistory
 import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.kb.ContextBuilder
@@ -185,6 +186,16 @@ open class ChatCaptureService : AccessibilityService() {
         override fun onReceive(ctx: Context?, intent: Intent?) {
             if (intent?.action != ACTION_WX_MSG) return
             if (intent.getBooleanExtra("image", false)) imageOcrRequested = true
+            // The notification preview (sender + text) is the earliest signal we get;
+            // fold it into history so a background message is never lost even if the
+            // chat never opens or the tree read misses it.
+            val sender = intent.getStringExtra("sender")
+            val text = intent.getStringExtra("text")
+            if (!text.isNullOrBlank()) {
+                ConversationHistory.appendFromNotification(
+                    PKG_WECHAT, currentSnapshot?.title ?: sender, sender, text,
+                    intent.getBooleanExtra("image", false))
+            }
             val fg = rootInActiveWindow?.packageName?.toString()
             if (fg == PKG_WECHAT) {
                 main.post { if (prefs.enabled) runCatching { maybeCapture() } }
@@ -228,6 +239,8 @@ open class ChatCaptureService : AccessibilityService() {
         // Load the bundled OCR model now, off the main thread: the first
         // recognize() otherwise pays for it inside the screenshot callback.
         submit { PaddleOcr.warmUp(this) }
+        // Restore cross-session conversation history (survives process death).
+        ConversationHistory.attach(this)
         // Listen for new WeChat messages from the NotificationListenerService.
         runCatching {
             ContextCompat.registerReceiver(
@@ -338,6 +351,9 @@ open class ChatCaptureService : AccessibilityService() {
         if (pkg != activePkg) { activePkg = pkg; lastSignature = "" }
 
         currentSnapshot = snapshot
+        // Fold the visible bubbles into cross-session history so the judge later
+        // sees the whole thread (history + screen), not just what fits on screen.
+        ConversationHistory.appendFromSnapshot(pkg ?: "", snapshot.title, snapshot.messages)
         // Image message from the other person: OCR the picture to read its text,
         // then analyze. This is the ONLY screenshot we take inside WeChat (a normal
         // screenshot there trips its risk control; the accessibility screenshot API
@@ -413,13 +429,16 @@ open class ChatCaptureService : AccessibilityService() {
         if (!prefs.hasKey()) { overlay?.showError("未设置判断接口密钥，去设置里填"); return }
         val token = session.begin() ?: return
         analyzing = true
+        // Merge the persisted cross-session history into the visible snapshot so the
+        // judge sees the full thread, not only the bubbles currently on screen.
+        val augmented = ConversationHistory.mergeInto(snapshot, token.target.pkg)
         overlay?.showLoading()
         overlay?.setNote(snapshot.note)
         val client = JevClient(prefs)
         val rel = prefs.relationship
         submitAnalysis {
             val ctx = try {
-                ContextBuilder.build(this, snapshot, token.target.pkg, prefs)
+                ContextBuilder.build(this, augmented, token.target.pkg, prefs)
             } catch (e: Exception) {
                 Log.w(TAG, "context build failed: ${e.javaClass.simpleName}"); null
             }
@@ -435,7 +454,7 @@ open class ChatCaptureService : AccessibilityService() {
                     }
                 }
                 submitAnalysis {
-                    val judgment = client.judge(snapshot, rel, ctx)
+                    val judgment = client.judge(augmented, rel, ctx)
                     main.post {
                         if (isCurrent(token)) {
                             if (judgment.error != null) overlay?.showError(judgment.error)
@@ -446,7 +465,7 @@ open class ChatCaptureService : AccessibilityService() {
                 }
                 submitAnalysis {
                     var replyError: String? = null
-                    val ranked = try { client.draftAndRank(snapshot, rel, ctx) } catch (e: Exception) {
+                    val ranked = try { client.draftAndRank(augmented, rel, ctx) } catch (e: Exception) {
                         replyError = e.message ?: e.javaClass.simpleName
                         emptyList()
                     }

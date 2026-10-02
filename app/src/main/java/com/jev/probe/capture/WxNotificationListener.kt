@@ -4,6 +4,7 @@ import android.app.Notification
 import android.content.Intent
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.jev.probe.core.ConversationHistory
 import com.jev.probe.core.Prefs
 
 /**
@@ -21,6 +22,13 @@ class WxNotificationListener : NotificationListenerService() {
 
     /** (title|text) -> last post time, for de-duplicating re-posted notifications. */
     private val seen = LinkedHashMap<String, Long>(128, 0.75f, true)
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        // Make sure history persistence is wired even if the capture service has
+        // not connected yet (the listener can receive events first at boot).
+        ConversationHistory.attach(this)
+    }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         val s = sbn ?: return
@@ -48,6 +56,11 @@ class WxNotificationListener : NotificationListenerService() {
         }
 
         val isImage = isImageMessage(text)
+
+        // Accumulate the preview into cross-session history immediately — this works
+        // even when WeChat is in the background and the chat never opens, so the
+        // judge later sees the full thread instead of only the visible screen.
+        ConversationHistory.appendFromNotification(packageName, title, title, text, isImage)
 
         // Tell the capture service a message arrived; it re-reads the live chat.
         // Explicit package: keeps the broadcast inside our own app instead of

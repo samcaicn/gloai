@@ -272,10 +272,11 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
     /**
      * 收到微信消息时，若微信不在前台，是否自动点开该会话（通过通知的 contentIntent）。
-     * 开启后才能做到真正"不在手机旁"也自动接管；默认关，避免打扰。
+     * 开启后才能做到真正"不在手机旁"也自动接管。默认开：自动监听的核心开关之一
+     * （配合 autoAnalyze + 通知监听），关掉则只在用户已停留在聊天界面时才自动分析。
      */
     var autoOpenChat: Boolean
-        get() = sp.getBoolean(K_AUTO_OPEN, false)
+        get() = sp.getBoolean(K_AUTO_OPEN, true)
         set(v) = sp.edit().putBoolean(K_AUTO_OPEN, v).apply()
 
     /**
