@@ -411,7 +411,9 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         // 密钥按用户要求硬编码为默认值；此 key 会出现在源码与公开镜像里，介意请改走设置页自填。
         const val TUPTUP_BASE = "https://aiapi.tuptup.top/v1"
         const val TUPTUP_KEY = "sk-15.1_XFAL9BjiPERLLCDZMBvI9jqO86m6S5df0zjJVq1fdR0"
-        const val TUPTUP_MODEL = "deepseek-v3.1"
+        // doubao seed 系列在 tuptup.top 唯一有可用渠道的聊天模型（seed-1.6-flash 无渠道、seedance 未定价）。
+        // 网关上游偶发限流(429)为瞬态，恢复后即可用。deepseek-v3.1 在该网关无渠道(503)，已弃用。
+        const val TUPTUP_MODEL = "doubao-seed-2.0-pro"
 
         // ---- legacy 预设（仅兜底）----
         const val DEFAULT_JUDGE_BASE_BOCHA = "https://jev.bocha.cn"
