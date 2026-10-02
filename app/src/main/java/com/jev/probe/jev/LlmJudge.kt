@@ -198,7 +198,7 @@ class LlmJudge(private val prefs: Prefs) {
             "acknowledge", "say_less", "make_plan"
         )
 
-        private const val JUDGE_SCHEMA_PROMPT = """
+        private val JUDGE_SCHEMA_PROMPT = """
 请只输出一个 JSON 对象，字段严格如下（不要多余字段）：
 {
   "true_intent": {"choice": "confirm_you_care|vent_anger|request_action|seek_explanation|casual_chat|close_topic", "confidence": 0.0-1.0},
@@ -219,7 +219,7 @@ class LlmJudge(private val prefs: Prefs) {
 - literal_question：对方最新一句是否纯字面、无潜台词（true 接近 1）。
 confidence 是你对该判断的把握度。""".trimIndent()
 
-        private const val RANK_SCHEMA_PROMPT = """
+        private val RANK_SCHEMA_PROMPT = """
 请只输出一个 JSON 对象，对三条候选各给 0.0-1.0 的合适度分数：
 {"reply_a": 0.0-1.0, "reply_b": 0.0-1.0, "reply_c": 0.0-1.0}
 优先匹配 best_action 类型；贬低、过度承诺、跑题的候选给低分；事实未确认时优先会去查证而不是假装记得或泛泛道歉的那条。"""
