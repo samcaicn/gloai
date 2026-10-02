@@ -174,6 +174,10 @@ open class ChatCaptureService : AccessibilityService() {
     /** Dedupe key for image OCR: title + image rect, so we shoot each picture once. */
     private var lastImageOcrSig: String = ""
 
+    /** Tree snapshot captured alongside an OCR-primary pass; if PaddleOCR draws
+     *  a blank we fall back to the tree's text so the bubble still has content. */
+    private var lastTreeSnapshot: ChatSnapshot? = null
+
     /** Bridge from [WxNotificationListener]: a new WeChat message arrived. Re-runs
      *  capture when WeChat is foreground; flags image OCR when the message was a
      *  picture. Registered NOT_EXPORTED — only our own app sends this. */
@@ -279,6 +283,7 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     private fun maybeCapture() {
+        lastTreeSnapshot = null // fresh capture cycle; only the OCR-primary branch re-sets it
         val root = rootInActiveWindow ?: run { leaveConversation(); overlay?.hide(); return }
         val pkg = root.packageName?.toString()
         // Apps with no adapter are never handled automatically (v1.3 revision):
@@ -347,6 +352,21 @@ open class ChatCaptureService : AccessibilityService() {
                 imageOcr(img, snapshot.title, pkg)
                 return
             }
+        }
+        // OCR-primary: read each bubble via local PaddleOCR (accessibility
+        // screenshot API — safe inside WeChat, no risk-control trigger). The tree
+        // still supplies bubble geometry + sides; its text is the fallback when
+        // OCR returns empty. This is what makes "优先本地 OCR" actually run in the
+        // main WeChat flow instead of being skipped for a tree-only read.
+        if (prefs.ocrPrimary && snapshot.bubbleRects.isNotEmpty()) {
+            if (overlay?.isShowing() != true) overlay?.showIdle(snapshot.title)
+            val sig3 = ocrSignature(pkg ?: "", snapshot.title, snapshot.bubbleRects)
+            if (sig3 == lastOcrSignature && overlay?.isShowing() == true) return
+            if (ocrBusy) return
+            lastOcrSignature = sig3
+            lastTreeSnapshot = snapshot
+            ocrCapture(snapshot.title, snapshot.bubbleRects, pkg ?: "", manual = false)
+            return
         }
         val sig = snapshot.signature()
         val showing = overlay?.isShowing() == true
@@ -626,9 +646,23 @@ open class ChatCaptureService : AccessibilityService() {
         // Counts only — OCR'd chat text never goes to logcat.
         Log.i(TAG, "ocr[$pkg] msgs=${snapshot.messages.size} manual=$manual")
         if (snapshot.messages.isEmpty()) {
-            if (manual) overlay?.showError("这一屏没认出文字")
+            if (manual) {
+                overlay?.showError("这一屏没认出文字")
+                return
+            }
+            // OCR drew a blank: fall back to the tree text captured alongside so the
+            // bubble still has content (local OCR just couldn't read these pixels).
+            if (prefs.ocrPrimary) {
+                val tree = lastTreeSnapshot
+                if (tree != null && tree.messages.isNotEmpty()) {
+                    lastTreeSnapshot = null
+                    finishOcrSnapshot(tree.copy(note = "本地OCR未识别，已回退树读取"), pkg, manual, token)
+                    return
+                }
+            }
             return
         }
+        lastTreeSnapshot = null
         if (!prefs.isAllowed(snapshot.title)) { leaveConversation(); overlay?.hide(); return }
 
         if (pkg.isNotEmpty() && pkg != activePkg) { activePkg = pkg; lastSignature = "" }

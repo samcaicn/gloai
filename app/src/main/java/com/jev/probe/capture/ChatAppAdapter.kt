@@ -142,6 +142,7 @@ class WeChatAdapter : ChatAppAdapter {
     override fun extract(root: AccessibilityNodeInfo, res: Resources): ChatSnapshot? {
         val width = res.displayMetrics.widthPixels
         val bubbles = ArrayList<Triple<Int, Int, String>>() // top, centerX, text
+        val bubbleRects = ArrayList<BubbleRect>() // screen rect + side, for local PaddleOCR
         val imageBubbles = ArrayList<Pair<Int, BubbleRect>>() // top, rect (side is in the rect)
         var firstBubbleTop = Int.MAX_VALUE
         var isChat = false
@@ -160,6 +161,8 @@ class WeChatAdapter : ChatAppAdapter {
                 if (!text.isNullOrBlank()) {
                     bubbles.add(Triple(b.top, b.centerX(), text))
                     if (b.top < firstBubbleTop) firstBubbleTop = b.top
+                    val side = if (b.centerX() > width / 2) "me" else "other"
+                    bubbleRects.add(BubbleRect(Rect(b), side))
                 } else if (hasImageChild(node)) {
                     // An image / screenshot / sticker: no text in the tree, but the
                     // picture may carry text worth reading. Record it so the service
@@ -193,7 +196,8 @@ class WeChatAdapter : ChatAppAdapter {
         val msgs = bubbles.map { (_, cx, text) ->
             Msg(if (cx > width / 2) "me" else "other", text)
         }
-        return ChatSnapshot(title, msgs, imageMessage = imageMessage, imageIsLatest = imageIsLatest)
+        return ChatSnapshot(title, msgs, bubbleRects = bubbleRects,
+            imageMessage = imageMessage, imageIsLatest = imageIsLatest)
     }
 
     /** Does this bubble node contain an ImageView descendant (i.e. it is a picture)? */

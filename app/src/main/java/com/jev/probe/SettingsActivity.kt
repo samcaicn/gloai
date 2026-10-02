@@ -108,6 +108,9 @@ class SettingsActivity : AppCompatActivity() {
         val ocrFallbackRow = toggleRow("树读不到正文时用 OCR 兜底", prefs.ocrFallback)
         card2.addView(ocrFallbackRow)
         card2.addView(text("飞书正文是画上去的，节点树里读不到，这时截一次屏本地识别（不上传）。", 11f, sub))
+        val ocrPrimaryRow = toggleRow("微信内优先本地 OCR 逐气泡识别", prefs.ocrPrimary)
+        card2.addView(ocrPrimaryRow)
+        card2.addView(text("开则微信每个气泡都用本机 PaddleOCR 认字（不上传），收发方仍由树判定；关则退回纯树读。", 11f, sub))
         val ocrAutoRow = toggleRow("OCR 模式自动分析", prefs.ocrAutoAnalyze)
         card2.addView(ocrAutoRow)
         card2.addView(text("关闭时 OCR 认完只亮悬浮球，点一下再分析。", 11f, sub))
@@ -208,6 +211,7 @@ class SettingsActivity : AppCompatActivity() {
                 .map { it.trim() }.filter { it.isNotEmpty() }.toSet()
             prefs.autoAnalyze = (autoRow.tag as? Boolean) ?: true
             prefs.ocrFallback = (ocrFallbackRow.tag as? Boolean) ?: true
+            prefs.ocrPrimary = (ocrPrimaryRow.tag as? Boolean) ?: true
             prefs.ocrAutoAnalyze = (ocrAutoRow.tag as? Boolean) ?: false
             prefs.contextEnabled = (ctxRow.tag as? Boolean) ?: false
             prefs.autoSend = (autoSendRow.tag as? Boolean) ?: true

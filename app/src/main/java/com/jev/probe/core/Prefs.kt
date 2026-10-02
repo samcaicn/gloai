@@ -218,6 +218,14 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getBoolean(K_OCR_FALLBACK, true)
         set(v) = sp.edit().putBoolean(K_OCR_FALLBACK, v).apply()
 
+    /**
+     * 微信内文字读取是否优先走本地 PaddleOCR（无障碍截屏 API，不触风控），
+     * 逐气泡识别、收发方仍由节点树判定。关则退回纯树读。默认开——本地 OCR 优先。
+     */
+    var ocrPrimary: Boolean
+        get() = sp.getBoolean(K_OCR_PRIMARY, true)
+        set(v) = sp.edit().putBoolean(K_OCR_PRIMARY, v).apply()
+
     var ocrAutoAnalyze: Boolean
         get() = sp.getBoolean(K_OCR_AUTO, false)
         set(v) = sp.edit().putBoolean(K_OCR_AUTO, v).apply()
@@ -387,8 +395,9 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_AUTO_SUMMARY = "auto_summary"
         private const val K_OCR_ENGINE = "ocr_engine"
         private const val K_OCR_UNKNOWN = "ocr_unknown_apps"
-        private const val K_OCR_FALLBACK = "ocr_fallback"
-        private const val K_OCR_AUTO = "ocr_auto_analyze"
+    private const val K_OCR_FALLBACK = "ocr_fallback"
+    private const val K_OCR_PRIMARY = "ocr_primary"
+    private const val K_OCR_AUTO = "ocr_auto_analyze"
         private const val K_REL = "relationship"
         private const val K_ENABLED = "enabled"
         private const val K_WHITELIST = "whitelist"
