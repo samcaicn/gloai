@@ -34,7 +34,10 @@ dependencies {
     // On-device OCR. ONNX Runtime ships 16 KB-page-aligned arm64 .so, so it
     // loads fine on Android 15+ (our targetSdk is 35).
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.21.1")
-    implementation("com.quickbirdstudios:opencv:4.5.3")
+    // Official OpenCV Android AAR (Maven Central). quickbirdstudios:opencv:4.5.3
+    // is built with an old NDK and dies on modern Android:
+    // dlopen fails "cannot locate symbol __sfp_handle_exceptions".
+    implementation("org.opencv:opencv:4.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("androidx.core:core-ktx:1.15.0")
 }
