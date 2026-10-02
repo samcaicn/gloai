@@ -26,28 +26,32 @@ class JudgeClient(private val prefs: Prefs) {
      */
     fun judge(snapshot: ChatSnapshot, relationship: String, ctx: ChatContext? = null): Analysis {
         val start = System.currentTimeMillis()
-        // jev 优先：先打 Jev 决策服务（provider=tuptup 时也先试云端 jev），
-        // 失败才退回 tuptup LLM 兜底。
-        return try {
-            val answers = postDecisions(
-                snapshot, relationship, ctx,
-                JevQuestions.judge()
-            )
-            Analysis(
-                trueIntent = parseChoice(answers.optJSONObject("true_intent")),
-                dangerLevel = parseScore(answers.optJSONObject("danger_level")),
-                sheNeeds = parseChoice(answers.optJSONObject("she_needs")),
-                shouldReplyNow = answers.optJSONObject("should_reply_now")?.optDouble("noul"),
-                bestAction = parseChoice(answers.optJSONObject("best_action")),
-                tensionResolved = answers.optJSONObject("tension_resolved")?.optDouble("noul"),
-                literalQuestion = answers.optJSONObject("literal_question")?.optDouble("noul"),
-                rankedReplies = emptyList(),
-                latencyMs = System.currentTimeMillis() - start
-            )
-        } catch (e: Exception) {
-            Log.w(TAG, "jev judge failed -> llm fallback: ${e.message}")
-            LlmJudge(prefs).judge(snapshot, relationship, ctx)
+        // jev 优先：仅当 worker 模式（有账户令牌 + 签名能力）才打云端 jev 决策服务。
+        // 其余 provider（如 tuptup）无签名头、云端必然 401，直接走 LLM 版 jev 协议，
+        // 避免每次都白等一次注定失败的云端请求（这正是此前"点了卡死"的主因）。
+        if (prefs.isWorkerMode) {
+            return try {
+                val answers = postDecisions(
+                    snapshot, relationship, ctx,
+                    JevQuestions.judge()
+                )
+                Analysis(
+                    trueIntent = parseChoice(answers.optJSONObject("true_intent")),
+                    dangerLevel = parseScore(answers.optJSONObject("danger_level")),
+                    sheNeeds = parseChoice(answers.optJSONObject("she_needs")),
+                    shouldReplyNow = answers.optJSONObject("should_reply_now")?.optDouble("noul"),
+                    bestAction = parseChoice(answers.optJSONObject("best_action")),
+                    tensionResolved = answers.optJSONObject("tension_resolved")?.optDouble("noul"),
+                    literalQuestion = answers.optJSONObject("literal_question")?.optDouble("noul"),
+                    rankedReplies = emptyList(),
+                    latencyMs = System.currentTimeMillis() - start
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "jev judge failed -> llm fallback: ${e.message}")
+                LlmJudge(prefs).judge(snapshot, relationship, ctx)
+            }
         }
+        return LlmJudge(prefs).judge(snapshot, relationship, ctx)
     }
 
     /** Ask Jev which of the candidate replies is best. jev 优先，失败退回 LLM 兜底。 */
@@ -57,15 +61,18 @@ class JudgeClient(private val prefs: Prefs) {
         candidates: List<String>,
         ctx: ChatContext? = null
     ): List<RankedReply> {
-        return try {
-            val questions = JSONObject().put("best_reply",
-                JevQuestions.rankQuestion(candidates).getJSONObject("best_reply"))
-            val answers = postDecisions(snapshot, relationship, ctx, questions)
-            parseRanked(answers.optJSONObject("best_reply"), candidates)
-        } catch (e: Exception) {
-            Log.w(TAG, "jev rank failed -> llm fallback: ${e.message}")
-            LlmJudge(prefs).rank(snapshot, relationship, candidates, ctx)
+        if (prefs.isWorkerMode) {
+            return try {
+                val questions = JSONObject().put("best_reply",
+                    JevQuestions.rankQuestion(candidates).getJSONObject("best_reply"))
+                val answers = postDecisions(snapshot, relationship, ctx, questions)
+                parseRanked(answers.optJSONObject("best_reply"), candidates)
+            } catch (e: Exception) {
+                Log.w(TAG, "jev rank failed -> llm fallback: ${e.message}")
+                LlmJudge(prefs).rank(snapshot, relationship, candidates, ctx)
+            }
         }
+        return LlmJudge(prefs).rank(snapshot, relationship, candidates, ctx)
     }
 
     /**

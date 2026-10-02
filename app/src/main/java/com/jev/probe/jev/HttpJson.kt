@@ -64,8 +64,8 @@ object HttpJson {
             try {
                 conn = (URL(url).openConnection() as HttpURLConnection).apply {
                     requestMethod = "POST"
-                    connectTimeout = 15000
-                    readTimeout = 40000
+                    connectTimeout = 8000
+                    readTimeout = 20000
                     doOutput = true
                     // worker 模式用账户令牌；legacy 模式用 provider key。两者都是 Bearer。
                     if (authToken.isNotBlank()) {
@@ -80,11 +80,10 @@ object HttpJson {
                 val bytes = body.toString().toByteArray(Charsets.UTF_8)
                 conn.outputStream.use { os: OutputStream -> os.write(bytes) }
                 val code = conn.responseCode
+                // 429/529 是网关级限流/过载，立即重试无意义，直接失败让上层快速报错，
+                // 避免此前"点了卡死"（最坏 3 次退避 + 40s 读超时把 UI 冻住）的问题。
                 if (code == 429 || code == 529) {
-                    last = ApiException(route, code, "服务繁忙，已重试")
-                    attempt++
-                    if (attempt < MAX_ATTEMPTS) Thread.sleep(500L * (1L shl attempt))
-                    continue
+                    throw ApiException(route, code, "服务繁忙，请稍后重试")
                 }
                 if (code !in 200..299) {
                     val errText = readBody(conn.errorStream)
