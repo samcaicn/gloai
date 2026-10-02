@@ -21,6 +21,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.jev.probe.core.Analysis
 import com.jev.probe.core.ChatSnapshot
+import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.RankedReply
 import kotlin.math.abs
@@ -354,6 +355,34 @@ class OverlayController(private val ctx: Context) {
         setContent(listOf(
             line("出错了", "#DC2626", 14f, true),
             hint(msg)))
+    }
+
+    /**
+     * 判断接口（LLM）不可用时的本地兜底：把本地 OCR / 无障碍树读到的对话直接
+     * 显示出来，让用户即使没网、没额度、没 key 也能看到探针"读到了什么"。
+     * reason 为非空时附一行判断失败的原因，并在底部提供"重新分析"按钮。
+     */
+    fun showOcrResult(messages: List<Msg>, reason: String? = null) {
+        ensureRoot(); bubble?.alpha = 1f
+        val views = ArrayList<View>()
+        views.add(line("本地识别到的对话（无需联网）", "#3A7AFE", 14f, true))
+        if (messages.isEmpty()) {
+            views.add(hint("（这一屏没认出文字）"))
+        } else {
+            var lastSide = ""
+            for (m in messages) {
+                val side = m.side
+                val label = if (side == "me") "我" else "对方"
+                val prefix = if (side != lastSide) "$label：" else ""
+                lastSide = side
+                val color = if (side == "me") "#1F2937" else "#374151"
+                views.add(line("$prefix${m.text}", color, 13f))
+            }
+        }
+        reason?.let { views.add(hint("⚠ 判断接口暂不可用：$it")) }
+        views.add(bigButton("重新分析") { onManualAnalyze?.invoke() })
+        setContent(views)
+        if (!expanded) toggle()
     }
 
     /**

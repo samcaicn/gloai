@@ -426,7 +426,7 @@ open class ChatCaptureService : AccessibilityService() {
         if (analyzing || destroyed || !prefs.enabled) return
         val previous = session.token() ?: return
         if (!isCurrent(previous)) return
-        if (!prefs.hasKey()) { overlay?.showError("未设置判断接口密钥，去设置里填"); return }
+        if (!prefs.hasKey()) { overlay?.showOcrResult(snapshot.messages, "未设置判断接口密钥，去设置里填"); return }
         val token = session.begin() ?: return
         analyzing = true
         // Merge the persisted cross-session history into the visible snapshot so the
@@ -457,7 +457,7 @@ open class ChatCaptureService : AccessibilityService() {
                     val judgment = client.judge(augmented, rel, ctx)
                     main.post {
                         if (isCurrent(token)) {
-                            if (judgment.error != null) overlay?.showError(judgment.error)
+                            if (judgment.error != null) overlay?.showOcrResult(augmented.messages, judgment.error)
                             else overlay?.showJudgment(judgment)
                             completed()
                         }
