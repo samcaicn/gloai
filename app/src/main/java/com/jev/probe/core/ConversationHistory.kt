@@ -25,14 +25,14 @@ object ConversationHistory {
     private const val MAX_PER_CONV = 60          // 单会话最多保留多少条
     private const val MAX_CONV = 50              // 最多保留多少个会话
     private const val DUP_WINDOW_MS = 3000L      // 同一文本 3 秒内不重复计
-    // 整屏去重：同一屏内容在短时间内被反复 OCR 时，整屏跳过，避免逐条膨胀
-    private const val SCREEN_DUP_MS = 60_000L
+    // 去重回看窗口：新读到的消息若与"桶内最近 N 条"中任一条 (side,text) 相同，视为
+    // 同一屏被反复 OCR，跳过。N 取 40 足以覆盖"整屏重读"的重叠，又不至于误杀
+    // 相隔很久后合法的相同短消息。
+    private const val DEDUP_LOOKBACK = 40
 
     private data class Entry(val side: String, val text: String, val t: Long)
 
     private val store = LinkedHashMap<String, MutableList<Entry>>(MAX_CONV, 0.75f, true)
-    // 每会话"上一次整屏签名 + 时间"，用于整屏级去重
-    private val lastScreen = HashMap<String, Pair<Long, String>>()
     private var file: File? = null
     private val disk = Executors.newSingleThreadExecutor()
 
@@ -49,15 +49,20 @@ object ConversationHistory {
     fun appendFromSnapshot(pkg: String, title: String?, msgs: List<Msg>) {
         if (msgs.isEmpty()) return
         val k = key(pkg, title)
-        // 整屏级去重：同一屏（内容签名相同）在窗口内重复 OCR 时整屏跳过，
-        // 否则 addUnique 只跟"上一条"比，整屏会逐次线性膨胀成几十条。
-        val sig = msgs.joinToString("\u0000") { "${it.side}:${it.text}" }
-        val prev = lastScreen[k]
-        if (prev != null && prev.second == sig &&
-            System.currentTimeMillis() - prev.first < SCREEN_DUP_MS) return
-        lastScreen[k] = System.currentTimeMillis() to sig
         val list = store.getOrPut(k) { ArrayList() }
-        for (m in msgs) addUnique(list, m.side, m.text)
+        // 与"写入前"桶内最近 DEDUP_LOOKBACK 条比对：同一屏被反复 OCR 时，
+        // 屏幕上仍可见的老消息会命中去重被跳过；而同屏内合法的重复气泡
+        // （两条相同 "ok"）因只跟"写入前"的旧内容比，仍会各记一次。
+        val known = HashSet<String>(DEDUP_LOOKBACK * 2)
+        for (e in list.takeLast(DEDUP_LOOKBACK)) known.add(e.side + "\u0000" + e.text)
+        val now = System.currentTimeMillis()
+        var added = false
+        for (m in msgs) {
+            if (m.side + "\u0000" + m.text in known) continue
+            list.add(Entry(m.side, m.text, now))
+            added = true
+        }
+        if (!added) return
         trim(list)
         persist()
     }
