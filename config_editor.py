@@ -2504,7 +2504,7 @@ class WebLogHandler(logging.Handler):
                 pass  # 队列满时静默丢弃
         except Exception as e:
             # 避免日志处理器内部错误导致程序崩溃
-            print(f"WebLogHandler错误: {e}")
+            app.logger.warning(f"WebLogHandler错误: {e}")
 
 # 配置日志处理器
 web_handler = WebLogHandler()
@@ -2611,9 +2611,9 @@ def receive_bot_log():
                             # 队列满时，记录警告但不中断
                             app.logger.warning("日志队列已满，丢弃日志")
                             pass
-                # 定期输出接收统计（每收到100条日志输出一次）
+                # 定期输出接收统计（每收到100条日志记录一次到日志文件）
                 if processed_count > 0 and processed_count % 100 == 0:
-                    print(f"[配置编辑器] 已接收 bot.py 日志: {processed_count} 条")
+                    app.logger.info("已接收 bot.py 日志 %d 条", processed_count)
                 return jsonify({'status': 'success', 'processed': processed_count})
             return jsonify({'error': 'Invalid logs format'}), 400
             
@@ -3430,20 +3430,9 @@ def check_should_post_forum(character_name):
 直接输出动态内容，不需要"内容："前缀。
 """
 
-        # 打印完整提示词到控制台，方便调试
-        print("\n" + "="*80)
-        print(f"🎯 论坛拉取请求 - 角色: {character_name}")
-        print("="*80)
-        print("📊 提示词统计:")
-        print(f"   角色设定长度: {len(character_prompt)} 字符")
-        print(f"   总提示词长度: {len(prompt)} 字符")
-        print(f"   当前时间: {time_str}")
-        print(f"   最近内容数量: {len(recent_posts) if recent_posts else 0}")
-        print(f"   联网热点检索: {'已启用' if online_hot_brief else '未启用'}")
+        # 提示词/响应调试信息已改为只写日志文件（GUI-only，控制台不输出）
         if online_hot_brief:
-            print(f"   热点内容长度: {len(online_hot_brief)} 字符")
-        print("="*80 + "\n")
-        
+            app.logger.info("论坛提示词含联网热点，长度 %d 字符", len(online_hot_brief))
         # 调用AI API - 优先使用论坛自定义模型，其次主模型
         use_forum_custom = bool(config.get('ENABLE_FORUM_CUSTOM_MODEL', False))
         if use_forum_custom:
@@ -3488,13 +3477,6 @@ def check_should_post_forum(character_name):
         app.logger.info(f"AI回复: {reply}")
         
         # 打印AI响应到控制台，方便调试
-        print("🤖 AI模型响应:")
-        print(f"   模型: {model}")
-        print(f"   联网热点: {'已使用' if online_hot_brief else '未使用'}")
-        print(f"   响应内容: '{reply}'")
-        print(f"   响应长度: {len(reply) if reply else 0} 字符")
-        print(f"   是否为空: {'是' if not reply else '否'}")
-        print("="*80 + "\n")
         
         # 简化的解析逻辑 - 直接使用AI的回复作为内容
         if reply and len(reply) > 5:
@@ -4587,14 +4569,12 @@ def validate_config():
     try:
         # 如果配置文件不存在，直接创建完整配置
         if not os.path.exists(config_path):
-            print(f"配置文件不存在，正在创建新配置文件: {config_path}")
             with open(config_path, 'w', encoding='utf-8') as f:
                 f.write("# -*- coding: utf-8 -*-\n\n")
                 f.write("# 自动生成的配置文件\n\n")
                 
                 for key, value in get_default_config().items():
                     f.write(f"{key} = {repr(value)}\n")
-            print("已创建新的配置文件")
             return True
         
         # 尝试解析当前配置
@@ -4614,8 +4594,6 @@ def validate_config():
         
         # 如果存在缺失项，更新配置文件
         if missing_keys:
-            print(f"检测到{len(missing_keys)}个缺失的配置项: {', '.join(missing_keys)}")
-            print("正在自动补充默认值...")
             
             # 直接修改文件，添加缺失的配置项
             with open(config_path, 'a', encoding='utf-8') as f:
@@ -4623,14 +4601,12 @@ def validate_config():
                 for key in missing_keys:
                     f.write(f"{key} = {repr(default_config[key])}\n")
             
-            print("配置文件已更新完成")
             return True  # 配置已更新
         
-        print("配置文件验证完成，所有配置项齐全")
         return False  # 配置无需更新
         
     except Exception as e:
-        print(f"验证配置文件时出错: {str(e)}")
+        app.logger.warning(f"验证配置文件时出错: {str(e)}")
         return False
 def delete_forum_post_by_id(character_name, post_id):
     """根据ID删除角色的论坛帖子"""
@@ -4726,12 +4702,10 @@ def kill_process_using_port(port):
             if conn.status in ('LISTEN', 'LISTENING'):
                 try:
                     proc = psutil.Process(conn.pid)
-                    print(f"检测到端口 {port} 被进程 {conn.pid} 占用，尝试结束该进程……")
                     proc.kill()
                     proc.wait(timeout=3)
-                    print(f"进程 {conn.pid} 已被成功结束。")
                 except Exception as e:
-                    print(f"结束进程 {conn.pid} 时出现异常：{e}")
+                    app.logger.warning(f"结束进程 {conn.pid} 时出现异常：{e}")
 
 # ---------------------------------------------------------------------------
 # 风格模仿：通过聊天记录学习主人的说话方式，并可注入提示词让 bot 模仿
@@ -5342,15 +5316,12 @@ def _run_desktop_window(web_url, attach_mode, start_waitress):
     url = web_url
 
     def _fallback_browser(reason):
-        print(f"\033[33m{reason}，已回退到系统浏览器模式\033[0m")
-        print("\033[33m如需桌面窗口，请安装 Microsoft WebView2 Runtime:\033[0m")
-        print("\033[33mhttps://developer.microsoft.com/microsoft-edge/webview2/\033[0m")
         webbrowser.open(url)
 
     if not attach_mode:
         # waitress 放后台线程，主线程交给 webview 事件循环
         if not start_waitress(background=True):
-            print("\033[31mWebUI 服务启动失败，即将退出\033[0m")
+            app.logger.warning("\033[31mWebUI 服务启动失败，即将退出\033[0m")
             raise SystemExit(1)
 
     try:
@@ -5393,7 +5364,6 @@ def _run_desktop_window(web_url, attach_mode, start_waitress):
 
         webview.create_window('WeAuto', url, width=1280, height=860, min_size=(960, 640),
                               js_api=_AppApi())
-        print("\033[32m桌面窗口已打开，关闭窗口即退出（不影响已运行的其他实例）\033[0m")
         webview.start()
     except Exception as _e:
         _fallback_browser(f"桌面窗口启动失败 ({_e})")
@@ -5440,15 +5410,21 @@ if __name__ == '__main__':
         except Exception:
             pass
 
-    # 配置应用日志级别
+    # 配置应用日志级别：GUI-only 产品，日志只落文件，控制台保持静默
     app.logger.setLevel(logging.INFO)
-
-    # 添加控制台处理器确保论坛相关日志显示
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    console_handler.setFormatter(formatter)
-    app.logger.addHandler(console_handler)
+    for _h in list(app.logger.handlers):
+        app.logger.removeHandler(_h)
+    app.logger.propagate = False
+    try:
+        from logging.handlers import RotatingFileHandler
+        _file_handler = RotatingFileHandler(
+            os.path.join(BASE_DIR, 'weauto_webui.log'),
+            maxBytes=5 * 1024 * 1024, backupCount=4, encoding='utf-8')
+        _file_handler.setFormatter(formatter)
+        app.logger.addHandler(_file_handler)
+    except Exception:
+            pass
 
     class BotStatusFilter(logging.Filter):
         def filter(self, record):
@@ -5485,21 +5461,18 @@ if __name__ == '__main__':
 
     # 如果端口为默认的5000，则自动修改为5001-5998之间的随机可用端口
     if PORT == 5000 or PORT == '5000':
-        print("\033[33m检测到使用默认端口 5000，正在自动切换到随机端口...\033[0m")
         new_port = get_random_available_port(5001, 5998)
 
         if new_port:
-            print(f"\033[32m已分配新端口: {new_port}\033[0m")
             # 更新配置文件
             try:
                 update_config({'PORT': new_port})
                 PORT = new_port
-                print(f"\033[32m配置文件已更新，新端口: {new_port}\033[0m")
             except Exception as e:
-                print(f"\033[31m更新配置文件失败: {e}，将继续使用端口 5000\033[0m")
+                app.logger.warning(f"\033[31m更新配置文件失败: {e}，将继续使用端口 5000\033[0m")
                 PORT = 5000
         else:
-            print("\033[31m警告: 无法找到5001-5998之间的可用端口，将继续使用端口 5000\033[0m")
+            app.logger.warning("\033[31m警告: 无法找到5001-5998之间的可用端口，将继续使用端口 5000\033[0m")
             PORT = 5000
 
     # 确保PORT是整数类型
@@ -5527,35 +5500,20 @@ if __name__ == '__main__':
     if _port_in_use(PORT):
         if _is_weauto_serving(PORT):
             ATTACH_MODE = True
-            print(f"\033[32m检测到 WeAuto 已在运行（端口 {PORT}），直接打开管理窗口\033[0m")
         else:
             new_port = get_random_available_port(5001, 5998)
             if new_port:
-                print(f"\033[33m端口 {PORT} 被其他程序占用，已自动切换到 {new_port}\033[0m")
                 PORT = new_port
             else:
-                print("\033[31m端口被占用且 5001-5998 无可用端口，即将退出\033[0m")
                 raise SystemExit(1)
 
     allow_open_port = config.get('ALLOW_OPEN_PORT', False)
     password_is_valid = config.get('PASSWORD_IS_VALID', False)
     host = "0.0.0.0" if allow_open_port else "127.0.0.1"
     WEB_URL = f'http://localhost:{PORT}/'
-
-    print("\033[36m")
-    print("============================================================")
-    print("  WeAuto 配置管理器")
-    print(f"监听地址: {host}:{PORT}")
-    print(f"访问地址: {WEB_URL}")
-    print("============================================================")
-    print("\033[0m")
-
-    if password_is_valid:
-        print("\033[32m已启用登录保护：访问网页需输入已设置的密码。\r\n \033[0m")
-    else:
-        print("\033[31m检测到尚未设置登录密码：首次访问将跳转到密码设置页面。\r\n \033[0m")
-    if allow_open_port:
-        print("\033[33m外网访问已开启，请务必妥善保管您的登录密码。\r\n \033[0m")
+    # 登录保护/外网访问状态不再向控制台输出（GUI-only），需要时看 weauto_webui.log
+    app.logger.info("WebUI 监听 %s:%s，登录保护=%s，外网访问=%s",
+                    host, PORT, bool(password_is_valid), bool(allow_open_port))
 
     def _start_waitress(background=False):
         kwargs = dict(
