@@ -4951,6 +4951,10 @@ def _license_status():
                     and now < cache.get("expire_at", 0))
     expired = bool(cache.get("expire_at") and now >= cache.get("expire_at", 0))
     key_hint = ("****" + key[-4:]) if key else ""
+    expire_at = cache.get("expire_at") or 0
+    valid_days = cache.get("valid_days") or 0
+    days_left = int((expire_at - now) / 86400) if expire_at else None
+    near_expiry = bool(days_left is not None and 0 <= days_left <= 5)
     return {
         "available": True,
         "guard_enabled": enabled,
@@ -4961,7 +4965,10 @@ def _license_status():
         "key_hint": key_hint,
         "activated": activated,
         "expired": expired,
-        "expire_at": cache.get("expire_at"),
+        "expire_at": expire_at,
+        "valid_days": valid_days,
+        "days_left": days_left,
+        "near_expiry": near_expiry,
         "machine_id": _guard.get_machine_id() if _guard else "",
         "tier": _guard.license_tier() if _guard else "",
     }

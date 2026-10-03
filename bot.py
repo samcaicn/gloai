@@ -5302,7 +5302,22 @@ def main():
                 )
                 os._exit(1)  # 线程回调里必须 os._exit；sys.exit 只杀线程
 
-            start_periodic_recheck(on_invalid=_license_dead)
+            def _license_near_expiry(days_left, tier):
+                # 软件自定义「每月提示续费」：临近到期时主动在微信里提醒 owner（filehelper）。
+                # 尽力而为：微信未就绪 / 发送异常都不影响 bot 运行。
+                try:
+                    buy = (_gw() + "/buy") if _gw() else "(未配置 CREEM_WORKER_URL)"
+                    tl = {"normal": "初级", "premium": "中级", "lifetime": "高级"}.get(tier, tier or "当前")
+                    msg = ("【WeAuto 授权提醒】您的 %s 套餐授权还剩 %d 天到期，请尽快续费：%s"
+                           % (tl, days_left, buy))
+                    try:
+                        wx.SendMsg(msg=msg, who="filehelper")
+                    except Exception as _se:
+                        logger.warning("授权临近到期微信提醒发送失败: %s" % _se)
+                except Exception as _e:
+                    logger.warning("授权临近到期提醒异常: %s" % _e)
+
+            start_periodic_recheck(on_invalid=_license_dead, on_near_expiry=_license_near_expiry)
         except Exception as _lg2:
             logger.warning(f"License 周期复检未启动: {_lg2}")
 

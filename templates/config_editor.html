@@ -4660,6 +4660,11 @@
                     <button type="button" id="payMethodsToggle" style="background:#3f51b5;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">💳 支持的支付方式</button>
                 </div>
 
+                <div class="form-group" id="licenseDurationBox" style="display:none;margin:12px 0;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;background:#f7f9ff;font-size:14px;line-height:1.7;">
+                    <div id="licenseDurationText" style="margin-bottom:8px;"></div>
+                    <button type="button" id="licenseRenewBtn" class="pm-buy" data-tier="" style="background:#ff9800;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">续费 / 再次购买</button>
+                </div>
+
                 <!-- 支付方式说明：切换按钮展开的 tab 面板 -->
                 <div id="payMethodsPanel" style="display:none;margin:12px 0;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;font-size:14px;">
                     <style>
@@ -4685,30 +4690,18 @@
                             #payMethodsPanel .pm-no{background:rgba(220,60,60,.18);color:#ff8a80;}
                             #payMethodsPanel .pm-sub{color:#888;}
                             #payMethodsPanel .pm-note{background:rgba(255,170,60,.12);color:#ffb866;}
+                            #licenseDurationBox{border-color:#444;background:#2a2a2a;color:#e0e0e0;}
                         }
                     </style>
-                    <div style="display:flex;border-bottom:1px solid #e0e0e0;">
-                        <button type="button" class="pm-tab active" data-tab="sub">月租订阅（normal / premium）</button>
-                        <button type="button" class="pm-tab" data-tab="ot">一次性买断（lifetime 永久版）</button>
+                    <div style="padding:12px 16px 4px;color:#555;font-size:13px;line-height:1.7;">
+                        以下均为<b>一次性购买（套餐费）</b>：购一次获得对应有效期的授权，<b>到期前本软件会提示续费</b>（续费需再次购买）。
+                        <b>支付宝扫码支持全部档位</b>。
                     </div>
-                    <div id="pm-sub" class="pm-body" style="padding:14px 16px;">
-                        <div class="pm-row"><span class="pm-name">银行卡</span><span class="pm-badge pm-yes">✅ 支持</span></div>
-                        <div class="pm-row"><span class="pm-name">Apple Pay</span><span class="pm-badge pm-yes">✅ 支持</span></div>
-                        <div class="pm-row"><span class="pm-name">支付宝</span><span class="pm-badge pm-no">❌ 不支持</span><span class="pm-sub">平台限制：支付宝仅出现在一次性付款收银台</span></div>
-                        <div class="pm-note">💡 想用支付宝支付？请选择下方「一次性买断（永久版）」——支付宝扫码只在 lifetime 收银台提供。</div>
-                        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
-                            <button type="button" class="pm-buy" data-tier="normal" style="background:#4caf50;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">💳 立即付款（月租 normal）</button>
-                            <button type="button" class="pm-buy" data-tier="premium" style="background:#4caf50;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">💳 立即付款（月租 premium）</button>
-                        </div>
-                    </div>
-                    <div id="pm-ot" class="pm-body" style="display:none;padding:14px 16px;">
-                        <div class="pm-row"><span class="pm-name">支付宝</span><span class="pm-badge pm-yes">✅ 支持（扫码）</span></div>
-                        <div class="pm-row"><span class="pm-name">银行卡</span><span class="pm-badge pm-yes">✅ 支持</span></div>
-                        <div class="pm-row"><span class="pm-name">Apple Pay</span><span class="pm-badge pm-yes">✅ 支持</span></div>
-                        <div class="pm-note">💡 一次性买断支持支付宝扫码，推荐想用支付宝的用户直接选此档。</div>
-                        <div style="margin-top:12px;">
-                            <button type="button" class="pm-buy" data-tier="lifetime" style="background:#4caf50;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">💳 立即付款（永久版 · 支付宝扫码）</button>
-                        </div>
+                    <div style="padding:8px 16px 16px;">
+                        <div class="pm-row"><span class="pm-name">初级 套餐费</span><span class="pm-sub">¥29.9 · 30天</span><span class="pm-badge pm-yes">✅ 支付宝</span><button type="button" class="pm-buy" data-tier="normal" style="margin-left:auto;background:#4caf50;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;">立即付款</button></div>
+                        <div class="pm-row"><span class="pm-name">中级 套餐费</span><span class="pm-sub">¥39.9 · 30天</span><span class="pm-badge pm-yes">✅ 支付宝</span><button type="button" class="pm-buy" data-tier="premium" style="margin-left:auto;background:#4caf50;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;">立即付款</button></div>
+                        <div class="pm-row"><span class="pm-name">高级 套餐费</span><span class="pm-sub">¥199 · 365天</span><span class="pm-badge pm-yes">✅ 支付宝</span><button type="button" class="pm-buy" data-tier="lifetime" style="margin-left:auto;background:#4caf50;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;">立即付款</button></div>
+                        <div class="pm-note">💡 全部为一次性套餐；想用支付宝直接选任意档，收银台都会出现支付宝扫码。</div>
                     </div>
                 </div>
 
@@ -4842,6 +4835,23 @@
                         } else {
                             banner.style.display='none';
                         }
+                    // 套餐有效期 + 每月续费提示
+                    try {
+                        var _db = document.getElementById('licenseDurationBox');
+                        var _dt = document.getElementById('licenseDurationText');
+                        var _rb = document.getElementById('licenseRenewBtn');
+                        if (_db && _dt && s.activated && s.days_left !== null && s.days_left !== undefined) {
+                            _db.style.display = 'block';
+                            var _tl = ({normal:'初级', premium:'中级', lifetime:'高级'}[s.tier] || (s.tier || '当前'));
+                            var _txt = '当前档位：<b>' + _tl + ' 套餐费</b>　剩余 <b>' + s.days_left + '</b> 天'
+                                     + (s.expire_at ? '（有效期至 ' + new Date(s.expire_at*1000).toLocaleDateString() + '）' : '');
+                            if (s.near_expiry) _txt += '　⚠️ <span style="color:#c62828;font-weight:bold;">即将到期，请尽快续费</span>';
+                            _dt.innerHTML = _txt;
+                            if (_rb) _rb.setAttribute('data-tier', s.tier || 'normal');
+                        } else if (_db) {
+                            _db.style.display = 'none';
+                        }
+                    } catch(e) {}
                     }catch(e){ setBadge('warn','加载失败'); console.error(e); }
                 }
 
@@ -4920,16 +4930,7 @@
                         pmPanel.style.display = show ? 'block' : 'none';
                         pmToggle.textContent = show ? '💳 收起支付方式' : '💳 支持的支付方式';
                     });
-                    pmPanel.querySelectorAll('.pm-tab').forEach(function(tab){
-                        tab.addEventListener('click', function(){
-                            pmPanel.querySelectorAll('.pm-tab').forEach(function(x){ x.classList.remove('active'); });
-                            tab.classList.add('active');
-                            var which = tab.getAttribute('data-tab');
-                            document.getElementById('pm-sub').style.display = (which === 'sub') ? 'block' : 'none';
-                            document.getElementById('pm-ot').style.display  = (which === 'ot')  ? 'block' : 'none';
-                        });
-                    });
-                    pmPanel.querySelectorAll('.pm-buy').forEach(function(btn){
+                    document.querySelectorAll('.pm-buy').forEach(function(btn){
                         btn.addEventListener('click', async function(){
                             var tier = btn.getAttribute('data-tier');
                             try{

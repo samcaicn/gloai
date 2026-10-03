@@ -187,7 +187,20 @@ function parseProducts(env) {
   if (raw) {
     try {
       const arr = typeof raw === "string" ? JSON.parse(raw) : raw;
-      if (Array.isArray(arr) && arr.length) return arr;
+      if (Array.isArray(arr) && arr.length) {
+        // 归一化：补齐 valid_days（默认 30 天）与 voluntary 字段，供「每月提示续费」计算用。
+        // 现在三档都是一次性（onetime）套餐，购一次给 valid_days 天授权，到期前软件提示续费。
+        return arr.map((x) => ({
+          tier: x.tier,
+          label: x.label || x.tier,
+          price_text: x.price_text || "",
+          product_id: x.product_id,
+          billing: x.billing || "once",
+          features: x.features || "",
+          valid_days: x.valid_days ? Number(x.valid_days) : 30,
+          voluntary: !!x.voluntary,
+        }));
+      }
     } catch (e) { /* 解析失败走兜底 */ }
   }
   if (env.CREEM_PRODUCT_ID) {
@@ -771,9 +784,10 @@ function termsPage(env) {
 </div>
 <div class="card">
   <h3 style="margin-top:0">服务条款（中文摘要）</h3>
-  <p style="color:#374151;font-size:14px">WeAuto 为按设备授权的本机软件。月租档为自动续订订阅，
-  可随时在 Creem 收据邮件/客户门户取消，取消后服务持续至当期期末；一次性买断不续订。
-  退款：一次性买断 7 天内且激活遇无法解决的技术问题可全额退款；月租当期原则上不退，重复/误扣全额退。
+  <p style="color:#374151;font-size:14px">WeAuto 为按设备授权的本机软件。三档（初级 / 中级 / 高级 套餐费）均为
+  <b>一次性购买</b>，购一次获得对应档位 <b>valid_days 天</b>授权，到期前软件会在授权面板与微信里提示续费，
+  续费需再次购买。可随时在 Creem 收据邮件 / 客户门户查看订单；一次性购买原则上不自动续订、不重复扣款。
+  退款：购买后 7 天内且激活遇无法解决的技术问题可全额退款；重复 / 误扣全额退。
   许可规则：禁止转售、共享卡密、逆向工程、绕过校验、用于违法违规用途，违者终止授权不予退款。
   使用自动化功能请遵守微信用户协议。</p>
 </div>`));
@@ -789,7 +803,7 @@ function buyPage(env, origin, mid) {
   const support = env.SUPPORT_EMAIL;
 
   const cards = products.map((p) => {
-    const badge = p.billing === "monthly" ? "月租订阅" : "永久买断";
+    const badge = p.billing === "monthly" ? "月租订阅" : "一次性套餐";
     const go = origin + "/buy?go=1&tier=" + encodeURIComponent(p.tier) +
       (mid ? "&mid=" + encodeURIComponent(mid) : "");
     const feats = (p.features || "").split(/[+；;]/).map((f) => f.trim()).filter(Boolean);
@@ -1195,7 +1209,7 @@ export default {
         mode: env.CREEM_MODE || "test",
         has_api_key: !!env.CREEM_API_KEY,
         has_webhook_secret: !!env.CREEM_WEBHOOK_SECRET,
-        creem_products: products.map((x) => ({ tier: x.tier, billing: x.billing, product_id: x.product_id })),
+        creem_products: products.map((x) => ({ tier: x.tier, billing: x.billing, product_id: x.product_id, valid_days: x.valid_days, voluntary: x.voluntary })),
         checkout_ready: ready,
         has_ai_upstream: aiAvailable(env),
         ai_ready: !!(env.CREEM_API_KEY && aiAvailable(env)),
@@ -1341,6 +1355,7 @@ export default {
           ok: true,
           instance_id: extractInstanceId(data),
           expires_at: expiresToUnix(data.expires_at),
+          valid_days: 30,
         });
       }
       return json({ ok: false, reason: (data && data.message) || "http_" + status }, status);
@@ -1429,10 +1444,18 @@ export default {
               await setAcct(env, sub, tier);
               token = await signBillingToken(env, { sub, tier, exp: Date.now() + 32 * 24 * 3600 * 1000 });
             }
-            // 存 7 天自动过期：卡密同步到本机后即无用，避免 KV 无限堆积 / mid 被猜泄露
-            await env.LICENSE_KV.put("lic:" + mid, JSON.stringify({ key: lk, tier, token, ts: Date.now() }),
-              { expirationTtl: 7 * 24 * 3600 });
-            console.log("license stored for mid", mid, "tier", tier);
+            // 存 N 天自动过期（N = 该档 valid_days）：记录存活时长与授权有效期一致，
+            // 到期即失效；同时写 lickey:<卡密> -> mid 索引，供 /validate、/activate 反查有效期。
+            const products = parseProducts(env);
+            const prod = products.find((x) => x.tier === tier);
+            const vdays = (prod && prod.valid_days) || 30;
+            const rec = { key: lk, tier, token, ts: Date.now(), valid_days: vdays };
+            await env.LICENSE_KV.put("lic:" + mid, JSON.stringify(rec),
+              { expirationTtl: vdays * 24 * 3600 });
+            try {
+              await env.LICENSE_KV.put("lickey:" + lk, mid, { expirationTtl: vdays * 24 * 3600 });
+            } catch (e) { /* 索引非关键，失败不影响主流程 */ }
+            console.log("license stored for mid", mid, "tier", tier, "valid_days", vdays);
           }
         }
         console.log("Creem webhook:", et, obj && obj.id);
@@ -1450,7 +1473,11 @@ export default {
         const val = await env.LICENSE_KV.get("lic:" + mid);
         if (!val) return json({ pending: true }, 404);
         const d = JSON.parse(val);
-        return json({ key: d.key, tier: d.tier || "", token: d.token || "", ts: d.ts || 0 });
+        const vdays = d.valid_days || 30;
+        const ts = d.ts || 0;
+        // 有效期 = 购买时刻 + 该档 valid_days；一次性套餐无 Creem 续期，由我们自己定义周期。
+        const expires_at = ts ? Math.floor(ts / 1000) + vdays * 24 * 3600 : 0;
+        return json({ key: d.key, tier: d.tier || "", token: d.token || "", ts, valid_days: vdays, expires_at });
       } catch (e) {
         return json({ pending: true }, 404);
       }

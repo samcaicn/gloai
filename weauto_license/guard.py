@@ -245,6 +245,7 @@ def ensure_license(strict: bool = True) -> bool:
                 "instance_id": resp.get("instance_id"),
                 "expire_at": resp.get("expires_at") or (now + 30 * 86400),
                 "tier": resp.get("tier"),
+                "valid_days": resp.get("valid_days") or 30,
             })
             return True
         # 5xx：Worker / Creem 临时故障，不等于卡密失效。本地有同一 key 的历史成功
@@ -275,6 +276,7 @@ def activate(license_key: str):
                 "instance_id": resp.get("instance_id"),
                 "expire_at": resp.get("expires_at") or (time.time() + 30 * 86400),
                 "tier": resp.get("tier"),
+                "valid_days": resp.get("valid_days") or 30,
             })
             return True, "激活成功（请把该 key 写入 config.py 的 CREEM_LICENSE_KEY 以持久化）"
         return False, "激活失败: " + str(resp.get("reason", ""))
@@ -338,7 +340,7 @@ def ai_endpoint():
     }
 
 
-def start_periodic_recheck(interval_seconds=None, on_invalid=None):
+def start_periodic_recheck(interval_seconds=None, on_invalid=None, on_near_expiry=None, near_expiry_days=5):
     """运行期周期复检线程（防『只堵启动一处』：patch 掉启动检查也逃不过运行中复检）。
 
     - 网络异常/服务端异常：静默跳过（走离线宽限），不打扰运行中的 bot
@@ -348,6 +350,7 @@ def start_periodic_recheck(interval_seconds=None, on_invalid=None):
     """
     def _loop():
         iv = interval_seconds or int(os.environ.get("WEAUTO_LICENSE_RECHECK_SECONDS", 6 * 3600))
+        last_reminded = [0.0]
         while True:
             time.sleep(iv)
             try:
@@ -360,6 +363,17 @@ def start_periodic_recheck(interval_seconds=None, on_invalid=None):
                 cache = _read_cache()
                 now = time.time()
                 inst = cache.get("instance_id")
+                # 临近到期提醒（软件自定义「每月提示续费」）：离线也能算，不依赖联网
+                if on_near_expiry and inst and key:
+                    try:
+                        ea = cache.get("expire_at") or 0
+                        if ea:
+                            dleft = (ea - now) / 86400.0
+                            if 0 < dleft <= near_expiry_days and now - last_reminded[0] > 86400:
+                                last_reminded[0] = now
+                                on_near_expiry(int(round(dleft)), cache.get("tier") or "")
+                    except Exception:
+                        pass
                 if cache.get("key") == key and inst:
                     if now >= cache.get("expire_at", 0) + OFFLINE_GRACE_SECONDS:
                         on_invalid("离线宽限期已过且未通过校验")
@@ -373,7 +387,8 @@ def start_periodic_recheck(interval_seconds=None, on_invalid=None):
                     if resp.get("ok"):
                         _write_cache({"key": key, "instance_id": inst,
                                       "expire_at": resp.get("expires_at") or (now + 30 * 86400),
-                                      "tier": resp.get("tier")})
+                                      "tier": resp.get("tier"),
+                                      "valid_days": resp.get("valid_days") or 30})
                     else:
                         on_invalid(str(resp.get("reason", "校验未通过")))
                 # 无 instance 记录 → 运行期不判定，交给下次启动的 ensure_license

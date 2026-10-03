@@ -5,9 +5,9 @@
 
 背景与硬性约束（别改错）：
   1) Creem 只支持 USD / EUR 计价 -> 人民币价格必须折算成美元后才能建套餐。
-  2) 月租 = 订阅（recurring），必须用 billing_type="recurring" + billing_period="every-month"
-     （实测 "month"/"monthly" 均被拒，合法枚举是 every-month/every-year/.../once）。
-  3) 永久 = 一次性（onetime）+ pay_what_you_want:true，"自愿付款"，price 字段即最低价。
+  2) 全部档位均为<b>一次性（onetime）</b>：初级/中级为固定价一次性；高级为一次性 + 自愿付款（pay_what_you_want）。
+     一次性套餐无 Creem 自动续订，由本软件在 valid_days 到期前提示用户再次购买（续费）。
+  3) 旧文档里的「月租=订阅」已弃用：Creem 的支付宝只在一次性收银台出现，故全部改为一次性以支持支付宝。
   4) price 单位是**分（cents）**，必须 >= 100（$1.00）。
   5) 本机到 api.creem.io 有 Cloudflare WAF：不带浏览器 UA 会被挡成 HTTP 403 / error code 1010；
      且必须绕开本机 Clash 代理（ProxyHandler({}) 直连）。
@@ -65,36 +65,41 @@ FX_URLS = [
 TIERS = [
     {
         "tier": "normal",
-        "label": "普通版（月租）",
-        "price_text": "¥29.9 / 月",
+        "label": "初级 套餐费",
+        "price_text": "¥29.9",
         "cny": 29.9,
-        "billing": "monthly",
-        "name": "WeAuto 普通版（月租）",
-        "desc": "WeAuto 微信机器人普通授权，按月订阅。付款后在收款邮箱获得卡密，在 WeAuto 后台「授权管理」粘贴激活。",
+        "billing": "once",
+        "voluntary": False,
+        "valid_days": 30,
+        "name": "WeAuto 初级套餐费（一次性）",
+        "desc": "WeAuto 微信机器人初级授权，一次性购买，获得 30 天使用权。付款后在收款邮箱获得卡密，在 WeAuto 后台「授权管理」粘贴激活；到期前软件会提示续费。",
         "features": "基础自动回复 + 授权管理 + 标准 AI 额度",
     },
     {
         "tier": "premium",
-        "label": "高级版（月租）",
-        "price_text": "¥39.9 / 月",
+        "label": "中级 套餐费",
+        "price_text": "¥39.9",
         "cny": 39.9,
-        "billing": "monthly",
-        "name": "WeAuto 高级版（月租）",
-        "desc": "WeAuto 微信机器人高级授权，按月订阅，解锁全部功能与优先支持。付款后在收款邮箱获得卡密，在后台「授权管理」粘贴激活。",
+        "billing": "once",
+        "voluntary": False,
+        "valid_days": 30,
+        "name": "WeAuto 中级套餐费（一次性）",
+        "desc": "WeAuto 微信机器人中级授权，一次性购买，获得 30 天使用权，解锁全部功能与优先支持。付款后获得卡密，后台激活；到期前软件会提示续费。",
         "features": "全部功能 + 优先支持 + 更高 AI 额度",
     },
     {
         "tier": "lifetime",
-        "label": "永久授权",
-        "price_text": "¥199（自愿支持）",
+        "label": "高级 套餐费",
+        "price_text": "¥199",
         "cny": 199.0,
         "billing": "once",
-        "name": "WeAuto 永久授权（自愿支持）",
-        "desc": "WeAuto 微信机器人永久授权，一次买断长期使用。自愿付款，不低于 ¥199。付款后在收款邮箱获得卡密，在后台「授权管理」粘贴激活。",
-        "features": "一次买断 · 永久可用 · 全功能",
+        "voluntary": True,
+        "valid_days": 365,
+        "name": "WeAuto 高级套餐费（一次性·自愿支持）",
+        "desc": "WeAuto 微信机器人高级授权，一次性购买，获得 365 天使用权，全功能。自愿付款，不低于 ¥199。付款后获得卡密，后台激活；到期前软件会提示续费。",
+        "features": "一次购买 · 365天全功能 · 优先支持",
     },
 ]
-
 
 def fetch_rate(auto):
     """自动拉 USD/CNY 汇率（1 CNY = ? USD）；auto=False 直接回退。返回 (rate, 来源说明)。"""
@@ -176,10 +181,11 @@ def build_body(tier, cents):
         b["billing_type"] = "recurring"
         b["billing_period"] = "every-month"
     else:
-        # 一次性 + 自愿付款：price 即最低价，suggested_price 预填建议额
+        # 一次性：固定价（voluntary）才开 pay_what_you_want；普通一次性套餐给固定价
         b["billing_type"] = "onetime"
-        b["pay_what_you_want"] = True
-        b["suggested_price"] = cents
+        if tier.get("voluntary"):
+            b["pay_what_you_want"] = True
+            b["suggested_price"] = cents
     return b
 
 
@@ -274,7 +280,7 @@ def main():
         print("\n[%s] %s  ¥%.1f -> $%.2f (%d cents) [%s]" % (
             t["tier"], t["label"], t["cny"], cents / 100.0, cents, note))
         body = build_body(t, cents)
-        idem = "weauto-%s-%s" % (a.mode, t["tier"])
+        idem = "weauto-once-%s-%s" % (a.mode, t["tier"])
         status, data = creem_request("POST", base + "/products", a.key, body, idem=idem)
         pid = data.get("id")
         print("    HTTP", status, json.dumps({k: data.get(k) for k in
@@ -289,6 +295,8 @@ def main():
             "price_text": t["price_text"],
             "product_id": pid,
             "billing": t["billing"],
+            "voluntary": t.get("voluntary", False),
+            "valid_days": t.get("valid_days", 30),
             "features": t["features"],
         })
 

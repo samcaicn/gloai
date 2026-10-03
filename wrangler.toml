@@ -11,10 +11,10 @@ workers_dev = true
 # config.py 的 CREEM_WORKER_URL 已指向 https://weauto.safeopc.cn
 
 [vars]
-CREEM_PRODUCTS = '[{"tier": "normal", "label": "普通版（月租）", "price_text": "¥29.9 / 月", "product_id": "prod_1xaKxzuVRluYDmFvaq2dQj", "billing": "monthly", "features": "基础自动回复 + 授权管理 + 标准 AI 额度"}, {"tier": "premium", "label": "高级版（月租）", "price_text": "¥39.9 / 月", "product_id": "prod_1BrJoEUEGGuWZGRX0trS6h", "billing": "monthly", "features": "全部功能 + 优先支持 + 更高 AI 额度"}, {"tier": "lifetime", "label": "永久授权", "price_text": "¥199（自愿支持）", "product_id": "prod_4QeZzI7YyAmySg3F0XfuZK", "billing": "once", "features": "一次买断 · 永久可用 · 全功能"}]'
+CREEM_PRODUCTS = '[{"tier": "normal", "label": "初级 套餐费", "price_text": "¥29.9", "product_id": "prod_PENDING_MINT_ONETIME", "billing": "once", "voluntary": false, "valid_days": 30, "features": "基础自动回复 + 授权管理 + 标准 AI 额度"}, {"tier": "premium", "label": "中级 套餐费", "price_text": "¥39.9", "product_id": "prod_PENDING_MINT_ONETIME", "billing": "once", "voluntary": false, "valid_days": 30, "features": "全部功能 + 优先支持 + 更高 AI 额度"}, {"tier": "lifetime", "label": "高级 套餐费", "price_text": "¥199", "product_id": "prod_4QeZzI7YyAmySg3F0XfuZK", "billing": "once", "voluntary": true, "valid_days": 365, "features": "一次购买 · 365天全功能 · 优先支持"}]'
 
 # ---- Creem 模式：prod = 真实收款；test = 沙箱 ----
-CREEM_MODE = "prod"                       # 3 档套餐已用 prod key 建好（normal / premium / lifetime）
+CREEM_MODE = "prod"                       # 3 档套餐均为一次性（one-time）：初级/中级/高级 套餐费；高级复用已建一次性产品，初级/中级待 create_creem_product.py 重新铸币
 
 # ---- 卡密网站文案（/buy 页面显示，随手改）----
 SITE_TITLE    = "WeAuto 授权中心"
