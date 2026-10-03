@@ -288,15 +288,11 @@ class OverlayController(private val ctx: Context) {
 
     fun showIdle(title: String?) {
         ensureRoot(); bubble?.alpha = 0.55f
-        // Either there is genuinely nothing to show yet, or the panel is empty
-        // for some other reason (root got rebuilt after hide(), leaving
-        // contentBox with zero children while lastJudgment still points at a
-        // stale conversation) — either way an empty panel must never stay
-        // literally blank. 进对话即自动分析（需求变更）：不再放"分析当前对话"
-        // 手动按钮，直接提示分析进行中；手动重试入口保留在结果/错误面板底部。
-        if (lastJudgment == null || contentBox?.childCount == 0) {
-            setContent(listOf(hint("分析中…")))
-        }
+        // Idle = nothing to show and nothing is running. Never claim "分析中…"
+        // here — that label belongs to [showLoading] only, otherwise the panel
+        // sticks on a fake progress hint forever when a capture produced no
+        // analyzable content (e.g. a video-card-only chat where OCR msgs=0).
+        if (expanded) toggle()
     }
 
     /**
