@@ -231,7 +231,7 @@ def config_get(key: str) -> str:
 
 @mcp.tool()
 def config_set(key: str, value: str) -> str:
-    """写入一个配置项（原子写回 config.py）。value 传 Python 字面量，如 'True'、'[\"SamCai_\"]'、'你好'。"""
+    """写入一个配置项（原子写回 config.py）。value 传 Python 字面量，如 'True'、'[\"微信昵称\"]'、'你好'。"""
     try:
         _set_config_value(key, value)
     except Exception as e:

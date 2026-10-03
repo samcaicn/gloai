@@ -10,9 +10,10 @@
 # For any further details regarding the license, please refer to the LICENSE file.
 # ***********************************************************************
 
-# 用户列表(请配置要和bot说话的账号的微信昵称！)
-# 例如：LISTEN_LIST = [["微信名1", "角色1"], ["微信ID@chatroom", ""]]
-LISTEN_LIST = [["SamCai_", "角色1"], ["45158227848@chatroom", "角色1"], ["58550599600@chatroom", ""], ["18712200430@chatroom", ""], ["45882134652@chatroom", ""], ["wxid_9ivay0f1tt9322", ""], ["44222621566@chatroom", ""]]
+# 用户列表：请配置要和 bot 对话的账号（格式 ["微信昵称或wxid_xxx@chatroom", "角色名"]，角色名可留空）
+# 出厂必须为空 —— 打包分发时 config.py 会原样进 EXE，任何残留都是把你的真实微信号
+# 和群号白送给所有付费用户。首次使用在「用户列表」面板里添加即可。
+LISTEN_LIST = []
 
 # AI 大模型配置（统一走自有 Worker 网关 /ai/v1，反破解核心：真实 key 只在 Worker 端）
 # 发行版（门禁开启）下本机不直连任何供应商，base_url 由 guard 改写为 <worker>/ai/v1。
@@ -110,9 +111,12 @@ GROUP_CHAT_RESPONSE_PROBABILITY = 100
 GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY = True
 
 # 配置编辑器设置
+# GUI-only 桌面软件：WebUI 只监听本机（ALLOW_OPEN_PORT=False），由 pywebview 内嵌窗口打开。
+# 出厂不设密码（PASSWORD_IS_VALID=False）→ 首次启动强制进入 /password_setup 让用户自己设，
+# 绝不能出厂就带一个所有人都猜得到的默认口令。
 ALLOW_OPEN_PORT = False
-LOGIN_PASSWORD = '123456'  # 登录密码
-PASSWORD_IS_VALID = True  # 密码是否合法（用于适配旧版本，开放端口时必须重新设置密码）
+LOGIN_PASSWORD = ''            # 登录密码（由首启 /password_setup 写入，勿在出厂值里预置）
+PASSWORD_IS_VALID = False      # False = 尚未设置密码，login_required 会强制跳转设置页
 PORT = 5001
 
 # 文字指令识别开关
@@ -211,7 +215,7 @@ CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填
 # 技术来源：jev-chat-jarvis（MIT）。判断跑在自建 Cloudflare Worker 上，
 # Worker 内用 Workers AI 的 JSON Mode，不出 CF、无需 OpenRouter、无需卡密。
 # 要调参数（超时/阈值/端点/是否收声）改 jev_guard.py 顶部的 JEV_* 常量。
-# 状态与自检见 WebUI 的 /jev 页面（只读 + 一个测试按钮）。
+# 状态与自检见 WebUI 顶部的「Jev 状态」按钮（只读 + 一个测试按钮）。
 #
 # 客户端 <-> CF 后台通信密钥（防白嫖 Workers AI 额度）。
 # 与 Creem 卡密无关！这是「自己的 EXE <-> 自己的 Worker」之间的 HMAC 签名密钥。

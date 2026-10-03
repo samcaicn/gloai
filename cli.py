@@ -17,11 +17,11 @@
   python cli.py style --analyze
   python cli.py send   --who 文件传输助手 --msg "你好"
   python cli.py send   --who 群名 --msg "晚安" --type file --path d:/a.pdf
-  python cli.py whois  --name SamCai_
+  python cli.py whois  --name 微信昵称
   python cli.py config get ENABLE_AUTO_MESSAGE
-  python cli.py config set AUTO_MESSAGE_USER_LIST "['SamCai_']"
+  python cli.py config set AUTO_MESSAGE_USER_LIST "['微信昵称']"
   python cli.py listen list
-  python cli.py listen add "SamCai_" "朋友"
+  python cli.py listen add "微信昵称" "朋友"
   python cli.py serve        # 前台启动 bot（长驻）
 
 注意：需用本项目的 Python 运行（含 openai / bs4 / wechatauto 等依赖）。

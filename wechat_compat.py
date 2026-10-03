@@ -388,7 +388,7 @@ class WeChat:
         """open_chat 需要显示名（侧栏标题），若传入的是 wxid 则反查显示名。
 
         这是「回复时找不到人」bug 的另一半：bot 的回调 who 有时是 wxid
-        （如联系人微信号本身就是 SamCai_，或 LISTEN_LIST 配了 wxid，或群 wxid），
+        （如联系人微信号本身就是 微信昵称，或 LISTEN_LIST 配了 wxid，或群 wxid），
         open_chat 按显示名搜侧栏必然落空 → 发送失败“找不到人”。
         反向解析用 wechatauto 的 get_nickname（username -> remark/nick_name）。
         显示名查不到时会原样返回自身，因此无条件反查是安全的。

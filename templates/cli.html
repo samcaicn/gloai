@@ -119,7 +119,7 @@
 {{ diag.exe_path }} --cli status
 {{ diag.exe_path }} --cli history --source owner --limit 5 --text
 {{ diag.exe_path }} --cli config get ENABLE_AUTO_MESSAGE
-{{ diag.exe_path }} --cli listen add SamCai_ 老板
+{{ diag.exe_path }} --cli listen add 微信昵称 老板
 {{ diag.exe_path }} --cli send --who 文件传输助手 --msg 你好</div>
         </div>
         {% endif %}
@@ -132,7 +132,7 @@
             <div class="codeblock" data-page-node-id="cliRunC2"><button class="copy-btn" data-copy="cliRunC2">复制</button>{{ diag.venv_python }} cli.py status
 {{ diag.venv_python }} cli.py history --source owner --limit 5
 {{ diag.venv_python }} cli.py config get ENABLE_AUTO_MESSAGE
-{{ diag.venv_python }} cli.py listen add SamCai_ 老板
+{{ diag.venv_python }} cli.py listen add 微信昵称 老板
 {{ diag.venv_python }} cli.py send --who 文件传输助手 --msg 你好</div>
             <p class="hint" data-page-node-id="cliRunHint">
                 加 <code>--text</code> 可切换为人读格式（如 <code>cli.py history --source owner --limit 3 --text</code>）。

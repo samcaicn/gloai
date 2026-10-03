@@ -351,53 +351,6 @@ def is_hidden_api_key(api_key):
     """
     return api_key and '*' in api_key
 
-def safe_type_convert(value, target_type, default_value=None, field_name=""):
-    """
-    安全的类型转换函数，防止整数转换为字符串
-    
-    Args:
-        value: 要转换的值
-        target_type: 目标类型 (int, float, bool)
-        default_value: 转换失败时的默认值
-        field_name: 字段名，用于日志记录
-    
-    Returns:
-        转换后的值或默认值
-    """
-    try:
-        str_value = str(value).strip()
-        
-        if target_type == int:
-            if str_value and str_value.isdigit():
-                return int(str_value)
-            elif str_value == '':
-                return 0 if default_value is None else default_value
-            else:
-                if field_name:
-                    app.logger.warning(f"配置项 {field_name} 的值 '{value}' 包含非数字字符，使用默认值。")
-                return default_value if default_value is not None else 0
-                
-        elif target_type == float:
-            if str_value:
-                import re
-                if re.match(r'^-?\d+(\.\d+)?$', str_value):
-                    return float(str_value)
-                else:
-                    if field_name:
-                        app.logger.warning(f"配置项 {field_name} 的值 '{value}' 不是有效的数字格式，使用默认值。")
-                    return default_value if default_value is not None else 0.0
-            else:
-                return 0.0 if default_value is None else default_value
-                
-        elif target_type == bool:
-            return str_value.lower() in ('on', 'true', '1', 'yes')
-            
-    except (ValueError, TypeError) as e:
-        if field_name:
-            app.logger.warning(f"配置项 {field_name} 类型转换失败: {e}，使用默认值。")
-        return default_value if default_value is not None else (0 if target_type == int else 0.0 if target_type == float else False)
-    
-    return value
 
 def validate_config_types(config_path):
     """
@@ -480,8 +433,25 @@ def load_secret_key():
 
 app.secret_key = load_secret_key()
 
-# ===== 调试开关：跳过密码登录（便于本地调试 WebUI，调试完成后务必改回 False）=====
-BYPASS_LOGIN = True
+# ===== 跳过密码登录 =====
+# 发行版必须为 False：BYPASS_LOGIN=True 会让 login() 与 @login_required 全部形同虚设，
+# 任何人都能直接打开配置页（含 API Key、授权卡密、开放端口等敏感项）。
+# 确需免密调试时，在 config.py 里置 LICENSE_DEBUG_BYPASS_LOGIN = True 临时开启。
+def _debug_flag_from_config(key, default=False):
+    """从 config.py 文本里读一个布尔开关（不 import config，避免模块缓存住旧值）。"""
+    try:
+        import re as _re
+        cp = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.py')
+        with open(cp, 'r', encoding='utf-8') as f:
+            m = _re.search(r'^\s*%s\s*=\s*(.+?)\s*$' % _re.escape(key), f.read(), _re.M)
+        if not m:
+            return default
+        return m.group(1).strip().rstrip(',') in ('True', 'true', '1', 'yes', 'on')
+    except Exception:
+        return default
+
+
+BYPASS_LOGIN = _debug_flag_from_config('LICENSE_DEBUG_BYPASS_LOGIN', False)
 bot_process = None
 
 # 简易500错误处理，便于快速定位问题
@@ -496,11 +466,9 @@ def handle_internal_error(e):
 # ===== CSRF保护配置 =====
 csrf = CSRFProtect(app)
 
-# CSRF豁免端点列表（用于API调用，需要其他方式验证）
-CSRF_EXEMPT_ENDPOINTS = [
-    'bot_heartbeat',  # bot.py发送心跳，使用IP验证
-    'receive_bot_log',  # bot.py发送日志，使用内容验证
-]
+# 注：原 CSRF_EXEMPT_ENDPOINTS 列表（bot_heartbeat / receive_bot_log）已删。
+# 它定义了但全仓从未被读取 —— 真正的豁免是靠装饰器 @csrf.exempt（见 /bot_heartbeat
+# 与日志上传路由）。留着这个列表更危险：它让人误以为那两个端点走的是另一套验证机制。
 
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
@@ -3310,37 +3278,6 @@ def delete_forum_post(character_name, post_id):
         app.logger.error(f"删除论坛帖子失败: {e}")
         return jsonify({'error': f'删除失败: {str(e)}'}), 500
 
-@app.route('/test_forum_ai/<character_name>')
-@login_required
-def test_forum_ai(character_name):
-    """测试AI论坛判断逻辑"""
-    try:
-        config = parse_config()
-
-        
-        app.logger.info(f"测试AI判断逻辑，角色: {character_name}")
-        should_post, content = check_should_post_forum(character_name)
-        
-        result = {
-            "character": character_name,
-            "should_post": should_post,
-            "content": content,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        
-        return f"""
-        <h2>AI判断测试结果</h2>
-        <p><strong>角色:</strong> {character_name}</p>
-        <p><strong>判断结果:</strong> {'发布' if should_post else '不发布'}</p>
-        <p><strong>生成内容:</strong> {content}</p>
-        <p><strong>测试时间:</strong> {result['timestamp']}</p>
-        <hr>
-        <p><a href="javascript:history.back()">返回</a> | <a href="/forum/{character_name}" target="_blank">查看论坛</a></p>
-        """
-        
-    except Exception as e:
-        app.logger.error(f"测试AI判断失败: {e}")
-        return f"测试失败: {str(e)}", 500
 
 @app.route('/run_one_key_detection', methods=['GET'])
 @login_required
@@ -4764,22 +4701,6 @@ def get_random_available_port(start_port, end_port, max_attempts=50):
     
     return None
 
-def kill_process_using_port(port):
-    """
-    检查指定端口是否被占用，如果被占用则结束占用的进程
-    """
-    # 遍历所有连接
-    for conn in psutil.net_connections():
-        # 由于 config 中 PORT 可能为字符串，转换为 int
-        if conn.laddr and conn.laddr.port == port:
-            # 根据不同平台，监听状态可能不同（Linux一般为 'LISTEN'，Windows为 'LISTENING'）
-            if conn.status in ('LISTEN', 'LISTENING'):
-                try:
-                    proc = psutil.Process(conn.pid)
-                    proc.kill()
-                    proc.wait(timeout=3)
-                except Exception as e:
-                    app.logger.warning(f"结束进程 {conn.pid} 时出现异常：{e}")
 
 # ---------------------------------------------------------------------------
 # 风格模仿：通过聊天记录学习主人的说话方式，并可注入提示词让 bot 模仿
@@ -5097,31 +5018,10 @@ def api_license_activate():
     return jsonify(ok=False, msg=msg)
 
 
-@app.route('/api/license/deactivate', methods=['POST'])
-@login_required
-def api_license_deactivate():
-    if not _guard:
-        return jsonify(ok=False, msg="weauto_license 模块不可用"), 500
-    ok, msg = _guard.deactivate()
-    return jsonify(ok=ok, msg=msg, status=_license_status())
-
-
-@app.route('/api/license/set_guard', methods=['POST'])
-@login_required
-def api_license_set_guard():
-    try:
-        data = request.get_json(force=True, silent=True) or {}
-    except Exception:
-        data = {}
-    enabled = bool(data.get("enabled", False))
-    # 发行版固杀：门禁强制开启，config/UI 都关不掉（反破解）
-    if _guard and getattr(_guard, "RELEASE_BUILD", False) and not enabled:
-        return jsonify(ok=False, msg="发行版已强制启用授权门禁，不可关闭"), 400
-    try:
-        update_config({"LICENSE_GUARD_ENABLED": enabled})
-    except Exception as e:
-        return jsonify(ok=False, msg=f"写入失败: {e}"), 500
-    return jsonify(ok=True, enabled=enabled, status=_license_status())
+# 注意：/api/license/deactivate 与 /api/license/set_guard 已删除。
+#   deactivate —— 「释放本机」会让买家把自己锁在门外，终端用户不需要这个操作；
+#     换机场景由 CLI（cli.py license deactivate）承担，WebUI 不暴露。
+#   set_guard —— 门禁在发行版强制常开（RELEASE_BUILD 固杀），UI 上就是个拨不动的开关，纯摆设。
 
 
 @app.route('/api/license/restart', methods=['POST'])

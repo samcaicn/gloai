@@ -124,7 +124,7 @@
                 为防止机器人对陌生人主动发消息，主动消息仅向 <code>AUTO_MESSAGE_USER_LIST</code> 中的对象发送。<b>空列表 = 不主动给任何人发消息</b>。
             </p>
             <ul class="hint">
-                <li>配置项为 <span class="kbd">AUTO_MESSAGE_USER_LIST</span>，值为微信显示名 / wxid 列表，例如 <code>['SamCai_', '文件传输助手']</code>。</li>
+                <li>配置项为 <span class="kbd">AUTO_MESSAGE_USER_LIST</span>，值为微信显示名 / wxid 列表，例如 <code>['微信昵称', '文件传输助手']</code>。</li>
                 <li>匹配为双向：显示名或 wxid 任一命中即可。</li>
                 <li>在「快速上手」或「配置编辑器」中设置；也可经 CLI <code>config set AUTO_MESSAGE_USER_LIST</code> 或 MCP <code>config_set</code> 写入。</li>
                 <li>总开关 <code>ENABLE_AUTO_MESSAGE</code> 控制主动消息功能是否启用。</li>
@@ -157,15 +157,15 @@
                     <tr><td><code>history</code></td><td class="c">读聊天记录（--source all|owner|bot|friend|group）</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py history --source owner --limit 20</code></td></tr>
                     <tr><td><code>style</code></td><td class="c">风格画像（--analyze/--enable/--disable/--profile）</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py style --analyze</code></td></tr>
                     <tr><td><code>config get|set</code></td><td class="c">读写配置项（密钥脱敏）</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py config get ENABLE_AUTO_MESSAGE</code></td></tr>
-                    <tr><td><code>listen list|add|remove</code></td><td class="c">管理监听名单 LISTEN_LIST</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py listen add "SamCai_" "朋友"</code></td></tr>
+                    <tr><td><code>listen list|add|remove</code></td><td class="c">管理监听名单 LISTEN_LIST</td><td class="c"><span class="tag">否</span></td><td class="c"><code>cli.py listen add "微信昵称" "朋友"</code></td></tr>
                     <tr><td><code>send</code></td><td class="c">发消息（--type text|file|image，file/image 需 --path）</td><td class="c"><span class="tag yes">是</span></td><td class="c"><code>cli.py send --who 文件传输助手 --msg 你好</code></td></tr>
-                    <tr><td><code>whois</code></td><td class="c">解析名字/wxid → username / display_name</td><td class="c"><span class="tag yes">是</span></td><td class="c"><code>cli.py whois --name SamCai_</code></td></tr>
+                    <tr><td><code>whois</code></td><td class="c">解析名字/wxid → username / display_name</td><td class="c"><span class="tag yes">是</span></td><td class="c"><code>cli.py whois --name 微信昵称</code></td></tr>
                     <tr><td><code>serve</code></td><td class="c">前台启动 bot（长驻）</td><td class="c"><span class="tag yes">是</span></td><td class="c"><code>cli.py serve</code></td></tr>
                 </tbody>
             </table>
             <div class="codeblock" data-page-node-id="helpCliEx"># 经 agent 调用（示例）
 .venv_bot\Scripts\python.exe cli.py status
-.venv_bot\Scripts\python.exe cli.py config set AUTO_MESSAGE_USER_LIST "['SamCai_']"
+.venv_bot\Scripts\python.exe cli.py config set AUTO_MESSAGE_USER_LIST "['微信昵称']"
 .venv_bot\Scripts\python.exe cli.py listen list</div>
         </div>
 

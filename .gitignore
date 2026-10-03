@@ -91,3 +91,9 @@ _cfdeploy/
 
 # ---- wrangler 本地状态（非仓库内容）----
 .wrangler/
+
+# ---- 一次性验证产物 ----
+_shots/
+_restart_stamp
+weauto_webui.log
+build_local.log

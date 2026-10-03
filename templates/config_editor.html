@@ -399,60 +399,10 @@
             width: 100%;
             margin-top: 10px;
         }
-        
-        .npc-individual-settings {
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 20px;
-            background: #ffffff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        .npc-individual-settings h4 {
-            margin: 0 0 15px 0;
-            color: #2c3e50;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        
-        .npc-individual-settings:last-child {
-            margin-bottom: 0;
-        }
 
-        /* NPC 折叠/展开样式 */
-        .npc-individual-settings .npc-card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            margin: -15px -15px 0 -15px; /* 抵消容器内边距，使头部横向铺满 */
-            background: #f3f4f6;
-            cursor: pointer;
-            user-select: none;
-            -webkit-user-select: none; /* Safari */
-        }
-        .npc-individual-settings .npc-card-title {
-            margin: 0;
-            font-size: 15px;
-            color: #333;
-            font-weight: 600;
-        }
-        .npc-individual-settings .chevron {
-            transition: transform 0.2s ease;
-            font-size: 14px;
-            color: #666;
-        }
-        .npc-individual-settings .npc-card-body {
-            padding-top: 12px;
-        }
-        .npc-individual-settings.collapsed .npc-card-body {
-            display: none;
-        }
-        /* 展开时箭头向下，折叠时保持向右 */
-        .npc-individual-settings:not(.collapsed) .chevron {
-            transform: rotate(90deg);
-        }
+        /* 注：原 .npc-individual-settings / .npc-card-header / .npc-card-title / .chevron /
+           .npc-card-body 共 50 行 CSS 已删 —— 当前 UI 里没有任何元素挂这些 class，
+           唯一引用它们的 toggleNpcCard() 也是死函数。NPC 行改用 .npc-entry / .npc-detail。 */
 
         /* 已移除偷看TA浮动按钮样式 */
 
@@ -1036,24 +986,6 @@
         }
         
         // 判断URL是否为WeAPIs的URL（异步版本）
-        async function isWeAPIsUrl(url) {
-            if (!url) return false;
-            
-            try {
-                const nodes = await getWeApisNodes();
-                
-                // 检查是否匹配任何已知的WeAPIs节点
-                return nodes.some(node => {
-                    const baseUrl = node.replace(/\/+$/, '');
-                    return url.startsWith(baseUrl) || url.includes('v1api.cc') || url.includes('v1chat.cc') || url.includes('a3e.top') || url.includes('littlewheat.com');
-                });
-            } catch (error) {
-                console.warn('检查WeAPIs URL失败:', error);
-                // 备用检查逻辑
-                return isWeAPIsUrlSync(url);
-            }
-        }
-        
         // 判断URL是否为WeAPIs的URL（同步版本，基于已知模式）
         function isWeAPIsUrlSync(url) {
             if (!url) return false;
@@ -1182,17 +1114,10 @@
                     });
                 });
                 
-                // 更新已选中的WeAPIs配置
-                const providers = ['apiProvider', 'assistantApiProvider', 'imageApiProvider', 'onlineApiProvider', 'forumApiProvider'];
-                providers.forEach(providerId => {
-                    const provider = document.getElementById(providerId);
-                    if (provider && weapisVariants.has(provider.value)) {
-                        provider.value = availableUrl;
-                        // 触发change事件更新隐藏字段
-                        provider.dispatchEvent(new Event('change'));
-                    }
-                });
-                
+                // 更新已选中的 WeAPIs 配置。
+                // 注：原这里遍历 5 个 *ApiProvider 下拉，但那些下拉连同配套 JS 已整块删除
+                // （UI 早已 display:none 且无恢复路径）。主模型的地址由 customAiGroup 直接输入，
+                // 不需要下拉派发事件，故此处不再遍历。
                 console.log(`WeAPIs URLs已更新为: ${availableUrl}`);
             } catch (error) {
                 console.error('更新WeAPIs URLs失败:', error);
@@ -1231,13 +1156,8 @@
             // 首先尝试从后端加载NPC配置
             loadNpcSettingsFromBackend();
             
-            // 页面加载完成后，手动检查一次NPC设置区域状态
-            setTimeout(() => {
-                console.log('页面加载完成后，手动检查NPC设置区域状态');
-                updateNpcSelection();
-                
-
-            }, 100);
+            // 注：原这里有个 setTimeout 调 updateNpcSelection()，该函数体是空的（只取 DOM 不做任何事），
+            // 已随空壳函数一起删除。
             
 
 
@@ -1245,87 +1165,35 @@
             document.querySelectorAll('#reminder-list').forEach(container => {
                 container.addEventListener('input', debounce(saveReminders, 500));
             });
-            const onlineApiProvider = document.getElementById('onlineApiProvider');
-            const customOnlineApiUrl = document.getElementById('customOnlineApiUrl');
-            const finalOnlineApiUrl = document.getElementById('finalOnlineApiUrl');
+            // 联网搜索模型：服务商下拉已删除（那段 UI 整块 display:none 且无恢复路径），
+            // 模型候选按出厂推荐固定给出，用户仍可用「其它」手填模型名。
             const onlineModelSelect = document.getElementById('onlineModelSelect');
             const customOnlineModel = document.getElementById('customOnlineModel');
             const finalOnlineModel = document.getElementById('finalOnlineModel');
 
-            function updateOnlineModelOptions() {
-                let options = [];
-                const apiUrl = onlineApiProvider.value;
+            (function initOnlineModelOptions(){
+                if (!onlineModelSelect) return;
+                const options = [
+                    { value: 'net-gpt-4o-mini', text: 'net-gpt-4o-mini (推荐)' },
+                    { value: 'deepseek-r1-searching', text: 'deepseek-r1-searching' },
+                    { value: 'other', text: '其它' }
+                ];
                 const savedModel = finalOnlineModel.value;
-
-                if (isWeAPIsUrlSync(apiUrl)) {
-                    options = [
-                        { value: 'net-gpt-4o-mini', text: 'net-gpt-4o-mini (推荐)' },
-                        { value: 'deepseek-r1-searching', text: 'deepseek-r1-searching' },
-                        { value: 'other', text: '其它' }
-                    ];
-                } else {
-                    options = [ { value: 'other', text: '其它' } ];
-                }
-
                 onlineModelSelect.innerHTML = '';
                 let modelInOptions = false;
                 options.forEach(opt => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = opt.value;
-                    optionElement.textContent = opt.text;
-                    if (opt.value === savedModel) {
-                        optionElement.selected = true;
-                        modelInOptions = true;
-                    }
-                    onlineModelSelect.appendChild(optionElement);
+                    const el = document.createElement('option');
+                    el.value = opt.value; el.textContent = opt.text;
+                    if (opt.value === savedModel) { el.selected = true; modelInOptions = true; }
+                    onlineModelSelect.appendChild(el);
                 });
-
                 if (!modelInOptions && savedModel) {
                     onlineModelSelect.value = 'other';
                     customOnlineModel.value = savedModel;
-                } else if (modelInOptions && onlineModelSelect.value !== 'other'){
-                     customOnlineModel.value = '';
                 }
+                finalOnlineModel.value = savedModel;
+            })();
 
-                finalOnlineModel.value = savedModel || (onlineModelSelect.value === 'other' ? customOnlineModel.value : onlineModelSelect.value);
-                onlineModelSelect.dispatchEvent(new Event('change'));
-            }
-
-            if (onlineApiProvider.value === 'other') {
-                customOnlineApiUrl.style.display = 'block';
-            } else {
-                customOnlineApiUrl.style.display = 'none';
-                finalOnlineApiUrl.value = onlineApiProvider.value;
-            }
-            updateOnlineModelOptions();
-
-            if (onlineModelSelect.value === 'other') {
-                 customOnlineModel.style.display = 'block';
-            } else {
-                 customOnlineModel.style.display = 'none';
-            }
-
-
-            onlineApiProvider.addEventListener('change', async function() {
-                if (this.value === 'other') {
-                    customOnlineApiUrl.style.display = 'block';
-                    finalOnlineApiUrl.value = customOnlineApiUrl.value;
-                } else {
-                    customOnlineApiUrl.style.display = 'none';
-                    if (isWeAPIsUrlSync(this.value)) {
-                        // 选择WeAPIs时使用优选节点
-                        const availableUrl = await selectAvailableWeAPIsNode();
-                        this.value = availableUrl;
-                        finalOnlineApiUrl.value = availableUrl;
-                    } else {
-                        finalOnlineApiUrl.value = this.value;
-                    }
-                }
-                updateOnlineModelOptions();
-            });
-            customOnlineApiUrl.addEventListener('input', () => {
-                finalOnlineApiUrl.value = customOnlineApiUrl.value;
-            });
             onlineModelSelect.addEventListener('change', function() {
                 if (this.value === 'other') {
                     customOnlineModel.style.display = 'block';
@@ -1428,92 +1296,34 @@
             });
 
 
-            const imageApiProvider = document.getElementById('imageApiProvider');
-            const customImageApiUrl = document.getElementById('customImageApiUrl');
-            const finalImageApiUrl = document.getElementById('finalImageApiUrl');
+            // 识图模型：服务商下拉已删除（同上），候选固定给出 + 保留「其它」手填。
             const imageModelSelect = document.getElementById('imageModelSelect');
             const customImageModel = document.getElementById('customImageModel');
             const finalImageModel = document.getElementById('finalImageModel');
 
-            function updateImageModelOptions() {
-                let options = [];
-                const apiUrl = imageApiProvider.value;
+            (function initImageModelOptions(){
+                if (!imageModelSelect) return;
+                const options = [
+                    { value: 'gpt-4o', text: 'gpt-4o (推荐)' },
+                    { value: 'moonshot-v1-32k-vision-preview', text: 'moonshot-v1-32k-vision-preview' },
+                    { value: 'other', text: '其它' }
+                ];
                 const savedModel = finalImageModel.value;
-
-                if (apiUrl === 'https://api.moonshot.cn/v1') {
-                    options = [
-                        { value: 'moonshot-v1-128k-vision-preview', text: 'moonshot-v1-128k-vision-preview' },
-                        { value: 'moonshot-v1-32k-vision-preview',  text: 'moonshot-v1-32k-vision-preview' },
-                        { value: 'moonshot-v1-8k-vision-preview',   text: 'moonshot-v1-8k-vision-preview' },
-                        { value: 'other', text: '其它' }
-                    ];
-                } else if (isWeAPIsUrlSync(apiUrl)) {
-                    options = [
-                        { value: 'gpt-4o', text: 'gpt-4o' },
-                        { value: 'other', text: '其它' }
-                    ];
-                } else {
-                    options = [ { value: 'other', text: '其它' } ];
-                }
-
                 imageModelSelect.innerHTML = '';
                 let modelInOptions = false;
                 options.forEach(opt => {
                     const o = document.createElement('option');
-                    o.value = opt.value;
-                    o.textContent = opt.text;
-                    if (opt.value === savedModel) {
-                        o.selected = true;
-                        modelInOptions = true;
-                    }
+                    o.value = opt.value; o.textContent = opt.text;
+                    if (opt.value === savedModel) { o.selected = true; modelInOptions = true; }
                     imageModelSelect.appendChild(o);
                 });
-
                 if (!modelInOptions && savedModel) {
                     imageModelSelect.value = 'other';
                     customImageModel.value = savedModel;
-                } else if (modelInOptions && imageModelSelect.value !== 'other') {
-                    customImageModel.value = '';
                 }
+                finalImageModel.value = savedModel;
+            })();
 
-                finalImageModel.value = savedModel || (imageModelSelect.value === 'other' ? customImageModel.value : imageModelSelect.value);
-                imageModelSelect.dispatchEvent(new Event('change'));
-            }
-
-            if (imageApiProvider.value === 'other') {
-                customImageApiUrl.style.display = 'block';
-            } else {
-                customImageApiUrl.style.display = 'none';
-                finalImageApiUrl.value = imageApiProvider.value;
-            }
-            updateImageModelOptions();
-            if (imageModelSelect.value === 'other') {
-                 customImageModel.style.display = 'block';
-            } else {
-                 customImageModel.style.display = 'none';
-            }
-
-
-            imageApiProvider.addEventListener('change', async function() {
-                if (this.value === 'other') {
-                    customImageApiUrl.style.display = 'block';
-                    finalImageApiUrl.value = customImageApiUrl.value;
-                } else {
-                    customImageApiUrl.style.display = 'none';
-                    if (isWeAPIsUrlSync(this.value)) {
-                        // 选择WeAPIs时检测可用节点
-                        const availableUrl = await selectAvailableWeAPIsNode();
-                        this.value = availableUrl;
-                        finalImageApiUrl.value = availableUrl;
-                    } else {
-                        finalImageApiUrl.value = this.value;
-                    }
-                }
-                updateImageModelOptions();
-            });
-            customImageApiUrl.addEventListener('input', () => {
-                finalImageApiUrl.value = customImageApiUrl.value;
-            });
             imageModelSelect.addEventListener('change', function() {
                 if (this.value === 'other') {
                     customImageModel.style.display = 'block';
@@ -1530,8 +1340,6 @@
             // 辅助模型配置逻辑
             const enableAssistantModel = document.getElementById('enableAssistantModel');
             const assistantModelConfig = document.getElementById('assistantModelConfig');
-            const assistantApiProvider = document.getElementById('assistantApiProvider');
-            const customAssistantApiUrl = document.getElementById('customAssistantApiUrl');
             const finalAssistantApiUrl = document.getElementById('finalAssistantApiUrl');
             const assistantModelSelect = document.getElementById('assistantModelSelect');
             const customAssistantModel = document.getElementById('customAssistantModel');
@@ -1542,35 +1350,16 @@
                 assistantModelConfig.style.display = this.checked ? 'block' : 'none';
             });
 
+            // 辅助模型：服务商下拉已删除（同上），候选固定给出 + 保留「其它」手填。
             function updateAssistantModelOptions() {
-                let options = [];
-                const apiUrl = assistantApiProvider.value;
+                const options = [
+                    { value: "gpt-4o-mini", text: "GPT-4o-mini (推荐，成本低)" },
+                    { value: "gpt-3.5-turbo", text: "GPT-3.5-turbo" },
+                    { value: "deepseek-v3", text: "DeepSeek V3" },
+                    { value: "Qwen/Qwen2.5-7B-Instruct", text: "通义千问2.5-7B (免费额度)" },
+                    { value: 'other', text: '其它' }
+                ];
                 const savedModel = finalAssistantModel.value;
-
-                if (apiUrl === 'https://api.siliconflow.cn/v1/') {
-                    options = [
-                        { value: "Qwen/Qwen2.5-7B-Instruct", text: "硅基通义千问2.5-7B模型 (可用免费额度)" },
-                        { value: "meta-llama/Llama-3.1-8B-Instruct", text: "硅基Llama-3.1-8B模型 (可用免费额度)" },
-                        { value: "deepseek-ai/DeepSeek-V3", text: "硅基DeepSeek V3模型 (可用免费额度)" },
-                        { value: "Pro/deepseek-ai/DeepSeek-V3", text: "硅基DeepSeek V3 Pro模型 (需充值后方可使用)" },
-                        { value: 'other', text: '其它' }
-                    ];
-                } else if (apiUrl === 'https://api.deepseek.com') {
-                    options = [
-                        { value: "deepseek-chat", text: "DeepSeek官方V3模型" },
-                        { value: 'other', text: '其它' }
-                    ];
-                } else if (isWeAPIsUrlSync(apiUrl)) {
-                    options = [
-                        { value: "gpt-4o-mini", text: "GPT-4o-mini (推荐，成本低)" },
-                        { value: "gpt-3.5-turbo", text: "GPT-3.5-turbo" },
-                        { value: "deepseek-v3", text: "DeepSeek V3" },
-                        { value: "deepseek-v3-0324", text: "DeepSeek V3 (0324版本)" },
-                        { value: 'other', text: '其它' }
-                    ];
-                } else {
-                    options = [{ value: 'other', text: '其它' }];
-                }
 
                 assistantModelSelect.innerHTML = '';
                 let modelInOptions = false;
@@ -1588,55 +1377,17 @@
                 if (!modelInOptions && savedModel) {
                     assistantModelSelect.value = 'other';
                     customAssistantModel.value = savedModel;
-                } else if (modelInOptions && assistantModelSelect.value !== 'other') {
-                    customAssistantModel.value = '';
                 }
-
-                finalAssistantModel.value = savedModel || (assistantModelSelect.value === 'other' ? customAssistantModel.value : assistantModelSelect.value);
-                assistantModelSelect.dispatchEvent(new Event('change'));
+                finalAssistantModel.value = savedModel;
             }
 
-            // 初始化辅助模型配置
-            if (assistantApiProvider && assistantApiProvider.value === 'other') {
-                customAssistantApiUrl.style.display = 'block';
-            } else if (assistantApiProvider) {
-                customAssistantApiUrl.style.display = 'none';
-                finalAssistantApiUrl.value = assistantApiProvider.value;
-            }
-            if (assistantApiProvider) {
-                updateAssistantModelOptions();
-            }
+            updateAssistantModelOptions();
             if (assistantModelSelect && assistantModelSelect.value === 'other') {
                 customAssistantModel.style.display = 'block';
             } else if (customAssistantModel) {
                 customAssistantModel.style.display = 'none';
             }
 
-            // 辅助模型事件监听
-            if (assistantApiProvider) {
-                assistantApiProvider.addEventListener('change', async function() {
-                    if (this.value === 'other') {
-                        customAssistantApiUrl.style.display = 'block';
-                        finalAssistantApiUrl.value = customAssistantApiUrl.value;
-                    } else {
-                        customAssistantApiUrl.style.display = 'none';
-                        if (isWeAPIsUrlSync(this.value)) {
-                            // 选择WeAPIs时检测可用节点
-                            const availableUrl = await selectAvailableWeAPIsNode();
-                            this.value = availableUrl;
-                            finalAssistantApiUrl.value = availableUrl;
-                        } else {
-                            finalAssistantApiUrl.value = this.value;
-                        }
-                    }
-                    updateAssistantModelOptions();
-                });
-            }
-            if (customAssistantApiUrl) {
-                customAssistantApiUrl.addEventListener('input', () => {
-                    finalAssistantApiUrl.value = customAssistantApiUrl.value;
-                });
-            }
             if (assistantModelSelect) {
                 assistantModelSelect.addEventListener('change', function() {
                     if (this.value === 'other') {
@@ -1657,9 +1408,6 @@
             // 论坛自定义模型配置逻辑
             const enableForumCustomModel = document.getElementById('enableForumCustomModel');
             const forumCustomModelConfig = document.getElementById('forumCustomModelConfig');
-            const forumApiProvider = document.getElementById('forumApiProvider');
-            const customForumApiUrl = document.getElementById('customForumApiUrl');
-            const finalForumApiUrl = document.getElementById('finalForumApiUrl');
             const forumModelSelect = document.getElementById('forumModelSelect');
             const customForumModel = document.getElementById('customForumModel');
             const finalForumModel = document.getElementById('finalForumModel');
@@ -1670,92 +1418,37 @@
                 });
             }
 
-            function updateForumModelOptions() {
+            // 论坛模型：服务商下拉已删除（同上），只给通用候选 + 「其它」手填。
+            // 关闭论坛自定义模型时，论坛侧由 config_editor.resolve_ai_opts 回落到主模型。
+            (function initForumModelOptions(){
                 if (!forumModelSelect) return;
-                let options = [];
-                const apiUrl = forumApiProvider ? forumApiProvider.value : '';
+                const options = [
+                    { value: 'deepseek-v3', text: 'DeepSeek V3' },
+                    { value: 'deepseek-r1', text: 'DeepSeek R1' },
+                    { value: 'gpt-4o-mini', text: 'GPT-4o-mini (成本低)' },
+                    { value: 'other', text: '其它' }
+                ];
                 const savedModel = finalForumModel ? finalForumModel.value : '';
-
-                if (apiUrl === 'https://api.siliconflow.cn/v1/') {
-                    options = [
-                        { value: 'deepseek-ai/DeepSeek-V3', text: '硅基DeepSeek V3' },
-                        { value: 'deepseek-ai/DeepSeek-R1', text: '硅基DeepSeek R1' },
-                        { value: 'Pro/deepseek-ai/DeepSeek-V3', text: '硅基DeepSeek V3 Pro' },
-                        { value: 'Pro/deepseek-ai/DeepSeek-R1', text: '硅基DeepSeek R1 Pro' },
-                        { value: 'other', text: '其它' }
-                    ];
-                } else if (apiUrl === 'https://api.deepseek.com') {
-                    options = [
-                        { value: 'deepseek-chat', text: 'DeepSeek官方V3' },
-                        { value: 'deepseek-reasoner', text: 'DeepSeek官方R1' },
-                        { value: 'other', text: '其它' }
-                    ];
-                } else if (apiUrl && isWeAPIsUrlSync(apiUrl)) {
-                    // 使用动态获取的weapi模型列表
-                    options = getWeapiModels();
-                } else {
-                    options = [ { value: 'other', text: '其它' } ];
-                }
-
                 forumModelSelect.innerHTML = '';
                 let modelInOptions = false;
                 options.forEach(opt => {
                     const o = document.createElement('option');
-                    o.value = opt.value;
-                    o.textContent = opt.text;
-                    if (opt.value === savedModel) {
-                        o.selected = true;
-                        modelInOptions = true;
-                    }
+                    o.value = opt.value; o.textContent = opt.text;
+                    if (opt.value === savedModel) { o.selected = true; modelInOptions = true; }
                     forumModelSelect.appendChild(o);
                 });
-
                 if (!modelInOptions && savedModel) {
                     forumModelSelect.value = 'other';
                     if (customForumModel) customForumModel.value = savedModel;
-                } else if (modelInOptions && forumModelSelect.value !== 'other') {
-                    if (customForumModel) customForumModel.value = '';
                 }
-
-                if (finalForumModel) finalForumModel.value = savedModel || (forumModelSelect.value === 'other' ? (customForumModel ? customForumModel.value : '') : forumModelSelect.value);
-                forumModelSelect.dispatchEvent(new Event('change'));
-            }
-
-            if (forumApiProvider) {
-                if (forumApiProvider.value === 'other') {
-                    if (customForumApiUrl) customForumApiUrl.style.display = 'block';
-                } else {
-                    if (customForumApiUrl) customForumApiUrl.style.display = 'none';
-                    if (finalForumApiUrl) finalForumApiUrl.value = forumApiProvider.value;
-                }
-                updateForumModelOptions();
-                if (forumModelSelect && forumModelSelect.value === 'other') {
+                if (finalForumModel) finalForumModel.value = savedModel;
+                if (forumModelSelect.value === 'other') {
                     if (customForumModel) customForumModel.style.display = 'block';
                 } else if (customForumModel) {
                     customForumModel.style.display = 'none';
                 }
-                forumApiProvider.addEventListener('change', async function() {
-                    if (this.value === 'other') {
-                        if (customForumApiUrl) customForumApiUrl.style.display = 'block';
-                        if (finalForumApiUrl) finalForumApiUrl.value = customForumApiUrl ? customForumApiUrl.value : '';
-                    } else {
-                        if (customForumApiUrl) customForumApiUrl.style.display = 'none';
-                        if (isWeAPIsUrlSync(this.value)) {
-                            const availableUrl = await selectAvailableWeAPIsNode();
-                            this.value = availableUrl;
-                            if (finalForumApiUrl) finalForumApiUrl.value = availableUrl;
-                        } else {
-                            if (finalForumApiUrl) finalForumApiUrl.value = this.value;
-                        }
-                    }
-                    updateForumModelOptions();
-                });
-            }
-            if (customForumApiUrl) {
-                customForumApiUrl.addEventListener('input', () => {
-                    if (finalForumApiUrl) finalForumApiUrl.value = customForumApiUrl.value;
-                });
-            }
+            })();
+
             if (forumModelSelect) {
                 forumModelSelect.addEventListener('change', function() {
                     if (this.value === 'other') {
@@ -3698,7 +3391,6 @@
                             const s = (npcConfig.npc_settings && npcConfig.npc_settings[name]) ? npcConfig.npc_settings[name] : null;
                             list.appendChild(createNpcRow(name, s));
                         }
-                        updateNpcSelection();
                     }
                 } else {
                     console.log('后端没有NPC配置，尝试从localStorage恢复');
@@ -3727,7 +3419,6 @@
                             list.appendChild(createNpcRow(name));
                         }
                     }
-                    updateNpcSelection();
                 } catch (e) {
                     console.error('从localStorage恢复NPC设置失败:', e);
                 }
@@ -3749,7 +3440,11 @@
             <button type="submit" form="configForm" id="saveConfigButton" class="nav-button" style="background-color: #4CAF50;">保存配置</button>
                         <a href="{{ url_for('quick_start') }}" class="nav-button" style="background-color: #ff9800;">快速上手</a>
                         <a href="{{ url_for('style_lab') }}" class="nav-button">风格模仿</a>
-                        <button type="button" id="importButton" class="nav-button" style="background-color: #2196F3;">导入配置</button>      
+                        <a href="{{ url_for('forward_page') }}" class="nav-button">固定转发</a>
+                        <button type="button" id="importButton" class="nav-button" style="background-color: #2196F3;">导入配置</button>
+            <a href="{{ url_for('cli_page') }}" class="nav-button">命令行</a>
+            <a href="{{ url_for('mcp_page') }}" class="nav-button">MCP 接入</a>
+            <a href="{{ url_for('jev_page') }}" class="nav-button">Jev 状态</a>
             <a href="{{ url_for('help_page') }}" class="nav-button" style="background-color: #03A9F4;">帮助文档</a>
         </div>
     </div>
@@ -3777,8 +3472,8 @@
                 <li><a href="#" data-target="section-reply-interval">回复间隔配置</a></li>
                 <li><a href="#" data-target="section-fun-lab">趣味实验室</a></li>
                 <li><a href="#" data-target="section-scheduled-restart">定时重启Bot配置</a></li>
-                <li><a href="#" data-target="section-web-editor">网页编辑器配置</a></li>
-                <li><a href="#" id="oneKeyDetectLink" style="color:#f44336;">🔧 一键检测报错</a></li>
+                <li><a href="#" data-target="section-web-editor">访问与密码</a></li>
+                <li><a href="{{ url_for('help_page') }}">❓ 常见问题</a></li>
             </ul>
             <script>
                 (function(){
@@ -3791,20 +3486,9 @@
                             btn.textContent = hidden ? '⚙ 高级设置 ▴' : '⚙ 高级设置 ▾';
                         });
                     }
-                    var detect = document.getElementById('oneKeyDetectLink');
-                    if (detect) {
-                        detect.addEventListener('click', async function(e){
-                            e.preventDefault();
-                            try {
-                                const response = await fetch('/run_one_key_detection');
-                                if (!response.ok) throw new Error('检测失败，请稍后重试。');
-                                const result = await response.text();
-                                console.log(result || '检测工具启动中');
-                            } catch (error) {
-                                console.error('检测出现错误:', error);
-                            }
-                        });
-                    }
+                    // 注：原「🔧 一键检测报错」链接已删。两个原因让它在发行版里必然无效：
+                    //   1) 它 fetch 的是纯 HTML 文本，结果只 console.log —— GUI(noconsole) 下用户看不到；
+                    //   2) 它依赖同目录的「一键检测.bat」，而该文件没有打进 EXE，os.path.exists 恒为 False。
                 })();
             </script>
         </nav>
@@ -3922,17 +3606,8 @@
                         </div>
 
                         <div id="forumCustomModelConfig" class="{% if config.ENABLE_FORUM_CUSTOM_MODEL %}assistant-config-visible{% else %}assistant-config-hidden{% endif %}">
-                            <div class="form-group" style="display:none;">
-                                <label>API 服务商：</label>
-                                <select id="forumApiProvider" name="temp_FORUM_BASE_URL" title="论坛API服务商">
-                                    <option value="https://api.siliconflow.cn/v1/" {% if config.FORUM_BASE_URL == 'https://api.siliconflow.cn/v1/' %}selected{% endif %}>硅基流动</option>
-                                    <option value="https://api.deepseek.com" {% if config.FORUM_BASE_URL == 'https://api.deepseek.com' %}selected{% endif %}>DeepSeek官方API</option>
-                                    <option value="https://wetech.jukuai.net/ai/v1" {% if config.FORUM_BASE_URL == 'https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
-                                    <option value="other" {% if config.FORUM_BASE_URL not in ['https://api.siliconflow.cn/v1/','https://api.deepseek.com','https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
-                                </select>
-                                <input type="text" id="customForumApiUrl" placeholder="请输入自定义API地址" class="custom-input" {% if config.FORUM_BASE_URL not in ['https://api.siliconflow.cn/v1/','https://api.deepseek.com','https://wetech.jukuai.net/ai/v1'] %} value="{{ config.FORUM_BASE_URL }}" style="display:block;" {% endif %}>
-                                <input type="hidden" id="finalForumApiUrl" name="FORUM_BASE_URL" value="{{ config.FORUM_BASE_URL }}">
-                            </div>
+                            <!-- 服务商下拉曾在这里，但整块 display:none 且无恢复路径 —— UI 早已废弃， JS 里配套的 ~100 行切换逻辑也一并删掉了。这里只保留 hidden 字段， 让「不启用论坛自定义模型」时论坛侧回落主模型（见 config_editor.resolve_ai_opts）。 -->
+                            <input type="hidden" id="finalForumApiUrl" name="FORUM_BASE_URL" value="{{ config.FORUM_BASE_URL }}">
 
                             <div class="form-group">
                                 <label>模型选择：</label>
@@ -4111,17 +3786,8 @@
                     </div>
 
                     <div id="assistantModelConfig" class="{% if config.ENABLE_ASSISTANT_MODEL %}assistant-config-visible{% else %}assistant-config-hidden{% endif %}">
-                        <div class="form-group" style="display:none;">
-                            <label>辅助模型API服务商:</label>
-                            <select id="assistantApiProvider" name="temp_ASSISTANT_BASE_URL" title="辅助模型API服务商">
-                                <option value="https://api.siliconflow.cn/v1/" {% if config.ASSISTANT_BASE_URL == 'https://api.siliconflow.cn/v1/' %}selected{% endif %}>硅基流动</option>
-                                <option value="https://api.deepseek.com" {% if config.ASSISTANT_BASE_URL == 'https://api.deepseek.com' %}selected{% endif %}>DeepSeek官方API</option>
-                                <option value="https://wetech.jukuai.net/ai/v1" {% if config.ASSISTANT_BASE_URL == 'https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
-                                <option value="other" {% if config.ASSISTANT_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
-                            </select>
-                            <input type="text" id="customAssistantApiUrl" placeholder="请输入自定义辅助模型API地址" class="custom-input" {% if config.ASSISTANT_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://wetech.jukuai.net/ai/v1'] %} value="{{ config.ASSISTANT_BASE_URL }}" style="display:block;" {% endif %}>
-                            <input type="hidden" id="finalAssistantApiUrl" name="ASSISTANT_BASE_URL" value="{{ config.ASSISTANT_BASE_URL }}">
-                        </div>
+                        <!-- 同 forum：服务商下拉整块 display:none 无恢复路径，配套 JS 已删，只留 hidden -->
+                        <input type="hidden" id="finalAssistantApiUrl" name="ASSISTANT_BASE_URL" value="{{ config.ASSISTANT_BASE_URL }}">
                         <div class="form-group">
                             <label>辅助模型选择: (推荐使用成本较低的模型)</label>
                             <select id="assistantModelSelect" name="temp_ASSISTANT_MODEL" title="辅助模型选择">
@@ -4170,19 +3836,9 @@
                         </div>
                     </div>
                     <details class="advanced-block">
-                        <summary>识别服务商与模型（默认即可）</summary>
-                    <div class="form-group" style="display:none;">
-                        <label>图像识别API服务商：</label>
-                        <select id="imageApiProvider" name="temp_IMAGE_BASE_URL" title="图像识别API服务商">
-                            <option value="https://api.moonshot.cn/v1" {% if config.MOONSHOT_BASE_URL=='https://api.moonshot.cn/v1' %}selected{% endif %}>月之暗面 Moonshot</option>
-                            <option value="https://wetech.jukuai.net/ai/v1" {% if config.MOONSHOT_BASE_URL=='https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
-                            <option value="other" {% if config.MOONSHOT_BASE_URL not in ['https://api.moonshot.cn/v1','https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
-                        </select>
-                        <input type="text" id="customImageApiUrl" class="custom-input" placeholder="请输入自定义API地址" {% if config.MOONSHOT_BASE_URL not in ['https://api.moonshot.cn/v1','https://wetech.jukuai.net/ai/v1'] %} value="{{ config.MOONSHOT_BASE_URL }}" style="display:block;" {% endif %}>
-                        <input type="hidden" id="finalImageApiUrl" name="MOONSHOT_BASE_URL" value="{{ config.MOONSHOT_BASE_URL }}">
-                        <small>推荐使用默认网关，API Key 可与 Chat 模型配置保持一致（请前往对应服务商官网注册）。</small>
-                        <small>月之暗面 Moonshot 注册：请前往其官网申请（platform.moonshot.cn）。</small>
-                    </div>
+                        <summary>识别模型（默认即可）</summary>
+                    <!-- 同 forum：服务商下拉整块 display:none 无恢复路径，配套 JS 已删，只留 hidden -->
+                    <input type="hidden" id="finalImageApiUrl" name="MOONSHOT_BASE_URL" value="{{ config.MOONSHOT_BASE_URL }}">
                     <div class="form-group">
                         <label>识图模型选择：</label>
                         <select id="imageModelSelect" name="temp_IMAGE_MODEL" title="识图模型选择"></select>
@@ -4216,16 +3872,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-group" style="display:none;">
-                        <label>联网API服务商：</label>
-                        <select id="onlineApiProvider" name="temp_ONLINE_BASE_URL" title="联网API服务商">
-                            <option value="https://wetech.jukuai.net/ai/v1" {% if config.ONLINE_BASE_URL=='https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
-                            <option value="other" {% if config.ONLINE_BASE_URL not in ['https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
-                        </select>
-                        <input type="text" id="customOnlineApiUrl" class="custom-input" placeholder="请输入自定义联网API地址" {% if config.ONLINE_BASE_URL not in ['https://wetech.jukuai.net/ai/v1'] %} value="{{ config.ONLINE_BASE_URL }}" style="display:block;" {% endif %}>
-                        <input type="hidden" id="finalOnlineApiUrl" name="ONLINE_BASE_URL" value="{{ config.ONLINE_BASE_URL }}">
-                        <small>推荐使用默认网关，API Key 可与 Chat 模型配置保持一致（请前往对应服务商官网注册）。</small>
-                    </div>
+                    <!-- 同 forum：服务商下拉整块 display:none 无恢复路径，配套 JS 已删，只留 hidden -->
+                    <input type="hidden" id="finalOnlineApiUrl" name="ONLINE_BASE_URL" value="{{ config.ONLINE_BASE_URL }}">
                     <div class="form-group">
                         <label>联网搜索模型：</label>
                         <select id="onlineModelSelect" name="temp_ONLINE_MODEL" title="联网搜索模型"></select>
@@ -4446,7 +4094,7 @@
                     <div class="form-group">
                         <label>主动聊天白名单(仅名单内会收到主动消息):</label>
                         <input type="text" name="AUTO_MESSAGE_USER_LIST" value="{{ config.AUTO_MESSAGE_USER_LIST }}" placeholder="[]">
-                        <small>Python 列表格式，例如 <code>['SamCai_', 'wxid_9ivay0f1tt9322', '45158227848@chatroom']</code>。<br>
+                        <small>Python 列表格式，例如 <code>['微信昵称', 'wxid_xxxxxxxxxxxxx', '12345678@chatroom']</code>。<br>
                         <b>留空 <code>[]</code> 表示不主动向任何人发消息</b>（最安全默认）；只有写进本列表的用户/群才会收到「主动发消息」。标识符填写方式与用户列表一致（显示名或 wxid，群聊用 <code>xxx@chatroom</code>）。</small>
                     </div>
                     <div class="form-group">
@@ -4579,12 +4227,13 @@
                 </div>
 
                 <div id="section-web-editor" class="content-panel">
-                    <h2>网页编辑器配置 (修改后重新运行程序生效)</h2>
-                     <div class="form-group">
+                    <h2>访问与密码</h2>
+                    <div class="form-group">
                         <div class="switch-item">
-                            <label>允许开放端口 (开启后允许其它设备远程访问，关闭则仅本地访问)</label>
+                            <label>允许局域网访问（开启后同一 WiFi 下的手机/电脑可打开本软件后台；关闭则只有本机能打开）</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" name="ALLOW_OPEN_PORT" {% if config.ALLOW_OPEN_PORT %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
+                        <small style="display:block;margin-top:5px;color:#888;">修改后需重启软件生效。</small>
                     </div>
                     <div class="form-group">
                         <label>登录密码管理:</label>
@@ -4606,8 +4255,9 @@
                         </small>
                     </div>
                     <div class="form-group">
-                        <label>网页端口:</label>
+                        <label>后台端口:</label>
                         <input type="number" step="1" name="PORT" value="{{ config.PORT }}">
+                        <small style="display:block;margin-top:5px;color:#888;">端口被占用时软件会自动换用其它端口。</small>
                     </div>
                     <div class="form-group" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
                         <button type="button" id="resetDefaultConfigBtn" class="nav-button" style="background-color: #ff5722;">恢复默认配置</button>
@@ -4623,9 +4273,9 @@
                 </div>
             </form>
 
-            <!-- 授权管理（付费 / 卡密）：买家在此查看状态、一键激活、购买、释放本机 -->
+            <!-- 授权管理：买家只看「状态 + 购买 + 续费」三件事，其余全是内部流程 -->
             <div id="section-license" class="content-panel">
-                <h2>授权管理（付费 / 卡密）</h2>
+                <h2>授权管理</h2>
 
                 <div class="form-group">
                     <span id="licenseBadge" style="display:inline-block;padding:4px 12px;border-radius:12px;background:#eee;color:#555;font-weight:bold;">检测中…</span>
@@ -4634,89 +4284,51 @@
 
                 <div id="licenseBanner" style="display:none;margin:8px 0;padding:10px 12px;border-radius:6px;background:#e6f4ea;color:#1e7e34;font-size:14px;"></div>
 
-                <ol id="licenseInstr" style="margin:6px 0 14px 18px;color:#555;font-size:13px;line-height:1.7;">
-                    <li>点「购买许可证」完成付款（支持支付宝）。付款后卡密会<b>自动同步</b>到本页并一键激活 + 重启，无需手动复制粘贴。</li>
-                    <li>若因网络未自动同步，再把邮件里的卡密粘贴到下方输入框，点「激活 / 保存」手动核销。</li>
-                    <li>点「重启机器人使授权生效」（自动流程会替你点）；bot 下次启动即受授权保护。</li>
-                </ol>
-
-                <div class="form-group" id="licenseKeyGroup">
-                    <label>License Key（卡密）：</label>
-                    <input type="text" id="licenseKeyInput" placeholder="粘贴你在 Creem 购买后获得的卡密" class="api-key-input" style="width:100%;">
-                    <small id="licenseKeyHint" class="api-key-hint"></small>
+                <!-- 套餐档位：唯一的购买入口，取代原先「购买许可证 + 支付方式折叠面板」两套入口 -->
+                <div class="form-group" style="margin:14px 0;">
+                    <label style="font-weight:600;">选择套餐（一次性购买，到期可续费）</label>
+                    <div id="licenseTierRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+                        <style>
+                            #licenseTierRow .lic-tier{transition:border-color .15s,box-shadow .15s;}
+                            #licenseTierRow .lic-tier:hover{border-color:#4caf50;box-shadow:0 2px 8px rgba(76,175,80,.22);}
+                            #licenseTierRow .lic-tier:active{transform:translateY(1px);}
+                            @media (prefers-color-scheme: dark){
+                                #licenseTierRow .lic-tier{background:#2a2a2a;border-color:#444;}
+                                #licenseTierRow .lic-tier div:first-child{color:#e0e0e0 !important;}
+                                #licenseTierRow .lic-tier div:last-child{color:#999 !important;}
+                            }
+                        </style>
+                        <button type="button" class="lic-tier" data-tier="normal"
+                            style="flex:1;min-width:150px;text-align:left;padding:12px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">
+                            <div style="font-weight:600;color:#333;">初级</div>
+                            <div style="color:#888;font-size:12px;margin-top:2px;">¥29.9 · 30 天</div>
+                        </button>
+                        <button type="button" class="lic-tier" data-tier="premium"
+                            style="flex:1;min-width:150px;text-align:left;padding:12px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">
+                            <div style="font-weight:600;color:#333;">中级</div>
+                            <div style="color:#888;font-size:12px;margin-top:2px;">¥39.9 · 30 天</div>
+                        </button>
+                        <button type="button" class="lic-tier" data-tier="lifetime"
+                            style="flex:1;min-width:150px;text-align:left;padding:12px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">
+                            <div style="font-weight:600;color:#333;">高级</div>
+                            <div style="color:#888;font-size:12px;margin-top:2px;">¥199 · 365 天</div>
+                        </button>
+                    </div>
+                    <small style="display:block;margin-top:8px;color:#888;">支付宝 / 银行卡结算，付款成功后本机会自动获取并激活授权，无需复制卡密。</small>
                 </div>
 
-                <div class="form-group" style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <button type="button" id="licenseActivateBtn" style="background:#1976d2;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">激活 / 保存</button>
-                    <button type="button" id="licenseBuyBtn" style="background:#4caf50;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">购买许可证</button>
-                    <button type="button" id="licenseDeactivateBtn" style="background:#9e9e9e;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">释放本机</button>
-                    <button type="button" id="licenseRestartBtn" style="background:#ff9800;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">重启机器人使授权生效</button>
-                    <button type="button" id="payMethodsToggle" style="background:#3f51b5;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">💳 支持的支付方式</button>
-                </div>
-
+                <!-- 当前套餐 + 续费：已激活时才出现 -->
                 <div class="form-group" id="licenseDurationBox" style="display:none;margin:12px 0;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;background:#f7f9ff;font-size:14px;line-height:1.7;">
                     <div id="licenseDurationText" style="margin-bottom:8px;"></div>
-                    <button type="button" id="licenseRenewBtn" class="pm-buy" data-tier="" style="background:#ff9800;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">续费 / 再次购买</button>
+                    <button type="button" id="licenseRenewBtn" style="background:#ff9800;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">续费 / 升级</button>
                 </div>
 
-                <!-- 支付方式说明：切换按钮展开的 tab 面板 -->
-                <div id="payMethodsPanel" style="display:none;margin:12px 0;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;font-size:14px;">
-                    <style>
-                        #payMethodsPanel .pm-tab{background:#fafafa;border:none;border-bottom:2px solid transparent;padding:10px 16px;cursor:pointer;font-size:14px;color:#555;}
-                        #payMethodsPanel .pm-tab:hover{background:#f0f0f0;}
-                        #payMethodsPanel .pm-tab.active{background:#fff;color:#3f51b5;border-bottom-color:#3f51b5;font-weight:bold;}
-                        #payMethodsPanel .pm-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed #eee;}
-                        #payMethodsPanel .pm-row:last-child{border-bottom:none;}
-                        #payMethodsPanel .pm-name{width:120px;font-weight:600;color:#333;}
-                        #payMethodsPanel .pm-badge{padding:2px 10px;border-radius:12px;font-size:12px;font-weight:bold;white-space:nowrap;}
-                        #payMethodsPanel .pm-yes{background:#e6f4ea;color:#1e7e34;}
-                        #payMethodsPanel .pm-no{background:#fdecea;color:#c62828;}
-                        #payMethodsPanel .pm-sub{color:#999;font-size:12px;}
-                        #payMethodsPanel .pm-note{margin-top:10px;padding:8px 10px;background:#fff4e5;color:#b26a00;border-radius:6px;font-size:13px;line-height:1.6;}
-                        @media (prefers-color-scheme: dark){
-                            #payMethodsPanel{border-color:#444;background:#2a2a2a;color:#e0e0e0;}
-                            #payMethodsPanel .pm-tab{background:#2f2f2f;color:#bbb;}
-                            #payMethodsPanel .pm-tab:hover{background:#383838;}
-                            #payMethodsPanel .pm-tab.active{background:#2a2a2a;color:#9fa8da;}
-                            #payMethodsPanel .pm-row{border-bottom-color:#3a3a3a;}
-                            #payMethodsPanel .pm-name{color:#e0e0e0;}
-                            #payMethodsPanel .pm-yes{background:rgba(46,160,67,.18);color:#7bd88f;}
-                            #payMethodsPanel .pm-no{background:rgba(220,60,60,.18);color:#ff8a80;}
-                            #payMethodsPanel .pm-sub{color:#888;}
-                            #payMethodsPanel .pm-note{background:rgba(255,170,60,.12);color:#ffb866;}
-                            #licenseDurationBox{border-color:#444;background:#2a2a2a;color:#e0e0e0;}
-                        }
-                    </style>
-                    <div style="padding:12px 16px 4px;color:#555;font-size:13px;line-height:1.7;">
-                        以下均为<b>一次性购买（套餐费）</b>：购一次获得对应有效期的授权，<b>到期前本软件会提示续费</b>（续费需再次购买）。
-                        <b>支付宝扫码支持全部档位</b>。
-                    </div>
-                    <div style="padding:8px 16px 16px;">
-                        <div class="pm-row"><span class="pm-name">初级 套餐费</span><span class="pm-sub">¥29.9 · 30天</span><span class="pm-badge pm-yes">✅ 支付宝</span><button type="button" class="pm-buy" data-tier="normal" style="margin-left:auto;background:#4caf50;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;">立即付款</button></div>
-                        <div class="pm-row"><span class="pm-name">中级 套餐费</span><span class="pm-sub">¥39.9 · 30天</span><span class="pm-badge pm-yes">✅ 支付宝</span><button type="button" class="pm-buy" data-tier="premium" style="margin-left:auto;background:#4caf50;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;">立即付款</button></div>
-                        <div class="pm-row"><span class="pm-name">高级 套餐费</span><span class="pm-sub">¥199 · 365天</span><span class="pm-badge pm-yes">✅ 支付宝</span><button type="button" class="pm-buy" data-tier="lifetime" style="margin-left:auto;background:#4caf50;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;">立即付款</button></div>
-                        <div class="pm-note">💡 全部为一次性套餐；想用支付宝直接选任意档，收银台都会出现支付宝扫码。</div>
-                    </div>
-                </div>
-
-                <div class="form-group" id="licenseBuyRow" style="display:none;">
-                    <label>购买链接（若上方按钮被拦截，可手动复制打开）：</label>
-                    <div style="display:flex;gap:8px;">
-                        <input type="text" id="licenseBuyUrl" readonly class="api-key-input" style="flex:1;background:#f5f5f5;">
-                        <button type="button" id="licenseCopyBuyBtn" style="background:#607d8b;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">复制</button>
-                        <button type="button" id="licenseOpenBuyBtn" style="background:#4caf50;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">打开</button>
-                    </div>
-                </div>
-
-                <details id="licenseAdvanced" class="advanced-block">
-                    <summary>高级设置</summary>
-                    <div class="form-group">
-                        <div class="switch-item">
-                            <label>启用授权门禁（正式发布请开启；关闭则不限使用）</label>
-                            <div class="switch"><label class="switch-label"><input type="checkbox" id="licenseGuardToggle"><span class="slider round"></span></label></div>
-                        </div>
-                        <small id="licenseWorkerHint"></small>
-                        <small id="licenseMachineHint" style="display:block;margin-top:6px;color:#666;"></small>
+                <!-- 手动兜底：仅在自动同步失败时用（折叠起来，不占主视觉） -->
+                <details id="licenseManualFallback" style="margin-top:14px;">
+                    <summary style="cursor:pointer;color:#888;font-size:13px;">卡密没自动同步？点此手动激活</summary>
+                    <div class="form-group" style="margin-top:10px;">
+                        <input type="text" id="licenseKeyInput" placeholder="粘贴购买后获得的卡密" class="api-key-input" style="width:100%;">
+                        <button type="button" id="licenseActivateBtn" style="margin-top:8px;background:#1976d2;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">激活</button>
                     </div>
                 </details>
 
@@ -4728,14 +4340,9 @@
                 var badge = document.getElementById('licenseBadge');
                 var expireEl = document.getElementById('licenseExpire');
                 var keyInput = document.getElementById('licenseKeyInput');
-                var keyHint = document.getElementById('licenseKeyHint');
                 var msg = document.getElementById('licenseMsg');
                 var banner = document.getElementById('licenseBanner');
-                var guardToggle = document.getElementById('licenseGuardToggle');
-                var workerHint = document.getElementById('licenseWorkerHint');
-                var machineHint = document.getElementById('licenseMachineHint');
-                var buyRow = document.getElementById('licenseBuyRow');
-                var buyUrlInput = document.getElementById('licenseBuyUrl');
+                var manualBox = document.getElementById('licenseManualFallback');
 
                 // ---- 本机能力令牌 mid：高熵随机，贯穿「购买页→收银台 metadata→webhook→自动核销」 ----
                 var MID_KEY = 'weauto_license_mid';
@@ -4802,75 +4409,56 @@
                         if(!r.ok) throw new Error('status '+r.status);
                         var s = await r.json();
                         if(!s.available){ setBadge('warn','模块不可用'); return; }
-                        if(s.activated){ setBadge('ok','已激活'); expireEl.textContent = s.expire_at ? ('到期: ' + new Date(s.expire_at*1000).toLocaleString()) : ''; }
-                        else if(s.expired){ setBadge('bad','已过期'); }
-                        else { setBadge(s.key_set?'warn':'bad', s.key_set?'已保存但未激活':'未激活'); }
-                        keyHint.textContent = s.key_set ? ('当前卡密: ' + (s.key_hint||'****') + '（重新输入可替换）') : '尚未配置卡密';
-                        guardToggle.checked = !!s.guard_enabled;
-                        if (s.release_build) { guardToggle.disabled = true; guardToggle.title = '发行版固定启用授权门禁，不可关闭'; }
-                        // 发行版（CI 构建的 EXE）：授权面板只保留「操作(actions)」与「升级(upgrade)」，
-                        // 隐藏手动卡密录入 / 操作指引 / 高级设置，面板即只读，终端用户无法改动授权配置。
-                        if (s.release_build) {
-                            var _kg = document.getElementById('licenseKeyGroup'); if (_kg) _kg.style.display = 'none';
-                            var _in = document.getElementById('licenseInstr'); if (_in) _in.style.display = 'none';
-                            var _ad = document.getElementById('licenseAdvanced'); if (_ad) _ad.style.display = 'none';
-                        }
-                        workerHint.textContent = s.worker_url_set ? ('授权服务: ' + s.worker_url) : '未配置授权服务地址（CREEM_WORKER_URL 为空，激活/购买将不可用）';
-                        workerHint.style.color = s.worker_url_set ? '#1e7e34' : '#c62828';
-                        machineHint.textContent = s.machine_id ? ('本机指纹: ' + s.machine_id) : '';
-                        if(s.activated && !s.guard_enabled){
-                            banner.style.display='block';
-                            banner.style.background='#fff4e5'; banner.style.color='#b26a00';
-                            banner.textContent='卡密已激活，但授权门禁未开启——开启后重启机器人才会真正限制未授权使用。';
-                        } else if(s.activated){
-                            banner.style.display='block';
-                            banner.style.background='#e6f4ea'; banner.style.color='#1e7e34';
-                            banner.textContent='已激活且门禁开启。如刚刚改过配置，点「重启机器人使授权生效」使其立即应用。';
+
+                        if(s.activated){
+                            setBadge('ok', '已激活');
+                            expireEl.textContent = s.expire_at ? ('到期: ' + new Date(s.expire_at*1000).toLocaleDateString()) : '';
+                        } else if(s.expired){
+                            setBadge('bad', '已过期');
+                            expireEl.textContent = '';
                         } else {
-                            banner.style.display='none';
+                            setBadge('bad', '未激活');
+                            expireEl.textContent = '';
                         }
-                    // 套餐有效期 + 每月续费提示
-                    try {
-                        var _db = document.getElementById('licenseDurationBox');
-                        var _dt = document.getElementById('licenseDurationText');
-                        var _rb = document.getElementById('licenseRenewBtn');
-                        if (_db && _dt && s.activated && s.days_left !== null && s.days_left !== undefined) {
-                            _db.style.display = 'block';
-                            var _tl = ({normal:'初级', premium:'中级', lifetime:'高级'}[s.tier] || (s.tier || '当前'));
-                            var _txt = '当前档位：<b>' + _tl + ' 套餐费</b>　剩余 <b>' + s.days_left + '</b> 天'
-                                     + (s.expire_at ? '（有效期至 ' + new Date(s.expire_at*1000).toLocaleDateString() + '）' : '');
-                            if (s.near_expiry) _txt += '　⚠️ <span style="color:#c62828;font-weight:bold;">即将到期，请尽快续费</span>';
-                            _dt.innerHTML = _txt;
-                            if (_rb) _rb.setAttribute('data-tier', s.tier || 'normal');
-                        } else if (_db) {
-                            _db.style.display = 'none';
+
+                        // 当前套餐 + 续费入口（仅已激活时出现）
+                        var db = document.getElementById('licenseDurationBox');
+                        var dt = document.getElementById('licenseDurationText');
+                        var rb = document.getElementById('licenseRenewBtn');
+                        if (s.activated && s.days_left !== null && s.days_left !== undefined) {
+                            db.style.display = 'block';
+                            var tierName = ({normal:'初级', premium:'中级', lifetime:'高级'}[s.tier] || '当前');
+                            var txt = '当前套餐：<b>' + tierName + '</b>　剩余 <b>' + s.days_left + '</b> 天';
+                            if (s.near_expiry) txt += '　<span style="color:#c62828;font-weight:bold;">即将到期，请尽快续费</span>';
+                            dt.innerHTML = txt;
+                            if (rb) rb.setAttribute('data-tier', s.tier || 'normal');
+                        } else {
+                            db.style.display = 'none';
                         }
-                    } catch(e) {}
-                    }catch(e){ setBadge('warn','加载失败'); console.error(e); }
+
+                        // 未激活时提示购买；已激活就不要再啰嗦
+                        if (s.activated) {
+                            banner.style.display = 'none';
+                        } else {
+                            banner.style.display = 'block';
+                            banner.style.background = '#e3f2fd'; banner.style.color = '#1565c0';
+                            banner.textContent = '请选择一个套餐完成购买，付款成功后本机会自动激活。';
+                        }
+                    }catch(e){ setBadge('warn','加载失败'); }
                 }
 
-                document.getElementById('licenseActivateBtn').addEventListener('click', async function(){
-                    var key = keyInput.value.trim();
-                    if(!key){ showMsg('请先粘贴卡密', '#c62828'); return; }
-                    showMsg('正在激活…');
+                // ---- 购买：走软件内置窗口，付款后自动轮询核销 ----
+                async function buyTier(tier){
+                    if(!tier) return;
                     try{
-                        var res = await postJSON('/api/license/activate', {key:key});
-                        showMsg(res.msg || (res.ok?'激活成功':'激活失败'), res.ok ? '#1e7e34' : '#c62828');
-                        if(res.ok){ keyInput.value=''; }
-                        loadStatus();
-                    }catch(e){ showMsg('请求失败: '+e, '#c62828'); }
-                });
-
-                async function refreshBuyUrl(){
-                    try{
-                        var r = await fetch('/api/license/buy_url'); var d = await r.json();
-                        // 网址不再展示给用户（存入隐藏 input 仅作兜底复制用），购买页由软件内置加载
-                        buyRow.style.display='none';
-                        if(d.url){ buyUrlInput.value = d.url; return d.url; }
-                        return '';
-                    }catch(e){ buyRow.style.display='none'; return ''; }
+                        var r = await fetch('/api/license/buy_url?tier=' + encodeURIComponent(tier));
+                        var d = await r.json();
+                        if(!d.url){ showMsg('未配置授权服务地址，无法购买', '#c62828'); return; }
+                        var sep = d.url.indexOf('?') >= 0 ? '&' : '?';
+                        await openBuyInternal(d.url + sep + 'mid=' + encodeURIComponent(mid));
+                    }catch(e){ showMsg('请求失败: ' + e, '#c62828'); }
                 }
-                // 等待 pywebview API 就绪（桌面窗口模式才有；浏览器模式超时返回 null）
+
                 function pywebviewApi(timeoutMs){
                     return new Promise(function(resolve){
                         var t0 = Date.now();
@@ -4881,89 +4469,47 @@
                         })();
                     });
                 }
-                // 优先软件内置窗口加载购买页（不弹系统浏览器、不显示网址）；无 pywebview 时回退系统浏览器
+                // 优先软件内置窗口加载购买页（不弹系统浏览器、不显示网址）
                 async function openBuyInternal(url){
                     var api = await pywebviewApi(2500);
                     if(api){
                         try{
                             var ok = await api.open_buy_window(url);
-                            if(ok){ showMsg('已在软件内打开购买页，付款成功后将自动同步卡密并激活（无需手动粘贴）…', '#1e7e34'); startAutoRedeem(); return; }
+                            if(ok){ showMsg('已打开购买页，付款成功后自动激活…', '#1e7e34'); startAutoRedeem(); return; }
                         }catch(e){ /* 内置窗口失败，走下方回退 */ }
                     }
                     var win = window.open(url, '_blank');
-                    if(win){ showMsg('已打开购买页，付款成功后将自动同步卡密并激活…', '#1e7e34'); startAutoRedeem(); }
+                    if(win){ showMsg('已打开购买页，付款成功后自动激活…', '#1e7e34'); startAutoRedeem(); }
                     else {
-                        buyRow.style.display='flex'; buyUrlInput.value = url;
-                        showMsg('无法自动打开购买页，请复制下方链接到浏览器打开', '#b26a00');
+                        showMsg('无法自动打开购买页，请允许本软件弹出窗口后重试', '#b26a00');
                     }
                 }
-                document.getElementById('licenseBuyBtn').addEventListener('click', async function(){
-                    var url = await refreshBuyUrl();
-                    if(!url){ showMsg('未配置授权服务地址，无法打开购买页', '#c62828'); return; }
-                    var sep = url.indexOf('?') >= 0 ? '&' : '?';
-                    await openBuyInternal(url + sep + 'mid=' + encodeURIComponent(mid));
-                });
-                document.getElementById('licenseCopyBuyBtn').addEventListener('click', function(){
-                    buyUrlInput.select();
-                    try{ document.execCommand('copy'); showMsg('购买链接已复制', '#1e7e34'); }
-                    catch(e){ showMsg('复制失败，请手动选择复制', '#b26a00'); }
-                });
-                document.getElementById('licenseOpenBuyBtn').addEventListener('click', function(){
-                    if(buyUrlInput.value){ openBuyInternal(buyUrlInput.value); }
-                });
 
-                document.getElementById('licenseDeactivateBtn').addEventListener('click', async function(){
-                    if(!confirm('确定释放本机激活？释放后需重新激活才能使用。')) return;
+                // 三个档位卡片
+                document.querySelectorAll('.lic-tier').forEach(function(btn){
+                    btn.addEventListener('click', function(){ buyTier(btn.getAttribute('data-tier')); });
+                });
+                // 续费 = 按当前档位再买一次
+                var renewBtn = document.getElementById('licenseRenewBtn');
+                if(renewBtn){
+                    renewBtn.addEventListener('click', function(){ buyTier(renewBtn.getAttribute('data-tier') || 'normal'); });
+                }
+                // 手动兜底激活
+                document.getElementById('licenseActivateBtn').addEventListener('click', async function(){
+                    var key = keyInput.value.trim();
+                    if(!key){ showMsg('请先粘贴卡密', '#c62828'); return; }
+                    showMsg('正在激活…');
                     try{
-                        var res = await postJSON('/api/license/deactivate', {});
-                        showMsg(res.msg || (res.ok?'已释放':'释放失败'), res.ok ? '#1e7e34' : '#c62828');
+                        var res = await postJSON('/api/license/activate', {key:key});
+                        showMsg(res.msg || (res.ok?'激活成功':'激活失败'), res.ok ? '#1e7e34' : '#c62828');
+                        if(res.ok){ keyInput.value=''; if(manualBox) manualBox.open = false; }
                         loadStatus();
                     }catch(e){ showMsg('请求失败: '+e, '#c62828'); }
                 });
 
-                document.getElementById('licenseRestartBtn').addEventListener('click', async function(){
-                    if(!confirm('确定重启机器人？重启后授权配置立即生效（约数秒）。')) return;
-                    showMsg('正在重启机器人…');
-                    try{
-                        var res = await postJSON('/api/license/restart', {});
-                        showMsg(res.msg || (res.ok?'已重启':'重启失败'), res.ok ? '#1e7e34' : '#c62828');
-                    }catch(e){ showMsg('请求失败: '+e, '#c62828'); }
-                });
-
-                guardToggle.addEventListener('change', async function(){
-                    try{
-                        var res = await postJSON('/api/license/set_guard', {enabled: guardToggle.checked});
-                        if(!res.ok){ showMsg('门禁设置失败: '+(res.msg||''), '#c62828'); }
-                        else { showMsg('门禁已' + (guardToggle.checked?'开启':'关闭'), '#1e7e34'); loadStatus(); }
-                    }catch(e){ showMsg('请求失败: '+e, '#c62828'); }
-                });
-
-                // ---- 支付方式说明：切换按钮 + tab 切换 ----
-                var pmToggle = document.getElementById('payMethodsToggle');
-                var pmPanel = document.getElementById('payMethodsPanel');
-                if(pmToggle && pmPanel){
-                    pmToggle.addEventListener('click', function(){
-                        var show = pmPanel.style.display === 'none';
-                        pmPanel.style.display = show ? 'block' : 'none';
-                        pmToggle.textContent = show ? '💳 收起支付方式' : '💳 支持的支付方式';
-                    });
-                    document.querySelectorAll('.pm-buy').forEach(function(btn){
-                        btn.addEventListener('click', async function(){
-                            var tier = btn.getAttribute('data-tier');
-                            try{
-                                var r = await fetch('/api/license/buy_url?tier=' + encodeURIComponent(tier));
-                                var d = await r.json();
-                                if(!d.url){ showMsg('未配置授权服务地址，无法打开购买页', '#c62828'); return; }
-                                var sep = d.url.indexOf('?') >= 0 ? '&' : '?';
-                                await openBuyInternal(d.url + sep + 'mid=' + encodeURIComponent(mid));
-                            }catch(e){ showMsg('请求失败: ' + e, '#c62828'); }
-                        });
-                    });
-                }
-
                 var navLink = document.querySelector('.sidebar a[data-target="section-license"]');
-                if(navLink){ navLink.addEventListener('click', function(){ setTimeout(loadStatus, 50); setTimeout(refreshBuyUrl, 60); }); }
-                loadStatus(); refreshBuyUrl();
+                if(navLink){ navLink.addEventListener('click', function(){ setTimeout(loadStatus, 50); }); }
+                loadStatus();
             })();
             </script>
         </div>
@@ -5461,20 +5007,14 @@
             window.open(`/forum/${select.value}`, '_blank');
         }
 
-        function updateNpcSelection() {
-            // 保持容器常显，仅在需要时用于其他联动
-            const list = document.getElementById('npc-list');
-            if (!list) return;
-        }
+        // 注：原 updateNpcSelection / addNpcInput / removeNpcInput / toggleNpcCard 四个函数已删。
+        //   前两个取到 DOM 后什么都不做（纯空壳），后两个是空函数体，
+        //   且它们服务的 .npc-card-body / .chevron 等样式在当前 UI 里已无任何元素使用。
+        //   NPC 行现在由 createNpcRow() 动态生成，交互自成一体。
 
-        function addNpcInput() {}
-        function removeNpcInput() {}
-
-        function toggleNpcCard(cardId) {
-            const card = document.getElementById(cardId);
-            if (!card) return;
-            card.classList.toggle('collapsed');
-        }
+        // 注：原 toggleNpcCard(cardId) 已删 —— 它是 .npc-individual-settings.collapsed 的唯一
+        //   使用者，而那整套 CSS（403-455）在当前 UI 里没有任何元素挂这个 class，属纯死样式。
+        //   NPC 行的展开/收起由 createNpcRow 自己绑在 .npc-detail 上，不依赖它。
 
         // 生成单个 NPC 行（名称 + 操作区）
         function createNpcRow(initialName = '', initialSettings = null) {
@@ -5557,7 +5097,6 @@
             };
             removeBtn.onclick = () => {
                 row.remove();
-                updateNpcSelection();
             };
 
             row.appendChild(nameInput);
@@ -5581,13 +5120,11 @@
             if (newDetail) {
                 newDetail.style.display = 'block';
             }
-            updateNpcSelection();
         }
 
         function clearAllNpcs() {
             const list = document.getElementById('npc-list');
             list.innerHTML = '';
-            updateNpcSelection();
         }
 
         async function saveNpcSettings() {
