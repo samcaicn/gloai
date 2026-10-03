@@ -4979,7 +4979,13 @@ def api_license_buy_url():
     if not _guard:
         return jsonify({"url": ""})
     w = _guard.worker_url()
-    return jsonify({"url": (w + "/buy") if w else ""})
+    if not w:
+        return jsonify({"url": ""})
+    tier = request.args.get('tier', '').strip()
+    url = w + "/buy"
+    if tier:
+        url += "?tier=" + tier
+    return jsonify({"url": url})
 
 
 @app.route('/api/license/poll', methods=['GET'])

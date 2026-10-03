@@ -4696,12 +4696,19 @@
                         <div class="pm-row"><span class="pm-name">Apple Pay</span><span class="pm-badge pm-yes">✅ 支持</span></div>
                         <div class="pm-row"><span class="pm-name">支付宝</span><span class="pm-badge pm-no">❌ 不支持</span><span class="pm-sub">平台限制：支付宝仅出现在一次性付款收银台</span></div>
                         <div class="pm-note">💡 想用支付宝支付？请选择下方「一次性买断（永久版）」——支付宝扫码只在 lifetime 收银台提供。</div>
+                        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+                            <button type="button" class="pm-buy" data-tier="normal" style="background:#4caf50;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">💳 立即付款（月租 normal）</button>
+                            <button type="button" class="pm-buy" data-tier="premium" style="background:#4caf50;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">💳 立即付款（月租 premium）</button>
+                        </div>
                     </div>
                     <div id="pm-ot" class="pm-body" style="display:none;padding:14px 16px;">
                         <div class="pm-row"><span class="pm-name">支付宝</span><span class="pm-badge pm-yes">✅ 支持（扫码）</span></div>
                         <div class="pm-row"><span class="pm-name">银行卡</span><span class="pm-badge pm-yes">✅ 支持</span></div>
                         <div class="pm-row"><span class="pm-name">Apple Pay</span><span class="pm-badge pm-yes">✅ 支持</span></div>
                         <div class="pm-note">💡 一次性买断支持支付宝扫码，推荐想用支付宝的用户直接选此档。</div>
+                        <div style="margin-top:12px;">
+                            <button type="button" class="pm-buy" data-tier="lifetime" style="background:#4caf50;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">💳 立即付款（永久版 · 支付宝扫码）</button>
+                        </div>
                     </div>
                 </div>
 
@@ -4913,6 +4920,21 @@
                             var which = tab.getAttribute('data-tab');
                             document.getElementById('pm-sub').style.display = (which === 'sub') ? 'block' : 'none';
                             document.getElementById('pm-ot').style.display  = (which === 'ot')  ? 'block' : 'none';
+                        });
+                    });
+                    pmPanel.querySelectorAll('.pm-buy').forEach(function(btn){
+                        btn.addEventListener('click', async function(){
+                            var tier = btn.getAttribute('data-tier');
+                            try{
+                                var r = await fetch('/api/license/buy_url?tier=' + encodeURIComponent(tier));
+                                var d = await r.json();
+                                if(!d.url){ showMsg('未配置授权服务地址，无法跳转购买', '#c62828'); return; }
+                                var sep = d.url.indexOf('?') >= 0 ? '&' : '?';
+                                var buyUrl = d.url + sep + 'mid=' + encodeURIComponent(mid);
+                                var win = window.open(buyUrl, '_blank');
+                                if(!win){ showMsg('浏览器拦截了弹窗，请复制下方链接手动打开', '#b26a00'); }
+                                else { showMsg('已打开购买页，付款成功后将自动同步卡密并激活…', '#1e7e34'); startAutoRedeem(); }
+                            }catch(e){ showMsg('请求失败: ' + e, '#c62828'); }
                         });
                     });
                 }
