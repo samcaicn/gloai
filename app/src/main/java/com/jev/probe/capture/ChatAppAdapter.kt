@@ -81,6 +81,11 @@ private val WECHAT_TITLE_EXCLUDE_PUNCT = Regex("""[，。？！、]""")
 /** A WeChat group title's "(N)" member-count suffix, half- or full-width. */
 private val WECHAT_GROUP_COUNT_SUFFIX = Regex("""[（(]\d+[）)]""")
 
+/** WeChat chat-avatar node's contentDescription, e.g.「元宝头像」/「老徐一家子头像」.
+ *  WeChat 8.0.78 hides title text from accessibility entirely, but the avatar's
+ *  cd is readable and unique to the open conversation → best stable identity. */
+private val WECHAT_AVATAR_CD = Regex("""(.{1,24})头像""")
+
 /**
  * WeChat conversation title (v1.3 fix): a group's pinned announcement or a
  * stray message can sit in the same "topmost, short, centered" search
@@ -107,15 +112,37 @@ internal fun findWeChatTitle(
     var bestPlainTop = Int.MAX_VALUE
     var bestCounted: String? = null
     var bestCountedTop = Int.MAX_VALUE
+    // 头像节点的 contentDescription 形如「元宝头像」「XX头像」——微信 8.0.78 把
+    // 标题文本对无障碍完全隐藏（实测恒 null），但头像 cd 可读，且头像只属于
+    // 当前会话 → 这是最稳定的会话标识，优先级最高。
+    var bestAvatar: String? = null
+    var bestAvatarTop = Int.MAX_VALUE
     var guard = 0
     val trace = ArrayList<String>()
     while (stack.isNotEmpty() && guard < 5000) {
         guard++
         val node = stack.removeLast()
-        val text = node.text?.toString()?.takeIf { it.isNotBlank() }
-            ?: node.contentDescription?.toString()?.takeIf { it.isNotBlank() }
+        val rawText = node.text?.toString()?.takeIf { it.isNotBlank() }
+        val rawCd = node.contentDescription?.toString()?.takeIf { it.isNotBlank() }
+        val text = rawText ?: rawCd
         if (text != null) {
             val b = Rect(); node.getBoundsInScreen(b)
+            // 屏外窗口节点（如小微侧栏，x 为负）不是候选，别进 trace 噪音
+            if (b.left < 0 || b.right > width) {
+                for (i in node.childCount - 1 downTo 0) node.getChild(i)?.let { stack.addLast(it) }
+                continue
+            }
+            // 头像规则：cd 以「头像」结尾 + 左上角区域 + 不低于第一气泡太多。
+            // 群聊里消息旁的成员头像 cd 同形，故取全树 top 最小者（会话头像恒在最顶）。
+            if (rawText == null && rawCd != null) {
+                val m = WECHAT_AVATAR_CD.matchEntire(rawCd)
+                if (m != null && b.left < width * 0.2 && b.top < firstBubbleTop + 260) {
+                    val name = m.groupValues[1]
+                    if (name.isNotBlank() && !looksLikeTimestamp(name) && b.top < bestAvatarTop) {
+                        bestAvatarTop = b.top; bestAvatar = name
+                    }
+                }
+            }
             // 诊断：标题恒为 null 时把上屏区（含 20% 高度带）的候选打出来，
             // 便于定位微信到底把标题藏在哪个节点（text / contentDescription / id）。
             if (b.bottom in 1 until (screenH * 0.20).toInt() && trace.size < 14) {
@@ -123,8 +150,8 @@ internal fun findWeChatTitle(
                     "${node.viewIdResourceName?.substringAfterLast('/') ?: "-"}" +
                         "|${node.className?.toString()?.substringAfterLast('.') ?: "-"}" +
                         "|(${b.left},${b.top},${b.right},${b.bottom})" +
-                        "|t=" + (node.text?.toString()?.take(16) ?: "-") +
-                        "|cd=" + (node.contentDescription?.toString()?.take(16) ?: "-"))
+                        "|t=" + (rawText?.take(16) ?: "-") +
+                        "|cd=" + (rawCd?.take(16) ?: "-"))
             }
         }
         if (text != null && text.length <= 32 && !looksLikeTimestamp(text) &&
@@ -141,7 +168,7 @@ internal fun findWeChatTitle(
         }
         for (i in node.childCount - 1 downTo 0) node.getChild(i)?.let { stack.addLast(it) }
     }
-    val out = bestCounted ?: bestPlain
+    val out = bestAvatar ?: bestCounted ?: bestPlain
     if (out == null) {
         val now = System.currentTimeMillis()
         if (now - lastWxTitleDumpAt > 8000L) {
