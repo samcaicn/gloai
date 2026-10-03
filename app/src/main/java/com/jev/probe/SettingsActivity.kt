@@ -198,8 +198,22 @@ class SettingsActivity : AppCompatActivity() {
         val autoFillRow = toggleRow("自动填入最佳候选（配合上两项＝全自动）", prefs.autoFillBest)
         unattendedCard.addView(autoFillRow)
         unattendedCard.addView(text(
-            "开后不再等你点选：直接按打分最高的候选填入（并在自动发送开启时发出）。" +
-            "只在微信生效，只填候选原文。请确认你接受 AI 不经确认就回话。",
+            "worker/jev 返回候选后直接填入打分最高的一条，延迟下述时间后自动发出。" +
+                "只在微信生效，只填候选原文；输入框已有你手打的字时不会覆盖。",
+            11f, sub))
+        val delayLabel = label("发送前延迟（秒）")
+        unattendedCard.addView(delayLabel)
+        val delayEdit = edit(
+            if (prefs.sendDelayMs % 1000 == 0) (prefs.sendDelayMs / 1000).toString()
+            else String.format("%.1f", prefs.sendDelayMs / 1000f),
+            "2"
+        )
+        delayEdit.inputType = android.text.InputType.TYPE_CLASS_NUMBER or
+            android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        unattendedCard.addView(delayEdit)
+        unattendedCard.addView(text(
+            "填入后等这么久再点发送。微信需要一点时间把草稿落进编辑框、把发送按钮切回可点状态，" +
+                "太短会点空导致消息没发出去。0 = 立刻发。",
             11f, sub))
         root.addView(unattendedCard)
 
@@ -241,7 +255,10 @@ class SettingsActivity : AppCompatActivity() {
             prefs.autoSend = (autoSendRow.tag as? Boolean) ?: true
             prefs.ocrImages = (ocrImgRow.tag as? Boolean) ?: true
             prefs.autoOpenChat = (autoOpenRow.tag as? Boolean) ?: false
-            prefs.autoFillBest = (autoFillRow.tag as? Boolean) ?: false
+            prefs.autoFillBest = (autoFillRow.tag as? Boolean) ?: true
+            delayEdit.text?.toString()?.trim()?.toFloatOrNull()?.let { secs ->
+                prefs.sendDelayMs = (secs * 1000f).toInt()
+            }
             prefs.visionCustom = (visionCustomRow.tag as? Boolean) ?: false
             prefs.visionBaseUrl = visionBaseEdit.text.toString()
             prefs.visionKey = visionKeyEdit.text.toString()

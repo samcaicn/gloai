@@ -313,12 +313,20 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
     /**
      * 分析完成后是否直接按排名第一的候选填入（配合 [autoSend] 即全自动收发）。
-     * 默认关：让 AI 不经人眼就决定发出什么内容风险太高，必须显式打开。
+     * 默认开：配合通知监听可做到「对方来信 → 自动分析 → 填入 → 延迟发送」全链路无人值守。
      * 仅作用于微信；开启后仍只会填/发候选里的原文，不会改写。
      */
     var autoFillBest: Boolean
-        get() = sp.getBoolean(K_AUTO_FILL, false)
+        get() = sp.getBoolean(K_AUTO_FILL, true)
         set(v) = sp.edit().putBoolean(K_AUTO_FILL, v).apply()
+
+    /**
+     * 填入后延迟多久点发送（毫秒）。留一点间隔是为了让微信把草稿真正落进编辑框、
+     * 发送按钮从「语音/表情」态切回「发送」态，间隔太短会点空。
+     */
+    var sendDelayMs: Int
+        get() = sp.getInt(K_SEND_DELAY, 2000)
+        set(v) = sp.edit().putInt(K_SEND_DELAY, v.coerceIn(0, 30_000)).apply()
 
     // ------------------------------------------------------------- helpers
 
@@ -437,6 +445,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_AUTO_OPEN = "auto_open_chat"
         private const val K_OCR_IMAGES = "ocr_images"
         private const val K_AUTO_FILL = "auto_fill_best"
+        private const val K_SEND_DELAY = "send_delay_ms"
 
         // ---- provider ----
         const val PROVIDER_WORKER = "worker"

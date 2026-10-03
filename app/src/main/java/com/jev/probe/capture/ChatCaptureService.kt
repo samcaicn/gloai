@@ -23,6 +23,7 @@ import com.jev.probe.core.ChatSnapshot
 import com.jev.probe.core.ConversationHistory
 import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
+import com.jev.probe.core.RankedReply
 import com.jev.probe.core.kb.ContextBuilder
 import com.jev.probe.core.kb.KbStore
 import com.jev.probe.jev.JevClient
@@ -69,6 +70,9 @@ open class ChatCaptureService : AccessibilityService() {
     private var overlay: OverlayController? = null
 
     private var lastSignature: String = ""
+    /** Screen state (sides+lengths) already auto-answered, so one incoming message
+     *  can never trigger two automatic replies. Reset whenever the chat changes. */
+    private var lastAutoSentSig: String = ""
     private var activePkg: String? = null
     private var analyzing = false
     private val session = ConversationSession()
@@ -89,6 +93,7 @@ open class ChatCaptureService : AccessibilityService() {
         main.removeCallbacks(debounce)
         pendingSnapshot = null
         analyzing = false
+        lastAutoSentSig = ""      // a different conversation may legitimately be answered
         analysisTasks.forEach { it.cancel(true) }
         analysisTasks.clear()
         overlay?.resetForNewConversation()
@@ -472,21 +477,54 @@ open class ChatCaptureService : AccessibilityService() {
                     main.post {
                         if (isCurrent(token)) {
                             overlay?.showReplies(ranked, replyError) { text -> fillInput(token, text) }
-                            // 真·无人值守（微信）：用户显式开启后，直接按打分最高的候选
-                            // 填入；配合 autoSend 就形成完整的自动收发闭环。默认关，
-                            // 且只填候选原文、不改写，只在微信生效。
-                            if (prefs.autoFillBest && token.target.pkg == PKG_WECHAT &&
-                                replyError == null && ranked.isNotEmpty()
-                            ) {
-                                val best = ranked.maxByOrNull { it.prob } ?: ranked.first()
-                                main.postDelayed({ fillInput(token, best.text) }, 400L)
-                            }
+                            // 真·无人值守（微信）：worker/jev 返回候选后直接按打分最高的
+                            // 一条填入，autoSend 开着就再延迟 sendDelayMs（默认 2s）发出。
+                            maybeAutoSendBest(token, augmented, ranked, replyError)
                             completed()
                         }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Unattended reply: take the top-ranked candidate the worker/jev route produced,
+     * drop it into the chat's input box, and let [Prefs.autoSend] fire it after
+     * [Prefs.sendDelayMs].
+     *
+     * Two guards keep this from misbehaving, because a wrong send here talks to a
+     * real person:
+     *  - the same screen state is only ever auto-answered once (a bubble whose side
+     *    got misread as "other" would otherwise re-trigger this forever);
+     *  - a non-empty input box means the human is typing — never stomp on that.
+     */
+    private fun maybeAutoSendBest(
+        token: ConversationSession.Token,
+        snapshot: ChatSnapshot,
+        ranked: List<RankedReply>,
+        replyError: String?
+    ) {
+        if (!prefs.autoFillBest) return
+        if (token.target.pkg != PKG_WECHAT) return
+        if (replyError != null || ranked.isEmpty()) return
+        if (snapshot.latestFrom != "other") return
+        val best = ranked.maxByOrNull { it.prob } ?: ranked.first()
+        val text = best.text.trim()
+        if (text.isEmpty()) return
+        val sig = snapshot.signature()
+        if (sig == lastAutoSentSig) {
+            Log.i(TAG, "auto-send skipped: already answered this screen state")
+            return
+        }
+        val draft = inputFor(token)?.text?.toString()?.trim()
+        if (!draft.isNullOrEmpty()) {
+            Log.i(TAG, "auto-send skipped: input box not empty")
+            return
+        }
+        lastAutoSentSig = sig
+        Log.i(TAG, "auto-send best(${(best.prob * 100).toInt()}%): ${text.take(24)}")
+        main.postDelayed({ fillInput(token, text) }, 500L)
     }
 
     // ------------------------------------------------------------------ OCR
@@ -734,12 +772,9 @@ open class ChatCaptureService : AccessibilityService() {
         fun finish(ok: Boolean) {
             if (!isCurrent(token)) return
             if (ok) {
-                if (prefs.autoSend) {
-                    overlay?.toast("已填入，正在发送…")
-                    sendFor(token)
-                } else {
-                    overlay?.toast("已填入，确认后自己发送")
-                }
+                // sendFor announces the countdown itself; don't double-toast here.
+                if (prefs.autoSend) sendFor(token)
+                else overlay?.toast("已填入，确认后自己发送")
             } else { copyToClipboard(text); overlay?.toast("已复制，长按输入框粘贴") }
         }
         if (!isCurrent(token)) { overlay?.toast("会话已变化，请重新分析后填入"); return }
@@ -795,8 +830,14 @@ open class ChatCaptureService : AccessibilityService() {
      * [Prefs.autoSend] is on — the reply text itself is still the one the user
      * picked from the candidates, so this sends what they chose, not something the
      * AI decided on its own.
+     *
+     * Waits [Prefs.sendDelayMs] (default 2s) before clicking: WeChat needs a beat
+     * to commit the draft and flip its send control out of the voice/emoji state —
+     * clicking sooner lands on nothing and the message silently never goes out.
      */
     private fun sendFor(token: ConversationSession.Token) {
+        val delay = prefs.sendDelayMs.toLong()
+        if (delay > 0) overlay?.toast("已填入，${delay / 1000} 秒后自动发送…")
         main.postDelayed({
             if (!isCurrent(token)) return@postDelayed
             val root = rootInActiveWindow ?: return@postDelayed
@@ -816,8 +857,8 @@ open class ChatCaptureService : AccessibilityService() {
                     findSendButton(rootInActiveWindow ?: return@postDelayed, token.target.pkg)
                         ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 }
-            }, 600L)
-        }, 300L)
+            }, 800L)
+        }, delay)
     }
 
     /** The chat's send control. WeChat uses a stable view-id; others fall back to a
