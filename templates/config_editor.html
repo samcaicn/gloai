@@ -4640,13 +4640,13 @@
 
                 <div id="licenseBanner" style="display:none;margin:8px 0;padding:10px 12px;border-radius:6px;background:#e6f4ea;color:#1e7e34;font-size:14px;"></div>
 
-                <ol style="margin:6px 0 14px 18px;color:#555;font-size:13px;line-height:1.7;">
+                <ol id="licenseInstr" style="margin:6px 0 14px 18px;color:#555;font-size:13px;line-height:1.7;">
                     <li>点「购买许可证」完成付款（支持支付宝）。付款后卡密会<b>自动同步</b>到本页并一键激活 + 重启，无需手动复制粘贴。</li>
                     <li>若因网络未自动同步，再把邮件里的卡密粘贴到下方输入框，点「激活 / 保存」手动核销。</li>
                     <li>点「重启机器人使授权生效」（自动流程会替你点）；bot 下次启动即受授权保护。</li>
                 </ol>
 
-                <div class="form-group">
+                <div class="form-group" id="licenseKeyGroup">
                     <label>License Key（卡密）：</label>
                     <input type="text" id="licenseKeyInput" placeholder="粘贴你在 Creem 购买后获得的卡密" class="api-key-input" style="width:100%;">
                     <small id="licenseKeyHint" class="api-key-hint"></small>
@@ -4721,7 +4721,7 @@
                     </div>
                 </div>
 
-                <details class="advanced-block">
+                <details id="licenseAdvanced" class="advanced-block">
                     <summary>高级设置</summary>
                     <div class="form-group">
                         <div class="switch-item">
@@ -4821,6 +4821,13 @@
                         keyHint.textContent = s.key_set ? ('当前卡密: ' + (s.key_hint||'****') + '（重新输入可替换）') : '尚未配置卡密';
                         guardToggle.checked = !!s.guard_enabled;
                         if (s.release_build) { guardToggle.disabled = true; guardToggle.title = '发行版固定启用授权门禁，不可关闭'; }
+                        // 发行版（CI 构建的 EXE）：授权面板只保留「操作(actions)」与「升级(upgrade)」，
+                        // 隐藏手动卡密录入 / 操作指引 / 高级设置，面板即只读，终端用户无法改动授权配置。
+                        if (s.release_build) {
+                            var _kg = document.getElementById('licenseKeyGroup'); if (_kg) _kg.style.display = 'none';
+                            var _in = document.getElementById('licenseInstr'); if (_in) _in.style.display = 'none';
+                            var _ad = document.getElementById('licenseAdvanced'); if (_ad) _ad.style.display = 'none';
+                        }
                         workerHint.textContent = s.worker_url_set ? ('授权服务: ' + s.worker_url) : '未配置授权服务地址（CREEM_WORKER_URL 为空，激活/购买将不可用）';
                         workerHint.style.color = s.worker_url_set ? '#1e7e34' : '#c62828';
                         machineHint.textContent = s.machine_id ? ('本机指纹: ' + s.machine_id) : '';
