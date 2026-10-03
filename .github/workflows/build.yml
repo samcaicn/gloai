@@ -42,10 +42,69 @@ jobs:
       - name: Set up Gradle (cache)
         uses: gradle/actions/setup-gradle@v4
 
-      # Debug-only builds for now (per project decision: ship debug APK until the
-      # project stabilizes; release + keystore signing comes back later).
-      - name: Build debug APK (installable, arm64-v8a only)
-        run: ./gradlew :app:assembleDebug --stacktrace > build_debug.log 2>&1
+      # ------------------------------------------------------------------
+      # 签名密钥（release 唯一产物，必须签名）
+      #
+      # 需要的仓库密钥（Settings → Secrets → Actions）：
+      #   SIGNING_KEY            = base64(keystore.p12 全文)，PKCS12
+      #   SIGNING_KEY_ALIAS      = 密钥别名
+      #   SIGNING_KEY_PASSWORD   = 别名口令
+      #   SIGNING_STORE_PASSWORD = 仓库口令
+      #
+      # 为什么必须是 release：debug 包用的是 Android 自动生成的
+      # ~/.android/debug.keystore，GitHub 托管 runner 每次都是新 VM、
+      # 每次随机生成，签名互不相同 → 覆盖安装必然报
+      # INSTALL_FAILED_UPDATE_INCOMPATIBLE，只能卸载重装，而卸载会连带
+      # 丢掉无障碍绑定（ColorOS 上还得走 UI 手动重开，非常折腾）。
+      # 用固定 keystore 后 install -r 直接覆盖，权限与配置全部保留。
+      #
+      # 守卫写在 shell 内部而非 `if:`——secrets 上下文在 workflow 启动阶段
+      # 的 `if:` 里并不可靠（见 7fe66bd 之前的踩坑）。
+      - name: Decode and validate signing keystore
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          set -eu
+          if [ -z "${SIGNING_KEY:-}" ]; then
+            echo "::error::仓库密钥 SIGNING_KEY 未配置，无法产出已签名的 release 包（本工作流只出 release，故直接失败）"
+            exit 1
+          fi
+          KS="$RUNNER_TEMP/keystore.p12"
+          printf '%s' "$SIGNING_KEY" | base64 -d > "$KS"
+          if [ ! -s "$KS" ]; then
+            echo "::error::SIGNING_KEY base64 解码后为空或损坏，secret 内容不是合法的 base64"
+            exit 1
+          fi
+          # 提前用 keytool 验一次：口令错/ 别名不存在 / 不是 PKCS12 都在这里暴露，
+          # 比等 Gradle 报一屏stacktrace 更快定位。签名方案由 build.gradle
+          # 的 enableV1/V2/V3 决定，这里只确认「密钥本身可用」。
+          if ! keytool -list -v \
+                -keystore "$KS" -storetype PKCS12 \
+                -storepass "$SIGNING_STORE_PASSWORD" -alias "$SIGNING_KEY_ALIAS" \
+                > keytool_check.log 2>&1; then
+            echo "::error::keystore 校验失败（口令错、别名不存在或格式非 PKCS12），详见下方 keytool 输出"
+            cat keytool_check.log
+            exit 1
+          fi
+          echo "keystore 校验通过："
+          grep -E "Alias name|Entry type|Certificate fingerprint" keytool_check.log || true
+          {
+            echo "SIGNING_STORE_FILE=$KS"
+            echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS"
+            echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD"
+            echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD"
+          } >> "$GITHUB_ENV"
+          {
+            echo "### 签名密钥"
+            echo ""
+            echo "keystore 校验通过，别名 \`$SIGNING_KEY_ALIAS\`。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build release APK (keystore-signed)
+        run: ./gradlew :app:assembleRelease --stacktrace > build_release.log 2>&1
 
       - name: Collect APKs
         run: |
@@ -53,11 +112,43 @@ jobs:
           find app/build/outputs/apk -name '*.apk' -exec cp {} dist/ \;
           ls -la dist/
 
-      - name: Upload APK artifacts
+      # 双重保险：build.gradle 配了签名但万一配置没生效（环境变量名写错、
+      # storeType 不匹配等），会「构建成功但包是未签名的」，装到手机上才发现。
+      # 这里用官方 apksigner 校验，并打印证书指纹+ SHA-256 供比对，
+      # 绝不允许未签名的包流到 artifact。
+      - name: Verify release APK signature
+        run: |
+          set -eu
+          APK=dist/app-release.apk
+          if [ ! -f "$APK" ]; then
+            echo "::error::$APK 不存在，release 构建没有产出"
+            exit 1
+          fi
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1 || true)
+          if [ -z "$APKSIGNER" ] || [ ! -x "$APKSIGNER" ]; then
+            echo "::error::找不到 apksigner，无法校验签名"
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee apk_verify.log
+          if ! "$APKSIGNER" verify "$APK" > /dev/null 2>&1; then
+            echo "::error::apksigner 校验不通过，APK 签名无效"
+            exit 1
+          fi
+          {
+            echo ""
+            echo "### 签名校验"
+            echo ""
+            echo '```'
+            grep -E "Verified using|Signer #1 certificate (DN|SHA-256)" apk_verify.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "release APK 签名校验通过"
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: jev-chat-jarvis-apk-${{ github.run_number }}
-          path: dist/*.apk
+          path: dist/app-release.apk
           retention-days: 30
 
       - name: Report failure log to public issue
@@ -70,14 +161,14 @@ jobs:
             echo "## jev-chat-jarvis APK build failure (run ${{ github.run_number }})"
             echo "Commit: ${{ github.sha }}"
             echo '### key lines'
-            grep -nE "FAILURE:|What went wrong|Caused by:|error:|Error:|FAILED" build_debug.log build_release.log 2>/dev/null | head -40 || true
+            grep -nE "FAILURE:|What went wrong|Caused by:|error:|Error:|FAILED" build_release.log 2>/dev/null | head -40 || true
             echo '### Kotlin compiler errors'
-            grep -hE "^e: " build_debug.log build_release.log 2>/dev/null | head -40 || true
+            grep -hE "^e: " build_release.log 2>/dev/null | head -40 || true
             echo '### What went wrong section'
-            L=$(grep -n "What went wrong" build_debug.log 2>/dev/null | head -1 | cut -d: -f1)
-            [ -n "$L" ] && sed -n "${L},$((L+30))p" build_debug.log
+            L=$(grep -n "What went wrong" build_release.log 2>/dev/null | head -1 | cut -d: -f1)
+            [ -n "$L" ] && sed -n "${L},$((L+30))p" build_release.log
             echo '### last 60 lines'
-            tail -60 build_debug.log 2>/dev/null || true
+            tail -60 build_release.log 2>/dev/null || true
           } > "$BODY"
           gh issue create --repo "$GITHUB_REPOSITORY" \
             --title "jev-chat-jarvis APK build failure (run ${{ github.run_number }})" \
@@ -87,4 +178,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.apk
+          files: dist/app-release.apk
