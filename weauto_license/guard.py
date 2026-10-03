@@ -88,6 +88,59 @@ def worker_url() -> str:
     return (_cfg("CREEM_WORKER_URL", "") or "").rstrip("/")
 
 
+# 网关自身地址（这些 base_url 视为「走 Cloudflare Workers AI」而非用户自填）
+_GATEWAY_PATHS = ("/ai/v1", "/ai")
+
+
+def _is_gateway_base_url(url: str) -> bool:
+    """base_url 是否指向本网关（即默认的 Workers AI 链路）。"""
+    u = str(url or "").strip().rstrip("/").lower()
+    if not u:
+        return True          # 空 = 没自填，按默认网关链路处理
+    w = worker_url().lower().rstrip("/")
+    if w and u.startswith(w):
+        return True
+    return any(u.endswith(p) for p in _GATEWAY_PATHS)
+
+
+def _key_is_real(key: str) -> bool:
+    """key 是否像一把真 key（排除出厂占位值）。"""
+    k = str(key or "").strip()
+    if not k:
+        return False
+    low = k.lower()
+    if "dummy" in low or "placeholder" in low or k == "sk-" or "your" in low or "xxxx" in low:
+        return False
+    return True
+
+
+def use_worker_ai() -> bool:
+    """本机是否使用 Cloudflare Workers AI（经本网关）。
+
+    返回 False = 用户选择了自填大模型（自己的 base_url + key），此时**不碰网关**：
+    既不注入卡密作凭证，也不加 X-WeAuto-Instance 头，请求直发用户填的供应商。
+
+    USE_WORKER_AI 语义：
+      True       强制走 Workers AI
+      False      强制直连自填供应商
+      'auto'     自动：填了真 key 且 base_url 不是本网关 → 直连；否则走 Workers AI
+    """
+    v = _cfg("USE_WORKER_AI", "auto")
+    if isinstance(v, bool):
+        return v
+    s = str(v or "").strip().lower()
+    if s in ("1", "true", "yes", "on"):
+        return True
+    if s in ("0", "false", "no", "off"):
+        return False
+    # auto：只有在「明确自填了别家地址 + 真 key」时才绕开网关
+    base = str(_cfg("DEEPSEEK_BASE_URL", "") or "")
+    key = str(_cfg("DEEPSEEK_API_KEY", "") or "")
+    if _key_is_real(key) and not _is_gateway_base_url(base):
+        return False
+    return True
+
+
 def get_machine_id() -> str:
     """稳定的机器指纹（不含 PII，仅用于设备配额）。"""
     parts = []
@@ -313,7 +366,12 @@ def license_tier() -> str:
 
 
 def ai_endpoint():
-    """LLM 统一走自有 Worker 代理时的端点信息；门禁未启用返回 None（走本地 config）。
+    """LLM 统一走自有 Worker 代理时的端点信息；不该走网关时返回 None。
+
+    返回 None 的两种情况（bot.py 会回落到 config.py 的本地配置）：
+      ① 门禁未启用（开发态）
+      ② 用户选择「自填大模型」：USE_WORKER_AI=False，或 auto 判定为已填别家地址+真 key
+         —— 此时请求直发用户自己的供应商，网关与卡密一律不参与。
 
     返回 {"base_url", "api_key", "headers"}：
       - base_url: <worker>/ai/v1 —— Worker 验完卡密后透传到真正的 upstream，
@@ -323,6 +381,8 @@ def ai_endpoint():
       - headers:  X-WeAuto-Instance（实例绑定，供 Worker 做设备级校验）
     """
     if not guard_enabled():
+        return None
+    if not use_worker_ai():
         return None
     w = worker_url()
     if not w:

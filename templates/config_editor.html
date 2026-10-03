@@ -1339,37 +1339,35 @@
                 finalOnlineModel.value = customOnlineModel.value;
             });
 
-            const apiProviderSelect = document.getElementById('apiProvider');
             const customApiUrlInput = document.getElementById('customApiUrl');
-            const finalApiUrlInput = document.getElementById('finalApiUrl');
+            const customAiGroup = document.getElementById('customAiGroup');
+            const aiSourceNow = document.getElementById('aiSourceNow');
             const modelSelect = document.getElementById('modelSelect');
             const customModelInput = document.getElementById('customModel');
             const finalModelInput = document.getElementById('finalModel');
 
+            // AI 来源：Workers AI（官方托管）↔ 自定义大模型 BaseURL+Key
+            function aiSourceValue() {
+                const sel = document.querySelector('input[name="USE_WORKER_AI"]:checked');
+                return sel ? sel.value : 'True';
+            }
+            function isCustomSource() { return aiSourceValue() === 'False'; }
+
             function updateModelOptions() {
                 let options = [];
-                const apiUrl = apiProviderSelect.value;
                 const currentModelValue = finalModelInput.value;
 
-                if (apiUrl === 'https://api.siliconflow.cn/v1/') {
-                    options = [
-                        { value: "deepseek-ai/DeepSeek-V3", text: "硅基DeepSeeek V3模型  (可用免费额度)" },
-                        { value: "deepseek-ai/DeepSeek-R1", text: "硅基DeepSeeek R1模型  (可用免费额度)" },
-                        { value: "Pro/deepseek-ai/DeepSeek-V3", text: "硅基DeepSeeek V3 Pro模型  (需充值后方可使用)" },
-                        { value: "Pro/deepseek-ai/DeepSeek-R1", text: "硅基DeepSeeek R1 Pro模型  (需充值后方可使用)" },
-                        { value: "other", text: "其它" }
-                    ];
-                } else if (apiUrl === 'https://api.deepseek.com') {
-                    options = [
-                        { value: "deepseek-chat", text: "DeepSeeek官方V3模型" },
-                        { value: "deepseek-reasoner", text: "DeepSeeek官方R1模型" },
-                        { value: "other", text: "其它" }
-                    ];
-                } else if (isWeAPIsUrlSync(apiUrl)) {
-                    // 使用动态获取的weapi模型列表
-                    options = getWeapiModels();
+                if (isCustomSource()) {
+                    // 自定义供应商：模型名自由填写，只给「其它」一项
+                    options = [ { value: "other", text: "其它（手动填写模型名）" } ];
                 } else {
-                    options = [ { value: "other", text: "其它" } ];
+                    // 官方 Cloudflare Workers AI
+                    options = [
+                        { value: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", text: "Llama 3.3 70B（官方默认，综合最好）" },
+                        { value: "@cf/meta/llama-3.1-8b-instruct", text: "Llama 3.1 8B（更快更省，适合轻量对话）" },
+                        { value: "@cf/qwen/qwen3-235b-a22b-fp8", text: "Qwen3 235B（官方，中文更强）" },
+                        { value: "other", text: "其它" }
+                    ];
                 }
 
                 modelSelect.innerHTML = "";
@@ -1397,41 +1395,24 @@
                 modelSelect.dispatchEvent(new Event('change'));
             }
 
-
-            if (apiProviderSelect.value === 'other') {
-                customApiUrlInput.style.display = 'block';
-            } else {
-                customApiUrlInput.style.display = 'none';
-                finalApiUrlInput.value = apiProviderSelect.value;
-            }
-            updateModelOptions();
-            if (modelSelect.value === 'other') {
-                customModelInput.style.display = 'block';
-            } else {
-                customModelInput.style.display = 'none';
-            }
-            finalModelInput.value = (modelSelect.value === 'other') ? customModelInput.value : modelSelect.value;
-
-
-            apiProviderSelect.addEventListener('change', async function() {
-                if (this.value === 'other') {
-                    customApiUrlInput.style.display = 'block';
-                    finalApiUrlInput.value = customApiUrlInput.value;
-                } else {
-                    customApiUrlInput.style.display = 'none';
-                    if (isWeAPIsUrlSync(this.value)) {
-                        // 选择WeAPIs时检测可用节点
-                        const availableUrl = await selectAvailableWeAPIsNode();
-                        this.value = availableUrl;
-                        finalApiUrlInput.value = availableUrl;
-                    } else {
-                        finalApiUrlInput.value = this.value;
-                    }
+            function applyAiSourceUi() {
+                const custom = isCustomSource();
+                if (customAiGroup) customAiGroup.style.display = custom ? '' : 'none';
+                if (aiSourceNow) {
+                    aiSourceNow.textContent = custom ? '自定义大模型（直接连你自己的供应商）' : 'Cloudflare Workers AI（官方托管）';
                 }
                 updateModelOptions();
-            });
-            customApiUrlInput.addEventListener('input', function() {
-                finalApiUrlInput.value = this.value;
+                if (modelSelect.value === 'other') {
+                    customModelInput.style.display = 'block';
+                } else {
+                    customModelInput.style.display = 'none';
+                }
+                finalModelInput.value = (modelSelect.value === 'other') ? customModelInput.value : modelSelect.value;
+            }
+
+            applyAiSourceUi();
+            document.querySelectorAll('input[name="USE_WORKER_AI"]').forEach(r => {
+                r.addEventListener('change', applyAiSourceUi);
             });
             modelSelect.addEventListener('change', function() {
                 if (this.value === 'other') {
@@ -4049,19 +4030,32 @@
 
                 <div id="section-chat-model" class="content-panel">
                     <h2>Chat 模型配置</h2>
-                    <div class="form-group" style="display:none;">
-                        <label>API 服务商:（推荐默认网关，注册与接入方式请参见随附说明文档，无需跳转外部站点）</label>
-                        <select id="apiProvider" name="temp_DEEPSEEK_BASE_URL" title="聊天API服务商">
-                            <option value="https://api.siliconflow.cn/v1/" {% if config.DEEPSEEK_BASE_URL == 'https://api.siliconflow.cn/v1/' %}selected{% endif %}>硅基流动</option>
-                            <option value="https://api.deepseek.com" {% if config.DEEPSEEK_BASE_URL == 'https://api.deepseek.com' %}selected{% endif %}>DeepSeek官方API</option>
-                            <option value="https://wetech.jukuai.net/ai/v1" {% if config.DEEPSEEK_BASE_URL == 'https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
-                            <option value="other" {% if config.DEEPSEEK_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
-                        </select>
-                        <input type="text" id="customApiUrl" placeholder="请输入自定义API地址" class="custom-input" {% if config.DEEPSEEK_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://wetech.jukuai.net/ai/v1'] %} value="{{ config.DEEPSEEK_BASE_URL }}" style="display:block;" {% endif %}>
-                        <input type="hidden" id="finalApiUrl" name="DEEPSEEK_BASE_URL" value="{{ config.DEEPSEEK_BASE_URL }}">
+                    <div class="form-group">
+                        <label>AI 来源:</label>
+                        <div class="switch-item" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+                            <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
+                                <input type="radio" name="USE_WORKER_AI" value="True"
+                                    {% if ai_source != 'custom' %}checked{% endif %} style="width:auto">
+                                Cloudflare Workers AI（推荐）
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
+                                <input type="radio" name="USE_WORKER_AI" value="False"
+                                    {% if ai_source == 'custom' %}checked{% endif %} style="width:auto">
+                                自定义大模型 BaseURL + Key
+                            </label>
+                        </div>
+                        <small id="aiSourceHint">
+                            当前使用 <b id="aiSourceNow">Cloudflare Workers AI</b>。官方 AI 由软件方托管，无需自备密钥，订阅后直接可用。
+                        </small>
+                    </div>
+                    <div class="form-group" id="customAiGroup" style="{% if ai_source == 'custom' %}{% else %}display:none;{% endif %}">
+                        <label>自定义 Base URL（OpenAI 兼容地址，如 https://api.deepseek.com/v1）:</label>
+                        <input type="text" id="customApiUrl" name="DEEPSEEK_BASE_URL" value="{{ config.DEEPSEEK_BASE_URL }}"
+                            placeholder="https://api.example.com/v1">
+                        <small>选择「自定义大模型」后生效。填这里之后，请求直接发给你填的供应商，不经过软件方网关、不消耗官方 AI 额度。</small>
                     </div>
                     <div class="form-group">
-                        <label>模型选择: (首次使用推荐DeepSeek V3模型,带*的模型收费较高)</label>
+                        <label>模型选择: (官方 AI 建议用 Workers AI 模型；自定义供应商填对应模型名)</label>
                         <select id="modelSelect" name="temp_MODEL" title="聊天模型选择">
                         </select>
                         <input type="text" id="customModel" placeholder="请输入自定义模型名称" class="custom-input" value="{{ config.MODEL if config.MODEL not in popular_models else '' }}">
@@ -4071,7 +4065,7 @@
                         <label>API Key（主密钥，所有功能通用）:</label>
                         <input type="text" id="masterApiKey" placeholder="sk-xxxxxxxxxx" name="DEEPSEEK_API_KEY" value="{{ config.DEEPSEEK_API_KEY }}" class="api-key-input">
                         <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in config.DEEPSEEK_API_KEY else "" }}</small>
-                        <small>默认所有功能共用此密钥。如需为图片识别 / 联网搜索等单独设置密钥，关闭下方开关即可。</small>
+                        <small>使用 Cloudflare Workers AI 时这里留空即可（凭据为软件授权）；选择「自定义大模型」时必须填入你自己的 Key。</small>
                     </div>
                     <div class="form-group">
                         <div class="switch-item">

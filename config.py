@@ -18,6 +18,18 @@ LISTEN_LIST = [["SamCai_", "角色1"], ["45158227848@chatroom", "角色1"], ["58
 # 发行版（门禁开启）下本机不直连任何供应商，base_url 由 guard 改写为 <worker>/ai/v1。
 # 本地开发（门禁关闭）若想直连供应商，可把 DEEPSEEK_BASE_URL 改成火山方舟等直连地址，
 # 并在 DEEPSEEK_API_KEY 填入对应 key、MODEL 改成对应模型名。
+
+# ===== AI 来源开关（决定用不用 Cloudflare Workers AI）=====
+# 三态，取值 'auto' / True / False：
+#   'auto'（出厂默认）—— 自动判断：
+#       · DEEPSEEK_BASE_URL 是本网关地址（wetech.jukuai.net/ai/v1 等）→ 走 Cloudflare Workers AI
+#       · 或填了真实 DEEPSEEK_API_KEY 且 base_url 是别家地址 → 不用 Workers AI，直连你自己的模型
+#       · 都没有 → 仍走 Workers AI（门禁开启时由卡密作凭证，客户端不接触真实上游 key）
+#   True  —— 强制走 Cloudflare Workers AI（忽略本地 base_url/key）
+#   False —— 强制不用 Workers AI，直连 DEEPSEEK_BASE_URL / DEEPSEEK_API_KEY / MODEL
+# 在图形界面「Chat 模型配置 → AI 来源」里切换，改这里即可。
+USE_WORKER_AI = 'auto'
+
 DEEPSEEK_API_KEY = 'sk-dummy-placeholder'
 # 默认指向自有 Worker 网关（门禁开启时由 guard 覆盖；门禁关闭时此为直连兜底地址）
 DEEPSEEK_BASE_URL = 'https://wetech.jukuai.net/ai/v1'

@@ -278,30 +278,36 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <h2>1. API 配置</h2>
             <div class="form-group">
-                <label for="quick_start_api_provider">API 服务商:</label>
-                <select id="quick_start_api_provider" name="quick_start_api_provider" title="API 服务商">
-                    <option value="weapis" {% if current_api_provider == 'weapis' %}selected{% endif %}>默认网关 (推荐, 支持聊天/识图/联网)</option>
-                    <option value="siliconflow" {% if current_api_provider == 'siliconflow' %}selected{% endif %}>硅基流动 (仅聊天)</option>
-                    <option value="deepseek_official" {% if current_api_provider == 'deepseek_official' %}selected{% endif %}>DeepSeek官方 (仅聊天)</option>
-                    <option value="other" {% if current_api_provider == 'other' %}selected{% endif %}>其它 (仅聊天, 自定义URL)</option>
-                </select>
-                <a class="button-like secondary" id="weapis_register_link" style="margin-top: 10px; display: block; width: fit-content; opacity:.85; cursor:default;">请前往 API 服务商官网申请密钥</a>
+                <label>AI 来源:</label>
+                <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+                    <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
+                        <input type="radio" id="quick_start_source_worker" name="quick_start_api_source" value="worker" {% if current_api_provider != 'other' %}checked{% endif %}>
+                        Cloudflare Workers AI（推荐，免密钥）
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
+                        <input type="radio" id="quick_start_source_custom" name="quick_start_api_source" value="custom" {% if current_api_provider == 'other' %}checked{% endif %}>
+                        自定义大模型 BaseURL + Key
+                    </label>
+                </div>
+                <small id="source_note">官方 AI 由软件方托管，无需自备密钥，购买授权后直接可用。</small>
             </div>
+            <input type="hidden" id="quick_start_api_provider" name="quick_start_api_provider" value="{{ 'other' if current_api_provider == 'other' else 'weapis' }}">
 
             <div class="form-group" id="custom_base_url_group" style="display: none;">
-                <label for="quick_start_custom_base_url">自定义 Base URL:</label>
-                <input type="text" id="quick_start_custom_base_url" name="quick_start_custom_base_url" placeholder="例如: https://api.example.com/v1" value="{{ current_custom_base_url if current_api_provider == 'other' else '' }}">
+                <label for="quick_start_custom_base_url">自定义 Base URL（OpenAI 兼容地址）:</label>
+                <input type="text" id="quick_start_custom_base_url" name="quick_start_custom_base_url" placeholder="例如: https://api.deepseek.com/v1" value="{{ current_custom_base_url if current_api_provider == 'other' else '' }}">
+                <small>选「自定义大模型」后生效。填了这里，请求就直接发给你填的供应商，不经过软件方网关、不消耗官方 AI 额度。</small>
             </div>
 
             <div class="form-group">
                 <label for="quick_start_api_key">API Key:</label>
                 <input type="text" id="quick_start_api_key" name="quick_start_api_key" value="{{ config.DEEPSEEK_API_KEY or '' }}" placeholder="请输入 API Key" class="api-key-input">
                 <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in (config.DEEPSEEK_API_KEY or '') else "" }}</small>
-                <small id="api_key_note">申请 API 密钥后，聊天、图片识别、联网搜索功能将使用此 Key 和推荐配置。</small>
+                <small id="api_key_note">使用官方 Cloudflare Workers AI 时这里留空即可；选择「自定义大模型」时必须填入你自己的 Key。</small>
             </div>
 
             <div class="form-group" id="non_weapis_note" style="display: none;">
-                <small style="color: #dd6600; font-weight: bold;">提示: 您选择的AI服务商可能不支持识图模型和联网搜索模型，如需使用这些功能，请到详细配置页面单独设置。</small>
+                <small style="color: #dd6600; font-weight: bold;">提示: 自定义服务商不一定支持识图和联网搜索模型，如需这些功能请到详细配置页单独设置。</small>
             </div>
 
             <h2>2. 用户列表</h2>
@@ -412,21 +418,25 @@
         document.addEventListener('DOMContentLoaded', function() {
             // 初始化API Key输入字段
             setupApiKeyInputs();
-            
-            const apiProviderSelect = document.getElementById('quick_start_api_provider');
+
+            const workerRadio = document.getElementById('quick_start_source_worker');
+            const customRadio = document.getElementById('quick_start_source_custom');
+            const hiddenProvider = document.getElementById('quick_start_api_provider');
             const customBaseUrlGroup = document.getElementById('custom_base_url_group');
             const customBaseUrlInput = document.getElementById('quick_start_custom_base_url');
             const apiKeyNote = document.getElementById('api_key_note');
             const nonWeapisNote = document.getElementById('non_weapis_note');
             const onlineSearchSwitchGroup = document.getElementById('online_search_switch_group');
             const onlineApiSwitch = document.getElementById('enable_online_api_switch');
-            const weapisRegisterLink = document.getElementById('weapis_register_link');
             const apiKeyInput = document.getElementById('quick_start_api_key');
 
-            function updateProviderUI() {
-                const selectedProvider = apiProviderSelect.value;
+            function isCustom() { return !!(customRadio && customRadio.checked); }
 
-                if (selectedProvider === 'other') {
+            function updateProviderUI() {
+                // 同步隐藏字段，保持后端分支逻辑（weapis / other）不变
+                if (hiddenProvider) hiddenProvider.value = isCustom() ? 'other' : 'weapis';
+
+                if (isCustom()) {
                     customBaseUrlGroup.style.display = 'block';
                     customBaseUrlInput.required = true;
                 } else {
@@ -434,30 +444,28 @@
                     customBaseUrlInput.required = false;
                 }
 
-                if (selectedProvider === 'weapis') {
-                    apiKeyNote.textContent = '申请 API 密钥后，聊天、图片识别、联网搜索功能将使用此 Key 和推荐配置。';
+                if (!isCustom()) {
+                    apiKeyNote.textContent = '官方 Cloudflare Workers AI 无需自备密钥，这里留空即可；购买授权后直接可用。';
                     apiKeyNote.style.color = '#666';
                     nonWeapisNote.style.display = 'none';
                     onlineSearchSwitchGroup.style.display = 'block';
                     if(onlineApiSwitch) onlineApiSwitch.disabled = false;
-                    weapisRegisterLink.style.display = 'block';
-                    apiKeyInput.placeholder = "请输入从默认网关获取的 API Key";
+                    apiKeyInput.placeholder = "使用官方 AI 时可留空";
                 } else {
-                    apiKeyNote.textContent = '请输入您选择的服务商的 API Key。';
+                    apiKeyNote.textContent = '请填入你自己大模型的 API Key（如 DeepSeek / 硅基流动 / 火山方舟等）。';
                     apiKeyNote.style.color = '#555';
                     nonWeapisNote.style.display = 'block';
-                    onlineSearchSwitchGroup.style.display = 'none'; 
+                    onlineSearchSwitchGroup.style.display = 'none';
                     if(onlineApiSwitch) {
                         onlineApiSwitch.checked = false;
-                        onlineApiSwitch.disabled = true; 
+                        onlineApiSwitch.disabled = true;
                     }
-                    weapisRegisterLink.style.display = 'none';
                     apiKeyInput.placeholder = "请输入 API Key";
                 }
             }
 
-            updateProviderUI(); 
-            apiProviderSelect.addEventListener('change', updateProviderUI);
+            updateProviderUI();
+            [workerRadio, customRadio].forEach(r => r && r.addEventListener('change', updateProviderUI));
         });
 
         function addEntry() {

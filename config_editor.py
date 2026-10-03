@@ -1403,6 +1403,82 @@ def parse_config():
     except FileNotFoundError:
         raise Exception(f"配置文件不存在于: {config_path}")
 
+
+# ---- AI 来源判定（与 bot.py / weauto_license.guard 同一套语义）----
+# 走 Cloudflare Workers AI：base_url 改写为 <worker>/ai/v1，api_key 用卡密。
+# 用户自填大模型：原样用他填的 base_url + key，不碰网关、不消耗 Workers AI 额度。
+_GATEWAY_SUFFIX = ('/ai/v1', '/ai')
+
+def _is_gateway_base_url(u: str) -> bool:
+    s = str(u or '').strip().rstrip('/').lower()
+    if not s:
+        return True
+    try:
+        from weauto_license import guard as _g
+        w = (_g.worker_url() or '').lower().rstrip('/')
+    except Exception:
+        w = ''
+    if w and s.startswith(w):
+        return True
+    return s.endswith(_GATEWAY_SUFFIX)
+
+def _key_is_real(k: str) -> bool:
+    s = str(k or '').strip()
+    if not s:
+        return False
+    low = s.lower()
+    return not ('dummy' in low or 'placeholder' in low or s == 'sk-' or 'your' in low or 'xxxx' in low)
+
+def ai_source_mode(config) -> str:
+    """返回 'worker'（用 Cloudflare Workers AI）或 'custom'（用用户自填大模型）。
+
+    只看配置，不做网络请求 —— 供 UI 展示与本地功能（论坛/生图等）选地址用。
+    与 weauto_license.guard.use_worker_ai() 同源同语义。
+    """
+    cfg = config or {}
+    raw = cfg.get('USE_WORKER_AI', 'auto')
+    if isinstance(raw, bool):
+        return 'worker' if raw else 'custom'
+    s = str(raw or '').strip().lower()
+    if s in ('1', 'true', 'yes', 'on'):
+        return 'worker'
+    if s in ('0', 'false', 'no', 'off'):
+        return 'custom'
+    base = str(cfg.get('DEEPSEEK_BASE_URL', '') or '')
+    key = str(cfg.get('DEEPSEEK_API_KEY', '') or '')
+    if _key_is_real(key) and not _is_gateway_base_url(base):
+        return 'custom'
+    return 'worker'
+
+def resolve_ai_opts(config, sub_key=None, sub_base=None):
+    """给本进程（论坛/生图等非 bot.py 的功能）解析 (api_key, base_url)。
+
+    走 Workers AI：<worker>/ai/v1 + 卡密（真实上游 key 只在 Worker）。
+    自填模式：优先子功能自己的配置；未单独配置则继承主模型的 key + base_url。
+    """
+    cfg = config or {}
+    if ai_source_mode(cfg) == 'worker':
+        try:
+            from weauto_license import guard as _g
+            ep = _g.ai_endpoint()
+        except Exception:
+            ep = None
+        if ep:
+            return ep.get('api_key') or '', ep.get('base_url') or ''
+        # 门禁未启用（开发态）：仍走网关地址，但需要本地有 key
+        return (cfg.get('DEEPSEEK_API_KEY', '') or '',
+                cfg.get('DEEPSEEK_BASE_URL', '') or 'https://wetech.jukuai.net/ai/v1')
+    k = (sub_key or '').strip()
+    b = (sub_base or '').strip()
+    if (not k) and (not b or b.rstrip('/').endswith(_GATEWAY_SUFFIX)):
+        return (cfg.get('DEEPSEEK_API_KEY', '') or '',
+                cfg.get('DEEPSEEK_BASE_URL', '') or '')
+    if not k:
+        k = cfg.get('DEEPSEEK_API_KEY', '') or ''
+    if not b:
+        b = cfg.get('DEEPSEEK_BASE_URL', '') or ''
+    return k, b
+
 def update_config(new_values):
     """
     更新配置文件内容，确保文件写入安全性和原子性，避免文件被清空或损坏。
@@ -1410,7 +1486,6 @@ def update_config(new_values):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(script_dir, 'config.py')
     lock_path = config_path + '.lock'  # 文件锁路径
-
     # 使用文件锁，确保只有一个进程/线程能操作 config.py
     with FileLock(lock_path):
         try:
@@ -1462,13 +1537,17 @@ def quick_start():
             new_values = {}
 
             api_provider = request.form.get('quick_start_api_provider', 'weapis')
+            api_source = request.form.get('quick_start_api_source', 'worker')
             api_key_raw = request.form.get('quick_start_api_key', '').strip()
-            
+
             # 处理API Key，如果是隐藏版本则保持原值
             if is_hidden_api_key(api_key_raw):
                 api_key = config.get('DEEPSEEK_API_KEY', '')
             else:
                 api_key = api_key_raw
+
+            if api_source == 'custom':
+                api_provider = 'other'
 
             keys_to_clear_for_non_weapis = [
                 'MOONSHOT_API_KEY', 'ONLINE_API_KEY',
@@ -1477,6 +1556,8 @@ def quick_start():
             ]
 
             if api_provider == 'weapis':
+                # 官方 Cloudflare Workers AI：由软件方托管，无需自备 key
+                new_values['USE_WORKER_AI'] = True
                 if api_key:
                     new_values['DEEPSEEK_API_KEY'] = api_key
                     new_values['MOONSHOT_API_KEY'] = api_key
@@ -1487,26 +1568,27 @@ def quick_start():
                 new_values['MOONSHOT_MODEL'] = 'gpt-4o'
                 new_values['ONLINE_MODEL'] = 'net-gpt-4o-mini'
                 if not config.get('MODEL','').strip():
-                    new_values['MODEL'] = 'deepseek-ai/DeepSeek-V3'
+                    new_values['MODEL'] = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
                 new_values['ENABLE_ONLINE_API'] = 'ENABLE_ONLINE_API' in request.form
-            
+
             else:
+                # 自定义大模型：明确不走 Workers AI，直连用户自己的供应商
+                new_values['USE_WORKER_AI'] = False
                 if api_provider == 'siliconflow':
                     new_values['DEEPSEEK_BASE_URL'] = 'https://api.siliconflow.cn/v1/'
                 elif api_provider == 'deepseek_official':
                     new_values['DEEPSEEK_BASE_URL'] = 'https://api.deepseek.com'
-                elif api_provider == 'other':
+                else:
                     custom_base_url = request.form.get('quick_start_custom_base_url', '').strip()
-                    if custom_base_url:
-                        new_values['DEEPSEEK_BASE_URL'] = custom_base_url
-                    else:
-                        new_values['DEEPSEEK_BASE_URL'] = ""
-                
+                    new_values['DEEPSEEK_BASE_URL'] = custom_base_url or config.get('DEEPSEEK_BASE_URL', '')
+
                 if api_key:
                     new_values['DEEPSEEK_API_KEY'] = api_key
-                
+
+                # 子功能沿用主模型的 key/base（bot.py 的 _resolve_api_opts 会自动继承，
+                # 这里清空是为了避免残留上一套供应商的地址导致识图/联网打错地方）
                 for key_to_clear in keys_to_clear_for_non_weapis:
-                    new_values[key_to_clear] = "" 
+                    new_values[key_to_clear] = ""
                 new_values['ENABLE_ONLINE_API'] = False
 
             # 快速上手表单不含 listen_settings 字段：按昵称保留旧设置
@@ -1529,24 +1611,12 @@ def quick_start():
         
         current_api_provider = 'weapis'
         current_custom_base_url = ''
-        
-        deepseek_url = config.get('DEEPSEEK_BASE_URL', '')
-        
-        is_weapis_setup = (
-            deepseek_url == 'https://wetech.jukuai.net/ai/v1' and
-            config.get('MOONSHOT_BASE_URL') == 'https://wetech.jukuai.net/ai/v1' and
-            config.get('ONLINE_BASE_URL') == 'https://wetech.jukuai.net/ai/v1'
-        )
 
-        if is_weapis_setup:
-            current_api_provider = 'weapis'
-        elif deepseek_url == 'https://api.siliconflow.cn/v1/':
-            current_api_provider = 'siliconflow'
-        elif deepseek_url == 'https://api.deepseek.com':
-            current_api_provider = 'deepseek_official'
-        elif deepseek_url and deepseek_url != 'https://wetech.jukuai.net/ai/v1': 
+        # 以 AI 来源判定为准（与 guard.use_worker_ai / ai_source_mode 同源）：
+        # 走 Workers AI → 显示"官方"；用户自填 → 显示自定义 URL。
+        if ai_source_mode(config) == 'custom':
             current_api_provider = 'other'
-            current_custom_base_url = deepseek_url
+            current_custom_base_url = config.get('DEEPSEEK_BASE_URL', '') or ''
 
         # 为快速配置页面也隐藏API Key
         display_config = config.copy()
@@ -1592,9 +1662,14 @@ def index():
              # 处理二维数组的LISTEN_LIST（兼容第三列：监测内容/固定转发设置）
             new_values['LISTEN_LIST'] = _build_listen_list_from_form(request.form, config)
 
+            # AI 来源：radio 只在选中时提交，这里显式转成 Python bool 写回 config.py。
+            # radio 未选中 = 没提交该字段，此时保持原值不动。
+            if 'USE_WORKER_AI' in request.form:
+                new_values['USE_WORKER_AI'] = request.form['USE_WORKER_AI'].strip() == 'True'
+
             # 处理其他字段（剔除已单独处理的 LISTEN_LIST 组成部分）
             # 修正: submitted_fields应为 {'nickname', 'prompt_file'}
-            submitted_fields = set(request.form.keys()) - {'nickname', 'prompt_file'}
+            submitted_fields = set(request.form.keys()) - {'nickname', 'prompt_file', 'USE_WORKER_AI'}
 
             for var in submitted_fields:
                 if var not in config and not var.startswith('temp_'): # 忽略不存在于config中的字段, 但保留temp_字段
@@ -1711,7 +1786,8 @@ def index():
         return render_template('config_editor.html',
                              config=display_config,
                              prompt_files=prompt_files,
-                             chat_context_users=chat_context_users)
+                             chat_context_users=chat_context_users,
+                             ai_source=ai_source_mode(config))
     except Exception as e:
         app.logger.error(f"加载主配置页面错误: {e}")
         return "加载配置页面错误，请检查日志。"
@@ -3436,15 +3512,16 @@ def check_should_post_forum(character_name):
         # 调用AI API - 优先使用论坛自定义模型，其次主模型
         use_forum_custom = bool(config.get('ENABLE_FORUM_CUSTOM_MODEL', False))
         if use_forum_custom:
-            api_key = (config.get('FORUM_API_KEY') or config.get('DEEPSEEK_API_KEY', '')).strip()
-            base_url = config.get('FORUM_BASE_URL', config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1'))
+            # resolve_ai_opts：走 Workers AI 时改写成 <worker>/ai/v1 + 卡密；
+            # 用户自填大模型时用他自己的 key/base_url（未单配则继承主模型）。
+            api_key, base_url = resolve_ai_opts(
+                config, config.get('FORUM_API_KEY'), config.get('FORUM_BASE_URL'))
             # 如果未填写论坛模型则回落到主模型
             model = (config.get('FORUM_MODEL') or config.get('MODEL', 'deepseek-v3-0324'))
             temperature = config.get('FORUM_TEMPERATURE', config.get('TEMPERATURE', 1.1))
             max_tokens = int(config.get('FORUM_MAX_TOKEN', config.get('MAX_TOKEN', 2000)))
         else:
-            api_key = config.get('DEEPSEEK_API_KEY', '')
-            base_url = config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
+            api_key, base_url = resolve_ai_opts(config)
             model = config.get('MODEL', 'deepseek-v3-0324')
             temperature = config.get('TEMPERATURE', 1.1)
             max_tokens = config.get('MAX_TOKEN', 2000)
@@ -3686,14 +3763,13 @@ def generate_character_conversation_reply(character_name, post_content, user_mes
         # 优先使用论坛自定义模型
         use_forum_custom = bool(config.get('ENABLE_FORUM_CUSTOM_MODEL', False))
         if use_forum_custom:
-            api_key = (config.get('FORUM_API_KEY') or config.get('DEEPSEEK_API_KEY', '')).strip()
-            base_url = config.get('FORUM_BASE_URL', config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1'))
-            model = (config.get('FORUM_MODEL') or config.get('MODEL', 'deepseek-v3-0324'))
+            api_key, base_url = resolve_ai_opts(
+                config, config.get('FORUM_API_KEY'), config.get('FORUM_BASE_URL'))
+            model = config.get('FORUM_MODEL') or config.get('MODEL', 'deepseek-v3-0324')
             temperature = config.get('FORUM_TEMPERATURE', config.get('TEMPERATURE', 1.0))
             max_tokens = min(int(config.get('FORUM_MAX_TOKEN', config.get('MAX_TOKEN', 2000))), 120)
         else:
-            api_key = config.get('DEEPSEEK_API_KEY', '')
-            base_url = config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
+            api_key, base_url = resolve_ai_opts(config)
             model = config.get('MODEL', 'deepseek-v3-0324')
             temperature = config.get('TEMPERATURE', 1.0)
             max_tokens = min(config.get('MAX_TOKEN', 2000), 120)
@@ -3877,16 +3953,15 @@ def generate_likes_feed_items(character_name, use_online=False):
 
         # --- 阶段二：用论坛模型（若启用）或主模型生成三条内容 ---
         # 选择生成阶段所用模型
-        gen_base_url = config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
+        gen_api_key, gen_base_url = resolve_ai_opts(config)
         gen_model = config.get('MODEL', 'deepseek-v3-0324')
-        gen_api_key = (config.get('DEEPSEEK_API_KEY', '')).strip()
         gen_temperature = float(config.get('TEMPERATURE', 1.0))
         gen_max_tokens = min(int(config.get('MAX_TOKEN', 2000)), 400)
 
         if bool(config.get('ENABLE_FORUM_CUSTOM_MODEL', False)):
-            gen_base_url = config.get('FORUM_BASE_URL', gen_base_url)
+            gen_api_key, gen_base_url = resolve_ai_opts(
+                config, config.get('FORUM_API_KEY'), config.get('FORUM_BASE_URL') or gen_base_url)
             gen_model = (config.get('FORUM_MODEL') or gen_model)
-            gen_api_key = (config.get('FORUM_API_KEY') or gen_api_key).strip()
             gen_temperature = float(config.get('FORUM_TEMPERATURE', gen_temperature))
             gen_max_tokens = min(int(config.get('FORUM_MAX_TOKEN', gen_max_tokens)), 400)
 
@@ -4336,14 +4411,13 @@ NPC设定：
             use_forum_custom = bool(config.get('ENABLE_FORUM_CUSTOM_MODEL', False))
 
             if use_forum_custom:
-                api_key = (config.get('FORUM_API_KEY') or config.get('DEEPSEEK_API_KEY', '')).strip()
-                base_url = config.get('FORUM_BASE_URL', config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1'))
+                api_key, base_url = resolve_ai_opts(
+                    config, config.get('FORUM_API_KEY'), config.get('FORUM_BASE_URL'))
                 model = (config.get('FORUM_MODEL') or config.get('MODEL', 'deepseek-v3-0324'))
                 temperature = config.get('FORUM_TEMPERATURE', config.get('TEMPERATURE', 1.1))
                 max_tokens = config.get('FORUM_MAX_TOKEN', config.get('MAX_TOKEN', 2000))
             else:
-                api_key = config.get('DEEPSEEK_API_KEY', '')
-                base_url = config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
+                api_key, base_url = resolve_ai_opts(config)
                 model = config.get('MODEL', 'deepseek-v3-0324')
                 temperature = config.get('TEMPERATURE', 1.1)
                 max_tokens = config.get('MAX_TOKEN', 2000)

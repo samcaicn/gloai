@@ -759,9 +759,13 @@ def _is_base_url_untrusted(base_url: str) -> bool:
     return any((s in url_lower) for s in bl)
 
 # ---- LLM 统一走自有 Worker AI 代理（反破解核心）----
-# 门禁启用时：base_url = <worker>/ai/v1、api_key = 卡密（Worker 验证后注入真实
-# upstream key）→ 反编译/patch 掉本地门禁也白嫖不了 AI：Worker 对无卡密请求直接 401。
-# 开发态（门禁关）回落到 config.py 的本地配置，行为与旧版一致。
+# 门禁启用**且**用户没选「自填大模型」时：base_url = <worker>/ai/v1、api_key = 卡密
+#   （Worker 验证后注入真实 upstream key）→ 反编译/patch 掉本地门禁也白嫖不了 AI：
+#   Worker 对无卡密请求直接 401。
+# 用户在界面填了自己的 base_url + key（USE_WORKER_AI=False 或 auto 判定为自填）时：
+#   _ai_proxy_opts() 返回 {}，全部客户端回落到 config.py 的本地配置，
+#   请求直发用户自己的供应商 —— 不经过网关、不用卡密、不消耗 Workers AI 额度。
+# 开发态（门禁关）同样回落到本地配置，行为与旧版一致。
 def _ai_proxy_opts():
     try:
         from weauto_license.guard import ai_endpoint
@@ -772,10 +776,33 @@ def _ai_proxy_opts():
 _AI_PROXY = _ai_proxy_opts()
 _AI_HEADERS = _AI_PROXY.get("headers") or None
 
+def _resolve_api_opts(local_key: str, local_base: str) -> tuple:
+    """按「走网关 / 走自填」决定某个客户端的 (api_key, base_url)。
+
+    走网关时统一用网关地址 + 卡密（子功能的独立 base_url 无意义，Worker 内部决定上游）。
+    自填时优先用该子功能自己的配置；若它仍是出厂占位（空 / 网关地址 / 空 key），
+    则继承主模型的 DEEPSEEK_API_KEY / DEEPSEEK_BASE_URL —— 否则「只填了主模型」
+    的用户会因识图/联网客户端指向网关而 401。
+    """
+    if _AI_PROXY:
+        return _AI_PROXY.get("api_key") or local_key, _AI_PROXY.get("base_url") or local_base
+    from config import USE_WORKER_AI  # noqa: F401  （保持与 guard 同一份配置语义）
+    k = (local_key or "").strip()
+    b = (local_base or "").strip()
+    # 子功能未单独配置（key 为空且 base 为空/仍是网关）→ 继承主模型
+    if (not k) and (not b or b.rstrip('/').endswith(('/ai/v1', '/ai'))):
+        return DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
+    if not k:
+        k = DEEPSEEK_API_KEY
+    if not b:
+        b = DEEPSEEK_BASE_URL
+    return k, b
+
 # 初始化OpenAI客户端
+_chat_key, _chat_base = _resolve_api_opts(DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL)
 client = OpenAI(
-    api_key=_AI_PROXY.get("api_key") or DEEPSEEK_API_KEY,
-    base_url=_AI_PROXY.get("base_url") or DEEPSEEK_BASE_URL,
+    api_key=_chat_key,
+    base_url=_chat_base,
     default_headers=_AI_HEADERS,
 )
 
@@ -786,16 +813,17 @@ _K = (DEEPSEEK_API_KEY or "").strip()
 if not _AI_PROXY and (not _K or "dummy" in _K.lower() or "placeholder" in _K.lower() or _K == "sk-"):
     logger.critical(
         "⚠️ DEEPSEEK_API_KEY 仍是占位/无效值（config.py），AI 回复将全部失败并退回固定话术。"
-        "请在 config.py:18 填入真实 key 后重启 bot。"
+        "请在图形界面「Chat 模型配置」里选择 Cloudflare Workers AI，或填入自己的 API Key。"
     )
 
 #初始化在线 AI 客户端 (如果启用)
 online_client: Optional[OpenAI] = None
 if ENABLE_ONLINE_API:
     try:
+        _ok, _ob = _resolve_api_opts(ONLINE_API_KEY, ONLINE_BASE_URL)
         online_client = OpenAI(
-            api_key=_AI_PROXY.get("api_key") or ONLINE_API_KEY,
-            base_url=_AI_PROXY.get("base_url") or ONLINE_BASE_URL,
+            api_key=_ok,
+            base_url=_ob,
             default_headers=_AI_HEADERS,
         )
         logger.info("联网搜索 API 客户端已初始化。")
@@ -808,9 +836,10 @@ if ENABLE_ONLINE_API:
 assistant_client: Optional[OpenAI] = None
 if ENABLE_ASSISTANT_MODEL:
     try:
+        _ak, _ab = _resolve_api_opts(ASSISTANT_API_KEY, ASSISTANT_BASE_URL)
         assistant_client = OpenAI(
-            api_key=_AI_PROXY.get("api_key") or ASSISTANT_API_KEY,
-            base_url=_AI_PROXY.get("base_url") or ASSISTANT_BASE_URL,
+            api_key=_ak,
+            base_url=_ab,
             default_headers=_AI_HEADERS,
         )
         logger.info("辅助模型 API 客户端已初始化。")
@@ -1353,7 +1382,9 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
     返回:
         str: API 返回的文本回复。
     """
-    if _is_base_url_untrusted(DEEPSEEK_BASE_URL):
+    # 黑名单只针对「走网关」链路：走网关时 base_url 会被 guard 改写，
+    # 这里要拦的是被 guard 判定为不受信任的上游。自填模式下用户自己指定供应商，不拦。
+    if _AI_PROXY and _is_base_url_untrusted(DEEPSEEK_BASE_URL):
         logger.error("抱歉，您所使用的API服务商不受信任，请联系网站管理员")
         raise RuntimeError("抱歉，您所使用的API服务商不受信任，请联系网站管理员")
 
@@ -2089,15 +2120,20 @@ def recognize_image_with_moonshot(image_path, is_emoji=False):
     try:
 
         processed_image_path = image_path
-        
+
         # 读取图片内容并编码
         with open(processed_image_path, 'rb') as img_file:
             image_content = base64.b64encode(img_file.read()).decode('utf-8')
-            
+
+        # 走网关 / 自填 两种模式的凭据与地址（与主聊天客户端同一套判定）。
+        # 自填模式下若用户没单独配 Moonshot，就用他自己的 key + base_url。
+        _mo_key, _mo_base = _resolve_api_opts(MOONSHOT_API_KEY, MOONSHOT_BASE_URL)
         headers = {
-            'Authorization': f'Bearer {MOONSHOT_API_KEY}',
+            'Authorization': f'Bearer {_mo_key}',
             'Content-Type': 'application/json'
         }
+        # 自填模式：模型名沿用 MOONSHOT_MODEL（默认 gpt-4o），但若它仍是网关侧的
+        # 专用模型名而用户填的是别家供应商，允许其在界面单独指定，故此处原样使用。
         text_prompt = "请用中文描述这张图片的主要内容或主题。不要使用'这是'、'这张'等开头，直接描述。如果有文字，请包含在描述中。" if not is_emoji else "请用中文简洁地描述这个聊天窗口最后一张表情包所表达的情绪、含义或内容。如果表情包含文字，请一并描述。注意：1. 只描述表情包本身，不要添加其他内容 2. 不要出现'这是'、'这个'等词语"
         data = {
             "model": MOONSHOT_MODEL,
@@ -2113,7 +2149,7 @@ def recognize_image_with_moonshot(image_path, is_emoji=False):
             "temperature": MOONSHOT_TEMPERATURE
         }
         
-        response = requests.post(f"{MOONSHOT_BASE_URL}/chat/completions", headers=headers, json=data, timeout=(10, 30))
+        response = requests.post(f"{_mo_base}/chat/completions", headers=headers, json=data, timeout=(10, 30))
         response.raise_for_status()
         result = response.json()
         recognized_text = result['choices'][0]['message']['content']
