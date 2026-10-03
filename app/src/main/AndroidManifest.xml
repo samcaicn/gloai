@@ -32,6 +32,17 @@
             android:name=".KnowledgeActivity"
             android:exported="false" />
 
+        <!-- 收银台：Creem checkout 在 App 内 WebView 打开，不跳外部浏览器。
+             configChanges 让旋转/键盘不会重建 Activity（否则 WebView 会重载
+             一次性 checkout 会话，导致付款中断）。 -->
+        <activity
+            android:name=".CheckoutActivity"
+            android:exported="false"
+            android:label="安全支付"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|fontScale|density" />
+
         <service
             android:name="com.google.android.accessibility.selecttospeak.SelectToSpeakService"
             android:exported="true"

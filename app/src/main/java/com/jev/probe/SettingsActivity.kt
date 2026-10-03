@@ -18,6 +18,7 @@ import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.jev.probe.core.LicenseClient
 import com.jev.probe.core.Prefs
@@ -31,6 +32,26 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var prefs: Prefs
     private val worker = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
+
+    /** 订阅卡片的状态行，收银台返回后要就地刷新。 */
+    private lateinit var licStatus: TextView
+    private var pendingTier: String = ""
+
+    /** 收银台在 App 内打开（见 [CheckoutActivity]）；返回后若还没激活就继续后台确认。 */
+    private val checkoutLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { res ->
+        val activated = prefs.licenseKey.isNotBlank() || prefs.accountToken.isNotBlank()
+        if (activated) {
+            licStatus.text = licenseStatusText()
+            if (res.resultCode == android.app.Activity.RESULT_OK) {
+                Toast.makeText(this, "✓ 激活成功，判断接口已切换到云端", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            // 提前退出收银台（或付款还在银行侧处理）：继续后台确认
+            startLicensePoll(pendingTier, licStatus)
+        }
+    }
 
     private val accent = Color.parseColor("#3A7AFE")
     private val ink = Color.parseColor("#111827")
@@ -100,10 +121,11 @@ class SettingsActivity : AppCompatActivity() {
         licCard.addView(text(
             "购买后自动激活云端判断（不再依赖内置网关额度）。支付宝仅一次性买断可用" +
                 "（平台限制），月租档支持卡/Apple Pay。", 12f, sub))
-        val licStatus = text(licenseStatusText(), 12.5f, ink, bold = true).apply {
+        val licStatusView = text(licenseStatusText(), 12.5f, ink, bold = true).apply {
             setPadding(0, dp(10), 0, dp(2))
         }
-        licCard.addView(licStatus)
+        licStatus = licStatusView
+        licCard.addView(licStatusView)
         for (tier in LicenseClient.TIERS) {
             val label = when (tier) {
                 LicenseClient.TIER_NORMAL -> "标准版 · 月租"
@@ -113,7 +135,8 @@ class SettingsActivity : AppCompatActivity() {
             licCard.addView(cardBtn(label) { startCheckout(tier, licStatus) })
         }
         licCard.addView(text(
-            "付款完成返回本页即自动激活（每 3 秒自动确认，最长等 30 分钟）。", 11f, sub))
+            "付款页在 App 内打开，付款完成即自动激活（每 3 秒确认一次，最长等 30 分钟）。" +
+                "支付宝/微信等唤起支付 App 属正常跳转。", 11f, sub))
         root.addView(licCard)
 
         // =================== 分析 ===================
@@ -396,19 +419,35 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     /**
-     * 打开收银台并开始自动确认：Worker /buy 动态建 checkout（302 到 creem.io，
-     * metadata 带本机 mid）→ 浏览器付款 → webhook 写 lic:<mid> → 本端每 3s 轮询
-     * /license?mid= → 拿到卡密即写 accountToken + 切 worker 模式。
+     * 打开收银台并开始自动确认：Worker /buy 动态建 checkout（302 到 Creem 的 pay.jukuai.net，
+     * metadata 带本机 mid）→ **在 App 内 [CheckoutActivity] 的 WebView 里付款**（不跳外部浏览器）
+     * → webhook 写 lic:<mid> → 每 3s 轮询 /license?mid= → 拿到卡密即写 accountToken + 切 worker 模式。
      */
     private fun startCheckout(tier: String, statusView: TextView) {
+        val url = LicenseClient.buyUrl(prefs, tier)
+        pendingTier = tier
         try {
-            val url = LicenseClient.buyUrl(prefs, tier)
-            startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+            checkoutLauncher.launch(
+                android.content.Intent(this, CheckoutActivity::class.java)
+                    .putExtra(CheckoutActivity.EXTRA_URL, url)
+                    .putExtra(CheckoutActivity.EXTRA_TIER, tier))
+            statusView.text = "等待付款确认…（${tierLabel(tier)}）"
         } catch (e: Exception) {
-            Toast.makeText(this, "无法打开浏览器：${e.message}", Toast.LENGTH_LONG).show()
-            return
+            // 极端情况（ROM 无 WebView）：退回浏览器，但确认逻辑不变
+            Log.w(TAG, "in-app checkout unavailable: ${e.message}")
+            try {
+                startActivity(android.content.Intent(
+                    android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+            } catch (e2: Exception) {
+                Toast.makeText(this, "无法打开收银台：${e2.message}", Toast.LENGTH_LONG).show()
+                return
+            }
+            startLicensePoll(tier, statusView)
         }
-        Toast.makeText(this, "已在浏览器打开收银台，付款后回到本页自动激活", Toast.LENGTH_LONG).show()
+    }
+
+    /** 每 3s 轮询一次卡密（最长 30 分钟），拿到即落盘激活并刷新状态行。 */
+    private fun startLicensePoll(tier: String, statusView: TextView) {
         statusView.text = "等待付款确认…（${tierLabel(tier)}）"
         Thread {
             val deadline = System.currentTimeMillis() + 30 * 60_000L
