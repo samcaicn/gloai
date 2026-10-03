@@ -36,14 +36,19 @@ Worker 端未配置该密钥时端点保持公开（开发/向后兼容）。这
 
 在 WeAuto 里的作用
 ------------------
-回复前先判断「对方真实意图 / 危险度 / 需要什么 / 下一步最佳动作」：
-  1. guidance_text()  -> 注入 system 提示，让主模型照着判（默认开）
-  2. should_hold()    -> 危险度过高时收声不回（默认关，需显式开启）
+出厂即自动运行，**零配置**（没有开关、没有 URL 输入框、没有密钥框）：
+回复前先判断「对方真实意图 / 危险度 / 需要什么 / 下一步最佳动作」，
+  1. guidance_text()  -> 注入 system 提示，让主模型照着判
+  2. should_hold()    -> 危险度过高时收声不回（出厂关闭）
+
+所有参数都是本文件顶部的内置常量（JEV_*），用户与 UI 都不需要碰。
+要调行为改常量即可，不需要动 config.py。
 
 设计红线（24h 鲁棒性）
 ----------------------
 - 纯标准库，不引第三方依赖。
-- 默认关闭（ENABLE_JEV_GUARD=False）；开启即用，绝不因此让 bot 变哑巴或变慢。
+- 出厂即用，绝不因此让 bot 变哑巴或变慢：端点连续失败 JEV_CIRCUIT_FAILS 次
+  就在本进程内熔断（不再每条都白等超时），成功一次即恢复。
 - 任何异常、超时、非 200、解析失败一律返回 None / False —— 降级为"照常回复"。
 - 密钥不落日志（_redact）。
 """
@@ -260,16 +265,25 @@ _ROOT = os.path.dirname(os.path.abspath(__file__))
 _CFG_CACHE = {"ts": 0.0, "values": {}}
 _CFG_TTL = 30.0  # 秒：WebUI 改完配置不必重启 bot 也能生效
 
+# ------------------------------------------------------------------ 零配置常量
+# Jev 判断式 AI 是产品内置能力，**不设任何用户可见配置项**：出厂即自动运行，
+# 用户不需要知道自己需要配 URL / 密钥 / 开关。以下为出厂固定值，代码里直接写死。
+# 唯一仍从 config.py 读的是「客户端↔Worker 通信密钥」与卡密（用于签名与脱敏），
+# 那两项属于授权体系而非 Jev 业务参数。
+JEV_ENDPOINT = "https://weauto.safeopc.cn/ai/jev/decisions"  # 自建 Worker 端点
+JEV_MODEL_NAME = ""          # 留空 = 用 Worker 端 wrangler.toml 的默认模型（实测 70B 判得准）
+JEV_TIMEOUT_SEC = 8.0        # 单次判断超时（秒）；超时/失败一律降级为照常回复
+JEV_RELATIONSHIP = "微信联系人"  # 填进判断的「我和对方是什么关系」
+JEV_CONTEXT_TURNS = 6        # 带进判断的最近对话条数（一问一答算 2 条）
+JEV_INJECT_GUIDANCE = True   # 把判断结论注入 system 提示，指导主模型语气与内容
+JEV_HOLD_ON_DANGER = False   # 危险度过高时 bot 收声不回（交给真人处理）
+JEV_DANGER_HOLD_LEVEL = 8    # 收声阈值 0..9（8 = 最后通牒级别）
+# 端点不可用时自动降级的场景：连续失败到该次数后，本进程内熔断 Jev（不再每条都等超时），
+# 保证网络异常时 bot 不会因判断而整体变慢。成功一次即恢复。
+JEV_CIRCUIT_FAILS = 3
+
+# 仍需从 config.py 读取的项（授权体系，非 Jev 业务参数）
 _DEFAULTS = {
-    "ENABLE_JEV_GUARD": False,
-    "JEV_BASE_URL": "https://weauto.safeopc.cn/ai/jev/decisions",
-    "JEV_MODEL": "",                 # 留空 = 用 Worker 端 wrangler.toml 的默认模型
-    "JEV_TIMEOUT": 8.0,
-    "JEV_RELATIONSHIP": "微信联系人",
-    "JEV_CONTEXT_TURNS": 6,          # 带进判断的最近对话轮数（一问一答算 2 条）
-    "JEV_INJECT_GUIDANCE": True,     # 把判断结论注入 system 提示
-    "JEV_HOLD_ON_DANGER": False,     # 危险度过高时收声不回
-    "JEV_DANGER_HOLD_LEVEL": 8,      # 收声阈值（0..9）
     "CREEM_LICENSE_KEY": "",
     "WEAUATO_CLIENT_SECRET": "",     # 客户端↔后台通信密钥（防白嫖）；留空=公开模式
 }
@@ -359,11 +373,17 @@ def _instance_id():
 
 
 def enabled():
-    """闸门是否生效。只看 ENABLE_JEV_GUARD 开关（无需卡密，公开可用）。"""
+    """Jev 是否生效。零配置：出厂恒为 True，用户无开关可关。
+
+    保留 enabled() 这个函数名是为了让 bot.py / config_editor.py 的调用点
+    语义不变（未来若要做「企业版关闭」，只需改这一个函数的返回值）。
+    唯一会返回 False 的情况是端点连续失败触发了本进程内的熔断
+    （见 _CIRCUIT，见下）—— 此时降级为「不做判断、照常回复」，绝不阻塞 bot。
+    """
     try:
-        return bool(_cfg("ENABLE_JEV_GUARD", False))
+        return not _circuit_open()
     except Exception:
-        return False
+        return True
 
 
 # ---------------------------------------------------------------- 构造请求
@@ -412,17 +432,50 @@ def build_rank_question(candidates):
     }
 
 
+# ---------------------------------------------------------------- 熔断器
+# 零配置后 Jev 每条消息都会跑（无开关），所以「端点挂了不能拖慢 bot」这件事
+# 比原来更重要：连续失败 JEV_CIRCUIT_FAILS 次后，本进程内直接跳过判断，
+# 不再每条都白等一次超时；成功一次即完全恢复。
+_CIRCUIT = {"fails": 0, "open": False}
+_CIRCUIT_LOCK = threading.Lock()
+
+
+def _circuit_open() -> bool:
+    """熔断是否已打开（打开=暂时不做判断）。"""
+    with _CIRCUIT_LOCK:
+        return bool(_CIRCUIT["open"])
+
+
+def _circuit_record(ok: bool) -> None:
+    """记录一次调用结果，维护熔断状态。"""
+    with _CIRCUIT_LOCK:
+        if ok:
+            _CIRCUIT["fails"] = 0
+            _CIRCUIT["open"] = False
+        else:
+            _CIRCUIT["fails"] += 1
+            if _CIRCUIT["fails"] >= JEV_CIRCUIT_FAILS:
+                _CIRCUIT["open"] = True
+
+
+def circuit_status():
+    """给 WebUI 展示的熔断状态（只读，不改状态）。"""
+    with _CIRCUIT_LOCK:
+        return {"fails": _CIRCUIT["fails"], "open": bool(_CIRCUIT["open"]),
+                "threshold": JEV_CIRCUIT_FAILS}
+
+
 # ---------------------------------------------------------------- HTTP
 
 def _jev_candidate_urls():
     """返回候选 Worker 域名列表（主 + 备），用于单域名抖动时 failover。
 
-    默认域名按配置顺序在前；两个对外域名（wetech.jukuai.net 主用、
+    端点是内置常量（零配置）；两个对外域名（wetech.jukuai.net 主用、
     weauto.safeopc.cn 备用）都会尝试，path 完全一致，签名可复用。
     """
     known = ["wetech.jukuai.net", "weauto.safeopc.cn"]
     try:
-        p = urllib.parse.urlparse(_cfg("JEV_BASE_URL", _DEFAULTS["JEV_BASE_URL"]))
+        p = urllib.parse.urlparse(JEV_ENDPOINT)
         path = p.path or "/ai/jev/decisions"
         scheme = p.scheme or "https"
         host = p.hostname or known[1]
@@ -432,17 +485,16 @@ def _jev_candidate_urls():
     return [f"{scheme}://{h}{path}" for h in hosts]
 
 
-def _post_decisions(questions, state, timeout=None, model=None):
+def _post_decisions(questions, state, timeout=None, model=None, circuit=True):
     """POST 到 Worker 的 /ai/jev/decisions。返回 ( answers_dict | None, 错误信息|None )。
 
     用守护线程 + join 兜底：即使 urllib 卡死也不会拖住消息回调线程。
     内部按 _jev_candidate_urls() 顺序 failover：主域名失败（网络/5xx）自动试备用域名。
+    circuit=False 时不参与熔断计数（WebUI 手动自检用 —— 用户点一次测试不该
+    把线上判断熔断掉，也不该被已熔断的状态挡住）。
     """
     if timeout is None:
-        try:
-            timeout = float(_cfg("JEV_TIMEOUT", 8.0))
-        except Exception:
-            timeout = 8.0
+        timeout = JEV_TIMEOUT_SEC
     payload = {
         "state": state,
         "questions": questions,
@@ -509,7 +561,11 @@ def _post_decisions(questions, state, timeout=None, model=None):
     t.start()
     t.join(timeout * len(urls) + 2)
     if t.is_alive():
+        if circuit:
+            _circuit_record(False)
         return None, f"超时（>{timeout * len(urls) + 2:.0f}s）未返回"
+    if circuit:
+        _circuit_record(box["res"] is not None)
     return box["res"], box["err"]
 
 
@@ -575,14 +631,9 @@ def judge(user_id, incoming_text, history=None):
     try:
         if not incoming_text or not str(incoming_text).strip():
             return None
-        turns = _cfg("JEV_CONTEXT_TURNS", 6)
-        try:
-            turns = int(turns)
-        except Exception:
-            turns = 6
-        hist = (history or [])[-(turns * 2):]
-        state = build_state(hist, incoming_text, _cfg("JEV_RELATIONSHIP", "微信联系人"))
-        answers, err = _post_decisions(JUDGE_QUESTIONS, state, model=(_cfg("JEV_MODEL", "") or None))
+        hist = (history or [])[-(JEV_CONTEXT_TURNS * 2):]
+        state = build_state(hist, incoming_text, JEV_RELATIONSHIP)
+        answers, err = _post_decisions(JUDGE_QUESTIONS, state, model=(JEV_MODEL_NAME or None))
         if err or not answers:
             return None
         verdict = _answers_of(answers)
@@ -595,7 +646,7 @@ def guidance_text(verdict):
     """把判断结论转成给主模型的中文指令段（注入 system）。无可用结论返回空串。"""
     if not verdict or not isinstance(verdict, dict):
         return ""
-    if not _cfg("JEV_INJECT_GUIDANCE", True):
+    if not JEV_INJECT_GUIDANCE:
         return ""
     lines = ["【对话判断（Jev 判断模型给出，按它调整你的语气与内容）】"]
     intent = verdict.get("true_intent")
@@ -626,15 +677,15 @@ def guidance_text(verdict):
 def should_hold(verdict):
     """是否应当收声不回（交给真人处理）。
 
-    默认关闭（JEV_HOLD_ON_DANGER=False）：开启后，危险度 >= JEV_DANGER_HOLD_LEVEL 时
+    出厂关闭（JEV_HOLD_ON_DANGER=False）：危险度 >= JEV_DANGER_HOLD_LEVEL 时
     bot 不自动回复，只在日志里留痕。任何异常一律返回 False（绝不误伤正常回复）。
     """
     try:
-        if not _cfg("JEV_HOLD_ON_DANGER", False):
+        if not JEV_HOLD_ON_DANGER:
             return False
         if not verdict or not isinstance(verdict, dict):
             return False
-        level = int(_cfg("JEV_DANGER_HOLD_LEVEL", 8))
+        level = JEV_DANGER_HOLD_LEVEL
         danger = verdict.get("danger_level")
         return danger is not None and int(danger) >= level
     except Exception:
@@ -646,9 +697,9 @@ def rank(user_id, incoming_text, candidates, history=None):
     if not enabled() or len(candidates) != 3:
         return None
     try:
-        state = build_state(history or [], incoming_text, _cfg("JEV_RELATIONSHIP", "微信联系人"))
+        state = build_state(history or [], incoming_text, JEV_RELATIONSHIP)
         answers, err = _post_decisions(
-            build_rank_question(candidates), state, model=(_cfg("JEV_MODEL", "") or None)
+            build_rank_question(candidates), state, model=(JEV_MODEL_NAME or None)
         )
         if err or not answers:
             return None
@@ -665,14 +716,13 @@ def rank(user_id, incoming_text, candidates, history=None):
 
 def self_test(timeout=None):
     """连通性自检（WebUI「测试 Jev」按钮用）。返回 (ok: bool, message: str)。"""
-    if not _cfg("ENABLE_JEV_GUARD", False):
-        return False, "未开启（config.py 的 ENABLE_JEV_GUARD = False）"
     t0 = time.time()
     answers, err = _post_decisions(
         JUDGE_QUESTIONS,
-        build_state([], "在吗", _cfg("JEV_RELATIONSHIP", "微信联系人")),
+        build_state([], "在吗", JEV_RELATIONSHIP),
         timeout=timeout,
-        model=(_cfg("JEV_MODEL", "") or None),
+        model=(JEV_MODEL_NAME or None),
+        circuit=False,   # 手动自检不参与熔断
     )
     ms = int((time.time() - t0) * 1000)
     if err:

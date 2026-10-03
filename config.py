@@ -148,9 +148,9 @@ REQUESTS_TIMEOUT = 10
 # 一次慢请求会长期占用消息泵，导致 bot “活着但收不到消息”。
 CHAT_API_TIMEOUT = 60
 # 抓取网页时使用的 User-Agent，模拟浏览器防止被屏蔽
-# REQUESTS_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-# REQUESTS_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1'
-REQUESTS_USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Mobile Safari/537.36'
+# 桌面 Chrome UA：与产品形态一致（本软件是 Windows 桌面端），
+# 联网搜索抓的是网页而非移动端接口，用桌面 UA 更自然、也少一些站点的移动版降级。
+REQUESTS_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 # 从网页提取内容的最大字符数，防止上下文过长，影响AI处理效率和成本
 MAX_WEB_CONTENT_LENGTH = 2000
 
@@ -204,23 +204,15 @@ CREEM_WORKER_URL = "https://wetech.jukuai.net"   # 已部署的 Worker（2026-09
 CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填这里
 
 
-# ===== Jev 判断式 AI（回复前的"对话体检"，跑在 Cloudflare Worker + Workers AI 上）=====
-# 技术来源：jev-chat-jarvis（MIT）。Jev 不生成回复文字，只做结构化判断
-#   （对方真实意图 / 关系危险度 0-9 / 对方现在需要什么 / 下一步最佳动作 / 是否该给实质内容），
-#   结论注入 system 提示，让主模型照着判。原版走 OpenRouter（需境外账号+美元结算），
-#   本项目改走自建 Worker /ai/jev/decisions —— Worker 内用 Cloudflare Workers AI 的
-#   JSON Mode 跑同一套题目，返回结构兼容，不出 CF、无需 OpenRouter。
-# Jev 判断是 Workers AI 推理能力，公开可用，不需要卡密（卡密仅服务 Creem 支付授权）。
-ENABLE_JEV_GUARD = False        # 默认关闭；打开后每条待回复消息先跑一次判断（约 1s）
-JEV_BASE_URL = "https://weauto.safeopc.cn/ai/jev/decisions"   # Worker 端点，一般不用改
-JEV_MODEL = ""                  # 留空 = 用 Worker 端默认模型（实测 8B 判不准，已默认 70B）
-JEV_TIMEOUT = 8.0               # 单次判断超时（秒）；超时/失败一律降级为照常回复
-JEV_RELATIONSHIP = "微信联系人"  # 填进判断的"我和对方是什么关系"，写得越准判断越准
-JEV_CONTEXT_TURNS = 6           # 带进判断的最近对话轮数（一问一答算 2 条）
-JEV_INJECT_GUIDANCE = True      # 把判断结论注入 system 提示，指导主模型的语气和内容
-JEV_HOLD_ON_DANGER = False      # 危险度过高时 bot 收声不回（交给真人处理）
-JEV_DANGER_HOLD_LEVEL = 8       # 收声阈值 0..9（8 = 最后通牒级别）
-
+# ===== Jev 判断式 AI ======================================================
+# 内置能力，出厂自动运行，**不需要任何配置项**。
+# 回复前先做一次结构化判断（对方真实意图 / 关系危险度 0-9 / 对方现在需要什么 /
+# 下一步最佳动作 / 是否该给实质内容），结论注入 system 提示让主模型照着判。
+# 技术来源：jev-chat-jarvis（MIT）。判断跑在自建 Cloudflare Worker 上，
+# Worker 内用 Workers AI 的 JSON Mode，不出 CF、无需 OpenRouter、无需卡密。
+# 要调参数（超时/阈值/端点/是否收声）改 jev_guard.py 顶部的 JEV_* 常量。
+# 状态与自检见 WebUI 的 /jev 页面（只读 + 一个测试按钮）。
+#
 # 客户端 <-> CF 后台通信密钥（防白嫖 Workers AI 额度）。
 # 与 Creem 卡密无关！这是「自己的 EXE <-> 自己的 Worker」之间的 HMAC 签名密钥。
 # 留空 = Jev 端点公开（开发/向后兼容）。要真防白嫖：

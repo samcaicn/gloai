@@ -43,6 +43,22 @@ desktop.ini
 _preview.py
 _preview/
 _cleanup_junk.py
+_preview_server.py
+
+# ---- PyInstaller 本地产物（可由 WeAuto.spec / build.yml 重建，不入库）----
+build/
+dist/
+*.manifest
+build_local.log
+ce_src.log
+_gui_*.log
+_webui_preview.log
+_preview_server.log
+
+# ---- 一次性调试脚本残留（不参与产品，也不再是回归测试）----
+weauto_license/pay_debug_*.py
+weauto_license/pay_test_qr*.png
+weauto_license/_priority_probe.mjs
 
 # ---- Project-local venv (NOT covered by generic venv/ or .venv/ patterns) ----
 .venv_bot/

@@ -59,6 +59,10 @@ class WechatautoLogger:
         fmt = '%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]  %(message)s'
 
         # 控制台处理器（带颜色）
+        # GUI-only：EXE 是 noconsole 构建、bot 由 WebUI 以 CREATE_NO_WINDOW 拉起，
+        # 两种情况下 sys.stderr 都是 None。实测 CPython 的 StreamHandler 在流为
+        # None 时会走 Handler.handleError 静默吞掉（不会把 bot 掀翻），且
+        # weauto_stdio 已在 bot 导入前把三流兜成 devnull，所以这里保持原样即可。
         self.console_handler = logging.StreamHandler()
         console_formatter = ColoredFormatter(
             fmt=fmt,

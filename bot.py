@@ -81,6 +81,17 @@ from threading import Timer
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import os
+
+# GUI-only：EXE 是 noconsole 构建、bot 由 WebUI 以 CREATE_NO_WINDOW 拉起，
+# 两种情况下 sys.stdout/stderr 都是 None，本文件里的 print 会抛 AttributeError，
+# 微信引擎的 StreamHandler 也会在首次 emit 时炸（详见 weauto_stdio docstring）。
+# 必须放在任何可能建 handler / print 的 import **之前**。
+try:
+    import weauto_stdio as _weauto_stdio
+    _weauto_stdio.ensure_stdio()
+except Exception:
+    pass
+
 from wechat_compat import WeChat  # 微信 4.x 引擎兼容层（替代旧版 UIA 自动化方案）
 
 # 固定转发引擎（零 bot 依赖；导入失败仅禁用本功能，不影响主体）
@@ -90,7 +101,7 @@ except Exception:  # noqa: BLE001
     forward_hub = None
 
 # Jev 判断式 AI 闸门（回复前的「对话体检」，跑在 CF Worker + Workers AI 上）。
-# 导入失败仅禁用本功能，不影响收发主体；默认开关也是关闭的（config.ENABLE_JEV_GUARD）。
+# 导入失败仅禁用本功能，不影响收发主体。
 try:
     import jev_guard
 except Exception:  # noqa: BLE001
@@ -677,7 +688,10 @@ logger.handlers.clear()
 # 添加异步HTTP日志处理器
 logger.addHandler(async_http_handler)
 
-# 同时可以保留控制台日志处理器
+# 控制台日志处理器。GUI-only 形态下（noconsole EXE / CREATE_NO_WINDOW 拉起）
+# sys.stderr 是 None；实测 CPython 的 StreamHandler 在流为 None 时会走
+# handleError 静默吞掉，不会掀翻 bot，且 weauto_stdio 已在文件顶部把三流兜成
+# devnull，所以保持标准写法即可。
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
@@ -2815,10 +2829,11 @@ def process_user_messages(user_id):
         if not is_auto_message:
             _send_thinking_placeholder(user_id)
 
-        # --- Jev 判断式闸门（可选，默认关闭）---
+        # --- Jev 判断式闸门（内置能力，出厂自动运行、零配置）---
         # 生成回复前先体检这段对话：对方真实意图 / 危险度 / 需要什么 / 最佳动作。
-        # 结论注入提示词约束语气；危险度过高时可收声（JEV_HOLD_ON_DANGER）交给真人。
+        # 结论注入提示词约束语气；危险度过高时可收声（jev_guard.JEV_HOLD_ON_DANGER）交给真人。
         # 红线：这里任何异常、超时、失败都必须降级为「照常回复」，绝不让 bot 变哑巴。
+        # enabled() 恒为 True（唯一例外是端点连续失败触发熔断，此时直接跳过判断）。
         jev_verdict = None
         jev_hold = False
         try:

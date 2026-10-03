@@ -69,7 +69,11 @@ jobs:
             # 使用极短的工作/输出路径（C:/_wb、C:/_wd）规避 windows-2022 runner
             # 未开启长路径支持时 PyInstaller --collect-all 产生的深路径超过 MAX_PATH(260)
             # 导致 FileNotFoundError / WinError 206 的构建失败（本地 Win11 默认支持长路径故不报错）。
-            ARGS=(--name WeAuto --onefile --noupx --paths vendor
+            # --noconsole：GUI-only 硬要求，双击启动不弹 cmd 黑框。
+            # 需要真实 stdio 的子形态（--cli/--mcp/--bot）在 __main__ 里用
+            # AttachConsole(ATTACH_PARENT_PROCESS) 重新附着调用方控制台（weauto_stdio.py），
+            # 从命令行启动时输出照常回到调用方窗口。
+            ARGS=(--name WeAuto --onefile --noupx --noconsole --paths vendor
                   --workpath C:/_wb --distpath C:/_wd
                   --hidden-import bot --hidden-import wechat_compat --hidden-import wechatauto
                   # 固定转发引擎（bot.py / config_editor.py 静态 + 运行期 import），
@@ -78,6 +82,9 @@ jobs:
                   # Jev 判断式 AI 闸门（回复前的对话体检，跑在自有 CF Worker + Workers AI 上）：
                   # bot.py 顶层 try-import、config_editor.py 运行期 import，显式兜底防漏打包。
                   --hidden-import jev_guard
+                  # GUI-only 的 stdio 兜底（noconsole 下 sys.stdout 是 None 的统一处理）：
+                  # bot.py 顶层与 config_editor __main__ 都以运行期 import 方式引入。
+                  --hidden-import weauto_stdio
                   # 单 EXE 全功能：WebUI / bot / CLI / MCP 四种形态共用同一个 exe，
                   # 靠命令行参数（默认 / --bot / --cli / --mcp）在 __main__ 派发。
                   # 这几个入口是运行时动态 import，必须显式 hidden-import 才会被打进包。
@@ -138,6 +145,36 @@ jobs:
           ls -lh C:/_wd/WeAuto.exe
           if [ ! -s C:/_wd/WeAuto.exe ]; then echo "WeAuto.exe missing"; exit 1; fi
           echo "WeAuto.exe built (single all-in-one): $(stat -c%s C:/_wd/WeAuto.exe) bytes"
+
+      - name: Verify EXE is a GUI (no console) build
+        shell: bash
+        run: |
+          # GUI-only 防回归：noconsole 构建的 EXE，其 PE OptionalHeader.Subsystem
+          # 必须是 2 (IMAGE_SUBSYSTEM_WINDOWS_GUI)；console 形态是 3
+          # (IMAGE_SUBSYSTEM_WINDOWS_CUI)，那会双击就弹 cmd 黑框。
+          # 用 PE 头直接读，不启动程序（headless runner 上没有桌面会话）。
+          #
+          # 偏移：e_lfanew -> PE签名(4) + COFF头(20) = OptionalHeader 起点；
+          #       Subsystem 位于 OptionalHeader + 68（PE32 与 PE32+ 同）。
+          # 对照值实测：notepad.exe=2(GUI)，cmd.exe=3(CUI)。
+          python - <<'PY'
+          import struct, sys
+          p = r'C:/_wd/WeAuto.exe'
+          with open(p, 'rb') as f:
+              dos = f.read(64)
+              if dos[:2] != b'MZ':
+                  sys.exit('FAIL: not a PE file')
+              e_lfanew = struct.unpack_from('<I', dos, 0x3C)[0]
+              f.seek(e_lfanew)
+              if f.read(4) != b'PE\0\0':
+                  sys.exit('FAIL: bad PE signature')
+              f.seek(e_lfanew + 4 + 20 + 68)
+              subsystem = struct.unpack('<H', f.read(2))[0]
+          print('PE subsystem =', subsystem, '(2=GUI, 3=CUI)')
+          if subsystem != 2:
+              sys.exit('FAIL: EXE is a console build (subsystem=3) -> would show a cmd black box')
+          print('OK: GUI build, no console window on launch')
+          PY
 
       - name: Upload Artifact (90d)
         uses: actions/upload-artifact@v4

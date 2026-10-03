@@ -4609,7 +4609,7 @@ def get_default_config():
         "ONLINE_FIXED_PROMPT": '',
         "ENABLE_URL_FETCHING": True,
         "REQUESTS_TIMEOUT": 10,
-        "REQUESTS_USER_AGENT": 'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Mobile Safari/537.36',
+        "REQUESTS_USER_AGENT": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         "MAX_WEB_CONTENT_LENGTH": 2000,
         "ENABLE_SCHEDULED_RESTART": True,
         "RESTART_INTERVAL_HOURS": 2.0,
@@ -5252,7 +5252,11 @@ def api_forward_log():
 
 # ==================== Jev 判断式 AI（回复前的「对话体检」） ====================
 # 技术来源：jev-chat-jarvis（MIT）。判断跑在自建 Cloudflare Worker + Workers AI 上，
-# 不走 OpenRouter；判断是 Workers AI 推理能力，公开可用，不需要卡密。任何失败都降级为「照常回复」。
+# 不走 OpenRouter；判断是 Workers AI 推理能力，不需要卡密。任何失败都降级为「照常回复」。
+#
+# 零配置：Jev 是出厂即自动运行的内置能力，**没有用户可见的配置项**。
+# 所有参数都是 jev_guard.py 顶部的 JEV_* 常量，因此这里只提供只读状态与自检，
+# 不再提供 /api/jev/save 保存接口（避免用户把功能改坏）。
 
 def _jev():
     try:
@@ -5267,70 +5271,21 @@ def _jev():
 def jev_page():
     m = _jev()
     cfg = parse_config()
+    # 出厂常量（只读展示，让用户知道它在跑、跑的是什么）
+    consts = {}
+    if m is not None:
+        for name in ('JEV_ENDPOINT', 'JEV_MODEL_NAME', 'JEV_TIMEOUT_SEC', 'JEV_RELATIONSHIP',
+                     'JEV_CONTEXT_TURNS', 'JEV_INJECT_GUIDANCE', 'JEV_HOLD_ON_DANGER',
+                     'JEV_DANGER_HOLD_LEVEL', 'JEV_CIRCUIT_FAILS'):
+            consts[name] = getattr(m, name, None)
     return render_template('jev.html', data={
         "available": m is not None,
-        "needs_key": False,
-        "cfg": {
-            "ENABLE_JEV_GUARD": bool(cfg.get("ENABLE_JEV_GUARD", False)),
-            "JEV_BASE_URL": cfg.get("JEV_BASE_URL", "https://weauto.safeopc.cn/ai/jev/decisions"),
-            "JEV_MODEL": cfg.get("JEV_MODEL", ""),
-            "JEV_TIMEOUT": cfg.get("JEV_TIMEOUT", 8.0),
-            "JEV_RELATIONSHIP": cfg.get("JEV_RELATIONSHIP", "微信联系人"),
-            "JEV_CONTEXT_TURNS": cfg.get("JEV_CONTEXT_TURNS", 6),
-            "JEV_INJECT_GUIDANCE": bool(cfg.get("JEV_INJECT_GUIDANCE", True)),
-            "JEV_HOLD_ON_DANGER": bool(cfg.get("JEV_HOLD_ON_DANGER", False)),
-            "JEV_DANGER_HOLD_LEVEL": cfg.get("JEV_DANGER_HOLD_LEVEL", 8),
-            "WEAUATO_CLIENT_SECRET": cfg.get("WEAUATO_CLIENT_SECRET", ""),
-        },
+        "consts": consts,
+        "circuit": (m.circuit_status() if m is not None else None),
+        "active": (m.enabled() if m is not None else False),
+        # 签名密钥只回显是否配置，不回显明文
         "auth_enabled": bool(cfg.get("WEAUATO_CLIENT_SECRET", "")),
     })
-
-
-@app.route('/api/jev/save', methods=['POST'])
-@login_required
-def api_jev_save():
-    payload = request.get_json(force=True, silent=True) or {}
-    new = {}
-    errors = []
-    for k in ("ENABLE_JEV_GUARD", "JEV_INJECT_GUIDANCE", "JEV_HOLD_ON_DANGER"):
-        if k in payload:
-            new[k] = bool(payload[k])
-    for k in ("JEV_BASE_URL", "JEV_MODEL", "JEV_RELATIONSHIP", "WEAUATO_CLIENT_SECRET"):
-        if k in payload:
-            new[k] = str(payload[k]).strip()
-    for k in ("JEV_TIMEOUT",):
-        if k in payload:
-            try:
-                new[k] = float(payload[k])
-            except (TypeError, ValueError):
-                errors.append(f"{k} 不是合法数字")
-    for k in ("JEV_CONTEXT_TURNS", "JEV_DANGER_HOLD_LEVEL"):
-        if k in payload:
-            try:
-                new[k] = int(payload[k])
-            except (TypeError, ValueError):
-                errors.append(f"{k} 不是合法整数")
-    if "JEV_TIMEOUT" in new and not (1.0 <= new["JEV_TIMEOUT"] <= 30.0):
-        errors.append("超时需在 1~30 秒之间")
-    if "JEV_CONTEXT_TURNS" in new and not (0 <= new["JEV_CONTEXT_TURNS"] <= 20):
-        errors.append("上下文轮数需在 0~20 之间")
-    if "JEV_DANGER_HOLD_LEVEL" in new and not (0 <= new["JEV_DANGER_HOLD_LEVEL"] <= 9):
-        errors.append("收声阈值需在 0~9 之间")
-    if errors:
-        return jsonify(ok=False, errors=errors), 400
-    if not new:
-        return jsonify(ok=True, msg="没有需要保存的改动")
-    try:
-        update_config(new)
-    except Exception as e:  # noqa: BLE001
-        return jsonify(ok=False, msg=f"写入 config.py 失败：{e}"), 500
-    m = _jev()
-    if m is not None:
-        try:
-            m.reload_config()   # 让正在运行的 bot 尽快读到新配置
-        except Exception:  # noqa: BLE001
-            pass
-    return jsonify(ok=True, msg="已保存，约 30 秒内（或下次判断时）生效")
 
 
 @app.route('/api/jev/test', methods=['POST'])
@@ -5342,9 +5297,6 @@ def api_jev_test():
         return jsonify(ok=False, msg="jev_guard 模块不可用"), 500
     payload = request.get_json(force=True, silent=True) or {}
     text = str(payload.get("text", "") or "在吗").strip()[:500] or "在吗"
-    cfg = parse_config()
-    if not bool(cfg.get("ENABLE_JEV_GUARD", False)):
-        return jsonify(ok=False, msg="未开启：请先把「启用 Jev 判断」打开并保存")
     try:
         t0 = time.time()
         verdict = m.judge("__jev_self_test__", text, [])
@@ -5358,6 +5310,16 @@ def api_jev_test():
     except Exception:  # noqa: BLE001
         guidance = ""
     return jsonify(ok=True, msg=f"OK（{ms}ms）", verdict=verdict, guidance=guidance)
+
+
+@app.route('/api/jev/status', methods=['GET'])
+@login_required
+def api_jev_status():
+    """只读状态（前端轮询用）：是否在跑 + 熔断情况。"""
+    m = _jev()
+    if m is None:
+        return jsonify(ok=False, available=False), 500
+    return jsonify(ok=True, available=True, active=bool(m.enabled()), circuit=m.circuit_status())
 
 
 def _webview2_runtime_available():
@@ -5448,6 +5410,14 @@ def _run_desktop_window(web_url, attach_mode, start_waitress):
     os._exit(0)
 
 if __name__ == '__main__':
+    # ---- GUI-only：确保 stdio 可用（必须在任何 print / StreamHandler 之前）----
+    # EXE 以 noconsole(console=False) 构建：双击启动不弹 cmd 黑框（产品硬要求）。
+    # 但 noconsole 下 sys.stdout/stderr 启动时就是 None，print 和 logging.StreamHandler
+    # 都会抛 AttributeError；而 --cli/--mcp 又必须有真实 stdio。
+    # 统一交给 weauto_stdio.ensure_stdio() 处理，细节见该模块 docstring。
+    import weauto_stdio
+    weauto_stdio.ensure_stdio(sys.argv)
+
     # 冻结模式自重启：以 --bot 参数运行时直接进入机器人主循环
     if '--bot' in sys.argv:
         import bot
@@ -5472,17 +5442,9 @@ if __name__ == '__main__':
         _cli_main()
         raise SystemExit(0)
 
-    # 桌面窗口模式下隐藏启动用的控制台窗口，避免「黑框 + webview」双窗口。
-    # 仅冻结后的 Windows GUI 形态隐藏；--bot/--cli/--mcp 等需要控制台的形态不隐藏，
-    # 否则会破坏 MCP 的 stdio 传输与 CLI 输出（合并为单窗口仍以保留功能为前提）。
-    if getattr(sys, 'frozen', False) and os.name == 'nt':
-        try:
-            import ctypes
-            _hwnd = ctypes.windll.kernel32.GetConsoleWindow()
-            if _hwnd:
-                ctypes.windll.user32.ShowWindow(_hwnd, 0)  # SW_HIDE = 0
-        except Exception:
-            pass
+    # 注：EXE 以 noconsole 构建（见 WeAuto.spec console=False），GUI 形态启动时
+    # 根本不存在控制台窗口，无需再 GetConsoleWindow/ShowWindow 去隐藏 —— 那是
+    # console=True 时代的补救代码，保留反而会让人误以为还有黑框要处理。
 
     # 配置应用日志级别：GUI-only 产品，日志只落文件，控制台保持静默
     app.logger.setLevel(logging.INFO)

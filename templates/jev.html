@@ -3,25 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jev 判断式 AI · 回复前的对话体检</title>
+    <title>对话判断 · 运行状态</title>
     <style>
         body{ margin:0; }
         .wrap{ max-width:1000px; margin:0 auto; padding:22px 20px 60px; }
         .panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--sh-2); padding:20px 22px; margin-bottom:18px; }
         .panel h2{ margin:0 0 14px; font-size:16.5px; font-weight:650; padding-bottom:10px; border-bottom:1px solid var(--border); }
         .hint{ color:var(--text-3); font-size:13px; line-height:1.75; margin:8px 0 0; }
-        .switch-line{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; }
-        .switch-line .txt strong{ display:block; font-size:14.5px; color:var(--text); }
-        .switch-line .txt span{ font-size:12.5px; color:var(--text-3); }
         .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
         .badge.on{ background:var(--ok-soft); color:var(--ok-text); }
         .badge.off{ background:var(--surface-3); color:var(--text-3); }
         .badge.bad{ background:var(--danger-soft); color:var(--danger-text); }
-        input[type=text], input[type=number], textarea{ background:var(--input-bg); color:var(--text); border:1px solid var(--border); border-radius:var(--r-sm); padding:8px 10px; font-size:13.5px; box-sizing:border-box; width:100%; }
+        .badge.info{ background:var(--info-soft); color:var(--info-text); }
+        input[type=text]{ background:var(--input-bg); color:var(--text); border:1px solid var(--border); border-radius:var(--r-sm); padding:8px 10px; font-size:13.5px; box-sizing:border-box; width:100%; }
         label.fld{ display:block; font-size:12.5px; color:var(--text-3); margin:12px 0 4px; }
-        .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-        .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
-        .chk{ display:flex; align-items:center; gap:7px; font-size:13.5px; color:var(--text-2); margin-top:10px; }
         .btn{ background:var(--brand); color:#fff; border:0; border-radius:var(--r-sm); padding:9px 18px; font-size:13.5px; font-weight:600; cursor:pointer; }
         .btn.ghost{ background:var(--surface-3); color:var(--text-2); }
         .btn:disabled{ opacity:.55; cursor:not-allowed; }
@@ -32,6 +27,8 @@
         table{ width:100%; border-collapse:collapse; font-size:13px; }
         th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); }
         th{ color:var(--text-3); font-weight:600; font-size:12.5px; }
+        td.k{ color:var(--text-3); white-space:nowrap; width:210px; }
+        td.v{ color:var(--text); font-family:ui-monospace,Consolas,monospace; font-size:12.5px; word-break:break-all; }
         .muted{ color:var(--text-3); }
         .row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
     </style>
@@ -40,77 +37,55 @@
 <div class="wrap">
 
     <div class="panel">
-        <h2>Jev 判断式 AI · 回复前的「对话体检」</h2>
+        <h2>对话判断 · 回复前的「对话体检」</h2>
         <div id="msg" class="msg" style="display:none"></div>
 
         <div class="switch-line">
             <div class="txt">
-                <strong>启用 Jev 判断</strong>
+                <strong>已内置 · 无需配置</strong>
                 <span>每条待回复消息先判断：对方真实意图 / 关系危险度 / 需要什么 / 最佳动作，再据此约束主模型的语气与内容</span>
             </div>
             <div class="row">
-                <span id="keyBadge" class="badge {{ 'on' if data.auth_enabled else 'bad' }}">
-                    {{ '已启用客户端鉴权（防白嫖）' if data.auth_enabled else '公开模式：任何人可调用，Workers AI 额度可能被盗用' }}
+                {% if not data.available %}
+                    <span class="badge bad">模块不可用</span>
+                {% elif data.circuit and data.circuit.open %}
+                    <span class="badge bad">已熔断 · 暂不判断（照常回复）</span>
+                {% else %}
+                    <span class="badge on">运行中</span>
+                {% endif %}
+                <span id="keyBadge" class="badge {{ 'info' if data.auth_enabled else 'bad' }}">
+                    {{ '已启用客户端鉴权（防白嫖）' if data.auth_enabled else '公开模式：Workers AI 额度可能被他人盗用' }}
                 </span>
-                <label class="chk"><input type="checkbox" id="f_enable"> 开启</label>
             </div>
         </div>
+
         <p class="hint">
-            技术来源 <b>jev-chat-jarvis</b>（MIT）。判断跑在自建 Cloudflare Worker 上，Worker 内部用
-            <b>Workers AI</b> 的 JSON Mode 跑同一套题目 —— 不走 OpenRouter、不需要境外账号与美元结算，
-            判断是 Workers AI 推理能力，<b>与 Creem 卡密无关</b>；EXE 与 CF 后台之间另有
-            <b>共享密钥 HMAC 签名</b>防白嫖（见下方「客户端通信密钥」）。<br>
-            <b>安全设计</b>：判断失败 / 超时 / 未开启，一律降级为「照常回复」，绝不会让机器人变哑巴。
+            这个功能<b>出厂自动运行</b>，不需要填任何东西：没有开关、没有接口地址、没有密钥。
+            它跑在软件自带的 Cloudflare Worker 上，Worker 内部用 <b>Workers AI</b> 做结构化判断 ——
+            不走 OpenRouter、不需要境外账号与美元结算，<b>与卡密无关</b>。<br>
+            <b>安全设计</b>：判断失败 / 超时，一律降级为「照常回复」，绝不会让机器人变哑巴。
+            若后台连续不可达，短时间内会自动暂停判断（不拖慢回复），恢复后自动继续。
         </p>
     </div>
 
     <div class="panel">
-        <h2>参数</h2>
-        <label class="fld">关系描述（判断准确度很大程度取决于它，写得越具体越好）</label>
-        <input type="text" id="f_rel" placeholder="微信联系人">
-
-        <div class="grid3">
-            <div>
-                <label class="fld">超时（秒）</label>
-                <input type="number" id="f_timeout" step="0.5" min="1" max="30">
-            </div>
-            <div>
-                <label class="fld">带进判断的对话轮数</label>
-                <input type="number" id="f_turns" step="1" min="0" max="20">
-            </div>
-            <div>
-                <label class="fld">收声阈值（危险度 0-9）</label>
-                <input type="number" id="f_hold" step="1" min="0" max="9">
-            </div>
-        </div>
-
-        <label class="chk"><input type="checkbox" id="f_inject"> 把判断结论注入提示词，指导主模型语气与内容</label>
-        <label class="chk"><input type="checkbox" id="f_holdon"> 危险度达到阈值时机器人收声不回（交给真人处理）</label>
-
-        <div class="grid2" style="margin-top:14px">
-            <div>
-                <label class="fld">Worker 端点</label>
-                <input type="text" id="f_url">
-            </div>
-            <div>
-                <label class="fld">判断模型（留空 = 用 Worker 默认）</label>
-                <input type="text" id="f_model" placeholder="@cf/meta/llama-3.1-8b-instruct">
-            </div>
-        </div>
-
-        <div class="grid2" style="margin-top:14px">
-            <div>
-                <label class="fld">客户端通信密钥（防白嫖 · 与卡密无关）</label>
-                <input type="password" id="f_secret" placeholder="留空 = 公开模式" autocomplete="off">
-            </div>
-            <div style="align-self:end">
-                <span class="muted" style="font-size:12.5px">EXE↔CF 后台 HMAC 签名密钥。要真防白嫖：本框填长随机串，并在 Cloudflare 用 <code>wrangler secret put WEAUATO_CLIENT_SECRET</code> 注入<strong>同一串</strong>。</span>
-            </div>
-        </div>
-
-        <div class="row" style="margin-top:18px">
-            <button class="btn" id="btnSave">保存</button>
-            <span class="muted" style="font-size:12.5px">保存会写入 config.py</span>
+        <h2>运行状态</h2>
+        <table>
+            <tbody>
+                <tr><td class="k">判断服务</td><td class="v">WeAuto 自建 Worker（主 wetech.jukuai.net，备 weauto.safeopc.cn，自动切换）</td></tr>
+                <tr><td class="k">判断模型</td><td class="v">{{ data.consts.get('JEV_MODEL_NAME') or '后台默认（llama-3.3-70b）' }}</td></tr>
+                <tr><td class="k">单次超时</td><td class="v">{{ data.consts.get('JEV_TIMEOUT_SEC') }} 秒（超时即照常回复）</td></tr>
+                <tr><td class="k">带进判断的对话</td><td class="v">最近 {{ data.consts.get('JEV_CONTEXT_TURNS') }} 轮</td></tr>
+                <tr><td class="k">关系设定</td><td class="v">{{ data.consts.get('JEV_RELATIONSHIP') }}</td></tr>
+                <tr><td class="k">结论注入提示词</td><td class="v">{{ '开启' if data.consts.get('JEV_INJECT_GUIDANCE') else '关闭' }}</td></tr>
+                <tr><td class="k">高危自动收声</td><td class="v">{{ ('开启（危险度 ≥ %s 时不自动回复）' % data.consts.get('JEV_DANGER_HOLD_LEVEL')) if data.consts.get('JEV_HOLD_ON_DANGER') else '关闭（始终自动回复）' }}</td></tr>
+                <tr><td class="k">连续失败熔断</td><td class="v">连续失败 {{ data.consts.get('JEV_CIRCUIT_FAILS') }} 次后暂停判断
+                    {%- if data.circuit %} · 当前失败计数 {{ data.circuit.fails }}{% endif %}</td></tr>
+            </tbody>
+        </table>
+        <div class="row" style="margin-top:14px">
+            <button class="btn ghost" id="btnRefresh">刷新状态</button>
+            <span class="muted" style="font-size:12.5px">这些参数由程序内置，如需调整请联系软件提供方</span>
         </div>
     </div>
 
@@ -119,14 +94,14 @@
         <label class="fld">用一句话试跑（会真的发一次判断请求）</label>
         <input type="text" id="t_text" value="你又忘了吧，算了">
         <div class="row" style="margin-top:12px">
-            <button class="btn ghost" id="btnTest">跑一次判断</button>
-            <span class="muted" style="font-size:12.5px">需要先开启并保存</span>
+            <button class="btn" id="btnTest">跑一次判断</button>
+            <span class="muted" style="font-size:12.5px">不影响正在运行的机器人</span>
         </div>
         <pre id="t_out" style="display:none"></pre>
     </div>
 
     <div class="panel">
-        <h2>判断项说明</h2>
+        <h2>它在判断什么</h2>
         <table>
             <thead><tr><th style="width:150px">判断项</th><th>含义</th></tr></thead>
             <tbody>
@@ -144,21 +119,8 @@
 </div>
 
 <script>
-const cfg = {{ data.cfg | tojson }};
+const BOOT = {{ {'available': data.available, 'active': data.active, 'circuit': data.circuit} | tojson }};
 const $ = (id) => document.getElementById(id);
-
-function fill() {
-    $('f_enable').checked = !!cfg.ENABLE_JEV_GUARD;
-    $('f_inject').checked = !!cfg.JEV_INJECT_GUIDANCE;
-    $('f_holdon').checked = !!cfg.JEV_HOLD_ON_DANGER;
-    $('f_rel').value = cfg.JEV_RELATIONSHIP || '';
-    $('f_timeout').value = cfg.JEV_TIMEOUT;
-    $('f_turns').value = cfg.JEV_CONTEXT_TURNS;
-    $('f_hold').value = cfg.JEV_DANGER_HOLD_LEVEL;
-    $('f_url').value = cfg.JEV_BASE_URL || '';
-    $('f_model').value = cfg.JEV_MODEL || '';
-    $('f_secret').value = cfg.WEAUATO_CLIENT_SECRET || '';
-}
 
 function showMsg(text, kind) {
     const el = $('msg');
@@ -176,44 +138,25 @@ async function post(url, body) {
     return await r.json();
 }
 
-$('btnSave').onclick = async () => {
-    $('btnSave').disabled = true;
+function paintStatus(st) {
+    // 运行状态徽标：熔断时红色（不影响回复，仅暂停判断），否则绿色
+    const badges = document.querySelectorAll('.switch-line .badge');
+    if (!badges.length) return;
+    const run = badges[0];
+    if (!st.available) { run.className = 'badge bad'; run.textContent = '模块不可用'; }
+    else if (st.circuit && st.circuit.open) { run.className = 'badge bad'; run.textContent = '已熔断 · 暂不判断（照常回复）'; }
+    else { run.className = 'badge on'; run.textContent = '运行中'; }
+}
+
+async function refreshStatus() {
     try {
-        const res = await post('/api/jev/save', {
-            ENABLE_JEV_GUARD: $('f_enable').checked,
-            JEV_INJECT_GUIDANCE: $('f_inject').checked,
-            JEV_HOLD_ON_DANGER: $('f_holdon').checked,
-            JEV_RELATIONSHIP: $('f_rel').value,
-            JEV_TIMEOUT: $('f_timeout').value,
-            JEV_CONTEXT_TURNS: $('f_turns').value,
-            JEV_DANGER_HOLD_LEVEL: $('f_hold').value,
-            JEV_BASE_URL: $('f_url').value,
-            JEV_MODEL: $('f_model').value,
-            WEAUATO_CLIENT_SECRET: $('f_secret').value,
-        });
-        if (res.ok) {
-            showMsg(res.msg, 'ok');
-            Object.assign(cfg, {
-                ENABLE_JEV_GUARD: $('f_enable').checked,
-                JEV_INJECT_GUIDANCE: $('f_inject').checked,
-                JEV_HOLD_ON_DANGER: $('f_holdon').checked,
-                JEV_RELATIONSHIP: $('f_rel').value,
-                JEV_TIMEOUT: $('f_timeout').value,
-                JEV_CONTEXT_TURNS: $('f_turns').value,
-                JEV_DANGER_HOLD_LEVEL: $('f_hold').value,
-                JEV_BASE_URL: $('f_url').value,
-                JEV_MODEL: $('f_model').value,
-                WEAUATO_CLIENT_SECRET: $('f_secret').value,
-            });
-        } else {
-            showMsg((res.errors || [res.msg || '保存失败']).join('；'), 'err');
-        }
-    } catch (e) {
-        showMsg('保存请求失败：' + e, 'err');
-    } finally {
-        $('btnSave').disabled = false;
-    }
-};
+        const r = await fetch('/api/jev/status');
+        const st = await r.json();
+        if (st && st.ok) paintStatus(st);
+    } catch (e) { /* 状态刷新失败不影响使用，静默 */ }
+}
+
+$('btnRefresh').onclick = refreshStatus;
 
 $('btnTest').onclick = async () => {
     $('btnTest').disabled = true;
@@ -237,7 +180,7 @@ $('btnTest').onclick = async () => {
     }
 };
 
-fill();
+paintStatus(BOOT);
 </script>
 </body>
 </html>
