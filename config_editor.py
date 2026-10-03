@@ -5368,9 +5368,31 @@ def _run_desktop_window(web_url, attach_mode, start_waitress):
         return
 
     try:
-        # target=_blank / window.open 的外链（如购买页）统一用系统浏览器打开
+        # target=_blank / window.open 的外链（如帮助文档）统一用系统浏览器打开；
+        # 付款页不走 window.open，改由下方 js_api 在软件内开新窗口（不弹系统浏览器、不显示网址）。
         webview.settings['OPEN_EXTERNAL_LINKS_IN_BROWSER'] = True
-        webview.create_window('WeAuto', url, width=1280, height=860, min_size=(960, 640))
+
+        class _AppApi:
+            """暴露给前端 JS 的桌面能力（仅桌面窗口模式存在，浏览器模式无此 API）。"""
+
+            def open_buy_window(self, url):
+                """在软件内新开一个窗口加载购买/支付页。
+
+                pywebview 窗口没有地址栏，买家看不到网址；主窗口保持不动，
+                自动核销轮询照常运行。收银台跳转（/buy -> creem.io）是同窗口
+                导航，不受 OPEN_EXTERNAL_LINKS_IN_BROWSER 影响，全程留在软件内。
+                """
+                try:
+                    import webview as _wv
+                    _wv.create_window('WeAuto · 购买', url,
+                                      width=1080, height=820, min_size=(760, 560))
+                    return True
+                except Exception as e:  # 兜底：失败时前端回退系统浏览器
+                    app.logger.warning(f"内置购买窗口打开失败: {e}")
+                    return False
+
+        webview.create_window('WeAuto', url, width=1280, height=860, min_size=(960, 640),
+                              js_api=_AppApi())
         print("\033[32m桌面窗口已打开，关闭窗口即退出（不影响已运行的其他实例）\033[0m")
         webview.start()
     except Exception as _e:
