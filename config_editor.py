@@ -881,65 +881,29 @@ def bot_status():
 @app.route('/proxy/weapis/endpoint', methods=['GET'])
 @limiter.limit("20 per minute")  # 速率限制：防止频繁请求
 def proxy_weapis_endpoint():
-    """代理WeAPIs endpoint请求，避免前端CORS问题"""
-    # WeAPIs endpoint地址列表
-    endpoints = [
-        'https://vg.v1api.cc/endpoint',
-        'https://vg.v1chat.cc/endpoint', 
-        'https://vg.a3e.top/endpoint',
-        'https://vg.littlewheat.com/endpoint'
-    ]
-    
-    # 尝试从每个endpoint获取节点列表
-    for endpoint in endpoints:
-        try:
-            response = requests.get(endpoint, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                if data and isinstance(data.get('data'), list) and len(data['data']) > 0:
-                    app.logger.info(f"成功从 {endpoint} 获取节点列表")
-                    return jsonify(data), 200
-        except requests.exceptions.Timeout:
-            app.logger.warning(f"从 {endpoint} 获取节点列表超时")
-            continue
-        except requests.exceptions.RequestException as e:
-            app.logger.warning(f"从 {endpoint} 获取节点列表失败: {str(e)}")
-            continue
-        except Exception as e:
-            app.logger.warning(f"解析 {endpoint} 响应失败: {str(e)}")
-            continue
-    
-    # 如果所有endpoint都失败，返回备用节点列表
-    fallback_nodes = [
-        'https://vg.v1api.cc',
-        'https://vg.v1chat.cc',
-        'https://vg.a3e.top'
-    ]
-    app.logger.warning('所有endpoint都无法获取节点列表，返回备用节点')
-    return jsonify({'data': fallback_nodes}), 200
+    """返回 WeAuto Worker 网关地址（已彻底去掉 vg.v1api.cc 第三方节点）。
+
+    EXE 全程只与自有 Worker 通信，BASE_URL = <worker>/ai/v1，由 Worker 再路由到
+    Workers AI / 火山方舟，第三方中转网关 vg.v1api.cc 不再使用。
+    """
+    nodes = ['https://wetech.jukuai.net/ai']
+    return jsonify({'data': nodes}), 200
 
 @app.route('/proxy/weapis/models', methods=['GET'])
 @limiter.limit("20 per minute")  # 速率限制：防止频繁请求
 def proxy_weapis_models():
-    """代理WeAPIs模型列表请求，避免前端CORS问题"""
-    try:
-        response = requests.get('https://vg.v1api.cc/weapi_models', timeout=5)
-        if response.status_code == 200:
-            models = response.json()
-            app.logger.info(f"成功获取WeAPIs模型列表，共 {len(models)} 个模型")
-            return jsonify(models), 200
-        else:
-            app.logger.warning(f"获取WeAPIs模型列表失败，状态码: {response.status_code}")
-            return jsonify({'error': '获取模型列表失败'}), response.status_code
-    except requests.exceptions.Timeout:
-        app.logger.warning("获取WeAPIs模型列表超时")
-        return jsonify({'error': '请求超时'}), 504
-    except requests.exceptions.RequestException as e:
-        app.logger.warning(f"获取WeAPIs模型列表失败: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-    except Exception as e:
-        app.logger.error(f"处理WeAPIs模型列表请求时出错: {str(e)}")
-        return jsonify({'error': '服务器内部错误'}), 500
+    """返回 WeAuto Worker 支持的模型列表（已彻底去掉 vg.v1api.cc /weapi_models）。
+
+    前端期望 [{value, text}] 形态；Worker 按模型前缀(@cf/、volcano:、ark:、doubao:)
+    或 AI_DEFAULT_PROVIDER 把请求路由到 Workers AI / 火山方舟。
+    """
+    models = [
+        {"value": "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "text": "Workers AI · Llama 3.3 70B (默认,免密钥)"},
+        {"value": "volcano:doubao-seed-1.6-250615", "text": "火山方舟 · Doubao Seed 1.6 (强制火山)"},
+        {"value": "doubao-seed-1.6-250615", "text": "火山方舟 · Doubao Seed 1.6 (自动识别)"},
+        {"value": "volcano:deepseek-v3-241226", "text": "火山方舟 · DeepSeek V3 (强制火山)"},
+    ]
+    return jsonify(models), 200
 
 # --------------------------------------------------------------------------
 # 用户列表扩展：监测内容 + 固定转发（LISTEN_LIST 第三列，可选）
@@ -1517,9 +1481,9 @@ def quick_start():
                     new_values['DEEPSEEK_API_KEY'] = api_key
                     new_values['MOONSHOT_API_KEY'] = api_key
                     new_values['ONLINE_API_KEY'] = api_key
-                new_values['DEEPSEEK_BASE_URL'] = 'https://vg.v1api.cc/v1'
-                new_values['MOONSHOT_BASE_URL'] = 'https://vg.v1api.cc/v1'
-                new_values['ONLINE_BASE_URL'] = 'https://vg.v1api.cc/v1'
+                new_values['DEEPSEEK_BASE_URL'] = 'https://wetech.jukuai.net/ai/v1'
+                new_values['MOONSHOT_BASE_URL'] = 'https://wetech.jukuai.net/ai/v1'
+                new_values['ONLINE_BASE_URL'] = 'https://wetech.jukuai.net/ai/v1'
                 new_values['MOONSHOT_MODEL'] = 'gpt-4o'
                 new_values['ONLINE_MODEL'] = 'net-gpt-4o-mini'
                 if not config.get('MODEL','').strip():
@@ -1569,9 +1533,9 @@ def quick_start():
         deepseek_url = config.get('DEEPSEEK_BASE_URL', '')
         
         is_weapis_setup = (
-            deepseek_url == 'https://vg.v1api.cc/v1' and
-            config.get('MOONSHOT_BASE_URL') == 'https://vg.v1api.cc/v1' and
-            config.get('ONLINE_BASE_URL') == 'https://vg.v1api.cc/v1'
+            deepseek_url == 'https://wetech.jukuai.net/ai/v1' and
+            config.get('MOONSHOT_BASE_URL') == 'https://wetech.jukuai.net/ai/v1' and
+            config.get('ONLINE_BASE_URL') == 'https://wetech.jukuai.net/ai/v1'
         )
 
         if is_weapis_setup:
@@ -1580,7 +1544,7 @@ def quick_start():
             current_api_provider = 'siliconflow'
         elif deepseek_url == 'https://api.deepseek.com':
             current_api_provider = 'deepseek_official'
-        elif deepseek_url and deepseek_url != 'https://vg.v1api.cc/v1': 
+        elif deepseek_url and deepseek_url != 'https://wetech.jukuai.net/ai/v1': 
             current_api_provider = 'other'
             current_custom_base_url = deepseek_url
 
@@ -3363,7 +3327,7 @@ def check_should_post_forum(character_name):
         
         if should_use_online and bool(config.get('ENABLE_ONLINE_API', False)):
             online_api_key = (config.get('ONLINE_API_KEY') or '').strip()
-            online_base_url = config.get('ONLINE_BASE_URL', 'https://vg.v1api.cc/v1')
+            online_base_url = config.get('ONLINE_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
             online_model = config.get('ONLINE_MODEL', 'net-gpt-4o-mini')
             online_temperature = float(config.get('ONLINE_API_TEMPERATURE', 0.7))
             online_max_tokens = int(config.get('ONLINE_API_MAX_TOKEN', 2000))
@@ -3484,14 +3448,14 @@ def check_should_post_forum(character_name):
         use_forum_custom = bool(config.get('ENABLE_FORUM_CUSTOM_MODEL', False))
         if use_forum_custom:
             api_key = (config.get('FORUM_API_KEY') or config.get('DEEPSEEK_API_KEY', '')).strip()
-            base_url = config.get('FORUM_BASE_URL', config.get('DEEPSEEK_BASE_URL', 'https://vg.v1api.cc/v1'))
+            base_url = config.get('FORUM_BASE_URL', config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1'))
             # 如果未填写论坛模型则回落到主模型
             model = (config.get('FORUM_MODEL') or config.get('MODEL', 'deepseek-v3-0324'))
             temperature = config.get('FORUM_TEMPERATURE', config.get('TEMPERATURE', 1.1))
             max_tokens = int(config.get('FORUM_MAX_TOKEN', config.get('MAX_TOKEN', 2000)))
         else:
             api_key = config.get('DEEPSEEK_API_KEY', '')
-            base_url = config.get('DEEPSEEK_BASE_URL', 'https://vg.v1api.cc/v1')
+            base_url = config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
             model = config.get('MODEL', 'deepseek-v3-0324')
             temperature = config.get('TEMPERATURE', 1.1)
             max_tokens = config.get('MAX_TOKEN', 2000)
@@ -3741,13 +3705,13 @@ def generate_character_conversation_reply(character_name, post_content, user_mes
         use_forum_custom = bool(config.get('ENABLE_FORUM_CUSTOM_MODEL', False))
         if use_forum_custom:
             api_key = (config.get('FORUM_API_KEY') or config.get('DEEPSEEK_API_KEY', '')).strip()
-            base_url = config.get('FORUM_BASE_URL', config.get('DEEPSEEK_BASE_URL', 'https://vg.v1api.cc/v1'))
+            base_url = config.get('FORUM_BASE_URL', config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1'))
             model = (config.get('FORUM_MODEL') or config.get('MODEL', 'deepseek-v3-0324'))
             temperature = config.get('FORUM_TEMPERATURE', config.get('TEMPERATURE', 1.0))
             max_tokens = min(int(config.get('FORUM_MAX_TOKEN', config.get('MAX_TOKEN', 2000))), 120)
         else:
             api_key = config.get('DEEPSEEK_API_KEY', '')
-            base_url = config.get('DEEPSEEK_BASE_URL', 'https://vg.v1api.cc/v1')
+            base_url = config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
             model = config.get('MODEL', 'deepseek-v3-0324')
             temperature = config.get('TEMPERATURE', 1.0)
             max_tokens = min(config.get('MAX_TOKEN', 2000), 120)
@@ -3900,7 +3864,7 @@ def generate_likes_feed_items(character_name, use_online=False):
         online_hot_brief = ''
         if use_online and bool(config.get('ENABLE_ONLINE_API', False)):
             online_api_key = (config.get('ONLINE_API_KEY') or '').strip()
-            online_base_url = config.get('ONLINE_BASE_URL', 'https://vg.v1api.cc/v1')
+            online_base_url = config.get('ONLINE_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
             online_model = config.get('ONLINE_MODEL', 'net-gpt-4o-mini')
             online_temperature = float(config.get('ONLINE_API_TEMPERATURE', 0.7))
             online_max_tokens = int(config.get('ONLINE_API_MAX_TOKEN', 2000))
@@ -3931,7 +3895,7 @@ def generate_likes_feed_items(character_name, use_online=False):
 
         # --- 阶段二：用论坛模型（若启用）或主模型生成三条内容 ---
         # 选择生成阶段所用模型
-        gen_base_url = config.get('DEEPSEEK_BASE_URL', 'https://vg.v1api.cc/v1')
+        gen_base_url = config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
         gen_model = config.get('MODEL', 'deepseek-v3-0324')
         gen_api_key = (config.get('DEEPSEEK_API_KEY', '')).strip()
         gen_temperature = float(config.get('TEMPERATURE', 1.0))
@@ -4391,13 +4355,13 @@ NPC设定：
 
             if use_forum_custom:
                 api_key = (config.get('FORUM_API_KEY') or config.get('DEEPSEEK_API_KEY', '')).strip()
-                base_url = config.get('FORUM_BASE_URL', config.get('DEEPSEEK_BASE_URL', 'https://vg.v1api.cc/v1'))
+                base_url = config.get('FORUM_BASE_URL', config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1'))
                 model = (config.get('FORUM_MODEL') or config.get('MODEL', 'deepseek-v3-0324'))
                 temperature = config.get('FORUM_TEMPERATURE', config.get('TEMPERATURE', 1.1))
                 max_tokens = config.get('FORUM_MAX_TOKEN', config.get('MAX_TOKEN', 2000))
             else:
                 api_key = config.get('DEEPSEEK_API_KEY', '')
-                base_url = config.get('DEEPSEEK_BASE_URL', 'https://vg.v1api.cc/v1')
+                base_url = config.get('DEEPSEEK_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
                 model = config.get('MODEL', 'deepseek-v3-0324')
                 temperature = config.get('TEMPERATURE', 1.1)
                 max_tokens = config.get('MAX_TOKEN', 2000)
@@ -4535,13 +4499,13 @@ def get_default_config():
     return {
         "LISTEN_LIST": [['微信名1', '角色1']],
         "DEEPSEEK_API_KEY": '',
-        "DEEPSEEK_BASE_URL": 'https://vg.v1api.cc/v1',
+        "DEEPSEEK_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
         "MODEL": 'deepseek-v3-0324',
         "MAX_GROUPS": 5,
         "MAX_TOKEN": 2000,
         "TEMPERATURE": 1.1,
         "MOONSHOT_API_KEY": '',
-        "MOONSHOT_BASE_URL": 'https://vg.v1api.cc/v1',
+        "MOONSHOT_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
         "MOONSHOT_MODEL": 'gpt-4o',
         "MOONSHOT_TEMPERATURE": 0.8,
         "ENABLE_IMAGE_RECOGNITION": True,
@@ -4580,7 +4544,7 @@ def get_default_config():
         "ALLOW_REMINDERS_IN_QUIET_TIME": True,
         "USE_VOICE_CALL_FOR_REMINDERS": False,
         "ENABLE_ONLINE_API": False,
-        "ONLINE_BASE_URL": 'https://vg.v1api.cc/v1',
+        "ONLINE_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
         "ONLINE_MODEL": 'net-gpt-4o-mini',
         "ONLINE_API_KEY": '',
         "ONLINE_API_TEMPERATURE": 0.7,
@@ -4596,7 +4560,7 @@ def get_default_config():
         "RESTART_INACTIVITY_MINUTES": 15,
         "REMOVE_PARENTHESES": False,
         "ENABLE_ASSISTANT_MODEL": False,
-        "ASSISTANT_BASE_URL": 'https://vg.v1api.cc/v1',
+        "ASSISTANT_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
         "ASSISTANT_MODEL": 'gpt-4o-mini',
         "ASSISTANT_API_KEY": '',
         "ASSISTANT_TEMPERATURE": 0.3,
@@ -4608,7 +4572,7 @@ def get_default_config():
         "CORE_MEMORY_DIR": 'CoreMemory',
         "ENABLE_TEXT_COMMANDS": True,
         "ENABLE_FORUM_CUSTOM_MODEL": False,
-        "FORUM_BASE_URL": 'https://vg.v1api.cc/v1',
+        "FORUM_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
         "FORUM_MODEL": '',
         "FORUM_API_KEY": '',
         "FORUM_TEMPERATURE": 1.0,

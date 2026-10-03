@@ -121,7 +121,7 @@ WeAuto/
 
 1. 安装 **Python 3.9 ~ 3.13**（建议勾选「Add to PATH」），并确认 `pip` 可用。
 2. 安装 **微信 3.9 或 4.x** 并保持后台登录运行。
-3. 申请大模型 API Key（推荐默认网关 vg.v1api.cc，支持 GPT / Grok / Claude / Gemini / DeepSeek-R1 联网版等，注册请前往对应服务商官网）。
+3. 申请大模型 API Key（AI 统一走自有 Worker 网关 `/ai/v1`：默认 Workers AI 免密钥；如需火山方舟等，在 Worker 配置 `VOLCANO_API_KEY` 即可；发行版卡密门禁开启后客户端不再直连任何供应商）。
 
 > 依赖安装全部走二进制 wheel（`--only-binary=:all:`，不本地编译）；`Run.bat` 会按 **阿里云 → 清华 → 官方** 顺序自动选择最快镜像源。
 

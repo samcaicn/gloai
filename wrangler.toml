@@ -20,12 +20,26 @@ CREEM_MODE = "prod"                       # 3 档套餐已用 prod key 建好（
 SITE_TITLE    = "WeAuto 授权中心"
 SUPPORT_EMAIL = "weetech@foxmail.com"     # 售后邮箱（Creem 收款账户同款）
 
-# ---- LLM 代理 upstream（反破解核心：真实 key 放 Worker secret，客户端只拿卡密）----
-#   客户端所有 LLM 调用 -> <worker>/ai/v1/* -> 这里配置的 upstream。
-#   upstream 的真实 key 用 secret 注入（不入仓库）：
-#     wrangler secret put AI_UPSTREAM_KEY     # 粘贴 vg.v1api.cc 的 key
-#   未配置 AI_UPSTREAM_KEY 时 /ai 一律 401（fail-close）。
-AI_UPSTREAM_URL = "https://vg.v1api.cc/v1"
+# ---- AI 双供应商（彻底去掉 vg.v1api.cc，反破解核心：真实 key 放 Worker secret，客户端只拿卡密）----
+#   客户端所有 LLM 调用 -> <worker>/ai/v1/* -> 这里路由到 Workers AI 或火山方舟。
+#   ① Workers AI：env.AI binding（下方 [ai] 已绑定），免密钥、有免费额度，默认走它。
+#   ② 火山方舟（Volcano Engine / 火山）：OpenAI 兼容，需配 VOLCANO_API_KEY（secret 注入）。
+#      火山 key 用 secret 注入（不入仓库）：
+#        wrangler secret put VOLCANO_API_KEY     # 粘贴火山方舟 API Key
+#      未配 VOLCANO_API_KEY 时 /ai 回落到 Workers AI；两家都没有才 503。
+#   优先级：主用 Workers AI，火山(failover)备用。
+#   模型路由（resolveProvider）：
+#     - 以 @cf/ 开头                       -> Workers AI（主用）
+#     - 模型名像火山(doubao / ep- / ark-)  -> 火山（显式指定时主用；未配 VOLCANO_API_KEY 则回落 Workers AI）
+#     - 其余（无前缀）                     -> 由 AI_DEFAULT_PROVIDER 决定（默认 workers）
+#     - X-WeAuto-Provider: workers|volcano 头可强制指定供应商
+#     - 主供应商不可用时自动 failover 到另一家（最大化在线率）
+AI_DEFAULT_PROVIDER = "workers"                                       # workers | volcano（默认走 Workers AI）
+AI_CHAT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"           # Workers AI 聊天模型
+VOLCANO_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"        # 火山方舟 OpenAI 兼容基址
+# VOLCANO_MODEL：火山方舟模型接入点 ID，由环境变量注入，不在仓库硬编码（避免被密钥扫描误拦）；未配置时回落 Workers AI。
+# 兼容回退（不推荐）：若未配 VOLCANO_*，仍可用旧 AI_UPSTREAM_* 充当火山配置。
+# AI_UPSTREAM_URL = "https://ark.cn-beijing.volces.com/api/v3"
 
 # ---- Jev 判断模型（/ai/jev/decisions 默认模型，客户端可在 body 里覆盖）----
 # 实测对比（2026-09-28，同一句"算了，我习惯了"）：

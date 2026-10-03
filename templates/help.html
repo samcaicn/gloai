@@ -207,7 +207,7 @@
             <h2>⑧ 常见问题 / 排障</h2>
             <ul class="hint">
                 <li><b>机器人不回复？</b> 确认微信已登录、监听名单已含对方、Start Bot 已启动；用「报错一键检测」自查。</li>
-                <li><b>API Key 无效（401）？</b> 确认 Key 对应 <code>BASE_URL</code>（默认 <code>vg.v1api.cc/v1</code>），Key 需在该网关有效。</li>
+                <li><b>API Key 无效（401）？</b> 确认 Key 对应 <code>BASE_URL</code>（默认 <code>wetech.jukuai.net/ai/v1</code>），Key 即卡密，需在 WeAuto Worker 网关有效。</li>
                 <li><b>CLI/MCP 报缺依赖？</b> 用项目自带 <code>.venv_bot/Scripts/python.exe</code> 运行；MCP 需要 <code>mcp[cli]</code>（含 typer）。</li>
                 <li><b>主动消息发不出去？</b> 检查 <code>ENABLE_AUTO_MESSAGE</code> 与 <code>AUTO_MESSAGE_USER_LIST</code> 白名单。</li>
                 <li><b>换电脑 / 更新？</b> 双击 <code>Run.bat</code> 自动检查更新；或用 <code>updater.py</code> 下载 Release 中的 <code>WeAuto.exe</code>。</li>

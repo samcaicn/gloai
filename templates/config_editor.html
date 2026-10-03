@@ -959,19 +959,15 @@
     </style>
 
     <script>
-        // WeAPIs endpoint地址列表（用于获取最新节点）
+        // WeAuto Worker 网关（已彻底去掉 vg.v1api.cc 第三方节点）
+        // EXE 全程只与自有 Worker 通信，由后端 /proxy/weapis/endpoint 返回统一网关。
         const WEAPIS_ENDPOINTS = [
-            'https://vg.v1api.cc/endpoint',
-            'https://vg.v1chat.cc/endpoint', 
-            'https://vg.a3e.top/endpoint',
-            'https://vg.littlewheat.com/endpoint'
+            'https://wetech.jukuai.net/ai'
         ];
-        
-        // 备用固定节点（当endpoint无法获取时使用）
+
+        // 备用固定节点（当后端代理不可用时回退到 Worker 网关）
         const FALLBACK_WEAPIS_NODES = [
-            'https://vg.v1api.cc',
-            'https://vg.v1chat.cc',
-            'https://vg.a3e.top'
+            'https://wetech.jukuai.net/ai'
         ];
         
         // 缓存的节点列表和缓存时间
@@ -1033,7 +1029,7 @@
             
             // 直接使用第一个节点，因为这些节点都是从endpoint验证过的
             // 不再进行额外的可用性检测，避免401错误（需要API Key）
-            const firstNode = nodes[0] || 'https://vg.v1api.cc';
+            const firstNode = nodes[0] || 'https://wetech.jukuai.net/ai';
             const baseUrl = firstNode.replace(/\/+$/, ''); // 移除末尾的斜杠
             console.log(`选择WeAPIs节点: ${baseUrl}`);
             return baseUrl + '/v1';
@@ -1080,25 +1076,10 @@
         
         // 默认的weapi模型列表（作为备用）
         const defaultWeapiModels = [
-            { value: "deepseek-ai/DeepSeek-V3", text: "DeepSeek V3 (1226版本)" },
-            { value: "deepseek-v3-0324", text: "DeepSeek V3 (0324版本，推荐)" },
-            { value: "gemini-2.0-flash-exp", text: "Gemini 2.0 Flash (推荐)" },     
-            { value: "gemini-2.5-pro", text: "Gemini 2.5 Pro * (推荐，体验感更好)" },
-            { value: "gemini-2.5-pro-exp-03-25", text: "Gemini 2.5 Pro * (0325版本)" },
-            { value: "claude-3-7-sonnet-20250219", text: "Claude 3.7 Sonnet * (20250219版本，推荐)" },
-            { value: "claude-sonnet-4-20250514", text: "Claude Sonnet 4 * (20250514版本)" },
-            { value: "doubao-pro-256k-241115", text: "豆包 Pro (241115版本)" },
-            { value: "deepseek-ai/DeepSeek-R1", text: "DeepSeek R1" },
-            { value: "claude-3-5-sonnet-20241022", text: "Claude 3.5 Sonnet (20241022版本)" },
-            { value: "claude-3-5-haiku-20241022", text: "Claude 3.5 Haiku (20241022版本)" },
-            { value: "gemini-2.0-flash-thinking-exp-1219", text: "Gemini 2.0 Flash (1219版本)" },
-            { value: "gemini-2.5-flash", text: "Gemini 2.5 Flash" },                     
-            { value: "gpt-5", text: "GPT-5 *" },
-            { value: "o4-mini", text: "o4-mini" },
-            { value: "gpt-4o", text: "GPT-4o" },
-            { value: "gpt-4.1", text: "GPT-4.1" },
-            { value: "gpt-4o-mini", text: "GPT-4o-mini" },
-            { value: "gpt-4.1-mini", text: "GPT-4.1-mini" },   
+            { value: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", text: "Workers AI · Llama 3.3 70B (默认,免密钥)" },
+            { value: "volcano:doubao-seed-1.6-250615", text: "火山方舟 · Doubao Seed 1.6 (强制火山)" },
+            { value: "doubao-seed-1.6-250615", text: "火山方舟 · Doubao Seed 1.6 (自动识别)" },
+            { value: "volcano:deepseek-v3-241226", text: "火山方舟 · DeepSeek V3 (强制火山)" },
             { value: "other", text: "其它" }
         ];
 
@@ -1183,11 +1164,9 @@
                 const availableUrl = await selectAvailableWeAPIsNode();
                 const nodes = await getWeApisNodes();
                 
-                // 创建所有可能的WeAPIs URL变体（包括新旧格式）
+                // 创建所有可能的 WeAuto Worker 网关 URL 变体（已去掉 vg 旧节点）
                 const weapisVariants = new Set([
-                    'https://vg.v1api.cc/v1',
-                    'https://vg.v1chat.cc/v1', 
-                    'https://vg.a3e.top/v1'
+                    'https://wetech.jukuai.net/ai/v1'
                 ]);
                 
                 // 添加动态获取的节点URL变体
@@ -3967,10 +3946,10 @@
                                 <select id="forumApiProvider" name="temp_FORUM_BASE_URL" title="论坛API服务商">
                                     <option value="https://api.siliconflow.cn/v1/" {% if config.FORUM_BASE_URL == 'https://api.siliconflow.cn/v1/' %}selected{% endif %}>硅基流动</option>
                                     <option value="https://api.deepseek.com" {% if config.FORUM_BASE_URL == 'https://api.deepseek.com' %}selected{% endif %}>DeepSeek官方API</option>
-                                    <option value="https://vg.v1api.cc/v1" {% if config.FORUM_BASE_URL == 'https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
-                                    <option value="other" {% if config.FORUM_BASE_URL not in ['https://api.siliconflow.cn/v1/','https://api.deepseek.com','https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
+                                    <option value="https://wetech.jukuai.net/ai/v1" {% if config.FORUM_BASE_URL == 'https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
+                                    <option value="other" {% if config.FORUM_BASE_URL not in ['https://api.siliconflow.cn/v1/','https://api.deepseek.com','https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
                                 </select>
-                                <input type="text" id="customForumApiUrl" placeholder="请输入自定义API地址" class="custom-input" {% if config.FORUM_BASE_URL not in ['https://api.siliconflow.cn/v1/','https://api.deepseek.com','https://vg.v1api.cc/v1'] %} value="{{ config.FORUM_BASE_URL }}" style="display:block;" {% endif %}>
+                                <input type="text" id="customForumApiUrl" placeholder="请输入自定义API地址" class="custom-input" {% if config.FORUM_BASE_URL not in ['https://api.siliconflow.cn/v1/','https://api.deepseek.com','https://wetech.jukuai.net/ai/v1'] %} value="{{ config.FORUM_BASE_URL }}" style="display:block;" {% endif %}>
                                 <input type="hidden" id="finalForumApiUrl" name="FORUM_BASE_URL" value="{{ config.FORUM_BASE_URL }}">
                             </div>
 
@@ -4075,10 +4054,10 @@
                         <select id="apiProvider" name="temp_DEEPSEEK_BASE_URL" title="聊天API服务商">
                             <option value="https://api.siliconflow.cn/v1/" {% if config.DEEPSEEK_BASE_URL == 'https://api.siliconflow.cn/v1/' %}selected{% endif %}>硅基流动</option>
                             <option value="https://api.deepseek.com" {% if config.DEEPSEEK_BASE_URL == 'https://api.deepseek.com' %}selected{% endif %}>DeepSeek官方API</option>
-                            <option value="https://vg.v1api.cc/v1" {% if config.DEEPSEEK_BASE_URL == 'https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
-                            <option value="other" {% if config.DEEPSEEK_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
+                            <option value="https://wetech.jukuai.net/ai/v1" {% if config.DEEPSEEK_BASE_URL == 'https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
+                            <option value="other" {% if config.DEEPSEEK_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
                         </select>
-                        <input type="text" id="customApiUrl" placeholder="请输入自定义API地址" class="custom-input" {% if config.DEEPSEEK_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://vg.v1api.cc/v1'] %} value="{{ config.DEEPSEEK_BASE_URL }}" style="display:block;" {% endif %}>
+                        <input type="text" id="customApiUrl" placeholder="请输入自定义API地址" class="custom-input" {% if config.DEEPSEEK_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://wetech.jukuai.net/ai/v1'] %} value="{{ config.DEEPSEEK_BASE_URL }}" style="display:block;" {% endif %}>
                         <input type="hidden" id="finalApiUrl" name="DEEPSEEK_BASE_URL" value="{{ config.DEEPSEEK_BASE_URL }}">
                     </div>
                     <div class="form-group">
@@ -4143,10 +4122,10 @@
                             <select id="assistantApiProvider" name="temp_ASSISTANT_BASE_URL" title="辅助模型API服务商">
                                 <option value="https://api.siliconflow.cn/v1/" {% if config.ASSISTANT_BASE_URL == 'https://api.siliconflow.cn/v1/' %}selected{% endif %}>硅基流动</option>
                                 <option value="https://api.deepseek.com" {% if config.ASSISTANT_BASE_URL == 'https://api.deepseek.com' %}selected{% endif %}>DeepSeek官方API</option>
-                                <option value="https://vg.v1api.cc/v1" {% if config.ASSISTANT_BASE_URL == 'https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
-                                <option value="other" {% if config.ASSISTANT_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
+                                <option value="https://wetech.jukuai.net/ai/v1" {% if config.ASSISTANT_BASE_URL == 'https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
+                                <option value="other" {% if config.ASSISTANT_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
                             </select>
-                            <input type="text" id="customAssistantApiUrl" placeholder="请输入自定义辅助模型API地址" class="custom-input" {% if config.ASSISTANT_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://vg.v1api.cc/v1'] %} value="{{ config.ASSISTANT_BASE_URL }}" style="display:block;" {% endif %}>
+                            <input type="text" id="customAssistantApiUrl" placeholder="请输入自定义辅助模型API地址" class="custom-input" {% if config.ASSISTANT_BASE_URL not in ['https://api.siliconflow.cn/v1/', 'https://api.deepseek.com', 'https://wetech.jukuai.net/ai/v1'] %} value="{{ config.ASSISTANT_BASE_URL }}" style="display:block;" {% endif %}>
                             <input type="hidden" id="finalAssistantApiUrl" name="ASSISTANT_BASE_URL" value="{{ config.ASSISTANT_BASE_URL }}">
                         </div>
                         <div class="form-group">
@@ -4202,10 +4181,10 @@
                         <label>图像识别API服务商：</label>
                         <select id="imageApiProvider" name="temp_IMAGE_BASE_URL" title="图像识别API服务商">
                             <option value="https://api.moonshot.cn/v1" {% if config.MOONSHOT_BASE_URL=='https://api.moonshot.cn/v1' %}selected{% endif %}>月之暗面 Moonshot</option>
-                            <option value="https://vg.v1api.cc/v1" {% if config.MOONSHOT_BASE_URL=='https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
-                            <option value="other" {% if config.MOONSHOT_BASE_URL not in ['https://api.moonshot.cn/v1','https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
+                            <option value="https://wetech.jukuai.net/ai/v1" {% if config.MOONSHOT_BASE_URL=='https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
+                            <option value="other" {% if config.MOONSHOT_BASE_URL not in ['https://api.moonshot.cn/v1','https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
                         </select>
-                        <input type="text" id="customImageApiUrl" class="custom-input" placeholder="请输入自定义API地址" {% if config.MOONSHOT_BASE_URL not in ['https://api.moonshot.cn/v1','https://vg.v1api.cc/v1'] %} value="{{ config.MOONSHOT_BASE_URL }}" style="display:block;" {% endif %}>
+                        <input type="text" id="customImageApiUrl" class="custom-input" placeholder="请输入自定义API地址" {% if config.MOONSHOT_BASE_URL not in ['https://api.moonshot.cn/v1','https://wetech.jukuai.net/ai/v1'] %} value="{{ config.MOONSHOT_BASE_URL }}" style="display:block;" {% endif %}>
                         <input type="hidden" id="finalImageApiUrl" name="MOONSHOT_BASE_URL" value="{{ config.MOONSHOT_BASE_URL }}">
                         <small>推荐使用默认网关，API Key 可与 Chat 模型配置保持一致（请前往对应服务商官网注册）。</small>
                         <small>月之暗面 Moonshot 注册：请前往其官网申请（platform.moonshot.cn）。</small>
@@ -4246,10 +4225,10 @@
                     <div class="form-group" style="display:none;">
                         <label>联网API服务商：</label>
                         <select id="onlineApiProvider" name="temp_ONLINE_BASE_URL" title="联网API服务商">
-                            <option value="https://vg.v1api.cc/v1" {% if config.ONLINE_BASE_URL=='https://vg.v1api.cc/v1' %}selected{% endif %}>默认网关(vg.v1api.cc)</option>
-                            <option value="other" {% if config.ONLINE_BASE_URL not in ['https://vg.v1api.cc/v1'] %}selected{% endif %}>其它</option>
+                            <option value="https://wetech.jukuai.net/ai/v1" {% if config.ONLINE_BASE_URL=='https://wetech.jukuai.net/ai/v1' %}selected{% endif %}>WeAuto Worker 网关(/ai/v1)</option>
+                            <option value="other" {% if config.ONLINE_BASE_URL not in ['https://wetech.jukuai.net/ai/v1'] %}selected{% endif %}>其它</option>
                         </select>
-                        <input type="text" id="customOnlineApiUrl" class="custom-input" placeholder="请输入自定义联网API地址" {% if config.ONLINE_BASE_URL not in ['https://vg.v1api.cc/v1'] %} value="{{ config.ONLINE_BASE_URL }}" style="display:block;" {% endif %}>
+                        <input type="text" id="customOnlineApiUrl" class="custom-input" placeholder="请输入自定义联网API地址" {% if config.ONLINE_BASE_URL not in ['https://wetech.jukuai.net/ai/v1'] %} value="{{ config.ONLINE_BASE_URL }}" style="display:block;" {% endif %}>
                         <input type="hidden" id="finalOnlineApiUrl" name="ONLINE_BASE_URL" value="{{ config.ONLINE_BASE_URL }}">
                         <small>推荐使用默认网关，API Key 可与 Chat 模型配置保持一致（请前往对应服务商官网注册）。</small>
                     </div>

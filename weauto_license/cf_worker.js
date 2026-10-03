@@ -21,11 +21,21 @@
  *   CREEM_MODE           "test" | "prod"
  *   CREEM_PRODUCTS       JSON 数组，多档套餐（每档含 tier/label/price_text/product_id/billing/features）
  *   SITE_TITLE / SUPPORT_EMAIL   站点文案
- *   AI_UPSTREAM_URL      LLM upstream（如 https://vg.v1api.cc/v1），/ai 代理透传目标
+ *   AI 双供应商（彻底去掉 vg.v1api.cc）：
+ *     - Workers AI：env.AI binding（wrangler [ai]），免密钥、有免费额度，/ai 默认走它
+ *     - 火山方舟：VOLCANO_BASE_URL + VOLCANO_API_KEY（OpenAI 兼容，failover 备用）
+ *   路由规则见 cf_worker.js 的 resolveProvider；模型以 @cf/ 开头即 Workers AI。
+ *
+ *   AI_DEFAULT_PROVIDER  workers | volcano（模型未显式标明供应商时的默认；默认 workers）
+ *   AI_CHAT_MODEL        Workers AI 聊天模型（默认 @cf/meta/llama-3.3-70b-instruct-fp8-fast）
+ *   VOLCANO_BASE_URL     火山方舟 API 基址（默认 https://ark.cn-beijing.volces.com/api/v3）
+ *   VOLCANO_MODEL        火山默认模型（planagent；如 doubao-seed-1.6-250615 或 ep-xxxx 接入点）
  *
  * 额外 Secrets（wrangler secret put）：
- *   AI_UPSTREAM_KEY      LLM upstream 的真实 key（商家持有，客户端永不接触）；
- *                        未配置时 /ai 一律 401（fail-close），LLM 功能不可用
+ *   VOLCANO_API_KEY      火山方舟 API Key（商家持有，客户端永不接触）；
+ *                        未配置时火山不可用，/ai 回落到 Workers AI
+ * 兼容保留（旧的 vg.v1api.cc secret 仍可被当作火山 key 复用，不推荐）：
+ *   AI_UPSTREAM_URL / AI_UPSTREAM_KEY —— 仅当未配 VOLCANO_* 时作为火山配置回退
  *
  * 关于支付宝（两个不同概念，别混淆）：
  *   1) 买家付款方式：Creem 2.0 已上线 AliPay（官方 Changelog: "Alipay Is Live at Checkout,
@@ -209,9 +219,9 @@ function mapTier(env, data) {
 
 /* ---------------- AI 代理（LLM 唯一出口，反破解核心） ----------------
  * 客户端把 OpenAI base_url 指到 <worker>/ai/v1，api_key 用 license key，
- * 并带 X-WeAuto-Instance 头。Worker 验完卡密后把请求透传给真正的 upstream
- * （AI_UPSTREAM_URL）并注入商家持有的 AI_UPSTREAM_KEY —— 客户端永远拿不到
- * 真实 key：反编译/patch 掉客户端门禁也没用，没有有效卡密这里直接 401。
+ * 并带 X-WeAuto-Instance 头。Worker 验完卡密后把请求路由到 Workers AI（env.AI）
+ * 或火山方舟（VOLCANO_*，OpenAI 兼容）并注入商家持有的 VOLCANO_API_KEY ——
+ * 客户端永远拿不到真实 key：反编译/patch 掉客户端门禁也没用，没有有效卡密这里直接 401。
  */
 
 // isolate 级内存缓存：key|instance -> 校验通过时间戳(ms)。TTL 内不再打 Creem，
@@ -222,10 +232,10 @@ const LICENSE_TTL = 10 * 60 * 1000;
 async function licenseOk(env, key, instanceId, requireUpstream = true) {
   // fail-close：Worker 自身没配好（无 Creem key）一律拒绝。
   // requireUpstream=false 供 Jev 用：Jev 走 Workers AI（env.AI），不依赖 LLM upstream，
-  // 不能因为商家没配 AI_UPSTREAM_KEY 就把 Jev 也一起封死。
+  // 不能因为商家没配火山 key / Workers AI 就把 Jev 也一起封死（Jev 走 env.AI，不依赖 LLM upstream）。
   if (!key || !instanceId) return false;
   if (!env.CREEM_API_KEY) return false;
-  if (requireUpstream && (!env.AI_UPSTREAM_URL || !env.AI_UPSTREAM_KEY)) return false;
+  if (requireUpstream && !aiAvailable(env)) return false;
   const now = Date.now();
   const ck = key + "|" + instanceId;
   const hit = licenseCache.get(ck);
@@ -245,7 +255,191 @@ async function licenseOk(env, key, instanceId, requireUpstream = true) {
   }
 }
 
-/** /ai/v1/* -> AI_UPSTREAM_URL/<原样路径>，注入真实 upstream key，原样透传（含 SSE 流式） */
+/* ---------------- AI 双供应商路由（彻底去掉 vg.v1api.cc） ----------------
+ * 客户端把 OpenAI base_url 指到 <worker>/ai/v1，api_key 用 license key（或 APK 计费令牌）。
+ * Worker 在这里把请求路由到两家供应商之一：
+ *   1) Workers AI（Cloudflare 自家的 env.AI binding，免密钥、有免费额度，延迟低）
+ *   2) 火山方舟（Volcano Engine / 火山，OpenAI 兼容，需 VOLCANO_API_KEY）
+ * 路由规则（按优先级）：
+ *   - 请求头 X-WeAuto-Provider: workers | volcano 显式指定；
+ *   - 模型名以 @cf/ 开头 → Workers AI；
+ *   - 模型名以 volcano:/ark:/doubao: 开头 → 火山（并剥掉前缀）；
+ *   - 其余 → 由 AI_DEFAULT_PROVIDER（默认 workers）决定。
+ * 任一家主供应商失败时，若另一家已配置则自动 failover，最大化在线率。
+ */
+
+/** 火山方舟配置：优先 VOLCANO_*，未配则回退兼容旧的 AI_UPSTREAM_*（旧 secret 仍可用）。 */
+function volcanoConfig(env) {
+  const base = env.VOLCANO_BASE_URL || env.AI_UPSTREAM_URL || "https://ark.cn-beijing.volces.com/api/v3";
+  const key = env.VOLCANO_API_KEY || env.AI_UPSTREAM_KEY || "";
+  return { base: String(base).replace(/\/+$/, ""), key: String(key) };
+}
+function volcanoConfigured(env) { return !!volcanoConfig(env).key; }
+/** 任一 AI 供应商可用：Workers AI binding 绑定 或 火山 key 已配。 */
+function aiAvailable(env) { return !!env.AI || volcanoConfigured(env); }
+
+/** 解析最终供应商与模型名。返回 { provider, realModel } 或 { error }。 */
+function resolveProvider(model, hint, env) {
+  const workersReady = !!env.AI;
+  const volcanoReady = volcanoConfigured(env);
+  const def = (env.AI_DEFAULT_PROVIDER || "workers").toLowerCase();
+  let provider;
+  if (hint === "workers") provider = "workers";
+  else if (hint === "volcano") provider = "volcano";
+  else if (typeof model === "string" && model.startsWith("@cf/")) provider = "workers";
+  else if (typeof model === "string" && /^(volcano|ark|doubao):/i.test(model)) provider = "volcano";
+  else {
+    // 未被前缀/header 显式指定：模型名本身像火山方舟（doubao / ep- / ark- 接入点）时优先走火山
+    if (typeof model === "string" && /(doubao|^ep-|^ark-)/i.test(model) && volcanoReady) {
+      provider = "volcano";
+    } else {
+      provider = def;
+    }
+  }
+  let realModel = typeof model === "string" ? model : "";
+  if (provider === "workers") {
+    if (!workersReady) {
+      if (volcanoReady) provider = "volcano";
+      else return { error: "no_provider" };
+    }
+    if (!realModel.startsWith("@cf/")) {
+      realModel = env.AI_CHAT_MODEL || env.AI_DEFAULT_MODEL || JEV_MODEL_DEFAULT;
+    }
+  } else {
+    if (!volcanoReady) {
+      if (workersReady) {
+        provider = "workers";
+        if (!realModel.startsWith("@cf/")) realModel = env.AI_CHAT_MODEL || env.AI_DEFAULT_MODEL || JEV_MODEL_DEFAULT;
+      } else return { error: "no_provider" };
+    }
+    realModel = realModel.replace(/^(volcano|ark|doubao):/i, "");
+    if (!realModel) realModel = env.VOLCANO_MODEL || env.AI_DEFAULT_MODEL || "";
+  }
+  return { provider, realModel };
+}
+
+/** 从 Workers AI 各种返回形态里抠出文本（兼容 {response}、choices、content、text）。 */
+function workersAiText(res) {
+  if (!res) return null;
+  if (typeof res === "string") return res;
+  if (res.response !== undefined) return typeof res.response === "string" ? res.response : JSON.stringify(res.response);
+  if (res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content !== undefined) return res.choices[0].message.content;
+  if (res.content !== undefined) return res.content;
+  if (res.text !== undefined) return res.text;
+  return null;
+}
+
+/** 包成标准 OpenAI chat.completion 结构，让 OpenAI SDK 无需改动即可解析。 */
+function openAiCompletion(model, text, usage) {
+  return {
+    id: "chatcmpl-weauto-" + Date.now().toString(36),
+    object: "chat.completion",
+    created: Math.floor(Date.now() / 1000),
+    model: model,
+    choices: [{ index: 0, message: { role: "assistant", content: text }, finish_reason: "stop" }],
+    usage: {
+      prompt_tokens: usage.prompt,
+      completion_tokens: usage.completion,
+      total_tokens: usage.prompt + usage.completion,
+    },
+  };
+}
+
+/** 字符数兜底估算 token（Workers AI 不返回 usage，计费/统计用）。 */
+function estimateUsage(obj, text) {
+  const msgs = (obj && Array.isArray(obj.messages)) ? JSON.stringify(obj.messages) : "";
+  const promptChars = msgs ? msgs.length : 0;
+  const completionChars = text ? String(text).length : 0;
+  return { prompt: Math.ceil(promptChars / 3), completion: Math.ceil(completionChars / 3) };
+}
+
+/** Workers AI 直连：env.AI.run() -> OpenAI 结构（非流式，EXE 侧 stream=False）。 */
+async function callWorkersAi(env, model, obj) {
+  if (!env.AI) throw new Error("workers_ai_binding_missing");
+  const messages = Array.isArray(obj.messages) ? obj.messages : [];
+  const opts = { messages, stream: false };
+  if (typeof obj.temperature === "number") opts.temperature = obj.temperature;
+  if (typeof obj.max_tokens === "number") opts.max_tokens = obj.max_tokens;
+  if (typeof obj.top_p === "number") opts.top_p = obj.top_p;
+  if (obj.stop !== undefined) opts.stop = obj.stop;
+  let res;
+  try { res = await env.AI.run(model, opts); }
+  catch (e) { throw e; }
+  const text = workersAiText(res);
+  if (text == null) throw new Error("workers_ai_empty_response");
+  return json(openAiCompletion(model, text, estimateUsage(obj, text)), 200);
+}
+
+/** 火山方舟直连：OpenAI 兼容，注入真实 key，原样透传（含 SSE 流式）。 */
+async function callVolcano(env, model, obj, url, req, bodyStr) {
+  const c = volcanoConfig(env);
+  if (!c.key) throw new Error("volcano_key_missing");
+  const rel = url.pathname.slice("/ai/".length).replace(/^v1\//, "");
+  const target = c.base + "/" + rel + url.search;
+  let finalBody = bodyStr || "";
+  if (model) {
+    try {
+      const o = finalBody ? JSON.parse(finalBody) : {};
+      if (o.model !== model) { o.model = model; finalBody = JSON.stringify(o); }
+    } catch (_) { /* 非 JSON 则原样发，让上游报错 */ }
+  }
+  const init = {
+    method: req.method,
+    headers: {
+      "content-type": req.headers.get("content-type") || "application/json",
+      "accept": req.headers.get("accept") || "application/json, text/event-stream",
+      "authorization": "Bearer " + c.key,
+      "user-agent": req.headers.get("user-agent") || "weauto-worker",
+    },
+    body: (req.method === "GET" || req.method === "HEAD") ? undefined : finalBody,
+  };
+  return fetch(target, init);
+}
+
+/** 按解析结果派发到对应供应商。 */
+async function dispatch(env, provider, model, obj, url, req, bodyStr) {
+  if (provider === "workers") return callWorkersAi(env, model, obj);
+  return callVolcano(env, model, obj, url, req, bodyStr);
+}
+
+/** /ai/v1 统一入口：解析模型/供应商 -> 调用 -> 失败 failover。 */
+async function routeAi(req, env, url) {
+  let bodyStr = "";
+  try { bodyStr = await req.clone().text(); } catch (_) {}
+  let obj = {};
+  if (bodyStr) { try { obj = JSON.parse(bodyStr); } catch (_) {} }
+  const model = (obj && obj.model) || "";
+  const hint = (req.headers && req.headers.get && req.headers.get("x-weauto-provider")) || "";
+  const resolved = resolveProvider(model, hint, env);
+  if (resolved.error) {
+    return json({
+      error: {
+        message: "云端尚未配置 AI 供应商（Workers AI 或火山方舟），请联系管理员",
+        type: "server_misconfigured",
+        code: "ai_upstream_missing",
+      },
+    }, 503);
+  }
+  try {
+    return await dispatch(env, resolved.provider, resolved.realModel, obj, url, req, bodyStr);
+  } catch (e1) {
+    const other = resolved.provider === "workers" ? "volcano" : "workers";
+    const otherReady = other === "volcano" ? volcanoConfigured(env) : !!env.AI;
+    if (otherReady) {
+      try { return await dispatch(env, other, resolved.realModel, obj, url, req, bodyStr); }
+      catch (_) { /* fall through to 502 */ }
+    }
+    return json({
+      error: {
+        message: "AI 调用失败（双供应商均不可用）：" + String((e1 && e1.message) || e1),
+        type: "upstream_error",
+        code: "ai_run_failed",
+      },
+    }, 502);
+  }
+}
+
+/** /ai/v1/* 路由入口：先鉴权（计费令牌 或 Creem 卡密），再交给 routeAi 派发。 */
 async function proxyAi(req, env, url) {
   const authHdr = (req.headers.get("authorization") || "").trim();
   const token = authHdr.startsWith("Bearer ") ? authHdr.slice(7).trim() : authHdr;
@@ -265,24 +459,7 @@ async function proxyAi(req, env, url) {
       },
     }, 401);
   }
-  // <worker>/ai/v1/chat/completions -> AI_UPSTREAM_URL/chat/completions
-  // AI_UPSTREAM_URL 需带 /v1 后缀（如 https://vg.v1api.cc/v1，与 config.py 的 BASE_URL 同义）；
-  // 客户端路径里的 "v1/" 前缀剥掉，避免拼出 /v1/v1/ 双重路径。
-  const rel = url.pathname.slice("/ai/".length).replace(/^v1\//, "");
-  const target = String(env.AI_UPSTREAM_URL).replace(/\/+$/, "") + "/" + rel + url.search;
-  const init = {
-    method: req.method,
-    headers: {
-      "content-type": req.headers.get("content-type") || "application/json",
-      "accept": req.headers.get("accept") || "application/json",
-      "authorization": "Bearer " + env.AI_UPSTREAM_KEY,
-      "user-agent": req.headers.get("user-agent") || "weauto-worker",
-    },
-    // POST body 原样透传（支持流式）；GET/HEAD 无 body
-    body: (req.method === "GET" || req.method === "HEAD") ? undefined : req.body,
-  };
-  // 直接 return fetch 的 Response：upstream 的 SSE 流式响应原样透传给客户端
-  return fetch(target, init);
+  return routeAi(req, env, url);
 }
 
 /* ===================== Token 计费（APK 专用，云端强约束） =====================
@@ -416,57 +593,27 @@ async function proxyAiBilled(req, env, url, token) {
       error: { message: "本月算力已用尽，请升级套餐或等待下月重置", type: "quota_error", code: "quota_exceeded", used, quota },
     }, 402);
   }
-  if (!env.AI_UPSTREAM_URL || !env.AI_UPSTREAM_KEY) {
-    return json({ error: { message: "云端尚未配置 LLM 上游", type: "server_misconfigured", code: "ai_upstream_missing" } }, 503);
-  }
-  const rel = url.pathname.slice("/ai/".length).replace(/^v1\//, "");
-  const target = String(env.AI_UPSTREAM_URL).replace(/\/+$/, "") + "/" + rel + url.search;
+  const resp = await routeAi(req, env, url);
 
-  // 读取请求体：① 模型缺省补全 ② 兜底估算 token
-  let reqText = "";
-  try { reqText = await req.clone().text(); } catch (_) {}
-  let bodyStr = reqText;
-  if (reqText) {
-    try {
-      const obj = JSON.parse(reqText);
-      if (obj && typeof obj === "object" && Array.isArray(obj.messages) && !obj.model) {
-        obj.model = env.AI_DEFAULT_MODEL || "";
-        bodyStr = JSON.stringify(obj);
-      }
-    } catch (_) {}
-  }
-
-  const init = {
-    method: req.method,
-    headers: {
-      "content-type": req.headers.get("content-type") || "application/json",
-      "accept": req.headers.get("accept") || "application/json",
-      "authorization": "Bearer " + env.AI_UPSTREAM_KEY,
-      "user-agent": req.headers.get("user-agent") || "weauto-worker",
-    },
-    body: (req.method === "GET" || req.method === "HEAD") ? undefined : bodyStr,
-  };
-  const upstream = await fetch(target, init);
-
-  // 计量：优先取 upstream 响应的 usage.total_tokens；否则按字符数兜底估算
+  // 计量：优先取响应的 usage.total_tokens；否则按字符数兜底估算
   let cost = 0;
-  const ct = upstream.headers.get("content-type") || "";
-  if (ct.includes("application/json") && !ct.includes("text/event-stream")) {
+  const ct = resp.headers.get("content-type") || "";
+  if (resp.status === 200 && ct.includes("application/json") && !ct.includes("text/event-stream")) {
     try {
-      const j = await upstream.clone().json();
+      const j = await resp.clone().json();
       cost = (j && j.usage && (j.usage.total_tokens || j.usage.totalTokens)) || 0;
     } catch (_) {}
   }
   if (!cost) {
     let ub = "";
-    try { ub = await upstream.clone().text(); } catch (_) {}
-    cost = estimateTokens(reqText) + estimateTokens(ub);
+    try { ub = await resp.clone().text(); } catch (_) {}
+    cost = estimateTokens(ub);
   }
   cost = Math.max(1, Math.round(cost));
   await addUsage(env, payload.sub, cost);
 
   const h = billingHeaders({ used: used + cost, quota, tier: payload.tier });
-  return new Response(upstream.body, { status: upstream.status, headers: h });
+  return new Response(resp.body, { status: resp.status, headers: h });
 }
 
 /* ---------------- 卡密网站（HTML） ---------------- */
@@ -525,8 +672,111 @@ code{background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:13px}
 </head>
 <body>
 <div class="wrap">${inner}</div>
+<div class="foot" style="margin-top:26px">
+  <a href="/privacy" style="color:#374151;text-decoration:underline">Privacy Policy</a> ·
+  <a href="/terms" style="color:#374151;text-decoration:underline">Terms of Service</a> ·
+  Payments &amp; refunds handled by Creem (Merchant of Record)<br>
+  <span style="color:#9ca3af">隐私政策 · 服务条款 · 支付与退款由 Creem 处理</span>
+</div>
 </body>
 </html>`;
+}
+
+/** 隐私政策页。Creem 商户合规审查（account review）硬性要求。
+ *  英文为主 + 中文对照（审核员为英文环境）。 */
+function privacyPage(env) {
+  const support = env.SUPPORT_EMAIL;
+  const contact = support
+    ? `<a href="mailto:${esc(support)}">${esc(support)}</a>`
+    : "our support email";
+  return html(layout("Privacy Policy · 隐私政策", `
+<div class="hd"><h1>Privacy Policy <span style="color:#6b7280;font-size:18px">/ 隐私政策</span></h1>
+<p>WeAuto · weauto.safeopc.cn · Last updated: 2026-10-02</p></div>
+
+<div class="card">
+  <h3 style="margin-top:0">1. What We Collect（我们收集什么）</h3>
+  <p>WeAuto is desktop software that runs <b>on your own computer</b>. To provide licensing and
+  payment services, we collect:</p>
+  <ul>
+    <li><b>License key &amp; device instance ID</b> — to validate your license and enforce device limits.</li>
+    <li><b>Email address</b> — provided by our payment processor Creem, used only for receipts and license delivery.</li>
+    <li><b>AI usage counters</b> — token consumption numbers only. <b>We never record chat content.</b></li>
+  </ul>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">2. What We Do NOT Collect（我们不收集什么）</h3>
+  <p>This website does <b>not</b> store or upload your WeChat chat history, contacts, images, or voice
+  messages. AI reply requests go directly from your local client to the model gateway; this site only
+  performs license validation and usage quota counting.</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">3. Payment Data &amp; Third Parties（支付数据与第三方）</h3>
+  <p>Payments and refunds are handled by <b>Creem (Merchant of Record)</b>. Card/payment details are
+  processed by Creem and never touch our servers — see
+  <a href="https://www.creem.io/privacy" rel="noopener">creem.io/privacy</a>.
+  We do not sell your data to anyone.</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">4. Data Retention &amp; Deletion（数据保留与删除）</h3>
+  <p>License and device records are kept while your license is active. To delete your data
+  (license key / device ID / email), contact ${contact} and we will remove it within 7 days.</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">隐私政策（中文摘要）</h3>
+  <p style="color:#374151;font-size:14px">WeAuto 运行于你自己的电脑。为提供授权与付费服务，我们仅收集：
+  卡密与设备实例 ID、由 Creem 提供的邮箱、AI 用量计数（不含聊天内容）。本站不存储/不上传微信聊天记录、
+  联系人、图片或语音。支付与退款由 Creem（Merchant of Record）处理，卡片信息不经我方服务器。
+  我们不出售你的数据。如需删除授权数据，请联系客服邮箱，7 天内处理。</p>
+</div>`));
+}
+
+/** 服务条款页。Creem 审查点名三要素：subscription terms / refund policy / license usage rules。
+ *  英文为主 + 中文对照。 */
+function termsPage(env) {
+  return html(layout("Terms of Service · 服务条款", `
+<div class="hd"><h1>Terms of Service <span style="color:#6b7280;font-size:18px">/ 服务条款</span></h1>
+<p>WeAuto · Effective date: 2026-10-02</p></div>
+
+<div class="card">
+  <h3 style="margin-top:0">1. The Service（服务内容）</h3>
+  <p>WeAuto is desktop automation software for WeChat, licensed per device. After purchase you
+  activate it with a license key on the number of devices stated on the product page.</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">2. Subscription Terms（订阅条款）</h3>
+  <p>Monthly plans are <b>auto-renewing subscriptions</b>, billed each month until cancelled.
+  You may cancel anytime from the Creem receipt email or the Creem customer portal; access continues
+  until the end of the current billing period. One-time (lifetime) plans never renew.</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">3. Refund Policy（退款政策）</h3>
+  <ul>
+    <li><b>One-time purchases</b>: full refund within 7 days if activation fails and the issue
+    cannot be resolved by our support.</li>
+    <li><b>Monthly subscriptions</b>: the current period is generally non-refundable; duplicate or
+    erroneous charges are refunded in full after verification.</li>
+    <li>Refunds are issued via Creem (Merchant of Record) to the original payment method.</li>
+  </ul>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">4. License Usage Rules（许可使用规则）</h3>
+  <p>The license is personal to you. You may <b>not</b> resell, share your license key, reverse
+  engineer, circumvent license validation, or use the software for any unlawful purpose (including
+  harassment, fraud, or spam). Violation allows us to terminate the license without refund.</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">5. Disclaimer &amp; Acceptable Use（免责声明）</h3>
+  <p>The software is provided "as is". You are responsible for complying with the WeChat Terms of
+  Service when using automation features; account restrictions caused by misuse are your own risk.</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">服务条款（中文摘要）</h3>
+  <p style="color:#374151;font-size:14px">WeAuto 为按设备授权的本机软件。月租档为自动续订订阅，
+  可随时在 Creem 收据邮件/客户门户取消，取消后服务持续至当期期末；一次性买断不续订。
+  退款：一次性买断 7 天内且激活遇无法解决的技术问题可全额退款；月租当期原则上不退，重复/误扣全额退。
+  许可规则：禁止转售、共享卡密、逆向工程、绕过校验、用于违法违规用途，违者终止授权不予退款。
+  使用自动化功能请遵守微信用户协议。</p>
+</div>`));
 }
 
 /** 购买落地页（多档套餐）
@@ -945,10 +1195,12 @@ export default {
         mode: env.CREEM_MODE || "test",
         has_api_key: !!env.CREEM_API_KEY,
         has_webhook_secret: !!env.CREEM_WEBHOOK_SECRET,
-        tiers: products.map((x) => ({ tier: x.tier, billing: x.billing, product_id: x.product_id })),
+        creem_products: products.map((x) => ({ tier: x.tier, billing: x.billing, product_id: x.product_id })),
         checkout_ready: ready,
-        has_ai_upstream: !!(env.AI_UPSTREAM_URL && env.AI_UPSTREAM_KEY),
-        ai_ready: !!(env.CREEM_API_KEY && env.AI_UPSTREAM_URL && env.AI_UPSTREAM_KEY),
+        has_ai_upstream: aiAvailable(env),
+        ai_ready: !!(env.CREEM_API_KEY && aiAvailable(env)),
+        workers_ai_ready: !!env.AI,
+        volcano_ready: volcanoConfigured(env),
         // Jev 判断：Workers AI binding + 模型（binding 由 wrangler 注入，不在 vars 里）
         jev_ready: !!env.AI,
         jev_model: env.JEV_MODEL || JEV_MODEL_DEFAULT,
@@ -960,6 +1212,13 @@ export default {
         default_tier: DEFAULT_TIER,
         tiers: Object.keys(TIERS),
       });
+    }
+
+    // ---- EXE 不受信任服务商黑名单：/black（自建，替代原 vg 的 /black）----
+    // 返回需要被 EXE 阻断的 API 网关域名/关键字列表（小写子串匹配）。
+    // 当前为空：自有 Worker 网关始终可信；若发现泄露/恶意网关域名可在此下发。
+    if (p === "/black") {
+      return json({ data: [] });
     }
 
     // ---- EXE 自动更新代理：/api/update ----
@@ -1042,6 +1301,14 @@ export default {
         return notConfiguredPage();
       }
       return html(buyPage(env, url.origin, mid));
+    }
+
+    // ---- 合规页面（Creem 商户审查硬性要求：footer 可见的 Privacy Policy 与 Terms）----
+    if (p === "/privacy" && req.method === "GET") {
+      return privacyPage(env);
+    }
+    if (p === "/terms" && req.method === "GET") {
+      return termsPage(env);
     }
 
     // ---- 激活（首次）----

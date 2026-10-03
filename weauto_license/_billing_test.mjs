@@ -1,6 +1,6 @@
 // 离线验证 token 计费全链路（Node 22，内存 mock，不打网络）
-// 运行：node _billing_test.mjs（需先有 cf_worker.js 的副本 _cf_worker_under_test.mjs）
-import worker from "./_cf_worker_under_test.mjs";
+// 运行：node _billing_test.mjs（直接 import 真实 cf_worker.js，无需副本）
+import worker from "./cf_worker.js";
 
 let pass = 0, fail = 0;
 function ok(name, cond, extra = "") {
@@ -41,6 +41,7 @@ const env = {
   WEAUATO_SIGN_SECRET: "test_sign_secret_0123456789abcdef",
   AI_UPSTREAM_URL: "https://upstream.test/v1",
   AI_UPSTREAM_KEY: "sk-upstream-real-key",
+  AI_DEFAULT_PROVIDER: "volcano",   // 无模型名时回落火山（保留旧 upstream 断言）
   AI_DEFAULT_MODEL: "gpt-test",
   JEV_MODEL: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
   CREEM_PRODUCTS: "[]",
@@ -131,6 +132,16 @@ let tok;
 
   // 不带 body.model 时自动补 AI_DEFAULT_MODEL
   // （在 upstreamCall 里没法直接断言 body，跳过 —— 逻辑与旧 proxyAi 一致）
+
+  // Workers AI 路由：@cf/ 前缀应走 env.AI，而不走 HTTP upstream
+  const beforeWA = upstreamCalls;
+  const rwa = await call("/ai/v1/chat/completions", {
+    method: "POST",
+    headers: { "content-type": "application/json", "authorization": "Bearer " + tok },
+    body: JSON.stringify({ model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", messages: [{ role: "user", content: "hi" }] }),
+  });
+  ok("workers ai 路由 200", rwa.status === 200, "status=" + rwa.status + " body=" + JSON.stringify(rwa.body));
+  ok("workers ai 未走 HTTP upstream", upstreamCalls === beforeWA, "upstreamCalls=" + upstreamCalls);
 
   // 篡改签名
   const bad = tok.slice(0, -4) + "AAAA";

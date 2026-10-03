@@ -158,21 +158,23 @@ python cli.py license deactivate   # 换机前释放本机激活
 - 客户端仅传 `HMAC/机器指纹` 与用户卡密，服务端拿不到原始硬件 PII。
 - Webhook 必须验签（`creem-signature` HMAC-SHA256），否则会被伪造回调。
 
-## LLM 统一走 Worker AI 代理（反破解核心，2026-09-25）
+## LLM 统一走 Worker AI 代理（反破解核心，2026-09-25 / 2026-10-01 改双供应商）
 
-客户端所有 LLM 调用不再直连第三方，全部经自有 Worker 中转：
+客户端所有 LLM 调用不再直连第三方，全部经自有 Worker 中转；**已彻底去掉 vg.v1api.cc**：
 
 ```
 bot.py (base_url=<worker>/ai/v1, api_key=卡密, X-WeAuto-Instance=实例ID)
    └─> CF Worker /ai/v1/*  ──验证卡密(Creem /licenses/validate, isolate 缓存10min)──┐
-           │ 有效：透传请求 -> AI_UPSTREAM_URL（注入真实 key = Secret AI_UPSTREAM_KEY）│
+           │ 有效：按模型路由 -> Workers AI(env.AI, @cf/ 模型) 或 火山方舟(VOLCANO_*)  │
            │ 无效：401 license_required（fail-close）<──────────────────────────────┘
 ```
 
-- **反编译跳过支付为何失效**：upstream 真实 key 只存在 Worker Secret 里；破解者 patch
+- **反编译跳过支付为何失效**：火山真实 key 只存在 Worker Secret 里；破解者 patch
   掉本地门禁后，Worker 仍会因无有效卡密拒绝 AI 请求 → bot 无 AI 可用 = 废物。
-- 配置（一次性）：`wrangler secret put AI_UPSTREAM_KEY`（vg.v1api.cc 的 key）；
-  `AI_UPSTREAM_URL` 已在 wrangler.toml `[vars]`（需带 /v1 后缀）。
+- **双供应商**：模型以 `@cf/` 开头走 Workers AI（免密钥、免费额度）；其余走火山方舟
+  （OpenAI 兼容，`wrangler secret put VOLCANO_API_KEY`）；主供应商失败自动 failover 到另一家。
+- 配置（一次性）：`wrangler secret put VOLCANO_API_KEY`（火山方舟 API Key）；
+  `VOLCANO_BASE_URL` / `VOLCANO_MODEL` / `AI_DEFAULT_PROVIDER` / `AI_CHAT_MODEL` 在 wrangler.toml `[vars]`。
 - **表情 API（MOONSHOT 图像识别）按项目方要求保留直连**，不走 Worker、不受门禁影响。
 - 开发态（无 `weauto_license/_release.py`）门禁可关、LLM 走本地 config；
   CI 发行版注入 `_release.py` → 门禁强制开启 + LLM 强制走 Worker。

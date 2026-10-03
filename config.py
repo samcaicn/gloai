@@ -14,12 +14,16 @@
 # 例如：LISTEN_LIST = [["微信名1", "角色1"], ["微信ID@chatroom", ""]]
 LISTEN_LIST = [["SamCai_", "角色1"], ["45158227848@chatroom", "角色1"], ["58550599600@chatroom", ""], ["18712200430@chatroom", ""], ["45882134652@chatroom", ""], ["wxid_9ivay0f1tt9322", ""], ["44222621566@chatroom", ""]]
 
-# DeepSeek API 配置
+# AI 大模型配置（统一走自有 Worker 网关 /ai/v1，反破解核心：真实 key 只在 Worker 端）
+# 发行版（门禁开启）下本机不直连任何供应商，base_url 由 guard 改写为 <worker>/ai/v1。
+# 本地开发（门禁关闭）若想直连供应商，可把 DEEPSEEK_BASE_URL 改成火山方舟等直连地址，
+# 并在 DEEPSEEK_API_KEY 填入对应 key、MODEL 改成对应模型名。
 DEEPSEEK_API_KEY = 'sk-dummy-placeholder'
-# 硅基流动API注册地址，免费15元额度 https://cloud.siliconflow.cn/
-DEEPSEEK_BASE_URL = 'https://vg.v1api.cc/v1'
-# 硅基流动API的模型
-MODEL = 'deepseek-v3-0324'
+# 默认指向自有 Worker 网关（门禁开启时由 guard 覆盖；门禁关闭时此为直连兜底地址）
+DEEPSEEK_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
+# 主聊天模型：@cf/ 开头 -> Workers AI（Cloudflare，免密钥）；
+# 写成火山模型名（如 doubao-seed-1.6-250615）-> 火山方舟（需 Worker 配 VOLCANO_API_KEY）
+MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
 # 用户和AI对话轮数
 MAX_GROUPS = 5
 
@@ -36,7 +40,7 @@ TEMPERATURE = 1.1
 # Moonshot AI配置（用于图片和表情包识别）
 # API申请https://platform.moonshot.cn/
 MOONSHOT_API_KEY = ''
-MOONSHOT_BASE_URL = 'https://vg.v1api.cc/v1'
+MOONSHOT_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
 MOONSHOT_MODEL = 'gpt-4o'
 MOONSHOT_TEMPERATURE = 0.8
 ENABLE_IMAGE_RECOGNITION = True
@@ -115,7 +119,7 @@ USE_VOICE_CALL_FOR_REMINDERS = False
 
 # 联网API配置
 ENABLE_ONLINE_API = False
-ONLINE_BASE_URL = 'https://vg.v1api.cc/v1'
+ONLINE_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
 ONLINE_MODEL = 'net-gpt-4o-mini'
 ONLINE_API_KEY = ''
 ONLINE_API_TEMPERATURE = 0.7
@@ -148,7 +152,7 @@ REMOVE_PARENTHESES = False
 
 # 是否使用辅助模型
 ENABLE_ASSISTANT_MODEL = False
-ASSISTANT_BASE_URL = 'https://vg.v1api.cc/v1'
+ASSISTANT_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
 ASSISTANT_MODEL = 'gpt-4o-mini'
 ASSISTANT_API_KEY = ''
 ASSISTANT_TEMPERATURE = 0.3
@@ -161,7 +165,7 @@ ENABLE_SENSITIVE_CONTENT_CLEARING = True
 
 # 论坛自定义模型配置（可选）
 ENABLE_FORUM_CUSTOM_MODEL = False
-FORUM_BASE_URL = 'https://vg.v1api.cc/v1'
+FORUM_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
 FORUM_MODEL = 'deepseek-ai/DeepSeek-V3'
 FORUM_API_KEY = ''
 FORUM_TEMPERATURE = 1.0

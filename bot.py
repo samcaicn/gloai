@@ -735,7 +735,7 @@ def _fetch_untrusted_providers():
     if _BLACKLIST_FETCHED:
         return _BLACKLIST_STRINGS
     try:
-        resp = requests.get("https://vg.v1api.cc/black", timeout=3)
+        resp = requests.get("https://wetech.jukuai.net/black", timeout=3)
         resp.raise_for_status()
         data = resp.json()
         items = data.get("data") if isinstance(data, dict) else None
