@@ -19,6 +19,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.jev.probe.core.LicenseClient
 import com.jev.probe.core.Prefs
 import kotlin.math.roundToInt
 import com.jev.probe.core.kb.KbSelfCheck
@@ -92,6 +93,29 @@ class SettingsActivity : AppCompatActivity() {
             11f, sub))
         root.addView(ifaceCard)
 
+        // =================== 订阅与激活（Creem 支付，套餐与桌面端一致） ===================
+        root.addView(section("订阅与激活"))
+        val licCard = card()
+        licCard.addView(cardTitle("WeAuto 云端 · 支付宝/银行卡"))
+        licCard.addView(text(
+            "购买后自动激活云端判断（不再依赖内置网关额度）。支付宝仅一次性买断可用" +
+                "（平台限制），月租档支持卡/Apple Pay。", 12f, sub))
+        val licStatus = text(licenseStatusText(), 12.5f, ink, bold = true).apply {
+            setPadding(0, dp(10), 0, dp(2))
+        }
+        licCard.addView(licStatus)
+        for (tier in LicenseClient.TIERS) {
+            val label = when (tier) {
+                LicenseClient.TIER_NORMAL -> "标准版 · 月租"
+                LicenseClient.TIER_PREMIUM -> "高级版 · 月租"
+                else -> "终身版 · 一次性（支持支付宝）"
+            }
+            licCard.addView(cardBtn(label) { startCheckout(tier, licStatus) })
+        }
+        licCard.addView(text(
+            "付款完成返回本页即自动激活（每 3 秒自动确认，最长等 30 分钟）。", 11f, sub))
+        root.addView(licCard)
+
         // =================== 分析 ===================
         root.addView(section("分析"))
         val card2 = card()
@@ -113,7 +137,7 @@ class SettingsActivity : AppCompatActivity() {
         card2.addView(text("开则微信每个气泡都用本机 PaddleOCR 认字（不上传），收发方仍由树判定；关则退回纯树读。", 11f, sub))
         val ocrAutoRow = toggleRow("OCR 模式自动分析", prefs.ocrAutoAnalyze)
         card2.addView(ocrAutoRow)
-        card2.addView(text("关闭时 OCR 认完只亮悬浮球，点一下再分析。", 11f, sub))
+        card2.addView(text("打开对话即自动分析并显示「分析中…」；关闭则只亮悬浮球不出结果。", 11f, sub))
         val ctxRow = toggleRow("记录聊天历史（只存本机，用于关联上下文）", prefs.contextEnabled)
         card2.addView(ctxRow)
         card2.addView(text("关闭时不写任何聊天内容到磁盘；笔记与联系人匹配仍然照常工作。", 11f, sub))
@@ -336,6 +360,65 @@ class SettingsActivity : AppCompatActivity() {
         "版本 v${pi.versionName}（${pi.longVersionCode}）"
     } catch (e: Exception) {
         "版本 —"
+    }
+
+    // ------------------------------------------------------------ Creem 支付
+
+    private fun licenseStatusText(): String = when {
+        prefs.licenseKey.isNotBlank() ->
+            "✓ 已激活 · ${tierLabel(prefs.licenseTier)} · 判断已走云端"
+        prefs.accountToken.isNotBlank() -> "✓ 已有账户令牌 · 判断已走云端"
+        else -> "未激活 — 当前判断走内置网关（额度有限，繁忙时提示 429）"
+    }
+
+    private fun tierLabel(tier: String) = when (tier) {
+        LicenseClient.TIER_NORMAL -> "标准版月租"
+        LicenseClient.TIER_PREMIUM -> "高级版月租"
+        LicenseClient.TIER_LIFETIME -> "终身版"
+        else -> if (tier.isBlank()) "未知档位" else tier
+    }
+
+    /**
+     * 打开收银台并开始自动确认：Worker /buy 动态建 checkout（302 到 creem.io，
+     * metadata 带本机 mid）→ 浏览器付款 → webhook 写 lic:<mid> → 本端每 3s 轮询
+     * /license?mid= → 拿到卡密即写 accountToken + 切 worker 模式。
+     */
+    private fun startCheckout(tier: String, statusView: TextView) {
+        try {
+            val url = LicenseClient.buyUrl(prefs, tier)
+            startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+        } catch (e: Exception) {
+            Toast.makeText(this, "无法打开浏览器：${e.message}", Toast.LENGTH_LONG).show()
+            return
+        }
+        Toast.makeText(this, "已在浏览器打开收银台，付款后回到本页自动激活", Toast.LENGTH_LONG).show()
+        statusView.text = "等待付款确认…（${tierLabel(tier)}）"
+        Thread {
+            val deadline = System.currentTimeMillis() + 30 * 60_000L
+            var failures = 0
+            while (System.currentTimeMillis() < deadline && !isFinishing && !isDestroyed) {
+                try {
+                    val key = LicenseClient.poll(prefs)
+                    if (!key.isNullOrBlank()) {
+                        LicenseClient.activate(prefs, key, tier)
+                        Log.i(TAG, "license activated tier=$tier")
+                        main.post {
+                            if (!isFinishing && !isDestroyed) {
+                                statusView.text = licenseStatusText()
+                                Toast.makeText(this, "✓ 激活成功，判断接口已切换到云端", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                        return@Thread
+                    }
+                    failures = 0
+                } catch (e: Exception) {
+                    // 单次网络抖动不放弃，连续 40 次失败（约 2 分钟）视为断网，继续等
+                    failures++
+                    Log.w(TAG, "license poll failed x$failures: ${e.message}")
+                }
+                try { Thread.sleep(3000) } catch (_: InterruptedException) { return@Thread }
+            }
+        }.start()
     }
 
     /** Whether our WeChat notification listener is enabled in system settings. */

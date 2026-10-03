@@ -697,7 +697,9 @@ open class ChatCaptureService : AccessibilityService() {
         cancelAnalysis()
         lastSignature = sig
 
-        val auto = prefs.ocrAutoAnalyze && prefs.autoAnalyze && snapshot.latestFrom == "other"
+        // 进对话/内容变化即自动分析（不再要求"对方最新消息"）：打开微信对话
+        // 就直接出结果，配合面板"分析中…"提示（手动按钮已按需求移除）。
+        val auto = prefs.ocrAutoAnalyze && prefs.autoAnalyze
         if (manual || auto) {
             pendingSnapshot = snapshot
             main.removeCallbacks(debounce)

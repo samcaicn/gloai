@@ -182,6 +182,30 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getLong(K_BILLING_QUOTA, 0L)
         set(v) = sp.edit().putLong(K_BILLING_QUOTA, v).apply()
 
+    /**
+     * 购买实例 ID（mid）：首次取值时生成高熵 UUID 并持久化。整个购买闭环
+     * （checkout metadata.mid → webhook 写 lic:<mid> → /license?mid= 轮询）
+     * 都靠它把付款关联到本机，重装前保持不变。
+     */
+    val licenseMid: String
+        get() {
+            val saved = sp.getString(K_LICENSE_MID, null)
+            if (!saved.isNullOrBlank()) return saved
+            val fresh = java.util.UUID.randomUUID().toString().replace("-", "") + instanceId.hashCode().toUInt()
+            sp.edit().putString(K_LICENSE_MID, fresh).apply()
+            return fresh
+        }
+
+    /** 购买成功后由 /license?mid= 轮询拿到的卡密（加密存，同 accountToken）。 */
+    var licenseKey: String
+        get() = SecureStore.decrypt(appContext, sp.getString(K_LICENSE_KEY, "") ?: "")
+        set(v) = sp.edit().putString(K_LICENSE_KEY, SecureStore.encrypt(appContext, v.trim())).apply()
+
+    /** 本机已购买的 Creem 档位（normal/premium/lifetime），仅展示用。 */
+    var licenseTier: String
+        get() = sp.getString(K_LICENSE_TIER, "") ?: ""
+        set(v) = sp.edit().putString(K_LICENSE_TIER, v).apply()
+
     /** 客户端用计费回传刷新本地缓存。 */
     fun recordBilling(s: BillingState?) {
         if (s == null) return
@@ -227,7 +251,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         set(v) = sp.edit().putBoolean(K_OCR_PRIMARY, v).apply()
 
     var ocrAutoAnalyze: Boolean
-        get() = sp.getBoolean(K_OCR_AUTO, false)
+        get() = sp.getBoolean(K_OCR_AUTO, true)
         set(v) = sp.edit().putBoolean(K_OCR_AUTO, v).apply()
 
     // ------------------------------------------------------------- existing
@@ -391,6 +415,9 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_BILLING_TIER = "billing_tier"
         private const val K_BILLING_USED = "billing_used"
         private const val K_BILLING_QUOTA = "billing_quota"
+        private const val K_LICENSE_MID = "license_mid"
+        private const val K_LICENSE_KEY = "license_key_enc"
+        private const val K_LICENSE_TIER = "license_tier"
         private const val K_CTX_ENABLED = "context_enabled"
         private const val K_CTX_COUNT = "context_history_count"
         private const val K_AUTO_SUMMARY = "auto_summary"
