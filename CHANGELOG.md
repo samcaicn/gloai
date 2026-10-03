@@ -6,6 +6,7 @@
 
 **改进**
 - 付款不再跳外部浏览器：点套餐后 Creem 收银台直接在 App 内的页面里打开（自带返回 / 刷新 / 「已完成付款」），付款中途不会因为切到浏览器而丢状态。收银台里跳支付宝、云闪付、3DS 这类网页跳转也都留在 App 内，只有唤起支付宝/微信 App 的原生链接才出去。收银台同时强制不缓存，避免拿到别人的付款会话。
+- 收银台里看不到 Creem 字样了：页面整体上移裁掉顶部品牌条（可调）、窗口高度可控、内容装得下时禁止滚动，同时把页面上任何带 Creem 字样的节点直接隐藏，并用 MutationObserver 盯着后续渲染出来的节点。
 
 **新增**
 - 判断接口新增「Vercel」预设。选中后自动填好地址 `https://ai-gateway.vercel.sh/typesafe` 和模型 `typesafe-ai/jev`，密钥用 Vercel AI Gateway 的 key。走的是网关的 TypeSafe 兼容接口 `POST /v1/systemone`，和 TypeSafe 直连同一套请求体与 `noul` 答案，默认仍是 OpenRouter。

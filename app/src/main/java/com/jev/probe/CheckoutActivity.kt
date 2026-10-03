@@ -42,6 +42,14 @@ import kotlin.math.roundToInt
  * App 内收银台：Creem 的 checkout 页（Worker /buy 302 到 pay.jukuai.net）**在本 App 的
  * WebView 里打开**，不再跳出外部浏览器/H5 容器，避免「付款后回不到 App / 会话串号 / 状态丢失」。
  *
+ * 品牌白牌：Creem 页自带「Secure Checkout by Creem / Powered by Creem.io」字样，用三重手段藏掉
+ *  1. **布局裁切**：WebView 整体上移 [TOP_CROP_DP]，底边再收 [BOTTOM_CROP_DP]（或固定
+ *     [WINDOW_HEIGHT_DP]），把品牌所在的边缘顶到可视区外，容器负责裁剪；
+ *  2. **禁止滚动**：注入 `overflow:hidden` + 关闭滚动条/回弹，用户滚不回去看到被切掉的部分；
+ *  3. **DOM 兜底**：注入脚本把任何文案/alt/src/class 里带 "creem" 的节点直接 `display:none`，
+ *     并用 MutationObserver 盯着（收银台是 Next.js 客户端渲染，品牌节点是后插入的）。
+ * 三个量都在 [Companion] 里，真机上看着调即可。
+ *
  * 关键约束：
  *  - **checkout 是一次性的买家私有资源**，`/buy` 每次现建 → 这里强制 `LOAD_NO_CACHE`
  *    （以及请求头 no-cache），第二个买家不会拿到第一个人的会话。
@@ -115,8 +123,8 @@ class CheckoutActivity : AppCompatActivity() {
             fallbackToBrowser(startUrl)
             return
         }
-        container.addView(w, FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        container.addView(w, windowLayoutParams())
+        container.setClipChildren(true)
 
         setContentView(root)
         WindowInsetsControllerCompat(window, root).isAppearanceLightStatusBars = true
@@ -237,6 +245,9 @@ class CheckoutActivity : AppCompatActivity() {
     private fun createWebView(): WebView = WebView(this).apply {
         setBackgroundColor(Color.WHITE)
         isHorizontalScrollBarEnabled = false
+        isVerticalScrollBarEnabled = false
+        // 禁滚动：不留滚动条、不留回弹，配合注入的 overflow:hidden
+        overScrollMode = View.OVER_SCROLL_NEVER
         val s = settings
         s.javaScriptEnabled = true
         s.domStorageEnabled = true
@@ -263,6 +274,28 @@ class CheckoutActivity : AppCompatActivity() {
         webChromeClient = makeChromeClient()
     }
 
+    /**
+     * WebView 的窗口尺寸：整体上移 [TOP_CROP_DP]、底边再收 [BOTTOM_CROP_DP]，
+     * 让页面边缘的品牌区落在容器可视区之外（容器 clipChildren 负责裁掉）。
+     * [WINDOW_HEIGHT_DP] > 0 时不再撑满，而是固定高度 —— 用来控制「窗口高度」。
+     */
+    private fun windowLayoutParams(): FrameLayout.LayoutParams {
+        val topCrop = dp(TOP_CROP_DP)
+        val bottomCrop = dp(BOTTOM_CROP_DP)
+        val h = if (WINDOW_HEIGHT_DP > 0) dp(WINDOW_HEIGHT_DP) + topCrop + bottomCrop
+        else ViewGroup.LayoutParams.MATCH_PARENT
+        return FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, h).apply {
+            topMargin = -topCrop
+            bottomMargin = -bottomCrop
+        }
+    }
+
+    /** 藏品牌 + 禁滚动。每次页面加载完都打一遍（SPA 内部跳转靠页面里的 MutationObserver 续命）。 */
+    private fun injectBrandGuard(view: WebView) {
+        runCatching { view.evaluateJavascript(HIDE_BRAND_JS, android.webkit.ValueCallback<String> { }) }
+            .onFailure { Log.w(TAG, "brand guard inject failed: ${it.message}") }
+    }
+
     private fun makeClient(): WebViewClient = object : WebViewClient() {
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -287,6 +320,7 @@ class CheckoutActivity : AppCompatActivity() {
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            injectBrandGuard(view)
             if (view !== web) return
             progress.visibility = View.GONE
             lastGoodUrl = url
@@ -307,9 +341,8 @@ class CheckoutActivity : AppCompatActivity() {
             progress.visibility = if (newProgress in 1..99) View.VISIBLE else View.GONE
         }
 
-        override fun onReceivedTitle(view: WebView, title: String?) {
-            if (view === web && !title.isNullOrBlank()) titleView.text = title
-        }
+        // 刻意不接管 onReceivedTitle：收银台页面的 <title> 就是 "Creem"，
+        // 拿到标题栏上等于把品牌又露了出来。标题固定用我们自己的。
 
         /** window.open / target=_blank：新建 WebView 叠在容器内，仍然不出 App。 */
         override fun onCreateWindow(
@@ -431,5 +464,70 @@ class CheckoutActivity : AppCompatActivity() {
             "success", "succeeded", "successful", "thank", "thanks", "thankyou",
             "complete", "completed", "paid", "finish", "finished", "done"
         )
+
+        // ---------------------------------------------------- 白牌调参区
+        // 真机上看着调这三个值即可，改完直接出包，不用动其它逻辑。
+
+        /** 页面整体上移多少 dp（把顶部品牌条顶出可视区）。 */
+        private const val TOP_CROP_DP = 10
+
+        /** 底边再收多少 dp：底部还有「Powered by Creem」时把它也切掉。 */
+        private const val BOTTOM_CROP_DP = 0
+
+        /** 窗口固定高度（dp）。0 = 撑满剩余空间；>0 时按这个高度开窗（控制窗口高度）。 */
+        private const val WINDOW_HEIGHT_DP = 0
+
+        /** 隐藏品牌节点 + 禁止页面滚动的注入脚本。 */
+        private const val HIDE_BRAND_JS = """
+(function () {
+  // 可交互元素只按文案判定，避免把「Pay」按钮误杀（它的 class 里可能带 creem）
+  var INTERACTIVE = { BUTTON: 1, INPUT: 1, SELECT: 1, TEXTAREA: 1, LABEL: 1, FORM: 1 };
+  var timer = null;
+  function attrOf(e, n) { try { return (e.getAttribute(n) || '') + ' '; } catch (err) { return ''; } }
+  function sweep() {
+    var els = document.querySelectorAll('*');
+    for (var i = 0; i < els.length; i++) {
+      var e = els[i];
+      if (e.__waHidden) continue;
+      var tag = (e.tagName || '').toUpperCase();
+      // 只看叶子节点的文本，避免把整棵 body 干掉
+      var own = (e.children && e.children.length === 0)
+        ? String(e.textContent || '').toLowerCase() : '';
+      var content = (attrOf(e, 'alt') + attrOf(e, 'aria-label') + attrOf(e, 'src') +
+                     attrOf(e, 'href') + attrOf(e, 'title')).toLowerCase();
+      var cls = (attrOf(e, 'class') + attrOf(e, 'id')).toLowerCase();
+      var hit = own.indexOf('creem') >= 0 || content.indexOf('creem') >= 0 ||
+                (cls.indexOf('creem') >= 0 && !INTERACTIVE[tag]);
+      if (hit) {
+        try { e.style.setProperty('display', 'none', 'important'); e.__waHidden = 1; } catch (err) {}
+      }
+    }
+  }
+  // 内容装得下才禁滚动；装不下就放开，否则用户够不着付款按钮
+  function lockScroll() {
+    try {
+      var fits = document.documentElement.scrollHeight <= (window.innerHeight + 12);
+      var css = fits
+        ? 'html,body{overflow:hidden!important;overscroll-behavior:none!important;}'
+        : 'html,body{overscroll-behavior:none!important;}';
+      var el = document.getElementById('__waLock');
+      if (!el) {
+        el = document.createElement('style');
+        el.id = '__waLock';
+        (document.head || document.documentElement).appendChild(el);
+      }
+      if (el.textContent !== css) el.textContent = css;
+    } catch (e) {}
+  }
+  function run() { sweep(); lockScroll(); }
+  run();
+  try {
+    new MutationObserver(function () {
+      if (timer) return;
+      timer = setTimeout(function () { timer = null; run(); }, 150);
+    }).observe(document.documentElement || document.body, { childList: true, subtree: true });
+  } catch (e) {}
+})();
+"""
     }
 }
