@@ -48,6 +48,11 @@ object ConversationHistory {
     @Synchronized
     fun appendFromSnapshot(pkg: String, title: String?, msgs: List<Msg>) {
         if (msgs.isEmpty()) return
+        // 标题未知时一律不写：微信把会话标题对无障碍隐藏（实测恒为 null），
+        // 于是所有微信会话都会落到同一个 "pkg|" 桶里，A 会话的内容会被当成
+        // B 会话的历史（实测在「元宝」里点分析，面板显示的是「隆诚装饰」的话）。
+        // 宁可少累积，也不能串会话。
+        if (title.isNullOrBlank()) return
         val k = key(pkg, title)
         val list = store.getOrPut(k) { ArrayList() }
         // 与"写入前"桶内最近 DEDUP_LOOKBACK 条比对：同一屏被反复 OCR 时，
@@ -92,6 +97,9 @@ object ConversationHistory {
      */
     @Synchronized
     fun mergeInto(snapshot: ChatSnapshot, pkg: String, limit: Int = MAX_PER_CONV): ChatSnapshot {
+        // 标题未知 → 绝不跨会话合并。否则 "pkg|" 这个共享桶里别的会话的历史
+        // 会被拼到当前会话前面，AI 就会对着完全无关的一段对话出建议。
+        if (snapshot.title.isNullOrBlank()) return snapshot
         val hist = threadFor(pkg, snapshot.title, limit)
         if (hist.isEmpty()) return snapshot
         val visible = snapshot.messages

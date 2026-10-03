@@ -2,6 +2,7 @@ package com.jev.probe.capture
 
 import android.content.res.Resources
 import android.graphics.Rect
+import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import com.jev.probe.core.BubbleRect
 import com.jev.probe.core.ChatSnapshot
@@ -96,7 +97,8 @@ internal fun findWeChatTitle(
     width: Int,
     res: Resources
 ): String? {
-    val actionBarMax = minOf(firstBubbleTop, (res.displayMetrics.heightPixels * 0.14).toInt())
+    val screenH = res.displayMetrics.heightPixels
+    val actionBarMax = minOf(firstBubbleTop, (screenH * 0.14).toInt())
     val minCenterX = (width * 0.25).toInt()
     val maxCenterX = (width * 0.75).toInt()
     val stack = ArrayDeque<AccessibilityNodeInfo>()
@@ -106,11 +108,26 @@ internal fun findWeChatTitle(
     var bestCounted: String? = null
     var bestCountedTop = Int.MAX_VALUE
     var guard = 0
+    val trace = ArrayList<String>()
     while (stack.isNotEmpty() && guard < 5000) {
         guard++
         val node = stack.removeLast()
-        val text = node.text?.toString()
-        if (!text.isNullOrBlank() && text.length <= 24 && !looksLikeTimestamp(text) &&
+        val text = node.text?.toString()?.takeIf { it.isNotBlank() }
+            ?: node.contentDescription?.toString()?.takeIf { it.isNotBlank() }
+        if (text != null) {
+            val b = Rect(); node.getBoundsInScreen(b)
+            // 诊断：标题恒为 null 时把上屏区（含 20% 高度带）的候选打出来，
+            // 便于定位微信到底把标题藏在哪个节点（text / contentDescription / id）。
+            if (b.bottom in 1 until (screenH * 0.20).toInt() && trace.size < 14) {
+                trace.add(
+                    "${node.viewIdResourceName?.substringAfterLast('/') ?: "-"}" +
+                        "|${node.className?.toString()?.substringAfterLast('.') ?: "-"}" +
+                        "|(${b.left},${b.top},${b.right},${b.bottom})" +
+                        "|t=" + (node.text?.toString()?.take(16) ?: "-") +
+                        "|cd=" + (node.contentDescription?.toString()?.take(16) ?: "-"))
+            }
+        }
+        if (text != null && text.length <= 32 && !looksLikeTimestamp(text) &&
             !WECHAT_TITLE_EXCLUDE_PUNCT.containsMatchIn(text)
         ) {
             val b = Rect(); node.getBoundsInScreen(b)
@@ -124,8 +141,19 @@ internal fun findWeChatTitle(
         }
         for (i in node.childCount - 1 downTo 0) node.getChild(i)?.let { stack.addLast(it) }
     }
-    return bestCounted ?: bestPlain
+    val out = bestCounted ?: bestPlain
+    if (out == null) {
+        val now = System.currentTimeMillis()
+        if (now - lastWxTitleDumpAt > 8000L) {
+            lastWxTitleDumpAt = now
+            Log.d("JEVASSIST", "wx title=none actionBarMax=$actionBarMax firstBubbleTop=$firstBubbleTop " +
+                "band=[${trace.joinToString(" ;; ")}]")
+        }
+    }
+    return out
 }
+
+@Volatile private var lastWxTitleDumpAt = 0L
 
 /** WeChat (com.tencent.mm). Message bubbles carry a stable id; sender side is
  *  the bubble's horizontal position (right = me, left = other).
