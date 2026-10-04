@@ -244,6 +244,35 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getBoolean(K_AUTO_SUMMARY, true)
         set(v) = sp.edit().putBoolean(K_AUTO_SUMMARY, v).apply()
 
+    // -------------------------------------------------------- 统计与自检（P0）
+
+    /**
+     * 本地事件日志开关（P0-1）。**默认关闭**——产品读的是聊天，任何统计都必须由用户
+     * 显式同意。关闭时 [Metrics.log] 直接 no-op，不写任何文件。
+     * 打开后只写本机 `filesDir/metrics/events.log`，不上传，且绝不记录聊天内容。
+     */
+    var metricsEnabled: Boolean
+        get() = sp.getBoolean(K_METRICS, false)
+        set(v) {
+            sp.edit().putBoolean(K_METRICS, v).apply()
+            Metrics.setEnabled(v)
+        }
+
+    /** 上一轮分析耗时（毫秒），自检卡展示用。与统计开关无关，只存数字。 */
+    var lastAnalysisMs: Long
+        get() = sp.getLong(K_LAST_MS, -1L)
+        set(v) = sp.edit().putLong(K_LAST_MS, v).apply()
+
+    /** 上一轮分析是否成功（true=出判断 / false=失败 / 未跑过=-1 由 [lastAnalysisMs] 表达）。 */
+    var lastAnalysisOk: Boolean
+        get() = sp.getBoolean(K_LAST_OK, false)
+        set(v) = sp.edit().putBoolean(K_LAST_OK, v).apply()
+
+    /** 上一轮分析的失败类别（见 ErrCatalog.Kind），成功时为空。 */
+    var lastAnalysisErr: String
+        get() = sp.getString(K_LAST_ERR, "") ?: ""
+        set(v) = sp.edit().putString(K_LAST_ERR, v).apply()
+
     // ------------------------------------------------------------ OCR (B)
 
     var ocrEngine: String
@@ -303,11 +332,14 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     // --------------------------------------------------- 无人值守（微信）
 
     /**
-     * 填入回复后是否自动点「发送」。仅作用于微信（用户要求"要填也要自动发"）。
-     * 注意：自动发送的是用户已从候选里选定的那一条，不是 AI 擅自决定发什么。
+     * 填入回复后是否自动点「发送」。仅作用于微信。
+     *
+     * **默认关**（2026-10-05 改）：对外承诺是「发送权永远在人手里」，而这是全应用
+     * 唯一会替用户把消息发出去的开关，新装不该默认打开。已经开过的老用户不受影响
+     * （值已存在），且设置页开启时会有二次确认、运行期悬浮窗会挂「自动发送已开」角标。
      */
     var autoSend: Boolean
-        get() = sp.getBoolean(K_AUTO_SEND, true)
+        get() = sp.getBoolean(K_AUTO_SEND, false)
         set(v) = sp.edit().putBoolean(K_AUTO_SEND, v).apply()
 
     /**
@@ -517,6 +549,10 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_BILLING_USED = "billing_used"
         private const val K_BILLING_QUOTA = "billing_quota"
         private const val K_LICENSE_MID = "license_mid"
+        private const val K_METRICS = "metrics_enabled"
+        private const val K_LAST_MS = "last_analysis_ms"
+        private const val K_LAST_OK = "last_analysis_ok"
+        private const val K_LAST_ERR = "last_analysis_err"
         private const val K_LICENSE_KEY = "license_key_enc"
         private const val K_LICENSE_TIER = "license_tier"
         private const val K_CTX_ENABLED = "context_enabled"

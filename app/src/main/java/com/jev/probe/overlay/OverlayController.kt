@@ -21,6 +21,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.jev.probe.core.Analysis
 import com.jev.probe.core.ChatSnapshot
+import com.jev.probe.core.ErrCatalog
 import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.RankedReply
@@ -49,6 +50,15 @@ class OverlayController(private val ctx: Context) {
     private var lp: WindowManager.LayoutParams? = null
 
     var onManualAnalyze: (() -> Unit)? = null
+
+    /** 错误卡上那个按钮被点了（去设置 / 看档位 / 重试 / 无障碍设置）。 */
+    var onErrorAction: ((ErrCatalog.Action) -> Unit)? = null
+
+    /** 候选回复的「有用 / 没用」反馈（P1-6）：只有排序与是否被采纳，绝不回传正文。 */
+    var onReplyFeedback: ((rank: Int, good: Boolean) -> Unit)? = null
+
+    /** 悬浮球菜单 → 把当前会话加入 / 移出白名单（P1-8）。 */
+    var onWhitelistToggle: (() -> Unit)? = null
 
     /** Bubble menu → file the open conversation as a knowledge-base contact. */
     var onSaveContact: (() -> Unit)? = null
@@ -243,6 +253,9 @@ class OverlayController(private val ctx: Context) {
         }
         menu.addView(menuItem("截屏识别一次") { root?.removeView(menu); onOcrCapture?.invoke() })
         menu.addView(menuItem("把当前会话存为联系人") { onSaveContact?.invoke(); root?.removeView(menu) })
+        if (onWhitelistToggle != null) {
+            menu.addView(menuItem("白名单：加入 / 移出当前会话") { root?.removeView(menu); onWhitelistToggle?.invoke() })
+        }
         menu.addView(menuItem("打开设置") { openSettings(); root?.removeView(menu) })
         menu.addView(menuItem("隐藏助手（本次）") { hide() })
         menu.addView(menuItem("取消") { root?.removeView(menu) })
@@ -321,12 +334,24 @@ class OverlayController(private val ctx: Context) {
         setOnClickListener { onClick() }
     }
 
+    /** 「分析中…」那一行。阶段变化时直接改它，不重建整个面板。 */
+    private var statusLine: TextView? = null
+
     fun showLoading() {
         ensureRoot(); bubble?.alpha = 1f
         ctxNotes = 0; ctxHistory = 0   // counts for the round that is starting
         replyError = null              // this round has not failed (yet)
-        setContent(listOf(hint("分析中…")))
+        statusLine = hint("分析中…")
+        setContent(listOf(statusLine!!))
         if (!expanded) toggle()
+    }
+
+    /**
+     * 更新面板顶部的阶段（P0-2 状态可见）：「读界面…」→「识别文字…」→「判断中…」→「写候选…」。
+     * 面板不在 loading 态时（已经出了结果）调用会被忽略。
+     */
+    fun setStatus(text: String) {
+        statusLine?.text = text
     }
 
     /** How many knowledge notes / history lines went into the pending analysis. */
@@ -347,11 +372,25 @@ class OverlayController(private val ctx: Context) {
         root?.visibility = if (hidden) View.INVISIBLE else View.VISIBLE
     }
 
-    fun showError(msg: String) {
+    /** 兼容旧调用：把原始错误串归一成一张带动作的错误卡。 */
+    fun showError(msg: String) = showFailure(ErrCatalog.classify(msg))
+
+    /**
+     * 错误卡（P0-3 / P1-3）：一句人话说明「发生了什么」，加一个**能立刻做**的按钮。
+     * 429 走的是「看看专属额度」而不是「重试」——用户正吃共享网关的苦头，
+     * 这时候给升级入口才有用，让他重试只会再撞一次限流。
+     */
+    fun showFailure(v: ErrCatalog.View) {
         ensureRoot(); bubble?.alpha = 1f
-        setContent(listOf(
-            line("出错了", "#DC2626", 14f, true),
-            hint(msg)))
+        statusLine = null
+        val views = ArrayList<View>()
+        views.add(line(v.title, "#DC2626", 14f, true))
+        views.add(hint(v.message))
+        views.add(bigButton(v.actionLabel) { onErrorAction?.invoke(v.action) })
+        // 重试永远保留：动作按钮是「更有用的那一步」，不是唯一出路。
+        views.add(reAnalyzeBtn())
+        setContent(views)
+        if (!expanded) toggle()
     }
 
     /**
@@ -359,7 +398,7 @@ class OverlayController(private val ctx: Context) {
      * 显示出来，让用户即使没网、没额度、没 key 也能看到探针"读到了什么"。
      * reason 为非空时附一行判断失败的原因，并在底部提供"重新分析"按钮。
      */
-    fun showOcrResult(messages: List<Msg>, reason: String? = null) {
+    fun showOcrResult(messages: List<Msg>, reason: String? = null, failure: ErrCatalog.View? = null) {
         ensureRoot(); bubble?.alpha = 1f
         val views = ArrayList<View>()
         views.add(line("本地识别到的对话（无需联网）", "#3A7AFE", 14f, true))
@@ -376,7 +415,17 @@ class OverlayController(private val ctx: Context) {
                 views.add(line("$prefix${m.text}", color, 13f))
             }
         }
-        reason?.let { views.add(hint("⚠ 判断接口暂不可用：$it")) }
+        if (failure != null) {
+            // 判断挂了但内容读到了：先把读到的对话留给用户，再摆上「发生了什么 + 能做的一步」
+            //（429 时那一步是「看看专属额度」，让他重试只会再撞一次限流）。
+            views.add(divider())
+            views.add(line(failure.title, "#DC2626", 13f, true))
+            views.add(hint(failure.message))
+            views.add(bigButton(failure.actionLabel) { onErrorAction?.invoke(failure.action) })
+        } else {
+            reason?.let { views.add(hint("⚠ 判断接口暂不可用：$it")) }
+        }
+        statusLine = null
         views.add(bigButton("重新分析") { onManualAnalyze?.invoke() })
         setContent(views)
         if (!expanded) toggle()
@@ -392,6 +441,7 @@ class OverlayController(private val ctx: Context) {
     fun showNotice(msg: String) {
         ensureRoot(); bubble?.alpha = 1f
         resetForNewConversation()
+        statusLine = null
         setContent(listOf(
             line("提示", "#3A7AFE", 14f, true),
             hint(msg)))
@@ -429,7 +479,17 @@ class OverlayController(private val ctx: Context) {
     private fun render(a: Analysis, generating: Boolean) {
         ensureRoot(); bubble?.alpha = 1f
         panel?.background = card(18, panelBg(), stroke = true) // re-apply in case opacity changed
+        statusLine = null
         val views = ArrayList<View>()
+
+        // 云端额度（P1-4）：数字是接口响应头给的，本地只展示。没额度信息时不占版面。
+        val quota = prefs.billingQuota
+        if (quota > 0) views.add(hint("本月额度 ${prefs.billingUsed} / $quota"))
+
+        // 合规角标：自动发送开着时必须让用户一眼看见，不能只在设置页里写着。
+        if (prefs.autoSend && prefs.autoFillBest) {
+            views.add(line("⚠ 自动发送已开启（仅微信）", "#DC2626", 12f, bold = true))
+        }
 
         // What context this read was based on (knowledge base / remembered history).
         views.add(hint(
@@ -520,8 +580,24 @@ class OverlayController(private val ctx: Context) {
         btns.addView(pill("复制", false) { copy(text) })
         // Fill, then collapse so the input box + keyboard are visible to review/send.
         btns.addView(pill("填入", true) { android.util.Log.d("JEVASSIST", "overlay: fill tapped"); onFill(text); if (expanded) toggle() })
+        // P1-6：只回传「第几名 + 有没有用」，不回传正文，用来校准排序。
+        if (onReplyFeedback != null) {
+            btns.addView(feedbackPill("有用") { onReplyFeedback?.invoke(rank, true); toast("谢谢，已记下") })
+            btns.addView(feedbackPill("没用") { onReplyFeedback?.invoke(rank, false); toast("谢谢，已记下") })
+        }
         c.addView(btns)
         return c
+    }
+
+    /** 反馈用的小号弱化按钮，跟主操作（复制 / 填入）在视觉上分开。 */
+    private fun feedbackPill(label: String, onClick: () -> Unit) = TextView(ctx).apply {
+        text = label; textSize = 12f; gravity = Gravity.CENTER
+        setTextColor(Color.parseColor("#6B7280"))
+        setPadding(dp(12), dp(6), dp(12), dp(6))
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { rightMargin = dp(6) }
+        setOnClickListener { onClick() }
     }
 
     private fun pill(label: String, primary: Boolean, onClick: () -> Unit) = TextView(ctx).apply {

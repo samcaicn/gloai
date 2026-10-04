@@ -16,7 +16,9 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.jev.probe.core.CrashLog
 import com.jev.probe.core.Prefs
+import com.jev.probe.core.SelfCheck
 import kotlin.math.roundToInt
 
 /**
@@ -69,6 +71,7 @@ class MainActivity : AppCompatActivity() {
 
         val a11y = isA11yEnabled()
         val overlay = Settings.canDrawOverlays(this)
+        val notify = isNotifListenerEnabled()
         val key = prefs.hasKey()   // judge route key: the one analysis cannot run without
         val ready = a11y && overlay && key
 
@@ -76,21 +79,32 @@ class MainActivity : AppCompatActivity() {
         container.addView(statusCard(ready, a11y, overlay, key))
         container.addView(privacyHint())
 
-        // Permission checklist
-        container.addView(sectionLabel("权限设置"))
-        container.addView(permCard("无障碍权限", "读取当前聊天窗口的消息文字", a11y) {
+        // 引导式首启（P1-1）：一次只推一步，跳系统页回来后 onResume 重建，
+        // 自动落到的下一个未完成项。用户不需要自己记「还差哪个」。
+        val battery = isBatteryUnrestricted()
+        val pending = ArrayList<String>().apply {
+            if (!a11y) add(A11Y)
+            if (!overlay) add(OVERLAY)
+            if (!notify) add(NOTIFY)
+            if (!battery) add(BATTERY)
+        }
+        val next = pending.firstOrNull()
+
+        container.addView(sectionLabel(
+            if (next == null) "权限设置（已全部开启）" else "还差 ${pending.size} 步 · 先开「${stepTitle(next)}」"))
+        container.addView(permCard(A11Y, "读取当前聊天窗口的消息文字", a11y, next == A11Y) {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         })
-        container.addView(permCard("悬浮窗权限", "在聊天窗口上方显示分析卡片", overlay) {
+        container.addView(permCard(OVERLAY, "在聊天窗口上方显示分析卡片", overlay, next == OVERLAY) {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
         })
-        container.addView(permCard("自启动 + 省电无限制", "小米/HyperOS 必做，否则服务被冻结、读不到消息", null) {
+        container.addView(permCard(NOTIFY, "监听微信新消息，触发自动收发", notify, next == NOTIFY) {
+            startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+        })
+        container.addView(permCard(BATTERY, "小米 / HyperOS 必做，否则后台被冻结、读不到消息", battery, next == BATTERY) {
             runCatching {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             }
-        })
-        container.addView(permCard("通知读取（微信）", "监听微信新消息，触发自动收发；必开", isNotifListenerEnabled()) {
-            startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
         })
 
         // Actions
@@ -98,15 +112,64 @@ class MainActivity : AppCompatActivity() {
         container.addView(actionRow("设置", "密钥 · 模型 · 关系 · 透明度 · 会话白名单") {
             startActivity(Intent(this, SettingsActivity::class.java))
         })
+        container.addView(actionRow("自检与诊断", "一眼看清哪项没开、上次分析成没成、有没有崩过") {
+            showDiagnostics()
+        })
 
-        // Master toggle
-        val toggle = bigToggle(prefs.enabled)
-        toggle.setOnClickListener {
-            prefs.enabled = !prefs.enabled
-            build()
+        // Master toggle — only meaningful once the prerequisites are in place,
+        // otherwise flipping it just produces a silent no-op.
+        if (next == null) {
+            val toggle = bigToggle(prefs.enabled)
+            toggle.setOnClickListener {
+                prefs.enabled = !prefs.enabled
+                build()
+            }
+            container.addView(toggle)
+        } else {
+            container.addView(text("把上面 ${pending.size} 项开完就能用了", 13f, sub).apply {
+                setPadding(0, dp(18), 0, 0)
+            })
         }
-        container.addView(toggle)
     }
+
+    private fun stepTitle(id: String?) = when (id) {
+        A11Y -> "无障碍权限"
+        OVERLAY -> "悬浮窗权限"
+        NOTIFY -> "通知读取"
+        else -> "自启动 + 省电无限制"
+    }
+
+    /** 自检结果（P0-4）：纯文本，可一键复制发作者，不上传。 */
+    private fun showDiagnostics() {
+        val report = SelfCheck.run(this)
+        val tv = android.widget.TextView(this).apply {
+            text = report.text
+            textSize = 12f
+            setTextIsSelectable(true)
+            setPadding(dp(18), dp(14), dp(18), dp(14))
+            typeface = android.graphics.Typeface.MONOSPACE
+        }
+        val scroll = android.widget.ScrollView(this).apply { addView(tv) }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("自检与诊断")
+            .setView(scroll)
+            .setPositiveButton("复制") { _, _ ->
+                val cm = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("jev_diag", report.text))
+                Toast.makeText(this, "已复制", Toast.LENGTH_SHORT).show()
+            }
+            .setNeutralButton("清除崩溃记录") { _, _ ->
+                CrashLog.clear(this)
+                Toast.makeText(this, "已清除", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("关闭", null)
+            .show()
+    }
+
+    private fun isBatteryUnrestricted(): Boolean = try {
+        val pm = getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
+        pm.isIgnoringBatteryOptimizations(packageName)
+    } catch (_: Exception) { false }
 
     // ---------------------------------------------------------------- cards
 
@@ -157,7 +220,8 @@ class MainActivity : AppCompatActivity() {
         return row
     }
 
-    private fun permCard(title: String, desc: String, granted: Boolean?, onClick: () -> Unit): View {
+    /** One tappable permission row. [next] marks the step the guide is pointing at. */
+    private fun permCard(title: String, desc: String, granted: Boolean, next: Boolean, onClick: () -> Unit): View {
         val c = cardBox()
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val left = LinearLayout(this).apply {
@@ -166,9 +230,12 @@ class MainActivity : AppCompatActivity() {
         }
         left.addView(text(title, 15f, ink, bold = true))
         left.addView(text(desc, 12f, sub).apply { setPadding(0, dp(3), 0, 0) })
-        if (granted == true) left.addView(text("✓ 已开启", 12f, green, bold = true).apply { setPadding(0, dp(4), 0, 0) })
+        when {
+            granted -> left.addView(text("✓ 已开启", 12f, green, bold = true).apply { setPadding(0, dp(4), 0, 0) })
+            next -> left.addView(text("下一步 →", 12f, accent, bold = true).apply { setPadding(0, dp(4), 0, 0) })
+        }
         row.addView(left)
-        row.addView(btn(if (granted == true) "已开启" else "去开启", granted != true, onClick))
+        row.addView(btn(if (granted) "已开启" else "去开启", !granted, onClick))
         c.addView(row)
         return c
     }
@@ -256,5 +323,11 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val PRIVACY_URL = "https://chatjevs.com/privacy.html"
+
+        // 引导式首启的步骤 id（P1-1）
+        private const val A11Y = "a11y"
+        private const val OVERLAY = "overlay"
+        private const val NOTIFY = "notify"
+        private const val BATTERY = "battery"
     }
 }

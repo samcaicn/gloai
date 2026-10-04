@@ -21,6 +21,8 @@ import com.jev.probe.capture.ocr.ScreenCapture
 import com.jev.probe.core.BubbleRect
 import com.jev.probe.core.ChatSnapshot
 import com.jev.probe.core.ConversationHistory
+import com.jev.probe.core.ErrCatalog
+import com.jev.probe.core.Metrics
 import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.RankedReply
@@ -80,6 +82,61 @@ open class ChatCaptureService : AccessibilityService() {
      *  `if (analyzing) return` 会把之后每一次分析全部挡掉，界面永远停在
      *  「分析中…」——2026-10-05「自动获取对话 / 自动聊天卡死」的根因就在这里。 */
     @Volatile private var analyzing = false
+
+    /** 一轮分析内部的结果，供收尾时写埋点与自检卡（不含任何聊天内容）。 */
+    @Volatile private var roundOk = false
+    @Volatile private var roundErr: ErrCatalog.Kind = ErrCatalog.Kind.UNKNOWN
+
+    /** 上一次错误卡里的类别：决定「重试」到底是重跑分析还是再截屏识别一次。 */
+    private var lastErrKind: ErrCatalog.Kind = ErrCatalog.Kind.UNKNOWN
+
+    /**
+     * 错误卡上那个按钮（P0-3 / P1-3）。「重试」按错误类别分流：没读到文字时重试 =
+     * 截屏 OCR 一次，其它错误才是重跑一轮分析。
+     */
+    private fun handleErrorAction(a: ErrCatalog.Action) {
+        when (a) {
+            ErrCatalog.Action.RETRY -> {
+                if (lastErrKind == ErrCatalog.Kind.NO_TEXT) ocrCaptureManual()
+                else currentSnapshot?.let { pendingSnapshot = it; runAnalysis() }
+            }
+            ErrCatalog.Action.SETTINGS -> openSettings(focusPlan = false)
+            ErrCatalog.Action.PLAN -> openSettings(focusPlan = true)
+            ErrCatalog.Action.A11Y -> runCatching {
+                startActivity(android.content.Intent(
+                    android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+            }.onFailure { overlay?.toast("打不开无障碍设置") }
+        }
+    }
+
+    /**
+     * 把当前会话加入 / 移出白名单（P1-8）。白名单是关键词集合，所以「移出」= 删掉
+     * 能匹配上当前标题的那些关键词，而不是删掉一个不存在的等值项。
+     */
+    private fun toggleWhitelist() {
+        val title = currentSnapshot?.title
+        if (title.isNullOrBlank()) { overlay?.toast("当前会话没有标题，改不了白名单"); return }
+        val wl = prefs.whitelist
+        val matched = wl.filter { title.contains(it, ignoreCase = true) }
+        if (matched.isEmpty()) {
+            prefs.whitelist = wl + title
+            overlay?.toast("已加入白名单：$title")
+        } else {
+            prefs.whitelist = wl - matched.toSet()
+            overlay?.toast("已移出白名单（删掉 ${matched.size} 个匹配项）")
+        }
+    }
+
+    /** 打开设置页；[focusPlan] 时定位到订阅/档位卡片（429 的升级入口走这条路）。 */
+    private fun openSettings(focusPlan: Boolean) {
+        runCatching {
+            startActivity(android.content.Intent()
+                .setClassName(this, "com.jev.probe.SettingsActivity")
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("focus", if (focusPlan) "plan" else ""))
+        }.onFailure { overlay?.toast("打不开设置") }
+    }
     private val session = ConversationSession()
     private val analysisTasks = ArrayList<Future<*>>()
     private var destroyed = false
@@ -230,8 +287,15 @@ open class ChatCaptureService : AccessibilityService() {
         getSharedPreferences(Prefs.PREFS_MAIN, MODE_PRIVATE)
             .registerOnSharedPreferenceChangeListener(preferencesListener)
         overlay = OverlayController(this)
+        Metrics.init(this, prefs.metricsEnabled)
         overlay?.onManualAnalyze = {
             currentSnapshot?.let { pendingSnapshot = it; runAnalysis() }
+        }
+        overlay?.onErrorAction = { a -> handleErrorAction(a) }
+        overlay?.onReplyFeedback = { rank, good ->
+            Metrics.log("reply_feedback", "rank" to rank, "good" to good,
+                "conv" to Metrics.hash(currentSnapshot?.title),
+                "pkg" to (activePkg ?: ""))
         }
         // Bubble menu: file the open conversation as a knowledge-base contact.
         // Contacts are never created automatically — this is the one-tap way in.
@@ -251,6 +315,8 @@ open class ChatCaptureService : AccessibilityService() {
         }
         // Bubble menu: one manual screenshot + OCR, for any app at all.
         overlay?.onOcrCapture = { ocrCaptureManual() }
+        // 白名单（P1-8）：用户最常问的是「为什么这里不分析」，把开关摆到手边。
+        overlay?.onWhitelistToggle = { toggleWhitelist() }
         // Keep the process at foreground importance so MIUI does not freeze us.
         runCatching { KeepAliveService.start(this) }
         // Load the bundled OCR model now, off the main thread: the first
@@ -446,11 +512,20 @@ open class ChatCaptureService : AccessibilityService() {
         if (!prefs.hasKey()) { overlay?.showOcrResult(snapshot.messages, "未设置判断接口密钥，去设置里填"); return }
         val token = session.begin() ?: return
         analyzing = true
+        roundOk = false
+        roundErr = ErrCatalog.Kind.UNKNOWN
+        Metrics.markStart("analysis")
+        Metrics.log("analysis_start",
+            "pkg" to (activePkg ?: foregroundPkg ?: ""),
+            "conv" to Metrics.hash(snapshot.title),
+            "n" to snapshot.messages.size,
+            "src" to if (snapshot.note.isNullOrBlank()) "tree" else "ocr")
         // Merge the persisted cross-session history into the visible snapshot so the
         // judge sees the full thread, not only the bubbles currently on screen.
         val augmented = ConversationHistory.mergeInto(snapshot, token.target.pkg)
         overlay?.showLoading()
         overlay?.setNote(snapshot.note)
+        overlay?.setStatus("整理上下文…")
         val client = JevClient(prefs)
         val rel = prefs.relationship
         submitAnalysis {
@@ -468,6 +543,7 @@ open class ChatCaptureService : AccessibilityService() {
                     return@post
                 }
                 overlay?.setContextInfo(ctx?.notes?.size ?: 0, ctx?.history?.size ?: 0)
+                overlay?.setStatus("判断意图…")
                 var remaining = 2
                 fun completed() {
                     remaining--
@@ -475,6 +551,7 @@ open class ChatCaptureService : AccessibilityService() {
                         analyzing = false
                         analysisTasks.clear()
                         main.removeCallbacks(analysisWatchdog)
+                        finishRound()
                         Log.d(TAG, "analysis round finished")
                     }
                 }
@@ -485,11 +562,19 @@ open class ChatCaptureService : AccessibilityService() {
                 val judgeQueued = submitAnalysis {
                     val judgment = client.judge(augmented, rel, ctx)
                     main.post {
-                        // 只有 UI 更新需要会话仍然匹配；计数复位与它无关，必须无条件执行
-                        // （旧代码把 completed() 关在 isCurrent 里，一旦会话失效就永久卡死）。
-                        if (isCurrent(token)) {
-                            if (judgment.error != null) overlay?.showOcrResult(augmented.messages, judgment.error)
-                            else overlay?.showJudgment(judgment)
+                        // 结果归类放在 isCurrent **外面**：无论会话还匹不匹配，这一轮
+                        // 是成是败都要如实记进埋点与自检卡，否则统计会漏掉失败。
+                        if (judgment.error != null) {
+                            val v = ErrCatalog.classify(judgment.error)
+                            roundErr = v.kind
+                            lastErrKind = v.kind
+                            Log.i(TAG, "judge failed: ${v.kind.id}")
+                            // 只有 UI 更新需要会话仍然匹配（旧代码把收尾也关在里面，
+                            // 会话一失效就永久卡死——2026-10-05 的卡死根因）。
+                            if (isCurrent(token)) overlay?.showOcrResult(augmented.messages, failure = v)
+                        } else {
+                            roundOk = true
+                            if (isCurrent(token)) overlay?.showJudgment(judgment)
                         }
                         completed()
                     }
@@ -501,6 +586,9 @@ open class ChatCaptureService : AccessibilityService() {
                         emptyList()
                     }
                     main.post {
+                        if (replyError != null && roundErr == ErrCatalog.Kind.UNKNOWN) {
+                            roundErr = ErrCatalog.classify(replyError).kind
+                        }
                         if (isCurrent(token)) {
                             overlay?.showReplies(ranked, replyError) { text -> fillInput(token, text) }
                             // 真·无人值守（微信）：worker/jev 返回候选后直接按打分最高的
@@ -527,7 +615,25 @@ open class ChatCaptureService : AccessibilityService() {
         analysisTasks.forEach { runCatching { it.cancel(true) } }
         analysisTasks.clear()
         analyzing = false
-        overlay?.showError("分析超时，请重试")
+        roundErr = ErrCatalog.Kind.TIMEOUT
+        lastErrKind = ErrCatalog.Kind.TIMEOUT
+        Metrics.log("analysis_timeout", "conv" to Metrics.hash(currentSnapshot?.title))
+        overlay?.showFailure(ErrCatalog.classify("分析超时"))
+    }
+
+    /**
+     * 一轮分析结束（无论成败）：写埋点 + 刷新自检卡要用的三个数字。
+     * 只记耗时、成败、错误类别和会话摘要，**没有任何聊天内容**。
+     */
+    private fun finishRound() {
+        val ms = Metrics.markEnd("analysis", "analysis_end",
+            "ok" to roundOk,
+            "err" to roundErr.id,
+            "pkg" to (activePkg ?: foregroundPkg ?: ""),
+            "conv" to Metrics.hash(currentSnapshot?.title))
+        if (ms != null) prefs.lastAnalysisMs = ms
+        prefs.lastAnalysisOk = roundOk
+        prefs.lastAnalysisErr = if (roundOk) "" else roundErr.id
     }
 
     /**
@@ -623,6 +729,8 @@ open class ChatCaptureService : AccessibilityService() {
         val token = session.token() ?: return
         if (!isCurrent(token)) return
         ocrBusy = true
+        Metrics.markStart("ocr")
+        overlay?.setStatus("截屏识别…")
         screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
             if (!isCurrent(token)) {
                 if (res is ScreenCapture.Result.Ok) res.bitmap.recycle()
@@ -633,6 +741,7 @@ open class ChatCaptureService : AccessibilityService() {
                 is ScreenCapture.Result.Failed -> {
                     ocrBusy = false
                     Log.i(TAG, "ocr: screenshot failed code=${res.code}")
+                    Metrics.markEnd("ocr", "ocr_end", "ok" to false, "code" to res.code)
                     // Nothing was read, so the signature must not claim this
                     // screen is done — the next event may retry, still held
                     // back by ScreenCapture's own throttle and failure backoff.
@@ -744,9 +853,14 @@ open class ChatCaptureService : AccessibilityService() {
         if (!isCurrent(token)) return
         // Counts only — OCR'd chat text never goes to logcat.
         Log.i(TAG, "ocr[$pkg] msgs=${snapshot.messages.size} manual=$manual")
+        Metrics.markEnd("ocr", "ocr_end",
+            "ok" to snapshot.messages.isNotEmpty(),
+            "n" to snapshot.messages.size,
+            "manual" to manual)
         if (snapshot.messages.isEmpty()) {
             if (manual) {
-                overlay?.showError("这一屏没认出文字")
+                lastErrKind = ErrCatalog.Kind.NO_TEXT
+                overlay?.showFailure(ErrCatalog.classify("这一屏没认出文字"))
                 return
             }
             // OCR drew a blank: fall back to the tree text captured alongside so the
@@ -1031,6 +1145,9 @@ open class ChatCaptureService : AccessibilityService() {
         overlay?.onManualAnalyze = null
         overlay?.onSaveContact = null
         overlay?.onOcrCapture = null
+        overlay?.onWhitelistToggle = null
+        overlay?.onErrorAction = null
+        overlay?.onReplyFeedback = null
         overlay?.hide()
         overlay = null
         worker.shutdownNow()

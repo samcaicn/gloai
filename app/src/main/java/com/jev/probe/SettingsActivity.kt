@@ -23,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.jev.probe.core.CloudSync
 import com.jev.probe.core.DeviceId
 import com.jev.probe.core.LicenseClient
+import com.jev.probe.core.Metrics
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.SyncClient
 import kotlin.math.roundToInt
@@ -154,13 +155,15 @@ class SettingsActivity : AppCompatActivity() {
         }
         licStatus = licStatusView
         licCard.addView(licStatusView)
+
+        // 额度（P1-4）：数字来自接口响应头，本地只展示。以前抓到了却从不显示，
+        // 用户根本不知道自己还剩多少，也就不知道「该升级了」。
+        val quotaBox = quotaBar()
+        licCard.addView(quotaBox)
+
+        // 三档对比（P1-5）：卖点对齐真实机制——免费走共享网关会排队，付费是专属额度。
         for (tier in LicenseClient.TIERS) {
-            val label = when (tier) {
-                LicenseClient.TIER_NORMAL -> "标准版 · 月租"
-                LicenseClient.TIER_PREMIUM -> "高级版 · 月租"
-                else -> "终身版 · 一次性（支持支付宝）"
-            }
-            licCard.addView(cardBtn(label) { startCheckout(tier, licStatus) })
+            licCard.addView(tierCard(tier) { startCheckout(tier, licStatus) })
         }
         licCard.addView(text(
             "付款页在 App 内打开，付款完成即自动激活（每 3 秒确认一次，最长等 30 分钟）。" +
@@ -239,8 +242,16 @@ class SettingsActivity : AppCompatActivity() {
             "无障碍读取 + 通知监听驱动：收到消息自动分析并填入回复；开启自动发送后，由你从候选里选定的那一条会自动发出。" +
             "对方发图片时用 OCR 读图里文字（不上传）。",
             12f, sub))
-        val autoSendRow = toggleRow("填入后自动发送回复", prefs.autoSend)
+        // 合规红线：这是全应用唯一会替用户发出消息的开关，开启必须有一次显式确认。
+        val autoSendRow = armedToggleRow("填入后自动发送回复", prefs.autoSend,
+            "开启后，AI 选中的那条候选会在设定的延迟后自动发出（仅微信）。\n\n" +
+                "这是本应用唯一会替你发消息的设置；关掉时永远只填入、由你手动点发送。\n\n" +
+                "确定要开吗？")
         unattendedCard.addView(autoSendRow)
+        unattendedCard.addView(text(
+            "⚠ 这是唯一会替你发消息的设置。发的一定是你/自动填入选中的候选原文，" +
+                "转账、红包、收款一律不碰。想随时停下：关这个开关，或在主页关掉总开关。",
+            11f, Color.parseColor("#DC2626")))
         val ocrImgRow = toggleRow("对方发图片时按图 OCR 读字", prefs.ocrImages)
         unattendedCard.addView(ocrImgRow)
         val autoOpenRow = toggleRow("收到消息自动打开会话（真·无人值守）", prefs.autoOpenChat)
@@ -287,6 +298,31 @@ class SettingsActivity : AppCompatActivity() {
         card3.addView(seek)
         root.addView(card3)
 
+        // =================== 诊断与统计（P0-1 / P0-4） ===================
+        root.addView(section("诊断与统计"))
+        val diagCard = card()
+        diagCard.addView(cardTitle("事件日志（只存本机）"))
+        diagCard.addView(text(
+            "打开后记录每一轮分析的成败、耗时、OCR 失败次数，只写进本机文件，不上传，也不记录任何聊天内容。" +
+                "排查「为什么没反应」就靠它；默认关闭。", 12f, sub))
+        val metricsRow = toggleRow("开启事件日志", prefs.metricsEnabled)
+        diagCard.addView(metricsRow)
+        val diagResult = resultText()
+        diagCard.addView(cardBtn("查看事件日志") {
+            diagResult.text = Metrics.snapshotText().take(900)
+        })
+        diagCard.addView(cardBtn("复制事件日志") {
+            val t = Metrics.snapshotText()
+            val cm = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            cm.setPrimaryClip(android.content.ClipData.newPlainText("jev_metrics", t))
+            Toast.makeText(this, "已复制（${t.lines().size} 行）", Toast.LENGTH_SHORT).show()
+        })
+        diagCard.addView(cardBtn("清除事件日志") {
+            Metrics.clear(); diagResult.text = "已清除"
+        })
+        diagCard.addView(diagResult)
+        root.addView(diagCard)
+
         // =================== 关于 ===================
         root.addView(section("关于"))
         val aboutCard = card()
@@ -312,6 +348,8 @@ class SettingsActivity : AppCompatActivity() {
             }
             prefs.visionCustom = (visionCustomRow.tag as? Boolean) ?: false
             prefs.syncEnabled = (syncRow.tag as? Boolean) ?: true
+            // 走 setter：它会同步 [Metrics] 的内存开关，关掉时清空缓冲。
+            prefs.metricsEnabled = (metricsRow.tag as? Boolean) ?: false
             prefs.visionBaseUrl = visionBaseEdit.text.toString()
             prefs.visionKey = visionKeyEdit.text.toString()
             prefs.visionModel = visionModelEdit.text.toString()
@@ -322,12 +360,119 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         setContentView(scroll)
+
+        // 从「共享额度正忙（429）」的错误卡跳进来时，直接落到订阅卡上（P1-3）。
+        if (intent?.getStringExtra("focus") == "plan") {
+            scroll.post { scroll.smoothScrollTo(0, licCard.top - dp(8)) }
+        }
     }
 
     override fun onDestroy() { super.onDestroy(); worker.shutdownNow() }
 
     // ---------------------------------------------------------------- atoms
-    private fun header(t: String) = text(t, 24f, ink, bold = true).apply { setPadding(0, 0, 0, dp(4)) }
+    /**
+     * 带二次确认的开关：只有「关 → 开」需要确认，关掉永远不需要。
+     * 用于会放宽安全默认值的设置（目前只有自动发送）。
+     */
+    private fun armedToggleRow(labelText: String, initial: Boolean, confirmMessage: String): LinearLayout {
+        val row = toggleRow(labelText, initial)
+        val sw = row.getChildAt(1) as? TextView ?: return row
+        sw.setOnClickListener {
+            val now = !((row.tag as? Boolean) ?: false)
+            if (!now) applyToggle(row, sw, false)
+            else androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("确认开启")
+                .setMessage(confirmMessage)
+                .setPositiveButton("确定开启") { _, _ -> applyToggle(row, sw, true) }
+                .setNegativeButton("取消", null)
+                .show()
+        }
+        return row
+    }
+
+    private fun applyToggle(row: LinearLayout, sw: TextView, on: Boolean) {
+        row.tag = on
+        sw.text = if (on) "开" else "关"
+        sw.setTextColor(if (on) Color.WHITE else sub)
+        sw.background = round(dp(10), if (on) accent else Color.parseColor("#E5E7EB"))
+    }
+
+    /**
+     * 三档对比卡（P1-5）。卖点必须说真话：免费档走的是**共享**网关，高峰会排队
+     * 并返回 429；付费买的是专属额度，不是「更多功能」。
+     */
+    private fun tierCard(tier: String, onClick: () -> Unit): View {
+        val current = prefs.licenseTier == tier
+        val (name, pitch) = when (tier) {
+            LicenseClient.TIER_NORMAL -> "标准版 · 月租" to
+                "专属额度，不再和免费用户挤共享网关（不再返回 429）"
+            LicenseClient.TIER_PREMIUM -> "高级版 · 月租" to
+                "更大额度 + 优先排队，消息密集时也不卡"
+            else -> "终身版 · 一次性" to "一次买断，永久专属额度（支持支付宝）"
+        }
+        val c = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = round(dp(12), if (current) Color.parseColor("#EAF1FF") else Color.parseColor("#F7F8FA"))
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(8) }
+        }
+        val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        head.addView(text(name, 14f, ink, bold = true).apply {
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        if (current) head.addView(text("当前档位", 11f, accent, bold = true))
+        c.addView(head)
+        c.addView(text(pitch, 12f, sub).apply { setPadding(0, dp(3), 0, dp(8)) })
+        c.addView(pillBtn(if (current) "续费 / 换档" else "选择这个") { onClick() })
+        return c
+    }
+
+    /** 小号主按钮，用于档位卡内部（[cardBtn] 是整卡宽度的那一种）。 */
+    private fun pillBtn(label: String, onClick: () -> Unit) = TextView(this).apply {
+        text = label; textSize = 13f; gravity = Gravity.CENTER
+        setTypeface(typeface, Typeface.BOLD); setTextColor(Color.WHITE)
+        background = round(dp(10), accent)
+        setPadding(dp(16), dp(8), dp(16), dp(8))
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        setOnClickListener { onClick() }
+    }
+
+    /** 本月额度进度条（数字来自接口 `X-Billing-*` 响应头）。 */
+    private fun quotaBar(): View {
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(6) }
+        }
+        val q = prefs.billingQuota
+        if (q <= 0L) {
+            box.addView(text("额度：云端还没返回过数字（跑一次分析或激活后可见）", 12f, sub))
+            return box
+        }
+        val used = prefs.billingUsed.coerceIn(0, q)
+        val pct = (used * 100 / q).toInt().coerceIn(0, 100)
+        box.addView(text("本月额度 $used / $q（$pct%）", 12.5f, ink, bold = true))
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            background = round(dp(4), Color.parseColor("#E5E7EB"))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(8)).apply { topMargin = dp(5) }
+        }
+        bar.addView(View(this).apply {
+            background = round(dp(4), if (pct >= 90) Color.parseColor("#DC2626") else accent)
+            layoutParams = LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.MATCH_PARENT, (pct.coerceAtLeast(2) / 100f))
+        })
+        box.addView(bar)
+        if (pct >= 90) box.addView(text(
+            "额度快用完了 —— 下面选个档位换成专属额度，就不用跟免费用户挤了。",
+            11f, Color.parseColor("#DC2626")).apply { setPadding(0, dp(5), 0, 0) })
+        return box
+    }
     private fun section(t: String) = text(t, 12f, sub, bold = true).apply { setPadding(dp(2), dp(16), 0, dp(6)) }
     private fun label(t: String) = text(t, 13f, ink, bold = true).apply { setPadding(0, dp(12), 0, dp(4)) }
     private fun cardTitle(t: String) = text(t, 16f, ink, bold = true).apply { setPadding(0, dp(10), 0, dp(4)) }

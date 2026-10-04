@@ -143,7 +143,10 @@ object CloudSync {
                     null
                 }
                 is SyncClient.Result.Failure -> {
-                    Log.w(TAG, "restore failed: ${res.message}")
+                    // 5xx 是服务端（Worker 未部署 / Cloudflare 源站故障），用户改不了，
+                    // 降为 debug：否则每次启动都刷一行「sync HTTP 525」吓人且没信息量。
+                    if (res.message.contains("HTTP 5")) Log.d(TAG, "restore unavailable: ${res.message}")
+                    else Log.w(TAG, "restore failed: ${res.message}")
                     null
                 }
                 SyncClient.Result.Empty -> {
