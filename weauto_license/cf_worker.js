@@ -1483,9 +1483,81 @@ export default {
       }
     }
 
+    // ---- 设备备份同步：App 的云端快照，用于卸载重装后恢复数据 ----
+    // GET  ?mid=<deviceId>  取回快照（404 = 该设备还没备份过）
+    // PUT  ?mid=<deviceId>  body 为明文 JSON 快照
+    if (p === "/sync") {
+      return handleSync(req, env, url);
+    }
+
     // 根路径：跳购买页，方便直接访问域名
     if (p === "/" && req.method === "GET") {
       return Response.redirect(url.origin + "/buy", 302);
+    }
+
+    // ---- /sync 的实现 ----
+    //
+    // deviceId 是 App 自己生成的随机 UUID v4 —— 不是 IMEI、不是序列号、
+    // 也不是 ANDROID_ID（后者部分国产 ROM 会对所有 App 返回同一个固定值）。
+    // 它既是数据地址也是凭证，因此校验形态是唯一必要的访问控制：猜到别人
+    // slot 的概率约等于 2^-122。
+    //
+    // 没有 deviceId 就查不到数据，而 deviceId 本身必须在卸载后还能拿回来 ——
+    // App 侧为此在公共 Download 目录留了一份几十字节的 MediaStore 锚点。
+    const DEVICE_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const SYNC_MAX_BYTES = 8 * 1024 * 1024;
+
+    async function handleSync(req, env, url) {
+      const CORS = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      };
+
+      if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
+
+      const mid = (url.searchParams.get("mid") || "").trim();
+      if (!DEVICE_ID_RE.test(mid)) {
+        return json({ ok: false, error: "bad_device_id" }, 400, CORS);
+      }
+      if (!env.BILLING_KV) {
+        return json({ ok: false, error: "kv_not_bound" }, 500, CORS);
+      }
+
+      const key = "bak:" + mid;
+
+      if (req.method === "GET") {
+        const raw = await env.BILLING_KV.get(key);
+        if (!raw) return new Response("Not found", { status: 404, headers: CORS });
+        return new Response(raw, {
+          status: 200,
+          headers: { ...CORS, "Content-Type": "application/json; charset=utf-8" },
+        });
+      }
+
+      if (req.method === "PUT") {
+        const body = await req.text();
+        if (!body) return json({ ok: false, error: "empty_body" }, 400, CORS);
+        if (body.length > SYNC_MAX_BYTES) {
+          return json({ ok: false, error: "snapshot_too_large" }, 413, CORS);
+        }
+        try {
+          const obj = JSON.parse(body);
+          if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+            return json({ ok: false, error: "not_an_object" }, 400, CORS);
+          }
+          if (typeof obj.v !== "number") {
+            return json({ ok: false, error: "missing_version" }, 400, CORS);
+          }
+          obj.saved_at = Date.now();
+          await env.BILLING_KV.put(key, JSON.stringify(obj));
+          return json({ ok: true, bytes: body.length, saved_at: obj.saved_at }, 200, CORS);
+        } catch (e) {
+          return json({ ok: false, error: "invalid_json" }, 400, CORS);
+        }
+      }
+
+      return json({ ok: false, error: "method_not_allowed" }, 405, CORS);
     }
 
     // ---- EXE 自动更新代理实现 ----
