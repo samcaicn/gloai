@@ -3,12 +3,12 @@ main = "weauto_license/cf_worker.js"
 compatibility_date = "2024-09-23"
 
 # workers.dev 显式开启：仅供 Creem 官方回调 Webhook 用（服务器在海外，可达 workers.dev）；
-# 买家页面(/buy)和 bot 的 AI 代理(/ai/v1)必须走自定义域名 weauto.safeopc.cn（大陆可达）。
+# 买家页面(/buy)和 bot 的 AI 代理(/ai/v1)走自定义域名 wetech.jukuai.net（大陆可达）。
 workers_dev = true
 
-# 已绑定自定义域名 weauto.safeopc.cn（见下方 [[routes]]）。
+# 已绑定自定义域名 wetech.jukuai.net（见下方 [[routes]]）。
 # 原因：实测 *.workers.dev 在中国大陆不可达（DNS 被污染 + 代理 502），买家打不开购买页、也无法激活。
-# config.py 的 CREEM_WORKER_URL 已指向 https://weauto.safeopc.cn
+# config.py 的 CREEM_WORKER_URL 已指向 https://wetech.jukuai.net
 
 [vars]
 CREEM_PRODUCTS = '[{"tier": "normal", "label": "初级 套餐费", "price_text": "¥29.9", "product_id": "prod_2oyeDnQx6eWqmDpVvDRfC3", "billing": "once", "voluntary": false, "valid_days": 30, "features": "基础自动回复 + 授权管理 + 标准 AI 额度"}, {"tier": "premium", "label": "中级 套餐费", "price_text": "¥39.9", "product_id": "prod_mYzCeNE1MvRPo6DFt2ZmZ", "billing": "once", "voluntary": false, "valid_days": 30, "features": "全部功能 + 优先支持 + 更高 AI 额度"}, {"tier": "lifetime", "label": "高级 套餐费", "price_text": "¥199", "product_id": "prod_OkTJwM4Od9maNxP8b6vNc", "billing": "once", "voluntary": true, "valid_days": 365, "features": "一次购买 · 365天全功能 · 优先支持"}]'
@@ -65,15 +65,10 @@ id = "b9359d143ab04b549500066b467e3011"
 binding = "BILLING_KV"
 id = "8d92f8ae61f948b9a17fdfd6239c8dd0"
 
-# ---- 自定义域名（必须绑定）----
+# ---- 自定义域名（已绑定 wetech.jukuai.net）----
 # 实测：*.workers.dev 在中国大陆不可达（DNS 被污染到 Facebook 段 IP，代理亦 502），
 # 导致买家打不开购买页、且首次激活无法联网。绑定自有域名后国内可直连。
-# wetech.jukuai.net（2026-09-28 主用，新 Creem 账户 weetech@foxmail.com 配套）；
-# weauto.safeopc.cn 保留作备用入口。
+# wetech.jukuai.net（2026-09-28 起主用，新 Creem 账户 weetech@foxmail.com 配套）。
 [[routes]]
 pattern = "wetech.jukuai.net"
-custom_domain = true
-
-[[routes]]
-pattern = "weauto.safeopc.cn"
 custom_domain = true

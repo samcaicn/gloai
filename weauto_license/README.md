@@ -36,7 +36,7 @@
    - 记下 `Product ID`（`prod_xxx`）
 3. **Settings > API Keys** 生成 API key（`creem_test_...` / `creem_live_...`）。
 4. **Developers > Webhooks** 填 `https://weauto-license.tuptup-workbuddy.workers.dev/webhook`（CF 原始链接，已部署并经 CF API 确认 enabled），记下 Webhook Secret。
-   - 为什么 Webhook 用 workers.dev 而购买页用自定义域名：Webhook 是 **Creem 海外服务器 → CF** 的服务器间回调，不受大陆 workers.dev 被墙影响；而 `/buy`、`/ai/v1` 是大陆买家/bot 访问，必须走 `weauto.safeopc.cn`。
+   - 为什么 Webhook 用 workers.dev 而购买页用自定义域名：Webhook 是 **Creem 海外服务器 → CF** 的服务器间回调，不受大陆 workers.dev 被墙影响；而 `/buy`、`/ai/v1` 是大陆买家/bot 访问，必须走 `wetech.jukuai.net`。
 5. 本地测试用 `creem_test_` key + 测试卡 `4242 4242 4242 4242`。
 
 ## 支付宝：两个必须分清的概念（最容易踩坑）
@@ -104,7 +104,7 @@ curl -I "https://weauto-license.<子域>.workers.dev/buy?go=1"
 
 > ⚠️ **大陆访问约束**：Cloudflare 的 `*.workers.dev` 默认域名在中国大陆**可能被墙**，买家可能打不开。
 > 本项目当前按指令**使用 CF 默认域名、不绑自定义域名**。若日后需大陆直连，再绑自定义域名
-> （例如 `weauto.safeopc.cn`，其 NS 已在 Cloudflare，可直接 `[[routes]] custom_domain` 绑）。
+> （例如 `wetech.jukuai.net`，其 NS 已在 Cloudflare，可直接 `[[routes]] custom_domain` 绑）。
 > `config.py` 的 `CREEM_WORKER_URL` 必须填 `wrangler deploy` 后终端显示的
 > `https://weauto-license.<子域>.workers.dev`，不能用占位。
 

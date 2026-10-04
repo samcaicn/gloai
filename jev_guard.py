@@ -270,7 +270,7 @@ _CFG_TTL = 30.0  # 秒：WebUI 改完配置不必重启 bot 也能生效
 # 用户不需要知道自己需要配 URL / 密钥 / 开关。以下为出厂固定值，代码里直接写死。
 # 唯一仍从 config.py 读的是「客户端↔Worker 通信密钥」与卡密（用于签名与脱敏），
 # 那两项属于授权体系而非 Jev 业务参数。
-JEV_ENDPOINT = "https://weauto.safeopc.cn/ai/jev/decisions"  # 自建 Worker 端点
+JEV_ENDPOINT = "https://wetech.jukuai.net/ai/jev/decisions"  # 自建 Worker 端点
 JEV_MODEL_NAME = ""          # 留空 = 用 Worker 端 wrangler.toml 的默认模型（实测 70B 判得准）
 JEV_TIMEOUT_SEC = 8.0        # 单次判断超时（秒）；超时/失败一律降级为照常回复
 JEV_RELATIONSHIP = "微信联系人"  # 填进判断的「我和对方是什么关系」
@@ -468,19 +468,19 @@ def circuit_status():
 # ---------------------------------------------------------------- HTTP
 
 def _jev_candidate_urls():
-    """返回候选 Worker 域名列表（主 + 备），用于单域名抖动时 failover。
+    """返回候选 Worker 域名列表（仅 wetech.jukuai.net 一个，无备用域名）。
 
-    端点是内置常量（零配置）；两个对外域名（wetech.jukuai.net 主用、
-    weauto.safeopc.cn 备用）都会尝试，path 完全一致，签名可复用。
+    端点是内置常量（零配置）；已删除 weauto.safeopc.cn 备用入口，统一走 wetech.jukuai.net，
+    path 完全一致，签名可复用。
     """
-    known = ["wetech.jukuai.net", "weauto.safeopc.cn"]
+    known = ["wetech.jukuai.net"]
     try:
         p = urllib.parse.urlparse(JEV_ENDPOINT)
         path = p.path or "/ai/jev/decisions"
         scheme = p.scheme or "https"
-        host = p.hostname or known[1]
+        host = p.hostname or known[0]
     except Exception:
-        scheme, host, path = "https", known[1], "/ai/jev/decisions"
+        scheme, host, path = "https", known[0], "/ai/jev/decisions"
     hosts = [host] + [h for h in known if h != host]
     return [f"{scheme}://{h}{path}" for h in hosts]
 

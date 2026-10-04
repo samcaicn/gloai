@@ -204,7 +204,7 @@ MAX_SINGLE_MSG_LEN = 800
 #   api.creem.io 的 license 调用。客户端绝不接触 Creem 域名、不持有任何 Creem 密钥。
 # 详见 weauto_license/README.md
 LICENSE_GUARD_ENABLED = False   # 开发期 False；正式发布设 True
-CREEM_WORKER_URL = "https://wetech.jukuai.net"   # 已部署的 Worker（2026-09-28 起主用域名；weauto.safeopc.cn 仍作备用）
+CREEM_WORKER_URL = "https://wetech.jukuai.net"   # 已部署的 Worker（2026-09-28 起唯一对外域名；weauto.safeopc.cn 已删除）
 CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填这里
 
 # 设备档案 / 套餐 / AI 分身人格 的云同步（走同一个 Worker 的 /device/*）。

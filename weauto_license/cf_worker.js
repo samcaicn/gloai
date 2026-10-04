@@ -994,7 +994,7 @@ function privacyPage(env) {
     : "our support email";
   return html(layout("Privacy Policy · 隐私政策", `
 <div class="hd"><h1>Privacy Policy <span style="color:#6b7280;font-size:18px">/ 隐私政策</span></h1>
-<p>WeAuto · weauto.safeopc.cn · Last updated: 2026-10-02</p></div>
+<p>WeAuto · wetech.jukuai.net · Last updated: 2026-10-02</p></div>
 
 <div class="card">
   <h3 style="margin-top:0">1. What We Collect（我们收集什么）</h3>

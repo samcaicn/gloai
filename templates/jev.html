@@ -72,7 +72,7 @@
         <h2>运行状态</h2>
         <table>
             <tbody>
-                <tr><td class="k">判断服务</td><td class="v">WeAuto 自建 Worker（主 wetech.jukuai.net，备 weauto.safeopc.cn，自动切换）</td></tr>
+                <tr><td class="k">判断服务</td><td class="v">WeAuto 自建 Worker（wetech.jukuai.net）</td></tr>
                 <tr><td class="k">判断模型</td><td class="v">{{ data.consts.get('JEV_MODEL_NAME') or '后台默认（llama-3.3-70b）' }}</td></tr>
                 <tr><td class="k">单次超时</td><td class="v">{{ data.consts.get('JEV_TIMEOUT_SEC') }} 秒（超时即照常回复）</td></tr>
                 <tr><td class="k">带进判断的对话</td><td class="v">最近 {{ data.consts.get('JEV_CONTEXT_TURNS') }} 轮</td></tr>

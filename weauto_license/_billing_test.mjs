@@ -56,7 +56,7 @@ const env = {
 };
 
 async function call(path, opts = {}) {
-  const req = new Request("https://weauto.safeopc.cn" + path, opts);
+  const req = new Request("https://wetech.jukuai.net" + path, opts);
   const res = await worker.fetch(req, env, {});
   let body = null;
   try { body = await res.json(); } catch (_) {}
