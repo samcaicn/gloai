@@ -15,6 +15,7 @@ import android.os.Message
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -72,6 +73,10 @@ class CheckoutActivity : AppCompatActivity() {
     private var tier: String = ""
     private var activated = false
     private var lastGoodUrl: String = ""
+
+    /** 页面回报的滚动锁：内容装得下才锁死滚动（JS 侧算，见 HIDE_BRAND_JS 的 lockScroll）。 */
+    @Volatile
+    private var pageScrollLock = false
 
     private val accent = Color.parseColor("#3A7AFE")
     private val ink = Color.parseColor("#111827")
@@ -241,8 +246,43 @@ class CheckoutActivity : AppCompatActivity() {
 
     // -------------------------------------------------------------- WebView
 
+    /**
+     * 禁滚动的 WebView：收银台页面的 CSP（style-src 'self'）会拦掉注入的 <style>，
+     * CSS 侧锁不死滚动，所以滚动直接在 View 层禁掉 —— 吞掉 MOVE（滑动/惯性）和
+     * 滚轮事件，DOWN/UP 放行所以按钮、输入框照常点。
+     *
+     * 是否锁由页面回报（[pageScrollLock]）：内容装得下一屏时锁死（品牌页脚在底部，
+     * 锁在顶部就永远看不见）；内容超一屏（支付表单那一步）时放开，否则够不到
+     * 下面的支付按钮 —— 此时页面上已无任何 Creem 节点，滚到底也看不见。
+     */
+    private inner class NoScrollWebView(ctx: android.content.Context) : WebView(ctx) {
+        override fun onTouchEvent(ev: MotionEvent): Boolean {
+            if (pageScrollLock && ev.actionMasked == MotionEvent.ACTION_MOVE) return true
+            return super.onTouchEvent(ev)
+        }
+
+        override fun onGenericMotionEvent(ev: MotionEvent): Boolean {
+            if (pageScrollLock && ev.actionMasked == MotionEvent.ACTION_SCROLL) return true
+            return super.onGenericMotionEvent(ev)
+        }
+
+        override fun performAccessibilityAction(action: Int, arguments: Bundle?): Boolean {
+            if (pageScrollLock && (
+                action == android.view.accessibility.AccessibilityNodeInfo.ACTION_SCROLL_FORWARD ||
+                action == android.view.accessibility.AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+            ) return true
+            return super.performAccessibilityAction(action, arguments)
+        }
+    }
+
+    /** JS 把「内容是否装得下一屏」回报上来，View 层据此决定锁不锁滚动。 */
+    private inner class ScrollLockBridge {
+        @android.webkit.JavascriptInterface
+        fun setLock(v: Boolean) { pageScrollLock = v }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
-    private fun createWebView(): WebView = WebView(this).apply {
+    private fun createWebView(): WebView = NoScrollWebView(this).apply {
         setBackgroundColor(Color.WHITE)
         isHorizontalScrollBarEnabled = false
         isVerticalScrollBarEnabled = false
@@ -270,6 +310,7 @@ class CheckoutActivity : AppCompatActivity() {
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
         runCatching { CookieManager.getInstance().setAcceptCookie(true) }
         runCatching { CookieManager.getInstance().setAcceptThirdPartyCookies(this, true) }
+        addJavascriptInterface(ScrollLockBridge(), "__wa")
         webViewClient = makeClient()
         webChromeClient = makeChromeClient()
     }
@@ -316,6 +357,7 @@ class CheckoutActivity : AppCompatActivity() {
         }
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+            pageScrollLock = false // 新页面先放开，等注入脚本回报后再决定
             if (view === web) progress.visibility = View.VISIBLE
         }
 
@@ -499,27 +541,39 @@ class CheckoutActivity : AppCompatActivity() {
       var hit = own.indexOf('creem') >= 0 || content.indexOf('creem') >= 0 ||
                 (cls.indexOf('creem') >= 0 && !INTERACTIVE[tag]);
       if (hit) {
-        try { e.style.setProperty('display', 'none', 'important'); e.__waHidden = 1; } catch (err) {}
+        try {
+          // 命中的是页脚里的链接/logo 时，把整个 <footer> 一起收掉，
+          // 免得留下「Merchant of Record services by」这种孤零零的半句
+          var host = (e.closest && e.closest('footer')) || e;
+          host.style.setProperty('display', 'none', 'important');
+          host.__waHidden = 1;
+          var sub = host.querySelectorAll ? host.querySelectorAll('*') : [];
+          for (var j = 0; j < sub.length; j++) sub[j].__waHidden = 1;
+        } catch (err) {}
       }
     }
   }
-  // 内容装得下才禁滚动；装不下就放开，否则用户够不着付款按钮
+  // 滚动锁走 CSSOM（页面的 CSP 禁 <style> 注入，但管不着 JS 改 style），
+  // 同时把「是否装得下一屏」回报给原生层，由 WebView 在 View 层硬锁滑动。
+  // 内容超一屏时不锁 —— 那一步是支付表单，锁死会够不到支付按钮；
+  // 此时页面上已无任何 Creem 节点，滚到底也看不见。
   function lockScroll() {
+    var fits = true;
     try {
-      var fits = document.documentElement.scrollHeight <= (window.innerHeight + 12);
-      var css = fits
-        ? 'html,body{overflow:hidden!important;overscroll-behavior:none!important;}'
-        : 'html,body{overscroll-behavior:none!important;}';
-      var el = document.getElementById('__waLock');
-      if (!el) {
-        el = document.createElement('style');
-        el.id = '__waLock';
-        (document.head || document.documentElement).appendChild(el);
-      }
-      if (el.textContent !== css) el.textContent = css;
+      fits = document.documentElement.scrollHeight <= (window.innerHeight + 12);
+      var v = fits ? 'hidden' : 'visible';
+      document.documentElement.style.setProperty('overflow', v, 'important');
+      if (document.body) document.body.style.setProperty('overflow', v, 'important');
+      document.documentElement.style.setProperty('overscroll-behavior', 'none', 'important');
     } catch (e) {}
+    try { if (window.__wa && window.__wa.setLock) window.__wa.setLock(fits); } catch (e) {}
   }
-  function run() { sweep(); lockScroll(); }
+  function run() {
+    sweep();
+    lockScroll();
+    // 页面 <title> 就是 "Creem"，改掉防止从任何地方漏出去
+    try { if (document.title !== '支付') document.title = '支付'; } catch (e) {}
+  }
   run();
   try {
     new MutationObserver(function () {

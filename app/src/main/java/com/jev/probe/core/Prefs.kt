@@ -3,6 +3,8 @@ package com.jev.probe.core
 import android.content.Context
 import android.provider.Settings
 import android.util.Log
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * App-private config store.
@@ -195,6 +197,20 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
             sp.edit().putString(K_LICENSE_MID, fresh).apply()
             return fresh
         }
+
+    /**
+     * Put back a mid captured from a previous install, so an already-paid licence
+     * stays reachable: the server keys Top-up records to this value, so generating
+     * a fresh one after a reinstall would orphan the purchase forever. No-op once a
+     * mid exists — a reinstall must not silently swap somebody's licence out.
+     */
+    fun adoptLicenseMid(v: String?) {
+        val mid = v?.trim().orEmpty()
+        if (mid.isBlank()) return
+        if (!sp.getString(K_LICENSE_MID, null).isNullOrBlank()) return
+        sp.edit().putString(K_LICENSE_MID, mid).apply()
+        Log.i(TAG, "license mid adopted from backup")
+    }
 
     /** 购买成功后由 /license?mid= 轮询拿到的卡密（加密存，同 accountToken）。 */
     var licenseKey: String
@@ -400,6 +416,83 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         else -> judgeKey.isNotBlank()
     }
 
+    /**
+     * 云端备份 marks whether this install has already tried to pull a snapshot
+     * down. Without it every launch would attempt an import and clobber local
+     * edits made in between.
+     */
+    var syncRestored: Boolean
+        get() = sp.getBoolean(K_SYNC_RESTORED, false)
+        set(v) = sp.edit().putBoolean(K_SYNC_RESTORED, v).apply()
+
+    /** ms epoch of the last successful upload; shown in settings, 0 = never. */
+    var lastSyncAt: Long
+        get() = sp.getLong(K_LAST_SYNC, 0L)
+        set(v) = sp.edit().putLong(K_LAST_SYNC, v).apply()
+
+    /** Kill switch for cloud backup, for users who would rather not send anything. */
+    var syncEnabled: Boolean
+        get() = sp.getBoolean(K_SYNC_ENABLED, true)
+        set(v) = sp.edit().putBoolean(K_SYNC_ENABLED, v).apply()
+
+    /**
+     * Every preference as plain values, for the cloud snapshot.
+     *
+     * Two entries are deliberately left out: `account_token_enc` and
+     * `license_key_enc`. Both are AES-GCM blobs sealed by the AndroidKeyStore key
+     * `weauto_billing_aes`, and **that key is destroyed along with the app**.
+     * Copying the ciphertext to a new install would restore a string that can
+     * never decrypt again — worse, it would make [hasKey] report "activated"
+     * while silently producing empty credentials. The recoverable credential is
+     * `license_mid`: with the same mid the existing `/license?mid=` polling
+     * hands back the purchased key from the server.
+     */
+    fun exportAll(): JSONObject = JSONObject().apply {
+        for ((k, v) in sp.all) {
+            if (k == K_ACCOUNT_TOKEN || k == K_LICENSE_KEY) continue
+            when (v) {
+                is String -> put(k, v)
+                is Boolean -> put(k, v)
+                is Int -> put(k, v)
+                is Long -> put(k, v)
+                is Float -> put(k, v)
+                is Set<*> -> put(k, JSONArray(v.filterIsInstance<String>()))
+            }
+        }
+    }
+
+    /**
+     * Apply a previously exported map. Existing values win — a restore must never
+     * run backwards over something the user changed since the snapshot was taken.
+     *
+     * @return number of keys actually written (0 means everything was already set)
+     */
+    fun importAll(obj: JSONObject): Int {
+        val e = sp.edit()
+        var n = 0
+        for (k in obj.keys()) {
+            if (k == K_ACCOUNT_TOKEN || k == K_LICENSE_KEY) continue
+            if (sp.contains(k)) continue
+            val v = obj.get(k)
+            when (v) {
+                is String -> e.putString(k, v)
+                is Boolean -> e.putBoolean(k, v)
+                is Int -> e.putInt(k, v)
+                is Long -> e.putLong(k, v)
+                is Double -> e.putFloat(k, v.toFloat())
+                is JSONArray -> {
+                    val set = mutableSetOf<String>()
+                    for (i in 0 until v.length()) v.optString(i)?.let { set.add(it) }
+                    e.putStringSet(k, set)
+                }
+                else -> continue
+            }
+            n++
+        }
+        e.apply()
+        return n
+    }
+
     companion object {
         private const val TAG = "JEVASSIST"
 
@@ -446,6 +539,9 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_OCR_IMAGES = "ocr_images"
         private const val K_AUTO_FILL = "auto_fill_best"
         private const val K_SEND_DELAY = "send_delay_ms"
+        private const val K_SYNC_RESTORED = "sync_restored"
+        private const val K_LAST_SYNC = "last_sync_at"
+        private const val K_SYNC_ENABLED = "sync_enabled"
 
         // ---- provider ----
         const val PROVIDER_WORKER = "worker"

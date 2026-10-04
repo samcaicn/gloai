@@ -20,8 +20,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.jev.probe.core.CloudSync
+import com.jev.probe.core.DeviceId
 import com.jev.probe.core.LicenseClient
 import com.jev.probe.core.Prefs
+import com.jev.probe.core.SyncClient
 import kotlin.math.roundToInt
 import com.jev.probe.core.kb.KbSelfCheck
 import com.jev.probe.core.kb.KbStore
@@ -35,6 +38,8 @@ class SettingsActivity : AppCompatActivity() {
 
     /** 订阅卡片的状态行，收银台返回后要就地刷新。 */
     private lateinit var licStatus: TextView
+    /** 云端备份卡片的状态行，备份/恢复结束后要就地刷新。 */
+    private lateinit var syncStatus: TextView
     private var pendingTier: String = ""
 
     /** 收银台在 App 内打开（见 [CheckoutActivity]）；返回后若还没激活就继续后台确认。 */
@@ -113,6 +118,29 @@ class SettingsActivity : AppCompatActivity() {
                 "对方发图片也只在本机 OCR 读字、不上传。",
             11f, sub))
         root.addView(ifaceCard)
+
+        // =================== 云端备份（卸载重装不丢数据） ===================
+        root.addView(section("云端备份"))
+        val syncCard = card()
+        syncCard.addView(cardTitle("WeAuto 云端 · 卸载重装不丢"))
+        val syncStatusView = text(syncStatusText(), 12.5f, ink, bold = true).apply {
+            setPadding(0, dp(10), 0, dp(2))
+        }
+        syncStatus = syncStatusView
+        syncCard.addView(syncStatusView)
+        syncCard.addView(text(
+            "配置、三个 API 密钥、知识库笔记与联系人会存到你自己的 Worker（weauto.safeopc.cn），" +
+                "聊天历史不上传。设备 ID 是一把随机 UUID，不含 IMEI / 序列号 / Android ID，" +
+                "卸载时在 Download 目录留一个几十字节的锚点，重装后凭它把数据取回来。",
+            11f, sub))
+        val syncRow = toggleRow("开启云端备份", prefs.syncEnabled)
+        syncCard.addView(syncRow)
+        syncCard.addView(cardBtn("立即备份") { doSyncBackup(syncStatusView) })
+        syncCard.addView(cardBtn("从云端恢复") { doSyncRestore(syncStatusView) })
+        syncCard.addView(text(
+            "已付款的授权不需要备份：设备 ID 稳定后购买凭证（mid）不变，" +
+                "重装会自动从服务端把卡密拉回来。", 11f, sub))
+        root.addView(syncCard)
 
         // =================== 订阅与激活（Creem 支付，套餐与桌面端一致） ===================
         root.addView(section("订阅与激活"))
@@ -283,6 +311,7 @@ class SettingsActivity : AppCompatActivity() {
                 prefs.sendDelayMs = (secs * 1000f).toInt()
             }
             prefs.visionCustom = (visionCustomRow.tag as? Boolean) ?: false
+            prefs.syncEnabled = (syncRow.tag as? Boolean) ?: true
             prefs.visionBaseUrl = visionBaseEdit.text.toString()
             prefs.visionKey = visionKeyEdit.text.toString()
             prefs.visionModel = visionModelEdit.text.toString()
@@ -484,6 +513,51 @@ class SettingsActivity : AppCompatActivity() {
         return enabled.split(":").any {
             it.equals("$packageName/com.jev.probe.capture.WxNotificationListener", ignoreCase = true) ||
                 it.endsWith("WxNotificationListener", ignoreCase = true)
+        }
+    }
+
+    // ------------------------------------------------------------ 云端备份
+
+    private fun syncStatusText(): String {
+        if (!prefs.syncEnabled) return "云端备份：已关闭"
+        val last = prefs.lastSyncAt
+        val ago = if (last <= 0) "尚未备份" else {
+            val mins = (System.currentTimeMillis() - last) / 60000
+            when {
+                mins < 1 -> "刚刚备份"
+                mins < 60 -> "$mins 分钟前备份"
+                else -> "${mins / 60} 小时前备份"
+            }
+        }
+        return "云端备份：$ago · 设备 ${DeviceId.shortHash(this).take(8)}"
+    }
+
+    private fun doSyncBackup(statusView: TextView) {
+        statusView.text = "正在备份…"
+        worker.execute {
+            val res = CloudSync.uploadNow(this, prefs)
+            main.post {
+                statusView.text = when (res) {
+                    is SyncClient.Result.Ok -> syncStatusText()
+                    SyncClient.Result.NotDeployed -> "云端备份：服务端 /sync 端点尚未部署"
+                    SyncClient.Result.Empty -> "云端备份：已关闭"
+                    is SyncClient.Result.Failure -> "备份失败：${res.message}"
+                }
+            }
+        }
+    }
+
+    private fun doSyncRestore(statusView: TextView) {
+        statusView.text = "正在恢复…"
+        worker.execute {
+            val msg = CloudSync.restoreNow(this, prefs)
+            main.post {
+                statusView.text = msg ?: if (prefs.syncRestored) {
+                    "云端没有更早的数据"
+                } else {
+                    "云端备份：服务端 /sync 端点尚未部署"
+                }
+            }
         }
     }
 
