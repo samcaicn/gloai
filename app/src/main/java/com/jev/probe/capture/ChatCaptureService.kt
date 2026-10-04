@@ -74,7 +74,12 @@ open class ChatCaptureService : AccessibilityService() {
      *  can never trigger two automatic replies. Reset whenever the chat changes. */
     private var lastAutoSentSig: String = ""
     private var activePkg: String? = null
-    private var analyzing = false
+    /** 是否正在分析。跨线程读写（worker 提交 / main 复位）所以必须 volatile。
+     *
+     *  **任何**退出路径都必须把它复位**：一旦漏掉，`runAnalysis()` 开头的
+     *  `if (analyzing) return` 会把之后每一次分析全部挡掉，界面永远停在
+     *  「分析中…」——2026-10-05「自动获取对话 / 自动聊天卡死」的根因就在这里。 */
+    @Volatile private var analyzing = false
     private val session = ConversationSession()
     private val analysisTasks = ArrayList<Future<*>>()
     private var destroyed = false
@@ -91,6 +96,7 @@ open class ChatCaptureService : AccessibilityService() {
     private fun cancelAnalysis() {
         session.invalidate()
         main.removeCallbacks(debounce)
+        main.removeCallbacks(analysisWatchdog)
         pendingSnapshot = null
         analyzing = false
         lastAutoSentSig = ""      // a different conversation may legitimately be answered
@@ -153,9 +159,15 @@ open class ChatCaptureService : AccessibilityService() {
         return true
     }
 
-    /** Only called on the main thread, including the context-completion callback. */
-    private fun submitAnalysis(task: () -> Unit) {
-        try { analysisTasks.add(worker.submit(task)) } catch (_: RejectedExecutionException) { }
+    /** Only called on the main thread, including the context-completion callback.
+     *
+     *  返回 **false = 任务没能排上队**（服务已销毁 / 线程池已关闭）。调用方必须照样
+     *  把计数复位，否则 `analyzing` 永远等不到归零，UI 就冻在「分析中…」。 */
+    private fun submitAnalysis(task: () -> Unit): Boolean = try {
+        analysisTasks.add(worker.submit(task))
+        true
+    } catch (_: RejectedExecutionException) {
+        false
     }
 
     private val debounce = Runnable { runAnalysis() }
@@ -448,27 +460,41 @@ open class ChatCaptureService : AccessibilityService() {
                 Log.w(TAG, "context build failed: ${e.javaClass.simpleName}"); null
             }
             main.post {
-                if (!isCurrent(token)) return@post
+                if (!isCurrent(token)) {
+                    // 会话已失效（切了聊天 / 关了开关 / token 过期）。必须在这里复位，
+                    // 因为下面两个任务压根不会被提交，没人会去归零 analyzing。
+                    analyzing = false
+                    analysisTasks.clear()
+                    return@post
+                }
                 overlay?.setContextInfo(ctx?.notes?.size ?: 0, ctx?.history?.size ?: 0)
                 var remaining = 2
                 fun completed() {
                     remaining--
-                    if (remaining == 0) {
+                    if (remaining <= 0) {
                         analyzing = false
                         analysisTasks.clear()
+                        main.removeCallbacks(analysisWatchdog)
+                        Log.d(TAG, "analysis round finished")
                     }
                 }
-                submitAnalysis {
+                // 兜底看门狗：不管走哪条路径，超时没归零就强制放开，
+                // 绝不允许把面板永久冻在「分析中…」。
+                main.postDelayed(analysisWatchdog, ANALYSIS_TIMEOUT_MS)
+
+                val judgeQueued = submitAnalysis {
                     val judgment = client.judge(augmented, rel, ctx)
                     main.post {
+                        // 只有 UI 更新需要会话仍然匹配；计数复位与它无关，必须无条件执行
+                        // （旧代码把 completed() 关在 isCurrent 里，一旦会话失效就永久卡死）。
                         if (isCurrent(token)) {
                             if (judgment.error != null) overlay?.showOcrResult(augmented.messages, judgment.error)
                             else overlay?.showJudgment(judgment)
-                            completed()
                         }
+                        completed()
                     }
                 }
-                submitAnalysis {
+                val replyQueued = submitAnalysis {
                     var replyError: String? = null
                     val ranked = try { client.draftAndRank(augmented, rel, ctx) } catch (e: Exception) {
                         replyError = e.message ?: e.javaClass.simpleName
@@ -480,12 +506,28 @@ open class ChatCaptureService : AccessibilityService() {
                             // 真·无人值守（微信）：worker/jev 返回候选后直接按打分最高的
                             // 一条填入，autoSend 开着就再延迟 sendDelayMs（默认 2s）发出。
                             maybeAutoSendBest(token, augmented, ranked, replyError)
-                            completed()
                         }
+                        completed()
                     }
                 }
+                // 任务没排上队（服务已销毁）→ 手动补计数，别让 analyzing 空等。
+                if (!judgeQueued) completed()
+                if (!replyQueued) completed()
             }
         }
+    }
+
+    /**
+     * 兜底：一轮分析超过 [ANALYSIS_TIMEOUT_MS] 仍未归零，强制复位 [analyzing] 并把面板
+     * 从「分析中…」放开。正常路径下 [completed] 会把它取消掉；只有真出了意外才轮到它。
+     */
+    private val analysisWatchdog = Runnable {
+        if (!analyzing) return@Runnable
+        Log.w(TAG, "analysis watchdog fired after ${ANALYSIS_TIMEOUT_MS}ms — force reset")
+        analysisTasks.forEach { runCatching { it.cancel(true) } }
+        analysisTasks.clear()
+        analyzing = false
+        overlay?.showError("分析超时，请重试")
     }
 
     /**
@@ -1004,6 +1046,10 @@ open class ChatCaptureService : AccessibilityService() {
          *  event so [WxNotificationListener] can decide whether to auto-open a chat
          *  without needing a restricted usage/running-tasks permission. */
         @Volatile var weChatForeground: Boolean = false
+
+        /** 一轮分析（判断 + 候选回复各打一次 LLM）的兜底上限。判定接口最坏 3 次重试
+         *  × 20s 读超时，90s 足够宽；超时由 analysisWatchdog 强制复位 [analyzing]。 */
+        private const val ANALYSIS_TIMEOUT_MS = 90_000L
 
         /** WeChat's package. Now wired in via [WeChatAdapter]; the capture service
          *  is disguised as SelectToSpeakService so WeChat exposes its node tree.
