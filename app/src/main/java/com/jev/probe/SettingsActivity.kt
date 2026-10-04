@@ -473,6 +473,7 @@ class SettingsActivity : AppCompatActivity() {
             11f, Color.parseColor("#DC2626")).apply { setPadding(0, dp(5), 0, 0) })
         return box
     }
+    private fun header(t: String) = text(t, 22f, ink, bold = true).apply { setPadding(0, 0, 0, dp(10)) }
     private fun section(t: String) = text(t, 12f, sub, bold = true).apply { setPadding(dp(2), dp(16), 0, dp(6)) }
     private fun label(t: String) = text(t, 13f, ink, bold = true).apply { setPadding(0, dp(12), 0, dp(4)) }
     private fun cardTitle(t: String) = text(t, 16f, ink, bold = true).apply { setPadding(0, dp(10), 0, dp(4)) }
