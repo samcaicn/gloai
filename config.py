@@ -207,6 +207,12 @@ LICENSE_GUARD_ENABLED = False   # 开发期 False；正式发布设 True
 CREEM_WORKER_URL = "https://wetech.jukuai.net"   # 已部署的 Worker（2026-09-28 起主用域名；weauto.safeopc.cn 仍作备用）
 CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填这里
 
+# 设备档案 / 套餐 / AI 分身人格 的云同步（走同一个 Worker 的 /device/*）。
+# 作用：把设备 ID、套餐档位、AI 分身人格存到 CF —— 换机/卸载重装能拉回来；
+# 并以「微信身份键」为归属键，实现 Windows 端与 Android 端的人格互通。
+# 关掉后软件照常可用（人格只存本机），只是不跨端、换机会丢。
+DEVICE_SYNC_ENABLED = True
+
 
 # ===== Jev 判断式 AI ======================================================
 # 内置能力，出厂自动运行，**不需要任何配置项**。

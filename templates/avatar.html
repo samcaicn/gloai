@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>AI 分身 · 主人身份与分身人设</title>
+    <style>
+        body{ margin:0; }
+        .wrap{ max-width:1180px; margin:0 auto; padding:22px 20px 60px; }
+        .panel{
+            background:var(--surface);
+            border:1px solid var(--border);
+            border-radius:var(--r-lg);
+            box-shadow:var(--sh-2);
+            padding:20px 22px;
+            margin-bottom:18px;
+        }
+        .panel h2{
+            margin:0 0 14px; font-size:16.5px; font-weight:650;
+            padding-bottom:10px; border-bottom:1px solid var(--border);
+        }
+        .hint{ color:var(--text-3); font-size:13px; line-height:1.7; margin:8px 0 0; }
+        .grid2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+        .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+        .field label{ font-size:12.5px; color:var(--text-2); font-weight:600; }
+        .field input, .field textarea{
+            background:var(--input-bg); color:var(--text);
+            border:1px solid var(--border); border-radius:var(--r-sm);
+            padding:9px 12px; font-size:13.5px; font-family:inherit;
+        }
+        .field textarea{ min-height:70px; line-height:1.7; resize:vertical; }
+        .field input:focus, .field textarea:focus{ outline:none; border-color:var(--brand); }
+        .switch-line{
+            display:flex; align-items:center; justify-content:space-between;
+            gap:16px; flex-wrap:wrap;
+            background:var(--surface-2); border:1px solid var(--border);
+            border-radius:var(--r); padding:14px 16px;
+        }
+        .switch-line .txt strong{ display:block; font-size:14.5px; color:var(--text); }
+        .switch-line .txt span{ font-size:12.5px; color:var(--text-3); }
+        .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+        .badge.on{ background:var(--ok-soft); color:var(--ok-text); }
+        .badge.off{ background:var(--surface-3); color:var(--text-3); }
+        .btn{
+            background:var(--brand); color:#fff; border:0; border-radius:var(--r-sm);
+            padding:10px 18px; font-size:13.5px; cursor:pointer; font-weight:600;
+        }
+        .btn.ghost{ background:var(--surface-3); color:var(--text-2); }
+        .btn.danger{ background:var(--danger); color:#fff; }
+        .btn:disabled{ opacity:.55; cursor:not-allowed; }
+        .msg{
+            background:var(--info-soft); color:var(--info-text);
+            border:1px solid var(--brand-ring);
+            border-radius:var(--r); padding:10px 14px; margin-bottom:16px; font-size:13.5px;
+        }
+        .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+        .stat-card{
+            background:var(--surface-2); border:1px solid var(--border);
+            border-radius:var(--r); padding:14px 16px;
+        }
+        .stat-card .k{ color:var(--text-3); font-size:12.5px; margin-bottom:6px; }
+        .stat-card .v{ font-size:22px; font-weight:680; color:var(--text); letter-spacing:-.02em; }
+        .stat-card .u{ font-size:12px; color:var(--text-3); margin-left:3px; font-weight:500; }
+        .chat-box{
+            max-height:340px; overflow-y:auto; background:var(--surface-2);
+            border:1px solid var(--border); border-radius:var(--r); padding:12px 14px;
+        }
+        .line{ display:flex; gap:8px; margin-bottom:10px; }
+        .line.me{ flex-direction:row-reverse; }
+        .who{ font-size:11px; color:var(--text-3); margin-bottom:3px; }
+        .bub{
+            max-width:78%; padding:8px 12px; border-radius:12px;
+            background:var(--surface-3); color:var(--text);
+            font-size:13.5px; line-height:1.65; white-space:pre-wrap; word-break:break-word;
+        }
+        .line.me .bub{ background:var(--brand); color:#fff; }
+        .stamp{ font-size:10.5px; color:var(--text-3); align-self:flex-end; }
+        .kv{ font-size:13px; color:var(--text-2); line-height:1.9; }
+        .kv b{ color:var(--text); font-weight:600; }
+        .mono{
+            font-family:ui-monospace,Consolas,monospace; font-size:12px;
+            background:var(--surface-2); border:1px solid var(--border);
+            border-radius:var(--r-sm); padding:8px 10px; color:var(--text-2);
+            word-break:break-all;
+        }
+        pre.json{
+            max-height:200px; overflow:auto; background:var(--surface-2);
+            border:1px solid var(--border); border-radius:var(--r-sm);
+            padding:10px 12px; font-size:11.5px; color:var(--text-2);
+            white-space:pre-wrap; word-break:break-all;
+        }
+        .teach-row{ display:flex; gap:10px; align-items:flex-end; }
+        .teach-row textarea{ flex:1; }
+    </style>
+    {% include '_modern_ui.html' %}
+</head>
+<body>
+    <div class="header-bar">
+        <div class="header-title"><h1>AI 分身 · 我的身份与分身人设</h1></div>
+        <div class="buttons">
+            <a href="{{ url_for('style_lab') }}" class="nav-button">风格模仿</a>
+            <a href="{{ url_for('index') }}" class="nav-button">返回配置</a>
+        </div>
+    </div>
+
+    <div class="wrap content-area">
+        {% if message %}<div class="msg">{{ message }}</div>{% endif %}
+
+        <!-- 概览 -->
+        <div class="panel">
+            <h2>分身概览</h2>
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="k">身份完整度</div>
+                    <div class="v">{{ stats.get('filled', 0) }}<span class="u">/ {{ stats.get('fields', 7) }} 项</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="k">教学对话</div>
+                    <div class="v">{{ stats.get('owner_msgs', 0) }}<span class="u">条我说的</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="k">生效对象（用户列表）</div>
+                    <div class="v">{{ audience_count }}<span class="u">个联系人</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="k">人设注入</div>
+                    <div class="v" style="font-size:16px;">
+                        {% if settings.get('enabled') %}<span class="badge on">已启用</span>
+                        {% else %}<span class="badge off">已停用</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+            <p class="hint">
+                这里<strong>只有主人部分</strong>：身份档案、分身人设、教学聊天。
+                没有访客/名片分享——本项目里「访客」就是<b>用户列表里的微信联系人</b>，
+                分身人设启用后，会通过系统提示词注入，对 bot 回复的<strong>全部联系人</strong>生效。
+            </p>
+        </div>
+
+        <!-- 身份档案 -->
+        <div class="panel">
+            <h2>我的身份档案</h2>
+            <form method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="save_identity"/>
+                <div class="grid2">
+                    <div class="field">
+                        <label>你的称呼 *</label>
+                        <input name="nameCN" value="{{ identity.get('nameCN','') }}" placeholder="如：张三"/>
+                    </div>
+                    <div class="field">
+                        <label>职位</label>
+                        <input name="title" value="{{ identity.get('title','') }}" placeholder="如：品牌总监"/>
+                    </div>
+                    <div class="field">
+                        <label>公司</label>
+                        <input name="company" value="{{ identity.get('company','') }}" placeholder="如：某酒业集团"/>
+                    </div>
+                    <div class="field">
+                        <label>城市</label>
+                        <input name="city" value="{{ identity.get('city','') }}" placeholder="如：成都"/>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>一句话简介（分身会学你的语气）</label>
+                    <textarea name="about" placeholder="如：做高端白酒的，说话很直接，不爱客套。">{{ identity.get('about','') }}</textarea>
+                </div>
+                <div class="field">
+                    <label>公司能提供什么（访客最爱问，填了分身才答得上来）</label>
+                    <textarea name="companyDescription" placeholder="如：高端白酒定制、企业团购方案">{{ identity.get('companyDescription','') }}</textarea>
+                </div>
+                <div class="field">
+                    <label>产品 / 服务介绍</label>
+                    <textarea name="productDescription" placeholder="如：酱香型白酒，500ml 礼盒装">{{ identity.get('productDescription','') }}</textarea>
+                </div>
+                <button class="btn" type="submit">保存身份档案</button>
+            </form>
+        </div>
+
+        <!-- 分身设置 -->
+        <div class="panel">
+            <h2>分身设置</h2>
+            <form method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="save_settings"/>
+                <div class="switch-line" style="margin-bottom:14px;">
+                    <div class="txt">
+                        <strong>启用 AI 分身人设
+                            {% if settings.get('enabled') %}<span class="badge on">已启用</span>
+                            {% else %}<span class="badge off">已停用</span>{% endif %}
+                        </strong>
+                        <span>启用后，身份档案 + 说话风格会追加到每次对话的系统提示词中</span>
+                    </div>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;">
+                        <input type="checkbox" name="enabled" value="1"
+                               {% if settings.get('enabled') %}checked{% endif %}/>
+                        启用
+                    </label>
+                </div>
+                <div class="grid2">
+                    <div class="field">
+                        <label>对话目的</label>
+                        <input name="chatPurpose" value="{{ settings.get('chatPurpose','') }}" placeholder="如：商务对接"/>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>额外人设要求（可留空，让分身按你的语气自然回）</label>
+                    <textarea name="personaPrompt" placeholder="如：不主动报价，先问对方预算">{{ settings.get('personaPrompt','') }}</textarea>
+                </div>
+                <button class="btn" type="submit">保存设置</button>
+            </form>
+        </div>
+
+        <!-- 说话风格（复用风格模仿） -->
+        <div class="panel">
+            <h2>说话风格（来自「风格模仿」）</h2>
+            {% if profile.get('ok') %}
+                <p class="kv">
+                    样本 <b>{{ profile.get('sample_count', 0) }}</b> 条 ·
+                    平均句长 <b>{{ profile.get('features', {}).get('avg_len', 0) }}</b> 字
+                </p>
+                <pre class="json">{{ profile.get('profile_text','') }}</pre>
+            {% else %}
+                <p class="hint">
+                    还没有风格画像（{{ profile.get('reason','尚未生成') }}）。
+                    去 <a href="{{ url_for('style_lab') }}">风格模仿</a> 分析真实聊天记录即可生成，
+                    分身会自动带上你的说话方式。
+                </p>
+            {% endif %}
+        </div>
+
+        <!-- 教学聊天 -->
+        <div class="panel">
+            <h2>和分身聊聊（教它你的说话方式）</h2>
+            <div class="chat-box" id="chatbox">
+                {% if chat %}
+                    {% for ts, role, content in chat %}
+                        <div class="line {% if role == 'user' %}me{% endif %}">
+                            <div>
+                                <div class="who">{% if role == 'user' %}我{% else %}AI 分身{% endif %}</div>
+                                <div class="bub">{{ content }}</div>
+                            </div>
+                            <div class="stamp">{{ ts }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="hint" style="margin:0;">还没有对话。跟分身说几句你是谁、平时怎么说话，它会记下来。</p>
+                {% endif %}
+            </div>
+            <form method="post" style="margin-top:12px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="teach"/>
+                <div class="teach-row">
+                    <textarea name="content" rows="2" placeholder="如：我一般这么回客户：价格好说，先聊聊你要多少量。"></textarea>
+                    <button class="btn" type="submit">发送</button>
+                </div>
+            </form>
+            <form method="post" style="margin-top:10px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="clear_chat"/>
+                <button class="btn ghost" type="submit">清空教学聊天</button>
+            </form>
+        </div>
+
+        <!-- 云同步：设备 ID / 套餐 / 人格上云，Windows 与 Android 互通 -->
+        <div class="panel">
+            <h2>云同步与跨端互通（设备 ID · 套餐 · 人格）</h2>
+            {% if not cloud %}
+                <p class="hint" style="margin-top:0;">云同步模块不可用，人格仅存在本机。</p>
+            {% else %}
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="k">档案归属</div>
+                        <div class="v" style="font-size:14px;">{{ cloud.get('owner_scope') }}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="k">云端套餐</div>
+                        <div class="v" style="font-size:14px;">
+                            {% if cloud.get('plan') %}{{ cloud['plan'].get('name') }}
+                            {% elif cloud.get('tier') %}{{ cloud.get('tier') }}
+                            {% else %}未绑定{% endif %}
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="k">云端人格版本</div>
+                        <div class="v" style="font-size:14px;">{{ cloud.get('persona_rev') or '无' }}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="k">已登记设备</div>
+                        <div class="v">{{ (cloud.get('devices') or [])|length }}<span class="u">台</span></div>
+                    </div>
+                </div>
+                <p class="kv" style="margin-top:14px;">
+                    微信身份键：<span class="mono">{{ cloud.get('wx_key') or '未绑定（需先启动 bot 登录微信）' }}</span>
+                    {% if cloud.get('wx_nickname') %}（{{ cloud.get('wx_nickname') }}）{% endif %}<br/>
+                    设备 ID：<span class="mono">{{ cloud.get('device_id') }}</span><br/>
+                    云端地址：<span class="mono">{{ cloud.get('worker') or '未配置' }}</span><br/>
+                    上次同步：<span class="mono">{{ cloud.get('last_sync_str') }}</span>
+                    {% if cloud.get('last_action') %}（{{ cloud.get('last_action') }}）{% endif %}
+                    {% if cloud.get('last_error') %}
+                        <br/><span style="color:var(--danger-text);">最近错误：{{ cloud.get('last_error') }}</span>
+                    {% endif %}
+                </p>
+                <p class="hint">
+                    人格档案以<strong>微信身份键</strong>为归属：同一个微信号在 Windows 与 Android 上登录，
+                    两端读到的是同一份人格（换手机、换电脑都不丢）。微信号只做单向哈希上传，服务端拿不到原始账号。<br/>
+                    套餐档位由服务端现验卡密/账户令牌后写入，客户端改不了。断网或云端不可用时软件照常使用，联网后自动补同步。
+                </p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;">
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="action" value="cloud_sync"/>
+                        <button class="btn" type="submit">立即同步</button>
+                    </form>
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="action" value="cloud_push"/>
+                        <button class="btn ghost" type="submit">上传本机人格</button>
+                    </form>
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="action" value="cloud_pull"/>
+                        <button class="btn ghost" type="submit">拉取云端人格</button>
+                    </form>
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="action" value="cloud_plan"/>
+                        <button class="btn ghost" type="submit">同步套餐</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- 设备 ID / 数据 -->
+        <div class="panel">
+            <h2>设备标识与数据（卸载重装不丢）</h2>
+            <p class="kv">
+                设备 ID：<span class="mono">{{ device.get('device_id','') }}</span><br/>
+                数据目录：<span class="mono">{{ device.get('data_dir','') }}</span>
+            </p>
+            <p class="hint">
+                {{ device.get('privacy','') }}。数据写在<strong>安装目录之外</strong>的用户数据目录，
+                且设备 ID 可由系统硬件重算——<strong>卸载重装后身份与人设仍然在</strong>。
+            </p>
+            <p class="kv" style="margin-top:10px;">
+                <b>导出身份 JSON</b>（换机时先导出，再到新机器导入）
+            </p>
+            <pre class="json">{{ export_json }}</pre>
+            <form method="post" style="margin-top:12px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="import"/>
+                <div class="field">
+                    <label>粘贴身份 JSON 导入</label>
+                    <textarea name="json_text" placeholder='{"identity":{...},"settings":{...}}'></textarea>
+                </div>
+                <button class="btn" type="submit">导入</button>
+            </form>
+            <form method="post" style="margin-top:10px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="reset"/>
+                <button class="btn danger" type="submit">清空身份与人设</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

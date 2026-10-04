@@ -4770,6 +4770,188 @@ def style_lab():
                            recent=recent_fmt, message=message, updated_str=updated_str)
 
 
+# ---------------------------------------------------------------------------
+# AI 分身（主人侧）：身份档案 / 人设 / 教学聊天
+#   说明：去掉了访客侧（名片分享、访客会话、接管轮询）——本项目的「访客」
+#         就是用户列表里的微信联系人，分身人设注入后对 bot 回复的全部联系人生效。
+# ---------------------------------------------------------------------------
+def _avatar_llm_chat(messages, timeout=60):
+    """按既有「AI 来源双模式」调用大模型。
+
+    官方模式：走 weauto_license.guard.ai_endpoint()（<worker>/ai/v1 + 卡密 + 实例头）；
+    自填模式：直接用 config.py 里的 DEEPSEEK_BASE_URL / API_KEY，不碰网关。
+    """
+    base_url = api_key = model = None
+    headers = {}
+    try:
+        from weauto_license import guard
+        ep = guard.ai_endpoint()
+        if ep:
+            base_url = ep.get('base_url')
+            api_key = ep.get('api_key') or ''
+            headers = ep.get('headers') or {}
+    except Exception:
+        pass
+
+    _cfg = parse_config()
+    if not base_url:
+        base_url = (_cfg.get('DEEPSEEK_BASE_URL') or 'https://api.deepseek.com').rstrip('/')
+        api_key = _cfg.get('DEEPSEEK_API_KEY') or ''
+    model = _cfg.get('MODEL') or 'deepseek-chat'
+
+    if not api_key:
+        raise RuntimeError('未配置大模型 API Key（config.py 的 DEEPSEEK_API_KEY，或先激活卡密走官方模式）')
+
+    client = openai.OpenAI(base_url=base_url, api_key=api_key,
+                           default_headers=headers or None, timeout=timeout)
+    resp = client.chat.completions.create(
+        model=model, messages=messages, temperature=0.8, max_tokens=800,
+    )
+    return (resp.choices[0].message.content or '').strip()
+
+
+def _avatar_audience_count():
+    """生效对象数量：本项目的用户列表（bot 监听/回复的联系人）。"""
+    try:
+        _cfg = parse_config()
+        lst = _cfg.get('LISTEN_LIST') or []
+        if isinstance(lst, list) and len(lst):
+            return len(lst)
+    except Exception:
+        pass
+    try:
+        base = os.path.dirname(os.path.abspath(__file__))
+        pdir = os.path.join(base, 'prompts')
+        if os.path.isdir(pdir):
+            return len([f for f in os.listdir(pdir)
+                        if f.endswith(('.md', '.txt')) and not f.startswith('默认')])
+    except Exception:
+        pass
+    return 0
+
+
+@app.route('/avatar', methods=['GET', 'POST'])
+@login_required
+def avatar_page():
+    """AI 分身 · 主人侧面板（身份档案 / 人设 / 教学聊天 / 设备 ID）。"""
+    try:
+        import persona
+    except Exception as _e:  # noqa: BLE001
+        persona = None
+        app.logger.warning(f"persona 不可用，AI 分身面板降级: {_e}")
+    try:
+        import device_id
+    except Exception as _e:  # noqa: BLE001
+        device_id = None
+        app.logger.warning(f"device_id 不可用: {_e}")
+    try:
+        import style_learner
+    except Exception:
+        style_learner = None
+    try:
+        import cloud_sync
+    except Exception as _e:  # noqa: BLE001
+        cloud_sync = None
+        app.logger.warning(f"cloud_sync 不可用，AI 分身云同步降级为纯本地: {_e}")
+
+    message = ''
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+        # 云同步动作不依赖 persona，单独分发（persona 挂了也能把云端人格拉回来）
+        if action.startswith('cloud_'):
+            try:
+                if cloud_sync is None:
+                    message = '云同步模块不可用（cloud_sync 导入失败）'
+                elif action == 'cloud_sync':
+                    r = cloud_sync.sync(reason='manual')
+                    if r.get('ok'):
+                        _label = {'push': '已上传本机人格', 'pull': '已拉取云端人格',
+                                  'up-to-date': '两端一致，无需同步'}
+                        message = '同步完成：' + _label.get(r.get('action'), str(r.get('action')))
+                    else:
+                        message = '同步失败：' + str(r.get('error') or r.get('detail'))
+                elif action == 'cloud_push':
+                    r = cloud_sync.push(force=True)
+                    message = ('已把本机人格上传到云端。' if r.get('ok') else f"上传失败：{r.get('error')}")
+                elif action == 'cloud_pull':
+                    r = cloud_sync.pull(force=True)
+                    message = (r.get('message') or '已用云端人格覆盖本机。') if r.get('ok') else f"拉取失败：{r.get('error')}"
+                elif action == 'cloud_plan':
+                    r = cloud_sync.sync_plan()
+                    message = (f"套餐已同步到云端：{r.get('tier') or '未识别档位'}" if r.get('ok')
+                               else f"套餐同步失败：{r.get('error')}")
+            except Exception as _e:  # noqa: BLE001
+                message = f'云同步失败：{_e}'
+                app.logger.error(f"avatar 云同步失败: {_e}", exc_info=True)
+        else:
+            try:
+                if persona is None:
+                    message = 'AI 分身模块不可用（persona 导入失败）'
+                elif action == 'save_identity':
+                    persona.save_identity(request.form)
+                    message = '身份档案已保存。'
+                elif action == 'save_settings':
+                    persona.save_settings(request.form)
+                    message = '分身设置已保存。'
+                elif action == 'teach':
+                    text = (request.form.get('content') or '').strip()
+                    if not text:
+                        message = '请先输入内容'
+                    else:
+                        persona.add_chat('user', text)
+                        system = persona.build_prompt() + (
+                            "\n\n（现在正在和「我本人」对话。他在教你他的说话方式和业务信息，"
+                            "请用自然简短的口语回应，并可反问引导他补充信息。）"
+                        )
+                        hist = [{'role': ('assistant' if m.get('role') == 'assistant' else 'user'),
+                                 'content': m.get('content', '')}
+                                for m in persona.chat()[-20:]]
+                        reply = _avatar_llm_chat([{'role': 'system', 'content': system}] + hist)
+                        persona.add_chat('assistant', reply)
+                        message = '已记录这次对话。'
+                elif action == 'clear_chat':
+                    persona.clear_chat()
+                    message = '教学聊天已清空。'
+                elif action == 'import':
+                    ok, msg = persona.import_json(request.form.get('json_text', ''))
+                    message = msg
+                elif action == 'reset':
+                    persona.reset_all()
+                    message = '身份与人设已清空。'
+            except Exception as _e:  # noqa: BLE001
+                message = f'操作失败：{_e}'
+                app.logger.error(f"avatar 操作失败: {_e}", exc_info=True)
+
+    ident = persona.identity() if persona else {}
+    st = persona.settings() if persona else {}
+    chat_rows = persona.chat() if persona else []
+    pstats = persona.stats() if persona else {}
+    profile = style_learner.load_profile() if style_learner else {}
+    dev = device_id.device_info() if device_id else {}
+
+    def _fmt(ts):
+        try:
+            return time.strftime('%m-%d %H:%M', time.localtime(ts))
+        except Exception:
+            return ''
+
+    chat_fmt = [(_fmt(m.get('ts')), m.get('role'), m.get('content', '')) for m in chat_rows]
+
+    try:
+        cloud = cloud_sync.status() if cloud_sync else None
+    except Exception as _ce:  # noqa: BLE001
+        cloud = None
+        app.logger.warning(f"读取云同步状态失败: {_ce}")
+
+    return render_template('avatar.html',
+                           identity=ident, settings=st, chat=chat_fmt,
+                           stats=pstats, profile=profile, device=dev,
+                           cloud=cloud,
+                           audience_count=_avatar_audience_count(),
+                           export_json=(persona.export_json() if persona else ''),
+                           message=message)
+
+
 # ================================================================= 工具接口诊断（MCP / CLI，供 agent 调用）
 def _weauto_agent_diag():
     """汇总 agent 接口（MCP / CLI）的本地能力，供管理后台页面与接口展示。"""

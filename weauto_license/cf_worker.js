@@ -592,6 +592,296 @@ function estimateTokens(text) {
   return Math.ceil((text ? String(text).length : 0) / 4);
 }
 
+/* ---------------- 设备档案 / 套餐 / 人格云同步（/device/*） ----------------
+ * 目标：
+ *   1) 设备 ID、套餐（tier）、AI 分身人格档案存到 CF —— 软件卸载重装后能拉回来。
+ *   2) 与 Android 端（jev-chat-jarvis）互通：Android 每个请求本来就会带
+ *      X-WeAuto-Instance（设备 ID）+ Authorization: Bearer <账户令牌>，
+ *      这套接口直接复用这两个头，**Android 端零改动即可接入**。
+ *   3) 跨端人格互通：以「微信身份键 wxKey」为归属键。同一个微信号在
+ *      Windows(EXE) 与 Android(APK) 上登录，读到的是同一份人格档案。
+ *
+ * 归属键优先级：wxKey（微信身份）> deviceId（设备）。
+ *   两者都是单向哈希（客户端算好再上报），服务器拿不到 wxid/MAC 等原始值。
+ *
+ * 凭证（三选一，任一通过即可读写「自己那份」档案）：
+ *   ① Authorization: Bearer <billing token>              —— Android 现成的账户令牌
+ *   ② X-WeAuto-Key: <卡密> + X-WeAuto-Instance: <设备ID>  —— EXE 已激活用户
+ *   ③ HMAC 签名头 X-WeAuto-Ts/Nonce/Sig（客户端共享密钥）  —— 兜底
+ *   三个 secret 都没配时退化为「公开模式」（向后兼容未配置环境），靠 ownerKey 不可猜做隔离。
+ *
+ * 存储：复用 BILLING_KV（前缀 prof:），不新增 namespace，免改 wrangler.toml。
+ * 注意：Workers 运行时没有 Buffer，只能用 btoa/atob + TextEncoder（同上）。
+ */
+
+const PROF_PREFIX = "prof:";
+const PROF_TTL = 400 * 24 * 3600;
+const DEVICE_ID_RE = /^[A-Za-z0-9_-]{4,64}$/;
+const WXKEY_RE = /^wx_[a-f0-9]{16,64}$/;
+
+const PERSONA_IDENTITY_FIELDS = [
+  "nameCN", "title", "company", "city", "about", "companyDescription", "productDescription",
+];
+
+function ownerKeyOf(wxKey, deviceId) {
+  const w = String(wxKey || "").trim();
+  if (WXKEY_RE.test(w)) return "wx:" + w;
+  const d = String(deviceId || "").trim();
+  if (DEVICE_ID_RE.test(d)) return "dev:" + d;
+  return "";
+}
+
+/** 归一不同套餐体系的展示信息（APK 令牌三档 / Creem 卡密三档）。 */
+function planInfoFor(tier) {
+  const t = String(tier || "").trim();
+  if (!t) return null;
+  if (TIERS[t]) {
+    return { tier: t, name: TIERS[t].name, source: "apk_token", tokens: TIERS[t].tokens, price_text: TIERS[t].price_text };
+  }
+  const CREEM_LABEL = { normal: "初级套餐", premium: "中级套餐", lifetime: "高级套餐" };
+  if (CREEM_LABEL[t]) return { tier: t, name: CREEM_LABEL[t], source: "creem_license" };
+  return null;
+}
+
+async function readProfile(env, owner) {
+  if (!env.BILLING_KV || !owner) return null;
+  const raw = await env.BILLING_KV.get(PROF_PREFIX + owner);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (_) { return null; }
+}
+
+async function writeProfile(env, owner, prof) {
+  if (!env.BILLING_KV || !owner) return false;
+  prof.owner = owner;
+  prof.updatedAt = Date.now();
+  await env.BILLING_KV.put(PROF_PREFIX + owner, JSON.stringify(prof), { expirationTtl: PROF_TTL });
+  return true;
+}
+
+function blankProfile(owner, wxKey) {
+  return {
+    owner, wxKey: wxKey || "", tier: "", plan: null,
+    persona: null, personaRev: 0, devices: [],
+    createdAt: Date.now(), updatedAt: Date.now(),
+  };
+}
+
+function touchDevice(prof, deviceId, platform, appVer) {
+  const id = String(deviceId || "").trim();
+  if (!DEVICE_ID_RE.test(id)) return;
+  const now = Date.now();
+  prof.devices = Array.isArray(prof.devices) ? prof.devices : [];
+  const hit = prof.devices.find((d) => d && d.id === id);
+  if (hit) {
+    hit.lastSeen = now;
+    if (platform) hit.platform = String(platform).slice(0, 32);
+    if (appVer) hit.appVer = String(appVer).slice(0, 32);
+  } else {
+    prof.devices.push({ id, platform: String(platform || "").slice(0, 32), appVer: String(appVer || "").slice(0, 32), firstSeen: now, lastSeen: now });
+  }
+  if (prof.devices.length > 10) {
+    prof.devices = prof.devices.slice().sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0)).slice(0, 10);
+  }
+}
+
+/** 只保留白名单字段并限长，防止把整个硬盘塞进 KV。 */
+function sanitizePersona(p) {
+  if (!p || typeof p !== "object") return null;
+  const srcId = (p.identity && typeof p.identity === "object") ? p.identity : {};
+  const srcSt = (p.settings && typeof p.settings === "object") ? p.settings : {};
+  const identity = {};
+  for (const k of PERSONA_IDENTITY_FIELDS) identity[k] = String(srcId[k] ?? "").slice(0, 500);
+  return {
+    identity,
+    settings: {
+      enabled: !!srcSt.enabled,
+      personaPrompt: String(srcSt.personaPrompt ?? "").slice(0, 4000),
+      chatPurpose: String(srcSt.chatPurpose ?? "").slice(0, 500),
+    },
+    styleText: String(p.styleText ?? "").slice(0, 4000),
+  };
+}
+
+function profState(prof) {
+  const persona = prof.persona || null;
+  return {
+    ok: true,
+    owner: prof.owner || "",
+    wxKey: prof.wxKey || "",
+    tier: prof.tier || "",
+    plan: prof.plan || planInfoFor(prof.tier) || null,
+    persona,
+    personaRev: Number(prof.personaRev) || 0,
+    personaUpdatedAt: Number((persona && persona.updatedAt) || prof.personaRev || 0),
+    personaSource: (persona && persona.sourcePlatform) || "",
+    devices: prof.devices || [],
+    updatedAt: prof.updatedAt || 0,
+  };
+}
+
+/** /device/* 的凭证校验：三选一通过即可。 */
+async function deviceAuth(req, env, rawBody) {
+  // ① 账户令牌（Android 现成的 Bearer token）
+  const auth = String(req.headers.get("authorization") || "").trim();
+  const bm = /^bearer\s+(.+)$/i.exec(auth);
+  if (bm && env.WEAUATO_SIGN_SECRET) {
+    const payload = await verifyBillingToken(env, bm[1].trim());
+    if (payload) return { ok: true, kind: "token", sub: payload.sub || "", tier: payload.tier || "" };
+  }
+  // ② 卡密 + 设备 ID（EXE 已激活用户）
+  const key = String(req.headers.get("x-weauto-key") || "").trim();
+  const inst = String(req.headers.get("x-weauto-instance") || "").trim();
+  if (key && inst && env.CREEM_API_KEY) {
+    if (await licenseOk(env, key, inst, false)) return { ok: true, kind: "license", sub: "", tier: "" };
+  }
+  // ③ HMAC 签名（与 /ai/jev/decisions 同一套：X-WeAuto-Ts/Nonce/Sig）
+  const secret = env.WEAUATO_CLIENT_SECRET || env.WEAUATO_SIGN_SECRET || "";
+  if (secret && rawBody != null) {
+    const ts = String(req.headers.get("x-weauto-ts") || "").trim();
+    const nonce = String(req.headers.get("x-weauto-nonce") || "").trim();
+    const sig = String(req.headers.get("x-weauto-sig") || "").trim();
+    if (ts && nonce && sig) {
+      const msg = [req.method, new URL(req.url).pathname, ts, nonce, rawBody].join("\n");
+      if (await verifySignature(secret, msg, sig)) return { ok: true, kind: "hmac", sub: "", tier: "" };
+    }
+  }
+  // ④ 公开模式：三个 secret 都没配（未配置环境）才放行，保持向后兼容
+  if (!env.WEAUATO_SIGN_SECRET && !env.CREEM_API_KEY && !env.WEAUATO_CLIENT_SECRET) {
+    return { ok: true, kind: "open", sub: "", tier: "" };
+  }
+  return { ok: false, kind: "none" };
+}
+
+async function deviceUnauthorized() {
+  return json({ ok: false, error: "unauthorized", hint: "需要 Bearer 账户令牌 / 卡密 / HMAC 签名之一" }, 401);
+}
+
+/** 读设备档案（GET /device/state?device=&wx=）。 */
+async function deviceState(req, env, url) {
+  const owner = ownerKeyOf(url.searchParams.get("wx"), url.searchParams.get("device"));
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  // GET 没有 body，但 HMAC 签名仍要对「空 body」签名，故传 ""（null 会被当成未签名跳过校验）
+  const auth = await deviceAuth(req, env, "");
+  if (!auth.ok) return deviceUnauthorized();
+  let prof = await readProfile(env, owner);
+  if (!prof) prof = blankProfile(owner, url.searchParams.get("wx") || "");
+  return json(profState(prof));
+}
+
+/** 注册/心跳 + 拉回档案（POST /device/hello）。 */
+async function deviceHello(req, env, url) {
+  const raw = await req.text();
+  let body;
+  try { body = JSON.parse(raw || "{}"); } catch (_) { return json({ ok: false, error: "bad_json" }, 400); }
+  const wxKey = String(body.wxKey || url.searchParams.get("wx") || "").trim();
+  const deviceId = String(body.deviceId || req.headers.get("x-weauto-instance") || "").trim();
+  const owner = ownerKeyOf(wxKey, deviceId);
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  const auth = await deviceAuth(req, env, raw);
+  if (!auth.ok) return deviceUnauthorized();
+
+  let prof = (await readProfile(env, owner)) || blankProfile(owner, wxKey);
+  if (wxKey && WXKEY_RE.test(wxKey)) prof.wxKey = wxKey;
+  touchDevice(prof, deviceId, body.platform, body.appVer);
+
+  // 云端套餐：令牌/卡密校验通过才有资格写入（不会被客户端随意篡改）
+  const acct = await getAcct(env, auth.sub);
+  let tier = auth.tier || (acct && acct.tier) || "";
+  if (!tier && auth.kind === "license") {
+    const lk = String(body.licenseKey || req.headers.get("x-weauto-key") || "").trim();
+    const li = String(body.licenseInstanceId || deviceId).trim();
+    if (lk && li && env.CREEM_API_KEY) {
+      try {
+        const { status, data } = await creemPost(env, "/licenses/validate", { key: lk, instance_id: li });
+        if (status >= 200 && status < 300 && data && data.status === "active") tier = mapTier(env, data) || "";
+      } catch (_) { /* 保持原 tier */ }
+    }
+  }
+  if (tier) { prof.tier = tier; prof.plan = planInfoFor(tier); }
+
+  await writeProfile(env, owner, prof);
+  return json(Object.assign(profState(prof), { auth_kind: auth.kind, deviceId }));
+}
+
+/** 上传人格（PUT /device/persona）：rev 小于服务端则拒绝（防旧版本覆盖新版本）。 */
+async function devicePutPersona(req, env, url) {
+  const raw = await req.text();
+  let body;
+  try { body = JSON.parse(raw || "{}"); } catch (_) { return json({ ok: false, error: "bad_json" }, 400); }
+  const wxKey = String(body.wxKey || url.searchParams.get("wx") || "").trim();
+  const deviceId = String(body.deviceId || req.headers.get("x-weauto-instance") || "").trim();
+  const owner = ownerKeyOf(wxKey, deviceId);
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  const auth = await deviceAuth(req, env, raw);
+  if (!auth.ok) return deviceUnauthorized();
+
+  const persona = sanitizePersona(body.persona);
+  if (!persona) return json({ ok: false, error: "bad_persona" }, 400);
+  // rev 用客户端毫秒时间戳；无脑四舍五入，非数字按 0 处理
+  const rev = Number.isFinite(Number(body.rev)) ? Number(body.rev) : Date.now();
+
+  let prof = (await readProfile(env, owner)) || blankProfile(owner, wxKey);
+  if (wxKey && WXKEY_RE.test(wxKey)) prof.wxKey = wxKey;
+  touchDevice(prof, deviceId, body.platform, body.appVer);
+  if (rev < (Number(prof.personaRev) || 0)) {
+    return json({ ok: false, error: "stale_rev", serverRev: Number(prof.personaRev) || 0 }, 409);
+  }
+  persona.updatedAt = rev;
+  persona.sourcePlatform = String(body.platform || "").slice(0, 32);
+  persona.sourceDevice = String(deviceId || "").slice(0, 64);
+  prof.persona = persona;
+  prof.personaRev = rev;
+  await writeProfile(env, owner, prof);
+  return json({ ok: true, personaRev: rev, owner });
+}
+
+/** 只拉人格（GET /device/persona?wx=&device=），跨端互通的读口。 */
+async function deviceGetPersona(req, env, url) {
+  const owner = ownerKeyOf(url.searchParams.get("wx"), url.searchParams.get("device"));
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  // GET 没有 body，但 HMAC 签名仍要对「空 body」签名，故传 ""（null 会被当成未签名跳过校验）
+  const auth = await deviceAuth(req, env, "");
+  if (!auth.ok) return deviceUnauthorized();
+  const prof = await readProfile(env, owner);
+  return json({
+    ok: true,
+    owner,
+    persona: (prof && prof.persona) || null,
+    personaRev: Number((prof && prof.personaRev) || 0),
+  });
+}
+
+/** 写入/刷新套餐（PUT /device/plan）：必须拿卡密到 Creem 现验，客户端说了不算。 */
+async function devicePutPlan(req, env, url) {
+  const raw = await req.text();
+  let body;
+  try { body = JSON.parse(raw || "{}"); } catch (_) { return json({ ok: false, error: "bad_json" }, 400); }
+  const wxKey = String(body.wxKey || url.searchParams.get("wx") || "").trim();
+  const deviceId = String(body.deviceId || req.headers.get("x-weauto-instance") || "").trim();
+  const owner = ownerKeyOf(wxKey, deviceId);
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  const auth = await deviceAuth(req, env, raw);
+  if (!auth.ok) return deviceUnauthorized();
+  const lk = String(body.licenseKey || req.headers.get("x-weauto-key") || "").trim();
+  const li = String(body.licenseInstanceId || deviceId).trim();
+  // 先判请求本身是否合法（400），再判服务端是否配好（503）
+  if (!lk || !li) return json({ ok: false, error: "missing_license" }, 400);
+  if (!env.CREEM_API_KEY) return json({ ok: false, error: "creem_not_configured" }, 503);
+  const { status, data } = await creemPost(env, "/licenses/validate", { key: lk, instance_id: li });
+  if (!(status >= 200 && status < 300) || !data || data.status !== "active") {
+    return json({ ok: false, error: "license_not_active" }, 403);
+  }
+  const tier = mapTier(env, data) || "";
+  let prof = (await readProfile(env, owner)) || blankProfile(owner, wxKey);
+  if (wxKey && WXKEY_RE.test(wxKey)) prof.wxKey = wxKey;
+  touchDevice(prof, deviceId, body.platform, body.appVer);
+  prof.tier = tier;
+  prof.plan = planInfoFor(tier);
+  prof.license = { expiresAt: expiresToUnix(data.expires_at) || 0, updatedAt: Date.now() };
+  await writeProfile(env, owner, prof);
+  return json({ ok: true, tier, plan: prof.plan, expiresAt: prof.license.expiresAt });
+}
+
 /** /ai/v1 的计费拦截：校验令牌 -> 查额度 -> 转发 upstream -> 扣减 -> 回写计费头。 */
 async function proxyAiBilled(req, env, url, token) {
   const payload = await verifyBillingToken(env, token);
@@ -1223,6 +1513,9 @@ export default {
         // token 计费
         billing_enabled: !!env.WEAUATO_SIGN_SECRET,
         billing_kv: !!env.BILLING_KV,
+        // 设备档案 / 套餐 / 人格云同步（/device/*）
+        device_sync_ready: !!env.BILLING_KV,
+        device_auth_mode: (env.WEAUATO_SIGN_SECRET || env.CREEM_API_KEY || env.WEAUATO_CLIENT_SECRET) ? "strict" : "open",
         default_tier: DEFAULT_TIER,
         tiers: Object.keys(TIERS),
       });
@@ -1293,6 +1586,28 @@ export default {
       const token = await signBillingToken(env, { sub, tier, exp });
       const ti = TIERS[tier];
       return json({ ok: true, token, sub, tier, name: ti.name, quota: ti.tokens, months });
+    }
+
+    // ---- 设备档案 / 套餐 / 人格云同步（EXE 与 Android 共用，见上方注释块）----
+    if (p === "/device/hello" && req.method === "POST") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return deviceHello(req, env, url);
+    }
+    if (p === "/device/state" && req.method === "GET") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return deviceState(req, env, url);
+    }
+    if (p === "/device/persona" && req.method === "GET") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return deviceGetPersona(req, env, url);
+    }
+    if (p === "/device/persona" && req.method === "PUT") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return devicePutPersona(req, env, url);
+    }
+    if (p === "/device/plan" && req.method === "PUT") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return devicePutPlan(req, env, url);
     }
 
     // ---- 购买落地页：真正的卡密网站 ----
