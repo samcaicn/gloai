@@ -20,6 +20,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import com.jev.probe.core.Analysis
+import com.jev.probe.core.AutoReply
 import com.jev.probe.core.ChatSnapshot
 import com.jev.probe.core.CrashLog
 import com.jev.probe.core.ErrCatalog
@@ -265,14 +266,12 @@ class OverlayController(private val ctx: Context) {
         menu.addView(menuItem("分析当前对话") { root?.removeView(menu); onManualAnalyze?.invoke() })
         // 自动收发总开关：自动发送是不可逆的（消息真发出去了），所以把「暂停 / 恢复」
         // 摆在气泡菜单一步可达的位置——用户不必跳设置就能立刻收回控制权。
-        val autoOn = prefs.autoSend && prefs.autoFillBest
+        // 与通知栏动作共用 AutoReply，保证两个入口的状态永远一致。
+        val autoOn = AutoReply.isOn(ctx)
         menu.addView(menuItem(if (autoOn) "暂停自动收发" else "开启自动收发") {
             root?.removeView(menu)
-            val on = !autoOn
-            prefs.autoFillBest = on
-            prefs.autoSend = on
-            toast(if (on) "已开启自动收发：对方发消息→我读→自动回复并发送"
-                  else "已暂停自动收发：只给建议并自动填好，发送由你点")
+            toast(AutoReply.setOn(ctx, !autoOn))
+            com.jev.probe.capture.KeepAliveService.refresh(ctx)
         })
         menu.addView(menuItem("截屏识别一次") { root?.removeView(menu); onOcrCapture?.invoke() })
         menu.addView(menuItem("把当前会话存为联系人") { onSaveContact?.invoke(); root?.removeView(menu) })
@@ -353,9 +352,8 @@ class OverlayController(private val ctx: Context) {
             views.add(hint("在聊天 App 里，我读对方最新的消息，给你「对方意图」判断和几条回复建议。\n\n· 微信：对方发消息我就自动读并生成回复，可「自动填入并发送」；配合通知读取，你不在手机旁也能收发\n· QQ / 飞书等：给建议并把最佳回复自动填好，你点一下发送\n· 点气泡：随时手动分析 · 长按气泡：暂停自动 / 诊断 / 设置"))
             views.add(bigButton("开启自动收发并开始") {
                 prefs.onboarded = true
-                prefs.autoFillBest = true
-                prefs.autoSend = true
-                toast("已开启自动收发：对方发消息我就自动处理。随时长按气泡可暂停")
+                toast(AutoReply.setOn(ctx, true) + "。随时长按气泡或下拉通知栏可暂停")
+                com.jev.probe.capture.KeepAliveService.refresh(ctx)
                 if (expanded) toggle()
             })
             // 次要选项：只给建议并自动填好，发送仍由用户点——同一张卡里把选择权交回用户。
@@ -578,7 +576,7 @@ class OverlayController(private val ctx: Context) {
         if (quota > 0) views.add(hint("本月额度 ${prefs.billingUsed} / $quota"))
 
         // 合规角标：自动发送开着时必须让用户一眼看见，不能只在设置页里写着。
-        if (prefs.autoSend && prefs.autoFillBest) {
+        if (AutoReply.isOn(ctx)) {
             views.add(line("⚠ 自动发送已开启（仅微信）", "#DC2626", 12f, bold = true))
         }
 

@@ -75,6 +75,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- 保活通知上的「暂停/开启自动收发」动作：不依赖 App 进程与 UI，锁屏也能收权。 -->
+        <receiver
+            android:name=".capture.ControlReceiver"
+            android:exported="false" />
+
         <!-- WeChat notification listener: the RECEIVE side of unattended mode. -->
         <service
             android:name=".capture.WxNotificationListener"

@@ -356,6 +356,9 @@ class SettingsActivity : AppCompatActivity() {
             prefs.contextHistoryCount =
                 ctxCountEdit.text.toString().trim().toIntOrNull()?.coerceIn(0, 100) ?: 30
             prefs.overlayOpacity = seek.progress + 60
+            // 保活通知上挂着「暂停/开启自动收发」动作 + 一行状态文案，状态在设置页
+            // 改完必须立刻重画，否则通知会显示与实际不符的旧状态。
+            com.jev.probe.capture.KeepAliveService.refresh(this)
             Toast.makeText(this, "已保存", Toast.LENGTH_SHORT).show()
         })
 
