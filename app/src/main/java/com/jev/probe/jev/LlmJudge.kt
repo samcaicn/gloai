@@ -66,16 +66,37 @@ class LlmJudge(private val prefs: Prefs) {
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", sys))
             .put(JSONObject().put("role", "user").put("content", userPrompt))
-        val body = JSONObject()
-            .put("model", Prefs.TUPTUP_MODEL)
-            .put("messages", messages)
-            .put("temperature", temperature)
-        val resp = HttpJson.post(
-            url, "", body, Route.JUDGE, HttpJson.headersFor(url),
-            authToken = Prefs.TUPTUP_KEY, instanceId = prefs.instanceId
-        )
-        return resp.optJSONArray("choices")?.optJSONObject(0)
-            ?.optJSONObject("message")?.optString("content") ?: ""
+
+        // 模型降级链：网关某个模型的上游被打满（429 insufficient_user_quota / 503 无可用渠道）
+        // 是**常态**而非例外——实测 2026-10-05 全 13 个模型同时挂。所以这里按序换模型试，
+        // 哪个先通用哪个。全部失败才把最后一个错误抛给上层（那里会显示真实原因）。
+        var last: Exception? = null
+        for (model in Prefs.TUPTUP_FALLBACK_MODELS) {
+            val body = JSONObject()
+                .put("model", model)
+                .put("messages", messages)
+                .put("temperature", temperature)
+            try {
+                val resp = HttpJson.post(
+                    url, "", body, Route.JUDGE, HttpJson.headersFor(url),
+                    authToken = Prefs.TUPTUP_KEY, instanceId = prefs.instanceId
+                )
+                val content = resp.optJSONArray("choices")?.optJSONObject(0)
+                    ?.optJSONObject("message")?.optString("content")
+                if (!content.isNullOrBlank()) {
+                    if (model != Prefs.TUPTUP_MODEL) {
+                        Log.i(TAG, "judge: primary ${Prefs.TUPTUP_MODEL} unavailable, fell back to $model")
+                        android.util.Log.i("JEVASSIST", "jev: 判断模型降级 → $model")
+                    }
+                    return content
+                }
+            } catch (e: Exception) {
+                if (e is InterruptedException) throw e
+                last = e
+                Log.w(TAG, "judge model $model failed: ${e.message}")
+            }
+        }
+        throw last ?: ApiException(Route.JUDGE, null, "所有模型均不可用")
     }
 
     // ----------------------------------------------------------- 提示词

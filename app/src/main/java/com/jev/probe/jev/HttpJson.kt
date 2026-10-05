@@ -91,8 +91,12 @@ object HttpJson {
                 val code = conn.responseCode
                 // 429/529 是网关级限流/过载，立即重试无意义，直接失败让上层快速报错，
                 // 避免此前"点了卡死"（最坏 3 次退避 + 40s 读超时把 UI 冻住）的问题。
+                // 但**必须把响应体带出来**：网关会写明真实原因，例 one-hub 的
+                // {"code":"insufficient_user_quota","message":"上游负载已饱和"}。
+                // 丢掉它就只剩一句"服务繁忙"，用户既不知道该等还是该换，也没法反馈。
                 if (code == 429 || code == 529) {
-                    throw ApiException(route, code, "服务繁忙，请稍后重试")
+                    val detail = readBody(conn.errorStream).extractGatewayReason()
+                    throw ApiException(route, code, detail.ifBlank { "服务繁忙，请稍后重试" })
                 }
                 // Cloudflare 525/521/522/523/524 = CF 到了源站但 TLS 握手/回源失败
                 // （证书过期、443 没开、源站挂了）。这是**源站配置问题**，重试 100 次
@@ -102,7 +106,9 @@ object HttpJson {
                     throw ApiException(route, code, cfOriginHint(code))
                 }
                 if (code !in 200..299) {
-                    val errText = readBody(conn.errorStream)
+                    // 流只能读一次：先取原文，再从同一份原文里挖原因。
+                    val rawErr = readBody(conn.errorStream)
+                    val errText = rawErr.extractGatewayReason().ifBlank { rawErr }
                     throw ApiException(route, code, errText.ifBlank { "（响应体为空）" })
                 }
                 val text = readBody(conn.inputStream)
@@ -193,6 +199,42 @@ object HttpJson {
             m.contains("Failed to connect") || m.contains("ECONNREFUSED") -> "无法连接该地址"
             m.contains("CertPath") || m.contains("SSL") -> "HTTPS 证书校验失败"
             else -> m
+        }
+    }
+
+    /**
+     * 从 429/5xx 的错误体里挖出**网关自己说的**原因。
+     *
+     * 网关（one-hub / new-api 这类）都会在 body 里给出可执行信息，例：
+     * `{"error":{"code":"insufficient_user_quota","message":"上游负载已饱和，请稍后再试"}}`
+     * 或 `{"error":{"message":"当前分组 default 下对于模型 X 无可用渠道"}}`（503）。
+     * 这些比"服务繁忙"有用得多——前者说明等一会就好、后者说明换模型才行。
+     * 解析不出来就返回空串，调用方回退到通用文案。
+     */
+    private fun String.extractGatewayReason(): String {
+        val raw = trim()
+        if (raw.isEmpty() || !raw.startsWith("{")) return ""
+        return try {
+            val root = JSONObject(raw)
+            // 兼容三种形状：{error:{message}} / {message} / {error:"文本"}
+            val err = root.opt("error")
+            val message = when {
+                err is JSONObject -> err.optString("message")
+                err is String -> err
+                else -> root.optString("message")
+            }
+            val code = when {
+                err is JSONObject -> err.optString("code")
+                else -> root.optString("code")
+            }
+            when {
+                message.isNotBlank() && code.isNotBlank() -> "$message（$code）"
+                message.isNotBlank() -> message
+                code.isNotBlank() -> code
+                else -> ""
+            }
+        } catch (_: Exception) {
+            ""
         }
     }
 }

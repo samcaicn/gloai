@@ -609,6 +609,24 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         // 网关上游偶发限流(429)为瞬态，恢复后即可用。deepseek-v3.1 在该网关无渠道(503)，已弃用。
         const val TUPTUP_MODEL = "doubao-seed-2.0-pro"
 
+        /**
+         * 判断/回复的模型降级链（第一个是 [TUPTUP_MODEL]）。
+         *
+         * 为什么要降级：one-hub 网关的"上游负载已饱和"(429 insufficient_user_quota) 与
+         * "无可用渠道"(503) 是**按模型**发生的——同一个网关上 13 个模型实测会同时全挂，
+         * 但也常常只有一两个在饱和。此时换模型立刻就能出结果，比让用户干等一个死模型强得多。
+         * 顺序按「稳定性优先」：pro 系列最稳，flash 系列饱和率明显更高。
+         * 全部失败才把最后一个错误抛给上层（由 [com.jev.probe.core.ErrCatalog] 归类展示）。
+         */
+        val TUPTUP_FALLBACK_MODELS = listOf(
+            TUPTUP_MODEL,
+            "qwen3.7-max",
+            "kimi-k2.6",
+            "deepseek-v4-pro",
+            "minimax-m3",
+            "glm-5.2",
+        )
+
         // ---- legacy 预设（仅兜底）----
         const val DEFAULT_JUDGE_BASE_BOCHA = "https://jev.bocha.cn"
         const val DEFAULT_JUDGE_MODEL_BOCHA = "bocha-jev-v1"
