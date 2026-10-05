@@ -80,6 +80,9 @@ class OverlayController(private val ctx: Context) {
     /** 崩溃提示是否已在本会话弹过一次，避免每次 idle 都读盘+弹 toast。 */
     private var crashNoted = false
 
+    /** 空闲态去重：同一状态只渲染一次，避免每次无障碍事件都重绘 / 反复弹开面板。 */
+    private var lastIdleKey: String? = null
+
     /** Whether the overlay window is currently on screen. */
     fun isShowing(): Boolean = root != null
 
@@ -258,6 +261,8 @@ class OverlayController(private val ctx: Context) {
             setPadding(dp(4), dp(4), dp(4), dp(4))
             layoutParams = FrameLayout.LayoutParams(dp(196), ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(56) }
         }
+        // 最常用：随时手动分析当前对话（关掉自动分析后这几乎是唯一的触发入口）。
+        menu.addView(menuItem("分析当前对话") { root?.removeView(menu); onManualAnalyze?.invoke() })
         menu.addView(menuItem("截屏识别一次") { root?.removeView(menu); onOcrCapture?.invoke() })
         menu.addView(menuItem("把当前会话存为联系人") { onSaveContact?.invoke(); root?.removeView(menu) })
         if (onWhitelistToggle != null) {
@@ -307,20 +312,50 @@ class OverlayController(private val ctx: Context) {
 
     // ------------------------------------------------------------ public API
 
+    /**
+     * 空闲态（没在跑分析、也没结果可展示）。
+     *
+     * 体验上两个坑要填：
+     * 1）首次出现的悬浮球只是个半透明小圆点，用户不知道它是干嘛的——所以第一次
+     *    用一张卡把产品讲清楚（[prefs.onboarded] 控制只展示一次，且首次自动展开）。
+     * 2）关掉「自动分析」后，气泡菜单里并没有「分析当前对话」入口，点气泡又只会
+     *    弹空面板——等于无处可点。这里在空闲卡里常驻一个手动分析按钮，保证总有路可走。
+     *
+     * 用 [lastIdleKey] 去重：同一状态只渲染一次，避免每次无障碍事件都重绘 / 反复弹开面板。
+     * 空闲卡不自动展开（只刷新内容），用户点一下气泡才看得到分析入口，不打扰。
+     */
     fun showIdle(title: String?) {
-        ensureRoot(); bubble?.alpha = 0.55f
-        // Idle = nothing to show and nothing is running. Never claim "分析中…"
-        // here — that label belongs to [showLoading] only, otherwise the panel
-        // sticks on a fake progress hint forever when a capture produced no
-        // analyzable content (e.g. a video-card-only chat where OCR msgs=0).
-        if (expanded) toggle()
+        ensureRoot()
+        bubble?.alpha = 0.9f
         // 崩溃闭环（P0-5）：本机存在崩溃记录时，整个会话只提示一次，引导用户去诊断页查看。
-        // 只在首次进入 idle 时读一次文件，之后靠 crashNoted 拦住，避免每次事件都读盘。
         if (!crashNoted) {
             crashNoted = true
             runCatching {
                 if (CrashLog.text(ctx) != null) toast("检测到崩溃记录，可点悬浮球菜单「诊断与自检」查看")
             }
+        }
+        val key = if (prefs.onboarded) "idle" else "onboard"
+        if (key == lastIdleKey) return
+        val views = ArrayList<View>()
+        if (!prefs.onboarded) {
+            views.add(line("我是 AI 聊天助手", "#3A7AFE", 15f, true))
+            views.add(hint("在聊天 App 里，我会读对方最新的消息，给你「对方意图」判断和几条回复建议。\n\n· 点这个气泡：随时手动分析当前对话\n· 长按气泡：截屏识别 / 诊断 / 设置\n· 微信开启后，你不在手机旁也能自动收发"))
+            views.add(bigButton("知道了，开始用") {
+                prefs.onboarded = true
+                if (expanded) toggle()
+            })
+            setContent(views)
+            if (contentBox != null) lastIdleKey = key // 只在悬浮窗真建好后记状态
+            if (!expanded) toggle() // 首次自动展开说明卡
+        } else {
+            if (title != null) {
+                views.add(hint("「$title」已就绪。点下面按钮可随时手动分析当前对话。"))
+            } else {
+                views.add(hint("已就绪。点这个气泡可随时手动分析当前对话。"))
+            }
+            views.add(bigButton("分析当前对话") { onManualAnalyze?.invoke() })
+            setContent(views) // 不自动展开：气泡亮着，用户点一下才看得到入口
+            if (contentBox != null) lastIdleKey = key
         }
     }
 
@@ -484,6 +519,7 @@ class OverlayController(private val ctx: Context) {
         runCatching { wm.removeView(r) }
         root = null; bubble = null; panel = null; contentBox = null; dangerDot = null; expanded = false
         crashNoted = false
+        lastIdleKey = null
     }
 
     /**
@@ -495,6 +531,7 @@ class OverlayController(private val ctx: Context) {
         runCatching { root?.let { wm.removeView(it) } }
         root = null; bubble = null; panel = null; contentBox = null; dangerDot = null; expanded = false
         crashNoted = false
+        lastIdleKey = null
     }
 
     // --------------------------------------------------------------- rendering

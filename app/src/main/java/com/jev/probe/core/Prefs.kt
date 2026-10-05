@@ -329,6 +329,11 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getBoolean(K_AUTO, true)
         set(v) = sp.edit().putBoolean(K_AUTO, v).apply()
 
+    /** 是否已完成首次引导（悬浮球首次出现时的产品说明卡）。只展示一次。 */
+    var onboarded: Boolean
+        get() = sp.getBoolean(K_ONBOARDED, false)
+        set(v) = sp.edit().putBoolean(K_ONBOARDED, v).apply()
+
     // --------------------------------------------------- 无人值守（微信）
 
     /**
@@ -578,6 +583,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_SYNC_RESTORED = "sync_restored"
         private const val K_LAST_SYNC = "last_sync_at"
         private const val K_SYNC_ENABLED = "sync_enabled"
+        private const val K_ONBOARDED = "onboarded_v1"
 
         // ---- provider ----
         const val PROVIDER_WORKER = "worker"

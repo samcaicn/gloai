@@ -341,6 +341,9 @@ open class ChatCaptureService : AccessibilityService() {
         // 悬浮球菜单 → 在 App 内打开「诊断与自检」，不用退出当前聊天就能看到
         // 权限 / 上次分析 / 崩溃记录，自己定位「为什么没反应」。
         overlay?.onDiagnostics = { openDiagnostics() }
+        // 首次引导：无障碍刚绑上、悬浮球还没出现过时，弹一张产品说明卡（只展示一次，
+        // 见 OverlayController.showIdle）。否则新用户只看到一个半透明小圆点，不知干嘛。
+        if (!prefs.onboarded) overlay?.showIdle(null)
         // Keep the process at foreground importance so MIUI does not freeze us.
         runCatching { KeepAliveService.start(this) }
         // Load the bundled OCR model now, off the main thread: the first
