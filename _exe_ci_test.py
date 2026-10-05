@@ -36,6 +36,14 @@ import re
 import struct
 import sys
 
+# Windows runner 上 Python stdout 默认 cp1252，print 中文会 UnicodeEncodeError 直接崩溃
+#（CI #360/#361/#363 的真正根因，与断言内容无关）。强制 UTF-8 输出。
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 SIZE_FLOOR = 40 * 1024 * 1024   # 实测 85.7MB；留足余量只拦「明显截断」
 
 # ---- templates/config_editor.html 必须出现的特征串 ----

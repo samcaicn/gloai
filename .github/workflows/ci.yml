@@ -120,6 +120,8 @@ jobs:
 
       - name: Unpack-and-assert the EXE
         shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
         run: |
           # 真正解包实测：PE 头 + 归档内容断言（价格文案、付款浮层、密钥出厂值等）。
           # 具体断言见 _exe_ci_test.py 的 REQUIRED_TOKENS —— 改了 UI/价格要往那里加条目。
