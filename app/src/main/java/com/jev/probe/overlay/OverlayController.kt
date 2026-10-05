@@ -469,6 +469,16 @@ class OverlayController(private val ctx: Context) {
         root = null; bubble = null; panel = null; contentBox = null; dangerDot = null; expanded = false
     }
 
+    /**
+     * 强制丢弃当前 window 引用（系统已销毁它，例如悬浮窗权限被收回时），让下次
+     * [ensureRoot] 干净地重建，而不是复用已分离的旧 view——后者会让 updateViewLayout
+     * 在已移除的 window 上抛异常。比 [hide] 轻：不依赖 root 是否还挂着。
+     */
+    fun resetWindow() {
+        runCatching { root?.let { wm.removeView(it) } }
+        root = null; bubble = null; panel = null; contentBox = null; dangerDot = null; expanded = false
+    }
+
     // --------------------------------------------------------------- rendering
 
     private fun setContent(views: List<View>) {

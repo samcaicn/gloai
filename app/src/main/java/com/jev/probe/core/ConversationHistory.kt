@@ -24,6 +24,7 @@ object ConversationHistory {
 
     private const val MAX_PER_CONV = 60          // 单会话最多保留多少条
     private const val MAX_CONV = 50              // 最多保留多少个会话
+    private const val MAX_VISIBLE = 80           // 单屏快照最多并入多少条（防超长屏把请求体撑爆）
     private const val DUP_WINDOW_MS = 3000L      // 同一文本 3 秒内不重复计
     // 去重回看窗口：新读到的消息若与"桶内最近 N 条"中任一条 (side,text) 相同，视为
     // 同一屏被反复 OCR，跳过。N 取 40 足以覆盖"整屏重读"的重叠，又不至于误杀
@@ -102,7 +103,8 @@ object ConversationHistory {
         if (snapshot.title.isNullOrBlank()) return snapshot
         val hist = threadFor(pkg, snapshot.title, limit)
         if (hist.isEmpty()) return snapshot
-        val visible = snapshot.messages
+        // 超长聊天屏（极端情况）只并最后 MAX_VISIBLE 条，避免把 LLM 请求体撑到不可控。
+        val visible = if (snapshot.messages.size > MAX_VISIBLE) snapshot.messages.takeLast(MAX_VISIBLE) else snapshot.messages
         val visibleSig = visible.map { "${it.side}:${it.text}" }.toSet()
         val older = hist.filter { "${it.side}:${it.text}" !in visibleSig }
         if (older.isEmpty()) return snapshot

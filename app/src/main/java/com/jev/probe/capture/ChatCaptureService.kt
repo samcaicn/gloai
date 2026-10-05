@@ -12,7 +12,9 @@ import androidx.core.content.ContextCompat
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.jev.probe.capture.ocr.PaddleOcr
@@ -89,6 +91,12 @@ open class ChatCaptureService : AccessibilityService() {
 
     /** 上一次错误卡里的类别：决定「重试」到底是重跑分析还是再截屏识别一次。 */
     private var lastErrKind: ErrCatalog.Kind = ErrCatalog.Kind.UNKNOWN
+
+    /** 最近一次已知悬浮窗权限状态：从 true→false 时只报一次警，避免每个事件都弹 toast。 */
+    private var overlayOk = true
+
+    /** 最近一次分析命中 429 限流的时间戳；自动分析冷却期内不再自动触发（手动不受影响）。 */
+    private var lastBusyAt = 0L
 
     /**
      * 错误卡上那个按钮（P0-3 / P1-3）。「重试」按错误类别分流：没读到文字时重试 =
@@ -343,6 +351,17 @@ open class ChatCaptureService : AccessibilityService() {
         weChatForeground = rootInActiveWindow?.packageName?.toString() == PKG_WECHAT
         if (!prefs.enabled) { leaveConversation(); overlay?.hide(); return }
 
+        // 悬浮窗权限被系统收回（用户手动关掉、或 ROM 把设置重置）时，气泡会无声消失，
+        // 用户只看到「助手不工作了」却不知为什么。这里只报一次警；权限回来后复位，
+        // 并强制重建悬浮窗——系统已销毁旧 window，必须重 add 而非复用已分离的旧 root。
+        val canOverlayNow = Settings.canDrawOverlays(this)
+        if (canOverlayNow) {
+            if (!overlayOk) { overlayOk = true; overlay?.resetWindow() }
+        } else if (overlayOk) {
+            overlayOk = false
+            Toast.makeText(this, "悬浮窗权限被收回，去设置重新开启后助手才能显示", Toast.LENGTH_LONG).show()
+        }
+
         val type = event.eventType
         // Decide "did we leave the chat app" from the REAL active window, not the
         // event's package. The event package can be an IME (e.g. com.tencent.wetype)
@@ -485,6 +504,13 @@ open class ChatCaptureService : AccessibilityService() {
         // Trigger only when the newest message is from the other person, and only
         // if auto-analyze is on. Otherwise show the idle bubble (tap to analyze).
         if (snapshot.latestFrom != "other" || !prefs.autoAnalyze) {
+            overlay?.showIdle(snapshot.title); return
+        }
+
+        // 429 冷却期内不再自动分析（见 BUSY_COOLDOWN_MS）。避免无人值守模式下反复打共享
+        // 网关、既浪费额度又加剧限流。手动「重新分析」走 runAnalysis 直接调用，不经此处，
+        // 所以用户点重试仍能立即再试，不受冷却影响。
+        if (lastBusyAt != 0L && System.currentTimeMillis() - lastBusyAt < BUSY_COOLDOWN_MS) {
             overlay?.showIdle(snapshot.title); return
         }
 
@@ -634,6 +660,9 @@ open class ChatCaptureService : AccessibilityService() {
         if (ms != null) prefs.lastAnalysisMs = ms
         prefs.lastAnalysisOk = roundOk
         prefs.lastAnalysisErr = if (roundOk) "" else roundErr.id
+        // 命中 429 限流：记下时间戳，自动分析进入冷却（见 BUSY_COOLDOWN_MS），
+        // 不让无人值守模式反复撞同一道限流墙。
+        if (roundErr == ErrCatalog.Kind.BUSY) lastBusyAt = System.currentTimeMillis()
     }
 
     /**
@@ -1005,6 +1034,7 @@ open class ChatCaptureService : AccessibilityService() {
                 overlay?.toast("已填入，请手动点发送"); return@postDelayed
             }
             send.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            overlay?.toast("已自动发送")
             // Confirm the input cleared (message actually went out); retry once if not.
             main.postDelayed({
                 if (!isCurrent(token)) return@postDelayed
@@ -1167,6 +1197,10 @@ open class ChatCaptureService : AccessibilityService() {
         /** 一轮分析（判断 + 候选回复各打一次 LLM）的兜底上限。判定接口最坏 3 次重试
          *  × 20s 读超时，90s 足够宽；超时由 analysisWatchdog 强制复位 [analyzing]。 */
         private const val ANALYSIS_TIMEOUT_MS = 90_000L
+
+        /** 429 限流后的自动分析冷却时长：这段时间内不再自动触发分析（手动「重新分析」
+         *  不受影响）。避免无人值守模式下反复打共享网关、既浪费额度又加剧限流。 */
+        private const val BUSY_COOLDOWN_MS = 60_000L
 
         /** WeChat's package. Now wired in via [WeChatAdapter]; the capture service
          *  is disguised as SelectToSpeakService so WeChat exposes its node tree.
