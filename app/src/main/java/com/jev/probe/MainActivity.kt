@@ -182,7 +182,26 @@ class MainActivity : AppCompatActivity() {
 
     /** 自检结果（P0-4）：纯文本，可一键复制发作者，不上传。 */
     private fun showDiagnostics() {
-        val report = SelfCheck.run(this)
+        // 探活要走网络（最长 12s 超时），绝不能在主线程做——这里只放一个"检查中"的
+        // 提示框，拿到结果再弹真正的报告。系统不会在这期间卡住。
+        val wait = android.app.ProgressDialog(this).apply {
+            setMessage("正在检查服务接口…")
+            setCancelable(false)
+        }
+        wait.show()
+        Thread {
+            val report = runCatching { SelfCheck.run(this) }
+                .getOrElse {
+                    SelfCheck.Report(listOf("自检执行失败：${it.message ?: it.javaClass.simpleName}"), false)
+                }
+            runOnUiThread {
+                runCatching { wait.dismiss() }
+                showDiagReport(report)
+            }
+        }.apply { isDaemon = true }.start()
+    }
+
+    private fun showDiagReport(report: SelfCheck.Report) {
         val tv = android.widget.TextView(this).apply {
             text = report.text
             textSize = 12f

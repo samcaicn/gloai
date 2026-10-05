@@ -42,6 +42,23 @@ object SelfCheck {
         l.add("${mark(notify)} 通知监听${if (notify) "已启用" else "未启用 —— 微信来新消息不会自动触发"}")
         l.add("${mark(battery)} 省电无限制${if (battery) "已放开" else "未放开 —— 国产 ROM 会冻结后台，气泡会消失"}")
 
+        // 服务端连通性：权限全绿但服务挂了时，用户看到的仍是"已就绪"却怎么都不出
+        // 结果——这是最难自查的一类故障。主动打一次（GET，不消耗额度），
+        // 把「站方挂了」和「你没配好」彻底分开。
+        val live = probeEndpoint(ctx)
+        l.add("")
+        l.add("【服务接口】")
+        when {
+            live.code == 200 -> l.add("✓ 接口可达（${live.host}）")
+            live.cfOrigin -> l.add("✗ ${live.host} 回源失败（HTTP ${live.code}）")
+            else -> l.add("! ${live.host} 返回 HTTP ${live.code}${if (live.note.isBlank()) "" else " · ${live.note}"}")
+        }
+        if (live.cfOrigin) {
+            l.add("  这是服务方源站的问题（证书/443/宕机），不是你的配置问题，重试无用。")
+        } else if (live.code != 200 && live.code != 0) {
+            l.add("  先确认下面「上一次分析」的类别；若是 401 去设置里换密钥，若是 429 属共享额度排队。")
+        }
+
         l.add("")
         l.add("【上一次分析】")
         val ms = prefs.lastAnalysisMs
@@ -78,10 +95,51 @@ object SelfCheck {
 
         val ready = a11y && overlay && notify
         l.add("")
-        l.add(if (ready) "结论：必要条件已满足，可以去聊天里试了。"
-        else "结论：上面带 ✗ 的项先补齐，否则助手不会工作。")
-        return Report(l, ready)
+        l.add(
+            when {
+                !ready -> "结论：上面带 ✗ 的项先补齐，否则助手不会工作。"
+                live.cfOrigin -> "结论：你的权限都齐了，但服务方源站当前不可用（HTTP ${live.code}）。" +
+                    "等站方修复后即可自动恢复，这不是你这边的问题。"
+                else -> "结论：必要条件已满足，可以去聊天里试了。"
+            })
+        return Report(l, ready && live.code == 200)
     }
+
+    /** 一次服务端探活结果。 */
+    private data class Live(val code: Int, val host: String, val cfOrigin: Boolean, val note: String = "")
+
+    /**
+     * 轻量探活：对当前真实使用的接口发一个 **GET**（不 POST、不带 body、不消耗任何
+     * 额度），只看状态码。
+     *
+     * 为什么用 GET 而不 POST：POST 决策接口会真的调用模型、扣额度，自检不该花钱；
+     * GET 拿到的状态码对"源站通不通"这个判断是足够的（Cloudflare 的 52x 会在
+     * CONNECT 阶段就返回，跟有没有 body 无关）。
+     */
+    private fun probeEndpoint(ctx: Context): Live {
+        val prefs = Prefs(ctx)
+        val url = try { prefs.jevDecisionsEndpoint() } catch (e: Exception) { return Live(0, "接口地址", false) }
+        val host = runCatching { java.net.URI(url).host ?: "接口" }.getOrDefault("接口")
+        return try {
+            val conn = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 6000
+                readTimeout = 6000
+                setRequestProperty("User-Agent", "jev-assistant-android")
+                if (prefs.isWorkerMode && prefs.accountToken.isNotBlank()) {
+                    setRequestProperty("Authorization", "Bearer " + prefs.accountToken)
+                }
+            }
+            val code = try { conn.responseCode } finally { conn.disconnect() }
+            // 5xx 全当"不可用"：自检要回答的是"现在能不能用"，不是"确切几号"。
+            Live(if (code in 200..299) 200 else code, host, isCfOrigin(code))
+        } catch (e: Exception) {
+            Live(0, host, false, e.message?.take(40) ?: "连不上")
+        }
+    }
+
+    private fun isCfOrigin(code: Int) =
+        code == 521 || code == 522 || code == 523 || code == 524 || code == 525
 
     private fun hintFor(kindId: String): String = when (kindId) {
         ErrCatalog.Kind.BUSY.id -> "HTTP 429"

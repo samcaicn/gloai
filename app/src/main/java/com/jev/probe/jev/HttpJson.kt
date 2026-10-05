@@ -46,6 +46,15 @@ object HttpJson {
 
     private const val MAX_ATTEMPTS = 3
 
+    /**
+     * Cloudflare 回源失败的统一提示。**这跟 429 限流是两回事**，必须说清楚：
+     * 429 是"排队等一下就好"，52x 是"服务端自己出问题了，等多久都不行，
+     * 得有人去修源站"。混为一谈会让用户反复重试白等，也掩盖了真正的故障。
+     */
+    fun cfOriginHint(code: Int): String =
+        "服务端回源失败（HTTP $code）：源站证书或 443 端口有问题，" +
+            "这不是你的配置错误，重试没用，需要站方修复"
+
     fun post(
         url: String,
         key: String,
@@ -84,6 +93,13 @@ object HttpJson {
                 // 避免此前"点了卡死"（最坏 3 次退避 + 40s 读超时把 UI 冻住）的问题。
                 if (code == 429 || code == 529) {
                     throw ApiException(route, code, "服务繁忙，请稍后重试")
+                }
+                // Cloudflare 525/521/522/523/524 = CF 到了源站但 TLS 握手/回源失败
+                // （证书过期、443 没开、源站挂了）。这是**源站配置问题**，重试 100 次
+                // 也是同样结果，必须像 429 一样立即失败——否则纯浪费 3 次往返，
+                // 更糟的是把"服务器挂了"拖成"网络慢/在排队"的错误观感。
+                if (code == 521 || code == 522 || code == 523 || code == 524 || code == 525) {
+                    throw ApiException(route, code, cfOriginHint(code))
                 }
                 if (code !in 200..299) {
                     val errText = readBody(conn.errorStream)
