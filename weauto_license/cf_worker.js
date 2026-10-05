@@ -1582,6 +1582,14 @@ export default {
     // EXE 只问本端点；本端点用 secret 里的 GITHUB_TOKEN 查最新 CI 构件，
     // 并返回一个「免 GitHub 鉴权」的直链（GitHub 重定向到的 azure SAS URL）。
     // EXE 零密钥即可升级，GitHub token 仅在服务端，可随时轮换、不重发 EXE。
+    // ---- APK 自动更新代理：/api/update-android ----
+    // 与 /api/update 同源（GitHub Actions artifacts），但查 Android 构件。
+    // Android artifact 名带 run 序号（如 jev-chat-jarvis-apk-1294），故用前缀匹配。
+    // 默认前缀 jev-chat-jarvis-apk*，可用 env UPDATE_ANDROID_ARTIFACT_PREFIX 覆盖。
+    if (p === "/api/update-android") {
+      return updateProxy(req, env, env.UPDATE_ANDROID_ARTIFACT_PREFIX || "jev-chat-jarvis-apk*");
+    }
+
     if (p === "/api/update") {
       return updateProxy(req, env);
     }
@@ -2027,7 +2035,7 @@ export default {
 
     // ---- EXE 自动更新代理实现 ----
     // 查询 repo 的最新 CI 构件（actions/artifacts），解析出无需 GitHub 鉴权的 azure SAS 直链。
-    async function updateProxy(req, env) {
+    async function updateProxy(req, env, artifactNameOverride) {
       const token = env.GITHUB_TOKEN;
       if (!token) return json({ ok: false, error: "github_token_missing" }, 503);
       const owner = env.UPDATE_REPO_OWNER || "samcaicn";
@@ -2041,7 +2049,12 @@ export default {
         });
         if (!r.ok) return json({ ok: false, error: "github_api_error", status: r.status }, 502);
         const data = await r.json();
-        const arts = (data.artifacts || []).filter((a) => a.name === artifactName && !a.expired);
+      const matchName = artifactNameOverride || env.UPDATE_ARTIFACT_NAME || "weauto-windows-exe";
+      const arts = (data.artifacts || []).filter((a) => {
+        if (a.expired) return false;
+        if (matchName.endsWith("*")) return a.name.startsWith(matchName.slice(0, -1));
+        return a.name === matchName;
+      });
         if (!arts.length) return json({ ok: false, error: "no_artifact" }, 404);
         arts.sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1));
         const target = arts[0];
