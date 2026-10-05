@@ -3766,7 +3766,7 @@
                     <h2>AI 模型</h2>
                     <small class="panel-lead">官方 AI 按套餐自动匹配；自备大模型可展开下方。</small>
                     <div class="form-group" id="tierModelNote">
-                        <small>当前套餐：<b>{{ license_tier or '未订阅（默认模型）' }}</b> · 自动匹配模型：<b id="recommendedModelName">{{ recommended_model }}</b></small>
+                        <small>当前套餐：<b>{{ license_tier or '未订阅（默认模型）' }}</b> · 模型：<b id="recommendedModelName" title="自动匹配：{{ recommended_model }}">自动匹配</b></small>
                     </div>
                     <div class="form-group" id="customAiGroup">
                         <details>
