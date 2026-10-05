@@ -26,7 +26,43 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         if (prefsName == PREFS_MAIN) {
             migrateIfNeeded()
             unseedBochaDefaultIfUnconfigured()
+            normalizeHiddenSettings()
         }
+    }
+
+    /**
+     * 设置页精简（2026-10-05）的一次性收口：处理那些**从界面上删掉、但仍影响运行**的项。
+     *
+     * 删 UI 最怕的不是少个开关，而是留下「隐形行为」——用户当初关掉了某项、现在界面上
+     * 再没有地方改回来，而功能已经悄悄变了。逐项看过设置页删掉的东西，真正需要在这里
+     * 兜底的只有一条：
+     *
+     *  - **云端备份**（syncEnabled，原本默认 **true**）：[App] 每次启动都会调
+     *    [CloudSync.uploadNow]，唯一的闸门就是这个开关。界面上删掉它，就变成「三个 API
+     *    密钥、知识库笔记、联系人每次启动自动上传，而用户永远找不到开关关掉」——与
+     *    产品自己在设置页写下的隐私承诺（「读取的聊天内容只发往你自己配置的接口」）直接
+     *    冲突。**改为默认关闭**。
+     *
+     * 其余删掉的项（本地 OCR 兜底 / 逐气泡识别 / OCR 自动分析 / 图片 OCR / 自动分析 /
+     * 自动打开会话 / 自定义视觉接口 / 事件日志）**不需要在这里动手**：它们的 getter 默认值
+     * 已经就是产品要的答案（OCR 与自动分析全 true、视觉自定义与事件日志全 false），用户
+     * 没显式改过就等于默认值，改过的则按用户意愿保留。所以这里刻意不写它们——写一遍
+     * 和默认值相同的值只会把「这是有意选的」和「这是继承来的」混为一谈。
+     *
+     * 只在用户**从未显式碰过** [K_SYNC_ENABLED] 时才写入；已经设过的（无论开还是关）
+     * 尊重既有选择。执行一次后打标记，之后不再进入。
+     */
+    private fun normalizeHiddenSettings() {
+        if (sp.getBoolean(K_HIDDEN_NORMALIZED, false)) return
+        val e = sp.edit().putBoolean(K_HIDDEN_NORMALIZED, true)
+        if (!sp.contains(K_SYNC_ENABLED)) e.putBoolean(K_SYNC_ENABLED, false)
+        // 旧默认值里那句「from=me 的是我发的」是给模型看的字段说明，却原样显示在设置页，
+        // 用户只会一脸茫然（prompt 两条路径都自己交代了说话人，那句话本就多余）。
+        // 只清洗**恰好等于旧默认值**的那一串，不动用户自己写的描述。
+        val rel = sp.getString(K_REL, "") ?: ""
+        if (rel.startsWith(LEGACY_REL_PREFIX)) e.putString(K_REL, DEFAULT_REL)
+        e.apply()
+        Log.i(TAG, "prefs: cloud backup defaulted OFF after settings simplification")
     }
 
     private fun migrateIfNeeded() {
@@ -538,6 +574,10 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_LEGACY_KEY = "openrouter_key"
         private const val K_MIGRATED_V13 = "prefs_migrated_v13"
         private const val K_UNSEEDED_BOCHA = "unseeded_bocha_v141"
+        private const val K_HIDDEN_NORMALIZED = "hidden_settings_normalized_v145"
+
+        /** 旧版 [DEFAULT_REL] 的开头，用来识别「这串是旧默认值、不是我写的」。 */
+        private const val LEGACY_REL_PREFIX = "对方是我的伴侣；"
         private const val K_JUDGE_PROVIDER = "judge_provider"
         private const val K_JUDGE_BASE = "judge_base_url"
         private const val K_JUDGE_KEY = "judge_key"
@@ -650,7 +690,15 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val DEFAULT_VISION_MODEL = "qwen/qwen2.5-vl-72b-instruct"
         const val DASHSCOPE_VISION_MODEL = "qwen-vl-max"
 
-        const val DEFAULT_REL = "对方是我的伴侣；from=me 的是我发的，from=other 的是对方发的"
+        /**
+         * 关系描述留空时喂给模型的兜底文本。
+         *
+         * 这里**不要**再写「from=me 的是我发的」这类字段说明：两条 prompt 路径都已经
+         * 自己交代了说话人——[JevQuestions.buildState] 用结构化的 `from` 字段，
+         * `LlmJudge` 直接渲染成「我：/ 对方：」。它过去被写进来只是因为同一份字符串
+         * 还要显示在设置页给用户看，而用户看到 `from=me` 只会一脸茫然。
+         */
+        const val DEFAULT_REL = "对方是我的伴侣"
     }
 }
 

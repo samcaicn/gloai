@@ -121,7 +121,7 @@ class MainActivity : AppCompatActivity() {
 
         // Actions
         container.addView(sectionLabel("其他"))
-        container.addView(actionRow("设置", "密钥 · 模型 · 关系 · 透明度 · 会话白名单") {
+        container.addView(actionRow("设置", "自动收发 · 关系描述 · 订阅") {
             startActivity(Intent(this, SettingsActivity::class.java))
         })
         container.addView(actionRow("自检与诊断", "一眼看清哪项没开、上次分析成没成、有没有崩过") {
@@ -244,12 +244,6 @@ class MainActivity : AppCompatActivity() {
         c.addView(checkLine("无障碍", a11y))
         c.addView(checkLine("悬浮窗", overlay))
         c.addView(checkLine("密钥", key, okWord = "已设", noWord = "未设"))
-        // History recording is opt-in (off by default). Mention it here, never block on it.
-        if (!prefs.contextEnabled) {
-            c.addView(text("关联上下文未开启，可在设置里开启", 12f, sub).apply {
-                setPadding(0, dp(8), 0, 0)
-            })
-        }
         return c
     }
 

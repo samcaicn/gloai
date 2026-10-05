@@ -174,8 +174,17 @@ jobs:
             --title "jev-chat-jarvis APK build failure (run ${{ github.run_number }})" \
             --body-file "$BODY" || true
 
-      - name: Release APK (tagged builds only)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/app-release.apk
+      # 产物策略：只保留 Actions artifact（人工去 Actions 页下载安装），
+      # 刻意**不**发 GitHub Release、不打自动更新推送。App 侧「升级」只是只读提示：
+      # 有新版本时在设置里告诉用户「有新版本，去装」，不自动下载、不自动安装。
+      # 这样收银台/授权相关的一切都只经 Actions 一条路，避免多条升级通道打架。
+      - name: Summary (artifact only, no auto-update)
+        run: |
+          {
+            echo ""
+            echo "### 安装包（只放这儿，不会自动更新）"
+            echo ""
+            echo "构建完成。安装包在本次 Actions 的 artifacts 里，名字："
+            echo '`jev-chat-jarvis-apk-'"${{ github.run_number }}"'`，下载 `app-release.apk` 手动安装。'
+            echo "本工作流不发布 GitHub Release、不做自动更新推送——App 只会在设置里提示有新版，由你决定什么时候装。"
+          } >> "$GITHUB_STEP_SUMMARY"
