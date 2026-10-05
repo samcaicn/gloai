@@ -108,9 +108,9 @@ class KeepAliveService : Service() {
         private fun buildNotification(ctx: Context): Notification {
             val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // IMPORTANCE_MIN：动作按钮常驻但不响铃不震动——控制项不该打扰用户。
                 val ch = NotificationChannel(CH_ID, "Jev 助手运行中", NotificationManager.IMPORTANCE_MIN)
                 ch.setShowBadge(false)
-                ch.setShowAction(false) // 动作默认收起，展开才显示，不喧宾夺主
                 nm.createNotificationChannel(ch)
             }
             val on = AutoReply.isOn(ctx)
