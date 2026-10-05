@@ -230,6 +230,9 @@
             display: block; margin: 0 0 16px 0;
             color: var(--text-2, #666); font-size: 13.5px; line-height: 1.75;
         }
+        /* 解释性文字统一弱化（精简视觉噪音） */
+        .panel-lead { font-size: 12.5px; color: var(--text-3, #999); }
+        .form-group small { font-size: 11.5px; color: var(--text-3, #999); }
         .content-panel > h2 { margin: 0 0 14px 0; padding-bottom: 10px; border-bottom: 1px solid var(--border, #eee); }
         .form-card {
             border: 1px solid var(--border, #eee);
@@ -1503,11 +1506,11 @@
                     `<label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="${t[0]}"> ${t[1]}</label>`).join('');
                 return `
                     <div style="margin-bottom:8px;">
-                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测内容类型（全不勾 = 全部内容）</label>
+                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测类型（不勾 = 全部）</label>
                         <span class="mon-types">${typeBoxes}</span>
                     </div>
                     <div style="margin-bottom:8px;">
-                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测关键字（逗号分隔，空 = 不限）</label>
+                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测关键字（逗号分隔）</label>
                         <input type="text" class="mon-keywords" placeholder="如：订单, 退款" style="width:90%;">
                     </div>
                     <div style="margin-bottom:8px;">
@@ -1523,7 +1526,7 @@
                         <small style="display:block; color:#777; margin-top:4px;">配置了监测类型/关键字后：仅命中的内容会处理，未命中一律不回应。</small>
                     </div>
                     <div>
-                        <label style="display:block; font-weight:bold; margin-bottom:4px;">固定转发给（联系人/群名，逗号分隔，双向转发）</label>
+                        <label style="display:block; font-weight:bold; margin-bottom:4px;">转发给（逗号分隔，双向）</label>
                         <input type="text" class="fwd-targets" placeholder="如：李四, 销售群" style="width:90%;">
                         <small style="display:block; color:#777; margin-top:4px;">该会话的消息自动转发给对端，对端回复也会转回来；留空 = 不转发。</small>
                     </div>`;
@@ -3483,7 +3486,7 @@
         <nav class="sidebar">
             <!-- 分组 1：让 AI 正常工作所需的核心配置 -->
             <div class="sidebar-group">
-                <div class="sidebar-group-label">① 让 AI 开始工作</div>
+                <div class="sidebar-group-label">让 AI 开始工作</div>
                 <ul>
                     <li><a href="#" data-target="section-ext-quickstart">快速上手</a></li>
                     <li><a href="#" data-target="section-user-list" class="active">用户与监听</a></li>
@@ -3495,7 +3498,7 @@
 
             <!-- 分组 2：AI 怎么说话、对谁说话（联网搜索已默认开启，无需配置页） -->
             <div class="sidebar-group">
-                <div class="sidebar-group-label">② 聊天表现</div>
+                <div class="sidebar-group-label">聊天表现</div>
                 <ul>
                     <li><a href="#" data-target="section-group-chat">群聊回复规则</a></li>
                     <li><a href="#" data-target="section-reply-style">回复风格与节奏</a></li>
@@ -3506,7 +3509,7 @@
 
             <!-- 分组 3：业务特色功能页（原顶部按钮迁入） -->
             <div class="sidebar-group">
-                <div class="sidebar-group-label">③ 特色功能</div>
+                <div class="sidebar-group-label">特色功能</div>
                 <ul>
                     <li><a href="#" data-target="section-ext-avatar">AI 分身</a></li>
                     <li><a href="#" data-target="section-ext-stylelab">风格模仿</a></li>
@@ -3516,7 +3519,7 @@
 
             <!-- 分组 4：AI 主动做的事 -->
             <div class="sidebar-group">
-                <div class="sidebar-group-label">④ 主动能力</div>
+                <div class="sidebar-group-label">主动能力</div>
                 <ul>
                     <li><a href="#" data-target="section-active-message">主动消息</a></li>
                     <li><a href="#" data-target="section-reminders">定时提醒</a></li>
@@ -3526,7 +3529,7 @@
 
             <!-- 分组 5：系统、授权、排障与开发者工具（低频） -->
             <div class="sidebar-group is-secondary">
-                <div class="sidebar-group-label">⑤ 系统与工具</div>
+                <div class="sidebar-group-label">系统与工具</div>
                 <ul>
                     <li><a href="#" data-target="section-license">授权管理</a></li>
                     <li><a href="#" data-target="section-logs">运行日志</a></li>
@@ -3553,9 +3556,9 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div id="section-user-list" class="content-panel active-panel">
                     <h2>用户与监听</h2>
-                    <small class="panel-lead">添加要让 AI 自动回复的好友或群，并为每个人指定不同的人设。</small>
+                    <small class="panel-lead">自动回复的好友/群，每人可指定不同人设。</small>
                     <div class="form-group">
-                        <label>微信昵称/备注与对应Prompt配置:</label>
+                        <label>用户与 Prompt：</label>
                         <div id="listen-list">
                             {% for item in config.LISTEN_LIST %}
                             <div class="entry">
@@ -3571,7 +3574,7 @@
                                 <button type="button" onclick="removeEntry(this)">删除</button>
                                 <div class="listen-extra" style="display:none; width:100%; border:1px solid #ddd; border-radius:6px; padding:10px; margin-top:8px; background:#fafafa;">
                                     <div style="margin-bottom:8px;">
-                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测内容类型（全不勾 = 全部内容）</label>
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测类型（不勾 = 全部）</label>
                                         <span class="mon-types">
                                             <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="text"> 文字</label>
                                             <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="image"> 图片</label>
@@ -3585,7 +3588,7 @@
                                         </span>
                                     </div>
                                     <div style="margin-bottom:8px;">
-                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测关键字（逗号分隔，空 = 不限）</label>
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测关键字（逗号分隔）</label>
                                         <input type="text" class="mon-keywords" placeholder="如：订单, 退款" style="width:90%;">
                                     </div>
                                     <div style="margin-bottom:8px;">
@@ -3600,12 +3603,12 @@
                                             <option value="{{ file }}">{{ file }}</option>
                                             {% endfor %}
                                         </select>
-                                        <small style="display:block; color:#777; margin-top:4px;">配置了监测类型/关键字后：仅命中的内容会处理，未命中一律不回应。</small>
+                                        <small style="display:block; color:#777; margin-top:4px;">命中才处理，未命中不回应。</small>
                                     </div>
                                     <div>
-                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">固定转发给（联系人/群名，逗号分隔，双向转发）</label>
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">转发给（逗号分隔，双向）</label>
                                         <input type="text" class="fwd-targets" placeholder="如：李四, 销售群" style="width:90%;">
-                                        <small style="display:block; color:#777; margin-top:4px;">该会话的消息自动转发给对端，对端回复也会转回来；留空 = 不转发。</small>
+                                        <small style="display:block; color:#777; margin-top:4px;">自动双向转发；留空 = 不转发。</small>
                                     </div>
                                 </div>
                             </div>
@@ -3613,13 +3616,12 @@
                         </div>
                         <button type="button" onclick="addEntry()" style="margin-top:10px;">添加用户</button>
                     </div>
-                    <small>提示：修改了用户对应的Prompt文件后保存配置时将自动清除该用户的上下文记忆。<br>
-                    「⚙ 设置」里可配置监测内容（某些消息类型或关键字，默认全部内容；命中后用指定Prompt回复或不回应）和固定转发目标。</small>
+                    <small>改人设并保存会清该用户记忆。</small>
                 </div>
 
                 <div id="section-fun-lab" class="content-panel">
                     <h2>趣味实验室 · 角色论坛</h2>
-                    <small class="panel-lead">娱乐功能：让多个 AI 角色自动发帖、互相评论，生成一个虚拟论坛。不影响正常聊天。</small>
+                    <small class="panel-lead">AI 角色自动发帖互动，不影响正常聊天。</small>
                     <div class="peek-section">
                         <h4>📱 选择论坛角色</h4>
                         <div class="forum-selector">
@@ -3673,7 +3675,7 @@
                             </div>
 
                             <div class="form-group separate-key-field">
-                                <label>论坛专用密钥（留空则共用主密钥）:</label>
+                                <label>论坛密钥（留空共用主密钥）:</label>
                                 <input type="text" id="forumKey" placeholder="sk-xxxxxxxxxx" name="FORUM_API_KEY" value="{{ config.FORUM_API_KEY }}" class="api-key-input">
                                 <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in config.FORUM_API_KEY else "" }}</small>
                             </div>
@@ -3697,7 +3699,7 @@
 
                 <div id="section-prompt-management" class="content-panel">
                     <h2>AI 人设（Prompt）</h2>
-                    <small class="panel-lead">人设决定了 AI 的性格与说话方式。在这里新建或编辑人设文件，再到「用户与监听」里分配给人。</small>
+                    <small class="panel-lead">编辑 AI 性格与说话方式，再到「用户与监听」分配。</small>
                     <div id="prompt-list-view">
                         <a href="#" class="nav-button" id="createPromptBtn">新建Prompt</a>
                         <!-- 在线角色库外部链接已按需求移除 -->
@@ -3762,35 +3764,35 @@
 
                 <div id="section-chat-model" class="content-panel">
                     <h2>AI 模型</h2>
-                    <small class="panel-lead">回复由官方 AI 生成，模型大小按你的订阅套餐自动匹配，无需手动选择。需要用自己的大模型时可展开下方选项。</small>
+                    <small class="panel-lead">官方 AI 按套餐自动匹配；自备大模型可展开下方。</small>
                     <div class="form-group" id="tierModelNote">
                         <small>当前套餐：<b>{{ license_tier or '未订阅（默认模型）' }}</b> · 自动匹配模型：<b id="recommendedModelName">{{ recommended_model }}</b></small>
                     </div>
                     <div class="form-group" id="customAiGroup">
                         <details>
                             <summary>使用自己的大模型（可选，高级）</summary>
-                            <label>自定义 Base URL（OpenAI 兼容地址，如 https://api.deepseek.com/v1）:</label>
+                            <label>自定义 Base URL：</label>
                             <input type="text" id="customApiUrl" name="DEEPSEEK_BASE_URL" value="{{ config.DEEPSEEK_BASE_URL }}"
                                 placeholder="https://api.example.com/v1">
                             <small>填入后，请求直接发给你填的供应商，不经过软件方网关、不消耗官方 AI 额度；同时模型选择将切换为自由填写。</small>
                         </details>
                     </div>
                     <div class="form-group">
-                        <label>模型选择: (由套餐自动匹配，一般无需改动)</label>
+                        <label>模型：</label>
                         <select id="modelSelect" name="temp_MODEL" title="聊天模型选择" data-recommended="{{ recommended_model }}">
                         </select>
                         <input type="text" id="customModel" placeholder="请输入自定义模型名称" class="custom-input" value="{{ config.MODEL if config.MODEL not in popular_models else '' }}">
                         <input type="hidden" id="finalModel" name="MODEL" value="{{ config.MODEL }}">
                     </div>
                     <div class="form-group">
-                        <label>API Key（主密钥，所有功能通用）:</label>
+                        <label>API Key（主密钥）：</label>
                         <input type="text" id="masterApiKey" placeholder="sk-xxxxxxxxxx" name="DEEPSEEK_API_KEY" value="{{ config.DEEPSEEK_API_KEY }}" class="api-key-input">
                         <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in config.DEEPSEEK_API_KEY else "" }}</small>
                         <small>使用 Cloudflare Workers AI 时这里留空即可（凭据为软件授权）；选择「自定义大模型」时必须填入你自己的 Key。</small>
                     </div>
                     <div class="form-group">
                         <div class="switch-item">
-                            <label>所有功能使用同一个 API Key（推荐）</label>
+                            <label>统一使用主密钥</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" id="useUnifiedKey" checked><span class="slider round"></span></label></div>
                         </div>
                         <small>关闭后，可在各功能的高级设置中填写独立密钥。</small>
@@ -3804,18 +3806,14 @@
                     <div class="form-group">
                         <label>温度 (0-2):</label>
                         <input type="number" step="0.1" name="TEMPERATURE" value="{{ config.TEMPERATURE }}">
-                        <small>如果回复出现乱码请将温度调到1.1或0.7以下。温度越高，ai思维越发散，但是温度过高可能导致ai胡言乱语。</small>
+                        <small>温度过高易乱码，建议 1.1 或 0.7 以下。</small>
                     </div>
                     <div class="form-group">
                         <div class="switch-item">
-                            <label>强制移除消息中的括号及其内容</label>
+                            <label>移除回复中的括号内容</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" name="REMOVE_PARENTHESES" {% if config.REMOVE_PARENTHESES %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
-                        <small>
-                            开启后，程序会自动删除AI回复中所有括号及括号内的内容（如心理、动作等描述）。<br>
-                            注意：强制移除括号内容可能导致语义不完整或改变原意，请谨慎使用。<br>
-                            如果不希望AI使用括号描述心理和动作，建议优先通过完善Prompt规范AI输出，仅在无法通过Prompt控制时再开启此选项。
-                        </small>
+                        <small>自动删除回复中括号及内容，可能改变原意，建议先用 Prompt 规范输出。</small>
                     </div>
 
                     <!-- 辅助模型配置部分 -->
@@ -3825,24 +3823,21 @@
                             <label>启用辅助模型功能（可选）</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" id="enableAssistantModel" name="ENABLE_ASSISTANT_MODEL" {% if config.ENABLE_ASSISTANT_MODEL %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
-                        <small>
-                            启用后，表情判断、联网检测、提醒解析等功能将使用辅助模型处理，主模型专注于对话生成。<br>
-                            辅助模型通常使用较小且成本更低的模型（如gpt-4o-mini），可提高效率并降低主模型使用成本。
-                        </small>
+                        <small>启用后判断类任务走小成本辅助模型，降低主模型消耗。</small>
                     </div>
 
                     <div id="assistantModelConfig" class="{% if config.ENABLE_ASSISTANT_MODEL %}assistant-config-visible{% else %}assistant-config-hidden{% endif %}">
                         <!-- 同 forum：服务商下拉整块 display:none 无恢复路径，配套 JS 已删，只留 hidden -->
                         <input type="hidden" id="finalAssistantApiUrl" name="ASSISTANT_BASE_URL" value="{{ config.ASSISTANT_BASE_URL }}">
                         <div class="form-group">
-                            <label>辅助模型选择: (推荐使用成本较低的模型)</label>
+                            <label>辅助模型选择:</label>
                             <select id="assistantModelSelect" name="temp_ASSISTANT_MODEL" title="辅助模型选择">
                             </select>
                             <input type="text" id="customAssistantModel" placeholder="请输入自定义辅助模型名称" class="custom-input" value="{{ config.ASSISTANT_MODEL if config.ASSISTANT_MODEL not in assistant_popular_models else '' }}">
                             <input type="hidden" id="finalAssistantModel" name="ASSISTANT_MODEL" value="{{ config.ASSISTANT_MODEL }}">
                         </div>
                         <div class="form-group separate-key-field">
-                            <label>辅助模型专用密钥（留空则共用主密钥）:</label>
+                            <label>辅助模型密钥（留空共用主密钥）:</label>
                             <input type="text" id="assistantKey" placeholder="sk-xxxxxxxxxx" name="ASSISTANT_API_KEY" value="{{ config.ASSISTANT_API_KEY }}" class="api-key-input">
                             <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in config.ASSISTANT_API_KEY else "" }}</small>
                         </div>
@@ -3869,7 +3864,7 @@
 
                 <div id="section-image-recognition" class="content-panel">
                     <h2>图片 / 表情包识别</h2>
-                    <small class="panel-lead">开启后，AI 能看懂对方发的图片和表情包并作出回应。</small>
+                    <small class="panel-lead">开启后 AI 可看懂图片/表情包并回应。</small>
                     <div class="form-group">
                         <div class="switch-container">
                             <div class="switch-item">
@@ -3894,7 +3889,7 @@
                     </div>
                     </details>
                     <div class="form-group separate-key-field">
-                        <label>图片识别专用密钥（留空则共用主密钥）:</label>
+                        <label>图片识别密钥（留空共用主密钥）:</label>
                         <input type="text" id="moonKey" placeholder="sk-xxxxxxxxxx" name="MOONSHOT_API_KEY" value="{{ config.MOONSHOT_API_KEY }}" class="api-key-input">
                         <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in config.MOONSHOT_API_KEY else "" }}</small>
                     </div>
@@ -3903,7 +3898,7 @@
                     <div class="form-group">
                         <label>温度 (0-1):</label>
                         <input type="number" step="0.1" name="MOONSHOT_TEMPERATURE" value="{{ config.MOONSHOT_TEMPERATURE }}">
-                        <small>温度越高，ai思维越发散，但是温度过高可能导致ai胡言乱语。</small>
+                        <small>温度过高易乱码。</small>
                     </div>
                     </details>
                 </div>
@@ -3960,7 +3955,7 @@
                     <details class="advanced-block">
                         <summary>高级回复控制</summary>
                     <div class="form-group">
-                        <label for="groupChatResponseProbabilityInput">群聊回复概率 (0-100):</label>
+                        <label for="groupChatResponseProbabilityInput">回复概率 (0-100):</label>
                         <input type="number" id="groupChatResponseProbabilityInput" name="GROUP_CHAT_RESPONSE_PROBABILITY"
                                min="0" max="100" step="1" value="{{ config.GROUP_CHAT_RESPONSE_PROBABILITY }}">
                         <small>设置机器人在满足回复条件（被@、关键词触发或接收所有消息）时实际做出回复的概率。100表示总是回复，0表示总不回复。</small>
@@ -3999,7 +3994,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>消息队列等待时间（秒，建议 5-10）：</label>
+                            <label>等待时间（秒）：</label>
                             <input type="number" step="1" name="QUEUE_WAITING_TIME" value="{{ config.QUEUE_WAITING_TIME }}">
                             <small>收到消息后先等一会儿再回复，避免秒回显得像机器人。</small>
                         </div>
@@ -4014,7 +4009,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>主动表情包触发概率 (0-100)：</label>
+                            <label>表情包触发概率 (0-100)：</label>
                             <input type="number" step="1" name="EMOJI_SENDING_PROBABILITY" value="{{ config.EMOJI_SENDING_PROBABILITY }}">
                         </div>
                         <input type="hidden" name="EMOJI_DIR" value="{{ config.EMOJI_DIR }}">
@@ -4044,7 +4039,7 @@
 
                     <div class="form-group">
                         <div class="switch-item">
-                            <label>启用长期记忆（让 AI 记住重要信息）</label>
+                            <label>启用长期记忆</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_MEMORY" {% if config.ENABLE_MEMORY %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
                         <small>开启后，AI 会自动把聊天里的重要信息整理成长期记忆，跨多次对话都记得。</small>
@@ -4073,7 +4068,7 @@
                         <summary>高级设置</summary>
                         <div class="form-group">
                             <div class="switch-item">
-                                <label>允许 AI 参考已记住的信息</label>
+                                <label>回复时参考记忆</label>
                                 <div class="switch"><label class="switch-label"><input type="checkbox" name="UPLOAD_MEMORY_TO_AI" {% if config.UPLOAD_MEMORY_TO_AI %}checked{% endif %}><span class="slider round"></span></label></div>
                             </div>
                             <small>关闭后 AI 不会读取任何长期记忆（仅影响长期记忆，不影响上方"记忆深度"）。</small>
@@ -4121,13 +4116,13 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>主动聊天白名单(仅名单内会收到主动消息):</label>
+                        <label>主动聊天白名单:</label>
                         <input type="text" name="AUTO_MESSAGE_USER_LIST" value="{{ config.AUTO_MESSAGE_USER_LIST }}" placeholder="[]">
                         <small>Python 列表格式，例如 <code>['微信昵称', 'wxid_xxxxxxxxxxxxx', '12345678@chatroom']</code>。<br>
                         <b>留空 <code>[]</code> 表示不主动向任何人发消息</b>（最安全默认）；只有写进本列表的用户/群才会收到「主动发消息」。标识符填写方式与用户列表一致（显示名或 wxid，群聊用 <code>xxx@chatroom</code>）。</small>
                     </div>
                     <div class="form-group">
-                        <label>主动消息内容(发送给ai获取回复):</label>
+                        <label>主动消息内容:</label>
                         <input type="text" name="AUTO_MESSAGE" value="{{ config.AUTO_MESSAGE }}">
                         <small>如果开启了联网功能，您也可以在这里设置联网请求比如"获取最新的新闻资讯"。</small>
                     </div>
@@ -4180,7 +4175,7 @@
                                 <div class="switch"><label class="switch-label"><input type="checkbox" name="ALLOW_REMINDERS_IN_QUIET_TIME" {% if config.ALLOW_REMINDERS_IN_QUIET_TIME %}checked{% endif %}><span class="slider round"></span></label></div>
                             </div>
                             <div class="switch-item">
-                                <label>使用语音通话提醒用户 (仅支持私聊)</label>
+                                <label>语音通话提醒（仅私聊）</label>
                                 <div class="switch"><label class="switch-label"><input type="checkbox" name="USE_VOICE_CALL_FOR_REMINDERS" {% if config.USE_VOICE_CALL_FOR_REMINDERS %}checked{% endif %}><span class="slider round"></span></label></div>
                             </div>
                         </div>
@@ -4227,7 +4222,7 @@
                     <small class="panel-lead">控制谁能打开本软件的后台界面。默认只有本机能访问，最安全。</small>
                     <div class="form-group">
                         <div class="switch-item">
-                            <label>允许局域网访问（开启后同一 WiFi 下的手机/电脑可打开本软件后台；关闭则只有本机能打开）</label>
+                            <label>允许局域网访问</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" name="ALLOW_OPEN_PORT" {% if config.ALLOW_OPEN_PORT %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
                         <small style="display:block;margin-top:5px;color:#888;">修改后需重启软件生效。</small>
@@ -4309,7 +4304,7 @@
 
                 <!-- 套餐档位：唯一的购买入口，取代原先「购买许可证 + 支付方式折叠面板」两套入口 -->
                 <div class="form-group" style="margin:14px 0;">
-                    <label style="font-weight:600;">选择套餐（一次性购买，到期可续费）</label>
+                    <label style="font-weight:600;">选择套餐</label>
                     <div id="licenseTierRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
                         <style>
                             #licenseTierRow .lic-tier{transition:border-color .15s,box-shadow .15s;}
@@ -4342,7 +4337,7 @@
                     <!-- 邮箱：只填一次，之后每次付款由 Creem 收银台自动填好（买家零输入）。
                          Creem 是 MoR，收银台邮箱无法去掉（收据/税务法定必填），只能预填。 -->
                     <div class="form-group" style="margin:12px 0 0;">
-                        <label style="font-weight:600;">付款邮箱（填一次，以后自动填好）</label>
+                        <label style="font-weight:600;">付款邮箱</label>
                         <div style="display:flex;gap:8px;margin-top:6px;">
                             <input type="email" id="buyerEmailInput" placeholder="用于接收收据，付款页自动填入"
                                    autocomplete="email" spellcheck="false"
