@@ -59,6 +59,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // 从悬浮球「诊断与自检」跳过来时，直接弹出诊断卡（仍会在背后建好主页）。
+        if (intent?.getBooleanExtra("diag", false) == true) {
+            intent?.removeExtra("diag")
+            showDiagnostics()
+        }
         build()
     }
 
@@ -74,6 +79,13 @@ class MainActivity : AppCompatActivity() {
         val notify = isNotifListenerEnabled()
         val key = prefs.hasKey()   // judge route key: the one analysis cannot run without
         val ready = a11y && overlay && key
+
+        // 已开启但无障碍被系统（或用户）悄悄关掉：这是「助手明明开了却没反应」的头号原因，
+        // 给一条醒目的恢复横幅，点一下直接回无障碍设置页（关掉时下面的引导清单也会列出它，
+        // 这条横幅只是让恢复更显眼）。
+        if (prefs.enabled && !a11y) {
+            container.addView(recoveryBanner())
+        }
 
         // Readiness card
         container.addView(statusCard(ready, a11y, overlay, key))
@@ -137,6 +149,35 @@ class MainActivity : AppCompatActivity() {
         OVERLAY -> "悬浮窗权限"
         NOTIFY -> "通知读取"
         else -> "自启动 + 省电无限制"
+    }
+
+    /** 已开启但无障碍被系统关掉时的恢复横幅：点一下直接回无障碍设置页。 */
+    private fun recoveryBanner(): View {
+        val c = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundBg(dp(14), Color.parseColor("#FEF2F2"), stroke = true).apply {
+                setStroke(dp(1), red)
+            }
+            setPadding(dp(14), dp(13), dp(14), dp(13))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(12) }
+        }
+        c.addView(text("⚠ 助手已开启，但无障碍服务被系统关闭了", 14f, red, bold = true))
+        c.addView(text("读不到聊天内容，助手不会工作。点此重新打开无障碍服务。", 12f, sub).apply {
+            setPadding(0, dp(4), 0, dp(10))
+        })
+        val go = TextView(this).apply {
+            text = "重新打开无障碍"; textSize = 13f; gravity = Gravity.CENTER
+            setTypeface(typeface, Typeface.BOLD); setTextColor(Color.WHITE)
+            background = roundBg(dp(10), red)
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+        }
+        go.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+        c.addView(go)
+        return c
     }
 
     /** 自检结果（P0-4）：纯文本，可一键复制发作者，不上传。 */

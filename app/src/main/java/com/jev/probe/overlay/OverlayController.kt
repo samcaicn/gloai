@@ -21,6 +21,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.jev.probe.core.Analysis
 import com.jev.probe.core.ChatSnapshot
+import com.jev.probe.core.CrashLog
 import com.jev.probe.core.ErrCatalog
 import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
@@ -66,12 +67,18 @@ class OverlayController(private val ctx: Context) {
     /** Bubble menu → one manual screenshot + OCR of whatever app is open. */
     var onOcrCapture: (() -> Unit)? = null
 
+    /** 悬浮球菜单 → 在 App 内打开「诊断与自检」，不用退出当前聊天就能看到权限/上次分析/崩溃。 */
+    var onDiagnostics: (() -> Unit)? = null
+
     /** How much knowledge context the last analysis actually used. */
     private var ctxNotes = 0
     private var ctxHistory = 0
 
     /** A caveat about how the current snapshot was captured (OCR mode). */
     private var noteText: String? = null
+
+    /** 崩溃提示是否已在本会话弹过一次，避免每次 idle 都读盘+弹 toast。 */
+    private var crashNoted = false
 
     /** Whether the overlay window is currently on screen. */
     fun isShowing(): Boolean = root != null
@@ -256,6 +263,7 @@ class OverlayController(private val ctx: Context) {
         if (onWhitelistToggle != null) {
             menu.addView(menuItem("白名单：加入 / 移出当前会话") { root?.removeView(menu); onWhitelistToggle?.invoke() })
         }
+        menu.addView(menuItem("诊断与自检") { root?.removeView(menu); onDiagnostics?.invoke() })
         menu.addView(menuItem("打开设置") { openSettings(); root?.removeView(menu) })
         menu.addView(menuItem("隐藏助手（本次）") { hide() })
         menu.addView(menuItem("取消") { root?.removeView(menu) })
@@ -306,6 +314,14 @@ class OverlayController(private val ctx: Context) {
         // sticks on a fake progress hint forever when a capture produced no
         // analyzable content (e.g. a video-card-only chat where OCR msgs=0).
         if (expanded) toggle()
+        // 崩溃闭环（P0-5）：本机存在崩溃记录时，整个会话只提示一次，引导用户去诊断页查看。
+        // 只在首次进入 idle 时读一次文件，之后靠 crashNoted 拦住，避免每次事件都读盘。
+        if (!crashNoted) {
+            crashNoted = true
+            runCatching {
+                if (CrashLog.text(ctx) != null) toast("检测到崩溃记录，可点悬浮球菜单「诊断与自检」查看")
+            }
+        }
     }
 
     /**
@@ -467,6 +483,7 @@ class OverlayController(private val ctx: Context) {
         val r = root ?: return
         runCatching { wm.removeView(r) }
         root = null; bubble = null; panel = null; contentBox = null; dangerDot = null; expanded = false
+        crashNoted = false
     }
 
     /**
@@ -477,6 +494,7 @@ class OverlayController(private val ctx: Context) {
     fun resetWindow() {
         runCatching { root?.let { wm.removeView(it) } }
         root = null; bubble = null; panel = null; contentBox = null; dangerDot = null; expanded = false
+        crashNoted = false
     }
 
     // --------------------------------------------------------------- rendering

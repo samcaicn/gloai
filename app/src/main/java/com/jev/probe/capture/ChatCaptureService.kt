@@ -95,6 +95,9 @@ open class ChatCaptureService : AccessibilityService() {
     /** 最近一次已知悬浮窗权限状态：从 true→false 时只报一次警，避免每个事件都弹 toast。 */
     private var overlayOk = true
 
+    /** 上次复查悬浮窗权限的时间戳（节流到每 3s 一次，避免每个无障碍事件都做 IPC）。 */
+    private var lastOverlayCheckAt = 0L
+
     /** 最近一次分析命中 429 限流的时间戳；自动分析冷却期内不再自动触发（手动不受影响）。 */
     private var lastBusyAt = 0L
 
@@ -144,6 +147,16 @@ open class ChatCaptureService : AccessibilityService() {
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                 .putExtra("focus", if (focusPlan) "plan" else ""))
         }.onFailure { overlay?.toast("打不开设置") }
+    }
+
+    /** 悬浮球菜单「诊断与自检」→ 打开主页并直接弹出诊断卡。 */
+    private fun openDiagnostics() {
+        runCatching {
+            startActivity(android.content.Intent()
+                .setClassName(this, "com.jev.probe.MainActivity")
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("diag", true))
+        }.onFailure { overlay?.toast("打不开诊断页") }
     }
     private val session = ConversationSession()
     private val analysisTasks = ArrayList<Future<*>>()
@@ -325,6 +338,9 @@ open class ChatCaptureService : AccessibilityService() {
         overlay?.onOcrCapture = { ocrCaptureManual() }
         // 白名单（P1-8）：用户最常问的是「为什么这里不分析」，把开关摆到手边。
         overlay?.onWhitelistToggle = { toggleWhitelist() }
+        // 悬浮球菜单 → 在 App 内打开「诊断与自检」，不用退出当前聊天就能看到
+        // 权限 / 上次分析 / 崩溃记录，自己定位「为什么没反应」。
+        overlay?.onDiagnostics = { openDiagnostics() }
         // Keep the process at foreground importance so MIUI does not freeze us.
         runCatching { KeepAliveService.start(this) }
         // Load the bundled OCR model now, off the main thread: the first
@@ -352,14 +368,19 @@ open class ChatCaptureService : AccessibilityService() {
         if (!prefs.enabled) { leaveConversation(); overlay?.hide(); return }
 
         // 悬浮窗权限被系统收回（用户手动关掉、或 ROM 把设置重置）时，气泡会无声消失，
-        // 用户只看到「助手不工作了」却不知为什么。这里只报一次警；权限回来后复位，
-        // 并强制重建悬浮窗——系统已销毁旧 window，必须重 add 而非复用已分离的旧 root。
-        val canOverlayNow = Settings.canDrawOverlays(this)
-        if (canOverlayNow) {
-            if (!overlayOk) { overlayOk = true; overlay?.resetWindow() }
-        } else if (overlayOk) {
-            overlayOk = false
-            Toast.makeText(this, "悬浮窗权限被收回，去设置重新开启后助手才能显示", Toast.LENGTH_LONG).show()
+        // 用户只看到「助手不工作了」却不知为什么。这里每 3s 复查一次（避免每个无障碍事件
+        // 都做 IPC），权限回来后复位并强制重建悬浮窗——系统已销毁旧 window，必须重 add
+        // 而非复用已分离的旧 root；权限刚被收回时只报一次警。
+        val now = System.currentTimeMillis()
+        if (now - lastOverlayCheckAt > 3000) {
+            lastOverlayCheckAt = now
+            val canOverlayNow = Settings.canDrawOverlays(this)
+            if (canOverlayNow) {
+                if (!overlayOk) { overlayOk = true; overlay?.resetWindow() }
+            } else if (overlayOk) {
+                overlayOk = false
+                Toast.makeText(this, "悬浮窗权限被收回，去设置重新开启后助手才能显示", Toast.LENGTH_LONG).show()
+            }
         }
 
         val type = event.eventType
@@ -1176,6 +1197,7 @@ open class ChatCaptureService : AccessibilityService() {
         overlay?.onSaveContact = null
         overlay?.onOcrCapture = null
         overlay?.onWhitelistToggle = null
+        overlay?.onDiagnostics = null
         overlay?.onErrorAction = null
         overlay?.onReplyFeedback = null
         overlay?.hide()
