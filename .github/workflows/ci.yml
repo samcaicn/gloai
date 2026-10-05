@@ -101,7 +101,9 @@ jobs:
                   --collect-all wechatauto
                   --collect-all webview --collect-all clr_loader --collect-all pythonnet
                   --hidden-import webview.platforms.edgechromium --hidden-import webview.platforms.winforms
-                  --version-file version_info.txt --manifest manifest.xml)
+                  --version-file version_info.txt --manifest manifest.xml
+                  # 启动画面：splash.png 转成 Splash-*.res 打进归档，_exe_ci_test.py 有对应断言
+                  --splash splash.png)
             add_data config.py "."
             add_data templates templates
             add_data emojis emojis

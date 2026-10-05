@@ -106,7 +106,10 @@ jobs:
                   --hidden-import webview.platforms.edgechromium --hidden-import webview.platforms.winforms
                   # 写入合法的版本信息资源 + 显式 manifest（asInvoker，不请求管理员）：
                   # 降低杀软对「无数字签名 + 未知发布者」的启发式误报评分。根治仍需 EV 代码签名证书。
-                  --version-file version_info.txt --manifest manifest.xml)
+                  --version-file version_info.txt --manifest manifest.xml
+                  # 启动画面：splash.png 由 bootloader 转成 Splash-*.res 打进归档
+                  #（_exe_ci_test.py 对该资源有断言，必须与 ci.yml 构建参数保持一致）
+                  --splash splash.png)
             add_data config.py "."
             add_data templates templates
             add_data emojis emojis
