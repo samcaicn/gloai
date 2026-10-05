@@ -62,6 +62,8 @@
         .stat-card .k{ color:var(--text-3); font-size:12.5px; margin-bottom:6px; }
         .stat-card .v{ font-size:22px; font-weight:680; color:var(--text); letter-spacing:-.02em; }
         .stat-card .u{ font-size:12px; color:var(--text-3); margin-left:3px; font-weight:500; }
+        .stat-card .prog{ height:4px; background:var(--surface-3); border-radius:99px; margin-top:8px; overflow:hidden; }
+        .stat-card .prog-bar{ display:block; height:100%; width:0; background:linear-gradient(90deg,var(--brand),var(--brand-600)); border-radius:99px; transition:width .35s var(--ease); }
         .chat-box{
             max-height:340px; overflow-y:auto; background:var(--surface-2);
             border:1px solid var(--border); border-radius:var(--r); padding:12px 14px;
@@ -114,13 +116,14 @@
                 <div class="stat-card">
                     <div class="k">身份完整度</div>
                     <div class="v">{{ stats.get('filled', 0) }}<span class="u">/ {{ stats.get('fields', 7) }} 项</span></div>
+                    <div class="prog"><span class="prog-bar" id="identityProg"></span></div>
                 </div>
                 <div class="stat-card">
                     <div class="k">教学对话</div>
                     <div class="v">{{ stats.get('owner_msgs', 0) }}<span class="u">条我说的</span></div>
                 </div>
                 <div class="stat-card">
-                    <div class="k">生效对象（用户列表）</div>
+                    <div class="k">生效对象</div>
                     <div class="v">{{ audience_count }}<span class="u">个联系人</span></div>
                 </div>
                 <div class="stat-card">
@@ -361,5 +364,6 @@
             </form>
         </div>
     </div>
+<script>var f={{ stats.get('filled', 0) }},t={{ stats.get('fields', 7) }};var b=document.getElementById('identityProg');if(b&&t>0){b.style.width=Math.min(100,Math.round(f/t*100))+'%';}</script>
 </body>
 </html>
