@@ -1,8 +1,17 @@
-name: CI — Python 语法体检
+name: CI — 语法体检 + EXE 实测
 
-# 与 build.yml（仅 weauto 分支的 PyInstaller 构建）分离：
-# 本流水线在「每次 push / 任意分支 PR」上跑一遍全量编译，尽早抓回归。
-# 不依赖任何第三方包、不装微信引擎，纯语法门禁，几秒出结果。
+# 每次 push / 任意分支 PR 都跑。两条腿：
+#   1. syntax —— 全量 compileall，纯语法门禁，秒级，最早暴露缩进/编码错误。
+#   2. exe    —— 真正构建 PyInstaller onefile EXE 并**解包实测**。
+#
+# ⭐ 为什么 EXE 这条腿不可省（2026-10-05 立规：CI EXE 测试每次都要）：
+#   只做 compileall 会漏掉一整类最常见的假绿 —— **改了源码但没重新打包**。
+#   那种情况下所有 .py 都能编译通过、CI 全绿，但用户拿到的 EXE 里还是旧模板
+#   （实测踩过：源码价格已改成 ¥19.9，打包产物里仍是 ¥29.9）。
+#   所以必须构建真 EXE，并把它当 zip 解开、断言**资源内容**真的更新了。
+#
+# build.yml 只在 weauto 分支跑（产物分发用）；本文件负责「每次改动都验」，
+# 两者不重复：这里不传 Artifact，只判定成败。
 on:
   push:
     branches: ['**']
@@ -38,3 +47,95 @@ jobs:
       - name: Report
         if: success()
         run: echo "✅ 全部 Python 文件编译通过，无语法/缩进错误。"
+
+  exe:
+    name: Build EXE + unpack assertions
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # 与 build.yml 保持一致：PyInstaller 6.22.3 在 3.10 上构建成功。
+          python-version: '3.10'
+
+      - name: Enable long paths (Windows MAX_PATH=260 workaround)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          try {
+            New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+            Write-Host "LongPathsEnabled=1 applied"
+          } catch { Write-Host "LongPathsEnabled set skipped: $_" }
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller==6.22.3
+
+      - name: Build onefile EXE
+        shell: bash
+        run: |
+          # 用**全新目录名**构建：workpath/distpath 复用旧目录时，
+          # PyInstaller 的 --clean 偶尔会把上次的中间产物带进新包（假绿来源之一）。
+          # 极短路径（C:/_ciwb、C:/_ciwd）同时规避 windows runner 未开长路径时的 MAX_PATH。
+          {
+            set -x
+            set +e
+            add_data() { if [ -e "$1" ]; then ARGS+=(--add-data "$1;$2"); fi; }
+            ARGS=(--name WeAuto --onefile --noupx --noconsole --paths vendor
+                  --workpath C:/_ciwb --distpath C:/_ciwd
+                  --hidden-import bot --hidden-import wechat_compat --hidden-import wechatauto
+                  --hidden-import forward_hub
+                  --hidden-import jev_guard
+                  --hidden-import weauto_stdio
+                  --hidden-import cli --hidden-import weauto_mcp
+                  --hidden-import weauto_license --hidden-import weauto_license.guard
+                  --hidden-import mcp --collect-all mcp
+                  --hidden-import uiautomation --hidden-import comtypes --hidden-import colorama
+                  --collect-all wechatauto
+                  --collect-all webview --collect-all clr_loader --collect-all pythonnet
+                  --hidden-import webview.platforms.edgechromium --hidden-import webview.platforms.winforms
+                  --version-file version_info.txt --manifest manifest.xml)
+            add_data config.py "."
+            add_data templates templates
+            add_data emojis emojis
+            add_data prompts prompts
+            add_data static static
+            add_data Demo_Image Demo_Image
+            python -m PyInstaller --noconfirm --clean "${ARGS[@]}" config_editor.py
+          } > build.log 2>&1
+          rc=$?
+          echo "BUILD_RC=$rc"
+          if [ "$rc" != "0" ]; then tail -c 40000 build.log; fi
+          exit $rc
+
+      - name: Unpack-and-assert the EXE
+        shell: bash
+        run: |
+          # 真正解包实测：PE 头 + 归档内容断言（价格文案、付款浮层、密钥出厂值等）。
+          # 具体断言见 _exe_ci_test.py 的 REQUIRED_TOKENS —— 改了 UI/价格要往那里加条目。
+          ls -lh C:/_ciwd/WeAuto.exe
+          python _exe_ci_test.py C:/_ciwd/WeAuto.exe
+
+      - name: Publish failure detail on build log
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo "===== build.log (tail 40k) ====="
+            tail -c 40000 build.log 2>/dev/null || echo "(build.log missing)"
+          } > _diag.txt
+          cat _diag.txt
+          # 附到 job summary，便于在网页上直接看
+          {
+            echo '## EXE CI 失败'
+            echo '```'
+            cat _diag.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

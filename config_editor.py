@@ -438,7 +438,13 @@ app.secret_key = load_secret_key()
 # 任何人都能直接打开配置页（含 API Key、授权卡密、开放端口等敏感项）。
 # 确需免密调试时，在 config.py 里置 LICENSE_DEBUG_BYPASS_LOGIN = True 临时开启。
 def _debug_flag_from_config(key, default=False):
-    """从 config.py 文本里读一个布尔开关（不 import config，避免模块缓存住旧值）。"""
+    """从 config.py 文本里读一个布尔开关（不 import config，避免模块缓存住旧值）。
+
+    重要：必须剥掉行尾注释再比较。否则 `KEY = True  # 说明文字` 会被整体捕获成
+    "True  # 说明文字"，`in ('True', ...)` 判定失败而恒返回 False，
+    导致开关写了 True 却完全不生效（曾影响 ENABLE_LOGIN_PASSWORD 与
+    LICENSE_DEBUG_BYPASS_LOGIN 两个开关）。
+    """
     try:
         import re as _re
         cp = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.py')
@@ -446,12 +452,28 @@ def _debug_flag_from_config(key, default=False):
             m = _re.search(r'^\s*%s\s*=\s*(.+?)\s*$' % _re.escape(key), f.read(), _re.M)
         if not m:
             return default
-        return m.group(1).strip().rstrip(',') in ('True', 'true', '1', 'yes', 'on')
+        raw = m.group(1).strip().rstrip(',')
+        # 剥离行尾注释：布尔开关行不会在引号内出现 '#'，直接截断即可
+        raw = raw.split('#', 1)[0].strip()
+        return raw in ('True', 'true', '1', 'yes', 'on')
     except Exception:
         return default
 
 
 BYPASS_LOGIN = _debug_flag_from_config('LICENSE_DEBUG_BYPASS_LOGIN', False)
+
+
+def _login_password_enabled():
+    """登录密码功能总开关（默认关闭）。
+
+    config.py 的 ENABLE_LOGIN_PASSWORD = False（出厂默认）表示**不启用密码**：
+    启动后直接进界面，不再强制跳 /password_setup 设置密码，访问 /login、/password_setup 也会被送回首页。
+    想恢复密码登录，在 config.py 里置 ENABLE_LOGIN_PASSWORD = True 即可（此时沿用原有逻辑：
+    未设密码→强制设置页；已设密码→需登录）。
+    每次实时读 config.py 文本，避免模块缓存住旧值。
+    """
+    return _debug_flag_from_config('ENABLE_LOGIN_PASSWORD', False)
+
 bot_process = None
 
 # 简易500错误处理，便于快速定位问题
@@ -556,6 +578,11 @@ def login():
         session['logged_in'] = True
         return redirect(url_for('index'))
 
+    # 登录密码功能关闭（出厂默认）→ 不需要登录页，直接回首页
+    if not _login_password_enabled():
+        session['logged_in'] = True
+        return redirect(url_for('index'))
+
     password_is_valid = config.get('PASSWORD_IS_VALID', False)
     
     # 未设置密码时，强制跳转到密码设置页面
@@ -602,6 +629,10 @@ def logout():
 def password_setup():
     config = parse_config()
     password_is_valid = config.get('PASSWORD_IS_VALID', False)
+
+    # 登录密码功能关闭（出厂默认）→ 不提供设置密码环节，直接回首页
+    if not _login_password_enabled():
+        return redirect(url_for('index'))
     
     # 获取返回目标参数
     return_to = request.args.get('return', 'login')
@@ -655,10 +686,14 @@ def login_required(f):
         # 调试模式：跳过登录校验（调试完成后将 BYPASS_LOGIN 改回 False）
         if BYPASS_LOGIN:
             return f(*args, **kwargs)
+        # 登录密码功能关闭（ENABLE_LOGIN_PASSWORD=False，出厂默认）→ 免密直接放行，
+        # 既不跳密码设置页也不跳登录页，启动即用。
+        if not _login_password_enabled():
+            return f(*args, **kwargs)
         config = parse_config()
         password_is_valid = config.get('PASSWORD_IS_VALID', False)
         
-        # 全局规则：
+        # 全局规则（仅在启用密码时生效）：
         # - 若未设置密码，则强制跳转到密码设置页面
         # - 若已设置密码但未登录，则要求先登录
         if not password_is_valid:
@@ -1054,10 +1089,10 @@ def submit_config():
             'ENABLE_EMOJI_SENDING', 'ENABLE_AUTO_MESSAGE', 'ENABLE_MEMORY',
             'UPLOAD_MEMORY_TO_AI', 'ALLOW_OPEN_PORT', 'ENABLE_REMINDERS',
             'ALLOW_REMINDERS_IN_QUIET_TIME', 'USE_VOICE_CALL_FOR_REMINDERS',
-            'ENABLE_ONLINE_API', 'SEPARATE_ROW_SYMBOLS','ENABLE_SCHEDULED_RESTART',
+            'ENABLE_ONLINE_API', 'SEPARATE_ROW_SYMBOLS',
             'ENABLE_GROUP_AT_REPLY', 'ENABLE_GROUP_KEYWORD_REPLY','GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY', 'REMOVE_PARENTHESES',
             'ENABLE_ASSISTANT_MODEL', 'USE_ASSISTANT_FOR_MEMORY_SUMMARY', 'ENABLE_FORUM_CUSTOM_MODEL',
-            'IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE', 'ENABLE_SENSITIVE_CONTENT_CLEARING', 'SAVE_MEMORY_TO_SEPARATE_FILE',
+            'IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE', 'ENABLE_SENSITIVE_CONTENT_CLEARING',
             'ENABLE_TEXT_COMMANDS'
         ]
         for field in boolean_fields:
@@ -1447,6 +1482,29 @@ def resolve_ai_opts(config, sub_key=None, sub_base=None):
         b = cfg.get('DEEPSEEK_BASE_URL', '') or ''
     return k, b
 
+# ---- 套餐(档位) → 官方 AI 默认模型 ----
+# 模型大小由订阅套餐自动决定，用户无需手动选择；自填大模型供应商时不受此限制。
+TIER_MODELS = {
+    'normal':   '@cf/meta/llama-3.3-70b-instruct-fp8-fast',  # 标准版：70B 均衡
+    'premium':  '@cf/qwen/qwen3-235b-a22b-fp8',              # 高级版：235B 更强
+    'lifetime': '@cf/qwen/qwen3-235b-a22b-fp8',              # 永久版：235B 顶级
+}
+DEFAULT_WORKER_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
+
+def recommended_model_for_tier(tier):
+    """返回某订阅档位应自动使用的官方模型；未识别档位回落默认模型。"""
+    return TIER_MODELS.get((tier or '').strip().lower(), DEFAULT_WORKER_MODEL)
+
+# 模板用：官方聊天模型候选 / 辅助模型候选（让 {{ x not in popular_models }} 判定正确）
+POPULAR_CHAT_MODELS = [
+    '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+    '@cf/meta/llama-3.1-8b-instruct',
+    '@cf/qwen/qwen3-235b-a22b-fp8',
+]
+ASSISTANT_POPULAR_MODELS = [
+    'gpt-4o-mini', 'gpt-3.5-turbo', 'deepseek-v3', 'Qwen/Qwen2.5-7B-Instruct',
+]
+
 def update_config(new_values):
     """
     更新配置文件内容，确保文件写入安全性和原子性，避免文件被清空或损坏。
@@ -1499,13 +1557,16 @@ def update_config(new_values):
 @app.route('/quick_start', methods=['GET', 'POST'])
 @login_required
 def quick_start():
+    # 内嵌模式（?embed=1）：本页作为主界面左侧菜单的一个面板被 iframe 引入。
+    # 此时保存/跳过后必须留在本页（留在 iframe 内），不能 redirect 到 index ——
+    # 否则会在 iframe 里再嵌一整个配置后台，出现「页面套页面」。
+    is_embed = request.args.get('embed') == '1' or request.form.get('embed') == '1'
     if request.method == 'POST':
         try:
             config = parse_config()
             new_values = {}
 
             api_provider = request.form.get('quick_start_api_provider', 'weapis')
-            api_source = request.form.get('quick_start_api_source', 'worker')
             api_key_raw = request.form.get('quick_start_api_key', '').strip()
 
             # 处理API Key，如果是隐藏版本则保持原值
@@ -1513,9 +1574,6 @@ def quick_start():
                 api_key = config.get('DEEPSEEK_API_KEY', '')
             else:
                 api_key = api_key_raw
-
-            if api_source == 'custom':
-                api_provider = 'other'
 
             keys_to_clear_for_non_weapis = [
                 'MOONSHOT_API_KEY', 'ONLINE_API_KEY',
@@ -1537,7 +1595,8 @@ def quick_start():
                 new_values['ONLINE_MODEL'] = 'net-gpt-4o-mini'
                 if not config.get('MODEL','').strip():
                     new_values['MODEL'] = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
-                new_values['ENABLE_ONLINE_API'] = 'ENABLE_ONLINE_API' in request.form
+                # 联网搜索已作为默认能力恒开（配置页已撤），不再依赖快速上手表单的勾选
+                new_values['ENABLE_ONLINE_API'] = True
 
             else:
                 # 自定义大模型：明确不走 Workers AI，直连用户自己的供应商
@@ -1557,7 +1616,8 @@ def quick_start():
                 # 这里清空是为了避免残留上一套供应商的地址导致识图/联网打错地方）
                 for key_to_clear in keys_to_clear_for_non_weapis:
                     new_values[key_to_clear] = ""
-                new_values['ENABLE_ONLINE_API'] = False
+                # 联网搜索保持默认开启（默认能力，不再在快速上手里关掉）；
+                # 自填供应商若无联网模型，检测/调用失败会安全降级为普通回复。
 
             # 快速上手表单不含 listen_settings 字段：按昵称保留旧设置
             new_values['LISTEN_LIST'] = _build_listen_list_from_form(request.form, config)
@@ -1565,9 +1625,13 @@ def quick_start():
 
             update_config(new_values)
             _sync_listen_forward_rules(new_values['LISTEN_LIST'])
+            if is_embed:
+                return redirect(url_for('quick_start', embed=1))
             return redirect(url_for('index'))
         except Exception as e:
             app.logger.error(f"快速配置保存错误: {e}")
+            if is_embed:
+                return redirect(url_for('quick_start', embed=1))
             return redirect(url_for('quick_start'))
 
     try:
@@ -1597,7 +1661,8 @@ def quick_start():
                                config=display_config,
                                prompt_files=prompt_files_list,
                                current_api_provider=current_api_provider,
-                               current_custom_base_url=current_custom_base_url)
+                               current_custom_base_url=current_custom_base_url,
+                               is_embed=is_embed)
     except Exception as e:
         app.logger.error(f"加载快速配置页面错误: {e}")
         return "加载快速配置页面错误，请检查日志。"
@@ -1709,10 +1774,10 @@ def index():
                 'ENABLE_EMOJI_SENDING', 'ENABLE_AUTO_MESSAGE', 'ENABLE_MEMORY',
                 'UPLOAD_MEMORY_TO_AI', 'ALLOW_OPEN_PORT', 'ENABLE_REMINDERS',
                 'ALLOW_REMINDERS_IN_QUIET_TIME', 'USE_VOICE_CALL_FOR_REMINDERS',
-                'ENABLE_ONLINE_API', 'SEPARATE_ROW_SYMBOLS','ENABLE_SCHEDULED_RESTART',
+                'ENABLE_ONLINE_API', 'SEPARATE_ROW_SYMBOLS',
                 'ENABLE_GROUP_AT_REPLY', 'ENABLE_GROUP_KEYWORD_REPLY','GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY','REMOVE_PARENTHESES',
                 'ENABLE_ASSISTANT_MODEL', 'USE_ASSISTANT_FOR_MEMORY_SUMMARY',
-                'IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE', 'ENABLE_SENSITIVE_CONTENT_CLEARING', 'SAVE_MEMORY_TO_SEPARATE_FILE'
+                'IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE', 'ENABLE_SENSITIVE_CONTENT_CLEARING'
             ]
             for field in boolean_fields_from_editor:
                  # 确保这些字段在表单中存在才处理，否则它们可能来自 quick_start
@@ -1751,11 +1816,24 @@ def index():
             if field in display_config:
                 display_config[field] = hide_api_key(display_config[field])
 
+        # 订阅档位 → 套餐自动匹配模型（用户无需手动选模型）
+        _tier = ''
+        try:
+            from weauto_license import guard as _g
+            _tier = _g.license_tier()
+        except Exception:
+            _tier = ''
+        _recommended = recommended_model_for_tier(_tier)
+
         return render_template('config_editor.html',
                              config=display_config,
                              prompt_files=prompt_files,
                              chat_context_users=chat_context_users,
-                             ai_source=ai_source_mode(config))
+                             ai_source=ai_source_mode(config),
+                             license_tier=_tier,
+                             recommended_model=_recommended,
+                             popular_models=POPULAR_CHAT_MODELS,
+                             assistant_popular_models=ASSISTANT_POPULAR_MODELS)
     except Exception as e:
         app.logger.error(f"加载主配置页面错误: {e}")
         return "加载配置页面错误，请检查日志。"
@@ -4770,6 +4848,188 @@ def style_lab():
                            recent=recent_fmt, message=message, updated_str=updated_str)
 
 
+# ---------------------------------------------------------------------------
+# AI 分身（主人侧）：身份档案 / 人设 / 教学聊天
+#   说明：去掉了访客侧（名片分享、访客会话、接管轮询）——本项目的「访客」
+#         就是用户列表里的微信联系人，分身人设注入后对 bot 回复的全部联系人生效。
+# ---------------------------------------------------------------------------
+def _avatar_llm_chat(messages, timeout=60):
+    """按既有「AI 来源双模式」调用大模型。
+
+    官方模式：走 weauto_license.guard.ai_endpoint()（<worker>/ai/v1 + 卡密 + 实例头）；
+    自填模式：直接用 config.py 里的 DEEPSEEK_BASE_URL / API_KEY，不碰网关。
+    """
+    base_url = api_key = model = None
+    headers = {}
+    try:
+        from weauto_license import guard
+        ep = guard.ai_endpoint()
+        if ep:
+            base_url = ep.get('base_url')
+            api_key = ep.get('api_key') or ''
+            headers = ep.get('headers') or {}
+    except Exception:
+        pass
+
+    _cfg = parse_config()
+    if not base_url:
+        base_url = (_cfg.get('DEEPSEEK_BASE_URL') or 'https://api.deepseek.com').rstrip('/')
+        api_key = _cfg.get('DEEPSEEK_API_KEY') or ''
+    model = _cfg.get('MODEL') or 'deepseek-chat'
+
+    if not api_key:
+        raise RuntimeError('未配置大模型 API Key（config.py 的 DEEPSEEK_API_KEY，或先激活卡密走官方模式）')
+
+    client = openai.OpenAI(base_url=base_url, api_key=api_key,
+                           default_headers=headers or None, timeout=timeout)
+    resp = client.chat.completions.create(
+        model=model, messages=messages, temperature=0.8, max_tokens=800,
+    )
+    return (resp.choices[0].message.content or '').strip()
+
+
+def _avatar_audience_count():
+    """生效对象数量：本项目的用户列表（bot 监听/回复的联系人）。"""
+    try:
+        _cfg = parse_config()
+        lst = _cfg.get('LISTEN_LIST') or []
+        if isinstance(lst, list) and len(lst):
+            return len(lst)
+    except Exception:
+        pass
+    try:
+        base = os.path.dirname(os.path.abspath(__file__))
+        pdir = os.path.join(base, 'prompts')
+        if os.path.isdir(pdir):
+            return len([f for f in os.listdir(pdir)
+                        if f.endswith(('.md', '.txt')) and not f.startswith('默认')])
+    except Exception:
+        pass
+    return 0
+
+
+@app.route('/avatar', methods=['GET', 'POST'])
+@login_required
+def avatar_page():
+    """AI 分身 · 主人侧面板（身份档案 / 人设 / 教学聊天 / 设备 ID）。"""
+    try:
+        import persona
+    except Exception as _e:  # noqa: BLE001
+        persona = None
+        app.logger.warning(f"persona 不可用，AI 分身面板降级: {_e}")
+    try:
+        import device_id
+    except Exception as _e:  # noqa: BLE001
+        device_id = None
+        app.logger.warning(f"device_id 不可用: {_e}")
+    try:
+        import style_learner
+    except Exception:
+        style_learner = None
+    try:
+        import cloud_sync
+    except Exception as _e:  # noqa: BLE001
+        cloud_sync = None
+        app.logger.warning(f"cloud_sync 不可用，AI 分身云同步降级为纯本地: {_e}")
+
+    message = ''
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+        # 云同步动作不依赖 persona，单独分发（persona 挂了也能把云端人格拉回来）
+        if action.startswith('cloud_'):
+            try:
+                if cloud_sync is None:
+                    message = '云同步模块不可用（cloud_sync 导入失败）'
+                elif action == 'cloud_sync':
+                    r = cloud_sync.sync(reason='manual')
+                    if r.get('ok'):
+                        _label = {'push': '已上传本机人格', 'pull': '已拉取云端人格',
+                                  'up-to-date': '两端一致，无需同步'}
+                        message = '同步完成：' + _label.get(r.get('action'), str(r.get('action')))
+                    else:
+                        message = '同步失败：' + str(r.get('error') or r.get('detail'))
+                elif action == 'cloud_push':
+                    r = cloud_sync.push(force=True)
+                    message = ('已把本机人格上传到云端。' if r.get('ok') else f"上传失败：{r.get('error')}")
+                elif action == 'cloud_pull':
+                    r = cloud_sync.pull(force=True)
+                    message = (r.get('message') or '已用云端人格覆盖本机。') if r.get('ok') else f"拉取失败：{r.get('error')}"
+                elif action == 'cloud_plan':
+                    r = cloud_sync.sync_plan()
+                    message = (f"套餐已同步到云端：{r.get('tier') or '未识别档位'}" if r.get('ok')
+                               else f"套餐同步失败：{r.get('error')}")
+            except Exception as _e:  # noqa: BLE001
+                message = f'云同步失败：{_e}'
+                app.logger.error(f"avatar 云同步失败: {_e}", exc_info=True)
+        else:
+            try:
+                if persona is None:
+                    message = 'AI 分身模块不可用（persona 导入失败）'
+                elif action == 'save_identity':
+                    persona.save_identity(request.form)
+                    message = '身份档案已保存。'
+                elif action == 'save_settings':
+                    persona.save_settings(request.form)
+                    message = '分身设置已保存。'
+                elif action == 'teach':
+                    text = (request.form.get('content') or '').strip()
+                    if not text:
+                        message = '请先输入内容'
+                    else:
+                        persona.add_chat('user', text)
+                        system = persona.build_prompt() + (
+                            "\n\n（现在正在和「我本人」对话。他在教你他的说话方式和业务信息，"
+                            "请用自然简短的口语回应，并可反问引导他补充信息。）"
+                        )
+                        hist = [{'role': ('assistant' if m.get('role') == 'assistant' else 'user'),
+                                 'content': m.get('content', '')}
+                                for m in persona.chat()[-20:]]
+                        reply = _avatar_llm_chat([{'role': 'system', 'content': system}] + hist)
+                        persona.add_chat('assistant', reply)
+                        message = '已记录这次对话。'
+                elif action == 'clear_chat':
+                    persona.clear_chat()
+                    message = '教学聊天已清空。'
+                elif action == 'import':
+                    ok, msg = persona.import_json(request.form.get('json_text', ''))
+                    message = msg
+                elif action == 'reset':
+                    persona.reset_all()
+                    message = '身份与人设已清空。'
+            except Exception as _e:  # noqa: BLE001
+                message = f'操作失败：{_e}'
+                app.logger.error(f"avatar 操作失败: {_e}", exc_info=True)
+
+    ident = persona.identity() if persona else {}
+    st = persona.settings() if persona else {}
+    chat_rows = persona.chat() if persona else []
+    pstats = persona.stats() if persona else {}
+    profile = style_learner.load_profile() if style_learner else {}
+    dev = device_id.device_info() if device_id else {}
+
+    def _fmt(ts):
+        try:
+            return time.strftime('%m-%d %H:%M', time.localtime(ts))
+        except Exception:
+            return ''
+
+    chat_fmt = [(_fmt(m.get('ts')), m.get('role'), m.get('content', '')) for m in chat_rows]
+
+    try:
+        cloud = cloud_sync.status() if cloud_sync else None
+    except Exception as _ce:  # noqa: BLE001
+        cloud = None
+        app.logger.warning(f"读取云同步状态失败: {_ce}")
+
+    return render_template('avatar.html',
+                           identity=ident, settings=st, chat=chat_fmt,
+                           stats=pstats, profile=profile, device=dev,
+                           cloud=cloud,
+                           audience_count=_avatar_audience_count(),
+                           export_json=(persona.export_json() if persona else ''),
+                           message=message)
+
+
 # ================================================================= 工具接口诊断（MCP / CLI，供 agent 调用）
 def _weauto_agent_diag():
     """汇总 agent 接口（MCP / CLI）的本地能力，供管理后台页面与接口展示。"""
@@ -4940,6 +5200,8 @@ def _license_status():
         "near_expiry": near_expiry,
         "machine_id": _guard.get_machine_id() if _guard else "",
         "tier": _guard.license_tier() if _guard else "",
+        # 仅用于「付款页自动填好邮箱」，不参与鉴权、不是账号体系。
+        "buyer_email": _buyer_email(),
     }
 
 
@@ -4947,6 +5209,39 @@ def _license_status():
 @login_required
 def api_license_status():
     return jsonify(_license_status())
+
+
+def _buyer_email() -> str:
+    """取本机记住的买家邮箱（只用于付款页预填，不参与鉴权）。
+
+    数据源优先级：环境变量 WEAUTO_CREEM_BUYER_EMAIL > config.py 的 CREEM_BUYER_EMAIL。
+    空串表示尚未记录 —— 此时 Creem 收银台会自己问买家要（MoR 法定必填，无法省）。
+    """
+    v = os.environ.get("WEAUTO_CREEM_BUYER_EMAIL")
+    if v is None:
+        v = (parse_config().get("CREEM_BUYER_EMAIL", "") or "")
+    return str(v).strip()
+
+
+def _remember_buyer_email(email: str) -> bool:
+    """把 Worker webhook 回传的买家邮箱写进 config.py，供下次续费预填。
+
+    只在「本地还没有」时写入，且做基本形状校验：
+      - 以 Creem 实际收款邮箱为准（webhook 是权威来源），不覆盖用户手填的值；
+      - 形状明显不合法（无 @ / 含空白 / 超长）直接丢弃，不污染 config.py。
+    返回是否真的落盘。
+    """
+    mail = (email or "").strip()
+    if not mail or len(mail) > 254 or "@" not in mail or re.search(r"\s", mail):
+        return False
+    if mail == _buyer_email():
+        return False
+    try:
+        update_config({"CREEM_BUYER_EMAIL": mail})
+        return True
+    except Exception as e:
+        app.logger.warning(f"保存买家邮箱失败: {e}")
+        return False
 
 
 @app.route('/api/license/buy_url', methods=['GET'])
@@ -4958,10 +5253,23 @@ def api_license_buy_url():
     if not w:
         return jsonify({"url": ""})
     tier = request.args.get('tier', '').strip()
-    url = w + "/buy"
+    # 带上本机记住的买家邮箱：Worker 转发给 Creem 的 customer.email，
+    # 收银台邮箱框被**预填并锁定**，买家点开即可付款、零输入。
+    # Creem 是 MoR，邮箱无法免填（收据/税务法定要求），预填是唯一可行的减负方式。
+    # 前端可用 ?email= 覆盖（用户当次想用别的邮箱付款）。
+    email = (request.args.get('email') or _buyer_email()).strip()
+    import urllib.parse as _up
+    qs = []
     if tier:
-        url += "?tier=" + tier
-    return jsonify({"url": url})
+        qs.append("tier=" + _up.quote(tier, safe=""))
+    if email:
+        # 必须百分号编码：邮箱含 @ / + 等在 query value 里的保留字符，
+        # 不编码虽多数情况能解析，但 + 会被部分服务端解成空格。
+        qs.append("email=" + _up.quote(email, safe=""))
+    url = w + "/buy"
+    if qs:
+        url += "?" + "&".join(qs)
+    return jsonify({"url": url, "email": email})
 
 
 @app.route('/api/license/poll', methods=['GET'])
@@ -4985,7 +5293,11 @@ def api_license_poll():
         with _ur.urlopen(req, timeout=10) as r:
             d = _json.loads(r.read().decode("utf-8"))
         if d.get("key"):
-            return jsonify(pending=False, key=d["key"], tier=d.get("tier", ""))
+            # 顺手把 webhook 回传的买家邮箱存进本机：下次续费直接预填进 Creem
+            # 收银台（buyer 不用再手打邮箱）。以 Creem 实际收款邮箱为准。
+            _remember_buyer_email(d.get("email") or "")
+            return jsonify(pending=False, key=d["key"], tier=d.get("tier", ""),
+                           email=d.get("email", ""))
         return jsonify(pending=True)
     except _ur.HTTPError as e:
         if e.code == 404:
@@ -4993,6 +5305,36 @@ def api_license_poll():
         return jsonify(pending=True, error="http_" + str(e.code))
     except Exception as e:
         return jsonify(pending=True, error=str(e)[:120])
+
+
+@app.route('/api/license/email', methods=['POST'])
+@login_required
+def api_license_email():
+    """保存买家邮箱（仅用于付款页预填）。
+
+    首次购买前填一次 → 之后每次点「立即购买」，Creem 收银台邮箱框已填好并锁定，
+    买家点开直接付款、零输入。付款成功后 webhook 会回传 Creem 实际收款邮箱并覆盖此处，
+    所以即便这里填错也会被自动纠正。
+    """
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+    except Exception:
+        data = {}
+    mail = (data.get("email") or "").strip()
+    if not mail:
+        # 传空 = 清除（用户不想记邮箱）。直接写空串，不走 _remember_buyer_email 的「不覆盖」逻辑。
+        try:
+            update_config({"CREEM_BUYER_EMAIL": ""})
+            return jsonify(ok=True, email="")
+        except Exception as e:
+            return jsonify(ok=False, msg="清除失败: " + str(e)[:120]), 500
+    ok = _remember_buyer_email(mail)
+    if not ok:
+        cur = _buyer_email()
+        if cur == mail:
+            return jsonify(ok=True, email=cur)
+        return jsonify(ok=False, msg="邮箱格式看起来不对，请检查是否填了完整地址"), 400
+    return jsonify(ok=True, email=mail)
 
 
 @app.route('/api/license/activate', methods=['POST'])
@@ -5012,6 +5354,18 @@ def api_license_activate():
     if ok:
         try:
             update_config({"CREEM_LICENSE_KEY": key, "LICENSE_GUARD_ENABLED": True})
+            # 套餐自动匹配模型：激活成功后，若用户尚未自定义模型（仍是出厂官方模型），
+            # 按订阅档位自动选用对应大小的模型（normal=70B / premium·lifetime=235B）。
+            # 已手填「其它」自定义模型的用户不受影响。
+            try:
+                _cfg = parse_config()
+                _cur = (_cfg.get('MODEL') or '').strip()
+                if _cur in POPULAR_CHAT_MODELS:
+                    _rec = recommended_model_for_tier(_guard.license_tier())
+                    if _rec and _rec != _cur:
+                        update_config({'MODEL': _rec})
+            except Exception as _e:
+                app.logger.warning(f"激活后自动匹配套餐模型失败: {_e}")
         except Exception as e:
             app.logger.warning(f"激活成功但写入 config.py 失败: {e}")
         return jsonify(ok=True, msg=msg, status=_license_status())
@@ -5275,31 +5629,32 @@ def _run_desktop_window(web_url, attach_mode, start_waitress):
         return
 
     try:
-        # target=_blank / window.open 的外链（如帮助文档）统一用系统浏览器打开；
-        # 付款页不走 window.open，改由下方 js_api 在软件内开新窗口（不弹系统浏览器、不显示网址）。
+        # target=_blank / window.open 的外链（如帮助文档）统一用系统浏览器打开。
+        # 付款页改为前端浮层展示（templates/config_editor.html 的 #buyOverlay + iframe），
+        # 叠在当前界面之上，不再新建任何窗口；下方 open_buy_window 已弃用（前端不再调用）。
         webview.settings['OPEN_EXTERNAL_LINKS_IN_BROWSER'] = True
 
         class _AppApi:
             """暴露给前端 JS 的桌面能力（仅桌面窗口模式存在，浏览器模式无此 API）。"""
 
             def open_buy_window(self, url):
-                """在软件内新开一个窗口加载购买/支付页。
+                """【已删除弹窗能力】付款页统一走前端浮层（#buyOverlay + iframe），绝不新建窗口。
 
-                pywebview 窗口没有地址栏，买家看不到网址；主窗口保持不动，
-                自动核销轮询照常运行。收银台跳转（/buy -> creem.io）是同窗口
-                导航，不受 OPEN_EXTERNAL_LINKS_IN_BROWSER 影响，全程留在软件内。
+                当前 templates/config_editor.html 的 openBuyInternal() 只调用 window.openBuyOverlay()，
+                不会再走到这里；此处直接返回 False，确保任何调用路径都不会弹出新窗口。
+                收银台最终落在 pay.jukuai.net，其响应头 CSP `frame-ancestors *` 允许被 iframe 嵌入。
                 """
-                try:
-                    import webview as _wv
-                    _wv.create_window('WeAuto · 购买', url,
-                                      width=1080, height=820, min_size=(760, 560))
-                    return True
-                except Exception as e:  # 兜底：失败时前端回退系统浏览器
-                    app.logger.warning(f"内置购买窗口打开失败: {e}")
-                    return False
+                app.logger.info("open_buy_window 已禁用：付款页仅以软件内浮层展示，不弹新窗口")
+                return False
 
         webview.create_window('WeAuto', url, width=1280, height=860, min_size=(960, 640),
                               js_api=_AppApi())
+        # 关闭 PyInstaller 启动闪屏（若有），避免遮挡主窗口
+        try:
+            import pyi_splash
+            pyi_splash.close()
+        except Exception:
+            pass
         webview.start()
     except Exception as _e:
         _fallback_browser(f"桌面窗口启动失败 ({_e})")

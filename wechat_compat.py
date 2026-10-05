@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-wechat_compat.py — 微信 4.x 引擎兼容层（WeAuto v3.25.1 专用）
+wechat_compat.py — 微信 4.x 引擎兼容层（WeAuto v1.1 专用）
 
 背景
 ----
-本项目 v3.25.1 的 bot.py 基于旧版 UIA 引擎 3.x 的 API 编写（依赖 UIA 自动化，
+本项目 v1.1 的 bot.py 基于旧版 UIA 引擎 3.x 的 API 编写（依赖 UIA 自动化，
 只能驱动微信 3.x）。微信 4.x 后 UIA 外壳失效，旧方案彻底不可用。
 
 本模块把 bot.py 实际用到的旧版 UIA 引擎 ``WeChat`` API 契约**完整复刻**到微信 4.x
@@ -45,7 +45,7 @@ logger = logging.getLogger("wechat_compat")
 # 本机方向：sender_id == 1 才是“我”，== 2 是对方（与 wechatauto 库默认相反）
 SELF_SENDER_ID = 1
 
-# wechatauto 媒体类型 -> (v3.25.1 内容类型, 富文本标记)
+# wechatauto 媒体类型 -> (v1.1 内容类型, 富文本标记)
 _MEDIA = {
     "图片": ("image", "[图片]"),
     "动画表情": ("image", "[动画表情]"),
@@ -64,9 +64,9 @@ _MEDIA = {
 
 
 class Msg:
-    """复刻旧版引擎的 Message 对象，暴露 v3.25.1 bot.py 用到的全部字段与方法。
+    """复刻旧版引擎的 Message 对象，暴露 v1.1 bot.py 用到的全部字段与方法。
 
-    v3.25.1 同时使用两个维度：
+    v1.1 同时使用两个维度：
       - ``.type``   内容类型：text / voice / link / quote / merge / image / file / sys ...
       - ``.attr``   消息类别：friend / self / tickle(拍一拍) / sys ...
     """
@@ -205,7 +205,7 @@ def _clean_text(content):
 
 
 def _parse(row, who, username, member_resolver=None):
-    """把 wechatauto 的原始消息 row 解析成 v3.25.1 的 Msg（两轴模型）。"""
+    """把 wechatauto 的原始消息 row 解析成 v1.1 的 Msg（两轴模型）。"""
     content = row.get("content")
     if content is None:
         content = ""
@@ -417,7 +417,7 @@ class WeChat:
     def AddListenChat(self, who=None, nickname=None, callback=None, savepic=True):
         """开始监听某会话。
 
-        v3.25.1 调用形式：``AddListenChat(nickname=user_name, callback=message_listener)``。
+        v1.1 调用形式：``AddListenChat(nickname=user_name, callback=message_listener)``。
         每收到一条消息直接回调 ``callback(msg, chat)``。
         """
         self._init()
@@ -457,7 +457,7 @@ class WeChat:
         return cb
 
     def GetListenMessage(self):
-        """轮询式取消息（兼容保留，v3.25.1 实际走回调）。"""
+        """轮询式取消息（兼容保留，v1.1 实际走回调）。"""
         with self._lock:
             q = self._queue
             self._queue = []

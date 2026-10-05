@@ -36,7 +36,7 @@
    - 记下 `Product ID`（`prod_xxx`）
 3. **Settings > API Keys** 生成 API key（`creem_test_...` / `creem_live_...`）。
 4. **Developers > Webhooks** 填 `https://weauto-license.tuptup-workbuddy.workers.dev/webhook`（CF 原始链接，已部署并经 CF API 确认 enabled），记下 Webhook Secret。
-   - 为什么 Webhook 用 workers.dev 而购买页用自定义域名：Webhook 是 **Creem 海外服务器 → CF** 的服务器间回调，不受大陆 workers.dev 被墙影响；而 `/buy`、`/ai/v1` 是大陆买家/bot 访问，必须走 `weauto.safeopc.cn`。
+   - 为什么 Webhook 用 workers.dev 而购买页用自定义域名：Webhook 是 **Creem 海外服务器 → CF** 的服务器间回调，不受大陆 workers.dev 被墙影响；而 `/buy`、`/ai/v1` 是大陆买家/bot 访问，必须走 `wetech.jukuai.net`。
 5. 本地测试用 `creem_test_` key + 测试卡 `4242 4242 4242 4242`。
 
 ## 支付宝：两个必须分清的概念（最容易踩坑）
@@ -104,7 +104,7 @@ curl -I "https://weauto-license.<子域>.workers.dev/buy?go=1"
 
 > ⚠️ **大陆访问约束**：Cloudflare 的 `*.workers.dev` 默认域名在中国大陆**可能被墙**，买家可能打不开。
 > 本项目当前按指令**使用 CF 默认域名、不绑自定义域名**。若日后需大陆直连，再绑自定义域名
-> （例如 `weauto.safeopc.cn`，其 NS 已在 Cloudflare，可直接 `[[routes]] custom_domain` 绑）。
+> （例如 `wetech.jukuai.net`，其 NS 已在 Cloudflare，可直接 `[[routes]] custom_domain` 绑）。
 > `config.py` 的 `CREEM_WORKER_URL` 必须填 `wrangler deploy` 后终端显示的
 > `https://weauto-license.<子域>.workers.dev`，不能用占位。
 
@@ -181,15 +181,68 @@ bot.py (base_url=<worker>/ai/v1, api_key=卡密, X-WeAuto-Instance=实例ID)
 - 其余加固：激活缓存 HMAC 签名（改 JSON/换机即失效）、运行期每 6h 复检
   （失效 `os._exit`）、发行版 WebUI 门禁开关锁定。
 
-## 多档套餐（2026-09-25 改版）
+## 多档套餐
 
-3 档套餐，全部用 `creem_5fHTWBhssHvCVQ3lsbPzod`（prod key）建好：
+> ⚠️ **当前生效的 3 档（2026-10-03 起，commit `9867e7a`）——以 `wrangler.toml` 的
+> `CREEM_PRODUCTS` 为唯一权威**，下表已过期，勿照抄：
+>
+> | 档位 | 计费 | 人民币 | product_id |
+> |---|---|---|---|
+> | normal 初级 套餐费 | 一次性 onetime | ¥19.9 | `prod_2oyeDnQx6eWqmDpVvDRfC3` |
+> | premium 中级 套餐费 | 一次性 onetime | ¥59.9 | `prod_mYzCeNE1MvRPo6DFt2ZmZ` |
+> | lifetime 高级 套餐费 | 一次性 onetime | ¥199 | `prod_OkTJwM4Od9maNxP8b6vNc` |
+>
+> ⚠️ **`price_text`（页面展示价）与 Creem 实际 `price`（收银台收费）毫无联动**，
+> 改价必须同时改两处，否则每单少收/多收：
+> 1. 展示价 → 改 `wrangler.toml` 的 `CREEM_PRODUCTS[].price_text` + `templates/config_editor.html`
+> 2. 实收价 → 改 `wrangler.toml` 的 `CREEM_PRODUCTS[].usd_cents`（**单位美分**，
+>    如 ¥19.9 → 297），然后 `wrangler deploy` + 调 `/creem/price`（见下）
+>
+> **两种改实收价的路径**（都只 PATCH 已有产品，**绝不重建**——重建丢销量/评价/统计，
+> 且旧卡密仍指向旧产品）：
+> - **A. 有本机 Creem API key 时**：
+>   `set CREEM_API_KEY=... && CONFIRM_PRICE=YES python weauto_license/create_creem_product.py --mode prod --sync-price`
+> - **B. 本机没有 key 时（key 只在 Worker secret，只写不可读）**：
+>   走 Worker 侧运维接口，它用 Worker 自己的 secret 发请求：
+>   ```bash
+>   curl -H "x-admin-key: $ADMIN_KEY" https://wetech.jukuai.net/creem/price                  # 只读，查线上现价
+>   curl -X POST -H "x-admin-key: $ADMIN_KEY" -H "content-type: application/json" \
+>        -d '{"confirm":true}' https://wetech.jukuai.net/creem/price                        # 改价
+>   ```
+>   守卫与 `/token/issue` 同款 fail-close（`ADMIN_KEY` 未配或头不匹配一律 403），
+>   另支持一次性 nonce（代码里只留 SHA-256 哈希，明文只在部署者本地，用完即焚重部署）。
+>   2026-10-05 已用它把三档校准到 ¥19.9/$2.97、¥59.9/$8.93、¥199/$29.68。
+
+**🔑 API key 的两个事实（2026-10-05 实测，勿再搞错）**
+
+1. **本机没有当前账户的 key。** 换账户（commit `b5cfe15`，2026-09-28）后的新 key
+   **只存在于 Cloudflare Worker secret**（`wrangler secret put CREEM_API_KEY`），
+   本地无副本。本 README 里曾留的 `creem_5fHTWB...` 是**换账户前的旧 key**。
+2. **用旧 key 调 API 会 404 `Product not found`，但这不代表产品不存在。**
+   实测：用旧 key 查/建 checkout → 全部 404；用**线上 Worker** 请求同样的
+   `prod_2oyeDnQx6eWqmDpVvDRfC3` → 302 正常跳 `pay.jukuai.net` 收银台。
+   → 遇到 404 先别急着重建产品，**先确认 key 是不是当前账户的**，
+     或直接用 `https://wetech.jukuai.net/buy?go=1&tier=<档>` 实测线上。
+
+要改线上产品文案，必须先取到当前 key：
+```
+wrangler secret list          # 只能看到名字，看不到值
+# 在 Creem 后台 Settings > API Keys 重新生成/复制，拿到后：
+set CREEM_API_KEY=creem_xxx
+python weauto_license/create_creem_product.py --mode prod --sync-desc
+```
+
+<details>
+<summary>历史：2026-09-25 旧版月租三档（product_id 已不用于线上）</summary>
 
 | 档位 | 计费 | 人民币 | Creem 产品（USD） |
 |---|---|---|---|
 | normal 普通版（月租） | 订阅 recurring/every-month | ¥29.9/月 | `prod_3PRueiU3wkoI0MiOfH7gJI` ($4.45) |
 | premium 高级版（月租） | 订阅 recurring/every-month | ¥39.9/月 | `prod_1FGMYGoMeSg1PFiT91mZ6N` ($5.94) |
 | lifetime 永久授权 | 一次性 onetime | ¥199（自愿支持） | `prod_7by0YHsTNBleF1uOE2qAao` ($29.65) |
+
+</details>
+
 
 - **wrangler.toml 用 `CREEM_PRODUCTS`（TOML 单引号字面量包裹的 JSON 数组）** 描述各档，
   Worker 解析后 /buy 渲染三张卡片、/buy?go=1&tier=<档> 跳对应收银台。

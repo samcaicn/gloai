@@ -54,6 +54,19 @@
 const creemBase = (mode) =>
   mode === "prod" ? "https://api.creem.io/v1" : "https://test-api.creem.io/v1";
 
+// ============ 一次性运维 nonce（改完线上价格后应清空并重部署）============
+// 明文口令只存在于部署者本地，代码里只留 SHA-256 哈希 -> 拿到源码也推不出明文。
+// 用法：echo -n "$NONCE" | openssl dgst -sha256 -hex  填到下面。
+const ONETIME_NONCE_SHA256 = "";  // 已用完并烧毁：重新启用需重跑 create_creem_product.py 生成新 nonce
+
+
+/** sha256 十六进制（用 Workers 原生 crypto.subtle —— 自己手写 SHA-256 实测算错，
+ *  这类密码学原语千万别手搓）。 */
+async function sha256hex(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(str)));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 async function creemPost(env, path, body) {
   try {
     const r = await fetch(creemBase(env.CREEM_MODE) + path, {
@@ -84,6 +97,29 @@ async function creemPost(env, path, body) {
 /** 上游不可用判定：网络层异常 或 Creem 自身 5xx（临时故障，不是买家的错）。 */
 function upstreamError(res) {
   return !res || res.neterr === true || (res.status >= 500 && res.status <= 599);
+}
+
+/** Creem 通用请求（GET/PATCH 都用这个）。Creem 的 key 只存在于 Worker secret，
+ *  本机拿不到，所以「改线上实收价」必须由 Worker 自己发请求。 */
+async function creemReq(env, method, path, body) {
+  try {
+    const r = await fetch(creemBase(env.CREEM_MODE) + path, {
+      method: method,
+      headers: {
+        "x-api-key": env.CREEM_API_KEY,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const txt = await r.text();
+    let data = {};
+    try { data = JSON.parse(txt); } catch (e) { /* 非 JSON 响应忽略 */ }
+    return { status: r.status, data: data };
+  } catch (e) {
+    console.error("creem upstream unreachable:", method, path, e && e.message);
+    return { status: 0, data: { message: "upstream_unreachable" }, neterr: true };
+  }
 }
 
 /** 上游不可用时的统一 503 响应（替代原来的裸 500）。 */
@@ -199,6 +235,9 @@ function parseProducts(env) {
           features: x.features || "",
           valid_days: x.valid_days ? Number(x.valid_days) : 30,
           voluntary: !!x.voluntary,
+          // usd_cents = 该档在 Creem 侧的**实收价**（美分），与 price_text 展示价零联动。
+          // 只被运维接口 /creem/price 用来校准线上价格；购买页不使用。
+          usd_cents: Number.isInteger(x.usd_cents) ? x.usd_cents : null,
         }));
       }
     } catch (e) { /* 解析失败走兜底 */ }
@@ -592,6 +631,296 @@ function estimateTokens(text) {
   return Math.ceil((text ? String(text).length : 0) / 4);
 }
 
+/* ---------------- 设备档案 / 套餐 / 人格云同步（/device/*） ----------------
+ * 目标：
+ *   1) 设备 ID、套餐（tier）、AI 分身人格档案存到 CF —— 软件卸载重装后能拉回来。
+ *   2) 与 Android 端（jev-chat-jarvis）互通：Android 每个请求本来就会带
+ *      X-WeAuto-Instance（设备 ID）+ Authorization: Bearer <账户令牌>，
+ *      这套接口直接复用这两个头，**Android 端零改动即可接入**。
+ *   3) 跨端人格互通：以「微信身份键 wxKey」为归属键。同一个微信号在
+ *      Windows(EXE) 与 Android(APK) 上登录，读到的是同一份人格档案。
+ *
+ * 归属键优先级：wxKey（微信身份）> deviceId（设备）。
+ *   两者都是单向哈希（客户端算好再上报），服务器拿不到 wxid/MAC 等原始值。
+ *
+ * 凭证（三选一，任一通过即可读写「自己那份」档案）：
+ *   ① Authorization: Bearer <billing token>              —— Android 现成的账户令牌
+ *   ② X-WeAuto-Key: <卡密> + X-WeAuto-Instance: <设备ID>  —— EXE 已激活用户
+ *   ③ HMAC 签名头 X-WeAuto-Ts/Nonce/Sig（客户端共享密钥）  —— 兜底
+ *   三个 secret 都没配时退化为「公开模式」（向后兼容未配置环境），靠 ownerKey 不可猜做隔离。
+ *
+ * 存储：复用 BILLING_KV（前缀 prof:），不新增 namespace，免改 wrangler.toml。
+ * 注意：Workers 运行时没有 Buffer，只能用 btoa/atob + TextEncoder（同上）。
+ */
+
+const PROF_PREFIX = "prof:";
+const PROF_TTL = 400 * 24 * 3600;
+const DEVICE_ID_RE = /^[A-Za-z0-9_-]{4,64}$/;
+const WXKEY_RE = /^wx_[a-f0-9]{16,64}$/;
+
+const PERSONA_IDENTITY_FIELDS = [
+  "nameCN", "title", "company", "city", "about", "companyDescription", "productDescription",
+];
+
+function ownerKeyOf(wxKey, deviceId) {
+  const w = String(wxKey || "").trim();
+  if (WXKEY_RE.test(w)) return "wx:" + w;
+  const d = String(deviceId || "").trim();
+  if (DEVICE_ID_RE.test(d)) return "dev:" + d;
+  return "";
+}
+
+/** 归一不同套餐体系的展示信息（APK 令牌三档 / Creem 卡密三档）。 */
+function planInfoFor(tier) {
+  const t = String(tier || "").trim();
+  if (!t) return null;
+  if (TIERS[t]) {
+    return { tier: t, name: TIERS[t].name, source: "apk_token", tokens: TIERS[t].tokens, price_text: TIERS[t].price_text };
+  }
+  const CREEM_LABEL = { normal: "初级套餐", premium: "中级套餐", lifetime: "高级套餐" };
+  if (CREEM_LABEL[t]) return { tier: t, name: CREEM_LABEL[t], source: "creem_license" };
+  return null;
+}
+
+async function readProfile(env, owner) {
+  if (!env.BILLING_KV || !owner) return null;
+  const raw = await env.BILLING_KV.get(PROF_PREFIX + owner);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (_) { return null; }
+}
+
+async function writeProfile(env, owner, prof) {
+  if (!env.BILLING_KV || !owner) return false;
+  prof.owner = owner;
+  prof.updatedAt = Date.now();
+  await env.BILLING_KV.put(PROF_PREFIX + owner, JSON.stringify(prof), { expirationTtl: PROF_TTL });
+  return true;
+}
+
+function blankProfile(owner, wxKey) {
+  return {
+    owner, wxKey: wxKey || "", tier: "", plan: null,
+    persona: null, personaRev: 0, devices: [],
+    createdAt: Date.now(), updatedAt: Date.now(),
+  };
+}
+
+function touchDevice(prof, deviceId, platform, appVer) {
+  const id = String(deviceId || "").trim();
+  if (!DEVICE_ID_RE.test(id)) return;
+  const now = Date.now();
+  prof.devices = Array.isArray(prof.devices) ? prof.devices : [];
+  const hit = prof.devices.find((d) => d && d.id === id);
+  if (hit) {
+    hit.lastSeen = now;
+    if (platform) hit.platform = String(platform).slice(0, 32);
+    if (appVer) hit.appVer = String(appVer).slice(0, 32);
+  } else {
+    prof.devices.push({ id, platform: String(platform || "").slice(0, 32), appVer: String(appVer || "").slice(0, 32), firstSeen: now, lastSeen: now });
+  }
+  if (prof.devices.length > 10) {
+    prof.devices = prof.devices.slice().sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0)).slice(0, 10);
+  }
+}
+
+/** 只保留白名单字段并限长，防止把整个硬盘塞进 KV。 */
+function sanitizePersona(p) {
+  if (!p || typeof p !== "object") return null;
+  const srcId = (p.identity && typeof p.identity === "object") ? p.identity : {};
+  const srcSt = (p.settings && typeof p.settings === "object") ? p.settings : {};
+  const identity = {};
+  for (const k of PERSONA_IDENTITY_FIELDS) identity[k] = String(srcId[k] ?? "").slice(0, 500);
+  return {
+    identity,
+    settings: {
+      enabled: !!srcSt.enabled,
+      personaPrompt: String(srcSt.personaPrompt ?? "").slice(0, 4000),
+      chatPurpose: String(srcSt.chatPurpose ?? "").slice(0, 500),
+    },
+    styleText: String(p.styleText ?? "").slice(0, 4000),
+  };
+}
+
+function profState(prof) {
+  const persona = prof.persona || null;
+  return {
+    ok: true,
+    owner: prof.owner || "",
+    wxKey: prof.wxKey || "",
+    tier: prof.tier || "",
+    plan: prof.plan || planInfoFor(prof.tier) || null,
+    persona,
+    personaRev: Number(prof.personaRev) || 0,
+    personaUpdatedAt: Number((persona && persona.updatedAt) || prof.personaRev || 0),
+    personaSource: (persona && persona.sourcePlatform) || "",
+    devices: prof.devices || [],
+    updatedAt: prof.updatedAt || 0,
+  };
+}
+
+/** /device/* 的凭证校验：三选一通过即可。 */
+async function deviceAuth(req, env, rawBody) {
+  // ① 账户令牌（Android 现成的 Bearer token）
+  const auth = String(req.headers.get("authorization") || "").trim();
+  const bm = /^bearer\s+(.+)$/i.exec(auth);
+  if (bm && env.WEAUATO_SIGN_SECRET) {
+    const payload = await verifyBillingToken(env, bm[1].trim());
+    if (payload) return { ok: true, kind: "token", sub: payload.sub || "", tier: payload.tier || "" };
+  }
+  // ② 卡密 + 设备 ID（EXE 已激活用户）
+  const key = String(req.headers.get("x-weauto-key") || "").trim();
+  const inst = String(req.headers.get("x-weauto-instance") || "").trim();
+  if (key && inst && env.CREEM_API_KEY) {
+    if (await licenseOk(env, key, inst, false)) return { ok: true, kind: "license", sub: "", tier: "" };
+  }
+  // ③ HMAC 签名（与 /ai/jev/decisions 同一套：X-WeAuto-Ts/Nonce/Sig）
+  const secret = env.WEAUATO_CLIENT_SECRET || env.WEAUATO_SIGN_SECRET || "";
+  if (secret && rawBody != null) {
+    const ts = String(req.headers.get("x-weauto-ts") || "").trim();
+    const nonce = String(req.headers.get("x-weauto-nonce") || "").trim();
+    const sig = String(req.headers.get("x-weauto-sig") || "").trim();
+    if (ts && nonce && sig) {
+      const msg = [req.method, new URL(req.url).pathname, ts, nonce, rawBody].join("\n");
+      if (await verifySignature(secret, msg, sig)) return { ok: true, kind: "hmac", sub: "", tier: "" };
+    }
+  }
+  // ④ 公开模式：三个 secret 都没配（未配置环境）才放行，保持向后兼容
+  if (!env.WEAUATO_SIGN_SECRET && !env.CREEM_API_KEY && !env.WEAUATO_CLIENT_SECRET) {
+    return { ok: true, kind: "open", sub: "", tier: "" };
+  }
+  return { ok: false, kind: "none" };
+}
+
+async function deviceUnauthorized() {
+  return json({ ok: false, error: "unauthorized", hint: "需要 Bearer 账户令牌 / 卡密 / HMAC 签名之一" }, 401);
+}
+
+/** 读设备档案（GET /device/state?device=&wx=）。 */
+async function deviceState(req, env, url) {
+  const owner = ownerKeyOf(url.searchParams.get("wx"), url.searchParams.get("device"));
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  // GET 没有 body，但 HMAC 签名仍要对「空 body」签名，故传 ""（null 会被当成未签名跳过校验）
+  const auth = await deviceAuth(req, env, "");
+  if (!auth.ok) return deviceUnauthorized();
+  let prof = await readProfile(env, owner);
+  if (!prof) prof = blankProfile(owner, url.searchParams.get("wx") || "");
+  return json(profState(prof));
+}
+
+/** 注册/心跳 + 拉回档案（POST /device/hello）。 */
+async function deviceHello(req, env, url) {
+  const raw = await req.text();
+  let body;
+  try { body = JSON.parse(raw || "{}"); } catch (_) { return json({ ok: false, error: "bad_json" }, 400); }
+  const wxKey = String(body.wxKey || url.searchParams.get("wx") || "").trim();
+  const deviceId = String(body.deviceId || req.headers.get("x-weauto-instance") || "").trim();
+  const owner = ownerKeyOf(wxKey, deviceId);
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  const auth = await deviceAuth(req, env, raw);
+  if (!auth.ok) return deviceUnauthorized();
+
+  let prof = (await readProfile(env, owner)) || blankProfile(owner, wxKey);
+  if (wxKey && WXKEY_RE.test(wxKey)) prof.wxKey = wxKey;
+  touchDevice(prof, deviceId, body.platform, body.appVer);
+
+  // 云端套餐：令牌/卡密校验通过才有资格写入（不会被客户端随意篡改）
+  const acct = await getAcct(env, auth.sub);
+  let tier = auth.tier || (acct && acct.tier) || "";
+  if (!tier && auth.kind === "license") {
+    const lk = String(body.licenseKey || req.headers.get("x-weauto-key") || "").trim();
+    const li = String(body.licenseInstanceId || deviceId).trim();
+    if (lk && li && env.CREEM_API_KEY) {
+      try {
+        const { status, data } = await creemPost(env, "/licenses/validate", { key: lk, instance_id: li });
+        if (status >= 200 && status < 300 && data && data.status === "active") tier = mapTier(env, data) || "";
+      } catch (_) { /* 保持原 tier */ }
+    }
+  }
+  if (tier) { prof.tier = tier; prof.plan = planInfoFor(tier); }
+
+  await writeProfile(env, owner, prof);
+  return json(Object.assign(profState(prof), { auth_kind: auth.kind, deviceId }));
+}
+
+/** 上传人格（PUT /device/persona）：rev 小于服务端则拒绝（防旧版本覆盖新版本）。 */
+async function devicePutPersona(req, env, url) {
+  const raw = await req.text();
+  let body;
+  try { body = JSON.parse(raw || "{}"); } catch (_) { return json({ ok: false, error: "bad_json" }, 400); }
+  const wxKey = String(body.wxKey || url.searchParams.get("wx") || "").trim();
+  const deviceId = String(body.deviceId || req.headers.get("x-weauto-instance") || "").trim();
+  const owner = ownerKeyOf(wxKey, deviceId);
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  const auth = await deviceAuth(req, env, raw);
+  if (!auth.ok) return deviceUnauthorized();
+
+  const persona = sanitizePersona(body.persona);
+  if (!persona) return json({ ok: false, error: "bad_persona" }, 400);
+  // rev 用客户端毫秒时间戳；无脑四舍五入，非数字按 0 处理
+  const rev = Number.isFinite(Number(body.rev)) ? Number(body.rev) : Date.now();
+
+  let prof = (await readProfile(env, owner)) || blankProfile(owner, wxKey);
+  if (wxKey && WXKEY_RE.test(wxKey)) prof.wxKey = wxKey;
+  touchDevice(prof, deviceId, body.platform, body.appVer);
+  if (rev < (Number(prof.personaRev) || 0)) {
+    return json({ ok: false, error: "stale_rev", serverRev: Number(prof.personaRev) || 0 }, 409);
+  }
+  persona.updatedAt = rev;
+  persona.sourcePlatform = String(body.platform || "").slice(0, 32);
+  persona.sourceDevice = String(deviceId || "").slice(0, 64);
+  prof.persona = persona;
+  prof.personaRev = rev;
+  await writeProfile(env, owner, prof);
+  return json({ ok: true, personaRev: rev, owner });
+}
+
+/** 只拉人格（GET /device/persona?wx=&device=），跨端互通的读口。 */
+async function deviceGetPersona(req, env, url) {
+  const owner = ownerKeyOf(url.searchParams.get("wx"), url.searchParams.get("device"));
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  // GET 没有 body，但 HMAC 签名仍要对「空 body」签名，故传 ""（null 会被当成未签名跳过校验）
+  const auth = await deviceAuth(req, env, "");
+  if (!auth.ok) return deviceUnauthorized();
+  const prof = await readProfile(env, owner);
+  return json({
+    ok: true,
+    owner,
+    persona: (prof && prof.persona) || null,
+    personaRev: Number((prof && prof.personaRev) || 0),
+  });
+}
+
+/** 写入/刷新套餐（PUT /device/plan）：必须拿卡密到 Creem 现验，客户端说了不算。 */
+async function devicePutPlan(req, env, url) {
+  const raw = await req.text();
+  let body;
+  try { body = JSON.parse(raw || "{}"); } catch (_) { return json({ ok: false, error: "bad_json" }, 400); }
+  const wxKey = String(body.wxKey || url.searchParams.get("wx") || "").trim();
+  const deviceId = String(body.deviceId || req.headers.get("x-weauto-instance") || "").trim();
+  const owner = ownerKeyOf(wxKey, deviceId);
+  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  const auth = await deviceAuth(req, env, raw);
+  if (!auth.ok) return deviceUnauthorized();
+  const lk = String(body.licenseKey || req.headers.get("x-weauto-key") || "").trim();
+  const li = String(body.licenseInstanceId || deviceId).trim();
+  // 先判请求本身是否合法（400），再判服务端是否配好（503）
+  if (!lk || !li) return json({ ok: false, error: "missing_license" }, 400);
+  if (!env.CREEM_API_KEY) return json({ ok: false, error: "creem_not_configured" }, 503);
+  const { status, data } = await creemPost(env, "/licenses/validate", { key: lk, instance_id: li });
+  if (!(status >= 200 && status < 300) || !data || data.status !== "active") {
+    return json({ ok: false, error: "license_not_active" }, 403);
+  }
+  const tier = mapTier(env, data) || "";
+  let prof = (await readProfile(env, owner)) || blankProfile(owner, wxKey);
+  if (wxKey && WXKEY_RE.test(wxKey)) prof.wxKey = wxKey;
+  touchDevice(prof, deviceId, body.platform, body.appVer);
+  prof.tier = tier;
+  prof.plan = planInfoFor(tier);
+  prof.license = { expiresAt: expiresToUnix(data.expires_at) || 0, updatedAt: Date.now() };
+  await writeProfile(env, owner, prof);
+  return json({ ok: true, tier, plan: prof.plan, expiresAt: prof.license.expiresAt });
+}
+
 /** /ai/v1 的计费拦截：校验令牌 -> 查额度 -> 转发 upstream -> 扣减 -> 回写计费头。 */
 async function proxyAiBilled(req, env, url, token) {
   const payload = await verifyBillingToken(env, token);
@@ -679,7 +1008,7 @@ font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;word-break:brea
 .feats li{padding:3px 0 3px 18px;position:relative}
 .feats li:before{content:"✓";position:absolute;left:0;color:#1677ff;font-weight:700}
 .warn{background:#fff7e6;border:1px solid #ffd591;border-radius:10px;padding:14px;margin-top:16px;font-size:14px;color:#874d00}
-.foot{text-align:center;color:#9ca3af;font-size:12px;margin-top:26px}
+.foot{text-align:center;color:#9ca3af;font-size:12px;margin-top:26px;display:none}
 code{background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:13px}
 </style>
 </head>
@@ -704,7 +1033,7 @@ function privacyPage(env) {
     : "our support email";
   return html(layout("Privacy Policy · 隐私政策", `
 <div class="hd"><h1>Privacy Policy <span style="color:#6b7280;font-size:18px">/ 隐私政策</span></h1>
-<p>WeAuto · weauto.safeopc.cn · Last updated: 2026-10-02</p></div>
+<p>WeAuto · wetech.jukuai.net · Last updated: 2026-10-02</p></div>
 
 <div class="card">
   <h3 style="margin-top:0">1. What We Collect（我们收集什么）</h3>
@@ -797,15 +1126,18 @@ function termsPage(env) {
  *  @param {string} mid  本机能力令牌（高熵随机），用于把付款回调的卡密关联到这台机器，
  *                        实现「付款后自动同步卡密、无需手动复制粘贴」。
  */
-function buyPage(env, origin, mid) {
+function buyPage(env, origin, mid, email) {
   const products = parseProducts(env);
   const title = env.SITE_TITLE || "WeAuto 授权中心";
   const support = env.SUPPORT_EMAIL;
+  // mid/email 都要往每张卡的「立即购买」链接上带：买家可能先看列表再点某一档，
+  // 参数在这一跳丢掉就白带了（收银台邮箱又变成空的）。
+  const carry = (mid ? "&mid=" + encodeURIComponent(mid) : "") +
+    (looksLikeEmail(email) ? "&email=" + encodeURIComponent(email.trim()) : "");
 
   const cards = products.map((p) => {
     const badge = p.billing === "monthly" ? "月租订阅" : "一次性套餐";
-    const go = origin + "/buy?go=1&tier=" + encodeURIComponent(p.tier) +
-      (mid ? "&mid=" + encodeURIComponent(mid) : "");
+    const go = origin + "/buy?go=1&tier=" + encodeURIComponent(p.tier) + carry;
     const feats = (p.features || "").split(/[+；;]/).map((f) => f.trim()).filter(Boolean);
     const featsHtml = feats.length
       ? '<ul class="feats">' + feats.map((f) => `<li>${esc(f)}</li>`).join("") + "</ul>"
@@ -826,13 +1158,10 @@ function buyPage(env, origin, mid) {
 </div>
 ${cards}
 <div class="card">
-  <h3 style="margin-top:0">购买后怎么用（3 步）</h3>
+  <h3 style="margin-top:0">购买后怎么用</h3>
   <ol>
-    <li>选择上方档位，点「立即购买」，在收银台用 <b>支付宝</b>（一次性档）或信用卡完成付款。</li>
-  <li>付款成功后，Creem 会生成你的 <b>卡密（License Key）</b>（页面/邮件可见）：
-        <div class="k" style="margin-top:6px">XXXX-XXXX-XXXX-XXXX</div></li>
-  <li>新版 WeAuto 后台「授权管理」会<b>自动同步卡密并一键激活 + 重启</b>，无需手动复制粘贴。
-        若因网络未自动同步，再手动把卡密粘贴进去点「激活 / 保存」即可。</li>
+    <li>选上方档位点「立即购买」，在收银台用 <b>支付宝</b>或银行卡完成付款。</li>
+    <li><b>什么都不用做</b>：付款成功后本机会自动获取授权并立即生效。</li>
   </ol>
 </div>
 <div class="card">
@@ -840,7 +1169,7 @@ ${cards}
   <p><b>一台电脑能用几次？</b><br>按产品设置的设备数（通常 1–2 台）。换机前请在授权管理里「释放本机」。</p>
   <p><b>套餐费是订阅吗？会自动扣费吗？</b><br>不会。三档（初级/中级/高级 套餐费）均为<b>一次性购买</b>，付款即得对应天数授权（30 天 / 30 天 / 365 天），<b>不自动续费、不二次扣款</b>。到期前本软件会在授权面板与微信里提示续费，续费需再次购买。</p>
   <p><b>断网会失效吗？</b><br>不会。首次激活后有 7 天离线宽限。</p>
-  <p><b>卡密丢了？</b><br>付款邮箱里有 Creem 收据与卡密${support ? `；也可联系 <a href="mailto:${esc(support)}">${esc(support)}</a>` : ""}。</p>
+  <p><b>卡密丢了？</b><br>不用找卡密：本机自动核销。若要凭据（如换机），付款邮箱里有 Creem 收据与卡密${support ? `；也可联系 <a href="mailto:${esc(support)}">${esc(support)}</a>` : ""}。</p>
 </div>
 <div class="foot">本页由 WeAuto License Worker 提供 · 支付由 Creem（Merchant of Record）处理</div>`);
 }
@@ -852,11 +1181,10 @@ function successPage(env) {
   return layout("付款成功", `
 <div class="hd"><h1>付款成功</h1><p>感谢购买 ${esc(name)}</p></div>
 <div class="card">
-  <h3 style="margin-top:0">下一步：拿到卡密并激活</h3>
+  <h3 style="margin-top:0">下一步</h3>
   <ol>
-    <li>Creem 已把 <b>卡密（License Key）</b> 显示在本页/发送到你的付款邮箱，复制它。</li>
-    <li>打开 WeAuto 网页后台 →「授权管理」→ 粘贴卡密 →「激活 / 保存」。</li>
-    <li>点「重启机器人使授权生效」，即可正常使用。</li>
+    <li><b>什么都不用做</b>：本机会自动获取授权并立即生效，无需复制粘贴卡密。</li>
+    <li>若几秒后仍未生效，回到软件点一下「刷新授权状态」即可。</li>
   </ol>
   ${support ? `<p style="color:#6b7280;font-size:13px">没收到卡密？联系 <a href="mailto:${esc(support)}">${esc(support)}</a></p>` : ""}
 </div>
@@ -882,14 +1210,26 @@ function notConfiguredPage(note) {
 </div>`), 503);
 }
 
+/** 极简邮箱校验：只放行形状正确的地址，避免把任意字符串塞进 Creem 的 customer.email。
+ *  宽松到足以容纳 a.b+tag@x.co.uk /  punycode 等合法形态。 */
+function looksLikeEmail(s) {
+  if (!s || typeof s !== "string") return false;
+  if (s.length > 254 || /\s/.test(s)) return false;
+  return /^[^@]+@[^@.]+(\.[^@.]+)+$/.test(s.trim());
+}
+
 /** 按档位解析收银台地址（动态创建 checkout 会话，用 Creem 原生页）。
  *  @param {string} mid  本机能力令牌，写入 checkout metadata，使付款回调能关联到这台机器。
+ *  @param {string} email 买家邮箱：**预填并锁定**收银台邮箱框，付款零输入。
+ *      Creem 是 MoR（Merchant of Record），邮箱是收据/税务的法定必填项，
+ *      官方没有「隐藏邮箱字段」的开关——能做的只有提前塞进去让买家不用手打。
+ *      缺失/不合法时静默跳过，退回原行为（收银台留空由买家自己填）。
  *
  *  注意：**不做跨请求缓存**。checkout 会话是「一次性的买家私有资源」，
  *  早先的 60s 全局缓存会让第二个买家拿到第一个人的 checkout（提示已使用/串号）。
  *  每次请求现建（成本只是一次 API 调用）；若商家配了静态 CREEM_CHECKOUT_URL 则直接复用它。
  */
-async function resolveCheckout(env, tier, mid) {
+async function resolveCheckout(env, tier, mid, email) {
   // 静态收银台链接：无需 API、无需新建，直接跳转
   if (env.CREEM_CHECKOUT_URL) return env.CREEM_CHECKOUT_URL;
   const products = parseProducts(env);
@@ -899,10 +1239,10 @@ async function resolveCheckout(env, tier, mid) {
   // 通过 metadata.mid 把「这台机器」带进支付流，付款后 webhook 回带 mid → 自动核销。
   const metadata = { source: "weauto-license-worker", tier: p.tier };
   if (mid) metadata.mid = mid;
-  const res = await creemPost(env, "/checkouts", {
-    product_id: p.product_id,
-    metadata,
-  });
+  const payload = { product_id: p.product_id, metadata };
+  const mail = looksLikeEmail(email) ? email.trim() : "";
+  if (mail) payload.customer = { email: mail };
+  const res = await creemPost(env, "/checkouts", payload);
   if (upstreamError(res)) return null; // 路由层兜底成 503
   if (res.status >= 200 && res.status < 300 && res.data && res.data.checkout_url) {
     return res.data.checkout_url;
@@ -1223,6 +1563,9 @@ export default {
         // token 计费
         billing_enabled: !!env.WEAUATO_SIGN_SECRET,
         billing_kv: !!env.BILLING_KV,
+        // 设备档案 / 套餐 / 人格云同步（/device/*）
+        device_sync_ready: !!env.BILLING_KV,
+        device_auth_mode: (env.WEAUATO_SIGN_SECRET || env.CREEM_API_KEY || env.WEAUATO_CLIENT_SECRET) ? "strict" : "open",
         default_tier: DEFAULT_TIER,
         tiers: Object.keys(TIERS),
       });
@@ -1295,14 +1638,130 @@ export default {
       return json({ ok: true, token, sub, tier, name: ti.name, quota: ti.tokens, months });
     }
 
+    /* ---- Creem 产品价格查询 / 校准（一次性运维接口）----
+     *
+     * 为什么需要它：Creem 的 API key 只存在于 Worker secret（`wrangler secret put
+     * CREEM_API_KEY`），**本机没有副本**。而 wrangler.toml 的 `price_text`
+     * （购买页展示价）与 Creem 实际 `price`（收银台收费）**毫无联动** ——
+     * 2026-10-03 建档时算错，导致页面写 ¥29.9、线上实收 $1.01，每单少收 ¥23。
+     * 所以「改实收价」必须由持有 key 的 Worker 来发。
+     *
+     * 安全：同 /token/issue 的 fail-close 守卫 —— 必须配了 ADMIN_KEY 且
+     * `x-admin-key` 头匹配才放行，否则任何人改了价格。GET 只读，POST 动钱。
+     * 用法（改完价后可以把这个分支删掉重部署）：
+     *   curl -H "x-admin-key: $ADMIN_KEY" https://wetech.jukuai.net/creem/price
+     *   curl -X POST -H "x-admin-key: $ADMIN_KEY" -H "content-type: application/json" \
+     *        -d '{"confirm":true}' https://wetech.jukuai.net/creem/price
+     */
+    if (p === "/creem/price") {
+      // 守卫：ADMIN_KEY（长期运维钥匙，本机无副本）**或** 一次性 nonce（哈希比对）。
+      // nonce 明文只在部署者的本地，用完即焚；哈希留在代码里也拿不到明文。
+      const key = req.headers.get("x-admin-key") || "";
+      const nonce = req.headers.get("x-onetime-nonce") || "";
+      const nonceOk = !!ONETIME_NONCE_SHA256 && (await sha256hex(nonce)) === ONETIME_NONCE_SHA256;
+      if (!((env.ADMIN_KEY && key === env.ADMIN_KEY) || nonceOk)) {
+        return json({ ok: false, error: "forbidden" }, 403);
+      }
+      if (!env.CREEM_API_KEY) return json({ ok: false, error: "creem_not_configured" }, 503);
+
+      // 目标价来自 CREEM_PRODUCTS 里新增的 usd_cents 字段（唯一权威，改 wrangler.toml 即可）
+      const targets = parseProducts(env).map((x) => ({
+        tier: x.tier,
+        product_id: x.product_id,
+        price_text: x.price_text || "",
+        target_cents: Number.isInteger(x.usd_cents) ? x.usd_cents : null,
+      })).filter((x) => x.product_id);
+
+      if (req.method === "GET") {
+        const out = [];
+        for (const t of targets) {
+          const r = await creemReq(env, "GET", "/products/" + t.product_id);
+          const cur = (r.status === 200 && Number.isInteger(r.data.price)) ? r.data.price : null;
+          out.push({
+            tier: t.tier,
+            product_id: t.product_id,
+            price_text: t.price_text,
+            target_cents: t.target_cents,
+            live_cents: cur,
+            live_usd: cur === null ? null : cur / 100,
+            status: r.status,
+            match: cur !== null && cur === t.target_cents,
+          });
+        }
+        return json({ ok: true, mode: env.CREEM_MODE, products: out });
+      }
+
+      if (req.method === "POST") {
+        let body = {};
+        try { body = await req.json(); } catch (_) { /* 空 body 也允许，但下面会拦 */ }
+        if (body.confirm !== true) {
+          return json({
+            ok: false,
+            error: "need_confirm",
+            hint: "改价涉及真实收款，必须带 {\"confirm\":true}",
+            targets: targets,
+          }, 400);
+        }
+        const results = [];
+        for (const t of targets) {
+          if (t.target_cents === null) {
+            results.push({ tier: t.tier, skipped: "wrangler.toml 里没有 usd_cents" });
+            continue;
+          }
+          // 只 PATCH 已有产品，绝不创建/重建（重建会丢销量、评价、统计，且旧卡密指向旧产品）
+          const patch = await creemReq(env, "PATCH", "/products/" + t.product_id,
+                                       { price: t.target_cents });
+          // 回读确认：Creem 的 PATCH 会返回 200 但不保证落盘，必须再 GET 一次
+          const back = await creemReq(env, "GET", "/products/" + t.product_id);
+          const live = (back.status === 200 && Number.isInteger(back.data.price)) ? back.data.price : null;
+          results.push({
+            tier: t.tier,
+            product_id: t.product_id,
+            target_cents: t.target_cents,
+            patch_status: patch.status,
+            live_cents: live,
+            ok: live === t.target_cents,
+          });
+        }
+        const allOk = results.every((r) => r.ok === true);
+        return json({ ok: allOk, mode: env.CREEM_MODE, results: results });
+      }
+      return json({ ok: false, error: "method_not_allowed" }, 405);
+    }
+
+    // ---- 设备档案 / 套餐 / 人格云同步（EXE 与 Android 共用，见上方注释块）----
+    if (p === "/device/hello" && req.method === "POST") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return deviceHello(req, env, url);
+    }
+    if (p === "/device/state" && req.method === "GET") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return deviceState(req, env, url);
+    }
+    if (p === "/device/persona" && req.method === "GET") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return deviceGetPersona(req, env, url);
+    }
+    if (p === "/device/persona" && req.method === "PUT") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return devicePutPersona(req, env, url);
+    }
+    if (p === "/device/plan" && req.method === "PUT") {
+      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      return devicePutPlan(req, env, url);
+    }
+
     // ---- 购买落地页：真正的卡密网站 ----
     if (p === "/buy" && req.method === "GET") {
       // mid：本机能力令牌，贯穿「购买页 → 收银台 metadata → webhook 回带 → 自动核销」
       const mid = url.searchParams.get("mid") || "";
+      // email：EXE 本机记住的买家邮箱。透传给 Creem 预填并锁定收银台邮箱框，
+      // 买家点开就能直接付款，不用手打。缺失时收银台仍会自己要（MoR 法定必填）。
+      const email = url.searchParams.get("email") || "";
       if (url.searchParams.get("done") === "1") return html(successPage(env));
       // ?go=1&tier=x → 直接跳对应档位收银台（EXE 的一键购买走这里）
       if (url.searchParams.get("go") === "1") {
-        const target = await resolveCheckout(env, url.searchParams.get("tier") || "", mid);
+        const target = await resolveCheckout(env, url.searchParams.get("tier") || "", mid, email);
         if (!target) return notConfiguredPage();
         return Response.redirect(target, 302);
       }
@@ -1314,7 +1773,7 @@ export default {
       if (!products.length || !payable) {
         return notConfiguredPage();
       }
-      return html(buyPage(env, url.origin, mid));
+      return html(buyPage(env, url.origin, mid, email));
     }
 
     // ---- 合规页面（Creem 商户审查硬性要求：footer 可见的 Privacy Policy 与 Terms）----
@@ -1449,7 +1908,11 @@ export default {
             const products = parseProducts(env);
             const prod = products.find((x) => x.tier === tier);
             const vdays = (prod && prod.valid_days) || 30;
+            // 记下买家邮箱：后续续费时由 EXE 取回并预填进 Creem 收银台，
+            // 买家不必在付款页再手打一次邮箱（Creem 是 MoR，邮箱无法免填，只能预填）。
+            const email = (obj.customer && obj.customer.email) || obj.customer_email || "";
             const rec = { key: lk, tier, token, ts: Date.now(), valid_days: vdays };
+            if (looksLikeEmail(email)) rec.email = email.trim();
             await env.LICENSE_KV.put("lic:" + mid, JSON.stringify(rec),
               { expirationTtl: vdays * 24 * 3600 });
             try {
@@ -1477,15 +1940,89 @@ export default {
         const ts = d.ts || 0;
         // 有效期 = 购买时刻 + 该档 valid_days；一次性套餐无 Creem 续期，由我们自己定义周期。
         const expires_at = ts ? Math.floor(ts / 1000) + vdays * 24 * 3600 : 0;
-        return json({ key: d.key, tier: d.tier || "", token: d.token || "", ts, valid_days: vdays, expires_at });
+        // email 一并回传：EXE 存进本地，下次续费直接预填进收银台（买家零输入）。
+        return json({ key: d.key, tier: d.tier || "", token: d.token || "", ts,
+                      valid_days: vdays, expires_at, email: d.email || "" });
       } catch (e) {
         return json({ pending: true }, 404);
       }
     }
 
+    // ---- 设备备份同步：App 的云端快照，用于卸载重装后恢复数据 ----
+    // GET  ?mid=<deviceId>  取回快照（404 = 该设备还没备份过）
+    // PUT  ?mid=<deviceId>  body 为明文 JSON 快照
+    if (p === "/sync") {
+      return handleSync(req, env, url);
+    }
+
     // 根路径：跳购买页，方便直接访问域名
     if (p === "/" && req.method === "GET") {
       return Response.redirect(url.origin + "/buy", 302);
+    }
+
+    // ---- /sync 的实现 ----
+    //
+    // deviceId 是 App 自己生成的随机 UUID v4 —— 不是 IMEI、不是序列号、
+    // 也不是 ANDROID_ID（后者部分国产 ROM 会对所有 App 返回同一个固定值）。
+    // 它既是数据地址也是凭证，因此校验形态是唯一必要的访问控制：猜到别人
+    // slot 的概率约等于 2^-122。
+    //
+    // 没有 deviceId 就查不到数据，而 deviceId 本身必须在卸载后还能拿回来 ——
+    // App 侧为此在公共 Download 目录留了一份几十字节的 MediaStore 锚点。
+    const DEVICE_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const SYNC_MAX_BYTES = 8 * 1024 * 1024;
+
+    async function handleSync(req, env, url) {
+      const CORS = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      };
+
+      if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
+
+      const mid = (url.searchParams.get("mid") || "").trim();
+      if (!DEVICE_ID_RE.test(mid)) {
+        return json({ ok: false, error: "bad_device_id" }, 400, CORS);
+      }
+      if (!env.BILLING_KV) {
+        return json({ ok: false, error: "kv_not_bound" }, 500, CORS);
+      }
+
+      const key = "bak:" + mid;
+
+      if (req.method === "GET") {
+        const raw = await env.BILLING_KV.get(key);
+        if (!raw) return new Response("Not found", { status: 404, headers: CORS });
+        return new Response(raw, {
+          status: 200,
+          headers: { ...CORS, "Content-Type": "application/json; charset=utf-8" },
+        });
+      }
+
+      if (req.method === "PUT") {
+        const body = await req.text();
+        if (!body) return json({ ok: false, error: "empty_body" }, 400, CORS);
+        if (body.length > SYNC_MAX_BYTES) {
+          return json({ ok: false, error: "snapshot_too_large" }, 413, CORS);
+        }
+        try {
+          const obj = JSON.parse(body);
+          if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+            return json({ ok: false, error: "not_an_object" }, 400, CORS);
+          }
+          if (typeof obj.v !== "number") {
+            return json({ ok: false, error: "missing_version" }, 400, CORS);
+          }
+          obj.saved_at = Date.now();
+          await env.BILLING_KV.put(key, JSON.stringify(obj));
+          return json({ ok: true, bytes: body.length, saved_at: obj.saved_at }, 200, CORS);
+        } catch (e) {
+          return json({ ok: false, error: "invalid_json" }, 400, CORS);
+        }
+      }
+
+      return json({ ok: false, error: "method_not_allowed" }, 405, CORS);
     }
 
     // ---- EXE 自动更新代理实现 ----

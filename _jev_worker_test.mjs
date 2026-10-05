@@ -93,7 +93,7 @@ const baseEnv = {
 };
 
 const post = (body, env, headers = {}) =>
-  new Request("https://weauto.safeopc.cn/ai/jev/decisions", {
+  new Request("https://wetech.jukuai.net/ai/jev/decisions", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -177,7 +177,7 @@ const aiEnv = (mockFn) => ({ ...baseEnv, AI: { run: mockFn } });
 {
   const env = aiEnv(async () => ({ choices: [{ message: { content: JSON.stringify({ true_intent: "casual_chat" }) } }] }));
   const res = await M.jevDecisions(
-    new Request("https://weauto.safeopc.cn/ai/jev/decisions", {
+    new Request("https://wetech.jukuai.net/ai/jev/decisions", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ state, questions }),
@@ -214,7 +214,7 @@ const aiEnv = (mockFn) => ({ ...baseEnv, AI: { run: mockFn } });
 {
   const env = aiEnv(async () => ({ response: {} }));
   const res = await M.jevDecisions(
-    new Request("https://weauto.safeopc.cn/ai/jev/decisions", { method: "GET" }),
+    new Request("https://wetech.jukuai.net/ai/jev/decisions", { method: "GET" }),
     env
   );
   ok("GET -> 405", res.status === 405);
@@ -233,7 +233,7 @@ const aiEnv = (mockFn) => ({ ...baseEnv, AI: { run: mockFn } });
   const sign = (bodyStr, ts, nonce) =>
     crypto.createHmac("sha256", SEC).update(Buffer.from("POST\n/ai/jev/decisions\n" + ts + "\n" + nonce + "\n" + bodyStr, "utf8")).digest("hex");
   const bodyStr = JSON.stringify({ state, questions });
-  const url = "https://weauto.safeopc.cn/ai/jev/decisions";
+  const url = "https://wetech.jukuai.net/ai/jev/decisions";
   const mk = (headers, body) => new Request(url, { method: "POST", headers: { "content-type": "application/json", ...headers }, body });
   // 3.9a 无签名 -> 401
   {

@@ -269,31 +269,22 @@
             }
 }
     </style>
+    
     {% include '_modern_ui.html' %}
 </head>
 <body>
     <div class="container">
         <h1>WeAuto 快速上手配置</h1>
-        <form method="post" action="{{ url_for('quick_start') }}">
+        <form method="post" action="{{ url_for('quick_start', embed=1) if is_embed else url_for('quick_start') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            {% if is_embed %}<input type="hidden" name="embed" value="1">{% endif %}
             <h2>1. API 配置</h2>
             <div class="form-group">
-                <label>AI 来源:</label>
-                <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
-                    <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
-                        <input type="radio" id="quick_start_source_worker" name="quick_start_api_source" value="worker" {% if current_api_provider != 'other' %}checked{% endif %}>
-                        Cloudflare Workers AI（推荐，免密钥）
-                    </label>
-                    <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
-                        <input type="radio" id="quick_start_source_custom" name="quick_start_api_source" value="custom" {% if current_api_provider == 'other' %}checked{% endif %}>
-                        自定义大模型 BaseURL + Key
-                    </label>
-                </div>
-                <small id="source_note">官方 AI 由软件方托管，无需自备密钥，购买授权后直接可用。</small>
+                <small>官方 AI 由软件方托管，无需自备密钥，模型按订阅套餐自动匹配；如要用自己的大模型，在下方填写。</small>
             </div>
-            <input type="hidden" id="quick_start_api_provider" name="quick_start_api_provider" value="{{ 'other' if current_api_provider == 'other' else 'weapis' }}">
+            <input type="hidden" id="quick_start_api_provider" name="quick_start_api_provider" value="weapis">
 
-            <div class="form-group" id="custom_base_url_group" style="display: none;">
+            <div class="form-group" id="custom_base_url_group">
                 <label for="quick_start_custom_base_url">自定义 Base URL（OpenAI 兼容地址）:</label>
                 <input type="text" id="quick_start_custom_base_url" name="quick_start_custom_base_url" placeholder="例如: https://api.deepseek.com/v1" value="{{ current_custom_base_url if current_api_provider == 'other' else '' }}">
                 <small>选「自定义大模型」后生效。填了这里，请求就直接发给你填的供应商，不经过软件方网关、不消耗官方 AI 额度。</small>
@@ -337,20 +328,7 @@
             </div>
 
             <h2>3. 功能开关</h2>
-            <div id="online_search_switch_group">
-                <div class="form-group">
-                    <div class="switch-item">
-                        <label for="enable_online_api_switch"><b>联网搜索</b></label>
-                        <div class="switch">
-                            <label>
-                                <input type="checkbox" id="enable_online_api_switch" name="ENABLE_ONLINE_API" {% if config.ENABLE_ONLINE_API %}checked{% endif %}>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <small>允许机器人联网搜索信息以回答问题 (如天气、新闻)。</small>
-                </div>
-            </div>
+            <!-- 联网搜索已作为默认能力恒开（2026-10-05），不再提供开关；如需关闭请编辑 config.py -->
             <div class="form-group">
                 <div class="switch-item">
                     <label for="enable_auto_message_switch"><b>主动消息</b></label>
@@ -365,8 +343,12 @@
             </div>
 
             <div class="button-group">
+                {% if is_embed %}
+                <button type="submit">保存配置</button>
+                {% else %}
                 <button type="submit">保存并进入完整配置页面</button>
                 <a href="{{ url_for('index', skipped='true') }}" class="button-like skip">跳过快速配置</a>
+                {% endif %}
             </div>
         </form>
     </div>
@@ -419,53 +401,36 @@
             // 初始化API Key输入字段
             setupApiKeyInputs();
 
-            const workerRadio = document.getElementById('quick_start_source_worker');
-            const customRadio = document.getElementById('quick_start_source_custom');
             const hiddenProvider = document.getElementById('quick_start_api_provider');
             const customBaseUrlGroup = document.getElementById('custom_base_url_group');
             const customBaseUrlInput = document.getElementById('quick_start_custom_base_url');
             const apiKeyNote = document.getElementById('api_key_note');
             const nonWeapisNote = document.getElementById('non_weapis_note');
-            const onlineSearchSwitchGroup = document.getElementById('online_search_switch_group');
-            const onlineApiSwitch = document.getElementById('enable_online_api_switch');
             const apiKeyInput = document.getElementById('quick_start_api_key');
+            // 联网搜索已默认恒开（2026-10-05），开关及其联动 UI 已删除
+            // workerAI 来源选择已从界面移除（2026-10-06）：官方 AI 默认，填了自有 Base URL 即视为自定义
 
-            function isCustom() { return !!(customRadio && customRadio.checked); }
+            function isCustom() { return !!(customBaseUrlInput && customBaseUrlInput.value.trim()); }
 
             function updateProviderUI() {
                 // 同步隐藏字段，保持后端分支逻辑（weapis / other）不变
                 if (hiddenProvider) hiddenProvider.value = isCustom() ? 'other' : 'weapis';
 
-                if (isCustom()) {
-                    customBaseUrlGroup.style.display = 'block';
-                    customBaseUrlInput.required = true;
-                } else {
-                    customBaseUrlGroup.style.display = 'none';
-                    customBaseUrlInput.required = false;
-                }
-
                 if (!isCustom()) {
-                    apiKeyNote.textContent = '官方 Cloudflare Workers AI 无需自备密钥，这里留空即可；购买授权后直接可用。';
+                    apiKeyNote.textContent = '官方 AI 无需自备密钥，这里留空即可；购买授权后直接可用。';
                     apiKeyNote.style.color = '#666';
                     nonWeapisNote.style.display = 'none';
-                    onlineSearchSwitchGroup.style.display = 'block';
-                    if(onlineApiSwitch) onlineApiSwitch.disabled = false;
                     apiKeyInput.placeholder = "使用官方 AI 时可留空";
                 } else {
                     apiKeyNote.textContent = '请填入你自己大模型的 API Key（如 DeepSeek / 硅基流动 / 火山方舟等）。';
                     apiKeyNote.style.color = '#555';
                     nonWeapisNote.style.display = 'block';
-                    onlineSearchSwitchGroup.style.display = 'none';
-                    if(onlineApiSwitch) {
-                        onlineApiSwitch.checked = false;
-                        onlineApiSwitch.disabled = true;
-                    }
                     apiKeyInput.placeholder = "请输入 API Key";
                 }
             }
 
             updateProviderUI();
-            [workerRadio, customRadio].forEach(r => r && r.addEventListener('change', updateProviderUI));
+            if (customBaseUrlInput) customBaseUrlInput.addEventListener('input', updateProviderUI);
         });
 
         function addEntry() {

@@ -720,6 +720,20 @@ except:
 # 获取登录用户的名字
 ROBOT_WX_NAME = wx.nickname
 
+# 记录当前登录者的「微信身份键」（wxid 的单向哈希，原始 wxid 不落盘、不上传）。
+# 用途：AI 分身人格档案以它为云端归属键 —— 同一个微信号在 Windows(EXE) 与
+# Android(APK) 上登录时，两端算出的键一致，人格即可跨端互通。
+try:
+    import device_id as _device_id
+    _self_wxid = str(getattr(wx, '_wxid', '') or getattr(wx, 'wxid', '') or '')
+    _wx_key = _device_id.save_wx_identity(_self_wxid, ROBOT_WX_NAME) if _self_wxid else ''
+    if _wx_key:
+        logger.info(f"微信身份键已记录（仅哈希，用于人格跨端互通）: {_wx_key}")
+    else:
+        logger.debug("未取到本机微信 wxid，人格档案暂按设备 ID 归属云端")
+except Exception as _wxe:  # noqa: BLE001
+    logger.debug(f"记录微信身份键失败（不影响运行）: {_wxe}")
+
 # 存储用户的计时器和随机等待时间
 user_timers = {}
 user_wait_times = {}
@@ -1175,6 +1189,15 @@ def get_user_prompt(user_id):
                 logger.debug("已将主人风格画像注入 prompt")
         except Exception as _sie:
             logger.debug(f"注入主人风格画像失败（已忽略）: {_sie}")
+    # AI 分身（主人侧）：身份档案 + 人设。启用后对 bot 回复的全部联系人（用户列表）生效
+    try:
+        import persona as _persona
+        _p_inj = _persona.get_injection()
+        if _p_inj:
+            content = content + _p_inj
+            logger.debug("已将 AI 分身人设注入 prompt")
+    except Exception as _pie:
+        logger.debug(f"注入 AI 分身人设失败（已忽略）: {_pie}")
     return content
              
 # 加载聊天上下文

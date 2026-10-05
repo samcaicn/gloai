@@ -166,8 +166,8 @@ check("未熔断时 enabled() == True（出厂自动运行）", jev_guard.enable
 urls = jev_guard._jev_candidate_urls()
 check("候选端点含主域名 wetech.jukuai.net",
       any("wetech.jukuai.net" in u for u in urls), "-> %s" % urls)
-check("候选端点含备用域名 weauto.safeopc.cn",
-      any("weauto.safeopc.cn" in u for u in urls), "-> %s" % urls)
+check("候选端点不再含已删除的备用域名 weauto.safeopc.cn",
+      not any("weauto.safeopc.cn" in u for u in urls), "-> %s" % urls)
 check("端点 path 为 /ai/jev/decisions",
       all(u.endswith("/ai/jev/decisions") for u in urls), "-> %s" % urls)
 

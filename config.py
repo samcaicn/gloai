@@ -31,7 +31,9 @@ LISTEN_LIST = []
 # 在图形界面「Chat 模型配置 → AI 来源」里切换，改这里即可。
 USE_WORKER_AI = 'auto'
 
-DEEPSEEK_API_KEY = 'sk-dummy-placeholder'
+# 出厂留空：留空即视为「未自填 key」，AI 走 Cloudflare Workers AI（见 USE_WORKER_AI='auto'）。
+# 注意：此处不要放任何占位串 —— 界面会把 config 里的值当默认值直接显示给用户。
+DEEPSEEK_API_KEY = ''
 # 默认指向自有 Worker 网关（门禁开启时由 guard 覆盖；门禁关闭时此为直连兜底地址）
 DEEPSEEK_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
 # 主聊天模型：@cf/ 开头 -> Workers AI（Cloudflare，免密钥）；
@@ -56,20 +58,20 @@ MOONSHOT_API_KEY = ''
 MOONSHOT_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
 MOONSHOT_MODEL = 'gpt-4o'
 MOONSHOT_TEMPERATURE = 0.8
-ENABLE_IMAGE_RECOGNITION = True
-ENABLE_EMOJI_RECOGNITION = True
+ENABLE_IMAGE_RECOGNITION = False
+ENABLE_EMOJI_RECOGNITION = False
 
 # 消息队列等待时间
 QUEUE_WAITING_TIME = 7
 
 # 表情包存放目录
 EMOJI_DIR = 'emojis'
-ENABLE_EMOJI_SENDING = True
+ENABLE_EMOJI_SENDING = False
 EMOJI_SENDING_PROBABILITY = 25
 
 # 自动消息配置
 AUTO_MESSAGE = '请你模拟系统设置的角色，在微信上找对方继续刚刚的话题或者询问对方在做什么'
-ENABLE_AUTO_MESSAGE = True
+ENABLE_AUTO_MESSAGE = False
 # 主动聊天白名单：仅本列表内的用户/群会收到「主动发消息」；留空 = 不主动向任何人发消息（最安全默认）
 AUTO_MESSAGE_USER_LIST = []
 # 等待时间
@@ -86,55 +88,60 @@ IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE = False
 AVERAGE_TYPING_SPEED = 0.2
 RANDOM_TYPING_SPEED_MIN = 0.05
 RANDOM_TYPING_SPEED_MAX = 0.1
-SEPARATE_ROW_SYMBOLS = True
+SEPARATE_ROW_SYMBOLS = False
 
 # 记忆功能
 # 采用综合评分公式：0.6*重要度 - 0.4*(存在时间小时数)
 # 示例：
 # 重要度5的旧记忆（存在12小时）得分：0.65 - 0.412 = 3 - 4.8 = -1.8
 # 重要度4的新记忆（存在1小时）得分：0.64 - 0.41 = 2.4 - 0.4 = 2.0 → 保留新记忆
-ENABLE_MEMORY = True
+ENABLE_MEMORY = False
 MEMORY_TEMP_DIR = 'Memory_Temp'
 MAX_MESSAGE_LOG_ENTRIES = 30
 MAX_MEMORY_NUMBER = 50
-UPLOAD_MEMORY_TO_AI = True
+UPLOAD_MEMORY_TO_AI = False
 # 记忆存储方式：True = 保存到单独的JSON文件，False = 保存到prompt文件中
 SAVE_MEMORY_TO_SEPARATE_FILE = True
 CORE_MEMORY_DIR = 'CoreMemory'
 
 # 是否接收全部群聊消息
 ACCEPT_ALL_GROUP_CHAT_MESSAGES = False
-ENABLE_GROUP_AT_REPLY = True
-ENABLE_GROUP_KEYWORD_REPLY = True
+ENABLE_GROUP_AT_REPLY = False
+ENABLE_GROUP_KEYWORD_REPLY = False
 GROUP_KEYWORD_LIST = ['你好', '机器人', '在吗']
 GROUP_CHAT_RESPONSE_PROBABILITY = 100
-GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY = True
+GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY = False
 
 # 配置编辑器设置
 # GUI-only 桌面软件：WebUI 只监听本机（ALLOW_OPEN_PORT=False），由 pywebview 内嵌窗口打开。
-# 出厂不设密码（PASSWORD_IS_VALID=False）→ 首次启动强制进入 /password_setup 让用户自己设，
-# 绝不能出厂就带一个所有人都猜得到的默认口令。
+# 登录密码总开关（出厂默认关闭）：
+#   ENABLE_LOGIN_PASSWORD = False → 不启用密码，启动直接进界面，不会强制走 /password_setup。
+#   ENABLE_LOGIN_PASSWORD = True  → 恢复密码登录（首次会要求先设置密码）。
+# 注意：绝不能出厂就带一个所有人都猜得到的默认口令，所以默认关闭而不是给个默认密码。
 ALLOW_OPEN_PORT = False
-LOGIN_PASSWORD = ''            # 登录密码（由首启 /password_setup 写入，勿在出厂值里预置）
-PASSWORD_IS_VALID = False      # False = 尚未设置密码，login_required 会强制跳转设置页
+ENABLE_LOGIN_PASSWORD = False  # False=默认不启用登录密码（免密直接进界面）；True=启用密码登录
+LOGIN_PASSWORD = ''            # 登录密码（仅在开关开启后由 /password_setup 写入，勿在出厂值里预置）
+PASSWORD_IS_VALID = False      # False = 尚未设置密码；仅当 ENABLE_LOGIN_PASSWORD=True 时才强制跳转设置页
 PORT = 5001
 
 # 文字指令识别开关
 # 开启后，私聊/群聊（满足触发条件）中以“/”开头的指令将被解析并执行
-ENABLE_TEXT_COMMANDS = True
+ENABLE_TEXT_COMMANDS = False
 
 # 定时器/提醒设置
 # 启用提醒功能
-ENABLE_REMINDERS = True
+ENABLE_REMINDERS = False
 # 是否允许在安静时间内发送提醒 (True/False)
 # 如果设置为 False，则在安静时间内安排的提醒将被跳过。
-ALLOW_REMINDERS_IN_QUIET_TIME = True
+ALLOW_REMINDERS_IN_QUIET_TIME = False
 # 是否使用语音通话进行提醒
 # 群聊无法使用语音通话进行提醒
 USE_VOICE_CALL_FOR_REMINDERS = False
 
 # 联网API配置
-ENABLE_ONLINE_API = False
+# 联网搜索已作为默认能力开启（2026-10-05）：密钥留空时自动继承主模型密钥，
+# 配置页已撤掉；需要关闭或换搜索模型的高级用户直接改这里。
+ENABLE_ONLINE_API = True
 ONLINE_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
 ONLINE_MODEL = 'net-gpt-4o-mini'
 ONLINE_API_KEY = ''
@@ -177,7 +184,7 @@ USE_ASSISTANT_FOR_MEMORY_SUMMARY = False
 
 # 敏感词处理配置
 # 开启后遇到敏感词时自动清除Memory_Temp文件和聊天上下文
-ENABLE_SENSITIVE_CONTENT_CLEARING = True
+ENABLE_SENSITIVE_CONTENT_CLEARING = False
 
 # 论坛自定义模型配置（可选）
 ENABLE_FORUM_CUSTOM_MODEL = False
@@ -204,8 +211,21 @@ MAX_SINGLE_MSG_LEN = 800
 #   api.creem.io 的 license 调用。客户端绝不接触 Creem 域名、不持有任何 Creem 密钥。
 # 详见 weauto_license/README.md
 LICENSE_GUARD_ENABLED = False   # 开发期 False；正式发布设 True
-CREEM_WORKER_URL = "https://wetech.jukuai.net"   # 已部署的 Worker（2026-09-28 起主用域名；weauto.safeopc.cn 仍作备用）
+CREEM_WORKER_URL = "https://wetech.jukuai.net"   # 已部署的 Worker（2026-09-28 起唯一对外域名；weauto.safeopc.cn 已删除）
 CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填这里
+# 买家邮箱：只用于「付款页自动填好」，不参与任何鉴权。
+# Creem 是 MoR（Merchant of Record），收银台邮箱是收据/税务的法定必填项、**无法去掉**，
+# 但官方 Checkout API 支持 customer.email 预填并锁定 —— 填一次，之后每次续费都自动带，
+# 买家点开收银台直接付款、零输入。付款成功后由 Worker webhook 回传真实邮箱写入这里
+# （以 Creem 实际收款邮箱为准，不信用户手填），故通常无需手工设置。
+# 隐私：仅保存在本机 config.py，不上传我方任何服务器（只作为参数传给 Worker→Creem）。
+CREEM_BUYER_EMAIL = ""
+
+# 设备档案 / 套餐 / AI 分身人格 的云同步（走同一个 Worker 的 /device/*）。
+# 作用：把设备 ID、套餐档位、AI 分身人格存到 CF —— 换机/卸载重装能拉回来；
+# 并以「微信身份键」为归属键，实现 Windows 端与 Android 端的人格互通。
+# 关掉后软件照常可用（人格只存本机），只是不跨端、换机会丢。
+DEVICE_SYNC_ENABLED = True
 
 
 # ===== Jev 判断式 AI ======================================================

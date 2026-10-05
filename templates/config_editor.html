@@ -170,24 +170,54 @@
             font-weight: 500;
             border-left-color: #4caf50;
         }
-        /* 高级设置折叠按钮 */
-        .advanced-toggle {
-            display: block;
-            width: 100%;
-            text-align: left;
-            padding: 11px 20px;
-            background: #fafafa;
-            border: none;
-            border-top: 1px solid #eee;
-            border-bottom: 1px solid #eee;
-            color: #666;
-            font-size: 14px;
-            cursor: pointer;
+        /* ===== 侧边栏逻辑分组（2026-10-05 信息架构重排） =====
+           取代原先「常用列表 + ⚙高级设置折叠」两层结构：
+           折叠会把主动消息/联网搜索/趣味实验室等业务功能藏起来，改用分组标签表达层级。 */
+        .sidebar-group { padding: 0 10px !important; margin: 0; }
+        /* 内层 ul 归零，避免与主题的 .sidebar ul padding 叠加导致缩进翻倍 */
+        .sidebar-group ul { list-style: none; padding: 0 !important; margin: 0; }
+        .sidebar-group + .sidebar-group { margin-top: 10px; padding-top: 8px !important; border-top: 1px solid var(--border, #f0f0f0); }
+        .sidebar-group-label {
+            padding: 10px 12px 4px 12px;
+            font-size: 11px; font-weight: 700; letter-spacing: .08em;
+            color: var(--text-3, #9e9e9e);
+            display: flex; align-items: center; gap: 6px;
+            user-select: none;
         }
-        .advanced-toggle:hover { background: #f0f0f0; color: #333; }
-        .sidebar-advanced { background: #fcfcfc; }
-        .sidebar-advanced li a { color: #777; font-size: 13.5px; padding: 9px 20px 9px 28px; }
-        .sidebar-advanced li a.active { background-color: #fff3e0; color: #ef6c00; border-left-color: #ff9800; }
+        .sidebar-group.is-secondary li a { font-size: 13.5px !important; padding: 8px 14px !important; }
+        /* 侧栏内按钮（如「导入配置」）与链接同款式 */
+        .sidebar li button {
+            display: block; width: 100%; text-align: left;
+            padding: 11px 20px; margin: 0;
+            background: none; border: 0; border-left: 4px solid transparent;
+            box-shadow: none; border-radius: 0; cursor: pointer;
+            color: #444; font-size: 14.5px; font-family: inherit; line-height: inherit;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .sidebar li button:hover { background-color: #f4f4f4; color: #222; }
+        .sidebar-group.is-secondary li button { font-size: 13.5px !important; padding: 8px 14px !important; }
+        /* 注：原 .sidebar-ext 外链箭头样式已删 —— 2026-10-05 起所有菜单项统一为页内面板，
+           不再有「整页跳转」的外链，无需区分箭头。 */
+
+        /* 头部只保留「Start Bot / 保存配置」两个主操作，业务入口全部收进左侧菜单 */
+
+        /* ===== 面板排版增强 ===== */
+        .panel-lead {
+            display: block; margin: 0 0 16px 0;
+            color: var(--text-2, #666); font-size: 13.5px; line-height: 1.75;
+        }
+        .content-panel > h2 { margin: 0 0 14px 0; padding-bottom: 10px; border-bottom: 1px solid var(--border, #eee); }
+        .form-card {
+            border: 1px solid var(--border, #eee);
+            border-radius: var(--r, 10px);
+            background: var(--surface-2, #fcfcfc);
+            padding: 14px 16px; margin: 14px 0;
+        }
+        .form-card-title {
+            font-size: 14px; font-weight: 600; color: var(--text, #333);
+            margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px;
+        }
+        .form-card .form-group:last-child { margin-bottom: 0; }
 
         /* 区块内高级参数折叠 */
         details.advanced-block {
@@ -232,6 +262,19 @@
         }
         .content-panel.active-panel {
             display: block;
+        }
+
+        /* 内嵌页面面板（快速上手 / AI 分身 / 风格模仿 / 固定转发 / Jev / 命令行 / MCP / 常见问题）：
+           这些页原本是整页跳转 + 各自带「返回配置」按钮，点击行为与其它菜单项不一致。
+           现统一改为在主界面内以 iframe 面板呈现 —— 所有左侧菜单点击 = 切换当前面板。 */
+        .content-panel.ext-panel { padding: 0; overflow: hidden; }
+        .ext-frame {
+            display: block;
+            width: 100%;
+            height: calc(100vh - 210px);
+            min-height: 520px;
+            border: 0;
+            background: var(--surface, #fff);
         }
 
         .peek-content {
@@ -907,7 +950,7 @@
             gap: 10px;
         }
     </style>
-
+    
     <script>
         // WeAuto Worker 网关（已彻底去掉 vg.v1api.cc 第三方节点）
         // EXE 全程只与自有 Worker 通信，由后端 /proxy/weapis/endpoint 返回统一网关。
@@ -1165,77 +1208,50 @@
             document.querySelectorAll('#reminder-list').forEach(container => {
                 container.addEventListener('input', debounce(saveReminders, 500));
             });
-            // 联网搜索模型：服务商下拉已删除（那段 UI 整块 display:none 且无恢复路径），
-            // 模型候选按出厂推荐固定给出，用户仍可用「其它」手填模型名。
-            const onlineModelSelect = document.getElementById('onlineModelSelect');
-            const customOnlineModel = document.getElementById('customOnlineModel');
-            const finalOnlineModel = document.getElementById('finalOnlineModel');
-
-            (function initOnlineModelOptions(){
-                if (!onlineModelSelect) return;
-                const options = [
-                    { value: 'net-gpt-4o-mini', text: 'net-gpt-4o-mini (推荐)' },
-                    { value: 'deepseek-r1-searching', text: 'deepseek-r1-searching' },
-                    { value: 'other', text: '其它' }
-                ];
-                const savedModel = finalOnlineModel.value;
-                onlineModelSelect.innerHTML = '';
-                let modelInOptions = false;
-                options.forEach(opt => {
-                    const el = document.createElement('option');
-                    el.value = opt.value; el.textContent = opt.text;
-                    if (opt.value === savedModel) { el.selected = true; modelInOptions = true; }
-                    onlineModelSelect.appendChild(el);
-                });
-                if (!modelInOptions && savedModel) {
-                    onlineModelSelect.value = 'other';
-                    customOnlineModel.value = savedModel;
-                }
-                finalOnlineModel.value = savedModel;
-            })();
-
-            onlineModelSelect.addEventListener('change', function() {
-                if (this.value === 'other') {
-                    customOnlineModel.style.display = 'block';
-                    finalOnlineModel.value = customOnlineModel.value;
-                } else {
-                    customOnlineModel.style.display = 'none';
-                    finalOnlineModel.value = this.value;
-                }
-            });
-            customOnlineModel.addEventListener('input', () => {
-                finalOnlineModel.value = customOnlineModel.value;
-            });
+            // 联网搜索已默认开启且不再提供配置页（2026-10-05）：
+            // 原联网模型下拉/自定义模型名 JS 随 section-online-search 表单一并删除，
+            // ONLINE_MODEL 等高级字段不再由表单提交，保存时原样保留 config.py 的值。
 
             const customApiUrlInput = document.getElementById('customApiUrl');
-            const customAiGroup = document.getElementById('customAiGroup');
-            const aiSourceNow = document.getElementById('aiSourceNow');
             const modelSelect = document.getElementById('modelSelect');
             const customModelInput = document.getElementById('customModel');
             const finalModelInput = document.getElementById('finalModel');
+            const masterApiKeyInput = document.getElementById('masterApiKey');
+            // 套餐自动匹配的推荐模型（后端按订阅档位算出，避免把 workerAI 选择暴露给用户）
+            const recommendedModel = (modelSelect && modelSelect.dataset.recommended) || '';
 
-            // AI 来源：Workers AI（官方托管）↔ 自定义大模型 BaseURL+Key
-            function aiSourceValue() {
-                const sel = document.querySelector('input[name="USE_WORKER_AI"]:checked');
-                return sel ? sel.value : 'True';
+            // 自动判定 AI 来源：填了自有 Base URL + Key 即视为自定义大模型，否则走官方 AI
+            function isCustomSource() {
+                const url = (customApiUrlInput && customApiUrlInput.value || '').trim();
+                const key = (masterApiKeyInput && masterApiKeyInput.value || '').trim();
+                return !!url && !!key;
             }
-            function isCustomSource() { return aiSourceValue() === 'False'; }
+
+            const OFFICIAL_MODELS = [
+                "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+                "@cf/meta/llama-3.1-8b-instruct",
+                "@cf/qwen/qwen3-235b-a22b-fp8"
+            ];
 
             function updateModelOptions() {
-                let options = [];
                 const currentModelValue = finalModelInput.value;
-
+                let options;
                 if (isCustomSource()) {
-                    // 自定义供应商：模型名自由填写，只给「其它」一项
+                    // 自定义供应商：模型名自由填写
                     options = [ { value: "other", text: "其它（手动填写模型名）" } ];
                 } else {
-                    // 官方 Cloudflare Workers AI
                     options = [
-                        { value: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", text: "Llama 3.3 70B（官方默认，综合最好）" },
-                        { value: "@cf/meta/llama-3.1-8b-instruct", text: "Llama 3.1 8B（更快更省，适合轻量对话）" },
-                        { value: "@cf/qwen/qwen3-235b-a22b-fp8", text: "Qwen3 235B（官方，中文更强）" },
+                        { value: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", text: "Llama 3.3 70B（综合均衡）" },
+                        { value: "@cf/meta/llama-3.1-8b-instruct", text: "Llama 3.1 8B（更快更省）" },
+                        { value: "@cf/qwen/qwen3-235b-a22b-fp8", text: "Qwen3 235B（中文更强）" },
                         { value: "other", text: "其它" }
                     ];
+                }
+
+                // 官方模式且当前是出厂/已知官方模型 → 自动升级为套餐推荐模型
+                let effective = currentModelValue;
+                if (!isCustomSource() && recommendedModel && OFFICIAL_MODELS.includes(currentModelValue)) {
+                    effective = recommendedModel;
                 }
 
                 modelSelect.innerHTML = "";
@@ -1243,45 +1259,27 @@
                 options.forEach(opt => {
                     const optionElem = document.createElement("option");
                     optionElem.value = opt.value;
-                    optionElem.textContent = opt.text;
-                    if (opt.value === currentModelValue) {
+                    let txt = opt.text;
+                    if (!isCustomSource() && opt.value === recommendedModel) txt += "（套餐推荐）";
+                    optionElem.textContent = txt;
+                    if (opt.value === effective) {
                         optionElem.selected = true;
                         modelInOptions = true;
                     }
                     modelSelect.appendChild(optionElem);
                 });
 
-                if (!modelInOptions && currentModelValue) {
+                if (!modelInOptions && effective) {
                     modelSelect.value = 'other';
-                    customModelInput.value = currentModelValue;
+                    customModelInput.value = effective;
                 } else if (modelInOptions && modelSelect.value !== 'other') {
-                     customModelInput.value = '';
+                    customModelInput.value = '';
                 }
 
-
-                finalModelInput.value = currentModelValue;
-                modelSelect.dispatchEvent(new Event('change'));
-            }
-
-            function applyAiSourceUi() {
-                const custom = isCustomSource();
-                if (customAiGroup) customAiGroup.style.display = custom ? '' : 'none';
-                if (aiSourceNow) {
-                    aiSourceNow.textContent = custom ? '自定义大模型（直接连你自己的供应商）' : 'Cloudflare Workers AI（官方托管）';
-                }
-                updateModelOptions();
-                if (modelSelect.value === 'other') {
-                    customModelInput.style.display = 'block';
-                } else {
-                    customModelInput.style.display = 'none';
-                }
                 finalModelInput.value = (modelSelect.value === 'other') ? customModelInput.value : modelSelect.value;
             }
 
-            applyAiSourceUi();
-            document.querySelectorAll('input[name="USE_WORKER_AI"]').forEach(r => {
-                r.addEventListener('change', applyAiSourceUi);
-            });
+            updateModelOptions();
             modelSelect.addEventListener('change', function() {
                 if (this.value === 'other') {
                     customModelInput.style.display = 'block';
@@ -1294,6 +1292,9 @@
             customModelInput.addEventListener('input', function() {
                 finalModelInput.value = this.value;
             });
+            // 自定义 Base URL / Key 变化时刷新模型选项（官方 ↔ 自定义 切换）
+            if (customApiUrlInput) customApiUrlInput.addEventListener('input', updateModelOptions);
+            if (masterApiKeyInput) masterApiKeyInput.addEventListener('input', updateModelOptions);
 
 
             // 识图模型：服务商下拉已删除（同上），候选固定给出 + 保留「其它」手填。
@@ -1880,6 +1881,8 @@
                 });
             }
 
+            // 头部「更多」下拉已删除：开发者/运维入口并入左侧菜单第 ⑤ 组
+
             const sidebarLinks = document.querySelectorAll('.sidebar a');
             const contentPanels = document.querySelectorAll('.content-area .content-panel');
             const mobileMenuToggle = document.getElementById('mobileMenuToggle');
@@ -1927,6 +1930,12 @@
                     panel.classList.remove('active-panel');
                     if (panel.id === targetId) {
                         panel.classList.add('active-panel');
+                        // 内嵌页面面板：首次激活时才把 data-src 填进 src（懒加载），
+                        // 避免一进主界面就把 8 个功能页全部请求一遍。
+                        const frame = panel.querySelector('iframe[data-src]:not([src])');
+                        if (frame) {
+                            frame.setAttribute('src', frame.getAttribute('data-src'));
+                        }
                     }
                 });
 
@@ -1966,9 +1975,9 @@
 
             sidebarLinks.forEach(link => {
                 link.addEventListener('click', function (e) {
-                    e.preventDefault();
                     const targetId = this.dataset.target;
-                    if (!targetId) return; // 一键检测报错等无目标链接直接返回
+                    if (!targetId) return; // 无 data-target 的外链（快速上手/常见问题等）走默认跳转
+                    e.preventDefault();
                     activatePanel(targetId);
                     localStorage.setItem('activeConfigTab', targetId);
 
@@ -2006,9 +2015,11 @@
                 const userListTabTarget = 'section-user-list';
                 if (document.getElementById(userListTabTarget) && document.querySelector(`.sidebar a[data-target="${userListTabTarget}"]`)) {
                     initialTab = userListTabTarget;
-                } else {
-                    initialTab = sidebarLinks.length > 0 ? sidebarLinks[0].dataset.target : null;
-                }
+            } else {
+                // 首个带 data-target 的链接（所有菜单项现均为页内面板）
+                const firstPanelLink = Array.from(sidebarLinks).find(a => a.dataset.target);
+                initialTab = firstPanelLink ? firstPanelLink.dataset.target : null;
+            }
             }
             
             if (initialTab) {
@@ -3434,63 +3445,82 @@
     <button id="mobileMenuToggle">☰</button> 
 
     <div class="header-bar">
-        <div class="header-title"><h1>WeAuto配置编辑器 v3.25.1</h1></div>
+        <div class="header-title"><h1>WeAuto配置编辑器 v1.1</h1></div>
         <div class="buttons">
+            <!-- 头部精简：只留两个主操作；快速上手/AI 分身/风格模仿/固定转发/帮助文档
+                 与开发者工具（Jev/命令行/MCP/导入配置）已全部并入左侧菜单 -->
             <button id="botButton" class="nav-button">Start Bot</button>
-            <button type="submit" form="configForm" id="saveConfigButton" class="nav-button" style="background-color: #4CAF50;">保存配置</button>
-                        <a href="{{ url_for('quick_start') }}" class="nav-button" style="background-color: #ff9800;">快速上手</a>
-                        <a href="{{ url_for('style_lab') }}" class="nav-button">风格模仿</a>
-                        <a href="{{ url_for('forward_page') }}" class="nav-button">固定转发</a>
-                        <button type="button" id="importButton" class="nav-button" style="background-color: #2196F3;">导入配置</button>
-            <a href="{{ url_for('cli_page') }}" class="nav-button">命令行</a>
-            <a href="{{ url_for('mcp_page') }}" class="nav-button">MCP 接入</a>
-            <a href="{{ url_for('jev_page') }}" class="nav-button">Jev 状态</a>
-            <a href="{{ url_for('help_page') }}" class="nav-button" style="background-color: #03A9F4;">帮助文档</a>
+            <button type="submit" form="configForm" id="saveConfigButton" class="nav-button">保存配置</button>
         </div>
     </div>
     <div id="sidebarOverlay"></div>
 
     <div class="main-container">
         <nav class="sidebar">
-            <ul class="sidebar-common">
-                <li><a href="#" data-target="section-user-list">用户列表</a></li>
-                <li><a href="#" data-target="section-prompt-management">Prompt管理</a></li>
-                <li><a href="#" data-target="section-chat-model">Chat 模型配置</a></li>
-                <li><a href="#" data-target="section-image-recognition">图片/表情包识别</a></li>
-                <li><a href="#" data-target="section-group-chat">群聊消息接收</a></li>
-                <li><a href="#" data-target="section-memory">记忆管理</a></li>
-                <li><a href="#" data-target="section-reminders">定时器与提醒</a></li>
-                <li><a href="#" data-target="section-logs">程序运行日志</a></li>
-                <li><a href="#" data-target="section-license">授权管理</a></li>
-            </ul>
-            <button type="button" id="toggleAdvancedSidebar" class="advanced-toggle">⚙ 高级设置 ▾</button>
-            <ul class="sidebar-advanced" id="sidebarAdvanced" style="display:none;">
-                <li><a href="#" data-target="section-active-emoji">主动表情包配置</a></li>
-                <li><a href="#" data-target="section-online-search">联网搜索配置</a></li>
-                <li><a href="#" data-target="section-active-message">主动消息配置</a></li>
-                <li><a href="#" data-target="section-text-commands">指令设置</a></li>
-                <li><a href="#" data-target="section-reply-interval">回复间隔配置</a></li>
-                <li><a href="#" data-target="section-fun-lab">趣味实验室</a></li>
-                <li><a href="#" data-target="section-scheduled-restart">定时重启Bot配置</a></li>
-                <li><a href="#" data-target="section-web-editor">访问与密码</a></li>
-                <li><a href="{{ url_for('help_page') }}">❓ 常见问题</a></li>
-            </ul>
-            <script>
-                (function(){
-                    var btn = document.getElementById('toggleAdvancedSidebar');
-                    var adv = document.getElementById('sidebarAdvanced');
-                    if (btn && adv) {
-                        btn.addEventListener('click', function(){
-                            var hidden = adv.style.display === 'none';
-                            adv.style.display = hidden ? 'block' : 'none';
-                            btn.textContent = hidden ? '⚙ 高级设置 ▴' : '⚙ 高级设置 ▾';
-                        });
-                    }
-                    // 注：原「🔧 一键检测报错」链接已删。两个原因让它在发行版里必然无效：
-                    //   1) 它 fetch 的是纯 HTML 文本，结果只 console.log —— GUI(noconsole) 下用户看不到；
-                    //   2) 它依赖同目录的「一键检测.bat」，而该文件没有打进 EXE，os.path.exists 恒为 False。
-                })();
-            </script>
+            <!-- 分组 1：让 AI 正常工作所需的核心配置 -->
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">① 让 AI 开始工作</div>
+                <ul>
+                    <li><a href="#" data-target="section-ext-quickstart">快速上手</a></li>
+                    <li><a href="#" data-target="section-user-list">用户与监听</a></li>
+                    <li><a href="#" data-target="section-prompt-management">AI 人设（Prompt）</a></li>
+                    <li><a href="#" data-target="section-chat-model">AI 模型</a></li>
+                    <li><a href="#" data-target="section-image-recognition">图片 / 表情包识别</a></li>
+                </ul>
+            </div>
+
+            <!-- 分组 2：AI 怎么说话、对谁说话（联网搜索已默认开启，无需配置页） -->
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">② 聊天表现</div>
+                <ul>
+                    <li><a href="#" data-target="section-group-chat">群聊回复规则</a></li>
+                    <li><a href="#" data-target="section-reply-style">回复风格与节奏</a></li>
+                    <li><a href="#" data-target="section-memory">记忆管理</a></li>
+                    <li><a href="#" data-target="section-text-commands">聊天指令</a></li>
+                </ul>
+            </div>
+
+            <!-- 分组 3：业务特色功能页（原顶部按钮迁入） -->
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">③ 特色功能</div>
+                <ul>
+                    <li><a href="#" data-target="section-ext-avatar">AI 分身</a></li>
+                    <li><a href="#" data-target="section-ext-stylelab">风格模仿</a></li>
+                    <li><a href="#" data-target="section-ext-forward">固定转发</a></li>
+                </ul>
+            </div>
+
+            <!-- 分组 4：AI 主动做的事 -->
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">④ 主动能力</div>
+                <ul>
+                    <li><a href="#" data-target="section-active-message">主动消息</a></li>
+                    <li><a href="#" data-target="section-reminders">定时提醒</a></li>
+                    <li><a href="#" data-target="section-fun-lab">趣味实验室</a></li>
+                </ul>
+            </div>
+
+            <!-- 分组 5：系统、授权、排障与开发者工具（低频） -->
+            <div class="sidebar-group is-secondary">
+                <div class="sidebar-group-label">⑤ 系统与工具</div>
+                <ul>
+                    <li><a href="#" data-target="section-license">授权管理</a></li>
+                    <li><a href="#" data-target="section-logs">运行日志</a></li>
+                    <li><a href="#" data-target="section-web-editor">访问与密码</a></li>
+                    <li><a href="#" data-target="section-ext-jev">Jev 对话判断</a></li>
+                    <li><a href="#" data-target="section-ext-cli">命令行</a></li>
+                    <li><a href="#" data-target="section-ext-mcp">MCP 接入</a></li>
+                    <li><button type="button" id="importButton">导入配置</button></li>
+                    <li><a href="#" data-target="section-ext-help">❓ 常见问题</a></li>
+                </ul>
+            </div>
+            <!-- 注：原「🔧 一键检测报错」与「⚙ 高级设置」折叠已删。
+                 前者在发行版必然无效（结果只 console.log，GUI 下看不到；且依赖未打进 EXE 的 .bat）；
+                 后者把主动消息/趣味实验室等业务功能藏进了默认折叠区，改用分组标签表达层级。
+                 2026-10-05 二次精简：顶部按钮全部并入左侧菜单；联网搜索默认开启并撤掉配置页。
+                 2026-10-05 三次精简：所有菜单项（含快速上手/AI分身/风格模仿/固定转发/Jev/命令行/MCP/常见问题）
+                 统一为「页内面板切换」——原先这些是整页跳转 + 各自带「返回配置」按钮，点击行为不一致；
+                 现改为 iframe 内嵌面板（?embed=1 隐藏子页独立页头），左侧任意点击都只是切换当前面板。 -->
         </nav>
         
 
@@ -3498,7 +3528,8 @@
             <form method="post" id="configForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div id="section-user-list" class="content-panel">
-                    <h2>用户列表</h2>
+                    <h2>用户与监听</h2>
+                    <small class="panel-lead">添加要让 AI 自动回复的好友或群，并为每个人指定不同的人设（Prompt）。</small>
                     <div class="form-group">
                         <label>微信昵称/备注与对应Prompt配置:</label>
                         <div id="listen-list">
@@ -3563,7 +3594,8 @@
                 </div>
 
                 <div id="section-fun-lab" class="content-panel">
-                    <h2>👀偷看他 - 角色趣味论坛</h2>
+                    <h2>趣味实验室 · 角色论坛</h2>
+                    <small class="panel-lead">娱乐功能：让多个 AI 角色自动发帖、互相评论，生成一个虚拟论坛。不影响正常聊天。</small>
                     <div class="peek-section">
                         <h4>📱 选择论坛角色</h4>
                         <div class="forum-selector">
@@ -3640,7 +3672,8 @@
                 </div>
 
                 <div id="section-prompt-management" class="content-panel">
-                    <h2>Prompt管理</h2>
+                    <h2>AI 人设（Prompt）</h2>
+                    <small class="panel-lead">人设决定了 AI 的性格与说话方式。在这里新建或编辑人设文件，再到「用户与监听」里分配给人。</small>
                     <div id="prompt-list-view">
                         <a href="#" class="nav-button" id="createPromptBtn">新建Prompt</a>
                         <!-- 在线角色库外部链接已按需求移除 -->
@@ -3704,34 +3737,23 @@
                 </div>
 
                 <div id="section-chat-model" class="content-panel">
-                    <h2>Chat 模型配置</h2>
-                    <div class="form-group">
-                        <label>AI 来源:</label>
-                        <div class="switch-item" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
-                            <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
-                                <input type="radio" name="USE_WORKER_AI" value="True"
-                                    {% if ai_source != 'custom' %}checked{% endif %} style="width:auto">
-                                Cloudflare Workers AI（推荐）
-                            </label>
-                            <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
-                                <input type="radio" name="USE_WORKER_AI" value="False"
-                                    {% if ai_source == 'custom' %}checked{% endif %} style="width:auto">
-                                自定义大模型 BaseURL + Key
-                            </label>
-                        </div>
-                        <small id="aiSourceHint">
-                            当前使用 <b id="aiSourceNow">Cloudflare Workers AI</b>。官方 AI 由软件方托管，无需自备密钥，订阅后直接可用。
-                        </small>
+                    <h2>AI 模型</h2>
+                    <small class="panel-lead">回复由官方 AI 生成，模型大小按你的订阅套餐自动匹配，无需手动选择。需要用自己的大模型时可展开下方选项。</small>
+                    <div class="form-group" id="tierModelNote">
+                        <small>当前套餐：<b>{{ license_tier or '未订阅（默认模型）' }}</b> · 自动匹配模型：<b id="recommendedModelName">{{ recommended_model }}</b></small>
                     </div>
-                    <div class="form-group" id="customAiGroup" style="{% if ai_source == 'custom' %}{% else %}display:none;{% endif %}">
-                        <label>自定义 Base URL（OpenAI 兼容地址，如 https://api.deepseek.com/v1）:</label>
-                        <input type="text" id="customApiUrl" name="DEEPSEEK_BASE_URL" value="{{ config.DEEPSEEK_BASE_URL }}"
-                            placeholder="https://api.example.com/v1">
-                        <small>选择「自定义大模型」后生效。填这里之后，请求直接发给你填的供应商，不经过软件方网关、不消耗官方 AI 额度。</small>
+                    <div class="form-group" id="customAiGroup">
+                        <details>
+                            <summary>使用自己的大模型（可选，高级）</summary>
+                            <label>自定义 Base URL（OpenAI 兼容地址，如 https://api.deepseek.com/v1）:</label>
+                            <input type="text" id="customApiUrl" name="DEEPSEEK_BASE_URL" value="{{ config.DEEPSEEK_BASE_URL }}"
+                                placeholder="https://api.example.com/v1">
+                            <small>填入后，请求直接发给你填的供应商，不经过软件方网关、不消耗官方 AI 额度；同时模型选择将切换为自由填写。</small>
+                        </details>
                     </div>
                     <div class="form-group">
-                        <label>模型选择: (官方 AI 建议用 Workers AI 模型；自定义供应商填对应模型名)</label>
-                        <select id="modelSelect" name="temp_MODEL" title="聊天模型选择">
+                        <label>模型选择: (由套餐自动匹配，一般无需改动)</label>
+                        <select id="modelSelect" name="temp_MODEL" title="聊天模型选择" data-recommended="{{ recommended_model }}">
                         </select>
                         <input type="text" id="customModel" placeholder="请输入自定义模型名称" class="custom-input" value="{{ config.MODEL if config.MODEL not in popular_models else '' }}">
                         <input type="hidden" id="finalModel" name="MODEL" value="{{ config.MODEL }}">
@@ -3822,7 +3844,8 @@
                 </div>
 
                 <div id="section-image-recognition" class="content-panel">
-                    <h2>图片/表情包识别配置</h2>
+                    <h2>图片 / 表情包识别</h2>
+                    <small class="panel-lead">开启后，AI 能看懂对方发的图片和表情包并作出回应。</small>
                     <div class="form-group">
                         <div class="switch-container">
                             <div class="switch-item">
@@ -3861,68 +3884,21 @@
                     </details>
                 </div>
 
-                <div id="section-online-search" class="content-panel">
-                    <h2>联网搜索配置</h2>
-                    <div style="margin-bottom: 10px; font-style: italic; color: #555;"><small>注意：此功能为实验性功能，AI搜索结果可能不准确。</small></div>
-                    <div class="form-group">
-                        <div class="switch-container">
-                            <div class="switch-item">
-                                <label>启用联网搜索功能</label>
-                                <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_ONLINE_API" {% if config.ENABLE_ONLINE_API %}checked{% endif %}><span class="slider round"></span></label></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- 同 forum：服务商下拉整块 display:none 无恢复路径，配套 JS 已删，只留 hidden -->
-                    <input type="hidden" id="finalOnlineApiUrl" name="ONLINE_BASE_URL" value="{{ config.ONLINE_BASE_URL }}">
-                    <div class="form-group">
-                        <label>联网搜索模型：</label>
-                        <select id="onlineModelSelect" name="temp_ONLINE_MODEL" title="联网搜索模型"></select>
-                        <input type="text" id="customOnlineModel" class="custom-input" placeholder="请输入自定义模型名称 (请使用带联网功能的模型)" {% if config.ONLINE_MODEL not in ['deepseek-r1-searching','net-gpt-4o-mini'] %} value="{{ config.ONLINE_MODEL }}" style="display:block;" {% endif %}>
-                        <input type="hidden" id="finalOnlineModel" name="ONLINE_MODEL" value="{{ config.ONLINE_MODEL }}">
-                    </div>
-                    <div class="form-group separate-key-field">
-                        <label>联网搜索专用密钥（留空则共用主密钥）:</label>
-                        <input type="text" id="onlineKey" placeholder="sk-xxxxxxxxxx" name="ONLINE_API_KEY" value="{{ config.ONLINE_API_KEY }}" class="api-key-input">
-                        <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in config.ONLINE_API_KEY else "" }}</small>
-                    </div>
-                    <div class="form-group">
-                        <label>联网API温度 (0-1):</label>
-                        <input type="number" step="0.1" name="ONLINE_API_TEMPERATURE" value="{{ config.ONLINE_API_TEMPERATURE }}">
-                        <small>温度越高，ai思维越发散，但过高可能导致胡言乱语。</small>
-                    </div>
-                    <div class="form-group">
-                        <label>联网API回复最大Token:</label>
-                        <input type="number" step="100" name="ONLINE_API_MAX_TOKEN" value="{{ config.ONLINE_API_MAX_TOKEN }}">
-                    </div>
-                    <div class="form-group">
-                        <label>触发联网请求的提示词:</label>
-                        <input type="text" placeholder="触发联网请求的提示词" name="SEARCH_DETECTION_PROMPT" value="{{ config.SEARCH_DETECTION_PROMPT }}">
-                        <small>此处填你希望AI查询哪些信息，比如天气、新闻、歌词...</small>
-                    </div>
-                    <div class="form-group">
-                        <label>联网API固定提示词 (可选):</label>
-                        <input type="text" placeholder="联网API固定提示词" name="ONLINE_FIXED_PROMPT" value="{{ config.ONLINE_FIXED_PROMPT }}">
-                        <small>填写后，每次联网搜索请求将自动附加此提示词。例如若您希望AI回复所在地天气，可在此处填写您的所在地信息。示例：当前所在地为上海浦东区...</small>
-                    </div>
+                <!-- 联网搜索已作为默认能力开启（2026-10-05），不再提供配置页：
+                     表单用 hidden 字段保证保存时恒为开启；模型/密钥/温度等高级字段
+                     不再从表单提交，保存逻辑会原样保留 config.py 中的现有值。
+                     密钥留空时由 bot._resolve_api_opts 自动继承主模型密钥。
+                     需要关闭或换模型的高级用户可直接编辑 config.py。 -->
+                <div id="section-online-search" class="content-panel" style="display:none;">
+                    <input type="hidden" name="ENABLE_ONLINE_API" value="true">
                 </div>
 
-                <div id="section-active-emoji" class="content-panel">
-                    <h2>主动表情包配置</h2>
-                    <div class="form-group">
-                         <div class="switch-item">
-                            <label>启用主动表情包功能</label>
-                            <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_EMOJI_SENDING" {% if config.ENABLE_EMOJI_SENDING %}checked{% endif %}><span class="slider round"></span></label></div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>主动表情包触发概率(0-100):</label>
-                        <input type="number" step="1" name="EMOJI_SENDING_PROBABILITY" value="{{ config.EMOJI_SENDING_PROBABILITY }}">
-                    </div>
-                    <input type="hidden" name="EMOJI_DIR" value="{{ config.EMOJI_DIR }}">
-                </div>
+                <!-- 主动表情包已并入「回复风格与节奏」（见 section-reply-style），字段保留：
+                     ENABLE_EMOJI_SENDING / EMOJI_SENDING_PROBABILITY / EMOJI_DIR -->
 
                 <div id="section-group-chat" class="content-panel">
-                    <h2>群聊消息接收配置</h2>
+                    <h2>群聊回复规则</h2>
+                    <small class="panel-lead">决定 AI 在群里什么时候开口。默认只在被 @ 或命中关键词时回复，避免刷屏打扰群友。</small>
                     <div class="form-group">
                         <label>群聊消息处理模式:</label>
                         <select name="ACCEPT_ALL_GROUP_CHAT_MESSAGES" id="acceptAllGroupMessagesSelect" title="群聊消息处理模式">
@@ -3976,35 +3952,65 @@
                     </details>
                 </div>
 
-                <div id="section-reply-interval" class="content-panel">
-                    <h2>回复间隔配置</h2>
-                    <div class="form-group">
-                        <label>消息间隔时间 = 字数 * (平均时间 + 随机时间)</label>
-                        <label>平均打字速度 (秒/字):</label>
-                        <input type="number" step="0.01" name="AVERAGE_TYPING_SPEED" value="{{ config.AVERAGE_TYPING_SPEED }}">
-                        <label>随机打字速度 (秒/字)：</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" step="0.01" name="RANDOM_TYPING_SPEED_MIN" value="{{ config.RANDOM_TYPING_SPEED_MIN }}" style="flex:1;">
-                            <span style="align-self:center;">至</span>
-                            <input type="number" step="0.01" name="RANDOM_TYPING_SPEED_MAX" value="{{ config.RANDOM_TYPING_SPEED_MAX }}" style="flex:1;">
+                <!-- 原「回复间隔配置」+「主动表情包配置」合并为本面板：两者都是「AI 怎么把话说出来」，
+                     拆成两个菜单项只会让买家在两个地方改同一件事。字段一个都没删。 -->
+                <div id="section-reply-style" class="content-panel">
+                    <h2>回复风格与节奏</h2>
+                    <small class="panel-lead">控制 AI 回复的节奏与形式，让它更像真人在打字。数值越小回复越快，但过于机械；建议保持默认。</small>
+
+                    <div class="form-card">
+                        <div class="form-card-title">⌨️ 打字节奏</div>
+                        <div class="form-group">
+                            <label>平均打字速度 (秒/字)：
+                                <small style="font-weight:normal;color:#888;">消息间隔 = 字数 × (平均时间 + 随机时间)</small>
+                            </label>
+                            <input type="number" step="0.01" name="AVERAGE_TYPING_SPEED" value="{{ config.AVERAGE_TYPING_SPEED }}">
+                        </div>
+                        <div class="form-group">
+                            <label>随机打字速度 (秒/字)：</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="number" step="0.01" name="RANDOM_TYPING_SPEED_MIN" value="{{ config.RANDOM_TYPING_SPEED_MIN }}" style="flex:1;">
+                                <span style="align-self:center;">至</span>
+                                <input type="number" step="0.01" name="RANDOM_TYPING_SPEED_MAX" value="{{ config.RANDOM_TYPING_SPEED_MAX }}" style="flex:1;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>消息队列等待时间（秒，建议 5-10）：</label>
+                            <input type="number" step="1" name="QUEUE_WAITING_TIME" value="{{ config.QUEUE_WAITING_TIME }}">
+                            <small>收到消息后先等一会儿再回复，避免秒回显得像机器人。</small>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>消息队列等待时间 (建议5-10秒):</label>
-                        <input type="number" step="1" name="QUEUE_WAITING_TIME" value="{{ config.QUEUE_WAITING_TIME }}">
-                    </div>
-                    <div class="form-group">
-                         <div class="switch-item">
-                            <label>以换行符分隔消息</label>
-                            <div class="switch"><label class="switch-label"><input type="checkbox" name="SEPARATE_ROW_SYMBOLS" {% if config.SEPARATE_ROW_SYMBOLS %}checked{% endif %}><span class="slider round"></span></label></div>
+
+                    <div class="form-card">
+                        <div class="form-card-title">😊 主动发送表情包</div>
+                        <div class="form-group">
+                            <div class="switch-item">
+                                <label>启用主动表情包功能</label>
+                                <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_EMOJI_SENDING" {% if config.ENABLE_EMOJI_SENDING %}checked{% endif %}><span class="slider round"></span></label></div>
+                            </div>
                         </div>
-                        <small>开启后，消息将同时使用换行符和反斜线（\）分隔；关闭时，仅使用反斜线（\）分隔。</small>
+                        <div class="form-group">
+                            <label>主动表情包触发概率 (0-100)：</label>
+                            <input type="number" step="1" name="EMOJI_SENDING_PROBABILITY" value="{{ config.EMOJI_SENDING_PROBABILITY }}">
+                        </div>
+                        <input type="hidden" name="EMOJI_DIR" value="{{ config.EMOJI_DIR }}">
+                    </div>
+
+                    <div class="form-card">
+                        <div class="form-card-title">📨 消息拆分方式</div>
+                        <div class="form-group">
+                            <div class="switch-item">
+                                <label>以换行符分隔消息</label>
+                                <div class="switch"><label class="switch-label"><input type="checkbox" name="SEPARATE_ROW_SYMBOLS" {% if config.SEPARATE_ROW_SYMBOLS %}checked{% endif %}><span class="slider round"></span></label></div>
+                            </div>
+                            <small>开启后，消息将同时使用换行符和反斜线（\）分隔；关闭时，仅使用反斜线（\）分隔。</small>
+                        </div>
                     </div>
                 </div>
 
                 <div id="section-memory" class="content-panel">
                     <h2>记忆管理</h2>
-                    <small>这里控制 AI 能记住多少关于你和好友的对话信息。绝大多数用户保持默认即可，无需改动。</small>
+                    <small class="panel-lead">这里控制 AI 能记住多少关于你和好友的对话信息。绝大多数用户保持默认即可，无需改动。</small>
 
                     <div class="form-group">
                         <label>AI 记忆深度（对话轮数）</label>
@@ -4048,12 +4054,8 @@
                             </div>
                             <small>关闭后 AI 不会读取任何长期记忆（仅影响长期记忆，不影响上方"记忆深度"）。</small>
                         </div>
-                        <div class="form-group">
-                            <div class="switch-item">
-                                <label>记忆独立存档（不写入人设文件）</label>
-                                <div class="switch"><label class="switch-label"><input type="checkbox" name="SAVE_MEMORY_TO_SEPARATE_FILE" {% if config.SAVE_MEMORY_TO_SEPARATE_FILE %}checked{% endif %}><span class="slider round"></span></label></div>
-                            </div>
-                        </div>
+                        <!-- 记忆独立存档（SAVE_MEMORY_TO_SEPARATE_FILE）：存储实现细节，无业务语义，
+                             已从界面移除；config.py 默认 True 保持不变。 -->
                         <div class="form-group">
                             <label>自动总结触发条数</label>
                             <input type="number" step="1" name="MAX_MESSAGE_LOG_ENTRIES" value="{{ config.MAX_MESSAGE_LOG_ENTRIES }}">
@@ -4084,7 +4086,10 @@
                 </div>
 
                 <div id="section-active-message" class="content-panel">
-                    <h2>主动消息配置</h2>
+                    <h2>主动消息</h2>
+                    <small class="panel-lead">
+                        让 AI 在对方长时间没说话时主动找话题。默认只对白名单内的人生效，<b>留空则不会主动给任何人发消息</b>。
+                    </small>
                     <div class="form-group">
                         <div class="switch-item">
                             <label>启用主动消息功能</label>
@@ -4128,7 +4133,8 @@
                 </div>
 
                 <div id="section-reminders" class="content-panel">
-                    <h2>定时器与提醒配置</h2>
+                    <h2>定时提醒</h2>
+                    <small class="panel-lead">开启后可以直接在聊天里说「15分钟后提醒我出门」来设置提醒。</small>
                     <div class="form-group">
                          <div class="switch-item">
                             <label>启用定时器提醒功能</label>
@@ -4166,7 +4172,8 @@
                 </div>
 
                 <div id="section-text-commands" class="content-panel">
-                    <h2>指令设置</h2>
+                    <h2>聊天指令</h2>
+                    <small class="panel-lead">开启后，可以在微信里直接发送以「/」开头的指令来控制机器人。</small>
                     <div class="form-group">
                         <div class="switch-item">
                             <label>启用文字指令</label>
@@ -4188,46 +4195,12 @@
                     </div>
                 </div>
 
-                <div id="section-scheduled-restart" class="content-panel">
-                    <h2>定时重启Bot配置</h2>
-                    <small>此功能为实验性功能，启用后允许程序在满足特定条件时自动重启，以期解决长时间运行可能导致的性能下降和回复变慢问题。重启前会自动保存聊天上下文及提醒列表。</small>
-
-                    <div class="form-group" style="margin-top: 20px;">
-                        <div class="switch-item">
-                            <label for="ENABLE_SCHEDULED_RESTART_checkbox">启用定时重启功能</label>
-                            <div class="switch">
-                                <label class="switch-label">
-                                    <input type="checkbox" id="ENABLE_SCHEDULED_RESTART_checkbox" name="ENABLE_SCHEDULED_RESTART" {% if config.ENABLE_SCHEDULED_RESTART %}checked{% endif %}>
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                        </div>
-                        <small>开启后，程序将根据下方设定的条件尝试自动重启。</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="RESTART_INTERVAL_HOURS_input">程序运行时长阈值 (小时):</label>
-                        <input type="number" step="0.1" min="0.1" id="RESTART_INTERVAL_HOURS_input" name="RESTART_INTERVAL_HOURS" value="{{ config.RESTART_INTERVAL_HOURS }}">
-                        <small>当程序连续运行达到此设定的时长后，将开始检查是否满足重启的不活跃条件。例如，设置为 2.0 表示运行 2 小时后检查。</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="RESTART_INACTIVITY_MINUTES_input">不活跃时长阈值 (分钟):</label>
-                        <input type="number" step="1" min="15" id="RESTART_INACTIVITY_MINUTES_input" name="RESTART_INACTIVITY_MINUTES" value="{{ config.RESTART_INACTIVITY_MINUTES }}">
-                        <small>当程序运行达到上述时长阈值后，如果在这段时间内没有任何消息接收或机器人主动活动（持续达到此分钟数），则执行重启。例如，设置为 15 表示需要持续 15 分钟无活动。</small>
-                    </div>
-                    <div style="font-size:13px; line-height:1.7; color:#555; border-left:4px solid #ffb74d; background:linear-gradient(90deg,#fffde7 80%,#fff9c4 100%); border-radius:5px; padding:14px 18px 12px 18px; margin:18px 0;">
-                        <strong style="color:#f57c00; font-size:15px;">注意事项：</strong>
-                        <ul style="margin:10px 0 0 22px; padding:0; list-style: disc;">
-                            <li style="margin-bottom:7px;">定时重启会中断所有正在进行的处理，包括未完成的对话和消息队列。</li>
-                            <li style="margin-bottom:7px;">通过配置编辑器修改的设置需手动重启才能生效，定时重启不会自动应用这些更改。</li>
-                            <li style="margin-bottom:7px;">定时重启会自动避开定时提醒，防止重启期间遗漏提醒。</li>
-                        </ul>
-                    </div>
-                </div>
+                <!-- 定时重启Bot配置：纯运维稳定性项（运行时长/不活跃阈值自动兜底），
+                     与业务无关且用户无需干预，已从界面移除；config.py 默认 True/2.0h/15min 保持生效。 -->
 
                 <div id="section-web-editor" class="content-panel">
                     <h2>访问与密码</h2>
+                    <small class="panel-lead">控制谁能打开本软件的后台界面。默认只有本机能访问，最安全。</small>
                     <div class="form-group">
                         <div class="switch-item">
                             <label>允许局域网访问（开启后同一 WiFi 下的手机/电脑可打开本软件后台；关闭则只有本机能打开）</label>
@@ -4254,11 +4227,8 @@
                             {% endif %}
                         </small>
                     </div>
-                    <div class="form-group">
-                        <label>后台端口:</label>
-                        <input type="number" step="1" name="PORT" value="{{ config.PORT }}">
-                        <small style="display:block;margin-top:5px;color:#888;">端口被占用时软件会自动换用其它端口。</small>
-                    </div>
+                    <!-- 后台端口（PORT）：纯网络技术项，端口被占用时软件会自动换用其它端口，
+                         用户填写无实际意义且填错会导致启动失败，已从界面移除；默认值 5001 保持生效。 -->
                     <div class="form-group" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
                         <button type="button" id="resetDefaultConfigBtn" class="nav-button" style="background-color: #ff5722;">恢复默认配置</button>
                         <small style="display: block; margin-top: 10px; color: #d32f2f;">警告：此操作将清除所有自定义配置并恢复到程序初始默认值（登录密码和开放端口设置除外），操作不可撤销！</small>
@@ -4266,12 +4236,41 @@
                 </div>
 
                 <div id="section-logs" class="content-panel">
-                    <h2>程序运行日志</h2>
+                    <h2>运行日志</h2>
+                    <small class="panel-lead">AI 回复异常时可在这里查看实时日志定位问题。</small>
                     <div id="log-container" class="collapsed">
                         <div id="logs"></div>
                     </div>
                 </div>
             </form>
+
+            <!-- ===== 内嵌页面面板：把原本整页跳转的功能页改为「切换面板」，
+                 与左侧其它菜单项行为完全一致（不弹窗、不整页刷新、无「返回配置」）。
+                 每个 iframe 带 ?embed=1，子页据此隐藏自己的独立页头/返回按钮。 -->
+            <div id="section-ext-quickstart" class="content-panel ext-panel">
+                <iframe class="ext-frame" data-src="{{ url_for('quick_start') }}?embed=1" title="快速上手" loading="lazy"></iframe>
+            </div>
+            <div id="section-ext-avatar" class="content-panel ext-panel">
+                <iframe class="ext-frame" data-src="{{ url_for('avatar_page') }}?embed=1" title="AI 分身" loading="lazy"></iframe>
+            </div>
+            <div id="section-ext-stylelab" class="content-panel ext-panel">
+                <iframe class="ext-frame" data-src="{{ url_for('style_lab') }}?embed=1" title="风格模仿" loading="lazy"></iframe>
+            </div>
+            <div id="section-ext-forward" class="content-panel ext-panel">
+                <iframe class="ext-frame" data-src="{{ url_for('forward_page') }}?embed=1" title="固定转发" loading="lazy"></iframe>
+            </div>
+            <div id="section-ext-jev" class="content-panel ext-panel">
+                <iframe class="ext-frame" data-src="{{ url_for('jev_page') }}?embed=1" title="Jev 对话判断" loading="lazy"></iframe>
+            </div>
+            <div id="section-ext-cli" class="content-panel ext-panel">
+                <iframe class="ext-frame" data-src="{{ url_for('cli_page') }}?embed=1" title="命令行" loading="lazy"></iframe>
+            </div>
+            <div id="section-ext-mcp" class="content-panel ext-panel">
+                <iframe class="ext-frame" data-src="{{ url_for('mcp_page') }}?embed=1" title="MCP 接入" loading="lazy"></iframe>
+            </div>
+            <div id="section-ext-help" class="content-panel ext-panel">
+                <iframe class="ext-frame" data-src="{{ url_for('help_page') }}?embed=1" title="常见问题" loading="lazy"></iframe>
+            </div>
 
             <!-- 授权管理：买家只看「状态 + 购买 + 续费」三件事，其余全是内部流程 -->
             <div id="section-license" class="content-panel">
@@ -4301,12 +4300,12 @@
                         <button type="button" class="lic-tier" data-tier="normal"
                             style="flex:1;min-width:150px;text-align:left;padding:12px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">
                             <div style="font-weight:600;color:#333;">初级</div>
-                            <div style="color:#888;font-size:12px;margin-top:2px;">¥29.9 · 30 天</div>
+                            <div style="color:#888;font-size:12px;margin-top:2px;">¥19.9 · 30 天</div>
                         </button>
                         <button type="button" class="lic-tier" data-tier="premium"
                             style="flex:1;min-width:150px;text-align:left;padding:12px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">
                             <div style="font-weight:600;color:#333;">中级</div>
-                            <div style="color:#888;font-size:12px;margin-top:2px;">¥39.9 · 30 天</div>
+                            <div style="color:#888;font-size:12px;margin-top:2px;">¥59.9 · 30 天</div>
                         </button>
                         <button type="button" class="lic-tier" data-tier="lifetime"
                             style="flex:1;min-width:150px;text-align:left;padding:12px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">
@@ -4315,6 +4314,22 @@
                         </button>
                     </div>
                     <small style="display:block;margin-top:8px;color:#888;">支付宝 / 银行卡结算，付款成功后本机会自动获取并激活授权，无需复制卡密。</small>
+
+                    <!-- 邮箱：只填一次，之后每次付款由 Creem 收银台自动填好（买家零输入）。
+                         Creem 是 MoR，收银台邮箱无法去掉（收据/税务法定必填），只能预填。 -->
+                    <div class="form-group" style="margin:12px 0 0;">
+                        <label style="font-weight:600;">付款邮箱（填一次，以后自动填好）</label>
+                        <div style="display:flex;gap:8px;margin-top:6px;">
+                            <input type="email" id="buyerEmailInput" placeholder="用于接收收据，付款页自动填入"
+                                   autocomplete="email" spellcheck="false"
+                               style="flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                            <button type="button" id="buyerEmailSaveBtn"
+                                style="background:#1976d2;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;white-space:nowrap;">保存</button>
+                        </div>
+                        <small id="buyerEmailHint" style="display:block;margin-top:6px;color:#888;">
+                            付款成功后本机会自动记住 Creem 实际的收款邮箱，通常无需手动填写。
+                        </small>
+                    </div>
                 </div>
 
                 <!-- 当前套餐 + 续费：已激活时才出现 -->
@@ -4343,6 +4358,9 @@
                 var msg = document.getElementById('licenseMsg');
                 var banner = document.getElementById('licenseBanner');
                 var manualBox = document.getElementById('licenseManualFallback');
+                var emailInput = document.getElementById('buyerEmailInput');
+                var emailSaveBtn = document.getElementById('buyerEmailSaveBtn');
+                var emailHint = document.getElementById('buyerEmailHint');
 
                 // ---- 本机能力令牌 mid：高熵随机，贯穿「购买页→收银台 metadata→webhook→自动核销」 ----
                 var MID_KEY = 'weauto_license_mid';
@@ -4371,6 +4389,12 @@
                             var d = await r.json();
                             if(d.key){
                                 clearInterval(_redeemTimer); _redeemTimer = null;
+                                // webhook 已把 Creem 实际收款邮箱写进本机（/api/license/poll 落盘），
+                                // 这里同步到输入框，让用户看到「以后不用再填」。
+                                if(d.email && emailInput){
+                                    emailInput.value = d.email; emailInput.dataset.touched = '';
+                                    if(emailHint) emailHint.textContent = '已记住 ' + d.email + '，续费时付款页会自动填好。';
+                                }
                                 showMsg('已自动获取卡密，正在激活…');
                                 var res = await postJSON('/api/license/activate', {key: d.key});
                                 if(res.ok){
@@ -4436,6 +4460,14 @@
                             db.style.display = 'none';
                         }
 
+                        // 回填已记住的付款邮箱（用户在输入框里改过就别覆盖他的编辑）
+                        if(emailInput && document.activeElement !== emailInput && !emailInput.dataset.touched){
+                            emailInput.value = s.buyer_email || '';
+                        }
+                        if(emailHint && s.buyer_email){
+                            emailHint.textContent = '已记住 ' + s.buyer_email + '，付款页会自动填好。';
+                        }
+
                         // 未激活时提示购买；已激活就不要再啰嗦
                         if (s.activated) {
                             banner.style.display = 'none';
@@ -4451,7 +4483,12 @@
                 async function buyTier(tier){
                     if(!tier) return;
                     try{
-                        var r = await fetch('/api/license/buy_url?tier=' + encodeURIComponent(tier));
+                        // 带上已保存的邮箱：Creem 收银台会预填并锁定该邮箱框，
+                        // 买家点开就能直接付款、零输入。空值不影响（收银台会自己问）。
+                        var qs = 'tier=' + encodeURIComponent(tier);
+                        var em = (emailInput && emailInput.value || '').trim();
+                        if(em) qs += '&email=' + encodeURIComponent(em);
+                        var r = await fetch('/api/license/buy_url?' + qs);
                         var d = await r.json();
                         if(!d.url){ showMsg('未配置授权服务地址，无法购买', '#c62828'); return; }
                         var sep = d.url.indexOf('?') >= 0 ? '&' : '?';
@@ -4459,30 +4496,16 @@
                     }catch(e){ showMsg('请求失败: ' + e, '#c62828'); }
                 }
 
-                function pywebviewApi(timeoutMs){
-                    return new Promise(function(resolve){
-                        var t0 = Date.now();
-                        (function poll(){
-                            if(window.pywebview && window.pywebview.api && window.pywebview.api.open_buy_window){ resolve(window.pywebview.api); return; }
-                            if(Date.now() - t0 > (timeoutMs||2500)){ resolve(null); return; }
-                            setTimeout(poll, 100);
-                        })();
-                    });
-                }
-                // 优先软件内置窗口加载购买页（不弹系统浏览器、不显示网址）
+                // 改为在软件内以浮层打开购买页：全程不弹新窗口（也不 window.open 自动弹出）；
+                // 浮层由本模板底部的 #buyOverlay + iframe 承载，叠在当前界面之上。
                 async function openBuyInternal(url){
-                    var api = await pywebviewApi(2500);
-                    if(api){
-                        try{
-                            var ok = await api.open_buy_window(url);
-                            if(ok){ showMsg('已打开购买页，付款成功后自动激活…', '#1e7e34'); startAutoRedeem(); return; }
-                        }catch(e){ /* 内置窗口失败，走下方回退 */ }
+                    if(typeof window.openBuyOverlay === 'function' && window.openBuyOverlay(url)){
+                        showMsg('已在软件内打开购买页，付款成功后自动激活…', '#1e7e34');
+                        startAutoRedeem();
+                        return;
                     }
-                    var win = window.open(url, '_blank');
-                    if(win){ showMsg('已打开购买页，付款成功后自动激活…', '#1e7e34'); startAutoRedeem(); }
-                    else {
-                        showMsg('无法自动打开购买页，请允许本软件弹出窗口后重试', '#b26a00');
-                    }
+                    // 浮层不可用的极端兜底：仅提示，不提供任何浏览器/新窗口出口。
+                    showMsg('无法在软件内打开购买页，请重启软件后重试', '#b26a00');
                 }
 
                 // 三个档位卡片
@@ -4506,6 +4529,28 @@
                         loadStatus();
                     }catch(e){ showMsg('请求失败: '+e, '#c62828'); }
                 });
+
+                // 保存付款邮箱（填一次，之后每次续费由 Creem 收银台自动填好）
+                if(emailInput){
+                    emailInput.addEventListener('input', function(){ emailInput.dataset.touched = '1'; });
+                }
+                if(emailSaveBtn){
+                    emailSaveBtn.addEventListener('click', async function(){
+                        var v = (emailInput.value || '').trim();
+                        try{
+                            var res = await postJSON('/api/license/email', {email: v});
+                            if(res.ok){
+                                emailInput.value = res.email || '';
+                                emailInput.dataset.touched = '';
+                                emailHint.textContent = v ? ('已记住 ' + res.email + '，付款页会自动填好。')
+                                                         : '已清除，付款时收银台会自己询问。';
+                                showMsg('付款邮箱已保存', '#1e7e34');
+                            } else {
+                                showMsg(res.msg || '保存失败', '#c62828');
+                            }
+                        }catch(e){ showMsg('保存失败: ' + e, '#c62828'); }
+                    });
+                }
 
                 var navLink = document.querySelector('.sidebar a[data-target="section-license"]');
                 if(navLink){ navLink.addEventListener('click', function(){ setTimeout(loadStatus, 50); }); }
@@ -5216,6 +5261,67 @@
         }
     });
     </script>
+
+<!-- ===== 购买浮层：在软件内以浮层打开收银台，不弹新窗口；底部遮挡 Creem footer ===== -->
+<style>
+  .buy-ov{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;}
+  .buy-ov.show{display:flex;}
+  .buy-ov-box{position:relative;width:min(1080px,94vw);height:min(840px,90vh);background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.45);}
+  .buy-ov-bar{position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#fafafa;border-bottom:1px solid #e5e5e5;z-index:6;}
+  .buy-ov-title{font-size:15px;font-weight:600;color:#333;}
+  .buy-ov-spacer{flex:1;}
+  .buy-ov-btn{border:1px solid #d0d0d0;background:#fff;color:#444;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;}
+  .buy-ov-btn:hover{background:#f0f0f0;}
+  .buy-ov-close{border:0;background:transparent;font-size:22px;line-height:1;color:#888;cursor:pointer;padding:2px 8px;}
+  .buy-ov-close:hover{color:#333;}
+  .buy-ov-wrap{position:absolute;top:46px;left:0;right:0;bottom:0;overflow:hidden;background:#fff;}
+  /* 把 iframe 整体上移并裁掉底部：长/可滚动页面时 "Powered by Creem" footer 落到可视区外被裁掉；
+     跨域 iframe 无法改其内部 DOM，只能从容器侧裁剪 + 遮罩双保险。 */
+  .buy-ov-frame{width:100%;height:calc(100% + 80px);border:0;display:block;transform:translateY(-80px);}
+  /* 不透明遮罩条盖住底部可视区，应对 footer 贴视口底部（短页面）的情况；
+     与收银台浅色背景同色，视觉无感；pointer-events:none 让下方仍可滚动/交互。 */
+  .buy-ov-mask{position:absolute;left:0;right:0;bottom:0;height:104px;background:#fff;z-index:5;pointer-events:none;}
+</style>
+
+<div id="buyOverlay" class="buy-ov" role="dialog" aria-modal="true" aria-label="购买">
+  <div class="buy-ov-box">
+    <div class="buy-ov-bar">
+      <span class="buy-ov-title">购买 / 收银台</span>
+      <span class="buy-ov-spacer"></span>
+      <button class="buy-ov-close" id="buyOvClose" type="button" title="关闭">&times;</button>
+    </div>
+    <div class="buy-ov-wrap">
+      <iframe id="buyOvFrame" class="buy-ov-frame" src="about:blank" title="购买"></iframe>
+      <div class="buy-ov-mask"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var ov=document.getElementById('buyOverlay');
+  var fr=document.getElementById('buyOvFrame');
+  function close(){
+    ov.classList.remove('show');
+    try{ fr.src='about:blank'; }catch(e){}
+    // 关闭后刷新授权状态（typeof 对未定义变量安全，不会抛 ReferenceError）
+    if(typeof loadStatus==='function'){ try{ loadStatus(); }catch(e){} }
+  }
+  window.openBuyOverlay=function(url){
+    if(!url) return false;
+    fr.src=url;
+    ov.classList.add('show');
+    return true;
+  };
+  window.closeBuyOverlay=close;
+  document.getElementById('buyOvClose').addEventListener('click',close);
+  // 点击遮罩空白处关闭；Esc 关闭
+  ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape' && ov.classList.contains('show')) close();
+  });
+})();
+</script>
 
 </body>
 </html>

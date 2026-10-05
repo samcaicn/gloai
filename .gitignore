@@ -97,3 +97,7 @@ _shots/
 _restart_stamp
 weauto_webui.log
 build_local.log
+
+# ---- 独立嵌套项目 / 本地工作区外壳（不入库）----
+aichat-h5/
+WeChatBot_SE-v3.25.1/

@@ -18,8 +18,8 @@
 <style id="weauto-modern-ui">
 /* ---------- design tokens : light ---------- */
 :root{
-  --brand:#4f46e5; --brand-600:#4338ca; --brand-700:#3730a3;
-  --brand-soft:#eef2ff; --brand-ring:rgba(79,70,229,.20);
+  --brand:#2563eb; --brand-600:#1d4ed8; --brand-700:#1e40af;
+  --brand-soft:#eff6ff; --brand-ring:rgba(37,99,235,.20);
   --ok:#10b981;  --ok-soft:#ecfdf5;   --ok-text:#047857;
   --warn:#f59e0b; --warn-soft:#fffbeb; --warn-text:#b45309;
   --danger:#ef4444; --danger-soft:#fef2f2; --danger-text:#b91c1c;
@@ -44,8 +44,8 @@
 
 /* ---------- design tokens : dark ---------- */
 html[data-theme="dark"]{
-  --brand:#818cf8; --brand-600:#6366f1; --brand-700:#4f46e5;
-  --brand-soft:#232447; --brand-ring:rgba(129,140,248,.28);
+  --brand:#60a5fa; --brand-600:#3b82f6; --brand-700:#2563eb;
+  --brand-soft:#1e293b; --brand-ring:rgba(96,165,250,.28);
   --ok:#34d399;  --ok-soft:#0f2a22;   --ok-text:#6ee7b7;
   --warn:#fbbf24; --warn-soft:#2b2410; --warn-text:#fcd34d;
   --danger:#f87171; --danger-soft:#2c1618; --danger-text:#fca5a5;
@@ -330,8 +330,37 @@ input[type=checkbox],input[type=radio]{ accent-color:var(--brand); }
   .header-bar .buttons{ flex-wrap:wrap; gap:6px; }
   .content-panel{ padding:18px !important; border-radius:var(--r) !important; }
 }
+
+/* ---------- v1.1 视觉打磨（叠加层，全部 !important 覆盖，无外部资源） ---------- */
+/* 内容面板入场动效，轻柔上浮 */
+@keyframes weauto-rise{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none;} }
+.content-panel{ animation:weauto-rise .26s var(--ease) both; }
+
+/* 侧栏激活项：内嵌品牌光条 + 渐变底，反馈更强 */
+.sidebar li a.active{
+  box-shadow: inset 3px 0 0 0 var(--brand) !important;
+  background:linear-gradient(90deg, var(--brand-soft), transparent 80%) !important;
+}
+
+/* 浅色模式主区域极淡品牌晕染，避免纯白刺眼（深色不叠加） */
+html:not([data-theme="dark"]) body{
+  background:
+    radial-gradient(1100px 520px at 100% -8%, rgba(79,70,229,.06), transparent 60%),
+    var(--bg) !important;
+}
+
+/* 顶栏标题后加品牌圆点，强化产品识别（已有前置竖条，此为补充） */
+.header-bar .header-title h1::after{
+  content:""; display:inline-block; width:7px; height:7px; border-radius:50%;
+  margin-left:10px; vertical-align:2px;
+  background:linear-gradient(180deg, var(--brand-600), var(--brand));
+  box-shadow:0 0 0 3px var(--brand-ring);
+}
+
+/* 卡片/分区小标题更精致 */
+.content-panel h2, .peek-section h4{ letter-spacing:.01em; }
 </style>
-<script>
+    <script>
 /* Theme bootstrap: apply a stored preference before paint to avoid a flash. */
 (function () {
   try {
@@ -340,6 +369,30 @@ input[type=checkbox],input[type=radio]{ accent-color:var(--brand); }
       document.documentElement.setAttribute('data-theme', saved);
     }
   } catch (e) { /* private mode / storage disabled - ignore */ }
+})();
+
+/* ===== 内嵌模式（?embed=1）=====
+   这些功能页现在作为主界面左侧菜单的一个「面板」被 iframe 引入。
+   内嵌时它们自己的独立页头（标题 + 「返回配置」等导航按钮）是多余的，
+   且会让用户在面板里再点一次「返回」，与统一菜单操作冲突 —— 故直接隐藏。
+   （jev.html / quick_start.html 等无独立页头的页面不受影响，隐藏规则对它们是空操作。） */
+(function () {
+  try {
+    if (/(^|[?&])embed=1(&|$)/.test(window.location.search)) {
+      document.documentElement.setAttribute('data-embed', '1');
+      var hide = function () {
+        var hdr = document.querySelector('.header-bar');
+        if (hdr) { hdr.style.display = 'none'; }
+        // 内嵌时页面顶部不再有独立页头，body 顶部留白交给内容自身
+        document.body && document.body.setAttribute('data-embed', '1');
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', hide);
+      } else {
+        hide();
+      }
+    }
+  } catch (e) { /* ignore */ }
 })();
 
 /* Inject a theme toggle once the DOM is ready (works on every page). */
