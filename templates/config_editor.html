@@ -160,15 +160,35 @@
             border-left: 4px solid transparent;
             transition: background-color 0.2s, color 0.2s, border-left-color 0.2s;
         }
+        /* 菜单项前置小箭头：强化「可点击」暗示，active 时点亮品牌色 */
+        .sidebar li a::before {
+            content: '▸';
+            display: inline-block;
+            width: 14px;
+            margin-right: 2px;
+            color: var(--text-3, #9e9e9e);
+            font-size: 11px;
+            transition: color .15s, transform .15s;
+        }
+        .sidebar li a:hover::before { color: var(--brand, #2563eb); transform: translateX(1px); }
+        .sidebar li a.active::before { color: var(--brand, #2563eb); }
+        .sidebar li button::before {
+            content: '▸';
+            display: inline-block;
+            width: 14px;
+            margin-right: 2px;
+            color: var(--text-3, #9e9e9e);
+            font-size: 11px;
+        }
         .sidebar li a:hover {
             background-color: #f4f4f4;
             color: #222;
         }
         .sidebar li a.active {
-            background-color: #e8f5e9;
-            color: #388e3c;
-            font-weight: 500;
-            border-left-color: #4caf50;
+            background-color: var(--brand-soft, #eef2ff);
+            color: var(--brand, #2563eb);
+            font-weight: 600;
+            border-left-color: var(--brand, #2563eb);
         }
         /* ===== 侧边栏逻辑分组（2026-10-05 信息架构重排） =====
            取代原先「常用列表 + ⚙高级设置折叠」两层结构：
@@ -183,6 +203,10 @@
             color: var(--text-3, #9e9e9e);
             display: flex; align-items: center; gap: 6px;
             user-select: none;
+        }
+        .sidebar-group-label::before {
+            content: ''; width: 4px; height: 12px; border-radius: 2px;
+            background: var(--brand, #2563eb); opacity: .45;
         }
         .sidebar-group.is-secondary li a { font-size: 13.5px !important; padding: 8px 14px !important; }
         /* 侧栏内按钮（如「导入配置」）与链接同款式 */
@@ -3462,10 +3486,10 @@
                 <div class="sidebar-group-label">① 让 AI 开始工作</div>
                 <ul>
                     <li><a href="#" data-target="section-ext-quickstart">快速上手</a></li>
-                    <li><a href="#" data-target="section-user-list">用户与监听</a></li>
-                    <li><a href="#" data-target="section-prompt-management">AI 人设（Prompt）</a></li>
+                    <li><a href="#" data-target="section-user-list" class="active">用户与监听</a></li>
+                    <li><a href="#" data-target="section-prompt-management">AI 人设</a></li>
                     <li><a href="#" data-target="section-chat-model">AI 模型</a></li>
-                    <li><a href="#" data-target="section-image-recognition">图片 / 表情包识别</a></li>
+                    <li><a href="#" data-target="section-image-recognition">图片/表情包识别</a></li>
                 </ul>
             </div>
 
@@ -3527,9 +3551,9 @@
         <div class="content-area">
             <form method="post" id="configForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <div id="section-user-list" class="content-panel">
+                <div id="section-user-list" class="content-panel active-panel">
                     <h2>用户与监听</h2>
-                    <small class="panel-lead">添加要让 AI 自动回复的好友或群，并为每个人指定不同的人设（Prompt）。</small>
+                    <small class="panel-lead">添加要让 AI 自动回复的好友或群，并为每个人指定不同的人设。</small>
                     <div class="form-group">
                         <label>微信昵称/备注与对应Prompt配置:</label>
                         <div id="listen-list">
