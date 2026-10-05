@@ -102,6 +102,9 @@ object SelfCheck {
         return v.split(":").any { it.equals(A11Y_COMPONENT, ignoreCase = true) }
     }
 
+    /** 无障碍服务是否真的开启（同进程内其它组件（如 KeepAliveService）用来做自愈轮询）。 */
+    internal fun isA11yOnPublic(ctx: Context): Boolean = isA11yOn(ctx)
+
     private fun isNotifyOn(ctx: Context): Boolean {
         val v = Settings.Secure.getString(ctx.contentResolver, "enabled_notification_listeners")
             ?: return false
