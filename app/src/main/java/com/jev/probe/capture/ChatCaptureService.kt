@@ -1049,6 +1049,9 @@ open class ChatCaptureService : AccessibilityService() {
         if (delay > 0) overlay?.toast("已填入，${delay / 1000} 秒后自动发送…")
         main.postDelayed({
             if (!isCurrent(token)) return@postDelayed
+            // 发送不可逆：用户可能在这 2 秒等待里点了「暂停自动收发」（气泡菜单一步可达）。
+            // 这里必须重新读开关，让暂停立刻生效——否则「随时收回控制权」就是空话。
+            if (!prefs.autoSend) { overlay?.toast("已暂停自动发送，本次未发出"); return@postDelayed }
             val root = rootInActiveWindow ?: return@postDelayed
             if (targetFor(root) != token.target) return@postDelayed
             val send = findSendButton(root, token.target.pkg) ?: run {
