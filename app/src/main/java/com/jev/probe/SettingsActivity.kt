@@ -175,6 +175,21 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
         })
 
+        // 自动分析与自动发送是两件事，必须在这里也摆出来。
+        // 原来设置页只有「自动收发」一项，而悬浮球菜单里「暂停自动收发」并不会关掉
+        // 自动分析——于是出现「设置页看不出助手还在自动读」的盲区。菜单里加了
+        // 独立的「自动分析」开关后，这里必须同步，否则两处说法不一致。
+        c.addView(toggleRow(
+            "自动分析（只给建议，不替你发）", prefs.autoAnalyze
+        ) { on ->
+            prefs.autoAnalyze = on
+            // 刚把自动分析关掉，就顺手把自动收发也退到「只给建议」这一档：
+            // 用户表达的是「别自己动了」，两个开关同时关掉最贴近这个意思。
+            if (!on && AutoReply.isOn(this)) AutoReply.setOn(this, false)
+            com.jev.probe.capture.KeepAliveService.refresh(this)
+            refreshAutoReplyUi()
+        })
+
         // 发送延迟：一个数字，但它直接决定「自动发送能不能成功」——太快会点空。
         c.addView(label("发出前等几秒"))
         val delayEdit = edit(
@@ -185,8 +200,10 @@ class SettingsActivity : AppCompatActivity() {
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         }
         c.addView(delayEdit)
-        c.addView(text("太快的话微信还没准备好发送，点下去消息就丢了。", 11f, sub)
-            .apply { setPadding(0, dp(4), 0, 0) })
+        c.addView(text(
+            "太快的话微信还没准备好发送，点下去消息就丢了。这段时间里悬浮窗会出现一条倒计时，" +
+                "可以点「本次不发送」拦下来。",
+            11f, sub).apply { setPadding(0, dp(4), 0, 0) })
         // 离开设置页时兜底保存。只挂失焦是不够的：软键盘收起、系统返回手势都可能
         // 不经过 onBlur，用户改完直接退出就会丢掉这个值（而页面上已经不再有「保存」按钮）。
         pendingDelayEdit = delayEdit

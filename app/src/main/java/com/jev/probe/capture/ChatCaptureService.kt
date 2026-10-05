@@ -92,6 +92,14 @@ open class ChatCaptureService : AccessibilityService() {
     /** 上一次错误卡里的类别：决定「重试」到底是重跑分析还是再截屏识别一次。 */
     private var lastErrKind: ErrCatalog.Kind = ErrCatalog.Kind.UNKNOWN
 
+    /**
+     * 「本次不发送」的闸门。发送前有 [Prefs.sendDelayMs] 的等待期，用户点悬浮窗上
+     * 的「本次不发送」就把它置真；[sendFor] 在真正点击发送前检查它。
+     *
+     * 只挡这一条，不动自动收发总开关——用户的意思是「这条别发」，不是「以后都别发」。
+     */
+    @Volatile private var skipThisSend = false
+
     /** 最近一次已知悬浮窗权限状态：从 true→false 时只报一次警，避免每个事件都弹 toast。 */
     private var overlayOk = true
 
@@ -108,8 +116,11 @@ open class ChatCaptureService : AccessibilityService() {
     private fun handleErrorAction(a: ErrCatalog.Action) {
         when (a) {
             ErrCatalog.Action.RETRY -> {
-                if (lastErrKind == ErrCatalog.Kind.NO_TEXT) ocrCaptureManual()
-                else currentSnapshot?.let { pendingSnapshot = it; runAnalysis() }
+                // NO_TEXT 原本一律改走截屏 OCR。但微信里整屏截屏会被风控拒掉
+                // （ocrCaptureManual 会直接拒绝），所以在微信内老老实实重跑分析。
+                if (lastErrKind == ErrCatalog.Kind.NO_TEXT && activePkg != PKG_WECHAT) {
+                    ocrCaptureManual()
+                } else currentSnapshot?.let { pendingSnapshot = it; runAnalysis(manual = true) }
             }
             ErrCatalog.Action.SETTINGS -> openSettings(focusPlan = false)
             ErrCatalog.Action.PLAN -> openSettings(focusPlan = true)
@@ -122,20 +133,30 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     /**
-     * 把当前会话加入 / 移出白名单（P1-8）。白名单是关键词集合，所以「移出」= 删掉
-     * 能匹配上当前标题的那些关键词，而不是删掉一个不存在的等值项。
+     * 把当前会话加入 / 移出「只分析这些会话」名单（P1-8）。
+     *
+     * 语义澄清（原来这里是最容易招致困惑的一处）：[Prefs.isAllowed] 的规则是
+     * **名单非空时只分析命中的会话**——所以这是一个「缩小范围」的开关，不是「排除」。
+     * 界面上原来叫「白名单」，用户理所当然理解成后者，点了之后发现助手突然不分析了，
+     * 却又找不到原因。菜单与 toast 都按真实语义措辞，并明确说出影响面。
+     *
+     * 因为名单存的是关键词（不是会话 id），「移出」= 删掉所有能匹配上当前标题的关键词。
      */
     private fun toggleWhitelist() {
         val title = currentSnapshot?.title
-        if (title.isNullOrBlank()) { overlay?.toast("当前会话没有标题，改不了白名单"); return }
+        if (title.isNullOrBlank()) { overlay?.toast("当前会话没有标题，改不了名单"); return }
         val wl = prefs.whitelist
         val matched = wl.filter { title.contains(it, ignoreCase = true) }
         if (matched.isEmpty()) {
             prefs.whitelist = wl + title
-            overlay?.toast("已加入白名单：$title")
+            // 说清后果：用户最常见的场景是「只想看这一个」，那他就该知道别人都不分析了。
+            overlay?.toast("已加入：之后只分析「$title」，其它会话都不再分析")
         } else {
             prefs.whitelist = wl - matched.toSet()
-            overlay?.toast("已移出白名单（删掉 ${matched.size} 个匹配项）")
+            overlay?.toast(if (wl.size == matched.size)
+                "已退出「只分析这些会话」，现在所有会话都会分析"
+            else
+                "已移出「$title」，名单里还剩 ${wl.size - matched.size} 个")
         }
     }
 
@@ -248,7 +269,8 @@ open class ChatCaptureService : AccessibilityService() {
         false
     }
 
-    private val debounce = Runnable { runAnalysis() }
+    // 自动触发的分析：结果只挂蓝点，不弹面板（见 OverlayController.setManualRun）。
+    private val debounce = Runnable { runAnalysis(manual = false) }
     private var pendingSnapshot: ChatSnapshot? = null
     @Volatile private var currentSnapshot: ChatSnapshot? = null
     private var foregroundPkg: String? = null
@@ -310,7 +332,7 @@ open class ChatCaptureService : AccessibilityService() {
         overlay = OverlayController(this)
         Metrics.init(this, prefs.metricsEnabled)
         overlay?.onManualAnalyze = {
-            currentSnapshot?.let { pendingSnapshot = it; runAnalysis() }
+            currentSnapshot?.let { pendingSnapshot = it; runAnalysis(manual = true) }
         }
         overlay?.onErrorAction = { a -> handleErrorAction(a) }
         overlay?.onReplyFeedback = { rank, good ->
@@ -336,7 +358,7 @@ open class ChatCaptureService : AccessibilityService() {
         }
         // Bubble menu: one manual screenshot + OCR, for any app at all.
         overlay?.onOcrCapture = { ocrCaptureManual() }
-        // 白名单（P1-8）：用户最常问的是「为什么这里不分析」，把开关摆到手边。
+        // 「只分析这些会话」名单（P1-8）：用户最常问的是「为什么这里不分析」，把开关摆到手边。
         overlay?.onWhitelistToggle = { toggleWhitelist() }
         // 悬浮球菜单 → 在 App 内打开「诊断与自检」，不用退出当前聊天就能看到
         // 权限 / 上次分析 / 崩溃记录，自己定位「为什么没反应」。
@@ -477,6 +499,11 @@ open class ChatCaptureService : AccessibilityService() {
         if (pkg != activePkg) { activePkg = pkg; lastSignature = "" }
 
         currentSnapshot = snapshot
+        // 气泡菜单里「只分析这个会话 / 退出」要按当前是否已在名单里显示不同文案，
+        // 所以把标题同步给悬浮窗一份（判断逻辑在 Prefs.isAllowed 那边保持唯一事实源）。
+        overlay?.currentTitle = snapshot.title
+        // 包名同理：菜单要靠它决定「截屏识别一次」该不该摆（微信内会被风控拒绝）。
+        overlay?.currentPkg = pkg
         // Fold the visible bubbles into cross-session history so the judge later
         // sees the whole thread (history + screen), not just what fits on screen.
         ConversationHistory.appendFromSnapshot(pkg ?: "", snapshot.title, snapshot.messages)
@@ -554,7 +581,7 @@ open class ChatCaptureService : AccessibilityService() {
         return TRANSIENT_TITLE_WORDS.any { lower.contains(it.lowercase()) }
     }
 
-    private fun runAnalysis() {
+    private fun runAnalysis(manual: Boolean = true) {
         val snapshot = pendingSnapshot ?: return
         if (analyzing || destroyed || !prefs.enabled) return
         val previous = session.token() ?: return
@@ -562,6 +589,10 @@ open class ChatCaptureService : AccessibilityService() {
         if (!prefs.hasKey()) { overlay?.showOcrResult(snapshot.messages, "未设置判断接口密钥，去设置里填"); return }
         val token = session.begin() ?: return
         analyzing = true
+        // 手动 / 自动的区别只影响「要不要强弹面板」，判断逻辑本身完全一样，
+        // 所以只把标志交给悬浮窗，本类不再留一份副本（两处状态必然会走偏）。
+        overlay?.setManualRun(manual)
+        overlay?.currentTitle = snapshot.title
         roundOk = false
         roundErr = ErrCatalog.Kind.UNKNOWN
         Metrics.markStart("analysis")
@@ -615,7 +646,8 @@ open class ChatCaptureService : AccessibilityService() {
                         // 结果归类放在 isCurrent **外面**：无论会话还匹不匹配，这一轮
                         // 是成是败都要如实记进埋点与自检卡，否则统计会漏掉失败。
                         if (judgment.error != null) {
-                            val v = ErrCatalog.classify(judgment.error)
+                            val v = ErrCatalog.classify(judgment.error,
+                                inWeChat = token.target.pkg == PKG_WECHAT)
                             roundErr = v.kind
                             lastErrKind = v.kind
                             Log.i(TAG, "judge failed: ${v.kind.id}")
@@ -637,7 +669,8 @@ open class ChatCaptureService : AccessibilityService() {
                     }
                     main.post {
                         if (replyError != null && roundErr == ErrCatalog.Kind.UNKNOWN) {
-                            roundErr = ErrCatalog.classify(replyError).kind
+                            roundErr = ErrCatalog.classify(replyError,
+                                inWeChat = token.target.pkg == PKG_WECHAT).kind
                         }
                         if (isCurrent(token)) {
                             overlay?.showReplies(ranked, replyError) { text -> fillInput(token, text) }
@@ -668,7 +701,10 @@ open class ChatCaptureService : AccessibilityService() {
         roundErr = ErrCatalog.Kind.TIMEOUT
         lastErrKind = ErrCatalog.Kind.TIMEOUT
         Metrics.log("analysis_timeout", "conv" to Metrics.hash(currentSnapshot?.title))
-        overlay?.showFailure(ErrCatalog.classify("分析超时"))
+        // 超时文案不区分微信与否（它在任何 App 上都一样），但把 inWeChat 传准，
+        // 万一日志里出现别的 no_text 归类也不会给出在微信里无效的按钮。
+        overlay?.showFailure(ErrCatalog.classify("分析超时",
+            inWeChat = activePkg == PKG_WECHAT))
     }
 
     /**
@@ -913,7 +949,10 @@ open class ChatCaptureService : AccessibilityService() {
         if (snapshot.messages.isEmpty()) {
             if (manual) {
                 lastErrKind = ErrCatalog.Kind.NO_TEXT
-                overlay?.showFailure(ErrCatalog.classify("这一屏没认出文字"))
+                // pkg 传进去：微信里整屏截屏会被风控拒绝，按钮必须换成
+                // 「重新分析」而不是那个必然失败的「截屏识别一次」。
+                overlay?.showFailure(ErrCatalog.classify("这一屏没认出文字",
+                    inWeChat = pkg == PKG_WECHAT))
                 return
             }
             // OCR drew a blank: fall back to the tree text captured alongside so the
@@ -933,6 +972,8 @@ open class ChatCaptureService : AccessibilityService() {
 
         if (pkg.isNotEmpty() && pkg != activePkg) { activePkg = pkg; lastSignature = "" }
         currentSnapshot = snapshot
+        overlay?.currentTitle = snapshot.title
+        overlay?.currentPkg = pkg
         val sig = snapshot.signature()
         // Manual taps always re-run; the automatic path dedupes like the tree path.
         if (!manual && sig == lastSignature) {
@@ -945,12 +986,13 @@ open class ChatCaptureService : AccessibilityService() {
         lastSignature = sig
 
         // 进对话/内容变化即自动分析（不再要求"对方最新消息"）：打开微信对话
-        // 就直接出结果，配合面板"分析中…"提示（手动按钮已按需求移除）。
+        // 就直接出结果。manual=true（用户自己点的「截屏识别一次」）才展开面板；
+        // 自动这一路只挂蓝点，别把卡片压在用户正在看的聊天上。
         val auto = prefs.ocrAutoAnalyze && prefs.autoAnalyze
         if (manual || auto) {
             pendingSnapshot = snapshot
             main.removeCallbacks(debounce)
-            runAnalysis()
+            runAnalysis(manual = manual)
         } else {
             overlay?.setNote(snapshot.note)
             overlay?.showIdle(snapshot.title)
@@ -1043,12 +1085,24 @@ open class ChatCaptureService : AccessibilityService() {
      * Waits [Prefs.sendDelayMs] (default 2s) before clicking: WeChat needs a beat
      * to commit the draft and flip its send control out of the voice/emoji state —
      * clicking sooner lands on nothing and the message silently never goes out.
+     *
+     * 这段等待期是**用户唯一的反悔窗口**，所以不能只弹个 toast（Toast 会消失、
+     * 不可点、还可能被别的通知顶掉）。改成在悬浮窗上摆一张带「本次不发送」的
+     * 倒计时卡：发出去的消息收不回来，给一个能点的撤销口是最低成本的对价。
      */
     private fun sendFor(token: ConversationSession.Token) {
         val delay = prefs.sendDelayMs.toLong()
-        if (delay > 0) overlay?.toast("已填入，${delay / 1000} 秒后自动发送…")
+        skipThisSend = false
+        if (delay > 0) {
+            overlay?.showSendCountdown(delay.toInt()) {
+                skipThisSend = true
+                overlay?.toast("已拦下这一条，不会发出去")
+            }
+        }
         main.postDelayed({
             if (!isCurrent(token)) return@postDelayed
+            // 用户在这段等待里点了「本次不发送」：只放弃这一条，不动总开关。
+            if (skipThisSend) { skipThisSend = false; return@postDelayed }
             // 发送不可逆：用户可能在这 2 秒等待里点了「暂停自动收发」（气泡菜单一步可达）。
             // 这里必须重新读开关，让暂停立刻生效——否则「随时收回控制权」就是空话。
             if (!prefs.autoSend) { overlay?.toast("已暂停自动发送，本次未发出"); return@postDelayed }
@@ -1169,7 +1223,7 @@ open class ChatCaptureService : AccessibilityService() {
                         if (prefs.autoAnalyze && merged.latestFrom == "other") {
                             pendingSnapshot = merged
                             main.removeCallbacks(debounce)
-                            runAnalysis()
+                            runAnalysis(manual = false)
                         } else {
                             overlay?.setNote(merged.note)
                             overlay?.showIdle(merged.title)

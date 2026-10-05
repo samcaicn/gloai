@@ -345,6 +345,13 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getBoolean(K_ENABLED, true)
         set(v) = sp.edit().putBoolean(K_ENABLED, v).apply()
 
+    /**
+     * 「只分析这些会话」名单。
+     *
+     * 键名沿用历史的 `whitelist`（**不要改**：改了老用户的名单会凭空消失），但语义
+     * 以这里为准：**非空时只分析标题命中的会话**，其余一律不分析——它是缩小范围，
+     * 不是排除。界面文案已按这个语义写，见 ChatCaptureService.toggleWhitelist。
+     */
     var whitelist: Set<String>
         get() = sp.getStringSet(K_WHITELIST, emptySet()) ?: emptySet()
         set(v) = sp.edit().putStringSet(K_WHITELIST, v).apply()

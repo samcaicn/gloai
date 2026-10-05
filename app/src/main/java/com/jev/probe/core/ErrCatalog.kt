@@ -53,10 +53,17 @@ object ErrCatalog {
         val actionLabel: String = "重试"
     )
 
-    /** 从异常归类。优先看 HTTP 状态码，其次看文案关键词。 */
-    fun classify(e: Throwable?): View = classify(e?.message, e)
+    /**
+     * 从异常归类。优先看 HTTP 状态码，其次看文案关键词。
+     *
+     * [inWeChat] 只影响 [Kind.NO_TEXT] 一类：微信内整屏截屏会触发风控，所以
+     * `ocrCaptureManual` 在那里直接拒绝执行（见 ChatCaptureService）。若不告诉
+     * classify 这件事，「截屏识别一次」这个按钮在微信里就是一个点了必然没反应的
+     * 死路——比不给按钮更伤。
+     */
+    fun classify(e: Throwable?, inWeChat: Boolean = false): View = classify(e?.message, e, inWeChat)
 
-    fun classify(msg: String?, e: Throwable? = null): View {
+    fun classify(msg: String?, e: Throwable? = null, inWeChat: Boolean = false): View {
         val raw = msg?.trim().orEmpty()
         val low = raw.lowercase()
         val status = (e as? ApiException)?.status
@@ -113,10 +120,18 @@ object ErrCatalog {
             "判断接口没有可用密钥。填一把自己的 key，或者直接选一个套餐走云端额度。",
             Action.SETTINGS, "去设置")
 
-        if (low.contains("没认出") || low.contains("没有文字") || low.contains("没读到")) return View(
-            Kind.NO_TEXT, "这一屏没读到文字",
-            "界面里没有能读到的正文（自绘控件很常见）。可以点悬浮球菜单的「截屏识别一次」用本机 OCR 试一下。",
-            Action.RETRY, "截屏识别一次")
+        if (low.contains("没认出") || low.contains("没有文字") || low.contains("没读到")) {
+            return if (inWeChat) View(
+                Kind.NO_TEXT, "这一屏没读到文字",
+                "微信里的消息文字读不到了。可以先点「重新分析」再试一次（微信版本更新后" +
+                    "节点结构常变）；仍然读不到的话，等下次微信更新或长按气泡做一次自检。",
+                Action.RETRY, "重新分析"
+            ) else View(
+                Kind.NO_TEXT, "这一屏没读到文字",
+                "界面里没有能读到的正文（自绘控件很常见）。可以点悬浮球菜单的「截屏识别一次」用本机 OCR 试一下。",
+                Action.RETRY, "截屏识别一次"
+            )
+        }
 
         if (low.contains("截屏") && (low.contains("拒绝") || low.contains("不允许") ||
                 low.contains("未开启") || low.contains("重开") || low.contains("errorcode"))

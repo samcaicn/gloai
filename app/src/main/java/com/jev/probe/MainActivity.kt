@@ -77,8 +77,22 @@ class MainActivity : AppCompatActivity() {
         val a11y = isA11yEnabled()
         val overlay = Settings.canDrawOverlays(this)
         val notify = isNotifListenerEnabled()
+        val battery = isBatteryUnrestricted()
         val key = prefs.hasKey()   // judge route key: the one analysis cannot run without
-        val ready = a11y && overlay && key
+        // 引导式首启：一次只推一步，跳系统页回来后 onResume 重建，自动落到下一个未完成项。
+        val pending = ArrayList<String>().apply {
+            if (!a11y) add(A11Y)
+            if (!overlay) add(OVERLAY)
+            if (!notify) add(NOTIFY)
+            if (!battery) add(BATTERY)
+        }
+        // 就绪口径必须和下面的清单用**同一组**判断。原来这里只查 3 项（无障碍 /
+        // 悬浮窗 / 密钥）而清单查 4 项（含通知、省电），于是卡片写着「已就绪，可以用了」
+        // 紧接着下面又冒出一句「还差 2 步」——用户完全不知道该信哪个。
+        // 密钥单独算：它是「能不能跑」的另一条轴（没密钥能装能开，就是不出结果）。
+        val permsOk = pending.isEmpty()
+        val ready = permsOk && key
+        val next = pending.firstOrNull()
 
         // 已开启但无障碍被系统（或用户）悄悄关掉：这是「助手明明开了却没反应」的头号原因，
         // 给一条醒目的恢复横幅，点一下直接回无障碍设置页（关掉时下面的引导清单也会列出它，
@@ -88,22 +102,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Readiness card
-        container.addView(statusCard(ready, a11y, overlay, key))
+        container.addView(statusCard(ready, permsOk, a11y, overlay, notify, battery, key))
         container.addView(privacyHint())
 
-        // 引导式首启（P1-1）：一次只推一步，跳系统页回来后 onResume 重建，
-        // 自动落到的下一个未完成项。用户不需要自己记「还差哪个」。
-        val battery = isBatteryUnrestricted()
-        val pending = ArrayList<String>().apply {
-            if (!a11y) add(A11Y)
-            if (!overlay) add(OVERLAY)
-            if (!notify) add(NOTIFY)
-            if (!battery) add(BATTERY)
-        }
-        val next = pending.firstOrNull()
-
         container.addView(sectionLabel(
-            if (next == null) "权限设置（已全部开启）" else "还差 ${pending.size} 步 · 先开「${stepTitle(next)}」"))
+            when {
+                pending.isEmpty() -> "权限设置（已全部开启）"
+                else -> "还差 ${pending.size} / ${TOTAL_STEPS} 步 · 先开「${stepTitle(next)}」"
+            }))
+        // 进度条：把「4 步」画成一条，用户一眼看到自己走到哪，而不是去数下面几张卡。
+        if (pending.isNotEmpty()) container.addView(progressBar(TOTAL_STEPS - pending.size, TOTAL_STEPS))
+
         container.addView(permCard(A11Y, "读取当前聊天窗口的消息文字", a11y, next == A11Y) {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         })
@@ -119,6 +128,12 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // 密钥缺失单独提示，且给一个直达设置页的按钮——它不在上面 4 步里，
+        // 混在权限清单中会让人以为「开完 4 项就一定出结果」，然后卡在无反应上。
+        if (!key) {
+            container.addView(keyMissingCard())
+        }
+
         // Actions
         container.addView(sectionLabel("其他"))
         container.addView(actionRow("设置", "自动收发 · 关系描述 · 订阅") {
@@ -128,20 +143,81 @@ class MainActivity : AppCompatActivity() {
             showDiagnostics()
         })
 
-        // Master toggle — only meaningful once the prerequisites are in place,
-        // otherwise flipping it just produces a silent no-op.
-        if (next == null) {
-            val toggle = bigToggle(prefs.enabled)
-            toggle.setOnClickListener {
+        // 总开关**始终**可见。原来只在 4 项全开后才显示，于是「权限还没开完」的用户
+        // 想先把助手关掉都找不到开关——而 prefs.enabled 默认就是 true，助手处于
+        // 开启状态。开关不可见 + 状态已开 = 用户在不知情下被采集。
+        val toggle = bigToggle(prefs.enabled)
+        toggle.setOnClickListener {
+            if (prefs.enabled && !permsOk) {
+                // 关掉不需要任何前置条件，这正是要立刻能关的原因。
+                prefs.enabled = false
+                build()
+            } else {
                 prefs.enabled = !prefs.enabled
                 build()
             }
-            container.addView(toggle)
-        } else {
-            container.addView(text("把上面 ${pending.size} 项开完就能用了", 13f, sub).apply {
-                setPadding(0, dp(18), 0, 0)
+        }
+        container.addView(toggle)
+        if (!permsOk) {
+            container.addView(text(
+                if (prefs.enabled) "上面 ${pending.size} 项开完就能用了；不想现在开，可以先点上面关掉助手"
+                else "助手已关闭。权限开完后再打开上面的总开关",
+                12.5f, sub).apply { setPadding(dp(2), dp(10), 0, 0) })
+        }
+    }
+
+    /**
+     * 4 步权限的进度条。纯装饰但有效：把「还差几步」从需要心算的句子变成一眼可见的量。
+     */
+    private fun progressBar(done: Int, total: Int): View {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(8) }
+        }
+        for (i in 0 until total) {
+            row.addView(View(this).apply {
+                background = roundBg(dp(2), if (i < done) accent else Color.parseColor("#E5E7EB"))
+                layoutParams = LinearLayout.LayoutParams(0, dp(4), 1f).apply {
+                    if (i > 0) leftMargin = dp(4)
+                }
             })
         }
+        return row
+    }
+
+    /**
+     * 「没配接口」提示卡。worker 模式下 [Prefs.hasKey] 看的是账户令牌，所以对绝大多数
+     * 用户来说这一项靠订阅激活自动满足——这张卡只在真的没激活时出现，文案要说清
+     * 「不激活也能用，只是走共享额度会排队」，免得用户以为不付钱就完全不能用。
+     */
+    private fun keyMissingCard(): View {
+        val c = cardBox()
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        }
+        val left = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        left.addView(text("判断接口未激活", 15f, ink, bold = true))
+        left.addView(text(
+            "现在还能用，走共享额度、高峰期可能提示繁忙。激活后有专属额度、不用排队。",
+            12f, sub).apply { setPadding(0, dp(3), 0, dp(4)) })
+        val go = TextView(this).apply {
+            text = "去看看"; textSize = 13f; gravity = Gravity.CENTER
+            setTypeface(typeface, Typeface.BOLD); setTextColor(Color.WHITE)
+            background = roundBg(dp(10), accent)
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+        }
+        go.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java).putExtra("focus", "plan"))
+        }
+        row.addView(left)
+        row.addView(go)
+        c.addView(row)
+        return c
     }
 
     private fun stepTitle(id: String?) = when (id) {
@@ -184,9 +260,19 @@ class MainActivity : AppCompatActivity() {
     private fun showDiagnostics() {
         // 探活要走网络（最长 12s 超时），绝不能在主线程做——这里只放一个"检查中"的
         // 提示框，拿到结果再弹真正的报告。系统不会在这期间卡住。
-        val wait = android.app.ProgressDialog(this).apply {
-            setMessage("正在检查服务接口…")
-            setCancelable(false)
+        //
+        // 原来用的是 android.app.ProgressDialog：已废弃，而且在 HyperOS 这类深度
+        // 定制系统上样式常常跑偏。换成自建的 Dialog——顺带把「可以取消」做出来：
+        // 12 秒干等一个自己没触发的检查，用户第一反应是想退出去干别的。
+        val wait = android.app.Dialog(this).apply {
+            setCancelable(true)
+            setContentView(TextView(this@MainActivity).apply {
+                text = "正在检查服务接口…"
+                textSize = 14f
+                setTextColor(ink)
+                setPadding(dp(24), dp(26), dp(24), dp(26))
+            })
+            window?.setBackgroundDrawableResource(android.R.color.transparent)
         }
         wait.show()
         Thread {
@@ -195,8 +281,11 @@ class MainActivity : AppCompatActivity() {
                     SelfCheck.Report(listOf("自检执行失败：${it.message ?: it.javaClass.simpleName}"), false)
                 }
             runOnUiThread {
-                runCatching { wait.dismiss() }
-                showDiagReport(report)
+                // 用户可能已经取消了这个等待框：别再在他背后弹报告。
+                if (wait.isShowing) {
+                    runCatching { wait.dismiss() }
+                    showDiagReport(report)
+                }
             }
         }.apply { isDaemon = true }.start()
     }
@@ -233,17 +322,35 @@ class MainActivity : AppCompatActivity() {
 
     // ---------------------------------------------------------------- cards
 
-    private fun statusCard(ready: Boolean, a11y: Boolean, overlay: Boolean, key: Boolean): View {
+    /**
+     * 就绪卡。4 项权限 + 密钥，共 5 行——与下面的清单一一对应。
+     *
+     * 措辞按「缺什么就说什么」：权限全开但没激活接口时，标题给「可以用了，接口未激活」
+     * 而不是笼统的「尚未就绪」——因为这两种状态下助手**都能读能显示**，区别只在
+     * 判断请求走共享额度还是专属额度。混成一句「未就绪」会让用户以为坏了。
+     */
+    private fun statusCard(
+        ready: Boolean, permsOk: Boolean,
+        a11y: Boolean, overlay: Boolean, notify: Boolean, battery: Boolean,
+        key: Boolean
+    ): View {
         val c = cardBox()
         val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        head.addView(dot(if (ready) green else red).apply {
+        val (title, color) = when {
+            ready -> "已就绪，可以用了" to green
+            permsOk -> "可以用了，接口未激活" to Color.parseColor("#D97706")
+            else -> "尚未就绪，还差 ${4 - listOf(a11y, overlay, notify, battery).count { it }} 项" to ink
+        }
+        head.addView(dot(if (ready) green else if (permsOk) Color.parseColor("#D97706") else red).apply {
             (layoutParams as LinearLayout.LayoutParams).rightMargin = dp(10)
         })
-        head.addView(text(if (ready) "已就绪，可以用了" else "尚未就绪", 16f, if (ready) green else ink, bold = true))
+        head.addView(text(title, 16f, color, bold = true))
         c.addView(head)
         c.addView(checkLine("无障碍", a11y))
         c.addView(checkLine("悬浮窗", overlay))
-        c.addView(checkLine("密钥", key, okWord = "已设", noWord = "未设"))
+        c.addView(checkLine("通知读取", notify))
+        c.addView(checkLine("省电无限制", battery, okWord = "已放开", noWord = "未放开"))
+        c.addView(checkLine("判断接口", key, okWord = "已激活", noWord = "未激活"))
         return c
     }
 
@@ -383,5 +490,8 @@ class MainActivity : AppCompatActivity() {
         private const val OVERLAY = "overlay"
         private const val NOTIFY = "notify"
         private const val BATTERY = "battery"
+
+        /** 引导共 4 步，进度条与「还差 N 步」都以此为分母。 */
+        private const val TOTAL_STEPS = 4
     }
 }

@@ -14,7 +14,13 @@ import android.content.Context
  */
 object AutoReply {
 
-    /** 自动收发是否处于「全自动」状态（读 → 选 → 填 → 发都归我）。 */
+    /**
+     * 自动收发是否处于「全自动」状态（读 → 选 → 填 → 发都归我）。
+     *
+     * 注意这只描述**发送**这一段，不含「自动分析」：助手在暂停状态下仍可能读界面、
+     * 出建议、挂气泡（那是只读且不打扰的），只是不再替用户发消息。两个概念在
+     * 悬浮球菜单里是分开的两项，见 [setOn] 与气泡菜单的「自动分析」开关。
+     */
     fun isOn(ctx: Context): Boolean {
         val p = Prefs(ctx)
         return p.autoSend && p.autoFillBest
@@ -32,9 +38,19 @@ object AutoReply {
         else "已暂停自动收发：只给建议并自动填好，发送由你点"
     }
 
-    /** 通知栏 / 气泡上显示的一行状态说明。 */
-    fun statusText(ctx: Context): String = if (isOn(ctx))
-        "自动收发已开启 · 在聊天旁读消息并自动回复"
-    else
-        "在聊天旁读消息、给回复建议"
+    /**
+     * 通知栏 / 气泡上显示的一行状态说明。
+     *
+     * 要把「自动分析」和「自动发送」两层都讲出来，只说发送会让人误判：
+     * 看到「在聊天旁读消息、给回复建议」时，助手其实仍在自动读界面出建议，
+     * 只是不会替他发消息——这正是 [setOn] 关闭后的真实状态。
+     */
+    fun statusText(ctx: Context): String {
+        val p = Prefs(ctx)
+        return when {
+            isOn(ctx) -> "自动收发已开启 · 自动读消息并自动回复发送"
+            p.autoAnalyze -> "自动分析已开启 · 只给建议，发送由你点"
+            else -> "助手已待命 · 只在你点气泡时分析"
+        }
+    }
 }
