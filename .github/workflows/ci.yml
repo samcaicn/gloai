@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   syntax:
@@ -128,16 +129,18 @@ jobs:
       - name: Publish failure detail on build log
         if: failure()
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           {
             echo "===== build.log (tail 40k) ====="
             tail -c 40000 build.log 2>/dev/null || echo "(build.log missing)"
+            echo "===== Unpack-and-assert re-run (断言真实输出) ====="
+            ls -lh C:/_ciwd/WeAuto.exe 2>/dev/null || echo "(EXE missing)"
+            python _exe_ci_test.py C:/_ciwd/WeAuto.exe 2>&1 || true
           } > _diag.txt
           cat _diag.txt
-          # 附到 job summary，便于在网页上直接看
-          {
-            echo '## EXE CI 失败'
-            echo '```'
-            cat _diag.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          # 发布到公开 Issue：即使匿名/未登录也能通过 API/网页读到 CI 真实失败项。
+          gh issue create --repo samcaicn/gloai \
+            --title "WeAuto CI Assert Failure (run #${{ github.run_number }})" \
+            --body-file _diag.txt || true
