@@ -5262,6 +5262,9 @@ def api_license_buy_url():
     qs = []
     if tier:
         qs.append("tier=" + _up.quote(tier, safe=""))
+    # go=1：客户端点套餐卡片即选定档位，直接进 Creem 收银台（跳过中间购买列表页）
+    if request.args.get('go') == '1':
+        qs.append("go=1")
     if email:
         # 必须百分号编码：邮箱含 @ / + 等在 query value 里的保留字符，
         # 不编码虽多数情况能解析，但 + 会被部分服务端解成空格。

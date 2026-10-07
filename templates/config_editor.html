@@ -4502,7 +4502,8 @@
                     try{
                         // 带上已保存的邮箱：Creem 收银台会预填并锁定该邮箱框，
                         // 买家点开就能直接付款、零输入。空值不影响（收银台会自己问）。
-                        var qs = 'tier=' + encodeURIComponent(tier);
+                        // go=1：用户点卡片即选定套餐，直接进收银台，跳过中间购买列表页（少一段等待）。
+                        var qs = 'go=1&tier=' + encodeURIComponent(tier);
                         var em = (emailInput && emailInput.value || '').trim();
                         if(em) qs += '&email=' + encodeURIComponent(em);
                         var r = await fetch('/api/license/buy_url?' + qs);
@@ -4517,7 +4518,7 @@
                 // 浮层由本模板底部的 #buyOverlay + iframe 承载，叠在当前界面之上。
                 async function openBuyInternal(url){
                     if(typeof window.openBuyOverlay === 'function' && window.openBuyOverlay(url)){
-                        showMsg('已在软件内打开购买页，付款成功后自动激活…', '#1e7e34');
+                        showMsg('已在软件内打开收银台，付款成功后自动激活…', '#1e7e34');
                         startAutoRedeem();
                         return;
                     }
