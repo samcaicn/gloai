@@ -5295,7 +5295,7 @@
   .buy-ov-wrap{position:absolute;top:46px;left:0;right:0;bottom:0;overflow:hidden;background:#fff;}
   /* 把 iframe 整体上移并裁掉底部：长/可滚动页面时 "Powered by Creem" footer 落到可视区外被裁掉；
      跨域 iframe 无法改其内部 DOM，只能从容器侧裁剪 + 遮罩双保险。 */
-  .buy-ov-frame{width:100%;height:calc(100% + 80px);border:0;display:block;transform:translateY(-80px);}
+  .buy-ov-frame{width:100%;height:calc(100% + 200px);border:0;display:block;transform:translateY(-200px);}
   /* 不透明遮罩条盖住底部可视区，应对 footer 贴视口底部（短页面）的情况；
      与收银台浅色背景同色，视觉无感；pointer-events:none 让下方仍可滚动/交互。 */
   .buy-ov-mask{position:absolute;left:0;right:0;bottom:0;height:104px;background:#fff;z-index:5;pointer-events:none;}
