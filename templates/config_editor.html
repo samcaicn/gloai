@@ -4330,7 +4330,7 @@
                             <div style="color:#888;font-size:12px;margin-top:2px;">¥199 · 365 天</div>
                         </button>
                     </div>
-                    <small style="display:block;margin-top:8px;color:#888;">支付宝 / 银行卡结算，付款成功后本机会自动获取并激活授权，无需复制卡密。</small>
+                    <small style="display:block;margin-top:8px;color:#888;">支付宝 / 银行卡结算，付款后自动激活。</small>
 
                     <!-- 邮箱：只填一次，之后每次付款由 Creem 收银台自动填好（买家零输入）。
                          Creem 是 MoR，收银台邮箱无法去掉（收据/税务法定必填），只能预填。 -->
@@ -4343,9 +4343,7 @@
                             <button type="button" id="buyerEmailSaveBtn"
                                 style="background:#1976d2;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;white-space:nowrap;">保存</button>
                         </div>
-                        <small id="buyerEmailHint" style="display:block;margin-top:6px;color:#888;">
-                            付款成功后本机会自动记住 Creem 实际的收款邮箱，通常无需手动填写。
-                        </small>
+                        <small id="buyerEmailHint" style="display:none;margin-top:6px;color:#888;">
                     </div>
                 </div>
 
@@ -4355,8 +4353,8 @@
                     <button type="button" id="licenseRenewBtn" style="background:#ff9800;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">续费 / 升级</button>
                 </div>
 
-                <!-- 手动兜底：仅在自动同步失败时用（折叠起来，不占主视觉） -->
-                <details id="licenseManualFallback" style="margin-top:14px;">
+                <!-- 手动兜底：仅在自动同步失败时用（已全自动，入口隐藏；功能代码保留） -->
+                <details id="licenseManualFallback" style="display:none;margin-top:14px;">
                     <summary style="cursor:pointer;color:#888;font-size:13px;">卡密没自动同步？点此手动激活</summary>
                     <div class="form-group" style="margin-top:10px;">
                         <input type="text" id="licenseKeyInput" placeholder="粘贴购买后获得的卡密" class="api-key-input" style="width:100%;">
@@ -4398,7 +4396,7 @@
                 function startAutoRedeem(){
                     if(_redeemTimer) return; // 已在轮询
                     var tries = 0;
-                    showMsg('已打开购买页，正在等待付款…（付款成功后自动核销，无需粘贴）', '#1976d2');
+                    // 付款自动核销无需提示（打开浮层即开始轮询）
                     _redeemTimer = setInterval(async function(){
                         tries++;
                         try{
@@ -4518,7 +4516,6 @@
                 // 浮层由本模板底部的 #buyOverlay + iframe 承载，叠在当前界面之上。
                 async function openBuyInternal(url){
                     if(typeof window.openBuyOverlay === 'function' && window.openBuyOverlay(url)){
-                        showMsg('已在软件内打开收银台，付款成功后自动激活…', '#1e7e34');
                         startAutoRedeem();
                         return;
                     }
