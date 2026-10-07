@@ -50,7 +50,7 @@ SIZE_FLOOR = 40 * 1024 * 1024   # 实测 85.7MB；留足余量只拦「明显截
 # 每次改了 UI/价格就往这里加一条断言 —— 这是「改了没重新打包」的唯一防线。
 REQUIRED_TOKENS = [
     ('buyOverlay',              "付款浮层容器"),
-    ('translateY(-80px)',       "iframe 上移裁掉 Creem footer"),
+    ('translateY(-200px)',      "iframe 上移裁掉 Creem 顶部与 footer"),
     ('height:104px',            "footer 不透明遮罩条"),
     ('openBuyOverlay',          "浮层打开函数"),
 ]
