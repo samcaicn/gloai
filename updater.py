@@ -283,7 +283,7 @@ class Updater:
     def _check_artifact_updates(self) -> dict:
         """向 Worker 更新代理查询最新 CI 构件（EXE 零密钥）。"""
         try:
-            url = f"{self.UPDATE_WORKER_URL.rstrip('/')}/api/update"
+            url = f"{self.UPDATE_WORKER_URL.rstrip('/')}/api/update-windows"
             headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
             resp = requests.get(url, headers=headers, timeout=15)
             if resp.status_code in (401, 403, 404, 503):
