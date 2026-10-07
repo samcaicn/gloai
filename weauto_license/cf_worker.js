@@ -1578,20 +1578,28 @@ export default {
       return json({ data: [] });
     }
 
-    // ---- EXE 自动更新代理：/api/update ----
-    // EXE 只问本端点；本端点用 secret 里的 GITHUB_TOKEN 查最新 CI 构件，
-    // 并返回一个「免 GitHub 鉴权」的直链（GitHub 重定向到的 azure SAS URL）。
-    // EXE 零密钥即可升级，GitHub token 仅在服务端，可随时轮换、不重发 EXE。
-    // ---- APK 自动更新代理：/api/update-android ----
-    // 与 /api/update 同源（GitHub Actions artifacts），但查 Android 构件。
+    // ---- Android APK 自动更新代理：/api/update ----
+    // 本端点用 secret 里的 GITHUB_TOKEN 查最新 CI 构件，返回一个「免 GitHub 鉴权」
+    // 的直链（GitHub 重定向到的 azure SAS URL）。客户端零密钥即可升级，
+    // token 仅在服务端，可随时轮换、不需重发客户端。
     // Android artifact 名带 run 序号（如 jev-chat-jarvis-apk-1294），故用前缀匹配。
-    // 默认前缀 jev-chat-jarvis-apk*，可用 env UPDATE_ANDROID_ARTIFACT_PREFIX 覆盖。
-    if (p === "/api/update-android") {
-      return updateProxy(req, env, env.UPDATE_ANDROID_ARTIFACT_PREFIX || "jev-chat-jarvis-apk*");
+    // 默认前缀 jev-chat-jarvis-apk*，可用 env UPDATE_APK_ARTIFACT_PREFIX 覆盖。
+    // 注意：这里用独立的 env（不看 UPDATE_ARTIFACT_NAME），避免被 Windows 的配置带偏。
+    if (p === "/api/update") {
+      return updateProxy(req, env, env.UPDATE_APK_ARTIFACT_PREFIX || "jev-chat-jarvis-apk*");
     }
 
-    if (p === "/api/update") {
-      return updateProxy(req, env);
+    // ---- /api/update-android：/api/update 的显式别名，语义更清楚 ----
+    if (p === "/api/update-android") {
+      return updateProxy(req, env, env.UPDATE_APK_ARTIFACT_PREFIX || "jev-chat-jarvis-apk*");
+    }
+
+    // ---- Windows EXE 更新：/api/update-windows ----
+    // Windows 客户端由他人维护。/api/update 已改为返回 Android APK，
+    // 为避免 Windows 端升级断供，保留此专属端点：Windows 侧请改用本端点
+    // （仍可用 env UPDATE_ARTIFACT_NAME 覆盖构件名，默认 weauto-windows-exe）。
+    if (p === "/api/update-windows") {
+      return updateProxy(req, env, env.UPDATE_ARTIFACT_NAME || "weauto-windows-exe");
     }
 
     // ---- Jev 判断式 AI：/ai/jev/decisions（Workers AI JSON Mode，必须排在 /ai/ 通配之前）----
