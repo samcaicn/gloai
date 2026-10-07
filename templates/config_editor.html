@@ -5298,6 +5298,14 @@
   /* 不透明遮罩条盖住底部可视区，应对 footer 贴视口底部（短页面）的情况；
      与收银台浅色背景同色，视觉无感；pointer-events:none 让下方仍可滚动/交互。 */
   .buy-ov-mask{position:absolute;left:0;right:0;bottom:0;height:104px;background:#fff;z-index:5;pointer-events:none;}
+  /* 收银台加载态：Worker 冷启动可能数秒，给用户明确反馈，避免白屏误解为故障 */
+  .buy-ov-loading{position:absolute;top:46px;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#fff;z-index:4;}
+  .buy-ov-loading.hide{display:none;}
+  .buy-ov-spin{width:34px;height:34px;border:3px solid #e4e4e4;border-top-color:#2563eb;border-radius:50%;animation:buyOvSpin .8s linear infinite;}
+  @keyframes buyOvSpin{to{transform:rotate(360deg);}}
+  .buy-ov-loading p{font-size:14px;color:#666;margin:0;}
+  .buy-ov-retry{border:1px solid #d0d0d0;background:#fff;color:#444;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;display:none;}
+  .buy-ov-retry:hover{background:#f0f0f0;}
 </style>
 
 <div id="buyOverlay" class="buy-ov" role="dialog" aria-modal="true" aria-label="购买">
@@ -5308,6 +5316,11 @@
       <button class="buy-ov-close" id="buyOvClose" type="button" title="关闭">&times;</button>
     </div>
     <div class="buy-ov-wrap">
+      <div class="buy-ov-loading" id="buyOvLoading">
+        <div class="buy-ov-spin"></div>
+        <p id="buyOvLoadingText">正在打开收银台…</p>
+        <button class="buy-ov-retry" id="buyOvRetry" type="button">加载超时，点击重试</button>
+      </div>
       <iframe id="buyOvFrame" class="buy-ov-frame" src="about:blank" title="购买"></iframe>
       <div class="buy-ov-mask"></div>
     </div>
@@ -5318,7 +5331,22 @@
 (function(){
   var ov=document.getElementById('buyOverlay');
   var fr=document.getElementById('buyOvFrame');
+  var ld=document.getElementById('buyOvLoading');
+  var ldText=document.getElementById('buyOvLoadingText');
+  var retry=document.getElementById('buyOvRetry');
+  var ldTimer=null;
+  function showLoading(){
+    if(ld) ld.classList.remove('hide');
+    if(retry) retry.style.display='none';
+    if(ldText) ldText.textContent='正在打开收银台…';
+    clearTimeout(ldTimer);
+    ldTimer=setTimeout(function(){
+      if(ldText) ldText.textContent='收银台加载较慢…';
+      if(retry) retry.style.display='inline-block';
+    },20000);
+  }
   function close(){
+    clearTimeout(ldTimer);
     ov.classList.remove('show');
     try{ fr.src='about:blank'; }catch(e){}
     // 关闭后刷新授权状态（typeof 对未定义变量安全，不会抛 ReferenceError）
@@ -5326,10 +5354,20 @@
   }
   window.openBuyOverlay=function(url){
     if(!url) return false;
+    showLoading();
     fr.src=url;
     ov.classList.add('show');
     return true;
   };
+  // 跨域 iframe 的 load 事件对父页面可见，加载完成即隐藏 loading
+  fr.addEventListener('load',function(){
+    clearTimeout(ldTimer);
+    if(ld) ld.classList.add('hide');
+  });
+  if(retry) retry.addEventListener('click',function(){
+    var cur=fr.src;
+    if(cur && cur!=='about:blank'){ showLoading(); fr.src=cur; }
+  });
   window.closeBuyOverlay=close;
   document.getElementById('buyOvClose').addEventListener('click',close);
   // 点击遮罩空白处关闭；Esc 关闭
