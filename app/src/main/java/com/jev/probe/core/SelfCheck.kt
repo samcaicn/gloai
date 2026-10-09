@@ -48,10 +48,12 @@ object SelfCheck {
         val live = probeEndpoint(ctx)
         l.add("")
         l.add("【服务接口】")
+        // 给用户看的只说「云端服务」，不露具体域名（safeopc.cn / tuptup.top 等内部信息）；
+        // 真要做服务端排查时域名仍在 logcat（Live.host）里，作者自己看。
         when {
-            live.code == 200 -> l.add("✓ 接口可达（${live.host}）")
-            live.cfOrigin -> l.add("✗ ${live.host} 回源失败（HTTP ${live.code}）")
-            else -> l.add("! ${live.host} 返回 HTTP ${live.code}${if (live.note.isBlank()) "" else " · ${live.note}"}")
+            live.code == 200 -> l.add("✓ 云端服务可达")
+            live.cfOrigin -> l.add("✗ 云端服务回源失败（HTTP ${live.code}）")
+            else -> l.add("! 云端服务返回 HTTP ${live.code}${if (live.note.isBlank()) "" else " · ${live.note}"}")
         }
         if (live.cfOrigin) {
             l.add("  这是服务方源站的问题（证书/443/宕机），不是你的配置问题，重试无用。")
@@ -131,6 +133,7 @@ object SelfCheck {
                 }
             }
             val code = try { conn.responseCode } finally { conn.disconnect() }
+            Log.d(TAG, "selfcheck probe host=$host code=$code")
             // 5xx 全当"不可用"：自检要回答的是"现在能不能用"，不是"确切几号"。
             Live(if (code in 200..299) 200 else code, host, isCfOrigin(code))
         } catch (e: Exception) {
