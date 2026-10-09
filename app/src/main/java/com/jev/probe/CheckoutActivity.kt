@@ -40,8 +40,9 @@ import com.jev.probe.core.Prefs
 import kotlin.math.roundToInt
 
 /**
- * App 内收银台：Creem 的 checkout 页（Worker /buy 302 到 pay.jukuai.net）**在本 App 的
- * WebView 里打开**，不再跳出外部浏览器/H5 容器，避免「付款后回不到 App / 会话串号 / 状态丢失」。
+ * App 内收银台：Creem 直连结账短链（[Prefs.CREEM_CHECKOUT_URLS]，落在 pay.jukuai.net）
+ * **在本 App 的 WebView 里打开**，不再跳出外部浏览器/H5 容器，避免「付款后回不到 App /
+ * 会话串号 / 状态丢失」。直连后不再经过 weauto.safeopc.cn 的 Worker，绕开其源站 525。
  *
  * 品牌白牌：Creem 页自带「Secure Checkout by Creem / Powered by Creem.io」字样，用三重手段藏掉
  *  1. **布局裁切**：WebView 整体上移 [TOP_CROP_DP]，底边再收 [BOTTOM_CROP_DP]（或固定
@@ -52,13 +53,16 @@ import kotlin.math.roundToInt
  * 三个量都在 [Companion] 里，真机上看着调即可。
  *
  * 关键约束：
- *  - **checkout 是一次性的买家私有资源**，`/buy` 每次现建 → 这里强制 `LOAD_NO_CACHE`
+ *  - **checkout 是一次性的买家私有资源**（Creem 会话短链）→ 这里强制 `LOAD_NO_CACHE`
  *    （以及请求头 no-cache），第二个买家不会拿到第一个人的会话。
  *  - 所有 http/https 导航（含 Creem → 支付宝/银联/3DS 的跳转）都留在 WebView 内；
  *    只有非 http 的原生 scheme（alipays://、weixin://、intent:// …）才交给外部 App。
  *  - `target=_blank` / `window.open`（收银台弹二维码、3DS 弹窗）由 [WebChromeClient.onCreateWindow]
  *    接管，新建一个 WebView 叠在同一容器里，仍然不出 App。
  *  - 付款成功靠 [LicenseClient.poll] 轮询确认（不依赖回调 URL），拿到卡密即写令牌并收尾。
+ *  - 若底层仍出现 Cloudflare 5xx / 源站错误页（理论上直连后不会再触发，但留一手），
+ *    [onPageFinished] 会检测到并覆盖一层「支付服务暂时不可用，请稍后重试」友好提示，
+ *    不让用户看到原生 Cloudflare 错误页或任何内部域名。
  */
 class CheckoutActivity : AppCompatActivity() {
 
@@ -73,6 +77,8 @@ class CheckoutActivity : AppCompatActivity() {
     private var tier: String = ""
     private var activated = false
     private var lastGoodUrl: String = ""
+    /** 已经盖过 Cloudflare/源站错误友好层，避免 SPA 内部跳转重复弹。 */
+    private var cloudErrorShown = false
 
     /** 页面回报的滚动锁：内容装得下才锁死滚动（JS 侧算，见 HIDE_BRAND_JS 的 lockScroll）。 */
     @Volatile
@@ -197,7 +203,7 @@ class CheckoutActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
         box.addView(TextView(this).apply {
-            text = "页面加载失败\n$msg"; textSize = 14f; setTextColor(sub); gravity = Gravity.CENTER
+            text = msg; textSize = 14f; setTextColor(sub); gravity = Gravity.CENTER
             setPadding(dp(24), dp(24), dp(24), dp(12))
         })
         box.addView(TextView(this).apply {
@@ -213,6 +219,25 @@ class CheckoutActivity : AppCompatActivity() {
             }
         })
         container.addView(box)
+    }
+
+    /** 覆盖 Cloudflare / 源站错误页：用户只看到中性提示，看不到原生 5xx 页或任何内部域名。 */
+    private fun showCloudError() {
+        if (cloudErrorShown) return
+        cloudErrorShown = true
+        showError("支付服务暂时不可用，请稍后重试")
+    }
+
+    /** 检测当前页是否为 Cloudflare 5xx / 源站证书错误页（命中 body 文本特征串即覆盖）。 */
+    private fun detectCloudError(view: WebView) {
+        runCatching {
+            view.evaluateJavascript(
+                "(function(){try{var t=document.body?document.body.innerText||'':'';" +
+                "return /cloudflare|error 5\\d\\d|ray id|回源失败|origin (ca )?certificate" +
+                "|52[1-5]|连接.*失败|无法访问此网站/i.test(t);}catch(e){return false;}})()",
+                android.webkit.ValueCallback<String> { v -> if (v == "true") showCloudError() }
+            )
+        }.onFailure { Log.w(TAG, "cloud error detect failed: ${it.message}") }
     }
 
     private fun goBack() {
@@ -358,7 +383,10 @@ class CheckoutActivity : AppCompatActivity() {
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
             pageScrollLock = false // 新页面先放开，等注入脚本回报后再决定
-            if (view === web) progress.visibility = View.VISIBLE
+            if (view === web) {
+                progress.visibility = View.VISIBLE
+                cloudErrorShown = false // 新页面（含重试）重置错误覆盖层
+            }
         }
 
         override fun onPageFinished(view: WebView, url: String) {
@@ -366,13 +394,16 @@ class CheckoutActivity : AppCompatActivity() {
             if (view !== web) return
             progress.visibility = View.GONE
             lastGoodUrl = url
+            // 兜底：万一底层仍是 Cloudflare 5xx / 源站错误页（直连后理论上不会），
+            // 盖一层友好提示，不把原生错误页/内部域名暴露给用户。
+            detectCloudError(view)
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
             if (!request.isForMainFrame) return
             Log.w(TAG, "page error ${error.errorCode}: ${error.description}")
             progress.visibility = View.GONE
-            showError("${error.description}（${error.errorCode}）")
+            showError("页面加载失败\n${error.description}（${error.errorCode}）")
         }
     }
 
