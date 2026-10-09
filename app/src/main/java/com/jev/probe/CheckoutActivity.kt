@@ -40,9 +40,10 @@ import com.jev.probe.core.Prefs
 import kotlin.math.roundToInt
 
 /**
- * App 内收银台：Creem 直连结账短链（[Prefs.CREEM_CHECKOUT_URLS]，落在 pay.jukuai.net）
- * **在本 App 的 WebView 里打开**，不再跳出外部浏览器/H5 容器，避免「付款后回不到 App /
- * 会话串号 / 状态丢失」。直连后不再经过 weauto.safeopc.cn 的 Worker，绕开其源站 525。
+ * App 内收银台：[LicenseClient.buyUrl] 走 weauto.jukuai.net 的 /buy（weauto-license Worker 持
+ * Creem key 现建正确结账会话并 302 到 pay.jukuai.net 的 Creem 页），**在本 App 的 WebView 里
+ * 打开**，不再跳出外部浏览器/H5 容器，避免「付款后回不到 App / 会话串号 / 状态丢失」。中间的
+ * weauto.jukuai.net 跳转身在 WebView 内、不暴露给用户，原 safeopc.cn 源站 525 已彻底绕开。
  *
  * 品牌白牌：Creem 页自带「Secure Checkout by Creem / Powered by Creem.io」字样，用三重手段藏掉
  *  1. **布局裁切**：WebView 整体上移 [TOP_CROP_DP]，底边再收 [BOTTOM_CROP_DP]（或固定

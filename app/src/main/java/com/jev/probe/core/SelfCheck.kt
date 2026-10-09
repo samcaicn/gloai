@@ -135,7 +135,9 @@ object SelfCheck {
             val code = try { conn.responseCode } finally { conn.disconnect() }
             Log.d(TAG, "selfcheck probe host=$host code=$code")
             // 5xx 全当"不可用"：自检要回答的是"现在能不能用"，不是"确切几号"。
-            Live(if (code in 200..299) 200 else code, host, isCfOrigin(code))
+            // 4xx（401 无令牌 / 405 探测方法不被允许等）说明**服务器活着且端点存在**，
+            // 只是 GET 探测本身被拒——这算"可达"，不该让用户看到红色感叹号。
+            Live(if (code in 200..299 || code in 400..499) 200 else code, host, isCfOrigin(code))
         } catch (e: Exception) {
             Live(0, host, false, e.message?.take(40) ?: "连不上")
         }

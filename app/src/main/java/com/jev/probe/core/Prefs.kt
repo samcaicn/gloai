@@ -10,7 +10,7 @@ import org.json.JSONObject
  * App-private config store.
  *
  * v2 起（本文件）：三个 LLM 路由（judge / reply / vision）统一由 WeAuto 云端
- * `weauto.safeopc.cn` 提供，**默认即 worker 模式**，设置界面不再暴露 base url / key / model
+ * `weauto.jukuai.net` 提供，**默认即 worker 模式**，设置界面不再暴露 base url / key / model
  * （见 SettingsActivity「账户」卡片）。云端负责鉴权与 token 计费，客户端只持有一个
  * 加密保存的账户令牌（见 [accountToken] / [SecureStore]）。
  *
@@ -646,28 +646,11 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val OCR_VISION = "vision"
 
         // ---- WeAuto 云端（唯一 LLM 出口）----
-        const val WORKER_BASE = "https://weauto.safeopc.cn"
-
-        /**
-         * Creem 直连结账短链（三档对应 [LicenseClient.TIERS]）。
-         *
-         * 为什么直连：原 [WORKER_BASE]/buy 走 weauto.safeopc.cn 的 Cloudflare Worker
-         * 动态建 checkout，但该源站证书/443 故障会整页 525（"SSL 握手失败、页面打不开"）。
-         * 这里改成本地硬编码 Creem 结账短链（落在用户自有的 pay.jukuai.net 域，Vercel 托管，
-         * 与 safeopc Worker 隔离），WebView 直接打开，**彻底绕过 525 的那一层**。
-         *
-         * 链接是 Creem API 建的会话短链（一次性），需轮换时在 Dev 侧重跑建链脚本即可：
-         *   curl -X POST https://api.creem.io/v1/checkouts \
-         *     -H "x-api-key: $CREEM_KEY" -H 'Content-Type: application/json' \
-         *     -d '{"product_id":"<prod_xxx>"}'
-         * 取返回的 checkout_url 填到这里。App 内绝不持有 Creem API key。
-         * 界面对用户只显示「安全支付」，不露任何内部域名。
-         */
-        val CREEM_CHECKOUT_URLS = mapOf(
-            LicenseClient.TIER_NORMAL to "https://pay.jukuai.net/checkout/prod_1xaKxzuVRluYDmFvaq2dQj/ch_3Wdf8t4uahOmNaqmVTLfZ3",
-            LicenseClient.TIER_PREMIUM to "https://pay.jukuai.net/checkout/prod_1BrJoEUEGGuWZGRX0trS6h/ch_3F7SMPVmtEMVIxMwTnJJ6E",
-            LicenseClient.TIER_LIFETIME to "https://pay.jukuai.net/checkout/prod_4QeZzI7YyAmySg3F0XfuZK/ch_2HdxkEOJGwSTedymbM4Pgz"
-        )
+        // 原 weauto.safeopc.cn 走腾讯云 SCF 源站，Cloudflare 回源 TLS 握手失败 → 整站 525
+        // （用户报的"SSL 握手失败、页面打不开"）。2026-10-09 起改用同后端的健康域名
+        // weauto.jukuai.net（Cloudflare Worker weauto-license 的自定义路由）：LLM / 支付 / 激活 /
+        // 升级全部接口一次性恢复，且界面不露任何内部域名。safeopc.cn 那条坏链路已不再被引用。
+        const val WORKER_BASE = "https://weauto.jukuai.net"
 
         // ---- tuptup.top OpenAI 兼容网关（用户自备 LLM，判断/回复/视觉统一走这里）----
         // 密钥按用户要求硬编码为默认值；此 key 会出现在源码与公开镜像里，介意请改走设置页自填。

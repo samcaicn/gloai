@@ -7,15 +7,14 @@ import java.net.URL
 /**
  * Creem 支付购买闭环的客户端半边。
  *
- * 收银台（[buyUrl]）现在**直连 Creem 结账短链**（[Prefs.CREEM_CHECKOUT_URLS]，落在
- * pay.jukuai.net），不再经过 weauto.safeopc.cn 的 Worker —— 那层源站证书故障会整页 525，
- * 正是用户报的"SSL 握手失败、页面打不开"。直连后支付页稳定可开。
+ * 收银台（[buyUrl]）走 [Prefs.WORKER_BASE]/buy（weauto.jukuai.net 的 weauto-license Worker），
+ * 由服务端持 Creem key 动态建**正确**的结账会话并 302 到 pay.jukuai.net 的 Creem 页——
+ * 用户最终看到的是 Creem 收银台，中间的 weauto.jukuai.net 跳转身在 WebView 里、不暴露给用户。
+ * 这样既不把 Creem key 写进 App，也保证三档对应正确的 Creem 产品（产品 ID 由服务端维护，
+ * 避免客户端硬编码错档 / 一次性会话过期）。原 safeopc.cn 源站 525 那条已彻底绕开。
  *
- * 闭环（激活侧仍依赖服务端 webhook，见下）：
- *   → 用户付款 → Creem webhook 在 Worker 侧写 lic:<mid>=卡密 → 本端 [poll] 每 3s 轮询
- *   → 拿到卡密后由调用方写入 accountToken 并切 worker 模式，判断接口即恢复。
- *
- * 客户端绝不持有 Creem API key；[buyUrl] 用的是预先建好、硬编码进 App 的公开结账短链。
+ * 闭环（激活侧）：用户付款 → Creem webhook 在 Worker 侧写 lic:<mid>=卡密 → 本端 [poll] 每 3s
+ * 轮询 [Prefs.WORKER_BASE]/license?mid= → 拿到卡密后由调用方写入 accountToken 并切 worker 模式。
  */
 object LicenseClient {
 
@@ -26,9 +25,9 @@ object LicenseClient {
     const val TIER_PREMIUM = "premium"
     const val TIER_LIFETIME = "lifetime"
 
-    /** 收银台直达 URL：Creem 直连结账短链（绕过 safeopc Worker 的源站 525）。 */
+    /** 收银台直达 URL：走 weauto.jukuai.net 的 /buy，由服务端现建正确 Creem 会话（绕开 safeopc 525）。 */
     fun buyUrl(prefs: Prefs, tier: String): String =
-        Prefs.CREEM_CHECKOUT_URLS[tier] ?: Prefs.CREEM_CHECKOUT_URLS[TIER_NORMAL]!!
+        "${Prefs.WORKER_BASE.trimEnd('/')}/buy?go=1&tier=$tier&mid=${prefs.licenseMid}"
 
     /**
      * 轮询一次 /license?mid=。未付款返回 null（404 pending）；
