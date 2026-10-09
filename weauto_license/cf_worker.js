@@ -1967,9 +1967,9 @@ export default {
     // ---- 设备备份同步：App 的云端快照，用于卸载重装后恢复数据 ----
     // GET  ?mid=<deviceId>  取回快照（404 = 该设备还没备份过）
     // PUT  ?mid=<deviceId>  body 为明文 JSON 快照
-    if (p === "/sync") {
-      return handleSync(req, env, url);
-    }
+    // 注意：路由分发放在 handleSync 定义之后 —— 函数声明会提升，但
+    // DEVICE_ID_RE/SYNC_MAX_BYTES 是 const（TDZ），若在声明前调用
+    // handleSync 会 ReferenceError → Worker 1101（/sync 永远 500 的根因）。
 
     // 根路径：跳购买页，方便直接访问域名
     if (p === "/" && req.method === "GET") {
@@ -2039,6 +2039,11 @@ export default {
       }
 
       return json({ ok: false, error: "method_not_allowed" }, 405, CORS);
+    }
+
+    // /sync 路由分发（必须在 const 声明与 handleSync 定义之后，见上方 TDZ 注释）
+    if (p === "/sync") {
+      return handleSync(req, env, url);
     }
 
     // ---- EXE 自动更新代理实现 ----
