@@ -51,7 +51,8 @@ import kotlin.math.roundToInt
  *  2. **禁止滚动**：注入 `overflow:hidden` + 关闭滚动条/回弹，用户滚不回去看到被切掉的部分；
  *  3. **DOM 兜底**：注入脚本把任何文案/alt/src/class 里带 "creem" 的节点直接 `display:none`，
  *     并用 MutationObserver 盯着（收银台是 Next.js 客户端渲染，品牌节点是后插入的）。
- * 三个量都在 [Companion] 里，真机上看着调即可。
+ * 另外把「产品详情面板 + 它以上的全部内容」（产品标题/价格行/卖家「由 x 提供」/详情描述）
+ * 整块隐藏，用户只见付款表单（小计/总计仍显示金额）。三个调参量都在 [Companion] 里。
  *
  * 关键约束：
  *  - **checkout 是一次性的买家私有资源**（Creem 会话短链）→ 这里强制 `LOAD_NO_CACHE`
@@ -551,7 +552,7 @@ class CheckoutActivity : AppCompatActivity() {
         /** 窗口固定高度（dp）。0 = 撑满剩余空间；>0 时按这个高度开窗（控制窗口高度）。 */
         private const val WINDOW_HEIGHT_DP = 0
 
-        /** 隐藏品牌节点 + 禁止页面滚动的注入脚本。 */
+        /** 隐藏品牌节点 + 产品摘要面板（详情和以上） + 禁止页面滚动的注入脚本。 */
         private const val HIDE_BRAND_JS = """
 (function () {
   // 可交互元素只按文案判定，避免把「Pay」按钮误杀（它的 class 里可能带 creem）
@@ -585,6 +586,40 @@ class CheckoutActivity : AppCompatActivity() {
       }
     }
   }
+  // 隐藏「产品详情面板 + 它以上的所有内容」：Creem 布局是 main 下两半栏
+  // （左=产品摘要：标题/价格/卖家「由 x 提供」/产品图/详情描述；右=付款表单），
+  // 手机端单列堆叠，摘要在上。定位含摘要特征的半栏整个 display:none，
+  // 只留付款表单（电子邮件/全名/账单地址/小计/总计/继续付款）。
+  function hideSummary() {
+    var main = document.querySelector('main');
+    if (!main || !main.children) return;
+    var kids = main.children;
+    var target = null;
+    for (var i = 0; i < kids.length; i++) {
+      var t = String(kids[i].textContent || '');
+      // 摘要栏特征：卖家行/产品描述；且排除付款表单栏（含电子邮件/邮箱字段）
+      if (/提供|provided by|使用权|到期前|授权/.test(t) &&
+          !/电子邮件|电子邮箱|邮箱地址|email/i.test(t)) { target = kids[i]; break; }
+    }
+    if (!target && kids.length > 1) target = kids[0]; // 兜底：首子元素就是摘要栏
+    if (target && !target.__waHidden) {
+      target.style.setProperty('display', 'none', 'important');
+      target.__waHidden = 1;
+      var sub = target.querySelectorAll ? target.querySelectorAll('*') : [];
+      for (var j = 0; j < sub.length; j++) sub[j].__waHidden = 1;
+    }
+    // 兜底：万一页头「支付」等零散节点在摘要栏之外，把 main 之下
+    // 位于摘要栏前面的兄弟节点也一并收掉（正常布局到不了这里）
+    if (target) {
+      for (var k = 0; k < kids.length; k++) {
+        if (kids[k] === target) break;
+        if (!kids[k].__waHidden) {
+          kids[k].style.setProperty('display', 'none', 'important');
+          kids[k].__waHidden = 1;
+        }
+      }
+    }
+  }
   // 滚动锁走 CSSOM（页面的 CSP 禁 <style> 注入，但管不着 JS 改 style），
   // 同时把「是否装得下一屏」回报给原生层，由 WebView 在 View 层硬锁滑动。
   // 内容超一屏时不锁 —— 那一步是支付表单，锁死会够不到支付按钮；
@@ -602,6 +637,7 @@ class CheckoutActivity : AppCompatActivity() {
   }
   function run() {
     sweep();
+    hideSummary();
     lockScroll();
     // 页面 <title> 就是 "Creem"，改掉防止从任何地方漏出去
     try { if (document.title !== '支付') document.title = '支付'; } catch (e) {}
