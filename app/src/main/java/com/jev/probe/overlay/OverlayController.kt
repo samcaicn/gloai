@@ -24,9 +24,11 @@ import com.jev.probe.core.AutoReply
 import com.jev.probe.core.ChatSnapshot
 import com.jev.probe.core.CrashLog
 import com.jev.probe.core.ErrCatalog
+import com.jev.probe.core.Lang
 import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.RankedReply
+import com.jev.probe.core.t
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -256,7 +258,7 @@ class OverlayController(private val ctx: Context) {
         // Header
         val header = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         header.addView(TextView(ctx).apply {
-            text = "Jev 分析"; setTextColor(Color.parseColor("#111827")); textSize = 15f
+            text = ctx.t("Jev 分析", "Jev analysis"); setTextColor(Color.parseColor("#111827")); textSize = 15f
             setTypeface(typeface, Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
@@ -333,7 +335,7 @@ class OverlayController(private val ctx: Context) {
             layoutParams = FrameLayout.LayoutParams(dp(210), ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(56) }
         }
         // 最常用：随时手动分析当前对话（关掉自动分析后这几乎是唯一的触发入口）。
-        menu.addView(menuItem("分析当前对话", primary = true) {
+        menu.addView(menuItem(ctx.t("分析当前对话", "Analyze this chat now"), primary = true) {
             root?.removeView(menu); manualTriggered(); onManualAnalyze?.invoke()
         })
 
@@ -343,8 +345,9 @@ class OverlayController(private val ctx: Context) {
         // 状态错位。拆开后两个语义各自明确，且都带当前状态。
         val autoOn = AutoReply.isOn(ctx)
         menu.addView(menuItem(
-            if (autoOn) "自动收发：已开启" else "自动收发：已暂停",
-            sub = if (autoOn) "会自动回复并发送 · 点此暂停" else "只给建议，发送由你点 · 点此开启"
+            if (autoOn) ctx.t("自动收发：已开启", "Auto send/receive: on") else ctx.t("自动收发：已暂停", "Auto send/receive: paused"),
+            sub = if (autoOn) ctx.t("会自动回复并发送 · 点此暂停", "Replies and sends automatically · tap to pause")
+                  else ctx.t("只给建议，发送由你点 · 点此开启", "Advice only, you tap send · tap to enable")
         ) {
             root?.removeView(menu)
             // 开启是不可逆动作（消息真会发出去），必须先确认；暂停随时可做，直接生效。
@@ -355,15 +358,17 @@ class OverlayController(private val ctx: Context) {
         })
         val anaOn = prefs.autoAnalyze
         menu.addView(menuItem(
-            if (anaOn) "自动分析：已开启" else "自动分析：已关闭",
-            sub = if (anaOn) "对方发消息就自动判断 · 点此关闭" else "只在你点气泡时分析 · 点此开启"
+            if (anaOn) ctx.t("自动分析：已开启", "Auto-analyze: on") else ctx.t("自动分析：已关闭", "Auto-analyze: off"),
+            sub = if (anaOn) ctx.t("对方发消息就自动判断 · 点此关闭", "Judges automatically on new messages · tap to turn off")
+                  else ctx.t("只在你点气泡时分析 · 点此开启", "Analyzes only when you tap the bubble · tap to turn on")
         ) {
             root?.removeView(menu)
             prefs.autoAnalyze = !anaOn
             // 手动从菜单开回来时，把自动收发一并对齐到「只给建议」这一档：
             // 用户主动点开的是分析，不是发消息。
             if (anaOn && AutoReply.isOn(ctx)) AutoReply.setOn(ctx, false)
-            toast(if (anaOn) "已关闭自动分析，助手只在需要时待命" else "已开启自动分析")
+            toast(if (anaOn) ctx.t("已关闭自动分析，助手只在需要时待命", "Auto-analyze off — the assistant only stands by when needed")
+                  else ctx.t("已开启自动分析", "Auto-analyze on"))
             com.jev.probe.capture.KeepAliveService.refresh(ctx)
         })
 
@@ -371,23 +376,23 @@ class OverlayController(private val ctx: Context) {
         // 微信里整屏截屏会触发风控，所以这一项在微信前台时直接不摆出来——
         // 摆在菜单里、点下去才回一句「不支持」，等于浪费用户一次点击。
         if (!inWeChat()) {
-            menu.addView(menuItem("截屏识别一次") { root?.removeView(menu); onOcrCapture?.invoke() })
+            menu.addView(menuItem(ctx.t("截屏识别一次", "Capture screen once")) { root?.removeView(menu); onOcrCapture?.invoke() })
         }
-        menu.addView(menuItem("把当前会话存为联系人") { onSaveContact?.invoke(); root?.removeView(menu) })
+        menu.addView(menuItem(ctx.t("把当前会话存为联系人", "Save this chat as a contact")) { onSaveContact?.invoke(); root?.removeView(menu) })
         if (onWhitelistToggle != null) {
             // 文案按真实语义写：[Prefs.isAllowed] 是「白名单非空时只分析命中的会话」，
             // 也就是它在缩小范围而不是排除。原来写「加入白名单」，用户理所当然理解成
             // 「把这个排除掉」，方向正好相反——这是最容易招致「为什么突然不分析了」的措辞。
             menu.addView(menuItem(
-                if (onWhitelistInList()) "退出「只分析这些会话」" else "只分析这个会话",
-                sub = if (onWhitelistInList()) "恢复为所有会话都分析" else "之后只分析这个会话，别的都不分析"
+                if (onWhitelistInList()) ctx.t("退出「只分析这些会话」", "Leave \"only analyze listed chats\"") else ctx.t("只分析这个会话", "Only analyze this chat"),
+                sub = if (onWhitelistInList()) ctx.t("恢复为所有会话都分析", "Back to analyzing all chats") else ctx.t("之后只分析这个会话，别的都不分析", "From now on only this chat is analyzed")
             ) { root?.removeView(menu); onWhitelistToggle?.invoke() })
         }
         menu.addView(menuDivider())
-        menu.addView(menuItem("诊断与自检") { root?.removeView(menu); onDiagnostics?.invoke() })
-        menu.addView(menuItem("打开设置") { openSettings(); root?.removeView(menu) })
-        menu.addView(menuItem("隐藏助手（本次）") { hide() })
-        menu.addView(menuItem("取消") { root?.removeView(menu) })
+        menu.addView(menuItem(ctx.t("诊断与自检", "Diagnostics")) { root?.removeView(menu); onDiagnostics?.invoke() })
+        menu.addView(menuItem(ctx.t("打开设置", "Open settings")) { openSettings(); root?.removeView(menu) })
+        menu.addView(menuItem(ctx.t("隐藏助手（本次）", "Hide assistant (this session)")) { hide() })
+        menu.addView(menuItem(ctx.t("取消", "Cancel")) { root?.removeView(menu) })
         root?.addView(menu)
     }
 
@@ -441,9 +446,13 @@ class OverlayController(private val ctx: Context) {
      */
     private fun confirmEnableAuto() {
         val box = TextView(ctx).apply {
-            text = "对方发来消息后，应用会自动读、判断、填好回复并直接发送出去。\n\n" +
-                "发出去的一定是候选回复的原文，不会改写；转账、红包、收款一律不碰。\n\n" +
-                "随时想停：长按气泡或下拉通知栏点一下就能关。"
+            text = ctx.t(
+                "对方发来消息后，应用会自动读、判断、填好回复并直接发送出去。\n\n" +
+                    "发出去的一定是候选回复的原文，不会改写；转账、红包、收款一律不碰。\n\n" +
+                    "随时想停：长按气泡或下拉通知栏点一下就能关。",
+                "When a message arrives, the app will read it, judge it, fill in a reply and send it automatically.\n\n" +
+                    "What gets sent is always the candidate reply verbatim, never rewritten; money transfers, red packets and payment requests are never touched.\n\n" +
+                    "To stop anytime: long-press the bubble or tap in the notification.")
             setTextColor(Color.parseColor("#111827")); textSize = 13.5f
             setLineSpacing(dp(3).toFloat(), 1f)
             setPadding(dp(22), dp(6), dp(22), dp(6))
@@ -454,9 +463,9 @@ class OverlayController(private val ctx: Context) {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
         android.app.AlertDialog.Builder(ctx)
-            .setTitle("确定开启自动收发？")
+            .setTitle(ctx.t("确定开启自动收发？", "Turn on auto send/receive?"))
             .setView(wrap)
-            .setPositiveButton("开启") { _, _ ->
+            .setPositiveButton(ctx.t("开启", "Turn on")) { _, _ ->
                 // 确认过了才算完成首启引导，否则首启卡会一直留在面板上。
                 prefs.onboarded = true
                 toast(AutoReply.setOn(ctx, true))
@@ -464,7 +473,7 @@ class OverlayController(private val ctx: Context) {
                 // 收起卡片，让用户回到聊天本身（他刚做完决定，不该被面板继续挡着）。
                 if (expanded) toggle()
             }
-            .setNegativeButton("再想想", null)
+            .setNegativeButton(ctx.t("再想想", "Not now"), null)
             .show()
     }
 
@@ -522,7 +531,8 @@ class OverlayController(private val ctx: Context) {
         if (!crashNoted) {
             crashNoted = true
             runCatching {
-                if (CrashLog.text(ctx) != null) toast("检测到崩溃记录，可点悬浮球菜单「诊断与自检」查看")
+                if (CrashLog.text(ctx) != null) toast(ctx.t("检测到崩溃记录，可点悬浮球菜单「诊断与自检」查看",
+                    "A crash log was found — bubble menu > \"Diagnostics\" to view it"))
             }
         }
         // 去重键必须**包含会影响空闲卡文案的状态**。原来这里只有 "idle"/"onboard"
@@ -531,29 +541,32 @@ class OverlayController(private val ctx: Context) {
         // 最想确认的一件事。开关状态进 key，改完立刻重绘。
         val autoOn = AutoReply.isOn(ctx)
         val anaOn = prefs.autoAnalyze
-        val key = (if (prefs.onboarded) "idle" else "onboard") + "|auto=$autoOn|ana=$anaOn"
+        val key = (if (prefs.onboarded) "idle" else "onboard") + "|auto=$autoOn|ana=$anaOn|lang=" + Lang.code(ctx)
         if (key == lastIdleKey) return
         val views = ArrayList<View>()
         if (!prefs.onboarded) {
-            views.add(line("我是 AI 聊天助手", "#3A7AFE", 15f, true))
-            views.add(hint("在聊天 App 里，我读对方最新的消息，给你「对方意图」判断和几条回复建议。\n\n· 微信：对方发消息我就自动读并生成回复，可「自动填入并发送」；配合通知读取，你不在手机旁也能收发\n· QQ / 飞书等：给建议并把最佳回复自动填好，你点一下发送\n· 点气泡：随时手动分析 · 长按气泡：暂停自动 / 诊断 / 设置"))
+            views.add(line(ctx.t("我是 AI 聊天助手", "Hi, I'm your AI chat assistant"), "#3A7AFE", 15f, true))
+            views.add(hint(ctx.t(
+                "在聊天 App 里，我读对方最新的消息，给你「对方意图」判断和几条回复建议。\n\n· 微信：对方发消息我就自动读并生成回复，可「自动填入并发送」；配合通知读取，你不在手机旁也能收发\n· QQ / 飞书等：给建议并把最佳回复自动填好，你点一下发送\n· 点气泡：随时手动分析 · 长按气泡：暂停自动 / 诊断 / 设置",
+                "In chat apps I read their latest messages and give you an \"intent\" read plus candidate replies.\n\n· WeChat: I read and draft automatically, and can \"auto-fill and send\"; with notification access this works even when you're away from the phone\n· QQ / Feishu etc.: I suggest and auto-fill the best reply, you tap send\n· Tap the bubble: analyze anytime · Long-press: pause auto / diagnostics / settings")))
             // 开启自动收发 = 唯一不可逆的动作。首启卡是用户看到的第一屏，
             // 也是最容易顺手点掉的地方，所以和设置页一样先过一道确认——
             // 「读完再决定」的默认值应该是安全的那个。
-            views.add(bigButton("开启自动收发并开始") {
+            views.add(bigButton(ctx.t("开启自动收发并开始", "Enable auto send/receive and start")) {
                 // 不在这里收起卡片：用户可能点「再想想」，那时这张卡还得在，
                 // 否则引导入口就消失了。收起交给确认框里的「开启」。
                 confirmEnableAuto()
             })
             // 次要选项：只给建议并自动填好，发送仍由用户点——同一张卡里把选择权交回用户。
             views.add(TextView(ctx).apply {
-                text = "先只看建议，不自动发送"
+                text = ctx.t("先只看建议，不自动发送", "Just suggestions for now, don't auto-send")
                 textSize = 13f; gravity = Gravity.CENTER
                 setTextColor(Color.parseColor("#6B7280"))
                 setPadding(dp(10), dp(12), dp(10), dp(6))
                 setOnClickListener {
                     prefs.onboarded = true
-                    toast("已就绪：给建议并自动填好，发送由你点。设置里可随时开启自动发送")
+                    toast(ctx.t("已就绪：给建议并自动填好，发送由你点。设置里可随时开启自动发送",
+                        "Ready: suggestions auto-filled, you tap send. Auto-send can be enabled anytime in settings"))
                     if (expanded) toggle()
                 }
             })
@@ -566,16 +579,21 @@ class OverlayController(private val ctx: Context) {
             // 唯一需要他随时知道的事。autoOn / anaOn 已在上面为去重键读过。
             views.add(hint(
                 when {
-                    autoOn -> "自动收发已开启：对方发消息我会自动回复并发送。随时长按气泡可暂停。"
-                    anaOn -> "自动分析已开启：只给建议，发送由你点。长按气泡可关。"
-                    else -> "自动分析已关闭：只有你点气泡才会分析。长按气泡可重新开启。"
+                    autoOn -> ctx.t("自动收发已开启：对方发消息我会自动回复并发送。随时长按气泡可暂停。",
+                        "Auto send/receive is on: incoming messages get replied and sent automatically. Long-press the bubble anytime to pause.")
+                    anaOn -> ctx.t("自动分析已开启：只给建议，发送由你点。长按气泡可关。",
+                        "Auto-analyze is on: advice only, you tap send. Long-press the bubble to turn off.")
+                    else -> ctx.t("自动分析已关闭：只有你点气泡才会分析。长按气泡可重新开启。",
+                        "Auto-analyze is off: analysis runs only when you tap the bubble. Long-press to re-enable.")
                 }))
             if (title != null) {
-                views.add(hint("「$title」已就绪。点下面按钮可随时手动分析当前对话。"))
+                views.add(hint(ctx.t("「", "\"") + title + ctx.t("」已就绪。点下面按钮可随时手动分析当前对话。",
+                    "\" is ready. Tap the button below to analyze the current chat anytime.")))
             } else {
-                views.add(hint("已就绪。点这个气泡可随时手动分析当前对话。"))
+                views.add(hint(ctx.t("已就绪。点这个气泡可随时手动分析当前对话。",
+                    "Ready. Tap this bubble to analyze the current chat anytime.")))
             }
-            views.add(bigButton("分析当前对话") { manualTriggered(); onManualAnalyze?.invoke() })
+            views.add(bigButton(ctx.t("分析当前对话", "Analyze current chat")) { manualTriggered(); onManualAnalyze?.invoke() })
             setContent(views) // 不自动展开：气泡亮着，用户点一下才看得到入口
             if (contentBox != null) lastIdleKey = key
         }
@@ -641,7 +659,7 @@ class OverlayController(private val ctx: Context) {
             setTypeface(typeface, Typeface.BOLD)
         }
         val skip = TextView(ctx).apply {
-            text = "本次不发送"; textSize = 13f; gravity = Gravity.CENTER
+            text = ctx.t("本次不发送", "Skip this time"); textSize = 13f; gravity = Gravity.CENTER
             setTextColor(Color.WHITE); setTypeface(typeface, Typeface.BOLD)
             background = card(10, Color.parseColor("#DC2626"))
             setPadding(dp(14), dp(9), dp(14), dp(9))
@@ -663,7 +681,8 @@ class OverlayController(private val ctx: Context) {
             }
             addView(line)
             addView(TextView(ctx).apply {
-                text = "自动发送已开启，${totalSec} 秒后发出。点下面可以拦下这一条。"
+                text = ctx.t("自动发送已开启，${totalSec} 秒后发出。点下面可以拦下这一条。",
+                    "Auto-send is on; it goes out in ${totalSec}s. Tap below to stop this one.")
                 setTextColor(Color.parseColor("#6B7280")); textSize = 11.5f
                 setPadding(0, dp(3), 0, 0)
             })
@@ -673,13 +692,13 @@ class OverlayController(private val ctx: Context) {
         countdownView = box
         // 逐秒走字，让「还剩多久」是真实读数而不是一句静态承诺。
         var left = totalSec
-        line.text = "⏱ $left 秒后自动发送"
+        line.text = "⏱ " + ctx.t("$left 秒后自动发送", "auto-send in $left s")
         val tick = object : Runnable {
             override fun run() {
                 if (countdownView !== box) return
                 left--
-                if (left <= 0) { line.text = "正在发送…"; return }
-                line.text = "⏱ $left 秒后自动发送"
+                if (left <= 0) { line.text = ctx.t("正在发送…", "Sending…"); return }
+                line.text = "⏱ " + ctx.t("$left 秒后自动发送", "auto-send in $left s")
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this, 1000L)
             }
         }
@@ -698,7 +717,7 @@ class OverlayController(private val ctx: Context) {
         ensureRoot(); bubble?.alpha = 1f
         ctxNotes = 0; ctxHistory = 0   // counts for the round that is starting
         replyError = null              // this round has not failed (yet)
-        statusLine = hint("分析中…")
+        statusLine = hint(ctx.t("分析中…", "Analyzing…"))
         setContent(listOf(statusLine!!))
         autoExpand()
     }
@@ -730,7 +749,7 @@ class OverlayController(private val ctx: Context) {
     }
 
     /** 兼容旧调用：把原始错误串归一成一张带动作的错误卡。 */
-    fun showError(msg: String) = showFailure(ErrCatalog.classify(msg))
+    fun showError(msg: String) = showFailure(ErrCatalog.classify(ctx, msg))
 
     /**
      * 错误卡（P0-3 / P1-3）：一句人话说明「发生了什么」，加一个**能立刻做**的按钮。
@@ -758,14 +777,14 @@ class OverlayController(private val ctx: Context) {
     fun showOcrResult(messages: List<Msg>, reason: String? = null, failure: ErrCatalog.View? = null) {
         ensureRoot(); bubble?.alpha = 1f
         val views = ArrayList<View>()
-        views.add(line("本地识别到的对话（无需联网）", "#3A7AFE", 14f, true))
+        views.add(line(ctx.t("本地识别到的对话（无需联网）", "Chat read locally (no network needed)"), "#3A7AFE", 14f, true))
         if (messages.isEmpty()) {
-            views.add(hint("（这一屏没认出文字）"))
+            views.add(hint(ctx.t("（这一屏没认出文字）", "(No text recognized on this screen)")))
         } else {
             var lastSide = ""
             for (m in messages) {
                 val side = m.side
-                val label = if (side == "me") "我" else "对方"
+                val label = if (side == "me") ctx.t("我", "Me") else ctx.t("对方", "Them")
                 val prefix = if (side != lastSide) "$label：" else ""
                 lastSide = side
                 val color = if (side == "me") "#1F2937" else "#374151"
@@ -780,10 +799,10 @@ class OverlayController(private val ctx: Context) {
             views.add(hint(failure.message))
             views.add(bigButton(failure.actionLabel) { manualTriggered(); onErrorAction?.invoke(failure.action) })
         } else {
-            reason?.let { views.add(hint("⚠ 判断接口暂不可用：$it")) }
+            reason?.let { views.add(hint(ctx.t("⚠ 判断接口暂不可用：", "⚠ Judge endpoint unavailable: ") + it)) }
         }
         statusLine = null
-        views.add(bigButton("重新分析") { manualTriggered(); onManualAnalyze?.invoke() })
+        views.add(bigButton(ctx.t("重新分析", "Analyze again")) { manualTriggered(); onManualAnalyze?.invoke() })
         setContent(views)
         autoExpand()
     }
@@ -800,7 +819,7 @@ class OverlayController(private val ctx: Context) {
         resetForNewConversation()
         statusLine = null
         setContent(listOf(
-            line("提示", "#3A7AFE", 14f, true),
+            line(ctx.t("提示", "Notice"), "#3A7AFE", 14f, true),
             hint(msg)))
         // 通知性文案（微信已停用之类）必须让人真的看到，所以这条路径强制展开，
         // 忽略手动/自动的区别——它本来就只在状态变化时出现一次。
@@ -863,17 +882,19 @@ class OverlayController(private val ctx: Context) {
 
         // 云端额度（P1-4）：数字是接口响应头给的，本地只展示。没额度信息时不占版面。
         val quota = prefs.billingQuota
-        if (quota > 0) views.add(hint("本月额度 ${prefs.billingUsed} / $quota"))
+        if (quota > 0) views.add(hint(ctx.t("本月额度 ${prefs.billingUsed} / $quota",
+            "This month's quota ${prefs.billingUsed} / $quota")))
 
         // 合规角标：自动发送开着时必须让用户一眼看见，不能只在设置页里写着。
         if (AutoReply.isOn(ctx)) {
-            views.add(line("⚠ 自动发送已开启（仅微信）", "#DC2626", 12f, bold = true))
+            views.add(line(ctx.t("⚠ 自动发送已开启（仅微信）", "⚠ Auto-send is on (WeChat only)"), "#DC2626", 12f, bold = true))
         }
 
         // What context this read was based on (knowledge base / remembered history).
         views.add(hint(
-            if (ctxNotes == 0 && ctxHistory == 0) "未用知识库"
-            else "知识库 $ctxNotes 条 · 历史 $ctxHistory 条"))
+            if (ctxNotes == 0 && ctxHistory == 0) ctx.t("未用知识库", "No knowledge base used")
+            else ctx.t("知识库 $ctxNotes 条 · 历史 $ctxHistory 条",
+                "KB notes $ctxNotes · history $ctxHistory")))
 
         // How this snapshot was captured, when it changes how to read it.
         noteText?.let { if (it.isNotBlank()) views.add(hint(it)) }
@@ -886,28 +907,28 @@ class OverlayController(private val ctx: Context) {
         }
         // Intent headline.
         a.trueIntent?.let {
-            views.add(line("对方真实意图：${INTENT[it.choice] ?: it.choice}", "#111827", 15f, true))
-            views.add(hint("把握 ${(it.confidence * 100).roundToInt()}%"))
+            views.add(line(ctx.t("对方真实意图：", "Their true intent: ") + intentLabel(it.choice), "#111827", 15f, true))
+            views.add(hint(ctx.t("把握 ", "Confidence ") + "${(it.confidence * 100).roundToInt()}%"))
         }
         // Compact secondary line: needs · action · reply-now.
         val bits = ArrayList<String>()
-        a.sheNeeds?.let { bits.add("要${(NEEDS[it.choice] ?: it.choice)}") }
-        a.bestAction?.let { bits.add(ACTION[it.choice] ?: it.choice) }
-        a.shouldReplyNow?.let { bits.add(if (it >= 0.5) "可给实质" else "先别给实质") }
+        a.sheNeeds?.let { bits.add(ctx.t("要", "needs ") + needsLabel(it.choice)) }
+        a.bestAction?.let { bits.add(actionLabel(it.choice)) }
+        a.shouldReplyNow?.let { bits.add(if (it >= 0.5) ctx.t("可给实质", "substance OK") else ctx.t("先别给实质", "hold substance")) }
         if (bits.isNotEmpty()) views.add(line(bits.joinToString("  ·  "), "#374151", 13f))
-        a.tensionResolved?.let { if (it >= 0.7) views.add(line("✓ 紧张已缓解", "#16A34A", 12f)) }
+        a.tensionResolved?.let { if (it >= 0.7) views.add(line(ctx.t("✓ 紧张已缓解", "✓ Tension has eased"), "#16A34A", 12f)) }
 
         views.add(divider())
-        views.add(line("候选回复（Jev 排序）", "#9CA3AF", 12f))
+        views.add(line(ctx.t("候选回复（Jev 排序）", "Candidate replies (ranked by Jev)"), "#9CA3AF", 12f))
         if (generating) {
-            views.add(hint("生成中…"))
+            views.add(hint(ctx.t("生成中…", "Generating…")))
         } else {
             val fill = lastFill ?: {}
             a.rankedReplies.forEachIndexed { i, r ->
                 views.add(replyCard(i + 1, r.text, (r.prob * 100).roundToInt(), fill))
             }
             if (a.rankedReplies.isEmpty()) {
-                val msg = replyError?.let { "回复接口出错：$it" } ?: "（未生成候选回复）"
+                val msg = replyError?.let { ctx.t("回复接口出错：", "Reply endpoint error: ") + it } ?: ctx.t("（未生成候选回复）", "(No candidate replies generated)")
                 views.add(hint(msg))
             }
         }
@@ -924,7 +945,7 @@ class OverlayController(private val ctx: Context) {
             setPadding(0, 0, 0, dp(6))
         }
         row.addView(TextView(ctx).apply {
-            text = "危险 $lvl/$max"
+            text = ctx.t("危险", "Risk") + " $lvl/$max"
             setTextColor(Color.WHITE); textSize = 13f; setTypeface(typeface, Typeface.BOLD)
             setPadding(dp(10), dp(4), dp(10), dp(4))
             background = card(20, color)
@@ -956,17 +977,17 @@ class OverlayController(private val ctx: Context) {
             setPadding(0, dp(3), 0, dp(7)); setLineSpacing(dp(2).toFloat(), 1f)
         })
         val btns = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
-        btns.addView(pill("复制", false) { copy(text) })
+        btns.addView(pill(ctx.t("复制", "Copy"), false) { copy(text) })
         // Fill, then collapse so the input box + keyboard are visible to review/send.
-        btns.addView(pill("填入", true) {
+        btns.addView(pill(ctx.t("填入", "Fill"), true) {
             android.util.Log.d("JEVASSIST", "overlay: fill tapped")
             onFill(text)
             if (expanded) toggle()
         })
         // P1-6：只回传「第几名 + 有没有用」，不回传正文，用来校准排序。
         if (onReplyFeedback != null) {
-            btns.addView(feedbackPill("有用") { onReplyFeedback?.invoke(rank, true); toast("谢谢，已记下") })
-            btns.addView(feedbackPill("没用") { onReplyFeedback?.invoke(rank, false); toast("谢谢，已记下") })
+            btns.addView(feedbackPill(ctx.t("有用", "Helpful")) { onReplyFeedback?.invoke(rank, true); toast(ctx.t("谢谢，已记下", "Thanks, noted")) })
+            btns.addView(feedbackPill(ctx.t("没用", "Not helpful")) { onReplyFeedback?.invoke(rank, false); toast(ctx.t("谢谢，已记下", "Thanks, noted")) })
         }
         c.addView(btns)
         return c
@@ -996,7 +1017,7 @@ class OverlayController(private val ctx: Context) {
     }
 
     private fun reAnalyzeBtn() = TextView(ctx).apply {
-        text = "重新分析"; textSize = 13f; gravity = Gravity.CENTER
+        text = ctx.t("重新分析", "Analyze again"); textSize = 13f; gravity = Gravity.CENTER
         setTextColor(Color.parseColor("#6B7280"))
         setPadding(dp(10), dp(10), dp(10), dp(4))
         setOnClickListener { manualTriggered(); onManualAnalyze?.invoke() }
@@ -1030,7 +1051,7 @@ class OverlayController(private val ctx: Context) {
     private fun copy(text: String) {
         val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
         cm.setPrimaryClip(android.content.ClipData.newPlainText("jev_reply", text))
-        toast("已复制")
+        toast(ctx.t("已复制", "Copied"))
     }
 
     private fun dangerColor(lvl: Int): Int = when {
@@ -1040,26 +1061,46 @@ class OverlayController(private val ctx: Context) {
     }
 
     private fun dangerWord(lvl: Int): String = when {
-        lvl >= 8 -> "很危险"
-        lvl >= 6 -> "偏危险"
-        lvl >= 3 -> "留神"
-        else -> "安全"
+        lvl >= 8 -> ctx.t("很危险", "Critical")
+        lvl >= 6 -> ctx.t("偏危险", "Risky")
+        lvl >= 3 -> ctx.t("留神", "Watch out")
+        else -> ctx.t("安全", "Safe")
     }
+
+    /** 意图/需求/动作标签：映射表存 (中文, 英文)，按语言设置取词；未知 key 原样返回。 */
+    private fun intentLabel(key: String): String =
+        INTENT[key]?.let { ctx.t(it.first, it.second) } ?: key
+
+    private fun needsLabel(key: String): String =
+        NEEDS[key]?.let { ctx.t(it.first, it.second) } ?: key
+
+    private fun actionLabel(key: String): String =
+        ACTION[key]?.let { ctx.t(it.first, it.second) } ?: key
 
     companion object {
         /** 微信包名：菜单里据此屏蔽会被风控拒绝的整屏截屏入口。 */
         private const val WECHAT_PKG = "com.tencent.mm"
 
         private val INTENT = mapOf(
-            "confirm_you_care" to "确认你在不在乎", "vent_anger" to "在发泄情绪",
-            "request_action" to "要你办事", "seek_explanation" to "要个解释",
-            "casual_chat" to "随便聊聊", "close_topic" to "事情过去了")
+            "confirm_you_care" to ("确认你在不在乎" to "checking if you care"),
+            "vent_anger" to ("在发泄情绪" to "venting emotions"),
+            "request_action" to ("要你办事" to "asking you to do something"),
+            "seek_explanation" to ("要个解释" to "wanting an explanation"),
+            "casual_chat" to ("随便聊聊" to "just chatting"),
+            "close_topic" to ("事情过去了" to "moving on"))
         private val NEEDS = mapOf(
-            "apology" to "道歉", "action" to "具体行动", "explanation" to "解释",
-            "care" to "你的在乎", "nothing" to "（不用做什么）")
+            "apology" to ("道歉" to "an apology"),
+            "action" to ("具体行动" to "concrete action"),
+            "explanation" to ("解释" to "an explanation"),
+            "care" to ("你的在乎" to "your care"),
+            "nothing" to ("（不用做什么）" to "(nothing needed)"))
         private val ACTION = mapOf(
-            "check_history" to "翻聊天记录", "apologize" to "先道歉", "give_commitment" to "给承诺",
-            "explain" to "解释清楚", "acknowledge" to "接住情绪", "say_less" to "少说两句",
-            "make_plan" to "定个安排")
+            "check_history" to ("翻聊天记录" to "review chat history"),
+            "apologize" to ("先道歉" to "apologize first"),
+            "give_commitment" to ("给承诺" to "give a commitment"),
+            "explain" to ("解释清楚" to "explain clearly"),
+            "acknowledge" to ("接住情绪" to "acknowledge the feelings"),
+            "say_less" to ("少说两句" to "say less"),
+            "make_plan" to ("定个安排" to "make a plan"))
     }
 }

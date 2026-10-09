@@ -2,6 +2,7 @@ package com.jev.probe.core.kb
 
 import android.content.Context
 import android.util.Log
+import com.jev.probe.core.t
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -121,7 +122,7 @@ class KbStore private constructor(context: Context) {
      */
     fun saveOrMergeContact(title: String, app: String): String {
         val display = displayName(title)
-        if (display.isEmpty()) return "当前会话没有标题，存不了"
+        if (display.isEmpty()) return this.app.t("当前会话没有标题，存不了", "This chat has no title yet — can't save")
         val existing = findContact(title, app)
         if (existing == null) {
             val aliases = if (displayName(title) != title.trim()) listOf(title.trim()) else emptyList()
@@ -131,7 +132,7 @@ class KbStore private constructor(context: Context) {
                 aliases = aliases,
                 apps = if (app.isBlank()) emptyList() else listOf(app)
             ))
-            return "已存为联系人「${display}」"
+            return this.app.t("已存为联系人「${display}」", "Saved as contact \"$display\"")
         }
         val apps = if (app.isBlank() || existing.apps.contains(app)) existing.apps else existing.apps + app
         val raw = title.trim()
@@ -139,9 +140,9 @@ class KbStore private constructor(context: Context) {
         val aliases = if (raw.isNotEmpty() && normalizeName(raw) !in known)
             existing.aliases + raw else existing.aliases
         if (apps == existing.apps && aliases == existing.aliases)
-            return "联系人「${existing.name}」已存在"
+            return this.app.t("联系人「${existing.name}」已存在", "Contact \"${existing.name}\" already exists")
         saveContact(existing.copy(apps = apps, aliases = aliases))
-        return "已并入联系人「${existing.name}」"
+        return this.app.t("已并入联系人「${existing.name}」", "Merged into contact \"${existing.name}\"")
     }
 
     // ---------------------------------------------------------------- history

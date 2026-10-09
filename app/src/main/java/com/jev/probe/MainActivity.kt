@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.jev.probe.core.CrashLog
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.SelfCheck
+import com.jev.probe.core.t
 import kotlin.math.roundToInt
 
 /**
@@ -70,9 +71,10 @@ class MainActivity : AppCompatActivity() {
     private fun build() {
         container.removeAllViews()
 
-        container.addView(text("Jev 聊天助手", 24f, ink, bold = true))
-        container.addView(text("在聊天 App 旁读对方消息（已支持 QQ、X、飞书、微信），给出判断和候选回复。微信开启后可在手机端无人值守收发。",
-            13f, sub).apply { setPadding(0, dp(6), 0, dp(16)) })
+        container.addView(text(t("Jev 聊天助手", "Jev Chat Assistant"), 24f, ink, bold = true))
+        container.addView(text(t(
+            "在聊天 App 旁读对方消息（已支持 QQ、X、飞书、微信），给出判断和候选回复。微信开启后可在手机端无人值守收发。",
+            "Reads messages next to your chat apps (QQ, X, Feishu, WeChat) and suggests judgments plus candidate replies. With WeChat it can run fully hands-free."), 13f, sub).apply { setPadding(0, dp(6), 0, dp(16)) })
 
         val a11y = isA11yEnabled()
         val overlay = Settings.canDrawOverlays(this)
@@ -107,22 +109,26 @@ class MainActivity : AppCompatActivity() {
 
         container.addView(sectionLabel(
             when {
-                pending.isEmpty() -> "权限设置（已全部开启）"
-                else -> "还差 ${pending.size} / ${TOTAL_STEPS} 步 · 先开「${stepTitle(next)}」"
+                pending.isEmpty() -> t("权限设置（已全部开启）", "Permissions (all granted)")
+                else -> t(
+                    "还差 ${pending.size} / ${TOTAL_STEPS} 步 · 先开「${stepTitle(next)}」",
+                    "${pending.size} of ${TOTAL_STEPS} steps left · Start with \"${stepTitle(next)}\"")
             }))
         // 进度条：把「4 步」画成一条，用户一眼看到自己走到哪，而不是去数下面几张卡。
         if (pending.isNotEmpty()) container.addView(progressBar(TOTAL_STEPS - pending.size, TOTAL_STEPS))
 
-        container.addView(permCard(A11Y, "读取当前聊天窗口的消息文字", a11y, next == A11Y) {
+        // 卡标题必须走 stepTitle()（本地化文案）。曾经把步骤 ID 常量（"a11y" 等）
+        // 直接当标题传进来，用户在「还差 N / 4 步」页看到四张卡顶着英文单词。
+        container.addView(permCard(stepTitle(A11Y), t("读取当前聊天窗口的消息文字", "Read the text of the current chat window"), a11y, next == A11Y) {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         })
-        container.addView(permCard(OVERLAY, "在聊天窗口上方显示分析卡片", overlay, next == OVERLAY) {
-            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+        container.addView(permCard(stepTitle(OVERLAY), t("在聊天窗口上方显示分析卡片", "Show the analysis card above chat windows"), overlay, next == OVERLAY) {
+            startActivity(Settings.ACTION_MANAGE_OVERLAY_PERMISSION.let { Intent(it, Uri.parse("package:$packageName")) })
         })
-        container.addView(permCard(NOTIFY, "监听微信新消息，触发自动收发", notify, next == NOTIFY) {
+        container.addView(permCard(stepTitle(NOTIFY), t("监听微信新消息，触发自动收发", "Listen for new WeChat messages to trigger auto send/receive"), notify, next == NOTIFY) {
             startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
         })
-        container.addView(permCard(BATTERY, "小米 / HyperOS 必做，否则后台被冻结、读不到消息", battery, next == BATTERY) {
+        container.addView(permCard(stepTitle(BATTERY), t("小米 / HyperOS 必做，否则后台被冻结、读不到消息", "Required on Xiaomi / HyperOS, otherwise the background process is frozen and messages can't be read"), battery, next == BATTERY) {
             runCatching {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             }
@@ -135,11 +141,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Actions
-        container.addView(sectionLabel("其他"))
-        container.addView(actionRow("设置", "自动收发 · 关系描述 · 订阅") {
+        container.addView(sectionLabel(t("其他", "More")))
+        container.addView(actionRow(t("设置", "Settings"), t("自动收发 · 关系描述 · 订阅", "Auto send/receive · Relationship · Subscription")) {
             startActivity(Intent(this, SettingsActivity::class.java))
         })
-        container.addView(actionRow("自检与诊断", "一眼看清哪项没开、上次分析成没成、有没有崩过") {
+        container.addView(actionRow(t("自检与诊断", "Diagnostics"), t("一眼看清哪项没开、上次分析成没成、有没有崩过", "See at a glance what's off, whether the last analysis succeeded, and any past crashes")) {
             showDiagnostics()
         })
 
@@ -157,11 +163,12 @@ class MainActivity : AppCompatActivity() {
                 build()
             }
         }
-        container.addView(toggle)
-        if (!permsOk) {
+        container.addView(toggle)        if (!permsOk) {
             container.addView(text(
-                if (prefs.enabled) "上面 ${pending.size} 项开完就能用了；不想现在开，可以先点上面关掉助手"
-                else "助手已关闭。权限开完后再打开上面的总开关",
+                if (prefs.enabled) t("上面 ${pending.size} 项开完就能用了；不想现在开，可以先点上面关掉助手",
+                    "Finish the ${pending.size} item(s) above and it's ready; to hold off, switch the assistant off above")
+                else t("助手已关闭。权限开完后再打开上面的总开关",
+                    "Assistant is off. Turn the main switch back on once permissions are granted"),
                 12.5f, sub).apply { setPadding(dp(2), dp(10), 0, 0) })
         }
     }
@@ -201,12 +208,13 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
-        left.addView(text("判断接口未激活", 15f, ink, bold = true))
+        left.addView(text(t("判断接口未激活", "Service not activated"), 15f, ink, bold = true))
         left.addView(text(
-            "现在还能用，走共享额度、高峰期可能提示繁忙。激活后有专属额度、不用排队。",
+            t("现在还能用，走共享额度、高峰期可能提示繁忙。激活后有专属额度、不用排队。",
+                "Still usable on the shared quota; it may report busy at peak times. Activate for dedicated quota with no queueing."),
             12f, sub).apply { setPadding(0, dp(3), 0, dp(4)) })
         val go = TextView(this).apply {
-            text = "去看看"; textSize = 13f; gravity = Gravity.CENTER
+            text = t("去看看", "Activate"); textSize = 13f; gravity = Gravity.CENTER
             setTypeface(typeface, Typeface.BOLD); setTextColor(Color.WHITE)
             background = roundBg(dp(10), accent)
             setPadding(dp(16), dp(8), dp(16), dp(8))
@@ -221,10 +229,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stepTitle(id: String?) = when (id) {
-        A11Y -> "无障碍权限"
-        OVERLAY -> "悬浮窗权限"
-        NOTIFY -> "通知读取"
-        else -> "自启动 + 省电无限制"
+        A11Y -> t("无障碍权限", "Accessibility")
+        OVERLAY -> t("悬浮窗权限", "Display over other apps")
+        NOTIFY -> t("通知读取", "Notification access")
+        else -> t("自启动 + 省电无限制", "Auto-start & unrestricted battery")
     }
 
     /** 已开启但无障碍被系统关掉时的恢复横幅：点一下直接回无障碍设置页。 */
@@ -239,12 +247,14 @@ class MainActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = dp(12) }
         }
-        c.addView(text("⚠ 助手已开启，但无障碍服务被系统关闭了", 14f, red, bold = true))
-        c.addView(text("读不到聊天内容，助手不会工作。点此重新打开无障碍服务。", 12f, sub).apply {
+        c.addView(text(t("⚠ 助手已开启，但无障碍服务被系统关闭了",
+            "⚠ Assistant is on, but the accessibility service was turned off by the system"), 14f, red, bold = true))
+        c.addView(text(t("读不到聊天内容，助手不会工作。点此重新打开无障碍服务。",
+            "It can't read chat content and won't work. Tap to reopen the accessibility service."), 12f, sub).apply {
             setPadding(0, dp(4), 0, dp(10))
         })
         val go = TextView(this).apply {
-            text = "重新打开无障碍"; textSize = 13f; gravity = Gravity.CENTER
+            text = t("重新打开无障碍", "Reopen accessibility"); textSize = 13f; gravity = Gravity.CENTER
             setTypeface(typeface, Typeface.BOLD); setTextColor(Color.WHITE)
             background = roundBg(dp(10), red)
             setPadding(dp(16), dp(8), dp(16), dp(8))
@@ -267,7 +277,7 @@ class MainActivity : AppCompatActivity() {
         val wait = android.app.Dialog(this).apply {
             setCancelable(true)
             setContentView(TextView(this@MainActivity).apply {
-                text = "正在检查服务接口…"
+                text = t("正在检查服务接口…", "Checking the service endpoint…")
                 textSize = 14f
                 setTextColor(ink)
                 setPadding(dp(24), dp(26), dp(24), dp(26))
@@ -278,7 +288,7 @@ class MainActivity : AppCompatActivity() {
         Thread {
             val report = runCatching { SelfCheck.run(this) }
                 .getOrElse {
-                    SelfCheck.Report(listOf("自检执行失败：${it.message ?: it.javaClass.simpleName}"), false)
+                    SelfCheck.Report(listOf(t("自检执行失败：", "Self-check failed: ") + (it.message ?: it.javaClass.simpleName)), false)
                 }
             runOnUiThread {
                 // 用户可能已经取消了这个等待框：别再在他背后弹报告。
@@ -300,18 +310,18 @@ class MainActivity : AppCompatActivity() {
         }
         val scroll = android.widget.ScrollView(this).apply { addView(tv) }
         android.app.AlertDialog.Builder(this)
-            .setTitle("自检与诊断")
+            .setTitle(t("自检与诊断", "Diagnostics"))
             .setView(scroll)
-            .setPositiveButton("复制") { _, _ ->
+            .setPositiveButton(t("复制", "Copy")) { _, _ ->
                 val cm = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 cm.setPrimaryClip(android.content.ClipData.newPlainText("jev_diag", report.text))
-                Toast.makeText(this, "已复制", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, t("已复制", "Copied"), Toast.LENGTH_SHORT).show()
             }
-            .setNeutralButton("清除崩溃记录") { _, _ ->
+            .setNeutralButton(t("清除崩溃记录", "Clear crash log")) { _, _ ->
                 CrashLog.clear(this)
-                Toast.makeText(this, "已清除", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, t("已清除", "Cleared"), Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton("关闭", null)
+            .setNegativeButton(t("关闭", "Close"), null)
             .show()
     }
 
@@ -337,25 +347,27 @@ class MainActivity : AppCompatActivity() {
         val c = cardBox()
         val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val (title, color) = when {
-            ready -> "已就绪，可以用了" to green
-            permsOk -> "可以用了，接口未激活" to Color.parseColor("#D97706")
-            else -> "尚未就绪，还差 ${4 - listOf(a11y, overlay, notify, battery).count { it }} 项" to ink
+            ready -> t("已就绪，可以用了", "Ready to go") to green
+            permsOk -> t("可以用了，接口未激活", "Ready — service not activated") to Color.parseColor("#D97706")
+            else -> t("尚未就绪，还差 ${4 - listOf(a11y, overlay, notify, battery).count { it }} 项",
+                "Not ready — ${4 - listOf(a11y, overlay, notify, battery).count { it }} item(s) left") to ink
         }
         head.addView(dot(if (ready) green else if (permsOk) Color.parseColor("#D97706") else red).apply {
             (layoutParams as LinearLayout.LayoutParams).rightMargin = dp(10)
         })
         head.addView(text(title, 16f, color, bold = true))
         c.addView(head)
-        c.addView(checkLine("无障碍", a11y))
-        c.addView(checkLine("悬浮窗", overlay))
-        c.addView(checkLine("通知读取", notify))
-        c.addView(checkLine("省电无限制", battery, okWord = "已放开", noWord = "未放开"))
-        c.addView(checkLine("判断接口", key, okWord = "已激活", noWord = "未激活"))
+        c.addView(checkLine(t("无障碍", "Accessibility"), a11y))
+        c.addView(checkLine(t("悬浮窗", "Overlay"), overlay))
+        c.addView(checkLine(t("通知读取", "Notifications"), notify))
+        c.addView(checkLine(t("省电无限制", "Battery"), battery, okWord = t("已放开", "allowed"), noWord = t("未放开", "restricted")))
+        c.addView(checkLine(t("判断接口", "Service"), key, okWord = t("已激活", "active"), noWord = t("未激活", "inactive")))
         return c
     }
 
     /** One tappable line under the readiness card, opening the privacy policy page. */
-    private fun privacyHint(): View = text("读取的聊天内容只发往你自己配置的接口 · 隐私政策", 11f, sub).apply {
+    private fun privacyHint(): View = text(t("读取的聊天内容只发往你自己配置的接口 · 隐私政策",
+        "Chat content is only sent to the endpoint you configured · Privacy policy"), 11f, sub).apply {
         setPadding(dp(2), dp(8), 0, 0)
         setOnClickListener { openUrl(PRIVACY_URL) }
     }
@@ -365,11 +377,11 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }.onFailure {
-            Toast.makeText(this, "打不开浏览器", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, t("打不开浏览器", "Can't open the browser"), Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun checkLine(label: String, ok: Boolean, okWord: String = "已开", noWord: String = "未开"): View {
+    private fun checkLine(label: String, ok: Boolean, okWord: String = t("已开", "on"), noWord: String = t("未开", "off")): View {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(5), 0, 0)
@@ -392,11 +404,11 @@ class MainActivity : AppCompatActivity() {
         left.addView(text(title, 15f, ink, bold = true))
         left.addView(text(desc, 12f, sub).apply { setPadding(0, dp(3), 0, 0) })
         when {
-            granted -> left.addView(text("✓ 已开启", 12f, green, bold = true).apply { setPadding(0, dp(4), 0, 0) })
-            next -> left.addView(text("下一步 →", 12f, accent, bold = true).apply { setPadding(0, dp(4), 0, 0) })
+            granted -> left.addView(text(t("✓ 已开启", "✓ on"), 12f, green, bold = true).apply { setPadding(0, dp(4), 0, 0) })
+            next -> left.addView(text(t("下一步 →", "Next →"), 12f, accent, bold = true).apply { setPadding(0, dp(4), 0, 0) })
         }
         row.addView(left)
-        row.addView(btn(if (granted) "已开启" else "去开启", !granted, onClick))
+        row.addView(btn(if (granted) t("已开启", "On") else t("去开启", "Enable"), !granted, onClick))
         c.addView(row)
         return c
     }
@@ -419,7 +431,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun bigToggle(on: Boolean): View {
         return TextView(this).apply {
-            text = if (on) "助手已开启 · 点击关闭" else "助手已关闭 · 点击开启"
+            text = if (on) t("助手已开启 · 点击关闭", "Assistant is on · Tap to turn off")
+                   else t("助手已关闭 · 点击开启", "Assistant is off · Tap to turn on")
             textSize = 15f; gravity = Gravity.CENTER; setTypeface(typeface, Typeface.BOLD)
             setTextColor(if (on) Color.WHITE else accent)
             background = roundBg(dp(14), if (on) accent else Color.WHITE, stroke = !on)

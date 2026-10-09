@@ -25,9 +25,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.jev.probe.core.AutoReply
 import com.jev.probe.core.CloudSync
 import com.jev.probe.core.DeviceId
+import com.jev.probe.core.Lang
 import com.jev.probe.core.LicenseClient
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.SyncClient
+import com.jev.probe.core.t
 import com.jev.probe.core.kb.KbStore
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
@@ -81,7 +83,8 @@ class SettingsActivity : AppCompatActivity() {
         if (activated) {
             licStatus.text = licenseStatusText()
             if (res.resultCode == android.app.Activity.RESULT_OK) {
-                Toast.makeText(this, "✓ 激活成功，判断接口已切换到云端", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, t("✓ 激活成功，判断接口已切换到云端",
+                    "✓ Activated — judging has switched to the cloud"), Toast.LENGTH_LONG).show()
             }
         } else {
             // 提前退出收银台（或付款还在银行侧处理）：继续后台确认
@@ -111,7 +114,9 @@ class SettingsActivity : AppCompatActivity() {
         root.padForSystemBars()
         scroll.addView(root)
 
-        root.addView(text("设置", 22f, ink, bold = true).apply { setPadding(0, 0, 0, dp(4)) })
+        root.addView(text(t("设置", "Settings"), 22f, ink, bold = true).apply { setPadding(0, 0, 0, dp(4)) })
+
+        root.addView(buildLangRow())
 
         buildAutoReplyCard(root)
         buildRelationshipCard(root)
@@ -135,6 +140,43 @@ class SettingsActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    /**
+     * 中 / EN 界面语言切换。默认中文；点 EN 即全 App 界面切英文（本 Activity
+     * recreate 立即生效，主页 onResume 重建、悬浮球下次重绘生效）。
+     * 当前语言高亮，再点当前语言不做事。
+     */
+    private fun buildLangRow(): View {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(2), dp(10), dp(2), 0)
+        }
+        row.addView(text(t("语言 / Language", "Language / 语言"), 14f, ink, bold = true).apply {
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        val cur = Lang.code(this)
+        fun langBtn(label: String, code: String): TextView {
+            val active = cur == code
+            return TextView(this).apply {
+                text = label; textSize = 13f; gravity = Gravity.CENTER
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(if (active) Color.WHITE else ink)
+                background = round(dp(10), if (active) accent else Color.WHITE, stroke = !active)
+                setPadding(dp(16), dp(6), dp(16), dp(6))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { leftMargin = dp(8) }
+                if (!active) setOnClickListener {
+                    Lang.set(this@SettingsActivity, code)
+                    recreate()
+                }
+            }
+        }
+        row.addView(langBtn("中文", Lang.ZH))
+        row.addView(langBtn("EN", Lang.EN))
+        return row
+    }
+
     // ------------------------------------------------------- 1. 自动收发
 
     /**
@@ -143,7 +185,7 @@ class SettingsActivity : AppCompatActivity() {
      * [AutoReply] 保持一致（三个入口：这里 / 悬浮球菜单 / 通知栏动作）。
      */
     private fun buildAutoReplyCard(root: LinearLayout) {
-        root.addView(section("自动收发"))
+        root.addView(section(t("自动收发", "Auto send/receive")))
         val c = card()
 
         val status = text("", 12.5f, sub).apply { setPadding(0, dp(2), 0, dp(8)) }
@@ -155,7 +197,7 @@ class SettingsActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(4), 0, dp(2))
         }
-        row.addView(text("收到消息后自动回复并发送", 15f, ink, bold = true).apply {
+        row.addView(text(t("收到消息后自动回复并发送", "Auto-reply and send when a message arrives"), 15f, ink, bold = true).apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
         val sw = switchView(AutoReply.isOn(this))
@@ -166,12 +208,13 @@ class SettingsActivity : AppCompatActivity() {
 
         // 唯一的红线提示，保留但压成两行：这不是可以顺手点开的开关。
         c.addView(text(
-            "这是本应用唯一会替你发消息的设置。发出去的一定是候选回复原文，转账、红包、收款一律不碰。",
+            t("这是本应用唯一会替你发消息的设置。发出去的一定是候选回复原文，转账、红包、收款一律不碰。",
+              "This is the only setting that sends messages on your behalf. What gets sent is always the candidate reply verbatim; money transfers, red packets and payment requests are never touched."),
             11f, danger).apply { setPadding(0, dp(6), 0, dp(2)) })
 
         // 通知读取权限：没开就自动收发不了，所以放在这一组里而不是另起一节。
         val notifyOn = isNotifListenerEnabled()
-        c.addView(permRow("通知读取权限", "用来知道微信来了新消息", notifyOn) {
+        c.addView(permRow(t("通知读取权限", "Notification access"), t("用来知道微信来了新消息", "So the app knows when a new WeChat message arrives"), notifyOn) {
             startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
         })
 
@@ -180,7 +223,7 @@ class SettingsActivity : AppCompatActivity() {
         // 自动分析——于是出现「设置页看不出助手还在自动读」的盲区。菜单里加了
         // 独立的「自动分析」开关后，这里必须同步，否则两处说法不一致。
         c.addView(toggleRow(
-            "自动分析（只给建议，不替你发）", prefs.autoAnalyze
+            t("自动分析（只给建议，不替你发）", "Auto-analyze (advice only, never sends)"), prefs.autoAnalyze
         ) { on ->
             prefs.autoAnalyze = on
             // 刚把自动分析关掉，就顺手把自动收发也退到「只给建议」这一档：
@@ -191,7 +234,7 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         // 发送延迟：一个数字，但它直接决定「自动发送能不能成功」——太快会点空。
-        c.addView(label("发出前等几秒"))
+        c.addView(label(t("发出前等几秒", "Wait before sending (seconds)")))
         val delayEdit = edit(
             if (prefs.sendDelayMs % 1000 == 0) (prefs.sendDelayMs / 1000).toString()
             else String.format("%.1f", prefs.sendDelayMs / 1000f),
@@ -201,8 +244,9 @@ class SettingsActivity : AppCompatActivity() {
         }
         c.addView(delayEdit)
         c.addView(text(
-            "太快的话微信还没准备好发送，点下去消息就丢了。这段时间里悬浮窗会出现一条倒计时，" +
+            t("太快的话微信还没准备好发送，点下去消息就丢了。这段时间里悬浮窗会出现一条倒计时，" +
                 "可以点「本次不发送」拦下来。",
+              "If it's too short, WeChat isn't ready to send and the tap misses. During this window a countdown appears on the floating card where you can tap \"Skip this time\" to stop it."),
             11f, sub).apply { setPadding(0, dp(4), 0, 0) })
         // 离开设置页时兜底保存。只挂失焦是不够的：软键盘收起、系统返回手势都可能
         // 不经过 onBlur，用户改完直接退出就会丢掉这个值（而页面上已经不再有「保存」按钮）。
@@ -223,14 +267,19 @@ class SettingsActivity : AppCompatActivity() {
         val on = !AutoReply.isOn(this)
         if (on) {
             androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("确定开启自动收发？")
+                .setTitle(t("确定开启自动收发？", "Turn on auto send/receive?"))
                 .setMessage(
-                    "对方发来消息后，应用会自动读、判断、填好回复并直接发送出去。\n\n" +
-                        "发出去的一定是候选回复的原文，不会改写；转账、红包、收款一律不碰。\n\n" +
-                        "随时想停：在悬浮球菜单、通知栏或这里点一下就能关。"
+                    t(
+                        "对方发来消息后，应用会自动读、判断、填好回复并直接发送出去。\n\n" +
+                            "发出去的一定是候选回复的原文，不会改写；转账、红包、收款一律不碰。\n\n" +
+                            "随时想停：在悬浮球菜单、通知栏或这里点一下就能关。",
+                        "When a message arrives, the app will read it, judge it, fill in a reply and send it automatically.\n\n" +
+                            "What gets sent is always the candidate reply verbatim, never rewritten; money transfers, red packets and payment requests are never touched.\n\n" +
+                            "To stop anytime: tap in the bubble menu, the notification, or here."
+                    )
                 )
-                .setPositiveButton("开启") { _, _ -> applyAutoReply(true) }
-                .setNegativeButton("再想想", null)
+                .setPositiveButton(t("开启", "Turn on")) { _, _ -> applyAutoReply(true) }
+                .setNegativeButton(t("再想想", "Not now"), null)
                 .show()
         } else {
             applyAutoReply(false)
@@ -249,9 +298,11 @@ class SettingsActivity : AppCompatActivity() {
         val on = AutoReply.isOn(this)
         autoSwitch?.let { applySwitchLook(it, on) }
         autoStatusLine?.text = if (on)
-            "对方发消息 → 我读 → 自动填好并发出"
+            t("对方发消息 → 我读 → 自动填好并发出",
+              "They message → I read → auto-fill and send")
         else
-            "对方发消息 → 我读 → 给出建议，发送由你点"
+            t("对方发消息 → 我读 → 给出建议，发送由你点",
+              "They message → I read → suggestions, you tap send")
     }
 
     // ------------------------------------------------------- 2. 关系描述
@@ -261,10 +312,11 @@ class SettingsActivity : AppCompatActivity() {
      * 原来旁边那句「（给 Jev 判断用）」是实现细节，改成用户能理解的理由。
      */
     private fun buildRelationshipCard(root: LinearLayout) {
-        root.addView(section("我和对方的关系"))
+        root.addView(section(t("我和对方的关系", "My relationship with them")))
         val c = card()
-        c.addView(text("写清你们是什么关系、现在怎么样，AI 判断时会更准。", 12f, sub))
-        c.addView(label("关系描述"))
+        c.addView(text(t("写清你们是什么关系、现在怎么样，AI 判断时会更准。",
+            "Describe your relationship and where things stand — the AI judges more accurately."), 12f, sub))
+        c.addView(label(t("关系描述", "Relationship notes")))
         val relEdit = edit(prefs.relationship, Prefs.DEFAULT_REL)
         // 逐字落盘：点「保存」才生效在这里是不可接受的（用户会以为没生效然后丢下）。
         relEdit.addTextChangedListener(object : TextWatcher {
@@ -276,25 +328,26 @@ class SettingsActivity : AppCompatActivity() {
         })
         c.addView(relEdit)
 
-        c.addView(cardBtn("知识库与联系人") {
+        c.addView(cardBtn(t("知识库与联系人", "Knowledge base & contacts")) {
             startActivity(android.content.Intent(this, KnowledgeActivity::class.java))
         })
-        c.addView(text("记下对方的重要信息，判断和回复会更贴合。", 11f, sub))
+        c.addView(text(t("记下对方的重要信息，判断和回复会更贴合。",
+            "Note important things about them — judgments and replies fit better."), 11f, sub))
         root.addView(c)
     }
 
     // ---------------------------------------------------------- 3. 外观
 
     private fun buildAppearanceCard(root: LinearLayout) {
-        root.addView(section("外观"))
+        root.addView(section(t("外观", "Appearance")))
         val c = card()
-        val opacityLabel = label("悬浮窗透明度")
+        val opacityLabel = label(t("悬浮窗透明度", "Card opacity"))
         c.addView(opacityLabel)
         val seek = SeekBar(this).apply {
             max = 40; progress = prefs.overlayOpacity - 60
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(sb: SeekBar?, p: Int, u: Boolean) {
-                    opacityLabel.text = "悬浮窗透明度：${100 - p - 60}%"
+                    opacityLabel.text = t("悬浮窗透明度", "Card opacity") + "：${100 - p - 60}%".replace("：", ": ")
                 }
                 override fun onStartTrackingTouch(sb: SeekBar?) {}
                 override fun onStopTrackingTouch(sb: SeekBar?) {
@@ -304,7 +357,8 @@ class SettingsActivity : AppCompatActivity() {
             })
         }
         c.addView(seek)
-        c.addView(text("越透明越能看清下面的聊天内容。", 11f, sub))
+        c.addView(text(t("越透明越能看清下面的聊天内容。",
+            "More transparent makes the chat underneath easier to read."), 11f, sub))
         root.addView(c)
     }
 
@@ -316,7 +370,7 @@ class SettingsActivity : AppCompatActivity() {
      * 去掉它，用户会以为自己没丢东西，实际重装后要重新配一遍。
      */
     private fun buildCloudSyncCard(root: LinearLayout) {
-        root.addView(section("换手机 / 重装不丢"))
+        root.addView(section(t("换手机 / 重装不丢", "Survives phone changes / reinstalls")))
         val syncCard = card()
         val syncStatusView = text(syncStatusText(), 12.5f, ink, bold = true).apply {
             setPadding(0, dp(10), 0, dp(2))
@@ -324,16 +378,18 @@ class SettingsActivity : AppCompatActivity() {
         syncStatus = syncStatusView
         syncCard.addView(syncStatusView)
         syncCard.addView(text(
-            "把你的设置存一份到网上。换个手机、重装一次，登录回来就能接着用。聊天记录不会上传。",
+            t("把你的设置存一份到网上。换个手机、重装一次，登录回来就能接着用。聊天记录不会上传。",
+              "Keeps a copy of your settings online. Switch phones or reinstall and sign back in to continue. Chat content is never uploaded."),
             11f, sub))
-        syncCard.addView(toggleRow("开启备份", prefs.syncEnabled) { on ->
+        syncCard.addView(toggleRow(t("开启备份", "Back up"), prefs.syncEnabled) { on ->
             prefs.syncEnabled = on
             syncStatusView.text = syncStatusText()
         })
-        syncCard.addView(cardBtn("立即备份") { doSyncBackup(syncStatusView) })
-        syncCard.addView(cardBtn("从云端恢复") { doSyncRestore(syncStatusView) })
+        syncCard.addView(cardBtn(t("立即备份", "Back up now")) { doSyncBackup(syncStatusView) })
+        syncCard.addView(cardBtn(t("从云端恢复", "Restore from cloud")) { doSyncRestore(syncStatusView) })
         syncCard.addView(text(
-            "已经买过的也不怕：只要这台手机没换，付款记录会自己找回来，不用重复买。",
+            t("已经买过的也不怕：只要这台手机没换，付款记录会自己找回来，不用重复买。",
+              "Already purchased? As long as this phone hasn't changed, your payment record comes back on its own — no need to buy again."),
             11f, sub))
         root.addView(syncCard)
     }
@@ -345,9 +401,10 @@ class SettingsActivity : AppCompatActivity() {
      * 但把三档卡片顶上的解释性长文砍掉——「卖点要说真话」不等于「要写一屏文案」。
      */
     private fun buildLicenseCard(root: LinearLayout): LinearLayout {
-        root.addView(section("订阅"))
+        root.addView(section(t("订阅", "Subscription")))
         val licCard = card()
-        licCard.addView(text("判断与回复由 WeAuto 云端提供，繁忙时可能提示 429。", 12f, sub))
+        licCard.addView(text(t("判断与回复由 WeAuto 云端提供，繁忙时可能提示 429。",
+            "Judging and replies run on the WeAuto cloud; it may report 429 when busy."), 12f, sub))
 
         val licStatusView = text(licenseStatusText(), 12.5f, ink, bold = true).apply {
             setPadding(0, dp(10), 0, dp(2))
@@ -359,7 +416,8 @@ class SettingsActivity : AppCompatActivity() {
         for (tier in LicenseClient.TIERS) {
             licCard.addView(tierCard(tier) { startCheckout(tier, licStatus) })
         }
-        licCard.addView(text("付款在本应用内完成，确认后自动激活。", 11f, sub))
+        licCard.addView(text(t("付款在本应用内完成，确认后自动激活。",
+            "Payment completes inside the app; activation is automatic once confirmed."), 11f, sub))
         root.addView(licCard)
         return licCard
     }
@@ -367,27 +425,28 @@ class SettingsActivity : AppCompatActivity() {
     // ---------------------------------------------------------- 5. 关于
 
     private fun buildAboutCard(root: LinearLayout) {
-        root.addView(section("关于"))
+        root.addView(section(t("关于", "About")))
         val c = card()
 
-        c.addView(cardBtn("自检与诊断") {
+        c.addView(cardBtn(t("自检与诊断", "Diagnostics")) {
             startActivity(android.content.Intent(this, MainActivity::class.java)
                 .putExtra("diag", true))
         })
-        c.addView(text("助手没反应、上次分析成没成、有没有崩过，都在这里。", 11f, sub))
+        c.addView(text(t("助手没反应、上次分析成没成、有没有崩过，都在这里。",
+            "Whether the assistant is unresponsive, whether the last analysis succeeded, and any crashes — all here."), 11f, sub))
 
         val kbResult = resultText()
-        c.addView(cardBtn("清空知识库与聊天历史") {
+        c.addView(cardBtn(t("清空知识库与聊天历史", "Clear knowledge base & chat history")) {
             val n = KbStore.get(this).counts()
             androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("清空知识库与历史")
-                .setMessage("将删除 ${n.notes} 条笔记、${n.contacts} 个联系人、" +
-                    "${n.logLines} 条聊天历史。其他设置不受影响，不可恢复。")
-                .setPositiveButton("清空") { _, _ ->
+                .setTitle(t("清空知识库与历史", "Clear knowledge base & history"))
+                .setMessage(t("将删除 ${n.notes} 条笔记、${n.contacts} 个联系人、${n.logLines} 条聊天历史。其他设置不受影响，不可恢复。",
+                    "This deletes ${n.notes} notes, ${n.contacts} contacts and ${n.logLines} chat history lines. Other settings are unaffected. This cannot be undone."))
+                .setPositiveButton(t("清空", "Clear")) { _, _ ->
                     KbStore.get(this).clearAll()
-                    kbResult.text = "已清空"
+                    kbResult.text = t("已清空", "Cleared")
                 }
-                .setNegativeButton("取消", null)
+                .setNegativeButton(t("取消", "Cancel"), null)
                 .show()
         })
         c.addView(kbResult)
@@ -399,13 +458,13 @@ class SettingsActivity : AppCompatActivity() {
     // ---------------------------------------------------------------- atoms
 
     private fun applySwitchLook(sw: TextView, on: Boolean) {
-        sw.text = if (on) "开" else "关"
+        sw.text = if (on) t("开", "ON") else t("关", "OFF")
         sw.setTextColor(if (on) Color.WHITE else sub)
         sw.background = round(dp(10), if (on) accent else Color.parseColor("#E5E7EB"))
     }
 
     private fun switchView(on: Boolean) = TextView(this).apply {
-        text = if (on) "开" else "关"; textSize = 13f; gravity = Gravity.CENTER
+        text = if (on) t("开", "ON") else t("关", "OFF"); textSize = 13f; gravity = Gravity.CENTER
         setTypeface(typeface, Typeface.BOLD)
         setTextColor(if (on) Color.WHITE else sub)
         background = round(dp(10), if (on) accent else Color.parseColor("#E5E7EB"))
@@ -475,15 +534,15 @@ class SettingsActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val sw = TextView(this).apply {
-            text = if (initial) "开" else "关"; textSize = 13f; gravity = Gravity.CENTER
+            text = if (initial) t("开", "ON") else t("关", "OFF"); textSize = 13f; gravity = Gravity.CENTER
             setTypeface(typeface, Typeface.BOLD)
             setTextColor(if (initial) Color.WHITE else sub)
             background = round(dp(10), if (initial) accent else Color.parseColor("#E5E7EB"))
             setPadding(dp(18), dp(6), dp(18), dp(6))
         }
         sw.setOnClickListener {
-            val now = (sw.text == "关")
-            sw.text = if (now) "开" else "关"
+            val now = (sw.text == t("关", "OFF"))
+            sw.text = if (now) t("开", "ON") else t("关", "OFF")
             sw.setTextColor(if (now) Color.WHITE else sub)
             sw.background = round(dp(10), if (now) accent else Color.parseColor("#E5E7EB"))
             onChange(now)
@@ -511,7 +570,7 @@ class SettingsActivity : AppCompatActivity() {
         left.addView(text(desc, 11.5f, sub).apply { setPadding(0, dp(2), 0, 0) })
         c.addView(left)
         val btn = TextView(this).apply {
-            text = if (granted) "已开启" else "去开启"
+            text = if (granted) t("已开启", "On") else t("去开启", "Enable")
             textSize = 13f; gravity = Gravity.CENTER; setTypeface(typeface, Typeface.BOLD)
             setTextColor(if (granted) sub else Color.WHITE)
             background = round(dp(10), if (granted) Color.parseColor("#E5E7EB") else accent)
@@ -526,9 +585,9 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun versionLabel(): String = try {
         val pi = packageManager.getPackageInfo(packageName, 0)
-        "版本 v${pi.versionName}（${pi.longVersionCode}）"
+        t("版本", "Version") + " v${pi.versionName}（${pi.longVersionCode}）"
     } catch (e: Exception) {
-        "版本 —"
+        t("版本", "Version") + " —"
     }
 
     // ------------------------------------------------------------ 订阅卡
@@ -540,9 +599,12 @@ class SettingsActivity : AppCompatActivity() {
     private fun tierCard(tier: String, onClick: () -> Unit): View {
         val current = prefs.licenseTier == tier
         val (name, pitch) = when (tier) {
-            LicenseClient.TIER_NORMAL -> "标准版 · 月租" to "专属额度，不用和免费用户挤"
-            LicenseClient.TIER_PREMIUM -> "高级版 · 月租" to "更大额度，消息密集时也不卡"
-            else -> "终身版 · 一次性" to "一次买断，永久专属额度"
+            LicenseClient.TIER_NORMAL -> t("标准版 · 月租", "Standard · monthly") to
+                t("专属额度，不用和免费用户挤", "Dedicated quota — no queueing with free users")
+            LicenseClient.TIER_PREMIUM -> t("高级版 · 月租", "Premium · monthly") to
+                t("更大额度，消息密集时也不卡", "A bigger quota — stays smooth even with heavy messaging")
+            else -> t("终身版 · 一次性", "Lifetime · one-time") to
+                t("一次买断，永久专属额度", "One purchase, dedicated quota forever")
         }
         val c = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -558,10 +620,10 @@ class SettingsActivity : AppCompatActivity() {
         head.addView(text(name, 14f, ink, bold = true).apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
-        if (current) head.addView(text("当前档位", 11f, accent, bold = true))
+        if (current) head.addView(text(t("当前档位", "Current plan"), 11f, accent, bold = true))
         c.addView(head)
         c.addView(text(pitch, 12f, sub).apply { setPadding(0, dp(3), 0, dp(8)) })
-        c.addView(pillBtn(if (current) "续费 / 换档" else "选择这个") { onClick() })
+        c.addView(pillBtn(if (current) t("续费 / 换档", "Renew / switch") else t("选择这个", "Choose this")) { onClick() })
         return c
     }
 
@@ -585,12 +647,12 @@ class SettingsActivity : AppCompatActivity() {
         }
         val q = prefs.billingQuota
         if (q <= 0L) {
-            box.addView(text("额度：跑一次分析后显示", 12f, sub))
+            box.addView(text(t("额度：跑一次分析后显示", "Quota: shown after the first analysis"), 12f, sub))
             return box
         }
         val used = prefs.billingUsed.coerceIn(0, q)
         val pct = (used * 100 / q).toInt().coerceIn(0, 100)
-        box.addView(text("本月额度 $used / $q（$pct%）", 12.5f, ink, bold = true))
+        box.addView(text(t("本月额度", "This month's quota") + " $used / $q（$pct%）".replace("（", " (").replace("）", ")"), 12.5f, ink, bold = true))
         val bar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             background = round(dp(4), Color.parseColor("#E5E7EB"))
@@ -604,23 +666,25 @@ class SettingsActivity : AppCompatActivity() {
         })
         box.addView(bar)
         if (pct >= 90) box.addView(text(
-            "额度快用完了，换个档位就不用和免费用户挤了。",
+            t("额度快用完了，换个档位就不用和免费用户挤了。",
+              "Quota is almost used up — switch plans to stop queueing with free users."),
             11f, danger).apply { setPadding(0, dp(5), 0, 0) })
         return box
     }
 
     private fun licenseStatusText(): String = when {
         prefs.licenseKey.isNotBlank() ->
-            "✓ 已激活 · ${tierLabel(prefs.licenseTier)} · 判断已走云端"
-        prefs.accountToken.isNotBlank() -> "✓ 已有账户令牌 · 判断已走云端"
-        else -> "未激活 — 判断走共享网关，高峰期可能提示 429"
+            t("✓ 已激活 · ", "✓ Active · ") + tierLabel(prefs.licenseTier) + t(" · 判断已走云端", " · judging via cloud")
+        prefs.accountToken.isNotBlank() -> t("✓ 已有账户令牌 · 判断已走云端", "✓ Account token present · judging via cloud")
+        else -> t("未激活 — 判断走共享网关，高峰期可能提示 429",
+            "Not activated — judging via the shared gateway; may report 429 at peak times")
     }
 
     private fun tierLabel(tier: String) = when (tier) {
-        LicenseClient.TIER_NORMAL -> "标准版月租"
-        LicenseClient.TIER_PREMIUM -> "高级版月租"
-        LicenseClient.TIER_LIFETIME -> "终身版"
-        else -> if (tier.isBlank()) "未知档位" else tier
+        LicenseClient.TIER_NORMAL -> t("标准版月租", "Standard monthly")
+        LicenseClient.TIER_PREMIUM -> t("高级版月租", "Premium monthly")
+        LicenseClient.TIER_LIFETIME -> t("终身版", "Lifetime")
+        else -> if (tier.isBlank()) t("未知档位", "Unknown plan") else tier
     }
 
     /**
@@ -636,7 +700,7 @@ class SettingsActivity : AppCompatActivity() {
                 android.content.Intent(this, CheckoutActivity::class.java)
                     .putExtra(CheckoutActivity.EXTRA_URL, url)
                     .putExtra(CheckoutActivity.EXTRA_TIER, tier))
-            statusView.text = "等待付款确认…（${tierLabel(tier)}）"
+            statusView.text = t("等待付款确认…（", "Waiting for payment confirmation… (") + tierLabel(tier) + ")"
         } catch (e: Exception) {
             // 极端情况（ROM 无 WebView）：退回浏览器，但确认逻辑不变
             Log.w(TAG, "in-app checkout unavailable: ${e.message}")
@@ -644,7 +708,7 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(android.content.Intent(
                     android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
             } catch (e2: Exception) {
-                Toast.makeText(this, "无法打开收银台：${e2.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, t("无法打开收银台：", "Can't open checkout: ") + (e2.message ?: ""), Toast.LENGTH_LONG).show()
                 return
             }
             startLicensePoll(tier, statusView)
@@ -653,7 +717,7 @@ class SettingsActivity : AppCompatActivity() {
 
     /** 每 3s 轮询一次卡密（最长 30 分钟），拿到即落盘激活并刷新状态行。 */
     private fun startLicensePoll(tier: String, statusView: TextView) {
-        statusView.text = "等待付款确认…（${tierLabel(tier)}）"
+        statusView.text = t("等待付款确认…（", "Waiting for payment confirmation… (") + tierLabel(tier) + ")"
         Thread {
             val deadline = System.currentTimeMillis() + 30 * 60_000L
             var failures = 0
@@ -666,7 +730,8 @@ class SettingsActivity : AppCompatActivity() {
                         main.post {
                             if (!isFinishing && !isDestroyed) {
                                 statusView.text = licenseStatusText()
-                                Toast.makeText(this, "✓ 激活成功，判断接口已切换到云端", Toast.LENGTH_LONG).show()
+                                Toast.makeText(this, t("✓ 激活成功，判断接口已切换到云端",
+                                    "✓ Activated — judging has switched to the cloud"), Toast.LENGTH_LONG).show()
                             }
                         }
                         return@Thread
@@ -695,45 +760,45 @@ class SettingsActivity : AppCompatActivity() {
     // ------------------------------------------------------------ 云端备份
 
     private fun syncStatusText(): String {
-        if (!prefs.syncEnabled) return "云端备份：已关闭"
+        if (!prefs.syncEnabled) return t("云端备份：已关闭", "Cloud backup: off")
         val last = prefs.lastSyncAt
-        val ago = if (last <= 0) "尚未备份" else {
+        val ago = if (last <= 0) t("尚未备份", "never backed up") else {
             val mins = (System.currentTimeMillis() - last) / 60000
             when {
-                mins < 1 -> "刚刚备份"
-                mins < 60 -> "$mins 分钟前备份"
-                else -> "${mins / 60} 小时前备份"
+                mins < 1 -> t("刚刚备份", "backed up just now")
+                mins < 60 -> t("${mins} 分钟前备份", "backed up ${mins} min ago")
+                else -> t("${mins / 60} 小时前备份", "backed up ${mins / 60} h ago")
             }
         }
-        return "云端备份：$ago · 设备 ${DeviceId.shortHash(this).take(8)}"
+        return t("云端备份：", "Cloud backup: ") + ago + t(" · 设备 ", " · device ") + DeviceId.shortHash(this).take(8)
     }
 
     private fun doSyncBackup(statusView: TextView) {
-        statusView.text = "正在备份…"
+        statusView.text = t("正在备份…", "Backing up…")
         worker.execute {
             val res = CloudSync.uploadNow(this, prefs)
             main.post {
                 if (isFinishing || isDestroyed) return@post
                 statusView.text = when (res) {
                     is SyncClient.Result.Ok -> syncStatusText()
-                    SyncClient.Result.NotDeployed -> "暂时连不上服务器，稍后再试"
-                    SyncClient.Result.Empty -> "云端备份：已关闭"
-                    is SyncClient.Result.Failure -> "备份失败：${res.message}"
+                    SyncClient.Result.NotDeployed -> t("暂时连不上服务器，稍后再试", "Can't reach the server right now — try again later")
+                    SyncClient.Result.Empty -> t("云端备份：已关闭", "Cloud backup: off")
+                    is SyncClient.Result.Failure -> t("备份失败：", "Backup failed: ") + res.message
                 }
             }
         }
     }
 
     private fun doSyncRestore(statusView: TextView) {
-        statusView.text = "正在恢复…"
+        statusView.text = t("正在恢复…", "Restoring…")
         worker.execute {
             val msg = CloudSync.restoreNow(this, prefs)
             main.post {
                 if (isFinishing || isDestroyed) return@post
                 statusView.text = msg ?: if (prefs.syncRestored) {
-                    "云端没有更早的数据"
+                    t("云端没有更早的数据", "No earlier data in the cloud")
                 } else {
-                    "暂时连不上服务器，稍后再试"
+                    t("暂时连不上服务器，稍后再试", "Can't reach the server right now — try again later")
                 }
             }
         }

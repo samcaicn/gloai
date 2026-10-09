@@ -28,6 +28,7 @@ import com.jev.probe.core.Metrics
 import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.RankedReply
+import com.jev.probe.core.t
 import com.jev.probe.core.kb.ContextBuilder
 import com.jev.probe.core.kb.KbStore
 import com.jev.probe.jev.JevClient
@@ -128,7 +129,7 @@ open class ChatCaptureService : AccessibilityService() {
                 startActivity(android.content.Intent(
                     android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
                     .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
-            }.onFailure { overlay?.toast("打不开无障碍设置") }
+            }.onFailure { overlay?.toast(t("打不开无障碍设置", "Can't open accessibility settings")) }
         }
     }
 
@@ -144,19 +145,23 @@ open class ChatCaptureService : AccessibilityService() {
      */
     private fun toggleWhitelist() {
         val title = currentSnapshot?.title
-        if (title.isNullOrBlank()) { overlay?.toast("当前会话没有标题，改不了名单"); return }
+        if (title.isNullOrBlank()) {
+            overlay?.toast(t("当前会话没有标题，改不了名单", "This chat has no title yet — can't edit the list")); return }
         val wl = prefs.whitelist
         val matched = wl.filter { title.contains(it, ignoreCase = true) }
         if (matched.isEmpty()) {
             prefs.whitelist = wl + title
             // 说清后果：用户最常见的场景是「只想看这一个」，那他就该知道别人都不分析了。
-            overlay?.toast("已加入：之后只分析「$title」，其它会话都不再分析")
+            overlay?.toast(t("已加入：之后只分析「$title」，其它会话都不再分析",
+                "Added: from now on only \"$title\" is analyzed, other chats are skipped"))
         } else {
             prefs.whitelist = wl - matched.toSet()
             overlay?.toast(if (wl.size == matched.size)
-                "已退出「只分析这些会话」，现在所有会话都会分析"
+                t("已退出「只分析这些会话」，现在所有会话都会分析",
+                  "Left \"only analyze listed chats\" — all chats are analyzed again")
             else
-                "已移出「$title」，名单里还剩 ${wl.size - matched.size} 个")
+                t("已移出「$title」，名单里还剩 ${wl.size - matched.size} 个",
+                  "Removed \"$title\" — ${wl.size - matched.size} left in the list"))
         }
     }
 
@@ -167,7 +172,7 @@ open class ChatCaptureService : AccessibilityService() {
                 .setClassName(this, "com.jev.probe.SettingsActivity")
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                 .putExtra("focus", if (focusPlan) "plan" else ""))
-        }.onFailure { overlay?.toast("打不开设置") }
+        }.onFailure { overlay?.toast(t("打不开设置", "Can't open settings")) }
     }
 
     /** 悬浮球菜单「诊断与自检」→ 打开主页并直接弹出诊断卡。 */
@@ -177,7 +182,7 @@ open class ChatCaptureService : AccessibilityService() {
                 .setClassName(this, "com.jev.probe.MainActivity")
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                 .putExtra("diag", true))
-        }.onFailure { overlay?.toast("打不开诊断页") }
+        }.onFailure { overlay?.toast(t("打不开诊断页", "Can't open diagnostics")) }
     }
     private val session = ConversationSession()
     private val analysisTasks = ArrayList<Future<*>>()
@@ -346,12 +351,14 @@ open class ChatCaptureService : AccessibilityService() {
             val title = currentSnapshot?.title
             val pkg = activePkg ?: foregroundPkg ?: ""
             when {
-                title.isNullOrBlank() -> overlay?.toast("当前会话没有标题，存不了")
-                isTransientTitle(title) -> overlay?.toast("当前会话标题还没加载出来，稍后再试")
+                title.isNullOrBlank() -> overlay?.toast(t("当前会话没有标题，存不了",
+                    "This chat has no title yet — can't save"))
+                isTransientTitle(title) -> overlay?.toast(t("当前会话标题还没加载出来，稍后再试",
+                    "The chat title hasn't loaded yet — try again shortly"))
                 else -> submit {
                     val msg = try {
                         KbStore.get(this).saveOrMergeContact(title, pkg)
-                    } catch (e: Exception) { "保存失败：${e.javaClass.simpleName}" }
+                    } catch (e: Exception) { t("保存失败：", "Save failed: ") + e.javaClass.simpleName }
                     main.post { overlay?.toast(msg) }
                 }
             }
@@ -404,7 +411,7 @@ open class ChatCaptureService : AccessibilityService() {
                 if (!overlayOk) { overlayOk = true; overlay?.resetWindow() }
             } else if (overlayOk) {
                 overlayOk = false
-                Toast.makeText(this, "悬浮窗权限被收回，去设置重新开启后助手才能显示", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, t("悬浮窗权限被收回，去设置重新开启后助手才能显示", "Overlay permission was revoked — re-enable it in Settings or the bubble can\u0027t show"), Toast.LENGTH_LONG).show()
             }
         }
 
@@ -646,7 +653,7 @@ open class ChatCaptureService : AccessibilityService() {
                         // 结果归类放在 isCurrent **外面**：无论会话还匹不匹配，这一轮
                         // 是成是败都要如实记进埋点与自检卡，否则统计会漏掉失败。
                         if (judgment.error != null) {
-                            val v = ErrCatalog.classify(judgment.error,
+                            val v = ErrCatalog.classify(this, judgment.error,
                                 inWeChat = token.target.pkg == PKG_WECHAT)
                             roundErr = v.kind
                             lastErrKind = v.kind
@@ -669,7 +676,7 @@ open class ChatCaptureService : AccessibilityService() {
                     }
                     main.post {
                         if (replyError != null && roundErr == ErrCatalog.Kind.UNKNOWN) {
-                            roundErr = ErrCatalog.classify(replyError,
+                            roundErr = ErrCatalog.classify(this, replyError,
                                 inWeChat = token.target.pkg == PKG_WECHAT).kind
                         }
                         if (isCurrent(token)) {
@@ -703,7 +710,7 @@ open class ChatCaptureService : AccessibilityService() {
         Metrics.log("analysis_timeout", "conv" to Metrics.hash(currentSnapshot?.title))
         // 超时文案不区分微信与否（它在任何 App 上都一样），但把 inWeChat 传准，
         // 万一日志里出现别的 no_text 归类也不会给出在微信里无效的按钮。
-        overlay?.showFailure(ErrCatalog.classify("分析超时",
+        overlay?.showFailure(ErrCatalog.classify(this, "分析超时",
             inWeChat = activePkg == PKG_WECHAT))
     }
 
@@ -778,13 +785,13 @@ open class ChatCaptureService : AccessibilityService() {
         // WeChat's anti-screenshot risk control makes an in-WeChat screenshot
         // unreliable and risky, so manual OCR is disabled there; tree capture
         // (the bubble's auto analysis) still works.
-        if (pkg == PKG_WECHAT) { overlay?.toast("微信内暂不支持截屏识别，已用树读取"); return }
+        if (pkg == PKG_WECHAT) { overlay?.toast(t("微信内暂不支持截屏识别，已用树读取", "Screen capture isn\u0027t supported inside WeChat — used tree reading instead")); return }
         // Top bar text, if this app has one we can read; else the first OCR line.
         val title = root?.let {
             findTitleInActionBar(it, Int.MAX_VALUE, resources.displayMetrics.widthPixels, resources, 0.15, 0.85)
         }
         val target = root?.let { targetFor(it) } ?: run {
-            overlay?.toast("无法确认当前会话，请等待标题加载后重试")
+            overlay?.toast(t("无法确认当前会话，请等待标题加载后重试", "Can\u0027t confirm the current chat — wait for the title to load and retry"))
             return
         }
         observeTarget(target)
@@ -951,7 +958,7 @@ open class ChatCaptureService : AccessibilityService() {
                 lastErrKind = ErrCatalog.Kind.NO_TEXT
                 // pkg 传进去：微信里整屏截屏会被风控拒绝，按钮必须换成
                 // 「重新分析」而不是那个必然失败的「截屏识别一次」。
-                overlay?.showFailure(ErrCatalog.classify("这一屏没认出文字",
+                overlay?.showFailure(ErrCatalog.classify(this, "这一屏没认出文字",
                     inWeChat = pkg == PKG_WECHAT))
                 return
             }
@@ -1025,10 +1032,10 @@ open class ChatCaptureService : AccessibilityService() {
             if (ok) {
                 // sendFor announces the countdown itself; don't double-toast here.
                 if (prefs.autoSend) sendFor(token)
-                else overlay?.toast("已填入，确认后自己发送")
-            } else { copyToClipboard(text); overlay?.toast("已复制，长按输入框粘贴") }
+                else overlay?.toast(t("已填入，确认后自己发送", "Filled in — review it and send yourself"))
+            } else { copyToClipboard(text); overlay?.toast(t("已复制，长按输入框粘贴", "Copied — long-press the input box to paste")) }
         }
-        if (!isCurrent(token)) { overlay?.toast("会话已变化，请重新分析后填入"); return }
+        if (!isCurrent(token)) { overlay?.toast(t("会话已变化，请重新分析后填入", "The chat changed — analyze again before filling")); return }
         if (inputFor(token) == null) { finish(false); return }
         GuardedInputWriter(
             resolve = {
@@ -1096,7 +1103,7 @@ open class ChatCaptureService : AccessibilityService() {
         if (delay > 0) {
             overlay?.showSendCountdown(delay.toInt()) {
                 skipThisSend = true
-                overlay?.toast("已拦下这一条，不会发出去")
+                overlay?.toast(t("已拦下这一条，不会发出去", "Held back — this one won\u0027t be sent"))
             }
         }
         main.postDelayed({
@@ -1105,17 +1112,17 @@ open class ChatCaptureService : AccessibilityService() {
             if (skipThisSend) { skipThisSend = false; return@postDelayed }
             // 发送不可逆：用户可能在这 2 秒等待里点了「暂停自动收发」（气泡菜单一步可达）。
             // 这里必须重新读开关，让暂停立刻生效——否则「随时收回控制权」就是空话。
-            if (!prefs.autoSend) { overlay?.toast("已暂停自动发送，本次未发出"); return@postDelayed }
+            if (!prefs.autoSend) { overlay?.toast(t("已暂停自动发送，本次未发出", "Auto-send paused — not sent this time")); return@postDelayed }
             val root = rootInActiveWindow ?: return@postDelayed
             if (targetFor(root) != token.target) return@postDelayed
             val send = findSendButton(root, token.target.pkg) ?: run {
-                overlay?.toast("已填入，未能自动发送，请手动点发送"); return@postDelayed
+                overlay?.toast(t("已填入，未能自动发送，请手动点发送", "Filled in but couldn\u0027t auto-send — tap send manually")); return@postDelayed
             }
             if (!(send.refresh() && send.isVisibleToUser && send.isEnabled)) {
-                overlay?.toast("已填入，请手动点发送"); return@postDelayed
+                overlay?.toast(t("已填入，请手动点发送", "Filled in — tap send manually")); return@postDelayed
             }
             send.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            overlay?.toast("已自动发送")
+            overlay?.toast(t("已自动发送", "Sent automatically"))
             // Confirm the input cleared (message actually went out); retry once if not.
             main.postDelayed({
                 if (!isCurrent(token)) return@postDelayed

@@ -1,6 +1,7 @@
 package com.jev.probe.core
 
 import android.content.Context
+import com.jev.probe.core.t
 
 /**
  * 「自动收发」这一个开关的单一事实源。
@@ -34,8 +35,10 @@ object AutoReply {
         val p = Prefs(ctx)
         p.autoFillBest = on
         p.autoSend = on
-        return if (on) "已开启自动收发：对方发消息 → 我读 → 自动回复并发送"
-        else "已暂停自动收发：只给建议并自动填好，发送由你点"
+        return if (on) ctx.t("已开启自动收发：对方发消息 → 我读 → 自动回复并发送",
+            "Auto send/receive on: when they message, I read, reply and send automatically")
+        else ctx.t("已暂停自动收发：只给建议并自动填好，发送由你点",
+            "Auto send/receive paused: suggestions only, auto-filled — you tap send")
     }
 
     /**
@@ -48,9 +51,12 @@ object AutoReply {
     fun statusText(ctx: Context): String {
         val p = Prefs(ctx)
         return when {
-            isOn(ctx) -> "自动收发已开启 · 自动读消息并自动回复发送"
-            p.autoAnalyze -> "自动分析已开启 · 只给建议，发送由你点"
-            else -> "助手已待命 · 只在你点气泡时分析"
+            isOn(ctx) -> ctx.t("自动收发已开启 · 自动读消息并自动回复发送",
+                "Auto send/receive on · reads messages and replies automatically")
+            p.autoAnalyze -> ctx.t("自动分析已开启 · 只给建议，发送由你点",
+                "Auto-analyze on · suggestions only, you tap send")
+            else -> ctx.t("助手已待命 · 只在你点气泡时分析",
+                "Assistant standing by · analyzes only when you tap the bubble")
         }
     }
 }
