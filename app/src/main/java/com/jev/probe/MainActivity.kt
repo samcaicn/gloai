@@ -163,7 +163,8 @@ class MainActivity : AppCompatActivity() {
                 build()
             }
         }
-        container.addView(toggle)        if (!permsOk) {
+        container.addView(toggle)
+        if (!permsOk) {
             container.addView(text(
                 if (prefs.enabled) t("上面 ${pending.size} 项开完就能用了；不想现在开，可以先点上面关掉助手",
                     "Finish the ${pending.size} item(s) above and it's ready; to hold off, switch the assistant off above")
