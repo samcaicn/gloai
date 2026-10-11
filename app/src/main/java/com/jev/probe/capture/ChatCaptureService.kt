@@ -394,6 +394,7 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        try {
         if (event == null) return
         // Live foreground state for the notification listener (reliable, no extra perms).
         weChatForeground = rootInActiveWindow?.packageName?.toString() == PKG_WECHAT
@@ -447,6 +448,14 @@ open class ChatCaptureService : AccessibilityService() {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
             AccessibilityEvent.TYPE_VIEW_SCROLLED -> maybeCapture()
+        }
+        } catch (t: Throwable) {
+            // A bad event must never kill the service: Android marks an
+            // AccessibilityService that throws from onAccessibilityEvent as
+            // crashed and stops dispatching events entirely, which silently
+            // breaks all capture until the user re-enables it. Swallow and
+            // keep alive.
+            Log.e(TAG, "onAccessibilityEvent swallowed to keep service alive", t)
         }
     }
 
