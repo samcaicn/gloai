@@ -231,6 +231,7 @@ class WeChatAdapter : ChatAppAdapter {
         val title = findWeChatTitle(root, firstBubbleTop, width, res)
         // In a chat but nothing readable → empty snapshot, the OCR fallback cue.
         if (bubbles.isEmpty() && imageBubbles.isEmpty()) {
+            Log.d("JEVASSIST", "wechat extract: isChat=$isChat nodes=$guard title=$title bubbles=0")
             return if (isChat) ChatSnapshot(title, emptyList()) else null
         }
         // The latest "other" image bubble is the one to OCR when the newest message

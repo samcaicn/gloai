@@ -508,6 +508,7 @@ open class ChatCaptureService : AccessibilityService() {
         // their list screen produced no bubble at all.
         val rawSnapshot = adapter.extract(root, resources)
         if (rawSnapshot == null) {
+            Log.i(TAG, "wx-cycle: snapshot=null pkg=$pkg class=$lastWindowClass fb=${prefs.ocrFallback}")
             // WeChat 8.0.78 intermittently hides every chat bubble from the
             // accessibility tree while the user IS in a conversation. The adapter
             // then says "not a chat window" (null) and we used to drop the cycle
@@ -549,6 +550,7 @@ open class ChatCaptureService : AccessibilityService() {
         // WeChat hides them when the disguise fails) → screenshot + OCR, subject
         // to ScreenCapture's own >=1s throttle and failure backoff.
         if (snapshot.messages.isEmpty()) {
+            Log.i(TAG, "wx-cycle: empty-tree pkg=$pkg class=$lastWindowClass fb=${prefs.ocrFallback} pri=${prefs.ocrPrimary} rects=${snapshot.bubbleRects.size}")
             // In a chat window, but the tree carries no text (Feishu draws its
             // message bodies). Park the bubble BEFORE attempting OCR, so the user
             // still has something to tap when OCR is off, deduped, or comes back
@@ -571,6 +573,8 @@ open class ChatCaptureService : AccessibilityService() {
                 if (ocrBusy) return
                 lastOcrSignature = sig
                 ocrCapture(snapshot.title, snapshot.bubbleRects, pkg ?: "", manual = false)
+            } else {
+                Log.i(TAG, "wx-cycle: OCR skipped (ocrFallback=false)")
             }
             return
         }
