@@ -233,7 +233,22 @@ open class ChatCaptureService : AccessibilityService() {
         val adapter = adapters[pkg]
         var messagesSignature: String? = null
         val title = if (adapter != null) {
-            val snapshot = adapter.extract(root, resources) ?: return null
+            val snapshot = adapter.extract(root, resources) ?: run {
+                // WeChat 8.0.78 blanks the chat bubbles out of the accessibility
+                // tree while the user is really inside the conversation. The tree
+                // then reports "not a chat window", and because every downstream
+                // gate is built on this call — maybeCapture's target check,
+                // ocrCapture's session.token() and isCurrent() — the whole
+                // pipeline died: no tree read AND no OCR, which is exactly the
+                // recent 识别失效. The window class does not depend on the tree,
+                // so when it still says ChattingUI we know the tree is lying.
+                // Keep a target with an unreadable title so the OCR fallback can
+                // still run (its screenshot path survives WeChat's risk control).
+                if (pkg == PKG_WECHAT && lastWindowClass.contains("chatting", ignoreCase = true)) {
+                    return ConversationSession.Target(pkg, root.windowId, null, null)
+                }
+                return null
+            }
             messagesSignature = snapshot.takeIf { it.messages.isNotEmpty() }?.signature()
             // A title we cannot read must not abort the capture. A non-empty
             // message list already proves we are inside a chat window, and some
@@ -417,6 +432,12 @@ open class ChatCaptureService : AccessibilityService() {
         }
 
         val type = event.eventType
+        // Remember the foreground window class on every window switch. It is the
+        // only "am I in a chat screen" signal that does not depend on the tree,
+        // which WeChat 8.0.78 blanks out intermittently.
+        if (type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            event.className?.toString()?.takeIf { it.isNotBlank() }?.let { lastWindowClass = it }
+        }
         // Decide "did we leave the chat app" from the REAL active window, not the
         // event's package. The event package can be an IME (e.g. com.tencent.wetype)
         // or the status bar while the chat app is still foreground — keying off it
@@ -459,6 +480,17 @@ open class ChatCaptureService : AccessibilityService() {
         }
     }
 
+    /**
+     * Last window class reported by TYPE_WINDOW_STATE_CHANGED (usually the
+     * Activity name, e.g. com.tencent.mm.ui.chatting.ChattingUI). Kept because
+     * WeChat 8.0.78 intermittently drops the chat bubbles from the
+     * accessibility tree while the user really is inside a conversation — in
+     * that state the tree alone cannot tell "chat screen" from "list screen",
+     * but the window class can. Never derived from the tree, so it survives
+     * those blank-tree episodes.
+     */
+    private var lastWindowClass: String = ""
+
     private fun maybeCapture() {
         lastTreeSnapshot = null // fresh capture cycle; only the OCR-primary branch re-sets it
         val root = rootInActiveWindow ?: run { leaveConversation(); overlay?.hide(); return }
@@ -475,7 +507,38 @@ open class ChatCaptureService : AccessibilityService() {
         // bubble so the menu stays reachable. Without this, opening QQ / Feishu on
         // their list screen produced no bubble at all.
         val rawSnapshot = adapter.extract(root, resources)
-        if (rawSnapshot == null) { leaveConversation(); overlay?.showIdle(null); return }
+        if (rawSnapshot == null) {
+            // WeChat 8.0.78 intermittently hides every chat bubble from the
+            // accessibility tree while the user IS in a conversation. The adapter
+            // then says "not a chat window" (null) and we used to drop the cycle
+            // right here — no tree read AND no OCR, i.e. the recent 识别失效
+            // (zero output even though the probe was healthy and bound).
+            // The window class does not depend on the tree, so when it still says
+            // ChattingUI we know the tree lied: fall back to the accessibility
+            // screenshot + local OCR, which takeScreenshot serves without tripping
+            // WeChat's FLAG_SECURE risk control.
+            if (pkg == PKG_WECHAT && prefs.ocrFallback &&
+                lastWindowClass.contains("chatting", ignoreCase = true)
+            ) {
+                val pkgName = pkg ?: ""
+                // Establish the target first: ocrCapture gates on session.token()
+                // and isCurrent(), both of which need one. targetFor() now keeps a
+                // target for a blanked-out chat tree (see above), so this succeeds
+                // where it used to return null and kill the OCR fallback.
+                targetFor(root)?.let { observeTarget(it) }
+                val title = session.target?.title ?: ""
+                if (overlay?.isShowing() != true) {
+                    overlay?.showIdle(if (title.isBlank()) null else title)
+                }
+                val sig = ocrSignature(pkgName, title, emptyList())
+                if (sig == lastOcrSignature && overlay?.isShowing() == true) return
+                if (ocrBusy) return
+                lastOcrSignature = sig
+                ocrCapture(title, emptyList(), pkgName, manual = false)
+                return
+            }
+            leaveConversation(); overlay?.showIdle(null); return
+        }
         val target = targetFor(root)
         if (target == null) { leaveConversation(); overlay?.showIdle(null); return }
         observeTarget(target)
