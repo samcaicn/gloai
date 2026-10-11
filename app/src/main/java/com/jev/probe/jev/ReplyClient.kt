@@ -30,7 +30,38 @@ class ReplyClient(private val prefs: Prefs) {
             "每条不超过 40 字，口语、自然、像真人在聊天软件里发消息。不要解释，不要加引号以外的内容，直接输出 JSON 数组。"
         val user = knowledgeBlock(relationship, ctx) +
             "关系：$relationship\n\n最近对话：\n$convo\n\n请给出 3 条候选回复。"
-        return parseThree(chat(sys, user, temperature = 0.8))
+        // cf worker ai 优先回复：主路打 Worker（Cloudflare Workers AI），失败再兜底 one-api 网关。
+        val cloudMode = prefs.isWorkerMode || prefs.judgeProvider == Prefs.PROVIDER_TUPTUP
+        return try {
+            parseThree(chat(sys, user, temperature = 0.8))
+        } catch (e: Exception) {
+            if (!cloudMode) return emptyList()
+            Log.w(TAG, "worker reply failed -> one-api fallback: ${e.message}")
+            try {
+                parseThree(chatFallback(sys, user, temperature = 0.8))
+            } catch (e2: Exception) {
+                Log.w(TAG, "one-api reply fallback also failed: ${e2.message}")
+                emptyList()
+            }
+        }
+    }
+
+    /** 兜底：直连 one-api 网关（TUPTUP 内置密钥），仅当 Worker 不可用时使用。 */
+    private fun chatFallback(system: String, user: String, temperature: Double): String {
+        val url = Prefs.TUPTUP_BASE.trimEnd('/') + "/chat/completions"
+        val messages = JSONArray()
+            .put(JSONObject().put("role", "system").put("content", system))
+            .put(JSONObject().put("role", "user").put("content", user))
+        val body = JSONObject()
+            .put("model", Prefs.TUPTUP_MODEL)
+            .put("messages", messages)
+            .put("temperature", temperature)
+        val resp = HttpJson.post(
+            url, "", body, Route.REPLY, HttpJson.headersFor(url),
+            authToken = Prefs.TUPTUP_KEY, instanceId = prefs.instanceId, billing = null
+        )
+        return resp.optJSONArray("choices")?.optJSONObject(0)
+            ?.optJSONObject("message")?.optString("content") ?: ""
     }
 
     /** The background + history preamble; empty string when there is no context. */
@@ -89,6 +120,8 @@ class ReplyClient(private val prefs: Prefs) {
         return resp.optJSONArray("choices")?.optJSONObject(0)
             ?.optJSONObject("message")?.optString("content") ?: ""
     }
+
+    companion object { private const val TAG = "JEVASSIST" }
 
     private fun parseThree(content: String): List<String> {
         val start = content.indexOf('[')

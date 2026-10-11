@@ -125,13 +125,15 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         set(v) = sp.edit().putString(K_JUDGE_KEY, v.trim()).apply()
 
     /**
-     * Jev 模型。worker 模式下清空 → 云端用其自身默认模型（env.JEV_MODEL），
-     * 不把客户端的旧 OpenRouter 模型名（如 typesafe/jev-1.13）误发给 Workers AI。
+     * Jev 模型。worker / tuptup 两种「云端 jev」模式都清空 → 云端用其自身默认模型
+     * （env.JEV_MODEL = @cf/meta/llama-3.3-70b-instruct），不把客户端的 one-api 模型名
+     * （如 doubao-seed-2.0-pro）误发给只跑 Cloudflare Workers AI 的 jev 决策接口。
+     * 否则 env.AI.run 拒掉该模型 → 502 → 回落到饱和的 one-api 网关 → 全 429。
      */
     var judgeModel: String
         get() = when {
             isWorkerMode -> ""
-            judgeProvider == PROVIDER_TUPTUP -> TUPTUP_MODEL
+            judgeProvider == PROVIDER_TUPTUP -> ""
             else -> sp.getString(K_JUDGE_MODEL, DEFAULT_JUDGE_MODEL_OPENROUTER) ?: DEFAULT_JUDGE_MODEL_OPENROUTER
         }
         set(v) = sp.edit().putString(K_JUDGE_MODEL, v.trim()).apply()
@@ -153,7 +155,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     var replyModel: String
         get() = when {
             isWorkerMode -> ""
-            judgeProvider == PROVIDER_TUPTUP -> TUPTUP_MODEL
+            judgeProvider == PROVIDER_TUPTUP -> ""   // 同 judge：走 Worker /ai/v1/chat 时用 Cloudflare Workers AI，不转发 one-api 模型名
             else -> sp.getString(K_REPLY_MODEL, DEFAULT_REPLY_MODEL) ?: DEFAULT_REPLY_MODEL
         }
         set(v) = sp.edit().putString(K_REPLY_MODEL, v.trim()).apply()
@@ -465,10 +467,15 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         else -> judgeEndpoint()
     }
 
-    /** Full POST URL for the OpenAI-compatible chat completions call. */
+    /**
+     * OpenAI-compatible chat completions 地址。
+     * cf worker ai 优先回复：worker / tuptup 两种云端模式都把生成式回复打到 Worker
+     * 的 /ai/v1/chat/completions（Cloudflare Workers AI，免费不限流），不再直连饱和
+     * 的 one-api 网关（aiapi.tuptup.top）；one-api 仅在 Worker 不可用时由 ReplyClient 兜底。
+     */
     fun replyEndpoint(): String =
         if (isWorkerMode) WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
-        else if (judgeProvider == PROVIDER_TUPTUP) TUPTUP_BASE.trimEnd('/') + "/chat/completions"
+        else if (judgeProvider == PROVIDER_TUPTUP) WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
         else "${replyBaseUrl.trim().trimEnd('/')}/chat/completions"
 
     fun visionEndpoint(): String {
