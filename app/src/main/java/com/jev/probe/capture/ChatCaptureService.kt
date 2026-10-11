@@ -482,9 +482,11 @@ open class ChatCaptureService : AccessibilityService() {
             // still has something to tap when OCR is off, deduped, or comes back
             // empty — previously all three cases left the screen with no bubble.
             if (overlay?.isShowing() != true) overlay?.showIdle(snapshot.title)
-            // WeChat hides its screenshot under risk control — skip the screenshot
-            // OCR fallback there; the tree read already ran above, so park the bubble.
-            if (prefs.ocrFallback && pkg != PKG_WECHAT) {
+            // WeChat 8.0.78 hides bubble text in the accessibility tree, so the
+            // tree read above yields no messages. The OCR below uses the
+            // AccessibilityService capture API (takeScreenshot), which WeChat's
+            // FLAG_SECURE risk control does NOT block — safe inside WeChat. Allow it.
+            if (prefs.ocrFallback) {
                 // Gate BEFORE the shot, not after the OCR. Feishu's tree is empty
                 // on every content-changed event, and a successful shot resets the
                 // failure backoff — so without this the caret blinking or an
