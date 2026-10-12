@@ -212,7 +212,11 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     private fun observeTarget(target: ConversationSession.Target?) {
-        if (session.observe(target)) {
+        // 通知直驱轮次进行中（autoOpenChat 刚把微信拉到前台）：target 换成真实窗口
+        // 是正常的前台语义，但绝不许顺带 cancelAnalysis——那会在 judge 跑到一半时
+        // 把通知轮次拆掉，表现为「context 打完就断、之后什么都不日志」。
+        val notifRound = analyzing && session.target?.windowId == ConversationSession.NOTIF_WINDOW
+        if (session.observe(target) && !notifRound) {
             cancelAnalysis()
             currentSnapshot = null
             activePkg = null
@@ -222,6 +226,11 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     private fun leaveConversation() {
+        // 后台通知直驱轮次在跑：无障碍的窗口 churn（autoOpenChat 拉起微信、用户切
+        // 桌面、target 失配）不该拆台——文本来自通知，轮次要跑完出结果。
+        // prefs 总开关除外：关了她必须立刻停。
+        if (analyzing && prefs.enabled &&
+            session.target?.windowId == ConversationSession.NOTIF_WINDOW) return
         observeTarget(null)
         cancelAnalysis()
         currentSnapshot = null
@@ -748,7 +757,13 @@ open class ChatCaptureService : AccessibilityService() {
     private fun runAnalysis(manual: Boolean = true) {
         val snapshot = pendingSnapshot ?: return
         if (analyzing || destroyed || !prefs.enabled) return
-        val previous = session.token() ?: return
+        // 通知直驱快照（note=NOTIFY_NOTE）：session.target 可能已被无障碍的 observe()
+        // 换成真实窗口 target（autoOpenChat 拉起微信的必然结果），token() 于是不再是
+        // 通知 token。通知轮次的合法性不依赖实时窗口——补签一个逻辑 token 放行。
+        val previous = if (snapshot.note == NOTIFY_NOTE &&
+            session.token()?.target?.windowId != ConversationSession.NOTIF_WINDOW
+        ) session.beginNotification(PKG_WECHAT, snapshot.title)
+        else session.token() ?: return
         if (!isCurrent(previous)) return
         if (!prefs.hasKey()) { overlay?.showOcrResult(snapshot.messages, "未设置判断接口密钥，去设置里填"); return }
         val token = session.begin() ?: return
@@ -781,6 +796,9 @@ open class ChatCaptureService : AccessibilityService() {
             }
             main.post {
                 if (!isCurrent(token)) {
+                    Log.w(TAG, "runAnalysis: stale session -> drop round " +
+                        "(notif=${token.target.windowId == ConversationSession.NOTIF_WINDOW}, " +
+                        "liveTarget=${session.target?.windowId}, enabled=${prefs.enabled})")
                     // 会话已失效（切了聊天 / 关了开关 / token 过期）。必须在这里复位，
                     // 因为下面两个任务压根不会被提交，没人会去归零 analyzing。
                     analyzing = false

@@ -43,8 +43,15 @@ internal class ConversationSession {
         return Token(t, revision)
     }
 
-    fun accepts(token: Token): Boolean =
-        token.target == target && token.revision == revision
+    fun accepts(token: Token): Boolean {
+        // 后台通知直驱 token（windowId=NOTIF_WINDOW）：autoOpenChat 会把微信拉到前台，
+        // 无障碍随即使 observe() 疯狂换 target/涨 revision——按常规 revision 比对，
+        // 通知轮次会被这些前台噪声判死刑（runAnalysis 在 context 打完后就静默 bail，
+        // 即「通知到了、分析起了、打完上下文就断」）。通知文本不依赖实时窗口：
+        // 这类 token 一旦签发，本轮内始终有效。
+        if (token.target.windowId == NOTIF_WINDOW) return true
+        return token.target == target && token.revision == revision
+    }
 
     companion object {
         /** 后台通知驱动 target 的 windowId 标记，见 [beginNotification]。 */
