@@ -271,9 +271,13 @@ open class ChatCaptureService : AccessibilityService() {
 
     private fun isCurrent(token: ConversationSession.Token): Boolean {
         if (destroyed || !prefs.enabled || !session.accepts(token)) return false
+        // 后台通知驱动（windowId=NOTIF_WINDOW）：微信故意在后台，rootInActiveWindow 是
+        // 桌面/其他 app，「前台窗口必须匹配」这条前台假设不适用；消息文本来自通知，
+        // 只要 token 仍被 session 接受就放行，让通知直驱分析能跑完并回填结果。
+        if (token.target.windowId == ConversationSession.NOTIF_WINDOW) return true
         val live = rootInActiveWindow?.let { targetFor(it) }
         if (live != token.target || !prefs.isAllowed(currentSnapshot?.title ?: live.title)) {
-            leaveConversation()
+            leaveConversation();
             overlay?.hide()
             return false
         }
@@ -358,10 +362,15 @@ open class ChatCaptureService : AccessibilityService() {
      * shared tail handle dedupe + auto-analyze + reply.
      */
     private fun analyzeFromNotification(text: String, sender: String?, isImage: Boolean) {
-        val token = session.token() ?: return
-        if (!isCurrent(token)) return
+        if (destroyed || !prefs.enabled) return
+        // 后台纯通知场景：微信在后台，无障碍没抓到聊天窗口，session.target 可能为 null，
+        // 旧代码用 session.token() 会直接 return、连日志都不打（静默黑洞——这是
+        // 「对方发了、通知也弹了、却毫无反应」的根因）。改用 beginNotification 构造
+        // 逻辑 target，绕开前台窗口假设，让通知文本能真正驱动分析 + 回复。
+        val token = session.beginNotification(PKG_WECHAT, sender)
         val body = if (isImage) "[图片] $text" else text
-        val snapshot = ChatSnapshot(null, listOf(Msg("other", body)), note = NOTIFY_NOTE)
+        val snapshot = ChatSnapshot(sender, listOf(Msg("other", body)), note = NOTIFY_NOTE)
+        Log.d(TAG, "analyzeFromNotification: sender=$sender textLen=${text.length} -> notif-driven analyze")
         finishOcrSnapshot(snapshot, PKG_WECHAT, manual = false, token = token)
     }
 

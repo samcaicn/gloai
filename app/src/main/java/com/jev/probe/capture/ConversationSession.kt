@@ -30,6 +30,24 @@ internal class ConversationSession {
         return token()
     }
 
+    /**
+     * 后台纯通知场景专用：微信在后台、无障碍没抓到聊天窗口，[target] 可能为 null，
+     * [token] 会因此返回 null 而把通知直驱分析整个吞掉。这里用通知里的会话名构造一个
+     * 逻辑 target（windowId = [NOTIF_WINDOW] 作标记），[isCurrent] 见到该标记就跳过
+     * 「前台窗口必须匹配」的检查——文本来自通知，本就不依赖实时窗口。
+     */
+    fun beginNotification(pkg: String, title: String?): Token {
+        val t = Target(pkg, NOTIF_WINDOW, title, null)
+        target = t
+        revision++
+        return Token(t, revision)
+    }
+
     fun accepts(token: Token): Boolean =
         token.target == target && token.revision == revision
+
+    companion object {
+        /** 后台通知驱动 target 的 windowId 标记，见 [beginNotification]。 */
+        const val NOTIF_WINDOW = -1
+    }
 }
