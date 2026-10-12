@@ -553,9 +553,17 @@ open class ChatCaptureService : AccessibilityService() {
             // ChattingUI we know the tree lied: fall back to the accessibility
             // screenshot + local OCR, which takeScreenshot serves without tripping
             // WeChat's FLAG_SECURE risk control.
-            if (pkg == PKG_WECHAT && prefs.ocrFallback &&
-                lastWindowClass.contains("chatting", ignoreCase = true)
-            ) {
+            val chatWin = weChatChatRoot()
+            val inConversation = pkg == PKG_WECHAT && prefs.ocrFallback && (
+                lastWindowClass.contains("chatting", ignoreCase = true) ||
+                // WeChat may rename the chat Activity across builds, but the list
+                // screen is always LauncherUI. Trusting "not the list" instead of a
+                // hard-coded "chatting" string makes the OCR fallback survive renames.
+                (chatWin != null && chatWin.className?.toString()
+                    ?.contains("Launcher", ignoreCase = true) != true)
+            )
+            Log.i(TAG, "wx-cycle: ocr-gate pkg=$pkg class=$lastWindowClass inConv=$inConversation")
+            if (inConversation) {
                 val pkgName = pkg ?: ""
                 // Establish the target first: ocrCapture gates on session.token()
                 // and isCurrent(), both of which need one. targetFor() now keeps a
