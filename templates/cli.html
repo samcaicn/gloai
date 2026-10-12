@@ -4,7 +4,7 @@
     <meta charset="UTF-8" data-page-node-id="cliMeta1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="cliMeta2">
     <meta name="csrf-token" content="{{ csrf_token() }}" data-page-node-id="cliCsrf">
-    <title>CLI 命令行 · 让 agent 用命令行驱动微信机器人</title>
+    <title>CLI 工具控制 · 让 agent 用命令行驱动微信机器人</title>
     <style>
         body{ margin:0; }
         .wrap{ max-width:1180px; margin:0 auto; padding:22px 20px 60px; }
@@ -62,16 +62,43 @@
 </head>
 <body data-page-node-id="cliBody">
     <div class="header-bar" data-page-node-id="cliHdr">
-        <div class="header-title" data-page-node-id="cliHdrT"><h1 data-page-node-id="cliHdrH">CLI 命令行 · 用命令行驱动微信机器人</h1></div>
+        <div class="header-title" data-page-node-id="cliHdrT"><h1 data-page-node-id="cliHdrH">CLI 工具控制 · 用命令行驱动微信机器人</h1></div>
         <div class="buttons" data-page-node-id="cliHdrB">
             <a href="{{ url_for('index') }}" class="nav-button" data-page-node-id="cliBack">返回配置</a>
         </div>
     </div>
 
     <div class="wrap content-area" data-page-node-id="cliWrap">
+        {% if lic and lic.available and not lic.activated %}
+        <div data-page-node-id="cliLicWarn" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+             background:var(--warn-soft,#fff4e5);color:var(--warn-text,#8a5a00);
+             border:1px solid var(--border,#e5e5e5);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;">
+            <span>⚠️ 当前<b>未激活授权</b>，CLI 命令暂不可用（执行时会提示「未激活」）。激活后即可正常使用。</span>
+            <button type="button" onclick="openBuyFromSub()" style="cursor:pointer;border:0;background:var(--brand,#2f6fed);
+                    color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;">立即购买激活</button>
+        </div>
+        {% elif lic and lic.near_expiry %}
+        <div data-page-node-id="cliLicNear" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+             background:var(--warn-soft,#fff4e5);color:var(--warn-text,#8a5a00);
+             border:1px solid var(--border,#e5e5e5);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;">
+            <span>⏳ 授权即将到期（剩余 {{ lic.days_left }} 天），建议尽快续费以免影响使用。</span>
+            <button type="button" onclick="openBuyFromSub()" style="cursor:pointer;border:0;background:var(--brand,#2f6fed);
+                    color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;">续费</button>
+        </div>
+        {% endif %}
+        <script>
+        // 付款必须在软件内浮层打开（绝不弹新窗口）；本页常以 iframe 内嵌，故调父窗口浮层
+        function openBuyFromSub(){
+            try{
+                if (window.parent && typeof window.parent.openBuyOverlay === 'function'){
+                    window.parent.openBuyOverlay('normal'); return;
+                }
+            }catch(e){}
+            alert('请在主界面左侧「授权管理」面板中完成购买激活（付款会在软件内窗口打开）。');
+        }
+        </script>
         <div class="msg" data-page-node-id="cliMsg">
-            除了 MCP，WeAuto 还提供命令行入口 <code>cli.py</code>：agent 直接执行
-            <code>python cli.py &lt;命令&gt;</code> 即可查询/配置，默认输出 JSON，便于机器解析。
+            <code>cli.py</code> 命令行入口：agent（WorkBuddy / 豆包 / Codex）可直接调用控制机器人，默认 JSON 输出。
         </div>
 
         <div class="panel" data-page-node-id="cliDiag">
@@ -103,8 +130,7 @@
                 </div>
             </div>
             <p class="hint" data-page-node-id="cliDiagHint">
-                须用<b>项目 venv</b> 的 python 运行（含 wechatauto / openai / mcp）：
-                <code>{{ diag.venv_python }}</code>
+                用项目 venv 的 python 运行：<code>{{ diag.venv_python }}</code>
             </p>
         </div>
 
@@ -135,8 +161,7 @@
 {{ diag.venv_python }} cli.py listen add 微信昵称 老板
 {{ diag.venv_python }} cli.py send --who 文件传输助手 --msg 你好</div>
             <p class="hint" data-page-node-id="cliRunHint">
-                加 <code>--text</code> 可切换为人读格式（如 <code>cli.py history --source owner --limit 3 --text</code>）。
-                需微信的命令（send / whois）在微信未登录时返回错误 JSON 并退出码 1，不会崩溃。
+                加 <code>--text</code> 换可读格式；需微信的命令未登录时返回错误码 1，不崩溃。
             </p>
         </div>
 
@@ -148,10 +173,10 @@
                 </tr></thead>
                 <tbody data-page-node-id="cliRefTb">
                     <tr data-page-node-id="c1"><td><code>version</code></td><td><span class="req no">否</span></td><td class="c">打印版本号</td></tr>
-                    <tr data-page-node-id="c2"><td><code>status</code></td><td><span class="req no">否</span></td><td class="c">运行/配置摘要（监听名单、白名单、风格样本、聊天统计）</td></tr>
+                    <tr data-page-node-id="c2"><td><code>status</code></td><td><span class="req no">否</span></td><td class="c">运行/配置摘要</td></tr>
                     <tr data-page-node-id="c3"><td><code>history</code></td><td><span class="req no">否</span></td><td class="c">读聊天记录；--source owner|bot|friend|group|all --limit N</td></tr>
                     <tr data-page-node-id="c4"><td><code>style</code></td><td><span class="req no">否</span></td><td class="c">风格画像；--analyze / --profile / --enable / --disable</td></tr>
-                    <tr data-page-node-id="c5"><td><code>config get/set</code></td><td><span class="req no">否</span></td><td class="c">读写配置项（原子写回 config.py；密钥脱敏）</td></tr>
+                    <tr data-page-node-id="c5"><td><code>config get/set</code></td><td><span class="req no">否</span></td><td class="c">读写配置项（密钥脱敏）</td></tr>
                     <tr data-page-node-id="c6"><td><code>listen list/add/remove</code></td><td><span class="req no">否</span></td><td class="c">管理监听名单 LISTEN_LIST</td></tr>
                     <tr data-page-node-id="c7"><td><code>send</code></td><td><span class="req yes">是</span></td><td class="c">发微信消息；--who --msg [--type file|image --path F]</td></tr>
                     <tr data-page-node-id="c8"><td><code>whois</code></td><td><span class="req yes">是</span></td><td class="c">解析名字/微信ID</td></tr>
@@ -163,8 +188,7 @@
         <div class="panel" data-page-node-id="cliTest">
             <h2 data-page-node-id="cliTestH">在线测试（只读命令实时执行）</h2>
             <p class="hint" data-page-node-id="cliTestHint">
-                网页端出于安全仅允许只读命令：<code>version</code> / <code>status</code> / <code>history</code> /
-                <code>style</code> / <code>config get &lt;KEY&gt;</code> / <code>listen list</code>。
+                网页端仅允许只读命令。
             </p>
             <div class="row" data-page-node-id="cliTestRow">
                 <input class="cmd-input" id="cliInput" value="status" data-page-node-id="cliInput" />
