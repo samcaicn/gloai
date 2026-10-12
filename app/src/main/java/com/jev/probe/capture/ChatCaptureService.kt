@@ -10,6 +10,7 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import androidx.core.content.ContextCompat
 import android.os.Bundle
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -17,6 +18,7 @@ import android.util.Log
 import android.widget.Toast
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import com.jev.probe.capture.ocr.PaddleOcr
 import com.jev.probe.capture.ocr.OcrLine
 import com.jev.probe.capture.ocr.ScreenCapture
@@ -436,7 +438,18 @@ open class ChatCaptureService : AccessibilityService() {
         // only "am I in a chat screen" signal that does not depend on the tree,
         // which WeChat 8.0.78 blanks out intermittently.
         if (type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            event.className?.toString()?.takeIf { it.isNotBlank() }?.let { lastWindowClass = it }
+            val cn = event.className?.toString()?.takeIf { it.isNotBlank() }
+            // The soft keyboard reports its own window class (SoftInputWindow / the
+            // IME class). While it is up the chat Activity is still foreground, so
+            // letting that event overwrite lastWindowClass would make us think the
+            // chat closed and kill the OCR fallback — i.e. the recent 识别失效
+            // whenever the user types or sends a message. Ignore IME-class windows
+            // so lastWindowClass keeps the real Activity class (ChattingUI).
+            if (cn != null && !cn.contains("inputmethod", ignoreCase = true)
+                && !cn.contains("SoftInputWindow", ignoreCase = true)
+            ) {
+                lastWindowClass = cn
+            }
         }
         // Decide "did we leave the chat app" from the REAL active window, not the
         // event's package. The event package can be an IME (e.g. com.tencent.wetype)
@@ -491,6 +504,23 @@ open class ChatCaptureService : AccessibilityService() {
      */
     private var lastWindowClass: String = ""
 
+    /**
+     * While the soft keyboard is up, [rootInActiveWindow] is the IME window and its
+     * tree carries no chat content, so adapters report "not a chat". The chat
+     * Activity window is still live behind the IME and reachable via [getWindows];
+     * return its root so callers can read the real conversation. Skips
+     * TYPE_INPUT_METHOD windows and anything that is not WeChat.
+     */
+    private fun weChatChatRoot(): AccessibilityNodeInfo? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        for (w in getWindows()) {
+            if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) continue
+            val r = w.root ?: continue
+            if (r.packageName?.toString() == PKG_WECHAT) return r
+        }
+        return null
+    }
+
     private fun maybeCapture() {
         lastTreeSnapshot = null // fresh capture cycle; only the OCR-primary branch re-sets it
         val root = rootInActiveWindow ?: run { leaveConversation(); overlay?.hide(); return }
@@ -501,14 +531,19 @@ open class ChatCaptureService : AccessibilityService() {
             if (session.target != null && session.target != targetFor(root)) leaveConversation()
             return
         }
+        // While the soft keyboard is up, rootInActiveWindow is the IME window
+        // (SoftInputWindow) whose tree has no chat bubbles, so extract() would
+        // return null even though WeChat is foreground. The real chat window is
+        // still present in getWindows() behind the IME — read that tree instead.
+        val effectiveRoot = if (pkg == PKG_WECHAT) weChatChatRoot() ?: root else root
         // Outside a chat window (the conversation list, a profile, settings…) the
         // adapter returns null. That is NOT a reason to show nothing: an adapted
         // app must behave at least as well as an unadapted one, which parks an idle
         // bubble so the menu stays reachable. Without this, opening QQ / Feishu on
         // their list screen produced no bubble at all.
-        val rawSnapshot = adapter.extract(root, resources)
+        val rawSnapshot = adapter.extract(effectiveRoot, resources)
         if (rawSnapshot == null) {
-            Log.i(TAG, "wx-cycle: snapshot=null pkg=$pkg class=$lastWindowClass fb=${prefs.ocrFallback}")
+            Log.i(TAG, "wx-cycle: snapshot=null pkg=$pkg class=$lastWindowClass effChat=${effectiveRoot != root} fb=${prefs.ocrFallback}")
             // WeChat 8.0.78 intermittently hides every chat bubble from the
             // accessibility tree while the user IS in a conversation. The adapter
             // then says "not a chat window" (null) and we used to drop the cycle
@@ -526,7 +561,7 @@ open class ChatCaptureService : AccessibilityService() {
                 // and isCurrent(), both of which need one. targetFor() now keeps a
                 // target for a blanked-out chat tree (see above), so this succeeds
                 // where it used to return null and kill the OCR fallback.
-                targetFor(root)?.let { observeTarget(it) }
+                targetFor(effectiveRoot)?.let { observeTarget(it) }
                 val title = session.target?.title ?: ""
                 if (overlay?.isShowing() != true) {
                     overlay?.showIdle(if (title.isBlank()) null else title)
@@ -540,7 +575,7 @@ open class ChatCaptureService : AccessibilityService() {
             }
             leaveConversation(); overlay?.showIdle(null); return
         }
-        val target = targetFor(root)
+        val target = targetFor(effectiveRoot)
         if (target == null) { leaveConversation(); overlay?.showIdle(null); return }
         observeTarget(target)
         // Use only this window's title; never inherit another conversation's title.
