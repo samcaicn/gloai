@@ -74,7 +74,7 @@
         <div class="panel" id="intro" data-page-node-id="helpIntro">
             <h2>① 简介</h2>
             <p class="hint">
-                <b>WeAuto</b> 是运行在 <b>Windows 10/11 桌面端</b>的智能微信聊天机器人，基于内置 <code>wechatauto</code> 引擎驱动微信 4.x（兼容 3.9），调用大模型生成拟人化回复。
+                <b>WeAuto</b> 是运行在 <b>Windows 10/11 桌面端</b>的 <b>AI 对话助理</b>，接入大模型生成拟人化回复，支持以 <b>MCP / CLI</b> 被 Codex / WorkBuddy / 豆包等 agent 工具驱动。
             </p>
             <ul class="hint">
                 <li>支持微信 4.x / 3.9（仅 Windows 桌面客户端），<b>macOS / Linux 暂不支持</b>。</li>
@@ -97,7 +97,7 @@
             <div class="codeblock" data-page-node-id="helpStartCode">python -m pip install -r requirements.txt --only-binary=:all:
 .venv_bot\Scripts\python.exe config_editor.py</div>
             <h3>方式三：打包 EXE</h3>
-            <p class="hint">从 Release 下载 <code>WeAuto.exe</code> 双击即可（资源自动释放到同目录）。<b>只有一个 exe，即是全功能</b>：管理后台、机器人主循环、命令行、MCP 服务四合一，用参数切换 —— 默认启动后台，<code>--cli</code> 走命令行，<code>--mcp</code> 变 MCP stdio 服务。</p>
+            <p class="hint">从 Release 下载 <code>WeAuto.exe</code> 双击即可（资源自动释放到同目录）。<b>只有一个 exe，即是全功能</b>：管理后台、对话主循环、命令行、MCP 服务四合一，用参数切换 —— 默认启动后台，<code>--cli</code> 走命令行，<code>--mcp</code> 变 MCP stdio 服务。</p>
         </div>
 
         <!-- ③ 配置后台 -->
@@ -108,8 +108,8 @@
                 <tbody>
                     <tr><td>快速上手</td><td class="c">向导式配置：选服务商 / 模型、填 Key、配监听对象、启动。</td></tr>
                     <tr><td>风格模仿</td><td class="c">统计主人历史聊天风格（句长、语气词、口头禅等）并注入回复，使 AI 更像本人。</td></tr>
-                    <tr><td>MCP</td><td class="c">让 agent 工具通过 MCP 协议驱动本机器人（能力检测 + 客户端配置）。</td></tr>
-                    <tr><td>CLI</td><td class="c">让 agent 用 <code>python cli.py &lt;cmd&gt;</code> 命令行驱动本机器人（命令参考 + 在线只读测试）。</td></tr>
+                    <tr><td>MCP</td><td class="c">让 agent 工具通过 MCP 协议驱动本助理（能力检测 + 客户端配置）。</td></tr>
+                    <tr><td>CLI</td><td class="c">让 agent 用 <code>python cli.py &lt;cmd&gt;</code> 命令行驱动本助理（命令参考 + 在线只读测试）。</td></tr>
                     <tr><td>导入配置</td><td class="c">从备份或他人配置快速导入 <code>config.py</code>。</td></tr>
                     <tr><td>报错一键检测</td><td class="c">自动排查微信 / 依赖 / 端口等常见问题。</td></tr>
                     <tr><td>帮助文档</td><td class="c">本页（离线帮助中心）。</td></tr>
@@ -121,7 +121,7 @@
         <div class="panel" id="allowlist" data-page-node-id="helpAllow">
             <h2>④ 主动消息白名单</h2>
             <p class="hint">
-                为防止机器人对陌生人主动发消息，主动消息仅向 <code>AUTO_MESSAGE_USER_LIST</code> 中的对象发送。<b>空列表 = 不主动给任何人发消息</b>。
+                为防止助理对陌生人主动发消息，主动消息仅向 <code>AUTO_MESSAGE_USER_LIST</code> 中的对象发送。<b>空列表 = 不主动给任何人发消息</b>。
             </p>
             <ul class="hint">
                 <li>配置项为 <span class="kbd">AUTO_MESSAGE_USER_LIST</span>，值为微信显示名 / wxid 列表，例如 <code>['微信昵称', '文件传输助手']</code>。</li>
@@ -135,7 +135,7 @@
         <div class="panel" id="style" data-page-node-id="helpStyle">
             <h2>⑤ 风格模仿（Style Lab）</h2>
             <p class="hint">
-                基于本地聊天历史（<code>weauto_chat.db</code>）统计主人的说话习惯，生成风格画像并注入 AI 回复。仅学习 <code>source='owner'</code>（主人亲发）消息，自动排除机器人代发内容。
+                基于本地聊天历史（<code>weauto_chat.db</code>）统计主人的说话习惯，生成风格画像并注入 AI 回复。仅学习 <code>source='owner'</code>（主人亲发）消息，自动排除助理代发内容。
             </p>
             <ul class="hint">
                 <li>统计维度：句长、句末标点、emoji、语气词、口头禅、字级 n-gram、中英混用等。</li>
@@ -172,7 +172,7 @@
         <!-- ⑦ MCP -->
         <div class="panel" id="mcp" data-page-node-id="helpMcp">
             <h2>⑦ MCP 协议</h2>
-            <p class="hint">MCP（Model Context Protocol）让 Codex / WorkBuddy 等 agent 以标准协议驱动本机器人。stdio 传输，启动时按需懒加载，不触发微信 GUI。</p>
+            <p class="hint">MCP（Model Context Protocol）让 Codex / WorkBuddy 等 agent 以标准协议驱动本助理。stdio 传输，启动时按需懒加载，不触发微信 GUI。</p>
             <h3>客户端配置（mcp.json）</h3>
             <div class="codeblock" data-page-node-id="helpMcpJson">{
   "mcpServers": {
@@ -206,7 +206,7 @@
         <div class="panel" id="faq" data-page-node-id="helpFaq">
             <h2>⑧ 常见问题 / 排障</h2>
             <ul class="hint">
-                <li><b>机器人不回复？</b> 确认微信已登录、监听名单已含对方、Start Bot 已启动；用「报错一键检测」自查。</li>
+                <li><b>助理不回复？</b> 确认微信已登录、监听名单已含对方、Start Bot 已启动；用「报错一键检测」自查。</li>
                 <li><b>API Key 无效（401）？</b> 确认 Key 对应 <code>BASE_URL</code>（默认 <code>wetech.jukuai.net/ai/v1</code>），Key 即卡密，需在 WeAuto Worker 网关有效。</li>
                 <li><b>CLI/MCP 报缺依赖？</b> 用项目自带 <code>.venv_bot/Scripts/python.exe</code> 运行；MCP 需要 <code>mcp[cli]</code>（含 typer）。</li>
                 <li><b>主动消息发不出去？</b> 检查 <code>ENABLE_AUTO_MESSAGE</code> 与 <code>AUTO_MESSAGE_USER_LIST</code> 白名单。</li>
