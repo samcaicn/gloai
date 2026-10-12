@@ -334,12 +334,35 @@ open class ChatCaptureService : AccessibilityService() {
                 ConversationHistory.appendFromNotification(
                     PKG_WECHAT, currentSnapshot?.title ?: sender, sender, text,
                     intent.getBooleanExtra("image", false))
+                // WeChat 8.0.78 hides chat bubbles from the tree AND blocks the
+                // accessibility screenshot (FLAG_SECURE), so the live-screen read can
+                // never see the message. The notification preview is the only reliable
+                // non-root source — drive analysis straight from it, no tree/OCR, so a
+                // background/locked message gets analyzed and replied even when WeChat
+                // never comes forward. (Foreground real-time messages are not posted as
+                // notifications while the chat is open, so they stay unreachable — a
+                // WeChat limitation, not ours.)
+                analyzeFromNotification(text, sender, intent.getBooleanExtra("image", false))
             }
             val fg = rootInActiveWindow?.packageName?.toString()
             if (fg == PKG_WECHAT) {
                 main.post { if (prefs.enabled) runCatching { maybeCapture() } }
             }
         }
+    }
+
+    /**
+     * Analyze a WeChat message from its notification preview text alone — the
+     * path that survives WeChat 8.0.78's live-screen block. Builds a one-message
+     * "other" snapshot (exactly what [finishOcrSnapshot] expects) and lets the
+     * shared tail handle dedupe + auto-analyze + reply.
+     */
+    private fun analyzeFromNotification(text: String, sender: String?, isImage: Boolean) {
+        val token = session.token() ?: return
+        if (!isCurrent(token)) return
+        val body = if (isImage) "[图片] $text" else text
+        val snapshot = ChatSnapshot(null, listOf(Msg("other", body)), note = NOTIFY_NOTE)
+        finishOcrSnapshot(snapshot, PKG_WECHAT, manual = false, token = token)
     }
 
     /** What the screen looked like the last time we fired an automatic shot.
@@ -967,6 +990,25 @@ open class ChatCaptureService : AccessibilityService() {
                     // something the user can act on — nagging would be constant.
                     val transient = res.code == ScreenCapture.CODE_THROTTLED || res.code == 3
                     if (manual || !transient) overlay?.showError(res.humanMessage)
+                    // WeChat 8.0.78 blocks the accessibility screenshot (FLAG_SECURE),
+                    // so the OCR path is dead inside a live chat. The notification
+                    // preview we already accumulated is the only fallback left — use
+                    // it to keep auto-analysis alive for messages that arrived while
+                    // WeChat was in the background (they sit in history). Foreground
+                    // real-time messages are not in history (WeChat posts no
+                    // notification while the chat is open), so this cannot recover
+                    // those — that is a WeChat limit.
+                    if (!manual && pkg == PKG_WECHAT && !transient) {
+                        val fb = ConversationHistory.latestOtherForPkg(PKG_WECHAT)
+                        if (!fb.isNullOrBlank()) {
+                            val tk = session.token()
+                            if (tk != null && isCurrent(tk)) {
+                                finishOcrSnapshot(
+                                    ChatSnapshot(null, listOf(Msg("other", fb)), note = NOTIFY_NOTE),
+                                    PKG_WECHAT, manual = false, token = tk)
+                            }
+                        }
+                    }
                 }
                 is ScreenCapture.Result.Ok -> {
                     ocr.scaleX = res.scaleX; ocr.scaleY = res.scaleY
@@ -1423,6 +1465,10 @@ open class ChatCaptureService : AccessibilityService() {
 
         /** Said on the panel whenever a snapshot came from flat-screen OCR. */
         private const val OCR_NOTE = "OCR 未分边，把全部消息当作对方所说"
+
+        /** Said on the panel when the chat text came from the notification preview
+         *  instead of the (WeChat-8.0.78-blocked) live screen read. */
+        private const val NOTIFY_NOTE = "来自通知预览（微信前台屏蔽了读屏，已用通知文本兜底）"
 
         private val PURE_TIME = Regex("""\d{1,2}[:：]\d{2}""")
         private val TAIL_TIME = Regex("""\d{1,2}[:：]\d{2}$""")

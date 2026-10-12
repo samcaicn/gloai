@@ -93,6 +93,28 @@ object ConversationHistory {
     }
 
     /**
+     * 该 pkg 下全局最近一条对方(other)消息文本，跨所有会话桶。
+     *
+     * 微信前台把会话标题对无障碍隐藏（title 恒为 null），前台无法用 title 匹配
+     * 具体会话，所以这里不按 title、只按"全局最近"返回。用途：OCR 截屏被
+     * FLAG_SECURE 挡住时，用通知累积的文本兜底一次自动分析。仅作 fallback，
+     * 不用于常规读取——前台实时消息（对方在你看着屏幕时发，微信不弹通知）
+     * 不在历史里，本方法也捞不到，那是微信的限制。
+     */
+    @Synchronized
+    fun latestOtherForPkg(pkg: String): String? {
+        var best: Entry? = null
+        for ((k, list) in store) {
+            if (!k.startsWith("$pkg|")) continue
+            for (e in list) {
+                if (e.side != "other") continue
+                if (best == null || e.t > best.t) best = e
+            }
+        }
+        return best?.text
+    }
+
+    /**
      * 把历史里"屏幕上看不到的更早消息"拼到快照前面，得到完整线程。
      * 屏幕可见的 messages 已是最新，用签名去重避免重复计入。
      */
