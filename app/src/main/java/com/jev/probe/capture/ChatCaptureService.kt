@@ -1,12 +1,14 @@
 package com.jev.probe.capture
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.graphics.Bitmap
+import android.graphics.Path
 import android.graphics.Rect
 import androidx.core.content.ContextCompat
 import android.os.Bundle
@@ -1204,12 +1206,22 @@ open class ChatCaptureService : AccessibilityService() {
     private fun inputFor(token: ConversationSession.Token): AccessibilityNodeInfo? {
         if (!isCurrent(token)) return null
         val root = rootInActiveWindow ?: return null
-        if (targetFor(root) != token.target) return null
+        if (token.target.windowId == ConversationSession.NOTIF_WINDOW) {
+            // 后台通知直驱：token 是逻辑 target（windowId=NOTIF_WINDOW），永远不等于真实
+            // 窗口 target。autoOpenChat 已用 contentIntent 打开指定会话——只要前台还是
+            // 同一个 app，输入框就属于那个会话。（8.0.78 读不到聊天标题，无法按会话名
+            // 校验；防误填靠 autoFillBest 的「输入框必须为空 + 同一屏只回一次」两道闸。）
+            if (root.packageName?.toString() != token.target.pkg) return null
+        } else if (targetFor(root) != token.target) return null
         val input = when (token.target.pkg) {
             "com.tencent.mobileqq" -> root.findAccessibilityNodeInfosByViewId("com.tencent.mobileqq:id/input").firstOrNull()
             "com.ss.android.lark" -> root.findAccessibilityNodeInfosByViewId("com.ss.android.lark:id/kb_rich_text_content").firstOrNull()
             "com.twitter.android" -> findEditable(root)
             PKG_WECHAT -> findEditable(root)
+                // 8.0.78 把聊天页树剪到个位数节点，输入框不在树里——但它获得焦点后
+                // findFocus(FOCUS_INPUT) 不走树遍历，仍拿得到（配合 fillInput 的
+                // 「点按输入栏聚焦」重试）。
+                ?: root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
             else -> null // Unknown apps support explicit clipboard copy, not unverified writes.
         }
         // Re-read the node after SET_TEXT: the accessibility cache may still
@@ -1219,8 +1231,41 @@ open class ChatCaptureService : AccessibilityService() {
         return input.takeIf { it.isVisibleToUser && it.isEnabled && !it.isPassword }
     }
 
+    /** 微信聊天页底部输入栏的中心 Y（避开系统导航条）：屏高往上约 62dp。 */
+    private fun weChatInputBarCenterY(): Float {
+        val dm = resources.displayMetrics
+        return dm.heightPixels - 62f * dm.density
+    }
+
+    /**
+     * 点微信聊天页底部输入栏中心，让输入框获得焦点——8.0.78 把它从无障碍树里剪掉了，
+     * 树遍历找不到，点一下之后 findFocus(FOCUS_INPUT) 才拿得到。点偏了（表情键 /
+     * “+”键）最坏是弹出对应面板，不会误发任何东西。
+     */
+    private fun tapWeChatInputBar(): Boolean {
+        val dm = resources.displayMetrics
+        val path = Path().apply { moveTo(dm.widthPixels / 2f, weChatInputBarCenterY()) }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 60L))
+            .build()
+        return dispatchGesture(gesture, null, null)
+    }
+
+    /**
+     * 点微信发送键：有文本时它出现在输入栏右端。8.0.78 树被剪、findSendButton
+     * 找不到节点时的兜底。点空的后果只是没发出去，不会误发别的。
+     */
+    private fun tapWeChatSendButton(): Boolean {
+        val dm = resources.displayMetrics
+        val path = Path().apply { moveTo(dm.widthPixels - 42f * dm.density, weChatInputBarCenterY()) }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 60L))
+            .build()
+        return dispatchGesture(gesture, null, null)
+    }
+
     /** Fill without blocking the main thread; all retries re-resolve the original target. */
-    private fun fillInput(token: ConversationSession.Token, text: String) {
+    private fun fillInput(token: ConversationSession.Token, text: String, attempt: Int = 0) {
         fun finish(ok: Boolean) {
             if (!isCurrent(token)) return
             if (ok) {
@@ -1230,7 +1275,15 @@ open class ChatCaptureService : AccessibilityService() {
             } else { copyToClipboard(text); overlay?.toast(t("已复制，长按输入框粘贴", "Copied — long-press the input box to paste")) }
         }
         if (!isCurrent(token)) { overlay?.toast(t("会话已变化，请重新分析后填入", "The chat changed — analyze again before filling")); return }
-        if (inputFor(token) == null) { finish(false); return }
+        if (inputFor(token) == null) {
+            // 微信 8.0.78：输入框既不在树里、也未必持有焦点——点一下底部输入栏再试。
+            // 点偏了（表情键/+键）最坏是弹出面板，findFocus 仍空 → 降级剪贴板，不会误发。
+            if (token.target.pkg == PKG_WECHAT && attempt == 0 && tapWeChatInputBar()) {
+                main.postDelayed({ fillInput(token, text, attempt = 1) }, 450L)
+                return
+            }
+            finish(false); return
+        }
         GuardedInputWriter(
             resolve = {
                 inputFor(token)?.let { node ->
@@ -1308,22 +1361,34 @@ open class ChatCaptureService : AccessibilityService() {
             // 这里必须重新读开关，让暂停立刻生效——否则「随时收回控制权」就是空话。
             if (!prefs.autoSend) { overlay?.toast(t("已暂停自动发送，本次未发出", "Auto-send paused — not sent this time")); return@postDelayed }
             val root = rootInActiveWindow ?: return@postDelayed
-            if (targetFor(root) != token.target) return@postDelayed
-            val send = findSendButton(root, token.target.pkg) ?: run {
-                overlay?.toast(t("已填入，未能自动发送，请手动点发送", "Filled in but couldn\u0027t auto-send — tap send manually")); return@postDelayed
+            // 通知直驱 token 是逻辑 target，按 app 匹配（同 inputFor 的理由）。
+            if (token.target.windowId != ConversationSession.NOTIF_WINDOW &&
+                targetFor(root) != token.target) return@postDelayed
+            fun clickSend(): Boolean {
+                val r = rootInActiveWindow ?: return false
+                val send = findSendButton(r, token.target.pkg)
+                if (send != null && send.refresh() && send.isVisibleToUser && send.isEnabled) {
+                    send.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    return true
+                }
+                // 8.0.78 树被剪，发送按钮不在树里——直接点输入栏右端（有文本时
+                // 微信把发送键放在那里）。点空的后果只是没发出去，不会误发别的。
+                if (token.target.pkg == PKG_WECHAT) return tapWeChatSendButton()
+                return false
             }
-            if (!(send.refresh() && send.isVisibleToUser && send.isEnabled)) {
-                overlay?.toast(t("已填入，请手动点发送", "Filled in — tap send manually")); return@postDelayed
+            if (!clickSend()) {
+                overlay?.toast(t("已填入，未能自动发送，请手动点发送", "Filled in but couldn't auto-send - tap send manually")); return@postDelayed
             }
-            send.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             overlay?.toast(t("已自动发送", "Sent automatically"))
             // Confirm the input cleared (message actually went out); retry once if not.
             main.postDelayed({
                 if (!isCurrent(token)) return@postDelayed
                 val input = inputFor(token)
                 if (input != null && !input.text.isNullOrBlank()) {
-                    findSendButton(rootInActiveWindow ?: return@postDelayed, token.target.pkg)
-                        ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    if (!clickSend()) {
+                        findSendButton(rootInActiveWindow ?: return@postDelayed, token.target.pkg)
+                            ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    }
                 }
             }, 800L)
         }, delay)
