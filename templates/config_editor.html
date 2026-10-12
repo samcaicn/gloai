@@ -291,7 +291,7 @@
             display: block;
         }
 
-        /* 内嵌页面面板（快速上手 / AI 分身 / 风格模仿 / 固定转发 / Jev / 命令行 / MCP / 常见问题）：
+        /* 内嵌页面面板（快速上手 / AI 分身 / 风格模仿 / 固定转发 / Jev / CLI工具控制 / MCP / 常见问题）：
            这些页原本是整页跳转 + 各自带「返回配置」按钮，点击行为与其它菜单项不一致。
            现统一改为在主界面内以 iframe 面板呈现 —— 所有左侧菜单点击 = 切换当前面板。 */
         .content-panel.ext-panel { padding: 0; overflow: hidden; }
@@ -3475,7 +3475,7 @@
         <div class="header-title"><h1>WeAuto配置编辑器 v1.1</h1></div>
         <div class="buttons">
             <!-- 头部精简：只留两个主操作；快速上手/AI 分身/风格模仿/固定转发/帮助文档
-                 与开发者工具（Jev/命令行/MCP/导入配置）已全部并入左侧菜单 -->
+                 与开发者工具（Jev/CLI工具控制/MCP/导入配置）已全部并入左侧菜单 -->
             <button id="botButton" class="nav-button">Start Bot</button>
             <button type="submit" form="configForm" id="saveConfigButton" class="nav-button">保存配置</button>
         </div>
@@ -3533,8 +3533,7 @@
                 <ul>
                     <li><a href="#" data-target="section-license">授权管理</a></li>
                     <li><a href="#" data-target="section-logs">运行日志</a></li>
-                    <li><a href="#" data-target="section-web-editor">访问与密码</a></li>
-                    <li><a href="#" data-target="section-ext-cli">命令行</a></li>
+                    <li><a href="#" data-target="section-ext-cli">CLI工具控制</a></li>
                     <li><a href="#" data-target="section-ext-mcp">MCP 接入</a></li>
                     <li><a href="#" data-target="section-ext-help">❓ 常见问题</a></li>
                 </ul>
@@ -3543,7 +3542,7 @@
                  前者在发行版必然无效（结果只 console.log，GUI 下看不到；且依赖未打进 EXE 的 .bat）；
                  后者把主动消息/趣味实验室等业务功能藏进了默认折叠区，改用分组标签表达层级。
                  2026-10-05 二次精简：顶部按钮全部并入左侧菜单；联网搜索默认开启并撤掉配置页。
-                 2026-10-05 三次精简：所有菜单项（含快速上手/AI分身/风格模仿/固定转发/Jev/命令行/MCP/常见问题）
+                 2026-10-05 三次精简：所有菜单项（含快速上手/AI分身/风格模仿/固定转发/Jev/CLI工具控制/MCP/常见问题）
                  统一为「页内面板切换」——原先这些是整页跳转 + 各自带「返回配置」按钮，点击行为不一致；
                  现改为 iframe 内嵌面板（?embed=1 隐藏子页独立页头），左侧任意点击都只是切换当前面板。 -->
         </nav>
@@ -3786,7 +3785,7 @@
                         <label>API Key（主密钥）：</label>
                         <input type="text" id="masterApiKey" placeholder="sk-xxxxxxxxxx" name="DEEPSEEK_API_KEY" value="{{ config.DEEPSEEK_API_KEY }}" class="api-key-input">
                         <small class="api-key-hint">{{ "出于安全考虑，已隐藏完整API Key。如需修改，请直接输入新的API Key。" if "*" in config.DEEPSEEK_API_KEY else "" }}</small>
-                        <small>使用 Cloudflare Workers AI 时这里留空即可（凭据为软件授权）；选择「自定义大模型」时必须填入你自己的 Key。</small>
+                        <small>使用 Cloudflare Workers AI 时留空即可（凭据为软件授权）；自定义大模型需填入自己的 Key。</small>
                     </div>
                     <div class="form-group">
                         <div class="switch-item">
@@ -3804,14 +3803,14 @@
                     <div class="form-group">
                         <label>温度 (0-2):</label>
                         <input type="number" step="0.1" name="TEMPERATURE" value="{{ config.TEMPERATURE }}">
-                        <small>温度过高易乱码，建议 1.1 或 0.7 以下。</small>
+                        <small>温度过高易乱码，建议 ≤1.1。</small>
                     </div>
                     <div class="form-group">
                         <div class="switch-item">
                             <label>移除回复中的括号内容</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" name="REMOVE_PARENTHESES" {% if config.REMOVE_PARENTHESES %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
-                        <small>自动删除回复中括号及内容，可能改变原意，建议先用 Prompt 规范输出。</small>
+                        <small>自动删除回复中括号及内容，可能改变原意。</small>
                     </div>
 
                     <!-- 辅助模型配置部分 -->
@@ -3842,19 +3841,19 @@
                         <div class="form-group">
                             <label>辅助模型最大Token:</label>
                             <input type="number" step="100" name="ASSISTANT_MAX_TOKEN" value="{{ config.ASSISTANT_MAX_TOKEN }}">
-                            <small>辅助模型主要用于判断任务，通常不需要太多Token。</small>
+                        <small>辅助模型用于判断任务，无需太多 Token。</small>
                         </div>
                         <div class="form-group">
                             <label>辅助模型温度 (0-2):</label>
                             <input type="number" step="0.1" name="ASSISTANT_TEMPERATURE" value="{{ config.ASSISTANT_TEMPERATURE }}">
-                            <small>辅助模型用于判断任务，建议使用较低温度（如0.3）以提高判断准确性。</small>
+                            <small>建议低温度（如 0.3）提高判断准确性。</small>
                         </div>
                         <div class="form-group">
                             <div class="switch-item">
                                 <label>使用辅助模型进行记忆总结</label>
                                 <div class="switch"><label class="switch-label"><input type="checkbox" name="USE_ASSISTANT_FOR_MEMORY_SUMMARY" {% if config.USE_ASSISTANT_FOR_MEMORY_SUMMARY %}checked{% endif %}><span class="slider round"></span></label></div>
                             </div>
-                            <small>启用后，记忆总结和重要性评估也将使用辅助模型，进一步降低主模型调用成本，但可能降低总结质量。</small>
+                            <small>记忆总结也走辅助模型，更省主模型成本（可能略降质量）。</small>
                         </div>
                     </div>
                     </details>
@@ -3915,7 +3914,7 @@
 
                 <div id="section-group-chat" class="content-panel">
                     <h2>群聊回复规则</h2>
-                    <small class="panel-lead">决定 AI 在群里什么时候开口。默认只在被 @ 或命中关键词时回复，避免刷屏打扰群友。</small>
+                    <small class="panel-lead">控制 AI 在群里什么时候开口。</small>
                     <div class="form-group">
                         <label>群聊消息处理模式:</label>
                         <select name="ACCEPT_ALL_GROUP_CHAT_MESSAGES" id="acceptAllGroupMessagesSelect" title="群聊消息处理模式">
@@ -3930,7 +3929,7 @@
                                 <label>被@时回复</label>
                                 <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_GROUP_AT_REPLY" {% if config.ENABLE_GROUP_AT_REPLY %}checked{% endif %}><span class="slider round"></span></label></div>
                             </div>
-                            <small>启用后，当机器人在群聊中被@时会作出回应。此选项在"接收所有群聊消息"模式下无效。</small>
+                        <small>被 @ 时回应（接收所有消息模式下无效）。</small>
                         </div>
 
                         <div class="form-group">
@@ -3946,7 +3945,7 @@
                             <input type="text" id="groupKeywordListInput" name="GROUP_KEYWORD_LIST"
                                    value="{{ config.GROUP_KEYWORD_LIST | join(', ') if config.GROUP_KEYWORD_LIST else '' }}"
                                    placeholder="例如: 你好, 机器人, bot">
-                            <small>多个关键词请使用英文逗号 (,)、中文逗号 (，) 或空格分隔。机器人会根据这些关键词判断是否回应。</small>
+                        <small>多个关键词用逗号或空格分隔。</small>
                         </div>
                     </div>
 
@@ -3956,7 +3955,7 @@
                         <label for="groupChatResponseProbabilityInput">回复概率 (0-100):</label>
                         <input type="number" id="groupChatResponseProbabilityInput" name="GROUP_CHAT_RESPONSE_PROBABILITY"
                                min="0" max="100" step="1" value="{{ config.GROUP_CHAT_RESPONSE_PROBABILITY }}">
-                        <small>设置机器人在满足回复条件（被@、关键词触发或接收所有消息）时实际做出回复的概率。100表示总是回复，0表示总不回复。</small>
+                        <small>回复概率：100=总是回复，0=总不回复。</small>
                     </div>
 
                     <div class="form-group">
@@ -3964,7 +3963,7 @@
                             <label>关键词触发时忽略回复概率</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" name="GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY" {% if config.GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
-                        <small>启用后，如果群聊消息触发了关键词回复，将无视上方设置的"群聊回复概率"，必定进行回复。此选项优先于"群聊回复概率"。</small>
+                        <small>关键词命中时必定回复，无视回复概率。</small>
                     </div>
                     </details>
                 </div>
@@ -3973,30 +3972,8 @@
                      拆成两个菜单项只会让买家在两个地方改同一件事。字段一个都没删。 -->
                 <div id="section-reply-style" class="content-panel">
                     <h2>回复风格与节奏</h2>
-                    <small class="panel-lead">控制 AI 回复的节奏与形式，让它更像真人在打字。数值越小回复越快，但过于机械；建议保持默认。</small>
+                    <small class="panel-lead">控制回复节奏与形式，让它更像真人打字。</small>
 
-                    <div class="form-card">
-                        <div class="form-card-title">⌨️ 打字节奏</div>
-                        <div class="form-group">
-                            <label>平均打字速度 (秒/字)：
-                                <small style="font-weight:normal;color:#888;">消息间隔 = 字数 × (平均时间 + 随机时间)</small>
-                            </label>
-                            <input type="number" step="0.01" name="AVERAGE_TYPING_SPEED" value="{{ config.AVERAGE_TYPING_SPEED }}">
-                        </div>
-                        <div class="form-group">
-                            <label>随机打字速度 (秒/字)：</label>
-                            <div style="display: flex; gap: 10px;">
-                                <input type="number" step="0.01" name="RANDOM_TYPING_SPEED_MIN" value="{{ config.RANDOM_TYPING_SPEED_MIN }}" style="flex:1;">
-                                <span style="align-self:center;">至</span>
-                                <input type="number" step="0.01" name="RANDOM_TYPING_SPEED_MAX" value="{{ config.RANDOM_TYPING_SPEED_MAX }}" style="flex:1;">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>等待时间（秒）：</label>
-                            <input type="number" step="1" name="QUEUE_WAITING_TIME" value="{{ config.QUEUE_WAITING_TIME }}">
-                            <small>收到消息后先等一会儿再回复，避免秒回显得像机器人。</small>
-                        </div>
-                    </div>
 
                     <div class="form-card">
                         <div class="form-card-title">😊 主动发送表情包</div>
@@ -4013,27 +3990,12 @@
                         <input type="hidden" name="EMOJI_DIR" value="{{ config.EMOJI_DIR }}">
                     </div>
 
-                    <div class="form-card">
-                        <div class="form-card-title">📨 消息拆分方式</div>
-                        <div class="form-group">
-                            <div class="switch-item">
-                                <label>以换行符分隔消息</label>
-                                <div class="switch"><label class="switch-label"><input type="checkbox" name="SEPARATE_ROW_SYMBOLS" {% if config.SEPARATE_ROW_SYMBOLS %}checked{% endif %}><span class="slider round"></span></label></div>
-                            </div>
-                            <small>开启后，消息将同时使用换行符和反斜线（\）分隔；关闭时，仅使用反斜线（\）分隔。</small>
-                        </div>
-                    </div>
                 </div>
 
                 <div id="section-memory" class="content-panel">
                     <h2>记忆管理</h2>
-                    <small class="panel-lead">这里控制 AI 能记住多少关于你和好友的对话信息。绝大多数用户保持默认即可，无需改动。</small>
+                    <small class="panel-lead">控制 AI 能记住多少对话信息，保持默认即可。</small>
 
-                    <div class="form-group">
-                        <label>AI 记忆深度（对话轮数）</label>
-                        <input type="number" step="1" name="MAX_GROUPS" value="{{ config.MAX_GROUPS }}">
-                        <small>每次对话时 AI 会参考的最近聊天轮数。数值越大记得越清楚，但更耗费额度。</small>
-                    </div>
 
                     <div class="form-group">
                         <div class="switch-item">
@@ -4059,7 +4021,7 @@
                             {% endif %}
                         </ul>
                         <p class="no-context-data" style="font-size: 14px; color: #777;" {% if chat_context_users %}style="display: none;"{% else %}style="display: block;"{% endif %}>暂无聊天记录。</p>
-                        <small>当 AI 回复异常（如乱码、重复、答非所问）时，可清除对应好友的聊天记录让其"重新认识"你。这不影响上面的长期记忆。</small>
+                        <small>AI 回复异常时，可清除该好友聊天记录让其重新认识你。不影响长期记忆。</small>
                     </div>
 
                     <details class="advanced-block" style="margin-top: 30px;">
@@ -4069,7 +4031,7 @@
                                 <label>回复时参考记忆</label>
                                 <div class="switch"><label class="switch-label"><input type="checkbox" name="UPLOAD_MEMORY_TO_AI" {% if config.UPLOAD_MEMORY_TO_AI %}checked{% endif %}><span class="slider round"></span></label></div>
                             </div>
-                            <small>关闭后 AI 不会读取任何长期记忆（仅影响长期记忆，不影响上方"记忆深度"）。</small>
+                            <small>关闭后不读取长期记忆。</small>
                         </div>
                         <!-- 记忆独立存档（SAVE_MEMORY_TO_SEPARATE_FILE）：存储实现细节，无业务语义，
                              已从界面移除；config.py 默认 True 保持不变。 -->
@@ -4105,7 +4067,7 @@
                 <div id="section-active-message" class="content-panel">
                     <h2>主动消息</h2>
                     <small class="panel-lead">
-                        让 AI 在对方长时间没说话时主动找话题。默认只对白名单内的人生效，<b>留空则不会主动给任何人发消息</b>。
+                        让 AI 在对方长时间没说话时主动找话题，仅对白名单生效。
                     </small>
                     <div class="form-group">
                         <div class="switch-item">
@@ -4116,36 +4078,12 @@
                     <div class="form-group">
                         <label>主动聊天白名单:</label>
                         <input type="text" name="AUTO_MESSAGE_USER_LIST" value="{{ config.AUTO_MESSAGE_USER_LIST }}" placeholder="[]">
-                        <small>Python 列表格式，例如 <code>['微信昵称', 'wxid_xxxxxxxxxxxxx', '12345678@chatroom']</code>。<br>
-                        <b>留空 <code>[]</code> 表示不主动向任何人发消息</b>（最安全默认）；只有写进本列表的用户/群才会收到「主动发消息」。标识符填写方式与用户列表一致（显示名或 wxid，群聊用 <code>xxx@chatroom</code>）。</small>
+                        <small>写进本列表的好友/群才会收到主动消息；<b>留空 <code>[]</code> 则不会主动打扰任何人</b>。格式如 <code>['微信昵称','wxid_xxx','xxx@chatroom']</code>。</small>
                     </div>
                     <div class="form-group">
                         <label>主动消息内容:</label>
                         <input type="text" name="AUTO_MESSAGE" value="{{ config.AUTO_MESSAGE }}">
                         <small>如果开启了联网功能，您也可以在这里设置联网请求比如"获取最新的新闻资讯"。</small>
-                    </div>
-                    <div class="form-group">
-                        <label>主动消息触发时间(小时):</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" step="0.01" name="MIN_COUNTDOWN_HOURS" value="{{ config.MIN_COUNTDOWN_HOURS }}" style="flex:1;">
-                            <span style="align-self:center;">至</span>
-                            <input type="number" step="0.01" name="MAX_COUNTDOWN_HOURS" value="{{ config.MAX_COUNTDOWN_HOURS }}" style="flex:1;">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>主动消息安静时间段: (请填00:00-23:59 不要填24:00,并请注意中间的符号为英文冒号)</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" name="QUIET_TIME_START" value="{{ config.QUIET_TIME_START }}" placeholder="HH:MM" style="flex:1;">
-                            <span style="align-self:center;">至</span>
-                            <input type="text" name="QUIET_TIME_END" value="{{ config.QUIET_TIME_END }}" placeholder="HH:MM" style="flex:1;">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="switch-item">
-                            <label>忽略群聊主动消息</label>
-                            <div class="switch"><label class="switch-label"><input type="checkbox" name="IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE" {% if config.IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE %}checked{% endif %}><span class="slider round"></span></label></div>
-                        </div>
-                        <small>启用后，群聊不会收到主动消息，仅私聊会接收主动消息。</small>
                     </div>
                 </div>
 
@@ -4196,7 +4134,6 @@
                             <label>启用文字指令</label>
                             <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_TEXT_COMMANDS" {% if config.ENABLE_TEXT_COMMANDS %}checked{% endif %}><span class="slider round"></span></label></div>
                         </div>
-                        <small>开启后，可在聊天中直接发送以下以“/”开头的指令进行控制。</small>
                     </div>
                     <div class="form-group">
                         <h3>可用指令说明</h3>
@@ -4280,7 +4217,7 @@
                 <iframe class="ext-frame" data-src="{{ url_for('jev_page') }}?embed=1" title="Jev 对话判断" loading="lazy"></iframe>
             </div>
             <div id="section-ext-cli" class="content-panel ext-panel">
-                <iframe class="ext-frame" data-src="{{ url_for('cli_page') }}?embed=1" title="命令行" loading="lazy"></iframe>
+                <iframe class="ext-frame" data-src="{{ url_for('cli_page') }}?embed=1" title="CLI工具控制" loading="lazy"></iframe>
             </div>
             <div id="section-ext-mcp" class="content-panel ext-panel">
                 <iframe class="ext-frame" data-src="{{ url_for('mcp_page') }}?embed=1" title="MCP 接入" loading="lazy"></iframe>
