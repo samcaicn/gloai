@@ -334,11 +334,6 @@ class OverlayController(private val ctx: Context) {
             setPadding(dp(4), dp(4), dp(4), dp(4))
             layoutParams = FrameLayout.LayoutParams(dp(210), ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(56) }
         }
-        // 最常用：随时手动分析当前对话（关掉自动分析后这几乎是唯一的触发入口）。
-        menu.addView(menuItem(ctx.t("分析当前对话", "Analyze this chat now"), primary = true) {
-            root?.removeView(menu); manualTriggered(); onManualAnalyze?.invoke()
-        })
-
         // —— 开关组：把「自动收发」和「自动分析」拆成两个独立开关 ——
         // 原来只有「自动收发」一个开关，但暂停它并不会停止自动分析（助手照样在后台
         // 读、判断、弹结果），用户看到「已暂停」却还有东西在动，是最容易被投诉的
@@ -518,8 +513,9 @@ class OverlayController(private val ctx: Context) {
      * 体验上两个坑要填：
      * 1）首次出现的悬浮球只是个半透明小圆点，用户不知道它是干嘛的——所以第一次
      *    用一张卡把产品讲清楚（[prefs.onboarded] 控制只展示一次，且首次自动展开）。
-     * 2）关掉「自动分析」后，气泡菜单里并没有「分析当前对话」入口，点气泡又只会
-     *    弹空面板——等于无处可点。这里在空闲卡里常驻一个手动分析按钮，保证总有路可走。
+ * 2）关掉「自动分析」后，气泡菜单里并没有手动分析入口，点气泡只会弹空面板——
+ *    等于无处可点。手动分析由气泡点击/菜单里的「重新分析」等入口承担，空闲卡只
+ *    负责把当前模式讲清楚，不再单独摆一个分析按钮。
      *
      * 用 [lastIdleKey] 去重：同一状态只渲染一次，避免每次无障碍事件都重绘 / 反复弹开面板。
      * 空闲卡不自动展开（只刷新内容），用户点一下气泡才看得到分析入口，不打扰。
@@ -587,13 +583,12 @@ class OverlayController(private val ctx: Context) {
                         "Auto-analyze is off: analysis runs only when you tap the bubble. Long-press to re-enable.")
                 }))
             if (title != null) {
-                views.add(hint(ctx.t("「", "\"") + title + ctx.t("」已就绪。点下面按钮可随时手动分析当前对话。",
-                    "\" is ready. Tap the button below to analyze the current chat anytime.")))
+                views.add(hint(ctx.t("「", "\"") + title + ctx.t("」已就绪。",
+                    "\" is ready.")))
             } else {
-                views.add(hint(ctx.t("已就绪。点这个气泡可随时手动分析当前对话。",
-                    "Ready. Tap this bubble to analyze the current chat anytime.")))
+                views.add(hint(ctx.t("已就绪。",
+                    "Ready.")))
             }
-            views.add(bigButton(ctx.t("分析当前对话", "Analyze current chat")) { manualTriggered(); onManualAnalyze?.invoke() })
             setContent(views) // 不自动展开：气泡亮着，用户点一下才看得到入口
             if (contentBox != null) lastIdleKey = key
         }
@@ -604,7 +599,7 @@ class OverlayController(private val ctx: Context) {
      * conversation. Call this before showing anything for a different chat
      * window (a different app, or new content in the same one) — otherwise a
      * leftover [lastJudgment] from a prior conversation can keep [showIdle]
-     * from putting the "分析当前对话" button back, and a leftover [lastFill]
+     * from refreshing the idle card, and a leftover [lastFill]
      * could fill the wrong chat's input box.
      */
     fun resetForNewConversation() {
