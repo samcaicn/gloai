@@ -4,6 +4,7 @@ import android.app.Notification
 import android.content.Intent
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
 import com.jev.probe.core.ConversationHistory
 import com.jev.probe.core.Prefs
 
@@ -28,27 +29,40 @@ class WxNotificationListener : NotificationListenerService() {
         // Make sure history persistence is wired even if the capture service has
         // not connected yet (the listener can receive events first at boot).
         ConversationHistory.attach(this)
+        Log.i(TAG, "onListenerConnected")
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        Log.w(TAG, "onListenerDisconnected (system rebound / revoke?)")
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
-        val s = sbn ?: return
+        val s = sbn ?: run { Log.d(TAG, "onNotificationPosted: sbn==null"); return }
         if (s.packageName != PKG_WECHAT) return
-        val n = s.notification ?: return
-        val extras = n.extras ?: return
+        val n = s.notification ?: run { Log.d(TAG, "onNotificationPosted: notification==null"); return }
+        val extras = n.extras ?: run { Log.d(TAG, "onNotificationPosted: extras==null"); return }
 
         val title = extras.getString(Notification.EXTRA_TITLE)
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
             ?: extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
-        if (title.isNullOrBlank() && text.isNullOrBlank()) return
+        Log.d(TAG, "onNotificationPosted: title='$title' textLen=${text?.length} head='${text?.take(24)}'")
+        if (title.isNullOrBlank() && text.isNullOrBlank()) {
+            Log.d(TAG, "onNotificationPosted: blank title+text -> skip")
+            return
+        }
 
         // WeChat's "微信 · N 条新消息" summary tile — no single conversation to act on.
-        if (isSummary(title, text)) return
+        if (isSummary(title, text)) { Log.d(TAG, "onNotificationPosted: summary tile -> skip"); return }
 
         // De-dupe repeated posts of the exact same content within 2s.
         val now = System.currentTimeMillis()
         val key = "$title $text"
         val last = seen[key]
-        if (last != null && now - last < 2000) return
+        if (last != null && now - last < 2000) {
+            Log.d(TAG, "onNotificationPosted: dedupe <2s -> skip")
+            return
+        }
         seen[key] = now
         if (seen.size > 200) {
             val iter = seen.keys.iterator()
@@ -63,8 +77,8 @@ class WxNotificationListener : NotificationListenerService() {
         ConversationHistory.appendFromNotification(packageName, title, title, text, isImage)
 
         // Tell the capture service a message arrived; it re-reads the live chat.
-        // Explicit package: keeps the broadcast inside our own app instead of
-        // relying on the receiver's NOT_EXPORTED flag alone.
+        // Explicit package: keeps the broadcast inside our own app.
+        Log.d(TAG, "onNotificationPosted: broadcast WX_MSG sender='$title' textLen=${text?.length} image=$isImage")
         runCatching {
             sendBroadcast(Intent(ChatCaptureService.ACTION_WX_MSG).apply {
                 setPackage(packageName)
@@ -76,9 +90,8 @@ class WxNotificationListener : NotificationListenerService() {
 
         // Unattended mode: if enabled, bring the conversation to the foreground so
         // the accessibility service can read + reply even when the phone is idle.
-        // The tree read still gates on the live chat, so if this fails to open we
-        // simply do nothing rather than acting on a stale conversation.
         if (Prefs(this).autoOpenChat && !isWeChatForeground()) {
+            Log.d(TAG, "onNotificationPosted: autoOpenChat ON & WeChat not fg -> contentIntent.send()")
             runCatching { n.contentIntent?.send() }
         }
     }
@@ -113,5 +126,6 @@ class WxNotificationListener : NotificationListenerService() {
 
     companion object {
         private const val PKG_WECHAT = "com.tencent.mm"
+        private const val TAG = "WxNotif"
     }
 }

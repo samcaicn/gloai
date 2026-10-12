@@ -328,6 +328,7 @@ open class ChatCaptureService : AccessibilityService() {
     private val wxMsgReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context?, intent: Intent?) {
             if (intent?.action != ACTION_WX_MSG) return
+            Log.d(TAG, "wxMsgReceiver: WX_MSG received sender=${intent.getStringExtra("sender")} textLen=${intent.getStringExtra("text")?.length}")
             if (intent.getBooleanExtra("image", false)) imageOcrRequested = true
             // The notification preview (sender + text) is the earliest signal we get;
             // fold it into history so a background message is never lost even if the
@@ -362,7 +363,10 @@ open class ChatCaptureService : AccessibilityService() {
      * shared tail handle dedupe + auto-analyze + reply.
      */
     private fun analyzeFromNotification(text: String, sender: String?, isImage: Boolean) {
-        if (destroyed || !prefs.enabled) return
+        if (destroyed || !prefs.enabled) {
+            Log.d(TAG, "analyzeFromNotification: skip destroyed=$destroyed enabled=${prefs.enabled}")
+            return
+        }
         // 后台纯通知场景：微信在后台，无障碍没抓到聊天窗口，session.target 可能为 null，
         // 旧代码用 session.token() 会直接 return、连日志都不打（静默黑洞——这是
         // 「对方发了、通知也弹了、却毫无反应」的根因）。改用 beginNotification 构造
