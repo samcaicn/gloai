@@ -1,11 +1,13 @@
 package com.jev.probe
 
+import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.service.notification.NotificationListenerService
 import android.provider.Settings
 import android.util.TypedValue
 import android.view.Gravity
@@ -47,6 +49,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
         window.decorView.setBackgroundColor(Color.parseColor("#F2F3F5"))
+        // 进程被系统回收后系统不会自动重绑通知监听（Live listeners 里没有它，
+        // 授权却还在 → 通知全丢）。用户每次打开 App 都是一次补救时机。
+        runCatching {
+            if (Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+                    ?.contains("com.jev.probe") == true
+            ) {
+                NotificationListenerService.requestRebind(
+                    ComponentName(this, com.jev.probe.capture.WxNotificationListener::class.java)
+                )
+            }
+        }
 
         val scroll = ScrollView(this)
         container = LinearLayout(this).apply {

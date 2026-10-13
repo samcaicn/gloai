@@ -5,12 +5,14 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.service.notification.NotificationListenerService
 import androidx.core.app.NotificationCompat
 import com.jev.probe.MainActivity
 import com.jev.probe.core.AutoReply
@@ -45,6 +47,17 @@ class KeepAliveService : Service() {
                     }
                 } else if (on) {
                     warnedA11yOff = false
+                }
+                // 通知监听自愈：进程被系统回收后，即使 enabled_notification_listeners
+                // 授权还在，系统也不会自动重新 bind listener（dumpsys 的 Live listeners
+                // 里没有它 → 通知全丢、后台自动分析静默失效）。requestRebind 是官方
+                // 补救 API（API 24+）：授权开着时请求重绑，系统已绑时会忽略。
+                if (SelfCheck.isNotifyOnPublic(this@KeepAliveService)) {
+                    runCatching {
+                        NotificationListenerService.requestRebind(
+                            ComponentName(this@KeepAliveService, WxNotificationListener::class.java)
+                        )
+                    }
                 }
             }
             handler.postDelayed(this, HEAL_INTERVAL_MS)

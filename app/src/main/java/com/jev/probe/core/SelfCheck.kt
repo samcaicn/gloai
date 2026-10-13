@@ -198,6 +198,9 @@ object SelfCheck {
     /** 无障碍服务是否真的开启（同进程内其它组件（如 KeepAliveService）用来做自愈轮询）。 */
     internal fun isA11yOnPublic(ctx: Context): Boolean = isA11yOn(ctx)
 
+    /** 通知监听授权是否开启（KeepAliveService 自愈轮询用来触发 requestRebind）。 */
+    internal fun isNotifyOnPublic(ctx: Context): Boolean = isNotifyOn(ctx)
+
     private fun isNotifyOn(ctx: Context): Boolean {
         val v = Settings.Secure.getString(ctx.contentResolver, "enabled_notification_listeners")
             ?: return false
