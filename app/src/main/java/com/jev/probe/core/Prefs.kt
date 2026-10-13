@@ -19,7 +19,7 @@ import org.json.JSONObject
  */
 class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
-    private val appContext = context.applicationContext
+    val appContext = context.applicationContext
     private val sp = appContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
 
     init {

@@ -5,6 +5,10 @@ import com.jev.probe.core.BillingState
 import com.jev.probe.core.ChatSnapshot
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.kb.ChatContext
+import com.jev.probe.core.scriptpack.PackFewShot
+import com.jev.probe.core.scriptpack.PackPrompts
+import com.jev.probe.core.scriptpack.ScriptPack
+import com.jev.probe.core.scriptpack.ScriptPackStore
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -26,20 +30,24 @@ class ReplyClient(private val prefs: Prefs) {
         val convo = snapshot.messages.takeLast(10).joinToString("\n") {
             (if (it.side == "me") "我" else "对方") + "：" + it.text
         }
-        val sys = "你是中文即时通讯回复助手。只输出一个 JSON 数组，含且仅含 3 条候选回复文本，" +
-            "三条策略要有区别（例如：一条稳妥承接、一条给具体行动或承诺、一条简短低姿态）。" +
-            "每条不超过 40 字，口语、自然、像真人在聊天软件里发消息。不要解释，不要加引号以外的内容，直接输出 JSON 数组。"
+        // 话术包（加密/防伪造/有期限，见 docs/scriptpack-spec.md）：启用且未过期时
+        // 覆盖系统提示词、温度与 few-shot 示例；任何异常都回退内置默认话术。
+        val pack = effectivePack()
+        val sys = pack?.let { PackPrompts.buildSystemPrompt(it) } ?: PackPrompts.DEFAULT_DRAFT_SYS
+        val temperature = pack?.let { PackPrompts.temperatureOf(it) } ?: 0.8
+        val fewShot: List<PackFewShot> = pack?.fewShot ?: emptyList()
+        val want = pack?.params?.candidates?.coerceIn(1, 5) ?: 3
         val user = knowledgeBlock(relationship, ctx) +
-            "关系：$relationship\n\n最近对话：\n$convo\n\n请给出 3 条候选回复。"
+            "关系：$relationship\n\n最近对话：\n$convo\n\n请给出 $want 条候选回复。"
         // cf worker ai 优先回复：主路打 Worker（Cloudflare Workers AI），失败再兜底 one-api 网关。
         val cloudMode = prefs.isWorkerMode || prefs.judgeProvider == Prefs.PROVIDER_TUPTUP
         return try {
-            parseThree(chat(sys, user, temperature = 0.8))
+            parseThree(chat(sys, user, temperature = temperature, fewShot = fewShot))
         } catch (e: Exception) {
             if (!cloudMode) return emptyList()
             Log.w(TAG, "worker reply failed -> one-api fallback: ${e.message}")
             try {
-                parseThree(chatFallback(sys, user, temperature = 0.8))
+                parseThree(chatFallback(sys, user, temperature = temperature, fewShot = fewShot))
             } catch (e2: Exception) {
                 Log.w(TAG, "one-api reply fallback also failed: ${e2.message}")
                 emptyList()
@@ -47,12 +55,30 @@ class ReplyClient(private val prefs: Prefs) {
         }
     }
 
+    /**
+     * 启用中且未到期的话术包。任何失败（未导入 / 已到期 / 验签失败 / 设备不匹配）
+     * 都返回 null 回退默认话术——话术包不允许把回复链路搞挂。
+     */
+    private fun effectivePack(): ScriptPack? = try {
+        ScriptPackStore.effectivePack(prefs.appContext)
+    } catch (e: Exception) {
+        Log.w(TAG, "scriptpack effective failed: ${e.javaClass.simpleName}")
+        null
+    }
+
     /** 兜底：直连 one-api 网关（TUPTUP 内置密钥），仅当 Worker 不可用时使用。 */
-    private fun chatFallback(system: String, user: String, temperature: Double): String {
+    private fun chatFallback(
+        system: String, user: String, temperature: Double,
+        fewShot: List<PackFewShot> = emptyList()
+    ): String {
         val url = Prefs.TUPTUP_BASE.trimEnd('/') + "/chat/completions"
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", system))
-            .put(JSONObject().put("role", "user").put("content", user))
+        for (turn in fewShot) {
+            messages.put(JSONObject().put("role", "user").put("content", turn.user))
+            messages.put(JSONObject().put("role", "assistant").put("content", turn.assistant))
+        }
+        messages.put(JSONObject().put("role", "user").put("content", user))
         val body = JSONObject()
             .put("model", Prefs.TUPTUP_MODEL)
             .put("messages", messages)
@@ -102,13 +128,20 @@ class ReplyClient(private val prefs: Prefs) {
     }
 
     /** One chat-completions round trip; returns the assistant message content. */
-    private fun chat(system: String, user: String, temperature: Double): String {
+    private fun chat(
+        system: String, user: String, temperature: Double,
+        fewShot: List<PackFewShot> = emptyList()
+    ): String {
         val url = prefs.replyEndpoint()
         val billing = if (prefs.isWorkerMode) BillingState() else null
         val auth = if (prefs.isWorkerMode) prefs.accountToken else prefs.effectiveReplyKey()
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", system))
-            .put(JSONObject().put("role", "user").put("content", user))
+        for (turn in fewShot) {
+            messages.put(JSONObject().put("role", "user").put("content", turn.user))
+            messages.put(JSONObject().put("role", "assistant").put("content", turn.assistant))
+        }
+        messages.put(JSONObject().put("role", "user").put("content", user))
         val body = JSONObject()
             .put("model", prefs.replyModel)
             .put("messages", messages)

@@ -1,0 +1,55 @@
+name: ScriptPack Selftest
+
+# 话术包（.wpk）密码学自测：纯标准库实现，零依赖直接跑。
+# 触发：推送（tools/scriptpack 或本工作流变更）/ 手动。
+# 注意：build.yml 有 paths-ignore（docs/**.md），本工作流独立触发、不受其影响。
+
+on:
+  push:
+    branches: [main, jev-chat-jarvis]
+    paths:
+      - 'tools/scriptpack/**'
+      - '.github/workflows/scriptpack-selftest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax check (py_compile)
+        run: |
+          python3 -m py_compile \
+            tools/scriptpack/packcrypto.py \
+            tools/scriptpack/make_pack.py \
+            tools/scriptpack/unpack_pack.py \
+            tools/scriptpack/selftest.py
+
+      - name: Selftest (round-trip + rejection paths)
+        run: python3 tools/scriptpack/selftest.py
+
+      - name: Sign example pack and verify it back
+        run: |
+          set -e
+          cd tools/scriptpack
+          # 临时密钥对只活在本次 CI 运行内，不落仓库
+          python3 make_pack.py genkey --out /tmp/sig.pem --pub-out /tmp/pub.pem
+          python3 make_pack.py sign \
+            --script examples/chuqing.json \
+            --sign-key /tmp/sig.pem \
+            --days 30 \
+            --out /tmp/chuqing.wpk
+          python3 unpack_pack.py --pack /tmp/chuqing.wpk --pub /tmp/pub.pem | head -20
+          echo "--- 反向用例：错误公钥必须被拒 ---"
+          python3 make_pack.py genkey --out /tmp/other.pem --pub-out /tmp/other_pub.pem
+          if python3 unpack_pack.py --pack /tmp/chuqing.wpk --pub /tmp/other_pub.pem; then
+            echo "::error::错误公钥竟然验过了，签名链路有漏洞"; exit 1
+          else
+            echo "正确拒绝"
+          fi
+          shred -u /tmp/sig.pem /tmp/other.pem 2>/dev/null || rm -f /tmp/sig.pem /tmp/other.pem

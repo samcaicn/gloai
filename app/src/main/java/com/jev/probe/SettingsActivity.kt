@@ -1,8 +1,10 @@
 package com.jev.probe
 
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -30,6 +32,8 @@ import com.jev.probe.core.Lang
 import com.jev.probe.core.LicenseClient
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.SyncClient
+import com.jev.probe.core.scriptpack.PackError
+import com.jev.probe.core.scriptpack.ScriptPackStore
 import com.jev.probe.core.t
 import com.jev.probe.core.kb.KbStore
 import java.util.concurrent.Executors
@@ -40,11 +44,13 @@ import kotlin.math.roundToInt
  *
  * 2026-10-05 精简前这里有 9 个 section、二十多个开关，每个下面还挂一段解释，
  * 混着「树读不到正文时用 OCR 兜底」「注入最近历史条数」这类只有实现者看得懂的措辞。
- * 现在收敛成 5 段：
+ * 现在收敛成 6 段：
  *
  *  1. 自动收发  —— 唯一需要用户操心的开关组，全部用「会发生什么」措辞；
  *  2. 我和ta的关系 —— 一个文本框，AI 判断质量唯一的输入；
  *  3. 外观      —— 透明度滑块；
+ *  3.5 换手机不丢 —— 云端备份（设置 + 购买凭证）；
+ *  3.7 话术包   —— 导入商家签发的 .wpk，AI 回复按包内人设/风格生成（见 docs/scriptpack-spec.md）；
  *  4. 订阅      —— 429 时唯一的出路，必须留在设置里；
  *  5. 关于      —— 版本 + 数据清除 + 诊断入口。
  *
@@ -98,6 +104,14 @@ class SettingsActivity : AppCompatActivity() {
     private val sub = Color.parseColor("#6B7280")
     private val danger = Color.parseColor("#DC2626")
 
+    /** 话术包导入（SAF OpenDocument）。导入/删除/启用后整卡重画。 */
+    private val packImportLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { importPackAsync(it) } }
+
+    /** 话术包卡片容器：状态变化时清空重画（导入 / 启用 / 删除）。 */
+    private var packCardHost: LinearLayout? = null
+
     private fun dp(v: Int) = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP, v.toFloat(), resources.displayMetrics).roundToInt()
 
@@ -123,6 +137,7 @@ class SettingsActivity : AppCompatActivity() {
         buildRelationshipCard(root)
         buildAppearanceCard(root)
         buildCloudSyncCard(root)
+        buildScriptPackCard(root)
 
         val licCard = buildLicenseCard(root)
         buildAboutCard(root)
@@ -406,6 +421,143 @@ class SettingsActivity : AppCompatActivity() {
               "Already purchased? As long as this phone hasn't changed, your payment record comes back on its own — no need to buy again."),
             11f, sub))
         root.addView(syncCard)
+    }
+
+    // ------------------------------------------------------ 3.7 话术包
+
+    /**
+     * 话术包卡片：导入商家签发的 .wpk（加密 + 有期限，见 docs/scriptpack-spec.md）。
+     * 导入是重操作（验签 + 解密 + 落盘 + 网络时间校准），放 worker 线程，
+     * 结束后回主线程整卡重画。失败按 [PackError] 给双语文案。
+     */
+    private fun buildScriptPackCard(root: LinearLayout) {
+        root.addView(section(t("话术包", "Script packs")))
+        val host = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        packCardHost = host
+        root.addView(host)
+        renderScriptPackCard()
+    }
+
+    private fun renderScriptPackCard() {
+        val host = packCardHost ?: return
+        host.removeAllViews()
+        val c = card()
+        c.addView(text(
+            t("导入商家签发的话术包（.wpk 文件），AI 回复会按包内的人设与风格生成。",
+              "Import a signed script pack (.wpk); AI replies follow its persona and style."),
+            12f, sub))
+        c.addView(text(scriptPackStatusText(), 12.5f, ink, bold = true)
+            .apply { setPadding(0, dp(10), 0, dp(2)) })
+        c.addView(cardBtn(t("导入话术包", "Import script pack")) {
+            packImportLauncher.launch(arrayOf("*/*"))
+        })
+        val activeId = ScriptPackStore.activePackId(this)
+        for (h in ScriptPackStore.packs(this)) {
+            val isActive = h.packId == activeId
+            c.addView(text(packLine(h, isActive), 12f, if (isActive) ink else sub, bold = isActive)
+                .apply { setPadding(0, dp(10), 0, dp(2)) })
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(4), 0, 0)
+            }
+            if (!isActive) {
+                row.addView(smallBtn(t("启用", "Enable")) {
+                    ScriptPackStore.setActive(this, h.packId)
+                    renderScriptPackCard()
+                })
+            }
+            row.addView(smallBtn(t("删除", "Remove")) { confirmRemovePack(h.packId) })
+            c.addView(row)
+        }
+        c.addView(text(
+            t("本机绑定码（商家绑机签发时用）：${ScriptPackStore.deviceHashHex(this)}",
+              "Device binding code (for device-bound signing): ${ScriptPackStore.deviceHashHex(this)}"),
+            11f, sub).apply { setPadding(0, dp(12), 0, 0) })
+        host.addView(c)
+    }
+
+    private fun packLine(h: com.jev.probe.core.scriptpack.PackHeader, isActive: Boolean): String {
+        val date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date(h.expiresAt * 1000))
+        val bound = if (h.deviceBound) t("绑机", "device-bound") else t("未绑机", "any device")
+        val prefix = if (isActive) "▶ " else ""
+        return "$prefix${h.name} · v${h.version} · $bound · ${t("到期", "expires")} $date"
+    }
+
+    private fun scriptPackStatusText(): String {
+        val activeId = ScriptPackStore.activePackId(this)
+            ?: return t("未导入话术包，当前使用内置默认话术。",
+                "No script pack imported — using the built-in default persona.")
+        val h = ScriptPackStore.packs(this).firstOrNull { it.packId == activeId }
+            ?: return t("启用中的话术包文件缺失。", "The active pack file is missing.")
+        val days = (h.expiresAt * 1000 - ScriptPackStore.effectiveNow(this)) / 86400000
+        return if (days >= 0) {
+            t("${h.name} 生效中，剩余 $days 天", "${h.name} active — $days day(s) left")
+        } else {
+            t("${h.name} 已到期，已回退默认话术", "${h.name} expired — fell back to the default persona")
+        }
+    }
+
+    private fun importPackAsync(uri: Uri) {
+        worker.execute {
+            try {
+                ScriptPackStore.importPack(this, uri)
+                main.post {
+                    Toast.makeText(this, t("话术包已导入并启用", "Script pack imported and enabled"),
+                        Toast.LENGTH_LONG).show()
+                    renderScriptPackCard()
+                }
+            } catch (e: com.jev.probe.core.scriptpack.PackException) {
+                Log.w(TAG, "scriptpack import rejected: ${e.code}")
+                main.post {
+                    Toast.makeText(this, packErrorText(e.code), Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "scriptpack import io error: ${e.javaClass.simpleName}")
+                main.post {
+                    Toast.makeText(this, t("导入失败：读不了这个文件", "Import failed: cannot read this file"),
+                        Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun packErrorText(code: PackError): String = when (code) {
+        PackError.NOT_A_PACK -> t("不是话术包文件（.wpk）", "Not a script pack file (.wpk)")
+        PackError.BAD_VERSION -> t("话术包版本太新，请升级 App", "Pack version too new — update the app")
+        PackError.TRUNCATED -> t("文件不完整", "File is incomplete")
+        PackError.BAD_HEADER -> t("话术包头损坏", "Pack header is corrupt")
+        PackError.SIGNATURE -> t("签名校验失败：文件被改过或不是官方签发", "Signature check failed — tampered or not officially signed")
+        PackError.DEVICE -> t("这是绑机话术包，不适用于本机", "Device-bound pack — not valid on this device")
+        PackError.EXPIRED -> t("话术包已到期，请联系商家续期", "Pack expired — contact the merchant to renew")
+        PackError.DECRYPT -> t("解密失败：文件损坏或设备不匹配", "Decrypt failed — corrupt file or device mismatch")
+        PackError.CHECKSUM -> t("内容校验失败", "Content checksum failed")
+        PackError.EXPIRES_MISMATCH -> t("包内时间信息不一致", "Inconsistent expiry inside the pack")
+        PackError.APP_TOO_OLD -> t("App 版本太低，请升级后导入", "App too old — update before importing")
+    }
+
+    private fun confirmRemovePack(packId: String) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(t("删除话术包", "Remove script pack"))
+            .setMessage(t("删除后该话术包不再可用，需要重新导入。",
+                "The pack will stop working until re-imported."))
+            .setPositiveButton(t("删除", "Remove")) { _, _ ->
+                ScriptPackStore.remove(this, packId)
+                renderScriptPackCard()
+            }
+            .setNegativeButton(t("取消", "Cancel"), null)
+            .show()
+    }
+
+    private fun smallBtn(label: String, onClick: () -> Unit) = TextView(this).apply {
+        text = label; textSize = 13f; gravity = Gravity.CENTER
+        setTypeface(typeface, Typeface.BOLD)
+        setTextColor(accent); background = round(dp(10), Color.WHITE, stroke = true)
+        setPadding(dp(14), dp(8), dp(14), dp(8))
+        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            .apply { rightMargin = dp(8) }
+        setOnClickListener { onClick() }
     }
 
     // ---------------------------------------------------------- 4. 订阅
