@@ -22,6 +22,9 @@ object SelfCheck {
     private const val A11Y_COMPONENT =
         "com.jev.probe/com.google.android.accessibility.selecttospeak.SelectToSpeakService"
 
+    /** 探针输入法 id（与 ProbeImeBus.imeId 保持一致）。 */
+    private const val IME_ID = "com.jev.probe/com.jev.probe.input.ProbeInputMethod"
+
     data class Report(val lines: List<String>, val ok: Boolean) {
         val text: String get() = lines.joinToString("\n")
     }
@@ -210,6 +213,19 @@ object SelfCheck {
 
     /** 通知监听授权是否开启（KeepAliveService 自愈轮询用来触发 requestRebind）。 */
     internal fun isNotifyOnPublic(ctx: Context): Boolean = isNotifyOn(ctx)
+
+    /**
+     * 探针输入法是否已在系统里启用（写入通道的前置条件，2026-10-13）。
+     * 微信 8.0.78 剥光 a11y 树后，自动回复的文本只能靠 ProbeInputMethod.commitText 写入，
+     * 用户需在 设置→语言和输入法 里一次性启用「AI聊天助手 · 写入」。
+     */
+    internal fun isProbeImeEnabledPublic(ctx: Context): Boolean = isProbeImeEnabled(ctx)
+
+    private fun isProbeImeEnabled(ctx: Context): Boolean {
+        val v = Settings.Secure.getString(ctx.contentResolver,
+            Settings.Secure.ENABLED_INPUT_METHODS) ?: return false
+        return v.split(":").any { it.trim() == IME_ID }
+    }
 
     private fun isNotifyOn(ctx: Context): Boolean {
         val v = Settings.Secure.getString(ctx.contentResolver, "enabled_notification_listeners")

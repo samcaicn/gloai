@@ -93,6 +93,22 @@
                 android:name="android.service.notification.notification_listener_filter"
                 android:resource="@xml/wx_notification_listener" />
         </service>
+
+        <!-- Probe input method: the ONLY channel that can actually write text into
+             WeChat's input bar (8.0.78 strips the a11y tree to ~4 nodes). Users
+             enable it once in system settings; fillInput writes via commitText. -->
+        <service
+            android:name=".input.ProbeInputMethod"
+            android:exported="true"
+            android:label="AI聊天助手 · 写入"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
     </application>
 
 </manifest>

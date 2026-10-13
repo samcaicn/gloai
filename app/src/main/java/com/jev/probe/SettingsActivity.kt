@@ -6,6 +6,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -216,6 +217,19 @@ class SettingsActivity : AppCompatActivity() {
         val notifyOn = isNotifListenerEnabled()
         c.addView(permRow(t("通知读取权限", "Notification access"), t("用来知道微信来了新消息", "So the app knows when a new WeChat message arrives"), notifyOn) {
             startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+        })
+
+        // 写入输入法（2026-10-13）：微信 8.0.78 剥光 a11y 树后，普通 app 再也写不进输入栏，
+        // 自动回复的文本只能靠探针自带的输入法服务 commitText 写入。没启用它，
+        // 「自动发送」会退化成「已复制，长按输入框粘贴」。这里给一次性引导。
+        val imeOn = com.jev.probe.core.SelfCheck.isProbeImeEnabledPublic(this)
+        c.addView(permRow(
+            t("写入输入法", "Write input method"),
+            if (imeOn) t("已启用，自动回复可直接写入输入栏", "Enabled — replies can be typed into the input box directly")
+            else t("未启用：自动回复只能复制到剪贴板。点此去 设置→语言和输入法 启用「AI聊天助手 · 写入」", "Not enabled: replies are only copied to the clipboard. Tap to open Settings → Languages & input and enable \"AI Assistant · Write\""),
+            imeOn
+        ) {
+            startActivity(android.content.Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         })
 
         // 自动分析与自动发送是两件事，必须在这里也摆出来。
