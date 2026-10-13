@@ -3,6 +3,7 @@
 
 覆盖：
   1. FIPS-197 AES-256 ECB 已知答案测试（验证手写 AES 内核）
+  1b. AES-256-GCM 已知答案测试（NIST 向量，钉死 CTR 起点与 GHASH）
   2. ECDSA P-256 域运算性质（验证手写曲线实现）
   3. 话术包 round-trip：签发 -> 验签 -> 解密 -> 内容一致
   4. 改一个密文字节     -> 拒收（GCM tag / 签名）
@@ -46,6 +47,32 @@ def test_aes_kat() -> None:
     ct = pc._encrypt_block(pc._expand_key(key), pt)
     check("AES-256(0..31, 0011..eeff) == 8ea2b7ca...",
           ct.hex() == "8ea2b7ca516745bfeafc49904b496089", ct.hex())
+
+
+def test_gcm_kat() -> None:
+    """NIST SP 800-38D / McGrew-Viega GCM 已知答案测试（AES-256）。
+
+    只自签自验永远发现不了 GCM 实现的 off-by-one——密钥流必须从 inc32(J0) 起，
+    J0 只用于算 tag。曾写成 ctr = j0：空明文（TC14）恰好蒙对，多分组全错，
+    Android JCE 一验就拒。这里用独立向量把 CTR 和 GHASH 都钉死。
+    """
+    print("AES-256-GCM 已知答案测试（NIST / McGrew-Viega TC14-TC15）")
+    k = bytes(32)
+    iv = bytes(12)
+    out = pc.aes_gcm_encrypt(k, iv, b"", b"")
+    check("TC14 空明文 tag == 530f8afb...", out[-16:].hex() == "530f8afbc74536b9a963b4f1c4cb738b",
+          out[-16:].hex())
+    out = pc.aes_gcm_encrypt(k, iv, bytes(16), b"")
+    check("TC15 密文 == cea7403d...", out[:-16].hex() == "cea7403d4d606b6e074ec5d3baf39d18",
+          out[:-16].hex())
+    check("TC15 tag == d0d1c8a7...", out[-16:].hex() == "d0d1c8a799996bf0265b98b5d48ab919",
+          out[-16:].hex())
+    # AAD 只影响 tag，不影响密文 —— 钉死 GHASH 的 AAD 路径
+    with_aad = pc.aes_gcm_encrypt(k, iv, bytes(16), b"header")
+    check("AAD 不改变密文", with_aad[:-16] == out[:-16])
+    check("AAD 改变 tag", with_aad[-16:] != out[-16:])
+    check("带 AAD 的 tag 可被验过",
+          pc.aes_gcm_decrypt(k, iv, with_aad, b"header") == bytes(16))
 
 
 def test_ecdsa_domain() -> None:
@@ -212,6 +239,7 @@ def test_spki_structure() -> None:
 
 def main() -> int:
     test_aes_kat()
+    test_gcm_kat()
     test_ecdsa_domain()
     test_spki_structure()
     test_pack_pipeline()

@@ -55,12 +55,25 @@ object ScriptPackStore {
     private fun packFile(context: Context, safePackId: String): File =
         File(packsDir(context), "$safePackId.wpk")
 
+    /**
+     * 索引内容**没有任何秘密**：启用哪个包、导入时间、是否绑机、网络时钟偏移。
+     * 加密它只是锦上添花（密文落在同样只有本 App 能读的私有目录），因此 keystore
+     * 不可用时必须退化为明文，不能让话术包整体失效——实机在 ColorOS 上就撞到过
+     * AndroidKeyStore 抛 IllegalStateException（账户 token 路径因为 `encrypt("")`
+     * 直接短路返回，从没暴露过这个问题）。
+     */
     private fun readIndex(context: Context): JSONObject = try {
         val enc = SecureStore.decrypt(context, indexRaw(context))
-        if (enc.isBlank()) JSONObject() else JSONObject(enc)
+        val raw = if (enc.isNotBlank()) enc else plainFile(context).let {
+            if (it.exists()) it.readText() else ""
+        }
+        if (raw.isBlank()) JSONObject() else JSONObject(raw)
     } catch (_: Exception) {
         JSONObject()
     }
+
+    private fun plainFile(context: Context): File =
+        File(context.filesDir, "$IDX_KEY.json")
 
     private fun indexRaw(context: Context): String = try {
         val f = File(context.filesDir, "$IDX_KEY.enc")
@@ -70,11 +83,20 @@ object ScriptPackStore {
     }
 
     private fun saveIndex(context: Context, idx: JSONObject) {
+        val text = idx.toString()
         try {
-            File(context.filesDir, "$IDX_KEY.enc")
-                .writeText(SecureStore.encrypt(context, idx.toString()))
+            val enc = SecureStore.encrypt(context, text)
+            if (enc.isBlank()) throw IllegalStateException("SecureStore 返回空串")
+            File(context.filesDir, "$IDX_KEY.enc").writeText(enc)
+            plainFile(context).delete()
         } catch (e: Exception) {
-            Log.w(TAG, "index save failed: ${e.javaClass.simpleName}")
+            Log.w(TAG, "index secure save failed, fallback plain: " +
+                "${e.javaClass.simpleName}: ${e.message}")
+            try {
+                plainFile(context).writeText(text)
+            } catch (e2: Exception) {
+                Log.w(TAG, "index plain save failed: ${e2.javaClass.simpleName}")
+            }
         }
     }
 

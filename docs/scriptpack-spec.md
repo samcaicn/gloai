@@ -80,7 +80,7 @@ signature       var  ECDSA P-256/SHA-256，DER
 | 改系统时钟 | effective_now = 本地 + 网络时间偏移；每次联网（导入/Worker Date 头）校准，clamp ±7 天 | §7 |
 | 换机 / 多机共用 | `device_hashes` 签名覆盖；IKM 混入 device_hash，KDF 错 → tag 失败 | §3/§5 |
 | dump 运行期内存 | 明文只活内存，TTL 缓存 5 分钟；不写 logcat/崩溃日志/云备份 | §8 |
-| root 拖私有目录 | .wpk 仍是密文；index 走 SecureStore（AndroidKeyStore） | §8 |
+| root 拖私有目录 | .wpk 仍是密文；index 优先走 SecureStore（AndroidKeyStore），keystore 不可用时退化为明文（索引里没有任何秘密：启用哪个包 / 导入时间 / 是否绑机 / 时钟偏移，不允许它成为话术包失效的单点） | §8 |
 | 抓激活票据（v1.1） | 短期票据 + 设备绑定 + 服务端可撤销 | §7 |
 
 ## 7. 期限判定与时间锚

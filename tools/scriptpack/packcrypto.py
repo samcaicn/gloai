@@ -218,7 +218,10 @@ def aes_gcm_encrypt(key: bytes, nonce: bytes, pt: bytes, aad: bytes) -> bytes:
     w = _expand_key(key)
     h = int.from_bytes(_encrypt_block(w, b"\x00" * 16), "big")
     j0 = nonce + b"\x00\x00\x00\x01"
-    ctr = j0
+    # 标准 GCM：密钥流从 inc32(J0) 开始，J0 只用于算 tag。
+    # 曾在这里写成 ctr = j0（off-by-one），自签自验发现不了，只有外部实现（Android
+    # JCE / Node crypto）才验得出来——NIST 向量与交叉验证已进 selftest 和 CI。
+    ctr = _inc32(j0)
     ct = bytearray()
     for i in range(0, len(pt), 16):
         ks = _encrypt_block(w, ctr)
@@ -243,7 +246,7 @@ def aes_gcm_decrypt(key: bytes, nonce: bytes, ct_tag: bytes, aad: bytes) -> byte
     expect = (s ^ int.from_bytes(_encrypt_block(w, j0), "big")).to_bytes(16, "big")
     if not hmac.compare_digest(expect, tag):
         raise PackCryptoError("GCM tag 校验失败（密钥不匹配 / 包被改动 / 设备不匹配）")
-    ctr = j0
+    ctr = _inc32(j0)
     pt = bytearray()
     for i in range(0, len(ct), 16):
         ks = _encrypt_block(w, ctr)

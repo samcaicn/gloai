@@ -33,6 +33,15 @@ jobs:
       - name: Selftest (round-trip + rejection paths)
         run: python3 tools/scriptpack/selftest.py
 
+      - name: Cross-check GCM against Node/OpenSSL (independent implementation)
+        run: |
+          set -e
+          # 手写 AES-GCM 的偏差（例：密钥流起点写成 J0 而非 inc32(J0)）自签自验
+          # 发现不了——空明文向量还蒙对，多分组全错，Android JCE 一验就拒。
+          # Node 内置 crypto 走 OpenSSL，是完全独立的实现，双向逐字节比对。
+          node --version
+          python3 tools/scriptpack/gcm_crosscheck.py
+
       - name: Cross-verify with OpenSSL (independent implementation)
         run: |
           set -e

@@ -33,6 +33,9 @@ class ReplyClient(private val prefs: Prefs) {
         // 话术包（加密/防伪造/有期限，见 docs/scriptpack-spec.md）：启用且未过期时
         // 覆盖系统提示词、温度与 few-shot 示例；任何异常都回退内置默认话术。
         val pack = effectivePack()
+        // 只记 pack_id（话术内容绝不进日志），实机排障时用它确认是否真的生效
+        Log.i(TAG, "reply persona: ${pack?.header?.packId ?: "default(built-in)"} " +
+            "temp=${pack?.let { PackPrompts.temperatureOf(it) } ?: 0.8}")
         val sys = pack?.let { PackPrompts.buildSystemPrompt(it) } ?: PackPrompts.DEFAULT_DRAFT_SYS
         val temperature = pack?.let { PackPrompts.temperatureOf(it) } ?: 0.8
         val fewShot: List<PackFewShot> = pack?.fewShot ?: emptyList()
