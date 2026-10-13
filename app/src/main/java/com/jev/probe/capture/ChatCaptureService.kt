@@ -1267,23 +1267,28 @@ open class ChatCaptureService : AccessibilityService() {
     /** Fill without blocking the main thread; all retries re-resolve the original target. */
     private fun fillInput(token: ConversationSession.Token, text: String, attempt: Int = 0) {
         fun finish(ok: Boolean) {
-            if (!isCurrent(token)) return
+            if (!isCurrent(token)) { Log.w(TAG, "fillInput finish: token stale, drop"); return }
             if (ok) {
+                Log.i(TAG, "fillInput ok: autoSend=${prefs.autoSend} -> ${if (prefs.autoSend) "sendFor" else "toast-only"}")
                 // sendFor announces the countdown itself; don't double-toast here.
                 if (prefs.autoSend) sendFor(token)
                 else overlay?.toast(t("已填入，确认后自己发送", "Filled in — review it and send yourself"))
-            } else { copyToClipboard(text); overlay?.toast(t("已复制，长按输入框粘贴", "Copied — long-press the input box to paste")) }
+            } else { Log.w(TAG, "fillInput failed -> clipboard fallback"); copyToClipboard(text); overlay?.toast(t("已复制，长按输入框粘贴", "Copied — long-press the input box to paste")) }
         }
-        if (!isCurrent(token)) { overlay?.toast(t("会话已变化，请重新分析后填入", "The chat changed — analyze again before filling")); return }
+        if (!isCurrent(token)) { Log.w(TAG, "fillInput: token stale at entry (destroyed=$destroyed enabled=${prefs.enabled})"); overlay?.toast(t("会话已变化，请重新分析后填入", "The chat changed — analyze again before filling")); return }
         if (inputFor(token) == null) {
+            Log.w(TAG, "fillInput: inputFor=null attempt=$attempt fgPkg=${rootInActiveWindow?.packageName} rootNull=${rootInActiveWindow == null}")
             // 微信 8.0.78：输入框既不在树里、也未必持有焦点——点一下底部输入栏再试。
             // 点偏了（表情键/+键）最坏是弹出面板，findFocus 仍空 → 降级剪贴板，不会误发。
             if (token.target.pkg == PKG_WECHAT && attempt == 0 && tapWeChatInputBar()) {
+                Log.i(TAG, "fillInput: tapped input bar (${resources.displayMetrics.widthPixels / 2},${weChatInputBarCenterY().toInt()}), retrying in 450ms")
                 main.postDelayed({ fillInput(token, text, attempt = 1) }, 450L)
                 return
             }
+            Log.w(TAG, "fillInput: no retry possible -> clipboard")
             finish(false); return
         }
+        Log.i(TAG, "fillInput: input node found, writing via GuardedInputWriter (attempt=$attempt)")
         GuardedInputWriter(
             resolve = {
                 inputFor(token)?.let { node ->
@@ -1347,6 +1352,7 @@ open class ChatCaptureService : AccessibilityService() {
     private fun sendFor(token: ConversationSession.Token) {
         val delay = prefs.sendDelayMs.toLong()
         skipThisSend = false
+        Log.i(TAG, "sendFor: delay=${delay}ms autoSend=${prefs.autoSend} notifToken=${token.target.windowId == ConversationSession.NOTIF_WINDOW}")
         if (delay > 0) {
             overlay?.showSendCountdown(delay.toInt()) {
                 skipThisSend = true
@@ -1354,36 +1360,45 @@ open class ChatCaptureService : AccessibilityService() {
             }
         }
         main.postDelayed({
-            if (!isCurrent(token)) return@postDelayed
+            if (!isCurrent(token)) { Log.w(TAG, "sendFor: token stale at fire time, aborted"); return@postDelayed }
             // 用户在这段等待里点了「本次不发送」：只放弃这一条，不动总开关。
-            if (skipThisSend) { skipThisSend = false; return@postDelayed }
+            if (skipThisSend) { skipThisSend = false; Log.i(TAG, "sendFor: user held back this one"); return@postDelayed }
             // 发送不可逆：用户可能在这 2 秒等待里点了「暂停自动收发」（气泡菜单一步可达）。
             // 这里必须重新读开关，让暂停立刻生效——否则「随时收回控制权」就是空话。
             if (!prefs.autoSend) { overlay?.toast(t("已暂停自动发送，本次未发出", "Auto-send paused — not sent this time")); return@postDelayed }
-            val root = rootInActiveWindow ?: return@postDelayed
+            val root = rootInActiveWindow ?: run { Log.w(TAG, "sendFor: rootInActiveWindow=null, aborted"); return@postDelayed }
             // 通知直驱 token 是逻辑 target，按 app 匹配（同 inputFor 的理由）。
             if (token.target.windowId != ConversationSession.NOTIF_WINDOW &&
-                targetFor(root) != token.target) return@postDelayed
+                targetFor(root) != token.target) { Log.w(TAG, "sendFor: fg window no longer matches, aborted"); return@postDelayed }
             fun clickSend(): Boolean {
                 val r = rootInActiveWindow ?: return false
                 val send = findSendButton(r, token.target.pkg)
+                Log.i(TAG, "clickSend: treeNode=${send != null} fgPkg=${r.packageName}")
                 if (send != null && send.refresh() && send.isVisibleToUser && send.isEnabled) {
                     send.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    Log.i(TAG, "clickSend: clicked via tree node")
                     return true
                 }
                 // 8.0.78 树被剪，发送按钮不在树里——直接点输入栏右端（有文本时
                 // 微信把发送键放在那里）。点空的后果只是没发出去，不会误发别的。
-                if (token.target.pkg == PKG_WECHAT) return tapWeChatSendButton()
+                if (token.target.pkg == PKG_WECHAT) {
+                    val tapped = tapWeChatSendButton()
+                    Log.i(TAG, "clickSend: tap fallback (${resources.displayMetrics.widthPixels - 42f * resources.displayMetrics.density},${weChatInputBarCenterY().toInt()}) dispatched=$tapped")
+                    return tapped
+                }
                 return false
             }
             if (!clickSend()) {
+                Log.w(TAG, "sendFor: clickSend failed -> manual tap needed")
                 overlay?.toast(t("已填入，未能自动发送，请手动点发送", "Filled in but couldn't auto-send - tap send manually")); return@postDelayed
             }
+            Log.i(TAG, "sendFor: clicked, awaiting confirm")
             overlay?.toast(t("已自动发送", "Sent automatically"))
             // Confirm the input cleared (message actually went out); retry once if not.
             main.postDelayed({
                 if (!isCurrent(token)) return@postDelayed
                 val input = inputFor(token)
+                Log.i(TAG, "sendFor verify: inputStillHasText=${input?.text?.isBlank() == false}")
                 if (input != null && !input.text.isNullOrBlank()) {
                     if (!clickSend()) {
                         findSendButton(rootInActiveWindow ?: return@postDelayed, token.target.pkg)
