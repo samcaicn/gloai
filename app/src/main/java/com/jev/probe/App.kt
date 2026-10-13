@@ -7,6 +7,7 @@ import android.util.Log
 import com.jev.probe.core.CloudSync
 import com.jev.probe.core.CrashLog
 import com.jev.probe.core.DeviceId
+import com.jev.probe.core.Integrity
 import com.jev.probe.core.Metrics
 import com.jev.probe.core.Prefs
 
@@ -28,6 +29,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        APP_CONTEXT = applicationContext
         val prefs = Prefs(this)
         // Touch lazily so the id/anchor are established before anything else asks.
         DeviceId.get(this)
@@ -36,10 +38,17 @@ class App : Application() {
         installAnrWatchdog()
         Thread {
             try {
+                // 运行时完整性：重签/马甲包/注入框架/调试器 → 置 tampered 标记，
+                // 核心功能据此在客户端降级；真正的不可绕过在 L3 服务端按官方签名指纹放行。
+                Integrity.verify(this@App)
+            } catch (e: Exception) {
+                Log.w(TAG, "integrity verify failed: ${e.message}")
+            }
+            try {
                 // Restore first: whatever comes back decides what preferences exist,
                 // and the upload that follows should then describe the merged state.
-                CloudSync.restoreOnce(this, prefs)
-                CloudSync.uploadNow(this, prefs)
+                CloudSync.restoreOnce(this@App, prefs)
+                CloudSync.uploadNow(this@App, prefs)
             } catch (e: Exception) {
                 Log.w(TAG, "background sync failed: ${e.message}")
             }
@@ -86,9 +95,13 @@ class App : Application() {
         }.apply { isDaemon = true; name = "anr-watchdog" }.start()
     }
 
-    private companion object {
+    companion object {
         const val TAG = "JEVASSIST"
         const val ANR_POLL_MS = 4_000L
         const val ANR_WAIT_MS = 5_000L
+
+        /** 应用级 Context 静态句柄，供 HttpJson / SyncClient 等无 Context 的调用点取用（仅拼请求头）。 */
+        lateinit var APP_CONTEXT: Context
+            private set
     }
 }

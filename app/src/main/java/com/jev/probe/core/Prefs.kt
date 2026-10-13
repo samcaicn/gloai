@@ -523,6 +523,18 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         set(v) = sp.edit().putBoolean(K_SYNC_ENABLED, v).apply()
 
     /**
+     * 运行时完整性失败标记（[Integrity.verify] 写入）。
+     *
+     * 一旦被标记为篡改（被重签/马甲包/注入框架/调试器），核心功能（自动回复、AI 判断、
+     * 云端授权）在客户端侧降级为不可用——即便攻击者清数据重装同证书包也不会自愈。
+     * 真正的不可绕过在 L3 服务端：服务端只按官方签名指纹放行激活与 AI 调用，
+     * 马甲包证书≠官方 → 403 → 永远拿不到卡密、用不了云 AI。
+     */
+    var tampered: Boolean
+        get() = sp.getBoolean(K_TAMPERED, false)
+        set(v) = sp.edit().putBoolean(K_TAMPERED, v).apply()
+
+    /**
      * Every preference as plain values, for the cloud snapshot.
      *
      * Two entries are deliberately left out: `account_token_enc` and
@@ -637,6 +649,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_SYNC_RESTORED = "sync_restored"
         private const val K_LAST_SYNC = "last_sync_at"
         private const val K_SYNC_ENABLED = "sync_enabled"
+        private const val K_TAMPERED = "integrity_tampered_v1"
         private const val K_ONBOARDED = "onboarded_v1"
 
         // ---- provider ----

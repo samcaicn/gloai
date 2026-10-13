@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
+import com.jev.probe.core.Integrity
 
 /**
  * 一键自检（P0-4）。把「为什么没反应」这类问题变成一张用户自己能看懂、
@@ -157,6 +158,15 @@ object SelfCheck {
                 setRequestProperty("User-Agent", "jev-assistant-android")
                 if (prefs.isWorkerMode && prefs.accountToken.isNotBlank()) {
                     setRequestProperty("Authorization", "Bearer " + prefs.accountToken)
+                }
+                // L3：探活打的是 Worker（/ai/jev/decisions），必须带完整性头，
+                // 否则 L3 强制校验生效后会 403，自检误报"不可达"。
+                if (url.contains("jukuai.net", ignoreCase = true)) {
+                    val path = runCatching { java.net.URL(url).path.ifBlank { "/" } }.getOrDefault("/")
+                    runCatching {
+                        Integrity.integrityHeaders(ctx, "GET", path)
+                            .forEach { (k, v) -> setRequestProperty(k, v) }
+                    }
                 }
             }
             val code = try { conn.responseCode } finally { conn.disconnect() }

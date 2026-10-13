@@ -40,11 +40,23 @@ android {
         versionCode = 5
         versionName = "1.4"
 
+        // 编译期反马甲包（L1）：native 完整性模块需要 NDK 编译 libintegrity.so。
+        // 27.0.12077973 与 CI ubuntu-latest 预装的 AGP 8.7.3 兼容。
+        ndkVersion = "27.0.12077973"
+
         // ML Kit's bundled Chinese recognizer ships native libs for every ABI.
         // The target phone (and every phone this can run on: minSdk 30) is
         // arm64, so keep only that one — the other three are dead weight.
         ndk {
             abiFilters += listOf("arm64-v8a")
+        }
+    }
+
+    // L2：native 完整性模块（SHA-256 证书比对 + 注入扫描 + HMAC 密钥）。
+    // 仅 arm64-v8a（与 ndk.abiFilters 一致）。
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
         }
     }
 
@@ -81,7 +93,15 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // L1：R8 全量混淆 + 资源压缩（仅 release；debug 保持可读便于 WiFi ADB 排障）。
+            // 配合 proguard-rules.pro 保留 JNI 类名/原生方法、Manifest 组件与核心类，
+            // 既提高改壳者定位成本，又不破坏运行时。
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             signingConfig = signingConfigs.findByName("release")
         }
     }

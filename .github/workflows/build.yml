@@ -39,6 +39,11 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
 
+      # L2：native 完整性模块（libintegrity.so）需要 NDK 编译。ubuntu-latest 的预装
+      # Android SDK 不含 NDK，这里显式装上；CMake 由 AGP 自带版本处理，无需单独装。
+      - name: Install NDK for libintegrity
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.0.12077973" > /dev/null 2>&1 || true
+
       - name: Set up Gradle (cache)
         uses: gradle/actions/setup-gradle@v4
 

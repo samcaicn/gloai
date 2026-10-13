@@ -3,6 +3,8 @@ package com.jev.probe.core
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import com.jev.probe.App
+import com.jev.probe.core.Integrity
 
 /**
  * Creem 支付购买闭环的客户端半边。
@@ -45,6 +47,10 @@ object LicenseClient {
                 setRequestProperty("Accept", "application/json")
                 // Cloudflare WAF 对无 UA 请求 403
                 setRequestProperty("User-Agent", "jev-assistant-android")
+                // L3：把官方签名指纹 + HMAC 带上，服务端据此判定是否官方包。
+                // 马甲包证书≠官方 → X-Sig-Fp 不匹配 → /license 返回 403 → 永远拿不到卡密。
+                Integrity.integrityHeaders(App.APP_CONTEXT, "GET", "/license")
+                    .forEach { (k, v) -> setRequestProperty(k, v) }
             }
             val code = conn.responseCode
             if (code == 404) return null // pending：还没付款
