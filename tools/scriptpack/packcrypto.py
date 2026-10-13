@@ -47,8 +47,13 @@ P256_GY = 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5
 P256_N = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
 P256_G = (P256_GX, P256_GY)
 
-# SPKI 前缀（EC / prime256v1 的 AlgorithmIdentifier），后面拼 04||X||Y
-_SPKI_PREFIX = bytes.fromhex("3059301306072a8648ce3d020106082a8648ce3d03010703420004")
+# SPKI 前缀（EC / prime256v1 的 AlgorithmIdentifier + BIT STRING 头 + 未用位字节）。
+# **末尾是 0x00（BIT STRING unused-bits），不是点标记 0x04**——点标记由
+# spki_from_point 拼。历史 bug：前缀末尾多带一个 04，导致签发出的 SPKI 多一字节、
+# 外层长度声明不符，OpenSSL / Android KeyFactory 全部拒收，而 Python 自测因
+# 两头同源发现不了。改动此处必须同步 selftest 的 SPKI 结构断言与 CI 的
+# openssl 交叉验证。
+_SPKI_PREFIX = bytes.fromhex("3059301306072a8648ce3d020106082a8648ce3d030107034200")
 
 
 class PackCryptoError(Exception):
@@ -333,7 +338,7 @@ def spki_from_point(point) -> bytes:
 def point_from_spki(spki: bytes):
     if not spki.startswith(_SPKI_PREFIX):
         raise PackCryptoError("公钥不是 prime256v1 SPKI")
-    raw = spki[len(_SPKI_PREFIX) - 1:]  # 保留前缀末尾的 0x04
+    raw = spki[len(_SPKI_PREFIX):]  # 04||X||Y（点标记由 spki_from_point 拼在这里）
     if len(raw) != 65 or raw[0] != 0x04:
         raise PackCryptoError("公钥点格式非法")
     return (int.from_bytes(raw[1:33], "big"), int.from_bytes(raw[33:65], "big"))

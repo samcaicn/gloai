@@ -82,7 +82,7 @@ object ScriptPackCodec {
      * 对应私钥由商户线下保管，永不进仓库、不进 CI。
      */
     const val PACK_VERIFY_PUBKEY_B64 =
-        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEBJBAnKKqtPs4czHDK8m5aW4Scm/wZGU0f+6XvvslgfeYQ0EYqgToD0128rOhcu2U4bHM9PLPMlw7zQi13FmhbQc="
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkECcoqq0+zhzMcMryblpbhJyb/BkZTR/7pe++yWB95hDQRiqBOgPTXbys6Fy7ZThscz08s8yXDvNCLXcWaFtBw=="
 
     private fun u16le(b: ByteArray, off: Int): Int =
         (b[off].toInt() and 0xFF) or ((b[off + 1].toInt() and 0xFF) shl 8)

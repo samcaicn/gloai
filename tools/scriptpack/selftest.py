@@ -11,6 +11,9 @@
   7. 绑机包换一台设备   -> 拒收
   8. 用错误私钥签名     -> 拒收（伪造）
   9. 改 signature 字节  -> 拒收
+ 10. SPKI 公钥 DER 结构自洽 + 坐标 round-trip（曾因前缀多一个 04 字节被
+     OpenSSL/Android KeyFactory 拒收，Python 两头同源发现不了——CI 另有
+     openssl 交叉验证兜底）
 """
 
 import json
@@ -166,9 +169,51 @@ def test_pack_pipeline() -> None:
         check("GCM tamper 被拒", True)
 
 
+def _der_walk(b: bytes, i: int = 0, end: int = None) -> int:
+    """DER 长度走查：返回消耗到的偏移。任何长度声明与实际不符都会抛错。"""
+    end = len(b) if end is None else end
+    tag = b[i]
+    i += 1
+    n = b[i]
+    i += 1
+    if n & 0x80:
+        k = n & 0x7F
+        if k == 0 or k > 4:
+            raise ValueError("bad DER long-form length")
+        n = int.from_bytes(b[i:i + k], "big")
+        i += k
+    if i + n > end:
+        raise ValueError("DER length overruns buffer")
+    if tag in (0x30, 0x31):  # SEQUENCE / SET：递归
+        j = i
+        while j < i + n:
+            j = _der_walk(b, j, i + n)
+    return i + n
+
+
+def test_spki_structure() -> None:
+    print("SPKI 公钥 DER 结构")
+    priv, point = pc.gen_keypair()
+    spki = pc.spki_from_point(point)
+    check("SPKI 总长 91（26 前缀 + 1 点标记 + 64 坐标）", len(spki) == 91, str(len(spki)))
+    check("外层 SEQUENCE 长度自洽", spki[0] == 0x30 and spki[1] == 89)
+    check("BIT STRING 长度 66（0 未用位 + 65 点）", spki[23] == 0x03 and spki[24] == 0x42)
+    check("未用位字节为 0x00", spki[25] == 0x00)
+    expect_point = b"\x04" + point[0].to_bytes(32, "big") + point[1].to_bytes(32, "big")
+    check("点区（偏移 26 起）== 04||X||Y，无多余字节", spki[26:] == expect_point)
+    try:
+        _der_walk(spki)
+        check("DER 长度走查完全消耗", True)
+    except ValueError as e:
+        check("DER 长度走查完全消耗", False, str(e))
+    back = pc.point_from_spki(spki)
+    check("SPKI 坐标 round-trip", back == point, "%s != %s" % (back, point))
+
+
 def main() -> int:
     test_aes_kat()
     test_ecdsa_domain()
+    test_spki_structure()
     test_pack_pipeline()
     print()
     if FAILED:

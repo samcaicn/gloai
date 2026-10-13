@@ -33,6 +33,41 @@ jobs:
       - name: Selftest (round-trip + rejection paths)
         run: python3 tools/scriptpack/selftest.py
 
+      - name: Cross-verify with OpenSSL (independent implementation)
+        run: |
+          set -e
+          cd tools/scriptpack
+          # Python 自测是"两头同源"——签和验用的是同一份手写实现，编码层的 bug
+          # （如 SPKI 多字节、DER 长度不符）自测发现不了。这里用 OpenSSL 做独立裁判：
+          # ① 公钥必须能加载（畸形 SPKI 现形）② 签名必须验过 ③ 篡改必须验不过。
+          SPKI=$(python3 make_pack.py genkey --out /tmp/sig.pem --pub-out /tmp/pub.pem | tail -1)
+          python3 make_pack.py sign --script examples/chuqing.json --sign-key /tmp/sig.pem --days 30 --out /tmp/chuqing.wpk
+          python3 - "$SPKI" <<'PYEOF'
+          import base64, struct, sys
+          spki_b64 = sys.argv[1]
+          pem = "-----BEGIN PUBLIC KEY-----\n" + "\n".join(spki_b64[i:i+64] for i in range(0, len(spki_b64), 64)) + "\n-----END PUBLIC KEY-----\n"
+          open("/tmp/pack_pub.pem", "w").write(pem)
+          data = open("/tmp/chuqing.wpk", "rb").read()
+          hlen = struct.unpack("<H", data[6:8])[0]
+          plen = struct.unpack("<I", data[8 + hlen:8 + hlen + 4])[0]
+          ct_end = 8 + hlen + 4 + plen
+          open("/tmp/signed_data.bin", "wb").write(data[:ct_end])
+          slen = struct.unpack("<H", data[ct_end:ct_end + 2])[0]
+          open("/tmp/sig.der", "wb").write(data[ct_end + 2:ct_end + 2 + slen])
+          print("signed bytes:", ct_end, "sig len:", slen)
+          PYEOF
+          openssl pkey -pubin -in /tmp/pack_pub.pem -noout
+          openssl dgst -sha256 -verify /tmp/pack_pub.pem -signature /tmp/sig.der /tmp/signed_data.bin
+          python3 -c "
+          d = bytearray(open('/tmp/signed_data.bin','rb').read()); d[10] ^= 0xFF
+          open('/tmp/signed_bad.bin','wb').write(bytes(d))"
+          if openssl dgst -sha256 -verify /tmp/pack_pub.pem -signature /tmp/sig.der /tmp/signed_bad.bin 2>/dev/null; then
+            echo "::error::OpenSSL 竟然验过了被篡改的数据"; exit 1
+          else
+            echo "正确拒绝被篡改数据"
+          fi
+          shred -u /tmp/sig.pem 2>/dev/null || rm -f /tmp/sig.pem
+
       - name: Sign example pack and verify it back
         run: |
           set -e
