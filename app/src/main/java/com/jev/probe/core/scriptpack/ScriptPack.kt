@@ -65,8 +65,11 @@ data class ScriptPack(
  *   5. App 版本门槛
  *   6. AES-256-GCM 解密（tag 失败 = 密钥错 / 设备不匹配 / 包被改）
  *   7. payload 摘要复核 + header/payload 双写 expires_at 一致性 + payload 到期判定
+ *
+ * 命名说明：内容数据类叫 [ScriptPack]，编解码器叫本 object——同一 package 内
+ * 两个同名声明会 Redeclaration。
  */
-object ScriptPack {
+object ScriptPackCodec {
 
     private const val TAG = "JEVASSIST"
     const val MAGIC = "WPK1"

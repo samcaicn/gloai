@@ -87,7 +87,7 @@ object ScriptPackStore {
     fun importPack(context: Context, uri: Uri): PackHeader {
         val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: throw PackException(PackError.TRUNCATED)
-        val pack = ScriptPack.parseAndDecrypt(
+        val pack = ScriptPackCodec.parseAndDecrypt(
             bytes,
             AppPackCrypto.deviceHash(DeviceId.get(context)),
             effectiveNow(context),
@@ -115,7 +115,7 @@ object ScriptPackStore {
         packsDir(context).listFiles(java.io.FileFilter { f -> f.name.endsWith(".wpk") })
             ?.mapNotNull { f ->
                 try {
-                    ScriptPack.readHeader(f.readBytes())
+                    ScriptPackCodec.readHeader(f.readBytes())
                 } catch (e: PackException) {
                     AppPackCrypto.logReject("list", e.code.name)
                     null
@@ -156,31 +156,33 @@ object ScriptPackStore {
      * 回复链路唯一入口：启用中且未过期的话术包；没有 / 已过期 / 任何异常都返回
      * null（调用方回退内置默认话术）——**话术包永远不允许把回复链路搞挂**。
      */
-    fun effectivePack(context: Context): ScriptPack? = try {
-        val safe = activePackId(context) ?: return null
-        val f = packFile(context, safe)
-        if (!f.exists()) return null
-        val mtime = f.lastModified()
-        val now = effectiveNow(context)
-        val c = cache
-        if (c != null && c.mtime == mtime && now - c.at < TTL_MS) {
-            if (now >= c.pack.header.expiresAt * 1000) null else c.pack
-        } else {
-            val pack = ScriptPack.parseAndDecrypt(
-                f.readBytes(),
-                AppPackCrypto.deviceHash(DeviceId.get(context)),
-                now,
-                appVersion(context)
-            )
-            cache = Cache(pack, mtime, now)
-            if (now >= pack.header.expiresAt * 1000) null else pack
+    fun effectivePack(context: Context): ScriptPack? {
+        return try {
+            val safe = activePackId(context) ?: return null
+            val f = packFile(context, safe)
+            if (!f.exists()) return null
+            val mtime = f.lastModified()
+            val now = effectiveNow(context)
+            val c = cache
+            if (c != null && c.mtime == mtime && now - c.at < TTL_MS) {
+                if (now >= c.pack.header.expiresAt * 1000) null else c.pack
+            } else {
+                val pack = ScriptPackCodec.parseAndDecrypt(
+                    f.readBytes(),
+                    AppPackCrypto.deviceHash(DeviceId.get(context)),
+                    now,
+                    appVersion(context)
+                )
+                cache = Cache(pack, mtime, now)
+                if (now >= pack.header.expiresAt * 1000) null else pack
+            }
+        } catch (e: PackException) {
+            AppPackCrypto.logReject("effective", e.code.name)
+            null
+        } catch (e: Exception) {
+            Log.w(TAG, "effectivePack io error: ${e.javaClass.simpleName}")
+            null
         }
-    } catch (e: PackException) {
-        AppPackCrypto.logReject("effective", e.code.name)
-        null
-    } catch (e: Exception) {
-        Log.w(TAG, "effectivePack io error: ${e.javaClass.simpleName}")
-        null
     }
 
     /** 本机 device hash（16B hex）。设置页展示 + 绑机签发时照抄。 */

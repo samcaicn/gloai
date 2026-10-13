@@ -29,11 +29,13 @@ internal object AppPackCrypto {
 
     /** 测试 master（32B）。正式发行替换；生成端同步改 --master-hex / PACK_MASTER_HEX。 */
     private const val MASTER_XOR = 0x5A
-    private val MASTER_OBFUSCATED = byteArrayOf(
-        0x50, 0x45, 0x74, 0x67, 0x16, 0x01, 0x30, 0x25, 0xD4, 0xC7, 0x51, 0x46,
-        0x70, 0x15, 0x34, 0xD7, 0x06, 0x61, 0x50, 0x25, 0x74, 0xC7, 0x16, 0x41,
-        0x52, 0xFC, 0xBF, 0x89, 0x1B, 0x26, 0x71, 0xC5
-    )
+    private val MASTER_OBFUSCATED: ByteArray =
+        "5045746716013025D4C75146701534D70661502574C7164152FCBF891B2671C5"
+            .let { hex ->
+                ByteArray(hex.length / 2) { i ->
+                    hex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+                }
+            }
 
     fun masterKey(): ByteArray {
         val n = MASTER_OBFUSCATED.size
