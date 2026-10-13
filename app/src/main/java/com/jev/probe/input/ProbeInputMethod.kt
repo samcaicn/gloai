@@ -91,6 +91,7 @@ class ProbeInputMethod : InputMethodService() {
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
+        ProbeImeBus.imeActive = true
         Log.i(TAG, "ProbeIme: onStartInput restarting=$restarting pending=${ProbeImeBus.pendingText != null}")
         val pair = ProbeImeBus.consumePending()
         if (pair == null) {
@@ -103,12 +104,14 @@ class ProbeInputMethod : InputMethodService() {
     }
 
     override fun onFinishInput() {
+        ProbeImeBus.imeActive = false
         Log.i(TAG, "ProbeIme: onFinishInput")
         super.onFinishInput()
     }
 
     override fun onDestroy() {
         polling = false
+        ProbeImeBus.imeActive = false
         handler.removeCallbacksAndMessages(null)
         Log.i(TAG, "ProbeIme: onDestroy")
         super.onDestroy()

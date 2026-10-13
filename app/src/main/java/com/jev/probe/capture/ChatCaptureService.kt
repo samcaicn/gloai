@@ -1293,13 +1293,14 @@ open class ChatCaptureService : AccessibilityService() {
         // 全部不可达——唯一可靠写入通道是探针自己的输入法（ProbeInputMethod.commitText）。
         if (token.target.pkg == PKG_WECHAT && ProbeImeBus.isEnabled(this)) {
             val (fx, fy) = wxFocusPoint()
-            // 先聚焦输入栏：无键盘态 tap (fx,fy) 弹起键盘，输入框拿到 InputConnection。
-            tapWeChatInputBar()
+            // 先投递再聚焦：探针输入法若已活跃，tap 输入栏触发的 onStartInput 能直接
+            // 消费到 pending（反过来先 tap 会 onStartInput(null) 白弹一次选择器）。
             ProbeImeBus.requestWrite(text) { ok -> finish(ok) }
-            if (ProbeImeBus.isCurrent(this)) {
-                // 输入法已是探针（上一轮切过来没切回）：onStartInput 不会再回调，
+            tapWeChatInputBar()
+            if (ProbeImeBus.imeActive) {
+                // 输入法已是探针（上一轮切过来没切回）：onStartInput 不再回调，
                 // 靠 ProbeInputMethod 的 200ms 轮询消费 pending。
-                Log.i(TAG, "fillInput: probe IME current, wrote via poll path (focus=$fx,$fy)")
+                Log.i(TAG, "fillInput: probe IME active, wrote via poll path (focus=$fx,$fy)")
             } else {
                 // 输入法是讯飞：焦点已在输入框，弹系统选择器让用户切到探针输入法，
                 // 切换后 onStartInput 触发并消费 pending。用户每轮点一次。

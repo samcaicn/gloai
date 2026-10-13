@@ -22,9 +22,6 @@ object SelfCheck {
     private const val A11Y_COMPONENT =
         "com.jev.probe/com.google.android.accessibility.selecttospeak.SelectToSpeakService"
 
-    /** 探针输入法 id（与 ProbeImeBus.imeId 保持一致）。 */
-    private const val IME_ID = "com.jev.probe/com.jev.probe.input.ProbeInputMethod"
-
     data class Report(val lines: List<String>, val ok: Boolean) {
         val text: String get() = lines.joinToString("\n")
     }
@@ -218,14 +215,12 @@ object SelfCheck {
      * 探针输入法是否已在系统里启用（写入通道的前置条件，2026-10-13）。
      * 微信 8.0.78 剥光 a11y 树后，自动回复的文本只能靠 ProbeInputMethod.commitText 写入，
      * 用户需在 设置→语言和输入法 里一次性启用「AI聊天助手 · 写入」。
+     * 判定走 InputMethodManager（系统进程读设置）——Android 14 起 app 直读
+     * Settings.Secure.ENABLED_INPUT_METHODS 会抛 SecurityException（targetSdk>33），
+     * 2026-10-13 实测把探针崩到循环重启，千万别改回直读。
      */
-    internal fun isProbeImeEnabledPublic(ctx: Context): Boolean = isProbeImeEnabled(ctx)
-
-    private fun isProbeImeEnabled(ctx: Context): Boolean {
-        val v = Settings.Secure.getString(ctx.contentResolver,
-            Settings.Secure.ENABLED_INPUT_METHODS) ?: return false
-        return v.split(":").any { it.trim() == IME_ID }
-    }
+    internal fun isProbeImeEnabledPublic(ctx: Context): Boolean =
+        com.jev.probe.input.ProbeImeBus.isEnabled(ctx)
 
     private fun isNotifyOn(ctx: Context): Boolean {
         val v = Settings.Secure.getString(ctx.contentResolver, "enabled_notification_listeners")

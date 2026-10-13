@@ -1,7 +1,6 @@
 package com.jev.probe.input
 
 import android.content.Context
-import android.provider.Settings
 
 /**
  * 探针写入通道总线（同进程单例，ChatCaptureService 与 ProbeInputMethod 共享）。
@@ -17,8 +16,8 @@ import android.provider.Settings
  */
 object ProbeImeBus {
 
-    /** IME 在 Settings.Secure 里的 id 格式：包名/类全名。 */
-    val imeId: String = "com.jev.probe/com.jev.probe.input.ProbeInputMethod"
+    /** IME 在 Settings.Secure 里的 id 形式：包名/manifest 声明名（相对名原样进 id）。 */
+    val imeId: String = "com.jev.probe/.input.ProbeInputMethod"
 
     @Volatile
     var pendingText: String? = null
@@ -31,6 +30,15 @@ object ProbeImeBus {
 
     @Volatile
     var onWritten: ((Boolean) -> Unit)? = null
+
+    /**
+     * ProbeInputMethod 当前是否正持有输入连接（onStartInput=true / onFinishInput=false）。
+     * 替代读 Settings.Secure.DEFAULT_INPUT_METHOD——Android 14 起 targetSdk>33 的 app
+     * 读 ENABLED_INPUT_METHODS / DEFAULT_INPUT_METHOD 直接抛 SecurityException
+     * （2026-10-13 实测把探针进程崩到循环重启）。IME 服务自己知道自己在不在位，最准。
+     */
+    @Volatile
+    var imeActive: Boolean = false
 
     @Synchronized
     fun requestWrite(text: String, done: (Boolean) -> Unit) {
@@ -56,15 +64,16 @@ object ProbeImeBus {
         cb?.invoke(ok)
     }
 
-    /** 用户在系统设置里启用过探针输入法吗（ enabled_input_methods 列表）。 */
-    fun isEnabled(ctx: Context): Boolean {
-        val enabled = Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ENABLED_INPUT_METHODS) ?: return false
-        return enabled.split(':').any { it.trim() == imeId }
-    }
-
-    /** 当前默认输入法就是探针吗。 */
-    fun isCurrent(ctx: Context): Boolean {
-        val cur = Settings.Secure.getString(ctx.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD) ?: return false
-        return cur.trim() == imeId
+    /**
+     * 用户在系统设置里启用过探针输入法吗。
+     * 走 InputMethodManager.enabledInputMethodList（IMMS 在系统进程里读设置，
+     * 不受 targetSdk 34+ 的 Secure settings 读取限制）；按包名匹配，
+     * 不纠结 id 是相对名还是全限定名。异常一律当未启用，绝不上抛崩进程。
+     */
+    fun isEnabled(ctx: Context): Boolean = try {
+        val imm = ctx.getSystemService(android.view.inputmethod.InputMethodManager::class.java)
+        imm?.enabledInputMethodList?.any { it.packageName == ctx.packageName } == true
+    } catch (e: Exception) {
+        false
     }
 }
