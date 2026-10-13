@@ -127,8 +127,10 @@ class ProbeInputMethod : InputMethodService() {
         ic.commitText(text, 1)
         Log.i(TAG, "ProbeIme: committed ${text.length} chars")
         ProbeImeBus.completeWrite(true)
-        // 写完了：弹系统选择器让用户一步切回普通输入法（讯飞）。
-        handler.postDelayed({ backToNormalIme() }, 500L)
+        // 注意：写完后**不自动弹选择器切回**。ChatCaptureService 紧接着按
+        // sendDelayMs（默认 2s）倒计时点微信发送键 (984,1331)——这里只要弹了
+        // 选择器，用户没来得及切回时那一 tap 就落在选择器上，消息发不出去。
+        // 切回交给视图上的「↩ 返回普通输入法」按钮，用户自己掌握时机。
     }
 
     private fun backToNormalIme() {
