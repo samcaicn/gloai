@@ -42,3 +42,6 @@ keystore.properties
 
 # WorkBuddy agent working notes (never part of the app)
 .workbuddy/
+
+# 话术包测试签名私钥（测试用，正式私钥永不进仓库）
+tools/scriptpack/testdata/

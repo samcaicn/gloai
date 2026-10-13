@@ -77,11 +77,12 @@ object ScriptPackCodec {
 
     /**
      * 验签公钥（EC prime256v1 SPKI，标准 base64）。
-     * **当前是占位测试值**：正式发行时用 `make_pack.py genkey` 打印的 SPKI 行
-     * 整行替换（对应私钥由商户线下保管，永不进仓库、不进 CI）。
+     * **当前是测试值**（配对私钥在 tools/scriptpack/testdata/test_sig.pem，已 gitignore，
+     * 仅本机实机测试用）：正式发行时用 `make_pack.py genkey` 打印的 SPKI 行整行替换，
+     * 对应私钥由商户线下保管，永不进仓库、不进 CI。
      */
     const val PACK_VERIFY_PUBKEY_B64 =
-        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEBANRTmInTLsE36+DxaglXxrjXZiBooNA6R10LOlchdREU+x+z66p4YVDpl+H9mJ9iWqjpho8I4V4BjYHYPR6Vng=="
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEBJBAnKKqtPs4czHDK8m5aW4Scm/wZGU0f+6XvvslgfeYQ0EYqgToD0128rOhcu2U4bHM9PLPMlw7zQi13FmhbQc="
 
     private fun u16le(b: ByteArray, off: Int): Int =
         (b[off].toInt() and 0xFF) or ((b[off + 1].toInt() and 0xFF) shl 8)
