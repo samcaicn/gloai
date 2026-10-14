@@ -30,6 +30,7 @@ class ProbeInputMethod : InputMethodService() {
     private val handler = Handler(Looper.getMainLooper())
     private var polling = false
     private var consumedId = -1L
+    private var kbRoot: View? = null
 
     private val poll = object : Runnable {
         override fun run() {
@@ -62,7 +63,7 @@ class ProbeInputMethod : InputMethodService() {
         // 微信输入栏永远紧跟 IME 窗顶，ChatCaptureService 用 ProbeImeBus.imeWindowHeightPx
         // 动态算坐标，窗口 304px 还是 1005px 都点得中发送键。
         val kbH = (resources.displayMetrics.heightPixels * ProbeImeBus.KB_RATIO).toInt()
-        return LinearLayout(this).apply {
+        kbRoot = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = android.view.Gravity.CENTER_VERTICAL
             setBackgroundColor(0xFFF2F3F5.toInt())
@@ -83,6 +84,7 @@ class ProbeInputMethod : InputMethodService() {
                 setOnClickListener { backToNormalIme() }
             })
         }
+        return kbRoot!!
     }
 
     /**
@@ -93,9 +95,9 @@ class ProbeInputMethod : InputMethodService() {
     private fun publishWindowHeight() {
         try {
             // SoftInputWindow 本质是 Dialog，Dialog 无 decorView，需再 .window 取其 Window。
-            // 取不到时退回 currentInputView 高度；两者都是「微信输入栏上沿到屏底的距离」。
+            // 取不到时退回我们自己键盘根 view 的高度；两者都是「微信输入栏上沿到屏底的距离」。
             val h = window?.window?.decorView?.height
-                ?: currentInputView?.height
+                ?: kbRoot?.height
                 ?: 0
             if (h > 0) ProbeImeBus.imeWindowHeightPx = h
             Log.i(TAG, "ProbeIme: window height published = $h")
