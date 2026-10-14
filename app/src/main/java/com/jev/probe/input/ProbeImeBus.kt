@@ -49,6 +49,15 @@ object ProbeImeBus {
     var lastSent: Boolean = false
         private set
 
+    /**
+     * 探针 IME 窗口实际高度（px，0=未知）。IME 窗口是 wrap_content，实测会被内容
+     * 缩到 304px（而非设想的键盘高 1005px）——窗口多高决定了微信输入栏被顶到哪。
+     * ProbeInputMethod 每次消费 pending 前从 decorView 刷新此值；
+     * ChatCaptureService 的发送/聚焦坐标用它算，窗口多高都不点空。
+     */
+    @Volatile
+    var imeWindowHeightPx: Int = 0
+
     @Volatile
     var onWritten: ((Boolean) -> Unit)? = null
 

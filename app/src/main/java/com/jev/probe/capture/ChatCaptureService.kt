@@ -1240,25 +1240,33 @@ open class ChatCaptureService : AccessibilityService() {
      * 整行落在键盘区域——这是 70e588b 之后仍发不出去的直接原因之一。
      */
     private fun wxFocusPoint(): Pair<Float, Float> {
-        // 输入栏中心：紧贴 IME 窗顶，与 wxSendPoint 同一条线（IME 窗高 = KB_RATIO*H）。
-        // 旧值 0.9349H 是 IME 被 wrap 成 304px、输入栏被推高后的位置；IME 窗口高度
-        // 修复后输入栏回落到键盘态，必须同链更新，否则点到探针自己的视图上。
+        // 输入栏中心：紧贴 IME 窗顶，与 wxSendPoint 同一条线（y=H-IME实际高-输入栏半高）。
+        // IME 实际高度从 ProbeImeBus.imeWindowHeightPx 读（IME 窗口 wrap_content，
+        // 实测 304px 而非键盘高），读不到才回落 KB_RATIO*H 兜底。
         val dm = resources.displayMetrics
-        val kbH = dm.heightPixels * com.jev.probe.input.ProbeImeBus.KB_RATIO
+        val imeH = imeWindowHeight()
         val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
-        return dm.widthPixels * 0.462f to (dm.heightPixels - kbH - barHalf)
+        return dm.widthPixels * 0.462f to (dm.heightPixels - imeH - barHalf)
     }
 
     private fun wxSendPoint(): Pair<Float, Float> {
-        // 绿按钮中心 = (0.9111W, 输入栏垂直中心)。输入栏紧贴 IME 窗顶，其半高
-        // 56dp*density/2。IME 窗高由 ProbeInputMethod 强制撑到 KB_RATIO*H（与讯飞
-        // 键盘同高），所以 y = H - KB_RATIO*H - 输入栏半高，全部按屏幕比例算，
-        // 换手机/换分辨率不用改坐标（2026-10-14 真机 1080x2412 标定：
-        // 2412-1005-77=1330，与绿按钮像素实测中心 y=1331 吻合）。
+        // 绿按钮中心 = (0.9111W, 输入栏垂直中心)。输入栏紧贴 IME 窗顶，所以
+        // y = H - IME实际窗口高 - 输入栏半高(56dp*density/2)。IME 窗口是 wrap_content
+        // （实测被内容缩到 304px），用 ProbeImeBus.imeWindowHeightPx 动态取实际高度，
+        // 窗口多高都不点空；2026-10-14 真机 1080x2412 标定：imeH=304 时
+        // 2412-304-77=2031，与 PIL 绿像素实测中心 y=2031 吻合。全部按屏幕参数算，
+        // 换手机/换分辨率自动适配，无硬编码坐标。
         val dm = resources.displayMetrics
-        val kbH = dm.heightPixels * com.jev.probe.input.ProbeImeBus.KB_RATIO
+        val imeH = imeWindowHeight()
         val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
-        return dm.widthPixels * 0.9111f to (dm.heightPixels - kbH - barHalf)
+        return dm.widthPixels * 0.9111f to (dm.heightPixels - imeH - barHalf)
+    }
+
+    /** IME 窗口实际高度：IME 活着时取其发布值，否则回落键盘同高兜底。 */
+    private fun imeWindowHeight(): Float {
+        val h = com.jev.probe.input.ProbeImeBus.imeWindowHeightPx
+        if (h > 0) return h.toFloat()
+        return resources.displayMetrics.heightPixels * com.jev.probe.input.ProbeImeBus.KB_RATIO
     }
 
     /**

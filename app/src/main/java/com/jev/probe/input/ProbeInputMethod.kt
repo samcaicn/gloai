@@ -40,6 +40,7 @@ class ProbeInputMethod : InputMethodService() {
             }
             if (pair != null) {
                 consumedId = pair.first
+                publishWindowHeight()
                 val send = ProbeImeBus.pendingSend
                 commitAndFinish(pair.second, send)
             }
@@ -56,19 +57,17 @@ class ProbeInputMethod : InputMethodService() {
         polling = true
         handler.post(poll)
         val dp = { v: Int -> (v * resources.displayMetrics.density).toInt() }
-        // 窗口高度必须与实测讯飞键盘一致（1080x2412 上 = 1005px，屏高 0.4167）：
-        // 微信输入栏紧贴 IME 窗顶，高度一变输入栏位移，ChatCaptureService 里
-        // 按比例计算的发送键坐标就点空。只设 view 高度不够——IME 窗口默认
-        // wrap_content，会按内容缩成 304px（2026-10-14 真机实测，输入栏被推高
-        // 750px，发送全点空）。这里 window.setLayout 强制窗口撑到键盘同高。
+        // 视图给键盘同高（屏高 0.4167，讯飞实测 1080x2412 上 1005px）。注意：IME 窗口
+        // 是 wrap_content，实际会把窗口缩到内容高（实测 304px）——窗口多高不影响正确性，
+        // 微信输入栏永远紧跟 IME 窗顶，ChatCaptureService 用 ProbeImeBus.imeWindowHeightPx
+        // 动态算坐标，窗口 304px 还是 1005px 都点得中发送键。
         val kbH = (resources.displayMetrics.heightPixels * ProbeImeBus.KB_RATIO).toInt()
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = android.view.Gravity.CENTER_VERTICAL
             setBackgroundColor(0xFFF2F3F5.toInt())
             layoutParams = android.widget.FrameLayout.LayoutParams(
-                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT, kbH
             )
             addView(TextView(this@ProbeInputMethod).apply {
                 text = t("AI 聊天助手 · 写入通道\n（正在写入回复，写完点下面返回普通输入法）",
@@ -86,17 +85,18 @@ class ProbeInputMethod : InputMethodService() {
         }
     }
 
-    override fun onWindowShown() {
-        super.onWindowShown()
-        // onWindowShown 时 decorView 才 attach 到 IME 窗口，此时 setLayout 才生效。
-        val kbH = (resources.displayMetrics.heightPixels * ProbeImeBus.KB_RATIO).toInt()
+    /**
+     * 把 IME 窗口实际高度发布到 ProbeImeBus。decorView 就是 IME 窗口根 view，
+     * 其 height 即窗口真实占位（wrap_content 下可能是 304px 而非键盘高）。
+     * 发送/聚焦坐标全靠它算，所以每次准备消费 pending 前都刷新一次。
+     */
+    private fun publishWindowHeight() {
         try {
-            window?.setLayout(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT, kbH
-            )
-            Log.i(TAG, "ProbeIme: onWindowShown forced window h=$kbH")
+            val h = window?.decorView?.height ?: 0
+            if (h > 0) ProbeImeBus.imeWindowHeightPx = h
+            Log.i(TAG, "ProbeIme: window height published = $h")
         } catch (e: Exception) {
-            Log.w(TAG, "ProbeIme: setLayout failed ${e.message}")
+            Log.w(TAG, "ProbeIme: publishWindowHeight failed ${e.message}")
         }
     }
 
@@ -114,6 +114,7 @@ class ProbeInputMethod : InputMethodService() {
             return
         }
         consumedId = pair.first
+        publishWindowHeight()
         val send = ProbeImeBus.pendingSend
         commitAndFinish(pair.second, send)
     }
