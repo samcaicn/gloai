@@ -11,7 +11,7 @@ import { ipcBridge } from '@/common';
  * mu's own link scheme (electron-builder.yml `protocols`). mu does not answer AionUi's `aionui://`: that scheme belongs
  * to AionUi, which may be installed beside mu.
  */
-export const PROTOCOL_SCHEME = 'tupai';
+export const PROTOCOL_SCHEME = 'aibuddy';
 
 /**
  * Parse a mu:// URL into action and params.

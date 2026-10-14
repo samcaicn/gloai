@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aibuddy-win-x64-exe
-          path: desktop/out/TupAI-*-win-x64.exe
+          path: desktop/out/AiBuddy-*-win-x64.exe
           retention-days: 90
           if-no-files-found: error
 
@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aibuddy-win-x64-msi
-          path: desktop/out/TupAI-*-win-x64.msi
+          path: desktop/out/AiBuddy-*-win-x64.msi
           retention-days: 90
           if-no-files-found: error
 

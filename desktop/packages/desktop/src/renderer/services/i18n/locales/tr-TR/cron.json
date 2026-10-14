@@ -14,7 +14,7 @@
     "error": "Hata",
     "unread": "Yeni çalıştırma",
     "unconfigured": "Zamanlanmış görev yok",
-    "defaultPrompt": "Every day at 10am, search for the latest AI news, summarize and output an insight report. (TupAI'da zamanlanmış bir görev oluşturmak için lütfen /cron becerisini kullan.)"
+    "defaultPrompt": "Every day at 10am, search for the latest AI news, summarize and output an insight report. (AiBuddy'da zamanlanmış bir görev oluşturmak için lütfen /cron becerisini kullan.)"
   },
   "actions": {
     "goTo": "Sohbeti görüntüle",
@@ -68,10 +68,10 @@
     "newTask": "Yeni görev",
     "createViaChat": "Sohbetle oluştur",
     "createManually": "Manuel oluştur",
-    "description": "Görevleri bir zamanlamayla çalıştırın. Ayrıca herhangi bir konuşmada TupAI'dan sizin için bir görev oluşturmasını isteyebilirsiniz.",
+    "description": "Görevleri bir zamanlamayla çalıştırın. Ayrıca herhangi bir konuşmada AiBuddy'dan sizin için bir görev oluşturmasını isteyebilirsiniz.",
     "awakeBanner": "Zamanlanmış görevler yalnızca bilgisayarınız açıkken çalışır.",
     "keepAwake": "Uyanık tut",
-    "keepAwakeTooltip": "Etkinleştirildiğinde TupAI bilgisayarınızın uyku moduna geçmesini engeller",
+    "keepAwakeTooltip": "Etkinleştirildiğinde AiBuddy bilgisayarınızın uyku moduna geçmesini engeller",
     "createTask": "Zamanlanmış Görev Oluştur",
     "editTask": "Zamanlanmış Görevi Düzenle",
     "createSuccess": "Görev başarıyla oluşturuldu",

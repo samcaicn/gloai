@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
   <defs>
-    <linearGradient id="tupai-tile" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+    <linearGradient id="aibuddy-tile" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#5E7CFB" />
       <stop offset="0.5" stop-color="#4D6BFE" />
       <stop offset="1" stop-color="#3C57D4" />
     </linearGradient>
   </defs>
-  <rect width="100" height="100" rx="26" fill="url(#tupai-tile)" />
+  <rect width="100" height="100" rx="26" fill="url(#aibuddy-tile)" />
   <text x="50" y="50" dominantBaseline="central" textAnchor="middle"
-        fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="28" fill="#FFFFFF">TupAI</text>
+        fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="20" fill="#FFFFFF">AiBuddy</text>
 </svg>

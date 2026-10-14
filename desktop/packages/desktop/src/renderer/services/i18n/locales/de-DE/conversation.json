@@ -12,7 +12,7 @@
     "clearWorkspace": "Ordner entfernen",
     "openFolder": "Ordner öffnen",
     "none": "Keiner",
-    "quickActionsTitle": "Was kann TupAI?"
+    "quickActionsTitle": "Was kann AiBuddy?"
   },
   "history": {
     "recents": "Zuletzt",
@@ -321,7 +321,7 @@
       },
       "MCP_HTTP_RESPONSE_READ_FAILED": {
         "title": "Antwort des Team-Hilfsprozesses konnte nicht gelesen werden",
-        "body": "TupAI konnte die Antwort des lokalen Team-Hilfsprozesses nicht lesen. Versuche es einmal erneut; wenn es weiter passiert, starte die App neu."
+        "body": "AiBuddy konnte die Antwort des lokalen Team-Hilfsprozesses nicht lesen. Versuche es einmal erneut; wenn es weiter passiert, starte die App neu."
       },
       "MCP_TOOL_REMOTE_ERROR": {
         "title": "Der lokale Team-Hilfsprozess hat die Anfrage abgelehnt",
@@ -329,11 +329,11 @@
       },
       "MCP_TOOL_RESPONSE_UNEXPECTED": {
         "title": "Der Team-Hilfsprozess hat eine unerwartete Antwort zurückgegeben",
-        "body": "TupAI hat eine unerwartete Antwort vom lokalen Team-Hilfsprozess erhalten. Versuche es einmal erneut und melde das Problem, wenn es bestehen bleibt."
+        "body": "AiBuddy hat eine unerwartete Antwort vom lokalen Team-Hilfsprozess erhalten. Versuche es einmal erneut und melde das Problem, wenn es bestehen bleibt."
       },
       "MCP_TCP_READ_FAILED": {
         "title": "Lesen vom lokalen Team-Hilfsprozess fehlgeschlagen",
-        "body": "TupAI konnte die TCP-Antwort des lokalen Team-Hilfsprozesses nicht lesen. Versuche es einmal erneut und starte die App neu, wenn es weiter fehlschlägt."
+        "body": "AiBuddy konnte die TCP-Antwort des lokalen Team-Hilfsprozesses nicht lesen. Versuche es einmal erneut und starte die App neu, wenn es weiter fehlschlägt."
       },
       "TEAM_SERVICE_UNAVAILABLE": {
         "title": "Team-Dienst ist noch nicht bereit",
@@ -628,13 +628,13 @@
         "body": "{{count}} Schritt(e) sind fehlgeschlagen und wurden NICHT ausgeführt. agy schließt solche Durchläufe trotzdem als erfolgreich ab – prüfe daher das tatsächliche Ergebnis statt der Antwort."
       },
       "CLI_VERSION_OLDER": {
-        "body": "Das installierte {{cli}} ist älter als die von TupAI verifizierte Version; einige Funktionen fehlen möglicherweise. Ein Upgrade von {{cli}} wird empfohlen. (installiert: {{reported}} / von TupAI verifiziert: {{verified}})"
+        "body": "Das installierte {{cli}} ist älter als die von AiBuddy verifizierte Version; einige Funktionen fehlen möglicherweise. Ein Upgrade von {{cli}} wird empfohlen. (installiert: {{reported}} / von AiBuddy verifiziert: {{verified}})"
       },
       "CLI_VERSION_NEWER": {
-        "body": "Das installierte {{cli}} ist neuer als die von TupAI verifizierte Version. Es sollte weiterhin funktionieren; melden Sie ungewöhnliches Verhalten. (installiert: {{reported}} / von TupAI verifiziert: {{verified}})"
+        "body": "Das installierte {{cli}} ist neuer als die von AiBuddy verifizierte Version. Es sollte weiterhin funktionieren; melden Sie ungewöhnliches Verhalten. (installiert: {{reported}} / von AiBuddy verifiziert: {{verified}})"
       },
       "CODEX_RETRYING": {
-        "body": "{{detail}} (Versuch {{attempts}}, bisher {{elapsed}} – der Anbieter des Agents bricht die Verbindung wiederholt ab; TupAI wartet ab.)"
+        "body": "{{detail}} (Versuch {{attempts}}, bisher {{elapsed}} – der Anbieter des Agents bricht die Verbindung wiederholt ab; AiBuddy wartet ab.)"
       }
     }
   },
@@ -714,7 +714,7 @@
         "conflicted": "!",
         "unknown": "?"
       },
-      "conflictedHint": "Lösen Sie diesen Konflikt zuerst außerhalb von TupAI",
+      "conflictedHint": "Lösen Sie diesen Konflikt zuerst außerhalb von AiBuddy",
       "opaqueHint": "Dieser Status kommt von einem neueren Backend — nur lesend angezeigt",
       "degraded": "Die Aktualisierung läuft langsamer, weil der git-Index nicht geschrieben werden kann",
       "truncated": "Zu viele Änderungen — nur der erste Teil wird angezeigt",
@@ -733,7 +733,7 @@
         "discard": "Änderungen verwerfen",
         "stageAll": "Alle vormerken",
         "unstageAll": "Alle Vormerkungen aufheben",
-        "blockedHint": "Lösen Sie den Konflikt außerhalb von TupAI, bevor Sie vormerken oder verwerfen",
+        "blockedHint": "Lösen Sie den Konflikt außerhalb von AiBuddy, bevor Sie vormerken oder verwerfen",
         "confirmDiscardTitle": "Änderungen verwerfen?",
         "confirmDiscardTracked": "Die Änderungen an {{count}} Dateien gehen verloren. Das kann nicht rückgängig gemacht werden.",
         "confirmDiscardUntracked": "{{count}} neue Dateien werden in den Papierkorb verschoben.",

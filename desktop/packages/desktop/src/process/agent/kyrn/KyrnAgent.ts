@@ -109,16 +109,16 @@ type RpcFactory = (
  * (`renderer/utils/chat/muTurnErrors.ts`, which a test keeps in step with this list).
  */
 export const MU_TURN_ERRORS = {
-  processExited: 'TupAI process exited during the turn',
+  processExited: 'AiBuddy process exited during the turn',
   modelFailed: 'Model request failed',
-  turnRunning: 'A TupAI turn is already running',
+  turnRunning: 'A AiBuddy turn is already running',
   busyConfig: 'Wait for the current turn before changing configuration',
   unsupportedValue: 'Unsupported configuration value',
-  permissionsNotSwitched: 'TupAI did not switch permissions',
+  permissionsNotSwitched: 'AiBuddy did not switch permissions',
   imageUnsupported: 'Unsupported image format or size',
-  contentUnsupported: 'This TupAI adapter accepts text, images and text resources',
+  contentUnsupported: 'This AiBuddy adapter accepts text, images and text resources',
   wrongProject: 'Session belongs to a different project',
-  notPersisted: 'TupAI did not persist the session',
+  notPersisted: 'AiBuddy did not persist the session',
   /** pi has no model to answer with, or none it has a key for. pi's own words (with `/login` help) follow as a detail. */
   noModel: 'mu has no model to answer with',
 } as const;
@@ -188,15 +188,15 @@ export function readDefaultModel(home?: string): { provider: string; id: string 
  */
 export const MU_NOTICES = {
   /** A question of mu's got no usable answer (the app failed to ask, or answered with none of the choices). */
-  answer_lost: 'TupAI did not get your answer, so it went on as if you had declined.',
+  answer_lost: 'AiBuddy did not get your answer, so it went on as if you had declined.',
   /** A command failed because mu found no bash on Windows: Git for Windows is missing (see `bashMissing`). */
   bash_missing:
-    'TupAI needs Git for Windows to run commands. Once it is installed, send your message again. Download it here: https://git-scm.com/download/win',
+    'AiBuddy needs Git for Windows to run commands. Once it is installed, send your message again. Download it here: https://git-scm.com/download/win',
   /**
    * The conversation goes without checkpoints (mu's `checkpoint.off`). The input carries mu's reason code and what it
    * names (`code`, `params`); the title is mu's own line, already in the app's language, and this only its stand-in.
    */
-  checkpoint_off: 'TupAI: checkpoints are off in this session.',
+  checkpoint_off: 'AiBuddy: checkpoints are off in this session.',
   /** The person stopped the reply: what came before this line is all of it. */
   stopped: 'You stopped this reply.',
 } as const;
@@ -269,7 +269,7 @@ export class KyrnAgent implements Agent {
     return {
       protocolVersion: PROTOCOL_VERSION,
       // `name` is an identifier the backend has already seen; only the title is shown.
-      agentInfo: { name: 'kyrn', title: 'TupAI', version: '0.1.0' },
+      agentInfo: { name: 'kyrn', title: 'AiBuddy', version: '0.1.0' },
       agentCapabilities: { loadSession: true, promptCapabilities: { embeddedContext: true, image: true } },
       authMethods: [],
     };
@@ -279,11 +279,11 @@ export class KyrnAgent implements Agent {
   }
   private session(id: string): Session {
     const found = this.sessions.get(id);
-    if (!found) throw new Error('Unknown TupAI session');
+    if (!found) throw new Error('Unknown AiBuddy session');
     return found;
   }
   private path(id: string): string {
-    if (!/^[a-f\d-]{36}$/.test(id)) throw new Error('Invalid TupAI session ID');
+    if (!/^[a-f\d-]{36}$/.test(id)) throw new Error('Invalid AiBuddy session ID');
     return join(this.store, `${id}.json`);
   }
   private async state(id: string): Promise<JsonRecord> {

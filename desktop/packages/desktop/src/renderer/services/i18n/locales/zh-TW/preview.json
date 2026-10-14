@@ -85,7 +85,7 @@
       "outsideSandbox": "此檔案不在目前專案沙箱範圍內。"
     },
     "serverInstall": {
-      "hint": "TupAI 執行於伺服器上，預覽元件需要安裝在該伺服器上。請在伺服器執行以下指令後重試：",
+      "hint": "AiBuddy 執行於伺服器上，預覽元件需要安裝在該伺服器上。請在伺服器執行以下指令後重試：",
       "icuNote": "若安裝後仍無法啟動，請在伺服器安裝 ICU 函式庫（Debian/Ubuntu：apt-get install -y libicu-dev）。"
     }
   },
@@ -189,28 +189,28 @@
     "elapsed": "已用時間",
     "steps": "步驟 {{total}}",
     "noSteps": "尚未執行任何操作",
-    "reason": "TupAI 的說明",
+    "reason": "AiBuddy 的說明",
     "goal": "目標",
     "pause": "暫停",
     "resume": "繼續",
     "stop": "停止",
     "takeover": "接手",
-    "takeoverTip": "暫停並把鍵盤交給你。操作完按「繼續」，TupAI 會重新觀察頁面再判斷。",
+    "takeoverTip": "暫停並把鍵盤交給你。操作完按「繼續」，AiBuddy 會重新觀察頁面再判斷。",
     "pausedShort": "已暫停",
     "stopping": "正在停止…",
     "paused": {
-      "user": "已暫停。按「繼續」後，TupAI 會重新觀察頁面再判斷。",
-      "takeover": "你已接手，可以直接操作頁面。完成後按「繼續」，TupAI 會重新觀察頁面。",
-      "interaction": "你剛才操作了頁面，TupAI 已自動暫停，避免和你同時點擊。按「繼續」後它會重新觀察頁面。"
+      "user": "已暫停。按「繼續」後，AiBuddy 會重新觀察頁面再判斷。",
+      "takeover": "你已接手，可以直接操作頁面。完成後按「繼續」，AiBuddy 會重新觀察頁面。",
+      "interaction": "你剛才操作了頁面，AiBuddy 已自動暫停，避免和你同時點擊。按「繼續」後它會重新觀察頁面。"
     },
     "statusHint": {
-      "blocked": "TupAI 找不到能繼續推進目標的操作，停了下來。",
-      "needs_confirmation": "這個操作看起來無法復原，又沒有得到允許，TupAI 沒有執行它。",
+      "blocked": "AiBuddy 找不到能繼續推進目標的操作，停了下來。",
+      "needs_confirmation": "這個操作看起來無法復原，又沒有得到允許，AiBuddy 沒有執行它。",
       "budget": "已用完本次執行的步數上限。",
       "stopped": "你停止了這次執行。",
       "failed": "瀏覽過程中發生錯誤，本次執行沒有完成。"
     },
-    "detachedHint": "TupAI 與這個頁面的連線已中斷，本次執行無法繼續。",
+    "detachedHint": "AiBuddy 與這個頁面的連線已中斷，本次執行無法繼續。",
     "verb": {
       "click": "點擊",
       "fill": "輸入",
@@ -238,7 +238,7 @@
       "popup": "已攔截彈出視窗：{{detail}}"
     },
     "confirm": {
-      "title": "TupAI 想執行一個可能無法復原的操作",
+      "title": "AiBuddy 想執行一個可能無法復原的操作",
       "action": "操作",
       "page": "頁面",
       "allow": "允許",
@@ -249,7 +249,7 @@
     "detachCause": "原因",
     "detachReason": {
       "tab_closed": "分頁被關閉了。",
-      "connection": "TupAI 的瀏覽工作階段在任務完成前就結束了。",
+      "connection": "AiBuddy 的瀏覽工作階段在任務完成前就結束了。",
       "devtools": "這個頁面開啟了開發人員工具。",
       "crashed": "頁面當掉了。"
     },

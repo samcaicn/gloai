@@ -54,8 +54,8 @@ export const MU_COMMAND_WORDS: ReadonlyMap<string, readonly string[]> = new Map(
   [
     'permissions',
     [
-      'How much TupAI may do without asking: /permissions full | jev | ask, or a picker. /permissions reset forgets what you allowed for this conversation',
-      'TupAI 不问你就能做多少事：/permissions full（完全访问）| jev（Jev 审批）| ask（最小权限），不带参数就弹出选择；/permissions reset 忘掉这次对话里允许过的操作',
+      'How much AiBuddy may do without asking: /permissions full | jev | ask, or a picker. /permissions reset forgets what you allowed for this conversation',
+      'AiBuddy 不问你就能做多少事：/permissions full（完全访问）| jev（Jev 审批）| ask（最小权限），不带参数就弹出选择；/permissions reset 忘掉这次对话里允许过的操作',
     ],
   ],
   [
@@ -124,8 +124,8 @@ export const MU_COMMAND_WORDS: ReadonlyMap<string, readonly string[]> = new Map(
   [
     'inherit',
     [
-      'What TupAI took over from Claude Code, Cursor and Codex, and from where',
-      'TupAI 从 Claude Code、Cursor 和 Codex 沿用了什么，各来自哪个文件',
+      'What AiBuddy took over from Claude Code, Cursor and Codex, and from where',
+      'AiBuddy 从 Claude Code、Cursor 和 Codex 沿用了什么，各来自哪个文件',
     ],
   ],
   [
@@ -153,8 +153,8 @@ export const MU_COMMAND_WORDS: ReadonlyMap<string, readonly string[]> = new Map(
   [
     'mu',
     [
-      'TupAI status. Also: /mu judge <tiers> | /mu route <decision> <tiers|default> | /mu mode <decision|default> <off|shadow|active>',
-      'TupAI 的状态。另外：/mu judge <判定器> | /mu route <判定点> <判定器|default> | /mu mode <判定点|default> <off|shadow|active>',
+      'AiBuddy status. Also: /mu judge <tiers> | /mu route <decision> <tiers|default> | /mu mode <decision|default> <off|shadow|active>',
+      'AiBuddy 的状态。另外：/mu judge <判定器> | /mu route <判定点> <判定器|default> | /mu mode <判定点|default> <off|shadow|active>',
     ],
   ],
   [
@@ -164,7 +164,7 @@ export const MU_COMMAND_WORDS: ReadonlyMap<string, readonly string[]> = new Map(
       '模型、判定器、各判定点的模式、省下的上下文和最近的判定',
     ],
   ],
-  ['help', ['What TupAI can do and every command worth knowing', 'TupAI 能做什么，以及常用命令一览']],
+  ['help', ['What AiBuddy can do and every command worth knowing', 'AiBuddy 能做什么，以及常用命令一览']],
   ['ledger', ['The last verdicts of the judge with timing: /ledger [n]', '判定器最近的判定和用时：/ledger [条数]']],
   [
     'doctor',
@@ -176,7 +176,7 @@ export const MU_COMMAND_WORDS: ReadonlyMap<string, readonly string[]> = new Map(
   [
     'import-chat',
     [
-      'Bring a Claude Code or Codex conversation of this project into TupAI and continue it: /import-chat [file]',
+      'Bring a Claude Code or Codex conversation of this project into AiBuddy and continue it: /import-chat [file]',
       '导入这个项目在 Claude Code 或 Codex 里的对话，接着在这里聊：/import-chat [文件]',
     ],
   ],

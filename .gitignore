@@ -18,6 +18,9 @@ dist/
 # third-party binaries prepared at build time (prepare-aioncore downloads these)
 desktop/resources/bundled-aioncore/
 
+# local CI artifact downloads & scratch work
+ci-artifacts/
+
 # os / editor
 .DS_Store
 Thumbs.db

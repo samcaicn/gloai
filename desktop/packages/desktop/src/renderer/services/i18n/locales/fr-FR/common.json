@@ -65,11 +65,11 @@
   "more": "Plus",
   "refresh": "Actualiser",
   "readOnly": "Lecture seule",
-  "tray.showWindow": "Afficher TupAI",
+  "tray.showWindow": "Afficher AiBuddy",
   "tray.newChat": "Nouveau chat",
   "tray.closeToTray": "Réduire dans la barre système",
   "tray.hideToMenuBar": "Réduire dans la barre des menus",
-  "tray.about": "À propos de TupAI",
+  "tray.about": "À propos de AiBuddy",
   "tray.restart": "Redémarrer l'application",
   "tray.quit": "Quitter",
   "tray.pauseAll": "Tout mettre en pause",
@@ -79,39 +79,39 @@
   "backendStartup": {
     "incompatibleRuntime": {
       "title": "Ce système n'est pas pris en charge par le backend fourni",
-      "description": "TupAI s'est ouvert, mais son service local ne peut pas fonctionner sur cette version de Linux. Veuillez effectuer une mise à niveau vers une distribution Linux prise en charge et redémarrer TupAI.",
+      "description": "AiBuddy s'est ouvert, mais son service local ne peut pas fonctionner sur cette version de Linux. Veuillez effectuer une mise à niveau vers une distribution Linux prise en charge et redémarrer AiBuddy.",
       "requiredVersions": "Symboles d'exécution requis : {{versions}}"
     },
     "incompleteInstallation": {
-      "title": "L'installation de TupAI est incomplète",
-      "description": "Cette installation ne dispose pas des ressources locales requises, le service local de TupAI ne peut donc pas démarrer. Veuillez télécharger et réinstaller la dernière version de TupAI. Si le problème réapparaît après la réinstallation, vérifiez si un logiciel de sécurité ou antivirus a mis des fichiers de TupAI en quarantaine.",
+      "title": "L'installation de AiBuddy est incomplète",
+      "description": "Cette installation ne dispose pas des ressources locales requises, le service local de AiBuddy ne peut donc pas démarrer. Veuillez télécharger et réinstaller la dernière version de AiBuddy. Si le problème réapparaît après la réinstallation, vérifiez si un logiciel de sécurité ou antivirus a mis des fichiers de AiBuddy en quarantaine.",
       "downloadLatest": "Télécharger le dernier",
-      "runtimeComponentDescription": "Il manque les composants d'exécution groupés requis dans cette installation, donc {{resource}} ne peut pas démarrer. Réinstallez le dernier package TupAI. Si cela se produit toujours après la réinstallation, vérifiez si un logiciel de sécurité ou un antivirus a mis en quarantaine les composants TupAI."
+      "runtimeComponentDescription": "Il manque les composants d'exécution groupés requis dans cette installation, donc {{resource}} ne peut pas démarrer. Réinstallez le dernier package AiBuddy. Si cela se produit toujours après la réinstallation, vérifiez si un logiciel de sécurité ou un antivirus a mis en quarantaine les composants AiBuddy."
     },
     "packageArchitectureMismatch": {
-      "title": "Inadéquation de l'architecture du package TupAI",
-      "description": "Ce package TupAI est pour {{packageArch}}, mais ce Mac est {{deviceArch}}. Vous avez peut-être téléchargé le mauvais package. Veuillez télécharger et installer le package {{expectedArch}}."
+      "title": "Inadéquation de l'architecture du package AiBuddy",
+      "description": "Ce package AiBuddy est pour {{packageArch}}, mais ce Mac est {{deviceArch}}. Vous avez peut-être téléchargé le mauvais package. Veuillez télécharger et installer le package {{expectedArch}}."
     },
     "dataMigration": {
       "title": "Échec de la migration des données locales",
-      "description": "TupAI s'est ouvert, mais son service local s'est arrêté lors de l'initialisation des données locales. La réinstallation de TupAI ne résoudra peut-être pas ce problème. Le journal de l'application indique où la migration de la base de données locale s'est arrêtée."
+      "description": "AiBuddy s'est ouvert, mais son service local s'est arrêté lors de l'initialisation des données locales. La réinstallation de AiBuddy ne résoudra peut-être pas ce problème. Le journal de l'application indique où la migration de la base de données locale s'est arrêtée."
     },
     "databaseNewerThanApp": {
-      "title": "Une version plus récente de TupAI est requise",
-      "description": "Vos données locales ont été créées par une version plus récente de TupAI et cette version ne peut pas les ouvrir. Mettez à jour TupAI vers la dernière version pour continuer : vos données sont intactes, aucune réinstallation ni réinitialisation n'est nécessaire.",
-      "descriptionWithVersion": "Vos données locales ont été créées par une version de TupAI plus récente que celle installée actuellement (v{{currentVersion}}), cette version ne peut donc pas les ouvrir. Mettez à jour TupAI vers la dernière version pour continuer : vos données sont intactes, aucune réinstallation ni réinitialisation n'est nécessaire."
+      "title": "Une version plus récente de AiBuddy est requise",
+      "description": "Vos données locales ont été créées par une version plus récente de AiBuddy et cette version ne peut pas les ouvrir. Mettez à jour AiBuddy vers la dernière version pour continuer : vos données sont intactes, aucune réinstallation ni réinitialisation n'est nécessaire.",
+      "descriptionWithVersion": "Vos données locales ont été créées par une version de AiBuddy plus récente que celle installée actuellement (v{{currentVersion}}), cette version ne peut donc pas les ouvrir. Mettez à jour AiBuddy vers la dernière version pour continuer : vos données sont intactes, aucune réinstallation ni réinitialisation n'est nécessaire."
     },
     "localDataRepair": {
       "title": "La réparation des données locales a échoué",
-      "description": "TupAI s'est ouvert, mais son service local s'est arrêté lors de la préparation des données locales de démarrage, comme les enregistrements d'assistants ou d'agents. La réinstallation de TupAI ne résoudra peut-être pas ce problème. Le journal de l'application indique quelles données locales n'ont pas pu être préparées."
+      "description": "AiBuddy s'est ouvert, mais son service local s'est arrêté lors de la préparation des données locales de démarrage, comme les enregistrements d'assistants ou d'agents. La réinstallation de AiBuddy ne résoudra peut-être pas ce problème. Le journal de l'application indique quelles données locales n'ont pas pu être préparées."
     },
     "startupDirectory": {
       "title": "Le répertoire de démarrage n'est pas disponible",
-      "description": "TupAI s'est ouvert, mais son service local n'a pas pu démarrer car le répertoire de travail ou de journal configuré est manquant, indisponible ou bloqué par les autorisations. Vérifiez que les répertoires configurés existent et sont accessibles en écriture, puis redémarrez TupAI."
+      "description": "AiBuddy s'est ouvert, mais son service local n'a pas pu démarrer car le répertoire de travail ou de journal configuré est manquant, indisponible ou bloqué par les autorisations. Vérifiez que les répertoires configurés existent et sont accessibles en écriture, puis redémarrez AiBuddy."
     },
     "recoverableDatabaseCorruption": {
       "title": "Les données locales sont corrompues",
-      "description": "TupAI a détecté que la base de données locale est corrompue et ne peut pas continuer le démarrage. Après confirmation, TupAI sauvegardera l'ancienne base de données et créera une nouvelle base de données locale pour continuer le démarrage. Les conversations passées ne seront plus affichées et l'ancienne base de données sera conservée comme fichier de sauvegarde.",
+      "description": "AiBuddy a détecté que la base de données locale est corrompue et ne peut pas continuer le démarrage. Après confirmation, AiBuddy sauvegardera l'ancienne base de données et créera une nouvelle base de données locale pour continuer le démarrage. Les conversations passées ne seront plus affichées et l'ancienne base de données sera conservée comme fichier de sauvegarde.",
       "confirmRebuild": "Sauvegarder l'ancienne base de données et reconstruire la nouvelle base de données",
       "rebuildFailed": "Échec de la sauvegarde de l'ancienne base de données et de la reconstruction de la nouvelle base de données",
       "confirmDialog": {
@@ -122,8 +122,8 @@
       }
     },
     "transientConcurrentStartup": {
-      "title": "TupAI démarre",
-      "description": "À l'ouverture de cette fenêtre, un autre démarrage de TupAI utilisait encore les données locales. C'est temporaire et vos données sont en sécurité — aucune réinstallation n'est nécessaire. Veuillez patienter un instant et réessayer, ou redémarrer TupAI."
+      "title": "AiBuddy démarre",
+      "description": "À l'ouverture de cette fenêtre, un autre démarrage de AiBuddy utilisait encore les données locales. C'est temporaire et vos données sont en sécurité — aucune réinstallation n'est nécessaire. Veuillez patienter un instant et réessayer, ou redémarrer AiBuddy."
     },
     "pendingSlow": {
       "title": "Démarrage",
@@ -164,12 +164,12 @@
   "selectedSkills": "Compétences sélectionnées",
   "aiAssistant": "Assistant IA",
   "kyrn": {
-    "settings": "Paramètres de TupAI",
+    "settings": "Paramètres de AiBuddy",
     "judge": "Configuration du juge",
     "reload": "Recharger",
-    "starting": "Démarrage de TupAI…",
-    "startingHint": "Connexion au noyau TupAI local et lecture de la configuration du modèle et du juge.",
-    "startupError": "Échec du démarrage de TupAI",
+    "starting": "Démarrage de AiBuddy…",
+    "startingHint": "Connexion au noyau AiBuddy local et lecture de la configuration du modèle et du juge.",
+    "startupError": "Échec du démarrage de AiBuddy",
     "hiveView": {
       "title": "Ruche",
       "agents": "Sous-agents",
@@ -200,7 +200,7 @@
       "lineDelivery_other": "{{from}} → {{to}} : {{count}} remises",
       "lineCorrection": "{{from}} a corrigé une découverte de {{to}}",
       "lineConflict": "{{from}} et {{to}} sont en désaccord",
-      "lineReport": "{{from}} a fait son rapport à TupAI",
+      "lineReport": "{{from}} a fait son rapport à AiBuddy",
       "deliveries": "Flux d’informations",
       "noDeliveries": "Aucune transmission confirmée pour le moment.",
       "board": "Tableau partagé",
@@ -1072,7 +1072,7 @@
       "switch": "Tableau en clair de ce projet",
       "switching": "Changement…",
       "afterTurn": "Change quand l’agent aura fini cette étape",
-      "unknown": "Pas encore de tableau dans cette conversation. Il apparaît dans les conversations TupAI tant que le tableau en clair est activé dans Fonctions.",
+      "unknown": "Pas encore de tableau dans cette conversation. Il apparaît dans les conversations AiBuddy tant que le tableau en clair est activé dans Fonctions.",
       "off": "Une fois activé, il dit en mots simples où en est le travail, ce que fait l’agent en ce moment et ce qui vous attend.",
       "cost": "Pour ce projet seulement. Chaque mise à jour coûte un appel au modèle.",
       "empty": "Laissez un moment à l’agent ; ici s’affichera en mots simples où il en est.",
@@ -1147,11 +1147,11 @@
         "helpers_back_other": "{{count, number}} assistants sont revenus",
         "permission_allowed": "Vous avez autorisé : {{summary}}",
         "permission_denied": "Vous n’avez pas autorisé : {{summary}}",
-        "goal_round": "L’objectif n’est pas encore atteint ; TupAI l’a remis au travail (tour {{round, number}}){{reason}}",
+        "goal_round": "L’objectif n’est pas encore atteint ; AiBuddy l’a remis au travail (tour {{round, number}}){{reason}}",
         "goal_met": "L’objectif est atteint : {{text}}",
         "goal_paused": "L’objectif est en pause{{reason}}",
-        "trouble_loop": "TupAI a remarqué qu’il répète la même étape : {{detail}}",
-        "trouble": "TupAI a remarqué : {{detail}}",
+        "trouble_loop": "AiBuddy a remarqué qu’il répète la même étape : {{detail}}",
+        "trouble": "AiBuddy a remarqué : {{detail}}",
         "did": "A utilisé {{tool}} : {{what}}",
         "said_quote": "Il a dit : {{text}}",
         "ended": "S’est arrêté.",
@@ -1192,7 +1192,7 @@
       "retireConfirm": "Retirer cette leçon ? Elle ne sera plus apportée dans aucun tour.",
       "loadFailed": "Impossible de lire les leçons",
       "saveFailed": "La leçon n’a pas été modifiée",
-      "empty": "Aucune leçon pour ce projet pour l’instant. TupAI les apprend de vos corrections, de ses propres issues et de /remember.",
+      "empty": "Aucune leçon pour ce projet pour l’instant. AiBuddy les apprend de vos corrections, de ses propres issues et de /remember.",
       "noneActive": "Aucune leçon en usage. Toutes affiche aussi les leçons retirées et remplacées.",
       "noMatch": "Aucune leçon ne correspond.",
       "noProject": "Cette conversation n’a pas de dossier de projet : seules les leçons pour tous les projets sont listées.",
@@ -1305,16 +1305,16 @@
       "mcp": {
         "line": "{{name}} : {{reason}}",
         "projectUntrusted": "le projet n’est pas marqué comme fiable, et ce serveur est défini par le projet",
-        "needsApproval": "il est défini par le projet ({{source}}) et n’a pas été approuvé ; ouvrez ce dossier dans TupAI et autorisez-le une fois, ou définissez-le dans TupAI.json",
+        "needsApproval": "il est défini par le projet ({{source}}) et n’a pas été approuvé ; ouvrez ce dossier dans AiBuddy et autorisez-le une fois, ou définissez-le dans AiBuddy.json",
         "aborted": "le démarrage a été annulé",
         "rpc": "il a répondu par une erreur",
         "protocol": "sa réponse ne suit pas le protocole MCP",
         "startFailed": "il n’a pas pu être démarré",
-        "crashedRestarting": "il a planté en cours d’exécution ; TupAI le redémarre une fois",
+        "crashedRestarting": "il a planté en cours d’exécution ; AiBuddy le redémarre une fois",
         "crashedAgain": "il a de nouveau planté et ne sera pas redémarré",
         "restartFailed": "il a planté, et le redémarrage a échoué aussi",
         "restartFailedCause": "il a planté, et le redémarrage a échoué aussi : {{cause}}",
-        "closed": "sa connexion s’est fermée alors que TupAI attendait encore une réponse",
+        "closed": "sa connexion s’est fermée alors que AiBuddy attendait encore une réponse",
         "timeout": "il n’a pas répondu à temps",
         "denied": "vous n’avez pas autorisé le démarrage du serveur de ce projet",
         "unreachable": "il n’a pu être ni démarré ni joint"
@@ -1376,7 +1376,7 @@
       "contextHint": "Ce que le modèle lira ensuite occupe {{percent}} de son contexte",
       "cache": "Succès de cache",
       "cacheHint": "Succès de cache : {{turn}} au dernier tour, {{session}} sur toute la conversation",
-      "pending": "S’affiche après la prochaine réponse de TupAI"
+      "pending": "S’affiche après la prochaine réponse de AiBuddy"
     }
   },
   "menu": {
@@ -1469,11 +1469,11 @@
   },
   "nodeRuntime": {
     "title": "Télécharger Node.js ?",
-    "message": "TupAI exécute les agents et les outils avec sa propre copie de Node.js, qui n'est pas encore téléchargée.",
-    "detail": "Node.js {{version}} (environ {{size}} Mo) sera téléchargé depuis nodejs.org et décompressé dans :\n{{folder}}\n\n« Plus tard » ne télécharge rien : TupAI s'ouvre normalement, le signale là où Node.js est nécessaire et redemande au prochain démarrage.",
+    "message": "AiBuddy exécute les agents et les outils avec sa propre copie de Node.js, qui n'est pas encore téléchargée.",
+    "detail": "Node.js {{version}} (environ {{size}} Mo) sera téléchargé depuis nodejs.org et décompressé dans :\n{{folder}}\n\n« Plus tard » ne télécharge rien : AiBuddy s'ouvre normalement, le signale là où Node.js est nécessaire et redemande au prochain démarrage.",
     "download": "Télécharger",
     "later": "Plus tard",
-    "note": "Node.js n'est pas téléchargé, cet agent ne peut donc pas s'exécuter. TupAI redemandera au prochain démarrage.",
-    "toolNote": "Node.js n'est pas téléchargé, les outils qui en ont besoin ne peuvent donc pas s'exécuter. TupAI redemandera au prochain démarrage."
+    "note": "Node.js n'est pas téléchargé, cet agent ne peut donc pas s'exécuter. AiBuddy redemandera au prochain démarrage.",
+    "toolNote": "Node.js n'est pas téléchargé, les outils qui en ont besoin ne peuvent donc pas s'exécuter. AiBuddy redemandera au prochain démarrage."
   }
 }

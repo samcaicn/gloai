@@ -1,6 +1,6 @@
 {
-  "title": "Configurações do TupAI",
-  "description": "Tudo o que dá para configurar no TupAI: juízes, pontos de decisão, recursos, modelos e contexto. Compartilhado com a linha de comando do TupAI.",
+  "title": "Configurações do AiBuddy",
+  "description": "Tudo o que dá para configurar no AiBuddy: juízes, pontos de decisão, recursos, modelos e contexto. Compartilhado com a linha de comando do AiBuddy.",
   "reload": "Recarregar",
   "search": "Buscar decisões e recursos",
   "noMatch": "Nada corresponde à busca.",
@@ -44,8 +44,8 @@
     "offHelp": "O veredito não tem efeito: essa etapa segue normalmente."
   },
   "harness": {
-    "tooOld": "Esta versão do TupAI é antiga demais para listar seus pontos de decisão e recursos. Atualize o TupAI para vê-los aqui; as configurações básicas continuam funcionando.",
-    "unsupported": "O TupAI se descreve em um formato que este aplicativo não conhece (versão {{version}}). Atualize o aplicativo para editar pontos de decisão e recursos."
+    "tooOld": "Esta versão do AiBuddy é antiga demais para listar seus pontos de decisão e recursos. Atualize o AiBuddy para vê-los aqui; as configurações básicas continuam funcionando.",
+    "unsupported": "O AiBuddy se descreve em um formato que este aplicativo não conhece (versão {{version}}). Atualize o aplicativo para editar pontos de decisão e recursos."
   },
   "load": {
     "failed": "Não foi possível carregar as configurações"
@@ -56,7 +56,7 @@
     "nothing": "Nenhuma alteração pendente",
     "unsavedDot": "Alterações não salvas",
     "discard": "Descartar",
-    "stale": "Outro programa (a linha de comando do TupAI ou uma sessão em andamento) alterou a configuração depois que ela foi carregada aqui, então nada foi salvo. Recarregue para ver o estado atual; suas edições não salvas serão perdidas.",
+    "stale": "Outro programa (a linha de comando do AiBuddy ou uma sessão em andamento) alterou a configuração depois que ela foi carregada aqui, então nada foi salvo. Recarregue para ver o estado atual; suas edições não salvas serão perdidas.",
     "failed": "Não foi salvo: {{reason}}"
   },
   "units": {
@@ -94,14 +94,14 @@
     "none": "Ainda não há pontos de decisão aqui."
   },
   "features": {
-    "lead": "O que o TupAI faz por você em segundo plano. Desative um recurso e o TupAI deixa de fazê-lo.",
-    "moreLead": "Tudo o mais que o TupAI sabe fazer, agrupado por onde age. As opções de cada recurso ficam a um clique.",
+    "lead": "O que o AiBuddy faz por você em segundo plano. Desative um recurso e o AiBuddy deixa de fazê-lo.",
+    "moreLead": "Tudo o mais que o AiBuddy sabe fazer, agrupado por onde age. As opções de cada recurso ficam a um clique.",
     "beta": "Beta",
     "reset": "Restaurar padrões",
     "boardModelElsewhere": "O modelo que escreve o painel é escolhido em “Modelo padrão”.",
     "options": "Opções",
     "noOptions": "Não há mais nada para ajustar: só o interruptor.",
-    "noSuchFeature": "Esta versão do TupAI não tem esse recurso.",
+    "noSuchFeature": "Esta versão do AiBuddy não tem esse recurso.",
     "none": "Ainda não há recursos aqui.",
     "part": "Opções, página {{part}} de {{parts}}",
     "previousPart": "Página anterior",
@@ -145,13 +145,13 @@
     "baseUrlHelp": "Deixe vazio para usar o endereço oficial da TypeSafe.",
     "customUrlHelp": "O endereço System One do serviço. A chave dele só é enviada para lá.",
     "baseUrlNeeded": "Um serviço personalizado precisa do endereço dele.",
-    "customTier": "Um juiz que você mesmo adicionou. Para mudá-lo, edite o arquivo de configurações do TupAI.",
+    "customTier": "Um juiz que você mesmo adicionou. Para mudá-lo, edite o arquivo de configurações do AiBuddy.",
     "endpointDefault": "Endereço padrão do serviço",
     "types": {
       "localHelp": "Roda neste computador.",
       "clmHelp": "Roda no seu próprio servidor CLM."
     },
-    "intro": "Enquanto trabalha, o TupAI faz muitas pequenas perguntas: como tratar esta mensagem, se este passo viola uma regra que você definiu. O juiz as responde. Escolha um.",
+    "intro": "Enquanto trabalha, o AiBuddy faz muitas pequenas perguntas: como tratar esta mensagem, se este passo viola uma regra que você definiu. O juiz as responde. Escolha um.",
     "choose": "Escolha um juiz",
     "custom": "No momento, o primeiro juiz é personalizado: veja e altere abaixo, em “Camadas de juízes”.",
     "keyPlaceholder": "Cole a chave",
@@ -175,7 +175,7 @@
     "localAddress": "Endereço: {{address}}",
     "laya": {
       "running": "Em execução nesta máquina",
-      "stopped": "Instalado, mas não está em execução. O TupAI o inicia quando precisar.",
+      "stopped": "Instalado, mas não está em execução. O AiBuddy o inicia quando precisar.",
       "missing": "Ainda não instalado.",
       "platform": "O Laya não roda neste computador: ele precisa de Windows ou Linux (x64 ou arm64), ou de um Mac com Apple Silicon.",
       "needsUv": "A instalação precisa do uv, um gerenciador de pacotes Python. Instale-o e depois volte aqui.",
@@ -184,7 +184,7 @@
       "start": "Iniciar",
       "stop": "Parar",
       "confirmTitle": "Baixar e instalar o Laya?",
-      "confirmText": "Isto baixa cerca de {{size}} MB do PyPI e do Hugging Face (pacotes Python e os pesos do modelo) para a pasta do TupAI e leva alguns minutos. O Laya inicia assim que estiver instalado.",
+      "confirmText": "Isto baixa cerca de {{size}} MB do PyPI e do Hugging Face (pacotes Python e os pesos do modelo) para a pasta do AiBuddy e leva alguns minutos. O Laya inicia assim que estiver instalado.",
       "confirmOk": "Baixar e instalar",
       "working": {
         "setup": "Instalando o Laya…",
@@ -197,11 +197,11 @@
         "stop": "Não foi possível parar o Laya."
       },
       "onnx": {
-        "missing": "O modelo do Laya ainda não está neste computador (cerca de {{size}} MB). O TupAI não o baixa por você: baixe os arquivos no Hugging Face, coloque-os na pasta do modelo e clique em “Verificar e iniciar”.",
-        "stopped": "O modelo está no lugar e o Laya não está em execução. Se o Laya for o seu juiz, o TupAI o inicia sozinho ao abrir o app.",
+        "missing": "O modelo do Laya ainda não está neste computador (cerca de {{size}} MB). O AiBuddy não o baixa por você: baixe os arquivos no Hugging Face, coloque-os na pasta do modelo e clique em “Verificar e iniciar”.",
+        "stopped": "O modelo está no lugar e o Laya não está em execução. Se o Laya for o seu juiz, o AiBuddy o inicia sozinho ao abrir o app.",
         "starting": "Verificando o modelo e iniciando o Laya… A primeira verificação lê o modelo inteiro e leva um momento.",
         "missingFiles": "Ainda faltam: {{files}}",
-        "wrongFiles": "Não é a versão testada com o TupAI, baixe de novo: {{files}}",
+        "wrongFiles": "Não é a versão testada com o AiBuddy, baixe de novo: {{files}}",
         "folder": "Pasta do modelo: {{folder}}",
         "command": "Com a linha de comando do Hugging Face (hf), este único comando baixa tudo:",
         "page": "Baixar no Hugging Face",
@@ -209,11 +209,11 @@
         "check": "Verificar e iniciar",
         "problem": {
           "missing": "Faltam alguns arquivos do modelo.",
-          "wrong": "Alguns arquivos do modelo não são a versão testada com o TupAI. Baixe-os de novo.",
+          "wrong": "Alguns arquivos do modelo não são a versão testada com o AiBuddy. Baixe-os de novo.",
           "runtime": "Este computador não conseguiu executar o modelo.",
           "port": "Outro programa já usa a porta do Laya ({{port}}).",
           "stopped": "O Laya parou antes de ficar pronto.",
-          "foreign": "Há um Laya em execução que o TupAI não iniciou. Pare-o onde ele foi iniciado."
+          "foreign": "Há um Laya em execução que o AiBuddy não iniciou. Pare-o onde ele foi iniciado."
         }
       }
     },
@@ -224,7 +224,7 @@
       "keyPlaceholder": "Só se o servidor pedir",
       "keyHelp": "Só um servidor iniciado com CLM_API_KEY pede chave: digite o mesmo valor. Depois de salva, ela nunca mais é exibida.",
       "check": "Verificar o servidor",
-      "unmeasured": "Ainda não foi medido quão bem o CLM toma as decisões do TupAI.",
+      "unmeasured": "Ainda não foi medido quão bem o CLM toma as decisões do AiBuddy.",
       "status": {
         "checking": "Consultando o servidor…",
         "ready": "Respondendo · {{models}} · {{ms}} ms",
@@ -269,21 +269,21 @@
   },
   "permissionsCard": {
     "kind": {
-      "edit": "O TupAI quer editar um arquivo",
-      "shell": "O TupAI quer executar um comando",
-      "run": "O TupAI quer executar um programa",
-      "outside": "O TupAI quer alterar um arquivo fora do projeto",
-      "delegate": "O TupAI quer iniciar subagentes",
-      "other": "O TupAI quer fazer uma ação externa"
+      "edit": "O AiBuddy quer editar um arquivo",
+      "shell": "O AiBuddy quer executar um comando",
+      "run": "O AiBuddy quer executar um programa",
+      "outside": "O AiBuddy quer alterar um arquivo fora do projeto",
+      "delegate": "O AiBuddy quer iniciar subagentes",
+      "other": "O AiBuddy quer fazer uma ação externa"
     },
     "reason": {
-      "ask": "Permissões mínimas: o TupAI pergunta a você antes de cada passo.",
+      "ask": "Permissões mínimas: o AiBuddy pergunta a você antes de cada passo.",
       "unsure": "O Jev não tem certeza de que este passo é o que você quer.",
       "beyond": "O Jev acha que isto vai além do que você pediu.",
       "unrelated": "O Jev acha que isto não faz parte da tarefa.",
-      "protected": "Isto mexe nas configurações do próprio TupAI; só você pode permitir.",
-      "nojudge": "Ainda não há nenhum juiz disponível, então o TupAI pergunta a você a cada passo.",
-      "judgedown": "O juiz não respondeu desta vez, então o TupAI pergunta a você."
+      "protected": "Isto mexe nas configurações do próprio AiBuddy; só você pode permitir.",
+      "nojudge": "Ainda não há nenhum juiz disponível, então o AiBuddy pergunta a você a cada passo.",
+      "judgedown": "O juiz não respondeu desta vez, então o AiBuddy pergunta a você."
     },
     "answer": {
       "once": "Permitir uma vez",
@@ -339,7 +339,7 @@
     "foreignHelp": "Esta entrada redireciona um provedor integrado ou usa um formato de API que esta tela não edita. Ela pode ser removida aqui, mas não editada: edite-a no models.json.",
     "modelCount": "{{count, number}} modelos",
     "usable": "Disponível",
-    "builtinHelp": "Na última conexão, o TupAI o informou como disponível, geralmente porque a chave de API dele está no ambiente. Não é possível removê-lo aqui: exclua essa chave do ambiente e ele some depois que o TupAI se conectar de novo.",
+    "builtinHelp": "Na última conexão, o AiBuddy o informou como disponível, geralmente porque a chave de API dele está no ambiente. Não é possível removê-lo aqui: exclua essa chave do ambiente e ele some depois que o AiBuddy se conectar de novo.",
     "noneYet": "Nenhum ainda",
     "unreadable": "Não foi possível ler o models.json, então os provedores não são exibidos nem salvos. Corrija-o manualmente e recarregue.",
     "commented": "O models.json contém comentários. Salvar por aqui os removeria, por isso os provedores estão somente leitura. Remova os comentários manualmente para editar aqui.",
@@ -378,7 +378,7 @@
     "instant": "Entrar e sair têm efeito imediato, sem precisar salvar.",
     "models": "Modelos que você pode usar",
     "byKey": "Disponível (chave de API)",
-    "byKeyHelp": "Nenhuma assinatura está conectada, mas o TupAI o informou como disponível na última conexão, geralmente porque a chave de API dele está no ambiente. Ao entrar, ele passa a usar a assinatura.",
+    "byKeyHelp": "Nenhuma assinatura está conectada, mas o AiBuddy o informou como disponível na última conexão, geralmente porque a chave de API dele está no ambiente. Ao entrar, ele passa a usar a assinatura.",
     "otherRunning": "O login em {{name}} está em andamento, e só um login é feito por vez.",
     "showRunning": "Mostrar"
   },
@@ -464,10 +464,10 @@
     "model": "Modelo",
     "notSet": "Não definido",
     "pickProvider": "Escolha um provedor primeiro",
-    "unset": "Nenhum ainda: o TupAI pergunta na primeira vez que o painel for ativado.",
+    "unset": "Nenhum ainda: o AiBuddy pergunta na primeira vez que o painel for ativado.",
     "session": "O modelo que a conversa estiver usando",
     "sessionHelp": "Quando a conversa troca de modelo, o painel acompanha.",
-    "update": "Esta versão do TupAI não permite escolher aqui qual modelo escreve o painel. Atualize o TupAI primeiro."
+    "update": "Esta versão do AiBuddy não permite escolher aqui qual modelo escreve o painel. Atualize o AiBuddy primeiro."
   },
   "levels": {
     "off": "Sem raciocínio",
@@ -493,7 +493,7 @@
     "start": "Começar",
     "model": {
       "title": "Conecte um modelo",
-      "subtitle": "O TupAI o usa para escrever código e responder a você. São três passos; você pode mudar tudo depois nas Configurações.",
+      "subtitle": "O AiBuddy o usa para escrever código e responder a você. São três passos; você pode mudar tudo depois nas Configurações.",
       "model": "Modelo",
       "baseUrl": "URL base",
       "key": "Chave de API",
@@ -530,7 +530,7 @@
     },
     "judge": {
       "title": "Escolha um juiz",
-      "subtitle": "O juiz responde às pequenas perguntas que o TupAI faz enquanto trabalha. O TupAI funciona sem juiz, só que sem essas verificações."
+      "subtitle": "O juiz responde às pequenas perguntas que o AiBuddy faz enquanto trabalha. O AiBuddy funciona sem juiz, só que sem essas verificações."
     },
     "done": {
       "title": "Tudo pronto",
@@ -543,8 +543,8 @@
       "modelValue": "{{provider}} / {{model}}"
     },
     "intro": {
-      "title": "Boas-vindas ao TupAI",
-      "lead": "O TupAI é um assistente de programação que faz o trabalho: ele lê seu projeto, edita código, executa comandos e testes e continua até terminar a tarefa.",
+      "title": "Boas-vindas ao AiBuddy",
+      "lead": "O AiBuddy é um assistente de programação que faz o trabalho: ele lê seu projeto, edita código, executa comandos e testes e continua até terminar a tarefa.",
       "points": {
         "judge": {
           "title": "Uma verificação a cada passo",
@@ -602,7 +602,7 @@
       "waitingDevice": "A página de verificação de {{name}} está aberta no seu navegador. Confira se o código de lá é igual a este (digite-o se não estiver preenchido), aprove, e esta tela continua sozinha.",
       "risk": {
         "title": "Conheça o risco antes de entrar",
-        "text": "Este login usa o acesso que o Google criou para o próprio {{tool}}, e não um que o Google oferece para o TupAI. O Google pode considerar isso contrário aos termos de uso e limitar ou suspender a conta.",
+        "text": "Este login usa o acesso que o Google criou para o próprio {{tool}}, e não um que o Google oferece para o AiBuddy. O Google pode considerar isso contrário aos termos de uso e limitar ou suspender a conta.",
         "instead": "Use uma conta cujo acesso você possa perder sem problemas. Os caminhos oficiais são uma chave de API do Gemini ou o Vertex AI com login pelo gcloud.",
         "continue": "Entendo o risco, entrar",
         "cancel": "Não entrar"
@@ -611,24 +611,24 @@
     }
   },
   "turnErrors": {
-    "processExited": "O TupAI parou no meio do turno. Envie a mensagem de novo para reiniciá-lo.",
+    "processExited": "O AiBuddy parou no meio do turno. Envie a mensagem de novo para reiniciá-lo.",
     "busyConfig": "Aguarde o turno atual terminar antes de trocar o modelo ou o nível de raciocínio.",
-    "unsupportedValue": "O TupAI não oferece este modelo, nível de raciocínio ou modo de permissão.",
-    "permissionsNotSwitched": "O TupAI não trocou o modo de permissão. Tente de novo ou digite /permissions na conversa.",
+    "unsupportedValue": "O AiBuddy não oferece este modelo, nível de raciocínio ou modo de permissão.",
+    "permissionsNotSwitched": "O AiBuddy não trocou o modo de permissão. Tente de novo ou digite /permissions na conversa.",
     "imageUnsupported": "Só é possível enviar imagens PNG, JPEG, WebP ou GIF de até 12 MB.",
-    "contentUnsupported": "O TupAI aceita apenas texto, imagens e arquivos de texto.",
+    "contentUnsupported": "O AiBuddy aceita apenas texto, imagens e arquivos de texto.",
     "wrongProject": "Esta conversa pertence a outra pasta de projeto.",
-    "notPersisted": "O TupAI não conseguiu salvar esta conversa.",
-    "startFailed": "O TupAI não conseguiu iniciar.",
-    "timeout": "O TupAI não respondeu a tempo.",
-    "processClosed": "O TupAI parou. Envie a mensagem de novo para reiniciá-lo.",
+    "notPersisted": "O AiBuddy não conseguiu salvar esta conversa.",
+    "startFailed": "O AiBuddy não conseguiu iniciar.",
+    "timeout": "O AiBuddy não respondeu a tempo.",
+    "processClosed": "O AiBuddy parou. Envie a mensagem de novo para reiniciá-lo.",
     "modelFailed": "A solicitação ao modelo falhou.",
-    "turnRunning": "O TupAI ainda está trabalhando na mensagem anterior. Aguarde ou interrompa primeiro.",
-    "noModel": "O TupAI não tem nenhum modelo para responder."
+    "turnRunning": "O AiBuddy ainda está trabalhando na mensagem anterior. Aguarde ou interrompa primeiro.",
+    "noModel": "O AiBuddy não tem nenhum modelo para responder."
   },
   "noModel": {
     "title": "Nenhum modelo para responder",
-    "body": "O TupAI precisa de um modelo que possa usar. Entre ou adicione uma chave em {{place}} e envie sua mensagem de novo.",
+    "body": "O AiBuddy precisa de um modelo que possa usar. Entre ou adicione uma chave em {{place}} e envie sua mensagem de novo.",
     "open": "Abrir {{page}}",
     "chip": "Escolher um modelo"
   },
@@ -639,14 +639,14 @@
       "xcodeLicense": "Os pontos de controle estão desativados nesta conversa: o Git não pode ser executado neste Mac até que a licença do Xcode seja aceita. Aceite-a com sudo xcodebuild -license no Terminal e comece uma nova conversa para tê-los.",
       "developerToolsMissing": "Os pontos de controle estão desativados nesta conversa: este Mac não tem as ferramentas de desenvolvedor de linha de comando de que o Git precisa. Instale-as com xcode-select --install no Terminal e comece uma nova conversa para tê-los.",
       "homeFolder": "Os pontos de controle estão desativados nesta conversa: a pasta dela é a sua pasta pessoal ou a contém. Comece uma conversa em uma pasta de projeto para tê-los.",
-      "muFolder": "Os pontos de controle estão desativados nesta conversa: a pasta dela fica dentro da pasta do próprio TupAI. Comece uma conversa em uma pasta de projeto para tê-los.",
+      "muFolder": "Os pontos de controle estão desativados nesta conversa: a pasta dela fica dentro da pasta do próprio AiBuddy. Comece uma conversa em uma pasta de projeto para tê-los.",
       "tooManyFiles": "Os pontos de controle estão desativados nesta conversa: a pasta dela tem mais de {{limit}} arquivos. Comece uma conversa em uma pasta de projeto para tê-los.",
       "tooManyBytes": "Os pontos de controle estão desativados nesta conversa: a pasta dela tem mais de {{limitMb}} MB de arquivos. Comece uma conversa em uma pasta de projeto para tê-los.",
       "tooSlow": "Os pontos de controle estão desativados nesta conversa: listar os arquivos da pasta dela levou mais de {{seconds}} segundos. Comece uma conversa em uma pasta de projeto para tê-los."
     },
     "stopped": "Você interrompeu esta resposta.",
-    "answerLost": "O TupAI não recebeu sua resposta e continuou como se você tivesse recusado.",
-    "bashMissing": "O TupAI precisa do Git for Windows para executar comandos. Depois de instalá-lo, envie sua mensagem de novo. Baixe aqui:"
+    "answerLost": "O AiBuddy não recebeu sua resposta e continuou como se você tivesse recusado.",
+    "bashMissing": "O AiBuddy precisa do Git for Windows para executar comandos. Depois de instalá-lo, envie sua mensagem de novo. Baixe aqui:"
   },
   "errors": {
     "credential": "A chave contém caracteres que uma chave não pode ter, como espaços, aspas ou quebras de linha. Cole-a novamente.",
@@ -664,23 +664,23 @@
     },
     "invalidJson": "{{file}} não é um JSON válido. Corrija-o manualmente e depois recarregue.",
     "unreadable": "Não foi possível ler {{file}}.",
-    "runtimeOffline": "O ambiente de execução do TupAI não está online. Verifique o inicializador local e o login.",
-    "otherRegistration": "Outro comando TupAI já está registrado no aplicativo.",
+    "runtimeOffline": "O ambiente de execução do AiBuddy não está online. Verifique o inicializador local e o login.",
+    "otherRegistration": "Outro comando AiBuddy já está registrado no aplicativo.",
     "backend": "O serviço local não respondeu como esperado (HTTP {{status}}).",
     "invalid": "Um dos valores não é válido.",
-    "unknown": "Algo deu errado no TupAI.",
+    "unknown": "Algo deu errado no AiBuddy.",
     "unwritable": "Não foi possível gravar {{file}}.",
     "contextLimit": "O limite de contexto deve ser 0 ou um número inteiro de {{min}} a {{max}}.",
-    "importMissing": "Esta versão do TupAI ainda não importa conversas. Atualize o TupAI primeiro.",
-    "importFailed": "O TupAI não conseguiu importar as conversas."
+    "importMissing": "Esta versão do AiBuddy ainda não importa conversas. Atualize o AiBuddy primeiro.",
+    "importFailed": "O AiBuddy não conseguiu importar as conversas."
   },
   "importChats": {
     "title": "Importar conversas",
-    "description": "Traga para o TupAI as conversas que você teve no Claude Code ou no Codex neste computador e continue-as aqui.",
+    "description": "Traga para o AiBuddy as conversas que você teve no Claude Code ou no Codex neste computador e continue-as aqui.",
     "open": "Escolher…",
     "dialog": {
       "title": "Importar conversas",
-      "hint": "Cada conversa escolhida vira uma conversa do TupAI na pasta do projeto dela. O TupAI lê tudo o que foi dito; o raciocínio e as imagens ficam de fora.",
+      "hint": "Cada conversa escolhida vira uma conversa do AiBuddy na pasta do projeto dela. O AiBuddy lê tudo o que foi dito; o raciocínio e as imagens ficam de fora.",
       "search": "Buscar por palavras ou pasta",
       "loading": "Procurando conversas…",
       "empty": "Nenhuma conversa do Claude Code ou do Codex foi encontrada neste computador.",
@@ -711,7 +711,7 @@
     "notice": {
       "title": "Importada do {{tool}}",
       "counts": "Suas mensagens: {{user}} · respostas: {{assistant}} · chamadas de ferramentas: {{toolCalls}}",
-      "goOn": "É só continuar aqui embaixo: o TupAI leu a conversa. O raciocínio e as imagens não vieram junto.",
+      "goOn": "É só continuar aqui embaixo: o AiBuddy leu a conversa. O raciocínio e as imagens não vieram junto.",
       "read": "Ler a conversa anterior"
     },
     "history": {
@@ -732,7 +732,7 @@
     "lessons": "As lições deste projeto: /lessons lista id · tipo · recuperada/seguida · lição, /lessons all inclui as que valem em todo lugar e as aposentadas",
     "forget": "Aposentar uma lição para que não seja mais recuperada: /forget <início do id> (os ids estão em /lessons)",
     "capabilities": "Quais capacidades estão instaladas e quais estão ativas: /capabilities, /capabilities open <id>",
-    "permissions": "Quanto o TupAI pode fazer sem perguntar: /permissions full (Acesso total) | jev (O Jev aprova) | ask (Permissões mínimas), ou um seletor sem argumentos. /permissions reset esquece o que você permitiu nesta conversa",
+    "permissions": "Quanto o AiBuddy pode fazer sem perguntar: /permissions full (Acesso total) | jev (O Jev aprova) | ask (Permissões mínimas), ou um seletor sem argumentos. /permissions reset esquece o que você permitiu nesta conversa",
     "lsp": "Servidores de linguagem: quais estão instalados, quais estão rodando e o último erro",
     "goal": "Modo objetivo: o agente continua trabalhando até uma condição ser atendida. /goal <condição>, /goal (mostrar ou pedir um), /goal clear",
     "board": "O painel em linguagem simples: /board (mostrar), /board on, /board off (para este projeto), /board model (quem escreve)",
@@ -742,17 +742,17 @@
     "agents": "Os papéis de subagente que a ferramenta delegate pode usar e onde adicionar os seus",
     "hive": "Colocar vários investigadores numa mesma pergunta ao mesmo tempo: /hive <pergunta>. Sem pergunta, igual a /swarm",
     "browse": "Fazer o navegador integrado abrir um endereço e fazer o que você disser: /browse <url> [objetivo]",
-    "inherit": "O que o TupAI herdou do Claude Code, do Cursor e do Codex, e de onde",
+    "inherit": "O que o AiBuddy herdou do Claude Code, do Cursor e do Codex, e de onde",
     "mcp": "Servidores MCP: /mcp, /mcp open <id>, /mcp restart <id>",
     "jobs": "Tarefas em segundo plano: /jobs, /jobs stop <id|all>",
     "commit": "Dividir a alteração não commitada em commits: mostra o plano, só faz commit quando você concorda e nunca faz push",
     "review": "Revisar a alteração não commitada, ou o que você indicar, com o subagente revisor; achados ordenados de P0 a P3",
-    "mu": "Status do TupAI. Também: /TupAI judge <camadas> | /TupAI route <ponto de decisão> <camadas|default> | /TupAI mode <ponto de decisão|default> <off|shadow|active>",
+    "mu": "Status do AiBuddy. Também: /AiBuddy judge <camadas> | /AiBuddy route <ponto de decisão> <camadas|default> | /AiBuddy mode <ponto de decisão|default> <off|shadow|active>",
     "status": "Modelo, juiz, modos dos pontos de decisão, contexto economizado e os últimos vereditos",
-    "help": "O que o TupAI sabe fazer e todos os comandos que vale conhecer",
+    "help": "O que o AiBuddy sabe fazer e todos os comandos que vale conhecer",
     "ledger": "Os últimos vereditos do juiz com o tempo de cada um: /ledger [n]",
     "doctor": "Verificar se o juiz, o modelo, o navegador e os subagentes estão bem conectados",
-    "import-chat": "Trazer para o TupAI uma conversa do Claude Code ou do Codex deste projeto e continuá-la: /import-chat [arquivo]",
+    "import-chat": "Trazer para o AiBuddy uma conversa do Claude Code ou do Codex deste projeto e continuá-la: /import-chat [arquivo]",
     "llama": "Gerenciar os modelos do roteador llama.cpp"
   }
 }

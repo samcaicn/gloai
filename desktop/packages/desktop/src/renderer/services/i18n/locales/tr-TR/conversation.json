@@ -12,7 +12,7 @@
     "clearWorkspace": "Projeyi kaldır",
     "openFolder": "Klasör Aç",
     "none": "Hiçbiri",
-    "quickActionsTitle": "TupAI neler yapabilir?"
+    "quickActionsTitle": "AiBuddy neler yapabilir?"
   },
   "history": {
     "recents": "Son",
@@ -190,7 +190,7 @@
       },
       "USER_AGENT_HANDSHAKE_TIMEOUT": {
         "title": "Ajan el sıkışması zaman aşımına uğradı",
-        "body": "Seçili ajan başlangıç el sıkışmasını zamanında tamamlamadı. Hâlâ başlıyor TupAI veya engellenmiş mi kontrol edip yeniden deneyin."
+        "body": "Seçili ajan başlangıç el sıkışmasını zamanında tamamlamadı. Hâlâ başlıyor AiBuddy veya engellenmiş mi kontrol edip yeniden deneyin."
       },
       "USER_AGENT_ACP_INIT_FAILED": {
         "title": "Ajan protokolü başlatılamadı",
@@ -303,7 +303,7 @@
       },
       "MCP_HTTP_RESPONSE_READ_FAILED": {
         "title": "Takım yardımcı işleminin yanıtı okunamadı",
-        "body": "TupAI, yerel takım yardımcı işleminin yanıtını okuyamadı. Bir kez yeniden deneyin; sorun sürerse uygulamayı yeniden başlatın."
+        "body": "AiBuddy, yerel takım yardımcı işleminin yanıtını okuyamadı. Bir kez yeniden deneyin; sorun sürerse uygulamayı yeniden başlatın."
       },
       "MCP_TOOL_REMOTE_ERROR": {
         "title": "Yerel takım yardımcı işlemi isteği reddetti",
@@ -311,11 +311,11 @@
       },
       "MCP_TOOL_RESPONSE_UNEXPECTED": {
         "title": "Takım yardımcı işlemi beklenmeyen bir yanıt döndürdü",
-        "body": "TupAI, yerel takım yardımcı işleminden beklenmeyen bir yanıt aldı. Bir kez yeniden deneyin; sorun sürerse bildirin."
+        "body": "AiBuddy, yerel takım yardımcı işleminden beklenmeyen bir yanıt aldı. Bir kez yeniden deneyin; sorun sürerse bildirin."
       },
       "MCP_TCP_READ_FAILED": {
         "title": "Yerel takım yardımcı işleminden okunamadı",
-        "body": "TupAI, yerel takım yardımcı işleminin TCP yanıtını okuyamadı. Bir kez yeniden deneyin; hata sürerse uygulamayı yeniden başlatın."
+        "body": "AiBuddy, yerel takım yardımcı işleminin TCP yanıtını okuyamadı. Bir kez yeniden deneyin; hata sürerse uygulamayı yeniden başlatın."
       },
       "TEAM_SERVICE_UNAVAILABLE": {
         "title": "Takım hizmeti henüz hazır değil",
@@ -629,13 +629,13 @@
         "body": "{{count}} adım başarısız oldu ve etkili OLMADI. agy bu turları yine de başarılı olarak bitirir; bu yüzden yanıta değil gerçek sonuca bakın."
       },
       "CLI_VERSION_OLDER": {
-        "body": "Kurulu {{cli}} sürümü TupAI tarafından doğrulanan sürümden eski; bazı özellikler eksik olabilir. {{cli}} sürümünü yükseltmeyi düşünün. (kurulu: {{reported}} / TupAI tarafından doğrulanan: {{verified}})"
+        "body": "Kurulu {{cli}} sürümü AiBuddy tarafından doğrulanan sürümden eski; bazı özellikler eksik olabilir. {{cli}} sürümünü yükseltmeyi düşünün. (kurulu: {{reported}} / AiBuddy tarafından doğrulanan: {{verified}})"
       },
       "CLI_VERSION_NEWER": {
-        "body": "Kurulu {{cli}} sürümü TupAI tarafından doğrulanan sürümden yeni. Genelde çalışır; tuhaf bir davranış görürseniz bildirin. (kurulu: {{reported}} / TupAI tarafından doğrulanan: {{verified}})"
+        "body": "Kurulu {{cli}} sürümü AiBuddy tarafından doğrulanan sürümden yeni. Genelde çalışır; tuhaf bir davranış görürseniz bildirin. (kurulu: {{reported}} / AiBuddy tarafından doğrulanan: {{verified}})"
       },
       "CODEX_RETRYING": {
-        "body": "{{detail}} ({{attempts}}. deneme, {{elapsed}} geçti — aracının sağlayıcısı bağlantıyı sürekli kesiyor; TupAI bekliyor.)"
+        "body": "{{detail}} ({{attempts}}. deneme, {{elapsed}} geçti — aracının sağlayıcısı bağlantıyı sürekli kesiyor; AiBuddy bekliyor.)"
       }
     }
   },
@@ -715,7 +715,7 @@
         "conflicted": "!",
         "unknown": "?"
       },
-      "conflictedHint": "Bu çakışmayı önce TupAI dışında çözün",
+      "conflictedHint": "Bu çakışmayı önce AiBuddy dışında çözün",
       "opaqueHint": "Bu durum daha yeni bir arka uçtan geliyor — salt okunur gösteriliyor",
       "degraded": "git dizini güncellenemediği için yenileme daha yavaş bir modda çalışıyor",
       "truncated": "Listelenecek çok fazla değişiklik var — yalnızca ilk kısım gösteriliyor",
@@ -734,7 +734,7 @@
         "discard": "Değişiklikleri sil",
         "stageAll": "Tümünü hazırla",
         "unstageAll": "Tümünün hazırlamasını geri al",
-        "blockedHint": "Hazırlamadan veya silmeden önce çakışmayı TupAI dışında çözün",
+        "blockedHint": "Hazırlamadan veya silmeden önce çakışmayı AiBuddy dışında çözün",
         "confirmDiscardTitle": "Değişiklikler silinsin mi?",
         "confirmDiscardTracked": "{{count}} dosyadaki düzenlemeler kaybolacak. Bu geri alınamaz.",
         "confirmDiscardUntracked": "{{count}} yeni dosya çöp kutusuna taşınacak.",

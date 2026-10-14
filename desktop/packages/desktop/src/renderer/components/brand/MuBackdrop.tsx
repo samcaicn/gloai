@@ -8,7 +8,7 @@ export type MuBackdropProps = {
 };
 
 const MuBackdrop: React.FC<MuBackdropProps> = ({ leaving = false, className }) => {
-  const id = `tupai-backdrop-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const id = `aibuddy-backdrop-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   return (
     <span className={classNames(styles.backdrop, leaving && styles.backdropLeaving, className)}
       data-testid='mu-backdrop' data-state={leaving ? 'leaving' : 'shown'} aria-hidden='true'>
@@ -20,8 +20,8 @@ const MuBackdrop: React.FC<MuBackdropProps> = ({ leaving = false, className }) =
           </linearGradient>
         </defs>
         <text x='50' y='56' dominantBaseline='central' textAnchor='middle'
-          fontFamily='Arial, Helvetica, sans-serif' fontWeight='800' fontSize='62'
-          fill={`url(#${id}-fill)`}>TupAI</text>
+          fontFamily='Arial, Helvetica, sans-serif' fontWeight='800' fontSize='43'
+          fill={`url(#${id}-fill)`}>AiBuddy</text>
       </svg>
     </span>
   );

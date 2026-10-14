@@ -20,11 +20,11 @@
   },
   "readyTitle": "Yeni sürüm {{version}} hazır",
   "restartToUpdate": "Yeniden başlat ve güncelle",
-  "lastInstallFailed": "Son güncelleme yüklenmedi: TupAI kapatılamadı.",
+  "lastInstallFailed": "Son güncelleme yüklenmedi: AiBuddy kapatılamadı.",
   "availableVersion": "Yeni sürüm {{version}} indirilebilir",
   "installerReason": {
-    "linux": "Linux'ta TupAI güncellemeleri kendisi yükleyemez: yükleyiciyi indirip açın.",
-    "unpackaged": "Bu TupAI kopyası güncellemeleri kendisi yükleyemez: yükleyiciyi indirip açın.",
+    "linux": "Linux'ta AiBuddy güncellemeleri kendisi yükleyemez: yükleyiciyi indirip açın.",
+    "unpackaged": "Bu AiBuddy kopyası güncellemeleri kendisi yükleyemez: yükleyiciyi indirip açın.",
     "autoUpdateFailed": "Yükleyiciyi indirip onunla güncelleyebilirsiniz."
   },
   "downloadInstaller": "Yükleyiciyi indir",

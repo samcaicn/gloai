@@ -20,11 +20,11 @@
   },
   "readyTitle": "新版本 {{version}} 已就緒",
   "restartToUpdate": "重新啟動並更新",
-  "lastInstallFailed": "上次的更新沒有裝上：安裝時 TupAI 沒能關閉。",
+  "lastInstallFailed": "上次的更新沒有裝上：安裝時 AiBuddy 沒能關閉。",
   "availableVersion": "新版本 {{version}} 可以下載",
   "installerReason": {
-    "linux": "在 Linux 上，TupAI 無法自行安裝更新：下載安裝檔，開啟它來安裝。",
-    "unpackaged": "這個 TupAI 無法自行安裝更新：下載安裝檔，開啟它來安裝。",
+    "linux": "在 Linux 上，AiBuddy 無法自行安裝更新：下載安裝檔，開啟它來安裝。",
+    "unpackaged": "這個 AiBuddy 無法自行安裝更新：下載安裝檔，開啟它來安裝。",
     "autoUpdateFailed": "可以下載安裝檔來更新。"
   },
   "downloadInstaller": "下載安裝檔",

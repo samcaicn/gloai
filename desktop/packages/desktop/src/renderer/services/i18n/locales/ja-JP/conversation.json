@@ -12,7 +12,7 @@
     "clearWorkspace": "プロジェクトを解除",
     "openFolder": "フォルダーを開く",
     "none": "なし",
-    "quickActionsTitle": "TupAI で何ができる？"
+    "quickActionsTitle": "AiBuddy で何ができる？"
   },
   "history": {
     "recents": "最近",
@@ -321,7 +321,7 @@
       },
       "MCP_HTTP_RESPONSE_READ_FAILED": {
         "title": "チーム補助プロセスの応答を読み取れませんでした",
-        "body": "TupAI はローカルのチーム補助プロセスの応答を読み取れませんでした。一度再試行し、繰り返し発生する場合はアプリを再起動してください。"
+        "body": "AiBuddy はローカルのチーム補助プロセスの応答を読み取れませんでした。一度再試行し、繰り返し発生する場合はアプリを再起動してください。"
       },
       "MCP_TOOL_REMOTE_ERROR": {
         "title": "ローカルのチーム補助プロセスがリクエストを拒否しました",
@@ -329,11 +329,11 @@
       },
       "MCP_TOOL_RESPONSE_UNEXPECTED": {
         "title": "チーム補助プロセスが予期しない応答を返しました",
-        "body": "TupAI はローカルのチーム補助プロセスから予期しない応答を受け取りました。一度再試行し、問題が続く場合は報告してください。"
+        "body": "AiBuddy はローカルのチーム補助プロセスから予期しない応答を受け取りました。一度再試行し、問題が続く場合は報告してください。"
       },
       "MCP_TCP_READ_FAILED": {
         "title": "ローカルのチーム補助プロセスから読み取れませんでした",
-        "body": "TupAI はローカルのチーム補助プロセスの TCP 応答を読み取れませんでした。一度再試行し、失敗が続く場合はアプリを再起動してください。"
+        "body": "AiBuddy はローカルのチーム補助プロセスの TCP 応答を読み取れませんでした。一度再試行し、失敗が続く場合はアプリを再起動してください。"
       },
       "TEAM_SERVICE_UNAVAILABLE": {
         "title": "チームサービスはまだ準備できていません",
@@ -627,13 +627,13 @@
         "body": "このターンで {{count}} 件のステップが失敗し、実行されませんでした。agy はこうしたターンも成功として終了するため、返答ではなく実際の結果を確認してください。"
       },
       "CLI_VERSION_OLDER": {
-        "body": "インストール済みの {{cli}} は、TupAI が検証したバージョンより古いため、一部の機能が使えない可能性があります。{{cli}} の更新を検討してください。 （インストール済み {{reported}} / TupAI 検証済み {{verified}}）"
+        "body": "インストール済みの {{cli}} は、AiBuddy が検証したバージョンより古いため、一部の機能が使えない可能性があります。{{cli}} の更新を検討してください。 （インストール済み {{reported}} / AiBuddy 検証済み {{verified}}）"
       },
       "CLI_VERSION_NEWER": {
-        "body": "インストール済みの {{cli}} は、TupAI が検証したバージョンより新しいです。通常は動作しますが、不審な挙動があればご報告ください。 （インストール済み {{reported}} / TupAI 検証済み {{verified}}）"
+        "body": "インストール済みの {{cli}} は、AiBuddy が検証したバージョンより新しいです。通常は動作しますが、不審な挙動があればご報告ください。 （インストール済み {{reported}} / AiBuddy 検証済み {{verified}}）"
       },
       "CODEX_RETRYING": {
-        "body": "{{detail}}（累計 {{attempts}} 回目の再試行、経過 {{elapsed}} — エージェントの提供元が接続を切断し続けており、TupAI は再接続を待っています。）"
+        "body": "{{detail}}（累計 {{attempts}} 回目の再試行、経過 {{elapsed}} — エージェントの提供元が接続を切断し続けており、AiBuddy は再接続を待っています。）"
       }
     }
   },
@@ -713,7 +713,7 @@
         "conflicted": "!",
         "unknown": "?"
       },
-      "conflictedHint": "この競合は TupAI の外で解決してください",
+      "conflictedHint": "この競合は AiBuddy の外で解決してください",
       "opaqueHint": "この状態は新しいバックエンドのものです — 読み取り専用で表示",
       "degraded": "git のインデックスを更新できないため、低速モードで更新しています",
       "truncated": "変更が多すぎるため、先頭部分のみ表示しています",
@@ -732,7 +732,7 @@
         "discard": "変更を破棄",
         "stageAll": "すべてステージ",
         "unstageAll": "すべてステージ解除",
-        "blockedHint": "ステージや破棄の前に、TupAI の外で競合を解決してください",
+        "blockedHint": "ステージや破棄の前に、AiBuddy の外で競合を解決してください",
         "confirmDiscardTitle": "変更を破棄しますか？",
         "confirmDiscardTracked": "{{count}} 個のファイルの編集は失われ、元に戻せません。",
         "confirmDiscardUntracked": "{{count}} 個の新規ファイルがゴミ箱に移動されます。",

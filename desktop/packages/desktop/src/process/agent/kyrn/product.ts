@@ -24,10 +24,10 @@ type AgentRow = {
 };
 export type BackendRequest = <T>(method: string, path: string, body?: unknown) => Promise<T>;
 
-export const AGENT_NAME = 'TupAI';
+export const AGENT_NAME = 'AiBuddy';
 /** What the registration was called before the rename. Found under these names too, and then renamed. */
 const FORMER_NAMES = ['KYRN'];
-export const AGENT_DESCRIPTION = 'TupAI harness · local Codex login · Jev judgment';
+export const AGENT_DESCRIPTION = 'AiBuddy harness · local Codex login · Jev judgment';
 /**
  * The descriptions mu has written, compared case-insensitively: a record written before the judge's name took
  * its present capitalization is still ours to update.
@@ -53,7 +53,7 @@ export function findRegistration(agents: AgentRow[], command: string): AgentRow 
   const ours = agents.find((row) => row.command === command);
   if (ours) return ours;
   const namesake = agents.find((row) => [AGENT_NAME, ...FORMER_NAMES].includes(row.name));
-  if (namesake) throw new KyrnError('otherRegistration', 'A different TupAI command is already registered');
+  if (namesake) throw new KyrnError('otherRegistration', 'A different AiBuddy command is already registered');
   return undefined;
 }
 
@@ -141,7 +141,7 @@ export async function initializeKyrn(request: BackendRequest, command: string): 
   );
   const checked = await request<AgentRow>('POST', `/api/agents/${encodeURIComponent(agent.id)}/health-check`, {});
   if (checked.status !== 'online')
-    throw new KyrnError('runtimeOffline', 'TupAI runtime is not online. Check the local launcher and login.');
+    throw new KyrnError('runtimeOffline', 'AiBuddy runtime is not online. Check the local launcher and login.');
   const ready = await request<Assistant[]>('GET', '/api/assistants');
   return { agentId: agent.id, assistants: ready.filter((row) => row.agent_id === agent.id && row.enabled) };
 }

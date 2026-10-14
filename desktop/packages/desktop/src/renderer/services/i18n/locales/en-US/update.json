@@ -20,11 +20,11 @@
   },
   "readyTitle": "New version {{version}} is ready",
   "restartToUpdate": "Restart to update",
-  "lastInstallFailed": "The last update was not installed: TupAI could not be closed.",
+  "lastInstallFailed": "The last update was not installed: AiBuddy could not be closed.",
   "availableVersion": "New version {{version}} is available",
   "installerReason": {
-    "linux": "On Linux, TupAI cannot install updates by itself: download the installer and open it.",
-    "unpackaged": "This copy of TupAI cannot install updates by itself: download the installer and open it.",
+    "linux": "On Linux, AiBuddy cannot install updates by itself: download the installer and open it.",
+    "unpackaged": "This copy of AiBuddy cannot install updates by itself: download the installer and open it.",
     "autoUpdateFailed": "You can download the installer and update with it."
   },
   "downloadInstaller": "Download installer",

@@ -148,7 +148,7 @@ function get(url: URL, signal: AbortSignal, pinned: Pinned, maxBodyBytes: number
         headers: {
           accept: 'application/json',
           'accept-encoding': 'identity',
-          'user-agent': 'tupai-market/0.1',
+          'user-agent': 'aibuddy-market/0.1',
         },
         timeout: CONNECT_TIMEOUT_MS,
       },

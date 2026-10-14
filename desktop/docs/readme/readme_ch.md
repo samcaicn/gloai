@@ -567,7 +567,7 @@ AionUi 是一个**免费开源的 Multi-AI Agent 桌面应用**。相比只能�
 
 <details>
 <summary><strong>问：它是免费的吗？</strong></summary>
-答：TupAI 完全免费。你只需为所选服务商的 API 用量付费，可以使用任何你喜欢的服务商的 API 密钥。
+答：AiBuddy 完全免费。你只需为所选服务商的 API 用量付费，可以使用任何你喜欢的服务商的 API 密钥。
 </details>
 
 <details>
@@ -737,7 +737,7 @@ AionUi 本地开发涉及两个仓库：AionUi 负责 Electron 前端，AionCore
   <a href="https://atomgit.com/iOfficeAI/AionUi" target="_blank">AtomGit</a>
 </td>
 <td>
-  <a href="https://atomgit.com/iOfficeAI/AionUi" target="_blank">AtomGit</a> — 面向全球开发者的社区与代码托管平台。TupAI 已在 AtomGit 上线，欢迎访问。
+  <a href="https://atomgit.com/iOfficeAI/AionUi" target="_blank">AtomGit</a> — 面向全球开发者的社区与代码托管平台。AiBuddy 已在 AtomGit 上线，欢迎访问。
 </td>
 </tr>
 </table>

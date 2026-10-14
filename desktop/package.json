@@ -1,11 +1,11 @@
 {
   "name": "mu-desktop",
   "version": "0.1.4",
-  "description": "TupAI, the coding agent with Jev judgment, as a desktop app.",
+  "description": "AiBuddy, the coding agent with Jev judgment, as a desktop app.",
   "keywords": [],
   "license": "Apache-2.0",
   "author": {
-    "name": "TupAI"
+    "name": "AiBuddy"
   },
   "workspaces": [
     "packages/*"
@@ -264,5 +264,5 @@
   "patchedDependencies": {
     "7zip-bin@5.2.0": "patches/7zip-bin@5.2.0.patch"
   },
-  "productName": "TupAI"
+  "productName": "AiBuddy"
 }

@@ -85,7 +85,7 @@
       "outsideSandbox": "Este arquivo está fora da sandbox atual do projeto."
     },
     "serverInstall": {
-      "hint": "O TupAI está sendo executado em um servidor. O componente de pré-visualização precisa ser instalado nesse servidor. Execute o comando abaixo no servidor e tente novamente:",
+      "hint": "O AiBuddy está sendo executado em um servidor. O componente de pré-visualização precisa ser instalado nesse servidor. Execute o comando abaixo no servidor e tente novamente:",
       "icuNote": "Se ainda não iniciar, instale a biblioteca ICU no servidor (Debian/Ubuntu: apt-get install -y libicu-dev)."
     }
   },
@@ -189,28 +189,28 @@
     "elapsed": "Tempo decorrido",
     "steps": "Etapas {{total}}",
     "noSteps": "Nada foi feito ainda",
-    "reason": "Segundo o TupAI",
+    "reason": "Segundo o AiBuddy",
     "goal": "Objetivo",
     "pause": "Pausar",
     "resume": "Retomar",
     "stop": "Parar",
     "takeover": "Assumir o controle",
-    "takeoverTip": "Pausa a execução e passa o teclado para você. Ao terminar, clique em “Retomar”: o TupAI observa a página de novo antes de decidir.",
+    "takeoverTip": "Pausa a execução e passa o teclado para você. Ao terminar, clique em “Retomar”: o AiBuddy observa a página de novo antes de decidir.",
     "pausedShort": "Pausado",
     "stopping": "Parando…",
     "paused": {
-      "user": "Pausado. Ao retomar, o TupAI observa a página de novo antes de decidir.",
-      "takeover": "Você assumiu o controle: use a página você mesmo. Clique em “Retomar” ao terminar, e o TupAI observa a página de novo.",
-      "interaction": "Você mexeu na página, então o TupAI se pausou sozinho para não clicar ao mesmo tempo. Ao retomar, ele observa a página de novo."
+      "user": "Pausado. Ao retomar, o AiBuddy observa a página de novo antes de decidir.",
+      "takeover": "Você assumiu o controle: use a página você mesmo. Clique em “Retomar” ao terminar, e o AiBuddy observa a página de novo.",
+      "interaction": "Você mexeu na página, então o AiBuddy se pausou sozinho para não clicar ao mesmo tempo. Ao retomar, ele observa a página de novo."
     },
     "statusHint": {
-      "blocked": "O TupAI não encontrou na página nada que aproximasse do objetivo e parou.",
-      "needs_confirmation": "A ação parecia irreversível e não foi permitida, então o TupAI não a executou.",
+      "blocked": "O AiBuddy não encontrou na página nada que aproximasse do objetivo e parou.",
+      "needs_confirmation": "A ação parecia irreversível e não foi permitida, então o AiBuddy não a executou.",
       "budget": "A execução esgotou seu limite de etapas.",
       "stopped": "Você parou esta execução.",
       "failed": "Algo deu errado durante a navegação; a execução não foi concluída."
     },
-    "detachedHint": "O TupAI perdeu a conexão com esta página; esta execução não pode continuar.",
+    "detachedHint": "O AiBuddy perdeu a conexão com esta página; esta execução não pode continuar.",
     "verb": {
       "click": "Clicar em",
       "fill": "Digitar em",
@@ -238,7 +238,7 @@
       "popup": "Pop-up bloqueado: {{detail}}"
     },
     "confirm": {
-      "title": "O TupAI quer fazer algo que talvez não possa ser desfeito",
+      "title": "O AiBuddy quer fazer algo que talvez não possa ser desfeito",
       "action": "Ação",
       "page": "Página",
       "allow": "Permitir",
@@ -249,7 +249,7 @@
     "detachCause": "Causa",
     "detachReason": {
       "tab_closed": "A aba foi fechada.",
-      "connection": "A sessão de navegação do TupAI terminou antes do fim da execução.",
+      "connection": "A sessão de navegação do AiBuddy terminou antes do fim da execução.",
       "devtools": "As ferramentas de desenvolvedor foram abertas nesta página.",
       "crashed": "A página travou."
     },

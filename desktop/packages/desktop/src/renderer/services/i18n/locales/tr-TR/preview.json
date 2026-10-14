@@ -85,7 +85,7 @@
       "outsideSandbox": "Bu dosya geçerli çalışma alanı sandbox'ının dışında."
     },
     "serverInstall": {
-      "hint": "TupAI bir sunucuda çalışıyor. Önizleme bileşeni o sunucuya kurulmalıdır. Aşağıdaki komutu sunucuda çalıştırıp yeniden deneyin:",
+      "hint": "AiBuddy bir sunucuda çalışıyor. Önizleme bileşeni o sunucuya kurulmalıdır. Aşağıdaki komutu sunucuda çalıştırıp yeniden deneyin:",
       "icuNote": "Yine de başlamazsa sunucuya ICU kitaplığını kurun (Debian/Ubuntu: apt-get install -y libicu-dev)."
     }
   },
@@ -189,28 +189,28 @@
     "elapsed": "Geçen süre",
     "steps": "Adımlar {{total}}",
     "noSteps": "Henüz bir şey yapılmadı",
-    "reason": "TupAI’nun açıklaması",
+    "reason": "AiBuddy’nun açıklaması",
     "goal": "Hedef",
     "pause": "Duraklat",
     "resume": "Sürdür",
     "stop": "Durdur",
     "takeover": "Devral",
-    "takeoverTip": "Çalışmayı duraklatır ve klavyeyi size verir. İşiniz bitince “Sürdür”e basın: TupAI karar vermeden önce sayfaya yeniden bakar.",
+    "takeoverTip": "Çalışmayı duraklatır ve klavyeyi size verir. İşiniz bitince “Sürdür”e basın: AiBuddy karar vermeden önce sayfaya yeniden bakar.",
     "pausedShort": "Duraklatıldı",
     "stopping": "Durduruluyor…",
     "paused": {
-      "user": "Duraklatıldı. Sürdürdüğünüzde TupAI karar vermeden önce sayfaya yeniden bakar.",
+      "user": "Duraklatıldı. Sürdürdüğünüzde AiBuddy karar vermeden önce sayfaya yeniden bakar.",
       "takeover": "Kontrol sizde: sayfayı doğrudan kullanın, bitince “Sürdür”e basın.",
-      "interaction": "Sayfaya dokundunuz; TupAI sizinle aynı anda tıklamamak için kendini duraklattı. Sürdürdüğünüzde sayfaya yeniden bakar."
+      "interaction": "Sayfaya dokundunuz; AiBuddy sizinle aynı anda tıklamamak için kendini duraklattı. Sürdürdüğünüzde sayfaya yeniden bakar."
     },
     "statusHint": {
-      "blocked": "TupAI sayfada hedefe yaklaştıracak bir işlem bulamadı ve durdu.",
-      "needs_confirmation": "İşlem geri alınamaz görünüyordu ve izin verilmedi; TupAI bu işlemi yapmadı.",
+      "blocked": "AiBuddy sayfada hedefe yaklaştıracak bir işlem bulamadı ve durdu.",
+      "needs_confirmation": "İşlem geri alınamaz görünüyordu ve izin verilmedi; AiBuddy bu işlemi yapmadı.",
       "budget": "Bu çalışmanın adım sınırı doldu.",
       "stopped": "Bu çalışmayı siz durdurdunuz.",
       "failed": "Gezinme sırasında bir sorun oluştu; çalışma tamamlanmadı."
     },
-    "detachedHint": "TupAI bu sayfayla bağlantısını kaybetti; bu çalışma devam edemez.",
+    "detachedHint": "AiBuddy bu sayfayla bağlantısını kaybetti; bu çalışma devam edemez.",
     "verb": {
       "click": "Tıkla",
       "fill": "Şuraya yaz",
@@ -238,7 +238,7 @@
       "popup": "Açılır pencere engellendi: {{detail}}"
     },
     "confirm": {
-      "title": "TupAI geri alınamayabilecek bir işlem yapmak istiyor",
+      "title": "AiBuddy geri alınamayabilecek bir işlem yapmak istiyor",
       "action": "İşlem",
       "page": "Sayfa",
       "allow": "İzin ver",
@@ -249,7 +249,7 @@
     "detachCause": "Neden",
     "detachReason": {
       "tab_closed": "Sekme kapatıldı.",
-      "connection": "TupAI'nun tarama oturumu çalışma bitmeden sona erdi.",
+      "connection": "AiBuddy'nun tarama oturumu çalışma bitmeden sona erdi.",
       "devtools": "Bu sayfada geliştirici araçları açıldı.",
       "crashed": "Sayfa çöktü."
     },

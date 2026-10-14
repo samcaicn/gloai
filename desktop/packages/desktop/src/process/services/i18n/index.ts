@@ -72,7 +72,7 @@ export const i18nReady = (async (): Promise<void> => {
     fallbackLng: DEFAULT_LANGUAGE,
     debug: false,
     interpolation: { escapeValue: false },
-    // Tray and dialog strings name the product AionUi upstream: shown as TupAI (see common/kyrn/displayName.ts).
+    // Tray and dialog strings name the product AionUi upstream: shown as AiBuddy (see common/kyrn/displayName.ts).
     postProcess: [MU_NAME_POST_PROCESSOR],
   });
 
