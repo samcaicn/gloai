@@ -35,6 +35,10 @@ class ProbeInputMethod : InputMethodService() {
     private val poll = object : Runnable {
         override fun run() {
             if (!polling) return
+            // 每个 tick 都刷新窗口高度：fillInput 算聚焦/发送坐标时要读它，
+            // 只在消费 pending 时发布会有竞态（真机见过 focus 点落到 y=1322
+            // 的聊天区——那时高度还没发布，走了 KB_RATIO 兜底）。
+            publishWindowHeight()
             val pair = ProbeImeBus.pendingText?.let { text ->
                 val id = ProbeImeBus.pendingId
                 if (id != consumedId) id to text else null
@@ -99,8 +103,11 @@ class ProbeInputMethod : InputMethodService() {
             val h = window?.window?.decorView?.height
                 ?: kbRoot?.height
                 ?: 0
-            if (h > 0) ProbeImeBus.imeWindowHeightPx = h
-            Log.i(TAG, "ProbeIme: window height published = $h")
+            // 只在变化时打日志：poll 每 200ms 调一次，别刷屏。
+            if (h > 0 && h != ProbeImeBus.imeWindowHeightPx) {
+                ProbeImeBus.imeWindowHeightPx = h
+                Log.i(TAG, "ProbeIme: window height published = $h")
+            }
         } catch (e: Exception) {
             Log.w(TAG, "ProbeIme: publishWindowHeight failed ${e.message}")
         }
@@ -109,6 +116,7 @@ class ProbeInputMethod : InputMethodService() {
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         ProbeImeBus.imeActive = true
+        publishWindowHeight()
         Log.i(TAG, "ProbeIme: onStartInput restarting=$restarting pending=${ProbeImeBus.pendingText != null}")
         val pair = ProbeImeBus.consumePending()
         if (pair == null) {
@@ -146,41 +154,24 @@ class ProbeInputMethod : InputMethodService() {
             ProbeImeBus.completeWrite(false)
             return
         }
+        // commitText 是**追加**语义：不清空的话，之前几轮没发出去的回复会串成
+        // 一条大杂烩消息（2026-10-14 真机实锤：8 段回复挤进同一条已发气泡，
+        // 而当天只 commit 了 7 个字符）。光标前后各删一圈清旧草稿，
+        // 再 select-all 双保险，然后写新回复。
+        ic.deleteSurroundingText(4096, 4096)
+        ic.performContextMenuAction(android.R.id.selectAll)
         ic.commitText(text, 1)
-        Log.i(TAG, "ProbeIme: committed ${text.length} chars send=$send")
-        val sentOk = if (send) sendViaIme(ic) else false
-        ProbeImeBus.reportSent(sentOk)
+        Log.i(TAG, "ProbeIme: committed ${text.length} chars send=$send (box cleared first)")
+        // 发送不归输入法管：IME 只负责写入。真正发送由 ChatCaptureService 的
+        // 「截图确认绿键在 → 点 (0.9111W, H-IME实际高-56dp/2) → 1.1s 复检 →
+        // 重点一次」完成——保留 sendDelayMs 倒计时撤回窗口（IME 内直接发会吞掉
+        // 这个窗口），且截图复检能抓住任何「返回 true 但其实没发」的故障。
+        // （2026-10-14 实测：performEditorAction 在微信上确实能发送，但发送权
+        // 统一收归 ChatCaptureService，行为可预期、可验证、可重试。）
+        ProbeImeBus.reportSent(false)
         ProbeImeBus.completeWrite(true)
         // 注意：写完后**不自动弹选择器切回**。切回交给视图上的「↩ 返回普通输入法」
         // 按钮，用户自己掌握时机（App 不替用户切换输入法）。
-    }
-
-    /**
-     * 设备无关的发送尝试（不用屏幕坐标，换手机/换分辨率都有效）：
-     * 1. performEditorAction(IME_ACTION_SEND)——正规输入法「发送」键的同款路径。
-     *    微信输入框实测 imeOptions=0x40000006（NO_ENTER_ACTION|NO_FULLSCREEN）、
-     *    actionId=0（ACTION_NONE），所以这条路大概率返回 false，但免费试。
-     * 2. 回车 keyevent——用户开启微信「回车键发送消息」后这条直接发送；没开则
-     *    是换行。**无法从返回值确认是否真发**，所以只做 best-effort 注入，
-     *    不算成功，让调用方继续走动态坐标兜底（双保险，不会漏发）。
-     * 只有 performEditorAction 明确返回 true 才认为发送成功。
-     */
-    private fun sendViaIme(ic: android.view.inputmethod.InputConnection): Boolean {
-        try {
-            val sent = ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
-            Log.i(TAG, "ProbeIme: performEditorAction(SEND)=$sent")
-            if (sent) return true
-        } catch (e: Exception) {
-            Log.w(TAG, "ProbeIme: performEditorAction failed ${e.message}")
-        }
-        try {
-            ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER))
-            ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_ENTER))
-            Log.i(TAG, "ProbeIme: ENTER keyevent injected (best-effort, not confirmed)")
-        } catch (e: Exception) {
-            Log.w(TAG, "ProbeIme: ENTER keyevent failed ${e.message}")
-        }
-        return false
     }
 
     private fun backToNormalIme() {

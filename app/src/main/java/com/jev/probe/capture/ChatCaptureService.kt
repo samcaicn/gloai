@@ -1250,12 +1250,14 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     private fun wxSendPoint(): Pair<Float, Float> {
-        // 绿按钮中心 = (0.9111W, 输入栏垂直中心)。输入栏紧贴 IME 窗顶，所以
-        // y = H - IME实际窗口高 - 输入栏半高(56dp*density/2)。IME 窗口是 wrap_content
-        // （实测被内容缩到 304px），用 ProbeImeBus.imeWindowHeightPx 动态取实际高度，
-        // 窗口多高都不点空；2026-10-14 真机 1080x2412 标定：imeH=304 时
-        // 2412-304-77=2031，与 PIL 绿像素实测中心 y=2031 吻合。全部按屏幕参数算，
-        // 换手机/换分辨率自动适配，无硬编码坐标。
+        // 绿按钮中心 = (0.9111W, 图标行垂直中心)。图标行紧贴 IME 窗顶，所以
+        // y = H - IME实际窗口高 - 图标行半高(56dp*density/2)。IME 窗口是 wrap_content
+        // （实测被内容缩到 304px），用 ProbeImeBus.imeWindowHeightPx 动态取实际高度。
+        // 2026-10-14 真机 PIL 标定（1080x2412, 微信 8.0.78）：imeH=304 时
+        // 2412-304-77=2031，与绿键实测中心 (984,2031) 吻合；**回复多行时绿键
+        // 并不移位**（多行只撑高上面的输入框，图标行位置不变——曾把已发气泡
+        // 误读成按钮，虚惊一场）。输入框空时同一位置变灰色「+」。
+        // 全部按屏幕参数算，换手机/换分辨率自动适配，无硬编码坐标。
         val dm = resources.displayMetrics
         val imeH = imeWindowHeight()
         val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
@@ -1284,17 +1286,95 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     /**
-     * 点微信发送键：有文本时它出现在输入栏右端（键盘弹起态实测 (984,1331)）。
-     * 8.0.78 树被剪、findSendButton 找不到节点时的兜底。点空的后果只是没发出去，
-     * 不会误发别的。
+     * 微信发送（2026-10-14 真机复盘后重写）：截图确认 → 点绿键 → 复检 → 重点。
+     *
+     * 真机事实（1080x2412 + 微信 8.0.78 截图 PIL 标定）：
+     * - 绿键（品牌绿 #07C160 纸飞机圆钮）位置**固定**在图标行右端
+     *   (984,2031) = (0.9111W, H-IME实际窗口高-56dp/2)，**多行输入不会移位**
+     *   （曾把已发气泡误读成按钮，以为多行会带动它——不会）。
+     * - 输入框空时同一位置变灰色「+」：品牌绿像素数=0（实测）。
+     *   所以「绿键在」= 还没发出去，「绿键没了」= 已发送。
+     * - performEditorAction 在微信上确实能发送，但发送权统一收在这里：
+     *   保留 sendDelayMs 倒计时撤回窗口 + 截图复检抓假阳性 + 失败可重试。
+     *
+     * 流程：截屏 → 绿键在才点（防止点到「+」弹出面板）→ 1.1s 后复检 →
+     * 没了=成功 toast；还在=再点一次并请用户人工确认。
+     * 截屏失败时按旧行为点计算坐标兜底（点在绿键上发送，点空无害）。
      */
-    private fun tapWeChatSendButton(): Boolean {
-        val (x, y) = wxSendPoint()
-        val path = Path().apply { moveTo(x, y) }
-        val gesture = GestureDescription.Builder()
-            .addStroke(GestureDescription.StrokeDescription(path, 0, 60L))
-            .build()
-        return dispatchGesture(gesture, null, null)
+    private fun sendWeChatByVerifiedTap(token: ConversationSession.Token) {
+        fun tapSend() {
+            val (x, y) = wxSendPoint()
+            val path = Path().apply { moveTo(x, y) }
+            val gesture = GestureDescription.Builder()
+                .addStroke(GestureDescription.StrokeDescription(path, 0, 60L))
+                .build()
+            Log.i(TAG, "sendTap: dispatching tap at (${x.toInt()},${y.toInt()})")
+            dispatchGesture(gesture, null, null)
+        }
+        // onResult(true) = 已确认发送成功（绿键没了）；false = 点了但未确认/截屏失败
+        fun checkThenAct(onResult: (Boolean) -> Unit) {
+            screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
+                if (!isCurrent(token)) { onResult(false); return@capture }
+                if (res is ScreenCapture.Result.Ok) {
+                    val present = weChatSendButtonPresent(res)
+                    Log.i(TAG, "sendTap check: greenButtonPresent=$present")
+                    if (present) tapSend()
+                    onResult(!present)
+                } else {
+                    Log.w(TAG, "sendTap check: screenshot failed code=${(res as? ScreenCapture.Result.Failed)?.code}, tapping computed point as fallback")
+                    tapSend()
+                    onResult(false)
+                }
+            }
+        }
+        checkThenAct { firstOk ->
+            if (firstOk) {
+                // 点之前绿键就已不在（极端情况：别处已发）——没点，直接报成功。
+                overlay?.toast(t("已自动发送", "Sent automatically"))
+                return@checkThenAct
+            }
+            // 1.1s：等微信发送动画落定，同时避开 ScreenCapture 1s 截屏节流。
+            main.postDelayed({
+                checkThenAct { secondOk ->
+                    if (secondOk) {
+                        Log.i(TAG, "sendTap verify: green button gone -> message actually sent")
+                        overlay?.toast(t("已自动发送", "Sent automatically"))
+                    } else {
+                        Log.w(TAG, "sendTap verify: not confirmed (green button still there or shot failed)")
+                        overlay?.toast(t("请确认消息是否已发出", "Please check whether the message went out"))
+                    }
+                }
+            }, 1100L)
+        }
+    }
+
+    /**
+     * 微信绿键在位检测：截 [wxSendPoint] 周围 ±70px 小窗，数品牌绿
+     * #07C160 容差像素。有文本时微信在此显示纸飞机圆钮（约 120px 直径，
+     * 数千绿像素）；输入框空时同一位置是灰色「+」（0 绿像素，2026-10-14
+     * 真机实测）。光标在输入框文本区（左侧），不会进这个小窗。
+     */
+    private fun weChatSendButtonPresent(ok: ScreenCapture.Result.Ok): Boolean {
+        val (sx, sy) = wxSendPoint()
+        val bmp = ok.bitmap
+        val half = 70f
+        val x0 = ((sx - half - ok.originX) * ok.scaleX).toInt().coerceIn(0, bmp.width - 1)
+        val x1 = ((sx + half - ok.originX) * ok.scaleX).toInt().coerceIn(0, bmp.width)
+        val y0 = ((sy - half - ok.originY) * ok.scaleY).toInt().coerceIn(0, bmp.height - 1)
+        val y1 = ((sy + half - ok.originY) * ok.scaleY).toInt().coerceIn(0, bmp.height)
+        if (x1 <= x0 || y1 <= y0) return false
+        val w = x1 - x0; val h = y1 - y0
+        val pixels = IntArray(w * h)
+        bmp.getPixels(pixels, 0, w, x0, y0, w, h)
+        var green = 0
+        for (px in pixels) {
+            val r = (px shr 16) and 0xFF; val g = (px shr 8) and 0xFF; val b = px and 0xFF
+            if (kotlin.math.abs(r - 0x07) <= 40 &&
+                kotlin.math.abs(g - 0xC1) <= 40 &&
+                kotlin.math.abs(b - 0x60) <= 40) green++
+        }
+        Log.i(TAG, "sendTap: brand-green px in button region = $green (region ${w}x${h})")
+        return green >= 300
     }
 
     /** Fill without blocking the main thread; all retries re-resolve the original target. */
@@ -1302,11 +1382,13 @@ open class ChatCaptureService : AccessibilityService() {
         fun finish(ok: Boolean) {
             if (!isCurrent(token)) { Log.w(TAG, "fillInput finish: token stale, drop"); return }
             if (ok) {
-                val sentByIme = ProbeImeBus.lastSent
-                Log.i(TAG, "fillInput ok: autoSend=${prefs.autoSend} sentByIme=$sentByIme -> ${if (prefs.autoSend && !sentByIme) "sendFor" else "toast-only"}")
+                // 不信 IME 的 lastSent 短路：2026-10-14 真机教训——IME 报了
+                // 「已发送」就跳过 sendFor，验证链整段被绕过。autoSend 开就
+                // 一律走 sendFor（倒计时 → 截图确认绿键 → 点 → 复检 → 重点），
+                // 真发没发出去以截屏复检为准，不以任何返回值承诺为准。
+                Log.i(TAG, "fillInput ok: autoSend=${prefs.autoSend} imeClaimedSent=${ProbeImeBus.lastSent} -> ${if (prefs.autoSend) "sendFor" else "toast-only"}")
                 // sendFor announces the countdown itself; don't double-toast here.
-                if (prefs.autoSend && !sentByIme) sendFor(token)
-                else if (sentByIme) overlay?.toast(t("已自动发送", "Sent automatically"))
+                if (prefs.autoSend) sendFor(token)
                 else overlay?.toast(t("已填入，确认后自己发送", "Filled in — review it and send yourself"))
             } else { Log.w(TAG, "fillInput failed -> clipboard fallback"); copyToClipboard(text); overlay?.toast(t("已复制，长按输入框粘贴", "Copied — long-press the input box to paste")) }
         }
@@ -1317,8 +1399,9 @@ open class ChatCaptureService : AccessibilityService() {
             val (fx, fy) = wxFocusPoint()
             if (ProbeImeBus.imeActive) {
                 // 探针已激活（用户自己在系统/通知栏切到了探针输入法）：投递 + 聚焦输入栏，
-                // 走 poll path 直接填字；autoSend 开时 IME 写入后顺手设备无关发送
-                // （performEditorAction/回车），失败才回落到 sendFor 动态坐标点击。
+                // 走 poll path 直接填字（输入法写入前会先清空旧草稿，防多轮回复串缸）。
+                // autoSend 开时由 sendFor 走「截图确认绿键 → 点 → 复检 → 重点」
+                // 完成真正发送，倒计时撤回窗口保留。
                 // App 全程不弹选择器、不替用户切输入法。
                 ProbeImeBus.requestWrite(text, prefs.autoSend) { ok -> finish(ok) }
                 tapWeChatInputBar()
@@ -1450,13 +1533,14 @@ open class ChatCaptureService : AccessibilityService() {
                 } else {
                     Log.i(TAG, "clickSend: root=null, tree path skipped")
                 }
-                // 8.0.78 树被剪，发送按钮不在树里——直接点输入栏右端（有文本时
-                // 微信把发送键放在那里）。点空的后果只是没发出去，不会误发别的。
+                // 8.0.78 树被剪，发送按钮不在树里——微信走「截图确认绿键 → 点 →
+                // 复检 → 重点」的验证式发送（sendWeChatByVerifiedTap 内部完成，
+                // 含截屏失败时计算坐标兜底）。IME 的 performEditorAction 不在
+                // 这条链里：发送权统一收在这里，倒计时撤回窗口才作数。
                 if (token.target.pkg == PKG_WECHAT) {
-                    val (sx, sy) = wxSendPoint()
-                    val tapped = tapWeChatSendButton()
-                    Log.i(TAG, "clickSend: tap fallback (${sx.toInt()},${sy.toInt()}) dispatched=$tapped")
-                    return tapped
+                    Log.i(TAG, "clickSend: WeChat -> verified-tap send path")
+                    sendWeChatByVerifiedTap(token)
+                    return true
                 }
                 return false
             }
@@ -1464,16 +1548,18 @@ open class ChatCaptureService : AccessibilityService() {
                 Log.w(TAG, "sendFor: clickSend failed -> manual tap needed")
                 overlay?.toast(t("已填入，未能自动发送，请手动点发送", "Filled in but couldn't auto-send - tap send manually")); return@postDelayed
             }
-            Log.i(TAG, "sendFor: clicked, awaiting confirm")
+            if (token.target.pkg == PKG_WECHAT) {
+                // 微信：确认/重试/提示都在 sendWeChatByVerifiedTap 里异步完成。
+                return@postDelayed
+            }
+            // 非微信：树可读，保留「输入框是否还有字」的事后确认。
+            Log.i(TAG, "sendFor: clicked via tree, awaiting confirm")
             overlay?.toast(t("已自动发送", "Sent automatically"))
-            // Confirm the input cleared (message actually went out); retry once if not.
             main.postDelayed({
                 if (!isCurrent(token)) return@postDelayed
                 val input = inputFor(token)
-                // 树被 FLAG_SECURE 剪空时 inputFor 返回 null——这不是"输入框已清空"，
-                // 旧代码 null==false 打出 inputStillHasText=false 曾误报发送成功（2026-10-14 真机教训）。
                 if (input == null) {
-                    Log.i(TAG, "sendFor verify: a11y tree pruned, cannot confirm via input node")
+                    Log.i(TAG, "sendFor verify: no input node, cannot confirm")
                 } else {
                     Log.i(TAG, "sendFor verify: inputStillHasText=${!input.text.isNullOrBlank()}")
                     if (!input.text.isNullOrBlank()) {

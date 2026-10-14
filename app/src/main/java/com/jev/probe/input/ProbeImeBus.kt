@@ -9,10 +9,11 @@ import android.content.Context
  * ACTION_SET_TEXT 无节点可写；普通 app 也不能像 adb shell 那样 input text。
  * 实测唯一可靠的写入通道 = 探针自己的输入法（InputMethodService.commitText）。
  *
- * 流程：ChatCaptureService.fillInput → requestWrite(text) → 弹系统输入法选择器 →
- * 用户选「AI聊天助手 写入」→ ProbeInputMethod.onStartInput 检出 pending →
- * commitText → completeWrite(true) → ChatCaptureService 继续 sendFor（点发送键）。
- * 写完 ProbeInputMethod 不自动切回——由视图上的「↩ 返回普通输入法」按钮让用户自己切回（App 不替用户切换输入法）。
+ * 流程：ChatCaptureService.fillInput → requestWrite(text) →（用户自己已切到探针
+ * 输入法）ProbeInputMethod.onStartInput/poll 检出 pending → 清空旧草稿 →
+ * commitText → completeWrite(true) → ChatCaptureService 走 sendFor 验证式发送
+ * （截图确认绿键 → 点 → 复检）。App 不弹选择器、不替用户切输入法。
+ * 写完 ProbeInputMethod 不自动切回——由视图上的「↩ 返回普通输入法」按钮让用户自己切回。
  */
 object ProbeImeBus {
 
@@ -39,12 +40,15 @@ object ProbeImeBus {
     var pendingId: Long = 0L
         private set
 
-    /** 写入成功后是否顺便发送（autoSend 开时 true）。由 ProbeInputMethod 执行。 */
+    /** 写入成功后是否顺便发送（autoSend 开时 true）。**仅信息性**：IME 只负责写入，
+     *  发送统一由 ChatCaptureService「截图确认绿键 → 点 → 复检」完成（保留倒计时
+     *  撤回窗口 + 复检抓假阳性）——2026-10-14 真机决定，IME 内直接发会吞掉撤回窗口。 */
     @Volatile
     var pendingSend: Boolean = false
         private set
 
-    /** 最近一次写入的发送结果（IME 通道 performEditorAction/回车是否成功）。 */
+    /** 最近一次写入后 IME 是否声称已发送。现在恒 false（IME 不做发送），
+     *  保留仅供日志诊断——ChatCaptureService 不再拿它短路验证链。 */
     @Volatile
     var lastSent: Boolean = false
         private set
