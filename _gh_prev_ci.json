@@ -1,0 +1,346 @@
+﻿{
+  "total_count": 3,
+  "jobs": [
+    {
+      "id": 115883830446,
+      "run_id": 38573309065,
+      "workflow_name": "CI — 语法体检 + EXE 实测",
+      "head_branch": "weauto",
+      "run_url": "https://api.github.com/repos/samcaicn/gloai/actions/runs/38573309065",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORUloKM8AAAAa-zbsrg",
+      "head_sha": "c9722ff2eee29e2bc5f9ea796715c0b72a498436",
+      "url": "https://api.github.com/repos/samcaicn/gloai/actions/jobs/115883830446",
+      "html_url": "https://github.com/samcaicn/gloai/actions/runs/38573309065/job/115883830446",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-14T13:37:15Z",
+      "started_at": "2026-10-14T13:37:18Z",
+      "completed_at": "2026-10-14T13:37:46Z",
+      "name": "UI + 业务流程端到端实测 (Flask test_client)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-14T13:37:19Z",
+          "completed_at": "2026-10-14T13:37:19Z"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-14T13:37:19Z",
+          "completed_at": "2026-10-14T13:37:23Z"
+        },
+        {
+          "name": "Set up Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-14T13:37:23Z",
+          "completed_at": "2026-10-14T13:37:23Z"
+        },
+        {
+          "name": "Install minimal deps for test_client",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-14T13:37:23Z",
+          "completed_at": "2026-10-14T13:37:43Z"
+        },
+        {
+          "name": "Run UI / save-zero-regression e2e",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 5,
+          "started_at": "2026-10-14T13:37:43Z",
+          "completed_at": "2026-10-14T13:37:43Z"
+        },
+        {
+          "name": "Run business-flow e2e (CLI / license / MCP)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 6,
+          "started_at": "2026-10-14T13:37:43Z",
+          "completed_at": "2026-10-14T13:37:43Z"
+        },
+        {
+          "name": "Run full business-module e2e (15 个环节)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 7,
+          "started_at": "2026-10-14T13:37:43Z",
+          "completed_at": "2026-10-14T13:37:43Z"
+        },
+        {
+          "name": "Run jev_guard offline unit tests (mock decisions server)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8,
+          "started_at": "2026-10-14T13:37:43Z",
+          "completed_at": "2026-10-14T13:37:43Z"
+        },
+        {
+          "name": "Run worker dual-credential gate tests (node, mock env)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9,
+          "started_at": "2026-10-14T13:37:43Z",
+          "completed_at": "2026-10-14T13:37:43Z"
+        },
+        {
+          "name": "Assert config.py not polluted by tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-14T13:37:43Z",
+          "completed_at": "2026-10-14T13:37:43Z"
+        },
+        {
+          "name": "Post Set up Python",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 19,
+          "started_at": "2026-10-14T13:37:43Z",
+          "completed_at": "2026-10-14T13:37:43Z"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-14T13:37:43Z",
+          "completed_at": "2026-10-14T13:37:45Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-14T13:37:45Z",
+          "completed_at": "2026-10-14T13:37:45Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/samcaicn/gloai/check-runs/115883830446",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": 1000009668,
+      "runner_name": "GitHub Actions 1000009668",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 115883830762,
+      "run_id": 38573309065,
+      "workflow_name": "CI — 语法体检 + EXE 实测",
+      "head_branch": "weauto",
+      "run_url": "https://api.github.com/repos/samcaicn/gloai/actions/runs/38573309065",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORUloKM8AAAAa-zbt6g",
+      "head_sha": "c9722ff2eee29e2bc5f9ea796715c0b72a498436",
+      "url": "https://api.github.com/repos/samcaicn/gloai/actions/jobs/115883830762",
+      "html_url": "https://github.com/samcaicn/gloai/actions/runs/38573309065/job/115883830762",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-10-14T13:37:15Z",
+      "started_at": "2026-10-14T13:37:21Z",
+      "completed_at": "2026-10-14T13:37:28Z",
+      "name": "Compile all .py (compileall)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-14T13:37:21Z",
+          "completed_at": "2026-10-14T13:37:22Z"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-14T13:37:22Z",
+          "completed_at": "2026-10-14T13:37:23Z"
+        },
+        {
+          "name": "Set up Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-14T13:37:23Z",
+          "completed_at": "2026-10-14T13:37:24Z"
+        },
+        {
+          "name": "Compile-check every Python file (exclude venv / git / caches)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-14T13:37:24Z",
+          "completed_at": "2026-10-14T13:37:24Z"
+        },
+        {
+          "name": "Report",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-14T13:37:24Z",
+          "completed_at": "2026-10-14T13:37:24Z"
+        },
+        {
+          "name": "Post Set up Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-14T13:37:24Z",
+          "completed_at": "2026-10-14T13:37:24Z"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-14T13:37:24Z",
+          "completed_at": "2026-10-14T13:37:25Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-10-14T13:37:25Z",
+          "completed_at": "2026-10-14T13:37:25Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/samcaicn/gloai/check-runs/115883830762",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000009670,
+      "runner_name": "GitHub Actions 1000009670",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 115883830876,
+      "run_id": 38573309065,
+      "workflow_name": "CI — 语法体检 + EXE 实测",
+      "head_branch": "weauto",
+      "run_url": "https://api.github.com/repos/samcaicn/gloai/actions/runs/38573309065",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORUloKM8AAAAa-zbuXA",
+      "head_sha": "c9722ff2eee29e2bc5f9ea796715c0b72a498436",
+      "url": "https://api.github.com/repos/samcaicn/gloai/actions/jobs/115883830876",
+      "html_url": "https://github.com/samcaicn/gloai/actions/runs/38573309065/job/115883830876",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-10-14T13:37:16Z",
+      "started_at": "2026-10-14T13:37:18Z",
+      "completed_at": "2026-10-14T13:39:24Z",
+      "name": "Build EXE + unpack assertions",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-14T13:37:19Z",
+          "completed_at": "2026-10-14T13:37:19Z"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-14T13:37:19Z",
+          "completed_at": "2026-10-14T13:37:25Z"
+        },
+        {
+          "name": "Set up Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-14T13:37:25Z",
+          "completed_at": "2026-10-14T13:37:25Z"
+        },
+        {
+          "name": "Enable long paths (Windows MAX_PATH=260 workaround)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-14T13:37:25Z",
+          "completed_at": "2026-10-14T13:37:26Z"
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-14T13:37:26Z",
+          "completed_at": "2026-10-14T13:38:17Z"
+        },
+        {
+          "name": "Build onefile EXE",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-14T13:38:17Z",
+          "completed_at": "2026-10-14T13:39:20Z"
+        },
+        {
+          "name": "Unpack-and-assert the EXE",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-14T13:39:20Z",
+          "completed_at": "2026-10-14T13:39:20Z"
+        },
+        {
+          "name": "Publish failure detail on build log",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8,
+          "started_at": "2026-10-14T13:39:20Z",
+          "completed_at": "2026-10-14T13:39:20Z"
+        },
+        {
+          "name": "Post Set up Python",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-10-14T13:39:20Z",
+          "completed_at": "2026-10-14T13:39:20Z"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-10-14T13:39:20Z",
+          "completed_at": "2026-10-14T13:39:22Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-14T13:39:22Z",
+          "completed_at": "2026-10-14T13:39:22Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/samcaicn/gloai/check-runs/115883830876",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": 1000009669,
+      "runner_name": "GitHub Actions 1000009669",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}
+

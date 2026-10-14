@@ -29,6 +29,18 @@ import secrets as pysecrets
 import shutil
 import subprocess
 import sys
+
+# CI/本地跨平台输出编码修复：Windows runner 上 Python 默认 stdout 为 cp1252，
+# 打印中文会 UnicodeEncodeError 直接崩（实测 GitHub Actions windows-latest 踩中）。
+# 统一强制 UTF-8，保证构建日志与告警在任何 shell 下可打印。
+try:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

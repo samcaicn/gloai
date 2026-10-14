@@ -1,0 +1,594 @@
+﻿2026-10-14T14:35:24.7911633Z Current runner version: '2.337.0'
+2026-10-14T14:35:24.7972118Z ##[group]Runner Image Provisioner
+2026-10-14T14:35:24.7973558Z Hosted Compute Agent
+2026-10-14T14:35:24.7976891Z Version: 20260901.588
+2026-10-14T14:35:24.7978921Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+2026-10-14T14:35:24.7981913Z Build Date: 2026-09-01T19:56:44Z
+2026-10-14T14:35:24.7985042Z Worker ID: ***0c9da3e4-04bc-4f73-9c98-ac1b53a55cf0***
+2026-10-14T14:35:24.7990185Z Azure Region: northcentralus
+2026-10-14T14:35:24.7992468Z ##[endgroup]
+2026-10-14T14:35:24.7995261Z ##[group]Operating System
+2026-10-14T14:35:24.7996606Z Microsoft Windows Server 2025
+2026-10-14T14:35:24.7997739Z 10.0.26100
+2026-10-14T14:35:24.7998746Z Datacenter
+2026-10-14T14:35:24.8000576Z ##[endgroup]
+2026-10-14T14:35:24.8002514Z ##[group]Runner Image
+2026-10-14T14:35:24.8005318Z Image: windows-2025-vs2026
+2026-10-14T14:35:24.8007621Z Version: 20260925.250.1
+2026-10-14T14:35:24.8010989Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260925.250/images/windows/Windows2025-VS2026-Readme.md
+2026-10-14T14:35:24.8014010Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260925.250
+2026-10-14T14:35:24.8016244Z ##[endgroup]
+2026-10-14T14:35:24.8018311Z ##[group]GITHUB_TOKEN Permissions
+2026-10-14T14:35:24.8023277Z Contents: read
+2026-10-14T14:35:24.8025675Z Metadata: read
+2026-10-14T14:35:24.8026785Z ##[endgroup]
+2026-10-14T14:35:24.8032366Z Secret source: Actions
+2026-10-14T14:35:24.8035550Z Cache mode: write
+2026-10-14T14:35:24.8037725Z Prepare workflow directory
+2026-10-14T14:35:24.8649676Z Prepare all required actions
+2026-10-14T14:35:24.8737997Z Getting action download info
+2026-10-14T14:35:25.1534142Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-14T14:35:25.4432093Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-10-14T14:35:25.6933566Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-14T14:35:26.0344646Z Complete job name: build
+2026-10-14T14:35:26.2108434Z ##[group]Run actions/checkout@v4
+2026-10-14T14:35:26.2109753Z with:
+2026-10-14T14:35:26.2110346Z   repository: samcaicn/gloai
+2026-10-14T14:35:26.2114676Z   token: ***
+2026-10-14T14:35:26.2115263Z   ssh-strict: true
+2026-10-14T14:35:26.2115854Z   ssh-user: git
+2026-10-14T14:35:26.2116447Z   persist-credentials: true
+2026-10-14T14:35:26.2117108Z   clean: true
+2026-10-14T14:35:26.2117705Z   sparse-checkout-cone-mode: true
+2026-10-14T14:35:26.2186668Z   fetch-depth: 1
+2026-10-14T14:35:26.2187873Z   fetch-tags: false
+2026-10-14T14:35:26.2188864Z   show-progress: true
+2026-10-14T14:35:26.2189819Z   lfs: false
+2026-10-14T14:35:26.2190501Z   submodules: false
+2026-10-14T14:35:26.2191081Z   set-safe-directory: true
+2026-10-14T14:35:26.2191719Z   allow-unsafe-pr-checkout: false
+2026-10-14T14:35:26.2193036Z ##[endgroup]
+2026-10-14T14:35:26.4289123Z Syncing repository: samcaicn/gloai
+2026-10-14T14:35:26.4292755Z ##[group]Getting Git version info
+2026-10-14T14:35:26.4294153Z Working directory is 'D:\a\gloai\gloai'
+2026-10-14T14:35:26.5627532Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-14T14:35:27.1612423Z git version 2.55.0.windows.5
+2026-10-14T14:35:27.1696969Z ##[endgroup]
+2026-10-14T14:35:27.1719834Z Temporarily overriding HOME='D:\a\_temp\bdf9dcb3-8afd-48aa-aab5-d746218e86b4' before making global git config changes
+2026-10-14T14:35:27.1724206Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-14T14:35:27.1733162Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\gloai\gloai
+2026-10-14T14:35:27.3838010Z Deleting the contents of 'D:\a\gloai\gloai'
+2026-10-14T14:35:27.3845223Z ##[group]Initializing the repository
+2026-10-14T14:35:27.3856147Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\gloai\gloai
+2026-10-14T14:35:27.5154652Z Initialized empty Git repository in D:/a/gloai/gloai/.git/
+2026-10-14T14:35:27.5207525Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/samcaicn/gloai
+2026-10-14T14:35:27.5860440Z ##[endgroup]
+2026-10-14T14:35:27.5863829Z ##[group]Disabling automatic garbage collection
+2026-10-14T14:35:27.5868661Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-10-14T14:35:27.6274190Z ##[endgroup]
+2026-10-14T14:35:27.6277284Z ##[group]Setting up auth
+2026-10-14T14:35:27.6288789Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-14T14:35:27.6618955Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-14T14:35:29.2178310Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-14T14:35:29.2493728Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-14T14:35:29.8118790Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-14T14:35:29.8452624Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-14T14:35:30.3887883Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-10-14T14:35:30.4205464Z ##[endgroup]
+2026-10-14T14:35:30.4206204Z ##[group]Fetching the repository
+2026-10-14T14:35:30.4218532Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +bbe5671becca0e6b0b756682baf357784aa5de91:refs/remotes/origin/weauto
+2026-10-14T14:35:31.5128220Z From https://github.com/samcaicn/gloai
+2026-10-14T14:35:31.5131736Z  * [new ref]         bbe5671becca0e6b0b756682baf357784aa5de91 -> origin/weauto
+2026-10-14T14:35:31.5176018Z ##[endgroup]
+2026-10-14T14:35:31.5176842Z ##[group]Determining the checkout info
+2026-10-14T14:35:31.5179129Z ##[endgroup]
+2026-10-14T14:35:31.5189379Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-10-14T14:35:31.5606976Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-10-14T14:35:31.5906595Z ##[group]Checking out the ref
+2026-10-14T14:35:31.5916784Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B weauto refs/remotes/origin/weauto
+2026-10-14T14:35:31.7392096Z Switched to a new branch 'weauto'
+2026-10-14T14:35:31.7449477Z branch 'weauto' set up to track 'origin/weauto'.
+2026-10-14T14:35:31.7509546Z ##[endgroup]
+2026-10-14T14:35:31.7910638Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-10-14T14:35:31.8173974Z bbe5671becca0e6b0b756682baf357784aa5de91
+2026-10-14T14:35:31.8650597Z ##[group]Run actions/setup-python@v5
+2026-10-14T14:35:31.8651010Z with:
+2026-10-14T14:35:31.8651269Z   python-version: 3.10
+2026-10-14T14:35:31.8651555Z   check-latest: false
+2026-10-14T14:35:31.8654054Z   token: ***
+2026-10-14T14:35:31.8654321Z   update-environment: true
+2026-10-14T14:35:31.8654997Z   allow-prereleases: false
+2026-10-14T14:35:31.8655292Z   freethreaded: false
+2026-10-14T14:35:31.8655598Z ##[endgroup]
+2026-10-14T14:35:32.0392082Z ##[group]Installed versions
+2026-10-14T14:35:32.0613352Z (node:4092) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-14T14:35:32.0614166Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-14T14:35:32.0614885Z Successfully set up CPython (3.10.11)
+2026-10-14T14:35:32.0616438Z ##[endgroup]
+2026-10-14T14:35:32.0933640Z ##[group]Run try ***
+2026-10-14T14:35:32.0934111Z [36;1mtry ***[0m
+2026-10-14T14:35:32.0934810Z [36;1m  New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force[0m
+2026-10-14T14:35:32.0935573Z [36;1m  Write-Host "LongPathsEnabled=1 applied"[0m
+2026-10-14T14:35:32.0936030Z [36;1m*** catch *** Write-Host "LongPathsEnabled set skipped: $_" ***[0m
+2026-10-14T14:35:32.1524292Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '***0***'"
+2026-10-14T14:35:32.1524771Z env:
+2026-10-14T14:35:32.1525125Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:35:32.1525694Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.10.11\x64/lib/pkgconfig
+2026-10-14T14:35:32.1526221Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:35:32.1526687Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:35:32.1527216Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:35:32.1528048Z ##[endgroup]
+2026-10-14T14:35:32.6054290Z 
+2026-10-14T14:35:32.6060106Z [32;1mLongPathsEnabled : [0m1
+2026-10-14T14:35:32.6061693Z [32;1mPSPath           : [0mMicrosoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem
+2026-10-14T14:35:32.6063889Z [32;1mPSParentPath     : [0mMicrosoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control
+2026-10-14T14:35:32.6065116Z [32;1mPSChildName      : [0mFileSystem
+2026-10-14T14:35:32.6065787Z [32;1mPSDrive          : [0mHKLM
+2026-10-14T14:35:32.6066223Z [32;1mPSProvider       : [0mMicrosoft.PowerShell.Core\Registry
+2026-10-14T14:35:32.6066521Z 
+2026-10-14T14:35:32.6316732Z LongPathsEnabled=1 applied
+2026-10-14T14:35:32.7061377Z ##[group]Run python -m pip install --upgrade pip
+2026-10-14T14:35:32.7061883Z [36;1mpython -m pip install --upgrade pip[0m
+2026-10-14T14:35:32.7062278Z [36;1mpip install -r requirements.txt[0m
+2026-10-14T14:35:32.7062624Z [36;1mpip install pyinstaller==6.22.3[0m
+2026-10-14T14:35:32.7062944Z [36;1mpip install pyarmor[0m
+2026-10-14T14:35:32.7133836Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '***0***'"
+2026-10-14T14:35:32.7134273Z env:
+2026-10-14T14:35:32.7134622Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:35:32.7135134Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.10.11\x64/lib/pkgconfig
+2026-10-14T14:35:32.7135643Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:35:32.7136105Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:35:32.7136546Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:35:32.7136955Z ##[endgroup]
+2026-10-14T14:35:36.4772099Z Requirement already satisfied: pip in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (26.2.1)
+2026-10-14T14:35:37.8526116Z Collecting flask (from -r requirements.txt (line 6))
+2026-10-14T14:35:37.8949992Z   Downloading flask-3.1.3-py3-none-any.whl.metadata (3.2 kB)
+2026-10-14T14:35:37.9414009Z Collecting flask-cors (from -r requirements.txt (line 7))
+2026-10-14T14:35:37.9468357Z   Downloading flask_cors-6.0.5-py3-none-any.whl.metadata (5.4 kB)
+2026-10-14T14:35:38.0058590Z Collecting flask-wtf (from -r requirements.txt (line 8))
+2026-10-14T14:35:38.0106020Z   Downloading flask_wtf-1.3.0-py3-none-any.whl.metadata (3.4 kB)
+2026-10-14T14:35:38.0675532Z Collecting flask-limiter (from -r requirements.txt (line 9))
+2026-10-14T14:35:38.0740536Z   Downloading flask_limiter-4.1.1-py3-none-any.whl.metadata (6.3 kB)
+2026-10-14T14:35:38.4313158Z Collecting sqlalchemy~=2.0.37 (from -r requirements.txt (line 10))
+2026-10-14T14:35:38.4381576Z   Downloading sqlalchemy-2.0.54-cp310-cp310-win_amd64.whl.metadata (9.9 kB)
+2026-10-14T14:35:38.5187271Z Collecting werkzeug (from -r requirements.txt (line 11))
+2026-10-14T14:35:38.5240724Z   Downloading werkzeug-3.1.9-py3-none-any.whl.metadata (4.1 kB)
+2026-10-14T14:35:38.5692863Z Collecting waitress (from -r requirements.txt (line 12))
+2026-10-14T14:35:38.5736654Z   Downloading waitress-3.0.2-py3-none-any.whl.metadata (5.8 kB)
+2026-10-14T14:35:38.6650668Z Collecting psutil (from -r requirements.txt (line 13))
+2026-10-14T14:35:38.6711441Z   Downloading psutil-7.2.2-cp37-abi3-win_amd64.whl.metadata (22 kB)
+2026-10-14T14:35:38.7455268Z Collecting filelock (from -r requirements.txt (line 14))
+2026-10-14T14:35:38.7504471Z   Downloading filelock-4.1.0-py3-none-any.whl.metadata (2.0 kB)
+2026-10-14T14:35:38.8064309Z Collecting requests (from -r requirements.txt (line 15))
+2026-10-14T14:35:38.8116879Z   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+2026-10-14T14:35:38.8534825Z Collecting beautifulsoup4 (from -r requirements.txt (line 16))
+2026-10-14T14:35:38.8585199Z   Downloading beautifulsoup4-4.15.0-py3-none-any.whl.metadata (3.8 kB)
+2026-10-14T14:35:39.1371065Z Collecting lxml (from -r requirements.txt (line 17))
+2026-10-14T14:35:39.1440089Z   Downloading lxml-6.1.3-cp310-cp310-win_amd64.whl.metadata (3.4 kB)
+2026-10-14T14:35:39.1887544Z Collecting pywebview>=5.0 (from -r requirements.txt (line 18))
+2026-10-14T14:35:39.1933612Z   Downloading pywebview-6.2.1-py3-none-any.whl.metadata (4.9 kB)
+2026-10-14T14:35:39.2891497Z Collecting openai==1.84.0 (from -r requirements.txt (line 21))
+2026-10-14T14:35:39.2954827Z   Downloading openai-1.84.0-py3-none-any.whl.metadata (25 kB)
+2026-10-14T14:35:39.3510986Z Collecting mcp<2,>=1.9 (from mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:39.3561008Z   Downloading mcp-1.30.0-py3-none-any.whl.metadata (9.3 kB)
+2026-10-14T14:35:39.5966990Z Collecting cryptography (from -r requirements.txt (line 31))
+2026-10-14T14:35:39.6038508Z   Downloading cryptography-50.0.2-cp39-abi3-win_amd64.whl.metadata (4.4 kB)
+2026-10-14T14:35:39.7179475Z Collecting zstandard (from -r requirements.txt (line 32))
+2026-10-14T14:35:39.7257756Z   Downloading zstandard-0.25.0-cp310-cp310-win_amd64.whl.metadata (3.3 kB)
+2026-10-14T14:35:39.7928515Z Collecting pypinyin (from -r requirements.txt (line 33))
+2026-10-14T14:35:39.7977375Z   Downloading pypinyin-0.55.0-py2.py3-none-any.whl.metadata (12 kB)
+2026-10-14T14:35:39.8402788Z Collecting uiautomation (from -r requirements.txt (line 34))
+2026-10-14T14:35:39.8454775Z   Downloading uiautomation-2.0.29-py3-none-any.whl.metadata (919 bytes)
+2026-10-14T14:35:39.9015481Z Collecting comtypes (from -r requirements.txt (line 35))
+2026-10-14T14:35:39.9072251Z   Downloading comtypes-1.4.17-py3-none-any.whl.metadata (7.8 kB)
+2026-10-14T14:35:39.9620532Z Collecting pyperclip (from -r requirements.txt (line 36))
+2026-10-14T14:35:39.9666631Z   Downloading pyperclip-1.11.0-py3-none-any.whl.metadata (2.4 kB)
+2026-10-14T14:35:40.0161081Z Collecting pywin32 (from -r requirements.txt (line 37))
+2026-10-14T14:35:40.0229045Z   Downloading pywin32-312-cp310-cp310-win_amd64.whl.metadata (11 kB)
+2026-10-14T14:35:40.2491883Z Collecting Pillow (from -r requirements.txt (line 38))
+2026-10-14T14:35:40.2545620Z   Downloading pillow-12.3.0-cp310-cp310-win_amd64.whl.metadata (9.3 kB)
+2026-10-14T14:35:40.3045891Z Collecting typing-extensions (from -r requirements.txt (line 39))
+2026-10-14T14:35:40.3106424Z   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+2026-10-14T14:35:40.3545219Z Collecting colorama (from -r requirements.txt (line 40))
+2026-10-14T14:35:40.3630979Z   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+2026-10-14T14:35:40.4286381Z Collecting imageio-ffmpeg (from -r requirements.txt (line 41))
+2026-10-14T14:35:40.4352401Z   Downloading imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl.metadata (1.5 kB)
+2026-10-14T14:35:40.4883922Z Collecting anyio<5,>=3.5.0 (from openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:40.4935550Z   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+2026-10-14T14:35:40.5409939Z Collecting distro<2,>=1.7.0 (from openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:40.5455003Z   Downloading distro-1.9.0-py3-none-any.whl.metadata (6.8 kB)
+2026-10-14T14:35:40.5887015Z Collecting httpx<1,>=0.23.0 (from openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:40.5935074Z   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+2026-10-14T14:35:40.7278752Z Collecting jiter<1,>=0.4.0 (from openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:40.7339451Z   Downloading jiter-0.17.0-cp310-cp310-win_amd64.whl.metadata (5.3 kB)
+2026-10-14T14:35:40.8767210Z Collecting pydantic<3,>=1.9.0 (from openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:40.8819891Z   Downloading pydantic-2.14.1-py3-none-any.whl.metadata (133 kB)
+2026-10-14T14:35:40.9238657Z Collecting sniffio (from openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:40.9281724Z   Downloading sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+2026-10-14T14:35:40.9919449Z Collecting tqdm>4 (from openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:40.9972354Z   Downloading tqdm-4.70.1-py3-none-any.whl.metadata (57 kB)
+2026-10-14T14:35:41.2114835Z Collecting greenlet>=1 (from sqlalchemy~=2.0.37->-r requirements.txt (line 10))
+2026-10-14T14:35:41.2170736Z   Downloading greenlet-3.5.6-cp310-cp310-win_amd64.whl.metadata (3.9 kB)
+2026-10-14T14:35:41.2671346Z Collecting httpx-sse>=0.4 (from mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:41.2716926Z   Downloading httpx_sse-0.4.3-py3-none-any.whl.metadata (9.7 kB)
+2026-10-14T14:35:41.3231535Z Collecting jsonschema>=4.20.0 (from mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:41.3280038Z   Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+2026-10-14T14:35:41.3935293Z Collecting pydantic-settings>=2.5.2 (from mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:41.3982028Z   Downloading pydantic_settings-2.15.0-py3-none-any.whl.metadata (3.9 kB)
+2026-10-14T14:35:41.4475393Z Collecting pyjwt>=2.10.1 (from pyjwt[crypto]>=2.10.1->mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:41.4520691Z   Downloading pyjwt-2.15.1-py3-none-any.whl.metadata (3.5 kB)
+2026-10-14T14:35:41.4958147Z Collecting python-multipart>=0.0.9 (from mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:41.5008390Z   Downloading python_multipart-0.0.32-py3-none-any.whl.metadata (2.1 kB)
+2026-10-14T14:35:41.5540124Z Collecting sse-starlette>=1.6.1 (from mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:41.5589447Z   Downloading sse_starlette-3.5.0-py3-none-any.whl.metadata (15 kB)
+2026-10-14T14:35:41.6136794Z Collecting starlette>=0.27 (from mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:41.6182571Z   Downloading starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+2026-10-14T14:35:41.6580685Z Collecting typing-inspection>=0.4.1 (from mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:41.6627376Z   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+2026-10-14T14:35:41.7199126Z Collecting uvicorn>=0.31.1 (from mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:41.7244736Z   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+2026-10-14T14:35:41.7975696Z Collecting exceptiongroup>=1.0.2 (from anyio<5,>=3.5.0->openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:41.8021099Z   Downloading exceptiongroup-1.3.1-py3-none-any.whl.metadata (6.7 kB)
+2026-10-14T14:35:41.8492872Z Collecting idna>=2.8 (from anyio<5,>=3.5.0->openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:41.8542072Z   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+2026-10-14T14:35:41.9026701Z Collecting certifi (from httpx<1,>=0.23.0->openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:41.9076941Z   Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+2026-10-14T14:35:41.9462407Z Collecting httpcore==1.* (from httpx<1,>=0.23.0->openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:41.9509004Z   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+2026-10-14T14:35:41.9932802Z Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:41.9981162Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2026-10-14T14:35:42.0383335Z Collecting python-dotenv>=1.0.0 (from mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:42.0451198Z   Downloading python_dotenv-1.2.4-py3-none-any.whl.metadata (29 kB)
+2026-10-14T14:35:42.1308167Z Collecting typer>=0.16.0 (from mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:42.1353889Z   Downloading typer-0.27.3-py3-none-any.whl.metadata (16 kB)
+2026-10-14T14:35:42.1800974Z Collecting annotated-types>=0.6.0 (from pydantic<3,>=1.9.0->openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:42.1849400Z   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+2026-10-14T14:35:43.0326552Z Collecting pydantic-core==2.50.1 (from pydantic<3,>=1.9.0->openai==1.84.0->-r requirements.txt (line 21))
+2026-10-14T14:35:43.0416714Z   Downloading pydantic_core-2.50.1-cp310-cp310-win_amd64.whl.metadata (6.7 kB)
+2026-10-14T14:35:43.0910951Z Collecting blinker>=1.9.0 (from flask->-r requirements.txt (line 6))
+2026-10-14T14:35:43.0955696Z   Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+2026-10-14T14:35:43.1372483Z Collecting click>=8.1.3 (from flask->-r requirements.txt (line 6))
+2026-10-14T14:35:43.1420442Z   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+2026-10-14T14:35:43.1815797Z Collecting itsdangerous>=2.2.0 (from flask->-r requirements.txt (line 6))
+2026-10-14T14:35:43.1864979Z   Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+2026-10-14T14:35:43.2346854Z Collecting jinja2>=3.1.2 (from flask->-r requirements.txt (line 6))
+2026-10-14T14:35:43.2391291Z   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+2026-10-14T14:35:43.3265699Z Collecting markupsafe>=2.1.1 (from flask->-r requirements.txt (line 6))
+2026-10-14T14:35:43.3315482Z   Downloading markupsafe-3.0.4-cp310-cp310-win_amd64.whl.metadata (2.8 kB)
+2026-10-14T14:35:43.3874341Z Collecting wtforms (from flask-wtf->-r requirements.txt (line 8))
+2026-10-14T14:35:43.3922464Z   Downloading wtforms-3.2.2-py3-none-any.whl.metadata (4.9 kB)
+2026-10-14T14:35:43.4515755Z Collecting limits>=3.13 (from flask-limiter->-r requirements.txt (line 9))
+2026-10-14T14:35:43.4561463Z   Downloading limits-5.8.0-py3-none-any.whl.metadata (10 kB)
+2026-10-14T14:35:43.4921704Z Collecting ordered-set<5,>4 (from flask-limiter->-r requirements.txt (line 9))
+2026-10-14T14:35:43.4967472Z   Downloading ordered_set-4.1.0-py3-none-any.whl.metadata (5.3 kB)
+2026-10-14T14:35:43.7033874Z Collecting charset_normalizer<4,>=2 (from requests->-r requirements.txt (line 15))
+2026-10-14T14:35:43.7084073Z   Downloading charset_normalizer-3.5.2-cp310-cp310-win_amd64.whl.metadata (47 kB)
+2026-10-14T14:35:43.7641574Z Collecting urllib3<3,>=1.26 (from requests->-r requirements.txt (line 15))
+2026-10-14T14:35:43.7687310Z   Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+2026-10-14T14:35:43.8191593Z Collecting soupsieve>=1.6.1 (from beautifulsoup4->-r requirements.txt (line 16))
+2026-10-14T14:35:43.8241919Z   Downloading soupsieve-2.10-py3-none-any.whl.metadata (4.4 kB)
+2026-10-14T14:35:43.8731997Z Collecting pythonnet (from pywebview>=5.0->-r requirements.txt (line 18))
+2026-10-14T14:35:43.8782623Z   Downloading pythonnet-3.1.0-cp310.cp311.cp312.cp313.cp314-none-win32.win_amd64.whl.metadata (6.5 kB)
+2026-10-14T14:35:43.9148120Z Collecting proxy_tools (from pywebview>=5.0->-r requirements.txt (line 18))
+2026-10-14T14:35:43.9199466Z   Downloading proxy_tools-0.1.0.tar.gz (3.0 kB)
+2026-10-14T14:35:43.9550658Z   Installing build dependencies: started
+2026-10-14T14:35:45.6232696Z   Installing build dependencies: finished with status 'done'
+2026-10-14T14:35:45.6250003Z   Getting requirements to build wheel: started
+2026-10-14T14:35:46.1648708Z   Getting requirements to build wheel: finished with status 'done'
+2026-10-14T14:35:46.1679985Z   Preparing metadata (pyproject.toml): started
+2026-10-14T14:35:46.5266298Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-10-14T14:35:46.5559298Z Collecting bottle (from pywebview>=5.0->-r requirements.txt (line 18))
+2026-10-14T14:35:46.5605222Z   Downloading bottle-0.13.4-py2.py3-none-any.whl.metadata (1.6 kB)
+2026-10-14T14:35:46.6997940Z Collecting cffi>=2.0.0 (from cryptography->-r requirements.txt (line 31))
+2026-10-14T14:35:46.7048487Z   Downloading cffi-2.1.1-cp310-cp310-win_amd64.whl.metadata (2.6 kB)
+2026-10-14T14:35:46.7533838Z Collecting pycparser (from cffi>=2.0.0->cryptography->-r requirements.txt (line 31))
+2026-10-14T14:35:46.7586954Z   Downloading pycparser-3.11-py3-none-any.whl.metadata (8.2 kB)
+2026-10-14T14:35:46.8075236Z Collecting attrs>=22.2.0 (from jsonschema>=4.20.0->mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:46.8120054Z   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+2026-10-14T14:35:46.8504146Z Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=4.20.0->mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:46.8552782Z   Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+2026-10-14T14:35:46.9023612Z Collecting referencing>=0.28.4 (from jsonschema>=4.20.0->mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:46.9071157Z   Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+2026-10-14T14:35:47.2730842Z Collecting rpds-py>=0.25.0 (from jsonschema>=4.20.0->mcp<2,>=1.9->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:47.2792524Z   Downloading rpds_py-0.30.0-cp310-cp310-win_amd64.whl.metadata (4.2 kB)
+2026-10-14T14:35:47.3257410Z Collecting deprecated>=1.2 (from limits>=3.13->flask-limiter->-r requirements.txt (line 9))
+2026-10-14T14:35:47.3310272Z   Downloading deprecated-1.3.1-py2.py3-none-any.whl.metadata (5.9 kB)
+2026-10-14T14:35:47.3723024Z Collecting packaging>=21 (from limits>=3.13->flask-limiter->-r requirements.txt (line 9))
+2026-10-14T14:35:47.3771998Z   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+2026-10-14T14:35:47.8372269Z Collecting wrapt<3,>=1.10 (from deprecated>=1.2->limits>=3.13->flask-limiter->-r requirements.txt (line 9))
+2026-10-14T14:35:47.8554034Z   Downloading wrapt-2.5.1-cp310-cp310-win_amd64.whl.metadata (7.7 kB)
+2026-10-14T14:35:47.9501649Z Collecting shellingham>=1.3.0 (from typer>=0.16.0->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:47.9549714Z   Downloading shellingham-1.5.4-py2.py3-none-any.whl.metadata (3.5 kB)
+2026-10-14T14:35:48.0112202Z Collecting rich>=13.8.0 (from typer>=0.16.0->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:48.0156950Z   Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+2026-10-14T14:35:48.0539341Z Collecting annotated-doc>=0.0.2 (from typer>=0.16.0->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:48.0584339Z   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+2026-10-14T14:35:48.1016430Z Collecting markdown-it-py>=2.2.0 (from rich>=13.8.0->typer>=0.16.0->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:48.1065239Z   Downloading markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+2026-10-14T14:35:48.1567137Z Collecting pygments<3.0.0,>=2.13.0 (from rich>=13.8.0->typer>=0.16.0->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:48.1611190Z   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+2026-10-14T14:35:48.2047116Z Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=13.8.0->typer>=0.16.0->mcp[cli]<2,>=1.9->-r requirements.txt (line 27))
+2026-10-14T14:35:48.2097690Z   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+2026-10-14T14:35:48.2628465Z Collecting clr_loader<0.4.0,>=0.3.1 (from pythonnet->pywebview>=5.0->-r requirements.txt (line 18))
+2026-10-14T14:35:48.2689766Z   Downloading clr_loader-0.3.1-py3-none-any.whl.metadata (1.4 kB)
+2026-10-14T14:35:48.3081384Z Downloading openai-1.84.0-py3-none-any.whl (725 kB)
+2026-10-14T14:35:48.3451197Z    ---------------------------------------- 725.5/725.5 kB 14.9 MB/s  0:00:00
+2026-10-14T14:35:48.3505662Z Downloading sqlalchemy-2.0.54-cp310-cp310-win_amd64.whl (2.2 MB)
+2026-10-14T14:35:48.4208319Z    ---------------------------------------- 2.2/2.2 MB 30.8 MB/s  0:00:00
+2026-10-14T14:35:48.4263982Z Downloading mcp-1.30.0-py3-none-any.whl (234 kB)
+2026-10-14T14:35:48.4530625Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+2026-10-14T14:35:48.4745559Z Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+2026-10-14T14:35:48.4987190Z Downloading distro-1.9.0-py3-none-any.whl (20 kB)
+2026-10-14T14:35:48.5205632Z Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+2026-10-14T14:35:48.5617901Z Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+2026-10-14T14:35:48.5862736Z Downloading jiter-0.17.0-cp310-cp310-win_amd64.whl (231 kB)
+2026-10-14T14:35:48.6072061Z Downloading pydantic-2.14.1-py3-none-any.whl (488 kB)
+2026-10-14T14:35:48.6359199Z Downloading pydantic_core-2.50.1-cp310-cp310-win_amd64.whl (2.2 MB)
+2026-10-14T14:35:48.6759413Z    ---------------------------------------- 2.2/2.2 MB 40.8 MB/s  0:00:00
+2026-10-14T14:35:48.6807075Z Downloading flask-3.1.3-py3-none-any.whl (103 kB)
+2026-10-14T14:35:48.7066800Z Downloading flask_cors-6.0.5-py3-none-any.whl (16 kB)
+2026-10-14T14:35:48.7305427Z Downloading flask_wtf-1.3.0-py3-none-any.whl (13 kB)
+2026-10-14T14:35:48.7509281Z Downloading flask_limiter-4.1.1-py3-none-any.whl (30 kB)
+2026-10-14T14:35:48.7724504Z Downloading ordered_set-4.1.0-py3-none-any.whl (7.6 kB)
+2026-10-14T14:35:48.7937445Z Downloading werkzeug-3.1.9-py3-none-any.whl (228 kB)
+2026-10-14T14:35:48.8124952Z Downloading waitress-3.0.2-py3-none-any.whl (56 kB)
+2026-10-14T14:35:48.8347444Z Downloading psutil-7.2.2-cp37-abi3-win_amd64.whl (137 kB)
+2026-10-14T14:35:48.8681639Z Downloading filelock-4.1.0-py3-none-any.whl (133 kB)
+2026-10-14T14:35:48.8887636Z Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+2026-10-14T14:35:48.9062386Z Downloading charset_normalizer-3.5.2-cp310-cp310-win_amd64.whl (215 kB)
+2026-10-14T14:35:48.9345699Z Downloading idna-3.20-py3-none-any.whl (69 kB)
+2026-10-14T14:35:48.9546212Z Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+2026-10-14T14:35:48.9730822Z Downloading beautifulsoup4-4.15.0-py3-none-any.whl (109 kB)
+2026-10-14T14:35:48.9978856Z Downloading lxml-6.1.3-cp310-cp310-win_amd64.whl (4.0 MB)
+2026-10-14T14:35:49.0536851Z    ---------------------------------------- 4.0/4.0 MB 80.1 MB/s  0:00:00
+2026-10-14T14:35:49.0597572Z Downloading pywebview-6.2.1-py3-none-any.whl (525 kB)
+2026-10-14T14:35:49.0841371Z    ---------------------------------------- 525.5/525.5 kB 17.6 MB/s  0:00:00
+2026-10-14T14:35:49.0909834Z Downloading cryptography-50.0.2-cp39-abi3-win_amd64.whl (3.9 MB)
+2026-10-14T14:35:49.1445886Z    ---------------------------------------- 3.9/3.9 MB 76.4 MB/s  0:00:00
+2026-10-14T14:35:49.1499400Z Downloading zstandard-0.25.0-cp310-cp310-win_amd64.whl (506 kB)
+2026-10-14T14:35:49.1835838Z Downloading pypinyin-0.55.0-py2.py3-none-any.whl (840 kB)
+2026-10-14T14:35:49.2415955Z    ---------------------------------------- 840.2/840.2 kB 9.3 MB/s  0:00:00
+2026-10-14T14:35:49.2476867Z Downloading uiautomation-2.0.29-py3-none-any.whl (198 kB)
+2026-10-14T14:35:49.2703181Z Downloading comtypes-1.4.17-py3-none-any.whl (298 kB)
+2026-10-14T14:35:49.2912364Z Downloading pyperclip-1.11.0-py3-none-any.whl (11 kB)
+2026-10-14T14:35:49.3141959Z Downloading pywin32-312-cp310-cp310-win_amd64.whl (6.9 MB)
+2026-10-14T14:35:49.3882509Z    ---------------------------------------- 6.9/6.9 MB 107.5 MB/s  0:00:00
+2026-10-14T14:35:49.3943178Z Downloading pillow-12.3.0-cp310-cp310-win_amd64.whl (7.2 MB)
+2026-10-14T14:35:49.4945868Z    ---------------------------------------- 7.2/7.2 MB 74.9 MB/s  0:00:00
+2026-10-14T14:35:49.4998133Z Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+2026-10-14T14:35:49.5738559Z Downloading imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl (31.2 MB)
+2026-10-14T14:35:50.4913547Z    ---------------------------------------- 31.2/31.2 MB 33.6 MB/s  0:00:00
+2026-10-14T14:35:50.4965904Z Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+2026-10-14T14:35:50.8240095Z Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+2026-10-14T14:35:50.8476058Z Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+2026-10-14T14:35:50.8704537Z Downloading cffi-2.1.1-cp310-cp310-win_amd64.whl (185 kB)
+2026-10-14T14:35:50.8916821Z Downloading click-8.5.0-py3-none-any.whl (125 kB)
+2026-10-14T14:35:50.9127264Z Downloading exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+2026-10-14T14:35:50.9353058Z Downloading greenlet-3.5.6-cp310-cp310-win_amd64.whl (322 kB)
+2026-10-14T14:35:50.9677425Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+2026-10-14T14:35:50.9871405Z Downloading httpx_sse-0.4.3-py3-none-any.whl (9.0 kB)
+2026-10-14T14:35:51.0084612Z Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+2026-10-14T14:35:51.0292347Z Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+2026-10-14T14:35:51.0532579Z Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+2026-10-14T14:35:51.0782978Z Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+2026-10-14T14:35:51.1035857Z Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+2026-10-14T14:35:51.1269258Z Downloading limits-5.8.0-py3-none-any.whl (60 kB)
+2026-10-14T14:35:51.1455235Z Downloading deprecated-1.3.1-py2.py3-none-any.whl (11 kB)
+2026-10-14T14:35:51.1664254Z Downloading wrapt-2.5.1-cp310-cp310-win_amd64.whl (105 kB)
+2026-10-14T14:35:51.1867376Z Downloading markupsafe-3.0.4-cp310-cp310-win_amd64.whl (14 kB)
+2026-10-14T14:35:51.2057432Z Downloading packaging-26.3-py3-none-any.whl (129 kB)
+2026-10-14T14:35:51.2308189Z Downloading pydantic_settings-2.15.0-py3-none-any.whl (69 kB)
+2026-10-14T14:35:51.2516037Z Downloading pyjwt-2.15.1-py3-none-any.whl (33 kB)
+2026-10-14T14:35:51.2990484Z Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+2026-10-14T14:35:51.3214536Z Downloading python_multipart-0.0.32-py3-none-any.whl (30 kB)
+2026-10-14T14:35:51.3393726Z Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+2026-10-14T14:35:51.3605321Z Downloading rpds_py-0.30.0-cp310-cp310-win_amd64.whl (235 kB)
+2026-10-14T14:35:51.3805018Z Downloading soupsieve-2.10-py3-none-any.whl (38 kB)
+2026-10-14T14:35:51.3976892Z Downloading sse_starlette-3.5.0-py3-none-any.whl (17 kB)
+2026-10-14T14:35:51.4153012Z Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+2026-10-14T14:35:51.4399146Z Downloading tqdm-4.70.1-py3-none-any.whl (80 kB)
+2026-10-14T14:35:51.4566200Z Downloading typer-0.27.3-py3-none-any.whl (123 kB)
+2026-10-14T14:35:51.4774424Z Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+2026-10-14T14:35:51.4948852Z Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+2026-10-14T14:35:52.5107292Z Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+2026-10-14T14:35:52.6769504Z    ---------------------------------------- 1.3/1.3 MB 5.7 MB/s  0:00:00
+2026-10-14T14:35:52.6819176Z Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+2026-10-14T14:35:52.7457315Z Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+2026-10-14T14:35:52.8265599Z Downloading shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+2026-10-14T14:35:52.9015012Z Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+2026-10-14T14:35:52.9594594Z Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+2026-10-14T14:35:53.0331045Z Downloading bottle-0.13.4-py2.py3-none-any.whl (103 kB)
+2026-10-14T14:35:53.0943389Z Downloading pycparser-3.11-py3-none-any.whl (51 kB)
+2026-10-14T14:35:53.1523474Z Downloading pythonnet-3.1.0-cp310.cp311.cp312.cp313.cp314-none-win32.win_amd64.whl (1.6 MB)
+2026-10-14T14:35:53.1995316Z    ---------------------------------------- 1.6/1.6 MB 43.2 MB/s  0:00:00
+2026-10-14T14:35:53.2039467Z Downloading clr_loader-0.3.1-py3-none-any.whl (55 kB)
+2026-10-14T14:35:53.2520713Z Downloading sniffio-1.3.1-py3-none-any.whl (10 kB)
+2026-10-14T14:35:53.3137175Z Downloading wtforms-3.2.2-py3-none-any.whl (158 kB)
+2026-10-14T14:35:53.7570291Z Building wheels for collected packages: proxy_tools
+2026-10-14T14:35:54.6157144Z   Building wheel for proxy_tools (pyproject.toml): started
+2026-10-14T14:35:56.3346740Z   Building wheel for proxy_tools (pyproject.toml): finished with status 'done'
+2026-10-14T14:35:56.3370502Z   Created wheel for proxy_tools: filename=proxy_tools-0.1.0-py3-none-any.whl size=2944 sha256=c42b3911908295e7ca34a093f58e471ca333ea567cd45b9d8032894b10778c28
+2026-10-14T14:35:56.3372572Z   Stored in directory: c:\users\runneradmin\appdata\local\pip\cache\wheels\09\85\c8\5320d6985060fd2f9b33e61f4496824be3d2b3566853c55955
+2026-10-14T14:35:56.3396082Z Successfully built proxy_tools
+2026-10-14T14:35:56.5063940Z Installing collected packages: pyperclip, proxy_tools, bottle, zstandard, wrapt, waitress, urllib3, typing-extensions, soupsieve, sniffio, shellingham, rpds-py, pywin32, python-multipart, python-dotenv, pypinyin, pygments, pycparser, psutil, Pillow, packaging, ordered-set, mdurl, markupsafe, lxml, jiter, itsdangerous, imageio-ffmpeg, idna, httpx-sse, h11, greenlet, filelock, distro, comtypes, colorama, click, charset_normalizer, certifi, blinker, attrs, annotated-types, annotated-doc, wtforms, werkzeug, uvicorn, uiautomation, typing-inspection, tqdm, sqlalchemy, requests, referencing, pyjwt, pydantic-core, markdown-it-py, jinja2, httpcore, exceptiongroup, deprecated, cffi, beautifulsoup4, rich, pydantic, limits, jsonschema-specifications, flask, cryptography, clr_loader, anyio, typer, starlette, pythonnet, pydantic-settings, jsonschema, httpx, flask-wtf, flask-limiter, flask-cors, sse-starlette, pywebview, openai, mcp
+2026-10-14T14:36:17.9091555Z 
+2026-10-14T14:36:17.9367708Z Successfully installed Pillow-12.3.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 attrs-26.1.0 beautifulsoup4-4.15.0 blinker-1.9.0 bottle-0.13.4 certifi-2026.7.22 cffi-2.1.1 charset_normalizer-3.5.2 click-8.5.0 clr_loader-0.3.1 colorama-0.4.6 comtypes-1.4.17 cryptography-50.0.2 deprecated-1.3.1 distro-1.9.0 exceptiongroup-1.3.1 filelock-4.1.0 flask-3.1.3 flask-cors-6.0.5 flask-limiter-4.1.1 flask-wtf-1.3.0 greenlet-3.5.6 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 httpx-sse-0.4.3 idna-3.20 imageio-ffmpeg-0.6.0 itsdangerous-2.2.0 jinja2-3.1.6 jiter-0.17.0 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 limits-5.8.0 lxml-6.1.3 markdown-it-py-4.2.0 markupsafe-3.0.4 mcp-1.30.0 mdurl-0.1.2 openai-1.84.0 ordered-set-4.1.0 packaging-26.3 proxy_tools-0.1.0 psutil-7.2.2 pycparser-3.11 pydantic-2.14.1 pydantic-core-2.50.1 pydantic-settings-2.15.0 pygments-2.21.0 pyjwt-2.15.1 pyperclip-1.11.0 pypinyin-0.55.0 python-dotenv-1.2.4 python-multipart-0.0.32 pythonnet-3.1.0 pywebview-6.2.1 pywin32-312 referencing-0.37.0 requests-2.34.2 rich-15.0.0 rpds-py-0.30.0 shellingham-1.5.4 sniffio-1.3.1 soupsieve-2.10 sqlalchemy-2.0.54 sse-starlette-3.5.0 starlette-1.7.0 tqdm-4.70.1 typer-0.27.3 typing-extensions-4.16.0 typing-inspection-0.4.4 uiautomation-2.0.29 urllib3-2.8.0 uvicorn-0.54.0 waitress-3.0.2 werkzeug-3.1.9 wrapt-2.5.1 wtforms-3.2.2 zstandard-0.25.0
+2026-10-14T14:36:19.5986269Z Collecting pyinstaller==6.22.3
+2026-10-14T14:36:19.6338660Z   Downloading pyinstaller-6.22.3-py3-none-win_amd64.whl.metadata (8.5 kB)
+2026-10-14T14:36:19.7062693Z Collecting altgraph (from pyinstaller==6.22.3)
+2026-10-14T14:36:19.7111141Z   Downloading altgraph-0.17.5-py2.py3-none-any.whl.metadata (7.5 kB)
+2026-10-14T14:36:19.7317158Z Requirement already satisfied: packaging>=22.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from pyinstaller==6.22.3) (26.3)
+2026-10-14T14:36:19.7504391Z Collecting pefile>=2022.5.30 (from pyinstaller==6.22.3)
+2026-10-14T14:36:19.7548201Z   Downloading pefile-2024.8.26-py3-none-any.whl.metadata (1.4 kB)
+2026-10-14T14:36:19.7959770Z Collecting pyinstaller-hooks-contrib>=2026.7 (from pyinstaller==6.22.3)
+2026-10-14T14:36:19.8007239Z   Downloading pyinstaller_hooks_contrib-2026.8-py3-none-any.whl.metadata (16 kB)
+2026-10-14T14:36:19.8475157Z Collecting pywin32-ctypes>=0.2.1 (from pyinstaller==6.22.3)
+2026-10-14T14:36:19.8486368Z   Downloading pywin32_ctypes-0.2.3-py3-none-any.whl.metadata (3.9 kB)
+2026-10-14T14:36:19.8678371Z Requirement already satisfied: setuptools>=42.0.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from pyinstaller==6.22.3) (65.5.0)
+2026-10-14T14:36:19.8792717Z Downloading pyinstaller-6.22.3-py3-none-win_amd64.whl (1.5 MB)
+2026-10-14T14:36:19.9375331Z    ---------------------------------------- 1.5/1.5 MB 38.5 MB/s  0:00:00
+2026-10-14T14:36:19.9425897Z Downloading pefile-2024.8.26-py3-none-any.whl (74 kB)
+2026-10-14T14:36:19.9651634Z Downloading pyinstaller_hooks_contrib-2026.8-py3-none-any.whl (462 kB)
+2026-10-14T14:36:19.9899215Z Downloading pywin32_ctypes-0.2.3-py3-none-any.whl (30 kB)
+2026-10-14T14:36:20.0087501Z Downloading altgraph-0.17.5-py2.py3-none-any.whl (21 kB)
+2026-10-14T14:36:20.1756842Z Installing collected packages: altgraph, pywin32-ctypes, pyinstaller-hooks-contrib, pefile, pyinstaller
+2026-10-14T14:36:23.6297046Z 
+2026-10-14T14:36:23.6576974Z Successfully installed altgraph-0.17.5 pefile-2024.8.26 pyinstaller-6.22.3 pyinstaller-hooks-contrib-2026.8 pywin32-ctypes-0.2.3
+2026-10-14T14:36:24.8672043Z Collecting pyarmor
+2026-10-14T14:36:24.8918477Z   Downloading pyarmor-9.2.7-3-py3-none-any.whl.metadata (2.5 kB)
+2026-10-14T14:36:25.0774624Z Collecting pyarmor.cli.core~=8.1.2 (from pyarmor)
+2026-10-14T14:36:25.0842362Z   Downloading pyarmor_cli_core-8.1.2-cp310-cp310-win_amd64.whl.metadata (3.0 kB)
+2026-10-14T14:36:25.1093522Z Downloading pyarmor-9.2.7-3-py3-none-any.whl (3.1 MB)
+2026-10-14T14:36:25.1831604Z    ---------------------------------------- 3.1/3.1 MB 44.7 MB/s  0:00:00
+2026-10-14T14:36:25.1909786Z Downloading pyarmor_cli_core-8.1.2-cp310-cp310-win_amd64.whl (414 kB)
+2026-10-14T14:36:25.3475279Z Installing collected packages: pyarmor.cli.core, pyarmor
+2026-10-14T14:36:25.8250672Z 
+2026-10-14T14:36:25.8541677Z Successfully installed pyarmor-9.2.7 pyarmor.cli.core-8.1.2
+2026-10-14T14:36:26.0383469Z ##[group]Run python tools/build_release.py
+2026-10-14T14:36:26.0383961Z [36;1mpython tools/build_release.py[0m
+2026-10-14T14:36:26.0384793Z [36;1mif (Test-Path _pybuild_dist\WeAuto.exe) *** Write-Host "BUILD_OK $((Get-Item _pybuild_dist\WeAuto.exe).Length) bytes" *** else *** exit 1 ***[0m
+2026-10-14T14:36:26.0454419Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '***0***'"
+2026-10-14T14:36:26.0454856Z env:
+2026-10-14T14:36:26.0455189Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:36:26.0455719Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.10.11\x64/lib/pkgconfig
+2026-10-14T14:36:26.0456253Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:36:26.0456705Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:36:26.0457176Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:36:26.0461159Z   pc_build_key: ***
+2026-10-14T14:36:26.0461459Z ##[endgroup]
+2026-10-14T14:36:26.4066215Z Traceback (most recent call last):
+2026-10-14T14:36:26.4073416Z   File "D:\a\gloai\gloai\tools\build_release.py", line 303, in <module>
+2026-10-14T14:36:26.4073950Z     main()
+2026-10-14T14:36:26.4074360Z   File "D:\a\gloai\gloai\tools\build_release.py", line 285, in main
+2026-10-14T14:36:26.4074787Z     write_build_key(keys)
+2026-10-14T14:36:26.4075216Z   File "D:\a\gloai\gloai\tools\build_release.py", line 121, in write_build_key
+2026-10-14T14:36:26.4075700Z     print("[build] \u5df2\u5199\u5165", BUILD_KEY_PY)
+2026-10-14T14:36:26.4076904Z   File "C:\hostedtoolcache\windows\Python\3.10.11\x64\lib\encodings\cp1252.py", line 19, in encode
+2026-10-14T14:36:26.4122497Z     return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+2026-10-14T14:36:26.4123944Z UnicodeEncodeError: 'charmap' codec can't encode characters in position 8-10: character maps to <undefined>
+2026-10-14T14:36:26.5571266Z ##[error]Process completed with exit code 1.
+2026-10-14T14:36:26.5749420Z ##[group]Run # 权限已收紧为只读（不再建 issue）：真实报错输出到 Actions 日志，
+2026-10-14T14:36:26.5749947Z [36;1m# 权限已收紧为只读（不再建 issue）：真实报错输出到 Actions 日志，[0m
+2026-10-14T14:36:26.5750326Z [36;1m# 需要排障时在 run 页面直接看。[0m
+2026-10-14T14:36:26.5750953Z [36;1mtail -c 60000 build.log 2>/dev/null || echo "(build.log missing/empty)"[0m
+2026-10-14T14:36:26.5751395Z [36;1mecho "===== pip list ====="[0m
+2026-10-14T14:36:26.5751714Z [36;1mpip list 2>/dev/null[0m
+2026-10-14T14:36:26.5766218Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail ***0***
+2026-10-14T14:36:26.5766690Z env:
+2026-10-14T14:36:26.5767008Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:36:26.5767527Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.10.11\x64/lib/pkgconfig
+2026-10-14T14:36:26.5768067Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:36:26.5768516Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:36:26.5769022Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+2026-10-14T14:36:26.5769383Z ##[endgroup]
+2026-10-14T14:36:26.7651688Z (build.log missing/empty)
+2026-10-14T14:36:26.7652211Z ===== pip list =====
+2026-10-14T14:36:27.1864754Z Package                   Version   Build
+2026-10-14T14:36:27.1866686Z ------------------------- --------- -----
+2026-10-14T14:36:27.1868397Z altgraph                  0.17.5
+2026-10-14T14:36:27.1870134Z annotated-doc             0.0.5
+2026-10-14T14:36:27.1872448Z annotated-types           0.8.0
+2026-10-14T14:36:27.1873854Z anyio                     4.15.1
+2026-10-14T14:36:27.1875496Z attrs                     26.1.0
+2026-10-14T14:36:27.1876906Z beautifulsoup4            4.15.0
+2026-10-14T14:36:27.1878412Z blinker                   1.9.0
+2026-10-14T14:36:27.1879900Z bottle                    0.13.4
+2026-10-14T14:36:27.1881494Z certifi                   2026.7.22
+2026-10-14T14:36:27.1882869Z cffi                      2.1.1
+2026-10-14T14:36:27.1884605Z charset-normalizer        3.5.2
+2026-10-14T14:36:27.1885969Z click                     8.5.0
+2026-10-14T14:36:27.1887764Z clr_loader                0.3.1
+2026-10-14T14:36:27.1889353Z colorama                  0.4.6
+2026-10-14T14:36:27.1891033Z comtypes                  1.4.17
+2026-10-14T14:36:27.1892410Z cryptography              50.0.2
+2026-10-14T14:36:27.1893900Z Deprecated                1.3.1
+2026-10-14T14:36:27.1895410Z distro                    1.9.0
+2026-10-14T14:36:27.1896852Z exceptiongroup            1.3.1
+2026-10-14T14:36:27.1898283Z filelock                  4.1.0
+2026-10-14T14:36:27.1899730Z Flask                     3.1.3
+2026-10-14T14:36:27.1901184Z flask-cors                6.0.5
+2026-10-14T14:36:27.1902786Z Flask-Limiter             4.1.1
+2026-10-14T14:36:27.1904164Z Flask-WTF                 1.3.0
+2026-10-14T14:36:27.1905626Z greenlet                  3.5.6
+2026-10-14T14:36:27.1907273Z h11                       0.16.0
+2026-10-14T14:36:27.1908985Z httpcore                  1.0.9
+2026-10-14T14:36:27.1910653Z httpx                     0.28.1
+2026-10-14T14:36:27.1912063Z httpx-sse                 0.4.3
+2026-10-14T14:36:27.1913510Z idna                      3.20
+2026-10-14T14:36:27.1914863Z imageio-ffmpeg            0.6.0
+2026-10-14T14:36:27.1916433Z itsdangerous              2.2.0
+2026-10-14T14:36:27.1917726Z Jinja2                    3.1.6
+2026-10-14T14:36:27.1919173Z jiter                     0.17.0
+2026-10-14T14:36:27.1920622Z jsonschema                4.26.0
+2026-10-14T14:36:27.1922113Z jsonschema-specifications 2025.9.1
+2026-10-14T14:36:27.1923558Z limits                    5.8.0
+2026-10-14T14:36:27.1924982Z lxml                      6.1.3
+2026-10-14T14:36:27.1926408Z markdown-it-py            4.2.0
+2026-10-14T14:36:27.1927973Z MarkupSafe                3.0.4
+2026-10-14T14:36:27.1929972Z mcp                       1.30.0
+2026-10-14T14:36:27.1931400Z mdurl                     0.1.2
+2026-10-14T14:36:27.1932905Z openai                    1.84.0
+2026-10-14T14:36:27.1936610Z ordered-set               4.1.0
+2026-10-14T14:36:27.1937029Z packaging                 26.3
+2026-10-14T14:36:27.1937720Z pefile                    2024.8.26
+2026-10-14T14:36:27.1939289Z pillow                    12.3.0
+2026-10-14T14:36:27.1940684Z pip                       26.2.1
+2026-10-14T14:36:27.1942385Z proxy_tools               0.1.0
+2026-10-14T14:36:27.1943707Z psutil                    7.2.2
+2026-10-14T14:36:27.1945184Z pyarmor                   9.2.7     3
+2026-10-14T14:36:27.1946605Z pyarmor.cli.core          8.1.2
+2026-10-14T14:36:27.1948173Z pycparser                 3.11
+2026-10-14T14:36:27.1949844Z pydantic                  2.14.1
+2026-10-14T14:36:27.1951303Z pydantic_core             2.50.1
+2026-10-14T14:36:27.1952764Z pydantic-settings         2.15.0
+2026-10-14T14:36:27.1954192Z Pygments                  2.21.0
+2026-10-14T14:36:27.1955777Z pyinstaller               6.22.3
+2026-10-14T14:36:27.1957132Z pyinstaller-hooks-contrib 2026.8
+2026-10-14T14:36:27.1958572Z PyJWT                     2.15.1
+2026-10-14T14:36:27.1959975Z pyperclip                 1.11.0
+2026-10-14T14:36:27.1961525Z pypinyin                  0.55.0
+2026-10-14T14:36:27.1962952Z python-dotenv             1.2.4
+2026-10-14T14:36:27.1964277Z python-multipart          0.0.32
+2026-10-14T14:36:27.1965803Z pythonnet                 3.1.0
+2026-10-14T14:36:27.1967543Z pywebview                 6.2.1
+2026-10-14T14:36:27.1969025Z pywin32                   312
+2026-10-14T14:36:27.1970563Z pywin32-ctypes            0.2.3
+2026-10-14T14:36:27.1972047Z referencing               0.37.0
+2026-10-14T14:36:27.1973527Z requests                  2.34.2
+2026-10-14T14:36:27.1974979Z rich                      15.0.0
+2026-10-14T14:36:27.1976529Z rpds-py                   0.30.0
+2026-10-14T14:36:27.1977790Z setuptools                65.5.0
+2026-10-14T14:36:27.1979219Z shellingham               1.5.4
+2026-10-14T14:36:27.1980632Z sniffio                   1.3.1
+2026-10-14T14:36:27.1982083Z soupsieve                 2.10
+2026-10-14T14:36:27.1983537Z SQLAlchemy                2.0.54
+2026-10-14T14:36:27.1984971Z sse-starlette             3.5.0
+2026-10-14T14:36:27.1986406Z starlette                 1.7.0
+2026-10-14T14:36:27.1988044Z tqdm                      4.70.1
+2026-10-14T14:36:27.1989760Z typer                     0.27.3
+2026-10-14T14:36:27.1991293Z typing_extensions         4.16.0
+2026-10-14T14:36:27.1992840Z typing-inspection         0.4.4
+2026-10-14T14:36:27.1994284Z uiautomation              2.0.29
+2026-10-14T14:36:27.1995768Z urllib3                   2.8.0
+2026-10-14T14:36:27.1997011Z uvicorn                   0.54.0
+2026-10-14T14:36:27.1998436Z waitress                  3.0.2
+2026-10-14T14:36:27.2000205Z Werkzeug                  3.1.9
+2026-10-14T14:36:27.2002411Z wrapt                     2.5.1
+2026-10-14T14:36:27.2003936Z WTForms                   3.2.2
+2026-10-14T14:36:27.2007779Z zstandard                 0.25.0
+2026-10-14T14:36:27.2697049Z Post job cleanup.
+2026-10-14T14:36:27.4449419Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-14T14:36:27.4732932Z git version 2.55.0.windows.5
+2026-10-14T14:36:27.4807271Z Temporarily overriding HOME='D:\a\_temp\665a4b37-8413-4676-a5de-edaf9dce6324' before making global git config changes
+2026-10-14T14:36:27.4808339Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-14T14:36:27.4818343Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\gloai\gloai
+2026-10-14T14:36:27.5147491Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-14T14:36:27.5471107Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-14T14:36:28.1585511Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-14T14:36:28.1887316Z http.https://github.com/.extraheader
+2026-10-14T14:36:28.1939092Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-10-14T14:36:28.2294383Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-14T14:36:28.7898522Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-14T14:36:28.8217281Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-14T14:36:29.4119459Z Cleaning up orphan processes
+2026-10-14T14:36:29.4761073Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

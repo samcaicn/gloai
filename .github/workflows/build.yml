@@ -56,6 +56,7 @@ jobs:
         shell: pwsh
         env:
           pc_build_key: ${{ secrets.pc_build_key }}
+          PYTHONIOENCODING: utf-8   # Windows runner 默认 cp1252，打印中文会 UnicodeEncodeError
         run: |
           python tools/build_release.py
           if (Test-Path _pybuild_dist\WeAuto.exe) { Write-Host "BUILD_OK $((Get-Item _pybuild_dist\WeAuto.exe).Length) bytes" } else { exit 1 }
