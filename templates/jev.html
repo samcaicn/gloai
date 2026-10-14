@@ -75,7 +75,9 @@
             <tbody>
                 <tr><td class="k">判断服务</td><td class="v">WeAuto 自建 Worker（wetech.jukuai.net）</td></tr>
                 <tr><td class="k">判断模型</td><td class="v">{{ data.consts.get('JEV_MODEL_NAME') or '后台默认（llama-3.3-70b）' }}</td></tr>
-                <tr><td class="k">单次超时</td><td class="v">{{ data.consts.get('JEV_TIMEOUT_SEC') }} 秒（超时即照常回复）</td></tr>
+                <tr><td class="k">单次超时</td><td class="v">首次 {{ data.consts.get('JEV_TIMEOUT_SEC') }} 秒（超时即照常回复）</td></tr>
+                <tr><td class="k">超时与重试</td><td class="v">瞬时故障（超时/连接失败/服务端 5xx）自动重试 {{ data.consts.get('JEV_MAX_RETRIES') }} 次，每次最多 {{ data.consts.get('JEV_RETRY_TIMEOUT_SEC') }} 秒</td></tr>
+                <tr><td class="k">语言跟随</td><td class="v">{{ '开启（对方用英文就用英文回复）' if data.consts.get('JEV_LANGUAGE_FOLLOW') else '关闭' }}</td></tr>
                 <tr><td class="k">带进判断的对话</td><td class="v">最近 {{ data.consts.get('JEV_CONTEXT_TURNS') }} 轮</td></tr>
                 <tr><td class="k">关系设定</td><td class="v">{{ data.consts.get('JEV_RELATIONSHIP') }}</td></tr>
                 <tr><td class="k">结论注入提示词</td><td class="v">{{ '开启' if data.consts.get('JEV_INJECT_GUIDANCE') else '关闭' }}</td></tr>
@@ -113,6 +115,7 @@
                 <tr><td>should_reply_now</td><td>下一条是否需要实质内容（否 = 别硬凑）</td></tr>
                 <tr><td>literal_question</td><td>是否为字面意思（否 = 话里有话）</td></tr>
                 <tr><td>tension_resolved</td><td>紧张是否已化解</td></tr>
+                <tr><td>language</td><td>对方在用什么语言：中文 / 英文 / 其他（回复跟随对方语言）</td></tr>
             </tbody>
         </table>
     </div>

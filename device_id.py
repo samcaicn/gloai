@@ -44,8 +44,25 @@ import threading
 
 APP_NAME = "WeAuto"
 
-# 应用级盐：只有 WeAuto 能算出这个 ID，别的软件拿到同样的硬件标识也算不出同一个值
-_SALT = "weauto.device-id.v1"
+# 应用级盐：只有 WeAuto 能算出这个 ID，别的软件拿到同样的硬件标识也算不出同一个值。
+# 【防破解整改】发行版从构建期注入的 secrets blob 读取（DEVICE_SALT，每次发行随机），
+# 开发态回退仓库内开发盐（换盐即换 ID）。
+_DEV_SALT = "weauto.device-id.v1"
+
+
+def _salt():
+    try:
+        from weauto_license import secrets as _sec
+        if _sec.is_release():
+            v = _sec.get("DEVICE_SALT", "")
+            if v:
+                return v
+    except Exception:
+        pass
+    return _DEV_SALT
+
+
+_SALT = _salt()
 _CACHE_NAME = "device.json"
 
 _lock = threading.Lock()

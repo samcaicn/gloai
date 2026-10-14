@@ -7,6 +7,26 @@
 - 由于修改范围广泛且深入，无法精确标注每处修改的具体日期
 - 所有修改均在2025年期间完成，遵循GPL-3.0许可证
 
+## 未发布（2026-10-14）
+
+- Jev 判断式 AI 升级（对齐上游 jev-chat-jarvis v1.7，硬 fork 继续自维护）：
+  - 题目集判据精化：对照上游 main 的 tools/jev/questions.py 逐条合入
+    true_intent / should_reply_now / best_action / she_needs / tension_resolved 的修订
+  - 语言跟随对方（上游 v1.7 行为）：新增 language 判断题，结论注入提示词，
+    主模型用同一语言回复
+  - 超时重试：首次 8 秒，瞬时故障（超时/连接失败/服务端 5xx）自动重试一次
+    （30 秒量级，对齐上游「判断最多等 30 秒」）；4xx 不重试；每次尝试重新
+    签名 HMAC（保证时间戳在 ±60s 防重放窗口内）
+  - 候选条数 1/2/3（上游 v1.7 设置项）：build_rank_question / rank 支持
+    1~3 条候选，1 条时不发排序请求
+- Jev 状态页新增「超时与重试」「语言跟随」只读展示，判断项表新增 language
+- _jev_exe_test.py 重写为适配零配置架构的离线单测（67 项，mock 本地
+  decisions 服务，不碰线上 Worker），并接入 CI 的 ux-e2e job
+- 合规：LICENSE_COMPLIANCE.md 增加 jev-chat-jarvis（MIT）移植声明与署名
+- 已知线上问题：Worker 自 2026-10-13 起对 /ai/* 启用 Android L3 完整性门槛，
+  Windows 端 Jev 判断暂时被 403（已降级为照常回复，不影响自动回复），
+  待 Worker 侧放行 EXE 的 HMAC 双凭证
+
 ## v1.1 (2026年10月5日)
 - 全新现代简洁 UI：13 个页面统一设计体系（现代浅色、卡片化、圆角、统一配色）
 - 版本号体系切换为 1.x

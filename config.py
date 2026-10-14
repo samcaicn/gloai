@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 # ***********************************************************************
 # Modified based on the KouriChat project
 # Copyright of this modification: Copyright (C) 2025, iwyxdxl
@@ -23,7 +25,7 @@ LISTEN_LIST = []
 # ===== AI 来源开关（决定用不用 Cloudflare Workers AI）=====
 # 三态，取值 'auto' / True / False：
 #   'auto'（出厂默认）—— 自动判断：
-#       · DEEPSEEK_BASE_URL 是本网关地址（wetech.jukuai.net/ai/v1 等）→ 走 Cloudflare Workers AI
+#       · DEEPSEEK_BASE_URL 是本网关地址（weauto-license.pages.dev/ai/v1 等）→ 走 Cloudflare Workers AI
 #       · 或填了真实 DEEPSEEK_API_KEY 且 base_url 是别家地址 → 不用 Workers AI，直连你自己的模型
 #       · 都没有 → 仍走 Workers AI（门禁开启时由卡密作凭证，客户端不接触真实上游 key）
 #   True  —— 强制走 Cloudflare Workers AI（忽略本地 base_url/key）
@@ -35,7 +37,7 @@ USE_WORKER_AI = 'auto'
 # 注意：此处不要放任何占位串 —— 界面会把 config 里的值当默认值直接显示给用户。
 DEEPSEEK_API_KEY = ''
 # 默认指向自有 Worker 网关（门禁开启时由 guard 覆盖；门禁关闭时此为直连兜底地址）
-DEEPSEEK_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
+DEEPSEEK_BASE_URL = 'https://weauto-license.pages.dev/ai/v1'
 # 主聊天模型：@cf/ 开头 -> Workers AI（Cloudflare，免密钥）；
 # 写成火山模型名（如 doubao-seed-1.6-250615）-> 火山方舟（需 Worker 配 VOLCANO_API_KEY）
 MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
@@ -55,7 +57,7 @@ TEMPERATURE = 1.1
 # Moonshot AI配置（用于图片和表情包识别）
 # API申请https://platform.moonshot.cn/
 MOONSHOT_API_KEY = ''
-MOONSHOT_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
+MOONSHOT_BASE_URL = 'https://weauto-license.pages.dev/ai/v1'
 MOONSHOT_MODEL = 'gpt-4o'
 MOONSHOT_TEMPERATURE = 0.8
 ENABLE_IMAGE_RECOGNITION = False
@@ -142,7 +144,7 @@ USE_VOICE_CALL_FOR_REMINDERS = False
 # 联网搜索已作为默认能力开启（2026-10-05）：密钥留空时自动继承主模型密钥，
 # 配置页已撤掉；需要关闭或换搜索模型的高级用户直接改这里。
 ENABLE_ONLINE_API = True
-ONLINE_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
+ONLINE_BASE_URL = 'https://weauto-license.pages.dev/ai/v1'
 ONLINE_MODEL = 'net-gpt-4o-mini'
 ONLINE_API_KEY = ''
 ONLINE_API_TEMPERATURE = 0.7
@@ -175,7 +177,7 @@ REMOVE_PARENTHESES = False
 
 # 是否使用辅助模型
 ENABLE_ASSISTANT_MODEL = False
-ASSISTANT_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
+ASSISTANT_BASE_URL = 'https://weauto-license.pages.dev/ai/v1'
 ASSISTANT_MODEL = 'gpt-4o-mini'
 ASSISTANT_API_KEY = ''
 ASSISTANT_TEMPERATURE = 0.3
@@ -188,7 +190,7 @@ ENABLE_SENSITIVE_CONTENT_CLEARING = False
 
 # 论坛自定义模型配置（可选）
 ENABLE_FORUM_CUSTOM_MODEL = False
-FORUM_BASE_URL = 'https://wetech.jukuai.net/ai/v1'
+FORUM_BASE_URL = 'https://weauto-license.pages.dev/ai/v1'
 FORUM_MODEL = 'deepseek-ai/DeepSeek-V3'
 FORUM_API_KEY = ''
 FORUM_TEMPERATURE = 1.0
@@ -211,7 +213,7 @@ MAX_SINGLE_MSG_LEN = 800
 #   api.creem.io 的 license 调用。客户端绝不接触 Creem 域名、不持有任何 Creem 密钥。
 # 详见 weauto_license/README.md
 LICENSE_GUARD_ENABLED = False   # 开发期 False；正式发布设 True
-CREEM_WORKER_URL = "https://wetech.jukuai.net"   # 已部署的 Worker（2026-09-28 起唯一对外域名；weauto.safeopc.cn 已删除）
+CREEM_WORKER_URL = "https://weauto-license.pages.dev"   # 已部署的 Worker（2026-09-28 起唯一对外域名；weauto.safeopc.cn 已删除）
 CREEM_LICENSE_KEY = ""          # 用户购买后在 Creem 拿到的卡密，填这里
 # 买家邮箱：只用于「付款页自动填好」，不参与任何鉴权。
 # Creem 是 MoR（Merchant of Record），收银台邮箱是收据/税务的法定必填项、**无法去掉**，
@@ -245,10 +247,10 @@ DEVICE_SYNC_ENABLED = True
 #
 # 客户端 <-> CF 后台通信密钥（防白嫖 Workers AI 额度）。
 # 与 Creem 卡密无关！这是「自己的 EXE <-> 自己的 Worker」之间的 HMAC 签名密钥。
-# 留空 = Jev 端点公开（开发/向后兼容）。要真防白嫖：
-#   1) 在本行填一个长随机串（如 python -c "import secrets;print(secrets.token_hex(32))"）
-#   2) 在 Cloudflare 注入同值：cd weauto_license && wrangler secret put WEAUATO_CLIENT_SECRET
-# 两端必须一致，否则请求会被 401 拒绝。
-WEAUATO_CLIENT_SECRET = "e3471d8e67bfbcb8823b038d7a2af30d4b15d91e480c98c2"
+# 【防破解整改】仓库不再存放明文密钥：本地开发用环境变量注入；
+# 发行版由构建期加密注入（weauto_license/secrets → release_secrets.enc）。
+# 生产两端一致：Cloudflare wrangler secret put WEAUATO_CLIENT_SECRET <同值>，
+# 不一致请求会被 401 拒绝。
+WEAUATO_CLIENT_SECRET = os.environ.get("WEAUATO_CLIENT_SECRET", "")
 
 

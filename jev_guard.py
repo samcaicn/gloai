@@ -14,7 +14,20 @@ Jev 不是聊天模型，是「判断模型」：喂 state + questions，返回�
     noul   是非   -> {"noul": 0..1}
     choice 单选   -> {"choice": "<criteria 里的 key>"}
     score  打分   -> {"score": 0..bins-1}
-一次 7 题在原实现里约 900ms。它不生成任何回复文字，只回答"这段对话现在是什么状况"。
+一次 8 题在原实现里约 900ms。它不生成任何回复文字，只回答"这段对话现在是什么状况"。
+
+与上游的同步（2026-10-14）
+------------------------
+题目集基线原为上游 v1.4 快照（@8722e03）。本次对照上游 main（v1.7 时代）
+的 tools/jev/questions.py 逐条合入判据精化（true_intent / should_reply_now /
+best_action / she_needs / tension_resolved 的 criteria 与 instructions 修订），
+并移植三项与本地改造不冲突的 v1.7 行为：
+  - 语言跟随对方（language 判断题 + guidance 注入）
+  - 判断超时后重试（首次 JEV_TIMEOUT_SEC，瞬时故障重试一次 JEV_RETRY_TIMEOUT_SEC，
+    对应上游「判断最多等 30 秒，超时停下给重试」）
+  - 候选条数 1/2/3（build_rank_question / rank 支持 1~3 条，1 条不排序）
+Android 专属项（WhatsApp 适配 / 常驻可拖拽卡片 / 候选「换一组」/ 无障碍服务改名 /
+截屏移出主线程）不适用，未移植。
 
 为什么放在 Cloudflare Worker 上
 -------------------------------
@@ -103,7 +116,8 @@ JUDGE_QUESTIONS = {
             "confirm_you_care": (
                 "They are testing whether you remember, pay attention, or still care. "
                 "Signals: 'did you forget again', 'then say it', 'you better', sarcastic 'busy person', "
-                "asking you to prove you know a past conversation."
+                "asking you to prove you know a past conversation. "
+                "If they mainly want a new deliverable or a yes on a time, do not use this."
             ),
             "vent_anger": (
                 "They are angry or hurt and mainly want the feeling acknowledged. "
@@ -119,7 +133,8 @@ JUDGE_QUESTIONS = {
             ),
             "casual_chat": (
                 "Light talk, banter, sharing, teasing with a laugh, or friendly logistics "
-                "with no emotional test and no conflict."
+                "with no emotional test and no conflict. A friend suggesting a meal time can be this "
+                "if the thread is warm."
             ),
             "close_topic": (
                 "Peaceful wrap-up only: they accepted an apology, confirmed a happy plan, said thanks, "
@@ -160,8 +175,10 @@ JUDGE_QUESTIONS = {
             "Substantive means: admitting a specific known fault, giving a concrete time/plan/deliverable, "
             "explaining facts you actually know, or reciting the recalled content they asked you to say. "
             "This is NOT 'should you send any message'. Timing is irrelevant. "
-            "Answer FALSE if the thing they want you to recite or prove is not present in this snippet. "
-            "Answer FALSE if they already accepted and closed the topic."
+            "Answer FALSE if the thing they want you to recite or prove is not present in this snippet "
+            "(you would be guessing). 'Then say it' / 'you better' while you are stalling is FALSE. "
+            "Answer FALSE if they already accepted and closed the topic. "
+            "Answer true only if the needed fact, plan, or named fault is already in this snippet."
         ),
         "criteria": {
             "true": (
@@ -184,13 +201,31 @@ JUDGE_QUESTIONS = {
             "you actually remember it, choose check_history — do not apologize or invent a plan instead."
         ),
         "criteria": {
-            "check_history": "Look up prior chat or facts before taking a position.",
-            "apologize": "Lead with a sincere apology for a real mistake or hurt already identified.",
-            "give_commitment": "Give a concrete promise, deadline, or arrangement they asked for.",
+            "check_history": (
+                "Look up prior chat or facts before taking a position. "
+                "Use when they ask you to repeat, recall, or prove you remember something specific."
+            ),
+            "apologize": (
+                "Lead with a sincere apology for a real mistake or hurt already identified. "
+                "Not for an unnamed forgotten thing when you should first find out what it was."
+            ),
+            "give_commitment": (
+                "Give a concrete promise, deadline, or arrangement they asked for "
+                "in a conflict or work-pressure setting."
+            ),
             "explain": "Explain what happened or why, without leading with apology or a new plan.",
-            "acknowledge": "Show you heard them and care, without new facts, an apology, or a plan.",
-            "say_less": "Keep it short or add nothing. Extra words would over-explain or pour fuel on it.",
-            "make_plan": "Propose or confirm logistics (time, place, task) for a non-conflict request.",
+            "acknowledge": (
+                "Show you heard them and care, without new facts, an apology, or a plan. "
+                "Use for light chat or when they mainly need to feel seen."
+            ),
+            "say_less": (
+                "Keep it short or add nothing. Extra words would over-explain, reopen a closed topic, "
+                "or pour fuel on an ultimatum that told you not to talk."
+            ),
+            "make_plan": (
+                "Propose or confirm logistics (time, place, task) for a non-conflict request "
+                "such as a meal or a meeting."
+            ),
         },
     },
     "she_needs": {
@@ -199,18 +234,30 @@ JUDGE_QUESTIONS = {
             "What does the other person need from you right now? Judge the LATEST message first. "
             "If they genuinely accepted (thanks / got it / 没事了 / 那就这样 / 收到了 / 过去了), "
             "you MUST choose nothing, even if earlier they wanted action or an apology. "
-            "Sarcastic 'I'm used to it', 'whatever', 'I don't want to hear it' is NOT genuine satisfaction. "
+            "Sarcastic 'I'm used to it', 'whatever', 'I don't want to hear it', 'don't bother coming' "
+            "is NOT genuine satisfaction — do not choose nothing. "
             "If they asked you to recap a named time/place/date, choose action. "
             "If they are testing whether you remember or still care, and the content is unnamed, choose care."
         ),
         "criteria": {
-            "apology": "They need a sincere apology for hurt or a mistake, and have not accepted one yet.",
-            "action": "They need a concrete action, time, commitment, or follow-through, and have not accepted one yet.",
-            "explanation": "They need a clear explanation of what happened or why, and have not received it.",
-            "care": "They need proof you remember, listen, or care — a loyalty or attention test.",
+            "apology": (
+                "They need a sincere apology for hurt or a mistake, and they have not accepted one yet."
+            ),
+            "action": (
+                "They need a concrete action, time, commitment, recap of a named fact, or follow-through, "
+                "and they have not yet accepted one."
+            ),
+            "explanation": (
+                "They need a clear explanation of what happened or why, and have not received it."
+            ),
+            "care": (
+                "They need proof you remember, listen, or care — a loyalty or attention test — "
+                "not yet a plan or an apology. Sarcastic 'I am used to it' belongs here, not nothing."
+            ),
             "nothing": (
                 "They need nothing further. Genuine acceptance, a peaceful closed topic, "
-                "warm casual chat with no ask, or a rupture where they told you not to reply."
+                "warm casual chat with no ask, or a rupture where they told you not to reply. "
+                "Not sarcasm pretending to be fine."
             ),
         },
     },
@@ -223,8 +270,30 @@ JUDGE_QUESTIONS = {
             "A sarcastic 'you better', an unanswered test, leftover blame, or an open ultimatum means false."
         ),
         "criteria": {
-            "true": "No remaining tension: they accepted, joked again, said it's fine, or the chat was never tense.",
-            "false": "Tension is still present: they are waiting, testing, angry, sarcastic, or the issue is open.",
+            "true": (
+                "No remaining tension: they accepted, joked again, said it's fine, "
+                "confirmed a happy plan, or the chat was never tense."
+            ),
+            "false": (
+                "Tension is still present: they are waiting, testing, angry, sarcastic, "
+                "issuing an ultimatum, or the issue is open."
+            ),
+        },
+    },
+    # 语言跟随对方（上游 v1.7「候选回复的语言跟随对方最近一条消息」的 WeAuto 落地）：
+    # 判断对方在用什么语言，结论注入提示词，让主模型用同一语言回复。
+    # 与其余题目同批发出，不增加往返延迟。
+    "language": {
+        "type": "choice",
+        "instructions": (
+            "What language is the other person using in their latest messages? "
+            "Judge from the latest message first; if scripts are mixed, pick the dominant one. "
+            "This decides the language the next reply should be written in."
+        ),
+        "criteria": {
+            "zh": "Chinese (simplified or traditional), including slang and emoji-only lines.",
+            "en": "English or another Latin-script language.",
+            "other": "A non-Chinese, non-English language such as Japanese, Korean or Thai.",
         },
     },
 }
@@ -254,6 +323,11 @@ _NEEDS_CN = {
     "care": "你在意他/她的证明",
     "nothing": "什么都不需要了",
 }
+_LANG_CN = {
+    "zh": "中文",
+    "en": "英文",
+    "other": "对方使用的语言",
+}
 
 # ---------------------------------------------------------------- 配置读取
 
@@ -270,9 +344,12 @@ _CFG_TTL = 30.0  # 秒：WebUI 改完配置不必重启 bot 也能生效
 # 用户不需要知道自己需要配 URL / 密钥 / 开关。以下为出厂固定值，代码里直接写死。
 # 唯一仍从 config.py 读的是「客户端↔Worker 通信密钥」与卡密（用于签名与脱敏），
 # 那两项属于授权体系而非 Jev 业务参数。
-JEV_ENDPOINT = "https://wetech.jukuai.net/ai/jev/decisions"  # 自建 Worker 端点
+JEV_ENDPOINT = "https://weauto-license.pages.dev/ai/jev/decisions"  # 自建 Worker 端点
 JEV_MODEL_NAME = ""          # 留空 = 用 Worker 端 wrangler.toml 的默认模型（实测 70B 判得准）
-JEV_TIMEOUT_SEC = 8.0        # 单次判断超时（秒）；超时/失败一律降级为照常回复
+JEV_TIMEOUT_SEC = 8.0        # 单次尝试超时（秒）；超时/失败一律降级为照常回复
+JEV_RETRY_TIMEOUT_SEC = 30.0 # 重试尝试超时（上游 v1.7「判断最多等 30 秒」的同量级）
+JEV_MAX_RETRIES = 1          # 瞬时故障（超时/连接失败/5xx）重试次数；4xx 不重试（重试无意义）
+JEV_LANGUAGE_FOLLOW = True   # 语言跟随对方（上游 v1.7）：把对方语言注入提示词，主模型用同一语言回复
 JEV_RELATIONSHIP = "微信联系人"  # 填进判断的「我和对方是什么关系」
 JEV_CONTEXT_TURNS = 6        # 带进判断的最近对话条数（一问一答算 2 条）
 JEV_INJECT_GUIDANCE = True   # 把判断结论注入 system 提示，指导主模型语气与内容
@@ -331,9 +408,14 @@ def reload_config():
 
 
 def _redact(text):
-    """日志/异常里抹掉卡密与客户端通信密钥。"""
+    """日志/异常里抹掉卡密与客户端通信密钥（含构建期注入的全部密钥）。"""
     if not isinstance(text, str):
         text = str(text)
+    try:
+        from weauto_license import secrets as _sec
+        text = _sec.redact(text)
+    except Exception:
+        pass
     for k in (_cfg("CREEM_LICENSE_KEY", "") or "", _cfg("WEAUATO_CLIENT_SECRET", "") or ""):
         if k and len(k) >= 6:
             text = text.replace(k, "[REDACTED]")
@@ -341,7 +423,18 @@ def _redact(text):
 
 
 def _client_secret():
-    """取客户端↔后台通信密钥（WEAUATO_CLIENT_SECRET）；空串=公开模式。"""
+    """取客户端↔后台通信密钥（WEAUATO_CLIENT_SECRET）；空串=公开模式。
+
+    【防破解整改】发行版下从构建期注入的加密 blob（weauto_license.secrets）读取，
+    config.py 不再存放明文密钥；开发态回退 config.py（本地联调用）。
+    """
+    try:
+        from weauto_license import secrets as _sec
+        if _sec.is_release():
+            v = _sec.get("WEAUATO_CLIENT_SECRET", "") or ""
+            return v.strip()
+    except Exception:
+        pass
     try:
         return (_cfg("WEAUATO_CLIENT_SECRET", "") or "").strip()
     except Exception:
@@ -415,17 +508,25 @@ def build_state(history, incoming_text, relationship="微信联系人"):
 
 
 def build_rank_question(candidates):
-    """3 条候选回复 -> Jev 单选排序题（criteria 保留候选原文）。"""
-    if len(candidates) != 3:
-        raise ValueError("build_rank_question 需要恰好 3 条候选回复")
-    keys = ("reply_a", "reply_b", "reply_c")
+    """1~3 条候选回复 -> Jev 单选排序题（criteria 保留候选原文）。
+
+    上游 v1.7 起候选条数可配 1/2/3（默认 3，只要 1 条时不做排序出得更快），
+    这里同样支持 1~3 条：键按数量取 reply_a/b/c。
+    """
+    candidates = list(candidates or [])
+    if not (1 <= len(candidates) <= 3):
+        raise ValueError("build_rank_question 需要 1~3 条候选回复")
+    keys = ("reply_a", "reply_b", "reply_c")[: len(candidates)]
     return {
         "best_reply": {
             "type": "choice",
             "instructions": (
                 "Which candidate reply is the most appropriate next message, "
                 "given the conversation and the other person's true need? "
-                "Penalize dismissive, over-promising, or off-topic replies."
+                "Prefer a reply that matches the best action type. "
+                "Penalize dismissive, over-promising, or off-topic replies. "
+                "If the facts are not yet confirmed, prefer the candidate that looks them up "
+                "instead of faking memory or a vague apology."
             ),
             "criteria": {k: t for k, t in zip(keys, candidates)},
         }
@@ -468,12 +569,12 @@ def circuit_status():
 # ---------------------------------------------------------------- HTTP
 
 def _jev_candidate_urls():
-    """返回候选 Worker 域名列表（仅 wetech.jukuai.net 一个，无备用域名）。
+    """返回候选 Worker 域名列表（仅 weauto-license.pages.dev 一个，无备用域名）。
 
-    端点是内置常量（零配置）；已删除 weauto.safeopc.cn 备用入口，统一走 wetech.jukuai.net，
+    端点是内置常量（零配置）；已删除 weauto.safeopc.cn 备用入口，统一走 weauto-license.pages.dev，
     path 完全一致，签名可复用。
     """
-    known = ["wetech.jukuai.net"]
+    known = ["weauto-license.pages.dev"]
     try:
         p = urllib.parse.urlparse(JEV_ENDPOINT)
         path = p.path or "/ai/jev/decisions"
@@ -490,6 +591,11 @@ def _post_decisions(questions, state, timeout=None, model=None, circuit=True):
 
     用守护线程 + join 兜底：即使 urllib 卡死也不会拖住消息回调线程。
     内部按 _jev_candidate_urls() 顺序 failover：主域名失败（网络/5xx）自动试备用域名。
+    超时/重试（移植上游 v1.7「判断最多等 30 秒，超时停下给重试」）：
+      首次尝试 JEV_TIMEOUT_SEC；遇到瞬时故障（超时 / 连接失败 / 5xx）按 JEV_MAX_RETRIES
+      重试，重试超时升到 JEV_RETRY_TIMEOUT_SEC。4xx（鉴权/配额/参数）不重试——重试
+      无意义，只会拖慢回复。每次尝试重新签名（ts ±60s 防重放窗口内保持新鲜）。
+    一次逻辑调用 = 一次熔断记账（重试在内部，成功一次即算成功）。
     circuit=False 时不参与熔断计数（WebUI 手动自检用 —— 用户点一次测试不该
     把线上判断熔断掉，也不该被已熔断的状态挡住）。
     """
@@ -503,67 +609,81 @@ def _post_decisions(questions, state, timeout=None, model=None, circuit=True):
         payload["model"] = model
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     # 客户端↔后台通信签名（防白嫖）：填了 WEAUATO_CLIENT_SECRET 才带，否则公开模式。
-    # 两个域名 path 相同，签名一次即可复用。
-    auth_headers = {}
+    # 两个域名 path 相同，签名一次即可复用；但重试时会重签（见 _work 内 _auth_headers）。
     secret = _client_secret()
     urls = _jev_candidate_urls()
-    if secret:
+    # 每次尝试的超时计划：首次 JEV_TIMEOUT_SEC，之后 JEV_RETRY_TIMEOUT_SEC（不低于首次）。
+    timeouts = [timeout] + [max(timeout, JEV_RETRY_TIMEOUT_SEC)] * max(0, JEV_MAX_RETRIES)
+    join_budget = sum(timeouts) * len(urls) + 2
+    box = {"res": None, "err": None}
+
+    def _auth_headers():
+        if not secret:
+            return {}
         try:
             path = urllib.parse.urlparse(urls[0]).path or "/ai/jev/decisions"
             ts = str(int(time.time()))
             nonce = secrets.token_hex(16)
             sig = _sign(secret, path, ts, nonce, body)
-            auth_headers = {
+            return {
                 "X-WeAuto-Ts": ts,
                 "X-WeAuto-Nonce": nonce,
                 "X-WeAuto-Sig": sig,
             }
         except Exception:
-            auth_headers = {}
-    box = {"res": None, "err": None}
+            return {}
 
     def _work():
         last_err = "无可用域名"
-        for url in urls:
-            try:
-                req = urllib.request.Request(
-                    url,
-                    data=body,
-                    method="POST",
-                    headers={
-                        "Content-Type": "application/json; charset=utf-8",
-                        "Accept": "application/json",
-                        "X-WeAuto-Instance": _instance_id(),
-                        # Cloudflare WAF 会把 Python-urllib 的默认 UA 挡成 403（实测 same as creem 直连），
-                        # 必须带浏览器 UA，否则请求根本到不了 Worker。
-                        "User-Agent": _UA,
-                        **auth_headers,
-                    },
-                )
-                with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    data = json.loads(resp.read().decode("utf-8", errors="replace"))
-                answers = data.get("answers") if isinstance(data, dict) else None
-                if isinstance(answers, dict):
-                    box["res"] = answers
-                    return
-                last_err = "响应缺少 answers"
-            except urllib.error.HTTPError as e:
+        for tmo in timeouts:
+            auth_headers = _auth_headers()  # 每次尝试重签：保证 ts 在 ±60s 窗口内
+            for url in urls:
                 try:
-                    detail = e.read().decode("utf-8", errors="replace")[:300]
-                except Exception:
-                    detail = ""
-                last_err = f"HTTP {e.code}: {_redact(detail)}"
-            except Exception as e:
-                last_err = _redact(f"{type(e).__name__}: {e}")
+                    req = urllib.request.Request(
+                        url,
+                        data=body,
+                        method="POST",
+                        headers={
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Accept": "application/json",
+                            "X-WeAuto-Instance": _instance_id(),
+                            # Cloudflare WAF 会把 Python-urllib 的默认 UA 挡成 403（实测 same as creem 直连），
+                            # 必须带浏览器 UA，否则请求根本到不了 Worker。
+                            "User-Agent": _UA,
+                            **auth_headers,
+                        },
+                    )
+                    with urllib.request.urlopen(req, timeout=tmo) as resp:
+                        data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                    answers = data.get("answers") if isinstance(data, dict) else None
+                    if isinstance(answers, dict):
+                        box["res"] = answers
+                        return
+                    # 200 但没有 answers：属于响应形态异常，重试大概率一样，直接收手
+                    box["err"] = "响应缺少 answers"
+                    return
+                except urllib.error.HTTPError as e:
+                    try:
+                        detail = e.read().decode("utf-8", errors="replace")[:300]
+                    except Exception:
+                        detail = ""
+                    last_err = f"HTTP {e.code}: {_redact(detail)}"
+                    if e.code < 500:
+                        # 4xx（鉴权失败/配额尽/参数错）：重试无意义，直接失败
+                        box["err"] = last_err
+                        return
+                except Exception as e:
+                    # 超时 / 连接失败等网络层异常：瞬时故障，进入下一次尝试
+                    last_err = _redact(f"{type(e).__name__}: {e}")
         box["err"] = last_err
 
     t = threading.Thread(target=_work, daemon=True)
     t.start()
-    t.join(timeout * len(urls) + 2)
+    t.join(join_budget)
     if t.is_alive():
         if circuit:
             _circuit_record(False)
-        return None, f"超时（>{timeout * len(urls) + 2:.0f}s）未返回"
+        return None, f"超时（>{join_budget:.0f}s）未返回"
     if circuit:
         _circuit_record(box["res"] is not None)
     return box["res"], box["err"]
@@ -606,7 +726,7 @@ def _answers_of(answers):
         v = _noul(k)
         if v is not None:
             verdict[k] = v
-    for k in ("true_intent", "best_action", "she_needs"):
+    for k in ("true_intent", "best_action", "she_needs", "language"):
         v = _choice(k)
         if v is not None:
             verdict[k] = v
@@ -649,6 +769,11 @@ def guidance_text(verdict):
     if not JEV_INJECT_GUIDANCE:
         return ""
     lines = ["【对话判断（Jev 判断模型给出，按它调整你的语气与内容）】"]
+    # 语言跟随（上游 v1.7）：放在最前面，语言是整条回复的基调
+    if JEV_LANGUAGE_FOLLOW:
+        lang = verdict.get("language")
+        if lang:
+            lines.append(f"- 对方使用语言：{_LANG_CN.get(lang, lang)}（请用同一语言回复）")
     intent = verdict.get("true_intent")
     if intent:
         lines.append(f"- 对方真实意图：{intent}（{_INTENT_CN.get(intent, '')}）")
@@ -693,21 +818,25 @@ def should_hold(verdict):
 
 
 def rank(user_id, incoming_text, candidates, history=None):
-    """对 3 条候选回复排序，返回最好的那条下标（0/1/2）；失败返回 None。"""
-    if not enabled() or len(candidates) != 3:
+    """对候选回复排序，返回最好的那条下标（0/1/2）；失败返回 None。
+
+    候选 1~3 条（上游 v1.7 的候选条数设置）。只有 1 条时不做排序——
+    上游行为：1 条候选不出排序请求，直接返回 None，调用方应直接用那条（出得更快）。
+    """
+    if not enabled():
         return None
     try:
+        candidates = list(candidates or [])
+        if not (2 <= len(candidates) <= 3):
+            return None
         state = build_state(history or [], incoming_text, JEV_RELATIONSHIP)
         answers, err = _post_decisions(
             build_rank_question(candidates), state, model=(JEV_MODEL_NAME or None)
         )
         if err or not answers:
             return None
-        picked = _answers_of(answers).get("best_reply") if isinstance(answers, dict) else None
-        # best_reply 是 choice 题型，_answers_of 只认已知 key，这里单独取
         a = answers.get("best_reply")
-        if isinstance(a, dict) and a.get("choice"):
-            picked = str(a["choice"])
+        picked = str(a["choice"]) if isinstance(a, dict) and a.get("choice") else None
         mapping = {"reply_a": 0, "reply_b": 1, "reply_c": 2}
         return mapping.get(picked)
     except Exception:

@@ -35,14 +35,42 @@ except Exception:  # 打包进 EXE 时 tools 路径不可用 → 兜底尝试内
 PROMPTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts")
 
 # 话术包验签公钥（SPKI base64，EC prime256v1）。
-# 配对私钥在 weauto_license/pack_signing_key.pem（本地 600 权限，永不进仓库）。
-PACK_VERIFY_PUBKEY_B64 = (
+# 【防破解整改】发行版从构建期注入的 secrets blob 读取新密钥对的公钥；
+# 配对私钥只在构建机 / CI secret 中，**不再随仓库分发**（旧私钥已作废删除）。
+# 开发态回退到仓库内开发公钥，便于本地生成测试包。
+_DEV_PACK_VERIFY_PUBKEY_B64 = (
     "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEme+K+KHbIccO7/vfRVJ1cE2aRJgaZ8X2qWxlMhkIhnkXwpQ2EXh4nG2nVVv3bfS9FuoFP9k1po47OtGIM75GYw=="
 )
 
+
+def _pack_verify_pubkey_b64() -> str:
+    try:
+        from weauto_license import secrets as _sec
+        if _sec.is_release():
+            v = _sec.get("PACK_SIGNING_PUB", "")
+            if v:
+                return v
+    except Exception:
+        pass
+    return _DEV_PACK_VERIFY_PUBKEY_B64
+
+
 # master key（与生成端一致）。泄密不致命：没有签名私钥，包连验签都过不了。
-# 生成端可用 PACK_MASTER_HEX 覆盖；此处与 tools/scriptpack/packcrypto.py 的 TEST_MASTER_HEX 保持一致。
-MASTER_HEX = os.environ.get("PACK_MASTER_HEX", "9f2b7c41d3e5a6081b4c9d2e7f0a3b5c8d6e4f2a1c0b9d8e7f6a5b4c3d2e1f0a")
+# 【防破解整改】发行版从 secrets blob 读取构建期生成的正式 master；
+# 开发态保持与生成端 TEST_MASTER_HEX 一致（仅本地开发用）。
+_DEV_MASTER_HEX = "9f2b7c41d3e5a6081b4c9d2e7f0a3b5c8d6e4f2a1c0b9d8e7f6a5b4c3d2e1f0a"
+
+
+def _pack_master_hex() -> str:
+    try:
+        from weauto_license import secrets as _sec
+        if _sec.is_release():
+            v = _sec.get("WPK_MASTER_HEX", "")
+            if v:
+                return v
+    except Exception:
+        pass
+    return os.environ.get("PACK_MASTER_HEX", _DEV_MASTER_HEX)
 
 
 class PackError(Exception):
@@ -59,7 +87,7 @@ def _pub_point():
         raise PackError("crypto-unavailable", "缺少 packcrypto 实现")
     try:
         import base64
-        return pc.point_from_spki(base64.b64decode(PACK_VERIFY_PUBKEY_B64))
+        return pc.point_from_spki(base64.b64decode(_pack_verify_pubkey_b64()))
     except Exception as e:
         raise PackError("bad-pubkey", str(e))
 
@@ -124,7 +152,7 @@ def load_pack(pack_id, now_ts=None, device_hash_hex=None):
                 dh = bytes.fromhex(device_hash_hex or _device_hash_hex())
                 pub = _pub_point()
                 payload = pc.parse_and_decrypt(
-                    data, bytes.fromhex(MASTER_HEX), dh, now, pub_point=pub
+                    data, bytes.fromhex(_pack_master_hex()), dh, now, pub_point=pub
                 )
                 return payload
             except pc.PackCryptoError as e:

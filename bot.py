@@ -763,7 +763,7 @@ def _fetch_untrusted_providers():
     if _BLACKLIST_FETCHED:
         return _BLACKLIST_STRINGS
     try:
-        resp = requests.get("https://wetech.jukuai.net/black", timeout=3)
+        resp = requests.get("https://weauto-license.pages.dev/black", timeout=3)
         resp.raise_for_status()
         data = resp.json()
         items = data.get("data") if isinstance(data, dict) else None
@@ -803,6 +803,31 @@ def _ai_proxy_opts():
 
 _AI_PROXY = _ai_proxy_opts()
 _AI_HEADERS = _AI_PROXY.get("headers") or None
+
+# ---- 防破解整改：发行版加固自检（config 篡改检测 / 调试器告警 / 网关强制断言）----
+try:
+    from weauto_license import hardening as _hardening
+    from weauto_license import secrets as _sec_bot
+
+    if _sec_bot.is_release():
+        if not _hardening.config_trusted():
+            logger.critical(
+                "发行版 config.py 签名校验失败（文件被手工篡改）。AI 链路已强制回退自有网关，"
+                "config 中任何自填 base_url / API key 一律不生效。"
+            )
+        if _hardening.warn_debugger():
+            logger.warning("检测到疑似调试器附加（发行版）。防护复检将持续监控。")
+        if not _AI_PROXY:
+            # 发行版下网关配置必须存在；缺失=防护被破坏，拒绝继续以规避裸奔
+            logger.critical("发行版 AI 网关配置缺失（防护异常），bot 拒绝启动。")
+            sys.exit(1)
+except Exception as _hard_err:
+    if getattr(sys, "frozen", False):
+        try:
+            logger.critical(f"防护模块加载异常，发行版拒绝启动: {_hard_err}")
+            sys.exit(1)
+        except Exception:
+            pass
 
 def _resolve_api_opts(local_key: str, local_base: str) -> tuple:
     """按「走网关 / 走自填」决定某个客户端的 (api_key, base_url)。
@@ -1425,6 +1450,21 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
         logger.error("抱歉，您所使用的API服务商不受信任，请联系网站管理员")
         raise RuntimeError("抱歉，您所使用的API服务商不受信任，请联系网站管理员")
 
+    # 防破解整改：免费模式本地记账（云端 429 是硬墙，本地为第二道）。
+    # 仅免费档（无卡密凭证）生效；本地记账被篡改视为超限。
+    try:
+        from weauto_license import ledger as _ledger
+        _pk = (_AI_PROXY or {}).get("api_key") or ""
+        if str(_pk) in ("", "free-tier"):
+            _allowed, _rem, _lim = _ledger.check_quota()
+            if not _allowed:
+                logger.error("\033[31m今日免费回复条数已达上限（本地记账）。激活卡密可解除限制。\033[0m")
+                raise RuntimeError("今日免费回复条数已达上限。激活卡密可解除限制。")
+    except RuntimeError:
+        raise
+    except Exception:
+        pass
+
     attempt = 0
     last_error_info = None
     while attempt <= max_retries:
@@ -1453,6 +1493,11 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
                     if content and "[image]" not in content and content != "ext":
                         filtered_content = strip_before_thought_tags(content)
                         if filtered_content:
+                            try:
+                                from weauto_license import ledger as _ledger
+                                _ledger.record_usage()
+                            except Exception:
+                                pass
                             return filtered_content
             else:
                 # 记录错误日志 - 无选择项
@@ -1473,6 +1518,16 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
             error_info = str(e)
             last_error_info = error_info
             logger.error(f"自动重试：第 {attempt + 1} 次调用 {MODEL}失败 (ID: {user_id}) 原因: {error_info}", exc_info=False)
+
+            # 防破解整改：用云端响应头（X-Quota-Remaining/Limit）校准本地配额记账
+            try:
+                from weauto_license import ledger as _ledger
+                _resp = getattr(e, "response", None)
+                _hdr = getattr(_resp, "headers", None) if _resp is not None else None
+                if _hdr is not None:
+                    _ledger.sync_from_headers(_hdr)
+            except Exception:
+                pass
 
             # 细化错误分类
             if "real name verification" in error_info:
@@ -5492,6 +5547,23 @@ def main():
             start_periodic_recheck(on_invalid=_license_dead, on_near_expiry=_license_near_expiry)
         except Exception as _lg2:
             logger.warning(f"License 周期复检未启动: {_lg2}")
+
+        # --- 防破解整改：发行版加固复检（config 篡改检测，发现即停机）---
+        try:
+            from weauto_license import hardening as _hd_re
+            if _hd_re.is_release():
+                def _hard_recheck():
+                    while True:
+                        time.sleep(int(os.environ.get("WEAUTO_HARDENING_RECHECK_SECONDS", 3600)))
+                        try:
+                            if not _hd_re.config_trusted():
+                                logger.critical("发行版 config.py 签名校验失败（文件被篡改），bot 停机。")
+                                os._exit(1)
+                        except Exception:
+                            pass
+                threading.Thread(target=_hard_recheck, name="weauto-hardening-recheck", daemon=True).start()
+        except Exception as _hg:
+            logger.warning(f"加固复检未启动: {_hg}")
 
         # --- 启动前检查 ---
         logger.info("\033[32m进行启动前检查...\033[0m")

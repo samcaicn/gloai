@@ -921,7 +921,7 @@ def proxy_weapis_endpoint():
     EXE 全程只与自有 Worker 通信，BASE_URL = <worker>/ai/v1，由 Worker 再路由到
     Workers AI / 火山方舟，第三方中转网关 vg.v1api.cc 不再使用。
     """
-    nodes = ['https://wetech.jukuai.net/ai']
+    nodes = ['https://weauto-license.pages.dev/ai']
     return jsonify({'data': nodes}), 200
 
 @app.route('/proxy/weapis/models', methods=['GET'])
@@ -1469,7 +1469,14 @@ def ai_source_mode(config) -> str:
 
     只看配置，不做网络请求 —— 供 UI 展示与本地功能（论坛/生图等）选地址用。
     与 weauto_license.guard.use_worker_ai() 同源同语义。
+    【防破解整改】发行版强制 'worker'：即使 config.py 被手工改成自填直连也不生效。
     """
+    try:
+        from weauto_license import secrets as _sec_am
+        if _sec_am.is_release():
+            return 'worker'
+    except Exception:
+        pass
     cfg = config or {}
     raw = cfg.get('USE_WORKER_AI', 'auto')
     if isinstance(raw, bool):
@@ -1502,7 +1509,7 @@ def resolve_ai_opts(config, sub_key=None, sub_base=None):
             return ep.get('api_key') or '', ep.get('base_url') or ''
         # 门禁未启用（开发态）：仍走网关地址，但需要本地有 key
         return (cfg.get('DEEPSEEK_API_KEY', '') or '',
-                cfg.get('DEEPSEEK_BASE_URL', '') or 'https://wetech.jukuai.net/ai/v1')
+                cfg.get('DEEPSEEK_BASE_URL', '') or 'https://weauto-license.pages.dev/ai/v1')
     k = (sub_key or '').strip()
     b = (sub_base or '').strip()
     if (not k) and (not b or b.rstrip('/').endswith(_GATEWAY_SUFFIX)):
@@ -1582,6 +1589,13 @@ def update_config(new_values):
 
             # 替换原配置文件
             shutil.move(temp_file_name, config_path)
+
+            # 防破解整改：发行版下保存后重签 config.py，保证合法修改通过签名校验
+            try:
+                from weauto_license import secrets as _sec_ce
+                _sec_ce.sign_project_config()
+            except Exception:
+                pass
         except Exception as e:
             # 捕获并记录异常，以便排查问题
             raise Exception(f"更新配置文件失败: {e}")
@@ -1600,6 +1614,15 @@ def quick_start():
 
             api_provider = request.form.get('quick_start_api_provider', 'weapis')
             api_key_raw = request.form.get('quick_start_api_key', '').strip()
+
+            # 防破解整改：发行版强制走官方网关，禁用「自定义大模型直连」入口
+            try:
+                from weauto_license import secrets as _sec_qs
+                if _sec_qs.is_release():
+                    api_provider = 'weapis'
+                    api_key_raw = ''
+            except Exception:
+                pass
 
             # 处理API Key，如果是隐藏版本则保持原值
             if is_hidden_api_key(api_key_raw):
@@ -1620,9 +1643,9 @@ def quick_start():
                     new_values['DEEPSEEK_API_KEY'] = api_key
                     new_values['MOONSHOT_API_KEY'] = api_key
                     new_values['ONLINE_API_KEY'] = api_key
-                new_values['DEEPSEEK_BASE_URL'] = 'https://wetech.jukuai.net/ai/v1'
-                new_values['MOONSHOT_BASE_URL'] = 'https://wetech.jukuai.net/ai/v1'
-                new_values['ONLINE_BASE_URL'] = 'https://wetech.jukuai.net/ai/v1'
+                new_values['DEEPSEEK_BASE_URL'] = 'https://weauto-license.pages.dev/ai/v1'
+                new_values['MOONSHOT_BASE_URL'] = 'https://weauto-license.pages.dev/ai/v1'
+                new_values['ONLINE_BASE_URL'] = 'https://weauto-license.pages.dev/ai/v1'
                 new_values['MOONSHOT_MODEL'] = 'gpt-4o'
                 new_values['ONLINE_MODEL'] = 'net-gpt-4o-mini'
                 if not config.get('MODEL','').strip():
@@ -1723,6 +1746,26 @@ def index():
         try:
             config = parse_config()
             new_values = {}
+
+            # 防破解整改：发行版锁定 AI 来源与直连字段。
+            # 发行版强制走自有网关：用户界面提交的 USE_WORKER_AI=False、
+            # 自填 base_url / api_key 一律不写入 config（guard 侧也已强制恒走网关）。
+            _ce_is_release = False
+            try:
+                from weauto_license import secrets as _sec_ce
+                _ce_is_release = _sec_ce.is_release()
+            except Exception:
+                _ce_is_release = False
+            if _ce_is_release:
+                new_values['USE_WORKER_AI'] = True
+                for _lock_f in (
+                    'DEEPSEEK_BASE_URL', 'DEEPSEEK_API_KEY',
+                    'MOONSHOT_BASE_URL', 'MOONSHOT_API_KEY',
+                    'ONLINE_BASE_URL', 'ONLINE_API_KEY',
+                    'ASSISTANT_BASE_URL', 'ASSISTANT_API_KEY',
+                    'FORUM_BASE_URL', 'FORUM_API_KEY',
+                ):
+                    new_values.pop(_lock_f, None)
 
              # 处理二维数组的LISTEN_LIST（兼容第三列：监测内容/固定转发设置）
             new_values['LISTEN_LIST'] = _build_listen_list_from_form(request.form, config)
@@ -2022,9 +2065,9 @@ def generate_prompt():
         # 从config.py获取配置。
         # 修复：原来直接 from config import ...，一旦配置项缺失/被改名就直接 500；
         # 改用具容错的 parse_config() 并提供默认值（P2-7）
+        # 防破解整改：统一走 resolve_ai_opts（发行版强制网关），不允许直读自填 key 旁路。
         _cfg = parse_config()
-        DEEPSEEK_API_KEY = _cfg.get('DEEPSEEK_API_KEY', '') or ''
-        DEEPSEEK_BASE_URL = _cfg.get('DEEPSEEK_BASE_URL', '') or 'https://api.deepseek.com'
+        DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL = resolve_ai_opts(_cfg)
         MODEL = _cfg.get('MODEL', '') or 'deepseek-chat'
         
         client = openai.OpenAI(
@@ -3672,8 +3715,10 @@ def check_should_post_forum(character_name):
         should_use_online = random.random() < 0.5  # 50%概率
         
         if should_use_online and bool(config.get('ENABLE_ONLINE_API', False)):
-            online_api_key = (config.get('ONLINE_API_KEY') or '').strip()
-            online_base_url = config.get('ONLINE_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
+            # 防破解整改：联网热点客户端也统一走 resolve_ai_opts（发行版强制网关），
+            # 不允许直读 config 的自填 key/base_url 旁路。
+            online_api_key, online_base_url = resolve_ai_opts(
+                config, config.get('ONLINE_API_KEY'), config.get('ONLINE_BASE_URL'))
             online_model = config.get('ONLINE_MODEL', 'net-gpt-4o-mini')
             online_temperature = float(config.get('ONLINE_API_TEMPERATURE', 0.7))
             online_max_tokens = int(config.get('ONLINE_API_MAX_TOKEN', 2000))
@@ -4191,8 +4236,9 @@ def generate_likes_feed_items(character_name, use_online=False):
         # --- 阶段一：可选的联网热点检索 ---
         online_hot_brief = ''
         if use_online and bool(config.get('ENABLE_ONLINE_API', False)):
-            online_api_key = (config.get('ONLINE_API_KEY') or '').strip()
-            online_base_url = config.get('ONLINE_BASE_URL', 'https://wetech.jukuai.net/ai/v1')
+            # 防破解整改：统一走 resolve_ai_opts（发行版强制网关），不允许直读自填 key 旁路。
+            online_api_key, online_base_url = resolve_ai_opts(
+                config, config.get('ONLINE_API_KEY'), config.get('ONLINE_BASE_URL'))
             online_model = config.get('ONLINE_MODEL', 'net-gpt-4o-mini')
             online_temperature = float(config.get('ONLINE_API_TEMPERATURE', 0.7))
             online_max_tokens = int(config.get('ONLINE_API_MAX_TOKEN', 2000))
@@ -4825,13 +4871,13 @@ def get_default_config():
     return {
         "LISTEN_LIST": [['微信名1', '角色1']],
         "DEEPSEEK_API_KEY": '',
-        "DEEPSEEK_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
+        "DEEPSEEK_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
         "MODEL": 'deepseek-v3-0324',
         "MAX_GROUPS": 5,
         "MAX_TOKEN": 2000,
         "TEMPERATURE": 1.1,
         "MOONSHOT_API_KEY": '',
-        "MOONSHOT_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
+        "MOONSHOT_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
         "MOONSHOT_MODEL": 'gpt-4o',
         "MOONSHOT_TEMPERATURE": 0.8,
         "ENABLE_IMAGE_RECOGNITION": True,
@@ -4870,7 +4916,7 @@ def get_default_config():
         "ALLOW_REMINDERS_IN_QUIET_TIME": True,
         "USE_VOICE_CALL_FOR_REMINDERS": False,
         "ENABLE_ONLINE_API": False,
-        "ONLINE_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
+        "ONLINE_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
         "ONLINE_MODEL": 'net-gpt-4o-mini',
         "ONLINE_API_KEY": '',
         "ONLINE_API_TEMPERATURE": 0.7,
@@ -4886,7 +4932,7 @@ def get_default_config():
         "RESTART_INACTIVITY_MINUTES": 15,
         "REMOVE_PARENTHESES": False,
         "ENABLE_ASSISTANT_MODEL": False,
-        "ASSISTANT_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
+        "ASSISTANT_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
         "ASSISTANT_MODEL": 'gpt-4o-mini',
         "ASSISTANT_API_KEY": '',
         "ASSISTANT_TEMPERATURE": 0.3,
@@ -4898,7 +4944,7 @@ def get_default_config():
         "CORE_MEMORY_DIR": 'CoreMemory',
         "ENABLE_TEXT_COMMANDS": True,
         "ENABLE_FORUM_CUSTOM_MODEL": False,
-        "FORUM_BASE_URL": 'https://wetech.jukuai.net/ai/v1',
+        "FORUM_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
         "FORUM_MODEL": '',
         "FORUM_API_KEY": '',
         "FORUM_TEMPERATURE": 1.0,
@@ -5902,7 +5948,7 @@ def _run_desktop_window(web_url, attach_mode, start_waitress):
 
                 当前 templates/config_editor.html 的 openBuyInternal() 只调用 window.openBuyOverlay()，
                 不会再走到这里；此处直接返回 False，确保任何调用路径都不会弹出新窗口。
-                收银台最终落在 pay.jukuai.net，其响应头 CSP `frame-ancestors *` 允许被 iframe 嵌入。
+                收银台最终落在 pay.weauto-license.pages.dev，其响应头 CSP `frame-ancestors *` 允许被 iframe 嵌入。
                 """
                 app.logger.info("open_buy_window 已禁用：付款页仅以软件内浮层展示，不弹新窗口")
                 return False

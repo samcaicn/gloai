@@ -41,87 +41,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller==6.22.3
+          pip install pyarmor
 
-      - name: Stamp release build marker (license guard forced on)
-        shell: bash
-        run: |
-          # 发行版固杀：正式 EXE 里授权门禁强制开启（guard_enabled() 恒 True），
-          # 用户改 config.py 的 LICENSE_GUARD_ENABLED=False 也无效。
-          # 本地开发无此文件 = 开发态；该文件由 CI 生成、不提交仓库（见 .gitignore）。
-          printf 'RELEASE = True  # CI generated release marker: license guard forced on\n' > weauto_license/_release.py
-          cat weauto_license/_release.py
-
-      - name: Build obfuscated onefile EXE
+      # 防破解整改（2026-10-14）：构建统一走 tools/build_release.py ——
+      #   1. 生成/读取构建密钥（CI 用 Secret pc_build_key，首次需固化）
+      #   2. 写 _release.py（发行版门禁强制）
+      #   3. 生成加密密钥 blob（release_secrets.enc，主密钥 _build_key.py 随后被混淆）
+      #   4. 生成净化版 config.py + config.py.sig（篡改即强制走网关）
+      #   5. PyArmor 混淆核心模块（weauto_license 包 / jev_guard / scriptpack / device_id）
+      #   6. PyInstaller 构建
+      #   7. Ed25519 签名 WeAuto.exe → WeAuto.exe.sig（updater 验签防投毒）
+      - name: Build release EXE (obfuscated + signed)
         id: build
-        shell: bash
+        shell: pwsh
+        env:
+          pc_build_key: ${{ secrets.pc_build_key }}
         run: |
-          # 整个构建块的输出（含 set -x 跟踪 + PyInstaller 全部输出）重定向到 build.log，
-          # 避免此前 `| tee` 在 headless runner 上 SIGPIPE 导致 build.log 为空、报错丢失。
-          {
-            set -x
-            set +e  # 关闭 GitHub 自动加的 errexit：任何命令非 0 退出都不中断脚本，
-                    # 由末尾 `exit $rc` 依据 PyInstaller 真实返回码决定构建成败。
-            # 防御性 add-data：只打包真实存在的资源。
-            # 用 if 块确保函数始终返回 0 —— GitHub Actions 给 bash 步骤自动加 set -e，
-            # 若用 `[ -e x ] && ARGS+=(...)` 这种写法，目录缺失时函数返回非 0 会触发
-            # set -e 直接终止整个脚本（跑不到 PyInstaller），这是此前 11 次构建秒失败的真正根因。
-            add_data() { if [ -e "$1" ]; then ARGS+=(--add-data "$1;$2"); fi; }
-            # 使用极短的工作/输出路径（C:/_wb、C:/_wd）规避 windows-2022 runner
-            # 未开启长路径支持时 PyInstaller --collect-all 产生的深路径超过 MAX_PATH(260)
-            # 导致 FileNotFoundError / WinError 206 的构建失败（本地 Win11 默认支持长路径故不报错）。
-            # --noconsole：GUI-only 硬要求，双击启动不弹 cmd 黑框。
-            # 需要真实 stdio 的子形态（--cli/--mcp/--bot）在 __main__ 里用
-            # AttachConsole(ATTACH_PARENT_PROCESS) 重新附着调用方控制台（weauto_stdio.py），
-            # 从命令行启动时输出照常回到调用方窗口。
-            ARGS=(--name WeAuto --onefile --noupx --noconsole --paths vendor
-                  --workpath C:/_wb --distpath C:/_wd
-                  --hidden-import bot --hidden-import wechat_compat --hidden-import wechatauto
-                  # 固定转发引擎（bot.py / config_editor.py 静态 + 运行期 import），
-                  # 显式 hidden-import 兜底，避免后续改为纯动态 import 时被漏打包。
-                  --hidden-import forward_hub
-                  # Jev 判断式 AI 闸门（回复前的对话体检，跑在自有 CF Worker + Workers AI 上）：
-                  # bot.py 顶层 try-import、config_editor.py 运行期 import，显式兜底防漏打包。
-                  --hidden-import jev_guard
-                  # GUI-only 的 stdio 兜底（noconsole 下 sys.stdout 是 None 的统一处理）：
-                  # bot.py 顶层与 config_editor __main__ 都以运行期 import 方式引入。
-                  --hidden-import weauto_stdio
-                  # 单 EXE 全功能：WebUI / bot / CLI / MCP 四种形态共用同一个 exe，
-                  # 靠命令行参数（默认 / --bot / --cli / --mcp）在 __main__ 派发。
-                  # 这几个入口是运行时动态 import，必须显式 hidden-import 才会被打进包。
-                  --hidden-import cli --hidden-import weauto_mcp
-                  # License 门禁（Creem 卡密，仅与自有 CF Worker 通信，不持密钥）：
-                  # weauto_license 包是运行期动态 import，必须显式 hidden-import 才会打进包。
-                  --hidden-import weauto_license --hidden-import weauto_license.guard
-                  # MCP 协议栈（FastMCP 基于 mcp<2）：显式收集，避免动态 import 漏模块。
-                  # 注意 requirements.txt 里必须是 mcp[cli]，否则 mcp.cli 需要 typer 会构建失败。
-                  --hidden-import mcp --collect-all mcp
-                  # vendor/wechatauto 顶层硬依赖（__init__/logger/uia_driver 直接 import），
-                  # 显式 hidden-import 兜底，避免 --collect-all 在某些子模块导入失败时被漏掉。
-                  --hidden-import uiautomation --hidden-import comtypes --hidden-import colorama
-                  --collect-all wechatauto
-                  # 桌面窗口模式（pywebview / WebView2，config_editor.py 运行期 import webview）：
-                  # collect-all 打包 webview 的 lib（WebView2Loader 等）与 pythonnet/clr_loader
-                  # 的运行时 DLL（Python.Runtime 等），缺一个桌面窗口就起不来。
-                  --collect-all webview --collect-all clr_loader --collect-all pythonnet
-                  --hidden-import webview.platforms.edgechromium --hidden-import webview.platforms.winforms
-                  # 写入合法的版本信息资源 + 显式 manifest（asInvoker，不请求管理员）：
-                  # 降低杀软对「无数字签名 + 未知发布者」的启发式误报评分。根治仍需 EV 代码签名证书。
-                  --version-file version_info.txt --manifest manifest.xml
-                  # 启动画面：splash.png 由 bootloader 转成 Splash-*.res 打进归档
-                  #（_exe_ci_test.py 对该资源有断言，必须与 ci.yml 构建参数保持一致）
-                  --splash splash.png)
-            add_data config.py "."
-            add_data templates templates
-            add_data emojis emojis
-            add_data prompts prompts
-            add_data static static
-            add_data Demo_Image Demo_Image
-            # PyInstaller 6.x 已移除 --key 字节码加密（v6.0 起）；用 python -m 规避 PATH 问题。
-            python -m PyInstaller --noconfirm --clean "${ARGS[@]}" config_editor.py
-          } > build.log 2>&1
-          rc=$?
-          echo "BUILD_RC=$rc"
-          exit $rc
+          python tools/build_release.py
+          if (Test-Path _pybuild_dist\WeAuto.exe) { Write-Host "BUILD_OK $((Get-Item _pybuild_dist\WeAuto.exe).Length) bytes" } else { exit 1 }
 
       - name: Report build failure (publish build.log to issue)
         if: failure()
@@ -145,9 +82,10 @@ jobs:
       - name: Verify EXE
         shell: bash
         run: |
-          ls -lh C:/_wd/WeAuto.exe
-          if [ ! -s C:/_wd/WeAuto.exe ]; then echo "WeAuto.exe missing"; exit 1; fi
-          echo "WeAuto.exe built (single all-in-one): $(stat -c%s C:/_wd/WeAuto.exe) bytes"
+          ls -lh _pybuild_dist/WeAuto.exe _pybuild_dist/WeAuto.exe.sig
+          if [ ! -s _pybuild_dist/WeAuto.exe ]; then echo "WeAuto.exe missing"; exit 1; fi
+          if [ ! -s _pybuild_dist/WeAuto.exe.sig ]; then echo "WeAuto.exe.sig missing"; exit 1; fi
+          echo "WeAuto.exe built (single all-in-one): $(stat -c%s _pybuild_dist/WeAuto.exe) bytes"
 
       - name: Verify EXE is a GUI (no console) build
         shell: bash
@@ -162,7 +100,7 @@ jobs:
           # 对照值实测：notepad.exe=2(GUI)，cmd.exe=3(CUI)。
           python - <<'PY'
           import struct, sys
-          p = r'C:/_wd/WeAuto.exe'
+          p = r'_pybuild_dist/WeAuto.exe'
           with open(p, 'rb') as f:
               dos = f.read(64)
               if dos[:2] != b'MZ':
@@ -183,7 +121,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: weauto-windows-exe
-          path: C:/_wd/WeAuto.exe
+          # 防破解整改：EXE + Ed25519 签名一起上传。
+          # GitHub 会把二者打包进同一个 artifact zip，Worker updateProxy 原样转发，
+          # 客户端 updater 解压后先验签（WeAuto.exe.sig）再安装，防下载投毒。
+          path: |
+            _pybuild_dist/WeAuto.exe
+            _pybuild_dist/WeAuto.exe.sig
           retention-days: 90
 
       # 不再发布公开 Release：EXE 分发改由 GitHub Actions Artifact（保留 90 天）承担，

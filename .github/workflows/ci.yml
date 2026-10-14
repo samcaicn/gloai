@@ -1,8 +1,9 @@
 name: CI — 语法体检 + EXE 实测
 
-# 每次 push / 任意分支 PR 都跑。两条腿：
+# 每次 push / 任意分支 PR 都跑。三条腿：
 #   1. syntax —— 全量 compileall，纯语法门禁，秒级，最早暴露缩进/编码错误。
-#   2. exe    —— 真正构建 PyInstaller onefile EXE 并**解包实测**。
+#   2. ux-e2e —— Flask test_client 打真实路由，验界面精简 + 保存零回归 + CLI/授权/MCP 业务流程。
+#   3. exe    —— 真正构建 PyInstaller onefile EXE 并**解包实测**。
 #
 # ⭐ 为什么 EXE 这条腿不可省（2026-10-05 立规：CI EXE 测试每次都要）：
 #   只做 compileall 会漏掉一整类最常见的假绿 —— **改了源码但没重新打包**。
@@ -48,6 +49,104 @@ jobs:
       - name: Report
         if: success()
         run: echo "✅ 全部 Python 文件编译通过，无语法/缩进错误。"
+
+  ux-e2e:
+    name: UI + 业务流程端到端实测 (Flask test_client)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    # ⭐ 为什么要有这条腿（2026-10-12 立规）：
+    #   「语法体检」只能证明 .py 能编译，「EXE 解包断言」只能证明打包产物里带了新模板。
+    #   两者都**证明不了业务流程还通**——尤其删了 UI 配置项之后，保存会不会把用户
+    #   真实设置静默写成 False（本项目踩过的真坑：submit_config / index 两处
+    #   boolean_fields 对「表单里没出现」的开关写 False）。
+    #   本 job 直接 import config_editor 用 Flask test_client 打真实路由，从渲染出的
+    #   HTML 里解析 configForm 真实字段来构造 POST（界面上有什么就提交什么），
+    #   并先改动一个可见字段断言它真写回（保存确证），再断言已删字段原值不变——
+    #   否则「字段没变」可能只是保存根本没成功（假阳性）。
+    #   平台选 windows：与开发实测环境一致，避免模板/路径的平台差异造成假红。
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install minimal deps for test_client
+        shell: bash
+        run: |
+          # 刻意**不装 requirements.txt 全量**：那里面 uiautomation / pywin32 /
+          # pythonnet / pywebview 等 Windows 微信引擎重包与本测试无关，装了白白多花几分钟。
+          # 这里只装 config_editor.py 顶层真正 import 的包（已核对：顶层无 wxauto/uiautomation
+          # /webview 依赖，webview 只在打开桌面窗口的函数内部 import）。
+          python -m pip install --upgrade pip
+          pip install flask flask-cors flask-wtf flask-limiter waitress \
+                      werkzeug "openai==1.84.0" requests psutil filelock sqlalchemy
+
+      - name: Run UI / save-zero-regression e2e
+        shell: bash
+        env:
+          # Windows runner 控制台默认非 UTF-8，断言里全是中文，不设会 UnicodeEncodeError
+          PYTHONIOENCODING: utf-8
+        run: |
+          python _ux_e2e_test.py
+
+      - name: Run business-flow e2e (CLI / license / MCP)
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          python _flow_e2e_test.py
+
+      - name: Run full business-module e2e (15 个环节)
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          # 覆盖面最广的一条：页面渲染 / 机器人控制 / 提醒 / 核心记忆 / 聊天上下文 /
+          # AI分身 / 朋友圈 / 固定转发 / Jev / 人设 / 授权拒绝路径 / 配置导入 /
+          # 恢复默认配置 / 心跳日志。整体备份可变数据 → finally 全量还原。
+          # ⚠️ 刻意不测 /start_bot 成功路径（会真起微信 bot）与 /api/jev/test（真调 AI 烧额度）。
+          python _full_e2e_test.py
+
+      - name: Run jev_guard offline unit tests (mock decisions server)
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          # jev_guard 是纯标准库模块（无第三方依赖）：在本机 mock 一个 decisions
+          # 服务，覆盖解析 / guidance 注入（含语言跟随）/ 收声 / 降级 / 超时重试
+          # （5xx 重试、4xx 不重试、每次尝试重签）/ 熔断 / 候选 1~3 / HMAC 签名。
+          # ⚠️ 刻意不连线上 Worker：会烧 Workers AI 额度且依赖本机网络。
+          # 线上闸门行为（Android 墙 + EXE 双凭证）由下面的 node 测试离线覆盖。
+          python _jev_exe_test.py
+
+      - name: Run worker dual-credential gate tests (node, mock env)
+        shell: bash
+        run: |
+          # worker_fix/cf_worker.js = 线上部署的合并版（Android L3 完整性墙 + WeAuto
+          # 基线，2026-10-14 从 Cloudflare API 拉回）+ 双凭证闸门补丁。本测试零依赖
+          # （仅 node 内置模块），mock env/fetch 确定性覆盖：
+          #   fail-open / 无凭证落 Android 墙 / Android 五头该过过该拦拦
+          #   （含「五头合法+计费令牌过期不误杀」回归）/ EXE 三凭证
+          #   （HMAC 签名 / 卡密+实例 / 计费令牌）/ 精确错误码 / 闸门 clone 不消耗 body /
+          #   e2e worker.fetch。⚠️ 不连线上：HMAC 密钥与 ts 窗口只能在 mock 里构造。
+          node _worker_gate_test.mjs
+
+      - name: Assert config.py not polluted by tests
+        if: always()
+        shell: bash
+        run: |
+          # 两个脚本都会为「保存确证」临时改写 config.py，并在 finally 里从
+          # config.py.bak_test 还原。这里兜底断言仓库出厂 config.py 没被留在改动状态，
+          # 否则说明还原逻辑失效（本地跑会污染用户配置，比测试失败更严重）。
+          if [ -n "$(git diff --name-only -- config.py)" ]; then
+            echo "❌ config.py 被测试污染且未还原："
+            git diff -- config.py | head -40
+            exit 1
+          fi
+          echo "✅ config.py 未被污染（测试还原逻辑有效）"
 
   exe:
     name: Build EXE + unpack assertions

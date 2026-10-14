@@ -30,6 +30,11 @@ try:
 except Exception:
     _cfg_mod = None
 
+# 防反编译/防破解整改：密钥一律走构建期注入的加密 blob（secrets.py），
+# 不再有硬编码默认值可被提取复用。
+from weauto_license import secrets as _sec
+from weauto_license import hardening as _hard
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ---- 发行版固杀标记（反破解第一道） ----
@@ -42,12 +47,13 @@ try:
 except Exception:
     RELEASE_BUILD = os.environ.get("WEAUTO_RELEASE_BUILD", "") == "1"
 
-# 激活缓存签名盐（配合 _release 注入；防手写 APPDATA 里的 JSON 伪造激活记录）
-_CACHE_SIG_SALT = "weauto-license-cache-v1"
+# 激活缓存签名盐（构建期注入，配合 _release 注入；防手写 APPDATA 里的 JSON 伪造激活记录）
+_CACHE_SIG_SALT = _sec.get("CACHE_SIG_SALT", "weauto-license-cache-v1")
 
 # L3 请求签名密钥（防抓包重放/伪造激活请求的"绊线"，非绝对防线）。
-# 服务端配同名 env（WEAUTO_LICENSE_SIG_SECRET）后开始强制校验；未配则放行兼容旧客户端。
-_SIG_SECRET = os.environ.get("WEAUTO_LICENSE_SIG_SECRET", "weauto-license-sig-v1")
+# 构建期注入，与 Worker 端 env.WEAUTO_LICENSE_SIG_SECRET 同值；
+# 不再存在可被反编译提取的硬编码默认密钥。
+_SIG_SECRET = _sec.get("LICENSE_SIG_SECRET", os.environ.get("WEAUTO_LICENSE_SIG_SECRET", "") or "")
 
 
 def _cache_file() -> str:
@@ -89,6 +95,15 @@ def guard_enabled() -> bool:
 
 
 def worker_url() -> str:
+    """Worker 网关地址。
+
+    【防破解整改】发行版下优先取构建期注入的 GATEWAY_HOST（secrets blob），
+    再回退到内置常量；config.py 里的 CREEM_WORKER_URL 即使被篡改也不影响。
+    开发态保持从 config 读（本地可指向任意 Worker）。
+    """
+    if RELEASE_BUILD:
+        host = _sec.get("GATEWAY_HOST", "") or "https://weauto-license.pages.dev"
+        return host.rstrip("/")
     return (_cfg("CREEM_WORKER_URL", "") or "").rstrip("/")
 
 
@@ -121,14 +136,13 @@ def _key_is_real(key: str) -> bool:
 def use_worker_ai() -> bool:
     """本机是否使用 Cloudflare Workers AI（经本网关）。
 
-    返回 False = 用户选择了自填大模型（自己的 base_url + key），此时**不碰网关**：
-    既不注入卡密作凭证，也不加 X-WeAuto-Instance 头，请求直发用户填的供应商。
-
-    USE_WORKER_AI 语义：
-      True       强制走 Workers AI
-      False      强制直连自填供应商
-      'auto'     自动：填了真 key 且 base_url 不是本网关 → 直连；否则走 Workers AI
+    【防破解整改】发行版下**恒为 True**：直连自填供应商的旁路被彻底封死。
+    即使用户改 config.py 的 USE_WORKER_AI=False、甚至篡改 DEEPSEEK_BASE_URL /
+    DEEPSEEK_API_KEY，发行版也一律强制走自有网关（Worker 验卡密/配额后才透传上游）。
+    开发态保留原语义：True/False/'auto' 三档，便于本地直连调试。
     """
+    if RELEASE_BUILD:
+        return True
     v = _cfg("USE_WORKER_AI", "auto")
     if isinstance(v, bool):
         return v

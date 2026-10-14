@@ -96,6 +96,14 @@ weauto_license/_release.py
 # ---- 话术包签名私钥（本地 600 权限，永不提交；公钥在 tools/scriptpack/pack_verify_key.pem 与 scriptpack.py）----
 weauto_license/pack_signing_key.pem
 
+# ---- 防破解整改：构建密钥与加密产物（一律不入库）----
+weauto_license/build_keys.json
+weauto_license/_build_key.py
+release_secrets.enc
+config.py.sig
+_pyobf_dist/
+_pyarmor_install*.log
+
 # ---- 本地 CF 部署工具链（含 node_modules，不提交）----
 _cfdeploy/
 

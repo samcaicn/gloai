@@ -46,7 +46,7 @@ class Updater:
 
     # EXE 自动更新代理（Cloudflare Worker）：EXE 只问本端点，Worker 用服务端 GITHUB_TOKEN
     # 解析出免鉴权的 azure 直链返回。EXE 零密钥升级，GitHub token 仅在服务端、可随时轮换。
-    UPDATE_WORKER_URL = "https://wetech.jukuai.net"
+    UPDATE_WORKER_URL = "https://weauto-license.pages.dev"
 
     # 只读令牌（可选）：用于访问私有仓库的 Actions Artifact / Release。
     # 仅需 read-only 权限（actions:read、contents:read）。
@@ -344,6 +344,37 @@ class Updater:
                     return {"success": False, "output": "\n".join(progress) + "\n构件中未找到 WeAuto.exe"}
                 z.extract(cand[0], extract_dir)
                 src = os.path.join(extract_dir, cand[0])
+
+                # 防破解整改：发行版更新包 Ed25519 签名校验（公钥构建期注入 secrets blob）。
+                # 校验对象 = WeAuto.exe 的 SHA-256；签名文件必须与 exe 同名 .sig 同包下发。
+                try:
+                    from weauto_license import secrets as _sec_up
+                    if _sec_up.is_release():
+                        _sig_bytes = None
+                        for _n in z.namelist():
+                            if _n.lower().endswith(".sig"):
+                                _sig_bytes = z.read(_n)
+                                break
+                        if not _sig_bytes:
+                            return {"success": False,
+                                    "output": "\n".join(progress) + "\n发行版更新缺少签名文件，已拒绝安装。"}
+                        _pub = _sec_up.get_bytes("UPDATER_VERIFY_KEY")
+                        if not _pub or len(_pub) != 32:
+                            return {"success": False,
+                                    "output": "\n".join(progress) + "\n发行版缺少验签公钥，已拒绝安装。"}
+                        import hashlib as _hl
+                        from cryptography.exceptions import InvalidSignature
+                        from cryptography.hazmat.primitives.asymmetric import ed25519
+                        with open(src, "rb") as _f:
+                            _digest = _hl.sha256(_f.read()).digest()
+                        ed25519.Ed25519PublicKey.from_public_bytes(_pub).verify(_sig_bytes, _digest)
+                        log_progress("更新包签名校验通过")
+                except InvalidSignature:
+                    return {"success": False,
+                            "output": "\n".join(progress) + "\n更新包签名校验失败（内容被篡改），已拒绝安装。"}
+                except Exception as _up_e:
+                    return {"success": False,
+                            "output": "\n".join(progress) + f"\n更新包校验异常，已拒绝安装: {_up_e}"}
 
             current = os.path.abspath(sys.executable)
             if not current.lower().endswith(".exe"):
