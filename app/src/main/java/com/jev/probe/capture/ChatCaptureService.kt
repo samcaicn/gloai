@@ -381,22 +381,42 @@ open class ChatCaptureService : AccessibilityService() {
      */
     private val notifBatch = LinkedHashMap<String, MutableList<Msg>>()
     private val notifBatchTimer = HashMap<String, Runnable>()
+    private val notifBatchFirstAt = HashMap<String, Long>()
     private val NOTIF_BATCH_MS = 1200L
+    // 攒批总窗口上限：真人连发几条（"在吗" / "忙吗" / "看到回我"）间隔常在 1-3s，
+    // 固定 1.2s 会把一句话拆成两批、然后连回两次——一眼假。做法是"每条新消息都顺延
+    // 1.2s"，但总窗口到 4s 就强制收口，避免群里刷屏把回复无限拖后。
+    private val NOTIF_BATCH_MAX_MS = 4000L
 
     // ---- 通知轮 FIFO 队列：多个会话同时来消息时，一次只处理一个会话（分析→生成→发送→
     // 下一个），且每次发送前用该会话暂存的 PendingIntent 把微信重开到那个会话，杜绝
     // "第二个通知被 analyzing 挡掉即丢" 与 "回复填进错误会话窗口" 两个竞态。 ----
-    private data class NotifRound(val conv: String, val msgs: List<Msg>)
+    private data class NotifRound(val conv: String, val msgs: List<Msg>, val enqueuedAt: Long = System.currentTimeMillis())
     private val notifRoundQueue = ArrayList<NotifRound>()
     private var notifRoundBusy = false
     private var notifRoundConv: String? = null
+    // 本轮是否缺少"定位到目标会话"的锚点（微信不在前台且无可用/新鲜的 PendingIntent）。
+    // 无锚点时**禁止自动发送**：探针读不到标题，回复会填进"此刻恰好前台"的任意会话，
+    // 等于把私聊的话发进群里——这种错比不回严重得多，宁可不回。
+    private var notifRoundAnchorless = false
+    // 同一会话的发送冷却：刚回过就别再回。真人连发 / 通知重复投递最容易触发"连回两次"，
+    // 这是最露馅的机器感。冷却期内照样分析和出建议，只是不自动发出去。
+    private val lastAutoSentAtByConv = HashMap<String, Long>()
+    private val CONV_COOLDOWN_MS = 20_000L
+    // 队列上限：群刷屏时别几十个会话排队回十几分钟（那时早没人等回复了）。
+    // 被挤掉的会话文本已进 history，下一条消息会带着完整上下文重新触发。
+    private val NOTIF_QUEUE_MAX = 4
+    // 轮次保鲜：从入队到开跑超过这个时长就丢弃。回一条"迟到几分钟"的回复很怪，
+    // 而且对方多半已经自己解决了。
+    private val NOTIF_ROUND_TTL_MS = 120_000L
     // 轮次代号：每开一轮自增。滞后的"发送完成"回调只许终结自己所处的那一轮，
     // 防止上一轮慢速发送的 onDone 在宽限已推进到下一轮后误伤当前轮。
     private var notifRoundSeq = 0L
     // 本轮分析跑完（judge+reply 均返回）后，留给"异步发送"落定的宽限；到点即推进队列。
     private val SEND_DWELL_MS = 6000L
     // 从轮次启动起算的硬上限兜底：分析挂住（看门狗复位 analyzing 但不走 completed）也不卡死队列。
-    private val NOTIF_HARD_MAX_MS = 100000L
+    // 60s 而非 100s：一轮卡住要卡一队列，真实使用里 60s 已是很长的容忍上限。
+    private val NOTIF_HARD_MAX_MS = 60000L
     private val notifAdvanceRunnable = Runnable {
         Log.w(TAG, "notif-round: dwell elapsed -> advance")
         finishNotifRound(notifRoundSeq)
@@ -412,14 +432,19 @@ open class ChatCaptureService : AccessibilityService() {
             if (list.none { it.sender == msg.sender && it.text == msg.text }) list.add(msg)
             notifBatchTimer[key]?.let { main.removeCallbacks(it) }
         }
+        val nowAt = System.currentTimeMillis()
+        val firstAt = notifBatchFirstAt.getOrPut(key) { nowAt }
+        // 还在 4s 窗口内 → 顺延 1.2s 等下一句；已超窗口 → 立即收口，不再让刷屏拖后。
+        val delay = if (nowAt - firstAt >= NOTIF_BATCH_MAX_MS) 0L else NOTIF_BATCH_MS
         val r = Runnable { flushNotifBatch(key) }
         notifBatchTimer[key] = r
-        main.postDelayed(r, NOTIF_BATCH_MS)
+        main.postDelayed(r, delay)
     }
 
     private fun flushNotifBatch(conv: String) {
         val msgs = synchronized(notifBatch) { notifBatch.remove(conv) } ?: return
         notifBatchTimer.remove(conv)
+        notifBatchFirstAt.remove(conv)
         if (destroyed || !prefs.enabled) {
             Log.d(TAG, "notif-batch: drop destroyed=$destroyed enabled=${prefs.enabled}")
             return
@@ -451,6 +476,10 @@ open class ChatCaptureService : AccessibilityService() {
                 // 本轮 runAnalysis 的 mergeInto 会看到，无需再排一轮（避免同会话连回两次）。
                 Log.i(TAG, "notif-round: conv=${round.conv} already active, folded into history")
             }
+            notifRoundQueue.size >= NOTIF_QUEUE_MAX -> {
+                // 队列已满（群刷屏）：丢最新这一批，文本已进 history，下一条消息会带上下文重触发。
+                Log.w(TAG, "notif-round: queue full($NOTIF_QUEUE_MAX) -> drop conv=${round.conv} (text kept in history)")
+            }
             else -> {
                 notifRoundQueue.add(round)
                 Log.i(TAG, "notif-round: queued conv=${round.conv} (busy=${notifRoundConv}) depth=${notifRoundQueue.size}")
@@ -469,27 +498,48 @@ open class ChatCaptureService : AccessibilityService() {
         notifRoundSeq++
         val mySeq = notifRoundSeq
         Log.i(TAG, "notif-round: START conv=${round.conv} msgs=${round.msgs.size} seq=$mySeq queueDepth=${notifRoundQueue.size}")
+
+        // 保鲜：排队太久的会话直接跳过。回一条迟到几分钟的回复，体验比不回更差。
+        val ageMs = System.currentTimeMillis() - round.enqueuedAt
+        if (ageMs > NOTIF_ROUND_TTL_MS) {
+            Log.w(TAG, "notif-round: conv=${round.conv} stale (${ageMs}ms > ${NOTIF_ROUND_TTL_MS}ms) -> skip")
+            finishNotifRound(mySeq)
+            return
+        }
+
         // 兜底防队列卡死（分析挂住 / 发送无回调时也能推进）。
         scheduleNotifAdvance(NOTIF_HARD_MAX_MS)
-        if (prefs.autoOpenChat) {
-            val pi = NotifIntentStore.get(round.conv)
-            if (pi != null) {
-                Log.i(TAG, "notif-round: reopen conv=${round.conv} via saved PendingIntent")
-                runCatching { pi.send() }
-            } else {
-                Log.w(TAG, "notif-round: no saved PendingIntent for conv=${round.conv}, relying on current fg")
-            }
+        // 锚点：只认"新鲜"的 PendingIntent（群改名/会话重建后的旧 intent 会把微信开错会话）。
+        val pi = if (prefs.autoOpenChat) NotifIntentStore.fresh(round.conv) else null
+        // 无锚点且微信不在前台 → 无法确定前台是哪个会话，本轮禁止自动发送。
+        notifRoundAnchorless = prefs.autoOpenChat && pi == null && !weChatForeground
+        if (notifRoundAnchorless) {
+            Log.w(TAG, "notif-round: NO ANCHOR for conv=${round.conv} (no fresh PendingIntent, WeChat not fg) -> analyze only, no auto-send")
         }
-        awaitWeChatForegroundThen {
-            if (destroyed || !prefs.enabled) { finishNotifRound(mySeq); return@awaitWeChatForegroundThen }
-            // 后台纯通知场景：微信在后台，无障碍没抓到聊天窗口，session.target 可能为 null，
-            // 旧代码用 session.token() 会直接 return、连日志都不打（静默黑洞）。改用
-            // beginNotification 构造逻辑 target，绕开前台窗口假设，让通知文本真正驱动分析+回复。
-            val token = session.beginNotification(PKG_WECHAT, round.conv)
-            val snapshot = ChatSnapshot(round.conv, round.msgs, note = NOTIFY_NOTE)
-            Log.i(TAG, "notif-batch: conv=${round.conv} msgs=${round.msgs.size} senders=${round.msgs.map { it.sender }.distinct()} -> single analyze+reply")
-            finishOcrSnapshot(snapshot, PKG_WECHAT, manual = false, token = token)
+        if (pi != null) {
+            Log.i(TAG, "notif-round: reopen conv=${round.conv} via saved PendingIntent")
+            runCatching { pi.send() }
+        } else if (prefs.autoOpenChat) {
+            Log.w(TAG, "notif-round: no saved PendingIntent for conv=${round.conv}, relying on current fg")
         }
+        if (notifRoundAnchorless) {
+            // 没有锚点就没有重放动作，微信不会自己到前台，傻等 2s 纯属拖慢队列——直接分析。
+            startNotifAnalysis(round, mySeq)
+        } else {
+            awaitWeChatForegroundThen { startNotifAnalysis(round, mySeq) }
+        }
+    }
+
+    /** 通知轮的分析主体：用通知文本构造快照驱动一次分析+回复。 */
+    private fun startNotifAnalysis(round: NotifRound, seq: Long) {
+        if (destroyed || !prefs.enabled) { finishNotifRound(seq); return }
+        // 后台纯通知场景：微信在后台，无障碍没抓到聊天窗口，session.target 可能为 null，
+        // 旧代码用 session.token() 会直接 return、连日志都不打（静默黑洞）。改用
+        // beginNotification 构造逻辑 target，绕开前台窗口假设，让通知文本真正驱动分析+回复。
+        val token = session.beginNotification(PKG_WECHAT, round.conv)
+        val snapshot = ChatSnapshot(round.conv, round.msgs, note = NOTIFY_NOTE)
+        Log.i(TAG, "notif-batch: conv=${round.conv} msgs=${round.msgs.size} senders=${round.msgs.map { it.sender }.distinct()} -> single analyze+reply")
+        finishOcrSnapshot(snapshot, PKG_WECHAT, manual = false, token = token)
     }
 
     /**
@@ -1112,7 +1162,29 @@ open class ChatCaptureService : AccessibilityService() {
             Log.i(TAG, "auto-send skipped: input box not empty")
             return
         }
+        // 同一会话冷却：刚回过就别再回（真人连发 / 通知重复投递会触发连回两次，一眼假）。
+        if (token.target.windowId == ConversationSession.NOTIF_WINDOW) {
+            val convKey = snapshot.title ?: ""
+            val lastAt = lastAutoSentAtByConv[convKey]
+            if (lastAt != null && System.currentTimeMillis() - lastAt < CONV_COOLDOWN_MS) {
+                Log.i(TAG, "auto-send skipped: conv='$convKey' cooled down (${(System.currentTimeMillis() - lastAt) / 1000}s)")
+                finishNotifRound(notifRoundSeq)
+                return
+            }
+        }
+        // 无锚点：不知道前台到底是哪个会话，回复填进去就可能发错人（私聊话进群）。
+        // 只给建议、绝不自动发送——这种错比不回严重得多。
+        if (token.target.windowId == ConversationSession.NOTIF_WINDOW && notifRoundAnchorless) {
+            Log.w(TAG, "auto-send blocked: no anchor for this conv -> suggestion only, not sending")
+            overlay?.toast(t("没定位到该会话，未自动发送", "Couldn't open that chat — not sent"))
+            finishNotifRound(notifRoundSeq)
+            return
+        }
         lastAutoSentSig = sig
+        if (token.target.windowId == ConversationSession.NOTIF_WINDOW && prefs.autoSend) {
+            lastAutoSentAtByConv[snapshot.title ?: ""] = System.currentTimeMillis()
+            if (lastAutoSentAtByConv.size > 64) lastAutoSentAtByConv.clear()
+        }
         Log.i(TAG, "auto-send best(${(best.prob * 100).toInt()}%): ${text.take(24)}")
         // 通知轮：发送真正落定后推进队列（处理下一个会话）；前台/手动轮不涉及队列。
         val mySeq = notifRoundSeq

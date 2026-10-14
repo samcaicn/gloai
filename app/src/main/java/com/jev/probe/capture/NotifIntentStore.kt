@@ -15,13 +15,20 @@ import android.app.PendingIntent
  * 探针（ChatCaptureService）是**同一个 App 进程**，故用进程内单例直接持有。
  */
 object NotifIntentStore {
+    // 锚点保鲜期：超过这个时长的 PendingIntent 视为**不可信**。
+    // 真实场景：群改名、会话重建、通知被清空后复用旧 intent——这时照着重放会把
+    // 微信开到别的会话，而探针读不到标题（8.0.78）无从校验，等于"发错人"。
+    private val FRESH_MS = 30 * 60 * 1000L
+
+    private data class Holder(val pi: PendingIntent, val at: Long)
+
     // access-order LRU：最近用过的会话排到末尾，超量时从最旧开始淘汰。
-    private val map = LinkedHashMap<String, PendingIntent>(16, 0.75f, true)
+    private val map = LinkedHashMap<String, Holder>(16, 0.75f, true)
 
     @Synchronized
     fun put(conv: String?, pi: PendingIntent?) {
         if (conv.isNullOrBlank() || pi == null) return
-        map[conv] = pi
+        map[conv] = Holder(pi, System.currentTimeMillis())
         if (map.size > 32) {
             val iter = map.keys.iterator()
             repeat(map.size - 16) { iter.next(); iter.remove() }
@@ -29,7 +36,19 @@ object NotifIntentStore {
     }
 
     @Synchronized
-    fun get(conv: String?): PendingIntent? = if (conv.isNullOrBlank()) null else map[conv]
+    fun get(conv: String?): PendingIntent? =
+        if (conv.isNullOrBlank()) null else map[conv]?.pi
+
+    /**
+     * 只返回**新鲜**的锚点；过期返回 null，让调用方走"无锚点不自动发送"的保守路径。
+     * 宁可不回，也不能把回复发到别的会话。
+     */
+    @Synchronized
+    fun fresh(conv: String?): PendingIntent? {
+        if (conv.isNullOrBlank()) return null
+        val h = map[conv] ?: return null
+        return if (System.currentTimeMillis() - h.at <= FRESH_MS) h.pi else null
+    }
 
     @Synchronized
     fun remove(conv: String?) {

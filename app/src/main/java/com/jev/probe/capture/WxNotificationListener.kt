@@ -6,7 +6,6 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.jev.probe.core.ConversationHistory
-import com.jev.probe.core.Prefs
 
 /**
  * WeChat notification listener. Its job in the unattended loop is the RECEIVE
@@ -55,6 +54,10 @@ class WxNotificationListener : NotificationListenerService() {
         // WeChat's "微信 · N 条新消息" summary tile — no single conversation to act on.
         if (isSummary(title, text)) { Log.d(TAG, "onNotificationPosted: summary tile -> skip"); return }
 
+        // 系统提示 / 非消息类通知：撤回、拉人、改群名、群公告、"以下为新消息"分隔条等。
+        // 对它们生成回复是最典型的人工智障——既答非所问又暴露对方在用自动回复。
+        if (isSystemNotice(text)) { Log.d(TAG, "onNotificationPosted: system notice -> skip"); return }
+
         // De-dupe repeated posts of the exact same content within 2s.
         val now = System.currentTimeMillis()
         val key = "$title $text"
@@ -97,17 +100,14 @@ class WxNotificationListener : NotificationListenerService() {
             })
         }
 
-        // 多会话同时来消息：先把这条通知的 contentIntent 按 conv 暂存，探针的通知轮队列
-        // 会在每条回复发送前重放它、把微信重开到"这个"会话（8.0.78 读不到标题，PendingIntent
-        // 是唯一可靠的定位锚点，见 NotifIntentStore）。下面的 warm-start 开窗保留作首条兜底。
+        // 多会话同时来消息：把这条通知的 contentIntent 按 conv 暂存，探针的通知轮队列会在
+        // 每条回复发送前重放它、把微信重开到"这个"会话（8.0.78 读不到标题，PendingIntent
+        // 是唯一可靠的定位锚点，见 NotifIntentStore）。
+        //
+        // 这里**不再**立刻 contentIntent.send()：那会在通知到达的瞬间就把微信抢到前台，
+        // 用户正在用手机（打字 / 看视频 / 别的 App）时体验极差；而且队列每轮本来就会重放
+        // 一次，抢在前面没有任何收益。开窗统一交给队列按序处理。
         NotifIntentStore.put(conv, n.contentIntent)
-
-        // Unattended mode: if enabled, bring the conversation to the foreground so
-        // the accessibility service can read + reply even when the phone is idle.
-        if (Prefs(this).autoOpenChat && !isWeChatForeground()) {
-            Log.d(TAG, "onNotificationPosted: autoOpenChat ON & WeChat not fg -> contentIntent.send()")
-            runCatching { n.contentIntent?.send() }
-        }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) = Unit
@@ -121,6 +121,26 @@ class WxNotificationListener : NotificationListenerService() {
         return false
     }
 
+    /**
+     * 非消息类系统提示。这些通知出现在通知栏里，但**不是对方对你说的话**——
+     * 对它们自动回复是最典型的人工智障：既答非所问，又让群里人一眼看出是机器。
+     * 宁可漏过个别边缘 case，也不要对着"撤回了一条消息"回一句"好的"。
+     */
+    private fun isSystemNotice(text: String?): Boolean {
+        val t = text ?: return false
+        return SYS_NOTICE.any { t.contains(it) }
+    }
+
+    // 只收**带明确微信固定话术**的系统提示；不收「取消」「结束」这类会命中正常消息的词。
+    private val SYS_NOTICE = listOf(
+        "撤回了一条消息", "以下为新消息", "对方正在输入", "正在输入…",
+        "加入了群聊", "邀请你加入群聊", "修改群名为", "群公告",
+        "你已添加了", "现在可以开始聊天", "通过了朋友验证", "开启了朋友验证",
+        "消息已发出，但被对方拒收", "拍了拍", "领取了你的红包",
+        "已添加你为朋友", "已退出了群聊", "已移出了群聊",
+        "通话时长", "[语音通话]", "[视频通话]", "对方已取消", "对方已拒绝"
+    )
+
     /** WeChat marks image/video/voice messages with a placeholder in the text.
      *  That placeholder is the reliable signal here; a MessagingStyle data-mime
      *  probe is intentionally avoided (it depends on an API level where
@@ -132,11 +152,6 @@ class WxNotificationListener : NotificationListenerService() {
             t.contains("[相册]") || t.contains("[照片]") || t.contains("[Image]") ||
             t.contains("[Sticker]") || t.contains("[表情]")
     }
-
-    /** Whether WeChat is the foreground app right now. The capture service keeps
-     *  this live (it sees rootInActiveWindow on every event), so we don't need a
-     *  restricted usage/running-tasks permission here. */
-    private fun isWeChatForeground(): Boolean = ChatCaptureService.weChatForeground
 
     /**
      * 从通知预览文本里拆出个人发送人。
