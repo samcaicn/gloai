@@ -18,6 +18,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.jev.probe.BuildConfig
 import android.widget.Toast
 import com.jev.probe.core.Analysis
 import com.jev.probe.core.AutoReply
@@ -384,7 +385,10 @@ class OverlayController(private val ctx: Context) {
             ) { root?.removeView(menu); onWhitelistToggle?.invoke() })
         }
         menu.addView(menuDivider())
-        menu.addView(menuItem(ctx.t("诊断与自检", "Diagnostics")) { root?.removeView(menu); onDiagnostics?.invoke() })
+        // 自检与诊断仅调试期可见；正式发行版去掉，减少可被逆向利用的内部信息面。
+        if (BuildConfig.DEBUG) {
+            menu.addView(menuItem(ctx.t("诊断与自检", "Diagnostics")) { root?.removeView(menu); onDiagnostics?.invoke() })
+        }
         menu.addView(menuItem(ctx.t("打开设置", "Open settings")) { openSettings(); root?.removeView(menu) })
         menu.addView(menuItem(ctx.t("隐藏助手（本次）", "Hide assistant (this session)")) { hide() })
         menu.addView(menuItem(ctx.t("取消", "Cancel")) { root?.removeView(menu) })

@@ -158,9 +158,12 @@ class MainActivity : AppCompatActivity() {
         container.addView(actionRow(t("设置", "Settings"), t("自动收发 · 关系描述 · 订阅", "Auto send/receive · Relationship · Subscription")) {
             startActivity(Intent(this, SettingsActivity::class.java))
         })
-        container.addView(actionRow(t("自检与诊断", "Diagnostics"), t("一眼看清哪项没开、上次分析成没成、有没有崩过", "See at a glance what's off, whether the last analysis succeeded, and any past crashes")) {
-            showDiagnostics()
-        })
+        // 自检与诊断仅调试期可见；正式发行版去掉，减少可被逆向利用的内部信息面。
+        if (BuildConfig.DEBUG) {
+            container.addView(actionRow(t("自检与诊断", "Diagnostics"), t("一眼看清哪项没开、上次分析成没成、有没有崩过", "See at a glance what's off, whether the last analysis succeeded, and any past crashes")) {
+                showDiagnostics()
+            })
+        }
 
         // 总开关**始终**可见。原来只在 4 项全开后才显示，于是「权限还没开完」的用户
         // 想先把助手关掉都找不到开关——而 prefs.enabled 默认就是 true，助手处于

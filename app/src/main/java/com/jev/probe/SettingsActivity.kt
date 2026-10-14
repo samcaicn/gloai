@@ -246,6 +246,16 @@ class SettingsActivity : AppCompatActivity() {
         ) {
             startActivity(android.content.Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         })
+        // 写入输入法启用后，还须把它设为「当前输入法」自动发送才会真正落键——
+        // 否则每次填完都弹系统选择器、需手动点一次。这里给一键切换入口（弹选择器选探针）。
+        if (imeOn) {
+            c.addView(cardBtn(t("切换为探针输入法（自动发送需它当前）", "Switch to probe IME (auto-send needs it current)")) {
+                val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+                imm?.showInputMethodPicker()
+                Toast.makeText(this, t("在弹出列表里选「AI聊天助手 · 写入」，设为默认后自动发送最稳",
+                    "Pick \"AI Assistant · Write\" — setting it as default makes auto-send reliable"), Toast.LENGTH_LONG).show()
+            })
+        }
 
         // 自动分析与自动发送是两件事，必须在这里也摆出来。
         // 原来设置页只有「自动收发」一项，而悬浮球菜单里「暂停自动收发」并不会关掉
@@ -594,10 +604,13 @@ class SettingsActivity : AppCompatActivity() {
         root.addView(section(t("关于", "About")))
         val c = card()
 
-        c.addView(cardBtn(t("自检与诊断", "Diagnostics")) {
-            startActivity(android.content.Intent(this, MainActivity::class.java)
-                .putExtra("diag", true))
-        })
+        // 自检与诊断仅调试期可见；正式发行版去掉，减少可被逆向利用的内部信息面。
+        if (BuildConfig.DEBUG) {
+            c.addView(cardBtn(t("自检与诊断", "Diagnostics")) {
+                startActivity(android.content.Intent(this, MainActivity::class.java)
+                    .putExtra("diag", true))
+            })
+        }
         c.addView(text(t("助手没反应、上次分析成没成、有没有崩过，都在这里。",
             "Whether the assistant is unresponsive, whether the last analysis succeeded, and any crashes — all here."), 11f, sub))
 

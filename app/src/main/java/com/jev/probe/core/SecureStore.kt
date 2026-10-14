@@ -45,6 +45,10 @@ object SecureStore {
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
             .setKeySize(256)
             .build()
+        // 必须 init(spec)：少了这一句 AndroidKeyStore 抛 IllegalStateException("Not
+        // initialized")。真机上话术包索引落盘才把它暴露出来——账户 token / license
+        // 路径因为 encrypt("") 对空串短路返回，从没真正碰过 keystore，一直没报。
+        kg.init(spec)
         return kg.generateKey().also { cached = it }
     }
 
