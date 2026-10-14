@@ -21,6 +21,7 @@ import android.widget.Toast
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
+import com.jev.probe.BuildConfig
 import com.jev.probe.input.ProbeImeBus
 import com.jev.probe.capture.ocr.PaddleOcr
 import com.jev.probe.capture.ocr.OcrLine
@@ -364,6 +365,10 @@ open class ChatCaptureService : AccessibilityService() {
         }
     }
 
+    /** DEBUG-only synthetic injector receiver (see [ACTION_TEST_WX_MSG]). Null in
+     *  release; set only when [BuildConfig.DEBUG] so the branch is R8-stripped. */
+    private var debugInjectReceiver: BroadcastReceiver? = null
+
     /**
      * 通知攒批：同会话([conv])在 [NOTIF_BATCH_MS] 内到达的多条消息合并成一个快照，
      * 统一走一次分析+回复。微信 8.0.78 屏蔽了前台读屏，自动回复只能靠通知，
@@ -464,6 +469,29 @@ open class ChatCaptureService : AccessibilityService() {
             ContextCompat.registerReceiver(
                 this, wxMsgReceiver, IntentFilter(ACTION_WX_MSG),
                 ContextCompat.RECEIVER_NOT_EXPORTED)
+        }
+        // DEBUG-only synthetic injector: drive the real enqueueNotif pipeline from
+        // `adb shell am broadcast` so multi-message / group-sender batching can be
+        // verified on-device without a real WeChat notification. Stripped in release.
+        if (BuildConfig.DEBUG) {
+            val r = object : BroadcastReceiver() {
+                override fun onReceive(ctx: Context?, intent: Intent?) {
+                    if (intent?.action != ACTION_TEST_WX_MSG) return
+                    val conv = intent.getStringExtra("conv")
+                    val sender = intent.getStringExtra("sender")
+                    val text = intent.getStringExtra("text")
+                    val image = intent.getBooleanExtra("image", false)
+                    Log.i(TAG, "debug-inject: WX_MSG conv='$conv' sender='$sender' textLen=${text?.length} image=$image")
+                    if (!text.isNullOrBlank()) enqueueNotif(conv, sender, text, image)
+                }
+            }
+            debugInjectReceiver = r
+            runCatching {
+                ContextCompat.registerReceiver(
+                    this, r, IntentFilter(ACTION_TEST_WX_MSG),
+                    ContextCompat.RECEIVER_EXPORTED)
+            }
+            Log.i(TAG, "debug-inject: TEST_WX_MSG receiver registered (DEBUG build)")
         }
         // HyperOS may kill and restart us. On (re)connect, proactively re-show the
         // bubble for whatever chat is already open, so it comes back on its own
@@ -1705,6 +1733,8 @@ open class ChatCaptureService : AccessibilityService() {
         // silently disable auto-opening the chat for good.
         weChatForeground = false
         runCatching { unregisterReceiver(wxMsgReceiver) }
+        runCatching { debugInjectReceiver?.let { unregisterReceiver(it) } }
+        debugInjectReceiver = null
         getSharedPreferences(Prefs.PREFS_MAIN, MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(preferencesListener)
         leaveConversation()
@@ -1729,6 +1759,13 @@ open class ChatCaptureService : AccessibilityService() {
 
         /** Sent by [WxNotificationListener] when a new WeChat message arrives. */
         const val ACTION_WX_MSG = "com.jev.probe.action.WX_MSG"
+
+        /** DEBUG-only synthetic injector. Lets on-device E2E tests drive the exact
+         *  production [enqueueNotif] -> [flushNotifBatch] -> reply path without a
+         *  real WeChat notification (which the shell cannot forge on Android 14+).
+         *  Never registered in release builds (BuildConfig.DEBUG folds to false and
+         *  R8 removes the branch), so it leaves no test surface in shipped APKs. */
+        const val ACTION_TEST_WX_MSG = "com.jev.probe.action.TEST_WX_MSG"
 
         /** Live: is WeChat the foreground app right now? Updated every accessibility
          *  event so [WxNotificationListener] can decide whether to auto-open a chat

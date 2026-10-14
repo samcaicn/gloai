@@ -156,6 +156,35 @@ jobs:
           path: dist/app-release.apk
           retention-days: 30
 
+      # ------------------------------------------------------------------
+      # DEBUG 包（复用 release keystore 签名，install -r 可覆盖已装 release 不丢权限）：
+      # 仅用于真机 E2E 验证 DEBUG-only 的可注入入口（ACTION_TEST_WX_MSG），
+      # 驱动 enqueueNotif→flushNotifBatch→回复 整条生产线测多消息/群发送人。
+      # 出现在本仓库 CI（有 SIGNING_* secret）时即为 release 同证书签名；release 产物流程不受影响。
+      - name: Build debug APK (release-keystore signed, for on-device E2E)
+        run: ./gradlew :app:assembleDebug --stacktrace > build_debug.log 2>&1 || true
+
+      - name: Collect & upload debug APK
+        if: always()
+        run: |
+          set -eu
+          APK=$(find app/build/outputs/apk/debug -name 'app-debug.apk' 2>/dev/null | head -1 || true)
+          if [ -z "$APK" ]; then
+            echo "::warning::debug APK 未产出（可能 signingConfig 缺失），跳过 debug 产物上传"
+            exit 0
+          fi
+          mkdir -p dist
+          cp "$APK" dist/app-debug.apk
+          echo "debug APK: $(ls -la dist/app-debug.apk)"
+
+      - name: Upload debug APK artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jev-chat-jarvis-debug-apk-${{ github.run_number }}
+          path: dist/app-debug.apk
+          retention-days: 30
+
       - name: Report failure log to public issue
         if: failure()
         env:

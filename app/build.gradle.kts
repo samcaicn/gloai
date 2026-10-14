@@ -110,6 +110,17 @@ android {
             )
             signingConfig = signingConfigs.findByName("release")
         }
+        // DEBUG 构建：复用 release keystore 签名，使 `install -r` 能直接覆盖已装的
+        // release 包（同证书），不丢无障碍绑定 / 通知监听权限；BuildConfig.DEBUG=true
+        // 用于开启 DEBUG-only 的可注入入口（com.jev.probe.action.TEST_WX_MSG），
+        // 让真机 E2E 能驱动 enqueueNotif→flushNotifBatch→回复 整条生产线验证多消息/群发送人。
+        // release 包因 BuildConfig.DEBUG 折叠为 false 被 R8 死代码消除，无测试面暴露。
+        debug {
+            isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
+            signingConfig = signingConfigs.findByName("release")
+        }
     }
 
     // Uncompressed, page-aligned .so files: required for the 16 KB page-size
