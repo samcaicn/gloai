@@ -33,6 +33,12 @@ android {
     namespace = "com.jev.probe"
     compileSdk = 35
 
+    // 生成 BuildConfig 类（AGP 8+ 默认关闭）。诊断入口用 BuildConfig.DEBUG 包裹，
+    // release 下常量折叠为 false 被 R8 死代码消除，正式包不暴露内部调试入口。
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.jev.probe"
         minSdk = 30
