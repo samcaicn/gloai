@@ -1,0 +1,323 @@
+{
+  "loading": "加载中...",
+  "downloadFile": "下载文件",
+  "closePreview": "关闭预览",
+  "collapsePanel": "收起面板",
+  "maximizePanel": "最大化",
+  "restorePanel": "还原",
+  "source": "原文",
+  "code": "代码",
+  "preview": "预览",
+  "editor": "编辑器",
+  "previewEffect": "预览效果",
+  "downloadMarkdown": "下载 Markdown 文件",
+  "downloadCode": "下载 {{language}} 文件",
+  "downloadDiff": "下载 Diff 文件",
+  "addToChat": "添加到会话",
+  "openSplitScreen": "开启分屏",
+  "closeSplitScreen": "关闭分屏",
+  "edit": "编辑",
+  "exitEdit": "退出编辑",
+  "unsavedChangesTitle": "未保存的修改",
+  "unsavedChangesMessage": "当前修改还没有保存，确定退出编辑吗？",
+  "confirmExit": "确定退出",
+  "continueEdit": "继续编辑",
+  "closeTabTitle": "关闭标签页",
+  "closeTabMessage": "当前内容还未保存，是否保存后再关闭？",
+  "closeTabsTitle": "关闭标签页",
+  "closeTabsMessage": "有 {{count}} 个标签页未保存，是否保存后再关闭？",
+  "closeTabsMessage_one": "有 {{count}} 个标签页未保存，是否保存后再关闭？",
+  "closeTabsMessage_other": "有 {{count}} 个标签页未保存，是否保存后再关闭？",
+  "saveAndClose": "保存并关闭",
+  "closeWithoutSave": "不保存",
+  "pptTitle": "PowerPoint 演示文稿",
+  "pptOpenHint": "点击下方按钮在系统应用中打开以查看完整内容",
+  "pptOpenFile": "打开文件",
+  "pptShowLocation": "显示位置",
+  "pptSystemAppHint": "将使用 PowerPoint、Keynote 或 WPS 等系统默认应用打开",
+  "openWithApp": "在 {{app}} 中打开",
+  "openInSystemApp": "使用系统默认应用打开",
+  "openInSystemSuccess": "已在系统默认应用中打开",
+  "openInSystemFailed": "打开文件失败",
+  "close": "关闭",
+  "closeLeft": "关闭左侧",
+  "closeRight": "关闭右侧",
+  "closeOthers": "关闭其他",
+  "closeAll": "全部关闭",
+  "closeUnmodified": "关闭未修改",
+  "copyPath": "复制路径",
+  "copyRelativePath": "复制相对路径",
+  "openLocation": "打开文件所在目录",
+  "openLocationFailed": "无法打开所在目录",
+  "readOnlyLabel": "只读预览",
+  "pathLabel": "路径",
+  "missingFile": {
+    "title": "文件不存在",
+    "openInNewTab": "尝试在新的标签页打开"
+  },
+  "noTabs": "暂无标签页",
+  "openInPanelTooltip": "在预览面板中查看",
+  "mermaidTitle": "Mermaid 图表",
+  "wavedromTitle": "WaveDrom 波形图",
+  "oversized": {
+    "title": "文件过大，无法预览",
+    "detail": "文件尺寸 {{size}} 超过 {{threshold}}，请用系统编辑器打开。",
+    "downloadUnavailable": "文件过大，无法在此下载。请改用「在系统中打开」。"
+  },
+  "unsupported": {
+    "title": "暂不支持预览此格式",
+    "detail": "{{format}} 文件无法在此预览，请用系统应用打开。",
+    "downloadUnavailable": "该文件无法在此下载。请改用「在系统中打开」。"
+  },
+  "aiWriting": "AI 正在写入…",
+  "errors": {
+    "missingFilePath": "未提供文件路径",
+    "openWithoutPath": "无法打开：未提供文件路径",
+    "conversionFailed": "转换失败"
+  },
+  "office": {
+    "installLinkText": "打开 officecli 安装说明",
+    "errors": {
+      "officecliNotFound": "未安装 officecli。",
+      "installFailed": "自动安装 officecli 失败，请检查后端日志后重试。",
+      "portTimeout": "预览服务启动后未在预期时间内就绪，请重试。",
+      "startFailed": "启动 Office 预览服务失败。",
+      "outsideSandbox": "该文件不在当前项目沙箱范围内。"
+    },
+    "serverInstall": {
+      "hint": "TupAI 运行在服务器上，预览组件需要安装在该服务器上。请在服务器执行以下命令后重试：",
+      "icuNote": "若安装后仍无法启动，请在服务器安装 ICU 库（Debian/Ubuntu：apt-get install -y libicu-dev）。"
+    }
+  },
+  "word": {
+    "title": "Word 文档",
+    "loading": "加载 Word 文档中...",
+    "invalid": "请检查文件是否为有效的 Word 文档",
+    "loadFailed": "加载 Word 文档失败",
+    "watch": {
+      "loading": "正在加载 Word 文档...",
+      "installing": "正在安装 officecli...",
+      "startFailed": "启动 Word 预览失败",
+      "installHint": "需要 officecli，将自动安装。"
+    }
+  },
+  "excel": {
+    "title": "Excel 表格",
+    "loading": "加载 Excel 文档中...",
+    "invalid": "请检查文件是否为有效的 Excel 文档",
+    "noSheets": "Excel 文件中没有工作表",
+    "sheetCount": "{{count}} 个工作表",
+    "convertFailed": "Excel 转换失败",
+    "loadFailed": "加载 Excel 文档失败",
+    "emptySheet": "此工作表无数据",
+    "emptySheetHint": "请检查 Excel 文件是否包含数据或图片",
+    "watch": {
+      "loading": "正在加载 Excel 文件...",
+      "installing": "正在安装 officecli...",
+      "startFailed": "启动 Excel 预览失败",
+      "installHint": "需要 officecli，将自动安装。"
+    }
+  },
+  "pdf": {
+    "title": "PDF 文档",
+    "pathMissing": "PDF 文件路径为空",
+    "loadFailed": "加载 PDF 失败",
+    "unableDisplay": "无法加载 PDF 文件"
+  },
+  "html": {
+    "elementSelected": "已选中元素: {{path}}",
+    "copySuccess": "已复制该段 HTML",
+    "inspectorEnabled": "元素选择器已开启，点击预览中的元素可定位代码",
+    "inspectorButton": "元素选择器",
+    "inspecting": "选择中...",
+    "selectedLabel": "已选中:",
+    "inspectorTooltip": "开启后，点击预览中的元素可查看其 HTML 代码",
+    "downloadHtml": "下载 HTML 文件",
+    "copyElementHtml": "复制元素 HTML",
+    "viewElementInfo": "查看元素信息",
+    "printedToConsole": "已在控制台打印元素信息",
+    "inspectElement": "审核元素",
+    "inspectElementEnable": "开启审核元素",
+    "inspectElementDisable": "关闭审核元素",
+    "frameTitle": "HTML 预览"
+  },
+  "ppt": {
+    "loading": "正在启动 PPT 预览...",
+    "installing": "正在安装预览组件...",
+    "startFailed": "启动 PPT 预览失败",
+    "installHint": "请从官方 iOfficeAI/OfficeCLI releases 页面安装 OfficeCLI"
+  },
+  "browser": {
+    "newTab": "新建标签页",
+    "addressPlaceholder": "输入网址或搜索内容",
+    "tabsLabel": "已打开的网页",
+    "closeTab": "关闭「{{title}}」",
+    "copyAddress": "复制网址",
+    "agentActiveTooltip": "Agent 正在操作此标签页",
+    "tabLimitReached": "标签页数量已达上限（{{count}} 个），已复用最早打开的标签页。",
+    "agentFirstUseTitle": "Agent 正在使用应用内浏览器",
+    "agentFirstUseContent": "它可以在这个面板里打开网页、点击和读取内容。你的登录状态会被保留。",
+    "agentFirstUseAction": "前往设置"
+  },
+  "saveConflict": "保存失败：该文件在你打开后已被改动。可重新加载查看其他改动——你的编辑仍在，尚未保存。",
+  "persistQuotaExceeded": "本地存储已满，无法再记住该项目打开的标签页。请关闭一些标签页或清理站点数据。",
+  "save": {
+    "tooltip": "保存修改（Ctrl/Cmd+S）",
+    "clean": "没有未保存的修改"
+  },
+  "refresh": {
+    "label": "刷新",
+    "tooltip": "从磁盘重新加载",
+    "hasUpdate": "该文件已在磁盘上改动——点击重新加载",
+    "noSignalSource": "该文件不在项目内，不会自动提示更新",
+    "unavailable": "无法定位该文件",
+    "failed": "无法重新加载该文件",
+    "confirmTitle": "重新加载将丢失未保存的修改？",
+    "confirmMessage": "该标签页有未保存的修改，重新加载会用磁盘上的内容覆盖它们。",
+    "discardAndRefresh": "放弃修改并刷新",
+    "officeNotWired": "Office 文档的刷新尚未接入——请关闭后重新打开文件以查看改动。"
+  },
+  "zoomIn": "放大",
+  "zoomOut": "缩小",
+  "zoomReset": "重置视图",
+  "diagramZoomHint": "滚轮缩放 • 拖拽平移 • ESC 关闭",
+  "muBrowser": {
+    "stepNumber": "第 {{step}} 步",
+    "confidence": "把握 {{percent}}%",
+    "noChange": "页面无变化",
+    "observing": "正在观察页面…",
+    "elapsed": "已用时间",
+    "steps": "步骤 {{total}}",
+    "noSteps": "还没有执行任何操作",
+    "reason": "TupAI 的说明",
+    "goal": "目标",
+    "pause": "暂停",
+    "resume": "继续",
+    "stop": "停止",
+    "takeover": "接管",
+    "takeoverTip": "暂停并把键盘交给你。操作完点「继续」，TupAI 会重新观察页面再判断。",
+    "pausedShort": "已暂停",
+    "stopping": "正在停止…",
+    "paused": {
+      "user": "已暂停。点「继续」后，TupAI 会重新观察页面再判断。",
+      "takeover": "你已接管，可以直接操作页面。完成后点「继续」，TupAI 会重新观察页面。",
+      "interaction": "你刚才操作了页面，TupAI 已自动暂停，避免和你同时点。点「继续」后它会重新观察页面。"
+    },
+    "statusHint": {
+      "blocked": "TupAI 找不到能继续推进目标的操作，停了下来。",
+      "needs_confirmation": "这个操作看起来无法撤销，又没有得到允许，TupAI 没有执行它。",
+      "budget": "已经用完本次运行的步数上限。",
+      "stopped": "你停止了这次运行。",
+      "failed": "浏览过程中出了错，本次运行没有完成。"
+    },
+    "detachedHint": "TupAI 与这个页面的连接已断开，本次运行无法继续。",
+    "verb": {
+      "click": "点击",
+      "fill": "输入",
+      "select": "选择",
+      "scroll": "滚动",
+      "wait": "等待",
+      "none": "没有找到目标",
+      "other": "操作"
+    },
+    "status": {
+      "done": "完成",
+      "blocked": "受阻",
+      "needs_confirmation": "需要确认",
+      "stopped": "已停止",
+      "budget": "步数用尽",
+      "read": "已读取页面",
+      "failed": "出错",
+      "ended": "已结束",
+      "detached": "已断开"
+    },
+    "notice": {
+      "download": "已拦截下载：{{detail}}",
+      "permission": "已拒绝权限请求：{{detail}}",
+      "navigation": "已拦截非网页地址：{{detail}}",
+      "popup": "已拦截弹出窗口：{{detail}}"
+    },
+    "confirm": {
+      "title": "TupAI 想执行一个可能无法撤销的操作",
+      "action": "操作",
+      "page": "页面",
+      "allow": "允许",
+      "deny": "拒绝",
+      "countdown": "{{seconds}} 秒后自动拒绝",
+      "untrusted": "以上文字来自网页，仅供参考，请以页面实际内容为准。"
+    },
+    "detachCause": "原因",
+    "detachReason": {
+      "tab_closed": "标签页被关闭了。",
+      "connection": "TupAI 的浏览会话在任务完成前就结束了。",
+      "devtools": "这个页面打开了开发者工具。",
+      "crashed": "页面崩溃了。"
+    },
+    "permission": {
+      "location": "位置",
+      "media": "摄像头或麦克风",
+      "notifications": "通知",
+      "clipboard": "剪贴板",
+      "screen": "屏幕录制",
+      "midi": "MIDI 设备",
+      "fullscreen": "全屏",
+      "pointerLock": "锁定鼠标",
+      "devices": "USB、串口或 HID 设备",
+      "storage": "存储访问",
+      "openExternal": "打开其他应用",
+      "protectedContent": "受保护内容播放",
+      "windows": "窗口管理"
+    },
+    "end": {
+      "stopped_by_user": "你叫停了这次运行。",
+      "max_steps": "执行 {{count}} 个操作后停止了。",
+      "max_steps_one": "执行 {{count}} 个操作后停止了。",
+      "max_steps_other": "执行 {{count}} 个操作后停止了。",
+      "no_judge": "没有判定器能选出下一步操作（{{judgeReason}}）。",
+      "no_progress": "判定器找不到能推进目标的操作。",
+      "not_confirmed": "「{{label}}」看起来无法撤销，且没有得到确认。",
+      "no_value": "无法为「{{label}}」生成要填写的内容。",
+      "stuck": "连续 {{count}} 个操作都没有改变页面。",
+      "stuck_one": "连续 {{count}} 个操作都没有改变页面。",
+      "stuck_other": "连续 {{count}} 个操作都没有改变页面。"
+    },
+    "judgeReason": {
+      "shadow": "影子模式，回答只做记录",
+      "abstain": "判定器弃权",
+      "noVerdict": "没有给出结论",
+      "error": {
+        "timeout": "判定器超时",
+        "aborted": "判定请求被取消",
+        "unreachable": "判定器不可达",
+        "auth": "判定器密钥被拒绝",
+        "payment_required": "判定服务需要付款方式",
+        "rate_limited": "判定器请求过于频繁",
+        "bad_request": "判定器拒绝了请求",
+        "server": "判定服务出错",
+        "invalid_response": "判定器的回答无法解析",
+        "unexpected": "意外错误",
+        "all": "所有判定请求都失败了",
+        "other": "判定请求失败"
+      },
+      "off": "判定器未启用"
+    }
+  },
+  "tabTitle": {
+    "image": "图片",
+    "diff": "差异"
+  },
+  "sideBySide": "并排对比",
+  "diffTag": {
+    "changed": "已修改",
+    "added": "新增",
+    "deleted": "已删除",
+    "renamed": "已重命名"
+  },
+  "diffEmpty": "此文件没有变更",
+  "mermaidTitleWithSummary": "Mermaid 图表：{{summary}}",
+  "wavedromTitleWithSummary": "WaveDrom 波形图：{{summary}}",
+  "saveFailedWithDetail": "保存失败：{{detail}}",
+  "zoomActualSize": "重置缩放",
+  "zoomFit": "适应宽度",
+  "zoomFitTooltip": "缩放到面板宽度"
+}

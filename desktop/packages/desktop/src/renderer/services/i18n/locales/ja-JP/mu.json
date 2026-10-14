@@ -1,0 +1,758 @@
+{
+  "title": "TupAI の設定",
+  "description": "TupAI に指示できるすべての項目: 判定器、判定ポイント、機能、モデル、コンテキスト。TupAI コマンドラインと共有されます。",
+  "reload": "再読み込み",
+  "search": "判定ポイントと機能を検索",
+  "noMatch": "一致する項目がありません。",
+  "modified": "変更済み",
+  "applyNote": "変更は新しいセッションに適用されます。実行中のセッションは開始時の設定のままです。変更を反映するには再接続してください。",
+  "apiKey": "API キー",
+  "keyHelp": "保存後は二度と表示されません。このコンピューターにだけ保存され、あなたのアカウントしか読めません。",
+  "keyKeep": "空欄のままにすると保存済みのキーを保持します",
+  "endpointRule": "HTTPS を使用してください。HTTP はこのマシン（127.0.0.1、localhost）またはプライベートネットワークの IP アドレス（例: 192.168.1.20）宛てにのみ使えます。アドレスにユーザー名、パスワード、クエリ、フラグメントは含められません。",
+  "sections": {
+    "judges": "判定器",
+    "judgeTiers": "判定の階層",
+    "decisions": "判定ポイント",
+    "features": "機能",
+    "moreFeatures": "その他の機能",
+    "providers": "プロバイダー",
+    "defaultModel": "既定のモデル",
+    "context": "コンテキスト"
+  },
+  "pages": {
+    "decisions": {
+      "input": "判定ポイント：入力",
+      "context": "コンテキスト",
+      "memory": "判定ポイント：教訓",
+      "tools": "判定ポイント：ツールと安全性",
+      "turn": "判定ポイント：ターン",
+      "team": "判定ポイント：連携"
+    },
+    "features": {
+      "input": "その他の機能：入力",
+      "context": "その他の機能：コンテキスト",
+      "tools": "その他の機能：ツールと安全性",
+      "turn": "その他の機能：ターン",
+      "other": "その他の機能：その他"
+    }
+  },
+  "modes": {
+    "active": "オン",
+    "off": "オフ",
+    "activeHelp": "判定が反映されます。",
+    "offHelp": "判定は反映されず、その段階はそのまま進みます。"
+  },
+  "harness": {
+    "tooOld": "この TupAI は古いため、判定ポイントと機能の一覧を出せません。ここに表示するには TupAI を更新してください。基本設定は引き続き使用できます。",
+    "unsupported": "TupAI が、このアプリの対応していない形式（バージョン {{version}}）で自身の情報を提供しています。判定ポイントと機能を編集するには、アプリを更新してください。"
+  },
+  "load": {
+    "failed": "設定を読み込めませんでした"
+  },
+  "save": {
+    "saved": "保存しました。新しいセッションから適用されます。実行中のセッションは再接続してください。",
+    "unsaved": "未保存の変更: {{sections}}",
+    "nothing": "未保存の変更はありません",
+    "unsavedDot": "未保存の変更",
+    "discard": "変更を破棄",
+    "stale": "ここで読み込んだ後に別のプログラム（TupAI コマンドライン、または実行中のセッション）が設定を変更したため、保存されませんでした。再読み込みして現在の状態を確認してください。未保存の編集は失われます。",
+    "failed": "保存できませんでした: {{reason}}"
+  },
+  "units": {
+    "s": "秒",
+    "tokens": "トークン"
+  },
+  "options": {
+    "range": "範囲: {{min}}〜{{max}}。",
+    "emptyText": "空欄: 既定値を使用",
+    "addItem": "入力して Enter で追加",
+    "addNumber": "数値を入力して Enter で追加",
+    "problem": {
+      "type": "値の型が正しくありません。",
+      "range": "許可された範囲外の値です。",
+      "choice": "選択肢にない値です。",
+      "length": "長すぎるか、空の項目があります。"
+    }
+  },
+  "decisions": {
+    "description": "判定器に問い合わせる各ポイントです。個別にモードを指定しない限り、既定のモードに従います。",
+    "defaultMode": "既定のモード",
+    "defaultModeHelp": "個別のモードが指定されていないすべての判定ポイントに適用されます。",
+    "useDefault": "既定に戻す（{{mode}}）",
+    "featureOff": "機能がオフのため、問い合わせません",
+    "groups": {
+      "input": "入力",
+      "context": "コンテキスト",
+      "memory": "教訓",
+      "tools": "ツールと安全性",
+      "turn": "ターン",
+      "team": "連携"
+    },
+    "otherGroup": "その他",
+    "pageLead": "個別にモードを指定しない限り、既定のモードに従います。既定のモードと検索は「{{page}}」にあります。",
+    "none": "ここにはまだ判定ポイントがありません。"
+  },
+  "features": {
+    "lead": "TupAI がバックグラウンドで代わりに行うことです。オフにすると、TupAI はそれを行わなくなります。",
+    "moreLead": "TupAI ができるその他のことを、働く場所ごとにまとめています。各機能のオプションはワンクリックで開けます。",
+    "beta": "ベータ",
+    "reset": "既定値に戻す",
+    "boardModelElsewhere": "ボードを書くモデルは「既定のモデル」で選択します。",
+    "options": "オプション",
+    "noOptions": "ほかに設定する項目はありません。スイッチだけです。",
+    "noSuchFeature": "このバージョンの TupAI にはこの機能がありません。",
+    "none": "ここにはまだ機能がありません。",
+    "part": "オプション（{{parts}} ページ中 {{part}} ページ目）",
+    "previousPart": "前のページ",
+    "nextPart": "次のページ"
+  },
+  "judges": {
+    "tiersHelp": "判定器は順に試されます。後の判定器は、前の判定器で確定しなかったものだけを扱います。",
+    "order": "順序",
+    "orderHelp": "最初のものが上で選んだ判定器です。",
+    "tierTitle": "第 {{index}} 階層：{{name}}",
+    "service": "サービス",
+    "services": {
+      "auto": {
+        "name": "自動",
+        "help": "TypeSafe のキーがあれば TypeSafe、なければ OpenRouter のキーがあれば OpenRouter、どちらもなければ Vercel AI Gateway を使います。",
+        "key": "TypeSafe の API キー"
+      },
+      "typesafe": {
+        "name": "TypeSafe",
+        "help": "常に TypeSafe に直接接続します。",
+        "key": "TypeSafe の API キー"
+      },
+      "openrouter": {
+        "name": "OpenRouter",
+        "help": "常に OpenRouter を経由し、OpenRouter の API キーを使います。キーは Jev 専用に保存され、設定しても OpenRouter のチャットモデル用のキーは変わりません。",
+        "key": "OpenRouter の API キー"
+      },
+      "gateway": {
+        "name": "Vercel AI Gateway",
+        "help": "常に Vercel AI Gateway を経由します。",
+        "key": "Vercel AI Gateway の API キー"
+      },
+      "custom": {
+        "name": "カスタムサービス",
+        "help": "TypeSafe の System One プロトコルに対応したサービスなら使えます。自分で動かすサーバー、ネットワーク内の中継、Jev を提供する他のサービスなどです。",
+        "key": "このサービスの API キー"
+      }
+    },
+    "model": "判定モデル",
+    "baseUrl": "ベース URL",
+    "baseUrlHelp": "空欄なら TypeSafe の公式アドレスを使います。",
+    "customUrlHelp": "このサービスの System One アドレスです。キーはここにだけ送られます。",
+    "baseUrlNeeded": "カスタムサービスにはアドレスが必要です。",
+    "customTier": "自分で追加した判定器です。変更するには TupAI の設定ファイルを編集してください。",
+    "endpointDefault": "サービスの既定のアドレス",
+    "types": {
+      "localHelp": "このコンピューターで動きます。",
+      "clmHelp": "あなた自身の CLM サーバーで動きます。"
+    },
+    "intro": "TupAI は作業中に、このメッセージをどう扱うか、このステップが設定したルールに反していないか、といった小さな判断を何度も迫られます。それに答えるのが判定器です。1 つ選んでください。",
+    "choose": "判定器を選択",
+    "custom": "現在、先頭の判定器はカスタム設定です。下の「判定の階層」で確認・変更できます。",
+    "keyPlaceholder": "キーを貼り付け",
+    "choices": {
+      "jev": {
+        "title": "Jev",
+        "tag": "おすすめ",
+        "description": "高速かつ正確で、呼び出しごとに課金されます。TypeSafe、OpenRouter、Vercel AI Gateway、または自前のサービスのキーが必要です。"
+      },
+      "local": {
+        "title": "ローカル Laya",
+        "tag": "無料・オフライン",
+        "description": "このコンピューター上で動作し、ネットワーク不要・無料です。分類は得意ですが、関連付けやスコアリングの信頼性は劣ります。"
+      },
+      "clm": {
+        "title": "CLM",
+        "tag": "セルフホスト",
+        "description": "Jev と同じ質問に、あなた自身のサーバー（clm-serve）で答えます。エンコーダーには GPU が必要で、呼び出しごとの課金はありません。"
+      }
+    },
+    "localAddress": "アドレス: {{address}}",
+    "laya": {
+      "running": "このマシンで実行中",
+      "stopped": "インストール済みですが、実行されていません。必要なときに TupAI が起動します。",
+      "missing": "まだインストールされていません。",
+      "platform": "このコンピューターでは Laya を実行できません。Windows または Linux（x64 または arm64）か、Apple Silicon 搭載の Mac が必要です。",
+      "needsUv": "インストールには Python のパッケージマネージャー uv が必要です。uv をインストールしてから、ここに戻ってください。",
+      "uvLink": "uv のインストール方法",
+      "install": "Laya をインストール",
+      "start": "起動",
+      "stop": "停止",
+      "confirmTitle": "Laya をダウンロードしてインストールしますか？",
+      "confirmText": "PyPI と Hugging Face から約 {{size}} MB（Python パッケージとモデルの重み）を TupAI のフォルダーにダウンロードします。数分かかります。インストールが終わると Laya が起動します。",
+      "confirmOk": "ダウンロードしてインストール",
+      "working": {
+        "setup": "Laya をインストールしています…",
+        "start": "Laya を起動しています…",
+        "stop": "Laya を停止しています…"
+      },
+      "failed": {
+        "setup": "インストールが完了しませんでした。もう一度お試しください。",
+        "start": "Laya を起動できませんでした。",
+        "stop": "Laya を停止できませんでした。"
+      },
+      "onnx": {
+        "missing": "このコンピューターにはまだ Laya のモデルがありません（約 {{size}} MB）。TupAI は自動ではダウンロードしません。Hugging Face からファイルをダウンロードしてモデルフォルダーに入れ、「確認して起動」を押してください。",
+        "stopped": "モデルは揃っていますが、Laya は実行されていません。Laya を判定器に選んでいる場合、アプリを開いたときに TupAI が自動で起動します。",
+        "starting": "モデルを確認して Laya を起動しています… 初回の確認ではモデル全体を読み込むため、少し時間がかかります。",
+        "missingFiles": "まだ足りないファイル：{{files}}",
+        "wrongFiles": "TupAI でテストしたバージョンではありません。ダウンロードし直してください：{{files}}",
+        "folder": "モデルフォルダー：{{folder}}",
+        "command": "Hugging Face のコマンドライン（hf）があれば、次のコマンド 1 つですべて取得できます：",
+        "page": "Hugging Face で入手",
+        "openFolder": "モデルフォルダーを開く",
+        "check": "確認して起動",
+        "problem": {
+          "missing": "一部のモデルファイルがありません。",
+          "wrong": "一部のモデルファイルが TupAI でテストしたバージョンではありません。ダウンロードし直してください。",
+          "runtime": "このコンピューターではモデルを実行できませんでした。",
+          "port": "Laya のポート（{{port}}）はすでに別のプログラムが使用しています。",
+          "stopped": "Laya は準備が整う前に停止しました。",
+          "foreign": "TupAI が起動したのではない Laya が実行中です。起動した場所で停止してください。"
+        }
+      }
+    },
+    "clm": {
+      "address": "サーバーのアドレス",
+      "addressHelp": "clm-serve が待ち受けるアドレスです（例: http://192.168.1.20:8700）。空欄ならこのコンピューター（{{address}}）です。",
+      "key": "サーバーのキー",
+      "keyPlaceholder": "サーバーが求める場合のみ",
+      "keyHelp": "キーを求めるのは CLM_API_KEY を付けて起動したサーバーだけです。同じ値を入力してください。保存後は二度と表示されません。",
+      "check": "サーバーを確認",
+      "unmeasured": "CLM が TupAI の判定をどれだけうまく行えるかは、まだ測定していません。",
+      "status": {
+        "checking": "サーバーに問い合わせ中…",
+        "ready": "応答中 · {{models}} · {{ms}} ミリ秒",
+        "down": "{{address}} から応答がありません。そこで clm-serve を起動するか、アドレスを直してください。",
+        "encoderDown": "サーバーは応答していますが、エンコーダーが応答しません。埋め込みサーバー（vLLM）が動くまで、すべての質問が失敗します。",
+        "model": "サーバーは {{model}} を提供していません。提供しているのは {{models}} です。",
+        "keyNeeded": "サーバーがキーを求めています。起動時に使ったキー（CLM_API_KEY）を入力してください。",
+        "keySaved": "サーバーはキーを求めており、キーは保存済みです。",
+        "mock": "このサーバーは CLM のモックエンコーダーで動いています。回答はノイズで、CLM のものではありません。",
+        "failed": "サーバーに問い合わせできませんでした。"
+      }
+    }
+  },
+  "keyState": {
+    "none": "未設定",
+    "set": "設定済み",
+    "typed": "新しいキー（未保存）",
+    "empty": "変数が空です",
+    "managed": "設定済み",
+    "manual": "設定済み（手動）"
+  },
+  "context": {
+    "auto": "自動圧縮",
+    "autoHelp": "コンテキストがいっぱいに近づくと、履歴を圧縮します。",
+    "limit": "コンテキスト上限",
+    "limitHelp": "0 の場合は、モデルのコンテキストウィンドウから予約分を引いた値に従います。それ以外は {{min}}〜{{max}} で指定します。次のモデルリクエストの前に確認されるもので、厳密な打ち切りではありません。",
+    "limitProblem": "0、または {{min}}〜{{max}} の整数を入力してください。",
+    "lead": "会話をいつ圧縮するか、コンテキストをどこまで大きくできるか、そしてコンテキストに関する判定ポイント。"
+  },
+  "permissions": {
+    "modes": {
+      "full": {
+        "title": "フルアクセス"
+      },
+      "jev": {
+        "title": "Jev が承認"
+      },
+      "ask": {
+        "title": "最小権限"
+      }
+    }
+  },
+  "permissionsCard": {
+    "kind": {
+      "edit": "TupAI がファイルを編集しようとしています",
+      "shell": "TupAI がコマンドを実行しようとしています",
+      "run": "TupAI がプログラムを実行しようとしています",
+      "outside": "TupAI がプロジェクト外のファイルを変更しようとしています",
+      "delegate": "TupAI がサブエージェントを起動しようとしています",
+      "other": "TupAI が外部への操作を行おうとしています"
+    },
+    "reason": {
+      "ask": "最小権限：どの操作も事前にあなたに確認します。",
+      "unsure": "Jev は、この操作があなたの意図どおりか確信が持てません。",
+      "beyond": "Jev の判定では、この操作はあなたの依頼の範囲を超えています。",
+      "unrelated": "Jev の判定では、この操作はタスクと関係ありません。",
+      "protected": "TupAI 自身の設定に触れる操作のため、許可できるのはあなただけです。",
+      "nojudge": "まだ使える判定器がないため、TupAI はステップごとにあなたに確認します。",
+      "judgedown": "今回は判定器から応答がなかったため、TupAI があなたに確認します。"
+    },
+    "answer": {
+      "once": "今回のみ許可",
+      "session": "この会話中は許可",
+      "sessionFor": "この会話中は許可（{{grant}}）",
+      "deny": "許可しない"
+    },
+    "decided": {
+      "once": "今回のみ許可しました：{{summary}}",
+      "session": "この会話中は許可済み：{{summary}}",
+      "deny": "許可しませんでした：{{summary}}"
+    },
+    "flag": {
+      "recursive_or_forced_delete": "再帰削除または強制削除",
+      "discards_git_work": "git の作業内容の破棄",
+      "force_push": "強制プッシュ",
+      "drops_database_objects": "データベースオブジェクトの削除",
+      "overwrites_device": "デバイスの上書き",
+      "opens_permissions_recursively": "権限の再帰的な開放",
+      "runs_downloaded_script": "ダウンロードしたスクリプトの実行",
+      "runs_as_administrator": "管理者権限での実行",
+      "runs_as_root": "root 権限での実行"
+    },
+    "flagged": "危険な操作：{{flag}}。"
+  },
+  "providers": {
+    "lead": "モデルの提供元（サブスクリプションとエンドポイント）を設定します。会話のモデルと思考レベルは、その会話の入力欄で選択します。",
+    "title": "プロバイダー",
+    "custom": "カスタムプロバイダー",
+    "manualGroup": "手動設定",
+    "builtinGroup": "その他の組み込み",
+    "add": "プロバイダーを追加",
+    "new": "新しいプロバイダー",
+    "unsaved": "未保存",
+    "remove": "削除",
+    "endpointType": "API 形式",
+    "name": "表示名",
+    "namePlaceholder": "例: 自分のプロキシ",
+    "id": "ID",
+    "idHelp": "小文字の英字、数字、ハイフン。保存後は変更できません。",
+    "idProblem": {
+      "format": "小文字の英字、数字、ハイフンを使い、英字か数字で始めてください（最大 40 文字）。",
+      "reserved": "組み込みプロバイダーの ID です。この ID でエントリを作ると、新しく追加されるのではなく、そのプロバイダーの接続先が変更されます。",
+      "taken": "この ID はすでに使われています。"
+    },
+    "baseUrl": "ベース URL",
+    "keyEnter": "API キーを貼り付け",
+    "keyReplace": "手動で設定されたキーが使われています。ここに入力すると置き換えられます。",
+    "authHeader": "Authorization: Bearer も送信する（一部のプロキシで必要）",
+    "headers": "手動で書かれた追加ヘッダーはそのまま保持されます: {{names}}。値は機密情報のため、models.json で編集してください。",
+    "pick": "左側でプロバイダーを選択するか、追加してください。",
+    "manual": "手動設定",
+    "foreignHelp": "このエントリは組み込みプロバイダーの接続先を変更しているか、この画面で編集できない API 形式を使用しています。ここでは削除のみ可能です。編集は models.json で行ってください。",
+    "modelCount": "{{count, number}} 個のモデル",
+    "usable": "利用可能",
+    "builtinHelp": "前回の接続時に TupAI が利用可能と報告したプロバイダーです。通常は、その API キーが環境変数にあるためです。ここでは削除できません。環境変数からそのキーを削除すると、次に TupAI が接続したときに表示されなくなります。",
+    "noneYet": "まだありません",
+    "unreadable": "models.json を読み取れないため、プロバイダーの表示も保存もできません。手動で修復してから再読み込みしてください。",
+    "commented": "models.json にコメントが含まれています。ここから保存するとコメントが消えるため、プロバイダーは読み取り専用です。ここで編集するには、コメントを手動で削除してください。",
+    "modelCount_one": "{{count, number}} 個のモデル",
+    "modelCount_other": "{{count, number}} 個のモデル",
+    "summary": "サブスクリプションでログインしてすぐに使うか、OpenAI、Anthropic、Gemini 互換の任意のエンドポイントに接続できます。",
+    "subscriptions": "サブスクリプション",
+    "manualShort": "手動",
+    "needsSetup": "未設定",
+    "more": "その他の操作",
+    "removeProvider": "プロバイダーを削除",
+    "removeTitle": "{{name}} を削除しますか？",
+    "removeSaved": "保存すると models.json から削除され、保存されているキーも削除されます。",
+    "removeUnsaved": "まだ保存されていないため、ここで入力した内容は破棄されます。",
+    "removeEntry": "保存すると、この手動エントリが models.json から削除されます。組み込みプロバイダーを上書きしている場合、そのプロバイダーは既定の設定に戻ります。",
+    "removeDefault": "新しいセッションはこれを使って始まるため、既定のモデルもクリアされます。"
+  },
+  "defaults": {
+    "summary": "新しいセッションの開始時の設定です。会話の中でも切り替えられます。",
+    "provider": "プロバイダー",
+    "model": "モデル",
+    "level": "思考レベル",
+    "levelUnset": "指定しない",
+    "levelHelp": "このモデルが対応していないレベルは選べません。",
+    "levelClamped": "「指定しない」は「中」になります。モデルが対応していないレベルは、対応している最も近いレベルになります。",
+    "noReasoning": "このモデルは思考しないため、このモデルのセッションは常に思考オフで始まります。",
+    "notSet": "未指定",
+    "pickProvider": "先にプロバイダーを選んでください。"
+  },
+  "accounts": {
+    "signIn": "ログイン",
+    "signOut": "ログアウト",
+    "signOutFailed": "ログアウトが完了しませんでした。もう一度お試しください。",
+    "signOutConfirm": "{{name}} からログアウトしますか？再び使うには、もう一度ログインする必要があります。",
+    "signedOut": "未ログイン",
+    "instant": "ログインとログアウトは、保存しなくてもすぐに反映されます。",
+    "models": "利用できるモデル",
+    "byKey": "利用可能（API キー）",
+    "byKeyHelp": "サブスクリプションにはログインしていませんが、前回の接続時に TupAI が利用可能と報告しました。通常は、その API キーが環境変数にあるためです。ログインするとサブスクリプションに切り替わります。",
+    "otherRunning": "{{name}} のログインが進行中です。ログインは一度に 1 つしか実行できません。",
+    "showRunning": "表示する"
+  },
+  "endpoints": {
+    "openaiCompletions": {
+      "name": "OpenAI 互換（Chat Completions）",
+      "hint": "最も広く対応されている形式: プロキシ、Ollama、vLLM、LM Studio、DeepSeek など",
+      "url": "通常は /v1 で終わります。例: https://api.example.com/v1 または http://localhost:11434/v1",
+      "short": "OpenAI 互換"
+    },
+    "openaiResponses": {
+      "name": "OpenAI Responses",
+      "hint": "OpenAI の新しい Responses API。提供しているサービスで使用します。",
+      "url": "通常は /v1 で終わります。例: https://api.example.com/v1",
+      "short": "OpenAI Responses"
+    },
+    "anthropicMessages": {
+      "name": "Anthropic 互換（Messages）",
+      "hint": "Claude、および Anthropic Messages 形式に対応したサービス向け。",
+      "url": "/v1 は付けないでください。クライアントが /v1/messages を自動で追加します。例: https://api.example.com",
+      "short": "Anthropic 互換"
+    },
+    "googleGenerativeAi": {
+      "name": "Google Generative AI",
+      "hint": "Google AI Studio 経由の Gemini と Gemma。",
+      "url": "例: https://generativelanguage.googleapis.com/v1beta",
+      "short": "Google"
+    }
+  },
+  "models": {
+    "title": "モデル",
+    "id": "モデル ID",
+    "name": "表示名",
+    "context": "コンテキストウィンドウ",
+    "maxOutput": "最大出力",
+    "reasoning": "思考",
+    "image": "画像",
+    "add": "モデルを追加",
+    "none": "モデルはまだありません。追加するか、接続をテストしてエンドポイントの一覧から選択してください。",
+    "problem": {
+      "emptyId": "すべてのモデルに ID が必要です。",
+      "duplicate": "同じ ID のモデルが 2 つあります。"
+    },
+    "idField": "モデル ID（API での表記どおり）",
+    "rowField": "{{field}}（{{n}} 行目）",
+    "edit": "{{name}} を編集",
+    "removeNamed": "{{name}} を削除",
+    "done": "完了",
+    "contextTag": "コンテキストウィンドウ {{size}}",
+    "tagReasoning": "思考",
+    "tagImage": "画像認識",
+    "noId": "新しいモデル",
+    "show": "{{name}} を表示",
+    "addListed": "{{name}} を追加",
+    "levels": "思考レベル",
+    "levelsHelp": "チェックしたレベルだけをこのモデルで使えます。非常に高いと最大はオンにするまで使えません。"
+  },
+  "test": {
+    "run": "接続をテスト",
+    "hint": "このアプリから最小限のリクエストを 1 回送信します。モデル一覧を取得し、取得できない場合は最初のモデルにひと言だけ答えてもらいます。",
+    "okModels": "接続しました（{{ms}} ミリ秒）。エンドポイントには {{count, number}} 個のモデルがあります。",
+    "okCompletion": "接続しました（{{ms}} ミリ秒）。モデルが応答しました。",
+    "auth": "キーが拒否されました（HTTP {{status}}）。",
+    "notFound": "このアドレスには何もありません（HTTP 404）。ベース URL と API 形式を確認してください。モデルを追加すると、リクエストでテストできます。",
+    "http": "エンドポイントが HTTP {{status}} を返しました。",
+    "timeout": "時間内に応答がありませんでした。",
+    "network": "接続できませんでした。アドレスとネットワークを確認してください。",
+    "redirect": "エンドポイントが別の場所にリダイレクトしています（HTTP {{status}}）。最終的なアドレスを使用してください。キーはリダイレクト先には送信されません。",
+    "invalidResponse": "応答がこの API 形式ではありません。API 形式は正しいですか？",
+    "keyUnavailable": "保存されたキーはコマンドまたは複合値のため、このアプリでは評価しません。テストするにはキーを入力してください。",
+    "urlChanged": "アドレスまたは API 形式が変更されました。保存されたキーは保存時の宛先にのみ送信されます。先に保存するか、キーを再入力してください。",
+    "detail": "エンドポイントの応答: {{detail}}",
+    "okModels_one": "接続しました（{{ms}} ミリ秒）。エンドポイントには {{count, number}} 個のモデルがあります。",
+    "okModels_other": "接続しました（{{ms}} ミリ秒）。エンドポイントには {{count, number}} 個のモデルがあります。"
+  },
+  "boardModel": {
+    "title": "わかりやすいボードのモデル",
+    "summary": "わかりやすいボードを書くモデルです。作業の進み具合を日常の言葉で伝えます。あなただけに表示され、会話のコンテキストには入りません。更新のたびに 1 回呼び出します。",
+    "pick": "モデルを指定",
+    "recommended": "おすすめは Claude Opus 4.6 で、最も自然で安定しています。次点は Gemini 3.8 Flash で、より高速かつ安価です。",
+    "recommendedTag": "おすすめ",
+    "provider": "プロバイダー",
+    "model": "モデル",
+    "notSet": "未設定",
+    "pickProvider": "先にプロバイダーを選択してください",
+    "unset": "未選択: 初めてボードをオンにしたときに TupAI が尋ねます。",
+    "session": "会話で使っているモデル",
+    "sessionHelp": "会話のモデルを切り替えると、ボードも同じモデルに切り替わります。",
+    "update": "このバージョンの TupAI では、ボードを書くモデルをここで指定できません。先に TupAI を更新してください。"
+  },
+  "levels": {
+    "off": "思考オフ",
+    "minimal": "最小",
+    "low": "低",
+    "medium": "中",
+    "high": "高",
+    "xhigh": "非常に高い",
+    "max": "最大"
+  },
+  "welcome": {
+    "reopen": "セットアップガイド",
+    "progress": "セットアップの進捗",
+    "steps": {
+      "model": "モデル",
+      "judge": "判定器",
+      "done": "完了"
+    },
+    "skipAll": "セットアップをスキップ",
+    "skipStep": "今はスキップ",
+    "back": "戻る",
+    "next": "次へ",
+    "start": "はじめる",
+    "model": {
+      "title": "モデルを接続",
+      "subtitle": "TupAI はこのモデルを使ってコードを書き、質問に答えます。3 ステップで完了し、あとから「設定」でいつでも変更できます。",
+      "model": "モデル",
+      "baseUrl": "ベース URL",
+      "key": "API キー",
+      "keyPlaceholder": "キーを貼り付け（このマシン上のサービスでは不要な場合があります）",
+      "modelId": "モデル名",
+      "signedIn": {
+        "title": "サブスクリプションでログイン",
+        "tag": "API キー不要",
+        "description": "ChatGPT、Claude、Grok などのプラン"
+      },
+      "openai": {
+        "title": "OpenAI 互換 API",
+        "tag": "最も一般的",
+        "description": "OpenAI、DeepSeek、Kimi、Qwen、Ollama、および中継サービス",
+        "modelPlaceholder": "例: deepseek-chat"
+      },
+      "anthropic": {
+        "title": "Anthropic 互換 API",
+        "description": "Claude、および Messages 形式に対応したサービス",
+        "modelPlaceholder": "例: claude-sonnet-5"
+      },
+      "problems": {
+        "baseUrl": "https:// で始まるアドレスを入力してください（http:// はこのマシンまたはプライベートネットワークのアドレスのみ）。",
+        "key": "API キーを入力してください。",
+        "model": "モデル名を入力してください。"
+      },
+      "openaiApi": {
+        "label": "API 形式",
+        "openai-completions": "Chat Completions",
+        "openai-responses": "Responses",
+        "openai-completionsHint": "ほぼどこでも使えます。ほとんどのサービスや中継サービスが対応しています。",
+        "openai-responsesHint": "OpenAI の新しい API です。対応しているサービスは一部のみです。"
+      }
+    },
+    "judge": {
+      "title": "判定器を選択",
+      "subtitle": "判定器は、TupAI が作業中に迫られる小さな判断に答えます。判定器がなくても TupAI は動作しますが、これらのチェックは行われません。"
+    },
+    "done": {
+      "title": "準備完了",
+      "subtitle": "内容を確認して、始めましょう。",
+      "model": "モデル",
+      "judge": "判定器",
+      "none": "未設定",
+      "noKey": "キー未設定: 設定するまでは既定の方針で処理します",
+      "saveFailed": "保存できませんでした: {{reason}}",
+      "modelValue": "{{provider}} / {{model}}"
+    },
+    "intro": {
+      "title": "TupAI へようこそ",
+      "lead": "TupAI は実際に手を動かすコーディングアシスタントです。プロジェクトを読み、コードを編集し、コマンドやテストを実行して、作業が終わるまで進め続けます。",
+      "points": {
+        "judge": {
+          "title": "すべてのステップでチェック",
+          "text": "内蔵の判定器が重要な場面を見守ります。行動の前に考え、あなたが設定したルールを守り、検証せずに完了とはしません。"
+        },
+        "control": {
+          "title": "すべて見えて、操作できる",
+          "text": "どの変更も元に戻せます。ブラウザーでの操作はすべて見えるので、一時停止したり、操作を引き継いだりできます。"
+        },
+        "ready": {
+          "title": "すぐに使える",
+          "text": "Claude Code、Cursor、Codex で設定済みのルール、スキル、MCP サーバーをそのまま利用します。"
+        }
+      },
+      "start": "セットアップ"
+    },
+    "login": {
+      "providers": {
+        "openai-codex": {
+          "name": "ChatGPT",
+          "plan": "Plus / Pro プラン"
+        },
+        "anthropic": {
+          "name": "Claude",
+          "plan": "Pro / Max プラン"
+        },
+        "xai": {
+          "name": "Grok",
+          "plan": "SuperGrok / X Premium"
+        },
+        "google-gemini-cli": {
+          "name": "Gemini CLI",
+          "plan": "Google アカウント"
+        },
+        "google-antigravity": {
+          "name": "Antigravity",
+          "plan": "Google アカウント"
+        }
+      },
+      "signedIn": "ログイン済み",
+      "inProgress": "ログイン中…",
+      "waiting": "ブラウザーで {{name}} のログインページを開きました。ログインしてアクセスを許可すると、自動的に続行します。",
+      "deviceCode": "コード",
+      "code": "認証コード",
+      "codePlaceholder": "ブラウザーに表示されたコード、または最後に開いたアドレスを貼り付け",
+      "submit": "送信",
+      "openAgain": "ページをもう一度開く",
+      "pasteCode": "代わりにコードを貼り付け",
+      "cancel": "キャンセル",
+      "failed": "ログインが完了しませんでした。もう一度お試しください。",
+      "asks": "{{name}} からの質問（原文のまま）:",
+      "needAccount": "先にアカウントにログインしてから、モデルを選択してください。",
+      "experimental": "実験的",
+      "starting": "{{name}} のログインを準備しています…",
+      "waitingDevice": "ブラウザーで {{name}} の確認ページを開きました。そこに表示されたコードがこのコードと一致することを確認し（入力されていない場合は入力してください）、承認すると自動的に続行します。",
+      "risk": {
+        "title": "ログイン前にリスクを確認してください",
+        "text": "このログインは、Google が TupAI 向けに提供しているものではなく、Google が {{tool}} 自身のために用意したログインを使います。Google はこれを規約違反とみなし、アカウントを制限または停止する可能性があります。",
+        "instead": "アクセスを失っても困らないアカウントを使ってください。公式の方法は、Gemini API キー、または gcloud でログインした Vertex AI です。",
+        "continue": "リスクを理解してログインする",
+        "cancel": "ログインしない"
+      },
+      "readingModels": "{{name}} にログインしました。このアカウントで使えるモデルを読み込んでいます…"
+    }
+  },
+  "turnErrors": {
+    "processExited": "TupAI がターンの途中で停止しました。再起動するには、メッセージをもう一度送信してください。",
+    "busyConfig": "モデルや思考レベルを変更する前に、現在のターンが終わるまでお待ちください。",
+    "unsupportedValue": "TupAI はこのモデル、思考レベル、または権限モードに対応していません。",
+    "permissionsNotSwitched": "TupAI は権限モードを切り替えられませんでした。再試行するか、会話で /permissions と入力してください。",
+    "imageUnsupported": "送信できるのは 12 MB までの PNG、JPEG、WebP、GIF 画像のみです。",
+    "contentUnsupported": "TupAI が受け付けるのはテキスト、画像、テキストファイルのみです。",
+    "wrongProject": "この会話は別のプロジェクトフォルダーに属しています。",
+    "notPersisted": "TupAI はこの会話を保存できませんでした。",
+    "startFailed": "TupAI を起動できませんでした。",
+    "timeout": "TupAI から時間内に応答がありませんでした。",
+    "processClosed": "TupAI が停止しました。再起動するには、メッセージをもう一度送信してください。",
+    "modelFailed": "モデルへのリクエストが失敗しました。",
+    "turnRunning": "TupAI はまだ前のメッセージを処理中です。完了を待つか、先に停止してください。",
+    "noModel": "TupAI が回答に使えるモデルがありません。"
+  },
+  "noModel": {
+    "title": "回答に使えるモデルがありません",
+    "body": "TupAI には使えるモデルが必要です。{{place}} でログインするかキーを追加してから、メッセージをもう一度送信してください。",
+    "open": "{{page}} を開く",
+    "chip": "モデルを選択"
+  },
+  "notices": {
+    "checkpointOff": "この会話ではチェックポイントがオフです。",
+    "checkpointOffWhy": {
+      "gitMissing": "この会話ではチェックポイントがオフです：このコンピューターに Git が見つかりませんでした。Git をインストールしてから新しい会話を始めると、チェックポイントが使えます。",
+      "xcodeLicense": "この会話ではチェックポイントがオフです：Xcode のライセンスに同意するまで、この Mac では Git を実行できません。ターミナルで sudo xcodebuild -license を実行して同意してから新しい会話を始めると、チェックポイントが使えます。",
+      "developerToolsMissing": "この会話ではチェックポイントがオフです：この Mac には、Git に必要なコマンドライン・デベロッパツールがありません。ターミナルで xcode-select --install を実行してインストールしてから新しい会話を始めると、チェックポイントが使えます。",
+      "homeFolder": "この会話ではチェックポイントがオフです：会話のフォルダーがホームフォルダーか、ホームフォルダーを含むフォルダーです。プロジェクトフォルダーで会話を始めると、チェックポイントが使えます。",
+      "muFolder": "この会話ではチェックポイントがオフです：会話のフォルダーが TupAI 自身のフォルダーの中にあります。プロジェクトフォルダーで会話を始めると、チェックポイントが使えます。",
+      "tooManyFiles": "この会話ではチェックポイントがオフです：会話のフォルダーに {{limit}} 個を超えるファイルがあります。プロジェクトフォルダーで会話を始めると、チェックポイントが使えます。",
+      "tooManyBytes": "この会話ではチェックポイントがオフです：会話のフォルダーのファイルが合計 {{limitMb}} MB を超えています。プロジェクトフォルダーで会話を始めると、チェックポイントが使えます。",
+      "tooSlow": "この会話ではチェックポイントがオフです：会話のフォルダーのファイル一覧の取得に {{seconds}} 秒以上かかりました。プロジェクトフォルダーで会話を始めると、チェックポイントが使えます。"
+    },
+    "stopped": "この返信を停止しました。",
+    "answerLost": "TupAI は回答を受け取れなかったため、同意しなかったものとして続けました。",
+    "bashMissing": "TupAI がコマンドを実行するには Git for Windows が必要です。インストールしたら、メッセージをもう一度送信してください。ダウンロード先："
+  },
+  "errors": {
+    "credential": "キーに使用できない文字（スペース、引用符、改行など）が含まれています。もう一度貼り付けてください。",
+    "keyVariable": "{{name}} には判定器のキーを保存できません。TYPESAFE_API_KEY、AI_GATEWAY_API_KEY、または MU_JUDGE_ で始まる名前を使用してください。",
+    "judgeEndpoint": "Jev のサービスにアドレスがないため、キーの送り先がありません。アドレスを入力するか、別のサービスを選んでください。",
+    "otherRegistration": "別の TupAI コマンドがすでにアプリに登録されています。",
+    "backend": "ローカルサービスから想定外の応答がありました（HTTP {{status}}）。",
+    "invalid": "無効な値があります。",
+    "unknown": "TupAI で問題が発生しました。",
+    "unwritable": "{{file}} に書き込めませんでした。",
+    "contextLimit": "コンテキスト上限は 0、または {{min}}〜{{max}} の整数である必要があります。",
+    "pickBoth": "プロバイダーとモデルを両方選択してください。",
+    "modelsUnreadable": "models.json を読み込めませんでした。プロバイダーを保存する前に手動で修復してください。",
+    "modelsCommented": "models.json にコメントが含まれており、ここから保存すると削除されます。プロバイダーは手動で編集してください。",
+    "option": {
+      "type": "「{{name}}」の値の型が正しくありません。",
+      "choice": "「{{name}}」は選択肢にありません。",
+      "length": "「{{name}}」が長すぎるか、空の項目があります。",
+      "range": "「{{name}}」は許可された範囲外です。"
+    },
+    "invalidJson": "{{file}} は有効な JSON ではありません。手動で修正してから再読み込みしてください。",
+    "unreadable": "{{file}} を読み取れませんでした。",
+    "runtimeOffline": "TupAI のランタイムがオフラインです。ローカルのランチャーとログイン状態を確認してください。",
+    "sharedKey": "{{providers}} が同じキー変数を共有することになります。いずれかの ID を変更してください。",
+    "importMissing": "このバージョンの TupAI はまだ会話を取り込めません。先に TupAI を更新してください。",
+    "importFailed": "TupAI は会話を取り込めませんでした。"
+  },
+  "importChats": {
+    "title": "会話を取り込む",
+    "description": "このコンピューターで Claude Code や Codex と交わした会話を TupAI に取り込み、ここで続けます。",
+    "open": "会話を選ぶ",
+    "dialog": {
+      "title": "会話を取り込む",
+      "hint": "選んだ会話はそれぞれ、元のプロジェクトフォルダーにある TupAI の会話になります。TupAI はそれまでのやり取りをすべて読みます。思考過程と画像は取り込まれません。",
+      "search": "内容やフォルダーで検索",
+      "loading": "会話を探しています…",
+      "empty": "このコンピューターに Claude Code や Codex の会話は見つかりませんでした。",
+      "noMatch": "一致する会話はありません。",
+      "noTitle": "（メッセージなし）",
+      "folderUnknown": "フォルダー不明",
+      "inList": "会話リストにあります",
+      "open": "開く",
+      "selected": "選択中：{{count}}",
+      "import": "取り込む",
+      "importing": "取り込み中…",
+      "retry": "もう一度試す"
+    },
+    "done": "{{count}} 件の会話を取り込みました。会話リストにあります。",
+    "done_one": "{{count}} 件の会話を取り込みました。会話リストにあります。",
+    "done_other": "{{count}} 件の会話を取り込みました。会話リストにあります。",
+    "someFailed": "{{count}} 件の会話を取り込めませんでした。理由はそれぞれの下にあります。",
+    "someFailed_one": "{{count}} 件の会話を取り込めませんでした。理由はそれぞれの下にあります。",
+    "someFailed_other": "{{count}} 件の会話を取り込めませんでした。理由はそれぞれの下にあります。",
+    "failure": {
+      "missing": "ファイルがもうありません。",
+      "notFile": "これはファイルではありません。",
+      "notTranscript": "これは Claude Code や Codex の会話ではありません。",
+      "empty": "メッセージが入っていません。",
+      "folderMissing": "プロジェクトフォルダーがもうありません：{{folder}}",
+      "other": "取り込めませんでした：{{detail}}"
+    },
+    "notice": {
+      "title": "{{tool}} から取り込んだ会話",
+      "counts": "あなたのメッセージ {{user}} 件 · 回答 {{assistant}} 件 · ツール呼び出し {{toolCalls}} 回",
+      "goOn": "下でそのまま続けてください。TupAI はここまでの会話を読んでいます。思考過程と画像は取り込まれていません。",
+      "read": "これまでの会話を見る"
+    },
+    "history": {
+      "title": "{{tool}} でのこれまでの会話",
+      "loading": "会話を読み込んでいます…",
+      "you": "あなた",
+      "summary": "それ以前の内容の要約",
+      "tools": "使用：{{tools}}",
+      "earlier": "それ以前の {{count}} 件は表示していません。",
+      "earlier_one": "それ以前の {{count}} 件は表示していません。",
+      "earlier_other": "それ以前の {{count}} 件は表示していません。",
+      "empty": "表示できる内容はありません。"
+    }
+  },
+  "commands": {
+    "frame": "タスクフレーム：目標、あなたが定めた厳守事項とその発言箇所、現在のサブ目標、受け入れ条件",
+    "remember": "このプロジェクトの教訓を記録し、今後の会話で使います：/remember <どうするか>",
+    "lessons": "このプロジェクトの教訓：/lessons で id · 種類 · 参照/守られた回数 · 教訓 を一覧表示、/lessons all でどこでも使う教訓と廃止した教訓も表示します",
+    "forget": "教訓を廃止し、今後は参照しないようにします：/forget <id の先頭部分>（id は /lessons で確認）",
+    "capabilities": "インストール済みのケイパビリティと、今開いているもの：/capabilities で表示、/capabilities open <ID> で開く",
+    "permissions": "TupAI が確認なしでどこまで行えるか：/permissions full（フルアクセス）| jev（Jev が承認）| ask（最小権限）、引数なしで選択肢を表示。/permissions reset でこの会話で許可した操作を忘れます",
+    "lsp": "言語サーバー：インストール済みのもの、実行中のもの、直近のエラー",
+    "goal": "目標モード：条件が満たされるまでエージェントに作業を続けさせます。/goal <条件> で設定、/goal で表示（未設定なら尋ねます）、/goal clear で終了",
+    "board": "わかりやすいボード：/board で表示、/board on・/board off でこのプロジェクトのオン/オフ、/board model で書くモデルを変更",
+    "checkpoints": "この会話のチェックポイント：ターン、時刻、その後に変更されたファイル",
+    "rewind": "チェックポイントに戻ります：/rewind [番号] [both|files|conversation]、/rewind undo で取り消し。both はファイルと会話、files はファイルのみ、conversation は会話のみ",
+    "swarm": "作業中のサブエージェント：/swarm でそれぞれの作業を表示、/swarm stop [名前] で今すぐ報告させ、/swarm kill [名前] で即座に終了",
+    "agents": "delegate ツールが使えるサブエージェントの役割と、独自の役割を追加する場所を表示します",
+    "hive": "複数の調査員に一つの問いを同時に調べさせます：/hive <問い>。問いがなければ /swarm と同じです",
+    "browse": "内蔵ブラウザで URL を開き、指示どおりに操作させます：/browse <URL> [やること]",
+    "inherit": "TupAI が Claude Code、Cursor、Codex から引き継いだ設定と、その出どころ",
+    "mcp": "MCP サーバー：/mcp で表示、/mcp open <ID> で開く、/mcp restart <ID> で再起動",
+    "jobs": "バックグラウンドジョブ：/jobs で表示、/jobs stop <ID|all> で停止",
+    "commit": "未コミットの変更を複数のコミットに分けます：まず計画を示し、同意したときだけコミットし、プッシュはしません",
+    "review": "レビュー担当のサブエージェントが未コミットの変更（または指定した内容）をレビューし、指摘を P0〜P3 の重さ順に並べます",
+    "mu": "TupAI の状態。ほかに：/TupAI judge <判定器> | /TupAI route <判定ポイント> <判定器|default> | /TupAI mode <判定ポイント|default> <off|shadow|active>",
+    "status": "モデル、判定器、各判定ポイントのモード、節約したコンテキスト、最近の判定",
+    "help": "TupAI にできることと、知っておきたいコマンドの一覧",
+    "ledger": "判定器の最近の判定と所要時間：/ledger [件数]",
+    "doctor": "判定器、モデル、ブラウザ、サブエージェントが正しくつながっているか確認します",
+    "import-chat": "このプロジェクトの Claude Code または Codex の会話を TupAI に取り込み、続きをここで話せます：/import-chat [ファイル]",
+    "llama": "llama.cpp ルーターのモデルを管理します"
+  }
+}

@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# build output
+out/
+out.old/
+dist/
+
+# local env & secrets
+.dev.vars
+.wrangler/
+*.log
+.build-log*
+
+# local agent state
+.workbuddy/
+
+# third-party binaries prepared at build time (prepare-aioncore downloads these)
+desktop/resources/bundled-aioncore/
+
+# os / editor
+.DS_Store
+Thumbs.db

@@ -1,0 +1,489 @@
+/* A page of mu's settings: the page header, then plain panels. Each section is its own size container, so its rows
+   and the provider manager lay themselves out by the room they really have (a page or a narrow window). */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  container: mu-section / inline-size;
+}
+
+/* Several panels stacked, as one block of a page. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* A group of rows: its small title and one line under it when it has them, then the rows as a quiet list. No box: the
+   hairlines above, between and below the rows are all the frame there is. */
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding-bottom: 8px;
+}
+
+.cardTitle {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.cardSpacer {
+  flex: 1;
+}
+
+.cardSummary {
+  margin-top: -6px;
+  padding-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-wrap: balance;
+}
+
+/* A quiet list of rows. The Card's rows, a feature's options, the judge choices and the decision points use it alike:
+   a hairline above the first row and between rows, none under the last (settings.css draws the other pages alike). */
+.cardBody,
+.list {
+  min-width: 0;
+  border-top: 1px solid var(--border-base);
+}
+
+/* The small title of a group of a page, sitting 8px above what it names (the page's rhythm is 16px). */
+.groupTitle,
+.groupLabel {
+  margin: 0 0 -8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+/* A group of a page: its small title, and one line on what it holds. */
+.groupHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: -8px;
+}
+
+.groupHead .groupTitle {
+  margin: 0;
+}
+
+.groupHelp {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-wrap: balance;
+}
+
+.search {
+  width: min(320px, 100%);
+}
+
+.empty {
+  padding: 24px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
+.meta {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 0 0 10px;
+  text-wrap: balance;
+}
+
+.dim {
+  opacity: 0.62;
+}
+
+/* A choice of one (the judge, the permission mode, the board's model): a quiet list of radio rows, the chosen one opened
+   to the one thing it needs. */
+.choices,
+.choiceRows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-base);
+}
+
+.choice {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+
+.choice + .choice {
+  border-top: 1px solid var(--border-base);
+}
+
+.choice:focus-visible {
+  outline: 2px solid var(--color-text-3);
+  outline-offset: -2px;
+}
+
+.choiceActive {
+  cursor: default;
+}
+
+.choiceRadio {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  border: 1.5px solid var(--color-border-3);
+  border-radius: 50%;
+  background: var(--bg-base);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.choice:hover .choiceRadio {
+  border-color: var(--color-text-3);
+}
+
+.choiceActive .choiceRadio,
+.choiceActive:hover .choiceRadio {
+  border-color: var(--text-primary);
+  box-shadow: inset 0 0 0 3.5px var(--bg-base);
+  background: var(--text-primary);
+}
+
+.choiceText {
+  flex: 1;
+  min-width: 0;
+}
+
+.choiceTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.choiceTag {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--color-fill-2);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.choiceDescription {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-wrap: balance;
+}
+
+.choiceBody {
+  margin-top: 12px;
+  cursor: auto;
+}
+
+/* Inside a group's list (人话模型), the choices are its rows: the list's own lines frame them. */
+.cardBody > .choiceRows {
+  border-top: 0;
+}
+
+/* Several fields in one chosen tile (Jev's service, its address, its key): each one a label, a control and a hint. */
+.choiceFields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.choiceField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 440px;
+}
+
+.choiceInput {
+  width: 100%;
+}
+
+.choiceLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.choiceHint {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-wrap: balance;
+}
+
+/* Laya further down the judge order: its panel in the group's list, spaced as a row. */
+.tierPanel {
+  padding: 12px 0;
+}
+
+/* Laya on this machine: where it stands, what can be done, and the script's last words while it works. */
+.localJudge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.localJudgeStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.localJudgeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.localJudgeActions:empty {
+  display: none;
+}
+
+.localJudgeProblem {
+  color: rgb(var(--danger-6));
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.localJudgeOutput {
+  margin: 0;
+  padding: 8px 10px;
+  max-height: 120px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--color-fill-1);
+  color: var(--text-secondary);
+  font-family: var(--font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.localJudgeModel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+.localJudgeCommand {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.localJudgeCommand code {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--color-fill-1);
+  color: var(--text-primary);
+  font-family: var(--font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
+  font-size: 11px;
+  line-height: 16px;
+  word-break: break-all;
+  user-select: all;
+}
+
+.localJudgeSource {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.localJudgeSourceLabel {
+  color: var(--text-primary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.localJudgeProgress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.localJudgeProgress :global(.arco-progress) {
+  flex: 1;
+  min-width: 0;
+}
+
+.localJudgeProgressText {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.localJudgeManual {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.localJudgeManual summary {
+  cursor: pointer;
+  color: var(--text-primary);
+  user-select: none;
+}
+
+.localJudgeManual code {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Plain rows, laid out like the app's other settings pages: a quiet list of rows, each a readable title, one sentence
+   and its control (the features' switches, the decision points' modes). A feature's options are a page of their own. */
+.plainList {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-top: 1px solid var(--border-base);
+}
+
+.plainRow + .plainRow {
+  border-top: 1px solid var(--border-base);
+}
+
+.plainMain {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 0;
+}
+
+.plainText {
+  flex: 1;
+  min-width: 0;
+}
+
+.plainTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+}
+
+.featureBeta {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--color-fill-2);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.plainSummary {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-wrap: balance;
+}
+
+.plainNote {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* A feature's row: the way to its options page, then its switch. */
+.featureControls {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.featureOpen {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.featureReset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The pages of a feature with more options than one page holds: where this one is, and the way on and back. */
+.featureParts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.plainControl {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.plainMuted {
+  opacity: 0.55;
+}
+
+@container mu-section (max-width: 560px) {
+  .plainMain {
+    flex-wrap: wrap;
+  }
+
+  .plainControl {
+    align-items: flex-start;
+  }
+}

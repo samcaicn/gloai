@@ -1,0 +1,36 @@
+{
+  "upToDateTitle": "Güncelsiniz",
+  "foundVersion": "Yeni sürüm {{version}} bulundu",
+  "foundVersionSize": "Yeni sürüm {{version}} bulundu (yaklaşık {{size}} MB)",
+  "download": "İndir",
+  "currentVersion": "Mevcut sürüm: {{version}}",
+  "later": "Daha sonra",
+  "preparingInstall": "Hazırlanıyor...",
+  "showInFolder": "Klasörde göster",
+  "errors": {
+    "prepareInstallTimeout": "Kurulum hazırlığı zaman aşımına uğradı. Lütfen daha sonra tekrar deneyin.",
+    "prepareInstallFailed": "Kurulum hazırlığı başarısız oldu. Lütfen daha sonra tekrar deneyin.",
+    "network": "Güncelleme sunucusuna ulaşılamadı. Ağ bağlantınızı kontrol edip yeniden deneyin.",
+    "timeout": "Güncelleme sunucusu çok geç yanıt verdi. Daha sonra yeniden deneyin.",
+    "noUpdateInfo": "Bu sürüm bu sistemde otomatik olarak yüklenemiyor.",
+    "serverError": "Güncelleme sunucusu bir hata döndürdü ({{status}}). Daha sonra yeniden deneyin.",
+    "invalidMetadata": "Güncelleme bilgileri okunamadı. Daha sonra yeniden deneyin.",
+    "checkFailed": "Güncellemeler kontrol edilemedi. Daha sonra yeniden deneyin.",
+    "downloadFailed": "Güncelleme indirilemedi. Daha sonra yeniden deneyin."
+  },
+  "readyTitle": "Yeni sürüm {{version}} hazır",
+  "restartToUpdate": "Yeniden başlat ve güncelle",
+  "lastInstallFailed": "Son güncelleme yüklenmedi: TupAI kapatılamadı.",
+  "availableVersion": "Yeni sürüm {{version}} indirilebilir",
+  "installerReason": {
+    "linux": "Linux'ta TupAI güncellemeleri kendisi yükleyemez: yükleyiciyi indirip açın.",
+    "unpackaged": "Bu TupAI kopyası güncellemeleri kendisi yükleyemez: yükleyiciyi indirip açın.",
+    "autoUpdateFailed": "Yükleyiciyi indirip onunla güncelleyebilirsiniz."
+  },
+  "downloadInstaller": "Yükleyiciyi indir",
+  "openReleasePage": "Sürüm sayfasını aç",
+  "downloadingVersion": "{{version}} sürümü indiriliyor ({{percent}})",
+  "downloadingInstaller": "Yükleyici indiriliyor ({{percent}})",
+  "installerReadyTitle": "{{version}} sürümünün yükleyicisi indirildi",
+  "openInstaller": "Yükleyiciyi aç"
+}

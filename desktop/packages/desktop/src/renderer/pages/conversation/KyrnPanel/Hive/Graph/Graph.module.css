@@ -1,0 +1,210 @@
+/*
+ * The map of a run: the bees on a ring around what they work on, hairlines in the text colour between them for what
+ * the judge handed from one to another. Black and white; the lavender accent only on a delivery as it arrives and on
+ * the bee the person picked. No card around it: the map sits on the page like the rows under it.
+ */
+
+.map {
+  min-width: 0;
+  margin-block: 10px 6px;
+}
+
+.stage {
+  position: relative;
+  direction: ltr;
+  min-width: 0;
+  overflow: visible;
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  color: var(--text-primary);
+  pointer-events: none;
+}
+
+.line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  opacity: 0.75;
+  transition: opacity 150ms ease;
+}
+
+.line[data-kind='conflict'] {
+  stroke-dasharray: 4 4;
+}
+
+.line[data-muted='true'] {
+  opacity: 0.12;
+}
+
+/* A wide invisible stroke over each line, so a pointer finds it and reads what went along it. */
+.hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14px;
+  pointer-events: stroke;
+}
+
+/* A delivery arriving now: one short dash of the accent runs the length of its line, once. */
+.pulse {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-dasharray: 10 100;
+  stroke-dashoffset: 10;
+  animation: hive-pulse 1.1s ease-out forwards;
+}
+
+@keyframes hive-pulse {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+.arrow {
+  fill: currentColor;
+}
+
+.bar {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5px;
+}
+
+/* Whom the sub-agents of a delegate call stand around: mu, whom each of them reports back to. */
+.home {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--text-primary);
+  border-radius: 50%;
+  background: var(--bg-1, #fff);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.node:global(.arco-btn) {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: auto;
+  padding: 0 2px 4px;
+  border-radius: 10px;
+  color: var(--text-primary);
+  background: transparent;
+  white-space: normal;
+}
+
+.node:global(.arco-btn:hover) {
+  background: var(--bg-hover);
+}
+
+.node:global(.arco-btn:focus-visible) {
+  outline: 1px solid var(--text-primary);
+  outline-offset: 1px;
+}
+
+/* The picked bee: its avatar (the node's first child) is ringed in the accent. */
+.node[aria-pressed='true'] > span:first-child {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.nodeName {
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  unicode-bidi: plaintext;
+}
+
+.nodeStatus,
+.nodeCounts {
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.legend > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendLine {
+  display: block;
+  flex: none;
+  color: var(--text-primary);
+}
+
+.hint {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* The transcript's miniature: dots on a small ring and the lines between them, with no words. */
+.miniature {
+  display: block;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.miniLine {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1px;
+  opacity: 0.8;
+}
+
+.miniDot {
+  fill: var(--bg-1, #fff);
+  stroke: currentColor;
+  stroke-width: 1.2px;
+}
+
+.miniDot[data-filled='true'] {
+  fill: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation-duration: 0.01s;
+  }
+}

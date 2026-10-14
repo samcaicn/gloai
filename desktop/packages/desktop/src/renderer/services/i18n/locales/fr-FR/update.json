@@ -1,0 +1,36 @@
+{
+  "upToDateTitle": "Vous êtes à jour",
+  "foundVersion": "Nouvelle version {{version}} trouvée",
+  "foundVersionSize": "Nouvelle version {{version}} trouvée (environ {{size}} Mo)",
+  "download": "Télécharger",
+  "currentVersion": "Version actuelle : {{version}}",
+  "later": "Plus tard",
+  "preparingInstall": "Préparation...",
+  "showInFolder": "Afficher dans le dossier",
+  "errors": {
+    "prepareInstallTimeout": "Le délai de préparation de l'installation a expiré. Veuillez réessayer plus tard.",
+    "prepareInstallFailed": "La préparation de l'installation a échoué. Veuillez réessayer plus tard.",
+    "network": "Impossible de joindre le serveur de mise à jour. Vérifiez votre réseau et réessayez.",
+    "timeout": "Le serveur de mise à jour a mis trop de temps à répondre. Réessayez plus tard.",
+    "noUpdateInfo": "Cette version ne peut pas s’installer automatiquement sur ce système.",
+    "serverError": "Le serveur de mise à jour a renvoyé une erreur ({{status}}). Réessayez plus tard.",
+    "invalidMetadata": "Impossible de lire les informations de mise à jour. Réessayez plus tard.",
+    "checkFailed": "La vérification des mises à jour n’a pas abouti. Réessayez plus tard.",
+    "downloadFailed": "Impossible de télécharger la mise à jour. Réessayez plus tard."
+  },
+  "readyTitle": "La nouvelle version {{version}} est prête",
+  "restartToUpdate": "Redémarrer et mettre à jour",
+  "lastInstallFailed": "La dernière mise à jour n’a pas été installée : TupAI n’a pas pu être fermé.",
+  "availableVersion": "La nouvelle version {{version}} est disponible",
+  "installerReason": {
+    "linux": "Sous Linux, TupAI ne peut pas installer les mises à jour tout seul : téléchargez le programme d’installation et ouvrez-le.",
+    "unpackaged": "Cette copie de TupAI ne peut pas installer les mises à jour toute seule : téléchargez le programme d’installation et ouvrez-le.",
+    "autoUpdateFailed": "Vous pouvez télécharger le programme d’installation et mettre à jour avec lui."
+  },
+  "downloadInstaller": "Télécharger le programme d’installation",
+  "openReleasePage": "Ouvrir la page de la version",
+  "downloadingVersion": "Téléchargement de la version {{version}} ({{percent}})",
+  "downloadingInstaller": "Téléchargement du programme d’installation ({{percent}})",
+  "installerReadyTitle": "Le programme d’installation de la version {{version}} est téléchargé",
+  "openInstaller": "Ouvrir le programme d’installation"
+}

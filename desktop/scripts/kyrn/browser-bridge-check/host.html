@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>mu browser bridge check</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #f4f1fb;
+      }
+      #draft {
+        position: absolute;
+        z-index: 1;
+        right: 8px;
+        bottom: 8px;
+        width: 220px;
+      }
+      #stage {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      webview {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Stands in for the conversation's message box: the loop's typing must never land here. -->
+    <input id="draft" placeholder="the person's own draft" />
+    <div id="stage"></div>
+    <script>
+      // Stands in for the product's browser panel: one <webview> per tab, the newest on top.
+      const tabs = new Map();
+      window.openTab = (tabId, url, partition) => {
+        const view = document.createElement('webview');
+        view.setAttribute('partition', partition);
+        // Asked for on purpose: the main process must strip both before the webview is attached.
+        view.setAttribute('nodeintegration', '');
+        view.setAttribute('allowpopups', '');
+        view.setAttribute('src', url);
+        document.getElementById('stage').append(view);
+        tabs.set(tabId, view);
+      };
+      window.closeTab = (tabId) => {
+        tabs.get(tabId)?.remove();
+        tabs.delete(tabId);
+      };
+      window.resizeTab = (tabId, width, height) => {
+        const view = tabs.get(tabId);
+        if (!view) return;
+        view.style.inset = 'auto';
+        view.style.width = `${width}px`;
+        view.style.height = `${height}px`;
+      };
+      window.hostState = () => ({
+        active: document.activeElement?.id || document.activeElement?.tagName,
+        draft: document.getElementById('draft').value,
+      });
+      window.focusDraft = () => document.getElementById('draft').focus();
+      // What the product's panel does when the bridge asks for the keyboard: focus the tab's webview, then say
+      // whether the window's focus really is there now.
+      window.keyboardTo = (tabId) => {
+        const view = tabs.get(tabId);
+        view?.focus();
+        return view !== undefined && document.activeElement === view;
+      };
+      document.getElementById('draft').focus();
+      window.tabWidth = (tabId) => Math.round(tabs.get(tabId)?.getBoundingClientRect().width ?? 0);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+name = "mu-pay"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# ---------- KV：支付单 / 积分余额 / 限流计数 / 微信平台证书缓存 ----------
+# 部署前先建：wrangler kv namespace create PAY_KV，把返回的 id 填到下面
+[[kv_namespaces]]
+binding = "PAY_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# ---------- 非敏感配置（密钥一律走 wrangler secret put，见 README） ----------
+[vars]
+# 支付模式：mock = 开发自测（下单返回模拟二维码，mock/confirm 一键确认到账）；
+#           wechat = 微信支付 Native 扫码（真实收款，需配 WXPAY_* secrets）
+PAY_MODE = "mock"
+# 每消费 1 元人民币到账的积分。三档套餐的积分 = 价格(元) × 本值。
+# 具体兑换比例待定——以后只改这一个值，全部档位与全部客户端同步生效。
+CREDITS_PER_YUAN = "50"
+# 支付单有效期（分钟）：Native 二维码过期时间，到点自动置 expired
+ORDER_EXPIRE_MINUTES = "30"
+# 微信支付回调地址（PAY_MODE=wechat 必填）：必须是公网 HTTPS、无登录验证
+WXPAY_NOTIFY_URL = "https://REPLACE_WITH_WORKER_DOMAIN/api/pay/notify"

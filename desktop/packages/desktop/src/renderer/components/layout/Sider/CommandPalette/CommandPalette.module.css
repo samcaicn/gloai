@@ -1,0 +1,197 @@
+/**
+ * @license
+ * Copyright 2026 AionUi (aionui.com)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * The command palette: one white (or black) surface with a hairline, 8px corners and a faint shadow; monochrome
+ * text. The only colour is the thin bar on the chosen row's leading edge. No gradients.
+ *
+ * Arco's modal chrome is reduced to that surface. `.wrap` scopes the overrides, and the doubled `.palette` outranks
+ * `[data-color-scheme='mu'] .arco-modal` (a heavier shadow) and the dark theme's
+ * `body[arco-theme='dark'] .arco-modal` (a grey fill, !important).
+ */
+.wrap .palette.palette {
+  top: 20vh;
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  padding: 0;
+  border: 1px solid var(--border-base);
+  border-radius: 8px;
+  background-color: var(--bg-base) !important;
+  box-shadow: var(--mu-shadow-2, none);
+  overflow: hidden;
+}
+
+/* The dark theme also gives every modal body a fill of its own. */
+.wrap .palette.palette :global(.arco-modal-content) {
+  padding: 0;
+  background-color: transparent !important;
+}
+
+/* A short fade instead of Arco's zoom from the cursor. */
+.wrap .palette:global(.zoomModal-enter),
+.wrap .palette:global(.zoomModal-appear) {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.wrap .palette:global(.zoomModal-enter-active),
+.wrap .palette:global(.zoomModal-appear-active) {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--mu-duration, 160ms) var(--mu-ease, ease-out),
+    transform var(--mu-duration, 160ms) var(--mu-ease, ease-out);
+}
+
+.wrap .palette:global(.zoomModal-exit) {
+  opacity: 1;
+  transform: none;
+}
+
+.wrap .palette:global(.zoomModal-exit-active) {
+  opacity: 0;
+  transform: none;
+  transition: opacity 100ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrap .palette:global(.zoomModal-enter-active),
+  .wrap .palette:global(.zoomModal-appear-active),
+  .wrap .palette:global(.zoomModal-exit-active) {
+    transition: none;
+  }
+}
+
+/* The query: a bare line on the surface, a hairline under it. The modal is the focus, so the field has no ring. */
+.field {
+  border-bottom: 1px solid var(--border-base);
+}
+
+.field :global(.arco-input-inner-wrapper) {
+  height: 48px;
+  padding: 0 16px;
+  border-width: 0 !important;
+  border-radius: 0;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.field :global(.arco-input-group-prefix) {
+  padding-inline-end: 10px;
+  color: var(--bg-6);
+  line-height: 0;
+}
+
+.field :global(.arco-input) {
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.field :global(.arco-input)::placeholder {
+  color: var(--bg-6);
+}
+
+.list {
+  max-height: min(400px, 56vh);
+  overflow-y: auto;
+  padding: 4px 6px 6px;
+}
+
+.groupLabel {
+  padding: 8px 10px 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--bg-6);
+}
+
+/* Above the hand-off to the message search, which is an action rather than a group of results. */
+.divider {
+  height: 1px;
+  margin: 6px 4px;
+  background-color: var(--border-base);
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.row[aria-selected='true'] {
+  background-color: var(--bg-2);
+}
+
+.row[aria-selected='true']::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 1px;
+  background-color: var(--mu-accent-dot, var(--primary));
+}
+
+.label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A command reads `/name  what it does`: the name keeps its width (up to half the row), the description takes the
+   rest and is the one cut short. */
+.row[data-kind='command'] .label {
+  flex: none;
+  max-width: 50%;
+}
+
+.detail {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--bg-6);
+}
+
+/* The right-hand note: how long ago, or the shortcut of the message search. */
+.meta {
+  flex: none;
+  font-size: 12px;
+  color: var(--bg-6);
+}
+
+/* Matched characters are underlined, never coloured. */
+.hit {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.empty {
+  padding: 16px 10px;
+  font-size: 13px;
+  color: var(--bg-6);
+  text-align: center;
+}
+
+/* A quiet line under the rows, in the group labels' voice: why the list is as short as it is. */
+.hint {
+  padding: 10px 10px 4px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--bg-6);
+}

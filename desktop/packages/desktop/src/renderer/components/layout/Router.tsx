@@ -1,0 +1,229 @@
+import React, { Suspense } from 'react';
+import { HashRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Button, Result, Space } from '@arco-design/web-react';
+import { useTranslation } from 'react-i18next';
+import AppLoader from '@renderer/components/layout/AppLoader';
+import DocumentTitle from '@renderer/components/layout/DocumentTitle';
+import { useCrossSessionRateLimitNotice } from '@/renderer/hooks/system/useCrossSessionRateLimitNotice';
+import { STUDIO_EXPERTS_PATH, STUDIO_HOME_PATH } from '@renderer/plugins/zhichuang';
+import StartupGate from '@/renderer/pages/settings/KyrnSettings/StartupGate';
+import { MuSettingsProvider } from '@/renderer/pages/settings/KyrnSettings/useMuSettings';
+import {
+  FEATURE_LIST_PAGES,
+  MOVED_SETTINGS_TABS,
+  RETIRED_SETTINGS_PATHS,
+  SETTINGS_HOME,
+  SETTINGS_PAGES,
+  movedSettingsTab,
+  retiredSettingsTarget,
+  type SettingsPageId,
+} from '@/renderer/pages/settings/settingsNav';
+const Conversation = React.lazy(() => import('@renderer/pages/conversation'));
+const Guid = React.lazy(() => import('@renderer/pages/guid'));
+const Welcome = React.lazy(() => import('@renderer/pages/welcome'));
+const MuSettings = React.lazy(() => import('@renderer/pages/settings/KyrnSettings'));
+const MovedFeatureOptions = React.lazy(() =>
+  import('@renderer/pages/settings/KyrnSettings').then((module) => ({ default: module.MovedFeatureOptions }))
+);
+const SkillsSettings = React.lazy(() => import('@renderer/pages/settings/SkillsSettings/SkillsHubSettings'));
+const SkillDetailPage = React.lazy(() => import('@renderer/pages/settings/SkillsSettings/SkillDetailPage'));
+const PluginMarketSettings = React.lazy(() => import('@renderer/pages/settings/PluginMarketSettings'));
+const IlinkSettings = React.lazy(() => import('@renderer/pages/settings/IlinkSettings'));
+const ToolsSettings = React.lazy(() => import('@renderer/pages/settings/ToolsSettings'));
+const AssistantSettings = React.lazy(() => import('@renderer/pages/settings/AssistantSettings'));
+const AppearanceSettings = React.lazy(() => import('@renderer/pages/settings/AppearanceSettings'));
+const SystemSettings = React.lazy(() => import('@renderer/pages/settings/SystemSettings'));
+const ConversationSettings = React.lazy(() => import('@renderer/pages/settings/SystemSettings/ConversationSettings'));
+const BrowserSettings = React.lazy(() => import('@renderer/pages/settings/SystemSettings/BrowserSettings'));
+const AboutSettings = React.lazy(() => import('@renderer/pages/settings/SystemSettings/AboutSettings'));
+const ArchivedSettings = React.lazy(() => import('@renderer/pages/settings/ArchivedSettings'));
+const ExtensionSettingsPage = React.lazy(() => import('@renderer/pages/settings/ExtensionSettingsPage'));
+const ScheduledTasksPage = React.lazy(() => import('@renderer/pages/cron/ScheduledTasksPage'));
+const TaskDetailPage = React.lazy(() => import('@renderer/pages/cron/ScheduledTasksPage/TaskDetailPage'));
+// A plugin's page: the paths come from the plugin that put the rows in the sidebar, so the two cannot drift apart.
+const StudioPage = React.lazy(() => import('@renderer/plugins/zhichuang/StudioPage'));
+
+const RouteFailure = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  return (
+    <div role='alert' className='flex flex-1 items-center justify-center min-h-0'>
+      <Result
+        status='error'
+        title={t('common.error')}
+        extra={
+          <Space>
+            <Button type='primary' onClick={() => window.location.reload()}>
+              {t('common.reload')}
+            </Button>
+            <Button onClick={() => void navigate('/guid')}>{t('common.back')}</Button>
+          </Space>
+        }
+      />
+    </div>
+  );
+};
+
+class RouteErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[Route] Page failed to load or render', error, info.componentStack);
+  }
+
+  render() {
+    return this.state.failed ? <RouteFailure /> : this.props.children;
+  }
+}
+
+/** Keep page failures inside the route, preserving navigation and running agents. */
+export const RouteContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { pathname } = useLocation();
+  return (
+    <RouteErrorBoundary key={pathname}>
+      <Suspense fallback={<AppLoader />}>{children}</Suspense>
+    </RouteErrorBoundary>
+  );
+};
+
+const withRouteFallback = (Component: React.LazyExoticComponent<React.ComponentType>) => (
+  <RouteContent>
+    <Component />
+  </RouteContent>
+);
+
+/** The page each entry of the settings rail opens: mu's own sections are one area, routed by the path. */
+const SETTINGS_PAGE_ELEMENTS: Record<SettingsPageId, React.LazyExoticComponent<React.ComponentType>> = {
+  appearance: AppearanceSettings,
+  system: SystemSettings,
+  conversations: ConversationSettings,
+  providers: MuSettings,
+  'default-model': MuSettings,
+  judges: MuSettings,
+  features: MuSettings,
+  'decisions-input': MuSettings,
+  'decisions-context': MuSettings,
+  'decisions-memory': MuSettings,
+  'decisions-tools': MuSettings,
+  'decisions-turn': MuSettings,
+  'decisions-team': MuSettings,
+  'more-features-input': MuSettings,
+  'more-features-context': MuSettings,
+  'more-features-tools': MuSettings,
+  'more-features-turn': MuSettings,
+  'more-features-other': MuSettings,
+  skills: SkillsSettings,
+  plugins: PluginMarketSettings,
+  ilink: IlinkSettings,
+  tools: ToolsSettings,
+  assistants: AssistantSettings,
+  browser: BrowserSettings,
+  archived: ArchivedSettings,
+  about: AboutSettings,
+};
+
+/**
+ * Around every settings page: the one draft of mu's settings they all edit. A route change draws the page afresh, so
+ * the draft lives here, above the pages: a change typed on one page is still there, unsaved, on the next, until the
+ * settings are left.
+ */
+const SettingsScope: React.FC = () => (
+  <MuSettingsProvider>
+    <Outlet />
+  </MuSettingsProvider>
+);
+
+/**
+ * A settings route that no longer exists (a key of `RETIRED_SETTINGS_PATHS`), sent to the page that took it over.
+ * Whatever the old link carried travels with it: its query string (`?highlight=`, `?view=`), so a deep link still
+ * arrives at the thing it named, and its navigation state (an assistant to open).
+ */
+export const RetiredSettingsPath: React.FC<{ from: string }> = ({ from }) => {
+  const { search, state } = useLocation();
+  return <Navigate to={retiredSettingsTarget(from, search)} replace state={state} />;
+};
+
+/**
+ * A page that used to hold other pages as tabs (the skills page held tools and assistants): a link naming one of those
+ * tabs (`?tab=tools`) goes to the page that holds it now, with the rest of its query. Any other link draws the page.
+ */
+export const WithMovedTabs: React.FC<{ path: string; children: React.ReactElement }> = ({ path, children }) => {
+  const { search, state } = useLocation();
+  const moved = movedSettingsTab(path, search);
+  return moved ? <Navigate to={moved} replace state={state} /> : children;
+};
+
+const AppLayout: React.FC<{ layout: React.ReactElement }> = ({ layout }) => {
+  const location = useLocation();
+  // Mounted once for every route: the loop warning has to reach the user even
+  // when they are looking at a THIRD conversation, which is the whole reason it
+  // is a broadcast rather than an in-conversation banner. The hook asks the
+  // backend who this client is on its own.
+  useCrossSessionRateLimitNotice();
+
+  // Do not obstruct an existing task while the main process is being upgraded: a conversation passes the gate. The
+  // gate stays in the tree on every page, open on a conversation. Leaving it out there would give the layout another
+  // parent, and React would mount the whole layout afresh on every step between a conversation and any other page:
+  // the sidebar forgot the conversation "back to chat" returns to, and the work panel reloaded its pages.
+  return <StartupGate open={location.pathname.startsWith('/conversation/')}>{React.cloneElement(layout)}</StartupGate>;
+};
+
+const PanelRoute: React.FC<{ layout: React.ReactElement }> = ({ layout }) => {
+  return (
+    <HashRouter>
+      <DocumentTitle />
+      <Routes>
+        <Route element={<AppLayout layout={layout} />}>
+          <Route index element={<Navigate to='/guid' replace />} />
+          <Route path='/guid' element={withRouteFallback(Guid)} />
+          <Route path='/welcome' element={withRouteFallback(Welcome)} />
+          <Route path='/conversation/:id' element={withRouteFallback(Conversation)} />
+          <Route path='/team/:id' element={<Navigate to='/guid' replace />} />
+          {/* The settings rail: one route per entry, all under one draft of mu's settings. */}
+          <Route element={<SettingsScope />}>
+            {SETTINGS_PAGES.map(({ id, route }) => (
+              <Route
+                key={id}
+                path={route}
+                element={
+                  route in MOVED_SETTINGS_TABS ? (
+                    <WithMovedTabs path={route}>{withRouteFallback(SETTINGS_PAGE_ELEMENTS[id])}</WithMovedTabs>
+                  ) : (
+                    withRouteFallback(SETTINGS_PAGE_ELEMENTS[id])
+                  )
+                }
+              />
+            ))}
+            {/* One feature's options, opened from its list, and the pages after the first when they fill more. */}
+            {FEATURE_LIST_PAGES.map((id) => (
+              <Route key={id} path={`/settings/${id}/:feature/:part?`} element={withRouteFallback(MuSettings)} />
+            ))}
+            {/* From when every other feature was one page: the page of the feature's group now. */}
+            <Route path='/settings/more-features/:feature/:part?' element={withRouteFallback(MovedFeatureOptions)} />
+            <Route path='/settings/skills/import-history' element={withRouteFallback(SkillsSettings)} />
+            <Route path='/settings/skills/detail/:skillName' element={withRouteFallback(SkillDetailPage)} />
+            <Route path='/settings/ext/:tabId' element={withRouteFallback(ExtensionSettingsPage)} />
+          </Route>
+
+          {/* Retired destinations — old deep links keep working. */}
+          {Object.keys(RETIRED_SETTINGS_PATHS).map((from) => (
+            <Route key={from} path={from} element={<RetiredSettingsPath from={from} />} />
+          ))}
+          <Route path='/settings' element={<Navigate to={SETTINGS_HOME} replace />} />
+          <Route path='/scheduled' element={withRouteFallback(ScheduledTasksPage)} />
+          <Route path='/scheduled/:job_id' element={withRouteFallback(TaskDetailPage)} />
+          {/* The studio plugin: one route per row it put in the sidebar. */}
+          <Route path={STUDIO_HOME_PATH} element={withRouteFallback(StudioPage)} />
+          <Route path={STUDIO_EXPERTS_PATH} element={withRouteFallback(StudioPage)} />
+        </Route>
+        <Route path='*' element={<Navigate to='/guid' replace />} />
+      </Routes>
+    </HashRouter>
+  );
+};
+
+export default PanelRoute;

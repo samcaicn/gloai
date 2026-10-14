@@ -1,0 +1,418 @@
+/* Every provider in one place: one line of what can be done with the add button, then the list on the left and the
+   chosen one on the right; one column when the section is narrow. Neutral surfaces: the accent is for buttons only. */
+.providers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.managerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.manager {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 420px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  background: var(--bg-1);
+  overflow: hidden;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px;
+  border-right: 1px solid var(--color-border-2);
+}
+
+.listTitle {
+  padding: 14px 10px 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.listTitle:first-child {
+  padding-top: 6px;
+}
+
+.listEmpty {
+  padding: 4px 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.item:hover {
+  background: var(--color-fill-1);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--color-border-3);
+  outline-offset: 1px;
+}
+
+/* The chosen row, as the settings rail marks its page: by weight, with no fill and no border of its own. */
+.itemActive,
+.itemActive:hover {
+  background: none;
+}
+
+.itemName {
+  color: var(--text-secondary);
+}
+
+.item:hover .itemName,
+.itemActive .itemName {
+  color: var(--text-primary);
+}
+
+.itemActive .itemName {
+  font-weight: 600;
+}
+
+.itemMark,
+.headMark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  color: var(--text-secondary);
+}
+
+.itemName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemNote {
+  flex: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+/* The state at the end of a row: green usable, amber something to do, a ring when not signed in, the judge's pink
+   breathing while a sign-in runs. Big enough to tell apart at a glance. */
+.dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dotReady {
+  background: rgb(var(--success-6));
+}
+
+.dotAttention {
+  background: rgb(var(--warning-6));
+}
+
+.dotOff {
+  box-shadow: inset 0 0 0 1.5px var(--bg-6);
+}
+
+.dotBusy {
+  background: var(--mu-judge-dot, rgb(var(--primary-5)));
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dotBusy {
+    animation: none;
+  }
+}
+
+.editor {
+  min-width: 0;
+  padding: 6px 20px 20px;
+}
+
+.editorHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 12px 0 14px;
+}
+
+.editorTitle {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fieldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.value {
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hint {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-wrap: balance;
+}
+
+.problem {
+  color: rgb(var(--danger-6));
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.danger {
+  color: rgb(var(--danger-6));
+}
+
+/* An icon-park icon is not Arco's own, so a button with one gets its gap here. */
+.iconButton {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+}
+
+.confirm p {
+  margin: 0 0 6px;
+}
+
+.confirm p:last-child {
+  margin-bottom: 0;
+}
+
+/* Models: one line each, like a table, between hairlines and with no box of their own inside the manager's frame; the
+   one being edited opens below its line. */
+.models {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-top: 1px solid var(--color-border-2);
+}
+
+.modelsEmpty {
+  padding: 12px 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.model + .model {
+  border-top: 1px solid var(--color-border-2);
+}
+
+.modelLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 42px;
+  padding: 6px 0;
+}
+
+.modelId,
+.modelIdEmpty {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
+  font-size: 13px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelId {
+  color: var(--text-primary);
+}
+
+.modelIdEmpty {
+  color: var(--text-secondary);
+}
+
+.modelName {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelTag {
+  flex: none;
+  padding: 0 6px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.modelEdit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 8px;
+  padding: 0 0 12px;
+}
+
+.modelFacts {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 6px 14px;
+  min-width: 0;
+}
+
+.modelLevels {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1 / -1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.modelLevelRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+
+.modelNumber {
+  width: 240px;
+  max-width: 100%;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.test {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 2px;
+}
+
+.ok {
+  color: rgb(var(--success-6));
+  font-size: 12px;
+}
+
+.levels {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@container mu-section (max-width: 680px) {
+  .manager {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .list {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-2);
+  }
+}
+
+@container mu-section (max-width: 480px) {
+  .pair,
+  .modelEdit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .managerHead {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+}

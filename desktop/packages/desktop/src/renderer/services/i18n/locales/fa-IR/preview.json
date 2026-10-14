@@ -1,0 +1,323 @@
+{
+  "loading": "در حال بارگذاری...",
+  "downloadFile": "دانلود فایل",
+  "closePreview": "بستن پیش‌نمایش",
+  "collapsePanel": "جمع کردن پنل",
+  "maximizePanel": "بزرگ‌نمایی",
+  "restorePanel": "بازگردانی",
+  "source": "منبع",
+  "code": "کد",
+  "preview": "پیش‌نمایش",
+  "editor": "ویرایشگر",
+  "previewEffect": "پیش‌نمایش",
+  "downloadMarkdown": "دانلود فایل Markdown",
+  "downloadCode": "دانلود فایل {{language}}",
+  "downloadDiff": "دانلود فایل Diff",
+  "addToChat": "افزودن به چت",
+  "openSplitScreen": "باز کردن صفحه تقسیم‌شده",
+  "closeSplitScreen": "بستن صفحه تقسیم‌شده",
+  "edit": "ویرایش",
+  "exitEdit": "خروج از ویرایش",
+  "unsavedChangesTitle": "تغییرات ذخیره‌نشده",
+  "unsavedChangesMessage": "تغییرات ذخیره‌نشده‌ای دارید. آیا مطمئن هستید که می‌خواهید از ویرایش خارج شوید؟",
+  "confirmExit": "تأیید خروج",
+  "continueEdit": "ادامه ویرایش",
+  "closeTabTitle": "بستن تب",
+  "closeTabMessage": "محتوای فعلی ذخیره نشده است. آیا می‌خواهید قبل از بستن ذخیره کنید؟",
+  "closeTabsTitle": "بستن تب‌ها",
+  "closeTabsMessage": "{{count}} تب تغییرات ذخیره‌نشده دارند. پیش از بستن ذخیره شوند؟",
+  "closeTabsMessage_one": "{{count}} تب تغییرات ذخیره‌نشده دارند. پیش از بستن ذخیره شوند؟",
+  "closeTabsMessage_other": "{{count}} تب تغییرات ذخیره‌نشده دارند. پیش از بستن ذخیره شوند؟",
+  "saveAndClose": "ذخیره و بستن",
+  "closeWithoutSave": "ذخیره نکن",
+  "pptTitle": "ارائه PowerPoint",
+  "pptOpenHint": "روی دکمه زیر کلیک کنید تا در برنامه سیستم باز شود و محتوای کامل را مشاهده کنید",
+  "pptOpenFile": "باز کردن فایل",
+  "pptShowLocation": "نمایش موقعیت",
+  "pptSystemAppHint": "با برنامه پیش‌فرض سیستم (PowerPoint، Keynote، یا WPS) باز خواهد شد",
+  "openWithApp": "باز کردن در {{app}}",
+  "openInSystemApp": "باز کردن در برنامه سیستم",
+  "openInSystemSuccess": "در برنامه پیش‌فرض سیستم باز شد",
+  "openInSystemFailed": "باز کردن با برنامه سیستم ناموفق بود",
+  "close": "بستن",
+  "closeLeft": "بستن سمت چپ",
+  "closeRight": "بستن سمت راست",
+  "closeOthers": "بستن بقیه",
+  "closeAll": "بستن همه",
+  "closeUnmodified": "بستن تغییرنیافته‌ها",
+  "copyPath": "کپی مسیر",
+  "copyRelativePath": "کپی مسیر نسبی",
+  "openLocation": "نمایش در پوشه",
+  "openLocationFailed": "باز کردن پوشه حاوی ناموفق بود",
+  "readOnlyLabel": "پیش‌نمایش فقط‌خواندنی",
+  "pathLabel": "مسیر",
+  "missingFile": {
+    "title": "فایل یافت نشد",
+    "openInNewTab": "در تب جدید باز کنید"
+  },
+  "noTabs": "تبی باز نیست",
+  "openInPanelTooltip": "مشاهده در پنل پیش‌نمایش",
+  "mermaidTitle": "نمودار Mermaid",
+  "wavedromTitle": "نمودار WaveDrom",
+  "oversized": {
+    "title": "حجم فایل برای پیش‌نمایش بیش از حد زیاد است",
+    "detail": "حجم فایل {{size}} از محدودیت {{threshold}} بیشتر است. لطفاً آن را در ویرایشگر سیستم باز کنید.",
+    "downloadUnavailable": "این فایل برای دانلود در اینجا بیش از حد بزرگ است. از «باز کردن در سیستم» استفاده کنید."
+  },
+  "unsupported": {
+    "title": "پیش‌نمایش این قالب پشتیبانی نمی‌شود",
+    "detail": "فایل‌های {{format}} را نمی‌توان اینجا پیش‌نمایش کرد. آن را در یک برنامه سیستمی باز کنید.",
+    "downloadUnavailable": "این فایل را نمی‌توان اینجا دانلود کرد. از «باز کردن در سیستم» استفاده کنید."
+  },
+  "aiWriting": "هوش مصنوعی در حال نوشتن…",
+  "errors": {
+    "missingFilePath": "مسیر فایل وجود ندارد",
+    "openWithoutPath": "باز کردن ممکن نیست: مسیر فایل ارائه نشده است",
+    "conversionFailed": "تبدیل ناموفق بود"
+  },
+  "office": {
+    "installLinkText": "باز کردن راهنمای نصب officecli",
+    "errors": {
+      "officecliNotFound": "officecli نصب نشده است.",
+      "installFailed": "نصب خودکار officecli ناموفق بود. لاگ‌های بک‌اند را بررسی کنید و دوباره تلاش کنید.",
+      "portTimeout": "سرویس پیش‌نمایش شروع شد اما به‌موقع آماده نشد. دوباره تلاش کنید.",
+      "startFailed": "شروع سرویس پیش‌نمایش Office ناموفق بود.",
+      "outsideSandbox": "این فایل خارج از سندباکس پروژه فعلی است."
+    },
+    "serverInstall": {
+      "hint": "TupAI روی سرور اجرا می‌شود. مؤلفه پیش‌نمایش را روی همان سرور نصب کنید، سپس دوباره تلاش کنید:",
+      "icuNote": "اگر همچنان شروع نشد، کتابخانه ICU را روی سرور نصب کنید (Debian/Ubuntu: apt-get install -y libicu-dev)."
+    }
+  },
+  "word": {
+    "title": "سند Word",
+    "loading": "در حال بارگذاری سند Word...",
+    "invalid": "لطفاً تأیید کنید که فایل یک سند Word معتبر است",
+    "loadFailed": "بارگذاری سند Word ناموفق بود",
+    "watch": {
+      "loading": "در حال بارگذاری سند Word...",
+      "installing": "در حال نصب officecli...",
+      "startFailed": "شروع پیش‌نمایش Word ناموفق بود",
+      "installHint": "نیاز به officecli دارد. به‌صورت خودکار نصب خواهد شد."
+    }
+  },
+  "excel": {
+    "title": "صفحه گسترده Excel",
+    "loading": "در حال بارگذاری workbook Excel...",
+    "invalid": "لطفاً تأیید کنید که فایل یک سند Excel معتبر است",
+    "noSheets": "ورک‌شیتی در این فایل Excel پیدا نشد",
+    "sheetCount": "{{count}} ورک‌شیت",
+    "convertFailed": "تبدیل Excel ناموفق بود",
+    "loadFailed": "بارگذاری workbook Excel ناموفق بود",
+    "emptySheet": "این ورک‌شیت داده‌ای ندارد",
+    "emptySheetHint": "بررسی کنید آیا شیت شامل داده یا تصویر است",
+    "watch": {
+      "loading": "در حال بارگذاری فایل Excel...",
+      "installing": "در حال نصب officecli...",
+      "startFailed": "شروع پیش‌نمایش Excel ناموفق بود",
+      "installHint": "نیاز به officecli دارد. به‌صورت خودکار نصب خواهد شد."
+    }
+  },
+  "pdf": {
+    "title": "سند PDF",
+    "pathMissing": "مسیر فایل PDF وجود ندارد",
+    "loadFailed": "بارگذاری سند PDF ناموفق بود",
+    "unableDisplay": "نمایش فایل PDF ممکن نیست"
+  },
+  "html": {
+    "elementSelected": "عنصر انتخاب‌شده: {{path}}",
+    "copySuccess": "قطعه HTML کپی شد",
+    "inspectorEnabled": "بازرس عنصر فعال شد. روی آیتم‌ها در پیش‌نمایش کلیک کنید تا هایلایت شوند.",
+    "inspectorButton": "بازرس عنصر",
+    "inspecting": "در حال بازرسی...",
+    "selectedLabel": "انتخاب‌شده:",
+    "inspectorTooltip": "روی عناصر پیش‌نمایش کلیک کنید تا HTML آن‌ها بازرسی شود",
+    "downloadHtml": "دانلود فایل HTML",
+    "copyElementHtml": "کپی HTML عنصر",
+    "viewElementInfo": "مشاهده اطلاعات عنصر",
+    "printedToConsole": "اطلاعات عنصر در کنسول ثبت شد",
+    "inspectElement": "بازرسی عنصر",
+    "inspectElementEnable": "فعال‌سازی بازرس عنصر",
+    "inspectElementDisable": "غیرفعال‌سازی بازرس عنصر",
+    "frameTitle": "پیش‌نمایش HTML"
+  },
+  "ppt": {
+    "loading": "در حال شروع پیش‌نمایش PPT...",
+    "installing": "در حال نصب مؤلفه پیش‌نمایش...",
+    "startFailed": "شروع پیش‌نمایش PPT ناموفق بود",
+    "installHint": "OfficeCLI را از صفحه انتشارات رسمی iOfficeAI/OfficeCli نصب کنید"
+  },
+  "browser": {
+    "newTab": "زبانه جدید",
+    "addressPlaceholder": "نشانی اینترنتی را وارد کنید یا جست‌وجو کنید",
+    "tabsLabel": "صفحه‌های باز",
+    "closeTab": "بستن {{title}}",
+    "copyAddress": "کپی نشانی",
+    "agentActiveTooltip": "عامل در حال کار با این زبانه است",
+    "tabLimitReached": "به سقف تعداد زبانه‌ها ({{count}}) رسیدید. قدیمی‌ترین زبانه دوباره استفاده شد.",
+    "agentFirstUseTitle": "عامل از مرورگر درون‌برنامه استفاده می‌کند",
+    "agentFirstUseContent": "می‌تواند در این پنل صفحه باز کند، کلیک کند و محتوا را بخواند. وضعیت ورود شما حفظ می‌شود.",
+    "agentFirstUseAction": "باز کردن تنظیمات"
+  },
+  "saveConflict": "ذخیره نشد: این فایل پس از باز کردن شما روی دیسک تغییر کرده است. برای دیدن تغییرات دیگر دوباره بارگیری کنید — ویرایش‌های شما همچنان ذخیره‌نشده باقی مانده است.",
+  "persistQuotaExceeded": "حافظه محلی پر است، بنابراین تب‌های باز این پروژه دیگر به خاطر سپرده نمی‌شوند. چند تب را ببندید یا داده‌های سایت را پاک کنید.",
+  "save": {
+    "tooltip": "ذخیره تغییرات (Ctrl/Cmd+S)",
+    "clean": "تغییر ذخیره‌نشده‌ای وجود ندارد"
+  },
+  "refresh": {
+    "label": "بازخوانی",
+    "tooltip": "بارگیری مجدد از دیسک",
+    "hasUpdate": "این فایل روی دیسک تغییر کرده است — برای بارگیری مجدد کلیک کنید",
+    "noSignalSource": "این فایل در پروژه نیست، بنابراین تغییرات اعلام نمی‌شود",
+    "unavailable": "نمی‌توان این فایل را پیدا کرد",
+    "failed": "بارگیری مجدد این فایل ممکن نشد",
+    "confirmTitle": "بازخوانی شود و تغییرات ذخیره‌نشده از دست برود؟",
+    "confirmMessage": "این تب تغییرات ذخیره‌نشده دارد. بازخوانی آن‌ها را با محتوای دیسک جایگزین می‌کند.",
+    "discardAndRefresh": "صرف‌نظر از تغییرات و بازخوانی",
+    "officeNotWired": "بازخوانی اسناد Office هنوز فراهم نیست — برای دیدن تغییرات فایل را ببندید و دوباره باز کنید."
+  },
+  "zoomIn": "بزرگ‌نمایی",
+  "zoomOut": "کوچک‌نمایی",
+  "zoomReset": "بازنشانی نما",
+  "diagramZoomHint": "برای بزرگنمایی اسکرول کنید • برای جابهجایی بکشید • ESC برای بستن",
+  "muBrowser": {
+    "stepNumber": "گام {{step}}",
+    "confidence": "اطمینان {{percent}}٪",
+    "noChange": "صفحه تغییری نکرد",
+    "observing": "در حال بررسی صفحه…",
+    "elapsed": "زمان سپری‌شده",
+    "steps": "گام‌ها {{total}}",
+    "noSteps": "هنوز کاری انجام نشده است",
+    "reason": "توضیح TupAI",
+    "goal": "هدف",
+    "pause": "مکث",
+    "resume": "ادامه",
+    "stop": "توقف",
+    "takeover": "در دست گرفتن",
+    "takeoverTip": "اجرا را موقتاً متوقف می‌کند و صفحه‌کلید را به شما می‌دهد. پس از پایان کار «ادامه» را بزنید: TupAI پیش از تصمیم‌گیری دوباره صفحه را بررسی می‌کند.",
+    "pausedShort": "مکث شده",
+    "stopping": "در حال توقف…",
+    "paused": {
+      "user": "مکث شده است. با ادامه دادن، TupAI پیش از تصمیم‌گیری دوباره صفحه را بررسی می‌کند.",
+      "takeover": "کنترل در دست شماست: خودتان با صفحه کار کنید و در پایان «ادامه» را بزنید.",
+      "interaction": "شما با صفحه کار کردید و TupAI برای این‌که هم‌زمان با شما کلیک نکند خودش مکث کرد. با ادامه دادن، دوباره صفحه را بررسی می‌کند."
+    },
+    "statusHint": {
+      "blocked": "TupAI در صفحه عملیاتی که به هدف نزدیک کند پیدا نکرد و ایستاد.",
+      "needs_confirmation": "این عملیات برگشت‌ناپذیر به نظر می‌رسید و اجازه داده نشد؛ بنابراین TupAI آن را انجام نداد.",
+      "budget": "سقف گام‌های این اجرا تمام شد.",
+      "stopped": "شما این اجرا را متوقف کردید.",
+      "failed": "هنگام مرور مشکلی پیش آمد و این اجرا کامل نشد."
+    },
+    "detachedHint": "ارتباط TupAI با این صفحه قطع شد و این اجرا نمی‌تواند ادامه یابد.",
+    "verb": {
+      "click": "کلیک روی",
+      "fill": "نوشتن در",
+      "select": "انتخاب",
+      "scroll": "پیمایش",
+      "wait": "انتظار",
+      "none": "هدفی پیدا نشد",
+      "other": "عملیات روی"
+    },
+    "status": {
+      "done": "انجام شد",
+      "blocked": "به بن‌بست خورد",
+      "needs_confirmation": "نیاز به تأیید",
+      "stopped": "متوقف شد",
+      "budget": "گام‌ها تمام شد",
+      "read": "صفحه خوانده شد",
+      "failed": "ناموفق",
+      "ended": "پایان یافت",
+      "detached": "قطع ارتباط"
+    },
+    "notice": {
+      "download": "بارگیری مسدود شد: {{detail}}",
+      "permission": "درخواست مجوز رد شد: {{detail}}",
+      "navigation": "نشانی‌ای که صفحهٔ وب نیست مسدود شد: {{detail}}",
+      "popup": "پنجرهٔ بازشو مسدود شد: {{detail}}"
+    },
+    "confirm": {
+      "title": "TupAI می‌خواهد کاری انجام دهد که شاید برگشت‌پذیر نباشد",
+      "action": "عملیات",
+      "page": "صفحه",
+      "allow": "اجازه",
+      "deny": "رد",
+      "countdown": "پس از {{seconds}} ثانیه خودکار رد می‌شود",
+      "untrusted": "متن بالا از صفحهٔ وب آمده است. به آنچه خود صفحه نشان می‌دهد اعتماد کنید."
+    },
+    "detachCause": "علت",
+    "detachReason": {
+      "tab_closed": "زبانه بسته شد.",
+      "connection": "نشست مرور TupAI پیش از پایان اجرا تمام شد.",
+      "devtools": "ابزارهای توسعه‌دهنده روی این صفحه باز شد.",
+      "crashed": "صفحه از کار افتاد."
+    },
+    "permission": {
+      "location": "موقعیت مکانی",
+      "media": "دوربین یا میکروفون",
+      "notifications": "اعلان‌ها",
+      "clipboard": "کلیپ‌بورد",
+      "screen": "ضبط صفحه",
+      "midi": "دستگاه‌های MIDI",
+      "fullscreen": "تمام‌صفحه",
+      "pointerLock": "قفل ماوس",
+      "devices": "دستگاه‌های USB، سریال یا HID",
+      "storage": "دسترسی به فضای ذخیره‌سازی",
+      "openExternal": "باز کردن برنامهٔ دیگر",
+      "protectedContent": "پخش محتوای محافظت‌شده",
+      "windows": "مدیریت پنجره"
+    },
+    "end": {
+      "stopped_by_user": "کسی که اجرا را تماشا می‌کرد آن را متوقف کرد.",
+      "max_steps": "پس از {{count}} عملیات متوقف شد.",
+      "max_steps_one": "پس از {{count}} عملیات متوقف شد.",
+      "max_steps_other": "پس از {{count}} عملیات متوقف شد.",
+      "no_judge": "هیچ داوری نتوانست عملیاتی انتخاب کند ({{judgeReason}}).",
+      "no_progress": "داور عملیاتی پیدا نکرد که کار را پیش ببرد.",
+      "not_confirmed": "«{{label}}» برگشت‌ناپذیر به نظر می‌رسد و تأیید نشد.",
+      "no_value": "هیچ مقداری برای «{{label}}» ساخته نشد.",
+      "stuck": "{{count}} عملیات پشت سر هم هیچ تغییری ایجاد نکرد.",
+      "stuck_one": "{{count}} عملیات هیچ تغییری ایجاد نکرد.",
+      "stuck_other": "{{count}} عملیات پشت سر هم هیچ تغییری ایجاد نکرد."
+    },
+    "judgeReason": {
+      "shadow": "حالت سایه: پاسخ آن فقط ثبت می‌شود",
+      "abstain": "داور رأی ممتنع داد",
+      "off": "داور خاموش است",
+      "noVerdict": "بدون نتیجهٔ داوری",
+      "error": {
+        "timeout": "مهلت داور تمام شد",
+        "aborted": "فراخوانی داور لغو شد",
+        "unreachable": "داور در دسترس نبود",
+        "auth": "کلید داور رد شد",
+        "payment_required": "داور به روش پرداخت نیاز دارد",
+        "rate_limited": "داور به محدودیت نرخ خورده است",
+        "bad_request": "داور درخواست را رد کرد",
+        "server": "سرور داور خطا داد",
+        "invalid_response": "پاسخ داور خوانده نشد",
+        "unexpected": "یک خطای غیرمنتظره",
+        "all": "همهٔ فراخوانی‌های داور ناموفق بود",
+        "other": "فراخوانی داور ناموفق بود"
+      }
+    }
+  },
+  "tabTitle": {
+    "image": "تصویر",
+    "diff": "تفاوت‌ها"
+  },
+  "sideBySide": "کنار هم",
+  "diffTag": {
+    "changed": "تغییریافته",
+    "added": "افزوده‌شده",
+    "deleted": "حذف‌شده",
+    "renamed": "تغییرنام‌یافته"
+  },
+  "diffEmpty": "این فایل تغییری ندارد",
+  "mermaidTitleWithSummary": "نمودار Mermaid: {{summary}}",
+  "wavedromTitleWithSummary": "نمودار WaveDrom: {{summary}}",
+  "saveFailedWithDetail": "ذخیره ناموفق بود: {{detail}}",
+  "zoomActualSize": "بازنشانی بزرگ‌نمایی",
+  "zoomFit": "متناسب",
+  "zoomFitTooltip": "متناسب با عرض پنل"
+}

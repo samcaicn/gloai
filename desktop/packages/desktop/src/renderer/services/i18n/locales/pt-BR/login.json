@@ -1,0 +1,28 @@
+{
+  "pageTitle": "TupAI - Entrar",
+  "brand": "TupAI",
+  "subtitle": "Bem-vindo de volta, por favor entre na sua conta",
+  "username": "Nome de usuário",
+  "usernamePlaceholder": "Digite seu nome de usuário",
+  "password": "Senha",
+  "passwordPlaceholder": "Digite sua senha",
+  "rememberMe": "Lembrar-me",
+  "submit": "Entrar",
+  "submitting": "Entrando...",
+  "success": "Login bem-sucedido! Redirecionando...",
+  "showPassword": "Mostrar senha",
+  "hidePassword": "Ocultar senha",
+  "languageToggle": "Mudar idioma",
+  "footerPrimary": "Transforme sua IA de linha de comando",
+  "footerSecondary": "Moderno e Eficiente",
+  "errors": {
+    "empty": "Por favor, insira nome de usuário e senha",
+    "invalidCredentials": "Nome de usuário ou senha inválidos",
+    "tooManyAttempts": "Muitas tentativas, por favor tente novamente mais tarde",
+    "networkError": "Falha na conexão, por favor tente novamente",
+    "serverError": "Erro no servidor, por favor tente novamente mais tarde",
+    "unknown": "O login falhou, por favor tente novamente",
+    "csrfExpired": "Sua sessão de login expirou. Tente novamente.",
+    "staleCache": "O login falhou por causa de dados em cache. Limpe o cache do navegador e tente novamente."
+  }
+}

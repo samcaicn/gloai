@@ -1,0 +1,1479 @@
+{
+  "send": "發送",
+  "cancel": "取消",
+  "save": "儲存",
+  "delete": "刪除",
+  "confirm": "確認",
+  "file": "檔案",
+  "folder": "資料夾",
+  "upload": "上傳",
+  "model": "模型",
+  "skills": "技能",
+  "workspace": "專案",
+  "settings": "設定",
+  "system": "系統",
+  "about": "關於我們",
+  "back": "返回聊天",
+  "goBack": "返回",
+  "add": "新增",
+  "edit": "編輯",
+  "website": "官網",
+  "version": "版本號",
+  "contact": "聯絡我們",
+  "github": "GitHub",
+  "loading": "請稍候...",
+  "copy": "複製",
+  "reply": "引用",
+  "openInBuiltinBrowser": "內建瀏覽器開啟",
+  "openInSystemBrowser": "系統瀏覽器開啟",
+  "copySuccess": "已複製",
+  "copyFailed": "複製失敗",
+  "download": "下載",
+  "close": "關閉",
+  "retry": "重試",
+  "reload": "重新載入",
+  "technical_details": "技術詳情",
+  "error_details": "錯誤詳情",
+  "troubleshooting": "疑難排解",
+  "select": "選擇",
+  "expandMore": "展開更多",
+  "collapse": "收起",
+  "viewMoreLines": "檢視更多 ({{count}} 行)",
+  "viewMoreLines_one": "檢視更多 ({{count}} 行)",
+  "viewMoreLines_other": "檢視更多 ({{count}} 行)",
+  "success": "成功",
+  "error": "錯誤",
+  "saveSuccess": "儲存成功",
+  "saveFailed": "儲存失敗",
+  "unknownError": "未知錯誤",
+  "confirmDelete": "確認刪除",
+  "deleteSuccess": "刪除成功",
+  "deleteFailed": "刪除失敗",
+  "default": "預設",
+  "defaultModel": "預設模型",
+  "escToCancel": "按 ESC 取消",
+  "create": "建立",
+  "createSuccess": "建立成功",
+  "failed": "失敗",
+  "browse": "瀏覽",
+  "remove": "移除",
+  "show": "顯示",
+  "hide": "隱藏",
+  "goToSettings": "前往設定",
+  "forward": "前進",
+  "historyBack": "後退",
+  "more": "更多",
+  "refresh": "重新整理",
+  "readOnly": "唯讀",
+  "tray.showWindow": "顯示 TupAI",
+  "tray.newChat": "新建對話",
+  "tray.closeToTray": "隱藏到托盤",
+  "tray.hideToMenuBar": "隱藏到選單列",
+  "tray.about": "關於 TupAI",
+  "tray.restart": "重啟應用",
+  "tray.quit": "結束",
+  "tray.pauseAll": "暫停所有任務",
+  "tray.checkUpdate": "檢查更新",
+  "tray.recentChats": "最近對話",
+  "tray.untitled": "未命名",
+  "backendStartup": {
+    "incompatibleRuntime": {
+      "title": "目前系統不支援內建後端",
+      "description": "TupAI 已開啟，但本機服務無法在目前 Linux 版本上執行。請升級到受支援的 Linux 發行版後重新啟動 TupAI。",
+      "requiredVersions": "需要的執行階段符號：{{versions}}"
+    },
+    "incompleteInstallation": {
+      "title": "TupAI 安裝不完整",
+      "description": "目前安裝缺少必要的本機資源，TupAI 的本機服務無法啟動。請下載並重新安裝最新版 TupAI；如果重新安裝後仍然出現，請檢查系統安全軟體或防毒軟體是否隔離了 TupAI 的檔案。",
+      "downloadLatest": "下載最新版",
+      "runtimeComponentDescription": "目前安裝缺少必要的內建執行元件，{{resource}} 無法啟動。請重新安裝最新版 TupAI；如果重新安裝後仍然出現，請檢查系統安全軟體或防毒軟體是否隔離了 TupAI 元件。"
+    },
+    "packageArchitectureMismatch": {
+      "title": "TupAI 安裝包架構不相符",
+      "description": "目前 TupAI 安裝包是 {{packageArch}}，但這台 Mac 是 {{deviceArch}}。你可能下載了錯誤的安裝包，請重新下載並安裝 {{expectedArch}} 版本。"
+    },
+    "dataMigration": {
+      "title": "本地資料遷移失敗",
+      "description": "TupAI 已開啟，但本機服務在初始化本地資料時停止。重新安裝 TupAI 未必能解決此問題。應用程式日誌記錄了本地資料庫遷移停在哪一步。"
+    },
+    "databaseNewerThanApp": {
+      "title": "需要更新 TupAI",
+      "description": "本機資料由較新版本的 TupAI 建立，目前版本無法開啟。請將 TupAI 更新至最新版本即可繼續使用，資料完好無損，無需重新安裝或重設資料。",
+      "descriptionWithVersion": "本機資料由比目前版本 v{{currentVersion}} 更新的 TupAI 建立，目前版本無法開啟。請將 TupAI 更新至最新版本即可繼續使用，資料完好無損，無需重新安裝或重設資料。"
+    },
+    "localDataRepair": {
+      "title": "本機資料修復失敗",
+      "description": "TupAI 已開啟，但本機服務在準備本機啟動資料時停止，例如 assistant 或代理記錄。重新安裝 TupAI 可能無法解決此問題。應用程式日誌記錄了哪些本機資料未能準備好。"
+    },
+    "startupDirectory": {
+      "title": "啟動目錄無法使用",
+      "description": "TupAI 已開啟，但因為設定的工作目錄或日誌目錄不存在、無法存取或權限受限，本機服務無法啟動。請確認這些目錄存在且可寫入，然後重新啟動 TupAI。"
+    },
+    "recoverableDatabaseCorruption": {
+      "title": "本機資料已損壞",
+      "description": "偵測到本機資料庫損壞，TupAI 無法繼續啟動。確認後將備份舊資料庫，並建立新的本機資料庫繼續啟動。歷史對話將不再顯示，舊資料庫會保留為備份檔案。",
+      "confirmRebuild": "備份舊資料庫並重建新資料庫",
+      "rebuildFailed": "備份舊資料庫並重建新資料庫失敗",
+      "confirmDialog": {
+        "title": "確認重建資料庫？",
+        "content": "此操作會備份目前損壞的資料庫並建立一個全新空庫。歷史對話將不再顯示（舊庫會保留為備份檔案）。確定要繼續嗎？",
+        "okText": "確認重建",
+        "cancelText": "取消"
+      }
+    },
+    "transientConcurrentStartup": {
+      "title": "TupAI 正在啟動",
+      "description": "此視窗開啟時，另一個 TupAI 啟動程序仍在使用本機資料。這是暫時的，您的資料是安全的——無需重新安裝。請稍候片刻後重試，或重新啟動 TupAI。"
+    },
+    "pendingSlow": {
+      "title": "正在啟動",
+      "description": "本機服務正在啟動，請稍候。若長時間無回應，可結束應用程式後再試。"
+    },
+    "exited": {
+      "title": "啟動未完成",
+      "description": "本機服務未能完成啟動並已結束。請重新啟動應用程式；若反覆出現，請查看應用程式日誌。"
+    },
+    "portReportTimeout": {
+      "title": "啟動逾時",
+      "description": "本機服務未在預期時間內完成啟動。請重新啟動應用程式；若反覆出現，請查看應用程式日誌。"
+    },
+    "startupFailed": {
+      "title": "啟動失敗",
+      "description": "本機服務啟動失敗。請重新啟動應用程式；若反覆出現，請查看應用程式日誌。"
+    },
+    "openLogs": "開啟日誌資料夾",
+    "openLogsFailed": "無法開啟日誌資料夾"
+  },
+  "fileAttach.addFiles": "新增檔案",
+  "fileAttach.myDevice": "我的裝置",
+  "fileAttach.failed": "上傳失敗",
+  "fileAttach.uploading": "上傳中...",
+  "fileAttach.uploadSuccess": "上傳成功",
+  "fileAttach.cancelUpload": "取消上傳",
+  "expand": "展開",
+  "name": "名稱",
+  "added": "已新增",
+  "status": "狀態",
+  "agentMode": "Agent 模式",
+  "refreshSuccess": "重新整理成功",
+  "import": "匯入",
+  "processing": "處理中...",
+  "optional": "（選填）",
+  "clear": "清除",
+  "selectedCount": "已選 {{count}}",
+  "selectedSkills": "已選技能",
+  "aiAssistant": "AI 助手",
+  "kyrn": {
+    "settings": "TupAI 設定",
+    "judge": "判定器設定",
+    "reload": "重新載入",
+    "starting": "正在啟動 TupAI…",
+    "startingHint": "正在連線本機的 TupAI 核心，讀取模型與判定器設定。",
+    "startupError": "TupAI 啟動失敗",
+    "hiveView": {
+      "title": "蜂群",
+      "agents": "子智慧體",
+      "open": "開啟蜂群",
+      "inspect": "檢視 {{name}}",
+      "summary": "{{active}} 個進行中 · 已完成 {{done}} / 共 {{total}}",
+      "summaryEnded": "已完成 {{done}} / 共 {{total}}",
+      "summaryUnfinished": "已完成 {{done}} / 共 {{total}} · {{unfinished}} 個沒做完",
+      "counts": "執行中 {{running}} · 已完成 {{done}} · 失敗 {{failed}}",
+      "none": "這個對話還沒有子智慧體。",
+      "details": "資訊流與記錄",
+      "pending": "等待蜂群成員狀態",
+      "unknown": "狀態無法取得",
+      "lastStep": "{{status}} · 上一步：{{step}}",
+      "runs": "蜂群執行紀錄",
+      "graph": "協作關係圖",
+      "graphHint": "線越粗，送達越多。點一個成員打開它的那一列；指向一條線，看它送達了什麼。",
+      "map": "連接圖",
+      "legend": "圖例",
+      "legendDelivery": "送達",
+      "legendCorrection": "糾正",
+      "legendConflict": "爭議",
+      "legendReport": "回報",
+      "nodeSent": "發 {{count}}",
+      "nodeReceived": "收 {{count}}",
+      "lineDelivery": "{{from}} → {{to}}：送達 {{count}} 條",
+      "lineDelivery_one": "{{from}} → {{to}}：送達 {{count}} 條",
+      "lineDelivery_other": "{{from}} → {{to}}：送達 {{count}} 條",
+      "lineCorrection": "{{from}} 糾正了 {{to}} 的發現",
+      "lineConflict": "{{from}} 與 {{to}} 的發現有爭議",
+      "lineReport": "{{from}} 已向 TupAI 回報",
+      "deliveries": "資訊流",
+      "noDeliveries": "尚無已確認的送達。",
+      "board": "共享看板",
+      "noNotes": "尚無共享發現。",
+      "context": "執行上下文",
+      "contextHint": "記錄的訊息和已完成的工具輸出，不是完整的模型提示詞。工具輸出會在完成後顯示。",
+      "focus": "指派任務",
+      "missingFocus": "此次執行未記錄指派任務。",
+      "current": "目前活動",
+      "records": "執行紀錄",
+      "noRecords": "尚未收到執行紀錄。",
+      "raw": "原始證據",
+      "input": "輸入",
+      "output": "輸出",
+      "assistant": "蜂群成員訊息",
+      "thinking": "已發布的思考",
+      "user": "任務輸入",
+      "custom": "執行框架訊息",
+      "tool": "工具",
+      "waitingOutput": "等待已完成的工具輸出。",
+      "noText": "沒有文字輸出。",
+      "selectBee": "選擇蜂群成員以檢視其活動。",
+      "unknownSource": "未知來源",
+      "noteMissing": "未記錄發現。",
+      "allFlow": "所有送達",
+      "beeFlow": "{{name}} 的送達",
+      "audit": "Jev 判定",
+      "waitingRun": "正在等待這次蜂群執行的紀錄。",
+      "recordedAt": "記錄時間 {{time}}",
+      "beeMissing": "此蜂群成員不在已記錄的快照中。",
+      "snapshot": "最近回報狀態",
+      "updated": "上次更新 {{time}}",
+      "runTitle": {
+        "tasks": "{{count}} 個任務",
+        "tasks_one": "{{count}} 個任務",
+        "tasks_other": "{{count}} 個任務",
+        "chain": "{{count}} 步的任務鏈",
+        "chain_one": "{{count}} 步的任務鏈",
+        "chain_other": "{{count}} 步的任務鏈"
+      },
+      "choosingRoles": "正在為 {{count}} 個子代理選擇角色、模型和思考強度…",
+      "choosingRoles_one": "正在為 {{count}} 個子代理選擇角色、模型和思考強度…",
+      "choosingRoles_other": "正在為 {{count}} 個子代理選擇角色、模型和思考強度…",
+      "activity": {
+        "notesReceived": "← 收到其他蜂群成員的 {{count}} 則發現",
+        "notesReceived_one": "← 收到其他蜂群成員的 {{count}} 則發現",
+        "notesReceived_other": "← 收到其他蜂群成員的 {{count}} 則發現",
+        "lateNotes": "← 最後一輪：{{count}} 則遲到的發現",
+        "lateNotes_one": "← 最後一輪：{{count}} 則遲到的發現",
+        "lateNotes_other": "← 最後一輪：{{count}} 則遲到的發現",
+        "askedFindings": "← 被問到目前有哪些發現",
+        "toldWrapUp": "← 被要求收尾並提交報告",
+        "toolFailed": "{{tool}} 失敗",
+        "retry": "重試 {{attempt}}/{{maxAttempts}}：{{message}}",
+        "modelError": "模型錯誤：{{message}}",
+        "compacting": "正在壓縮上下文"
+      },
+      "errors": {
+        "cancelled": "執行已取消",
+        "stoppedByUser": "已被使用者停止",
+        "endedByUser": "已被使用者結束",
+        "stalledModel": "模型已 {{duration}} 沒有任何動靜",
+        "stalledTool": "{{tool}} 呼叫已 {{duration}} 沒有任何動靜",
+        "timeBudget": "已用完 {{duration}} 的時間預算",
+        "timeBudgetReached": "已用完時間預算",
+        "noReportInTime": "{{reason}}；被要求後 {{duration}} 內沒有提交報告",
+        "modelFailed": "模型請求失敗",
+        "modelAborted": "模型請求已中止",
+        "retriesExhausted": "模型請求多次重試後仍然失敗",
+        "exitedCode": "子代理在完成前結束，結束代碼 {{exitCode}}",
+        "exitedSignal": "子代理在完成前被 {{signal}} 終止",
+        "exitedKilled": "子代理在完成前被訊號終止",
+        "chainBroken": "未開始：前一步（「{{step}}」）沒有完成",
+        "detail": "{{reason}}：{{detail}}"
+      }
+    },
+    "judgeView": {
+      "empty": "目前對話還沒有判定記錄。",
+      "question": "判定什麼",
+      "result": "判定結果",
+      "action": "對執行的作用",
+      "details": "回答與證據",
+      "raw": "原始記錄",
+      "answers": "模型回答",
+      "noResult": "沒有記錄到可讀的結果",
+      "unreported": "未記錄",
+      "scoreValue": "評分：{{value}}",
+      "latency": "{{ms}} 毫秒",
+      "more": "另有 {{count}} 項",
+      "batch": "本筆記錄涵蓋的候選項：{{count}} 個。",
+      "batchFailures": "未得到回答、已改用預設策略：{{count}} 個。",
+      "changedThinking": "思考強度：{{from}} → {{to}}",
+      "sentHints": "傳給主模型的提示",
+      "unlinked": "獨立記錄",
+      "unlinkedHint": "這筆記錄沒有輪次關聯資訊，因此單獨顯示，不會與時間相近的記錄合併。",
+      "state": {
+        "pending": "等待中",
+        "returned": "判定已回傳",
+        "confirmed": "作用已確認",
+        "shadow": "影子模式",
+        "fallback": "改用預設",
+        "late": "晚到",
+        "rule": "規則判定",
+        "ended": "等待已結束",
+        "unknown": "結果未知"
+      },
+      "actions": {
+        "toRuntime": "判定已交給執行層；這不代表操作已經完成。",
+        "observeOnly": "影子模式：僅記錄用於對比，執行沒有依據這次判定改變。",
+        "useDefault": "已改用該判定點的預設策略。改用預設不等於放行：風險判定和蜂群閘門的預設策略偏保守。",
+        "lateIgnored": "這一輪已經開始，這次晚到的判定沒有改變它。",
+        "waiting": "正在等待判定結果。",
+        "waitEnded": "等待或任務已結束，沒有記錄到最終判定。",
+        "recordedOnly": "有記錄，但沒有確認它對執行產生了作用。",
+        "mainGiven": "下方記錄的調整或提示已套用到主模型。",
+        "allowPublish": "允許發布。實際發布了什麼，請檢視共享看板。",
+        "denyPublish": "不允許發布這則候選發現。",
+        "allowDelivery": "允許投遞，但還沒有送達回執。",
+        "denyDelivery": "不允許把這則發現投遞給該蜂群成員。",
+        "delivered": "已有回執確認這則發現送達了接收方。"
+      },
+      "questions": {
+        "preflight": "這則請求應該如何處理？",
+        "interjection": "這次插話是糾正、後續要求，還是旁支問題？",
+        "admission": "哪些工具輸出片段應該進入上下文？",
+        "testLog": "測試日誌的哪些部分應該交給模型？",
+        "forget": "這段舊的工具輸出還需要保留全文嗎？",
+        "compaction": "哪些舊結果可以裁剪？",
+        "skills": "哪些技能與目前任務相關？",
+        "locate": "哪些檔案最可能相關？",
+        "routing": "每個子任務適合什麼角色和思考強度？",
+        "publish": "這則發現值得分享給其他蜂群成員嗎？",
+        "deliver": "這則發現對接收的蜂群成員有幫助嗎？",
+        "browser": "瀏覽器下一步該做什麼？",
+        "recall": "哪些過往經驗現在適用？",
+        "capture": "這是一則長期有效的糾正或偏好嗎？",
+        "outcome": "這一輪學到繞過辦法了嗎？",
+        "worth": "這則經驗值不值得記？",
+        "merge": "要和已有經驗合併嗎？",
+        "applied": "經驗有沒有照做？",
+        "risk": "這個操作需要使用者確認嗎？",
+        "drift": "目前工作還在正軌上嗎？",
+        "completion": "這次改動還需要驗證嗎？",
+        "notify": "這則通知應該何時送達模型？",
+        "cache": "對話快取需要繼續保溫嗎？",
+        "other": "已記錄的判定",
+        "rewind": "這條路是否走進了死胡同、值得回退？",
+        "goalMet": "目標達成了嗎？",
+        "outputDrift": "輸出是否違反了你的規則？",
+        "taskFrame": "這則訊息改變了任務框架嗎？",
+        "constraint": "這次呼叫是否違反了你的約束？",
+        "capabilities": "這個任務需要哪些能力？",
+        "diagnostics": "這些診斷應該何時告訴模型？",
+        "patch": "子代理的修補程式是否在任務範圍內？",
+        "review": "每則審查發現有多嚴重？",
+        "board": "工作進展到哪一步了？",
+        "relate": "這則發現對之前的發現意味著什麼？",
+        "approval": "這一步是任務需要、也是你會預期的做法嗎？"
+      },
+      "fields": {
+        "turnType": "任務類型",
+        "gear": "任務檔位",
+        "thinking": "思考強度",
+        "agent": "建議角色",
+        "strength": "模型強度",
+        "drop": "建議過濾",
+        "keep": "建議保留",
+        "kind": "內容類型",
+        "score": "評分",
+        "hide": "建議隱藏的技能",
+        "relevant": "相關技能",
+        "apply": "建議採用的經驗",
+        "applied": "照做了",
+        "notApplied": "沒照做",
+        "publish": "允許發布",
+        "deliver": "允許投遞",
+        "path": "候選檔案",
+        "result": "結果",
+        "reason": "原因",
+        "keepResult": "保留結果",
+        "keepCall": "保留呼叫",
+        "broken": "違反的規則",
+        "open": "要開啟的能力",
+        "errors": "錯誤",
+        "warnings": "警告",
+        "withinTask": "在任務範圍內",
+        "unrelated": "無關檔案",
+        "judged": "已判定的檔案",
+        "priorities": "優先順序",
+        "phase": "階段",
+        "focus": "正在處理的驗收項目",
+        "needsUser": "需要使用者",
+        "update": "重寫看板",
+        "relation": "關係",
+        "operation": "下一步",
+        "target": "目標元素",
+        "probability": "機率",
+        "omit": "省略的日誌段",
+        "key": "值得告訴你的事件"
+      },
+      "values": {
+        "true": "是",
+        "false": "否",
+        "yes": "是",
+        "no": "否",
+        "unsure": "不確定",
+        "unknown": "未知",
+        "chat": "閒聊",
+        "chat_question": "概念問答",
+        "quick_lookup": "快速查找",
+        "single_edit": "單處修改",
+        "multi_step_task": "多步驟任務",
+        "research": "調查研究",
+        "design_discussion": "方案討論",
+        "light": "輕量",
+        "standard": "標準",
+        "heavy": "重度",
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "keep": "保留",
+        "shrink": "縮短",
+        "capture": "記錄",
+        "skip": "略過",
+        "error": "錯誤",
+        "result": "有效結果",
+        "progress": "過程輸出",
+        "warning": "警告",
+        "passing": "檢查通過",
+        "other": "其他",
+        "allow": "無需額外確認",
+        "confirm": "需要使用者確認",
+        "now": "立即送達",
+        "next_turn": "留到下一輪",
+        "drop": "捨棄",
+        "on_track": "在正軌上",
+        "detour": "繞路",
+        "drift": "偏離",
+        "loop": "陷入迴圈",
+        "done": "無需提醒",
+        "nudge": "提醒驗證",
+        "steer": "引導目前工作",
+        "followUp": "排入後續",
+        "warm": "繼續保溫",
+        "stop": "停止保溫",
+        "default": "預設",
+        "finding": "發現",
+        "dead_end": "死路",
+        "decision": "決定",
+        "blocker": "阻塞",
+        "abstain": "判定器棄權",
+        "shadow": "影子模式",
+        "skipped": "使用者略過",
+        "timeout": "逾時",
+        "all": "全部候選項失敗",
+        "unreachable": "判定器無法連線",
+        "unexpected": "非預期錯誤",
+        "off": "關閉",
+        "continue": "繼續",
+        "propose": "建議回退",
+        "met": "已達成",
+        "ask": "詢問使用者",
+        "unjudged": "未判定",
+        "none": "無",
+        "new_task": "新任務",
+        "constraint": "新約束",
+        "correction": "糾正",
+        "subgoal": "新子目標",
+        "unclear": "說不準",
+        "hold": "暫緩",
+        "no_answer": "未及時得到回答",
+        "aborted": "已取消",
+        "auth": "判定器金鑰遭拒",
+        "payment_required": "判定服務需要付款方式",
+        "rate_limited": "判定器請求過於頻繁",
+        "bad_request": "判定器拒絕了請求",
+        "server": "判定服務出錯",
+        "invalid_response": "判定器的回答無法解析",
+        "verdict": "判定器已作答",
+        "learn": "記下繞過辦法",
+        "reusable": "之後還用得上",
+        "one_off": "只關這一次",
+        "already_known": "早就知道",
+        "same": "同一則",
+        "refines": "說得更準",
+        "contradicts": "互相矛盾",
+        "supersedes": "更新了它",
+        "supports": "佐證它",
+        "unrelated": "無關",
+        "preference": "長期規則",
+        "approve": "放行",
+        "beyond": "超出你的要求",
+        "CLICK": "點擊",
+        "TYPE_TEXT": "輸入文字",
+        "SELECT": "從清單中選擇",
+        "SCROLL_DOWN": "向下捲動",
+        "SCROLL_UP": "向上捲動",
+        "WAIT": "等頁面更新",
+        "DONE": "已完成",
+        "BLOCKED": "無法繼續",
+        "listing": "檔名或搜尋比對",
+        "content": "程式碼或文字",
+        "log": "建置或測試輸出",
+        "data": "查到的事實"
+      },
+      "probabilityValue": "判定為「是」的機率：{{percent}}",
+      "optionProbability": "{{option}} {{percent}}",
+      "reasonValue": "原因：{{reason}}",
+      "fieldValue": "{{field}}：{{value}}",
+      "errorValue": "錯誤 · {{kind}}",
+      "noAnswerAfter": "{{duration}}內未得到回答",
+      "hints": {
+        "answered": "這則訊息是在回答代理自己的提問：照此去做，不要再問。",
+        "resolve": "說法較籠統且可能改動檔案：先查看專案，說明所作的假設，只問在這裡找不到的內容。",
+        "clarify": "請求看起來不夠明確：先問一個關鍵問題。",
+        "side_question": "這是個題外問題：簡短回答，然後繼續主任務。",
+        "plan_first": "改動大或有風險：先寫一個簡短的計畫再照做，只在無法復原的步驟前暫停等待確認。",
+        "try_hive": "難度較高：如果原因不明或直接嘗試不行，就改用蜂群。",
+        "try_delegate": "可以拆成相互獨立的幾部分：考慮交給子代理並行處理。"
+      },
+      "hintChips": {
+        "answered": "回覆代理",
+        "resolve": "先自己查",
+        "clarify": "先釐清",
+        "side_question": "題外問題",
+        "plan_first": "先計畫",
+        "try_hive": "卡住就用蜂群",
+        "try_delegate": "分頭委派"
+      },
+      "answerWords": {
+        "preflight": {
+          "questions": {
+            "turn_type": "任務類型",
+            "is_side_question": "題外問題",
+            "needs_clarification": "太模糊，無法直接動手",
+            "needs_files_changed": "需要修改程式碼",
+            "needs_memory": "以往的筆記有幫助",
+            "swarm_worthy": "可拆成獨立部分",
+            "plan_first": "改動大或有風險",
+            "task_complexity": "涉及範圍",
+            "reasoning_depth": "推理深度",
+            "tool_complexity": "工具使用量"
+          },
+          "answers": {
+            "chat": "閒聊",
+            "chat_question": "概念問答",
+            "quick_lookup": "快速查找",
+            "single_edit": "單處修改",
+            "multi_step_task": "多步驟任務",
+            "research": "調查研究",
+            "design_discussion": "方案討論",
+            "other": "其他情況"
+          },
+          "levels": {
+            "task_complexity": {
+              "0": "只是提問",
+              "1": "程式碼中的一處",
+              "2": "程式碼中的多處",
+              "3": "整個程式碼庫"
+            },
+            "reasoning_depth": {
+              "0": "回想或查找",
+              "1": "簡單解釋",
+              "2": "細緻分析",
+              "3": "深入推理"
+            },
+            "tool_complexity": {
+              "0": "不用工具",
+              "1": "一兩次讀取",
+              "2": "多次呼叫並修改檔案",
+              "3": "大量呼叫並建置或測試"
+            }
+          }
+        },
+        "interjection": {
+          "questions": {
+            "kind": "訊息屬於哪種"
+          },
+          "answers": {
+            "correction": "糾正",
+            "addition": "追加的後續工作",
+            "side_question": "無關的提問",
+            "other": "其他情況"
+          }
+        },
+        "admission": {
+          "questions": {
+            "kind": "輸出類型",
+            "chunk": "輸出第 {{number}} 段"
+          },
+          "answers": {
+            "error": "錯誤",
+            "result": "有用的結果",
+            "progress": "過程輸出",
+            "warning": "重複的警告",
+            "passing": "通過的檢查",
+            "other": "其他情況"
+          }
+        },
+        "testLog": {
+          "questions": {
+            "part": "日誌第 {{number}} 段"
+          },
+          "answers": {
+            "needed": "摘要之外還需要",
+            "not_needed": "有摘要就夠了",
+            "unclear": "說不準"
+          }
+        },
+        "forget": {
+          "questions": {
+            "still_needed": "還要再用到完整輸出"
+          }
+        },
+        "compaction": {
+          "questions": {
+            "kind": "結果類型",
+            "result_needed": "還需要完整結果",
+            "call_matters": "這次呼叫本身還重要"
+          },
+          "answers": {
+            "error": "錯誤",
+            "listing": "檔名或搜尋比對",
+            "content": "程式碼或文字",
+            "log": "建置或測試輸出",
+            "data": "查到的事實",
+            "other": "其他情況"
+          }
+        },
+        "skills": {
+          "questions": {
+            "skill": "技能 {{number}} 有幫助"
+          }
+        },
+        "locate": {
+          "questions": {
+            "path": "檔案 {{number}} 相關"
+          }
+        },
+        "routing": {
+          "questions": {
+            "agent": "工作類型",
+            "difficulty": "任務難度",
+            "reasoning": "需要多少推理"
+          },
+          "answers": {
+            "other": "都不是"
+          },
+          "levels": {
+            "difficulty": {
+              "0": "機械性工作",
+              "1": "例行工作",
+              "2": "需要仔細設計",
+              "3": "專家也覺得難"
+            },
+            "reasoning": {
+              "0": "幾乎不需要",
+              "1": "需要一些",
+              "2": "需要很多",
+              "3": "多步深入推理"
+            }
+          }
+        },
+        "publish": {
+          "questions": {
+            "share_worthy": "值得分享",
+            "kind": "筆記類型"
+          },
+          "answers": {
+            "finding": "發現",
+            "dead_end": "死路",
+            "decision": "決定",
+            "blocker": "阻塞",
+            "other": "例行進展"
+          }
+        },
+        "deliver": {
+          "questions": {
+            "useful": "對接收的蜂群成員有幫助"
+          }
+        },
+        "browser": {
+          "questions": {
+            "operation": "下一步",
+            "click_target": "點哪裡",
+            "type_text_target": "在哪裡輸入",
+            "select_target": "選哪一項"
+          },
+          "answers": {
+            "CLICK": "點擊",
+            "TYPE_TEXT": "輸入文字",
+            "SELECT": "從清單中選擇",
+            "SCROLL_DOWN": "向下捲動",
+            "SCROLL_UP": "向上捲動",
+            "WAIT": "等頁面更新",
+            "DONE": "已完成",
+            "other": "無法繼續",
+            "none": "都不合適"
+          }
+        },
+        "recall": {
+          "questions": {
+            "lesson": "經驗 {{number}} 適用"
+          }
+        },
+        "capture": {
+          "questions": {
+            "correction": "糾正了一個錯誤",
+            "preference": "定下一條長期規則"
+          }
+        },
+        "outcome": {
+          "questions": {
+            "way_out": "找到了另一條行得通的路"
+          }
+        },
+        "worth": {
+          "questions": {
+            "lesson": "經驗 {{number}}"
+          },
+          "answers": {
+            "reusable": "之後還用得上",
+            "one_off": "只關這一次",
+            "already_known": "早就知道",
+            "unclear": "說不準"
+          }
+        },
+        "merge": {
+          "questions": {
+            "kept": "既有經驗 {{number}}"
+          },
+          "answers": {
+            "same": "同一則經驗",
+            "refines": "新的說得更準",
+            "contradicts": "互相矛盾",
+            "unrelated": "說的是別的事",
+            "unclear": "說不準"
+          }
+        },
+        "applied": {
+          "questions": {
+            "lesson": "經驗 {{number}} 照做了"
+          }
+        },
+        "risk": {
+          "questions": {
+            "destructive": "會刪除或無法復原",
+            "requested": "是你要求的"
+          }
+        },
+        "drift": {
+          "questions": {
+            "course": "工作方向"
+          },
+          "answers": {
+            "on_track": "在正軌上",
+            "detour": "必要的繞路",
+            "drift": "偏離了",
+            "loop": "在原地打轉",
+            "other": "說不準"
+          }
+        },
+        "completion": {
+          "questions": {
+            "claims_done": "說工作已完成",
+            "needs_check": "應該執行驗證"
+          }
+        },
+        "notify": {
+          "questions": {
+            "urgency": "模型何時需要知道"
+          },
+          "answers": {
+            "now": "立即",
+            "next_turn": "目前這步做完後",
+            "drop": "不用告知",
+            "other": "說不準"
+          }
+        },
+        "cache": {
+          "questions": {
+            "finished": "對話已結束",
+            "open": "有問題在等你回答"
+          }
+        },
+        "rewind": {
+          "questions": {
+            "dead_end": "同一做法反覆失敗",
+            "progress": "正在取得進展"
+          }
+        },
+        "goalMet": {
+          "questions": {
+            "achieved": "目標已完全達成",
+            "needs_user": "沒有你無法繼續"
+          }
+        },
+        "outputDrift": {
+          "questions": {
+            "rule": "違反規則 {{number}}"
+          }
+        },
+        "taskFrame": {
+          "questions": {
+            "change": "對任務的改變"
+          },
+          "answers": {
+            "new_task": "新任務",
+            "constraint": "為工作加了一條規則",
+            "correction": "目前做法不對",
+            "subgoal": "同一任務的下一步",
+            "none": "沒有改變"
+          }
+        },
+        "constraint": {
+          "questions": {
+            "constraint": "違反約束 {{number}}"
+          }
+        },
+        "capabilities": {
+          "questions": {
+            "capability": "需要能力 {{number}}"
+          }
+        },
+        "diagnostics": {
+          "questions": {
+            "more_edits_coming": "後面還有修改",
+            "warnings_are_style": "只有風格類警告"
+          }
+        },
+        "patch": {
+          "questions": {
+            "within_task": "沒有超出任務範圍",
+            "file": "任務需要改檔案 {{number}}"
+          }
+        },
+        "review": {
+          "questions": {
+            "bug": "發現 {{number}} 是真問題",
+            "inScope": "發現 {{number}} 與這次改動有關"
+          }
+        },
+        "board": {
+          "questions": {
+            "phase": "正在做什麼",
+            "needs_user": "需要你提供什麼",
+            "focus": "正在做的事項",
+            "event": "事件 {{number}}",
+            "changed": "有新情況要告訴你"
+          },
+          "answers": {
+            "understanding": "在弄懂任務",
+            "planning": "在想怎麼做",
+            "changing": "在改程式碼",
+            "checking": "在檢查",
+            "fixing": "在修問題",
+            "waiting": "在等你",
+            "wrapping_up": "在收尾",
+            "stuck": "好像卡住了",
+            "other": "說不準",
+            "none": "都不是",
+            "key": "值得告訴你的消息",
+            "routine": "例行步驟",
+            "unclear": "說不準"
+          }
+        },
+        "relate": {
+          "questions": {
+            "relation": "對之前發現的影響"
+          },
+          "answers": {
+            "supersedes": "取代了它",
+            "contradicts": "與它矛盾",
+            "supports": "佐證它",
+            "none": "與它無關"
+          }
+        },
+        "approval": {
+          "questions": {
+            "verdict": "這一步屬於哪種"
+          },
+          "answers": {
+            "needed": "任務需要的一步",
+            "beyond": "超出你的要求",
+            "unrelated": "與任務無關",
+            "unclear": "說不準"
+          }
+        }
+      },
+      "log": {
+        "thisTurn": "本輪",
+        "earlier": "顯示更早的紀錄",
+        "latest": "跳到最新",
+        "times": "{{times}} 次"
+      }
+    },
+    "empty": "目前的對話還沒有這類紀錄。",
+    "quiet": "已 {{duration}} 沒有活動",
+    "passed": "通過",
+    "filtered": "已過濾",
+    "image": "工具返回的圖片",
+    "beeStatus": {
+      "queued": "排隊中",
+      "starting": "啟動中",
+      "thinking": "思考中",
+      "tool": "執行工具",
+      "retrying": "重試中",
+      "wrapping-up": "產生報告",
+      "done": "已完成",
+      "failed": "失敗",
+      "stopped": "已停止",
+      "timed-out": "已逾時"
+    },
+    "event": {
+      "preflight.pending": "正在分類",
+      "preflight.verdict": "分類結果",
+      "preflight.wait_end": "分類等待結束",
+      "decision": "判定",
+      "progress": "進度",
+      "agent_start": "任務開始",
+      "agent_settled": "任務結束",
+      "kyrn_rpc_closed": "TupAI 核心已關閉",
+      "auto_compaction_start": "正在壓縮上下文",
+      "auto_compaction_end": "壓縮結束",
+      "hive.note": "共享發現",
+      "hive.delivery": "送達已確認",
+      "hive.gate": "Jev 閘門",
+      "hive.manifest": "蜂群任務分配",
+      "bee.event": "執行步驟",
+      "memory.recalled": "引用經驗",
+      "artifact.image": "圖片",
+      "memory.stored": "經驗已儲存",
+      "memory.applied": "經驗已照做",
+      "memory.retired": "經驗已退役",
+      "memory.merged": "經驗已合併",
+      "compaction_start": "正在壓縮上下文…",
+      "compaction_end": "壓縮結束",
+      "context.usage": "上下文用量",
+      "context.policy": "Beta 壓縮模式",
+      "compaction.plan": "Beta 壓縮計畫",
+      "goal": {
+        "state": "目標狀態"
+      },
+      "board": {
+        "update": "看板已更新",
+        "switched": "看板開關已切換"
+      },
+      "permissions": {
+        "mode": "權限模式",
+        "request": "請求授權",
+        "resolved": "授權已回覆",
+        "approved": "未詢問即執行"
+      },
+      "checkpoint": {
+        "taken": "已儲存檢查點",
+        "off": "檢查點已關閉"
+      },
+      "rewind": {
+        "proposed": "建議回退",
+        "done": "已回退",
+        "undone": "已撤銷回退"
+      },
+      "ttsr": {
+        "interrupted": "輸出因違反規則被中斷"
+      },
+      "frame": {
+        "updated": "任務框架已更新"
+      },
+      "capability": {
+        "opened": "已開啟能力"
+      },
+      "inherit": {
+        "found": "發現可繼承的設定",
+        "rule": "已使用繼承的規則"
+      },
+      "mcp": {
+        "started": "MCP 伺服器已啟動",
+        "failed": "MCP 伺服器出錯",
+        "tools_changed": "MCP 工具已變更"
+      },
+      "constraint": {
+        "blocked": "因你的約束被攔下"
+      },
+      "browser": {
+        "run": "瀏覽器任務",
+        "step": "瀏覽器步驟"
+      },
+      "diagnostics": {
+        "delivered": "診斷已告知模型",
+        "held": "診斷暫緩告知",
+        "dropped": "診斷已捨棄"
+      },
+      "background": {
+        "start": "背景工作已啟動",
+        "exit": "背景工作已結束",
+        "stop": "背景工作已停止",
+        "match": "背景輸出符合條件"
+      },
+      "web": {
+        "fetch": "已擷取網頁",
+        "search": "網頁搜尋"
+      },
+      "swarm": {
+        "worktree": {
+          "created": "已建立工作樹",
+          "removed": "已移除工作樹"
+        },
+        "patch": {
+          "ready": "修補程式已就緒",
+          "applied": "已套用修補程式"
+        }
+      }
+    },
+    "contextUsage": "上下文用量",
+    "contextPending": "等待新的上下文用量測量",
+    "betaActive": "Beta 已啟用",
+    "betaShadow": "Beta 影子模式",
+    "betaOff": "Beta 已關閉",
+    "contextWaiting": "等待 TupAI 核心連線",
+    "contextTrigger": "{{tokens}} tokens 觸發壓縮",
+    "autoOff": "自動壓縮已關閉",
+    "compacting": "正在壓縮上下文…",
+    "compactionResults": "壓縮效果（{{count}} 次）",
+    "noCompaction": "本工作階段尚無壓縮紀錄。",
+    "betaApplied": "Beta 裁剪已套用",
+    "summaryApplied": "已採用摘要壓縮",
+    "compactionAborted": "壓縮已取消",
+    "compactionFailed": "壓縮失敗",
+    "compactionSavings": "上下文減少約 {{saved}}",
+    "compactionEstimate": "壓縮後 tokens 為估計值；下次模型回傳後更新用量。",
+    "cacheHit": "快取命中",
+    "cachePending": "暫無快取用量資料",
+    "cacheLabel": "工作階段快取命中率：{{percent}}",
+    "cacheDetail": "工作階段累計：{{read}} 快取讀取 / {{total}} 總輸入 tokens。總輸入包含一般輸入、快取讀取及快取寫入，不包含輸出；壓縮不會清除累計值。",
+    "brand": {
+      "tagline": "內建判定核心的程式設計代理",
+      "judge": {
+        "idle": "判定器待命",
+        "judging": "判定器正在判定",
+        "off": "判定器未啟用"
+      },
+      "starters": {
+        "hint": "不知道從哪裡開始？試試這些：",
+        "understand": {
+          "title": "讀懂這個專案",
+          "desc": "梳理結構、進入點和關鍵模組",
+          "prompt": "請先通讀這個專案，告訴我它的整體結構、主要進入點和關鍵模組，再指出最值得先看的三個檔案。"
+        },
+        "fix": {
+          "title": "定位並修復問題",
+          "desc": "從錯誤訊息或現象出發，找到根因",
+          "prompt": "我遇到了一個問題：<在這裡描述現象或貼上錯誤訊息>。請先重現並定位根因，再提出最小修復，改完後執行相關測試驗證。"
+        },
+        "plan": {
+          "title": "規劃一項改動",
+          "desc": "先出方案，確認後再動手",
+          "prompt": "我想實作：<在這裡描述需求>。請先提出實作方案和涉及的檔案，等我確認後再開始修改。"
+        }
+      }
+    },
+    "toolStatus": {
+      "pending": "等待中",
+      "in_progress": "進行中",
+      "completed": "已完成",
+      "failed": "失敗"
+    },
+    "boardView": {
+      "title": "人話看板",
+      "switch": "這個專案的人話看板",
+      "switching": "正在切換…",
+      "afterTurn": "代理這一步做完就切換",
+      "unknown": "這個對話還沒有人話看板。它只在 TupAI 的對話裡、而且「功能」裡開著人話看板時出現。",
+      "off": "開啟後，代理每做一段，這裡就用白話告訴你：進展到哪了、正在做什麼、哪些需要你確認。",
+      "cost": "只對這個專案生效。每次更新會呼叫一次模型。",
+      "empty": "等代理做一會兒，這裡會用白話告訴你進展",
+      "checks": "驗收 {{done}}/{{total}}",
+      "ended": "已停下",
+      "done": "已完成",
+      "brief": "簡要版",
+      "briefHelp": "這次模型沒來得及寫，先用固定的簡短說明。",
+      "needsYou": "需要你確認",
+      "needsYouText": "代理在對話裡等你回答。",
+      "quote": "引用到回覆裡",
+      "quoteHint": "點一條會引用到輸入框，你送出之前不會傳送。",
+      "account": "它做了什麼",
+      "earlierNotes": "更早的 {{count, number}} 條",
+      "earlierNotes_one": "更早的 {{count, number}} 條",
+      "earlierNotes_other": "更早的 {{count, number}} 條",
+      "phases": {
+        "understanding": "在弄懂任務",
+        "planning": "在想怎麼做",
+        "changing": "在改程式碼",
+        "checking": "在檢查",
+        "fixing": "在修問題",
+        "waiting": "在等你",
+        "wrapping_up": "在收尾",
+        "stuck": "好像卡住了"
+      },
+      "checks_one": "驗收 {{done}}/{{total}}",
+      "checks_other": "驗收 {{done}}/{{total}}",
+      "codes": {
+        "progress": {
+          "none": "還沒有列出要做完的事。",
+          "all": "清單上的 {{total}} 件事都做完了。",
+          "all_one": "清單上的 {{total}} 件事都做完了。",
+          "all_other": "清單上的 {{total}} 件事都做完了。",
+          "some": "清單上 {{total}} 件事，做完了 {{done}} 件。",
+          "some_one": "清單上 {{total}} 件事，做完了 {{done}} 件。",
+          "some_other": "清單上 {{total}} 件事，做完了 {{done}} 件。"
+        },
+        "now": {
+          "understanding": "正在看程式碼和資料，先弄清楚要做什麼。",
+          "planning": "正在想怎麼做，還沒有動手改。",
+          "changing": "正在改程式碼。",
+          "checking": "正在跑測試或檢查，看改得對不對。",
+          "fixing": "檢查發現了問題，正在修。",
+          "waiting": "停下來了，在等你回覆。",
+          "wrapping_up": "手上的活做完了，正在收尾。",
+          "stuck": "好像在原地打轉，可能需要你給個方向。",
+          "unclear": "正在做事。",
+          "focus": "{{now}}（在做：{{focus}}）"
+        },
+        "confirm": {
+          "waiting_reply": "它在等你回覆。"
+        }
+      },
+      "notes": {
+        "looked": "看了 {{count, number}} 個檔案或地方",
+        "looked_one": "看了 {{count, number}} 個檔案或地方",
+        "looked_other": "看了 {{count, number}} 個檔案或地方",
+        "changed_file": "改了 {{file}}",
+        "wrote_file": "寫了 {{file}}",
+        "ran_command": "執行了 {{command}}",
+        "command_failed": "執行 {{command}} 出錯了",
+        "check_passed": "檢查通過了：{{command}}",
+        "check_failed": "檢查沒通過：{{command}}",
+        "item_done": "做完了一條：{{item}}",
+        "item_added": "清單上加了一條：{{item}}",
+        "helpers_sent": "派出 {{count, number}} 個助手：{{titles}}",
+        "helpers_sent_one": "派出 {{count, number}} 個助手：{{titles}}",
+        "helpers_sent_other": "派出 {{count, number}} 個助手：{{titles}}",
+        "helpers_back": "{{count, number}} 個助手回來了",
+        "helpers_back_one": "{{count, number}} 個助手回來了",
+        "helpers_back_other": "{{count, number}} 個助手回來了",
+        "permission_allowed": "你允許了：{{summary}}",
+        "permission_denied": "你沒允許：{{summary}}",
+        "goal_round": "目標還沒達成，TupAI 讓它接著做（第 {{round, number}} 輪）{{reason}}",
+        "goal_met": "目標達成了：{{text}}",
+        "goal_paused": "目標暫停了{{reason}}",
+        "trouble_loop": "TupAI 發現它在重複同一步：{{detail}}",
+        "trouble": "TupAI 發現：{{detail}}",
+        "did": "用 {{tool}} 做了：{{what}}",
+        "said_quote": "它說：{{text}}",
+        "ended": "停下來了。",
+        "waiting_reply": "停下來了，在等你回覆。"
+      }
+    },
+    "lessonsView": {
+      "filterLabel": "顯示哪些經驗",
+      "active": "使用中",
+      "all": "全部",
+      "count": "{{count}} 則",
+      "count_one": "{{count}} 則",
+      "count_other": "{{count}} 則",
+      "search": "搜尋經驗",
+      "kinds": {
+        "correction": "糾正",
+        "preference": "規則",
+        "pitfall": "坑",
+        "workaround": "繞過辦法",
+        "fact": "事實"
+      },
+      "everywhere": "到處適用",
+      "status": {
+        "retired": "已退役",
+        "superseded": "已被取代"
+      },
+      "uses": "召回 {{recalled}} · 照做 {{applied}}",
+      "origins": {
+        "user": "來自你的糾正或規則",
+        "outcome": "來自代理自己脫困的辦法",
+        "model": "模型自己記下的",
+        "subagent": "來自子代理的報告",
+        "command": "用 /remember 記下的"
+      },
+      "updated": "更新於 {{date}}",
+      "editLabel": "經驗內容",
+      "retire": "退役",
+      "retireConfirm": "讓這則經驗退役？之後不會再召回它。",
+      "loadFailed": "讀不到經驗庫",
+      "saveFailed": "這則經驗沒有改成",
+      "empty": "這個專案還沒有經驗。TupAI 會從你的糾正、它自己脫困的辦法和 /remember 裡學到經驗。",
+      "noneActive": "沒有使用中的經驗。「全部」裡還有已退役和已被取代的。",
+      "noMatch": "沒有符合的經驗。",
+      "noProject": "這個對話沒有專案資料夾，只列出到處適用的經驗。",
+      "notes": {
+        "label": "這個工作階段裡經驗的動向",
+        "recalled": "這一輪用上了 {{count}} 則",
+        "recalled_one": "這一輪用上了 {{count}} 則",
+        "recalled_other": "這一輪用上了 {{count}} 則",
+        "briefed": "子代理的簡報帶上了 {{count}} 則：{{task}}",
+        "briefed_one": "子代理的簡報帶上了 {{count}} 則：{{task}}",
+        "briefed_other": "子代理的簡報帶上了 {{count}} 則：{{task}}",
+        "applied": "照做了 {{count}} 則",
+        "applied_one": "照做了 {{count}} 則",
+        "applied_other": "照做了 {{count}} 則",
+        "retired": "退役：{{lesson}}",
+        "retiredUnused": "退役：{{lesson}}（{{count}} 次召回從未照做）",
+        "retiredUnused_one": "退役：{{lesson}}（{{count}} 次召回從未照做）",
+        "retiredUnused_other": "退役：{{lesson}}（{{count}} 次召回從未照做）",
+        "retiredContradicted": "退役：{{lesson}}（和你新的說法矛盾）",
+        "retiredForgotten": "退役：{{lesson}}（依你的要求）",
+        "mergedSame": "已併入：{{lesson}}",
+        "mergedRefines": "換成了說得更準的：{{lesson}}",
+        "mergedContradicts": "沒有記下，和這則矛盾：{{lesson}}"
+      }
+    },
+    "activityLoadFailed": "無法載入協作記錄，正在重試…",
+    "beeFailed": "這個蜂群成員回報了錯誤。",
+    "beeCounts": {
+      "turns": "{{count}} 輪",
+      "turns_one": "{{count}} 輪",
+      "turns_other": "{{count}} 輪",
+      "tools": "{{count}} 次工具呼叫",
+      "tools_one": "{{count}} 次工具呼叫",
+      "tools_other": "{{count}} 次工具呼叫",
+      "shared": "分享 {{count}}",
+      "shared_one": "分享 {{count}}",
+      "shared_other": "分享 {{count}}",
+      "received": "收到 {{count}}",
+      "received_one": "收到 {{count}}",
+      "received_other": "收到 {{count}}"
+    },
+    "compactionTokens": "{{before}} → 約 {{after}} tokens",
+    "compactionKept": "保留 {{count}} 項結果",
+    "compactionKept_one": "保留 {{count}} 項結果",
+    "compactionKept_other": "保留 {{count}} 項結果",
+    "compactionPruned": "裁剪 {{count}} 項",
+    "compactionPruned_one": "裁剪 {{count}} 項",
+    "compactionPruned_other": "裁剪 {{count}} 項",
+    "compactionDropped": "移除 {{count}} 次呼叫",
+    "compactionDropped_one": "移除 {{count}} 次呼叫",
+    "compactionDropped_other": "移除 {{count}} 次呼叫",
+    "jevLine": {
+      "classifying": "{{judge}} 正在分類這則訊息…",
+      "classified": "{{judge}} 分類為{{type}}",
+      "byRule": "依規則分類為{{type}}",
+      "shadow": "{{line}}（僅觀察，沒有生效）",
+      "late": "{{line}}（來晚了，這一輪沒用上）",
+      "fallback": "{{judge}} 這次沒給出明確分類，按預設方式繼續",
+      "unanswered": "{{judge}} 這次沒有回答，按預設方式繼續",
+      "noJudge": "還沒有可用的判定器，訊息不會被分類。",
+      "setUp": "設定判定器",
+      "skipped": "已略過分類",
+      "off": "分類已關閉"
+    },
+    "eventLine": {
+      "detail": "詳細資訊：{{detail}}",
+      "progress": {
+        "frame": "正在更新任務框架",
+        "lessons": "正在查看先前工作階段的經驗",
+        "skills": "正在挑選這個工作階段需要的技能",
+        "capabilities": "正在挑選這個任務需要的能力",
+        "goal_check": "正在檢查目標是否達成",
+        "permissionReview": "Jev 正在審批：{{summary}}"
+      },
+      "goal": {
+        "paused": "已暫停：{{reason}}",
+        "reason": {
+          "interrupted": "你中斷了這次執行",
+          "modelCallFailed": "一次模型呼叫失敗了",
+          "needsUser": "代理在等你回覆",
+          "needsUserDetail": "代理需要你：{{detail}}",
+          "unjudged": "沒有判定器能判讀目標是否達成，也沒有能證明尚未完成的事",
+          "idle": "代理連續 {{count}} 次什麼都沒做就停下了",
+          "idle_one": "代理連續 {{count}} 次什麼都沒做就停下了",
+          "idle_other": "代理連續 {{count}} 次什麼都沒做就停下了",
+          "noProgress": "連續 {{count}} 次沒有進展，告訴它接下來怎麼做",
+          "noProgress_one": "連續 {{count}} 次沒有進展，告訴它接下來怎麼做",
+          "noProgress_other": "連續 {{count}} 次沒有進展，告訴它接下來怎麼做",
+          "noProgressDetail": "連續 {{count}} 次沒有進展（{{detail}}），告訴它接下來怎麼做",
+          "noProgressDetail_one": "連續 {{count}} 次沒有進展（{{detail}}），告訴它接下來怎麼做",
+          "noProgressDetail_other": "連續 {{count}} 次沒有進展（{{detail}}），告訴它接下來怎麼做",
+          "continuationsUsedUp": "續跑次數（{{count}} 次）用完了",
+          "continuationsUsedUp_one": "續跑次數（{{count}} 次）用完了",
+          "continuationsUsedUp_other": "續跑次數（{{count}} 次）用完了",
+          "minutesUsedUp": "時間額度（{{duration}}）用完了",
+          "sessionReopened": "工作階段重新開啟了"
+        }
+      },
+      "frame": {
+        "unclearChange": "這則訊息會怎樣改變任務：「{{message}}」？"
+      },
+      "search": {
+        "notConfigured": "「{{source}}」不是可用的搜尋來源（features.web.search）",
+        "failed": "{{source}} 發生錯誤：{{message}}",
+        "robotPage": "{{source}} 回傳了人機驗證頁面：它把這個用戶端當成了機器人",
+        "httpError": "{{source}} 回傳了 HTTP {{status}}",
+        "noResults": "{{source}} 回傳的頁面裡沒有結果（沒找到，或頁面結構變了）",
+        "unrelated": "{{source}} 回傳的結果與查詢毫不相關，搜尋引擎把用戶端當成機器人時常會這樣"
+      },
+      "mcp": {
+        "line": "{{name}}：{{reason}}",
+        "projectUntrusted": "專案未受信任，而這個伺服器是專案自行定義的",
+        "needsApproval": "它由專案定義（{{source}}），尚未獲得核准；在 TupAI 中開啟這個資料夾並允許一次，或在 TupAI.json 中定義它",
+        "denied": "你沒有允許這個專案的伺服器啟動",
+        "unreachable": "無法啟動或連線到它",
+        "closed": "TupAI 還在等回應時，連線就關閉了",
+        "timeout": "它沒有及時回應",
+        "aborted": "啟動被取消了",
+        "rpc": "它回傳了錯誤",
+        "protocol": "它的回應不符合 MCP 協定",
+        "startFailed": "啟動失敗了",
+        "crashedRestarting": "執行時當機了，TupAI 會重新啟動它一次",
+        "crashedAgain": "又當機了，不會再重新啟動",
+        "restartFailed": "當機後重新啟動也失敗了",
+        "restartFailedCause": "當機後重新啟動也失敗了：{{cause}}"
+      },
+      "rewind": {
+        "sameCommandFailed": "同一條指令已經失敗了 {{count}} 次：{{command}}",
+        "sameCommandFailed_one": "同一條指令已經失敗了 {{count}} 次：{{command}}",
+        "sameCommandFailed_other": "同一條指令已經失敗了 {{count}} 次：{{command}}",
+        "monitorTrouble": "監控在這一輪裡提醒了 {{count}} 次（{{kind}}：{{detail}}）",
+        "monitorTrouble_one": "監控在這一輪裡提醒了 {{count}} 次（{{kind}}：{{detail}}）",
+        "monitorTrouble_other": "監控在這一輪裡提醒了 {{count}} 次（{{kind}}：{{detail}}）",
+        "trouble": {
+          "loop": "原地打轉",
+          "drift": "偏離任務"
+        }
+      },
+      "browser": {
+        "finished": "{{status}}：{{reason}}",
+        "openFailed": "頁面無法在瀏覽器中開啟。",
+        "openFailedPanel": "頁面無法在應用程式的瀏覽器面板中開啟。",
+        "launch": {
+          "noBrowser": {
+            "mac": "在 /Applications 中找不到 Chrome、Chromium、Edge 或 Brave。請安裝其中一個，或將 MU_CHROME 設為某個 Chromium 核心瀏覽器的執行檔。",
+            "windows": "在 Program Files 或 %LOCALAPPDATA% 下找不到 Chrome、Chromium、Edge 或 Brave。請安裝其中一個，或將 MU_CHROME 設為它的 .exe 檔案。",
+            "wsl": "WSL 中找不到瀏覽器。請在 WSL 中安裝一個，或開啟 WSL 的鏡像網路模式；具體步驟請見下方的 reason 欄位。",
+            "other": "找不到 Chrome、Chromium、Edge 或 Brave。請安裝其中一個，或將 MU_CHROME 設為它的執行檔；安裝指令請見下方的 reason 欄位。"
+          },
+          "windowsBrowserUnusable": "無法使用 {{executable}}：WSL 只有在鏡像網路模式下才能連線到 Windows 端的瀏覽器。",
+          "profileNoWindowsPath": "瀏覽器設定檔資料夾 {{profileDir}} 沒有對應的 Windows 路徑（未設定 WSL_DISTRO_NAME）。",
+          "browserSpawnFailed": "無法啟動 {{command}}。",
+          "browserExitedOnStart": "瀏覽器在啟動過程中結束了（結束代碼 {{exitCode}}）。",
+          "devtoolsPortTimeout": "瀏覽器沒有及時開啟 DevTools 連接埠。",
+          "cdpConnectTimeout": "連線到瀏覽器逾時。",
+          "cdpConnectFailed": "無法連線到瀏覽器。"
+        }
+      },
+      "permissions": {
+        "mode": "權限模式：{{mode}}",
+        "request": "等你授權：{{summary}}",
+        "waiting": "等你授權",
+        "answers": {
+          "once": "你允許了一次",
+          "session": "這次對話都允許",
+          "deny": "你沒允許"
+        },
+        "about": "{{answer}}：{{summary}}",
+        "approved": {
+          "judge": "判定器放行了，沒有問你：{{summary}}",
+          "grant": "這次對話已允許，沒有再問：{{summary}}"
+        }
+      },
+      "board": {
+        "on": "看板：開啟",
+        "off": "看板：關閉"
+      }
+    },
+    "gauges": {
+      "context": "上下文",
+      "contextHint": "模型下一次要讀的內容占它上下文的 {{percent}}",
+      "cache": "快取命中",
+      "cacheHint": "最近一輪快取命中 {{turn}}，整個對話快取命中 {{session}}",
+      "pending": "TupAI 下一次回覆後顯示"
+    }
+  },
+  "menu": {
+    "about": "關於 {{name}}",
+    "settings": "設定…",
+    "services": "服務",
+    "hide": "隱藏 {{name}}",
+    "hideOthers": "隱藏其他",
+    "unhide": "全部顯示",
+    "quit": "結束 {{name}}",
+    "file": "檔案",
+    "newChat": "新會話",
+    "closeWindow": "關閉視窗",
+    "edit": "編輯",
+    "undo": "還原",
+    "redo": "重做",
+    "cut": "剪下",
+    "copy": "複製",
+    "paste": "貼上",
+    "pasteAndMatchStyle": "貼上並符合樣式",
+    "delete": "刪除",
+    "selectAll": "全選",
+    "view": "檢視",
+    "reload": "重新載入",
+    "forceReload": "強制重新載入",
+    "toggleDevTools": "切換開發者工具",
+    "resetZoom": "實際大小",
+    "zoomIn": "放大",
+    "zoomOut": "縮小",
+    "toggleFullScreen": "切換全螢幕",
+    "window": "視窗",
+    "minimize": "縮到最小",
+    "zoomWindow": "縮放",
+    "bringAllToFront": "將全部移至最前",
+    "help": "說明",
+    "checkForUpdates": "檢查更新…",
+    "projectPage": "GitHub 上的 {{name}}"
+  },
+  "trayMenu": {
+    "runningTasks": "執行中的任務：{{count}}"
+  },
+  "noData": "暫無資料",
+  "labelWithSelectedCount": "{{label}}（{{selected}}/{{total}}）",
+  "selectedSkillsWithCount": "已選技能 · {{count}}",
+  "commandPalette": {
+    "title": "命令面板",
+    "placeholder": "搜尋對話、設定和命令",
+    "groups": {
+      "conversations": "對話",
+      "settings": "設定",
+      "commands": "命令"
+    },
+    "searchMessages": "在訊息中搜尋「{{query}}」",
+    "empty": "沒有符合的結果",
+    "noConversations": "還沒有對話。輸入文字即可查找設定和命令。",
+    "openSettings": "開啟設定",
+    "actions": {
+      "newConversation": "開始新會話",
+      "scheduledTasks": "開啟定時任務"
+    },
+    "commandWaits": "等這一輪結束後執行"
+  },
+  "window": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "還原"
+  },
+  "collapseSidebar": "收合側邊欄",
+  "expandSidebar": "展開側邊欄",
+  "workPanel": {
+    "label": "工作面板",
+    "tabsLabel": "工作面板分頁",
+    "tabs": {
+      "board": "看板",
+      "judge": "判定",
+      "hive": "蜂群",
+      "lessons": "經驗",
+      "files": "檔案",
+      "preview": "預覽",
+      "source": "原始碼",
+      "browser": "瀏覽器"
+    },
+    "close": "關閉工作面板",
+    "resize": "調整工作面板寬度",
+    "unread": "{{tab}}，有新內容",
+    "noProject": "這個對話沒有專案資料夾，沒有可顯示的檔案或變更。",
+    "previewEmpty": "還沒有可預覽的內容。從對話中開啟的檔案會顯示在這裡。",
+    "previewHidden": "預覽已隱藏。",
+    "browserEmpty": "還沒有開啟的網頁。在上方輸入網址或搜尋內容；從對話中開啟的網頁也會顯示在這裡。"
+  },
+  "nodeRuntime": {
+    "title": "下載 Node.js？",
+    "message": "TupAI 使用自帶的 Node.js 執行智慧體和工具，這份 Node.js 尚未下載。",
+    "detail": "將從 nodejs.org 下載 Node.js {{version}}（約 {{size}} MB），解壓縮到：\n{{folder}}\n\n選「稍後」不會下載任何東西：TupAI 照常開啟，需要 Node.js 的地方會提示，下次啟動時再詢問。",
+    "download": "下載",
+    "later": "稍後",
+    "note": "Node.js 尚未下載，這個智慧體暫時無法執行。下次啟動 TupAI 時會再詢問。",
+    "toolNote": "Node.js 尚未下載，需要它的工具暫時無法執行。下次啟動 TupAI 時會再詢問。"
+  }
+}

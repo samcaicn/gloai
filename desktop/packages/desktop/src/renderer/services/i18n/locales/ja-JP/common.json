@@ -1,0 +1,1479 @@
+{
+  "send": "送信",
+  "cancel": "キャンセル",
+  "save": "保存",
+  "delete": "削除",
+  "confirm": "確認",
+  "file": "ファイル",
+  "folder": "フォルダ",
+  "upload": "アップロード",
+  "model": "モデル",
+  "skills": "スキル",
+  "workspace": "プロジェクト",
+  "settings": "設定",
+  "system": "システム",
+  "about": "私たちについて",
+  "back": "チャットに戻る",
+  "goBack": "戻る",
+  "add": "追加",
+  "edit": "編集",
+  "website": "公式サイト",
+  "version": "バージョン",
+  "contact": "お問い合わせ",
+  "github": "GitHub",
+  "loading": "お待ちください...",
+  "copy": "コピー",
+  "reply": "引用",
+  "openInBuiltinBrowser": "内蔵ブラウザで開く",
+  "openInSystemBrowser": "システムブラウザで開く",
+  "copySuccess": "コピーしました",
+  "copyFailed": "コピーに失敗しました",
+  "download": "ダウンロード",
+  "close": "閉じる",
+  "retry": "再試行",
+  "reload": "再読み込み",
+  "technical_details": "技術詳細",
+  "error_details": "エラー詳細",
+  "troubleshooting": "トラブルシューティング",
+  "select": "選択",
+  "expandMore": "さらに表示",
+  "collapse": "折りたたむ",
+  "viewMoreLines": "もっと見る ({{count}} 行)",
+  "viewMoreLines_one": "もっと見る ({{count}} 行)",
+  "viewMoreLines_other": "もっと見る ({{count}} 行)",
+  "success": "成功",
+  "error": "エラー",
+  "saveSuccess": "保存に成功しました",
+  "saveFailed": "保存に失敗しました",
+  "unknownError": "不明なエラー",
+  "confirmDelete": "削除の確認",
+  "deleteSuccess": "削除に成功しました",
+  "deleteFailed": "削除に失敗しました",
+  "default": "デフォルト",
+  "defaultModel": "デフォルトモデル",
+  "escToCancel": "ESC でキャンセル",
+  "create": "作成",
+  "createSuccess": "作成に成功しました",
+  "failed": "失敗",
+  "browse": "参照",
+  "remove": "削除",
+  "show": "表示",
+  "hide": "非表示",
+  "goToSettings": "設定に移動",
+  "forward": "進む",
+  "historyBack": "戻る",
+  "more": "その他",
+  "refresh": "更新",
+  "readOnly": "読み取り専用",
+  "tray.showWindow": "TupAI を表示",
+  "tray.newChat": "新しいチャット",
+  "tray.closeToTray": "トレイに隠す",
+  "tray.hideToMenuBar": "メニューバーに隠す",
+  "tray.about": "TupAI について",
+  "tray.restart": "アプリを再起動",
+  "tray.quit": "終了",
+  "tray.pauseAll": "すべてのタスクを一時停止",
+  "tray.checkUpdate": "更新を確認",
+  "tray.recentChats": "最近のチャット",
+  "tray.untitled": "無題",
+  "backendStartup": {
+    "incompatibleRuntime": {
+      "title": "このシステムは同梱バックエンドに対応していません",
+      "description": "TupAI は開きましたが、ローカルサービスはこの Linux バージョンでは実行できません。対応している Linux ディストリビューションにアップグレードしてから TupAI を再起動してください。",
+      "requiredVersions": "必要なランタイムシンボル: {{versions}}"
+    },
+    "incompleteInstallation": {
+      "title": "TupAI のインストールが不完全です",
+      "description": "このインストールには必要なローカルリソースが不足しているため、TupAI のローカルサービスを起動できません。最新の TupAI をダウンロードして再インストールしてください。再インストール後も問題が再発する場合は、セキュリティソフトまたはウイルス対策ソフトが TupAI のファイルを隔離していないか確認してください。",
+      "downloadLatest": "最新版をダウンロード",
+      "runtimeComponentDescription": "このインストールには必要な組み込み実行コンポーネントが不足しているため、{{resource}} を起動できません。最新版の TupAI パッケージを再インストールしてください。再インストール後も続く場合は、セキュリティソフトまたはウイルス対策ソフトが TupAI コンポーネントを隔離していないか確認してください。"
+    },
+    "packageArchitectureMismatch": {
+      "title": "TupAI パッケージのアーキテクチャが一致しません",
+      "description": "この TupAI パッケージは {{packageArch}} 用ですが、この Mac は {{deviceArch}} です。誤ったパッケージをダウンロードした可能性があります。{{expectedArch}} 用のパッケージをダウンロードしてインストールしてください。"
+    },
+    "dataMigration": {
+      "title": "ローカルデータの移行に失敗しました",
+      "description": "TupAI は開きましたが、ローカルサービスがローカルデータの初期化中に停止しました。TupAI を再インストールしても解決しない可能性があります。ローカルデータベースの移行がどこで止まったかは、アプリのログで確認できます。"
+    },
+    "databaseNewerThanApp": {
+      "title": "新しいバージョンの TupAI が必要です",
+      "description": "ローカルデータはより新しいバージョンの TupAI で作成されたため、このバージョンでは開けません。TupAI を最新バージョンに更新すれば続行できます。データは保持され、再インストールやリセットは不要です。",
+      "descriptionWithVersion": "ローカルデータは現在のバージョン v{{currentVersion}} より新しい TupAI で作成されたため、このバージョンでは開けません。TupAI を最新バージョンに更新すれば続行できます。データは保持され、再インストールやリセットは不要です。"
+    },
+    "localDataRepair": {
+      "title": "ローカルデータの修復に失敗しました",
+      "description": "TupAI は開きましたが、ローカルサービスは assistant またはエージェントのレコードなどのローカル起動データを準備中に停止しました。TupAI を再インストールしても解決しない可能性があります。どのローカルデータを準備できなかったかは、アプリのログで確認できます。"
+    },
+    "startupDirectory": {
+      "title": "起動ディレクトリを利用できません",
+      "description": "TupAI は開きましたが、設定された作業ディレクトリまたはログディレクトリが存在しない、利用できない、または権限でブロックされているため、ローカルサービスを起動できませんでした。設定したディレクトリが存在し、書き込み可能であることを確認してから、TupAI を再起動してください。"
+    },
+    "recoverableDatabaseCorruption": {
+      "title": "ローカルデータが破損しています",
+      "description": "ローカルデータベースの破損を検出したため、TupAI は起動を続行できません。確認後、古いデータベースをバックアップし、新しいローカルデータベースを作成して起動を続行します。過去の会話は表示されなくなり、古いデータベースはバックアップファイルとして保持されます。",
+      "confirmRebuild": "古いDBをバックアップして新しいDBを再作成",
+      "rebuildFailed": "古いDBのバックアップと新しいDBの再作成に失敗しました",
+      "confirmDialog": {
+        "title": "データベースを再構築しますか？",
+        "content": "この操作は現在の破損したデータベースをバックアップし、まったく新しい空のデータベースを作成します。過去の会話は表示されなくなります（古いデータベースはバックアップファイルとして保持されます）。続行しますか？",
+        "okText": "再構築を確認",
+        "cancelText": "キャンセル"
+      }
+    },
+    "transientConcurrentStartup": {
+      "title": "TupAI を起動しています",
+      "description": "このウィンドウを開いたとき、別の TupAI の起動処理がまだローカルデータを使用していました。これは一時的なもので、データは安全です。再インストールの必要はありません。少し待ってから再試行するか、TupAI を再起動してください。"
+    },
+    "pendingSlow": {
+      "title": "起動中",
+      "description": "ローカルサービスを起動しています。しばらくお待ちください。しばらく応答がない場合は、アプリを終了してから再度お試しください。"
+    },
+    "exited": {
+      "title": "起動が完了しませんでした",
+      "description": "ローカルサービスは起動を完了できずに終了しました。アプリを再起動してください。繰り返し発生する場合は、アプリのログを確認してください。"
+    },
+    "portReportTimeout": {
+      "title": "起動がタイムアウトしました",
+      "description": "ローカルサービスは想定時間内に起動を完了できませんでした。アプリを再起動してください。繰り返し発生する場合は、アプリのログを確認してください。"
+    },
+    "startupFailed": {
+      "title": "起動に失敗しました",
+      "description": "ローカルサービスを起動できませんでした。アプリを再起動してください。繰り返し発生する場合は、アプリのログを確認してください。"
+    },
+    "openLogs": "ログフォルダーを開く",
+    "openLogsFailed": "ログフォルダーを開けませんでした"
+  },
+  "fileAttach.addFiles": "ファイルを追加",
+  "fileAttach.myDevice": "マイデバイス",
+  "fileAttach.failed": "アップロードに失敗しました",
+  "fileAttach.uploading": "アップロード中...",
+  "fileAttach.uploadSuccess": "アップロード成功",
+  "fileAttach.cancelUpload": "アップロードをキャンセル",
+  "expand": "展開",
+  "name": "名前",
+  "added": "追加済み",
+  "status": "ステータス",
+  "agentMode": "エージェントモード",
+  "refreshSuccess": "更新しました",
+  "import": "インポート",
+  "processing": "処理中...",
+  "optional": "（任意）",
+  "clear": "クリア",
+  "selectedCount": "選択済み {{count}}",
+  "selectedSkills": "選択済みスキル",
+  "aiAssistant": "AI アシスタント",
+  "kyrn": {
+    "settings": "TupAI の設定",
+    "judge": "判定器の設定",
+    "reload": "再読み込み",
+    "starting": "TupAI を起動しています…",
+    "startingHint": "ローカルの TupAI カーネルに接続し、モデルと判定器の設定を読み込んでいます。",
+    "startupError": "TupAI を起動できませんでした",
+    "hiveView": {
+      "title": "Hive",
+      "agents": "サブエージェント",
+      "open": "Hive を開く",
+      "inspect": "{{name}} を確認",
+      "summary": "{{active}} 件がアクティブ · {{done}} 件完了 / 全 {{total}} 件",
+      "summaryEnded": "{{done}} 件完了 / 全 {{total}} 件",
+      "summaryUnfinished": "{{done}} 件完了 / 全 {{total}} 件 · {{unfinished}} 件は未完了",
+      "counts": "実行中 {{running}} · 完了 {{done}} · 失敗 {{failed}}",
+      "none": "この会話にはまだサブエージェントがいません。",
+      "details": "情報の流れと記録",
+      "pending": "ビーの状態を待機中",
+      "unknown": "状態を取得できません",
+      "lastStep": "{{status}} · 直前：{{step}}",
+      "runs": "Hive の実行",
+      "graph": "コラボレーションマップ",
+      "graphHint": "線が太いほど多く届いています。メンバーを選ぶとその行が開き、線を指すと届いた内容が読めます。",
+      "map": "つながり図",
+      "legend": "凡例",
+      "legendDelivery": "配達",
+      "legendCorrection": "訂正",
+      "legendConflict": "対立",
+      "legendReport": "報告",
+      "nodeSent": "送信 {{count}}",
+      "nodeReceived": "受信 {{count}}",
+      "lineDelivery": "{{from}} → {{to}}：{{count}} 件を配達",
+      "lineDelivery_one": "{{from}} → {{to}}：{{count}} 件を配達",
+      "lineDelivery_other": "{{from}} → {{to}}：{{count}} 件を配達",
+      "lineCorrection": "{{from}} が {{to}} の発見を訂正しました",
+      "lineConflict": "{{from}} と {{to}} の発見が対立しています",
+      "lineReport": "{{from}} が TupAI に報告しました",
+      "deliveries": "情報フロー",
+      "noDeliveries": "確認済みの配信はまだありません。",
+      "board": "共有ボード",
+      "noNotes": "共有された発見はまだありません。",
+      "context": "実行コンテキスト",
+      "contextHint": "記録済みメッセージと完了したツール出力であり、完全なモデルプロンプトではありません。ツール出力は完了後に表示されます。",
+      "focus": "割り当て",
+      "missingFocus": "この実行の割り当ては記録されていません。",
+      "current": "現在のアクティビティ",
+      "records": "実行記録",
+      "noRecords": "実行記録はまだ受信していません。",
+      "raw": "生の証拠",
+      "input": "入力",
+      "output": "出力",
+      "assistant": "ビーのメッセージ",
+      "thinking": "公開された思考",
+      "user": "タスク入力",
+      "custom": "ハーネスメッセージ",
+      "tool": "ツール",
+      "waitingOutput": "完了したツール出力を待機中です。",
+      "noText": "テキスト出力はありません。",
+      "selectBee": "ビーを選択してアクティビティを確認してください。",
+      "unknownSource": "不明なソース",
+      "noteMissing": "発見は記録されていません。",
+      "allFlow": "すべての配信",
+      "beeFlow": "{{name}} の配信",
+      "audit": "Jev の判定",
+      "waitingRun": "この Hive の記録済みイベントを待機中です。",
+      "recordedAt": "記録時刻: {{time}}",
+      "beeMissing": "このビーは記録済みスナップショットにありません。",
+      "snapshot": "最後に報告された状態",
+      "updated": "最終更新 {{time}}",
+      "runTitle": {
+        "tasks": "{{count}} 件のタスク",
+        "tasks_one": "{{count}} 件のタスク",
+        "tasks_other": "{{count}} 件のタスク",
+        "chain": "{{count}} ステップのチェーン",
+        "chain_one": "{{count}} ステップのチェーン",
+        "chain_other": "{{count}} ステップのチェーン"
+      },
+      "choosingRoles": "{{count}} 個のサブエージェントの役割、モデル、思考レベルを選んでいます…",
+      "choosingRoles_one": "{{count}} 個のサブエージェントの役割、モデル、思考レベルを選んでいます…",
+      "choosingRoles_other": "{{count}} 個のサブエージェントの役割、モデル、思考レベルを選んでいます…",
+      "activity": {
+        "notesReceived": "← ほかのビーからの発見 {{count}} 件",
+        "notesReceived_one": "← ほかのビーからの発見 {{count}} 件",
+        "notesReceived_other": "← ほかのビーからの発見 {{count}} 件",
+        "askedFindings": "← これまでの発見を尋ねられました",
+        "toldWrapUp": "← 作業をまとめてレポートを出すよう指示されました",
+        "toolFailed": "{{tool}} が失敗しました",
+        "retry": "再試行 {{attempt}}/{{maxAttempts}}: {{message}}",
+        "modelError": "モデルエラー: {{message}}",
+        "compacting": "コンテキストを圧縮中",
+        "lateNotes": "← 最終配信: 遅れて届いた発見 {{count}} 件",
+        "lateNotes_one": "← 最終配信: 遅れて届いた発見 {{count}} 件",
+        "lateNotes_other": "← 最終配信: 遅れて届いた発見 {{count}} 件"
+      },
+      "errors": {
+        "cancelled": "実行がキャンセルされました",
+        "stoppedByUser": "ユーザーが停止しました",
+        "endedByUser": "ユーザーが終了しました",
+        "stalledModel": "{{duration}} の間、モデルから反応がありませんでした",
+        "stalledTool": "{{duration}} の間、{{tool}} の呼び出しから反応がありませんでした",
+        "timeBudget": "制限時間 {{duration}} に達しました",
+        "timeBudgetReached": "制限時間に達しました",
+        "noReportInTime": "{{reason}}（依頼から {{duration}} 以内にレポートなし）",
+        "modelFailed": "モデルへのリクエストが失敗しました",
+        "modelAborted": "モデルへのリクエストが中断されました",
+        "retriesExhausted": "モデルへのリクエストが繰り返し失敗しました",
+        "exitedCode": "サブエージェントが完了前に終了コード {{exitCode}} で終了しました",
+        "exitedSignal": "サブエージェントが完了前に {{signal}} で終了しました",
+        "exitedKilled": "サブエージェントが完了前にシグナルで終了しました",
+        "chainBroken": "未開始: 前のステップ（「{{step}}」）が完了しませんでした",
+        "detail": "{{reason}}: {{detail}}"
+      }
+    },
+    "judgeView": {
+      "empty": "このセッションにはまだ判定の記録がありません。",
+      "question": "質問",
+      "result": "判定結果",
+      "action": "実行への影響",
+      "details": "回答と証拠",
+      "raw": "元の記録",
+      "answers": "モデルの回答",
+      "noResult": "読み取れる結果は記録されていません",
+      "unreported": "記録なし",
+      "scoreValue": "スコア: {{value}}",
+      "latency": "{{ms}} ミリ秒",
+      "more": "ほか {{count}} 件",
+      "batch": "この記録が対象とする候補: {{count}} 件。",
+      "batchFailures": "回答が得られず既定の方針で処理: {{count}} 件。",
+      "changedThinking": "思考レベル: {{from}} → {{to}}",
+      "sentHints": "メインモデルに送ったヒント",
+      "unlinked": "単独の記録",
+      "unlinkedHint": "ターンの関連付け情報がない記録です。単独で表示され、時刻が近い記録とは結合されません。",
+      "state": {
+        "pending": "待機中",
+        "returned": "判定を返却",
+        "confirmed": "影響を確認済み",
+        "shadow": "シャドーモード",
+        "fallback": "既定の方針",
+        "late": "遅れて到着",
+        "rule": "ルールで決定",
+        "ended": "待機終了",
+        "unknown": "結果不明"
+      },
+      "actions": {
+        "toRuntime": "判定は実行レイヤーに引き渡されました。操作が完了したことを示すものではありません。",
+        "observeOnly": "シャドーモード: 比較のために記録しただけで、この判定によって実行は変わっていません。",
+        "useDefault": "この判定ポイントの既定の方針で処理しました。既定の方針は許可を意味しません。リスク確認と Hive のゲートは慎重側が既定です。",
+        "lateIgnored": "ターンはすでに始まっており、遅れて届いたこの判定は反映されませんでした。",
+        "waiting": "判定結果を待っています。",
+        "waitEnded": "待機またはタスクが終了し、最終的な判定は記録されていません。",
+        "recordedOnly": "記録はありますが、実行への影響は確認されていません。",
+        "mainGiven": "以下に記録された調整またはヒントがメインモデルに適用されました。",
+        "allowPublish": "公開が許可されました。実際に公開された内容は共有ボードで確認してください。",
+        "denyPublish": "この候補の公開は許可されませんでした。",
+        "allowDelivery": "配信は許可されましたが、受領の記録はまだありません。",
+        "denyDelivery": "この発見をこのビーへ配信することは許可されませんでした。",
+        "delivered": "この発見が受信側のビーに届いたことを受領記録が示しています。"
+      },
+      "questions": {
+        "preflight": "このリクエストをどう扱うべきか？",
+        "interjection": "この割り込みは訂正、追加依頼、それとも脇道の質問か？",
+        "admission": "ツール出力のどの部分をコンテキストに入れるべきか？",
+        "testLog": "テストログのどの部分をモデルに渡すべきか？",
+        "forget": "古いツール出力の全文はまだ必要か？",
+        "compaction": "どの古い結果を削れるか？",
+        "skills": "このタスクに関連するスキルはどれか？",
+        "locate": "関連している可能性が最も高いファイルはどれか？",
+        "routing": "各サブタスクに合う役割と思考レベルは？",
+        "publish": "この発見はほかのビーと共有する価値があるか？",
+        "deliver": "この発見は受け取るビーの役に立つか？",
+        "browser": "ブラウザーは次に何をすべきか？",
+        "recall": "過去のどの教訓がいま当てはまるか？",
+        "capture": "これは長く有効な訂正または好みか？",
+        "outcome": "このターンで残すべき抜け道は見つかったか？",
+        "worth": "この教訓は残す価値があるか？",
+        "merge": "新しい教訓を既存の教訓とまとめるか？",
+        "applied": "教訓は守られたか？",
+        "risk": "この操作にはユーザーの確認が必要か？",
+        "drift": "作業はまだ軌道に乗っているか？",
+        "completion": "この変更にはまだ検証が必要か？",
+        "notify": "この通知はいつモデルに届けるべきか？",
+        "cache": "セッションキャッシュを保温し続けるべきか？",
+        "other": "記録された判定",
+        "rewind": "この方針は巻き戻すべき行き止まりか？",
+        "goalMet": "目標は達成されたか？",
+        "outputDrift": "出力は設定したルールに違反しているか？",
+        "taskFrame": "このメッセージはタスクフレームを変えるか？",
+        "constraint": "この呼び出しは設定した制約に違反するか？",
+        "capabilities": "このタスクに必要なケイパビリティはどれか？",
+        "diagnostics": "これらの診断はいつモデルに届けるべきか？",
+        "patch": "サブエージェントのパッチはタスクの範囲内に収まっているか？",
+        "review": "各指摘の重大度はどの程度か？",
+        "board": "作業はどこまで進んでいるか？",
+        "relate": "この発見は以前の発見に対して何を意味するか？",
+        "approval": "これはタスクに必要な手順で、期待どおりのやり方か？"
+      },
+      "fields": {
+        "turnType": "タスクの種類",
+        "gear": "タスクの重さ",
+        "thinking": "思考レベル",
+        "agent": "推奨される役割",
+        "strength": "モデルの強さ",
+        "drop": "除外の提案",
+        "keep": "保持の提案",
+        "kind": "内容の種類",
+        "score": "スコア",
+        "hide": "非表示を提案されたスキル",
+        "relevant": "関連スキル",
+        "apply": "適用を提案された教訓",
+        "applied": "守られた",
+        "notApplied": "守られなかった",
+        "publish": "公開を許可",
+        "deliver": "配信を許可",
+        "path": "候補ファイル",
+        "result": "結果",
+        "reason": "理由",
+        "keepResult": "結果を保持",
+        "keepCall": "呼び出しを保持",
+        "broken": "違反したルール",
+        "open": "開くケイパビリティ",
+        "errors": "エラー",
+        "warnings": "警告",
+        "withinTask": "タスクの範囲内",
+        "unrelated": "無関係なファイル",
+        "judged": "判定したファイル",
+        "priorities": "優先度",
+        "phase": "フェーズ",
+        "focus": "対応中の項目",
+        "needsUser": "ユーザー対応が必要",
+        "update": "ボードを書き直す",
+        "relation": "関係",
+        "operation": "次のステップ",
+        "target": "対象の要素",
+        "probability": "確率",
+        "omit": "省いたログの部分",
+        "key": "伝える価値のある出来事"
+      },
+      "values": {
+        "true": "はい",
+        "false": "いいえ",
+        "yes": "はい",
+        "no": "いいえ",
+        "unsure": "不確か",
+        "unknown": "不明",
+        "chat": "会話",
+        "chat_question": "概念の質問",
+        "quick_lookup": "簡単な検索",
+        "single_edit": "単一の編集",
+        "multi_step_task": "複数ステップのタスク",
+        "research": "調査",
+        "design_discussion": "設計の議論",
+        "light": "軽い",
+        "standard": "標準",
+        "heavy": "重い",
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "keep": "保持",
+        "shrink": "短縮",
+        "capture": "記録する",
+        "skip": "スキップ",
+        "error": "エラー",
+        "result": "有用な結果",
+        "progress": "進行中の出力",
+        "warning": "警告",
+        "passing": "チェック合格",
+        "other": "その他",
+        "allow": "追加の確認は不要",
+        "confirm": "先にユーザーへ確認",
+        "now": "すぐに届ける",
+        "next_turn": "次のターンまで保留",
+        "drop": "破棄",
+        "on_track": "順調",
+        "detour": "寄り道",
+        "drift": "逸脱",
+        "loop": "ループ",
+        "done": "リマインド不要",
+        "nudge": "検証をリマインド",
+        "steer": "現在の作業を誘導",
+        "followUp": "フォローアップとして待機",
+        "warm": "保温を継続",
+        "stop": "保温を停止",
+        "default": "既定",
+        "finding": "発見",
+        "dead_end": "行き止まり",
+        "decision": "決定",
+        "blocker": "ブロッカー",
+        "abstain": "判定器が棄権",
+        "shadow": "シャドーモード",
+        "skipped": "ユーザーがスキップ",
+        "timeout": "タイムアウト",
+        "all": "すべての候補が失敗",
+        "unreachable": "判定器に接続できません",
+        "unexpected": "予期しないエラー",
+        "off": "オフ",
+        "continue": "続行",
+        "propose": "巻き戻しを提案",
+        "met": "達成",
+        "ask": "ユーザーに確認",
+        "unjudged": "未判定",
+        "none": "なし",
+        "new_task": "新しいタスク",
+        "constraint": "新しい制約",
+        "correction": "訂正",
+        "subgoal": "新しいサブ目標",
+        "unclear": "判断できない",
+        "hold": "保留",
+        "no_answer": "時間内に回答なし",
+        "aborted": "キャンセル済み",
+        "auth": "判定器のキーが拒否されました",
+        "payment_required": "判定器に支払い方法が必要です",
+        "rate_limited": "判定器がレート制限中",
+        "bad_request": "判定器がリクエストを拒否しました",
+        "server": "判定器のサーバーエラー",
+        "invalid_response": "判定器の回答を読み取れません",
+        "verdict": "判定器が回答",
+        "learn": "抜け道を残す",
+        "reusable": "また役立つ",
+        "one_off": "今回限り",
+        "already_known": "既知",
+        "same": "同じ教訓",
+        "refines": "より正確",
+        "contradicts": "矛盾する",
+        "supersedes": "置き換える",
+        "supports": "裏付ける",
+        "unrelated": "無関係",
+        "preference": "恒久ルール",
+        "approve": "実行を許可",
+        "beyond": "求められた以上",
+        "CLICK": "クリック",
+        "TYPE_TEXT": "文字を入力",
+        "SELECT": "リストから選ぶ",
+        "SCROLL_DOWN": "下へスクロール",
+        "SCROLL_UP": "上へスクロール",
+        "WAIT": "ページの更新を待つ",
+        "DONE": "完了",
+        "BLOCKED": "先に進めない",
+        "listing": "ファイル名や検索の一致",
+        "content": "コードや文章",
+        "log": "ビルドやテストの出力",
+        "data": "調べた事実"
+      },
+      "probabilityValue": "「はい」の確率: {{percent}}",
+      "optionProbability": "{{option}} {{percent}}",
+      "reasonValue": "理由: {{reason}}",
+      "fieldValue": "{{field}}: {{value}}",
+      "errorValue": "エラー · {{kind}}",
+      "noAnswerAfter": "{{duration}} 経過しても回答なし",
+      "hints": {
+        "answered": "このメッセージはエージェント自身の質問への返答です。これに従って進め、もう一度質問しないでください。",
+        "resolve": "依頼の表現があいまいで、ファイルを変更する可能性があります。プロジェクトを確認して前提を述べ、ここで見つからないことだけを質問してください。",
+        "clarify": "リクエストの内容が不十分なようです。まず的を絞った質問を 1 つしてください。",
+        "side_question": "脇道の質問です。手短に答えてから、メインのタスクを続けてください。",
+        "plan_first": "規模が大きいか、リスクが高いようです。短い計画を書いてから実行し、元に戻せない手順の前でだけ確認を待ってください。",
+        "try_hive": "難しいタスクのようです。原因がわからない場合や、直接の試みがうまくいかない場合は Hive を使ってください。",
+        "try_delegate": "独立した部分に分けられます。サブエージェントに並行して任せることを検討してください。"
+      },
+      "hintChips": {
+        "answered": "エージェントへの返答",
+        "resolve": "まず調べる",
+        "clarify": "まず質問",
+        "side_question": "脇道の質問",
+        "plan_first": "まず計画",
+        "try_hive": "詰まれば Hive",
+        "try_delegate": "分けて委任"
+      },
+      "answerWords": {
+        "preflight": {
+          "questions": {
+            "turn_type": "タスクの種類",
+            "is_side_question": "脇道の質問",
+            "needs_clarification": "曖昧で着手できない",
+            "needs_files_changed": "コードの変更が必要",
+            "needs_memory": "過去の経験が役立つ",
+            "swarm_worthy": "独立した部分に分けられる",
+            "plan_first": "大規模またはリスクが高い",
+            "task_complexity": "作業範囲",
+            "reasoning_depth": "推論の深さ",
+            "tool_complexity": "ツールの使用量"
+          },
+          "answers": {
+            "chat": "会話",
+            "chat_question": "概念の質問",
+            "quick_lookup": "簡単な検索",
+            "single_edit": "単一の編集",
+            "multi_step_task": "複数ステップのタスク",
+            "research": "調査",
+            "design_discussion": "設計の議論",
+            "other": "その他"
+          },
+          "levels": {
+            "task_complexity": {
+              "0": "質問だけ",
+              "1": "コードの1か所",
+              "2": "コードの複数か所",
+              "3": "コードベース全体"
+            },
+            "reasoning_depth": {
+              "0": "思い出す・調べる",
+              "1": "簡単な説明",
+              "2": "丁寧な分析",
+              "3": "深い推論"
+            },
+            "tool_complexity": {
+              "0": "なし",
+              "1": "1〜2回の読み取り",
+              "2": "編集を含む数回の呼び出し",
+              "3": "ビルドやテストを含む多数の呼び出し"
+            }
+          }
+        },
+        "interjection": {
+          "questions": {
+            "kind": "メッセージの種類"
+          },
+          "answers": {
+            "correction": "訂正",
+            "addition": "あとでやる追加の作業",
+            "side_question": "関係のない質問",
+            "other": "その他"
+          }
+        },
+        "admission": {
+          "questions": {
+            "kind": "出力の種類",
+            "chunk": "出力の第{{number}}部分"
+          },
+          "answers": {
+            "error": "エラー",
+            "result": "有用な結果",
+            "progress": "進行中の出力",
+            "warning": "繰り返される警告",
+            "passing": "合格したチェック",
+            "other": "その他"
+          }
+        },
+        "testLog": {
+          "questions": {
+            "part": "ログの第{{number}}部分"
+          },
+          "answers": {
+            "needed": "要約のほかにも必要",
+            "not_needed": "要約で足りる",
+            "unclear": "判断できない"
+          }
+        },
+        "forget": {
+          "questions": {
+            "still_needed": "出力全文がまた必要"
+          }
+        },
+        "compaction": {
+          "questions": {
+            "kind": "結果の種類",
+            "result_needed": "結果の全文がまだ必要",
+            "call_matters": "呼び出し自体がまだ重要"
+          },
+          "answers": {
+            "error": "エラー",
+            "listing": "ファイル名や検索の一致",
+            "content": "コードや文章",
+            "log": "ビルドやテストの出力",
+            "data": "調べた事実",
+            "other": "その他"
+          }
+        },
+        "skills": {
+          "questions": {
+            "skill": "スキル{{number}}が役立つ"
+          }
+        },
+        "locate": {
+          "questions": {
+            "path": "ファイル{{number}}が関係する"
+          }
+        },
+        "routing": {
+          "questions": {
+            "agent": "作業の種類",
+            "difficulty": "タスクの難しさ",
+            "reasoning": "必要な推論"
+          },
+          "answers": {
+            "other": "どれでもない"
+          },
+          "levels": {
+            "difficulty": {
+              "0": "機械的",
+              "1": "定型的",
+              "2": "慎重な設計が必要",
+              "3": "専門家でも難しい"
+            },
+            "reasoning": {
+              "0": "ほぼ不要",
+              "1": "少し",
+              "2": "多い",
+              "3": "多段階の深い推論"
+            }
+          }
+        },
+        "publish": {
+          "questions": {
+            "share_worthy": "共有する価値がある",
+            "kind": "メモの種類"
+          },
+          "answers": {
+            "finding": "発見",
+            "dead_end": "行き止まり",
+            "decision": "決定",
+            "blocker": "ブロッカー",
+            "other": "通常の進捗"
+          }
+        },
+        "deliver": {
+          "questions": {
+            "useful": "受け取るビーの役に立つ"
+          }
+        },
+        "browser": {
+          "questions": {
+            "operation": "次のステップ",
+            "click_target": "クリックする対象",
+            "type_text_target": "入力する場所",
+            "select_target": "選ぶ項目"
+          },
+          "answers": {
+            "CLICK": "クリック",
+            "TYPE_TEXT": "文字を入力",
+            "SELECT": "リストから選ぶ",
+            "SCROLL_DOWN": "下へスクロール",
+            "SCROLL_UP": "上へスクロール",
+            "WAIT": "ページの更新を待つ",
+            "DONE": "完了",
+            "other": "先に進めない",
+            "none": "当てはまるものがない"
+          }
+        },
+        "recall": {
+          "questions": {
+            "lesson": "教訓{{number}}が当てはまる"
+          }
+        },
+        "capture": {
+          "questions": {
+            "correction": "誤りを正している",
+            "preference": "続けて守るルールを示している"
+          }
+        },
+        "outcome": {
+          "questions": {
+            "way_out": "うまくいく別の方法が見つかった"
+          }
+        },
+        "worth": {
+          "questions": {
+            "lesson": "教訓{{number}}"
+          },
+          "answers": {
+            "reusable": "また役立つ",
+            "one_off": "今回限り",
+            "already_known": "既知",
+            "unclear": "判断できない"
+          }
+        },
+        "merge": {
+          "questions": {
+            "kept": "既存の教訓{{number}}"
+          },
+          "answers": {
+            "same": "同じ教訓",
+            "refines": "新しい方がより正確",
+            "contradicts": "互いに矛盾する",
+            "unrelated": "別の内容",
+            "unclear": "判断できない"
+          }
+        },
+        "applied": {
+          "questions": {
+            "lesson": "教訓{{number}}が守られた"
+          }
+        },
+        "risk": {
+          "questions": {
+            "destructive": "削除する、または元に戻せない",
+            "requested": "あなたが頼んだこと"
+          }
+        },
+        "drift": {
+          "questions": {
+            "course": "作業の方向"
+          },
+          "answers": {
+            "on_track": "順調",
+            "detour": "必要な寄り道",
+            "drift": "逸れつつある",
+            "loop": "堂々巡り",
+            "other": "判断できない"
+          }
+        },
+        "completion": {
+          "questions": {
+            "claims_done": "作業が完了したと言っている",
+            "needs_check": "実行して確かめるべき"
+          }
+        },
+        "notify": {
+          "questions": {
+            "urgency": "エージェントがいつ知るべきか"
+          },
+          "answers": {
+            "now": "すぐに",
+            "next_turn": "今のステップの後",
+            "drop": "知らせない",
+            "other": "判断できない"
+          }
+        },
+        "cache": {
+          "questions": {
+            "finished": "会話が終わった",
+            "open": "あなたへの質問が待っている"
+          }
+        },
+        "rewind": {
+          "questions": {
+            "dead_end": "同じやり方がまた失敗している",
+            "progress": "前進している"
+          }
+        },
+        "goalMet": {
+          "questions": {
+            "achieved": "目標を完全に達成",
+            "needs_user": "あなたなしでは続けられない"
+          }
+        },
+        "outputDrift": {
+          "questions": {
+            "rule": "ルール{{number}}に反する"
+          }
+        },
+        "taskFrame": {
+          "questions": {
+            "change": "タスクへの変化"
+          },
+          "answers": {
+            "new_task": "新しいタスク",
+            "constraint": "作業の新しいルール",
+            "correction": "やり方が間違っている",
+            "subgoal": "同じタスクの次のステップ",
+            "none": "変化なし"
+          }
+        },
+        "constraint": {
+          "questions": {
+            "constraint": "制約{{number}}に反する"
+          }
+        },
+        "capabilities": {
+          "questions": {
+            "capability": "ケイパビリティ{{number}}が必要"
+          }
+        },
+        "diagnostics": {
+          "questions": {
+            "more_edits_coming": "まだ編集が続く",
+            "warnings_are_style": "スタイルの警告だけ"
+          }
+        },
+        "patch": {
+          "questions": {
+            "within_task": "タスクの範囲内",
+            "file": "タスクにファイル{{number}}の変更が必要"
+          }
+        },
+        "review": {
+          "questions": {
+            "bug": "指摘{{number}}は本物のバグ",
+            "inScope": "指摘{{number}}はこの変更に関係する"
+          }
+        },
+        "board": {
+          "questions": {
+            "phase": "エージェントがしていること",
+            "needs_user": "あなたから何かが必要",
+            "focus": "取り組み中の項目",
+            "event": "出来事{{number}}",
+            "changed": "伝えるべき新しいことがある"
+          },
+          "answers": {
+            "understanding": "タスクを理解中",
+            "planning": "進め方を検討中",
+            "changing": "コードを変更中",
+            "checking": "作業を確認中",
+            "fixing": "確認で見つかった問題を修正中",
+            "waiting": "あなたを待っています",
+            "wrapping_up": "仕上げ中",
+            "stuck": "行き詰まっているようです",
+            "other": "判断できない",
+            "none": "どれでもない",
+            "key": "伝える価値のある知らせ",
+            "routine": "いつもの手順",
+            "unclear": "判断できない"
+          }
+        },
+        "relate": {
+          "questions": {
+            "relation": "以前の発見への影響"
+          },
+          "answers": {
+            "supersedes": "置き換える",
+            "contradicts": "矛盾する",
+            "supports": "裏付ける",
+            "none": "関係しない"
+          }
+        },
+        "approval": {
+          "questions": {
+            "verdict": "このステップの性質"
+          },
+          "answers": {
+            "needed": "タスクに必要",
+            "beyond": "求められた以上",
+            "unrelated": "タスクと関係ない",
+            "unclear": "判断できない"
+          }
+        }
+      },
+      "log": {
+        "thisTurn": "このターン",
+        "earlier": "以前の行を表示",
+        "latest": "最新へ移動",
+        "times": "{{times}} 回"
+      }
+    },
+    "empty": "このセッションにはまだイベントが記録されていません。",
+    "quiet": "アクティビティなし（{{duration}}）",
+    "passed": "通過",
+    "filtered": "除外",
+    "image": "ツールが返した画像",
+    "beeStatus": {
+      "queued": "待機中",
+      "starting": "起動中",
+      "thinking": "思考中",
+      "tool": "ツール実行中",
+      "retrying": "再試行中",
+      "wrapping-up": "レポート作成中",
+      "done": "完了",
+      "failed": "失敗",
+      "stopped": "停止",
+      "timed-out": "タイムアウト"
+    },
+    "event": {
+      "preflight.pending": "分類中",
+      "preflight.verdict": "分類結果",
+      "preflight.wait_end": "分類の待機が終了",
+      "decision": "判定",
+      "progress": "進捗",
+      "agent_start": "タスク開始",
+      "agent_settled": "タスク終了",
+      "kyrn_rpc_closed": "ランタイムが終了しました",
+      "auto_compaction_start": "コンテキストを圧縮中",
+      "auto_compaction_end": "圧縮が完了しました",
+      "hive.note": "共有された発見",
+      "hive.delivery": "配信を確認",
+      "hive.gate": "Jev ゲート",
+      "hive.manifest": "Hive の割り当て",
+      "bee.event": "ビーのイベント",
+      "memory.recalled": "参照した経験",
+      "artifact.image": "画像",
+      "memory.stored": "経験を保存しました",
+      "memory.applied": "教訓が守られました",
+      "memory.retired": "教訓を廃止しました",
+      "memory.merged": "教訓をまとめました",
+      "compaction_start": "コンテキストを圧縮中…",
+      "compaction_end": "圧縮が終了しました",
+      "context.usage": "コンテキスト使用量",
+      "context.policy": "ベータ版圧縮モード",
+      "compaction.plan": "ベータ版圧縮プラン",
+      "goal": {
+        "state": "目標の状態"
+      },
+      "board": {
+        "update": "ボードを更新しました",
+        "switched": "ボードのオン/オフを切り替えました"
+      },
+      "permissions": {
+        "mode": "権限モード",
+        "request": "許可を求めました",
+        "resolved": "許可の回答",
+        "approved": "確認なしで実行"
+      },
+      "checkpoint": {
+        "taken": "チェックポイントを保存しました",
+        "off": "チェックポイントがオフ"
+      },
+      "rewind": {
+        "proposed": "巻き戻しを提案",
+        "done": "巻き戻しました",
+        "undone": "巻き戻しを取り消しました"
+      },
+      "ttsr": {
+        "interrupted": "ルールにより出力を停止しました"
+      },
+      "frame": {
+        "updated": "タスクフレームを更新しました"
+      },
+      "capability": {
+        "opened": "ケイパビリティを開きました"
+      },
+      "inherit": {
+        "found": "継承できる設定が見つかりました",
+        "rule": "継承したルールを使用しました"
+      },
+      "mcp": {
+        "started": "MCP サーバーを起動しました",
+        "failed": "MCP サーバーでエラーが発生しました",
+        "tools_changed": "MCP ツールが変更されました"
+      },
+      "constraint": {
+        "blocked": "設定した制約によりブロック"
+      },
+      "browser": {
+        "run": "ブラウザータスク",
+        "step": "ブラウザーのステップ"
+      },
+      "diagnostics": {
+        "delivered": "診断をモデルに渡しました",
+        "held": "診断を保留しました",
+        "dropped": "診断を破棄しました"
+      },
+      "background": {
+        "start": "バックグラウンドジョブを開始しました",
+        "exit": "バックグラウンドジョブが終了しました",
+        "stop": "バックグラウンドジョブを停止しました",
+        "match": "バックグラウンド出力が一致しました"
+      },
+      "web": {
+        "fetch": "ページを取得しました",
+        "search": "Web 検索"
+      },
+      "swarm": {
+        "worktree": {
+          "created": "ワークツリーを作成しました",
+          "removed": "ワークツリーを削除しました"
+        },
+        "patch": {
+          "ready": "パッチの準備ができました",
+          "applied": "パッチを適用しました"
+        }
+      }
+    },
+    "contextUsage": "コンテキスト使用量",
+    "contextPending": "新しいコンテキスト計測を待っています",
+    "betaActive": "ベータ版 有効",
+    "betaShadow": "ベータ版 シャドーモード",
+    "betaOff": "ベータ版 オフ",
+    "contextWaiting": "ランタイムを待っています",
+    "contextTrigger": "{{tokens}} トークンで圧縮を開始",
+    "autoOff": "自動圧縮はオフ",
+    "compacting": "コンテキストを圧縮中…",
+    "compactionResults": "圧縮結果（{{count}} 回）",
+    "noCompaction": "このセッションにはまだ圧縮の記録がありません。",
+    "betaApplied": "ベータ版の刈り込みを適用",
+    "summaryApplied": "要約による圧縮を適用",
+    "compactionAborted": "圧縮をキャンセルしました",
+    "compactionFailed": "圧縮に失敗しました",
+    "compactionSavings": "コンテキストを約 {{saved}} 削減",
+    "compactionEstimate": "圧縮後のトークン数は推定値です。次のモデル応答で使用量が更新されます。",
+    "cacheHit": "キャッシュヒット",
+    "cachePending": "キャッシュ使用量はまだ報告されていません",
+    "cacheLabel": "セッションのキャッシュヒット率：{{percent}}",
+    "cacheDetail": "セッション累計：キャッシュ読み取り {{read}} / 入力トークン合計 {{total}}。入力には通常の入力、キャッシュ読み取り、キャッシュ書き込みが含まれ、出力は含まれません。圧縮しても累計はリセットされません。",
+    "brand": {
+      "tagline": "判定カーネルを備えたコーディングエージェント",
+      "judge": {
+        "idle": "判定器は待機中",
+        "judging": "判定器が判定中",
+        "off": "判定器はオフ"
+      },
+      "starters": {
+        "hint": "どこから始めるか迷ったら、こちらをどうぞ：",
+        "understand": {
+          "title": "このプロジェクトを理解する",
+          "desc": "構成、エントリーポイント、主要モジュールを整理",
+          "prompt": "まずこのプロジェクト全体を読み、全体の構成、主なエントリーポイント、重要なモジュールを教えてください。最初に読むべきファイルを 3 つ挙げてください。"
+        },
+        "fix": {
+          "title": "問題を特定して修正する",
+          "desc": "エラーや症状から根本原因へ",
+          "prompt": "問題が発生しました：<症状を説明するか、エラーを貼り付けてください>。まず再現して根本原因を特定し、最小限の修正を行い、関連するテストを実行して確認してください。"
+        },
+        "plan": {
+          "title": "変更を計画する",
+          "desc": "まず計画、確認してから着手",
+          "prompt": "実現したいこと：<要件を説明してください>。まず実装方針と関係するファイルを示し、私が確認してから編集を始めてください。"
+        }
+      }
+    },
+    "toolStatus": {
+      "pending": "保留中",
+      "in_progress": "実行中",
+      "completed": "完了",
+      "failed": "失敗"
+    },
+    "boardView": {
+      "title": "わかりやすいボード",
+      "switch": "このプロジェクトのわかりやすいボード",
+      "switching": "切り替え中…",
+      "afterTurn": "エージェントがこのステップを終えたら切り替わります",
+      "unknown": "この会話にはまだボードがありません。TupAI の会話で、「機能」でわかりやすいボードがオンのときに表示されます。",
+      "off": "オンにすると、作業の進み具合、エージェントが今していること、あなたの確認が必要なことを、やさしい言葉で伝えます。",
+      "cost": "このプロジェクトだけに適用されます。更新のたびにモデルを 1 回呼び出します。",
+      "empty": "エージェントが少し作業するまでお待ちください。ここに進み具合をやさしい言葉で表示します。",
+      "checks": "チェック {{done}}/{{total}} 完了",
+      "ended": "停止済み",
+      "done": "完了",
+      "brief": "簡易版",
+      "briefHelp": "今回はモデルの作成が間に合わず、決まった短い説明を表示しています。",
+      "needsYou": "あなたの確認が必要",
+      "needsYouText": "エージェントが会話であなたの返事を待っています。",
+      "quote": "返信に引用",
+      "quoteHint": "項目をクリックすると入力欄に引用されます。送信するまで送られません。",
+      "account": "やったこと",
+      "earlierNotes": "さらに前の {{count, number}} 件",
+      "earlierNotes_one": "さらに前の {{count, number}} 件",
+      "earlierNotes_other": "さらに前の {{count, number}} 件",
+      "phases": {
+        "understanding": "タスクを理解中",
+        "planning": "進め方を検討中",
+        "changing": "コードを変更中",
+        "checking": "作業を確認中",
+        "fixing": "確認で見つかった問題を修正中",
+        "waiting": "あなたを待っています",
+        "wrapping_up": "仕上げ中",
+        "stuck": "行き詰まっているようです"
+      },
+      "checks_one": "チェック {{done}}/{{total}} 完了",
+      "checks_other": "チェック {{done}}/{{total}} 完了",
+      "codes": {
+        "progress": {
+          "none": "チェックリストはまだありません。",
+          "all": "チェックリストの {{total}} 項目はすべて完了しました。",
+          "all_one": "チェックリストの {{total}} 項目が完了しました。",
+          "all_other": "チェックリストの {{total}} 項目はすべて完了しました。",
+          "some": "チェックリストの {{total}} 項目のうち、{{done}} 項目が完了しました。",
+          "some_one": "チェックリストの {{total}} 項目のうち、{{done}} 項目が完了しました。",
+          "some_other": "チェックリストの {{total}} 項目のうち、{{done}} 項目が完了しました。"
+        },
+        "confirm": {
+          "waiting_reply": "あなたの返事を待っています。"
+        },
+        "now": {
+          "understanding": "コードや資料を読んで、やるべきことを把握しています。",
+          "changing": "コードを変更しています。",
+          "checking": "変更がうまくいくか、テストやチェックを実行して確かめています。",
+          "fixing": "チェックで問題が見つかったので、修正しています。",
+          "waiting": "手を止めて、あなたの返事を待っています。",
+          "wrapping_up": "作業が終わったので、仕上げをしています。",
+          "stuck": "堂々巡りしているようです。あなたからのヒントが必要かもしれません。",
+          "unclear": "作業しています。",
+          "focus": "{{now}}（取り組み中: {{focus}}）",
+          "planning": "進め方を考えています。まだ何も変更していません。"
+        }
+      },
+      "notes": {
+        "looked": "{{count, number}} 個のファイルや場所を見ました",
+        "looked_one": "{{count, number}} 個のファイルや場所を見ました",
+        "looked_other": "{{count, number}} 個のファイルや場所を見ました",
+        "changed_file": "{{file}} を変更しました",
+        "wrote_file": "{{file}} を書きました",
+        "ran_command": "{{command}} を実行しました",
+        "command_failed": "{{command}} の実行でエラーが出ました",
+        "check_passed": "チェックに通りました: {{command}}",
+        "check_failed": "チェックに通りませんでした: {{command}}",
+        "item_done": "項目を 1 つ終えました: {{item}}",
+        "item_added": "チェックリストに追加しました: {{item}}",
+        "helpers_sent": "助っ人を {{count, number}} 人送り出しました: {{titles}}",
+        "helpers_sent_one": "助っ人を {{count, number}} 人送り出しました: {{titles}}",
+        "helpers_sent_other": "助っ人を {{count, number}} 人送り出しました: {{titles}}",
+        "helpers_back": "助っ人が {{count, number}} 人戻ってきました",
+        "helpers_back_one": "助っ人が {{count, number}} 人戻ってきました",
+        "helpers_back_other": "助っ人が {{count, number}} 人戻ってきました",
+        "permission_allowed": "あなたが許可しました: {{summary}}",
+        "permission_denied": "あなたは許可しませんでした: {{summary}}",
+        "goal_round": "目標はまだ達成されていないので、TupAI が作業を続けさせました（{{round, number}} 回目）{{reason}}",
+        "goal_met": "目標を達成しました: {{text}}",
+        "goal_paused": "目標を一時停止しました{{reason}}",
+        "trouble_loop": "TupAI は同じ手順を繰り返していることに気づきました: {{detail}}",
+        "trouble": "TupAI が気づいたこと: {{detail}}",
+        "did": "{{tool}} を使いました: {{what}}",
+        "said_quote": "こう言いました: {{text}}",
+        "ended": "手を止めました。",
+        "waiting_reply": "手を止めて、あなたの返事を待っています。"
+      }
+    },
+    "lessonsView": {
+      "filterLabel": "表示する教訓",
+      "active": "使用中",
+      "all": "すべて",
+      "count": "{{count}} 件",
+      "count_one": "{{count}} 件",
+      "count_other": "{{count}} 件",
+      "search": "教訓を検索",
+      "kinds": {
+        "correction": "訂正",
+        "preference": "ルール",
+        "pitfall": "落とし穴",
+        "workaround": "回避策",
+        "fact": "事実"
+      },
+      "everywhere": "全プロジェクト",
+      "status": {
+        "retired": "廃止",
+        "superseded": "置き換え済み"
+      },
+      "uses": "呼び出し {{recalled}} · 遵守 {{applied}}",
+      "origins": {
+        "user": "あなたの訂正やルールから",
+        "outcome": "エージェント自身が見つけた抜け道から",
+        "model": "モデルが記録",
+        "subagent": "サブエージェントの報告から",
+        "command": "/remember で記録"
+      },
+      "updated": "{{date}} 更新",
+      "editLabel": "教訓の内容",
+      "retire": "廃止",
+      "retireConfirm": "この教訓を廃止しますか？今後どのターンにも持ち込まれません。",
+      "loadFailed": "教訓を読み込めませんでした",
+      "saveFailed": "教訓を変更できませんでした",
+      "empty": "このプロジェクトにはまだ教訓がありません。TupAI はあなたの訂正、自力で見つけた抜け道、/remember から教訓を学びます。",
+      "noneActive": "使用中の教訓はありません。「すべて」には廃止・置き換え済みのものも表示されます。",
+      "noMatch": "一致する教訓はありません。",
+      "noProject": "この会話にはプロジェクトフォルダーがないため、全プロジェクト共通の教訓だけを表示します。",
+      "notes": {
+        "label": "このセッションでの教訓の動き",
+        "recalled": "このターンで教訓を {{count}} 件使いました",
+        "recalled_one": "このターンで教訓を {{count}} 件使いました",
+        "recalled_other": "このターンで教訓を {{count}} 件使いました",
+        "briefed": "サブエージェントへの指示に教訓を {{count}} 件含めました：{{task}}",
+        "briefed_one": "サブエージェントへの指示に教訓を {{count}} 件含めました：{{task}}",
+        "briefed_other": "サブエージェントへの指示に教訓を {{count}} 件含めました：{{task}}",
+        "applied": "教訓が {{count}} 件守られました",
+        "applied_one": "教訓が {{count}} 件守られました",
+        "applied_other": "教訓が {{count}} 件守られました",
+        "retired": "廃止：{{lesson}}",
+        "retiredUnused": "廃止：{{lesson}}（{{count}} 回呼び出され、一度も守られず）",
+        "retiredUnused_one": "廃止：{{lesson}}（{{count}} 回呼び出され、一度も守られず）",
+        "retiredUnused_other": "廃止：{{lesson}}（{{count}} 回呼び出され、一度も守られず）",
+        "retiredContradicted": "廃止：{{lesson}}（あなたの新しい指示と矛盾）",
+        "retiredForgotten": "廃止：{{lesson}}（あなたの依頼で）",
+        "mergedSame": "既存の教訓にまとめました：{{lesson}}",
+        "mergedRefines": "より正確な言い方に置き換えました：{{lesson}}",
+        "mergedContradicts": "記録しませんでした。矛盾する教訓：{{lesson}}"
+      }
+    },
+    "activityLoadFailed": "コラボレーションのアクティビティを読み込めませんでした。再試行しています…",
+    "beeFailed": "このビーがエラーを報告しました。",
+    "beeCounts": {
+      "turns": "{{count}} ターン",
+      "turns_one": "{{count}} ターン",
+      "turns_other": "{{count}} ターン",
+      "received": "{{count}} 件受信",
+      "received_one": "{{count}} 件受信",
+      "received_other": "{{count}} 件受信",
+      "shared": "{{count}} 件共有",
+      "shared_one": "{{count}} 件共有",
+      "shared_other": "{{count}} 件共有",
+      "tools": "ツール呼び出し {{count}} 回",
+      "tools_one": "ツール呼び出し {{count}} 回",
+      "tools_other": "ツール呼び出し {{count}} 回"
+    },
+    "compactionTokens": "{{before}} → 約 {{after}} トークン",
+    "compactionKept": "{{count}} 件の結果を保持",
+    "compactionKept_one": "{{count}} 件の結果を保持",
+    "compactionKept_other": "{{count}} 件の結果を保持",
+    "compactionPruned": "{{count}} 件を削除",
+    "compactionPruned_one": "{{count}} 件を削除",
+    "compactionPruned_other": "{{count}} 件を削除",
+    "compactionDropped": "{{count}} 件の呼び出しを削除",
+    "compactionDropped_one": "{{count}} 件の呼び出しを削除",
+    "compactionDropped_other": "{{count}} 件の呼び出しを削除",
+    "jevLine": {
+      "classifying": "{{judge}} がメッセージを分類中…",
+      "classified": "{{judge}} の分類: {{type}}",
+      "byRule": "ルールによる分類: {{type}}",
+      "shadow": "{{line}}（観察のみ、適用なし）",
+      "late": "{{line}}（このターンには間に合いませんでした）",
+      "fallback": "今回は {{judge}} から明確な分類がなかったため、通常どおり続けます",
+      "unanswered": "今回は {{judge}} から応答がなかったため、通常どおり続けます",
+      "noJudge": "使える判定器がまだないため、メッセージは分類されません。",
+      "setUp": "判定器を設定",
+      "skipped": "分類をスキップしました",
+      "off": "分類はオフです"
+    },
+    "eventLine": {
+      "detail": "詳細: {{detail}}",
+      "progress": {
+        "frame": "タスクフレームを更新しています",
+        "lessons": "過去のセッションの教訓を確認しています",
+        "skills": "このセッションに必要なスキルを選んでいます",
+        "capabilities": "このタスクに必要なケイパビリティを選んでいます",
+        "goal_check": "目標が達成されたか確認しています",
+        "permissionReview": "Jev が審査しています: {{summary}}"
+      },
+      "goal": {
+        "paused": "一時停止中: {{reason}}",
+        "reason": {
+          "interrupted": "あなたが実行を中断しました",
+          "modelCallFailed": "モデルの呼び出しに失敗しました",
+          "needsUser": "エージェントがあなたの対応を必要としています",
+          "needsUserDetail": "エージェントがあなたの対応を必要としています: {{detail}}",
+          "unjudged": "目標を達成したかをどの判定器も判定できず、未完了だと確かめられる項目もありません",
+          "continuationsUsedUp": "続行回数の上限 {{count}} 回に達しました",
+          "continuationsUsedUp_one": "続行回数の上限 {{count}} 回に達しました",
+          "continuationsUsedUp_other": "続行回数の上限 {{count}} 回に達しました",
+          "minutesUsedUp": "制限時間 {{duration}} に達しました",
+          "sessionReopened": "セッションが再び開かれました",
+          "idle": "エージェントが {{count}} 回連続で、何もせずに実行を終えました",
+          "idle_one": "エージェントが {{count}} 回の実行を何もせずに終えました",
+          "idle_other": "エージェントが {{count}} 回連続で、何もせずに実行を終えました",
+          "noProgress": "{{count}} 回連続で進捗がありません。どう進めるか指示してください",
+          "noProgress_one": "{{count}} 回の実行で進捗がありません。どう進めるか指示してください",
+          "noProgress_other": "{{count}} 回連続で進捗がありません。どう進めるか指示してください",
+          "noProgressDetail": "{{count}} 回連続で進捗がありません（{{detail}}）。どう進めるか指示してください",
+          "noProgressDetail_one": "{{count}} 回の実行で進捗がありません（{{detail}}）。どう進めるか指示してください",
+          "noProgressDetail_other": "{{count}} 回連続で進捗がありません（{{detail}}）。どう進めるか指示してください"
+        }
+      },
+      "frame": {
+        "unclearChange": "「{{message}}」はタスクをどう変えるか？"
+      },
+      "search": {
+        "notConfigured": "「{{source}}」は検索ソースではありません（features.web.search）",
+        "failed": "{{source}} でエラーが発生しました: {{message}}",
+        "robotPage": "{{source}} が確認ページを返しました。このクライアントをロボットと見なしています",
+        "httpError": "{{source}} が HTTP {{status}} を返しました",
+        "noResults": "{{source}} が結果のないページを返しました（該当なし、またはページ構造の変更）",
+        "unrelated": "{{source}} が検索内容と無関係な結果を返しました。ロボットと見なしたクライアントに検索エンジンがよく返すものです"
+      },
+      "mcp": {
+        "line": "{{name}}: {{reason}}",
+        "projectUntrusted": "プロジェクトが信頼されておらず、このサーバーはプロジェクトで定義されています",
+        "needsApproval": "プロジェクト（{{source}}）で定義されており、まだ承認されていません。TupAI でこのフォルダーを開いて一度許可するか、TupAI.json で定義してください",
+        "aborted": "起動がキャンセルされました",
+        "rpc": "エラーが返されました",
+        "protocol": "MCP プロトコルに沿わない応答が返されました",
+        "startFailed": "起動できませんでした",
+        "crashedRestarting": "実行中にクラッシュしました。TupAI が 1 回だけ再起動します",
+        "crashedAgain": "再びクラッシュしたため、再起動しません",
+        "restartFailed": "クラッシュし、再起動にも失敗しました",
+        "restartFailedCause": "クラッシュし、再起動にも失敗しました: {{cause}}",
+        "closed": "TupAI が応答を待っている間に接続が閉じられました",
+        "timeout": "時間内に応答がありませんでした",
+        "denied": "このプロジェクトのサーバーの起動をあなたが許可しませんでした",
+        "unreachable": "起動も接続もできませんでした"
+      },
+      "rewind": {
+        "sameCommandFailed": "同じコマンドを {{count}} 回実行し、毎回失敗しました: {{command}}",
+        "sameCommandFailed_one": "失敗するコマンドを {{count}} 回実行しました: {{command}}",
+        "sameCommandFailed_other": "同じコマンドを {{count}} 回実行し、毎回失敗しました: {{command}}",
+        "monitorTrouble": "このターンで逸脱検知が {{count}} 回警告しました（{{kind}}: {{detail}}）",
+        "monitorTrouble_one": "このターンで逸脱検知が {{count}} 回警告しました（{{kind}}: {{detail}}）",
+        "monitorTrouble_other": "このターンで逸脱検知が {{count}} 回警告しました（{{kind}}: {{detail}}）",
+        "trouble": {
+          "loop": "堂々巡り",
+          "drift": "タスクから逸脱"
+        }
+      },
+      "browser": {
+        "finished": "{{status}}: {{reason}}",
+        "openFailed": "ページをブラウザーで開けませんでした。",
+        "openFailedPanel": "ページをアプリのブラウザーパネルで開けませんでした。",
+        "launch": {
+          "noBrowser": {
+            "mac": "/Applications に Chrome、Chromium、Edge、Brave のいずれも見つかりませんでした。いずれかをインストールするか、MU_CHROME に Chromium ベースのブラウザーの実行ファイルを設定してください。",
+            "windows": "Program Files と %LOCALAPPDATA% に Chrome、Chromium、Edge、Brave のいずれも見つかりませんでした。いずれかをインストールするか、MU_CHROME にその .exe を設定してください。",
+            "wsl": "WSL 内にブラウザーが見つかりませんでした。WSL 内にインストールするか、WSL のミラーモードのネットワークをオンにしてください。手順は下の reason フィールドにあります。",
+            "other": "Chrome、Chromium、Edge、Brave のいずれも見つかりませんでした。いずれかをインストールするか、MU_CHROME にその実行ファイルを設定してください。インストールコマンドは下の reason フィールドにあります。"
+          },
+          "windowsBrowserUnusable": "{{executable}} は使用できません。Windows 側のブラウザーには、WSL からはミラーモードのネットワークでしか接続できません。",
+          "profileNoWindowsPath": "プロファイルフォルダー {{profileDir}} に対応する Windows パスがありません（WSL_DISTRO_NAME が設定されていません）。",
+          "browserExitedOnStart": "ブラウザーが起動中に終了しました（終了コード {{exitCode}}）。",
+          "devtoolsPortTimeout": "ブラウザーが時間内に DevTools ポートを開きませんでした。",
+          "cdpConnectTimeout": "ブラウザーへの接続がタイムアウトしました。",
+          "cdpConnectFailed": "ブラウザーに接続できませんでした。",
+          "browserSpawnFailed": "{{command}} を起動できませんでした。"
+        }
+      },
+      "permissions": {
+        "mode": "権限モード：{{mode}}",
+        "request": "あなたの許可を待っています：{{summary}}",
+        "waiting": "あなたの許可を待っています",
+        "answers": {
+          "once": "今回のみ許可しました",
+          "session": "この会話中は許可済み",
+          "deny": "許可しませんでした"
+        },
+        "about": "{{answer}}：{{summary}}",
+        "approved": {
+          "judge": "判定器が確認なしで実行を許可しました：{{summary}}",
+          "grant": "この会話中は許可済みのため、確認なしで実行しました：{{summary}}"
+        }
+      },
+      "board": {
+        "on": "ボード：オン",
+        "off": "ボード：オフ"
+      }
+    },
+    "gauges": {
+      "context": "コンテキスト",
+      "contextHint": "モデルが次に読む内容は、コンテキストの {{percent}} を占めます",
+      "cache": "キャッシュヒット",
+      "cacheHint": "キャッシュヒット：直近のターン {{turn}}、会話全体 {{session}}",
+      "pending": "TupAI の次の返信のあとに表示されます"
+    }
+  },
+  "menu": {
+    "about": "{{name}} について",
+    "settings": "設定…",
+    "services": "サービス",
+    "hide": "{{name}} を非表示",
+    "hideOthers": "ほかを非表示",
+    "unhide": "すべてを表示",
+    "quit": "{{name}} を終了",
+    "file": "ファイル",
+    "newChat": "新しいチャット",
+    "closeWindow": "ウィンドウを閉じる",
+    "edit": "編集",
+    "undo": "元に戻す",
+    "redo": "やり直す",
+    "cut": "切り取り",
+    "copy": "コピー",
+    "paste": "貼り付け",
+    "pasteAndMatchStyle": "貼り付けてスタイルを合わせる",
+    "delete": "削除",
+    "selectAll": "すべて選択",
+    "view": "表示",
+    "reload": "再読み込み",
+    "forceReload": "強制再読み込み",
+    "toggleDevTools": "開発者ツールを切り替え",
+    "resetZoom": "実際のサイズ",
+    "zoomIn": "拡大",
+    "zoomOut": "縮小",
+    "toggleFullScreen": "フルスクリーンを切り替え",
+    "window": "ウィンドウ",
+    "minimize": "しまう",
+    "zoomWindow": "拡大/縮小",
+    "bringAllToFront": "すべてを手前に移動",
+    "help": "ヘルプ",
+    "checkForUpdates": "更新を確認…",
+    "projectPage": "GitHub の {{name}}"
+  },
+  "trayMenu": {
+    "runningTasks": "実行中のタスク: {{count}}"
+  },
+  "noData": "データがありません",
+  "labelWithSelectedCount": "{{label}}（{{selected}}/{{total}}）",
+  "selectedSkillsWithCount": "選択済みスキル · {{count}}",
+  "commandPalette": {
+    "title": "コマンドパレット",
+    "placeholder": "会話、設定、コマンドを検索",
+    "groups": {
+      "conversations": "会話",
+      "settings": "設定",
+      "commands": "コマンド"
+    },
+    "searchMessages": "メッセージから「{{query}}」を検索",
+    "empty": "一致する項目がありません",
+    "noConversations": "まだ会話はありません。入力すると設定やコマンドを探せます。",
+    "openSettings": "設定を開く",
+    "actions": {
+      "newConversation": "新しいチャットを始める",
+      "scheduledTasks": "スケジュールタスクを開く"
+    },
+    "commandWaits": "この応答が終わってから実行します"
+  },
+  "window": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "元のサイズに戻す"
+  },
+  "collapseSidebar": "サイドバーを折りたたむ",
+  "expandSidebar": "サイドバーを展開",
+  "workPanel": {
+    "label": "作業パネル",
+    "tabsLabel": "作業パネルのタブ",
+    "tabs": {
+      "board": "ボード",
+      "judge": "判定",
+      "hive": "Hive",
+      "lessons": "教訓",
+      "files": "ファイル",
+      "preview": "プレビュー",
+      "source": "ソース",
+      "browser": "ブラウザ"
+    },
+    "close": "作業パネルを閉じる",
+    "resize": "作業パネルの幅を変更",
+    "unread": "{{tab}}、新着あり",
+    "noProject": "この会話にはプロジェクトフォルダーがないため、表示するファイルや変更はありません。",
+    "previewEmpty": "プレビューするものはまだありません。会話から開いたファイルがここに表示されます。",
+    "previewHidden": "プレビューは非表示です。",
+    "browserEmpty": "開いているページはありません。上に URL または検索語を入力してください。会話から開いたページもここに表示されます。"
+  },
+  "nodeRuntime": {
+    "title": "Node.js をダウンロードしますか？",
+    "message": "TupAI はエージェントとツールを専用の Node.js で実行します。この Node.js はまだダウンロードされていません。",
+    "detail": "Node.js {{version}}（約 {{size}} MB）を nodejs.org からダウンロードし、次の場所に展開します：\n{{folder}}\n\n「後で」を選ぶと何もダウンロードしません。TupAI は通常どおり開き、Node.js が必要な場所でお知らせし、次回の起動時にもう一度確認します。",
+    "download": "ダウンロード",
+    "later": "後で",
+    "note": "Node.js がダウンロードされていないため、このエージェントは実行できません。次回の起動時にもう一度確認します。",
+    "toolNote": "Node.js がダウンロードされていないため、それを必要とするツールは実行できません。次回の起動時にもう一度確認します。"
+  }
+}

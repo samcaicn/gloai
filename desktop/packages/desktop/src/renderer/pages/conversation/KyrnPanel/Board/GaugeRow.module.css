@@ -1,0 +1,93 @@
+/*
+ * The gauges above the board: one row in the page's own black and white, a hairline under it. The bar's track is the
+ * hairline grey and its fill the text colour; only the ring's arc takes the lavender accent. A narrow panel keeps the
+ * row in one line: the bar gives up its width first, then the cache's name (the longer one) gives up its own; the
+ * numbers always stay whole.
+ */
+
+.row {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-base);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.context,
+.cache {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.context {
+  flex: 1 0 auto;
+}
+
+.cache {
+  flex: 0 1 auto;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.value {
+  flex: none;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  flex: 1 1 0;
+  min-width: 24px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--border-base);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text-primary);
+  transition: width 150ms ease;
+}
+
+.ring {
+  display: block;
+  flex: none;
+}
+
+.ringTrack,
+.ringArc {
+  fill: none;
+  stroke-width: 2px;
+}
+
+.ringTrack {
+  stroke: var(--border-base);
+}
+
+.ringArc {
+  stroke: var(--primary);
+  stroke-linecap: butt;
+  transition: stroke-dasharray 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill,
+  .ringArc {
+    transition: none;
+  }
+}

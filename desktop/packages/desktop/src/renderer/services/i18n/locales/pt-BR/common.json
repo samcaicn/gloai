@@ -1,0 +1,1479 @@
+{
+  "send": "Enviar",
+  "cancel": "Cancelar",
+  "save": "Salvar",
+  "delete": "Excluir",
+  "confirm": "Confirmar",
+  "file": "Arquivo",
+  "folder": "Pasta",
+  "upload": "Fazer upload",
+  "model": "Modelo",
+  "skills": "Habilidades",
+  "workspace": "Projeto",
+  "settings": "Configurações",
+  "system": "Sistema",
+  "about": "Sobre Nós",
+  "back": "Voltar ao Chat",
+  "goBack": "Voltar",
+  "add": "Adicionar",
+  "edit": "Editar",
+  "website": "Site",
+  "version": "Versão",
+  "contact": "Contato",
+  "github": "GitHub",
+  "loading": "Por favor, aguarde...",
+  "copy": "Copiar",
+  "reply": "Responder",
+  "openInBuiltinBrowser": "Abrir no navegador integrado",
+  "openInSystemBrowser": "Abrir no navegador do sistema",
+  "copySuccess": "Copiado",
+  "copyFailed": "Falha ao copiar",
+  "download": "Baixar",
+  "close": "Fechar",
+  "retry": "Tentar novamente",
+  "reload": "Recarregar",
+  "technical_details": "Detalhes Técnicos",
+  "error_details": "Detalhes do Erro",
+  "troubleshooting": "Solução de Problemas",
+  "select": "Selecionar",
+  "expandMore": "Expandir Mais",
+  "collapse": "Recolher",
+  "viewMoreLines": "Ver Mais ({{count}} linhas)",
+  "viewMoreLines_one": "Ver Mais ({{count}} linha)",
+  "viewMoreLines_other": "Ver Mais ({{count}} linhas)",
+  "success": "Sucesso",
+  "error": "Erro",
+  "saveSuccess": "Salvo com sucesso",
+  "saveFailed": "Falha ao salvar",
+  "unknownError": "Erro desconhecido",
+  "confirmDelete": "Confirmar Exclusão",
+  "deleteSuccess": "Excluído com sucesso",
+  "deleteFailed": "Falha ao excluir",
+  "default": "Padrão",
+  "defaultModel": "Modelo Padrão",
+  "escToCancel": "esc para cancelar",
+  "create": "Criar",
+  "createSuccess": "Criado com sucesso",
+  "failed": "Falhou",
+  "browse": "Procurar",
+  "remove": "Remover",
+  "show": "Mostrar",
+  "hide": "Ocultar",
+  "goToSettings": "Ir para Configurações",
+  "forward": "Encaminhar",
+  "historyBack": "Voltar",
+  "more": "Mais",
+  "refresh": "Atualizar",
+  "readOnly": "Somente leitura",
+  "tray.showWindow": "Mostrar TupAI",
+  "tray.newChat": "Novo Chat",
+  "tray.closeToTray": "Ocultar na Bandeja",
+  "tray.hideToMenuBar": "Ocultar na Barra de Menus",
+  "tray.about": "Sobre o TupAI",
+  "tray.restart": "Reiniciar Aplicativo",
+  "tray.quit": "Sair",
+  "tray.pauseAll": "Pausar Todas as Tarefas",
+  "tray.checkUpdate": "Verificar Atualização",
+  "tray.recentChats": "Chats Recentes",
+  "tray.untitled": "Sem título",
+  "backendStartup": {
+    "incompatibleRuntime": {
+      "title": "Este sistema não é suportado pelo backend integrado",
+      "description": "O TupAI abriu, mas o serviço local não pode ser executado nesta versão do Linux. Por favor, atualize para uma distribuição Linux suportada e reinicie o TupAI.",
+      "requiredVersions": "Símbolos de runtime necessários: {{versions}}"
+    },
+    "incompleteInstallation": {
+      "title": "A instalação do TupAI está incompleta",
+      "description": "Esta instalação está faltando recursos locais necessários, portanto o serviço local do TupAI não pode ser iniciado. Por favor, baixe e reinstale a versão mais recente do TupAI.",
+      "downloadLatest": "Baixar mais recente",
+      "runtimeComponentDescription": "Esta instalação não tem os componentes de runtime integrados necessários, portanto {{resource}} não pode iniciar. Reinstale o pacote mais recente do TupAI. Se isso continuar após a reinstalação, verifique se algum software de segurança ou antivírus colocou componentes do TupAI em quarentena."
+    },
+    "packageArchitectureMismatch": {
+      "title": "Arquitetura do pacote do TupAI incompatível",
+      "description": "Este pacote do TupAI é para {{packageArch}}, mas este Mac é {{deviceArch}}. Talvez você tenha baixado o pacote errado. Baixe e instale o pacote {{expectedArch}}."
+    },
+    "dataMigration": {
+      "title": "Falha na migração dos dados locais",
+      "description": "O TupAI abriu, mas o serviço local parou ao inicializar os dados locais. Reinstalar o TupAI pode não corrigir o problema. O log do aplicativo mostra onde a migração do banco de dados local parou."
+    },
+    "databaseNewerThanApp": {
+      "title": "É necessária uma versão mais recente do TupAI",
+      "description": "Seus dados locais foram criados por uma versão mais recente do TupAI e esta versão não consegue abri-los. Atualize o TupAI para a versão mais recente para continuar; seus dados estão intactos e não é preciso reinstalar nem redefinir nada.",
+      "descriptionWithVersion": "Seus dados locais foram criados por uma versão do TupAI mais recente do que a instalada agora (v{{currentVersion}}), então esta versão não consegue abri-los. Atualize o TupAI para a versão mais recente para continuar; seus dados estão intactos e não é preciso reinstalar nem redefinir nada."
+    },
+    "localDataRepair": {
+      "title": "Falha no reparo dos dados locais",
+      "description": "O TupAI abriu, mas o serviço local parou ao preparar dados locais de inicialização, como registros de assistants ou agentes. Reinstalar o TupAI pode não corrigir o problema. O log do aplicativo mostra quais dados locais não puderam ser preparados."
+    },
+    "startupDirectory": {
+      "title": "Diretório de inicialização indisponível",
+      "description": "O TupAI abriu, mas o serviço local não pôde iniciar porque o diretório de trabalho ou de logs configurado não existe, está indisponível ou foi bloqueado por permissões. Verifique se os diretórios existem e permitem escrita, depois reinicie o TupAI."
+    },
+    "recoverableDatabaseCorruption": {
+      "title": "Os dados locais estão corrompidos",
+      "description": "O TupAI detectou que o banco de dados local está corrompido e não pode continuar a inicialização. Após a confirmação, o banco de dados antigo será salvo como backup e um novo banco de dados local será criado para continuar a inicialização. As conversas anteriores não serão mais exibidas, e o banco antigo será mantido como arquivo de backup.",
+      "confirmRebuild": "Fazer backup do DB antigo e criar novo DB",
+      "rebuildFailed": "Falha ao fazer backup do DB antigo e criar novo DB",
+      "confirmDialog": {
+        "title": "Reconstruir o banco de dados?",
+        "content": "Esta ação fará backup do banco de dados corrompido atual e criará um totalmente novo e vazio. As conversas anteriores não serão mais exibidas (o banco antigo é mantido como arquivo de backup). Deseja continuar?",
+        "okText": "Confirmar reconstrução",
+        "cancelText": "Cancelar"
+      }
+    },
+    "transientConcurrentStartup": {
+      "title": "O TupAI está iniciando",
+      "description": "Quando esta janela foi aberta, outra inicialização do TupAI ainda estava usando os dados locais. Isso é temporário e seus dados estão seguros — não é necessário reinstalar. Aguarde um momento e tente novamente ou reinicie o TupAI."
+    },
+    "pendingSlow": {
+      "title": "Iniciando",
+      "description": "O serviço local está iniciando, aguarde. Se não responder após um tempo, você pode sair do aplicativo e abri-lo novamente."
+    },
+    "exited": {
+      "title": "A inicialização não foi concluída",
+      "description": "O serviço local não conseguiu concluir a inicialização e foi encerrado. Reinicie o aplicativo; se isso continuar acontecendo, verifique o log do aplicativo."
+    },
+    "portReportTimeout": {
+      "title": "Tempo de inicialização esgotado",
+      "description": "O serviço local não concluiu a inicialização dentro do tempo esperado. Reinicie o aplicativo; se isso continuar acontecendo, verifique o log do aplicativo."
+    },
+    "startupFailed": {
+      "title": "Falha na inicialização",
+      "description": "O serviço local não conseguiu iniciar. Reinicie o aplicativo; se isso continuar acontecendo, verifique o log do aplicativo."
+    },
+    "openLogs": "Abrir a pasta de logs",
+    "openLogsFailed": "Não foi possível abrir a pasta de logs"
+  },
+  "fileAttach.addFiles": "Adicionar arquivos",
+  "fileAttach.myDevice": "Upload do dispositivo",
+  "fileAttach.failed": "Falha no upload",
+  "fileAttach.uploading": "Enviando...",
+  "fileAttach.uploadSuccess": "Upload bem-sucedido",
+  "fileAttach.cancelUpload": "Cancelar upload",
+  "expand": "Expandir",
+  "name": "Nome",
+  "added": "Adicionado",
+  "status": "Status",
+  "agentMode": "Modo do Agente",
+  "refreshSuccess": "Atualizado",
+  "import": "Importar",
+  "processing": "Processando...",
+  "optional": "(opcional)",
+  "clear": "Limpar",
+  "selectedCount": "{{count}} selecionado(s)",
+  "selectedSkills": "Habilidades selecionadas",
+  "aiAssistant": "Assistente de IA",
+  "kyrn": {
+    "settings": "Configurações do TupAI",
+    "judge": "Configuração do juiz",
+    "reload": "Recarregar",
+    "starting": "Iniciando o TupAI…",
+    "startingHint": "Conectando ao núcleo local do TupAI e lendo a configuração do modelo e do juiz.",
+    "startupError": "Falha ao iniciar o TupAI",
+    "hiveView": {
+      "title": "Hive",
+      "agents": "Subagentes",
+      "open": "Abrir Hive",
+      "inspect": "Inspecionar {{name}}",
+      "summary": "{{active}} ativos · {{done}} concluídos / {{total}}",
+      "summaryEnded": "{{done}} concluídos / {{total}}",
+      "summaryUnfinished": "{{done}} concluídos / {{total}} · {{unfinished}} não terminados",
+      "counts": "em execução: {{running}} · concluídos: {{done}} · com falha: {{failed}}",
+      "none": "Ainda não há subagentes nesta conversa.",
+      "details": "Fluxo e registros",
+      "pending": "Aguardando status da abelha",
+      "unknown": "Status indisponível",
+      "lastStep": "{{status}} · último passo: {{step}}",
+      "runs": "Execuções do Hive",
+      "graph": "Mapa de colaboração",
+      "graphHint": "Quanto mais grossa a linha, mais passou por ela. Escolha uma abelha para abrir sua linha; aponte para um traço para ler o que ele levou.",
+      "map": "Mapa",
+      "legend": "Legenda",
+      "legendDelivery": "entrega",
+      "legendCorrection": "correção",
+      "legendConflict": "divergência",
+      "legendReport": "relato",
+      "nodeSent": "{{count}} enviadas",
+      "nodeReceived": "{{count}} recebidas",
+      "lineDelivery": "{{from}} → {{to}}: {{count}} entregas",
+      "lineDelivery_one": "{{from}} → {{to}}: {{count}} entrega",
+      "lineDelivery_other": "{{from}} → {{to}}: {{count}} entregas",
+      "lineCorrection": "{{from}} corrigiu uma descoberta de {{to}}",
+      "lineConflict": "{{from}} e {{to}} divergem",
+      "lineReport": "{{from}} relatou a TupAI",
+      "deliveries": "Fluxo de informações",
+      "noDeliveries": "Ainda não há entregas confirmadas.",
+      "board": "Quadro compartilhado",
+      "noNotes": "Ainda não há descobertas compartilhadas.",
+      "context": "Contexto de execução",
+      "contextHint": "Mensagens registradas e saída de ferramenta concluída, não o prompt completo do modelo. A saída aparece após a conclusão.",
+      "focus": "Atribuição",
+      "missingFocus": "A atribuição não foi registrada para esta execução.",
+      "current": "Atividade atual",
+      "records": "Registros de execução",
+      "noRecords": "Ainda não há registros de execução.",
+      "raw": "Evidência bruta",
+      "input": "Entrada",
+      "output": "Saída",
+      "assistant": "Mensagem da abelha",
+      "thinking": "Raciocínio publicado",
+      "user": "Entrada da tarefa",
+      "custom": "Mensagem do harness",
+      "tool": "Ferramenta",
+      "waitingOutput": "Aguardando saída de ferramenta concluída.",
+      "noText": "Sem saída de texto.",
+      "selectBee": "Selecione uma abelha para inspecionar sua atividade.",
+      "unknownSource": "Fonte desconhecida",
+      "noteMissing": "Descoberta não registrada.",
+      "allFlow": "Todas as entregas",
+      "beeFlow": "Entregas para {{name}}",
+      "audit": "Vereditos do Jev",
+      "waitingRun": "Aguardando eventos registrados deste Hive.",
+      "recordedAt": "Registrado em {{time}}",
+      "beeMissing": "Esta abelha não está no instantâneo registrado.",
+      "snapshot": "Último estado informado",
+      "updated": "Última atualização {{time}}",
+      "runTitle": {
+        "tasks": "{{count}} tarefas",
+        "tasks_one": "{{count}} tarefa",
+        "tasks_other": "{{count}} tarefas",
+        "chain": "uma cadeia de {{count}} etapas",
+        "chain_one": "uma cadeia de {{count}} etapa",
+        "chain_other": "uma cadeia de {{count}} etapas"
+      },
+      "choosingRoles": "escolhendo um papel, um modelo e um nível de raciocínio para {{count}} subagentes…",
+      "choosingRoles_one": "escolhendo um papel, um modelo e um nível de raciocínio para {{count}} subagente…",
+      "choosingRoles_other": "escolhendo um papel, um modelo e um nível de raciocínio para {{count}} subagentes…",
+      "activity": {
+        "notesReceived": "← {{count}} descobertas das outras abelhas",
+        "notesReceived_one": "← {{count}} descoberta das outras abelhas",
+        "notesReceived_other": "← {{count}} descobertas das outras abelhas",
+        "askedFindings": "← perguntaram o que descobriu até agora",
+        "toldWrapUp": "← pediram para finalizar e enviar o relatório",
+        "toolFailed": "{{tool}} falhou",
+        "retry": "nova tentativa {{attempt}}/{{maxAttempts}}: {{message}}",
+        "modelError": "erro do modelo: {{message}}",
+        "compacting": "compactando o contexto",
+        "lateNotes": "← última chamada: {{count}} descobertas atrasadas",
+        "lateNotes_one": "← última chamada: {{count}} descoberta atrasada",
+        "lateNotes_other": "← última chamada: {{count}} descobertas atrasadas"
+      },
+      "errors": {
+        "cancelled": "a execução foi cancelada",
+        "stoppedByUser": "interrompido pelo usuário",
+        "endedByUser": "encerrado pelo usuário",
+        "stalledModel": "o modelo ficou {{duration}} sem dar sinal de vida",
+        "stalledTool": "a chamada de {{tool}} ficou {{duration}} sem dar sinal de vida",
+        "timeBudget": "limite de tempo de {{duration}} atingido",
+        "timeBudgetReached": "limite de tempo atingido",
+        "noReportInTime": "{{reason}}; nenhum relatório em até {{duration}} após o pedido",
+        "modelFailed": "a solicitação ao modelo falhou",
+        "modelAborted": "a solicitação ao modelo foi interrompida",
+        "retriesExhausted": "a solicitação ao modelo continuou falhando",
+        "exitedCode": "o subagente saiu com o código {{exitCode}} antes de terminar",
+        "exitedSignal": "o subagente foi encerrado por {{signal}} antes de terminar",
+        "exitedKilled": "o subagente foi encerrado por um sinal antes de terminar",
+        "chainBroken": "não começou: a etapa anterior (“{{step}}”) não terminou",
+        "detail": "{{reason}}: {{detail}}"
+      }
+    },
+    "judgeView": {
+      "empty": "Ainda não há vereditos registrados nesta sessão.",
+      "question": "O que foi julgado",
+      "result": "Veredito",
+      "action": "Impacto na execução",
+      "details": "Respostas e evidências",
+      "raw": "Registros originais",
+      "answers": "Respostas do modelo",
+      "noResult": "Nenhum resultado legível foi registrado",
+      "unreported": "Não registrado",
+      "scoreValue": "Pontuação: {{value}}",
+      "latency": "{{ms}} ms",
+      "more": "+{{count}} a mais",
+      "batch": "Candidatos cobertos por este registro: {{count}}.",
+      "batchFailures": "Sem resposta, com a estratégia padrão aplicada: {{count}}.",
+      "changedThinking": "Nível de raciocínio: {{from}} → {{to}}",
+      "sentHints": "Dicas enviadas ao modelo principal",
+      "unlinked": "Registro independente",
+      "unlinkedHint": "Registrado sem correlação de turno. É exibido sozinho e não é combinado com registros próximos no tempo.",
+      "state": {
+        "pending": "Aguardando",
+        "returned": "Veredito retornado",
+        "confirmed": "Efeito confirmado",
+        "shadow": "Modo sombra",
+        "fallback": "Estratégia padrão",
+        "late": "Chegou atrasada",
+        "rule": "Resolvido por regra",
+        "ended": "Espera encerrada",
+        "unknown": "Resultado desconhecido"
+      },
+      "actions": {
+        "toRuntime": "O veredito foi entregue à camada de execução; isso não prova que a operação foi concluída.",
+        "observeOnly": "Modo sombra: registrado para comparação, sem mudar a execução com base neste veredito.",
+        "useDefault": "Foi usada a estratégia padrão deste ponto de decisão. Isso não é permissão para prosseguir: as verificações de risco e os portões do Hive ficam do lado cauteloso por padrão.",
+        "lateIgnored": "O turno já havia começado; este veredito atrasado não o alterou.",
+        "waiting": "Aguardando o veredito.",
+        "waitEnded": "A espera ou a tarefa terminou sem um veredito final registrado.",
+        "recordedOnly": "Há um registro, mas nenhum efeito na execução foi confirmado.",
+        "mainGiven": "O ajuste ou as dicas registrados abaixo foram aplicados ao modelo principal.",
+        "allowPublish": "Publicação permitida. Consulte o quadro compartilhado para ver o que foi realmente publicado.",
+        "denyPublish": "A publicação deste candidato não foi permitida.",
+        "allowDelivery": "Entrega permitida, mas ainda não há recibo registrado.",
+        "denyDelivery": "A entrega desta descoberta a esta abelha não foi permitida.",
+        "delivered": "Um recibo confirma que esta descoberta chegou à abelha destinatária."
+      },
+      "questions": {
+        "preflight": "Como este pedido deve ser tratado?",
+        "interjection": "Esta interrupção é uma correção, um acompanhamento ou uma pergunta paralela?",
+        "admission": "Quais trechos da saída da ferramenta devem entrar no contexto?",
+        "testLog": "Quais partes de um log de testes devem chegar ao modelo?",
+        "forget": "A saída antiga completa da ferramenta ainda é necessária?",
+        "compaction": "Quais resultados antigos podem ser podados?",
+        "skills": "Quais habilidades são relevantes para esta tarefa?",
+        "locate": "Quais arquivos têm mais chance de ser relevantes?",
+        "routing": "Que papel e nível de raciocínio servem a cada subtarefa?",
+        "publish": "Vale a pena compartilhar esta descoberta com as outras abelhas?",
+        "deliver": "Esta descoberta ajuda a abelha destinatária?",
+        "browser": "O que o navegador deve fazer em seguida?",
+        "recall": "Quais lições anteriores se aplicam agora?",
+        "capture": "Isto é uma correção ou preferência duradoura?",
+        "outcome": "Este turno achou uma saída que vale guardar?",
+        "worth": "Vale a pena guardar esta lição?",
+        "merge": "A nova lição deve se juntar a uma já guardada?",
+        "applied": "As lições foram seguidas?",
+        "risk": "Esta ação exige confirmação do usuário?",
+        "drift": "O trabalho continua no rumo certo?",
+        "completion": "Esta alteração ainda precisa de verificação?",
+        "notify": "Quando esta notificação deve chegar ao modelo?",
+        "cache": "O cache da sessão deve continuar aquecido?",
+        "other": "Veredito registrado",
+        "rewind": "Esta abordagem é um beco sem saída do qual vale retroceder?",
+        "goalMet": "O objetivo foi alcançado?",
+        "outputDrift": "A saída viola alguma das suas regras?",
+        "taskFrame": "Esta mensagem muda a definição da tarefa?",
+        "constraint": "Esta chamada viola alguma das suas restrições?",
+        "capabilities": "Quais capacidades esta tarefa exige?",
+        "diagnostics": "Quando estes diagnósticos devem chegar ao modelo?",
+        "patch": "O patch do subagente fica dentro da tarefa dele?",
+        "review": "Qual a gravidade de cada apontamento da revisão?",
+        "board": "Em que ponto está o trabalho?",
+        "relate": "O que esta descoberta significa para uma anterior?",
+        "approval": "É um passo de que a tarefa precisa, feito do jeito que você esperaria?"
+      },
+      "fields": {
+        "turnType": "Tipo de tarefa",
+        "gear": "Nível da tarefa",
+        "thinking": "Nível de raciocínio",
+        "agent": "Papel sugerido",
+        "strength": "Força do modelo",
+        "drop": "Filtragem sugerida",
+        "keep": "Retenção sugerida",
+        "kind": "Tipo de conteúdo",
+        "score": "Pontuação",
+        "hide": "Habilidades sugeridas para ocultar",
+        "relevant": "Habilidades relevantes",
+        "apply": "Lições sugeridas",
+        "applied": "Seguidas",
+        "notApplied": "Não seguidas",
+        "publish": "Permitir publicação",
+        "deliver": "Permitir entrega",
+        "path": "Arquivo candidato",
+        "result": "Resultado",
+        "reason": "Motivo",
+        "keepResult": "Manter resultado",
+        "keepCall": "Manter chamada",
+        "broken": "Regras violadas",
+        "open": "Capacidades a ativar",
+        "errors": "Erros",
+        "warnings": "Avisos",
+        "withinTask": "Dentro da tarefa",
+        "unrelated": "Arquivos não relacionados",
+        "judged": "Arquivos avaliados",
+        "priorities": "Prioridades",
+        "phase": "Fase",
+        "focus": "Item em andamento",
+        "needsUser": "Precisa do usuário",
+        "update": "Reescrever o painel",
+        "relation": "Relação",
+        "operation": "Próximo passo",
+        "target": "Elemento",
+        "probability": "Probabilidade",
+        "omit": "Partes do log omitidas",
+        "key": "Eventos que valem contar"
+      },
+      "values": {
+        "true": "Sim",
+        "false": "Não",
+        "yes": "Sim",
+        "no": "Não",
+        "unsure": "Incerto",
+        "unknown": "Desconhecido",
+        "chat": "Conversa",
+        "chat_question": "Pergunta conceitual",
+        "quick_lookup": "Consulta rápida",
+        "single_edit": "Edição única",
+        "multi_step_task": "Tarefa em várias etapas",
+        "research": "Investigação",
+        "design_discussion": "Discussão de design",
+        "light": "Leve",
+        "standard": "Padrão",
+        "heavy": "Pesado",
+        "low": "Baixo",
+        "medium": "Médio",
+        "high": "Alto",
+        "keep": "Manter",
+        "shrink": "Encurtar",
+        "capture": "Registrar",
+        "skip": "Ignorar",
+        "error": "Erro",
+        "result": "Resultado útil",
+        "progress": "Saída de progresso",
+        "warning": "Aviso",
+        "passing": "Verificações aprovadas",
+        "other": "Outro",
+        "allow": "Sem confirmação extra",
+        "confirm": "Perguntar ao usuário antes",
+        "now": "Entregar agora",
+        "next_turn": "Segurar até o próximo turno",
+        "drop": "Descartar",
+        "on_track": "No rumo certo",
+        "detour": "Desvio",
+        "drift": "Fora do rumo",
+        "loop": "Em loop",
+        "done": "Lembrete desnecessário",
+        "nudge": "Lembrar de verificar",
+        "steer": "Direcionar o trabalho atual",
+        "followUp": "Enfileirar como acompanhamento",
+        "warm": "Manter aquecido",
+        "stop": "Parar de aquecer",
+        "default": "Padrão",
+        "finding": "Descoberta",
+        "dead_end": "Beco sem saída",
+        "decision": "Decisão",
+        "blocker": "Bloqueio",
+        "abstain": "O juiz se absteve",
+        "shadow": "Modo sombra",
+        "skipped": "Ignorado pelo usuário",
+        "timeout": "Tempo esgotado",
+        "all": "Todos os candidatos falharam",
+        "unreachable": "Juiz inacessível",
+        "unexpected": "Erro inesperado",
+        "off": "Desligado",
+        "continue": "Continuar",
+        "propose": "Propor retrocesso",
+        "met": "Alcançado",
+        "ask": "Perguntar ao usuário",
+        "unjudged": "Não avaliado",
+        "none": "Nenhum",
+        "new_task": "Nova tarefa",
+        "constraint": "Nova restrição",
+        "correction": "Correção",
+        "subgoal": "Novo subobjetivo",
+        "unclear": "Não dá para saber",
+        "hold": "Adiar",
+        "no_answer": "Sem resposta a tempo",
+        "aborted": "Cancelado",
+        "auth": "Chave do juiz rejeitada",
+        "payment_required": "O juiz precisa de uma forma de pagamento",
+        "rate_limited": "Limite de taxa do juiz atingido",
+        "bad_request": "O juiz rejeitou a solicitação",
+        "server": "Erro no servidor do juiz",
+        "invalid_response": "Resposta ilegível do juiz",
+        "verdict": "O juiz respondeu",
+        "learn": "Guardar a saída",
+        "reusable": "Útil de novo",
+        "one_off": "Só desta vez",
+        "already_known": "Já conhecida",
+        "same": "Mesma lição",
+        "refines": "Mais precisa",
+        "contradicts": "Contradiz",
+        "supersedes": "Substitui",
+        "supports": "Confirma",
+        "unrelated": "Sem relação",
+        "preference": "Regra permanente",
+        "approve": "Deixar executar",
+        "beyond": "Mais do que você pediu",
+        "CLICK": "Clicar",
+        "TYPE_TEXT": "Digitar texto",
+        "SELECT": "Escolher de uma lista",
+        "SCROLL_DOWN": "Rolar para baixo",
+        "SCROLL_UP": "Rolar para cima",
+        "WAIT": "Esperar a página",
+        "DONE": "Concluído",
+        "BLOCKED": "Sem como avançar",
+        "listing": "Nomes de arquivo ou correspondências",
+        "content": "Código ou texto",
+        "log": "Saída de build ou de testes",
+        "data": "Fatos consultados"
+      },
+      "probabilityValue": "Probabilidade de “sim”: {{percent}}",
+      "optionProbability": "{{option}} {{percent}}",
+      "reasonValue": "Motivo: {{reason}}",
+      "fieldValue": "{{field}}: {{value}}",
+      "errorValue": "Erro · {{kind}}",
+      "noAnswerAfter": "Sem resposta após {{duration}}",
+      "hints": {
+        "answered": "Esta mensagem responde à própria pergunta do agente: aja com base nela e não pergunte de novo.",
+        "resolve": "O pedido está vago e pode alterar arquivos: examine o projeto, diga qual suposição fez e pergunte só o que não dá para encontrar aqui.",
+        "clarify": "O pedido parece pouco especificado: faça primeiro uma pergunta objetiva.",
+        "side_question": "Esta é uma pergunta paralela: responda brevemente e depois continue com a tarefa principal.",
+        "plan_first": "Isto parece grande ou arriscado: escreva um plano curto e execute-o; pare para confirmar só antes de um passo que não pode ser desfeito.",
+        "try_hive": "Isto parece difícil: se a causa for desconhecida ou uma tentativa direta falhar, use o Hive.",
+        "try_delegate": "Isto se divide em partes independentes: considere passá-las a subagentes em paralelo."
+      },
+      "hintChips": {
+        "answered": "Resposta ao agente",
+        "resolve": "Olhar antes",
+        "clarify": "Perguntar antes",
+        "side_question": "Pergunta paralela",
+        "plan_first": "Planejar antes",
+        "try_hive": "Hive se travar",
+        "try_delegate": "Delegar partes"
+      },
+      "answerWords": {
+        "preflight": {
+          "questions": {
+            "turn_type": "Tipo de tarefa",
+            "is_side_question": "Pergunta paralela",
+            "needs_clarification": "Vago demais para agir",
+            "needs_files_changed": "Precisa alterar o código",
+            "needs_memory": "Anotações anteriores ajudariam",
+            "swarm_worthy": "Partes independentes",
+            "plan_first": "Grande ou arriscado",
+            "task_complexity": "Escopo",
+            "reasoning_depth": "Profundidade de raciocínio",
+            "tool_complexity": "Uso de ferramentas"
+          },
+          "answers": {
+            "chat": "Conversa",
+            "chat_question": "Pergunta conceitual",
+            "quick_lookup": "Consulta rápida",
+            "single_edit": "Edição única",
+            "multi_step_task": "Tarefa em várias etapas",
+            "research": "Investigação",
+            "design_discussion": "Discussão de design",
+            "other": "Outra coisa"
+          },
+          "levels": {
+            "task_complexity": {
+              "0": "Uma pergunta",
+              "1": "Um ponto do código",
+              "2": "Vários pontos do código",
+              "3": "O código inteiro"
+            },
+            "reasoning_depth": {
+              "0": "Lembrar ou consultar",
+              "1": "Uma explicação simples",
+              "2": "Uma análise cuidadosa",
+              "3": "Raciocínio profundo"
+            },
+            "tool_complexity": {
+              "0": "Nenhum",
+              "1": "Uma ou duas leituras",
+              "2": "Várias chamadas com alterações",
+              "3": "Muitas chamadas com builds ou testes"
+            }
+          }
+        },
+        "interjection": {
+          "questions": {
+            "kind": "O que a mensagem é"
+          },
+          "answers": {
+            "correction": "Uma correção",
+            "addition": "Mais trabalho para depois",
+            "side_question": "Uma pergunta sem relação",
+            "other": "Outra coisa"
+          }
+        },
+        "admission": {
+          "questions": {
+            "kind": "Tipo de saída",
+            "chunk": "Parte {{number}} da saída"
+          },
+          "answers": {
+            "error": "Um erro",
+            "result": "Um resultado útil",
+            "progress": "Saída de progresso",
+            "warning": "Avisos repetidos",
+            "passing": "Verificações aprovadas",
+            "other": "Outra coisa"
+          }
+        },
+        "testLog": {
+          "questions": {
+            "part": "Parte {{number}} do log"
+          },
+          "answers": {
+            "needed": "Necessária além do resumo",
+            "not_needed": "O resumo basta",
+            "unclear": "Não dá para saber"
+          }
+        },
+        "forget": {
+          "questions": {
+            "still_needed": "A saída completa será necessária de novo"
+          }
+        },
+        "compaction": {
+          "questions": {
+            "kind": "Tipo de resultado",
+            "result_needed": "Ainda precisa do resultado completo",
+            "call_matters": "A chamada em si ainda importa"
+          },
+          "answers": {
+            "error": "Um erro",
+            "listing": "Nomes de arquivo ou correspondências",
+            "content": "Código ou texto",
+            "log": "Saída de build ou de testes",
+            "data": "Fatos consultados",
+            "other": "Outra coisa"
+          }
+        },
+        "skills": {
+          "questions": {
+            "skill": "A habilidade {{number}} ajudaria"
+          }
+        },
+        "locate": {
+          "questions": {
+            "path": "O arquivo {{number}} é relevante"
+          }
+        },
+        "routing": {
+          "questions": {
+            "agent": "Tipo de trabalho",
+            "difficulty": "Dificuldade da tarefa",
+            "reasoning": "Raciocínio necessário"
+          },
+          "answers": {
+            "other": "Nenhum destes"
+          },
+          "levels": {
+            "difficulty": {
+              "0": "Mecânica",
+              "1": "Rotineira",
+              "2": "Exige um design cuidadoso",
+              "3": "Difícil até para um especialista"
+            },
+            "reasoning": {
+              "0": "Quase nenhum",
+              "1": "Algum",
+              "2": "Muito",
+              "3": "Profundo, em muitas etapas"
+            }
+          }
+        },
+        "publish": {
+          "questions": {
+            "share_worthy": "Vale a pena compartilhar",
+            "kind": "Tipo de nota"
+          },
+          "answers": {
+            "finding": "Uma descoberta",
+            "dead_end": "Um beco sem saída",
+            "decision": "Uma decisão",
+            "blocker": "Um bloqueio",
+            "other": "Progresso de rotina"
+          }
+        },
+        "deliver": {
+          "questions": {
+            "useful": "Ajuda a abelha destinatária"
+          }
+        },
+        "browser": {
+          "questions": {
+            "operation": "Próximo passo",
+            "click_target": "Onde clicar",
+            "type_text_target": "Onde digitar",
+            "select_target": "O que escolher"
+          },
+          "answers": {
+            "CLICK": "Clicar",
+            "TYPE_TEXT": "Digitar texto",
+            "SELECT": "Escolher de uma lista",
+            "SCROLL_DOWN": "Rolar para baixo",
+            "SCROLL_UP": "Rolar para cima",
+            "WAIT": "Esperar a página",
+            "DONE": "Concluído",
+            "other": "Sem como avançar",
+            "none": "Nada serve"
+          }
+        },
+        "recall": {
+          "questions": {
+            "lesson": "A lição {{number}} se aplica"
+          }
+        },
+        "capture": {
+          "questions": {
+            "correction": "Corrige um erro",
+            "preference": "Define uma regra permanente"
+          }
+        },
+        "outcome": {
+          "questions": {
+            "way_out": "Achou outro caminho que funcionou"
+          }
+        },
+        "worth": {
+          "questions": {
+            "lesson": "Lição {{number}}"
+          },
+          "answers": {
+            "reusable": "Útil de novo",
+            "one_off": "Só desta vez",
+            "already_known": "Já conhecida",
+            "unclear": "Não dá para saber"
+          }
+        },
+        "merge": {
+          "questions": {
+            "kept": "Lição guardada {{number}}"
+          },
+          "answers": {
+            "same": "A mesma lição",
+            "refines": "A nova é mais precisa",
+            "contradicts": "Elas se contradizem",
+            "unrelated": "Fala de outra coisa",
+            "unclear": "Não dá para saber"
+          }
+        },
+        "applied": {
+          "questions": {
+            "lesson": "Lição {{number}} seguida"
+          }
+        },
+        "risk": {
+          "questions": {
+            "destructive": "Apaga ou não pode ser desfeito",
+            "requested": "Você pediu isso"
+          }
+        },
+        "drift": {
+          "questions": {
+            "course": "Rumo do trabalho"
+          },
+          "answers": {
+            "on_track": "No rumo certo",
+            "detour": "Um desvio necessário",
+            "drift": "Saindo do rumo",
+            "loop": "Andando em círculos",
+            "other": "Não dá para saber"
+          }
+        },
+        "completion": {
+          "questions": {
+            "claims_done": "Diz que o trabalho está pronto",
+            "needs_check": "Deveria ser verificado executando"
+          }
+        },
+        "notify": {
+          "questions": {
+            "urgency": "Quando o agente precisa saber"
+          },
+          "answers": {
+            "now": "Imediatamente",
+            "next_turn": "Depois do passo atual",
+            "drop": "Nunca",
+            "other": "Não dá para saber"
+          }
+        },
+        "cache": {
+          "questions": {
+            "finished": "A conversa terminou",
+            "open": "Uma pergunta está esperando por você"
+          }
+        },
+        "rewind": {
+          "questions": {
+            "dead_end": "A mesma abordagem falhando de novo",
+            "progress": "Fazendo progresso"
+          }
+        },
+        "goalMet": {
+          "questions": {
+            "achieved": "Objetivo totalmente alcançado",
+            "needs_user": "Não dá para continuar sem você"
+          }
+        },
+        "outputDrift": {
+          "questions": {
+            "rule": "Vai contra a regra {{number}}"
+          }
+        },
+        "taskFrame": {
+          "questions": {
+            "change": "Mudança na tarefa"
+          },
+          "answers": {
+            "new_task": "Uma nova tarefa",
+            "constraint": "Uma nova regra para o trabalho",
+            "correction": "A abordagem está errada",
+            "subgoal": "Próximo passo da mesma tarefa",
+            "none": "Nenhuma mudança"
+          }
+        },
+        "constraint": {
+          "questions": {
+            "constraint": "Vai contra a restrição {{number}}"
+          }
+        },
+        "capabilities": {
+          "questions": {
+            "capability": "A capacidade {{number}} é necessária"
+          }
+        },
+        "diagnostics": {
+          "questions": {
+            "more_edits_coming": "Vêm mais alterações",
+            "warnings_are_style": "Só avisos de estilo"
+          }
+        },
+        "patch": {
+          "questions": {
+            "within_task": "Fica dentro da tarefa",
+            "file": "A tarefa pede mudar o arquivo {{number}}"
+          }
+        },
+        "review": {
+          "questions": {
+            "bug": "O apontamento {{number}} é um bug real",
+            "inScope": "O apontamento {{number}} é sobre esta mudança"
+          }
+        },
+        "board": {
+          "questions": {
+            "phase": "O que o agente está fazendo",
+            "needs_user": "Precisa de algo de você",
+            "focus": "Item em andamento",
+            "event": "Evento {{number}}",
+            "changed": "Há novidades para contar"
+          },
+          "answers": {
+            "understanding": "Entendendo a tarefa",
+            "planning": "Planejando",
+            "changing": "Fazendo alterações",
+            "checking": "Verificando o trabalho",
+            "fixing": "Corrigindo o que a verificação encontrou",
+            "waiting": "Esperando por você",
+            "wrapping_up": "Finalizando",
+            "stuck": "Parece travado",
+            "other": "Não dá para saber",
+            "none": "Nenhum deles",
+            "key": "Uma novidade que vale contar",
+            "routine": "Um passo de rotina",
+            "unclear": "Não dá para saber"
+          }
+        },
+        "relate": {
+          "questions": {
+            "relation": "Efeito sobre a descoberta anterior"
+          },
+          "answers": {
+            "supersedes": "Substitui a anterior",
+            "contradicts": "Contradiz a anterior",
+            "supports": "Confirma a anterior",
+            "none": "Não afeta a anterior"
+          }
+        },
+        "approval": {
+          "questions": {
+            "verdict": "O que o passo é"
+          },
+          "answers": {
+            "needed": "Necessário para a tarefa",
+            "beyond": "Mais do que você pediu",
+            "unrelated": "Fora da tarefa",
+            "unclear": "Não dá para saber"
+          }
+        }
+      },
+      "log": {
+        "thisTurn": "Este turno",
+        "earlier": "Mostrar linhas anteriores",
+        "latest": "Ir para o mais recente",
+        "times": "×{{times}}"
+      }
+    },
+    "empty": "Ainda não há eventos registrados nesta sessão.",
+    "quiet": "Sem atividade há {{duration}}",
+    "passed": "Aprovado",
+    "filtered": "Filtrado",
+    "image": "Imagem retornada por uma ferramenta",
+    "beeStatus": {
+      "queued": "Na fila",
+      "starting": "Iniciando",
+      "thinking": "Pensando",
+      "tool": "Executando ferramenta",
+      "retrying": "Tentando novamente",
+      "wrapping-up": "Gerando relatório",
+      "done": "Concluído",
+      "failed": "Falhou",
+      "stopped": "Interrompido",
+      "timed-out": "Tempo esgotado"
+    },
+    "event": {
+      "preflight.pending": "Classificando",
+      "preflight.verdict": "Classificação",
+      "preflight.wait_end": "Espera pela classificação encerrada",
+      "decision": "Veredito",
+      "progress": "Progresso",
+      "agent_start": "Tarefa iniciada",
+      "agent_settled": "Tarefa concluída",
+      "kyrn_rpc_closed": "Ambiente de execução encerrado",
+      "auto_compaction_start": "Compactando o contexto",
+      "auto_compaction_end": "Compactação concluída",
+      "hive.note": "Descoberta compartilhada",
+      "hive.delivery": "Entrega confirmada",
+      "hive.gate": "Portão do Jev",
+      "hive.manifest": "Atribuição do Hive",
+      "bee.event": "Evento de abelha",
+      "memory.recalled": "Experiência recuperada",
+      "artifact.image": "Imagem",
+      "memory.stored": "Experiência salva",
+      "memory.applied": "Lições seguidas",
+      "memory.retired": "Lição aposentada",
+      "memory.merged": "Lições unidas",
+      "compaction_start": "Compactando o contexto…",
+      "compaction_end": "Compactação encerrada",
+      "context.usage": "Uso do contexto",
+      "context.policy": "Modo de compactação beta",
+      "compaction.plan": "Plano de compactação beta",
+      "goal": {
+        "state": "Status do objetivo"
+      },
+      "board": {
+        "update": "Painel atualizado",
+        "switched": "Painel ativado ou desativado"
+      },
+      "permissions": {
+        "mode": "Modo de permissões",
+        "request": "Permissão solicitada",
+        "resolved": "Permissão respondida",
+        "approved": "Executado sem perguntar"
+      },
+      "checkpoint": {
+        "taken": "Ponto de controle salvo",
+        "off": "Pontos de controle desativados"
+      },
+      "rewind": {
+        "proposed": "Retrocesso proposto",
+        "done": "Retrocedido",
+        "undone": "Retrocesso desfeito"
+      },
+      "ttsr": {
+        "interrupted": "Saída interrompida por uma regra"
+      },
+      "frame": {
+        "updated": "Definição da tarefa atualizada"
+      },
+      "capability": {
+        "opened": "Capacidade ativada"
+      },
+      "inherit": {
+        "found": "Configuração herdável encontrada",
+        "rule": "Regra herdada usada"
+      },
+      "mcp": {
+        "started": "Servidor MCP iniciado",
+        "failed": "Falha no servidor MCP",
+        "tools_changed": "Ferramentas MCP alteradas"
+      },
+      "constraint": {
+        "blocked": "Bloqueado pela sua restrição"
+      },
+      "browser": {
+        "run": "Tarefa do navegador",
+        "step": "Etapa do navegador"
+      },
+      "diagnostics": {
+        "delivered": "Diagnósticos entregues",
+        "held": "Diagnósticos adiados",
+        "dropped": "Diagnósticos descartados"
+      },
+      "background": {
+        "start": "Tarefa em segundo plano iniciada",
+        "exit": "Tarefa em segundo plano encerrada",
+        "stop": "Tarefa em segundo plano interrompida",
+        "match": "Correspondência na saída em segundo plano"
+      },
+      "web": {
+        "fetch": "Página obtida",
+        "search": "Busca na web"
+      },
+      "swarm": {
+        "worktree": {
+          "created": "Árvore de trabalho criada",
+          "removed": "Árvore de trabalho removida"
+        },
+        "patch": {
+          "ready": "Patch pronto",
+          "applied": "Patch aplicado"
+        }
+      }
+    },
+    "contextUsage": "Uso do contexto",
+    "contextPending": "Aguardando uma nova medição do contexto",
+    "betaActive": "Beta ativa",
+    "betaShadow": "Beta em modo sombra",
+    "betaOff": "Beta desativada",
+    "contextWaiting": "Aguardando o ambiente de execução",
+    "contextTrigger": "Dispara em {{tokens}} tokens",
+    "autoOff": "Compactação automática desativada",
+    "compacting": "Compactando o contexto…",
+    "compactionResults": "Resultados da compactação ({{count}})",
+    "noCompaction": "Ainda não há compactação registrada nesta sessão.",
+    "betaApplied": "Poda beta aplicada",
+    "summaryApplied": "Compactação por resumo aplicada",
+    "compactionAborted": "Compactação cancelada",
+    "compactionFailed": "Falha na compactação",
+    "compactionSavings": "Redução do contexto ≈{{saved}}",
+    "compactionEstimate": "Os tokens após a compactação são estimados; a próxima resposta do modelo atualiza o uso.",
+    "cacheHit": "Acertos de cache",
+    "cachePending": "Nenhum uso de cache informado ainda",
+    "cacheLabel": "Taxa de acerto de cache da sessão: {{percent}}",
+    "cacheDetail": "Total da sessão: {{read}} lidos do cache / {{total}} tokens de entrada. A entrada inclui tokens sem cache, lidos do cache e gravados no cache; a saída não conta. A compactação não zera os totais.",
+    "brand": {
+      "tagline": "Um agente de programação com núcleo de julgamento",
+      "judge": {
+        "idle": "Juiz de prontidão",
+        "judging": "Juiz avaliando",
+        "off": "Juiz desativado"
+      },
+      "starters": {
+        "hint": "Não sabe por onde começar? Experimente uma destas opções:",
+        "understand": {
+          "title": "Entender este projeto",
+          "desc": "Mapear a estrutura, os pontos de entrada e os módulos principais",
+          "prompt": "Primeiro leia este projeto e me explique a estrutura geral, os principais pontos de entrada e os módulos mais importantes. Indique os três arquivos que vale a pena ler primeiro."
+        },
+        "fix": {
+          "title": "Encontrar e corrigir um problema",
+          "desc": "Partir de um erro ou sintoma até chegar à causa",
+          "prompt": "Encontrei um problema: <descreva o sintoma ou cole o erro>. Primeiro reproduza e encontre a causa raiz, depois faça a menor correção possível e execute os testes relacionados para verificar."
+        },
+        "plan": {
+          "title": "Planejar uma mudança",
+          "desc": "Primeiro o plano; as alterações, depois da sua confirmação",
+          "prompt": "Quero implementar: <descreva o que você precisa>. Primeiro apresente um plano de implementação e os arquivos envolvidos, e só comece a editar depois que eu confirmar."
+        }
+      }
+    },
+    "toolStatus": {
+      "pending": "Pendente",
+      "in_progress": "Em andamento",
+      "completed": "Concluída",
+      "failed": "Falhou"
+    },
+    "boardView": {
+      "title": "Painel em linguagem simples",
+      "switch": "Painel em linguagem simples deste projeto",
+      "switching": "Alternando…",
+      "afterTurn": "Alterna quando o agente terminar esta etapa",
+      "unknown": "Esta conversa ainda não tem painel. Ele aparece nas conversas do TupAI enquanto o painel em linguagem simples está ativado em Recursos.",
+      "off": "Quando ativado, ele diz em palavras simples como o trabalho está indo, o que o agente está fazendo agora e o que precisa de você.",
+      "cost": "Só para este projeto. Cada atualização custa uma chamada ao modelo.",
+      "empty": "Dê um momento ao agente; aqui aparecerá em palavras simples como está indo.",
+      "checks": "{{done}} de {{total}} verificações feitas",
+      "ended": "Parado",
+      "done": "Concluído",
+      "brief": "Resumo",
+      "briefHelp": "O modelo não escreveu este a tempo; é um resumo curto e fixo.",
+      "needsYou": "Precisa de você",
+      "needsYouText": "O agente está esperando sua resposta na conversa.",
+      "quote": "Citar na sua resposta",
+      "quoteHint": "Clique em um item para citá-lo na sua resposta; nada é enviado até você enviar.",
+      "account": "O que ele fez",
+      "earlierNotes": "{{count, number}} anteriores",
+      "earlierNotes_one": "{{count, number}} anterior",
+      "earlierNotes_other": "{{count, number}} anteriores",
+      "phases": {
+        "understanding": "Entendendo a tarefa",
+        "planning": "Planejando",
+        "changing": "Fazendo alterações",
+        "checking": "Verificando o trabalho",
+        "fixing": "Corrigindo o que a verificação encontrou",
+        "waiting": "Esperando por você",
+        "wrapping_up": "Finalizando",
+        "stuck": "Parece travado"
+      },
+      "checks_one": "{{done}} de {{total}} verificação feita",
+      "checks_other": "{{done}} de {{total}} verificações feitas",
+      "codes": {
+        "progress": {
+          "none": "Ainda não há lista de verificação.",
+          "all": "Todos os {{total}} itens da lista de verificação foram feitos.",
+          "all_one": "A lista de verificação tem {{total}} item, e ele já foi feito.",
+          "all_other": "Todos os {{total}} itens da lista de verificação foram feitos.",
+          "some": "{{done}} de {{total}} itens da lista de verificação foram feitos.",
+          "some_one": "{{done}} de {{total}} item da lista de verificação foi feito.",
+          "some_other": "{{done}} de {{total}} itens da lista de verificação foram feitos."
+        },
+        "confirm": {
+          "waiting_reply": "O agente está esperando sua resposta."
+        },
+        "now": {
+          "understanding": "Lendo o código e as anotações para entender o que fazer.",
+          "changing": "Alterando o código.",
+          "checking": "Executando os testes ou verificações para ver se a alteração funciona.",
+          "fixing": "Uma verificação encontrou um problema, que está sendo corrigido.",
+          "waiting": "Parado, esperando sua resposta.",
+          "wrapping_up": "O trabalho está feito; finalizando.",
+          "stuck": "Parece estar andando em círculos; talvez precise de uma dica sua.",
+          "unclear": "Trabalhando.",
+          "focus": "{{now}} (Item atual: {{focus}})",
+          "planning": "Pensando em como fazer; nada foi alterado ainda."
+        }
+      },
+      "notes": {
+        "looked": "Olhou {{count, number}} arquivos ou lugares",
+        "looked_one": "Olhou {{count, number}} arquivo ou lugar",
+        "looked_other": "Olhou {{count, number}} arquivos ou lugares",
+        "changed_file": "Alterou {{file}}",
+        "wrote_file": "Escreveu {{file}}",
+        "ran_command": "Executou {{command}}",
+        "command_failed": "{{command}} deu erro",
+        "check_passed": "Uma verificação passou: {{command}}",
+        "check_failed": "Uma verificação falhou: {{command}}",
+        "item_done": "Feito: {{item}}",
+        "item_added": "Adicionado à lista de verificação: {{item}}",
+        "helpers_sent": "Enviou {{count, number}} ajudantes: {{titles}}",
+        "helpers_sent_one": "Enviou {{count, number}} ajudante: {{titles}}",
+        "helpers_sent_other": "Enviou {{count, number}} ajudantes: {{titles}}",
+        "helpers_back": "{{count, number}} ajudantes voltaram",
+        "helpers_back_one": "{{count, number}} ajudante voltou",
+        "helpers_back_other": "{{count, number}} ajudantes voltaram",
+        "permission_allowed": "Você permitiu: {{summary}}",
+        "permission_denied": "Você não permitiu: {{summary}}",
+        "goal_round": "O objetivo ainda não foi atingido; o TupAI o mandou de volta ao trabalho (rodada {{round, number}}){{reason}}",
+        "goal_met": "O objetivo foi atingido: {{text}}",
+        "goal_paused": "O objetivo está pausado{{reason}}",
+        "trouble_loop": "O TupAI percebeu que ele está repetindo o mesmo passo: {{detail}}",
+        "trouble": "O TupAI percebeu: {{detail}}",
+        "did": "Usou {{tool}}: {{what}}",
+        "said_quote": "Ele disse: {{text}}",
+        "ended": "Parou.",
+        "waiting_reply": "Parado, esperando sua resposta."
+      }
+    },
+    "lessonsView": {
+      "filterLabel": "Quais lições mostrar",
+      "active": "Em uso",
+      "all": "Todas",
+      "count": "{{count}} lições",
+      "count_one": "{{count}} lição",
+      "count_other": "{{count}} lições",
+      "search": "Buscar lições",
+      "kinds": {
+        "correction": "Correção",
+        "preference": "Regra",
+        "pitfall": "Armadilha",
+        "workaround": "Contorno",
+        "fact": "Fato"
+      },
+      "everywhere": "Todos os projetos",
+      "status": {
+        "retired": "Aposentada",
+        "superseded": "Substituída"
+      },
+      "uses": "Lembrada {{recalled}} · Seguida {{applied}}",
+      "origins": {
+        "user": "Da sua correção ou regra",
+        "outcome": "Da saída que o agente achou sozinho",
+        "model": "Guardada pelo modelo",
+        "subagent": "Do relatório de um subagente",
+        "command": "Guardada com /remember"
+      },
+      "updated": "Atualizada em {{date}}",
+      "editLabel": "Texto da lição",
+      "retire": "Aposentar",
+      "retireConfirm": "Aposentar esta lição? Ela não será mais trazida para nenhum turno.",
+      "loadFailed": "Não foi possível ler as lições",
+      "saveFailed": "A lição não foi alterada",
+      "empty": "Ainda não há lições para este projeto. O TupAI aprende com suas correções, com as saídas que ele mesmo encontra e com /remember.",
+      "noneActive": "Nenhuma lição em uso. Todas também lista as aposentadas e as substituídas.",
+      "noMatch": "Nenhuma lição corresponde.",
+      "noProject": "Esta conversa não tem pasta de projeto, então só aparecem as lições para todos os projetos.",
+      "notes": {
+        "label": "O que as lições fizeram nesta sessão",
+        "recalled": "Este turno trouxe {{count}} lições",
+        "recalled_one": "Este turno trouxe {{count}} lição",
+        "recalled_other": "Este turno trouxe {{count}} lições",
+        "briefed": "O briefing de um subagente levou {{count}} lições: {{task}}",
+        "briefed_one": "O briefing de um subagente levou {{count}} lição: {{task}}",
+        "briefed_other": "O briefing de um subagente levou {{count}} lições: {{task}}",
+        "applied": "{{count}} lições foram seguidas",
+        "applied_one": "{{count}} lição foi seguida",
+        "applied_other": "{{count}} lições foram seguidas",
+        "retired": "Aposentada: {{lesson}}",
+        "retiredUnused": "Aposentada: {{lesson}} (lembrada {{count}} vezes, nunca seguida)",
+        "retiredUnused_one": "Aposentada: {{lesson}} (lembrada {{count}} vez, nunca seguida)",
+        "retiredUnused_other": "Aposentada: {{lesson}} (lembrada {{count}} vezes, nunca seguida)",
+        "retiredContradicted": "Aposentada: {{lesson}} (contradiz o que você disse depois)",
+        "retiredForgotten": "Aposentada: {{lesson}} (a seu pedido)",
+        "mergedSame": "Unida a: {{lesson}}",
+        "mergedRefines": "Mantida uma formulação mais precisa: {{lesson}}",
+        "mergedContradicts": "Não guardada, contradiz: {{lesson}}"
+      }
+    },
+    "activityLoadFailed": "Não foi possível carregar a atividade de colaboração. Tentando novamente…",
+    "beeFailed": "Esta abelha relatou um erro.",
+    "beeCounts": {
+      "turns": "{{count}} turnos",
+      "turns_one": "{{count}} turno",
+      "turns_other": "{{count}} turnos",
+      "received": "{{count}} recebidas",
+      "received_one": "{{count}} recebida",
+      "received_other": "{{count}} recebidas",
+      "shared": "{{count}} compartilhadas",
+      "shared_one": "{{count}} compartilhada",
+      "shared_other": "{{count}} compartilhadas",
+      "tools": "{{count}} chamadas de ferramenta",
+      "tools_one": "{{count}} chamada de ferramenta",
+      "tools_other": "{{count}} chamadas de ferramenta"
+    },
+    "compactionTokens": "{{before}} → ≈{{after}} tokens",
+    "compactionKept": "{{count}} resultados mantidos",
+    "compactionKept_one": "{{count}} resultado mantido",
+    "compactionKept_other": "{{count}} resultados mantidos",
+    "compactionPruned": "{{count}} podados",
+    "compactionPruned_one": "{{count}} podado",
+    "compactionPruned_other": "{{count}} podados",
+    "compactionDropped": "{{count}} chamadas removidas",
+    "compactionDropped_one": "{{count}} chamada removida",
+    "compactionDropped_other": "{{count}} chamadas removidas",
+    "jevLine": {
+      "classifying": "{{judge}} está classificando a mensagem…",
+      "classified": "Classificado por {{judge}}: {{type}}",
+      "byRule": "Classificado por regra: {{type}}",
+      "shadow": "{{line}} (só observando, não aplicado)",
+      "late": "{{line}} (tarde demais para este turno)",
+      "fallback": "Desta vez {{judge}} não deu uma classe clara; segue como de costume",
+      "unanswered": "Desta vez {{judge}} não respondeu; segue como de costume",
+      "noJudge": "Ainda não há nenhum juiz disponível, então as mensagens não são classificadas.",
+      "setUp": "Configurar um juiz",
+      "skipped": "Classificação pulada",
+      "off": "A classificação está desativada"
+    },
+    "eventLine": {
+      "detail": "Detalhes: {{detail}}",
+      "progress": {
+        "frame": "Atualizando a definição da tarefa",
+        "lessons": "Verificando lições de sessões anteriores",
+        "skills": "Escolhendo as habilidades de que esta sessão precisa",
+        "capabilities": "Escolhendo as capacidades de que esta tarefa precisa",
+        "goal_check": "Verificando se o objetivo foi alcançado",
+        "permissionReview": "O Jev está avaliando: {{summary}}"
+      },
+      "goal": {
+        "paused": "Pausado: {{reason}}",
+        "reason": {
+          "interrupted": "você interrompeu a execução",
+          "modelCallFailed": "uma chamada ao modelo falhou",
+          "needsUser": "o agente precisa de algo de você",
+          "needsUserDetail": "o agente precisa de algo de você: {{detail}}",
+          "unjudged": "nenhum juiz conseguiu dizer se o objetivo foi alcançado, e nada está comprovadamente inacabado",
+          "continuationsUsedUp": "a cota de {{count}} continuações se esgotou",
+          "continuationsUsedUp_one": "a cota de {{count}} continuação se esgotou",
+          "continuationsUsedUp_other": "a cota de {{count}} continuações se esgotou",
+          "minutesUsedUp": "a cota de {{duration}} se esgotou",
+          "sessionReopened": "a sessão foi reaberta",
+          "idle": "o agente encerrou {{count}} execuções seguidas sem fazer nada",
+          "idle_one": "o agente encerrou {{count}} execução sem fazer nada",
+          "idle_other": "o agente encerrou {{count}} execuções seguidas sem fazer nada",
+          "noProgress": "nenhum progresso em {{count}} execuções seguidas; diga como seguir",
+          "noProgress_one": "nenhum progresso em {{count}} execução; diga como seguir",
+          "noProgress_other": "nenhum progresso em {{count}} execuções seguidas; diga como seguir",
+          "noProgressDetail": "nenhum progresso em {{count}} execuções seguidas ({{detail}}); diga como seguir",
+          "noProgressDetail_one": "nenhum progresso em {{count}} execução ({{detail}}); diga como seguir",
+          "noProgressDetail_other": "nenhum progresso em {{count}} execuções seguidas ({{detail}}); diga como seguir"
+        }
+      },
+      "frame": {
+        "unclearChange": "Como isto muda a tarefa: “{{message}}”?"
+      },
+      "search": {
+        "notConfigured": "“{{source}}” não é uma fonte de busca (features.web.search)",
+        "failed": "{{source}} falhou: {{message}}",
+        "robotPage": "{{source}} respondeu com uma página de verificação: achou que este cliente é um robô",
+        "httpError": "{{source}} respondeu com HTTP {{status}}",
+        "noResults": "{{source}} retornou uma página sem resultados (nada encontrado ou a estrutura da página mudou)",
+        "unrelated": "{{source}} retornou resultados que não têm nada a ver com a busca, como os buscadores fazem com clientes que tomam por robôs"
+      },
+      "mcp": {
+        "line": "{{name}}: {{reason}}",
+        "projectUntrusted": "o projeto não foi marcado como confiável, e este servidor é definido pelo projeto",
+        "needsApproval": "é definido pelo projeto ({{source}}) e não foi aprovado; abra esta pasta no TupAI e permita uma vez, ou defina-o no TupAI.json",
+        "aborted": "a inicialização foi cancelada",
+        "rpc": "respondeu com um erro",
+        "protocol": "respondeu com algo que não segue o protocolo MCP",
+        "startFailed": "não foi possível iniciá-lo",
+        "crashedRestarting": "travou durante a execução; o TupAI vai reiniciá-lo uma vez",
+        "crashedAgain": "travou de novo e não será reiniciado",
+        "restartFailed": "travou, e a reinicialização também falhou",
+        "restartFailedCause": "travou, e a reinicialização também falhou: {{cause}}",
+        "closed": "a conexão foi encerrada enquanto o TupAI ainda aguardava uma resposta",
+        "timeout": "não respondeu a tempo",
+        "denied": "você não permitiu que o servidor deste projeto fosse iniciado",
+        "unreachable": "não foi possível iniciá-lo nem acessá-lo"
+      },
+      "rewind": {
+        "sameCommandFailed": "O mesmo comando falhou {{count}} vezes: {{command}}",
+        "sameCommandFailed_one": "O mesmo comando falhou {{count}} vez: {{command}}",
+        "sameCommandFailed_other": "O mesmo comando falhou {{count}} vezes: {{command}}",
+        "monitorTrouble": "O monitor emitiu {{count}} alertas neste turno ({{kind}}: {{detail}})",
+        "monitorTrouble_one": "O monitor emitiu {{count}} alerta neste turno ({{kind}}: {{detail}})",
+        "monitorTrouble_other": "O monitor emitiu {{count}} alertas neste turno ({{kind}}: {{detail}})",
+        "trouble": {
+          "loop": "andando em círculos",
+          "drift": "saindo do rumo da tarefa"
+        }
+      },
+      "browser": {
+        "finished": "{{status}}: {{reason}}",
+        "openFailed": "Não foi possível abrir a página no navegador.",
+        "openFailedPanel": "Não foi possível abrir a página no painel do navegador do aplicativo.",
+        "launch": {
+          "noBrowser": {
+            "mac": "Nenhum Chrome, Chromium, Edge ou Brave foi encontrado em /Applications. Instale um deles ou defina MU_CHROME como o executável de um navegador baseado no Chromium.",
+            "windows": "Nenhum Chrome, Chromium, Edge ou Brave foi encontrado em Program Files ou %LOCALAPPDATA%. Instale um deles ou defina MU_CHROME como o .exe do navegador.",
+            "wsl": "Nenhum navegador foi encontrado no WSL. Instale um no WSL ou ative o modo de rede espelhada do WSL; as instruções estão no campo reason abaixo.",
+            "other": "Nenhum Chrome, Chromium, Edge ou Brave foi encontrado. Instale um deles ou defina MU_CHROME como o executável do navegador; os comandos de instalação estão no campo reason abaixo."
+          },
+          "windowsBrowserUnusable": "Não é possível usar {{executable}}: um navegador do lado do Windows só pode ser acessado pelo WSL no modo de rede espelhada.",
+          "profileNoWindowsPath": "A pasta de perfil {{profileDir}} não tem um caminho do Windows (WSL_DISTRO_NAME não está definida).",
+          "browserExitedOnStart": "O navegador fechou durante a inicialização (código {{exitCode}}).",
+          "devtoolsPortTimeout": "O navegador não abriu a porta do DevTools a tempo.",
+          "cdpConnectTimeout": "Tempo esgotado ao conectar ao navegador.",
+          "cdpConnectFailed": "Não foi possível conectar ao navegador.",
+          "browserSpawnFailed": "Não foi possível iniciar {{command}}."
+        }
+      },
+      "permissions": {
+        "mode": "Modo de permissões: {{mode}}",
+        "request": "Aguardando sua permissão: {{summary}}",
+        "waiting": "Aguardando sua permissão",
+        "answers": {
+          "once": "Você permitiu uma vez",
+          "session": "Permitido nesta conversa",
+          "deny": "Você não permitiu"
+        },
+        "about": "{{answer}}: {{summary}}",
+        "approved": {
+          "judge": "O juiz deixou passar sem perguntar a você: {{summary}}",
+          "grant": "Executado sem perguntar, porque está permitido nesta conversa: {{summary}}"
+        }
+      },
+      "board": {
+        "on": "Painel: ativado",
+        "off": "Painel: desativado"
+      }
+    },
+    "gauges": {
+      "context": "Contexto",
+      "contextHint": "O que o modelo vai ler em seguida ocupa {{percent}} do contexto dele",
+      "cache": "Acertos de cache",
+      "cacheHint": "Acertos de cache: {{turn}} na última rodada, {{session}} na conversa inteira",
+      "pending": "Aparece depois da próxima resposta do TupAI"
+    }
+  },
+  "menu": {
+    "about": "Sobre o {{name}}",
+    "settings": "Configurações…",
+    "services": "Serviços",
+    "hide": "Ocultar o {{name}}",
+    "hideOthers": "Ocultar outros",
+    "unhide": "Mostrar tudo",
+    "quit": "Encerrar o {{name}}",
+    "file": "Arquivo",
+    "newChat": "Novo chat",
+    "closeWindow": "Fechar janela",
+    "edit": "Editar",
+    "undo": "Desfazer",
+    "redo": "Refazer",
+    "cut": "Recortar",
+    "copy": "Copiar",
+    "paste": "Colar",
+    "pasteAndMatchStyle": "Colar e manter estilo",
+    "delete": "Excluir",
+    "selectAll": "Selecionar tudo",
+    "view": "Visualizar",
+    "reload": "Recarregar",
+    "forceReload": "Forçar recarregamento",
+    "toggleDevTools": "Alternar ferramentas de desenvolvedor",
+    "resetZoom": "Tamanho real",
+    "zoomIn": "Ampliar",
+    "zoomOut": "Reduzir",
+    "toggleFullScreen": "Alternar tela cheia",
+    "window": "Janela",
+    "minimize": "Minimizar",
+    "zoomWindow": "Zoom",
+    "bringAllToFront": "Trazer todas para a frente",
+    "help": "Ajuda",
+    "checkForUpdates": "Verificar atualizações…",
+    "projectPage": "{{name}} no GitHub"
+  },
+  "trayMenu": {
+    "runningTasks": "Tarefas em execução: {{count}}"
+  },
+  "noData": "Sem dados",
+  "labelWithSelectedCount": "{{label}} ({{selected}}/{{total}})",
+  "selectedSkillsWithCount": "Habilidades selecionadas · {{count}}",
+  "commandPalette": {
+    "title": "Paleta de comandos",
+    "placeholder": "Pesquisar conversas, configurações e comandos",
+    "groups": {
+      "conversations": "Conversas",
+      "settings": "Configurações",
+      "commands": "Comandos"
+    },
+    "searchMessages": "Pesquisar “{{query}}” nas mensagens",
+    "empty": "Nenhum resultado",
+    "noConversations": "Ainda não há conversas. Digite para encontrar configurações e comandos.",
+    "openSettings": "Abrir configurações",
+    "actions": {
+      "newConversation": "Começar um novo chat",
+      "scheduledTasks": "Abrir tarefas agendadas"
+    },
+    "commandWaits": "Será executado quando esta resposta terminar"
+  },
+  "window": {
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "restore": "Restaurar"
+  },
+  "collapseSidebar": "Recolher barra lateral",
+  "expandSidebar": "Expandir barra lateral",
+  "workPanel": {
+    "label": "Painel de trabalho",
+    "tabsLabel": "Abas do painel de trabalho",
+    "tabs": {
+      "board": "Painel",
+      "judge": "Vereditos",
+      "hive": "Hive",
+      "lessons": "Lições",
+      "files": "Arquivos",
+      "preview": "Prévia",
+      "source": "Código",
+      "browser": "Navegador"
+    },
+    "close": "Fechar o painel de trabalho",
+    "resize": "Redimensionar o painel de trabalho",
+    "unread": "{{tab}}, novidade",
+    "noProject": "Esta conversa não tem pasta de projeto, então não há arquivos nem alterações para mostrar.",
+    "previewEmpty": "Nada para pré-visualizar ainda. Arquivos abertos na conversa aparecem aqui.",
+    "previewHidden": "A prévia está oculta.",
+    "browserEmpty": "Nenhuma página aberta. Digite um endereço ou uma pesquisa acima. As páginas abertas na conversa também aparecem aqui."
+  },
+  "nodeRuntime": {
+    "title": "Baixar o Node.js?",
+    "message": "O TupAI executa agentes e ferramentas com a própria cópia do Node.js, que ainda não foi baixada.",
+    "detail": "O Node.js {{version}} (cerca de {{size}} MB) será baixado de nodejs.org e extraído em:\n{{folder}}\n\n\"Depois\" não baixa nada: o TupAI abre normalmente, avisa onde o Node.js é necessário e pergunta de novo na próxima inicialização.",
+    "download": "Baixar",
+    "later": "Depois",
+    "note": "O Node.js não foi baixado, então este agente não pode ser executado. O TupAI pergunta de novo na próxima inicialização.",
+    "toolNote": "O Node.js não foi baixado, então as ferramentas que precisam dele não podem ser executadas. O TupAI pergunta de novo na próxima inicialização."
+  }
+}

@@ -1,0 +1,758 @@
+{
+  "title": "TupAI 設定",
+  "description": "TupAI 能設定的一切都在這裡：判定器、判定點、功能、模型與上下文。與命令列 TupAI 共用同一份設定。",
+  "reload": "重新載入",
+  "search": "搜尋判定點和功能",
+  "noMatch": "沒有符合的項目。",
+  "modified": "已修改",
+  "applyNote": "修改對新對話生效。正在執行的對話沿用啟動時的設定，重新連線後才會使用新設定。",
+  "apiKey": "API 金鑰",
+  "keyHelp": "儲存後不再顯示。只存在這台電腦上，只有你的帳戶能讀取。",
+  "keyKeep": "留空則保留已儲存的金鑰",
+  "endpointRule": "請使用 HTTPS；只有本機（127.0.0.1、localhost）或區域網路 IP 位址（例如 192.168.1.20）可以用 HTTP。位址裡不能帶使用者名稱、密碼、查詢參數或片段。",
+  "sections": {
+    "judges": "判定器",
+    "judgeTiers": "判定層級",
+    "decisions": "判定點",
+    "features": "功能",
+    "moreFeatures": "更多功能",
+    "providers": "供應商",
+    "defaultModel": "預設模型",
+    "context": "上下文"
+  },
+  "pages": {
+    "decisions": {
+      "input": "輸入判定點",
+      "context": "上下文",
+      "memory": "經驗庫判定點",
+      "tools": "工具與安全判定點",
+      "turn": "回合判定點",
+      "team": "協作判定點"
+    },
+    "features": {
+      "input": "輸入功能",
+      "context": "上下文功能",
+      "tools": "工具與安全功能",
+      "turn": "回合功能",
+      "other": "其他功能"
+    }
+  },
+  "modes": {
+    "active": "開啟",
+    "off": "關閉",
+    "activeHelp": "判定結果直接生效。",
+    "offHelp": "判定不起作用，這一步照常進行。"
+  },
+  "harness": {
+    "tooOld": "目前的 TupAI 版本較舊，還不能列出自己的判定點和功能。更新 TupAI 後這裡才會列出；基礎設定仍可正常使用。",
+    "unsupported": "TupAI 用了本應用程式不認得的格式描述自己（版本 {{version}}）。請更新應用程式，才能編輯判定點和功能。"
+  },
+  "load": {
+    "failed": "無法讀取設定"
+  },
+  "save": {
+    "saved": "已儲存。新對話立即使用；執行中的對話請重新連線。",
+    "unsaved": "有未儲存的修改：{{sections}}",
+    "nothing": "沒有未儲存的修改",
+    "unsavedDot": "有未儲存的修改",
+    "discard": "放棄修改",
+    "stale": "設定在載入之後被其他程式（命令列 TupAI 或執行中的對話）改過，因此這次沒有儲存。請重新載入查看最新狀態；尚未儲存的修改會遺失。",
+    "failed": "儲存失敗：{{reason}}"
+  },
+  "units": {
+    "s": "秒",
+    "tokens": "tokens"
+  },
+  "options": {
+    "range": "範圍 {{min}} – {{max}}。",
+    "emptyText": "留空使用預設值",
+    "addItem": "輸入後按 Enter 新增",
+    "addNumber": "輸入數字後按 Enter 新增",
+    "problem": {
+      "type": "這個值的類型不對。",
+      "range": "這個值超出了允許的範圍。",
+      "choice": "這個值不在可選項裡。",
+      "length": "內容過長，或有空白項目。"
+    }
+  },
+  "decisions": {
+    "description": "判定器被提問的每一個環節。除非你為它單獨指定，否則每個判定點都跟隨預設模式。",
+    "defaultMode": "預設模式",
+    "defaultModeHelp": "沒有單獨指定模式的判定點都用它。",
+    "useDefault": "改回預設（{{mode}}）",
+    "featureOff": "所屬功能已關閉，現在不會問這一項。",
+    "groups": {
+      "input": "輸入",
+      "context": "上下文",
+      "memory": "經驗庫",
+      "tools": "工具與安全",
+      "turn": "回合",
+      "team": "協作"
+    },
+    "otherGroup": "其他",
+    "pageLead": "沒有單獨指定模式的判定點跟隨預設模式；預設模式和搜尋在「{{page}}」頁。",
+    "none": "這裡還沒有判定點。"
+  },
+  "features": {
+    "lead": "TupAI 在背景替你做的事。關掉一項，TupAI 就不再做這件事。",
+    "moreLead": "TupAI 能做的其他事，按起作用的地方分組。每一項的選項點一下就能打開。",
+    "beta": "測試版",
+    "reset": "恢復預設",
+    "boardModelElsewhere": "寫看板的模型在「預設模型」裡選。",
+    "options": "選項",
+    "noOptions": "沒有別的可設定：只有這個開關。",
+    "noSuchFeature": "這個版本的 TupAI 沒有這項功能。",
+    "none": "這裡還沒有功能。",
+    "part": "選項第 {{part}} 頁，共 {{parts}} 頁",
+    "previousPart": "上一頁",
+    "nextPart": "下一頁"
+  },
+  "judges": {
+    "tiersHelp": "依序詢問各判定器；後一級只處理前面拿不準的問題。",
+    "order": "順序",
+    "orderHelp": "排在第一的就是上面選的那個。",
+    "tierTitle": "第 {{index}} 級：{{name}}",
+    "service": "服務",
+    "services": {
+      "auto": {
+        "name": "自動",
+        "help": "設定了 TypeSafe 金鑰就用 TypeSafe，否則設定了 OpenRouter 金鑰就用 OpenRouter，都沒有則走 Vercel AI Gateway。",
+        "key": "TypeSafe API 金鑰"
+      },
+      "typesafe": {
+        "name": "TypeSafe",
+        "help": "始終直連 TypeSafe。",
+        "key": "TypeSafe API 金鑰"
+      },
+      "openrouter": {
+        "name": "OpenRouter",
+        "help": "始終經由 OpenRouter，用 OpenRouter 的 API 金鑰。它單獨給 Jev 保存，設定它不會改動 OpenRouter 聊天模型的金鑰。",
+        "key": "OpenRouter API 金鑰"
+      },
+      "gateway": {
+        "name": "Vercel AI Gateway",
+        "help": "始終經由 Vercel AI Gateway。",
+        "key": "Vercel AI Gateway API 金鑰"
+      },
+      "custom": {
+        "name": "自訂服務",
+        "help": "任何支援 TypeSafe System One 協定的服務：你自己執行的、區域網路裡的中繼，或其他提供 Jev 的服務商。",
+        "key": "該服務的 API 金鑰"
+      }
+    },
+    "model": "判定模型",
+    "baseUrl": "介面位址",
+    "baseUrlHelp": "留空則使用 TypeSafe 的官方位址",
+    "customUrlHelp": "該服務的 System One 位址。它的金鑰只會送到這裡。",
+    "baseUrlNeeded": "自訂服務需要填寫位址。",
+    "customTier": "你自己加的判定器，要改它請編輯 TupAI 的設定檔。",
+    "endpointDefault": "使用服務的預設位址",
+    "types": {
+      "localHelp": "在這台電腦上執行。",
+      "clmHelp": "執行在你自己的 CLM 伺服器上。"
+    },
+    "intro": "TupAI 工作時要做很多小判斷：這則訊息該怎麼處理、這一步會不會違反你定的規則……判定器負責回答。選一個就行。",
+    "choose": "選擇判定器",
+    "custom": "現在排在第一位的是自訂的判定器，可以在下面的「判定層級」裡查看和修改。",
+    "keyPlaceholder": "貼上金鑰",
+    "choices": {
+      "jev": {
+        "title": "Jev",
+        "tag": "推薦",
+        "description": "又快又準，按次計費。需要 TypeSafe、OpenRouter、Vercel AI Gateway 或你自己服務的金鑰。"
+      },
+      "local": {
+        "title": "本機 Laya",
+        "tag": "免費 · 離線",
+        "description": "在這台電腦上執行，不連網、不花錢。適合分類判斷，關聯和評分不夠可靠。"
+      },
+      "clm": {
+        "title": "CLM",
+        "tag": "自建",
+        "description": "回答和 Jev 一樣的問題，執行在你自己的伺服器上（clm-serve）。編碼器需要 GPU，不按次計費。"
+      }
+    },
+    "localAddress": "服務位址：{{address}}",
+    "laya": {
+      "running": "正在本機執行",
+      "stopped": "已安裝，沒有執行。TupAI 用到它時會自己啟動。",
+      "missing": "還沒有安裝。",
+      "platform": "這台電腦無法執行 Laya：它需要 Windows 或 Linux（x64 或 arm64），或 Apple Silicon 的 Mac。",
+      "needsUv": "安裝前需要先裝好 uv（Python 的套件管理工具），裝好後回到這裡。",
+      "uvLink": "如何安裝 uv",
+      "install": "安裝 Laya",
+      "start": "啟動",
+      "stop": "停止",
+      "confirmTitle": "下載並安裝 Laya？",
+      "confirmText": "這會從 PyPI 和 Hugging Face 下載約 {{size}} MB（Python 套件和模型權重）到 TupAI 的資料夾，需要幾分鐘。裝好後 Laya 會自動啟動。",
+      "confirmOk": "下載並安裝",
+      "working": {
+        "setup": "正在安裝 Laya…",
+        "start": "正在啟動 Laya…",
+        "stop": "正在停止 Laya…"
+      },
+      "failed": {
+        "setup": "安裝沒有完成，可以再試一次。",
+        "start": "Laya 沒能啟動。",
+        "stop": "Laya 沒能停止。"
+      },
+      "onnx": {
+        "missing": "這台電腦上還沒有 Laya 的模型（約 {{size}} MB）。TupAI 不會替你下載：請從 Hugging Face 下載這些檔案，放進模型資料夾，再按「檢查並啟動」。",
+        "stopped": "模型已就位，Laya 沒有執行。選了 Laya 作為判定器時，TupAI 會在開啟 App 時自己啟動它。",
+        "starting": "正在檢查模型並啟動 Laya… 第一次檢查要讀完整個模型，需要一點時間。",
+        "missingFiles": "還缺：{{files}}",
+        "wrongFiles": "這些檔案不是 TupAI 測試過的版本，請重新下載：{{files}}",
+        "folder": "模型資料夾：{{folder}}",
+        "command": "裝了 Hugging Face 命令列（hf）的話，一行指令就能全部下載：",
+        "page": "到 Hugging Face 下載",
+        "openFolder": "開啟模型資料夾",
+        "check": "檢查並啟動",
+        "problem": {
+          "missing": "缺少部分模型檔案。",
+          "wrong": "部分模型檔案不是 TupAI 測試過的版本，請重新下載。",
+          "runtime": "這台電腦無法執行這個模型。",
+          "port": "Laya 的連接埠（{{port}}）已被其他程式佔用。",
+          "stopped": "Laya 還沒準備好就停止了。",
+          "foreign": "這裡正在執行一個不是 TupAI 啟動的 Laya，請在啟動它的地方停止它。"
+        }
+      }
+    },
+    "clm": {
+      "address": "伺服器位址",
+      "addressHelp": "clm-serve 監聽的位址，例如 http://192.168.1.20:8700。留空就是這台電腦（{{address}}）。",
+      "key": "伺服器金鑰",
+      "keyPlaceholder": "伺服器要求時才填",
+      "keyHelp": "只有用 CLM_API_KEY 啟動的伺服器才需要金鑰：填同一個值。儲存後不再顯示。",
+      "check": "檢查伺服器",
+      "unmeasured": "CLM 做 TupAI 的判定做得如何，目前還沒有測過。",
+      "status": {
+        "checking": "正在詢問伺服器…",
+        "ready": "正在回應 · {{models}} · {{ms}} 毫秒",
+        "down": "{{address}} 沒有回應。請在那台機器上啟動 clm-serve，或者更正位址。",
+        "encoderDown": "伺服器有回應，但它的編碼器沒有：嵌入服務（vLLM）執行起來之前，每道題都會失敗。",
+        "model": "伺服器沒有提供 {{model}}，它提供的是 {{models}}。",
+        "keyNeeded": "伺服器要求金鑰：請填它啟動時用的那個（CLM_API_KEY）。",
+        "keySaved": "伺服器要求金鑰，已經儲存了一個。",
+        "mock": "這台伺服器執行的是 CLM 的模擬編碼器：它的回答是雜訊，不是 CLM 的判斷。",
+        "failed": "無法詢問伺服器。"
+      }
+    }
+  },
+  "keyState": {
+    "none": "未設定",
+    "set": "已設定",
+    "typed": "已輸入新金鑰，待儲存",
+    "empty": "變數為空",
+    "managed": "已設定",
+    "manual": "已設定（手動）"
+  },
+  "context": {
+    "auto": "自動壓縮",
+    "autoHelp": "上下文快滿時自動壓縮歷史。",
+    "limit": "上下文上限",
+    "limitHelp": "0 表示跟隨模型的上下文視窗減去保留量；否則為 {{min}} 到 {{max}}。在下一次請求模型之前檢查，不是硬性截斷。",
+    "limitProblem": "請填 0，或 {{min}} 到 {{max}} 之間的整數。",
+    "lead": "對話何時壓縮、上下文最多多大，以及和上下文有關的判定點。"
+  },
+  "permissions": {
+    "modes": {
+      "full": {
+        "title": "完全存取"
+      },
+      "jev": {
+        "title": "Jev 審批"
+      },
+      "ask": {
+        "title": "最小權限"
+      }
+    }
+  },
+  "permissionsCard": {
+    "kind": {
+      "edit": "TupAI 想修改檔案，需要你授權",
+      "shell": "TupAI 想執行指令，需要你授權",
+      "run": "TupAI 想執行程式，需要你授權",
+      "outside": "TupAI 想改動專案外的檔案，需要你授權",
+      "delegate": "TupAI 想派出子代理，需要你授權",
+      "other": "TupAI 想對外操作，需要你授權"
+    },
+    "reason": {
+      "ask": "最小權限模式：每一步都先問你。",
+      "unsure": "Jev 拿不準這一步是不是你要的。",
+      "beyond": "Jev 認為這一步超出了你的要求。",
+      "unrelated": "Jev 認為這一步和目前的任務無關。",
+      "protected": "這會動到 TupAI 自己的設定，只能由你決定。",
+      "nojudge": "還沒有可用的判定器，所以每一步都先問你。",
+      "judgedown": "判定器這次沒有回答，所以先問你。"
+    },
+    "flagged": "危險操作：{{flag}}。",
+    "flag": {
+      "recursive_or_forced_delete": "遞迴或強制刪除",
+      "discards_git_work": "捨棄 git 裡的改動",
+      "force_push": "強制推送",
+      "drops_database_objects": "刪除資料庫物件",
+      "overwrites_device": "覆寫整個裝置",
+      "opens_permissions_recursively": "遞迴開放權限",
+      "runs_downloaded_script": "執行下載來的指令碼",
+      "runs_as_administrator": "以系統管理員身分執行",
+      "runs_as_root": "以 root 身分執行"
+    },
+    "answer": {
+      "once": "允許這一次",
+      "session": "這次對話都允許",
+      "sessionFor": "這次對話都允許（{{grant}}）",
+      "deny": "不允許"
+    },
+    "decided": {
+      "once": "你允許了這一次：{{summary}}",
+      "session": "這次對話都允許：{{summary}}",
+      "deny": "你沒允許：{{summary}}"
+    }
+  },
+  "providers": {
+    "lead": "模型從哪裡來：訂閱帳號和介面位址。對話用哪個模型、思考等級多少，在傳送框裡選。",
+    "title": "供應商",
+    "custom": "自訂供應商",
+    "manualGroup": "手動設定",
+    "builtinGroup": "其他內建",
+    "add": "新增供應商",
+    "new": "新供應商",
+    "unsaved": "未儲存",
+    "remove": "移除",
+    "endpointType": "API 格式",
+    "name": "顯示名稱",
+    "namePlaceholder": "例如：我的中轉服務",
+    "id": "ID",
+    "idHelp": "小寫字母、數字和連字號。儲存後不能再改。",
+    "idProblem": {
+      "format": "只能用小寫字母、數字和連字號，以字母或數字開頭，最多 40 個字元。",
+      "reserved": "這是內建供應商的 ID。用它建立的項目會改寫那個內建供應商，而不是新增一個。",
+      "taken": "這個 ID 已被使用。"
+    },
+    "baseUrl": "端點位址（Base URL）",
+    "keyEnter": "貼上 API 金鑰",
+    "keyReplace": "目前使用的是手動設定的金鑰，在這裡輸入會取代它。",
+    "authHeader": "同時傳送 Authorization: Bearer 標頭（部分中轉服務需要）",
+    "headers": "手動設定的額外請求標頭會原樣保留：{{names}}。它們的值屬於機密，請在 models.json 中修改。",
+    "pick": "在左側選擇一個供應商，或新增一個。",
+    "manual": "手動設定",
+    "foreignHelp": "這個項目改寫了內建供應商，或用了本頁面不支援編輯的 API 格式。這裡只能移除它，不能編輯；要修改請直接改 models.json。",
+    "modelCount": "{{count, number}} 個模型",
+    "usable": "可用",
+    "builtinHelp": "TupAI 上次連線時回報它能用，通常是因為環境裡有它的 API 金鑰。這裡不能移除它：從環境變數裡刪掉那個金鑰，TupAI 下次連線後它就不會再出現。",
+    "noneYet": "還沒有",
+    "unreadable": "無法解析 models.json，供應商既不會顯示也不會儲存。請手動修復後重新載入。",
+    "commented": "models.json 裡有註解，從這裡儲存會把註解弄丟，所以供應商暫為唯讀。手動去掉註解後即可在此編輯。",
+    "modelCount_one": "{{count, number}} 個模型",
+    "modelCount_other": "{{count, number}} 個模型",
+    "summary": "登入訂閱帳號就能直接用，也可以連接任何 OpenAI、Anthropic 或 Gemini 相容的端點。",
+    "subscriptions": "訂閱登入",
+    "manualShort": "手動",
+    "needsSetup": "還沒設定好",
+    "more": "更多操作",
+    "removeProvider": "移除供應商",
+    "removeTitle": "移除 {{name}}？",
+    "removeSaved": "儲存後它會從 models.json 裡刪除，為它存的金鑰也會一起刪除。",
+    "removeUnsaved": "它還沒儲存，移除後這裡填的內容都會丟掉。",
+    "removeEntry": "儲存後這個手動設定的項目會從 models.json 裡刪除。如果它改寫的是內建供應商，那個供應商會恢復預設。",
+    "removeDefault": "新對話預設用的就是它，所以預設模型也會清空。"
+  },
+  "defaults": {
+    "summary": "新對話啟動時使用。對話中仍可隨時切換。",
+    "provider": "供應商",
+    "model": "模型",
+    "level": "思考等級",
+    "levelUnset": "不指定",
+    "levelHelp": "該模型不支援的等級已停用。",
+    "levelClamped": "不指定時為「中」。模型不支援的等級會自動改用最接近的可用等級。",
+    "noReasoning": "這個模型不支援思考，用它啟動的對話思考固定為關閉。",
+    "notSet": "未指定",
+    "pickProvider": "請先選擇供應商。"
+  },
+  "accounts": {
+    "signIn": "登入",
+    "signOut": "登出",
+    "signOutFailed": "登出沒有完成，可以再試一次。",
+    "signOutConfirm": "登出 {{name}}？之後要用它需要重新登入。",
+    "signedOut": "未登入",
+    "instant": "登入和登出立即生效，不用按儲存。",
+    "models": "可用的模型",
+    "byKey": "可用（API 金鑰）",
+    "byKeyHelp": "目前沒有登入訂閱帳號，但 TupAI 上次連線時回報它能用，通常是因為環境裡有它的 API 金鑰。登入後會改用訂閱。",
+    "otherRunning": "{{name}} 正在登入，同一時間只能進行一個登入。",
+    "showRunning": "查看"
+  },
+  "endpoints": {
+    "openaiCompletions": {
+      "name": "OpenAI 相容（Chat Completions）",
+      "hint": "相容性最廣：各類中轉服務、Ollama、vLLM、LM Studio、DeepSeek 等",
+      "url": "通常以 /v1 結尾，例如 https://api.example.com/v1 或 http://localhost:11434/v1。",
+      "short": "OpenAI 相容"
+    },
+    "openaiResponses": {
+      "name": "OpenAI Responses",
+      "hint": "OpenAI 較新的 Responses 介面，服務方支援時選用",
+      "url": "通常以 /v1 結尾，例如 https://api.example.com/v1。",
+      "short": "OpenAI Responses"
+    },
+    "anthropicMessages": {
+      "name": "Anthropic 相容（Messages）",
+      "hint": "用於 Claude，以及提供 Anthropic Messages 格式的服務",
+      "url": "不要帶 /v1：用戶端會自己加上 /v1/messages，例如 https://api.example.com。",
+      "short": "Anthropic 相容"
+    },
+    "googleGenerativeAi": {
+      "name": "Google Generative AI",
+      "hint": "經 Google AI Studio 使用 Gemini、Gemma",
+      "url": "例如 https://generativelanguage.googleapis.com/v1beta。",
+      "short": "Google"
+    }
+  },
+  "models": {
+    "title": "模型",
+    "id": "模型 ID",
+    "name": "顯示名稱",
+    "context": "上下文視窗",
+    "maxOutput": "最大輸出",
+    "reasoning": "思考",
+    "image": "圖片",
+    "add": "新增模型",
+    "none": "還沒有模型。可以手動新增，或先測試連線，從端點回傳的清單裡點選。",
+    "problem": {
+      "emptyId": "每個模型都要填 ID。",
+      "duplicate": "有兩個模型的 ID 相同。"
+    },
+    "idField": "模型 ID · 依 API 要求填寫",
+    "rowField": "{{field}}（第 {{n}} 列）",
+    "edit": "編輯 {{name}}",
+    "removeNamed": "移除 {{name}}",
+    "done": "完成",
+    "contextTag": "上下文視窗 {{size}}",
+    "tagReasoning": "思考",
+    "tagImage": "視覺",
+    "noId": "新模型",
+    "show": "檢視 {{name}}",
+    "addListed": "新增 {{name}}",
+    "levels": "思考等級",
+    "levelsHelp": "勾選的等級才會提供給這個模型。極高和最高預設關閉，勾選後才會打開。"
+  },
+  "test": {
+    "run": "測試連線",
+    "hint": "由本應用程式發出一次最小的請求：先取模型清單，取不到就讓第一個模型回一個字。",
+    "okModels": "連線成功（{{ms}} 毫秒），端點回傳了 {{count, number}} 個模型。",
+    "okCompletion": "連線成功（{{ms}} 毫秒），模型已回應。",
+    "auth": "金鑰被拒絕（HTTP {{status}}）。",
+    "notFound": "這個位址上沒有對應的端點（HTTP 404）。請檢查端點位址和 API 格式；也可以先新增一個模型，再用它發請求測試。",
+    "http": "端點回傳了 HTTP {{status}}。",
+    "timeout": "等待逾時，沒有收到回應。",
+    "network": "無法連線。請檢查位址和網路。",
+    "redirect": "端點把請求重新導向到了別處（HTTP {{status}}）。請直接填最終位址：金鑰不會跟著重新導向傳送。",
+    "invalidResponse": "回傳內容不符合這種 API 格式。API 格式選對了嗎？",
+    "keyUnavailable": "已儲存的金鑰是一個指令或組合值，本應用程式不會執行它。請輸入金鑰後再測試。",
+    "urlChanged": "位址或 API 格式已修改。已儲存的金鑰只會傳往儲存時的位址：請先儲存，或重新輸入金鑰。",
+    "detail": "端點回傳：{{detail}}",
+    "okModels_one": "連線成功（{{ms}} 毫秒），端點回傳了 {{count, number}} 個模型。",
+    "okModels_other": "連線成功（{{ms}} 毫秒），端點回傳了 {{count, number}} 個模型。"
+  },
+  "boardModel": {
+    "title": "人話模型",
+    "summary": "人話看板用它把進展講成白話。只給你看，不進對話的上下文；看板每更新一次呼叫一次。",
+    "pick": "指定一個模型",
+    "recommended": "推薦 Claude Opus 4.6：講得最自然、最穩；其次 Gemini 3.8 Flash：更快，也更省。",
+    "recommendedTag": "推薦",
+    "provider": "供應商",
+    "model": "模型",
+    "notSet": "未選擇",
+    "pickProvider": "先選供應商",
+    "unset": "還沒選：第一次打開看板時 TupAI 會問你。",
+    "session": "跟著對話用的模型",
+    "sessionHelp": "對話換了模型，看板也跟著換。",
+    "update": "這個版本的 TupAI 還不能在這裡選寫看板的模型，更新 TupAI 後就可以。"
+  },
+  "levels": {
+    "off": "不思考",
+    "minimal": "極低",
+    "low": "低",
+    "medium": "中",
+    "high": "高",
+    "xhigh": "極高",
+    "max": "最高"
+  },
+  "welcome": {
+    "reopen": "新手引導",
+    "progress": "引導進度",
+    "steps": {
+      "model": "模型",
+      "judge": "判定器",
+      "done": "完成"
+    },
+    "skipAll": "跳過引導",
+    "skipStep": "暫時跳過",
+    "back": "上一步",
+    "next": "下一步",
+    "start": "開始使用",
+    "model": {
+      "title": "連接一個模型",
+      "subtitle": "TupAI 用它寫程式、回答問題。三步就好，之後隨時可以在設定裡修改。",
+      "model": "模型",
+      "baseUrl": "端點位址",
+      "key": "API 金鑰",
+      "keyPlaceholder": "貼上金鑰；本機服務可以不填",
+      "modelId": "模型名稱",
+      "signedIn": {
+        "title": "用訂閱帳號登入",
+        "tag": "免 API 金鑰",
+        "description": "ChatGPT、Claude、Grok 等訂閱"
+      },
+      "openai": {
+        "title": "OpenAI 相容介面",
+        "tag": "最常見",
+        "description": "OpenAI、DeepSeek、Kimi、Qwen、Ollama，以及各種中轉服務",
+        "modelPlaceholder": "例如 deepseek-chat"
+      },
+      "anthropic": {
+        "title": "Anthropic 相容介面",
+        "description": "Claude，以及相容 Messages 格式的服務",
+        "modelPlaceholder": "例如 claude-sonnet-5"
+      },
+      "problems": {
+        "baseUrl": "請填寫 https:// 開頭的位址（本機或區域網路位址可以用 http://）。",
+        "key": "請填寫 API 金鑰。",
+        "model": "請填寫模型名稱。"
+      },
+      "openaiApi": {
+        "label": "API 格式",
+        "openai-completions": "Chat Completions",
+        "openai-responses": "Responses",
+        "openai-completionsHint": "相容性最好，大多數服務和中轉服務都支援。",
+        "openai-responsesHint": "OpenAI 的新介面，只有部分服務支援。"
+      }
+    },
+    "judge": {
+      "title": "選一個判定器",
+      "subtitle": "TupAI 工作時的小判斷由判定器回答。沒有判定器 TupAI 也能執行，只是少了這些把關。"
+    },
+    "done": {
+      "title": "準備好了",
+      "subtitle": "確認一下，就可以開始了。",
+      "model": "模型",
+      "judge": "判定器",
+      "none": "尚未設定",
+      "noKey": "還沒有金鑰：設定之前，判定點會改用預設規則",
+      "saveFailed": "儲存失敗：{{reason}}",
+      "modelValue": "{{provider}} / {{model}}"
+    },
+    "intro": {
+      "title": "歡迎使用 TupAI",
+      "lead": "TupAI 是一個會動手的程式助手：它讀你的專案、改程式碼、跑指令和測試，直到把事情做完。",
+      "points": {
+        "judge": {
+          "title": "每一步都有把關",
+          "text": "內建的判定器在關鍵處把關：先想清楚再動手，遵守你定的規則，沒驗證不說做完。"
+        },
+        "control": {
+          "title": "看得見，管得住",
+          "text": "改動隨時可以回退；瀏覽器裡的每一步都在眼前，可以暫停，也可以自己接手。"
+        },
+        "ready": {
+          "title": "開箱即用",
+          "text": "自動沿用你在 Claude Code、Cursor、Codex 裡的規則、技能和 MCP 設定。"
+        }
+      },
+      "start": "開始設定"
+    },
+    "login": {
+      "providers": {
+        "openai-codex": {
+          "name": "ChatGPT",
+          "plan": "Plus / Pro 訂閱"
+        },
+        "anthropic": {
+          "name": "Claude",
+          "plan": "Pro / Max 訂閱"
+        },
+        "xai": {
+          "name": "Grok",
+          "plan": "SuperGrok / X Premium"
+        },
+        "google-gemini-cli": {
+          "name": "Gemini CLI",
+          "plan": "Google 帳號"
+        },
+        "google-antigravity": {
+          "name": "Antigravity",
+          "plan": "Google 帳號"
+        }
+      },
+      "signedIn": "已登入",
+      "inProgress": "正在登入…",
+      "waiting": "已在瀏覽器開啟 {{name}} 的授權頁。登入並同意後，這裡會自動繼續。",
+      "deviceCode": "驗證碼",
+      "code": "授權碼",
+      "codePlaceholder": "貼上瀏覽器顯示的授權碼，或它最後停留的網址",
+      "submit": "送出",
+      "openAgain": "重新開啟授權頁",
+      "pasteCode": "手動貼上授權碼",
+      "cancel": "取消",
+      "failed": "登入沒有完成，可以再試一次。",
+      "asks": "{{name}} 的登入在問（以下是原文）：",
+      "needAccount": "先登入一個帳號，再選一個模型。",
+      "experimental": "實驗性",
+      "starting": "正在準備 {{name}} 的登入…",
+      "waitingDevice": "已在瀏覽器開啟 {{name}} 的驗證頁。核對頁面上的驗證碼是否和這裡的一致（沒有自動填入就手動輸入），同意後這裡會自動繼續。",
+      "risk": {
+        "title": "登入前請先了解風險",
+        "text": "這個登入借用的是 Google 給 {{tool}} 自己用的登入方式，不是 Google 為 TupAI 提供的。Google 可能認為這違反它的條款，限制甚至停用這個帳號。",
+        "instead": "建議用一個出問題也不要緊的帳號。官方的方式是 Gemini API 金鑰，或用 gcloud 登入的 Vertex AI。",
+        "continue": "我了解風險，繼續登入",
+        "cancel": "不登入了"
+      },
+      "readingModels": "已登入 {{name}}，正在讀取這個帳號能用的模型…"
+    }
+  },
+  "turnErrors": {
+    "processExited": "TupAI 在這一輪中途停止了，重新傳送訊息即可重新啟動。",
+    "modelFailed": "模型請求失敗。",
+    "turnRunning": "TupAI 還在處理上一則訊息，請等待或先停止。",
+    "busyConfig": "請等這一輪結束後再切換模型或思考強度。",
+    "unsupportedValue": "TupAI 不支援這個模型、思考強度或權限模式。",
+    "permissionsNotSwitched": "TupAI 沒有切換權限模式。請重試，或在對話中輸入 /permissions。",
+    "imageUnsupported": "只能傳送 12 MB 以內的 PNG、JPEG、WebP 或 GIF 圖片。",
+    "contentUnsupported": "TupAI 只接受文字、圖片和文字檔案。",
+    "wrongProject": "這個對話屬於另一個專案資料夾。",
+    "notPersisted": "TupAI 無法儲存這個對話。",
+    "startFailed": "TupAI 無法啟動。",
+    "timeout": "TupAI 沒有及時回應。",
+    "processClosed": "TupAI 已停止，重新傳送訊息即可重新啟動。",
+    "noModel": "TupAI 還沒有可用的模型來回答。"
+  },
+  "noModel": {
+    "title": "還沒有可用的模型",
+    "body": "TupAI 需要一個能用的模型才能回答。請到「{{place}}」登入帳號或填寫金鑰，然後重新傳送訊息。",
+    "open": "開啟{{page}}",
+    "chip": "選擇模型"
+  },
+  "notices": {
+    "checkpointOff": "這個對話的檢查點已關閉。",
+    "checkpointOffWhy": {
+      "gitMissing": "這個對話的檢查點已關閉：這台電腦上找不到 Git。裝好 Git 後開新對話就有了。",
+      "xcodeLicense": "這個對話的檢查點已關閉：這台 Mac 要先同意 Xcode 授權條款才能執行 Git。在終端機執行 sudo xcodebuild -license 同意後，開新對話就有了。",
+      "developerToolsMissing": "這個對話的檢查點已關閉：這台 Mac 沒有安裝 Git 需要的命令列開發者工具。在終端機執行 xcode-select --install 安裝後，開新對話就有了。",
+      "homeFolder": "這個對話的檢查點已關閉：它的資料夾是你的家目錄，或包含家目錄。在專案資料夾裡開對話就有了。",
+      "muFolder": "這個對話的檢查點已關閉：它的資料夾在 TupAI 自己的資料夾裡。在專案資料夾裡開對話就有了。",
+      "tooManyFiles": "這個對話的檢查點已關閉：它的資料夾裡有超過 {{limit}} 個檔案。在專案資料夾裡開對話就有了。",
+      "tooManyBytes": "這個對話的檢查點已關閉：它的資料夾裡的檔案超過 {{limitMb}} MB。在專案資料夾裡開對話就有了。",
+      "tooSlow": "這個對話的檢查點已關閉：列出它資料夾裡的檔案花了超過 {{seconds}} 秒。在專案資料夾裡開對話就有了。"
+    },
+    "stopped": "你停止了這次回覆。",
+    "answerLost": "TupAI 沒有收到你的回答，已按不同意處理。",
+    "bashMissing": "TupAI 執行命令需要 Git for Windows，安裝好後重新傳送訊息即可。下載網址："
+  },
+  "errors": {
+    "credential": "金鑰中有不允許的字元（如空格、引號或換行），請重新貼上。",
+    "keyVariable": "{{name}} 不能用來存判定器的金鑰。請用 TYPESAFE_API_KEY、AI_GATEWAY_API_KEY，或以 MU_JUDGE_ 開頭的變數名稱。",
+    "judgeEndpoint": "Jev 的服務沒有位址，它的金鑰無處可送。請填寫位址，或換一個服務。",
+    "sharedKey": "{{providers}} 會共用同一個金鑰變數，請修改其中一個 ID。",
+    "pickBoth": "請同時選擇供應商和模型。",
+    "modelsUnreadable": "無法解析 models.json，請先手動修復，再儲存供應商。",
+    "modelsCommented": "models.json 中有註解，從這裡儲存會把它們刪掉，請手動編輯供應商。",
+    "option": {
+      "type": "「{{name}}」的值類型不對。",
+      "range": "「{{name}}」超出了允許的範圍。",
+      "choice": "「{{name}}」不在可選項裡。",
+      "length": "「{{name}}」內容過長，或有空白項目。"
+    },
+    "invalidJson": "{{file}} 不是有效的 JSON，請手動修正後重新載入。",
+    "unreadable": "無法讀取 {{file}}。",
+    "runtimeOffline": "TupAI 核心目前離線，請檢查本機啟動器和登入狀態。",
+    "otherRegistration": "應用程式中已經註冊了另一個 TupAI 指令。",
+    "backend": "本機服務回應異常（HTTP {{status}}）。",
+    "invalid": "有一項填寫的值無效。",
+    "unknown": "TupAI 出了點問題。",
+    "unwritable": "無法寫入 {{file}}。",
+    "contextLimit": "上下文上限必須是 0，或 {{min}} 到 {{max}} 之間的整數。",
+    "importMissing": "目前的 TupAI 版本還不能匯入對話，請先更新 TupAI。",
+    "importFailed": "TupAI 沒能匯入這些對話。"
+  },
+  "importChats": {
+    "title": "匯入對話",
+    "description": "把這台電腦上在 Claude Code 或 Codex 裡聊過的對話帶進 TupAI，在這裡接著聊。",
+    "open": "選擇對話",
+    "dialog": {
+      "title": "匯入對話",
+      "hint": "選取的每段對話都會變成 TupAI 裡的一個對話，放在原本的專案資料夾下。TupAI 會讀到之前說過的全部內容，思考過程和圖片不會帶過來。",
+      "search": "依內容或資料夾搜尋",
+      "loading": "正在尋找對話…",
+      "empty": "這台電腦上沒有找到 Claude Code 或 Codex 的對話。",
+      "noMatch": "沒有符合的對話。",
+      "noTitle": "（沒有訊息）",
+      "folderUnknown": "不知道在哪個資料夾",
+      "inList": "已在對話列表裡",
+      "open": "開啟",
+      "selected": "已選 {{count}} 段",
+      "import": "匯入",
+      "importing": "正在匯入…",
+      "retry": "再試一次"
+    },
+    "done": "已匯入 {{count}} 段對話，可以在對話列表裡找到。",
+    "done_one": "已匯入 {{count}} 段對話，可以在對話列表裡找到。",
+    "done_other": "已匯入 {{count}} 段對話，可以在對話列表裡找到。",
+    "someFailed": "有 {{count}} 段對話沒能匯入，原因寫在它下面。",
+    "someFailed_one": "有 {{count}} 段對話沒能匯入，原因寫在它下面。",
+    "someFailed_other": "有 {{count}} 段對話沒能匯入，原因寫在它下面。",
+    "failure": {
+      "missing": "檔案已經不在了。",
+      "notFile": "這不是一個檔案。",
+      "notTranscript": "這不是 Claude Code 或 Codex 的對話。",
+      "empty": "裡面沒有訊息。",
+      "folderMissing": "它的專案資料夾已經不在了：{{folder}}",
+      "other": "沒能匯入：{{detail}}"
+    },
+    "notice": {
+      "title": "從 {{tool}} 匯入的對話",
+      "counts": "你的訊息 {{user}} 則 · 回答 {{assistant}} 則 · 工具呼叫 {{toolCalls}} 次",
+      "goOn": "在下面接著說就好，之前的內容 TupAI 都讀過了。思考過程和圖片沒有帶過來。",
+      "read": "查看之前的對話"
+    },
+    "history": {
+      "title": "之前在 {{tool}} 裡的對話",
+      "loading": "正在讀取對話…",
+      "you": "你",
+      "summary": "更早內容的摘要",
+      "tools": "用了：{{tools}}",
+      "earlier": "更早的 {{count}} 段沒有顯示。",
+      "earlier_one": "更早的 {{count}} 段沒有顯示。",
+      "earlier_other": "更早的 {{count}} 段沒有顯示。",
+      "empty": "沒有可顯示的內容。"
+    }
+  },
+  "commands": {
+    "frame": "任務框架：目標、你的硬性限制（原話加出處）、目前的子目標、驗收條件",
+    "remember": "為這個專案記下一條經驗，之後的對話都會用上：/remember <該怎麼做>",
+    "lessons": "這個專案的經驗：/lessons 列出 id · 類型 · 召回/照做次數 · 經驗，/lessons all 連同到處適用的和已退役的一起列出",
+    "forget": "讓一條經驗退役，之後不再召回：/forget <id 前幾碼>（id 見 /lessons）",
+    "capabilities": "裝了哪些能力、這次開啟了哪些：/capabilities 查看，/capabilities open <ID> 開啟",
+    "permissions": "TupAI 不問你就能做多少事：/permissions full（完全存取）| jev（Jev 審批）| ask（最小權限），不帶參數就跳出選擇；/permissions reset 忘掉這次對話裡允許過的操作",
+    "lsp": "語言伺服器：裝了哪些、哪些在執行、最近一次出錯",
+    "goal": "目標模式：讓代理一直做到某個條件成立。/goal <條件> 設定，/goal 查看（沒有時會問你），/goal clear 結束",
+    "board": "人話看板：/board 查看，/board on、/board off 為這個專案開啟或關閉，/board model 換個模型來講",
+    "checkpoints": "這次對話的檢查點：第幾回合、什麼時間、之後改了哪些檔案",
+    "rewind": "回到一個檢查點：/rewind [序號] [both|files|conversation]，/rewind undo 撤銷回退；both 檔案和對話都退，files 只退檔案，conversation 只退對話",
+    "swarm": "正在工作的子代理：/swarm 看每個在做什麼，/swarm stop [名字] 讓它現在交報告，/swarm kill [名字] 立刻結束它",
+    "agents": "列出 delegate 工具能用的子代理角色，以及在哪裡加入你自己的",
+    "hive": "讓幾個調查員同時查一個問題：/hive <問題>；不帶問題時同 /swarm，看正在工作的子代理",
+    "browse": "讓內建瀏覽器打開網址，照你說的去做：/browse <網址> [要做的事]",
+    "inherit": "TupAI 從 Claude Code、Cursor 和 Codex 沿用了什麼，各來自哪個檔案",
+    "mcp": "MCP 伺服器：/mcp 查看，/mcp open <ID> 開啟，/mcp restart <ID> 重新啟動",
+    "jobs": "背景工作：/jobs 查看，/jobs stop <編號|all> 停掉",
+    "commit": "把還沒提交的變更拆成幾個提交：先給你看計畫，你同意才提交，從不推送",
+    "review": "讓審查子代理審查還沒提交的變更（或你指定的內容），審查發現依輕重排成 P0 到 P3",
+    "mu": "TupAI 的狀態。另外：/TupAI judge <判定器> | /TupAI route <判定點> <判定器|default> | /TupAI mode <判定點|default> <off|shadow|active>",
+    "status": "模型、判定器、各判定點的模式、省下的上下文和最近的判定",
+    "help": "TupAI 能做什麼，以及常用指令一覽",
+    "ledger": "判定器最近的判定和用時：/ledger [筆數]",
+    "doctor": "檢查判定器、模型、瀏覽器和子代理有沒有接好",
+    "import-chat": "匯入這個專案在 Claude Code 或 Codex 裡的對話，接著在這裡聊：/import-chat [檔案]",
+    "llama": "管理 llama.cpp 路由器上的模型"
+  }
+}

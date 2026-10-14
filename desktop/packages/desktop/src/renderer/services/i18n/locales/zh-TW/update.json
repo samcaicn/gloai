@@ -1,0 +1,36 @@
+{
+  "upToDateTitle": "已是最新版本",
+  "foundVersion": "發現新版本 {{version}}",
+  "foundVersionSize": "發現新版本 {{version}}（約 {{size}} MB）",
+  "download": "下載",
+  "currentVersion": "目前版本：{{version}}",
+  "later": "稍後",
+  "preparingInstall": "準備安裝...",
+  "showInFolder": "在資料夾中顯示",
+  "errors": {
+    "prepareInstallTimeout": "準備安裝逾時，請稍後重試。",
+    "prepareInstallFailed": "準備安裝失敗，請稍後重試。",
+    "network": "無法連線到更新伺服器，請檢查網路後再試一次。",
+    "timeout": "更新伺服器回應逾時，請稍後再試。",
+    "noUpdateInfo": "這個版本不能在此系統上自動更新。",
+    "serverError": "更新伺服器傳回錯誤（{{status}}），請稍後再試。",
+    "invalidMetadata": "無法讀取更新資訊，請稍後重試。",
+    "checkFailed": "檢查更新沒有成功，請稍後重試。",
+    "downloadFailed": "新版本沒能下載下來，請稍後重試。"
+  },
+  "readyTitle": "新版本 {{version}} 已就緒",
+  "restartToUpdate": "重新啟動並更新",
+  "lastInstallFailed": "上次的更新沒有裝上：安裝時 TupAI 沒能關閉。",
+  "availableVersion": "新版本 {{version}} 可以下載",
+  "installerReason": {
+    "linux": "在 Linux 上，TupAI 無法自行安裝更新：下載安裝檔，開啟它來安裝。",
+    "unpackaged": "這個 TupAI 無法自行安裝更新：下載安裝檔，開啟它來安裝。",
+    "autoUpdateFailed": "可以下載安裝檔來更新。"
+  },
+  "downloadInstaller": "下載安裝檔",
+  "openReleasePage": "開啟發布頁面",
+  "downloadingVersion": "正在下載新版本 {{version}}（{{percent}}）",
+  "downloadingInstaller": "正在下載安裝檔（{{percent}}）",
+  "installerReadyTitle": "新版本 {{version}} 的安裝檔已下載",
+  "openInstaller": "開啟安裝檔"
+}

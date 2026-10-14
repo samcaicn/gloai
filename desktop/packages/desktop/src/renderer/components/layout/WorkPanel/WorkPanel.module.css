@@ -1,0 +1,258 @@
+/*
+ * The work panel: the page's own surface, a hairline where it meets the transcript, 8px corners where a corner shows.
+ * The one colour is the accent under the open tab; news is a black (or white) dot.
+ */
+
+.host {
+  position: relative;
+  flex: none;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-inline-start: 1px solid var(--border-base);
+  background: var(--bg-1);
+}
+
+.host[data-open='false'] {
+  border-inline-start-width: 0;
+}
+
+.host[data-mode='dock'][data-maximized='true'] {
+  flex: 1 1 0;
+}
+
+/*
+ * A row too narrow for the panel and a readable transcript: the panel takes the whole row (the Layout sets the
+ * transcript aside, mounted), and its strip leads with the way back. Nothing lies over text.
+ */
+.host[data-mode='fill'][data-open='true'] {
+  flex: 1 1 0;
+  border-inline-start-width: 0;
+}
+
+/* A phone: a sheet from the side, over everything, kept in place off-screen while closed. */
+.host[data-mode='sheet'] {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  inset-inline-end: 0;
+  z-index: 100;
+  transition: transform 150ms ease-out;
+}
+
+.host[data-mode='sheet'][data-open='false'] {
+  transform: translateX(100%);
+}
+
+:global([dir='rtl']) .host[data-mode='sheet'][data-open='false'] {
+  transform: translateX(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .host[data-mode='sheet'] {
+    transition: none;
+  }
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgb(0 0 0 / 30%);
+}
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ---- Tab strip ---- */
+
+.strip {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: 4px;
+  height: 40px;
+  padding-inline: 8px 6px;
+  border-bottom: 1px solid var(--border-base);
+}
+
+.tabs {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * 4px a side: eight Chinese labels (浏览器 among them) still fit the default 360px panel (about 305 of the strip's
+ * 318px), and eight icons (26px each, border included) fit the narrowest one.
+ */
+.tab:global(.arco-btn) {
+  position: relative;
+  flex: none;
+  height: 40px;
+  padding: 0 4px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  transition: color 120ms ease;
+}
+
+.tab:global(.arco-btn:not(:disabled):hover),
+.tab:global(.arco-btn:not(:disabled):active) {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.tab:global(.arco-btn)[aria-selected='true'] {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.tab:global(.arco-btn)[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  inset-inline: 4px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--mu-accent-border, var(--text-primary));
+}
+
+.tab:global(.arco-btn:focus-visible) {
+  outline: 1px solid var(--text-primary);
+  outline-offset: -4px;
+}
+
+/* Too narrow for the labels: one icon per tab (26px with the tab's padding and border), its name in the tooltip. */
+.tabIcon {
+  display: block;
+  line-height: 0;
+}
+
+.dot {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-primary);
+}
+
+.close:global(.arco-btn) {
+  flex: none;
+  align-self: center;
+  color: var(--text-secondary);
+}
+
+/* The way back to the transcript while the panel fills the row: first in the strip, named, never cut. */
+.back:global(.arco-btn) {
+  flex: none;
+  align-self: center;
+  padding: 0 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.back:global(.arco-btn:not(:disabled):hover) {
+  background: var(--bg-hover);
+}
+
+.close:global(.arco-btn:not(:disabled):hover) {
+  color: var(--text-primary);
+}
+
+/* ---- Bodies: all mounted, the open one on top; the others invisible and out of reach ---- */
+
+.bodies {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.body > * {
+  flex: 1;
+  min-height: 0;
+}
+
+.body[data-active='true'] {
+  z-index: 1;
+}
+
+.body[data-active='false'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A tab's empty state: one line at the top left, the same in every tab (10px 12px, 13px text). */
+.quiet {
+  flex: none !important;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.inlineAction:global(.arco-btn) {
+  padding: 0 4px;
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+/* ---- Resize handle: the hairline itself thickens under the pointer ---- */
+
+.handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  z-index: 5;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  width: 2px;
+  background: transparent;
+  transition: background-color 120ms ease;
+}
+
+.handle:hover::before,
+.handle:focus-visible::before,
+.handle[data-dragging='true']::before {
+  background: var(--text-secondary);
+}
+
+.handle:focus-visible {
+  outline: none;
+}

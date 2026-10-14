@@ -1,0 +1,758 @@
+{
+  "title": "Configuración de TupAI",
+  "description": "Todo lo que se le puede indicar a TupAI: jueces, puntos de decisión, funciones, modelos y contexto. Compartido con la línea de comandos de TupAI.",
+  "reload": "Recargar",
+  "search": "Buscar decisiones y funciones",
+  "noMatch": "Nada coincide con la búsqueda.",
+  "modified": "Modificado",
+  "applyNote": "Los cambios se aplican a las sesiones nuevas. Una sesión en curso mantiene la configuración con la que empezó; reconéctala para aplicarlos.",
+  "apiKey": "Clave de API",
+  "keyHelp": "Una vez guardada, la clave no se vuelve a mostrar. Se queda en este ordenador y solo tu cuenta puede leerla.",
+  "keyKeep": "Déjalo vacío para conservar la clave guardada",
+  "endpointRule": "Usa HTTPS, o HTTP solo hacia este ordenador (127.0.0.1, localhost) o hacia una dirección IP de red privada (como 192.168.1.20). Sin nombre de usuario, contraseña, consulta ni fragmento en la dirección.",
+  "sections": {
+    "judges": "Jueces",
+    "judgeTiers": "Niveles de jueces",
+    "decisions": "Puntos de decisión",
+    "features": "Funciones",
+    "moreFeatures": "Más funciones",
+    "providers": "Proveedores",
+    "defaultModel": "Modelo predeterminado",
+    "context": "Contexto"
+  },
+  "pages": {
+    "decisions": {
+      "input": "Puntos de decisión: Entrada",
+      "context": "Contexto",
+      "memory": "Puntos de decisión: Lecciones",
+      "tools": "Puntos de decisión: Herramientas y seguridad",
+      "turn": "Puntos de decisión: Turno",
+      "team": "Puntos de decisión: Trabajo en equipo"
+    },
+    "features": {
+      "input": "Más funciones: Entrada",
+      "context": "Más funciones: Contexto",
+      "tools": "Más funciones: Herramientas y seguridad",
+      "turn": "Más funciones: Turno",
+      "other": "Más funciones: Otros"
+    }
+  },
+  "modes": {
+    "active": "Activado",
+    "off": "Desactivado",
+    "activeHelp": "El veredicto se aplica.",
+    "offHelp": "El veredicto no tiene efecto: ese paso sigue como siempre."
+  },
+  "harness": {
+    "tooOld": "Esta versión de TupAI es demasiado antigua para mostrar sus puntos de decisión y funciones. Actualiza TupAI para verlos aquí; la configuración básica sigue funcionando.",
+    "unsupported": "TupAI se describe en un formato que esta aplicación no conoce (versión {{version}}). Actualiza la aplicación para editar los puntos de decisión y las funciones."
+  },
+  "load": {
+    "failed": "No se pudo cargar la configuración"
+  },
+  "save": {
+    "saved": "Guardado. Las sesiones nuevas lo usan; reconecta las que están en curso.",
+    "unsaved": "Cambios sin guardar en: {{sections}}",
+    "nothing": "No hay cambios sin guardar",
+    "unsavedDot": "Cambios sin guardar",
+    "discard": "Descartar",
+    "stale": "Otro programa (la línea de comandos de TupAI o una sesión en curso) cambió la configuración después de cargarla aquí, así que no se guardó nada. Recarga para ver el estado actual; perderás los cambios sin guardar.",
+    "failed": "No se guardó: {{reason}}"
+  },
+  "units": {
+    "s": "s",
+    "tokens": "tokens"
+  },
+  "options": {
+    "range": "Rango {{min}} – {{max}}.",
+    "emptyText": "Vacío: se usa el valor predeterminado",
+    "addItem": "Escribe y pulsa Enter",
+    "addNumber": "Escribe un número y pulsa Enter",
+    "problem": {
+      "type": "Este valor tiene un tipo incorrecto.",
+      "range": "Este valor está fuera del rango permitido.",
+      "choice": "No es una de las opciones.",
+      "length": "Demasiado largo o hay una entrada vacía."
+    }
+  },
+  "decisions": {
+    "description": "Cada punto en el que se consulta al juez. Un punto sigue el modo predeterminado, salvo que le asignes uno propio.",
+    "defaultMode": "Modo predeterminado",
+    "defaultModeHelp": "Para todos los puntos de decisión sin modo propio.",
+    "useDefault": "Volver al predeterminado ({{mode}})",
+    "featureOff": "La función está desactivada: no se consulta",
+    "groups": {
+      "input": "Entrada",
+      "context": "Contexto",
+      "memory": "Lecciones",
+      "tools": "Herramientas y seguridad",
+      "turn": "Turno",
+      "team": "Trabajo en equipo"
+    },
+    "otherGroup": "Otros",
+    "pageLead": "Un punto sigue el modo predeterminado, salvo que le asignes uno propio. El modo predeterminado y la búsqueda están en «{{page}}».",
+    "none": "Aún no hay puntos de decisión aquí."
+  },
+  "features": {
+    "lead": "Lo que TupAI hace por ti en segundo plano. Si desactivas una función, TupAI deja de hacerla.",
+    "moreLead": "Todo lo demás que TupAI puede hacer, agrupado según dónde actúa. Las opciones de cada función están a un clic.",
+    "beta": "Beta",
+    "reset": "Restablecer valores",
+    "boardModelElsewhere": "El modelo que escribe el tablero se elige en «Modelo predeterminado».",
+    "options": "Opciones",
+    "noOptions": "No hay nada más que ajustar: solo está el interruptor.",
+    "noSuchFeature": "Esta versión de TupAI no tiene esa función.",
+    "none": "Aún no hay funciones aquí.",
+    "part": "Opciones, página {{part}} de {{parts}}",
+    "previousPart": "Página anterior",
+    "nextPart": "Página siguiente"
+  },
+  "judges": {
+    "tiersHelp": "Los jueces se consultan en orden. Uno posterior solo ve lo que los anteriores dejaron sin resolver.",
+    "order": "Orden",
+    "orderHelp": "El primero es el juez elegido arriba.",
+    "tierTitle": "Nivel {{index}}: {{name}}",
+    "service": "Servicio",
+    "services": {
+      "auto": {
+        "name": "Automático",
+        "help": "TypeSafe si su clave está definida; si no, OpenRouter si su clave está definida; si no, Vercel AI Gateway.",
+        "key": "Clave de API de TypeSafe"
+      },
+      "typesafe": {
+        "name": "TypeSafe",
+        "help": "Siempre TypeSafe directamente.",
+        "key": "Clave de API de TypeSafe"
+      },
+      "openrouter": {
+        "name": "OpenRouter",
+        "help": "Siempre a través de OpenRouter, con una clave de API de OpenRouter. Se guarda solo para Jev: configurarla no cambia la clave de los modelos de chat de OpenRouter.",
+        "key": "Clave de API de OpenRouter"
+      },
+      "gateway": {
+        "name": "Vercel AI Gateway",
+        "help": "Siempre a través de Vercel AI Gateway.",
+        "key": "Clave de API de Vercel AI Gateway"
+      },
+      "custom": {
+        "name": "Servicio personalizado",
+        "help": "Cualquier servicio que hable el protocolo System One de TypeSafe: uno que ejecutes tú, un relé en tu red u otro proveedor de Jev.",
+        "key": "Clave de API del servicio"
+      }
+    },
+    "model": "Modelo del juez",
+    "baseUrl": "URL base",
+    "baseUrlHelp": "Déjalo vacío para usar la dirección de TypeSafe.",
+    "customUrlHelp": "La dirección System One del servicio. Su clave solo se envía ahí.",
+    "baseUrlNeeded": "Un servicio personalizado necesita su dirección.",
+    "customTier": "Un juez que añadiste tú. Se cambia en el archivo de ajustes de TupAI.",
+    "endpointDefault": "Dirección predeterminada del servicio",
+    "types": {
+      "localHelp": "Se ejecuta en este ordenador.",
+      "clmHelp": "Se ejecuta en tu propio servidor CLM."
+    },
+    "intro": "Mientras trabaja, TupAI hace muchas pequeñas valoraciones: cómo tratar este mensaje, si este paso rompe una regla que has fijado. El juez las responde. Elige uno.",
+    "choose": "Elige un juez",
+    "custom": "Ahora el primer juez es uno personalizado: puedes verlo y cambiarlo abajo, en «Niveles de jueces».",
+    "keyPlaceholder": "Pega la clave",
+    "choices": {
+      "jev": {
+        "title": "Jev",
+        "tag": "Recomendado",
+        "description": "Rápido y preciso, se cobra por llamada. Necesita una clave de TypeSafe, OpenRouter, Vercel AI Gateway o de un servicio propio."
+      },
+      "local": {
+        "title": "Laya local",
+        "tag": "Gratis · sin conexión",
+        "description": "Se ejecuta en este ordenador, sin red y sin coste. Clasifica bien; relacionar y puntuar es menos fiable."
+      },
+      "clm": {
+        "title": "CLM",
+        "tag": "Autoalojado",
+        "description": "Responde las mismas preguntas que Jev, en un servidor propio (clm-serve). Su codificador necesita una GPU; no se cobra por llamada."
+      }
+    },
+    "localAddress": "Dirección: {{address}}",
+    "laya": {
+      "running": "Ejecutándose en este ordenador",
+      "stopped": "Instalado, pero no se está ejecutando. TupAI lo inicia cuando lo necesita.",
+      "missing": "Aún no está instalado.",
+      "platform": "Laya no puede ejecutarse en este ordenador: necesita Windows o Linux (x64 o arm64), o un Mac con Apple Silicon.",
+      "needsUv": "Para instalarlo hace falta uv, un gestor de paquetes de Python. Instálalo y vuelve aquí.",
+      "uvLink": "Cómo instalar uv",
+      "install": "Instalar Laya",
+      "start": "Iniciar",
+      "stop": "Detener",
+      "confirmTitle": "¿Descargar e instalar Laya?",
+      "confirmText": "Se descargan unos {{size}} MB de PyPI y Hugging Face (paquetes de Python y los pesos del modelo) en la carpeta de TupAI; tarda unos minutos. Laya se inicia en cuanto termina la instalación.",
+      "confirmOk": "Descargar e instalar",
+      "working": {
+        "setup": "Instalando Laya…",
+        "start": "Iniciando Laya…",
+        "stop": "Deteniendo Laya…"
+      },
+      "failed": {
+        "setup": "No se completó la instalación. Puedes intentarlo de nuevo.",
+        "start": "Laya no se inició.",
+        "stop": "Laya no se detuvo."
+      },
+      "onnx": {
+        "missing": "El modelo de Laya aún no está en este ordenador (unos {{size}} MB). TupAI no lo descarga por ti: descarga los archivos de Hugging Face, ponlos en la carpeta del modelo y pulsa «Comprobar e iniciar».",
+        "stopped": "El modelo está listo y Laya no se está ejecutando. Si Laya es tu juez, TupAI lo inicia solo al abrir la app.",
+        "starting": "Comprobando el modelo e iniciando Laya… La primera comprobación lee el modelo entero y tarda un momento.",
+        "missingFiles": "Faltan todavía: {{files}}",
+        "wrongFiles": "No es la versión probada con TupAI, vuelve a descargarlos: {{files}}",
+        "folder": "Carpeta del modelo: {{folder}}",
+        "command": "Con la línea de comandos de Hugging Face (hf), este único comando lo descarga todo:",
+        "page": "Obtener en Hugging Face",
+        "openFolder": "Abrir la carpeta del modelo",
+        "check": "Comprobar e iniciar",
+        "problem": {
+          "missing": "Faltan algunos archivos del modelo.",
+          "wrong": "Algunos archivos del modelo no son la versión probada con TupAI. Vuelve a descargarlos.",
+          "runtime": "Este ordenador no pudo ejecutar el modelo.",
+          "port": "Otro programa ya usa el puerto de Laya ({{port}}).",
+          "stopped": "Laya se detuvo antes de estar listo.",
+          "foreign": "Aquí se está ejecutando un Laya que TupAI no inició. Detenlo donde se inició."
+        }
+      }
+    },
+    "clm": {
+      "address": "Dirección del servidor",
+      "addressHelp": "Donde escucha clm-serve, por ejemplo http://192.168.1.20:8700. Vacío es este ordenador ({{address}}).",
+      "key": "Clave del servidor",
+      "keyPlaceholder": "Solo si el servidor la pide",
+      "keyHelp": "Solo un servidor iniciado con CLM_API_KEY pide una clave: escribe el mismo valor. Una vez guardada, no se vuelve a mostrar.",
+      "check": "Comprobar el servidor",
+      "unmeasured": "Todavía no se ha medido qué tan bien toma CLM las decisiones de TupAI.",
+      "status": {
+        "checking": "Preguntando al servidor…",
+        "ready": "Responde · {{models}} · {{ms}} ms",
+        "down": "Nada responde en {{address}}. Inicia clm-serve allí o corrige la dirección.",
+        "encoderDown": "El servidor responde, pero su codificador no: todas las preguntas fallan hasta que su servidor de embeddings (vLLM) esté en marcha.",
+        "model": "El servidor no ofrece {{model}}. Ofrece {{models}}.",
+        "keyNeeded": "El servidor pide una clave: escribe la que se usó al iniciarlo (CLM_API_KEY).",
+        "keySaved": "El servidor pide una clave, y hay una guardada.",
+        "mock": "Este servidor usa el codificador simulado de CLM: sus respuestas son ruido, no las de CLM.",
+        "failed": "No se pudo preguntar al servidor."
+      }
+    }
+  },
+  "keyState": {
+    "none": "Sin definir",
+    "set": "Definida",
+    "typed": "Clave nueva, aún sin guardar",
+    "empty": "La variable está vacía",
+    "managed": "Definida",
+    "manual": "Definida (a mano)"
+  },
+  "context": {
+    "auto": "Compactación automática",
+    "autoHelp": "Compacta el historial cuando el contexto está casi lleno.",
+    "limit": "Límite de contexto",
+    "limitHelp": "0 usa la ventana del modelo menos la reserva. Si no, entre {{min}} y {{max}}. Se comprueba antes de la siguiente solicitud al modelo; no es un corte estricto.",
+    "limitProblem": "Usa 0 o un número entero de {{min}} a {{max}}.",
+    "lead": "Cuándo se compacta la conversación, cuánto puede crecer su contexto y los puntos de decisión sobre el contexto."
+  },
+  "permissions": {
+    "modes": {
+      "full": {
+        "title": "Acceso completo"
+      },
+      "jev": {
+        "title": "Jev aprueba"
+      },
+      "ask": {
+        "title": "Permisos mínimos"
+      }
+    }
+  },
+  "permissionsCard": {
+    "kind": {
+      "edit": "TupAI quiere editar un archivo",
+      "shell": "TupAI quiere ejecutar un comando",
+      "run": "TupAI quiere ejecutar un programa",
+      "outside": "TupAI quiere cambiar un archivo fuera del proyecto",
+      "delegate": "TupAI quiere iniciar subagentes",
+      "other": "TupAI quiere realizar una acción externa"
+    },
+    "reason": {
+      "ask": "Permisos mínimos: te pregunta antes de cada paso.",
+      "unsure": "Jev no está seguro de que este paso sea lo que quieres.",
+      "beyond": "Jev cree que esto va más allá de lo que has pedido.",
+      "unrelated": "Jev cree que esto no forma parte de la tarea.",
+      "protected": "Esto afecta a la propia configuración de TupAI; solo tú puedes permitirlo.",
+      "nojudge": "Todavía no hay ningún juez disponible, así que TupAI te pregunta en cada paso.",
+      "judgedown": "El juez no ha respondido esta vez, así que TupAI te pregunta."
+    },
+    "answer": {
+      "once": "Permitir una vez",
+      "session": "Permitir en esta conversación",
+      "sessionFor": "Permitir en esta conversación ({{grant}})",
+      "deny": "No permitir"
+    },
+    "decided": {
+      "once": "Lo has permitido una vez: {{summary}}",
+      "session": "Permitido en esta conversación: {{summary}}",
+      "deny": "No has permitido: {{summary}}"
+    },
+    "flag": {
+      "recursive_or_forced_delete": "eliminación recursiva o forzada",
+      "discards_git_work": "descarta cambios de git",
+      "force_push": "push forzado",
+      "drops_database_objects": "elimina objetos de la base de datos",
+      "overwrites_device": "sobrescribe un dispositivo",
+      "opens_permissions_recursively": "abre permisos de forma recursiva",
+      "runs_downloaded_script": "ejecuta un script descargado",
+      "runs_as_administrator": "se ejecuta como administrador",
+      "runs_as_root": "se ejecuta como root"
+    },
+    "flagged": "Riesgo: {{flag}}."
+  },
+  "providers": {
+    "lead": "De dónde salen los modelos: suscripciones y endpoints. El modelo y el nivel de razonamiento de cada conversación se eligen en su cuadro de mensaje.",
+    "title": "Proveedores",
+    "custom": "Proveedores personalizados",
+    "manualGroup": "Escritos a mano",
+    "builtinGroup": "Otros integrados",
+    "add": "Añadir proveedor",
+    "new": "Proveedor nuevo",
+    "unsaved": "Sin guardar",
+    "remove": "Quitar",
+    "endpointType": "Formato de API",
+    "name": "Nombre visible",
+    "namePlaceholder": "Ej. Mi proxy",
+    "id": "ID",
+    "idHelp": "Letras minúsculas, dígitos y guiones. No se puede cambiar una vez guardado.",
+    "idProblem": {
+      "format": "Usa letras minúsculas, dígitos y guiones, empezando por una letra o un dígito (40 como máximo).",
+      "reserved": "Este es el ID de un proveedor integrado. Una entrada con él redirigiría ese proveedor en lugar de añadir uno nuevo.",
+      "taken": "Este ID ya está en uso."
+    },
+    "baseUrl": "URL base",
+    "keyEnter": "Pega la clave de API",
+    "keyReplace": "Se está usando una clave escrita a mano. Si escribes una aquí, la sustituye.",
+    "authHeader": "Enviar también Authorization: Bearer (algunos proxies lo necesitan)",
+    "headers": "Los encabezados adicionales escritos a mano se conservan tal cual: {{names}}. Sus valores son secretos y se editan en models.json.",
+    "pick": "Elige un proveedor a la izquierda o añade uno.",
+    "manual": "Escrito a mano",
+    "foreignHelp": "Esta entrada redirige un proveedor integrado o usa un formato de API que esta pantalla no edita. Se puede quitar aquí, pero no editar: edítala en models.json.",
+    "modelCount": "{{count, number}} modelos",
+    "usable": "Disponible",
+    "builtinHelp": "TupAI lo indicó como disponible en su última conexión, normalmente porque su clave de API está en el entorno. No se puede quitar aquí: elimina esa clave del entorno y desaparecerá cuando TupAI vuelva a conectarse.",
+    "noneYet": "Aún no hay ninguno",
+    "unreadable": "No se pudo leer models.json, así que los proveedores ni se muestran ni se guardan. Repáralo a mano y vuelve a cargar.",
+    "commented": "models.json contiene comentarios. Guardar desde aquí los eliminaría, así que los proveedores son de solo lectura. Quita los comentarios a mano para editarlos aquí.",
+    "modelCount_one": "{{count, number}} modelo",
+    "modelCount_other": "{{count, number}} modelos",
+    "summary": "Inicia sesión con una suscripción y úsala al momento, o conecta cualquier endpoint compatible con OpenAI, Anthropic o Gemini.",
+    "subscriptions": "Suscripciones",
+    "manualShort": "A mano",
+    "needsSetup": "Sin configurar",
+    "more": "Más acciones",
+    "removeProvider": "Quitar proveedor",
+    "removeTitle": "¿Quitar {{name}}?",
+    "removeSaved": "Al guardar, se elimina de models.json, junto con la clave guardada para él.",
+    "removeUnsaved": "Aún no está guardado, así que se descartará lo que hayas rellenado aquí.",
+    "removeEntry": "Al guardar, esta entrada escrita a mano se elimina de models.json. Si sustituye a un proveedor integrado, ese proveedor vuelve a sus valores predeterminados.",
+    "removeDefault": "Las sesiones nuevas empiezan con él, así que también se borra el modelo predeterminado."
+  },
+  "defaults": {
+    "summary": "Lo que usa una sesión nueva al empezar. Dentro de una conversación aún puedes cambiarlo.",
+    "provider": "Proveedor",
+    "model": "Modelo",
+    "level": "Nivel de razonamiento",
+    "levelUnset": "No indicar",
+    "levelHelp": "Los niveles que este modelo no admite están desactivados.",
+    "levelClamped": "«No indicar» equivale a Medio. Un nivel que el modelo no admite pasa al más cercano que sí admite.",
+    "noReasoning": "Este modelo no razona, así que una sesión con él siempre empieza con el razonamiento desactivado.",
+    "notSet": "Sin indicar",
+    "pickProvider": "Elige primero un proveedor."
+  },
+  "accounts": {
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión",
+    "signOutFailed": "No se completó el cierre de sesión. Puedes intentarlo de nuevo.",
+    "signOutConfirm": "¿Cerrar la sesión de {{name}}? Tendrás que volver a iniciar sesión para usarlo.",
+    "signedOut": "Sin sesión iniciada",
+    "instant": "El inicio y el cierre de sesión se aplican al momento, sin guardar.",
+    "models": "Modelos que puedes usar",
+    "byKey": "Disponible (clave de API)",
+    "byKeyHelp": "No hay ninguna suscripción con sesión iniciada, pero TupAI lo indicó como disponible en su última conexión, normalmente porque su clave de API está en el entorno. Al iniciar sesión pasa a usar la suscripción.",
+    "otherRunning": "Se está iniciando sesión en {{name}}; solo puede haber un inicio de sesión a la vez.",
+    "showRunning": "Ver"
+  },
+  "endpoints": {
+    "openaiCompletions": {
+      "name": "Compatible con OpenAI (Chat Completions)",
+      "hint": "El más compatible: proxies, Ollama, vLLM, LM Studio, DeepSeek…",
+      "url": "Suele terminar en /v1, p. ej., https://api.example.com/v1 o http://localhost:11434/v1.",
+      "short": "Compatible con OpenAI"
+    },
+    "openaiResponses": {
+      "name": "OpenAI Responses",
+      "hint": "La API Responses más reciente de OpenAI, para los servicios que la ofrecen.",
+      "url": "Suele terminar en /v1, p. ej., https://api.example.com/v1.",
+      "short": "OpenAI Responses"
+    },
+    "anthropicMessages": {
+      "name": "Compatible con Anthropic (Messages)",
+      "hint": "Para Claude y los servicios que usan el formato Messages de Anthropic.",
+      "url": "Sin /v1: el cliente añade /v1/messages por su cuenta, p. ej., https://api.example.com.",
+      "short": "Compatible con Anthropic"
+    },
+    "googleGenerativeAi": {
+      "name": "Google Generative AI",
+      "hint": "Gemini y Gemma a través de Google AI Studio.",
+      "url": "P. ej., https://generativelanguage.googleapis.com/v1beta.",
+      "short": "Google"
+    }
+  },
+  "models": {
+    "title": "Modelos",
+    "id": "ID del modelo",
+    "name": "Nombre visible",
+    "context": "Ventana de contexto",
+    "maxOutput": "Salida máxima",
+    "reasoning": "Razonamiento",
+    "image": "Imágenes",
+    "add": "Añadir modelo",
+    "none": "Aún no hay modelos. Añade uno o prueba la conexión para elegir entre los que ofrece el endpoint.",
+    "problem": {
+      "emptyId": "Cada modelo necesita un ID.",
+      "duplicate": "Dos modelos tienen el mismo ID."
+    },
+    "idField": "ID del modelo · tal como lo espera la API",
+    "rowField": "{{field}} {{n}}",
+    "edit": "Editar {{name}}",
+    "removeNamed": "Quitar {{name}}",
+    "done": "Hecho",
+    "contextTag": "Ventana de contexto {{size}}",
+    "tagReasoning": "Razonamiento",
+    "tagImage": "Visión",
+    "noId": "Modelo nuevo",
+    "show": "Ver {{name}}",
+    "addListed": "Añadir {{name}}",
+    "levels": "Niveles de razonamiento",
+    "levelsHelp": "Solo los niveles marcados se ofrecen para este modelo. Muy alto y Máximo siguen apagados hasta que los actives."
+  },
+  "test": {
+    "run": "Probar conexión",
+    "hint": "Una única solicitud mínima desde esta aplicación: la lista de modelos o, si no, una respuesta de una palabra del primer modelo.",
+    "okModels": "Conectado ({{ms}} ms). El endpoint ofrece {{count, number}} modelos.",
+    "okCompletion": "Conectado ({{ms}} ms). El modelo respondió.",
+    "auth": "Se rechazó la clave (HTTP {{status}}).",
+    "notFound": "No hay nada en esta dirección (HTTP 404). Comprueba la URL base y el formato de API; añade un modelo para probar con una solicitud.",
+    "http": "El endpoint respondió HTTP {{status}}.",
+    "timeout": "Tiempo agotado: no hubo respuesta.",
+    "network": "No se pudo conectar. Comprueba la dirección y la red.",
+    "redirect": "El endpoint redirige a otro sitio (HTTP {{status}}). Usa la dirección final: la clave no se envía tras una redirección.",
+    "invalidResponse": "La respuesta no tiene este formato de API. ¿Es el formato correcto?",
+    "keyUnavailable": "La clave guardada es un comando o un valor compuesto, que esta aplicación no evalúa. Escribe una clave para probar.",
+    "urlChanged": "Se cambió la dirección o el formato de API. Una clave guardada solo se envía a donde se guardó: guarda primero o vuelve a escribir la clave.",
+    "detail": "Respuesta del endpoint: {{detail}}",
+    "okModels_one": "Conectado ({{ms}} ms). El endpoint ofrece {{count, number}} modelo.",
+    "okModels_other": "Conectado ({{ms}} ms). El endpoint ofrece {{count, number}} modelos."
+  },
+  "boardModel": {
+    "title": "Modelo del tablero",
+    "summary": "Escribe el tablero en lenguaje claro: cómo va el trabajo, con palabras sencillas. Solo lo ves tú y nunca entra en el contexto de la conversación; cada actualización es una llamada.",
+    "pick": "Un modelo a tu elección",
+    "recommended": "Recomendado: Claude Opus 4.6, el más natural y estable; después, Gemini 3.8 Flash, más rápido y barato.",
+    "recommendedTag": "recomendado",
+    "provider": "Proveedor",
+    "model": "Modelo",
+    "notSet": "Sin elegir",
+    "pickProvider": "Elige primero un proveedor",
+    "unset": "Aún ninguno: TupAI te lo preguntará la primera vez que se active el tablero.",
+    "session": "El modelo que use la conversación",
+    "sessionHelp": "Si la conversación cambia de modelo, el tablero también.",
+    "update": "Esta versión de TupAI no permite elegir aquí qué modelo escribe el tablero. Actualiza TupAI primero."
+  },
+  "levels": {
+    "off": "Sin razonamiento",
+    "minimal": "Mínimo",
+    "low": "Bajo",
+    "medium": "Medio",
+    "high": "Alto",
+    "xhigh": "Muy alto",
+    "max": "Máximo"
+  },
+  "welcome": {
+    "reopen": "Guía de configuración",
+    "progress": "Progreso de la configuración",
+    "steps": {
+      "model": "Modelo",
+      "judge": "Juez",
+      "done": "Listo"
+    },
+    "skipAll": "Omitir configuración",
+    "skipStep": "Omitir por ahora",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "start": "Empezar",
+    "model": {
+      "title": "Conecta un modelo",
+      "subtitle": "TupAI lo usa para escribir código y responderte. Son tres pasos; luego puedes cambiarlo todo en Configuración.",
+      "model": "Modelo",
+      "baseUrl": "URL base",
+      "key": "Clave de API",
+      "keyPlaceholder": "Pega la clave; un servicio en este ordenador puede no necesitarla",
+      "modelId": "Nombre del modelo",
+      "signedIn": {
+        "title": "Iniciar sesión con una suscripción",
+        "tag": "Sin clave de API",
+        "description": "Un plan de ChatGPT, Claude, Grok u otros"
+      },
+      "openai": {
+        "title": "API compatible con OpenAI",
+        "tag": "El más común",
+        "description": "OpenAI, DeepSeek, Kimi, Qwen, Ollama y servicios intermediarios",
+        "modelPlaceholder": "Ej. deepseek-chat"
+      },
+      "anthropic": {
+        "title": "API compatible con Anthropic",
+        "description": "Claude y los servicios que usan el formato Messages",
+        "modelPlaceholder": "Ej. claude-sonnet-5"
+      },
+      "problems": {
+        "baseUrl": "Introduce una dirección que empiece por https:// (http:// solo para este ordenador o una dirección de red privada).",
+        "key": "Introduce la clave de API.",
+        "model": "Introduce el nombre del modelo."
+      },
+      "openaiApi": {
+        "label": "Formato de API",
+        "openai-completions": "Chat Completions",
+        "openai-responses": "Responses",
+        "openai-completionsHint": "Funciona casi en todas partes; la mayoría de servicios e intermediarios lo usan.",
+        "openai-responsesHint": "La API más reciente de OpenAI; solo algunos servicios la admiten."
+      }
+    },
+    "judge": {
+      "title": "Elige un juez",
+      "subtitle": "El juez responde a las pequeñas valoraciones que TupAI hace mientras trabaja. TupAI funciona sin él, solo que sin estas comprobaciones."
+    },
+    "done": {
+      "title": "Todo listo",
+      "subtitle": "Revísalo y empieza.",
+      "model": "Modelo",
+      "judge": "Juez",
+      "none": "Sin configurar",
+      "noKey": "Aún no hay clave: los veredictos siguen las reglas predeterminadas hasta que la haya",
+      "saveFailed": "No se pudo guardar: {{reason}}",
+      "modelValue": "{{provider}} / {{model}}"
+    },
+    "intro": {
+      "title": "Bienvenido a TupAI",
+      "lead": "TupAI es un asistente de programación que hace el trabajo: lee tu proyecto, edita código, ejecuta comandos y pruebas, y sigue hasta terminar la tarea.",
+      "points": {
+        "judge": {
+          "title": "Una comprobación en cada paso",
+          "text": "Un juez integrado vigila los momentos clave: pensar antes de actuar, respetar las reglas que has fijado y no dar nada por terminado sin verificarlo."
+        },
+        "control": {
+          "title": "Lo ves y lo diriges",
+          "text": "Cualquier cambio se puede deshacer; cada paso en el navegador está a la vista y puedes pausar o tomar el control."
+        },
+        "ready": {
+          "title": "Listo para usar",
+          "text": "Aprovecha las reglas, habilidades y servidores MCP que ya has configurado en Claude Code, Cursor y Codex."
+        }
+      },
+      "start": "Configurar"
+    },
+    "login": {
+      "providers": {
+        "openai-codex": {
+          "name": "ChatGPT",
+          "plan": "Plan Plus / Pro"
+        },
+        "anthropic": {
+          "name": "Claude",
+          "plan": "Plan Pro / Max"
+        },
+        "xai": {
+          "name": "Grok",
+          "plan": "SuperGrok / X Premium"
+        },
+        "google-gemini-cli": {
+          "name": "Gemini CLI",
+          "plan": "Cuenta de Google"
+        },
+        "google-antigravity": {
+          "name": "Antigravity",
+          "plan": "Cuenta de Google"
+        }
+      },
+      "signedIn": "Sesión iniciada",
+      "inProgress": "Iniciando sesión…",
+      "waiting": "La página de inicio de sesión de {{name}} está abierta en tu navegador. Inicia sesión y permite el acceso; esto continuará solo.",
+      "deviceCode": "Código",
+      "code": "Código de autorización",
+      "codePlaceholder": "Pega el código que muestra el navegador o la dirección en la que terminó",
+      "submit": "Enviar",
+      "openAgain": "Abrir la página de nuevo",
+      "pasteCode": "Pegar un código en su lugar",
+      "cancel": "Cancelar",
+      "failed": "No se completó el inicio de sesión. Puedes intentarlo de nuevo.",
+      "asks": "{{name}} pregunta (con sus propias palabras):",
+      "needAccount": "Primero inicia sesión en una cuenta y luego elige un modelo.",
+      "experimental": "Experimental",
+      "starting": "Preparando el inicio de sesión de {{name}}…",
+      "waitingDevice": "La página de verificación de {{name}} está abierta en tu navegador. Comprueba que el código que aparece allí coincide con este (escríbelo si no está rellenado), aprueba el acceso y esto continuará solo.",
+      "risk": {
+        "title": "Conoce el riesgo antes de iniciar sesión",
+        "text": "Esto inicia sesión mediante el acceso que Google creó para el propio {{tool}}, no uno que Google ofrezca para TupAI. Google puede considerarlo contrario a sus condiciones y limitar o suspender la cuenta.",
+        "instead": "Usa una cuenta cuyo acceso puedas permitirte perder. Las vías oficiales son una clave de API de Gemini o Vertex AI con sesión iniciada mediante gcloud.",
+        "continue": "Entiendo el riesgo, iniciar sesión",
+        "cancel": "No iniciar sesión"
+      },
+      "readingModels": "Sesión iniciada en {{name}}. Leyendo los modelos que puede usar esta cuenta…"
+    }
+  },
+  "turnErrors": {
+    "processExited": "TupAI se detuvo a mitad del turno. Vuelve a enviar el mensaje para reiniciarlo.",
+    "busyConfig": "Espera a que termine el turno actual antes de cambiar el modelo o el nivel de razonamiento.",
+    "unsupportedValue": "TupAI no ofrece este modelo, este nivel de razonamiento ni este modo de permiso.",
+    "permissionsNotSwitched": "TupAI no cambió el modo de permiso. Inténtalo de nuevo o escribe /permissions en la conversación.",
+    "imageUnsupported": "Solo se pueden enviar imágenes PNG, JPEG, WebP o GIF de hasta 12 MB.",
+    "contentUnsupported": "TupAI solo acepta texto, imágenes y archivos de texto.",
+    "wrongProject": "Esta conversación pertenece a otra carpeta de proyecto.",
+    "notPersisted": "TupAI no pudo guardar esta conversación.",
+    "startFailed": "TupAI no pudo iniciarse.",
+    "timeout": "TupAI no respondió a tiempo.",
+    "processClosed": "TupAI se ha detenido. Vuelve a enviar el mensaje para reiniciarlo.",
+    "modelFailed": "Falló la solicitud al modelo.",
+    "turnRunning": "TupAI sigue trabajando en el mensaje anterior. Espera o detenlo primero.",
+    "noModel": "TupAI no tiene ningún modelo con el que responder."
+  },
+  "noModel": {
+    "title": "No hay ningún modelo para responder",
+    "body": "TupAI necesita un modelo que pueda usar. Inicia sesión o añade una clave en {{place}} y vuelve a enviar tu mensaje.",
+    "open": "Abrir {{page}}",
+    "chip": "Elegir un modelo"
+  },
+  "notices": {
+    "checkpointOff": "Los puntos de control están desactivados en esta conversación.",
+    "checkpointOffWhy": {
+      "gitMissing": "Los puntos de control están desactivados en esta conversación: no se encontró Git en este ordenador. Instala Git y empieza una conversación nueva para tenerlos.",
+      "xcodeLicense": "Los puntos de control están desactivados en esta conversación: Git no puede ejecutarse en este Mac hasta que se acepte la licencia de Xcode. Acéptala con sudo xcodebuild -license en Terminal y empieza una conversación nueva para tenerlos.",
+      "developerToolsMissing": "Los puntos de control están desactivados en esta conversación: este Mac no tiene las herramientas de desarrollo de línea de comandos que Git necesita. Instálalas con xcode-select --install en Terminal y empieza una conversación nueva para tenerlos.",
+      "homeFolder": "Los puntos de control están desactivados en esta conversación: su carpeta es tu carpeta personal o la contiene. Empieza una conversación en una carpeta de proyecto para tenerlos.",
+      "muFolder": "Los puntos de control están desactivados en esta conversación: su carpeta está dentro de la propia carpeta de TupAI. Empieza una conversación en una carpeta de proyecto para tenerlos.",
+      "tooManyFiles": "Los puntos de control están desactivados en esta conversación: su carpeta tiene más de {{limit}} archivos. Empieza una conversación en una carpeta de proyecto para tenerlos.",
+      "tooManyBytes": "Los puntos de control están desactivados en esta conversación: su carpeta contiene más de {{limitMb}} MB de archivos. Empieza una conversación en una carpeta de proyecto para tenerlos.",
+      "tooSlow": "Los puntos de control están desactivados en esta conversación: listar los archivos de su carpeta tardó más de {{seconds}} segundos. Empieza una conversación en una carpeta de proyecto para tenerlos."
+    },
+    "stopped": "Has detenido esta respuesta.",
+    "answerLost": "TupAI no recibió tu respuesta y siguió como si la hubieras rechazado.",
+    "bashMissing": "TupAI necesita Git for Windows para ejecutar comandos. Cuando esté instalado, vuelve a enviar tu mensaje. Descárgalo aquí:"
+  },
+  "errors": {
+    "credential": "La clave contiene caracteres no permitidos, como espacios, comillas o saltos de línea. Vuelve a pegarla.",
+    "keyVariable": "{{name}} no puede guardar una clave del juez. Usa TYPESAFE_API_KEY, AI_GATEWAY_API_KEY o un nombre que empiece por MU_JUDGE_.",
+    "judgeEndpoint": "El servicio de Jev no tiene dirección a la que enviar su clave. Escribe la dirección o elige otro servicio.",
+    "sharedKey": "{{providers}} compartirían la misma variable de clave. Cambia uno de los ID.",
+    "pickBoth": "Elige un proveedor y un modelo a la vez.",
+    "modelsUnreadable": "No se pudo leer models.json. Repáralo a mano antes de guardar proveedores.",
+    "modelsCommented": "models.json contiene comentarios, que se eliminarían al guardar desde aquí. Edita los proveedores a mano.",
+    "option": {
+      "type": "«{{name}}» tiene un valor de tipo incorrecto.",
+      "choice": "«{{name}}» no es una de las opciones.",
+      "length": "«{{name}}» es demasiado largo o tiene una entrada vacía.",
+      "range": "«{{name}}» está fuera del rango permitido."
+    },
+    "invalidJson": "{{file}} no es un JSON válido. Corrígelo a mano y vuelve a cargar.",
+    "unreadable": "No se pudo leer {{file}}.",
+    "runtimeOffline": "El entorno de ejecución de TupAI no está en línea. Comprueba el lanzador local y el inicio de sesión.",
+    "otherRegistration": "Ya hay otro comando TupAI registrado en la aplicación.",
+    "backend": "El servicio local no respondió como se esperaba (HTTP {{status}}).",
+    "invalid": "Uno de los valores no es válido.",
+    "unknown": "Algo salió mal en TupAI.",
+    "unwritable": "No se pudo escribir {{file}}.",
+    "contextLimit": "El límite de contexto debe ser 0 o un número entero de {{min}} a {{max}}.",
+    "importMissing": "Esta versión de TupAI aún no puede importar conversaciones. Actualiza TupAI primero.",
+    "importFailed": "TupAI no pudo importar las conversaciones."
+  },
+  "importChats": {
+    "title": "Importar conversaciones",
+    "description": "Trae a TupAI las conversaciones que tuviste en Claude Code o Codex en este ordenador y continúalas aquí.",
+    "open": "Elegir…",
+    "dialog": {
+      "title": "Importar conversaciones",
+      "hint": "Cada conversación que elijas se convierte en una conversación de TupAI en su carpeta de proyecto. TupAI lee todo lo que se dijo; el razonamiento y las imágenes se quedan fuera.",
+      "search": "Buscar por palabras o carpeta",
+      "loading": "Buscando conversaciones…",
+      "empty": "No se encontraron conversaciones de Claude Code ni de Codex en este ordenador.",
+      "noMatch": "Ninguna conversación coincide.",
+      "noTitle": "(sin mensajes)",
+      "folderUnknown": "Carpeta desconocida",
+      "inList": "Ya está en la lista",
+      "open": "Abrir",
+      "selected": "Elegidas: {{count}}",
+      "import": "Importar",
+      "importing": "Importando…",
+      "retry": "Reintentar"
+    },
+    "done": "Se importaron {{count}} conversaciones. Están en tu lista de conversaciones.",
+    "done_one": "Se importó {{count}} conversación. Está en tu lista de conversaciones.",
+    "done_other": "Se importaron {{count}} conversaciones. Están en tu lista de conversaciones.",
+    "someFailed": "No se pudieron importar {{count}} conversaciones. El motivo aparece debajo de cada una.",
+    "someFailed_one": "No se pudo importar {{count}} conversación. El motivo aparece debajo.",
+    "someFailed_other": "No se pudieron importar {{count}} conversaciones. El motivo aparece debajo de cada una.",
+    "failure": {
+      "missing": "El archivo ya no existe.",
+      "notFile": "Esto no es un archivo.",
+      "notTranscript": "Esto no es una conversación de Claude Code ni de Codex.",
+      "empty": "No contiene ningún mensaje.",
+      "folderMissing": "Su carpeta de proyecto ya no existe: {{folder}}",
+      "other": "No se pudo importar: {{detail}}"
+    },
+    "notice": {
+      "title": "Importada de {{tool}}",
+      "counts": "Tus mensajes: {{user}} · respuestas: {{assistant}} · llamadas a herramientas: {{toolCalls}}",
+      "goOn": "Sigue escribiendo abajo: TupAI ya leyó la conversación. El razonamiento y las imágenes no se trajeron.",
+      "read": "Leer la conversación anterior"
+    },
+    "history": {
+      "title": "Antes, en {{tool}}",
+      "loading": "Leyendo la conversación…",
+      "you": "Tú",
+      "summary": "Resumen de lo anterior",
+      "tools": "Usó: {{tools}}",
+      "earlier": "No se muestran {{count}} pasos anteriores.",
+      "earlier_one": "No se muestra {{count}} paso anterior.",
+      "earlier_other": "No se muestran {{count}} pasos anteriores.",
+      "empty": "No hay nada que mostrar."
+    }
+  },
+  "commands": {
+    "frame": "El marco de la tarea: objetivo, tus restricciones firmes y dónde las dijiste, subobjetivo, criterios de aceptación",
+    "remember": "Guardar una lección para las próximas conversaciones de este proyecto: /remember <qué hacer>",
+    "lessons": "Las lecciones de este proyecto: /lessons lista id · tipo · recuperada/seguida · lección, /lessons all añade las de todas partes y las retiradas",
+    "forget": "Retirar una lección para que ya no se recupere: /forget <inicio del id> (los id están en /lessons)",
+    "capabilities": "Qué capacidades están instaladas y cuáles abiertas: /capabilities, /capabilities open <id>",
+    "permissions": "Cuánto puede hacer TupAI sin preguntar: /permissions full (Acceso completo) | jev (Jev aprueba) | ask (Permisos mínimos), o un selector sin argumentos. /permissions reset olvida lo que permitiste en esta conversación",
+    "lsp": "Servidores de lenguaje: cuáles están instalados, cuáles se están ejecutando y el último error",
+    "goal": "Modo objetivo: el agente sigue trabajando hasta que se cumpla una condición. /goal <condición>, /goal (mostrarlo o pedir uno), /goal clear",
+    "board": "El tablero en lenguaje claro: /board (mostrarlo), /board on, /board off (para este proyecto), /board model (quién lo escribe)",
+    "checkpoints": "Los puntos de control de esta conversación: turno, hora, archivos cambiados desde entonces",
+    "rewind": "Volver a un punto de control: /rewind [n.º] [both|files|conversation], /rewind undo lo deshace; both: archivos y conversación, files: solo archivos, conversation: solo la conversación",
+    "swarm": "Subagentes trabajando: /swarm (qué hace cada uno), /swarm stop [nombre] (informar ya), /swarm kill [nombre] (terminar al instante)",
+    "agents": "Los roles de subagente que puede usar la herramienta delegate y dónde añadir los tuyos",
+    "hive": "Poner a varios investigadores con una misma pregunta a la vez: /hive <pregunta>. Sin ella, igual que /swarm",
+    "browse": "Hacer que el navegador integrado abra una dirección y haga lo que dices: /browse <url> [objetivo]",
+    "inherit": "Lo que TupAI tomó de Claude Code, Cursor y Codex, y de dónde",
+    "mcp": "Servidores MCP: /mcp, /mcp open <id>, /mcp restart <id>",
+    "jobs": "Tareas en segundo plano: /jobs, /jobs stop <id|all>",
+    "commit": "Dividir el cambio sin confirmar en commits: muestra el plan, confirma solo cuando dices que sí y nunca hace push",
+    "review": "Revisar el cambio sin confirmar, o lo que indiques, con el subagente revisor; hallazgos ordenados de P0 a P3",
+    "mu": "Estado de TupAI. Además: /TupAI judge <niveles> | /TupAI route <punto de decisión> <niveles|default> | /TupAI mode <punto de decisión|default> <off|shadow|active>",
+    "status": "Modelo, juez, modos de los puntos de decisión, contexto ahorrado y los últimos veredictos",
+    "help": "Lo que TupAI puede hacer y todos los comandos que vale la pena conocer",
+    "ledger": "Los últimos veredictos del juez con su duración: /ledger [n]",
+    "doctor": "Comprobar que el juez, el modelo, el navegador y los subagentes están bien conectados",
+    "import-chat": "Traer a TupAI una conversación de Claude Code o Codex de este proyecto y continuarla: /import-chat [archivo]",
+    "llama": "Gestionar los modelos del router de llama.cpp"
+  }
+}

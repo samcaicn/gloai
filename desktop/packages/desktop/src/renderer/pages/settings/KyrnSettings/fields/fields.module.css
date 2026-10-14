@@ -1,0 +1,99 @@
+/* Rows and markers shared by every section of the mu settings area. Colours are the app's tokens only. */
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 24px;
+  padding: 12px 0;
+}
+
+.row + .row {
+  border-top: 1px solid var(--border-base);
+}
+
+.rowText {
+  min-width: 0;
+}
+
+.rowTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+}
+
+.rowHelp {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-wrap: balance;
+}
+
+.rowControl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.problem {
+  grid-column: 1 / -1;
+  color: rgb(var(--danger-6));
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.modified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--color-fill-2);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.modified::before {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
+}
+
+.wide {
+  width: 320px;
+  max-width: 100%;
+}
+
+.number {
+  width: 148px;
+  max-width: 100%;
+}
+
+/* The row stacks when the section itself is narrow, whatever the window is. */
+@container mu-section (max-width: 520px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rowControl {
+    justify-content: flex-start;
+  }
+
+  .wide {
+    width: 100%;
+  }
+}

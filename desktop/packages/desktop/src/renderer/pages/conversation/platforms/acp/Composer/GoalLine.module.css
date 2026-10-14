@@ -1,0 +1,51 @@
+/* The running goal above the send box: one quiet row of secondary text, a plain link at its end, nothing coloured. */
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 6px;
+  padding: 0 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.end:global(.arco-btn) {
+  flex: none;
+  height: 18px;
+  padding: 0 2px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 18px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.end:global(.arco-btn:not(:disabled):hover),
+.end:global(.arco-btn:not(:disabled):active) {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.end:global(.arco-btn:disabled) {
+  background: transparent;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.end:global(.arco-btn:focus-visible) {
+  outline: 1px solid var(--text-primary);
+  outline-offset: 2px;
+}

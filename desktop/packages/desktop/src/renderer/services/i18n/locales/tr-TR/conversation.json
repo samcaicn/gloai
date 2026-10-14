@@ -1,0 +1,804 @@
+{
+  "welcome": {
+    "title": "Merhaba, bugünkü planın nedir?",
+    "placeholder": "Mesaj gönder, dosya yükle, klasör aç veya komutlar için / yaz...",
+    "linkFolder": "Klasör Aç",
+    "newConversation": "Yeni Sohbet",
+    "selectModel": "Model Seç",
+    "useCliModel": "Model Seç",
+    "modelSwitchNotSupported": "Model listesi ilk bağlantıdan sonra kullanılabilir olacaktır. Bağlanmak ve mevcut modelleri yüklemek için önce bir mesaj gönderin.",
+    "specifyWorkspace": "Projede Sohbet Et",
+    "currentWorkspace": "Mevcut Proje",
+    "clearWorkspace": "Projeyi kaldır",
+    "openFolder": "Klasör Aç",
+    "none": "Hiçbiri",
+    "quickActionsTitle": "TupAI neler yapabilir?"
+  },
+  "history": {
+    "recents": "Son",
+    "today": "Bugün",
+    "yesterday": "Dün",
+    "recent7Days": "Son 7 Gün",
+    "earlier": "Daha Eski",
+    "noHistory": "Sohbet geçmişi yok",
+    "deleteTitle": "Sil",
+    "deleteConfirm": "Bu sohbeti silmek istediğinizden emin misiniz?",
+    "confirmDelete": "Sil",
+    "cancelDelete": "İptal",
+    "editName": "İsmi Düzenle",
+    "saveName": "Kaydet",
+    "cancelEdit": "İptal",
+    "rename": "Yeniden Adlandır",
+    "createCronTask": "Zamanlanmış Görev Oluştur",
+    "renameTitle": "Sohbeti Yeniden Adlandır",
+    "renamePlaceholder": "Lütfen yeni bir isim girin",
+    "renameSuccess": "Başarıyla yeniden adlandırıldı",
+    "renameFailed": "Yeniden adlandırma başarısız oldu",
+    "batchManage": "Toplu yönetim",
+    "batchModeExit": "Toplu yönetimden çık",
+    "selectAll": "Tümünü seç",
+    "selectedCount": "{{count}} seçili",
+    "batchExport": "Toplu dışa aktar",
+    "batchExportConfirm": "Seçili {{count}} konuşma dışa aktarılsın mı?",
+    "batchDelete": "Toplu sil",
+    "batchDeleteConfirm": "Seçili {{count}} konuşma silinsin mi?",
+    "batchDeleteConfirm_one": "Delete {{count}} selected topics?",
+    "batchDeleteConfirm_other": "Seçili {{count}} konuşma silinsin mi?",
+    "batchDeleteSuccess": "{{count}} konuşma silindi",
+    "batchDeleteSuccess_one": "{{count}} topics deleted",
+    "batchDeleteSuccess_other": "{{count}} konuşma silindi",
+    "batchNoSelection": "Lütfen önce konuşmaları seçin",
+    "export": "Dışa aktar",
+    "exportDialogTitle": "Konuşmaları dışa aktar",
+    "exportDialogSingleDescription": "Geçerli konuşmanın kayıtları (JSON + Markdown) ve proje dosyaları bir ZIP paketi olarak dışa aktarılır.",
+    "exportDialogBatchDescription": "Seçili {{count}} konuşmanın kayıtları (JSON + Markdown) ve proje dosyaları tek bir ZIP paketi olarak dışa aktarılır.",
+    "exportTargetFolder": "Hedef klasör",
+    "exportSelectFolder": "Lütfen bir dışa aktarma klasörü seçin",
+    "exportDialogHint": "Klasör seçimi, proje değiştirirken olduğu gibi çalışır.",
+    "exporting": "Dışa aktarılıyor…",
+    "exportSuccess": "Dışa aktarma başarılı",
+    "exportCanceled": "Dışa aktarma iptal edildi",
+    "exportFailed": "Dışa aktarma başarısız",
+    "pin": "Sabitle",
+    "unpin": "Sabitlemeyi kaldır",
+    "markAsUnread": "Okunmadı olarak işaretle",
+    "markAsRead": "Okundu olarak işaretle",
+    "pinned": "Sabitlendi",
+    "pinFailed": "Sabitleme başarısız",
+    "pinnedSection": "Sabitlenenler",
+    "deleteSuccess": "Başarıyla silindi",
+    "deleteFailed": "Silme başarısız oldu",
+    "projectsSection": "Projeler",
+    "conversationsSection": "Konuşmalar",
+    "newConversationInProject": "Bu projede yeni konuşma",
+    "deleting": "Siliniyor...",
+    "reorderPinned": "Sabitlenmiş sohbetin sırasını değiştirmek için sürükleyin",
+    "forkedFrom": "“{{name}}” konuşmasından çatallandı",
+    "forkedConversation": "Çatallanmış konuşma",
+    "archive": "Arşivle",
+    "archiveSuccess": "Arşivlendi",
+    "archiveFailed": "Arşivleme başarısız",
+    "batchArchive": "Toplu arşivle",
+    "batchArchiveConfirm": "Seçili {{count}} konuşma arşivlensin mi? Ayarlar'daki Arşiv bölümünden geri yükleyebilir veya silebilirsiniz.",
+    "batchArchiveSuccess": "{{count}} konuşma arşivlendi",
+    "archiveProject": "Projeyi arşivle",
+    "archiveProjectTitle": "Projeyi arşivle",
+    "archiveProjectConfirm": "“{{name}}” projesi arşivlensin mi? İçindeki {{count}} konuşma da arşivlenecek. Ayarlar'daki Arşiv bölümünden geri yükleyebilir veya silebilirsiniz.",
+    "archiving": "Arşivleniyor…",
+    "batchArchiveConfirm_one": "Seçili {{count}} konuşma arşivlensin mi? Ayarlar'daki Arşiv bölümünden geri yükleyebilir veya silebilirsiniz.",
+    "batchArchiveConfirm_other": "Seçili {{count}} konuşma arşivlensin mi? Ayarlar'daki Arşiv bölümünden geri yükleyebilir veya silebilirsiniz.",
+    "batchArchiveSuccess_one": "{{count}} konuşma arşivlendi",
+    "batchArchiveSuccess_other": "{{count}} konuşma arşivlendi",
+    "archiveProjectConfirm_one": "“{{name}}” projesi arşivlensin mi? İçindeki {{count}} konuşma da arşivlenecek. Ayarlar'daki Arşiv bölümünden geri yükleyebilir veya silebilirsiniz.",
+    "archiveProjectConfirm_other": "“{{name}}” projesi arşivlensin mi? İçindeki {{count}} konuşma da arşivlenecek. Ayarlar'daki Arşiv bölümünden geri yükleyebilir veya silebilirsiniz.",
+    "projectActions": "Proje işlemleri"
+  },
+  "historySearch": {
+    "tooltip": "Mesajları ara",
+    "title": "Sohbet içeriğini ara",
+    "shortTitle": "Ara",
+    "description": "Anahtar kelimeyle geçmiş mesajları arayın, kaydırarak daha fazla yükleyin ve eşleşen mesaja tıklayarak gidin.",
+    "placeholder": "Mesaj içeriğini ara...",
+    "idle": "Mesajları aramak için anahtar kelime girin",
+    "empty": "Eşleşen mesaj bulunamadı",
+    "loadingMore": "Daha fazla yükleniyor...",
+    "untitled": "Adsız sohbet"
+  },
+  "agentError": {
+    "fallbackTitle": "Ajan yanıt veremedi",
+    "retryable": "Yeniden denenebilir",
+    "notRetryable": "Yapılandırma gerekiyor",
+    "resolutionPrefix": "Öneri: ",
+    "resolution": {
+      "retry": "Daha sonra yeniden deneyin veya bu mesajı tekrar gönderin.",
+      "wait_for_current_response": "Yeni bir mesaj göndermeden önce mevcut yanıtın bitmesini bekleyin.",
+      "start_new_session": "Devam etmeden önce yeni bir konuşma başlatın.",
+      "reconnect_agent": "Seçili ajanı yeniden başlatın veya yeniden bağlayın, ardından tekrar deneyin.",
+      "check_agent_login": "Seçili ajanda oturum açın veya kimlik bilgilerini yenileyin.",
+      "check_agent_installation": "Ajan kurulumunu ve yerel komut yapılandırmasını kontrol edin.",
+      "check_agent_version": "Ajan protokolü ve sürüm uyumluluğunu kontrol edin.",
+      "check_local_command": "Eksik komutu yükleyin veya PATH içinde olduğundan emin olun.",
+      "check_provider_credentials": "Ayarlar bölümünde model sağlayıcının API anahtarını veya hesap kimlik bilgilerini kontrol edin.",
+      "check_provider_billing": "Model sağlayıcının bakiyesini, kredilerini veya kotasını kontrol edin.",
+      "check_provider_base_url": "Model sağlayıcının Base URL, API yolu, proxy ve API uyumluluğunu kontrol edin.",
+      "change_model": "Geçerli hesapta kullanılabilen ve bu isteği destekleyen bir model seçin.",
+      "reduce_context": "Mesaj içeriğini, başvurulan dosyaları veya bağlam boyutunu azaltıp yeniden deneyin.",
+      "send_feedback": "Yeniden deneyin; başarısız olmaya devam ederse uygulama günlüğünü kontrol edin."
+    },
+    "ownership": {
+      "aionui": "Uygulama",
+      "user_agent": "Ajan",
+      "user_llm_provider": "Model sağlayıcı",
+      "unknown_upstream": "Üst hizmet"
+    },
+    "codes": {
+      "AIONUI_STREAM_BROKEN": {
+        "title": "Yanıt akışı kesildi",
+        "body": "Uygulama mesajınızı aldı ancak yanıt akışı beklenmedik şekilde sona erdi. Yeniden deneyin; tekrarlanırsa uygulama günlüğünü kontrol edin."
+      },
+      "AIONUI_STATE_INCONSISTENT": {
+        "title": "Konuşma durumu eşitlenmemiş",
+        "body": "Konuşma durumu eşitlenmemiş. Yeniden denemeden önce bu sohbeti yeniden başlatın veya uygulamayı yenileyin."
+      },
+      "AIONUI_PERMISSION_ERROR": {
+        "title": "İstenen kaynağa erişilemedi",
+        "body": "Yerel izin veya dosya sistemi denetimi başarısız oldu. Proje yolunu ve uygulama izinlerini kontrol edip yeniden deneyin."
+      },
+      "AIONUI_INTERNAL_ERROR": {
+        "title": "İstek uygulamada başarısız oldu",
+        "body": "Uygulama isteği işlerken hata oluştu. Bir kez yeniden deneyin; tekrarlanırsa uygulama günlüğünü kontrol edin."
+      },
+      "AIONUI_CONVERSATION_BUSY": {
+        "title": "Konuşma meşgul",
+        "body": "Başka bir yanıt hâlâ çalışıyor. Yeni mesaj göndermeden önce bitmesini bekleyin."
+      },
+      "USER_AGENT_NOT_INSTALLED": {
+        "title": "Seçili ajan yüklü değil",
+        "body": "Bu ajanın gerektirdiği CLI veya uygulamayı yükleyin, ardından ayarlarda yeniden bağlayın."
+      },
+      "USER_AGENT_STARTUP_FAILED": {
+        "title": "Seçili ajan başlatılamadı",
+        "body": "Ajan işlemi hazır olmadan çıktı. Kurulumu, oturum durumunu ve yerel komut yapılandırmasını kontrol edin."
+      },
+      "USER_AGENT_OPENCLAW_GATEWAY_UNREACHABLE": {
+        "title": "OpenClaw Gateway'e ulaşılamıyor",
+        "body": "OpenClaw Gateway çalışmıyor veya 127.0.0.1:18789 adresine ulaşılamıyor.\n\nOpenClaw Gateway'i başlatıp tekrar deneyin. Şu komutları çalıştırabilirsiniz:\nopenclaw gateway status\nopenclaw gateway start"
+      },
+      "USER_AGENT_DISCONNECTED": {
+        "title": "Seçili ajan bağlantısı kesildi",
+        "body": "Bu mesaj işlenirken ajan bağlantısı kapandı. Ajanı yeniden başlatın veya yeniden bağlayın, ardından tekrar deneyin."
+      },
+      "USER_AGENT_AUTH_REQUIRED": {
+        "title": "Seçili ajan kimlik doğrulaması istiyor",
+        "body": "Seçili ajanda oturum açın veya kimlik bilgilerini yenileyin, ardından mesajı tekrar gönderin."
+      },
+      "USER_AGENT_SESSION_NOT_FOUND": {
+        "title": "Ajan oturumu kayboldu",
+        "body": "Ajan bu oturumun bulunamadığını veya artık bilinmediğini bildirdi."
+      },
+      "USER_AGENT_UNSUPPORTED_METHOD": {
+        "title": "Seçili ajan bu işlemi desteklemiyor",
+        "body": "Ajan, istenen ACP yönteminin desteklenmediğini veya kullanılamadığını bildirdi."
+      },
+      "USER_AGENT_INVALID_PARAMS": {
+        "title": "Seçili ajan isteği reddetti",
+        "body": "Ajan, istek parametrelerinin geçersiz olduğunu bildirdi."
+      },
+      "USER_AGENT_HANDSHAKE_FAILED": {
+        "title": "Ajan el sıkışması başarısız oldu",
+        "body": "Seçili ajan başlangıç el sıkışmasını tamamlayamadı. Ajanı yeniden başlatın veya yeniden bağlayın, ardından tekrar deneyin."
+      },
+      "USER_AGENT_HANDSHAKE_TIMEOUT": {
+        "title": "Ajan el sıkışması zaman aşımına uğradı",
+        "body": "Seçili ajan başlangıç el sıkışmasını zamanında tamamlamadı. Hâlâ başlıyor TupAI veya engellenmiş mi kontrol edip yeniden deneyin."
+      },
+      "USER_AGENT_ACP_INIT_FAILED": {
+        "title": "Ajan protokolü başlatılamadı",
+        "body": "Uygulama bu ajan ile Agent Client Protocol oturumunu başlatamadı."
+      },
+      "USER_AGENT_PROTOCOL_PARSE_ERROR": {
+        "title": "Agent bir protokol ayrıştırma hatası bildirdi",
+        "body": "Seçili Agent, bir ACP/JSON-RPC mesajının ayrıştırılamadığını bildirdi."
+      },
+      "USER_AGENT_INVALID_REQUEST": {
+        "title": "Agent geçersiz bir protokol isteği bildirdi",
+        "body": "Seçili Agent, ACP/JSON-RPC istek nesnesinin geçersiz olduğunu bildirdi."
+      },
+      "USER_AGENT_RESOURCE_NOT_FOUND": {
+        "title": "Agent gerekli kaynağı bulamadı",
+        "body": "Seçili Agent, dosya gibi gerekli bir kaynağın bulunamadığını bildirdi."
+      },
+      "USER_AGENT_PROTOCOL_ERROR": {
+        "title": "Agent protokol hatası döndürdü",
+        "body": "Seçili Agent standart dışı bir ACP hata kodu döndürdü."
+      },
+      "USER_AGENT_PROTOCOL_MISMATCH": {
+        "title": "Ajan protokol sürümleri uyumsuz",
+        "body": "Uygulama ve seçili ajan uyumlu bir ACP protokol sürümü kullanamadı."
+      },
+      "USER_AGENT_NO_PREVIOUS_SESSION": {
+        "title": "Önceki ajan oturumu kullanılamıyor",
+        "body": "Ajan önceki oturumu sürdüremiyor. Devam etmek için yeni bir konuşma başlatın."
+      },
+      "USER_AGENT_COMMAND_NOT_FOUND": {
+        "title": "Ajan komutu bulunamadı",
+        "body": "Yapılandırılmış ajan komutu bulunamadı. Komutu yükleyin veya ayarlarda komut yolunu güncelleyin."
+      },
+      "USER_AGENT_MISSING_ENV": {
+        "title": "Ajan için gerekli ortam değişkenleri eksik",
+        "body": "Ajanın ihtiyaç duyduğu ortam değişkenleri yapılandırılmamış. Ayarlara veya shell ortamına ekleyip yeniden bağlayın."
+      },
+      "USER_LLM_PROVIDER_AUTH_FAILED": {
+        "title": "Model sağlayıcı kimlik doğrulaması başarısız oldu",
+        "body": "Seçili sağlayıcı API anahtarını veya hesap kimlik bilgilerini reddetti. Sağlayıcı ayarlarını kontrol edip tekrar deneyin."
+      },
+      "USER_LLM_PROVIDER_AWS_SSO_EXPIRED": {
+        "title": "AWS SSO oturumunun süresi doldu",
+        "body": "AWS SSO oturumunuzun süresi doldu. Eşleşen profile için 'aws sso login' komutunu çalıştırın, ardından mesajı yeniden gönderin."
+      },
+      "USER_LLM_PROVIDER_CONFIG_ERROR": {
+        "title": "Model sağlayıcı yapılandırması geçersiz",
+        "body": "Geçerli ayarlardan sağlayıcı isteği oluşturulamadı. Kimlik bilgilerini, bölgeyi, Base URL ve sağlayıcıya özel ayarları kontrol edip yeniden deneyin."
+      },
+      "USER_LLM_PROVIDER_MODEL_NOT_FOUND": {
+        "title": "Seçili model bulunamadı",
+        "body": "Sağlayıcı bu model adını tanımıyor. Ayarlardan kullanılabilir bir model seçip yeniden deneyin."
+      },
+      "USER_LLM_PROVIDER_RATE_LIMITED": {
+        "title": "Model sağlayıcı hız sınırına ulaşıldı",
+        "body": "Sağlayıcı geçici olarak istekleri sınırlıyor. Bir süre bekleyin, istek sıklığını azaltın veya model değiştirin."
+      },
+      "USER_LLM_PROVIDER_TIMEOUT": {
+        "title": "Model sağlayıcı isteği zaman aşımına uğradı",
+        "body": "Sağlayıcı zamanında yanıt vermedi. Daha sonra tekrar deneyin veya daha kararlı bir sağlayıcıya geçin."
+      },
+      "USER_LLM_PROVIDER_NETWORK_ERROR": {
+        "title": "Model sağlayıcıya ulaşılamadı",
+        "body": "Ağ veya DNS hatası sağlayıcıya erişimi engelledi. Ağınızı, proxy ve Base URL ayarlarını kontrol edin."
+      },
+      "USER_LLM_PROVIDER_GATEWAY_ERROR": {
+        "title": "Model sağlayıcı hizmeti kullanılamıyor",
+        "body": "Sağlayıcı ağ geçidi veya hizmet hatası döndürdü. Daha sonra tekrar deneyin veya başka bir sağlayıcı kullanın."
+      },
+      "USER_LLM_PROVIDER_PERMISSION_DENIED": {
+        "title": "Model sağlayıcı izni reddetti",
+        "body": "Sağlayıcı hesabının bu model veya işlem için izni yok. Hesap izinlerini kontrol edin veya başka bir model seçin."
+      },
+      "USER_LLM_PROVIDER_BILLING_REQUIRED": {
+        "title": "Model sağlayıcı için faturalandırma gerekiyor",
+        "body": "Seçili sağlayıcının bu isteği tamamlamak için etkin faturalandırma, kredi veya kotaya ihtiyacı var."
+      },
+      "USER_LLM_PROVIDER_UNSUPPORTED_MODEL": {
+        "title": "Model bu isteği desteklemiyor",
+        "body": "Seçili model kullanılamıyor veya istenen yeteneği desteklemiyor. Desteklenen bir model seçip yeniden deneyin."
+      },
+      "USER_LLM_PROVIDER_ENDPOINT_NOT_FOUND": {
+        "title": "Model sağlayıcı uç noktası bulunamadı",
+        "body": "Sağlayıcı uç noktası veya API yolu bulunamadı. Base URL, dağıtım adı ve API uyumluluğunu kontrol edin."
+      },
+      "USER_LLM_PROVIDER_INVALID_REQUEST": {
+        "title": "Model sağlayıcı isteği reddetti",
+        "body": "Sağlayıcı isteğin geçersiz olduğunu bildirdi. Mesajı sadeleştirin veya model/sağlayıcı ayarlarını kontrol edin."
+      },
+      "USER_LLM_PROVIDER_INVALID_TOOL_SCHEMA": {
+        "title": "Araç şeması sağlayıcı tarafından reddedildi",
+        "body": "Sağlayıcı bu istekteki araç tanımını reddetti. Ajanı güncelleyin veya uyumsuz aracı devre dışı bırakıp yeniden deneyin."
+      },
+      "USER_LLM_PROVIDER_CONTEXT_TOO_LARGE": {
+        "title": "Bağlam model sınırını aşıyor",
+        "body": "İstek modelin bağlam sınırını aşıyor. Mesaj içeriğini, başvurulan dosyaları veya konuşma geçmişini azaltıp yeniden deneyin."
+      },
+      "USER_LLM_PROVIDER_EMPTY_RESPONSE": {
+        "title": "Model sağlayıcı boş yanıt döndürdü",
+        "body": "Sağlayıcı isteği tamamladı ancak kullanılabilir içerik döndürmedi. Bir kez yeniden deneyin; tekrarlanırsa sağlayıcı değiştirin."
+      },
+      "WORKSPACE_PATH_RUNTIME_UNAVAILABLE": {
+        "title": "Geçerli Agent bu çalışma alanı yolunda çalıştırılamadı",
+        "body": "Geçerli çalışma alanı yolunun gerçekten var olduğundan emin olun.",
+        "bodyWithPath": "Geçerli Agent çalışma alanı yolu \"{{workspacePath}}\" içinde çalıştırılamadı. Çalışma alanı yolunun gerçekten var olduğundan emin olun."
+      },
+      "UNKNOWN_UPSTREAM_ERROR": {
+        "title": "Üst ajan veya sağlayıcı başarısız oldu",
+        "body": "Uygulama bir üst hata aldı ancak bunun ajandan, sağlayıcıdan, ağdan veya yerel ortamdan gelip gelmediğini belirleyemedi."
+      },
+      "MCP_HTTP_RESPONSE_READ_FAILED": {
+        "title": "Takım yardımcı işleminin yanıtı okunamadı",
+        "body": "TupAI, yerel takım yardımcı işleminin yanıtını okuyamadı. Bir kez yeniden deneyin; sorun sürerse uygulamayı yeniden başlatın."
+      },
+      "MCP_TOOL_REMOTE_ERROR": {
+        "title": "Yerel takım yardımcı işlemi isteği reddetti",
+        "body": "Yerel takım yardımcı işlemi bu isteği işlerken bir hata döndürdü. Aşağıdaki ayrıntıları inceleyin ve takım eylemini düzenledikten sonra yeniden deneyin."
+      },
+      "MCP_TOOL_RESPONSE_UNEXPECTED": {
+        "title": "Takım yardımcı işlemi beklenmeyen bir yanıt döndürdü",
+        "body": "TupAI, yerel takım yardımcı işleminden beklenmeyen bir yanıt aldı. Bir kez yeniden deneyin; sorun sürerse bildirin."
+      },
+      "MCP_TCP_READ_FAILED": {
+        "title": "Yerel takım yardımcı işleminden okunamadı",
+        "body": "TupAI, yerel takım yardımcı işleminin TCP yanıtını okuyamadı. Bir kez yeniden deneyin; hata sürerse uygulamayı yeniden başlatın."
+      },
+      "TEAM_SERVICE_UNAVAILABLE": {
+        "title": "Takım hizmeti henüz hazır değil",
+        "body": "Yerel takım oturumu hâlâ başlıyor veya kesintiye uğradı. Biraz bekleyip yeniden deneyin."
+      },
+      "TEAM_ASSISTANT_ID_REQUIRED": {
+        "title": "Bir takım üyesi asistanı seçilmelidir",
+        "body": "Bir takım üyesi oluşturmadan veya başlatmadan önce kullanılabilir asistan kataloğundan gerçek bir asistan seçin."
+      },
+      "TEAM_ASSISTANT_NOT_FOUND": {
+        "title": "Seçilen asistan artık kullanılamıyor",
+        "body": "Asistan kataloğunu yenileyin, ardından bu takım üyesi için başka bir asistan seçin."
+      },
+      "TEAM_ASSISTANT_FIELD_UNSUPPORTED": {
+        "title": "İstek eski bir takım kimliği alanı kullandı",
+        "body": "Bu takım eylemi, eski backend veya agent alanları yerine assistant_id kullanmalıdır."
+      }
+    },
+    "errorCodeValue": "Hata kodu: {{code}}"
+  },
+  "workspace": {
+    "title": "Proje",
+    "pasteConfirm_title": "Dosyaları yapıştır",
+    "pasteConfirm_message": "'{{name}}' dosyasını seçili klasöre ({{target}}) yapıştırmak istediğinizden emin misiniz?",
+    "pasteConfirm_paste": "Yapıştır",
+    "pasteConfirm_cancel": "İptal",
+    "pasteConfirm_noAsk": "Bana tekrar sorma",
+    "pasteConfirm_fileName": "Dosya adı",
+    "pasteConfirm_targetFolder": "Hedef klasör",
+    "pasteConfirm_multipleFiles": "{{count}} dosya",
+    "empty": "Burası boş",
+    "emptyDescription": "Dosyalar yüklendikten veya bir klasör açıldıktan sonra burada görünecektir",
+    "searchPlaceholder": "Dosyalarda ara...",
+    "createNewConversation": "Mevcut çalışma alanında yeni sohbet oluştur",
+    "search.empty": "Arama sonucu boş",
+    "addFile": "Dosya Ekle",
+    "refresh": "Yenile",
+    "temporarySpace": "Geçici Alan",
+    "temporaryWorkspace": "Geçici çalışma alanı",
+    "dragOverlayTitle": "İçe aktarmak için bırakın",
+    "dragOverlayDesc": "Dosyaları veya klasörleri bu çalışma alanına kopyalamak için buraya sürükleyin.",
+    "dragOverlayHint": "İpucu: seçili klasöre içe aktarmak için herhangi bir yere bırakın.",
+    "dragNoFiles": "Geçerli dosya algılanmadı. Lütfen Finder/Explorer'dan sürükleyin.",
+    "dragFailed": "Bırakılan dosyalar içe aktarılamadı.",
+    "contextMenu": {
+      "open": "Aç",
+      "openLocation": "Klasörde göster",
+      "preview": "Önizleme",
+      "previewFailed": "Önizleme başarısız",
+      "deleteTitle": "Dosyayı sil",
+      "deleteConfirm": "Bu işlem dosyayı sisteminizden silecek. Devam edilsin mi?",
+      "deleteSuccess": "Başarıyla silindi",
+      "deleteFailed": "Silme başarısız",
+      "rename": "Yeniden Adlandır",
+      "renameTitle": "Yeniden Adlandır",
+      "renamePlaceholder": "Yeni isim girin",
+      "renameSuccess": "Başarıyla yeniden adlandırıldı",
+      "renameFailed": "Yeniden adlandırma başarısız",
+      "renameEmpty": "İsim boş olamaz",
+      "renameTimeout": "Yeniden adlandırma isteği zaman aşımına uğradı, lütfen tekrar deneyin",
+      "addToChat": "Sohbete ekle",
+      "addedToChat": "Sohbete eklendi",
+      "openFailed": "Açılamadı",
+      "revealFailed": "İçeren klasör açılamadı",
+      "download": "İndir",
+      "downloadSuccess": "İndirme başarılı",
+      "downloadFailed": "İndirme başarısız"
+    },
+    "preview": {
+      "errors": {
+        "outsideSandbox": "Dosya çalışma alanı korumalı alanının dışında, önizlenemiyor.",
+        "notFound": "Dosya mevcut değil veya silinmiş.",
+        "timeout": "Dosya okuma zaman aşımına uğradı. Lütfen tekrar deneyin."
+      }
+    },
+    "expand": "Projeyi Genişlet",
+    "collapse": "Projeyi Daralt",
+    "changes": {
+      "tab": "Değişiklikler",
+      "filesTab": "Dosyalar",
+      "currentBranchLabel": "Geçerli dal",
+      "summary": "{{count}} dosya değiştirildi",
+      "insertions": "+{{count}} ekleme",
+      "deletions": "-{{count}} silme",
+      "empty": "Henüz değişiklik yok",
+      "emptyDescription": "AI dosyaları değiştirdiğinde değişiklikler burada görünecektir",
+      "refresh": "Yenile",
+      "staged": "Hazırlanmış Değişiklikler",
+      "unstaged": "Değişiklikler",
+      "changedFiles": "Değişen Dosyalar",
+      "stage": "Hazırla",
+      "stageAll": "Tüm Değişiklikleri Hazırla",
+      "unstage": "Hazırlamayı Geri Al",
+      "unstageAll": "Tüm Hazırlamaları Geri Al",
+      "discard": "Değişiklikleri Sil",
+      "reset": "Değişiklikleri Geri Al",
+      "noUnstaged": "Hazırlanmamış değişiklik yok",
+      "noStaged": "Hazırlanmış değişiklik yok"
+    },
+    "openWorkspace": "Proje klasörünü aç",
+    "openWith": {
+      "vscode": "VS Code",
+      "terminal": "Terminal",
+      "explorer": "Dosya Gezgini",
+      "browser": "Tarayıcı",
+      "choose": "Açma yöntemini seç"
+    },
+    "collapsePanel": "Çalışma panelini gizle",
+    "togglePanel": "Proje panelini göster veya gizle",
+    "expandPanel": "Çalışma panelini göster"
+  },
+  "minimap": {
+    "searchAria": "Sohbeti ara",
+    "searchHint": "Anahtar kelime aramak için buraya tıkla",
+    "empty": "Henüz soru-cevap içeriği yok",
+    "noMatch": "Eşleşen içerik bulunamadı",
+    "count": "{{count}} dönüş",
+    "count_one": "{{count}} dönüş",
+    "count_other": "{{count}} dönüş",
+    "questionLabel": "S:",
+    "answerLabel": "C:"
+  },
+  "chat": {
+    "noModelSelected": "Mevcut oturum için model seçilmedi, mesaj gönderilemiyor",
+    "sendMessageTo": "{{model}} modeline mesaj gönder",
+    "processing": "İşleniyor…",
+    "quotaExceededTitle": "Model kotasına ulaşıldı",
+    "quotaExceededBody": "Mevcut model kotası tükendi. Devam etmek için {{model}} modeline geçilsin mi?",
+    "quotaExceededNoFallback": "Model kotasına ulaşıldı. Lütfen başka bir uygun modele geçin.",
+    "quotaSwitched": "{{model}} modeline geçildi.",
+    "apiErrorNoCli": "API hatası oluştu. Geçiş yapılabilecek bir CLI ajanı yok.",
+    "apiErrorSwitchFailed": "Geçiş için yeni konuşma oluşturulamadı.",
+    "apiErrorSwitched": "API hatası; otomatik olarak {{cli}} CLI ajanına geçildi",
+    "confirmationLoadError": "Onay penceresi yüklenemedi",
+    "tryAnotherAgent": "Başka bir ajan deneyin:",
+    "switchAgentFailed": "Ajan değiştirilemedi",
+    "archivedCannotSend": "Bu konuşma arşivlendi ve yeni mesaj alamaz.",
+    "awaitingConfirmation": "Onay bekleniyor"
+  },
+  "sideQuestion": {
+    "title": "Kısa Soru",
+    "description": "Mevcut konuşma hakkında hızlı bir yan soru sor",
+    "started": "Yan soru başlatılıyor...",
+    "answered": "Yan soru yanıtlandı.",
+    "noAnswer": "Geçerli konuşma bağlamında net bir yanıt yok.",
+    "loading": "Düşünüyor...",
+    "parentTaskRunning": "Ana görev arka planda çalışmaya devam ediyor.",
+    "dismissHint": "Kapatmak için Escape, Enter veya Space tuşuna basın",
+    "unsupported": "Bu konuşma için yan sorular kullanılamıyor.",
+    "alreadyRunning": "Zaten çalışan bir yan soru var.",
+    "attachmentsNotAllowed": "Yan sorular dosya veya DOM parçacıkları içeremez.",
+    "emptyQuestion": "/btw sonrasına bir soru yazın.",
+    "toolsRequired": "/btw yalnızca bu konuşmada zaten mevcut olan bilgilere dayanarak yanıt verebilir. Arama yapma, göz atma veya yeni bilgi getirme erişimi yoktur.",
+    "error": "Yan soru yanıtlanamadı."
+  },
+  "commandQueue": {
+    "title": "Taslak kutusu",
+    "clear": "Taslak kutusunu temizle",
+    "edit": "Düzenle",
+    "editing": "Düzenleniyor",
+    "editPlaceholder": "Bu bekleyen komutu çalıştırılmadan önce güncelleyin.",
+    "cancelEdit": "İptal",
+    "saveEdit": "Kaydet",
+    "moreActions": "Diğer işlemler",
+    "reorder": "Sıradaki komutu yeniden sıralamak için sürükleyin",
+    "remove": "Kaldır",
+    "files": "{{count}} dosya",
+    "files_one": "{{count}} dosya",
+    "files_other": "{{count}} dosya",
+    "pausedAfterFailure": "Sıradaki komut başlatılamadı. Devam etmek için düzenleyin, yeniden sıralayın veya kaldırın.",
+    "emptyInput": "Kuyruktaki komutlar boş olamaz.",
+    "queueFull": "Kuyruk dolu. Yeni komut eklemeden önce bazılarını kaldırın.",
+    "inputTooLong": "Sıraya alınan komut çok uzun. Göndermeden önce kısaltın.",
+    "tooManyFiles": "Bu kuyruk komutuna çok fazla dosya eklendi.",
+    "queueTooLarge": "Kuyruk verisi güvenli şekilde saklanamayacak kadar büyük. Önce bazı komutları kaldırın.",
+    "sendNow": "Şimdi gönder",
+    "modeToggle": "Gönderim modunu değiştir",
+    "help": "Yardım",
+    "helpIntro": "Yapay zeka yanıt verirken gönderdiğin mesajlar burada bekler.",
+    "helpAuto": ": her yanıt bittikten sonra otomatik olarak tek tek gönderilir.",
+    "helpManual": ": gönderilmeden burada tutulur; her birini \"Şimdi gönder\" ile yolla.",
+    "clearConfirmTitle": "Gönderim taslak kutusu temizlensin mi?",
+    "clearConfirmContent": "Bekleyen tüm mesajlar kaldırılır. Bu işlem geri alınamaz.",
+    "mode": {
+      "auto": "Otomatik gönder",
+      "manual": "Elle gönder"
+    },
+    "addToQueue": "Taslak kutusuna ekle",
+    "midturnBlocked": "Bu aracı yanıt verirken araya girmek desteklenmiyor. Bunun yerine Taslak kutusuna ekle'yi kullanın.",
+    "enterShortcut": "Enter",
+    "actionMode": "Gönderim işlemini seçin",
+    "midturnBlockedSendHint": "Bu ajan hâlâ çalışıyor, bu yüzden mesaj doğrudan gönderilemiyor. Taslak kutusuna kaydedip daha sonra gönderin.",
+    "addToQueueBusyHint": "Taslak kutusuna kaydedip daha sonra gönderin."
+  },
+  "contextUsage": {
+    "tokensUsed": "{{tokens}} jeton kullanıldı",
+    "windowUnknown": "Bağlam penceresi boyutu bilinmiyor",
+    "usedOfWindow": "{{percent}} · {{used}} / {{limit}} bağlam kullanıldı",
+    "sessionCostApprox": "Oturum maliyeti ≈ {{cost}}",
+    "inputTokens": "Girdi {{tokens}}",
+    "outputTokens": "Çıktı {{tokens}}",
+    "cachedReadTokens": "Önbellek okuma {{tokens}}",
+    "cachedWriteTokens": "Önbellek yazma {{tokens}}",
+    "thoughtTokens": "Düşünme {{tokens}}"
+  },
+  "skill_generator": {
+    "title": "Yetenek/Kural Oluştur",
+    "generate": "Oluştur",
+    "description": "Oluşturmak için konuşma geçmişini analiz et:",
+    "type_skill": "Yetenek (Python)",
+    "type_rule": "Kural (JSON/MD)",
+    "name_label": "Ajan Adı:",
+    "name_placeholder": "örn. Excel Çevirici",
+    "menu_generate": "Geçmişten Oluştur",
+    "menu_load": "Kural/Yetenek Yükle",
+    "load_title": "Kural/Yetenek Yükle",
+    "load_error": "Dosyalar yüklenemedi",
+    "no_files": "Projede ilgili dosya bulunamadı",
+    "read_error": "Dosya okunamadı",
+    "rule_loaded": "Kural başarıyla yüklendi",
+    "no_workspace": "Proje yapılandırılmadı",
+    "name_required": "Lütfen hazır ayar için bir isim girin",
+    "no_history": "Konuşma geçmişi bulunamadı",
+    "request_sent": "İstek ajana gönderildi",
+    "failed": "Oluşturulamadı",
+    "preset_registered": "Ajan hazır ayarı başarıyla kaydedildi!"
+  },
+  "dropdown": {
+    "cliAgents": "CLI ajanları",
+    "presetAssistants": "Hazır asistanlar"
+  },
+  "noAgentsAvailable": "Kullanılabilir ajan yok",
+  "noModelConfigured": "Yapılandırılmış model yok. Lütfen ayarlardan yapılandırın.",
+  "createFailed": "Konuşma oluşturulamadı",
+  "createError": {
+    "pathVariants": {
+      "WORKSPACE_PATH_UNAVAILABLE": "Seçilen çalışma alanı yolu kullanılamıyor. Çalışma alanı yolu \"{{workspacePath}}\" gerçekten var ve erişilebilir olduğundan emin olun."
+    },
+    "codes": {
+      "TEAM_ASSISTANT_ID_REQUIRED": "Takımı oluşturmadan önce lütfen bir asistan seçin.",
+      "TEAM_ASSISTANT_NOT_FOUND": "{{assistantId}} asistanı artık kullanılamıyor. Asistan listesini yenileyip başka bir asistan seçin.",
+      "TEAM_ASSISTANT_FIELD_UNSUPPORTED": "{{field}} yerine assistant_id kullanın.",
+      "WORKSPACE_PATH_UNAVAILABLE": "Seçilen çalışma alanı yolu kullanılamıyor. Var olduğundan ve erişilebilir olduğundan emin olun."
+    }
+  },
+  "thinking": {
+    "label": "Düşünüyor...",
+    "history": "Düşünme geçmişi",
+    "thoughtFor": "{{time}} düşündü",
+    "labelWithTime": "{{label}} · {{time}}",
+    "completeWithTime": "Düşünme tamamlandı · {{time}}",
+    "elapsed": "({{time}})"
+  },
+  "skills": {
+    "loaded": "Yüklenen Beceriler",
+    "slashHint": "Beceri"
+  },
+  "mcp": {
+    "loaded": "Yüklü MCP",
+    "managementHint": "Bir MCP anormal görünüyorsa, bunun nedeni genellikle MCP JSON yapılandırmasıdır. Araç ayarlarına gidip manuel olarak test edin.",
+    "openSettings": "Araç ayarlarını aç",
+    "status": {
+      "loaded": "Yüklendi",
+      "failed": "Başarısız",
+      "unsupported": "Desteklenmiyor"
+    },
+    "selected": "Seçili MCP",
+    "statusWithReason": "{{status}} · {{reason}}",
+    "selectedWithCount": "Seçili MCP · {{count}}"
+  },
+  "runtimePreparing": {
+    "sendboxHint": "Çalışma ortamı hazırlanıyor. İlk başlatma biraz daha uzun sürebilir."
+  },
+  "sendbox": {
+    "hint": "Komutlar için /, dosya için @ yazın, ↑/↓ ile mesaj geçmişi",
+    "mediaPathFallback": "Bu ajan bu dosya türünü yerel olarak desteklemiyor; dosya yolu olarak gönderilecek.",
+    "hintWithSessions": "Komutlar için /, dosyalar için @, sohbetler için @@, geçmiş için ↑/↓",
+    "stop": "Yanıtı durdur"
+  },
+  "composer": {
+    "goalLine": {
+      "running": "Hedef sürüyor: {{goal}}",
+      "paused": "Hedef duraklatıldı: {{goal}}",
+      "end": "Bitir",
+      "endLabel": "Hedefi bitir"
+    },
+    "thinkingNote": "Düşünme düzeyini değiştirmek istem önbelleğini düşürür; aynı modelde sabit tutun",
+    "modelBusy": "Bu yanıt bitince modeli değiştirin."
+  },
+  "agentTip": {
+    "codes": {
+      "ACP_EMPTY_TURN": {
+        "body": "Bu istek görünür bir yanıt üretmedi."
+      },
+      "ACP_EMPTY_TURN_NEEDS_AUTH": {
+        "body": "Bu istek görünür bir yanıt üretmedi. Zaten oturum açtıysanız, bu geçici bir arka uç veya bağlantı sorunu olabilir; tekrar deneyin ya da yeni bir sohbet başlatın. Henüz oturum açmadıysanız oturum açabilirsiniz: {{hint}}."
+      },
+      "ACP_EMPTY_TURN_TOKEN_LIMIT": {
+        "body": "Bu istek görünür bir yanıt üretmedi. Geçerli sohbet bağlam uzunluğu sınırına yaklaşmış olabilir; tekrar deneyin veya yeni bir sohbet başlatıp yeniden deneyin."
+      },
+      "ACP_EMPTY_TURN_MAX_TOKENS": {
+        "body": "Bu istek, görünür bir yanıt üretilmeden önce modelin çıktı token sınırına ulaştı."
+      },
+      "ACP_EMPTY_TURN_MAX_TURN_REQUESTS": {
+        "body": "Bu istek, görünür bir yanıt üretilmeden önce modelin istek sınırına ulaştı."
+      },
+      "ACP_EMPTY_TURN_REFUSAL": {
+        "body": "Model, görünür bir yanıt üretmeden önce bu isteği reddetti."
+      },
+      "ANTIGRAVITY_STEPS_FAILED": {
+        "body": "{{count}} adım başarısız oldu ve etkili OLMADI. agy bu turları yine de başarılı olarak bitirir; bu yüzden yanıta değil gerçek sonuca bakın."
+      },
+      "CLI_VERSION_OLDER": {
+        "body": "Kurulu {{cli}} sürümü TupAI tarafından doğrulanan sürümden eski; bazı özellikler eksik olabilir. {{cli}} sürümünü yükseltmeyi düşünün. (kurulu: {{reported}} / TupAI tarafından doğrulanan: {{verified}})"
+      },
+      "CLI_VERSION_NEWER": {
+        "body": "Kurulu {{cli}} sürümü TupAI tarafından doğrulanan sürümden yeni. Genelde çalışır; tuhaf bir davranış görürseniz bildirin. (kurulu: {{reported}} / TupAI tarafından doğrulanan: {{verified}})"
+      },
+      "CODEX_RETRYING": {
+        "body": "{{detail}} ({{attempts}}. deneme, {{elapsed}} geçti — aracının sağlayıcısı bağlantıyı sürekli kesiyor; TupAI bekliyor.)"
+      }
+    }
+  },
+  "notFound": "Konuşma bulunamadı veya silinmiş",
+  "explorer": {
+    "addFolder": "Projeye klasör ekle",
+    "refreshFiles": "Dosyaları yenile",
+    "refreshChanges": "Değişiklikleri yenile",
+    "collapseAll": "Tümünü daralt",
+    "removeFolder": "Projeden kaldır",
+    "attachDuplicate": "Bu klasör zaten projede",
+    "attachOverlap": "Bu klasör, projedeki bir klasörle çakışıyor",
+    "attachFailed": "Klasör eklenemedi",
+    "removeFailed": "Klasör kaldırılamadı",
+    "contextMenu": {
+      "rename": "Yeniden adlandır",
+      "addToChat": "Sohbete ekle",
+      "copyRelativePath": "Göreli yolu kopyala",
+      "copyAbsolutePath": "Mutlak yolu kopyala",
+      "newFile": "Yeni dosya",
+      "newDir": "Yeni klasör"
+    },
+    "namePlaceholder": "Ad",
+    "deleteConfirm": "“{{name}}” silinsin mi? Bu geri alınamaz.",
+    "renameFailed": "Yeniden adlandırılamadı",
+    "newFileFailed": "Dosya oluşturulamadı",
+    "newDirFailed": "Klasör oluşturulamadı",
+    "tabs": {
+      "files": "Dosyalar",
+      "changes": "Değişiklikler"
+    },
+    "addedToChat": "{{name}} sohbete eklendi",
+    "imported": "{{count}} dosya içe aktarıldı",
+    "importPartialFailed": "{{copied}} kopyalandı, {{failed}} başarısız (ad çakışması veya desteklenmiyor)",
+    "importFailed": "Dosyalar içe aktarılamadı",
+    "copyNodeFailed": "Kopyalanamadı",
+    "moveNodeFailed": "Taşınamadı",
+    "search": {
+      "placeholder": "Dosya adına göre ara",
+      "searching": "Aranıyor…",
+      "empty": "Eşleşen dosya yok",
+      "limitReached": "İlk {{count}} gösteriliyor — daraltın"
+    },
+    "scm": {
+      "notARepository": "Bu klasör sürüm denetiminde değil",
+      "noChanges": "Değişiklik yok",
+      "loading": "Değişiklikler yükleniyor…",
+      "loadFailed": "Değişiklikler yüklenemedi",
+      "groups": {
+        "staged": "Hazırlanan değişiklikler",
+        "unstaged": "Değişiklikler",
+        "changes": "Değişiklikler",
+        "blocked": "Çözülmesi gerekiyor"
+      },
+      "sections": {
+        "repositories": "Depolar",
+        "changes": "Değişiklikler"
+      },
+      "viewAsTree": "Ağaç olarak görüntüle",
+      "viewAsList": "Liste olarak görüntüle",
+      "worktree": "Çalışma ağacı",
+      "expandWorktrees": "Çalışma ağaçlarını göster",
+      "collapseWorktrees": "Çalışma ağaçlarını gizle",
+      "state": {
+        "created": "Eklendi",
+        "modified": "Değiştirildi",
+        "deleted": "Silindi",
+        "renamed": "Yeniden adlandırıldı",
+        "conflicted": "Çakışma",
+        "unknown": "Tanınmayan durum"
+      },
+      "badge": {
+        "created": "A",
+        "modified": "M",
+        "deleted": "D",
+        "renamed": "R",
+        "conflicted": "!",
+        "unknown": "?"
+      },
+      "conflictedHint": "Bu çakışmayı önce TupAI dışında çözün",
+      "opaqueHint": "Bu durum daha yeni bir arka uçtan geliyor — salt okunur gösteriliyor",
+      "degraded": "git dizini güncellenemediği için yenileme daha yavaş bir modda çalışıyor",
+      "truncated": "Listelenecek çok fazla değişiklik var — yalnızca ilk kısım gösteriliyor",
+      "renamedFrom": "{{from}} → {{to}}",
+      "diff": {
+        "loading": "Fark yükleniyor…",
+        "failed": "Fark yüklenemedi",
+        "binary": "İkili dosya — metin farkı yok",
+        "truncated": "Fark kısaltıldı (büyük dosya)",
+        "empty": "Metinsel değişiklik yok",
+        "close": "Farkı kapat"
+      },
+      "actions": {
+        "stage": "Değişiklikleri hazırla",
+        "unstage": "Hazırlamayı geri al",
+        "discard": "Değişiklikleri sil",
+        "stageAll": "Tümünü hazırla",
+        "unstageAll": "Tümünün hazırlamasını geri al",
+        "blockedHint": "Hazırlamadan veya silmeden önce çakışmayı TupAI dışında çözün",
+        "confirmDiscardTitle": "Değişiklikler silinsin mi?",
+        "confirmDiscardTracked": "{{count}} dosyadaki düzenlemeler kaybolacak. Bu geri alınamaz.",
+        "confirmDiscardUntracked": "{{count}} yeni dosya çöp kutusuna taşınacak.",
+        "confirmDiscardMixed": "Düzenlemeleri kalıcı olarak kaybolacak dosyalar: {{tracked}}. Çöp kutusuna taşınacak yeni dosyalar: {{untracked}}.",
+        "discardConfirmButton": "Sil",
+        "okStage": "{{count}} dosya hazırlandı",
+        "okStage_one": "{{count}} dosya hazırlandı",
+        "okStage_other": "{{count}} dosya hazırlandı",
+        "okUnstage": "{{count}} dosyanın hazırlaması geri alındı",
+        "okUnstage_one": "{{count}} dosyanın hazırlaması geri alındı",
+        "okUnstage_other": "{{count}} dosyanın hazırlaması geri alındı",
+        "okDiscard": "{{count}} dosya silindi",
+        "okDiscard_one": "{{count}} dosya silindi",
+        "okDiscard_other": "{{count}} dosya silindi",
+        "partial": "{{total}} işlemden {{succeeded}} tamamlandı —— {{failed}} tamamlanamadı",
+        "partialDetail": "Tamamlanamayan: {{files}}",
+        "rejectedBlocked": "Hiçbir şey değişmedi —— önce çakışmayı çözün",
+        "rejectedUnsupported": "Bu depo bu işlemi desteklemiyor",
+        "rejectedFailed": "İşlem tamamlanamadı",
+        "retry": "Yeniden dene",
+        "notSent": "İstek arka uca ulaşmadı, hiçbir şey değişmedi. Yeniden deneyebilirsiniz.",
+        "outcomeUnknown": "Yanıt gelmeden bağlantı sıfırlandı — bu işlem tamamlanmış da olabilir, olmamış da. Yeniden denemeden önce yenileyip dosya listesini kontrol edin.",
+        "allFailed": "{{count}} dosyanın hiçbiri işlenemedi",
+        "allFailed_one": "{{count}} dosyanın hiçbiri işlenemedi",
+        "allFailed_other": "{{count}} dosyanın hiçbiri işlenemedi",
+        "confirmDiscardTracked_one": "{{count}} dosyadaki düzenlemeler kaybolacak. Bu geri alınamaz.",
+        "confirmDiscardTracked_other": "{{count}} dosyadaki düzenlemeler kaybolacak. Bu geri alınamaz.",
+        "confirmDiscardUntracked_one": "{{count}} yeni dosya çöp kutusuna taşınacak.",
+        "confirmDiscardUntracked_other": "{{count}} yeni dosya çöp kutusuna taşınacak."
+      }
+    },
+    "pathCopied": "Yol kopyalandı",
+    "copyFailed": "Yol kopyalanamadı",
+    "imported_one": "{{count}} dosya içe aktarıldı",
+    "imported_other": "{{count}} dosya içe aktarıldı"
+  },
+  "terminal": {
+    "running": "Çalışıyor",
+    "stopped": "Durduruldu",
+    "exited": "Çıkış {{code}}",
+    "stop": "Durdur",
+    "truncated": "(önceki çıktı kesildi)"
+  },
+  "emptyState": {
+    "greeting": "Merhaba! Ne istediğinizi söyleyin, hemen başlayayım."
+  },
+  "crossSession": {
+    "mentionAgain": "{{name}} sohbetini mesaj alanında an",
+    "mentionAgainHint": "Bu sohbeti mesaj alanında anmak için tıklayın",
+    "mentionUnavailable": "Bu sohbet artık anılamıyor.",
+    "mentionFailed": "Bu sohbet anılamadı.",
+    "fromBadge": "{{name}} sohbetinden",
+    "otherWorkspace": "farklı çalışma alanı",
+    "rateLimitedTitle": "Sohbetler arası mesajlar döngüye girmiş olabilir",
+    "rateLimited": "\"{{from}}\" ve \"{{to}}\" arasındaki otomatik mesajlar olağandışı sıklıkta; döngüye girmiş olabilir.",
+    "stopBoth": "Her iki sohbeti durdur",
+    "disableFeature": "Sohbetler arası mesajları kapat"
+  },
+  "planBar": {
+    "title": "Plan",
+    "progress": "{{completed}}/{{total}}",
+    "expand": "Planı genişlet",
+    "collapse": "Planı daralt"
+  },
+  "createFailedWithDetail": "Konuşma oluşturulamadı: {{error}}",
+  "agentStartFailedWithDetail": "Ajan başlatılamadı: {{error}}"
+}

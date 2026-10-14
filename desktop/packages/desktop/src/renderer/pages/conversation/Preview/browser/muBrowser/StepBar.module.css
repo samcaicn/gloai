@@ -1,0 +1,202 @@
+.bar {
+  container-type: inline-size;
+  flex: none;
+  min-width: 0;
+  border-bottom: 1px solid var(--border-base);
+  background: var(--bg-1);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.5;
+  --tone: var(--brand);
+}
+
+.bar[data-tone='paused'],
+.bar[data-tone='warn'],
+.bar[data-tone='stopping'] {
+  --tone: var(--warning);
+}
+
+.bar[data-tone='good'] {
+  --tone: var(--success);
+}
+
+.bar[data-tone='bad'] {
+  --tone: var(--danger);
+}
+
+.bar[data-tone='quiet'] {
+  --tone: var(--text-secondary);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 10px;
+  min-width: 0;
+}
+
+.pulse {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 20%, transparent);
+}
+
+.bar[data-tone='running'] .pulse {
+  animation: breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar[data-tone='running'] .pulse {
+    animation: none;
+  }
+}
+
+.now {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.status {
+  flex: none;
+  font-weight: 600;
+  color: var(--tone);
+}
+
+.line {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.number,
+.confidence,
+.dot,
+.time {
+  flex: none;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.verb {
+  flex: none;
+}
+
+.target {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.target::before {
+  content: '「';
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.target::after {
+  content: '」';
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.unchanged {
+  flex: none;
+  color: var(--warning);
+}
+
+.toggle {
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.controls {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.hint {
+  padding: 0 10px 6px 25px;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.hint[data-kind='notice'] {
+  color: var(--warning);
+}
+
+.details {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px 10px 8px 25px;
+  border-top: 1px solid var(--border-base);
+  background: var(--bg-2);
+}
+
+.goal {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
+.label {
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.goalText {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: flex;
+  min-width: 0;
+  padding-block: 2px;
+}
+
+.list .line {
+  flex-wrap: wrap;
+  white-space: normal;
+}
+
+.empty {
+  color: var(--text-secondary);
+}
+
+/* A narrow panel gives the step line a row of its own, above the buttons. */
+@container (max-width: 520px) {
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .now {
+    flex-basis: calc(100% - 16px);
+  }
+}

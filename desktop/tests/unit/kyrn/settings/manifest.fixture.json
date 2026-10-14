@@ -1,0 +1,1324 @@
+{
+  "version": 1,
+  "groups": {
+    "input": {
+      "zh": "输入",
+      "en": "Input"
+    },
+    "context": {
+      "zh": "上下文",
+      "en": "Context"
+    },
+    "tools": {
+      "zh": "工具与安全",
+      "en": "Tools and safety"
+    },
+    "turn": {
+      "zh": "回合",
+      "en": "Turn"
+    },
+    "team": {
+      "zh": "协作",
+      "en": "Teamwork"
+    }
+  },
+  "modes": [
+    {
+      "value": "active",
+      "label": {
+        "zh": "生效",
+        "en": "Active"
+      },
+      "help": {
+        "zh": "判定结果直接起作用。",
+        "en": "The verdict takes effect."
+      }
+    },
+    {
+      "value": "shadow",
+      "label": {
+        "zh": "影子",
+        "en": "Shadow"
+      },
+      "help": {
+        "zh": "照常提问并记录，但不改变任何行为，用来先观察判定准不准。",
+        "en": "Asked and recorded, but nothing changes. For watching how well it judges first."
+      }
+    },
+    {
+      "value": "off",
+      "label": {
+        "zh": "关闭",
+        "en": "Off"
+      },
+      "help": {
+        "zh": "不提问，行为与原版 pi 相同。",
+        "en": "Not asked. Behaves like plain pi."
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "id": "input.preflight",
+      "group": "input",
+      "feature": "preflight",
+      "title": {
+        "zh": "消息预判",
+        "en": "Message preflight"
+      },
+      "summary": {
+        "zh": "每条消息先判断是什么类型、要多深的思考，据此设定本回合的思考等级并给出一行提示。",
+        "en": "Classifies each message and how much thinking it needs, then sets the turn's thinking level and a one-line hint."
+      }
+    },
+    {
+      "id": "task.frame",
+      "group": "input",
+      "feature": "frame",
+      "title": {
+        "zh": "任务帧更新",
+        "en": "Task frame update"
+      },
+      "summary": {
+        "zh": "每条消息判断一次：它是新任务、新的硬约束、对做法的纠正、新的子目标，还是什么都没变。只有变了才让模型重写任务帧。",
+        "en": "Asks of each message: a new task, a new hard constraint, a correction, a new subgoal, or no change. Only a change has a model rewrite the task frame."
+      }
+    },
+    {
+      "id": "input.interjection",
+      "group": "input",
+      "feature": "interjection",
+      "title": {
+        "zh": "中途插话",
+        "en": "Mid-run messages"
+      },
+      "summary": {
+        "zh": "任务进行中你又发来一句话：判断是要立刻打断，还是等这一步做完再处理。",
+        "en": "A message that arrives while the agent works: interrupt now, or handle it after the current step."
+      }
+    },
+    {
+      "id": "skills.disclosure",
+      "group": "context",
+      "feature": "skills",
+      "title": {
+        "zh": "技能披露",
+        "en": "Skill disclosure"
+      },
+      "summary": {
+        "zh": "会话开始时只把与任务有关的技能说明放进提示词，其余隐藏但随时可查。",
+        "en": "Only skills relevant to the task go into the prompt; the rest stay hidden but findable."
+      }
+    },
+    {
+      "id": "capability.disclosure",
+      "group": "context",
+      "feature": "catalog",
+      "title": {
+        "zh": "能力披露",
+        "en": "Capability disclosure"
+      },
+      "summary": {
+        "zh": "能力包、MCP 服务器等装着但默认不露，任务需要时才打开，对应的进程也到那时才启动。",
+        "en": "Packs and MCP servers are installed but hidden, opened only when a task needs them; their processes start then."
+      }
+    },
+    {
+      "id": "tool.admission",
+      "group": "context",
+      "feature": "admission",
+      "title": {
+        "zh": "工具输出准入",
+        "en": "Tool output admission"
+      },
+      "summary": {
+        "zh": "很长的工具输出分块判断，只让与任务有关的部分进入上下文，其余归档并留下指针。",
+        "en": "Long tool output is judged in chunks; only what matters enters the context, the rest is archived with a pointer."
+      }
+    },
+    {
+      "id": "tool.admission.test-log",
+      "group": "context",
+      "feature": "admission",
+      "title": {
+        "zh": "测试日志精简",
+        "en": "Test log trimming"
+      },
+      "summary": {
+        "zh": "测试输出里完全重复的失败段落只留一份；可再让判定器挑出必要的部分。",
+        "en": "Exact repeats in test output are kept once; optionally the judge selects what is needed from the rest."
+      }
+    },
+    {
+      "id": "context.forget",
+      "group": "context",
+      "feature": "forgetting",
+      "title": {
+        "zh": "过期结果遗忘",
+        "en": "Forgetting stale results"
+      },
+      "summary": {
+        "zh": "上下文用量越过阈值时，把已经用不上的旧工具结果在发出的请求里换成一行占位。",
+        "en": "When context use crosses a threshold, stale tool results are replaced by one-line tombstones in outgoing requests."
+      }
+    },
+    {
+      "id": "context.compact",
+      "group": "context",
+      "feature": "compaction",
+      "title": {
+        "zh": "免摘要压缩",
+        "en": "Summary-free compaction"
+      },
+      "summary": {
+        "zh": "压缩时不让模型写摘要，而是逐段判断保留还是裁掉，原文保真。",
+        "en": "Compaction keeps or prunes passages by judgment instead of asking a model for a summary."
+      }
+    },
+    {
+      "id": "memory.recall",
+      "group": "context",
+      "feature": "memory",
+      "title": {
+        "zh": "经验召回",
+        "en": "Lesson recall"
+      },
+      "summary": {
+        "zh": "从经验库里挑出与当前任务有关的几条，带进这一回合。",
+        "en": "Picks the lessons relevant to the current task and brings them into the turn."
+      }
+    },
+    {
+      "id": "memory.capture",
+      "group": "context",
+      "feature": "memory",
+      "title": {
+        "zh": "经验记录",
+        "en": "Lesson capture"
+      },
+      "summary": {
+        "zh": "判断一段经历值不值得记成经验。",
+        "en": "Decides whether something that happened is worth keeping as a lesson."
+      }
+    },
+    {
+      "id": "cache.warming",
+      "group": "context",
+      "feature": "warming",
+      "title": {
+        "zh": "缓存保温",
+        "en": "Cache warming"
+      },
+      "summary": {
+        "zh": "判断你是否很快会回来，以决定要不要在提示词缓存过期前续一下。",
+        "en": "Guesses whether you will be back soon, to decide on refreshing the prompt cache before it expires."
+      }
+    },
+    {
+      "id": "tool.risk",
+      "group": "tools",
+      "feature": "guard",
+      "title": {
+        "zh": "危险命令把关",
+        "en": "Risky command guard"
+      },
+      "summary": {
+        "zh": "规则先挑出看起来危险的命令，判定器只负责确认“这是不是你要求的”；拿不准就问你。",
+        "en": "Rules flag dangerous-looking commands; the judge only vouches that you asked for it. Unsure means asking you."
+      }
+    },
+    {
+      "id": "tool.constraint",
+      "group": "tools",
+      "feature": "constraints",
+      "title": {
+        "zh": "硬约束把关",
+        "en": "Hard constraint gate"
+      },
+      "summary": {
+        "zh": "你说过“先别改 X”“不要加依赖”这类话会原文记在任务帧里；每次要改动东西之前，逐条判断这次调用是否违反，确信违反才拦下，并用你的原话告诉模型。",
+        "en": "What you ruled out is kept word for word in the task frame; before a call that changes something, each constraint is checked, and only a confident violation is stopped, in your own words."
+      }
+    },
+    {
+      "id": "files.locate",
+      "group": "tools",
+      "feature": "locate",
+      "title": {
+        "zh": "文件定位",
+        "en": "File location"
+      },
+      "summary": {
+        "zh": "用一句话描述要找什么，判定器给候选文件排序，省去一连串 grep。",
+        "en": "Describe what you are looking for; the judge ranks candidate files instead of a string of greps."
+      }
+    },
+    {
+      "id": "browser.step",
+      "group": "tools",
+      "feature": "browser",
+      "title": {
+        "zh": "浏览器逐步操作",
+        "en": "Browser steps"
+      },
+      "summary": {
+        "zh": "内置浏览器每一步“观察 → 一次判定 → 动作”，由判定器选择下一步操作和目标。",
+        "en": "Each browser step is observe, one judgment, act: the judge picks the next operation and its target."
+      }
+    },
+    {
+      "id": "turn.drift",
+      "group": "turn",
+      "feature": "monitor",
+      "title": {
+        "zh": "跑偏监测",
+        "en": "Drift monitor"
+      },
+      "summary": {
+        "zh": "每隔几步判断当前工作是否还在为目标服务，并用规则发现原地打转。",
+        "en": "Every few steps, checks that the work still serves the goal; rules catch going in circles."
+      }
+    },
+    {
+      "id": "turn.completion",
+      "group": "turn",
+      "feature": "completion",
+      "title": {
+        "zh": "完成核对",
+        "en": "Completion check"
+      },
+      "summary": {
+        "zh": "模型说“做完了”时，判断是否真的验证过；没验证就提醒一次。",
+        "en": "When the model says it is done, checks whether anything verified that; one nudge if not."
+      }
+    },
+    {
+      "id": "notify.routing",
+      "group": "turn",
+      "feature": "notify",
+      "title": {
+        "zh": "通知分流",
+        "en": "Notification routing"
+      },
+      "summary": {
+        "zh": "上下文预算等事件出现时，判断该现在告诉模型、稍后再说，还是不必说。",
+        "en": "For events such as the context budget: tell the model now, later, or not at all."
+      }
+    },
+    {
+      "id": "swarm.routing",
+      "group": "team",
+      "feature": "swarm",
+      "title": {
+        "zh": "子代理分派",
+        "en": "Sub-agent routing"
+      },
+      "summary": {
+        "zh": "为每个委派任务挑选角色，并按难度选择模型档位和思考等级。",
+        "en": "Picks a role for each delegated task, and a model tier and thinking level by difficulty."
+      }
+    },
+    {
+      "id": "hive.publish",
+      "group": "team",
+      "feature": "hive",
+      "title": {
+        "zh": "蜂群：发布发现",
+        "en": "Hive: publishing findings"
+      },
+      "summary": {
+        "zh": "一只蜂的发现值不值得放到公告板上给其他蜂看。",
+        "en": "Whether a bee's finding is worth putting on the board for the others."
+      }
+    },
+    {
+      "id": "hive.deliver",
+      "group": "team",
+      "feature": "hive",
+      "title": {
+        "zh": "蜂群：投递",
+        "en": "Hive: delivery"
+      },
+      "summary": {
+        "zh": "公告板上的一条发现与某只蜂手头的工作有没有关系，有关系才送达。",
+        "en": "Whether a finding on the board matters to a bee's current work; only then is it delivered."
+      }
+    }
+  ],
+  "features": [
+    {
+      "name": "preflight",
+      "title": {
+        "zh": "消息预判",
+        "en": "Message preflight"
+      },
+      "summary": {
+        "zh": "发送后先判定再开工，判定结果显示在对话里。",
+        "en": "Judges a message before work starts and shows the verdict in the conversation."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "thinking",
+          "kind": "boolean",
+          "default": true,
+          "label": {
+            "zh": "按判定设置思考等级",
+            "en": "Set the thinking level from the verdict"
+          }
+        },
+        {
+          "key": "hints",
+          "kind": "boolean",
+          "default": true,
+          "label": {
+            "zh": "给模型一行提示",
+            "en": "Give the model a one-line hint"
+          }
+        },
+        {
+          "key": "show",
+          "kind": "boolean",
+          "default": true,
+          "label": {
+            "zh": "在界面上显示等待和结论",
+            "en": "Show the wait and the verdict"
+          }
+        },
+        {
+          "key": "waitMs",
+          "kind": "number",
+          "default": 6000,
+          "min": 500,
+          "max": 30000,
+          "unit": {
+            "zh": "毫秒",
+            "en": "ms"
+          },
+          "label": {
+            "zh": "最多等待",
+            "en": "Wait at most"
+          },
+          "help": {
+            "zh": "超时就不等了，按原样开始。",
+            "en": "After this the turn starts without the verdict."
+          }
+        }
+      ]
+    },
+    {
+      "name": "interjection",
+      "title": {
+        "zh": "中途插话",
+        "en": "Mid-run messages"
+      },
+      "summary": {
+        "zh": "处理任务进行中发来的消息。",
+        "en": "Handles messages sent while the agent is working."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "waitMs",
+          "kind": "number",
+          "default": 1500,
+          "min": 200,
+          "max": 10000,
+          "unit": {
+            "zh": "毫秒",
+            "en": "ms"
+          },
+          "label": {
+            "zh": "最多等待",
+            "en": "Wait at most"
+          }
+        }
+      ]
+    },
+    {
+      "name": "skills",
+      "title": {
+        "zh": "技能披露",
+        "en": "Skill disclosure"
+      },
+      "summary": {
+        "zh": "按任务决定提示词里带哪些技能说明。",
+        "en": "Chooses which skill descriptions a session carries."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "minSkills",
+          "kind": "number",
+          "default": 4,
+          "min": 1,
+          "max": 100,
+          "label": {
+            "zh": "技能少于这个数就不筛",
+            "en": "Do not filter below this many skills"
+          }
+        },
+        {
+          "key": "waitMs",
+          "kind": "number",
+          "default": 4000,
+          "min": 500,
+          "max": 30000,
+          "unit": {
+            "zh": "毫秒",
+            "en": "ms"
+          },
+          "label": {
+            "zh": "最多等待",
+            "en": "Wait at most"
+          }
+        }
+      ]
+    },
+    {
+      "name": "catalog",
+      "title": {
+        "zh": "能力目录",
+        "en": "Capability catalog"
+      },
+      "summary": {
+        "zh": "装得多、露得少：能力包和 MCP 服务器默认隐藏，按任务打开。",
+        "en": "Install a lot, expose little: packs and MCP servers stay hidden and open per task."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "waitMs",
+          "kind": "number",
+          "default": 4000,
+          "min": 500,
+          "max": 30000,
+          "unit": {
+            "zh": "毫秒",
+            "en": "ms"
+          },
+          "label": {
+            "zh": "最多等待",
+            "en": "Wait at most"
+          }
+        }
+      ]
+    },
+    {
+      "name": "frame",
+      "title": {
+        "zh": "任务帧与待办",
+        "en": "Task frame and to-do list"
+      },
+      "summary": {
+        "zh": "记住你到底要什么：目标、你的硬约束（原话加出处）、当前子目标、验收条件。验收条件就是待办清单，模型用 todo 工具勾选。所有“和目标相关吗”的判断都以它为准，回退会话时它跟着回退。",
+        "en": "Keeps what you actually want: the goal, your hard constraints (your own words, with their source), the current subgoal and the acceptance items. Those items are the to-do list the model ticks with the todo tool. Every goal-relevance judgment reads it, and it rewinds with the session."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "waitMs",
+          "kind": "number",
+          "default": 3000,
+          "min": 0,
+          "max": 30000,
+          "unit": {
+            "zh": "毫秒",
+            "en": "ms"
+          },
+          "label": {
+            "zh": "回合最多等任务帧多久",
+            "en": "A turn waits for its frame at most"
+          },
+          "help": {
+            "zh": "从消息到达算起。超时不丢弃：本回合先用上一版加这条原话，更新完成后照常落地。",
+            "en": "Counted from the arrival of the message. A late update is not dropped: the turn starts on the previous version plus the raw message, and the update lands when it is ready."
+          }
+        },
+        {
+          "key": "writerTimeoutMs",
+          "kind": "number",
+          "default": 20000,
+          "min": 1000,
+          "max": 120000,
+          "unit": {
+            "zh": "毫秒",
+            "en": "ms"
+          },
+          "label": {
+            "zh": "重写任务帧的时限",
+            "en": "Time limit for writing a frame"
+          },
+          "help": {
+            "zh": "超时或写坏了就保留上一版并标记为过期，按目标筛选上下文的功能暂停，下一条消息时重试。",
+            "en": "On a timeout or a malformed reply the last version stays and is marked stale, goal-based filtering holds back, and the next message retries."
+          }
+        },
+        {
+          "key": "show",
+          "kind": "boolean",
+          "default": true,
+          "label": {
+            "zh": "在对话里显示任务帧更新",
+            "en": "Show frame updates in the chat"
+          }
+        }
+      ]
+    },
+    {
+      "name": "memory",
+      "title": {
+        "zh": "经验库",
+        "en": "Lessons"
+      },
+      "summary": {
+        "zh": "记下踩过的坑，下次遇到相关任务时带上。",
+        "en": "Keeps lessons learned and brings the relevant ones along next time."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "path",
+          "kind": "text",
+          "default": "",
+          "label": {
+            "zh": "经验库文件",
+            "en": "Lessons file"
+          },
+          "help": {
+            "zh": "留空使用默认位置。",
+            "en": "Empty uses the default location."
+          }
+        },
+        {
+          "key": "maxCandidates",
+          "kind": "number",
+          "default": 24,
+          "min": 1,
+          "max": 200,
+          "label": {
+            "zh": "每次最多评估",
+            "en": "Judge at most"
+          }
+        },
+        {
+          "key": "maxInjected",
+          "kind": "number",
+          "default": 5,
+          "min": 0,
+          "max": 20,
+          "label": {
+            "zh": "每回合最多带入",
+            "en": "Bring in at most"
+          }
+        }
+      ]
+    },
+    {
+      "name": "guard",
+      "title": {
+        "zh": "危险命令把关",
+        "en": "Risky command guard"
+      },
+      "summary": {
+        "zh": "危险命令在执行前确认。",
+        "en": "Confirms dangerous commands before they run."
+      },
+      "defaultEnabled": true,
+      "options": []
+    },
+    {
+      "name": "constraints",
+      "title": {
+        "zh": "硬约束把关",
+        "en": "Hard constraint gate"
+      },
+      "summary": {
+        "zh": "改动文件或执行命令之前，对照你的硬约束检查一遍；子代理同样受这些约束限制。",
+        "en": "Checks a change or a command against your hard constraints first; sub-agents work under them too."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "maxConstraints",
+          "kind": "number",
+          "default": 6,
+          "min": 1,
+          "max": 20,
+          "label": {
+            "zh": "每次最多对照的约束条数",
+            "en": "Constraints checked per call at most"
+          },
+          "help": {
+            "zh": "取最新的几条。",
+            "en": "The newest ones are used."
+          }
+        },
+        {
+          "key": "waitMs",
+          "kind": "number",
+          "default": 5000,
+          "min": 500,
+          "max": 30000,
+          "unit": {
+            "zh": "毫秒",
+            "en": "ms"
+          },
+          "label": {
+            "zh": "最多等待",
+            "en": "Wait at most"
+          }
+        }
+      ]
+    },
+    {
+      "name": "admission",
+      "title": {
+        "zh": "工具输出准入",
+        "en": "Tool output admission"
+      },
+      "summary": {
+        "zh": "控制多长的工具输出、以什么方式进入上下文。",
+        "en": "Controls how long tool output enters the context."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "minChars",
+          "kind": "number",
+          "default": 4000,
+          "min": 500,
+          "max": 200000,
+          "unit": {
+            "zh": "字符",
+            "en": "chars"
+          },
+          "label": {
+            "zh": "超过这个长度才筛",
+            "en": "Only filter output longer than"
+          }
+        },
+        {
+          "key": "chunkChars",
+          "kind": "number",
+          "default": 1200,
+          "min": 200,
+          "max": 20000,
+          "unit": {
+            "zh": "字符",
+            "en": "chars"
+          },
+          "label": {
+            "zh": "每块大小",
+            "en": "Chunk size"
+          }
+        },
+        {
+          "key": "maxChunks",
+          "kind": "number",
+          "default": 48,
+          "min": 4,
+          "max": 400,
+          "label": {
+            "zh": "最多判断的块数",
+            "en": "Judge at most this many chunks"
+          }
+        },
+        {
+          "key": "passThrough",
+          "kind": "list",
+          "default": ["read", "edit", "write"],
+          "label": {
+            "zh": "这些工具的输出不筛",
+            "en": "Never filter these tools"
+          }
+        },
+        {
+          "key": "testLog",
+          "kind": "choice",
+          "default": "off",
+          "label": {
+            "zh": "测试日志精简",
+            "en": "Test log trimming"
+          },
+          "choices": [
+            {
+              "value": "off",
+              "label": {
+                "zh": "关闭",
+                "en": "Off"
+              }
+            },
+            {
+              "value": "rules",
+              "label": {
+                "zh": "只去掉完全重复的段落（无损）",
+                "en": "Drop exact repeats only (lossless)"
+              }
+            },
+            {
+              "value": "jev",
+              "label": {
+                "zh": "再由判定器挑选剩余部分",
+                "en": "Also let the judge select from the rest"
+              }
+            }
+          ]
+        },
+        {
+          "key": "agentEnv",
+          "kind": "boolean",
+          "default": true,
+          "label": {
+            "zh": "告诉测试工具“读者是代理”",
+            "en": "Tell test runners an agent is reading"
+          },
+          "help": {
+            "zh": "Vitest 等会因此只输出失败和汇总。",
+            "en": "Vitest and others then print failures and the summary only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "forgetting",
+      "title": {
+        "zh": "过期结果遗忘",
+        "en": "Forgetting stale results"
+      },
+      "summary": {
+        "zh": "上下文吃紧时，把用不上的旧结果换成占位。",
+        "en": "Replaces stale results with tombstones when the context gets tight."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "thresholds",
+          "kind": "numbers",
+          "default": [50, 70, 85],
+          "label": {
+            "zh": "触发阈值（上下文用量 %）",
+            "en": "Trigger thresholds (context use %)"
+          }
+        },
+        {
+          "key": "minChars",
+          "kind": "number",
+          "default": 6000,
+          "min": 500,
+          "max": 200000,
+          "unit": {
+            "zh": "字符",
+            "en": "chars"
+          },
+          "label": {
+            "zh": "只考虑长于此的结果",
+            "en": "Only results longer than"
+          }
+        },
+        {
+          "key": "minAgeTurns",
+          "kind": "number",
+          "default": 2,
+          "min": 0,
+          "max": 50,
+          "label": {
+            "zh": "至少过了几个回合",
+            "en": "At least this many turns old"
+          }
+        },
+        {
+          "key": "maxPerBatch",
+          "kind": "number",
+          "default": 12,
+          "min": 1,
+          "max": 100,
+          "label": {
+            "zh": "每批最多判断",
+            "en": "Judge at most per batch"
+          }
+        }
+      ]
+    },
+    {
+      "name": "compaction",
+      "title": {
+        "zh": "免摘要压缩",
+        "en": "Summary-free compaction"
+      },
+      "summary": {
+        "zh": "压缩时保留原文片段，不写摘要。",
+        "en": "Compaction that keeps original passages instead of a summary."
+      },
+      "defaultEnabled": false,
+      "beta": true,
+      "options": [
+        {
+          "key": "keepThreshold",
+          "kind": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "label": {
+            "zh": "保留阈值",
+            "en": "Keep threshold"
+          }
+        },
+        {
+          "key": "minChars",
+          "kind": "number",
+          "default": 600,
+          "min": 100,
+          "max": 20000,
+          "unit": {
+            "zh": "字符",
+            "en": "chars"
+          },
+          "label": {
+            "zh": "短于此的原样保留",
+            "en": "Keep anything shorter than"
+          }
+        },
+        {
+          "key": "headChars",
+          "kind": "number",
+          "default": 300,
+          "min": 0,
+          "max": 5000,
+          "unit": {
+            "zh": "字符",
+            "en": "chars"
+          },
+          "label": {
+            "zh": "裁掉时保留的开头",
+            "en": "Head kept when pruning"
+          }
+        },
+        {
+          "key": "targetRatio",
+          "kind": "number",
+          "default": 0.5,
+          "min": 0.05,
+          "max": 1,
+          "label": {
+            "zh": "压缩后占原来的比例",
+            "en": "Target share of the original"
+          }
+        },
+        {
+          "key": "maxWindowShare",
+          "kind": "number",
+          "default": 0.25,
+          "min": 0.05,
+          "max": 0.9,
+          "label": {
+            "zh": "最多占上下文窗口的比例",
+            "en": "At most this share of the window"
+          }
+        },
+        {
+          "key": "freeChars",
+          "kind": "number",
+          "default": 24000,
+          "min": 0,
+          "max": 500000,
+          "unit": {
+            "zh": "字符",
+            "en": "chars"
+          },
+          "label": {
+            "zh": "小于此的历史不受预算挤压",
+            "en": "Histories this small are not squeezed"
+          }
+        },
+        {
+          "key": "maxJudged",
+          "kind": "number",
+          "default": 120,
+          "min": 10,
+          "max": 1000,
+          "label": {
+            "zh": "最多判断的片段数",
+            "en": "Judge at most this many passages"
+          }
+        }
+      ]
+    },
+    {
+      "name": "monitor",
+      "title": {
+        "zh": "跑偏监测",
+        "en": "Drift monitor"
+      },
+      "summary": {
+        "zh": "发现偏离目标和原地打转。",
+        "en": "Notices drift from the goal and going in circles."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "every",
+          "kind": "number",
+          "default": 6,
+          "min": 1,
+          "max": 100,
+          "label": {
+            "zh": "每隔几次工具调用检查",
+            "en": "Check every this many tool calls"
+          }
+        },
+        {
+          "key": "repeats",
+          "kind": "number",
+          "default": 3,
+          "min": 2,
+          "max": 20,
+          "label": {
+            "zh": "同一调用重复几次算打转",
+            "en": "Repeats that count as a loop"
+          }
+        },
+        {
+          "key": "window",
+          "kind": "number",
+          "default": 8,
+          "min": 2,
+          "max": 100,
+          "label": {
+            "zh": "观察窗口",
+            "en": "Window"
+          }
+        }
+      ]
+    },
+    {
+      "name": "completion",
+      "title": {
+        "zh": "完成核对",
+        "en": "Completion check"
+      },
+      "summary": {
+        "zh": "“做完了”之前确认有没有验证过。",
+        "en": "Checks that something verified the work before it is called done."
+      },
+      "defaultEnabled": true,
+      "options": []
+    },
+    {
+      "name": "notify",
+      "title": {
+        "zh": "通知分流",
+        "en": "Notification routing"
+      },
+      "summary": {
+        "zh": "决定各类事件何时告诉模型。",
+        "en": "Decides when events are told to the model."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "budgetThresholds",
+          "kind": "numbers",
+          "default": [70, 85],
+          "label": {
+            "zh": "上下文预算提醒（%）",
+            "en": "Context budget notices (%)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "warming",
+      "title": {
+        "zh": "缓存保温",
+        "en": "Cache warming"
+      },
+      "summary": {
+        "zh": "在提示词缓存过期前视情况续一下。",
+        "en": "Refreshes the prompt cache before it expires when that pays off."
+      },
+      "defaultEnabled": true,
+      "options": []
+    },
+    {
+      "name": "swarm",
+      "title": {
+        "zh": "子代理",
+        "en": "Sub-agents"
+      },
+      "summary": {
+        "zh": "把任务委派给按角色分工的子代理。",
+        "en": "Delegates tasks to sub-agents with roles."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "models",
+          "kind": "list",
+          "default": [],
+          "label": {
+            "zh": "模型梯队（从便宜到强）",
+            "en": "Model ladder (cheapest to strongest)"
+          },
+          "help": {
+            "zh": "留空则子代理都用当前会话的模型。",
+            "en": "Empty means every sub-agent uses the session's model."
+          }
+        },
+        {
+          "key": "maxTasks",
+          "kind": "number",
+          "default": 6,
+          "min": 1,
+          "max": 32,
+          "label": {
+            "zh": "一次最多委派",
+            "en": "Tasks per call at most"
+          }
+        },
+        {
+          "key": "concurrency",
+          "kind": "number",
+          "default": 3,
+          "min": 1,
+          "max": 16,
+          "label": {
+            "zh": "同时运行",
+            "en": "Running at once"
+          }
+        },
+        {
+          "key": "defaultAgent",
+          "kind": "text",
+          "default": "worker",
+          "label": {
+            "zh": "默认角色",
+            "en": "Default role"
+          }
+        },
+        {
+          "key": "agentsDir",
+          "kind": "text",
+          "default": "",
+          "label": {
+            "zh": "自定义角色目录",
+            "en": "Folder with your own roles"
+          },
+          "help": {
+            "zh": "留空使用 <agent 目录>/agents。",
+            "en": "Empty uses <agent dir>/agents."
+          }
+        }
+      ]
+    },
+    {
+      "name": "hive",
+      "title": {
+        "zh": "蜂群",
+        "en": "Hive"
+      },
+      "summary": {
+        "zh": "多只蜂并行攻一个难题，判定器把关它们之间传什么。",
+        "en": "Several bees work one hard task in parallel; the judge gates what passes between them."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "maxNotesPerBee",
+          "kind": "number",
+          "default": 12,
+          "min": 1,
+          "max": 100,
+          "label": {
+            "zh": "每只蜂最多发布",
+            "en": "Notes per bee at most"
+          }
+        },
+        {
+          "key": "maxDeliveriesPerBee",
+          "kind": "number",
+          "default": 10,
+          "min": 1,
+          "max": 100,
+          "label": {
+            "zh": "每只蜂最多收到",
+            "en": "Deliveries per bee at most"
+          }
+        },
+        {
+          "key": "checkpointEvery",
+          "kind": "number",
+          "default": 4,
+          "min": 0,
+          "max": 50,
+          "label": {
+            "zh": "沉默几次工具调用后询问进展",
+            "en": "Ask for findings after this many silent tool calls"
+          },
+          "help": {
+            "zh": "0 表示不询问。",
+            "en": "0 turns this off."
+          }
+        },
+        {
+          "key": "lastCall",
+          "kind": "boolean",
+          "default": true,
+          "label": {
+            "zh": "写报告时再听一次新消息",
+            "en": "One last hearing while writing the report"
+          }
+        }
+      ]
+    },
+    {
+      "name": "locate",
+      "title": {
+        "zh": "文件定位",
+        "en": "File location"
+      },
+      "summary": {
+        "zh": "用描述找文件的 locate 工具。",
+        "en": "The locate tool: find files by description."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "candidates",
+          "kind": "number",
+          "default": 40,
+          "min": 5,
+          "max": 400,
+          "label": {
+            "zh": "送判的候选数",
+            "en": "Candidates judged"
+          }
+        },
+        {
+          "key": "results",
+          "kind": "number",
+          "default": 12,
+          "min": 1,
+          "max": 100,
+          "label": {
+            "zh": "返回条数",
+            "en": "Results returned"
+          }
+        }
+      ]
+    },
+    {
+      "name": "browser",
+      "title": {
+        "zh": "内置浏览器",
+        "en": "Built-in browser"
+      },
+      "summary": {
+        "zh": "判定器驱动的浏览器，用自己独立的配置目录，从不动你的浏览器。",
+        "en": "A judge-driven browser with its own profile; it never touches yours."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "headless",
+          "kind": "boolean",
+          "default": true,
+          "label": {
+            "zh": "无界面运行",
+            "en": "Run headless"
+          }
+        },
+        {
+          "key": "maxSteps",
+          "kind": "number",
+          "default": 40,
+          "min": 1,
+          "max": 200,
+          "label": {
+            "zh": "每次最多步数",
+            "en": "Steps per run at most"
+          }
+        },
+        {
+          "key": "textChars",
+          "kind": "number",
+          "default": 4000,
+          "min": 500,
+          "max": 50000,
+          "unit": {
+            "zh": "字符",
+            "en": "chars"
+          },
+          "label": {
+            "zh": "每步读取的页面文字",
+            "en": "Page text read per step"
+          }
+        },
+        {
+          "key": "embedded",
+          "kind": "boolean",
+          "default": true,
+          "label": {
+            "zh": "桌面端运行时使用应用内的浏览器面板",
+            "en": "Use the desktop app's browser panel when it is running"
+          },
+          "help": {
+            "zh": "这样每一步都看得见，可以随时暂停、停止或接管；应用没开时用 mu 自己的浏览器。",
+            "en": "Every step is then visible and can be paused, stopped or taken over; without the app mu's own browser is used."
+          }
+        },
+        {
+          "key": "profileDir",
+          "kind": "text",
+          "default": "",
+          "label": {
+            "zh": "浏览器配置目录",
+            "en": "Browser profile folder"
+          },
+          "help": {
+            "zh": "留空使用 mu 自己的目录。",
+            "en": "Empty uses mu's own folder."
+          }
+        }
+      ]
+    },
+    {
+      "name": "background",
+      "title": {
+        "zh": "后台命令",
+        "en": "Background commands"
+      },
+      "summary": {
+        "zh": "开发服务器、长时间构建放到后台跑，不占用回合。",
+        "en": "Dev servers and long builds run in the background without holding up the turn."
+      },
+      "defaultEnabled": true,
+      "options": [
+        {
+          "key": "maxJobs",
+          "kind": "number",
+          "default": 8,
+          "min": 1,
+          "max": 32,
+          "label": {
+            "zh": "同时运行的任务上限",
+            "en": "Jobs running at the same time"
+          }
+        }
+      ]
+    },
+    {
+      "name": "welcome",
+      "title": {
+        "zh": "欢迎页",
+        "en": "Welcome screen"
+      },
+      "summary": {
+        "zh": "终端里的欢迎框和身份说明。",
+        "en": "The welcome box in the terminal and the identity note."
+      },
+      "defaultEnabled": true,
+      "options": []
+    }
+  ]
+}
