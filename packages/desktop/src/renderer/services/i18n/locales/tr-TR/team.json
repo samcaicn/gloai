@@ -73,7 +73,7 @@
     "selectedMembersTitleWithCount": "Seçilen üyeler {{count}}",
     "leaderLegend": "= Lider",
     "membersHelper": "Takım üyelerini seçin ve bir lider atayın. Aynı asistan birden fazla kez seçilebilir.",
-    "memberHint": "Üye olacak uygun bir asistan yok TupAI? Takımı oluşturduktan sonra liderin sohbette geçici takım üyeleri oluşturmasını sağlayabilirsiniz.",
+    "memberHint": "Üye olacak uygun bir asistan yok AiBuddy? Takımı oluşturduktan sonra liderin sohbette geçici takım üyeleri oluşturmasını sağlayabilirsiniz.",
     "errorWithDetail": "Takım oluşturulamadı: {{error}}",
     "memberErrorWithDetail": "{{name}} için model seçilemedi: {{error}}"
   },
@@ -99,7 +99,7 @@
     "searchAssistants": "Asistan ara…",
     "addFailed": "Üye eklenemedi",
     "noSearchResults": "Sonuç bulunamadı",
-    "tellLeaderHint": "Uygun biri yok TupAI? Bunu ayarlamasını liderden de isteyebilirsiniz.",
+    "tellLeaderHint": "Uygun biri yok AiBuddy? Bunu ayarlamasını liderden de isteyebilirsiniz.",
     "tellLeaderCta": "Lidere söyle →",
     "tellLeaderPrefill": "Takıma ___ konusunda iyi bir üye eklememe yardım et",
     "addFailedWithDetail": "Üye eklenemedi: {{error}}"

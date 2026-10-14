@@ -65,11 +65,11 @@
   "more": "更多",
   "refresh": "刷新",
   "readOnly": "只读",
-  "tray.showWindow": "显示 TupAI",
+  "tray.showWindow": "显示 AiBuddy",
   "tray.newChat": "新建对话",
   "tray.closeToTray": "隐藏到托盘",
   "tray.hideToMenuBar": "隐藏到菜单栏",
-  "tray.about": "关于 TupAI",
+  "tray.about": "关于 AiBuddy",
   "tray.restart": "重启应用",
   "tray.quit": "退出",
   "tray.pauseAll": "暂停所有任务",
@@ -79,39 +79,39 @@
   "backendStartup": {
     "incompatibleRuntime": {
       "title": "当前系统不支持内置后端",
-      "description": "TupAI 已打开，但本地服务无法在当前 Linux 版本上运行。请升级到受支持的 Linux 发行版后重启 TupAI。",
+      "description": "AiBuddy 已打开，但本地服务无法在当前 Linux 版本上运行。请升级到受支持的 Linux 发行版后重启 AiBuddy。",
       "requiredVersions": "需要的运行时符号：{{versions}}"
     },
     "incompleteInstallation": {
-      "title": "TupAI 安装不完整",
-      "description": "当前安装缺少必要的本地资源，TupAI 的本地服务无法启动。请下载并重新安装最新版 TupAI；如果重新安装后仍然出现，请检查系统安全软件或杀毒软件是否隔离了 TupAI 的文件。",
+      "title": "AiBuddy 安装不完整",
+      "description": "当前安装缺少必要的本地资源，AiBuddy 的本地服务无法启动。请下载并重新安装最新版 AiBuddy；如果重新安装后仍然出现，请检查系统安全软件或杀毒软件是否隔离了 AiBuddy 的文件。",
       "downloadLatest": "下载最新版",
-      "runtimeComponentDescription": "当前安装缺少必要的内置运行组件，{{resource}} 无法启动。请重新安装最新版 TupAI；如果重新安装后仍然出现，请检查系统安全软件或杀毒软件是否隔离了 TupAI 组件。"
+      "runtimeComponentDescription": "当前安装缺少必要的内置运行组件，{{resource}} 无法启动。请重新安装最新版 AiBuddy；如果重新安装后仍然出现，请检查系统安全软件或杀毒软件是否隔离了 AiBuddy 组件。"
     },
     "packageArchitectureMismatch": {
-      "title": "TupAI 安装包架构不匹配",
-      "description": "当前 TupAI 安装包是 {{packageArch}}，但这台 Mac 是 {{deviceArch}}。你可能下载了错误的安装包，请重新下载并安装 {{expectedArch}} 版本。"
+      "title": "AiBuddy 安装包架构不匹配",
+      "description": "当前 AiBuddy 安装包是 {{packageArch}}，但这台 Mac 是 {{deviceArch}}。你可能下载了错误的安装包，请重新下载并安装 {{expectedArch}} 版本。"
     },
     "dataMigration": {
       "title": "本地数据迁移失败",
-      "description": "TupAI 已打开，但本地服务在初始化本地数据时停止。重复安装 TupAI 未必能解决此问题。应用日志记录了本地数据库迁移停在哪一步。"
+      "description": "AiBuddy 已打开，但本地服务在初始化本地数据时停止。重复安装 AiBuddy 未必能解决此问题。应用日志记录了本地数据库迁移停在哪一步。"
     },
     "databaseNewerThanApp": {
-      "title": "需要更新 TupAI",
-      "description": "本地数据由更高版本的 TupAI 创建，当前版本无法打开。请将 TupAI 更新到最新版本即可继续使用，数据完好无损，无需重装或重置数据。",
-      "descriptionWithVersion": "本地数据由比当前版本 v{{currentVersion}} 更新的 TupAI 创建，当前版本无法打开。请将 TupAI 更新到最新版本即可继续使用，数据完好无损，无需重装或重置数据。"
+      "title": "需要更新 AiBuddy",
+      "description": "本地数据由更高版本的 AiBuddy 创建，当前版本无法打开。请将 AiBuddy 更新到最新版本即可继续使用，数据完好无损，无需重装或重置数据。",
+      "descriptionWithVersion": "本地数据由比当前版本 v{{currentVersion}} 更新的 AiBuddy 创建，当前版本无法打开。请将 AiBuddy 更新到最新版本即可继续使用，数据完好无损，无需重装或重置数据。"
     },
     "localDataRepair": {
       "title": "本地数据修复失败",
-      "description": "TupAI 已打开，但本地服务在准备本地启动数据时停止，例如 assistant 或智能体记录。重新安装 TupAI 可能无法解决此问题。应用日志记录了哪些本地数据未能准备好。"
+      "description": "AiBuddy 已打开，但本地服务在准备本地启动数据时停止，例如 assistant 或智能体记录。重新安装 AiBuddy 可能无法解决此问题。应用日志记录了哪些本地数据未能准备好。"
     },
     "startupDirectory": {
       "title": "启动目录不可用",
-      "description": "TupAI 已打开，但由于配置的工作目录或日志目录不存在、不可访问或权限受限，本地服务无法启动。请确认这些目录存在且可写，然后重启 TupAI。"
+      "description": "AiBuddy 已打开，但由于配置的工作目录或日志目录不存在、不可访问或权限受限，本地服务无法启动。请确认这些目录存在且可写，然后重启 AiBuddy。"
     },
     "recoverableDatabaseCorruption": {
       "title": "本地数据已损坏",
-      "description": "检测到本地数据库损坏，TupAI 无法继续启动。确认后将备份旧数据库，并创建新的本地数据库继续启动。历史会话将不再显示，旧数据库会保留为备份文件。",
+      "description": "检测到本地数据库损坏，AiBuddy 无法继续启动。确认后将备份旧数据库，并创建新的本地数据库继续启动。历史会话将不再显示，旧数据库会保留为备份文件。",
       "confirmRebuild": "备份旧库并重建新库",
       "rebuildFailed": "备份旧库并重建新库失败",
       "confirmDialog": {
@@ -122,8 +122,8 @@
       }
     },
     "transientConcurrentStartup": {
-      "title": "TupAI 正在启动",
-      "description": "此窗口打开时，另一个 TupAI 启动进程仍在使用本地数据。这是暂时的，您的数据是安全的——无需重新安装。请稍候片刻后重试，或重启 TupAI。"
+      "title": "AiBuddy 正在启动",
+      "description": "此窗口打开时，另一个 AiBuddy 启动进程仍在使用本地数据。这是暂时的，您的数据是安全的——无需重新安装。请稍候片刻后重试，或重启 AiBuddy。"
     },
     "pendingSlow": {
       "title": "正在启动",
@@ -164,12 +164,12 @@
   "selectedSkills": "已选技能",
   "aiAssistant": "AI 助手",
   "kyrn": {
-    "settings": "TupAI 设置",
+    "settings": "AiBuddy 设置",
     "judge": "判定器配置",
     "reload": "重新加载",
-    "starting": "正在启动 TupAI…",
-    "startingHint": "正在连接本机的 TupAI 内核，读取模型与判定器配置。",
-    "startupError": "TupAI 启动失败",
+    "starting": "正在启动 AiBuddy…",
+    "startingHint": "正在连接本机的 AiBuddy 内核，读取模型与判定器配置。",
+    "startupError": "AiBuddy 启动失败",
     "hiveView": {
       "title": "蜂群",
       "agents": "子智能体",
@@ -200,7 +200,7 @@
       "lineDelivery_other": "{{from}} → {{to}}：送达 {{count}} 条",
       "lineCorrection": "{{from}} 纠正了 {{to}} 的发现",
       "lineConflict": "{{from}} 与 {{to}} 的发现有争议",
-      "lineReport": "{{from}} 已向 TupAI 回报",
+      "lineReport": "{{from}} 已向 AiBuddy 回报",
       "deliveries": "信息流",
       "noDeliveries": "尚无已确认的送达。",
       "board": "共享看板",
@@ -922,7 +922,7 @@
       "progress": "进度",
       "agent_start": "任务开始",
       "agent_settled": "任务结束",
-      "kyrn_rpc_closed": "TupAI 内核已关闭",
+      "kyrn_rpc_closed": "AiBuddy 内核已关闭",
       "auto_compaction_start": "正在压缩上下文",
       "auto_compaction_end": "压缩结束",
       "hive.note": "共享发现",
@@ -1019,7 +1019,7 @@
     "betaActive": "Beta 已启用",
     "betaShadow": "Beta 影子模式",
     "betaOff": "Beta 已关闭",
-    "contextWaiting": "等待 TupAI 内核连接",
+    "contextWaiting": "等待 AiBuddy 内核连接",
     "contextTrigger": "{{tokens}} tokens 触发压缩",
     "autoOff": "自动压缩已关闭",
     "compacting": "正在压缩上下文…",
@@ -1072,7 +1072,7 @@
       "switch": "这个项目的人话看板",
       "switching": "正在切换…",
       "afterTurn": "代理这一步做完就切换",
-      "unknown": "这个对话还没有人话看板。它只在 TupAI 的对话里、而且「功能」里开着人话看板时出现。",
+      "unknown": "这个对话还没有人话看板。它只在 AiBuddy 的对话里、而且「功能」里开着人话看板时出现。",
       "off": "打开后，代理每做一段，这里就用大白话告诉你：进展到哪了、正在做什么、哪些需要你确认。",
       "cost": "只对这个项目生效。每次更新会调用一次模型。",
       "empty": "等代理做一会儿，这里会用大白话告诉你进展",
@@ -1147,11 +1147,11 @@
         "helpers_back_other": "{{count, number}} 个助手回来了",
         "permission_allowed": "你允许了：{{summary}}",
         "permission_denied": "你没允许：{{summary}}",
-        "goal_round": "目标还没达成，TupAI 让它接着干（第 {{round, number}} 轮）{{reason}}",
+        "goal_round": "目标还没达成，AiBuddy 让它接着干（第 {{round, number}} 轮）{{reason}}",
         "goal_met": "目标达成了：{{text}}",
         "goal_paused": "目标暂停了{{reason}}",
-        "trouble_loop": "TupAI 发现它在重复同一步：{{detail}}",
-        "trouble": "TupAI 发现：{{detail}}",
+        "trouble_loop": "AiBuddy 发现它在重复同一步：{{detail}}",
+        "trouble": "AiBuddy 发现：{{detail}}",
         "did": "用 {{tool}} 做了：{{what}}",
         "said_quote": "它说：{{text}}",
         "ended": "停下来了。",
@@ -1192,7 +1192,7 @@
       "retireConfirm": "让这条经验退役？以后不会再召回它。",
       "loadFailed": "读不到经验库",
       "saveFailed": "这条经验没有改成",
-      "empty": "这个项目还没有经验。TupAI 会从你的纠正、它自己脱困的办法和 /remember 里学到经验。",
+      "empty": "这个项目还没有经验。AiBuddy 会从你的纠正、它自己脱困的办法和 /remember 里学到经验。",
       "noneActive": "没有在用的经验。「全部」里还有已退役和已被替代的。",
       "noMatch": "没有匹配的经验。",
       "noProject": "本会话没有项目文件夹，只列出到处适用的经验。",
@@ -1305,16 +1305,16 @@
       "mcp": {
         "line": "{{name}}：{{reason}}",
         "projectUntrusted": "项目未被信任，而这个服务器是项目自己定义的",
-        "needsApproval": "它由项目定义（{{source}}），还没有获得批准；在 TupAI 中打开这个文件夹并允许一次，或者在 TupAI.json 中定义它",
+        "needsApproval": "它由项目定义（{{source}}），还没有获得批准；在 AiBuddy 中打开这个文件夹并允许一次，或者在 AiBuddy.json 中定义它",
         "denied": "你没有允许这个项目的服务器启动",
         "unreachable": "无法启动或连接到它",
-        "closed": "TupAI 还在等回应时，连接就关闭了",
+        "closed": "AiBuddy 还在等回应时，连接就关闭了",
         "timeout": "它没有及时响应",
         "aborted": "启动被取消了",
         "rpc": "它返回了错误",
         "protocol": "它的回应不符合 MCP 协议",
         "startFailed": "启动失败了",
-        "crashedRestarting": "运行时崩溃了，TupAI 会重启它一次",
+        "crashedRestarting": "运行时崩溃了，AiBuddy 会重启它一次",
         "crashedAgain": "又崩溃了，不会再重启",
         "restartFailed": "崩溃后重启也失败了",
         "restartFailedCause": "崩溃后重启也失败了：{{cause}}"
@@ -1376,7 +1376,7 @@
       "contextHint": "模型下一次要读的内容占它上下文的 {{percent}}",
       "cache": "缓存命中",
       "cacheHint": "最近一轮缓存命中 {{turn}}，整个对话缓存命中 {{session}}",
-      "pending": "TupAI 下一次回复后显示"
+      "pending": "AiBuddy 下一次回复后显示"
     }
   },
   "menu": {
@@ -1469,11 +1469,11 @@
   },
   "nodeRuntime": {
     "title": "下载 Node.js？",
-    "message": "TupAI 用自带的 Node.js 运行智能体和工具，这份 Node.js 还没有下载。",
-    "detail": "将从 nodejs.org 下载 Node.js {{version}}（约 {{size}} MB），解压到：\n{{folder}}\n\n选「稍后」不会下载任何东西：TupAI 照常打开，需要 Node.js 的地方会提示，下次启动时再问。",
+    "message": "AiBuddy 用自带的 Node.js 运行智能体和工具，这份 Node.js 还没有下载。",
+    "detail": "将从 nodejs.org 下载 Node.js {{version}}（约 {{size}} MB），解压到：\n{{folder}}\n\n选「稍后」不会下载任何东西：AiBuddy 照常打开，需要 Node.js 的地方会提示，下次启动时再问。",
     "download": "下载",
     "later": "稍后",
-    "note": "Node.js 还没有下载，这个智能体暂时无法运行。下次启动 TupAI 时会再问。",
-    "toolNote": "Node.js 还没有下载，需要它的工具暂时无法运行。下次启动 TupAI 时会再问。"
+    "note": "Node.js 还没有下载，这个智能体暂时无法运行。下次启动 AiBuddy 时会再问。",
+    "toolNote": "Node.js 还没有下载，需要它的工具暂时无法运行。下次启动 AiBuddy 时会再问。"
   }
 }

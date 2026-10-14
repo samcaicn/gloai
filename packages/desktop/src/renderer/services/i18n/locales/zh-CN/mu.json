@@ -1,6 +1,6 @@
 {
-  "title": "TupAI 设置",
-  "description": "TupAI 支持的各项控制都在这里：判定器、判定点、功能、模型与上下文。与命令行里的 TupAI 共用同一份配置。",
+  "title": "AiBuddy 设置",
+  "description": "AiBuddy 支持的各项控制都在这里：判定器、判定点、功能、模型与上下文。与命令行里的 AiBuddy 共用同一份配置。",
   "reload": "重新载入",
   "search": "搜索判定点和功能",
   "noMatch": "没有匹配的条目。",
@@ -44,8 +44,8 @@
     "offHelp": "判定不起作用，这一步照常进行。"
   },
   "harness": {
-    "tooOld": "当前的 TupAI 版本较旧，还不能列出自己的判定点和功能。更新 TupAI 后这里才会列出；基础设置仍可正常使用。",
-    "unsupported": "TupAI 用了本应用不认识的格式描述自己（版本 {{version}}）。请更新应用后再编辑判定点和功能。"
+    "tooOld": "当前的 AiBuddy 版本较旧，还不能列出自己的判定点和功能。更新 AiBuddy 后这里才会列出；基础设置仍可正常使用。",
+    "unsupported": "AiBuddy 用了本应用不认识的格式描述自己（版本 {{version}}）。请更新应用后再编辑判定点和功能。"
   },
   "load": {
     "failed": "无法读取设置"
@@ -56,7 +56,7 @@
     "nothing": "没有未保存的修改",
     "unsavedDot": "有未保存的修改",
     "discard": "放弃修改",
-    "stale": "配置在载入之后被其他程序（命令行 TupAI 或运行中的会话）改过，因此这次没有保存。请重新载入查看最新状态；尚未保存的修改会丢失。",
+    "stale": "配置在载入之后被其他程序（命令行 AiBuddy 或运行中的会话）改过，因此这次没有保存。请重新载入查看最新状态；尚未保存的修改会丢失。",
     "failed": "保存失败：{{reason}}"
   },
   "units": {
@@ -94,14 +94,14 @@
     "none": "这里还没有判定点。"
   },
   "features": {
-    "lead": "TupAI 在后台替你做的事。关掉一项，TupAI 就不再做这件事。",
-    "moreLead": "TupAI 能做的其他事，按起作用的地方分组。每一项的选项点一下就能打开。",
+    "lead": "AiBuddy 在后台替你做的事。关掉一项，AiBuddy 就不再做这件事。",
+    "moreLead": "AiBuddy 能做的其他事，按起作用的地方分组。每一项的选项点一下就能打开。",
     "beta": "测试版",
     "reset": "恢复默认",
     "boardModelElsewhere": "写看板的模型在「默认模型」里选。",
     "options": "选项",
     "noOptions": "没有别的可设置：只有这个开关。",
-    "noSuchFeature": "这个版本的 TupAI 没有这项功能。",
+    "noSuchFeature": "这个版本的 AiBuddy 没有这项功能。",
     "none": "这里还没有功能。",
     "part": "选项第 {{part}} 页，共 {{parts}} 页",
     "previousPart": "上一页",
@@ -145,13 +145,13 @@
     "baseUrlHelp": "留空则使用 TypeSafe 官方地址",
     "customUrlHelp": "该服务的 System One 地址。它的密钥只会发到这里。",
     "baseUrlNeeded": "自定义服务需要填写地址。",
-    "customTier": "你自己加的判定器，要改它请编辑 TupAI 的设置文件。",
+    "customTier": "你自己加的判定器，要改它请编辑 AiBuddy 的设置文件。",
     "endpointDefault": "使用服务的默认地址",
     "types": {
       "localHelp": "在这台电脑上运行。",
       "clmHelp": "运行在你自己的 CLM 服务器上。"
     },
-    "intro": "TupAI 工作时要做很多小判断：这条消息该怎么处理、这一步会不会违反你定的规则……判定器负责回答。选一个就行。",
+    "intro": "AiBuddy 工作时要做很多小判断：这条消息该怎么处理、这一步会不会违反你定的规则……判定器负责回答。选一个就行。",
     "choose": "选择判定器",
     "advanced": "高级设置",
     "advancedHelp": "已选定的判定器排在第一位。需要多个判定器按顺序兜底（前一级拿不准就问下一级）时，再展开这里调整顺序与各级设置。",
@@ -177,7 +177,7 @@
     "localAddress": "服务地址：{{address}}",
     "laya": {
       "running": "正在本机运行",
-      "stopped": "已安装，没有运行。TupAI 用到它时会自己启动。",
+      "stopped": "已安装，没有运行。AiBuddy 用到它时会自己启动。",
       "missing": "还没有安装。",
       "platform": "这台电脑跑不了 Laya：它需要 Windows 或 Linux（x64 或 arm64），或者 Apple Silicon 的 Mac。",
       "needsUv": "安装需要先装好 uv（Python 的包管理工具），装好后回到这里。",
@@ -192,7 +192,7 @@
       "sourceCustom": "自定义镜像",
       "sourceCustomPlaceholder": "镜像的基础地址，需能按 repo/resolve/revision/path?download=true 提供文件",
       "confirmTitle": "下载并安装 Laya？",
-      "confirmText": "这会从 PyPI 和 Hugging Face 下载约 {{size}} MB（Python 依赖和模型权重）到 TupAI 的目录，需要几分钟。装好后 Laya 会自动启动。",
+      "confirmText": "这会从 PyPI 和 Hugging Face 下载约 {{size}} MB（Python 依赖和模型权重）到 AiBuddy 的目录，需要几分钟。装好后 Laya 会自动启动。",
       "confirmOk": "下载并安装",
       "working": {
         "setup": "正在安装 Laya…",
@@ -206,10 +206,10 @@
       },
       "onnx": {
         "missing": "这台电脑上还没有 Laya 的模型（约 {{size}} MB）。在上面选一个下载来源，点「下载模型」即可；或者自己从 Hugging Face 下好文件，放进模型文件夹。",
-        "stopped": "模型已就位，Laya 没有运行。选了 Laya 作为判定器时，TupAI 会在打开 App 时自己启动它。",
+        "stopped": "模型已就位，Laya 没有运行。选了 Laya 作为判定器时，AiBuddy 会在打开 App 时自己启动它。",
         "starting": "正在检查模型并启动 Laya… 第一次检查要读完整个模型，需要一会儿。",
         "missingFiles": "还缺：{{files}}",
-        "wrongFiles": "这些文件不是 TupAI 测试过的版本，请重新下载：{{files}}",
+        "wrongFiles": "这些文件不是 AiBuddy 测试过的版本，请重新下载：{{files}}",
         "folder": "模型文件夹：{{folder}}",
         "command": "装了 Hugging Face 命令行（hf）的话，一条命令就能下全：",
         "page": "去 Hugging Face 下载",
@@ -220,11 +220,11 @@
         "check": "检查并启动",
         "problem": {
           "missing": "缺少部分模型文件。",
-          "wrong": "部分模型文件不是 TupAI 测试过的版本，请重新下载。",
+          "wrong": "部分模型文件不是 AiBuddy 测试过的版本，请重新下载。",
           "runtime": "这台电脑运行不了这个模型。",
           "port": "Laya 的端口（{{port}}）已被别的程序占用。",
           "stopped": "Laya 还没准备好就停了。",
-  "foreign": "这里在运行一个不是 TupAI 启动的 Laya，请在启动它的地方停止它。",
+  "foreign": "这里在运行一个不是 AiBuddy 启动的 Laya，请在启动它的地方停止它。",
   "cancelled": "下载已取消。"
 }
       }
@@ -236,7 +236,7 @@
       "keyPlaceholder": "服务器要求时才填",
       "keyHelp": "只有用 CLM_API_KEY 启动的服务器才要密钥：填同一个值。保存后不再显示。",
       "check": "检查服务器",
-      "unmeasured": "CLM 做 TupAI 的判定做得怎么样，目前还没有测过。",
+      "unmeasured": "CLM 做 AiBuddy 的判定做得怎么样，目前还没有测过。",
       "status": {
         "checking": "正在询问服务器…",
         "ready": "正在应答 · {{models}} · {{ms}} 毫秒",
@@ -281,19 +281,19 @@
   },
   "permissionsCard": {
     "kind": {
-      "edit": "TupAI 想改文件，需要你授权",
-      "shell": "TupAI 想运行命令，需要你授权",
-      "run": "TupAI 想运行程序，需要你授权",
-      "outside": "TupAI 想改动项目外的文件，需要你授权",
-      "delegate": "TupAI 想派出子代理，需要你授权",
-      "other": "TupAI 想对外操作，需要你授权"
+      "edit": "AiBuddy 想改文件，需要你授权",
+      "shell": "AiBuddy 想运行命令，需要你授权",
+      "run": "AiBuddy 想运行程序，需要你授权",
+      "outside": "AiBuddy 想改动项目外的文件，需要你授权",
+      "delegate": "AiBuddy 想派出子代理，需要你授权",
+      "other": "AiBuddy 想对外操作，需要你授权"
     },
     "reason": {
       "ask": "最小权限模式：每一步都先问你。",
       "unsure": "Jev 拿不准这一步是不是你要的。",
       "beyond": "Jev 认为这一步超出了你的要求。",
       "unrelated": "Jev 认为这一步和当前任务无关。",
-      "protected": "这会动到 TupAI 自己的设置，只能由你决定。",
+      "protected": "这会动到 AiBuddy 自己的设置，只能由你决定。",
       "nojudge": "还没有可用的判定器，所以每一步都先问你。",
       "judgedown": "判定器这次没有回答，所以先问你。"
     },
@@ -351,7 +351,7 @@
     "foreignHelp": "这个条目改写了内置提供商，或用了本页面不支持编辑的 API 格式。这里只能移除它，不能编辑；要修改请直接改 models.json。",
     "modelCount": "{{count, number}} 个模型",
     "usable": "可用",
-    "builtinHelp": "TupAI 上次连接时报告它能用，通常是因为环境里有它的 API 密钥。这里不能移除它：从环境变量里删掉那个密钥，TupAI 下次连接后它就不会再出现。",
+    "builtinHelp": "AiBuddy 上次连接时报告它能用，通常是因为环境里有它的 API 密钥。这里不能移除它：从环境变量里删掉那个密钥，AiBuddy 下次连接后它就不会再出现。",
     "noneYet": "暂无",
     "unreadable": "无法解析 models.json，提供商既不会显示也不会保存。请手动修复后重新载入。",
     "commented": "models.json 里有注释，从这里保存会把注释弄丢，所以提供商暂为只读。手动去掉注释后即可在此编辑。",
@@ -390,7 +390,7 @@
     "instant": "登录和退出立即生效，不用点保存。",
     "models": "可用的模型",
     "byKey": "可用（API 密钥）",
-    "byKeyHelp": "没有登录订阅，但 TupAI 上次连接时报告它能用，通常是因为环境里有它的 API 密钥。登录订阅后改用订阅。",
+    "byKeyHelp": "没有登录订阅，但 AiBuddy 上次连接时报告它能用，通常是因为环境里有它的 API 密钥。登录订阅后改用订阅。",
     "otherRunning": "{{name}} 正在登录，同一时间只能进行一个登录。",
     "showRunning": "去看看"
   },
@@ -476,10 +476,10 @@
     "model": "模型",
     "notSet": "未选择",
     "pickProvider": "先选提供商",
-    "unset": "还没选：第一次打开看板时 TupAI 会问你。",
+    "unset": "还没选：第一次打开看板时 AiBuddy 会问你。",
     "session": "跟着对话用的模型",
     "sessionHelp": "对话换了模型，看板也跟着换。",
-    "update": "这个版本的 TupAI 还不能在这里选写看板的模型，更新 TupAI 后就可以。"
+    "update": "这个版本的 AiBuddy 还不能在这里选写看板的模型，更新 AiBuddy 后就可以。"
   },
   "levels": {
     "off": "不思考",
@@ -505,7 +505,7 @@
     "start": "开始使用",
     "model": {
       "title": "连接一个模型",
-      "subtitle": "TupAI 用它写代码、回答问题。三步就好，之后随时可以在设置里修改。",
+      "subtitle": "AiBuddy 用它写代码、回答问题。三步就好，之后随时可以在设置里修改。",
       "model": "模型",
       "baseUrl": "接口地址",
       "key": "API 密钥",
@@ -542,7 +542,7 @@
     },
     "judge": {
       "title": "选一个判定器",
-      "subtitle": "TupAI 工作时的各种小判断由判定器来回答。没有判定器也能运行，只是少了这些把关。"
+      "subtitle": "AiBuddy 工作时的各种小判断由判定器来回答。没有判定器也能运行，只是少了这些把关。"
     },
     "done": {
       "title": "准备好了",
@@ -555,8 +555,8 @@
       "modelValue": "{{provider}} / {{model}}"
     },
     "intro": {
-      "title": "欢迎使用 TupAI",
-      "lead": "TupAI 是一个会动手的编程助手：它读你的项目、改代码、跑命令和测试，直到把事情做完。",
+      "title": "欢迎使用 AiBuddy",
+      "lead": "AiBuddy 是一个会动手的编程助手：它读你的项目、改代码、跑命令和测试，直到把事情做完。",
       "points": {
         "judge": {
           "title": "每一步都有把关",
@@ -614,7 +614,7 @@
       "waitingDevice": "已在浏览器打开 {{name}} 的验证页。核对页面上的验证码与这里的一致（没有自动填好就手动输入），同意后这里会自动继续。",
       "risk": {
         "title": "登录前请先了解风险",
-        "text": "这个登录借用的是 Google 给 {{tool}} 自己用的登录方式，不是 Google 为 TupAI 提供的。Google 可能认为这违反它的条款，限制甚至停用这个账号。",
+        "text": "这个登录借用的是 Google 给 {{tool}} 自己用的登录方式，不是 Google 为 AiBuddy 提供的。Google 可能认为这违反它的条款，限制甚至停用这个账号。",
         "instead": "建议用一个出问题也不要紧的账号。想走官方的路，可以改用 Gemini API 密钥，或用 gcloud 登录 Vertex AI。",
         "continue": "我了解风险，继续登录",
         "cancel": "不登录了"
@@ -623,24 +623,24 @@
     }
   },
   "turnErrors": {
-    "processExited": "TupAI 在这一轮中途退出了，重新发送消息即可重启。",
+    "processExited": "AiBuddy 在这一轮中途退出了，重新发送消息即可重启。",
     "modelFailed": "模型请求失败。",
-    "turnRunning": "TupAI 还在处理上一条消息，请等待或先停止。",
+    "turnRunning": "AiBuddy 还在处理上一条消息，请等待或先停止。",
     "busyConfig": "请等这一轮结束后再切换模型或思考强度。",
-    "unsupportedValue": "TupAI 不支持这个模型、思考强度或权限模式。",
-    "permissionsNotSwitched": "TupAI 没有切换权限模式。请重试，或在对话里输入 /permissions。",
+    "unsupportedValue": "AiBuddy 不支持这个模型、思考强度或权限模式。",
+    "permissionsNotSwitched": "AiBuddy 没有切换权限模式。请重试，或在对话里输入 /permissions。",
     "imageUnsupported": "只能发送 12 MB 以内的 PNG、JPEG、WebP 或 GIF 图片。",
-    "contentUnsupported": "TupAI 只接受文字、图片和文本文件。",
+    "contentUnsupported": "AiBuddy 只接受文字、图片和文本文件。",
     "wrongProject": "这个对话属于另一个项目文件夹。",
-    "notPersisted": "TupAI 没能保存这个对话。",
-    "startFailed": "TupAI 无法启动。",
-    "timeout": "TupAI 没有及时响应。",
-    "processClosed": "TupAI 已退出，重新发送消息即可重启。",
-    "noModel": "TupAI 还没有可用的模型来回答。"
+    "notPersisted": "AiBuddy 没能保存这个对话。",
+    "startFailed": "AiBuddy 无法启动。",
+    "timeout": "AiBuddy 没有及时响应。",
+    "processClosed": "AiBuddy 已退出，重新发送消息即可重启。",
+    "noModel": "AiBuddy 还没有可用的模型来回答。"
   },
   "noModel": {
     "title": "还没有可用的模型",
-    "body": "TupAI 需要一个能用的模型才能回答。请到「{{place}}」登录账号或填写密钥，然后重新发送消息。",
+    "body": "AiBuddy 需要一个能用的模型才能回答。请到「{{place}}」登录账号或填写密钥，然后重新发送消息。",
     "open": "打开{{page}}",
     "chip": "选择模型"
   },
@@ -651,14 +651,14 @@
       "xcodeLicense": "这个对话的检查点已关闭：这台 Mac 要先同意 Xcode 许可协议才能运行 Git。在终端运行 sudo xcodebuild -license 同意后，新开一个对话就有了。",
       "developerToolsMissing": "这个对话的检查点已关闭：这台 Mac 没有装 Git 需要的命令行开发者工具。在终端运行 xcode-select --install 装好后，新开一个对话就有了。",
       "homeFolder": "这个对话的检查点已关闭：它的文件夹是你的主文件夹，或者包含主文件夹。在项目文件夹里开对话就有了。",
-      "muFolder": "这个对话的检查点已关闭：它的文件夹在 TupAI 自己的文件夹里。在项目文件夹里开对话就有了。",
+      "muFolder": "这个对话的检查点已关闭：它的文件夹在 AiBuddy 自己的文件夹里。在项目文件夹里开对话就有了。",
       "tooManyFiles": "这个对话的检查点已关闭：它的文件夹里有超过 {{limit}} 个文件。在项目文件夹里开对话就有了。",
       "tooManyBytes": "这个对话的检查点已关闭：它的文件夹里的文件超过 {{limitMb}} MB。在项目文件夹里开对话就有了。",
       "tooSlow": "这个对话的检查点已关闭：列出它文件夹里的文件用了超过 {{seconds}} 秒。在项目文件夹里开对话就有了。"
     },
     "stopped": "你停止了这次回复。",
-    "answerLost": "TupAI 没有收到你的回答，已按不同意处理。",
-    "bashMissing": "TupAI 运行命令需要 Git for Windows，安装好后重新发送消息即可。下载地址："
+    "answerLost": "AiBuddy 没有收到你的回答，已按不同意处理。",
+    "bashMissing": "AiBuddy 运行命令需要 Git for Windows，安装好后重新发送消息即可。下载地址："
   },
   "errors": {
     "credential": "密钥中有不允许的字符（如空格、引号或换行），请重新粘贴。",
@@ -676,23 +676,23 @@
     },
     "invalidJson": "{{file}} 不是有效的 JSON，请手动修正后重新载入。",
     "unreadable": "无法读取 {{file}}。",
-    "runtimeOffline": "TupAI 内核目前离线，请检查本机启动器和登录状态。",
-    "otherRegistration": "应用中已经注册了另一个 TupAI 命令。",
+    "runtimeOffline": "AiBuddy 内核目前离线，请检查本机启动器和登录状态。",
+    "otherRegistration": "应用中已经注册了另一个 AiBuddy 命令。",
     "backend": "本地服务返回异常（HTTP {{status}}）。",
     "invalid": "有一项填写的值无效。",
-    "unknown": "TupAI 出了点问题。",
+    "unknown": "AiBuddy 出了点问题。",
     "unwritable": "无法写入 {{file}}。",
     "contextLimit": "上下文上限必须是 0，或 {{min}} 到 {{max}} 之间的整数。",
-    "importMissing": "当前的 TupAI 版本还不能导入对话，请先更新 TupAI。",
-    "importFailed": "TupAI 没能导入这些对话。"
+    "importMissing": "当前的 AiBuddy 版本还不能导入对话，请先更新 AiBuddy。",
+    "importFailed": "AiBuddy 没能导入这些对话。"
   },
   "importChats": {
     "title": "导入对话",
-    "description": "把这台电脑上在 Claude Code 或 Codex 里聊过的对话带进 TupAI，在这里接着聊。",
+    "description": "把这台电脑上在 Claude Code 或 Codex 里聊过的对话带进 AiBuddy，在这里接着聊。",
     "open": "选择对话",
     "dialog": {
       "title": "导入对话",
-      "hint": "选中的每段对话都会变成 TupAI 里的一个对话，放在原来的项目文件夹下。TupAI 会读到之前说过的全部内容，思考过程和图片不会带过来。",
+      "hint": "选中的每段对话都会变成 AiBuddy 里的一个对话，放在原来的项目文件夹下。AiBuddy 会读到之前说过的全部内容，思考过程和图片不会带过来。",
       "search": "按内容或文件夹搜索",
       "loading": "正在找对话…",
       "empty": "这台电脑上没有找到 Claude Code 或 Codex 的对话。",
@@ -723,7 +723,7 @@
     "notice": {
       "title": "从 {{tool}} 导入的对话",
       "counts": "你的消息 {{user}} 条 · 回答 {{assistant}} 条 · 工具调用 {{toolCalls}} 次",
-      "goOn": "在下面接着说就行，之前的内容 TupAI 都读过了。思考过程和图片没有带过来。",
+      "goOn": "在下面接着说就行，之前的内容 AiBuddy 都读过了。思考过程和图片没有带过来。",
       "read": "查看之前的对话"
     },
     "history": {
@@ -744,7 +744,7 @@
     "lessons": "这个项目的经验：/lessons 列出 id · 类型 · 召回/照做次数 · 经验，/lessons all 连到处适用的和已退役的一起列",
     "forget": "让一条经验退役，以后不再召回：/forget <id 前几位>（id 见 /lessons）",
     "capabilities": "装了哪些能力、这次打开了哪些：/capabilities 查看，/capabilities open <ID> 打开",
-    "permissions": "TupAI 不问你就能做多少事：/permissions full（完全访问）| jev（Jev 审批）| ask（最小权限），不带参数就弹出选择；/permissions reset 忘掉这次对话里允许过的操作",
+    "permissions": "AiBuddy 不问你就能做多少事：/permissions full（完全访问）| jev（Jev 审批）| ask（最小权限），不带参数就弹出选择；/permissions reset 忘掉这次对话里允许过的操作",
     "lsp": "语言服务器：装了哪些、哪些在运行、最近一次出错",
     "goal": "目标模式：让代理一直干到某个条件成立。/goal <条件> 设定，/goal 查看（没有时会问你），/goal clear 结束",
     "board": "人话看板：/board 查看，/board on、/board off 为这个项目打开或关闭，/board model 换个模型来讲",
@@ -754,14 +754,14 @@
     "agents": "列出 delegate 工具能用的子代理角色，以及在哪里加你自己的",
     "hive": "让几个调查员同时查一个问题：/hive <问题>；不带问题时同 /swarm，看正在干活的子代理",
     "browse": "让内置浏览器打开网址，照你说的去做：/browse <网址> [要做的事]",
-    "inherit": "TupAI 从 Claude Code、Cursor 和 Codex 沿用了什么，各来自哪个文件",
+    "inherit": "AiBuddy 从 Claude Code、Cursor 和 Codex 沿用了什么，各来自哪个文件",
     "mcp": "MCP 服务器：/mcp 查看，/mcp open <ID> 打开，/mcp restart <ID> 重启",
     "jobs": "后台命令：/jobs 查看，/jobs stop <编号|all> 停掉",
     "commit": "把还没提交的改动拆成几个提交：先给你看计划，你同意才提交，从不推送",
     "review": "让评审子代理审查还没提交的改动（或你指定的内容），评审发现按轻重排成 P0 到 P3",
-    "mu": "TupAI 的状态。另外：/TupAI judge <判定器> | /TupAI route <判定点> <判定器|default> | /TupAI mode <判定点|default> <off|shadow|active>",
+    "mu": "AiBuddy 的状态。另外：/AiBuddy judge <判定器> | /AiBuddy route <判定点> <判定器|default> | /AiBuddy mode <判定点|default> <off|shadow|active>",
     "status": "模型、判定器、各判定点的模式、省下的上下文和最近的判定",
-    "help": "TupAI 能做什么，以及常用命令一览",
+    "help": "AiBuddy 能做什么，以及常用命令一览",
     "ledger": "判定器最近的判定和用时：/ledger [条数]",
     "doctor": "检查判定器、模型、浏览器和子代理有没有接好",
     "import-chat": "导入这个项目在 Claude Code 或 Codex 里的对话，接着在这里聊：/import-chat [文件]",

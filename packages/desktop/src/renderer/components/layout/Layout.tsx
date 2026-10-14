@@ -460,11 +460,11 @@ const Layout: React.FC<{
                         }
                       }}
                     >
-                      TupAI
+                      AiBuddy
                     </div>
                   </Tooltip>
                 ) : (
-                  <div className='text-16px text-t-primary collapsed-hidden font-semibold'>TupAI</div>
+                  <div className='text-16px text-t-primary collapsed-hidden font-semibold'>AiBuddy</div>
                 )}
                 {isMobile && !collapsed && (
                   <button

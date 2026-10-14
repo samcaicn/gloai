@@ -12,7 +12,7 @@
     "clearWorkspace": "Quitar proyecto",
     "openFolder": "Abrir carpeta",
     "none": "Ninguno",
-    "quickActionsTitle": "¿Qué puede hacer TupAI?"
+    "quickActionsTitle": "¿Qué puede hacer AiBuddy?"
   },
   "history": {
     "recents": "Recientes",
@@ -321,7 +321,7 @@
       },
       "MCP_HTTP_RESPONSE_READ_FAILED": {
         "title": "No se pudo leer la respuesta del proceso auxiliar del equipo",
-        "body": "TupAI no pudo leer la respuesta del proceso auxiliar local del equipo. Reinténtalo una vez y, si sigue ocurriendo, reinicia la aplicación."
+        "body": "AiBuddy no pudo leer la respuesta del proceso auxiliar local del equipo. Reinténtalo una vez y, si sigue ocurriendo, reinicia la aplicación."
       },
       "MCP_TOOL_REMOTE_ERROR": {
         "title": "El proceso auxiliar local del equipo rechazó la solicitud",
@@ -329,11 +329,11 @@
       },
       "MCP_TOOL_RESPONSE_UNEXPECTED": {
         "title": "El proceso auxiliar del equipo devolvió una respuesta inesperada",
-        "body": "TupAI recibió una respuesta inesperada del proceso auxiliar local del equipo. Reinténtalo una vez e infórmalo si el problema persiste."
+        "body": "AiBuddy recibió una respuesta inesperada del proceso auxiliar local del equipo. Reinténtalo una vez e infórmalo si el problema persiste."
       },
       "MCP_TCP_READ_FAILED": {
         "title": "No se pudo leer del proceso auxiliar local del equipo",
-        "body": "TupAI no pudo leer la respuesta TCP del proceso auxiliar local del equipo. Reinténtalo una vez y reinicia la aplicación si sigue fallando."
+        "body": "AiBuddy no pudo leer la respuesta TCP del proceso auxiliar local del equipo. Reinténtalo una vez y reinicia la aplicación si sigue fallando."
       },
       "TEAM_SERVICE_UNAVAILABLE": {
         "title": "El servicio de equipo aún no está listo",
@@ -628,13 +628,13 @@
         "body": "{{count}} paso(s) han fallado y NO se han aplicado. agy termina estos turnos como correctos igualmente, así que comprueba el resultado real en lugar de la respuesta."
       },
       "CLI_VERSION_OLDER": {
-        "body": "El {{cli}} instalado es anterior a la versión verificada por TupAI; puede que falten funciones. Se recomienda actualizar {{cli}}. (instalado: {{reported}} / verificado por mu: {{verified}})"
+        "body": "El {{cli}} instalado es anterior a la versión verificada por AiBuddy; puede que falten funciones. Se recomienda actualizar {{cli}}. (instalado: {{reported}} / verificado por mu: {{verified}})"
       },
       "CLI_VERSION_NEWER": {
-        "body": "El {{cli}} instalado es posterior a la versión verificada por TupAI. Debería seguir funcionando; informa de cualquier comportamiento extraño. (instalado: {{reported}} / verificado por mu: {{verified}})"
+        "body": "El {{cli}} instalado es posterior a la versión verificada por AiBuddy. Debería seguir funcionando; informa de cualquier comportamiento extraño. (instalado: {{reported}} / verificado por mu: {{verified}})"
       },
       "CODEX_RETRYING": {
-        "body": "{{detail}} (intento {{attempts}}, {{elapsed}} transcurridos: el proveedor del agente corta la conexión una y otra vez; TupAI está esperando.)"
+        "body": "{{detail}} (intento {{attempts}}, {{elapsed}} transcurridos: el proveedor del agente corta la conexión una y otra vez; AiBuddy está esperando.)"
       }
     }
   },
@@ -714,7 +714,7 @@
         "conflicted": "!",
         "unknown": "?"
       },
-      "conflictedHint": "Resuelve este conflicto fuera de TupAI primero",
+      "conflictedHint": "Resuelve este conflicto fuera de AiBuddy primero",
       "opaqueHint": "Este estado proviene de un backend más nuevo — se muestra solo lectura",
       "degraded": "La actualización va en un modo más lento porque no se puede escribir el índice de git",
       "truncated": "Demasiados cambios para listar — mostrando solo la primera parte",
@@ -733,7 +733,7 @@
         "discard": "Descartar cambios",
         "stageAll": "Preparar todo",
         "unstageAll": "Quitar todo de preparados",
-        "blockedHint": "Resuelve el conflicto fuera de TupAI antes de preparar o descartar",
+        "blockedHint": "Resuelve el conflicto fuera de AiBuddy antes de preparar o descartar",
         "confirmDiscardTitle": "¿Descartar los cambios?",
         "confirmDiscardTracked": "Las ediciones de {{count}} archivos se perderán. Esto no se puede deshacer.",
         "confirmDiscardUntracked": "{{count}} archivos nuevos se moverán a la papelera.",

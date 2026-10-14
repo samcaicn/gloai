@@ -1,14 +1,14 @@
 # mu's own identity. It is a fork of AionUi (Apache-2.0) but a different app: its own bundle id, name, data folder
 # (userData follows productName) and link scheme, so it installs beside AionUi instead of over it.
-appId: io.github.tuptup.tupai
-productName: TupAI
-executableName: mu
-copyright: Copyright © 2026 TupAI
+appId: io.github.tuptup.aibuddy
+productName: AiBuddy
+executableName: AiBuddy
+copyright: Copyright © 2026 AiBuddy
 
 protocols:
-  - name: TupAI Protocol
+  - name: AiBuddy Protocol
     schemes:
-      - tupai
+      - aibuddy
 
 asar:
   smartUnpack: true
@@ -207,20 +207,20 @@ linux:
   icon: resources/app.png
   artifactName: ${productName}-${version}-${os}-${arch}.${ext}
   # `mu` on the PATH is the command line (npm i -g mu-agent); the desktop app gets its own name there.
-  executableName: mu-desktop
+  executableName: aibuddy-desktop
   files:
     - '!**/node_modules/onnxruntime-node/bin/napi-v6/{darwin,win32}/**'
   category: Utility
-  maintainer: TupAI
-  vendor: TupAI
+  maintainer: AiBuddy
+  vendor: AiBuddy
   synopsis: ${description}
   description: ${description}
   desktop:
     entry:
-      Name: TupAI
+      Name: AiBuddy
       Comment: ${description}
       Categories: Office;Utility;
-      MimeType: x-scheme-handler/tupai;
+      MimeType: x-scheme-handler/aibuddy;
 
 npmRebuild: false
 buildDependenciesFromSource: false

@@ -85,7 +85,7 @@
       "outsideSandbox": "该文件不在当前项目沙箱范围内。"
     },
     "serverInstall": {
-      "hint": "TupAI 运行在服务器上，预览组件需要安装在该服务器上。请在服务器执行以下命令后重试：",
+      "hint": "AiBuddy 运行在服务器上，预览组件需要安装在该服务器上。请在服务器执行以下命令后重试：",
       "icuNote": "若安装后仍无法启动，请在服务器安装 ICU 库（Debian/Ubuntu：apt-get install -y libicu-dev）。"
     }
   },
@@ -189,28 +189,28 @@
     "elapsed": "已用时间",
     "steps": "步骤 {{total}}",
     "noSteps": "还没有执行任何操作",
-    "reason": "TupAI 的说明",
+    "reason": "AiBuddy 的说明",
     "goal": "目标",
     "pause": "暂停",
     "resume": "继续",
     "stop": "停止",
     "takeover": "接管",
-    "takeoverTip": "暂停并把键盘交给你。操作完点「继续」，TupAI 会重新观察页面再判断。",
+    "takeoverTip": "暂停并把键盘交给你。操作完点「继续」，AiBuddy 会重新观察页面再判断。",
     "pausedShort": "已暂停",
     "stopping": "正在停止…",
     "paused": {
-      "user": "已暂停。点「继续」后，TupAI 会重新观察页面再判断。",
-      "takeover": "你已接管，可以直接操作页面。完成后点「继续」，TupAI 会重新观察页面。",
-      "interaction": "你刚才操作了页面，TupAI 已自动暂停，避免和你同时点。点「继续」后它会重新观察页面。"
+      "user": "已暂停。点「继续」后，AiBuddy 会重新观察页面再判断。",
+      "takeover": "你已接管，可以直接操作页面。完成后点「继续」，AiBuddy 会重新观察页面。",
+      "interaction": "你刚才操作了页面，AiBuddy 已自动暂停，避免和你同时点。点「继续」后它会重新观察页面。"
     },
     "statusHint": {
-      "blocked": "TupAI 找不到能继续推进目标的操作，停了下来。",
-      "needs_confirmation": "这个操作看起来无法撤销，又没有得到允许，TupAI 没有执行它。",
+      "blocked": "AiBuddy 找不到能继续推进目标的操作，停了下来。",
+      "needs_confirmation": "这个操作看起来无法撤销，又没有得到允许，AiBuddy 没有执行它。",
       "budget": "已经用完本次运行的步数上限。",
       "stopped": "你停止了这次运行。",
       "failed": "浏览过程中出了错，本次运行没有完成。"
     },
-    "detachedHint": "TupAI 与这个页面的连接已断开，本次运行无法继续。",
+    "detachedHint": "AiBuddy 与这个页面的连接已断开，本次运行无法继续。",
     "verb": {
       "click": "点击",
       "fill": "输入",
@@ -238,7 +238,7 @@
       "popup": "已拦截弹出窗口：{{detail}}"
     },
     "confirm": {
-      "title": "TupAI 想执行一个可能无法撤销的操作",
+      "title": "AiBuddy 想执行一个可能无法撤销的操作",
       "action": "操作",
       "page": "页面",
       "allow": "允许",
@@ -249,7 +249,7 @@
     "detachCause": "原因",
     "detachReason": {
       "tab_closed": "标签页被关闭了。",
-      "connection": "TupAI 的浏览会话在任务完成前就结束了。",
+      "connection": "AiBuddy 的浏览会话在任务完成前就结束了。",
       "devtools": "这个页面打开了开发者工具。",
       "crashed": "页面崩溃了。"
     },

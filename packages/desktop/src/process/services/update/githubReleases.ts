@@ -15,7 +15,7 @@ import semver from 'semver';
  */
 export const MU_REPO = 'samcaicn/mu';
 export const MU_RELEASES_URL = `https://github.com/${MU_REPO}/releases`;
-export const USER_AGENT = 'TupAI';
+export const USER_AGENT = 'AiBuddy';
 
 const RELEASES_API_URL = `https://api.github.com/repos/${MU_REPO}/releases`;
 const REQUEST_TIMEOUT_MS = 30_000;

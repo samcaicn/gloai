@@ -14,7 +14,7 @@
     "error": "Error",
     "unread": "New execution",
     "unconfigured": "No scheduled task",
-    "defaultPrompt": "Every day at 10am, search for the latest AI news, summarize and output an insight report. (Please use the /cron skill to create a scheduled task in TupAI.)"
+    "defaultPrompt": "Every day at 10am, search for the latest AI news, summarize and output an insight report. (Please use the /cron skill to create a scheduled task in AiBuddy.)"
   },
   "actions": {
     "goTo": "View Chat",
@@ -55,10 +55,10 @@
     "newTask": "New task",
     "createViaChat": "Create via chat",
     "createManually": "Create manually",
-    "description": "Run tasks on a schedule. You can also ask TupAI in any conversation to create one for you.",
+    "description": "Run tasks on a schedule. You can also ask AiBuddy in any conversation to create one for you.",
     "awakeBanner": "Scheduled tasks only run while your computer is awake.",
     "keepAwake": "Keep awake",
-    "keepAwakeTooltip": "When enabled, TupAI will prevent your computer from going to sleep",
+    "keepAwakeTooltip": "When enabled, AiBuddy will prevent your computer from going to sleep",
     "searchPlaceholder": "Search tasks...",
     "noSearchResults": "No matching scheduled tasks.",
     "emptyHint": "Use “{{button}}” above to make one.",

@@ -20,11 +20,11 @@
   "preparingInstall": "Preparando...",
   "readyTitle": "La nueva versión {{version}} está lista",
   "restartToUpdate": "Reiniciar y actualizar",
-  "lastInstallFailed": "La última actualización no se instaló: no se pudo cerrar TupAI.",
+  "lastInstallFailed": "La última actualización no se instaló: no se pudo cerrar AiBuddy.",
   "availableVersion": "La nueva versión {{version}} está disponible",
   "installerReason": {
-    "linux": "En Linux, TupAI no puede instalar las actualizaciones por sí mismo: descarga el instalador y ábrelo.",
-    "unpackaged": "Esta copia de TupAI no puede instalar las actualizaciones por sí misma: descarga el instalador y ábrelo.",
+    "linux": "En Linux, AiBuddy no puede instalar las actualizaciones por sí mismo: descarga el instalador y ábrelo.",
+    "unpackaged": "Esta copia de AiBuddy no puede instalar las actualizaciones por sí misma: descarga el instalador y ábrelo.",
     "autoUpdateFailed": "Puedes descargar el instalador y actualizar con él."
   },
   "downloadInstaller": "Descargar instalador",

@@ -20,11 +20,11 @@
   },
   "readyTitle": "新しいバージョン {{version}} の準備ができました",
   "restartToUpdate": "再起動して更新",
-  "lastInstallFailed": "前回の更新はインストールされませんでした。TupAI を終了できなかったためです。",
+  "lastInstallFailed": "前回の更新はインストールされませんでした。AiBuddy を終了できなかったためです。",
   "availableVersion": "新しいバージョン {{version}} をダウンロードできます",
   "installerReason": {
-    "linux": "Linux では TupAI は自分で更新をインストールできません。インストーラーをダウンロードして開いてください。",
-    "unpackaged": "この TupAI は自分で更新をインストールできません。インストーラーをダウンロードして開いてください。",
+    "linux": "Linux では AiBuddy は自分で更新をインストールできません。インストーラーをダウンロードして開いてください。",
+    "unpackaged": "この AiBuddy は自分で更新をインストールできません。インストーラーをダウンロードして開いてください。",
     "autoUpdateFailed": "インストーラーをダウンロードして更新できます。"
   },
   "downloadInstaller": "インストーラーをダウンロード",

@@ -85,7 +85,7 @@
       "outsideSandbox": "Diese Datei befindet sich außerhalb der aktuellen Projekt-Sandbox."
     },
     "serverInstall": {
-      "hint": "TupAI läuft auf einem Server. Installiere die Vorschau-Komponente auf diesem Server und versuche es erneut:",
+      "hint": "AiBuddy läuft auf einem Server. Installiere die Vorschau-Komponente auf diesem Server und versuche es erneut:",
       "icuNote": "Falls es immer noch nicht startet, installiere die ICU-Bibliothek auf dem Server (Debian/Ubuntu: apt-get install -y libicu-dev)."
     }
   },
@@ -189,28 +189,28 @@
     "elapsed": "Verstrichene Zeit",
     "steps": "Schritte {{total}}",
     "noSteps": "Noch nichts ausgeführt",
-    "reason": "In den Worten von TupAI",
+    "reason": "In den Worten von AiBuddy",
     "goal": "Ziel",
     "pause": "Pausieren",
     "resume": "Fortsetzen",
     "stop": "Stoppen",
     "takeover": "Übernehmen",
-    "takeoverTip": "Hält den Lauf an und gibt dir die Tastatur. Wenn du fertig bist, drücke „Fortsetzen“: TupAI sieht sich die Seite erneut an, bevor es entscheidet.",
+    "takeoverTip": "Hält den Lauf an und gibt dir die Tastatur. Wenn du fertig bist, drücke „Fortsetzen“: AiBuddy sieht sich die Seite erneut an, bevor es entscheidet.",
     "pausedShort": "Pausiert",
     "stopping": "Wird gestoppt…",
     "paused": {
-      "user": "Pausiert. Beim Fortsetzen sieht sich TupAI die Seite erneut an, bevor es entscheidet.",
-      "takeover": "Du hast übernommen: Bediene die Seite selbst. Wenn du fertig bist, drücke „Fortsetzen“, dann sieht sich TupAI die Seite erneut an.",
-      "interaction": "Du hast die Seite bedient, deshalb hat TupAI von selbst pausiert, statt gleichzeitig zu klicken. Beim Fortsetzen sieht es sich die Seite erneut an."
+      "user": "Pausiert. Beim Fortsetzen sieht sich AiBuddy die Seite erneut an, bevor es entscheidet.",
+      "takeover": "Du hast übernommen: Bediene die Seite selbst. Wenn du fertig bist, drücke „Fortsetzen“, dann sieht sich AiBuddy die Seite erneut an.",
+      "interaction": "Du hast die Seite bedient, deshalb hat AiBuddy von selbst pausiert, statt gleichzeitig zu klicken. Beim Fortsetzen sieht es sich die Seite erneut an."
     },
     "statusHint": {
-      "blocked": "TupAI fand auf der Seite nichts, was dem Ziel näherkommt, und hat angehalten.",
-      "needs_confirmation": "Die Aktion sah unumkehrbar aus und wurde nicht erlaubt, deshalb hat TupAI sie nicht ausgeführt.",
+      "blocked": "AiBuddy fand auf der Seite nichts, was dem Ziel näherkommt, und hat angehalten.",
+      "needs_confirmation": "Die Aktion sah unumkehrbar aus und wurde nicht erlaubt, deshalb hat AiBuddy sie nicht ausgeführt.",
       "budget": "Der Lauf hat sein Schrittlimit aufgebraucht.",
       "stopped": "Du hast diesen Lauf gestoppt.",
       "failed": "Beim Browsen ist etwas schiefgegangen; der Lauf wurde nicht abgeschlossen."
     },
-    "detachedHint": "TupAI hat die Verbindung zu dieser Seite verloren; dieser Lauf kann nicht weitergehen.",
+    "detachedHint": "AiBuddy hat die Verbindung zu dieser Seite verloren; dieser Lauf kann nicht weitergehen.",
     "verb": {
       "click": "Klicken",
       "fill": "Eingeben in",
@@ -238,7 +238,7 @@
       "popup": "Pop-up blockiert: {{detail}}"
     },
     "confirm": {
-      "title": "TupAI möchte etwas tun, das sich vielleicht nicht rückgängig machen lässt",
+      "title": "AiBuddy möchte etwas tun, das sich vielleicht nicht rückgängig machen lässt",
       "action": "Aktion",
       "page": "Seite",
       "allow": "Erlauben",
@@ -249,7 +249,7 @@
     "detachCause": "Ursache",
     "detachReason": {
       "tab_closed": "Der Tab wurde geschlossen.",
-      "connection": "Die Browsersitzung von TupAI endete, bevor der Lauf abgeschlossen war.",
+      "connection": "Die Browsersitzung von AiBuddy endete, bevor der Lauf abgeschlossen war.",
       "devtools": "Auf dieser Seite wurden die Entwicklertools geöffnet.",
       "crashed": "Die Seite ist abgestürzt."
     },

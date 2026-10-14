@@ -12,7 +12,7 @@
     "clearWorkspace": "Remover projeto",
     "openFolder": "Abrir Pasta",
     "none": "Nenhum",
-    "quickActionsTitle": "O que o TupAI pode fazer?"
+    "quickActionsTitle": "O que o AiBuddy pode fazer?"
   },
   "history": {
     "recents": "Recentes",
@@ -318,8 +318,8 @@
       },
       "WORKSPACE_PATH_CONTAINS_WHITESPACE_RUNTIME_UNSUPPORTED": {
         "title": "Este caminho de projeto não é mais compatível com execução",
-        "body": "Esta conversa ou tarefa existente usa um caminho de projeto cujos nomes de diretório contêm espaços ou outros caracteres de espaço em branco. O TupAI não oferece mais suporte ao envio de mensagens em caminhos desse tipo. Crie uma nova conversa ou tarefa com um caminho de projeto sem espaços em branco.",
-        "bodyWithPath": "O caminho de projeto existente \"{{workspacePath}}\" contém espaços ou outros caracteres de espaço em branco. O TupAI não oferece mais suporte ao envio de mensagens em conversas ou tarefas que usam esse caminho. Crie uma nova conversa ou tarefa com um caminho de projeto sem espaços em branco."
+        "body": "Esta conversa ou tarefa existente usa um caminho de projeto cujos nomes de diretório contêm espaços ou outros caracteres de espaço em branco. O AiBuddy não oferece mais suporte ao envio de mensagens em caminhos desse tipo. Crie uma nova conversa ou tarefa com um caminho de projeto sem espaços em branco.",
+        "bodyWithPath": "O caminho de projeto existente \"{{workspacePath}}\" contém espaços ou outros caracteres de espaço em branco. O AiBuddy não oferece mais suporte ao envio de mensagens em conversas ou tarefas que usam esse caminho. Crie uma nova conversa ou tarefa com um caminho de projeto sem espaços em branco."
       },
       "UNKNOWN_UPSTREAM_ERROR": {
         "title": "O agente ou provedor upstream falhou",
@@ -327,7 +327,7 @@
       },
       "MCP_HTTP_RESPONSE_READ_FAILED": {
         "title": "Falha ao ler a resposta do processo auxiliar da equipe",
-        "body": "O TupAI não conseguiu ler a resposta do processo auxiliar local da equipe. Tente novamente uma vez e, se continuar acontecendo, reinicie o aplicativo."
+        "body": "O AiBuddy não conseguiu ler a resposta do processo auxiliar local da equipe. Tente novamente uma vez e, se continuar acontecendo, reinicie o aplicativo."
       },
       "MCP_TOOL_REMOTE_ERROR": {
         "title": "O processo auxiliar local da equipe rejeitou a solicitação",
@@ -335,11 +335,11 @@
       },
       "MCP_TOOL_RESPONSE_UNEXPECTED": {
         "title": "O processo auxiliar da equipe retornou uma resposta inesperada",
-        "body": "O TupAI recebeu uma resposta inesperada do processo auxiliar local da equipe. Tente novamente uma vez e informe o problema se ele persistir."
+        "body": "O AiBuddy recebeu uma resposta inesperada do processo auxiliar local da equipe. Tente novamente uma vez e informe o problema se ele persistir."
       },
       "MCP_TCP_READ_FAILED": {
         "title": "Falha ao ler do processo auxiliar local da equipe",
-        "body": "O TupAI não conseguiu ler a resposta TCP do processo auxiliar local da equipe. Tente novamente uma vez e reinicie o aplicativo se a falha persistir."
+        "body": "O AiBuddy não conseguiu ler a resposta TCP do processo auxiliar local da equipe. Tente novamente uma vez e reinicie o aplicativo se a falha persistir."
       },
       "TEAM_SERVICE_UNAVAILABLE": {
         "title": "O serviço da equipe ainda não está pronto",
@@ -633,13 +633,13 @@
         "body": "{{count}} etapa(s) falharam e NÃO tiveram efeito. O agy encerra esses turnos como bem-sucedidos mesmo assim, então confira o resultado real em vez da resposta."
       },
       "CLI_VERSION_OLDER": {
-        "body": "O {{cli}} instalado é anterior à versão verificada pelo TupAI; alguns recursos podem estar ausentes. Considere atualizar o {{cli}}. (instalado: {{reported}} / verificado pelo mu: {{verified}})"
+        "body": "O {{cli}} instalado é anterior à versão verificada pelo AiBuddy; alguns recursos podem estar ausentes. Considere atualizar o {{cli}}. (instalado: {{reported}} / verificado pelo mu: {{verified}})"
       },
       "CLI_VERSION_NEWER": {
-        "body": "O {{cli}} instalado é posterior à versão verificada pelo TupAI. Deve continuar funcionando; relate qualquer comportamento estranho. (instalado: {{reported}} / verificado pelo mu: {{verified}})"
+        "body": "O {{cli}} instalado é posterior à versão verificada pelo AiBuddy. Deve continuar funcionando; relate qualquer comportamento estranho. (instalado: {{reported}} / verificado pelo mu: {{verified}})"
       },
       "CODEX_RETRYING": {
-        "body": "{{detail}} (tentativa {{attempts}}, {{elapsed}} decorridos — o provedor do agente derruba a conexão repetidamente; o TupAI está aguardando.)"
+        "body": "{{detail}} (tentativa {{attempts}}, {{elapsed}} decorridos — o provedor do agente derruba a conexão repetidamente; o AiBuddy está aguardando.)"
       }
     }
   },
@@ -719,7 +719,7 @@
         "conflicted": "!",
         "unknown": "?"
       },
-      "conflictedHint": "Resolva este conflito fora do TupAI primeiro",
+      "conflictedHint": "Resolva este conflito fora do AiBuddy primeiro",
       "opaqueHint": "Este estado vem de um backend mais novo — exibido somente leitura",
       "degraded": "A atualização está em modo mais lento porque o índice do git não pode ser gravado",
       "truncated": "Alterações demais para listar — mostrando apenas a primeira parte",
@@ -738,7 +738,7 @@
         "discard": "Descartar alterações",
         "stageAll": "Preparar tudo",
         "unstageAll": "Retirar tudo da preparação",
-        "blockedHint": "Resolva o conflito fora do TupAI antes de preparar ou descartar",
+        "blockedHint": "Resolva o conflito fora do AiBuddy antes de preparar ou descartar",
         "confirmDiscardTitle": "Descartar alterações?",
         "confirmDiscardTracked": "As edições em {{count}} arquivos serão perdidas. Isso não pode ser desfeito.",
         "confirmDiscardUntracked": "{{count}} novos arquivos serão movidos para a lixeira.",

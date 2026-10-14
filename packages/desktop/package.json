@@ -2,7 +2,7 @@
   "name": "@mu/desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "TupAI desktop",
+  "description": "AiBuddy desktop",
   "main": "../../out/main/index.js",
   "dependencies": {
     "@aionui/web-host": "workspace:*"

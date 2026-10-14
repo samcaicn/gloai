@@ -65,11 +65,11 @@
   "more": "その他",
   "refresh": "更新",
   "readOnly": "読み取り専用",
-  "tray.showWindow": "TupAI を表示",
+  "tray.showWindow": "AiBuddy を表示",
   "tray.newChat": "新しいチャット",
   "tray.closeToTray": "トレイに隠す",
   "tray.hideToMenuBar": "メニューバーに隠す",
-  "tray.about": "TupAI について",
+  "tray.about": "AiBuddy について",
   "tray.restart": "アプリを再起動",
   "tray.quit": "終了",
   "tray.pauseAll": "すべてのタスクを一時停止",
@@ -79,39 +79,39 @@
   "backendStartup": {
     "incompatibleRuntime": {
       "title": "このシステムは同梱バックエンドに対応していません",
-      "description": "TupAI は開きましたが、ローカルサービスはこの Linux バージョンでは実行できません。対応している Linux ディストリビューションにアップグレードしてから TupAI を再起動してください。",
+      "description": "AiBuddy は開きましたが、ローカルサービスはこの Linux バージョンでは実行できません。対応している Linux ディストリビューションにアップグレードしてから AiBuddy を再起動してください。",
       "requiredVersions": "必要なランタイムシンボル: {{versions}}"
     },
     "incompleteInstallation": {
-      "title": "TupAI のインストールが不完全です",
-      "description": "このインストールには必要なローカルリソースが不足しているため、TupAI のローカルサービスを起動できません。最新の TupAI をダウンロードして再インストールしてください。再インストール後も問題が再発する場合は、セキュリティソフトまたはウイルス対策ソフトが TupAI のファイルを隔離していないか確認してください。",
+      "title": "AiBuddy のインストールが不完全です",
+      "description": "このインストールには必要なローカルリソースが不足しているため、AiBuddy のローカルサービスを起動できません。最新の AiBuddy をダウンロードして再インストールしてください。再インストール後も問題が再発する場合は、セキュリティソフトまたはウイルス対策ソフトが AiBuddy のファイルを隔離していないか確認してください。",
       "downloadLatest": "最新版をダウンロード",
-      "runtimeComponentDescription": "このインストールには必要な組み込み実行コンポーネントが不足しているため、{{resource}} を起動できません。最新版の TupAI パッケージを再インストールしてください。再インストール後も続く場合は、セキュリティソフトまたはウイルス対策ソフトが TupAI コンポーネントを隔離していないか確認してください。"
+      "runtimeComponentDescription": "このインストールには必要な組み込み実行コンポーネントが不足しているため、{{resource}} を起動できません。最新版の AiBuddy パッケージを再インストールしてください。再インストール後も続く場合は、セキュリティソフトまたはウイルス対策ソフトが AiBuddy コンポーネントを隔離していないか確認してください。"
     },
     "packageArchitectureMismatch": {
-      "title": "TupAI パッケージのアーキテクチャが一致しません",
-      "description": "この TupAI パッケージは {{packageArch}} 用ですが、この Mac は {{deviceArch}} です。誤ったパッケージをダウンロードした可能性があります。{{expectedArch}} 用のパッケージをダウンロードしてインストールしてください。"
+      "title": "AiBuddy パッケージのアーキテクチャが一致しません",
+      "description": "この AiBuddy パッケージは {{packageArch}} 用ですが、この Mac は {{deviceArch}} です。誤ったパッケージをダウンロードした可能性があります。{{expectedArch}} 用のパッケージをダウンロードしてインストールしてください。"
     },
     "dataMigration": {
       "title": "ローカルデータの移行に失敗しました",
-      "description": "TupAI は開きましたが、ローカルサービスがローカルデータの初期化中に停止しました。TupAI を再インストールしても解決しない可能性があります。ローカルデータベースの移行がどこで止まったかは、アプリのログで確認できます。"
+      "description": "AiBuddy は開きましたが、ローカルサービスがローカルデータの初期化中に停止しました。AiBuddy を再インストールしても解決しない可能性があります。ローカルデータベースの移行がどこで止まったかは、アプリのログで確認できます。"
     },
     "databaseNewerThanApp": {
-      "title": "新しいバージョンの TupAI が必要です",
-      "description": "ローカルデータはより新しいバージョンの TupAI で作成されたため、このバージョンでは開けません。TupAI を最新バージョンに更新すれば続行できます。データは保持され、再インストールやリセットは不要です。",
-      "descriptionWithVersion": "ローカルデータは現在のバージョン v{{currentVersion}} より新しい TupAI で作成されたため、このバージョンでは開けません。TupAI を最新バージョンに更新すれば続行できます。データは保持され、再インストールやリセットは不要です。"
+      "title": "新しいバージョンの AiBuddy が必要です",
+      "description": "ローカルデータはより新しいバージョンの AiBuddy で作成されたため、このバージョンでは開けません。AiBuddy を最新バージョンに更新すれば続行できます。データは保持され、再インストールやリセットは不要です。",
+      "descriptionWithVersion": "ローカルデータは現在のバージョン v{{currentVersion}} より新しい AiBuddy で作成されたため、このバージョンでは開けません。AiBuddy を最新バージョンに更新すれば続行できます。データは保持され、再インストールやリセットは不要です。"
     },
     "localDataRepair": {
       "title": "ローカルデータの修復に失敗しました",
-      "description": "TupAI は開きましたが、ローカルサービスは assistant またはエージェントのレコードなどのローカル起動データを準備中に停止しました。TupAI を再インストールしても解決しない可能性があります。どのローカルデータを準備できなかったかは、アプリのログで確認できます。"
+      "description": "AiBuddy は開きましたが、ローカルサービスは assistant またはエージェントのレコードなどのローカル起動データを準備中に停止しました。AiBuddy を再インストールしても解決しない可能性があります。どのローカルデータを準備できなかったかは、アプリのログで確認できます。"
     },
     "startupDirectory": {
       "title": "起動ディレクトリを利用できません",
-      "description": "TupAI は開きましたが、設定された作業ディレクトリまたはログディレクトリが存在しない、利用できない、または権限でブロックされているため、ローカルサービスを起動できませんでした。設定したディレクトリが存在し、書き込み可能であることを確認してから、TupAI を再起動してください。"
+      "description": "AiBuddy は開きましたが、設定された作業ディレクトリまたはログディレクトリが存在しない、利用できない、または権限でブロックされているため、ローカルサービスを起動できませんでした。設定したディレクトリが存在し、書き込み可能であることを確認してから、AiBuddy を再起動してください。"
     },
     "recoverableDatabaseCorruption": {
       "title": "ローカルデータが破損しています",
-      "description": "ローカルデータベースの破損を検出したため、TupAI は起動を続行できません。確認後、古いデータベースをバックアップし、新しいローカルデータベースを作成して起動を続行します。過去の会話は表示されなくなり、古いデータベースはバックアップファイルとして保持されます。",
+      "description": "ローカルデータベースの破損を検出したため、AiBuddy は起動を続行できません。確認後、古いデータベースをバックアップし、新しいローカルデータベースを作成して起動を続行します。過去の会話は表示されなくなり、古いデータベースはバックアップファイルとして保持されます。",
       "confirmRebuild": "古いDBをバックアップして新しいDBを再作成",
       "rebuildFailed": "古いDBのバックアップと新しいDBの再作成に失敗しました",
       "confirmDialog": {
@@ -122,8 +122,8 @@
       }
     },
     "transientConcurrentStartup": {
-      "title": "TupAI を起動しています",
-      "description": "このウィンドウを開いたとき、別の TupAI の起動処理がまだローカルデータを使用していました。これは一時的なもので、データは安全です。再インストールの必要はありません。少し待ってから再試行するか、TupAI を再起動してください。"
+      "title": "AiBuddy を起動しています",
+      "description": "このウィンドウを開いたとき、別の AiBuddy の起動処理がまだローカルデータを使用していました。これは一時的なもので、データは安全です。再インストールの必要はありません。少し待ってから再試行するか、AiBuddy を再起動してください。"
     },
     "pendingSlow": {
       "title": "起動中",
@@ -164,12 +164,12 @@
   "selectedSkills": "選択済みスキル",
   "aiAssistant": "AI アシスタント",
   "kyrn": {
-    "settings": "TupAI の設定",
+    "settings": "AiBuddy の設定",
     "judge": "判定器の設定",
     "reload": "再読み込み",
-    "starting": "TupAI を起動しています…",
-    "startingHint": "ローカルの TupAI カーネルに接続し、モデルと判定器の設定を読み込んでいます。",
-    "startupError": "TupAI を起動できませんでした",
+    "starting": "AiBuddy を起動しています…",
+    "startingHint": "ローカルの AiBuddy カーネルに接続し、モデルと判定器の設定を読み込んでいます。",
+    "startupError": "AiBuddy を起動できませんでした",
     "hiveView": {
       "title": "Hive",
       "agents": "サブエージェント",
@@ -200,7 +200,7 @@
       "lineDelivery_other": "{{from}} → {{to}}：{{count}} 件を配達",
       "lineCorrection": "{{from}} が {{to}} の発見を訂正しました",
       "lineConflict": "{{from}} と {{to}} の発見が対立しています",
-      "lineReport": "{{from}} が TupAI に報告しました",
+      "lineReport": "{{from}} が AiBuddy に報告しました",
       "deliveries": "情報フロー",
       "noDeliveries": "確認済みの配信はまだありません。",
       "board": "共有ボード",
@@ -1072,7 +1072,7 @@
       "switch": "このプロジェクトのわかりやすいボード",
       "switching": "切り替え中…",
       "afterTurn": "エージェントがこのステップを終えたら切り替わります",
-      "unknown": "この会話にはまだボードがありません。TupAI の会話で、「機能」でわかりやすいボードがオンのときに表示されます。",
+      "unknown": "この会話にはまだボードがありません。AiBuddy の会話で、「機能」でわかりやすいボードがオンのときに表示されます。",
       "off": "オンにすると、作業の進み具合、エージェントが今していること、あなたの確認が必要なことを、やさしい言葉で伝えます。",
       "cost": "このプロジェクトだけに適用されます。更新のたびにモデルを 1 回呼び出します。",
       "empty": "エージェントが少し作業するまでお待ちください。ここに進み具合をやさしい言葉で表示します。",
@@ -1147,11 +1147,11 @@
         "helpers_back_other": "助っ人が {{count, number}} 人戻ってきました",
         "permission_allowed": "あなたが許可しました: {{summary}}",
         "permission_denied": "あなたは許可しませんでした: {{summary}}",
-        "goal_round": "目標はまだ達成されていないので、TupAI が作業を続けさせました（{{round, number}} 回目）{{reason}}",
+        "goal_round": "目標はまだ達成されていないので、AiBuddy が作業を続けさせました（{{round, number}} 回目）{{reason}}",
         "goal_met": "目標を達成しました: {{text}}",
         "goal_paused": "目標を一時停止しました{{reason}}",
-        "trouble_loop": "TupAI は同じ手順を繰り返していることに気づきました: {{detail}}",
-        "trouble": "TupAI が気づいたこと: {{detail}}",
+        "trouble_loop": "AiBuddy は同じ手順を繰り返していることに気づきました: {{detail}}",
+        "trouble": "AiBuddy が気づいたこと: {{detail}}",
         "did": "{{tool}} を使いました: {{what}}",
         "said_quote": "こう言いました: {{text}}",
         "ended": "手を止めました。",
@@ -1192,7 +1192,7 @@
       "retireConfirm": "この教訓を廃止しますか？今後どのターンにも持ち込まれません。",
       "loadFailed": "教訓を読み込めませんでした",
       "saveFailed": "教訓を変更できませんでした",
-      "empty": "このプロジェクトにはまだ教訓がありません。TupAI はあなたの訂正、自力で見つけた抜け道、/remember から教訓を学びます。",
+      "empty": "このプロジェクトにはまだ教訓がありません。AiBuddy はあなたの訂正、自力で見つけた抜け道、/remember から教訓を学びます。",
       "noneActive": "使用中の教訓はありません。「すべて」には廃止・置き換え済みのものも表示されます。",
       "noMatch": "一致する教訓はありません。",
       "noProject": "この会話にはプロジェクトフォルダーがないため、全プロジェクト共通の教訓だけを表示します。",
@@ -1305,16 +1305,16 @@
       "mcp": {
         "line": "{{name}}: {{reason}}",
         "projectUntrusted": "プロジェクトが信頼されておらず、このサーバーはプロジェクトで定義されています",
-        "needsApproval": "プロジェクト（{{source}}）で定義されており、まだ承認されていません。TupAI でこのフォルダーを開いて一度許可するか、TupAI.json で定義してください",
+        "needsApproval": "プロジェクト（{{source}}）で定義されており、まだ承認されていません。AiBuddy でこのフォルダーを開いて一度許可するか、AiBuddy.json で定義してください",
         "aborted": "起動がキャンセルされました",
         "rpc": "エラーが返されました",
         "protocol": "MCP プロトコルに沿わない応答が返されました",
         "startFailed": "起動できませんでした",
-        "crashedRestarting": "実行中にクラッシュしました。TupAI が 1 回だけ再起動します",
+        "crashedRestarting": "実行中にクラッシュしました。AiBuddy が 1 回だけ再起動します",
         "crashedAgain": "再びクラッシュしたため、再起動しません",
         "restartFailed": "クラッシュし、再起動にも失敗しました",
         "restartFailedCause": "クラッシュし、再起動にも失敗しました: {{cause}}",
-        "closed": "TupAI が応答を待っている間に接続が閉じられました",
+        "closed": "AiBuddy が応答を待っている間に接続が閉じられました",
         "timeout": "時間内に応答がありませんでした",
         "denied": "このプロジェクトのサーバーの起動をあなたが許可しませんでした",
         "unreachable": "起動も接続もできませんでした"
@@ -1376,7 +1376,7 @@
       "contextHint": "モデルが次に読む内容は、コンテキストの {{percent}} を占めます",
       "cache": "キャッシュヒット",
       "cacheHint": "キャッシュヒット：直近のターン {{turn}}、会話全体 {{session}}",
-      "pending": "TupAI の次の返信のあとに表示されます"
+      "pending": "AiBuddy の次の返信のあとに表示されます"
     }
   },
   "menu": {
@@ -1469,8 +1469,8 @@
   },
   "nodeRuntime": {
     "title": "Node.js をダウンロードしますか？",
-    "message": "TupAI はエージェントとツールを専用の Node.js で実行します。この Node.js はまだダウンロードされていません。",
-    "detail": "Node.js {{version}}（約 {{size}} MB）を nodejs.org からダウンロードし、次の場所に展開します：\n{{folder}}\n\n「後で」を選ぶと何もダウンロードしません。TupAI は通常どおり開き、Node.js が必要な場所でお知らせし、次回の起動時にもう一度確認します。",
+    "message": "AiBuddy はエージェントとツールを専用の Node.js で実行します。この Node.js はまだダウンロードされていません。",
+    "detail": "Node.js {{version}}（約 {{size}} MB）を nodejs.org からダウンロードし、次の場所に展開します：\n{{folder}}\n\n「後で」を選ぶと何もダウンロードしません。AiBuddy は通常どおり開き、Node.js が必要な場所でお知らせし、次回の起動時にもう一度確認します。",
     "download": "ダウンロード",
     "later": "後で",
     "note": "Node.js がダウンロードされていないため、このエージェントは実行できません。次回の起動時にもう一度確認します。",

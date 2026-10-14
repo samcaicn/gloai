@@ -85,7 +85,7 @@
       "outsideSandbox": "This file is outside the current project sandbox."
     },
     "serverInstall": {
-      "hint": "TupAI is running on a server. Install the preview component on that server, then retry:",
+      "hint": "AiBuddy is running on a server. Install the preview component on that server, then retry:",
       "icuNote": "If it still fails to start, install the ICU library on the server (Debian/Ubuntu: apt-get install -y libicu-dev)."
     }
   },
@@ -189,28 +189,28 @@
     "elapsed": "Time elapsed",
     "steps": "Steps {{total}}",
     "noSteps": "Nothing has been done yet",
-    "reason": "In TupAI’s words",
+    "reason": "In AiBuddy’s words",
     "goal": "Goal",
     "pause": "Pause",
     "resume": "Resume",
     "stop": "Stop",
     "takeover": "Take over",
-    "takeoverTip": "Pauses the run and gives you the keyboard. Press Resume when you are done: TupAI looks at the page again before it decides.",
+    "takeoverTip": "Pauses the run and gives you the keyboard. Press Resume when you are done: AiBuddy looks at the page again before it decides.",
     "pausedShort": "Paused",
     "stopping": "Stopping…",
     "paused": {
-      "user": "Paused. When you resume, TupAI looks at the page again before it decides.",
-      "takeover": "You have taken over: use the page yourself. Press Resume when you are done and TupAI looks at the page again.",
-      "interaction": "You touched the page, so TupAI paused itself rather than click at the same time. When you resume, it looks at the page again."
+      "user": "Paused. When you resume, AiBuddy looks at the page again before it decides.",
+      "takeover": "You have taken over: use the page yourself. Press Resume when you are done and AiBuddy looks at the page again.",
+      "interaction": "You touched the page, so AiBuddy paused itself rather than click at the same time. When you resume, it looks at the page again."
     },
     "statusHint": {
-      "blocked": "TupAI found nothing on the page that would bring the goal closer, and stopped.",
-      "needs_confirmation": "The action looked irreversible and was not allowed, so TupAI did not do it.",
+      "blocked": "AiBuddy found nothing on the page that would bring the goal closer, and stopped.",
+      "needs_confirmation": "The action looked irreversible and was not allowed, so AiBuddy did not do it.",
       "budget": "The run used up its step limit.",
       "stopped": "You stopped this run.",
       "failed": "Something went wrong while browsing; the run did not finish."
     },
-    "detachedHint": "TupAI lost its connection to this page, so this run cannot go on.",
+    "detachedHint": "AiBuddy lost its connection to this page, so this run cannot go on.",
     "verb": {
       "click": "Click",
       "fill": "Type into",
@@ -238,7 +238,7 @@
       "popup": "Pop-up blocked: {{detail}}"
     },
     "confirm": {
-      "title": "TupAI wants to do something that may be irreversible",
+      "title": "AiBuddy wants to do something that may be irreversible",
       "action": "Action",
       "page": "Page",
       "allow": "Allow",
@@ -249,7 +249,7 @@
     "detachCause": "Cause",
     "detachReason": {
       "tab_closed": "The tab was closed.",
-      "connection": "TupAI’s browsing session ended before the run finished.",
+      "connection": "AiBuddy’s browsing session ended before the run finished.",
       "devtools": "The developer tools were opened on this page.",
       "crashed": "The page crashed."
     },

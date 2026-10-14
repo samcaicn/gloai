@@ -85,7 +85,7 @@
       "outsideSandbox": "Este archivo está fuera del sandbox del proyecto actual."
     },
     "serverInstall": {
-      "hint": "TupAI se está ejecutando en un servidor. Instala el componente de vista previa en ese servidor y reintenta:",
+      "hint": "AiBuddy se está ejecutando en un servidor. Instala el componente de vista previa en ese servidor y reintenta:",
       "icuNote": "Si sigue sin iniciar, instala la biblioteca ICU en el servidor (Debian/Ubuntu: apt-get install -y libicu-dev)."
     }
   },
@@ -189,28 +189,28 @@
     "elapsed": "Tiempo transcurrido",
     "steps": "Pasos {{total}}",
     "noSteps": "Aún no se ha hecho nada",
-    "reason": "Según TupAI",
+    "reason": "Según AiBuddy",
     "goal": "Objetivo",
     "pause": "Pausar",
     "resume": "Reanudar",
     "stop": "Detener",
     "takeover": "Tomar el control",
-    "takeoverTip": "Pausa la ejecución y te cede el teclado. Al terminar pulsa «Reanudar»: TupAI vuelve a observar la página antes de decidir.",
+    "takeoverTip": "Pausa la ejecución y te cede el teclado. Al terminar pulsa «Reanudar»: AiBuddy vuelve a observar la página antes de decidir.",
     "pausedShort": "En pausa",
     "stopping": "Deteniendo…",
     "paused": {
-      "user": "En pausa. Al reanudar, TupAI vuelve a observar la página antes de decidir.",
+      "user": "En pausa. Al reanudar, AiBuddy vuelve a observar la página antes de decidir.",
       "takeover": "Has tomado el control: usa la página tú mismo y pulsa «Reanudar» al terminar.",
-      "interaction": "Has tocado la página, así que TupAI se ha pausado solo para no hacer clic a la vez que tú. Al reanudar vuelve a observar la página."
+      "interaction": "Has tocado la página, así que AiBuddy se ha pausado solo para no hacer clic a la vez que tú. Al reanudar vuelve a observar la página."
     },
     "statusHint": {
-      "blocked": "TupAI no encontró en la página nada que acercara al objetivo y se detuvo.",
-      "needs_confirmation": "La acción parecía irreversible y no se permitió, así que TupAI no la realizó.",
+      "blocked": "AiBuddy no encontró en la página nada que acercara al objetivo y se detuvo.",
+      "needs_confirmation": "La acción parecía irreversible y no se permitió, así que AiBuddy no la realizó.",
       "budget": "La ejecución agotó su límite de pasos.",
       "stopped": "Has detenido esta ejecución.",
       "failed": "Algo falló durante la navegación; la ejecución no terminó."
     },
-    "detachedHint": "TupAI ha perdido la conexión con esta página; esta ejecución no puede continuar.",
+    "detachedHint": "AiBuddy ha perdido la conexión con esta página; esta ejecución no puede continuar.",
     "verb": {
       "click": "Clic en",
       "fill": "Escribir en",
@@ -238,7 +238,7 @@
       "popup": "Ventana emergente bloqueada: {{detail}}"
     },
     "confirm": {
-      "title": "TupAI quiere hacer algo que quizá no se pueda deshacer",
+      "title": "AiBuddy quiere hacer algo que quizá no se pueda deshacer",
       "action": "Acción",
       "page": "Página",
       "allow": "Permitir",
@@ -249,7 +249,7 @@
     "detachCause": "Causa",
     "detachReason": {
       "tab_closed": "Se ha cerrado la pestaña.",
-      "connection": "La sesión de navegación de TupAI ha terminado antes de que acabara la ejecución.",
+      "connection": "La sesión de navegación de AiBuddy ha terminado antes de que acabara la ejecución.",
       "devtools": "Se han abierto las herramientas para desarrolladores en esta página.",
       "crashed": "La página se ha bloqueado."
     },

@@ -65,11 +65,11 @@
   "more": "Daha Fazla",
   "refresh": "Yenile",
   "readOnly": "Salt okunur",
-  "tray.showWindow": "TupAI'yu Göster",
+  "tray.showWindow": "AiBuddy'yu Göster",
   "tray.newChat": "Yeni Sohbet",
   "tray.closeToTray": "Tepsiye Gizle",
   "tray.hideToMenuBar": "Menü Çubuğuna Gizle",
-  "tray.about": "TupAI Hakkında",
+  "tray.about": "AiBuddy Hakkında",
   "tray.restart": "Uygulamayı Yeniden Başlat",
   "tray.quit": "Çıkış",
   "tray.pauseAll": "Tüm Görevleri Duraklat",
@@ -79,51 +79,51 @@
   "backendStartup": {
     "incompatibleRuntime": {
       "title": "Bu sistem paketlenmiş backend tarafından desteklenmiyor",
-      "description": "TupAI açıldı, ancak yerel hizmet bu Linux sürümünde çalışamaz. Desteklenen bir Linux dağıtımına yükseltip TupAI'yu yeniden başlatın.",
+      "description": "AiBuddy açıldı, ancak yerel hizmet bu Linux sürümünde çalışamaz. Desteklenen bir Linux dağıtımına yükseltip AiBuddy'yu yeniden başlatın.",
       "requiredVersions": "Gerekli çalışma zamanı sembolleri: {{versions}}"
     },
     "incompleteInstallation": {
-      "title": "TupAI kurulumu eksik",
-      "description": "Bu kurulumda gerekli yerel kaynaklar eksik, bu yüzden TupAI'nun yerel hizmeti başlatılamıyor. Lütfen en son TupAI sürümünü indirip yeniden kurun. Yeniden kurulumdan sonra sorun tekrarlarsa güvenlik veya antivirüs yazılımının TupAI dosyalarını karantinaya alıp almadığını kontrol edin.",
+      "title": "AiBuddy kurulumu eksik",
+      "description": "Bu kurulumda gerekli yerel kaynaklar eksik, bu yüzden AiBuddy'nun yerel hizmeti başlatılamıyor. Lütfen en son AiBuddy sürümünü indirip yeniden kurun. Yeniden kurulumdan sonra sorun tekrarlarsa güvenlik veya antivirüs yazılımının AiBuddy dosyalarını karantinaya alıp almadığını kontrol edin.",
       "downloadLatest": "Son sürümü indir",
-      "runtimeComponentDescription": "Bu kurulumda gerekli yerleşik çalışma zamanı bileşenleri eksik olduğu için {{resource}} başlatılamıyor. En son TupAI paketini yeniden yükleyin. Yeniden yükledikten sonra da devam ederse güvenlik veya antivirüs yazılımının TupAI bileşenlerini karantinaya alıp almadığını kontrol edin."
+      "runtimeComponentDescription": "Bu kurulumda gerekli yerleşik çalışma zamanı bileşenleri eksik olduğu için {{resource}} başlatılamıyor. En son AiBuddy paketini yeniden yükleyin. Yeniden yükledikten sonra da devam ederse güvenlik veya antivirüs yazılımının AiBuddy bileşenlerini karantinaya alıp almadığını kontrol edin."
     },
     "packageArchitectureMismatch": {
-      "title": "TupAI paket mimarisi uyuşmuyor",
-      "description": "Bu TupAI paketi {{packageArch}} içindir, ancak bu Mac {{deviceArch}} mimarisinde. Yanlış paketi indirmiş olabilirsiniz. Lütfen {{expectedArch}} paketini indirip kurun."
+      "title": "AiBuddy paket mimarisi uyuşmuyor",
+      "description": "Bu AiBuddy paketi {{packageArch}} içindir, ancak bu Mac {{deviceArch}} mimarisinde. Yanlış paketi indirmiş olabilirsiniz. Lütfen {{expectedArch}} paketini indirip kurun."
     },
     "dataMigration": {
       "title": "Yerel veriler taşınamadı",
-      "description": "TupAI açıldı, ancak yerel hizmet yerel verileri başlatırken durdu. TupAI'yu yeniden yüklemek bu sorunu çözmeyebilir. Uygulama günlüğü, yerel veritabanı taşımasının nerede durduğunu gösterir."
+      "description": "AiBuddy açıldı, ancak yerel hizmet yerel verileri başlatırken durdu. AiBuddy'yu yeniden yüklemek bu sorunu çözmeyebilir. Uygulama günlüğü, yerel veritabanı taşımasının nerede durduğunu gösterir."
     },
     "databaseNewerThanApp": {
-      "title": "Daha yeni bir TupAI sürümü gerekli",
-      "description": "Yerel verileriniz TupAI'nun daha yeni bir sürümü tarafından oluşturuldu ve bu sürüm bunları açamıyor. Devam etmek için TupAI'yu en son sürüme güncelleyin; verileriniz sağlam, yeniden yükleme veya sıfırlama gerekmez.",
-      "descriptionWithVersion": "Yerel verileriniz şu an yüklü olandan (v{{currentVersion}}) daha yeni bir TupAI sürümü tarafından oluşturuldu; bu sürüm bunları açamıyor. Devam etmek için TupAI'yu en son sürüme güncelleyin; verileriniz sağlam, yeniden yükleme veya sıfırlama gerekmez."
+      "title": "Daha yeni bir AiBuddy sürümü gerekli",
+      "description": "Yerel verileriniz AiBuddy'nun daha yeni bir sürümü tarafından oluşturuldu ve bu sürüm bunları açamıyor. Devam etmek için AiBuddy'yu en son sürüme güncelleyin; verileriniz sağlam, yeniden yükleme veya sıfırlama gerekmez.",
+      "descriptionWithVersion": "Yerel verileriniz şu an yüklü olandan (v{{currentVersion}}) daha yeni bir AiBuddy sürümü tarafından oluşturuldu; bu sürüm bunları açamıyor. Devam etmek için AiBuddy'yu en son sürüme güncelleyin; verileriniz sağlam, yeniden yükleme veya sıfırlama gerekmez."
     },
     "localDataRepair": {
       "title": "Yerel veriler onarılamadı",
-      "description": "TupAI açıldı, ancak yerel hizmet assistant veya agent kayıtları gibi yerel başlangıç verilerini hazırlarken durdu. TupAI'yu yeniden yüklemek bu sorunu çözmeyebilir. Uygulama günlüğü, hangi yerel verilerin hazırlanamadığını gösterir."
+      "description": "AiBuddy açıldı, ancak yerel hizmet assistant veya agent kayıtları gibi yerel başlangıç verilerini hazırlarken durdu. AiBuddy'yu yeniden yüklemek bu sorunu çözmeyebilir. Uygulama günlüğü, hangi yerel verilerin hazırlanamadığını gösterir."
     },
     "startupDirectory": {
       "title": "Başlangıç dizini kullanılamıyor",
-      "description": "TupAI açıldı, ancak yapılandırılan çalışma veya günlük dizini eksik, erişilemez ya da izinler nedeniyle engellendiği için yerel hizmet başlatılamadı. Yapılandırılan dizinlerin var olduğunu ve yazılabilir olduğunu kontrol edin, ardından TupAI'yu yeniden başlatın."
+      "description": "AiBuddy açıldı, ancak yapılandırılan çalışma veya günlük dizini eksik, erişilemez ya da izinler nedeniyle engellendiği için yerel hizmet başlatılamadı. Yapılandırılan dizinlerin var olduğunu ve yazılabilir olduğunu kontrol edin, ardından AiBuddy'yu yeniden başlatın."
     },
     "recoverableDatabaseCorruption": {
       "title": "Yerel veriler bozulmuş",
-      "description": "TupAI yerel veritabanının bozulduğunu algıladı ve başlatmaya devam edemiyor. Onaydan sonra eski veritabanı yedeklenecek ve başlatmaya devam etmek için yeni bir yerel veritabanı oluşturulacak. Geçmiş sohbetler artık gösterilmeyecek ve eski veritabanı yedek dosyası olarak saklanacak.",
+      "description": "AiBuddy yerel veritabanının bozulduğunu algıladı ve başlatmaya devam edemiyor. Onaydan sonra eski veritabanı yedeklenecek ve başlatmaya devam etmek için yeni bir yerel veritabanı oluşturulacak. Geçmiş sohbetler artık gösterilmeyecek ve eski veritabanı yedek dosyası olarak saklanacak.",
       "confirmRebuild": "Eski DB'yi yedekle ve yeni DB oluştur",
       "rebuildFailed": "Eski DB yedeklenip yeni DB oluşturulamadı",
       "confirmDialog": {
-        "title": "Veritabanı yeniden oluşturulsun TupAI?",
+        "title": "Veritabanı yeniden oluşturulsun AiBuddy?",
         "content": "Bu işlem, mevcut bozuk veritabanını yedekler ve tamamen yeni, boş bir veritabanı oluşturur. Geçmiş sohbetler artık gösterilmeyecek (eski veritabanı yedek dosyası olarak saklanır). Devam edilsin mi?",
         "okText": "Yeniden oluşturmayı onayla",
         "cancelText": "İptal"
       }
     },
     "transientConcurrentStartup": {
-      "title": "TupAI başlatılıyor",
-      "description": "Bu pencere açıldığında başka bir TupAI başlatma işlemi yerel verileri hâlâ kullanıyordu. Bu geçicidir ve verileriniz güvende — yeniden yükleme gerekmez. Lütfen biraz bekleyip tekrar deneyin veya TupAI'yu yeniden başlatın."
+      "title": "AiBuddy başlatılıyor",
+      "description": "Bu pencere açıldığında başka bir AiBuddy başlatma işlemi yerel verileri hâlâ kullanıyordu. Bu geçicidir ve verileriniz güvende — yeniden yükleme gerekmez. Lütfen biraz bekleyip tekrar deneyin veya AiBuddy'yu yeniden başlatın."
     },
     "pendingSlow": {
       "title": "Başlatılıyor",
@@ -164,12 +164,12 @@
   "selectedSkills": "Seçili beceriler",
   "aiAssistant": "Yapay Zekâ Asistanı",
   "kyrn": {
-    "settings": "TupAI ayarları",
+    "settings": "AiBuddy ayarları",
     "judge": "Hakem yapılandırması",
     "reload": "Yeniden yükle",
-    "starting": "TupAI başlatılıyor…",
-    "startingHint": "Yerel TupAI çekirdeğine bağlanılıyor, model ve hakem yapılandırması okunuyor.",
-    "startupError": "TupAI başlatılamadı",
+    "starting": "AiBuddy başlatılıyor…",
+    "startingHint": "Yerel AiBuddy çekirdeğine bağlanılıyor, model ve hakem yapılandırması okunuyor.",
+    "startupError": "AiBuddy başlatılamadı",
     "hiveView": {
       "title": "Hive",
       "agents": "Alt ajanlar",
@@ -200,7 +200,7 @@
       "lineDelivery_other": "{{from}} → {{to}}: {{count}} teslim",
       "lineCorrection": "{{from}}, {{to}} adlı arının bulgusunu düzeltti",
       "lineConflict": "{{from}} ile {{to}} çelişiyor",
-      "lineReport": "{{from}} TupAI'ya rapor verdi",
+      "lineReport": "{{from}} AiBuddy'ya rapor verdi",
       "deliveries": "Bilgi akışı",
       "noDeliveries": "Henüz onaylanmış teslim yok.",
       "board": "Paylaşılan pano",
@@ -324,7 +324,7 @@
       },
       "questions": {
         "preflight": "Bu istek nasıl ele alınmalı?",
-        "interjection": "Bu araya girme bir düzeltme mi, ek istek mi, yoksa yan soru TupAI?",
+        "interjection": "Bu araya girme bir düzeltme mi, ek istek mi, yoksa yan soru AiBuddy?",
         "admission": "Araç çıktısının hangi parçaları bağlama girmeli?",
         "testLog": "Bir test günlüğünün hangi parçaları modele ulaşmalı?",
         "forget": "Eski araç çıktısının tamamına hâlâ ihtiyaç var mı?",
@@ -333,28 +333,28 @@
         "locate": "Hangi dosyalar büyük olasılıkla ilgili?",
         "routing": "Her alt göreve hangi rol ve düşünme düzeyi uygun?",
         "publish": "Bu bulgu diğer arılarla paylaşılmaya değer mi?",
-        "deliver": "Bu bulgu alıcı arıya yardımcı olur TupAI?",
+        "deliver": "Bu bulgu alıcı arıya yardımcı olur AiBuddy?",
         "browser": "Tarayıcı bundan sonra ne yapmalı?",
         "recall": "Geçmiş deneyimlerden hangileri şu anda geçerli?",
         "capture": "Bu kalıcı bir düzeltme veya tercih mi?",
-        "outcome": "Bu tur saklanmaya değer bir çıkış yolu buldu TupAI?",
+        "outcome": "Bu tur saklanmaya değer bir çıkış yolu buldu AiBuddy?",
         "worth": "Bu ders saklanmaya değer mi?",
         "merge": "Yeni ders saklanan bir dersle birleşmeli mi?",
-        "applied": "Derslere uyuldu TupAI?",
-        "risk": "Bu işlem kullanıcı onayı gerektiriyor TupAI?",
+        "applied": "Derslere uyuldu AiBuddy?",
+        "risk": "Bu işlem kullanıcı onayı gerektiriyor AiBuddy?",
         "drift": "Çalışma hâlâ doğru yolda mı?",
-        "completion": "Bu değişikliğin hâlâ doğrulanması gerekiyor TupAI?",
+        "completion": "Bu değişikliğin hâlâ doğrulanması gerekiyor AiBuddy?",
         "notify": "Bu bildirim modele ne zaman ulaşmalı?",
         "cache": "Oturum önbelleği sıcak tutulmalı mı?",
         "other": "Kaydedilmiş karar",
         "rewind": "Bu yaklaşım geri sarmaya değer bir çıkmaz mı?",
         "goalMet": "Hedefe ulaşıldı mı?",
-        "outputDrift": "Çıktı kurallarınızdan birini çiğniyor TupAI?",
-        "taskFrame": "Bu mesaj görev çerçevesini değiştiriyor TupAI?",
-        "constraint": "Bu çağrı kısıtlarınızdan birini çiğniyor TupAI?",
+        "outputDrift": "Çıktı kurallarınızdan birini çiğniyor AiBuddy?",
+        "taskFrame": "Bu mesaj görev çerçevesini değiştiriyor AiBuddy?",
+        "constraint": "Bu çağrı kısıtlarınızdan birini çiğniyor AiBuddy?",
         "capabilities": "Bu görevin hangi yeteneklere ihtiyacı var?",
         "diagnostics": "Bu tanılama modele ne zaman ulaşmalı?",
-        "patch": "Alt ajanın yaması görev kapsamında kalıyor TupAI?",
+        "patch": "Alt ajanın yaması görev kapsamında kalıyor AiBuddy?",
         "review": "Her inceleme bulgusu ne kadar ciddi?",
         "board": "İş ne durumda?",
         "relate": "Bu bulgu önceki bir bulgu için ne anlama geliyor?",
@@ -1072,7 +1072,7 @@
       "switch": "Bu projenin sade dildeki panosu",
       "switching": "Değiştiriliyor…",
       "afterTurn": "Ajan bu adımı bitirince değişir",
-      "unknown": "Bu konuşmada henüz pano yok. Özellikler bölümünde sade dildeki pano açıkken TupAI konuşmalarında görünür.",
+      "unknown": "Bu konuşmada henüz pano yok. Özellikler bölümünde sade dildeki pano açıkken AiBuddy konuşmalarında görünür.",
       "off": "Açıldığında işin nasıl gittiğini, ajanın şu an ne yaptığını ve sizden neyin beklendiğini sade bir dille anlatır.",
       "cost": "Yalnızca bu proje için. Her güncelleme bir model çağrısına mal olur.",
       "empty": "Ajana biraz zaman tanıyın; nasıl gittiği burada sade bir dille yazacak.",
@@ -1147,11 +1147,11 @@
         "helpers_back_other": "{{count, number}} yardımcı geri döndü",
         "permission_allowed": "İzin verdiniz: {{summary}}",
         "permission_denied": "İzin vermediniz: {{summary}}",
-        "goal_round": "Hedefe henüz ulaşılmadı; TupAI onu yeniden işe koştu ({{round, number}}. tur){{reason}}",
+        "goal_round": "Hedefe henüz ulaşılmadı; AiBuddy onu yeniden işe koştu ({{round, number}}. tur){{reason}}",
         "goal_met": "Hedefe ulaşıldı: {{text}}",
         "goal_paused": "Hedef duraklatıldı{{reason}}",
-        "trouble_loop": "TupAI aynı adımı tekrarladığını fark etti: {{detail}}",
-        "trouble": "TupAI bir şey fark etti: {{detail}}",
+        "trouble_loop": "AiBuddy aynı adımı tekrarladığını fark etti: {{detail}}",
+        "trouble": "AiBuddy bir şey fark etti: {{detail}}",
         "did": "{{tool}} ile şunu yaptı: {{what}}",
         "said_quote": "Şunu söyledi: {{text}}",
         "ended": "Durdu.",
@@ -1192,7 +1192,7 @@
       "retireConfirm": "Bu ders devre dışı bırakılsın mı? Artık hiçbir tura getirilmeyecek.",
       "loadFailed": "Dersler okunamadı",
       "saveFailed": "Ders değiştirilemedi",
-      "empty": "Bu projede henüz ders yok. TupAI dersleri düzeltmelerinizden, kendi bulduğu çıkış yollarından ve /remember'dan öğrenir.",
+      "empty": "Bu projede henüz ders yok. AiBuddy dersleri düzeltmelerinizden, kendi bulduğu çıkış yollarından ve /remember'dan öğrenir.",
       "noneActive": "Kullanımda ders yok. Tümü, devre dışı ve yenisiyle değişen dersleri de gösterir.",
       "noMatch": "Eşleşen ders yok.",
       "noProject": "Bu konuşmanın proje klasörü yok; yalnızca tüm projelerde geçerli dersler listeleniyor.",
@@ -1305,16 +1305,16 @@
       "mcp": {
         "line": "{{name}}: {{reason}}",
         "projectUntrusted": "proje güvenilir değil ve bu sunucu proje tarafından tanımlanmış",
-        "needsApproval": "proje tarafından tanımlanmış ({{source}}) ve onaylanmamış; bu klasörü TupAI'da açıp bir kez izin verin ya da sunucuyu TupAI.json içinde tanımlayın",
+        "needsApproval": "proje tarafından tanımlanmış ({{source}}) ve onaylanmamış; bu klasörü AiBuddy'da açıp bir kez izin verin ya da sunucuyu AiBuddy.json içinde tanımlayın",
         "aborted": "başlatma iptal edildi",
         "rpc": "bir hatayla yanıt verdi",
         "protocol": "MCP protokolüne uymayan bir yanıt verdi",
         "startFailed": "başlatılamadı",
-        "crashedRestarting": "çalışırken çöktü; TupAI onu bir kez yeniden başlatıyor",
+        "crashedRestarting": "çalışırken çöktü; AiBuddy onu bir kez yeniden başlatıyor",
         "crashedAgain": "yine çöktü ve yeniden başlatılmayacak",
         "restartFailed": "çöktü ve yeniden başlatma da başarısız oldu",
         "restartFailedCause": "çöktü ve yeniden başlatma da başarısız oldu: {{cause}}",
-        "closed": "TupAI hâlâ yanıt beklerken bağlantısı kapandı",
+        "closed": "AiBuddy hâlâ yanıt beklerken bağlantısı kapandı",
         "timeout": "zamanında yanıt vermedi",
         "denied": "bu projenin sunucusunun başlamasına izin vermediniz",
         "unreachable": "başlatılamadı ya da ona ulaşılamadı"
@@ -1376,7 +1376,7 @@
       "contextHint": "Modelin sıradaki okuyacağı içerik bağlamının {{percent}} kadarını kaplıyor",
       "cache": "Önbellek isabeti",
       "cacheHint": "Önbellek isabeti: son turda {{turn}}, tüm konuşmada {{session}}",
-      "pending": "TupAI’nun bir sonraki yanıtından sonra gösterilir"
+      "pending": "AiBuddy’nun bir sonraki yanıtından sonra gösterilir"
     }
   },
   "menu": {
@@ -1469,11 +1469,11 @@
   },
   "nodeRuntime": {
     "title": "Node.js indirilsin mi?",
-    "message": "TupAI, ajanları ve araçları kendi Node.js kopyasıyla çalıştırır; bu kopya henüz indirilmedi.",
-    "detail": "Node.js {{version}} (yaklaşık {{size}} MB) nodejs.org adresinden indirilip şuraya açılacak:\n{{folder}}\n\n\"Sonra\" hiçbir şey indirmez: TupAI her zamanki gibi açılır, Node.js gereken yerde bunu belirtir ve bir sonraki başlatmada yeniden sorar.",
+    "message": "AiBuddy, ajanları ve araçları kendi Node.js kopyasıyla çalıştırır; bu kopya henüz indirilmedi.",
+    "detail": "Node.js {{version}} (yaklaşık {{size}} MB) nodejs.org adresinden indirilip şuraya açılacak:\n{{folder}}\n\n\"Sonra\" hiçbir şey indirmez: AiBuddy her zamanki gibi açılır, Node.js gereken yerde bunu belirtir ve bir sonraki başlatmada yeniden sorar.",
     "download": "İndir",
     "later": "Sonra",
-    "note": "Node.js indirilmediği için bu ajan çalışamıyor. TupAI bir sonraki başlatmada yeniden sorar.",
-    "toolNote": "Node.js indirilmediği için ona ihtiyaç duyan araçlar çalışamıyor. TupAI bir sonraki başlatmada yeniden sorar."
+    "note": "Node.js indirilmediği için bu ajan çalışamıyor. AiBuddy bir sonraki başlatmada yeniden sorar.",
+    "toolNote": "Node.js indirilmediği için ona ihtiyaç duyan araçlar çalışamıyor. AiBuddy bir sonraki başlatmada yeniden sorar."
   }
 }

@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-// TupAI's own releases: every installer (and every architecture) is attached to a release there.
+// AiBuddy's own releases: every installer (and every architecture) is attached to a release there.
 const MU_RELEASES_URL = 'https://github.com/samcaicn/mu/releases';
 
 type InstallationIntegrityDialogKind =
