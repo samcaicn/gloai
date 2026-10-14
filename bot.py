@@ -1871,6 +1871,94 @@ def auto_add_discovered_users():
         time.sleep(AUTO_ADD_INTERVAL)
 
 
+# ===== 历史未回复消息补漏（catch-up）=====
+# 微信 Listener 只派发「启动后新到」的消息；启动前的未读、Listener 掉线期间
+# 错过的消息都会漏，导致「有人发来但一直没回」。这里直接用微信本地库回扫
+# 每个监听会话的最近消息，发现「最后一条是对方发来、且其后没有 bot 回复」
+# 就重新走一次处理管线（复用 message_listener 的完整 AI 判定）。
+_CATCHUP_INTERVAL = 30            # 补漏轮询间隔（秒）
+_CATCHUP_SCAN_LIMIT = 30          # 每会话回扫条数
+_catchup_inflight = set()         # 正在补处理的会话（防重入）
+_catchup_done = {}                # who -> 已补处理过的消息 create_time（防重复补）
+
+
+def _catchup_missed_once():
+    """执行一轮补漏扫描（启动后立即 + 每 _CATCHUP_INTERVAL 秒）。"""
+    from wechat_compat import Msg, Chat, SELF_SENDER_ID
+    wx_obj = globals().get('wx', None)
+    if wx_obj is None:
+        return
+    db = getattr(wx_obj, '_db', None)
+    if db is None:
+        return
+    for who in list(user_names):
+        if who in _catchup_inflight:
+            continue
+        try:
+            rows = db.get_messages(who, limit=_CATCHUP_SCAN_LIMIT) or []
+            if not rows:
+                continue
+            # rows 按 sort_seq DESC（最新在前）：找最新一条「对方发来的文本」
+            cand = None
+            for r in rows:
+                sid = r.get("sender_id")
+                mtype = str(r.get("type") or "")
+                if sid == SELF_SENDER_ID:          # 自己发的跳过
+                    continue
+                if "文本" not in mtype:             # 只补文本消息
+                    continue
+                content = (r.get("content") or "").strip()
+                if not content or content.startswith("["):
+                    continue
+                cand = r
+                break
+            if cand is None:
+                continue
+            # 已回复判定：chat_history 该会话最后一条是发出（bot 或主人手动回）且时间不早于这条消息
+            last = chat_history.latest_message(who) if chat_history is not None else None
+            if last and last["direction"] == "outgoing" \
+                    and float(last["ts"] or 0) >= float(cand.get("create_time") or 0):
+                continue
+            # 防风暴：同一条（或更早的）消息已补处理过则跳过；仅新消息才补
+            if float(cand.get("create_time") or 0) <= _catchup_done.get(who, 0.0):
+                continue
+            # 未回复 → 补处理
+            _catchup_inflight.add(who)
+            try:
+                content = cand.get("content") or ""
+                ts = cand.get("create_time") or 0
+                _catchup_done[who] = float(ts or 0)
+                is_group = str(who).endswith("@chatroom")
+                sender = cand.get("sender_username") or who
+                # 群消息内容带 "wxid:\n" 前缀，剥离后取群成员
+                if is_group:
+                    mm = re.match(r"^\s*(wxid_[0-9A-Za-z_-]+|[A-Za-z0-9_-]+):\s*\n?", content)
+                    if mm:
+                        sender = mm.group(1)
+                        content = content[mm.end():]
+                msg = Msg("text", content, sender, attr="friend",
+                          create_time=ts, chat_username=who,
+                          type_code=cand.get("type_code"))
+                logger.info(f"[补漏] 会话「{who}」有历史未回复消息，补处理: {content[:60]!r}")
+                _message_listener_impl(msg, Chat(who))
+            finally:
+                _catchup_inflight.discard(who)
+        except Exception as e:
+            logger.warning(f"[补漏] 会话「{who}」扫描失败（已隔离，不影响其它会话）: {e}")
+
+
+def catchup_missed():
+    """补漏守护线程：启动先扫一轮（补启动前未读），之后周期扫描。"""
+    logger.info(f"未回复消息补漏线程已启动（间隔 {_CATCHUP_INTERVAL}s）。")
+    _catchup_missed_once()
+    while True:
+        time.sleep(_CATCHUP_INTERVAL)
+        try:
+            _catchup_missed_once()
+        except Exception as e:
+            logger.error(f"补漏扫描异常（已隔离，下轮继续）: {e}", exc_info=True)
+
+
 def message_listener(msg, chat):
     """对外回调：包裹实现层，确保单条消息处理异常不会中断整个消息接收循环（24h 鲁棒性）。
 
@@ -5523,6 +5611,12 @@ def main():
         auto_add_thread.daemon = True
         auto_add_thread.start()
         logger.info("自动添加用户线程已启动。")
+
+        # --- 启动未回复补漏线程（历史消息不漏回，启动即扫一轮 + 周期补漏）---
+        catchup_thread = threading.Thread(target=catchup_missed, name="CatchupMissed")
+        catchup_thread.daemon = True
+        catchup_thread.start()
+        logger.info("未回复消息补漏线程已启动。")
 
         checker_thread = threading.Thread(target=check_inactive_users, name="InactiveUserChecker")
         checker_thread.daemon = True

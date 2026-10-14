@@ -203,6 +203,73 @@ def fetch_recent(limit=50):
             return []
 
 
+def latest_message(who):
+    """某会话最后一条记录（供「未回复补漏」判定）。返回 dict 或 None。"""
+    with _lock:
+        try:
+            conn = _get_conn()
+            if conn is None:
+                return None
+            cur = conn.execute(
+                "SELECT direction, source, content, ts FROM messages"
+                " WHERE who=? ORDER BY ts DESC, id DESC LIMIT 1",
+                (who,),
+            )
+            r = cur.fetchone()
+            if not r:
+                return None
+            return {"direction": 'incoming' if r[0] == 'in' else 'outgoing',
+                    "source": r[1], "content": r[2] or "", "ts": r[3]}
+        except Exception as e:
+            logger.error(f"读取会话最新记录失败: {e}")
+            return None
+
+
+def fetch_who(who, limit=100):
+    """某会话最近往来消息（时间升序返回），供「消息中心」UI 使用。"""
+    with _lock:
+        try:
+            conn = _get_conn()
+            if conn is None:
+                return []
+            cur = conn.execute(
+                "SELECT ts, direction, source, content, msgtype, sender FROM messages"
+                " WHERE who=? ORDER BY ts DESC, id DESC LIMIT ?",
+                (who, int(limit)),
+            )
+            rows = cur.fetchall()
+            out = []
+            for r in reversed(rows):
+                out.append({
+                    "ts": r[0],
+                    "direction": 'incoming' if r[1] == 'in' else 'outgoing',
+                    "source": r[2],
+                    "content": r[3] or "", "msgtype": r[4], "sender": r[5],
+                })
+            return out
+        except Exception as e:
+            logger.error(f"读取会话消息失败: {e}")
+            return []
+
+
+def list_who(limit=200):
+    """出现过消息的会话（按最后消息时间倒序），供「消息中心」会话列表。"""
+    with _lock:
+        try:
+            conn = _get_conn()
+            if conn is None:
+                return []
+            cur = conn.execute(
+                "SELECT who, MAX(ts) FROM messages WHERE who IS NOT NULL AND who != ''"
+                " GROUP BY who ORDER BY MAX(ts) DESC LIMIT ?",
+                (int(limit),),
+            )
+            return [{"who": r[0], "last_ts": r[1]} for r in cur.fetchall()]
+        except Exception as e:
+            logger.error(f"读取会话列表失败: {e}")
+            return []
+
+
 def clear_all():
     """清空全部聊天记录（UI 提供入口）。"""
     with _lock:

@@ -2935,6 +2935,205 @@ def save_user_chat_context(username):
             return jsonify({'status': 'error', 'message': f'保存失败: {str(e)}'}), 500
     return jsonify({'status': 'success', 'message': f"用户 '{username}' 的上下文已更新"})
 
+
+# ===== 消息中心（多会话切换查看 + 手动回复）=====
+
+def _inbox_wxdb():
+    """惰性获取微信本地库对象（无微信/未登录时返回 None，不阻断页面）。"""
+    try:
+        from wechat_compat import WeChat
+        w = WeChat()
+        try:
+            w._init()
+            return w, getattr(w, '_db', None)
+        except Exception:
+            try:
+                w.close()
+            except Exception:
+                pass
+            return None, None
+    except Exception:
+        return None, None
+
+
+def _wx_name(db, who):
+    """会话显示名：群 → 群名；好友 → 昵称/备注；失败原样返回。"""
+    try:
+        if str(who).endswith("@chatroom"):
+            n = db.group_id_to_name(who)
+        else:
+            n = db.get_nickname(who)
+        return n or who
+    except Exception:
+        return who
+
+
+def _db_rows_to_msgs(db, who, rows, self_wxid):
+    """把微信库消息行转成消息中心统一结构（含群成员剥离）。"""
+    out = []
+    for r in rows or []:
+        try:
+            sid = r.get("sender_id")
+            is_self = sid == 1 or (self_wxid and str(sid) == str(self_wxid))
+            content = (r.get("content") or "")
+            if isinstance(content, bytes):
+                content = content.decode("utf-8", "ignore")
+            content = str(content)
+            mtype = str(r.get("type") or "")
+            if "文本" not in mtype:
+                continue
+            if not content.strip() or content.startswith("["):
+                continue
+            sender = r.get("sender_username") or who
+            if str(who).endswith("@chatroom") and not is_self:
+                mm = re.match(r"^\s*(wxid_[0-9A-Za-z_-]+|[A-Za-z0-9_-]+):\s*\n?", content)
+                if mm:
+                    sender = mm.group(1)
+                    content = content[mm.end():]
+            out.append({
+                "ts": float(r.get("create_time") or 0),
+                "direction": "outgoing" if is_self else "incoming",
+                "source": "group" if str(who).endswith("@chatroom") else "friend",
+                "content": content.strip(),
+                "sender": sender,
+                "from": "wechat",
+            })
+        except Exception:
+            continue
+    return out
+
+
+@app.route('/api/inbox/sessions')
+@login_required
+def inbox_sessions():
+    """消息中心会话列表：本地聊天记录 ∪ 微信库有消息的会话。
+
+    每条带 pending 标记（最后一条是对方发来且未回复），供 UI 红点提示。
+    """
+    sessions = {}
+    try:
+        import chat_history as _ch
+        for s in _ch.list_who(200):
+            who = s["who"]
+            last = _ch.latest_message(who)
+            sessions[who] = {
+                "who": who,
+                "last_content": (last["content"] if last else "")[:80],
+                "last_ts": last["ts"] if last else 0,
+                "pending": bool(last and last["direction"] == "incoming" and last["source"] != "sys"),
+            }
+    except Exception as e:
+        app.logger.warning(f"消息中心：读取本地聊天记录失败: {e}")
+
+    # 微信库侧补充（本地无记录但微信有消息的会话 + 显示名 + 未回复判定）
+    wx, db = _inbox_wxdb()
+    if db is not None:
+        try:
+            self_wxid = db.wxid() if hasattr(db, "wxid") else ""
+            for s in db.get_sessions(limit=200) or []:
+                who = s.get("username") or s.get("nick_name")
+                if not who:
+                    continue
+                ent = sessions.setdefault(who, {
+                    "who": who, "last_content": "", "last_ts": 0, "pending": False,
+                })
+                ent["name"] = s.get("nick_name") or _wx_name(db, who)
+                if ent["last_ts"]:
+                    continue
+                rows = db.get_messages(who, limit=10) or []
+                msgs = _db_rows_to_msgs(db, who, rows, self_wxid)
+                if msgs:
+                    ent["last_content"] = msgs[-1]["content"][:80]
+                    ent["last_ts"] = msgs[-1]["ts"]
+                    ent["pending"] = msgs[-1]["direction"] == "incoming"
+        except Exception as e:
+            app.logger.warning(f"消息中心：读取微信库会话失败: {e}")
+
+    for who, ent in sessions.items():
+        ent.setdefault("name", _wx_name(db, who) if db is not None else who)
+        ent["is_group"] = str(who).endswith("@chatroom")
+
+    items = sorted(sessions.values(), key=lambda x: x["last_ts"], reverse=True)
+    return jsonify({"ok": True, "sessions": items})
+
+
+@app.route('/api/inbox/messages/<path:who>')
+@login_required
+def inbox_messages(who):
+    """某会话往来消息：微信库最近 60 条 ∪ 本地聊天记录（合并去重按时间升序）。"""
+    merged = {}
+    wx, db = _inbox_wxdb()
+    if db is not None:
+        try:
+            self_wxid = db.wxid() if hasattr(db, "wxid") else ""
+            rows = db.get_messages(who, limit=60) or []
+            for m in _db_rows_to_msgs(db, who, rows, self_wxid):
+                merged[(round(m["ts"], 1), m["content"])] = m
+        except Exception as e:
+            app.logger.warning(f"消息中心：读取微信消息失败: {e}")
+    try:
+        import chat_history as _ch
+        for m in _ch.fetch_who(who, 200):
+            key = (round(float(m["ts"] or 0), 1), m["content"])
+            if key not in merged:
+                merged[key] = {
+                    "ts": float(m["ts"] or 0),
+                    "direction": m["direction"],
+                    "source": m["source"],
+                    "content": m["content"],
+                    "sender": m.get("sender") or who,
+                    "from": "local",
+                }
+    except Exception as e:
+        app.logger.warning(f"消息中心：读取本地记录失败: {e}")
+    msgs = sorted(merged.values(), key=lambda x: x["ts"])
+    return jsonify({
+        "ok": True,
+        "who": who,
+        "name": _wx_name(db, who) if db is not None else who,
+        "is_group": str(who).endswith("@chatroom"),
+        "messages": msgs[-200:],
+    })
+
+
+@app.route('/api/inbox/reply', methods=['POST'])
+@login_required
+def inbox_reply():
+    """手动回复：把文本发到指定会话（好友/群），并记录到本地聊天历史。"""
+    data = request.get_json(silent=True) or {}
+    who = (data.get("who") or "").strip()
+    text = (data.get("text") or "").strip()
+    if not who or not text:
+        return jsonify({"ok": False, "error": "缺少 who 或 text"}), 400
+    try:
+        from wechat_compat import WeChat
+        wx = WeChat()
+        try:
+            wx._init()
+            # 支持昵称/群名解析成 username
+            target = who
+            db = getattr(wx, "_db", None)
+            if db is not None:
+                if not str(who).endswith("@chatroom") and not str(who).startswith("wxid_"):
+                    resolved = wx._resolve_username(who)
+                    if resolved:
+                        target = resolved
+            wx.SendMsg(text, target)
+        finally:
+            try:
+                wx.close()
+            except Exception:
+                pass
+        try:
+            import chat_history as _ch
+            _ch.record_outgoing_bot(target, text)
+        except Exception:
+            pass
+        return jsonify({"ok": True, "who": target})
+    except Exception as e:
+        app.logger.warning(f"消息中心：发送失败: {e}")
+        return jsonify({"ok": False, "error": f"发送失败（微信未登录/未安装？）: {e}"}), 502
+
 @app.route('/api/npc/save_settings', methods=['POST'])
 @login_required
 def save_npc_settings():
@@ -5584,7 +5783,8 @@ def jev_page():
     # 出厂常量（只读展示，让用户知道它在跑、跑的是什么）
     consts = {}
     if m is not None:
-        for name in ('JEV_ENDPOINT', 'JEV_MODEL_NAME', 'JEV_TIMEOUT_SEC', 'JEV_RELATIONSHIP',
+        for name in ('JEV_ENDPOINT', 'JEV_MODEL_NAME', 'JEV_TIMEOUT_SEC', 'JEV_RETRY_TIMEOUT_SEC',
+                     'JEV_MAX_RETRIES', 'JEV_LANGUAGE_FOLLOW', 'JEV_RELATIONSHIP',
                      'JEV_CONTEXT_TURNS', 'JEV_INJECT_GUIDANCE', 'JEV_HOLD_ON_DANGER',
                      'JEV_DANGER_HOLD_LEVEL', 'JEV_CIRCUIT_FAILS'):
             consts[name] = getattr(m, name, None)

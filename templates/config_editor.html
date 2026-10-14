@@ -1640,6 +1640,108 @@
                 }
             }
             window.saveScriptPack = saveScriptPack;
+
+            // ===== 消息中心 =====
+            let inboxCurrent = null;
+            let inboxTimer = null;
+
+            function fmtTs(ts) {
+                if (!ts) return '';
+                const d = new Date(ts * 1000);
+                const p = (n) => String(n).padStart(2, '0');
+                return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+            }
+
+            function esc(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            async function loadInboxSessions() {
+                try {
+                    const r = await fetch('/api/inbox/sessions', { headers: getCSRFHeaders() });
+                    const j = await r.json();
+                    const list = document.getElementById('inbox-session-list');
+                    if (!j.ok) { list.innerHTML = '<div style="padding:12px;color:#999;">' + esc(j.error || '加载失败') + '</div>'; return; }
+                    if (!j.sessions.length) { list.innerHTML = '<div style="padding:12px;color:#999;">暂无消息</div>'; return; }
+                    list.innerHTML = j.sessions.map(s => `
+                        <div class="inbox-session-item" data-who="${esc(s.who)}" style="padding:10px 12px;border-bottom:1px solid #f5f5f5;cursor:pointer;${s.who === inboxCurrent ? 'background:#eef4ff;' : ''}">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-weight:600;font-size:13px;${s.is_group ? 'color:#0b7a3b;' : ''}">${s.is_group ? '👥 ' : ''}${esc(s.name || s.who)}</span>
+                                ${s.pending ? '<span style="background:#f43f5e;color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;">未回复</span>' : ''}
+                            </div>
+                            <div style="font-size:12px;color:#888;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(s.last_content || '（无文本消息）')}</div>
+                            <div style="font-size:11px;color:#bbb;margin-top:2px;">${fmtTs(s.last_ts)}</div>
+                        </div>`).join('');
+                    document.querySelectorAll('.inbox-session-item').forEach(el => {
+                        el.onclick = () => openInboxSession(el.getAttribute('data-who'));
+                    });
+                } catch (e) {
+                    document.getElementById('inbox-session-list').innerHTML = '<div style="padding:12px;color:#999;">加载失败</div>';
+                }
+            }
+
+            async function openInboxSession(who) {
+                inboxCurrent = who;
+                document.querySelectorAll('.inbox-session-item').forEach(el => {
+                    el.style.background = el.getAttribute('data-who') === who ? '#eef4ff' : '';
+                });
+                try {
+                    const r = await fetch('/api/inbox/messages/' + encodeURIComponent(who), { headers: getCSRFHeaders() });
+                    const j = await r.json();
+                    if (!j.ok) { document.getElementById('inbox-messages').innerHTML = '<div style="color:#999;">' + esc(j.error || '加载失败') + '</div>'; return; }
+                    document.getElementById('inbox-header').textContent = (j.is_group ? '👥 ' : '') + (j.name || who);
+                    const box = document.getElementById('inbox-messages');
+                    if (!j.messages.length) { box.innerHTML = '<div style="color:#999;text-align:center;margin-top:40px;">暂无消息</div>'; }
+                    else {
+                        box.innerHTML = j.messages.map(m => {
+                            const mine = m.direction === 'outgoing';
+                            return `<div style="display:flex;${mine ? 'justify-content:flex-end;' : ''}margin-bottom:10px;">
+                                <div style="max-width:70%;background:${mine ? '#d9f0ff' : '#f4f4f5'};border-radius:10px;padding:8px 12px;">
+                                    <div style="font-size:11px;color:#999;margin-bottom:2px;">${esc(m.sender || '')} · ${fmtTs(m.ts)}</div>
+                                    <div style="font-size:14px;word-break:break-word;white-space:pre-wrap;">${esc(m.content)}</div>
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+                    box.scrollTop = box.scrollHeight;
+                    document.getElementById('inbox-reply-box').style.display = 'flex';
+                } catch (e) {
+                    document.getElementById('inbox-messages').innerHTML = '<div style="color:#999;">加载失败</div>';
+                }
+            }
+
+            async function sendInboxReply() {
+                const input = document.getElementById('inbox-reply-text');
+                const text = input.value.trim();
+                if (!inboxCurrent || !text) return;
+                input.value = '';
+                try {
+                    const r = await fetch('/api/inbox/reply', {
+                        method: 'POST',
+                        headers: getCSRFHeaders(),
+                        body: JSON.stringify({ who: inboxCurrent, text }),
+                    });
+                    const j = await r.json();
+                    if (!j.ok) { showMsg(j.error || '发送失败'); return; }
+                    await openInboxSession(inboxCurrent);
+                    loadInboxSessions();
+                } catch (e) {
+                    showMsg('发送失败：' + e);
+                }
+            }
+
+            function initInbox() {
+                const sendBtn = document.getElementById('inbox-send-btn');
+                const input = document.getElementById('inbox-reply-text');
+                if (!sendBtn || !input) return;
+                sendBtn.onclick = sendInboxReply;
+                input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendInboxReply(); });
+                if (inboxTimer) clearInterval(inboxTimer);
+                inboxTimer = setInterval(() => { if (document.getElementById('inbox-session-list').offsetParent !== null) loadInboxSessions(); }, 15000);
+                loadInboxSessions();
+            }
+            window.initInbox = initInbox;
             
             // 辅助函数：获取包含CSRF token的headers
             function getCSRFHeaders(additionalHeaders = {}) {
@@ -3529,6 +3631,7 @@
             <div class="sidebar-group">
                 <div class="sidebar-group-label">特色功能</div>
                 <ul>
+                    <li><a href="#" data-target="section-inbox">消息中心</a></li>
                     <li><a href="#" data-target="section-ext-avatar">AI 分身</a></li>
                     <li><a href="#" data-target="section-ext-stylelab">风格模仿</a></li>
                     <li><a href="#" data-target="section-ext-forward">固定转发</a></li>
@@ -3709,6 +3812,25 @@
 
                     <div class="peek-section forum-view-actions" style="margin-top: 16px;">
                         <button type="button" class="peek-btn forum-view-btn" onclick="openForum()" disabled>查看论坛</button>
+                    </div>
+                </div>
+
+                <div id="section-inbox" class="content-panel">
+                    <h2>消息中心</h2>
+                    <small class="panel-lead">好友与群聊往来消息；红点 = 对方发来未回复，可手动回复或等 AI 自动回。</small>
+                    <div id="inbox-layout" style="display:flex;gap:16px;min-height:520px;">
+                        <div id="inbox-sessions" style="width:280px;flex:0 0 280px;border:1px solid #e5e7eb;border-radius:8px;overflow-y:auto;max-height:560px;background:#fff;">
+                            <div style="padding:10px 12px;font-weight:600;border-bottom:1px solid #f0f0f0;">会话</div>
+                            <div id="inbox-session-list"></div>
+                        </div>
+                        <div style="flex:1;display:flex;flex-direction:column;border:1px solid #e5e7eb;border-radius:8px;background:#fff;min-width:0;">
+                            <div id="inbox-header" style="padding:10px 14px;font-weight:600;border-bottom:1px solid #f0f0f0;">选择一个会话</div>
+                            <div id="inbox-messages" style="flex:1;overflow-y:auto;max-height:460px;padding:12px 14px;"></div>
+                            <div id="inbox-reply-box" style="display:none;padding:10px 14px;border-top:1px solid #f0f0f0;gap:8px;">
+                                <input id="inbox-reply-text" type="text" placeholder="输入回复内容，回车发送" style="flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;">
+                                <button id="inbox-send-btn" class="nav-button">发送</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -5213,6 +5335,7 @@
     <script>
     // 统一 API Key 自动化：默认所有功能共用主密钥，条件判定是否开启
     document.addEventListener('DOMContentLoaded', function () {
+        if (window.initInbox) window.initInbox();
         const master = document.getElementById('masterApiKey');
         const unified = document.getElementById('useUnifiedKey');
         const moon = document.getElementById('moonKey');
