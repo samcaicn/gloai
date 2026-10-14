@@ -19,6 +19,17 @@ object ProbeImeBus {
     /** IME 在 Settings.Secure 里的 id 形式：包名/manifest 声明名（相对名原样进 id）。 */
     val imeId: String = "com.jev.probe/.input.ProbeInputMethod"
 
+    /**
+     * 探针 IME 窗口高度占屏高比例——必须与主流键盘（讯飞实测 1080x2412 上 1005px）
+     * 一致。微信输入栏紧贴 IME 窗顶：IME 高度一变输入栏位移，发送键坐标就点空。
+     * 旧实现只设了 view 高度没设窗口高度，IME 被 wrap 成 304px，输入栏被推高
+     * 750px——2026-10-14 真机"填了没发出"的根因。
+     */
+    const val KB_RATIO = 0.4167f
+
+    /** 微信聊天页输入栏高度（dp，实测讯飞态标定：绿按钮中心=输入栏垂直中心）。 */
+    const val WX_INPUT_BAR_DP = 56f
+
     @Volatile
     var pendingText: String? = null
         private set
@@ -26,6 +37,16 @@ object ProbeImeBus {
     /** 每投递一次 +1，防 ProbeInputMethod 轮询重复消费同一条。 */
     @Volatile
     var pendingId: Long = 0L
+        private set
+
+    /** 写入成功后是否顺便发送（autoSend 开时 true）。由 ProbeInputMethod 执行。 */
+    @Volatile
+    var pendingSend: Boolean = false
+        private set
+
+    /** 最近一次写入的发送结果（IME 通道 performEditorAction/回车是否成功）。 */
+    @Volatile
+    var lastSent: Boolean = false
         private set
 
     @Volatile
@@ -41,9 +62,11 @@ object ProbeImeBus {
     var imeActive: Boolean = false
 
     @Synchronized
-    fun requestWrite(text: String, done: (Boolean) -> Unit) {
+    fun requestWrite(text: String, send: Boolean = false, done: (Boolean) -> Unit) {
         pendingText = text
+        pendingSend = send
         pendingId += 1
+        lastSent = false
         onWritten = done
     }
 
@@ -61,7 +84,14 @@ object ProbeImeBus {
         val cb = onWritten
         onWritten = null
         pendingText = null
+        pendingSend = false
         cb?.invoke(ok)
+    }
+
+    /** ProbeInputMethod 写入+发送完成后回填发送结果，供 ChatCaptureService 判断是否还要走坐标兜底。 */
+    @Synchronized
+    fun reportSent(sent: Boolean) {
+        lastSent = sent
     }
 
     /**

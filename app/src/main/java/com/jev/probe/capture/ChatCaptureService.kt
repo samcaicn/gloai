@@ -1240,13 +1240,25 @@ open class ChatCaptureService : AccessibilityService() {
      * 整行落在键盘区域——这是 70e588b 之后仍发不出去的直接原因之一。
      */
     private fun wxFocusPoint(): Pair<Float, Float> {
+        // 输入栏中心：紧贴 IME 窗顶，与 wxSendPoint 同一条线（IME 窗高 = KB_RATIO*H）。
+        // 旧值 0.9349H 是 IME 被 wrap 成 304px、输入栏被推高后的位置；IME 窗口高度
+        // 修复后输入栏回落到键盘态，必须同链更新，否则点到探针自己的视图上。
         val dm = resources.displayMetrics
-        return dm.widthPixels * 0.462f to dm.heightPixels * 0.9349f
+        val kbH = dm.heightPixels * com.jev.probe.input.ProbeImeBus.KB_RATIO
+        val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
+        return dm.widthPixels * 0.462f to (dm.heightPixels - kbH - barHalf)
     }
 
     private fun wxSendPoint(): Pair<Float, Float> {
+        // 绿按钮中心 = (0.9111W, 输入栏垂直中心)。输入栏紧贴 IME 窗顶，其半高
+        // 56dp*density/2。IME 窗高由 ProbeInputMethod 强制撑到 KB_RATIO*H（与讯飞
+        // 键盘同高），所以 y = H - KB_RATIO*H - 输入栏半高，全部按屏幕比例算，
+        // 换手机/换分辨率不用改坐标（2026-10-14 真机 1080x2412 标定：
+        // 2412-1005-77=1330，与绿按钮像素实测中心 y=1331 吻合）。
         val dm = resources.displayMetrics
-        return dm.widthPixels * 0.9111f to dm.heightPixels * 0.5518f
+        val kbH = dm.heightPixels * com.jev.probe.input.ProbeImeBus.KB_RATIO
+        val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
+        return dm.widthPixels * 0.9111f to (dm.heightPixels - kbH - barHalf)
     }
 
     /**
@@ -1282,9 +1294,11 @@ open class ChatCaptureService : AccessibilityService() {
         fun finish(ok: Boolean) {
             if (!isCurrent(token)) { Log.w(TAG, "fillInput finish: token stale, drop"); return }
             if (ok) {
-                Log.i(TAG, "fillInput ok: autoSend=${prefs.autoSend} -> ${if (prefs.autoSend) "sendFor" else "toast-only"}")
+                val sentByIme = ProbeImeBus.lastSent
+                Log.i(TAG, "fillInput ok: autoSend=${prefs.autoSend} sentByIme=$sentByIme -> ${if (prefs.autoSend && !sentByIme) "sendFor" else "toast-only"}")
                 // sendFor announces the countdown itself; don't double-toast here.
-                if (prefs.autoSend) sendFor(token)
+                if (prefs.autoSend && !sentByIme) sendFor(token)
+                else if (sentByIme) overlay?.toast(t("已自动发送", "Sent automatically"))
                 else overlay?.toast(t("已填入，确认后自己发送", "Filled in — review it and send yourself"))
             } else { Log.w(TAG, "fillInput failed -> clipboard fallback"); copyToClipboard(text); overlay?.toast(t("已复制，长按输入框粘贴", "Copied — long-press the input box to paste")) }
         }
@@ -1295,10 +1309,12 @@ open class ChatCaptureService : AccessibilityService() {
             val (fx, fy) = wxFocusPoint()
             if (ProbeImeBus.imeActive) {
                 // 探针已激活（用户自己在系统/通知栏切到了探针输入法）：投递 + 聚焦输入栏，
-                // 走 poll path 直接填字 + 点发送。App 全程不弹选择器、不替用户切输入法。
-                ProbeImeBus.requestWrite(text) { ok -> finish(ok) }
+                // 走 poll path 直接填字；autoSend 开时 IME 写入后顺手设备无关发送
+                // （performEditorAction/回车），失败才回落到 sendFor 动态坐标点击。
+                // App 全程不弹选择器、不替用户切输入法。
+                ProbeImeBus.requestWrite(text, prefs.autoSend) { ok -> finish(ok) }
                 tapWeChatInputBar()
-                Log.i(TAG, "fillInput: probe IME active, wrote via poll path (focus=$fx,$fy)")
+                Log.i(TAG, "fillInput: probe IME active, wrote via poll path (focus=$fx,$fy, autoSend=${prefs.autoSend})")
             } else {
                 // 输入法非探针：Android 不允许 app 静默切输入法，也绝不自动弹选择器打扰。
                 // 只在界面提示用户自己去系统/通知栏切到「AI聊天助手·写入」，
@@ -1446,11 +1462,17 @@ open class ChatCaptureService : AccessibilityService() {
             main.postDelayed({
                 if (!isCurrent(token)) return@postDelayed
                 val input = inputFor(token)
-                Log.i(TAG, "sendFor verify: inputStillHasText=${input?.text?.isBlank() == false}")
-                if (input != null && !input.text.isNullOrBlank()) {
-                    if (!clickSend()) {
-                        findSendButton(rootInActiveWindow ?: return@postDelayed, token.target.pkg)
-                            ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                // 树被 FLAG_SECURE 剪空时 inputFor 返回 null——这不是"输入框已清空"，
+                // 旧代码 null==false 打出 inputStillHasText=false 曾误报发送成功（2026-10-14 真机教训）。
+                if (input == null) {
+                    Log.i(TAG, "sendFor verify: a11y tree pruned, cannot confirm via input node")
+                } else {
+                    Log.i(TAG, "sendFor verify: inputStillHasText=${!input.text.isNullOrBlank()}")
+                    if (!input.text.isNullOrBlank()) {
+                        if (!clickSend()) {
+                            findSendButton(rootInActiveWindow ?: return@postDelayed, token.target.pkg)
+                                ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                        }
                     }
                 }
             }, 800L)

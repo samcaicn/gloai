@@ -25,12 +25,6 @@ class ProbeInputMethod : InputMethodService() {
     companion object {
         const val TAG = "JEVASSIST"
         private const val POLL_MS = 200L
-
-        /**
-         * IME 视图高度占屏高比例——与实测讯飞键盘一致（1080x2412：1005px/2412=0.4167）。
-         * 微信输入栏紧贴 IME 窗顶；高度一致，实测发送键坐标 (984,1331) 才有效。
-         */
-        private const val KB_RATIO = 0.4167f
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -46,7 +40,8 @@ class ProbeInputMethod : InputMethodService() {
             }
             if (pair != null) {
                 consumedId = pair.first
-                commitAndFinish(pair.second)
+                val send = ProbeImeBus.pendingSend
+                commitAndFinish(pair.second, send)
             }
             if (polling) handler.postDelayed(this, POLL_MS)
         }
@@ -61,17 +56,19 @@ class ProbeInputMethod : InputMethodService() {
         polling = true
         handler.post(poll)
         val dp = { v: Int -> (v * resources.displayMetrics.density).toInt() }
-        // 视图高度必须与实测讯飞键盘一致（1080x2412 上 = 1005px，屏高 0.4167）：
+        // 窗口高度必须与实测讯飞键盘一致（1080x2412 上 = 1005px，屏高 0.4167）：
         // 微信输入栏紧贴 IME 窗顶，高度一变输入栏位移，ChatCaptureService 里
-        // 实测校准的发送键 (984,1331) 就会点空。这里把 IME 窗撑成同高键盘，
-        // 写入-发送全程输入栏不动。
-        val kbH = (resources.displayMetrics.heightPixels * KB_RATIO).toInt()
+        // 按比例计算的发送键坐标就点空。只设 view 高度不够——IME 窗口默认
+        // wrap_content，会按内容缩成 304px（2026-10-14 真机实测，输入栏被推高
+        // 750px，发送全点空）。这里 window.setLayout 强制窗口撑到键盘同高。
+        val kbH = (resources.displayMetrics.heightPixels * ProbeImeBus.KB_RATIO).toInt()
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = android.view.Gravity.CENTER_VERTICAL
             setBackgroundColor(0xFFF2F3F5.toInt())
             layoutParams = android.widget.FrameLayout.LayoutParams(
-                android.widget.FrameLayout.LayoutParams.MATCH_PARENT, kbH
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
             )
             addView(TextView(this@ProbeInputMethod).apply {
                 text = t("AI 聊天助手 · 写入通道\n（正在写入回复，写完点下面返回普通输入法）",
@@ -89,6 +86,20 @@ class ProbeInputMethod : InputMethodService() {
         }
     }
 
+    override fun onWindowShown() {
+        super.onWindowShown()
+        // onWindowShown 时 decorView 才 attach 到 IME 窗口，此时 setLayout 才生效。
+        val kbH = (resources.displayMetrics.heightPixels * ProbeImeBus.KB_RATIO).toInt()
+        try {
+            window?.setLayout(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT, kbH
+            )
+            Log.i(TAG, "ProbeIme: onWindowShown forced window h=$kbH")
+        } catch (e: Exception) {
+            Log.w(TAG, "ProbeIme: setLayout failed ${e.message}")
+        }
+    }
+
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         ProbeImeBus.imeActive = true
@@ -103,7 +114,8 @@ class ProbeInputMethod : InputMethodService() {
             return
         }
         consumedId = pair.first
-        commitAndFinish(pair.second)
+        val send = ProbeImeBus.pendingSend
+        commitAndFinish(pair.second, send)
     }
 
     override fun onFinishInput() {
@@ -120,7 +132,7 @@ class ProbeInputMethod : InputMethodService() {
         super.onDestroy()
     }
 
-    private fun commitAndFinish(text: String) {
+    private fun commitAndFinish(text: String, send: Boolean) {
         val ic = currentInputConnection
         if (ic == null) {
             Log.w(TAG, "ProbeIme: no input connection, fail")
@@ -128,12 +140,40 @@ class ProbeInputMethod : InputMethodService() {
             return
         }
         ic.commitText(text, 1)
-        Log.i(TAG, "ProbeIme: committed ${text.length} chars")
+        Log.i(TAG, "ProbeIme: committed ${text.length} chars send=$send")
+        val sentOk = if (send) sendViaIme(ic) else false
+        ProbeImeBus.reportSent(sentOk)
         ProbeImeBus.completeWrite(true)
-        // 注意：写完后**不自动弹选择器切回**。ChatCaptureService 紧接着按
-        // sendDelayMs（默认 2s）倒计时点微信发送键 (984,1331)——这里只要弹了
-        // 选择器，用户没来得及切回时那一 tap 就落在选择器上，消息发不出去。
-        // 切回交给视图上的「↩ 返回普通输入法」按钮，用户自己掌握时机。
+        // 注意：写完后**不自动弹选择器切回**。切回交给视图上的「↩ 返回普通输入法」
+        // 按钮，用户自己掌握时机（App 不替用户切换输入法）。
+    }
+
+    /**
+     * 设备无关的发送尝试（不用屏幕坐标，换手机/换分辨率都有效）：
+     * 1. performEditorAction(IME_ACTION_SEND)——正规输入法「发送」键的同款路径。
+     *    微信输入框实测 imeOptions=0x40000006（NO_ENTER_ACTION|NO_FULLSCREEN）、
+     *    actionId=0（ACTION_NONE），所以这条路大概率返回 false，但免费试。
+     * 2. 回车 keyevent——用户开启微信「回车键发送消息」后这条直接发送；没开则
+     *    是换行。**无法从返回值确认是否真发**，所以只做 best-effort 注入，
+     *    不算成功，让调用方继续走动态坐标兜底（双保险，不会漏发）。
+     * 只有 performEditorAction 明确返回 true 才认为发送成功。
+     */
+    private fun sendViaIme(ic: android.view.inputmethod.InputConnection): Boolean {
+        try {
+            val sent = ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
+            Log.i(TAG, "ProbeIme: performEditorAction(SEND)=$sent")
+            if (sent) return true
+        } catch (e: Exception) {
+            Log.w(TAG, "ProbeIme: performEditorAction failed ${e.message}")
+        }
+        try {
+            ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER))
+            ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_ENTER))
+            Log.i(TAG, "ProbeIme: ENTER keyevent injected (best-effort, not confirmed)")
+        } catch (e: Exception) {
+            Log.w(TAG, "ProbeIme: ENTER keyevent failed ${e.message}")
+        }
+        return false
     }
 
     private fun backToNormalIme() {
