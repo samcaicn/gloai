@@ -97,6 +97,11 @@ class WxNotificationListener : NotificationListenerService() {
             })
         }
 
+        // 多会话同时来消息：先把这条通知的 contentIntent 按 conv 暂存，探针的通知轮队列
+        // 会在每条回复发送前重放它、把微信重开到"这个"会话（8.0.78 读不到标题，PendingIntent
+        // 是唯一可靠的定位锚点，见 NotifIntentStore）。下面的 warm-start 开窗保留作首条兜底。
+        NotifIntentStore.put(conv, n.contentIntent)
+
         // Unattended mode: if enabled, bring the conversation to the foreground so
         // the accessibility service can read + reply even when the phone is idle.
         if (Prefs(this).autoOpenChat && !isWeChatForeground()) {
