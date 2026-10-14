@@ -55,6 +55,10 @@ _gui_*.log
 _webui_preview.log
 _preview_server.log
 
+# ---- 本地 EXE 构建目录（90MB 级，不入库）----
+_pybuild_work/
+_pybuild_dist/
+
 # ---- 一次性调试脚本残留（不参与产品，也不再是回归测试）----
 weauto_license/pay_debug_*.py
 weauto_license/pay_test_qr*.png
