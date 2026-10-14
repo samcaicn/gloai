@@ -92,7 +92,11 @@ class ProbeInputMethod : InputMethodService() {
      */
     private fun publishWindowHeight() {
         try {
-            val h = window?.decorView?.height ?: 0
+            // SoftInputWindow 本质是 Dialog，Dialog 无 decorView，需再 .window 取其 Window。
+            // 取不到时退回 currentInputView 高度；两者都是「微信输入栏上沿到屏底的距离」。
+            val h = window?.window?.decorView?.height
+                ?: currentInputView?.height
+                ?: 0
             if (h > 0) ProbeImeBus.imeWindowHeightPx = h
             Log.i(TAG, "ProbeIme: window height published = $h")
         } catch (e: Exception) {
