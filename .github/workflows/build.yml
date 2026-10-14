@@ -1,0 +1,79 @@
+name: build-aibuddy
+
+# 智创协同 AI 工作台（mu-desktop）GitHub 构建载体。
+# 源码唯一事实源在腾讯工蜂 clawclaw/aibuddy；本仓库（gloai）仅作构建载体：
+#   push 到 aibuddy 分支 → 构建 Windows 安装包 → wipe job 删除该分支
+#   → 只保留 Actions 运行记录 + artifact（只读升级包，保留 90 天）
+# 下次构建重新 push 即重建分支触发，无需在本仓库保留任何分支。
+
+on:
+  push:
+    branches: [aibuddy]
+  workflow_dispatch:
+
+concurrency:
+  group: aibuddy-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      # hoisted 布局：bun 隔离布局下 electron 的 postinstall 找不到 @electron/get
+      # （作用域里只建空目录不建链接，bun 1.4.2 已知问题），装完会崩。
+      - name: 安装依赖（hoisted 布局）
+        working-directory: desktop
+        run: bun install --frozen-lockfile --linker=hoisted
+
+      # bun 1.4.2 hoisted 布局不建工作区链接（@mu/@aionui 是空目录），
+      # 而 src/index.ts 按包名 import '@aionui/web-host'，必须补 junction。
+      - name: 补齐工作区链接
+        working-directory: desktop
+        shell: cmd
+        run: |
+          if not exist node_modules\@mu mkdir node_modules\@mu
+          if not exist node_modules\@aionui mkdir node_modules\@aionui
+          if not exist node_modules\@mu\desktop mklink /J node_modules\@mu\desktop packages\desktop
+          if not exist node_modules\@aionui\shared-scripts mklink /J node_modules\@aionui\shared-scripts packages\shared-scripts
+          if not exist node_modules\@aionui\web-host mklink /J node_modules\@aionui\web-host packages\web-host
+
+      # 快速无签名构建：压缩级别 1 + 跳过签名。electron 二进制由 postinstall
+      # 从 GitHub releases 下载（runner 网络无墙）；aioncore 后端二进制由
+      # prepare-aioncore 从 iOfficeAI/AionCore 公开 releases 下载。
+      - name: 构建 Windows x64 安装包（快速 · 无签名）
+        working-directory: desktop
+        run: bun run build-win:x64:fast
+
+      - name: 上传只读升级包（90 天）
+        uses: actions/upload-artifact@v4
+        with:
+          name: aibuddy-win-x64
+          path: |
+            desktop/out/TupAI-*-win-x64.exe
+            desktop/out/TupAI-*-win-x64.msi
+            desktop/out/TupAI-*-win-x64.blockmap
+          retention-days: 90
+          if-no-files-found: error
+
+  # 构建结束后删除载体分支：仓库不保留代码，只留 Actions 记录 + artifact。
+  # always() 保证失败也删——下次 push 重建分支即可重新触发，不会因分支残留
+  # 导致 "Everything up-to-date" 而不触发 CI。
+  wipe:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 删除 aibuddy 载体分支
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/${{ github.ref_name }}" \
+            || echo "分支已删除或不存在，跳过"
