@@ -765,6 +765,35 @@ def start_bot():
 
     # 单文件 exe（PyInstaller 冻结）模式下，bot 已随 exe 打包，
     # 通过自重启并带 --bot 参数来启动机器人子进程。
+    # ---- 启动前置校验（2026-10-12 实测补）----
+    # 原先点了「启动」就无条件 Popen 起 bot：没配 API Key / 未激活 / 监听名单为空时，
+    # bot 会秒退，而前端只看到状态翻成 running 就提示「Bot 已启动」——用户以为起来了，
+    # 实际什么都没发生，且排查不到原因。这里先把必然失败的情况拦住并给出**可操作**的中文提示。
+    # ⚠️ 整段 fail-open：校验本身出任何异常都不阻塞启动，避免误伤正常场景。
+    try:
+        _cfg0 = parse_config()
+        _listen0 = _cfg0.get('LISTEN_LIST') or []
+        if not _listen0:
+            return jsonify({
+                'error': '还没有添加要监听的用户或群聊',
+                'message': '请先到「用户与监听」添加至少一个用户或群聊，再启动机器人。'
+            }), 400
+        _ls = _license_status()
+        if _ls.get('available'):
+            if _ls.get('guard_enabled') and not _ls.get('activated'):
+                return jsonify({
+                    'error': '未激活',
+                    'message': '软件尚未激活，请先购买并激活后再启动机器人。'
+                }), 400
+            if (not _ls.get('guard_enabled')
+                    and not str(_cfg0.get('DEEPSEEK_API_KEY', '') or '').strip()):
+                return jsonify({
+                    'error': '未配置 API Key',
+                    'message': '请到「AI 模型」填写 API Key，或用卡密激活以使用官方 AI（免配置）。'
+                }), 400
+    except Exception as _pre:
+        app.logger.warning(f"启动前置校验跳过（fail-open）: {_pre}")
+
     if getattr(sys, 'frozen', False):
         cmd = [sys.executable, '--bot']
     else:
@@ -1089,10 +1118,10 @@ def submit_config():
             'ENABLE_EMOJI_SENDING', 'ENABLE_AUTO_MESSAGE', 'ENABLE_MEMORY',
             'UPLOAD_MEMORY_TO_AI', 'ALLOW_OPEN_PORT', 'ENABLE_REMINDERS',
             'ALLOW_REMINDERS_IN_QUIET_TIME', 'USE_VOICE_CALL_FOR_REMINDERS',
-            'ENABLE_ONLINE_API', 'SEPARATE_ROW_SYMBOLS',
+            'ENABLE_ONLINE_API',
             'ENABLE_GROUP_AT_REPLY', 'ENABLE_GROUP_KEYWORD_REPLY','GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY', 'REMOVE_PARENTHESES',
             'ENABLE_ASSISTANT_MODEL', 'USE_ASSISTANT_FOR_MEMORY_SUMMARY', 'ENABLE_FORUM_CUSTOM_MODEL',
-            'IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE', 'ENABLE_SENSITIVE_CONTENT_CLEARING',
+            'ENABLE_SENSITIVE_CONTENT_CLEARING',
             'ENABLE_TEXT_COMMANDS'
         ]
         for field in boolean_fields:
@@ -1774,10 +1803,10 @@ def index():
                 'ENABLE_EMOJI_SENDING', 'ENABLE_AUTO_MESSAGE', 'ENABLE_MEMORY',
                 'UPLOAD_MEMORY_TO_AI', 'ALLOW_OPEN_PORT', 'ENABLE_REMINDERS',
                 'ALLOW_REMINDERS_IN_QUIET_TIME', 'USE_VOICE_CALL_FOR_REMINDERS',
-                'ENABLE_ONLINE_API', 'SEPARATE_ROW_SYMBOLS',
+                'ENABLE_ONLINE_API',
                 'ENABLE_GROUP_AT_REPLY', 'ENABLE_GROUP_KEYWORD_REPLY','GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY','REMOVE_PARENTHESES',
                 'ENABLE_ASSISTANT_MODEL', 'USE_ASSISTANT_FOR_MEMORY_SUMMARY',
-                'IGNORE_GROUP_CHAT_FOR_AUTO_MESSAGE', 'ENABLE_SENSITIVE_CONTENT_CLEARING'
+                'ENABLE_SENSITIVE_CONTENT_CLEARING'
             ]
             for field in boolean_fields_from_editor:
                  # 确保这些字段在表单中存在才处理，否则它们可能来自 quick_start
@@ -1825,6 +1854,21 @@ def index():
             _tier = ''
         _recommended = recommended_model_for_tier(_tier)
 
+        # 话术包列表（prompts/*.wpk）与当前激活 pack_id
+        _packs = []
+        _active_pack = ''
+        try:
+            import scriptpack as _sp
+            _packs = _sp.list_packs()
+            try:
+                import persona as _pa
+                _active_pack = (_pa.settings() or {}).get('scriptPack', '')
+            except Exception:
+                _active_pack = ''
+        except Exception:
+            _packs = []
+            _active_pack = ''
+
         return render_template('config_editor.html',
                              config=display_config,
                              prompt_files=prompt_files,
@@ -1833,7 +1877,9 @@ def index():
                              license_tier=_tier,
                              recommended_model=_recommended,
                              popular_models=POPULAR_CHAT_MODELS,
-                             assistant_popular_models=ASSISTANT_POPULAR_MODELS)
+                             assistant_popular_models=ASSISTANT_POPULAR_MODELS,
+                             script_packs=_packs,
+                             active_script_pack=_active_pack)
     except Exception as e:
         app.logger.error(f"加载主配置页面错误: {e}")
         return "加载配置页面错误，请检查日志。"
@@ -1984,6 +2030,13 @@ def generate_prompt():
         )
         
         prompt = request.json.get('prompt', '')
+        # 空描述前置拦截（2026-10-12 实测补）：原先不校验就直连 AI，
+        # 网络不通时用户只会看到难懂的 "Connection error."，且白白消耗一次额度。
+        if not str(prompt or '').strip():
+            return jsonify({
+                'error': '请先填写角色描述',
+                'message': '请先用一句话描述这个角色（例如：温柔的咖啡店店长，说话慢条斯理），再让 AI 生成人设。'
+            }), 400
         FixedPrompt = (
             "\n请严格按照以下格式生成提示词（仅参考以下格式，将...替换为合适的内容，不要输出其他多余内容）。"
             "\n注意：仅在<# 输出示例>部分需要输出以'\\'进行分隔的短句，且不输出逗号和句号，其它部分应当正常输出。"
@@ -4595,7 +4648,7 @@ def get_default_config():
         "AVERAGE_TYPING_SPEED": 0.2,
         "RANDOM_TYPING_SPEED_MIN": 0.05,
         "RANDOM_TYPING_SPEED_MAX": 0.1,
-        "SEPARATE_ROW_SYMBOLS": True,
+        "SEPARATE_ROW_SYMBOLS": False,
         "ENABLE_MEMORY": True,
         "MEMORY_TEMP_DIR": 'Memory_Temp',
         "MAX_MESSAGE_LOG_ENTRIES": 30,
@@ -5085,14 +5138,14 @@ def _weauto_agent_diag():
 @login_required
 def mcp_page():
     """MCP 服务说明页：让 Codex / WorkBuddy 等 agent 通过 MCP 协议驱动微信机器人。"""
-    return render_template('mcp.html', diag=_weauto_agent_diag())
+    return render_template('mcp.html', diag=_weauto_agent_diag(), lic=_license_status())
 
 
 @app.route('/cli')
 @login_required
 def cli_page():
     """CLI 命令行说明页：让 agent 用 `python cli.py <cmd>` 驱动微信机器人。"""
-    return render_template('cli.html', diag=_weauto_agent_diag())
+    return render_template('cli.html', diag=_weauto_agent_diag(), lic=_license_status())
 
 
 @app.route('/help')

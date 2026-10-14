@@ -63,6 +63,7 @@ DEFAULT = {
         "enabled": False,       # 是否把分身人设注入提示词
         "personaPrompt": "",    # 额外人设（可留空）
         "chatPurpose": "",      # 代聊目的，如「商务对接」
+        "scriptPack": "",       # 激活的话术包 pack_id（留空 = 不启用话术包，见 scriptpack.py）
     },
     "chat": [],                 # 教学聊天：[{role:user|assistant, content, ts}]
     # 云端同步下来的主人说话风格（Android 端学出来的那份）。本地 style_learner
@@ -142,6 +143,8 @@ def save_settings(fields):
     for k in ("personaPrompt", "chatPurpose"):
         if k in fields:
             s[k] = str(fields.get(k) or "").strip()
+    if "scriptPack" in fields:
+        s["scriptPack"] = str(fields.get("scriptPack") or "").strip()
     save(d)
     return s
 
@@ -198,6 +201,23 @@ def build_prompt():
     st = d.get("settings", {})
 
     lines = ["## 我的 AI 分身人设（回复时必须遵守）", ""]
+
+    # 话术包优先：激活了话术包时，以话术包 system_prompt 作为人设主体，
+    # 身份信息（name/title 等）仍追加在后面作为背景。
+    pack_text = ""
+    try:
+        sp = d.get("settings", {}).get("scriptPack", "")
+        if sp:
+            import scriptpack
+            act = scriptpack.active_prompt(sp)
+            if act.get("pack"):
+                pack_text = act["system_prompt"]
+                style = act.get("style") or {}
+                if style.get("persona") or style.get("tone"):
+                    lines.append(f"- 话术包人设：{act['pack']['name']}（{style.get('persona') or style.get('tone')}）")
+    except Exception:
+        pack_text = ""
+
     name = ident.get("nameCN", "").strip()
     if name:
         lines.append(f"- 我是{name}")
@@ -229,6 +249,13 @@ def build_prompt():
     lines.append("")
     lines.append("要求：用我本人的口吻回复；拿不准的信息如实说“这个我手头没准数，回头帮你核实”，"
                  "不要编造。保持自然口语，不要客服腔。")
+
+    # 话术包 system_prompt 作为回复规则追加在末尾（优先级最高）
+    if pack_text:
+        lines.append("")
+        lines.append("【话术包规则（最高优先级，必须遵守）】")
+        lines.append(pack_text)
+
     return "\n".join(lines)
 
 

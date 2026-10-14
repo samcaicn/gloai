@@ -45,6 +45,10 @@ except Exception:
 # 激活缓存签名盐（配合 _release 注入；防手写 APPDATA 里的 JSON 伪造激活记录）
 _CACHE_SIG_SALT = "weauto-license-cache-v1"
 
+# L3 请求签名密钥（防抓包重放/伪造激活请求的"绊线"，非绝对防线）。
+# 服务端配同名 env（WEAUTO_LICENSE_SIG_SECRET）后开始强制校验；未配则放行兼容旧客户端。
+_SIG_SECRET = os.environ.get("WEAUTO_LICENSE_SIG_SECRET", "weauto-license-sig-v1")
+
 
 def _cache_file() -> str:
     """激活缓存路径。
@@ -234,12 +238,27 @@ def _post(path: str, payload: dict):
       这样调用方才能区分「服务端临时故障 5xx」与「卡密真的无效 4xx/ok:false」；
       否则 5xx 混进网络异常分支，服务端抖一下就可能把合法用户判成未授权。
     - 网络层异常（DNS/超时/连接重置）照旧抛出，交给上层离线宽限处理。
+
+    L3 签名头（防重放/伪造，与 Worker 端 verifyClientSig 配套）：
+      X-WA-Ts      当前 unix 秒
+      X-WA-Machine 本机指纹（与服务端 body.instance_name 一致）
+      X-WA-Hmac    HMAC-SHA256(machine + "\\n" + path + "\\n" + ts, _SIG_SECRET)
     """
     url = worker_url() + path
     data = json.dumps(payload).encode("utf-8")
+    ts = str(int(time.time()))
+    machine = get_machine_id()
+    mac = hmac.new(_SIG_SECRET.encode("utf-8"),
+                   ("%s\n%s\n%s" % (machine, path, ts)).encode("utf-8"),
+                   hashlib.sha256).hexdigest()
     req = urllib.request.Request(
         url, data=data,
-        headers={"Content-Type": "application/json"}, method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "X-WA-Ts": ts,
+            "X-WA-Machine": machine,
+            "X-WA-Hmac": mac,
+        }, method="POST",
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as r:

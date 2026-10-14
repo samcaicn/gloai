@@ -217,6 +217,55 @@ function json(obj, status = 200, extraHeaders = null) {
   return new Response(JSON.stringify(obj), { status, headers: h });
 }
 
+/**
+ * L3 客户端请求签名校验（防重放/伪造激活请求的"绊线"）。
+ * 渐进式启用：env.WEAUTO_LICENSE_SIG_SECRET 未配置 → 放行（兼容旧客户端）；
+ * 配置后强制：X-WA-Ts 时间窗 ±5min + X-WA-Hmac 一致。
+ * 与客户端 weauto_license/guard.py 的 _post 签名逻辑逐字节一致：
+ *   hmac = HMAC-SHA256(machine + "\n" + path + "\n" + ts, secret)
+ * 调用：const sigErr = await verifyClientSig(req, env, path); if (sigErr) return sigErr;
+ */
+const SIG_SECRET_ENV = "WEAUTO_LICENSE_SIG_SECRET";
+const SIG_TS_WINDOW_MS = 5 * 60 * 1000;
+
+async function verifyClientSig(req, env, path) {
+  const secret = env[SIG_SECRET_ENV];
+  if (!secret) return null; // 未启用强制校验（渐进式）
+  const ts = req.headers.get("X-WA-Ts") || "";
+  const machine = req.headers.get("X-WA-Machine") || "";
+  const hmac = req.headers.get("X-WA-Hmac") || "";
+  if (!ts || !machine || !hmac) {
+    return json({ ok: false, reason: "missing_sig" }, 403);
+  }
+  const nowMs = Date.now();
+  const tsMs = Number(ts) * 1000;
+  if (!tsMs || Math.abs(nowMs - tsMs) > SIG_TS_WINDOW_MS) {
+    return json({ ok: false, reason: "sig_stale" }, 403);
+  }
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const buf = await crypto.subtle.sign(
+    "HMAC", key, enc.encode(`${machine}\n${path}\n${ts}`)
+  );
+  const computed = [...new Uint8Array(buf)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  if (computed.length !== hmac.length) {
+    return json({ ok: false, reason: "bad_sig" }, 403);
+  }
+  let diff = 0;
+  for (let i = 0; i < computed.length; i++) {
+    diff |= computed.charCodeAt(i) ^ hmac.toLowerCase().charCodeAt(i);
+  }
+  if (diff !== 0) {
+    return json({ ok: false, reason: "bad_sig" }, 403);
+  }
+  return null;
+}
+
 /** 解析套餐列表：优先 CREEM_PRODUCTS（JSON 数组，多档）；兼容旧的单产品变量。 */
 function parseProducts(env) {
   const raw = env.CREEM_PRODUCTS;
@@ -1802,6 +1851,8 @@ export default {
 
     // ---- 激活（首次）----
     if (p === "/activate" && req.method === "POST") {
+      const sigErr = await verifyClientSig(req, env, p);
+      if (sigErr) return sigErr;
       let body;
       try {
         body = await req.json();
@@ -1838,6 +1889,8 @@ export default {
 
     // ---- 校验（启动/付费功能前）----
     if (p === "/validate" && req.method === "POST") {
+      const sigErr = await verifyClientSig(req, env, p);
+      if (sigErr) return sigErr;
       let body;
       try {
         body = await req.json();
@@ -1862,6 +1915,8 @@ export default {
 
     // ---- 释放（换机/退订）----
     if (p === "/deactivate" && req.method === "POST") {
+      const sigErr = await verifyClientSig(req, env, p);
+      if (sigErr) return sigErr;
       let body;
       try {
         body = await req.json();

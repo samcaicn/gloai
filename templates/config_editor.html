@@ -1622,6 +1622,24 @@
                 return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             }
             window.getCSRFToken = getCSRFToken;
+
+            // 保存话术包选择（POST /avatar，action=save_settings）
+            async function saveScriptPack(packId) {
+                try {
+                    const fd = new FormData();
+                    fd.append('action', 'save_settings');
+                    fd.append('scriptPack', packId || '');
+                    await fetch('/avatar', {
+                        method: 'POST',
+                        headers: getCSRFHeaders(),
+                        body: fd,
+                    });
+                    showMsg('话术包已切换' + (packId ? '' : '（未启用）'));
+                } catch (e) {
+                    showMsg('保存失败：' + e);
+                }
+            }
+            window.saveScriptPack = saveScriptPack;
             
             // 辅助函数：获取包含CSRF token的headers
             function getCSRFHeaders(additionalHeaders = {}) {
@@ -3697,6 +3715,18 @@
                 <div id="section-prompt-management" class="content-panel">
                     <h2>AI 人设（Prompt）</h2>
                     <small class="panel-lead">编辑 AI 性格与说话方式，再到「用户与监听」分配。</small>
+                    <div class="form-group" id="script-pack-block">
+                        <label>话术包（.wpk，签名加密，可选）</label>
+                        <select id="scriptPackSelect" name="scriptPack" onchange="saveScriptPack(this.value)">
+                            <option value="">不启用（用下方人设 Prompt）</option>
+                            {% for p in script_packs if not p.error %}
+                            <option value="{{ p.pack_id }}" {% if p.pack_id == active_script_pack %}selected{% endif %} {% if p.expired %}disabled{% endif %}>
+                                {{ p.name }} v{{ p.version }}{% if p.expired %}（已过期）{% endif %}{% if p.device_bound %}（绑机）{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small style="display:block;margin-top:4px;color:#777;">启用后 AI 回复以话术包人设规则为主（客服/销售/助理模板，签名防篡改）。</small>
+                    </div>
                     <div id="prompt-list-view">
                         <a href="#" class="nav-button" id="createPromptBtn">新建Prompt</a>
                         <!-- 在线角色库外部链接已按需求移除 -->
