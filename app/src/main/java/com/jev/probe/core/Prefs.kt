@@ -666,11 +666,11 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val OCR_VISION = "vision"
 
         // ---- WeAuto 云端（唯一 LLM 出口）----
-        // 原 weauto.safeopc.cn 走腾讯云 SCF 源站，Cloudflare 回源 TLS 握手失败 → 整站 525
-        // （用户报的"SSL 握手失败、页面打不开"）。2026-10-09 起改用同后端的健康域名
-        // weauto.jukuai.net（Cloudflare Worker weauto-license 的自定义路由）：LLM / 支付 / 激活 /
-        // 升级全部接口一次性恢复，且界面不露任何内部域名。safeopc.cn 那条坏链路已不再被引用。
-        const val WORKER_BASE = "https://weauto.jukuai.net"
+        // 2026-10-14 起后端迁移到 Cloudflare Pages（weauto-license 项目），域名
+        // weauto-license.pages.dev：LLM / 支付 / 激活 / 升级全部接口统一走这里。
+        // 原自定义域名 wetech.jukuai.net / weauto.jukuai.net 已下线（403），不再被引用。
+        const val WORKER_HOST = "weauto-license.pages.dev"
+        const val WORKER_BASE = "https://weauto-license.pages.dev"
 
         // ---- tuptup.top OpenAI 兼容网关（用户自备 LLM，判断/回复/视觉统一走这里）----
         // 密钥按用户要求硬编码为默认值；此 key 会出现在源码与公开镜像里，介意请改走设置页自填。

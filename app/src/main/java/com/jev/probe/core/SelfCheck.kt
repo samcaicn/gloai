@@ -161,7 +161,7 @@ object SelfCheck {
                 }
                 // L3：探活打的是 Worker（/ai/jev/decisions），必须带完整性头，
                 // 否则 L3 强制校验生效后会 403，自检误报"不可达"。
-                if (url.contains("jukuai.net", ignoreCase = true)) {
+                if (url.contains(Prefs.WORKER_HOST, ignoreCase = true)) {
                     val path = runCatching { java.net.URL(url).path.ifBlank { "/" } }.getOrDefault("/")
                     runCatching {
                         Integrity.integrityHeaders(ctx, "GET", path)

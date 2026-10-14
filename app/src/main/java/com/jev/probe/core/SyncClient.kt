@@ -56,9 +56,9 @@ object SyncClient {
             readTimeout = READ_MS
             setRequestProperty("Accept", "application/json")
             setRequestProperty("User-Agent", "jev-assistant-android")
-            // L3：云端备份走 Worker（jukuai.net），同样附加官方签名指纹 + HMAC，
+            // L3：云端备份走 Worker（pages.dev），同样附加官方签名指纹 + HMAC，
             // 否则强制校验生效后会 403。其它部署（如调试用其它 base）不挂。
-            if (url.contains("jukuai.net", ignoreCase = true)) {
+            if (url.contains(Prefs.WORKER_HOST, ignoreCase = true)) {
                 val path = try { URL(url).path.ifBlank { "/" } } catch (_: Exception) { "/" }
                 runCatching {
                     Integrity.integrityHeaders(App.APP_CONTEXT, method, path)

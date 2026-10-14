@@ -3,6 +3,7 @@ package com.jev.probe.jev
 import com.jev.probe.App
 import com.jev.probe.core.BillingState
 import com.jev.probe.core.Integrity
+import com.jev.probe.core.Prefs
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -201,12 +202,12 @@ object HttpJson {
         else emptyMap()
 
     /**
-     * L3：仅对 WeAuto 云端（jukuai.net）请求附加完整性头。其它 host（OpenRouter / 自建）
+     * L3：仅对 WeAuto 云端（pages.dev）请求附加完整性头。其它 host（OpenRouter / 自建）
      * 不挂，避免把签名指纹外泄给第三方。
      * 头内容由 [Integrity.integrityHeaders] 生成（官方证书指纹 + HMAC）。
      */
     private fun workerIntegrityHeaders(url: String, method: String): Map<String, String> {
-        if (!url.contains("jukuai.net", ignoreCase = true)) return emptyMap()
+        if (!url.contains(Prefs.WORKER_HOST, ignoreCase = true)) return emptyMap()
         val path = try { URL(url).path.ifBlank { "/" } } catch (_: Exception) { "/" }
         return try {
             Integrity.integrityHeaders(App.APP_CONTEXT, method, path)
