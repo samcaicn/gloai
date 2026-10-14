@@ -71,19 +71,28 @@ class WxNotificationListener : NotificationListenerService() {
 
         val isImage = isImageMessage(text)
 
+        // 群消息 text 形如「张三：在吗」——把个人发送人解析出来，正文去掉前缀，
+        // 否则 AI 既看不到谁说的、又会把「张三：」重复写进提示词。
+        // 单聊 text 无前缀，发送人就是会话名（title=对方昵称）。
+        val (speaker, body) = parseSpeaker(text)
+        val sender = speaker ?: title
+        val conv = title
+
         // Accumulate the preview into cross-session history immediately — this works
         // even when WeChat is in the background and the chat never opens, so the
         // judge later sees the full thread instead of only the visible screen.
-        ConversationHistory.appendFromNotification(packageName, title, title, text, isImage)
+        ConversationHistory.appendFromNotification(packageName, conv, sender, body, isImage)
 
         // Tell the capture service a message arrived; it re-reads the live chat.
         // Explicit package: keeps the broadcast inside our own app.
-        Log.d(TAG, "onNotificationPosted: broadcast WX_MSG sender='$title' textLen=${text?.length} image=$isImage")
+        // 分两个 extra 传：conv=会话(群名/单人)，sender=个人发送人，text=正文。
+        Log.d(TAG, "onNotificationPosted: broadcast WX_MSG conv='$conv' sender='$sender' textLen=${body.length} image=$isImage")
         runCatching {
             sendBroadcast(Intent(ChatCaptureService.ACTION_WX_MSG).apply {
                 setPackage(packageName)
-                putExtra("sender", title)
-                putExtra("text", text)
+                putExtra("conv", conv)
+                putExtra("sender", sender)
+                putExtra("text", body)
                 putExtra("image", isImage)
             })
         }
@@ -123,6 +132,24 @@ class WxNotificationListener : NotificationListenerService() {
      *  this live (it sees rootInActiveWindow on every event), so we don't need a
      *  restricted usage/running-tasks permission here. */
     private fun isWeChatForeground(): Boolean = ChatCaptureService.weChatForeground
+
+    /**
+     * 从通知预览文本里拆出个人发送人。
+     * 群消息：「张三：在吗」/「张三: 在吗」→ ("张三", "在吗")；
+     * 单聊：纯正文、无「短名：」前缀 → (null, 原文)。
+     * 仅当冒号前是 ≤12 字的非空白片段、且冒号后有内容时才算群格式，
+     * 避免把「http://...」或正文里的冒号误判成发送人。
+     */
+    private fun parseSpeaker(text: String?): Pair<String?, String> {
+        val t = text ?: return null to ""
+        val m = Regex("^([^\\s：:]{1,12})[：:]\\s*(.*)$").find(t)
+        if (m != null) {
+            val name = m.groupValues[1]
+            val rest = m.groupValues[2]
+            if (rest.isNotBlank()) return name to rest
+        }
+        return null to t
+    }
 
     companion object {
         private const val PKG_WECHAT = "com.tencent.mm"

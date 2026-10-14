@@ -2,8 +2,15 @@ package com.jev.probe.core
 
 import android.graphics.Rect
 
-/** One captured chat bubble. side is "me" (right) or "other" (left). */
-data class Msg(val side: String, val text: String)
+/**
+ * One captured chat bubble. side is "me" (right) or "other" (left).
+ * [sender] is the individual speaker — null for 1:1 (where side already implies
+ * the other party) or when the screen can't attribute it (WeChat 8.0.78 hides
+ * bubbles from the tree). Populated from notification previews, which DO carry
+ * the speaker name ("张三：内容" in a group), so group chats get per-person
+ * attribution in the reply context.
+ */
+data class Msg(val side: String, val text: String, val sender: String? = null)
 
 /**
  * A bubble the node tree can locate but not read (Feishu draws its message text
@@ -42,7 +49,7 @@ data class ChatSnapshot(
 
     /** A stable signature of the last few messages, to detect real changes. */
     fun signature(): String =
-        messages.takeLast(6).joinToString("|") { "${it.side}:${it.text}" }
+        messages.takeLast(6).joinToString("|") { "${it.side}:${it.sender ?: ""}:${it.text}" }
 }
 
 /** Jev's judgment result for one snapshot, plus the ranked candidate replies. */

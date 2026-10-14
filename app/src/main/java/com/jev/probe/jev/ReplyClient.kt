@@ -28,7 +28,12 @@ class ReplyClient(private val prefs: Prefs) {
      */
     fun draft(snapshot: ChatSnapshot, relationship: String, ctx: ChatContext? = null): List<String> {
         val convo = snapshot.messages.takeLast(10).joinToString("\n") {
-            (if (it.side == "me") "我" else "对方") + "：" + it.text
+            val who = when {
+                it.side == "me" -> "我"
+                !it.sender.isNullOrBlank() -> it.sender!!   // 群聊：用真实发送人，别笼统写"对方"
+                else -> "对方"
+            }
+            who + "：" + it.text
         }
         // 话术包（加密/防伪造/有期限，见 docs/scriptpack-spec.md）：启用且未过期时
         // 覆盖系统提示词、温度与 few-shot 示例；任何异常都回退内置默认话术。

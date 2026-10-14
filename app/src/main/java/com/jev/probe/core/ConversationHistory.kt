@@ -31,7 +31,7 @@ object ConversationHistory {
     // 相隔很久后合法的相同短消息。
     private const val DEDUP_LOOKBACK = 40
 
-    private data class Entry(val side: String, val text: String, val t: Long)
+    private data class Entry(val side: String, val text: String, val t: Long, val sender: String? = null)
 
     private val store = LinkedHashMap<String, MutableList<Entry>>(MAX_CONV, 0.75f, true)
     private var file: File? = null
@@ -79,8 +79,7 @@ object ConversationHistory {
         val body = text ?: return
         val k = key(pkg, title ?: sender)
         val list = store.getOrPut(k) { ArrayList() }
-        val label = if (sender.isNullOrBlank()) "对方" else sender
-        addUnique(list, "other", if (isImage) "[图片] $body" else body)
+        addUnique(list, "other", if (isImage) "[图片] $body" else body, if (sender.isNullOrBlank()) null else sender)
         trim(list)
         persist()
     }
@@ -89,7 +88,7 @@ object ConversationHistory {
     @Synchronized
     fun threadFor(pkg: String, title: String?, limit: Int = MAX_PER_CONV): List<Msg> {
         val list = store[key(pkg, title)] ?: return emptyList()
-        return list.takeLast(limit).map { Msg(it.side, it.text) }
+        return list.takeLast(limit).map { Msg(it.side, it.text, it.sender) }
     }
 
     /**
@@ -127,8 +126,8 @@ object ConversationHistory {
         if (hist.isEmpty()) return snapshot
         // 超长聊天屏（极端情况）只并最后 MAX_VISIBLE 条，避免把 LLM 请求体撑到不可控。
         val visible = if (snapshot.messages.size > MAX_VISIBLE) snapshot.messages.takeLast(MAX_VISIBLE) else snapshot.messages
-        val visibleSig = visible.map { "${it.side}:${it.text}" }.toSet()
-        val older = hist.filter { "${it.side}:${it.text}" !in visibleSig }
+        val visibleSig = visible.map { "${it.side}:${it.sender ?: ""}:${it.text}" }.toSet()
+        val older = hist.filter { "${it.side}:${it.sender ?: ""}:${it.text}" !in visibleSig }
         if (older.isEmpty()) return snapshot
         return snapshot.copy(messages = older + visible)
     }
@@ -139,11 +138,11 @@ object ConversationHistory {
         persist()
     }
 
-    private fun addUnique(list: MutableList<Entry>, side: String, text: String) {
+    private fun addUnique(list: MutableList<Entry>, side: String, text: String, sender: String? = null) {
         val t = System.currentTimeMillis()
         val last = list.lastOrNull()
-        if (last != null && last.text == text && t - last.t < DUP_WINDOW_MS) return
-        list.add(Entry(side, text, t))
+        if (last != null && last.text == text && last.sender == sender && t - last.t < DUP_WINDOW_MS) return
+        list.add(Entry(side, text, t, sender))
     }
 
     private fun trim(list: MutableList<Entry>) {
@@ -161,6 +160,7 @@ object ConversationHistory {
                     val arr = JSONArray()
                     for (e in entries) arr.put(JSONObject().apply {
                         put("s", e.side); put("t", e.text); put("tm", e.t)
+                        if (!e.sender.isNullOrBlank()) put("sp", e.sender)
                     })
                     put(JSONObject().apply { put("k", k); put("m", arr) })
                 }
@@ -183,7 +183,8 @@ object ConversationHistory {
                     val list = ArrayList<Entry>()
                     for (j in 0 until arr.length()) {
                         val e = arr.getJSONObject(j)
-                        list.add(Entry(e.getString("s"), e.getString("t"), e.optLong("tm", 0L)))
+                        list.add(Entry(e.getString("s"), e.getString("t"), e.optLong("tm", 0L),
+                            e.optString("sp", "").takeIf { it.isNotBlank() }))
                     }
                     store[k] = list
                 }

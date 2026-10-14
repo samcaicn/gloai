@@ -783,7 +783,11 @@ class OverlayController(private val ctx: Context) {
             var lastSide = ""
             for (m in messages) {
                 val side = m.side
-                val label = if (side == "me") ctx.t("我", "Me") else ctx.t("对方", "Them")
+                val label = when {
+                    side == "me" -> ctx.t("我", "Me")
+                    !m.sender.isNullOrBlank() -> m.sender!!   // 群聊显示真实发送人
+                    else -> ctx.t("对方", "Them")
+                }
                 val prefix = if (side != lastSide) "$label：" else ""
                 lastSide = side
                 val color = if (side == "me") "#1F2937" else "#374151"

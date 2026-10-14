@@ -351,15 +351,11 @@ open class ChatCaptureService : AccessibilityService() {
                 ConversationHistory.appendFromNotification(
                     PKG_WECHAT, currentSnapshot?.title ?: sender, sender, text,
                     intent.getBooleanExtra("image", false))
-                // WeChat 8.0.78 hides chat bubbles from the tree AND blocks the
-                // accessibility screenshot (FLAG_SECURE), so the live-screen read can
-                // never see the message. The notification preview is the only reliable
-                // non-root source — drive analysis straight from it, no tree/OCR, so a
-                // background/locked message gets analyzed and replied even when WeChat
-                // never comes forward. (Foreground real-time messages are not posted as
-                // notifications while the chat is open, so they stay unreachable — a
-                // WeChat limitation, not ours.)
-                analyzeFromNotification(text, sender, intent.getBooleanExtra("image", false))
+                // 同会话多条通知攒一波（默认 1.2s 防抖）再统一分析+回复一次，
+                // 而不是每条通知各触发一次——否则对方连发 3 条会回 3 次、
+                // 且每条只看自己那一条，丢失「多条消息 + 历史 + 谁说的」全貌。
+                enqueueNotif(currentSnapshot?.title ?: sender, sender, text,
+                    intent.getBooleanExtra("image", false))
             }
             val fg = rootInActiveWindow?.packageName?.toString()
             if (fg == PKG_WECHAT) {
@@ -369,24 +365,42 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     /**
-     * Analyze a WeChat message from its notification preview text alone — the
-     * path that survives WeChat 8.0.78's live-screen block. Builds a one-message
-     * "other" snapshot (exactly what [finishOcrSnapshot] expects) and lets the
-     * shared tail handle dedupe + auto-analyze + reply.
+     * 通知攒批：同会话([conv])在 [NOTIF_BATCH_MS] 内到达的多条消息合并成一个快照，
+     * 统一走一次分析+回复。微信 8.0.78 屏蔽了前台读屏，自动回复只能靠通知，
+     * 不攒批就会「每条通知各回一次 + 每条只看自己」——既刷屏又丢上下文。
+     * 每条带真实发送人([speaker])，群聊也能在提示词里区分谁说的。
      */
-    private fun analyzeFromNotification(text: String, sender: String?, isImage: Boolean) {
+    private val notifBatch = LinkedHashMap<String, MutableList<Msg>>()
+    private val notifBatchTimer = HashMap<String, Runnable>()
+    private val NOTIF_BATCH_MS = 1200L
+
+    private fun enqueueNotif(conv: String?, speaker: String?, text: String, isImage: Boolean) {
+        val key = conv ?: speaker ?: "wechat"
+        val msg = Msg("other", if (isImage) "[图片] $text" else text, speaker)
+        synchronized(notifBatch) {
+            val list = notifBatch.getOrPut(key) { ArrayList() }
+            // 同一窗口内重复 OCR 的同一条不重复计入（防抖期间同一条通知可能重投）。
+            if (list.none { it.sender == msg.sender && it.text == msg.text }) list.add(msg)
+            main.removeCallbacks(notifBatchTimer[key])
+        }
+        val r = Runnable { flushNotifBatch(key) }
+        notifBatchTimer[key] = r
+        main.postDelayed(r, NOTIF_BATCH_MS)
+    }
+
+    private fun flushNotifBatch(conv: String) {
+        val msgs = synchronized(notifBatch) { notifBatch.remove(conv) } ?: return
+        notifBatchTimer.remove(conv)
         if (destroyed || !prefs.enabled) {
-            Log.d(TAG, "analyzeFromNotification: skip destroyed=$destroyed enabled=${prefs.enabled}")
+            Log.d(TAG, "notif-batch: drop destroyed=$destroyed enabled=${prefs.enabled}")
             return
         }
         // 后台纯通知场景：微信在后台，无障碍没抓到聊天窗口，session.target 可能为 null，
-        // 旧代码用 session.token() 会直接 return、连日志都不打（静默黑洞——这是
-        // 「对方发了、通知也弹了、却毫无反应」的根因）。改用 beginNotification 构造
-        // 逻辑 target，绕开前台窗口假设，让通知文本能真正驱动分析 + 回复。
-        val token = session.beginNotification(PKG_WECHAT, sender)
-        val body = if (isImage) "[图片] $text" else text
-        val snapshot = ChatSnapshot(sender, listOf(Msg("other", body)), note = NOTIFY_NOTE)
-        Log.d(TAG, "analyzeFromNotification: sender=$sender textLen=${text.length} -> notif-driven analyze")
+        // 旧代码用 session.token() 会直接 return、连日志都不打（静默黑洞）。改用
+        // beginNotification 构造逻辑 target，绕开前台窗口假设，让通知文本真正驱动分析+回复。
+        val token = session.beginNotification(PKG_WECHAT, conv)
+        val snapshot = ChatSnapshot(conv, msgs.toList(), note = NOTIFY_NOTE)
+        Log.i(TAG, "notif-batch: conv=$conv msgs=${msgs.size} senders=${msgs.map { it.sender }.distinct()} -> single analyze+reply")
         finishOcrSnapshot(snapshot, PKG_WECHAT, manual = false, token = token)
     }
 
