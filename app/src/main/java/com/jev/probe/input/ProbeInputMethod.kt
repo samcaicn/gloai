@@ -95,8 +95,11 @@ class ProbeInputMethod : InputMethodService() {
         Log.i(TAG, "ProbeIme: onStartInput restarting=$restarting pending=${ProbeImeBus.pendingText != null}")
         val pair = ProbeImeBus.consumePending()
         if (pair == null) {
-            // 用户手动切到了探针输入法但没有待写内容：引导返回，避免卡在不能打字的键盘上。
-            handler.postDelayed({ backToNormalIme() }, 600L)
+            // 无待写内容：保持激活，不自动切回。
+            // 理由：自动回复需 fillInput 时 imeActive==true 才能走 poll path 直接填字+点发送；
+            // 旧逻辑「600ms 后弹选择器切回普通输入法」会形成死循环——每次自动回复都要用户
+            // 手动确认一次输入法切换，无法无人值守。切回改由视图「↩ 返回普通输入法」按钮控制。
+            Log.i(TAG, "ProbeIme: onStartInput no pending, staying active (manual back only)")
             return
         }
         consumedId = pair.first
