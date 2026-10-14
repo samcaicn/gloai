@@ -84,6 +84,21 @@ object ConversationHistory {
         persist()
     }
 
+    /**
+     * 自己（助手）发出去的回复。无人值守模式下必记：微信把气泡对无障碍隐藏，
+     * 屏幕上读不到"我"这一侧的内容，不记的话下一轮模型不知道自己已经答过什么，
+     * 会对同一个问题换个说法再答一遍——真人看起来就是"这人怎么重复回一样的话"。
+     */
+    @Synchronized
+    fun appendOwnReply(pkg: String, title: String?, text: String?) {
+        val body = text?.trim() ?: return
+        if (body.isEmpty() || title.isNullOrBlank()) return
+        val list = store.getOrPut(key(pkg, title)) { ArrayList() }
+        addUnique(list, "me", body, null)
+        trim(list)
+        persist()
+    }
+
     /** 取最近 limit 条，按时间正序，给 judge 当上下文。 */
     @Synchronized
     fun threadFor(pkg: String, title: String?, limit: Int = MAX_PER_CONV): List<Msg> {

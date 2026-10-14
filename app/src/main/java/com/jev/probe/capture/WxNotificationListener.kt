@@ -77,7 +77,7 @@ class WxNotificationListener : NotificationListenerService() {
         // 群消息 text 形如「张三：在吗」——把个人发送人解析出来，正文去掉前缀，
         // 否则 AI 既看不到谁说的、又会把「张三：」重复写进提示词。
         // 单聊 text 无前缀，发送人就是会话名（title=对方昵称）。
-        val (speaker, body) = parseSpeaker(text)
+        val (speaker, body) = parseSpeaker(text, title)
         val sender = speaker ?: title
         val conv = title
 
@@ -157,19 +157,29 @@ class WxNotificationListener : NotificationListenerService() {
      * 从通知预览文本里拆出个人发送人。
      * 群消息：「张三：在吗」/「张三: 在吗」→ ("张三", "在吗")；
      * 单聊：纯正文、无「短名：」前缀 → (null, 原文)。
-     * 仅当冒号前是 ≤12 字的非空白片段、且冒号后有内容时才算群格式，
-     * 避免把「http://...」或正文里的冒号误判成发送人。
+     *
+     * 三道闸把"正文里的冒号"挡在门外——误拆会把**单聊正文**砍掉一截再塞进 sender，
+     * AI 于是对着"注意："当人名的残缺句子作答，是最难查的那种错：
+     *  1. 冒号前是 ≤12 字的非空白片段、且冒号后确实有内容（挡掉 http://… 之类）；
+     *  2. 冒号前的片段不含句中标点（「注意：」之外，「好的，注意：」这种不会被拆）；
+     *  3. **拆出来的名字不等于会话名**：单聊里 title 就是对方昵称，若正文以
+     *     「昵称：xxx」开头（自己给自己加前缀、或通知里就这么显示），那它多半是正文
+     *     的一部分，不是群发送人。群聊里 title 是群名，永远不等于某个成员名。
      */
-    private fun parseSpeaker(text: String?): Pair<String?, String> {
+    private fun parseSpeaker(text: String?, title: String?): Pair<String?, String> {
         val t = text ?: return null to ""
         val m = Regex("^([^\\s：:]{1,12})[：:]\\s*(.*)$").find(t)
         if (m != null) {
             val name = m.groupValues[1]
             val rest = m.groupValues[2]
-            if (rest.isNotBlank()) return name to rest
+            val looksLikeName = name.none { it in NAME_BREAK_CHARS }
+            if (rest.isNotBlank() && looksLikeName && name != title) return name to rest
         }
         return null to t
     }
+
+    /** 出现在"冒号前片段"里就说明这不是人名，而是正文的一部分。 */
+    private val NAME_BREAK_CHARS = "，。！？；、,.!?;:：~～…（）()【】「」\"'"
 
     companion object {
         private const val PKG_WECHAT = "com.tencent.mm"

@@ -2,6 +2,7 @@ package com.jev.probe.capture
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -196,6 +197,18 @@ open class ChatCaptureService : AccessibilityService() {
     private val preferencesListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == "enabled" || key == "whitelist") {
             main.post {
+                // 关掉总开关时把待回队列与攒批一起清掉：否则再次打开会集中补发一批几分钟前
+                // 的旧回复——那些消息对方早就不等了，补发只会显得莫名其妙（还容易发错会话）。
+                if (!prefs.enabled) {
+                    notifRoundQueue.clear()
+                    synchronized(notifBatch) {
+                        notifBatchTimer.values.forEach { main.removeCallbacks(it) }
+                        notifBatch.clear()
+                        notifBatchTimer.clear()
+                        notifBatchFirstAt.clear()
+                    }
+                    Log.i(TAG, "notif-round: queue+batch cleared (assistant turned off)")
+                }
                 leaveConversation()
                 overlay?.hide()
             }
@@ -399,10 +412,17 @@ open class ChatCaptureService : AccessibilityService() {
     // 无锚点时**禁止自动发送**：探针读不到标题，回复会填进"此刻恰好前台"的任意会话，
     // 等于把私聊的话发进群里——这种错比不回严重得多，宁可不回。
     private var notifRoundAnchorless = false
+    // 本轮是否"亲手用该会话的 PendingIntent 把微信重开到了这个会话"。锚点的第一要件：
+    // 只有我们重放过、且微信确实到了前台，才能认为"当前输入框属于这个会话"。
+    private var notifRoundReplayed = false
     // 同一会话的发送冷却：刚回过就别再回。真人连发 / 通知重复投递最容易触发"连回两次"，
     // 这是最露馅的机器感。冷却期内照样分析和出建议，只是不自动发出去。
     private val lastAutoSentAtByConv = HashMap<String, Long>()
     private val CONV_COOLDOWN_MS = 20_000L
+    // 上一次真正发给该会话的文本（+ 时间戳）。模型对"在吗"这类短句极易给出同一句回复，
+    // 连着发两句一模一样的话是最露馅的机器感，所以对同一会话做一次"与上条相同就不发"的拦截。
+    private val lastSentTextByConv = HashMap<String, Pair<String, Long>>()
+    private val REPLY_DEDUP_TTL_MS = 600_000L
     // 队列上限：群刷屏时别几十个会话排队回十几分钟（那时早没人等回复了）。
     // 被挤掉的会话文本已进 history，下一条消息会带着完整上下文重新触发。
     private val NOTIF_QUEUE_MAX = 4
@@ -417,6 +437,9 @@ open class ChatCaptureService : AccessibilityService() {
     // 从轮次启动起算的硬上限兜底：分析挂住（看门狗复位 analyzing 但不走 completed）也不卡死队列。
     // 60s 而非 100s：一轮卡住要卡一队列，真实使用里 60s 已是很长的容忍上限。
     private val NOTIF_HARD_MAX_MS = 60000L
+    // 重放 PendingIntent 后等微信前台落定的轮询上限（100ms 一跳）。2.5s 够微信冷启动到
+    // 聊天页；再久就是重放失败，早点放行让下一轮开工（本轮按无锚点处理，不会误发）。
+    private val NOTIF_FG_WAIT_TICKS = 25
     private val notifAdvanceRunnable = Runnable {
         Log.w(TAG, "notif-round: dwell elapsed -> advance")
         finishNotifRound(notifRoundSeq)
@@ -477,8 +500,13 @@ open class ChatCaptureService : AccessibilityService() {
                 Log.i(TAG, "notif-round: conv=${round.conv} already active, folded into history")
             }
             notifRoundQueue.size >= NOTIF_QUEUE_MAX -> {
-                // 队列已满（群刷屏）：丢最新这一批，文本已进 history，下一条消息会带上下文重触发。
-                Log.w(TAG, "notif-round: queue full($NOTIF_QUEUE_MAX) -> drop conv=${round.conv} (text kept in history)")
+                // 队列已满（群刷屏）：挤掉排队最久的那个。刚发消息的人还在等回复，
+                // 排了几分钟的那个多半早就不等了——保新不保旧。被挤掉的文本已在 history 里，
+                // 下一条消息会带着完整上下文重新触发。
+                val dropped = notifRoundQueue.removeAt(0)
+                Log.w(TAG, "notif-round: queue full($NOTIF_QUEUE_MAX) -> drop oldest conv=${dropped.conv}")
+                notifRoundQueue.add(round)
+                Log.i(TAG, "notif-round: queued conv=${round.conv} depth=${notifRoundQueue.size}")
             }
             else -> {
                 notifRoundQueue.add(round)
@@ -511,23 +539,54 @@ open class ChatCaptureService : AccessibilityService() {
         scheduleNotifAdvance(NOTIF_HARD_MAX_MS)
         // 锚点：只认"新鲜"的 PendingIntent（群改名/会话重建后的旧 intent 会把微信开错会话）。
         val pi = if (prefs.autoOpenChat) NotifIntentStore.fresh(round.conv) else null
-        // 无锚点且微信不在前台 → 无法确定前台是哪个会话，本轮禁止自动发送。
-        notifRoundAnchorless = prefs.autoOpenChat && pi == null && !weChatForeground
-        if (notifRoundAnchorless) {
-            Log.w(TAG, "notif-round: NO ANCHOR for conv=${round.conv} (no fresh PendingIntent, WeChat not fg) -> analyze only, no auto-send")
-        }
+        // 本轮是否亲手把微信重开到了这个会话——锚点的第一要件，见 [resolveNotifAnchor]。
+        notifRoundReplayed = pi != null
         if (pi != null) {
             Log.i(TAG, "notif-round: reopen conv=${round.conv} via saved PendingIntent")
             runCatching { pi.send() }
         } else if (prefs.autoOpenChat) {
             Log.w(TAG, "notif-round: no saved PendingIntent for conv=${round.conv}, relying on current fg")
         }
-        if (notifRoundAnchorless) {
-            // 没有锚点就没有重放动作，微信不会自己到前台，傻等 2s 纯属拖慢队列——直接分析。
-            startNotifAnalysis(round, mySeq)
+        if (pi == null && !prefs.autoOpenChat) {
+            // 既没有重放动作、也不允许开窗：微信不会自己到前台，傻等纯属拖慢队列——直接分析。
+            resolveNotifAnchor(round, mySeq)
         } else {
-            awaitWeChatForegroundThen { startNotifAnalysis(round, mySeq) }
+            // 锚点必须在"重放之后、微信前台落定"时才能判：重放瞬间微信还没起来，此刻判必假阴性。
+            awaitWeChatForegroundThen { resolveNotifAnchor(round, mySeq) }
         }
+    }
+
+    /**
+     * 微信前台落定后判定本轮锚点。**没有锚点就绝不自动发送**：探针读不到标题，回复会
+     * 填进"此刻恰好前台"的任意会话——把私聊的话发进群里，这种错比不回严重得多。
+     *
+     * 锚点成立要三条同时满足：本轮用新鲜 PendingIntent 亲手重放过该会话 +
+     * 微信确实在前台 + 设备没锁屏（锁屏时发出去用户看不见，也不该由机器代发）。
+     */
+    private fun resolveNotifAnchor(round: NotifRound, seq: Long) {
+        if (seq != notifRoundSeq) {
+            Log.d(TAG, "notif-round: anchor resolve stale seq=$seq cur=$notifRoundSeq -> ignored")
+            return
+        }
+        val locked = deviceLocked()
+        val fg = weChatForeground
+        // 重放后必须落在聊天页；若只落到微信主页（LauncherUI），说明重放没生效、输入框不属于该会话。
+        val onChatPage = lastWindowClass.isBlank() || lastWindowClass.contains("chatting", ignoreCase = true)
+        notifRoundAnchorless = !(notifRoundReplayed && fg && !locked && onChatPage)
+        if (notifRoundAnchorless) {
+            Log.w(TAG, "notif-round: NO ANCHOR conv=${round.conv} (replayed=$notifRoundReplayed fg=$fg " +
+                "locked=$locked onChatPage=$onChatPage class=$lastWindowClass) -> analyze only, no auto-send")
+        }
+        startNotifAnalysis(round, seq)
+    }
+
+    /** 设备是否处于锁屏/未解锁状态。无法判定（服务异常）时按未锁处理，宁可多试一次。 */
+    private fun deviceLocked(): Boolean {
+        val km = runCatching { getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager }.getOrNull()
+            ?: return false
+        return runCatching {
+            km.isKeyguardLocked || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && km.isDeviceLocked)
+        }.getOrDefault(false)
     }
 
     /** 通知轮的分析主体：用通知文本构造快照驱动一次分析+回复。 */
@@ -552,14 +611,26 @@ open class ChatCaptureService : AccessibilityService() {
             return
         }
         main.removeCallbacks(notifAdvanceRunnable)
-        notifRoundBusy = false
-        notifRoundConv = null
         val next = if (notifRoundQueue.isNotEmpty()) notifRoundQueue.removeAt(0) else null
-        if (next != null && !destroyed && prefs.enabled) {
-            Log.i(TAG, "notif-round: advance -> next conv=${next.conv} remaining=${notifRoundQueue.size}")
-            startNotifRound(next)
-        } else if (next != null) {
+        if (next == null) {
+            notifRoundBusy = false
+            notifRoundConv = null
+            return
+        }
+        if (destroyed || !prefs.enabled) {
             Log.d(TAG, "notif-round: next dropped (destroyed/enabled off)")
+            notifRoundBusy = false
+            notifRoundConv = null
+            return
+        }
+        Log.i(TAG, "notif-round: advance -> next conv=${next.conv} remaining=${notifRoundQueue.size}")
+        // 延到下一个消息再开跑：调用方（分析回调 / 发送回调 / bail）往往还处在同一条消息里，
+        // analyzing 之类的状态尚未复位，此刻立刻开跑会被 runAnalysis 开头的
+        // `if (analyzing) return` 静默吞掉——表现为"第二个会话永远不回"。
+        // busy 在这段间隙保持 true，期间新到的会话照常排队，不会插队抢跑。
+        main.post {
+            if (!destroyed && prefs.enabled) startNotifRound(next)
+            else { notifRoundBusy = false; notifRoundConv = null }
         }
     }
 
@@ -571,9 +642,9 @@ open class ChatCaptureService : AccessibilityService() {
 
     /** 轮询等待微信前台落定（重开 PendingIntent 后需要点时间），超时(~2s)也放行。 */
     private fun awaitWeChatForegroundThen(attempt: Int = 0, block: () -> Unit) {
-        if (destroyed) return
-        if (weChatForeground || attempt >= 20) {
-            if (attempt >= 20) Log.w(TAG, "notif-round: WeChat fg wait timeout, proceeding anyway")
+        if (destroyed || !prefs.enabled) return
+        if (weChatForeground || attempt >= NOTIF_FG_WAIT_TICKS) {
+            if (attempt >= NOTIF_FG_WAIT_TICKS) Log.w(TAG, "notif-round: WeChat fg wait timeout, proceeding anyway")
             block()
             return
         }
@@ -675,7 +746,16 @@ open class ChatCaptureService : AccessibilityService() {
         try {
         if (event == null) return
         // Live foreground state for the notification listener (reliable, no extra perms).
-        weChatForeground = rootInActiveWindow?.packageName?.toString() == PKG_WECHAT
+        // 微信 8.0.78 把聊天页的无障碍树剥掉（rootInActiveWindow 恒 null），只认 root 会把
+        // "微信明明在前台"误判成不在——每轮都被判成无锚点、一条都发不出去。补两条不依赖树
+        // 的信号兜底：事件包名、最近一次窗口类名（ChattingUI 属于 com.tencent.mm）。
+        val rootPkg = rootInActiveWindow?.packageName?.toString()
+        val evPkg = event.packageName?.toString()
+        weChatForeground = when {
+            rootPkg != null -> rootPkg == PKG_WECHAT
+            evPkg == PKG_WECHAT -> true
+            else -> lastWindowClass.startsWith("com.tencent.mm")
+        }
         if (!prefs.enabled) { leaveConversation(); overlay?.hide(); return }
 
         // 悬浮窗权限被系统收回（用户手动关掉、或 ROM 把设置重置）时，气泡会无声消失，
@@ -1024,6 +1104,10 @@ open class ChatCaptureService : AccessibilityService() {
                 overlay?.setContextInfo(ctx?.notes?.size ?: 0, ctx?.history?.size ?: 0)
                 overlay?.setStatus("判断意图…")
                 var remaining = 2
+                // 本轮启动时所属的通知轮序号。分析跑完时队列可能已被本轮自己推进到下一轮
+                // （冷却 / 无锚点会提前收尾），这时绝不能再给新一轮重排一个 6s 推进定时器——
+                // 那会在 6s 处把下一轮硬砍掉。只认"还是我这一轮"才排。
+                val roundSeq = if (token.target.windowId == ConversationSession.NOTIF_WINDOW) notifRoundSeq else -1L
                 fun completed() {
                     remaining--
                     if (remaining <= 0) {
@@ -1034,7 +1118,7 @@ open class ChatCaptureService : AccessibilityService() {
                         Log.d(TAG, "analysis round finished")
                         // 通知轮：分析已跑完，转入"发送落定"宽限；发送回调先到则立即推进，
                         // 否则到点(SEND_DWELL)兜底推进，绝不让第二个会话卡在这一轮后面。
-                        if (notifRoundBusy && token.target.windowId == ConversationSession.NOTIF_WINDOW) {
+                        if (roundSeq >= 0 && notifRoundBusy && roundSeq == notifRoundSeq) {
                             scheduleNotifAdvance(SEND_DWELL_MS)
                         }
                     }
@@ -1145,52 +1229,106 @@ open class ChatCaptureService : AccessibilityService() {
         ranked: List<RankedReply>,
         replyError: String?
     ) {
-        if (!prefs.autoFillBest) return
-        if (token.target.pkg != PKG_WECHAT) return
-        if (replyError != null || ranked.isEmpty()) return
-        if (snapshot.latestFrom != "other") return
+        val notif = token.target.windowId == ConversationSession.NOTIF_WINDOW
+        // 通知轮的每一条提前返回都必须收尾轮次：否则队列要白等 SEND_DWELL 才轮到下一个会话。
+        fun bail(reason: String) {
+            Log.i(TAG, "auto-send skipped: $reason")
+            if (notif) finishNotifRound(notifRoundSeq)
+        }
+        if (!prefs.autoFillBest) { bail("autoFillBest off"); return }
+        if (token.target.pkg != PKG_WECHAT) { bail("not WeChat"); return }
+        if (replyError != null) { bail("reply failed: ${replyError.take(40)}"); return }
+        if (ranked.isEmpty()) { bail("no candidates"); return }
+        if (snapshot.latestFrom != "other") { bail("latest bubble is not from the other side"); return }
         val best = ranked.maxByOrNull { it.prob } ?: ranked.first()
-        val text = best.text.trim()
-        if (text.isEmpty()) return
-        val sig = snapshot.signature()
-        if (sig == lastAutoSentSig) {
-            Log.i(TAG, "auto-send skipped: already answered this screen state")
-            return
+        val text = sanitizeReply(best.text)
+        if (text.isEmpty()) { bail("best candidate empty after sanitize"); return }
+        // 「同一屏只回一次」只对前台树路径有意义（同一画面会被反复 OCR 出同一批气泡）。
+        // 通知轮**绝不能**用它：通知 = 对方新说的一句话，若与几分钟前那句字面相同（"在吗"），
+        // 签名撞车会让这句此后再也不自动回复。通知轮的去重交给攒批 + 会话冷却 + 同文本拦截。
+        if (!notif) {
+            val sig = snapshot.signature()
+            if (sig == lastAutoSentSig) { bail("already answered this screen state"); return }
+            lastAutoSentSig = sig
         }
         val draft = inputFor(token)?.text?.toString()?.trim()
-        if (!draft.isNullOrEmpty()) {
-            Log.i(TAG, "auto-send skipped: input box not empty")
-            return
-        }
+        if (!draft.isNullOrEmpty()) { bail("input box not empty (user is typing)"); return }
+        val convKey = snapshot.title ?: ""
+        val now = System.currentTimeMillis()
         // 同一会话冷却：刚回过就别再回（真人连发 / 通知重复投递会触发连回两次，一眼假）。
-        if (token.target.windowId == ConversationSession.NOTIF_WINDOW) {
-            val convKey = snapshot.title ?: ""
+        if (notif) {
             val lastAt = lastAutoSentAtByConv[convKey]
-            if (lastAt != null && System.currentTimeMillis() - lastAt < CONV_COOLDOWN_MS) {
-                Log.i(TAG, "auto-send skipped: conv='$convKey' cooled down (${(System.currentTimeMillis() - lastAt) / 1000}s)")
-                finishNotifRound(notifRoundSeq)
+            if (lastAt != null && now - lastAt < CONV_COOLDOWN_MS) {
+                bail("conv='$convKey' cooled down (${(now - lastAt) / 1000}s ago)")
                 return
             }
         }
         // 无锚点：不知道前台到底是哪个会话，回复填进去就可能发错人（私聊话进群）。
         // 只给建议、绝不自动发送——这种错比不回严重得多。
-        if (token.target.windowId == ConversationSession.NOTIF_WINDOW && notifRoundAnchorless) {
-            Log.w(TAG, "auto-send blocked: no anchor for this conv -> suggestion only, not sending")
+        if (notif && notifRoundAnchorless) {
+            Log.w(TAG, "auto-send blocked: no anchor for conv='$convKey' -> suggestion only, not sending")
             overlay?.toast(t("没定位到该会话，未自动发送", "Couldn't open that chat — not sent"))
             finishNotifRound(notifRoundSeq)
             return
         }
-        lastAutoSentSig = sig
-        if (token.target.windowId == ConversationSession.NOTIF_WINDOW && prefs.autoSend) {
-            lastAutoSentAtByConv[snapshot.title ?: ""] = System.currentTimeMillis()
-            if (lastAutoSentAtByConv.size > 64) lastAutoSentAtByConv.clear()
+        // 与上一次发给该会话的话一模一样 → 不发（去标点空白后比较）。只在有记录时拦，
+        // 绝不影响首轮；不同内容照发。
+        val prev = lastSentTextByConv[convKey]?.first
+        if (notif && prev != null && sameReply(prev, text)) {
+            bail("identical to the reply just sent to '$convKey'")
+            return
+        }
+        if (notif && prefs.autoSend) {
+            lastAutoSentAtByConv[convKey] = now
+            lastSentTextByConv[convKey] = text to now
+            evictExpired(now)
         }
         Log.i(TAG, "auto-send best(${(best.prob * 100).toInt()}%): ${text.take(24)}")
         // 通知轮：发送真正落定后推进队列（处理下一个会话）；前台/手动轮不涉及队列。
+        // 回传 sent：只有真发出去了才把回复写进历史——写错等于污染 AI 对"我说过什么"的认知。
         val mySeq = notifRoundSeq
-        val onSendComplete: (() -> Unit)? =
-            if (token.target.windowId == ConversationSession.NOTIF_WINDOW) ({ finishNotifRound(mySeq) }) else null
+        val onSendComplete: ((Boolean) -> Unit)? = if (notif) ({ sent ->
+            // 自己说过的话也要进历史：微信把气泡对无障碍隐藏，读不到"我"发过什么，
+            // 不记的话下一轮模型不知道自己已经答过，会对同一个问题换个说法再答一遍。
+            if (sent) ConversationHistory.appendOwnReply(PKG_WECHAT, convKey, text)
+            finishNotifRound(mySeq)
+        }) else null
         main.postDelayed({ fillInput(token, text, onSendComplete = onSendComplete) }, 500L)
+    }
+
+    /** 发给真人的文本清洗：去掉包裹引号与模型爱加的「回复：」前缀，压缩多余空白。 */
+    private fun sanitizeReply(raw: String): String {
+        var s = raw.trim()
+        while (s.length >= 2) {
+            val a = s.first(); val b = s.last()
+            val wrapped = (a == '"' && b == '"') || (a == '“' && b == '”') ||
+                (a == '\'' && b == '\'') || (a == '「' && b == '」')
+            if (!wrapped) break
+            s = s.substring(1, s.length - 1).trim()
+        }
+        s = REPLY_PREFIX.replace(s, "").trim()
+        return s.replace(REPLY_WS, " ").trim()
+    }
+
+    /** 忽略空白与标点后的完全相等——只拦"同一句话再说一遍"，不同内容一律放行。 */
+    private fun sameReply(a: String, b: String): Boolean {
+        fun norm(s: String) = s.filterNot { it.isWhitespace() || it in REPLY_PUNCT }
+        val na = norm(a); val nb = norm(b)
+        return na.isNotEmpty() && na == nb
+    }
+
+    /**
+     * 冷却/去重表按**时间**淘汰，而不是 size 到了就 clear()。
+     * 一刀切清空会把别的会话的冷却也抹掉，正好制造"连回两次"这个最露馅的毛病。
+     */
+    private fun evictExpired(now: Long) {
+        val it1 = lastAutoSentAtByConv.iterator()
+        while (it1.hasNext()) if (now - it1.next().value > CONV_COOLDOWN_MS) it1.remove()
+        val it2 = lastSentTextByConv.iterator()
+        while (it2.hasNext()) if (now - it2.next().value.second > REPLY_DEDUP_TTL_MS) it2.remove()
+        // 极端兜底：真堆到几百个会话（群刷屏）时时间淘汰也拦不住，才允许整体清空。
+        if (lastAutoSentAtByConv.size > 256) lastAutoSentAtByConv.clear()
+        if (lastSentTextByConv.size > 256) lastSentTextByConv.clear()
     }
 
     // ------------------------------------------------------------------ OCR
@@ -1545,7 +1683,7 @@ open class ChatCaptureService : AccessibilityService() {
      * 没了=成功 toast；还在=再点一次并请用户人工确认。
      * 截屏失败时按旧行为点计算坐标兜底（点在绿键上发送，点空无害）。
      */
-    private fun sendWeChatByVerifiedTap(token: ConversationSession.Token, onDone: (() -> Unit)? = null) {
+    private fun sendWeChatByVerifiedTap(token: ConversationSession.Token, onDone: ((Boolean) -> Unit)? = null) {
         fun tapSend() {
             val (x, y) = wxSendPoint()
             val path = Path().apply { moveTo(x, y) }
@@ -1575,7 +1713,7 @@ open class ChatCaptureService : AccessibilityService() {
             if (firstOk) {
                 // 点之前绿键就已不在（极端情况：别处已发）——没点，直接报成功。
                 overlay?.toast(t("已自动发送", "Sent automatically"))
-                onDone?.invoke()
+                onDone?.invoke(true)
                 return@checkThenAct
             }
             // 1.1s：等微信发送动画落定，同时避开 ScreenCapture 1s 截屏节流。
@@ -1589,7 +1727,8 @@ open class ChatCaptureService : AccessibilityService() {
                         overlay?.toast(t("请确认消息是否已发出", "Please check whether the message went out"))
                     }
                     // 无论确认成败，这一轮的发送动作已收尾——通知轮队列在此推进到下一个会话。
-                    onDone?.invoke()
+                    // 只有截图复检通过才算"真发出去了"，调用方据此决定是否把回复记进历史。
+                    onDone?.invoke(secondOk)
                 }
             }, 1100L)
         }
@@ -1625,9 +1764,14 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     /** Fill without blocking the main thread; all retries re-resolve the original target. */
-    private fun fillInput(token: ConversationSession.Token, text: String, attempt: Int = 0, onSendComplete: (() -> Unit)? = null) {
+    private fun fillInput(token: ConversationSession.Token, text: String, attempt: Int = 0, onSendComplete: ((Boolean) -> Unit)? = null) {
         fun finish(ok: Boolean) {
-            if (!isCurrent(token)) { Log.w(TAG, "fillInput finish: token stale, drop"); return }
+            if (!isCurrent(token)) {
+                Log.w(TAG, "fillInput finish: token stale, drop")
+                // 必须照样收尾：通知轮靠这个回调推进队列，丢了就要白等 SEND_DWELL。
+                onSendComplete?.invoke(false)
+                return
+            }
             if (ok) {
                 // 不信 IME 的 lastSent 短路：2026-10-14 真机教训——IME 报了
                 // 「已发送」就跳过 sendFor，验证链整段被绕过。autoSend 开就
@@ -1635,11 +1779,26 @@ open class ChatCaptureService : AccessibilityService() {
                 // 真发没发出去以截屏复检为准，不以任何返回值承诺为准。
                 Log.i(TAG, "fillInput ok: autoSend=${prefs.autoSend} imeClaimedSent=${ProbeImeBus.lastSent} -> ${if (prefs.autoSend) "sendFor" else "toast-only"}")
                 // sendFor announces the countdown itself; don't double-toast here.
-                if (prefs.autoSend) sendFor(token, onSendComplete)
-                else overlay?.toast(t("已填入，确认后自己发送", "Filled in — review it and send yourself"))
-            } else { Log.w(TAG, "fillInput failed -> clipboard fallback"); copyToClipboard(text); overlay?.toast(t("已复制，长按输入框粘贴", "Copied — long-press the input box to paste")) }
+                if (prefs.autoSend) {
+                    sendFor(token, onSendComplete)
+                } else {
+                    overlay?.toast(t("已填入，确认后自己发送", "Filled in — review it and send yourself"))
+                    // 只填入模式：填完就是本轮终点（没人会再去点发送），通知轮立刻推进下一个会话。
+                    onSendComplete?.invoke(false)
+                }
+            } else {
+                Log.w(TAG, "fillInput failed -> clipboard fallback")
+                copyToClipboard(text)
+                overlay?.toast(t("已复制，长按输入框粘贴", "Copied — long-press the input box to paste"))
+                onSendComplete?.invoke(false)
+            }
         }
-        if (!isCurrent(token)) { Log.w(TAG, "fillInput: token stale at entry (destroyed=$destroyed enabled=${prefs.enabled})"); overlay?.toast(t("会话已变化，请重新分析后填入", "The chat changed — analyze again before filling")); return }
+        if (!isCurrent(token)) {
+            Log.w(TAG, "fillInput: token stale at entry (destroyed=$destroyed enabled=${prefs.enabled})")
+            overlay?.toast(t("会话已变化，请重新分析后填入", "The chat changed — analyze again before filling"))
+            onSendComplete?.invoke(false)
+            return
+        }
         // 微信 8.0.78 把输入框从 a11y 树里剪掉（rootInActiveWindow 恒 null），树写/焦点写
         // 全部不可达——唯一可靠写入通道是探针自己的输入法（ProbeInputMethod.commitText）。
         if (token.target.pkg == PKG_WECHAT && ProbeImeBus.isEnabled(this)) {
@@ -1743,7 +1902,7 @@ open class ChatCaptureService : AccessibilityService() {
      * 不可点、还可能被别的通知顶掉）。改成在悬浮窗上摆一张带「本次不发送」的
      * 倒计时卡：发出去的消息收不回来，给一个能点的撤销口是最低成本的对价。
      */
-    private fun sendFor(token: ConversationSession.Token, onSendComplete: (() -> Unit)? = null) {
+    private fun sendFor(token: ConversationSession.Token, onSendComplete: ((Boolean) -> Unit)? = null) {
         val delay = prefs.sendDelayMs.toLong()
         skipThisSend = false
         Log.i(TAG, "sendFor: delay=${delay}ms autoSend=${prefs.autoSend} notifToken=${token.target.windowId == ConversationSession.NOTIF_WINDOW}")
@@ -1754,19 +1913,23 @@ open class ChatCaptureService : AccessibilityService() {
             }
         }
         main.postDelayed({
-            if (!isCurrent(token)) { Log.w(TAG, "sendFor: token stale at fire time, aborted"); return@postDelayed }
+            if (!isCurrent(token)) { Log.w(TAG, "sendFor: token stale at fire time, aborted"); onSendComplete?.invoke(false); return@postDelayed }
             // 用户在这段等待里点了「本次不发送」：只放弃这一条，不动总开关。
-            if (skipThisSend) { skipThisSend = false; Log.i(TAG, "sendFor: user held back this one"); return@postDelayed }
+            if (skipThisSend) { skipThisSend = false; Log.i(TAG, "sendFor: user held back this one"); onSendComplete?.invoke(false); return@postDelayed }
             // 发送不可逆：用户可能在这 2 秒等待里点了「暂停自动收发」（气泡菜单一步可达）。
             // 这里必须重新读开关，让暂停立刻生效——否则「随时收回控制权」就是空话。
-            if (!prefs.autoSend) { overlay?.toast(t("已暂停自动发送，本次未发出", "Auto-send paused — not sent this time")); return@postDelayed }
+            if (!prefs.autoSend) { overlay?.toast(t("已暂停自动发送，本次未发出", "Auto-send paused — not sent this time")); onSendComplete?.invoke(false); return@postDelayed }
             val root = rootInActiveWindow
             // 微信 8.0.78 聊天页 rootInActiveWindow 恒 null（树被剥光），旧代码在这里
             // 直接 abort——发送永远走不到。null 时只认 NOTIF token / isCurrent 放行。
             if (root == null) {
                 Log.w(TAG, "sendFor: rootInActiveWindow=null (WeChat FLAG_SECURE path), proceeding by token")
             } else if (token.target.windowId != ConversationSession.NOTIF_WINDOW &&
-                targetFor(root) != token.target) { Log.w(TAG, "sendFor: fg window no longer matches, aborted"); return@postDelayed }
+                targetFor(root) != token.target) {
+                Log.w(TAG, "sendFor: fg window no longer matches, aborted")
+                onSendComplete?.invoke(false)
+                return@postDelayed
+            }
             fun clickSend(): Boolean {
                 val r = rootInActiveWindow
                 if (r != null) {
@@ -1793,7 +1956,9 @@ open class ChatCaptureService : AccessibilityService() {
             }
             if (!clickSend()) {
                 Log.w(TAG, "sendFor: clickSend failed -> manual tap needed")
-                overlay?.toast(t("已填入，未能自动发送，请手动点发送", "Filled in but couldn't auto-send - tap send manually")); return@postDelayed
+                overlay?.toast(t("已填入，未能自动发送，请手动点发送", "Filled in but couldn't auto-send - tap send manually"))
+                onSendComplete?.invoke(false)
+                return@postDelayed
             }
             if (token.target.pkg == PKG_WECHAT) {
                 // 微信：确认/重试/提示都在 sendWeChatByVerifiedTap 里异步完成。
@@ -1802,7 +1967,7 @@ open class ChatCaptureService : AccessibilityService() {
             // 非微信：树可读，保留「输入框是否还有字」的事后确认。
             Log.i(TAG, "sendFor: clicked via tree, awaiting confirm")
             overlay?.toast(t("已自动发送", "Sent automatically"))
-            onSendComplete?.invoke()
+            onSendComplete?.invoke(true)
             main.postDelayed({
                 if (!isCurrent(token)) return@postDelayed
                 val input = inputFor(token)
@@ -2008,6 +2173,14 @@ open class ChatCaptureService : AccessibilityService() {
 
         private val PURE_TIME = Regex("""\d{1,2}[:：]\d{2}""")
         private val TAIL_TIME = Regex("""\d{1,2}[:：]\d{2}$""")
+
+        /** 模型常给候选回复加的自我介绍式前缀，发给真人前去掉。 */
+        private val REPLY_PREFIX = Regex(
+            """^(回复|回覆|回信|回答|答|AI\s*回复|助手\s*回复|Reply|Answer)\s*[:：]\s*""",
+            RegexOption.IGNORE_CASE)
+        private val REPLY_WS = Regex("[\\t\\u00A0 ]+")
+        /** 比较"是不是同一句话"时忽略的标点。 */
+        private val REPLY_PUNCT = "。，、！？；：,.!?;:~～\"'“”‘’「」()（）…—-"
 
         /** Transient placeholder titles apps show while a chat page is still
          *  connecting/loading — see [isTransientTitle]. Matched as a substring,
