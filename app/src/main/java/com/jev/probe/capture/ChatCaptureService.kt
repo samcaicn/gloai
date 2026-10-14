@@ -381,7 +381,7 @@ open class ChatCaptureService : AccessibilityService() {
             val list = notifBatch.getOrPut(key) { ArrayList() }
             // 同一窗口内重复 OCR 的同一条不重复计入（防抖期间同一条通知可能重投）。
             if (list.none { it.sender == msg.sender && it.text == msg.text }) list.add(msg)
-            main.removeCallbacks(notifBatchTimer[key])
+            notifBatchTimer[key]?.let { main.removeCallbacks(it) }
         }
         val r = Runnable { flushNotifBatch(key) }
         notifBatchTimer[key] = r
