@@ -23,8 +23,8 @@ object NotifIntentStore {
         if (conv.isNullOrBlank() || pi == null) return
         map[conv] = pi
         if (map.size > 32) {
-            val it = map.keys.iterator()
-            repeat(map.size - 16) { it.next(); it.remove() }
+            val iter = map.keys.iterator()
+            repeat(map.size - 16) { iter.next(); iter.remove() }
         }
     }
 
