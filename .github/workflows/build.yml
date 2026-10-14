@@ -50,14 +50,20 @@ jobs:
         working-directory: desktop
         run: bun run build-win:x64:fast
 
-      - name: 上传只读升级包（90 天）
+      # 单 artifact 上限 500MB：exe ~404MB / msi ~384MB，必须分开上传。
+      - name: 上传只读升级包 · NSIS 安装程序（90 天）
         uses: actions/upload-artifact@v4
         with:
-          name: aibuddy-win-x64
-          path: |
-            desktop/out/TupAI-*-win-x64.exe
-            desktop/out/TupAI-*-win-x64.msi
-            desktop/out/TupAI-*-win-x64.blockmap
+          name: aibuddy-win-x64-exe
+          path: desktop/out/TupAI-*-win-x64.exe
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: 上传只读升级包 · MSI 安装程序（90 天）
+        uses: actions/upload-artifact@v4
+        with:
+          name: aibuddy-win-x64-msi
+          path: desktop/out/TupAI-*-win-x64.msi
           retention-days: 90
           if-no-files-found: error
 
