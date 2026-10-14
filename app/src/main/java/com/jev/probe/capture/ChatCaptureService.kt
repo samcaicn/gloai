@@ -1293,19 +1293,20 @@ open class ChatCaptureService : AccessibilityService() {
         // 全部不可达——唯一可靠写入通道是探针自己的输入法（ProbeInputMethod.commitText）。
         if (token.target.pkg == PKG_WECHAT && ProbeImeBus.isEnabled(this)) {
             val (fx, fy) = wxFocusPoint()
-            // 先投递再聚焦：探针输入法若已活跃，tap 输入栏触发的 onStartInput 能直接
-            // 消费到 pending（反过来先 tap 会 onStartInput(null) 白弹一次选择器）。
-            ProbeImeBus.requestWrite(text) { ok -> finish(ok) }
-            tapWeChatInputBar()
             if (ProbeImeBus.imeActive) {
-                // 输入法已是探针（上一轮切过来没切回）：onStartInput 不再回调，
-                // 靠 ProbeInputMethod 的 200ms 轮询消费 pending。
+                // 探针已激活（用户自己在系统/通知栏切到了探针输入法）：投递 + 聚焦输入栏，
+                // 走 poll path 直接填字 + 点发送。App 全程不弹选择器、不替用户切输入法。
+                ProbeImeBus.requestWrite(text) { ok -> finish(ok) }
+                tapWeChatInputBar()
                 Log.i(TAG, "fillInput: probe IME active, wrote via poll path (focus=$fx,$fy)")
             } else {
-                // 输入法是讯飞：焦点已在输入框，弹系统选择器让用户切到探针输入法，
-                // 切换后 onStartInput 触发并消费 pending。用户每轮点一次。
-                Log.i(TAG, "fillInput: probe IME enabled, showing picker (focus=$fx,$fy)")
-                main.postDelayed({ showInputMethodPickerSafely() }, 300L)
+                // 输入法非探针：Android 不允许 app 静默切输入法，也绝不自动弹选择器打扰。
+                // 只在界面提示用户自己去系统/通知栏切到「AI聊天助手·写入」，
+                // 回复复制剪贴板兜底（用户切好后可手动粘贴或等下次自动回复）。
+                Log.i(TAG, "fillInput: probe IME not active -> prompt to switch, clipboard fallback (focus=$fx,$fy)")
+                copyToClipboard(text)
+                overlay?.toast(t("请先在系统输入法切到「AI聊天助手·写入」才能自动回复，回复已复制可手动粘贴",
+                                 "Switch your keyboard to \"AI Assistant · Write\" to auto-reply; reply copied for manual paste"))
             }
             return
         }
@@ -1343,17 +1344,6 @@ open class ChatCaptureService : AccessibilityService() {
             copy = { copyToClipboard(it) },
             complete = { finish(it) }
         ).fill(text)
-    }
-
-    /** 弹系统输入法选择器（用户点一下切到探针输入法 / 写完后切回讯飞）。 */
-    private fun showInputMethodPickerSafely() {
-        try {
-            val imm = getSystemService(android.view.inputmethod.InputMethodManager::class.java)
-            imm?.showInputMethodPicker()
-            Log.i(TAG, "showInputMethodPicker: ok")
-        } catch (e: Exception) {
-            Log.w(TAG, "showInputMethodPicker failed: ${e.message}")
-        }
     }
 
     private fun setTextRaw(edit: AccessibilityNodeInfo, text: String): Boolean {

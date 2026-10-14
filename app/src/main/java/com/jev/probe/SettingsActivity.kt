@@ -238,10 +238,17 @@ class SettingsActivity : AppCompatActivity() {
         // 自动回复的文本只能靠探针自带的输入法服务 commitText 写入。没启用它，
         // 「自动发送」会退化成「已复制，长按输入框粘贴」。这里给一次性引导。
         val imeOn = com.jev.probe.core.SelfCheck.isProbeImeEnabledPublic(this)
+        val imeActive = com.jev.probe.input.ProbeImeBus.imeActive
+        val imeDesc = if (!imeOn) {
+            t("未启用：自动回复只能复制到剪贴板。点此去 设置→语言和输入法 启用「AI聊天助手 · 写入」", "Not enabled: replies are only copied to the clipboard. Tap to open Settings → Languages & input and enable \"AI Assistant · Write\"")
+        } else if (imeActive) {
+            t("已设为当前输入法，自动回复直接写入并发送", "Active — replies are written and sent directly")
+        } else {
+            t("已启用但未设为当前输入法：自动回复会提示你去切换。点下方「切换为探针输入法」把它设为当前", "Enabled but not current — auto-reply will prompt you to switch. Tap \"Switch to probe IME\" below to make it current")
+        }
         c.addView(permRow(
             t("写入输入法", "Write input method"),
-            if (imeOn) t("已启用，自动回复可直接写入输入栏", "Enabled — replies can be typed into the input box directly")
-            else t("未启用：自动回复只能复制到剪贴板。点此去 设置→语言和输入法 启用「AI聊天助手 · 写入」", "Not enabled: replies are only copied to the clipboard. Tap to open Settings → Languages & input and enable \"AI Assistant · Write\""),
+            imeDesc,
             imeOn
         ) {
             startActivity(android.content.Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))

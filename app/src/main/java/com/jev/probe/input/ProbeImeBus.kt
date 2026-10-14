@@ -12,7 +12,7 @@ import android.content.Context
  * 流程：ChatCaptureService.fillInput → requestWrite(text) → 弹系统输入法选择器 →
  * 用户选「AI聊天助手 写入」→ ProbeInputMethod.onStartInput 检出 pending →
  * commitText → completeWrite(true) → ChatCaptureService 继续 sendFor（点发送键）。
- * 写完 ProbeInputMethod 自动引导用户切回普通输入法。
+ * 写完 ProbeInputMethod 不自动切回——由视图上的「↩ 返回普通输入法」按钮让用户自己切回（App 不替用户切换输入法）。
  */
 object ProbeImeBus {
 
