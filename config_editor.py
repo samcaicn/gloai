@@ -780,7 +780,10 @@ def start_bot():
             }), 400
         _ls = _license_status()
         if _ls.get('available'):
-            if _ls.get('guard_enabled') and not _ls.get('activated'):
+            # 免费模式（无卡密）默认激活：允许启动，仅提示每日条数受限。
+            # 只有「填了卡密但激活失败」且门禁启用时才拦住（key 无效不能正常用官方 AI）。
+            if (_ls.get('guard_enabled') and not _ls.get('activated')
+                    and not _ls.get('free_mode')):
                 return jsonify({
                     'error': '未激活',
                     'message': '软件尚未激活，请先购买并激活后再启动机器人。'
@@ -5444,6 +5447,7 @@ def _license_status():
         "worker_url": w,
         "key_set": bool(key),
         "key_hint": key_hint,
+        "free_mode": not bool(key),   # 无卡密 = 免费模式（默认激活，每日条数云端限制）
         "activated": activated,
         "expired": expired,
         "expire_at": expire_at,

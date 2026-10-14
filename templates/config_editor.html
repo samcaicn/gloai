@@ -4545,6 +4545,9 @@
                         } else if(s.expired){
                             setBadge('bad', '已过期');
                             expireEl.textContent = '';
+                        } else if(s.free_mode){
+                            setBadge('warn', '免费模式');
+                            expireEl.textContent = '每日回复条数受云端限制';
                         } else {
                             setBadge('bad', '未激活');
                             expireEl.textContent = '';
@@ -4573,9 +4576,13 @@
                             emailHint.textContent = '已记住 ' + s.buyer_email + '，付款页会自动填好。';
                         }
 
-                        // 未激活时提示购买；已激活就不要再啰嗦
+                        // 免费模式：默认可用，仅提示购买解锁更高额度；已激活就不要再啰嗦
                         if (s.activated) {
                             banner.style.display = 'none';
+                        } else if (s.free_mode) {
+                            banner.style.display = 'block';
+                            banner.style.background = '#e3f2fd'; banner.style.color = '#1565c0';
+                            banner.textContent = '当前为免费模式：所有功能默认可用，每日回复条数受云端限制。购买激活可解除限制。';
                         } else {
                             banner.style.display = 'block';
                             banner.style.background = '#e3f2fd'; banner.style.color = '#1565c0';

@@ -38,7 +38,15 @@
     </div>
 
     <div class="wrap content-area" data-page-node-id="mcpWrap">
-        {% if lic and lic.available and not lic.activated %}
+        {% if lic and lic.available and lic.free_mode %}
+        <div data-page-node-id="mcpLicWarn" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+             background:var(--warn-soft,#fff4e5);color:var(--warn-text,#8a5a00);
+             border:1px solid var(--border,#e5e5e5);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;">
+            <span>✅ 当前为<b>免费模式</b>：MCP 默认可用，每日回复条数受云端限制。</span>
+            <button type="button" onclick="openBuyFromSub()" style="cursor:pointer;border:0;background:var(--brand,#2f6fed);
+                    color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;">购买解除限制</button>
+        </div>
+        {% elif lic and lic.available and not lic.activated %}
         <div data-page-node-id="mcpLicWarn" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;
              background:var(--warn-soft,#fff4e5);color:var(--warn-text,#8a5a00);
              border:1px solid var(--border,#e5e5e5);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;">

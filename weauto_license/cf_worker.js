@@ -540,7 +540,50 @@ async function routeAi(req, env, url) {
   }
 }
 
-/** /ai/v1/* 路由入口：先鉴权（计费令牌 或 Creem 卡密），再交给 routeAi 派发。 */
+/* ===================== 免费每日回复配额（无卡密用户默认可用） =====================
+ * 产品规则（2026-10-14）：所有软件默认激活可用；没有卡密的用户走「免费配额」：
+ * 每日最多回复 WEAUTO_FREE_DAILY_QUOTA 条（默认 30），由 Worker 按机器指纹
+ * （X-WA-Machine → X-WeAuto-Instance → 请求 IP）在 BILLING_KV 计数，超限 429。
+ * 有有效卡密的用户不受此限制。计数在 AI 调用成功（2xx）后才 +1，失败不耗额度。
+ */
+const FREE_QUOTA_DEFAULT = 30;
+
+function quotaMachine(req) {
+  return (
+    req.headers.get("x-wa-machine") ||
+    req.headers.get("x-weauto-instance") ||
+    req.headers.get("cf-connecting-ip") ||
+    "anon"
+  ).slice(0, 64);
+}
+
+function quotaDate() {
+  // KV key 用 UTC 日期即可（跨时区差一天可接受，次日零点重置）
+  return new Date().toISOString().slice(0, 10);
+}
+
+async function checkDailyQuota(env, machine) {
+  const limit = Number(env.WEAUTO_FREE_DAILY_QUOTA) > 0
+    ? Number(env.WEAUTO_FREE_DAILY_QUOTA) : FREE_QUOTA_DEFAULT;
+  if (!env.BILLING_KV) return { allowed: true, limit, remaining: limit, key: "" };
+  const key = "daily:" + quotaDate() + ":" + machine;
+  const raw = await env.BILLING_KV.get(key);
+  const count = raw ? Number(raw) : 0;
+  return { allowed: count < limit, limit, remaining: Math.max(0, limit - count), key };
+}
+
+async function incrDailyQuota(env, machine) {
+  if (!env.BILLING_KV || !machine) return;
+  const limit = Number(env.WEAUTO_FREE_DAILY_QUOTA) > 0
+    ? Number(env.WEAUTO_FREE_DAILY_QUOTA) : FREE_QUOTA_DEFAULT;
+  const key = "daily:" + quotaDate() + ":" + machine;
+  const cur = Number(await env.BILLING_KV.get(key)) || 0;
+  // 最多记到 limit+1（超限后不再无限涨），TTL 48h 兜底清理
+  await env.BILLING_KV.put(key, String(Math.min(cur + 1, limit + 1)),
+    { expirationTtl: 48 * 3600 });
+}
+
+/** /ai/v1/* 路由入口：先鉴权（计费令牌 或 Creem 卡密 或 免费配额），再交给 routeAi 派发。 */
 async function proxyAi(req, env, url) {
   const authHdr = (req.headers.get("authorization") || "").trim();
   const token = authHdr.startsWith("Bearer ") ? authHdr.slice(7).trim() : authHdr;
@@ -548,19 +591,37 @@ async function proxyAi(req, env, url) {
   if (token && looksLikeBillingToken(token) && env.WEAUATO_SIGN_SECRET) {
     return proxyAiBilled(req, env, url, token);
   }
-  // ---- 旧 Creem 卡密路径（EXE，保持不变）----
+  // ---- Creem 卡密路径（EXE）----
   const key = token;
   const instanceId = req.headers.get("x-weauto-instance") || "";
-  if (!(await licenseOk(env, key, instanceId))) {
+  const licensed = key && (await licenseOk(env, key, instanceId));
+  if (licensed) {
+    return routeAi(req, env, url);
+  }
+  // ---- 免费配额路径：无有效卡密默认放行，按机器每日条数限制 ----
+  const machine = quotaMachine(req);
+  const q = await checkDailyQuota(env, machine);
+  if (!q.allowed) {
+    const buy = env.CREEM_CHECKOUT_URL || (env.WORKER_URL ? env.WORKER_URL + "/buy" : "");
     return json({
       error: {
-        message: "无效授权：请先在 WeAuto 后台「授权管理」激活卡密后再使用 AI 功能",
-        type: "weauto_license_error",
-        code: "license_required",
+        message: `今日免费回复已达上限（${q.limit} 条），明天再来吧。`
+          + (buy ? ` 激活卡密可立即解除限制：${buy}` : ""),
+        type: "weauto_quota_error",
+        code: "daily_quota_exceeded",
+        quota_remaining: 0,
+        quota_limit: q.limit,
       },
-    }, 401);
+    }, 429, new Headers({ "X-Quota-Remaining": "0", "X-Quota-Limit": String(q.limit) }));
   }
-  return routeAi(req, env, url);
+  const resp = await routeAi(req, env, url);
+  if (resp && resp.status >= 200 && resp.status < 300) {
+    await incrDailyQuota(env, machine);
+  }
+  const h = new Headers(resp.headers);
+  h.set("X-Quota-Remaining", String(Math.max(0, q.remaining - 1)));
+  h.set("X-Quota-Limit", String(q.limit));
+  return new Response(resp.body, { status: resp.status, headers: h });
 }
 
 /* ===================== Token 计费（APK 专用，云端强约束） =====================

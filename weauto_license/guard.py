@@ -281,21 +281,21 @@ def _buy_prompt(reason):
 def ensure_license(strict: bool = True) -> bool:
     """门禁主函数。返回 True 放行，False 拒绝。
 
+    产品规则（2026-10-14）：所有软件**默认激活可用**——没有卡密也放行，
+    每日回复条数由 Worker 端按机器指纹限制（免费配额，超限 AI 请求返回 429）；
+    只有「填了卡密」的用户才走真实验证（激活 / 续期 / 换机释放）。
+    因此本函数仅在有卡密时严格校验；无卡密一律返回 True。
+
     strict=False 时：即便校验失败也放行（仅用于开发/异常兜底，避免门禁 bug 卡死主程序）。
-    正式发布请把 LICENSE_GUARD_ENABLED=True 并保持 strict 默认。
     """
     if not guard_enabled():
         return True
     w = worker_url()
     if not w:
-        if strict:
-            _buy_prompt("未配置 CREEM_WORKER_URL")
-            return False
-        return True
+        return True                      # 未配置 Worker：不设卡（开发态），配额无从谈起
     key = _cfg("CREEM_LICENSE_KEY", "")
     if not key:
-        _buy_prompt("未配置 CREEM_LICENSE_KEY")
-        return False
+        return True                      # 免费模式：默认激活，配额由 Worker 限制
 
     cache = _read_cache()
     now = time.time()
@@ -326,16 +326,18 @@ def ensure_license(strict: bool = True) -> bool:
             print("[License] 授权服务暂时不可用（HTTP %d），按本机最近一次成功记录放行。"
                   % http_status, flush=True)
             return True
-        _buy_prompt(resp.get("reason", "未知原因"))
-        return False
+        # 卡密无效：不阻止使用，回落到免费配额（Worker 会按机器限每日条数）
+        print("[License] 卡密校验未通过（%s），按免费模式继续（每日条数由云端限制）。"
+              % resp.get("reason", "未知原因"), flush=True)
+        return True
     except Exception as e:
-        # 联网失败：缓存仍在 grace 期内 → 离线放行
+        # 联网失败：缓存仍在 grace 期内 → 离线放行；否则免费模式放行
         if (cache.get("key") == key and cache.get("instance_id")
                 and now < cache.get("expire_at", 0) + OFFLINE_GRACE_SECONDS):
             print("[License] 联网校验失败（%s），离线宽限内放行。" % e, flush=True)
             return True
-        _buy_prompt("联网校验失败: %s" % e)
-        return False
+        print("[License] 联网校验失败（%s），按免费模式继续。" % e, flush=True)
+        return True
 
 
 def activate(license_key: str):
@@ -412,6 +414,13 @@ def ai_endpoint():
     except Exception:
         pass
     key = _cfg("CREEM_LICENSE_KEY", "") or ""
+    if not key:
+        # 免费模式（默认激活）：不带卡密，但带机器指纹供 Worker 做每日条数配额
+        return {
+            "base_url": w + "/ai/v1",
+            "api_key": "free-tier",
+            "headers": {"X-WA-Machine": get_machine_id()},
+        }
     return {
         "base_url": w + "/ai/v1",
         "api_key": key or "license-pending",
@@ -437,7 +446,7 @@ def start_periodic_recheck(interval_seconds=None, on_invalid=None, on_near_expir
                     continue
                 key = _cfg("CREEM_LICENSE_KEY", "") or ""
                 if not key:
-                    on_invalid("卡密被清空")
+                    # 免费模式（默认激活）：无需复检，配额由 Worker 云端限制
                     continue
                 cache = _read_cache()
                 now = time.time()

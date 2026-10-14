@@ -1483,6 +1483,11 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
             elif "payment required" in error_info:
                 logger.error("\033[31m错误：API 服务商反馈您正在使用付费模型，请先充值再使用或使用免费额度模型！\033[0m")
                 break  # 终止循环，不再重试
+            elif ("daily_quota_exceeded" in error_info
+                  or "今日免费回复已达上限" in error_info
+                  or "quota_remaining" in error_info):
+                logger.error("\033[31m错误：今日免费回复条数已达上限。激活卡密可解除限制（网页后台「授权管理」或购买页）。\033[0m")
+                break  # 配额耗尽，重试无意义
             elif "user quota" in error_info or "is not enough" in error_info or "UnlimitedQuota" in error_info:
                 logger.error("\033[31m错误：API 服务商反馈，你的余额不足，请先充值再使用! 如有余额，请检查令牌是否为无限额度。\033[0m")
                 break  # 终止循环，不再重试
@@ -1606,6 +1611,11 @@ def call_assistant_api_with_retry(messages_to_send, user_id, max_retries=2, is_s
             elif "payment required" in error_info:
                 logger.error("\033[31m错误：API 服务商反馈您正在使用付费模型，请先充值再使用或使用免费额度模型！\033[0m")
                 break  # 终止循环，不再重试
+            elif ("daily_quota_exceeded" in error_info
+                  or "今日免费回复已达上限" in error_info
+                  or "quota_remaining" in error_info):
+                logger.error("\033[31m错误：今日免费回复条数已达上限。激活卡密可解除限制（网页后台「授权管理」或购买页）。\033[0m")
+                break  # 配额耗尽，重试无意义
             elif "user quota" in error_info or "is not enough" in error_info or "UnlimitedQuota" in error_info:
                 logger.error("\033[31m错误：API 服务商反馈，你的余额不足，请先充值再使用! 如有余额，请检查令牌是否为无限额度。\033[0m")
                 break  # 终止循环，不再重试
