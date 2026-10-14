@@ -348,14 +348,18 @@ open class ChatCaptureService : AccessibilityService() {
             // chat never opens or the tree read misses it.
             val sender = intent.getStringExtra("sender")
             val text = intent.getStringExtra("text")
+            // 会话键必须用 WxNotificationListener 传来的 conv（群消息=群名、单聊=对方昵称），
+            // 不能回退到 sender——否则后台群消息会被当成「某个群成员的私聊」，
+            // beginNotification 用它去找会话只会定位到那个人的单聊，群消息永远发不出去。
+            val conv = intent.getStringExtra("conv") ?: currentSnapshot?.title
             if (!text.isNullOrBlank()) {
                 ConversationHistory.appendFromNotification(
-                    PKG_WECHAT, currentSnapshot?.title ?: sender, sender, text,
+                    PKG_WECHAT, conv ?: sender, sender, text,
                     intent.getBooleanExtra("image", false))
                 // 同会话多条通知攒一波（默认 1.2s 防抖）再统一分析+回复一次，
                 // 而不是每条通知各触发一次——否则对方连发 3 条会回 3 次、
                 // 且每条只看自己那一条，丢失「多条消息 + 历史 + 谁说的」全貌。
-                enqueueNotif(currentSnapshot?.title ?: sender, sender, text,
+                enqueueNotif(conv ?: sender, sender, text,
                     intent.getBooleanExtra("image", false))
             }
             val fg = rootInActiveWindow?.packageName?.toString()
