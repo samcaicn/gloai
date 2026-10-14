@@ -46,7 +46,20 @@ class Updater:
 
     # EXE 自动更新代理（Cloudflare Worker）：EXE 只问本端点，Worker 用服务端 GITHUB_TOKEN
     # 解析出免鉴权的 azure 直链返回。EXE 零密钥升级，GitHub token 仅在服务端、可随时轮换。
-    UPDATE_WORKER_URL = "https://weauto-license.pages.dev"
+    UPDATE_WORKER_URL = "https://weauto-app.pages.dev"
+
+    @staticmethod
+    def _update_worker_url() -> str:
+        """发行版更新代理地址：以 blob GATEWAY_HOST 为准（用户改 config 无效）；开发态用常量。"""
+        try:
+            from weauto_license import secrets as _sec
+            if _sec.is_release():
+                host = _sec.get("GATEWAY_HOST", "")
+                if host:
+                    return host.rstrip("/")
+        except Exception:
+            pass
+        return "https://weauto-app.pages.dev"
 
     # 只读令牌（可选）：用于访问私有仓库的 Actions Artifact / Release。
     # 仅需 read-only 权限（actions:read、contents:read）。
@@ -283,7 +296,7 @@ class Updater:
     def _check_artifact_updates(self) -> dict:
         """向 Worker 更新代理查询最新 CI 构件（EXE 零密钥）。"""
         try:
-            url = f"{self.UPDATE_WORKER_URL.rstrip('/')}/api/update-windows"
+            url = f"{self._update_worker_url().rstrip('/')}/api/update"
             headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
             resp = requests.get(url, headers=headers, timeout=15)
             if resp.status_code in (401, 403, 404, 503):

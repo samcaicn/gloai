@@ -119,3 +119,11 @@ build_local.log
 # ---- 独立嵌套项目 / 本地工作区外壳（不入库）----
 aichat-h5/
 WeChatBot_SE-v3.25.1/
+
+# ---- 本地 CF Pages 部署中间产物（不入库）----
+_pages_deploy/
+_cfg_pages_vars.py
+_build_check.txt
+_build_full*.log
+_verify*.log
+_worker_gate_test*.js

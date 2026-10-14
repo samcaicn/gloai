@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('config.py', '.'), ('templates', 'templates'), ('emojis', 'emojis'), ('prompts', 'prompts'), ('Demo_Image', 'Demo_Image')]
+datas = [('C:/d/weauto/_pybuild_work/config.py', '.'), ('C:/d/weauto/_pybuild_work/config.py.sig', '.'), ('C:/d/weauto/templates', 'templates'), ('C:/d/weauto/emojis', 'emojis'), ('C:/d/weauto/prompts', 'prompts'), ('C:/d/weauto/Demo_Image', 'Demo_Image'), ('C:/d/weauto/release_secrets.enc', '.')]
 binaries = []
 hiddenimports = ['bot', 'wechat_compat', 'wechatauto', 'forward_hub', 'jev_guard', 'weauto_stdio', 'cli', 'weauto_mcp', 'weauto_license', 'weauto_license.guard', 'mcp', 'uiautomation', 'comtypes', 'colorama', 'webview.platforms.edgechromium', 'webview.platforms.winforms']
 tmp_ret = collect_all('mcp')
@@ -17,8 +17,8 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['config_editor.py'],
-    pathex=['vendor'],
+    ['C:/d/weauto/config_editor.py'],
+    pathex=['C:/d/weauto/vendor', 'C:/d/weauto/_pyobf_dist'],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
@@ -31,7 +31,7 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 splash = Splash(
-    'splash.png',
+    'C:/d/weauto/splash.png',
     binaries=a.binaries,
     datas=a.datas,
     text_pos=None,
@@ -61,6 +61,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    version='version_info.txt',
-    manifest='manifest.xml',
+    version='C:/d/weauto/version_info.txt',
+    manifest='C:/d/weauto/manifest.xml',
 )

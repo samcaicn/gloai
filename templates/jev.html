@@ -73,7 +73,7 @@
         <h2>运行状态</h2>
         <table>
             <tbody>
-                <tr><td class="k">判断服务</td><td class="v">WeAuto 自建 Worker（wetech.jukuai.net）</td></tr>
+                <tr><td class="k">判断服务</td><td class="v">WeAuto 自建 Worker（weauto-app.pages.dev）</td></tr>
                 <tr><td class="k">判断模型</td><td class="v">{{ data.consts.get('JEV_MODEL_NAME') or '后台默认（llama-3.3-70b）' }}</td></tr>
                 <tr><td class="k">单次超时</td><td class="v">首次 {{ data.consts.get('JEV_TIMEOUT_SEC') }} 秒（超时即照常回复）</td></tr>
                 <tr><td class="k">超时与重试</td><td class="v">瞬时故障（超时/连接失败/服务端 5xx）自动重试 {{ data.consts.get('JEV_MAX_RETRIES') }} 次，每次最多 {{ data.consts.get('JEV_RETRY_TIMEOUT_SEC') }} 秒</td></tr>

@@ -36,7 +36,7 @@
    - 记下 `Product ID`（`prod_xxx`）
 3. **Settings > API Keys** 生成 API key（`creem_test_...` / `creem_live_...`）。
 4. **Developers > Webhooks** 填 `https://weauto-license.tuptup-workbuddy.workers.dev/webhook`（CF 原始链接，已部署并经 CF API 确认 enabled），记下 Webhook Secret。
-   - 为什么 Webhook 用 workers.dev 而购买页用自定义域名：Webhook 是 **Creem 海外服务器 → CF** 的服务器间回调，不受大陆 workers.dev 被墙影响；而 `/buy`、`/ai/v1` 是大陆买家/bot 访问，必须走 `wetech.jukuai.net`。
+   - 为什么 Webhook 用 workers.dev 而购买页用自定义域名：Webhook 是 **Creem 海外服务器 → CF** 的服务器间回调，不受大陆 workers.dev 被墙影响；而 `/buy`、`/ai/v1` 是大陆买家/bot 访问，必须走 `weauto-app.pages.dev`。
 5. 本地测试用 `creem_test_` key + 测试卡 `4242 4242 4242 4242`。
 
 ## 支付宝：两个必须分清的概念（最容易踩坑）
@@ -104,7 +104,7 @@ curl -I "https://weauto-license.<子域>.workers.dev/buy?go=1"
 
 > ⚠️ **大陆访问约束**：Cloudflare 的 `*.workers.dev` 默认域名在中国大陆**可能被墙**，买家可能打不开。
 > 本项目当前按指令**使用 CF 默认域名、不绑自定义域名**。若日后需大陆直连，再绑自定义域名
-> （例如 `wetech.jukuai.net`，其 NS 已在 Cloudflare，可直接 `[[routes]] custom_domain` 绑）。
+> （例如 `weauto-app.pages.dev`，其 NS 已在 Cloudflare，可直接 `[[routes]] custom_domain` 绑）。
 > `config.py` 的 `CREEM_WORKER_URL` 必须填 `wrangler deploy` 后终端显示的
 > `https://weauto-license.<子域>.workers.dev`，不能用占位。
 
@@ -205,9 +205,9 @@ bot.py (base_url=<worker>/ai/v1, api_key=卡密, X-WeAuto-Instance=实例ID)
 > - **B. 本机没有 key 时（key 只在 Worker secret，只写不可读）**：
 >   走 Worker 侧运维接口，它用 Worker 自己的 secret 发请求：
 >   ```bash
->   curl -H "x-admin-key: $ADMIN_KEY" https://wetech.jukuai.net/creem/price                  # 只读，查线上现价
+>   curl -H "x-admin-key: $ADMIN_KEY" https://weauto-app.pages.dev/creem/price                  # 只读，查线上现价
 >   curl -X POST -H "x-admin-key: $ADMIN_KEY" -H "content-type: application/json" \
->        -d '{"confirm":true}' https://wetech.jukuai.net/creem/price                        # 改价
+>        -d '{"confirm":true}' https://weauto-app.pages.dev/creem/price                        # 改价
 >   ```
 >   守卫与 `/token/issue` 同款 fail-close（`ADMIN_KEY` 未配或头不匹配一律 403），
 >   另支持一次性 nonce（代码里只留 SHA-256 哈希，明文只在部署者本地，用完即焚重部署）。
@@ -222,7 +222,7 @@ bot.py (base_url=<worker>/ai/v1, api_key=卡密, X-WeAuto-Instance=实例ID)
    实测：用旧 key 查/建 checkout → 全部 404；用**线上 Worker** 请求同样的
    `prod_2oyeDnQx6eWqmDpVvDRfC3` → 302 正常跳 `pay.jukuai.net` 收银台。
    → 遇到 404 先别急着重建产品，**先确认 key 是不是当前账户的**，
-     或直接用 `https://wetech.jukuai.net/buy?go=1&tier=<档>` 实测线上。
+     或直接用 `https://weauto-app.pages.dev/buy?go=1&tier=<档>` 实测线上。
 
 要改线上产品文案，必须先取到当前 key：
 ```

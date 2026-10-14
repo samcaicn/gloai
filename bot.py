@@ -763,7 +763,16 @@ def _fetch_untrusted_providers():
     if _BLACKLIST_FETCHED:
         return _BLACKLIST_STRINGS
     try:
-        resp = requests.get("https://weauto-license.pages.dev/black", timeout=3)
+        # 防破解整改：发行版黑名单接口走 blob GATEWAY_HOST（用户改 config 无效）
+        _url = "https://weauto-app.pages.dev/black"
+        try:
+            from weauto_license import secrets as _sec
+            _h = _sec.get("GATEWAY_HOST", "")
+            if _h:
+                _url = _h.rstrip("/") + "/black"
+        except Exception:
+            pass
+        resp = requests.get(_url, timeout=3)
         resp.raise_for_status()
         data = resp.json()
         items = data.get("data") if isinstance(data, dict) else None

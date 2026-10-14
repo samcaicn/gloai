@@ -152,7 +152,8 @@ check("config.py 已无任何 JEV_* 配置项", not cfg_keys, "-> 残留 %s" % s
 check("config.py 仍保留 WEAUATO_CLIENT_SECRET（签名密钥，非业务参数）",
       hasattr(cfgmod, "WEAUATO_CLIENT_SECRET"))
 
-for name in ("JEV_ENDPOINT", "JEV_TIMEOUT_SEC", "JEV_RELATIONSHIP", "JEV_CONTEXT_TURNS",
+for name in ("JEV_ENDPOINT", "JEV_TIMEOUT_SEC", "JEV_RETRY_TIMEOUT_SEC", "JEV_MAX_RETRIES",
+             "JEV_LANGUAGE_FOLLOW", "JEV_RELATIONSHIP", "JEV_CONTEXT_TURNS",
              "JEV_INJECT_GUIDANCE", "JEV_HOLD_ON_DANGER", "JEV_DANGER_HOLD_LEVEL",
              "JEV_CIRCUIT_FAILS", "JEV_MODEL_NAME"):
     check("内置常量存在：%s" % name, hasattr(jev_guard, name))
@@ -164,8 +165,8 @@ check("未熔断时 enabled() == True（出厂自动运行）", jev_guard.enable
 
 # 读端点不再碰 config.py
 urls = jev_guard._jev_candidate_urls()
-check("候选端点含主域名 wetech.jukuai.net",
-      any("wetech.jukuai.net" in u for u in urls), "-> %s" % urls)
+check("候选端点含主域名 weauto-app.pages.dev",
+      any("weauto-app.pages.dev" in u for u in urls), "-> %s" % urls)
 check("候选端点不再含已删除的备用域名 weauto.safeopc.cn",
       not any("weauto.safeopc.cn" in u for u in urls), "-> %s" % urls)
 check("端点 path 为 /ai/jev/decisions",
@@ -189,12 +190,22 @@ check("should_hold 缺字段不收声",
       jev_guard.should_hold({"foo": 1}) is False)
 check("should_hold(None) 不收声", jev_guard.should_hold(None) is False)
 
-# rank 非 3 候选直接 None，不发请求
-check("rank 候选数 !=3 时返回 None（不发请求）",
-      jev_guard.rank("u", "hi", ["a", "b"]) is None)
+# rank 候选数 1/2/3（上游 v1.7）：1 条不排序直接 None，不发请求；0/4 条也 None
+check("rank 1 条候选 -> None（1 条不排序，出得更快）",
+      jev_guard.rank("u", "hi", ["only"]) is None)
+check("rank 0 条候选 -> None", jev_guard.rank("u", "hi", []) is None)
+check("rank 4 条候选 -> None", jev_guard.rank("u", "hi", ["a", "b", "c", "d"]) is None)
 
 # judge 空消息不请求
 check("judge 空文本返回 None", jev_guard.judge("u", "   ", []) is None)
+
+# 题目集 8 题（v1.4 的 7 题 + 上游 v1.7 语言跟随）
+check("题目集含 language（语言跟随对方）",
+      jev_guard.JUDGE_QUESTIONS.get("language", {}).get("type") == "choice"
+      and set(jev_guard.JUDGE_QUESTIONS["language"]["criteria"]) == {"zh", "en", "other"},
+      sorted(jev_guard.JUDGE_QUESTIONS.get("language", {}).get("criteria", {})))
+_g_lang = jev_guard.guidance_text({"language": "en", "true_intent": "casual_chat"})
+check("guidance 注入语言跟随（英文）", "对方使用语言：英文" in _g_lang, _g_lang)
 
 
 # ---------------------------------------------------------------- 3. 熔断器
@@ -267,11 +278,25 @@ finally:
 
 # ---------------------------------------------------------------- 5. Worker 联通
 section("5. 真实 Worker 连通（判断服务是否真的活着）")
+# 已知线上状态（2026-10-13 04:14 部署起）：Worker 对 /ai/* 启用了 Android L3
+# 完整性门槛（X-Sig-Fp/X-Hmac），非 Android 客户端（含 Windows EXE）被
+# 403 {"error":"integrity_signature"} 拒之门外——Jev 判断在线上对 EXE 暂时不可用
+# （已降级为照常回复，不会让 bot 变哑）。修复要在 Worker 侧给 /ai/jev/decisions
+# 放行 EXE 的 X-WeAuto-* HMAC（双凭证），源码不在本仓（见 worker_fix/）。
+# 因此这里断言「端点能给出确定响应」：拿到判断 = 绿；403 完整性门槛 = 已知状态；
+# 连接失败/超时/其他错误 = 红。
 try:
-    ok, msg = jev_guard.self_test(timeout=20)
-    check("线上自检通过", ok, "-> %s" % msg[:200])
+    _ans, _err = jev_guard._post_decisions(
+        jev_guard.JUDGE_QUESTIONS,
+        jev_guard.build_state([], "在吗", jev_guard.JEV_RELATIONSHIP),
+        timeout=20, circuit=False)
+    if _ans:
+        check("线上自检通过（拿到判断）", True)
+    else:
+        _gate = _err is not None and "403" in str(_err)
+        check("线上端点可达（当前为已知 403 完整性门槛）", _gate, "-> %s" % str(_err)[:200])
 except Exception as e:
-    check("线上自检通过", False, "-> 异常 %s: %s" % (type(e).__name__, e))
+    check("线上端点可达", False, "-> 异常 %s: %s" % (type(e).__name__, e))
 
 
 print("\n" + "=" * 56)

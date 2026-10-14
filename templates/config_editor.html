@@ -982,12 +982,12 @@
         // WeAuto Worker 网关（已彻底去掉 vg.v1api.cc 第三方节点）
         // EXE 全程只与自有 Worker 通信，由后端 /proxy/weapis/endpoint 返回统一网关。
         const WEAPIS_ENDPOINTS = [
-            'https://wetech.jukuai.net/ai'
+            'https://weauto-app.pages.dev/ai'
         ];
 
         // 备用固定节点（当后端代理不可用时回退到 Worker 网关）
         const FALLBACK_WEAPIS_NODES = [
-            'https://wetech.jukuai.net/ai'
+            'https://weauto-app.pages.dev/ai'
         ];
         
         // 缓存的节点列表和缓存时间
@@ -1049,7 +1049,7 @@
             
             // 直接使用第一个节点，因为这些节点都是从endpoint验证过的
             // 不再进行额外的可用性检测，避免401错误（需要API Key）
-            const firstNode = nodes[0] || 'https://wetech.jukuai.net/ai';
+            const firstNode = nodes[0] || 'https://weauto-app.pages.dev/ai';
             const baseUrl = firstNode.replace(/\/+$/, ''); // 移除末尾的斜杠
             console.log(`选择WeAPIs节点: ${baseUrl}`);
             return baseUrl + '/v1';
@@ -1168,7 +1168,7 @@
                 
                 // 创建所有可能的 WeAuto Worker 网关 URL 变体（已去掉 vg 旧节点）
                 const weapisVariants = new Set([
-                    'https://wetech.jukuai.net/ai/v1'
+                    'https://weauto-app.pages.dev/ai/v1'
                 ]);
                 
                 // 添加动态获取的节点URL变体

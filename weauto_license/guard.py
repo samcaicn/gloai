@@ -102,7 +102,7 @@ def worker_url() -> str:
     开发态保持从 config 读（本地可指向任意 Worker）。
     """
     if RELEASE_BUILD:
-        host = _sec.get("GATEWAY_HOST", "") or "https://weauto-license.pages.dev"
+        host = _sec.get("GATEWAY_HOST", "") or "https://weauto-app.pages.dev"
         return host.rstrip("/")
     return (_cfg("CREEM_WORKER_URL", "") or "").rstrip("/")
 

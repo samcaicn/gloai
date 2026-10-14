@@ -2,7 +2,7 @@
 """端到端验证：自填模式真的直连用户供应商，不碰网关、不带卡密。
 
 起两个本地 mock OpenAI 服务：
-  A = 假网关（模拟 wetech.jukuai.net）：如果请求打到它，说明还在走 Workers AI 链路（错）
+  A = 假网关（模拟 weauto-app.pages.dev）：如果请求打到它，说明还在走 Workers AI 链路（错）
   B = 假用户供应商（模拟 api.deepseek.com）：请求应该打到这里，且 Authorization 是用户 key
 
 跑两种配置，各发一次请求，断言落点正确。

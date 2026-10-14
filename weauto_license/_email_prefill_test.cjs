@@ -99,7 +99,7 @@ const env = { CREEM_MODE: 'prod', CREEM_API_KEY: 'k' };
     parseProducts: () => PRODUCTS, looksLikeEmail, esc, layout,
   });
   const E = { SITE_TITLE: 'T', SUPPORT_EMAIL: 's@x.com', CREEM_API_KEY: 'k' };
-  const page = buyPage(E, 'https://wetech.jukuai.net', 'MID9', 'buyer@qq.com');
+  const page = buyPage(E, 'https://weauto-app.pages.dev', 'MID9', 'buyer@qq.com');
   ok('按钮带 mid', page.includes('mid=MID9'));
   ok('按钮带 email', page.includes('email=buyer%40qq.com'));
   ok('不再出现「复制粘贴卡密」步骤', !page.includes('复制粘贴卡密') && !page.includes('3 步'));
@@ -109,7 +109,7 @@ const env = { CREEM_MODE: 'prod', CREEM_API_KEY: 'k' };
      (page.match(/class="btn" href="[^"]*tier=/g) || []).length);
   ok('按钮文案含支付宝', (page.match(/支付宝付款 · 立即购买/g) || []).length === PRODUCTS.length);
 
-  const page2 = buyPage(E, 'https://wetech.jukuai.net', '', 'bad');
+  const page2 = buyPage(E, 'https://weauto-app.pages.dev', '', 'bad');
   ok('非法 email 不进 URL', !page2.includes('email='));
 
   console.log('\n== ' + pass + ' passed, ' + fail + ' failed ==');

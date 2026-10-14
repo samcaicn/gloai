@@ -323,7 +323,7 @@ def _probe_online(ids):
     能 302 到 pay.jukuai.net 即证明「产品存在且 Worker 配置正确」——
     这与本地 key 无关。返回 True = 线上全通。
     """
-    origin = os.environ.get("WEAUTO_WORKER_URL", "https://wetech.jukuai.net").rstrip("/")
+    origin = os.environ.get("WEAUTO_WORKER_URL", "https://weauto-app.pages.dev").rstrip("/")
     print("\n    线上交叉验证（无需 key） %s/buy?go=1&tier=..." % origin)
     class _NoRedir(urllib.request.HTTPRedirectHandler):
         """禁掉自动跟随：我们要看的是 Worker 回的 302 Location，而不是最终页面 200。"""

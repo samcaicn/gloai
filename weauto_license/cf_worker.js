@@ -1143,7 +1143,7 @@ function privacyPage(env) {
     : "our support email";
   return html(layout("Privacy Policy · 隐私政策", `
 <div class="hd"><h1>Privacy Policy <span style="color:#6b7280;font-size:18px">/ 隐私政策</span></h1>
-<p>WeAuto · weauto-license.pages.dev · Last updated: 2026-10-02</p></div>
+<p>WeAuto · weauto-app.pages.dev · Last updated: 2026-10-02</p></div>
 
 <div class="card">
   <h3 style="margin-top:0">1. What We Collect（我们收集什么）</h3>
@@ -1775,9 +1775,9 @@ export default {
      * 安全：同 /token/issue 的 fail-close 守卫 —— 必须配了 ADMIN_KEY 且
      * `x-admin-key` 头匹配才放行，否则任何人改了价格。GET 只读，POST 动钱。
      * 用法（改完价后可以把这个分支删掉重部署）：
-     *   curl -H "x-admin-key: $ADMIN_KEY" https://weauto-license.pages.dev/creem/price
+     *   curl -H "x-admin-key: $ADMIN_KEY" https://weauto-app.pages.dev/creem/price
      *   curl -X POST -H "x-admin-key: $ADMIN_KEY" -H "content-type: application/json" \
-     *        -d '{"confirm":true}' https://weauto-license.pages.dev/creem/price
+     *        -d '{"confirm":true}' https://weauto-app.pages.dev/creem/price
      */
     if (p === "/creem/price") {
       // 守卫：ADMIN_KEY（长期运维钥匙，本机无副本）**或** 一次性 nonce（哈希比对）。

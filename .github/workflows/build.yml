@@ -8,10 +8,10 @@ name: Build WeAuto EXE (obfuscated)
 # 若仓库 Settings → Actions → General → Workflow permissions 被设为 Read-only，
 # 则下面的 write 权限会被忽略，upload-artifact / Create Release / issue 诊断都会失败。
 # 需要 Read and write 才能真正产出 Artifact(90天)。
+# 【2026-10-14 安全收紧】构建后仅保留只读权限：artifact 上传无需 write（upload-artifact@v4
+# 走内部端点），失败诊断改为输出日志（不再 gh issue create，避免需要 issues:write）。
 permissions:
-  contents: write
-  actions: write
-  issues: write
+  contents: read
 
 jobs:
   build:
@@ -60,24 +60,15 @@ jobs:
           python tools/build_release.py
           if (Test-Path _pybuild_dist\WeAuto.exe) { Write-Host "BUILD_OK $((Get-Item _pybuild_dist\WeAuto.exe).Length) bytes" } else { exit 1 }
 
-      - name: Report build failure (publish build.log to issue)
+      - name: Report build failure (print build.log tail to logs)
         if: failure()
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 把真实报错（build.log 尾部 60k + pip list）写进公开 Issue 正文，
-          # 这样即使没有 token 也能通过公开 API/网页读到 CI 真实报错。
-          {
-            echo "===== build.log (tail 60k) ====="
-            tail -c 60000 build.log 2>/dev/null || echo "(build.log missing/empty)"
-
-            echo "===== pip list ====="
-            pip list 2>/dev/null
-          } > _diag.txt
-          gh issue create --repo samcaicn/gloai \
-            --title "WeAuto CI Build Failure (run ${{ github.run_number }})" \
-            --body-file _diag.txt || true
+          # 权限已收紧为只读（不再建 issue）：真实报错输出到 Actions 日志，
+          # 需要排障时在 run 页面直接看。
+          tail -c 60000 build.log 2>/dev/null || echo "(build.log missing/empty)"
+          echo "===== pip list ====="
+          pip list 2>/dev/null
 
       - name: Verify EXE
         shell: bash

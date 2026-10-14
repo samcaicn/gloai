@@ -31,10 +31,10 @@ def check(name, cond, extra=""):
 # ── 造一个假的 config 模块，guard._cfg 通过它读配置 ──
 def make_config(**kw):
     m = types.ModuleType("config")
-    m.CREEM_WORKER_URL = kw.pop("worker_url", "https://wetech.jukuai.net")
+    m.CREEM_WORKER_URL = kw.pop("worker_url", "https://weauto-app.pages.dev")
     m.LICENSE_GUARD_ENABLED = kw.pop("guard_enabled", True)
     m.USE_WORKER_AI = kw.pop("USE_WORKER_AI", "auto")
-    m.DEEPSEEK_BASE_URL = kw.pop("DEEPSEEK_BASE_URL", "https://wetech.jukuai.net/ai/v1")
+    m.DEEPSEEK_BASE_URL = kw.pop("DEEPSEEK_BASE_URL", "https://weauto-app.pages.dev/ai/v1")
     m.DEEPSEEK_API_KEY = kw.pop("DEEPSEEK_API_KEY", "sk-dummy-placeholder")
     m.CREEM_LICENSE_KEY = kw.pop("CREEM_LICENSE_KEY", "LIC-KEY-1234")
     for k, v in kw.items():
@@ -57,7 +57,7 @@ def load_guard(cfg):
     return g
 
 
-GATEWAY = "https://wetech.jukuai.net/ai/v1"
+GATEWAY = "https://weauto-app.pages.dev/ai/v1"
 REAL_KEY = "sk-abc1234567890xyz"
 VENDOR = "https://api.deepseek.com/v1"
 

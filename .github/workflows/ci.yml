@@ -20,9 +20,10 @@ on:
     branches: ['**']
   workflow_dispatch:
 
+# 【2026-10-14 安全收紧】全链路只读：语法体检 / e2e / EXE 解包断言均只读源码，
+# 失败诊断输出到 Actions 日志（不再 gh issue create，避免需要 issues:write）。
 permissions:
   contents: read
-  issues: write
 
 jobs:
   syntax:
@@ -227,12 +228,13 @@ jobs:
           ls -lh C:/_ciwd/WeAuto.exe
           python _exe_ci_test.py C:/_ciwd/WeAuto.exe
 
-      - name: Publish failure detail on build log
+      - name: Publish failure detail (print to logs)
         if: failure()
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYTHONIOENCODING: utf-8
         run: |
+          # 权限收紧为只读：报错直接输出到 Actions 日志，不再建公开 Issue。
           {
             echo "===== build.log (tail 40k) ====="
             tail -c 40000 build.log 2>/dev/null || echo "(build.log missing)"
@@ -241,7 +243,3 @@ jobs:
             python _exe_ci_test.py C:/_ciwd/WeAuto.exe 2>&1 || true
           } > _diag.txt
           cat _diag.txt
-          # 发布到公开 Issue：即使匿名/未登录也能通过 API/网页读到 CI 真实失败项。
-          gh issue create --repo samcaicn/gloai \
-            --title "WeAuto CI Assert Failure (run #${{ github.run_number }})" \
-            --body-file _diag.txt || true

@@ -344,7 +344,7 @@ _CFG_TTL = 30.0  # 秒：WebUI 改完配置不必重启 bot 也能生效
 # 用户不需要知道自己需要配 URL / 密钥 / 开关。以下为出厂固定值，代码里直接写死。
 # 唯一仍从 config.py 读的是「客户端↔Worker 通信密钥」与卡密（用于签名与脱敏），
 # 那两项属于授权体系而非 Jev 业务参数。
-JEV_ENDPOINT = "https://weauto-license.pages.dev/ai/jev/decisions"  # 自建 Worker 端点
+JEV_ENDPOINT = "https://weauto-app.pages.dev/ai/jev/decisions"  # 自建 Worker 端点（开发态默认）
 JEV_MODEL_NAME = ""          # 留空 = 用 Worker 端 wrangler.toml 的默认模型（实测 70B 判得准）
 JEV_TIMEOUT_SEC = 8.0        # 单次尝试超时（秒）；超时/失败一律降级为照常回复
 JEV_RETRY_TIMEOUT_SEC = 30.0 # 重试尝试超时（上游 v1.7「判断最多等 30 秒」的同量级）
@@ -569,14 +569,22 @@ def circuit_status():
 # ---------------------------------------------------------------- HTTP
 
 def _jev_candidate_urls():
-    """返回候选 Worker 域名列表（仅 weauto-license.pages.dev 一个，无备用域名）。
+    """返回候选 Worker 域名列表（以发行版 blob GATEWAY_HOST 为准，开发态用内置常量）。
 
-    端点是内置常量（零配置）；已删除 weauto.safeopc.cn 备用入口，统一走 weauto-license.pages.dev，
-    path 完全一致，签名可复用。
+    端点是内置常量（零配置）；已删除 weauto.safeopc.cn 备用入口，
+    发行版统一走构建期固化的 GATEWAY_HOST（用户改 config 无效）。
     """
-    known = ["weauto-license.pages.dev"]
+    endpoint = JEV_ENDPOINT
     try:
-        p = urllib.parse.urlparse(JEV_ENDPOINT)
+        from weauto_license import secrets as _sec
+        if _sec.is_release():
+            host = _sec.get("GATEWAY_HOST", "") or "https://weauto-app.pages.dev"
+            endpoint = host.rstrip("/") + "/ai/jev/decisions"
+    except Exception:
+        pass
+    known = ["weauto-app.pages.dev"]
+    try:
+        p = urllib.parse.urlparse(endpoint)
         path = p.path or "/ai/jev/decisions"
         scheme = p.scheme or "https"
         host = p.hostname or known[0]

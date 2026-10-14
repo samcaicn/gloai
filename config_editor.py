@@ -921,7 +921,7 @@ def proxy_weapis_endpoint():
     EXE 全程只与自有 Worker 通信，BASE_URL = <worker>/ai/v1，由 Worker 再路由到
     Workers AI / 火山方舟，第三方中转网关 vg.v1api.cc 不再使用。
     """
-    nodes = ['https://weauto-license.pages.dev/ai']
+    nodes = ['https://weauto-app.pages.dev/ai']
     return jsonify({'data': nodes}), 200
 
 @app.route('/proxy/weapis/models', methods=['GET'])
@@ -1509,7 +1509,7 @@ def resolve_ai_opts(config, sub_key=None, sub_base=None):
             return ep.get('api_key') or '', ep.get('base_url') or ''
         # 门禁未启用（开发态）：仍走网关地址，但需要本地有 key
         return (cfg.get('DEEPSEEK_API_KEY', '') or '',
-                cfg.get('DEEPSEEK_BASE_URL', '') or 'https://weauto-license.pages.dev/ai/v1')
+                cfg.get('DEEPSEEK_BASE_URL', '') or 'https://weauto-app.pages.dev/ai/v1')
     k = (sub_key or '').strip()
     b = (sub_base or '').strip()
     if (not k) and (not b or b.rstrip('/').endswith(_GATEWAY_SUFFIX)):
@@ -1643,9 +1643,9 @@ def quick_start():
                     new_values['DEEPSEEK_API_KEY'] = api_key
                     new_values['MOONSHOT_API_KEY'] = api_key
                     new_values['ONLINE_API_KEY'] = api_key
-                new_values['DEEPSEEK_BASE_URL'] = 'https://weauto-license.pages.dev/ai/v1'
-                new_values['MOONSHOT_BASE_URL'] = 'https://weauto-license.pages.dev/ai/v1'
-                new_values['ONLINE_BASE_URL'] = 'https://weauto-license.pages.dev/ai/v1'
+                new_values['DEEPSEEK_BASE_URL'] = 'https://weauto-app.pages.dev/ai/v1'
+                new_values['MOONSHOT_BASE_URL'] = 'https://weauto-app.pages.dev/ai/v1'
+                new_values['ONLINE_BASE_URL'] = 'https://weauto-app.pages.dev/ai/v1'
                 new_values['MOONSHOT_MODEL'] = 'gpt-4o'
                 new_values['ONLINE_MODEL'] = 'net-gpt-4o-mini'
                 if not config.get('MODEL','').strip():
@@ -4871,13 +4871,13 @@ def get_default_config():
     return {
         "LISTEN_LIST": [['微信名1', '角色1']],
         "DEEPSEEK_API_KEY": '',
-        "DEEPSEEK_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
+        "DEEPSEEK_BASE_URL": 'https://weauto-app.pages.dev/ai/v1',
         "MODEL": 'deepseek-v3-0324',
         "MAX_GROUPS": 5,
         "MAX_TOKEN": 2000,
         "TEMPERATURE": 1.1,
         "MOONSHOT_API_KEY": '',
-        "MOONSHOT_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
+        "MOONSHOT_BASE_URL": 'https://weauto-app.pages.dev/ai/v1',
         "MOONSHOT_MODEL": 'gpt-4o',
         "MOONSHOT_TEMPERATURE": 0.8,
         "ENABLE_IMAGE_RECOGNITION": True,
@@ -4916,7 +4916,7 @@ def get_default_config():
         "ALLOW_REMINDERS_IN_QUIET_TIME": True,
         "USE_VOICE_CALL_FOR_REMINDERS": False,
         "ENABLE_ONLINE_API": False,
-        "ONLINE_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
+        "ONLINE_BASE_URL": 'https://weauto-app.pages.dev/ai/v1',
         "ONLINE_MODEL": 'net-gpt-4o-mini',
         "ONLINE_API_KEY": '',
         "ONLINE_API_TEMPERATURE": 0.7,
@@ -4932,7 +4932,7 @@ def get_default_config():
         "RESTART_INACTIVITY_MINUTES": 15,
         "REMOVE_PARENTHESES": False,
         "ENABLE_ASSISTANT_MODEL": False,
-        "ASSISTANT_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
+        "ASSISTANT_BASE_URL": 'https://weauto-app.pages.dev/ai/v1',
         "ASSISTANT_MODEL": 'gpt-4o-mini',
         "ASSISTANT_API_KEY": '',
         "ASSISTANT_TEMPERATURE": 0.3,
@@ -4944,7 +4944,7 @@ def get_default_config():
         "CORE_MEMORY_DIR": 'CoreMemory',
         "ENABLE_TEXT_COMMANDS": True,
         "ENABLE_FORUM_CUSTOM_MODEL": False,
-        "FORUM_BASE_URL": 'https://weauto-license.pages.dev/ai/v1',
+        "FORUM_BASE_URL": 'https://weauto-app.pages.dev/ai/v1',
         "FORUM_MODEL": '',
         "FORUM_API_KEY": '',
         "FORUM_TEMPERATURE": 1.0,
@@ -5948,7 +5948,7 @@ def _run_desktop_window(web_url, attach_mode, start_waitress):
 
                 当前 templates/config_editor.html 的 openBuyInternal() 只调用 window.openBuyOverlay()，
                 不会再走到这里；此处直接返回 False，确保任何调用路径都不会弹出新窗口。
-                收银台最终落在 pay.weauto-license.pages.dev，其响应头 CSP `frame-ancestors *` 允许被 iframe 嵌入。
+                收银台最终落在 pay.weauto-app.pages.dev，其响应头 CSP `frame-ancestors *` 允许被 iframe 嵌入。
                 """
                 app.logger.info("open_buy_window 已禁用：付款页仅以软件内浮层展示，不弹新窗口")
                 return False

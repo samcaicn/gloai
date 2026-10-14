@@ -157,11 +157,11 @@ class DiagnosticTool:
                 self.add_log("正在测试接口站点连通性...", "info")
                 # 先解析域名获取IP
                 import socket
-                ip_address = socket.gethostbyname('wetech.jukuai.net')
+                ip_address = socket.gethostbyname('weauto-app.pages.dev')
                 self.add_log("接口站点IP解析成功", "info")
                 
                 # 测试HTTP连接
-                response = requests.get('https://wetech.jukuai.net', timeout=10)
+                response = requests.get('https://weauto-app.pages.dev', timeout=10)
                 if response.status_code in [200, 301, 302, 403, 404]:  # 这些都算连通
                     network_tests.append("接口站点访问正常")
                     self.add_log("接口站点访问测试成功", "success")

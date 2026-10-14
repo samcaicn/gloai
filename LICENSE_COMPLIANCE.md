@@ -27,6 +27,29 @@ WeAuto 遵循 **GNU GPL-3.0 或更高版本** 许可证。
    - 完全开源，GPL-3.0兼容
    - 提供完整的基础功能
 
+## 第三方组件许可证 / Third-Party Components
+
+### Jev 判断式 AI（MIT）
+
+本项目的 `jev_guard.py` 与 Cloudflare Worker（`weauto_license/cf_worker.js`）中的
+Jev 判断部分移植自 **jev-chat-jarvis**（Android 聊天决策助手）：
+
+- 来源：https://github.com/jev-chat/jev-chat-jarvis
+- 版权：Copyright (c) 2026 Finderchangchang and the jev-chat contributors
+- 许可：MIT License（其 LICENSE 与 NOTICE 的要求已在相关源码文件头注释中落实：
+  题目集为 Python 改写版并保留 MIT 声明）
+
+按 MIT 条款与上游 NOTICE 的署名要求，本产品声明：
+
+> Based on Jev Chat Assistant (https://github.com/jev-chat/jev-chat-jarvis)
+
+本产品与上游项目无隶属、无背书关系。不得使用 "Jev 聊天助手" / "jev-chat" /
+chatjevs.com 等名称或域名暗示官方授权；WeAuto 的对外品牌为「WeAuto · AI 对话助理」。
+
+WeAuto 侧的改造（判断跑在自建 Cloudflare Worker + Workers AI 而非 OpenRouter、
+零配置出厂自动运行、客户端↔后台 HMAC 防白嫖、超时重试与语言跟随）为独立演进，
+与上游各自维护。
+
 ## 用户选择 / User Options
 
 ### 完全开源使用

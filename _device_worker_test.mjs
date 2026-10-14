@@ -63,7 +63,7 @@ async function makeToken(env, sub, tier) {
 }
 async function call(env, method, urlPath, bodyObj, headers = {}) {
   const bodyStr = bodyObj == null ? "" : JSON.stringify(bodyObj);
-  const req = new Request("https://wetech.jukuai.net" + urlPath, {
+  const req = new Request("https://weauto-app.pages.dev" + urlPath, {
     method,
     headers: Object.assign({ "Content-Type": "application/json" }, headers),
     body: method === "GET" ? undefined : bodyStr,
