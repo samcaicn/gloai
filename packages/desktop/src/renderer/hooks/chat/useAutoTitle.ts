@@ -1,0 +1,54 @@
+import { useCallback } from 'react';
+import { ipcBridge } from '@/common';
+import { deriveAutoTitleFromMessages } from '@/renderer/utils/chat/autoTitle';
+import { isDefaultConversationName } from '@/renderer/utils/chat/defaultConversationName';
+import { DEFAULT_MESSAGE_PAGE_LIMIT, loadLatestConversationMessages } from '@/renderer/utils/chat/messagePagination';
+import { emitter } from '@/renderer/utils/emitter';
+import { getConversationOrNull } from '@/renderer/pages/conversation/utils/conversationCache';
+
+export const useAutoTitle = () => {
+  const syncTitleFromHistory = useCallback(async (conversation_id: string, fallbackContent?: string) => {
+    try {
+      const conversation = await getConversationOrNull(conversation_id);
+      // The default title is compared in every language: it was stored in the language of its creation.
+      if (!conversation || !isDefaultConversationName(conversation.name)) {
+        return;
+      }
+
+      const messages = await loadLatestConversationMessages(conversation_id, {
+        limit: DEFAULT_MESSAGE_PAGE_LIMIT,
+        contentMode: 'compact',
+      });
+      const newTitle = deriveAutoTitleFromMessages(messages.items, fallbackContent);
+      if (!newTitle) {
+        return;
+      }
+
+      const success = await ipcBridge.conversation.update.invoke({
+        id: conversation_id,
+        // 'auto': a derived default title, not a user rename — the backend
+        // keeps it overwritable by agent-generated session titles.
+        updates: { name: newTitle, name_source: 'auto' },
+      });
+      if (!success) {
+        return;
+      }
+
+      emitter.emit('chat.history.refresh');
+    } catch (error) {
+      console.error('Failed to auto-update conversation title:', error);
+    }
+  }, []);
+
+  const checkAndUpdateTitle = useCallback(
+    async (conversation_id: string, messageContent: string) => {
+      await syncTitleFromHistory(conversation_id, messageContent);
+    },
+    [syncTitleFromHistory]
+  );
+
+  return {
+    checkAndUpdateTitle,
+    syncTitleFromHistory,
+  };
+};

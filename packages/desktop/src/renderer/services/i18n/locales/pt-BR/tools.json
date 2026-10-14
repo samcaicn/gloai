@@ -1,0 +1,92 @@
+{
+  "unknownFile": "Arquivo desconhecido",
+  "newFile": "Novo Arquivo",
+  "deletedFile": "Arquivo Excluído",
+  "modified": "Modificado",
+  "fileChanges": "Alterações de Arquivo",
+  "shell": {
+    "displayName": "Comando Shell",
+    "description": "Executar comandos shell"
+  },
+  "fileOps": {
+    "displayName": "Operações de Arquivo",
+    "description": "Leitura, escrita e modificação de arquivo"
+  },
+  "webSearch": {
+    "displayName": "Busca na Web",
+    "description": "Pesquisar conteúdo na web"
+  },
+  "mcp": {
+    "generic": {
+      "displayName": "Ferramenta MCP: {{toolName}}",
+      "description": "Chamada de ferramenta MCP: {{toolName}}"
+    }
+  },
+  "unknown": {
+    "displayName": "Ferramenta Desconhecida",
+    "description": "Tipo de ferramenta desconhecido"
+  },
+  "status": {
+    "pending": "Pendente",
+    "executing": "Executando",
+    "success": "Sucesso",
+    "error": "Erro",
+    "canceled": "Cancelado",
+    "denied": "Não permitido"
+  },
+  "titles": {
+    "web_search_started": "Busca na Web Iniciada",
+    "web_search_completed": "Busca na Web Concluída",
+    "web_search": "Busca na Web",
+    "applying_patch": "Aplicando Patch",
+    "patch_applied": "Patch Aplicado",
+    "file_patch": "Patch de Arquivo",
+    "mcp_tool_starting": "Ferramenta MCP: {{toolName}} (iniciando)",
+    "mcp_tool": "Ferramenta MCP: {{toolName}}",
+    "execute_command": "Executar: {{command}}",
+    "command_output": "Saída do Comando",
+    "command_completed": "Comando Concluído",
+    "shell_command": "Comando Shell"
+  },
+  "labels": {
+    "search_query": "Consulta de Busca:",
+    "file_changes": "Alterações de Arquivo:",
+    "tool_details": "Detalhes da Ferramenta:",
+    "tool": "Ferramenta",
+    "arguments": "Argumentos:",
+    "result": "Resultado:",
+    "command": "Comando:",
+    "working_directory": "Diretório de trabalho:",
+    "exit_code": "Saída: {{code}}",
+    "duration": "Duração: {{seconds}}",
+    "auto_approved": "Aprovado automaticamente",
+    "manual_approval": "Aprovação manual",
+    "toolCallId": "ID da chamada de ferramenta: {{id}}"
+  },
+  "actions": {
+    "create": "criar",
+    "modify": "modificar",
+    "delete": "excluir"
+  },
+  "execution": {
+    "title": "Atividade de ferramentas",
+    "input": "Entrada",
+    "output": "Saída",
+    "loading": "Carregando saída completa…",
+    "loadError": "Não foi possível carregar a saída completa.",
+    "retry": "Tentar novamente",
+    "callAria": "{{name}} · {{status}}",
+    "denied": "Não executado: você não permitiu.",
+    "showMore": "Mostrar mais",
+    "showLess": "Mostrar menos"
+  },
+  "activity": {
+    "running": "{{steps}} passos · executando {{label}}",
+    "summary": "{{steps}} passos",
+    "summaryFailed": "{{steps}} passos · {{failed}} com falha"
+  },
+  "kind": {
+    "edit": "Edição de arquivo",
+    "read": "Leitura de arquivo"
+  }
+}

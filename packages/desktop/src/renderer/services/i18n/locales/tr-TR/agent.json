@@ -1,0 +1,60 @@
+{
+  "health": {
+    "detectedError": "Mevcut ajanla ilgili bir hata algılandı ({{agent}})",
+    "autoSwitching": ". Sistem otomatik olarak geçiş yapmayı deneyecek.",
+    "evaluating": "Ağ gecikmesi ve model kullanılabilirliği değerlendiriliyor…",
+    "checking": "{{agent}} uç noktası kontrol ediliyor…",
+    "foundBest": "En iyi alternatif bulundu",
+    "recommendSwitch": "Önerilen",
+    "available": "Kullanılabilir",
+    "lowLatency": "Düşük gecikme",
+    "mediumLatency": "Orta gecikme",
+    "highLatency": "Yüksek gecikme",
+    "bestMatch": "En iyi eşleşme",
+    "noAvailable": "Mevcut ortamda kullanılabilir ajan yok",
+    "checkConfig": "Lütfen yapılandırmayı kontrol edin veya daha sonra tekrar deneyin"
+  },
+  "setup": {
+    "connectionError": "Bağlantı hatası",
+    "notConfigured": "{{agent}} yapılandırılmadı",
+    "authRequired": "Bu ajanı kullanmak için kimlik doğrulama veya API anahtarı gerekli.",
+    "findingAlternatives": "Kullanılabilir alternatifler aranıyor…",
+    "checkingAgent": "{{agent}} kontrol ediliyor…",
+    "alternativesFound": "{{count}} kullanılabilir alternatif bulundu",
+    "autoSwitching": "Kullanılabilir en iyi ajana otomatik olarak geçiliyor…",
+    "configError": "Yapılandırma hatası. Lütfen ayarlarınızı kontrol edin veya bir alternatif seçin:",
+    "noAlternatives": "Kullanılabilir ajan bulunamadı",
+    "configureFirst": "Lütfen önce Ayarlar'da bir ajan yapılandırın.",
+    "switching": "Ajan değiştiriliyor…"
+  },
+  "model": {
+    "switchSuccess": "Model değiştirildi",
+    "switchFailed": "Model değiştirilemedi",
+    "searchPlaceholder": "Model ara",
+    "noResults": "Eşleşen model yok",
+    "withThoughtLevel": "{{model}} · {{level}}"
+  },
+  "config": {
+    "setting": "Ayar uygulanıyor...",
+    "commandAck": "Komut gönderildi, ancak durum doğrulanmadı. Daha sonra yenileyin veya yeniden deneyin.",
+    "timeout": "Ayar doğrulaması zaman aşımına uğradı. Önceki durum gösterilmeye devam ediyor.",
+    "busy": "Başka bir ayar uygulanıyor. Daha sonra tekrar deneyin.",
+    "failed": "Ayar uygulanamadı. Önceki durum gösterilmeye devam ediyor."
+  },
+  "thoughtLevel": {
+    "label": "Düşünme düzeyi",
+    "switchSuccess": "Düşünme düzeyi değiştirildi",
+    "switchFailed": "Düşünme düzeyi değiştirilemedi"
+  },
+  "warmup": {
+    "clickToWake": "Bu üyeyi uyandırmak için tıklayın"
+  },
+  "runtimeRestart": {
+    "tooltip": "Aracıyı yeniden bağla",
+    "confirmContent": "Harici CLI yapılandırma değişikliklerini (kanal değiştirme gibi) alması için aracı sürecini yeniden başlatır. Sohbet geçmişi korunur ve mümkün olduğunda oturum sürdürülür.",
+    "success": "Aracı yeniden bağlandı",
+    "failed": "Aracı yeniden bağlanamadı",
+    "initializingTooltip": "Aracı başlatılıyor. Hazır olduğunda yeniden bağlanın",
+    "processingTooltip": "Yeniden bağlanmadan önce mevcut yanıtın bitmesini bekleyin"
+  }
+}

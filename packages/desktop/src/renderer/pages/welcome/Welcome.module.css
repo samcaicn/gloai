@@ -1,0 +1,353 @@
+/* The first-run guide: the whole window, one narrow column, one question at a time, on the plain page. */
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow-y: auto;
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+/* The window has no title bar here: this strip is what it is moved by. */
+.drag {
+  position: sticky;
+  top: 0;
+  height: 40px;
+  -webkit-app-region: drag;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: min(560px, calc(100% - 48px));
+  margin: 4vh auto 48px;
+}
+
+.columnIntro {
+  margin-top: 10vh;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+/* The mark on the start side, the language on the end side. */
+.headerTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+  gap: 12px;
+}
+
+.language {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.steps {
+  display: flex;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-tertiary, var(--text-secondary));
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-border-3);
+  transition: background-color 0.2s ease;
+}
+
+.stepReached {
+  color: var(--text-secondary);
+}
+
+.stepReached .stepDot {
+  background: var(--mu-accent-dot, rgb(var(--primary-6)));
+}
+
+.stepItem[aria-current='step'] {
+  color: var(--text-primary);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: rise 0.28s ease both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body {
+    animation: none;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 650;
+  line-height: 34px;
+  letter-spacing: -0.01em;
+}
+
+/* The introduction: what mu is, in one sentence and three points. */
+.heroTitle {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 650;
+  line-height: 40px;
+  letter-spacing: -0.015em;
+}
+
+.lead {
+  margin: 4px 0 18px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 25px;
+  text-wrap: balance;
+}
+
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.point {
+  display: flex;
+  gap: 14px;
+}
+
+.pointMark {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f0c4fb, #9e93f2);
+  box-shadow: 0 0 0 4px rgb(205 182 250 / 22%);
+}
+
+.pointTitle {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.pointText {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 21px;
+  text-wrap: balance;
+}
+
+.subtitle {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+  text-wrap: balance;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 440px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.problem {
+  color: rgb(var(--danger-6));
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: 1px solid var(--color-border-2);
+  border-radius: 12px;
+  background: var(--bg-1);
+}
+
+.summaryRow {
+  display: flex;
+  gap: 16px;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.summaryRow + .summaryRow {
+  border-top: 1px solid var(--color-border-1);
+}
+
+.summaryRow dt {
+  flex: none;
+  width: 72px;
+  color: var(--text-secondary);
+}
+
+.summaryRow dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.warn {
+  color: rgb(var(--warning-6));
+  font-size: 12px;
+}
+
+.note {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  text-wrap: balance;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.textButton {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.textButton:hover {
+  color: var(--text-primary);
+}
+
+/* Signing in with a subscription: one button per service, its mark, and where the sign-in stands. */
+.login {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 440px;
+}
+
+.accounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 10px;
+  background: var(--bg-1);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.account:hover:not(:disabled) {
+  border-color: var(--mu-accent-border, rgb(var(--primary-4)));
+}
+
+.account:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.accountActive,
+.accountActive:hover:not(:disabled) {
+  border-color: var(--mu-accent-border, rgb(var(--primary-6)));
+  box-shadow: 0 0 0 3px var(--mu-ring, rgb(var(--primary-2) / 55%));
+}
+
+.accountMark {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--color-fill-2);
+}
+
+.accountText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.accountName {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.accountPlan {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.accountReady {
+  color: rgb(var(--success-6));
+}

@@ -1,0 +1,323 @@
+{
+  "loading": "Carregando...",
+  "downloadFile": "Baixar arquivo",
+  "closePreview": "Fechar visualização",
+  "collapsePanel": "Recolher painel",
+  "maximizePanel": "Maximizar",
+  "restorePanel": "Restaurar",
+  "source": "Fonte",
+  "code": "Código",
+  "preview": "Pré-visualização",
+  "editor": "Editor",
+  "previewEffect": "Visualização",
+  "downloadMarkdown": "Baixar arquivo Markdown",
+  "downloadCode": "Baixar arquivo {{language}}",
+  "downloadDiff": "Baixar arquivo Diff",
+  "addToChat": "Adicionar ao chat",
+  "openSplitScreen": "Abrir tela dividida",
+  "closeSplitScreen": "Fechar tela dividida",
+  "edit": "Editar",
+  "exitEdit": "Sair da Edição",
+  "unsavedChangesTitle": "Alterações Não Salvas",
+  "unsavedChangesMessage": "Você tem alterações não salvas. Tem certeza de que deseja sair da edição?",
+  "confirmExit": "Confirmar Saída",
+  "continueEdit": "Continuar Editando",
+  "closeTabTitle": "Fechar Guia",
+  "closeTabMessage": "O conteúdo atual não foi salvo. Deseja salvar antes de fechar?",
+  "closeTabsTitle": "Fechar abas",
+  "closeTabsMessage": "{{count}} abas têm alterações não salvas. Salvar antes de fechar?",
+  "closeTabsMessage_one": "{{count}} aba tem alterações não salvas. Salvar antes de fechar?",
+  "closeTabsMessage_other": "{{count}} abas têm alterações não salvas. Salvar antes de fechar?",
+  "saveAndClose": "Salvar e Fechar",
+  "closeWithoutSave": "Não Salvar",
+  "pptTitle": "Apresentação do PowerPoint",
+  "pptOpenHint": "Clique no botão abaixo para abrir no aplicativo do sistema e visualizar o conteúdo completo",
+  "pptOpenFile": "Abrir Arquivo",
+  "pptShowLocation": "Mostrar Localização",
+  "pptSystemAppHint": "Será aberto com o aplicativo padrão do sistema (PowerPoint, Keynote ou WPS)",
+  "openWithApp": "Abrir no {{app}}",
+  "openInSystemApp": "Abrir no aplicativo do sistema",
+  "openInSystemSuccess": "Aberto no aplicativo padrão do sistema",
+  "openInSystemFailed": "Falha ao abrir com o aplicativo do sistema",
+  "close": "Fechar",
+  "closeLeft": "Fechar à Esquerda",
+  "closeRight": "Fechar à Direita",
+  "closeOthers": "Fechar Outras",
+  "closeAll": "Fechar Todas",
+  "closeUnmodified": "Fechar Não Modificadas",
+  "copyPath": "Copiar Caminho",
+  "copyRelativePath": "Copiar Caminho Relativo",
+  "openLocation": "Mostrar na pasta",
+  "openLocationFailed": "Falha ao abrir a pasta que contém o arquivo",
+  "readOnlyLabel": "Pré-visualização somente leitura",
+  "pathLabel": "Caminho",
+  "missingFile": {
+    "title": "Arquivo não encontrado",
+    "openInNewTab": "Tentar abrir em uma nova aba"
+  },
+  "noTabs": "Nenhuma guia aberta",
+  "openInPanelTooltip": "Ver no painel de visualização",
+  "mermaidTitle": "Diagrama Mermaid",
+  "wavedromTitle": "Diagrama WaveDrom",
+  "oversized": {
+    "title": "Arquivo muito grande para pré-visualizar",
+    "detail": "O tamanho do arquivo {{size}} excede o limite de {{threshold}}. Abra-o em um editor do sistema.",
+    "downloadUnavailable": "Este arquivo é muito grande para baixar aqui. Use “Abrir no sistema”."
+  },
+  "unsupported": {
+    "title": "Pré-visualização não suportada para este formato",
+    "detail": "Arquivos {{format}} não podem ser pré-visualizados aqui. Abra em um aplicativo do sistema.",
+    "downloadUnavailable": "Este arquivo não pode ser baixado aqui. Use “Abrir no sistema”."
+  },
+  "aiWriting": "A IA está escrevendo…",
+  "errors": {
+    "missingFilePath": "O caminho do arquivo está ausente",
+    "openWithoutPath": "Não é possível abrir: o caminho do arquivo não foi fornecido",
+    "conversionFailed": "A conversão falhou"
+  },
+  "office": {
+    "installLinkText": "Abrir guia de instalação do officecli",
+    "errors": {
+      "officecliNotFound": "officecli não está instalado.",
+      "installFailed": "Falha ao instalar o officecli automaticamente. Verifique os logs do backend e tente novamente.",
+      "portTimeout": "O serviço de visualização iniciou, mas não ficou pronto a tempo. Tente novamente.",
+      "startFailed": "Falha ao iniciar o serviço de visualização do Office.",
+      "outsideSandbox": "Este arquivo está fora da sandbox atual do projeto."
+    },
+    "serverInstall": {
+      "hint": "O TupAI está sendo executado em um servidor. O componente de pré-visualização precisa ser instalado nesse servidor. Execute o comando abaixo no servidor e tente novamente:",
+      "icuNote": "Se ainda não iniciar, instale a biblioteca ICU no servidor (Debian/Ubuntu: apt-get install -y libicu-dev)."
+    }
+  },
+  "word": {
+    "title": "Documento Word",
+    "loading": "Carregando documento Word...",
+    "invalid": "Por favor, confirme se o arquivo é um documento Word válido",
+    "loadFailed": "Falha ao carregar o documento Word",
+    "watch": {
+      "loading": "Carregando documento Word...",
+      "installing": "Instalando officecli...",
+      "startFailed": "Falha ao iniciar a visualização do Word",
+      "installHint": "Requer officecli. Será instalado automaticamente."
+    }
+  },
+  "excel": {
+    "title": "Planilha Excel",
+    "loading": "Carregando pasta de trabalho do Excel...",
+    "invalid": "Por favor, confirme se o arquivo é um documento Excel válido",
+    "noSheets": "Nenhuma planilha encontrada neste arquivo Excel",
+    "sheetCount": "{{count}} planilha(s)",
+    "convertFailed": "A conversão do Excel falhou",
+    "loadFailed": "Falha ao carregar a pasta de trabalho do Excel",
+    "emptySheet": "Esta planilha não possui dados",
+    "emptySheetHint": "Verifique se a planilha contém dados ou imagens",
+    "watch": {
+      "loading": "Carregando arquivo Excel...",
+      "installing": "Instalando officecli...",
+      "startFailed": "Falha ao iniciar a visualização do Excel",
+      "installHint": "Requer officecli. Será instalado automaticamente."
+    }
+  },
+  "pdf": {
+    "title": "Documento PDF",
+    "pathMissing": "O caminho do arquivo PDF está ausente",
+    "loadFailed": "Falha ao carregar o documento PDF",
+    "unableDisplay": "Não é possível exibir o arquivo PDF"
+  },
+  "html": {
+    "elementSelected": "Elemento selecionado: {{path}}",
+    "copySuccess": "Trecho de HTML copiado",
+    "inspectorEnabled": "Inspecionador de elemento habilitado. Clique em itens na visualização para destacá-los.",
+    "inspectorButton": "Inspecionador de elemento",
+    "inspecting": "Inspecionando...",
+    "selectedLabel": "Selecionado:",
+    "inspectorTooltip": "Clique em elementos na visualização para inspecionar seu HTML",
+    "downloadHtml": "Baixar arquivo HTML",
+    "copyElementHtml": "Copiar HTML do elemento",
+    "viewElementInfo": "Ver informações do elemento",
+    "printedToConsole": "Informações do elemento enviadas ao console",
+    "inspectElement": "Inspecionar elemento",
+    "inspectElementEnable": "Habilitar inspecionador de elemento",
+    "inspectElementDisable": "Desabilitar inspecionador de elemento",
+    "frameTitle": "Pré-visualização de HTML"
+  },
+  "ppt": {
+    "loading": "Iniciando visualização do PPT...",
+    "installing": "Instalando componente de visualização...",
+    "startFailed": "Falha ao iniciar a visualização do PPT",
+    "installHint": "Instale o OfficeCLI pela página oficial de releases iOfficeAI/OfficeCLI"
+  },
+  "browser": {
+    "newTab": "Nova aba",
+    "addressPlaceholder": "Digite uma URL ou pesquise",
+    "tabsLabel": "Páginas abertas",
+    "closeTab": "Fechar {{title}}",
+    "copyAddress": "Copiar Endereço",
+    "agentActiveTooltip": "O agente está operando esta aba",
+    "tabLimitReached": "Limite de abas atingido ({{count}}). A aba mais antiga foi reutilizada.",
+    "agentFirstUseTitle": "O agente está usando o navegador integrado",
+    "agentFirstUseContent": "Ele pode abrir páginas, clicar e ler conteúdo neste painel. Seu login é preservado.",
+    "agentFirstUseAction": "Abrir configurações"
+  },
+  "saveConflict": "Não foi possível salvar: este arquivo mudou no disco depois que você o abriu. Recarregue para ver as outras alterações — suas edições continuam aqui, não salvas.",
+  "persistQuotaExceeded": "O armazenamento local está cheio, então as abas abertas deste projeto não podem mais ser lembradas. Feche algumas abas ou limpe os dados do site.",
+  "save": {
+    "tooltip": "Salvar alterações (Ctrl/Cmd+S)",
+    "clean": "Nenhuma alteração não salva"
+  },
+  "refresh": {
+    "label": "Atualizar",
+    "tooltip": "Recarregar do disco",
+    "hasUpdate": "Este arquivo mudou no disco — clique para recarregar",
+    "noSignalSource": "Este arquivo não está no projeto, então mudanças não serão anunciadas",
+    "unavailable": "Não foi possível localizar este arquivo",
+    "failed": "Não foi possível recarregar este arquivo",
+    "confirmTitle": "Recarregar e perder alterações não salvas?",
+    "confirmMessage": "Esta aba tem alterações não salvas. Recarregar as substitui pelo conteúdo do disco.",
+    "discardAndRefresh": "Descartar alterações e recarregar",
+    "officeNotWired": "A atualização de documentos do Office ainda não está disponível — feche e reabra o arquivo para ver as alterações."
+  },
+  "zoomIn": "Ampliar",
+  "zoomOut": "Reduzir",
+  "zoomReset": "Redefinir visualização",
+  "diagramZoomHint": "Role para ampliar • Arraste para mover • ESC para fechar",
+  "muBrowser": {
+    "stepNumber": "Etapa {{step}}",
+    "confidence": "{{percent}}% de certeza",
+    "noChange": "página sem alteração",
+    "observing": "Observando a página…",
+    "elapsed": "Tempo decorrido",
+    "steps": "Etapas {{total}}",
+    "noSteps": "Nada foi feito ainda",
+    "reason": "Segundo o TupAI",
+    "goal": "Objetivo",
+    "pause": "Pausar",
+    "resume": "Retomar",
+    "stop": "Parar",
+    "takeover": "Assumir o controle",
+    "takeoverTip": "Pausa a execução e passa o teclado para você. Ao terminar, clique em “Retomar”: o TupAI observa a página de novo antes de decidir.",
+    "pausedShort": "Pausado",
+    "stopping": "Parando…",
+    "paused": {
+      "user": "Pausado. Ao retomar, o TupAI observa a página de novo antes de decidir.",
+      "takeover": "Você assumiu o controle: use a página você mesmo. Clique em “Retomar” ao terminar, e o TupAI observa a página de novo.",
+      "interaction": "Você mexeu na página, então o TupAI se pausou sozinho para não clicar ao mesmo tempo. Ao retomar, ele observa a página de novo."
+    },
+    "statusHint": {
+      "blocked": "O TupAI não encontrou na página nada que aproximasse do objetivo e parou.",
+      "needs_confirmation": "A ação parecia irreversível e não foi permitida, então o TupAI não a executou.",
+      "budget": "A execução esgotou seu limite de etapas.",
+      "stopped": "Você parou esta execução.",
+      "failed": "Algo deu errado durante a navegação; a execução não foi concluída."
+    },
+    "detachedHint": "O TupAI perdeu a conexão com esta página; esta execução não pode continuar.",
+    "verb": {
+      "click": "Clicar em",
+      "fill": "Digitar em",
+      "select": "Selecionar",
+      "scroll": "Rolar",
+      "wait": "Aguardar",
+      "none": "Nenhum alvo encontrado",
+      "other": "Agir em"
+    },
+    "status": {
+      "done": "Concluído",
+      "blocked": "Bloqueado",
+      "needs_confirmation": "Precisa de confirmação",
+      "stopped": "Parado",
+      "budget": "Etapas esgotadas",
+      "read": "Página lida",
+      "failed": "Falhou",
+      "ended": "Encerrado",
+      "detached": "Desconectado"
+    },
+    "notice": {
+      "download": "Download bloqueado: {{detail}}",
+      "permission": "Pedido de permissão negado: {{detail}}",
+      "navigation": "Endereço bloqueado (não é uma página web): {{detail}}",
+      "popup": "Pop-up bloqueado: {{detail}}"
+    },
+    "confirm": {
+      "title": "O TupAI quer fazer algo que talvez não possa ser desfeito",
+      "action": "Ação",
+      "page": "Página",
+      "allow": "Permitir",
+      "deny": "Negar",
+      "countdown": "Negado automaticamente em {{seconds}} s",
+      "untrusted": "O texto acima vem da página web. Confie no que a própria página mostra."
+    },
+    "detachCause": "Causa",
+    "detachReason": {
+      "tab_closed": "A aba foi fechada.",
+      "connection": "A sessão de navegação do TupAI terminou antes do fim da execução.",
+      "devtools": "As ferramentas de desenvolvedor foram abertas nesta página.",
+      "crashed": "A página travou."
+    },
+    "permission": {
+      "location": "localização",
+      "media": "câmera ou microfone",
+      "notifications": "notificações",
+      "clipboard": "área de transferência",
+      "screen": "captura de tela",
+      "midi": "dispositivos MIDI",
+      "fullscreen": "tela cheia",
+      "pointerLock": "bloqueio do mouse",
+      "devices": "dispositivos USB, seriais ou HID",
+      "storage": "acesso ao armazenamento",
+      "openExternal": "abrir outro aplicativo",
+      "protectedContent": "reprodução de conteúdo protegido",
+      "windows": "gerenciamento de janelas"
+    },
+    "end": {
+      "stopped_by_user": "Quem estava acompanhando parou a execução.",
+      "max_steps": "Parou após {{count}} ações.",
+      "max_steps_one": "Parou após {{count}} ação.",
+      "max_steps_other": "Parou após {{count}} ações.",
+      "no_judge": "Nenhum juiz conseguiu escolher uma ação ({{judgeReason}}).",
+      "no_progress": "O juiz não encontrou nenhuma operação que traga progresso.",
+      "not_confirmed": "“{{label}}” parece irreversível e não houve confirmação.",
+      "no_value": "Não foi possível gerar um valor para “{{label}}”.",
+      "stuck": "{{count}} ações seguidas não mudaram nada.",
+      "stuck_one": "{{count}} ação não mudou nada.",
+      "stuck_other": "{{count}} ações seguidas não mudaram nada."
+    },
+    "judgeReason": {
+      "shadow": "modo sombra: a resposta só é registrada",
+      "abstain": "o juiz se absteve",
+      "off": "o juiz está desativado",
+      "noVerdict": "sem veredito",
+      "error": {
+        "timeout": "o juiz excedeu o tempo limite",
+        "aborted": "a chamada ao juiz foi cancelada",
+        "unreachable": "não foi possível acessar o juiz",
+        "auth": "a chave do juiz foi rejeitada",
+        "payment_required": "o juiz precisa de uma forma de pagamento",
+        "rate_limited": "o juiz atingiu o limite de taxa",
+        "bad_request": "o juiz rejeitou a solicitação",
+        "server": "houve um erro no servidor do juiz",
+        "invalid_response": "não foi possível ler a resposta do juiz",
+        "unexpected": "um erro inesperado",
+        "all": "todas as chamadas ao juiz falharam",
+        "other": "a chamada ao juiz falhou"
+      }
+    }
+  },
+  "tabTitle": {
+    "image": "Imagem",
+    "diff": "Diferenças"
+  },
+  "sideBySide": "Lado a lado",
+  "diffTag": {
+    "changed": "Alterado",
+    "added": "Adicionado",
+    "deleted": "Excluído",
+    "renamed": "Renomeado"
+  },
+  "diffEmpty": "Nenhuma alteração neste arquivo",
+  "mermaidTitleWithSummary": "Diagrama Mermaid: {{summary}}",
+  "wavedromTitleWithSummary": "Diagrama WaveDrom: {{summary}}",
+  "saveFailedWithDetail": "Falha ao salvar: {{detail}}",
+  "zoomActualSize": "Redefinir zoom",
+  "zoomFit": "Ajustar",
+  "zoomFitTooltip": "Ajustar à largura do painel"
+}

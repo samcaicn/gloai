@@ -1,0 +1,323 @@
+{
+  "loading": "Yükleniyor...",
+  "downloadFile": "Dosyayı İndir",
+  "closePreview": "Önizlemeyi Kapat",
+  "collapsePanel": "Paneli Daralt",
+  "maximizePanel": "Büyüt",
+  "restorePanel": "Geri Yükle",
+  "source": "Kaynak",
+  "code": "Kod",
+  "preview": "Önizleme",
+  "editor": "Editör",
+  "previewEffect": "Önizleme",
+  "downloadMarkdown": "Markdown Dosyasını İndir",
+  "downloadCode": "{{language}} Dosyasını İndir",
+  "downloadDiff": "Diff Dosyasını İndir",
+  "addToChat": "Sohbete Ekle",
+  "openSplitScreen": "Bölünmüş Ekranı Aç",
+  "closeSplitScreen": "Bölünmüş Ekranı Kapat",
+  "edit": "Düzenle",
+  "exitEdit": "Düzenlemeden Çık",
+  "unsavedChangesTitle": "Kaydedilmemiş Değişiklikler",
+  "unsavedChangesMessage": "Kaydedilmemiş değişiklikleriniz var. Düzenlemeden çıkmak istediğinizden emin misiniz?",
+  "confirmExit": "Çıkışı Onayla",
+  "continueEdit": "Düzenlemeye Devam Et",
+  "closeTabTitle": "Sekmeyi Kapat",
+  "closeTabMessage": "Mevcut içerik kaydedilmedi. Kapatmadan önce kaydetmek ister misiniz?",
+  "closeTabsTitle": "Sekmeleri Kapat",
+  "closeTabsMessage": "{{count}} sekmede kaydedilmemiş değişiklik var. Kapatmadan önce kaydedilsin mi?",
+  "closeTabsMessage_one": "{{count}} sekmede kaydedilmemiş değişiklik var. Kapatmadan önce kaydedilsin mi?",
+  "closeTabsMessage_other": "{{count}} sekmede kaydedilmemiş değişiklik var. Kapatmadan önce kaydedilsin mi?",
+  "saveAndClose": "Kaydet ve Kapat",
+  "closeWithoutSave": "Kaydetme",
+  "pptTitle": "PowerPoint Sunumu",
+  "pptOpenHint": "Tam içeriği görüntülemek için sistem uygulamasında açmak üzere aşağıdaki düğmeye tıklayın",
+  "pptOpenFile": "Dosyayı Aç",
+  "pptShowLocation": "Konumu Göster",
+  "pptSystemAppHint": "Varsayılan sistem uygulamasıyla açılacaktır (PowerPoint, Keynote veya WPS)",
+  "openWithApp": "{{app}} ile Aç",
+  "openInSystemApp": "Sistem uygulamasında aç",
+  "openInSystemSuccess": "Sistem varsayılan uygulamasında açıldı",
+  "openInSystemFailed": "Sistem uygulamasıyla açılamadı",
+  "close": "Kapat",
+  "closeLeft": "Solu Kapat",
+  "closeRight": "Sağı Kapat",
+  "closeOthers": "Diğerlerini Kapat",
+  "closeAll": "Tümünü Kapat",
+  "closeUnmodified": "Değiştirilmemişleri Kapat",
+  "copyPath": "Yolu Kopyala",
+  "copyRelativePath": "Göreli Yolu Kopyala",
+  "openLocation": "Klasörde göster",
+  "openLocationFailed": "İçeren klasör açılamadı",
+  "readOnlyLabel": "Salt okunur önizleme",
+  "pathLabel": "Yol",
+  "missingFile": {
+    "title": "Dosya bulunamadı",
+    "openInNewTab": "Yeni sekmede açmayı dene"
+  },
+  "noTabs": "Açık sekme yok",
+  "openInPanelTooltip": "Önizleme panelinde görüntüle",
+  "mermaidTitle": "Mermaid Diyagramı",
+  "wavedromTitle": "WaveDrom Diyagramı",
+  "oversized": {
+    "title": "Dosya önizleme için çok büyük",
+    "detail": "Dosya boyutu {{size}}, {{threshold}} sınırını aşıyor. Lütfen bir sistem düzenleyicisinde açın.",
+    "downloadUnavailable": "Bu dosya burada indirilemeyecek kadar büyük. Bunun yerine “Sistemde aç”ı kullanın."
+  },
+  "unsupported": {
+    "title": "Bu biçim için önizleme desteklenmiyor",
+    "detail": "{{format}} dosyaları burada önizlenemez. Bir sistem uygulamasında açın.",
+    "downloadUnavailable": "Bu dosya burada indirilemez. Bunun yerine “Sistemde aç”ı kullanın."
+  },
+  "aiWriting": "Yapay zeka yazıyor…",
+  "errors": {
+    "missingFilePath": "Dosya yolu eksik",
+    "openWithoutPath": "Açılamadı: dosya yolu sağlanmadı",
+    "conversionFailed": "Dönüştürme başarısız"
+  },
+  "office": {
+    "installLinkText": "officecli kurulum kılavuzunu aç",
+    "errors": {
+      "officecliNotFound": "officecli yüklü değil.",
+      "installFailed": "officecli otomatik olarak yüklenemedi. Arka uç günlüklerini kontrol edip yeniden deneyin.",
+      "portTimeout": "Önizleme servisi başladı ancak zamanında hazır olmadı. Yeniden deneyin.",
+      "startFailed": "Office önizleme servisi başlatılamadı.",
+      "outsideSandbox": "Bu dosya geçerli çalışma alanı sandbox'ının dışında."
+    },
+    "serverInstall": {
+      "hint": "TupAI bir sunucuda çalışıyor. Önizleme bileşeni o sunucuya kurulmalıdır. Aşağıdaki komutu sunucuda çalıştırıp yeniden deneyin:",
+      "icuNote": "Yine de başlamazsa sunucuya ICU kitaplığını kurun (Debian/Ubuntu: apt-get install -y libicu-dev)."
+    }
+  },
+  "word": {
+    "title": "Word Belgesi",
+    "loading": "Word belgesi yükleniyor...",
+    "invalid": "Lütfen dosyanın geçerli bir Word belgesi olduğunu onaylayın",
+    "loadFailed": "Word belgesi yüklenemedi",
+    "watch": {
+      "loading": "Word belgesi yükleniyor...",
+      "installing": "officecli yükleniyor...",
+      "startFailed": "Word önizlemesi başlatılamadı",
+      "installHint": "officecli gereklidir. Otomatik olarak yüklenecektir."
+    }
+  },
+  "excel": {
+    "title": "Excel Tablosu",
+    "loading": "Excel çalışma kitabı yükleniyor...",
+    "invalid": "Lütfen dosyanın geçerli bir Excel belgesi olduğunu onaylayın",
+    "noSheets": "Bu Excel dosyasında çalışma sayfası bulunamadı",
+    "sheetCount": "{{count}} çalışma sayfası",
+    "convertFailed": "Excel dönüştürme başarısız",
+    "loadFailed": "Excel çalışma kitabı yüklenemedi",
+    "emptySheet": "Bu çalışma sayfasında veri yok",
+    "emptySheetHint": "Sayfanın veri veya resim içerip içermediğini kontrol edin",
+    "watch": {
+      "loading": "Excel dosyası yükleniyor...",
+      "installing": "officecli yükleniyor...",
+      "startFailed": "Excel önizlemesi başlatılamadı",
+      "installHint": "officecli gereklidir. Otomatik olarak yüklenecektir."
+    }
+  },
+  "pdf": {
+    "title": "PDF Belgesi",
+    "pathMissing": "PDF dosya yolu eksik",
+    "loadFailed": "PDF belgesi yüklenemedi",
+    "unableDisplay": "PDF dosyası görüntülenemiyor"
+  },
+  "html": {
+    "elementSelected": "Seçilen öğe: {{path}}",
+    "copySuccess": "HTML parçacığı kopyalandı",
+    "inspectorEnabled": "Öğe denetçisi etkinleştirildi. Vurgulamak için önizlemedeki öğelere tıklayın.",
+    "inspectorButton": "Öğe Denetçisi",
+    "inspecting": "Denetleniyor...",
+    "selectedLabel": "Seçilen:",
+    "inspectorTooltip": "HTML'lerini incelemek için önizleme öğelerine tıklayın",
+    "downloadHtml": "HTML dosyasını indir",
+    "copyElementHtml": "Öğe HTML'sini kopyala",
+    "viewElementInfo": "Öğe bilgisini görüntüle",
+    "printedToConsole": "Öğe bilgisi konsola yazıldı",
+    "inspectElement": "Öğeyi İncele",
+    "inspectElementEnable": "Öğe denetçisini etkinleştir",
+    "inspectElementDisable": "Öğe denetçisini devre dışı bırak",
+    "frameTitle": "HTML önizlemesi"
+  },
+  "ppt": {
+    "loading": "PPT önizlemesi başlatılıyor...",
+    "installing": "Önizleme bileşeni yükleniyor...",
+    "startFailed": "PPT önizlemesi başlatılamadı",
+    "installHint": "OfficeCLI'yi resmi iOfficeAI/OfficeCLI releases sayfasından yükleyin"
+  },
+  "browser": {
+    "newTab": "Yeni sekme",
+    "addressPlaceholder": "Bir URL girin veya arama yapın",
+    "tabsLabel": "Açık sayfalar",
+    "closeTab": "{{title}} sekmesini kapat",
+    "copyAddress": "Adresi Kopyala",
+    "agentActiveTooltip": "Aracı bu sekmeyi kullanıyor",
+    "tabLimitReached": "Sekme sınırına ulaşıldı ({{count}}). En eski sekme yeniden kullanıldı.",
+    "agentFirstUseTitle": "Aracı uygulama içi tarayıcıyı kullanıyor",
+    "agentFirstUseContent": "Bu panelde sayfa açabilir, tıklayabilir ve içerik okuyabilir. Oturum bilgileriniz korunur.",
+    "agentFirstUseAction": "Ayarları aç"
+  },
+  "saveConflict": "Kaydedilemedi: bu dosya siz açtıktan sonra diskte değişti. Diğer değişiklikleri görmek için yeniden yükleyin — düzenlemeleriniz kaydedilmemiş olarak duruyor.",
+  "persistQuotaExceeded": "Yerel depolama dolu, bu proje için açık sekmeler artık hatırlanamıyor. Bazı sekmeleri kapatın veya site verilerini temizleyin.",
+  "save": {
+    "tooltip": "Değişiklikleri kaydet (Ctrl/Cmd+S)",
+    "clean": "Kaydedilmemiş değişiklik yok"
+  },
+  "refresh": {
+    "label": "Yenile",
+    "tooltip": "Diskten yeniden yükle",
+    "hasUpdate": "Bu dosya diskte değişti — yeniden yüklemek için tıklayın",
+    "noSignalSource": "Bu dosya projede değil, bu yüzden değişiklikler bildirilmeyecek",
+    "unavailable": "Bu dosya bulunamıyor",
+    "failed": "Bu dosya yeniden yüklenemedi",
+    "confirmTitle": "Yeniden yükleyip kaydedilmemiş değişiklikler kaybedilsin mi?",
+    "confirmMessage": "Bu sekmede kaydedilmemiş değişiklikler var. Yeniden yükleme onları diskteki içerikle değiştirir.",
+    "discardAndRefresh": "Değişiklikleri sil ve yenile",
+    "officeNotWired": "Office belgelerini yenileme henüz kullanılamıyor — değişiklikleri görmek için dosyayı kapatıp yeniden açın."
+  },
+  "zoomIn": "Yakınlaştır",
+  "zoomOut": "Uzaklaştır",
+  "zoomReset": "Görünümü sıfırla",
+  "diagramZoomHint": "Yakınlaştırmak için kaydırın • Taşımak için sürükleyin • ESC ile kapatın",
+  "muBrowser": {
+    "stepNumber": "{{step}}. adım",
+    "confidence": "%{{percent}} emin",
+    "noChange": "sayfa değişmedi",
+    "observing": "Sayfaya bakılıyor…",
+    "elapsed": "Geçen süre",
+    "steps": "Adımlar {{total}}",
+    "noSteps": "Henüz bir şey yapılmadı",
+    "reason": "TupAI’nun açıklaması",
+    "goal": "Hedef",
+    "pause": "Duraklat",
+    "resume": "Sürdür",
+    "stop": "Durdur",
+    "takeover": "Devral",
+    "takeoverTip": "Çalışmayı duraklatır ve klavyeyi size verir. İşiniz bitince “Sürdür”e basın: TupAI karar vermeden önce sayfaya yeniden bakar.",
+    "pausedShort": "Duraklatıldı",
+    "stopping": "Durduruluyor…",
+    "paused": {
+      "user": "Duraklatıldı. Sürdürdüğünüzde TupAI karar vermeden önce sayfaya yeniden bakar.",
+      "takeover": "Kontrol sizde: sayfayı doğrudan kullanın, bitince “Sürdür”e basın.",
+      "interaction": "Sayfaya dokundunuz; TupAI sizinle aynı anda tıklamamak için kendini duraklattı. Sürdürdüğünüzde sayfaya yeniden bakar."
+    },
+    "statusHint": {
+      "blocked": "TupAI sayfada hedefe yaklaştıracak bir işlem bulamadı ve durdu.",
+      "needs_confirmation": "İşlem geri alınamaz görünüyordu ve izin verilmedi; TupAI bu işlemi yapmadı.",
+      "budget": "Bu çalışmanın adım sınırı doldu.",
+      "stopped": "Bu çalışmayı siz durdurdunuz.",
+      "failed": "Gezinme sırasında bir sorun oluştu; çalışma tamamlanmadı."
+    },
+    "detachedHint": "TupAI bu sayfayla bağlantısını kaybetti; bu çalışma devam edemez.",
+    "verb": {
+      "click": "Tıkla",
+      "fill": "Şuraya yaz",
+      "select": "Seç",
+      "scroll": "Kaydır",
+      "wait": "Bekle",
+      "none": "Hedef bulunamadı",
+      "other": "İşlem"
+    },
+    "status": {
+      "done": "Tamamlandı",
+      "blocked": "Tıkandı",
+      "needs_confirmation": "Onay gerekiyor",
+      "stopped": "Durduruldu",
+      "budget": "Adımlar tükendi",
+      "read": "Sayfa okundu",
+      "failed": "Başarısız",
+      "ended": "Sona erdi",
+      "detached": "Bağlantı koptu"
+    },
+    "notice": {
+      "download": "İndirme engellendi: {{detail}}",
+      "permission": "İzin isteği reddedildi: {{detail}}",
+      "navigation": "Web sayfası olmayan adres engellendi: {{detail}}",
+      "popup": "Açılır pencere engellendi: {{detail}}"
+    },
+    "confirm": {
+      "title": "TupAI geri alınamayabilecek bir işlem yapmak istiyor",
+      "action": "İşlem",
+      "page": "Sayfa",
+      "allow": "İzin ver",
+      "deny": "Reddet",
+      "countdown": "{{seconds}} sn sonra otomatik reddedilecek",
+      "untrusted": "Yukarıdaki metin web sayfasından gelir. Sayfanın gerçekte gösterdiğine güvenin."
+    },
+    "detachCause": "Neden",
+    "detachReason": {
+      "tab_closed": "Sekme kapatıldı.",
+      "connection": "TupAI'nun tarama oturumu çalışma bitmeden sona erdi.",
+      "devtools": "Bu sayfada geliştirici araçları açıldı.",
+      "crashed": "Sayfa çöktü."
+    },
+    "permission": {
+      "location": "konum",
+      "media": "kamera veya mikrofon",
+      "notifications": "bildirimler",
+      "clipboard": "pano",
+      "screen": "ekran yakalama",
+      "midi": "MIDI cihazları",
+      "fullscreen": "tam ekran",
+      "pointerLock": "fare kilidi",
+      "devices": "USB, seri veya HID cihazları",
+      "storage": "depolama erişimi",
+      "openExternal": "başka bir uygulamayı açma",
+      "protectedContent": "korumalı içerik oynatma",
+      "windows": "pencere yönetimi"
+    },
+    "end": {
+      "stopped_by_user": "İzleyen kişi tarafından durduruldu.",
+      "max_steps": "{{count}} işlemden sonra durdu.",
+      "max_steps_one": "{{count}} işlemden sonra durdu.",
+      "max_steps_other": "{{count}} işlemden sonra durdu.",
+      "no_judge": "Hiçbir hakem bir işlem seçemedi ({{judgeReason}}).",
+      "no_progress": "Hakem ilerleme sağlayan bir işlem bulamadı.",
+      "not_confirmed": "“{{label}}” geri alınamaz görünüyor ve onaylanmadı.",
+      "no_value": "“{{label}}” için bir değer üretilemedi.",
+      "stuck": "Art arda {{count}} işlem hiçbir şeyi değiştirmedi.",
+      "stuck_one": "{{count}} işlem hiçbir şeyi değiştirmedi.",
+      "stuck_other": "Art arda {{count}} işlem hiçbir şeyi değiştirmedi."
+    },
+    "judgeReason": {
+      "shadow": "gölge modu: yanıtı yalnızca kaydedilir",
+      "abstain": "hakem çekimser kaldı",
+      "off": "hakem kapalı",
+      "noVerdict": "karar yok",
+      "error": {
+        "timeout": "hakem zaman aşımına uğradı",
+        "aborted": "hakem çağrısı iptal edildi",
+        "unreachable": "hakeme ulaşılamadı",
+        "auth": "hakem anahtarı reddedildi",
+        "payment_required": "hakem için ödeme yöntemi gerekli",
+        "rate_limited": "hakem hız sınırına ulaştı",
+        "bad_request": "hakem isteği reddetti",
+        "server": "hakem sunucusunda hata oluştu",
+        "invalid_response": "hakemin yanıtı okunamadı",
+        "unexpected": "beklenmeyen bir hata",
+        "all": "tüm hakem çağrıları başarısız oldu",
+        "other": "hakem çağrısı başarısız oldu"
+      }
+    }
+  },
+  "tabTitle": {
+    "image": "Görsel",
+    "diff": "Fark"
+  },
+  "sideBySide": "Yan yana",
+  "diffTag": {
+    "changed": "Değiştirildi",
+    "added": "Eklendi",
+    "deleted": "Silindi",
+    "renamed": "Yeniden adlandırıldı"
+  },
+  "diffEmpty": "Bu dosyada değişiklik yok",
+  "mermaidTitleWithSummary": "Mermaid diyagramı: {{summary}}",
+  "wavedromTitleWithSummary": "WaveDrom diyagramı: {{summary}}",
+  "saveFailedWithDetail": "Kaydedilemedi: {{detail}}",
+  "zoomActualSize": "Yakınlaştırmayı sıfırla",
+  "zoomFit": "Sığdır",
+  "zoomFitTooltip": "Panel genişliğine sığdır"
+}

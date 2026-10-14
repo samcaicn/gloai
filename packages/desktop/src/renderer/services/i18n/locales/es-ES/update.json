@@ -1,0 +1,36 @@
+{
+  "upToDateTitle": "Estás al día",
+  "foundVersion": "Nueva versión {{version}} encontrada",
+  "foundVersionSize": "Nueva versión {{version}} encontrada (unos {{size}} MB)",
+  "download": "Descargar",
+  "currentVersion": "Versión actual: {{version}}",
+  "later": "Después",
+  "showInFolder": "Mostrar en carpeta",
+  "errors": {
+    "prepareInstallTimeout": "Se agotó el tiempo al preparar la instalación. Inténtalo de nuevo más tarde.",
+    "prepareInstallFailed": "No se pudo preparar la instalación. Inténtalo de nuevo más tarde.",
+    "network": "No se pudo conectar con el servidor de actualizaciones. Comprueba tu red e inténtalo de nuevo.",
+    "timeout": "El servidor de actualizaciones tardó demasiado en responder. Inténtalo de nuevo más tarde.",
+    "noUpdateInfo": "Esta versión no se puede instalar automáticamente en este sistema.",
+    "serverError": "El servidor de actualizaciones devolvió un error ({{status}}). Inténtalo de nuevo más tarde.",
+    "invalidMetadata": "No se pudo leer la información de la actualización. Inténtalo de nuevo más tarde.",
+    "checkFailed": "No se pudieron buscar actualizaciones. Inténtalo de nuevo más tarde.",
+    "downloadFailed": "No se pudo descargar la actualización. Inténtalo de nuevo más tarde."
+  },
+  "preparingInstall": "Preparando...",
+  "readyTitle": "La nueva versión {{version}} está lista",
+  "restartToUpdate": "Reiniciar y actualizar",
+  "lastInstallFailed": "La última actualización no se instaló: no se pudo cerrar TupAI.",
+  "availableVersion": "La nueva versión {{version}} está disponible",
+  "installerReason": {
+    "linux": "En Linux, TupAI no puede instalar las actualizaciones por sí mismo: descarga el instalador y ábrelo.",
+    "unpackaged": "Esta copia de TupAI no puede instalar las actualizaciones por sí misma: descarga el instalador y ábrelo.",
+    "autoUpdateFailed": "Puedes descargar el instalador y actualizar con él."
+  },
+  "downloadInstaller": "Descargar instalador",
+  "openReleasePage": "Abrir página de la versión",
+  "downloadingVersion": "Descargando la versión {{version}} ({{percent}})",
+  "downloadingInstaller": "Descargando el instalador ({{percent}})",
+  "installerReadyTitle": "El instalador de la versión {{version}} se ha descargado",
+  "openInstaller": "Abrir instalador"
+}

@@ -1,0 +1,77 @@
+/*
+ * mu colour scheme, part three: the shell's own touches. Upstream layout stays as it is; these rules
+ * only re-dress elements that already exist (the selected sidebar row, the send button).
+ */
+
+/* ---- Sidebar ---- */
+
+/* The selected row keeps upstream's grey block; a thin bar of light purple is the only colour on it. The settings
+   rail marks its page shown by weight alone (SettingsSider). */
+[data-color-scheme='mu'] .chat-history__item[aria-current='page']::before,
+[data-color-scheme='mu'] .sider-item[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-start-end-radius: 3px;
+  border-end-end-radius: 3px;
+  background: var(--mu-accent-dot);
+  animation: mu-indicator-in var(--mu-duration) var(--mu-ease) both;
+}
+
+/* A hairline between the sidebar and the content: the two surfaces are only a shade apart. */
+[data-color-scheme='mu'] .layout-sider {
+  border-inline-end: 1px solid var(--border-base);
+}
+
+@keyframes mu-indicator-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* ---- Send button: one flat light lavender, with a dark arrow in both appearances ---- */
+
+[data-color-scheme='mu'] .send-button-custom--enabled,
+[data-color-scheme='mu'] .send-button-custom--enabled.arco-btn {
+  border-color: transparent !important;
+  background-color: var(--mu-accent-fill) !important;
+  background-image: none !important;
+  color: var(--mu-accent-on) !important;
+  transition: background-color var(--mu-duration) var(--mu-ease);
+}
+
+[data-color-scheme='mu'] .send-button-custom--enabled:not(:disabled):hover,
+[data-color-scheme='mu'] .send-button-custom--enabled.arco-btn:not(:disabled):hover,
+[data-color-scheme='mu'] .send-button-custom--enabled:not(:disabled):focus-visible,
+[data-color-scheme='mu'] .send-button-custom--enabled.arco-btn:not(:disabled):focus-visible {
+  border-color: transparent !important;
+  background-color: var(--mu-accent-fill-hover) !important;
+  color: var(--mu-accent-on) !important;
+}
+
+[data-color-scheme='mu'] .send-button-custom--enabled:not(:disabled):active,
+[data-color-scheme='mu'] .send-button-custom--enabled.arco-btn:not(:disabled):active {
+  border-color: transparent !important;
+  background-color: var(--mu-accent-fill-active) !important;
+  color: var(--mu-accent-on) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-color-scheme='mu'] .chat-history__item[aria-current='page']::before,
+  [data-color-scheme='mu'] .sider-item[aria-current='page']::before {
+    animation: none;
+  }
+
+  [data-color-scheme='mu'] .send-button-custom--enabled,
+  [data-color-scheme='mu'] .send-button-custom--enabled.arco-btn {
+    transition: none;
+  }
+}

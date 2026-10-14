@@ -1,0 +1,36 @@
+{
+  "upToDateTitle": "Você está atualizado",
+  "foundVersion": "Nova versão {{version}} encontrada",
+  "foundVersionSize": "Nova versão {{version}} encontrada (cerca de {{size}} MB)",
+  "download": "Baixar",
+  "currentVersion": "Versão atual: {{version}}",
+  "later": "Mais tarde",
+  "preparingInstall": "Preparando...",
+  "showInFolder": "Mostrar na pasta",
+  "errors": {
+    "prepareInstallTimeout": "A preparação da instalação expirou. Tente novamente mais tarde.",
+    "prepareInstallFailed": "Falha ao preparar a instalação. Tente novamente mais tarde.",
+    "network": "Não foi possível conectar ao servidor de atualizações. Verifique sua rede e tente novamente.",
+    "timeout": "O servidor de atualizações demorou demais para responder. Tente novamente mais tarde.",
+    "noUpdateInfo": "Esta versão não pode ser instalada automaticamente neste sistema.",
+    "serverError": "O servidor de atualizações retornou um erro ({{status}}). Tente novamente mais tarde.",
+    "invalidMetadata": "Não foi possível ler as informações da atualização. Tente novamente mais tarde.",
+    "checkFailed": "Não foi possível verificar atualizações. Tente novamente mais tarde.",
+    "downloadFailed": "Não foi possível baixar a atualização. Tente novamente mais tarde."
+  },
+  "readyTitle": "A nova versão {{version}} está pronta",
+  "restartToUpdate": "Reiniciar e atualizar",
+  "lastInstallFailed": "A última atualização não foi instalada: não foi possível fechar o TupAI.",
+  "availableVersion": "A nova versão {{version}} está disponível",
+  "installerReason": {
+    "linux": "No Linux, o TupAI não instala atualizações sozinho: baixe o instalador e abra-o.",
+    "unpackaged": "Esta cópia do TupAI não instala atualizações sozinha: baixe o instalador e abra-o.",
+    "autoUpdateFailed": "Você pode baixar o instalador e atualizar com ele."
+  },
+  "downloadInstaller": "Baixar instalador",
+  "openReleasePage": "Abrir página da versão",
+  "downloadingVersion": "Baixando a versão {{version}} ({{percent}})",
+  "downloadingInstaller": "Baixando o instalador ({{percent}})",
+  "installerReadyTitle": "O instalador da versão {{version}} foi baixado",
+  "openInstaller": "Abrir instalador"
+}

@@ -1,0 +1,36 @@
+{
+  "upToDateTitle": "You're up to date",
+  "foundVersion": "New version {{version}} found",
+  "foundVersionSize": "New version {{version}} found (about {{size}} MB)",
+  "download": "Download",
+  "currentVersion": "Current version: {{version}}",
+  "later": "Later",
+  "preparingInstall": "Preparing...",
+  "showInFolder": "Show in folder",
+  "errors": {
+    "prepareInstallTimeout": "Preparing installation timed out. Please try again later.",
+    "prepareInstallFailed": "Preparing installation failed. Please try again later.",
+    "network": "Couldn't reach the update server. Check your network and try again.",
+    "timeout": "The update server took too long to answer. Try again later.",
+    "noUpdateInfo": "This version cannot be installed automatically on this system.",
+    "serverError": "The update server returned an error ({{status}}). Try again later.",
+    "invalidMetadata": "The update information could not be read. Try again later.",
+    "checkFailed": "Checking for updates did not work. Try again later.",
+    "downloadFailed": "The update could not be downloaded. Try again later."
+  },
+  "readyTitle": "New version {{version}} is ready",
+  "restartToUpdate": "Restart to update",
+  "lastInstallFailed": "The last update was not installed: TupAI could not be closed.",
+  "availableVersion": "New version {{version}} is available",
+  "installerReason": {
+    "linux": "On Linux, TupAI cannot install updates by itself: download the installer and open it.",
+    "unpackaged": "This copy of TupAI cannot install updates by itself: download the installer and open it.",
+    "autoUpdateFailed": "You can download the installer and update with it."
+  },
+  "downloadInstaller": "Download installer",
+  "openReleasePage": "Open release page",
+  "downloadingVersion": "Downloading version {{version}} ({{percent}})",
+  "downloadingInstaller": "Downloading the installer ({{percent}})",
+  "installerReadyTitle": "The installer for version {{version}} is downloaded",
+  "openInstaller": "Open installer"
+}

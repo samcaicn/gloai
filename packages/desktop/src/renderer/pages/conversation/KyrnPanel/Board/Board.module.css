@@ -1,0 +1,353 @@
+/* The plain-language board: the page's own black and white, hairlines between its parts, nothing tinted. */
+
+.board {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.faint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-wrap: balance;
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  text-wrap: balance;
+}
+
+.off {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.offText {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 20px;
+  text-wrap: balance;
+}
+
+/* Read out, not shown: what a new board says, for a screen reader. */
+.announce {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.current {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* A new board or line comes in quickly; what the session replays on opening is simply there. */
+.fresh {
+  animation: arrive 150ms ease-out;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fresh {
+    animation: none;
+  }
+}
+
+.marks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+/* The state told by its words and a mark, never by a colour. */
+.stateMark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 11px;
+  height: 18px;
+}
+
+.stateMark[data-mark='dot']::before,
+.stateMark[data-mark='hollow']::before,
+.stateMark[data-mark='dash']::before {
+  content: '';
+  display: block;
+}
+
+.stateMark[data-mark='dot']::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Stuck, or waiting for the person. */
+.stateMark[data-mark='hollow']::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+/* Stopped. */
+.stateMark[data-mark='dash']::before {
+  width: 7px;
+  height: 1.5px;
+  background: currentColor;
+}
+
+.brief {
+  padding: 0 6px;
+  border: 1px solid var(--border-base);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 16px;
+  cursor: default;
+}
+
+.now {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 23px;
+  overflow-wrap: anywhere;
+}
+
+.progress {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--border-base);
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text-primary);
+  transition: width 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar span {
+    transition: none;
+  }
+}
+
+.count {
+  flex: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ask,
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-base);
+}
+
+.sectionTitle {
+  margin: 0 0 2px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.account .sectionTitle {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.askPlain {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.askList,
+.notes {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.askList li + li {
+  border-top: 1px solid var(--border-base);
+}
+
+.askItem:global(.arco-btn) {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  height: auto;
+  padding: 7px 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: start;
+  white-space: normal;
+}
+
+.askItem:global(.arco-btn:not(:disabled):hover),
+.askItem:global(.arco-btn:not(:disabled):active) {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.askItem:global(.arco-btn:focus-visible) {
+  outline: 1px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.askText {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.askAction {
+  flex: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.askItem:global(.arco-btn:hover) .askAction {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+/* One line of the account: its time, then its sentence, which wraps in its own column. */
+.note {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 10px;
+  padding: 3px 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* The board model's own words: what is worth reading, in the page's main colour. */
+.noteSaid {
+  color: var(--text-primary);
+}
+
+.noteTime {
+  color: var(--bg-6);
+  font-variant-numeric: tabular-nums;
+}
+
+.noteText {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Something went wrong: told by the words and a hollow dot, never by a colour. */
+.noteDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-inline-end: 6px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+  vertical-align: middle;
+}
+
+/* The older lines, on request: a quiet text button in the page's own colours. */
+.more:global(.arco-btn) {
+  align-self: flex-start;
+  height: auto;
+  padding: 2px 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.more:global(.arco-btn:not(:disabled):hover),
+.more:global(.arco-btn:not(:disabled):active) {
+  background: transparent;
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.more:global(.arco-btn:focus-visible) {
+  outline: 1px solid var(--text-primary);
+  outline-offset: 2px;
+}

@@ -1,0 +1,732 @@
+.guidLayout {
+  width: clamp(var(--app-min-width, 360px), calc(100% - 32px), 800px);
+  max-width: 100%;
+  padding: 0 16px;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.heroHeader {
+  /* The glyph's height: smaller on a short window, so the input stays in view. */
+  --mu-hero-glyph: clamp(150px, 31vh, 290px);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Room above the input, which follows directly when there is no assistant picker (mu alone). */
+  margin-bottom: 28px;
+  /* The greeting sits over the lower part of the glyph. */
+  padding-top: calc(var(--mu-hero-glyph) * 0.7);
+}
+
+.heroBackdrop {
+  position: absolute;
+  top: 0;
+  /* Centred without a transform: the glyph's entrance animates its transform. */
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: calc(var(--mu-hero-glyph) * 45 / 56);
+  height: var(--mu-hero-glyph);
+}
+
+.heroTitle {
+  position: relative;
+}
+
+.assistantPromptHint {
+  color: var(--color-text-3);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.guidInputCard {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* The new-conversation card looks like the send box: one surface with a hairline around it and a soft shadow;
+   focus darkens the hairline and lifts the shadow, and a file held over it turns the outline dashed. The project
+   strip under the input is the same surface, set apart by a hairline only. */
+.guidInputCardWrap {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--mu-input-border, var(--color-border-2));
+  background: var(--mu-composer-bg, var(--bg-base));
+  box-shadow: var(--mu-shadow-1, none);
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.guidInputCardWrap[data-active='true'] {
+  border-color: var(--color-border-3);
+  box-shadow: var(--mu-shadow-2, none);
+}
+
+.guidInputCardWrap[data-dragging='true'] {
+  border-style: dashed;
+  border-color: var(--color-border-4);
+}
+
+.guidInputInner {
+  border-bottom: 1px solid var(--border-base);
+  box-sizing: border-box;
+}
+
+.actionRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* The "+" keeps its room: the chips beside it wrap or clip their labels, and never slide under it. */
+.actionTools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.actionEntry {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-inline-end: 0;
+}
+
+/* The model and permission chips, side by side. In a narrow window they wrap onto a second line, and a chip too wide
+   for a line of its own clips its label (hovering it scrolls the label). */
+.actionConfigGroup {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.actionConfigGroup > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* The home composer's chips are the conversation's (.sendbox-tools / .sendbox-actions in sendbox.css): monochrome
+   text in a hairline outline, no fill of their own; the send button is the only colour in the box. */
+.actionSubmit :global(.sendbox-model-btn),
+.actionSubmit :global(.sendbox-model-btn:hover),
+.actionSubmit :global(.sendbox-model-btn:active),
+.actionSubmit :global(.sendbox-model-btn:focus),
+.actionSubmit :global(.sendbox-model-btn:focus-visible) {
+  background: transparent !important;
+  border: 1px solid var(--color-border-2) !important;
+  box-shadow: none !important;
+  color: var(--text-secondary) !important;
+}
+
+.actionSubmit :global(.sendbox-model-btn:hover),
+.actionSubmit :global(.sendbox-model-btn:active),
+.actionSubmit :global(.sendbox-model-btn:focus),
+.actionSubmit :global(.sendbox-model-btn:focus-visible) {
+  border-color: var(--color-border-3) !important;
+  color: var(--text-primary) !important;
+}
+
+/* A read-only pill states a fact; it is not a target, so it keeps no outline (as in the conversation). */
+.actionSubmit :global(.agent-mode-compact-pill--readonly) {
+  border-color: transparent !important;
+}
+
+.actionConfigGroup :global(.sendbox-model-btn .arco-btn-content > span:first-child) {
+  min-width: 0 !important;
+}
+
+/* Model button must be allowed to shrink so a long label truncates instead of
+ * pushing the send button / mode switch out of the row on narrow viewports. */
+.actionConfigGroup :global(.sendbox-model-btn) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.actionConfigGroup :global(.sendbox-model-btn .arco-btn-content) {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.actionConfigGroup :global(.sendbox-model-btn .guid-model-label) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 220px;
+}
+
+/* Whatever the "+" leaves: the chips and the send button, packed to the end of the row. */
+.actionSubmit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: 1 1 0;
+  margin-inline-start: auto;
+  min-width: 0;
+}
+
+.workspaceFootnote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 6px 10px;
+  padding-inline-start: 14px;
+  padding-inline-end: 6px;
+  background: transparent;
+}
+
+.workspaceEmptyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-3);
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    color 0.15s,
+    background 0.15s;
+  line-height: 1;
+}
+
+.workspaceEmptyBtn:hover {
+  color: var(--color-text-2);
+  background: var(--color-fill-3);
+}
+
+/* 选中态：和空状态同色系，不做颜色跳变 */
+.workspacePill {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  overflow: hidden;
+  max-width: 280px;
+}
+
+.workspacePillMain {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-2);
+  background: transparent;
+  border: none;
+  padding-block: 4px;
+  padding-inline-start: 6px;
+  padding-inline-end: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    background 0.12s,
+    color 0.12s;
+  max-width: 220px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.workspacePillMain:hover {
+  background: var(--color-fill-3);
+  color: var(--color-text-1);
+}
+
+.workspacePillName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspacePillClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-inline-end: 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--color-text-4);
+  flex-shrink: 0;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.workspacePillClose:hover {
+  background: var(--color-fill-3);
+  color: var(--color-text-2);
+}
+
+/* workspace dropdown popup — portal-rendered, position set via JS */
+.wsDropdown {
+  background: var(--bg-base, #fff);
+  border: 1px solid var(--color-border-2);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.06);
+  min-width: 230px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.wsDropdownSearch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  background: var(--color-fill-2);
+  border-radius: 8px;
+}
+
+.wsDropdownSearchInput {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--color-text-1);
+  width: 100%;
+  font-family: inherit;
+}
+
+.wsDropdownSearchInput::placeholder {
+  color: var(--color-text-4);
+}
+
+.wsDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text-1);
+  transition: background 0.1s;
+}
+
+.wsDropdownItem:hover {
+  background: var(--color-fill-2);
+}
+
+.wsDropdownItemActive {
+  color: var(--aou-7);
+  font-weight: 600;
+}
+
+.wsDropdownItemAccent {
+  color: var(--aou-7);
+}
+
+.wsDropdownItemMuted {
+  color: var(--color-text-2);
+  font-style: italic;
+}
+
+.wsDropdownItemMuted:hover {
+  color: var(--color-text-1);
+}
+
+.wsDropdownItemMutedDisabled {
+  color: var(--color-text-3);
+  font-style: italic;
+}
+
+.wsDropdownSep {
+  height: 1px;
+  background: var(--color-border-2);
+  margin: 4px 0;
+}
+
+.lightPlaceholder::placeholder {
+  color: #b4b5bc;
+  opacity: 1;
+}
+
+.plusButtonRotate {
+  animation: rotate-animation 0.3s ease-in-out;
+}
+
+@keyframes rotate-animation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(45deg);
+  }
+}
+
+/* Skeleton shimmer animation */
+@keyframes guid-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-fill-2) 25%, var(--color-fill-3) 50%, var(--color-fill-2) 75%);
+  background-size: 200% 100%;
+  animation: guid-shimmer 1.5s ease-in-out infinite;
+  border-radius: 50%;
+}
+
+.skeletonPill {
+  background: linear-gradient(90deg, var(--color-fill-2) 25%, var(--color-fill-3) 50%, var(--color-fill-2) 75%);
+  background-size: 200% 100%;
+  animation: guid-shimmer 1.5s ease-in-out infinite;
+  border-radius: 100px;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .guidLayout {
+    width: clamp(var(--app-min-width, 360px), calc(100% - 24px), 100%);
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+
+  /* 为底部快捷按钮留出空间: room for the phone's bottom quick buttons, in the phone layout only
+     (html[data-phone-layout], set by Layout). A narrow desktop window has no such buttons. */
+  :global(html[data-phone-layout]) .guidLayout {
+    padding-bottom: 100px;
+  }
+
+  .guidInputCard {
+    width: 100%;
+  }
+
+  /* The phone layout's row: the "+" (which opens the sheet holding every control) and the send button. A narrow
+     desktop window keeps the desktop row above, chips included. */
+  .actionRow[data-mobile='true'] {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .actionRow[data-mobile='true'] .actionTools {
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .actionRow[data-mobile='true'] .actionTools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .actionRow[data-mobile='true'] .actionTools > * {
+    flex: 0 0 auto;
+  }
+
+  .actionRow[data-mobile='true'] .actionEntry {
+    margin-inline-end: 0;
+  }
+
+  .actionConfigGroupWithDivider > :first-child::after {
+    inset-inline-end: -6px;
+    height: 16px;
+  }
+
+  .actionRow[data-mobile='true'] .actionSubmit {
+    flex: 0 0 auto;
+    margin-inline-start: 8px;
+  }
+}
+
+/* 小屏手机再收窄一点安全边距，提升可操作面积 */
+@media (max-width: 420px) {
+  .guidLayout {
+    width: clamp(var(--app-min-width, 360px), calc(100% - 20px), 100%);
+    padding: 0 10px;
+  }
+}
+
+/* 移动端容器滚动支持 */
+.guidContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  position: relative;
+}
+
+/* 整体内容块略往上移，减轻「重心偏下」的感觉 */
+.guidContainer .guidLayout {
+  margin-top: -5vh;
+}
+
+/* Agent 选中时：先放大再回落至略大（pop 动效） */
+@keyframes agentSelectPop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+.agentItemSelected {
+  background-color: var(--fill-0);
+  transition:
+    opacity 0.5s cubic-bezier(0.2, 0.8, 0.3, 1),
+    background-color 0.25s ease-out;
+  animation: agentSelectPop 0.4s ease-out forwards;
+}
+
+/* 更多 Agent 面板：细微且快速的下滑淡入 */
+@keyframes assistantOverflowPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.assistantOverflowPanel {
+  transform-origin: top center;
+  animation: assistantOverflowPanelIn 0.16s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+:global([data-theme='dark']) .assistantSelectorInactive {
+  opacity: 1;
+  color: var(--aou-9) !important;
+}
+
+/* A narrow window: the page can be taller than the window (the starting points stack, the composer's chips wrap), so
+   it scrolls. It stays centred while it fits, as in a wide window, and starts at the top when it does not (`safe`), so
+   nothing is cut off above; for the same reason it is not lifted above the middle here. */
+@media (max-width: 768px) {
+  .guidContainer {
+    justify-content: safe center;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .guidContainer .guidLayout {
+    margin-top: 0;
+  }
+
+  /* A phone: the page starts at the top and scrolls under the finger. */
+  :global(html[data-phone-layout]) .guidContainer {
+    justify-content: flex-start;
+    padding-top: 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 浅色占位符 */
+.lightPlaceholder :global(textarea::placeholder) {
+  color: #b4b5bc !important;
+  opacity: 1 !important;
+}
+
+/* 助手卡片网格（首页 list view） */
+.assistantCardScrollWrap {
+  position: relative;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-block: 4px;
+  padding-inline-start: 4px;
+  padding-inline-end: 6px;
+  scrollbar-width: thin;
+}
+
+.assistantCardScrollWrapScrollable {
+  -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0, black calc(100% - 56px), transparent 100%);
+}
+
+.assistantCardScrollWrap::-webkit-scrollbar {
+  width: 6px;
+}
+
+.assistantCardScrollWrap::-webkit-scrollbar-thumb {
+  background: var(--color-fill-3);
+  border-radius: 3px;
+}
+
+.assistantCardScrollWrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.assistantCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.assistantCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--bg-base, #fff);
+  border: 1px solid color-mix(in srgb, var(--color-border-2) 70%, transparent);
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.assistantCard:hover {
+  border-color: var(--color-border-3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+:global([data-theme='dark']) .assistantCard {
+  background: #262626;
+}
+
+:global([data-theme='dark']) .assistantCard:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.assistantCardAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-fill-2);
+  overflow: hidden;
+}
+
+.assistantCardAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.assistantCardEmoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.assistantCardMeta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.assistantCardName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assistantCardDesc {
+  font-size: 12px;
+  color: var(--color-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assistantCardAdd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  padding: 12px 14px;
+  background: var(--color-fill-1);
+  border: 1px dashed color-mix(in srgb, var(--color-border-2) 70%, transparent);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  color: var(--color-text-3);
+}
+
+.assistantCardAdd:hover {
+  background: var(--color-fill-2);
+  color: var(--color-text-2);
+}
+
+@media (max-width: 640px) {
+  .assistantCardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .actionRow[data-mobile='true'] .actionTools {
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+}
+
+/* iPhone专门优化 */
+@supports (-webkit-touch-callout: none) {
+  .actionRow {
+    flex-wrap: nowrap !important;
+  }
+
+  .actionTools {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+
+  .actionSubmit {
+    flex-shrink: 0;
+  }
+
+  .presetAgentTagName {
+    max-width: 100px;
+  }
+}

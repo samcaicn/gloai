@@ -1,0 +1,30 @@
+{
+  "plan": "Plan-Modus",
+  "default": "Standard",
+  "acceptEdits": "Bearbeitungen akzeptieren",
+  "autoEdit": "Automatisch bearbeiten",
+  "auto_edit": "Automatisch bearbeiten",
+  "read-only": "Schreibgeschützt",
+  "full-access": "Vollzugriff",
+  "yolo": "YOLO",
+  "yoloNoSandbox": "Vollautomatisch (ohne Sandbox)",
+  "auto": "Automatisch",
+  "dontAsk": "Nicht fragen",
+  "bypass": "Umgehen (YOLO)",
+  "bypassPermissions": "YOLO",
+  "smart": "Intelligent",
+  "build": "Build-Modus",
+  "full": "Vollzugriff",
+  "jev": "Jev gibt frei",
+  "ask": "Minimale Berechtigungen",
+  "permission": "Berechtigung",
+  "switchMode": "Modus wechseln",
+  "switchSuccess": "Modus erfolgreich gewechselt",
+  "switchPendingNextTurn": "Wird ab der nächsten Runde wirksam",
+  "switchFailed": "Moduswechsel fehlgeschlagen",
+  "descriptions": {
+    "full": "Führt alles aus, ohne zu fragen. Was du ausdrücklich verboten hast, wird trotzdem gestoppt.",
+    "jev": "Lesen und Bearbeiten im Projekt laufen direkt; Befehle, Änderungen außerhalb des Projekts und Aktionen nach außen genehmigt Jev für dich und fragt dich nur, wenn es unsicher ist.",
+    "ask": "Nur Lesen läuft direkt; jede Bearbeitung, jeder Befehl und jede Aktion nach außen fragt dich zuerst."
+  }
+}

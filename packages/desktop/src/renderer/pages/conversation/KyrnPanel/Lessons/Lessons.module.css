@@ -1,0 +1,229 @@
+/* The lessons tab: the page's own black and white, hairlines between rows, nothing tinted. */
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  color: var(--text-primary);
+}
+
+.toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border-base);
+}
+
+.count {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search {
+  flex: none;
+  padding: 8px 12px 0;
+}
+
+/* What the lessons did in this session: a few lines in the secondary text colour, the newest first. */
+.notes {
+  flex: none;
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-base);
+  list-style: none;
+}
+
+.note {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.noteTime {
+  flex: none;
+  color: var(--bg-6);
+  font-variant-numeric: tabular-nums;
+}
+
+.noteText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 12px;
+}
+
+.quiet {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row + .row {
+  border-top: 1px solid var(--border-light, var(--border-base));
+}
+
+/* Retired and replaced lessons are listed under "all", greyed. */
+.row[data-status='retired'],
+.row[data-status='superseded'] {
+  opacity: 0.55;
+}
+
+.rowButton:global(.arco-btn) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  height: auto;
+  padding: 8px 12px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: start;
+  white-space: normal;
+}
+
+.rowButton:global(.arco-btn:not(:disabled):hover) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.rowButton:global(.arco-btn[aria-expanded='true']) {
+  background: transparent;
+}
+
+.rowButton:global(.arco-btn:focus-visible) {
+  outline: 1px solid var(--text-primary);
+  outline-offset: -1px;
+}
+
+.rowLesson {
+  display: block;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+/* The kind, and where it applies or what became of it: small outlined chips before the words. */
+.kind,
+.mark {
+  display: inline-block;
+  margin-inline-end: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--border-base);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 16px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.kind {
+  color: var(--text-primary);
+}
+
+.rowMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* One line while the row is closed; all of it once it is open. */
+.trigger {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowButton:global(.arco-btn[aria-expanded='true']) .trigger {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* At the end of the line, with or without the trigger before it. */
+.uses {
+  flex: none;
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A `code` span of a lesson, as the chat shows inline code (the Markdown view's `code:not(pre code)`). */
+.code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-3);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  font-weight: bold;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 10px;
+}
+
+.detailLine,
+.confirm {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.confirm {
+  color: var(--text-primary);
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

@@ -1,0 +1,1479 @@
+{
+  "send": "发送",
+  "cancel": "取消",
+  "save": "保存",
+  "delete": "删除",
+  "confirm": "确定",
+  "file": "文件",
+  "folder": "文件夹",
+  "upload": "上传",
+  "model": "模型",
+  "skills": "技能",
+  "workspace": "项目",
+  "settings": "设置",
+  "system": "系统",
+  "about": "关于我们",
+  "back": "返回聊天",
+  "goBack": "返回",
+  "add": "添加",
+  "edit": "编辑",
+  "website": "官网",
+  "version": "版本号",
+  "contact": "联系我们",
+  "github": "GitHub",
+  "loading": "请稍候...",
+  "copy": "复制",
+  "reply": "引用",
+  "openInBuiltinBrowser": "内置浏览器打开",
+  "openInSystemBrowser": "系统浏览器打开",
+  "copySuccess": "已复制",
+  "copyFailed": "复制失败",
+  "download": "下载",
+  "close": "关闭",
+  "retry": "重试",
+  "reload": "重新加载",
+  "technical_details": "技术详情",
+  "error_details": "错误详情",
+  "troubleshooting": "故障排除",
+  "select": "选择",
+  "expandMore": "展开更多",
+  "collapse": "收起",
+  "viewMoreLines": "查看更多 ({{count}} 行)",
+  "viewMoreLines_one": "查看更多 ({{count}} 行)",
+  "viewMoreLines_other": "查看更多 ({{count}} 行)",
+  "success": "成功",
+  "error": "错误",
+  "saveSuccess": "保存成功",
+  "saveFailed": "保存失败",
+  "unknownError": "未知错误",
+  "confirmDelete": "确认删除",
+  "deleteSuccess": "删除成功",
+  "deleteFailed": "删除失败",
+  "default": "默认",
+  "defaultModel": "默认模型",
+  "escToCancel": "按 ESC 取消",
+  "create": "创建",
+  "createSuccess": "创建成功",
+  "failed": "失败",
+  "browse": "浏览",
+  "remove": "移除",
+  "show": "显示",
+  "hide": "隐藏",
+  "goToSettings": "前往设置",
+  "forward": "前进",
+  "historyBack": "后退",
+  "more": "更多",
+  "refresh": "刷新",
+  "readOnly": "只读",
+  "tray.showWindow": "显示 TupAI",
+  "tray.newChat": "新建对话",
+  "tray.closeToTray": "隐藏到托盘",
+  "tray.hideToMenuBar": "隐藏到菜单栏",
+  "tray.about": "关于 TupAI",
+  "tray.restart": "重启应用",
+  "tray.quit": "退出",
+  "tray.pauseAll": "暂停所有任务",
+  "tray.checkUpdate": "检查更新",
+  "tray.recentChats": "最近对话",
+  "tray.untitled": "未命名",
+  "backendStartup": {
+    "incompatibleRuntime": {
+      "title": "当前系统不支持内置后端",
+      "description": "TupAI 已打开，但本地服务无法在当前 Linux 版本上运行。请升级到受支持的 Linux 发行版后重启 TupAI。",
+      "requiredVersions": "需要的运行时符号：{{versions}}"
+    },
+    "incompleteInstallation": {
+      "title": "TupAI 安装不完整",
+      "description": "当前安装缺少必要的本地资源，TupAI 的本地服务无法启动。请下载并重新安装最新版 TupAI；如果重新安装后仍然出现，请检查系统安全软件或杀毒软件是否隔离了 TupAI 的文件。",
+      "downloadLatest": "下载最新版",
+      "runtimeComponentDescription": "当前安装缺少必要的内置运行组件，{{resource}} 无法启动。请重新安装最新版 TupAI；如果重新安装后仍然出现，请检查系统安全软件或杀毒软件是否隔离了 TupAI 组件。"
+    },
+    "packageArchitectureMismatch": {
+      "title": "TupAI 安装包架构不匹配",
+      "description": "当前 TupAI 安装包是 {{packageArch}}，但这台 Mac 是 {{deviceArch}}。你可能下载了错误的安装包，请重新下载并安装 {{expectedArch}} 版本。"
+    },
+    "dataMigration": {
+      "title": "本地数据迁移失败",
+      "description": "TupAI 已打开，但本地服务在初始化本地数据时停止。重复安装 TupAI 未必能解决此问题。应用日志记录了本地数据库迁移停在哪一步。"
+    },
+    "databaseNewerThanApp": {
+      "title": "需要更新 TupAI",
+      "description": "本地数据由更高版本的 TupAI 创建，当前版本无法打开。请将 TupAI 更新到最新版本即可继续使用，数据完好无损，无需重装或重置数据。",
+      "descriptionWithVersion": "本地数据由比当前版本 v{{currentVersion}} 更新的 TupAI 创建，当前版本无法打开。请将 TupAI 更新到最新版本即可继续使用，数据完好无损，无需重装或重置数据。"
+    },
+    "localDataRepair": {
+      "title": "本地数据修复失败",
+      "description": "TupAI 已打开，但本地服务在准备本地启动数据时停止，例如 assistant 或智能体记录。重新安装 TupAI 可能无法解决此问题。应用日志记录了哪些本地数据未能准备好。"
+    },
+    "startupDirectory": {
+      "title": "启动目录不可用",
+      "description": "TupAI 已打开，但由于配置的工作目录或日志目录不存在、不可访问或权限受限，本地服务无法启动。请确认这些目录存在且可写，然后重启 TupAI。"
+    },
+    "recoverableDatabaseCorruption": {
+      "title": "本地数据已损坏",
+      "description": "检测到本地数据库损坏，TupAI 无法继续启动。确认后将备份旧数据库，并创建新的本地数据库继续启动。历史会话将不再显示，旧数据库会保留为备份文件。",
+      "confirmRebuild": "备份旧库并重建新库",
+      "rebuildFailed": "备份旧库并重建新库失败",
+      "confirmDialog": {
+        "title": "确认重建数据库？",
+        "content": "此操作会备份当前损坏的数据库并创建一个全新空库。历史会话将不再显示（旧库会保留为备份文件）。确定继续吗？",
+        "okText": "确认重建",
+        "cancelText": "取消"
+      }
+    },
+    "transientConcurrentStartup": {
+      "title": "TupAI 正在启动",
+      "description": "此窗口打开时，另一个 TupAI 启动进程仍在使用本地数据。这是暂时的，您的数据是安全的——无需重新安装。请稍候片刻后重试，或重启 TupAI。"
+    },
+    "pendingSlow": {
+      "title": "正在启动",
+      "description": "本地服务正在启动，请稍候。若长时间无响应，可退出应用后重试。"
+    },
+    "exited": {
+      "title": "启动未完成",
+      "description": "本地服务未能完成启动并已退出。请重启应用；若反复出现，请查看应用日志。"
+    },
+    "portReportTimeout": {
+      "title": "启动超时",
+      "description": "本地服务未在预期时间内完成启动。请重启应用；若反复出现，请查看应用日志。"
+    },
+    "startupFailed": {
+      "title": "启动失败",
+      "description": "本地服务启动失败。请重启应用；若反复出现，请查看应用日志。"
+    },
+    "openLogs": "打开日志文件夹",
+    "openLogsFailed": "无法打开日志文件夹"
+  },
+  "fileAttach.addFiles": "添加文件",
+  "fileAttach.myDevice": "从设备上传",
+  "fileAttach.failed": "上传失败",
+  "fileAttach.uploading": "上传中...",
+  "fileAttach.uploadSuccess": "上传成功",
+  "fileAttach.cancelUpload": "取消上传",
+  "expand": "展开",
+  "name": "名称",
+  "added": "已添加",
+  "status": "状态",
+  "agentMode": "Agent 模式",
+  "refreshSuccess": "刷新成功",
+  "import": "导入",
+  "processing": "处理中...",
+  "optional": "（可选）",
+  "clear": "清除",
+  "selectedCount": "已选 {{count}}",
+  "selectedSkills": "已选技能",
+  "aiAssistant": "AI 助手",
+  "kyrn": {
+    "settings": "TupAI 设置",
+    "judge": "判定器配置",
+    "reload": "重新加载",
+    "starting": "正在启动 TupAI…",
+    "startingHint": "正在连接本机的 TupAI 内核，读取模型与判定器配置。",
+    "startupError": "TupAI 启动失败",
+    "hiveView": {
+      "title": "蜂群",
+      "agents": "子智能体",
+      "open": "打开蜂群",
+      "inspect": "查看 {{name}}",
+      "summary": "{{active}} 个进行中 · 已完成 {{done}} / 共 {{total}}",
+      "summaryEnded": "已完成 {{done}} / 共 {{total}}",
+      "summaryUnfinished": "已完成 {{done}} / 共 {{total}} · {{unfinished}} 个没做完",
+      "counts": "运行中 {{running}} · 已完成 {{done}} · 失败 {{failed}}",
+      "none": "本会话还没有子智能体。",
+      "details": "信息流与记录",
+      "pending": "等待蜂群成员状态",
+      "unknown": "状态不可用",
+      "lastStep": "{{status}} · 上一步：{{step}}",
+      "runs": "蜂群运行记录",
+      "graph": "协作关系图",
+      "graphHint": "线越粗，送达越多。点一个成员打开它的那一行；指向一条线，看它送达了什么。",
+      "map": "连接图",
+      "legend": "图例",
+      "legendDelivery": "送达",
+      "legendCorrection": "纠正",
+      "legendConflict": "争议",
+      "legendReport": "回报",
+      "nodeSent": "发 {{count}}",
+      "nodeReceived": "收 {{count}}",
+      "lineDelivery": "{{from}} → {{to}}：送达 {{count}} 条",
+      "lineDelivery_one": "{{from}} → {{to}}：送达 {{count}} 条",
+      "lineDelivery_other": "{{from}} → {{to}}：送达 {{count}} 条",
+      "lineCorrection": "{{from}} 纠正了 {{to}} 的发现",
+      "lineConflict": "{{from}} 与 {{to}} 的发现有争议",
+      "lineReport": "{{from}} 已向 TupAI 回报",
+      "deliveries": "信息流",
+      "noDeliveries": "尚无已确认的送达。",
+      "board": "共享看板",
+      "noNotes": "尚无共享发现。",
+      "context": "执行上下文",
+      "contextHint": "记录的消息和已完成的工具输出，不是完整的模型提示词。工具输出会在完成后显示。",
+      "focus": "分配任务",
+      "missingFocus": "此次运行未记录分配任务。",
+      "current": "当前活动",
+      "records": "执行记录",
+      "noRecords": "尚未收到执行记录。",
+      "raw": "原始证据",
+      "input": "输入",
+      "output": "输出",
+      "assistant": "蜂群成员消息",
+      "thinking": "已发布的思考",
+      "user": "任务输入",
+      "custom": "harness 消息",
+      "tool": "工具",
+      "waitingOutput": "等待已完成的工具输出。",
+      "noText": "没有文本输出。",
+      "selectBee": "选择一个蜂群成员查看其活动。",
+      "unknownSource": "未知来源",
+      "noteMissing": "未记录发现。",
+      "allFlow": "全部送达",
+      "beeFlow": "{{name}} 的送达",
+      "audit": "Jev 判定",
+      "waitingRun": "正在等待这次蜂群运行的记录。",
+      "recordedAt": "记录时间 {{time}}",
+      "beeMissing": "此蜂群成员不在已记录快照中。",
+      "snapshot": "最近上报状态",
+      "updated": "上次更新 {{time}}",
+      "runTitle": {
+        "tasks": "{{count}} 个任务",
+        "tasks_one": "{{count}} 个任务",
+        "tasks_other": "{{count}} 个任务",
+        "chain": "{{count}} 步的任务链",
+        "chain_one": "{{count}} 步的任务链",
+        "chain_other": "{{count}} 步的任务链"
+      },
+      "choosingRoles": "正在为 {{count}} 个子代理选择角色、模型和思考强度…",
+      "choosingRoles_one": "正在为 {{count}} 个子代理选择角色、模型和思考强度…",
+      "choosingRoles_other": "正在为 {{count}} 个子代理选择角色、模型和思考强度…",
+      "activity": {
+        "notesReceived": "← 收到其他蜂群成员的 {{count}} 条发现",
+        "notesReceived_one": "← 收到其他蜂群成员的 {{count}} 条发现",
+        "notesReceived_other": "← 收到其他蜂群成员的 {{count}} 条发现",
+        "lateNotes": "← 最后一轮：{{count}} 条迟到的发现",
+        "lateNotes_one": "← 最后一轮：{{count}} 条迟到的发现",
+        "lateNotes_other": "← 最后一轮：{{count}} 条迟到的发现",
+        "askedFindings": "← 被问到目前有哪些发现",
+        "toldWrapUp": "← 被要求收尾并提交报告",
+        "toolFailed": "{{tool}} 失败",
+        "retry": "重试 {{attempt}}/{{maxAttempts}}：{{message}}",
+        "modelError": "模型错误：{{message}}",
+        "compacting": "正在压缩上下文"
+      },
+      "errors": {
+        "cancelled": "运行已取消",
+        "stoppedByUser": "已被用户停止",
+        "endedByUser": "已被用户结束",
+        "stalledModel": "模型已 {{duration}} 没有任何动静",
+        "stalledTool": "{{tool}} 调用已 {{duration}} 没有任何动静",
+        "timeBudget": "已用完 {{duration}} 的时间预算",
+        "timeBudgetReached": "已用完时间预算",
+        "noReportInTime": "{{reason}}；被要求后 {{duration}} 内没有提交报告",
+        "modelFailed": "模型请求失败",
+        "modelAborted": "模型请求已中止",
+        "retriesExhausted": "模型请求多次重试后仍然失败",
+        "exitedCode": "子代理在完成前退出，退出码 {{exitCode}}",
+        "exitedSignal": "子代理在完成前被 {{signal}} 终止",
+        "exitedKilled": "子代理在完成前被信号终止",
+        "chainBroken": "未开始：前一步（「{{step}}」）没有完成",
+        "detail": "{{reason}}：{{detail}}"
+      }
+    },
+    "judgeView": {
+      "empty": "本会话还没有判定记录。",
+      "question": "判定什么",
+      "result": "判定结果",
+      "action": "对执行的作用",
+      "details": "回答与证据",
+      "raw": "原始记录",
+      "answers": "模型回答",
+      "noResult": "没有记录到可读的结果",
+      "unreported": "未记录",
+      "scoreValue": "评分：{{value}}",
+      "latency": "{{ms}} 毫秒",
+      "more": "另有 {{count}} 项",
+      "batch": "本条记录涵盖的候选项：{{count}} 个。",
+      "batchFailures": "未得到回答、已回退到默认策略：{{count}} 个。",
+      "changedThinking": "思考强度：{{from}} → {{to}}",
+      "sentHints": "发给主模型的提示",
+      "unlinked": "独立记录",
+      "unlinkedHint": "这条记录没有轮次关联信息，因此单独显示，不会与时间相近的记录合并。",
+      "state": {
+        "pending": "等待中",
+        "returned": "判定已返回",
+        "confirmed": "作用已确认",
+        "shadow": "影子模式",
+        "fallback": "回退",
+        "late": "晚到",
+        "rule": "规则判定",
+        "ended": "等待已结束",
+        "unknown": "结果未知"
+      },
+      "actions": {
+        "toRuntime": "判定已交给执行层；这不代表操作已经完成。",
+        "observeOnly": "影子模式：仅记录用于对比，执行没有依据这次判定改变。",
+        "useDefault": "已回退到该判定点的默认策略。回退不等于放行：风险判定和蜂群闸门的默认策略偏保守。",
+        "lateIgnored": "这一轮已经开始，这次晚到的判定没有改变它。",
+        "waiting": "正在等待判定结果。",
+        "waitEnded": "等待或任务已结束，没有记录到最终判定。",
+        "recordedOnly": "有记录，但没有确认它对执行产生了作用。",
+        "mainGiven": "下面记录的调整或提示已应用到主模型。",
+        "allowPublish": "允许发布。实际发布了什么，请查看共享看板。",
+        "denyPublish": "不允许发布这条候选发现。",
+        "allowDelivery": "允许投递，但还没有送达回执。",
+        "denyDelivery": "不允许把这条发现投递给该蜂群成员。",
+        "delivered": "已有回执确认这条发现送达了接收方。"
+      },
+      "questions": {
+        "preflight": "这条请求应该如何处理？",
+        "interjection": "这次插话是纠正、后续要求，还是旁支问题？",
+        "admission": "哪些工具输出片段应该进入上下文？",
+        "testLog": "测试日志的哪些部分应该交给模型？",
+        "forget": "这段旧的工具输出还需要保留全文吗？",
+        "compaction": "哪些旧结果可以裁剪？",
+        "skills": "哪些技能与当前任务相关？",
+        "locate": "哪些文件最可能相关？",
+        "routing": "每个子任务适合什么角色和思考强度？",
+        "publish": "这条发现值得分享给其他蜂群成员吗？",
+        "deliver": "这条发现对接收的蜂群成员有帮助吗？",
+        "browser": "浏览器下一步该做什么？",
+        "recall": "哪些过往经验现在适用？",
+        "capture": "这是一条长期有效的纠正或偏好吗？",
+        "outcome": "这一轮学到绕过办法了吗？",
+        "worth": "这条经验值不值得记？",
+        "merge": "要和已有经验合并吗？",
+        "applied": "经验有没有照做？",
+        "risk": "这个操作需要用户确认吗？",
+        "drift": "当前工作还在正轨上吗？",
+        "completion": "这次改动还需要验证吗？",
+        "notify": "这条通知应该何时送达模型？",
+        "cache": "会话缓存需要继续保温吗？",
+        "other": "已记录的判定",
+        "rewind": "这条路是否走进了死胡同、值得回滚？",
+        "goalMet": "目标达成了吗？",
+        "outputDrift": "输出是否违反了你的规则？",
+        "taskFrame": "这条消息改变了任务帧吗？",
+        "constraint": "这次调用是否违反了你的约束？",
+        "capabilities": "这个任务需要哪些能力？",
+        "diagnostics": "这些诊断应该何时告诉模型？",
+        "patch": "子代理的补丁是否在任务范围内？",
+        "review": "每条评审发现有多严重？",
+        "board": "工作进展到哪一步了？",
+        "relate": "这条发现对之前的发现意味着什么？",
+        "approval": "这一步是任务需要、也是你会预期的做法吗？"
+      },
+      "fields": {
+        "turnType": "任务类型",
+        "gear": "任务档位",
+        "thinking": "思考强度",
+        "agent": "建议角色",
+        "strength": "模型强度",
+        "drop": "建议过滤",
+        "keep": "建议保留",
+        "kind": "内容类型",
+        "score": "评分",
+        "hide": "建议隐藏的技能",
+        "relevant": "相关技能",
+        "apply": "建议采用的经验",
+        "applied": "照做了",
+        "notApplied": "没照做",
+        "publish": "允许发布",
+        "deliver": "允许投递",
+        "path": "候选文件",
+        "result": "结果",
+        "reason": "原因",
+        "keepResult": "保留结果",
+        "keepCall": "保留调用",
+        "broken": "违反的规则",
+        "open": "要打开的能力",
+        "errors": "错误",
+        "warnings": "警告",
+        "withinTask": "在任务范围内",
+        "unrelated": "无关文件",
+        "judged": "已判定的文件",
+        "priorities": "优先级",
+        "phase": "阶段",
+        "focus": "正在处理的验收项",
+        "needsUser": "需要用户",
+        "update": "重写看板",
+        "relation": "关系",
+        "operation": "下一步",
+        "target": "目标元素",
+        "probability": "概率",
+        "omit": "省略的日志段",
+        "key": "值得告诉你的事件"
+      },
+      "values": {
+        "true": "是",
+        "false": "否",
+        "yes": "是",
+        "no": "否",
+        "unsure": "不确定",
+        "unknown": "未知",
+        "chat": "闲聊",
+        "chat_question": "概念问答",
+        "quick_lookup": "快速查找",
+        "single_edit": "单处修改",
+        "multi_step_task": "多步骤任务",
+        "research": "调研",
+        "design_discussion": "方案讨论",
+        "light": "轻量",
+        "standard": "标准",
+        "heavy": "重度",
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "keep": "保留",
+        "shrink": "缩短",
+        "capture": "记录",
+        "skip": "跳过",
+        "error": "错误",
+        "result": "有效结果",
+        "progress": "过程输出",
+        "warning": "警告",
+        "passing": "检查通过",
+        "other": "其他",
+        "allow": "无需额外确认",
+        "confirm": "需要用户确认",
+        "now": "立即送达",
+        "next_turn": "留到下一轮",
+        "drop": "丢弃",
+        "on_track": "在正轨上",
+        "detour": "绕路",
+        "drift": "偏离",
+        "loop": "陷入循环",
+        "done": "无需提醒",
+        "nudge": "提醒验证",
+        "steer": "引导当前工作",
+        "followUp": "排入后续",
+        "warm": "继续保温",
+        "stop": "停止保温",
+        "default": "默认",
+        "finding": "发现",
+        "dead_end": "死路",
+        "decision": "决定",
+        "blocker": "阻塞",
+        "abstain": "判定器弃权",
+        "shadow": "影子模式",
+        "skipped": "用户跳过",
+        "timeout": "超时",
+        "all": "全部候选项失败",
+        "unreachable": "判定器不可达",
+        "unexpected": "意外错误",
+        "off": "关闭",
+        "continue": "继续",
+        "propose": "建议回滚",
+        "met": "已达成",
+        "ask": "询问用户",
+        "unjudged": "未判定",
+        "none": "无",
+        "new_task": "新任务",
+        "constraint": "新约束",
+        "correction": "纠正",
+        "subgoal": "新子目标",
+        "unclear": "说不准",
+        "hold": "暂缓",
+        "no_answer": "未及时得到回答",
+        "aborted": "已取消",
+        "auth": "判定器密钥被拒绝",
+        "payment_required": "判定服务需要付款方式",
+        "rate_limited": "判定器请求过于频繁",
+        "bad_request": "判定器拒绝了请求",
+        "server": "判定服务出错",
+        "invalid_response": "判定器的回答无法解析",
+        "verdict": "判定器已作答",
+        "learn": "记下绕过办法",
+        "reusable": "以后还用得上",
+        "one_off": "只关这一次",
+        "already_known": "早就知道",
+        "same": "同一条",
+        "refines": "说得更准",
+        "contradicts": "互相矛盾",
+        "supersedes": "更新了它",
+        "supports": "佐证它",
+        "unrelated": "无关",
+        "preference": "长期规则",
+        "approve": "放行",
+        "beyond": "超出你的要求",
+        "CLICK": "点击",
+        "TYPE_TEXT": "输入文字",
+        "SELECT": "从列表中选择",
+        "SCROLL_DOWN": "向下滚动",
+        "SCROLL_UP": "向上滚动",
+        "WAIT": "等页面更新",
+        "DONE": "已完成",
+        "BLOCKED": "无法继续",
+        "listing": "文件名或搜索匹配",
+        "content": "代码或文本",
+        "log": "构建或测试输出",
+        "data": "查到的事实"
+      },
+      "probabilityValue": "判定为「是」的概率：{{percent}}",
+      "optionProbability": "{{option}} {{percent}}",
+      "reasonValue": "原因：{{reason}}",
+      "fieldValue": "{{field}}：{{value}}",
+      "errorValue": "错误 · {{kind}}",
+      "noAnswerAfter": "{{duration}}内未得到回答",
+      "hints": {
+        "answered": "这条消息是在回答代理自己的提问：照此去做，不要再问。",
+        "resolve": "说法较宽泛且可能改动文件：先查看项目，说明所作的假设，只问在这里找不到的内容。",
+        "clarify": "请求看起来不够明确：先问一个关键问题。",
+        "side_question": "这是个题外问题：简短回答，然后继续主任务。",
+        "plan_first": "改动大或有风险：先写一个简短的计划再照做，只在无法撤销的步骤前暂停等待确认。",
+        "try_hive": "难度较高：如果原因不明或直接尝试不行，就改用蜂群。",
+        "try_delegate": "可以拆成相互独立的几部分：考虑交给子代理并行处理。"
+      },
+      "hintChips": {
+        "answered": "回复代理",
+        "resolve": "先自己查",
+        "clarify": "先澄清",
+        "side_question": "题外问题",
+        "plan_first": "先计划",
+        "try_hive": "卡住就用蜂群",
+        "try_delegate": "分头委派"
+      },
+      "answerWords": {
+        "preflight": {
+          "questions": {
+            "turn_type": "任务类型",
+            "is_side_question": "题外问题",
+            "needs_clarification": "太模糊，无法直接动手",
+            "needs_files_changed": "需要修改代码",
+            "needs_memory": "以往的笔记有帮助",
+            "swarm_worthy": "可拆成独立部分",
+            "plan_first": "改动大或有风险",
+            "task_complexity": "涉及范围",
+            "reasoning_depth": "推理深度",
+            "tool_complexity": "工具使用量"
+          },
+          "answers": {
+            "chat": "闲聊",
+            "chat_question": "概念问答",
+            "quick_lookup": "快速查找",
+            "single_edit": "单处修改",
+            "multi_step_task": "多步骤任务",
+            "research": "调研",
+            "design_discussion": "方案讨论",
+            "other": "其他情况"
+          },
+          "levels": {
+            "task_complexity": {
+              "0": "只是提问",
+              "1": "代码中的一处",
+              "2": "代码中的多处",
+              "3": "整个代码库"
+            },
+            "reasoning_depth": {
+              "0": "回忆或查找",
+              "1": "简单解释",
+              "2": "细致分析",
+              "3": "深入推理"
+            },
+            "tool_complexity": {
+              "0": "不用工具",
+              "1": "一两次读取",
+              "2": "多次调用并改文件",
+              "3": "大量调用并构建或测试"
+            }
+          }
+        },
+        "interjection": {
+          "questions": {
+            "kind": "消息属于哪种"
+          },
+          "answers": {
+            "correction": "纠正",
+            "addition": "追加的后续工作",
+            "side_question": "无关的提问",
+            "other": "其他情况"
+          }
+        },
+        "admission": {
+          "questions": {
+            "kind": "输出类型",
+            "chunk": "输出第 {{number}} 段"
+          },
+          "answers": {
+            "error": "错误",
+            "result": "有用的结果",
+            "progress": "过程输出",
+            "warning": "重复的警告",
+            "passing": "通过的检查",
+            "other": "其他情况"
+          }
+        },
+        "testLog": {
+          "questions": {
+            "part": "日志第 {{number}} 段"
+          },
+          "answers": {
+            "needed": "摘要之外还需要",
+            "not_needed": "有摘要就够了",
+            "unclear": "说不准"
+          }
+        },
+        "forget": {
+          "questions": {
+            "still_needed": "还要再用到完整输出"
+          }
+        },
+        "compaction": {
+          "questions": {
+            "kind": "结果类型",
+            "result_needed": "还需要完整结果",
+            "call_matters": "这次调用本身还重要"
+          },
+          "answers": {
+            "error": "错误",
+            "listing": "文件名或搜索匹配",
+            "content": "代码或文本",
+            "log": "构建或测试输出",
+            "data": "查到的事实",
+            "other": "其他情况"
+          }
+        },
+        "skills": {
+          "questions": {
+            "skill": "技能 {{number}} 有帮助"
+          }
+        },
+        "locate": {
+          "questions": {
+            "path": "文件 {{number}} 相关"
+          }
+        },
+        "routing": {
+          "questions": {
+            "agent": "工作类型",
+            "difficulty": "任务难度",
+            "reasoning": "需要多少推理"
+          },
+          "answers": {
+            "other": "都不是"
+          },
+          "levels": {
+            "difficulty": {
+              "0": "机械性工作",
+              "1": "常规工作",
+              "2": "需要仔细设计",
+              "3": "专家也觉得难"
+            },
+            "reasoning": {
+              "0": "几乎不需要",
+              "1": "需要一些",
+              "2": "需要很多",
+              "3": "多步深入推理"
+            }
+          }
+        },
+        "publish": {
+          "questions": {
+            "share_worthy": "值得分享",
+            "kind": "笔记类型"
+          },
+          "answers": {
+            "finding": "发现",
+            "dead_end": "死路",
+            "decision": "决定",
+            "blocker": "阻塞",
+            "other": "例行进展"
+          }
+        },
+        "deliver": {
+          "questions": {
+            "useful": "对接收的蜂群成员有帮助"
+          }
+        },
+        "browser": {
+          "questions": {
+            "operation": "下一步",
+            "click_target": "点哪里",
+            "type_text_target": "在哪里输入",
+            "select_target": "选哪一项"
+          },
+          "answers": {
+            "CLICK": "点击",
+            "TYPE_TEXT": "输入文字",
+            "SELECT": "从列表中选择",
+            "SCROLL_DOWN": "向下滚动",
+            "SCROLL_UP": "向上滚动",
+            "WAIT": "等页面更新",
+            "DONE": "已完成",
+            "other": "无法继续",
+            "none": "都不合适"
+          }
+        },
+        "recall": {
+          "questions": {
+            "lesson": "经验 {{number}} 适用"
+          }
+        },
+        "capture": {
+          "questions": {
+            "correction": "纠正了一个错误",
+            "preference": "定下一条长期规则"
+          }
+        },
+        "outcome": {
+          "questions": {
+            "way_out": "找到了另一条行得通的路"
+          }
+        },
+        "worth": {
+          "questions": {
+            "lesson": "经验 {{number}}"
+          },
+          "answers": {
+            "reusable": "以后还用得上",
+            "one_off": "只关这一次",
+            "already_known": "早就知道",
+            "unclear": "说不准"
+          }
+        },
+        "merge": {
+          "questions": {
+            "kept": "已有经验 {{number}}"
+          },
+          "answers": {
+            "same": "同一条经验",
+            "refines": "新的说得更准",
+            "contradicts": "互相矛盾",
+            "unrelated": "说的是别的事",
+            "unclear": "说不准"
+          }
+        },
+        "applied": {
+          "questions": {
+            "lesson": "经验 {{number}} 照做了"
+          }
+        },
+        "risk": {
+          "questions": {
+            "destructive": "会删除或无法撤销",
+            "requested": "是你要求的"
+          }
+        },
+        "drift": {
+          "questions": {
+            "course": "工作方向"
+          },
+          "answers": {
+            "on_track": "在正轨上",
+            "detour": "必要的绕路",
+            "drift": "偏离了",
+            "loop": "在原地打转",
+            "other": "说不准"
+          }
+        },
+        "completion": {
+          "questions": {
+            "claims_done": "说工作已完成",
+            "needs_check": "应该运行验证"
+          }
+        },
+        "notify": {
+          "questions": {
+            "urgency": "模型何时需要知道"
+          },
+          "answers": {
+            "now": "立即",
+            "next_turn": "当前这步做完后",
+            "drop": "不用告诉",
+            "other": "说不准"
+          }
+        },
+        "cache": {
+          "questions": {
+            "finished": "对话已结束",
+            "open": "有问题在等你回答"
+          }
+        },
+        "rewind": {
+          "questions": {
+            "dead_end": "同一做法反复失败",
+            "progress": "在取得进展"
+          }
+        },
+        "goalMet": {
+          "questions": {
+            "achieved": "目标已完全达成",
+            "needs_user": "没有你无法继续"
+          }
+        },
+        "outputDrift": {
+          "questions": {
+            "rule": "违反规则 {{number}}"
+          }
+        },
+        "taskFrame": {
+          "questions": {
+            "change": "对任务的改变"
+          },
+          "answers": {
+            "new_task": "新任务",
+            "constraint": "给工作加了一条规则",
+            "correction": "当前做法不对",
+            "subgoal": "同一任务的下一步",
+            "none": "没有改变"
+          }
+        },
+        "constraint": {
+          "questions": {
+            "constraint": "违反约束 {{number}}"
+          }
+        },
+        "capabilities": {
+          "questions": {
+            "capability": "需要能力 {{number}}"
+          }
+        },
+        "diagnostics": {
+          "questions": {
+            "more_edits_coming": "后面还有修改",
+            "warnings_are_style": "只有风格类警告"
+          }
+        },
+        "patch": {
+          "questions": {
+            "within_task": "没有超出任务范围",
+            "file": "任务需要改文件 {{number}}"
+          }
+        },
+        "review": {
+          "questions": {
+            "bug": "发现 {{number}} 是真问题",
+            "inScope": "发现 {{number}} 与这次改动有关"
+          }
+        },
+        "board": {
+          "questions": {
+            "phase": "正在做什么",
+            "needs_user": "需要你提供什么",
+            "focus": "正在做的事项",
+            "event": "事件 {{number}}",
+            "changed": "有新情况要告诉你"
+          },
+          "answers": {
+            "understanding": "在弄懂任务",
+            "planning": "在想怎么做",
+            "changing": "在改代码",
+            "checking": "在检查",
+            "fixing": "在修问题",
+            "waiting": "在等你",
+            "wrapping_up": "在收尾",
+            "stuck": "好像卡住了",
+            "other": "说不准",
+            "none": "都不是",
+            "key": "值得告诉你的消息",
+            "routine": "例行步骤",
+            "unclear": "说不准"
+          }
+        },
+        "relate": {
+          "questions": {
+            "relation": "对之前发现的影响"
+          },
+          "answers": {
+            "supersedes": "取代了它",
+            "contradicts": "与它矛盾",
+            "supports": "佐证它",
+            "none": "与它无关"
+          }
+        },
+        "approval": {
+          "questions": {
+            "verdict": "这一步属于哪种"
+          },
+          "answers": {
+            "needed": "任务需要的一步",
+            "beyond": "超出你的要求",
+            "unrelated": "与任务无关",
+            "unclear": "说不准"
+          }
+        }
+      },
+      "log": {
+        "thisTurn": "本轮",
+        "earlier": "显示更早的记录",
+        "latest": "跳到最新",
+        "times": "{{times}} 次"
+      }
+    },
+    "empty": "当前会话还没有这类记录。",
+    "quiet": "已 {{duration}} 没有活动",
+    "passed": "通过",
+    "filtered": "已过滤",
+    "image": "工具返回的图片",
+    "beeStatus": {
+      "queued": "排队中",
+      "starting": "启动中",
+      "thinking": "思考中",
+      "tool": "执行工具",
+      "retrying": "重试中",
+      "wrapping-up": "生成报告",
+      "done": "已完成",
+      "failed": "失败",
+      "stopped": "已停止",
+      "timed-out": "已超时"
+    },
+    "event": {
+      "preflight.pending": "正在归类",
+      "preflight.verdict": "归类结果",
+      "preflight.wait_end": "归类等待结束",
+      "decision": "判定",
+      "progress": "进度",
+      "agent_start": "任务开始",
+      "agent_settled": "任务结束",
+      "kyrn_rpc_closed": "TupAI 内核已关闭",
+      "auto_compaction_start": "正在压缩上下文",
+      "auto_compaction_end": "压缩结束",
+      "hive.note": "共享发现",
+      "hive.delivery": "已确认送达",
+      "hive.gate": "Jev 闸门",
+      "hive.manifest": "蜂群任务分配",
+      "bee.event": "执行步骤",
+      "memory.recalled": "引用经验",
+      "artifact.image": "图片",
+      "memory.stored": "经验已保存",
+      "memory.applied": "经验已照做",
+      "memory.retired": "经验已退役",
+      "memory.merged": "经验已合并",
+      "compaction_start": "正在压缩上下文…",
+      "compaction_end": "压缩结束",
+      "context.usage": "上下文占用",
+      "context.policy": "Beta 压缩模式",
+      "compaction.plan": "Beta 压缩计划",
+      "goal": {
+        "state": "目标状态"
+      },
+      "board": {
+        "update": "看板已更新",
+        "switched": "看板开关已切换"
+      },
+      "permissions": {
+        "mode": "权限模式",
+        "request": "请求授权",
+        "resolved": "授权已答复",
+        "approved": "未询问即运行"
+      },
+      "checkpoint": {
+        "taken": "已保存检查点",
+        "off": "检查点已关闭"
+      },
+      "rewind": {
+        "proposed": "建议回滚",
+        "done": "已回滚",
+        "undone": "已撤销回滚"
+      },
+      "ttsr": {
+        "interrupted": "输出因违反规则被打断"
+      },
+      "frame": {
+        "updated": "任务帧已更新"
+      },
+      "capability": {
+        "opened": "已打开能力"
+      },
+      "inherit": {
+        "found": "发现可继承的配置",
+        "rule": "已使用继承的规则"
+      },
+      "mcp": {
+        "started": "MCP 服务器已启动",
+        "failed": "MCP 服务器出错",
+        "tools_changed": "MCP 工具已变化"
+      },
+      "constraint": {
+        "blocked": "因你的约束被拦下"
+      },
+      "browser": {
+        "run": "浏览器任务",
+        "step": "浏览器步骤"
+      },
+      "diagnostics": {
+        "delivered": "诊断已告知模型",
+        "held": "诊断暂缓告知",
+        "dropped": "诊断已丢弃"
+      },
+      "background": {
+        "start": "后台任务已启动",
+        "exit": "后台任务已退出",
+        "stop": "后台任务已停止",
+        "match": "后台输出命中匹配"
+      },
+      "web": {
+        "fetch": "已抓取网页",
+        "search": "网页搜索"
+      },
+      "swarm": {
+        "worktree": {
+          "created": "已创建工作树",
+          "removed": "已移除工作树"
+        },
+        "patch": {
+          "ready": "补丁已就绪",
+          "applied": "补丁已应用"
+        }
+      }
+    },
+    "contextUsage": "上下文占用",
+    "contextPending": "等待新的上下文用量测量",
+    "betaActive": "Beta 已启用",
+    "betaShadow": "Beta 影子模式",
+    "betaOff": "Beta 已关闭",
+    "contextWaiting": "等待 TupAI 内核连接",
+    "contextTrigger": "{{tokens}} tokens 触发压缩",
+    "autoOff": "自动压缩已关闭",
+    "compacting": "正在压缩上下文…",
+    "compactionResults": "压缩效果（{{count}} 次）",
+    "noCompaction": "本会话尚无压缩记录。",
+    "betaApplied": "Beta 裁剪已应用",
+    "summaryApplied": "已采用摘要压缩",
+    "compactionAborted": "压缩已取消",
+    "compactionFailed": "压缩失败",
+    "compactionSavings": "上下文减少约 {{saved}}",
+    "compactionEstimate": "压缩后 tokens 为估算值；下次模型返回后更新用量。",
+    "cacheHit": "缓存命中",
+    "cachePending": "暂无缓存用量数据",
+    "cacheLabel": "会话缓存命中率：{{percent}}",
+    "cacheDetail": "会话累计：{{read}} 缓存读取 / {{total}} 总输入 tokens。总输入包含普通输入、缓存读取和缓存写入，不包含输出；压缩不会清零累计值。",
+    "brand": {
+      "tagline": "带判定内核的编程智能体",
+      "judge": {
+        "idle": "判定器待命",
+        "judging": "判定器正在判定",
+        "off": "判定器未启用"
+      },
+      "starters": {
+        "hint": "不知道从哪开始？试试这些：",
+        "understand": {
+          "title": "读懂这个项目",
+          "desc": "梳理结构、入口和关键模块",
+          "prompt": "请先通读这个项目，告诉我它的整体结构、主要入口和关键模块，再指出最值得先看的三个文件。"
+        },
+        "fix": {
+          "title": "定位并修复问题",
+          "desc": "从报错或现象出发，找到根因",
+          "prompt": "我遇到了一个问题：<在这里描述现象或粘贴报错>。请先复现并定位根因，再给出最小修复，改完后运行相关测试验证。"
+        },
+        "plan": {
+          "title": "规划一项改动",
+          "desc": "先出方案，确认后再动手",
+          "prompt": "我想实现：<在这里描述需求>。请先给出实现方案和涉及的文件，等我确认后再开始修改。"
+        }
+      }
+    },
+    "toolStatus": {
+      "pending": "等待中",
+      "in_progress": "进行中",
+      "completed": "已完成",
+      "failed": "失败"
+    },
+    "boardView": {
+      "title": "人话看板",
+      "switch": "这个项目的人话看板",
+      "switching": "正在切换…",
+      "afterTurn": "代理这一步做完就切换",
+      "unknown": "这个对话还没有人话看板。它只在 TupAI 的对话里、而且「功能」里开着人话看板时出现。",
+      "off": "打开后，代理每做一段，这里就用大白话告诉你：进展到哪了、正在做什么、哪些需要你确认。",
+      "cost": "只对这个项目生效。每次更新会调用一次模型。",
+      "empty": "等代理做一会儿，这里会用大白话告诉你进展",
+      "checks": "验收 {{done}}/{{total}}",
+      "ended": "已停下",
+      "done": "已完成",
+      "brief": "简要版",
+      "briefHelp": "这次模型没来得及写，先用固定的简短说明。",
+      "needsYou": "需要你确认",
+      "needsYouText": "代理在对话里等你回答。",
+      "quote": "引用到回复里",
+      "quoteHint": "点一条会引用到输入框，你发出去之前不会发送。",
+      "account": "它做了什么",
+      "earlierNotes": "更早的 {{count, number}} 条",
+      "earlierNotes_one": "更早的 {{count, number}} 条",
+      "earlierNotes_other": "更早的 {{count, number}} 条",
+      "phases": {
+        "understanding": "在弄懂任务",
+        "planning": "在想怎么做",
+        "changing": "在改代码",
+        "checking": "在检查",
+        "fixing": "在修问题",
+        "waiting": "在等你",
+        "wrapping_up": "在收尾",
+        "stuck": "好像卡住了"
+      },
+      "checks_one": "验收 {{done}}/{{total}}",
+      "checks_other": "验收 {{done}}/{{total}}",
+      "codes": {
+        "progress": {
+          "none": "还没有列出要做完的事。",
+          "all": "清单上的 {{total}} 件事都做完了。",
+          "all_one": "清单上的 {{total}} 件事都做完了。",
+          "all_other": "清单上的 {{total}} 件事都做完了。",
+          "some": "清单上 {{total}} 件事，做完了 {{done}} 件。",
+          "some_one": "清单上 {{total}} 件事，做完了 {{done}} 件。",
+          "some_other": "清单上 {{total}} 件事，做完了 {{done}} 件。"
+        },
+        "now": {
+          "understanding": "正在看代码和资料，先弄清楚要做什么。",
+          "planning": "正在想怎么做，还没有动手改。",
+          "changing": "正在改代码。",
+          "checking": "正在跑测试或检查，看改得对不对。",
+          "fixing": "检查发现了问题，正在修。",
+          "waiting": "停下来了，在等你回复。",
+          "wrapping_up": "手上的活做完了，正在收尾。",
+          "stuck": "好像在原地打转，可能需要你给个方向。",
+          "unclear": "正在干活。",
+          "focus": "{{now}}（在做：{{focus}}）"
+        },
+        "confirm": {
+          "waiting_reply": "它在等你回复。"
+        }
+      },
+      "notes": {
+        "looked": "看了 {{count, number}} 个文件或地方",
+        "looked_one": "看了 {{count, number}} 个文件或地方",
+        "looked_other": "看了 {{count, number}} 个文件或地方",
+        "changed_file": "改了 {{file}}",
+        "wrote_file": "写了 {{file}}",
+        "ran_command": "运行了 {{command}}",
+        "command_failed": "运行 {{command}} 出错了",
+        "check_passed": "检查通过了：{{command}}",
+        "check_failed": "检查没通过：{{command}}",
+        "item_done": "做完了一条：{{item}}",
+        "item_added": "清单上加了一条：{{item}}",
+        "helpers_sent": "派出 {{count, number}} 个助手：{{titles}}",
+        "helpers_sent_one": "派出 {{count, number}} 个助手：{{titles}}",
+        "helpers_sent_other": "派出 {{count, number}} 个助手：{{titles}}",
+        "helpers_back": "{{count, number}} 个助手回来了",
+        "helpers_back_one": "{{count, number}} 个助手回来了",
+        "helpers_back_other": "{{count, number}} 个助手回来了",
+        "permission_allowed": "你允许了：{{summary}}",
+        "permission_denied": "你没允许：{{summary}}",
+        "goal_round": "目标还没达成，TupAI 让它接着干（第 {{round, number}} 轮）{{reason}}",
+        "goal_met": "目标达成了：{{text}}",
+        "goal_paused": "目标暂停了{{reason}}",
+        "trouble_loop": "TupAI 发现它在重复同一步：{{detail}}",
+        "trouble": "TupAI 发现：{{detail}}",
+        "did": "用 {{tool}} 做了：{{what}}",
+        "said_quote": "它说：{{text}}",
+        "ended": "停下来了。",
+        "waiting_reply": "停下来了，在等你回复。"
+      }
+    },
+    "lessonsView": {
+      "filterLabel": "显示哪些经验",
+      "active": "在用",
+      "all": "全部",
+      "count": "{{count}} 条",
+      "count_one": "{{count}} 条",
+      "count_other": "{{count}} 条",
+      "search": "搜索经验",
+      "kinds": {
+        "correction": "纠正",
+        "preference": "规则",
+        "pitfall": "坑",
+        "workaround": "绕过办法",
+        "fact": "事实"
+      },
+      "everywhere": "到处适用",
+      "status": {
+        "retired": "已退役",
+        "superseded": "已被替代"
+      },
+      "uses": "召回 {{recalled}} · 照做 {{applied}}",
+      "origins": {
+        "user": "来自你的纠正或规则",
+        "outcome": "来自代理自己脱困的办法",
+        "model": "模型自己记下的",
+        "subagent": "来自子代理的报告",
+        "command": "用 /remember 记下的"
+      },
+      "updated": "更新于 {{date}}",
+      "editLabel": "经验内容",
+      "retire": "退役",
+      "retireConfirm": "让这条经验退役？以后不会再召回它。",
+      "loadFailed": "读不到经验库",
+      "saveFailed": "这条经验没有改成",
+      "empty": "这个项目还没有经验。TupAI 会从你的纠正、它自己脱困的办法和 /remember 里学到经验。",
+      "noneActive": "没有在用的经验。「全部」里还有已退役和已被替代的。",
+      "noMatch": "没有匹配的经验。",
+      "noProject": "本会话没有项目文件夹，只列出到处适用的经验。",
+      "notes": {
+        "label": "这次会话里经验的动向",
+        "recalled": "这一轮用上了 {{count}} 条",
+        "recalled_one": "这一轮用上了 {{count}} 条",
+        "recalled_other": "这一轮用上了 {{count}} 条",
+        "briefed": "子代理的简报带上了 {{count}} 条：{{task}}",
+        "briefed_one": "子代理的简报带上了 {{count}} 条：{{task}}",
+        "briefed_other": "子代理的简报带上了 {{count}} 条：{{task}}",
+        "applied": "照做了 {{count}} 条",
+        "applied_one": "照做了 {{count}} 条",
+        "applied_other": "照做了 {{count}} 条",
+        "retired": "退役：{{lesson}}",
+        "retiredUnused": "退役：{{lesson}}（{{count}} 次召回从未照做）",
+        "retiredUnused_one": "退役：{{lesson}}（{{count}} 次召回从未照做）",
+        "retiredUnused_other": "退役：{{lesson}}（{{count}} 次召回从未照做）",
+        "retiredContradicted": "退役：{{lesson}}（和你新的说法矛盾）",
+        "retiredForgotten": "退役：{{lesson}}（按你的要求）",
+        "mergedSame": "已并入：{{lesson}}",
+        "mergedRefines": "换成了说得更准的：{{lesson}}",
+        "mergedContradicts": "没有记下，和这条矛盾：{{lesson}}"
+      }
+    },
+    "activityLoadFailed": "无法加载协作记录，正在重试…",
+    "beeFailed": "这只蜂报告了一个错误。",
+    "beeCounts": {
+      "turns": "{{count}} 轮",
+      "turns_one": "{{count}} 轮",
+      "turns_other": "{{count}} 轮",
+      "tools": "{{count}} 次工具调用",
+      "tools_one": "{{count}} 次工具调用",
+      "tools_other": "{{count}} 次工具调用",
+      "shared": "分享 {{count}}",
+      "shared_one": "分享 {{count}}",
+      "shared_other": "分享 {{count}}",
+      "received": "收到 {{count}}",
+      "received_one": "收到 {{count}}",
+      "received_other": "收到 {{count}}"
+    },
+    "compactionTokens": "{{before}} → 约 {{after}} tokens",
+    "compactionKept": "保留 {{count}} 项结果",
+    "compactionKept_one": "保留 {{count}} 项结果",
+    "compactionKept_other": "保留 {{count}} 项结果",
+    "compactionPruned": "裁剪 {{count}} 项",
+    "compactionPruned_one": "裁剪 {{count}} 项",
+    "compactionPruned_other": "裁剪 {{count}} 项",
+    "compactionDropped": "移除 {{count}} 次调用",
+    "compactionDropped_one": "移除 {{count}} 次调用",
+    "compactionDropped_other": "移除 {{count}} 次调用",
+    "jevLine": {
+      "classifying": "{{judge}} 正在归类…",
+      "classified": "{{judge}} 归类为{{type}}",
+      "byRule": "按规则归类为{{type}}",
+      "shadow": "{{line}}（仅观察，没有生效）",
+      "late": "{{line}}（来晚了，这一轮没用上）",
+      "fallback": "{{judge}} 这次没给出明确分类，按默认方式继续",
+      "unanswered": "{{judge}} 这次没有回答，按默认方式继续",
+      "noJudge": "还没有可用的判定器，消息不会被归类。",
+      "setUp": "设置判定器",
+      "skipped": "已跳过归类",
+      "off": "归类已关闭"
+    },
+    "eventLine": {
+      "detail": "详情：{{detail}}",
+      "progress": {
+        "frame": "正在更新任务帧",
+        "lessons": "正在查看以往会话中的经验",
+        "skills": "正在挑选本次会话需要的技能",
+        "capabilities": "正在挑选这个任务需要的能力",
+        "goal_check": "正在检查目标是否达成",
+        "permissionReview": "Jev 在审批：{{summary}}"
+      },
+      "goal": {
+        "paused": "已暂停：{{reason}}",
+        "reason": {
+          "interrupted": "你打断了这次运行",
+          "modelCallFailed": "一次模型调用失败了",
+          "needsUser": "代理在等你回复",
+          "needsUserDetail": "代理需要你：{{detail}}",
+          "unjudged": "没有判定器能读出目标是否达成，也没有能证明还没做完的事",
+          "idle": "代理连续 {{count}} 次什么都没做就停下了",
+          "idle_one": "代理连续 {{count}} 次什么都没做就停下了",
+          "idle_other": "代理连续 {{count}} 次什么都没做就停下了",
+          "noProgress": "连续 {{count}} 次没有进展，告诉它接下来怎么做",
+          "noProgress_one": "连续 {{count}} 次没有进展，告诉它接下来怎么做",
+          "noProgress_other": "连续 {{count}} 次没有进展，告诉它接下来怎么做",
+          "noProgressDetail": "连续 {{count}} 次没有进展（{{detail}}），告诉它接下来怎么做",
+          "noProgressDetail_one": "连续 {{count}} 次没有进展（{{detail}}），告诉它接下来怎么做",
+          "noProgressDetail_other": "连续 {{count}} 次没有进展（{{detail}}），告诉它接下来怎么做",
+          "continuationsUsedUp": "续跑次数（{{count}} 次）用完了",
+          "continuationsUsedUp_one": "续跑次数（{{count}} 次）用完了",
+          "continuationsUsedUp_other": "续跑次数（{{count}} 次）用完了",
+          "minutesUsedUp": "时间额度（{{duration}}）用完了",
+          "sessionReopened": "会话重新打开了"
+        }
+      },
+      "frame": {
+        "unclearChange": "这条消息会怎样改变任务：「{{message}}」？"
+      },
+      "search": {
+        "notConfigured": "「{{source}}」不是可用的搜索来源（features.web.search）",
+        "failed": "{{source}} 出错：{{message}}",
+        "robotPage": "{{source}} 返回了人机验证页面：它把这个客户端当成了机器人",
+        "httpError": "{{source}} 返回了 HTTP {{status}}",
+        "noResults": "{{source}} 返回的页面里没有结果（没找到，或者页面结构变了）",
+        "unrelated": "{{source}} 返回的结果与查询毫不相关，搜索引擎把客户端当成机器人时常会这样"
+      },
+      "mcp": {
+        "line": "{{name}}：{{reason}}",
+        "projectUntrusted": "项目未被信任，而这个服务器是项目自己定义的",
+        "needsApproval": "它由项目定义（{{source}}），还没有获得批准；在 TupAI 中打开这个文件夹并允许一次，或者在 TupAI.json 中定义它",
+        "denied": "你没有允许这个项目的服务器启动",
+        "unreachable": "无法启动或连接到它",
+        "closed": "TupAI 还在等回应时，连接就关闭了",
+        "timeout": "它没有及时响应",
+        "aborted": "启动被取消了",
+        "rpc": "它返回了错误",
+        "protocol": "它的回应不符合 MCP 协议",
+        "startFailed": "启动失败了",
+        "crashedRestarting": "运行时崩溃了，TupAI 会重启它一次",
+        "crashedAgain": "又崩溃了，不会再重启",
+        "restartFailed": "崩溃后重启也失败了",
+        "restartFailedCause": "崩溃后重启也失败了：{{cause}}"
+      },
+      "rewind": {
+        "sameCommandFailed": "同一条命令已经失败了 {{count}} 次：{{command}}",
+        "sameCommandFailed_one": "同一条命令已经失败了 {{count}} 次：{{command}}",
+        "sameCommandFailed_other": "同一条命令已经失败了 {{count}} 次：{{command}}",
+        "monitorTrouble": "监控在这一轮里提醒了 {{count}} 次（{{kind}}：{{detail}}）",
+        "monitorTrouble_one": "监控在这一轮里提醒了 {{count}} 次（{{kind}}：{{detail}}）",
+        "monitorTrouble_other": "监控在这一轮里提醒了 {{count}} 次（{{kind}}：{{detail}}）",
+        "trouble": {
+          "loop": "原地打转",
+          "drift": "偏离任务"
+        }
+      },
+      "browser": {
+        "finished": "{{status}}：{{reason}}",
+        "openFailed": "页面无法在浏览器中打开。",
+        "openFailedPanel": "页面无法在应用的浏览器面板中打开。",
+        "launch": {
+          "noBrowser": {
+            "mac": "在 /Applications 中没有找到 Chrome、Chromium、Edge 或 Brave。请安装其中一个，或把 MU_CHROME 设为某个 Chromium 内核浏览器的可执行文件。",
+            "windows": "在 Program Files 或 %LOCALAPPDATA% 下没有找到 Chrome、Chromium、Edge 或 Brave。请安装其中一个，或把 MU_CHROME 设为它的 .exe 文件。",
+            "wsl": "WSL 中没有找到浏览器。请在 WSL 中安装一个，或者开启 WSL 的镜像网络模式；具体步骤见下方的 reason 字段。",
+            "other": "没有找到 Chrome、Chromium、Edge 或 Brave。请安装其中一个，或把 MU_CHROME 设为它的可执行文件；安装命令见下方的 reason 字段。"
+          },
+          "windowsBrowserUnusable": "无法使用 {{executable}}：WSL 只有在镜像网络模式下才能连接 Windows 这边的浏览器。",
+          "profileNoWindowsPath": "浏览器配置文件夹 {{profileDir}} 没有对应的 Windows 路径（未设置 WSL_DISTRO_NAME）。",
+          "browserSpawnFailed": "无法启动 {{command}}。",
+          "browserExitedOnStart": "浏览器在启动过程中退出了（退出码 {{exitCode}}）。",
+          "devtoolsPortTimeout": "浏览器没有及时打开 DevTools 端口。",
+          "cdpConnectTimeout": "连接浏览器超时。",
+          "cdpConnectFailed": "无法连接到浏览器。"
+        }
+      },
+      "permissions": {
+        "mode": "权限模式：{{mode}}",
+        "request": "等你授权：{{summary}}",
+        "waiting": "等你授权",
+        "answers": {
+          "once": "你允许了一次",
+          "session": "这次对话都允许",
+          "deny": "你没允许"
+        },
+        "about": "{{answer}}：{{summary}}",
+        "approved": {
+          "judge": "判定器放行了，没有问你：{{summary}}",
+          "grant": "这次对话已允许，没有再问：{{summary}}"
+        }
+      },
+      "board": {
+        "on": "看板：打开",
+        "off": "看板：关闭"
+      }
+    },
+    "gauges": {
+      "context": "上下文",
+      "contextHint": "模型下一次要读的内容占它上下文的 {{percent}}",
+      "cache": "缓存命中",
+      "cacheHint": "最近一轮缓存命中 {{turn}}，整个对话缓存命中 {{session}}",
+      "pending": "TupAI 下一次回复后显示"
+    }
+  },
+  "menu": {
+    "about": "关于 {{name}}",
+    "settings": "设置…",
+    "services": "服务",
+    "hide": "隐藏 {{name}}",
+    "hideOthers": "隐藏其他",
+    "unhide": "全部显示",
+    "quit": "退出 {{name}}",
+    "file": "文件",
+    "newChat": "新会话",
+    "closeWindow": "关闭窗口",
+    "edit": "编辑",
+    "undo": "撤销",
+    "redo": "重做",
+    "cut": "剪切",
+    "copy": "复制",
+    "paste": "粘贴",
+    "pasteAndMatchStyle": "粘贴并匹配样式",
+    "delete": "删除",
+    "selectAll": "全选",
+    "view": "视图",
+    "reload": "重新加载",
+    "forceReload": "强制重新加载",
+    "toggleDevTools": "切换开发者工具",
+    "resetZoom": "实际大小",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "toggleFullScreen": "切换全屏",
+    "window": "窗口",
+    "minimize": "最小化",
+    "zoomWindow": "缩放",
+    "bringAllToFront": "前置全部窗口",
+    "help": "帮助",
+    "checkForUpdates": "检查更新…",
+    "projectPage": "GitHub 上的 {{name}}"
+  },
+  "trayMenu": {
+    "runningTasks": "运行中的任务：{{count}}"
+  },
+  "noData": "暂无数据",
+  "labelWithSelectedCount": "{{label}}（{{selected}}/{{total}}）",
+  "selectedSkillsWithCount": "已选技能 · {{count}}",
+  "commandPalette": {
+    "title": "命令面板",
+    "placeholder": "搜索会话、设置和命令",
+    "groups": {
+      "conversations": "会话",
+      "settings": "设置",
+      "commands": "命令"
+    },
+    "searchMessages": "在消息中搜索「{{query}}」",
+    "empty": "没有匹配的结果",
+    "noConversations": "还没有会话。输入文字即可查找设置和命令。",
+    "openSettings": "打开设置",
+    "actions": {
+      "newConversation": "开始新会话",
+      "scheduledTasks": "打开定时任务"
+    },
+    "commandWaits": "等这一轮结束后执行"
+  },
+  "window": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "还原"
+  },
+  "collapseSidebar": "收起侧边栏",
+  "expandSidebar": "展开侧边栏",
+  "workPanel": {
+    "label": "工作面板",
+    "tabsLabel": "工作面板标签页",
+    "tabs": {
+      "board": "看板",
+      "judge": "判定",
+      "hive": "蜂群",
+      "lessons": "经验",
+      "files": "文件",
+      "preview": "预览",
+      "source": "源码",
+      "browser": "浏览器"
+    },
+    "close": "关闭工作面板",
+    "resize": "调整工作面板宽度",
+    "unread": "{{tab}}，有新内容",
+    "noProject": "本会话没有项目文件夹，没有可显示的文件或变更。",
+    "previewEmpty": "还没有可预览的内容。从会话中打开的文件会显示在这里。",
+    "previewHidden": "预览已隐藏。",
+    "browserEmpty": "还没有打开的网页。在上方输入网址或搜索内容；从会话中打开的网页也会显示在这里。"
+  },
+  "nodeRuntime": {
+    "title": "下载 Node.js？",
+    "message": "TupAI 用自带的 Node.js 运行智能体和工具，这份 Node.js 还没有下载。",
+    "detail": "将从 nodejs.org 下载 Node.js {{version}}（约 {{size}} MB），解压到：\n{{folder}}\n\n选「稍后」不会下载任何东西：TupAI 照常打开，需要 Node.js 的地方会提示，下次启动时再问。",
+    "download": "下载",
+    "later": "稍后",
+    "note": "Node.js 还没有下载，这个智能体暂时无法运行。下次启动 TupAI 时会再问。",
+    "toolNote": "Node.js 还没有下载，需要它的工具暂时无法运行。下次启动 TupAI 时会再问。"
+  }
+}

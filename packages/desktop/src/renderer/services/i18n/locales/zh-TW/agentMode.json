@@ -1,0 +1,30 @@
+{
+  "plan": "計畫模式",
+  "default": "預設",
+  "acceptEdits": "自動接受編輯",
+  "autoEdit": "自動編輯",
+  "auto_edit": "自動編輯",
+  "read-only": "唯讀",
+  "full-access": "完整存取",
+  "yolo": "全自動",
+  "yoloNoSandbox": "全自動（無沙盒）",
+  "auto": "自動",
+  "dontAsk": "僅預批准",
+  "bypass": "繞過檢查",
+  "bypassPermissions": "全自動",
+  "smart": "智能",
+  "build": "構建模式",
+  "full": "完全存取",
+  "jev": "Jev 審批",
+  "ask": "最小權限",
+  "permission": "權限",
+  "switchMode": "授權模式",
+  "switchSuccess": "模式切換成功",
+  "switchPendingNextTurn": "將在下一輪生效",
+  "switchFailed": "模式切換失敗",
+  "descriptions": {
+    "full": "什麼都不問，直接執行。你明確說過不許做的事仍然會被攔下。",
+    "jev": "專案裡的讀取和修改直接進行；命令、專案外的改動、對外操作由 Jev 替你審批，它拿不準的才問你。",
+    "ask": "只有讀取直接進行；改檔案、跑命令、對外操作都先問你。"
+  }
+}

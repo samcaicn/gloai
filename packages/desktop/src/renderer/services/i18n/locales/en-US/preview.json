@@ -1,0 +1,323 @@
+{
+  "loading": "Loading...",
+  "downloadFile": "Download file",
+  "closePreview": "Close preview",
+  "collapsePanel": "Collapse panel",
+  "maximizePanel": "Maximize",
+  "restorePanel": "Restore",
+  "source": "Source",
+  "code": "Code",
+  "preview": "Preview",
+  "editor": "Editor",
+  "previewEffect": "Preview",
+  "downloadMarkdown": "Download Markdown file",
+  "downloadCode": "Download {{language}} file",
+  "downloadDiff": "Download Diff file",
+  "addToChat": "Add to chat",
+  "openSplitScreen": "Open split screen",
+  "closeSplitScreen": "Close split screen",
+  "edit": "Edit",
+  "exitEdit": "Exit Edit",
+  "unsavedChangesTitle": "Unsaved Changes",
+  "unsavedChangesMessage": "You have unsaved changes. Are you sure you want to exit editing?",
+  "confirmExit": "Confirm Exit",
+  "continueEdit": "Continue Editing",
+  "closeTabTitle": "Close Tab",
+  "closeTabMessage": "The current content has not been saved. Do you want to save before closing?",
+  "closeTabsTitle": "Close Tabs",
+  "closeTabsMessage": "{{count}} tabs have unsaved changes. Save them before closing?",
+  "closeTabsMessage_one": "{{count}} tab has unsaved changes. Save it before closing?",
+  "closeTabsMessage_other": "{{count}} tabs have unsaved changes. Save them before closing?",
+  "saveAndClose": "Save and Close",
+  "closeWithoutSave": "Don't Save",
+  "pptTitle": "PowerPoint Presentation",
+  "pptOpenHint": "Click the button below to open in system application to view full content",
+  "pptOpenFile": "Open File",
+  "pptShowLocation": "Show Location",
+  "pptSystemAppHint": "Will be opened with default system app (PowerPoint, Keynote, or WPS)",
+  "openWithApp": "Open in {{app}}",
+  "openInSystemApp": "Open in system app",
+  "openInSystemSuccess": "Opened in system default app",
+  "openInSystemFailed": "Failed to open with system app",
+  "close": "Close",
+  "closeLeft": "Close Left",
+  "closeRight": "Close Right",
+  "closeOthers": "Close Others",
+  "closeAll": "Close All",
+  "closeUnmodified": "Close Unmodified",
+  "copyPath": "Copy Path",
+  "copyRelativePath": "Copy Relative Path",
+  "openLocation": "Show in folder",
+  "openLocationFailed": "Failed to open containing folder",
+  "readOnlyLabel": "Read-only preview",
+  "pathLabel": "Path",
+  "missingFile": {
+    "title": "File not found",
+    "openInNewTab": "Try opening in a new tab"
+  },
+  "noTabs": "No tabs open",
+  "openInPanelTooltip": "View in preview panel",
+  "mermaidTitle": "Mermaid Diagram",
+  "wavedromTitle": "WaveDrom Diagram",
+  "oversized": {
+    "title": "File too large to preview",
+    "detail": "File size {{size}} exceeds the {{threshold}} limit. Please open it in a system editor.",
+    "downloadUnavailable": "This file is too large to download here. Use “Open in system” instead."
+  },
+  "unsupported": {
+    "title": "Preview not supported for this format",
+    "detail": "{{format}} files cannot be previewed here. Open it in a system application instead.",
+    "downloadUnavailable": "This file cannot be downloaded here. Use “Open in system” instead."
+  },
+  "aiWriting": "AI is writing…",
+  "errors": {
+    "missingFilePath": "File path is missing",
+    "openWithoutPath": "Unable to open: file path is not provided",
+    "conversionFailed": "Conversion failed"
+  },
+  "office": {
+    "installLinkText": "Open officecli install guide",
+    "errors": {
+      "officecliNotFound": "officecli is not installed.",
+      "installFailed": "Failed to install officecli automatically. Check backend logs and retry.",
+      "portTimeout": "Preview service started but did not become ready in time. Retry.",
+      "startFailed": "Failed to start the Office preview service.",
+      "outsideSandbox": "This file is outside the current project sandbox."
+    },
+    "serverInstall": {
+      "hint": "TupAI is running on a server. Install the preview component on that server, then retry:",
+      "icuNote": "If it still fails to start, install the ICU library on the server (Debian/Ubuntu: apt-get install -y libicu-dev)."
+    }
+  },
+  "word": {
+    "title": "Word Document",
+    "loading": "Loading Word document...",
+    "invalid": "Please confirm the file is a valid Word document",
+    "loadFailed": "Failed to load Word document",
+    "watch": {
+      "loading": "Loading Word document...",
+      "installing": "Installing officecli...",
+      "startFailed": "Failed to start Word preview",
+      "installHint": "Requires officecli. It will be installed automatically."
+    }
+  },
+  "excel": {
+    "title": "Excel Spreadsheet",
+    "loading": "Loading Excel workbook...",
+    "invalid": "Please confirm the file is a valid Excel document",
+    "noSheets": "No worksheets found in this Excel file",
+    "sheetCount": "{{count}} worksheet(s)",
+    "convertFailed": "Excel conversion failed",
+    "loadFailed": "Failed to load Excel workbook",
+    "emptySheet": "This worksheet has no data",
+    "emptySheetHint": "Check whether the sheet contains data or images",
+    "watch": {
+      "loading": "Loading Excel file...",
+      "installing": "Installing officecli...",
+      "startFailed": "Failed to start Excel preview",
+      "installHint": "Requires officecli. It will be installed automatically."
+    }
+  },
+  "pdf": {
+    "title": "PDF Document",
+    "pathMissing": "PDF file path is missing",
+    "loadFailed": "Failed to load PDF document",
+    "unableDisplay": "Unable to display PDF file"
+  },
+  "html": {
+    "elementSelected": "Selected element: {{path}}",
+    "copySuccess": "Copied HTML snippet",
+    "inspectorEnabled": "Element inspector enabled. Click items in the preview to highlight them.",
+    "inspectorButton": "Element inspector",
+    "inspecting": "Inspecting...",
+    "selectedLabel": "Selected:",
+    "inspectorTooltip": "Click preview elements to inspect their HTML",
+    "downloadHtml": "Download HTML file",
+    "copyElementHtml": "Copy element HTML",
+    "viewElementInfo": "View element info",
+    "printedToConsole": "Element info logged to console",
+    "inspectElement": "Inspect element",
+    "inspectElementEnable": "Enable element inspector",
+    "inspectElementDisable": "Disable element inspector",
+    "frameTitle": "HTML preview"
+  },
+  "ppt": {
+    "loading": "Starting PPT preview...",
+    "installing": "Installing preview component...",
+    "startFailed": "Failed to start PPT preview",
+    "installHint": "Install OfficeCLI from the official iOfficeAI/OfficeCLI releases page"
+  },
+  "browser": {
+    "newTab": "New tab",
+    "addressPlaceholder": "Enter a URL or search",
+    "tabsLabel": "Open pages",
+    "closeTab": "Close {{title}}",
+    "copyAddress": "Copy Address",
+    "agentActiveTooltip": "The agent is operating this tab",
+    "tabLimitReached": "Browser tab limit reached ({{count}}). The oldest tab was reused.",
+    "agentFirstUseTitle": "The agent is using the in-app browser",
+    "agentFirstUseContent": "It can open pages, click and read content in this panel. Your sign-in state is kept between sessions.",
+    "agentFirstUseAction": "Open settings"
+  },
+  "saveConflict": "Could not save: this file changed on disk since you opened it. Reload to see the other changes — your edits are still here, unsaved.",
+  "persistQuotaExceeded": "Local storage is full, so open tabs can no longer be remembered for this project. Close some tabs or clear site data.",
+  "save": {
+    "tooltip": "Save changes (Ctrl/Cmd+S)",
+    "clean": "No unsaved changes"
+  },
+  "refresh": {
+    "label": "Refresh",
+    "tooltip": "Reload from disk",
+    "hasUpdate": "This file changed on disk — reload to see it",
+    "noSignalSource": "This file is not in the project, so changes will not be announced",
+    "unavailable": "This file cannot be located",
+    "failed": "Could not reload this file",
+    "confirmTitle": "Reload and lose unsaved changes?",
+    "confirmMessage": "This tab has unsaved changes. Reloading replaces them with what is on disk.",
+    "discardAndRefresh": "Discard changes and reload",
+    "officeNotWired": "Refreshing Office documents is not available yet — close and reopen the file to see changes."
+  },
+  "zoomIn": "Zoom in",
+  "zoomOut": "Zoom out",
+  "zoomReset": "Reset view",
+  "diagramZoomHint": "Scroll to zoom • Drag to pan • ESC to close",
+  "muBrowser": {
+    "stepNumber": "Step {{step}}",
+    "confidence": "{{percent}}% sure",
+    "noChange": "page unchanged",
+    "observing": "Looking at the page…",
+    "elapsed": "Time elapsed",
+    "steps": "Steps {{total}}",
+    "noSteps": "Nothing has been done yet",
+    "reason": "In TupAI’s words",
+    "goal": "Goal",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "takeover": "Take over",
+    "takeoverTip": "Pauses the run and gives you the keyboard. Press Resume when you are done: TupAI looks at the page again before it decides.",
+    "pausedShort": "Paused",
+    "stopping": "Stopping…",
+    "paused": {
+      "user": "Paused. When you resume, TupAI looks at the page again before it decides.",
+      "takeover": "You have taken over: use the page yourself. Press Resume when you are done and TupAI looks at the page again.",
+      "interaction": "You touched the page, so TupAI paused itself rather than click at the same time. When you resume, it looks at the page again."
+    },
+    "statusHint": {
+      "blocked": "TupAI found nothing on the page that would bring the goal closer, and stopped.",
+      "needs_confirmation": "The action looked irreversible and was not allowed, so TupAI did not do it.",
+      "budget": "The run used up its step limit.",
+      "stopped": "You stopped this run.",
+      "failed": "Something went wrong while browsing; the run did not finish."
+    },
+    "detachedHint": "TupAI lost its connection to this page, so this run cannot go on.",
+    "verb": {
+      "click": "Click",
+      "fill": "Type into",
+      "select": "Select",
+      "scroll": "Scroll",
+      "wait": "Wait",
+      "none": "No target found",
+      "other": "Act on"
+    },
+    "status": {
+      "done": "Done",
+      "blocked": "Blocked",
+      "needs_confirmation": "Needs confirmation",
+      "stopped": "Stopped",
+      "budget": "Out of steps",
+      "read": "Page read",
+      "failed": "Failed",
+      "ended": "Ended",
+      "detached": "Disconnected"
+    },
+    "notice": {
+      "download": "Download blocked: {{detail}}",
+      "permission": "Permission request denied: {{detail}}",
+      "navigation": "Blocked an address that is not a web page: {{detail}}",
+      "popup": "Pop-up blocked: {{detail}}"
+    },
+    "confirm": {
+      "title": "TupAI wants to do something that may be irreversible",
+      "action": "Action",
+      "page": "Page",
+      "allow": "Allow",
+      "deny": "Deny",
+      "countdown": "Denied automatically in {{seconds}} s",
+      "untrusted": "The text above comes from the web page. Trust what the page itself shows."
+    },
+    "detachCause": "Cause",
+    "detachReason": {
+      "tab_closed": "The tab was closed.",
+      "connection": "TupAI’s browsing session ended before the run finished.",
+      "devtools": "The developer tools were opened on this page.",
+      "crashed": "The page crashed."
+    },
+    "permission": {
+      "location": "location",
+      "media": "camera or microphone",
+      "notifications": "notifications",
+      "clipboard": "clipboard",
+      "screen": "screen capture",
+      "midi": "MIDI devices",
+      "fullscreen": "full screen",
+      "pointerLock": "mouse lock",
+      "devices": "USB, serial or HID devices",
+      "storage": "storage access",
+      "openExternal": "opening another app",
+      "protectedContent": "protected content playback",
+      "windows": "window management"
+    },
+    "end": {
+      "stopped_by_user": "Stopped by the person watching.",
+      "max_steps": "Stopped after {{count}} actions.",
+      "max_steps_one": "Stopped after {{count}} action.",
+      "max_steps_other": "Stopped after {{count}} actions.",
+      "no_judge": "No judge could choose an action ({{judgeReason}}).",
+      "no_progress": "The judge found no operation that makes progress.",
+      "not_confirmed": "“{{label}}” looks irreversible and was not confirmed.",
+      "no_value": "No value could be produced for “{{label}}”.",
+      "stuck": "{{count}} actions in a row changed nothing.",
+      "stuck_one": "{{count}} action changed nothing.",
+      "stuck_other": "{{count}} actions in a row changed nothing."
+    },
+    "judgeReason": {
+      "shadow": "shadow mode: its answer is only recorded",
+      "abstain": "the judge abstained",
+      "off": "the judge is off",
+      "noVerdict": "no verdict",
+      "error": {
+        "timeout": "the judge timed out",
+        "aborted": "the judge call was cancelled",
+        "unreachable": "the judge could not be reached",
+        "auth": "the judge’s key was rejected",
+        "payment_required": "the judge needs a payment method",
+        "rate_limited": "the judge is rate limited",
+        "bad_request": "the judge rejected the request",
+        "server": "the judge’s server had an error",
+        "invalid_response": "the judge’s answer could not be read",
+        "unexpected": "an unexpected error",
+        "all": "every judge call failed",
+        "other": "the judge call failed"
+      }
+    }
+  },
+  "tabTitle": {
+    "image": "Image",
+    "diff": "Diff"
+  },
+  "sideBySide": "Side by side",
+  "diffTag": {
+    "changed": "Changed",
+    "added": "Added",
+    "deleted": "Deleted",
+    "renamed": "Renamed"
+  },
+  "diffEmpty": "No changes in this file",
+  "mermaidTitleWithSummary": "Mermaid diagram: {{summary}}",
+  "wavedromTitleWithSummary": "WaveDrom diagram: {{summary}}",
+  "saveFailedWithDetail": "Failed to save: {{detail}}",
+  "zoomActualSize": "Reset zoom",
+  "zoomFit": "Fit",
+  "zoomFitTooltip": "Fit to the panel width"
+}

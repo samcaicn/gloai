@@ -1,0 +1,1479 @@
+{
+  "send": "전송",
+  "cancel": "취소",
+  "save": "저장",
+  "delete": "삭제",
+  "confirm": "확인",
+  "file": "파일",
+  "folder": "폴더",
+  "upload": "업로드",
+  "model": "모델",
+  "skills": "스킬",
+  "workspace": "프로젝트",
+  "settings": "설정",
+  "system": "시스템",
+  "about": "소개",
+  "back": "채팅으로 돌아가기",
+  "goBack": "뒤로",
+  "add": "추가",
+  "edit": "편집",
+  "website": "웹사이트",
+  "version": "버전",
+  "contact": "연락처",
+  "github": "GitHub",
+  "loading": "기다려주세요...",
+  "copy": "복사",
+  "reply": "인용",
+  "openInBuiltinBrowser": "내장 브라우저로 열기",
+  "openInSystemBrowser": "시스템 브라우저로 열기",
+  "copySuccess": "복사됨",
+  "copyFailed": "복사 실패",
+  "download": "다운로드",
+  "close": "닫기",
+  "retry": "재시도",
+  "reload": "새로고침",
+  "technical_details": "기술적 세부사항",
+  "error_details": "오류 세부사항",
+  "troubleshooting": "문제 해결",
+  "select": "선택",
+  "expandMore": "더 보기",
+  "collapse": "접기",
+  "viewMoreLines": "더 보기 ({{count}}줄)",
+  "viewMoreLines_one": "더 보기 ({{count}}줄)",
+  "viewMoreLines_other": "더 보기 ({{count}}줄)",
+  "success": "성공",
+  "error": "오류",
+  "saveSuccess": "저장 성공",
+  "saveFailed": "저장 실패",
+  "unknownError": "알 수 없는 오류",
+  "confirmDelete": "삭제 확인",
+  "deleteSuccess": "삭제 성공",
+  "deleteFailed": "삭제 실패",
+  "default": "기본",
+  "defaultModel": "기본 모델",
+  "escToCancel": "취소하려면 esc",
+  "create": "생성",
+  "createSuccess": "생성 성공",
+  "failed": "실패",
+  "browse": "찾아보기",
+  "remove": "제거",
+  "show": "표시",
+  "hide": "숨기기",
+  "goToSettings": "설정으로 이동",
+  "forward": "앞으로",
+  "historyBack": "뒤로",
+  "more": "더보기",
+  "refresh": "새로고침",
+  "readOnly": "읽기 전용",
+  "tray.showWindow": "TupAI 표시",
+  "tray.newChat": "새 채팅",
+  "tray.closeToTray": "트레이에 숨기기",
+  "tray.hideToMenuBar": "메뉴 막대에 숨기기",
+  "tray.about": "TupAI 소개",
+  "tray.restart": "앱 재시작",
+  "tray.quit": "종료",
+  "tray.pauseAll": "모든 작업 일시 중지",
+  "tray.checkUpdate": "업데이트 확인",
+  "tray.recentChats": "최근 채팅",
+  "tray.untitled": "제목 없음",
+  "backendStartup": {
+    "incompatibleRuntime": {
+      "title": "이 시스템은 번들 백엔드를 지원하지 않습니다",
+      "description": "mu는 열렸지만 로컬 서비스를 이 Linux 버전에서 실행할 수 없습니다. 지원되는 Linux 배포판으로 업그레이드한 뒤 mu를 다시 시작하세요.",
+      "requiredVersions": "필요한 런타임 심볼: {{versions}}"
+    },
+    "incompleteInstallation": {
+      "title": "TupAI 설치가 불완전합니다",
+      "description": "현재 설치에 필요한 로컬 리소스가 없어 mu의 로컬 서비스를 시작할 수 없습니다. 최신 mu를 다운로드하여 다시 설치하세요. 다시 설치한 후에도 문제가 반복되면 보안 또는 바이러스 백신 소프트웨어가 TupAI 파일을 격리했는지 확인하세요.",
+      "downloadLatest": "최신 버전 다운로드",
+      "runtimeComponentDescription": "현재 설치에 필요한 내장 런타임 구성 요소가 없어 {{resource}}을(를) 시작할 수 없습니다. 최신 TupAI 패키지를 다시 설치하세요. 다시 설치한 후에도 문제가 계속되면 보안 또는 백신 소프트웨어가 TupAI 구성 요소를 격리했는지 확인하세요."
+    },
+    "packageArchitectureMismatch": {
+      "title": "TupAI 패키지 아키텍처 불일치",
+      "description": "이 TupAI 패키지는 {{packageArch}}용이지만 이 Mac은 {{deviceArch}}입니다. 잘못된 패키지를 다운로드했을 수 있습니다. {{expectedArch}} 패키지를 다운로드하여 설치하세요."
+    },
+    "dataMigration": {
+      "title": "로컬 데이터 마이그레이션에 실패했습니다",
+      "description": "mu는 열렸지만 로컬 서비스가 로컬 데이터를 초기화하는 동안 중지되었습니다. mu를 다시 설치해도 해결되지 않을 수 있습니다. 로컬 데이터베이스 마이그레이션이 어디에서 멈췄는지는 앱 로그에서 확인할 수 있습니다."
+    },
+    "databaseNewerThanApp": {
+      "title": "최신 버전의 mu가 필요합니다",
+      "description": "로컬 데이터가 더 최신 버전의 mu에서 생성되어 현재 버전에서는 열 수 없습니다. mu를 최신 버전으로 업데이트하면 계속 사용할 수 있습니다. 데이터는 그대로 유지되며 재설치나 초기화는 필요하지 않습니다.",
+      "descriptionWithVersion": "로컬 데이터가 현재 버전 v{{currentVersion}}보다 최신 버전의 mu에서 생성되어 현재 버전에서는 열 수 없습니다. mu를 최신 버전으로 업데이트하면 계속 사용할 수 있습니다. 데이터는 그대로 유지되며 재설치나 초기화는 필요하지 않습니다."
+    },
+    "localDataRepair": {
+      "title": "로컬 데이터 복구에 실패했습니다",
+      "description": "mu는 열렸지만 로컬 서비스가 assistant 또는 에이전트 레코드 같은 로컬 시작 데이터를 준비하는 동안 중지되었습니다. mu를 다시 설치해도 문제가 해결되지 않을 수 있습니다. 어떤 로컬 데이터를 준비하지 못했는지는 앱 로그에서 확인할 수 있습니다."
+    },
+    "startupDirectory": {
+      "title": "시작 디렉토리를 사용할 수 없습니다",
+      "description": "mu는 열렸지만 설정된 작업 디렉토리 또는 로그 디렉토리가 없거나, 사용할 수 없거나, 권한 때문에 차단되어 로컬 서비스를 시작할 수 없습니다. 설정된 디렉토리가 존재하고 쓰기 가능한지 확인한 뒤 mu를 다시 시작하세요."
+    },
+    "recoverableDatabaseCorruption": {
+      "title": "로컬 데이터가 손상되었습니다",
+      "description": "로컬 데이터베이스 손상이 감지되어 mu가 시작을 계속할 수 없습니다. 확인하면 이전 데이터베이스를 백업하고 새 로컬 데이터베이스를 만들어 시작을 계속합니다. 기존 대화는 더 이상 표시되지 않으며 이전 데이터베이스는 백업 파일로 보관됩니다.",
+      "confirmRebuild": "이전 DB 백업 후 새 DB 재생성",
+      "rebuildFailed": "이전 DB 백업 및 새 DB 재생성 실패",
+      "confirmDialog": {
+        "title": "데이터베이스를 재생성하시겠습니까?",
+        "content": "이 작업은 현재 손상된 데이터베이스를 백업하고 완전히 새로운 빈 데이터베이스를 생성합니다. 기존 대화는 더 이상 표시되지 않습니다(이전 데이터베이스는 백업 파일로 보관됩니다). 계속하시겠습니까?",
+        "okText": "재생성 확인",
+        "cancelText": "취소"
+      }
+    },
+    "transientConcurrentStartup": {
+      "title": "mu를 시작하는 중입니다",
+      "description": "이 창이 열릴 때 다른 TupAI 시작 프로세스가 아직 로컬 데이터를 사용하고 있었습니다. 이는 일시적인 현상이며 데이터는 안전합니다. 다시 설치할 필요가 없습니다. 잠시 기다린 후 다시 시도하거나 mu를 다시 시작하세요."
+    },
+    "pendingSlow": {
+      "title": "시작 중",
+      "description": "로컬 서비스를 시작하고 있습니다. 잠시 기다려 주세요. 한동안 응답이 없으면 앱을 종료한 후 다시 시도할 수 있습니다."
+    },
+    "exited": {
+      "title": "시작이 완료되지 않았습니다",
+      "description": "로컬 서비스가 시작을 완료하지 못하고 종료되었습니다. 앱을 다시 시작해 주세요. 계속 발생하면 앱 로그를 확인해 주세요."
+    },
+    "portReportTimeout": {
+      "title": "시작 시간 초과",
+      "description": "로컬 서비스가 예상 시간 내에 시작을 완료하지 못했습니다. 앱을 다시 시작해 주세요. 계속 발생하면 앱 로그를 확인해 주세요."
+    },
+    "startupFailed": {
+      "title": "시작 실패",
+      "description": "로컬 서비스를 시작하지 못했습니다. 앱을 다시 시작해 주세요. 계속 발생하면 앱 로그를 확인해 주세요."
+    },
+    "openLogs": "로그 폴더 열기",
+    "openLogsFailed": "로그 폴더를 열 수 없습니다"
+  },
+  "fileAttach.addFiles": "파일 추가",
+  "fileAttach.myDevice": "내 기기",
+  "fileAttach.failed": "업로드 실패",
+  "fileAttach.uploading": "업로드 중...",
+  "fileAttach.uploadSuccess": "업로드 성공",
+  "fileAttach.cancelUpload": "업로드 취소",
+  "expand": "펼치기",
+  "name": "이름",
+  "added": "추가됨",
+  "status": "상태",
+  "agentMode": "에이전트 모드",
+  "refreshSuccess": "새로고침 완료",
+  "import": "가져오기",
+  "processing": "처리 중...",
+  "optional": "(선택 사항)",
+  "clear": "지우기",
+  "selectedCount": "선택됨 {{count}}",
+  "selectedSkills": "선택된 스킬",
+  "aiAssistant": "AI 어시스턴트",
+  "kyrn": {
+    "settings": "TupAI 설정",
+    "judge": "판정기 설정",
+    "reload": "다시 불러오기",
+    "starting": "mu를 시작하는 중…",
+    "startingHint": "로컬 TupAI 커널에 연결하여 모델과 판정기 설정을 읽는 중입니다.",
+    "startupError": "mu를 시작하지 못했습니다",
+    "hiveView": {
+      "title": "Hive",
+      "agents": "하위 에이전트",
+      "open": "Hive 열기",
+      "inspect": "{{name}} 검사",
+      "summary": "활성 {{active}} · 완료 {{done}} / {{total}}",
+      "summaryEnded": "완료 {{done}} / {{total}}",
+      "summaryUnfinished": "완료 {{done}} / {{total}} · 미완료 {{unfinished}}",
+      "counts": "실행 중 {{running}} · 완료 {{done}} · 실패 {{failed}}",
+      "none": "이 대화에는 아직 하위 에이전트가 없습니다.",
+      "details": "정보 흐름과 기록",
+      "pending": "벌 상태 대기 중",
+      "unknown": "상태를 사용할 수 없음",
+      "lastStep": "{{status}} · 직전 단계: {{step}}",
+      "runs": "Hive 실행",
+      "graph": "협업 지도",
+      "graphHint": "선이 굵을수록 더 많이 전달된 것입니다. 구성원을 고르면 해당 행이 열리고, 선을 가리키면 전달된 내용을 읽을 수 있습니다.",
+      "map": "연결 지도",
+      "legend": "범례",
+      "legendDelivery": "전달",
+      "legendCorrection": "정정",
+      "legendConflict": "이견",
+      "legendReport": "보고",
+      "nodeSent": "보냄 {{count}}",
+      "nodeReceived": "받음 {{count}}",
+      "lineDelivery": "{{from}} → {{to}}: {{count}}건 전달",
+      "lineDelivery_one": "{{from}} → {{to}}: {{count}}건 전달",
+      "lineDelivery_other": "{{from}} → {{to}}: {{count}}건 전달",
+      "lineCorrection": "{{from}}이(가) {{to}}의 발견을 정정했습니다",
+      "lineConflict": "{{from}}와(과) {{to}}의 발견이 서로 다릅니다",
+      "lineReport": "{{from}}이(가) mu에 보고했습니다",
+      "deliveries": "정보 흐름",
+      "noDeliveries": "확인된 전달이 아직 없습니다.",
+      "board": "공유 보드",
+      "noNotes": "공유된 발견이 아직 없습니다.",
+      "context": "실행 컨텍스트",
+      "contextHint": "기록된 메시지와 완료된 도구 출력이며 전체 모델 프롬프트는 아닙니다. 도구 출력은 완료 후 표시됩니다.",
+      "focus": "할당",
+      "missingFocus": "이 실행의 할당은 기록되지 않았습니다.",
+      "current": "현재 활동",
+      "records": "실행 기록",
+      "noRecords": "아직 실행 기록을 받지 못했습니다.",
+      "raw": "원시 증거",
+      "input": "입력",
+      "output": "출력",
+      "assistant": "벌 메시지",
+      "thinking": "공개된 생각",
+      "user": "작업 입력",
+      "custom": "하니스 메시지",
+      "tool": "도구",
+      "waitingOutput": "완료된 도구 출력을 기다리는 중입니다.",
+      "noText": "텍스트 출력이 없습니다.",
+      "selectBee": "벌을 선택해 활동을 검사하세요.",
+      "unknownSource": "알 수 없는 소스",
+      "noteMissing": "발견이 기록되지 않았습니다.",
+      "allFlow": "모든 전달",
+      "beeFlow": "{{name}}의 전달",
+      "audit": "Jev 판정",
+      "waitingRun": "이 Hive의 기록된 이벤트를 기다리는 중입니다.",
+      "recordedAt": "기록 시간 {{time}}",
+      "beeMissing": "이 벌은 기록된 스냅샷에 없습니다.",
+      "snapshot": "마지막 보고 상태",
+      "updated": "마지막 업데이트 {{time}}",
+      "runTitle": {
+        "tasks": "작업 {{count}}개",
+        "tasks_one": "작업 {{count}}개",
+        "tasks_other": "작업 {{count}}개",
+        "chain": "{{count}}단계 연쇄 작업",
+        "chain_one": "{{count}}단계 연쇄 작업",
+        "chain_other": "{{count}}단계 연쇄 작업"
+      },
+      "choosingRoles": "하위 에이전트 {{count}}개의 역할, 모델, 사고 수준을 고르는 중…",
+      "choosingRoles_one": "하위 에이전트 {{count}}개의 역할, 모델, 사고 수준을 고르는 중…",
+      "choosingRoles_other": "하위 에이전트 {{count}}개의 역할, 모델, 사고 수준을 고르는 중…",
+      "activity": {
+        "notesReceived": "← 다른 벌에게서 받은 발견 {{count}}개",
+        "notesReceived_one": "← 다른 벌에게서 받은 발견 {{count}}개",
+        "notesReceived_other": "← 다른 벌에게서 받은 발견 {{count}}개",
+        "askedFindings": "← 지금까지의 발견을 알려 달라는 요청을 받음",
+        "toldWrapUp": "← 마무리하고 보고하라는 요청을 받음",
+        "toolFailed": "{{tool}} 실패",
+        "retry": "재시도 {{attempt}}/{{maxAttempts}}: {{message}}",
+        "modelError": "모델 오류: {{message}}",
+        "compacting": "컨텍스트 압축 중",
+        "lateNotes": "← 마지막 라운드: 늦게 도착한 발견 {{count}}개",
+        "lateNotes_one": "← 마지막 라운드: 늦게 도착한 발견 {{count}}개",
+        "lateNotes_other": "← 마지막 라운드: 늦게 도착한 발견 {{count}}개"
+      },
+      "errors": {
+        "cancelled": "실행이 취소됨",
+        "stoppedByUser": "사용자가 중지함",
+        "endedByUser": "사용자가 종료함",
+        "stalledModel": "{{duration}} 동안 모델의 반응 없음",
+        "stalledTool": "{{duration}} 동안 {{tool}} 호출의 반응 없음",
+        "timeBudget": "시간 예산({{duration}}) 소진",
+        "timeBudgetReached": "시간 예산 소진",
+        "noReportInTime": "{{reason}}, 요청 후 {{duration}} 안에 보고 없음",
+        "modelFailed": "모델 요청 실패",
+        "modelAborted": "모델 요청이 중단됨",
+        "retriesExhausted": "모델 요청이 계속 실패함",
+        "exitedCode": "하위 에이전트가 완료 전에 종료됨(종료 코드 {{exitCode}})",
+        "exitedSignal": "하위 에이전트가 완료 전에 {{signal}} 신호로 종료됨",
+        "exitedKilled": "하위 에이전트가 완료 전에 신호로 종료됨",
+        "chainBroken": "시작 안 됨: 앞 단계(\"{{step}}\")가 끝나지 않음",
+        "detail": "{{reason}}: {{detail}}"
+      }
+    },
+    "judgeView": {
+      "empty": "이 세션에는 아직 기록된 판정이 없습니다.",
+      "question": "질문",
+      "result": "판정 결과",
+      "action": "실행에 미친 영향",
+      "details": "답변과 증거",
+      "raw": "원본 기록",
+      "answers": "모델 답변",
+      "noResult": "읽을 수 있는 결과가 기록되지 않았습니다",
+      "unreported": "기록 없음",
+      "scoreValue": "점수: {{value}}",
+      "latency": "{{ms}}ms",
+      "more": "외 {{count}}개",
+      "batch": "이 기록이 다루는 후보: {{count}}개.",
+      "batchFailures": "답변을 받지 못해 기본 전략으로 처리: {{count}}개.",
+      "changedThinking": "사고 수준: {{from}} → {{to}}",
+      "sentHints": "메인 모델에 보낸 힌트",
+      "unlinked": "독립 기록",
+      "unlinkedHint": "턴 연관 정보 없이 기록되었습니다. 단독으로 표시되며 시간이 가까운 기록과 합치지 않습니다.",
+      "state": {
+        "pending": "대기 중",
+        "returned": "판정 반환됨",
+        "confirmed": "영향 확인됨",
+        "shadow": "섀도 모드",
+        "fallback": "기본 전략",
+        "late": "늦게 도착",
+        "rule": "규칙으로 결정",
+        "ended": "대기 종료",
+        "unknown": "결과 알 수 없음"
+      },
+      "actions": {
+        "toRuntime": "판정이 실행 계층에 전달되었습니다. 작업이 완료되었다는 증거는 아닙니다.",
+        "observeOnly": "섀도 모드: 비교용으로만 기록되었으며, 이 판정으로 실행이 바뀌지 않았습니다.",
+        "useDefault": "이 판정 지점의 기본 전략으로 처리했습니다. 기본 전략은 진행 허용을 뜻하지 않습니다. 위험 확인과 Hive 게이트는 기본적으로 보수적인 쪽을 택합니다.",
+        "lateIgnored": "턴이 이미 시작된 뒤였으며, 늦게 도착한 이 판정은 반영되지 않았습니다.",
+        "waiting": "판정 결과를 기다리는 중입니다.",
+        "waitEnded": "대기 또는 작업이 끝났으며 최종 판정은 기록되지 않았습니다.",
+        "recordedOnly": "기록은 있지만 실행에 미친 영향은 확인되지 않았습니다.",
+        "mainGiven": "아래에 기록된 조정 또는 힌트가 메인 모델에 적용되었습니다.",
+        "allowPublish": "게시가 허용되었습니다. 실제로 게시된 내용은 공유 보드에서 확인하세요.",
+        "denyPublish": "이 후보의 게시는 허용되지 않았습니다.",
+        "allowDelivery": "전달이 허용되었지만 수신 확인은 아직 기록되지 않았습니다.",
+        "denyDelivery": "이 발견을 이 벌에게 전달하는 것은 허용되지 않았습니다.",
+        "delivered": "이 발견이 수신 벌에게 도착했음을 수신 확인이 보여 줍니다."
+      },
+      "questions": {
+        "preflight": "이 요청을 어떻게 처리해야 하는가?",
+        "interjection": "이 끼어들기는 수정인가, 후속 요청인가, 곁가지 질문인가?",
+        "admission": "도구 출력의 어느 부분을 컨텍스트에 넣어야 하는가?",
+        "testLog": "테스트 로그의 어느 부분이 모델에 전달되어야 하는가?",
+        "forget": "오래된 도구 출력의 전문이 아직 필요한가?",
+        "compaction": "어떤 오래된 결과를 잘라낼 수 있는가?",
+        "skills": "이 작업과 관련된 스킬은 무엇인가?",
+        "locate": "관련 가능성이 가장 높은 파일은 무엇인가?",
+        "routing": "각 하위 작업에 맞는 역할과 사고 수준은 무엇인가?",
+        "publish": "이 발견은 다른 벌들과 공유할 가치가 있는가?",
+        "deliver": "이 발견이 받는 벌에게 도움이 되는가?",
+        "browser": "브라우저는 다음에 무엇을 해야 하는가?",
+        "recall": "지금 적용되는 과거 경험은 무엇인가?",
+        "capture": "오래 유효한 수정 사항이나 선호인가?",
+        "outcome": "이번 턴에서 남길 만한 해결 방법을 찾았는가?",
+        "worth": "이 교훈은 남길 가치가 있는가?",
+        "merge": "새 교훈을 기존 교훈과 합칠 것인가?",
+        "applied": "교훈을 따랐는가?",
+        "risk": "이 작업에 사용자 확인이 필요한가?",
+        "drift": "작업이 아직 올바른 방향인가?",
+        "completion": "이 변경에 아직 검증이 필요한가?",
+        "notify": "이 알림은 언제 모델에 전달되어야 하는가?",
+        "cache": "세션 캐시를 계속 예열해 두어야 하는가?",
+        "other": "기록된 판정",
+        "rewind": "이 접근은 되감을 가치가 있는 막다른 길인가?",
+        "goalMet": "목표를 달성했는가?",
+        "outputDrift": "출력이 규칙을 위반하는가?",
+        "taskFrame": "이 메시지가 작업 프레임을 바꾸는가?",
+        "constraint": "이 호출이 제약 조건을 위반하는가?",
+        "capabilities": "이 작업에 필요한 기능 확장은 무엇인가?",
+        "diagnostics": "이 진단은 언제 모델에 전달되어야 하는가?",
+        "patch": "하위 에이전트의 패치가 작업 범위 안에 있는가?",
+        "review": "각 리뷰 발견은 얼마나 심각한가?",
+        "board": "작업은 어디까지 진행되었는가?",
+        "relate": "이 발견은 이전 발견에 어떤 의미가 있는가?",
+        "approval": "작업에 필요한 단계이고, 예상한 방식대로 하는가?"
+      },
+      "fields": {
+        "turnType": "작업 유형",
+        "gear": "작업 단계",
+        "thinking": "사고 수준",
+        "agent": "제안된 역할",
+        "strength": "모델 강도",
+        "drop": "제외 제안",
+        "keep": "유지 제안",
+        "kind": "내용 유형",
+        "score": "점수",
+        "hide": "숨김이 제안된 스킬",
+        "relevant": "관련 스킬",
+        "apply": "적용이 제안된 경험",
+        "applied": "따름",
+        "notApplied": "따르지 않음",
+        "publish": "게시 허용",
+        "deliver": "전달 허용",
+        "path": "후보 파일",
+        "result": "결과",
+        "reason": "사유",
+        "keepResult": "결과 유지",
+        "keepCall": "호출 유지",
+        "broken": "위반한 규칙",
+        "open": "열어야 할 기능 확장",
+        "errors": "오류",
+        "warnings": "경고",
+        "withinTask": "작업 범위 내",
+        "unrelated": "관련 없는 파일",
+        "judged": "판정한 파일",
+        "priorities": "우선순위",
+        "phase": "단계",
+        "focus": "진행 중인 항목",
+        "needsUser": "사용자 개입 필요",
+        "update": "보드 다시 쓰기",
+        "relation": "관계",
+        "operation": "다음 단계",
+        "target": "대상 요소",
+        "probability": "확률",
+        "omit": "생략한 로그 부분",
+        "key": "알릴 만한 사건"
+      },
+      "values": {
+        "true": "예",
+        "false": "아니요",
+        "yes": "예",
+        "no": "아니요",
+        "unsure": "불확실",
+        "unknown": "알 수 없음",
+        "chat": "대화",
+        "chat_question": "개념 질문",
+        "quick_lookup": "빠른 조회",
+        "single_edit": "단일 수정",
+        "multi_step_task": "여러 단계 작업",
+        "research": "조사",
+        "design_discussion": "설계 논의",
+        "light": "가벼움",
+        "standard": "표준",
+        "heavy": "무거움",
+        "low": "낮음",
+        "medium": "보통",
+        "high": "높음",
+        "keep": "유지",
+        "shrink": "축약",
+        "capture": "기록",
+        "skip": "건너뜀",
+        "error": "오류",
+        "result": "유용한 결과",
+        "progress": "진행 출력",
+        "warning": "경고",
+        "passing": "검사 통과",
+        "other": "기타",
+        "allow": "추가 확인 불필요",
+        "confirm": "먼저 사용자에게 확인",
+        "now": "지금 전달",
+        "next_turn": "다음 턴까지 보류",
+        "drop": "버림",
+        "on_track": "정상 진행",
+        "detour": "우회",
+        "drift": "이탈",
+        "loop": "반복",
+        "done": "알림 불필요",
+        "nudge": "검증 알림",
+        "steer": "현재 작업 방향 조정",
+        "followUp": "후속 작업으로 대기",
+        "warm": "예열 유지",
+        "stop": "예열 중지",
+        "default": "기본값",
+        "finding": "발견",
+        "dead_end": "막다른 길",
+        "decision": "결정",
+        "blocker": "차단 요소",
+        "abstain": "판정기 기권",
+        "shadow": "섀도 모드",
+        "skipped": "사용자가 건너뜀",
+        "timeout": "시간 초과",
+        "all": "모든 후보 실패",
+        "unreachable": "판정기에 연결할 수 없음",
+        "unexpected": "예기치 않은 오류",
+        "off": "꺼짐",
+        "continue": "계속 진행",
+        "propose": "되감기 제안",
+        "met": "달성",
+        "ask": "사용자에게 묻기",
+        "unjudged": "판정 안 됨",
+        "none": "없음",
+        "new_task": "새 작업",
+        "constraint": "새 제약 조건",
+        "correction": "정정",
+        "subgoal": "새 하위 목표",
+        "unclear": "판단할 수 없음",
+        "hold": "보류",
+        "no_answer": "시간 내 응답 없음",
+        "aborted": "취소됨",
+        "auth": "판정기 키 거부됨",
+        "payment_required": "판정기 결제 수단 필요",
+        "rate_limited": "판정기 요청 한도 초과",
+        "bad_request": "판정기가 요청을 거부함",
+        "server": "판정기 서버 오류",
+        "invalid_response": "판정기 답변을 읽을 수 없음",
+        "verdict": "판정기가 답변함",
+        "learn": "해결 방법 남기기",
+        "reusable": "다시 쓸모 있음",
+        "one_off": "이번 한 번뿐",
+        "already_known": "이미 알려짐",
+        "same": "같은 교훈",
+        "refines": "더 정확함",
+        "contradicts": "서로 모순",
+        "supersedes": "대체함",
+        "supports": "뒷받침함",
+        "unrelated": "관련 없음",
+        "preference": "지속 규칙",
+        "approve": "실행 허용",
+        "beyond": "요청보다 많음",
+        "CLICK": "클릭",
+        "TYPE_TEXT": "텍스트 입력",
+        "SELECT": "목록에서 선택",
+        "SCROLL_DOWN": "아래로 스크롤",
+        "SCROLL_UP": "위로 스크롤",
+        "WAIT": "페이지 기다리기",
+        "DONE": "완료",
+        "BLOCKED": "더 나아갈 방법 없음",
+        "listing": "파일 이름이나 검색 결과",
+        "content": "코드나 글",
+        "log": "빌드나 테스트 출력",
+        "data": "찾아본 사실"
+      },
+      "probabilityValue": "'예'일 확률: {{percent}}",
+      "optionProbability": "{{option}} {{percent}}",
+      "reasonValue": "사유: {{reason}}",
+      "fieldValue": "{{field}}: {{value}}",
+      "errorValue": "오류 · {{kind}}",
+      "noAnswerAfter": "{{duration}} 동안 답변 없음",
+      "hints": {
+        "answered": "이 메시지는 에이전트가 직접 한 질문에 대한 답입니다. 그대로 진행하고 다시 묻지 마세요.",
+        "resolve": "요청이 느슨하게 표현되어 있고 파일을 바꿀 수 있습니다. 프로젝트를 살펴보고 가정을 밝힌 뒤, 여기서 찾을 수 없는 것만 물으세요.",
+        "clarify": "요청이 충분히 구체적이지 않아 보입니다. 먼저 핵심 질문을 하나 하세요.",
+        "side_question": "곁가지 질문입니다. 짧게 답한 뒤 주 작업을 계속하세요.",
+        "plan_first": "크거나 위험한 작업으로 보입니다. 짧은 계획을 쓴 뒤 실행하고, 되돌릴 수 없는 단계 앞에서만 확인을 기다리세요.",
+        "try_hive": "어려운 작업으로 보입니다. 원인을 모르거나 직접 시도가 실패하면 Hive를 사용하세요.",
+        "try_delegate": "독립된 부분으로 나눌 수 있습니다. 하위 에이전트에게 병렬로 맡기는 것을 고려하세요."
+      },
+      "hintChips": {
+        "answered": "에이전트에 대한 답",
+        "resolve": "먼저 확인",
+        "clarify": "먼저 질문",
+        "side_question": "곁가지 질문",
+        "plan_first": "계획 먼저",
+        "try_hive": "막히면 Hive",
+        "try_delegate": "나눠서 위임"
+      },
+      "answerWords": {
+        "preflight": {
+          "questions": {
+            "turn_type": "작업 유형",
+            "is_side_question": "곁가지 질문",
+            "needs_clarification": "진행하기엔 너무 모호함",
+            "needs_files_changed": "코드 변경 필요",
+            "needs_memory": "과거 경험이 도움이 됨",
+            "swarm_worthy": "독립된 부분으로 나눌 수 있음",
+            "plan_first": "크거나 위험함",
+            "task_complexity": "범위",
+            "reasoning_depth": "사고 깊이",
+            "tool_complexity": "도구 사용량"
+          },
+          "answers": {
+            "chat": "대화",
+            "chat_question": "개념 질문",
+            "quick_lookup": "빠른 조회",
+            "single_edit": "단일 수정",
+            "multi_step_task": "여러 단계 작업",
+            "research": "조사",
+            "design_discussion": "설계 논의",
+            "other": "그 밖의 것"
+          },
+          "levels": {
+            "task_complexity": {
+              "0": "질문일 뿐",
+              "1": "코드의 한 곳",
+              "2": "코드의 여러 곳",
+              "3": "코드베이스 전체"
+            },
+            "reasoning_depth": {
+              "0": "기억하거나 찾아보기",
+              "1": "간단한 설명",
+              "2": "꼼꼼한 분석",
+              "3": "깊은 추론"
+            },
+            "tool_complexity": {
+              "0": "없음",
+              "1": "한두 번 읽기",
+              "2": "수정을 포함한 여러 번의 호출",
+              "3": "빌드나 테스트를 포함한 많은 호출"
+            }
+          }
+        },
+        "interjection": {
+          "questions": {
+            "kind": "메시지의 종류"
+          },
+          "answers": {
+            "correction": "정정",
+            "addition": "나중에 할 추가 작업",
+            "side_question": "관련 없는 질문",
+            "other": "그 밖의 것"
+          }
+        },
+        "admission": {
+          "questions": {
+            "kind": "출력 종류",
+            "chunk": "출력 {{number}}번째 부분"
+          },
+          "answers": {
+            "error": "오류",
+            "result": "유용한 결과",
+            "progress": "진행 출력",
+            "warning": "반복되는 경고",
+            "passing": "통과한 검사",
+            "other": "그 밖의 것"
+          }
+        },
+        "testLog": {
+          "questions": {
+            "part": "로그 {{number}}번째 부분"
+          },
+          "answers": {
+            "needed": "요약 외에도 필요",
+            "not_needed": "요약으로 충분",
+            "unclear": "판단할 수 없음"
+          }
+        },
+        "forget": {
+          "questions": {
+            "still_needed": "전체 출력이 다시 필요함"
+          }
+        },
+        "compaction": {
+          "questions": {
+            "kind": "결과 종류",
+            "result_needed": "전체 결과가 아직 필요함",
+            "call_matters": "호출 자체가 아직 중요함"
+          },
+          "answers": {
+            "error": "오류",
+            "listing": "파일 이름이나 검색 결과",
+            "content": "코드나 글",
+            "log": "빌드나 테스트 출력",
+            "data": "찾아본 사실",
+            "other": "그 밖의 것"
+          }
+        },
+        "skills": {
+          "questions": {
+            "skill": "{{number}}번 스킬이 도움이 됨"
+          }
+        },
+        "locate": {
+          "questions": {
+            "path": "{{number}}번 파일이 관련됨"
+          }
+        },
+        "routing": {
+          "questions": {
+            "agent": "작업 종류",
+            "difficulty": "작업 난이도",
+            "reasoning": "필요한 추론"
+          },
+          "answers": {
+            "other": "해당 없음"
+          },
+          "levels": {
+            "difficulty": {
+              "0": "기계적",
+              "1": "일상적",
+              "2": "신중한 설계가 필요함",
+              "3": "전문가에게도 어려움"
+            },
+            "reasoning": {
+              "0": "거의 없음",
+              "1": "조금",
+              "2": "많이",
+              "3": "여러 단계의 깊은 추론"
+            }
+          }
+        },
+        "publish": {
+          "questions": {
+            "share_worthy": "공유할 가치가 있음",
+            "kind": "노트 종류"
+          },
+          "answers": {
+            "finding": "발견",
+            "dead_end": "막다른 길",
+            "decision": "결정",
+            "blocker": "차단 요소",
+            "other": "일상적인 진행"
+          }
+        },
+        "deliver": {
+          "questions": {
+            "useful": "받는 벌에게 도움이 됨"
+          }
+        },
+        "browser": {
+          "questions": {
+            "operation": "다음 단계",
+            "click_target": "클릭할 대상",
+            "type_text_target": "입력할 곳",
+            "select_target": "고를 항목"
+          },
+          "answers": {
+            "CLICK": "클릭",
+            "TYPE_TEXT": "텍스트 입력",
+            "SELECT": "목록에서 선택",
+            "SCROLL_DOWN": "아래로 스크롤",
+            "SCROLL_UP": "위로 스크롤",
+            "WAIT": "페이지 기다리기",
+            "DONE": "완료",
+            "other": "더 나아갈 방법 없음",
+            "none": "맞는 것이 없음"
+          }
+        },
+        "recall": {
+          "questions": {
+            "lesson": "{{number}}번 교훈이 해당됨"
+          }
+        },
+        "capture": {
+          "questions": {
+            "correction": "실수를 바로잡음",
+            "preference": "계속 지킬 규칙을 정함"
+          }
+        },
+        "outcome": {
+          "questions": {
+            "way_out": "통하는 다른 방법을 찾음"
+          }
+        },
+        "worth": {
+          "questions": {
+            "lesson": "{{number}}번 교훈"
+          },
+          "answers": {
+            "reusable": "다시 쓸모 있음",
+            "one_off": "이번 한 번뿐",
+            "already_known": "이미 알려짐",
+            "unclear": "판단할 수 없음"
+          }
+        },
+        "merge": {
+          "questions": {
+            "kept": "저장된 {{number}}번 교훈"
+          },
+          "answers": {
+            "same": "같은 교훈",
+            "refines": "새 교훈이 더 정확함",
+            "contradicts": "서로 모순됨",
+            "unrelated": "다른 내용",
+            "unclear": "판단할 수 없음"
+          }
+        },
+        "applied": {
+          "questions": {
+            "lesson": "{{number}}번 교훈을 따름"
+          }
+        },
+        "risk": {
+          "questions": {
+            "destructive": "삭제하거나 되돌릴 수 없음",
+            "requested": "요청하신 일"
+          }
+        },
+        "drift": {
+          "questions": {
+            "course": "작업 방향"
+          },
+          "answers": {
+            "on_track": "정상 진행",
+            "detour": "필요한 우회",
+            "drift": "벗어나는 중",
+            "loop": "제자리걸음",
+            "other": "판단할 수 없음"
+          }
+        },
+        "completion": {
+          "questions": {
+            "claims_done": "작업이 끝났다고 말함",
+            "needs_check": "실행해서 확인해야 함"
+          }
+        },
+        "notify": {
+          "questions": {
+            "urgency": "에이전트가 알아야 할 때"
+          },
+          "answers": {
+            "now": "바로",
+            "next_turn": "현재 단계가 끝난 뒤",
+            "drop": "알리지 않음",
+            "other": "판단할 수 없음"
+          }
+        },
+        "cache": {
+          "questions": {
+            "finished": "대화가 끝남",
+            "open": "답을 기다리는 질문이 있음"
+          }
+        },
+        "rewind": {
+          "questions": {
+            "dead_end": "같은 방법이 또 실패함",
+            "progress": "진전이 있음"
+          }
+        },
+        "goalMet": {
+          "questions": {
+            "achieved": "목표를 완전히 달성함",
+            "needs_user": "사용자 없이는 계속할 수 없음"
+          }
+        },
+        "outputDrift": {
+          "questions": {
+            "rule": "{{number}}번 규칙에 어긋남"
+          }
+        },
+        "taskFrame": {
+          "questions": {
+            "change": "작업의 변화"
+          },
+          "answers": {
+            "new_task": "새 작업",
+            "constraint": "작업의 새 규칙",
+            "correction": "접근 방식이 틀림",
+            "subgoal": "같은 작업의 다음 단계",
+            "none": "변화 없음"
+          }
+        },
+        "constraint": {
+          "questions": {
+            "constraint": "{{number}}번 제약 조건에 어긋남"
+          }
+        },
+        "capabilities": {
+          "questions": {
+            "capability": "{{number}}번 기능이 필요함"
+          }
+        },
+        "diagnostics": {
+          "questions": {
+            "more_edits_coming": "수정이 더 이어짐",
+            "warnings_are_style": "스타일 경고뿐"
+          }
+        },
+        "patch": {
+          "questions": {
+            "within_task": "작업 범위 안에 있음",
+            "file": "작업상 {{number}}번 파일을 바꿔야 함"
+          }
+        },
+        "review": {
+          "questions": {
+            "bug": "{{number}}번 지적은 실제 버그",
+            "inScope": "{{number}}번 지적은 이번 변경에 관한 것"
+          }
+        },
+        "board": {
+          "questions": {
+            "phase": "에이전트가 하는 일",
+            "needs_user": "사용자에게서 필요한 것이 있음",
+            "focus": "진행 중인 항목",
+            "event": "{{number}}번 사건",
+            "changed": "알릴 새 소식이 있음"
+          },
+          "answers": {
+            "understanding": "작업을 파악하는 중",
+            "planning": "방법을 구상하는 중",
+            "changing": "코드를 바꾸는 중",
+            "checking": "작업을 확인하는 중",
+            "fixing": "확인에서 나온 문제를 고치는 중",
+            "waiting": "응답을 기다리는 중",
+            "wrapping_up": "마무리하는 중",
+            "stuck": "막힌 것 같습니다",
+            "other": "판단할 수 없음",
+            "none": "해당 없음",
+            "key": "알릴 만한 소식",
+            "routine": "일상적인 단계",
+            "unclear": "판단할 수 없음"
+          }
+        },
+        "relate": {
+          "questions": {
+            "relation": "이전 발견에 미치는 영향"
+          },
+          "answers": {
+            "supersedes": "대체함",
+            "contradicts": "모순됨",
+            "supports": "뒷받침함",
+            "none": "관련 없음"
+          }
+        },
+        "approval": {
+          "questions": {
+            "verdict": "이 단계의 성격"
+          },
+          "answers": {
+            "needed": "작업에 필요함",
+            "beyond": "요청보다 많음",
+            "unrelated": "작업과 관련 없음",
+            "unclear": "판단할 수 없음"
+          }
+        }
+      },
+      "log": {
+        "thisTurn": "이번 턴",
+        "earlier": "이전 줄 보기",
+        "latest": "최신으로 이동",
+        "times": "{{times}}회"
+      }
+    },
+    "empty": "이 세션에는 아직 기록된 이벤트가 없습니다.",
+    "quiet": "{{duration}} 동안 활동 없음",
+    "passed": "통과",
+    "filtered": "걸러짐",
+    "image": "도구가 반환한 이미지",
+    "beeStatus": {
+      "queued": "대기 중",
+      "starting": "시작 중",
+      "thinking": "생각 중",
+      "tool": "도구 실행 중",
+      "retrying": "재시도 중",
+      "wrapping-up": "보고서 작성 중",
+      "done": "완료",
+      "failed": "실패",
+      "stopped": "중지됨",
+      "timed-out": "시간 초과"
+    },
+    "event": {
+      "preflight.pending": "분류 중",
+      "preflight.verdict": "분류 결과",
+      "preflight.wait_end": "분류 대기 종료",
+      "decision": "판정",
+      "progress": "진행 상황",
+      "agent_start": "작업 시작",
+      "agent_settled": "작업 종료",
+      "kyrn_rpc_closed": "런타임이 종료되었습니다",
+      "auto_compaction_start": "컨텍스트 압축 중",
+      "auto_compaction_end": "압축 완료",
+      "hive.note": "공유된 발견",
+      "hive.delivery": "전달 확인됨",
+      "hive.gate": "Jev 게이트",
+      "hive.manifest": "Hive 할당",
+      "bee.event": "벌 이벤트",
+      "memory.recalled": "참조한 경험",
+      "artifact.image": "이미지",
+      "memory.stored": "경험이 저장되었습니다",
+      "memory.applied": "교훈을 따름",
+      "memory.retired": "교훈 사용 중지됨",
+      "memory.merged": "교훈 병합됨",
+      "compaction_start": "컨텍스트 압축 중…",
+      "compaction_end": "압축이 끝났습니다",
+      "context.usage": "컨텍스트 사용량",
+      "context.policy": "베타 압축 모드",
+      "compaction.plan": "베타 압축 계획",
+      "goal": {
+        "state": "목표 상태"
+      },
+      "board": {
+        "update": "보드 업데이트됨",
+        "switched": "보드 켜짐/꺼짐 전환"
+      },
+      "permissions": {
+        "mode": "권한 모드",
+        "request": "허용 요청",
+        "resolved": "허용 요청에 답함",
+        "approved": "묻지 않고 실행"
+      },
+      "checkpoint": {
+        "taken": "체크포인트 저장됨",
+        "off": "체크포인트 꺼짐"
+      },
+      "rewind": {
+        "proposed": "되감기 제안됨",
+        "done": "되감음",
+        "undone": "되감기 취소됨"
+      },
+      "ttsr": {
+        "interrupted": "규칙에 의해 출력 중지됨"
+      },
+      "frame": {
+        "updated": "작업 프레임 업데이트됨"
+      },
+      "capability": {
+        "opened": "기능 확장 열림"
+      },
+      "inherit": {
+        "found": "상속 가능한 설정 발견",
+        "rule": "상속된 규칙 사용"
+      },
+      "mcp": {
+        "started": "MCP 서버 시작됨",
+        "failed": "MCP 서버 오류",
+        "tools_changed": "MCP 도구 변경됨"
+      },
+      "constraint": {
+        "blocked": "제약 조건에 의해 차단됨"
+      },
+      "browser": {
+        "run": "브라우저 작업",
+        "step": "브라우저 단계"
+      },
+      "diagnostics": {
+        "delivered": "진단 전달됨",
+        "held": "진단 보류됨",
+        "dropped": "진단 폐기됨"
+      },
+      "background": {
+        "start": "백그라운드 작업 시작됨",
+        "exit": "백그라운드 작업 종료됨",
+        "stop": "백그라운드 작업 중지됨",
+        "match": "백그라운드 출력 일치"
+      },
+      "web": {
+        "fetch": "페이지 가져옴",
+        "search": "웹 검색"
+      },
+      "swarm": {
+        "worktree": {
+          "created": "워크트리 생성됨",
+          "removed": "워크트리 제거됨"
+        },
+        "patch": {
+          "ready": "패치 준비됨",
+          "applied": "패치 적용됨"
+        }
+      }
+    },
+    "contextUsage": "컨텍스트 사용량",
+    "contextPending": "새 컨텍스트 측정을 기다리는 중",
+    "betaActive": "베타 적용",
+    "betaShadow": "베타 섀도 모드",
+    "betaOff": "베타 꺼짐",
+    "contextWaiting": "런타임을 기다리는 중",
+    "contextTrigger": "{{tokens}}토큰에서 압축 시작",
+    "autoOff": "자동 압축 꺼짐",
+    "compacting": "컨텍스트 압축 중…",
+    "compactionResults": "압축 결과({{count}}회)",
+    "noCompaction": "이 세션에는 아직 압축 기록이 없습니다.",
+    "betaApplied": "베타 잘라내기 적용됨",
+    "summaryApplied": "요약 압축 적용됨",
+    "compactionAborted": "압축이 취소되었습니다",
+    "compactionFailed": "압축에 실패했습니다",
+    "compactionSavings": "컨텍스트 감소 ≈{{saved}}",
+    "compactionEstimate": "압축 후 토큰 수는 추정치입니다. 다음 모델 응답에서 사용량이 갱신됩니다.",
+    "cacheHit": "캐시 적중",
+    "cachePending": "아직 보고된 캐시 사용량이 없습니다",
+    "cacheLabel": "세션 캐시 적중률: {{percent}}",
+    "cacheDetail": "세션 누계: 캐시 읽기 {{read}} / 전체 입력 토큰 {{total}}. 입력에는 일반 입력, 캐시 읽기, 캐시 쓰기가 포함되며 출력은 제외됩니다. 압축해도 누계는 초기화되지 않습니다.",
+    "brand": {
+      "tagline": "판정 커널을 갖춘 코딩 에이전트",
+      "judge": {
+        "idle": "판정기 대기 중",
+        "judging": "판정기 판정 중",
+        "off": "판정기 꺼짐"
+      },
+      "starters": {
+        "hint": "어디서 시작할지 모르겠다면 다음을 시도해 보세요:",
+        "understand": {
+          "title": "이 프로젝트 이해하기",
+          "desc": "구조, 진입점, 핵심 모듈 정리",
+          "prompt": "먼저 이 프로젝트를 전체적으로 읽고 전체 구조, 주요 진입점, 핵심 모듈을 알려 주세요. 먼저 읽어 볼 만한 파일 세 개도 짚어 주세요."
+        },
+        "fix": {
+          "title": "문제 찾아 고치기",
+          "desc": "오류나 증상에서 출발해 원인까지",
+          "prompt": "문제가 생겼습니다: <증상을 설명하거나 오류를 붙여넣으세요>. 먼저 재현하고 근본 원인을 찾은 뒤, 최소한의 수정만 하고 관련 테스트를 실행해 검증해 주세요."
+        },
+        "plan": {
+          "title": "변경 계획하기",
+          "desc": "계획 먼저, 확인 후 작업",
+          "prompt": "구현하고 싶은 것: <요구 사항을 설명하세요>. 먼저 구현 방안과 관련 파일을 제시하고, 제가 확인한 뒤에 수정을 시작해 주세요."
+        }
+      }
+    },
+    "toolStatus": {
+      "pending": "대기 중",
+      "in_progress": "진행 중",
+      "completed": "완료",
+      "failed": "실패"
+    },
+    "boardView": {
+      "title": "쉬운 말 보드",
+      "switch": "이 프로젝트의 쉬운 말 보드",
+      "switching": "전환 중…",
+      "afterTurn": "에이전트가 이 단계를 마치면 전환됩니다",
+      "unknown": "이 대화에는 아직 보드가 없습니다. 기능에서 쉬운 말 보드를 켜 두면 TupAI 대화에 나타납니다.",
+      "off": "켜면 작업이 어디까지 왔는지, 에이전트가 지금 무엇을 하는지, 무엇을 확인해야 하는지 쉬운 말로 알려 줍니다.",
+      "cost": "이 프로젝트에만 적용됩니다. 업데이트할 때마다 모델을 한 번 호출합니다.",
+      "empty": "에이전트가 잠시 작업하면 여기에서 진행 상황을 쉬운 말로 알려 드립니다.",
+      "checks": "확인 항목 {{done}}/{{total}} 완료",
+      "ended": "멈춤",
+      "done": "완료",
+      "brief": "요약본",
+      "briefHelp": "이번에는 모델이 제때 작성하지 못해 정해진 짧은 요약을 보여 줍니다.",
+      "needsYou": "확인 필요",
+      "needsYouText": "에이전트가 대화에서 답을 기다리고 있습니다.",
+      "quote": "답장에 인용",
+      "quoteHint": "항목을 클릭하면 입력란에 인용됩니다. 직접 보내기 전에는 전송되지 않습니다.",
+      "account": "한 일",
+      "earlierNotes": "이전 기록 {{count, number}}개",
+      "earlierNotes_one": "이전 기록 {{count, number}}개",
+      "earlierNotes_other": "이전 기록 {{count, number}}개",
+      "phases": {
+        "understanding": "작업을 파악하는 중",
+        "planning": "방법을 구상하는 중",
+        "changing": "코드를 바꾸는 중",
+        "checking": "작업을 확인하는 중",
+        "fixing": "확인에서 나온 문제를 고치는 중",
+        "waiting": "응답을 기다리는 중",
+        "wrapping_up": "마무리하는 중",
+        "stuck": "막힌 것 같습니다"
+      },
+      "checks_one": "확인 항목 {{done}}/{{total}} 완료",
+      "checks_other": "확인 항목 {{done}}/{{total}} 완료",
+      "codes": {
+        "progress": {
+          "none": "아직 확인 항목이 없습니다.",
+          "all": "확인 항목 {{total}}개를 모두 마쳤습니다.",
+          "all_one": "확인 항목 {{total}}개를 마쳤습니다.",
+          "all_other": "확인 항목 {{total}}개를 모두 마쳤습니다.",
+          "some": "확인 항목 {{total}}개 중 {{done}}개를 마쳤습니다.",
+          "some_one": "확인 항목 {{total}}개 중 {{done}}개를 마쳤습니다.",
+          "some_other": "확인 항목 {{total}}개 중 {{done}}개를 마쳤습니다."
+        },
+        "confirm": {
+          "waiting_reply": "응답을 기다리고 있습니다."
+        },
+        "now": {
+          "understanding": "코드와 자료를 읽으며 무엇을 할지 파악하고 있습니다.",
+          "changing": "코드를 바꾸고 있습니다.",
+          "checking": "테스트나 확인 작업을 실행해 변경이 제대로 동작하는지 보고 있습니다.",
+          "fixing": "확인에서 문제가 발견되어 고치고 있습니다.",
+          "waiting": "멈춰서 응답을 기다리고 있습니다.",
+          "wrapping_up": "작업을 마쳤고 마무리하고 있습니다.",
+          "stuck": "제자리를 맴도는 것 같습니다. 방향을 알려 주셔야 할 수도 있습니다.",
+          "unclear": "작업하고 있습니다.",
+          "focus": "{{now}} (진행 중: {{focus}})",
+          "planning": "어떻게 할지 구상하고 있습니다. 아직 아무것도 바꾸지 않았습니다."
+        }
+      },
+      "notes": {
+        "looked": "파일이나 위치 {{count, number}}곳을 살펴봤습니다",
+        "looked_one": "파일이나 위치 {{count, number}}곳을 살펴봤습니다",
+        "looked_other": "파일이나 위치 {{count, number}}곳을 살펴봤습니다",
+        "changed_file": "파일을 바꿨습니다: {{file}}",
+        "wrote_file": "파일을 썼습니다: {{file}}",
+        "ran_command": "명령을 실행했습니다: {{command}}",
+        "command_failed": "명령 실행 중 오류가 났습니다: {{command}}",
+        "check_passed": "확인을 통과했습니다: {{command}}",
+        "check_failed": "확인을 통과하지 못했습니다: {{command}}",
+        "item_done": "확인 항목 하나를 마쳤습니다: {{item}}",
+        "item_added": "확인 항목에 추가했습니다: {{item}}",
+        "helpers_sent": "도우미 {{count, number}}명을 보냈습니다: {{titles}}",
+        "helpers_sent_one": "도우미 {{count, number}}명을 보냈습니다: {{titles}}",
+        "helpers_sent_other": "도우미 {{count, number}}명을 보냈습니다: {{titles}}",
+        "helpers_back": "도우미 {{count, number}}명이 돌아왔습니다",
+        "helpers_back_one": "도우미 {{count, number}}명이 돌아왔습니다",
+        "helpers_back_other": "도우미 {{count, number}}명이 돌아왔습니다",
+        "permission_allowed": "허용하셨습니다: {{summary}}",
+        "permission_denied": "허용하지 않으셨습니다: {{summary}}",
+        "goal_round": "목표를 아직 이루지 못해 mu가 다시 작업하게 했습니다({{round, number}}번째){{reason}}",
+        "goal_met": "목표를 이뤘습니다: {{text}}",
+        "goal_paused": "목표를 잠시 멈췄습니다{{reason}}",
+        "trouble_loop": "mu가 같은 단계를 되풀이하고 있다는 것을 알아챘습니다: {{detail}}",
+        "trouble": "mu가 알아챈 점: {{detail}}",
+        "did": "{{tool}} 도구를 썼습니다: {{what}}",
+        "said_quote": "에이전트가 한 말: {{text}}",
+        "ended": "멈췄습니다.",
+        "waiting_reply": "멈춰서 응답을 기다리고 있습니다."
+      }
+    },
+    "lessonsView": {
+      "filterLabel": "표시할 교훈",
+      "active": "사용 중",
+      "all": "전체",
+      "count": "{{count}}개",
+      "count_one": "{{count}}개",
+      "count_other": "{{count}}개",
+      "search": "교훈 검색",
+      "kinds": {
+        "correction": "정정",
+        "preference": "규칙",
+        "pitfall": "함정",
+        "workaround": "우회 방법",
+        "fact": "사실"
+      },
+      "everywhere": "모든 프로젝트",
+      "status": {
+        "retired": "사용 중지됨",
+        "superseded": "대체됨"
+      },
+      "uses": "불러옴 {{recalled}} · 따름 {{applied}}",
+      "origins": {
+        "user": "내 정정이나 규칙에서",
+        "outcome": "에이전트가 스스로 찾은 해결 방법에서",
+        "model": "모델이 기록함",
+        "subagent": "하위 에이전트의 보고에서",
+        "command": "/remember로 기록함"
+      },
+      "updated": "{{date}} 업데이트",
+      "editLabel": "교훈 내용",
+      "retire": "사용 중지",
+      "retireConfirm": "이 교훈의 사용을 중지할까요? 앞으로 어떤 턴에도 불러오지 않습니다.",
+      "loadFailed": "교훈을 읽을 수 없습니다",
+      "saveFailed": "교훈을 바꾸지 못했습니다",
+      "empty": "이 프로젝트에는 아직 교훈이 없습니다. mu는 내 정정, 스스로 찾은 해결 방법, /remember에서 교훈을 배웁니다.",
+      "noneActive": "사용 중인 교훈이 없습니다. 전체에는 사용 중지되거나 대체된 교훈도 표시됩니다.",
+      "noMatch": "일치하는 교훈이 없습니다.",
+      "noProject": "이 대화에는 프로젝트 폴더가 없어 모든 프로젝트에 적용되는 교훈만 표시합니다.",
+      "notes": {
+        "label": "이 세션에서 교훈이 한 일",
+        "recalled": "이번 턴에 교훈 {{count}}개를 불러왔습니다",
+        "recalled_one": "이번 턴에 교훈 {{count}}개를 불러왔습니다",
+        "recalled_other": "이번 턴에 교훈 {{count}}개를 불러왔습니다",
+        "briefed": "하위 에이전트 지시에 교훈 {{count}}개를 담았습니다: {{task}}",
+        "briefed_one": "하위 에이전트 지시에 교훈 {{count}}개를 담았습니다: {{task}}",
+        "briefed_other": "하위 에이전트 지시에 교훈 {{count}}개를 담았습니다: {{task}}",
+        "applied": "교훈 {{count}}개를 따랐습니다",
+        "applied_one": "교훈 {{count}}개를 따랐습니다",
+        "applied_other": "교훈 {{count}}개를 따랐습니다",
+        "retired": "사용 중지: {{lesson}}",
+        "retiredUnused": "사용 중지: {{lesson}} ({{count}}번 불러왔지만 한 번도 따르지 않음)",
+        "retiredUnused_one": "사용 중지: {{lesson}} ({{count}}번 불러왔지만 한 번도 따르지 않음)",
+        "retiredUnused_other": "사용 중지: {{lesson}} ({{count}}번 불러왔지만 한 번도 따르지 않음)",
+        "retiredContradicted": "사용 중지: {{lesson}} (새로 하신 말과 모순)",
+        "retiredForgotten": "사용 중지: {{lesson}} (요청에 따라)",
+        "mergedSame": "기존 교훈에 합침: {{lesson}}",
+        "mergedRefines": "더 정확한 표현으로 바꿈: {{lesson}}",
+        "mergedContradicts": "기록하지 않음, 다음 교훈과 모순: {{lesson}}"
+      }
+    },
+    "activityLoadFailed": "협업 활동을 불러오지 못했습니다. 다시 시도하는 중…",
+    "beeFailed": "이 벌이 오류를 보고했습니다.",
+    "beeCounts": {
+      "turns": "{{count}}턴",
+      "turns_one": "{{count}}턴",
+      "turns_other": "{{count}}턴",
+      "received": "수신 {{count}}",
+      "received_one": "수신 {{count}}",
+      "received_other": "수신 {{count}}",
+      "shared": "공유 {{count}}",
+      "shared_one": "공유 {{count}}",
+      "shared_other": "공유 {{count}}",
+      "tools": "도구 호출 {{count}}회",
+      "tools_one": "도구 호출 {{count}}회",
+      "tools_other": "도구 호출 {{count}}회"
+    },
+    "compactionTokens": "{{before}} → ≈{{after}}토큰",
+    "compactionKept": "결과 {{count}}개 유지됨",
+    "compactionKept_one": "결과 {{count}}개 유지됨",
+    "compactionKept_other": "결과 {{count}}개 유지됨",
+    "compactionPruned": "{{count}}개 잘라냄",
+    "compactionPruned_one": "{{count}}개 잘라냄",
+    "compactionPruned_other": "{{count}}개 잘라냄",
+    "compactionDropped": "호출 {{count}}개 제거됨",
+    "compactionDropped_one": "호출 {{count}}개 제거됨",
+    "compactionDropped_other": "호출 {{count}}개 제거됨",
+    "jevLine": {
+      "classifying": "{{judge}}에서 메시지를 분류하는 중…",
+      "classified": "{{judge}} 분류: {{type}}",
+      "byRule": "규칙으로 분류: {{type}}",
+      "shadow": "{{line}} (관찰만, 적용 안 됨)",
+      "late": "{{line}} (이번 턴에는 늦었습니다)",
+      "fallback": "이번에는 {{judge}}에서 뚜렷한 분류가 없어 평소대로 진행합니다",
+      "unanswered": "이번에는 {{judge}}에서 응답이 없어 평소대로 진행합니다",
+      "noJudge": "아직 사용할 수 있는 판정기가 없어 메시지를 분류하지 않습니다.",
+      "setUp": "판정기 설정",
+      "skipped": "분류를 건너뜀",
+      "off": "분류가 꺼져 있음"
+    },
+    "eventLine": {
+      "detail": "세부 정보: {{detail}}",
+      "progress": {
+        "frame": "작업 프레임 업데이트 중",
+        "lessons": "이전 세션의 경험을 확인하는 중",
+        "skills": "이 세션에 필요한 스킬을 고르는 중",
+        "capabilities": "이 작업에 필요한 기능 확장을 고르는 중",
+        "goal_check": "목표가 달성되었는지 확인하는 중",
+        "permissionReview": "Jev 검토 중: {{summary}}"
+      },
+      "goal": {
+        "paused": "일시정지됨: {{reason}}",
+        "reason": {
+          "interrupted": "사용자가 실행을 중단함",
+          "modelCallFailed": "모델 호출 실패",
+          "needsUser": "에이전트에게 사용자의 입력이 필요함",
+          "needsUserDetail": "에이전트에게 사용자의 입력이 필요함: {{detail}}",
+          "unjudged": "어떤 판정기도 목표 달성 여부를 판정하지 못했고, 끝나지 않았다고 확인된 항목도 없음",
+          "continuationsUsedUp": "계속 실행 한도({{count}}회) 소진",
+          "continuationsUsedUp_one": "계속 실행 한도({{count}}회) 소진",
+          "continuationsUsedUp_other": "계속 실행 한도({{count}}회) 소진",
+          "minutesUsedUp": "시간 한도({{duration}}) 소진",
+          "sessionReopened": "세션이 다시 열림",
+          "idle": "에이전트가 {{count}}번 연속 아무 작업 없이 실행을 끝냄",
+          "idle_one": "에이전트가 아무 작업 없이 실행을 {{count}}번 끝냄",
+          "idle_other": "에이전트가 {{count}}번 연속 아무 작업 없이 실행을 끝냄",
+          "noProgress": "{{count}}번 연속 실행에서 진전 없음, 어떻게 계속할지 알려 주세요",
+          "noProgress_one": "{{count}}번 실행에서 진전 없음, 어떻게 계속할지 알려 주세요",
+          "noProgress_other": "{{count}}번 연속 실행에서 진전 없음, 어떻게 계속할지 알려 주세요",
+          "noProgressDetail": "{{count}}번 연속 실행에서 진전 없음({{detail}}), 어떻게 계속할지 알려 주세요",
+          "noProgressDetail_one": "{{count}}번 실행에서 진전 없음({{detail}}), 어떻게 계속할지 알려 주세요",
+          "noProgressDetail_other": "{{count}}번 연속 실행에서 진전 없음({{detail}}), 어떻게 계속할지 알려 주세요"
+        }
+      },
+      "frame": {
+        "unclearChange": "이 메시지로 작업이 어떻게 바뀌는가? “{{message}}”"
+      },
+      "search": {
+        "notConfigured": "“{{source}}”은(는) 검색 소스가 아님(features.web.search)",
+        "failed": "{{source}} 실패: {{message}}",
+        "robotPage": "{{source}}에서 보안 확인 페이지를 반환함: 이 클라이언트를 로봇으로 간주함",
+        "httpError": "{{source}}에서 HTTP {{status}} 응답을 반환함",
+        "noResults": "{{source}}에서 결과가 없는 페이지를 반환함(찾은 결과가 없거나 페이지 구조가 바뀜)",
+        "unrelated": "{{source}}에서 검색어와 무관한 결과를 반환함(검색 엔진이 로봇으로 간주한 클라이언트에 흔히 하는 방식)"
+      },
+      "mcp": {
+        "line": "{{name}}: {{reason}}",
+        "projectUntrusted": "신뢰하지 않는 프로젝트이며, 이 서버는 해당 프로젝트에서 정의됨",
+        "needsApproval": "프로젝트({{source}})에서 정의한 서버이며 아직 승인되지 않음, mu에서 이 폴더를 열어 한 번 허용하거나 TupAI.json에 정의하세요",
+        "aborted": "시작이 취소됨",
+        "rpc": "오류로 응답함",
+        "protocol": "MCP 프로토콜이 아닌 응답을 보냄",
+        "startFailed": "시작할 수 없음",
+        "crashedRestarting": "실행 중 충돌하여 mu가 한 번 재시작함",
+        "crashedAgain": "다시 충돌하여 더 이상 재시작하지 않음",
+        "restartFailed": "충돌 후 재시작도 실패함",
+        "restartFailedCause": "충돌 후 재시작도 실패함: {{cause}}",
+        "closed": "mu가 응답을 기다리는 중에 연결이 닫힘",
+        "timeout": "제시간에 응답하지 않음",
+        "denied": "사용자가 이 프로젝트의 서버 시작을 허용하지 않음",
+        "unreachable": "시작하거나 연결할 수 없음"
+      },
+      "rewind": {
+        "sameCommandFailed": "실패하는 같은 명령을 {{count}}번 실행함: {{command}}",
+        "sameCommandFailed_one": "실패하는 같은 명령을 {{count}}번 실행함: {{command}}",
+        "sameCommandFailed_other": "실패하는 같은 명령을 {{count}}번 실행함: {{command}}",
+        "monitorTrouble": "이번 턴에 감시 기능이 {{count}}번 경고함({{kind}}: {{detail}})",
+        "monitorTrouble_one": "이번 턴에 감시 기능이 {{count}}번 경고함({{kind}}: {{detail}})",
+        "monitorTrouble_other": "이번 턴에 감시 기능이 {{count}}번 경고함({{kind}}: {{detail}})",
+        "trouble": {
+          "loop": "제자리를 맴도는 중",
+          "drift": "작업에서 이탈하는 중"
+        }
+      },
+      "browser": {
+        "finished": "{{status}}: {{reason}}",
+        "openFailed": "브라우저에서 페이지를 열 수 없습니다.",
+        "openFailedPanel": "앱의 브라우저 패널에서 페이지를 열 수 없습니다.",
+        "launch": {
+          "noBrowser": {
+            "mac": "/Applications에서 Chrome, Chromium, Edge 또는 Brave를 찾을 수 없습니다. 이 중 하나를 설치하거나 MU_CHROME을 Chromium 기반 브라우저의 실행 파일로 설정하세요.",
+            "windows": "Program Files 또는 %LOCALAPPDATA%에서 Chrome, Chromium, Edge 또는 Brave를 찾을 수 없습니다. 이 중 하나를 설치하거나 MU_CHROME을 해당 브라우저의 .exe 파일로 설정하세요.",
+            "wsl": "WSL 안에서 브라우저를 찾을 수 없습니다. WSL 안에 브라우저를 설치하거나 WSL의 미러 모드 네트워킹을 켜세요. 방법은 아래 reason 필드에 있습니다.",
+            "other": "Chrome, Chromium, Edge 또는 Brave를 찾을 수 없습니다. 이 중 하나를 설치하거나 MU_CHROME을 해당 브라우저의 실행 파일로 설정하세요. 설치 명령은 아래 reason 필드에 있습니다."
+          },
+          "windowsBrowserUnusable": "{{executable}}을(를) 사용할 수 없습니다. Windows 쪽 브라우저는 WSL에서 미러 모드 네트워킹을 켠 경우에만 연결할 수 있습니다.",
+          "profileNoWindowsPath": "프로필 폴더 {{profileDir}}에 해당하는 Windows 경로가 없습니다(WSL_DISTRO_NAME이 설정되지 않음).",
+          "browserExitedOnStart": "브라우저가 시작 중에 종료되었습니다(종료 코드 {{exitCode}}).",
+          "devtoolsPortTimeout": "브라우저가 제시간에 DevTools 포트를 열지 않았습니다.",
+          "cdpConnectTimeout": "브라우저 연결 시간이 초과되었습니다.",
+          "cdpConnectFailed": "브라우저에 연결할 수 없습니다.",
+          "browserSpawnFailed": "{{command}}을(를) 시작할 수 없습니다."
+        }
+      },
+      "permissions": {
+        "mode": "권한 모드: {{mode}}",
+        "request": "사용자의 허용을 기다리는 중: {{summary}}",
+        "waiting": "사용자의 허용을 기다리는 중",
+        "answers": {
+          "once": "한 번 허용했습니다",
+          "session": "이 대화 동안 허용됨",
+          "deny": "허용하지 않았습니다"
+        },
+        "about": "{{answer}}: {{summary}}",
+        "approved": {
+          "judge": "판정기가 묻지 않고 실행을 허용했습니다: {{summary}}",
+          "grant": "이 대화 동안 허용되어 묻지 않고 실행했습니다: {{summary}}"
+        }
+      },
+      "board": {
+        "on": "보드: 켜짐",
+        "off": "보드: 꺼짐"
+      }
+    },
+    "gauges": {
+      "context": "컨텍스트",
+      "contextHint": "모델이 다음에 읽을 내용이 컨텍스트의 {{percent}}를 차지합니다",
+      "cache": "캐시 적중",
+      "cacheHint": "캐시 적중: 최근 턴 {{turn}}, 대화 전체 {{session}}",
+      "pending": "mu의 다음 답변 후에 표시됩니다"
+    }
+  },
+  "menu": {
+    "about": "{{name}} 정보",
+    "settings": "설정…",
+    "services": "서비스",
+    "hide": "{{name}} 숨기기",
+    "hideOthers": "기타 숨기기",
+    "unhide": "모두 보기",
+    "quit": "{{name}} 종료",
+    "file": "파일",
+    "newChat": "새 채팅",
+    "closeWindow": "윈도우 닫기",
+    "edit": "편집",
+    "undo": "실행 취소",
+    "redo": "다시 실행",
+    "cut": "잘라내기",
+    "copy": "복사",
+    "paste": "붙여넣기",
+    "pasteAndMatchStyle": "스타일 맞춰 붙여넣기",
+    "delete": "삭제",
+    "selectAll": "모두 선택",
+    "view": "보기",
+    "reload": "새로고침",
+    "forceReload": "강제 새로고침",
+    "toggleDevTools": "개발자 도구 전환",
+    "resetZoom": "실제 크기",
+    "zoomIn": "확대",
+    "zoomOut": "축소",
+    "toggleFullScreen": "전체 화면 전환",
+    "window": "윈도우",
+    "minimize": "최소화",
+    "zoomWindow": "확대/축소",
+    "bringAllToFront": "모두 앞으로 가져오기",
+    "help": "도움말",
+    "checkForUpdates": "업데이트 확인…",
+    "projectPage": "GitHub의 {{name}}"
+  },
+  "trayMenu": {
+    "runningTasks": "실행 중인 작업: {{count}}"
+  },
+  "noData": "데이터 없음",
+  "labelWithSelectedCount": "{{label}} ({{selected}}/{{total}})",
+  "selectedSkillsWithCount": "선택된 스킬 · {{count}}",
+  "commandPalette": {
+    "title": "명령어 팔레트",
+    "placeholder": "대화, 설정, 명령어 검색",
+    "groups": {
+      "conversations": "대화",
+      "settings": "설정",
+      "commands": "명령어"
+    },
+    "searchMessages": "메시지에서 “{{query}}” 검색",
+    "empty": "일치하는 항목이 없습니다",
+    "noConversations": "아직 대화가 없습니다. 입력하면 설정과 명령어를 찾을 수 있습니다.",
+    "openSettings": "설정 열기",
+    "actions": {
+      "newConversation": "새 채팅 시작",
+      "scheduledTasks": "예약 작업 열기"
+    },
+    "commandWaits": "이 응답이 끝나면 실행됩니다"
+  },
+  "window": {
+    "minimize": "최소화",
+    "maximize": "최대화",
+    "restore": "복원"
+  },
+  "collapseSidebar": "사이드바 접기",
+  "expandSidebar": "사이드바 펼치기",
+  "workPanel": {
+    "label": "작업 패널",
+    "tabsLabel": "작업 패널 탭",
+    "tabs": {
+      "board": "보드",
+      "judge": "판정",
+      "hive": "Hive",
+      "lessons": "교훈",
+      "files": "파일",
+      "preview": "미리보기",
+      "source": "소스",
+      "browser": "브라우저"
+    },
+    "close": "작업 패널 닫기",
+    "resize": "작업 패널 너비 조절",
+    "unread": "{{tab}}, 새 소식",
+    "noProject": "이 대화에는 프로젝트 폴더가 없어 표시할 파일이나 변경 사항이 없습니다.",
+    "previewEmpty": "아직 미리 볼 내용이 없습니다. 대화에서 연 파일이 여기에 표시됩니다.",
+    "previewHidden": "미리보기가 숨겨져 있습니다.",
+    "browserEmpty": "열린 페이지가 없습니다. 위에 URL이나 검색어를 입력하세요. 대화에서 연 페이지도 여기에 표시됩니다."
+  },
+  "nodeRuntime": {
+    "title": "Node.js를 다운로드할까요?",
+    "message": "mu는 에이전트와 도구를 자체 Node.js로 실행합니다. 이 Node.js는 아직 다운로드되지 않았습니다.",
+    "detail": "nodejs.org에서 Node.js {{version}}(약 {{size}} MB)을 다운로드하여 다음 위치에 압축을 풉니다:\n{{folder}}\n\n'나중에'를 선택하면 아무것도 다운로드하지 않습니다. mu는 평소처럼 열리고, Node.js가 필요한 곳에서 알려 주며, 다음 시작 때 다시 묻습니다.",
+    "download": "다운로드",
+    "later": "나중에",
+    "note": "Node.js가 다운로드되지 않아 이 에이전트를 실행할 수 없습니다. 다음 시작 때 다시 묻습니다.",
+    "toolNote": "Node.js가 다운로드되지 않아 이를 필요로 하는 도구를 실행할 수 없습니다. 다음 시작 때 다시 묻습니다."
+  }
+}

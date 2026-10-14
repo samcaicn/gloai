@@ -1,0 +1,17 @@
+#!/bin/sh
+# mu's ACP adapter in the packaged app (macOS, Linux). AionCore runs this file as the command of mu's registration.
+# The adapter is bundled into app.asar.unpacked/out/main/mu-acp.js (scripts/build-mcp-servers.js), and the app carries
+# mu itself in harness/mu-agent (scripts/kyrn/bundle-harness.mjs). Both run on the app's own binary as Node, so no
+# Node has to be installed. MU_NODE, when set, runs them on that Node instead.
+here=$(cd "$(dirname "$0")" && pwd)
+adapter="$here/../app.asar.unpacked/out/main/mu-acp.js"
+if [ -n "${MU_NODE:-}" ]; then
+  exec "$MU_NODE" "$adapter" "$@"
+fi
+case "$(uname -s)" in
+  Darwin) app="$here/../../MacOS/mu" ;;
+  *) app="$here/../../mu-desktop" ;;
+esac
+ELECTRON_RUN_AS_NODE=1
+export ELECTRON_RUN_AS_NODE
+exec "$app" "$adapter" "$@"

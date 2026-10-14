@@ -1,0 +1,758 @@
+{
+  "title": "TupAI ayarları",
+  "description": "TupAI'ya verilebilecek tüm ayarlar: hakemler, karar noktaları, özellikler, modeller ve bağlam. TupAI komut satırıyla ortak kullanılır.",
+  "reload": "Yeniden yükle",
+  "search": "Kararlarda ve özelliklerde ara",
+  "noMatch": "Aramayla eşleşen bir şey yok.",
+  "modified": "Değiştirildi",
+  "applyNote": "Değişiklikler yeni oturumlarda geçerli olur. Çalışan bir oturum başladığı yapılandırmayı korur; değişiklikleri alması için yeniden bağlayın.",
+  "apiKey": "API anahtarı",
+  "keyHelp": "Kaydedildikten sonra bir daha gösterilmez. Yalnızca bu bilgisayarda kalır ve yalnızca sizin hesabınız okuyabilir.",
+  "keyKeep": "Kayıtlı anahtarı korumak için boş bırakın",
+  "endpointRule": "HTTPS kullanın; HTTP yalnızca bu makine (127.0.0.1, localhost) veya özel ağdaki bir IP adresi (örneğin 192.168.1.20) için. Adreste kullanıcı adı, şifre, sorgu veya parça bulunmamalı.",
+  "sections": {
+    "judges": "Hakemler",
+    "judgeTiers": "Hakem kademeleri",
+    "decisions": "Karar noktaları",
+    "features": "Özellikler",
+    "moreFeatures": "Diğer özellikler",
+    "providers": "Sağlayıcılar",
+    "defaultModel": "Varsayılan model",
+    "context": "Bağlam"
+  },
+  "pages": {
+    "decisions": {
+      "input": "Karar noktaları: Girdi",
+      "context": "Bağlam",
+      "memory": "Karar noktaları: Dersler",
+      "tools": "Karar noktaları: Araçlar ve güvenlik",
+      "turn": "Karar noktaları: Tur",
+      "team": "Karar noktaları: Ekip çalışması"
+    },
+    "features": {
+      "input": "Diğer özellikler: Girdi",
+      "context": "Diğer özellikler: Bağlam",
+      "tools": "Diğer özellikler: Araçlar ve güvenlik",
+      "turn": "Diğer özellikler: Tur",
+      "other": "Diğer özellikler: Diğer"
+    }
+  },
+  "modes": {
+    "active": "Açık",
+    "off": "Kapalı",
+    "activeHelp": "Karar uygulanır.",
+    "offHelp": "Karar etkili olmaz: o adım her zamanki gibi devam eder."
+  },
+  "harness": {
+    "tooOld": "Bu TupAI sürümü, karar noktalarını ve özelliklerini listeleyemeyecek kadar eski. Bunları burada görmek için TupAI’yu güncelleyin; temel ayarlar yine de çalışır.",
+    "unsupported": "TupAI kendini bu uygulamanın tanımadığı bir biçimde tanımlıyor (sürüm {{version}}). Karar noktalarını ve özellikleri düzenlemek için uygulamayı güncelleyin."
+  },
+  "load": {
+    "failed": "Ayarlar yüklenemedi"
+  },
+  "save": {
+    "saved": "Kaydedildi. Yeni oturumlar bunu kullanır; çalışan oturumları yeniden bağlayın.",
+    "unsaved": "Kaydedilmemiş değişiklikler: {{sections}}",
+    "nothing": "Kaydedilmemiş değişiklik yok",
+    "unsavedDot": "Kaydedilmemiş değişiklikler",
+    "discard": "Vazgeç",
+    "stale": "Başka bir program (TupAI komut satırı ya da çalışan bir oturum) yapılandırmayı burada yüklendikten sonra değiştirdi; bu yüzden hiçbir şey kaydedilmedi. Güncel durumu görmek için yeniden yükleyin; kaydedilmemiş düzenlemeleriniz kaybolur.",
+    "failed": "Kaydedilemedi: {{reason}}"
+  },
+  "units": {
+    "s": "sn",
+    "tokens": "token"
+  },
+  "options": {
+    "range": "Aralık {{min}} – {{max}}.",
+    "emptyText": "Boş: varsayılanı kullan",
+    "addItem": "Yazıp Enter'a basın",
+    "addNumber": "Bir sayı yazıp Enter'a basın",
+    "problem": {
+      "type": "Bu değerin türü yanlış.",
+      "range": "Bu değer izin verilen aralığın dışında.",
+      "choice": "Bu, seçeneklerden biri değil.",
+      "length": "Çok uzun ya da bir öğe boş."
+    }
+  },
+  "decisions": {
+    "description": "Hakeme soru sorulan her nokta. Bir noktaya kendi modunu vermedikçe varsayılan modu izler.",
+    "defaultMode": "Varsayılan mod",
+    "defaultModeHelp": "Kendi modu olmayan her karar noktası için.",
+    "useDefault": "Varsayılana dön ({{mode}})",
+    "featureOff": "Özellik kapalı: soru sorulmaz",
+    "groups": {
+      "input": "Girdi",
+      "context": "Bağlam",
+      "memory": "Dersler",
+      "tools": "Araçlar ve güvenlik",
+      "turn": "Tur",
+      "team": "Ekip çalışması"
+    },
+    "otherGroup": "Diğer",
+    "pageLead": "Bir noktaya kendi modunu vermedikçe varsayılan modu izler. Varsayılan mod ve arama “{{page}}” sayfasında.",
+    "none": "Burada henüz karar noktası yok."
+  },
+  "features": {
+    "lead": "TupAI'nun arka planda sizin için yaptıkları. Birini kapatırsanız TupAI onu yapmayı bırakır.",
+    "moreLead": "TupAI’nun yapabildiği diğer her şey, etki ettiği yere göre gruplandı. Her özelliğin seçenekleri bir tık uzakta.",
+    "beta": "Beta",
+    "reset": "Varsayılanlara dön",
+    "boardModelElsewhere": "Panoyu yazan model, Varsayılan model bölümünde seçilir.",
+    "options": "Seçenekler",
+    "noOptions": "Ayarlanacak başka bir şey yok: yalnızca anahtar var.",
+    "noSuchFeature": "TupAI’nun bu sürümünde böyle bir özellik yok.",
+    "none": "Burada henüz özellik yok.",
+    "part": "Seçenekler, sayfa {{part}}/{{parts}}",
+    "previousPart": "Önceki sayfa",
+    "nextPart": "Sonraki sayfa"
+  },
+  "judges": {
+    "tiersHelp": "Hakemler sırayla denenir. Sonraki hakem yalnızca öncekilerin emin olamadığı soruları görür.",
+    "order": "Sıra",
+    "orderHelp": "İlki, yukarıda seçilen hakemdir.",
+    "tierTitle": "{{index}}. kademe: {{name}}",
+    "service": "Hizmet",
+    "services": {
+      "auto": {
+        "name": "Otomatik",
+        "help": "Anahtarı ayarlıysa TypeSafe, değilse anahtarı ayarlıysa OpenRouter, o da değilse Vercel AI Gateway.",
+        "key": "TypeSafe API anahtarı"
+      },
+      "typesafe": {
+        "name": "TypeSafe",
+        "help": "Her zaman doğrudan TypeSafe.",
+        "key": "TypeSafe API anahtarı"
+      },
+      "openrouter": {
+        "name": "OpenRouter",
+        "help": "Her zaman OpenRouter üzerinden, bir OpenRouter API anahtarıyla. Yalnızca Jev için kaydedilir; ayarlamak OpenRouter sohbet modellerinin anahtarını değiştirmez.",
+        "key": "OpenRouter API anahtarı"
+      },
+      "gateway": {
+        "name": "Vercel AI Gateway",
+        "help": "Her zaman Vercel AI Gateway üzerinden.",
+        "key": "Vercel AI Gateway API anahtarı"
+      },
+      "custom": {
+        "name": "Özel hizmet",
+        "help": "TypeSafe'in System One protokolünü konuşan herhangi bir hizmet: kendi çalıştırdığınız bir hizmet, ağınızdaki bir aktarıcı ya da Jev sunan başka bir sağlayıcı.",
+        "key": "Hizmetin API anahtarı"
+      }
+    },
+    "model": "Hakem modeli",
+    "baseUrl": "Temel URL",
+    "baseUrlHelp": "Boş bırakılırsa TypeSafe'in kendi adresi kullanılır.",
+    "customUrlHelp": "Hizmetin System One adresi. Anahtarı yalnızca buraya gönderilir.",
+    "baseUrlNeeded": "Özel bir hizmetin adresi olmalıdır.",
+    "customTier": "Kendi eklediğiniz bir hakem. Değiştirmek için TupAI'nun ayar dosyasını düzenleyin.",
+    "endpointDefault": "Hizmetin varsayılan adresi",
+    "types": {
+      "localHelp": "Bu bilgisayarda çalışır.",
+      "clmHelp": "Kendi CLM sunucunuzda çalışır."
+    },
+    "intro": "TupAI çalışırken pek çok küçük soruyla karşılaşır: bu mesaj nasıl ele alınmalı, bu adım koyduğunuz bir kuralı çiğniyor TupAI? Bunları hakem yanıtlar. Birini seçin.",
+    "choose": "Bir hakem seçin",
+    "custom": "Şu an ilk sıradaki hakem özel bir hakem: aşağıda, Hakem kademeleri bölümünde görüp değiştirebilirsiniz.",
+    "keyPlaceholder": "Anahtarı yapıştırın",
+    "choices": {
+      "jev": {
+        "title": "Jev",
+        "tag": "Önerilen",
+        "description": "Hızlı ve isabetli, çağrı başına ücretlendirilir. TypeSafe, OpenRouter, Vercel AI Gateway ya da kendi hizmetinizin anahtarı gerekir."
+      },
+      "local": {
+        "title": "Yerel Laya",
+        "tag": "Ücretsiz · çevrimdışı",
+        "description": "Bu bilgisayarda çalışır; ağ yok, ücret yok. Sınıflandırmada iyidir; ilişkilendirme ve puanlama daha az güvenilirdir."
+      },
+      "clm": {
+        "title": "CLM",
+        "tag": "Kendi sunucunuz",
+        "description": "Jev ile aynı soruları kendi sunucunuzda (clm-serve) yanıtlar. Kodlayıcısı GPU ister; çağrı başına ücret yoktur."
+      }
+    },
+    "localAddress": "Adres: {{address}}",
+    "laya": {
+      "running": "Bu makinede çalışıyor",
+      "stopped": "Kurulu, çalışmıyor. TupAI gerektiğinde onu başlatır.",
+      "missing": "Henüz kurulu değil.",
+      "platform": "Laya bu bilgisayarda çalışamaz: Windows veya Linux (x64 ya da arm64) ya da Apple Silicon işlemcili bir Mac gerekir.",
+      "needsUv": "Kurulum için bir Python paket yöneticisi olan uv gerekiyor. Onu kurun, sonra buraya dönün.",
+      "uvLink": "uv nasıl kurulur",
+      "install": "Laya'yı kur",
+      "start": "Başlat",
+      "stop": "Durdur",
+      "confirmTitle": "Laya indirilip kurulsun TupAI?",
+      "confirmText": "Bu işlem PyPI ve Hugging Face'ten TupAI'nun klasörüne yaklaşık {{size}} MB (Python paketleri ve modelin ağırlıkları) indirir ve birkaç dakika sürer. Laya kurulduktan sonra başlar.",
+      "confirmOk": "İndir ve kur",
+      "working": {
+        "setup": "Laya kuruluyor…",
+        "start": "Laya başlatılıyor…",
+        "stop": "Laya durduruluyor…"
+      },
+      "failed": {
+        "setup": "Kurulum tamamlanmadı. Yeniden deneyebilirsiniz.",
+        "start": "Laya başlamadı.",
+        "stop": "Laya durmadı."
+      },
+      "onnx": {
+        "missing": "Laya'nın modeli henüz bu bilgisayarda yok (yaklaşık {{size}} MB). TupAI onu sizin yerinize indirmez: dosyaları Hugging Face'ten indirip model klasörüne koyun, ardından \"Denetle ve başlat\"a basın.",
+        "stopped": "Model yerinde, Laya çalışmıyor. Hakem olarak Laya seçiliyse TupAI, uygulama açıldığında onu kendisi başlatır.",
+        "starting": "Model denetleniyor ve Laya başlatılıyor… İlk denetim modelin tamamını okur, biraz sürer.",
+        "missingFiles": "Hâlâ eksik: {{files}}",
+        "wrongFiles": "TupAI ile test edilen sürüm değil, yeniden indirin: {{files}}",
+        "folder": "Model klasörü: {{folder}}",
+        "command": "Hugging Face komut satırı (hf) varsa bu tek komut her şeyi indirir:",
+        "page": "Hugging Face'ten al",
+        "openFolder": "Model klasörünü aç",
+        "check": "Denetle ve başlat",
+        "problem": {
+          "missing": "Bazı model dosyaları eksik.",
+          "wrong": "Bazı model dosyaları TupAI ile test edilen sürüm değil. Yeniden indirin.",
+          "runtime": "Bu bilgisayar modeli çalıştıramadı.",
+          "port": "Laya'nın bağlantı noktasını ({{port}}) başka bir program kullanıyor.",
+          "stopped": "Laya hazır olmadan durdu.",
+          "foreign": "Burada TupAI'nun başlatmadığı bir Laya çalışıyor. Onu başlatıldığı yerden durdurun."
+        }
+      }
+    },
+    "clm": {
+      "address": "Sunucu adresi",
+      "addressHelp": "clm-serve sunucusunun dinlediği adres, örneğin http://192.168.1.20:8700. Boş bırakılırsa bu bilgisayar ({{address}}).",
+      "key": "Sunucu anahtarı",
+      "keyPlaceholder": "Yalnızca sunucu isterse",
+      "keyHelp": "Yalnızca CLM_API_KEY ile başlatılan bir sunucu anahtar ister: aynı değeri girin. Kaydedildikten sonra bir daha gösterilmez.",
+      "check": "Sunucuyu denetle",
+      "unmeasured": "CLM'nin TupAI'nun kararlarını ne kadar iyi verdiği henüz ölçülmedi.",
+      "status": {
+        "checking": "Sunucuya soruluyor…",
+        "ready": "Yanıt veriyor · {{models}} · {{ms}} ms",
+        "down": "{{address}} adresinde yanıt veren yok. Orada clm-serve komutunu çalıştırın veya adresi düzeltin.",
+        "encoderDown": "Sunucu yanıt veriyor ama kodlayıcısı vermiyor: gömme sunucusu (vLLM) çalışana kadar her soru başarısız olur.",
+        "model": "Sunucu {{model}} sunmuyor. Sunduğu modeller: {{models}}.",
+        "keyNeeded": "Sunucu anahtar istiyor: başlatılırken kullanılan anahtarı (CLM_API_KEY) girin.",
+        "keySaved": "Sunucu anahtar istiyor ve bir anahtar kayıtlı.",
+        "mock": "Bu sunucu CLM'nin sahte kodlayıcısıyla çalışıyor: yanıtları gürültüdür, CLM'nin değil.",
+        "failed": "Sunucuya sorulamadı."
+      }
+    }
+  },
+  "keyState": {
+    "none": "Ayarlanmadı",
+    "set": "Ayarlandı",
+    "typed": "Yeni anahtar, henüz kaydedilmedi",
+    "empty": "Değişken boş",
+    "managed": "Ayarlandı",
+    "manual": "Ayarlandı (elle)"
+  },
+  "context": {
+    "auto": "Otomatik sıkıştırma",
+    "autoHelp": "Bağlam neredeyse dolduğunda geçmişi sıkıştırır.",
+    "limit": "Bağlam sınırı",
+    "limitHelp": "0 ise modelin penceresi, ayrılan pay düşülerek kullanılır. Aksi hâlde {{min}} ile {{max}} arası. Sonraki model isteğinden önce kontrol edilir; kesin bir sınır değildir.",
+    "limitProblem": "0 ya da {{min}} ile {{max}} arasında bir tam sayı girin.",
+    "lead": "Konuşmanın ne zaman sıkıştırılacağı, bağlamının ne kadar büyüyebileceği ve bağlamla ilgili karar noktaları."
+  },
+  "permissions": {
+    "modes": {
+      "full": {
+        "title": "Tam erişim"
+      },
+      "jev": {
+        "title": "Jev onaylar"
+      },
+      "ask": {
+        "title": "En az izin"
+      }
+    }
+  },
+  "permissionsCard": {
+    "kind": {
+      "edit": "TupAI bir dosyayı düzenlemek istiyor",
+      "shell": "TupAI bir komut çalıştırmak istiyor",
+      "run": "TupAI bir program çalıştırmak istiyor",
+      "outside": "TupAI proje dışındaki bir dosyayı değiştirmek istiyor",
+      "delegate": "TupAI alt ajanlar başlatmak istiyor",
+      "other": "TupAI bir dış işlem yapmak istiyor"
+    },
+    "reason": {
+      "ask": "En az izin: her adımda önce size sorulur.",
+      "unsure": "Jev bu adımın istediğiniz şey olduğundan emin değil.",
+      "beyond": "Jev bunun istediğiniz şeyin ötesine geçtiğini düşünüyor.",
+      "unrelated": "Jev bunun görevin bir parçası olmadığını düşünüyor.",
+      "protected": "Bu, TupAI'nun kendi ayarlarına dokunuyor; buna yalnızca siz izin verebilirsiniz.",
+      "nojudge": "Henüz kullanılabilir bir hakem yok, bu yüzden TupAI her adımda size soruyor.",
+      "judgedown": "Hakem bu kez yanıt vermedi, bu yüzden TupAI size soruyor."
+    },
+    "answer": {
+      "once": "Bir kez izin ver",
+      "session": "Bu konuşma için izin ver",
+      "sessionFor": "Bu konuşma için izin ver ({{grant}})",
+      "deny": "İzin verme"
+    },
+    "decided": {
+      "once": "Bir kez izin verdiniz: {{summary}}",
+      "session": "Bu konuşma için izin verildi: {{summary}}",
+      "deny": "İzin vermediniz: {{summary}}"
+    },
+    "flag": {
+      "recursive_or_forced_delete": "özyinelemeli veya zorla silme",
+      "discards_git_work": "git'teki değişiklikleri siler",
+      "force_push": "zorla push",
+      "drops_database_objects": "veritabanı nesnelerini siler",
+      "overwrites_device": "bir cihazın üzerine yazar",
+      "opens_permissions_recursively": "izinleri özyinelemeli olarak açar",
+      "runs_downloaded_script": "indirilen bir betiği çalıştırır",
+      "runs_as_administrator": "yönetici olarak çalışır",
+      "runs_as_root": "root olarak çalışır"
+    },
+    "flagged": "Riskli: {{flag}}."
+  },
+  "providers": {
+    "lead": "Modellerin nereden geldiği: abonelikler ve uç noktalar. Bir konuşmanın modeli ve düşünme düzeyi, o konuşmanın mesaj alanında seçilir.",
+    "title": "Sağlayıcılar",
+    "custom": "Özel sağlayıcılar",
+    "manualGroup": "Elle yazılmış",
+    "builtinGroup": "Diğer yerleşik",
+    "add": "Sağlayıcı ekle",
+    "new": "Yeni sağlayıcı",
+    "unsaved": "Kaydedilmedi",
+    "remove": "Kaldır",
+    "endpointType": "API biçimi",
+    "name": "Görünen ad",
+    "namePlaceholder": "örn. Proxy'm",
+    "id": "ID",
+    "idHelp": "Küçük harf, rakam ve kısa çizgi. Kaydedildikten sonra değiştirilemez.",
+    "idProblem": {
+      "format": "Küçük harf, rakam ve kısa çizgi kullanın; harf ya da rakamla başlasın (en fazla 40).",
+      "reserved": "Bu, yerleşik bir sağlayıcının ID'si. Bunun altındaki bir kayıt yeni bir sağlayıcı eklemek yerine o sağlayıcıyı yeniden yönlendirir.",
+      "taken": "Bu ID zaten kullanılıyor."
+    },
+    "baseUrl": "Temel URL",
+    "keyEnter": "API anahtarını yapıştırın",
+    "keyReplace": "Elle yazılmış bir anahtar kullanılıyor. Buraya yazdığınız anahtar onun yerini alır.",
+    "authHeader": "Authorization: Bearer başlığını da gönder (bazı proxy'ler bunu ister)",
+    "headers": "Elle yazılmış ek başlıklar olduğu gibi korunur: {{names}}. Değerleri gizlidir ve models.json içinde düzenlenir.",
+    "pick": "Soldan bir sağlayıcı seçin ya da yeni bir tane ekleyin.",
+    "manual": "Elle yazılmış",
+    "foreignHelp": "Bu kayıt yerleşik bir sağlayıcıyı yeniden yönlendiriyor ya da bu ekranın düzenlemediği bir API biçimi kullanıyor. Buradan kaldırılabilir ama düzenlenemez: models.json içinde düzenleyin.",
+    "modelCount": "{{count, number}} model",
+    "usable": "Kullanılabilir",
+    "builtinHelp": "TupAI son bağlantısında bunu kullanılabilir olarak bildirdi; genellikle API anahtarı ortamda olduğu için. Buradan kaldırılamaz: anahtarı ortamdan silin, TupAI yeniden bağlandıktan sonra kaybolur.",
+    "noneYet": "Henüz yok",
+    "unreadable": "models.json okunamadı; bu yüzden sağlayıcılar ne gösterilir ne kaydedilir. Dosyayı elle onarıp yeniden yükleyin.",
+    "commented": "models.json yorumlar içeriyor. Buradan kaydetmek bunları silerdi, bu yüzden sağlayıcılar salt okunur. Burada düzenlemek için yorumları elle kaldırın.",
+    "modelCount_one": "{{count, number}} model",
+    "modelCount_other": "{{count, number}} model",
+    "summary": "Bir abonelikle giriş yapıp hemen kullanın ya da herhangi bir OpenAI, Anthropic veya Gemini uyumlu uç noktaya bağlanın.",
+    "subscriptions": "Abonelikler",
+    "manualShort": "Elle",
+    "needsSetup": "Henüz kurulmadı",
+    "more": "Diğer işlemler",
+    "removeProvider": "Sağlayıcıyı kaldır",
+    "removeTitle": "{{name}} kaldırılsın mı?",
+    "removeSaved": "Kaydettiğinizde models.json dosyasından silinir; onun için saklanan anahtar da silinir.",
+    "removeUnsaved": "Henüz kaydedilmedi; burada doldurduklarınız atılır.",
+    "removeEntry": "Kaydettiğinizde bu elle yazılmış kayıt models.json dosyasından silinir. Yerleşik bir sağlayıcıyı geçersiz kılıyorsa o sağlayıcı varsayılanlarına döner.",
+    "removeDefault": "Yeni oturumlar bununla başlıyor, bu yüzden varsayılan model de temizlenir."
+  },
+  "defaults": {
+    "summary": "Yeni bir oturumun neyle başladığı. Bir sohbetin içinde yine de değiştirebilirsiniz.",
+    "provider": "Sağlayıcı",
+    "model": "Model",
+    "level": "Düşünme düzeyi",
+    "levelUnset": "Belirtme",
+    "levelHelp": "Bu modelin desteklemediği düzeyler devre dışıdır.",
+    "levelClamped": "“Belirtme” Orta anlamına gelir. Modelin desteklemediği bir düzey, desteklediği en yakın düzeye dönüşür.",
+    "noReasoning": "Bu model düşünmez; bu yüzden onunla açılan bir oturum her zaman düşünme kapalı başlar.",
+    "notSet": "Belirtilmedi",
+    "pickProvider": "Önce bir sağlayıcı seçin."
+  },
+  "accounts": {
+    "signIn": "Giriş yap",
+    "signOut": "Çıkış yap",
+    "signOutFailed": "Çıkış tamamlanmadı. Yeniden deneyebilirsiniz.",
+    "signOutConfirm": "{{name}} hesabından çıkış yapılsın mı? Kullanmak için yeniden giriş yapmanız gerekecek.",
+    "signedOut": "Giriş yapılmadı",
+    "instant": "Giriş ve çıkış, kaydetmeye gerek kalmadan hemen geçerli olur.",
+    "models": "Kullanabileceğiniz modeller",
+    "byKey": "Kullanılabilir (API anahtarı)",
+    "byKeyHelp": "Giriş yapılmış bir abonelik yok, ancak TupAI son bağlantısında bunu kullanılabilir olarak bildirdi; genellikle API anahtarı ortamda olduğu için. Giriş yaparsanız abonelik kullanılır.",
+    "otherRunning": "{{name}} için giriş yapılıyor; aynı anda yalnızca bir giriş yapılabilir.",
+    "showRunning": "Göster"
+  },
+  "endpoints": {
+    "openaiCompletions": {
+      "name": "OpenAI uyumlu (Chat Completions)",
+      "hint": "En yaygın desteklenen: proxy'ler, Ollama, vLLM, LM Studio, DeepSeek…",
+      "url": "Genellikle /v1 ile biter, örn. https://api.example.com/v1 veya http://localhost:11434/v1.",
+      "short": "OpenAI uyumlu"
+    },
+    "openaiResponses": {
+      "name": "OpenAI Responses",
+      "hint": "OpenAI'ın daha yeni Responses API'si; bunu sunan hizmetler için.",
+      "url": "Genellikle /v1 ile biter, örn. https://api.example.com/v1.",
+      "short": "OpenAI Responses"
+    },
+    "anthropicMessages": {
+      "name": "Anthropic uyumlu (Messages)",
+      "hint": "Claude ve Anthropic Messages biçimini kullanan hizmetler için.",
+      "url": "/v1 olmadan: istemci /v1/messages kısmını kendisi ekler, örn. https://api.example.com.",
+      "short": "Anthropic uyumlu"
+    },
+    "googleGenerativeAi": {
+      "name": "Google Generative AI",
+      "hint": "Google AI Studio üzerinden Gemini ve Gemma.",
+      "url": "örn. https://generativelanguage.googleapis.com/v1beta.",
+      "short": "Google"
+    }
+  },
+  "models": {
+    "title": "Modeller",
+    "id": "Model ID",
+    "name": "Görünen ad",
+    "context": "Bağlam penceresi",
+    "maxOutput": "En fazla çıktı",
+    "reasoning": "Düşünme",
+    "image": "Görseller",
+    "add": "Model ekle",
+    "none": "Henüz model yok. Bir tane ekleyin ya da bağlantıyı sınayıp uç noktanın listelediklerinden seçin.",
+    "problem": {
+      "emptyId": "Her modelin bir ID'si olmalı.",
+      "duplicate": "İki modelin ID'si aynı."
+    },
+    "idField": "Model ID · API'nin beklediği biçimde",
+    "rowField": "{{field}} ({{n}}. satır)",
+    "edit": "Düzenle: {{name}}",
+    "removeNamed": "Kaldır: {{name}}",
+    "done": "Tamam",
+    "contextTag": "Bağlam penceresi {{size}}",
+    "tagReasoning": "Düşünme",
+    "tagImage": "Görsel",
+    "noId": "Yeni model",
+    "show": "Göster: {{name}}",
+    "addListed": "Ekle: {{name}}",
+    "levels": "Düşünme düzeyleri",
+    "levelsHelp": "Bu model yalnızca işaretli düzeyleri sunar. Çok yüksek ve En yüksek, siz açana kadar kapalı kalır."
+  },
+  "test": {
+    "run": "Bağlantıyı sına",
+    "hint": "Bu uygulamadan tek bir küçük istek gönderilir: model listesi, o alınamazsa ilk modelden tek kelimelik bir yanıt.",
+    "okModels": "Bağlandı ({{ms}} ms). Uç nokta {{count, number}} model listeliyor.",
+    "okCompletion": "Bağlandı ({{ms}} ms). Model yanıt verdi.",
+    "auth": "Anahtar reddedildi (HTTP {{status}}).",
+    "notFound": "Bu adreste bir şey yok (HTTP 404). Temel URL'yi ve API biçimini kontrol edin; bir istekle sınamak için bir model ekleyin.",
+    "http": "Uç nokta HTTP {{status}} ile yanıt verdi.",
+    "timeout": "Zamanında yanıt gelmedi.",
+    "network": "Bağlanılamadı. Adresi ve ağı kontrol edin.",
+    "redirect": "Uç nokta başka bir adrese yönlendiriyor (HTTP {{status}}). Son adresi kullanın: anahtar yönlendirmelerde gönderilmez.",
+    "invalidResponse": "Yanıt bu API biçiminde değil. Biçim doğru TupAI?",
+    "keyUnavailable": "Kayıtlı anahtar bir komut ya da bileşik bir değer; bu uygulama bunu değerlendirmez. Sınamak için bir anahtar yazın.",
+    "urlChanged": "Adres ya da API biçimi değiştirildi. Kayıtlı anahtar yalnızca kaydedildiği yere gönderilir: önce kaydedin ya da anahtarı yeniden yazın.",
+    "detail": "Uç noktanın yanıtı: {{detail}}",
+    "okModels_one": "Bağlandı ({{ms}} ms). Uç nokta {{count, number}} model listeliyor.",
+    "okModels_other": "Bağlandı ({{ms}} ms). Uç nokta {{count, number}} model listeliyor."
+  },
+  "boardModel": {
+    "title": "Sade dil modeli",
+    "summary": "Sade dildeki panoyu yazar: işin nasıl gittiğini gündelik bir dille anlatır. Yalnızca size gösterilir, konuşmanın bağlamına asla girmez; her güncelleme bir model çağrısıdır.",
+    "pick": "Seçtiğiniz bir model",
+    "recommended": "Önerilen: en doğal ve en istikrarlı olan Claude Opus 4.6; ardından daha hızlı ve daha ucuz olan Gemini 3.8 Flash.",
+    "recommendedTag": "önerilen",
+    "provider": "Sağlayıcı",
+    "model": "Model",
+    "notSet": "Seçilmedi",
+    "pickProvider": "Önce bir sağlayıcı seçin",
+    "unset": "Henüz yok: pano ilk kez açıldığında TupAI size sorar.",
+    "session": "Konuşmanın kullandığı model",
+    "sessionHelp": "Konuşmanın modeli değişince pano da onu izler.",
+    "update": "TupAI'nun bu sürümünde panoyu yazan model buradan seçilemiyor. Önce TupAI'yu güncelleyin."
+  },
+  "levels": {
+    "off": "Düşünme kapalı",
+    "minimal": "En az",
+    "low": "Düşük",
+    "medium": "Orta",
+    "high": "Yüksek",
+    "xhigh": "Çok yüksek",
+    "max": "En yüksek"
+  },
+  "welcome": {
+    "reopen": "Kurulum rehberi",
+    "progress": "Kurulum ilerlemesi",
+    "steps": {
+      "model": "Model",
+      "judge": "Hakem",
+      "done": "Bitti"
+    },
+    "skipAll": "Kurulumu atla",
+    "skipStep": "Şimdilik atla",
+    "back": "Geri",
+    "next": "İleri",
+    "start": "Başla",
+    "model": {
+      "title": "Bir model bağlayın",
+      "subtitle": "TupAI bunu kod yazmak ve size yanıt vermek için kullanır. Üç adım; hepsini daha sonra Ayarlar'dan değiştirebilirsiniz.",
+      "model": "Model",
+      "baseUrl": "Temel URL",
+      "key": "API anahtarı",
+      "keyPlaceholder": "Anahtarı yapıştırın; bu bilgisayardaki bir hizmet anahtar istemeyebilir",
+      "modelId": "Model adı",
+      "signedIn": {
+        "title": "Abonelikle giriş yap",
+        "tag": "API anahtarı gerekmez",
+        "description": "ChatGPT, Claude, Grok ve diğer abonelikler"
+      },
+      "openai": {
+        "title": "OpenAI uyumlu API",
+        "tag": "En yaygın",
+        "description": "OpenAI, DeepSeek, Kimi, Qwen, Ollama ve aktarma hizmetleri",
+        "modelPlaceholder": "örn. deepseek-chat"
+      },
+      "anthropic": {
+        "title": "Anthropic uyumlu API",
+        "description": "Claude ve Messages biçimini kullanan hizmetler",
+        "modelPlaceholder": "örn. claude-sonnet-5"
+      },
+      "problems": {
+        "baseUrl": "https:// ile başlayan bir adres girin (http:// yalnızca bu bilgisayar veya özel ağ adresi için).",
+        "key": "API anahtarını girin.",
+        "model": "Model adını girin."
+      },
+      "openaiApi": {
+        "label": "API biçimi",
+        "openai-completions": "Chat Completions",
+        "openai-responses": "Responses",
+        "openai-completionsHint": "Neredeyse her yerde çalışır; çoğu hizmet ve aktarma hizmeti bunu destekler.",
+        "openai-responsesHint": "OpenAI'ın daha yeni API'si; yalnızca bazı hizmetler destekler."
+      }
+    },
+    "judge": {
+      "title": "Bir hakem seçin",
+      "subtitle": "Hakem, TupAI'nun çalışırken sorduğu küçük soruları yanıtlar. TupAI hakemsiz de çalışır, yalnızca bu kontroller olmaz."
+    },
+    "done": {
+      "title": "Her şey hazır",
+      "subtitle": "Bir göz atın, sonra başlayın.",
+      "model": "Model",
+      "judge": "Hakem",
+      "none": "Ayarlanmadı",
+      "noKey": "Henüz anahtar yok: anahtar girilene kadar kararlar varsayılan kurallara göre verilir",
+      "saveFailed": "Kaydedilemedi: {{reason}}",
+      "modelValue": "{{provider}} / {{model}}"
+    },
+    "intro": {
+      "title": "TupAI'ya hoş geldiniz",
+      "lead": "TupAI işi kendisi yapan bir kodlama asistanıdır: projenizi okur, kodu düzenler, komutları ve testleri çalıştırır, iş bitene kadar devam eder.",
+      "points": {
+        "judge": {
+          "title": "Her adımda bir kontrol",
+          "text": "Yerleşik bir hakem kritik anları gözetir: harekete geçmeden önce düşünmek, koyduğunuz kurallara uymak, doğrulamadan asla bitti dememek."
+        },
+        "control": {
+          "title": "Görürsünüz, yönetirsiniz",
+          "text": "Her değişiklik geri alınabilir; tarayıcıdaki her adım gözünüzün önündedir, duraklatabilir ya da devralabilirsiniz."
+        },
+        "ready": {
+          "title": "Hemen kullanıma hazır",
+          "text": "Claude Code, Cursor ve Codex'te zaten kurduğunuz kuralları, becerileri ve MCP sunucularını aktarır."
+        }
+      },
+      "start": "Kuruluma başla"
+    },
+    "login": {
+      "providers": {
+        "openai-codex": {
+          "name": "ChatGPT",
+          "plan": "Plus / Pro planı"
+        },
+        "anthropic": {
+          "name": "Claude",
+          "plan": "Pro / Max planı"
+        },
+        "xai": {
+          "name": "Grok",
+          "plan": "SuperGrok / X Premium"
+        },
+        "google-gemini-cli": {
+          "name": "Gemini CLI",
+          "plan": "Google hesabı"
+        },
+        "google-antigravity": {
+          "name": "Antigravity",
+          "plan": "Google hesabı"
+        }
+      },
+      "signedIn": "Giriş yapıldı",
+      "inProgress": "Giriş yapılıyor…",
+      "waiting": "{{name}} giriş sayfası tarayıcınızda açıldı. Giriş yapıp erişime izin verin; burası kendiliğinden devam eder.",
+      "deviceCode": "Kod",
+      "code": "Yetkilendirme kodu",
+      "codePlaceholder": "Tarayıcıda görünen kodu ya da en son açılan sayfanın adresini yapıştırın",
+      "submit": "Gönder",
+      "openAgain": "Sayfayı yeniden aç",
+      "pasteCode": "Bunun yerine kod yapıştır",
+      "cancel": "İptal",
+      "failed": "Giriş tamamlanmadı. Yeniden deneyebilirsiniz.",
+      "asks": "{{name}} soruyor (kendi ifadesiyle):",
+      "needAccount": "Önce bir hesapla giriş yapın, ardından bir model seçin.",
+      "experimental": "Deneysel",
+      "starting": "{{name}} girişi hazırlanıyor…",
+      "waitingDevice": "{{name}} doğrulama sayfası tarayıcınızda açıldı. Oradaki kodun bununla aynı olduğunu kontrol edin (doldurulmamışsa kendiniz yazın) ve onaylayın; burası kendiliğinden devam eder.",
+      "risk": {
+        "title": "Giriş yapmadan önce riski bilin",
+        "text": "Bu giriş, Google'ın TupAI için sunduğu bir yöntemi değil, doğrudan {{tool}} için hazırladığı girişi kullanır. Google bunu koşullarına aykırı sayıp hesabı kısıtlayabilir veya askıya alabilir.",
+        "instead": "Erişimini kaybetmeyi göze alabileceğiniz bir hesap kullanın. Resmî yollar: bir Gemini API anahtarı ya da gcloud ile giriş yapılmış Vertex AI.",
+        "continue": "Riski anlıyorum, giriş yap",
+        "cancel": "Giriş yapma"
+      },
+      "readingModels": "{{name}} ile giriş yapıldı. Bu hesabın kullanabileceği modeller okunuyor…"
+    }
+  },
+  "turnErrors": {
+    "processExited": "TupAI turun ortasında durdu. Yeniden başlatmak için mesajı tekrar gönderin.",
+    "busyConfig": "Modeli veya düşünme düzeyini değiştirmeden önce geçerli turun bitmesini bekleyin.",
+    "unsupportedValue": "TupAI bu modeli, düşünme düzeyini veya izin modunu sunmuyor.",
+    "permissionsNotSwitched": "TupAI izin modunu değiştirmedi. Yeniden deneyin ya da konuşmada /permissions yazın.",
+    "imageUnsupported": "Yalnızca en fazla 12 MB boyutunda PNG, JPEG, WebP veya GIF görseller gönderilebilir.",
+    "contentUnsupported": "TupAI yalnızca metin, görsel ve metin dosyası kabul eder.",
+    "wrongProject": "Bu konuşma başka bir proje klasörüne ait.",
+    "notPersisted": "TupAI bu konuşmayı kaydedemedi.",
+    "startFailed": "TupAI başlatılamadı.",
+    "timeout": "TupAI zamanında yanıt vermedi.",
+    "processClosed": "TupAI durdu. Yeniden başlatmak için mesajı tekrar gönderin.",
+    "modelFailed": "Model isteği başarısız oldu.",
+    "turnRunning": "TupAI hâlâ önceki mesaj üzerinde çalışıyor. Bekleyin ya da önce durdurun.",
+    "noModel": "TupAI'nun yanıt verebileceği bir model yok."
+  },
+  "noModel": {
+    "title": "Yanıt verecek model yok",
+    "body": "TupAI'nun kullanabileceği bir modele ihtiyacı var. {{place}} bölümünde oturum açın veya bir anahtar ekleyin, ardından mesajınızı tekrar gönderin.",
+    "open": "{{page}} bölümünü aç",
+    "chip": "Model seçin"
+  },
+  "notices": {
+    "checkpointOff": "Bu konuşmada kontrol noktaları kapalı.",
+    "checkpointOffWhy": {
+      "gitMissing": "Bu konuşmada kontrol noktaları kapalı: Bu bilgisayarda Git bulunamadı. Git'i kurun, ardından kontrol noktaları için yeni bir konuşma başlatın.",
+      "xcodeLicense": "Bu konuşmada kontrol noktaları kapalı: Xcode lisansı kabul edilene kadar Git bu Mac'te çalışamaz. Terminal'de sudo xcodebuild -license ile kabul edin, ardından kontrol noktaları için yeni bir konuşma başlatın.",
+      "developerToolsMissing": "Bu konuşmada kontrol noktaları kapalı: Bu Mac'te Git'in ihtiyaç duyduğu komut satırı geliştirici araçları yok. Terminal'de xcode-select --install ile kurun, ardından kontrol noktaları için yeni bir konuşma başlatın.",
+      "homeFolder": "Bu konuşmada kontrol noktaları kapalı: Konuşmanın klasörü ana klasörünüz ya da onu içeriyor. Kontrol noktaları için bir proje klasöründe konuşma başlatın.",
+      "muFolder": "Bu konuşmada kontrol noktaları kapalı: Konuşmanın klasörü TupAI'nun kendi klasörünün içinde. Kontrol noktaları için bir proje klasöründe konuşma başlatın.",
+      "tooManyFiles": "Bu konuşmada kontrol noktaları kapalı: Konuşmanın klasöründe {{limit}} dosyadan fazlası var. Kontrol noktaları için bir proje klasöründe konuşma başlatın.",
+      "tooManyBytes": "Bu konuşmada kontrol noktaları kapalı: Konuşmanın klasöründeki dosyaların toplamı {{limitMb}} MB sınırını aşıyor. Kontrol noktaları için bir proje klasöründe konuşma başlatın.",
+      "tooSlow": "Bu konuşmada kontrol noktaları kapalı: Konuşmanın klasöründeki dosyaları listelemek {{seconds}} saniyeden uzun sürdü. Kontrol noktaları için bir proje klasöründe konuşma başlatın."
+    },
+    "stopped": "Bu yanıtı durdurdunuz.",
+    "answerLost": "TupAI yanıtınızı alamadı; reddetmişsiniz gibi devam etti.",
+    "bashMissing": "TupAI'nun komut çalıştırabilmesi için Git for Windows gerekiyor. Kurulduktan sonra mesajınızı tekrar gönderin. İndirme adresi:"
+  },
+  "errors": {
+    "credential": "Anahtar, bir anahtarda bulunamayacak karakterler (boşluk, tırnak işareti veya satır sonu gibi) içeriyor. Yeniden yapıştırın.",
+    "keyVariable": "{{name}} bir hakem anahtarı tutamaz. TYPESAFE_API_KEY, AI_GATEWAY_API_KEY veya MU_JUDGE_ ile başlayan bir ad kullanın.",
+    "judgeEndpoint": "Jev'in hizmetinin, anahtarını gönderebileceği bir adresi yok. Adresi girin ya da başka bir hizmet seçin.",
+    "sharedKey": "{{providers}} aynı anahtar değişkenini paylaşacak. ID'lerden birini değiştirin.",
+    "pickBoth": "Sağlayıcıyı ve modeli birlikte seçin.",
+    "modelsUnreadable": "models.json okunamadı. Sağlayıcıları kaydetmeden önce dosyayı elle onarın.",
+    "modelsCommented": "models.json yorumlar içeriyor; buradan kaydetmek bunları siler. Sağlayıcıları elle düzenleyin.",
+    "option": {
+      "type": "“{{name}}” yanlış türde bir değer içeriyor.",
+      "choice": "“{{name}}” değeri seçeneklerden biri değil.",
+      "length": "“{{name}}” çok uzun ya da boş bir öğe içeriyor.",
+      "range": "“{{name}}” izin verilen aralığın dışında."
+    },
+    "invalidJson": "{{file}} geçerli bir JSON değil. Elle düzeltip yeniden yükleyin.",
+    "unreadable": "{{file}} okunamadı.",
+    "runtimeOffline": "TupAI çalışma zamanı çevrimiçi değil. Yerel başlatıcıyı ve giriş durumunu kontrol edin.",
+    "otherRegistration": "Uygulamada zaten başka bir TupAI komutu kayıtlı.",
+    "backend": "Yerel hizmet beklendiği gibi yanıt vermedi (HTTP {{status}}).",
+    "invalid": "Değerlerden biri geçerli değil.",
+    "unknown": "TupAI'da bir sorun oluştu.",
+    "unwritable": "{{file}} yazılamadı.",
+    "contextLimit": "Bağlam sınırı 0 ya da {{min}} ile {{max}} arasında bir tam sayı olmalıdır.",
+    "importMissing": "Bu TupAI sürümü henüz konuşmaları içe aktaramıyor. Önce TupAI’yu güncelleyin.",
+    "importFailed": "TupAI konuşmaları içe aktaramadı."
+  },
+  "importChats": {
+    "title": "Konuşmaları içe aktar",
+    "description": "Bu bilgisayarda Claude Code veya Codex ile yaptığınız konuşmaları TupAI’ya getirin ve burada sürdürün.",
+    "open": "Seç…",
+    "dialog": {
+      "title": "Konuşmaları içe aktar",
+      "hint": "Seçtiğiniz her konuşma, kendi proje klasöründe bir TupAI konuşması olur. TupAI söylenen her şeyi okur; düşünme adımları ve görseller aktarılmaz.",
+      "search": "Sözcüğe veya klasöre göre ara",
+      "loading": "Konuşmalar aranıyor…",
+      "empty": "Bu bilgisayarda Claude Code veya Codex konuşması bulunamadı.",
+      "noMatch": "Eşleşen konuşma yok.",
+      "noTitle": "(mesaj yok)",
+      "folderUnknown": "Klasör bilinmiyor",
+      "inList": "Listenizde",
+      "open": "Aç",
+      "selected": "Seçilen: {{count}}",
+      "import": "İçe aktar",
+      "importing": "İçe aktarılıyor…",
+      "retry": "Yeniden dene"
+    },
+    "done": "{{count}} konuşma içe aktarıldı. Konuşma listenizdeler.",
+    "done_one": "{{count}} konuşma içe aktarıldı. Konuşma listenizde.",
+    "done_other": "{{count}} konuşma içe aktarıldı. Konuşma listenizdeler.",
+    "someFailed": "{{count}} konuşma içe aktarılamadı. Nedeni her birinin altında yazıyor.",
+    "someFailed_one": "{{count}} konuşma içe aktarılamadı. Nedeni altında yazıyor.",
+    "someFailed_other": "{{count}} konuşma içe aktarılamadı. Nedeni her birinin altında yazıyor.",
+    "failure": {
+      "missing": "Dosya artık yok.",
+      "notFile": "Bu bir dosya değil.",
+      "notTranscript": "Bu bir Claude Code veya Codex konuşması değil.",
+      "empty": "İçinde hiç mesaj yok.",
+      "folderMissing": "Proje klasörü artık yok: {{folder}}",
+      "other": "İçe aktarılamadı: {{detail}}"
+    },
+    "notice": {
+      "title": "İçe aktarılan konuşma · {{tool}}",
+      "counts": "Mesajlarınız: {{user}} · yanıtlar: {{assistant}} · araç çağrıları: {{toolCalls}}",
+      "goOn": "Aşağıda devam etmeniz yeterli: TupAI konuşmayı okudu. Düşünme adımları ve görseller aktarılmadı.",
+      "read": "Önceki konuşmayı oku"
+    },
+    "history": {
+      "title": "Önceki konuşma · {{tool}}",
+      "loading": "Konuşma okunuyor…",
+      "you": "Siz",
+      "summary": "Öncesinin özeti",
+      "tools": "Kullanılan: {{tools}}",
+      "earlier": "Önceki {{count}} adım gösterilmiyor.",
+      "earlier_one": "Önceki {{count}} adım gösterilmiyor.",
+      "earlier_other": "Önceki {{count}} adım gösterilmiyor.",
+      "empty": "Gösterilecek bir şey yok."
+    }
+  },
+  "commands": {
+    "frame": "Görev çerçevesi: hedef, koyduğunuz kesin kısıtlar ve bunları nerede söylediğiniz, alt hedef, kabul ölçütleri",
+    "remember": "Bu projedeki sonraki konuşmalar için bir ders kaydeder: /remember <ne yapılmalı>",
+    "lessons": "Bu projenin dersleri: /lessons id · tür · hatırlanma/uyulma · ders listesini verir, /lessons all her yerde geçerli olanları ve devre dışı bırakılanları da ekler",
+    "forget": "Bir dersi devre dışı bırakır, artık hatırlanmaz: /forget <id başlangıcı> (id’ler /lessons içinde)",
+    "capabilities": "Hangi yeteneklerin kurulu, hangilerinin açık olduğu: /capabilities, /capabilities open <id>",
+    "permissions": "TupAI’nun sormadan ne kadarını yapabileceği: /permissions full (Tam erişim) | jev (Jev onaylar) | ask (En az izin), bağımsız değişken olmadan bir seçici açılır. /permissions reset bu konuşmada izin verdiklerinizi unutur",
+    "lsp": "Dil sunucuları: hangileri kurulu, hangileri çalışıyor ve son hata",
+    "goal": "Hedef modu: ajan bir koşul sağlanana kadar çalışmaya devam eder. /goal <koşul>, /goal (gösterir ya da bir hedef sorar), /goal clear",
+    "board": "Sade dilde pano: /board (gösterir), /board on, /board off (bu proje için), /board model (kimin yazdığı)",
+    "checkpoints": "Bu konuşmanın kontrol noktaları: tur, zaman, o zamandan beri değişen dosyalar",
+    "rewind": "Bir kontrol noktasına döner: /rewind [no] [both|files|conversation], /rewind undo geri alır; both: dosyalar ve konuşma, files: yalnızca dosyalar, conversation: yalnızca konuşma",
+    "swarm": "Çalışan alt ajanlar: /swarm (her birinin ne yaptığı), /swarm stop [ad] (şimdi rapor versin), /swarm kill [ad] (hemen sonlandırır)",
+    "agents": "delegate aracının kullanabileceği alt ajan rolleri ve kendi rollerinizi nereye ekleyeceğiniz",
+    "hive": "Tek bir soruya aynı anda birkaç araştırmacı koyar: /hive <soru>. Soru olmadan /swarm ile aynıdır",
+    "browse": "Yerleşik tarayıcıyı bir adrese gönderip söylediğinizi yaptırır: /browse <url> [hedef]",
+    "inherit": "TupAI’nun Claude Code, Cursor ve Codex’ten neyi, nereden devraldığı",
+    "mcp": "MCP sunucuları: /mcp, /mcp open <id>, /mcp restart <id>",
+    "jobs": "Arka plan işleri: /jobs, /jobs stop <id|all>",
+    "commit": "Commit edilmemiş değişikliği commit’lere böler: önce planı gösterir, yalnızca onay verdiğinizde commit eder, asla push yapmaz",
+    "review": "Commit edilmemiş değişikliği ya da belirttiğinizi inceleyici alt ajanla gözden geçirir; bulgular P0’dan P3’e sıralanır",
+    "mu": "TupAI durumu. Ayrıca: /TupAI judge <kademeler> | /TupAI route <karar noktası> <kademeler|default> | /TupAI mode <karar noktası|default> <off|shadow|active>",
+    "status": "Model, hakem, karar noktalarının modları, tasarruf edilen bağlam ve son kararlar",
+    "help": "TupAI’nun neler yapabildiği ve bilinmeye değer tüm komutlar",
+    "ledger": "Hakemin son kararları ve süreleri: /ledger [n]",
+    "doctor": "Hakemin, modelin, tarayıcının ve alt ajanların bağlı olup olmadığını denetler",
+    "import-chat": "Bu projenin Claude Code ya da Codex konuşmasını TupAI’ya getirip sürdürür: /import-chat [dosya]",
+    "llama": "llama.cpp yönlendiricisinin modellerini yönetir"
+  }
+}

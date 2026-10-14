@@ -1,0 +1,36 @@
+{
+  "upToDateTitle": "最新です",
+  "foundVersion": "新しいバージョン {{version}} が見つかりました",
+  "foundVersionSize": "新しいバージョン {{version}} が見つかりました（約 {{size}} MB）",
+  "download": "ダウンロード",
+  "currentVersion": "現在のバージョン：{{version}}",
+  "later": "後で",
+  "preparingInstall": "準備中...",
+  "showInFolder": "フォルダーで表示",
+  "errors": {
+    "prepareInstallTimeout": "インストールの準備がタイムアウトしました。後でもう一度お試しください。",
+    "prepareInstallFailed": "インストールの準備に失敗しました。後でもう一度お試しください。",
+    "network": "更新サーバーに接続できませんでした。ネットワークを確認して、もう一度お試しください。",
+    "timeout": "更新サーバーの応答がタイムアウトしました。後でもう一度お試しください。",
+    "noUpdateInfo": "このバージョンはこのシステムでは自動でインストールできません。",
+    "serverError": "更新サーバーがエラーを返しました（{{status}}）。後でもう一度お試しください。",
+    "invalidMetadata": "更新情報を読み取れませんでした。後でもう一度お試しください。",
+    "checkFailed": "更新を確認できませんでした。後でもう一度お試しください。",
+    "downloadFailed": "更新をダウンロードできませんでした。後でもう一度お試しください。"
+  },
+  "readyTitle": "新しいバージョン {{version}} の準備ができました",
+  "restartToUpdate": "再起動して更新",
+  "lastInstallFailed": "前回の更新はインストールされませんでした。TupAI を終了できなかったためです。",
+  "availableVersion": "新しいバージョン {{version}} をダウンロードできます",
+  "installerReason": {
+    "linux": "Linux では TupAI は自分で更新をインストールできません。インストーラーをダウンロードして開いてください。",
+    "unpackaged": "この TupAI は自分で更新をインストールできません。インストーラーをダウンロードして開いてください。",
+    "autoUpdateFailed": "インストーラーをダウンロードして更新できます。"
+  },
+  "downloadInstaller": "インストーラーをダウンロード",
+  "openReleasePage": "リリースページを開く",
+  "downloadingVersion": "バージョン {{version}} をダウンロード中（{{percent}}）",
+  "downloadingInstaller": "インストーラーをダウンロード中（{{percent}}）",
+  "installerReadyTitle": "バージョン {{version}} のインストーラーをダウンロードしました",
+  "openInstaller": "インストーラーを開く"
+}

@@ -1,0 +1,36 @@
+{
+  "upToDateTitle": "Du bist aktuell",
+  "foundVersion": "Neue Version {{version}} gefunden",
+  "foundVersionSize": "Neue Version {{version}} gefunden (etwa {{size}} MB)",
+  "download": "Herunterladen",
+  "currentVersion": "Aktuelle Version: {{version}}",
+  "later": "Später",
+  "preparingInstall": "Wird vorbereitet...",
+  "showInFolder": "Im Ordner anzeigen",
+  "errors": {
+    "prepareInstallTimeout": "Zeitüberschreitung beim Vorbereiten der Installation. Bitte später erneut versuchen.",
+    "prepareInstallFailed": "Vorbereiten der Installation fehlgeschlagen. Bitte später erneut versuchen.",
+    "network": "Der Update-Server ist nicht erreichbar. Prüfe deine Netzwerkverbindung und versuche es erneut.",
+    "timeout": "Der Update-Server hat zu lange nicht geantwortet. Versuche es später erneut.",
+    "noUpdateInfo": "Diese Version lässt sich auf diesem System nicht automatisch installieren.",
+    "serverError": "Der Update-Server hat einen Fehler gemeldet ({{status}}). Versuche es später erneut.",
+    "invalidMetadata": "Die Update-Informationen konnten nicht gelesen werden. Versuche es später erneut.",
+    "checkFailed": "Die Suche nach Updates hat nicht geklappt. Versuche es später erneut.",
+    "downloadFailed": "Das Update konnte nicht heruntergeladen werden. Versuche es später erneut."
+  },
+  "readyTitle": "Neue Version {{version}} ist bereit",
+  "restartToUpdate": "Neu starten und aktualisieren",
+  "lastInstallFailed": "Das letzte Update wurde nicht installiert: TupAI ließ sich nicht schließen.",
+  "availableVersion": "Neue Version {{version}} verfügbar",
+  "installerReason": {
+    "linux": "Unter Linux kann TupAI Updates nicht selbst installieren: Lade das Installationsprogramm herunter und öffne es.",
+    "unpackaged": "Diese Kopie von TupAI kann Updates nicht selbst installieren: Lade das Installationsprogramm herunter und öffne es.",
+    "autoUpdateFailed": "Du kannst das Installationsprogramm herunterladen und damit aktualisieren."
+  },
+  "downloadInstaller": "Installationsprogramm herunterladen",
+  "openReleasePage": "Release-Seite öffnen",
+  "downloadingVersion": "Version {{version}} wird heruntergeladen ({{percent}})",
+  "downloadingInstaller": "Installationsprogramm wird heruntergeladen ({{percent}})",
+  "installerReadyTitle": "Das Installationsprogramm für Version {{version}} ist heruntergeladen",
+  "openInstaller": "Installationsprogramm öffnen"
+}

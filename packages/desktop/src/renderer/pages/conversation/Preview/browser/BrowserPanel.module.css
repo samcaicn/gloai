@@ -1,0 +1,292 @@
+/*
+ * The 浏览器 tab: the page's own surface with one quiet chrome above the pages. Hairlines only, black on white (white
+ * on black): the open page is underlined in the text colour, never in the accent, which the app keeps for its primary
+ * buttons. A narrow panel puts the address under the pages; a wide one (a maximized browser) beside them.
+ */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg-1);
+}
+
+.chrome {
+  container: mu-browser / inline-size;
+  flex: none;
+  border-bottom: 1px solid var(--border-base);
+}
+
+.bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'pages actions'
+    'address address';
+  align-items: center;
+  column-gap: 6px;
+  padding-inline: 6px;
+}
+
+/* No page open: the address and the actions share one line, and the address opens the first page. */
+.bar[data-empty='true'] {
+  grid-template-areas: 'address actions';
+}
+
+.bar[data-empty='true'] .address {
+  padding-block: 6px;
+}
+
+/*
+ * ---- The pages: one line of equal tabs (72-180px each) that scrolls sideways once they are all at their narrowest,
+ * the new-page button at its end ----
+ */
+
+.pages {
+  grid-area: pages;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  height: 34px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pages::-webkit-scrollbar {
+  display: none;
+}
+
+.page {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  min-width: 72px;
+  max-width: 180px;
+}
+
+.pageButton:global(.arco-btn) {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 34px;
+  padding-inline: 8px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  transition: color 120ms ease;
+}
+
+.pageButton:global(.arco-btn:not(:disabled):hover),
+.pageButton:global(.arco-btn:not(:disabled):active) {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+/* The open page keeps room for its close button, which always shows there. */
+.page[data-active='true'] .pageButton:global(.arco-btn) {
+  padding-inline-end: 26px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.page[data-active='true']::after {
+  content: '';
+  position: absolute;
+  inset-inline: 8px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--text-primary);
+  pointer-events: none;
+}
+
+.pageButton:global(.arco-btn:focus-visible) {
+  outline: 1px solid var(--text-primary);
+  outline-offset: -4px;
+}
+
+.favicon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  object-fit: contain;
+}
+
+.globe {
+  flex: none;
+  display: block;
+  line-height: 0;
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The built-in browser tool is driving the pages: a small green pulse beside the title. */
+.driving {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: driving 1.6s ease-in-out infinite;
+}
+
+@keyframes driving {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .driving {
+    animation: none;
+  }
+}
+
+/*
+ * The close button shows on the open page, and on another one under the pointer or the keyboard, where it covers the
+ * end of the title (on the page's own surface) rather than taking room from every tab.
+ */
+.pageClose:global(.arco-btn) {
+  position: absolute;
+  inset-inline-end: 4px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 4px;
+  background: var(--bg-1);
+  color: var(--text-secondary);
+  opacity: 0;
+  transform: translateY(-50%);
+}
+
+.page[data-active='true'] .pageClose:global(.arco-btn),
+.page:hover .pageClose:global(.arco-btn),
+.page:focus-within .pageClose:global(.arco-btn) {
+  opacity: 1;
+}
+
+.pageClose:global(.arco-btn:not(:disabled):hover) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* A page's right-click menu: a hairline between closing and copying. */
+.pageMenuDivider {
+  height: 1px;
+  margin: 4px 8px;
+  background-color: var(--border-base);
+}
+
+.newPage:global(.arco-btn) {
+  flex: none;
+  align-self: center;
+  margin-inline-start: 2px;
+  color: var(--text-secondary);
+}
+
+.newPage:global(.arco-btn:not(:disabled):hover) {
+  color: var(--text-primary);
+}
+
+/* ---- The address: back, forward, reload, then the field ---- */
+
+.address {
+  grid-area: address;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding-block: 0 6px;
+}
+
+.navButton:global(.arco-btn) {
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.navButton:global(.arco-btn:not(:disabled):hover) {
+  color: var(--text-primary);
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+.field:global(.arco-input) {
+  flex: 1;
+  min-width: 0;
+  margin-inline-start: 4px;
+  font-size: 12px;
+}
+
+.actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+}
+
+.actions:empty {
+  display: none;
+}
+
+.actionButton:global(.arco-btn) {
+  color: var(--text-secondary);
+}
+
+.actionButton:global(.arco-btn:not(:disabled):hover) {
+  color: var(--text-primary);
+}
+
+/* A wide browser: the pages and the address share the one line. */
+@container mu-browser (min-width: 640px) {
+  .bar {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 1.2fr) auto;
+    grid-template-areas: 'pages address actions';
+  }
+
+  .address {
+    padding-block: 0;
+  }
+}
+
+/* ---- Below the chrome: the pages, or one quiet line while there are none ---- */
+
+.pagesArea {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.quiet {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}

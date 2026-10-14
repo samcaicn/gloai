@@ -1,0 +1,1479 @@
+{
+  "send": "Send",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "confirm": "Confirm",
+  "file": "File",
+  "folder": "Folder",
+  "upload": "Upload",
+  "model": "Model",
+  "skills": "Skills",
+  "workspace": "Project",
+  "settings": "Settings",
+  "system": "System",
+  "about": "About Us",
+  "back": "Back to Chat",
+  "goBack": "Back",
+  "add": "Add",
+  "edit": "Edit",
+  "website": "Website",
+  "version": "Version",
+  "contact": "Contact",
+  "github": "GitHub",
+  "loading": "Please wait...",
+  "copy": "Copy",
+  "reply": "Reply",
+  "openInBuiltinBrowser": "Open in built-in browser",
+  "openInSystemBrowser": "Open in system browser",
+  "copySuccess": "Copied",
+  "copyFailed": "Copy failed",
+  "download": "Download",
+  "close": "Close",
+  "retry": "Retry",
+  "reload": "Reload",
+  "technical_details": "Technical Details",
+  "error_details": "Error Details",
+  "troubleshooting": "Troubleshooting",
+  "select": "Select",
+  "expandMore": "Expand More",
+  "collapse": "Collapse",
+  "viewMoreLines": "View More ({{count}} lines)",
+  "viewMoreLines_one": "View More ({{count}} line)",
+  "viewMoreLines_other": "View More ({{count}} lines)",
+  "success": "Success",
+  "error": "Error",
+  "saveSuccess": "Saved successfully",
+  "saveFailed": "Failed to save",
+  "unknownError": "Unknown error",
+  "confirmDelete": "Confirm Delete",
+  "deleteSuccess": "Deleted successfully",
+  "deleteFailed": "Failed to delete",
+  "default": "Default",
+  "defaultModel": "Default Model",
+  "escToCancel": "esc to cancel",
+  "create": "Create",
+  "createSuccess": "Created successfully",
+  "failed": "Failed",
+  "browse": "Browse",
+  "remove": "Remove",
+  "show": "Show",
+  "hide": "Hide",
+  "goToSettings": "Go to Settings",
+  "forward": "Forward",
+  "historyBack": "Back",
+  "more": "More",
+  "refresh": "Refresh",
+  "readOnly": "Read only",
+  "tray.showWindow": "Show TupAI",
+  "tray.newChat": "New Chat",
+  "tray.closeToTray": "Hide to Tray",
+  "tray.hideToMenuBar": "Hide to Menu Bar",
+  "tray.about": "About TupAI",
+  "tray.restart": "Restart App",
+  "tray.quit": "Quit",
+  "tray.pauseAll": "Pause All Tasks",
+  "tray.checkUpdate": "Check Update",
+  "tray.recentChats": "Recent Chats",
+  "tray.untitled": "Untitled",
+  "backendStartup": {
+    "incompatibleRuntime": {
+      "title": "This system is not supported by the bundled backend",
+      "description": "TupAI opened, but its local service cannot run on this Linux version. Please upgrade to a supported Linux distribution and restart TupAI.",
+      "requiredVersions": "Required runtime symbols: {{versions}}"
+    },
+    "incompleteInstallation": {
+      "title": "TupAI installation is incomplete",
+      "description": "This installation is missing required local resources, so TupAI's local service cannot start. Please download and reinstall the latest TupAI. If the issue returns after reinstalling, check whether security or antivirus software quarantined TupAI's files.",
+      "downloadLatest": "Download latest",
+      "runtimeComponentDescription": "This installation is missing required bundled runtime components, so {{resource}} cannot start. Reinstall the latest TupAI package. If it still happens after reinstalling, check whether security or antivirus software quarantined TupAI components."
+    },
+    "packageArchitectureMismatch": {
+      "title": "TupAI package architecture mismatch",
+      "description": "This TupAI package is for {{packageArch}}, but this Mac is {{deviceArch}}. You may have downloaded the wrong package. Please download and install the {{expectedArch}} package."
+    },
+    "dataMigration": {
+      "title": "Local data migration failed",
+      "description": "TupAI opened, but its local service stopped while initializing local data. Reinstalling TupAI may not fix this. The app log shows where the local database migration stopped."
+    },
+    "databaseNewerThanApp": {
+      "title": "A newer version of TupAI is required",
+      "description": "Your local data was created by a newer version of TupAI, and this version can't open it. Update TupAI to the latest version to continue — your data is intact, and no reinstall or data reset is needed.",
+      "descriptionWithVersion": "Your local data was created by a version of TupAI newer than the one installed now (v{{currentVersion}}), so this version can't open it. Update TupAI to the latest version to continue — your data is intact, and no reinstall or data reset is needed."
+    },
+    "localDataRepair": {
+      "title": "Local data repair failed",
+      "description": "TupAI opened, but its local service stopped while preparing local startup data such as assistant or agent records. Reinstalling TupAI may not fix this. The app log shows which local data could not be prepared."
+    },
+    "startupDirectory": {
+      "title": "Startup directory is unavailable",
+      "description": "TupAI opened, but its local service could not start because the configured work or log directory is missing, unavailable, or blocked by permissions. Check that the configured directories exist and are writable, then restart TupAI."
+    },
+    "recoverableDatabaseCorruption": {
+      "title": "Local data is corrupted",
+      "description": "TupAI detected that the local database is corrupted and cannot continue startup. After confirmation, TupAI will back up the old database and create a new local database to continue startup. Past conversations will no longer be shown, and the old database will be kept as a backup file.",
+      "confirmRebuild": "Back up old DB and rebuild new DB",
+      "rebuildFailed": "Failed to back up old DB and rebuild new DB",
+      "confirmDialog": {
+        "title": "Rebuild the database?",
+        "content": "This will back up the currently corrupted database and create a brand-new empty one. Past conversations will no longer be shown (the old database is kept as a backup file). Continue?",
+        "okText": "Confirm rebuild",
+        "cancelText": "Cancel"
+      }
+    },
+    "transientConcurrentStartup": {
+      "title": "TupAI is starting up",
+      "description": "Another TupAI startup was still using the local data when this window opened. This is temporary and your data is safe — no reinstall is needed. Please wait a moment and try again, or restart TupAI."
+    },
+    "pendingSlow": {
+      "title": "Starting up",
+      "description": "The local service is starting up, please wait. If it doesn't respond after a while, you can quit and reopen the app."
+    },
+    "exited": {
+      "title": "Startup didn't complete",
+      "description": "The local service couldn't finish starting and has exited. Please restart the app; if this keeps happening, check the app log."
+    },
+    "portReportTimeout": {
+      "title": "Startup timed out",
+      "description": "The local service didn't finish starting within the expected time. Please restart the app; if this keeps happening, check the app log."
+    },
+    "startupFailed": {
+      "title": "Startup failed",
+      "description": "The local service failed to start. Please restart the app; if this keeps happening, check the app log."
+    },
+    "openLogs": "Open the log folder",
+    "openLogsFailed": "Couldn't open the log folder"
+  },
+  "fileAttach.addFiles": "Add files",
+  "fileAttach.myDevice": "Upload from device",
+  "fileAttach.failed": "Upload failed",
+  "fileAttach.uploading": "Uploading...",
+  "fileAttach.uploadSuccess": "Upload successful",
+  "fileAttach.cancelUpload": "Cancel upload",
+  "expand": "Expand",
+  "name": "Name",
+  "added": "Added",
+  "status": "Status",
+  "agentMode": "Agent Mode",
+  "refreshSuccess": "Refreshed",
+  "import": "Import",
+  "processing": "Processing...",
+  "optional": "(optional)",
+  "clear": "Clear",
+  "selectedCount": "Selected {{count}}",
+  "selectedSkills": "Selected skills",
+  "aiAssistant": "AI Assistant",
+  "kyrn": {
+    "settings": "TupAI settings",
+    "judge": "Judge configuration",
+    "reload": "Reload",
+    "starting": "Starting TupAI…",
+    "startingHint": "Connecting to the local TupAI kernel and reading the model and judge configuration.",
+    "startupError": "TupAI startup failed",
+    "hiveView": {
+      "title": "Hive",
+      "agents": "Sub-agents",
+      "open": "Open Hive",
+      "inspect": "Inspect {{name}}",
+      "summary": "{{active}} active · {{done}} done / {{total}}",
+      "summaryEnded": "{{done}} done / {{total}}",
+      "summaryUnfinished": "{{done}} done / {{total}} · {{unfinished}} not finished",
+      "counts": "{{running}} running · {{done}} done · {{failed}} failed",
+      "none": "No sub-agents in this conversation yet.",
+      "details": "Flow and records",
+      "pending": "Waiting for bee status",
+      "unknown": "Status unavailable",
+      "lastStep": "{{status}} · last step: {{step}}",
+      "runs": "Hive runs",
+      "graph": "Collaboration map",
+      "graphHint": "The thicker a line, the more went along it. Pick a bee to open its row; point at a line to read what it carried.",
+      "map": "Map",
+      "legend": "Legend",
+      "legendDelivery": "delivery",
+      "legendCorrection": "correction",
+      "legendConflict": "dispute",
+      "legendReport": "report",
+      "nodeSent": "{{count}} out",
+      "nodeReceived": "{{count}} in",
+      "lineDelivery": "{{from}} → {{to}}: {{count}} deliveries",
+      "lineDelivery_one": "{{from}} → {{to}}: {{count}} delivery",
+      "lineDelivery_other": "{{from}} → {{to}}: {{count}} deliveries",
+      "lineCorrection": "{{from}} corrected a finding of {{to}}",
+      "lineConflict": "{{from}} and {{to}} disagree",
+      "lineReport": "{{from}} reported back to TupAI",
+      "deliveries": "Information flow",
+      "noDeliveries": "No confirmed deliveries yet.",
+      "board": "Shared board",
+      "noNotes": "No shared findings yet.",
+      "context": "Execution context",
+      "contextHint": "Recorded messages and completed tool output, not the full model prompt. Tool output appears after completion.",
+      "focus": "Assignment",
+      "missingFocus": "Assignment was not recorded for this run.",
+      "current": "Current activity",
+      "records": "Execution records",
+      "noRecords": "No execution records received yet.",
+      "raw": "Raw evidence",
+      "input": "Input",
+      "output": "Output",
+      "assistant": "Bee message",
+      "thinking": "Published thinking",
+      "user": "Task input",
+      "custom": "Harness message",
+      "tool": "Tool",
+      "waitingOutput": "Waiting for completed tool output.",
+      "noText": "No text output.",
+      "selectBee": "Select a bee to inspect its activity.",
+      "unknownSource": "Unknown source",
+      "noteMissing": "Finding not recorded.",
+      "allFlow": "All deliveries",
+      "beeFlow": "Deliveries for {{name}}",
+      "audit": "Jev judgments",
+      "waitingRun": "Waiting for this Hive’s recorded events.",
+      "recordedAt": "Recorded at {{time}}",
+      "beeMissing": "This bee is not in the recorded snapshot.",
+      "snapshot": "Last reported state",
+      "updated": "Last update {{time}}",
+      "runTitle": {
+        "tasks": "{{count}} tasks",
+        "tasks_one": "{{count}} task",
+        "tasks_other": "{{count}} tasks",
+        "chain": "a chain of {{count}} steps",
+        "chain_one": "a chain of {{count}} step",
+        "chain_other": "a chain of {{count}} steps"
+      },
+      "choosingRoles": "choosing a role, a model and a thinking level for {{count}} sub-agents…",
+      "choosingRoles_one": "choosing a role, a model and a thinking level for {{count}} sub-agent…",
+      "choosingRoles_other": "choosing a role, a model and a thinking level for {{count}} sub-agents…",
+      "activity": {
+        "notesReceived": "← {{count}} notes from the others",
+        "notesReceived_one": "← {{count}} note from the others",
+        "notesReceived_other": "← {{count}} notes from the others",
+        "lateNotes": "← last call: {{count}} late notes",
+        "lateNotes_one": "← last call: {{count}} late note",
+        "lateNotes_other": "← last call: {{count}} late notes",
+        "askedFindings": "← asked what it has found so far",
+        "toldWrapUp": "← told to wrap up and report",
+        "toolFailed": "{{tool}} failed",
+        "retry": "retry {{attempt}}/{{maxAttempts}}: {{message}}",
+        "modelError": "model error: {{message}}",
+        "compacting": "compacting its context"
+      },
+      "errors": {
+        "cancelled": "the run was cancelled",
+        "stoppedByUser": "stopped by the user",
+        "endedByUser": "ended by the user",
+        "stalledModel": "no sign of life from the model for {{duration}}",
+        "stalledTool": "no sign of life from its {{tool}} call for {{duration}}",
+        "timeBudget": "time budget of {{duration}} reached",
+        "timeBudgetReached": "time budget reached",
+        "noReportInTime": "{{reason}}; no report within {{duration}} of being asked",
+        "modelFailed": "the model request failed",
+        "modelAborted": "the model request was aborted",
+        "retriesExhausted": "the model request kept failing",
+        "exitedCode": "sub-agent exited with code {{exitCode}} before it finished",
+        "exitedSignal": "sub-agent was ended by {{signal}} before it finished",
+        "exitedKilled": "sub-agent was ended by a signal before it finished",
+        "chainBroken": "not started: the step before it (\"{{step}}\") did not finish",
+        "detail": "{{reason}}: {{detail}}"
+      }
+    },
+    "judgeView": {
+      "empty": "No judgments recorded in this session yet.",
+      "question": "Question",
+      "result": "Judgment",
+      "action": "Effect on execution",
+      "details": "Answers and evidence",
+      "raw": "Original records",
+      "answers": "Model answers",
+      "noResult": "No readable result recorded",
+      "unreported": "Not recorded",
+      "scoreValue": "Score: {{value}}",
+      "latency": "{{ms}} ms",
+      "more": "+{{count}} more",
+      "batch": "Candidates covered by this record: {{count}}.",
+      "batchFailures": "Without an answer, default strategy used: {{count}}.",
+      "changedThinking": "Thinking level: {{from}} → {{to}}",
+      "sentHints": "Hints sent to the main model",
+      "unlinked": "Standalone record",
+      "unlinkedHint": "Recorded without turn correlation. It is shown on its own and is not merged with nearby records.",
+      "state": {
+        "pending": "Waiting",
+        "returned": "Judgment returned",
+        "confirmed": "Action confirmed",
+        "shadow": "Shadow mode",
+        "fallback": "Fallback",
+        "late": "Arrived late",
+        "rule": "Settled by rule",
+        "ended": "Wait ended",
+        "unknown": "Outcome unknown"
+      },
+      "actions": {
+        "toRuntime": "Judgment handed to the execution layer; this is not proof that the operation completed.",
+        "observeOnly": "Shadow mode: recorded for comparison, without changing execution based on this judgment.",
+        "useDefault": "Fell back to this decision point’s default strategy. A fallback is not permission to proceed: risk checks and Hive gates default to the cautious side.",
+        "lateIgnored": "The turn had already started; this late judgment did not change it.",
+        "waiting": "Waiting for the judgment result.",
+        "waitEnded": "The wait or task ended without a recorded final judgment.",
+        "recordedOnly": "A record is available, but no execution effect was confirmed.",
+        "mainGiven": "The recorded adjustment or hints below were applied to the main model.",
+        "allowPublish": "Allowed for publication. Check the shared board for what was actually published.",
+        "denyPublish": "Not permitted to publish this candidate.",
+        "allowDelivery": "Allowed for delivery, but no receipt is recorded yet.",
+        "denyDelivery": "Not permitted to deliver this finding to this bee.",
+        "delivered": "A receipt confirms that this finding reached the receiving bee."
+      },
+      "questions": {
+        "preflight": "How should this request be handled?",
+        "interjection": "Is this interruption a correction, follow-up or side question?",
+        "admission": "Which tool-output chunks should enter context?",
+        "testLog": "Which parts of a test log should reach the model?",
+        "forget": "Is the full old tool output still needed?",
+        "compaction": "Which old results can be pruned?",
+        "skills": "Which skills are relevant to this task?",
+        "locate": "Which files are most likely relevant?",
+        "routing": "Which role and thinking level suit each subtask?",
+        "publish": "Is this finding worth sharing with other bees?",
+        "deliver": "Does this finding help the receiving bee?",
+        "browser": "What should the browser do next?",
+        "recall": "Which past lessons apply now?",
+        "capture": "Is this a lasting correction or preference?",
+        "outcome": "Did this turn find a way out worth keeping?",
+        "worth": "Is this lesson worth keeping?",
+        "merge": "Should the new lesson merge with a kept one?",
+        "applied": "Were the lessons followed?",
+        "risk": "Does this action require user confirmation?",
+        "drift": "Is the work still on track?",
+        "completion": "Does this change still need verification?",
+        "notify": "When should this notification reach the model?",
+        "cache": "Should the session cache stay warm?",
+        "other": "Recorded judgment",
+        "rewind": "Is this approach a dead end worth rewinding?",
+        "goalMet": "Has the goal been reached?",
+        "outputDrift": "Does the output break one of your rules?",
+        "taskFrame": "Does this message change the task frame?",
+        "constraint": "Does this call break one of your constraints?",
+        "capabilities": "Which capabilities does this task need?",
+        "diagnostics": "When should these diagnostics reach the model?",
+        "patch": "Does the sub-agent's patch stay within its task?",
+        "review": "How serious is each review finding?",
+        "board": "Where does the work stand?",
+        "relate": "What does this finding do to an earlier one?",
+        "approval": "Is this a step the task needs, done the way you would expect?"
+      },
+      "fields": {
+        "turnType": "Task type",
+        "gear": "Task level",
+        "thinking": "Thinking level",
+        "agent": "Suggested role",
+        "strength": "Model strength",
+        "drop": "Suggested filtering",
+        "keep": "Suggested retention",
+        "kind": "Content type",
+        "score": "Score",
+        "hide": "Suggested hidden skills",
+        "relevant": "Relevant skills",
+        "apply": "Suggested lessons",
+        "applied": "Followed",
+        "notApplied": "Not followed",
+        "publish": "Allow publication",
+        "deliver": "Allow delivery",
+        "path": "Candidate file",
+        "result": "Result",
+        "reason": "Reason",
+        "keepResult": "Keep result",
+        "keepCall": "Keep call",
+        "broken": "Rules broken",
+        "open": "Capabilities to open",
+        "errors": "Errors",
+        "warnings": "Warnings",
+        "withinTask": "Within the task",
+        "unrelated": "Unrelated files",
+        "judged": "Files judged",
+        "priorities": "Priorities",
+        "phase": "Phase",
+        "focus": "Item in progress",
+        "needsUser": "Needs the user",
+        "update": "Rewrite the board",
+        "relation": "Relation",
+        "operation": "Next step",
+        "target": "Element",
+        "probability": "Probability",
+        "omit": "Log parts left out",
+        "key": "Events worth telling"
+      },
+      "values": {
+        "true": "Yes",
+        "false": "No",
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Uncertain",
+        "unknown": "Unknown",
+        "chat": "Conversation",
+        "chat_question": "Concept question",
+        "quick_lookup": "Quick lookup",
+        "single_edit": "Single edit",
+        "multi_step_task": "Multi-step task",
+        "research": "Investigation",
+        "design_discussion": "Design discussion",
+        "light": "Light",
+        "standard": "Standard",
+        "heavy": "Heavy",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "keep": "Keep",
+        "shrink": "Shorten",
+        "capture": "Capture",
+        "skip": "Skip",
+        "error": "Error",
+        "result": "Useful result",
+        "progress": "Progress output",
+        "warning": "Warning",
+        "passing": "Passed checks",
+        "other": "Other",
+        "allow": "No extra confirmation",
+        "confirm": "Ask the user first",
+        "now": "Deliver now",
+        "next_turn": "Hold until the next turn",
+        "drop": "Discard",
+        "on_track": "On track",
+        "detour": "Detour",
+        "drift": "Drifting",
+        "loop": "Looping",
+        "done": "No reminder needed",
+        "nudge": "Remind to verify",
+        "steer": "Steer the current work",
+        "followUp": "Queue as follow-up",
+        "warm": "Keep warm",
+        "stop": "Stop warming",
+        "default": "Default",
+        "finding": "Finding",
+        "dead_end": "Dead end",
+        "decision": "Decision",
+        "blocker": "Blocker",
+        "abstain": "Judge abstained",
+        "shadow": "Shadow mode",
+        "skipped": "Skipped by the user",
+        "timeout": "Timed out",
+        "all": "Every candidate failed",
+        "unreachable": "Judge unreachable",
+        "unexpected": "Unexpected error",
+        "off": "Off",
+        "continue": "Keep going",
+        "propose": "Propose rewinding",
+        "met": "Met",
+        "ask": "Ask the user",
+        "unjudged": "Not judged",
+        "none": "None",
+        "new_task": "New task",
+        "constraint": "New constraint",
+        "correction": "Correction",
+        "subgoal": "New subgoal",
+        "unclear": "Can’t tell",
+        "hold": "Hold back",
+        "no_answer": "No answer in time",
+        "aborted": "Cancelled",
+        "auth": "Judge key rejected",
+        "payment_required": "Judge needs a payment method",
+        "rate_limited": "Judge rate limited",
+        "bad_request": "Judge rejected the request",
+        "server": "Judge server error",
+        "invalid_response": "Unreadable judge answer",
+        "verdict": "The judge answered",
+        "learn": "Keep the way out",
+        "reusable": "Useful again",
+        "one_off": "Only this once",
+        "already_known": "Known already",
+        "same": "Same lesson",
+        "refines": "More precise",
+        "contradicts": "Contradicts it",
+        "supersedes": "Replaces it",
+        "supports": "Supports it",
+        "unrelated": "Unrelated",
+        "preference": "Standing rule",
+        "approve": "Let it run",
+        "beyond": "More than you asked for",
+        "CLICK": "Click",
+        "TYPE_TEXT": "Type text",
+        "SELECT": "Pick from a list",
+        "SCROLL_DOWN": "Scroll down",
+        "SCROLL_UP": "Scroll up",
+        "WAIT": "Wait for the page",
+        "DONE": "Finished",
+        "BLOCKED": "No way forward",
+        "listing": "File names or matches",
+        "content": "Code or text",
+        "log": "Build or test output",
+        "data": "Looked-up facts"
+      },
+      "probabilityValue": "Probability of yes: {{percent}}",
+      "optionProbability": "{{option}} {{percent}}",
+      "reasonValue": "Reason: {{reason}}",
+      "fieldValue": "{{field}}: {{value}}",
+      "errorValue": "Error · {{kind}}",
+      "noAnswerAfter": "No answer after {{duration}}",
+      "hints": {
+        "answered": "This message answers the agent’s own question: act on it and do not ask again.",
+        "resolve": "The request is loosely worded and may change files: look at the project, state the assumption, and ask only for what cannot be found here.",
+        "clarify": "The request looks under-specified: ask one focused question first.",
+        "side_question": "This is a side question: answer it briefly, then carry on with the main task.",
+        "plan_first": "This looks large or risky: write a short plan, then carry it out; pause only before a step that cannot be undone.",
+        "try_hive": "This looks hard: if the cause is unknown or a direct attempt fails, use the Hive.",
+        "try_delegate": "This splits into independent parts: consider handing them to sub-agents in parallel."
+      },
+      "hintChips": {
+        "answered": "Reply to agent",
+        "resolve": "Look first",
+        "clarify": "Ask first",
+        "side_question": "Side question",
+        "plan_first": "Plan first",
+        "try_hive": "Hive if stuck",
+        "try_delegate": "Delegate parts"
+      },
+      "answerWords": {
+        "preflight": {
+          "questions": {
+            "turn_type": "Task type",
+            "is_side_question": "Side question",
+            "needs_clarification": "Too vague to act on",
+            "needs_files_changed": "Needs a code change",
+            "needs_memory": "Past notes would help",
+            "swarm_worthy": "Independent parts",
+            "plan_first": "Large or risky",
+            "task_complexity": "Scope",
+            "reasoning_depth": "Reasoning depth",
+            "tool_complexity": "Tool use"
+          },
+          "answers": {
+            "chat": "Conversation",
+            "chat_question": "Concept question",
+            "quick_lookup": "Quick lookup",
+            "single_edit": "Single edit",
+            "multi_step_task": "Multi-step task",
+            "research": "Investigation",
+            "design_discussion": "Design discussion",
+            "other": "Something else"
+          },
+          "levels": {
+            "task_complexity": {
+              "0": "A question",
+              "1": "One place in the code",
+              "2": "Several places in the code",
+              "3": "The whole codebase"
+            },
+            "reasoning_depth": {
+              "0": "Recall or lookup",
+              "1": "A plain explanation",
+              "2": "Careful analysis",
+              "3": "Deep reasoning"
+            },
+            "tool_complexity": {
+              "0": "None",
+              "1": "One or two reads",
+              "2": "Several calls with edits",
+              "3": "Many calls with builds or tests"
+            }
+          }
+        },
+        "interjection": {
+          "questions": {
+            "kind": "What the message is"
+          },
+          "answers": {
+            "correction": "A correction",
+            "addition": "More work for later",
+            "side_question": "An unrelated question",
+            "other": "Something else"
+          }
+        },
+        "admission": {
+          "questions": {
+            "kind": "Kind of output",
+            "chunk": "Output part {{number}}"
+          },
+          "answers": {
+            "error": "An error",
+            "result": "A useful result",
+            "progress": "Progress output",
+            "warning": "Repeated warnings",
+            "passing": "Passed checks",
+            "other": "Something else"
+          }
+        },
+        "testLog": {
+          "questions": {
+            "part": "Log part {{number}}"
+          },
+          "answers": {
+            "needed": "Needed besides the summary",
+            "not_needed": "The summary is enough",
+            "unclear": "Can’t tell"
+          }
+        },
+        "forget": {
+          "questions": {
+            "still_needed": "Full output needed again"
+          }
+        },
+        "compaction": {
+          "questions": {
+            "kind": "Kind of result",
+            "result_needed": "Full result still needed",
+            "call_matters": "The call itself still matters"
+          },
+          "answers": {
+            "error": "An error",
+            "listing": "File names or matches",
+            "content": "Code or text",
+            "log": "Build or test output",
+            "data": "Looked-up facts",
+            "other": "Something else"
+          }
+        },
+        "skills": {
+          "questions": {
+            "skill": "Skill {{number}} would help"
+          }
+        },
+        "locate": {
+          "questions": {
+            "path": "File {{number}} is relevant"
+          }
+        },
+        "routing": {
+          "questions": {
+            "agent": "Kind of work",
+            "difficulty": "How hard the task is",
+            "reasoning": "Reasoning needed"
+          },
+          "answers": {
+            "other": "None of these"
+          },
+          "levels": {
+            "difficulty": {
+              "0": "Mechanical",
+              "1": "Routine",
+              "2": "Needs careful design",
+              "3": "Hard even for an expert"
+            },
+            "reasoning": {
+              "0": "Almost none",
+              "1": "Some",
+              "2": "A lot",
+              "3": "Deep, over many steps"
+            }
+          }
+        },
+        "publish": {
+          "questions": {
+            "share_worthy": "Worth sharing",
+            "kind": "Kind of note"
+          },
+          "answers": {
+            "finding": "A finding",
+            "dead_end": "A dead end",
+            "decision": "A decision",
+            "blocker": "A blocker",
+            "other": "Routine progress"
+          }
+        },
+        "deliver": {
+          "questions": {
+            "useful": "Helps the receiving bee"
+          }
+        },
+        "browser": {
+          "questions": {
+            "operation": "Next step",
+            "click_target": "What to click",
+            "type_text_target": "Where to type",
+            "select_target": "What to pick"
+          },
+          "answers": {
+            "CLICK": "Click",
+            "TYPE_TEXT": "Type text",
+            "SELECT": "Pick from a list",
+            "SCROLL_DOWN": "Scroll down",
+            "SCROLL_UP": "Scroll up",
+            "WAIT": "Wait for the page",
+            "DONE": "Finished",
+            "other": "No way forward",
+            "none": "Nothing fits"
+          }
+        },
+        "recall": {
+          "questions": {
+            "lesson": "Lesson {{number}} applies"
+          }
+        },
+        "capture": {
+          "questions": {
+            "correction": "Corrects a mistake",
+            "preference": "States a standing rule"
+          }
+        },
+        "outcome": {
+          "questions": {
+            "way_out": "Found another way that worked"
+          }
+        },
+        "worth": {
+          "questions": {
+            "lesson": "Lesson {{number}}"
+          },
+          "answers": {
+            "reusable": "Useful again",
+            "one_off": "Only this once",
+            "already_known": "Known already",
+            "unclear": "Can’t tell"
+          }
+        },
+        "merge": {
+          "questions": {
+            "kept": "Kept lesson {{number}}"
+          },
+          "answers": {
+            "same": "The same lesson",
+            "refines": "The new one is more precise",
+            "contradicts": "They contradict each other",
+            "unrelated": "About something else",
+            "unclear": "Can’t tell"
+          }
+        },
+        "applied": {
+          "questions": {
+            "lesson": "Lesson {{number}} followed"
+          }
+        },
+        "risk": {
+          "questions": {
+            "destructive": "Deletes or cannot be undone",
+            "requested": "You asked for it"
+          }
+        },
+        "drift": {
+          "questions": {
+            "course": "Direction of the work"
+          },
+          "answers": {
+            "on_track": "On track",
+            "detour": "A needed side step",
+            "drift": "Drifting away",
+            "loop": "Going in circles",
+            "other": "Can’t tell"
+          }
+        },
+        "completion": {
+          "questions": {
+            "claims_done": "Says the work is finished",
+            "needs_check": "Should be checked by running it"
+          }
+        },
+        "notify": {
+          "questions": {
+            "urgency": "When the agent needs it"
+          },
+          "answers": {
+            "now": "Right away",
+            "next_turn": "After the current step",
+            "drop": "Never",
+            "other": "Can’t tell"
+          }
+        },
+        "cache": {
+          "questions": {
+            "finished": "The conversation is over",
+            "open": "A question is waiting for you"
+          }
+        },
+        "rewind": {
+          "questions": {
+            "dead_end": "Same approach failing again",
+            "progress": "Making progress"
+          }
+        },
+        "goalMet": {
+          "questions": {
+            "achieved": "Goal fully reached",
+            "needs_user": "Can’t go on without you"
+          }
+        },
+        "outputDrift": {
+          "questions": {
+            "rule": "Goes against rule {{number}}"
+          }
+        },
+        "taskFrame": {
+          "questions": {
+            "change": "Change to the task"
+          },
+          "answers": {
+            "new_task": "A new task",
+            "constraint": "A new rule for the work",
+            "correction": "The approach is wrong",
+            "subgoal": "Next step of the same task",
+            "none": "No change"
+          }
+        },
+        "constraint": {
+          "questions": {
+            "constraint": "Goes against constraint {{number}}"
+          }
+        },
+        "capabilities": {
+          "questions": {
+            "capability": "Capability {{number}} is needed"
+          }
+        },
+        "diagnostics": {
+          "questions": {
+            "more_edits_coming": "More edits are coming",
+            "warnings_are_style": "Only style warnings"
+          }
+        },
+        "patch": {
+          "questions": {
+            "within_task": "Stays within the task",
+            "file": "File {{number}} needs changing for the task"
+          }
+        },
+        "review": {
+          "questions": {
+            "bug": "Finding {{number}} is a real bug",
+            "inScope": "Finding {{number}} is about this change"
+          }
+        },
+        "board": {
+          "questions": {
+            "phase": "What the agent is doing",
+            "needs_user": "Needs something from you",
+            "focus": "Item being worked on",
+            "event": "Event {{number}}",
+            "changed": "Something new to tell you"
+          },
+          "answers": {
+            "understanding": "Understanding the task",
+            "planning": "Planning",
+            "changing": "Making changes",
+            "checking": "Checking the work",
+            "fixing": "Fixing what the check found",
+            "waiting": "Waiting for you",
+            "wrapping_up": "Wrapping up",
+            "stuck": "Seems stuck",
+            "other": "Can’t tell",
+            "none": "None of them",
+            "key": "News worth telling",
+            "routine": "A routine step",
+            "unclear": "Can’t tell"
+          }
+        },
+        "relate": {
+          "questions": {
+            "relation": "Effect on the earlier finding"
+          },
+          "answers": {
+            "supersedes": "Replaces it",
+            "contradicts": "Contradicts it",
+            "supports": "Supports it",
+            "none": "No bearing on it"
+          }
+        },
+        "approval": {
+          "questions": {
+            "verdict": "What the step is"
+          },
+          "answers": {
+            "needed": "Needed for the task",
+            "beyond": "More than you asked for",
+            "unrelated": "Not part of the task",
+            "unclear": "Can’t tell"
+          }
+        }
+      },
+      "log": {
+        "thisTurn": "This turn",
+        "earlier": "Show earlier lines",
+        "latest": "Jump to latest",
+        "times": "×{{times}}"
+      }
+    },
+    "empty": "No events recorded in this session yet.",
+    "quiet": "No activity for {{duration}}",
+    "passed": "Passed",
+    "filtered": "Filtered",
+    "image": "Image returned by a tool",
+    "beeStatus": {
+      "queued": "Queued",
+      "starting": "Starting",
+      "thinking": "Thinking",
+      "tool": "Running tool",
+      "retrying": "Retrying",
+      "wrapping-up": "Reporting",
+      "done": "Done",
+      "failed": "Failed",
+      "stopped": "Stopped",
+      "timed-out": "Timed out"
+    },
+    "event": {
+      "preflight.pending": "Classifying",
+      "preflight.verdict": "Classification",
+      "preflight.wait_end": "Classification wait ended",
+      "decision": "Judgment",
+      "progress": "Progress",
+      "agent_start": "Task started",
+      "agent_settled": "Task finished",
+      "kyrn_rpc_closed": "Runtime closed",
+      "auto_compaction_start": "Compressing context",
+      "auto_compaction_end": "Compression finished",
+      "hive.note": "Shared finding",
+      "hive.delivery": "Delivery confirmed",
+      "hive.gate": "Jev gate",
+      "hive.manifest": "Hive assignment",
+      "bee.event": "Bee event",
+      "memory.recalled": "Recalled experience",
+      "artifact.image": "Image",
+      "memory.stored": "Memory saved",
+      "memory.applied": "Lessons followed",
+      "memory.retired": "Lesson retired",
+      "memory.merged": "Lessons merged",
+      "compaction_start": "Compacting context…",
+      "compaction_end": "Compaction ended",
+      "context.usage": "Context usage",
+      "context.policy": "Beta compaction mode",
+      "compaction.plan": "Beta compaction plan",
+      "goal": {
+        "state": "Goal status"
+      },
+      "board": {
+        "update": "Board updated",
+        "switched": "Board turned on or off"
+      },
+      "permissions": {
+        "mode": "Permission mode",
+        "request": "Permission asked",
+        "resolved": "Permission answered",
+        "approved": "Ran without asking"
+      },
+      "checkpoint": {
+        "taken": "Checkpoint saved",
+        "off": "Checkpoints off"
+      },
+      "rewind": {
+        "proposed": "Rewind proposed",
+        "done": "Rewound",
+        "undone": "Rewind undone"
+      },
+      "ttsr": {
+        "interrupted": "Output stopped by a rule"
+      },
+      "frame": {
+        "updated": "Task frame updated"
+      },
+      "capability": {
+        "opened": "Capability opened"
+      },
+      "inherit": {
+        "found": "Inheritable setup found",
+        "rule": "Inherited rule used"
+      },
+      "mcp": {
+        "started": "MCP server started",
+        "failed": "MCP server failed",
+        "tools_changed": "MCP tools changed"
+      },
+      "constraint": {
+        "blocked": "Blocked by your constraint"
+      },
+      "browser": {
+        "run": "Browser task",
+        "step": "Browser step"
+      },
+      "diagnostics": {
+        "delivered": "Diagnostics delivered",
+        "held": "Diagnostics held back",
+        "dropped": "Diagnostics dropped"
+      },
+      "background": {
+        "start": "Background job started",
+        "exit": "Background job exited",
+        "stop": "Background job stopped",
+        "match": "Background output matched"
+      },
+      "web": {
+        "fetch": "Page fetched",
+        "search": "Web search"
+      },
+      "swarm": {
+        "worktree": {
+          "created": "Worktree created",
+          "removed": "Worktree removed"
+        },
+        "patch": {
+          "ready": "Patch ready",
+          "applied": "Patch applied"
+        }
+      }
+    },
+    "contextUsage": "Context usage",
+    "contextPending": "Waiting for a fresh context measurement",
+    "betaActive": "Beta active",
+    "betaShadow": "Beta in shadow mode",
+    "betaOff": "Beta off",
+    "contextWaiting": "Waiting for runtime",
+    "contextTrigger": "Trigger at {{tokens}} tokens",
+    "autoOff": "Auto compaction off",
+    "compacting": "Compacting context…",
+    "compactionResults": "Compaction results ({{count}})",
+    "noCompaction": "No compaction recorded in this session yet.",
+    "betaApplied": "Beta pruning applied",
+    "summaryApplied": "Summary compaction applied",
+    "compactionAborted": "Compaction cancelled",
+    "compactionFailed": "Compaction failed",
+    "compactionSavings": "Context reduction ≈{{saved}}",
+    "compactionEstimate": "Post-compaction tokens are estimated; the next model response refreshes usage.",
+    "cacheHit": "Cache hits",
+    "cachePending": "No cache usage reported yet",
+    "cacheLabel": "Session cache hit rate: {{percent}}",
+    "cacheDetail": "Session total: {{read}} cached / {{total}} input tokens. Input includes uncached, cache-read and cache-write tokens; output is excluded. Compaction does not reset the totals.",
+    "brand": {
+      "tagline": "A coding agent with a judgment kernel",
+      "judge": {
+        "idle": "Judge standing by",
+        "judging": "Judge at work",
+        "off": "Judge is off"
+      },
+      "starters": {
+        "hint": "Not sure where to start? Try one of these:",
+        "understand": {
+          "title": "Understand this project",
+          "desc": "Map the structure, entry points and key modules",
+          "prompt": "Read through this project first, then tell me how it is structured, where the main entry points are and which modules matter most. Point out the three files worth reading first."
+        },
+        "fix": {
+          "title": "Find and fix a problem",
+          "desc": "Start from an error or a symptom and get to the cause",
+          "prompt": "I ran into a problem: <describe the symptom or paste the error>. Reproduce it and find the root cause first, then make the smallest fix and run the related tests to verify."
+        },
+        "plan": {
+          "title": "Plan a change",
+          "desc": "Get a plan first, edit after you confirm",
+          "prompt": "I want to build: <describe what you need>. Give me an implementation plan and the files involved first, and start editing only after I confirm."
+        }
+      }
+    },
+    "toolStatus": {
+      "pending": "Pending",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "boardView": {
+      "title": "Plain-language board",
+      "switch": "Plain-language board for this project",
+      "switching": "Switching…",
+      "afterTurn": "Switches when the agent finishes this step",
+      "unknown": "No board in this conversation yet. It comes with TupAI conversations while the plain-language board is on under Features.",
+      "off": "Once it is on, this says in plain words how the work is going, what the agent is doing now, and what needs you.",
+      "cost": "For this project only. Each update costs one model call.",
+      "empty": "Give the agent a moment; this will say in plain words how it is going.",
+      "checks": "{{done}} of {{total}} checks done",
+      "ended": "Stopped",
+      "done": "Done",
+      "brief": "Brief",
+      "briefHelp": "The model did not write this one in time; it is a short fixed summary.",
+      "needsYou": "Needs you",
+      "needsYouText": "The agent is waiting for your answer in the conversation.",
+      "quote": "Quote in your reply",
+      "quoteHint": "Click one to quote it in your reply; nothing is sent until you send it.",
+      "account": "What it did",
+      "earlierNotes": "{{count, number}} earlier",
+      "earlierNotes_one": "{{count, number}} earlier",
+      "earlierNotes_other": "{{count, number}} earlier",
+      "phases": {
+        "understanding": "Understanding the task",
+        "planning": "Planning",
+        "changing": "Making changes",
+        "checking": "Checking the work",
+        "fixing": "Fixing what the check found",
+        "waiting": "Waiting for you",
+        "wrapping_up": "Wrapping up",
+        "stuck": "Seems stuck"
+      },
+      "checks_one": "{{done}} of {{total}} check done",
+      "checks_other": "{{done}} of {{total}} checks done",
+      "codes": {
+        "progress": {
+          "none": "No checklist yet.",
+          "all": "All {{total}} things on the checklist are done.",
+          "all_one": "The {{total}} thing on the checklist is done.",
+          "all_other": "All {{total}} things on the checklist are done.",
+          "some": "{{done}} of {{total}} things on the checklist are done.",
+          "some_one": "{{done}} of {{total}} thing on the checklist is done.",
+          "some_other": "{{done}} of {{total}} things on the checklist are done."
+        },
+        "now": {
+          "understanding": "Reading the code and notes to work out what to do.",
+          "planning": "Working out how to do it; nothing is changed yet.",
+          "changing": "Changing the code.",
+          "checking": "Running the tests or checks to see whether the change works.",
+          "fixing": "A check found a problem; fixing it.",
+          "waiting": "Stopped, waiting for your reply.",
+          "wrapping_up": "The work is done; wrapping up.",
+          "stuck": "Seems to be going in circles; it may need a hint from you.",
+          "unclear": "Working.",
+          "focus": "{{now}} (On: {{focus}})"
+        },
+        "confirm": {
+          "waiting_reply": "It waits for your reply."
+        }
+      },
+      "notes": {
+        "looked": "Looked at {{count, number}} files or places",
+        "looked_one": "Looked at {{count, number}} file or place",
+        "looked_other": "Looked at {{count, number}} files or places",
+        "changed_file": "Changed {{file}}",
+        "wrote_file": "Wrote {{file}}",
+        "ran_command": "Ran {{command}}",
+        "command_failed": "{{command}} failed",
+        "check_passed": "A check passed: {{command}}",
+        "check_failed": "A check failed: {{command}}",
+        "item_done": "Done: {{item}}",
+        "item_added": "Added to the checklist: {{item}}",
+        "helpers_sent": "Sent out {{count, number}} helpers: {{titles}}",
+        "helpers_sent_one": "Sent out {{count, number}} helper: {{titles}}",
+        "helpers_sent_other": "Sent out {{count, number}} helpers: {{titles}}",
+        "helpers_back": "{{count, number}} helpers came back",
+        "helpers_back_one": "{{count, number}} helper came back",
+        "helpers_back_other": "{{count, number}} helpers came back",
+        "permission_allowed": "You allowed: {{summary}}",
+        "permission_denied": "You did not allow: {{summary}}",
+        "goal_round": "The goal is not met yet; TupAI sent it back to work (round {{round, number}}){{reason}}",
+        "goal_met": "The goal holds: {{text}}",
+        "goal_paused": "The goal is paused{{reason}}",
+        "trouble_loop": "TupAI noticed it repeating the same step: {{detail}}",
+        "trouble": "TupAI noticed: {{detail}}",
+        "did": "Used {{tool}}: {{what}}",
+        "said_quote": "It said: {{text}}",
+        "ended": "Stopped.",
+        "waiting_reply": "Stopped, waiting for your reply."
+      }
+    },
+    "lessonsView": {
+      "filterLabel": "Which lessons to show",
+      "active": "In use",
+      "all": "All",
+      "count": "{{count}} lessons",
+      "count_one": "{{count}} lesson",
+      "count_other": "{{count}} lessons",
+      "search": "Search lessons",
+      "kinds": {
+        "correction": "Correction",
+        "preference": "Rule",
+        "pitfall": "Pitfall",
+        "workaround": "Workaround",
+        "fact": "Fact"
+      },
+      "everywhere": "All projects",
+      "status": {
+        "retired": "Retired",
+        "superseded": "Replaced"
+      },
+      "uses": "Recalled {{recalled}} · Followed {{applied}}",
+      "origins": {
+        "user": "From your correction or rule",
+        "outcome": "From the agent’s own way out",
+        "model": "Kept by the model",
+        "subagent": "From a sub-agent’s report",
+        "command": "Kept with /remember"
+      },
+      "updated": "Updated {{date}}",
+      "editLabel": "Lesson text",
+      "retire": "Retire",
+      "retireConfirm": "Retire this lesson? It will no longer be brought into a turn.",
+      "loadFailed": "The lessons could not be read",
+      "saveFailed": "The lesson was not changed",
+      "empty": "No lessons for this project yet. TupAI learns them from your corrections, from its own ways out of trouble and from /remember.",
+      "noneActive": "No lessons in use. All also lists the retired and replaced ones.",
+      "noMatch": "No lesson matches.",
+      "noProject": "This conversation has no project folder, so only the lessons for all projects are listed.",
+      "notes": {
+        "label": "What the lessons did in this session",
+        "recalled": "This turn brought in {{count}} lessons",
+        "recalled_one": "This turn brought in {{count}} lesson",
+        "recalled_other": "This turn brought in {{count}} lessons",
+        "briefed": "A sub-agent’s brief carried {{count}} lessons: {{task}}",
+        "briefed_one": "A sub-agent’s brief carried {{count}} lesson: {{task}}",
+        "briefed_other": "A sub-agent’s brief carried {{count}} lessons: {{task}}",
+        "applied": "{{count}} lessons were followed",
+        "applied_one": "{{count}} lesson was followed",
+        "applied_other": "{{count}} lessons were followed",
+        "retired": "Retired: {{lesson}}",
+        "retiredUnused": "Retired: {{lesson}} (recalled {{count}} times, never followed)",
+        "retiredUnused_one": "Retired: {{lesson}} (recalled {{count}} time, never followed)",
+        "retiredUnused_other": "Retired: {{lesson}} (recalled {{count}} times, never followed)",
+        "retiredContradicted": "Retired: {{lesson}} (your newer word contradicts it)",
+        "retiredForgotten": "Retired: {{lesson}} (at your request)",
+        "mergedSame": "Merged into: {{lesson}}",
+        "mergedRefines": "Kept a more precise wording: {{lesson}}",
+        "mergedContradicts": "Not kept, it contradicts: {{lesson}}"
+      }
+    },
+    "activityLoadFailed": "Could not load the collaboration activity. Retrying…",
+    "beeFailed": "This bee reported an error.",
+    "beeCounts": {
+      "turns": "{{count}} turns",
+      "turns_one": "{{count}} turn",
+      "turns_other": "{{count}} turns",
+      "tools": "{{count}} tool calls",
+      "tools_one": "{{count}} tool call",
+      "tools_other": "{{count}} tool calls",
+      "shared": "{{count}} shared",
+      "shared_one": "{{count}} shared",
+      "shared_other": "{{count}} shared",
+      "received": "{{count}} received",
+      "received_one": "{{count}} received",
+      "received_other": "{{count}} received"
+    },
+    "compactionTokens": "{{before}} → ≈{{after}} tokens",
+    "compactionKept": "{{count}} results kept",
+    "compactionKept_one": "{{count}} result kept",
+    "compactionKept_other": "{{count}} results kept",
+    "compactionPruned": "{{count}} pruned",
+    "compactionPruned_one": "{{count}} pruned",
+    "compactionPruned_other": "{{count}} pruned",
+    "compactionDropped": "{{count}} calls removed",
+    "compactionDropped_one": "{{count}} call removed",
+    "compactionDropped_other": "{{count}} calls removed",
+    "jevLine": {
+      "classifying": "{{judge}} is classifying this message…",
+      "classified": "Classified by {{judge}}: {{type}}",
+      "byRule": "Classified by rule: {{type}}",
+      "shadow": "{{line}} (watching only, not applied)",
+      "late": "{{line}} (too late for this turn)",
+      "fallback": "No clear class from {{judge}} this time; going on as usual",
+      "unanswered": "{{judge}} did not answer this time; going on as usual",
+      "noJudge": "No judge is available yet, so messages are not classified.",
+      "setUp": "Set up a judge",
+      "skipped": "Classification skipped",
+      "off": "Classification is off"
+    },
+    "eventLine": {
+      "detail": "Details: {{detail}}",
+      "progress": {
+        "frame": "Updating the task frame",
+        "lessons": "Checking lessons from earlier sessions",
+        "skills": "Choosing which skills this session needs",
+        "capabilities": "Choosing which capabilities this task needs",
+        "goal_check": "Checking whether the goal holds",
+        "permissionReview": "Jev is reviewing: {{summary}}"
+      },
+      "goal": {
+        "paused": "Paused: {{reason}}",
+        "reason": {
+          "interrupted": "you interrupted the run",
+          "modelCallFailed": "a model call failed",
+          "needsUser": "the agent needs something from you",
+          "needsUserDetail": "the agent needs something from you: {{detail}}",
+          "unjudged": "no judge could read whether the goal holds, and nothing is provably unfinished",
+          "idle": "the agent ended {{count}} runs in a row without doing anything",
+          "idle_one": "the agent ended {{count}} run without doing anything",
+          "idle_other": "the agent ended {{count}} runs in a row without doing anything",
+          "noProgress": "no progress in {{count}} runs in a row; say how to go on",
+          "noProgress_one": "no progress in {{count}} run; say how to go on",
+          "noProgress_other": "no progress in {{count}} runs in a row; say how to go on",
+          "noProgressDetail": "no progress in {{count}} runs in a row ({{detail}}); say how to go on",
+          "noProgressDetail_one": "no progress in {{count}} run ({{detail}}); say how to go on",
+          "noProgressDetail_other": "no progress in {{count}} runs in a row ({{detail}}); say how to go on",
+          "continuationsUsedUp": "the allowance of {{count}} continuations is used up",
+          "continuationsUsedUp_one": "the allowance of {{count}} continuation is used up",
+          "continuationsUsedUp_other": "the allowance of {{count}} continuations is used up",
+          "minutesUsedUp": "the allowance of {{duration}} is used up",
+          "sessionReopened": "the session was reopened"
+        }
+      },
+      "frame": {
+        "unclearChange": "How does this change the task: “{{message}}”?"
+      },
+      "search": {
+        "notConfigured": "“{{source}}” is not a search source (features.web.search)",
+        "failed": "{{source}} failed: {{message}}",
+        "robotPage": "{{source}} answered with a verification page: it takes this client for a robot",
+        "httpError": "{{source}} answered with HTTP {{status}}",
+        "noResults": "{{source}} returned a page without results (none found, or its markup changed)",
+        "unrelated": "{{source}} returned results that have nothing to do with the query, as engines do for clients they take for robots"
+      },
+      "mcp": {
+        "line": "{{name}}: {{reason}}",
+        "projectUntrusted": "the project is not trusted, and this server is defined by the project",
+        "needsApproval": "it is defined by the project ({{source}}) and has not been approved; open this folder in TupAI and allow it once, or define it in TupAI.json",
+        "denied": "you did not allow this project's server to start",
+        "unreachable": "it could not be started or reached",
+        "closed": "its connection closed while TupAI was still waiting for an answer",
+        "timeout": "it did not answer in time",
+        "aborted": "the start was cancelled",
+        "rpc": "it answered with an error",
+        "protocol": "it answered with something that is not the MCP protocol",
+        "startFailed": "it could not be started",
+        "crashedRestarting": "it crashed while running; TupAI restarts it once",
+        "crashedAgain": "it crashed again and is not restarted",
+        "restartFailed": "it crashed, and the restart failed too",
+        "restartFailedCause": "it crashed, and the restart failed too: {{cause}}"
+      },
+      "rewind": {
+        "sameCommandFailed": "The same failing command ran {{count}} times: {{command}}",
+        "sameCommandFailed_one": "The same failing command ran {{count}} time: {{command}}",
+        "sameCommandFailed_other": "The same failing command ran {{count}} times: {{command}}",
+        "monitorTrouble": "The monitor spoke up {{count}} times in this turn ({{kind}}: {{detail}})",
+        "monitorTrouble_one": "The monitor spoke up {{count}} time in this turn ({{kind}}: {{detail}})",
+        "monitorTrouble_other": "The monitor spoke up {{count}} times in this turn ({{kind}}: {{detail}})",
+        "trouble": {
+          "loop": "going in circles",
+          "drift": "drifting from the task"
+        }
+      },
+      "browser": {
+        "finished": "{{status}}: {{reason}}",
+        "openFailed": "The page could not be opened in the browser.",
+        "openFailedPanel": "The page could not be opened in the app's browser panel.",
+        "launch": {
+          "noBrowser": {
+            "mac": "No Chrome, Chromium, Edge or Brave was found in /Applications. Install one, or set MU_CHROME to a Chromium-based browser's executable.",
+            "windows": "No Chrome, Chromium, Edge or Brave was found under Program Files or %LOCALAPPDATA%. Install one, or set MU_CHROME to its .exe.",
+            "wsl": "No browser was found inside WSL. Install one inside WSL, or turn on WSL's mirrored networking; the steps are in the reason field below.",
+            "other": "No Chrome, Chromium, Edge or Brave was found. Install one, or set MU_CHROME to its executable; the install commands are in the reason field below."
+          },
+          "windowsBrowserUnusable": "{{executable}} cannot be used: a browser on the Windows side can only be reached from WSL with mirrored networking.",
+          "profileNoWindowsPath": "The profile folder {{profileDir}} has no Windows path (WSL_DISTRO_NAME is not set).",
+          "browserSpawnFailed": "{{command}} could not be started.",
+          "browserExitedOnStart": "The browser exited during startup (code {{exitCode}}).",
+          "devtoolsPortTimeout": "The browser did not open its DevTools port in time.",
+          "cdpConnectTimeout": "Timed out connecting to the browser.",
+          "cdpConnectFailed": "Could not connect to the browser."
+        }
+      },
+      "permissions": {
+        "mode": "Permission mode: {{mode}}",
+        "request": "Waiting for your permission: {{summary}}",
+        "waiting": "Waiting for your permission",
+        "answers": {
+          "once": "You allowed it once",
+          "session": "Allowed for this conversation",
+          "deny": "You did not allow it"
+        },
+        "about": "{{answer}}: {{summary}}",
+        "approved": {
+          "judge": "The judge let it run without asking you: {{summary}}",
+          "grant": "Ran without asking, as allowed for this conversation: {{summary}}"
+        }
+      },
+      "board": {
+        "on": "Board: on",
+        "off": "Board: off"
+      }
+    },
+    "gauges": {
+      "context": "Context",
+      "contextHint": "What the model reads next takes up {{percent}} of its context",
+      "cache": "Cache hits",
+      "cacheHint": "Cache hits: {{turn}} in the latest turn, {{session}} across the whole conversation",
+      "pending": "Shown after TupAI’s next reply"
+    }
+  },
+  "menu": {
+    "about": "About {{name}}",
+    "settings": "Settings…",
+    "services": "Services",
+    "hide": "Hide {{name}}",
+    "hideOthers": "Hide others",
+    "unhide": "Show all",
+    "quit": "Quit {{name}}",
+    "file": "File",
+    "newChat": "New chat",
+    "closeWindow": "Close window",
+    "edit": "Edit",
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "pasteAndMatchStyle": "Paste and match style",
+    "delete": "Delete",
+    "selectAll": "Select all",
+    "view": "View",
+    "reload": "Reload",
+    "forceReload": "Force reload",
+    "toggleDevTools": "Toggle developer tools",
+    "resetZoom": "Actual size",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "toggleFullScreen": "Toggle full screen",
+    "window": "Window",
+    "minimize": "Minimize",
+    "zoomWindow": "Zoom",
+    "bringAllToFront": "Bring all to front",
+    "help": "Help",
+    "checkForUpdates": "Check for updates…",
+    "projectPage": "{{name}} on GitHub"
+  },
+  "trayMenu": {
+    "runningTasks": "Running tasks: {{count}}"
+  },
+  "noData": "No data",
+  "labelWithSelectedCount": "{{label}} ({{selected}}/{{total}})",
+  "selectedSkillsWithCount": "Selected skills · {{count}}",
+  "commandPalette": {
+    "title": "Command palette",
+    "placeholder": "Search conversations, settings and commands",
+    "groups": {
+      "conversations": "Conversations",
+      "settings": "Settings",
+      "commands": "Commands"
+    },
+    "searchMessages": "Search messages for “{{query}}”",
+    "empty": "No matches",
+    "noConversations": "No conversations yet. Type to find settings and commands.",
+    "openSettings": "Open settings",
+    "actions": {
+      "newConversation": "Start a new chat",
+      "scheduledTasks": "Open scheduled tasks"
+    },
+    "commandWaits": "Runs once this reply is done"
+  },
+  "window": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore"
+  },
+  "collapseSidebar": "Collapse sidebar",
+  "expandSidebar": "Expand sidebar",
+  "workPanel": {
+    "label": "Work panel",
+    "tabsLabel": "Work panel tabs",
+    "tabs": {
+      "board": "Board",
+      "judge": "Judge",
+      "hive": "Hive",
+      "lessons": "Lessons",
+      "files": "Files",
+      "preview": "Preview",
+      "source": "Source",
+      "browser": "Browser"
+    },
+    "close": "Close the work panel",
+    "resize": "Resize the work panel",
+    "unread": "{{tab}}, new",
+    "noProject": "This conversation has no project folder, so there are no files or changes to show.",
+    "previewEmpty": "Nothing to preview yet. Files opened from the conversation show here.",
+    "previewHidden": "The preview is hidden.",
+    "browserEmpty": "No pages open. Type an address or a search above. Pages opened from the conversation show here too."
+  },
+  "nodeRuntime": {
+    "title": "Download Node.js?",
+    "message": "TupAI runs agents and tools on its own copy of Node.js, which is not downloaded yet.",
+    "detail": "Node.js {{version}} (about {{size}} MB) will be downloaded from nodejs.org and unpacked into:\n{{folder}}\n\n\"Later\" downloads nothing: TupAI opens as usual, says so where Node.js is needed, and asks again at the next start.",
+    "download": "Download",
+    "later": "Later",
+    "note": "Node.js is not downloaded, so this agent cannot run. TupAI asks again at the next start.",
+    "toolNote": "Node.js is not downloaded, so tools that need it cannot run. TupAI asks again at the next start."
+  }
+}

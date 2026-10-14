@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# Two repositories side by side: the harness is ../KYRN. Anywhere else (the MU monorepo, mu-agent from npm) the
+# adapter finds it itself (process/agent/kyrn/harness.ts); KYRN_ROOT / MU_ROOT, when set, still win.
+if [[ -z "${KYRN_ROOT:-}${MU_ROOT:-}" && -f "$(dirname "$ROOT")/KYRN/kyrn/bin/mu.mjs" ]]; then
+  export KYRN_ROOT="$(dirname "$ROOT")/KYRN"
+fi
+if [[ -d "$HOME/.nvm/versions/node/v24.16.0/bin" ]]; then
+  export PATH="$HOME/.nvm/versions/node/v24.16.0/bin:$PATH"
+fi
+# acp.mjs checks the Node version, finds tsx wherever node_modules is, and runs the adapter.
+exec node "$ROOT/scripts/kyrn/acp.mjs" "$@"
