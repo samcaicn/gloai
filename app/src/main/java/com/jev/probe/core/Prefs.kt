@@ -355,8 +355,10 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getBoolean(K_OCR_PRIMARY, true)
         set(v) = sp.edit().putBoolean(K_OCR_PRIMARY, v).apply()
 
+    // 「自动分析」开关已去掉（2026-10-15 用户要求）：只要软件在跑、有消息进来就自动分析，
+    // 不再给关的机会。setter 保留只为兼容云端备份里的旧 key，写入无效。
     var ocrAutoAnalyze: Boolean
-        get() = sp.getBoolean(K_OCR_AUTO, true)
+        get() = true
         set(v) = sp.edit().putBoolean(K_OCR_AUTO, v).apply()
 
     // ------------------------------------------------------------- existing
@@ -392,8 +394,9 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getInt(K_BUBBLE_X, -1)
         set(v) = sp.edit().putInt(K_BUBBLE_X, v).apply()
 
+    // 「自动分析」开关已去掉（2026-10-15 用户要求）：恒开。setter 保留只为兼容旧 key。
     var autoAnalyze: Boolean
-        get() = sp.getBoolean(K_AUTO, true)
+        get() = true
         set(v) = sp.edit().putBoolean(K_AUTO, v).apply()
 
     /** 是否已完成首次引导（悬浮球首次出现时的产品说明卡）。只展示一次。 */

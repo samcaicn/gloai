@@ -352,21 +352,7 @@ class OverlayController(private val ctx: Context) {
                 com.jev.probe.capture.KeepAliveService.refresh(ctx)
             }
         })
-        val anaOn = prefs.autoAnalyze
-        menu.addView(menuItem(
-            if (anaOn) ctx.t("自动分析：已开启", "Auto-analyze: on") else ctx.t("自动分析：已关闭", "Auto-analyze: off"),
-            sub = if (anaOn) ctx.t("对方发消息就自动判断 · 点此关闭", "Judges automatically on new messages · tap to turn off")
-                  else ctx.t("只在你点气泡时分析 · 点此开启", "Analyzes only when you tap the bubble · tap to turn on")
-        ) {
-            root?.removeView(menu)
-            prefs.autoAnalyze = !anaOn
-            // 手动从菜单开回来时，把自动收发一并对齐到「只给建议」这一档：
-            // 用户主动点开的是分析，不是发消息。
-            if (anaOn && AutoReply.isOn(ctx)) AutoReply.setOn(ctx, false)
-            toast(if (anaOn) ctx.t("已关闭自动分析，助手只在需要时待命", "Auto-analyze off — the assistant only stands by when needed")
-                  else ctx.t("已开启自动分析", "Auto-analyze on"))
-            com.jev.probe.capture.KeepAliveService.refresh(ctx)
-        })
+        // 「自动分析」开关已去掉（2026-10-15 用户要求）：有消息就自动分析，菜单不再给这一项。
 
         menu.addView(menuDivider())
         // 微信里整屏截屏会触发风控，所以这一项在微信前台时直接不摆出来——
@@ -539,9 +525,9 @@ class OverlayController(private val ctx: Context) {
         // 两个常量，于是用户在气泡菜单里把自动收发开了/关了，key 不变 → 直接 return，
         // 面板上那行「当前是自动还是手动」永远停在旧状态，而它恰恰是用户刚改完
         // 最想确认的一件事。开关状态进 key，改完立刻重绘。
+        // 「自动分析」2026-10-15 起恒开、无开关，不再进 key。
         val autoOn = AutoReply.isOn(ctx)
-        val anaOn = prefs.autoAnalyze
-        val key = (if (prefs.onboarded) "idle" else "onboard") + "|auto=$autoOn|ana=$anaOn|lang=" + Lang.code(ctx)
+        val key = (if (prefs.onboarded) "idle" else "onboard") + "|auto=$autoOn|lang=" + Lang.code(ctx)
         if (key == lastIdleKey) return
         val views = ArrayList<View>()
         if (!prefs.onboarded) {

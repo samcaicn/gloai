@@ -49,14 +49,12 @@ object AutoReply {
      * 只是不会替他发消息——这正是 [setOn] 关闭后的真实状态。
      */
     fun statusText(ctx: Context): String {
-        val p = Prefs(ctx)
         return when {
             isOn(ctx) -> ctx.t("自动收发已开启 · 自动读消息并自动回复发送",
                 "Auto send/receive on · reads messages and replies automatically")
-            p.autoAnalyze -> ctx.t("自动分析已开启 · 只给建议，发送由你点",
+            // 「自动分析」2026-10-15 起恒开（开关已去掉）：没开发送时也是「只给建议」。
+            else -> ctx.t("自动分析已开启 · 只给建议，发送由你点",
                 "Auto-analyze on · suggestions only, you tap send")
-            else -> ctx.t("助手已待命 · 只在你点气泡时分析",
-                "Assistant standing by · analyzes only when you tap the bubble")
         }
     }
 }

@@ -264,20 +264,8 @@ class SettingsActivity : AppCompatActivity() {
             })
         }
 
-        // 自动分析与自动发送是两件事，必须在这里也摆出来。
-        // 原来设置页只有「自动收发」一项，而悬浮球菜单里「暂停自动收发」并不会关掉
-        // 自动分析——于是出现「设置页看不出助手还在自动读」的盲区。菜单里加了
-        // 独立的「自动分析」开关后，这里必须同步，否则两处说法不一致。
-        c.addView(toggleRow(
-            t("自动分析（只给建议，不替你发）", "Auto-analyze (advice only, never sends)"), prefs.autoAnalyze
-        ) { on ->
-            prefs.autoAnalyze = on
-            // 刚把自动分析关掉，就顺手把自动收发也退到「只给建议」这一档：
-            // 用户表达的是「别自己动了」，两个开关同时关掉最贴近这个意思。
-            if (!on && AutoReply.isOn(this)) AutoReply.setOn(this, false)
-            com.jev.probe.capture.KeepAliveService.refresh(this)
-            refreshAutoReplyUi()
-        })
+        // 「自动分析」开关已去掉（2026-10-15 用户要求）：只要软件在跑就自动分析，
+        // 设置页不再给这一项。上面保留的只有「自动收发」——发送权仍在人手里。
 
         // 发送延迟：一个数字，但它直接决定「自动发送能不能成功」——太快会点空。
         c.addView(label(t("发出前等几秒", "Wait before sending (seconds)")))
