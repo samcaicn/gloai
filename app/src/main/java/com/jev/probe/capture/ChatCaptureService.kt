@@ -570,12 +570,17 @@ open class ChatCaptureService : AccessibilityService() {
         }
         val locked = deviceLocked()
         val fg = weChatForeground
-        // 重放后必须落在聊天页；若只落到微信主页（LauncherUI），说明重放没生效、输入框不属于该会话。
-        val onChatPage = lastWindowClass.isBlank() || lastWindowClass.contains("chatting", ignoreCase = true)
-        notifRoundAnchorless = !(notifRoundReplayed && fg && !locked && onChatPage)
+        // 微信 8.0.78 把聊天页无障碍树剥掉，lastWindowClass 退化为壳类名（android.widget.FrameLayout），
+        // 拿不到 ChattingUI——再要求 onChatPage 会让所有通知轮被误判无锚点、一条都发不出去（实测退回此坑）。
+        // 锚点改为建立在"新鲜 PendingIntent 亲手重放该会话 + 微信前台 + 未锁屏"上：重放本身是系统保证跳到
+        // 该会话，且发送链路双保险（fillInput 找不到输入框即失败、sendWeChatByVerifiedTap 验证绿键消失）
+        // 已兜住"重放失效开到列表页"的发错风险，无需再用不可靠的 onChatPage 否决。
+        // 仅当能明确识别微信停在会话列表页（LauncherUI）时才否决——剥树下拿不到该类名，自然不触发。
+        val clearlyOnListPage = lastWindowClass.contains("LauncherUI", ignoreCase = true)
+        notifRoundAnchorless = !(notifRoundReplayed && fg && !locked && !clearlyOnListPage)
         if (notifRoundAnchorless) {
             Log.w(TAG, "notif-round: NO ANCHOR conv=${round.conv} (replayed=$notifRoundReplayed fg=$fg " +
-                "locked=$locked onChatPage=$onChatPage class=$lastWindowClass) -> analyze only, no auto-send")
+                "locked=$locked listPage=$clearlyOnListPage class=$lastWindowClass) -> analyze only, no auto-send")
         }
         startNotifAnalysis(round, seq)
     }
