@@ -9,10 +9,27 @@ export interface Env {
   ORDER_EXPIRE_MINUTES: string;
   /** 微信支付回调地址 */
   WXPAY_NOTIFY_URL: string;
+  /**
+   * 接入模式：
+   *   partner（默认） = 服务商模式，走 /v3/pay/partner/*，需 sp_appid + sp_mchid + sub_mchid
+   *   merchant       = 普通直连商户，走 /v3/pay/*，需 mchid + appid
+   */
+  WXPAY_SP_MODE?: string;
   // ---- 以下走 wrangler secret put，不落库 ----
+  /** 服务商模式：服务商商户号（同时是签名用的 mchid） */
+  WXPAY_SP_MCHID?: string;
+  /** 服务商模式：服务商 AppID（开放平台应用 / 公众号 / 小程序任一，须与 sp_mchid 有绑定） */
+  WXPAY_SP_APPID?: string;
+  /** 服务商模式：子商户（特约商户）商户号 —— 实际收款方 */
+  WXPAY_SUB_MCHID?: string;
+  /** 服务商模式：子商户 AppID（选填，须与 sub_mchid 有绑定） */
+  WXPAY_SUB_APPID?: string;
+  /** 直连模式：商户号 / AppID（WXPAY_SP_MODE=merchant 时使用） */
   WXPAY_MCHID?: string;
   WXPAY_APPID?: string;
+  /** 商户 API 证书序列号（服务商模式下为服务商商户的证书） */
   WXPAY_SERIAL?: string;
+  /** 商户 API 证书私钥 apiclient_key.pem 全文 */
   WXPAY_PRIVATE_KEY?: string;
   WXPAY_V3KEY?: string;
 }
@@ -51,6 +68,10 @@ export interface Order {
   expireAt: number;
   paidAt?: number;
   wxTransactionId?: string;
+  /** 主动向微信查单的时间戳（回调丢失时的兜底，兼作节流） */
+  lastQueryAt?: number;
+  /** 已向微信发起过关单的时间戳（只试一次） */
+  closeTriedAt?: number;
 }
 
 export interface CreditsRecord {

@@ -13,6 +13,11 @@ id = "REPLACE_WITH_KV_NAMESPACE_ID"
 # 支付模式：mock = 开发自测（下单返回模拟二维码，mock/confirm 一键确认到账）；
 #           wechat = 微信支付 Native 扫码（真实收款，需配 WXPAY_* secrets）
 PAY_MODE = "mock"
+# 微信支付接入形态（服务商模式为本次接入形态）：
+#   partner  = 服务商模式：走 /v3/pay/partner/*，需 WXPAY_SP_MCHID + WXPAY_SP_APPID + WXPAY_SUB_MCHID
+#              （服务商 sp_mchid 代子商户 sub_mchid 下单，钱进子商户账户）
+#   merchant = 普通直连商户：走 /v3/pay/*，需 WXPAY_MCHID + WXPAY_APPID
+WXPAY_SP_MODE = "partner"
 # 每消费 1 元人民币到账的积分。三档套餐的积分 = 价格(元) × 本值。
 # 具体兑换比例待定——以后只改这一个值，全部档位与全部客户端同步生效。
 CREDITS_PER_YUAN = "50"

@@ -1,25 +1,44 @@
 import type { Env, Order } from './types';
 import { findTier, listTiers } from './lib/tiers';
 import { addCredits, getCredits, getOrder, getOrderIdByOutTradeNo, rateLimit, saveOrder } from './lib/store';
-import { decryptNotify, nativeOrder, readNotifyHeaders, readWxConfig, verifyNotify } from './lib/wxpay';
+import {
+  closeOrder,
+  decryptNotify,
+  isPartnerMode,
+  nativeOrder,
+  notifyMerchantMatch,
+  queryOrder,
+  readNotifyHeaders,
+  readWxConfig,
+  rfc3339Cst,
+  verifyNotify,
+} from './lib/wxpay';
 
 /**
- * 智创协同 AI 桌面端支付 Worker。
+ * 智创协同 AI 桌面端支付 Worker（微信支付服务商模式 Native 扫码）。
  *
  * 唯一持有微信支付商户密钥的一层；桌面客户端只跟本 Worker 通信（配置里只存
  * Worker 域名），不持有任何商户凭证。积分余额以本 Worker 的 KV 为准。
  *
+ * 收款形态：服务商（sp_mchid）代子商户（sub_mchid）下单，钱进子商户账户。
+ * 设 WXPAY_SP_MODE=merchant 可退回直连商户模式，见 README。
+ *
  * 路由：
- *   GET  /health                  探活
+ *   GET  /health                  探活（返回模式 / 接入形态 / 凭证是否配齐）
  *   GET  /api/pay/tiers           三档套餐（含实时积分）
  *   POST /api/pay/create          {tier, mid} -> {orderId, codeUrl, expiresAt, mock}
- *   GET  /api/pay/status?orderId= 轮询支付结果
+ *   GET  /api/pay/status?orderId= 轮询支付结果（未支付时会向微信主动查单兜底）
  *   GET  /api/pay/credits?mid=    积分余额
  *   POST /api/pay/notify          微信支付回调（验签 + 解密 + 入账）
  *   POST /api/pay/mock/confirm    {orderId} 仅 PAY_MODE=mock：模拟支付成功
  */
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
+
+/** 主动查单最小间隔：客户端 2s 轮询，这里按 5s 打微信，避免触发频率限制 */
+const QUERY_MIN_INTERVAL_MS = 5_000;
+/** 关单最短延迟：微信建议下单后至少 5 分钟再关单，否则状态未同步会关单失败 */
+const CLOSE_MIN_DELAY_MS = 5 * 60_000;
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: JSON_HEADERS });
@@ -38,6 +57,24 @@ function orderExpireMinutes(env: Env): number {
   return Number.isFinite(n) && n > 0 ? n : 30;
 }
 
+/** /health 用：告诉运维当前接入形态与还缺哪些 secret（不泄露值）。 */
+function wxMissingSecrets(env: Env): string[] {
+  const missing: string[] = [];
+  if (!env.WXPAY_SERIAL?.trim()) missing.push('WXPAY_SERIAL');
+  if (!env.WXPAY_PRIVATE_KEY?.trim()) missing.push('WXPAY_PRIVATE_KEY');
+  if (!env.WXPAY_V3KEY?.trim()) missing.push('WXPAY_V3KEY');
+  if (!env.WXPAY_NOTIFY_URL?.trim()) missing.push('WXPAY_NOTIFY_URL');
+  if (isPartnerMode(env)) {
+    if (!env.WXPAY_SP_MCHID?.trim()) missing.push('WXPAY_SP_MCHID');
+    if (!env.WXPAY_SP_APPID?.trim()) missing.push('WXPAY_SP_APPID');
+    if (!env.WXPAY_SUB_MCHID?.trim()) missing.push('WXPAY_SUB_MCHID');
+  } else {
+    if (!env.WXPAY_MCHID?.trim()) missing.push('WXPAY_MCHID');
+    if (!env.WXPAY_APPID?.trim()) missing.push('WXPAY_APPID');
+  }
+  return missing;
+}
+
 function genId(): string {
   // out_trade_no 要求 ≤32 位且唯一；同值即订单 id，webhook 回查零歧义
   return `mu${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
@@ -50,6 +87,71 @@ async function refreshExpiry(env: Env, order: Order): Promise<Order> {
     await saveOrder(env, order);
   }
   return order;
+}
+
+/** 从 attach（下单时写入的 {mid,tierId}）取 mid；缺失用订单快照。 */
+function midFromAttach(attach: string | undefined, fallback: string): string {
+  if (!attach) return fallback;
+  try {
+    return (JSON.parse(attach) as { mid?: string }).mid || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/** 置为已付并入账，返回入账后的积分余额。只改对象，落盘交给调用方。 */
+async function markPaid(env: Env, order: Order, mid: string, transactionId?: string): Promise<number> {
+  order.status = 'paid';
+  order.paidAt = Date.now();
+  if (transactionId) order.wxTransactionId = transactionId;
+  await saveOrder(env, order);
+  return addCredits(env, mid, order.credits);
+}
+
+/**
+ * 回调兜底：微信回调可能因为网络/域名问题丢失，客户端轮询时顺手向微信查一次真单。
+ * 命中 SUCCESS 直接入账；命中终态（关闭/撤销/失败）把本地单置 closed。
+ */
+async function reconcileWithWxpay(env: Env, order: Order): Promise<void> {
+  if (order.status !== 'created' || order.mock) return;
+  const cfg = readWxConfig(env);
+  if (!cfg) return;
+
+  const now = Date.now();
+  if (order.lastQueryAt && now - order.lastQueryAt < QUERY_MIN_INTERVAL_MS) return;
+  order.lastQueryAt = now;
+
+  try {
+    const result = await queryOrder(env, cfg, order.outTradeNo);
+    if (!result) return; // 微信侧还没有这笔单（下单请求可能失败过），保持 created
+    if (result.trade_state === 'SUCCESS') {
+      const paidCents = result.amount?.total ?? result.amount?.payer_total ?? 0;
+      if (paidCents === order.amountCents) {
+        await markPaid(env, order, midFromAttach(result.attach, order.mid), result.transaction_id);
+        return;
+      }
+    } else if (['CLOSED', 'REVOKED', 'PAYERROR'].includes(result.trade_state)) {
+      order.status = 'closed';
+    }
+  } catch {
+    // 查单失败不影响本次轮询响应，下个周期重试
+  }
+  await saveOrder(env, order);
+}
+
+/** 本地过期后向微信关一次单，避免微信侧订单一直挂着可支付状态。 */
+async function closeExpiredOrder(env: Env, order: Order): Promise<void> {
+  if (order.status !== 'expired' || order.mock || order.closeTriedAt) return;
+  if (Date.now() - order.createdAt < CLOSE_MIN_DELAY_MS) return;
+  const cfg = readWxConfig(env);
+  if (!cfg) return;
+  order.closeTriedAt = Date.now();
+  await saveOrder(env, order);
+  try {
+    await closeOrder(env, cfg, order.outTradeNo);
+  } catch {
+    // 关单失败不重试：最坏结果是微信侧自然过期
+  }
 }
 
 async function handleCreate(env: Env, req: Request): Promise<Response> {
@@ -97,6 +199,8 @@ async function handleCreate(env: Env, req: Request): Promise<Response> {
         outTradeNo: order.outTradeNo,
         description: `智创协同AI·${tier.name}`,
         amountCents: tier.priceCents,
+        // 让微信侧的支付截止时间与本地 expireAt 一致，到点后用户扫旧码会被微信拒绝
+        timeExpire: rfc3339Cst(order.expireAt),
         attach: JSON.stringify({ mid, tierId: tier.id }).slice(0, 128),
       });
     } catch (error) {
@@ -119,6 +223,11 @@ async function handleStatus(env: Env, url: URL): Promise<Response> {
   const order = orderId ? await getOrder(env, orderId) : null;
   if (!order) return bad('order not found', 404);
   await refreshExpiry(env, order);
+  // 真实收款模式下，回调若没打到本 Worker，这里主动查微信兜底
+  if (payMode(env) === 'wechat') {
+    await reconcileWithWxpay(env, order);
+    await closeExpiredOrder(env, order);
+  }
   return json({
     orderId: order.id,
     status: order.status,
@@ -167,7 +276,8 @@ async function handleNotify(env: Env, req: Request): Promise<Response> {
     // 非成功态（如关单）不处理，直接确认收悉
     return ok();
   }
-  if (notify.mchid && notify.mchid !== cfg.mchid) return fail('mchid mismatch');
+  // 服务商模式校验 sp_mchid + sub_mchid；直连模式校验 mchid
+  if (!notifyMerchantMatch(cfg, notify)) return fail('merchant mismatch');
 
   const orderId = await getOrderIdByOutTradeNo(env, notify.out_trade_no);
   if (!orderId) return fail('unknown out_trade_no', 404);
@@ -180,19 +290,7 @@ async function handleNotify(env: Env, req: Request): Promise<Response> {
   if (paidCents !== order.amountCents) return fail('amount mismatch');
 
   // attach 里的 mid 优先（下单时写入），缺失退回订单快照
-  let mid = order.mid;
-  try {
-    const attach = notify.attach ? (JSON.parse(notify.attach) as { mid?: string }) : {};
-    if (attach.mid) mid = attach.mid;
-  } catch {
-    /* attach 损坏则用订单快照的 mid */
-  }
-
-  order.status = 'paid';
-  order.paidAt = Date.now();
-  order.wxTransactionId = notify.transaction_id;
-  await saveOrder(env, order);
-  await addCredits(env, mid, order.credits);
+  await markPaid(env, order, midFromAttach(notify.attach, order.mid), notify.transaction_id);
   return ok();
 }
 
@@ -208,10 +306,7 @@ async function handleMockConfirm(env: Env, req: Request): Promise<Response> {
   if (!order) return bad('order not found', 404);
   if (order.status === 'paid') return json({ orderId: order.id, status: 'paid', credits: order.credits });
   if (order.status !== 'created') return bad(`order is ${order.status}`);
-  order.status = 'paid';
-  order.paidAt = Date.now();
-  await saveOrder(env, order);
-  const balance = await addCredits(env, order.mid, order.credits);
+  const balance = await markPaid(env, order, order.mid);
   return json({ orderId: order.id, status: 'paid', credits: order.credits, balance });
 }
 
@@ -225,7 +320,18 @@ export default {
     try {
       let resp: Response;
       if (url.pathname === '/health') {
-        resp = json({ ok: true, mode: payMode(env) });
+        const partner = isPartnerMode(env);
+        const missing = wxMissingSecrets(env);
+        resp = json({
+          ok: true,
+          mode: payMode(env),
+          wxpay: {
+            access: partner ? 'partner' : 'merchant',
+            partner,
+            configured: missing.length === 0,
+            missing,
+          },
+        });
       } else if (url.pathname === '/api/pay/tiers' && req.method === 'GET') {
         resp = json({ tiers: listTiers(env) });
       } else if (url.pathname === '/api/pay/create' && req.method === 'POST') {
