@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // AiBuddy's own releases: every installer (and every architecture) is attached to a release there.
-const MU_RELEASES_URL = 'https://github.com/samcaicn/mu/releases';
+const MU_RELEASES_URL = 'https://github.com/samcaicn/gloai/releases';
 
 type InstallationIntegrityDialogKind =
   | 'incomplete_installation'

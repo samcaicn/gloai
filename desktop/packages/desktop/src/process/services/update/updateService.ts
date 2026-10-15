@@ -46,7 +46,7 @@ export interface UpdateServiceDeps {
   restartUpdater?: RestartUpdater;
   /** Why this system's updates come as installers, when there is no restartUpdater. */
   installerReason: Exclude<InstallerReason, 'autoUpdateFailed'>;
-  /** The newest release of github.com/qybaihe/mu, from GitHub's API. */
+  /** The newest release of github.com/samcaicn/gloai, from GitHub's API. */
   latestRelease: () => Promise<UpdateReleaseInfo | null>;
   /** Downloads an installer into the Downloads folder and answers with its path. */
   downloadInstaller: (asset: GitHubReleaseAsset, onProgress: (percent: number) => void) => Promise<string>;
