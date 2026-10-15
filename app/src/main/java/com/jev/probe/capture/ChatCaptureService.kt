@@ -903,9 +903,16 @@ open class ChatCaptureService : AccessibilityService() {
      */
     private fun weChatChatRoot(): AccessibilityNodeInfo? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
-        for (w in getWindows()) {
+        // getWindows() 个别机型会返回 null；循环体逐窗 catch——AccessibilityWindowInfo.getRoot()
+        // 对已失效/回收的窗口会直接抛 NPE（2026-10-15 实测崩溃栈：onAccessibilityEvent →
+        // weChatChatRoot → getRoot → NPE），不是判空能挡的，必须 try。
+        for (w in getWindows() ?: emptyList()) {
             if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) continue
-            val r = w.root ?: continue
+            val r = try {
+                w.root
+            } catch (_: Throwable) {
+                null
+            } ?: continue
             if (r.packageName?.toString() == PKG_WECHAT) return r
         }
         return null
