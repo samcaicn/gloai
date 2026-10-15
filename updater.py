@@ -36,6 +36,28 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# 直连代理表：显式置 None，绕开 requests trust_env 默认读取的
+# 环境变量 / Windows 注册表系统代理。残留死代理（如已卸载的加速器
+# 留下 127.0.0.1:xxxxx）会让所有请求静默黑洞，必须提供直连回退。
+_DIRECT_PROXIES = {"http": None, "https": None}
+
+
+def _http_get(url, *, headers=None, timeout=15, stream=False):
+    """带代理故障回退的 GET。
+
+    第一轮按 requests 默认（trust_env：环境变量 + 系统代理）走，
+    失败后强制直连重试一轮——确保"残留死代理"用户也能完成更新。
+    仍失败则抛出最后一个 RequestException。
+    """
+    last_exc = None
+    for proxies in (None, _DIRECT_PROXIES):
+        try:
+            return requests.get(url, headers=headers, timeout=timeout,
+                                stream=stream, proxies=proxies)
+        except requests.RequestException as e:
+            last_exc = e
+    raise last_exc
+
 class Updater:
     # GitHub 仓库信息（分发源：samcaicn/gloai 的 weauto 分支，CI 构建加密 exe 并保留 90 天 Artifact）
     REPO_OWNER = "samcaicn"
@@ -295,34 +317,41 @@ class Updater:
 
     def _check_artifact_updates(self) -> dict:
         """向 Worker 更新代理查询最新 CI 构件（EXE 零密钥）。"""
-        try:
-            url = f"{self._update_worker_url().rstrip('/')}/api/update"
-            headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
-            resp = requests.get(url, headers=headers, timeout=15)
-            if resp.status_code in (401, 403, 404, 503):
-                try:
-                    err = resp.json().get("error", "")
-                except Exception:
-                    err = ""
-                return {"has_update": False, "error": f"更新代理不可用 (HTTP {resp.status_code} {err})"}
-            resp.raise_for_status()
-            data = resp.json()
-            if not data.get("ok"):
-                return {"has_update": False, "error": f"更新代理返回: {data.get('error')}"}
-            latest_updated = data.get("version")  # updated_at 时间戳
-            local_updated = self._get_local_artifact_updated_at()
-            has_update = (local_updated is None) or bool(latest_updated and latest_updated > local_updated)
-            return {
-                "has_update": bool(has_update),
-                "version": latest_updated or "",
-                "download_url": data.get("download_url"),
-                "artifact_id": data.get("artifact_id"),
-                "description": "WeAuto 自动更新（CI 构建的加密混淆 WeAuto.exe）",
-                "source": "WeAuto Worker Update Proxy",
-                "output": f"最新构建: {latest_updated}",
-            }
-        except requests.RequestException as e:
-            return {"has_update": False, "error": f"检查更新代理失败: {e}"}
+        url = f"{self._update_worker_url().rstrip('/')}/api/update"
+        headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
+        # 网络抖动容错：CDN 握手间歇丢包时单发必挂，带退避重试 3 轮
+        last_err = None
+        for attempt in range(3):
+            try:
+                resp = _http_get(url, headers=headers, timeout=15)
+                if resp.status_code in (401, 403, 404, 503):
+                    try:
+                        err = resp.json().get("error", "")
+                    except Exception:
+                        err = ""
+                    return {"has_update": False, "error": f"更新代理不可用 (HTTP {resp.status_code} {err})"}
+                resp.raise_for_status()
+                data = resp.json()
+                if not data.get("ok"):
+                    return {"has_update": False, "error": f"更新代理返回: {data.get('error')}"}
+                latest_updated = data.get("version")  # updated_at 时间戳
+                local_updated = self._get_local_artifact_updated_at()
+                has_update = (local_updated is None) or bool(latest_updated and latest_updated > local_updated)
+                return {
+                    "has_update": bool(has_update),
+                    "version": latest_updated or "",
+                    "download_url": data.get("download_url"),
+                    "artifact_id": data.get("artifact_id"),
+                    "description": "WeAuto 自动更新（CI 构建的加密混淆 WeAuto.exe）",
+                    "source": "WeAuto Worker Update Proxy",
+                    "output": f"最新构建: {latest_updated}",
+                }
+            except requests.RequestException as e:
+                last_err = e
+                logger.warning(f"检查更新代理第 {attempt + 1} 次失败: {e}")
+                if attempt < 2:
+                    time.sleep(2 * (attempt + 1))
+        return {"has_update": False, "error": f"检查更新代理失败: {last_err}"}
 
     def apply_artifact_update(self, update_info: dict) -> dict:
         """下载加密 exe 构件并自替换（自更新通道，不经源码补丁逻辑）。"""
@@ -338,15 +367,29 @@ class Updater:
             log_progress = lambda s: progress.append(s)
             log_progress("开始下载加密 exe 构件...")
 
-            with requests.get(download_url, headers=headers, timeout=120, stream=True) as r:
-                r.raise_for_status()
+            last_dl_err = None
+            for attempt in range(3):
+                try:
+                    with _http_get(download_url, headers=headers, timeout=120,
+                                   stream=True) as r:
+                        r.raise_for_status()
 
-                os.makedirs(self.temp_dir, exist_ok=True)
-                zip_path = os.path.join(self.temp_dir, "weauto_artifact.zip")
-                with open(zip_path, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
+                        os.makedirs(self.temp_dir, exist_ok=True)
+                        zip_path = os.path.join(self.temp_dir, "weauto_artifact.zip")
+                        with open(zip_path, "wb") as f:
+                            for chunk in r.iter_content(chunk_size=8192):
+                                if chunk:
+                                    f.write(chunk)
+                    last_dl_err = None
+                    break
+                except requests.RequestException as e:
+                    last_dl_err = e
+                    logger.warning(f"下载构件第 {attempt + 1} 次失败: {e}")
+                    if attempt < 2:
+                        time.sleep(3 * (attempt + 1))
+            if last_dl_err is not None:
+                return {"success": False,
+                        "output": "\n".join(progress) + f"\n下载更新包失败: {last_dl_err}"}
             log_progress("下载完成，正在解压 WeAuto.exe...")
 
             extract_dir = os.path.join(self.temp_dir, "weauto_exe")
