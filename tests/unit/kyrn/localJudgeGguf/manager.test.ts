@@ -33,6 +33,7 @@ vi.mock('@/common/kyrn/layaGguf.ts', async (importOriginal) => {
   };
 });
 
+import { layaGgufUrlCandidates } from '@/common/kyrn/layaGguf.ts';
 import { GgufLocalJudge } from '@process/agent/kyrn/localJudgeGguf.ts';
 
 const GGUF_REVISION = '22265007700297ba9e128297e82540cf28c5d7d4';
@@ -125,6 +126,13 @@ describe('layaGguf download sources', () => {
     expect(fileOfUrl(`https://huggingface.co/${repoPath}?download=true`)?.name).toBe(name);
     expect(fileOfUrl(`https://hf-mirror.com/${repoPath}?download=true`)?.name).toBe(name);
   });
+
+  it('lists the mirrors in fallback order, Hugging Face first', () => {
+    const urls = layaGgufUrlCandidates('Laya-Q8_0.gguf');
+    expect(urls[0]).toContain('https://huggingface.co/');
+    expect(urls[1]).toContain('https://hf-mirror.com/');
+    expect(urls[2]).toContain('https://modelscope.cn/models/');
+  });
 });
 
 describe('GgufLocalJudge setup download', () => {
@@ -147,16 +155,27 @@ describe('GgufLocalJudge setup download', () => {
     expect(existsSync(`${join(dir, 'Laya-Q8_0.gguf')}.part`)).toBe(false);
   });
 
-  it('downloads from the source the person picked', async () => {
+  it('tries the mirrors in order and falls back when one fails', async () => {
     const dir = tempDir();
-    stubFetch((call) => serve(bodyOf(fileOfUrl(call.url)!.name)));
+    let triedHf = false;
+    let triedMirror = false;
+    stubFetch((call) => {
+      if (call.url.startsWith('https://huggingface.co/')) {
+        triedHf = true;
+        return new Response('boom', { status: 503 });
+      }
+      if (call.url.startsWith('https://hf-mirror.com/')) triedMirror = true;
+      return serve(bodyOf(fileOfUrl(call.url)!.name));
+    });
     const judge = makeJudge(dir);
 
-    await judge.run('setup', false, { id: 'hf-mirror' });
-    await settle(judge);
+    await judge.run('setup', false, {});
+    const state = await settle(judge);
 
-    expect(calls.length).toBe(TINY_FILES.length);
-    expect(calls.every((call) => call.url.startsWith('https://hf-mirror.com/'))).toBe(true);
+    expect(state.task?.phase).toBe('done');
+    expect(state.installed).toBe(true);
+    expect(triedHf).toBe(true);
+    expect(triedMirror).toBe(true);
   });
 
   it('skips a file it already has, and does not fetch it again', async () => {

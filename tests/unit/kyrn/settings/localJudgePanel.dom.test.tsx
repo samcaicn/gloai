@@ -3,7 +3,6 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createInstance } from 'i18next';
 import { I18nextProvider } from 'react-i18next';
-import { LAYA_ONNX_PAGE, LAYA_ONNX_REVISION } from '@/common/kyrn/layaOnnx';
 import type { LocalJudgeState } from '@/common/kyrn/localJudge';
 import type { Result } from '@/common/kyrn/types';
 import enCommon from '@/renderer/services/i18n/locales/en-US/common.json';
@@ -21,14 +20,8 @@ vi.mock('@/common/kyrn/bridge', () => ({
     return result.data;
   },
 }));
-const outside = vi.hoisted(() => ({ open: vi.fn(), copy: vi.fn(), copied: vi.fn() }));
+const outside = vi.hoisted(() => ({ open: vi.fn() }));
 vi.mock('@/renderer/utils/platform', () => ({ openExternalUrl: outside.open }));
-vi.mock('@/renderer/utils/ui/clipboard', () => ({ copyText: outside.copy }));
-// The real toast renders with the legacy ReactDOM.render, which this React has not.
-vi.mock('@arco-design/web-react', async (actual) => ({
-  ...(await actual<typeof import('@arco-design/web-react')>()),
-  Message: { success: outside.copied, error: vi.fn() },
-}));
 
 const i18n = createInstance();
 beforeAll(async () => {
@@ -78,30 +71,22 @@ function panel() {
 }
 
 describe('Laya on Windows and Linux, where the app runs the ONNX model itself', () => {
-  it('links to Hugging Face and offers a one-click download', async () => {
+  it('downloads by itself in the background and shows only progress, no technical detail', async () => {
     bridge.localJudgeState.mockResolvedValue(onnx());
     const view = await panel();
     await waitFor(() => expect(view).toHaveTextContent('about 681 MB'));
-    // The app downloads the model itself now, but still points at the manual `hf download` for the person who wants it.
-    expect(view).toHaveTextContent('get the files yourself from Hugging Face');
+    await waitFor(() =>
+      expect(bridge.localJudgeRun).toHaveBeenCalledWith(expect.objectContaining({ action: 'setup' }))
+    );
     expect(view).toHaveTextContent(`Model folder: ${FOLDER}`);
     // Every file is missing: no list of five names, the folder says it.
     expect(view).not.toHaveTextContent('Still missing');
-    const command = within(view).getByTestId('mu-laya-command');
-    expect(command).toHaveTextContent(`--revision ${LAYA_ONNX_REVISION}`);
-    expect(command).toHaveTextContent(`--local-dir "${FOLDER}"`);
+    // No commands, no source picker, no raw log: the app does it all.
+    expect(within(view).queryByTestId('mu-laya-command')).not.toBeInTheDocument();
+    expect(within(view).queryByTestId('mu-laya-source')).not.toBeInTheDocument();
+    expect(within(view).queryByTestId('mu-laya-output')).not.toBeInTheDocument();
+    expect(within(view).getByTestId('mu-laya-download')).toBeInTheDocument();
     expect(within(view).queryByTestId('mu-laya-install')).not.toBeInTheDocument();
-
-    fireEvent.click(within(view).getByRole('button', { name: 'Copy' }));
-    await waitFor(() => expect(outside.copied).toHaveBeenCalledWith('Copied'));
-    expect(outside.copy).toHaveBeenCalledWith(command.textContent);
-    fireEvent.click(within(view).getByTestId('mu-laya-page'));
-    expect(outside.open).toHaveBeenCalledWith(LAYA_ONNX_PAGE);
-
-    bridge.localJudgeRun.mockResolvedValue(onnx());
-    fireEvent.click(within(view).getByTestId('mu-laya-locate'));
-    await waitFor(() => expect(bridge.localJudgeRun).toHaveBeenCalledWith({ action: 'locate', consent: false }));
-    expect(bridge.localJudgeRun).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'setup' }));
   });
 
   it('names the files still missing and the ones to download again', async () => {

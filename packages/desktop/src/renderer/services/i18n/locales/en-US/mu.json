@@ -186,6 +186,7 @@
       "start": "Start",
       "stop": "Stop",
       "source": "Download source",
+      "sourceAuto": "Automatic across mirrors (no source to pick; tries each in turn)",
       "sourceHuggingface": "Hugging Face",
       "sourceHfMirror": "HF Mirror (China)",
       "sourceModelscope": "ModelScope",

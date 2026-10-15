@@ -51,7 +51,11 @@ export const kyrnBridge = {
   /** `consent`: the person agreed to what `setup` downloads. `source`: onnx/gguf, where the model files come from. */
   localJudgeRun: bridge.buildProvider<
     KyrnResult<LocalJudgeState>,
-    { action: LocalJudgeAction; consent?: boolean; source?: { id: string; base?: string; preset?: string } }
+    {
+      action: LocalJudgeAction;
+      consent?: boolean;
+      source?: { id?: string; base?: string; preset?: string; file?: string };
+    }
   >('kyrn.localJudge.run'),
   /** Picks the runtime (and the build of the model) this machine runs the judge with; see common/kyrn/localJudge.ts. */
   localJudgeRuntime: bridge.buildProvider<

@@ -14,7 +14,7 @@ import { existsSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { KyrnError } from '../../../common/kyrn/errors';
-import { LAYA_GGUF_DEFAULT_ID, layaGgufFileUrl, layaGgufPreset } from '../../../common/kyrn/layaGguf';
+import { LAYA_GGUF_DEFAULT_ID, layaGgufPreset, layaGgufUrlCandidates } from '../../../common/kyrn/layaGguf';
 import type {
   LocalJudgeAction,
   LocalJudgeProblem,
@@ -233,7 +233,7 @@ export class GgufLocalJudge {
   async run(
     action: LocalJudgeAction,
     _consent = false,
-    source?: { id: string; base?: string; preset?: string; file?: string }
+    source?: { id?: string; base?: string; preset?: string; file?: string }
   ): Promise<LocalJudgeState> {
     if (!ACTIONS.has(action)) throw new KyrnError('invalid', `Unknown local judge action: ${String(action)}`);
     // `setup` also carries the build to download: the panel lets the person pick one, and it decides the folder.
@@ -259,7 +259,7 @@ export class GgufLocalJudge {
         action,
         phase: 'running',
         output: [],
-        source: source?.id ?? 'huggingface',
+        source: 'auto',
         preset: this.preset,
       };
       this.task = task;
@@ -319,19 +319,19 @@ export class GgufLocalJudge {
    * updating `task.progress`, and checking its hash when the build pins one. A file already on disk at the right size
    * is skipped, so an interrupted run resumes instead of downloading again, and the person can cancel from the UI.
    */
-  private async download(task: LocalJudgeTask, source?: { id: string; base?: string }): Promise<void> {
-    const sourceId = source?.id ?? 'huggingface';
+  private async download(task: LocalJudgeTask, source?: { id?: string; base?: string }): Promise<void> {
     const presetId = this.preset;
     const build = layaGgufPreset(presetId);
     const files = build.files;
-    task.source = sourceId;
+    task.source = 'auto';
     task.preset = presetId;
     this.cancelled = false;
     const fetched = await downloadModelFiles({
       task,
       files,
       folder: this.folder,
-      urlFor: (file) => layaGgufFileUrl(file.name, presetId, sourceId, source?.base),
+      // Every mirror is tried in order; the first that serves the bytes wins, so no mirror needs picking by hand.
+      urlCandidates: (file) => layaGgufUrlCandidates(file.name, presetId, source?.base),
       hooks: {
         cancelled: () => this.cancelled,
         setAbort: (controller) => {
@@ -340,7 +340,7 @@ export class GgufLocalJudge {
         say: (target, line) => this.say(target, line),
         end: (target, problem) => this.end(target, problem),
       },
-      header: `Downloading the Laya model (${build.id}, ${build.downloadMb} MB) from ${sourceId}`,
+      header: `Downloading the Laya model (${build.id})`,
     });
     if (!fetched) return; // cancelled, or a file that never arrived: the task is already closed
     this.say(task, 'Verifying the model file');

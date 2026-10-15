@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Input, Message, Modal, Progress, Select } from '@arco-design/web-react';
+import { Button, Input, Modal, Progress, Select } from '@arco-design/web-react';
 import { useTranslation } from 'react-i18next';
 import { kyrnBridge, unwrap } from '@/common/kyrn/bridge';
 import {
@@ -9,10 +9,7 @@ import {
 import {
   LAYA_ONNX_DEFAULT_ID,
   LAYA_ONNX_DOWNLOAD_MB,
-  LAYA_ONNX_PAGE,
   LAYA_ONNX_PRESETS,
-  LAYA_ONNX_SOURCES,
-  layaOnnxCommand,
 } from '@/common/kyrn/layaOnnx';
 import {
   LOCAL_JUDGE_DOWNLOAD_MB,
@@ -22,7 +19,6 @@ import {
 } from '@/common/kyrn/localJudge';
 import { formatNumber } from '@/renderer/services/i18n/format';
 import { formatNameList } from '@/renderer/services/i18n/list';
-import { copyText } from '@/renderer/utils/ui/clipboard';
 import { openExternalUrl } from '@/renderer/utils/platform';
 import MuErrorMessage from '../fields/MuErrorMessage';
 import { toMuError, type MuError } from '../fields/muError';
@@ -40,18 +36,14 @@ const buildsOf = (runtime: LocalJudgeRuntime | undefined): readonly Build[] =>
 const defaultBuildOf = (runtime: LocalJudgeRuntime | undefined): string =>
   runtime === 'gguf' ? LAYA_GGUF_DEFAULT_ID : LAYA_ONNX_DEFAULT_ID;
 
-/** The page a build's files can be fetched from by hand. */
-const pageOf = (runtime: LocalJudgeRuntime | undefined): string =>
-  runtime === 'gguf' ? 'https://huggingface.co/ggml-org/Laya-GGUF' : LAYA_ONNX_PAGE;
-
 /**
  * Laya on this machine: whether it is installed and running, and what can be done about it. Applies at once, outside
  * the save bar: it is a program, not a setting.
  *
  * On an Apple Silicon Mac (coreml) one click installs it after the person agrees to the download. Elsewhere the app
  * runs it itself, and two runtimes are offered where both work: ONNX (the app's own runtime) and GGUF (llama.cpp, for
- * a machine whose GPU ONNX has no provider for). Either way the model can be downloaded with one click from a chosen
- * source, or the person gets the files themselves, and the app checks and starts them.
+ * a machine whose GPU ONNX has no provider for). Either way the model downloads itself in the background, falling
+ * back across mirrors automatically, and the panel only shows progress — no source to pick, no commands to run.
  *
  * `guide`: in the first-run guide, which sets Laya up; stopping it is for the settings.
  */
@@ -60,8 +52,6 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
   const [modal, modalHolder] = Modal.useModal();
   const [state, setState] = useState<LocalJudgeState>();
   const [problem, setProblem] = useState<MuError>();
-  const [sourceId, setSourceId] = useState<string>(LAYA_ONNX_SOURCES[0].id);
-  const [customBase, setCustomBase] = useState<string>('');
   // The `custom` GGUF build names a file the person already has; the environment's own naming still wins.
   const [customFile, setCustomFile] = useState<string>('');
   const live = useRef(true);
@@ -90,7 +80,20 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
     return () => clearInterval(timer);
   }, [busy, read]);
 
-  const run = async (action: LocalJudgeAction, consent = false, source?: { id: string; base?: string; preset?: string; file?: string }): Promise<void> => {
+  /** The download starts by itself in the background: no source to pick, the app falls back across mirrors itself. */
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!state || autoStarted.current) return;
+    const own = state.runtime === 'onnx' || state.runtime === 'gguf';
+    const custom = state.runtime === 'gguf' && state.model?.preset === 'gguf-custom';
+    if (own && !custom && state.support === 'ok' && !state.installed && !state.running && !state.task) {
+      autoStarted.current = true;
+      void run('setup', false, { preset: state.model?.preset });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
+  const run = async (action: LocalJudgeAction, consent = false, source?: { id?: string; base?: string; preset?: string; file?: string }): Promise<void> => {
     setProblem(undefined);
     try {
       const next = unwrap(await kyrnBridge.localJudgeRun.invoke({ action, consent, source }));
@@ -119,12 +122,7 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
     });
   };
   const download = (): void =>
-    void run('setup', false, {
-      id: sourceId,
-      base: sourceId === 'custom' ? customBase.trim() : undefined,
-      preset: state?.model?.preset,
-      file: customFile || undefined,
-    });
+    void run('setup', false, { preset: state?.model?.preset, file: customFile || undefined });
 
   if (!state)
     return problem ? (
@@ -165,15 +163,6 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
       ? t(`mu.judges.laya.onnx.problem.${task.problem}`, { port: new URL(state.url).port })
       : t(`mu.judges.laya.failed.${task.action}`);
   const getModel = own && state.support === 'ok' && !state.installed && !state.running;
-  const command = model ? layaOnnxCommand(model.folder, model.preset) : '';
-  const copy = async (): Promise<void> => {
-    try {
-      await copyText(command);
-      Message.success(t('common.copySuccess'));
-    } catch {
-      Message.error(t('common.copyFailed'));
-    }
-  };
   const customBuild = gguf && build.id === 'gguf-custom';
   const saveCustomFile = (): void => {
     const file = customFile.trim();
@@ -264,33 +253,7 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
           {!customBuild ? (
             <div className={styles.localJudgeSource}>
               <span className={styles.localJudgeSourceLabel}>{t('mu.judges.laya.source')}</span>
-              <Select
-                size='small'
-                value={sourceId}
-                disabled={busy}
-                onChange={(value) => setSourceId(String(value))}
-                style={{ minWidth: 200 }}
-                data-testid='mu-laya-source'
-              >
-                {LAYA_ONNX_SOURCES.map((candidate) => (
-                  <Select.Option key={candidate.id} value={candidate.id}>
-                    {t(candidate.labelKey)}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
-          ) : null}
-          {sourceId === 'custom' && !customBuild ? (
-            <div className={styles.localJudgeSource}>
-              <Input
-                size='small'
-                value={customBase}
-                disabled={busy}
-                placeholder={t('mu.judges.laya.sourceCustomPlaceholder')}
-                onChange={(value) => setCustomBase(value)}
-                style={{ minWidth: 300 }}
-                data-testid='mu-laya-source-base'
-              />
+              <span>{t('mu.judges.laya.sourceAuto')}</span>
             </div>
           ) : null}
           {task?.action === 'setup' && task.progress ? (
@@ -307,20 +270,6 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
                 })}
               </span>
             </div>
-          ) : null}
-          {!customBuild ? (
-            <details className={styles.localJudgeManual}>
-              <summary>{t('mu.judges.laya.onnx.manual')}</summary>
-              <div>{t('mu.judges.laya.onnx.command')}</div>
-              <div className={styles.localJudgeCommand}>
-                <code dir='ltr' data-testid='mu-laya-command'>
-                  {command}
-                </code>
-                <Button size='mini' onClick={() => void copy()}>
-                  {t('common.copy')}
-                </Button>
-              </div>
-            </details>
           ) : null}
         </div>
       ) : null}
@@ -343,14 +292,11 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
               size='small'
               type='primary'
               loading={busy}
-              disabled={busy || (sourceId === 'custom' && !customBase.trim()) || (customBuild && !customFile.trim())}
+              disabled={busy || (customBuild && !customFile.trim())}
               data-testid='mu-laya-download'
               onClick={download}
             >
               {t('mu.judges.laya.onnx.download')}
-            </Button>
-            <Button size='small' data-testid='mu-laya-page' onClick={() => void openExternalUrl(pageOf(state.runtime))}>
-              {t('mu.judges.laya.onnx.page')}
             </Button>
             <Button size='small' data-testid='mu-laya-locate' onClick={() => void run('locate')}>
               {t('mu.judges.laya.onnx.openFolder')}
@@ -390,11 +336,6 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
         <div className={styles.localJudgeProblem} role='alert' data-testid='mu-laya-failed'>
           {failure}
         </div>
-      ) : null}
-      {(busy || failed) && task.output.length ? (
-        <pre className={styles.localJudgeOutput} dir='ltr' data-testid='mu-laya-output'>
-          {task.output.slice(busy ? -2 : -6).join('\n')}
-        </pre>
       ) : null}
       {problem ? (
         <div className={styles.localJudgeProblem} role='alert'>
