@@ -12,6 +12,14 @@ async function sha256hex(str) {
 }
 __name(sha256hex, "sha256hex");
 __name2(sha256hex, "sha256hex");
+async function hmacSha256Hex(secret, raw) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const buf = await crypto.subtle.sign("HMAC", key, enc.encode(raw));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+__name(hmacSha256Hex, "hmacSha256Hex");
+__name2(hmacSha256Hex, "hmacSha256Hex");
 async function creemPost(env, path, body) {
   try {
     const r = await fetch(creemBase(env.CREEM_MODE) + path, {
@@ -431,6 +439,26 @@ __name2(routeAi, "routeAi");
 async function proxyAi(req, env, url) {
   const authHdr = (req.headers.get("authorization") || "").trim();
   const token = authHdr.startsWith("Bearer ") ? authHdr.slice(7).trim() : authHdr;
+  // 客户端机器指纹签名校验（2026-10-15 防配额盗用/伪造）：
+  // 开启 VERIFY_CLIENT_SIG=on 后，凡带 X-WA-Machine 的请求必须附合法
+  // X-WA-Ts + X-WA-Sig（HMAC-SHA256(WEAUATO_CLIENT_SECRET, machine\n+ts)），
+  // 时间窗 ±24h（防伪造为主，重放属更高阶威胁）；未配置该开关时 fail-open
+  // 保持兼容旧客户端。签名无效 → 403，不消耗配额、不转发。
+  if ((env.VERIFY_CLIENT_SIG || "").toLowerCase() === "on") {
+    const machineHdr = req.headers.get("x-wa-machine");
+    if (machineHdr) {
+      const ts = req.headers.get("x-wa-ts") || "";
+      const sig = (req.headers.get("x-wa-sig") || "").toLowerCase();
+      const sec = env.WEAUATO_CLIENT_SECRET || "";
+      const now = Date.now() / 1e3;
+      const ok = sec && /^\d{10}$/.test(ts)
+        && Math.abs(now - Number(ts)) < 24 * 3600
+        && sig === await hmacSha256Hex(sec, machineHdr + "\n" + ts);
+      if (!ok) {
+        return json({ ok: false, error: "weauto_sig_invalid" }, 403);
+      }
+    }
+  }
   if (token && looksLikeBillingToken(token) && env.WEAUATO_SIGN_SECRET) {
     return proxyAiBilled(req, env, url, token);
   }

@@ -868,6 +868,14 @@ client = OpenAI(
     default_headers=_AI_HEADERS,
 )
 
+# 网关请求签名头（防伪造 X-WA-Machine 盗用他人配额/刷免费额度）：
+# 仅当走自有 Worker 网关时注入；用户自填供应商/开发态返回 {}（SDK 忽略空 dict）。
+try:
+    from weauto_license import guard as _gw_guard
+    _GW_EXTRA = _gw_guard.signed_request_headers() if _AI_PROXY else {}
+except Exception:
+    _GW_EXTRA = {}
+
 # 启动期显式告警：占位/无效 key 会导致所有 AI 调用 401、bot 只能回固定话术。
 # 以前这个错很隐蔽（被重试逻辑吞掉，表现为"没反应"），这里直接打 CRITICAL 让问题一眼可见。
 # （走 Worker 代理时本地 key 不参与鉴权，无需告警）
@@ -1491,7 +1499,8 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
                 temperature=TEMPERATURE,
                 max_tokens=MAX_TOKEN,
                 stream=False,
-                timeout=CHAT_API_TIMEOUT
+                timeout=CHAT_API_TIMEOUT,
+                extra_headers=_GW_EXTRA
             )
 
             if response.choices:
@@ -1634,7 +1643,8 @@ def call_assistant_api_with_retry(messages_to_send, user_id, max_retries=2, is_s
                 temperature=ASSISTANT_TEMPERATURE,
                 max_tokens=ASSISTANT_MAX_TOKEN,
                 stream=False,
-                timeout=CHAT_API_TIMEOUT
+                timeout=CHAT_API_TIMEOUT,
+                extra_headers=_GW_EXTRA
             )
 
             if response.choices:
@@ -5080,7 +5090,8 @@ def get_online_model_response(query: str, user_id: str) -> Optional[str]:
             temperature=ONLINE_API_TEMPERATURE,
             max_tokens=ONLINE_API_MAX_TOKEN,
             stream=False,
-            timeout=CHAT_API_TIMEOUT
+            timeout=CHAT_API_TIMEOUT,
+            extra_headers=_GW_EXTRA
         )
 
         if not response.choices:

@@ -442,6 +442,28 @@ def ai_endpoint():
     }
 
 
+def signed_request_headers():
+    """网关请求附加签名头（防伪造 X-WA-Machine 盗用他人配额/刷免费额度）。
+
+    返回 {"X-WA-Ts": <unix秒>, "X-WA-Sig": <hmac-sha256 hex>}；
+    密钥 WEAUATO_CLIENT_SECRET 构建期注入 blob（PyArmor 混淆保护），
+    Worker 侧用同一字符串字节重算校验（两侧都按原始字符串 UTF-8，
+    不做 hex 解码，保证字节一致）。开发态/无密钥时返回 {}（不签名）。
+    """
+    try:
+        from weauto_license import secrets as _s
+        secret = _s.get("WEAUATO_CLIENT_SECRET")
+        if not secret:
+            return {}
+        machine = str(get_machine_id() or "").strip()
+        ts = str(int(time.time()))
+        raw = (machine + "\n" + ts).encode("utf-8")
+        sig = hmac.new(secret.encode("utf-8"), raw, hashlib.sha256).hexdigest()
+        return {"X-WA-Ts": ts, "X-WA-Sig": sig}
+    except Exception:
+        return {}
+
+
 def start_periodic_recheck(interval_seconds=None, on_invalid=None, on_near_expiry=None, near_expiry_days=5):
     """运行期周期复检线程（防『只堵启动一处』：patch 掉启动检查也逃不过运行中复检）。
 

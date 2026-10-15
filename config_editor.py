@@ -81,6 +81,7 @@ import psutil
 import openai
 import tempfile
 import shutil
+import secrets
 from filelock import FileLock
 from functools import wraps
 import webbrowser
@@ -5532,6 +5533,8 @@ def api_license_import():
             return jsonify(ok=False, msg="请选择要导入的授权文件（.wpk）")
         if not file.filename.lower().endswith(".wpk"):
             return jsonify(ok=False, msg="授权文件必须是 .wpk 格式（话术包）")
+        if (request.content_length or 0) > 4 * 1024 * 1024:
+            return jsonify(ok=False, msg="授权文件过大（>4MB），已拒绝导入")
         tmp = os.path.join(tempfile.gettempdir(), "weauto_import_" + secrets.token_hex(8) + ".wpk")
         file.save(tmp)
         try:
