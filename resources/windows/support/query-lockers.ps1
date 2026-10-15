@@ -78,6 +78,8 @@ try {
   } elseif ($targetPathFull -and (Test-Path -LiteralPath $targetPathFull -PathType Container)) {
     $topLevel = @(Get-ChildItem -LiteralPath $targetPathFull -Force -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
     $knownRelative = @(
+      'AiBuddy.exe',
+      'Uninstall AiBuddy.exe',
       'mu.exe',
       'Uninstall mu.exe',
       'resources\app.asar',

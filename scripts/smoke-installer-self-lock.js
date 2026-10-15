@@ -95,8 +95,8 @@ SilentInstall silent
 !define VERSION "self-lock-smoke"
 !define AIONUI_TARGET_ARCH "x64"
 !define AIONUI_FALLBACK_LOG "aionui-installer-self-lock-fallback.log"
-!define AIONUI_APP_EXECUTABLE_FILENAME "mu.exe"
-!define UNINSTALL_FILENAME "Uninstall mu.exe"
+!define AIONUI_APP_EXECUTABLE_FILENAME "AiBuddy.exe"
+!define UNINSTALL_FILENAME "Uninstall AiBuddy.exe"
 !define PROJECT_DIR "${nsisQuote(repoRoot)}"
 !include LogicLib.nsh
 !include "${nsisQuote(processControlPath)}"

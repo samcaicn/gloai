@@ -49,7 +49,7 @@ const INSTALLER_ERROR_SCENARIOS = [
     code: 'E1010',
     message: 'mu could not extract the application files correctly.',
     action: 'Download a fresh installer and run it again.',
-    diagnostics: 'scenario=extract-failed phase=extract method=zip missing=mu.exe',
+    diagnostics: 'scenario=extract-failed phase=extract method=zip missing=AiBuddy.exe',
   },
   {
     id: 'disk-insufficient',
