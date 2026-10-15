@@ -1802,9 +1802,14 @@ open class ChatCaptureService : AccessibilityService() {
         // 「真发出 / 放弃」才放行——2026-10-15 实测 dwell 强切会话曾把未消费的
         // pending 带进下一个会话发出（串缸），或把草稿烂在输入框里切走。
         sendSettled = false
-        // 先确认输入框确实有字（fillInput commit 成功才进到这里；若框空说明
-        // 填入实际失败，直接放弃，绝不对着空框点发送键误判「已发送」）。
-        main.postDelayed({
+        // 发送前守卫：回复已 commit 进输入框后，某些会话形态（ColorOS 通知半屏/横幅
+        // 回复）会在写完字后自动收起 → 此刻微信已不在前台、读框为空是**假象**。
+        // 2026-10-16 07:20 实测：committed 7 chars 成功后 2 秒 fgPkg=launcher，
+        // 读框空 → 走 abort，回复烂死在框里没发出（用户看到的就是「没回复」）。
+        // 所以点发送前先确保微信在这个会话的前台：不在就用该会话的 PendingIntent
+        // 重新拉起，等前台落定再继续；拉不回来才放行原逻辑（由读框判真假）。
+        ensureWeChatFgForSend {
+            main.postDelayed({
             if (!isCurrent(token)) { sendSettled = true; onDone?.invoke(false); return@postDelayed }
             val pre = ProbeImeBus.readBox()
             if (pre != null && pre.isBlank()) {
@@ -1859,8 +1864,34 @@ open class ChatCaptureService : AccessibilityService() {
                     }
                 }, 1200L)
             }
-            verifyLoop()
-        }, 400L)
+                verifyLoop()
+            }, 400L)
+        }
+    }
+
+    /**
+     * [sendWeChatByVerifiedTap] 的前台守卫：确保微信此刻在前台（否则读框/点发送键
+     * 全是对着桌面操作）。不在前台时用当前会话暂存的 PendingIntent 重新拉起，
+     * 100ms 一跳、最多约 4 秒；拉不回来也放行，由调用方按读框结果判真假。
+     */
+    private fun ensureWeChatFgForSend(attempt: Int = 0, block: () -> Unit) {
+        if (destroyed || !prefs.enabled || attempt >= 40) {
+            if (attempt >= 40) Log.e(TAG, "sendTap guard: WeChat fg wait timeout, proceed anyway")
+            block()
+            return
+        }
+        if (weChatForeground) {
+            if (attempt > 0) Log.i(TAG, "sendTap guard: WeChat back to fg after $attempt ticks")
+            block()
+            return
+        }
+        if (attempt == 0) {
+            val conv = notifRoundConv
+            val pi = if (prefs.autoOpenChat) NotifIntentStore.fresh(conv) else null
+            Log.w(TAG, "sendTap guard: WeChat NOT fg (conv=$conv) -> replay PendingIntent=$pi")
+            if (pi != null) runCatching { pi.send() }
+        }
+        main.postDelayed({ ensureWeChatFgForSend(attempt + 1, block) }, 100L)
     }
 
     /**
