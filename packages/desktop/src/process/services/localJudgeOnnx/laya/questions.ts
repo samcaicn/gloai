@@ -2,7 +2,7 @@
 // See ./NOTICE.md. Local changes are marked "mu:".
 
 import { pyJson } from './pyjson.ts';
-import type { Criterion, InternalQuestion, Json } from './types.ts';
+import type { Criterion, InternalQuestion, Json, NoulLabels } from './types.ts';
 import { QTYPES } from './types.ts';
 
 const isPlainObject = (v: unknown): v is Record<string, Json> =>
@@ -73,9 +73,29 @@ export function toInternal(question: unknown): InternalQuestion {
     if (!isPlainObject(criteria)) {
       throw new Error('Noul criteria must be a dictionary with false/true descriptions');
     }
+    // Python `Agent._to_internal` lowers the keys: the dictionary is keyed by the words "false" and "true", and a
+    // caller who wrote them another way ("False", "TRUE") used to be answered as if no criterion had been given.
+    criteria = Object.fromEntries(Object.entries(criteria).map(([key, value]) => [key.trim().toLowerCase(), value]));
   }
+  const labels = isPlainObject(question.labels) ? (question.labels as unknown as NoulLabels) : undefined;
   // mu: the cast states what the checks above proved; without strictNullChecks TypeScript cannot narrow it.
-  return { t: 'noul', ins: computeIns(), crit: (criteria ?? null) as { false?: Criterion; true?: Criterion } | null };
+  return {
+    t: 'noul',
+    ins: computeIns(),
+    crit: (criteria ?? null) as { false?: Criterion; true?: Criterion } | null,
+    ...(labels ? { labels } : {}),
+  };
+}
+
+/** Python `_resolve_noul_labels`: the words a noul question is offered under, defaulting to "false"/"true". */
+function noulLabels(q: { labels?: NoulLabels }): NoulLabels {
+  const labels = q.labels;
+  if (!labels) return { false: 'false', true: 'true' };
+  const falseLabel = typeof labels.false === 'string' ? labels.false.trim() : '';
+  const trueLabel = typeof labels.true === 'string' ? labels.true.trim() : '';
+  if (!falseLabel || !trueLabel || falseLabel === trueLabel)
+    throw new Error('noul labels must map exactly false and true to distinct non-empty strings');
+  return { false: falseLabel, true: trueLabel };
 }
 
 /** Python `render_criterion`: strings pass through, structured values become compact JSON. */
@@ -88,14 +108,17 @@ const isBlank = (v: Criterion | undefined): v is null | undefined | '' => v === 
 /** Python `render_options`: option texts in label-index order; noul is always [false, true]. */
 export function renderOptions(q: InternalQuestion): string[] {
   if (q.t === 'choice') {
-    return Object.entries(q.crit).map(([k, v]) => (isBlank(v) ? k : `${k}: ${renderCriterion(v)}`));
+    // `String(k)` unconditionally: a label with no description is rendered as itself, and a number key would otherwise
+    // reach `build_prefix`, which calls `.replace` on it and fails with a message naming neither question nor label.
+    return Object.entries(q.crit).map(([k, v]) => (isBlank(v) ? String(k) : `${k}: ${renderCriterion(v)}`));
   }
   if (q.t === 'score') return q.crit.map((c, i) => `level ${i}: ${renderCriterion(c)}`);
   const crit = q.crit ?? {};
+  const labels = noulLabels(q);
   const falseCrit = crit.false;
   const trueCrit = crit.true;
   return [
-    'false: ' + (isBlank(falseCrit) ? 'no, the statement does not hold' : renderCriterion(falseCrit)),
-    'true: ' + (isBlank(trueCrit) ? 'yes, the statement holds' : renderCriterion(trueCrit)),
+    labels.false + ': ' + (isBlank(falseCrit) ? 'no, the statement does not hold' : renderCriterion(falseCrit)),
+    labels.true + ': ' + (isBlank(trueCrit) ? 'yes, the statement holds' : renderCriterion(trueCrit)),
   ];
 }

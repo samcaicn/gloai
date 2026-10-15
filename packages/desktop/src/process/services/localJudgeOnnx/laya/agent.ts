@@ -2,7 +2,7 @@
 // See ./NOTICE.md. Local changes are marked "mu:".
 
 import { formatAnswers } from './calibration.ts';
-import { buildSequence, collate } from './prompt.ts';
+import { buildSequence, collate, serializeState } from './prompt.ts';
 import { renderOptions, toInternal } from './questions.ts';
 import type { LayaTokenizer } from './tokenizer.ts';
 import type {
@@ -15,6 +15,7 @@ import type {
   Question,
   RunnerOutput,
   State,
+  StateTruncation,
 } from './types.ts';
 
 /** Executes one collated batch. `OnnxRunner` in session.ts is the production implementation. */
@@ -54,18 +55,50 @@ export class LayaAgent {
     this.batchSize = batchSize;
   }
 
-  /** Python `Agent.prepare`: upstream-compatible token sequences for every question. */
-  prepare(state: State, questions: Record<string, Question>): { items: PreparedItem[]; internal: InternalQuestion[] } {
+  /**
+   * Python `Agent.prepare` / `_encode_state`: upstream-compatible token sequences for every question.
+   *
+   * The state is serialized and encoded once, not once per question: every question of a request sees the same state,
+   * so re-encoding it was the same ids for N times the work (upstream `Agent._encode_state`).
+   *
+   * `sink` collects what the token budget cut from the state, keyed by question id, for a caller that wants to say so
+   * without re-tokenizing the state a second time.
+   */
+  prepare(
+    state: State,
+    questions: Record<string, Question>,
+    sink?: Record<string, StateTruncation>
+  ): { items: PreparedItem[]; internal: InternalQuestion[] } {
     if (typeof questions !== 'object' || questions === null || Array.isArray(questions)) {
       throw new Error('questions must be a dictionary keyed by question id');
     }
+    const { max_len: maxLen, head_max_len: headMaxLen } = this.config;
+    const stateIds = this.tokenizer.encode(serializeState(state).replaceAll(this.tokenizer.maskToken, ' '));
     const items: PreparedItem[] = [];
     const internal: InternalQuestion[] = [];
     for (const [qid, definition] of Object.entries(questions)) {
       const q = toInternal(definition);
-      const item = buildSequence(this.tokenizer, state, q, this.config.max_len, this.config.head_max_len);
-      if (item.markers.length !== renderOptions(q).length) {
-        throw new Error(`Question ${JSON.stringify(qid)} has too many options for the token budget`);
+      const item = buildSequence(this.tokenizer, state, q, maxLen, headMaxLen, {
+        stateIds,
+        // A conversation list is serialized newest-last, so a right cut would drop the newest turn.
+        truncateLeft: Array.isArray(state),
+        ...(sink
+          ? {
+              onState: (truncation) => {
+                sink[qid] = truncation;
+              },
+            }
+          : {}),
+      });
+      const options = renderOptions(q).length;
+      if (item.markers.length !== options) {
+        // Python names both knobs: `head_max_len` is what the question's own block was given and `max_len` is the
+        // ceiling that dropped the markers, so saying only one of them points at the wrong dial in both directions.
+        throw new Error(
+          `question ${JSON.stringify(qid)}: only ${item.markers.length} of its ${options} option markers fit in ` +
+            `max_len=${maxLen} with head_max_len=${headMaxLen} spent on the question; ` +
+            'lower head_max_len, raise max_len, or use fewer options'
+        );
       }
       items.push(item);
       internal.push(q);
@@ -73,9 +106,12 @@ export class LayaAgent {
     return { items, internal };
   }
 
-  /** Python `Agent.predict` / `system_one`. */
-  async predict(state: State, questions: Record<string, Question>): Promise<PredictResult> {
-    const { items, internal } = this.prepare(state, questions);
+  /**
+   * Python `Agent.predict` / `system_one`. `sink` receives the per-question state truncation `prepare` measured; the
+   * result itself is exactly Python's.
+   */
+  async predict(state: State, questions: Record<string, Question>, sink?: Record<string, StateTruncation>): Promise<PredictResult> {
+    const { items, internal } = this.prepare(state, questions, sink);
     const questionIds = Object.keys(questions);
     const answers: Record<string, Answer> = {};
     let inputTokens = 0;

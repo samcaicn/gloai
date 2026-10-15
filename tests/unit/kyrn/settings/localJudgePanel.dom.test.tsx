@@ -78,11 +78,12 @@ function panel() {
 }
 
 describe('Laya on Windows and Linux, where the app runs the ONNX model itself', () => {
-  it('never downloads the model: it links to Hugging Face, names the folder and the command', async () => {
+  it('links to Hugging Face and offers a one-click download', async () => {
     bridge.localJudgeState.mockResolvedValue(onnx());
     const view = await panel();
     await waitFor(() => expect(view).toHaveTextContent('about 681 MB'));
-    expect(view).toHaveTextContent('mu does not download it for you');
+    // The app downloads the model itself now, but still points at the manual `hf download` for the person who wants it.
+    expect(view).toHaveTextContent('get the files yourself from Hugging Face');
     expect(view).toHaveTextContent(`Model folder: ${FOLDER}`);
     // Every file is missing: no list of five names, the folder says it.
     expect(view).not.toHaveTextContent('Still missing');
@@ -113,16 +114,16 @@ describe('Laya on Windows and Linux, where the app runs the ONNX model itself', 
   });
 
   it('checks and starts the model, can stop a start that takes long, and words why it failed', async () => {
-    bridge.localJudgeState.mockResolvedValue(onnx({ model: { folder: FOLDER, missing: [], wrong: [] } }));
+    bridge.localJudgeState.mockResolvedValue(onnx({ installed: true, model: { folder: FOLDER, missing: [], wrong: [] } }));
     const task = { id: 1, action: 'start' as const, phase: 'running' as const, output: [] };
-    bridge.localJudgeRun.mockResolvedValue(onnx({ task }));
+    bridge.localJudgeRun.mockResolvedValue(onnx({ installed: true, task }));
     const view = await panel();
-    fireEvent.click(await within(view).findByTestId('mu-laya-check'));
+    fireEvent.click(await within(view).findByTestId('mu-laya-start'));
     await waitFor(() => expect(bridge.localJudgeRun).toHaveBeenCalledWith({ action: 'start', consent: false }));
     await waitFor(() => expect(view).toHaveTextContent('Checking the model and starting Laya…'));
     expect(within(view).getByTestId('mu-laya-stop')).toBeInTheDocument();
 
-    bridge.localJudgeState.mockResolvedValue(onnx({ task: { ...task, phase: 'failed', problem: 'port' } }));
+    bridge.localJudgeState.mockResolvedValue(onnx({ installed: true, task: { ...task, phase: 'failed', problem: 'port' } }));
     await waitFor(() => expect(within(view).getByTestId('mu-laya-failed')).toHaveTextContent('port (47823)'), {
       timeout: 3000,
     });
@@ -133,7 +134,7 @@ describe('Laya on Windows and Linux, where the app runs the ONNX model itself', 
       onnx({ installed: true, model: { folder: FOLDER, missing: [], wrong: [] } })
     );
     const view = await panel();
-    await waitFor(() => expect(view).toHaveTextContent('mu starts it by itself when the app opens'));
+    await waitFor(() => expect(view).toHaveTextContent('AiBuddy starts it by itself when the app opens'));
     expect(within(view).getByTestId('mu-laya-start')).toBeInTheDocument();
     expect(within(view).queryByTestId('mu-laya-model')).not.toBeInTheDocument();
   });

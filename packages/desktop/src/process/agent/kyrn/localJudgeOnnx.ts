@@ -1,9 +1,14 @@
-import { createReadStream, createWriteStream, mkdirSync, renameSync, statSync, unlinkSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { KyrnError } from '../../../common/kyrn/errors';
-import { LAYA_ONNX_FILES, LAYA_ONNX_FOLDER, layaOnnxFileUrlFor } from '../../../common/kyrn/layaOnnx';
+import {
+  LAYA_ONNX_DEFAULT_ID,
+  layaOnnxFiles,
+  layaOnnxFolder,
+  layaOnnxFileUrlFor,
+  layaOnnxPreset,
+} from '../../../common/kyrn/layaOnnx';
 import type {
   LocalJudgeAction,
   LocalJudgeProblem,
@@ -12,6 +17,7 @@ import type {
   LocalJudgeTask,
 } from '../../../common/kyrn/localJudge';
 import { checkBundle, type BundleCheck } from '../../services/localJudgeOnnx/bundle';
+import { downloadModelFiles } from './modelDownload.ts';
 import { parseObject, readOptional, stripJsonComments } from './config/files';
 import { configPath, muHome } from './naming.ts';
 
@@ -28,7 +34,8 @@ export type OnnxJudgeDeps = {
   /** Starts `localJudgeOnnx.js` (see services/localJudgeOnnx/entry.ts) with this environment. */
   fork: (env: NodeJS.ProcessEnv) => JudgeChild;
   health: (url: string) => Promise<boolean>;
-  check: (folder: string, hash: boolean) => Promise<BundleCheck>;
+  /** `preset` names which build of the model to look for. */
+  check: (folder: string, hash: boolean, preset?: string) => Promise<BundleCheck>;
   /** Creates the folder if needed and shows it in the file manager. */
   open: (folder: string) => Promise<void>;
   platform: NodeJS.Platform;
@@ -94,11 +101,13 @@ export class OnnxLocalJudge {
   private abort?: AbortController;
   /** Set when the person cancels a `setup` download, so a transient error is not retried and the task is not closed twice. */
   private cancelled = false;
+  /** The build the person picked last, if any: `MU_LOCAL_JUDGE_ONNX_PRESET`, then this, then the default build. */
+  private chosen?: string;
 
   constructor(deps: Pick<OnnxJudgeDeps, 'fork' | 'open'> & Partial<OnnxJudgeDeps>) {
     this.deps = {
       health,
-      check: (folder, hash) => checkBundle(folder, { hash }),
+      check: (folder, hash, preset) => checkBundle(folder, { hash, preset }),
       platform: process.platform,
       arch: process.arch,
       env: process.env,
@@ -116,10 +125,15 @@ export class OnnxLocalJudge {
     return env.MU_LOCAL_JUDGE_PORT || env.KYRN_LOCAL_JUDGE_PORT || '47823';
   }
 
-  /** `MU_LOCAL_JUDGE_ONNX_DIR`, else `<mu home>/local-judge/laya-multilingual-onnx`. */
+  /** Which build of the model this machine uses: the environment, then the last choice, then the default build. */
+  get preset(): string {
+    return this.deps.env.MU_LOCAL_JUDGE_ONNX_PRESET || this.chosen || LAYA_ONNX_DEFAULT_ID;
+  }
+
+  /** `MU_LOCAL_JUDGE_ONNX_DIR`, else `<mu home>/local-judge/<build folder>`. */
   get folder(): string {
     const { env, home } = this.deps;
-    return env.MU_LOCAL_JUDGE_ONNX_DIR || join(muHome(home), ...LAYA_ONNX_FOLDER);
+    return env.MU_LOCAL_JUDGE_ONNX_DIR || join(muHome(home), ...layaOnnxFolder(this.preset));
   }
 
   private support(): LocalJudgeSupport {
@@ -128,14 +142,17 @@ export class OnnxLocalJudge {
   }
 
   async state(): Promise<LocalJudgeState> {
-    const [check, running] = await Promise.all([this.deps.check(this.folder, false), this.deps.health(this.url)]);
+    const [check, running] = await Promise.all([
+      this.deps.check(this.folder, false, this.preset),
+      this.deps.health(this.url),
+    ]);
     return {
       support: this.support(),
       runtime: 'onnx',
       installed: check.ready,
       running,
       url: this.url,
-      model: { folder: this.folder, missing: check.missing, wrong: check.wrong },
+      model: { folder: this.folder, missing: check.missing, wrong: check.wrong, preset: this.preset },
       ...(this.task ? { task: { ...this.task, output: [...this.task.output] } } : {}),
     };
   }
@@ -143,8 +160,14 @@ export class OnnxLocalJudge {
   /** `start` checks the model (hashing it the first time) and starts the judge; `consent` is coreml's and unused.
    *  `setup` downloads the model from the chosen source (onnx) so the first-run guide and the settings can offer
    *  one click instead of a manual `hf download`. */
-  async run(action: LocalJudgeAction, _consent = false, source?: { id: string; base?: string }): Promise<LocalJudgeState> {
+  async run(
+    action: LocalJudgeAction,
+    _consent = false,
+    source?: { id: string; base?: string; preset?: string }
+  ): Promise<LocalJudgeState> {
     if (!ACTIONS.has(action)) throw new KyrnError('invalid', `Unknown local judge action: ${String(action)}`);
+    // `setup` also carries the build to download: the panel lets the person pick one, and it decides the folder.
+    if (source?.preset) this.chosen = source.preset;
     // Cancelling a `setup` download from the UI aborts the in-flight request; the stop handler for a running judge
     // below does not apply because `setup` has no child process yet.
     const runningTask = this.task;
@@ -163,6 +186,7 @@ export class OnnxLocalJudge {
         phase: 'running',
         output: [],
         source: source?.id ?? 'huggingface',
+        preset: this.preset,
       };
       this.task = task;
       // Runs in the background like `start`: the screen follows via `localJudgeState`, which reports progress.
@@ -195,7 +219,7 @@ export class OnnxLocalJudge {
   async autoStart(agentDir: string): Promise<boolean> {
     if (this.support() !== 'ok' || this.child || this.task?.phase === 'running') return false;
     if (!wantsLocalJudge(readOptional(configPath(agentDir)))) return false;
-    if (!(await this.deps.check(this.folder, false)).ready || (await this.deps.health(this.url))) return false;
+    if (!(await this.deps.check(this.folder, false, this.preset)).ready || (await this.deps.health(this.url))) return false;
     await this.run('start');
     return true;
   }
@@ -216,175 +240,51 @@ export class OnnxLocalJudge {
   }
 
   /**
-   * onnx `setup`: pulls every `LAYA_ONNX_FILES` from the chosen source into the model folder, streaming each file
-   * while updating `task.progress` for the progress bar, and SHA-256 checks each one before it is moved into place.
-   * A file already on disk with the right size is skipped, so a failed or partial run resumes instead of re-downloading.
-   * The pull is resilient: each file retries on a transient error and resumes from a partial `.part`, and the person
-   * can cancel it from the UI (which aborts the in-flight request).
+   * onnx `setup`: pulls every file of the chosen build from the chosen source into the model folder, streaming each
+   * file while updating `task.progress` for the progress bar. A file already on disk with the right size is skipped,
+   * so a failed or partial run resumes instead of re-downloading, and the person can cancel from the UI. What each
+   * file must be is then checked once, the way `start` checks it.
    */
   private async download(task: LocalJudgeTask, source?: { id: string; base?: string }): Promise<void> {
     const sourceId = source?.id ?? 'huggingface';
+    const presetId = this.preset;
+    const files = layaOnnxFiles(presetId);
+    const build = layaOnnxPreset(presetId);
     task.source = sourceId;
+    task.preset = presetId;
     this.cancelled = false;
-    this.say(task, `Downloading the Laya model from ${sourceId}`);
-    mkdirSync(this.folder, { recursive: true });
-    const total = LAYA_ONNX_FILES.length;
-    for (let index = 0; index < total; index++) {
-      if (this.cancelled) return;
-      const file = LAYA_ONNX_FILES[index];
-      const url = layaOnnxFileUrlFor(sourceId, file.name, source?.base);
-      const dest = join(this.folder, file.name);
-      if (this.fileIsComplete(dest, file)) {
-        this.say(task, `Already have ${file.name}`);
-        task.progress = { file: file.name, index, total, downloadedBytes: file.bytes, totalBytes: file.bytes, percent: 1 };
-        continue;
-      }
-      this.say(task, `Downloading ${file.name} (${Math.round(file.bytes / 1_000_000)} MB)`);
-      const part = `${dest}.part`;
-      try {
-        await this.downloadFile(task, index, total, file, url, part, dest);
-      } catch (error) {
-        this.say(task, error instanceof Error ? error.message : String(error));
-        this.abort = undefined;
-        this.end(task, 'wrong');
-        return;
-      }
-    }
+    const fetched = await downloadModelFiles({
+      task,
+      files,
+      folder: this.folder,
+      urlFor: (file) => layaOnnxFileUrlFor(sourceId, file.name, source?.base, presetId),
+      hooks: {
+        cancelled: () => this.cancelled,
+        setAbort: (controller) => {
+          this.abort = controller;
+        },
+        say: (target, line) => this.say(target, line),
+        end: (target, problem) => this.end(target, problem),
+      },
+      header: `Downloading the Laya model (${build.id}, ${build.downloadMb} MB) from ${sourceId}`,
+    });
+    if (!fetched) return; // cancelled, or a file that never arrived: the task is already closed
     this.say(task, 'Verifying the model files');
-    const check = await this.deps.check(this.folder, false);
+    const check = await this.deps.check(this.folder, false, presetId);
     if (check.missing.length || check.wrong.length) {
       this.say(task, `Verification failed: ${[...check.missing, ...check.wrong].join(', ')}`);
-      this.abort = undefined;
       this.end(task, 'wrong');
       return;
     }
     this.say(task, 'Model ready');
-    this.abort = undefined;
     this.end(task);
   }
-
-  /** A destination file is already correct when it exists with the exact tested byte size (hash is verified on download). */
-  private fileIsComplete(dest: string, file: LayaOnnxFile): boolean {
-    try {
-      return statSync(dest).size === file.bytes;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Streams one file with resume + retry: hashes it (including any partial from a previous run), updates
-   * `task.progress`, and renames it into place on a good hash. Honors `this.abort` so the UI can cancel, and aborts
-   * itself if no byte arrives for 60s (a slow but moving stream resets the timer). A corrupt partial is dropped on a
-   * hash mismatch so the next try downloads fresh instead of appending to bad bytes.
-   */
-  private async downloadFile(
-    task: LocalJudgeTask,
-    index: number,
-    total: number,
-    file: LayaOnnxFile,
-    url: string,
-    part: string,
-    dest: string,
-  ): Promise<void> {
-    const expected = file.bytes;
-    mkdirSync(dirname(part), { recursive: true });
-    // Resume from a partial `.part` left by an interrupted run; a full-size-but-not-finalized part is corrupt, redo.
-    let offset = 0;
-    try {
-      const size = statSync(part).size;
-      if (size < expected) offset = size;
-      else unlinkSync(part);
-    } catch {
-      /* no partial yet */
-    }
-    const retries = 3;
-    const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      const controller = new AbortController();
-      this.abort = controller;
-      let stall = setTimeout(() => controller.abort(new Error('Download stalled (no data for 60s)')), 60_000);
-      const resetStall = () => {
-        clearTimeout(stall);
-        stall = setTimeout(() => controller.abort(new Error('Download stalled (no data for 60s)')), 60_000);
-      };
-      try {
-        const headers: Record<string, string> = {};
-        if (offset > 0) headers.Range = `bytes=${offset}-`;
-        const response = await fetch(url, { headers, signal: controller.signal });
-        if (offset > 0) {
-          if (response.status === 206) {
-            /* partial content: resume from `offset` */
-          } else if (response.status === 200) {
-            offset = 0; // server ignored the range; download fresh from the start
-          } else {
-            throw new Error(`HTTP ${response.status} ${response.statusText} for ${file.name}`);
-          }
-        } else if (!response.ok) {
-          throw new Error(`HTTP ${response.status} ${response.statusText} for ${file.name}`);
-        }
-        if (!response.body) throw new Error(`No response body for ${file.name}`);
-        const hash = createHash('sha256');
-        if (offset > 0) {
-          // The bytes already on disk are part of the final file: include them in the hash.
-          for await (const chunk of createReadStream(part)) hash.update(chunk);
-        }
-        const stream = createWriteStream(part, { flags: offset > 0 ? 'a' : 'w' });
-        const reader = response.body.getReader();
-        let received = 0;
-        try {
-          for (;;) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (!value) continue;
-            hash.update(value);
-            await new Promise<void>((resolve, reject) => stream.write(value, (error) => (error ? reject(error) : resolve())));
-            received += value.length;
-            resetStall();
-            const downloaded = offset + received;
-            task.progress = { file: file.name, index, total, downloadedBytes: downloaded, totalBytes: expected, percent: expected ? downloaded / expected : 0 };
-          }
-        } finally {
-          await new Promise<void>((resolve, reject) => stream.end((error) => (error ? reject(error) : resolve())));
-        }
-        const digest = hash.digest('hex');
-        if (digest !== file.sha256) {
-          throw new Error(`Hash mismatch for ${file.name}: expected ${file.sha256}, got ${digest}`);
-        }
-        clearTimeout(stall);
-        this.abort = undefined;
-        renameSync(part, dest);
-        return;
-      } catch (error) {
-        clearTimeout(stall);
-        this.abort = undefined;
-        if (this.cancelled) throw error; // user cancelled: do not retry
-        const message = error instanceof Error ? error.message : String(error);
-        // A corrupt partial can't be healed by appending: drop it so the next try downloads fresh.
-        if (/Hash mismatch/.test(message)) {
-          try {
-            unlinkSync(part);
-          } catch {
-            /* ignore */
-          }
-          offset = 0;
-        }
-        if (attempt < retries) {
-          this.say(task, `Retry ${attempt}/${retries - 1} for ${file.name}: ${message}`);
-          await sleep(1000 * 2 ** (attempt - 1));
-          continue;
-        }
-        throw error;
-      }
-    }
-  }
-
 
   private async start(task: LocalJudgeTask): Promise<void> {
     try {
       if (await this.deps.health(this.url)) return this.end(task);
       this.say(task, 'Checking the model files');
-      const check = await this.deps.check(this.folder, true);
+      const check = await this.deps.check(this.folder, true, this.preset);
       if (check.missing.length) {
         this.say(task, `Missing: ${check.missing.join(', ')}`);
         return this.end(task, 'missing');
@@ -396,6 +296,7 @@ export class OnnxLocalJudge {
       const child = this.deps.fork({
         ...this.deps.env,
         MU_LOCAL_JUDGE_ONNX_DIR: this.folder,
+        MU_LOCAL_JUDGE_ONNX_PRESET: this.preset,
         MU_LOCAL_JUDGE_PORT: this.port,
       });
       this.child = child;

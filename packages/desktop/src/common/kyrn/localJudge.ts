@@ -1,5 +1,5 @@
 /**
- * The local judge (Laya) as the app manages it. Two runtimes, one contract on the same address:
+ * The local judge (Laya) as the app manages it. Three runtimes, one contract on the same address:
  *
  * - coreml (Apple Silicon Macs): installed from the settings with one click after the person agrees to the download,
  *   started and stopped there. The main process runs the harness's own script,
@@ -7,15 +7,21 @@
  * - onnx (Windows, Linux): the app runs Laya itself (see `common/kyrn/layaOnnx.ts`). It can download the model with one
  *   click (`setup`, from the chosen source in `LAYA_ONNX_SOURCES`), or the person gets it from Hugging Face into the
  *   model folder, and the app checks it and starts the judge.
+ * - gguf (any machine with a `llama-server`): the judge is the same model as a GGUF file, run by the llama.cpp the
+ *   person already has (see `common/kyrn/layaGguf.ts`). The app starts `llama-server` beside the judge process, so a
+ *   machine whose GPU has no ONNX provider can still run the judge on it.
  */
 
-/** setup: coreml's install (downloads, needs consent). locate: onnx's "open the model folder". */
+/** setup: coreml's install (downloads, needs consent). locate: "open the model folder". */
 export type LocalJudgeAction = 'setup' | 'start' | 'stop' | 'locate';
 
-/** ok: this machine can run it. platform: no runtime for this machine. uv: installing needs `uv`, which is missing. */
-export type LocalJudgeSupport = 'ok' | 'platform' | 'uv';
+/**
+ * ok: this machine can run it. platform: no runtime for this machine. runtime: the runtime is there but the binary
+ * it runs with is not (`llama-server` for gguf). uv: installing needs `uv`, which is missing.
+ */
+export type LocalJudgeSupport = 'ok' | 'platform' | 'runtime' | 'uv';
 
-export type LocalJudgeRuntime = 'coreml' | 'onnx';
+export type LocalJudgeRuntime = 'coreml' | 'onnx' | 'gguf';
 
 /** onnx `setup`: how far the model download has got, so the screen can show a progress bar. */
 export type LocalJudgeDownloadProgress = {
@@ -45,6 +51,8 @@ export type LocalJudgeTask = {
   progress?: LocalJudgeDownloadProgress;
   /** onnx `setup`: the source the files are downloaded from (its id). */
   source?: string;
+  /** onnx `setup`: which build of the model is downloaded (its id, see `LAYA_ONNX_PRESETS`). */
+  preset?: string;
 };
 
 /**
@@ -57,23 +65,27 @@ export type LocalJudgeProblem = 'missing' | 'wrong' | 'runtime' | 'port' | 'stop
 /** onnx: the model folder and what it still lacks. */
 export type LocalJudgeModel = {
   folder: string;
-  /** Repository paths of files not found (see `LAYA_ONNX_FILES`). */
+  /** Repository paths of files not found (see a preset's `files`). */
   missing: string[];
   /** Files found but not the tested version (another size or hash). */
   wrong: string[];
+  /** Which build of the model the folder is checked against (see `LAYA_ONNX_PRESETS`). */
+  preset?: string;
 };
 
 export type LocalJudgeState = {
   support: LocalJudgeSupport;
   /** Which runtime this machine uses; absent from an older main process, which only had coreml. */
   runtime?: LocalJudgeRuntime;
-  /** coreml: the Python environment and the weights are there. onnx: every model file is there and checked. */
+  /** Every runtime this machine can run, so the settings can offer a choice where there is one. */
+  runtimes?: LocalJudgeRuntime[];
+  /** coreml: the Python environment and the weights are there. onnx/gguf: every model file is there and checked. */
   installed: boolean;
   /** Its health check answers on this machine. */
   running: boolean;
   /** The address it answers on. */
   url: string;
-  /** onnx only. */
+  /** onnx and gguf only. */
   model?: LocalJudgeModel;
   /** What the app runs now or ran last; unset before the first action of this app run. */
   task?: LocalJudgeTask;

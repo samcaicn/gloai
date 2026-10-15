@@ -23,7 +23,16 @@ const { TINY_FILES, TINY_BYTES } = vi.hoisted(() => {
 
 vi.mock('@/common/kyrn/layaOnnx.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/common/kyrn/layaOnnx.ts')>();
-  return { ...actual, LAYA_ONNX_FILES: TINY_FILES };
+  // The same build as the real one -- same repository and revision, so the URLs are the real ones -- with the tiny
+  // files standing in for the 680 MB model, which is what the download and the check read.
+  const tiny = { ...actual.LAYA_ONNX_PRESETS[0]!, files: TINY_FILES, downloadMb: 1 };
+  return {
+    ...actual,
+    LAYA_ONNX_FILES: TINY_FILES,
+    LAYA_ONNX_DEFAULT_ID: tiny.id,
+    layaOnnxFiles: () => TINY_FILES,
+    layaOnnxPreset: () => tiny,
+  };
 });
 
 import { LAYA_ONNX_FILES, LAYA_ONNX_REVISION, LAYA_ONNX_SOURCES, layaOnnxFileUrlFor } from '@/common/kyrn/layaOnnx.ts';

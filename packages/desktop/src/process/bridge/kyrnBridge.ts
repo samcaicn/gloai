@@ -2,6 +2,7 @@ import { basename, dirname, join } from 'node:path';
 import { app, shell, utilityProcess } from 'electron';
 import { kyrnBridge } from '../../common/kyrn/bridge';
 import { KyrnError, kyrnFailure, type KyrnResult } from '../../common/kyrn/errors';
+import type { LocalJudgeRuntime } from '../../common/kyrn/localJudge';
 import type { KyrnCatalog } from '../../common/kyrn/types';
 import { httpRequest } from '../../common/adapter/httpBridge';
 import { SettingsStore } from '../agent/kyrn/settings';
@@ -12,6 +13,7 @@ import { envFileOf, expectedHarness, findHarness, launcherOf, manifestOf } from 
 import { checkClmServer } from '../agent/kyrn/clmServer';
 import { LocalJudge } from '../agent/kyrn/localJudge';
 import { OnnxLocalJudge, openFolder, usesOnnxJudge } from '../agent/kyrn/localJudgeOnnx';
+import { GgufLocalJudge, llamaServerPresent, readChoice, writeChoice } from '../agent/kyrn/localJudgeGguf';
 import { importCli, importService } from '../agent/kyrn/importChats';
 import { LessonsStore, lessonsProject, type LessonsProject } from '../agent/kyrn/lessons';
 import { activityPage, modelLevels } from '../agent/kyrn/telemetry';
@@ -22,10 +24,27 @@ import { sessionBinding } from '../agent/kyrn/sessionBinding';
 import { conversationSessions } from '../agent/kyrn/conversationSession';
 import { getDataPath } from '../utils/utils';
 
-/** `out/main/localJudgeOnnx.js`, next to the main entry even when this module sits in `out/main/chunks/`. */
-function localJudgeEntry(): string {
+/** `out/main/localJudgeOnnx.js` (or `localJudgeGguf.js`), next to the main entry even in `out/main/chunks/`. */
+function localJudgeEntry(name = 'localJudgeOnnx'): string {
   const main = require.main?.filename ? dirname(require.main.filename) : __dirname;
-  return join(basename(main) === 'chunks' ? dirname(main) : main, 'localJudgeOnnx.js');
+  return join(basename(main) === 'chunks' ? dirname(main) : main, `${name}.js`);
+}
+
+/** What the app can run the local judge with on this machine, best first: the person's pick, then what works here. */
+function judgeRuntimes(env: NodeJS.ProcessEnv, home: string): LocalJudgeRuntime[] {
+  const runtimes: LocalJudgeRuntime[] = [];
+  if (usesOnnxJudge(process.platform, process.arch, env)) runtimes.push('onnx');
+  // llama.cpp runs anywhere its binary does, which is a different question from ONNX's execution providers.
+  if (llamaServerPresent(env)) runtimes.push('gguf');
+  if (process.platform === 'darwin' && process.arch === 'arm64') runtimes.unshift('coreml');
+  return runtimes.length ? runtimes : ['coreml'];
+}
+
+/** Which runtime this machine uses: the environment, then the person's last pick, then what works here. */
+function judgeRuntimeOf(env: NodeJS.ProcessEnv, home: string): LocalJudgeRuntime {
+  const wanted = (env.MU_LOCAL_JUDGE_RUNTIME || readChoice(home).runtime) as LocalJudgeRuntime | undefined;
+  const runtimes = judgeRuntimes(env, home);
+  return wanted && runtimes.includes(wanted) ? wanted : runtimes[0]!;
 }
 
 // Always answer IPC, including failure: the generic bridge otherwise only logs exceptions.
@@ -114,22 +133,43 @@ export function initKyrnBridge(): void {
   kyrnBridge.loginLogout.provider(({ provider }) => result(() => login.logout(provider)));
   // A sign-in, or a look at who is signed in, still running when the app quits is ended with it.
   app.once('will-quit', () => login.dispose());
-  // Core ML on Apple Silicon Macs, the app's own ONNX judge on Windows and Linux: the same state and actions.
-  const localJudge = usesOnnxJudge(process.platform, process.arch, process.env)
-    ? new OnnxLocalJudge({
+  // Core ML on Apple Silicon Macs, the app's own ONNX judge on Windows and Linux, llama.cpp's GGUF where the person
+  // has it: the same state and actions, whichever answers.
+  let localJudge: LocalJudge | OnnxLocalJudge | GgufLocalJudge = buildJudge(judgeRuntimeOf(process.env, home));
+  function buildJudge(runtime: LocalJudgeRuntime): LocalJudge | OnnxLocalJudge | GgufLocalJudge {
+    if (runtime === 'gguf')
+      return new GgufLocalJudge({
+        fork: (env) =>
+          utilityProcess.fork(localJudgeEntry('localJudgeGguf'), [], { env, stdio: 'pipe', serviceName: 'mu local judge' }),
+        open: (folder) => openFolder(folder, (path) => shell.openPath(path)),
+      });
+    if (runtime === 'onnx')
+      return new OnnxLocalJudge({
         fork: (env) =>
           utilityProcess.fork(localJudgeEntry(), [], { env, stdio: 'pipe', serviceName: 'mu local judge' }),
         open: (folder) => openFolder(folder, (path) => shell.openPath(path)),
-      })
-    : new LocalJudge(
-        root,
-        harness.layout === 'package' ? { stateDir: muEnv('LOCAL_JUDGE_RUN_DIR') || join(home, 'local-judge') } : {}
-      );
-  if (localJudge instanceof OnnxLocalJudge)
+      });
+    return new LocalJudge(
+      root,
+      harness.layout === 'package' ? { stateDir: muEnv('LOCAL_JUDGE_RUN_DIR') || join(home, 'local-judge') } : {}
+    );
+  }
+  if (localJudge instanceof OnnxLocalJudge || localJudge instanceof GgufLocalJudge)
     void localJudge.autoStart(agentDir).catch((error: unknown) => console.warn('[mu] local judge autostart:', error));
-  kyrnBridge.localJudgeState.provider(() => result(() => localJudge.state()));
+  kyrnBridge.localJudgeState.provider(async () =>
+    result(async () => ({ ...(await localJudge.state()), runtimes: judgeRuntimes(process.env, home) }))
+  );
   kyrnBridge.localJudgeRun.provider(({ action, consent, source }) =>
     result(() => localJudge.run(action, consent === true, source))
+  );
+  // Picking another runtime (or another build of the model) takes effect at once: the judge the app starts next is the
+  // one picked, and the choice is remembered for the next run. The one running now is left alone until it is stopped.
+  kyrnBridge.localJudgeRuntime.provider(({ runtime, preset, file }) =>
+    result(async () => {
+      writeChoice({ runtime, ...(preset ? { preset } : {}), ...(file ? { file } : {}) }, home);
+      if (judgeRuntimeOf(process.env, home) !== runtime) localJudge = buildJudge(runtime);
+      return { ...(await localJudge.state()), runtimes: judgeRuntimes(process.env, home) };
+    })
   );
   kyrnBridge.clmCheck.provider(({ baseUrl }) =>
     result(() => checkClmServer(typeof baseUrl === 'string' ? baseUrl : ''))

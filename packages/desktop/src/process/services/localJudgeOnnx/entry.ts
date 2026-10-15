@@ -32,22 +32,23 @@ function listen(server: Server, port: number): Promise<void> {
 async function main(): Promise<void> {
   const dir = process.env.MU_LOCAL_JUDGE_ONNX_DIR;
   const port = Number(process.env.MU_LOCAL_JUDGE_PORT || process.env.KYRN_LOCAL_JUDGE_PORT || 47823);
+  const presetId = process.env.MU_LOCAL_JUDGE_ONNX_PRESET;
   if (!dir) fail('config', 'MU_LOCAL_JUDGE_ONNX_DIR is not set');
   if (!Number.isInteger(port) || port < 1 || port > 65535) fail('config', `Invalid port: ${String(port)}`);
 
   // Hashes were checked by the app before it started this process; sizes are enough here.
-  const check = await checkBundle(dir);
+  const check = await checkBundle(dir, { preset: presetId });
   if (check.missing.length) fail('missing', `Model files missing: ${check.missing.join(', ')}`);
   if (check.wrong.length) fail('wrong', `Model files that are not the tested version: ${check.wrong.join(', ')}`);
 
   const providers = process.env.MU_LOCAL_JUDGE_ONNX_PROVIDERS?.split(',').filter(Boolean);
   let loaded: Awaited<ReturnType<typeof loadJudge>>;
   try {
-    loaded = await loadJudge(check.paths, { providers, say });
+    loaded = await loadJudge(check.paths, { providers, say, preset: presetId });
   } catch (error) {
     fail('runtime', error instanceof Error ? error.message : String(error));
   }
-  const { judge, runner } = loaded;
+  const { judge, runner, preset } = loaded;
   const server = createJudgeServer(judge, say);
   try {
     await listen(server, port);
@@ -55,10 +56,10 @@ async function main(): Promise<void> {
     const code = (error as NodeJS.ErrnoException).code;
     fail(code === 'EADDRINUSE' ? 'port' : 'listen', `Cannot listen on 127.0.0.1:${port}: ${code ?? String(error)}`);
   }
-  say(`listening on http://127.0.0.1:${port} (${runner.provider})`);
+  say(`listening on http://127.0.0.1:${port} (${preset.id}, ${runner.provider})`);
   await judge.warmUp();
   say('ready');
-  parent?.postMessage({ type: 'ready', provider: runner.provider });
+  parent?.postMessage({ type: 'ready', provider: runner.provider, preset: preset.id });
 
   const stop = () => {
     server.close();

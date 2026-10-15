@@ -44,6 +44,11 @@ export function serialise(value: unknown, previous: string): string {
   return `${JSON.stringify(value, null, indent)}\n`;
 }
 
+/** Writes a small JSON object through `atomic`, so a reader never sees half of it. */
+export function writeJson(path: string, value: unknown): void {
+  atomic(path, JSON.stringify(value, null, 2));
+}
+
 /** pi reads models.json with `//` comments and trailing commas. The same two replacements as pi's `stripJsonComments`. */
 export function stripJsonComments(input: string): string {
   return input

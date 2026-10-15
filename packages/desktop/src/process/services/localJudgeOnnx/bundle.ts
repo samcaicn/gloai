@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, promises as fs } from 'node:fs';
 import { basename, join } from 'node:path';
-import { LAYA_ONNX_FILES, LAYA_ONNX_REVISION, type LayaOnnxFile } from '../../../common/kyrn/layaOnnx.ts';
+import { layaOnnxPreset } from '../../../common/kyrn/layaOnnx.ts';
+import type { DownloadFile } from '../../agent/kyrn/modelDownload.ts';
 
 /** Where each model file was found, and which are missing or not the tested version. */
 export type BundleCheck = {
@@ -39,7 +40,7 @@ export const nodeBundleFs: BundleFs = {
     }),
 };
 
-async function locate(dir: string, file: LayaOnnxFile, io: BundleFs) {
+async function locate(dir: string, file: DownloadFile, io: BundleFs) {
   for (const path of [join(dir, ...file.name.split('/')), join(dir, basename(file.name))]) {
     const stat = await io.stat(path);
     if (stat?.isFile()) return { path, stat };
@@ -49,22 +50,30 @@ async function locate(dir: string, file: LayaOnnxFile, io: BundleFs) {
 
 /**
  * Looks for the model files in `dir`. Sizes are always compared; hashes only when `hash` is set (the first time a file
- * is seen at this size and date, it takes a few seconds), and a hash that matched is remembered in the folder.
+ * is seen at this size and date, it takes a few seconds), and a hash that matched is remembered in the folder. A file
+ * whose build pins no hash is trusted once its size matches: there is nothing here to compare its bytes against.
+ *
+ * Every backend's files go through here -- the ONNX builds of Laya and the GGUF ones are different files, checked the
+ * same way -- and `revision` only says in the memo which build's hashes it holds.
  */
-export async function checkBundle(dir: string, options: { hash?: boolean; io?: BundleFs } = {}): Promise<BundleCheck> {
+export async function checkFiles(
+  dir: string,
+  files: readonly DownloadFile[],
+  options: { hash?: boolean; io?: BundleFs; revision?: string } = {}
+): Promise<BundleCheck> {
   const io = options.io ?? nodeBundleFs;
   const memo = join(dir, VERIFIED);
-  let verified: Verified = { revision: LAYA_ONNX_REVISION, files: {} };
+  let verified: Verified = { revision: options.revision ?? '', files: {} };
   try {
     const read = JSON.parse((await io.readText(memo)) ?? '') as Verified;
-    if (read?.revision === LAYA_ONNX_REVISION && read.files && typeof read.files === 'object') verified = read;
+    if (read?.files && typeof read.files === 'object') verified = { ...read, revision: options.revision ?? read.revision };
   } catch {
     // No memo yet, or an unreadable one: hash again.
   }
   const check: BundleCheck = { paths: {}, missing: [], wrong: [], ready: false };
   let learned = false;
   let confirmed = 0;
-  for (const file of LAYA_ONNX_FILES) {
+  for (const file of files) {
     const found = await locate(dir, file, io);
     if (!found) {
       check.missing.push(file.name);
@@ -85,10 +94,22 @@ export async function checkBundle(dir: string, options: { hash?: boolean; io?: B
     }
     // Not hashed yet (a quick look): neither wrong nor confirmed.
     if (sha256 === undefined) continue;
-    if (sha256 === file.sha256) confirmed++;
+    if (file.sha256 === undefined || sha256 === file.sha256) confirmed++;
     else check.wrong.push(file.name);
   }
   if (learned) await io.writeText(memo, JSON.stringify(verified, null, 2)).catch((): void => undefined);
-  check.ready = confirmed === LAYA_ONNX_FILES.length;
+  check.ready = confirmed === files.length;
   return check;
+}
+
+/**
+ * Looks for one build of the Laya ONNX model in `dir`. `preset` names which build: the 4-bit builds are different
+ * files, not a smaller copy of the same ones.
+ */
+export async function checkBundle(
+  dir: string,
+  options: { hash?: boolean; io?: BundleFs; preset?: string } = {}
+): Promise<BundleCheck> {
+  const preset = layaOnnxPreset(options.preset);
+  return checkFiles(dir, preset.files, { ...options, revision: preset.revision });
 }
