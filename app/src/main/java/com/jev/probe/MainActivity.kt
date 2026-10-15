@@ -22,6 +22,7 @@ import com.jev.probe.core.CrashLog
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.SelfCheck
 import com.jev.probe.core.t
+import com.jev.probe.input.ProbeImeBus
 import kotlin.math.roundToInt
 
 /**
@@ -95,11 +96,18 @@ class MainActivity : AppCompatActivity() {
         val battery = isBatteryUnrestricted()
         val key = prefs.hasKey()   // judge route key: the one analysis cannot run without
         // 引导式首启：一次只推一步，跳系统页回来后 onResume 重建，自动落到下一个未完成项。
+        // 输入法走两步口径：先要求「启用」，再要求「设为默认」。
+        // 只检查默认会让「从没启用过」的用户看到无法操作的提示。
+        val imeEnabled = isProbeImeEnabled()
+        val imeDefault = isProbeImeDefault()
+        val postNotif = canPostNotifications()
         val pending = ArrayList<String>().apply {
             if (!a11y) add(A11Y)
             if (!overlay) add(OVERLAY)
             if (!notify) add(NOTIFY)
             if (!battery) add(BATTERY)
+            if (!imeEnabled || !imeDefault) add(IME)
+            if (!postNotif) add(POST_NOTIF)
         }
         // 就绪口径必须和下面的清单用**同一组**判断。原来这里只查 3 项（无障碍 /
         // 悬浮窗 / 密钥）而清单查 4 项（含通知、省电），于是卡片写着「已就绪，可以用了」
@@ -116,8 +124,15 @@ class MainActivity : AppCompatActivity() {
             container.addView(recoveryBanner())
         }
 
+        // 双通道兜底的接收端：通知发不出去时（权限被关），提示落在这里补送。
+        // 通知是即时通道，这条是「迟早会看到」的通道，两条一起才敢说提示不丢。
+        val alert = prefs.pendingAlert
+        if (alert.isNotBlank()) {
+            container.addView(pendingAlertBanner(alert, prefs.pendingAlertKind))
+        }
+
         // Readiness card
-        container.addView(statusCard(ready, permsOk, a11y, overlay, notify, battery, key))
+        container.addView(statusCard(ready, permsOk, a11y, overlay, notify, battery, imeDefault, postNotif, key))
         container.addView(privacyHint())
 
         container.addView(sectionLabel(
@@ -146,6 +161,19 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             }
         })
+        // 第 5 步：写入通道。系统禁止 App 代切输入法，所以这里只能给入口让用户自己切。
+        // 文案必须说清「去系统输入法列表里选」，否则用户不知道要点哪里。
+        container.addView(permCard(stepTitle(IME), t(
+            "微信 8.0.78 起读不到聊天文字，回复只能靠本 App 的输入法写入。请在系统输入法列表里勾选并切到「AI聊天助手·写入」",
+            "WeChat 8.0.78 blocks chat text, so replies can only be written through this app's keyboard. Enable and switch to \"AI Chat Assistant · write\" in the system keyboard list"),
+            imeDefault, next == IME) {
+            runCatching { (getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showInputMethodPicker() }
+        })
+        // 第 6 步：通知权限。缺失时所有自愈引导静默丢失，是「静默卡死」的根因。
+        container.addView(permCard(stepTitle(POST_NOTIF), t(
+            "权限掉线时，助手靠通知提醒你去恢复。通知被屏蔽的话，你会完全看不到提示，只能眼睁睁看着它不工作",
+            "When a permission drops, the assistant notifies you so you can restore it. If notifications are blocked you'll never see the hint and it will just silently do nothing"),
+            postNotif, next == POST_NOTIF) { requestPostNotifications() })
 
         // 密钥缺失单独提示，且给一个直达设置页的按钮——它不在上面 4 步里，
         // 混在权限清单中会让人以为「开完 4 项就一定出结果」，然后卡在无反应上。
@@ -251,7 +279,8 @@ class MainActivity : AppCompatActivity() {
         NOTIFY -> t("通知读取", "Notification access")
         IME -> t("写入通道（输入法）", "Write channel (keyboard)")
         POST_NOTIF -> t("允许通知", "Allow notifications")
-        else -> t("自启动 + 省电无限制", "Auto-start & unrestricted battery")
+        BATTERY -> t("自启动 + 省电无限制", "Auto-start & unrestricted battery")
+        else -> t("待设置", "To be set")
     }
 
     /** 已开启但无障碍被系统关掉时的恢复横幅：点一下直接回无障碍设置页。 */
@@ -280,6 +309,42 @@ class MainActivity : AppCompatActivity() {
         }
         go.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+        c.addView(go)
+        return c
+    }
+
+    /**
+     * 落盘提示的补送横幅（通知通道的兜底）。
+     *
+     * 触发条件：上次自愈提示发出去时通知权限是关的，系统把通知全丢了。
+     * 这条横幅在首页顶上直接告诉用户坏在哪、怎么修，点「知道了」才清除——
+     * 不自动消失，因为这类问题一旦错过，用户接下来几天都会在
+     * 「助手开着却什么都不干」的状态里摸不着头脑。
+     */
+    private fun pendingAlertBanner(msg: String, kind: String): View {
+        val c = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundBg(dp(14), Color.parseColor("#FFFBEB"), stroke = true).apply {
+                setStroke(dp(1), Color.parseColor("#F59E0B"))
+            }
+            setPadding(dp(14), dp(13), dp(14), dp(13))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(12) }
+        }
+        c.addView(text(t("⚠ 有一条恢复提示没送到通知栏", "⚠ A recovery notice never reached the notification bar"),
+            14f, Color.parseColor("#B45309"), bold = true))
+        c.addView(text(msg, 12f, sub).apply { setPadding(0, dp(4), 0, dp(10)) })
+        val go = TextView(this).apply {
+            text = t("知道了", "Got it"); textSize = 13f; gravity = Gravity.CENTER
+            setTypeface(typeface, Typeface.BOLD); setTextColor(Color.WHITE)
+            background = roundBg(dp(10), Color.parseColor("#B45309"))
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+        }
+        go.setOnClickListener {
+            prefs.apply { pendingAlert = ""; pendingAlertKind = "" }
+            build()
         }
         c.addView(go)
         return c
@@ -352,7 +417,7 @@ class MainActivity : AppCompatActivity() {
     // ---------------------------------------------------------------- cards
 
     /**
-     * 就绪卡。4 项权限 + 密钥，共 5 行——与下面的清单一一对应。
+     * 就绪卡。6 项权限 + 密钥，共 7 行——与下面的清单一一对应。
      *
      * 措辞按「缺什么就说什么」：权限全开但没激活接口时，标题给「可以用了，接口未激活」
      * 而不是笼统的「尚未就绪」——因为这两种状态下助手**都能读能显示**，区别只在
@@ -361,15 +426,17 @@ class MainActivity : AppCompatActivity() {
     private fun statusCard(
         ready: Boolean, permsOk: Boolean,
         a11y: Boolean, overlay: Boolean, notify: Boolean, battery: Boolean,
-        key: Boolean
+        imeDefault: Boolean, postNotif: Boolean, key: Boolean
     ): View {
         val c = cardBox()
         val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val (title, color) = when {
             ready -> t("已就绪，可以用了", "Ready to go") to green
             permsOk -> t("可以用了，接口未激活", "Ready — service not activated") to Color.parseColor("#D97706")
-            else -> t("尚未就绪，还差 ${4 - listOf(a11y, overlay, notify, battery).count { it }} 项",
-                "Not ready — ${4 - listOf(a11y, overlay, notify, battery).count { it }} item(s) left") to ink
+            else -> {
+                val missing = listOf(a11y, overlay, notify, battery, imeDefault, postNotif).count { !it }
+                t("尚未就绪，还差 $missing 项", "Not ready — $missing item(s) left") to ink
+            }
         }
         head.addView(dot(if (ready) green else if (permsOk) Color.parseColor("#D97706") else red).apply {
             (layoutParams as LinearLayout.LayoutParams).rightMargin = dp(10)
@@ -380,6 +447,10 @@ class MainActivity : AppCompatActivity() {
         c.addView(checkLine(t("悬浮窗", "Overlay"), overlay))
         c.addView(checkLine(t("通知读取", "Notifications"), notify))
         c.addView(checkLine(t("省电无限制", "Battery"), battery, okWord = t("已放开", "allowed"), noWord = t("未放开", "restricted")))
+        c.addView(checkLine(t("写入通道", "Write channel"), imeDefault,
+            okWord = t("已接管", "active"), noWord = t("未接管", "inactive")))
+        c.addView(checkLine(t("允许通知", "Notifications"), postNotif,
+            okWord = t("已允许", "allowed"), noWord = t("被屏蔽", "blocked")))
         c.addView(checkLine(t("判断接口", "Service"), key, okWord = t("已激活", "active"), noWord = t("未激活", "inactive")))
         return c
     }
@@ -514,8 +585,63 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** 探针输入法是否已启用（在系统的输入法列表里）。
+     *  注意：启用 ≠ 默认。只有**默认**时才能直接把回复写进微信输入框，
+     *  但启用与否是「用户有没有做过这一步」的判据，用于引导。 */
+    private fun isProbeImeEnabled(): Boolean = ProbeImeBus.isEnabled(this)
+
+    /** 探针输入法是不是当前默认输入法——这是 8.0.78 剥树后唯一能写入的通道。 */
+    private fun isProbeImeDefault(): Boolean = try {
+        Settings.Secure.getString(contentResolver,
+            Settings.Secure.DEFAULT_INPUT_METHOD)
+            ?.startsWith(packageName) == true
+    } catch (_: Exception) { false }
+
+    /**
+     * 通知权限（Android 13+）。
+     *
+     * 这条最容易被漏掉，也最致命：全项目请求通知的地方都不检查它，
+     * 一旦被关，自愈提示（无障碍掉线 / 输入法被重置）发是发了，
+     * 但系统一条都不投递——用户看到的就是「助手开着却什么都不干」，
+     * 而 App 自己以为已经通知过了。
+     */
+    private fun canPostNotifications(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        return checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+
+    /**
+     * 申请通知权限——整个项目此前**零处**调用，权限被关后自愈提示全部静默丢弃。
+     *
+     * Android 13+ 走系统权限对话框；12 及以下没有这个运行时权限，
+     * 只能跳应用详情页由用户手动开。
+     */
+    private fun requestPostNotifications() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            runCatching {
+                requestPermissions(
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    REQ_POST_NOTIF
+                )
+            }.onFailure {
+                Toast.makeText(this, t("无法打开权限申请，请到系统设置里开启通知",
+                    "Couldn't open the permission dialog — please allow notifications in system settings"),
+                    Toast.LENGTH_LONG).show()
+            }
+        } else {
+            runCatching {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:$packageName")))
+            }
+        }
+    }
+
     companion object {
         private const val PRIVACY_URL = "https://chatjevs.com/privacy.html"
+
+        /** 通知权限申请回调码（Android 13+）。 */
+        private const val REQ_POST_NOTIF = 1001
 
         // 引导式首启的步骤 id（P1-1）
         private const val A11Y = "a11y"

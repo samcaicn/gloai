@@ -333,6 +333,23 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getString(K_LAST_ERR, "") ?: ""
         set(v) = sp.edit().putString(K_LAST_ERR, v).apply()
 
+    /**
+     * 待送达的自愈提示（空=无）。
+     *
+     * 通知是唯一的提示通道时，一旦通知权限被关，提示发出去却被系统全丢，
+     * 用户永远看不到「哪里坏了」。这里做一个兜底：发通知前先查
+     * areNotificationsEnabled()，被关就落到 prefs，等用户下次打开 App
+     * 时在首页以醒目横幅补上——App 不一定在前台，但用户迟早会打开它。
+     */
+    var pendingAlert: String
+        get() = sp.getString(K_PENDING_ALERT, "") ?: ""
+        set(v) = sp.edit().putString(K_PENDING_ALERT, v).apply()
+
+    /** 待送达提示的类型：无障碍掉线 / 输入法被重置。 */
+    var pendingAlertKind: String
+        get() = sp.getString(K_PENDING_ALERT_KIND, "") ?: ""
+        set(v) = sp.edit().putString(K_PENDING_ALERT_KIND, v).apply()
+
     // ------------------------------------------------------------ OCR (B)
 
     var ocrEngine: String
@@ -652,6 +669,8 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_LAST_MS = "last_analysis_ms"
         private const val K_LAST_OK = "last_analysis_ok"
         private const val K_LAST_ERR = "last_analysis_err"
+        private const val K_PENDING_ALERT = "pending_alert"
+        private const val K_PENDING_ALERT_KIND = "pending_alert_kind"
         private const val K_LICENSE_KEY = "license_key_enc"
         private const val K_LICENSE_TIER = "license_tier"
         private const val K_CTX_ENABLED = "context_enabled"

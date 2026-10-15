@@ -11,6 +11,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import com.jev.probe.core.Prefs
+import com.jev.probe.core.t
 
 /**
  * 开机后若用户曾开启助手，发一条「助手已停止，点此恢复」通知。
@@ -34,6 +35,38 @@ class BootReceiver : BroadcastReceiver() {
         const val CH_ID = "jev_recovery"
         const val NOTIF_ID = 2
 
+        /** 落盘提示的类型标记。 */
+        const val KIND_A11Y = "a11y"
+        const val KIND_IME = "ime"
+
+        /**
+         * 通知还能送到用户眼前吗。
+         *
+         * Android 8+ 用 NotificationManager.areNotificationsEnabled()；
+         * 低版本查 AppOps 的 OP_POST_NOTIFICATION——有些 OEM 会把这里关掉
+         * 而 areNotificationsEnabled() 仍返回 true，两个都看才稳。
+         */
+        private fun notificationsEnabled(nm: NotificationManager): Boolean {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!nm.areNotificationsEnabled()) return false
+            }
+            return try {
+                val ctx = nm as? Context ?: return true
+                val aom = ctx.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+                @Suppress("DEPRECATION")
+                val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    aom.unsafeCheckOpNoThrow(
+                        android.app.AppOpsManager.OPSTR_POST_NOTIFICATION,
+                        android.os.Process.myUid(), ctx.packageName)
+                } else {
+                    aom.checkOpNoThrow(
+                        android.app.AppOpsManager.OPSTR_POST_NOTIFICATION,
+                        android.os.Process.myUid(), ctx.packageName)
+                }
+                mode == android.app.AppOpsManager.MODE_ALLOWED
+            } catch (_: Exception) { true }
+        }
+
         /** 发一条高优先级通知，点开直接跳无障碍设置页。OEM 把无障碍悄悄关掉时复用此入口。 */
         fun notifyRecovery(ctx: Context) {
             val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -41,6 +74,16 @@ class BootReceiver : BroadcastReceiver() {
                 val ch = NotificationChannel(CH_ID, "Jev 助手恢复", NotificationManager.IMPORTANCE_HIGH)
                 ch.setShowBadge(false)
                 nm.createNotificationChannel(ch)
+            }
+            // 双通道兜底：通知被屏蔽时提示会静默丢失，落到 prefs 由首页横幅补送。
+            if (!notificationsEnabled(nm)) {
+                Prefs(ctx).apply {
+                    pendingAlert = ctx.t("助手已停止：无障碍服务被关闭，点此重新开启",
+                        "Assistant stopped: accessibility service is off — tap to re-enable")
+                    pendingAlertKind = KIND_A11Y
+                }
+                android.util.Log.w("JEVASSIST",
+                    "notifyRecovery: notifications blocked -> pending alert saved for home banner")
             }
             val go = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -69,6 +112,16 @@ class BootReceiver : BroadcastReceiver() {
                 val ch = NotificationChannel(CH_ID, "Jev 助手恢复", NotificationManager.IMPORTANCE_HIGH)
                 ch.setShowBadge(false)
                 nm.createNotificationChannel(ch)
+            }
+            // 同上：通知被屏蔽时，提示落盘等首页补送。
+            if (!notificationsEnabled(nm)) {
+                Prefs(ctx).apply {
+                    pendingAlert = ctx.t("输入法被重置，自动回复已暂停，点此切回写入通道",
+                        "Keyboard was reset, auto-reply paused — tap to switch back to the write channel")
+                    pendingAlertKind = KIND_IME
+                }
+                android.util.Log.w("JEVASSIST",
+                    "notifyImeReset: notifications blocked -> pending alert saved for home banner")
             }
             val go = Intent(ctx, com.jev.probe.MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
