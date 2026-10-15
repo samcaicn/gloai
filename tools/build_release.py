@@ -165,13 +165,34 @@ def sanitize_config(keys: dict) -> None:
         lines = f.readlines()
     drop_prefixes = ("WEAUATO_CLIENT_SECRET",)
     out = []
-    for line in lines:
+    i, n = 0, len(lines)
+    while i < n:
+        line = lines[i]
         stripped = line.lstrip()
         if stripped.startswith(drop_prefixes):
             indent = line[: len(line) - len(line.lstrip())]
             out.append('%sWEAUATO_CLIENT_SECRET = ""  # 发行版密钥由构建期注入（weauto_license/secrets）\n' % indent)
-            continue
-        out.append(line)
+        elif stripped.startswith("LISTEN_LIST"):
+            # ⭐ 出厂 config 绝不能带开发者/测试机的真实监听对象（曾出现本地调试
+            # 配置 LISTEN_LIST=[['真实联系人',...]] 险些打进发行 EXE 的事故）。
+            # 一律重置为空列表，与仓库 HEAD 的出厂值保持一致。
+            # LISTEN_LIST 可能写成多行字面量：按括号配平整条消费，避免留孤儿括号。
+            indent = line[: len(line) - len(line.lstrip())]
+            depth = 0
+            while True:
+                for ch in stripped:
+                    if ch in "[{(":
+                        depth += 1
+                    elif ch in "]})":
+                        depth -= 1
+                if depth <= 0 or i + 1 >= n:
+                    break
+                i += 1
+                stripped = lines[i].lstrip()
+            out.append("%sLISTEN_LIST = []  # 出厂默认：监听对象由用户在界面自行添加\n" % indent)
+        else:
+            out.append(line)
+        i += 1
     with open(work_cfg, "w", encoding="utf-8") as f:
         f.writelines(out)
     key = bytes.fromhex(keys["CONFIG_SIG_KEY"])
@@ -234,6 +255,8 @@ def run_pyinstaller() -> None:
         "--collect-all", "pythonnet",
         "--hidden-import", "webview.platforms.edgechromium",
         "--hidden-import", "webview.platforms.winforms",
+        # 自动更新模块：EXE 启动后后台检查/下载/验签/自替换（缺失则用户永远收不到更新）
+        "--hidden-import", "updater",
         "--version-file", os.path.join(ROOT, "version_info.txt"),
         "--manifest", os.path.join(ROOT, "manifest.xml"),
         "--splash", os.path.join(ROOT, "splash.png"),

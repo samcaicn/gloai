@@ -124,6 +124,16 @@ jobs:
           # 线上闸门行为（Android 墙 + EXE 双凭证）由下面的 node 测试离线覆盖。
           python _jev_exe_test.py
 
+      - name: Run self-replace bat regression tests (Windows, real cmd)
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          # 防的是真实事故：旧版自替换 bat 只 copy 不校验，磁盘写满/中断会把
+          # EXE 写成截断文件，用户下次启动解压到一半就缺 base_library.zip。
+          # 这里用临时目录里的假文件真实执行 bat，覆盖成功/回滚/放弃三条分支。
+          python _updater_replace_test.py
+
       - name: Run worker dual-credential gate tests (node, mock env)
         shell: bash
         run: |

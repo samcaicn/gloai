@@ -42,6 +42,19 @@ logger = logging.getLogger(__name__)
 _DIRECT_PROXIES = {"http": None, "https": None}
 
 
+def _base_dir():
+    """运行根目录（落盘用）：冻结(EXE)时为 EXE 所在目录，源码态为 updater.py 所在目录。
+
+    ⚠️ PyInstaller onefile 下模块的 __file__ 指向 EXE 内虚拟路径（磁盘上并不存在），
+    若直接拿它当落盘根目录，状态文件 .weauto_artifact.json、temp_update、更新备份
+    全会写到无效位置（静默失效：更新每次都"成功"却永远记不住版本）。
+    冻结态必须回退到 sys.executable 所在目录，即用户放 WeAuto.exe 的那个目录。
+    """
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
+
 def _http_get(url, *, headers=None, timeout=15, stream=False):
     """带代理故障回退的 GET。
 
@@ -140,7 +153,7 @@ class Updater:
     ]
 
     def __init__(self):
-        self.root_dir = os.path.dirname(os.path.abspath(__file__))
+        self.root_dir = _base_dir()
         self.temp_dir = os.path.join(self.root_dir, 'temp_update')
         self.version_file = os.path.join(self.root_dir, 'version.json')
         self.current_proxy_index = 0  # 当前使用的代理索引
@@ -299,7 +312,7 @@ class Updater:
     # CI 已不再发布公开 Release，自动更新以 Artifact 为准（见 build.yml）。
     # ------------------------------------------------------------------
     def _artifact_state_path(self):
-        return os.path.join(os.path.dirname(os.path.abspath(__file__)), ".weauto_artifact.json")
+        return os.path.join(_base_dir(), ".weauto_artifact.json")
 
     def _get_local_artifact_updated_at(self):
         try:
@@ -438,17 +451,104 @@ class Updater:
 
             # 生成自替换批处理：等待本进程退出后覆盖并重启
             bat = os.path.join(self.temp_dir, "apply_update.bat")
+            logf = os.path.join(self.temp_dir, "apply_update.log")
+            # ⚠️ 自替换必须重试：PyInstaller onefile 有「引导父进程 + 子进程」两层，
+            # 业务进程 os._exit(0) 后父进程还要清理几十 MB 的 _MEI 临时目录，
+            # 期间目标 exe 仍被映像锁占用，单次 copy 会「拒绝访问」——
+            # 而 bat 默认不中断，会一路走到 del "%~f0"，造成「更新成功却没换文件」的假象。
+            # 这里改成最多 40 次重试（约 2 分钟），只有真正覆盖成功才拉起新版本。
+            # ⭐ 覆盖后必须校验 + 备份回滚：真实事故——旧版 bat 只做
+            # `copy /Y` 就 `start`，一旦磁盘写满/写入中断，目标 exe 会被写成
+            # **截断文件**；用户下次启动，PyInstaller 解压到一半就缺
+            # base_library.zip（"[Errno 2] No such file or directory"），
+            # 软件彻底起不来且无任何提示。这里覆盖前后各做一次校验：
+            #   覆盖前：备份当前 exe 为 .bak
+            #   覆盖后：大小 + fc /b 二进制比对，不一致立即回滚备份并启动旧版
             with open(bat, "w", encoding="utf-8") as f:
-                f.write("@echo off\n")
-                f.write("timeout /t 2 /nobreak >nul\n")
-                f.write(f'copy /Y "{os.path.abspath(src)}" "{current}"\n')
-                f.write(f'start "" "{current}"\n')
-                f.write('del "%~f0"\n')
+                self._write_replace_bat(f, os.path.abspath(src), current, logf)
             subprocess.Popen(["cmd", "/c", bat], shell=False)
             self._save_local_artifact_updated_at(update_info.get("version"), update_info.get("artifact_id"))
             return {"success": True, "output": "\n".join(progress) + "\n已下载新版本，将在退出后自动替换并重启"}
         except Exception as e:
             return {"success": False, "output": "\n".join(progress) + f"\n更新失败: {e}"}
+
+    def _write_replace_bat(self, f, src, current, logf):
+        """写入「自替换批处理」内容（可单测：传一个 file-like 即可，不真正执行）。
+
+        分支：
+          WAITLOCK  copy 失败（映像锁未释放）→ 重试至 40 次仍失败则放弃（exit 1）
+          VERIFY    copy 成功后比对大小 + fc /b 二进制，一致才启动新版本（exit 0）
+          ROLLBACK  校验不一致 → 用 .bak 回滚并启动旧版本（exit 2）
+
+        ⚠️ 批处理**不再自删**（旧版 `del "%~f0"`）：实测 cmd 在脚本文件被删除后
+        会立刻终止批处理并吞掉退出码（无论哪条分支 rc 恒为 1），那样日志里
+        "成功/回滚/放弃"就无从区分。改由下次更新覆盖同名文件，并在开头加
+        `if not exist "%SRC%" exit /b 3` 防止被误双击执行。
+
+        退出码：0=覆盖并校验通过；1=目标一直被占用已放弃；2=校验失败已回滚；3=源文件缺失。
+        """
+        f.write("@echo off\n")
+        f.write("setlocal enabledelayedexpansion\n")
+        f.write('set "SRC=%s"\n' % src)
+        f.write('set "DST=%s"\n' % current)
+        f.write('set "BAK=%DST%.bak"\n')
+        f.write('set "LOGF=%s"\n' % logf)
+        f.write("set N=0\n")
+        f.write('if not exist "%SRC%" exit /b 3\n')
+        f.write('> "%LOGF%" echo WeAuto 自替换开始 %date% %time%\n')
+        f.write('copy /Y "%DST%" "%BAK%" >> "%LOGF%" 2>&1\n')
+        # ---- 方案 A（首选）：让位法绕开映像锁 ----
+        # Windows 允许重命名正在运行的映像文件（不允许删除/覆盖）。先把旧 exe 改名让位，
+        # 新文件就能无障碍写入，不必苦等父进程清理完 _MEI（实测需 35~40s，且可能被
+        # 杀软扫描进一步拉长，单纯重试很容易全败）。
+        f.write('for %%F in ("%DST%") do set "DSTNAME=%%~nxF"\n')
+        f.write('for %%F in ("%DST%") do set "DSTDIR=%%~dpF"\n')
+        f.write('set "OLDNAME=!DSTNAME!.old"\n')
+        f.write(":RENAME_TRY\n")
+        f.write("pushd \"!DSTDIR!\"\n")
+        f.write('ren "!DSTNAME!" "!OLDNAME!" >> "%LOGF%" 2>&1\n')
+        f.write("if errorlevel 1 goto RNFAIL\n")
+        f.write('copy /Y "%SRC%" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
+        f.write("if not errorlevel 1 goto RNVERIFY\n")
+        # 新文件写入失败：立刻把旧文件改回来；改不回来就从备份复制回来，绝不让用户无 exe 可用
+        f.write('>> "%LOGF%" echo WARN 让位后写入失败，正在还原旧文件\n')
+        f.write('ren "!OLDNAME!" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
+        f.write('if errorlevel 1 copy /Y "%BAK%" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
+        f.write(":RNFAIL\n")
+        f.write("popd\n")
+        f.write("goto WAITLOCK\n")
+        f.write(":RNVERIFY\n")
+        f.write('del /F /Q "!OLDNAME!" >> "%LOGF%" 2>&1\n')
+        f.write("popd\n")
+        f.write('>> "%LOGF%" echo 让位法覆盖完成，正在校验完整性...\n')
+        f.write("goto VERIFY\n")
+        f.write(":WAITLOCK\n")
+        f.write("timeout /t 2 /nobreak >nul\n")
+        f.write('copy /Y "%SRC%" "%DST%" >> "%LOGF%" 2>&1\n')
+        f.write("if not errorlevel 1 goto VERIFY\n")
+        f.write("set /a N+=1\n")
+        # 实测：onefile 父进程清理 _MEI（约 90MB 解压目录）需 35~40s 才释放映像锁，
+        # 重试窗口必须覆盖它并留足余量（40 次 × 约 3s ≈ 2 分钟）。
+        f.write("if !N! LSS 40 goto WAITLOCK\n")
+        f.write('>> "%LOGF%" echo FAILED 目标文件仍被占用，已重试40次放弃\n')
+        f.write("exit /b 1\n")
+        f.write(":VERIFY\n")
+        f.write('>> "%LOGF%" echo 已覆盖，正在校验完整性...\n')
+        f.write('for %%F in ("%SRC%") do set SS=%%~zF\n')
+        f.write('for %%F in ("%DST%") do set DS=%%~zF\n')
+        f.write('if not "!SS!"=="!DS!" goto ROLLBACK\n')
+        f.write('fc /b "%SRC%" "%DST%" >nul 2>&1\n')
+        f.write("if errorlevel 1 goto ROLLBACK\n")
+        f.write('>> "%LOGF%" echo OK 覆盖并校验通过(!DS! 字节)\n')
+        f.write('del "%BAK%"\n')
+        f.write('start "" "%DST%"\n')
+        f.write('if exist "%SRC%" del "%SRC%"\n')
+        f.write("exit /b 0\n")
+        f.write(":ROLLBACK\n")
+        f.write('>> "%LOGF%" echo FAILED 覆盖后文件不完整(!DS!/!SS!)，回滚到备份版本\n')
+        f.write('copy /Y "%BAK%" "%DST%" >> "%LOGF%" 2>&1\n')
+        f.write('start "" "%DST%"\n')
+        f.write("exit /b 2\n")
 
     def _check_github_updates(self, headers: dict) -> dict:
         """从GitHub检查更新"""

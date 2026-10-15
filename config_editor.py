@@ -19,6 +19,56 @@
 # along with WeAuto.  If not, see <http://www.gnu.org/licenses/>.
 # ***********************************************************************
 
+# --- 冻结(单文件exe)启动自检：杀软误删解压文件时的自救指引 ---
+# 真实事故（客户机 D:\tt）：PyInstaller onefile 启动时把全部运行文件解压到
+# _MEIxxxx 临时目录，部分杀软（火绒/360/Defender）对其实时查杀，会直接隔离
+# base_library.zip（标准库压缩档）→ 启动后第一个命中未缓存模块的 import
+# 立刻抛 "[Errno 2] No such file or directory: ..._MEIxxxx\base_library.zip"，
+# 用户只看到一屏英文 traceback，无从下手。这里抢在所有业务 import 之前把
+# 完整导入链预热一遍；被拦则弹中文指引对话框（加白后可点「重试」），替代
+# PyInstaller 默认报错框。仅冻结态生效，源码运行零影响。
+import os as _os
+import sys as _sys
+if getattr(_sys, "frozen", False):
+
+    def _weauto_boot_guard():
+        import ctypes as _ct
+        import shutil as _sh
+        _chain = ("requests", "flask", "flask_cors", "flask_limiter", "flask_wtf",
+                  "werkzeug", "waitress", "jinja2", "filelock")
+        while True:
+            try:
+                for _m in _chain:
+                    __import__(_m)
+                return
+            except Exception:
+                pass
+            _meipass = getattr(_sys, "_MEIPASS", "")
+            _zip_ok = bool(_meipass) and _os.path.isfile(_os.path.join(_meipass, "base_library.zip"))
+            try:
+                _free = "%.1fGB" % (_sh.disk_usage(_meipass or _os.path.expanduser("~")).free / 1024 ** 3)
+            except Exception:
+                _free = "未知"
+            _msg = (
+                "WeAuto 启动失败：核心运行文件缺失，最可能是被杀毒软件误删。\n"
+                "\n"
+                "软件启动时会把运行文件解压到临时目录，部分杀毒软件会误报并\n"
+                "删除其中文件（本机临时目录：%s）。\n"
+                "当前状态：标准库文件 base_library.zip %s；磁盘剩余空间约 %s。\n"
+                "\n"
+                "请按以下步骤处理：\n"
+                "1. 打开杀毒软件，将 WeAuto.exe 加入信任列表/白名单\n"
+                "   （火绒：信任区；360：信任列表；Windows 安全中心：排除项），\n"
+                "   被隔离的文件请在杀毒软件里选择「恢复/还原」；\n"
+                "2. 处理完成后点「重试」；\n"
+                "3. 若重试仍失败：关闭软件，重新解压安装包到新的空目录再运行。\n"
+            ) % (_meipass or "未知", "已丢失" if not _zip_ok else "正常", _free)
+            # MB_ICONWARNING(0x30) | MB_RETRYCANCEL(0x04) | MB_TOPMOST(0x40000)
+            _rc = _ct.windll.user32.MessageBoxW(0, _msg, "WeAuto 启动自检", 0x30 | 0x04 | 0x40000)
+            if _rc != 4:  # 用户点了「取消」
+                raise SystemExit(1)
+    _weauto_boot_guard()
+
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, Response, send_file, abort, stream_with_context
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -5938,6 +5988,80 @@ def _webview2_runtime_available():
     prog = os.environ.get('PROGRAMFILES(X86)', r'C:\Program Files (x86)')
     return os.path.isdir(os.path.join(prog, r'Microsoft\EdgeWebView\Application'))
 
+def _maybe_auto_update():
+    """冻结态（WeAuto.exe）启动后的自动更新：后台检查→询问→下载验签→自替换重启。
+
+    设计约束：
+    - 仅 frozen 生效。源码态由 Run.bat 单独跑 updater.py，此处不重复下载。
+    - 全程后台线程 + 延迟启动，不阻塞界面、不影响 WebUI 可用性。
+    - 更新包经 Ed25519 验签（发行版强制），验签失败一律不安装。
+    - 用户点「否」即完全跳过，本次启动不再打扰。
+    - 替换前 apply_artifact_update 已拉起 apply_update.bat（等 2s→覆盖→校验→重启），
+      本进程随后 os._exit(0) 释放文件锁，bat 才能覆盖正在运行的 EXE。
+    - WEAUTO_NO_AUTO_UPDATE=1 完全跳过（本地冒烟/离线环境用）。
+    """
+    if not getattr(sys, "frozen", False):
+        return
+    if os.environ.get("WEAUTO_NO_AUTO_UPDATE") == "1":
+        # 本地冒烟测试用：否则双击 dist 里的新 EXE 会被线上旧 artifact 覆盖掉
+        try:
+            app.logger.info("自动更新已跳过（WEAUTO_NO_AUTO_UPDATE=1）")
+        except Exception:
+            pass
+        return
+    import updater as _updater_mod
+
+    def _ask_restart(version):
+        """GUI 询问（不弹控制台）。弹窗不可用时保守返回 False，绝不擅自重启。
+
+        WEAUTO_AUTO_UPDATE_YES=1 时免确认（无人值守 / 自动化实测用），
+        默认仍需用户点确认，避免用户正在使用时被擅自重启。
+        """
+        if os.environ.get("WEAUTO_AUTO_UPDATE_YES") == "1":
+            app.logger.info("自动更新免确认模式（WEAUTO_AUTO_UPDATE_YES=1）")
+            return True
+        try:
+            import tkinter as _tk
+            from tkinter import messagebox as _mb
+            _root = _tk.Tk()
+            _root.withdraw()
+            _root.attributes("-topmost", True)
+            yes = _mb.askyesno(
+                "WeAuto 更新",
+                "发现新版本（%s）。\n\n是否立即下载并在完成后重启应用？（配置不会丢失）" % version)
+            try:
+                _root.destroy()
+            except Exception:
+                pass
+            return bool(yes)
+        except Exception as _e:
+            app.logger.info("更新确认弹窗不可用，本次跳过: %s", _e)
+            return False
+
+    def _worker():
+        try:
+            time.sleep(15)  # 让主界面先完整起来再联网，避免拖慢启动
+            info = _updater_mod.Updater().check_for_updates()
+            version = info.get("version") or "最新构建"
+            if not info.get("has_update"):
+                app.logger.info("自动更新检查：已是最新（%s）", version)
+                return
+            app.logger.info("自动更新检查：发现新版本 %s", version)
+            if not _ask_restart(version):
+                app.logger.info("用户选择暂不更新（%s）", version)
+                return
+            res = _updater_mod.Updater().apply_artifact_update(info)
+            if res.get("success"):
+                app.logger.info("更新包已就绪，即将重启应用完成替换")
+                time.sleep(1.0)
+                os._exit(0)
+            app.logger.warning("自动更新失败: %s", str(res.get("output", ""))[-300:])
+        except Exception as _e:
+            app.logger.warning("自动更新检查异常: %s", _e)
+
+    threading.Thread(target=_worker, daemon=True, name="auto-update").start()
+
+
 def _run_desktop_window(web_url, attach_mode, start_waitress):
     """内嵌 WebView2 桌面窗口模式（默认）。pywebview / WebView2 不可用时自动回退系统浏览器。"""
     url = web_url
@@ -6163,6 +6287,9 @@ if __name__ == '__main__':
                 time.sleep(0.2)
             return False
         serve(app, **kwargs)
+
+    # 冻结态（EXE）后台自动更新检查；源码态由 Run.bat 的 updater.py 负责
+    _maybe_auto_update()
 
     if not WEB_MODE:
         # 默认：内嵌 WebView2 桌面窗口
