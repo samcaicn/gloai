@@ -700,22 +700,24 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val WORKER_HOST = "weauto-license.pages.dev"
         const val WORKER_BASE = "https://weauto-license.pages.dev"
 
-        // ---- tuptup.top OpenAI 兼容网关（用户自备 LLM，判断/回复/视觉统一走这里）----
-        // 密钥按用户要求硬编码为默认值；此 key 会出现在源码与公开镜像里，介意请改走设置页自填。
+        // ---- tuptup.top OpenAI 兼容网关（用户自备 LLM）----
+        // 2026-10-15 起客户端不再直连 aiapi：改打 Worker 的 /ai/tuptup/v1 转发路由
+        // （Worker 注入 AIAPI_KEY secret 并强制 auto 模型），key 不出现在客户端。
+        // 下面两个常量仅作非 worker 模式的 legacy 兜底与探针内引用。
         const val TUPTUP_BASE = "https://aiapi.tuptup.top/v1"
         const val TUPTUP_KEY = "sk-15.1_XFAL9BjiPERLLCDZMBvI9jqO86m6S5df0zjJVq1fdR0"
-        // doubao seed 系列在 tuptup.top 唯一有可用渠道的聊天模型（seed-1.6-flash 无渠道、seedance 未定价）。
-        // 网关上游偶发限流(429)为瞬态，恢复后即可用。deepseek-v3.1 在该网关无渠道(503)，已弃用。
-        const val TUPTUP_MODEL = "doubao-seed-2.0-pro"
+        // auto = one-api 网关的自动路由入口。2026-10-15 实测 default 组
+        // doubao-seed-2.0-pro / qwen3.7-max / kimi-k2.6 / deepseek-v4-pro 四模型
+        // 全部「无可用渠道」（火山配额耗尽），仅 auto 通（路由到 Qwen2.5-7B）。
+        // Worker 的 tuptup 转发也会强制把 model 覆盖为 auto，客户端传什么无所谓。
+        const val TUPTUP_MODEL = "auto"
 
         /**
-         * 判断/回复的模型降级链（第一个是 [TUPTUP_MODEL]）。
+         * 历史模型降级链（保留仅为兼容旧设置页展示，实际链路已不用）。
          *
-         * 为什么要降级：one-hub 网关的"上游负载已饱和"(429 insufficient_user_quota) 与
-         * "无可用渠道"(503) 是**按模型**发生的——同一个网关上 13 个模型实测会同时全挂，
-         * 但也常常只有一两个在饱和。此时换模型立刻就能出结果，比让用户干等一个死模型强得多。
-         * 顺序按「稳定性优先」：pro 系列最稳，flash 系列饱和率明显更高。
-         * 全部失败才把最后一个错误抛给上层（由 [com.jev.probe.core.ErrCatalog] 归类展示）。
+         * 2026-10-15：aiapi 改走 Worker /ai/tuptup/v1 转发且 Worker 侧强制 model=auto，
+         * 客户端多模型轮询失去意义（auto 是网关内唯一稳定入口，按模型挂是常态）。
+         * 若将来 Worker 转发支持显式指定模型，可恢复此链。
          */
         val TUPTUP_FALLBACK_MODELS = listOf(
             TUPTUP_MODEL,

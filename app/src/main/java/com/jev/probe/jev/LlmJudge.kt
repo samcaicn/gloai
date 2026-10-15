@@ -20,7 +20,8 @@ import org.json.JSONObject
  *  - provider=tuptup 时作为判断主路径（tuptup.top 是 OpenAI 兼容网关，跑不了 Jev 自定义协议）；
  *  - 其它 provider（worker / 自建 Jev）判断失败时，作为兜底退回这里，符合「优先 jev，不行再 llm」。
  *
- * 密钥与模型来自 [Prefs.TUPTUP_KEY] / [Prefs.TUPTUP_MODEL]（用户自备网关，硬编码默认值）。
+ * 请求经 Worker 的 /ai/tuptup/v1 转发（Worker 注入 AIAPI_KEY 并强制 model=auto），
+ * 客户端不再直连 aiapi；[Prefs.TUPTUP_KEY] 仅在非 worker 模式作 legacy 兜底。
  */
 class LlmJudge(private val prefs: Prefs) {
 
@@ -60,43 +61,29 @@ class LlmJudge(private val prefs: Prefs) {
     // ----------------------------------------------------------- 请求
 
     private fun chat(userPrompt: String, temperature: Double): String {
-        val url = Prefs.TUPTUP_BASE.trimEnd('/') + "/chat/completions"
+        // aiapi 走 Worker 转发（/ai/tuptup/v1）：客户端不再直连 aiapi，key 在 Worker
+        // secret 里；model 由 Worker 侧强制覆盖为 auto。2026-10-15 实测 one-api
+        // default 组四模型全「无可用渠道」（火山配额耗尽），仅 auto 通（→Qwen2.5-7B），
+        // 故不再做客户端多模型降级轮询。
+        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/tuptup/v1/chat/completions"
         val sys = "你是 Jev 对话判断引擎。只依据给定对话与背景给出结构化判断，绝不编造事实。" +
             "必须只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块。"
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", sys))
             .put(JSONObject().put("role", "user").put("content", userPrompt))
-
-        // 模型降级链：网关某个模型的上游被打满（429 insufficient_user_quota / 503 无可用渠道）
-        // 是**常态**而非例外——实测 2026-10-05 全 13 个模型同时挂。所以这里按序换模型试，
-        // 哪个先通用哪个。全部失败才把最后一个错误抛给上层（那里会显示真实原因）。
-        var last: Exception? = null
-        for (model in Prefs.TUPTUP_FALLBACK_MODELS) {
-            val body = JSONObject()
-                .put("model", model)
-                .put("messages", messages)
-                .put("temperature", temperature)
-            try {
-                val resp = HttpJson.post(
-                    url, "", body, Route.JUDGE, HttpJson.headersFor(url),
-                    authToken = Prefs.TUPTUP_KEY, instanceId = prefs.instanceId
-                )
-                val content = resp.optJSONArray("choices")?.optJSONObject(0)
-                    ?.optJSONObject("message")?.optString("content")
-                if (!content.isNullOrBlank()) {
-                    if (model != Prefs.TUPTUP_MODEL) {
-                        Log.i(TAG, "judge: primary ${Prefs.TUPTUP_MODEL} unavailable, fell back to $model")
-                        android.util.Log.i("JEVASSIST", "jev: 判断模型降级 → $model")
-                    }
-                    return content
-                }
-            } catch (e: Exception) {
-                if (e is InterruptedException) throw e
-                last = e
-                Log.w(TAG, "judge model $model failed: ${e.message}")
-            }
-        }
-        throw last ?: ApiException(Route.JUDGE, null, "所有模型均不可用")
+        val body = JSONObject()
+            .put("model", Prefs.TUPTUP_MODEL)
+            .put("messages", messages)
+            .put("temperature", temperature)
+        val resp = HttpJson.post(
+            url, "", body, Route.JUDGE, HttpJson.headersFor(url),
+            authToken = if (prefs.isWorkerMode) prefs.accountToken else Prefs.TUPTUP_KEY,
+            instanceId = prefs.instanceId
+        )
+        val content = resp.optJSONArray("choices")?.optJSONObject(0)
+            ?.optJSONObject("message")?.optString("content")
+        if (content.isNullOrBlank()) throw ApiException(Route.JUDGE, null, "aiapi 转发返回空回复")
+        return content
     }
 
     // ----------------------------------------------------------- 提示词

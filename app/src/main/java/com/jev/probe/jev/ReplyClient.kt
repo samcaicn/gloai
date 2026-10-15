@@ -53,11 +53,11 @@ class ReplyClient(private val prefs: Prefs) {
             parseThree(chat(sys, user, temperature = temperature, fewShot = fewShot))
         } catch (e: Exception) {
             if (!cloudMode) return emptyList()
-            Log.w(TAG, "worker reply failed -> one-api fallback: ${e.message}")
+            Log.w(TAG, "worker AI reply failed -> tuptup relay fallback: ${e.message}")
             try {
                 parseThree(chatFallback(sys, user, temperature = temperature, fewShot = fewShot))
             } catch (e2: Exception) {
-                Log.w(TAG, "one-api reply fallback also failed: ${e2.message}")
+                Log.w(TAG, "tuptup relay fallback also failed: ${e2.message}")
                 emptyList()
             }
         }
@@ -74,12 +74,15 @@ class ReplyClient(private val prefs: Prefs) {
         null
     }
 
-    /** 兜底：直连 one-api 网关（TUPTUP 内置密钥），仅当 Worker 不可用时使用。 */
+    /** 兜底：经 Worker 的 aiapi 转发（Worker 注入 AIAPI_KEY 并强制 auto 模型），仅当 Worker 自带 AI 不可用时使用。 */
     private fun chatFallback(
         system: String, user: String, temperature: Double,
         fewShot: List<PackFewShot> = emptyList()
     ): String {
-        val url = Prefs.TUPTUP_BASE.trimEnd('/') + "/chat/completions"
+        // 客户端不再直连 aiapi（key 曾硬编码在源码）：改打 Worker /ai/tuptup/v1 转发。
+        // 2026-10-15 实测 one-api default 组四模型全「无可用渠道」，仅 auto 通——
+        // model 由 Worker 侧强制覆盖为 auto，这里传 TUPTUP_MODEL 只为语义清晰。
+        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/tuptup/v1/chat/completions"
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", system))
         for (turn in fewShot) {
@@ -93,7 +96,8 @@ class ReplyClient(private val prefs: Prefs) {
             .put("temperature", temperature)
         val resp = HttpJson.post(
             url, "", body, Route.REPLY, HttpJson.headersFor(url),
-            authToken = Prefs.TUPTUP_KEY, instanceId = prefs.instanceId, billing = null
+            authToken = if (prefs.isWorkerMode) prefs.accountToken else Prefs.TUPTUP_KEY,
+            instanceId = prefs.instanceId, billing = null
         )
         return resp.optJSONArray("choices")?.optJSONObject(0)
             ?.optJSONObject("message")?.optString("content") ?: ""
