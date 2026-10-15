@@ -1,0 +1,62 @@
+name: Publish Release Assets
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Build run id whose windows artifact to publish'
+        required: true
+        type: string
+      tag:
+        description: 'Existing release tag to attach assets to'
+        required: true
+        default: 'v0.1.5'
+
+jobs:
+  publish:
+    name: Attach installers and updater feed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v7
+        with:
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GH_TOKEN }}
+          pattern: windows-build-x64-*
+          merge-multiple: true
+          path: dist
+
+      - name: Generate updater metadata (latest.yml)
+        run: |
+          set -euo pipefail
+          cd dist
+          ls -la
+          EXE=$(ls *.exe | head -n1)
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA512=$(base64 -w0 <(openssl dgst -sha512 -binary "$EXE"))
+          SIZE=$(stat -c%s "$EXE")
+          {
+            echo "version: ${VERSION}"
+            echo "files:"
+            echo "  - url: ${EXE}"
+            echo "    sha512: ${SHA512}"
+            echo "    size: ${SIZE}"
+            echo "path: ${EXE}"
+            echo "sha512: ${SHA512}"
+            echo "releaseDate: '$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)'"
+          } > latest.yml
+          cat latest.yml
+        env:
+          GITHUB_REF_NAME: ${{ inputs.tag }}
+
+      - name: Attach assets to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: |
+            dist/*.exe
+            dist/*.msi
+            dist/latest.yml
