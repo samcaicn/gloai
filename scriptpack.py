@@ -104,6 +104,15 @@ def _device_hash_hex():
     return "00" * 16
 
 
+def _trusted_now():
+    """可信时钟（防改系统时间延长授权）。失败回退系统时间。"""
+    try:
+        from weauto_license import clock as _clk
+        return _clk.trusted_now()
+    except Exception:
+        return int(time.time())
+
+
 def list_packs():
     """扫描 prompts/*.wpk，返回可读 header 摘要（不验签不解密）。损坏文件跳过并附 error。"""
     out = []
@@ -128,7 +137,7 @@ def list_packs():
                 "version": h.get("version"),
                 "author": h.get("author", ""),
                 "expires_at": h.get("expires_at", 0),
-                "expired": time.time() >= h.get("expires_at", 0),
+                "expired": _trusted_now() >= h.get("expires_at", 0),
                 "device_bound": bool(h.get("device_hashes")),
                 "reply_quota": int(h.get("reply_quota", 0) or 0),  # 离线授权次数额度
                 "error": None,
@@ -144,7 +153,7 @@ def load_pack(pack_id, now_ts=None, device_hash_hex=None):
     """加载指定 pack_id 的话术包（验签+解密+到期）。成功返回 payload dict，失败抛 PackError。"""
     if pc is None:
         raise PackError("crypto-unavailable", "缺少 packcrypto 实现")
-    now = int(now_ts if now_ts is not None else time.time())
+    now = int(now_ts if now_ts is not None else _trusted_now())
     for meta in list_packs():
         if meta["pack_id"] == pack_id and not meta["error"]:
             try:
@@ -273,7 +282,15 @@ def offline_license_info():
                 if meta:
                     info["pack_name"] = meta.get("name", lic["pack_id"])
                     info["active"] = not meta.get("expired", False) \
-                        and int(lic.get("expires_at", 0) or 0) >= int(__import__("time").time())
+                        and int(lic.get("expires_at", 0) or 0) >= _trusted_now()
+                # 防"换包骗状态"：对激活包做完整验签+绑机+解密（load_pack），
+                # 被替换/损坏/签名失效 → active 置 False 并标注原因。
+                try:
+                    load_pack(lic["pack_id"], device_hash_hex=info["device_hash_hex"])
+                except Exception as e:
+                    info["active"] = False
+                    if not info["error"]:
+                        info["error"] = "授权包校验失败: %s" % getattr(e, "detail", e)
     except Exception as e:
         if not info["error"]:
             info["error"] = "ledger: %s" % e

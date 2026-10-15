@@ -79,7 +79,9 @@ def _write(d: dict) -> None:
 
 
 def _today() -> str:
-    return time.strftime("%Y-%m-%d")
+    # 用可信时钟：防"改系统日期刷每日额度"
+    from weauto_license import clock as _clk
+    return time.strftime("%Y-%m-%d", time.localtime(_clk.trusted_now()))
 
 
 # ================================================================== 离线授权
@@ -93,18 +95,29 @@ def _offline() -> dict:
     if d.get("__tampered__"):
         return {}
     o = d.get("offline") or {}
-    return o if isinstance(o, dict) else {}
+    if not isinstance(o, dict):
+        return {}
+    # 防回滚：used 不得低于历史最高已用（max_used 单调递增）。
+    # 攻击者备份旧 ledger（used 小）恢复 → 此处把 used 抬回高水位。
+    used = int(o.get("used", 0) or 0)
+    max_used = int(o.get("max_used", 0) or 0)
+    if used < max_used:
+        o["used"] = max_used
+        d["offline"] = o
+        _write(d)
+    return o
 
 
 def offline_license() -> dict:
     """当前生效的离线授权摘要；无授权返回 {}。"""
+    from weauto_license import clock as _clk
     o = _offline()
     if not o.get("pack_id"):
         return {}
     total = int(o.get("total", 0) or 0)
     used = int(o.get("used", 0) or 0)
     expires = int(o.get("expires_at", 0) or 0)
-    if total <= 0 or (expires and expires <= int(time.time())):
+    if total <= 0 or (expires and expires <= _clk.trusted_now()):
         return {}
     return {
         "pack_id": str(o.get("pack_id", "")),
@@ -129,6 +142,7 @@ def set_offline_license(pack_id: str, name: str, total: int, expires_at: int = 0
         "name": str(name or pack_id),
         "total": int(total),
         "used": 0,  # 新授权从 0 开始计
+        "max_used": 0,  # 单调高水位：历史最大已用（防 ledger 回滚降次数）
         "expires_at": int(expires_at or 0),
         "imported_at": int(time.time()),
     }
@@ -188,6 +202,7 @@ def record_usage() -> None:
     lic = d.get("offline")
     if isinstance(lic, dict) and lic.get("pack_id") and int(lic.get("total", 0) or 0) > 0:
         lic["used"] = int(lic.get("used", 0) or 0) + 1
+        lic["max_used"] = max(int(lic.get("max_used", 0) or 0), lic["used"])
         d["offline"] = lic
         _write(d)
         return
@@ -222,6 +237,7 @@ def sync_from_headers(headers) -> None:
     lic = d.get("offline")
     if isinstance(lic, dict) and lic.get("pack_id"):
         lic["used"] = max(0, lim - rem)
+        lic["max_used"] = max(int(lic.get("max_used", 0) or 0), lic["used"])
         d["offline"] = lic
         _write(d)
         return
