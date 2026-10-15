@@ -1589,7 +1589,7 @@ open class ChatCaptureService : AccessibilityService() {
             return
         }
         lastTreeSnapshot = null
-        if (!prefs.isAllowed(snapshot.title)) { leaveConversation(); overlay?.hide(); return }
+        if (!prefs.isAllowed(snapshot.title)) { Log.i(TAG, "fo: blocked isAllowed=false title=${snapshot.title}"); leaveConversation(); overlay?.hide(); return }
 
         if (pkg.isNotEmpty() && pkg != activePkg) { activePkg = pkg; lastSignature = "" }
         currentSnapshot = snapshot
@@ -1598,6 +1598,7 @@ open class ChatCaptureService : AccessibilityService() {
         val sig = snapshot.signature()
         // Manual taps always re-run; the automatic path dedupes like the tree path.
         if (!manual && sig == lastSignature) {
+            Log.i(TAG, "fo: dedup notif sig match -> idle (no re-analysis)")
             if (overlay?.isShowing() != true) overlay?.showIdle(snapshot.title)
             return
         }
@@ -1610,11 +1611,13 @@ open class ChatCaptureService : AccessibilityService() {
         // 就直接出结果。manual=true（用户自己点的「截屏识别一次」）才展开面板；
         // 自动这一路只挂蓝点，别把卡片压在用户正在看的聊天上。
         val auto = prefs.ocrAutoAnalyze && prefs.autoAnalyze
+        Log.i(TAG, "fo: auto=$auto (ocrAutoAnalyze=${prefs.ocrAutoAnalyze} autoAnalyze=${prefs.autoAnalyze}) msgs=${snapshot.messages.size} title=${snapshot.title} allowed=${prefs.isAllowed(snapshot.title)}")
         if (manual || auto) {
             pendingSnapshot = snapshot
             main.removeCallbacks(debounce)
             runAnalysis(manual = manual)
         } else {
+            Log.i(TAG, "fo: auto off -> showIdle only (no analysis queued)")
             overlay?.setNote(snapshot.note)
             overlay?.showIdle(snapshot.title)
         }
