@@ -440,10 +440,25 @@ open class ChatCaptureService : AccessibilityService() {
     // 从轮次启动起算的硬上限兜底：分析挂住（看门狗复位 analyzing 但不走 completed）也不卡死队列。
     // 60s 而非 100s：一轮卡住要卡一队列，真实使用里 60s 已是很长的容忍上限。
     private val NOTIF_HARD_MAX_MS = 60000L
+    // 发送链（IME 写入 → sendFor → verified-tap 验证）是否已落定。false 期间通知轮
+    // dwell 到点也**不准 advance**——2026-10-15 实测：dwell 强切会把还没被 IME 消费的
+    // pending 带到下一个会话（快剧运营的回复在星享春会话里 commit 发出=串缸），或把
+    // 草稿烂在输入框里切走。门控最多 hold 20×2s=40s，超时强制放行防死锁。
+    @Volatile private var sendSettled = true
+    private var advanceHoldTicks = 0
     // 重放 PendingIntent 后等微信前台落定的轮询上限（100ms 一跳）。2.5s 够微信冷启动到
     // 聊天页；再久就是重放失败，早点放行让下一轮开工（本轮按无锚点处理，不会误发）。
     private val NOTIF_FG_WAIT_TICKS = 25
     private val notifAdvanceRunnable = Runnable {
+        if (!sendSettled && advanceHoldTicks < 20) {
+            // 发送链未落定（IME 还没 commit / verify 还在重试）：绝不准切会话。
+            advanceHoldTicks++
+            Log.w(TAG, "notif-round: dwell reached but send unsettled -> hold (tick=$advanceHoldTicks)")
+            main.postDelayed(notifAdvanceRunnable, 2000L)
+            return@Runnable
+        }
+        if (!sendSettled) Log.w(TAG, "notif-round: send unsettled past hold cap -> force advance")
+        advanceHoldTicks = 0
         Log.w(TAG, "notif-round: dwell elapsed -> advance")
         // 兜底推进时必须复位分析态：本轮可能因慢网络（设备访问 Cloudflare Worker
         // 在国内移动网下常超时）卡在 worker 线程里，completed() 没被调，analyzing
@@ -653,6 +668,7 @@ open class ChatCaptureService : AccessibilityService() {
     /** 重新排一次"推进队列"定时器（后到覆盖先到，取更早的触发）。 */
     private fun scheduleNotifAdvance(delayMs: Long) {
         main.removeCallbacks(notifAdvanceRunnable)
+        advanceHoldTicks = 0
         main.postDelayed(notifAdvanceRunnable, delayMs)
     }
 
@@ -1684,10 +1700,10 @@ open class ChatCaptureService : AccessibilityService() {
         return dm.widthPixels * 0.9111f to (dm.heightPixels - imeH - barHalf)
     }
 
-    /** IME 窗口实际高度：IME 活着时取其发布值，否则回落键盘同高兜底。 */
+    /** IME 窗口实际高度：IME 活着时取其发布值（<100px 是窗口收缩瞬间的假值，弃用），否则回落键盘同高兜底。 */
     private fun imeWindowHeight(): Float {
         val h = com.jev.probe.input.ProbeImeBus.imeWindowHeightPx
-        if (h > 0) return h.toFloat()
+        if (h >= 100) return h.toFloat()
         return resources.displayMetrics.heightPixels * com.jev.probe.input.ProbeImeBus.KB_RATIO
     }
 
@@ -1731,26 +1747,69 @@ open class ChatCaptureService : AccessibilityService() {
             Log.i(TAG, "sendTap: dispatching tap at (${x.toInt()},${y.toInt()})")
             dispatchGesture(gesture, null, null)
         }
-        // fillInput 已在进入本函数前 commit 成功（finish(true) 才进 sendFor），输入框有文本，
-        // 直接点发送键。微信 8.0.78 FLAG_SECURE 使截屏变黑，weChatSendButtonPresent 恒读 0 绿像素，
-        // 旧逻辑把「绿键不在」误当「已发送成功」(firstOk 取反) 导致根本不点发送键、文字卡在输入框。
-        // 修正：发送键坐标已知可靠，无条件点击；1.1s 后做一次软复检仅作信息参考，绝不阻塞发送。
-        tapSend()
-        overlay?.toast(t("已自动发送（点按发送键）", "Sent automatically (tapped send)"))
+        // 发送链开始：dwell advance 被门控（sendSettled=false），直到判定
+        // 「真发出 / 放弃」才放行——2026-10-15 实测 dwell 强切会话曾把未消费的
+        // pending 带进下一个会话发出（串缸），或把草稿烂在输入框里切走。
+        sendSettled = false
+        // 先确认输入框确实有字（fillInput commit 成功才进到这里；若框空说明
+        // 填入实际失败，直接放弃，绝不对着空框点发送键误判「已发送」）。
         main.postDelayed({
-            if (!isCurrent(token)) { onDone?.invoke(true); return@postDelayed }
-            // 软复检：截屏可用且绿键仍在 → 上一次点击没生效（极少见），兜底再点一次；
-            // 截屏黑(FLAG_SECURE)/绿键消失 → 信任点击已发出。无论哪种，发送动作已执行。
-            screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
-                if (res is ScreenCapture.Result.Ok && weChatSendButtonPresent(res)) {
-                    Log.w(TAG, "sendTap verify: green button STILL present after tap -> retry once")
-                    tapSend()
-                } else {
-                    Log.i(TAG, "sendTap verify: green button gone / shot unusable -> message sent")
-                }
-                onDone?.invoke(true)
+            if (!isCurrent(token)) { sendSettled = true; onDone?.invoke(false); return@postDelayed }
+            val pre = ProbeImeBus.readBox()
+            if (pre != null && pre.isBlank()) {
+                Log.e(TAG, "sendTap: input box EMPTY before tap -> fill actually failed, abort (no blind tap)")
+                sendSettled = true
+                overlay?.toast(t("消息未填入，未发送", "Fill failed — nothing sent"))
+                onDone?.invoke(false)
+                return@postDelayed
             }
-        }, 1100L)
+            tapSend()
+            var attempts = 0
+            // 判定循环：读输入框（探针 IME InputConnection）——微信发出消息后会清空
+            // 输入框，框空=真发出。这是 FLAG_SECURE 黑屏下唯一可靠信号（截屏恒黑、
+            // 绿键检测恒 0，曾假报 sent 实际没发）。框非空=没发出 → 原地补点，最多 3 次。
+            fun verifyLoop() {
+                main.postDelayed({
+                    if (!isCurrent(token)) { sendSettled = true; onDone?.invoke(true); return@postDelayed }
+                    val box = ProbeImeBus.readBox()
+                    if (box != null && box.isBlank()) {
+                        Log.i(TAG, "sendTap verify: box EMPTY -> message really sent (attempt=$attempts)")
+                        sendSettled = true
+                        overlay?.toast(t("已自动发送", "Sent automatically"))
+                        onDone?.invoke(true)
+                        return@postDelayed
+                    }
+                    attempts++
+                    if (box != null) {
+                        Log.w(TAG, "sendTap verify: box still has ${box.length} chars -> not sent, retry ($attempts/3)")
+                        if (attempts >= 3) {
+                            Log.e(TAG, "sendTap verify: 3 attempts exhausted -> give up, draft left in box")
+                            sendSettled = true
+                            overlay?.toast(t("发送未成功，消息留在输入框", "Send failed — draft left in input box"))
+                            onDone?.invoke(false)
+                            return@postDelayed
+                        }
+                        tapSend()
+                        verifyLoop()
+                    } else {
+                        // 读框不可用（IME 没激活/异常）：退回截屏软参考。绿键仍在 → 补点一次；
+                        // 截屏黑(FLAG_SECURE)/绿键消失 → 信任已发出（无信号时宁可信发了，
+                        // 盲重试有重复发送风险）。
+                        screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
+                            if (res is ScreenCapture.Result.Ok && weChatSendButtonPresent(res)) {
+                                Log.w(TAG, "sendTap verify: box unreadable + green button present -> retry once")
+                                tapSend()
+                            } else {
+                                Log.i(TAG, "sendTap verify: box unreadable, green gone/shot unusable -> trust sent")
+                            }
+                            sendSettled = true
+                            onDone?.invoke(true)
+                        }
+                    }
+                }, 1200L)
+            }
+            verifyLoop()
+        }, 400L)
     }
 
     /**

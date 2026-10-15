@@ -74,6 +74,23 @@ object ProbeImeBus {
     @Volatile
     var imeActive: Boolean = false
 
+    /**
+     * ProbeInputMethod 在 onStartInput 注册的「读输入框」闭包（InputConnection 只在
+     * IME 侧持有），onFinishInput/onDestroy 注销。sendWeChatByVerifiedTap 用它读
+     * 输入框判断消息是否真发出：微信发出消息后会清空输入框 → 框空=已发出。
+     * 微信 8.0.78 FLAG_SECURE 使截屏恒黑、绿键检测恒 0（2026-10-15 实测误报 sent），
+     * 输入框判据是黑屏下唯一可靠的发送确认信号。
+     */
+    @Volatile
+    var boxReader: (() -> String?)? = null
+
+    /** 读当前输入框全文；IME 不在位/异常返回 null（调用方退回截屏软参考）。 */
+    fun readBox(): String? = try {
+        boxReader?.invoke()
+    } catch (_: Exception) {
+        null
+    }
+
     @Synchronized
     fun requestWrite(text: String, send: Boolean = false, done: (Boolean) -> Unit) {
         pendingText = text

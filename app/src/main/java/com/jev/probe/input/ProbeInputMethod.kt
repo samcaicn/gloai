@@ -103,8 +103,12 @@ class ProbeInputMethod : InputMethodService() {
             val h = window?.window?.decorView?.height
                 ?: kbRoot?.height
                 ?: 0
-            // 只在变化时打日志：poll 每 200ms 调一次，别刷屏。
-            if (h > 0 && h != ProbeImeBus.imeWindowHeightPx) {
+            // 窗口收缩瞬间（会话切换/重建）decorView 会短暂量出 48px 这种假高度，
+            // 一旦发布出去会把发送键坐标算到屏幕中间（2026-10-15 实测 y=2024 点空）。
+            // 真实 IME 最矮也是「仅输入栏」≈56dp*density>130px，低于 100px 一律不发布。
+            if (h > 0 && h < 100) {
+                Log.w(TAG, "ProbeIme: suspicious tiny window height=$h, ignore")
+            } else if (h > 0 && h != ProbeImeBus.imeWindowHeightPx) {
                 ProbeImeBus.imeWindowHeightPx = h
                 Log.i(TAG, "ProbeIme: window height published = $h")
             }
@@ -117,6 +121,9 @@ class ProbeInputMethod : InputMethodService() {
         super.onStartInput(attribute, restarting)
         ProbeImeBus.imeActive = true
         publishWindowHeight()
+        // 注册读框闭包：sendWeChatByVerifiedTap 靠它判断消息真发出（发出后微信
+        // 清空输入框）。InputConnection 只在本服务里有效，必须由本侧提供。
+        ProbeImeBus.boxReader = { readBoxText() }
         Log.i(TAG, "ProbeIme: onStartInput restarting=$restarting pending=${ProbeImeBus.pendingText != null}")
         val pair = ProbeImeBus.consumePending()
         if (pair == null) {
@@ -135,6 +142,7 @@ class ProbeInputMethod : InputMethodService() {
 
     override fun onFinishInput() {
         ProbeImeBus.imeActive = false
+        ProbeImeBus.boxReader = null
         Log.i(TAG, "ProbeIme: onFinishInput")
         super.onFinishInput()
     }
@@ -142,9 +150,29 @@ class ProbeInputMethod : InputMethodService() {
     override fun onDestroy() {
         polling = false
         ProbeImeBus.imeActive = false
+        ProbeImeBus.boxReader = null
         handler.removeCallbacksAndMessages(null)
         Log.i(TAG, "ProbeIme: onDestroy")
         super.onDestroy()
+    }
+
+    /**
+     * 读输入框全文：ExtractedText 优先（最完整），微信不支持时退回
+     * 光标前后各 1000 字符拼接。任何异常返回 null（调用方走截屏软参考）。
+     */
+    private fun readBoxText(): String? {
+        val ic = currentInputConnection ?: return null
+        return try {
+            val et = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+            et?.text?.toString() ?: run {
+                val before = ic.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+                val after = ic.getTextAfterCursor(1000, 0)?.toString() ?: ""
+                before + after
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "ProbeIme: readBoxText failed ${e.message}")
+            null
+        }
     }
 
     private fun commitAndFinish(text: String, send: Boolean) {
