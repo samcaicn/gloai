@@ -206,11 +206,11 @@ def import_offline_pack(src_path, dst_dir=None):
     返回 (meta, payload)；任何失败抛 PackError。
     """
     import shutil
-    MAX_PACK_SIZE = 4 * 1024 * 1024  # 4MB：话术包 + 次数授权文件足够，防恶意超大文件塞盘
+    MAX_PACK_SIZE = 64 * 1024 * 1024  # 64MB：话术包含音视频素材场景放宽，仍防恶意超大文件塞盘
     with open(src_path, "rb") as f:
         data = f.read()
     if len(data) > MAX_PACK_SIZE:
-        raise PackError("size", "授权文件过大（>4MB），已拒绝导入")
+        raise PackError("size", "授权文件过大（>64MB），已拒绝导入")
     h = pc.read_header(data)
     pack_id = h.get("pack_id")
     if not pack_id:
