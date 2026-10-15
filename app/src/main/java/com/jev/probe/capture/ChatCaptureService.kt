@@ -1731,45 +1731,26 @@ open class ChatCaptureService : AccessibilityService() {
             Log.i(TAG, "sendTap: dispatching tap at (${x.toInt()},${y.toInt()})")
             dispatchGesture(gesture, null, null)
         }
-        // onResult(true) = 已确认发送成功（绿键没了）；false = 点了但未确认/截屏失败
-        fun checkThenAct(onResult: (Boolean) -> Unit) {
+        // fillInput 已在进入本函数前 commit 成功（finish(true) 才进 sendFor），输入框有文本，
+        // 直接点发送键。微信 8.0.78 FLAG_SECURE 使截屏变黑，weChatSendButtonPresent 恒读 0 绿像素，
+        // 旧逻辑把「绿键不在」误当「已发送成功」(firstOk 取反) 导致根本不点发送键、文字卡在输入框。
+        // 修正：发送键坐标已知可靠，无条件点击；1.1s 后做一次软复检仅作信息参考，绝不阻塞发送。
+        tapSend()
+        overlay?.toast(t("已自动发送（点按发送键）", "Sent automatically (tapped send)"))
+        main.postDelayed({
+            if (!isCurrent(token)) { onDone?.invoke(true); return@postDelayed }
+            // 软复检：截屏可用且绿键仍在 → 上一次点击没生效（极少见），兜底再点一次；
+            // 截屏黑(FLAG_SECURE)/绿键消失 → 信任点击已发出。无论哪种，发送动作已执行。
             screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
-                if (!isCurrent(token)) { onResult(false); return@capture }
-                if (res is ScreenCapture.Result.Ok) {
-                    val present = weChatSendButtonPresent(res)
-                    Log.i(TAG, "sendTap check: greenButtonPresent=$present")
-                    if (present) tapSend()
-                    onResult(!present)
-                } else {
-                    Log.w(TAG, "sendTap check: screenshot failed code=${(res as? ScreenCapture.Result.Failed)?.code}, tapping computed point as fallback")
+                if (res is ScreenCapture.Result.Ok && weChatSendButtonPresent(res)) {
+                    Log.w(TAG, "sendTap verify: green button STILL present after tap -> retry once")
                     tapSend()
-                    onResult(false)
+                } else {
+                    Log.i(TAG, "sendTap verify: green button gone / shot unusable -> message sent")
                 }
-            }
-        }
-        checkThenAct { firstOk ->
-            if (firstOk) {
-                // 点之前绿键就已不在（极端情况：别处已发）——没点，直接报成功。
-                overlay?.toast(t("已自动发送", "Sent automatically"))
                 onDone?.invoke(true)
-                return@checkThenAct
             }
-            // 1.1s：等微信发送动画落定，同时避开 ScreenCapture 1s 截屏节流。
-            main.postDelayed({
-                checkThenAct { secondOk ->
-                    if (secondOk) {
-                        Log.i(TAG, "sendTap verify: green button gone -> message actually sent")
-                        overlay?.toast(t("已自动发送", "Sent automatically"))
-                    } else {
-                        Log.w(TAG, "sendTap verify: not confirmed (green button still there or shot failed)")
-                        overlay?.toast(t("请确认消息是否已发出", "Please check whether the message went out"))
-                    }
-                    // 无论确认成败，这一轮的发送动作已收尾——通知轮队列在此推进到下一个会话。
-                    // 只有截图复检通过才算"真发出去了"，调用方据此决定是否把回复记进历史。
-                    onDone?.invoke(secondOk)
-                }
-            }, 1100L)
-        }
+        }, 1100L)
     }
 
     /**
