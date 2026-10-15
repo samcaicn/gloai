@@ -446,6 +446,9 @@ open class ChatCaptureService : AccessibilityService() {
     // 草稿烂在输入框里切走。门控最多 hold 20×2s=40s，超时强制放行防死锁。
     @Volatile private var sendSettled = true
     private var advanceHoldTicks = 0
+    // 本轮已交给探针 IME 写入的草稿全文。发送前读框为空时（编辑器失焦 → 读的是
+    // fallback 连接，恒空）用它原地重写一次，见 recoverEmptyBox（2026-10-16）。
+    private var lastDraftText: String? = null
     // 重放 PendingIntent 后等微信前台落定的轮询上限（100ms 一跳）。2.5s 够微信冷启动到
     // 聊天页；再久就是重放失败，早点放行让下一轮开工（本轮按无锚点处理，不会误发）。
     private val NOTIF_FG_WAIT_TICKS = 25
@@ -1785,8 +1788,10 @@ open class ChatCaptureService : AccessibilityService() {
         return left + width * 0.9111f to (yBase - barHalf)
     }
 
-    /** IME 窗口实际高度：IME 活着时取其发布值（<100px 是窗口收缩瞬间的假值，弃用），否则回落键盘同高兜底。 */
+    /** IME 窗口实际高度：IME 活着时取其发布值（<100px 是窗口收缩瞬间的假值，弃用），否则回落键盘同高兜底。
+     *  2026-10-16：新增「收起」态（imeCollapsed）→ 返回 0，输入栏坐标改贴窗口底边。 */
     private fun imeWindowHeight(): Float {
+        if (com.jev.probe.input.ProbeImeBus.imeCollapsed) return 0f
         val h = com.jev.probe.input.ProbeImeBus.imeWindowHeightPx
         if (h >= 100) return h.toFloat()
         return resources.displayMetrics.heightPixels * com.jev.probe.input.ProbeImeBus.KB_RATIO
@@ -1863,14 +1868,10 @@ open class ChatCaptureService : AccessibilityService() {
         ensureWeChatFgForSend {
             main.postDelayed({
             if (!isCurrent(token)) { sendSettled = true; onDone?.invoke(false); return@postDelayed }
-            val pre = ProbeImeBus.readBox()
-            if (pre != null && pre.isBlank()) {
-                Log.e(TAG, "sendTap: input box EMPTY before tap -> fill actually failed, abort (no blind tap)")
-                sendSettled = true
-                overlay?.toast(t("消息未填入，未发送", "Fill failed — nothing sent"))
-                onDone?.invoke(false)
-                return@postDelayed
-            }
+            // 发送本体：点（坐标优先树节点 bounds，被拒立刻走 IME）→ 读框复检 → 补点/IME 兜底。
+            // 抽成局部函数是为了让「发送前读框为空」先走一次恢复（重新聚焦/重写草稿）再进来，
+            // 而不是一见空框就 abort——空框不等于没填进去（见 recoverEmptyBox 注释）。
+            fun startSend() {
             tapOrIme()
             var attempts = 0
             // 判定循环：读输入框（探针 IME InputConnection）——微信发出消息后会清空
@@ -1938,6 +1939,27 @@ open class ChatCaptureService : AccessibilityService() {
                 }, 1200L)
             }
                 verifyLoop()
+            }
+            val pre = ProbeImeBus.readBox()
+            if (pre != null && pre.isBlank()) {
+                // 空框 ≠ 一定没填进去：编辑器失焦后 InputConnection 会退回系统给的
+                // fallback 连接（挂在 DecorView 上），读框恒为空串——2026-10-16 07:52
+                // 实测整轮 abort 就是这么来的（IME 窗口已收起、聚焦点却按键盘弹起算，
+                // 点到屏幕中央，编辑器从未获得焦点）。先重新聚焦复读、必要时重写草稿。
+                overlay?.toast(t("正在重新聚焦输入框…", "Refocusing the input box…"))
+                recoverEmptyBox(token) { ready ->
+                    if (ready) {
+                        startSend()
+                    } else {
+                        Log.e(TAG, "sendTap: input box EMPTY and unrecoverable -> abort (no blind tap)")
+                        sendSettled = true
+                        overlay?.toast(t("消息未填入，未发送", "Fill failed — nothing sent"))
+                        onDone?.invoke(false)
+                    }
+                }
+                return@postDelayed
+            }
+            startSend()
             }, 400L)
         }
     }
@@ -1965,6 +1987,53 @@ open class ChatCaptureService : AccessibilityService() {
             if (pi != null) runCatching { pi.send() }
         }
         main.postDelayed({ ensureWeChatFgForSend(attempt + 1, block) }, 100L)
+    }
+
+    /**
+     * 发送前读框为空的恢复流程（2026-10-16 07:52 真机实测后新增）。
+     *
+     * 空框有两个来源，单看 readBox 分不出来：
+     *  ① 真没写进去（输入法没挂上 / 被系统顶掉）；
+     *  ② 写进去了，但那一刻编辑器已失焦——InputConnection 退回系统的 fallback 连接
+     *     （挂在 DecorView 上），getExtractedText 恒返回空串。07:52 那轮就是 ②：
+     *     探针 IME 窗口已收起（decorView 只剩 48px），聚焦点却仍按「键盘弹起」算到
+     *     屏幕中央 y=1323（输入栏实际在屏底 y≈2335）→ 编辑器从未被点聚焦，
+     *     commitText 看似成功，2 秒后读框读到空 → 整轮 abort，回复烂掉。
+     * 所以不能一见空框就 abort：先按**当前实际键盘态**重点一次输入栏重新聚焦，再复读；
+     * 仍读不到就把本轮草稿重写一次。两条都失败才认输（照旧 toast，绝不盲点发送）。
+     */
+    private fun recoverEmptyBox(token: ConversationSession.Token, onReady: (Boolean) -> Unit) {
+        val draft = lastDraftText
+        tapWeChatInputBar()
+        main.postDelayed({
+            if (!isCurrent(token)) { onReady(false); return@postDelayed }
+            val b1 = ProbeImeBus.readBox()
+            if (!b1.isNullOrBlank()) {
+                Log.i(TAG, "sendTap recover: box readable after refocus (${b1.length} chars) -> continue")
+                onReady(true)
+                return@postDelayed
+            }
+            if (draft.isNullOrBlank()) {
+                Log.e(TAG, "sendTap recover: box empty and no draft kept -> give up")
+                onReady(false)
+                return@postDelayed
+            }
+            Log.w(TAG, "sendTap recover: box still empty after refocus -> rewrite draft (${draft.length} chars)")
+            ProbeImeBus.requestWrite(draft, prefs.autoSend) { ok ->
+                Log.i(TAG, "sendTap recover: rewrite delivered ok=$ok")
+            }
+            main.postDelayed({
+                if (!isCurrent(token)) { onReady(false); return@postDelayed }
+                val b2 = ProbeImeBus.readBox()
+                if (!b2.isNullOrBlank()) {
+                    Log.i(TAG, "sendTap recover: rewrite landed (${b2.length} chars) -> continue")
+                    onReady(true)
+                } else {
+                    Log.e(TAG, "sendTap recover: still unreadable after rewrite -> give up")
+                    onReady(false)
+                }
+            }, 900L)
+        }, 700L)
     }
 
     /**
@@ -2043,6 +2112,7 @@ open class ChatCaptureService : AccessibilityService() {
                 // 完成真正发送，倒计时撤回窗口保留。
                 // App 全程不弹选择器、不替用户切输入法。
                 ProbeImeBus.requestWrite(text, prefs.autoSend) { ok -> finish(ok) }
+                lastDraftText = text
                 tapWeChatInputBar()
                 Log.i(TAG, "fillInput: probe IME active, wrote via poll path (focus=$fx,$fy, autoSend=${prefs.autoSend})")
             } else {

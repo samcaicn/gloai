@@ -62,6 +62,19 @@ object ProbeImeBus {
     @Volatile
     var imeWindowHeightPx: Int = 0
 
+    /**
+     * 输入法窗口此刻是**收起**态吗。
+     *
+     * 2026-10-16 07:52 实测：探针 IME 是默认输入法但没有编辑器聚焦时，IME 窗口
+     * 的 decorView 会被量成 48px 并**持续**保持（不是旧注释以为的「重建瞬间假值」）。
+     * 旧逻辑把这种小值当噪声丢掉、继续沿用上一次量到的 1012px「键盘高」，
+     * 于是聚焦点被算到屏幕中央 y=1323（输入栏实际在屏底 y≈2335），点了个空——
+     * 编辑器从未获得焦点，写完的字落进 fallback 连接（读框恒空），整轮回复 abort。
+     * 所以「收起」必须是可区分的一等状态：收起时聚焦/发送坐标改按窗口底边算。
+     */
+    @Volatile
+    var imeCollapsed: Boolean = false
+
     @Volatile
     var onWritten: ((Boolean) -> Unit)? = null
 

@@ -113,11 +113,21 @@ class ProbeInputMethod : InputMethodService() {
                 ?: 0
             val maxSane = (resources.displayMetrics.heightPixels * 0.6f).toInt()
             if (h > 0 && h < 100) {
-                Log.w(TAG, "ProbeIme: suspicious tiny window height=$h, ignore")
+                // 窗口收起态（无编辑器聚焦时 decorView 只剩 48px）。旧逻辑只丢日志、
+                // 继续沿用上次的 1012px，坐标就还按「键盘弹起」算——2026-10-16 07:52
+                // 实测聚焦点因此落到屏幕中央 y=1323，编辑器没被点聚焦。改为发布
+                // 「收起」语义：imeWindowHeightPx 归 0 + imeCollapsed=true。
+                // 只在状态翻转时记一行，避免轮询每 200ms 刷屏（实测 5 行/秒）。
+                if (!ProbeImeBus.imeCollapsed || ProbeImeBus.imeWindowHeightPx != 0) {
+                    ProbeImeBus.imeWindowHeightPx = 0
+                    ProbeImeBus.imeCollapsed = true
+                    Log.i(TAG, "ProbeIme: window collapsed (h=$h) -> IME hidden, coords use window bottom")
+                }
             } else if (h >= maxSane) {
                 Log.w(TAG, "ProbeIme: suspicious huge window height=$h (>$maxSane), ignore")
-            } else if (h > 0 && h != ProbeImeBus.imeWindowHeightPx) {
+            } else if (h > 0 && (h != ProbeImeBus.imeWindowHeightPx || ProbeImeBus.imeCollapsed)) {
                 ProbeImeBus.imeWindowHeightPx = h
+                ProbeImeBus.imeCollapsed = false
                 Log.i(TAG, "ProbeIme: window height published = $h")
             }
         } catch (e: Exception) {
