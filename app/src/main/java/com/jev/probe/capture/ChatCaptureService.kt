@@ -449,16 +449,16 @@ open class ChatCaptureService : AccessibilityService() {
     // 重放 PendingIntent 后等微信前台落定的轮询上限（100ms 一跳）。2.5s 够微信冷启动到
     // 聊天页；再久就是重放失败，早点放行让下一轮开工（本轮按无锚点处理，不会误发）。
     private val NOTIF_FG_WAIT_TICKS = 25
-    // object 表达式：lambda 初始化器里自引用会报 "must be initialized"（definite-assignment），
-    // 方法体内引用则无此限制。
-    private val notifAdvanceRunnable: Runnable = object : Runnable {
-        override fun run() {
+    // by lazy：hold 期间 lambda 需 postDelayed 自己（自引用）。直接 val 初始化器里
+    // 自引用 K2 报 "must be initialized"，lazy 延迟到首次访问，自引用合法。
+    private val notifAdvanceRunnable: Runnable by lazy {
+        Runnable {
         if (!sendSettled && advanceHoldTicks < 20) {
             // 发送链未落定（IME 还没 commit / verify 还在重试）：绝不准切会话。
             advanceHoldTicks++
             Log.w(TAG, "notif-round: dwell reached but send unsettled -> hold (tick=$advanceHoldTicks)")
             main.postDelayed(notifAdvanceRunnable, 2000L)
-            return
+            return@Runnable
         }
         if (!sendSettled) Log.w(TAG, "notif-round: send unsettled past hold cap -> force advance")
         advanceHoldTicks = 0
