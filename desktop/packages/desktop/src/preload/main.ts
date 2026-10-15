@@ -47,13 +47,19 @@ contextBridge.exposeInMainWorld('ilink', {
   qrCreate: (opts?: { app?: string; callback?: string }) => ipcRenderer.invoke('ilink:qr:create', opts),
   statusPoll: (ticket: string) => ipcRenderer.invoke('ilink:status:poll', ticket),
   deviceGet: (opts: unknown) => ipcRenderer.invoke('ilink:device:get', opts),
-  deviceBind: (args: { deviceId: string; ilink: string }) =>
-    ipcRenderer.invoke('ilink:device:bind', args),
+  deviceBind: (args: { deviceId: string; ilink: string }) => ipcRenderer.invoke('ilink:device:bind', args),
   deviceGetRecord: (deviceId: string) => ipcRenderer.invoke('ilink:device:getRecord', deviceId),
   deviceReset: (deviceId: string) => ipcRenderer.invoke('ilink:device:reset', deviceId),
   deviceSalt: (app: string) => ipcRenderer.invoke('ilink:device:salt', app),
   botInit: (creds: unknown) => ipcRenderer.invoke('ilink:bot:init', creds),
   botSend: (args: { text: string; toUser?: string }) => ipcRenderer.invoke('ilink:bot:send', args),
+  // 登录态与消息推送：sessionGet 读落盘的登录态，loginComplete 是扫码确认后的收尾
+  // （主进程绑设备 + 落盘 + 起推送），logout 销毁推送通道并清除凭据。
+  sessionGet: () => ipcRenderer.invoke('ilink:session:get'),
+  loginComplete: (args: { confirmed: unknown; app?: string }) => ipcRenderer.invoke('ilink:login:complete', args),
+  logout: () => ipcRenderer.invoke('ilink:logout'),
+  pushSend: (args: { text: string; toUser?: string }) => ipcRenderer.invoke('ilink:push:send', args),
+  pushStatus: () => ipcRenderer.invoke('ilink:push:status'),
 });
 
 // 积分套餐支付桥（智创协同 AI 工作台用）。

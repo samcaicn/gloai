@@ -46,6 +46,27 @@ export interface BotSendResult {
   body: string;
 }
 
+/** 落盘的登录态：主进程 userData/ilink/session.json 的渲染层镜像。 */
+export interface IlinkSession {
+  ilink: string;
+  userId: string;
+  botToken: string;
+  baseUrl: string;
+  linkToken: string;
+  contextToken: string;
+  app: string;
+  deviceId: string;
+  loggedAt: number;
+}
+
+/** 扫码确认后主进程收尾的结果：登录态、设备码，以及设备绑定 / 首条推送是否成功。 */
+export interface LoginCompleteResult {
+  session: IlinkSession;
+  device?: DeviceIdResult;
+  bound: boolean;
+  pushed: boolean;
+}
+
 export interface IlinkBridge {
   qrCreate(opts?: { app?: string; callback?: string }): Promise<LoginQr>;
   statusPoll(ticket: string): Promise<ScanStatus>;
@@ -56,6 +77,11 @@ export interface IlinkBridge {
   deviceSalt(app: string): Promise<string>;
   botInit(creds: unknown): Promise<{ ok: true }>;
   botSend(args: { text: string; toUser?: string }): Promise<BotSendResult>;
+  sessionGet(): Promise<IlinkSession | null>;
+  loginComplete(args: { confirmed: ConfirmedLogin; app?: string }): Promise<LoginCompleteResult>;
+  logout(): Promise<boolean>;
+  pushSend(args: { text: string; toUser?: string }): Promise<BotSendResult>;
+  pushStatus(): Promise<boolean>;
 }
 
 declare global {
@@ -70,8 +96,7 @@ const bridge = (): IlinkBridge => {
   return api;
 };
 
-export const ilinkQrCreate = (opts?: { app?: string; callback?: string }): Promise<LoginQr> =>
-  bridge().qrCreate(opts);
+export const ilinkQrCreate = (opts?: { app?: string; callback?: string }): Promise<LoginQr> => bridge().qrCreate(opts);
 
 export const ilinkStatusPoll = (ticket: string): Promise<ScanStatus> => bridge().statusPoll(ticket);
 
@@ -82,5 +107,16 @@ export const ilinkDeviceBind = (args: { deviceId: string; ilink: string }): Prom
 
 export const ilinkBotInit = (creds: unknown): Promise<{ ok: true }> => bridge().botInit(creds);
 
-export const ilinkBotSend = (args: { text: string; toUser?: string }): Promise<BotSendResult> =>
-  bridge().botSend(args);
+export const ilinkBotSend = (args: { text: string; toUser?: string }): Promise<BotSendResult> => bridge().botSend(args);
+
+export const ilinkSessionGet = (): Promise<IlinkSession | null> => bridge().sessionGet();
+
+export const ilinkLoginComplete = (args: { confirmed: ConfirmedLogin; app?: string }): Promise<LoginCompleteResult> =>
+  bridge().loginComplete(args);
+
+export const ilinkLogout = (): Promise<boolean> => bridge().logout();
+
+export const ilinkPushSend = (args: { text: string; toUser?: string }): Promise<BotSendResult> =>
+  bridge().pushSend(args);
+
+export const ilinkPushStatus = (): Promise<boolean> => bridge().pushStatus();

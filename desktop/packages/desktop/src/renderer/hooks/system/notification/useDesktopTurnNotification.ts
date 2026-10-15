@@ -10,6 +10,7 @@ import { ipcBridge } from '@/common';
 import { configService } from '@/common/config/configService';
 import { isElectronDesktop } from '@/renderer/utils/platform';
 import { getSnapshotConversationName } from '@/renderer/pages/conversation/GroupedHistory/hooks/useConversationListSync';
+import { useIlinkSessionOptional } from '@renderer/services/ilinkSession';
 import { createBrowserNotificationController, truncateConversationName } from './browserNotificationCore';
 
 /**
@@ -22,6 +23,12 @@ import { createBrowserNotificationController, truncateConversationName } from '.
  */
 export const useDesktopTurnNotification = (): void => {
   const { t } = useTranslation();
+  // 已登录的话，同一句话再走一遍微信（iLink 消息推送）。人不在电脑前时最有用，
+  // 所以只在窗口不可见时推，免得盯着屏幕的人被手机和电脑各提醒一次。
+  // 用 optional：这个钩子在单测里是裸跑的，读不到登录态也不该抛错。
+  const ilink = useIlinkSessionOptional();
+  const session = ilink?.session;
+  const push = ilink?.push;
 
   useEffect(() => {
     if (!isElectronDesktop()) return;
@@ -49,6 +56,8 @@ export const useDesktopTurnNotification = (): void => {
         // fire a native notification. The main process still gates on the
         // setting and skips when the window is focused.
         void ipcBridge.notification.show.invoke({ title: 'AiBuddy', body, conversation_id: conversationId });
+        // 推不出去也不该影响桌面通知本身：微信这边只是多一个收件渠道。
+        if (session && push && document.hidden) void push(body).catch(() => undefined as void);
       },
     });
 
@@ -56,5 +65,5 @@ export const useDesktopTurnNotification = (): void => {
     return () => {
       disposeStream();
     };
-  }, [t]);
+  }, [t, session, push]);
 };

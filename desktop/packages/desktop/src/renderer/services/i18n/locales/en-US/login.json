@@ -1,6 +1,6 @@
 {
-  "pageTitle": "TupAI - Sign In",
-  "brand": "TupAI",
+  "pageTitle": "AiBuddy - Sign In",
+  "brand": "AiBuddy",
   "subtitle": "Welcome back, please sign in to your account",
   "username": "Username",
   "usernamePlaceholder": "Enter your username",
@@ -24,5 +24,31 @@
     "unknown": "Sign-in failed, please try again",
     "csrfExpired": "Your sign-in session expired. Please try again.",
     "staleCache": "Sign-in failed because of cached data. Clear your browser cache and try again."
+  },
+  "ilink": {
+    "title": "Sign in with WeChat",
+    "lead": "Scan with WeChat to connect: message push turns on once you do. AiBuddy works either way.",
+    "scanHint": "Scan this QR code with WeChat",
+    "waiting": "Waiting for the scan…",
+    "status": "Status: {{status}}",
+    "errorDetail": "Sign-in failed: {{detail}}",
+    "refresh": "New QR code",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "start": "Scan to connect",
+    "skip": "Not now",
+    "skipHint": "You can sign in any time from Settings → iLink Account",
+    "signedIn": "Signed in",
+    "ilinkId": "iLink ID",
+    "deviceId": "Device code",
+    "pushReady": "Message push is on",
+    "pushNotReady": "Message push is off",
+    "pushTest": "Send a test message",
+    "pushSample": "This is a push test message from the AiBuddy desktop app ✅",
+    "pushOk": "Push succeeded",
+    "pushFailed": "Push failed",
+    "signOut": "Sign out",
+    "signOutAsk": "Signing out stops message push on this machine. Sign in again by scanning a new QR code.",
+    "signOutDone": "Signed out"
   }
 }
