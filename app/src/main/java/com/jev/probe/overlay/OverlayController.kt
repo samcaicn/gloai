@@ -562,15 +562,14 @@ class OverlayController(private val ctx: Context) {
         } else {
             // 空闲态把「现在到底在什么模式」讲清楚。原来只有一句「已就绪」，用户
             // 根本判断不了助手此刻会不会替自己发消息——而这恰恰是自动收发场景里
-            // 唯一需要他随时知道的事。autoOn / anaOn 已在上面为去重键读过。
+            // 唯一需要他随时知道的事。「自动分析」2026-10-15 起恒开（开关去掉），
+            // 只剩 autoOn 一个维度。
             views.add(hint(
                 when {
                     autoOn -> ctx.t("自动收发已开启：对方发消息我会自动回复并发送。随时长按气泡可暂停。",
                         "Auto send/receive is on: incoming messages get replied and sent automatically. Long-press the bubble anytime to pause.")
-                    anaOn -> ctx.t("自动分析已开启：只给建议，发送由你点。长按气泡可关。",
-                        "Auto-analyze is on: advice only, you tap send. Long-press the bubble to turn off.")
-                    else -> ctx.t("自动分析已关闭：只有你点气泡才会分析。长按气泡可重新开启。",
-                        "Auto-analyze is off: analysis runs only when you tap the bubble. Long-press to re-enable.")
+                    else -> ctx.t("自动分析已开启：只给建议，发送由你点。",
+                        "Auto-analyze is on: advice only, you tap send.")
                 }))
             if (title != null) {
                 views.add(hint(ctx.t("「", "\"") + title + ctx.t("」已就绪。",
