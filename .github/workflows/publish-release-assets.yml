@@ -60,3 +60,5 @@ jobs:
             dist/*.exe
             dist/*.msi
             dist/latest.yml
+
+# Registered on GitHub Actions: trigger re-index after creation.
