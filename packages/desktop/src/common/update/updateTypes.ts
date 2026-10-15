@@ -15,7 +15,7 @@ export interface GitHubReleaseAsset {
   contentType?: string;
 }
 
-/** A release of github.com/qybaihe/mu. */
+/** A release of github.com/samcaicn/gloai. */
 export interface UpdateReleaseInfo {
   tagName: string;
   version: string;

@@ -45,7 +45,7 @@ const downloadSize = (files: readonly UpdateFileInfo[] | undefined): number | un
 
 /**
  * electron-updater, for the systems where an update installs itself on a restart: macOS (Squirrel.Mac, from the zip)
- * and Windows (the NSIS installer). The feed is the releases of github.com/samcaicn/mu, all of which are pre-releases:
+ * and Windows (the NSIS installer). The feed is the releases of github.com/samcaicn/gloai, all of which are pre-releases:
  * electron-updater reads the newest one's latest-mac.yml or latest.yml, which list every architecture's file.
  */
 export class AutoUpdaterService implements RestartUpdater {
@@ -68,7 +68,7 @@ export class AutoUpdaterService implements RestartUpdater {
       // release, while a channel would also allow downgrades.
       autoUpdater.allowPrerelease = true;
       autoUpdater.disableWebInstaller = true;
-      autoUpdater.setFeedURL({ provider: 'github', owner: 'samcaicn', repo: 'mu' });
+      autoUpdater.setFeedURL({ provider: 'github', owner: 'samcaicn', repo: 'gloai' });
       autoUpdater.on('download-progress', (progress: ProgressInfo) => this.onProgress?.(progress.percent));
     }
     return autoUpdater;

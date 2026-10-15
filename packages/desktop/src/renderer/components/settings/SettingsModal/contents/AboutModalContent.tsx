@@ -20,8 +20,8 @@ import { updateDetails, updateHeadline, updateMainAction } from '@/renderer/comp
 // the main process says which version runs.
 declare const __APP_VERSION__: string;
 
-const MU_REPO_URL = 'https://github.com/qybaihe/mu';
-const MU_RELEASES_URL = 'https://github.com/qybaihe/mu/releases';
+const MU_REPO_URL = 'https://github.com/samcaicn/gloai';
+const MU_RELEASES_URL = 'https://github.com/samcaicn/gloai/releases';
 
 /** While these run, another check has nothing to add. */
 const BUSY_PHASES: ReadonlySet<UpdatePhase> = new Set(['downloading', 'installing', 'downloadingInstaller']);

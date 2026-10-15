@@ -13,7 +13,7 @@ import semver from 'semver';
  * mu's builds are the releases of its own repository. mu is a fork of AionUi and never asks AionUi's update server
  * (static.aionui.com) or AionUi's GitHub: either would offer AionUi's installer as an update of mu.
  */
-export const MU_REPO = 'samcaicn/mu';
+export const MU_REPO = 'samcaicn/gloai';
 export const MU_RELEASES_URL = `https://github.com/${MU_REPO}/releases`;
 export const USER_AGENT = 'AiBuddy';
 
@@ -177,7 +177,7 @@ export const latestRelease = (releases: GitHubReleaseApi[]): UpdateReleaseInfo |
   };
 };
 
-/** The newest release of github.com/qybaihe/mu, asked from GitHub's API; null when there is none. */
+/** The newest release of github.com/samcaicn/gloai, asked from GitHub's API; null when there is none. */
 export const fetchLatestRelease = async (timeoutMs = REQUEST_TIMEOUT_MS): Promise<UpdateReleaseInfo | null> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
