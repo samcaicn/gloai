@@ -8,6 +8,7 @@ import { useCrossSessionRateLimitNotice } from '@/renderer/hooks/system/useCross
 import { STUDIO_EXPERTS_PATH, STUDIO_HOME_PATH } from '@renderer/plugins/zhichuang';
 import StartupGate from '@/renderer/pages/settings/KyrnSettings/StartupGate';
 import { MuSettingsProvider } from '@/renderer/pages/settings/KyrnSettings/useMuSettings';
+import { IlinkSessionProvider } from '@renderer/services/ilinkSession';
 import {
   FEATURE_LIST_PAGES,
   MOVED_SETTINGS_TABS,
@@ -21,6 +22,7 @@ import {
 const Conversation = React.lazy(() => import('@renderer/pages/conversation'));
 const Guid = React.lazy(() => import('@renderer/pages/guid'));
 const Welcome = React.lazy(() => import('@renderer/pages/welcome'));
+const Login = React.lazy(() => import('@renderer/pages/login'));
 const MuSettings = React.lazy(() => import('@renderer/pages/settings/KyrnSettings'));
 const MovedFeatureOptions = React.lazy(() =>
   import('@renderer/pages/settings/KyrnSettings').then((module) => ({ default: module.MovedFeatureOptions }))
@@ -169,6 +171,8 @@ const AppLayout: React.FC<{ layout: React.ReactElement }> = ({ layout }) => {
   // gate stays in the tree on every page, open on a conversation. Leaving it out there would give the layout another
   // parent, and React would mount the whole layout afresh on every step between a conversation and any other page:
   // the sidebar forgot the conversation "back to chat" returns to, and the work panel reloaded its pages.
+  // 未登录不拦人：连微信只是拿消息推送，不连也能照常用。扫码入口在首次运行引导
+  // 的一步里，以及「设置 → iLink 账号」。
   return <StartupGate open={location.pathname.startsWith('/conversation/')}>{React.cloneElement(layout)}</StartupGate>;
 };
 
@@ -176,52 +180,56 @@ const PanelRoute: React.FC<{ layout: React.ReactElement }> = ({ layout }) => {
   return (
     <HashRouter>
       <DocumentTitle />
-      <Routes>
-        <Route element={<AppLayout layout={layout} />}>
-          <Route index element={<Navigate to='/guid' replace />} />
-          <Route path='/guid' element={withRouteFallback(Guid)} />
-          <Route path='/welcome' element={withRouteFallback(Welcome)} />
-          <Route path='/conversation/:id' element={withRouteFallback(Conversation)} />
-          <Route path='/team/:id' element={<Navigate to='/guid' replace />} />
-          {/* The settings rail: one route per entry, all under one draft of mu's settings. */}
-          <Route element={<SettingsScope />}>
-            {SETTINGS_PAGES.map(({ id, route }) => (
-              <Route
-                key={id}
-                path={route}
-                element={
-                  route in MOVED_SETTINGS_TABS ? (
-                    <WithMovedTabs path={route}>{withRouteFallback(SETTINGS_PAGE_ELEMENTS[id])}</WithMovedTabs>
-                  ) : (
-                    withRouteFallback(SETTINGS_PAGE_ELEMENTS[id])
-                  )
-                }
-              />
-            ))}
-            {/* One feature's options, opened from its list, and the pages after the first when they fill more. */}
-            {FEATURE_LIST_PAGES.map((id) => (
-              <Route key={id} path={`/settings/${id}/:feature/:part?`} element={withRouteFallback(MuSettings)} />
-            ))}
-            {/* From when every other feature was one page: the page of the feature's group now. */}
-            <Route path='/settings/more-features/:feature/:part?' element={withRouteFallback(MovedFeatureOptions)} />
-            <Route path='/settings/skills/import-history' element={withRouteFallback(SkillsSettings)} />
-            <Route path='/settings/skills/detail/:skillName' element={withRouteFallback(SkillDetailPage)} />
-            <Route path='/settings/ext/:tabId' element={withRouteFallback(ExtensionSettingsPage)} />
-          </Route>
+      {/* 登录态挂在路由之上：登录页、设置页看到的是同一份，扫码结果不会各管一半。 */}
+      <IlinkSessionProvider>
+        <Routes>
+          <Route element={<AppLayout layout={layout} />}>
+            <Route index element={<Navigate to='/guid' replace />} />
+            <Route path='/guid' element={withRouteFallback(Guid)} />
+            <Route path='/welcome' element={withRouteFallback(Welcome)} />
+            <Route path='/login' element={withRouteFallback(Login)} />
+            <Route path='/conversation/:id' element={withRouteFallback(Conversation)} />
+            <Route path='/team/:id' element={<Navigate to='/guid' replace />} />
+            {/* The settings rail: one route per entry, all under one draft of mu's settings. */}
+            <Route element={<SettingsScope />}>
+              {SETTINGS_PAGES.map(({ id, route }) => (
+                <Route
+                  key={id}
+                  path={route}
+                  element={
+                    route in MOVED_SETTINGS_TABS ? (
+                      <WithMovedTabs path={route}>{withRouteFallback(SETTINGS_PAGE_ELEMENTS[id])}</WithMovedTabs>
+                    ) : (
+                      withRouteFallback(SETTINGS_PAGE_ELEMENTS[id])
+                    )
+                  }
+                />
+              ))}
+              {/* One feature's options, opened from its list, and the pages after the first when they fill more. */}
+              {FEATURE_LIST_PAGES.map((id) => (
+                <Route key={id} path={`/settings/${id}/:feature/:part?`} element={withRouteFallback(MuSettings)} />
+              ))}
+              {/* From when every other feature was one page: the page of the feature's group now. */}
+              <Route path='/settings/more-features/:feature/:part?' element={withRouteFallback(MovedFeatureOptions)} />
+              <Route path='/settings/skills/import-history' element={withRouteFallback(SkillsSettings)} />
+              <Route path='/settings/skills/detail/:skillName' element={withRouteFallback(SkillDetailPage)} />
+              <Route path='/settings/ext/:tabId' element={withRouteFallback(ExtensionSettingsPage)} />
+            </Route>
 
-          {/* Retired destinations — old deep links keep working. */}
-          {Object.keys(RETIRED_SETTINGS_PATHS).map((from) => (
-            <Route key={from} path={from} element={<RetiredSettingsPath from={from} />} />
-          ))}
-          <Route path='/settings' element={<Navigate to={SETTINGS_HOME} replace />} />
-          <Route path='/scheduled' element={withRouteFallback(ScheduledTasksPage)} />
-          <Route path='/scheduled/:job_id' element={withRouteFallback(TaskDetailPage)} />
-          {/* The studio plugin: one route per row it put in the sidebar. */}
-          <Route path={STUDIO_HOME_PATH} element={withRouteFallback(StudioPage)} />
-          <Route path={STUDIO_EXPERTS_PATH} element={withRouteFallback(StudioPage)} />
-        </Route>
-        <Route path='*' element={<Navigate to='/guid' replace />} />
-      </Routes>
+            {/* Retired destinations — old deep links keep working. */}
+            {Object.keys(RETIRED_SETTINGS_PATHS).map((from) => (
+              <Route key={from} path={from} element={<RetiredSettingsPath from={from} />} />
+            ))}
+            <Route path='/settings' element={<Navigate to={SETTINGS_HOME} replace />} />
+            <Route path='/scheduled' element={withRouteFallback(ScheduledTasksPage)} />
+            <Route path='/scheduled/:job_id' element={withRouteFallback(TaskDetailPage)} />
+            {/* The studio plugin: one route per row it put in the sidebar. */}
+            <Route path={STUDIO_HOME_PATH} element={withRouteFallback(StudioPage)} />
+            <Route path={STUDIO_EXPERTS_PATH} element={withRouteFallback(StudioPage)} />
+          </Route>
+          <Route path='*' element={<Navigate to='/guid' replace />} />
+        </Routes>
+      </IlinkSessionProvider>
     </HashRouter>
   );
 };

@@ -19,7 +19,7 @@ import * as path from 'path';
 import { initMainAdapterWithWindow } from './common/adapter/main';
 import { ipcBridge } from './common';
 import { initializeProcess } from './process';
-import { registerIlinkIpc } from './process/services/ilink/ipc';
+import { initIlinkPush, registerIlinkIpc } from './process/services/ilink/ipc';
 import { registerPayIpc } from './process/services/pay';
 import { startBackendOrExit } from './process/startup/backendStartup';
 import { planStartupNodeRuntime } from './process/startup/nodeRuntimeStartup';
@@ -662,6 +662,9 @@ const handleAppReady = async (): Promise<void> => {
     mark('initializeProcess');
     registerIlinkIpc();
     mark('registerIlinkIpc');
+    // 恢复上次的 iLink 登录态：后台消息推送不等渲染层，进程一起就能用。
+    initIlinkPush();
+    mark('initIlinkPush');
     registerPayIpc();
     mark('registerPayIpc');
   } catch (error) {
@@ -869,7 +872,7 @@ const handleAppReady = async (): Promise<void> => {
     appReadyDone = true;
     mark('createWindow');
 
-    // mu updates itself from the releases of github.com/qybaihe/mu (process/services/update): a check a little after
+    // mu updates itself from the releases of github.com/samcaicn/gloai (process/services/update): a check a little after
     // the start and then every 6 hours, besides the one on 关于 (About). A build run from its sources and automated
     // runs (CI, E2E, AIONUI_DISABLE_AUTO_UPDATE=1) check only when asked.
     const updates = getUpdateService();

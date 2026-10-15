@@ -1,6 +1,6 @@
 {
-  "pageTitle": "TupAI - 登录",
-  "brand": "TupAI",
+  "pageTitle": "AiBuddy - 登录",
+  "brand": "AiBuddy",
   "subtitle": "欢迎回来，请登录您的账户",
   "username": "用户名",
   "usernamePlaceholder": "请输入用户名",
@@ -24,5 +24,31 @@
     "unknown": "登录失败，请稍后再试",
     "csrfExpired": "登录会话已过期，请重试。",
     "staleCache": "缓存数据导致登录失败，请清除浏览器缓存后重试。"
+  },
+  "ilink": {
+    "title": "微信扫码登录",
+    "lead": "用微信扫码连接 AiBuddy：连上后可接收消息推送，不连也照常能用",
+    "scanHint": "请使用微信扫描下方二维码",
+    "waiting": "等待扫码 / 确认…",
+    "status": "当前状态：{{status}}",
+    "errorDetail": "登录失败：{{detail}}",
+    "refresh": "换一张二维码",
+    "cancel": "取消",
+    "retry": "重新扫码",
+    "start": "扫码连接",
+    "skip": "暂不登录",
+    "skipHint": "之后可在「设置 → iLink 账号」里随时登录",
+    "signedIn": "已登录",
+    "ilinkId": "iLink ID",
+    "deviceId": "设备码",
+    "pushReady": "消息推送已开启",
+    "pushNotReady": "消息推送未开启",
+    "pushTest": "发送测试消息",
+    "pushSample": "这是来自 AiBuddy 桌面的推送测试消息 ✅",
+    "pushOk": "推送成功",
+    "pushFailed": "推送失败",
+    "signOut": "退出登录",
+    "signOutAsk": "退出后这台机器将停止消息推送，重新扫码即可再次登录。",
+    "signOutDone": "已退出登录"
   }
 }

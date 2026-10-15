@@ -24,6 +24,7 @@ import ConnectionTest from '@/renderer/pages/settings/KyrnSettings/providers/Con
 import { ChoiceBody, JudgeChoiceTile } from '@/renderer/pages/settings/KyrnSettings/sections/JudgesSection';
 import choiceStyles from '@/renderer/pages/settings/KyrnSettings/sections/sections.module.css';
 import { useMuSettings } from '@/renderer/pages/settings/KyrnSettings/useMuSettings';
+import { useIlinkSessionOptional } from '@renderer/services/ilinkSession';
 import {
   apiModelProblem,
   type ApiModel,
@@ -33,11 +34,12 @@ import {
   withSignedInModel,
 } from './onboarding';
 import SubscriptionLogin from './SubscriptionLogin';
+import IlinkStep from './IlinkStep';
 import styles from './Welcome.module.css';
 
-type Step = 'intro' | 'model' | 'judge' | 'done';
+type Step = 'intro' | 'model' | 'judge' | 'ilink' | 'done';
 /** The steps of the setup itself; the introduction before them is not one. */
-const STEPS: Step[] = ['model', 'judge', 'done'];
+const STEPS: Step[] = ['model', 'judge', 'ilink', 'done'];
 /** A tile of the model step: an account mu is signed in to, or one of the two API families. */
 type Way = 'signedIn' | 'openai' | 'anthropic';
 const API_WAYS = ['openai', 'anthropic'] as const;
@@ -55,6 +57,8 @@ export default function Welcome() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const mu = useMuSettings();
+  /** 微信那一步只是顺带一提：这份登录态读不到（单测里没有 provider）就当没连。 */
+  const ilink = useIlinkSessionOptional();
   const [step, setStep] = useState<Step>('intro');
   const [way, setWay] = useState<Way>();
   const [openaiApi, setOpenaiApi] = useState<OpenAiApi>('openai-completions');
@@ -283,6 +287,15 @@ export default function Welcome() {
         </div>
       </>
     );
+  } else if (step === 'ilink') {
+    // Optional on purpose: the QR is here once, in the guide, and again in the settings.
+    body = (
+      <>
+        <h1 className={styles.title}>{t('mu.welcome.ilink.title')}</h1>
+        <p className={styles.subtitle}>{t('mu.welcome.ilink.subtitle')}</p>
+        <IlinkStep />
+      </>
+    );
   } else {
     const { provider: startProvider, model } = settings.models.defaults;
     const jevKey = judge === 'jev' ? jevKeyVariable(judgeProfile) : undefined;
@@ -309,6 +322,10 @@ export default function Welcome() {
               {judge ? t(`mu.judges.choices.${judge}.title`) : t('mu.welcome.done.none')}
               {judge === 'jev' && !keyReady ? <span className={styles.warn}>{t('mu.welcome.done.noKey')}</span> : null}
             </dd>
+          </div>
+          <div className={styles.summaryRow}>
+            <dt>{t('mu.welcome.done.ilink')}</dt>
+            <dd>{ilink?.phase === 'signedIn' ? t('mu.welcome.done.ilinkOn') : t('mu.welcome.done.none')}</dd>
           </div>
         </dl>
         {mu.error ? (
@@ -373,12 +390,12 @@ export default function Welcome() {
           )}
           <span className={styles.spacer} />
           {/* Skipping is a quiet text button on both steps; the lavender button is always the way on. */}
-          {step === 'model' || step === 'judge' ? (
+          {step === 'model' || step === 'judge' || step === 'ilink' ? (
             <button
               type='button'
               className={styles.textButton}
               data-testid='mu-welcome-skip'
-              onClick={() => setStep(step === 'model' ? 'judge' : 'done')}
+              onClick={() => setStep(step === 'model' ? 'judge' : step === 'judge' ? 'ilink' : 'done')}
             >
               {t('mu.welcome.skipStep')}
             </button>
@@ -392,6 +409,10 @@ export default function Welcome() {
               {t('mu.welcome.next')}
             </Button>
           ) : step === 'judge' ? (
+            <Button type='primary' shape='round' data-testid='mu-welcome-next' onClick={() => setStep('ilink')}>
+              {t('mu.welcome.next')}
+            </Button>
+          ) : step === 'ilink' ? (
             <Button type='primary' shape='round' data-testid='mu-welcome-next' onClick={() => setStep('done')}>
               {t('mu.welcome.next')}
             </Button>

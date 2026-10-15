@@ -246,6 +246,10 @@ describe('the first-run guide', () => {
     fireEvent.change(screen.getByLabelText('TypeSafe API key'), { target: { value: 'jev-key' } });
     fireEvent.click(screen.getByTestId('mu-welcome-next'));
 
+    // Connecting WeChat is its own step now, and it is optional: straight past it to the summary.
+    await screen.findByTestId('mu-welcome-step-ilink');
+    fireEvent.click(screen.getByTestId('mu-welcome-next'));
+
     await screen.findByTestId('mu-welcome-step-done');
     expect(screen.getByText('relay / relay-large')).toBeInTheDocument();
     expect(bridge.save).not.toHaveBeenCalled();
@@ -314,6 +318,8 @@ describe('the first-run guide', () => {
     fireEvent.click(await screen.findByText('Vercel AI Gateway', { selector: '.arco-select-option' }));
     fireEvent.change(await screen.findByLabelText('Vercel AI Gateway API key'), { target: { value: 'gateway-key' } });
     fireEvent.click(screen.getByTestId('mu-welcome-next'));
+    await screen.findByTestId('mu-welcome-step-ilink');
+    fireEvent.click(screen.getByTestId('mu-welcome-next'));
     await screen.findByTestId('mu-welcome-step-done');
     fireEvent.click(screen.getByTestId('mu-welcome-start'));
     expect(await screen.findByText('landing page')).toBeInTheDocument();
@@ -333,6 +339,7 @@ describe('the first-run guide', () => {
     fireEvent.change(screen.getByLabelText('Model name'), { target: { value: 'relay-large' } });
     fireEvent.click(screen.getByTestId('mu-welcome-next'));
     fireEvent.click(await screen.findByTestId('mu-welcome-next'));
+    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
     fireEvent.click(await screen.findByTestId('mu-welcome-start'));
     await waitFor(() => expect(bridge.save).toHaveBeenCalledTimes(1));
     const saved = bridge.save.mock.calls[0][0] as SaveSettings;
@@ -346,6 +353,8 @@ describe('the first-run guide', () => {
     fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'http://localhost:11434/v1' } });
     fireEvent.change(screen.getByLabelText('Model name'), { target: { value: 'qwen3' } });
     fireEvent.click(screen.getByTestId('mu-welcome-next'));
+    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
+    await screen.findByTestId('mu-welcome-step-ilink');
     fireEvent.click(await screen.findByTestId('mu-welcome-next'));
     await screen.findByTestId('mu-welcome-step-done');
     expect(screen.getByText('localhost:11434 / qwen3')).toBeInTheDocument();
@@ -384,6 +393,7 @@ describe('the first-run guide', () => {
     fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk relay' } });
     fireEvent.change(screen.getByLabelText('Model name'), { target: { value: 'relay-large' } });
     fireEvent.click(screen.getByTestId('mu-welcome-next'));
+    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
     fireEvent.click(await screen.findByTestId('mu-welcome-next'));
     bridge.save.mockResolvedValueOnce({ ok: false, code: 'credential', error: 'Invalid credential' });
     fireEvent.click(await screen.findByTestId('mu-welcome-start'));
@@ -446,6 +456,8 @@ describe('signing in with a subscription', () => {
   };
   const toSummary = async () => {
     fireEvent.click(screen.getByTestId('mu-welcome-next'));
+    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
+    await screen.findByTestId('mu-welcome-step-ilink');
     fireEvent.click(await screen.findByTestId('mu-welcome-next'));
     await screen.findByTestId('mu-welcome-step-done');
   };

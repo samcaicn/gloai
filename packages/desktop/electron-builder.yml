@@ -261,7 +261,7 @@ removePackageScripts: true
 electronDownload:
   cache: ${env.ELECTRON_CACHE}
 
-# mu's releases: the pre-releases of github.com/samcaicn/mu, which the app updates itself from (electron-updater's
+# mu's releases: the pre-releases of github.com/samcaicn/gloai, which the app updates itself from (electron-updater's
 # GitHub provider, see process/services/update). Beside the installers electron-builder writes the update feed:
 # latest-mac.yml, latest.yml (Windows), latest-linux.yml / latest-linux-arm64.yml and the .blockmap files; the
 # release job of the public repository's desktop.yml merges the per-arch ones and attaches them. It also writes
@@ -269,6 +269,6 @@ electronDownload:
 publish:
   provider: github
   owner: samcaicn
-  repo: mu
+  repo: gloai
   publishAutoUpdate: true
   releaseType: prerelease

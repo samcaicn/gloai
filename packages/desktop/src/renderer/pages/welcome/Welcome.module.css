@@ -351,3 +351,19 @@
 .accountReady {
   color: rgb(var(--success-6));
 }
+
+/* The WeChat step: the QR card and the line under it saying it can wait. */
+.ilink {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 21px;
+}
