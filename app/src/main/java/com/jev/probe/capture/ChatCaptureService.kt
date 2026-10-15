@@ -820,9 +820,19 @@ open class ChatCaptureService : AccessibilityService() {
         }
 
         when (type) {
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> maybeCapture()
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
-            AccessibilityEvent.TYPE_VIEW_SCROLLED -> maybeCapture()
+            AccessibilityEvent.TYPE_VIEW_SCROLLED -> {
+                // 内容变化/滚动事件在动画页、视频通话页会洪泛：实测微信 VoIP 页
+                // 10ms 内 6 轮，每轮都取树 + 提取 +（可能）OCR，纯耗电耗 CPU，
+                // 还把 logcat 冲出 "Unexpected EOF" 断流。窗口状态变化是真实状态
+                // 切换，永远放行；这两类加节流地板——新消息气泡以秒级到来，
+                // 300ms 延迟无感，洪泛场景直接降两个数量级。
+                if (now - lastCycleAt >= CYCLE_MIN_INTERVAL_MS) {
+                    lastCycleAt = now
+                    maybeCapture()
+                }
+            }
         }
         } catch (t: Throwable) {
             // A bad event must never kill the service: Android marks an
@@ -844,6 +854,9 @@ open class ChatCaptureService : AccessibilityService() {
      * those blank-tree episodes.
      */
     private var lastWindowClass: String = ""
+
+    /** 上一次内容变化驱动的捕获时刻，配 [CYCLE_MIN_INTERVAL_MS] 防洪泛。 */
+    private var lastCycleAt = 0L
 
     /**
      * While the soft keyboard is up, [rootInActiveWindow] is the IME window and its
@@ -2156,6 +2169,10 @@ open class ChatCaptureService : AccessibilityService() {
         /** 429 限流后的自动分析冷却时长：这段时间内不再自动触发分析（手动「重新分析」
          *  不受影响）。避免无人值守模式下反复打共享网关、既浪费额度又加剧限流。 */
         private const val BUSY_COOLDOWN_MS = 60_000L
+
+        /** 内容变化/滚动事件的最小间隔（见 onAccessibilityEvent 的节流注释）。
+         *  窗口状态变化不受此限——那是一次真实的状态切换，必须立即响应。 */
+        private const val CYCLE_MIN_INTERVAL_MS = 300L
 
         /** WeChat's package. Now wired in via [WeChatAdapter]; the capture service
          *  is disguised as SelectToSpeakService so WeChat exposes its node tree.
