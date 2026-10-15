@@ -694,11 +694,13 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val OCR_VISION = "vision"
 
         // ---- WeAuto 云端（唯一 LLM 出口）----
-        // 2026-10-14 起后端迁移到 Cloudflare Pages（weauto-license 项目），域名
-        // weauto-license.pages.dev：LLM / 支付 / 激活 / 升级全部接口统一走这里。
-        // 原自定义域名 wetech.jukuai.net / weauto.jukuai.net 已下线（403），不再被引用。
-        const val WORKER_HOST = "weauto-license.pages.dev"
-        const val WORKER_BASE = "https://weauto-license.pages.dev"
+        // 2026-10-15 起切到 weauto-license Worker 自定义域 wetech.jukuai.net：
+        // Pages 版（weauto-license.pages.dev）代码停在 1 天前快照——没有 /ai/tuptup/v1
+        // 转发路由，且带 KV daily 30 条硬限额（今日实测打满两次，整条回复链 429 死）。
+        // Worker 版（今天部署，含 aiapi 转发供应商 + secret AIAPI_TOKEN）功能是超集，
+        // LLM / 支付 / 激活 / 升级接口全部同源。
+        const val WORKER_HOST = "wetech.jukuai.net"
+        const val WORKER_BASE = "https://wetech.jukuai.net"
 
         // ---- tuptup.top OpenAI 兼容网关（用户自备 LLM）----
         // 2026-10-15 起客户端不再直连 aiapi：改打 Worker 的 /ai/tuptup/v1 转发路由
