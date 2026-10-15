@@ -63,7 +63,10 @@ import java.util.concurrent.RejectedExecutionException
 open class ChatCaptureService : AccessibilityService() {
 
     private val main = Handler(Looper.getMainLooper())
-    private val worker = Executors.newFixedThreadPool(2)
+    // 4 线程：通知轮 runAnalysis 内部会嵌套 submit(judge) 再 submit(reply)，且 jev 失败会
+    // 退回 LlmJudge 兜底（又一路网络）。2 线程时 judge 占满后 reply 只能排队，慢网络叠加
+    // fallback 极易饿死整池、单轮分析 > 60s 而被 HARD_MAX 兜底推进。扩到 4 留足余量。
+    private val worker = Executors.newFixedThreadPool(4)
 
     /** Adapted chat apps, keyed by package name. WeChat is now wired in: the
      *  capture service is registered under the disguised [SelectToSpeakService]
@@ -442,6 +445,14 @@ open class ChatCaptureService : AccessibilityService() {
     private val NOTIF_FG_WAIT_TICKS = 25
     private val notifAdvanceRunnable = Runnable {
         Log.w(TAG, "notif-round: dwell elapsed -> advance")
+        // 兜底推进时必须复位分析态：本轮可能因慢网络（设备访问 Cloudflare Worker
+        // 在国内移动网下常超时）卡在 worker 线程里，completed() 没被调，analyzing
+        // 仍 true。若不在这里清掉，后续所有轮 runAnalysis 会在开头 `if (analyzing)
+        // return` 被静默吞掉——表现为"每条消息都卡 60s 然后推进、从不回复"。
+        analyzing = false
+        analysisTasks.forEach { runCatching { it.cancel(true) } }
+        analysisTasks.clear()
+        main.removeCallbacks(analysisWatchdog)
         finishNotifRound(notifRoundSeq)
     }
 
@@ -1070,6 +1081,7 @@ open class ChatCaptureService : AccessibilityService() {
 
     private fun runAnalysis(manual: Boolean = true) {
         val snapshot = pendingSnapshot ?: return
+        Log.i(TAG, "runAnalysis enter manual=$manual hasKey=${prefs.hasKey()} analyzing=$analyzing destroyed=$destroyed enabled=${prefs.enabled}")
         if (analyzing || destroyed || !prefs.enabled) return
         // 通知直驱快照（note=NOTIFY_NOTE）：session.target 可能已被无障碍的 observe()
         // 换成真实窗口 target（autoOpenChat 拉起微信的必然结果），token() 于是不再是
@@ -1148,6 +1160,7 @@ open class ChatCaptureService : AccessibilityService() {
                 val judgeQueued = submitAnalysis {
                     val judgment = client.judge(augmented, rel, ctx)
                     main.post {
+                        Log.i(TAG, "judge done err=${judgment.error?.take(80)}")
                         // 结果归类放在 isCurrent **外面**：无论会话还匹不匹配，这一轮
                         // 是成是败都要如实记进埋点与自检卡，否则统计会漏掉失败。
                         if (judgment.error != null) {
@@ -1173,6 +1186,7 @@ open class ChatCaptureService : AccessibilityService() {
                         emptyList()
                     }
                     main.post {
+                        Log.i(TAG, "reply done ranked=${ranked.size} err=${replyError?.take(80)} isCurrent=${isCurrent(token)}")
                         if (replyError != null && roundErr == ErrCatalog.Kind.UNKNOWN) {
                             roundErr = ErrCatalog.classify(this, replyError,
                                 inWeChat = token.target.pkg == PKG_WECHAT).kind
@@ -1250,6 +1264,7 @@ open class ChatCaptureService : AccessibilityService() {
         replyError: String?
     ) {
         val notif = token.target.windowId == ConversationSession.NOTIF_WINDOW
+        Log.i(TAG, "maybeAutoSendBest enter notif=$notif autoFillBest=${prefs.autoFillBest} ranked=${ranked.size} latestFrom=${snapshot.latestFrom} replyError=$replyError")
         // 通知轮的每一条提前返回都必须收尾轮次：否则队列要白等 SEND_DWELL 才轮到下一个会话。
         fun bail(reason: String) {
             Log.i(TAG, "auto-send skipped: $reason")
