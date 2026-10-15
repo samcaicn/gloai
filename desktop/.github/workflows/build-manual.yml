@@ -91,3 +91,5 @@ jobs:
       append_commit_hash: true
       upload_installers_only: true
     secrets: inherit
+
+# Registered on GitHub Actions: trigger re-index after workflow edits (see aibuddy branch history).
