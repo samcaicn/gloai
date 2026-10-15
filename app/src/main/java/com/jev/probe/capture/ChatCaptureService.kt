@@ -1949,6 +1949,23 @@ open class ChatCaptureService : AccessibilityService() {
                 copyToClipboard(text)
                 overlay?.toast(t("请先在系统输入法切到「AI聊天助手·写入」才能自动回复，回复已复制可手动粘贴",
                                  "Switch your keyboard to \"AI Assistant · Write\" to auto-reply; reply copied for manual paste"))
+                // 时序坑修复（2026-10-15 实测四轮全兜底定位）：用户按提示切好输入法后，
+                // 若没人点微信输入栏，探针 IME 不会 onStartInput，imeActive 永远 false
+                // ——「切了也白切」，每轮都只复制剪贴板。这里幂等点一下输入栏把用户
+                // 已切好的探针 IME 挂上去（点输入栏聚焦是既有操作，不是切输入法，
+                // 不碰铁律），600ms 后复查：确实切了这轮就直接走 poll path 发出去。
+                if (attempt == 0) {
+                    Log.i(TAG, "fillInput: tap input bar to mount probe IME, recheck in 600ms")
+                    tapWeChatInputBar()
+                    main.postDelayed({
+                        if (ProbeImeBus.imeActive) {
+                            Log.i(TAG, "fillInput: probe IME mounted after tap -> retry via poll path")
+                            fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
+                        } else {
+                            Log.i(TAG, "fillInput: probe IME still not active after tap -> clipboard only this round")
+                        }
+                    }, 600L)
+                }
             }
             return
         }
