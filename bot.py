@@ -1459,16 +1459,21 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
         logger.error("抱歉，您所使用的API服务商不受信任，请联系网站管理员")
         raise RuntimeError("抱歉，您所使用的API服务商不受信任，请联系网站管理员")
 
-    # 防破解整改：免费模式本地记账（云端 429 是硬墙，本地为第二道）。
-    # 仅免费档（无卡密凭证）生效；本地记账被篡改视为超限。
+    # 防破解整改：配额本地记账（云端 429 是硬墙，本地为第二道）。
+    # 免费档（api_key 空/free-tier）与离线授权档（offline）都记账；
+    # 本地记账被篡改视为超限。有离线授权时扣授权总次数，否则扣每日免费条数。
     try:
         from weauto_license import ledger as _ledger
         _pk = (_AI_PROXY or {}).get("api_key") or ""
-        if str(_pk) in ("", "free-tier"):
+        if str(_pk) in ("", "free-tier", "offline"):
             _allowed, _rem, _lim = _ledger.check_quota()
             if not _allowed:
-                logger.error("\033[31m今日免费回复条数已达上限（本地记账）。激活卡密可解除限制。\033[0m")
-                raise RuntimeError("今日免费回复条数已达上限。激活卡密可解除限制。")
+                _off = _ledger.offline_license()
+                if _off and _off.get("remaining", 0) <= 0:
+                    logger.error("\033[31m回复次数已用完（离线授权），请联系管理员续期。\033[0m")
+                    raise RuntimeError("回复次数已用完（离线授权），请联系管理员续期。")
+                logger.error("\033[31m今日免费回复条数已达上限（本地记账）。\033[0m")
+                raise RuntimeError("今日免费回复条数已达上限。")
     except RuntimeError:
         raise
     except Exception:

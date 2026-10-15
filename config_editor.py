@@ -5468,42 +5468,53 @@ except Exception as _guard_err:
 
 
 def _license_status():
-    """汇总授权状态（不强制校验，仅供 UI 展示）。"""
+    """汇总授权状态（不强制校验，仅供 UI 展示）。
+
+    2026-10 商业模式调整：Creem 卡密授权已下线，改为「话术包 + 回复次数」离线授权
+    （管理员按硬件识别码签发 .wpk，导入生效）。无授权 = 免费模式（每日条数云端限制）。
+    """
     if not _guard:
         return {"available": False, "error": "weauto_license 模块不可用"}
     enabled = _guard.guard_enabled()
     w = _guard.worker_url()
-    cfg = parse_config()
-    key = (cfg.get("CREEM_LICENSE_KEY", "") or "")
-    cache = _guard._read_cache()
-    now = time.time()
-    activated = bool(cache.get("instance_id") and cache.get("key") == key
-                    and now < cache.get("expire_at", 0))
-    expired = bool(cache.get("expire_at") and now >= cache.get("expire_at", 0))
-    key_hint = ("****" + key[-4:]) if key else ""
-    expire_at = cache.get("expire_at") or 0
-    valid_days = cache.get("valid_days") or 0
-    days_left = int((expire_at - now) / 86400) if expire_at else None
-    near_expiry = bool(days_left is not None and 0 <= days_left <= 5)
+    offline = {}
+    try:
+        import scriptpack as _sp
+        offline = _sp.offline_license_info()
+    except Exception as e:
+        offline = {"error": str(e)[:120]}
+    try:
+        import device_id as _did
+        _dev = _did.get_device_id()
+        _dev_hash = offline.get("device_hash_hex") or ""
+        _short = offline.get("short_code") or ""
+    except Exception:
+        _dev, _dev_hash, _short = "", "", ""
+    try:
+        from weauto_license import ledger as _lg
+        _lic = _lg.offline_license()
+    except Exception:
+        _lic = {}
     return {
         "available": True,
         "guard_enabled": enabled,
         "release_build": bool(getattr(_guard, "RELEASE_BUILD", False)),
         "worker_url_set": bool(w),
         "worker_url": w,
-        "key_set": bool(key),
-        "key_hint": key_hint,
-        "free_mode": not bool(key),   # 无卡密 = 免费模式（默认激活，每日条数云端限制）
-        "activated": activated,
-        "expired": expired,
-        "expire_at": expire_at,
-        "valid_days": valid_days,
-        "days_left": days_left,
-        "near_expiry": near_expiry,
+        "free_mode": not bool(_lic),          # 无离线授权 = 免费模式（每日条数云端限制）
         "machine_id": _guard.get_machine_id() if _guard else "",
-        "tier": _guard.license_tier() if _guard else "",
-        # 仅用于「付款页自动填好邮箱」，不参与鉴权、不是账号体系。
-        "buyer_email": _buyer_email(),
+        "device_id": _dev,
+        "device_hash_hex": _dev_hash,
+        "short_code": _short,
+        # 离线授权（话术包 + 回复次数）
+        "offline": _lic or None,
+        "offline_error": offline.get("error", ""),
+        "pack_id": _lic.get("pack_id", "") if _lic else "",
+        "pack_name": _lic.get("name", "") if _lic else "",
+        "quota_total": _lic.get("total", 0) if _lic else 0,
+        "quota_used": _lic.get("used", 0) if _lic else 0,
+        "quota_remaining": _lic.get("remaining", 0) if _lic else 0,
+        "quota_expires_at": _lic.get("expires_at", 0) if _lic else 0,
     }
 
 
@@ -5513,168 +5524,104 @@ def api_license_status():
     return jsonify(_license_status())
 
 
-def _buyer_email() -> str:
-    """取本机记住的买家邮箱（只用于付款页预填，不参与鉴权）。
-
-    数据源优先级：环境变量 WEAUTO_CREEM_BUYER_EMAIL > config.py 的 CREEM_BUYER_EMAIL。
-    空串表示尚未记录 —— 此时 Creem 收银台会自己问买家要（MoR 法定必填，无法省）。
-    """
-    v = os.environ.get("WEAUTO_CREEM_BUYER_EMAIL")
-    if v is None:
-        v = (parse_config().get("CREEM_BUYER_EMAIL", "") or "")
-    return str(v).strip()
-
-
-def _remember_buyer_email(email: str) -> bool:
-    """把 Worker webhook 回传的买家邮箱写进 config.py，供下次续费预填。
-
-    只在「本地还没有」时写入，且做基本形状校验：
-      - 以 Creem 实际收款邮箱为准（webhook 是权威来源），不覆盖用户手填的值；
-      - 形状明显不合法（无 @ / 含空白 / 超长）直接丢弃，不污染 config.py。
-    返回是否真的落盘。
-    """
-    mail = (email or "").strip()
-    if not mail or len(mail) > 254 or "@" not in mail or re.search(r"\s", mail):
-        return False
-    if mail == _buyer_email():
-        return False
+@app.route('/api/license/offline', methods=['GET'])
+@login_required
+def api_license_offline():
+    """离线授权状态：识别码（完整 device_hash + 6 位短码）+ 已导入话术包 + 剩余次数。"""
     try:
-        update_config({"CREEM_BUYER_EMAIL": mail})
-        return True
+        import scriptpack as _sp
+        info = _sp.offline_license_info()
+        return jsonify(ok=True, **info)
     except Exception as e:
-        app.logger.warning(f"保存买家邮箱失败: {e}")
-        return False
+        return jsonify(ok=False, msg="读取授权状态失败: " + str(e)[:120])
 
 
-@app.route('/api/license/buy_url', methods=['GET'])
+@app.route('/api/license/import', methods=['POST'])
 @login_required
-def api_license_buy_url():
-    if not _guard:
-        return jsonify({"url": ""})
-    w = _guard.worker_url()
-    if not w:
-        return jsonify({"url": ""})
-    tier = request.args.get('tier', '').strip()
-    # 带上本机记住的买家邮箱：Worker 转发给 Creem 的 customer.email，
-    # 收银台邮箱框被**预填并锁定**，买家点开即可付款、零输入。
-    # Creem 是 MoR，邮箱无法免填（收据/税务法定要求），预填是唯一可行的减负方式。
-    # 前端可用 ?email= 覆盖（用户当次想用别的邮箱付款）。
-    email = (request.args.get('email') or _buyer_email()).strip()
-    import urllib.parse as _up
-    qs = []
-    if tier:
-        qs.append("tier=" + _up.quote(tier, safe=""))
-    # go=1：客户端点套餐卡片即选定档位，直接进 Creem 收银台（跳过中间购买列表页）
-    if request.args.get('go') == '1':
-        qs.append("go=1")
-    if email:
-        # 必须百分号编码：邮箱含 @ / + 等在 query value 里的保留字符，
-        # 不编码虽多数情况能解析，但 + 会被部分服务端解成空格。
-        qs.append("email=" + _up.quote(email, safe=""))
-    url = w + "/buy"
-    if qs:
-        url += "?" + "&".join(qs)
-    return jsonify({"url": url, "email": email})
+def api_license_import():
+    """导入离线授权文件（.wpk，管理员按识别码签发的话术包+回复次数）。
 
-
-@app.route('/api/license/poll', methods=['GET'])
-@login_required
-def api_license_poll():
-    """服务端代理轮询 Worker /license?mid=：付款后卡密由 webhook 写入 KV，前端据此自动核销。
-
-    放在服务端代理而非前端直连 Worker，是为了避免浏览器跨域（前端 localhost 无法直接
-    fetch Worker 域名）；同时不暴露任何密钥。
+    校验链（scriptpack）：magic/版本 → ECDSA 验签 → 设备绑定（带次数的包必须绑本机）
+    → 到期 → AES 解密。导入成功后：
+      - 话术包拷入 prompts/ 并激活（写 persona.scriptPack）；
+      - 回复次数写入本地 ledger（离线授权，跨天累计）；
+      - 向 Worker 上报激活（联网一次），云端改为按授权次数计费（X-Quota 校准）。
     """
-    if not _guard:
-        return jsonify(pending=True)
-    w = _guard.worker_url()
-    mid = request.args.get("mid", "")
-    if not w or not mid:
-        return jsonify(pending=True, error="no_mid")
-    try:
-        import urllib.request as _ur, json as _json
-        u = w + "/license?mid=" + mid
-        req = _ur.Request(u, headers={"accept": "application/json"})
-        with _ur.urlopen(req, timeout=10) as r:
-            d = _json.loads(r.read().decode("utf-8"))
-        if d.get("key"):
-            # 顺手把 webhook 回传的买家邮箱存进本机：下次续费直接预填进 Creem
-            # 收银台（buyer 不用再手打邮箱）。以 Creem 实际收款邮箱为准。
-            _remember_buyer_email(d.get("email") or "")
-            return jsonify(pending=False, key=d["key"], tier=d.get("tier", ""),
-                           email=d.get("email", ""))
-        return jsonify(pending=True)
-    except _ur.HTTPError as e:
-        if e.code == 404:
-            return jsonify(pending=True)
-        return jsonify(pending=True, error="http_" + str(e.code))
-    except Exception as e:
-        return jsonify(pending=True, error=str(e)[:120])
-
-
-@app.route('/api/license/email', methods=['POST'])
-@login_required
-def api_license_email():
-    """保存买家邮箱（仅用于付款页预填）。
-
-    首次购买前填一次 → 之后每次点「立即购买」，Creem 收银台邮箱框已填好并锁定，
-    买家点开直接付款、零输入。付款成功后 webhook 会回传 Creem 实际收款邮箱并覆盖此处，
-    所以即便这里填错也会被自动纠正。
-    """
-    try:
-        data = request.get_json(force=True, silent=True) or {}
-    except Exception:
-        data = {}
-    mail = (data.get("email") or "").strip()
-    if not mail:
-        # 传空 = 清除（用户不想记邮箱）。直接写空串，不走 _remember_buyer_email 的「不覆盖」逻辑。
-        try:
-            update_config({"CREEM_BUYER_EMAIL": ""})
-            return jsonify(ok=True, email="")
-        except Exception as e:
-            return jsonify(ok=False, msg="清除失败: " + str(e)[:120]), 500
-    ok = _remember_buyer_email(mail)
-    if not ok:
-        cur = _buyer_email()
-        if cur == mail:
-            return jsonify(ok=True, email=cur)
-        return jsonify(ok=False, msg="邮箱格式看起来不对，请检查是否填了完整地址"), 400
-    return jsonify(ok=True, email=mail)
-
-
-@app.route('/api/license/activate', methods=['POST'])
-@login_required
-def api_license_activate():
-    """激活并持久化卡密：写本地缓存 + 写回 config.py（重启仍有效），默认开启门禁。"""
+    import shutil
     if not _guard:
         return jsonify(ok=False, msg="weauto_license 模块不可用"), 500
     try:
-        data = request.get_json(force=True, silent=True) or {}
-    except Exception:
-        data = {}
-    key = (data.get("key") or "").strip()
-    if not key:
-        return jsonify(ok=False, msg="请输入卡密（License Key）")
-    ok, msg = _guard.activate(key)
-    if ok:
+        file = request.files.get("file")
+        if file is None or not file.filename:
+            return jsonify(ok=False, msg="请选择要导入的授权文件（.wpk）")
+        if not file.filename.lower().endswith(".wpk"):
+            return jsonify(ok=False, msg="授权文件必须是 .wpk 格式（话术包）")
+        tmp = os.path.join(tempfile.gettempdir(), "weauto_import_" + secrets.token_hex(8) + ".wpk")
+        file.save(tmp)
         try:
-            update_config({"CREEM_LICENSE_KEY": key, "LICENSE_GUARD_ENABLED": True})
-            # 套餐自动匹配模型：激活成功后，若用户尚未自定义模型（仍是出厂官方模型），
-            # 按订阅档位自动选用对应大小的模型（normal=70B / premium·lifetime=235B）。
-            # 已手填「其它」自定义模型的用户不受影响。
+            import scriptpack as _sp
+            meta, payload = _sp.import_offline_pack(tmp)
+        finally:
             try:
-                _cfg = parse_config()
-                _cur = (_cfg.get('MODEL') or '').strip()
-                if _cur in POPULAR_CHAT_MODELS:
-                    _rec = recommended_model_for_tier(_guard.license_tier())
-                    if _rec and _rec != _cur:
-                        update_config({'MODEL': _rec})
-            except Exception as _e:
-                app.logger.warning(f"激活后自动匹配套餐模型失败: {_e}")
+                os.remove(tmp)
+            except Exception:
+                pass
+        pack_id = meta["pack_id"]
+        quota = int(meta.get("reply_quota", 0) or 0)
+        # 激活话术包（persona.scriptPack = pack_id）
+        try:
+            import persona as _pa
+            _s = _pa.settings()
+            _s["scriptPack"] = pack_id
+            _pa.save_settings(_s)
         except Exception as e:
-            app.logger.warning(f"激活成功但写入 config.py 失败: {e}")
-        return jsonify(ok=True, msg=msg, status=_license_status())
-    return jsonify(ok=False, msg=msg)
+            app.logger.warning(f"写入话术包激活状态失败: {e}")
+        # 带次数的授权 → 写本地 ledger + 上报 Worker 激活
+        if quota > 0:
+            from weauto_license import ledger as _lg
+            _lg.set_offline_license(pack_id, meta.get("name", pack_id), quota,
+                                    int(meta.get("expires_at", 0) or 0))
+            try:
+                _sync_offline_activation(pack_id, quota)
+            except Exception as e:
+                app.logger.warning(f"Worker 激活上报失败（本地授权已生效）: {e}")
+        return jsonify(ok=True, pack_id=pack_id, name=meta.get("name", pack_id),
+                       reply_quota=quota, msg="授权导入成功" + ("（话术包 + %d 次回复）" % quota if quota else ""))
+    except Exception as e:
+        app.logger.warning(f"导入授权失败: {e}")
+        return jsonify(ok=False, msg="导入失败: " + str(e)[:200])
+
+
+def _sync_offline_activation(pack_id: str, quota: int) -> None:
+    """把离线授权上报 Worker（验签后云端改为按授权次数计费）。"""
+    import urllib.request as _ur
+    import base64 as _b64
+    import scriptpack as _sp
+    import device_id as _did
+    w = _guard.worker_url()
+    if not w:
+        return
+    dev = _did.get_device_id()
+    if not dev:
+        return
+    # 读取 prompts/ 下对应 .wpk 全文
+    target = None
+    for meta in _sp.list_packs():
+        if meta["pack_id"] == pack_id and not meta["error"]:
+            target = os.path.join(os.path.dirname(os.path.abspath(_sp.__file__)), "prompts", meta["file"])
+            break
+    if not target or not os.path.exists(target):
+        return
+    body = json.dumps({
+        "file_b64": _b64.b64encode(open(target, "rb").read()).decode("ascii"),
+        "device_id": dev,
+    }).encode("utf-8")
+    req = _ur.Request(w + "/api/activate-offline", data=body,
+                      headers={"content-type": "application/json", "accept": "application/json"})
+    with _ur.urlopen(req, timeout=15) as r:
+        resp = json.loads(r.read().decode("utf-8"))
+    if not resp.get("ok"):
+        raise RuntimeError(str(resp.get("error") or resp)[:200])
 
 
 # 注意：/api/license/deactivate 与 /api/license/set_guard 已删除。

@@ -253,6 +253,31 @@ def reset():
         return False
 
 
+# ------------------------------------------------------------------ 6 位短识别码
+# 离线授权模式：用户把短码/完整识别码报给管理员，管理员据此签发「话术包+回复次数」
+# 授权文件（绑本机 device_hash），离线分发后导入生效。
+# 6 位码不可逆（仅人工核对用），绑机签发的完整依据是 device_hash_hex（32 hex）。
+_SHORT_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"  # 去易混 I/O/0/1/L/U
+
+
+def six_digit_code() -> str:
+    """从稳定设备 ID 派生的 6 位短识别码（重装系统不变，仅展示/口头核对）。
+
+    确定性：同一设备永远同一短码；不落盘、不上传（任何场景都只展示）。
+    """
+    try:
+        dev = get_device_id()
+        h = hashlib.sha256(("weauto.shortcode.v1|" + dev).encode("utf-8")).digest()
+        n = int.from_bytes(h[:5], "big")  # 40 bit -> 6 位 32 进制
+        code = ""
+        for _ in range(6):
+            code += _SHORT_ALPHABET[n & 0x1F]
+            n >>= 5
+        return code
+    except Exception:
+        return "000000"
+
+
 # ------------------------------------------------------------------ 微信身份键
 # 盐值与算法必须与 Android 端（jev-chat-jarvis）完全一致，否则人格无法跨端互通。
 _WX_SALT = "weauto.wx-identity.v1"

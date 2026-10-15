@@ -442,7 +442,37 @@ async function proxyAi(req, env, url) {
   }
   // 免费配额路径（2026-10-14 商业模式：所有软件默认激活，无卡密/卡密无效
   // 也放行，但按机器指纹限制每日回复条数，超限 429，激活卡密可解除）。
+  // 2026-10-15 离线授权：导入管理员签发的「话术包+回复次数」授权文件并激活后，
+  // 本机按授权总次数计费（不再受每日免费条数限制）。
   const machine = quotaMachine(req);
+  const off = await getOfflineLic(env, machine);
+  if (off) {
+    const used = Number(off.used || 0);
+    const total = Number(off.total || 0);
+    if (used >= total) {
+      return json({
+        error: {
+          message: "回复次数已用完（离线授权），请联系管理员续期。",
+          type: "weauto_quota_error",
+          code: "offline_quota_exceeded",
+          quota_remaining: 0,
+          quota_limit: total,
+        },
+      }, 429, new Headers({ "X-Quota-Remaining": "0", "X-Quota-Limit": String(total) }));
+    }
+    const resp = await routeAi(req, env, url);
+    const h = new Headers(resp ? resp.headers : {});
+    if (resp && resp.status >= 200 && resp.status < 300) {
+      await incrOfflineUsed(env, machine);
+      h.set("X-Quota-Remaining", String(Math.max(0, total - used - 1)));
+    } else {
+      h.set("X-Quota-Remaining", String(Math.max(0, total - used)));
+    }
+    h.set("X-Quota-Limit", String(total));
+    h.set("X-Quota-Source", "offline");
+    if (resp) return new Response(resp.body, { status: resp.status, headers: h });
+    return new Response("{}", { status: 502, headers: h });
+  }
   const q = await checkDailyQuota(env, machine);
   if (!q.allowed) {
     const buy = env.CREEM_CHECKOUT_URL || (env.WORKER_URL ? env.WORKER_URL + "/buy" : "");
@@ -509,6 +539,170 @@ async function incrDailyQuota(env, machine) {
 }
 __name(incrDailyQuota, "incrDailyQuota");
 __name2(incrDailyQuota, "incrDailyQuota");
+
+/* ===================== 离线授权（话术包 + 回复次数） =====================
+ * 2026-10 商业模式：Creem 在线收款下线，改为「管理员按硬件识别码签发 .wpk
+ * （话术包 + 回复次数），离线分发，客户端导入后上报本端点激活」。
+ * - 激活校验：.wpk ECDSA P-256 验签（公钥 PACK_VERIFY_PUB env）→ 设备绑定
+ *   （header.device_hashes 含本机 device_hash）→ reply_quota>0 → 未到期；
+ * - 生效后 BILLING_KV 记 offline:lic:{machine}，/ai/v1 免费路径优先按授权
+ *   总次数计费（不再受每日免费条数限制），X-Quota 校准客户端本地记账。
+ */
+async function getOfflineLic(env, machine) {
+  if (!env.BILLING_KV || !machine) return null;
+  const raw = await env.BILLING_KV.get("offline:lic:" + machine);
+  if (!raw) return null;
+  try {
+    const o = JSON.parse(raw);
+    if (!o || !o.pack_id || !(o.total > 0)) return null;
+    if (o.expires_at && o.expires_at * 1000 < Date.now()) return null;
+    return o;
+  } catch (_) {
+    return null;
+  }
+}
+__name(getOfflineLic, "getOfflineLic");
+__name2(getOfflineLic, "getOfflineLic");
+async function setOfflineLic(env, machine, packId, total, expiresAt) {
+  if (!env.BILLING_KV || !machine) return;
+  await env.BILLING_KV.put("offline:lic:" + machine,
+    JSON.stringify({ pack_id: packId, total: Number(total), used: 0, expires_at: Number(expiresAt || 0), activated_at: Date.now() }),
+    { expirationTtl: 400 * 24 * 3600 });
+}
+__name(setOfflineLic, "setOfflineLic");
+__name2(setOfflineLic, "setOfflineLic");
+async function incrOfflineUsed(env, machine) {
+  if (!env.BILLING_KV || !machine) return 0;
+  const lic = await getOfflineLic(env, machine);
+  if (!lic) return 0;
+  lic.used = (lic.used || 0) + 1;
+  await env.BILLING_KV.put("offline:lic:" + machine, JSON.stringify(lic),
+    { expirationTtl: 400 * 24 * 3600 });
+  return lic.used;
+}
+__name(incrOfflineUsed, "incrOfflineUsed");
+__name2(incrOfflineUsed, "incrOfflineUsed");
+function b64Decode(s) {
+  const b = String(s).replace(/-/g, "+").replace(/_/g, "/");
+  const pad = b.length % 4;
+  const bin = atob(pad ? b + "=".repeat(4 - pad) : b);
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return u8;
+}
+__name(b64Decode, "b64Decode");
+__name2(b64Decode, "b64Decode");
+function derToRawEcdsa(der) {
+  // DER SEQUENCE -> IEEE P1363 raw r||s（WebCrypto ECDSA 输入格式）
+  try {
+    if (der.length < 8 || der[0] !== 0x30) return null;
+    let off = 2;
+    if (der[1] !== der.length - 2) return null;
+    if (der[off] !== 0x02) return null;
+    const rlen = der[off + 1];
+    const r = der.slice(off + 2, off + 2 + rlen);
+    off += 2 + rlen;
+    if (der[off] !== 0x02) return null;
+    const slen = der[off + 1];
+    const s = der.slice(off + 2, off + 2 + slen);
+    const ri = BigInt("0x" + Buffer.from(r).toString("hex"));
+    const si = BigInt("0x" + Buffer.from(s).toString("hex"));
+    const to32 = (v) => {
+      const h = v.toString(16).padStart(64, "0");
+      return Uint8Array.from(Buffer.from(h, "hex"));
+    };
+    const raw = new Uint8Array(64);
+    raw.set(to32(ri), 0);
+    raw.set(to32(si), 32);
+    return raw;
+  } catch (_) {
+    return null;
+  }
+}
+__name(derToRawEcdsa, "derToRawEcdsa");
+__name2(derToRawEcdsa, "derToRawEcdsa");
+async function wpkVerifySignature(env, aadCt, sigDer) {
+  const pubB64 = env.PACK_VERIFY_PUB;
+  if (!pubB64) return false;
+  try {
+    const raw = derToRawEcdsa(sigDer);
+    if (!raw) return false;
+    const key = await crypto.subtle.importKey("spki", b64Decode(pubB64),
+      { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+    return await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, raw, aadCt);
+  } catch (_) {
+    return false;
+  }
+}
+__name(wpkVerifySignature, "wpkVerifySignature");
+__name2(wpkVerifySignature, "wpkVerifySignature");
+function parseWpkHeader(data) {
+  // .wpk 明文头：WPK1 + ver(1) + flags(1) + hlen(2 LE) + header_json + payload_len(4) + ct_tag + sig_len(2) + sig
+  try {
+    if (data.length < 8) return null;
+    const magic = String.fromCharCode(data[0], data[1], data[2], data[3]);
+    if (magic !== "WPK1") return null;
+    const hlen = (data[7] << 8 | data[6]) >>> 0;
+    if (data.length < 8 + hlen + 4) return null;
+    const header = JSON.parse(new TextDecoder().decode(data.slice(8, 8 + hlen)));
+    let off = 8 + hlen;
+    const payloadLen = (data[off] | (data[off + 1] << 8) | (data[off + 2] << 16) | (data[off + 3] << 24)) >>> 0;
+    off += 4;
+    off += payloadLen; // 跳过 ct_tag 密文区
+    if (off + 2 > data.length) return null;
+    const sigLen = data[off] | (data[off + 1] << 8);
+    off += 2;
+    if (off + sigLen > data.length) return null;
+    const sig = data.slice(off, off + sigLen);
+    const aadCt = data.slice(0, 8 + hlen + 4 + payloadLen);
+    return { header, sig, aadCt };
+  } catch (_) {
+    return null;
+  }
+}
+__name(parseWpkHeader, "parseWpkHeader");
+__name2(parseWpkHeader, "parseWpkHeader");
+async function activateOffline(req, env) {
+  if (req.method !== "POST") return json({ ok: false, error: "method" }, 405);
+  let body;
+  try {
+    body = await req.json();
+  } catch (_) {
+    return json({ ok: false, error: "bad_json" }, 400);
+  }
+  const fileB64 = String(body.file_b64 || "");
+  const deviceId = String(body.device_id || "").trim();
+  if (!fileB64 || !deviceId) return json({ ok: false, error: "missing_fields" }, 400);
+  if (!env.PACK_VERIFY_PUB) return json({ ok: false, error: "pack_verify_not_configured" }, 503);
+  let data;
+  try {
+    data = b64Decode(fileB64);
+  } catch (_) {
+    return json({ ok: false, error: "bad_b64" }, 400);
+  }
+  const parsed = parseWpkHeader(data);
+  if (!parsed) return json({ ok: false, error: "bad_wpk_format" }, 400);
+  const h = parsed.header;
+  const quota = Number(h.reply_quota || 0);
+  if (!(quota > 0)) return json({ ok: false, error: "no_reply_quota" }, 400);
+  const packId = String(h.pack_id || "");
+  if (!packId) return json({ ok: false, error: "no_pack_id" }, 400);
+  const okSig = await wpkVerifySignature(env, parsed.aadCt, parsed.sig);
+  if (!okSig) return json({ ok: false, error: "bad_signature" }, 403);
+  // 设备绑定：device_hashes 非空时必须含本机 device_hash（sha256(device_id) 前 16B）
+  const dh = (await crypto.subtle.digest("SHA-256", new TextEncoder().encode(deviceId))).slice(0, 16);
+  const dhHex = Array.from(new Uint8Array(dh)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const bound = Array.isArray(h.device_hashes) && h.device_hashes.length > 0;
+  if (bound && !h.device_hashes.includes(dhHex)) {
+    return json({ ok: false, error: "device_mismatch" }, 403);
+  }
+  const expiresAt = Number(h.expires_at || 0);
+  if (expiresAt && expiresAt * 1000 < Date.now()) return json({ ok: false, error: "expired" }, 403);
+  await setOfflineLic(env, dhHex, packId, quota, expiresAt);
+  return json({ ok: true, pack_id: packId, reply_quota: quota, device_hash: dhHex });
+}
+__name(activateOffline, "activateOffline");
+__name2(activateOffline, "activateOffline");
 var DEFAULT_TIER = "standard";
 var JEV_COST = 1500;
 var TIERS = {
@@ -1634,6 +1828,9 @@ var cf_worker_default = {
     }
     if (p === "/api/update") {
       return updateProxy(req, env);
+    }
+    if (p === "/api/activate-offline") {
+      return activateOffline(req, env);
     }
     if (p === "/license" || p === "/ai" || p.startsWith("/ai/") || p === "/token/status") {
       const blocked = await integrityGate(req, env);

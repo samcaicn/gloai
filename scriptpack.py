@@ -130,6 +130,7 @@ def list_packs():
                 "expires_at": h.get("expires_at", 0),
                 "expired": time.time() >= h.get("expires_at", 0),
                 "device_bound": bool(h.get("device_hashes")),
+                "reply_quota": int(h.get("reply_quota", 0) or 0),  # 离线授权次数额度
                 "error": None,
             })
         except Exception as e:
@@ -188,10 +189,99 @@ def active_prompt(pack_id, fallback_prompt=""):
                 "relationship_hint": "", "pack": None}
 
 
+def load_pack_meta(pack_id):
+    """按 pack_id 找 prompts/*.wpk 的 header 摘要（不验签不解密）。找不到返回 None。"""
+    for meta in list_packs():
+        if meta["pack_id"] == pack_id and not meta["error"]:
+            return meta
+    return None
+
+
+def import_offline_pack(src_path, dst_dir=None):
+    """导入离线授权文件（.wpk）到 prompts/ 并做完整校验。
+
+    - 验签 + 解密 + 到期判定（scriptpack 安全链）
+    - 带 reply_quota 的包必须绑定本机（device_hashes 含本机 device_hash），否则 PackError(device)
+    - 同名 pack_id 覆盖导入（幂等）
+    返回 (meta, payload)；任何失败抛 PackError。
+    """
+    import shutil
+    with open(src_path, "rb") as f:
+        data = f.read()
+    h = pc.read_header(data)
+    pack_id = h.get("pack_id")
+    if not pack_id:
+        raise PackError("bad-pack", "授权文件缺少 pack_id")
+    # 完整安全链校验（验签/绑机/到期/解密）
+    payload = load_pack(pack_id, device_hash_hex=_device_hash_hex())
+    quota = int(h.get("reply_quota", 0) or 0)
+    if quota > 0 and not h.get("device_hashes"):
+        raise PackError("device", "带回复次数的授权文件必须绑定设备，本文件未绑机")
+    if dst_dir is None:
+        dst_dir = PROMPTS_DIR
+    try:
+        os.makedirs(dst_dir, exist_ok=True)
+        dst = os.path.join(dst_dir, os.path.basename(src_path))
+        shutil.copyfile(src_path, dst)
+    except Exception as e:
+        raise PackError("io", "写入 prompts/ 失败: %s" % e)
+    meta = load_pack_meta(pack_id)
+    return meta, payload
+
+
+def offline_license_info():
+    """本机离线授权摘要（供 UI 展示）：识别码 / 已导入话术包 / 剩余次数。
+
+    返回 dict：{device_id, device_hash_hex, short_code, pack_id, pack_name,
+                quota_total, quota_used, expires_at, active}
+    - quota_total/used 来自 ledger（授权记账）；话术包元信息来自 prompts/*.wpk。
+    """
+    info = {
+        "device_id": "",
+        "device_hash_hex": "",
+        "short_code": "",
+        "pack_id": "",
+        "pack_name": "",
+        "quota_total": 0,
+        "quota_used": 0,
+        "expires_at": 0,
+        "active": False,
+        "error": "",
+    }
+    try:
+        import device_id as _did
+        dev = _did.get_device_id()
+        info["device_id"] = dev
+        if dev:
+            info["device_hash_hex"] = pc.device_hash_hex(dev)
+            info["short_code"] = _did.six_digit_code()
+    except Exception as e:
+        info["error"] = "device: %s" % e
+    try:
+        from weauto_license import ledger as _lg
+        lic = _lg.offline_license()
+        if lic:
+            info["pack_id"] = lic.get("pack_id", "")
+            info["quota_total"] = int(lic.get("total", 0) or 0)
+            info["quota_used"] = int(lic.get("used", 0) or 0)
+            info["expires_at"] = int(lic.get("expires_at", 0) or 0)
+            if lic.get("pack_id"):
+                meta = load_pack_meta(lic["pack_id"])
+                if meta:
+                    info["pack_name"] = meta.get("name", lic["pack_id"])
+                    info["active"] = not meta.get("expired", False) \
+                        and int(lic.get("expires_at", 0) or 0) >= int(__import__("time").time())
+    except Exception as e:
+        if not info["error"]:
+            info["error"] = "ledger: %s" % e
+    return info
+
+
 if __name__ == "__main__":
     print("可用话术包：")
     for m in list_packs():
         mark = "[过期]" if m["expired"] else "[有效]"
         err = (" 错误:" + m["error"]) if m["error"] else ""
-        print("  %s %s v%s by %s 到期=%s%s" % (
-            mark, m["name"], m["version"], m["author"], m["expires_at"], err))
+        quota = (" 次数:%d" % m["reply_quota"]) if m["reply_quota"] else ""
+        print("  %s %s v%s by %s 到期=%s%s%s" % (
+            mark, m["name"], m["version"], m["author"], m["expires_at"], quota, err))

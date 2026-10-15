@@ -3652,7 +3652,7 @@
             <div class="sidebar-group is-secondary">
                 <div class="sidebar-group-label">系统与工具</div>
                 <ul>
-                    <li><a href="#" data-target="section-license">授权管理</a></li>
+                    <li><a href="#" data-target="section-license">离线授权</a></li>
                     <li><a href="#" data-target="section-logs">运行日志</a></li>
                     <li><a href="#" data-target="section-ext-cli">CLI工具控制</a></li>
                     <li><a href="#" data-target="section-ext-mcp">MCP 接入</a></li>
@@ -3915,7 +3915,7 @@
                     <h2>AI 模型</h2>
                     <small class="panel-lead">官方 AI 按套餐自动匹配；自备大模型可展开下方。</small>
                     <div class="form-group" id="tierModelNote">
-                        <small>当前套餐：<b>{{ license_tier or '未订阅（默认模型）' }}</b> · 模型：<b id="recommendedModelName" title="自动匹配：{{ recommended_model }}">自动匹配</b></small>
+                        <small>默认免费模式（每日回复条数受云端限制）。在「离线授权」页导入管理员签发的授权文件后，可解锁话术包与不限日次数的回复额度。</small>
                     </div>
                     <div class="form-group" id="customAiGroup">
                         <details>
@@ -4378,9 +4378,10 @@
                 <iframe class="ext-frame" data-src="{{ url_for('help_page') }}?embed=1" title="常见问题" loading="lazy"></iframe>
             </div>
 
-            <!-- 授权管理：买家只看「状态 + 购买 + 续费」三件事，其余全是内部流程 -->
+            <!-- 话术包与离线授权：管理员按硬件识别码签发 .wpk（话术包+回复次数），离线分发导入生效。
+                 2026-10 商业模式：Creem 在线收款已下线，整块授权改为本地导入离线授权文件。 -->
             <div id="section-license" class="content-panel">
-                <h2>授权管理</h2>
+                <h2>话术包与离线授权</h2>
 
                 <div class="form-group">
                     <span id="licenseBadge" style="display:inline-block;padding:4px 12px;border-radius:12px;background:#eee;color:#555;font-weight:bold;">检测中…</span>
@@ -4389,68 +4390,32 @@
 
                 <div id="licenseBanner" style="display:none;margin:8px 0;padding:10px 12px;border-radius:6px;background:#e6f4ea;color:#1e7e34;font-size:14px;"></div>
 
-                <!-- 套餐档位：唯一的购买入口，取代原先「购买许可证 + 支付方式折叠面板」两套入口 -->
-                <div class="form-group" style="margin:14px 0;">
-                    <label style="font-weight:600;">选择套餐</label>
-                    <div id="licenseTierRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
-                        <style>
-                            #licenseTierRow .lic-tier{transition:border-color .15s,box-shadow .15s;}
-                            #licenseTierRow .lic-tier:hover{border-color:#4caf50;box-shadow:0 2px 8px rgba(76,175,80,.22);}
-                            #licenseTierRow .lic-tier:active{transform:translateY(1px);}
-                            @media (prefers-color-scheme: dark){
-                                #licenseTierRow .lic-tier{background:#2a2a2a;border-color:#444;}
-                                #licenseTierRow .lic-tier div:first-child{color:#e0e0e0 !important;}
-                                #licenseTierRow .lic-tier div:last-child{color:#999 !important;}
-                            }
-                        </style>
-                        <button type="button" class="lic-tier" data-tier="normal"
-                            style="flex:1;min-width:150px;text-align:left;padding:12px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">
-                            <div style="font-weight:600;color:#333;">初级</div>
-                            <div style="color:#888;font-size:12px;margin-top:2px;">¥19.9 · 30 天</div>
-                        </button>
-                        <button type="button" class="lic-tier" data-tier="premium"
-                            style="flex:1;min-width:150px;text-align:left;padding:12px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">
-                            <div style="font-weight:600;color:#333;">中级</div>
-                            <div style="color:#888;font-size:12px;margin-top:2px;">¥59.9 · 30 天</div>
-                        </button>
-                        <button type="button" class="lic-tier" data-tier="lifetime"
-                            style="flex:1;min-width:150px;text-align:left;padding:12px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">
-                            <div style="font-weight:600;color:#333;">高级</div>
-                            <div style="color:#888;font-size:12px;margin-top:2px;">¥199 · 365 天</div>
-                        </button>
+                <!-- 设备识别码：6 位短码口头核对 + 完整 device_hash 用于签发绑机授权 -->
+                <div class="form-group" style="margin:14px 0;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;background:#f7f9ff;">
+                    <label style="font-weight:600;">设备识别码</label>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+                        <code id="offlineShortCode" style="font-size:22px;font-weight:700;background:#fff;padding:6px 14px;border:1px solid #ddd;border-radius:6px;letter-spacing:2px;"></code>
+                        <code id="offlineDeviceHash" style="font-size:12px;background:#fff;padding:5px 8px;border:1px solid #ddd;border-radius:4px;word-break:break-all;flex:1;min-width:200px;color:#666;"></code>
+                        <button type="button" id="offlineCopyHash" style="background:#1976d2;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;white-space:nowrap;">复制识别码</button>
                     </div>
-                    <small style="display:block;margin-top:8px;color:#888;">支付宝 / 银行卡结算，付款后自动激活。</small>
-                    <small style="display:block;margin-top:4px;color:#aaa;font-size:11.5px;">购买即代表同意：您自行确保使用行为符合所使用平台的服务条款，违规使用的账号风险由您自行承担。</small>
+                    <small style="display:block;margin-top:6px;color:#888;">把这串识别码发给管理员，管理员据此签发绑定本机的授权文件。重装系统后识别码不变；6 位短码仅用于口头核对。</small>
+                </div>
 
-                    <!-- 邮箱：只填一次，之后每次付款由 Creem 收银台自动填好（买家零输入）。
-                         Creem 是 MoR，收银台邮箱无法去掉（收据/税务法定必填），只能预填。 -->
-                    <div class="form-group" style="margin:12px 0 0;">
-                        <label style="font-weight:600;">付款邮箱</label>
-                        <div style="display:flex;gap:8px;margin-top:6px;">
-                            <input type="email" id="buyerEmailInput" placeholder="用于接收收据，付款页自动填入"
-                                   autocomplete="email" spellcheck="false"
+                <!-- 当前离线授权（话术包 + 回复次数） -->
+                <div class="form-group" id="offlineLicBox" style="display:none;margin:12px 0;padding:12px 14px;border:1px solid #c8e6c9;border-radius:8px;background:#f0faf0;font-size:14px;line-height:1.7;">
+                    <div id="offlineLicText"></div>
+                </div>
+
+                <!-- 导入授权文件 -->
+                <div class="form-group" style="margin:12px 0;">
+                    <label style="font-weight:600;">导入授权文件</label>
+                    <div style="display:flex;gap:8px;margin-top:6px;">
+                        <input type="file" id="offlineImportInput" accept=".wpk" class="api-key-input"
                                style="flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
-                            <button type="button" id="buyerEmailSaveBtn"
-                                style="background:#1976d2;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;white-space:nowrap;">保存</button>
-                        </div>
-                        <small id="buyerEmailHint" style="display:none;margin-top:6px;color:#888;">
+                        <button type="button" id="offlineImportBtn" style="background:#1976d2;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;white-space:nowrap;">导入生效</button>
                     </div>
+                    <small style="display:block;margin-top:6px;color:#aaa;font-size:11.5px;">授权文件为管理员按本机识别码签发的 .wpk（话术包 + 回复次数），仅本机有效，请勿外传。导入后话术包自动启用、回复次数立即生效。</small>
                 </div>
-
-                <!-- 当前套餐 + 续费：已激活时才出现 -->
-                <div class="form-group" id="licenseDurationBox" style="display:none;margin:12px 0;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;background:#f7f9ff;font-size:14px;line-height:1.7;">
-                    <div id="licenseDurationText" style="margin-bottom:8px;"></div>
-                    <button type="button" id="licenseRenewBtn" style="background:#ff9800;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">续费 / 升级</button>
-                </div>
-
-                <!-- 手动兜底：仅在自动同步失败时用（已全自动，入口隐藏；功能代码保留） -->
-                <details id="licenseManualFallback" style="display:none;margin-top:14px;">
-                    <summary style="cursor:pointer;color:#888;font-size:13px;">卡密没自动同步？点此手动激活</summary>
-                    <div class="form-group" style="margin-top:10px;">
-                        <input type="text" id="licenseKeyInput" placeholder="粘贴购买后获得的卡密" class="api-key-input" style="width:100%;">
-                        <button type="button" id="licenseActivateBtn" style="margin-top:8px;background:#1976d2;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">激活</button>
-                    </div>
-                </details>
 
                 <div id="licenseMsg" style="margin-top:10px;font-size:14px;"></div>
             </div>
@@ -4459,79 +4424,26 @@
             (function(){
                 var badge = document.getElementById('licenseBadge');
                 var expireEl = document.getElementById('licenseExpire');
-                var keyInput = document.getElementById('licenseKeyInput');
                 var msg = document.getElementById('licenseMsg');
                 var banner = document.getElementById('licenseBanner');
-                var manualBox = document.getElementById('licenseManualFallback');
-                var emailInput = document.getElementById('buyerEmailInput');
-                var emailSaveBtn = document.getElementById('buyerEmailSaveBtn');
-                var emailHint = document.getElementById('buyerEmailHint');
+                var shortCode = document.getElementById('offlineShortCode');
+                var devHash = document.getElementById('offlineDeviceHash');
+                var copyBtn = document.getElementById('offlineCopyHash');
+                var licBox = document.getElementById('offlineLicBox');
+                var licText = document.getElementById('offlineLicText');
+                var importInput = document.getElementById('offlineImportInput');
+                var importBtn = document.getElementById('offlineImportBtn');
 
-                // ---- 本机能力令牌 mid：高熵随机，贯穿「购买页→收银台 metadata→webhook→自动核销」 ----
-                var MID_KEY = 'weauto_license_mid';
-                function getMid(){
-                    var m = localStorage.getItem(MID_KEY);
-                    if(!m){
-                        var buf = new Uint8Array(32);
-                        (window.crypto || window.msCrypto).getRandomValues(buf);
-                        m = Array.prototype.map.call(buf, function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-                        localStorage.setItem(MID_KEY, m);
-                    }
-                    return m;
-                }
-                var mid = getMid();
-
-                // ---- 付款后自动轮询核销：取到卡密 → 激活 → 重启 ----
-                var _redeemTimer = null;
-                function startAutoRedeem(){
-                    if(_redeemTimer) return; // 已在轮询
-                    var tries = 0;
-                    // 付款自动核销无需提示（打开浮层即开始轮询）
-                    _redeemTimer = setInterval(async function(){
-                        tries++;
-                        try{
-                            var r = await fetch('/api/license/poll?mid=' + encodeURIComponent(mid));
-                            var d = await r.json();
-                            if(d.key){
-                                clearInterval(_redeemTimer); _redeemTimer = null;
-                                // webhook 已把 Creem 实际收款邮箱写进本机（/api/license/poll 落盘），
-                                // 这里同步到输入框，让用户看到「以后不用再填」。
-                                if(d.email && emailInput){
-                                    emailInput.value = d.email; emailInput.dataset.touched = '';
-                                    if(emailHint) emailHint.textContent = '已记住 ' + d.email + '，续费时付款页会自动填好。';
-                                }
-                                showMsg('已自动获取卡密，正在激活…');
-                                var res = await postJSON('/api/license/activate', {key: d.key});
-                                if(res.ok){
-                                    showMsg('卡密已激活，正在重启服务使授权生效…');
-                                    await postJSON('/api/license/restart', {});
-                                    showMsg('✅ 已自动激活并重启，授权立即生效（全程无需手动粘贴）', '#1e7e34');
-                                    loadStatus();
-                                } else {
-                                    showMsg('自动激活失败：' + (res.msg || '') + '，请手动粘贴卡密', '#c62828');
-                                }
-                                return;
-                            }
-                        }catch(e){ /* 网络抖动，继续轮询 */ }
-                        if(tries > 120){ // 约 6 分钟 @3s 仍未同步
-                            clearInterval(_redeemTimer); _redeemTimer = null;
-                            showMsg('超过等待时间仍未自动同步卡密（可能 Webhook 尚未配置）。请手动把邮件里的卡密粘贴到下方输入框激活。', '#b26a00');
-                        }
-                    }, 3000);
-                }
-
+                function csrfToken(){ var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.content : ''; }
+                function showMsg(text, color){ msg.style.color = color || '#1976d2'; msg.textContent = text; }
                 function setBadge(state, text){
                     var colors = {ok:['#e6f4ea','#1e7e34'], bad:['#fdecea','#c62828'], warn:['#fff4e5','#b26a00']};
                     var c = colors[state] || colors.warn;
                     badge.style.background = c[0]; badge.style.color = c[1];
                     badge.textContent = text;
                 }
-                function csrfToken(){ var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.content : ''; }
-                async function postJSON(url, body){
-                    var r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken()}, body: JSON.stringify(body||{})});
-                    return r.json();
-                }
-                function showMsg(text, color){ msg.style.color = color || '#1976d2'; msg.textContent = text; }
+
+                // ---- 授权状态：识别码 + 离线授权（话术包+回复次数） ----
                 async function loadStatus(){
                     try{
                         var r = await fetch('/api/license/status');
@@ -4539,128 +4451,76 @@
                         var s = await r.json();
                         if(!s.available){ setBadge('warn','模块不可用'); return; }
 
-                        if(s.activated){
-                            setBadge('ok', '已激活');
-                            expireEl.textContent = s.expire_at ? ('到期: ' + new Date(s.expire_at*1000).toLocaleDateString()) : '';
-                        } else if(s.expired){
-                            setBadge('bad', '已过期');
-                            expireEl.textContent = '';
-                        } else if(s.free_mode){
-                            setBadge('warn', '免费模式');
-                            expireEl.textContent = '每日回复条数受云端限制';
-                        } else {
-                            setBadge('bad', '未激活');
-                            expireEl.textContent = '';
-                        }
+                        // 识别码：6 位短码 + 完整 device_hash（签发授权用）
+                        if(shortCode) shortCode.textContent = s.short_code || '------';
+                        if(devHash) devHash.textContent = s.device_hash_hex || s.device_id || '';
+                        if(copyBtn) copyBtn.dataset.hash = s.device_hash_hex || s.device_id || '';
 
-                        // 当前套餐 + 续费入口（仅已激活时出现）
-                        var db = document.getElementById('licenseDurationBox');
-                        var dt = document.getElementById('licenseDurationText');
-                        var rb = document.getElementById('licenseRenewBtn');
-                        if (s.activated && s.days_left !== null && s.days_left !== undefined) {
-                            db.style.display = 'block';
-                            var tierName = ({normal:'初级', premium:'中级', lifetime:'高级'}[s.tier] || '当前');
-                            var txt = '当前套餐：<b>' + tierName + '</b>　剩余 <b>' + s.days_left + '</b> 天';
-                            if (s.near_expiry) txt += '　<span style="color:#c62828;font-weight:bold;">即将到期，请尽快续费</span>';
-                            dt.innerHTML = txt;
-                            if (rb) rb.setAttribute('data-tier', s.tier || 'normal');
-                        } else {
-                            db.style.display = 'none';
-                        }
-
-                        // 回填已记住的付款邮箱（用户在输入框里改过就别覆盖他的编辑）
-                        if(emailInput && document.activeElement !== emailInput && !emailInput.dataset.touched){
-                            emailInput.value = s.buyer_email || '';
-                        }
-                        if(emailHint && s.buyer_email){
-                            emailHint.textContent = '已记住 ' + s.buyer_email + '，付款页会自动填好。';
-                        }
-
-                        // 免费模式：默认可用，仅提示购买解锁更高额度；已激活就不要再啰嗦
-                        if (s.activated) {
+                        // 离线授权（话术包 + 回复次数）
+                        var lic = s.offline;
+                        if(lic && lic.total > 0){
+                            setBadge('ok', '已授权');
+                            var remain = lic.remaining;
+                            var txt = '话术包：<b>' + (s.pack_name || lic.pack_id) + '</b>　'
+                                + '剩余回复：<b>' + remain + ' / ' + lic.total + '</b> 次';
+                            if(lic.expires_at){
+                                txt += '　到期：' + new Date(lic.expires_at*1000).toLocaleDateString();
+                            }
+                            if(remain <= 0){
+                                txt += '　<span style="color:#c62828;font-weight:bold;">次数已用完，请联系管理员续期</span>';
+                                setBadge('bad', '次数用完');
+                            }
+                            licText.innerHTML = txt;
+                            licBox.style.display = 'block';
                             banner.style.display = 'none';
-                        } else if (s.free_mode) {
-                            banner.style.display = 'block';
-                            banner.style.background = '#e3f2fd'; banner.style.color = '#1565c0';
-                            banner.textContent = '当前为免费模式：所有功能默认可用，每日回复条数受云端限制。购买激活可解除限制。';
                         } else {
+                            licBox.style.display = 'none';
+                            setBadge('warn', '免费模式');
+                            expireEl.textContent = '';
                             banner.style.display = 'block';
                             banner.style.background = '#e3f2fd'; banner.style.color = '#1565c0';
-                            banner.textContent = '请选择一个套餐完成购买，付款成功后本机会自动激活。';
+                            banner.textContent = '当前为免费模式：所有功能默认可用，每日回复条数受云端限制。联系管理员购买「话术包 + 回复次数」授权可解除限制。';
                         }
                     }catch(e){ setBadge('warn','加载失败'); }
                 }
 
-                // ---- 购买：走软件内置窗口，付款后自动轮询核销 ----
-                async function buyTier(tier){
-                    if(!tier) return;
-                    try{
-                        // 带上已保存的邮箱：Creem 收银台会预填并锁定该邮箱框，
-                        // 买家点开就能直接付款、零输入。空值不影响（收银台会自己问）。
-                        // go=1：用户点卡片即选定套餐，直接进收银台，跳过中间购买列表页（少一段等待）。
-                        var qs = 'go=1&tier=' + encodeURIComponent(tier);
-                        var em = (emailInput && emailInput.value || '').trim();
-                        if(em) qs += '&email=' + encodeURIComponent(em);
-                        var r = await fetch('/api/license/buy_url?' + qs);
-                        var d = await r.json();
-                        if(!d.url){ showMsg('未配置授权服务地址，无法购买', '#c62828'); return; }
-                        var sep = d.url.indexOf('?') >= 0 ? '&' : '?';
-                        await openBuyInternal(d.url + sep + 'mid=' + encodeURIComponent(mid));
-                    }catch(e){ showMsg('请求失败: ' + e, '#c62828'); }
+                // ---- 复制识别码 ----
+                if(copyBtn){
+                    copyBtn.addEventListener('click', function(){
+                        var v = copyBtn.dataset.hash || '';
+                        if(!v){ showMsg('识别码尚未生成', '#b26a00'); return; }
+                        if(navigator.clipboard && navigator.clipboard.writeText){
+                            navigator.clipboard.writeText(v).then(
+                                function(){ showMsg('识别码已复制，可直接发给管理员', '#1e7e34'); },
+                                function(){ showMsg('复制失败，请手动选中复制', '#b26a00'); });
+                        } else {
+                            var ta = document.createElement('textarea');
+                            ta.value = v; document.body.appendChild(ta); ta.select();
+                            try{ document.execCommand('copy'); showMsg('识别码已复制，可直接发给管理员', '#1e7e34'); }
+                            catch(e){ showMsg('复制失败，请手动选中复制', '#b26a00'); }
+                            document.body.removeChild(ta);
+                        }
+                    });
                 }
 
-                // 改为在软件内以浮层打开购买页：全程不弹新窗口（也不 window.open 自动弹出）；
-                // 浮层由本模板底部的 #buyOverlay + iframe 承载，叠在当前界面之上。
-                async function openBuyInternal(url){
-                    if(typeof window.openBuyOverlay === 'function' && window.openBuyOverlay(url)){
-                        startAutoRedeem();
-                        return;
-                    }
-                    // 浮层不可用的极端兜底：仅提示，不提供任何浏览器/新窗口出口。
-                    showMsg('无法在软件内打开购买页，请重启软件后重试', '#b26a00');
-                }
-
-                // 三个档位卡片
-                document.querySelectorAll('.lic-tier').forEach(function(btn){
-                    btn.addEventListener('click', function(){ buyTier(btn.getAttribute('data-tier')); });
-                });
-                // 续费 = 按当前档位再买一次
-                var renewBtn = document.getElementById('licenseRenewBtn');
-                if(renewBtn){
-                    renewBtn.addEventListener('click', function(){ buyTier(renewBtn.getAttribute('data-tier') || 'normal'); });
-                }
-                // 手动兜底激活
-                document.getElementById('licenseActivateBtn').addEventListener('click', async function(){
-                    var key = keyInput.value.trim();
-                    if(!key){ showMsg('请先粘贴卡密', '#c62828'); return; }
-                    showMsg('正在激活…');
-                    try{
-                        var res = await postJSON('/api/license/activate', {key:key});
-                        showMsg(res.msg || (res.ok?'激活成功':'激活失败'), res.ok ? '#1e7e34' : '#c62828');
-                        if(res.ok){ keyInput.value=''; if(manualBox) manualBox.open = false; }
-                        loadStatus();
-                    }catch(e){ showMsg('请求失败: '+e, '#c62828'); }
-                });
-
-                // 保存付款邮箱（填一次，之后每次续费由 Creem 收银台自动填好）
-                if(emailInput){
-                    emailInput.addEventListener('input', function(){ emailInput.dataset.touched = '1'; });
-                }
-                if(emailSaveBtn){
-                    emailSaveBtn.addEventListener('click', async function(){
-                        var v = (emailInput.value || '').trim();
+                // ---- 导入授权文件（.wpk） ----
+                if(importBtn){
+                    importBtn.addEventListener('click', async function(){
+                        var f = importInput.files && importInput.files[0];
+                        if(!f){ showMsg('请先选择授权文件（.wpk）', '#c62828'); return; }
+                        if(!/\.wpk$/i.test(f.name)){ showMsg('授权文件必须是 .wpk 格式（话术包）', '#c62828'); return; }
+                        showMsg('正在导入并校验…（带次数的授权会联网激活一次）');
                         try{
-                            var res = await postJSON('/api/license/email', {email: v});
-                            if(res.ok){
-                                emailInput.value = res.email || '';
-                                emailInput.dataset.touched = '';
-                                emailHint.textContent = v ? ('已记住 ' + res.email + '，付款页会自动填好。')
-                                                         : '已清除，付款时收银台会自己询问。';
-                                showMsg('付款邮箱已保存', '#1e7e34');
-                            } else {
-                                showMsg(res.msg || '保存失败', '#c62828');
+                            var fd = new FormData();
+                            fd.append('file', f);
+                            var r = await fetch('/api/license/import', {method:'POST', headers:{'X-CSRFToken':csrfToken()}, body: fd});
+                            var d = await r.json();
+                            showMsg(d.msg || (d.ok ? '导入成功' : '导入失败'), d.ok ? '#1e7e34' : '#c62828');
+                            if(d.ok){
+                                importInput.value = '';
+                                loadStatus();
                             }
-                        }catch(e){ showMsg('保存失败: ' + e, '#c62828'); }
+                        }catch(e){ showMsg('导入请求失败: ' + e, '#c62828'); }
                     });
                 }
 
@@ -5403,76 +5263,6 @@
   .buy-ov-retry{border:1px solid #d0d0d0;background:#fff;color:#444;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;display:none;}
   .buy-ov-retry:hover{background:#f0f0f0;}
 </style>
-
-<div id="buyOverlay" class="buy-ov" role="dialog" aria-modal="true" aria-label="购买">
-  <div class="buy-ov-box">
-    <div class="buy-ov-bar">
-      <span class="buy-ov-title">购买 / 收银台</span>
-      <span class="buy-ov-spacer"></span>
-      <button class="buy-ov-close" id="buyOvClose" type="button" title="关闭">&times;</button>
-    </div>
-    <div class="buy-ov-wrap">
-      <div class="buy-ov-loading" id="buyOvLoading">
-        <div class="buy-ov-spin"></div>
-        <p id="buyOvLoadingText">正在打开收银台…</p>
-        <button class="buy-ov-retry" id="buyOvRetry" type="button">加载超时，点击重试</button>
-      </div>
-      <iframe id="buyOvFrame" class="buy-ov-frame" src="about:blank" title="购买"></iframe>
-      <div class="buy-ov-mask"></div>
-    </div>
-  </div>
-</div>
-
-<script>
-(function(){
-  var ov=document.getElementById('buyOverlay');
-  var fr=document.getElementById('buyOvFrame');
-  var ld=document.getElementById('buyOvLoading');
-  var ldText=document.getElementById('buyOvLoadingText');
-  var retry=document.getElementById('buyOvRetry');
-  var ldTimer=null;
-  function showLoading(){
-    if(ld) ld.classList.remove('hide');
-    if(retry) retry.style.display='none';
-    if(ldText) ldText.textContent='正在打开收银台…';
-    clearTimeout(ldTimer);
-    ldTimer=setTimeout(function(){
-      if(ldText) ldText.textContent='收银台加载较慢…';
-      if(retry) retry.style.display='inline-block';
-    },20000);
-  }
-  function close(){
-    clearTimeout(ldTimer);
-    ov.classList.remove('show');
-    try{ fr.src='about:blank'; }catch(e){}
-    // 关闭后刷新授权状态（typeof 对未定义变量安全，不会抛 ReferenceError）
-    if(typeof loadStatus==='function'){ try{ loadStatus(); }catch(e){} }
-  }
-  window.openBuyOverlay=function(url){
-    if(!url) return false;
-    showLoading();
-    fr.src=url;
-    ov.classList.add('show');
-    return true;
-  };
-  // 跨域 iframe 的 load 事件对父页面可见，加载完成即隐藏 loading
-  fr.addEventListener('load',function(){
-    clearTimeout(ldTimer);
-    if(ld) ld.classList.add('hide');
-  });
-  if(retry) retry.addEventListener('click',function(){
-    var cur=fr.src;
-    if(cur && cur!=='about:blank'){ showLoading(); fr.src=cur; }
-  });
-  window.closeBuyOverlay=close;
-  document.getElementById('buyOvClose').addEventListener('click',close);
-  // 点击遮罩空白处关闭；Esc 关闭
-  ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape' && ov.classList.contains('show')) close();
-  });
-})();
-</script>
 
 </body>
 </html>

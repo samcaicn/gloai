@@ -390,6 +390,9 @@ def build_header(script: dict, salt: bytes, nonce: bytes, device_hash_hexes) -> 
         "nonce": b64url_encode(nonce),
         "payload_sha256": b64url_encode(sha256(_canonical_payload(script))),
         "min_app_version": script.get("min_app_version", "0.0.0"),
+        # 离线授权：回复次数额度（0/缺省 = 纯话术包不带次数）。header 被 ECDSA 签名覆盖，
+        # 后台签发后不可篡改；Worker 激活时只读 header，无需解密 payload。
+        "reply_quota": int(script.get("reply_quota", 0) or 0),
     }
 
 
