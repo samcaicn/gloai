@@ -337,6 +337,13 @@
   white-space: nowrap;
 }
 
+/* One line under a picker saying what the picked build is: smaller, quieter than the label above it. */
+.localJudgeBuildNote {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
 .localJudgeProgress {
   display: flex;
   align-items: center;

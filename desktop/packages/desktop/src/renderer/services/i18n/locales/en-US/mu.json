@@ -204,6 +204,32 @@
         "start": "Laya did not start.",
         "stop": "Laya did not stop."
       },
+      "build": "Model build",
+      "runtime": "Runtime",
+      "runtimeCoreml": "Core ML (Apple Silicon)",
+      "runtimeOnnx": "ONNX (onnxruntime)",
+      "runtimeGguf": "GGUF (llama.cpp)",
+      "presetDefault": "Full (FP32)",
+      "presetDefaultNote": "The export the app first shipped, at the accuracy it was tested with, about {{size}} MB.",
+      "presetInt4": "4-bit",
+      "presetInt4Note": "The same weights exported at 4 bits: about a third of the size, the same accuracy in AiBuddy's tests, about {{size}} MB.",
+      "presetInt4Small": "4-bit (smaller)",
+      "presetInt4SmallNote": "The same weights at 4 bits with a quantized vocabulary as well: the smallest build, about {{size}} MB.",
+      "ggufQ8": "GGUF Q8_0",
+      "ggufQ8Note": "The 8-bit build llama.cpp publishes, about {{size}} MB.",
+      "ggufBf16": "GGUF BF16",
+      "ggufBf16Note": "The BF16 build llama.cpp publishes: the most accurate and the largest, about {{size}} MB.",
+      "ggufCustom": "A GGUF file I already have",
+      "ggufCustomNote": "Point at a Laya GGUF file on this computer; nothing is downloaded.",
+      "noServer": "This computer has no llama-server: point MU_LLAMA_SERVER_BIN at one, or pick another runtime.",
+      "gguf": {
+        "missing": "Laya's GGUF model is not on this computer yet. Pick a build and press Download model, or point at a file you already have.",
+        "stopped": "The model is in place, and Laya is not running. When Laya is your judge, AiBuddy starts it by itself when the app opens.",
+        "starting": "Starting llama-server and loading the model… The first start takes a moment.",
+        "server": "llama-server",
+        "customFile": "GGUF file",
+        "customFilePlaceholder": "For example D:\\models\\Laya-Q8_0.gguf"
+      },
       "onnx": {
         "missing": "Laya's model is not on this computer yet (about {{size}} MB). Pick a download source above and press Download model, or get the files yourself from Hugging Face and put them in the model folder.",
         "stopped": "The model is in place, and Laya is not running. When Laya is your judge, AiBuddy starts it by itself when the app opens.",
@@ -496,6 +522,7 @@
     "steps": {
       "model": "Model",
       "judge": "Judge",
+      "ilink": "WeChat",
       "done": "Done"
     },
     "skipAll": "Skip setup",
@@ -544,11 +571,20 @@
       "title": "Choose a judge",
       "subtitle": "The judge answers the small calls AiBuddy makes while it works. AiBuddy runs without one, just without these checks."
     },
+    "ilink": {
+      "title": "Connect WeChat (optional)",
+      "subtitle": "Connected, AiBuddy can also send you a WeChat message when a task finishes.",
+      "connected": "Connected. Disconnect or switch accounts later under Settings → iLink account.",
+      "later": "Nothing here is required: connect any time from the settings.",
+      "unavailable": "Scanning is unavailable right now; try again under Settings → iLink account."
+    },
     "done": {
       "title": "All set",
       "subtitle": "Check it over, then start.",
       "model": "Model",
       "judge": "Judge",
+      "ilink": "WeChat",
+      "ilinkOn": "Connected",
       "none": "Not set",
       "noKey": "No key yet: judgments follow the default rules until there is one",
       "saveFailed": "Saving did not work: {{reason}}",

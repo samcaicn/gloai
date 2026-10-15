@@ -25,10 +25,27 @@ function probeBatch(): Batch {
   };
 }
 
-/** Runs a Laya ONNX graph with onnxruntime-node (the Node port of upstream's browser `OnnxRunner`). */
+/** The five tensors one batch is fed as, kept between runs when the shape has not changed. */
+type Feeds = {
+  key: string;
+  inputIds: BigInt64Array;
+  attentionMask: BigInt64Array;
+  markerPos: BigInt64Array;
+  markerMask: Uint8Array;
+  qtype: BigInt64Array;
+};
+
+/**
+ * Runs a Laya ONNX graph with onnxruntime-node (the Node port of upstream's browser `OnnxRunner`).
+ *
+ * The tensors are reused between runs of the same shape: a judge answers requests of the same size all day, and
+ * allocating five typed arrays per batch only to fill them once was busywork. Nothing else shares them -- the judge
+ * runs one request at a time -- so refilling the same buffers is safe.
+ */
 export class NodeOnnxRunner implements Runner {
   readonly session: ort.InferenceSession;
   readonly provider: string;
+  private feeds?: Feeds;
 
   private constructor(session: ort.InferenceSession, provider: string) {
     this.session = session;
@@ -59,13 +76,38 @@ export class NodeOnnxRunner implements Runner {
     throw new Error(`No execution provider could run the model (${failures.join('; ')})`);
   }
 
+  /** The batch's buffers, allocated once per shape and refilled on every later run of that shape. */
+  private buffers(batch: Batch): Feeds {
+    const key = `${batch.rows}|${batch.length}|${batch.markers}`;
+    const cached = this.feeds;
+    if (cached?.key === key) {
+      cached.inputIds.set(batch.inputIds);
+      cached.attentionMask.set(batch.attentionMask);
+      cached.markerPos.set(batch.markerPos);
+      cached.markerMask.set(batch.markerMask);
+      cached.qtype.set(batch.qtype);
+      return cached;
+    }
+    const feeds: Feeds = {
+      key,
+      inputIds: BigInt64Array.from(batch.inputIds),
+      attentionMask: BigInt64Array.from(batch.attentionMask),
+      markerPos: BigInt64Array.from(batch.markerPos),
+      markerMask: Uint8Array.from(batch.markerMask),
+      qtype: BigInt64Array.from(batch.qtype),
+    };
+    this.feeds = feeds;
+    return feeds;
+  }
+
   async run(batch: Batch): Promise<RunnerOutput> {
+    const feeds = this.buffers(batch);
     const output = await this.session.run({
-      input_ids: new ort.Tensor('int64', batch.inputIds, [batch.rows, batch.length]),
-      attention_mask: new ort.Tensor('int64', batch.attentionMask, [batch.rows, batch.length]),
-      marker_pos: new ort.Tensor('int64', batch.markerPos, [batch.rows, batch.markers]),
-      marker_mask: new ort.Tensor('bool', batch.markerMask, [batch.rows, batch.markers]),
-      qtype: new ort.Tensor('int64', batch.qtype, [batch.rows]),
+      input_ids: new ort.Tensor('int64', feeds.inputIds, [batch.rows, batch.length]),
+      attention_mask: new ort.Tensor('int64', feeds.attentionMask, [batch.rows, batch.length]),
+      marker_pos: new ort.Tensor('int64', feeds.markerPos, [batch.rows, batch.markers]),
+      marker_mask: new ort.Tensor('bool', feeds.markerMask, [batch.rows, batch.markers]),
+      qtype: new ort.Tensor('int64', feeds.qtype, [batch.rows]),
     });
     const logits = output.logits;
     const actLogits = output.act_logits;
@@ -82,6 +124,7 @@ export class NodeOnnxRunner implements Runner {
   }
 
   release(): Promise<void> {
+    this.feeds = undefined;
     return this.session.release();
   }
 }

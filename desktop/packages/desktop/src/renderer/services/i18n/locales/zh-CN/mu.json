@@ -204,6 +204,32 @@
         "start": "Laya 没能启动。",
         "stop": "Laya 没能停止。"
       },
+      "build": "模型版本",
+      "runtime": "运行方式",
+      "runtimeCoreml": "Core ML（Apple Silicon）",
+      "runtimeOnnx": "ONNX（onnxruntime）",
+      "runtimeGguf": "GGUF（llama.cpp）",
+      "presetDefault": "完整版（FP32）",
+      "presetDefaultNote": "最早发布的导出，精度与测试基准一致，约 {{size}} MB。",
+      "presetInt4": "4-bit 量化版",
+      "presetInt4Note": "同一份权重的 4-bit 导出：体积约三分之一，测试集精度与完整版一致，约 {{size}} MB。",
+      "presetInt4Small": "4-bit 量化版（更小）",
+      "presetInt4SmallNote": "同一份权重的 4-bit 导出，词表也做了量化：体积最小的版本，约 {{size}} MB。",
+      "ggufQ8": "GGUF Q8_0",
+      "ggufQ8Note": "llama.cpp 官方发布的 8-bit 量化版，约 {{size}} MB。",
+      "ggufBf16": "GGUF BF16",
+      "ggufBf16Note": "llama.cpp 官方发布的 BF16 版：精度最高、体积最大，约 {{size}} MB。",
+      "ggufCustom": "使用已有的 GGUF 文件",
+      "ggufCustomNote": "指向本机已有的 Laya GGUF 文件，不下载。",
+      "noServer": "这台电脑上没有 llama-server：请用 MU_LLAMA_SERVER_BIN 指向它，或改用其他运行方式。",
+      "gguf": {
+        "missing": "这台电脑上还没有 Laya 的 GGUF 模型。选一个版本点「下载模型」，或指向已有的文件。",
+        "stopped": "模型已就位，Laya 没有运行。选了 Laya 作为判定器时，AiBuddy 会在打开 App 时自己启动它。",
+        "starting": "正在启动 llama-server 并加载模型… 第一次需要一会儿。",
+        "server": "llama-server",
+        "customFile": "GGUF 文件",
+        "customFilePlaceholder": "例如 D:\\models\\Laya-Q8_0.gguf"
+      },
       "onnx": {
         "missing": "这台电脑上还没有 Laya 的模型（约 {{size}} MB）。在上面选一个下载来源，点「下载模型」即可；或者自己从 Hugging Face 下好文件，放进模型文件夹。",
         "stopped": "模型已就位，Laya 没有运行。选了 Laya 作为判定器时，AiBuddy 会在打开 App 时自己启动它。",
@@ -496,6 +522,7 @@
     "steps": {
       "model": "模型",
       "judge": "判定器",
+      "ilink": "微信",
       "done": "完成"
     },
     "skipAll": "跳过引导",
@@ -544,11 +571,20 @@
       "title": "选一个判定器",
       "subtitle": "AiBuddy 工作时的各种小判断由判定器来回答。没有判定器也能运行，只是少了这些把关。"
     },
+    "ilink": {
+      "title": "连接微信（可选）",
+      "subtitle": "连上之后，AiBuddy 做完一件事时可以把结果也推送到你的微信。",
+      "connected": "已连接。以后可以在「设置 → iLink 账号」里断开或换一个号。",
+      "later": "不连也照常能用，之后随时可以在设置里连接。",
+      "unavailable": "这里暂时没法扫码，可以在「设置 → iLink 账号」里再试。"
+    },
     "done": {
       "title": "准备好了",
       "subtitle": "确认一下，就可以开始了。",
       "model": "模型",
       "judge": "判定器",
+      "ilink": "微信",
+      "ilinkOn": "已连接",
       "none": "暂未设置",
       "noKey": "还没有密钥，配好之前各判定点按默认规则处理",
       "saveFailed": "保存没有成功：{{reason}}",

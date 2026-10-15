@@ -29,18 +29,41 @@ export interface ScoreQuestion {
   instructions: Json;
   criteria: Criterion[];
 }
+/**
+ * The words a `noul` answer is offered under. Upstream Laya lets a question name them, so a judge that asks whether a
+ * message is "in scope" can be answered `in scope` / `out of scope` instead of `true` / `false`. The model was trained
+ * on the default pair, so this stays an opt-in and the labels only change the prompt text, not the answer shape.
+ */
+export type NoulLabels = { false: string; true: string };
+
 export interface NoulQuestion {
   type: 'noul';
   instructions: Json;
   criteria?: { false?: Criterion; true?: Criterion } | null;
+  labels?: NoulLabels;
 }
 export type Question = ChoiceQuestion | ScoreQuestion | NoulQuestion;
 
-/** Mirrors Python `Agent._to_internal` output: {"t", "ins", "crit"}. */
+/** Mirrors Python `Agent._to_internal` output: {"t", "ins", "crit", "labels"?}. */
 export type InternalQuestion =
   | { t: 'choice'; ins: string; crit: Record<string, Criterion> }
   | { t: 'score'; ins: string; crit: Criterion[] }
-  | { t: 'noul'; ins: string; crit: { false?: Criterion; true?: Criterion } | null };
+  | { t: 'noul'; ins: string; crit: { false?: Criterion; true?: Criterion } | null; labels?: NoulLabels };
+
+/**
+ * What the token budget took out of the state, as Python's `build_sequence(return_truncation_stats=True)` reports it.
+ * The room left for a state is `max_len` minus the question's own head, so it moves per checkpoint and per question:
+ * only the code that built the sequence can say how much of it survived.
+ */
+export interface StateTruncation {
+  /** How many tokens the state is, in full. */
+  tokens: number;
+  /** How many of them reached the sequence. */
+  used: number;
+  /** How many were cut. */
+  dropped: number;
+  truncated: boolean;
+}
 
 export interface AgentConfig {
   encoder: string;

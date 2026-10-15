@@ -4,7 +4,7 @@
 import { pyJson } from './pyjson.ts';
 import { renderOptions } from './questions.ts';
 import type { LayaTokenizer } from './tokenizer.ts';
-import type { Batch, InternalQuestion, PreparedItem, State } from './types.ts';
+import type { Batch, InternalQuestion, PreparedItem, State, StateTruncation } from './types.ts';
 import { QTYPES } from './types.ts';
 
 /** Python `serialize_state`: strings verbatim, otherwise `json.dumps(state, ensure_ascii=False)`. */
@@ -33,10 +33,11 @@ export function buildPrefix(
   const mask = tokenizer.maskToken;
   const options = renderOptions(q);
   const ins = q.ins.replaceAll(mask, ' ');
-  let headIds = tokenizer.encode(`${q.t} question: ${ins}`);
+  // mu: `encodeCached` for the question's own text: a judge is asked the same questions about new states all day.
+  let headIds = tokenizer.encodeCached(`${q.t} question: ${ins}`);
   let optIds = options.map((option) => [
     tokenizer.maskTokenId,
-    ...tokenizer.encode(' ' + option.replaceAll(mask, ' ')).slice(0, 48),
+    ...tokenizer.encodeCached(' ' + option.replaceAll(mask, ' ')).slice(0, 48),
   ]);
   const total = (rows: number[][]) => rows.reduce((n, row) => n + row.length, 0);
   let optBudget = headMaxLen - total(optIds);
@@ -56,18 +57,44 @@ export function buildPrefix(
   return { ids, markers };
 }
 
-/** Python `build_sequence`: prefix + state tokens (right-truncated) + [SEP], capped at maxLen. */
+export interface BuildSequenceOptions {
+  /**
+   * The state's token ids, when the caller already has them. Every question of a request sees the same state, so
+   * serializing and encoding it once instead of once per question is the same ids for a fraction of the work (upstream
+   * `Agent._encode_state`).
+   */
+  stateIds?: number[];
+  /**
+   * Which end of the state to cut when it does not fit. A conversation list is serialized newest-last, so the default
+   * for arrays keeps the newest turn: upstream's `truncate_left = isinstance(state, list)`.
+   */
+  truncateLeft?: boolean;
+  /** Receives what the budget took out of the state, so the caller can warn without re-tokenizing. */
+  onState?: (truncation: StateTruncation) => void;
+}
+
+/** Python `build_sequence`: prefix + state tokens (truncated to the room left) + [SEP], capped at maxLen. */
 export function buildSequence(
   tokenizer: LayaTokenizer,
   state: State,
   q: InternalQuestion,
   maxLen: number,
-  headMaxLen: number
+  headMaxLen: number,
+  options: BuildSequenceOptions = {}
 ): PreparedItem {
   const prefix = buildPrefix(tokenizer, q, headMaxLen);
   const room = Math.max(0, maxLen - prefix.ids.length - 1);
-  const stateIds = tokenizer.encode(serializeState(state).replaceAll(tokenizer.maskToken, ' ')).slice(0, room);
+  const all = options.stateIds ?? tokenizer.encode(serializeState(state).replaceAll(tokenizer.maskToken, ' '));
+  // Not `all.slice(-room)`: with no room left, `slice(-0)` is the whole state rather than none of it.
+  const truncateLeft = options.truncateLeft ?? Array.isArray(state);
+  const stateIds = truncateLeft ? all.slice(Math.max(0, all.length - room)) : all.slice(0, room);
   const ids = [...prefix.ids, ...stateIds, tokenizer.sepTokenId].slice(0, maxLen);
+  options.onState?.({
+    tokens: all.length,
+    used: stateIds.length,
+    dropped: all.length - stateIds.length,
+    truncated: stateIds.length < all.length,
+  });
   return { ids, markers: prefix.markers.filter((m) => m < maxLen), qtype: QTYPES[q.t] };
 }
 

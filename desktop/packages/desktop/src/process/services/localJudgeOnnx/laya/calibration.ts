@@ -28,6 +28,36 @@ export function softmax(values: ArrayLike<number>): number[] {
   return e.map((v) => v / sum);
 }
 
+/**
+ * A fitted temperature below 1 sharpens the logits instead of softening them, and no honest calibration needs to
+ * sharpen hard: upstream Laya refuses one, because a published checkpoint shipped `choice:11+` at 0.1006, which turns
+ * a genuine 0.24 top probability into 0.9999 and tells a caller gating on confidence that a coin flip is a certainty.
+ */
+export const TEMP_MIN = 0.5;
+export const TEMP_MAX = 5.0;
+
+/**
+ * Python `clamp_temperature`: `t` confined to [TEMP_MIN, TEMP_MAX], falling back to 1.0 when it is not a number. A
+ * boolean is not one either: `true` used to float to 1.0 and read as a fitted temperature.
+ */
+export function clampTemperature(t: unknown, lo: number = TEMP_MIN, hi: number = TEMP_MAX): number {
+  if (typeof t === 'boolean') return 1;
+  const value = typeof t === 'number' ? t : Number(t);
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(hi, Math.max(lo, value));
+}
+
+/** Python `answer_confidence`: the probability mass on the answer reported, `max(p)`. */
+export function answerConfidence(p: ArrayLike<number>, k: number): number {
+  if (k < 1) return 1;
+  let max = 0;
+  for (let i = 0; i < k; i++) {
+    const v = p[i]!;
+    if (v > max) max = v;
+  }
+  return Math.min(Math.max(max, 0), 1);
+}
+
 /** Python `temp_bucket`. */
 export function tempBucket(qtype: number, k: number): string {
   const size = k <= 2 ? '2' : k <= 5 ? '3-5' : k <= 10 ? '6-10' : '11+';
@@ -95,7 +125,9 @@ export function formatAnswers(input: FormatInput): PredictResult {
     const q = internal[row]!;
     const k = item.markers.length;
     const act = softmax(actLogits.subarray(row * actions, (row + 1) * actions));
-    const scale = config.temperature_by_options[tempBucket(item.qtype, k)] ?? config.temperature[item.qtype]!;
+    const raw = config.temperature_by_options[tempBucket(item.qtype, k)] ?? config.temperature[item.qtype]!;
+    // Python `clamp_temperature`: a temperature that would sharpen the logits past TEMP_MIN is not applied.
+    const scale = clampTemperature(raw);
     const z = Array.from(logits.subarray(row * markers, row * markers + k), (v) => v / Math.max(1e-3, scale));
     const p = softmax(z);
     const base = {

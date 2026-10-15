@@ -33,6 +33,9 @@ export interface TokenizerConfig {
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const isWhitespace = (ch: string) => /\p{White_Space}/u.test(ch);
 
+/** mu: how many question texts `encodeCached` keeps. A few thousand short id arrays is well under a megabyte. */
+const MEMO_MAX = 2048;
+
 interface AddedTokenInfo {
   id: number;
   lstrip: boolean;
@@ -85,6 +88,8 @@ export class LayaTokenizer {
   private readonly addedTokenInfo: Map<string, AddedTokenInfo>;
   private readonly replacement: string;
   private readonly pieceSplitter: RegExp;
+  /** mu: see `encodeCached`. */
+  private readonly memo = new Map<string, number[]>();
 
   constructor(tokenizerJson: TokenizerJson, tokenizerConfig: TokenizerConfig) {
     const pre = tokenizerJson.pre_tokenizer;
@@ -140,6 +145,25 @@ export class LayaTokenizer {
       last = match.end;
     }
     ids.push(...this.encodeSegment(text.slice(last)));
+    return ids;
+  }
+
+  /**
+   * mu: `encode` with a small cache, for the text of a question. A judge is asked the same questions about different
+   * states all day, and re-encoding an instruction and its options per request was the same ids over and over. The
+   * cache is bounded and drops its oldest entry when it fills, so a long run of different questions cannot grow it.
+   *
+   * The array is shared, not copied: a caller that changes it would change every answer. Every caller slices it.
+   */
+  encodeCached(text: string): number[] {
+    const hit = this.memo.get(text);
+    if (hit !== undefined) return hit;
+    const ids = this.encode(text);
+    if (this.memo.size >= MEMO_MAX) {
+      const oldest = this.memo.keys().next();
+      if (oldest.done === false) this.memo.delete(oldest.value);
+    }
+    this.memo.set(text, ids);
     return ids;
   }
 

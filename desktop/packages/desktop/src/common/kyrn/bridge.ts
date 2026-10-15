@@ -3,7 +3,7 @@ import type { ClmServerState } from './clm';
 import { KyrnError, type KyrnResult } from './errors';
 import type { ImportedHistory, ImportList, ImportOutcome } from './importChats';
 import type { LessonChange, LessonsView } from './lessons';
-import type { LocalJudgeAction, LocalJudgeState } from './localJudge';
+import type { LocalJudgeAction, LocalJudgeRuntime, LocalJudgeState } from './localJudge';
 import type { LoginState, LoginStatus, SubscriptionProvider } from './login';
 import type { AvailableModels, ModelThinkingLevels, ProviderTestInput, ProviderTestResult } from './models';
 import type { ActivityPage, KyrnCatalog, KyrnSettings, SaveSettings } from './types';
@@ -48,11 +48,16 @@ export const kyrnBridge = {
   loginLogout: bridge.buildProvider<KyrnResult<LoginStatus>, { provider: SubscriptionProvider }>('kyrn.login.logout'),
   /** The local judge (Laya) on this machine; see common/kyrn/localJudge.ts. */
   localJudgeState: bridge.buildProvider<KyrnResult<LocalJudgeState>, void>('kyrn.localJudge.state'),
-  /** `consent`: the person agreed to what `setup` downloads. `source`: onnx only, where the model files come from. */
+  /** `consent`: the person agreed to what `setup` downloads. `source`: onnx/gguf, where the model files come from. */
   localJudgeRun: bridge.buildProvider<
     KyrnResult<LocalJudgeState>,
-    { action: LocalJudgeAction; consent?: boolean; source?: { id: string; base?: string } }
+    { action: LocalJudgeAction; consent?: boolean; source?: { id: string; base?: string; preset?: string } }
   >('kyrn.localJudge.run'),
+  /** Picks the runtime (and the build of the model) this machine runs the judge with; see common/kyrn/localJudge.ts. */
+  localJudgeRuntime: bridge.buildProvider<
+    KyrnResult<LocalJudgeState>,
+    { runtime: LocalJudgeRuntime; preset?: string; file?: string }
+  >('kyrn.localJudge.runtime'),
   /** How the CLM server behind a judge's address is (common/kyrn/clm.ts), asked by the main process. */
   clmCheck: bridge.buildProvider<KyrnResult<ClmServerState>, { baseUrl: string }>('kyrn.clm.check'),
 };

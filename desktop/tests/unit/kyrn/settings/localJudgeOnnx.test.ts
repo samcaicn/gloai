@@ -97,7 +97,7 @@ describe('the ONNX local judge as the app manages it', () => {
       installed: false,
       running: false,
       url: 'http://127.0.0.1:47823',
-      model: { folder: FOLDER, missing: ['model.onnx', 'onnx_config.json'], wrong: [] },
+      model: { folder: FOLDER, missing: ['model.onnx', 'onnx_config.json'], wrong: [], preset: 'default' },
     });
     const moved = judge({ env: { MU_LOCAL_JUDGE_ONNX_DIR: 'D:\\models\\laya', MU_LOCAL_JUDGE_PORT: '5000' } });
     expect(await moved.local.state()).toMatchObject({
@@ -107,9 +107,16 @@ describe('the ONNX local judge as the app manages it', () => {
     });
   });
 
-  it('never downloads, and refuses what this machine cannot do', async () => {
+  it('downloads on a supported machine and refuses what this machine cannot do', async () => {
     const { local } = judge();
-    await expect(local.run('setup', true)).rejects.toThrow('does not download');
+    // The app now downloads the model itself, so `setup` starts a download rather than refusing.
+    const original = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => new Response('boom', { status: 500 })) as unknown as typeof globalThis.fetch;
+    try {
+      await expect(local.run('setup', true)).resolves.toMatchObject({ task: { action: 'setup' } });
+    } finally {
+      globalThis.fetch = original;
+    }
     await expect(local.run('run' as never)).rejects.toThrow('Unknown');
     await expect(judge({ platform: 'darwin', arch: 'x64' }).local.run('start')).rejects.toThrow('cannot run');
   });
@@ -125,7 +132,7 @@ describe('the ONNX local judge as the app manages it', () => {
     const { local, forked } = judge({ check });
     await local.run('start');
     await settle();
-    expect(check).toHaveBeenCalledWith(FOLDER, true);
+    expect(check).toHaveBeenCalledWith(FOLDER, true, 'default');
     expect(forked).toHaveLength(0);
     expect((await local.state()).task).toMatchObject({
       action: 'start',
