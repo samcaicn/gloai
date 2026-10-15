@@ -1307,7 +1307,7 @@
       "mcp": {
         "line": "{{name}}: {{reason}}",
         "projectUntrusted": "the project is not trusted, and this server is defined by the project",
-        "needsApproval": "it is defined by the project ({{source}}) and has not been approved; open this folder in AiBuddy and allow it once, or define it in AiBuddy.json",
+        "needsApproval": "it is defined by the project ({{source}}) and has not been approved; open this folder in AiBuddy and allow it once, or define it in mu.json",
         "denied": "you did not allow this project's server to start",
         "unreachable": "it could not be started or reached",
         "closed": "its connection closed while AiBuddy was still waiting for an answer",

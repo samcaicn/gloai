@@ -1307,7 +1307,7 @@
       "mcp": {
         "line": "{{name}}：{{reason}}",
         "projectUntrusted": "项目未被信任，而这个服务器是项目自己定义的",
-        "needsApproval": "它由项目定义（{{source}}），还没有获得批准；在 AiBuddy 中打开这个文件夹并允许一次，或者在 AiBuddy.json 中定义它",
+        "needsApproval": "它由项目定义（{{source}}），还没有获得批准；在 AiBuddy 中打开这个文件夹并允许一次，或者在 mu.json 中定义它",
         "denied": "你没有允许这个项目的服务器启动",
         "unreachable": "无法启动或连接到它",
         "closed": "AiBuddy 还在等回应时，连接就关闭了",
