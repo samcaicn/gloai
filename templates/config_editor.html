@@ -4383,7 +4383,7 @@
 
                 <div id="licenseBanner" style="display:none;margin:8px 0;padding:10px 12px;border-radius:6px;background:#e6f4ea;color:#1e7e34;font-size:14px;"></div>
 
-                <!-- 设备识别码：6 位短码口头核对 + 完整 device_hash 用于签发绑机授权 -->
+                <!-- 设备识别码：8 位数字短码口头核对 + 完整 device_hash 用于签发绑机授权 -->
                 <div class="form-group" style="margin:14px 0;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;background:#f7f9ff;">
                     <label style="font-weight:600;">设备识别码</label>
                     <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
@@ -4391,7 +4391,7 @@
                         <code id="offlineDeviceHash" style="font-size:12px;background:#fff;padding:5px 8px;border:1px solid #ddd;border-radius:4px;word-break:break-all;flex:1;min-width:200px;color:#666;"></code>
                         <button type="button" id="offlineCopyHash" style="background:#1976d2;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;white-space:nowrap;">复制识别码</button>
                     </div>
-                    <small style="display:block;margin-top:6px;color:#888;">把这串识别码发给管理员，管理员据此签发绑定本机的授权文件。重装系统后识别码不变；6 位短码仅用于口头核对。</small>
+                    <small style="display:block;margin-top:6px;color:#888;">把这串识别码发给管理员，管理员据此签发绑定本机的授权文件。重装系统后识别码不变；8 位数字短码仅用于口头核对。</small>
                 </div>
 
                 <!-- 当前离线授权（话术包 + 回复次数） -->
@@ -4444,7 +4444,7 @@
                         var s = await r.json();
                         if(!s.available){ setBadge('warn','模块不可用'); return; }
 
-                        // 识别码：6 位短码 + 完整 device_hash（签发授权用）
+                        // 识别码：8 位数字短码 + 完整 device_hash（签发授权用）
                         if(shortCode) shortCode.textContent = s.short_code || '------';
                         if(devHash) devHash.textContent = s.device_hash_hex || s.device_id || '';
                         if(copyBtn) copyBtn.dataset.hash = s.device_hash_hex || s.device_id || '';

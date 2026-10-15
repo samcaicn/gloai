@@ -253,29 +253,25 @@ def reset():
         return False
 
 
-# ------------------------------------------------------------------ 6 位短识别码
+# ------------------------------------------------------------------ 8 位数字短识别码
 # 离线授权模式：用户把短码/完整识别码报给管理员，管理员据此签发「话术包+回复次数」
 # 授权文件（绑本机 device_hash），离线分发后导入生效。
-# 6 位码不可逆（仅人工核对用），绑机签发的完整依据是 device_hash_hex（32 hex）。
-_SHORT_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"  # 去易混 I/O/0/1/L/U
+# 8 位数字码不可逆（仅人工核对用），绑机签发的完整依据是 device_hash_hex（32 hex）。
 
 
-def six_digit_code() -> str:
-    """从稳定设备 ID 派生的 6 位短识别码（重装系统不变，仅展示/口头核对）。
+def eight_digit_code() -> str:
+    """从稳定设备 ID 派生的 8 位数字短识别码（重装系统不变，仅展示/口头核对）。
 
     确定性：同一设备永远同一短码；不落盘、不上传（任何场景都只展示）。
+    空间：10^8 = 1 亿组合，取 sha256 前 32bit 取模映射，分布均匀。
     """
     try:
         dev = get_device_id()
-        h = hashlib.sha256(("weauto.shortcode.v1|" + dev).encode("utf-8")).digest()
-        n = int.from_bytes(h[:5], "big")  # 40 bit -> 6 位 32 进制
-        code = ""
-        for _ in range(6):
-            code += _SHORT_ALPHABET[n & 0x1F]
-            n >>= 5
-        return code
+        h = hashlib.sha256(("weauto.shortcode.v2|" + dev).encode("utf-8")).digest()
+        n = int.from_bytes(h[:4], "big")  # 32 bit
+        return "%08d" % (n % 100000000)
     except Exception:
-        return "000000"
+        return "00000000"
 
 
 # ------------------------------------------------------------------ 微信身份键

@@ -254,7 +254,7 @@ def offline_license_info():
         info["device_id"] = dev
         if dev:
             info["device_hash_hex"] = pc.device_hash_hex(dev)
-            info["short_code"] = _did.six_digit_code()
+            info["short_code"] = _did.eight_digit_code()
     except Exception as e:
         info["error"] = "device: %s" % e
     try:
