@@ -918,6 +918,30 @@ open class ChatCaptureService : AccessibilityService() {
         return null
     }
 
+    /**
+     * 微信窗口在屏幕上的实际 bounds。半屏回复界面（ColorOS 闪回小窗 / 通知横幅
+     * 半屏回复）下微信窗口只占屏幕一部分，所有按屏幕比例算的坐标（输入栏、
+     * 发送键）都会点到窗外——必须先取真实窗口边界再换算。
+     * FLAG_SECURE 只剪内容不剪节点坐标，root.getBoundsInScreen 仍可读。
+     */
+    private fun weChatWindowBounds(): Rect? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        for (w in getWindows() ?: emptyList()) {
+            if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) continue
+            val r = try {
+                w.root
+            } catch (_: Throwable) {
+                null
+            } ?: continue
+            if (r.packageName?.toString() == PKG_WECHAT) {
+                val b = Rect()
+                r.getBoundsInScreen(b)
+                if (!b.isEmpty) return b
+            }
+        }
+        return null
+    }
+
     private fun maybeCapture() {
         lastTreeSnapshot = null // fresh capture cycle; only the OCR-primary branch re-sets it
         val root = rootInActiveWindow ?: run { leaveConversation(); overlay?.hide(); return }
@@ -1693,7 +1717,16 @@ open class ChatCaptureService : AccessibilityService() {
         val dm = resources.displayMetrics
         val imeH = imeWindowHeight()
         val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
-        return dm.widthPixels * 0.462f to (dm.heightPixels - imeH - barHalf)
+        // 窗口相对化（半屏兼容）：全屏时 bounds.bottom==屏高，yBase 取到 屏高-IME高，
+        // 与旧屏幕比例公式逐像素一致；半屏小窗时取「小窗底」与「屏底-IME高」中更靠上
+        // 的一个——输入栏永远紧贴这两个上沿的下方的那个（三种窗口形态自洽）。
+        val b = weChatWindowBounds()
+        val left = b?.left?.toFloat() ?: 0f
+        val width = b?.width()?.toFloat() ?: dm.widthPixels.toFloat()
+        val yBase = listOfNotNull(b?.bottom?.toFloat(), dm.heightPixels - imeH)
+            .filter { it > 0f }
+            .minOrNull() ?: dm.heightPixels.toFloat()
+        return left + width * 0.462f to (yBase - barHalf)
     }
 
     private fun wxSendPoint(): Pair<Float, Float> {
@@ -1704,11 +1737,18 @@ open class ChatCaptureService : AccessibilityService() {
         // 2412-304-77=2031，与绿键实测中心 (984,2031) 吻合；**回复多行时绿键
         // 并不移位**（多行只撑高上面的输入框，图标行位置不变——曾把已发气泡
         // 误读成按钮，虚惊一场）。输入框空时同一位置变灰色「+」。
-        // 全部按屏幕参数算，换手机/换分辨率自动适配，无硬编码坐标。
+        // 半屏兼容（2026-10-15）：全部改按微信窗口实际 bounds 相对换算——
+        // 全屏时与旧屏幕比例公式逐像素一致（bounds=全屏），半屏小窗自动跟随窗口边界。
         val dm = resources.displayMetrics
         val imeH = imeWindowHeight()
         val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
-        return dm.widthPixels * 0.9111f to (dm.heightPixels - imeH - barHalf)
+        val b = weChatWindowBounds()
+        val left = b?.left?.toFloat() ?: 0f
+        val width = b?.width()?.toFloat() ?: dm.widthPixels.toFloat()
+        val yBase = listOfNotNull(b?.bottom?.toFloat(), dm.heightPixels - imeH)
+            .filter { it > 0f }
+            .minOrNull() ?: dm.heightPixels.toFloat()
+        return left + width * 0.9111f to (yBase - barHalf)
     }
 
     /** IME 窗口实际高度：IME 活着时取其发布值（<100px 是窗口收缩瞬间的假值，弃用），否则回落键盘同高兜底。 */
@@ -1755,7 +1795,7 @@ open class ChatCaptureService : AccessibilityService() {
             val gesture = GestureDescription.Builder()
                 .addStroke(GestureDescription.StrokeDescription(path, 0, 60L))
                 .build()
-            Log.i(TAG, "sendTap: dispatching tap at (${x.toInt()},${y.toInt()})")
+            Log.i(TAG, "sendTap: dispatching tap at (${x.toInt()},${y.toInt()}) win=${weChatWindowBounds()}")
             dispatchGesture(gesture, null, null)
         }
         // 发送链开始：dwell advance 被门控（sendSettled=false），直到判定
