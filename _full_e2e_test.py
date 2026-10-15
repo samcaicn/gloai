@@ -75,10 +75,18 @@ def backup():
 def restore():
     for rel in PROTECTED_FILES:
         src = os.path.join(BACKUP, rel)
+        dst = os.path.join(ROOT, rel)
         if os.path.exists(src):
-            dst = os.path.join(ROOT, rel)
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy2(src, dst)
+        elif os.path.exists(dst):
+            # 备份里没有、但测试期间新建的（如全新环境 CI 上生成的
+            # chat_contexts.json / forum_data/npc_config.json 等运行时缓存）→ 删掉，
+            # 保持工作区与测试前一致，不把 untracked 残留留进仓库。
+            try:
+                os.remove(dst)
+            except Exception:
+                pass
     for rel in PROTECTED_DIRS:
         src = os.path.join(BACKUP, rel)
         if os.path.isdir(src):
@@ -114,8 +122,12 @@ def main():
     check("/api/ping 200（单实例检测用，无需登录）", r.status_code == 200, r.get_data(as_text=True)[:60])
     c.get("/logout")
     r = c.get("/")
+    # 出厂免密：应直接进入主界面(200)；全新环境（CI）无 API key 时 index 会
+    # 302 到 quick_start —— 同样属于「免密自动进入」，不会卡在登录页/密码设置页。
+    _loc1 = r.headers.get("Location", "") or ""
     check("logout 后访问主界面可自动登录（出厂免密，不会把自己锁在外面）",
-          r.status_code == 200, f"{r.status_code}")
+          r.status_code == 200 or (r.status_code == 302 and "quick_start" in _loc1),
+          f"{r.status_code} {_loc1[:60]}")
 
     # ---------- 2. 全部页面渲染 ----------
     print("\n=== 2. 全部页面渲染 ===")
@@ -127,7 +139,10 @@ def main():
         except Exception as e:
             check(f"页面 {p} 渲染", False, repr(e)[:80])
             continue
+        # 主界面在「无 API key」的全新环境会 302 到 quick_start（产品行为），视为可进入
         ok = r.status_code == 200
+        if not ok and p == "/" and r.status_code == 302:
+            ok = "quick_start" in (r.headers.get("Location", "") or "")
         if ok and p.startswith("/forum"):
             ok = len(r.get_data()) > 200
         check(f"页面 {p} 渲染 200", ok, f"{r.status_code}")
@@ -202,23 +217,26 @@ def main():
     r = c.get("/api/get_chat_context_users")
     users = jget(r).get("users", []) if r.status_code == 200 else []
     check("聊天上下文用户列表 200", r.status_code == 200, f"{len(users)} 个用户")
-    # 接口约定：只能编辑**已存在**用户的上下文（不存在的用户名返回 404），
-    # 所以取真实列表里的第一个用户来测，改动由全局备份还原。
+    # 接口约定：只能编辑**已存在**用户的上下文（不存在的用户名返回 404）。
+    # CI/全新环境没有历史用户与上下文文件，先按 bot 写入的真实格式预置一个
+    # 测试用户，再走保存/回读（文件属运行时缓存，restore 时若备份无则删除）。
     # context 是「JSON 数组序列化后的字符串」，不是对象。
-    TEST_USER = users[0] if users else None
-    if not TEST_USER:
-        check("聊天上下文读写（需至少一个已有用户）", False, "无可用用户")
-    else:
-        r = c.post(f"/api/save_chat_context/{TEST_USER}",
-                   json={"context": json.dumps([{"role": "user", "content": "e2e 测试"}])})
-        check(f"保存用户上下文（{TEST_USER}）", r.status_code in (200, 201, 204),
-              f"{r.status_code} {str(jget(r))[:70]}")
-        r = c.get(f"/api/get_chat_context/{TEST_USER}")
-        check("回读用户上下文", r.status_code == 200, f"{r.status_code}")
-        # 只清不存在的用户，避免删掉真实历史（自洁且无损）
-        r = c.post("/clear_chat_context/_e2e_not_exist_user")
-        check("清理不存在的用户：安全拒绝（不误删真实数据）",
-              r.status_code in (200, 400, 404), f"{r.status_code}")
+    TEST_USER = users[0] if users else "_e2e_test_user"
+    _ctx_file = os.path.join(ROOT, "chat_contexts.json")
+    if not os.path.exists(_ctx_file):
+        with open(_ctx_file, "w", encoding="utf-8") as _f:
+            json.dump({TEST_USER: [{"role": "user", "content": "init"}]},
+                      _f, ensure_ascii=False, indent=4)
+    r0 = c.post(f"/api/save_chat_context/{TEST_USER}",
+                json={"context": json.dumps([{"role": "user", "content": "e2e 测试"}])})
+    check(f"保存用户上下文（{TEST_USER}）", r0.status_code in (200, 201, 204),
+          f"{r0.status_code} {str(jget(r0))[:70]}")
+    r = c.get(f"/api/get_chat_context/{TEST_USER}")
+    check("回读用户上下文", r.status_code == 200, f"{r.status_code}")
+    # 只清不存在的用户，避免删掉真实历史（自洁且无损）
+    r = c.post("/clear_chat_context/_e2e_not_exist_user")
+    check("清理不存在的用户：安全拒绝（不误删真实数据）",
+          r.status_code in (200, 400, 404), f"{r.status_code}")
 
     # ---------- 7. AI 分身 NPC ----------
     print("\n=== 7. AI 分身（NPC 设置）===")
