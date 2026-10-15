@@ -27,6 +27,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
             migrateIfNeeded()
             unseedBochaDefaultIfUnconfigured()
             normalizeHiddenSettings()
+            normalizeAutoDefaults()
         }
     }
 
@@ -63,6 +64,27 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         if (rel.startsWith(LEGACY_REL_PREFIX)) e.putString(K_REL, DEFAULT_REL)
         e.apply()
         Log.i(TAG, "prefs: cloud backup defaulted OFF after settings simplification")
+    }
+
+    /**
+     * 2026-10-15：自动回复开箱即用。用户明确要求不要再去设置页手动开一堆开关，
+     * 自动分析 / 自动填入 / 自动发送 / 自动打开会话全部默认开启。
+     *
+     * 关键：旧版装机把 `auto_analyze` / `auto_send` 残留成 false 并持久化，而 SharedPreferences
+     * 只在 key 缺失时才用 getter 默认值——`install -r` 升级后已存的 false 不会被新默认覆盖，
+     * 导致「代码默认 true 但设备仍 false」。这里一次性把这几个 key 显式置 true（仅执行一次），
+     * 升级后立刻生效。之后再允许用户手动关（getter 尊重已存值），本归一化不再进入。
+     */
+    private fun normalizeAutoDefaults() {
+        if (sp.getBoolean(K_AUTO_DEFAULTS_V1, false)) return
+        val e = sp.edit().putBoolean(K_AUTO_DEFAULTS_V1, true)
+        e.putBoolean(K_AUTO, true)
+        e.putBoolean(K_AUTO_SEND, true)
+        e.putBoolean(K_AUTO_FILL, true)
+        e.putBoolean(K_AUTO_OPEN, true)
+        e.putBoolean(K_OCR_AUTO, true)
+        e.apply()
+        Log.i(TAG, "prefs: normalized auto defaults -> analyze/fill/send/open all true")
     }
 
     private fun migrateIfNeeded() {
@@ -389,7 +411,9 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
      * （值已存在），且设置页开启时会有二次确认、运行期悬浮窗会挂「自动发送已开」角标。
      */
     var autoSend: Boolean
-        get() = sp.getBoolean(K_AUTO_SEND, false)
+        // 2026-10-15：用户要求自动回复开箱即用，默认开启自动发送（填完即发）。
+        // 仍需探针输入法处于激活态才会真正落到输入框；未激活时回落剪贴板+toast，不强行切 IME。
+        get() = sp.getBoolean(K_AUTO_SEND, true)
         set(v) = sp.edit().putBoolean(K_AUTO_SEND, v).apply()
 
     /**
@@ -601,6 +625,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_MIGRATED_V13 = "prefs_migrated_v13"
         private const val K_UNSEEDED_BOCHA = "unseeded_bocha_v141"
         private const val K_HIDDEN_NORMALIZED = "hidden_settings_normalized_v145"
+        private const val K_AUTO_DEFAULTS_V1 = "auto_defaults_normalized_v1"
 
         /** 旧版 [DEFAULT_REL] 的开头，用来识别「这串是旧默认值、不是我写的」。 */
         private const val LEGACY_REL_PREFIX = "对方是我的伴侣；"
