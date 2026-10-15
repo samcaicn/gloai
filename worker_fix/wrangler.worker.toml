@@ -1,0 +1,38 @@
+# worker_fix/wrangler.worker.toml —— Workers 脚本部署配置（wetech.jukuai.net）
+# 与同目录 wrangler.toml 的区别：那是 Pages 配置（pages_build_output_dir），
+# 这份用于把 cf_worker.js 部署为 Workers 脚本 weauto-license（自有域名）。
+# 绑定（vars/KV/AI）与 Pages 版保持一致；secrets 不在 toml 里。
+# 部署：cd worker_fix && env -u CLOUDFLARE_API_TOKEN ... wrangler deploy --config wrangler.worker.toml
+
+name = "weauto-license"
+main = "cf_worker.js"
+
+compatibility_date = "2024-09-23"
+
+[vars]
+CREEM_PRODUCTS = '[{"tier": "normal", "label": "初级 套餐费", "price_text": "¥19.9", "product_id": "prod_2oyeDnQx6eWqmDpVvDRfC3", "billing": "once", "voluntary": false, "valid_days": 30, "features": "基础自动回复 + 授权管理 + 标准 AI 额度", "usd_cents": 297}, {"tier": "premium", "label": "中级 套餐费", "price_text": "¥59.9", "product_id": "prod_mYzCeNE1MvRPo6DFt2ZmZ", "billing": "once", "voluntary": false, "valid_days": 30, "features": "全部功能 + 优先支持 + 更高 AI 额度", "usd_cents": 893}, {"tier": "lifetime", "label": "高级 套餐费", "price_text": "¥199", "product_id": "prod_OkTJwM4Od9maNxP8b6vNc", "billing": "once", "voluntary": true, "valid_days": 365, "features": "一次购买 · 365天全功能 · 优先支持", "usd_cents": 2968}]'
+CREEM_MODE = "prod"
+
+SITE_TITLE    = "WeAuto 授权中心"
+SUPPORT_EMAIL = "weetech@foxmail.com"
+
+AI_DEFAULT_PROVIDER = "workers"
+AI_CHAT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+VOLCANO_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
+
+JEV_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "LICENSE_KV"
+id = "b9359d143ab04b549500066b467e3011"
+
+[[kv_namespaces]]
+binding = "BILLING_KV"
+id = "8d92f8ae61f948b9a17fdfd6239c8dd0"
+
+# 不再使用自定义域名 wetech.jukuai.net（2026-10-14 已移除）；Pages 自带 <项目名>.pages.dev。
+# 注意：*.pages.dev 与 *.workers.dev 一样在中国大陆实测不可达（DNS 污染 + 502），
+# 大陆客户端如需直连请自行恢复自定义域名（[[routes]] 仅 Workers 模式可用，Pages 需另配）。

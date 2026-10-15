@@ -12,14 +12,6 @@ async function sha256hex(str) {
 }
 __name(sha256hex, "sha256hex");
 __name2(sha256hex, "sha256hex");
-async function hmacSha256Hex(secret, raw) {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const buf = await crypto.subtle.sign("HMAC", key, enc.encode(raw));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-__name(hmacSha256Hex, "hmacSha256Hex");
-__name2(hmacSha256Hex, "hmacSha256Hex");
 async function creemPost(env, path, body) {
   try {
     const r = await fetch(creemBase(env.CREEM_MODE) + path, {
@@ -82,13 +74,18 @@ function upstreamUnavailable(res) {
 __name(upstreamUnavailable, "upstreamUnavailable");
 __name2(upstreamUnavailable, "upstreamUnavailable");
 function isActiveLike(data) {
-  if (!data) return false;
-  if (typeof data.status === "string") return data.status.toLowerCase() === "active";
-  if (data.active === true) return true;
+  if (!data)
+    return false;
+  if (typeof data.status === "string")
+    return data.status.toLowerCase() === "active";
+  if (data.active === true)
+    return true;
   const lic = data.license || data.license_key_object;
   if (lic && typeof lic === "object") {
-    if (typeof lic.status === "string") return lic.status.toLowerCase() === "active";
-    if (lic.active === true) return true;
+    if (typeof lic.status === "string")
+      return lic.status.toLowerCase() === "active";
+    if (lic.active === true)
+      return true;
   }
   return !!(data.instance || data.id);
 }
@@ -96,27 +93,33 @@ __name(isActiveLike, "isActiveLike");
 __name2(isActiveLike, "isActiveLike");
 function extractInstanceId(data) {
   const inst = data && data.instance;
-  if (Array.isArray(inst)) return inst[0] && inst[0].id;
-  if (inst && typeof inst === "object") return inst.id;
+  if (Array.isArray(inst))
+    return inst[0] && inst[0].id;
+  if (inst && typeof inst === "object")
+    return inst.id;
   return data && data.id;
 }
 __name(extractInstanceId, "extractInstanceId");
 __name2(extractInstanceId, "extractInstanceId");
 function expiresToUnix(expiresAt) {
-  if (!expiresAt) return null;
+  if (!expiresAt)
+    return null;
   const t = Date.parse(expiresAt);
   return Number.isNaN(t) ? null : Math.floor(t / 1e3);
 }
 __name(expiresToUnix, "expiresToUnix");
 __name2(expiresToUnix, "expiresToUnix");
 function parseSig(header) {
-  if (!header) return { sig: "", ts: null };
+  if (!header)
+    return { sig: "", ts: null };
   if (header.includes("s=")) {
     const parts = header.split(",").map((s) => s.trim());
     let sig = "", ts = null;
     for (const p of parts) {
-      if (p.startsWith("s=")) sig = p.slice(2);
-      else if (p.startsWith("t=")) ts = Number(p.slice(2));
+      if (p.startsWith("s="))
+        sig = p.slice(2);
+      else if (p.startsWith("t="))
+        ts = Number(p.slice(2));
     }
     return { sig, ts };
   }
@@ -126,9 +129,11 @@ __name(parseSig, "parseSig");
 __name2(parseSig, "parseSig");
 var REPLAY_WINDOW_SEC = 300;
 async function verifySignature(secret, rawBody, signature) {
-  if (!secret || !signature) return false;
+  if (!secret || !signature)
+    return false;
   const { sig, ts } = parseSig(signature);
-  if (!sig) return false;
+  if (!sig)
+    return false;
   if (ts !== null && Number.isFinite(ts)) {
     const tsSec = ts > 1e12 ? Math.floor(ts / 1e3) : Math.floor(ts);
     const nowSec = Math.floor(Date.now() / 1e3);
@@ -148,7 +153,8 @@ async function verifySignature(secret, rawBody, signature) {
   const buf = await crypto.subtle.sign("HMAC", key, enc.encode(rawBody));
   const computed = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
   const given = sig.trim().toLowerCase();
-  if (computed.length !== given.length) return false;
+  if (computed.length !== given.length)
+    return false;
   let diff = 0;
   for (let i = 0; i < computed.length; i++) {
     diff |= computed.charCodeAt(i) ^ given.charCodeAt(i);
@@ -160,7 +166,8 @@ __name2(verifySignature, "verifySignature");
 function json(obj, status = 200, extraHeaders = null) {
   const h = { "content-type": "application/json; charset=utf-8" };
   if (extraHeaders && typeof extraHeaders.entries === "function") {
-    for (const [k, v] of extraHeaders.entries()) h[k] = v;
+    for (const [k, v] of extraHeaders.entries())
+      h[k] = v;
   }
   return new Response(JSON.stringify(obj), { status, headers: h });
 }
@@ -205,12 +212,14 @@ __name(parseProducts, "parseProducts");
 __name2(parseProducts, "parseProducts");
 function mapTier(env, data) {
   const products = parseProducts(env);
-  if (!products.length || !data) return null;
+  if (!products.length || !data)
+    return null;
   const obj = data.order || data.subscription || data.product || data.license || data;
   const cands = [obj && obj.product_id, obj && obj.id, data.product_id].filter(Boolean);
   for (const c of cands) {
     const hit = products.find((x) => x.product_id === c);
-    if (hit) return hit.tier;
+    if (hit)
+      return hit.tier;
   }
   return null;
 }
@@ -219,21 +228,27 @@ __name2(mapTier, "mapTier");
 var licenseCache = /* @__PURE__ */ new Map();
 var LICENSE_TTL = 10 * 60 * 1e3;
 async function licenseOk(env, key, instanceId, requireUpstream = true) {
-  if (!key || !instanceId) return false;
-  if (!env.CREEM_API_KEY) return false;
-  if (requireUpstream && !aiAvailable(env)) return false;
+  if (!key || !instanceId)
+    return false;
+  if (!env.CREEM_API_KEY)
+    return false;
+  if (requireUpstream && !aiAvailable(env))
+    return false;
   const now = Date.now();
   const ck = key + "|" + instanceId;
   const hit = licenseCache.get(ck);
-  if (hit && now - hit < LICENSE_TTL) return true;
+  if (hit && now - hit < LICENSE_TTL)
+    return true;
   try {
     const { status, data } = await creemPost(env, "/licenses/validate", {
       key,
       instance_id: instanceId
     });
     const ok = status >= 200 && status < 300 && data && data.status === "active";
-    if (ok) licenseCache.set(ck, now);
-    else licenseCache.delete(ck);
+    if (ok)
+      licenseCache.set(ck, now);
+    else
+      licenseCache.delete(ck);
     return ok;
   } catch (e) {
     licenseCache.delete(ck);
@@ -264,10 +279,14 @@ function resolveProvider(model, hint, env) {
   const volcanoReady = volcanoConfigured(env);
   const def = (env.AI_DEFAULT_PROVIDER || "workers").toLowerCase();
   let provider;
-  if (hint === "workers") provider = "workers";
-  else if (hint === "volcano") provider = "volcano";
-  else if (typeof model === "string" && model.startsWith("@cf/")) provider = "workers";
-  else if (typeof model === "string" && /^(volcano|ark|doubao):/i.test(model)) provider = "volcano";
+  if (hint === "workers")
+    provider = "workers";
+  else if (hint === "volcano")
+    provider = "volcano";
+  else if (typeof model === "string" && model.startsWith("@cf/"))
+    provider = "workers";
+  else if (typeof model === "string" && /^(volcano|ark|doubao):/i.test(model))
+    provider = "volcano";
   else {
     if (typeof model === "string" && /(doubao|^ep-|^ark-)/i.test(model) && volcanoReady) {
       provider = "volcano";
@@ -278,8 +297,10 @@ function resolveProvider(model, hint, env) {
   let realModel = typeof model === "string" ? model : "";
   if (provider === "workers") {
     if (!workersReady) {
-      if (volcanoReady) provider = "volcano";
-      else return { error: "no_provider" };
+      if (volcanoReady)
+        provider = "volcano";
+      else
+        return { error: "no_provider" };
     }
     if (!realModel.startsWith("@cf/")) {
       realModel = env.AI_CHAT_MODEL || env.AI_DEFAULT_MODEL || JEV_MODEL_DEFAULT;
@@ -288,23 +309,32 @@ function resolveProvider(model, hint, env) {
     if (!volcanoReady) {
       if (workersReady) {
         provider = "workers";
-        if (!realModel.startsWith("@cf/")) realModel = env.AI_CHAT_MODEL || env.AI_DEFAULT_MODEL || JEV_MODEL_DEFAULT;
-      } else return { error: "no_provider" };
+        if (!realModel.startsWith("@cf/"))
+          realModel = env.AI_CHAT_MODEL || env.AI_DEFAULT_MODEL || JEV_MODEL_DEFAULT;
+      } else
+        return { error: "no_provider" };
     }
     realModel = realModel.replace(/^(volcano|ark|doubao):/i, "");
-    if (!realModel) realModel = env.VOLCANO_MODEL || env.AI_DEFAULT_MODEL || "";
+    if (!realModel)
+      realModel = env.VOLCANO_MODEL || env.AI_DEFAULT_MODEL || "";
   }
   return { provider, realModel };
 }
 __name(resolveProvider, "resolveProvider");
 __name2(resolveProvider, "resolveProvider");
 function workersAiText(res) {
-  if (!res) return null;
-  if (typeof res === "string") return res;
-  if (res.response !== void 0) return typeof res.response === "string" ? res.response : JSON.stringify(res.response);
-  if (res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content !== void 0) return res.choices[0].message.content;
-  if (res.content !== void 0) return res.content;
-  if (res.text !== void 0) return res.text;
+  if (!res)
+    return null;
+  if (typeof res === "string")
+    return res;
+  if (res.response !== void 0)
+    return typeof res.response === "string" ? res.response : JSON.stringify(res.response);
+  if (res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content !== void 0)
+    return res.choices[0].message.content;
+  if (res.content !== void 0)
+    return res.content;
+  if (res.text !== void 0)
+    return res.text;
   return null;
 }
 __name(workersAiText, "workersAiText");
@@ -334,13 +364,18 @@ function estimateUsage(obj, text) {
 __name(estimateUsage, "estimateUsage");
 __name2(estimateUsage, "estimateUsage");
 async function callWorkersAi(env, model, obj) {
-  if (!env.AI) throw new Error("workers_ai_binding_missing");
+  if (!env.AI)
+    throw new Error("workers_ai_binding_missing");
   const messages = Array.isArray(obj.messages) ? obj.messages : [];
   const opts = { messages, stream: false };
-  if (typeof obj.temperature === "number") opts.temperature = obj.temperature;
-  if (typeof obj.max_tokens === "number") opts.max_tokens = obj.max_tokens;
-  if (typeof obj.top_p === "number") opts.top_p = obj.top_p;
-  if (obj.stop !== void 0) opts.stop = obj.stop;
+  if (typeof obj.temperature === "number")
+    opts.temperature = obj.temperature;
+  if (typeof obj.max_tokens === "number")
+    opts.max_tokens = obj.max_tokens;
+  if (typeof obj.top_p === "number")
+    opts.top_p = obj.top_p;
+  if (obj.stop !== void 0)
+    opts.stop = obj.stop;
   let res;
   try {
     res = await env.AI.run(model, opts);
@@ -348,14 +383,16 @@ async function callWorkersAi(env, model, obj) {
     throw e;
   }
   const text = workersAiText(res);
-  if (text == null) throw new Error("workers_ai_empty_response");
+  if (text == null)
+    throw new Error("workers_ai_empty_response");
   return json(openAiCompletion(model, text, estimateUsage(obj, text)), 200);
 }
 __name(callWorkersAi, "callWorkersAi");
 __name2(callWorkersAi, "callWorkersAi");
 async function callVolcano(env, model, obj, url, req, bodyStr) {
   const c = volcanoConfig(env);
-  if (!c.key) throw new Error("volcano_key_missing");
+  if (!c.key)
+    throw new Error("volcano_key_missing");
   const rel = url.pathname.slice("/ai/".length).replace(/^v1\//, "");
   const target = c.base + "/" + rel + url.search;
   let finalBody = bodyStr || "";
@@ -383,8 +420,73 @@ async function callVolcano(env, model, obj, url, req, bodyStr) {
 }
 __name(callVolcano, "callVolcano");
 __name2(callVolcano, "callVolcano");
+function tuptupConfig(env) {
+  return {
+    base: (env.AIAAPI_BASE || "https://aiapi.tuptup.top").replace(/\/+$/, ""),
+    key: env.AIAAPI_TOKEN || "",
+    model: env.AIAAPI_MODEL || "auto"
+  };
+}
+__name(tuptupConfig, "tuptupConfig");
+__name2(tuptupConfig, "tuptupConfig");
+async function proxyTuptup(req, env, url) {
+  const c = tuptupConfig(env);
+  if (!c.key) {
+    return json({
+      error: {
+        message: "aiapi \u8F6C\u53D1\u672A\u914D\u7F6E\uFF08AIAAPI_KEY missing\uFF09",
+        type: "server_misconfigured",
+        code: "tuptup_key_missing"
+      }
+    }, 503);
+  }
+  let bodyStr = "";
+  try {
+    bodyStr = await req.text();
+  } catch (_) {
+  }
+  let obj = {};
+  if (bodyStr) {
+    try {
+      obj = JSON.parse(bodyStr);
+    } catch (_) {
+    }
+  }
+  obj.model = c.model;
+  let rel = url.pathname.slice("/ai/tuptup".length).replace(/^\/+/, "");
+  if (!rel.startsWith("v1/"))
+    rel = "v1/" + rel;
+  const target = c.base + "/" + rel + url.search;
+  const init = {
+    method: req.method,
+    headers: {
+      "content-type": req.headers.get("content-type") || "application/json",
+      "accept": req.headers.get("accept") || "application/json, text/event-stream",
+      "authorization": "Bearer " + c.key,
+      "user-agent": req.headers.get("user-agent") || "weauto-worker"
+    },
+    body: req.method === "GET" || req.method === "HEAD" ? void 0 : JSON.stringify(obj)
+  };
+  try {
+    const up = await fetch(target, init);
+    const headers = new Headers(up.headers);
+    headers.set("x-weauto-tuptup", "1");
+    return new Response(up.body, { status: up.status, headers });
+  } catch (e) {
+    return json({
+      error: {
+        message: "aiapi \u8F6C\u53D1\u5931\u8D25\uFF1A" + String(e && e.message || e),
+        type: "upstream_error",
+        code: "tuptup_relay_failed"
+      }
+    }, 502);
+  }
+}
+__name(proxyTuptup, "proxyTuptup");
+__name2(proxyTuptup, "proxyTuptup");
 async function dispatch(env, provider, model, obj, url, req, bodyStr) {
-  if (provider === "workers") return callWorkersAi(env, model, obj);
+  if (provider === "workers")
+    return callWorkersAi(env, model, obj);
   return callVolcano(env, model, obj, url, req, bodyStr);
 }
 __name(dispatch, "dispatch");
@@ -439,298 +541,34 @@ __name2(routeAi, "routeAi");
 async function proxyAi(req, env, url) {
   const authHdr = (req.headers.get("authorization") || "").trim();
   const token = authHdr.startsWith("Bearer ") ? authHdr.slice(7).trim() : authHdr;
-  // 客户端机器指纹签名校验（2026-10-15 防配额盗用/伪造）：
-  // 开启 VERIFY_CLIENT_SIG=on 后，凡带 X-WA-Machine 的请求必须附合法
-  // X-WA-Ts + X-WA-Sig（HMAC-SHA256(WEAUATO_CLIENT_SECRET, machine\n+ts)），
-  // 时间窗 ±24h（防伪造为主，重放属更高阶威胁）；未配置该开关时 fail-open
-  // 保持兼容旧客户端。签名无效 → 403，不消耗配额、不转发。
-  if ((env.VERIFY_CLIENT_SIG || "").toLowerCase() === "on") {
-    const machineHdr = req.headers.get("x-wa-machine");
-    if (machineHdr) {
-      const ts = req.headers.get("x-wa-ts") || "";
-      const sig = (req.headers.get("x-wa-sig") || "").toLowerCase();
-      const sec = env.WEAUATO_CLIENT_SECRET || "";
-      const now = Date.now() / 1e3;
-      const ok = sec && /^\d{10}$/.test(ts)
-        && Math.abs(now - Number(ts)) < 24 * 3600
-        && sig === await hmacSha256Hex(sec, machineHdr + "\n" + ts);
-      if (!ok) {
-        return json({ ok: false, error: "weauto_sig_invalid" }, 403);
-      }
-    }
-  }
   if (token && looksLikeBillingToken(token) && env.WEAUATO_SIGN_SECRET) {
     return proxyAiBilled(req, env, url, token);
   }
-  // 卡密路径：有有效卡密 + 实例 → 直通（不受每日配额限制）
-  const key = token;
-  const instanceId = req.headers.get("x-weauto-instance") || "";
-  if (key && instanceId && (await licenseOk(env, key, instanceId))) {
+  let model = "";
+  try {
+    const b = await req.clone().json();
+    model = b && b.model || "";
+  } catch (_) {
+  }
+  const hint = req.headers.get("x-weauto-provider") || "";
+  if (!!env.AI && resolveProvider(model, hint, env).provider === "workers") {
     return routeAi(req, env, url);
   }
-  // 免费配额路径（2026-10-14 商业模式：所有软件默认激活，无卡密/卡密无效
-  // 也放行，但按机器指纹限制每日回复条数，超限 429，激活卡密可解除）。
-  // 2026-10-15 离线授权：导入管理员签发的「话术包+回复次数」授权文件并激活后，
-  // 本机按授权总次数计费（不再受每日免费条数限制）。
-  const machine = quotaMachine(req);
-  const off = await getOfflineLic(env, machine);
-  if (off) {
-    const used = Number(off.used || 0);
-    const total = Number(off.total || 0);
-    if (used >= total) {
-      return json({
-        error: {
-          message: "回复次数已用完（离线授权），请联系管理员续期。",
-          type: "weauto_quota_error",
-          code: "offline_quota_exceeded",
-          quota_remaining: 0,
-          quota_limit: total,
-        },
-      }, 429, new Headers({ "X-Quota-Remaining": "0", "X-Quota-Limit": String(total) }));
-    }
-    const resp = await routeAi(req, env, url);
-    const h = new Headers(resp ? resp.headers : {});
-    if (resp && resp.status >= 200 && resp.status < 300) {
-      await incrOfflineUsed(env, machine);
-      h.set("X-Quota-Remaining", String(Math.max(0, total - used - 1)));
-    } else {
-      h.set("X-Quota-Remaining", String(Math.max(0, total - used)));
-    }
-    h.set("X-Quota-Limit", String(total));
-    h.set("X-Quota-Source", "offline");
-    if (resp) return new Response(resp.body, { status: resp.status, headers: h });
-    return new Response("{}", { status: 502, headers: h });
-  }
-  const q = await checkDailyQuota(env, machine);
-  if (!q.allowed) {
-    const buy = env.CREEM_CHECKOUT_URL || (env.WORKER_URL ? env.WORKER_URL + "/buy" : "");
+  const key = token;
+  const instanceId = req.headers.get("x-weauto-instance") || "";
+  if (!await licenseOk(env, key, instanceId)) {
     return json({
       error: {
-        message: "今日免费回复已达上限（" + q.limit + " 条），明天再来吧。"
-          + (buy ? " 激活卡密可立即解除限制：" + buy : ""),
-        type: "weauto_quota_error",
-        code: "daily_quota_exceeded",
-        quota_remaining: 0,
-        quota_limit: q.limit,
-      },
-    }, 429, new Headers({ "X-Quota-Remaining": "0", "X-Quota-Limit": String(q.limit) }));
+        message: "\u65E0\u6548\u6388\u6743\uFF1A\u8BF7\u5148\u5728 WeAuto \u540E\u53F0\u300C\u6388\u6743\u7BA1\u7406\u300D\u6FC0\u6D3B\u5361\u5BC6\u540E\u518D\u4F7F\u7528 AI \u529F\u80FD",
+        type: "weauto_license_error",
+        code: "license_required"
+      }
+    }, 401);
   }
-  const resp = await routeAi(req, env, url);
-  if (resp && resp.status >= 200 && resp.status < 300) {
-    await incrDailyQuota(env, machine);
-  }
-  const h = new Headers(resp.headers);
-  h.set("X-Quota-Remaining", String(Math.max(0, q.remaining - 1)));
-  h.set("X-Quota-Limit", String(q.limit));
-  return new Response(resp.body, { status: resp.status, headers: h });
+  return routeAi(req, env, url);
 }
 __name(proxyAi, "proxyAi");
 __name2(proxyAi, "proxyAi");
-/* ===================== 免费每日回复配额（默认激活商业模式） =====================
- * 无卡密用户每日最多回复 WEAUTO_FREE_DAILY_QUOTA 条（默认 30），按机器指纹
- * （X-WA-Machine → X-WeAuto-Instance → 请求 IP）在 BILLING_KV 计数，超限 429。
- * 有有效卡密的用户不受此限制。AI 调用成功（2xx）后才 +1，失败不耗额度。
- */
-var FREE_QUOTA_DEFAULT = 30;
-function quotaMachine(req) {
-  return (req.headers.get("x-wa-machine")
-    || req.headers.get("x-weauto-instance")
-    || req.headers.get("cf-connecting-ip")
-    || "anon").slice(0, 64);
-}
-__name(quotaMachine, "quotaMachine");
-__name2(quotaMachine, "quotaMachine");
-function quotaDate() {
-  return new Date().toISOString().slice(0, 10);
-}
-__name(quotaDate, "quotaDate");
-__name2(quotaDate, "quotaDate");
-async function checkDailyQuota(env, machine) {
-  const limit = Number(env.WEAUTO_FREE_DAILY_QUOTA) > 0
-    ? Number(env.WEAUTO_FREE_DAILY_QUOTA) : FREE_QUOTA_DEFAULT;
-  if (!env.BILLING_KV) return { allowed: true, limit, remaining: limit, key: "" };
-  const key = "daily:" + quotaDate() + ":" + machine;
-  const raw = await env.BILLING_KV.get(key);
-  const count = raw ? Number(raw) : 0;
-  return { allowed: count < limit, limit, remaining: Math.max(0, limit - count), key };
-}
-__name(checkDailyQuota, "checkDailyQuota");
-__name2(checkDailyQuota, "checkDailyQuota");
-async function incrDailyQuota(env, machine) {
-  if (!env.BILLING_KV || !machine) return;
-  const limit = Number(env.WEAUTO_FREE_DAILY_QUOTA) > 0
-    ? Number(env.WEAUTO_FREE_DAILY_QUOTA) : FREE_QUOTA_DEFAULT;
-  const key = "daily:" + quotaDate() + ":" + machine;
-  const cur = Number(await env.BILLING_KV.get(key)) || 0;
-  await env.BILLING_KV.put(key, String(Math.min(cur + 1, limit + 1)),
-    { expirationTtl: 48 * 3600 });
-}
-__name(incrDailyQuota, "incrDailyQuota");
-__name2(incrDailyQuota, "incrDailyQuota");
-
-/* ===================== 离线授权（话术包 + 回复次数） =====================
- * 2026-10 商业模式：Creem 在线收款下线，改为「管理员按硬件识别码签发 .wpk
- * （话术包 + 回复次数），离线分发，客户端导入后上报本端点激活」。
- * - 激活校验：.wpk ECDSA P-256 验签（公钥 PACK_VERIFY_PUB env）→ 设备绑定
- *   （header.device_hashes 含本机 device_hash）→ reply_quota>0 → 未到期；
- * - 生效后 BILLING_KV 记 offline:lic:{machine}，/ai/v1 免费路径优先按授权
- *   总次数计费（不再受每日免费条数限制），X-Quota 校准客户端本地记账。
- */
-async function getOfflineLic(env, machine) {
-  if (!env.BILLING_KV || !machine) return null;
-  const raw = await env.BILLING_KV.get("offline:lic:" + machine);
-  if (!raw) return null;
-  try {
-    const o = JSON.parse(raw);
-    if (!o || !o.pack_id || !(o.total > 0)) return null;
-    if (o.expires_at && o.expires_at * 1000 < Date.now()) return null;
-    return o;
-  } catch (_) {
-    return null;
-  }
-}
-__name(getOfflineLic, "getOfflineLic");
-__name2(getOfflineLic, "getOfflineLic");
-async function setOfflineLic(env, machine, packId, total, expiresAt) {
-  if (!env.BILLING_KV || !machine) return;
-  await env.BILLING_KV.put("offline:lic:" + machine,
-    JSON.stringify({ pack_id: packId, total: Number(total), used: 0, expires_at: Number(expiresAt || 0), activated_at: Date.now() }),
-    { expirationTtl: 400 * 24 * 3600 });
-}
-__name(setOfflineLic, "setOfflineLic");
-__name2(setOfflineLic, "setOfflineLic");
-async function incrOfflineUsed(env, machine) {
-  if (!env.BILLING_KV || !machine) return 0;
-  const lic = await getOfflineLic(env, machine);
-  if (!lic) return 0;
-  lic.used = (lic.used || 0) + 1;
-  await env.BILLING_KV.put("offline:lic:" + machine, JSON.stringify(lic),
-    { expirationTtl: 400 * 24 * 3600 });
-  return lic.used;
-}
-__name(incrOfflineUsed, "incrOfflineUsed");
-__name2(incrOfflineUsed, "incrOfflineUsed");
-function b64Decode(s) {
-  const b = String(s).replace(/-/g, "+").replace(/_/g, "/");
-  const pad = b.length % 4;
-  const bin = atob(pad ? b + "=".repeat(4 - pad) : b);
-  const u8 = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-  return u8;
-}
-__name(b64Decode, "b64Decode");
-__name2(b64Decode, "b64Decode");
-function derToRawEcdsa(der) {
-  // DER SEQUENCE -> IEEE P1363 raw r||s（WebCrypto ECDSA 输入格式）
-  try {
-    if (der.length < 8 || der[0] !== 0x30) return null;
-    let off = 2;
-    if (der[1] !== der.length - 2) return null;
-    if (der[off] !== 0x02) return null;
-    const rlen = der[off + 1];
-    const r = der.slice(off + 2, off + 2 + rlen);
-    off += 2 + rlen;
-    if (der[off] !== 0x02) return null;
-    const slen = der[off + 1];
-    const s = der.slice(off + 2, off + 2 + slen);
-    const ri = BigInt("0x" + Buffer.from(r).toString("hex"));
-    const si = BigInt("0x" + Buffer.from(s).toString("hex"));
-    const to32 = (v) => {
-      const h = v.toString(16).padStart(64, "0");
-      return Uint8Array.from(Buffer.from(h, "hex"));
-    };
-    const raw = new Uint8Array(64);
-    raw.set(to32(ri), 0);
-    raw.set(to32(si), 32);
-    return raw;
-  } catch (_) {
-    return null;
-  }
-}
-__name(derToRawEcdsa, "derToRawEcdsa");
-__name2(derToRawEcdsa, "derToRawEcdsa");
-async function wpkVerifySignature(env, aadCt, sigDer) {
-  const pubB64 = env.PACK_VERIFY_PUB;
-  if (!pubB64) return false;
-  try {
-    const raw = derToRawEcdsa(sigDer);
-    if (!raw) return false;
-    const key = await crypto.subtle.importKey("spki", b64Decode(pubB64),
-      { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
-    return await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, raw, aadCt);
-  } catch (_) {
-    return false;
-  }
-}
-__name(wpkVerifySignature, "wpkVerifySignature");
-__name2(wpkVerifySignature, "wpkVerifySignature");
-function parseWpkHeader(data) {
-  // .wpk 明文头：WPK1 + ver(1) + flags(1) + hlen(2 LE) + header_json + payload_len(4) + ct_tag + sig_len(2) + sig
-  try {
-    if (data.length < 8) return null;
-    const magic = String.fromCharCode(data[0], data[1], data[2], data[3]);
-    if (magic !== "WPK1") return null;
-    const hlen = (data[7] << 8 | data[6]) >>> 0;
-    if (data.length < 8 + hlen + 4) return null;
-    const header = JSON.parse(new TextDecoder().decode(data.slice(8, 8 + hlen)));
-    let off = 8 + hlen;
-    const payloadLen = (data[off] | (data[off + 1] << 8) | (data[off + 2] << 16) | (data[off + 3] << 24)) >>> 0;
-    off += 4;
-    off += payloadLen; // 跳过 ct_tag 密文区
-    if (off + 2 > data.length) return null;
-    const sigLen = data[off] | (data[off + 1] << 8);
-    off += 2;
-    if (off + sigLen > data.length) return null;
-    const sig = data.slice(off, off + sigLen);
-    const aadCt = data.slice(0, 8 + hlen + 4 + payloadLen);
-    return { header, sig, aadCt };
-  } catch (_) {
-    return null;
-  }
-}
-__name(parseWpkHeader, "parseWpkHeader");
-__name2(parseWpkHeader, "parseWpkHeader");
-async function activateOffline(req, env) {
-  if (req.method !== "POST") return json({ ok: false, error: "method" }, 405);
-  let body;
-  try {
-    body = await req.json();
-  } catch (_) {
-    return json({ ok: false, error: "bad_json" }, 400);
-  }
-  const fileB64 = String(body.file_b64 || "");
-  const deviceId = String(body.device_id || "").trim();
-  if (!fileB64 || !deviceId) return json({ ok: false, error: "missing_fields" }, 400);
-  if (!env.PACK_VERIFY_PUB) return json({ ok: false, error: "pack_verify_not_configured" }, 503);
-  let data;
-  try {
-    data = b64Decode(fileB64);
-  } catch (_) {
-    return json({ ok: false, error: "bad_b64" }, 400);
-  }
-  const parsed = parseWpkHeader(data);
-  if (!parsed) return json({ ok: false, error: "bad_wpk_format" }, 400);
-  const h = parsed.header;
-  const quota = Number(h.reply_quota || 0);
-  if (!(quota > 0)) return json({ ok: false, error: "no_reply_quota" }, 400);
-  const packId = String(h.pack_id || "");
-  if (!packId) return json({ ok: false, error: "no_pack_id" }, 400);
-  const okSig = await wpkVerifySignature(env, parsed.aadCt, parsed.sig);
-  if (!okSig) return json({ ok: false, error: "bad_signature" }, 403);
-  // 设备绑定：device_hashes 非空时必须含本机 device_hash（sha256(device_id) 前 16B）
-  const dh = (await crypto.subtle.digest("SHA-256", new TextEncoder().encode(deviceId))).slice(0, 16);
-  const dhHex = Array.from(new Uint8Array(dh)).map((b) => b.toString(16).padStart(2, "0")).join("");
-  const bound = Array.isArray(h.device_hashes) && h.device_hashes.length > 0;
-  if (bound && !h.device_hashes.includes(dhHex)) {
-    return json({ ok: false, error: "device_mismatch" }, 403);
-  }
-  const expiresAt = Number(h.expires_at || 0);
-  if (expiresAt && expiresAt * 1000 < Date.now()) return json({ ok: false, error: "expired" }, 403);
-  await setOfflineLic(env, dhHex, packId, quota, expiresAt);
-  return json({ ok: true, pack_id: packId, reply_quota: quota, device_hash: dhHex });
-}
-__name(activateOffline, "activateOffline");
-__name2(activateOffline, "activateOffline");
 var DEFAULT_TIER = "standard";
 var JEV_COST = 1500;
 var TIERS = {
@@ -741,7 +579,8 @@ var TIERS = {
 function b64u(s) {
   const bytes = new TextEncoder().encode(String(s));
   let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
+  for (const b of bytes)
+    bin += String.fromCharCode(b);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 __name(b64u, "b64u");
@@ -762,7 +601,8 @@ __name2(looksLikeBillingToken, "looksLikeBillingToken");
 function randHex(n) {
   const c = "abcdef0123456789";
   let s = "";
-  for (let i = 0; i < n; i++) s += c[Math.floor(Math.random() * 16)];
+  for (let i = 0; i < n; i++)
+    s += c[Math.floor(Math.random() * 16)];
   return s;
 }
 __name(randHex, "randHex");
@@ -775,15 +615,20 @@ async function signBillingToken(env, payload) {
 __name(signBillingToken, "signBillingToken");
 __name2(signBillingToken, "signBillingToken");
 async function verifyBillingToken(env, token) {
-  if (!token || !looksLikeBillingToken(token)) return null;
+  if (!token || !looksLikeBillingToken(token))
+    return null;
   const parts = token.split(".");
-  if (parts.length !== 2) return null;
+  if (parts.length !== 2)
+    return null;
   const expect = await hmacHex(env.WEAUATO_SIGN_SECRET, new TextEncoder().encode("weauto-billing-v1|" + parts[0]));
-  if (expect.length !== parts[1].length || !timingSafeEqual(expect, parts[1])) return null;
+  if (expect.length !== parts[1].length || !timingSafeEqual(expect, parts[1]))
+    return null;
   try {
     const payload = JSON.parse(b64uDecode(parts[0]));
-    if (!payload.sub || !payload.tier) return null;
-    if (payload.exp && Date.now() > payload.exp) return null;
+    if (!payload.sub || !payload.tier)
+      return null;
+    if (payload.exp && Date.now() > payload.exp)
+      return null;
     return payload;
   } catch (_) {
     return null;
@@ -804,12 +649,15 @@ function nextMonthStart() {
 __name(nextMonthStart, "nextMonthStart");
 __name2(nextMonthStart, "nextMonthStart");
 async function readUsage(env, sub) {
-  if (!env.BILLING_KV) return 0;
+  if (!env.BILLING_KV)
+    return 0;
   const raw = await env.BILLING_KV.get("usage:" + sub);
-  if (!raw) return 0;
+  if (!raw)
+    return 0;
   try {
     const o = JSON.parse(raw);
-    if (o.month !== monthKey()) return 0;
+    if (o.month !== monthKey())
+      return 0;
     return o.tokens || 0;
   } catch (_) {
     return 0;
@@ -818,14 +666,16 @@ async function readUsage(env, sub) {
 __name(readUsage, "readUsage");
 __name2(readUsage, "readUsage");
 async function addUsage(env, sub, n) {
-  if (!env.BILLING_KV) return;
+  if (!env.BILLING_KV)
+    return;
   const m = monthKey();
   const raw = await env.BILLING_KV.get("usage:" + sub);
   let tokens = 0;
   if (raw) {
     try {
       const o = JSON.parse(raw);
-      if (o.month === m) tokens = o.tokens || 0;
+      if (o.month === m)
+        tokens = o.tokens || 0;
     } catch (_) {
     }
   }
@@ -835,9 +685,11 @@ async function addUsage(env, sub, n) {
 __name(addUsage, "addUsage");
 __name2(addUsage, "addUsage");
 async function getAcct(env, sub) {
-  if (!env.BILLING_KV) return null;
+  if (!env.BILLING_KV)
+    return null;
   const raw = await env.BILLING_KV.get("acct:" + sub);
-  if (!raw) return null;
+  if (!raw)
+    return null;
   try {
     return JSON.parse(raw);
   } catch (_) {
@@ -847,7 +699,8 @@ async function getAcct(env, sub) {
 __name(getAcct, "getAcct");
 __name2(getAcct, "getAcct");
 async function setAcct(env, sub, tier) {
-  if (!env.BILLING_KV) return;
+  if (!env.BILLING_KV)
+    return;
   await env.BILLING_KV.put("acct:" + sub, JSON.stringify({ tier, createdAt: Date.now() }), { expirationTtl: 400 * 24 * 3600 });
 }
 __name(setAcct, "setAcct");
@@ -882,29 +735,35 @@ var PERSONA_IDENTITY_FIELDS = [
 ];
 function ownerKeyOf(wxKey, deviceId) {
   const w = String(wxKey || "").trim();
-  if (WXKEY_RE.test(w)) return "wx:" + w;
+  if (WXKEY_RE.test(w))
+    return "wx:" + w;
   const d = String(deviceId || "").trim();
-  if (DEVICE_ID_RE.test(d)) return "dev:" + d;
+  if (DEVICE_ID_RE.test(d))
+    return "dev:" + d;
   return "";
 }
 __name(ownerKeyOf, "ownerKeyOf");
 __name2(ownerKeyOf, "ownerKeyOf");
 function planInfoFor(tier) {
   const t = String(tier || "").trim();
-  if (!t) return null;
+  if (!t)
+    return null;
   if (TIERS[t]) {
     return { tier: t, name: TIERS[t].name, source: "apk_token", tokens: TIERS[t].tokens, price_text: TIERS[t].price_text };
   }
   const CREEM_LABEL = { normal: "\u521D\u7EA7\u5957\u9910", premium: "\u4E2D\u7EA7\u5957\u9910", lifetime: "\u9AD8\u7EA7\u5957\u9910" };
-  if (CREEM_LABEL[t]) return { tier: t, name: CREEM_LABEL[t], source: "creem_license" };
+  if (CREEM_LABEL[t])
+    return { tier: t, name: CREEM_LABEL[t], source: "creem_license" };
   return null;
 }
 __name(planInfoFor, "planInfoFor");
 __name2(planInfoFor, "planInfoFor");
 async function readProfile(env, owner) {
-  if (!env.BILLING_KV || !owner) return null;
+  if (!env.BILLING_KV || !owner)
+    return null;
   const raw = await env.BILLING_KV.get(PROF_PREFIX + owner);
-  if (!raw) return null;
+  if (!raw)
+    return null;
   try {
     return JSON.parse(raw);
   } catch (_) {
@@ -914,7 +773,8 @@ async function readProfile(env, owner) {
 __name(readProfile, "readProfile");
 __name2(readProfile, "readProfile");
 async function writeProfile(env, owner, prof) {
-  if (!env.BILLING_KV || !owner) return false;
+  if (!env.BILLING_KV || !owner)
+    return false;
   prof.owner = owner;
   prof.updatedAt = Date.now();
   await env.BILLING_KV.put(PROF_PREFIX + owner, JSON.stringify(prof), { expirationTtl: PROF_TTL });
@@ -939,14 +799,17 @@ __name(blankProfile, "blankProfile");
 __name2(blankProfile, "blankProfile");
 function touchDevice(prof, deviceId, platform, appVer) {
   const id = String(deviceId || "").trim();
-  if (!DEVICE_ID_RE.test(id)) return;
+  if (!DEVICE_ID_RE.test(id))
+    return;
   const now = Date.now();
   prof.devices = Array.isArray(prof.devices) ? prof.devices : [];
   const hit = prof.devices.find((d) => d && d.id === id);
   if (hit) {
     hit.lastSeen = now;
-    if (platform) hit.platform = String(platform).slice(0, 32);
-    if (appVer) hit.appVer = String(appVer).slice(0, 32);
+    if (platform)
+      hit.platform = String(platform).slice(0, 32);
+    if (appVer)
+      hit.appVer = String(appVer).slice(0, 32);
   } else {
     prof.devices.push({ id, platform: String(platform || "").slice(0, 32), appVer: String(appVer || "").slice(0, 32), firstSeen: now, lastSeen: now });
   }
@@ -957,11 +820,13 @@ function touchDevice(prof, deviceId, platform, appVer) {
 __name(touchDevice, "touchDevice");
 __name2(touchDevice, "touchDevice");
 function sanitizePersona(p) {
-  if (!p || typeof p !== "object") return null;
+  if (!p || typeof p !== "object")
+    return null;
   const srcId = p.identity && typeof p.identity === "object" ? p.identity : {};
   const srcSt = p.settings && typeof p.settings === "object" ? p.settings : {};
   const identity = {};
-  for (const k of PERSONA_IDENTITY_FIELDS) identity[k] = String(srcId[k] ?? "").slice(0, 500);
+  for (const k of PERSONA_IDENTITY_FIELDS)
+    identity[k] = String(srcId[k] ?? "").slice(0, 500);
   return {
     identity,
     settings: {
@@ -997,12 +862,14 @@ async function deviceAuth(req, env, rawBody) {
   const bm = /^bearer\s+(.+)$/i.exec(auth);
   if (bm && env.WEAUATO_SIGN_SECRET) {
     const payload = await verifyBillingToken(env, bm[1].trim());
-    if (payload) return { ok: true, kind: "token", sub: payload.sub || "", tier: payload.tier || "" };
+    if (payload)
+      return { ok: true, kind: "token", sub: payload.sub || "", tier: payload.tier || "" };
   }
   const key = String(req.headers.get("x-weauto-key") || "").trim();
   const inst = String(req.headers.get("x-weauto-instance") || "").trim();
   if (key && inst && env.CREEM_API_KEY) {
-    if (await licenseOk(env, key, inst, false)) return { ok: true, kind: "license", sub: "", tier: "" };
+    if (await licenseOk(env, key, inst, false))
+      return { ok: true, kind: "license", sub: "", tier: "" };
   }
   const secret = env.WEAUATO_CLIENT_SECRET || env.WEAUATO_SIGN_SECRET || "";
   if (secret && rawBody != null) {
@@ -1011,7 +878,8 @@ async function deviceAuth(req, env, rawBody) {
     const sig = String(req.headers.get("x-weauto-sig") || "").trim();
     if (ts && nonce && sig) {
       const msg = [req.method, new URL(req.url).pathname, ts, nonce, rawBody].join("\n");
-      if (await verifySignature(secret, msg, sig)) return { ok: true, kind: "hmac", sub: "", tier: "" };
+      if (await verifySignature(secret, msg, sig))
+        return { ok: true, kind: "hmac", sub: "", tier: "" };
     }
   }
   if (!env.WEAUATO_SIGN_SECRET && !env.CREEM_API_KEY && !env.WEAUATO_CLIENT_SECRET) {
@@ -1028,11 +896,14 @@ __name(deviceUnauthorized, "deviceUnauthorized");
 __name2(deviceUnauthorized, "deviceUnauthorized");
 async function deviceState(req, env, url) {
   const owner = ownerKeyOf(url.searchParams.get("wx"), url.searchParams.get("device"));
-  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  if (!owner)
+    return json({ ok: false, error: "bad_identity" }, 400);
   const auth = await deviceAuth(req, env, "");
-  if (!auth.ok) return deviceUnauthorized();
+  if (!auth.ok)
+    return deviceUnauthorized();
   let prof = await readProfile(env, owner);
-  if (!prof) prof = blankProfile(owner, url.searchParams.get("wx") || "");
+  if (!prof)
+    prof = blankProfile(owner, url.searchParams.get("wx") || "");
   return json(profState(prof));
 }
 __name(deviceState, "deviceState");
@@ -1048,11 +919,14 @@ async function deviceHello(req, env, url) {
   const wxKey = String(body.wxKey || url.searchParams.get("wx") || "").trim();
   const deviceId = String(body.deviceId || req.headers.get("x-weauto-instance") || "").trim();
   const owner = ownerKeyOf(wxKey, deviceId);
-  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  if (!owner)
+    return json({ ok: false, error: "bad_identity" }, 400);
   const auth = await deviceAuth(req, env, raw);
-  if (!auth.ok) return deviceUnauthorized();
+  if (!auth.ok)
+    return deviceUnauthorized();
   let prof = await readProfile(env, owner) || blankProfile(owner, wxKey);
-  if (wxKey && WXKEY_RE.test(wxKey)) prof.wxKey = wxKey;
+  if (wxKey && WXKEY_RE.test(wxKey))
+    prof.wxKey = wxKey;
   touchDevice(prof, deviceId, body.platform, body.appVer);
   const acct = await getAcct(env, auth.sub);
   let tier = auth.tier || acct && acct.tier || "";
@@ -1062,7 +936,8 @@ async function deviceHello(req, env, url) {
     if (lk && li && env.CREEM_API_KEY) {
       try {
         const { status, data } = await creemPost(env, "/licenses/validate", { key: lk, instance_id: li });
-        if (status >= 200 && status < 300 && data && data.status === "active") tier = mapTier(env, data) || "";
+        if (status >= 200 && status < 300 && data && data.status === "active")
+          tier = mapTier(env, data) || "";
       } catch (_) {
       }
     }
@@ -1087,14 +962,18 @@ async function devicePutPersona(req, env, url) {
   const wxKey = String(body.wxKey || url.searchParams.get("wx") || "").trim();
   const deviceId = String(body.deviceId || req.headers.get("x-weauto-instance") || "").trim();
   const owner = ownerKeyOf(wxKey, deviceId);
-  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  if (!owner)
+    return json({ ok: false, error: "bad_identity" }, 400);
   const auth = await deviceAuth(req, env, raw);
-  if (!auth.ok) return deviceUnauthorized();
+  if (!auth.ok)
+    return deviceUnauthorized();
   const persona = sanitizePersona(body.persona);
-  if (!persona) return json({ ok: false, error: "bad_persona" }, 400);
+  if (!persona)
+    return json({ ok: false, error: "bad_persona" }, 400);
   const rev = Number.isFinite(Number(body.rev)) ? Number(body.rev) : Date.now();
   let prof = await readProfile(env, owner) || blankProfile(owner, wxKey);
-  if (wxKey && WXKEY_RE.test(wxKey)) prof.wxKey = wxKey;
+  if (wxKey && WXKEY_RE.test(wxKey))
+    prof.wxKey = wxKey;
   touchDevice(prof, deviceId, body.platform, body.appVer);
   if (rev < (Number(prof.personaRev) || 0)) {
     return json({ ok: false, error: "stale_rev", serverRev: Number(prof.personaRev) || 0 }, 409);
@@ -1111,9 +990,11 @@ __name(devicePutPersona, "devicePutPersona");
 __name2(devicePutPersona, "devicePutPersona");
 async function deviceGetPersona(req, env, url) {
   const owner = ownerKeyOf(url.searchParams.get("wx"), url.searchParams.get("device"));
-  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  if (!owner)
+    return json({ ok: false, error: "bad_identity" }, 400);
   const auth = await deviceAuth(req, env, "");
-  if (!auth.ok) return deviceUnauthorized();
+  if (!auth.ok)
+    return deviceUnauthorized();
   const prof = await readProfile(env, owner);
   return json({
     ok: true,
@@ -1135,20 +1016,25 @@ async function devicePutPlan(req, env, url) {
   const wxKey = String(body.wxKey || url.searchParams.get("wx") || "").trim();
   const deviceId = String(body.deviceId || req.headers.get("x-weauto-instance") || "").trim();
   const owner = ownerKeyOf(wxKey, deviceId);
-  if (!owner) return json({ ok: false, error: "bad_identity" }, 400);
+  if (!owner)
+    return json({ ok: false, error: "bad_identity" }, 400);
   const auth = await deviceAuth(req, env, raw);
-  if (!auth.ok) return deviceUnauthorized();
+  if (!auth.ok)
+    return deviceUnauthorized();
   const lk = String(body.licenseKey || req.headers.get("x-weauto-key") || "").trim();
   const li = String(body.licenseInstanceId || deviceId).trim();
-  if (!lk || !li) return json({ ok: false, error: "missing_license" }, 400);
-  if (!env.CREEM_API_KEY) return json({ ok: false, error: "creem_not_configured" }, 503);
+  if (!lk || !li)
+    return json({ ok: false, error: "missing_license" }, 400);
+  if (!env.CREEM_API_KEY)
+    return json({ ok: false, error: "creem_not_configured" }, 503);
   const { status, data } = await creemPost(env, "/licenses/validate", { key: lk, instance_id: li });
   if (!(status >= 200 && status < 300) || !data || data.status !== "active") {
     return json({ ok: false, error: "license_not_active" }, 403);
   }
   const tier = mapTier(env, data) || "";
   let prof = await readProfile(env, owner) || blankProfile(owner, wxKey);
-  if (wxKey && WXKEY_RE.test(wxKey)) prof.wxKey = wxKey;
+  if (wxKey && WXKEY_RE.test(wxKey))
+    prof.wxKey = wxKey;
   touchDevice(prof, deviceId, body.platform, body.appVer);
   prof.tier = tier;
   prof.plan = planInfoFor(tier);
@@ -1272,7 +1158,7 @@ function privacyPage(env) {
   const contact = support ? `<a href="mailto:${esc(support)}">${esc(support)}</a>` : "our support email";
   return html(layout("Privacy Policy \xB7 \u9690\u79C1\u653F\u7B56", `
 <div class="hd"><h1>Privacy Policy <span style="color:#6b7280;font-size:18px">/ \u9690\u79C1\u653F\u7B56</span></h1>
-<p>WeAuto \xB7 weauto-app.pages.dev \xB7 Last updated: 2026-10-14</p></div>
+<p>WeAuto \xB7 wetech.jukuai.net \xB7 Last updated: 2026-10-02</p></div>
 
 <div class="card">
   <h3 style="margin-top:0">1. What We Collect\uFF08\u6211\u4EEC\u6536\u96C6\u4EC0\u4E48\uFF09</h3>
@@ -1436,27 +1322,34 @@ function notConfiguredPage(note) {
 __name(notConfiguredPage, "notConfiguredPage");
 __name2(notConfiguredPage, "notConfiguredPage");
 function looksLikeEmail(s) {
-  if (!s || typeof s !== "string") return false;
-  if (s.length > 254 || /\s/.test(s)) return false;
+  if (!s || typeof s !== "string")
+    return false;
+  if (s.length > 254 || /\s/.test(s))
+    return false;
   return /^[^@]+@[^@.]+(\.[^@.]+)+$/.test(s.trim());
 }
 __name(looksLikeEmail, "looksLikeEmail");
 __name2(looksLikeEmail, "looksLikeEmail");
 async function resolveCheckout(env, tier, mid, email, origin) {
-  if (env.CREEM_CHECKOUT_URL) return env.CREEM_CHECKOUT_URL;
+  if (env.CREEM_CHECKOUT_URL)
+    return env.CREEM_CHECKOUT_URL;
   const products = parseProducts(env);
   const p = products.find((x) => x.tier === tier) || products[0];
-  if (!p || !p.product_id || !env.CREEM_API_KEY) return null;
+  if (!p || !p.product_id || !env.CREEM_API_KEY)
+    return null;
   const metadata = { source: "weauto-license-worker", tier: p.tier };
-  if (mid) metadata.mid = mid;
+  if (mid)
+    metadata.mid = mid;
   const payload = { product_id: p.product_id, metadata };
   if (typeof origin === "string" && origin.startsWith("http")) {
     payload.success_url = origin + "/buy?done=1";
   }
   const mail = looksLikeEmail(email) ? email.trim() : "";
-  if (mail) payload.customer = { email: mail };
+  if (mail)
+    payload.customer = { email: mail };
   const res = await creemPost(env, "/checkouts", payload);
-  if (upstreamError(res)) return null;
+  if (upstreamError(res))
+    return null;
   if (res.status >= 200 && res.status < 300 && res.data && res.data.checkout_url) {
     return res.data.checkout_url;
   }
@@ -1476,7 +1369,8 @@ function jevJsonSchema(questions) {
       properties[key] = { type: "boolean", description: desc };
     } else if (q.type === "choice") {
       const opts = Object.keys(q.criteria || {});
-      if (!opts.length) continue;
+      if (!opts.length)
+        continue;
       properties[key] = { type: "string", enum: opts, description: desc };
     } else if (q.type === "score") {
       const bins = Array.isArray(q.criteria) ? q.criteria.length : 10;
@@ -1515,7 +1409,8 @@ function jevSystemPrompt(questions, state) {
       c.forEach((b, i) => lines.push(`  ${i}: ${b}`));
     } else if (c && typeof c === "object") {
       lines.push("options (value -> meaning):");
-      for (const k of Object.keys(c)) lines.push(`  ${k}: ${c[k]}`);
+      for (const k of Object.keys(c))
+        lines.push(`  ${k}: ${c[k]}`);
     }
   }
   return lines.join("\n");
@@ -1531,18 +1426,22 @@ function jevUserPrompt(state) {
 __name(jevUserPrompt, "jevUserPrompt");
 __name2(jevUserPrompt, "jevUserPrompt");
 function jevExtractAnswers(res) {
-  if (!res || typeof res !== "object") return null;
+  if (!res || typeof res !== "object")
+    return null;
   let raw = res;
-  if (res.response !== void 0) raw = res.response;
+  if (res.response !== void 0)
+    raw = res.response;
   else if (res.choices && res.choices[0] && res.choices[0].message) {
     raw = res.choices[0].message.content;
   }
-  if (typeof raw !== "string") return raw && typeof raw === "object" ? raw : null;
+  if (typeof raw !== "string")
+    return raw && typeof raw === "object" ? raw : null;
   try {
     return JSON.parse(raw);
   } catch (_) {
     const m = raw.match(/\{[\s\S]*\}/);
-    if (!m) return null;
+    if (!m)
+      return null;
     try {
       return JSON.parse(m[0]);
     } catch (_2) {
@@ -1566,16 +1465,19 @@ async function hmacHex(secret, msgBytes) {
 __name(hmacHex, "hmacHex");
 __name2(hmacHex, "hmacHex");
 function timingSafeEqual(a, b) {
-  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length)
+    return false;
   let r = 0;
-  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  for (let i = 0; i < a.length; i++)
+    r |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return r === 0;
 }
 __name(timingSafeEqual, "timingSafeEqual");
 __name2(timingSafeEqual, "timingSafeEqual");
 async function verifyClientIntegrity(req, env) {
   const expectedFp = (env.EXPECTED_SIG_FP || "").toLowerCase();
-  if (!expectedFp) return null;
+  if (!expectedFp)
+    return null;
   const fp = (req.headers.get("x-sig-fp") || "").toLowerCase();
   const pkg = req.headers.get("x-pkg") || "";
   const instance = req.headers.get("x-instance") || "";
@@ -1602,24 +1504,7 @@ async function verifyClientIntegrity(req, env) {
   }
   return null;
 }
-__name(verifyClientIntegrity, "verifyClientIntegrity");
-__name2(verifyClientIntegrity, "verifyClientIntegrity");
-/**
- * 双凭证闸门（2026-10-14 修复 Windows EXE 被 Android 完整性墙误伤）。
- * 背景：10-13 合入 Android L3 墙后，墙上路由（/license、/ai、/ai/*、/token/status）
- * 对 Windows EXE 全量 403 integrity_signature——EXE 发不出 Android 五头
- * （x-sig-fp 是 APK 证书指纹、x-pkg 硬编码 com.jev.probe），导致
- * /ai/jev/decisions（Jev 判断）与 /ai/v1（云 AI 代理）双双不可用。
- * 现在：EXPECTED_SIG_FP 未配 → fail-open（与原墙一致）；配了则先试 EXE 自有凭证，
- * 任一合法即放行（各路由内部还有二次校验：jevDecisions 验 HMAC、proxyAi 验卡密），
- * 全不合法才落回 Android 墙。Android 客户端行为零变化。
- * EXE 凭证三种（与客户端实现逐字节对齐）：
- *   ① HMAC 签名 x-weauto-ts/nonce/sig，密钥 WEAUATO_CLIENT_SECRET
- *      （jev_guard.py _sign：HMAC(secret,"POST\n<path>\n<ts>\n<nonce>\n"+body)，±60s）
- *   ② 卡密+实例：Authorization Bearer 卡密 + X-WeAuto-Instance
- *      （guard.py worker_ai_gate；licenseOk 内部复检，含 Creem 在线校验+缓存）
- *   ③ 计费令牌：Authorization Bearer <b64>.<sig> 或 ?token=（WEAUATO_SIGN_SECRET 签发）
- */
+
 async function exeCredentialCheck(req, env) {
   const url = new URL(req.url);
   const authHdr = (req.headers.get("authorization") || "").trim();
@@ -1666,6 +1551,7 @@ async function exeCredentialCheck(req, env) {
   }
   return { ok: false, reason: "no_credential" };
 }
+
 async function integrityGate(req, env) {
   const expectedFp = (env.EXPECTED_SIG_FP || "").toLowerCase();
   if (!expectedFp) return null;
@@ -1694,6 +1580,8 @@ async function integrityGate(req, env) {
   }
   return verifyClientIntegrity(req, env);
 }
+__name(verifyClientIntegrity, "verifyClientIntegrity");
+__name2(verifyClientIntegrity, "verifyClientIntegrity");
 async function jevDecisions(req, env) {
   if (req.method !== "POST") {
     return json({ error: { message: "POST required", type: "invalid_request", code: "method_not_allowed" } }, 405);
@@ -1715,10 +1603,12 @@ async function jevDecisions(req, env) {
   const jt = authHdr.startsWith("Bearer ") ? authHdr.slice(7).trim() : authHdr;
   if (jt && looksLikeBillingToken(jt) && env.WEAUATO_SIGN_SECRET) {
     const p = await verifyBillingToken(env, jt);
-    if (!p) return json({ error: { message: "\u8D26\u6237\u4EE4\u724C\u65E0\u6548\u6216\u5DF2\u8FC7\u671F", type: "auth_error", code: "bad_token" } }, 401);
+    if (!p)
+      return json({ error: { message: "\u8D26\u6237\u4EE4\u724C\u65E0\u6548\u6216\u5DF2\u8FC7\u671F", type: "auth_error", code: "bad_token" } }, 401);
     const ti = TIERS[p.tier] || TIERS[DEFAULT_TIER];
     const used = await readUsage(env, p.sub);
-    if (used >= ti.tokens) return json({ error: { message: "\u672C\u6708\u7B97\u529B\u5DF2\u7528\u5C3D\uFF0C\u8BF7\u5347\u7EA7\u5957\u9910\u6216\u7B49\u5F85\u4E0B\u6708\u91CD\u7F6E", type: "quota_error", code: "quota_exceeded", used, quota: ti.tokens } }, 402);
+    if (used >= ti.tokens)
+      return json({ error: { message: "\u672C\u6708\u7B97\u529B\u5DF2\u7528\u5C3D\uFF0C\u8BF7\u5347\u7EA7\u5957\u9910\u6216\u7B49\u5F85\u4E0B\u6708\u91CD\u7F6E", type: "quota_error", code: "quota_exceeded", used, quota: ti.tokens } }, 402);
     await addUsage(env, p.sub, JEV_COST);
     billed = { used: used + JEV_COST, quota: ti.tokens, tier: p.tier };
   }
@@ -1800,12 +1690,16 @@ async function jevDecisions(req, env) {
   for (const k of Object.keys(questions)) {
     const q = questions[k] || {};
     const v = out[k];
-    if (v === void 0 || v === null) continue;
-    if (q.type === "noul") answers[k] = { noul: v === true || v === "true" ? 1 : 0 };
-    else if (q.type === "choice") answers[k] = { choice: String(v) };
+    if (v === void 0 || v === null)
+      continue;
+    if (q.type === "noul")
+      answers[k] = { noul: v === true || v === "true" ? 1 : 0 };
+    else if (q.type === "choice")
+      answers[k] = { choice: String(v) };
     else if (q.type === "score") {
       const n = Number(v);
-      if (Number.isFinite(n)) answers[k] = { score: n };
+      if (Number.isFinite(n))
+        answers[k] = { score: n };
     }
   }
   if (billed) {
@@ -1833,6 +1727,7 @@ var cf_worker_default = {
         has_ai_upstream: aiAvailable(env),
         ai_ready: !!(env.CREEM_API_KEY && aiAvailable(env)),
         workers_ai_ready: !!env.AI,
+        tuptup_ready: !!(env.AIAAPI_TOKEN || "").trim(),
         volcano_ready: volcanoConfigured(env),
         // Jev 判断：Workers AI binding + 模型（binding 由 wrangler 注入，不在 vars 里）
         jev_ready: !!env.AI,
@@ -1857,15 +1752,16 @@ var cf_worker_default = {
     if (p === "/api/update") {
       return updateProxy(req, env);
     }
-    if (p === "/api/activate-offline") {
-      return activateOffline(req, env);
-    }
     if (p === "/license" || p === "/ai" || p.startsWith("/ai/") || p === "/token/status") {
       const blocked = await integrityGate(req, env);
-      if (blocked) return blocked;
+      if (blocked)
+        return blocked;
     }
     if (p === "/ai/jev/decisions") {
       return jevDecisions(req, env);
+    }
+    if (p === "/ai/tuptup" || p.startsWith("/ai/tuptup/")) {
+      return proxyTuptup(req, env, url);
     }
     if (p === "/ai" || p.startsWith("/ai/")) {
       return proxyAi(req, env, url);
@@ -1885,7 +1781,8 @@ var cf_worker_default = {
     if (p === "/token/status" && req.method === "GET") {
       const tok = url.searchParams.get("token") || "";
       const p2 = env.WEAUATO_SIGN_SECRET ? await verifyBillingToken(env, tok) : null;
-      if (!p2) return json({ ok: false, error: "invalid_token" }, 401);
+      if (!p2)
+        return json({ ok: false, error: "invalid_token" }, 401);
       const ti = TIERS[p2.tier] || TIERS[DEFAULT_TIER];
       const used = await readUsage(env, p2.sub);
       return json({
@@ -1903,8 +1800,10 @@ var cf_worker_default = {
       if (!env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) {
         return json({ ok: false, error: "forbidden" }, 403);
       }
-      if (!env.WEAUATO_SIGN_SECRET) return json({ ok: false, error: "billing_not_configured" }, 503);
-      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      if (!env.WEAUATO_SIGN_SECRET)
+        return json({ ok: false, error: "billing_not_configured" }, 503);
+      if (!env.BILLING_KV)
+        return json({ ok: false, error: "billing_kv_missing" }, 503);
       let body;
       try {
         body = await req.json();
@@ -1927,7 +1826,8 @@ var cf_worker_default = {
       if (!(env.ADMIN_KEY && key === env.ADMIN_KEY || nonceOk)) {
         return json({ ok: false, error: "forbidden" }, 403);
       }
-      if (!env.CREEM_API_KEY) return json({ ok: false, error: "creem_not_configured" }, 503);
+      if (!env.CREEM_API_KEY)
+        return json({ ok: false, error: "creem_not_configured" }, 503);
       const targets = parseProducts(env).map((x) => ({
         tier: x.tier,
         product_id: x.product_id,
@@ -1995,32 +1895,39 @@ var cf_worker_default = {
       return json({ ok: false, error: "method_not_allowed" }, 405);
     }
     if (p === "/device/hello" && req.method === "POST") {
-      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      if (!env.BILLING_KV)
+        return json({ ok: false, error: "billing_kv_missing" }, 503);
       return deviceHello(req, env, url);
     }
     if (p === "/device/state" && req.method === "GET") {
-      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      if (!env.BILLING_KV)
+        return json({ ok: false, error: "billing_kv_missing" }, 503);
       return deviceState(req, env, url);
     }
     if (p === "/device/persona" && req.method === "GET") {
-      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      if (!env.BILLING_KV)
+        return json({ ok: false, error: "billing_kv_missing" }, 503);
       return deviceGetPersona(req, env, url);
     }
     if (p === "/device/persona" && req.method === "PUT") {
-      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      if (!env.BILLING_KV)
+        return json({ ok: false, error: "billing_kv_missing" }, 503);
       return devicePutPersona(req, env, url);
     }
     if (p === "/device/plan" && req.method === "PUT") {
-      if (!env.BILLING_KV) return json({ ok: false, error: "billing_kv_missing" }, 503);
+      if (!env.BILLING_KV)
+        return json({ ok: false, error: "billing_kv_missing" }, 503);
       return devicePutPlan(req, env, url);
     }
     if (p === "/buy" && req.method === "GET") {
       const mid = url.searchParams.get("mid") || "";
       const email = url.searchParams.get("email") || "";
-      if (url.searchParams.get("done") === "1") return html(successPage(env));
+      if (url.searchParams.get("done") === "1")
+        return html(successPage(env));
       if (url.searchParams.get("go") === "1") {
         const target = await resolveCheckout(env, url.searchParams.get("tier") || "", mid, email, url.origin);
-        if (!target) return notConfiguredPage();
+        if (!target)
+          return notConfiguredPage();
         return Response.redirect(target, 302);
       }
       const products = parseProducts(env);
@@ -2051,7 +1958,8 @@ var cf_worker_default = {
         key,
         instance_name
       });
-      if (upstreamError(res)) return upstreamUnavailable(res);
+      if (upstreamError(res))
+        return upstreamUnavailable(res);
       const { status, data } = res;
       if (status >= 200 && status < 300) {
         if (!isActiveLike(data)) {
@@ -2084,7 +1992,8 @@ var cf_worker_default = {
         key,
         instance_id
       });
-      if (upstreamError(res)) return upstreamUnavailable(res);
+      if (upstreamError(res))
+        return upstreamUnavailable(res);
       const { status, data } = res;
       if (status >= 200 && status < 300 && data && data.status === "active") {
         return json({ ok: true, expires_at: expiresToUnix(data.expires_at), tier: mapTier(env, data) });
@@ -2106,7 +2015,8 @@ var cf_worker_default = {
         key,
         instance_id
       });
-      if (upstreamError(res)) return upstreamUnavailable(res);
+      if (upstreamError(res))
+        return upstreamUnavailable(res);
       return json({ ok: res.status >= 200 && res.status < 300 }, res.status);
     }
     if (p === "/webhook" && req.method === "POST") {
@@ -2117,7 +2027,8 @@ var cf_worker_default = {
       const raw = await req.text();
       const sig = req.headers.get("creem-signature") || req.headers.get("x-creem-signature") || "";
       const okSig = await verifySignature(env.CREEM_WEBHOOK_SECRET, raw, sig);
-      if (!okSig) return new Response("invalid signature", { status: 401 });
+      if (!okSig)
+        return new Response("invalid signature", { status: 401 });
       try {
         const evt = JSON.parse(raw);
         const obj = evt.object || evt.data && evt.data.object || {};
@@ -2140,7 +2051,8 @@ var cf_worker_default = {
             const vdays = prod && prod.valid_days || 30;
             const email = obj.customer && obj.customer.email || obj.customer_email || "";
             const rec = { key: lk, tier, token, ts: Date.now(), valid_days: vdays };
-            if (looksLikeEmail(email)) rec.email = email.trim();
+            if (looksLikeEmail(email))
+              rec.email = email.trim();
             await env.LICENSE_KV.put(
               "lic:" + mid,
               JSON.stringify(rec),
@@ -2160,10 +2072,12 @@ var cf_worker_default = {
     }
     if (p === "/license" && req.method === "GET") {
       const mid = url.searchParams.get("mid") || "";
-      if (!mid || !env.LICENSE_KV) return json({ pending: true }, 404);
+      if (!mid || !env.LICENSE_KV)
+        return json({ pending: true }, 404);
       try {
         const val = await env.LICENSE_KV.get("lic:" + mid);
-        if (!val) return json({ pending: true }, 404);
+        if (!val)
+          return json({ pending: true }, 404);
         const d = JSON.parse(val);
         const vdays = d.valid_days || 30;
         const ts = d.ts || 0;
@@ -2192,7 +2106,8 @@ var cf_worker_default = {
         "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
       };
-      if (req2.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
+      if (req2.method === "OPTIONS")
+        return new Response("", { status: 204, headers: CORS });
       const mid = (url2.searchParams.get("mid") || "").trim();
       if (!DEVICE_ID_RE2.test(mid)) {
         return json({ ok: false, error: "bad_device_id" }, 400, CORS);
@@ -2203,7 +2118,8 @@ var cf_worker_default = {
       const key = "bak:" + mid;
       if (req2.method === "GET") {
         const raw = await env2.BILLING_KV.get(key);
-        if (!raw) return new Response("Not found", { status: 404, headers: CORS });
+        if (!raw)
+          return new Response("Not found", { status: 404, headers: CORS });
         return new Response(raw, {
           status: 200,
           headers: { ...CORS, "Content-Type": "application/json; charset=utf-8" }
@@ -2211,7 +2127,8 @@ var cf_worker_default = {
       }
       if (req2.method === "PUT") {
         const body = await req2.text();
-        if (!body) return json({ ok: false, error: "empty_body" }, 400, CORS);
+        if (!body)
+          return json({ ok: false, error: "empty_body" }, 400, CORS);
         if (body.length > SYNC_MAX_BYTES) {
           return json({ ok: false, error: "snapshot_too_large" }, 413, CORS);
         }
@@ -2239,7 +2156,8 @@ var cf_worker_default = {
     __name2(handleSync, "handleSync");
     async function updateProxy(req2, env2) {
       const token = env2.GITHUB_TOKEN;
-      if (!token) return json({ ok: false, error: "github_token_missing" }, 503);
+      if (!token)
+        return json({ ok: false, error: "github_token_missing" }, 503);
       const owner = env2.UPDATE_REPO_OWNER || "samcaicn";
       const repo = env2.UPDATE_REPO_NAME || "gloai";
       const artifactName = env2.UPDATE_ARTIFACT_NAME || "weauto-windows-exe";
@@ -2249,10 +2167,12 @@ var cf_worker_default = {
         const r = await fetch(api, {
           headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "user-agent": UA }
         });
-        if (!r.ok) return json({ ok: false, error: "github_api_error", status: r.status }, 502);
+        if (!r.ok)
+          return json({ ok: false, error: "github_api_error", status: r.status }, 502);
         const data = await r.json();
         const arts = (data.artifacts || []).filter((a) => a.name === artifactName && !a.expired);
-        if (!arts.length) return json({ ok: false, error: "no_artifact" }, 404);
+        if (!arts.length)
+          return json({ ok: false, error: "no_artifact" }, 404);
         arts.sort((a, b) => a.updated_at < b.updated_at ? 1 : -1);
         const target = arts[0];
         const dl = await fetch(target.archive_download_url, {
@@ -2262,7 +2182,8 @@ var cf_worker_default = {
         let directUrl = target.archive_download_url;
         if (dl.status === 301 || dl.status === 302) {
           const loc = dl.headers.get("location");
-          if (loc) directUrl = loc;
+          if (loc)
+            directUrl = loc;
         }
         return json({
           ok: true,
