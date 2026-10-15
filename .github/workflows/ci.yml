@@ -83,7 +83,8 @@ jobs:
           # /webview 依赖，webview 只在打开桌面窗口的函数内部 import）。
           python -m pip install --upgrade pip
           pip install flask flask-cors flask-wtf flask-limiter waitress \
-                      werkzeug "openai==1.84.0" requests psutil filelock sqlalchemy
+                      werkzeug "openai==1.84.0" requests psutil filelock sqlalchemy \
+                      cryptography
 
       - name: Run UI / save-zero-regression e2e
         shell: bash
@@ -134,6 +135,20 @@ jobs:
           #   （HMAC 签名 / 卡密+实例 / 计费令牌）/ 精确错误码 / 闸门 clone 不消耗 body /
           #   e2e worker.fetch。⚠️ 不连线上：HMAC 密钥与 ts 窗口只能在 mock 里构造。
           node _worker_gate_test.mjs
+
+      - name: Run updater hot-update channel tests (offline mocks)
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          # updater 热更新通道（2026-10-15 efbbc3a 加固）离线单测，mock requests.get /
+          # subprocess.Popen / time.sleep，覆盖：
+          #   _http_get 死代理回退直连（proxies 全置 None）/ 两轮全败抛异常
+          #   检查更新 3 次退避重试 / 版本比较矩阵 / 状态读写往返
+          #   下载 3 次重试后成功 / 3 次全败 / Ed25519 验签双路径（篡改拒绝 + 真签通过）
+          #   发行版缺 .sig 拒绝 / 非 exe 环境拒绝 / 构件无 WeAuto.exe。
+          # ⚠️ 刻意不跑 --live：会真下载 83MB CI 构件并依赖线上 Worker / azure 直链。
+          python _updater_e2e_test.py
 
       - name: Assert config.py not polluted by tests
         if: always()
