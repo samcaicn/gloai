@@ -2548,6 +2548,7 @@ export type I18nKey =
   | 'mu.judges.laya.runtimeGguf'
   | 'mu.judges.laya.runtimeOnnx'
   | 'mu.judges.laya.source'
+  | 'mu.judges.laya.sourceAuto'
   | 'mu.judges.laya.sourceCustom'
   | 'mu.judges.laya.sourceCustomPlaceholder'
   | 'mu.judges.laya.sourceHfMirror'

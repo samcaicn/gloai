@@ -36,10 +36,14 @@ export type DownloadOptions = {
   files: readonly DownloadFile[];
   /** Where the files go. */
   folder: string;
-  /** The URL of one file, from the source the person picked. */
-  urlFor: (file: DownloadFile) => string;
+  /**
+   * The candidate URLs for one file, in the order to try them. The first mirror that serves the bytes wins; a mirror
+   * that fails (or serves a corrupt partial) is skipped for the next one, so a person in a region where Hugging Face is
+   * slow or blocked still gets the model from a mirror without picking one by hand.
+   */
+  urlCandidates: (file: DownloadFile) => readonly string[];
   hooks: DownloadHooks;
-  /** The first line: what is being downloaded and from where. */
+  /** The first line: what is being downloaded. */
   header: string;
 };
 
@@ -48,7 +52,7 @@ export type DownloadOptions = {
  * finish -- cancelled or a file that never arrived -- with the task already closed; the caller then only has to stop.
  */
 export async function downloadModelFiles(options: DownloadOptions): Promise<boolean> {
-  const { task, files, folder, urlFor, hooks } = options;
+  const { task, files, folder, urlCandidates, hooks } = options;
   const total = files.length;
   hooks.say(task, options.header);
   mkdirSync(folder, { recursive: true });
@@ -64,7 +68,7 @@ export async function downloadModelFiles(options: DownloadOptions): Promise<bool
     }
     hooks.say(task, `Downloading ${file.name} (${Math.round(file.bytes / 1_000_000)} MB)`);
     try {
-      await downloadOne(task, index, total, file, urlFor(file), `${dest}.part`, dest, hooks);
+      await downloadOne(task, index, total, file, urlCandidates(file), `${dest}.part`, dest, hooks);
     } catch (error) {
       hooks.say(task, error instanceof Error ? error.message : String(error));
       hooks.setAbort(undefined);
@@ -86,17 +90,18 @@ function fileIsComplete(dest: string, file: DownloadFile): boolean {
 }
 
 /**
- * Streams one file with resume + retry: hashes it (including any partial from a previous run), updates
- * `task.progress`, and renames it into place on a good hash. Honors the abort controller the hooks hold, so the UI
- * can cancel, and aborts itself if no byte arrives for 60s (a slow but moving stream resets the timer). A corrupt
- * partial is dropped on a hash mismatch so the next try downloads fresh instead of appending to bad bytes.
+ * Streams one file from the first mirror that serves it, with resume + retry per mirror: hashes it (including any
+ * partial from a previous run), updates `task.progress`, and renames it into place on a good hash. Tries every URL in
+ * `urls` in order -- a mirror that errors or serves a corrupt partial is dropped and the next one tried from scratch,
+ * so the download finishes even when the person's nearest mirror is down. Honors the abort controller the hooks hold
+ * (the UI can cancel), and aborts itself if no byte arrives for 60s.
  */
 async function downloadOne(
   task: LocalJudgeTask,
   index: number,
   total: number,
   file: DownloadFile,
-  url: string,
+  urls: readonly string[],
   part: string,
   dest: string,
   hooks: DownloadHooks
@@ -114,92 +119,109 @@ async function downloadOne(
   }
   const retries = 3;
   const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    const controller = new AbortController();
-    hooks.setAbort(controller);
-    let stall = setTimeout(() => controller.abort(new Error('Download stalled (no data for 60s)')), 60_000);
-    const resetStall = () => {
-      clearTimeout(stall);
-      stall = setTimeout(() => controller.abort(new Error('Download stalled (no data for 60s)')), 60_000);
-    };
-    try {
-      const headers: Record<string, string> = {};
-      if (offset > 0) headers.Range = `bytes=${offset}-`;
-      const response = await fetch(url, { headers, signal: controller.signal });
-      if (offset > 0) {
-        if (response.status === 206) {
-          /* partial content: resume from `offset` */
-        } else if (response.status === 200) {
-          offset = 0; // server ignored the range; download fresh from the start
-        } else {
+
+  // Try each mirror in turn; only give up once every one has failed all its retries.
+  for (let mirror = 0; mirror < urls.length; mirror++) {
+    const url = urls[mirror]!;
+    let failed: unknown;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      const controller = new AbortController();
+      hooks.setAbort(controller);
+      let stall = setTimeout(() => controller.abort(new Error('Download stalled (no data for 60s)')), 60_000);
+      const resetStall = () => {
+        clearTimeout(stall);
+        stall = setTimeout(() => controller.abort(new Error('Download stalled (no data for 60s)')), 60_000);
+      };
+      try {
+        const headers: Record<string, string> = {};
+        if (offset > 0) headers.Range = `bytes=${offset}-`;
+        const response = await fetch(url, { headers, signal: controller.signal });
+        if (offset > 0) {
+          if (response.status === 206) {
+            /* partial content: resume from `offset` */
+          } else if (response.status === 200) {
+            offset = 0; // server ignored the range; download fresh from the start
+          } else {
+            throw new Error(`HTTP ${response.status} ${response.statusText} for ${file.name}`);
+          }
+        } else if (!response.ok) {
           throw new Error(`HTTP ${response.status} ${response.statusText} for ${file.name}`);
         }
-      } else if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${response.statusText} for ${file.name}`);
-      }
-      if (!response.body) throw new Error(`No response body for ${file.name}`);
-      const hash = createHash('sha256');
-      if (offset > 0) {
-        // The bytes already on disk are part of the final file: include them in the hash.
-        for await (const chunk of createReadStream(part)) hash.update(chunk);
-      }
-      const stream = createWriteStream(part, { flags: offset > 0 ? 'a' : 'w' });
-      const reader = response.body.getReader();
-      let received = 0;
-      try {
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (!value) continue;
-          hash.update(value);
-          await new Promise<void>((resolve, reject) =>
-            stream.write(value, (error: Error | null) => (error ? reject(error) : resolve()))
-          );
-          received += value.length;
-          resetStall();
-          const downloaded = offset + received;
-          task.progress = {
-            file: file.name,
-            index,
-            total,
-            downloadedBytes: downloaded,
-            totalBytes: expected,
-            percent: expected ? downloaded / expected : 0,
-          };
+        if (!response.body) throw new Error(`No response body for ${file.name}`);
+        const hash = createHash('sha256');
+        if (offset > 0) {
+          // The bytes already on disk are part of the final file: include them in the hash.
+          for await (const chunk of createReadStream(part)) hash.update(chunk);
         }
-      } finally {
-        await new Promise<void>((resolve, reject) =>
-          stream.end((error: Error | null) => (error ? reject(error) : resolve()))
-        );
-      }
-      const digest = hash.digest('hex');
-      // A build that pins no hash is checked by size alone: the stream is only trusted to have delivered all of it.
-      if (file.sha256 && digest !== file.sha256)
-        throw new Error(`Hash mismatch for ${file.name}: expected ${file.sha256}, got ${digest}`);
-      clearTimeout(stall);
-      hooks.setAbort(undefined);
-      renameSync(part, dest);
-      return;
-    } catch (error) {
-      clearTimeout(stall);
-      hooks.setAbort(undefined);
-      if (hooks.cancelled()) throw error; // user cancelled: do not retry
-      const message = error instanceof Error ? error.message : String(error);
-      // A corrupt partial can't be healed by appending: drop it so the next try downloads fresh.
-      if (/Hash mismatch/.test(message)) {
+        const stream = createWriteStream(part, { flags: offset > 0 ? 'a' : 'w' });
+        const reader = response.body.getReader();
+        let received = 0;
         try {
-          unlinkSync(part);
-        } catch {
-          /* ignore */
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (!value) continue;
+            hash.update(value);
+            await new Promise<void>((resolve, reject) =>
+              stream.write(value, (error: Error | null) => (error ? reject(error) : resolve()))
+            );
+            received += value.length;
+            resetStall();
+            const downloaded = offset + received;
+            task.progress = {
+              file: file.name,
+              index,
+              total,
+              downloadedBytes: downloaded,
+              totalBytes: expected,
+              percent: expected ? downloaded / expected : 0,
+            };
+          }
+        } finally {
+          await new Promise<void>((resolve, reject) =>
+            stream.end((error: Error | null) => (error ? reject(error) : resolve()))
+          );
         }
-        offset = 0;
+        const digest = hash.digest('hex');
+        // A build that pins no hash is checked by size alone: the stream is only trusted to have delivered all of it.
+        if (file.sha256 && digest !== file.sha256)
+          throw new Error(`Hash mismatch for ${file.name}: expected ${file.sha256}, got ${digest}`);
+        clearTimeout(stall);
+        hooks.setAbort(undefined);
+        renameSync(part, dest);
+        return;
+      } catch (error) {
+        clearTimeout(stall);
+        hooks.setAbort(undefined);
+        if (hooks.cancelled()) throw error; // user cancelled: do not retry
+        const message = error instanceof Error ? error.message : String(error);
+        // A corrupt partial can't be healed by appending: drop it so the next try downloads fresh.
+        if (/Hash mismatch/.test(message)) {
+          try {
+            unlinkSync(part);
+          } catch {
+            /* ignore */
+          }
+          offset = 0;
+        }
+        if (attempt < retries) {
+          hooks.say(task, `Retry ${attempt}/${retries - 1} for ${file.name}: ${message}`);
+          await sleep(1000 * 2 ** (attempt - 1));
+          continue;
+        }
+        failed = error;
       }
-      if (attempt < retries) {
-        hooks.say(task, `Retry ${attempt}/${retries - 1} for ${file.name}: ${message}`);
-        await sleep(1000 * 2 ** (attempt - 1));
-        continue;
-      }
-      throw error;
     }
+    // This mirror is exhausted; start the next one from a clean slate (its partial is not reusable).
+    if (mirror < urls.length - 1) {
+      try {
+        unlinkSync(part);
+      } catch {
+        /* ignore */
+      }
+      offset = 0;
+      continue;
+    }
+    throw failed;
   }
 }

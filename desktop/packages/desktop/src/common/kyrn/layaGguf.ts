@@ -113,3 +113,13 @@ export function layaGgufFileUrl(name: string, id?: string, sourceId = 'huggingfa
       return `https://huggingface.co/${path}?download=true`;
   }
 }
+
+/**
+ * The mirrors to try for one file, in the order the app falls back through them: Hugging Face, hf-mirror.com,
+ * ModelScope, and a custom base the person typed. The downloader uses the first that serves the bytes.
+ */
+export function layaGgufUrlCandidates(name: string, id?: string, customBase?: string): string[] {
+  const urls = ['huggingface', 'hf-mirror', 'modelscope'].map((sourceId) => layaGgufFileUrl(name, id, sourceId));
+  if (customBase) urls.push(layaGgufFileUrl(name, id, 'custom', customBase));
+  return urls;
+}

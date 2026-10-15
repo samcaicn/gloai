@@ -35,7 +35,7 @@ vi.mock('@/common/kyrn/layaOnnx.ts', async (importOriginal) => {
   };
 });
 
-import { LAYA_ONNX_FILES, LAYA_ONNX_REVISION, LAYA_ONNX_SOURCES, layaOnnxFileUrlFor } from '@/common/kyrn/layaOnnx.ts';
+import { LAYA_ONNX_FILES, LAYA_ONNX_REVISION, LAYA_ONNX_SOURCES, layaOnnxFileUrlFor, layaOnnxUrlCandidates } from '@/common/kyrn/layaOnnx.ts';
 import { OnnxLocalJudge } from '@process/agent/kyrn/localJudgeOnnx.ts';
 
 type Call = { url: string; headers: Record<string, string>; signal?: AbortSignal | null };
@@ -140,6 +140,20 @@ describe('layaOnnx download sources', () => {
     expect(LAYA_ONNX_SOURCES.every((source) => source.labelKey.startsWith('mu.judges.laya.source'))).toBe(true);
     expect(LAYA_ONNX_SOURCES.filter((source) => source.needsBase).map((source) => source.id)).toEqual(['custom']);
   });
+
+  it('lists the mirrors in fallback order, Hugging Face first', () => {
+    const urls = layaOnnxUrlCandidates('model.onnx');
+    expect(urls[0]).toContain('https://huggingface.co/');
+    expect(urls[1]).toContain('https://hf-mirror.com/');
+    expect(urls[2]).toContain('https://modelscope.cn/models/');
+  });
+
+  it('appends a custom mirror when a base is given', () => {
+    const urls = layaOnnxUrlCandidates('model.onnx', undefined, 'https://mirror.example/');
+    expect(urls[3]).toBe(
+      'https://mirror.example/mizchi/laya-multilingual-onnx/resolve/d9d003d543e63d6d3375c21d44624136bd1e0bad/model.onnx?download=true'
+    );
+  });
 });
 
 describe('OnnxLocalJudge setup download', () => {
@@ -166,16 +180,27 @@ describe('OnnxLocalJudge setup download', () => {
     expect(state.task?.progress).toMatchObject({ file: 'onnx_config.json', index: 1, total: 2, percent: 1 });
   });
 
-  it('downloads from the source the person picked', async () => {
+  it('tries the mirrors in order and falls back when one fails', async () => {
     const dir = tempDir();
-    stubFetch((call) => serve(bodyOf(fileOfUrl(call.url)!.name)));
+    let triedHf = false;
+    let triedMirror = false;
+    stubFetch((call) => {
+      if (call.url.startsWith('https://huggingface.co/')) {
+        triedHf = true;
+        return new Response('boom', { status: 503 });
+      }
+      if (call.url.startsWith('https://hf-mirror.com/')) triedMirror = true;
+      return serve(bodyOf(fileOfUrl(call.url)!.name));
+    });
     const judge = makeJudge(dir);
 
-    await judge.run('setup', false, { id: 'hf-mirror' });
-    await settle(judge);
+    await judge.run('setup', false, {});
+    const state = await settle(judge);
 
-    expect(calls.length).toBe(TINY_FILES.length);
-    expect(calls.every((call) => call.url.startsWith('https://hf-mirror.com/'))).toBe(true);
+    expect(state.task?.phase).toBe('done');
+    expect(state.installed).toBe(true);
+    expect(triedHf).toBe(true);
+    expect(triedMirror).toBe(true);
   });
 
   it('skips a file it already has, and does not fetch it again', async () => {

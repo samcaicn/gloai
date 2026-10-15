@@ -6,8 +6,8 @@ import {
   LAYA_ONNX_DEFAULT_ID,
   layaOnnxFiles,
   layaOnnxFolder,
-  layaOnnxFileUrlFor,
   layaOnnxPreset,
+  layaOnnxUrlCandidates,
 } from '../../../common/kyrn/layaOnnx';
 import type {
   LocalJudgeAction,
@@ -163,7 +163,7 @@ export class OnnxLocalJudge {
   async run(
     action: LocalJudgeAction,
     _consent = false,
-    source?: { id: string; base?: string; preset?: string }
+    source?: { id?: string; base?: string; preset?: string; file?: string }
   ): Promise<LocalJudgeState> {
     if (!ACTIONS.has(action)) throw new KyrnError('invalid', `Unknown local judge action: ${String(action)}`);
     // `setup` also carries the build to download: the panel lets the person pick one, and it decides the folder.
@@ -185,7 +185,7 @@ export class OnnxLocalJudge {
         action,
         phase: 'running',
         output: [],
-        source: source?.id ?? 'huggingface',
+        source: 'auto',
         preset: this.preset,
       };
       this.task = task;
@@ -245,19 +245,19 @@ export class OnnxLocalJudge {
    * so a failed or partial run resumes instead of re-downloading, and the person can cancel from the UI. What each
    * file must be is then checked once, the way `start` checks it.
    */
-  private async download(task: LocalJudgeTask, source?: { id: string; base?: string }): Promise<void> {
-    const sourceId = source?.id ?? 'huggingface';
+  private async download(task: LocalJudgeTask, source?: { id?: string; base?: string }): Promise<void> {
     const presetId = this.preset;
     const files = layaOnnxFiles(presetId);
     const build = layaOnnxPreset(presetId);
-    task.source = sourceId;
+    task.source = 'auto';
     task.preset = presetId;
     this.cancelled = false;
     const fetched = await downloadModelFiles({
       task,
       files,
       folder: this.folder,
-      urlFor: (file) => layaOnnxFileUrlFor(sourceId, file.name, source?.base, presetId),
+      // Every mirror is tried in order; the first that serves the bytes wins, so no mirror needs picking by hand.
+      urlCandidates: (file) => layaOnnxUrlCandidates(file.name, presetId, source?.base),
       hooks: {
         cancelled: () => this.cancelled,
         setAbort: (controller) => {
@@ -266,7 +266,7 @@ export class OnnxLocalJudge {
         say: (target, line) => this.say(target, line),
         end: (target, problem) => this.end(target, problem),
       },
-      header: `Downloading the Laya model (${build.id}, ${build.downloadMb} MB) from ${sourceId}`,
+      header: `Downloading the Laya model (${build.id})`,
     });
     if (!fetched) return; // cancelled, or a file that never arrived: the task is already closed
     this.say(task, 'Verifying the model files');

@@ -186,6 +186,7 @@
       "start": "启动",
       "stop": "停止",
       "source": "下载来源",
+      "sourceAuto": "多源自动（无需选择镜像，依次尝试可用源）",
       "sourceHuggingface": "Hugging Face",
       "sourceHfMirror": "HF Mirror（国内镜像）",
       "sourceModelscope": "ModelScope",

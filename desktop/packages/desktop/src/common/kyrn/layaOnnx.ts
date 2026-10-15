@@ -252,3 +252,18 @@ export function layaOnnxFileUrlFor(
   const source = LAYA_ONNX_SOURCES.find((candidate) => candidate.id === sourceId) ?? LAYA_ONNX_SOURCES[0]!;
   return source.fileUrl(name, layaOnnxPreset(presetId), customBase);
 }
+
+/**
+ * The mirrors to try for one file, in the order the app falls back through them: Hugging Face, then its China mirror
+ * hf-mirror.com, then ModelScope, and finally a custom base the person typed. The downloader uses the first that
+ * serves the bytes, so a person never has to pick a mirror by hand -- the closest working one wins.
+ */
+export function layaOnnxUrlCandidates(name: string, presetId?: string, customBase?: string): string[] {
+  const preset = layaOnnxPreset(presetId);
+  const urls = LAYA_ONNX_SOURCES.filter((source) => source.id !== 'custom').map((source) => source.fileUrl(name, preset));
+  if (customBase) {
+    const custom = LAYA_ONNX_SOURCES.find((source) => source.id === 'custom');
+    if (custom) urls.push(custom.fileUrl(name, preset, customBase));
+  }
+  return urls;
+}
