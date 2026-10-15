@@ -78,12 +78,16 @@ export function getInstallationIntegrityModalActions(
     diagnosticsKind?: InstallationIntegrityDialogKind;
     onDownloadLatest?: () => void;
     onRecoverCorruptedDatabase?: () => Promise<unknown> | void;
+    /** Offer the runtime repair (a fresh download into the data folder) beside the reinstall advice. */
+    onRepairRuntime?: () => Promise<unknown> | void;
   } = {}
 ): {
   downloadText?: string;
   onDownloadLatest: () => void;
   onRecoverCorruptedDatabase: () => Promise<unknown> | void;
   recoverText?: string;
+  repairText?: string;
+  onRepairRuntime?: () => Promise<unknown> | void;
 } {
   const diagnosticsKind = options.diagnosticsKind ?? 'incomplete_installation';
   const config = DIALOG_KIND_CONFIG[diagnosticsKind];
@@ -92,6 +96,8 @@ export function getInstallationIntegrityModalActions(
     onDownloadLatest: options.onDownloadLatest ?? openDownloadLatest,
     onRecoverCorruptedDatabase: options.onRecoverCorruptedDatabase ?? (() => Promise.resolve()),
     recoverText: config.showRecover ? dialogKindText(t, diagnosticsKind, 'confirmRebuild') : undefined,
+    repairText: options.onRepairRuntime ? t('common.backendStartup.incompleteInstallation.repairRuntime') : undefined,
+    onRepairRuntime: options.onRepairRuntime,
   };
 }
 
@@ -125,12 +131,15 @@ export const InstallationIntegrityContent: React.FC<{ description: string }> = (
 
 export const InstallationIntegrityFooter: React.FC<{
   diagnosticsKind?: InstallationIntegrityDialogKind;
-}> = ({ diagnosticsKind = 'incomplete_installation' }) => {
+  onRepairRuntime?: () => Promise<unknown> | void;
+}> = ({ diagnosticsKind = 'incomplete_installation', onRepairRuntime }) => {
   const { t } = useTranslation();
   const [recovering, setRecovering] = useState(false);
+  const [repairing, setRepairing] = useState(false);
   const actions = getInstallationIntegrityModalActions(t, {
     diagnosticsKind,
     onRecoverCorruptedDatabase: () => window.electronAPI?.recoverCorruptedDatabase?.(),
+    onRepairRuntime,
   });
 
   const handleRecoverCorruptedDatabase = () => {
@@ -154,6 +163,27 @@ export const InstallationIntegrityFooter: React.FC<{
     });
   };
 
+  // The repair downloads the managed Node.js runtime into the data folder (the consent question is asked in the main
+  // process) and restarts the app when it worked. Until then the button stays busy; a failure is a line of text.
+  const handleRepairRuntime = () => {
+    if (repairing) return;
+    setRepairing(true);
+    void (async () => {
+      try {
+        await actions.onRepairRuntime?.();
+        // Put off, or done and the app is restarting: either way the wait is over.
+        setRepairing(false);
+      } catch (error) {
+        setRepairing(false);
+        Message.error(
+          t('common.backendStartup.incompleteInstallation.repairFailed', {
+            error: error instanceof Error ? error.message : String(error),
+          })
+        );
+      }
+    })();
+  };
+
   // Only the desktop app can open a folder.
   const openLogFolder = window.electronAPI?.openLogFolder;
   const handleOpenLogFolder = () => {
@@ -165,6 +195,15 @@ export const InstallationIntegrityFooter: React.FC<{
       {openLogFolder ? (
         <Button data-testid='installation-integrity-open-logs' onClick={handleOpenLogFolder}>
           {t('common.backendStartup.openLogs')}
+        </Button>
+      ) : null}
+      {actions.repairText ? (
+        <Button
+          data-testid='installation-integrity-repair-runtime'
+          loading={repairing}
+          onClick={handleRepairRuntime}
+        >
+          {actions.repairText}
         </Button>
       ) : null}
       {actions.downloadText ? (
@@ -193,12 +232,13 @@ export function showInstallationIntegrityModal(
   modal: InstallationIntegrityModalController,
   t: TFunction,
   description: string,
-  diagnosticsKind: InstallationIntegrityDialogKind = 'incomplete_installation'
+  diagnosticsKind: InstallationIntegrityDialogKind = 'incomplete_installation',
+  options: { onRepairRuntime?: () => Promise<unknown> | void } = {}
 ): ReturnType<InstallationIntegrityModalController['error']> {
   return modal.error({
     title: getInstallationIntegrityTitle(t, diagnosticsKind),
     content: <InstallationIntegrityContent description={description} />,
-    footer: <InstallationIntegrityFooter diagnosticsKind={diagnosticsKind} />,
+    footer: <InstallationIntegrityFooter diagnosticsKind={diagnosticsKind} onRepairRuntime={options.onRepairRuntime} />,
     closable: false,
     maskClosable: false,
   });

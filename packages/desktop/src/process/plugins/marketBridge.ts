@@ -22,7 +22,11 @@ import { pluginBridge, type MarketResult } from '../../common/plugins/bridge';
 // Defined locally (not imported from kernel) so the production bundle never tree-shakes it away:
 // the kernel re-exports it, but Rollup drops an imported binding it cannot prove is used, and the
 // packaged app then throws `silentLogger is not defined` at startup.
-const silentLogger = { info: () => undefined, warn: () => undefined, error: () => undefined };
+const silentLogger = {
+  info: (): undefined => undefined,
+  warn: (): undefined => undefined,
+  error: (): undefined => undefined,
+};
 
 /** Wraps a market call so the renderer always gets `{ ok, data }` or `{ ok, code, message }`. */
 async function answer<T>(work: () => Promise<T>): Promise<MarketResult<T>> {

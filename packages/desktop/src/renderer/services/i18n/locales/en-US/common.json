@@ -86,7 +86,9 @@
       "title": "AiBuddy installation is incomplete",
       "description": "This installation is missing required local resources, so AiBuddy's local service cannot start. Please download and reinstall the latest AiBuddy. If the issue returns after reinstalling, check whether security or antivirus software quarantined AiBuddy's files.",
       "downloadLatest": "Download latest",
-      "runtimeComponentDescription": "This installation is missing required bundled runtime components, so {{resource}} cannot start. Reinstall the latest AiBuddy package. If it still happens after reinstalling, check whether security or antivirus software quarantined AiBuddy components."
+      "runtimeComponentDescription": "This installation is missing required bundled runtime components, so {{resource}} cannot start. Reinstall the latest AiBuddy package. If it still happens after reinstalling, check whether security or antivirus software quarantined AiBuddy components.",
+      "repairRuntime": "Repair runtime",
+      "repairFailed": "Repair failed: {{error}}"
     },
     "packageArchitectureMismatch": {
       "title": "AiBuddy package architecture mismatch",

@@ -14,7 +14,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Input, Message, Spin, Tag } from '@arco-design/web-react';
+import { Button, Input, Message, Modal, Spin, Tag } from '@arco-design/web-react';
 import { ArrowDown, ArrowUp, Delete, LinkOne, Plus, Puzzle, Refresh } from '@icon-park/react';
 import { pluginBridge, unwrapMarket } from '@/common/plugins/bridge';
 import type { MarketCatalogResult, MarketItem, MarketSourceView } from '@/common/plugins/market';
@@ -28,7 +28,7 @@ const useT = useTranslation;
 const PLUGIN_TILE = 'w-36px h-36px rd-8px flex items-center justify-center bg-fill-2 text-t-secondary';
 
 const openUrl = (url: string | undefined): void => {
-  if (url) void openExternalUrl(url).catch(() => undefined);
+  if (url) void openExternalUrl(url).catch((): undefined => undefined);
 };
 
 /** One source as a row in the management list. */
@@ -37,39 +37,42 @@ const SourceRow: React.FC<{
   onEnable: (id: string) => void;
   onRemove: (id: string) => void;
   onMove: (id: string, direction: 'up' | 'down') => void;
-}> = ({ source, onEnable, onRemove, onMove }) => (
-  <div data-testid={`mu-plugin-source-${source.sourceRecordId}`} className='flex items-center gap-12px py-10px border-b border-[var(--color-border-1)] last:border-b-0'>
-    <div className={PLUGIN_TILE}>
-      <Puzzle size={18} />
-    </div>
-    <div className='min-w-0 flex-1'>
-      <div className='flex items-center gap-8px'>
-        <span className='text-14px font-500 text-t-primary truncate'>{source.name}</span>
-        {source.enabled ? <Tag size='small' color='green'>{t('settings.pluginMarket.enabled')}</Tag> : null}
+}> = ({ source, onEnable, onRemove, onMove }) => {
+  const { t } = useT();
+  return (
+    <div data-testid={`mu-plugin-source-${source.sourceRecordId}`} className='flex items-center gap-12px py-10px border-b border-[var(--color-border-1)] last:border-b-0'>
+      <div className={PLUGIN_TILE}>
+        <Puzzle size={18} />
       </div>
-      <div className='text-12px text-t-tertiary truncate' dir='ltr'>
-        {source.endpoint}
+      <div className='min-w-0 flex-1'>
+        <div className='flex items-center gap-8px'>
+          <span className='text-14px font-500 text-t-primary truncate'>{source.name}</span>
+          {source.enabled ? <Tag size='small' color='green'>{t('settings.pluginMarket.enabled')}</Tag> : null}
+        </div>
+        <div className='text-12px text-t-tertiary truncate' dir='ltr'>
+          {source.endpoint}
+        </div>
+        {source.attribution ? <div className='text-12px text-t-tertiary truncate'>{source.attribution.name}</div> : null}
       </div>
-      {source.attribution ? <div className='text-12px text-t-tertiary truncate'>{source.attribution.name}</div> : null}
-    </div>
-    <div className='shrink-0 flex items-center gap-6px'>
-      {!source.enabled ? (
-        <Button size='mini' type='primary' data-testid='mu-plugin-enable' onClick={() => onEnable(source.sourceRecordId)}>
-          {t('settings.pluginMarket.enable')}
+      <div className='shrink-0 flex items-center gap-6px'>
+        {!source.enabled ? (
+          <Button size='mini' type='primary' data-testid='mu-plugin-enable' onClick={() => onEnable(source.sourceRecordId)}>
+            {t('settings.pluginMarket.enable')}
+          </Button>
+        ) : null}
+        <Button size='mini' iconOnly type='text' aria-label={t('settings.pluginMarket.moveUp')} disabled={!source.enabled} onClick={() => onMove(source.sourceRecordId, 'up')}>
+          <ArrowUp size={14} />
         </Button>
-      ) : null}
-      <Button size='mini' iconOnly type='text' aria-label={t('settings.pluginMarket.moveUp')} disabled={!source.enabled} onClick={() => onMove(source.sourceRecordId, 'up')}>
-        <ArrowUp size={14} />
-      </Button>
-      <Button size='mini' iconOnly type='text' aria-label={t('settings.pluginMarket.moveDown')} disabled={!source.enabled} onClick={() => onMove(source.sourceRecordId, 'down')}>
-        <ArrowDown size={14} />
-      </Button>
-      <Button size='mini' iconOnly type='text' status='danger' aria-label={t('settings.pluginMarket.remove')} onClick={() => onRemove(source.sourceRecordId)}>
-        <Delete size={14} />
-      </Button>
+        <Button size='mini' iconOnly type='text' aria-label={t('settings.pluginMarket.moveDown')} disabled={!source.enabled} onClick={() => onMove(source.sourceRecordId, 'down')}>
+          <ArrowDown size={14} />
+        </Button>
+        <Button size='mini' iconOnly type='text' status='danger' aria-label={t('settings.pluginMarket.remove')} onClick={() => onRemove(source.sourceRecordId)}>
+          <Delete size={14} />
+        </Button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /** One catalog item as a card. */
 const ItemCard: React.FC<{ item: MarketItem; onOpen: (item: MarketItem) => void }> = ({ item, onOpen }) => (

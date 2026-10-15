@@ -145,7 +145,7 @@ class Context implements PluginContext {
   }
 
   inject(deps: readonly string[], setup: (ctx: PluginContext) => void): Dispose {
-    let child: Context | undefined;
+    let child: PluginContext | undefined;
     const stopWatching = this.kernel.onChange((key) => {
       if (deps.includes(key)) sync();
     });
