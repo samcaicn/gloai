@@ -1207,9 +1207,11 @@ open class ChatCaptureService : AccessibilityService() {
         if (ms != null) prefs.lastAnalysisMs = ms
         prefs.lastAnalysisOk = roundOk
         prefs.lastAnalysisErr = if (roundOk) "" else roundErr.id
-        // 命中 429 限流：记下时间戳，自动分析进入冷却（见 BUSY_COOLDOWN_MS），
-        // 不让无人值守模式反复撞同一道限流墙。
-        if (roundErr == ErrCatalog.Kind.BUSY) lastBusyAt = System.currentTimeMillis()
+        // 命中 429 限流 / 免费额度耗尽（4006）：记下时间戳，自动分析进入冷却（见 BUSY_COOLDOWN_MS），
+        // 不让无人值守模式反复撞同一道限流墙。额度耗尽要等约 24h（滚动窗口），尤其不能硬撞。
+        if (roundErr == ErrCatalog.Kind.BUSY || roundErr == ErrCatalog.Kind.QUOTA) {
+            lastBusyAt = System.currentTimeMillis()
+        }
     }
 
     /**

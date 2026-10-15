@@ -21,6 +21,15 @@ object ErrCatalog {
         /** 429/529：共享网关限流或过载。免费档最常见。 */
         BUSY("busy"),
 
+        /**
+         * Cloudflare Workers AI 免费额度耗尽（4006）。
+         * 与 [BUSY] 的本质区别：BUSY 等一会儿就好，这个要等约 24 小时——免费额度
+         * 文档写"00:00 UTC 重置"，实测是**滚动 24h 窗口**（耗尽那次调用起算，
+         * 见 cloudflare-docs issue #34137：23:36 耗尽 → 次日 23:51 才恢复）。
+         * 所以文案绝不能再说"等一会儿再试"，那是让用户白等一整天。
+         */
+        QUOTA("quota"),
+
         /** 超时 / 解析失败 / 连不上：纯网络问题。 */
         NETWORK("network"),
 
@@ -89,6 +98,19 @@ object ErrCatalog {
             Kind.BUSY, w("共享额度正忙", "Shared quota busy"),
             w("现在用的是共享额度（免费档），高峰期会排队、返回 $status。换成专属额度就不再排队，也不用自己配密钥。",
                 "You're on the shared free quota — it queues at peak times and returned $status. Switch to a dedicated plan to skip the queue; no key setup needed."),
+            Action.PLAN, w("看看专属额度", "See plans"))
+
+        // CF Workers AI 免费额度耗尽（4006）。注意它经 Worker 包装后是 502 回来的，
+        // 必须排在下面 5xx 通用分支之前，否则会掉进"等一会儿再试"的错文案。
+        // 关键词同时覆盖英文原文（4006/neurons/free allocation）与 Worker 的中文包装。
+        if (low.contains("4006") || low.contains("neurons") || low.contains("free allocation") ||
+            low.contains("免费额度") || low.contains("额度已") || low.contains("额度耗尽")
+        ) return View(
+            Kind.QUOTA, w("今天的免费额度用完了", "Daily free quota used up"),
+            w("云端共享的免费额度每天 1 万 neurons，今天已经用完（4006）。它按滚动 24 小时恢复，" +
+                "不是零点重置——重试要等恢复，急着用可以看专属额度。",
+                "The shared free quota (10,000 neurons/day) is used up for today (4006). " +
+                    "It recovers on a rolling 24-hour window, not at midnight UTC — retrying won't help until then. See plans if you need it now."),
             Action.PLAN, w("看看专属额度", "See plans"))
 
         // Cloudflare 回源失败（521/522/523/524/525）：源站证书或 443 挂了。

@@ -185,6 +185,7 @@ object SelfCheck {
 
     private fun hintFor(kindId: String): String = when (kindId) {
         ErrCatalog.Kind.BUSY.id -> "HTTP 429"
+        ErrCatalog.Kind.QUOTA.id -> "免费额度耗尽(4006)"
         ErrCatalog.Kind.AUTH.id -> "HTTP 401"
         ErrCatalog.Kind.NETWORK.id -> "网络超时"
         ErrCatalog.Kind.NO_TEXT.id -> "这一屏没认出文字"
