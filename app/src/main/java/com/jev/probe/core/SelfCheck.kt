@@ -114,9 +114,18 @@ object SelfCheck {
 
         val crash = CrashLog.text(ctx)
         l.add("")
-        l.add(if (crash == null) t(ctx, "【崩溃 / ANR】无记录", "[Crash / ANR] No records")
-        else t(ctx, "【崩溃 / ANR】有记录（${crash.lines().size} 行），可在设置里导出或清除",
-            "[Crash / ANR] Records found (${crash.lines().size} lines) — export or clear in Settings"))
+        if (crash == null) {
+            l.add(t(ctx, "【崩溃 / ANR】无记录", "[Crash / ANR] No records"))
+        } else {
+            // 设置页没有真正的导出（allowBackup=false、无 FileProvider、无 root 拉不走
+            // crash.log），只报「N 行」等于让用户干瞪眼。这里直接把最后 25 行正文带进
+            // 报告——诊断页有「复制」按钮，用户一键复制后可直接粘贴反馈。
+            val lines = crash.lines()
+            val tail = lines.takeLast(25).joinToString("\n")
+            l.add(t(ctx, "【崩溃 / ANR】有记录（${lines.size} 行），以下为最后 25 行正文：",
+                "[Crash / ANR] Records (${lines.size} lines), last 25 lines below:"))
+            l.add(tail)
+        }
 
         val ready = a11y && overlay && notify
         l.add("")
