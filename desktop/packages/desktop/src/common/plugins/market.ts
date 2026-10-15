@@ -158,9 +158,11 @@ const QUERY_FEATURES: readonly MarketQueryFeature[] = ['q', 'category', 'capabil
 const SORTS: readonly MarketSort[] = ['relevance', 'updated', 'name', 'downloads'];
 const LOCALE = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/;
 
-const fail = (what: string): never => {
+// A function declaration, not a const arrow: TypeScript only treats a call as terminating control flow -- and so
+// narrows the value that was just checked -- when the callee is declared this way with an explicit `never`.
+function fail(what: string): never {
   throw new MarketError('contract', what);
-};
+}
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
@@ -287,7 +289,7 @@ export function parseMarketProviderPage(value: unknown, limit: number): MarketPr
   if (root.items.length > limit) fail('The catalog page holds more than was asked for');
 
   const seen = new Set<string>();
-  const items = root.items.map((entry, index) => {
+  const items = root.items.map((entry: unknown, index: number) => {
     const raw = asRecord(entry) ?? fail(`Catalog item ${index} is not an object`);
     const id = text(raw.id, `item ${index} id`, 160);
     if (!ITEM_ID.test(id)) fail(`item ${index} id is not allowed`);

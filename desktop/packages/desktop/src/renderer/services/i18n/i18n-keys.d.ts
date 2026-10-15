@@ -207,6 +207,8 @@ export type I18nKey =
   | 'common.backendStartup.incompatibleRuntime.title'
   | 'common.backendStartup.incompleteInstallation.description'
   | 'common.backendStartup.incompleteInstallation.downloadLatest'
+  | 'common.backendStartup.incompleteInstallation.repairFailed'
+  | 'common.backendStartup.incompleteInstallation.repairRuntime'
   | 'common.backendStartup.incompleteInstallation.runtimeComponentDescription'
   | 'common.backendStartup.incompleteInstallation.title'
   | 'common.backendStartup.localDataRepair.description'

@@ -275,6 +275,46 @@ ipcMain.handle('backend:open-log-folder', async () => {
   if (failure) throw new Error(failure);
 });
 
+// "Repair the runtime" on the incomplete-installation dialog: a packaged app whose bundled Node.js runtime cannot be
+// used -- a security program quarantining the unsigned node.exe next to the fresh install is the usual cause -- can
+// fetch the very same runtime into the data folder instead, which those programs usually leave alone. Nothing is
+// downloaded without the person's answer to the same question an unpackaged app asks, and a successful repair
+// restarts the app so the backend picks the runtime up.
+ipcMain.handle('node-runtime:repair', async () => {
+  const { getDataPath } = await import('./process/utils/utils');
+  const { getSystemDir } = await import('./process/utils/initStorage');
+  const { askNodeRuntimeDownload } = await import('./process/startup/nodeRuntimeStartup');
+  const { repairManagedNodeRuntime } = await import('./process/startup/nodeRuntimeRepair');
+  const { managedNodeRuntime } = await import('./process/startup/nodeRuntimeConsent');
+  const { translatorFor } = await import('./process/services/i18n');
+
+  const dataDir = getDataPath();
+  const runtime = managedNodeRuntime(dataDir, process.platform, process.arch);
+  if (!runtime) throw new Error(`This machine (${process.platform}-${process.arch}) has no managed Node.js runtime`);
+
+  const language = (await ProcessConfig.get('language').catch((): undefined => undefined)) || app.getLocale();
+  const choice = await askNodeRuntimeDownload(runtime, await translatorFor(language));
+  if (choice !== 'download') return { repaired: false as const };
+
+  const cacheDir = getSystemDir().cacheDir;
+  console.info('[AionUi] Repairing the managed Node.js runtime into the data folder…');
+  const result = await repairManagedNodeRuntime({
+    dataDir,
+    platform: process.platform,
+    arch: process.arch,
+    cacheDir,
+    onProgress: (received, total) => {
+      if (total > 0) console.info(`[AionUi] Node.js runtime repair: ${Math.round((received / total) * 100)}%`);
+    },
+  });
+  if (result.ok === false) throw new Error(result.error);
+
+  console.info(`[AionUi] Node.js runtime repaired at ${result.dir}; restarting the app.`);
+  // The backend is what needs the runtime, and it only checks at start: restart, not reload.
+  app.relaunch();
+  app.exit(0);
+});
+
 // Push the latest backend startup state to the renderer so it can either show
 // the "starting" view, switch to the honest-failure view, or return to the App.
 // The renderer only reads window.__backendStartupFailure once at preload; this

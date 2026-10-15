@@ -187,7 +187,15 @@ const RuntimeFailureDialogs: React.FC = () => {
       showDialog: (event) => {
         const resource = resolveRuntimeResourceLabel(event, t);
         const description = getRuntimeComponentInstallationDescription(t, resource);
-        const controller = showInstallationIntegrityModal(modal, t, description);
+        // The Node.js runtime is the one component a fresh download can replace: a packaged app whose bundled copy
+        // cannot be used (a security program quarantining it is the usual cause) is offered the repair beside the
+        // reinstall advice. ACP adapters have no such fallback and keep the reinstall advice alone.
+        const controller = showInstallationIntegrityModal(modal, t, description, 'incomplete_installation', {
+          onRepairRuntime:
+            event.resource === 'node'
+              ? () => window.electronAPI?.repairNodeRuntime?.() ?? Promise.resolve({ repaired: false })
+              : undefined,
+        });
         return { close: () => controller.close() };
       },
     });

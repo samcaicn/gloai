@@ -38,6 +38,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
   recoverCorruptedDatabase: () => ipcRenderer.invoke('backend:recover-corrupted-database'),
   openLogFolder: () => ipcRenderer.invoke('backend:open-log-folder'),
+  // Repairs a packaged app's managed Node.js runtime by downloading it into the data folder (the consent question
+  // is asked in the main process). Restarts the app on success; throws with the reason on failure.
+  repairNodeRuntime: () => ipcRenderer.invoke('node-runtime:repair'),
 });
 
 // iLink scan-login + device-code + message-push bridge.

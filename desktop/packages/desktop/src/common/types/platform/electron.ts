@@ -6,6 +6,12 @@ export interface ElectronBridgeAPI {
   recoverCorruptedDatabase?: () => Promise<void>;
   /** Opens the folder the logs are written to, in the file manager. Needs no backend: it is what a failed start lacks. */
   openLogFolder?: () => Promise<void>;
+  /**
+   * Repairs a packaged app's managed Node.js runtime by downloading it into the data folder (the consent question
+   * is asked in the main process). Resolves when the person put the download off, restarts the app on success, and
+   * rejects with the reason when the repair failed.
+   */
+  repairNodeRuntime?: () => Promise<{ repaired: boolean }>;
 }
 
 export type BackendStartupFailureReason =

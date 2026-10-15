@@ -49,6 +49,7 @@ export const pluginBridge = {
 
 /** Turns a wrapped answer back into a value, or throws what the main process threw. */
 export function unwrapMarket<T>(result: MarketResult<T>): T {
-  if (result.ok) return result.data;
-  throw new Error(result.message);
+  // `=== false`, not `!result.ok`: without strictNullChecks TypeScript narrows a union only on an equality check.
+  if (result.ok === false) throw new Error(result.message);
+  return result.data;
 }
