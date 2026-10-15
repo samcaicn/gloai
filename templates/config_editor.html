@@ -1244,8 +1244,6 @@
             const customModelInput = document.getElementById('customModel');
             const finalModelInput = document.getElementById('finalModel');
             const masterApiKeyInput = document.getElementById('masterApiKey');
-            // 套餐自动匹配的推荐模型（后端按订阅档位算出，避免把 workerAI 选择暴露给用户）
-            const recommendedModel = (modelSelect && modelSelect.dataset.recommended) || '';
 
             // 自动判定 AI 来源：填了自有 Base URL + Key 即视为自定义大模型，否则走官方 AI
             function isCustomSource() {
@@ -1275,11 +1273,8 @@
                     ];
                 }
 
-                // 官方模式且当前是出厂/已知官方模型 → 自动升级为套餐推荐模型
+                // 官方模式且当前是出厂/已知官方模型 → 保持当前模型
                 let effective = currentModelValue;
-                if (!isCustomSource() && recommendedModel && OFFICIAL_MODELS.includes(currentModelValue)) {
-                    effective = recommendedModel;
-                }
 
                 modelSelect.innerHTML = "";
                 let modelInOptions = false;
@@ -1287,7 +1282,6 @@
                     const optionElem = document.createElement("option");
                     optionElem.value = opt.value;
                     let txt = opt.text;
-                    if (!isCustomSource() && opt.value === recommendedModel) txt += "（套餐推荐）";
                     optionElem.textContent = txt;
                     if (opt.value === effective) {
                         optionElem.selected = true;
@@ -3913,7 +3907,7 @@
 
                 <div id="section-chat-model" class="content-panel">
                     <h2>AI 模型</h2>
-                    <small class="panel-lead">官方 AI 按套餐自动匹配；自备大模型可展开下方。</small>
+                    <small class="panel-lead">官方 AI 使用默认模型；自备大模型可展开下方。</small>
                     <div class="form-group" id="tierModelNote">
                         <small>默认免费模式（每日回复条数受云端限制）。在「离线授权」页导入管理员签发的授权文件后，可解锁话术包与不限日次数的回复额度。</small>
                     </div>
@@ -3928,7 +3922,7 @@
                     </div>
                     <div class="form-group">
                         <label>模型：</label>
-                        <select id="modelSelect" name="temp_MODEL" title="聊天模型选择" data-recommended="{{ recommended_model }}">
+                        <select id="modelSelect" name="temp_MODEL" title="聊天模型选择">
                         </select>
                         <input type="text" id="customModel" placeholder="请输入自定义模型名称" class="custom-input" value="{{ config.MODEL if config.MODEL not in popular_models else '' }}">
                         <input type="hidden" id="finalModel" name="MODEL" value="{{ config.MODEL }}">
@@ -4378,8 +4372,7 @@
                 <iframe class="ext-frame" data-src="{{ url_for('help_page') }}?embed=1" title="常见问题" loading="lazy"></iframe>
             </div>
 
-            <!-- 话术包与离线授权：管理员按硬件识别码签发 .wpk（话术包+回复次数），离线分发导入生效。
-                 2026-10 商业模式：Creem 在线收款已下线，整块授权改为本地导入离线授权文件。 -->
+            <!-- 话术包与离线授权：管理员按硬件识别码签发 .wpk（话术包+回复次数），离线分发导入生效。 -->
             <div id="section-license" class="content-panel">
                 <h2>话术包与离线授权</h2>
 
@@ -5234,35 +5227,6 @@
         }
     });
     </script>
-
-<!-- ===== 购买浮层：在软件内以浮层打开收银台，不弹新窗口；底部遮挡 Creem footer ===== -->
-<style>
-  .buy-ov{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;}
-  .buy-ov.show{display:flex;}
-  .buy-ov-box{position:relative;width:min(1080px,94vw);height:min(840px,90vh);background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.45);}
-  .buy-ov-bar{position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#fafafa;border-bottom:1px solid #e5e5e5;z-index:6;}
-  .buy-ov-title{font-size:15px;font-weight:600;color:#333;}
-  .buy-ov-spacer{flex:1;}
-  .buy-ov-btn{border:1px solid #d0d0d0;background:#fff;color:#444;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;}
-  .buy-ov-btn:hover{background:#f0f0f0;}
-  .buy-ov-close{border:0;background:transparent;font-size:22px;line-height:1;color:#888;cursor:pointer;padding:2px 8px;}
-  .buy-ov-close:hover{color:#333;}
-  .buy-ov-wrap{position:absolute;top:46px;left:0;right:0;bottom:0;overflow:hidden;background:#fff;}
-  /* 把 iframe 整体上移并裁掉底部：长/可滚动页面时 "Powered by Creem" footer 落到可视区外被裁掉；
-     跨域 iframe 无法改其内部 DOM，只能从容器侧裁剪 + 遮罩双保险。 */
-  .buy-ov-frame{width:100%;height:calc(100% + 200px);border:0;display:block;transform:translateY(-200px);}
-  /* 不透明遮罩条盖住底部可视区，应对 footer 贴视口底部（短页面）的情况；
-     与收银台浅色背景同色，视觉无感；pointer-events:none 让下方仍可滚动/交互。 */
-  .buy-ov-mask{position:absolute;left:0;right:0;bottom:0;height:104px;background:#fff;z-index:5;pointer-events:none;}
-  /* 收银台加载态：Worker 冷启动可能数秒，给用户明确反馈，避免白屏误解为故障 */
-  .buy-ov-loading{position:absolute;top:46px;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#fff;z-index:4;}
-  .buy-ov-loading.hide{display:none;}
-  .buy-ov-spin{width:34px;height:34px;border:3px solid #e4e4e4;border-top-color:#2563eb;border-radius:50%;animation:buyOvSpin .8s linear infinite;}
-  @keyframes buyOvSpin{to{transform:rotate(360deg);}}
-  .buy-ov-loading p{font-size:14px;color:#666;margin:0;}
-  .buy-ov-retry{border:1px solid #d0d0d0;background:#fff;color:#444;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;display:none;}
-  .buy-ov-retry:hover{background:#f0f0f0;}
-</style>
 
 </body>
 </html>

@@ -1521,19 +1521,6 @@ def resolve_ai_opts(config, sub_key=None, sub_base=None):
         b = cfg.get('DEEPSEEK_BASE_URL', '') or ''
     return k, b
 
-# ---- 套餐(档位) → 官方 AI 默认模型 ----
-# 模型大小由订阅套餐自动决定，用户无需手动选择；自填大模型供应商时不受此限制。
-TIER_MODELS = {
-    'normal':   '@cf/meta/llama-3.3-70b-instruct-fp8-fast',  # 标准版：70B 均衡
-    'premium':  '@cf/qwen/qwen3-235b-a22b-fp8',              # 高级版：235B 更强
-    'lifetime': '@cf/qwen/qwen3-235b-a22b-fp8',              # 永久版：235B 顶级
-}
-DEFAULT_WORKER_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
-
-def recommended_model_for_tier(tier):
-    """返回某订阅档位应自动使用的官方模型；未识别档位回落默认模型。"""
-    return TIER_MODELS.get((tier or '').strip().lower(), DEFAULT_WORKER_MODEL)
-
 # 模板用：官方聊天模型候选 / 辅助模型候选（让 {{ x not in popular_models }} 判定正确）
 POPULAR_CHAT_MODELS = [
     '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
@@ -1892,15 +1879,6 @@ def index():
                 display_config[field] = hide_api_key(display_config[field])
 
         # 订阅档位 → 套餐自动匹配模型（用户无需手动选模型）
-        _tier = ''
-        try:
-            from weauto_license import guard as _g
-            _tier = _g.license_tier()
-        except Exception:
-            _tier = ''
-        _recommended = recommended_model_for_tier(_tier)
-
-        # 话术包列表（prompts/*.wpk）与当前激活 pack_id
         _packs = []
         _active_pack = ''
         try:
@@ -1920,8 +1898,6 @@ def index():
                              prompt_files=prompt_files,
                              chat_context_users=chat_context_users,
                              ai_source=ai_source_mode(config),
-                             license_tier=_tier,
-                             recommended_model=_recommended,
                              popular_models=POPULAR_CHAT_MODELS,
                              assistant_popular_models=ASSISTANT_POPULAR_MODELS,
                              script_packs=_packs,
