@@ -45,6 +45,7 @@ class ProbeInputMethod : InputMethodService() {
             }
             if (pair != null) {
                 consumedId = pair.first
+                Log.i(TAG, "ProbeIme: poll consuming pending id=${pair.first} len=${pair.second.length}")
                 publishWindowHeight()
                 val send = ProbeImeBus.pendingSend
                 commitAndFinish(pair.second, send)
@@ -59,6 +60,7 @@ class ProbeInputMethod : InputMethodService() {
     }
 
     override fun onCreateInputView(): View {
+        Log.i(TAG, "ProbeIme: onCreateInputView (poll chain start)")
         polling = true
         handler.post(poll)
         val dp = { v: Int -> (v * resources.displayMetrics.density).toInt() }
@@ -100,14 +102,20 @@ class ProbeInputMethod : InputMethodService() {
         try {
             // SoftInputWindow 本质是 Dialog，Dialog 无 decorView，需再 .window 取其 Window。
             // 取不到时退回我们自己键盘根 view 的高度；两者都是「微信输入栏上沿到屏底的距离」。
-            val h = window?.window?.decorView?.height
-                ?: kbRoot?.height
-                ?: 0
             // 窗口收缩瞬间（会话切换/重建）decorView 会短暂量出 48px 这种假高度，
             // 一旦发布出去会把发送键坐标算到屏幕中间（2026-10-15 实测 y=2024 点空）。
             // 真实 IME 最矮也是「仅输入栏」≈56dp*density>130px，低于 100px 一律不发布。
+            // 上界同理：窗口未附着/测量前夕 decorView 会量到接近全屏的假高（2026-10-15
+            // 实测发布 2300px，把聚焦点算到屏幕顶部 y=34）。键盘最高 KB_RATIO*H
+            // （≈0.417H），超过 0.6H 一律是异常值，弃用并保留上一次的合理值。
+            val h = window?.window?.decorView?.height
+                ?: kbRoot?.height
+                ?: 0
+            val maxSane = (resources.displayMetrics.heightPixels * 0.6f).toInt()
             if (h > 0 && h < 100) {
                 Log.w(TAG, "ProbeIme: suspicious tiny window height=$h, ignore")
+            } else if (h >= maxSane) {
+                Log.w(TAG, "ProbeIme: suspicious huge window height=$h (>$maxSane), ignore")
             } else if (h > 0 && h != ProbeImeBus.imeWindowHeightPx) {
                 ProbeImeBus.imeWindowHeightPx = h
                 Log.i(TAG, "ProbeIme: window height published = $h")
@@ -121,10 +129,20 @@ class ProbeInputMethod : InputMethodService() {
         super.onStartInput(attribute, restarting)
         ProbeImeBus.imeActive = true
         publishWindowHeight()
+        // poll 看门狗：onCreateInputView 只在 IME 视图首次创建时调一次，poll 链一旦
+        // 断裂（onDestroy 后服务重建 / tick 里 polling=false 提前 return 就不再自恢复）
+        // 就永久停摆——requestWrite 的 pending 永远不被消费。2026-10-15 实测：
+        // fillInput 后既无 committed 也无 sendFor 日志，发送链整个没启动，dwell 兜底
+        // 切了会话，回复烂死在 pending 里。onStartInput 每次输入连接必调，在这幂等重启。
+        if (!polling) {
+            polling = true
+            handler.post(poll)
+            Log.w(TAG, "ProbeIme: poll watchdog restarted (chain was dead)")
+        }
         // 注册读框闭包：sendWeChatByVerifiedTap 靠它判断消息真发出（发出后微信
         // 清空输入框）。InputConnection 只在本服务里有效，必须由本侧提供。
         ProbeImeBus.boxReader = { readBoxText() }
-        Log.i(TAG, "ProbeIme: onStartInput restarting=$restarting pending=${ProbeImeBus.pendingText != null}")
+        Log.i(TAG, "ProbeIme: onStartInput restarting=$restarting pending=${ProbeImeBus.pendingText != null} polling=$polling")
         val pair = ProbeImeBus.consumePending()
         if (pair == null) {
             // 无待写内容：保持激活，不自动切回。
