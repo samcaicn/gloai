@@ -3636,6 +3636,7 @@
             <div class="sidebar-group">
                 <div class="sidebar-group-label">主动能力</div>
                 <ul>
+                    <li><a href="#" data-target="section-automation">自动化中心</a></li>
                     <li><a href="#" data-target="section-active-message">主动消息</a></li>
                     <li><a href="#" data-target="section-reminders">定时提醒</a></li>
                     <li><a href="#" data-target="section-fun-lab">趣味实验室</a></li>
@@ -4044,6 +4045,23 @@
                         <small>温度过高易乱码。</small>
                     </div>
                     </details>
+
+                    <!-- v1.4 感知联动：识别命中关键词自动回复 -->
+                    <hr class="panel-divider">
+                    <div class="form-group">
+                        <div class="switch-item">
+                            <label>感知联动：识别命中关键词自动回复</label>
+                            <div class="switch"><label class="switch-label"><input type="checkbox" name="ENABLE_IMAGE_RECOG_AUTO_REPLY" {% if config.ENABLE_IMAGE_RECOG_AUTO_REPLY %}checked{% endif %}><span class="slider round"></span></label></div>
+                        </div>
+                        <small>开启后，图片识别文本命中下方关键词 → 直接发送指定回复（跳过通用 AI）。典型：客户发商品图自动回报价话术。</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="imageRecogAutoReplyRulesInput">自动回复规则（每行一条，格式：关键词=>回复内容）:</label>
+                        <textarea id="imageRecogAutoReplyRulesInput" name="IMAGE_RECOG_AUTO_REPLY_RULES" rows="4"
+                                  placeholder="商品|报价|价格=>您好，这款产品的价格是 ¥XXX，需要了解详情请回复。&#10;参数|配置=>请把具体需求发我，我帮您确认配置。">{%- for r in (config.IMAGE_RECOG_AUTO_REPLY_RULES or []) -%}{{ r.get('keyword','') }}={{ '>' }}{{ r.get('reply','') }}
+{%- endfor -%}</textarea>
+                        <small>关键词支持用 | 分隔多个；识别文本命中即回复。建议与「图片识别」开关一起使用。</small>
+                    </div>
                 </div>
 
                 <!-- 联网搜索已作为默认能力开启（2026-10-05），不再提供配置页：
@@ -4112,6 +4130,60 @@
                         <small>关键词命中时必定回复，无视回复概率。</small>
                     </div>
                     </details>
+
+                    <!-- v1.4 群聊精细化：白名单/黑名单/禁词/频控 -->
+                    <hr class="panel-divider">
+                    <div class="form-group">
+                        <label for="groupWhitelistInput">群白名单:</label>
+                        <input type="text" id="groupWhitelistInput" name="GROUP_WHITELIST"
+                               value="{{ config.GROUP_WHITELIST | join(', ') if config.GROUP_WHITELIST else '' }}"
+                               placeholder="例如: 客户群, 售后群（留空 = 不限制）">
+                        <small>仅这些群参与自动回复，多个用逗号或空格分隔；留空表示不限制。</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="groupBlacklistInput">群黑名单:</label>
+                        <input type="text" id="groupBlacklistInput" name="GROUP_BLACKLIST"
+                               value="{{ config.GROUP_BLACKLIST | join(', ') if config.GROUP_BLACKLIST else '' }}"
+                               placeholder="例如: 广告群, 闲聊群">
+                        <small>这些群永不自动回复（优先级高于白名单），多个用逗号或空格分隔。</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bannedWordsInput">禁词过滤（私聊+群聊）:</label>
+                        <input type="text" id="bannedWordsInput" name="BANNED_WORDS"
+                               value="{{ config.BANNED_WORDS | join(', ') if config.BANNED_WORDS else '' }}"
+                               placeholder="例如: 广告, 加微信">
+                        <small>消息包含任一禁词则忽略，多个用逗号或空格分隔。</small>
+                    </div>
+
+                    <div class="form-group form-inline">
+                        <label>群内频控（防刷屏）:</label>
+                        <span class="inline-field"><input type="number" id="groupRateLimitWindowInput" name="GROUP_RATE_LIMIT_WINDOW"
+                               min="1" max="3600" value="{{ config.GROUP_RATE_LIMIT_WINDOW }}" style="width:70px;"> 秒内</span>
+                        <span class="inline-field">最多回复 <input type="number" id="groupRateLimitMaxInput" name="GROUP_RATE_LIMIT_MAX_REPLIES"
+                               min="0" max="50" value="{{ config.GROUP_RATE_LIMIT_MAX_REPLIES }}" style="width:60px;"> 条（0=不限）</span>
+                        <small>同一群在窗口时间内最多自动回复条数，防止连续刷屏。</small>
+                    </div>
+                </div>
+
+                <!-- v1.4 自动化中心：关键词/定时规则 → 指定回复 -->
+                <div id="section-automation" class="content-panel" style="display:none;">
+                    <h2>自动化中心</h2>
+                    <small class="panel-lead">「当 XX 触发 → 自动发送指定内容」：关键词命中直接回复，定时到点主动发送。规则在 bot 运行时实时生效，保存即用。</small>
+                    <div class="form-group">
+                        <label>规则列表：</label>
+                        <div id="automation-rule-list"></div>
+                        <button type="button" style="background-color:#607d8b;" onclick="addAutomationRuleRow()">+ 新增规则</button>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="nav-button" onclick="saveAutomationRules()">保存规则</button>
+                        <span id="automation-save-msg" style="margin-left:10px; color:#4caf50;"></span>
+                    </div>
+                    <small>说明：<br>
+                    · <b>关键词触发</b>：收到消息包含关键词 → 向该窗口发送指定内容（跳过 AI 回复）；冷却秒数防止重复刷屏。<br>
+                    · <b>定时触发</b>：每天到点（HH:MM）向「作用窗口」发送指定内容（每天一次）。<br>
+                    · 作用窗口留空 = 全部私聊/群聊生效；填写窗口名（支持子串）则仅该窗口生效。</small>
                 </div>
 
                 <!-- 原「回复间隔配置」+「主动表情包配置」合并为本面板：两者都是「AI 怎么把话说出来」，
@@ -5189,6 +5261,110 @@
                 alert(`保存NPC设置失败: ${error.message}`);
             }
         }
+
+        // ===== v1.4 自动化中心：规则列表 增删/保存/加载 =====
+        function automationRuleRowHtml(rule) {
+            rule = rule || {};
+            const trig = rule.trigger || {};
+            const scope = rule.scope || {};
+            const act = rule.action || {};
+            const div = document.createElement('div');
+            div.className = 'automation-rule-row';
+            div.style.cssText = 'border:1px solid #ddd;border-radius:6px;padding:10px;margin-bottom:10px;background:#fafafa;';
+            div.innerHTML =
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px;">' +
+                '  <input type="text" class="ar-name" placeholder="规则名称" value="' + (rule.name || '') + '" style="width:140px;">' +
+                '  <label style="margin-right:10px;"><input type="checkbox" class="ar-enabled"' + (rule.enabled === false ? '' : ' checked') + '> 启用</label>' +
+                '  <button type="button" onclick="this.closest(\'.automation-rule-row\').remove()" style="background-color:#e57373;color:#fff;">删除</button>' +
+                '</div>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+                '  <span>触发:</span>' +
+                '  <select class="ar-trigger-type">' +
+                '    <option value="keyword"' + (trig.type === 'timer' ? '' : ' selected') + '>关键词</option>' +
+                '    <option value="timer"' + (trig.type === 'timer' ? ' selected' : '') + '>定时(HH:MM)</option>' +
+                '  </select>' +
+                '  <input type="text" class="ar-trigger-value" placeholder="关键词 或 09:30" value="' + (trig.value || '') + '" style="width:150px;">' +
+                '  <span>窗口:</span><input type="text" class="ar-scope-window" placeholder="留空=全部" value="' + (scope.window || '') + '" style="width:120px;">' +
+                '  <span>动作:</span>' +
+                '  <select class="ar-action-type">' +
+                '    <option value="reply"' + (act.type === 'active' ? '' : ' selected') + '>回复内容</option>' +
+                '    <option value="active"' + (act.type === 'active' ? ' selected' : '') + '>主动发送</option>' +
+                '  </select>' +
+                '  <span>冷却(秒):</span><input type="number" class="ar-cooldown" min="0" value="' + (rule.cooldown || 60) + '" style="width:70px;">' +
+                '</div>' +
+                '<div style="margin-top:6px;"><input type="text" class="ar-content" placeholder="要发送的内容（如：您好，本店报价请稍等~）" value="' + (act.content || '') + '" style="width:100%;"></div>';
+            return div;
+        }
+
+        function addAutomationRuleRow(rule) {
+            const list = document.getElementById('automation-rule-list');
+            if (list) list.appendChild(automationRuleRowHtml(rule));
+        }
+
+        function collectAutomationRules() {
+            const rows = document.querySelectorAll('#automation-rule-list .automation-rule-row');
+            const rules = [];
+            rows.forEach(function (row) {
+                const name = row.querySelector('.ar-name').value.trim() || ('规则' + (rules.length + 1));
+                const triggerType = row.querySelector('.ar-trigger-type').value;
+                const triggerValue = row.querySelector('.ar-trigger-value').value.trim();
+                const scopeWindow = row.querySelector('.ar-scope-window').value.trim();
+                const actionType = row.querySelector('.ar-action-type').value;
+                const content = row.querySelector('.ar-content').value.trim();
+                const cooldown = parseInt(row.querySelector('.ar-cooldown').value, 10) || 0;
+                if (triggerType === 'timer' && !/^\d{2}:\d{2}$/.test(triggerValue)) return;
+                if (triggerType === 'keyword' && !triggerValue) return;
+                rules.push({
+                    id: 'rule_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                    name: name,
+                    enabled: row.querySelector('.ar-enabled').checked,
+                    trigger: {type: triggerType, value: triggerValue},
+                    scope: {window: scopeWindow},
+                    action: {type: actionType, content: content},
+                    cooldown: cooldown
+                });
+            });
+            return rules;
+        }
+
+        async function loadAutomationRules() {
+            try {
+                const res = await fetch('/api/automation/rules', { headers: getCSRFHeaders() });
+                const data = await res.json();
+                const list = document.getElementById('automation-rule-list');
+                if (!list) return;
+                list.innerHTML = '';
+                ((data && data.rules) || []).forEach(function (r) { addAutomationRuleRow(r); });
+            } catch (e) { console.error('加载自动化规则失败:', e); }
+        }
+
+        async function saveAutomationRules() {
+            const msg = document.getElementById('automation-save-msg');
+            if (!msg) return;
+            try {
+                const res = await fetch('/api/automation/rules', {
+                    method: 'POST',
+                    headers: getCSRFHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ rules: collectAutomationRules() })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    msg.style.color = '#4caf50';
+                    msg.textContent = '已保存 ' + data.count + ' 条规则';
+                    setTimeout(function () { msg.textContent = ''; }, 3000);
+                } else {
+                    msg.style.color = '#e57373';
+                    msg.textContent = '保存失败: ' + (data.error || '未知错误');
+                    setTimeout(function () { msg.textContent = ''; }, 5000);
+                }
+            } catch (e) {
+                msg.style.color = '#e57373';
+                msg.textContent = '保存失败: ' + e.message;
+            }
+        }
+
+        // 首次加载自动化规则（规则数量少，直接加载即可）
+        document.addEventListener('DOMContentLoaded', function () { loadAutomationRules(); });
 
     </script>
 

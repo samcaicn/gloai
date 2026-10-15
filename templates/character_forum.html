@@ -708,11 +708,11 @@
                     <span>网络空间</span>
                 </div>
                 <div class="profile-stats">
-                    <span class="stat-item">1 正在关注</span>
-                    <span class="stat-item">1 关注者</span>
+                    <span class="stat-item" id="followingStat">0 正在关注</span>
+                    <span class="stat-item" id="followersStat">0 关注者</span>
                 </div>
             </div>
-            <button class="edit-profile-btn">已关注</button>
+            <button class="edit-profile-btn" id="followBtn" onclick="toggleFollow()">关注</button>
         </div>
     </div>
 
@@ -730,6 +730,12 @@
             <button class="refresh-btn" id="refreshBtn" onclick="refreshForum()">✨ 看新动态</button>
             <button class="refresh-btn" id="refreshLikesBtn" onclick="refreshLikes()" style="display:none; background:#f91880;">💖 刷新喜欢</button>
         </div>
+    </div>
+
+    <!-- v1.4 社交增强：热帖榜 -->
+    <div id="hotRankContainer" style="display:none; margin-bottom:12px; padding:10px 12px; background:#fafafa; border:1px solid #e1e8ed; border-radius:10px;">
+        <div style="font-weight:bold; margin-bottom:6px;">🔥 热帖榜（按点赞）</div>
+        <div id="hotRankList"></div>
     </div>
 
     <!-- 帖子流 -->
@@ -926,16 +932,73 @@
                 console.log('响应状态:', response.status);
                 const data = await response.json();
                 console.log('获取到的数据:', data);
-                
+
+                // v1.4 社交增强：同步关注状态
+                updateFollowUI(data.followed_by_me, data.followers);
+
                 if (data.posts && data.posts.length > 0) {
                     displayPosts(data.posts);
                 } else {
                     showEmptyState();
                 }
+
+                // v1.4 社交增强：加载热帖榜
+                loadHotRank();
             } catch (error) {
                 console.error('获取帖子失败:', error);
                 showEmptyState();
             }
+        }
+
+        // ===== v1.4 社交增强：关注 / 热帖榜 =====
+        function updateFollowUI(followed, followers) {
+            const btn = document.getElementById('followBtn');
+            const stat = document.getElementById('followersStat');
+            const fstat = document.getElementById('followingStat');
+            if (btn) btn.textContent = followed ? '已关注' : '关注';
+            if (stat) stat.textContent = (followers || 0) + ' 关注者';
+            if (fstat) fstat.textContent = (followed ? 1 : 0) + ' 正在关注';
+        }
+
+        async function toggleFollow() {
+            const btn = document.getElementById('followBtn');
+            if (!btn) return;
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/forum/follow/${characterName}`, {
+                    method: 'POST',
+                    headers: getCSRFHeaders({ 'Content-Type': 'application/json' })
+                });
+                const data = await res.json();
+                if (data && 'followed_by_me' in data) {
+                    updateFollowUI(data.followed_by_me, data.followers);
+                }
+            } catch (e) {
+                console.error('切换关注失败:', e);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function loadHotRank() {
+            try {
+                const res = await fetch(`/api/forum/hot/${characterName}`);
+                const data = await res.json();
+                const box = document.getElementById('hotRankContainer');
+                const list = document.getElementById('hotRankList');
+                if (!box || !list) return;
+                const hot = (data && data.hot) || [];
+                if (!hot.length) { box.style.display = 'none'; return; }
+                list.innerHTML = hot.map(function (p, i) {
+                    const full = (p.content || '');
+                    const text = full.slice(0, 40);
+                    return `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed #e1e8ed;">
+                        <span title="${full.replace(/"/g, '&quot;')}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i + 1}. ${text}${text.length >= 40 ? '…' : ''}</span>
+                        <span style="color:#f91880;">♥ ${p.likes || 0}</span>
+                    </div>`;
+                }).join('');
+                box.style.display = '';
+            } catch (e) { console.error('加载热帖榜失败:', e); }
         }
 
         async function refreshForum() {

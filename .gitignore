@@ -138,3 +138,9 @@ _worker_gate_test*.js
 # ---- CI artifact 下载临时目录 ----
 _dl_ci*/
 _c7.txt
+
+# ---- v1.4 源码运行产物（automation 规则 / 论坛数据，不入库）----
+/automation_rules.json
+/automation_rules.json.lock
+/automation_rules.json.tmp
+/forum_data/

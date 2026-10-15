@@ -103,6 +103,12 @@ try:
 except Exception:  # noqa: BLE001
     forward_hub = None
 
+# v1.4 自动化工作流（关键词/定时指定回复；导入失败仅禁用本功能）
+try:
+    import automation
+except Exception:  # noqa: BLE001
+    automation = None
+
 # Jev 判断式 AI 闸门（回复前的「对话体检」，跑在 CF Worker + Workers AI 上）。
 # 导入失败仅禁用本功能，不影响收发主体。
 try:
@@ -269,6 +275,9 @@ def safe_write_file_with_encoding(file_path, content, mode='w'):
 
 # 群聊信息缓存
 group_chat_cache = {}  # {user_name: is_group_chat}
+
+# v1.4 群聊频控：记录每个群最近回复时间戳，用于窗口内限流（防刷屏）
+_group_reply_hist = {}  # {chat_name: [timestamp, ...]}
 group_cache_lock = threading.Lock()
 
 # 持续监听消息，并且收到消息后回复
@@ -2216,6 +2225,11 @@ def _message_listener_impl(msg, chat):
         logger.info("消息内容为空，已忽略。")
         return
 
+    # --- v1.4 禁词过滤（私聊与群聊均生效，优先级最高）---
+    if BANNED_WORDS and any(bw in original_content for bw in BANNED_WORDS):
+        logger.info(f"窗口 {who} 的消息命中禁词，已忽略。")
+        return
+
     # --- 监测内容过滤（联系人和群通用，LISTEN_LIST 第三列 monitor 配置）---
     # 'ignore' = 未命中监测条件 或 命中但配置为不回应 -> 本条消息到此为止；
     # 'prompt' = 命中且需处理（若配置了专用 Prompt，_get_user_prompt_core 已静态覆盖）。
@@ -2223,6 +2237,19 @@ def _message_listener_impl(msg, chat):
     if monitor_decision == 'ignore':
         logger.info(f"窗口 {who} 的消息未命中监测内容配置（或配置为不回应），已忽略。")
         return
+
+    # --- v1.4 自动化工作流：关键词规则（命中指定回复则直接发送，跳过通用 AI）---
+    if automation is not None:
+        try:
+            _ar = automation.check_keyword(who, original_content)
+            if _ar:
+                _act = _ar.get('action') or {}
+                if _act.get('type') == 'reply' and (_act.get('content') or '').strip():
+                    wx.SendMsg(msg=_act['content'].strip(), who=who)
+                    logger.info(f"自动化规则「{_ar.get('name') or _ar.get('id')}」已向 {who} 发送指定回复")
+                return
+        except Exception as _e:
+            logger.error(f"自动化关键词规则执行失败: {_e}")
 
     should_process_this_message = False
     content_for_handler = original_content 
@@ -2236,6 +2263,14 @@ def _message_listener_impl(msg, chat):
         else:
             logger.info(f"收到来自用户 {sender} (聊天窗口 {who}) 的个人私聊消息，但用户 {who} 不在监听列表或发送者与聊天窗口不符，已忽略。")
     else: 
+        # --- v1.4 群聊精细化：白名单 / 黑名单（在任何触发判断之前）---
+        if GROUP_WHITELIST and not any(w in who for w in GROUP_WHITELIST):
+            logger.info(f"群聊 '{who}' 不在白名单，忽略。")
+            return
+        if GROUP_BLACKLIST and any(w in who for w in GROUP_BLACKLIST):
+            logger.info(f"群聊 '{who}' 命中黑名单，忽略。")
+            return
+
         processed_group_content = original_content 
         at_triggered = False
         keyword_triggered = False
@@ -2307,6 +2342,17 @@ def _message_listener_impl(msg, chat):
                 content_for_handler = f"[群聊消息-来自群'{who}'-发送者:{sender}]:{processed_group_content}"
             else:
                 content_for_handler = processed_group_content
+            
+            # --- v1.4 群聊频控（防刷屏）：窗口内回复条数上限 ---
+            if GROUP_RATE_LIMIT_MAX_REPLIES > 0:
+                _now_ts = time.time()
+                _hist = _group_reply_hist.get(who, [])
+                _hist = [t for t in _hist if _now_ts - t <= GROUP_RATE_LIMIT_WINDOW]
+                _hist.append(_now_ts)
+                _group_reply_hist[who] = _hist
+                if len(_hist) > GROUP_RATE_LIMIT_MAX_REPLIES:
+                    should_process_this_message = False
+                    logger.info(f"群聊 '{who}' 在 {GROUP_RATE_LIMIT_WINDOW}s 内回复已达上限 {GROUP_RATE_LIMIT_MAX_REPLIES} 条，跳过（防刷屏）。")
             
             if not content_for_handler and at_triggered and not keyword_triggered: 
                 logger.info(f"群聊 '{who}' 中单独 @机器人，处理后内容为空，仍将传递给后续处理器。")
@@ -2915,6 +2961,19 @@ def handle_wechat_message(msg, who):
             clean_up_temp_files() # 清理临时截图文件
             can_send_messages = True # 确保识别后可以发送消息
             logger.info(f"图片/表情识别完成，结果: {processed_content}")
+
+            # --- v1.4 感知联动：识别文本命中关键词 → 直接发送指定回复（跳过通用 AI）---
+            if ENABLE_IMAGE_RECOG_AUTO_REPLY and IMAGE_RECOG_AUTO_REPLY_RULES:
+                for _recog_rule in IMAGE_RECOG_AUTO_REPLY_RULES:
+                    _rk = (_recog_rule.get('keyword') or '').strip()
+                    _rr = (_recog_rule.get('reply') or '').strip()
+                    if _rk and _rr and _rk in processed_content:
+                        try:
+                            wx.SendMsg(msg=_rr, who=who)
+                            logger.info(f"感知联动：图片识别命中关键词「{_rk}」，已向 {who} 自动回复")
+                        except Exception as _pe:
+                            logger.error(f"感知联动自动回复发送失败: {_pe}")
+                        return
 
         # --- 3. 链接内容获取 (仅当ENABLE_URL_FETCHING为True且当前非图片/表情处理流程时) ---
         fetched_web_content = None
@@ -5544,6 +5603,16 @@ def main():
                 exit(1)
             else:
                 logger.warning(f"License 门禁检查异常（开发模式已放行）: {_lg}")
+
+        # --- v1.4 自动化工作流：定时规则检查线程（关键词规则在消息链内实时检查）---
+        if automation is not None:
+            try:
+                automation.start_timer_loop(
+                    lambda _window, _content, _rule: wx.SendMsg(msg=_content, who=_window)
+                )
+                logger.info("自动化工作流定时规则线程已启动")
+            except Exception as _ae:
+                logger.warning(f"自动化定时规则线程启动失败: {_ae}")
 
         # --- 运行期周期复检（防 patch 掉启动检查；失效立即停机）---
         try:

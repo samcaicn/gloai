@@ -1129,7 +1129,8 @@ def submit_config():
             'ENABLE_GROUP_AT_REPLY', 'ENABLE_GROUP_KEYWORD_REPLY','GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY', 'REMOVE_PARENTHESES',
             'ENABLE_ASSISTANT_MODEL', 'USE_ASSISTANT_FOR_MEMORY_SUMMARY', 'ENABLE_FORUM_CUSTOM_MODEL',
             'ENABLE_SENSITIVE_CONTENT_CLEARING',
-            'ENABLE_TEXT_COMMANDS'
+            'ENABLE_TEXT_COMMANDS',
+            'ENABLE_IMAGE_RECOG_AUTO_REPLY'  # v1.4 感知联动
         ]
         for field in boolean_fields:
             new_values_for_config_py[field] = field in request.form
@@ -1147,6 +1148,36 @@ def submit_config():
                     new_values_for_config_py[key_from_form] = keywords_list
                 else:
                     new_values_for_config_py[key_from_form] = []
+                continue
+
+            # v1.4 群聊精细化：白名单/黑名单/禁词 同关键词列表一样按逗号分隔解析
+            if key_from_form in ('GROUP_WHITELIST', 'GROUP_BLACKLIST', 'BANNED_WORDS'):
+                if value_from_form:
+                    normalized_value = re.sub(r'，|\s+', ',', value_from_form)
+                    words_list = [kw.strip() for kw in normalized_value.split(',') if kw.strip()]
+                    new_values_for_config_py[key_from_form] = words_list
+                else:
+                    new_values_for_config_py[key_from_form] = []
+                continue
+
+            # v1.4 感知联动：图片识别自动回复规则（每行 "关键词=>回复内容"）
+            if key_from_form == 'IMAGE_RECOG_AUTO_REPLY_RULES':
+                rules = []
+                for line in value_from_form.splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if '=>' in line:
+                        kw_part, reply_part = line.split('=>', 1)
+                    elif '→' in line:
+                        kw_part, reply_part = line.split('→', 1)
+                    else:
+                        continue
+                    kw_part = kw_part.strip()
+                    reply_part = reply_part.strip()
+                    if kw_part and reply_part:
+                        rules.append({'keyword': kw_part, 'reply': reply_part})
+                new_values_for_config_py[key_from_form] = rules
                 continue
 
             if key_from_form in current_config_before_update:
@@ -3581,16 +3612,60 @@ def refresh_forum(character_name):
 @app.route('/api/forum/posts/<character_name>')
 @login_required
 def get_forum_posts(character_name):
-    """获取论坛历史帖子"""
+    """获取论坛历史帖子（含关注状态，供社交增强展示）"""
     try:
         config = parse_config()
         
         posts = get_character_forum_posts(character_name)
-        return jsonify({'posts': posts})
+        data = load_forum_data(character_name)
+        return jsonify({
+            'posts': posts,
+            'followers': int(data.get('followers', 0) or 0),
+            'followed_by_me': bool(data.get('followed_by_me', False)),
+        })
     
     except Exception as e:
         app.logger.error(f"获取论坛帖子失败: {e}")
         return jsonify({'error': f'获取失败: {str(e)}'}), 500
+
+
+@app.route('/api/forum/follow/<character_name>', methods=['POST'])
+@login_required
+def toggle_forum_follow(character_name):
+    """v1.4 社交增强：切换关注该角色（本机用户视角：followers 计数 + followed_by_me）。"""
+    try:
+        character_name = validate_path(character_name)
+        data = load_forum_data(character_name)
+        followed = bool(data.get('followed_by_me', False))
+        followers = int(data.get('followers', 0) or 0)
+        if followed:
+            followers = max(0, followers - 1)
+            followed = False
+        else:
+            followers += 1
+            followed = True
+        data['followed_by_me'] = followed
+        data['followers'] = followers
+        save_forum_data(character_name, data)
+        return jsonify({'followed_by_me': followed, 'followers': followers})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/forum/hot/<character_name>')
+@login_required
+def forum_hot_posts(character_name):
+    """v1.4 社交增强：热帖榜 —— 按点赞数排序的 Top 10。"""
+    try:
+        posts = get_character_forum_posts(character_name)
+        hot = sorted(
+            posts,
+            key=lambda p: int(p.get('likes', 0) or 0),
+            reverse=True,
+        )[:10]
+        return jsonify({'hot': hot})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/forum/delete/<character_name>/<post_id>', methods=['DELETE'])
 @login_required
@@ -5514,6 +5589,33 @@ def api_license_offline():
         return jsonify(ok=True, **info)
     except Exception as e:
         return jsonify(ok=False, msg="读取授权状态失败: " + str(e)[:120])
+
+
+@app.route('/api/automation/rules', methods=['GET'])
+@login_required
+def get_automation_rules():
+    """v1.4 自动化中心：读取规则列表。"""
+    try:
+        import automation as _auto
+        return jsonify(_auto.load_rules())
+    except Exception as e:
+        return jsonify({'error': str(e)[:120]}), 500
+
+
+@app.route('/api/automation/rules', methods=['POST'])
+@login_required
+def save_automation_rules():
+    """v1.4 自动化中心：整体保存规则列表。"""
+    try:
+        data = request.get_json(silent=True) or {}
+        rules = data.get('rules', [])
+        if not isinstance(rules, list):
+            return jsonify({'error': 'rules 必须是列表'}), 400
+        import automation as _auto
+        _auto.save_rules({'rules': rules})
+        return jsonify(ok=True, count=len(rules))
+    except Exception as e:
+        return jsonify({'error': str(e)[:120]}), 500
 
 
 @app.route('/api/license/import', methods=['POST'])

@@ -63,6 +63,13 @@ MOONSHOT_TEMPERATURE = 0.8
 ENABLE_IMAGE_RECOGNITION = False
 ENABLE_EMOJI_RECOGNITION = False
 
+# ===== v1.4 感知联动：图片识别自动回复规则 =====
+# 开启后，图片识别文本命中关键词时直接发送指定回复（跳过通用 AI）。
+# 典型场景：客户发来商品图 → 识别文本含「产品/价格/报价」→ 自动回复报价话术。
+ENABLE_IMAGE_RECOG_AUTO_REPLY = False
+# 规则格式：[{"keyword": "商品|报价|价格", "reply": "您好，这款产品的价格是…"}]
+IMAGE_RECOG_AUTO_REPLY_RULES = []
+
 # 消息队列等待时间
 QUEUE_WAITING_TIME = 7
 
@@ -113,6 +120,17 @@ ENABLE_GROUP_KEYWORD_REPLY = False
 GROUP_KEYWORD_LIST = ['你好', '机器人', '在吗']
 GROUP_CHAT_RESPONSE_PROBABILITY = 100
 GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY = False
+
+# ===== 群聊精细化（v1.4）=====
+# 群白名单：仅这些群参与自动回复（按群名/群ID子串匹配）；留空 = 不限制
+GROUP_WHITELIST = []
+# 群黑名单：这些群永不自动回复（优先级高于白名单）
+GROUP_BLACKLIST = []
+# 禁词过滤：消息包含任一禁词则忽略（私聊与群聊均生效）
+BANNED_WORDS = []
+# 群内频控（防刷屏）：同一群在窗口秒数内最多自动回复条数
+GROUP_RATE_LIMIT_WINDOW = 30
+GROUP_RATE_LIMIT_MAX_REPLIES = 2
 
 # 配置编辑器设置
 # GUI-only 桌面软件：WebUI 只监听本机（ALLOW_OPEN_PORT=False），由 pywebview 内嵌窗口打开。
