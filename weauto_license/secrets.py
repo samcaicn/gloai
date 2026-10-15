@@ -49,9 +49,14 @@ def is_release() -> bool:
 
 
 def project_root() -> str:
-    """开发态=项目根；冻结态=EXE 所在目录（config.py 等 add-data 落在这里）。"""
+    """开发态=项目根；冻结态=EXE 目录下的 weauto 子目录（config.py 等 add-data 落在这里）。"""
     if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
+        d = os.path.join(os.path.dirname(sys.executable), "weauto")
+        try:
+            os.makedirs(d, exist_ok=True)
+        except Exception:
+            pass
+        return d
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 

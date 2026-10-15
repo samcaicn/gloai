@@ -175,9 +175,14 @@ DEFAULT_CONFIG = {
 
 
 def _base_dir():
-    """规则/流水文件所在目录：冻结态用 exe 同目录，源码态用本模块目录。"""
+    """规则/流水文件所在目录：冻结态用 exe 目录下自动创建的 weauto 子目录，源码态用本模块目录。"""
     if getattr(sys, "frozen", False):
-        return os.path.dirname(os.path.abspath(sys.executable))
+        d = os.path.join(os.path.dirname(os.path.abspath(sys.executable)), "weauto")
+        try:
+            os.makedirs(d, exist_ok=True)
+        except Exception:
+            pass
+        return d
     return os.path.dirname(os.path.abspath(__file__))
 
 

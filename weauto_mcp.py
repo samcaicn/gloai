@@ -40,19 +40,21 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 # --- 冻结(单文件exe)模式引导（与 bot.py / config_editor.py 一致）---
-# 把 config.py 外置到 exe 同目录（可写、跨运行持久），使 config_get/set 在冻结态下
-# 也能读写同一份配置；其余本地模块(chat_history/style_learner/wechat_compat)由 PyInstaller
-# 直接打包进 exe 内部，无需外置。
+# 把 config.py 外置到 exe 目录下自动创建的 weauto 子目录（可写、跨运行持久），
+# 使 config_get/set 在冻结态下也能读写同一份配置；其余本地模块(chat_history/
+# style_learner/wechat_compat)由 PyInstaller 直接打包进 exe 内部，无需外置。
 if getattr(sys, "frozen", False):
     import shutil as _shutil
     _exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+    _base_dir = os.path.join(_exe_dir, "weauto")
+    os.makedirs(_base_dir, exist_ok=True)
     _meipass = getattr(sys, "_MEIPASS", None)
-    if _exe_dir not in sys.path:
-        sys.path.insert(0, _exe_dir)
+    if _base_dir not in sys.path:
+        sys.path.insert(0, _base_dir)
     if _meipass:
         for _item in ("config.py",):
             _src = os.path.join(_meipass, _item)
-            _dst = os.path.join(_exe_dir, _item)
+            _dst = os.path.join(_base_dir, _item)
             if os.path.exists(_src) and not os.path.exists(_dst):
                 try:
                     _shutil.copy(_src, _dst)
@@ -62,11 +64,11 @@ if getattr(sys, "frozen", False):
         def _patched_abspath(p):
             r = _orig_abspath(p)
             if r.startswith(_meipass):
-                r = _exe_dir + r[len(_meipass):]
+                r = _base_dir + r[len(_meipass):]
             return r
         os.path.abspath = _patched_abspath
-    os.chdir(_exe_dir)
-    ROOT_DIR = _exe_dir
+    os.chdir(_base_dir)
+    ROOT_DIR = _base_dir
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s:%(message)s")
 logger = logging.getLogger("weauto_mcp")
