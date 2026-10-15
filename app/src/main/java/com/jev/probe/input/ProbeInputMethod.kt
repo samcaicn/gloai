@@ -142,6 +142,9 @@ class ProbeInputMethod : InputMethodService() {
         // 注册读框闭包：sendWeChatByVerifiedTap 靠它判断消息真发出（发出后微信
         // 清空输入框）。InputConnection 只在本服务里有效，必须由本侧提供。
         ProbeImeBus.boxReader = { readBoxText() }
+        // 注册代发闭包：坐标点击全部重试失败后，ChatCaptureService 用它让 IME 直接
+        // 执行发送动作。IME 持有 InputConnection，是绕开屏幕坐标的最直接通道。
+        ProbeImeBus.sendAction = { performSendAction() }
         Log.i(TAG, "ProbeIme: onStartInput restarting=$restarting pending=${ProbeImeBus.pendingText != null} polling=$polling")
         val pair = ProbeImeBus.consumePending()
         if (pair == null) {
@@ -161,6 +164,7 @@ class ProbeInputMethod : InputMethodService() {
     override fun onFinishInput() {
         ProbeImeBus.imeActive = false
         ProbeImeBus.boxReader = null
+        ProbeImeBus.sendAction = null
         Log.i(TAG, "ProbeIme: onFinishInput")
         super.onFinishInput()
     }
@@ -169,6 +173,7 @@ class ProbeInputMethod : InputMethodService() {
         polling = false
         ProbeImeBus.imeActive = false
         ProbeImeBus.boxReader = null
+        ProbeImeBus.sendAction = null
         handler.removeCallbacksAndMessages(null)
         Log.i(TAG, "ProbeIme: onDestroy")
         super.onDestroy()
@@ -218,6 +223,36 @@ class ProbeInputMethod : InputMethodService() {
         ProbeImeBus.completeWrite(true)
         // 注意：写完后**不自动弹选择器切回**。切回交给视图上的「↩ 返回普通输入法」
         // 按钮，用户自己掌握时机（App 不替用户切换输入法）。
+    }
+
+    /**
+     * 代执行一次「发送」动作。
+     *
+     * 优先走编辑器声明的 IME_ACTION_SEND；没声明就发回车。注意两点：
+     * - 返回值只表示**动作已派发**，不代表消息真的发出去了。微信里回车默认是换行
+     *   还是发送，取决于它自己的「回车键发送消息」开关。调用方仍要用 readBox()
+     *   复检一次。
+     * - 这里只是坐标兜底走投无路时的最后一搏，不参与常规时序，因此不触碰
+     *   sendDelayMs 的倒计时撤回窗口——那条链还归 ChatCaptureService 管。
+     */
+    private fun performSendAction(): Boolean {
+        val ic = currentInputConnection
+        if (ic == null) {
+            Log.w(TAG, "ProbeIme: sendAction skipped, no input connection")
+            return false
+        }
+        val action = currentInputEditorInfo
+            ?.imeOptions
+            ?.and(EditorInfo.IME_MASK_ACTION)
+        return if (action == EditorInfo.IME_ACTION_SEND) {
+            val ok = ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
+            Log.i(TAG, "ProbeIme: performEditorAction(SEND) -> $ok")
+            ok
+        } else {
+            sendDefaultEditorAction(true)
+            Log.i(TAG, "ProbeIme: sendDefaultEditorAction dispatched (action=$action)")
+            true
+        }
     }
 
     private fun backToNormalIme() {

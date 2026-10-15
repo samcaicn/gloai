@@ -84,6 +84,24 @@ object ProbeImeBus {
     @Volatile
     var boxReader: (() -> String?)? = null
 
+    /**
+     * 让输入法代执行一次「发送」动作（performEditorAction / 回车）。
+     *
+     * 只在坐标点击重试耗尽后调用，作为**最后兜底**——坐标来自屏幕比例经验公式，
+     * 微信改版或半屏形态下会打偏；而 IME 持有 InputConnection，是直接通道。
+     * 是否真能发出取决于目标 App 有没有声明 IME_ACTION_SEND（微信还要看
+     * 「回车键发送消息」开关），所以返回值可能为 false，调用方需再判一次。
+     */
+    @Volatile
+    var sendAction: (() -> Boolean)? = null
+
+    /** 请求输入法代发一次；IME 不在位返回 false。 */
+    fun requestSendViaIme(): Boolean = try {
+        sendAction?.invoke() == true
+    } catch (_: Exception) {
+        false
+    }
+
     /** 读当前输入框全文；IME 不在位/异常返回 null（调用方退回截屏软参考）。 */
     fun readBox(): String? = try {
         boxReader?.invoke()

@@ -698,6 +698,15 @@ open class ChatCaptureService : AccessibilityService() {
             .registerOnSharedPreferenceChangeListener(preferencesListener)
         overlay = OverlayController(this)
         Metrics.init(this, prefs.metricsEnabled)
+        // 硬证据日志：无障碍能力位。16=CAN_PERFORM_GESTURES、128=CAN_TAKE_SCREENSHOT。
+        // 2026-10-16 实测本探针 capabilities=129（1+128）——**缺 16**，于是
+        // dispatchGesture 一律静默失败（返回 false、触摸事件根本没注入），
+        // 「sendTap: dispatching tap at (983,2024)」打得再准也点不动发送键，
+        // 输入框里 12 个字纹丝不动 3 轮后放弃——这就是「点了没发出」的根因
+        // （同坐标 adb shell input tap 一戳就发出去，硬对照已证）。
+        // 修法在 res/xml/config_disguised.xml 加 android:canPerformGestures="true"。
+        val caps = serviceInfo?.capabilities ?: 0
+        Log.i(TAG, "a11y capabilities=$caps gesture=${caps and 16 != 0} screenshot=${caps and 128 != 0}")
         overlay?.onManualAnalyze = {
             currentSnapshot?.let { pendingSnapshot = it; runAnalysis(manual = true) }
         }
@@ -1730,6 +1739,31 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     private fun wxSendPoint(): Pair<Float, Float> {
+        // 2026-10-16 修复：坐标优先取树里发送按钮的真实 bounds 中心。
+        //
+        // 实测事实：微信 8.0.78 只剥掉了气泡（id/bkl，bubbles=0），**发送按钮
+        // SEND_ID 仍在无障碍树里**（日志 treeNode=true）。旧代码要求
+        // `isVisibleToUser && isEnabled` 全过才走树路径，微信把这两项关掉反自动化
+        // → 判定失败 → 回落到下面的屏幕比例公式，精度就是在这里丢的。
+        // 实测后果：算出 (983,2024) 点击，输入框 12 字纹丝不动，重试 3 次后放弃，
+        // 草稿烂在框里（用户看到的就是「没回复」）。
+        //
+        // 节点被标记不可见时 getBoundsInScreen() 通常仍返回有效矩形，比比例公式准。
+        val fromTree = runCatching {
+            val r = rootInActiveWindow ?: return@runCatching null
+            val n = findSendButton(r, PKG_WECHAT) ?: return@runCatching null
+            val rect = Rect()
+            n.getBoundsInScreen(rect)
+            if (rect.width() > 0 && rect.height() > 0) {
+                rect.centerX().toFloat() to rect.centerY().toFloat()
+            } else null
+        }.getOrNull()
+        if (fromTree != null) {
+            Log.i(TAG, "wxSendPoint: tree bounds -> (${fromTree.first.toInt()},${fromTree.second.toInt()})")
+            return fromTree
+        }
+
+        // 兜底：屏幕比例经验公式。
         // 绿按钮中心 = (0.9111W, 图标行垂直中心)。图标行紧贴 IME 窗顶，所以
         // y = H - IME实际窗口高 - 图标行半高(56dp*density/2)。IME 窗口是 wrap_content
         // （实测被内容缩到 304px），用 ProbeImeBus.imeWindowHeightPx 动态取实际高度。
@@ -1789,14 +1823,32 @@ open class ChatCaptureService : AccessibilityService() {
      * 截屏失败时按旧行为点计算坐标兜底（点在绿键上发送，点空无害）。
      */
     private fun sendWeChatByVerifiedTap(token: ConversationSession.Token, onDone: ((Boolean) -> Unit)? = null) {
-        fun tapSend() {
+        fun tapSend(): Boolean {
             val (x, y) = wxSendPoint()
             val path = Path().apply { moveTo(x, y) }
             val gesture = GestureDescription.Builder()
                 .addStroke(GestureDescription.StrokeDescription(path, 0, 60L))
                 .build()
-            Log.i(TAG, "sendTap: dispatching tap at (${x.toInt()},${y.toInt()}) win=${weChatWindowBounds()}")
-            dispatchGesture(gesture, null, null)
+            val dispatched = dispatchGesture(gesture, null, null)
+            Log.i(TAG, "sendTap: dispatching tap at (${x.toInt()},${y.toInt()}) win=${weChatWindowBounds()} dispatched=$dispatched")
+            return dispatched
+        }
+        /**
+         * 发送动作统一入口：坐标点击派发**失败**（同时喂 IME 代发兜底）。
+         *
+         * `dispatchGesture` 需要服务声明 canPerformGestures，缺这一位时它不报错、
+         * 只返回 false，触摸事件根本没进系统——2026-10-16 实测本探针 capabilities=129
+         * 就是这种情况，连点 3 轮 (983,2024) 输入框 12 字纹丝不动。此时继续等
+         * 「读框复检发现没发出」纯属浪费 3×1.2s，直接改走 IME 的
+         * performEditorAction（不走坐标，微信编辑器支持 IME_ACTION_SEND）。
+         */
+        fun tapOrIme(): Boolean {
+            val ok = tapSend()
+            if (!ok) {
+                val viaIme = ProbeImeBus.requestSendViaIme()
+                Log.w(TAG, "sendTap: dispatchGesture REFUSED (capabilities=${serviceInfo?.capabilities}) -> IME send=$viaIme")
+            }
+            return ok
         }
         // 发送链开始：dwell advance 被门控（sendSettled=false），直到判定
         // 「真发出 / 放弃」才放行——2026-10-15 实测 dwell 强切会话曾把未消费的
@@ -1819,7 +1871,7 @@ open class ChatCaptureService : AccessibilityService() {
                 onDone?.invoke(false)
                 return@postDelayed
             }
-            tapSend()
+            tapOrIme()
             var attempts = 0
             // 判定循环：读输入框（探针 IME InputConnection）——微信发出消息后会清空
             // 输入框，框空=真发出。这是 FLAG_SECURE 黑屏下唯一可靠信号（截屏恒黑、
@@ -1839,13 +1891,34 @@ open class ChatCaptureService : AccessibilityService() {
                     if (box != null) {
                         Log.w(TAG, "sendTap verify: box still has ${box.length} chars -> not sent, retry ($attempts/3)")
                         if (attempts >= 3) {
+                            // 坐标点击三连全败（实测 2026-10-16 07:33：点 (983,2024)
+                            // 输入框 12 字纹丝不动）。在放弃前让 IME 代发一次——
+                            // 它绕开了屏幕坐标这条最不可靠的环节。失败才真正认输。
+                            val viaIme = ProbeImeBus.requestSendViaIme()
+                            Log.w(TAG, "sendTap: taps exhausted, IME send -> $viaIme")
+                            if (viaIme) {
+                                main.postDelayed({
+                                    if (!isCurrent(token)) { sendSettled = true; onDone?.invoke(true); return@postDelayed }
+                                    val after = ProbeImeBus.readBox()
+                                    val sent = after != null && after.isBlank()
+                                    Log.i(TAG, "sendTap: post-IME verify empty=$sent chars=${after?.length}")
+                                    sendSettled = true
+                                    if (sent) {
+                                        overlay?.toast(t("已自动发送", "Sent automatically"))
+                                    } else {
+                                        overlay?.toast(t("发送未成功，消息留在输入框", "Send failed — draft left in input box"))
+                                    }
+                                    onDone?.invoke(sent)
+                                }, 1200L)
+                                return@postDelayed
+                            }
                             Log.e(TAG, "sendTap verify: 3 attempts exhausted -> give up, draft left in box")
                             sendSettled = true
                             overlay?.toast(t("发送未成功，消息留在输入框", "Send failed — draft left in input box"))
                             onDone?.invoke(false)
                             return@postDelayed
                         }
-                        tapSend()
+                        tapOrIme()
                         verifyLoop()
                     } else {
                         // 读框不可用（IME 没激活/异常）：退回截屏软参考。绿键仍在 → 补点一次；
@@ -1854,7 +1927,7 @@ open class ChatCaptureService : AccessibilityService() {
                         screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
                             if (res is ScreenCapture.Result.Ok && weChatSendButtonPresent(res)) {
                                 Log.w(TAG, "sendTap verify: box unreadable + green button present -> retry once")
-                                tapSend()
+                                tapOrIme()
                             } else {
                                 Log.i(TAG, "sendTap verify: box unreadable, green gone/shot unusable -> trust sent")
                             }

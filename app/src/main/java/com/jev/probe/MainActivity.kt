@@ -249,6 +249,8 @@ class MainActivity : AppCompatActivity() {
         A11Y -> t("无障碍权限", "Accessibility")
         OVERLAY -> t("悬浮窗权限", "Display over other apps")
         NOTIFY -> t("通知读取", "Notification access")
+        IME -> t("写入通道（输入法）", "Write channel (keyboard)")
+        POST_NOTIF -> t("允许通知", "Allow notifications")
         else -> t("自启动 + 省电无限制", "Auto-start & unrestricted battery")
     }
 
@@ -520,8 +522,13 @@ class MainActivity : AppCompatActivity() {
         private const val OVERLAY = "overlay"
         private const val NOTIFY = "notify"
         private const val BATTERY = "battery"
+        // 输入法与通知权限（P0 补缺）：这两项缺失时 App 会「看起来开着却静默不工作」——
+        // 输入法没切到探针就写不进输入框；通知权限被关则所有自愈引导提示全被系统丢弃，
+        // 用户连「哪里坏了」都看不到。原来 4 步清单里没有它们，是静默卡死的根因。
+        private const val IME = "ime"
+        private const val POST_NOTIF = "postNotif"
 
-        /** 引导共 4 步，进度条与「还差 N 步」都以此为分母。 */
-        private const val TOTAL_STEPS = 4
+        /** 引导共 6 步，进度条与「还差 N 步」都以此为分母。 */
+        private const val TOTAL_STEPS = 6
     }
 }
