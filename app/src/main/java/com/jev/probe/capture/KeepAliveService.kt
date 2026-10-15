@@ -12,12 +12,14 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import androidx.core.app.NotificationCompat
 import com.jev.probe.MainActivity
 import com.jev.probe.core.AutoReply
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.SelfCheck
+import com.jev.probe.input.ProbeImeBus
 
 /**
  * A minimal foreground service whose only job is to keep the app process at
@@ -34,6 +36,7 @@ class KeepAliveService : Service() {
 
     private val handler = Handler(Looper.getMainLooper())
     private var warnedA11yOff = false
+    private var warnedImeReset = false
 
     private val heal = object : Runnable {
         override fun run() {
@@ -47,6 +50,22 @@ class KeepAliveService : Service() {
                     }
                 } else if (on) {
                     warnedA11yOff = false
+                }
+                // 输入法重置巡检：ColorOS 在 install -r（覆盖安装）后会把 default_input_method
+                // 重置回讯飞——2026-10-15 实测装机后探针 IME 静默失效，用户按旧记忆
+                // 「切过就不用管」→ 回复永远写不进输入框 → 「卡住没回复」。
+                // 铁律：App 不替用户切输入法，这里只检测+提示，通知文案写清手动切法。
+                val imeNow = Settings.Secure.getString(
+                    contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD
+                ) ?: ""
+                val imeWanted = ProbeImeBus.imeId
+                if (prefs.autoFillBest && imeNow != imeWanted) {
+                    if (!warnedImeReset) {
+                        BootReceiver.notifyImeReset(this@KeepAliveService)
+                        warnedImeReset = true
+                    }
+                } else if (imeNow == imeWanted) {
+                    warnedImeReset = false
                 }
                 // 通知监听自愈：进程被系统回收后，即使 enabled_notification_listeners
                 // 授权还在，系统也不会自动重新 bind listener（dumpsys 的 Live listeners
@@ -68,8 +87,10 @@ class KeepAliveService : Service() {
         super.onCreate()
         isAlive = true
         startForeground(NOTIF_ID, buildNotification(this))
-        // 启动自愈轮询（首次延迟一个间隔，避免刚拉起就弹通知）。
-        handler.postDelayed(heal, HEAL_INTERVAL_MS)
+        // 自愈轮询：装机/系统重置后授权丢失要在 1 分钟内被发现（原来 15 分钟，
+        // 用户装机后马上用，等提示早就骂娘了）。首检 10 秒：服务刚拉起时 settings
+        // 可能还没落盘，立刻查会误报。
+        handler.postDelayed(heal, 10_000L)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
@@ -87,7 +108,7 @@ class KeepAliveService : Service() {
         const val NOTIF_ID = 1
 
         /** 自愈轮询间隔：15 分钟。足够及时发现 OEM 关掉的权限，又不至于频繁唤醒。 */
-        private const val HEAL_INTERVAL_MS = 15 * 60_000L
+        private const val HEAL_INTERVAL_MS = 60_000L
 
         /** 保活服务当前是否在运行（由 onCreate/onDestroy 维护，供 [refresh] 判活）。 */
         @Volatile

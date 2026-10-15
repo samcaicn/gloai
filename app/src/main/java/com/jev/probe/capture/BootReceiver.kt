@@ -57,5 +57,37 @@ class BootReceiver : BroadcastReceiver() {
             @Suppress("DEPRECATION")
             nm.notify(NOTIF_ID, n)
         }
+
+        /**
+         * 输入法被系统重置（ColorOS 覆盖安装后必发）时提示用户手动切回。
+         * 铁律：App 不替用户切输入法（showInputMethodPicker / ime set 都禁止），
+         * 所以这里只发通知写清手动切法，点击进 App 主页。通知 ID 与恢复通知错开。
+         */
+        fun notifyImeReset(ctx: Context) {
+            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val ch = NotificationChannel(CH_ID, "Jev 助手恢复", NotificationManager.IMPORTANCE_HIGH)
+                ch.setShowBadge(false)
+                nm.createNotificationChannel(ch)
+            }
+            val go = Intent(ctx, com.jev.probe.MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+                if (Build.VERSION.SDK_INT >= 33) PendingIntent.FLAG_IMMUTABLE else 0
+            val pi = PendingIntent.getActivity(ctx, 1, go, flags)
+            val n = NotificationCompat.Builder(ctx, CH_ID)
+                .setContentTitle("输入法被系统重置，自动回复已暂停")
+                .setContentText("在微信点输入框 → 键盘图标 → 选「AI聊天助手·写入」即可恢复")
+                .setStyle(NotificationCompat.BigTextStyle().bigText(
+                    "系统（覆盖安装后）把默认输入法重置回了讯飞，回复写不进输入框。" +
+                    "请在微信里点一下输入框 → 讯飞工具栏键盘图标 → 选「AI聊天助手·写入」，" +
+                    "之后每轮自动生效，不用再切。"))
+                .setSmallIcon(android.R.drawable.ic_menu_edit)
+                .setContentIntent(pi)
+                .setAutoCancel(true)
+                .build()
+            @Suppress("DEPRECATION")
+            nm.notify(NOTIF_ID + 1, n)
+        }
     }
 }
