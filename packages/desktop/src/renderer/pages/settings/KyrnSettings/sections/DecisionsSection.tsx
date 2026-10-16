@@ -1,19 +1,18 @@
 import React from 'react';
-import { Alert, Button, Input } from '@arco-design/web-react';
+import { Alert, Input } from '@arco-design/web-react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import {
   localized,
   localizedTexts,
   type DecisionInfo,
-  type DecisionMode,
   type HarnessManifest,
   type Localized,
 } from '@/common/kyrn/manifest';
 import type { KyrnSettings } from '@/common/kyrn/types';
 import { DECISION_PAGES, pageGroupLabelKey, type DecisionPage } from '../../settingsNav';
 import { decisionPageOf, isStrayDecision, matches } from '../draft';
-import ModeControl, { shownMode, useModeLabels } from '../fields/ModeControl';
+import { shownMode, useModeLabels } from '../fields/ModeControl';
 import SectionShell, { GroupTitle } from './SectionShell';
 import styles from './sections.module.css';
 
@@ -33,7 +32,6 @@ type DecisionsSectionProps = {
   manifest?: HarnessManifest;
   query: string;
   onQuery: (query: string) => void;
-  onChange: (change: (settings: KyrnSettings) => KyrnSettings) => void;
   /** Above the points: settings of the page's own that are not decision points (the context page's compaction). */
   lead?: React.ReactNode;
 };
@@ -57,15 +55,7 @@ type Block = { key: string; title?: string; rows: DecisionInfo[] };
  * the default mode and a search over every point, whose results come from all the pages. The context page starts with
  * the compaction settings, so that everything about context is one page.
  */
-export default function DecisionsSection({
-  page,
-  settings,
-  manifest,
-  query,
-  onQuery,
-  onChange,
-  lead,
-}: DecisionsSectionProps) {
+export default function DecisionsSection({ page, settings, manifest, query, onQuery, lead }: DecisionsSectionProps) {
   const { t, i18n } = useTranslation();
   const labels = useModeLabels();
   const say = (text?: Localized) => localized(text, i18n.language);
@@ -74,12 +64,6 @@ export default function DecisionsSection({
   const pageLead = t('mu.decisions.pageLead', { page: t(`mu.pages.decisions.${FIRST_PAGE}`) });
   // The whole list: the area alone, or a search from the first page, which looks through every page.
   const whole = page === undefined || (first && query.trim() !== '');
-
-  const setMode = (id: string, mode: DecisionMode | undefined) =>
-    onChange((now) => {
-      const { [id]: _removed, ...rest } = now.decisionModes;
-      return { ...now, decisionModes: mode ? { ...rest, [id]: mode } : rest };
-    });
 
   const features = new Map(manifest?.features.map((feature) => [feature.name, feature]));
   const decisions = manifest?.decisions ?? [];
@@ -147,12 +131,7 @@ export default function DecisionsSection({
                 <div className={styles.plainSummary}>{labels[shownMode(settings.mode)].help}</div>
               </div>
               <div className={styles.plainControl}>
-                <ModeControl
-                  label={t('mu.decisions.defaultMode')}
-                  labels={labels}
-                  value={settings.mode}
-                  onChange={(mode) => onChange((now) => ({ ...now, mode }))}
-                />
+                <span className={styles.plainMode}>{labels[shownMode(settings.mode)].label}</span>
               </div>
             </div>
           </div>
@@ -187,22 +166,7 @@ export default function DecisionsSection({
                       {off ? <div className={styles.plainSummary}>{t('mu.decisions.featureOff')}</div> : null}
                     </div>
                     <div className={styles.plainControl}>
-                      <ModeControl
-                        label={title}
-                        labels={labels}
-                        value={own ?? settings.mode}
-                        onChange={(mode) => setMode(decision.id, mode)}
-                      />
-                      {own ? (
-                        <Button
-                          size='mini'
-                          type='text'
-                          data-testid={`mu-decision-default-${decision.id}`}
-                          onClick={() => setMode(decision.id, undefined)}
-                        >
-                          {t('mu.decisions.useDefault', { mode: labels[shownMode(settings.mode)].label })}
-                        </Button>
-                      ) : null}
+                      <span className={styles.plainMode}>{labels[shownMode(own ?? settings.mode)].label}</span>
                     </div>
                   </div>
                 </div>

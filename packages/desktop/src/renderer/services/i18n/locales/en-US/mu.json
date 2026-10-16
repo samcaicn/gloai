@@ -412,7 +412,10 @@
     "levelClamped": "Not set means medium. A level the model does not take becomes the nearest one it does.",
     "noReasoning": "This model does not think, so a session with it always starts with thinking off.",
     "notSet": "Not set",
-    "pickProvider": "Choose a provider first."
+    "pickProvider": "Choose a provider first.",
+    "cloudProvider": "AiBuddy cloud",
+    "cloudModel": "Auto, chosen per task",
+    "cloudNote": "AiBuddy picks the model per task in the cloud. Nothing to set here."
   },
   "accounts": {
     "signIn": "Sign in",

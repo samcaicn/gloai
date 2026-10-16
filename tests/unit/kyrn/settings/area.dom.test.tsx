@@ -323,15 +323,17 @@ describe('decision points and features from the manifest', () => {
     expect(within(screen.getByTestId('mu-feature-compaction')).getByText('Beta')).toBeInTheDocument();
   });
   it.each([
-    ['zh-CN', '消息预判', '开启'],
-    ['ja-JP', 'Message preflight', 'On'],
-    ['en-US', 'Message preflight', 'On'],
+    ['zh-CN', '消息预判', '关闭'],
+    ['ja-JP', 'Message preflight', 'Off'],
+    ['en-US', 'Message preflight', 'Off'],
   ])('reads the manifest in the language of %s', async (language, title, mode) => {
     await i18n.changeLanguage(language);
     await open('decisions');
     const row = screen.getByTestId('mu-decision-input.preflight');
     expect(row).toHaveTextContent(title);
+    // The point's state is a plain word in the app's language; here it is off (the default mode is a shadow).
     expect(within(row).getByText(mode)).toBeInTheDocument();
+    expect(within(row).queryByRole('radio')).not.toBeInTheDocument();
   });
   it('names a group the manifest leaves unnamed, and reads a harness text in the exact language it has', async () => {
     const preflight = manifestJson.decisions.find((decision) => decision.id === 'input.preflight')!;
@@ -410,19 +412,18 @@ describe('decision points and features from the manifest', () => {
     expect(within(page()).queryByTestId('mu-modified')).not.toBeInTheDocument();
     expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
   });
-  it('says the harness is too old without a manifest, and keeps the default mode working', async () => {
+  it('says the harness is too old without a manifest, and shows the default mode but no controls', async () => {
     bridge.settings.mockResolvedValue({ ok: true, data: settings({ harness: { status: 'missing' }, features: {} }) });
     await open('decisions');
     expect(screen.getByText(/too old to list/)).toBeInTheDocument();
-    fireEvent.click(within(screen.getByTestId('mu-default-mode')).getByText('On'));
-    fireEvent.click(screen.getByText('Save'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalled());
-    const sent = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(sent.mode).toBe('active');
-    expect(sent).not.toHaveProperty('features');
-    expect(sent).not.toHaveProperty('decisionModes');
+    // The default mode is a read-only label now; there is no control to change it, so nothing to save.
+    const mode = screen.getByTestId('mu-default-mode');
+    expect(within(mode).getByText('Off')).toBeInTheDocument();
+    expect(within(mode).queryByRole('radio')).not.toBeInTheDocument();
+    expect(within(mode).queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
   });
-  it('shows each point off or on: a stored shadow reads as off, and a change writes active or off', async () => {
+  it('shows each point off or on: a stored shadow reads as off', async () => {
     bridge.settings.mockResolvedValue({
       ok: true,
       data: settings({ mode: 'shadow', decisionModes: { 'tool.risk': 'shadow', 'input.preflight': 'active' } }),
@@ -430,26 +431,18 @@ describe('decision points and features from the manifest', () => {
     await open('decisions');
     const risk = screen.getByTestId('mu-decision-tool.risk');
     const byDefault = screen.getByTestId('mu-default-mode');
-    // Two states, off first; the harness's third mode is not offered, and is not named anywhere.
-    expect(
-      within(risk)
-        .getAllByRole('radio')
-        .map((radio) => radio.closest('label')?.textContent)
-    ).toEqual(['Off', 'On']);
-    expect(within(risk).getByRole('radio', { name: 'Off' })).toBeChecked();
-    expect(within(byDefault).getByRole('radio', { name: 'Off' })).toBeChecked();
-    expect(within(screen.getByTestId('mu-decision-input.preflight')).getByRole('radio', { name: 'On' })).toBeChecked();
+    // Each state is a plain word. The harness's third mode is not offered, and is not named anywhere.
+    expect(within(risk).getByText('Off')).toBeInTheDocument();
+    expect(within(byDefault).getByText('Off')).toBeInTheDocument();
+    expect(within(screen.getByTestId('mu-decision-input.preflight')).getByText('On')).toBeInTheDocument();
     expect(screen.getByTestId('kyrn-settings')).not.toHaveTextContent(/shadow/i);
-    // Nothing is written until a state is picked: a shadow left alone stays as it is in the file.
+    // A point without a mode of its own shows the default, a shadow, which reads as off too.
+    expect(within(screen.getByTestId('mu-decision-memory.recall')).getByText('Off')).toBeInTheDocument();
+    // A label, not a control: each point is handled per task, so there is nothing here to pick or write.
+    expect(within(risk).queryByRole('radio')).not.toBeInTheDocument();
+    expect(within(byDefault).queryByRole('radio')).not.toBeInTheDocument();
+    expect(within(risk).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
-    fireEvent.click(within(risk).getByText('On'));
-    fireEvent.click(within(byDefault).getByText('On'));
-    fireEvent.click(within(byDefault).getByText('Off'));
-    fireEvent.click(screen.getByText('Save'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalled());
-    const sent = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(sent.mode).toBe('off');
-    expect(sent.decisionModes).toEqual({ 'tool.risk': 'active', 'input.preflight': 'active' });
   });
 });
 
@@ -457,15 +450,14 @@ describe('the save bar', () => {
   it('appears with the first change, names the sections, saves everything at once and goes away', async () => {
     await open('decisions');
     expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
-    fireEvent.click(within(screen.getByTestId('mu-decision-tool.risk')).getByText('On'));
+    // The decision points are read-only, so the first change comes from a feature.
     fireEvent.click(screen.getByTestId('mu-nav-moreFeatures'));
     fireEvent.click(
       within(screen.getByTestId('mu-feature-guard')).getByRole('switch', { name: 'Risky command guard' })
     );
-    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent(
-      'Unsaved changes in: Decision points and More features'
-    );
-    expect(within(screen.getByTestId('mu-nav-decisions')).getByLabelText('Unsaved changes')).toBeInTheDocument();
+    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: More features');
+    expect(within(screen.getByTestId('mu-nav-moreFeatures')).getByLabelText('Unsaved changes')).toBeInTheDocument();
+    expect(within(screen.getByTestId('mu-nav-decisions')).queryByLabelText('Unsaved changes')).not.toBeInTheDocument();
     expect(within(screen.getByTestId('mu-nav-providers')).queryByLabelText('Unsaved changes')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Save'));
@@ -473,25 +465,24 @@ describe('the save bar', () => {
     expect(bridge.save).toHaveBeenCalledTimes(1);
     const sent = bridge.save.mock.calls[0][0] as SaveSettings;
     expect(sent.revision).toBe('r1');
-    expect(sent.decisionModes).toEqual({ 'tool.risk': 'active' });
     expect(sent.features?.guard.enabled).toBe(false);
     expect(sent).not.toHaveProperty('keys');
     expect(sent).not.toHaveProperty('credentials');
   });
-  it('going back to the default removes the override, and discard puts everything back', async () => {
+  it('shows a stored per-point mode read-only, with no per-point override to undo', async () => {
     bridge.settings.mockResolvedValue({ ok: true, data: settings({ decisionModes: { 'tool.risk': 'off' } }) });
     await open('decisions');
     const row = screen.getByTestId('mu-decision-tool.risk');
-    expect(within(row).getByRole('radio', { name: 'Off' })).toBeChecked();
-    // A point without a mode of its own shows the default (a shadow, which reads as off) and offers nothing to undo.
-    expect(within(screen.getByTestId('mu-decision-input.preflight')).getByRole('radio', { name: 'Off' })).toBeChecked();
+    // The stored mode reads as a plain word; nothing here changes it.
+    expect(within(row).getByText('Off')).toBeInTheDocument();
+    expect(within(row).queryByRole('radio')).not.toBeInTheDocument();
+    expect(within(row).queryByText(/use the default/i)).not.toBeInTheDocument();
+    // A point without a mode of its own shows the default, a shadow, which reads as off too.
+    expect(within(screen.getByTestId('mu-decision-input.preflight')).getByText('Off')).toBeInTheDocument();
     expect(screen.queryByTestId('mu-decision-default-input.preflight')).not.toBeInTheDocument();
-    fireEvent.click(within(row).getByText('Use the default (Off)'));
-    expect(within(row).getByRole('radio', { name: 'Off' })).toBeChecked();
     expect(screen.queryByTestId('mu-decision-default-tool.risk')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText('Discard'));
+    // Nothing on this page is editable, so there is nothing to save or discard.
     expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
-    expect(screen.getByTestId('mu-decision-default-tool.risk')).toBeInTheDocument();
   });
   it('shows a point whose feature is off as muted, with a plain sentence instead of a code name', async () => {
     bridge.settings.mockResolvedValue({
@@ -1331,7 +1322,6 @@ describe('the kernel pages', () => {
     expect(page).not.toHaveTextContent(/TYPESAFE_API_KEY|AI_GATEWAY_API_KEY|MU_JUDGE_|OpenRouter|Vercel/);
   });
 
-
   it('puts the switches that carry the product on the features page, and every other feature on the next', async () => {
     const { unmount } = render(<SettingsArea section='features' />, { wrapper });
     const featured = await screen.findByTestId('mu-feature-list-features');
@@ -1423,21 +1413,25 @@ describe('one draft across the settings pages', () => {
     fireEvent.click(screen.getByRole('link', { name: 'decisions' }));
     // Another page, drawn afresh: the draft is the same one.
     expect(await screen.findByTestId('mu-section-decisions-tools')).toBeInTheDocument();
+    // The decision points are read-only, so visiting them adds nothing of their own to the draft.
+    expect(within(screen.getByTestId('mu-decision-tool.risk')).queryByRole('radio')).not.toBeInTheDocument();
     expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Features');
-    fireEvent.click(within(screen.getByTestId('mu-decision-tool.risk')).getByText('On'));
-    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Decision points and Features');
 
     fireEvent.click(screen.getByRole('link', { name: 'appearance' }));
     expect(await screen.findByTestId('appearance')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('link', { name: 'features' }));
-    expect(within(screen.getByTestId('mu-feature-swarm')).getByRole('switch')).not.toHaveAttribute('aria-checked', before ?? '');
+    expect(within(screen.getByTestId('mu-feature-swarm')).getByRole('switch')).not.toHaveAttribute(
+      'aria-checked',
+      before ?? ''
+    );
     // Loaded once for all the pages, and saved once for all of them.
     expect(bridge.settings).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(bridge.save).toHaveBeenCalledTimes(1));
     const sent = bridge.save.mock.calls[0][0] as SaveSettings;
     expect(sent.features?.swarm?.enabled).toBe(before !== 'true');
-    expect(sent.decisionModes).toEqual({ 'tool.risk': 'active' });
+    // The points are read-only: no per-point mode is written.
+    expect(sent.decisionModes).toEqual({});
   });
 
   it('opens a feature’s options at a route of its own, and goes back to the list', async () => {
@@ -1506,10 +1500,10 @@ describe('one draft across the settings pages', () => {
     expect(compaction.compareDocumentPosition(points) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(section).getByRole('heading', { level: 3, name: 'Decision points' })).toBeInTheDocument();
     expect(rowsOf(points).length + 2).toBeLessThanOrEqual(PAGE_ROWS);
-    // A compaction change is the context's in the save bar; a point's is the decision points'.
+    // A compaction change is the context's in the save bar; the points are read-only, so they add nothing of their own.
     fireEvent.click(auto);
-    fireEvent.click(within(points).getAllByText('On')[0]);
-    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Decision points and Context');
+    expect(within(points).queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Context');
   });
 
   it('gives the lessons a page of their own, so the context group stays within a page', async () => {

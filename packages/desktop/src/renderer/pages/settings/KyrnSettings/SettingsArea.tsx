@@ -90,7 +90,6 @@ function Area({ section: routed, page, feature, part, onView, mu }: SettingsArea
           manifest={manifest}
           query={query}
           onQuery={setQuery}
-          onChange={mu.editSettings}
           lead={shown === 'context' ? <ContextRows settings={settings} base={base} onChange={mu.editSettings} /> : null}
         />
       );

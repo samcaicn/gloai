@@ -12,6 +12,7 @@ import {
   type ThinkingLevel,
 } from '@/common/kyrn/models';
 import type { KyrnSettings } from '@/common/kyrn/types';
+import { AIAPI_PROVIDER_ID } from '@/renderer/pages/welcome/onboarding';
 import { thinkingLevelLabel } from '@/renderer/utils/model/thinkingLevel';
 import Row from '../fields/Row';
 import fieldStyles from '../fields/fields.module.css';
@@ -51,6 +52,20 @@ export default function DefaultModelCard({
 }: DefaultModelCardProps) {
   const { t } = useTranslation();
   const { defaults, providers } = settings.models;
+  // The cloud gateway routes the `auto` model per task: with the cloud provider the picker would only ever name the
+  // one thing the cloud chooses, so it shows the choice instead of asking. No switch, no second best the user picks.
+  if (defaults.provider === AIAPI_PROVIDER_ID) {
+    return (
+      <Card testId='mu-defaults'>
+        <Row title={t('mu.defaults.provider')}>
+          <span>{t('mu.defaults.cloudProvider')}</span>
+        </Row>
+        <Row title={t('mu.defaults.model')} help={t('mu.defaults.cloudNote')}>
+          <span>{t('mu.defaults.cloudModel')}</span>
+        </Row>
+      </Card>
+    );
+  }
   const listed = hidden?.size
     ? available.providers.filter((provider) => !hidden.has(provider.id))
     : available.providers;

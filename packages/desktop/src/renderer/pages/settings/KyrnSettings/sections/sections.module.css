@@ -481,6 +481,12 @@
   gap: 2px;
 }
 
+/* A decision point's mode shown by the cloud, not chosen here: a label, not a control. */
+.plainMode {
+  font-size: 13px;
+  color: var(--color-text-3);
+}
+
 .plainMuted {
   opacity: 0.55;
 }

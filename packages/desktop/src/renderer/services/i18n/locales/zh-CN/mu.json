@@ -412,7 +412,10 @@
     "levelClamped": "不指定时为「中」。模型不支持的等级会自动改用最接近的可用等级。",
     "noReasoning": "这个模型不支持思考，用它启动的会话思考固定为关闭。",
     "notSet": "未指定",
-    "pickProvider": "请先选择提供商。"
+    "pickProvider": "请先选择提供商。",
+    "cloudProvider": "AiBuddy 云端",
+    "cloudModel": "按任务自动选择",
+    "cloudNote": "模型由 AiBuddy 云端按任务自动选择，无需设置。"
   },
   "accounts": {
     "signIn": "登录",
