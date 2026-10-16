@@ -2617,14 +2617,29 @@ def recognize_image_with_moonshot(image_path, is_emoji=False):
         can_send_messages = True
 
 def handle_emoji_message(msg, who):
+    """动画表情：等 3 秒让表情「落定」再入队处理，避免连发表情被拆成多条。
+
+    等待期间暂停队列排空（can_send_messages=False）。
+    """
     global emoji_timer
     global can_send_messages
     can_send_messages = False
 
     def timer_callback():
-        with emoji_timer_lock:           
-            handle_wechat_message(msg, who)   
-            emoji_timer = None       
+        # 两个变量都要在这里重新声明 global：外层函数的 global 声明不作用于嵌套函数，
+        # 缺了就只是给局部变量赋值，模块级状态根本没改（正是本次要修的 bug 本身）。
+        global emoji_timer
+        global can_send_messages
+        try:
+            with emoji_timer_lock:
+                handle_wechat_message(msg, who)
+                emoji_timer = None
+        finally:
+            # 必须无条件恢复：can_send_messages 一旦卡在 False，check_inactive_users
+            # 永远不会排空任何用户的队列 —— 机器人永久失声，且 user_queues 无上限
+            # 会一直堆积。修前这里没有恢复，收到第一个动画表情后 bot 就不再回复。
+            # （与 recognize_image_with_moonshot 的 finally 恢复保持一致）
+            can_send_messages = True
 
     with emoji_timer_lock:
         if emoji_timer is not None:

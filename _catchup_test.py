@@ -428,6 +428,41 @@ def main():
         bot.get_chat_type_info = _real_get_chat_type
         bot.wx = _real_wx
 
+    # ---------- 10. 动画表情：定时器回调必须恢复 can_send_messages ----------
+    # 修前：handle_emoji_message 把全局 can_send_messages 置 False 后，timer_callback
+    # 从不恢复 -> check_inactive_users（要求 can_send_messages）永不排空队列 ->
+    # 机器人永久失声，且 user_queues 无上限会一直堆积。
+    # 同函数第二个 bug：timer_callback 里 `emoji_timer = None` 缺 global 声明，
+    # 只改了局部变量，模块级 emoji_timer 永远清不掉（`is not None` 判断形同虚设）。
+    _real_hwm = bot.handle_wechat_message
+    try:
+        bot.can_send_messages = True
+        bot.emoji_timer = None
+        bot.handle_wechat_message = lambda _m, _w: None  # 隔离：不入队、不真发消息
+
+        class _EmoMsg:
+            type = 'emotion'
+            content = ''
+
+        bot.handle_emoji_message(_EmoMsg(), "表情测试")
+        _paused = bot.can_send_messages is False  # 3 秒等待期内应暂停排空
+        time.sleep(4.0)  # 等定时器回调跑完
+        check("表情 10a：等待期内暂停队列排空", _paused,
+              "can_send=%r" % (bot.can_send_messages,))
+        check("表情 10b：回调后恢复 can_send_messages（否则机器人永久失声）",
+              bot.can_send_messages is True, "can_send=%r" % (bot.can_send_messages,))
+        check("表情 10c：回调后模块级 emoji_timer 被清空（修前缺 global 声明）",
+              bot.emoji_timer is None, "emoji_timer=%r" % (bot.emoji_timer,))
+    finally:
+        bot.handle_wechat_message = _real_hwm
+        if bot.emoji_timer is not None:
+            try:
+                bot.emoji_timer.cancel()
+            except Exception:
+                pass
+            bot.emoji_timer = None
+        bot.can_send_messages = True
+
     # ---------- 汇总 ----------
     failed = [n for n, ok in results if not ok]
     print("\n===== 汇总: %d/%d 通过 =====" % (len(results) - len(failed), len(results)))
