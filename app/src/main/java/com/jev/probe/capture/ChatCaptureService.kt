@@ -133,7 +133,18 @@ open class ChatCaptureService : AccessibilityService() {
                 // （ocrCaptureManual 会直接拒绝），所以在微信内老老实实重跑分析。
                 if (lastErrKind == ErrCatalog.Kind.NO_TEXT && activePkg != PKG_WECHAT) {
                     ocrCaptureManual()
-                } else currentSnapshot?.let { pendingSnapshot = it; runAnalysis(manual = true) }
+                } else {
+                    // 同 onManualAnalyze：无快照时不再静默，给 log + toast
+                    val snap = currentSnapshot
+                    if (snap != null) {
+                        pendingSnapshot = snap; runAnalysis(manual = true)
+                    } else {
+                        Log.w(TAG, "RETRY: currentSnapshot=null 无可分析快照")
+                        overlay?.toast(t(
+                            "没有可重试的聊天内容，先打开一个聊天窗口",
+                            "Nothing to retry — open a chat window first"))
+                    }
+                }
             }
             ErrCatalog.Action.SETTINGS -> openSettings(focusPlan = false)
             ErrCatalog.Action.PLAN -> openSettings(focusPlan = true)
@@ -761,7 +772,17 @@ open class ChatCaptureService : AccessibilityService() {
         val caps = serviceInfo?.capabilities ?: 0
         Log.i(TAG, "a11y capabilities=$caps gesture=${caps and 0x20 != 0} screenshot=${caps and 0x80 != 0}")
         overlay?.onManualAnalyze = {
-            currentSnapshot?.let { pendingSnapshot = it; runAnalysis(manual = true) }
+            val snap = currentSnapshot
+            if (snap != null) {
+                pendingSnapshot = snap; runAnalysis(manual = true)
+            } else {
+                // 旧行为：静默无操作。微信前台整棵树被剪（nodes=1）→ currentSnapshot 恒 null
+                // → 用户在微信内点「重新分析」必然没反应且无任何反馈。改为 log + toast 说明原因。
+                Log.w(TAG, "onManualAnalyze: currentSnapshot=null 无可分析快照（微信前台树被剪/不在聊天页）")
+                overlay?.toast(t(
+                    "没读到当前聊天的内容（微信前台页面文字不可读时就这样）。回到聊天页等一条新消息，或从通知栏点那条消息进入后再分析",
+                    "No chat content captured (WeChat hides its own page text). Open the chat, wait for a new message, or enter from the notification and retry"))
+            }
         }
         overlay?.onErrorAction = { a -> handleErrorAction(a) }
         overlay?.onReplyFeedback = { rank, good ->
