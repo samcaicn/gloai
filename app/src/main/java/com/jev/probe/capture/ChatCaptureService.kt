@@ -1965,7 +1965,177 @@ open class ChatCaptureService : AccessibilityService() {
      * 坐标（2026-10-16 真机标定，双向确认）：切换钮在输入栏最左，x = 屏宽 * [WX_VOICE_TOGGLE_X_RATIO]（≈84@1080）；
      * 语音态键盘收起、输入栏贴屏底，y 取「窗口/屏底 - 半输入栏高」（≈2335@2412），与 wxFocusPoint 同源口径，半屏小窗自适应。
      */
+    /**
+     * 微信主窗 root（面积最大的非 IME 微信窗口）。聊天主窗之外微信还会挂各种
+     * PopupWindow（表情/更多/语音面板），其 root 只有一百来像素——2026-10-16
+     * 08:52 实测踩过：拿 Popup root 算坐标全打偏。树查找/dump 一律以主窗为准。
+     */
+    private fun weChatMainRoot(): AccessibilityNodeInfo? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            return rootInActiveWindow?.takeIf { it.packageName?.toString() == PKG_WECHAT }
+        }
+        var best: AccessibilityNodeInfo? = null
+        var bestArea = 0L
+        for (w in getWindows() ?: emptyList()) {
+            if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) continue
+            val r = try {
+                w.root
+            } catch (_: Throwable) {
+                null
+            } ?: continue
+            if (r.packageName?.toString() != PKG_WECHAT) continue
+            val b = Rect().also { r.getBoundsInScreen(it) }
+            val area = b.width().toLong() * b.height()
+            if (area > bestArea) {
+                bestArea = area
+                best = r
+            }
+        }
+        return best
+    }
+
+    /**
+     * 诊断（2026-10-16 21:10 重定标）：列出微信挂在无障碍系统里的全部窗口。
+     * 语音/表情/更多面板都会以额外 root 出现（bounds 远小于主窗）。语音分支
+     * 点击前先看清单：面板开着就先 BACK 关掉，否则栏位被面板按钮占据。
+     */
+    private fun logWeChatWindows(reason: String) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val main = weChatWindowBounds()
+        for (w in getWindows() ?: emptyList()) {
+            val r = try {
+                w.root
+            } catch (_: Throwable) {
+                null
+            } ?: continue
+            if (r.packageName?.toString() != PKG_WECHAT) continue
+            val b = Rect().also { r.getBoundsInScreen(it) }
+            Log.i(TAG, "wxwin[$reason]: type=${w.type} bounds=$b isMain=${main != null && b == main}")
+        }
+    }
+
+    /**
+     * 微信面板是否开着：存在一个非主窗、面积在主窗 1/7~3/5 之间、贴在下半屏的
+     * 微信窗口（表情/更多/语音面板的实测特征）。Toast 等系统窗口不属微信包，
+     * 天然排除。
+     */
+    private fun weChatPanelOpen(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
+        val main = weChatWindowBounds() ?: return false
+        val mainArea = (main.width().toLong() * main.height()).coerceAtLeast(1L)
+        for (w in getWindows() ?: emptyList()) {
+            if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) continue
+            val r = try {
+                w.root
+            } catch (_: Throwable) {
+                null
+            } ?: continue
+            if (r.packageName?.toString() != PKG_WECHAT) continue
+            val b = Rect().also { r.getBoundsInScreen(it) }
+            if (b == main) continue
+            val area = b.width().toLong() * b.height()
+            if (area in (mainArea / 7)..(mainArea * 3 / 5) && b.top > main.height() / 2) return true
+        }
+        return false
+    }
+
+    /**
+     * 诊断（2026-10-16 21:10 重定标）：把微信主窗输入栏区域的所有无障碍节点
+     * 打出来（class/viewId/text/cd/clickable/bounds）。FLAG_SECURE 只剪内容不剪
+     * 节点，发送按钮 bql 已证实在树里——切换钮理应也在，只是 id 未知。这个 dump
+     * 把「最左可点击节点 = 切换钮」从猜测变成事实。
+     */
+    private fun dumpWeChatBarNodes(reason: String) {
+        val root = weChatMainRoot() ?: run {
+            Log.w(TAG, "wxdump[$reason]: no wechat main root")
+            return
+        }
+        val win = weChatWindowBounds()
+        val dm = resources.displayMetrics
+        val imeH = imeWindowHeight()
+        val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
+        val yBase = listOfNotNull(win?.bottom?.toFloat(), dm.heightPixels - imeH)
+            .filter { it > 0f }
+            .minOrNull() ?: dm.heightPixels.toFloat()
+        val rowTop = yBase - barHalf * 2.4f
+        val out = StringBuilder()
+        var count = 0
+        fun walk(n: AccessibilityNodeInfo, depth: Int) {
+            if (depth > 24 || count > 120) return
+            val b = Rect().also { n.getBoundsInScreen(it) }
+            if (b.width() > 0 && b.height() > 0 && b.centerY() >= rowTop && b.centerY() <= yBase + barHalf) {
+                count++
+                out.append("\n  ").append(n.className)
+                    .append(" id=").append(n.viewIdResourceName)
+                    .append(" text=").append(n.text)
+                    .append(" cd=").append(n.contentDescription)
+                    .append(" clk=").append(n.isClickable)
+                    .append(" b=").append(b)
+            }
+            for (i in 0 until n.childCount) {
+                val c = try {
+                    n.getChild(i)
+                } catch (_: Throwable) {
+                    null
+                } ?: continue
+                walk(c, depth + 1)
+            }
+        }
+        walk(root, 0)
+        Log.i(TAG, "wxdump[$reason]: rowTop=${rowTop.toInt()} yBase=${yBase.toInt()} nodes=$count$out")
+    }
+
+    /**
+     * 从树里找语音/键盘切换钮：输入栏行内最左的**小尺寸可点击**节点。
+     * 2026-10-16 之前的盲坐标 (0.078W, 屏底-半栏) 从未被真正验证过——旧「双向
+     * 标定」把「点输入栏外部收起键盘」误当成「切语音态」，整套校准作废。
+     * 树里最左可点击图标即切换钮：文本态它是「切语音」、语音态它是「切键盘」，
+     * 同一按钮两种状态。排除宽节点（>30% 窗宽，输入框/容器）与不可点击节点。
+     * 找不到才回落坐标公式（并打日志说明回落）。
+     */
+    private fun voiceToggleCenterFromTree(): Pair<Float, Float>? {
+        val root = weChatMainRoot() ?: return null
+        val win = weChatWindowBounds()
+        val dm = resources.displayMetrics
+        val imeH = imeWindowHeight()
+        val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
+        val yBase = listOfNotNull(win?.bottom?.toFloat(), dm.heightPixels - imeH)
+            .filter { it > 0f }
+            .minOrNull() ?: dm.heightPixels.toFloat()
+        val rowTop = yBase - barHalf * 2.4f
+        val winW = win?.width()?.toFloat() ?: dm.widthPixels.toFloat()
+        var bestLeft = Float.MAX_VALUE
+        var bestNode: AccessibilityNodeInfo? = null
+        fun walk(n: AccessibilityNodeInfo, depth: Int) {
+            if (depth > 24) return
+            val b = Rect().also { n.getBoundsInScreen(it) }
+            if (b.width() > 0 && b.height() > 0 &&
+                b.centerY() >= rowTop && b.centerY() <= yBase + barHalf &&
+                n.isClickable && b.width() < winW * 0.30f && b.left < bestLeft
+            ) {
+                bestLeft = b.left.toFloat()
+                bestNode = n
+            }
+            for (i in 0 until n.childCount) {
+                val c = try {
+                    n.getChild(i)
+                } catch (_: Throwable) {
+                    null
+                } ?: continue
+                walk(c, depth + 1)
+            }
+        }
+        walk(root, 0)
+        val n = bestNode ?: return null
+        val b = Rect().also { n.getBoundsInScreen(it) }
+        Log.i(TAG, "voiceToggle: tree hit id=${n.viewIdResourceName} class=${n.className} bounds=$b")
+        return b.exactCenterX() to b.exactCenterY()
+    }
+
     private fun tapWeChatVoiceToggle(): Boolean {
+        // 优先树节点（2026-10-16 21:10）：切换钮在无障碍树里（FLAG_SECURE 不剪
+        // 节点），点真实 bounds 中心；找不到才回落比例坐标——旧坐标从未验证准过。
+        val hit = voiceToggleCenterFromTree()
         val dm = resources.displayMetrics
         val b = weChatWindowBounds()
         val left = b?.left?.toFloat() ?: 0f
@@ -1974,13 +2144,13 @@ open class ChatCaptureService : AccessibilityService() {
         val yBase = listOfNotNull(b?.bottom?.toFloat(), dm.heightPixels.toFloat())
             .filter { it > 0f }
             .minOrNull() ?: dm.heightPixels.toFloat()
-        val x = left + width * WX_VOICE_TOGGLE_X_RATIO
-        val y = yBase - barHalf
+        val x = hit?.first ?: (left + width * WX_VOICE_TOGGLE_X_RATIO)
+        val y = hit?.second ?: (yBase - barHalf)
         val path = Path().apply { moveTo(x, y) }
         val gesture = GestureDescription.Builder()
             .addStroke(GestureDescription.StrokeDescription(path, 0, 60L))
             .build()
-        Log.i(TAG, "tapWeChatVoiceToggle: tap at (${x.toInt()},${y.toInt()}) ratio=$WX_VOICE_TOGGLE_X_RATIO")
+        Log.i(TAG, "tapWeChatVoiceToggle: tap at (${x.toInt()},${y.toInt()}) source=${if (hit != null) "tree" else "coord-fallback"} ratio=$WX_VOICE_TOGGLE_X_RATIO")
         return dispatchGesture(gesture, null, null)
     }
 
@@ -2546,8 +2716,9 @@ open class ChatCaptureService : AccessibilityService() {
                         //     只有这种才点语音/键盘切换钮切回文本态（微信内部 UI 操作，不碰「不替用户切输入法」铁律）。
                         //  ② 探针没被设为当前输入法：系统键盘起着（只是不是探针）→ 有 IME 窗口，
                         //     该走「提示切换」路，绝不能点切换钮（会把文本误切成语音）。
-                        if (!anyImeWindowPresent()) {
-                            Log.i(TAG, "fillInput: no IME window at all -> WeChat likely voice mode, tap voice/keyboard toggle")
+                        // 语音态切回文本态 + 重试链（2026-10-16 21:10 提取为局部 fun：
+                        // 面板关闭是异步的，600ms 后才执行；同时避开局部函数前向引用）。
+                        fun tapToggleAndRetry() {
                             if (tapWeChatVoiceToggle()) {
                                 main.postDelayed({
                                     if (ProbeImeBus.imeActive && anyImeWindowPresent()) {
@@ -2569,6 +2740,26 @@ open class ChatCaptureService : AccessibilityService() {
                                 }, 900L)
                             } else {
                                 Log.w(TAG, "fillInput: voice toggle gesture dispatch failed -> clipboard only")
+                            }
+                        }
+                        if (!anyImeWindowPresent()) {
+                            Log.i(TAG, "fillInput: no IME window at all -> WeChat likely voice mode, tap voice/keyboard toggle")
+                            // 重定标仪表（2026-10-16 21:10）：FLAG_SECURE 下唯一能"看"到输入栏的
+                            // 通道就是无障碍节点本身——窗口清单 + 栏内节点 dump，既服务本次真切换钮
+                            // 标定，也让 tapWeChatVoiceToggle 的树查找有据可依。
+                            logWeChatWindows("voice-branch")
+                            dumpWeChatBarNodes("voice-branch")
+                            if (weChatPanelOpen()) {
+                                // 面板（表情/更多/语音）开着时栏位被面板按钮占据，先 BACK 关掉
+                                // 再点切换钮——19:24 盲点曾误开「+」8 按钮面板（用户实测）。
+                                Log.w(TAG, "fillInput: wechat panel open -> BACK close, toggle after 600ms")
+                                performGlobalAction(GLOBAL_ACTION_BACK)
+                                main.postDelayed({
+                                    dumpWeChatBarNodes("voice-branch-postback")
+                                    tapToggleAndRetry()
+                                }, 600L)
+                            } else {
+                                tapToggleAndRetry()
                             }
                         } else {
                             Log.i(TAG, "fillInput: probe IME still not active after tap -> clipboard only this round")
