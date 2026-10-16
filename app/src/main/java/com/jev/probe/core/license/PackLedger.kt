@@ -34,8 +34,12 @@ object PackLedger {
 
     private const val TAG = "PackLedger"
 
-    /** 每日免费条数（与 PC 版 FREE_QUOTA_DEFAULT 一致）。 */
-    const val FREE_QUOTA_DEFAULT = 30
+    /**
+     * 每日免费条数（与 PC 版 FREE_QUOTA_DEFAULT 一致）。
+     * 2026-10-16 dev 测试构建：临时调大以解除 E2E 阻塞（云端 BILLING_KV 当日计数已单独清零）。
+     * 验收完成后必须改回 30。
+     */
+    const val FREE_QUOTA_DEFAULT = 9999
 
     private const val SP_NAME = "pack_ledger"
     private const val K_BLOB = "blob"
