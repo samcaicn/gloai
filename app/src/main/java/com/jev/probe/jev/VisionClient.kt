@@ -2,7 +2,6 @@ package com.jev.probe.jev
 
 import android.graphics.Bitmap
 import android.util.Base64
-import com.jev.probe.core.BillingState
 import com.jev.probe.core.Prefs
 import java.io.ByteArrayOutputStream
 import org.json.JSONArray
@@ -54,14 +53,11 @@ class VisionClient(private val prefs: Prefs) {
             .put("messages", messages)
             .put("temperature", 0.0)
         // 自定义视觉接口（用户自配 base url）优先于 worker 模式：不走云端、不计量
-        val useWorker = prefs.isWorkerMode && !prefs.isVisionCustom()
-        val billing = if (useWorker) BillingState() else null
         val auth = prefs.effectiveVisionKey()
         val resp = HttpJson.post(
             url, "", body, Route.VISION, HttpJson.headersFor(url),
-            authToken = auth, instanceId = prefs.instanceId, billing = billing
+            authToken = auth, instanceId = prefs.instanceId
         )
-        prefs.recordBilling(billing)
         return resp.optJSONArray("choices")?.optJSONObject(0)
             ?.optJSONObject("message")?.optString("content") ?: ""
     }

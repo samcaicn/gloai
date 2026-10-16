@@ -1,7 +1,6 @@
 package com.jev.probe.jev
 
 import com.jev.probe.App
-import com.jev.probe.core.BillingState
 import com.jev.probe.core.Integrity
 import com.jev.probe.core.Prefs
 import org.json.JSONObject
@@ -42,7 +41,7 @@ class ApiException(
  * 所有失败归一化为 [ApiException]。token 与密钥均按调用传入、绝不记录内容。
  *
  * worker 模式下调用方传入 [authToken]（账户令牌）与 [instanceId]，本函数自动带上
- * `Authorization: Bearer` 与 `X-WeAuto-Instance`，并在成功后读取 `X-Billing-*` 响应头
+ * `Authorization: Bearer` 与 `X-WeAuto-Instance`，并在成功后把 `X-Quota-*` 响应头
  * 填入 [billing]，供上层刷新本地额度展示。
  */
 object HttpJson {
@@ -66,7 +65,6 @@ object HttpJson {
         extraHeaders: Map<String, String> = emptyMap(),
         authToken: String = "",
         instanceId: String = "",
-        billing: BillingState? = null,
         onQuota: ((Int?, Int?) -> Unit)? = null
     ): JSONObject {
         var attempt = 0
@@ -122,7 +120,6 @@ object HttpJson {
                 val text = readBody(conn.inputStream)
                 if (text.isBlank()) throw ApiException(route, code, "响应体为空")
                 // 成功：抓取计费头 + 配额头
-                captureBilling(conn, billing)
                 captureQuota(conn, onQuota)
                 return JSONObject(text)
             } catch (e: InterruptedException) {
@@ -175,15 +172,6 @@ object HttpJson {
         } finally {
             conn?.disconnect()
         }
-    }
-
-    /** 读取 `X-Billing-*` 响应头，写入 [billing]（云端计费权威，客户端只展示）。 */
-    private fun captureBilling(conn: HttpURLConnection, billing: BillingState?) {
-        if (billing == null) return
-        conn.getHeaderField("X-Billing-Tier")?.let { if (it.isNotBlank()) billing.tier = it }
-        conn.getHeaderField("X-Billing-Used")?.toLongOrNull()?.let { billing.used = it }
-        conn.getHeaderField("X-Billing-Quota")?.toLongOrNull()?.let { billing.quota = it }
-        conn.getHeaderField("X-Billing-Remain")?.toLongOrNull()?.let { billing.remain = it }
     }
 
     /**

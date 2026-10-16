@@ -2,7 +2,6 @@ package com.jev.probe.jev
 
 import android.util.Log
 import com.jev.probe.core.Analysis
-import com.jev.probe.core.BillingState
 import com.jev.probe.core.ChatSnapshot
 import com.jev.probe.core.Choice
 import com.jev.probe.core.Prefs
@@ -104,8 +103,7 @@ class JudgeClient(private val prefs: Prefs) {
         // （provider=tuptup 时即云端 worker；自建 provider 用各自配置的地址）。
         val url = prefs.jevDecisionsEndpoint()
         // v1.1 免费模式（对齐 PC 版 jevDecisions）：/ai/jev/decisions 无凭证放行，
-        // 不再带账户令牌鉴权；计费回传保留（Worker 不回带头时只是空转）。
-        val billing = if (prefs.isWorkerMode) BillingState() else null
+        // 不再带账户令牌鉴权。
         val auth = if (prefs.isWorkerMode) "" else prefs.judgeKey
         val body = JSONObject()
             .put("model", prefs.judgeModel)
@@ -113,12 +111,11 @@ class JudgeClient(private val prefs: Prefs) {
             .put("questions", questions)
         val resp = HttpJson.post(
             url, "", body, Route.JUDGE, HttpJson.headersFor(url),
-            authToken = auth, instanceId = prefs.instanceId, billing = billing,
+            authToken = auth, instanceId = prefs.instanceId,
             onQuota = if (prefs.isWorkerMode) { r, l ->
                 PackLedger.syncFromHeaders(prefs.appContext, r, l)
             } else null
         )
-        prefs.recordBilling(billing)
         return resp.optJSONObject("answers") ?: JSONObject()
     }
 

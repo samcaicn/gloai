@@ -24,11 +24,11 @@ import java.util.concurrent.atomic.AtomicBoolean
  *  1. A restore never overwrites what the user already has. Every stage only
  *     fills gaps. That keeps a restore harmless to run twice, and safe if it
  *     lands after the user has already started reconfiguring by hand.
- *  2. The encrypted licence blobs are skipped, not copied. They cannot decrypt
- *     under a new KeyStore, and importing them would produce the worst possible
- *     failure — looking activated while yielding empty credentials. With the old
- *     mid back in place the existing `/license?mid=` polling re-fetches the real
- *     key from the server, which is where it should come from anyway.
+ *  2. The encrypted credential blobs (account token / custom API key) are
+ *     skipped, not copied. They cannot decrypt under a new KeyStore, and
+ *     importing them would produce the worst possible failure — looking
+ *     activated while yielding empty credentials. Quota state lives in
+ *     [PackLedger] (device-local) and re-syncs from cloud response headers.
  */
 object CloudSync {
 
@@ -46,7 +46,6 @@ object CloudSync {
         o.put("v", VERSION)
         o.put("ts", System.currentTimeMillis())
         o.put("device_id", DeviceId.get(app))
-        o.put("license_mid", prefs.licenseMid)
         o.put("prefs", prefs.exportAll())
         try {
             val kb = KbStore.get(app)
@@ -164,9 +163,6 @@ object CloudSync {
 
     /** Applies a snapshot; only fills gaps. Safe to run repeatedly. */
     private fun apply(app: Context, prefs: Prefs, snap: JSONObject): String {
-        // The purchase anchor first — losing it strands a paid licence on the server.
-        prefs.adoptLicenseMid(snap.optString("license_mid", ""))
-
         val prefsObj = snap.optJSONObject("prefs")
         val nPrefs = prefsObj?.let { prefs.importAll(it) } ?: 0
 

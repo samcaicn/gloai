@@ -1,7 +1,6 @@
 package com.jev.probe.jev
 
 import android.util.Log
-import com.jev.probe.core.BillingState
 import com.jev.probe.core.ChatSnapshot
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.kb.ChatContext
@@ -165,7 +164,6 @@ class ReplyClient(private val prefs: Prefs) {
         // 才计费/计免费条数。
         val custom = prefs.isTextCustom()
         val cloud = prefs.isWorkerMode && !custom
-        val billing = if (cloud) BillingState() else null
         val auth = prefs.effectiveReplyKey()
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", system))
@@ -180,11 +178,10 @@ class ReplyClient(private val prefs: Prefs) {
             .put("temperature", temperature)
         val resp = HttpJson.post(
             url, "", body, Route.REPLY, HttpJson.headersFor(url),
-            authToken = auth, instanceId = prefs.instanceId, billing = billing,
+            authToken = auth, instanceId = prefs.instanceId,
             // 云端口径校准：Worker 回带剩余次数/上限，覆盖本地账本计数
             onQuota = if (cloud) { r, l -> PackLedger.syncFromHeaders(prefs.appContext, r, l) } else null
         )
-        prefs.recordBilling(billing)
         return resp.optJSONArray("choices")?.optJSONObject(0)
             ?.optJSONObject("message")?.optString("content") ?: ""
     }

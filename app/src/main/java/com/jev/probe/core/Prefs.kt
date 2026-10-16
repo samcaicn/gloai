@@ -9,13 +9,14 @@ import org.json.JSONObject
 /**
  * App-private config store.
  *
- * v2 起（本文件）：三个 LLM 路由（judge / reply / vision）统一由 WeAuto 云端
- * `weauto.jukuai.net` 提供，**默认即 worker 模式**，设置界面不再暴露 base url / key / model
- * （见 SettingsActivity「账户」卡片）。云端负责鉴权与 token 计费，客户端只持有一个
- * 加密保存的账户令牌（见 [accountToken] / [SecureStore]）。
+ * v1.1 免费模式（本文件现状）：不再有 Creem 卡密 / 云端 token 计费。使用方式三种——
+ *  ① 免费额度：默认，走 WeAuto 云端，每日条数由 [com.jev.probe.core.license.PackLedger]
+ *     本地账本 + 云端 `X-Quota-*` 响应头共同校准；
+ *  ② 自带接口：用户自填 OpenAI 兼容 base_url + key（[textCustom] 系列），直连不过云端；
+ *  ③ 话术包：商家签发的 .wpk 离线授权（reply_quota）。
  *
- * 旧的三方 provider（openrouter / bocha / typesafe / vercel / zen / custom）配置仍保留，
- * 仅作为 legacy 兜底，正常安装不会再走到。
+ * 仍保留一个加密账户令牌（[accountToken]）供 worker 模式 bearer 用；旧的三方 provider
+ * （openrouter / bocha / typesafe / vercel / zen / custom）配置仍保留，仅作 legacy 兜底。
  */
 class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
@@ -258,66 +259,8 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = SecureStore.decrypt(appContext, sp.getString(K_ACCOUNT_TOKEN, "") ?: "")
         set(v) = sp.edit().putString(K_ACCOUNT_TOKEN, SecureStore.encrypt(appContext, v.trim())).apply()
 
-    /** 最近一次云端返回的档位 id（basic/standard/pro），仅用于本地展示。 */
-    var billingTier: String
-        get() = sp.getString(K_BILLING_TIER, "") ?: ""
-        set(v) = sp.edit().putString(K_BILLING_TIER, v).apply()
-
-    /** 本月已用 token 数（本地缓存，真实以云端为准）。 */
-    var billingUsed: Long
-        get() = sp.getLong(K_BILLING_USED, 0L)
-        set(v) = sp.edit().putLong(K_BILLING_USED, v).apply()
-
-    /** 本月额度 token 数（本地缓存）。 */
-    var billingQuota: Long
-        get() = sp.getLong(K_BILLING_QUOTA, 0L)
-        set(v) = sp.edit().putLong(K_BILLING_QUOTA, v).apply()
-
-    /**
-     * 购买实例 ID（mid）：首次取值时生成高熵 UUID 并持久化。整个购买闭环
-     * （checkout metadata.mid → webhook 写 lic:<mid> → /license?mid= 轮询）
-     * 都靠它把付款关联到本机，重装前保持不变。
-     */
-    val licenseMid: String
-        get() {
-            val saved = sp.getString(K_LICENSE_MID, null)
-            if (!saved.isNullOrBlank()) return saved
-            val fresh = java.util.UUID.randomUUID().toString().replace("-", "") + instanceId.hashCode().toUInt()
-            sp.edit().putString(K_LICENSE_MID, fresh).apply()
-            return fresh
-        }
-
-    /**
-     * Put back a mid captured from a previous install, so an already-paid licence
-     * stays reachable: the server keys Top-up records to this value, so generating
-     * a fresh one after a reinstall would orphan the purchase forever. No-op once a
-     * mid exists — a reinstall must not silently swap somebody's licence out.
-     */
-    fun adoptLicenseMid(v: String?) {
-        val mid = v?.trim().orEmpty()
-        if (mid.isBlank()) return
-        if (!sp.getString(K_LICENSE_MID, null).isNullOrBlank()) return
-        sp.edit().putString(K_LICENSE_MID, mid).apply()
-        Log.i(TAG, "license mid adopted from backup")
-    }
-
-    /** 购买成功后由 /license?mid= 轮询拿到的卡密（加密存，同 accountToken）。 */
-    var licenseKey: String
-        get() = SecureStore.decrypt(appContext, sp.getString(K_LICENSE_KEY, "") ?: "")
-        set(v) = sp.edit().putString(K_LICENSE_KEY, SecureStore.encrypt(appContext, v.trim())).apply()
-
-    /** 本机已购买的 Creem 档位（normal/premium/lifetime），仅展示用。 */
-    var licenseTier: String
-        get() = sp.getString(K_LICENSE_TIER, "") ?: ""
-        set(v) = sp.edit().putString(K_LICENSE_TIER, v).apply()
-
-    /** 客户端用计费回传刷新本地缓存。 */
-    fun recordBilling(s: BillingState?) {
-        if (s == null) return
-        if (s.tier.isNotBlank()) billingTier = s.tier
-        if (s.quota > 0) billingQuota = s.quota
-        billingUsed = s.used
-    }
+    // 配额与授权由 PackLedger 统一管理（每日免费条数 + 话术包离线回复次数），
+    // 不再有 Creem 卡密 / 云端计费字段。
 
     // -------------------------------------------------------- context (D)
 
@@ -629,7 +572,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
      */
     fun exportAll(): JSONObject = JSONObject().apply {
         for ((k, v) in sp.all) {
-            if (k == K_ACCOUNT_TOKEN || k == K_LICENSE_KEY) continue
+            if (k == K_ACCOUNT_TOKEN) continue
             when (v) {
                 is String -> put(k, v)
                 is Boolean -> put(k, v)
@@ -651,7 +594,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         val e = sp.edit()
         var n = 0
         for (k in obj.keys()) {
-            if (k == K_ACCOUNT_TOKEN || k == K_LICENSE_KEY) continue
+            if (k == K_ACCOUNT_TOKEN) continue
             if (sp.contains(k)) continue
             val v = obj.get(k)
             when (v) {
@@ -702,18 +645,12 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_TEXT_MODEL = "text_model"
         private const val K_TEXT_CUSTOM = "text_custom"
         private const val K_ACCOUNT_TOKEN = "account_token_enc"
-        private const val K_BILLING_TIER = "billing_tier"
-        private const val K_BILLING_USED = "billing_used"
-        private const val K_BILLING_QUOTA = "billing_quota"
-        private const val K_LICENSE_MID = "license_mid"
         private const val K_METRICS = "metrics_enabled"
         private const val K_LAST_MS = "last_analysis_ms"
         private const val K_LAST_OK = "last_analysis_ok"
         private const val K_LAST_ERR = "last_analysis_err"
         private const val K_PENDING_ALERT = "pending_alert"
         private const val K_PENDING_ALERT_KIND = "pending_alert_kind"
-        private const val K_LICENSE_KEY = "license_key_enc"
-        private const val K_LICENSE_TIER = "license_tier"
         private const val K_CTX_ENABLED = "context_enabled"
         private const val K_CTX_COUNT = "context_history_count"
         private const val K_AUTO_SUMMARY = "auto_summary"
@@ -824,14 +761,3 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val DEFAULT_REL = "对方是我的伴侣"
     }
 }
-
-/**
- * Worker 回传的计费快照。客户端不自己算 token，只搬运云端通过
- * `X-Billing-*` 响应头给的数字，用于设置页展示。
- */
-data class BillingState(
-    var tier: String = "",
-    var used: Long = 0L,
-    var quota: Long = 0L,
-    var remain: Long = 0L
-)

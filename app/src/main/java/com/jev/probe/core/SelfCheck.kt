@@ -165,9 +165,6 @@ object SelfCheck {
                 connectTimeout = 6000
                 readTimeout = 6000
                 setRequestProperty("User-Agent", "jev-assistant-android")
-                if (prefs.isWorkerMode && prefs.accountToken.isNotBlank()) {
-                    setRequestProperty("Authorization", "Bearer " + prefs.accountToken)
-                }
                 // L3：探活打的是 Worker（/ai/jev/decisions），必须带完整性头，
                 // 否则 L3 强制校验生效后会 403，自检误报"不可达"。
                 if (url.contains(Prefs.WORKER_HOST, ignoreCase = true)) {

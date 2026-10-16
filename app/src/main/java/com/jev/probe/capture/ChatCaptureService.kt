@@ -177,7 +177,7 @@ open class ChatCaptureService : AccessibilityService() {
         }
     }
 
-    /** 打开设置页；[focusPlan] 时定位到订阅/档位卡片（429 的升级入口走这条路）。 */
+    /** 打开设置页；[focusPlan] 时定位到授权中心卡片（429 时切自带接口的入口走这条路）。 */
     private fun openSettings(focusPlan: Boolean) {
         runCatching {
             startActivity(android.content.Intent()

@@ -29,7 +29,6 @@ import com.jev.probe.core.AutoReply
 import com.jev.probe.core.CloudSync
 import com.jev.probe.core.DeviceId
 import com.jev.probe.core.Lang
-import com.jev.probe.core.LicenseClient
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.SyncClient
 import com.jev.probe.core.scriptpack.PackError
@@ -51,7 +50,7 @@ import kotlin.math.roundToInt
  *  3. 外观      —— 透明度滑块；
  *  3.5 换手机不丢 —— 云端备份（设置 + 购买凭证）；
  *  3.7 话术包   —— 导入商家签发的 .wpk，AI 回复按包内人设/风格生成（见 docs/scriptpack-spec.md）；
- *  4. 订阅      —— 429 时唯一的出路，必须留在设置里；
+ *  4. 授权中心  —— 免费额度 / 自带接口（BYO Key）/ 话术包三种用法，429 时在这里切自带接口；
  *  5. 关于      —— 版本 + 数据清除 + 诊断入口。
  *
  * 被移除的开关不是「删了不管」：凡是从界面上消失但仍影响运行的，都由
@@ -68,10 +67,6 @@ class SettingsActivity : AppCompatActivity() {
     private val main = Handler(Looper.getMainLooper())
     private val worker = Executors.newSingleThreadExecutor()
 
-    /** 订阅卡片的状态行，收银台返回后要就地刷新。 */
-    private lateinit var licStatus: TextView
-    private var pendingTier: String = ""
-
     /** 云端备份卡片的状态行，备份/恢复结束后要就地刷新。 */
     private lateinit var syncStatus: TextView
 
@@ -81,23 +76,6 @@ class SettingsActivity : AppCompatActivity() {
 
     /** 发送延迟输入框：离开页面时兜底落盘（页面上已没有「保存设置」按钮）。 */
     private var pendingDelayEdit: EditText? = null
-
-    /** 收银台在 App 内打开（见 [CheckoutActivity]）；返回后若还没激活就继续后台确认。 */
-    private val checkoutLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { res ->
-        val activated = prefs.licenseKey.isNotBlank() || prefs.accountToken.isNotBlank()
-        if (activated) {
-            licStatus.text = licenseStatusText()
-            if (res.resultCode == android.app.Activity.RESULT_OK) {
-                Toast.makeText(this, t("✓ 激活成功，判断接口已切换到云端",
-                    "✓ Activated — judging has switched to the cloud"), Toast.LENGTH_LONG).show()
-            }
-        } else {
-            // 提前退出收银台（或付款还在银行侧处理）：继续后台确认
-            startLicensePoll(pendingTier, licStatus)
-        }
-    }
 
     private val accent = Color.parseColor("#3A7AFE")
     private val ink = Color.parseColor("#111827")
@@ -139,14 +117,14 @@ class SettingsActivity : AppCompatActivity() {
         buildCloudSyncCard(root)
         buildScriptPackCard(root)
 
-        val licCard = buildLicenseCard(root)
+        val authCard = buildAuthCenterCard(root)
         buildAboutCard(root)
 
         setContentView(scroll)
 
-        // 从「共享额度正忙（429）」的错误卡跳进来时，直接落到订阅卡上。
+        // 从「共享额度正忙（429）」的错误卡跳进来时，直接落到授权中心卡（自带接口入口）。
         if (intent?.getStringExtra("focus") == "plan") {
-            scroll.post { scroll.smoothScrollTo(0, licCard.top - dp(8)) }
+            scroll.post { scroll.smoothScrollTo(0, authCard.top - dp(8)) }
         }
     }
 
@@ -565,32 +543,152 @@ class SettingsActivity : AppCompatActivity() {
         setOnClickListener { onClick() }
     }
 
-    // ---------------------------------------------------------- 4. 订阅
+    // ------------------------------------------------------- 4. 授权中心
 
     /**
-     * 订阅卡保留完整（这是 429 时唯一的出路，浮窗的错误卡会直接跳过来），
-     * 但把三档卡片顶上的解释性长文砍掉——「卖点要说真话」不等于「要写一屏文案」。
+     * 授权中心（取代旧「订阅」卡）。WeAuto 不再售卖卡密，使用方式收敛为三种：
+     *  ① 免费额度 —— 默认模式，每天若干条，走 WeAuto 云端（共享网关，峰期限流 429）；
+     *  ② 自带接口 —— 填自己的 OpenAI 兼容 base_url + key，直连自家模型，不计免费条数；
+     *  ③ 话术包 —— 商家签发的 .wpk（见上方「话术包」卡），离线授权给 N 次回复。
+     * 本卡负责「你现在是什么状态 + 怎么填自带接口」；话术包另起一节管理。
      */
-    private fun buildLicenseCard(root: LinearLayout): LinearLayout {
-        root.addView(section(t("订阅", "Subscription")))
-        val licCard = card()
-        licCard.addView(text(t("判断与回复由 WeAuto 云端提供，繁忙时可能提示 429。",
-            "Judging and replies run on the WeAuto cloud; it may report 429 when busy."), 12f, sub))
-
-        val licStatusView = text(licenseStatusText(), 12.5f, ink, bold = true).apply {
-            setPadding(0, dp(10), 0, dp(2))
+    private fun buildAuthCenterCard(root: LinearLayout): LinearLayout {
+        root.addView(section(t("授权中心", "Authorization")))
+        val authCard = card()
+        val statusView = text(authStatusText(), 12.5f, ink, bold = true).apply {
+            setPadding(0, dp(2), 0, dp(8))
         }
-        licStatus = licStatusView
-        licCard.addView(licStatusView)
-        licCard.addView(quotaBar())
+        authCard.addView(statusView)
 
-        for (tier in LicenseClient.TIERS) {
-            licCard.addView(tierCard(tier) { startCheckout(tier, licStatus) })
+        // 额度 / 授权进度条（授权模式显示话术包剩余，否则显示今日免费条数）
+        authCard.addView(freeQuotaBar())
+
+        // 自带接口开关：开启后判断/回复直连用户网关，不再走云端、不计免费条数
+        authCard.addView(toggleRow(
+            t("使用自带接口（自带 Key / Base URL）",
+              "Use my own endpoint (bring your own key / base URL)"),
+            prefs.isTextCustom()
+        ) { on ->
+            prefs.textCustom = on
+            renderAuthByo(authCard, statusView)
+            statusView.text = authStatusText()
+        })
+        authCard.addView(text(
+            t("开启后判断与回复直连你填的接口，不经过 WeAuto 云端、不计免费条数、不耗 Workers AI 额度。",
+              "When on, judging and replies go straight to your endpoint — not via the WeAuto cloud, not counted against the free quota, no Workers AI usage."),
+            11f, sub).apply { setPadding(0, dp(4), 0, dp(2)) })
+
+        // BYO 录入区：按开关显示 / 隐藏（首次进入若已开启则直接展开）
+        renderAuthByo(authCard, statusView)
+
+        root.addView(authCard)
+        return authCard
+    }
+
+    /** 自带接口录入区：以 tag="byo" 定位旧区并重建（开关切换时就地刷新）。 */
+    private fun renderAuthByo(host: LinearLayout, statusView: TextView) {
+        host.findViewWithTag<View>("byo")?.let { host.removeView(it) }
+        if (!prefs.textCustom) return
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            tag = "byo"
+            setPadding(0, dp(8), 0, 0)
         }
-        licCard.addView(text(t("付款在本应用内完成，确认后自动激活。",
-            "Payment completes inside the app; activation is automatic once confirmed."), 11f, sub))
-        root.addView(licCard)
-        return licCard
+        box.addView(label(t("接口地址（Base URL）", "Base URL")))
+        val baseEdit = edit(prefs.textBaseUrl, "https://your-endpoint/v1").apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+        }
+        baseEdit.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
+            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                prefs.textBaseUrl = s?.toString().orEmpty().trim()
+            }
+        })
+        box.addView(baseEdit)
+
+        box.addView(label(t("API Key（加密保存，不回显）", "API Key (encrypted, not shown)")))
+        val keyEdit = edit(if (prefs.textKey.isNotBlank()) "••••••••" else "", "sk-...").apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        keyEdit.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
+            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val v = s?.toString().orEmpty()
+                if (v != "••••••••") prefs.textKey = v.trim()   // 占位时不回写，避免清空已存 key
+            }
+        })
+        box.addView(keyEdit)
+
+        box.addView(label(t("模型名（留空 = 用默认）", "Model (blank = default)")))
+        val modelEdit = edit(prefs.textModel, "gpt-4o-mini")
+        modelEdit.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
+            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                prefs.textModel = s?.toString().orEmpty().trim()
+            }
+        })
+        box.addView(modelEdit)
+
+        host.addView(box)
+    }
+
+    /** 授权 / 免费额度进度条（数据来自 PackLedger）。 */
+    private fun freeQuotaBar(): View {
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(4) }
+        }
+        val q = PackLedger.checkQuota(this)
+        if (q.licensed) {
+            val lic = PackLedger.offlineLicense(this)
+            box.addView(text(
+                t("话术包授权", "Script-pack licence") + " · ${lic?.remaining ?: 0} / ${q.limit}",
+                12.5f, ink, bold = true))
+            return box
+        }
+        val used = q.limit - q.remaining
+        val pct = (used * 100 / q.limit).toInt().coerceIn(0, 100)
+        box.addView(text(
+            t("今日免费额度", "Today's free quota") + " $used / ${q.limit}（$pct%）"
+                .replace("（", " (").replace("）", ")"),
+            12.5f, ink, bold = true))
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            background = round(dp(4), Color.parseColor("#E5E7EB"))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(8)).apply { topMargin = dp(5) }
+        }
+        bar.addView(View(this).apply {
+            background = round(dp(4), if (pct >= 90) danger else accent)
+            layoutParams = LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.MATCH_PARENT, (pct.coerceAtLeast(2) / 100f))
+        })
+        box.addView(bar)
+        if (pct >= 90) box.addView(text(
+            t("免费额度快用完了，可在上方开启「自带接口」绕开云端限流。",
+              "Free quota almost used — turn on \"Use my own endpoint\" above to bypass the cloud rate limit."),
+            11f, danger).apply { setPadding(0, dp(5), 0, 0) })
+        return box
+    }
+
+    private fun authStatusText(): String {
+        val q = PackLedger.checkQuota(this)
+        return if (q.licensed) {
+            val lic = PackLedger.offlineLicense(this)
+            t("✓ 话术包授权生效，剩余 ${lic?.remaining ?: 0} 次回复",
+              "✓ Script-pack licence active — ${lic?.remaining ?: 0} replies left")
+        } else if (prefs.isTextCustom()) {
+            t("✓ 自带接口已启用，回复直连你填的网关",
+              "✓ Your own endpoint is on — replies go to your gateway")
+        } else {
+            t("免费额度模式：每天 ${q.limit} 条，云端共享网关（峰期限流 429）",
+              "Free-quota mode: ${q.limit} per day on the shared cloud gateway (rate-limited 429 at peak)")
+        }
     }
 
     // ---------------------------------------------------------- 5. 关于
@@ -762,163 +860,6 @@ class SettingsActivity : AppCompatActivity() {
         t("版本", "Version") + " v${pi.versionName}（${pi.longVersionCode}）"
     } catch (e: Exception) {
         t("版本", "Version") + " —"
-    }
-
-    // ------------------------------------------------------------ 订阅卡
-
-    /**
-     * 三档对比卡。卖点必须说真话：免费档走的是**共享**网关，高峰会排队并返回 429；
-     * 付费买的是专属额度，不是「更多功能」。但这句话一行就够，不必写成一段。
-     */
-    private fun tierCard(tier: String, onClick: () -> Unit): View {
-        val current = prefs.licenseTier == tier
-        val (name, pitch) = when (tier) {
-            LicenseClient.TIER_NORMAL -> t("标准版 · 月租", "Standard · monthly") to
-                t("专属额度，不用和免费用户挤", "Dedicated quota — no queueing with free users")
-            LicenseClient.TIER_PREMIUM -> t("高级版 · 月租", "Premium · monthly") to
-                t("更大额度，消息密集时也不卡", "A bigger quota — stays smooth even with heavy messaging")
-            else -> t("终身版 · 一次性", "Lifetime · one-time") to
-                t("一次买断，永久专属额度", "One purchase, dedicated quota forever")
-        }
-        val c = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background = round(dp(12), if (current) Color.parseColor("#EAF1FF") else Color.parseColor("#F7F8FA"))
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(8) }
-        }
-        val head = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-        }
-        head.addView(text(name, 14f, ink, bold = true).apply {
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        })
-        if (current) head.addView(text(t("当前档位", "Current plan"), 11f, accent, bold = true))
-        c.addView(head)
-        c.addView(text(pitch, 12f, sub).apply { setPadding(0, dp(3), 0, dp(8)) })
-        c.addView(pillBtn(if (current) t("续费 / 换档", "Renew / switch") else t("选择这个", "Choose this")) { onClick() })
-        return c
-    }
-
-    private fun pillBtn(label: String, onClick: () -> Unit) = TextView(this).apply {
-        text = label; textSize = 13f; gravity = Gravity.CENTER
-        setTypeface(typeface, Typeface.BOLD); setTextColor(Color.WHITE)
-        background = round(dp(10), accent)
-        setPadding(dp(16), dp(8), dp(16), dp(8))
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        setOnClickListener { onClick() }
-    }
-
-    /** 本月额度进度条（数字来自接口 `X-Billing-*` 响应头）。 */
-    private fun quotaBar(): View {
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(6) }
-        }
-        val q = prefs.billingQuota
-        if (q <= 0L) {
-            box.addView(text(t("额度：跑一次分析后显示", "Quota: shown after the first analysis"), 12f, sub))
-            return box
-        }
-        val used = prefs.billingUsed.coerceIn(0, q)
-        val pct = (used * 100 / q).toInt().coerceIn(0, 100)
-        box.addView(text(t("本月额度", "This month's quota") + " $used / $q（$pct%）".replace("（", " (").replace("）", ")"), 12.5f, ink, bold = true))
-        val bar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            background = round(dp(4), Color.parseColor("#E5E7EB"))
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(8)).apply { topMargin = dp(5) }
-        }
-        bar.addView(View(this).apply {
-            background = round(dp(4), if (pct >= 90) danger else accent)
-            layoutParams = LinearLayout.LayoutParams(
-                0, ViewGroup.LayoutParams.MATCH_PARENT, (pct.coerceAtLeast(2) / 100f))
-        })
-        box.addView(bar)
-        if (pct >= 90) box.addView(text(
-            t("额度快用完了，换个档位就不用和免费用户挤了。",
-              "Quota is almost used up — switch plans to stop queueing with free users."),
-            11f, danger).apply { setPadding(0, dp(5), 0, 0) })
-        return box
-    }
-
-    private fun licenseStatusText(): String = when {
-        prefs.licenseKey.isNotBlank() ->
-            t("✓ 已激活 · ", "✓ Active · ") + tierLabel(prefs.licenseTier) + t(" · 判断已走云端", " · judging via cloud")
-        prefs.accountToken.isNotBlank() -> t("✓ 已有账户令牌 · 判断已走云端", "✓ Account token present · judging via cloud")
-        else -> t("未激活 — 判断走共享网关，高峰期可能提示 429",
-            "Not activated — judging via the shared gateway; may report 429 at peak times")
-    }
-
-    private fun tierLabel(tier: String) = when (tier) {
-        LicenseClient.TIER_NORMAL -> t("标准版月租", "Standard monthly")
-        LicenseClient.TIER_PREMIUM -> t("高级版月租", "Premium monthly")
-        LicenseClient.TIER_LIFETIME -> t("终身版", "Lifetime")
-        else -> if (tier.isBlank()) t("未知档位", "Unknown plan") else tier
-    }
-
-    /**
-     * 打开收银台并开始自动确认：Worker /buy 动态建 checkout（302 到 Creem 的 pay.jukuai.net，
-     * metadata 带本机 mid）→ **在 App 内 [CheckoutActivity] 的 WebView 里付款**（不跳外部浏览器）
-     * → webhook 写 lic:<mid> → 每 3s 轮询 /license?mid= → 拿到卡密即写 accountToken + 切 worker 模式。
-     */
-    private fun startCheckout(tier: String, statusView: TextView) {
-        val url = LicenseClient.buyUrl(prefs, tier)
-        pendingTier = tier
-        try {
-            checkoutLauncher.launch(
-                android.content.Intent(this, CheckoutActivity::class.java)
-                    .putExtra(CheckoutActivity.EXTRA_URL, url)
-                    .putExtra(CheckoutActivity.EXTRA_TIER, tier))
-            statusView.text = t("等待付款确认…（", "Waiting for payment confirmation… (") + tierLabel(tier) + ")"
-        } catch (e: Exception) {
-            // 极端情况（ROM 无 WebView）：退回浏览器，但确认逻辑不变
-            Log.w(TAG, "in-app checkout unavailable: ${e.message}")
-            try {
-                startActivity(android.content.Intent(
-                    android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
-            } catch (e2: Exception) {
-                Toast.makeText(this, t("无法打开收银台：", "Can't open checkout: ") + (e2.message ?: ""), Toast.LENGTH_LONG).show()
-                return
-            }
-            startLicensePoll(tier, statusView)
-        }
-    }
-
-    /** 每 3s 轮询一次卡密（最长 30 分钟），拿到即落盘激活并刷新状态行。 */
-    private fun startLicensePoll(tier: String, statusView: TextView) {
-        statusView.text = t("等待付款确认…（", "Waiting for payment confirmation… (") + tierLabel(tier) + ")"
-        Thread {
-            val deadline = System.currentTimeMillis() + 30 * 60_000L
-            var failures = 0
-            while (System.currentTimeMillis() < deadline && !isFinishing && !isDestroyed) {
-                try {
-                    val key = LicenseClient.poll(prefs)
-                    if (!key.isNullOrBlank()) {
-                        LicenseClient.activate(prefs, key, tier)
-                        Log.i(TAG, "license activated tier=$tier")
-                        main.post {
-                            if (!isFinishing && !isDestroyed) {
-                                statusView.text = licenseStatusText()
-                                Toast.makeText(this, t("✓ 激活成功，判断接口已切换到云端",
-                                    "✓ Activated — judging has switched to the cloud"), Toast.LENGTH_LONG).show()
-                            }
-                        }
-                        return@Thread
-                    }
-                    failures = 0
-                } catch (e: Exception) {
-                    // 单次网络抖动不放弃，连续 40 次失败（约 2 分钟）视为断网，继续等
-                    failures++
-                    Log.w(TAG, "license poll failed x$failures: ${e.message}")
-                }
-                try { Thread.sleep(3000) } catch (_: InterruptedException) { return@Thread }
-            }
-        }.start()
     }
 
     /** Whether our WeChat notification listener is enabled in system settings. */

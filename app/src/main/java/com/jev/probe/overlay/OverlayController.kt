@@ -29,6 +29,7 @@ import com.jev.probe.core.Lang
 import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.RankedReply
+import com.jev.probe.core.license.PackLedger
 import com.jev.probe.core.t
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -868,10 +869,18 @@ class OverlayController(private val ctx: Context) {
         statusLine = null
         val views = ArrayList<View>()
 
-        // 云端额度（P1-4）：数字是接口响应头给的，本地只展示。没额度信息时不占版面。
-        val quota = prefs.billingQuota
-        if (quota > 0) views.add(hint(ctx.t("本月额度 ${prefs.billingUsed} / $quota",
-            "This month's quota ${prefs.billingUsed} / $quota")))
+        // 授权状态（v1.1）：话术包授权优先显示，否则显示今日免费额度（PackLedger 口径，
+        // 已被云端 X-Quota-* 响应头校准）。满额未动时不占版面。
+        val q = PackLedger.checkQuota(ctx)
+        if (q.licensed) {
+            val lic = PackLedger.offlineLicense(ctx)
+            if (lic != null) views.add(hint(ctx.t("话术包授权：剩余 ${lic.remaining} 次",
+                "Script-pack licence: ${lic.remaining} left")))
+        } else if (q.remaining < q.limit) {
+            val used = q.limit - q.remaining
+            views.add(hint(ctx.t("今日免费额度 $used / ${q.limit}",
+                "Today's free quota $used / ${q.limit}")))
+        }
 
         // 合规角标：自动发送开着时必须让用户一眼看见，不能只在设置页里写着。
         if (AutoReply.isOn(ctx)) {
