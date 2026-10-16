@@ -9,8 +9,8 @@ if [ -n "${MU_NODE:-}" ]; then
   exec "$MU_NODE" "$adapter" "$@"
 fi
 case "$(uname -s)" in
-  Darwin) app="$here/../../MacOS/mu" ;;
-  *) app="$here/../../mu-desktop" ;;
+  Darwin) app="$here/../../MacOS/AiBuddy" ;;
+  *) app="$here/../../aibuddy-desktop" ;;
 esac
 ELECTRON_RUN_AS_NODE=1
 export ELECTRON_RUN_AS_NODE
