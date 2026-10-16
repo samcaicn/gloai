@@ -498,6 +498,46 @@ open class ChatCaptureService : AccessibilityService() {
     private var currentSendText: String? = null
     // drainPendingSends 重入保护：同时只驱动一条持久化重发。
     @Volatile private var drainingPending = false
+
+    // ---- 持久化未发队列的「补发驱动」：周期性 tick + 亮屏/解锁触发 ----
+    // 旧逻辑只在两个时机驱动 drainPendingSends：服务 onCreate 后 3s、通知轮跑完。
+    // 后果：锁屏/息屏期间失败的回复躺在队列里没人管，直到 PENDING_TTL_MS(10min)
+    // 到期被判死丢弃——2026-10-17 07:21 / 07:24 / 07:38 三条现场失败全部这样静默
+    // 丢失（台账只有 failed,queue draft for retry，之后既无 sent 也无重发记录）。
+    private val PENDING_TICK_MS = 60_000L
+    @Volatile private var pendingTickScheduled = false
+    private val pendingTick = object : Runnable {
+        override fun run() {
+            if (destroyed || !prefs.enabled) { pendingTickScheduled = false; return }
+            if (SendQueueStore.all().isEmpty()) { pendingTickScheduled = false; return }
+            drainPendingSends()
+            main.postDelayed(this, PENDING_TICK_MS)
+        }
+    }
+    /** 队列里还有货就挂上周期 tick；已在跑或队列空则不动（幂等）。 */
+    private fun schedulePendingTick() {
+        if (pendingTickScheduled || destroyed) return
+        if (SendQueueStore.all().isEmpty()) return
+        pendingTickScheduled = true
+        main.postDelayed(pendingTick, PENDING_TICK_MS)
+    }
+
+    // 亮屏/解锁：设备重新可用时立刻驱动一次补发。探针 IME 只有在屏幕亮着时才可能
+    // 被激活，锁屏期间的重发一律被 drainPendingSends 的 imeActive 门 hold 住；
+    // 没有这个接收器，用户解锁后也要等到下一次通知轮结束才会补发。
+    // ACTION_SCREEN_ON / USER_PRESENT 只能动态注册——manifest 里声明收不到。
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_USER_PRESENT, Intent.ACTION_SCREEN_ON -> {
+                    val n = SendQueueStore.all().size
+                    if (n == 0) return
+                    Log.i(TAG, "screen: ${intent.action} -> drain pending n=$n")
+                    main.post { drainPendingSends(); schedulePendingTick() }
+                }
+            }
+        }
+    }
     // 未发送提醒节流：IME 没激活时别每条通知轮都弹。
     private var lastPendingReminderAt = 0L
     // by lazy：hold 期间 lambda 需 postDelayed 自己（自引用）。直接 val 初始化器里
@@ -760,6 +800,16 @@ open class ChatCaptureService : AccessibilityService() {
         // 持久化未发队列初始化；进程重启后把上次遗留的失败回复重新挂上，会话下次活跃自动补发。
         SendQueueStore.init(this)
         main.postDelayed({ drainPendingSends() }, 3000L)
+        // 亮屏/解锁触发补发 + 队列非空时的周期 tick（见 pendingTick 注释：
+        // 没有这两者，锁屏期间失败的回复会被 TTL 静默判死）。
+        runCatching {
+            registerReceiver(screenReceiver, IntentFilter().apply {
+                addAction(Intent.ACTION_USER_PRESENT)
+                addAction(Intent.ACTION_SCREEN_ON)
+            })
+            Log.i(TAG, "screen receiver registered (USER_PRESENT/SCREEN_ON)")
+        }.onFailure { Log.w(TAG, "screen receiver register failed: ${it.javaClass.simpleName}") }
+        main.postDelayed({ schedulePendingTick() }, 5000L)
         // 硬证据日志：无障碍能力位（AOSP AccessibilityServiceInfo 常量）：
         //   0x01=RETRIEVE_WINDOW_CONTENT  0x20=CAN_PERFORM_GESTURES  0x80=CAN_TAKE_SCREENSHOT
         // 2026-10-16 实测：修前 capabilities=129（1+128）**缺 0x20** → dispatchGesture
@@ -2438,8 +2488,12 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     private fun failAndQueue() {
-        val conv = currentSendConv ?: run {
-            Log.w(TAG, "failAndQueue: no currentSendConv -> drop (cannot persist)")
+        // 空会话名（连空串也算）一律不落盘：重发时要靠 conv 从 NotifIntentStore 取
+        // PendingIntent 重开"那个"会话，没有 conv 就只能填进此刻恰好前台的任意会话——
+        // 把私聊的话发进群里比不回严重得多（notifRoundAnchorless 是同一条原则）。
+        // 2026-10-17 07:21/07:24 两条就是这样带着空 conv 进队列、永远发不出去的。
+        val conv = currentSendConv?.takeIf { it.isNotBlank() } ?: run {
+            Log.w(TAG, "failAndQueue: blank conv -> drop (cannot reopen chat, would risk wrong conversation)")
             return
         }
         appendSendLedger(conv, false, "queue draft for retry")
@@ -2457,6 +2511,8 @@ open class ChatCaptureService : AccessibilityService() {
         }
         SendQueueStore.add(PendingSend(conv, text, tries, existing?.firstAt ?: System.currentTimeMillis()))
         Log.i(TAG, "failAndQueue: queued conv='$conv' tries=$tries text=${text.take(20)}")
+        // 挂上周期补发 tick：不再等下一次通知轮/进程重启才想起队列里还有货。
+        schedulePendingTick()
     }
 
     /**
@@ -3082,6 +3138,7 @@ open class ChatCaptureService : AccessibilityService() {
         notifRoundBusy = false
         notifRoundConv = null
         runCatching { unregisterReceiver(wxMsgReceiver) }
+        runCatching { unregisterReceiver(screenReceiver) }
         runCatching { debugInjectReceiver?.let { unregisterReceiver(it) } }
         debugInjectReceiver = null
         getSharedPreferences(Prefs.PREFS_MAIN, MODE_PRIVATE)
