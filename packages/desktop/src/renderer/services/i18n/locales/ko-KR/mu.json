@@ -76,10 +76,9 @@
     }
   },
   "decisions": {
-    "description": "판정기에 질문하는 각 지점입니다. 별도 모드를 지정하지 않으면 기본 모드를 따릅니다.",
+    "description": "판정기에 질문하는 각 지점입니다.",
     "defaultMode": "기본 모드",
     "defaultModeHelp": "별도 모드가 지정되지 않은 모든 판정 지점에 적용됩니다.",
-    "useDefault": "기본값으로 되돌리기 ({{mode}})",
     "featureOff": "기능 꺼짐: 질문하지 않음",
     "groups": {
       "input": "입력",
@@ -90,7 +89,7 @@
       "team": "협업"
     },
     "otherGroup": "기타",
-    "pageLead": "별도 모드를 지정하지 않으면 기본 모드를 따릅니다. 기본 모드와 검색은 「{{page}}」에 있습니다.",
+    "pageLead": "기본 모드와 검색은 「{{page}}」에 있습니다.",
     "none": "아직 여기에는 판정 지점이 없습니다."
   },
   "features": {

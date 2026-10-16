@@ -76,10 +76,9 @@
     }
   },
   "decisions": {
-    "description": "Cada ponto em que o juiz é consultado. Um ponto segue o modo padrão, a menos que você lhe dê um modo próprio.",
+    "description": "Cada ponto em que o juiz é consultado.",
     "defaultMode": "Modo padrão",
     "defaultModeHelp": "Para todo ponto de decisão sem um modo próprio.",
-    "useDefault": "Voltar ao padrão ({{mode}})",
     "featureOff": "O recurso está desativado: não é consultado",
     "groups": {
       "input": "Entrada",
@@ -90,7 +89,7 @@
       "team": "Trabalho em equipe"
     },
     "otherGroup": "Outros",
-    "pageLead": "Um ponto segue o modo padrão, a menos que você lhe dê um modo próprio. O modo padrão e a busca ficam em “{{page}}”.",
+    "pageLead": "O modo padrão e a busca ficam em “{{page}}”.",
     "none": "Ainda não há pontos de decisão aqui."
   },
   "features": {

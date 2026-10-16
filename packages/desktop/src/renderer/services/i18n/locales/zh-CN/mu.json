@@ -76,10 +76,9 @@
     }
   },
   "decisions": {
-    "description": "判定器被提问的每一个环节。没有单独指定模式的判定点跟随默认模式。",
+    "description": "判定器被提问的每一个环节。",
     "defaultMode": "默认模式",
     "defaultModeHelp": "没有单独指定模式的判定点都用它。",
-    "useDefault": "改回默认（{{mode}}）",
     "featureOff": "所属功能已关闭，现在不会问这一项。",
     "groups": {
       "input": "输入",
@@ -90,7 +89,7 @@
       "team": "协作"
     },
     "otherGroup": "其他",
-    "pageLead": "没有单独指定模式的判定点跟随默认模式；默认模式和搜索在「{{page}}」页。",
+    "pageLead": "默认模式和搜索在「{{page}}」页。",
     "none": "这里还没有判定点。"
   },
   "features": {

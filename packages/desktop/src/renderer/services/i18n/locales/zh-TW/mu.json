@@ -76,10 +76,9 @@
     }
   },
   "decisions": {
-    "description": "判定器被提問的每一個環節。除非你為它單獨指定，否則每個判定點都跟隨預設模式。",
+    "description": "判定器被提問的每一個環節。",
     "defaultMode": "預設模式",
     "defaultModeHelp": "沒有單獨指定模式的判定點都用它。",
-    "useDefault": "改回預設（{{mode}}）",
     "featureOff": "所屬功能已關閉，現在不會問這一項。",
     "groups": {
       "input": "輸入",
@@ -90,7 +89,7 @@
       "team": "協作"
     },
     "otherGroup": "其他",
-    "pageLead": "沒有單獨指定模式的判定點跟隨預設模式；預設模式和搜尋在「{{page}}」頁。",
+    "pageLead": "預設模式和搜尋在「{{page}}」頁。",
     "none": "這裡還沒有判定點。"
   },
   "features": {

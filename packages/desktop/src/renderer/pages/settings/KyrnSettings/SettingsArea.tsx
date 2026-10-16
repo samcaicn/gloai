@@ -71,8 +71,6 @@ function Area({ section: routed, page, feature, part, onView, mu }: SettingsArea
   if (base && draft) {
     const { settings } = draft;
     const { section } = view;
-    const onKey = (variable: string, value: string) =>
-      mu.edit((now) => ({ ...now, judgeKeys: { ...now.judgeKeys, [variable]: value } }));
     if (section === 'providers')
       content = <ProvidersSection draft={draft} base={base} available={mu.available} onDraft={mu.edit} />;
     else if (section === 'defaultModel')

@@ -12,7 +12,7 @@ import {
 import type { KyrnSettings } from '@/common/kyrn/types';
 import { DECISION_PAGES, pageGroupLabelKey, type DecisionPage } from '../../settingsNav';
 import { decisionPageOf, isStrayDecision, matches } from '../draft';
-import { shownMode, useModeLabels } from '../fields/ModeControl';
+import { shownMode, useModeLabels } from '../fields/mode';
 import SectionShell, { GroupTitle } from './SectionShell';
 import styles from './sections.module.css';
 
@@ -50,10 +50,11 @@ function useGroupTitle(manifest: HarnessManifest | undefined): (group: string) =
 type Block = { key: string; title?: string; rows: DecisionInfo[] };
 
 /**
- * The decision points of one page, in plain rows: a name, one sentence and whether it is on. A point without a mode of
- * its own shows the default mode; one with its own mode offers to go back to the default. The first page also holds
- * the default mode and a search over every point, whose results come from all the pages. The context page starts with
- * the compaction settings, so that everything about context is one page.
+ * The decision points of one page, in plain rows: a name, one sentence and — only where there is something to say —
+ * a mode that differs from the default one. Everything here is read: each point is handled per task, and what is
+ * still told is what the file already says, never a control. The first page also holds the default mode and a search
+ * over every point, whose results come from all the pages. The context page starts with the compaction settings, so
+ * that everything about context is one page.
  */
 export default function DecisionsSection({ page, settings, manifest, query, onQuery, lead }: DecisionsSectionProps) {
   const { t, i18n } = useTranslation();
@@ -165,9 +166,13 @@ export default function DecisionsSection({ page, settings, manifest, query, onQu
                       <div className={styles.plainSummary}>{say(decision.summary)}</div>
                       {off ? <div className={styles.plainSummary}>{t('mu.decisions.featureOff')}</div> : null}
                     </div>
-                    <div className={styles.plainControl}>
-                      <span className={styles.plainMode}>{labels[shownMode(own ?? settings.mode)].label}</span>
-                    </div>
+                    {/* A point following the default repeats nothing: the default above already says what every
+                        point without a mode of its own is in. Only a point the file gave a mode of its own is said. */}
+                    {own === undefined ? null : (
+                      <div className={styles.plainControl}>
+                        <span className={styles.plainMode}>{labels[shownMode(own)].label}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

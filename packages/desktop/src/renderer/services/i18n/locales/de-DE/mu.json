@@ -76,10 +76,9 @@
     }
   },
   "decisions": {
-    "description": "Jede Stelle, an der der Judge gefragt wird. Ein Punkt folgt dem Standardmodus, außer du gibst ihm einen eigenen.",
+    "description": "Jede Stelle, an der der Judge gefragt wird.",
     "defaultMode": "Standardmodus",
     "defaultModeHelp": "Für jeden Entscheidungspunkt ohne eigenen Modus.",
-    "useDefault": "Zurück zum Standard ({{mode}})",
     "featureOff": "Funktion ist aus: wird nicht gefragt",
     "groups": {
       "input": "Eingabe",
@@ -90,7 +89,7 @@
       "team": "Teamarbeit"
     },
     "otherGroup": "Sonstiges",
-    "pageLead": "Ein Punkt folgt dem Standardmodus, außer du gibst ihm einen eigenen. Standardmodus und Suche findest du unter „{{page}}“.",
+    "pageLead": "Standardmodus und Suche findest du unter „{{page}}“.",
     "none": "Hier gibt es noch keine Entscheidungspunkte."
   },
   "features": {

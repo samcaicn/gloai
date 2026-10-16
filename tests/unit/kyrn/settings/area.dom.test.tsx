@@ -323,16 +323,16 @@ describe('decision points and features from the manifest', () => {
     expect(within(screen.getByTestId('mu-feature-compaction')).getByText('Beta')).toBeInTheDocument();
   });
   it.each([
-    ['zh-CN', '消息预判', '关闭'],
-    ['ja-JP', 'Message preflight', 'Off'],
-    ['en-US', 'Message preflight', 'Off'],
-  ])('reads the manifest in the language of %s', async (language, title, mode) => {
+    ['zh-CN', '消息预判', '每条消息先判断是什么类型'],
+    ['ja-JP', 'Message preflight', 'Classifies each message'],
+    ['en-US', 'Message preflight', 'Classifies each message'],
+  ])('reads the manifest in the language of %s', async (language, title, summary) => {
     await i18n.changeLanguage(language);
     await open('decisions');
     const row = screen.getByTestId('mu-decision-input.preflight');
     expect(row).toHaveTextContent(title);
-    // The point's state is a plain word in the app's language; here it is off (the default mode is a shadow).
-    expect(within(row).getByText(mode)).toBeInTheDocument();
+    expect(row).toHaveTextContent(summary);
+    // Nothing here reads on or off for a point the file has not given a mode of its own: nothing here picks one.
     expect(within(row).queryByRole('radio')).not.toBeInTheDocument();
   });
   it('names a group the manifest leaves unnamed, and reads a harness text in the exact language it has', async () => {
@@ -423,25 +423,27 @@ describe('decision points and features from the manifest', () => {
     expect(within(mode).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
   });
-  it('shows each point off or on: a stored shadow reads as off', async () => {
+  it('says the mode once at the top, and again only for a point the file gave one of its own', async () => {
     bridge.settings.mockResolvedValue({
       ok: true,
       data: settings({ mode: 'shadow', decisionModes: { 'tool.risk': 'shadow', 'input.preflight': 'active' } }),
     });
     await open('decisions');
-    const risk = screen.getByTestId('mu-decision-tool.risk');
     const byDefault = screen.getByTestId('mu-default-mode');
-    // Each state is a plain word. The harness's third mode is not offered, and is not named anywhere.
-    expect(within(risk).getByText('Off')).toBeInTheDocument();
+    // Said once, as a plain word: a stored shadow has no effect either, so it reads as off.
     expect(within(byDefault).getByText('Off')).toBeInTheDocument();
-    expect(within(screen.getByTestId('mu-decision-input.preflight')).getByText('On')).toBeInTheDocument();
     expect(screen.getByTestId('kyrn-settings')).not.toHaveTextContent(/shadow/i);
-    // A point without a mode of its own shows the default, a shadow, which reads as off too.
-    expect(within(screen.getByTestId('mu-decision-memory.recall')).getByText('Off')).toBeInTheDocument();
+    // A point with a mode of its own says it. The harness's third mode is not offered, and is not named anywhere.
+    expect(within(screen.getByTestId('mu-decision-tool.risk')).getByText('Off')).toBeInTheDocument();
+    expect(within(screen.getByTestId('mu-decision-input.preflight')).getByText('On')).toBeInTheDocument();
+    // A point following the default repeats nothing: twenty rows reading "off" read as twenty things gone wrong.
+    const plain = screen.getByTestId('mu-decision-memory.recall');
+    expect(plain).toHaveTextContent('Lesson recall');
+    expect(within(plain).queryByText('Off')).not.toBeInTheDocument();
     // A label, not a control: each point is handled per task, so there is nothing here to pick or write.
-    expect(within(risk).queryByRole('radio')).not.toBeInTheDocument();
+    expect(within(screen.getByTestId('mu-decision-tool.risk')).queryByRole('radio')).not.toBeInTheDocument();
     expect(within(byDefault).queryByRole('radio')).not.toBeInTheDocument();
-    expect(within(risk).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(screen.getByTestId('mu-decision-tool.risk')).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
   });
 });
@@ -476,11 +478,9 @@ describe('the save bar', () => {
     // The stored mode reads as a plain word; nothing here changes it.
     expect(within(row).getByText('Off')).toBeInTheDocument();
     expect(within(row).queryByRole('radio')).not.toBeInTheDocument();
-    expect(within(row).queryByText(/use the default/i)).not.toBeInTheDocument();
-    // A point without a mode of its own shows the default, a shadow, which reads as off too.
-    expect(within(screen.getByTestId('mu-decision-input.preflight')).getByText('Off')).toBeInTheDocument();
-    expect(screen.queryByTestId('mu-decision-default-input.preflight')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('mu-decision-default-tool.risk')).not.toBeInTheDocument();
+    expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+    // A point that follows the default keeps quiet instead of repeating what is said once above.
+    expect(within(screen.getByTestId('mu-decision-input.preflight')).queryByText('Off')).not.toBeInTheDocument();
     // Nothing on this page is editable, so there is nothing to save or discard.
     expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
   });

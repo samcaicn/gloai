@@ -76,10 +76,9 @@
     }
   },
   "decisions": {
-    "description": "Each point where the judge is asked. A point follows the default mode unless you give it one of its own.",
+    "description": "Each point where the judge is asked.",
     "defaultMode": "Default mode",
     "defaultModeHelp": "For every decision point without a mode of its own.",
-    "useDefault": "Use the default ({{mode}})",
     "featureOff": "Its feature is off, so this point is not asked now.",
     "groups": {
       "input": "Input",
@@ -90,7 +89,7 @@
       "team": "Teamwork"
     },
     "otherGroup": "Other",
-    "pageLead": "A point follows the default mode unless you give it one of its own. The default mode and the search are on {{page}}.",
+    "pageLead": "The default mode and the search are on {{page}}.",
     "none": "No decision points here yet."
   },
   "features": {

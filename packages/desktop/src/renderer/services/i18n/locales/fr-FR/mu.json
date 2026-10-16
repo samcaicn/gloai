@@ -76,10 +76,9 @@
     }
   },
   "decisions": {
-    "description": "Chaque point où le juge est interrogé. Un point suit le mode par défaut, sauf si vous lui en donnez un propre.",
+    "description": "Chaque point où le juge est interrogé.",
     "defaultMode": "Mode par défaut",
     "defaultModeHelp": "Pour chaque point de décision sans mode propre.",
-    "useDefault": "Rétablir par défaut ({{mode}})",
     "featureOff": "Fonction désactivée : non interrogé",
     "groups": {
       "input": "Entrée",
@@ -90,7 +89,7 @@
       "team": "Travail d’équipe"
     },
     "otherGroup": "Autre",
-    "pageLead": "Un point suit le mode par défaut, sauf si vous lui en donnez un propre. Le mode par défaut et la recherche sont sur « {{page}} ».",
+    "pageLead": "Le mode par défaut et la recherche sont sur « {{page}} ».",
     "none": "Aucun point de décision ici pour l’instant."
   },
   "features": {

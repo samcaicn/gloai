@@ -76,10 +76,9 @@
     }
   },
   "decisions": {
-    "description": "Cada punto en el que se consulta al juez. Un punto sigue el modo predeterminado, salvo que le asignes uno propio.",
+    "description": "Cada punto en el que se consulta al juez.",
     "defaultMode": "Modo predeterminado",
     "defaultModeHelp": "Para todos los puntos de decisión sin modo propio.",
-    "useDefault": "Volver al predeterminado ({{mode}})",
     "featureOff": "La función está desactivada: no se consulta",
     "groups": {
       "input": "Entrada",
@@ -90,7 +89,7 @@
       "team": "Trabajo en equipo"
     },
     "otherGroup": "Otros",
-    "pageLead": "Un punto sigue el modo predeterminado, salvo que le asignes uno propio. El modo predeterminado y la búsqueda están en «{{page}}».",
+    "pageLead": "El modo predeterminado y la búsqueda están en «{{page}}».",
     "none": "Aún no hay puntos de decisión aquí."
   },
   "features": {

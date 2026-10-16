@@ -76,10 +76,9 @@
     }
   },
   "decisions": {
-    "description": "Hakeme soru sorulan her nokta. Bir noktaya kendi modunu vermedikçe varsayılan modu izler.",
+    "description": "Hakeme soru sorulan her nokta.",
     "defaultMode": "Varsayılan mod",
     "defaultModeHelp": "Kendi modu olmayan her karar noktası için.",
-    "useDefault": "Varsayılana dön ({{mode}})",
     "featureOff": "Özellik kapalı: soru sorulmaz",
     "groups": {
       "input": "Girdi",
@@ -90,7 +89,7 @@
       "team": "Ekip çalışması"
     },
     "otherGroup": "Diğer",
-    "pageLead": "Bir noktaya kendi modunu vermedikçe varsayılan modu izler. Varsayılan mod ve arama “{{page}}” sayfasında.",
+    "pageLead": "Varsayılan mod ve arama “{{page}}” sayfasında.",
     "none": "Burada henüz karar noktası yok."
   },
   "features": {

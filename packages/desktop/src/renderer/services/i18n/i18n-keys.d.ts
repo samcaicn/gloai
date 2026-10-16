@@ -2363,7 +2363,6 @@ export type I18nKey =
   | 'mu.decisions.none'
   | 'mu.decisions.otherGroup'
   | 'mu.decisions.pageLead'
-  | 'mu.decisions.useDefault'
   | 'mu.defaults.cloudModel'
   | 'mu.defaults.cloudNote'
   | 'mu.defaults.cloudProvider'
