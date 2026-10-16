@@ -251,6 +251,25 @@ object PackLedger {
     }
 
     /**
+     * 重置当日免费计数（设置页「重置今日免费计数」按钮 / adb 广播调试通道）：
+     * - 只清本地当日 count。**云端 KV（free:<utcday>:<inst>）仍是 30 条/天/设备的
+     *   硬墙**——重置本地只是让客户端不再提前拦截，换不来超额云端额度；
+     * - 话术包授权账本（offline license）原样保留，授权次数不受影响；
+     * - 账本被篡改（tampered）时借此修复为一份全新的合法账本（授权信息无法
+     *   从不可信 blob 恢复，需重新导入话术包）。
+     */
+    fun resetDaily(context: Context): Boolean {
+        val cur = read(context)
+        val keep = if (cur.tampered) null else cur.license
+        write(context, today(context), 0, keep)
+        Log.i(
+            TAG,
+            "daily free count reset (tampered=${cur.tampered}, licenseKept=${keep != null})"
+        )
+        return true
+    }
+
+    /**
      * 用云端响应头校准本地计数（对应 PC 版 sync_from_headers）：
      * - 有授权 → 按云端口径覆盖 used（limit = 授权总次数）；
      * - 无授权 → 覆盖当日 count。

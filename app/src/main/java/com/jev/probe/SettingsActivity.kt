@@ -91,6 +91,9 @@ class SettingsActivity : AppCompatActivity() {
     /** 话术包卡片容器：状态变化时清空重画（导入 / 启用 / 删除）。 */
     private var packCardHost: LinearLayout? = null
 
+    /** 授权中心卡容器：重置今日免费计数后就地刷新额度进度条。 */
+    private var authCardRef: LinearLayout? = null
+
     private fun dp(v: Int) = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP, v.toFloat(), resources.displayMetrics).roundToInt()
 
@@ -631,7 +634,8 @@ class SettingsActivity : AppCompatActivity() {
         authCard.addView(statusView)
 
         // 额度 / 授权进度条（授权模式显示话术包剩余，否则显示今日免费条数）
-        authCard.addView(freeQuotaBar())
+        authCardRef = authCard
+        renderQuotaBar(authCard)
 
         // 自带接口开关：开启后判断/回复直连用户网关，不再走云端、不计免费条数
         authCard.addView(toggleRow(
@@ -743,7 +747,40 @@ class SettingsActivity : AppCompatActivity() {
             t("免费额度快用完了，可在上方开启「自带接口」绕开云端限流。",
               "Free quota almost used — turn on \"Use my own endpoint\" above to bypass the cloud rate limit."),
             11f, danger).apply { setPadding(0, dp(5), 0, 0) })
+        // 重置今日免费计数：本地账本手动归零（云端 KV 仍是 30 条/天/设备硬墙，
+        // 重置不突破云端上限）。授权模式不显示——授权按包内总次数走。
+        box.addView(smallBtn(t("重置今日免费计数", "Reset today's free count")) {
+            confirmResetDaily()
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(8) }
+        })
         return box
+    }
+
+    /**
+     * 额度进度条就地刷新：以 tag 定位旧视图移除后插到状态文本之后（索引 1），
+     * 避免重置计数后整页 recreate。授权中心卡重建时由 buildAuthCenterCard 调用。
+     */
+    private fun renderQuotaBar(host: LinearLayout) {
+        host.findViewWithTag<View>(TAG_QUOTA_BAR)?.let { host.removeView(it) }
+        host.addView(freeQuotaBar().apply { tag = TAG_QUOTA_BAR }, 1)
+    }
+
+    /** 重置今日免费计数：二次确认后清本地 count（云端配额不变），就地刷新进度条。 */
+    private fun confirmResetDaily() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(t("重置今日免费计数？", "Reset today's free count?"))
+            .setMessage(t(
+                "只清本机今日计数。云端仍是每天 30 条/设备的硬上限，重置不会突破云端额度。",
+                "Clears this device's local counter only. The cloud still enforces 30/day/device — resetting does not raise the cloud limit."))
+            .setPositiveButton(t("重置", "Reset")) { _, _ ->
+                PackLedger.resetDaily(this)
+                authCardRef?.let { renderQuotaBar(it) }
+            }
+            .setNegativeButton(t("取消", "Cancel"), null)
+            .show()
     }
 
     private fun authStatusText(): String {
@@ -991,5 +1028,8 @@ class SettingsActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "JEVASSIST"
+
+        /** 额度进度条视图 tag：renderQuotaBar 据此定位旧视图并替换。 */
+        private const val TAG_QUOTA_BAR = "quota_bar"
     }
 }

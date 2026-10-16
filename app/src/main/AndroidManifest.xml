@@ -69,6 +69,16 @@
             android:name=".capture.ControlReceiver"
             android:exported="false" />
 
+        <!-- 本地免费计数重置（adb 调试/CI 验收通道，设置页亦有同效按钮）：
+             只清本地当日 count，云端 KV 仍是 30 条/天/设备硬墙。 -->
+        <receiver
+            android:name=".core.license.QuotaResetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.jev.probe.action.RESET_QUOTA" />
+            </intent-filter>
+        </receiver>
+
         <!-- WeChat notification listener: the RECEIVE side of unattended mode. -->
         <service
             android:name=".capture.WxNotificationListener"
