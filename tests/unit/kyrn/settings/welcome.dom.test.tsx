@@ -127,96 +127,18 @@ function at(path: string, element: React.ReactElement) {
 }
 
 describe('a settings section as its own page', () => {
-  it('has no second menu, and one click on a judge choice is saved as the one judge', async () => {
+  it('shows the judge as managed by AiBuddy, with no second menu and nothing to pick', async () => {
     at('/settings/judges', <SettingsArea section='judges' />);
-    fireEvent.click(await screen.findByTestId('mu-judge-choice-jev'));
+    const page = await screen.findByTestId('mu-section-judges');
+    expect(page).toHaveTextContent('Managed by AiBuddy');
+    // No second menu, and no judge to pick: the page is a status line, not a form.
     expect(screen.queryByTestId('mu-nav-judges')).not.toBeInTheDocument();
-    expect(screen.getByTestId('mu-judge-choice-jev')).toHaveAttribute('aria-checked', 'true');
-    // The chosen one asks for its service and that service's key, and only that.
-    expect(within(screen.getByTestId('mu-judge-choice-jev')).getByLabelText('Service')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('TypeSafe API key'), { target: { value: 'jev-key' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalledTimes(1));
-    const saved = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(saved.tiers).toEqual(['jev']);
-    expect(saved.credentials).toEqual([{ name: 'TYPESAFE_API_KEY', value: 'jev-key' }]);
-  });
-
-  it('installs Laya with one click, only after the person agrees to the download, and ends with it running', async () => {
-    const url = 'http://127.0.0.1:47823';
-    const task = {
-      id: 1,
-      action: 'setup',
-      phase: 'running',
-      progress: { file: 'coremltools-8.3.0', index: 0, percent: 0.42, total: 3 },
-    };
-    bridge.localJudgeState.mockResolvedValue({
-      ok: true,
-      data: { support: 'ok', installed: false, running: false, url },
-    });
-    bridge.localJudgeRun.mockResolvedValue({
-      ok: true,
-      data: { support: 'ok', installed: false, running: false, url, task },
-    });
-    at('/settings/judges', <SettingsArea section='judges' />);
-    // Laya's panel is the body of the Laya choice: the choice installs and starts it.
-    fireEvent.click(await screen.findByTestId('mu-judge-choice-local'));
-    const panel = await screen.findByTestId('mu-laya');
-    await waitFor(() => expect(panel).toHaveTextContent('Not installed yet.'));
-    fireEvent.click(within(panel).getByTestId('mu-laya-install'));
-    // Nothing is downloaded before the person says yes, and they are told how much.
-    expect(await screen.findByText(/downloads about 800 MB from PyPI and Hugging Face/)).toBeInTheDocument();
-    expect(bridge.localJudgeRun).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Download and install' }));
-    await waitFor(() => expect(bridge.localJudgeRun).toHaveBeenCalledWith({ action: 'setup', consent: true }));
-    // The raw output is gone: while it works the panel says what it is doing, nothing more.
-    expect(await within(panel).findByTestId('mu-laya-status')).toHaveTextContent('Installing Laya…');
-    // Its state is read while it works; the setup goes on to start it.
-    bridge.localJudgeState.mockResolvedValue({
-      ok: true,
-      data: { support: 'ok', installed: true, running: true, url, task: { ...task, action: 'start', phase: 'done' } },
-    });
-    await waitFor(() => expect(panel).toHaveTextContent('Running on this machine'), { timeout: 3000 });
-    expect(within(panel).getByTestId('mu-laya-stop')).toBeInTheDocument();
-    expect(within(panel).queryByTestId('mu-laya-progress')).not.toBeInTheDocument();
-  });
-
-  it('says why Laya cannot be installed on this machine, and where uv comes from', async () => {
-    const url = 'http://127.0.0.1:47823';
-    bridge.localJudgeState.mockResolvedValue({
-      ok: true,
-      data: { support: 'uv', installed: false, running: false, url },
-    });
-    const { unmount } = at('/settings/judges', <SettingsArea section='judges' />);
-    const panel = await screen.findByTestId('mu-laya');
-    await waitFor(() => expect(panel).toHaveTextContent('Installing needs uv'));
-    expect(within(panel).getByTestId('mu-laya-uv')).toBeInTheDocument();
-    expect(within(panel).queryByTestId('mu-laya-install')).not.toBeInTheDocument();
-    unmount();
-    bridge.localJudgeState.mockResolvedValue({
-      ok: true,
-      data: { support: 'platform', installed: false, running: false, url },
-    });
-    at('/settings/judges', <SettingsArea section='judges' />);
-    fireEvent.click(await screen.findByTestId('mu-judge-choice-local'));
-    const other = await screen.findByTestId('mu-laya');
-    await waitFor(() => expect(other).toHaveTextContent('or a Mac with Apple Silicon'));
-    expect(within(other).queryByRole('button')).not.toBeInTheDocument();
-  });
-
-  it('keeps the order of several judges under the choice, in the open, each judge by its name', async () => {
-    at('/settings/judges', <SettingsArea section='judges' />);
-    // The order is the advanced group: folded for the one judge here, open with its header.
-    fireEvent.click(await screen.findByText('Advanced'));
-    const tiers = await screen.findByTestId('mu-judge-tiers');
-    expect(within(tiers).getByLabelText('Order')).toBeInTheDocument();
-    // Laya, the one judge here, needs nothing in the tiers: the choice above installs and starts it.
-    const laya = within(tiers).getByTestId('mu-judge-tier-0');
-    expect(laya).toHaveTextContent('Tier 1: Local Laya');
-    expect(within(laya).queryByRole('textbox')).not.toBeInTheDocument();
-    expect(within(tiers).queryByTestId('mu-judge-tier-1')).not.toBeInTheDocument();
+    expect(within(page).queryByRole('radiogroup')).not.toBeInTheDocument();
+    expect(within(page).queryByRole('textbox')).not.toBeInTheDocument();
+    expect(within(page).queryByRole('button')).not.toBeInTheDocument();
   });
 });
+
 
 describe('the first-run guide', () => {
   it('shows the AiBuddy cloud as the only way to connect', async () => {

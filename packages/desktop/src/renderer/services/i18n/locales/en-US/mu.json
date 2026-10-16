@@ -108,6 +108,12 @@
     "nextPart": "Next page"
   },
   "judges": {
+    "auto": {
+      "description": "While it works, AiBuddy asks itself many small questions: how to handle this message, whether this step breaks a rule you set. The judge answers them, and the cloud picks the best one for each task on its own. Nothing to choose or combine here.",
+      "title": "Managed by AiBuddy",
+      "status": "Automatic",
+      "footnote": "The judge runs on the AiBuddy cloud, like everything else. It is picked per task: no key to set, no service to pick, no order to arrange."
+    },
     "tiersHelp": "Judges are tried in order. A later one only sees what the earlier ones left uncertain.",
     "order": "Order",
     "orderHelp": "The first one is the judge chosen above.",

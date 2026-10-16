@@ -78,7 +78,8 @@ function Area({ section: routed, page, feature, part, onView, mu }: SettingsArea
     else if (section === 'defaultModel')
       content = <DefaultModelSection draft={draft} base={base} available={mu.available} onDraft={mu.edit} />;
     else if (section === 'judges')
-      content = <JudgesSection draft={draft} base={base} onChange={mu.editSettings} onKey={onKey} />;
+      // No draft: the cloud product manages the judge itself, so the page has nothing to edit.
+      content = <JudgesSection />;
     else if (section === 'decisions' || section === 'context') {
       // The context settings are the top of the decision points' context page: one page for context.
       const shown = section === 'context' ? 'context' : isDecisionPage(view.page) ? view.page : undefined;

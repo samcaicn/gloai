@@ -675,7 +675,7 @@ describe('providers and the default model', () => {
     fireEvent.click(within(xai).getByTestId('mu-account-signin-xai'));
     const failed = await within(xai).findByTestId('mu-login-problem');
     expect(failed).toHaveTextContent('Signing in did not finish. You can try again.');
-    expect(failed).toHaveTextContent('The mu runtime is not online.');
+    expect(failed).toHaveTextContent('The AiBuddy runtime is not online.');
     // A coded reason says all there is: the raw text is not repeated.
     expect(failed).not.toHaveTextContent('runtime offline');
   });
@@ -908,7 +908,7 @@ describe('providers and the default model', () => {
     // On the same page as the model new sessions start with.
     expect(screen.getByTestId('mu-defaults')).toBeInTheDocument();
     const card = screen.getByTestId('mu-board-model');
-    expect(card).toHaveTextContent('None yet: mu asks the first time the board is switched on.');
+    expect(card).toHaveTextContent('None yet: AiBuddy asks the first time the board is switched on.');
     expect(card).toHaveTextContent('Pick a provider first');
     const user = userEvent.setup();
     await user.click(within(card).getByLabelText('Provider'));
@@ -964,7 +964,7 @@ describe('providers and the default model', () => {
     bridge.settings.mockResolvedValue({ ok: true, data: settings({ boardModel: { supported: false, model: '' } }) });
     await open('defaultModel');
     const card = screen.getByTestId('mu-board-model');
-    expect(card).toHaveTextContent('Update mu first.');
+    expect(card).toHaveTextContent('Update AiBuddy first.');
     expect(within(card).queryByRole('radio')).not.toBeInTheDocument();
   });
 
@@ -1158,13 +1158,13 @@ describe('providers and the default model', () => {
       data: settings({
         models: {
           ...base.models,
-          foreign: [{ id: 'google-gemini-cli', name: '', api: '', baseUrl: 'https://g.example.com', modelCount: 0 }],
-          defaults: { provider: 'google-gemini-cli', model: 'gemini-2.5-pro', thinkingLevel: '' },
+          foreign: [{ id: 'xai', name: '', api: '', baseUrl: 'https://g.example.com', modelCount: 0 }],
+          defaults: { provider: 'xai', model: 'grok-4', thinkingLevel: '' },
         },
       }),
     });
     await open('providers');
-    fireEvent.click(screen.getByTestId('mu-provider-item-foreign-google-gemini-cli'));
+    fireEvent.click(screen.getByTestId('mu-provider-item-foreign-xai'));
     fireEvent.click(within(screen.getByTestId('mu-provider-foreign')).getByTestId('mu-provider-more'));
     fireEvent.click(await screen.findByText('Remove provider'));
     await screen.findByText(/this hand-written entry is deleted from models.json/);
@@ -1173,8 +1173,8 @@ describe('providers and the default model', () => {
     fireEvent.click(await screen.findByText('Save'));
     await waitFor(() => expect(bridge.save).toHaveBeenCalled());
     const sent = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(sent.models?.removeEntries).toEqual(['google-gemini-cli']);
-    expect(sent.models?.defaults.provider).toBe('google-gemini-cli');
+    expect(sent.models?.removeEntries).toEqual(['xai']);
+    expect(sent.models?.defaults.provider).toBe('xai');
   });
 
   it('leaves a startup model without a provider alone when a provider without an id is removed', async () => {
@@ -1259,7 +1259,7 @@ describe('the permission modes and the board', () => {
     const { permissions: _permissions, boardModel: _boardModel, ...older } = withModes();
     bridge.settings.mockResolvedValue({ ok: true, data: older as KyrnSettings });
     render(<SettingsArea section='defaultModel' />, { wrapper });
-    expect(await screen.findByTestId('mu-board-model')).toHaveTextContent('Update mu');
+    expect(await screen.findByTestId('mu-board-model')).toHaveTextContent('Update AiBuddy');
     expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
   });
 
@@ -1315,252 +1315,22 @@ describe('the permission modes and the board', () => {
 });
 
 describe('the kernel pages', () => {
-  it('shows the judge choice first, and under it on the same page the order by name and what each judge needs', async () => {
+  it('says the judge is managed by AiBuddy, with nothing to choose or combine', async () => {
     bridge.settings.mockResolvedValue({ ok: true, data: settings({ tiers: ['jev', 'laya'] }) });
     render(<SettingsArea section='judges' />, { wrapper });
-    const tiers = await screen.findByTestId('mu-section-judges');
-    // The three choices, Jev, Laya and CLM, and no second way to pick a judge.
-    const choice = within(tiers).getByTestId('mu-judge-choice-jev');
-    expect(within(tiers).getByTestId('mu-judge-choice-local')).toBeInTheDocument();
-    expect(within(tiers).getByTestId('mu-judge-choice-clm')).toBeInTheDocument();
-    // The judge tiers are a group of this page, under the choice.
-    const order = within(tiers).getByTestId('mu-judge-tiers');
-    expect(choice.compareDocumentPosition(order) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(order).getByRole('heading', { name: enMu.sections.judgeTiers })).toBeInTheDocument();
-    expect(order).toHaveTextContent(enMu.judges.orderHelp);
-    // The order says the judges' names, never the profiles' ids.
-    const tags = [...order.querySelectorAll('.arco-tag')].map((tag) => tag.textContent);
-    expect(tags).toEqual([enMu.judges.choices.jev.title, enMu.judges.choices.local.title]);
-    expect(order).not.toHaveTextContent(/\bjev\b|\blaya\b/);
-    // Jev, first: its service and its model. Its key is asked for in the choice above, which chose it.
-    const jev = within(tiers).getByTestId('mu-judge-tier-0');
-    expect(jev).toHaveTextContent(`Tier 1: ${enMu.judges.choices.jev.title}`);
-    expect(within(jev).getByLabelText(enMu.judges.service)).toBeInTheDocument();
-    expect(within(jev).getByLabelText(enMu.judges.model)).toHaveValue('jev-latest');
-    expect(within(jev).queryByLabelText(enMu.judges.services.auto.key)).not.toBeInTheDocument();
-    expect(within(choice).getByLabelText(enMu.judges.services.auto.key)).toBeInTheDocument();
-    // Laya: its name and nothing to fill in.
-    const laya = within(tiers).getByTestId('mu-judge-tier-1');
-    expect(laya).toHaveTextContent(`Tier 2: ${enMu.judges.choices.local.title}`);
-    expect(within(laya).queryByRole('textbox')).not.toBeInTheDocument();
-    // No variable names, endpoints or timeouts: none of it is a person's decision.
-    expect(tiers).not.toHaveTextContent(/TYPESAFE_API_KEY|AI_GATEWAY_API_KEY|MU_JUDGE_|provider\/model-id/);
-    expect(within(tiers).queryByLabelText('Timeout')).not.toBeInTheDocument();
-    // Nothing is folded away.
-    expect(within(tiers).queryByText(/Advanced/)).not.toBeInTheDocument();
-    expect(within(tiers).queryByRole('button', { expanded: false })).not.toBeInTheDocument();
+    const page = await screen.findByTestId('mu-section-judges');
+    // One status line: the cloud picks the judge for each task on its own.
+    const auto = within(page).getByTestId('mu-judges-auto');
+    expect(auto).toHaveTextContent(enMu.judges.auto.title);
+    expect(auto).toHaveTextContent(enMu.judges.auto.footnote);
+    // No judge to pick, no service, no key, no order: none of it is a person's decision any more.
+    expect(within(page).queryByTestId('mu-judge-tiers')).not.toBeInTheDocument();
+    expect(within(page).queryByRole('radiogroup')).not.toBeInTheDocument();
+    expect(within(page).queryByRole('textbox')).not.toBeInTheDocument();
+    expect(within(page).queryByRole('button')).not.toBeInTheDocument();
+    expect(page).not.toHaveTextContent(/TYPESAFE_API_KEY|AI_GATEWAY_API_KEY|MU_JUDGE_|OpenRouter|Vercel/);
   });
 
-  it('keeps each of Jev’s services as a profile of its own: picking one puts that profile in the order', async () => {
-    const gateway = {
-      type: 'gateway' as const,
-      model: 'typesafe-ai/jev',
-      baseUrl: '',
-      apiKeyEnv: 'AI_GATEWAY_API_KEY',
-      timeoutMs: 10000,
-    };
-    bridge.settings.mockResolvedValue({
-      ok: true,
-      data: settings({ judges: { ...settings().judges, 'jev-gateway': gateway } }),
-    });
-    render(<SettingsArea section='judges' />, { wrapper });
-    const jev = await screen.findByTestId('mu-judge-tier-0');
-    fireEvent.click(within(jev).getByLabelText(enMu.judges.service));
-    fireEvent.click(await screen.findByText(enMu.judges.services.gateway.name, { selector: '.arco-select-option' }));
-    // The gateway's own model, and still one Jev in the order.
-    await waitFor(() =>
-      expect(within(screen.getByTestId('mu-judge-tier-0')).getByLabelText(enMu.judges.model)).toHaveValue(
-        'typesafe-ai/jev'
-      )
-    );
-    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Judges');
-    fireEvent.click(screen.getByText('Save'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalled());
-    const sent = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(sent.tiers).toEqual(['jev-gateway']);
-  });
-
-  it('shows a base URL only for TypeSafe and a custom service, and accepts a private-network HTTP address', async () => {
-    bridge.settings.mockResolvedValue({ ok: true, data: settings() });
-    render(<SettingsArea section='judges' />, { wrapper });
-    const jev = await screen.findByTestId('mu-judge-tier-0');
-    expect(within(jev).queryByLabelText(enMu.judges.baseUrl)).not.toBeInTheDocument();
-    fireEvent.click(within(jev).getByLabelText(enMu.judges.service));
-    fireEvent.click(await screen.findByText(enMu.judges.services.typesafe.name, { selector: '.arco-select-option' }));
-    const field = await within(screen.getByTestId('mu-judge-tier-0')).findByLabelText(enMu.judges.baseUrl);
-    fireEvent.change(field, { target: { value: 'http://example.com/v1' } });
-    expect(screen.getByTestId('mu-judge-tier-0')).toHaveTextContent(enMu.endpointRule);
-    fireEvent.change(field, { target: { value: 'http://192.168.31.124:8000/v1/systemone' } });
-    expect(screen.getByTestId('mu-judge-tier-0')).not.toHaveTextContent(enMu.endpointRule);
-    fireEvent.click(screen.getByText('Save'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalled());
-    const sent = bridge.save.mock.calls[0][0] as SaveSettings;
-    // TypeSafe's own profile, made for it: the automatic one keeps no address it never had.
-    expect(sent.tiers).toEqual(['jev-direct']);
-    expect(sent.judges['jev-direct']).toMatchObject({
-      type: 'typesafe',
-      baseUrl: 'http://192.168.31.124:8000/v1/systemone',
-    });
-    expect(sent.judges.jev).toEqual(settings().judges.jev);
-  });
-
-  it('asks for the key of a Jev further down the order, which the choice above does not show', async () => {
-    bridge.settings.mockResolvedValue({ ok: true, data: settings({ tiers: ['laya', 'jev'], keys: {} }) });
-    render(<SettingsArea section='judges' />, { wrapper });
-    const jev = await screen.findByTestId('mu-judge-tier-1');
-    fireEvent.change(within(jev).getByLabelText(enMu.judges.services.auto.key), { target: { value: 'jev-key' } });
-    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Judges');
-    // Laya, first, is installed and started from the choice above: one panel for it on the page.
-    expect(within(screen.getByTestId('mu-judge-tier-0')).queryByTestId('mu-laya')).not.toBeInTheDocument();
-    expect(screen.getAllByTestId('mu-laya')).toHaveLength(1);
-  });
-
-  it('reaches Jev through OpenRouter from the choice, with OpenRouter’s own key and nothing typed for another', async () => {
-    const openRouter = {
-      type: 'typesafe' as const,
-      model: '~typesafe/jev-latest',
-      baseUrl: 'https://openrouter.ai/api/v1/systemone',
-      apiKeyEnv: 'MU_JUDGE_OPENROUTER_API_KEY',
-      timeoutMs: 10000,
-    };
-    // As the store sends it: the built-in profile, and the state of its key.
-    bridge.settings.mockResolvedValue({
-      ok: true,
-      data: settings({
-        judges: { ...settings().judges, 'jev-openrouter': openRouter },
-        keys: { TYPESAFE_API_KEY: false, MU_JUDGE_OPENROUTER_API_KEY: false },
-      }),
-    });
-    render(<SettingsArea section='judges' />, { wrapper });
-    const choice = await screen.findByTestId('mu-judge-choice-jev');
-    // Automatic, first: TypeSafe's key. A key typed there stays TypeSafe's.
-    expect(within(choice).getByLabelText(enMu.judges.service)).toBeInTheDocument();
-    expect(choice).toHaveTextContent(enMu.judges.services.auto.help);
-    fireEvent.change(within(choice).getByLabelText(enMu.judges.services.auto.key), {
-      target: { value: 'typesafe-key' },
-    });
-    fireEvent.click(within(choice).getByLabelText(enMu.judges.service));
-    fireEvent.click(await screen.findByText(enMu.judges.services.openrouter.name, { selector: '.arco-select-option' }));
-    const key = await within(screen.getByTestId('mu-judge-choice-jev')).findByLabelText(
-      enMu.judges.services.openrouter.key
-    );
-    expect(key).toHaveValue('');
-    // OpenRouter's address is its own: nothing to type.
-    expect(
-      within(screen.getByTestId('mu-judge-choice-jev')).queryByLabelText(enMu.judges.baseUrl)
-    ).not.toBeInTheDocument();
-    expect(within(screen.getByTestId('mu-judge-tier-0')).getByLabelText(enMu.judges.model)).toHaveValue(
-      '~typesafe/jev-latest'
-    );
-    fireEvent.change(key, { target: { value: 'openrouter-key' } });
-    fireEvent.click(screen.getByText('Save'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalled());
-    const sent = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(sent.tiers).toEqual(['jev-openrouter']);
-    expect(sent.credentials).toEqual([
-      { name: 'TYPESAFE_API_KEY', value: 'typesafe-key' },
-      { name: 'MU_JUDGE_OPENROUTER_API_KEY', value: 'openrouter-key' },
-    ]);
-  });
-
-  it('asks a custom service for its address, and says why it cannot be saved without one', async () => {
-    render(<SettingsArea section='judges' />, { wrapper });
-    const choice = await screen.findByTestId('mu-judge-choice-jev');
-    fireEvent.click(within(choice).getByLabelText(enMu.judges.service));
-    fireEvent.click(await screen.findByText(enMu.judges.services.custom.name, { selector: '.arco-select-option' }));
-    const tile = screen.getByTestId('mu-judge-choice-jev');
-    const address = await within(tile).findByLabelText(enMu.judges.baseUrl);
-    // Empty: the problem, in the choice and on the tier alike.
-    expect(within(tile).getByRole('alert')).toHaveTextContent(enMu.judges.baseUrlNeeded);
-    expect(address).toHaveClass('arco-input-error');
-    expect(screen.getByTestId('mu-judge-tier-0')).toHaveTextContent(enMu.judges.baseUrlNeeded);
-    fireEvent.change(within(tile).getByLabelText(enMu.judges.services.custom.key), { target: { value: 'relay-key' } });
-    // The store refuses it, and the save bar says so in words.
-    bridge.save.mockResolvedValueOnce({
-      ok: false,
-      code: 'judgeEndpoint',
-      params: { name: 'jev-custom' },
-      error: 'Judge jev-custom has no base URL, and its key is not sent to TypeSafe',
-    });
-    fireEvent.click(screen.getByText('Save'));
-    expect(await screen.findByText(`Not saved: ${enMu.errors.judgeEndpoint}`)).toBeInTheDocument();
-    // An address a key must not go to is the other problem; a private-network one is fine.
-    fireEvent.change(address, { target: { value: 'http://relay.example.com/v1/systemone' } });
-    expect(within(tile).getByRole('alert')).toHaveTextContent(enMu.endpointRule);
-    fireEvent.change(address, { target: { value: 'http://192.168.1.20:8000/v1/systemone' } });
-    expect(within(tile).queryByRole('alert')).not.toBeInTheDocument();
-    expect(tile).toHaveTextContent(enMu.judges.customUrlHelp);
-    fireEvent.click(screen.getByText('Save'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalledTimes(2));
-    const sent = bridge.save.mock.calls[1][0] as SaveSettings;
-    expect(sent.tiers).toEqual(['jev-custom']);
-    expect(sent.judges['jev-custom']).toMatchObject({
-      type: 'typesafe',
-      baseUrl: 'http://192.168.1.20:8000/v1/systemone',
-      apiKeyEnv: 'MU_JUDGE_CUSTOM_API_KEY',
-    });
-    expect(sent.credentials).toEqual([{ name: 'MU_JUDGE_CUSTOM_API_KEY', value: 'relay-key' }]);
-  });
-
-  it('asks CLM, chosen, for its server’s address and says how the server is, once, with the address rule', async () => {
-    const clm = {
-      type: 'clm' as const,
-      model: 'clm-latest',
-      baseUrl: '',
-      apiKeyEnv: 'MU_JUDGE_CLM_API_KEY',
-      timeoutMs: 8000,
-    };
-    // As the store sends it: the built-in profile, and the state of its key.
-    bridge.settings.mockResolvedValue({
-      ok: true,
-      data: settings({
-        judges: { ...settings().judges, clm },
-        keys: { TYPESAFE_API_KEY: true, MU_JUDGE_CLM_API_KEY: false },
-      }),
-    });
-    bridge.clmCheck.mockResolvedValue({
-      ok: true,
-      data: { status: 'ready', models: ['clm-latest', 'clm-raw'], mock: false, keyRequired: false, latencyMs: 12 },
-    });
-    render(<SettingsArea section='judges' />, { wrapper });
-    fireEvent.click(await screen.findByTestId('mu-judge-choice-clm'));
-    const tile = screen.getByTestId('mu-judge-choice-clm');
-    expect(tile).toHaveAttribute('aria-checked', 'true');
-    // Empty is clm-serve's own address on this machine, and the server there is asked.
-    const address = within(tile).getByLabelText(enMu.judges.clm.address);
-    expect(address).toHaveValue('');
-    expect(tile).toHaveTextContent('Empty is this computer (http://127.0.0.1:8700).');
-    await waitFor(() =>
-      expect(within(tile).getByTestId('mu-clm-status')).toHaveTextContent('Answering · clm-latest and clm-raw · 12 ms')
-    );
-    expect(bridge.clmCheck).toHaveBeenCalledWith({ baseUrl: '' });
-    expect(tile).toHaveTextContent(enMu.judges.clm.unmeasured);
-    // The tier: CLM by its name, its address and its model. Its key and its server are the choice's, above.
-    const tier = screen.getByTestId('mu-judge-tier-0');
-    expect(tier).toHaveTextContent(`Tier 1: ${enMu.judges.choices.clm.title}`);
-    expect(tier).toHaveTextContent(enMu.judges.types.clmHelp);
-    expect(within(tier).getByLabelText(enMu.judges.model)).toHaveValue('clm-latest');
-    expect(within(tier).queryByLabelText(enMu.judges.clm.key)).not.toBeInTheDocument();
-    expect(screen.getAllByTestId('mu-clm-server')).toHaveLength(1);
-    // A public address over plain HTTP breaks the rule, and is not asked.
-    bridge.clmCheck.mockClear();
-    fireEvent.change(address, { target: { value: 'http://example.com:8700' } });
-    expect(within(tile).getByRole('alert')).toHaveTextContent(enMu.endpointRule);
-    expect(tier).toHaveTextContent(enMu.endpointRule);
-    expect(screen.queryByTestId('mu-clm-server')).not.toBeInTheDocument();
-    // A private-network one is fine, and asked.
-    fireEvent.change(address, { target: { value: 'http://192.168.1.20:8700' } });
-    expect(within(tile).queryByRole('alert')).not.toBeInTheDocument();
-    await waitFor(() => expect(bridge.clmCheck).toHaveBeenCalledWith({ baseUrl: 'http://192.168.1.20:8700' }));
-    expect(bridge.clmCheck).toHaveBeenCalledTimes(1);
-    fireEvent.change(within(tile).getByLabelText(enMu.judges.clm.key), { target: { value: 'clm-key' } });
-    fireEvent.click(screen.getByText('Save'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalled());
-    const sent = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(sent.tiers).toEqual(['clm']);
-    expect(sent.judges.clm).toMatchObject({ type: 'clm', baseUrl: 'http://192.168.1.20:8700' });
-    expect(sent.credentials).toEqual([{ name: 'MU_JUDGE_CLM_API_KEY', value: 'clm-key' }]);
-  });
 
   it('puts the switches that carry the product on the features page, and every other feature on the next', async () => {
     const { unmount } = render(<SettingsArea section='features' />, { wrapper });
@@ -1616,7 +1386,7 @@ describe('one draft across the settings pages', () => {
     return render(
       <MemoryRouter initialEntries={[path]}>
         <nav>
-          <Link to='/settings/judges'>judges</Link>
+          <Link to='/settings/features'>features</Link>
           <Link to='/settings/decisions-tools'>decisions</Link>
           <Link to='/settings/more-features-input'>more features</Link>
           <Link to='/settings/appearance'>appearance</Link>
@@ -1643,27 +1413,30 @@ describe('one draft across the settings pages', () => {
   }
 
   it('keeps an edit made on one page, unsaved, on the next and after a page that is not mu’s', async () => {
-    renderSettings('/settings/judges');
-    fireEvent.click(await screen.findByTestId('mu-judge-choice-local'));
-    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Judges');
+    renderSettings('/settings/features');
+    const swarm = await screen.findByTestId('mu-feature-swarm');
+    const control = within(swarm).getByRole('switch');
+    const before = control.getAttribute('aria-checked');
+    fireEvent.click(control);
+    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Features');
 
     fireEvent.click(screen.getByRole('link', { name: 'decisions' }));
     // Another page, drawn afresh: the draft is the same one.
     expect(await screen.findByTestId('mu-section-decisions-tools')).toBeInTheDocument();
-    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Judges');
+    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Features');
     fireEvent.click(within(screen.getByTestId('mu-decision-tool.risk')).getByText('On'));
-    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Judges and Decision points');
+    expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Decision points and Features');
 
     fireEvent.click(screen.getByRole('link', { name: 'appearance' }));
     expect(await screen.findByTestId('appearance')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('link', { name: 'judges' }));
-    expect(await screen.findByTestId('mu-judge-choice-local')).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByRole('link', { name: 'features' }));
+    expect(within(screen.getByTestId('mu-feature-swarm')).getByRole('switch')).not.toHaveAttribute('aria-checked', before ?? '');
     // Loaded once for all the pages, and saved once for all of them.
     expect(bridge.settings).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(bridge.save).toHaveBeenCalledTimes(1));
     const sent = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(sent.tiers).toEqual(['laya']);
+    expect(sent.features?.swarm?.enabled).toBe(before !== 'true');
     expect(sent.decisionModes).toEqual({ 'tool.risk': 'active' });
   });
 
