@@ -8,7 +8,9 @@
   4. 模板结构：用户列表抽屉 ①②③ 分区、群聊页指引、转发页来源标注
 """
 import json
+import os
 import sys
+import tempfile
 
 sys.path.insert(0, '.')
 
@@ -27,6 +29,12 @@ def check(name, cond, detail=''):
 
 def main():
     import config_editor as ce
+    # 用临时库隔离 chat_history，避免 weauto_chat.db 跨运行累积导致会话合并断言不稳定
+    import chat_history as _ch0
+    _tmp = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
+    _tmp.close()
+    _ch0.DB_PATH = _tmp.name
+    _ch0._conn = None
     ce.app.config['WTF_CSRF_ENABLED'] = False
     c = ce.app.test_client()
 
@@ -226,6 +234,53 @@ def main():
     check('群白名单说明子串匹配', '子串' in h3)
     check('消息中心含搜索框', 'inbox-search' in h3)
     check('esc 含引号转义', "replace(/\"/g, '&quot;')" in h3)
+
+    # ---------- 5. 固定转发：自身回声回环防护 ----------
+    # 双向规则下，本机把消息转发进群；个别微信 4.x 版本把这次发送回显成
+    # msgattr='group'（而非正常的 'self'）→ 回显又命中规则被再次转发 → 无限回环。
+    # 防护：以 (会话, 正文) 精确记录本机刚发出的文本，窗口内回灌的异常回声直接拦截。
+    import forward_hub as fh
+    hub = fh._ForwardHub()
+    hub._rules = {
+        'enabled': True,
+        'rules': [
+            {'enabled': True, 'bidirectional': True,
+             'party_a': [{'name': '群X'}], 'party_b': [{'name': '好友Y'}],
+             'monitor_content': 'all', 'media_mode': 'original',
+             'source_label': True, 'label_format': fh.DEFAULT_LABEL_FORMAT,
+             'replace_alias': False, 'salutation_mode': 'off'},
+        ],
+    }
+    hub._load_rules = lambda force=False: hub._rules  # 注入规则，绕过磁盘读取
+    sent = []
+    hub._send = lambda text, who: sent.append((who, text))
+    hub.robot_name = '机器人'
+
+    class _Msg:
+        def __init__(self, content):
+            self.content = content
+            self.type = 'text'
+
+    # A. 好友Y 的消息 -> 转发到 群X，并记录「刚发给群X 的文本」
+    rA = hub.handle_incoming('好友Y', 'wxid_peer', 'text', 'friend', _Msg('在吗'))
+    check('转发回声 A：好友Y->群X 已转发（返回 True 已消费）',
+          rA is True and any(d == '群X' for d, _ in sent), 'sent=%r' % (sent,))
+    # B. 刚转发到 群X 的文本以 msgattr='group' 异常回声回灌 -> 必须拦截，不再二次转发
+    sent_b_before = list(sent)
+    echo_text = sent_b_before[-1][1]
+    rB = hub.handle_incoming('群X', '机器人', 'text', 'group', _Msg(echo_text))
+    check('转发回声 B：群X 异常回声被回环防护拦截（不再二次转发）',
+          rB is False and sent == sent_b_before, 'sent=%r' % (sent,))
+    # C. 群X 里的真实新消息（非回声）仍正常转发到 好友Y
+    sent.clear()
+    rC = hub.handle_incoming('群X', 'wxid_other', 'text', 'group', _Msg('新消息'))
+    check('转发回声 C：群X 真实新消息仍转发到 好友Y',
+          rC is True and any(d == '好友Y' for d, _ in sent), 'sent=%r' % (sent,))
+    # D. 同源但正文不同的回声不应误拦（窗口内不同文本放行）
+    sent.clear()
+    rD = hub.handle_incoming('群X', '机器人', 'text', 'group', _Msg('另一条不同内容'))
+    check('转发回声 D：窗口内不同正文不误拦（仍转发）',
+          rD is True and any(d == '好友Y' for d, _ in sent), 'sent=%r' % (sent,))
 
     print('\n==== 汇总: %d PASS / %d FAIL ====' % (PASS, FAIL))
     return 0 if FAIL == 0 else 1

@@ -70,6 +70,10 @@ from collections import deque
 HUB_VERSION = "2.3.0"
 MAX_SINGLE_MSG_LEN = 800        # 单次发送最大长度，超出分段
 INFLIGHT_TTL = 5               # 去重窗口（秒）
+ECHO_GUARD_TTL = 6.0            # 回显防护窗口（秒）：本机刚转发到某会话的文本，
+                                # 在该窗口内若以 msgattr!='self' 的形式回灌（个别微信
+                                # 4.x 版本群里回显为 'group'），识别为自身转发回声并拦截，
+                                # 避免「转发→回显→再转发」无限回环。
 DEFAULT_RATE_WINDOW = 10        # 限流窗口（秒）
 DEFAULT_RATE_MAX = 15          # 限流窗口内最大条数
 LOG_DISPLAY_LIMIT = 10          # WebUI 展示的最近流水条数
@@ -481,6 +485,7 @@ class _ForwardHub:
         self._inflight = {}     # hash -> 过期时间戳
         self._buckets = {}      # (src, dst) -> deque(时间戳)
         self._sal_cache = {}    # 称呼处理结果缓存 -> (过期时间戳, 结果)
+        self._recent_sent = {}  # (who, text) -> 过期时间戳：本机刚发出的文本，用于回环防护
 
     # ----- 路径常量（供 WebUI 进程与 bot 进程共享同一组文件）-----
     @property
@@ -708,6 +713,37 @@ class _ForwardHub:
         return sorted(chats)
 
     # ----- 去重 / 限流 -----
+    def _mark_sent(self, who, text):
+        """记录本机刚向 who 发出的文本，供回显防护判定（避免转发回环）。"""
+        if not text:
+            return
+        self._recent_sent[(who, text)] = time.time() + ECHO_GUARD_TTL
+        if len(self._recent_sent) > 500:
+            self._purge_recent_sent()
+
+    def _purge_recent_sent(self):
+        now = time.time()
+        for k in [k for k, v in self._recent_sent.items() if v < now]:
+            self._recent_sent.pop(k, None)
+
+    def _is_our_echo(self, who, content):
+        """判断 incoming 消息是否本机刚转发到 who 的回声（回环风险）。
+
+        仅对 msgattr!='self'/'tickle' 的入站消息调用：正常的自我回显被
+        handle_incoming 提前 return False，不会走到这里；走到这里的自我转发
+        回声几乎都是群里被标成 'group' 的异常版本。以 (会话, 正文) 精确匹配
+        最近发出记录，窗口短（ECHO_GUARD_TTL），误伤真实消息概率极低。
+
+        说明：媒体回声（图片/视频）不能用 (who, 类型) 做哨兵——同一会话 6s 内
+        收到多条同类媒体是常态，会误伤真实消息；而媒体回声又无稳定唯一标识可精确
+        匹配，故媒体回环防护暂不在本层做（已知残留：个别微信版本群里媒体回声
+        msgattr='group' 仍可能回环，属低频且可被限流/去重缓解）。
+        """
+        if not content:
+            return False
+        self._purge_recent_sent()
+        return (who, content) in self._recent_sent
+
     def _is_duplicate(self, source, target, content):
         h = f"F|{source}|{target}|{content}"
         now = time.time()
@@ -945,11 +981,18 @@ class _ForwardHub:
         """
         if msgattr in ('self', 'tickle'):
             return False  # 自己的消息绝不过问（防回环）；拍一拍不转发
+        # 回显防护：本机刚转发到 who 的文本，在窗口内以非 self 形式回灌
+        # （个别微信 4.x 版本群里回声 msgattr='group'），识别为自身转发回声，
+        # 拦截避免「转发→回显→再转发」无限回环。'self'/'tickle' 已在上方放行，
+        # 此处只拦异常回声；正文精确匹配 + 短窗口，几乎不误伤真实消息。
+        is_group = bool(who and '@chatroom' in who) or msgattr == 'group'
+        raw_content = self._normalize(msgtype, msg, is_group, sender)
+        if raw_content and self._is_our_echo(who, raw_content):
+            self._info(f"固定转发：{who} 命中自身转发回声，拦截防回环")
+            return False
         cfg = self._load_rules()
         if not cfg.get('enabled', False):
             return False
-
-        is_group = bool(who and '@chatroom' in who) or msgattr == 'group'
 
         matched = []
         for rule in cfg.get('rules', []):
@@ -969,7 +1012,6 @@ class _ForwardHub:
 
         forwarded_any = False
         ai_reply = False
-        raw_content = self._normalize(msgtype, msg, is_group, sender)
         for rule, kind, dests in matched:
             if self._deliver(rule, who, sender, msgtype, msg, is_group, dests, kind, raw_content):
                 forwarded_any = True
@@ -1108,6 +1150,7 @@ class _ForwardHub:
                 continue
             try:
                 self._send(text, dst)
+                self._mark_sent(dst, text)  # 记录刚发出的文本，供回显防护判定（防回环）
                 self._append_log(self._mk_entry(kind, who, dst, msgtype, content[:40], 'ok'))
                 self._info(f"固定转发：{who} -> {dst} 成功")
             except Exception as e:  # noqa: BLE001
