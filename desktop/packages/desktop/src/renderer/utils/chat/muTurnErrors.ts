@@ -12,8 +12,12 @@
  * a detail line.
  */
 const MU_TURN_ERROR_TEXTS = [
-  // Longer texts first: "mu process exited during the turn" also contains "mu process exited".
+  // Longer texts first: "AiBuddy process exited during the turn" also contains "AiBuddy process exited".
+  // Each entry matches the current wording (AiBuddy, since the brand rename) AND the legacy wording (mu),
+  // because conversations stored before the rename keep the old text and must still get a localised headline.
+  ['processExited', 'AiBuddy process exited during the turn'],
   ['processExited', 'mu process exited during the turn'],
+  ['noModel', 'AiBuddy has no model to answer with'],
   ['noModel', 'mu has no model to answer with'],
   // pi's own words for it, as conversations from before the bridge named it stored them. Before `modelFailed`: a
   // request that failed for want of a key is the same trouble, and has the same way out.
@@ -21,17 +25,26 @@ const MU_TURN_ERROR_TEXTS = [
   ['noModel', 'No models available'],
   ['noModel', 'No model selected'],
   ['modelFailed', 'Model request failed'],
+  ['turnRunning', 'An AiBuddy turn is already running'],
+  ['turnRunning', 'A AiBuddy turn is already running'],
   ['turnRunning', 'A mu turn is already running'],
   ['busyConfig', 'Wait for the current turn before changing configuration'],
   ['unsupportedValue', 'Unsupported configuration value'],
+  ['permissionsNotSwitched', 'AiBuddy did not switch permissions'],
   ['permissionsNotSwitched', 'mu did not switch permissions'],
   ['imageUnsupported', 'Unsupported image format or size'],
+  ['contentUnsupported', 'This AiBuddy adapter accepts text, images and text resources'],
   ['contentUnsupported', 'This mu adapter accepts text, images and text resources'],
   ['wrongProject', 'Session belongs to a different project'],
+  ['notPersisted', 'AiBuddy did not persist the session'],
   ['notPersisted', 'mu did not persist the session'],
+  ['startFailed', 'AiBuddy failed to start'],
   ['startFailed', 'mu failed to start'],
+  ['timeout', 'AiBuddy control command timed out'],
   ['timeout', 'mu control command timed out'],
+  ['processClosed', 'AiBuddy process exited'],
   ['processClosed', 'mu process exited'],
+  ['processClosed', 'AiBuddy process is closed'],
   ['processClosed', 'mu process is closed'],
 ] as const;
 
@@ -55,7 +68,7 @@ export const muTurnErrorKey = (code: MuTurnErrorCode): string => `mu.turnErrors.
 export function noModelDetail(text: string): string {
   return text
     .replace(/^Agent internal error \(code -?\d+\):\s*/, '')
-    .replace(/mu has no model to answer with:?\s*/, '')
+    .replace(/^(?:AiBuddy|mu) has no model to answer with:?\s*/, '')
     .split(/\n\s*\n/)[0]
     .replace(/\s*Use \/login[\s\S]*$/, '')
     .replace(/\s*See:?\s+\S+\.md\S*/g, '')

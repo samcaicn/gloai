@@ -111,7 +111,7 @@ type RpcFactory = (
 export const MU_TURN_ERRORS = {
   processExited: 'AiBuddy process exited during the turn',
   modelFailed: 'Model request failed',
-  turnRunning: 'A AiBuddy turn is already running',
+  turnRunning: 'An AiBuddy turn is already running',
   busyConfig: 'Wait for the current turn before changing configuration',
   unsupportedValue: 'Unsupported configuration value',
   permissionsNotSwitched: 'AiBuddy did not switch permissions',
@@ -120,7 +120,7 @@ export const MU_TURN_ERRORS = {
   wrongProject: 'Session belongs to a different project',
   notPersisted: 'AiBuddy did not persist the session',
   /** pi has no model to answer with, or none it has a key for. pi's own words (with `/login` help) follow as a detail. */
-  noModel: 'mu has no model to answer with',
+  noModel: 'AiBuddy has no model to answer with',
 } as const;
 
 /** pi's words when it cannot run a prompt for want of a model: none at all, none chosen, or none with a key. */

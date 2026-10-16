@@ -305,6 +305,13 @@
         place-items: center;
         flex: 0 0 auto;
         font-size: 13px;
+        overflow: hidden;
+      }
+      .miniavatar.ai {
+        background-image: url('data:image/webp;base64,UklGRm4JAABXRUJQVlA4IGIJAABwKQCdASpgAGAAPj0aikOiIaEVynaYIAPEoAxF442t6L5veO72x6nzl/nftd7Ye3U8yH66erR0gH9T/yXWnegp+rvpo+yn+5npGVjvm79xfrH7T+sFm/61tSDs7/e+bPgTwAvYv+q39UAHV+6uPf7lhvEe829gD9Jehn/2eaH6k9g/9cf+n2Gv3M9nb9km1w42sCpPzBRcK4rwLnagDAU18+FbyAVhjsTQCndJACdZn3vKko3h2RhXQGK3Ap9LSOZG+43zKTdChBLWMuxRqnJN45M9qpP6HyVdYsb/7mZJ3V3Pez61Kc5Om2QwjymBuZ7KzllO+rxlQdXDhHNld4EoZbyJaok9J7ODOzzOmiBemS7PQxN4oenFO3kQ8IDdZsPweb/hWh4685VImntZmA2Hh1Aw0eE/F3SBm/rHnnIWvqemhpmIzyMne75yrcQ4UxlyQO/AAP78eEHAdIge+4d99XeFpmH2SPGDOPCdy9lhWeGCiepfvwSRTT6ux9PJcQc+/fv+pNcLor48/R+kjjoFmfUJThZwzKpljsvceGT+qlxczDMsI4tZSnpOGx0+ktk40jVSz4U53v8utIZJUtgXxCYISrSO22jglNkk1pHZyCZeukZjmNeev2SJcL70Uz+kAsGajtlNXM7jLjwVbzba8W/FyRnYWRzmFqMKkUt2ZuqqOBcJntSkXKTGnKKl2qZ8nAgj+VcNvncofGXkqB8tDWCWJTqvAYnaQyR2c35/lxulce6bex/dLE/JQnJAWGKRILAfjDOU9U1xbEgbsQXVUbqoZscFMmd6YCX2PgF8wnPwi321F/71r7xlXxqcLlRTr50VZfq5d/qxoXA+qeTQy7GfsIMqnReQLQ4xIFriJFhMkAsYg2DqKxy0s/hzlBmpuosfm1X3olkM9sMXA5wzKGZO/ReH3Cx2+bjdj98t2jEqys4oZhUYYd3b3wJ83C7OEvUyeB3G7ONdiTp/Xdpu/h/+/D2LPXfcjDaxuYNadxf96hGElCjuDgKidZW6PdN8HzXi8kGC8IJTSJCWXqLMzonmSRg2+yAi3GhnkSDIjEKlUp+CCvIsvCfIo064n9BHOUJmApcp7ajK8fZ3chr+jXvJsvUpRS7mUZpENMSRO/2mgujHVyrcXE5+kKZ+ALlJJh2ln+2y94YeDAJcMnXPwqvzc1ukL11ssbeGGJJWB9O7qFoaqQPU4tslzSOWLDKv4/hfhtyr+TUVVBlnvo3VZ2bmZpytj8zthS2oHJ/RvqhkRpUDwbF0yaHRgNSakUpwcdE3j6wXSK9Yu3TvkyiRI6a0r7FML6EkTvHCBp7r1uAi8b/9ydNERbOhF/GKXdKCjuDaObM/KHfXAX9D/cDFg/PHnIDiVj4gpo120EumWCwv1Ix+BYrdsHuQLmuHHGTXCt40jxyV5GcM0l/ZAaSHoQDAbYOfDL7lBEW4j9sDD/z4quiYLgeCu+089iPeQ7a84c19k1Bn2kq733+3An05+4328fYymMaK5alB1sWjOJbNYln1xMUUzH0y0Grh4o7mOMjY5Fpk/skJEfutgCwZ9EFfzZbznbB/A63Fx/hWk37h4ryZZVRAfUpz5O84DbLyTHqub6l5aaIwV4Nl1UwK8BBYd50DMZXVYLG5R3HwzcLuQJzvwZuRSSq6jhJIvwWPn1CnL+jfq7fTMPYas8nHdrIYARfWIvLceru4zaf/F2ZTxXux2UHV9VlLSqBPhwOzwrojlx2Z0ip7mkV8UjV/kYPOTyTOC85bjRr/YjFiJLRGmQJbO2E0CvSXsd1OmQmXgMv7WJe7Ss2fM+zFfnqQEeu2htV8AH78Zcdlug+07RpM1sbFmZpERLfGRBi0CytVolafmDQ91UP/zfy+96fguby3bVnTCz9cbQm7sKygy3gRQ62fQJrwg/Ed7KDHC4v27Wz/+pvb4VWt9LCaSwZufVCLlODg1MtU18UN0wqkil8VK7DjiicPClVrHyUQ/X0S9JZ/lx+5LR1YG2E2v2rX+6ntN1EMg4LbuRxZ+H+YMp2Bey6N/3yHBH+R1sfdcHXU+8kSO6jDEJFPWfsSMMEncz91BPD1kxcDwC6pzs+7yjrn1kz+3qYsJSnb7r+SHE1FP4n8c5jY8n4Ueem2h1dYvD/3oCBDQZ/EZPEb//SxP0lNsjbdSytw4LQap8rfAqhssxVJJIkLr/W571fFgyLjaId8dhEFqZSf+BzMpGqzL/+j4LQDvo0OcPl8FMfQlXG/QUDXAQeajTkxN6z5uNJpBOaxId8Bw8vCMV4iAzKp2SUxvOl+u/KKzn4z5r17csBbrlpSwvR9kneRWlb/g9+sWTk3iuwMSIPFrberqbvyu+40Ybg21GSpxVIBjDblHt1NlnJ+R57Z7mzx+FPem/xZC/zNbzm92W5lHWPZ+yAanQBspE0jctw/gbS0qcbhmNPFsHVcXBmXz+oLRS80+Tw8Tu4hAIuMaAczBaczk71P+9dLUKa1bJpXewxnXwumG41wATTZltMktGFSKBOS4OKsP1USBKUUQNgBebpKv+JPmXWjHD2EMJUAiQgo+glDhH7oORtJ3XECaUC4aHq7v4/eWHlYLBkNLwnaELReutS2IlrmAAESo0gGp4Lgac2UQwiXHYLCm1yWC35y/b2bw1cfamKbgjZ6VdZa0tUGdL7s0gy8Ukrw5380dTQ3806AGx6mztj2tdiTbnaGnusTNnqpoBbpp7Wpcg1NQKxrRQDa1mQG8vLlcst/JTVPZ/stCMMec5X/0PIZH46AMS5loUYAA9WkhjExPNODyAVPgnoSQ57AYhV4SoGqmsUYcV9/bJ+wnOcvu2dScYUMTf3JBucuD3Ry1BndOxP+bK/QVfjxJfEd6ebdaXYntaiZdjYeapYbs3lZUUmHcYTvbnzwyz4ezy9XmFfbgmDa0vhZHl4UHFS3GjQNuvLXeRXY5D3d9rqiLltXE4/PjirhUle3uozm5RJ11ld24EOX+0QH91/h61z9kLBGqHDZRtDkSJgK07ncupMRRKrlIasN+w+0NqikwKRQcHrev9AgLv5854+KDahnpHsoX4hhnp3qQKJvdyvWAc/mOrDM/C7wEI8bY4LOQBteN/Zo8GFA4BCg8tQFrAHGTSTn8XeIr1Gwamml3bkqlMRuPRoTLqvB8Ib1bzJ4rL3+FdQeq2aspm7G1bVrnwl2M7kR9R7mhYeLW0GW4wgAAA==');
+        background-size: cover;
+        background-position: center;
+        color: transparent;
       }
       .choices {
         display: flex;
@@ -1187,7 +1194,7 @@
                 <div class="chathead"><b>直播项目 · 需求确认</b><span class="pill">AI 总管</span></div>
                 <div class="messages" id="messages">
                   <div class="msg">
-                    <div class="miniavatar">AI</div>
+                    <div class="miniavatar ai"></div>
                     <div class="bubble">
                       好的，我来帮你完成整场直播。为了让最后生成的内容更准确，我先确认几个关键信息。<br /><br /><b
                         >这场直播主要面向谁？</b
@@ -1509,7 +1516,7 @@
         const box = document.getElementById('messages');
         const row = document.createElement('div');
         row.className = 'msg' + (user ? ' user' : '');
-        row.innerHTML = `<div class="miniavatar">${user ? '我' : 'AI'}</div><div class="bubble">${html ? text : text.replace(/\n/g, '<br>')}</div>`;
+        row.innerHTML = `<div class="miniavatar${user ? '' : ' ai'}">${user ? '我' : ''}</div><div class="bubble">${html ? text : text.replace(/\n/g, '<br>')}</div>`;
         box.appendChild(row);
         box.scrollTop = box.scrollHeight;
       }

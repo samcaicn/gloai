@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import mermaid from 'mermaid';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { muCodeTheme } from './muCodeTheme';
 
@@ -16,6 +15,20 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DiagramZoomOverlay from './DiagramZoomOverlay';
 import { withResponsiveSvg } from './markdownUtils';
+
+// Mermaid (~2.5MB minified) is only needed once a ```mermaid block actually renders.
+// A static import pulled the whole library — plus d3/cytoscape diagram loaders — into the
+// renderer entry chunk that every window pays for on cold start. The dynamic import keeps
+// it in its own chunk, fetched on first render and cached by the module registry after.
+type MermaidInstance = (typeof import('mermaid'))['default'];
+let mermaidModule: MermaidInstance | null = null;
+
+const loadMermaid = async (): Promise<MermaidInstance> => {
+  if (!mermaidModule) {
+    mermaidModule = (await import('mermaid')).default;
+  }
+  return mermaidModule;
+};
 
 type MermaidBlockProps = {
   code: string;
@@ -36,7 +49,7 @@ const MERMAID_ZOOM_STEP = 0.25;
 const PAN_CLICK_THRESHOLD = 4;
 
 let initializedTheme: 'light' | 'dark' | null = null;
-const ensureMermaidInitialized = (theme: 'light' | 'dark') => {
+const ensureMermaidInitialized = (mermaid: MermaidInstance, theme: 'light' | 'dark') => {
   if (initializedTheme === theme) return;
   mermaid.initialize({
     startOnLoad: false,
@@ -173,7 +186,9 @@ function MermaidBlock({ code, style, showOpenInPanelButton = true, enablePanZoom
 
     const renderDiagram = async () => {
       try {
-        ensureMermaidInitialized(currentTheme);
+        const mermaid = await loadMermaid();
+        if (cancelled) return;
+        ensureMermaidInitialized(mermaid, currentTheme);
 
         const { svg: renderedSvg } = await mermaid.render(`${blockIdRef.current}-${Date.now()}`, source);
 

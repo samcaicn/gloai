@@ -29,18 +29,24 @@ import { usePreviewContext } from '../../context/PreviewContext';
 import { previewTabDisplayTitle } from '../../context/tabTitle';
 import { useResizableSplit } from '@/renderer/hooks/ui/useResizableSplit';
 import { Link, Message } from '@arco-design/web-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import DiffPreview from '../viewers/DiffViewer';
-import ExcelPreview from '../viewers/ExcelViewer';
-import HTMLEditor from '../editors/HTMLEditor';
-import HTMLRenderer from '../renderers/HTMLRenderer';
-import ImagePreview from '../viewers/ImageViewer';
-import MarkdownEditor from '../editors/MarkdownEditor';
-import MarkdownPreview from '../viewers/MarkdownViewer';
-import PDFPreview from '../viewers/PDFViewer';
-import OfficeDocPreview from '../viewers/OfficeDocViewer';
-import PptViewer from '../viewers/PptViewer';
-import CodeEditor from '../editors/CodeEditor';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+// Viewers and editors carry the heavy weight of this panel — syntax highlighting
+// (react-syntax-highlighter + lowlight + refractor), KaTeX, CodeMirror with its
+// legacy language modes, PDF/Excel/Office renderers. A static import of all of
+// them pulled ~3MB into the renderer entry chunk that every window pays for on
+// cold start, although the panel renders exactly one of them per open tab. Each
+// is now a lazy chunk fetched when its content type first shows up.
+const DiffPreview = lazy(() => import('../viewers/DiffViewer'));
+const ExcelPreview = lazy(() => import('../viewers/ExcelViewer'));
+const HTMLEditor = lazy(() => import('../editors/HTMLEditor'));
+const HTMLRenderer = lazy(() => import('../renderers/HTMLRenderer'));
+const ImagePreview = lazy(() => import('../viewers/ImageViewer'));
+const MarkdownEditor = lazy(() => import('../editors/MarkdownEditor'));
+const MarkdownPreview = lazy(() => import('../viewers/MarkdownViewer'));
+const PDFPreview = lazy(() => import('../viewers/PDFViewer'));
+const OfficeDocPreview = lazy(() => import('../viewers/OfficeDocViewer'));
+const PptViewer = lazy(() => import('../viewers/PptViewer'));
+const CodeEditor = lazy(() => import('../editors/CodeEditor'));
 import {
   PreviewTabs,
   PreviewToolbar,
@@ -1226,7 +1232,26 @@ const PreviewPanel: React.FC = () => {
         )}
 
         {/* 预览内容 / Preview content */}
-        {renderContent()}
+        {/* Viewers/editors are lazy chunks; show a quiet placeholder while one loads. */}
+        <Suspense
+          fallback={
+            <div className='flex flex-1 items-center justify-center bg-1'>
+              <div
+                aria-hidden='true'
+                className='loading'
+                style={{
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '999px',
+                  border: '2px solid var(--bg-3)',
+                  borderTopColor: 'var(--text-secondary)',
+                }}
+              />
+            </div>
+          }
+        >
+          {renderContent()}
+        </Suspense>
 
         {/* Tab 右键菜单 / Tab context menu */}
         {/* eslint-disable-next-line max-len */}

@@ -26,6 +26,7 @@ import AssistantHomeTabs from './home/AssistantHomeTabs';
 import DeleteAssistantModal from './DeleteAssistantModal';
 import SkillConfirmModals from './SkillConfirmModals';
 import type { AssistantEditorViewModel, AssistantListItem } from './types';
+import { AI_BUDDY_AVATARS } from '@renderer/assets/avatars/builtinAvatars';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -69,8 +70,10 @@ const AssistantSettings: React.FC = () => {
   } = useAssistantList();
   const managedAgentRuntimeCatalog = useManagedAgentRuntimeCatalog();
   const builtinAvatarOptions = useMemo(
-    () =>
-      assistants
+    () => [
+      // AiBuddy 自己的 3D 头像形象（与 WorkBuddy 同形制），排在候选最前。
+      ...AI_BUDDY_AVATARS.map((option) => ({ id: option.id, label: option.label, src: option.src })),
+      ...assistants
         .filter((assistant) => assistant.source === 'builtin' && assistant.avatar?.startsWith('/api/assistants/'))
         .map((assistant) => {
           const src = resolveAvatarImageSrc(assistant.avatar);
@@ -85,6 +88,7 @@ const AssistantSettings: React.FC = () => {
           };
         })
         .filter((option): option is NonNullable<typeof option> => option !== null),
+    ],
     [assistants, localeKey]
   );
   const editor = useAssistantEditor({

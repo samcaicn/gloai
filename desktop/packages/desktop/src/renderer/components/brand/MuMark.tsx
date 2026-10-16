@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import classNames from 'classnames';
 import styles from './Brand.module.css';
 
@@ -12,6 +12,9 @@ export type MuMarkProps = {
 
 const MuMark: React.FC<MuMarkProps> = ({ size = 32, variant = 'tile', halo = false, title, className }) => {
   const tile = variant === 'tile';
+  // Every mark its own gradient: two marks on one page sharing an id would both paint from the
+  // first definition in the document.
+  const gradientId = `aibuddy-mark-tile-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   return (
     <span
       className={classNames(styles.mark, halo && styles.halo, className)}
@@ -29,13 +32,13 @@ const MuMark: React.FC<MuMarkProps> = ({ size = 32, variant = 'tile', halo = fal
         focusable='false'
       >
         <defs>
-          <linearGradient id='aibuddy-mark-tile' x1='0' y1='0' x2='100' y2='100' gradientUnits='userSpaceOnUse'>
+          <linearGradient id={gradientId} x1='0' y1='0' x2='100' y2='100' gradientUnits='userSpaceOnUse'>
             <stop offset='0' stopColor='#5E7CFB' />
             <stop offset='0.5' stopColor='#4D6BFE' />
             <stop offset='1' stopColor='#3C57D4' />
           </linearGradient>
         </defs>
-        {tile && <rect width='100' height='100' rx='27' fill={`url(#aibuddy-mark-tile)`} />}
+        {tile && <rect width='100' height='100' rx='27' fill={`url(#${gradientId})`} />}
         <text
           x='50'
           y='52'

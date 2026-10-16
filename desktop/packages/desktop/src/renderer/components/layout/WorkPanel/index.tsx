@@ -11,7 +11,8 @@ import { useCurrentConversation } from '@/renderer/pages/conversation/explorer/c
 import { useCurrentProject } from '@/renderer/pages/conversation/explorer/currentProjectStore';
 import { ExplorerContainer, type ExplorerView } from '@/renderer/pages/conversation/explorer/ExplorerContainer';
 import { KernelBody, useKyrnActivity, type KernelTab } from '@/renderer/pages/conversation/KyrnPanel';
-import { PreviewPanel, usePreviewContext } from '@/renderer/pages/conversation/Preview';
+import PreviewPanel from '@/renderer/pages/conversation/Preview/components/PreviewPanel/PreviewPanel';
+import { usePreviewContext } from '@/renderer/pages/conversation/Preview';
 import BrowserPanel from '@/renderer/pages/conversation/Preview/browser/BrowserPanel';
 import { setBrowserMaximized, useBrowserMaximized } from '@/renderer/pages/conversation/Preview/browser/browserStore';
 import { panelGeometry } from './panelGeometry';

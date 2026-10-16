@@ -159,6 +159,7 @@ type DurationFormatConstructor = new (
 ) => DurationFormatter;
 
 const durationFormatCache = new Map<string, DurationFormatter | null>();
+const durationListFormatCache = new Map<string, Intl.ListFormat>();
 
 /**
  * `Intl.DurationFormat` (Chromium 129+, Node 23+); TypeScript's lib does not describe it yet. It leaves zero parts
@@ -177,6 +178,21 @@ function getDurationFormat(locale: SupportedLanguage, style: DurationStyle, zero
 }
 
 /**
+ * The list separator `Intl.DurationFormat` would use for this locale and style — the fallback for runtimes without
+ * it (Node below 23). `type: 'unit'` is the duration list pattern of CLDR: ", " in en-US and de-DE, nothing in
+ * zh-CN, and a plain space in the narrow style, exactly as `DurationFormat` words it in the app's Chromium.
+ */
+function getDurationListFormat(locale: SupportedLanguage, style: DurationStyle): Intl.ListFormat {
+  const key = `${locale}|${style}`;
+  let formatter = durationListFormatCache.get(key);
+  if (!formatter) {
+    formatter = new Intl.ListFormat(locale, { type: 'unit', style });
+    durationListFormatCache.set(key, formatter);
+  }
+  return formatter;
+}
+
+/**
  * Format a span of time in the app language: `95_000` → "1 min, 35 sec" (en-US, short), "1分钟35秒" (zh-CN).
  * Whole seconds; zero parts are left out, and anything under a second reads as "0 sec". The narrow style gives
  * "1m 35s".
@@ -192,13 +208,12 @@ export function formatDuration(ms: number, language?: string | null, style: Dura
   if (minutes) parts.minutes = minutes;
   if (seconds || (!hours && !minutes)) parts.seconds = seconds;
   const formatter = getDurationFormat(locale, style, total === 0);
-  if (formatter) return formatter.format(parts);
   const unitDisplay = style === 'long' ? 'long' : style === 'narrow' ? 'narrow' : 'short';
-  return (Object.entries(parts) as Array<[keyof DurationParts, number]>)
-    .map(([unit, value]) =>
-      formatNumber(value, locale, { style: 'unit', unit: unit.slice(0, -1), unitDisplay } as Intl.NumberFormatOptions)
-    )
-    .join(' ');
+  const worded = (Object.entries(parts) as Array<[keyof DurationParts, number]>).map(([unit, value]) =>
+    formatNumber(value, locale, { style: 'unit', unit: unit.slice(0, -1), unitDisplay } as Intl.NumberFormatOptions)
+  );
+  if (formatter) return formatter.format(parts);
+  return getDurationListFormat(locale, style).format(worded);
 }
 
 /**

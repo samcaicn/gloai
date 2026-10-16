@@ -178,14 +178,14 @@ export class PiRpc implements RpcPort {
         this.pending.delete(text(event.id));
         clearTimeout(request.timer);
         if (event.success) request.resolve(asRecord(event.data));
-        else request.reject(new Error(text(event.error) || 'mu RPC command failed'));
+        else request.reject(new Error(text(event.error) || 'AiBuddy RPC command failed'));
       }
       this.emit(event);
     });
-    this.child.on('error', () => this.finish(new Error('mu failed to start')));
+    this.child.on('error', () => this.finish(new Error('AiBuddy failed to start')));
     this.child.on('exit', (code, signal) => {
       this.exited = true;
-      this.finish(new Error('mu process exited'));
+      this.finish(new Error('AiBuddy process exited'));
       if (!this.ending) this.report(code, signal);
     });
   }
@@ -235,7 +235,7 @@ export class PiRpc implements RpcPort {
     }
   }
   send(command: JsonRecord): Promise<JsonRecord> {
-    if (this.closed) return Promise.reject(new Error('mu process is closed'));
+    if (this.closed) return Promise.reject(new Error('AiBuddy process is closed'));
     const id = randomUUID();
     return new Promise((resolve, reject) => {
       // A difficult prompt can run for hours. Only control commands have a deadline (see RpcDeadlines).
@@ -253,7 +253,7 @@ export class PiRpc implements RpcPort {
       const request = this.pending.get(id);
       if (!request) return;
       this.pending.delete(id);
-      request.reject(new Error('mu control command timed out'));
+      request.reject(new Error('AiBuddy control command timed out'));
     }, ms);
   }
   /** mu is up: the control commands that waited for it have the usual deadline from now. */
@@ -282,14 +282,14 @@ export class PiRpc implements RpcPort {
   /** mu cannot be written to any more (it crashed, or is on its way out): its requests fail and it is ended. */
   private broken(): void {
     if (!this.ending) this.unreadable = true;
-    this.finish(new Error('mu process exited'));
+    this.finish(new Error('AiBuddy process exited'));
     this.end();
   }
   close(): void {
     if (this.ending) return;
     this.ending = true;
     this.end();
-    this.finish(new Error('mu session closed'));
+    this.finish(new Error('AiBuddy session closed'));
   }
   /** Ends mu and everything it started, unless it has already exited. */
   private end(): void {

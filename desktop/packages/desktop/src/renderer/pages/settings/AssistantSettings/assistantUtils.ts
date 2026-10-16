@@ -29,6 +29,15 @@ export const isEmoji = (str: string): boolean => {
   return emojiRegex.test(str);
 };
 
+/** Whether a path points at a bundled front-end image asset (any build flavour). A relative path or one served from the
+ * dev bundle (`/src/...`) or static root (`/assets/...`) is bundled; an arbitrary absolute path such as `/Users/x.png`
+ * or `/path/to/x.png` is a local file and must not be treated as a bundled asset. */
+const isBundledImagePath = (value: string): boolean => {
+  if (!/\.(svg|png|jpe?g|webp|gif)(?:[?#].*)?$/i.test(value)) return false;
+  if (!value.startsWith('/')) return true;
+  return /^\/(?:src|assets)\//.test(value);
+};
+
 /**
  * Resolve an avatar string to an image src URL, or undefined if it is not an image.
  */
@@ -37,7 +46,9 @@ export const resolveAvatarImageSrc = (avatar: string | undefined): string | unde
   if (!value) return undefined;
 
   if (isLikelyLocalFilePath(value)) return undefined;
-  if (value.startsWith('/') && !isBackendRelativeAssetPath(value)) return undefined;
+  // Backend-relative assets (`/api/...`, `/assets/...`) and bundled front-end assets
+  // (AiBuddy built-in avatars, which may resolve to `/src/...` in dev) are both image sources.
+  if (value.startsWith('/') && !isBackendRelativeAssetPath(value) && !isBundledImagePath(value)) return undefined;
 
   const resolved = resolveExtensionAssetUrl(value) || value;
   const isImage = /\.(svg|png|jpe?g|webp|gif)$/i.test(resolved) || /^(https?:|file:\/\/|data:|\/)/i.test(resolved);
