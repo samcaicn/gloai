@@ -113,6 +113,7 @@ class SettingsActivity : AppCompatActivity() {
         root.addView(buildLangRow())
 
         buildAutoReplyCard(root)
+        buildNoReplyCard(root)
         buildRelationshipCard(root)
         buildAppearanceCard(root)
         buildCloudSyncCard(root)
@@ -324,8 +325,76 @@ class SettingsActivity : AppCompatActivity() {
      * 关系描述是 AI 判断质量唯一的用户输入，也是这页第二有价值的设置。
      * 原来旁边那句「（给 Jev 判断用）」是实现细节，改成用户能理解的理由。
      */
-    private fun buildRelationshipCard(root: LinearLayout) {
-        root.addView(section(t("我和对方的关系", "My relationship with them")))
+    /**
+     * 不回复名单卡：命中关键词的会话（群/个人）完全不自动回复。
+     * 与「只分析这些会话」白名单互不影响，这里存关键词、子串匹配。
+     * 增删都在本卡内完成：输入框 + 添加按钮，名单行右侧「移除」。
+     */
+    private fun buildNoReplyCard(root: LinearLayout) {
+        root.addView(section(t("不回复名单", "No-reply list")))
+        val c = card()
+        c.addView(text(t(
+            "名单里的群/个人来了消息不分析、不回复。存关键词，匹配会话标题。",
+            "Chats (groups or people) whose title matches a keyword below get no auto replies."
+        ), 12f, sub).apply { setPadding(0, dp(2), 0, dp(6)) })
+
+        val listHost = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        c.addView(listHost)
+        val input = edit("", t("输入群名或对方昵称的关键词", "Keyword from group/person title"))
+
+        fun render() {
+            listHost.removeAllViews()
+            val nl = prefs.noReplyList
+            if (nl.isEmpty()) {
+                listHost.addView(text(t("（空）—— 所有会话都会正常自动回复",
+                    "(empty) — every chat gets normal auto replies"), 12f, sub).apply {
+                    setPadding(0, dp(4), 0, dp(4))
+                })
+            } else {
+                for (kw in nl.sorted()) {
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                        background = round(dp(8), Color.parseColor("#F7F8FA"))
+                        setPadding(dp(10), dp(6), dp(10), dp(6))
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply { topMargin = dp(4) }
+                    }
+                    row.addView(text(kw, 13.5f, ink).apply {
+                        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    })
+                    row.addView(text(t("移除", "Remove"), 12.5f, danger, bold = true).apply {
+                        setPadding(dp(10), dp(4), dp(2), dp(4))
+                        setOnClickListener {
+                            prefs.noReplyList = prefs.noReplyList - kw
+                            render()
+                        }
+                    })
+                    listHost.addView(row)
+                }
+            }
+        }
+        render()
+
+        c.addView(input)
+        c.addView(cardBtn(t("+ 添加到不回复名单", "+ Add to no-reply list")) {
+            val kw = input.text.toString().trim()
+            if (kw.isEmpty()) {
+                Toast.makeText(this, t("先输入关键词", "Enter a keyword first"), Toast.LENGTH_SHORT).show()
+                return@cardBtn
+            }
+            if (prefs.noReplyList.any { it.equals(kw, ignoreCase = true) }) {
+                Toast.makeText(this, t("名单里已有这个关键词", "Already in the list"), Toast.LENGTH_SHORT).show()
+                return@cardBtn
+            }
+            prefs.noReplyList = prefs.noReplyList + kw
+            input.setText("")
+            render()
+        })
+        root.addView(c)
+    }
+
+    private fun buildRelationshipCard(root: LinearLayout) {        root.addView(section(t("我和对方的关系", "My relationship with them")))
         val c = card()
         c.addView(text(t("写清你们是什么关系、现在怎么样，AI 判断时会更准。",
             "Describe your relationship and where things stand — the AI judges more accurately."), 12f, sub))

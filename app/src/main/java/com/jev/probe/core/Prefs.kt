@@ -371,6 +371,16 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getStringSet(K_WHITELIST, emptySet()) ?: emptySet()
         set(v) = sp.edit().putStringSet(K_WHITELIST, v).apply()
 
+    /**
+     * 「不回复名单」：标题命中的会话**完全不自动回复**（连分析都不跑），
+     * 与 [whitelist] 的「非空时只分析命中会话」方向相反——这是排除，且互不冲突：
+     * 一个会话可以同时命中两个名单（白名单收窄分析范围、不回复名单再排除掉它）。
+     * 存的同样是关键词（子串匹配，忽略大小写），「移出」= 删掉能匹配上的关键词。
+     */
+    var noReplyList: Set<String>
+        get() = sp.getStringSet(K_NO_REPLY, emptySet()) ?: emptySet()
+        set(v) = sp.edit().putStringSet(K_NO_REPLY, v).apply()
+
     var overlayOpacity: Int
         get() = sp.getInt(K_OPACITY, 92).coerceIn(60, 100)
         set(v) = sp.edit().putInt(K_OPACITY, v.coerceIn(60, 100)).apply()
@@ -520,6 +530,13 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         return wl.any { title.contains(it) }
     }
 
+    /** 不回复名单命中判定：关键词子串匹配（忽略大小写），空名单恒不命中。 */
+    fun isNoReply(title: String?): Boolean {
+        val nl = noReplyList
+        if (nl.isEmpty() || title.isNullOrBlank()) return false
+        return nl.any { title.contains(it, ignoreCase = true) }
+    }
+
     /** Readiness gate: worker 模式下看账户令牌，tuptup 看内置密钥，否则看判断接口 key。 */
     fun hasKey(): Boolean = when {
         isWorkerMode -> accountToken.isNotBlank()
@@ -662,6 +679,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_REL = "relationship"
         private const val K_ENABLED = "enabled"
         private const val K_WHITELIST = "whitelist"
+        private const val K_NO_REPLY = "no_reply_list"
         private const val K_OPACITY = "overlay_opacity"
         private const val K_BUBBLE_Y = "bubble_y"
         private const val K_BUBBLE_X = "bubble_x"

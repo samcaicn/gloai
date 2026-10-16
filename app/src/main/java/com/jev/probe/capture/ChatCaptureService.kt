@@ -177,6 +177,27 @@ open class ChatCaptureService : AccessibilityService() {
         }
     }
 
+    /**
+     * 「不回复」一键开关（悬浮窗菜单用）：把当前会话加进/移出 [Prefs.noReplyList]。
+     * 与 [toggleWhitelist] 对称，但方向相反——这是排除（命中后完全不自动回复）。
+     */
+    private fun toggleNoReply() {
+        val title = currentSnapshot?.title
+        if (title.isNullOrBlank()) {
+            overlay?.toast(t("当前会话没有标题，改不了名单", "This chat has no title yet — can't edit the list")); return }
+        val nl = prefs.noReplyList
+        val matched = nl.filter { title.contains(it, ignoreCase = true) }
+        if (matched.isEmpty()) {
+            prefs.noReplyList = nl + title
+            overlay?.toast(t("已加入不回复名单：之后「$title」的消息不再自动回复",
+                "Added to no-reply list: \"$title\" won't get auto replies anymore"))
+        } else {
+            prefs.noReplyList = nl - matched.toSet()
+            overlay?.toast(t("已移出不回复名单：「$title」恢复自动回复",
+                "Removed from no-reply list: \"$title\" will get auto replies again"))
+        }
+    }
+
     /** 打开设置页；[focusPlan] 时定位到授权中心卡片（429 时切自带接口的入口走这条路）。 */
     private fun openSettings(focusPlan: Boolean) {
         runCatching {
@@ -528,6 +549,12 @@ open class ChatCaptureService : AccessibilityService() {
     /** 把一个攒好批的会话轮次入队；空闲则立即开跑，忙则按 conv 合并/排队。 */
     private fun enqueueNotifRound(round: NotifRound) {
         if (destroyed || !prefs.enabled) return
+        // 不回复名单：命中即整轮丢弃（不分析、不回复、不排队）。这是最早也最省的闸口——
+        // 过了这里才会烧 AI 额度，放更晚就来不及了。
+        if (prefs.isNoReply(round.conv)) {
+            Log.i(TAG, "notif-round: dropped conv=${round.conv} (no-reply list)")
+            return
+        }
         if (!notifRoundBusy) {
             startNotifRound(round)
             return
@@ -764,6 +791,7 @@ open class ChatCaptureService : AccessibilityService() {
         overlay?.onOcrCapture = { ocrCaptureManual() }
         // 「只分析这些会话」名单（P1-8）：用户最常问的是「为什么这里不分析」，把开关摆到手边。
         overlay?.onWhitelistToggle = { toggleWhitelist() }
+        overlay?.onNoReplyToggle = { toggleNoReply() }
         // 悬浮球菜单 → 在 App 内打开「诊断与自检」，不用退出当前聊天就能看到
         // 权限 / 上次分析 / 崩溃记录，自己定位「为什么没反应」。
         overlay?.onDiagnostics = { openDiagnostics() }
@@ -2008,6 +2036,7 @@ open class ChatCaptureService : AccessibilityService() {
                             imeChecks++
                             if (sent) {
                                 sendSettled = true
+                                appendSendLedger(currentSendConv, true, "ime send verified")
                                 overlay?.toast(t("已自动发送", "Sent automatically"))
                                 onDone?.invoke(true)
                                 return@postDelayed
@@ -2029,6 +2058,7 @@ open class ChatCaptureService : AccessibilityService() {
                     if (box != null && box.isBlank()) {
                         Log.i(TAG, "sendTap verify: box EMPTY -> message really sent (attempt=$attempt)")
                         sendSettled = true
+                        appendSendLedger(currentSendConv, true, "box empty after tap")
                         overlay?.toast(t("已自动发送", "Sent automatically"))
                         onDone?.invoke(true)
                         return@postDelayed
@@ -2057,6 +2087,7 @@ open class ChatCaptureService : AccessibilityService() {
                             } else {
                                 Log.i(TAG, "sendTap verify: box unreadable, green gone -> trust sent")
                                 sendSettled = true
+                                appendSendLedger(currentSendConv, true, "green gone, trust sent")
                                 onDone?.invoke(true)
                             }
                         }
@@ -2080,11 +2111,29 @@ open class ChatCaptureService : AccessibilityService() {
      * 次数超限或会话下次活跃都靠 drainPendingSends 重新驱动，确保一条该发的回复不丢。
      * 不在这里弹「失败」噪音——上层（sendWeChatByVerifiedTap）已按场景 toast 过。
      */
+    /**
+     * 发送台账：每次发送结果（成功/失败）追加一行到外部私有目录 send_ledger.csv。
+     * logcat ring buffer 会被系统日志挤掉，导致 flow_check 拿不到「上次到底发没发出去」；
+     * 文件是持久的，adb shell 直接可读（ColorOS 允许 shell 列 Android/data）。
+     * IO 放后台线程，失败静默——台账只是观测，绝不能影响发送主路。
+     */
+    private fun appendSendLedger(conv: String?, ok: Boolean, detail: String) {
+        try {
+            val dir = getExternalFilesDir(null) ?: return
+            val line = "${System.currentTimeMillis()},${(conv ?: "-").replace(',', ';')}," +
+                (if (ok) "sent" else "failed") + "," + detail.replace(',', ';').take(80) + "\n"
+            Thread {
+                try { java.io.File(dir, "send_ledger.csv").appendText(line) } catch (_: Exception) {}
+            }.start()
+        } catch (_: Exception) {}
+    }
+
     private fun failAndQueue() {
         val conv = currentSendConv ?: run {
             Log.w(TAG, "failAndQueue: no currentSendConv -> drop (cannot persist)")
             return
         }
+        appendSendLedger(conv, false, "queue draft for retry")
         val text = (currentSendText ?: lastDraftText) ?: run {
             Log.w(TAG, "failAndQueue: no draft text -> drop")
             return
@@ -2636,6 +2685,7 @@ open class ChatCaptureService : AccessibilityService() {
         overlay?.onSaveContact = null
         overlay?.onOcrCapture = null
         overlay?.onWhitelistToggle = null
+        overlay?.onNoReplyToggle = null
         overlay?.onDiagnostics = null
         overlay?.onErrorAction = null
         overlay?.onReplyFeedback = null

@@ -68,6 +68,9 @@ class OverlayController(private val ctx: Context) {
     /** 悬浮球菜单 → 把当前会话加入 / 移出「只分析这些会话」名单（P1-8）。 */
     var onWhitelistToggle: (() -> Unit)? = null
 
+    /** 「不回复这个会话」开关：把当前会话加进/移出不回复名单（见 [Prefs.noReplyList]）。 */
+    var onNoReplyToggle: (() -> Unit)? = null
+
     /** Bubble menu → file the open conversation as a knowledge-base contact. */
     var onSaveContact: (() -> Unit)? = null
 
@@ -371,6 +374,14 @@ class OverlayController(private val ctx: Context) {
                 sub = if (onWhitelistInList()) ctx.t("恢复为所有会话都分析", "Back to analyzing all chats") else ctx.t("之后只分析这个会话，别的都不分析", "From now on only this chat is analyzed")
             ) { root?.removeView(menu); onWhitelistToggle?.invoke() })
         }
+        if (onNoReplyToggle != null) {
+            menu.addView(menuItem(
+                if (onNoReplyInList()) ctx.t("取消不回复（当前会话）", "Un-mute this chat")
+                else ctx.t("不回复这个会话", "Never reply to this chat"),
+                sub = if (onNoReplyInList()) ctx.t("恢复这个会话的自动回复", "Auto replies resume for this chat")
+                      else ctx.t("加入不回复名单：这个会话的消息完全不自动回复", "Adds it to the no-reply list: no auto replies here")
+            ) { root?.removeView(menu); onNoReplyToggle?.invoke() })
+        }
         menu.addView(menuDivider())
         // 自检与诊断仅调试期可见；正式发行版去掉，减少可被逆向利用的内部信息面。
         if (BuildConfig.DEBUG) {
@@ -415,6 +426,12 @@ class OverlayController(private val ctx: Context) {
     private fun onWhitelistInList(): Boolean {
         val t = currentTitle ?: return false
         return prefs.whitelist.any { t.contains(it, ignoreCase = true) }
+    }
+
+    /** 当前会话是否已在「不回复名单」里。与 [Prefs.isNoReply] 同口径（忽略大小写子串）。 */
+    private fun onNoReplyInList(): Boolean {
+        val t = currentTitle ?: return false
+        return prefs.noReplyList.any { t.contains(it, ignoreCase = true) }
     }
 
     /** 当前会话标题。由服务在采集时写入，仅用于菜单文案判断方向。 */
