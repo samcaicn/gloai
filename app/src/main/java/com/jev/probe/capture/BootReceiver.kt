@@ -14,6 +14,14 @@ import com.jev.probe.core.Prefs
 import com.jev.probe.core.t
 
 /**
+ * AppOps 里的「允许发通知」开关名。
+ *
+ * **必须写字面量**：AppOpsManager.OPSTR_POST_NOTIFICATION 是 @hide 常量，不在公开
+ * SDK 里，直接引用会 Unresolved reference（2026-10-16 CI run 1415 编译失败就是这个）。
+ */
+private const val OP_POST_NOTIFICATION = "android:post_notification"
+
+/**
  * 开机后若用户曾开启助手，发一条「助手已停止，点此恢复」通知。
  *
  * 无障碍服务无法被代码直接启动（只能由用户在设置里开启时由系统绑定），所以这里
@@ -56,11 +64,11 @@ class BootReceiver : BroadcastReceiver() {
                 @Suppress("DEPRECATION")
                 val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     aom.unsafeCheckOpNoThrow(
-                        android.app.AppOpsManager.OPSTR_POST_NOTIFICATION,
+                        OP_POST_NOTIFICATION,
                         android.os.Process.myUid(), ctx.packageName)
                 } else {
                     aom.checkOpNoThrow(
-                        android.app.AppOpsManager.OPSTR_POST_NOTIFICATION,
+                        OP_POST_NOTIFICATION,
                         android.os.Process.myUid(), ctx.packageName)
                 }
                 mode == android.app.AppOpsManager.MODE_ALLOWED
