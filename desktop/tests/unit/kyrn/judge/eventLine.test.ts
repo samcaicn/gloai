@@ -291,8 +291,8 @@ describe('Runtime event lines by the harness codes', () => {
       [
         'needs_approval',
         { source: '.mcp.json' },
-        'github: it is defined by the project (.mcp.json) and has not been approved; open this folder in mu and allow it once, or define it in mu.json',
-        'github：它由项目定义（.mcp.json），还没有获得批准；在 mu 中打开这个文件夹并允许一次，或者在 mu.json 中定义它',
+        'github: it is defined by the project (.mcp.json) and has not been approved; open this folder in AiBuddy and allow it once, or define it in mu.json',
+        'github：它由项目定义（.mcp.json），还没有获得批准；在 AiBuddy 中打开这个文件夹并允许一次，或者在 mu.json 中定义它',
       ],
       [
         'denied',
@@ -310,8 +310,8 @@ describe('Runtime event lines by the harness codes', () => {
       [
         'closed',
         undefined,
-        'github: its connection closed while mu was still waiting for an answer',
-        'github：mu 还在等回应时，连接就关闭了',
+        'github: its connection closed while AiBuddy was still waiting for an answer',
+        'github：AiBuddy 还在等回应时，连接就关闭了',
       ],
       ['timeout', undefined, 'github: it did not answer in time', 'github：它没有及时响应'],
       ['aborted', undefined, 'github: the start was cancelled', 'github：启动被取消了'],
@@ -326,8 +326,8 @@ describe('Runtime event lines by the harness codes', () => {
       [
         'crashed',
         { willRestart: 1 },
-        'github: it crashed while running; mu restarts it once',
-        'github：运行时崩溃了，mu 会重启它一次',
+        'github: it crashed while running; AiBuddy restarts it once',
+        'github：运行时崩溃了，AiBuddy 会重启它一次',
       ],
       ['crashed', { willRestart: 0 }, 'github: it crashed again and is not restarted', 'github：又崩溃了，不会再重启'],
       [
@@ -360,7 +360,7 @@ describe('Runtime event lines by the harness codes', () => {
     expect(say(zh, 'mcp.failed', { ...payload, code: 'needs_approval' })).toEqual(['github：spawn gh-mcp ENOENT']);
     // A crash without the 0/1 param still reads the event's own flag.
     expect(say(zh, 'mcp.failed', { ...payload, code: 'crashed', willRestart: true })).toEqual([
-      'github：运行时崩溃了，mu 会重启它一次',
+      'github：运行时崩溃了，AiBuddy 会重启它一次',
       '详情：spawn gh-mcp ENOENT',
     ]);
     expect(say(zh, 'mcp.failed', { ...payload, code: 'crashed' })).toEqual(['github：spawn gh-mcp ENOENT']);

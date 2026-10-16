@@ -17,11 +17,12 @@ function pythonString(name: string): string {
 const normal = (path: string): string => path.replace(/\s+/g, ' ').trim();
 
 describe('mu brand mark', () => {
-  it('draws the same glyph in the app, in logo.svg and in the 16-32 px icons', () => {
+  it('draws the same glyph in the app and in the 16-32 px icons, and the wordmark in logo.svg', () => {
     expect(normal(pythonString('GLYPH_PATH'))).toBe(normal(MU_GLYPH_PATH));
-    expect(normal(/ d="([^"]+)"/.exec(logo)?.[1] ?? '')).toBe(normal(MU_GLYPH_PATH));
     expect(Number(/^GLYPH_STROKE = ([\d.]+)/m.exec(script)?.[1])).toBe(MU_GLYPH_STROKE);
-    expect(Number(/stroke-width="([\d.]+)"/.exec(logo)?.[1])).toBe(MU_GLYPH_STROKE);
+    // logo.svg is the wordmark, not the traced glyph: the tile diagonal (checked below) behind the
+    // product name, set in the same weight MuMark and MuBackdrop use for it.
+    expect(/<text[^>]*>AiBuddy<\/text>/.test(logo)).toBe(true);
   });
 
   it('uses the same diagonal for the tile everywhere', () => {

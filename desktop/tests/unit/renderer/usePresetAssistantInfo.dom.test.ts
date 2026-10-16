@@ -533,12 +533,12 @@ describe('usePresetAssistantInfo', () => {
     const named = renderHook(() =>
       usePresetAssistantInfo(makeConversation({ agent_id: 'runtime-1', agent_name: 'Aion CLI', backend: 'aionrs' }))
     );
-    expect(named.result.current.info?.name).toBe('mu');
+    expect(named.result.current.info?.name).toBe('AiBuddy');
 
     const unnamed = renderHook(() =>
       usePresetAssistantInfo(makeConversation({ agent_id: 'runtime-1', backend: 'aionrs' }))
     );
-    expect(unnamed.result.current.info?.name).toBe('mu');
+    expect(unnamed.result.current.info?.name).toBe('AiBuddy');
   });
 
   it('still finds a legacy assistant whose stored rules name it AionUi Butler', () => {
@@ -546,7 +546,7 @@ describe('usePresetAssistantInfo', () => {
       if (key === 'assistants.list') {
         // The catalog shows the backend's names as mu (ipcBridge.assistants.list).
         return {
-          data: [{ id: 'butler-1', name: 'mu Butler', avatar: '🤵', name_i18n: { 'en-US': 'mu Butler' } }],
+          data: [{ id: 'butler-1', name: 'AiBuddy Butler', avatar: '🤵', name_i18n: { 'en-US': 'AiBuddy Butler' } }],
           isLoading: false,
         };
       }
@@ -557,7 +557,7 @@ describe('usePresetAssistantInfo', () => {
     const conversation = makeConversation({ preset_context: '# AionUi Butler\n\nYou are AionUi’s built-in butler.' });
     const { result } = renderHook(() => usePresetAssistantInfo(conversation));
 
-    expect(result.current.info).toMatchObject({ name: 'mu Butler', assistantId: 'butler-1' });
+    expect(result.current.info).toMatchObject({ name: 'AiBuddy Butler', assistantId: 'butler-1' });
   });
 
   it('shows the assistant name a conversation stored from the backend as mu', () => {
@@ -573,7 +573,7 @@ describe('usePresetAssistantInfo', () => {
     } as TChatConversation;
     const { result } = renderHook(() => usePresetAssistantInfo(conversation));
 
-    expect(result.current.info).toMatchObject({ name: 'mu Butler', assistantId: 'aionui-assistant' });
+    expect(result.current.info).toMatchObject({ name: 'AiBuddy Butler', assistantId: 'aionui-assistant' });
   });
 
   it('treats legacy custom_agent_id as runtime-only when resolving explicit assistant identity', () => {

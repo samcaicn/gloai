@@ -19,12 +19,21 @@
 
 import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 
+// The viewer pulls the syntax-highlighting tree through its import graph; the
+// transform alone takes >10s under a loaded pool, so these module-shape checks
+// get the same generous budget PreviewPanel.dom.test.tsx uses.
+const IMPORT_TIMEOUT_MS = 60000;
+
 describe('OfficeWatchViewer module shape', () => {
-  it('module loads and exposes a default export', async () => {
-    const mod = await import('@/renderer/pages/conversation/Preview/components/viewers/OfficeWatchViewer');
-    expect(mod).toBeDefined();
-    expect(mod.default).toBeDefined();
-  });
+  it(
+    'module loads and exposes a default export',
+    async () => {
+      const mod = await import('@/renderer/pages/conversation/Preview/components/viewers/OfficeWatchViewer');
+      expect(mod).toBeDefined();
+      expect(mod.default).toBeDefined();
+    },
+    IMPORT_TIMEOUT_MS
+  );
 
   it('default export is a function (React component)', async () => {
     const mod = await import('@/renderer/pages/conversation/Preview/components/viewers/OfficeWatchViewer');

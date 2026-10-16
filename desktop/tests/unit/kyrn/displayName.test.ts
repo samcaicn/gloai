@@ -4,32 +4,32 @@ import { MU_NAME_POST_PROCESSOR, muNamePostProcessor, showAsMu, withTextsAsMu } 
 
 describe('showAsMu', () => {
   it('shows the upstream product name as mu, in either spelling and next to CJK text', () => {
-    expect(showAsMu('关于 AionUi')).toBe('关于 mu');
+    expect(showAsMu('关于 AionUi')).toBe('关于 AiBuddy');
     expect(showAsMu('重启AionUI，或把这个 MCP server 改成绝对命令路径。')).toBe(
-      '重启mu，或把这个 MCP server 改成绝对命令路径。'
+      '重启AiBuddy，或把这个 MCP server 改成绝对命令路径。'
     );
-    expect(showAsMu('AionUi - Login')).toBe('mu - Login');
-    expect(showAsMu('Restart AionUi. Then retry.')).toBe('Restart mu. Then retry.');
-    expect(showAsMu('AionUi AionUi')).toBe('mu mu');
-    expect(showAsMu('Chat with (AionUi) assistant')).toBe('Chat with (mu) assistant');
+    expect(showAsMu('AionUi - Login')).toBe('AiBuddy - Login');
+    expect(showAsMu('Restart AionUi. Then retry.')).toBe('Restart AiBuddy. Then retry.');
+    expect(showAsMu('AionUi AionUi')).toBe('AiBuddy AiBuddy');
+    expect(showAsMu('Chat with (AionUi) assistant')).toBe('Chat with (AiBuddy) assistant');
   });
 
   it('shows the backend, the built-in agent and its CLI as mu too', () => {
-    expect(showAsMu('AionCore 无法启动')).toBe('mu 无法启动');
+    expect(showAsMu('AionCore 无法启动')).toBe('AiBuddy 无法启动');
     expect(showAsMu('AionCore usually provisions its managed Node runtime automatically.')).toBe(
-      'mu usually provisions its managed Node runtime automatically.'
+      'AiBuddy usually provisions its managed Node runtime automatically.'
     );
-    expect(showAsMu('Aionrs agent error: timeout')).toBe('mu agent error: timeout');
-    expect(showAsMu('Please select a model for Aion CLI')).toBe('Please select a model for mu');
-    expect(showAsMu('Send message to AionCLI...')).toBe('Send message to mu...');
-    expect(showAsMu("AionCore's log")).toBe("mu's log");
+    expect(showAsMu('Aionrs agent error: timeout')).toBe('AiBuddy agent error: timeout');
+    expect(showAsMu('Please select a model for Aion CLI')).toBe('Please select a model for AiBuddy');
+    expect(showAsMu('Send message to AionCLI...')).toBe('Send message to AiBuddy...');
+    expect(showAsMu("AionCore's log")).toBe("AiBuddy's log");
   });
 
   it('shows the name as mu in German compound nouns, which join it to the next word with a hyphen', () => {
-    expect(showAsMu('Die AionUi-Installation ist unvollständig.')).toBe('Die mu-Installation ist unvollständig.');
-    expect(showAsMu('Liebe AionUi-Nutzerin, lieber AionUi-Nutzer,')).toBe('Liebe mu-Nutzerin, lieber mu-Nutzer,');
-    expect(showAsMu('die AionUi-Oberfläche')).toBe('die mu-Oberfläche');
-    expect(showAsMu('das lokale AionCore-Backend')).toBe('das lokale mu-Backend');
+    expect(showAsMu('Die AionUi-Installation ist unvollständig.')).toBe('Die AiBuddy-Installation ist unvollständig.');
+    expect(showAsMu('Liebe AionUi-Nutzerin, lieber AionUi-Nutzer,')).toBe('Liebe AiBuddy-Nutzerin, lieber AiBuddy-Nutzer,');
+    expect(showAsMu('die AionUi-Oberfläche')).toBe('die AiBuddy-Oberfläche');
+    expect(showAsMu('das lokale AionCore-Backend')).toBe('das lokale AiBuddy-Backend');
   });
 
   it('leaves links, paths, file names, identifiers and the dev data folder alone', () => {
@@ -57,7 +57,7 @@ describe('showAsMu', () => {
 
   it('keeps a real data path while the sentence around it becomes mu', () => {
     expect(showAsMu('AionUi logs are in ~/Library/Application Support/AionUi-Dev/logs')).toBe(
-      'mu logs are in ~/Library/Application Support/AionUi-Dev/logs'
+      'AiBuddy logs are in ~/Library/Application Support/AionUi-Dev/logs'
     );
   });
 
@@ -81,11 +81,11 @@ describe('withTextsAsMu', () => {
     };
     expect(withTextsAsMu(record, ['name', 'name_i18n', 'description', 'prompts', 'prompts_i18n'] as const)).toEqual({
       id: 'aionui-assistant',
-      name: 'mu Butler',
-      name_i18n: { 'en-US': 'mu Butler', 'zh-CN': 'mu 管家' },
-      description: 'Helps you manage mu itself',
-      prompts: ['Open mu from my phone', 'Check mu logs'],
-      prompts_i18n: { 'en-US': ['Open mu from my phone'] },
+      name: 'AiBuddy Butler',
+      name_i18n: { 'en-US': 'AiBuddy Butler', 'zh-CN': 'AiBuddy 管家' },
+      description: 'Helps you manage AiBuddy itself',
+      prompts: ['Open AiBuddy from my phone', 'Check AiBuddy logs'],
+      prompts_i18n: { 'en-US': ['Open AiBuddy from my phone'] },
       agent_type: 'aionrs',
       context: 'You are AionUi’s built-in butler.',
     });
@@ -94,8 +94,8 @@ describe('withTextsAsMu', () => {
   });
 
   it('leaves missing and non-text fields alone', () => {
-    const record: { name: string; description?: string; enabled: boolean } = { name: 'mu', enabled: true };
-    expect(withTextsAsMu(record, ['name', 'description', 'enabled'])).toEqual({ name: 'mu', enabled: true });
+    const record: { name: string; description?: string; enabled: boolean } = { name: 'AiBuddy', enabled: true };
+    expect(withTextsAsMu(record, ['name', 'description', 'enabled'])).toEqual({ name: 'AiBuddy', enabled: true });
   });
 });
 
@@ -116,11 +116,11 @@ describe('muNamePostProcessor', () => {
       interpolation: { escapeValue: false },
       postProcess: [MU_NAME_POST_PROCESSOR],
     });
-    expect(i18n.t('tray.about')).toBe('关于 mu');
-    expect(i18n.t('update', { version: 'v2' })).toBe('请将 mu 更新到 v2，mu 无需处理。');
-    expect(i18n.t('agent', { name: 'Aion CLI' })).toBe('mu 正在运行');
+    expect(i18n.t('tray.about')).toBe('关于 AiBuddy');
+    expect(i18n.t('update', { version: 'v2' })).toBe('请将 AiBuddy 更新到 v2，AiBuddy 无需处理。');
+    expect(i18n.t('agent', { name: 'Aion CLI' })).toBe('AiBuddy 正在运行');
     expect(i18n.t('missing.key', { defaultValue: 'Chat with AionUi assistant via Telegram' })).toBe(
-      'Chat with mu assistant via Telegram'
+      'Chat with AiBuddy assistant via Telegram'
     );
   });
 });

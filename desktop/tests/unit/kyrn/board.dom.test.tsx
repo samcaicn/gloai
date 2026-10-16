@@ -482,7 +482,7 @@ describe('the account under the board', () => {
     ]);
     expect(texts()).toEqual([
       'Stopped.',
-      'The goal is not met yet; mu sent it back to work (round 2): the login test fails',
+      'The goal is not met yet; AiBuddy sent it back to work (round 2): the login test fails',
       'Sent out 2 helpers: tests, docs',
       'Looked at 1 file or place',
       'Changed src/login.ts',

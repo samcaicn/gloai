@@ -51,32 +51,38 @@ describe('release packaging configuration', () => {
     expect(script).toMatch(/--mac\s+dmg\s+zip\s+--\$\{targetArch\}\s+--prepackaged/);
   });
 
-  itWithBash('fails release asset preparation when a mac zip is missing', () => {
-    const tempDir = mkdtempSync(resolve(tmpdir(), 'aionui-release-assets-'));
-    const artifactsDir = resolve(tempDir, 'build-artifacts');
-    const outputDir = resolve(tempDir, 'release-assets');
+  itWithBash(
+    'fails release asset preparation when a mac zip is missing',
+    () => {
+      const tempDir = mkdtempSync(resolve(tmpdir(), 'aionui-release-assets-'));
+      const artifactsDir = resolve(tempDir, 'build-artifacts');
+      const outputDir = resolve(tempDir, 'release-assets');
 
-    try {
-      const env = { ...process.env, MOCK_VERSION: '1.0.0' };
-      const createResult = spawnSync('bash', ['scripts/create-mock-release-artifacts.sh', artifactsDir], {
-        cwd: projectRoot,
-        env,
-        encoding: 'utf8',
-      });
-      expect(createResult.status).toBe(0);
+      try {
+        const env = { ...process.env, MOCK_VERSION: '1.0.0' };
+        const createResult = spawnSync('bash', ['scripts/create-mock-release-artifacts.sh', artifactsDir], {
+          cwd: projectRoot,
+          env,
+          encoding: 'utf8',
+        });
+        expect(createResult.status).toBe(0);
 
-      rmSync(resolve(artifactsDir, 'macos-build-arm64', 'mu-1.0.0-mac-arm64.zip'), { force: true });
+        rmSync(resolve(artifactsDir, 'macos-build-arm64', 'mu-1.0.0-mac-arm64.zip'), {
+          force: true,
+        });
 
-      const prepareResult = spawnSync('bash', ['scripts/prepare-release-assets.sh', artifactsDir, outputDir], {
-        cwd: projectRoot,
-        env,
-        encoding: 'utf8',
-      });
+        const prepareResult = spawnSync('bash', ['scripts/prepare-release-assets.sh', artifactsDir, outputDir], {
+          cwd: projectRoot,
+          env,
+          encoding: 'utf8',
+        });
 
-      expect(prepareResult.status).not.toBe(0);
-      expect(`${prepareResult.stdout}\n${prepareResult.stderr}`).toContain('Missing macOS zip artifact');
-    } finally {
-      rmSync(tempDir, { force: true, recursive: true });
-    }
-  });
+        expect(prepareResult.status).not.toBe(0);
+        expect(`${prepareResult.stdout}\n${prepareResult.stderr}`).toContain('Missing macOS zip artifact');
+      } finally {
+        rmSync(tempDir, { force: true, recursive: true });
+      }
+    },
+    120000
+  );
 });

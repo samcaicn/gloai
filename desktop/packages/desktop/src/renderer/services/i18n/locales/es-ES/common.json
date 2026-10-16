@@ -1305,7 +1305,7 @@
       "mcp": {
         "line": "{{name}}: {{reason}}",
         "projectUntrusted": "el proyecto no es de confianza y este servidor lo define el proyecto",
-        "needsApproval": "lo define el proyecto ({{source}}) y no se ha aprobado; abre esta carpeta en AiBuddy y permítelo una vez, o defínelo en AiBuddy.json",
+        "needsApproval": "lo define el proyecto ({{source}}) y no se ha aprobado; abre esta carpeta en AiBuddy y permítelo una vez, o defínelo en mu.json",
         "aborted": "se canceló el inicio",
         "rpc": "respondió con un error",
         "protocol": "respondió con algo que no sigue el protocolo MCP",

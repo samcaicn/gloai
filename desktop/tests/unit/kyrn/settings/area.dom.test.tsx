@@ -675,7 +675,7 @@ describe('providers and the default model', () => {
     fireEvent.click(within(xai).getByTestId('mu-account-signin-xai'));
     const failed = await within(xai).findByTestId('mu-login-problem');
     expect(failed).toHaveTextContent('Signing in did not finish. You can try again.');
-    expect(failed).toHaveTextContent('The mu runtime is not online.');
+    expect(failed).toHaveTextContent('The AiBuddy runtime is not online.');
     // A coded reason says all there is: the raw text is not repeated.
     expect(failed).not.toHaveTextContent('runtime offline');
   });
@@ -908,7 +908,7 @@ describe('providers and the default model', () => {
     // On the same page as the model new sessions start with.
     expect(screen.getByTestId('mu-defaults')).toBeInTheDocument();
     const card = screen.getByTestId('mu-board-model');
-    expect(card).toHaveTextContent('None yet: mu asks the first time the board is switched on.');
+    expect(card).toHaveTextContent('None yet: AiBuddy asks the first time the board is switched on.');
     expect(card).toHaveTextContent('Pick a provider first');
     const user = userEvent.setup();
     await user.click(within(card).getByLabelText('Provider'));
@@ -964,7 +964,7 @@ describe('providers and the default model', () => {
     bridge.settings.mockResolvedValue({ ok: true, data: settings({ boardModel: { supported: false, model: '' } }) });
     await open('defaultModel');
     const card = screen.getByTestId('mu-board-model');
-    expect(card).toHaveTextContent('Update mu first.');
+    expect(card).toHaveTextContent('Update AiBuddy first.');
     expect(within(card).queryByRole('radio')).not.toBeInTheDocument();
   });
 
@@ -1158,13 +1158,13 @@ describe('providers and the default model', () => {
       data: settings({
         models: {
           ...base.models,
-          foreign: [{ id: 'google-gemini-cli', name: '', api: '', baseUrl: 'https://g.example.com', modelCount: 0 }],
-          defaults: { provider: 'google-gemini-cli', model: 'gemini-2.5-pro', thinkingLevel: '' },
+          foreign: [{ id: 'xai', name: '', api: '', baseUrl: 'https://g.example.com', modelCount: 0 }],
+          defaults: { provider: 'xai', model: 'grok-4', thinkingLevel: '' },
         },
       }),
     });
     await open('providers');
-    fireEvent.click(screen.getByTestId('mu-provider-item-foreign-google-gemini-cli'));
+    fireEvent.click(screen.getByTestId('mu-provider-item-foreign-xai'));
     fireEvent.click(within(screen.getByTestId('mu-provider-foreign')).getByTestId('mu-provider-more'));
     fireEvent.click(await screen.findByText('Remove provider'));
     await screen.findByText(/this hand-written entry is deleted from models.json/);
@@ -1173,8 +1173,8 @@ describe('providers and the default model', () => {
     fireEvent.click(await screen.findByText('Save'));
     await waitFor(() => expect(bridge.save).toHaveBeenCalled());
     const sent = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(sent.models?.removeEntries).toEqual(['google-gemini-cli']);
-    expect(sent.models?.defaults.provider).toBe('google-gemini-cli');
+    expect(sent.models?.removeEntries).toEqual(['xai']);
+    expect(sent.models?.defaults.provider).toBe('xai');
   });
 
   it('leaves a startup model without a provider alone when a provider without an id is removed', async () => {
@@ -1259,7 +1259,7 @@ describe('the permission modes and the board', () => {
     const { permissions: _permissions, boardModel: _boardModel, ...older } = withModes();
     bridge.settings.mockResolvedValue({ ok: true, data: older as KyrnSettings });
     render(<SettingsArea section='defaultModel' />, { wrapper });
-    expect(await screen.findByTestId('mu-board-model')).toHaveTextContent('Update mu');
+    expect(await screen.findByTestId('mu-board-model')).toHaveTextContent('Update AiBuddy');
     expect(screen.queryByTestId('mu-save-bar')).not.toBeInTheDocument();
   });
 
@@ -1314,10 +1314,24 @@ describe('the permission modes and the board', () => {
   });
 });
 
+/**
+ * The judge tiers live in the advanced group of the judges page, which starts folded unless several
+ * judges are already chained. Opens it when it is folded; a click on an open group would fold it.
+ */
+async function openJudgeTiers() {
+  // The page loads its settings first; the group's header is not there before that.
+  await screen.findByTestId('mu-judge-choice-jev');
+  if (!screen.queryByTestId('mu-judge-tier-0')) {
+    fireEvent.click(screen.getByText(enMu.judges.advanced));
+  }
+  await screen.findByTestId('mu-judge-tier-0');
+}
+
 describe('the kernel pages', () => {
   it('shows the judge choice first, and under it on the same page the order by name and what each judge needs', async () => {
     bridge.settings.mockResolvedValue({ ok: true, data: settings({ tiers: ['jev', 'laya'] }) });
     render(<SettingsArea section='judges' />, { wrapper });
+    await openJudgeTiers();
     const tiers = await screen.findByTestId('mu-section-judges');
     // The three choices, Jev, Laya and CLM, and no second way to pick a judge.
     const choice = within(tiers).getByTestId('mu-judge-choice-jev');
@@ -1326,7 +1340,8 @@ describe('the kernel pages', () => {
     // The judge tiers are a group of this page, under the choice.
     const order = within(tiers).getByTestId('mu-judge-tiers');
     expect(choice.compareDocumentPosition(order) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(order).getByRole('heading', { name: enMu.sections.judgeTiers })).toBeInTheDocument();
+    // The order sits in the advanced group, under the choice; two judges chained, so it starts open.
+    expect(within(tiers).getByText(enMu.judges.advanced)).toBeInTheDocument();
     expect(order).toHaveTextContent(enMu.judges.orderHelp);
     // The order says the judges' names, never the profiles' ids.
     const tags = [...order.querySelectorAll('.arco-tag')].map((tag) => tag.textContent);
@@ -1346,8 +1361,7 @@ describe('the kernel pages', () => {
     // No variable names, endpoints or timeouts: none of it is a person's decision.
     expect(tiers).not.toHaveTextContent(/TYPESAFE_API_KEY|AI_GATEWAY_API_KEY|MU_JUDGE_|provider\/model-id/);
     expect(within(tiers).queryByLabelText('Timeout')).not.toBeInTheDocument();
-    // Nothing is folded away.
-    expect(within(tiers).queryByText(/Advanced/)).not.toBeInTheDocument();
+    // Nothing is folded away: the group is already open and no other fold hides a field.
     expect(within(tiers).queryByRole('button', { expanded: false })).not.toBeInTheDocument();
   });
 
@@ -1364,6 +1378,7 @@ describe('the kernel pages', () => {
       data: settings({ judges: { ...settings().judges, 'jev-gateway': gateway } }),
     });
     render(<SettingsArea section='judges' />, { wrapper });
+    await openJudgeTiers();
     const jev = await screen.findByTestId('mu-judge-tier-0');
     fireEvent.click(within(jev).getByLabelText(enMu.judges.service));
     fireEvent.click(await screen.findByText(enMu.judges.services.gateway.name, { selector: '.arco-select-option' }));
@@ -1383,6 +1398,7 @@ describe('the kernel pages', () => {
   it('shows a base URL only for TypeSafe and a custom service, and accepts a private-network HTTP address', async () => {
     bridge.settings.mockResolvedValue({ ok: true, data: settings() });
     render(<SettingsArea section='judges' />, { wrapper });
+    await openJudgeTiers();
     const jev = await screen.findByTestId('mu-judge-tier-0');
     expect(within(jev).queryByLabelText(enMu.judges.baseUrl)).not.toBeInTheDocument();
     fireEvent.click(within(jev).getByLabelText(enMu.judges.service));
@@ -1407,6 +1423,7 @@ describe('the kernel pages', () => {
   it('asks for the key of a Jev further down the order, which the choice above does not show', async () => {
     bridge.settings.mockResolvedValue({ ok: true, data: settings({ tiers: ['laya', 'jev'], keys: {} }) });
     render(<SettingsArea section='judges' />, { wrapper });
+    await openJudgeTiers();
     const jev = await screen.findByTestId('mu-judge-tier-1');
     fireEvent.change(within(jev).getByLabelText(enMu.judges.services.auto.key), { target: { value: 'jev-key' } });
     expect(screen.getByTestId('mu-save-bar')).toHaveTextContent('Unsaved changes in: Judges');
@@ -1432,6 +1449,7 @@ describe('the kernel pages', () => {
       }),
     });
     render(<SettingsArea section='judges' />, { wrapper });
+    await openJudgeTiers();
     const choice = await screen.findByTestId('mu-judge-choice-jev');
     // Automatic, first: TypeSafe's key. A key typed there stays TypeSafe's.
     expect(within(choice).getByLabelText(enMu.judges.service)).toBeInTheDocument();
@@ -1465,6 +1483,7 @@ describe('the kernel pages', () => {
 
   it('asks a custom service for its address, and says why it cannot be saved without one', async () => {
     render(<SettingsArea section='judges' />, { wrapper });
+    await openJudgeTiers();
     const choice = await screen.findByTestId('mu-judge-choice-jev');
     fireEvent.click(within(choice).getByLabelText(enMu.judges.service));
     fireEvent.click(await screen.findByText(enMu.judges.services.custom.name, { selector: '.arco-select-option' }));
@@ -1523,6 +1542,7 @@ describe('the kernel pages', () => {
       data: { status: 'ready', models: ['clm-latest', 'clm-raw'], mock: false, keyRequired: false, latencyMs: 12 },
     });
     render(<SettingsArea section='judges' />, { wrapper });
+    await openJudgeTiers();
     fireEvent.click(await screen.findByTestId('mu-judge-choice-clm'));
     const tile = screen.getByTestId('mu-judge-choice-clm');
     expect(tile).toHaveAttribute('aria-checked', 'true');

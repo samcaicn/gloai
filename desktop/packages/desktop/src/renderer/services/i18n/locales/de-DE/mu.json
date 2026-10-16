@@ -747,7 +747,7 @@
     "jobs": "Hintergrundjobs: /jobs, /jobs stop <ID|all>",
     "commit": "Die nicht committete Änderung in Commits aufteilen: zeigt den Plan, committet erst nach deinem Ja, pusht nie",
     "review": "Die nicht committete Änderung oder was du nennst mit dem Reviewer-Unteragenten prüfen; Befunde nach P0 bis P3 sortiert",
-    "mu": "Status von AiBuddy. Außerdem: /AiBuddy judge <Stufen> | /AiBuddy route <Entscheidungspunkt> <Stufen|default> | /AiBuddy mode <Entscheidungspunkt|default> <off|shadow|active>",
+    "mu": "Status von AiBuddy. Außerdem: /mu judge <Stufen> | /mu route <Entscheidungspunkt> <Stufen|default> | /mu mode <Entscheidungspunkt|default> <off|shadow|active>",
     "status": "Modell, Judge, Modi der Entscheidungspunkte, eingesparter Kontext und die letzten Urteile",
     "help": "Was AiBuddy kann und alle wichtigen Befehle",
     "ledger": "Die letzten Urteile des Judges mit Dauer: /ledger [Anzahl]",

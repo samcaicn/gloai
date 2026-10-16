@@ -534,7 +534,7 @@
     "matched": "Matched features",
     "bindFailed": "Device binding failed",
     "pushTest": "Push test",
-    "pushSample": "This is a push test message from the AiBuddy desktop app ✅",
+    "pushSample": "This is a push test message from the AiBuddy desktop app",
     "pushOk": "Push succeeded",
     "pushWarn": "Push did not succeed",
     "pushErr": "Push error",

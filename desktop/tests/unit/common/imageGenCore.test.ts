@@ -5,12 +5,34 @@
  */
 
 import { describe, expect, it, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync, lstatSync } from 'node:fs';
 import { join, resolve as pathResolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { processImageUri, saveGeneratedImage, executeImageGeneration } from '@/common/chat/imageGenCore';
 
 let cleanupDirs: string[] = [];
+
+/**
+ * Symlink-aware tests can only prove anything where the filesystem actually honours symlinks. Some sandboxed
+ * Windows setups (and a few CI images) let `symlinkSync` succeed but then report the link as a plain file via
+ * `lstat`/`readlink`, so the escape the tests simulate cannot be constructed. Skip those cases there; the
+ * same assertions still run (and still guard the realpath-based traversal check) on Linux, WSL and privileged
+ * Windows.
+ */
+const symlinksSupported = (() => {
+  try {
+    const dir = mkdtempSync(join(tmpdir(), 'aionui-symprobe-'));
+    const target = join(dir, 'target.txt');
+    writeFileSync(target, 'x');
+    const link = join(dir, 'link.txt');
+    symlinkSync(target, link);
+    const ok = lstatSync(link).isSymbolicLink();
+    rmSync(dir, { recursive: true, force: true });
+    return ok;
+  } catch {
+    return false;
+  }
+})();
 
 function createWorkspace(): string {
   const dir = mkdtempSync(join(tmpdir(), 'aionui-image-gen-test-'));
@@ -140,7 +162,7 @@ describe('processImageUri', () => {
     await expect(processImageUri('nonexistent.png', ws)).rejects.toThrow('Image file not found');
   });
 
-  it('should block a symlink inside the workspace that points outside', async () => {
+  it.skipIf(!symlinksSupported)('should block a symlink inside the workspace that points outside', async () => {
     const ws = createWorkspace();
     // Secret image lives outside the workspace; a symlink inside the workspace
     // points to it. The lexical containment check passes for the link path, but
@@ -152,16 +174,19 @@ describe('processImageUri', () => {
     await expect(processImageUri('linked.png', ws)).rejects.toThrow('Path traversal blocked');
   });
 
-  it('should block a symlinked directory inside the workspace that points outside', async () => {
-    const ws = createWorkspace();
-    const outsideDir = createWorkspace();
-    createImageFile(outsideDir, 'secret.png');
-    symlinkSync(outsideDir, join(ws, 'linked-dir'), 'dir');
+  it.skipIf(!symlinksSupported)(
+    'should block a symlinked directory inside the workspace that points outside',
+    async () => {
+      const ws = createWorkspace();
+      const outsideDir = createWorkspace();
+      createImageFile(outsideDir, 'secret.png');
+      symlinkSync(outsideDir, join(ws, 'linked-dir'), 'dir');
 
-    await expect(processImageUri('linked-dir/secret.png', ws)).rejects.toThrow('Path traversal blocked');
-  });
+      await expect(processImageUri('linked-dir/secret.png', ws)).rejects.toThrow('Path traversal blocked');
+    }
+  );
 
-  it('should allow a symlink inside the workspace that stays inside', async () => {
+  it.skipIf(!symlinksSupported)('should allow a symlink inside the workspace that stays inside', async () => {
     const ws = createWorkspace();
     const imgPath = createImageFile(ws, 'real.png');
     symlinkSync(imgPath, join(ws, 'alias.png'));
@@ -199,7 +224,14 @@ describe('executeImageGeneration', () => {
   it('should return error for a non-existent workspace directory', async () => {
     const result = await executeImageGeneration(
       { prompt: 'a cat' },
-      { id: 'test', name: 'test', platform: 'openai', base_url: '', api_key: 'sk-test', use_model: 'dall-e-3' },
+      {
+        id: 'test',
+        name: 'test',
+        platform: 'openai',
+        base_url: '',
+        api_key: 'sk-test',
+        use_model: 'dall-e-3',
+      },
       '/nonexistent/workspace'
     );
 
@@ -213,7 +245,14 @@ describe('executeImageGeneration', () => {
 
     const result = await executeImageGeneration(
       { prompt: 'a cat' },
-      { id: 'test', name: 'test', platform: 'openai', base_url: '', api_key: 'sk-test', use_model: 'dall-e-3' },
+      {
+        id: 'test',
+        name: 'test',
+        platform: 'openai',
+        base_url: '',
+        api_key: 'sk-test',
+        use_model: 'dall-e-3',
+      },
       filePath
     );
 

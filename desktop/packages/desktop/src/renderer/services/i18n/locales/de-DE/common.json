@@ -1305,7 +1305,7 @@
       "mcp": {
         "line": "{{name}}: {{reason}}",
         "projectUntrusted": "das Projekt ist nicht als vertrauenswürdig eingestuft, und dieser Server ist im Projekt definiert",
-        "needsApproval": "der Server ist im Projekt definiert ({{source}}) und wurde nicht freigegeben; öffne diesen Ordner in AiBuddy und erlaube ihn einmal oder definiere ihn in AiBuddy.json",
+        "needsApproval": "der Server ist im Projekt definiert ({{source}}) und wurde nicht freigegeben; öffne diesen Ordner in AiBuddy und erlaube ihn einmal oder definiere ihn in mu.json",
         "aborted": "der Start wurde abgebrochen",
         "rpc": "der Server hat mit einem Fehler geantwortet",
         "protocol": "der Server hat mit etwas geantwortet, das nicht dem MCP-Protokoll entspricht",

@@ -25,7 +25,16 @@ afterEach(() => {
   vi.restoreAllMocks();
   for (const port of ports.splice(0)) port.close();
   // On Windows mu is ended through taskkill, which takes a moment: until then its folder cannot be removed.
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  // A leftover temp folder is the OS's to reclaim (the child is already gone), so a lock that outlives the
+  // retries must not fail the test — note the WorkBuddy sandbox routes rmSync through a trash shim that
+  // ignores maxRetries and fails closed on EBUSY.
+  for (const dir of dirs.splice(0)) {
+    try {
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    } catch {
+      /* left for the OS temp reaper */
+    }
+  }
 });
 
 /** Starts `script` as mu and collects what it sends. */
@@ -97,7 +106,7 @@ createInterface({ input: process.stdin }).on('line', () => {
   process.exit(3);
 });
 `);
-    await expect(port.send({ type: 'get_state' })).rejects.toThrow('mu process exited');
+    await expect(port.send({ type: 'get_state' })).rejects.toThrow('AiBuddy process exited');
     expect(events.at(-1)).toEqual({ type: 'kyrn_rpc_closed' });
     await vi.waitFor(() => expect(logged.join('')).toContain('stopped by itself'), { timeout: 5000 });
     expect(logged.join('')).toBe(
@@ -241,13 +250,13 @@ setTimeout(() => {}, 20_000);
 `,
       { command: 300, start: 20_000 }
     );
-    await expect(port.send({ type: 'get_state' })).rejects.toThrow('mu control command timed out');
+    await expect(port.send({ type: 'get_state' })).rejects.toThrow('AiBuddy control command timed out');
   });
 
   it('fails a control command when mu does not come up within the start deadline', async () => {
     const { port } = start('setTimeout(() => {}, 20_000);\n', { command: 100, start: 800 });
     const sent = Date.now();
-    await expect(port.send({ type: 'get_state' })).rejects.toThrow('mu control command timed out');
+    await expect(port.send({ type: 'get_state' })).rejects.toThrow('AiBuddy control command timed out');
     // The start deadline, not the command's: mu never said a word.
     expect(Date.now() - sent).toBeGreaterThanOrEqual(750);
   });

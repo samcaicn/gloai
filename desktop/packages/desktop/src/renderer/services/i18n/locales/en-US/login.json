@@ -44,7 +44,7 @@
     "pushReady": "Message push is on",
     "pushNotReady": "Message push is off",
     "pushTest": "Send a test message",
-    "pushSample": "This is a push test message from the AiBuddy desktop app ✅",
+    "pushSample": "This is a push test message from the AiBuddy desktop app",
     "pushOk": "Push succeeded",
     "pushFailed": "Push failed",
     "signOut": "Sign out",

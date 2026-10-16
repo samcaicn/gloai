@@ -189,36 +189,16 @@ describe('signing in to a subscription', () => {
     expect(manager.state().url).toBeUndefined();
   });
 
-  it('asks the Google risk question as the flow puts it, and a no to it is a cancel, not a failure', async () => {
-    const { manager, runners, opened } = setup();
-    manager.start('google-gemini-cli');
-    runners[0].say({
-      type: 'prompt',
-      prompt: {
-        type: 'select',
-        message: 'Experimental: this signs in through Gemini CLI’s own login…',
-        options: [
-          { id: 'continue', label: 'I understand the risk, sign in' },
-          { id: 'cancel', label: 'Cancel' },
-        ],
-      },
-    });
-    await settle();
-    expect(manager.state().prompt).toMatchObject({ type: 'select', options: [{ id: 'continue' }, { id: 'cancel' }] });
-    expect(opened).toEqual([]);
-
-    manager.answer(1, 'cancel');
-    runners[0].say({ type: 'error', message: 'Login cancelled' });
-    runners[0].end(1);
-    await settle();
-    expect(runners[0].sent).toEqual([{ type: 'answer', value: 'cancel' }]);
-    expect(manager.state()).toMatchObject({ phase: 'cancelled' });
-    expect(manager.state().error).toBeUndefined();
+  it('does not offer the Google sign-ins removed from this build', () => {
+    const { manager, runners } = setup();
+    expect(() => manager.start('google-gemini-cli' as never)).toThrow('Unknown provider');
+    expect(() => manager.start('google-antigravity' as never)).toThrow('Unknown provider');
+    expect(runners).toEqual([]);
   });
 
   it('knows the account is signed in once the credential is stored, before its models are read', async () => {
     const { manager, runners } = setup();
-    manager.start('google-antigravity');
+    manager.start('xai');
     runners[0].say({ type: 'prompt', prompt: { type: 'manual_code', message: 'paste' } });
     runners[0].say({ type: 'signed_in' });
     await settle();
@@ -229,14 +209,14 @@ describe('signing in to a subscription', () => {
   it('stops a sign-in nobody finishes, after a quarter of an hour, but not one already signed in', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout'] });
     const { manager, runners } = setup();
-    manager.start('google-gemini-cli');
+    manager.start('xai');
     await vi.advanceTimersByTimeAsync(15 * 60_000 - 1);
     expect(manager.state().phase).toBe('running');
     await vi.advanceTimersByTimeAsync(1);
     expect(manager.state()).toMatchObject({ phase: 'failed', error: 'The sign-in waited too long and was stopped' });
     expect(runners[0].sent).toEqual([{ type: 'cancel' }]);
 
-    manager.start('google-antigravity');
+    manager.start('anthropic');
     runners[1].say({ type: 'signed_in' });
     await vi.advanceTimersByTimeAsync(15 * 60_000);
     expect(manager.state()).toMatchObject({ phase: 'running', stored: true });
@@ -265,10 +245,11 @@ describe('who is signed in', () => {
     });
     runners[0].end(0);
     await expect(status).resolves.toEqual({
-      offered: ['openai-codex', 'anthropic', 'xai', 'google-antigravity'],
+      // google-antigravity is offered and signed in on the runner, but removed from this build: the app keeps only
+      // the providers it knows.
+      offered: ['openai-codex', 'anthropic', 'xai'],
       signedIn: [
         { provider: 'anthropic', models: [{ id: 'claude-opus-4-8', name: 'Claude Opus 4.8' }] },
-        { provider: 'google-antigravity', models: [{ id: 'gemini-3-flash', name: 'gemini-3-flash' }] },
       ],
     });
   });

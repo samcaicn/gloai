@@ -796,7 +796,7 @@
     "jobs": "后台命令：/jobs 查看，/jobs stop <编号|all> 停掉",
     "commit": "把还没提交的改动拆成几个提交：先给你看计划，你同意才提交，从不推送",
     "review": "让评审子代理审查还没提交的改动（或你指定的内容），评审发现按轻重排成 P0 到 P3",
-    "mu": "AiBuddy 的状态。另外：/AiBuddy judge <判定器> | /AiBuddy route <判定点> <判定器|default> | /AiBuddy mode <判定点|default> <off|shadow|active>",
+    "mu": "AiBuddy 的状态。另外：/mu judge <判定器> | /mu route <判定点> <判定器|default> | /mu mode <判定点|default> <off|shadow|active>",
     "status": "模型、判定器、各判定点的模式、省下的上下文和最近的判定",
     "help": "AiBuddy 能做什么，以及常用命令一览",
     "ledger": "判定器最近的判定和用时：/ledger [条数]",

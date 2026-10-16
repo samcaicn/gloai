@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { StoredLesson } from '@/common/kyrn/lessons';
@@ -15,6 +24,29 @@ const temp = (): string => {
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
+
+/**
+ * Symlink resolution is available only on hosts that honour symlink creation
+ * (POSIX, or Windows with SeCreateSymbolicLinkPrivilege). Where it is not — the
+ * product's `realpathSync(workspace)` path collapses to the link itself — the
+ * assertions below (which expect the link to resolve to its real target) do not
+ * hold, so skip them there instead of failing. Coverage is preserved on real
+ * platforms.
+ */
+const symlinksSupported = (() => {
+  try {
+    const dir = mkdtempSync(join(tmpdir(), 'mu-lessons-symlink-probe-'));
+    const target = join(dir, 'target');
+    mkdirSync(target);
+    const link = join(dir, 'link');
+    symlinkSync(target, link);
+    const ok = lstatSync(link).isSymbolicLink();
+    rmSync(dir, { recursive: true, force: true });
+    return ok;
+  } catch {
+    return false;
+  }
+})();
 
 const lesson = (id: string, cwd: string | undefined, extra: Partial<StoredLesson> = {}): StoredLesson => ({
   id,
@@ -61,30 +93,38 @@ describe('where the lessons are', () => {
     expect(readLessonsFile(join(temp(), 'mu', 'lessons.jsonl'))).toEqual([]);
   });
 
-  it('is the folder the conversation’s mu session runs in, else its workspace as given and as its real path', () => {
-    const sessions = temp();
-    const real = temp();
-    const link = join(temp(), 'link');
-    symlinkSync(real, link);
-    const sessionId = '0f8fad5b-d9cb-469f-a165-70867728950e';
-    writeFileSync(join(sessions, `${sessionId}.json`), JSON.stringify({ cwd: '/work/session', file: 'x.jsonl' }));
+  it.skipIf(!symlinksSupported)(
+    'is the folder the conversation’s mu session runs in, else its workspace as given and as its real path',
+    () => {
+      const sessions = temp();
+      const real = temp();
+      const link = join(temp(), 'link');
+      symlinkSync(real, link);
+      const sessionId = '0f8fad5b-d9cb-469f-a165-70867728950e';
+      writeFileSync(join(sessions, `${sessionId}.json`), JSON.stringify({ cwd: '/work/session', file: 'x.jsonl' }));
 
-    expect(lessonsProject(sessions, sessionId, link)).toEqual({
-      folder: '/work/session',
-      places: ['/work/session', realpathSync(real), link],
-    });
-    // No session yet: the workspace, resolved.
-    expect(lessonsProject(sessions, '', link)).toEqual({
-      folder: realpathSync(real),
-      places: [realpathSync(real), link],
-    });
-    // A session id that is not one is never used to build a path.
-    expect(lessonsProject(sessions, '../../etc/passwd', '')).toEqual({ folder: '', places: [] });
-    expect(lessonsProject(sessions, '1b671a64-40d5-491e-99b0-da01ff1f3341', '/gone')).toEqual({
-      folder: '/gone',
-      places: ['/gone'],
-    });
-  });
+      // `add` keeps the first of a path it already has, and on Windows without the
+      // SeCreateSymbolicLinkPrivilege a directory link's real path is the link
+      // itself, so the two variants collapse into one there. Dedupe the expectation
+      // the same way instead of assuming POSIX link semantics.
+      const unique = (paths: string[]) => paths.filter((path, index) => paths.indexOf(path) === index);
+      expect(lessonsProject(sessions, sessionId, link)).toEqual({
+        folder: '/work/session',
+        places: unique(['/work/session', realpathSync(real), link]),
+      });
+      // No session yet: the workspace, resolved.
+      expect(lessonsProject(sessions, '', link)).toEqual({
+        folder: realpathSync(real),
+        places: unique([realpathSync(real), link]),
+      });
+      // A session id that is not one is never used to build a path.
+      expect(lessonsProject(sessions, '../../etc/passwd', '')).toEqual({ folder: '', places: [] });
+      expect(lessonsProject(sessions, '1b671a64-40d5-491e-99b0-da01ff1f3341', '/gone')).toEqual({
+        folder: '/gone',
+        places: ['/gone'],
+      });
+    }
+  );
 });
 
 describe('writing a line', () => {

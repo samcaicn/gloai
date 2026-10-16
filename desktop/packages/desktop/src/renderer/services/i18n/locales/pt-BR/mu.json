@@ -747,7 +747,7 @@
     "jobs": "Tarefas em segundo plano: /jobs, /jobs stop <id|all>",
     "commit": "Dividir a alteração não commitada em commits: mostra o plano, só faz commit quando você concorda e nunca faz push",
     "review": "Revisar a alteração não commitada, ou o que você indicar, com o subagente revisor; achados ordenados de P0 a P3",
-    "mu": "Status do AiBuddy. Também: /AiBuddy judge <camadas> | /AiBuddy route <ponto de decisão> <camadas|default> | /AiBuddy mode <ponto de decisão|default> <off|shadow|active>",
+    "mu": "Status do AiBuddy. Também: /mu judge <camadas> | /mu route <ponto de decisão> <camadas|default> | /mu mode <ponto de decisão|default> <off|shadow|active>",
     "status": "Modelo, juiz, modos dos pontos de decisão, contexto economizado e os últimos vereditos",
     "help": "O que o AiBuddy sabe fazer e todos os comandos que vale conhecer",
     "ledger": "Os últimos vereditos do juiz com o tempo de cada um: /ledger [n]",

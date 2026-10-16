@@ -16,7 +16,7 @@ const row = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('findRegistration', () => {
-  it("matches the row that runs this install's command", () => {
+  it('matches the row that runs this install\'s command', () => {
     const agents = [row({ command: NEW_COMMAND })];
     expect(findRegistration(agents, NEW_COMMAND)?.id).toBe('agent-1');
   });
@@ -38,11 +38,11 @@ describe('findRegistration', () => {
     }
   });
 
-  it("refuses a namesake without a description (it may be a person's own agent)", () => {
+  it('refuses a namesake without a description (it may be a person\'s own agent)', () => {
     expect(() => findRegistration([row({ description: undefined })], NEW_COMMAND)).toThrow();
   });
 
-  it("refuses a namesake that is somebody else's agent (a description that is not ours)", () => {
+  it('refuses a namesake that is somebody else\'s agent (a description that is not ours)', () => {
     const agents = [row({ description: 'my own helper' })];
     expect(() => findRegistration(agents, NEW_COMMAND)).toThrow();
   });
@@ -95,7 +95,7 @@ describe('initializeKyrn adopts a stale registration', () => {
     };
   }
 
-  it("rewrites the old install's command onto the same agent id instead of failing", async () => {
+  it('rewrites the old install\'s command onto the same agent id instead of failing', async () => {
     const state = {
       agents: [row({ yolo_id: 'full' })],
       assistants: [{ id: 'as-1', agent_id: 'agent-1', enabled: true }],

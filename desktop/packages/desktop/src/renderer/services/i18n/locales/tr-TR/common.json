@@ -1305,7 +1305,7 @@
       "mcp": {
         "line": "{{name}}: {{reason}}",
         "projectUntrusted": "proje güvenilir değil ve bu sunucu proje tarafından tanımlanmış",
-        "needsApproval": "proje tarafından tanımlanmış ({{source}}) ve onaylanmamış; bu klasörü AiBuddy'da açıp bir kez izin verin ya da sunucuyu AiBuddy.json içinde tanımlayın",
+        "needsApproval": "proje tarafından tanımlanmış ({{source}}) ve onaylanmamış; bu klasörü AiBuddy'da açıp bir kez izin verin ya da sunucuyu mu.json içinde tanımlayın",
         "aborted": "başlatma iptal edildi",
         "rpc": "bir hatayla yanıt verdi",
         "protocol": "MCP protokolüne uymayan bir yanıt verdi",

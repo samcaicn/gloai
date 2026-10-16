@@ -22,6 +22,12 @@ vi.mock('@/renderer/pages/conversation/Preview', () => ({
   PreviewPanel: () => <div data-testid='preview-panel'>preview</div>,
 }));
 
+// ChatLayout imports PreviewPanel directly (bundle-size optimization), so the
+// direct module path needs its own mock alongside the Preview barrel mock.
+vi.mock('@/renderer/pages/conversation/Preview/components/PreviewPanel/PreviewPanel', () => ({
+  default: () => <div data-testid='preview-panel'>preview</div>,
+}));
+
 vi.mock('@/renderer/pages/conversation/components/ChatLayout/MobileWorkspaceOverlay', () => ({
   default: () => <div data-testid='mobile-workspace-overlay' />,
 }));

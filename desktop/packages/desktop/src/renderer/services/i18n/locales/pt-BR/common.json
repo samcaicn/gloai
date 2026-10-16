@@ -1305,7 +1305,7 @@
       "mcp": {
         "line": "{{name}}: {{reason}}",
         "projectUntrusted": "o projeto não foi marcado como confiável, e este servidor é definido pelo projeto",
-        "needsApproval": "é definido pelo projeto ({{source}}) e não foi aprovado; abra esta pasta no AiBuddy e permita uma vez, ou defina-o no AiBuddy.json",
+        "needsApproval": "é definido pelo projeto ({{source}}) e não foi aprovado; abra esta pasta no AiBuddy e permita uma vez, ou defina-o no mu.json",
         "aborted": "a inicialização foi cancelada",
         "rpc": "respondeu com um erro",
         "protocol": "respondeu com algo que não segue o protocolo MCP",

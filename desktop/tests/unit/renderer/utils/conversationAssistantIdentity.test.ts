@@ -63,7 +63,7 @@ describe('resolveConversationLeadingMark', () => {
       TEST_LOGOS
     );
 
-    expect(result).toEqual({ kind: 'emoji', value: '🤵', label: 'mu Butler' });
+    expect(result).toEqual({ kind: 'emoji', value: '🤵', label: 'AiBuddy Butler' });
   });
 
   it('falls back to the backend logo when there is no assistant info', () => {

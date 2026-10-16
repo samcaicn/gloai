@@ -16,11 +16,7 @@ const { TINY_FILES, TINY_BYTES } = vi.hoisted(() => {
   return {
     TINY_BYTES: tinyBytes,
     TINY_FILES: [
-      {
-        name: 'Laya-Q8_0.gguf',
-        bytes: model.length,
-        sha256: '2edc986847e209b4016e141a6dc8716d3207350f416969382d431539bf292e4a',
-      },
+      { name: 'Laya-Q8_0.gguf', bytes: model.length, sha256: '2edc986847e209b4016e141a6dc8716d3207350f416969382d431539bf292e4a' },
     ],
   };
 });
@@ -105,7 +101,10 @@ function makeJudge(dir: string): GgufLocalJudge {
 }
 
 /** The download runs in the background, so the screen's state is polled until the task is no longer running. */
-async function settle(judge: GgufLocalJudge, timeout = 15_000): Promise<Awaited<ReturnType<GgufLocalJudge['state']>>> {
+async function settle(
+  judge: GgufLocalJudge,
+  timeout = 15_000
+): Promise<Awaited<ReturnType<GgufLocalJudge['state']>>> {
   const start = Date.now();
   for (;;) {
     const state = await judge.state();

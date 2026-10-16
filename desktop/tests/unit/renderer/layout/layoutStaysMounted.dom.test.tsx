@@ -18,6 +18,28 @@ vi.mock('@/renderer/components/layout/DocumentTitle', () => ({ default: () => nu
 vi.mock('@/renderer/hooks/system/useCrossSessionRateLimitNotice', () => ({ useCrossSessionRateLimitNotice: () => {} }));
 vi.mock('@renderer/pages/guid', () => ({ default: () => <p>home page</p> }));
 vi.mock('@renderer/pages/conversation', () => ({ default: () => <p>conversation page</p> }));
+// The iLink session is a real backend bridge this layout test does not exercise; stand it in as a pass-through so the
+// provider does not reach for the (unmocked) bridge during mount.
+vi.mock('@renderer/services/ilinkSession', () => ({
+  IlinkSessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useIlinkSession: () => ({
+    phase: 'anonymous',
+    session: null,
+    qr: null,
+    device: null,
+    status: null,
+    error: null,
+    scanning: false,
+    pushReady: false,
+    startLogin: () => {},
+    refreshLogin: () => {},
+    cancelLogin: () => {},
+    logout: async () => {},
+    push: async () => ({ ok: true }),
+  }),
+  useIlinkSessionOptional: () => null,
+  ILINK_LOGIN_APP: 'tupai',
+}));
 
 afterEach(() => {
   cleanup();

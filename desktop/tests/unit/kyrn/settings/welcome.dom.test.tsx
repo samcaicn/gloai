@@ -148,7 +148,7 @@ describe('a settings section as its own page', () => {
       id: 1,
       action: 'setup',
       phase: 'running',
-      output: ['Resolved 26 packages', 'Downloading coremltools'],
+      progress: { file: 'coremltools-8.3.0', index: 0, percent: 0.42, total: 3 },
     };
     bridge.localJudgeState.mockResolvedValue({
       ok: true,
@@ -159,6 +159,8 @@ describe('a settings section as its own page', () => {
       data: { support: 'ok', installed: false, running: false, url, task },
     });
     at('/settings/judges', <SettingsArea section='judges' />);
+    // Laya's panel is the body of the Laya choice: the choice installs and starts it.
+    fireEvent.click(await screen.findByTestId('mu-judge-choice-local'));
     const panel = await screen.findByTestId('mu-laya');
     await waitFor(() => expect(panel).toHaveTextContent('Not installed yet.'));
     fireEvent.click(within(panel).getByTestId('mu-laya-install'));
@@ -167,8 +169,8 @@ describe('a settings section as its own page', () => {
     expect(bridge.localJudgeRun).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Download and install' }));
     await waitFor(() => expect(bridge.localJudgeRun).toHaveBeenCalledWith({ action: 'setup', consent: true }));
-    expect(await within(panel).findByTestId('mu-laya-output')).toHaveTextContent('Downloading coremltools');
-    expect(panel).toHaveTextContent('Installing Laya…');
+    // The raw output is gone: while it works the panel says what it is doing, nothing more.
+    expect(await within(panel).findByTestId('mu-laya-status')).toHaveTextContent('Installing Laya…');
     // Its state is read while it works; the setup goes on to start it.
     bridge.localJudgeState.mockResolvedValue({
       ok: true,
@@ -176,7 +178,7 @@ describe('a settings section as its own page', () => {
     });
     await waitFor(() => expect(panel).toHaveTextContent('Running on this machine'), { timeout: 3000 });
     expect(within(panel).getByTestId('mu-laya-stop')).toBeInTheDocument();
-    expect(within(panel).queryByTestId('mu-laya-output')).not.toBeInTheDocument();
+    expect(within(panel).queryByTestId('mu-laya-progress')).not.toBeInTheDocument();
   });
 
   it('says why Laya cannot be installed on this machine, and where uv comes from', async () => {
@@ -196,6 +198,7 @@ describe('a settings section as its own page', () => {
       data: { support: 'platform', installed: false, running: false, url },
     });
     at('/settings/judges', <SettingsArea section='judges' />);
+    fireEvent.click(await screen.findByTestId('mu-judge-choice-local'));
     const other = await screen.findByTestId('mu-laya');
     await waitFor(() => expect(other).toHaveTextContent('or a Mac with Apple Silicon'));
     expect(within(other).queryByRole('button')).not.toBeInTheDocument();
@@ -203,8 +206,9 @@ describe('a settings section as its own page', () => {
 
   it('keeps the order of several judges under the choice, in the open, each judge by its name', async () => {
     at('/settings/judges', <SettingsArea section='judges' />);
+    // The order is the advanced group: folded for the one judge here, open with its header.
+    fireEvent.click(await screen.findByText('Advanced'));
     const tiers = await screen.findByTestId('mu-judge-tiers');
-    expect(screen.getByRole('heading', { name: 'Judge tiers' })).toBeInTheDocument();
     expect(within(tiers).getByLabelText('Order')).toBeInTheDocument();
     // Laya, the one judge here, needs nothing in the tiers: the choice above installs and starts it.
     const laya = within(tiers).getByTestId('mu-judge-tier-0');
@@ -226,7 +230,7 @@ describe('the first-run guide', () => {
 
   it('says what mu is, connects an API model, takes a judge key, saves once at the end, and is not shown again', async () => {
     at('/welcome', <Welcome />);
-    expect(await screen.findByText('Welcome to mu')).toBeInTheDocument();
+    expect(await screen.findByText('Welcome to AiBuddy')).toBeInTheDocument();
     expect(screen.getByText('A check at every step')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('mu-welcome-begin'));
     fireEvent.click(await screen.findByTestId('mu-welcome-way-openai'));
@@ -520,7 +524,9 @@ describe('signing in with a subscription', () => {
     expect(screen.getByText('Claude / claude-opus-4-8')).toBeInTheDocument();
   });
 
-  it('offers Google only when the harness does, and asks about the risk before anything opens', async () => {
+  // The Google sign-ins (Gemini CLI, Antigravity) were removed from this build: Google OAuth flows are
+  // blocked behind the GFW. What the harness offers is filtered to the subscriptions the app has.
+  it('offers no Google sign-in in this build, even when the harness does', async () => {
     await toSubscriptions();
     await waitFor(() => expect(bridge.loginStatus).toHaveBeenCalled());
     expect(screen.getByTestId('mu-login-xai')).toHaveTextContent('Grok');
@@ -532,67 +538,16 @@ describe('signing in with a subscription', () => {
       data: { signedIn: [], offered: ['openai-codex', 'anthropic', 'xai', 'google-gemini-cli', 'google-antigravity'] },
     });
     await toSubscriptions();
-    const google = await screen.findByTestId('mu-login-google-gemini-cli');
-    expect(google).toHaveTextContent('Gemini CLI');
-    expect(google).toHaveTextContent('Experimental');
-    expect(screen.getByTestId('mu-login-google-antigravity')).toHaveTextContent('Antigravity');
-
-    const asking = {
-      id: 3,
-      provider: 'google-gemini-cli',
-      phase: 'running',
-      prompt: {
-        type: 'select',
-        message: 'Experimental: this signs in through Gemini CLI’s own login…',
-        options: [
-          { id: 'continue', label: 'I understand the risk, sign in' },
-          { id: 'cancel', label: 'Cancel' },
-        ],
-      },
-    };
-    bridge.loginStart.mockResolvedValue({ ok: true, data: asking });
-    bridge.loginState.mockResolvedValue({ ok: true, data: asking });
-    fireEvent.click(google);
-    const risk = await screen.findByTestId('mu-login-risk');
-    expect(risk).toHaveTextContent('the login Google made for Gemini CLI itself');
-    expect(risk).toHaveTextContent('Gemini API key');
-    expect(screen.queryByTestId('mu-login-waiting')).not.toBeInTheDocument();
-    // Nothing is answered for the person.
-    expect(bridge.loginAnswer).not.toHaveBeenCalled();
-
-    bridge.loginAnswer.mockResolvedValue({ ok: true, data: { ...asking, prompt: undefined } });
-    fireEvent.click(screen.getByTestId('mu-login-risk-continue'));
-    await waitFor(() => expect(bridge.loginAnswer).toHaveBeenCalledWith({ id: 3, value: 'continue' }));
-  });
-
-  it('turns a no to the risk into a cancelled sign-in', async () => {
-    bridge.loginStatus.mockResolvedValue({
-      ok: true,
-      data: { signedIn: [], offered: ['openai-codex', 'anthropic', 'xai', 'google-antigravity'] },
-    });
-    const asking = {
-      id: 4,
-      provider: 'google-antigravity',
-      phase: 'running',
-      prompt: {
-        type: 'select',
-        message: 'Experimental…',
-        options: [
-          { id: 'continue', label: 'I understand the risk, sign in' },
-          { id: 'cancel', label: 'Cancel' },
-        ],
-      },
-    };
-    bridge.loginStart.mockResolvedValue({ ok: true, data: asking });
-    bridge.loginState.mockResolvedValue({ ok: true, data: asking });
-    bridge.loginCancel.mockResolvedValue({ ok: true, data: { ...asking, phase: 'cancelled', prompt: undefined } });
-    await toSubscriptions();
-    fireEvent.click(await screen.findByTestId('mu-login-google-antigravity'));
-    fireEvent.click(await screen.findByTestId('mu-login-risk-cancel'));
-    await waitFor(() => expect(bridge.loginCancel).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByTestId('mu-login-risk')).not.toBeInTheDocument());
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(bridge.loginAnswer).not.toHaveBeenCalled();
+    await waitFor(() => expect(bridge.loginStatus).toHaveBeenCalledTimes(2));
+    // The three the app has, and nothing Google, whatever the harness offered.
+    expect(screen.getByTestId('mu-login-xai')).toBeInTheDocument();
+    expect(screen.getByTestId('mu-login-openai-codex')).toBeInTheDocument();
+    expect(screen.getByTestId('mu-login-anthropic')).toBeInTheDocument();
+    expect(screen.queryByTestId('mu-login-google-gemini-cli')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mu-login-google-antigravity')).not.toBeInTheDocument();
+    // No risk question either: there is no Google sign-in to ask about.
+    fireEvent.click(screen.getByTestId('mu-login-xai'));
+    expect(screen.queryByTestId('mu-login-risk')).not.toBeInTheDocument();
   });
 
   it('shows Grok’s code while its page in the browser is waiting for it', async () => {
@@ -615,21 +570,21 @@ describe('signing in with a subscription', () => {
   it('says the account is signed in while its models are still being read', async () => {
     bridge.loginStatus.mockResolvedValue({
       ok: true,
-      data: { signedIn: [], offered: ['openai-codex', 'anthropic', 'xai', 'google-antigravity'] },
+      data: { signedIn: [], offered: ['openai-codex', 'anthropic', 'xai'] },
     });
     const reading = {
       id: 6,
-      provider: 'google-antigravity',
+      provider: 'anthropic',
       phase: 'running',
-      url: 'https://accounts.google.com/o/oauth2/v2/auth',
+      url: 'https://claude.ai/oauth/authorize',
       stored: true,
     };
     bridge.loginStart.mockResolvedValue({ ok: true, data: reading });
     bridge.loginState.mockResolvedValue({ ok: true, data: reading });
     await toSubscriptions();
-    fireEvent.click(await screen.findByTestId('mu-login-google-antigravity'));
+    fireEvent.click(await screen.findByTestId('mu-login-anthropic'));
     expect(await screen.findByTestId('mu-login-waiting')).toHaveTextContent(
-      'Signed in to Antigravity. Reading the models this account can use'
+      'Signed in to Claude. Reading the models this account can use'
     );
     expect(screen.queryByRole('button', { name: 'Open the page again' })).not.toBeInTheDocument();
   });

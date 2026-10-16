@@ -747,7 +747,7 @@
     "jobs": "Tareas en segundo plano: /jobs, /jobs stop <id|all>",
     "commit": "Dividir el cambio sin confirmar en commits: muestra el plan, confirma solo cuando dices que sí y nunca hace push",
     "review": "Revisar el cambio sin confirmar, o lo que indiques, con el subagente revisor; hallazgos ordenados de P0 a P3",
-    "mu": "Estado de AiBuddy. Además: /AiBuddy judge <niveles> | /AiBuddy route <punto de decisión> <niveles|default> | /AiBuddy mode <punto de decisión|default> <off|shadow|active>",
+    "mu": "Estado de AiBuddy. Además: /mu judge <niveles> | /mu route <punto de decisión> <niveles|default> | /mu mode <punto de decisión|default> <off|shadow|active>",
     "status": "Modelo, juez, modos de los puntos de decisión, contexto ahorrado y los últimos veredictos",
     "help": "Lo que AiBuddy puede hacer y todos los comandos que vale la pena conocer",
     "ledger": "Los últimos veredictos del juez con su duración: /ledger [n]",

@@ -44,7 +44,7 @@
     "pushReady": "消息推送已开启",
     "pushNotReady": "消息推送未开启",
     "pushTest": "发送测试消息",
-    "pushSample": "这是来自 AiBuddy 桌面的推送测试消息 ✅",
+    "pushSample": "这是来自 AiBuddy 桌面的推送测试消息",
     "pushOk": "推送成功",
     "pushFailed": "推送失败",
     "signOut": "退出登录",

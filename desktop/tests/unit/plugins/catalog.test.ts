@@ -28,36 +28,15 @@ const MANIFEST = {
   schemaVersion: '1.0.0',
   generatedAt: '2026-01-01T00:00:00.000Z',
   items: [
-    {
-      id: 'p1',
-      name: 'p1',
-      displayName: 'Plugin One',
-      summary: 'Does a thing',
-      package: { registry: 'npm', name: 'p1' },
-      categories: ['utility'],
-    },
-    {
-      id: 'p2',
-      name: 'p2',
-      displayName: 'Plugin Two',
-      summary: 'Does another',
-      repository: { url: 'https://github.com/o/r2' },
-    },
+    { id: 'p1', name: 'p1', displayName: 'Plugin One', summary: 'Does a thing', package: { registry: 'npm', name: 'p1' }, categories: ['utility'] },
+    { id: 'p2', name: 'p2', displayName: 'Plugin Two', summary: 'Does another', repository: { url: 'https://github.com/o/r2' } },
   ],
   page: { total: 2 },
 };
 
 const V2_PAGE = {
   plugins: [
-    {
-      id: 's1',
-      name: 's1',
-      description: '1024 item',
-      install: 'dsh plugin --profile main add s1',
-      owner: 'someone',
-      category: 'tool',
-      pushedAt: '2026-01-01T00:00:00Z',
-    },
+    { id: 's1', name: 's1', description: '1024 item', install: 'dsh plugin --profile main add s1', owner: 'someone', category: 'tool', pushedAt: '2026-01-01T00:00:00Z' },
     { id: 's2', name: 's2', description: 'no source', owner: 'someone' },
   ],
   page: 1,
@@ -161,18 +140,12 @@ describe('MarketCatalogService', () => {
     const service = new MarketCatalogService({ store: createMemoryMarketSourceStore(), http });
     const a = await service.mutate({ action: 'add-builtin', key: 'dshfind' });
     const b = await service.mutate({ action: 'add-builtin', key: 'dsh-1024store' });
-    expect((await service.listSources()).map((source) => source.providerId)).toEqual([
-      'com.dshfind.catalog',
-      'com.deepseek1024.catalog',
-    ]);
+    expect((await service.listSources()).map((source) => source.providerId)).toEqual(['com.dshfind.catalog', 'com.deepseek1024.catalog']);
 
     // `mutate` returns the whole list, so the most recently added source is the last entry.
     const bRecordId = b[b.length - 1]!.sourceRecordId;
     await service.mutate({ action: 'move', sourceRecordId: bRecordId, direction: 'up' });
-    expect((await service.listSources()).map((source) => source.providerId)).toEqual([
-      'com.deepseek1024.catalog',
-      'com.dshfind.catalog',
-    ]);
+    expect((await service.listSources()).map((source) => source.providerId)).toEqual(['com.deepseek1024.catalog', 'com.dshfind.catalog']);
 
     await service.mutate({ action: 'remove', sourceRecordId: bRecordId });
     expect((await service.listSources()).map((source) => source.providerId)).toEqual(['com.dshfind.catalog']);

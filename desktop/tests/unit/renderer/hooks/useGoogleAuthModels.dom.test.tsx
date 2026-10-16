@@ -4,83 +4,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { SWRConfig } from 'swr';
-
-const { getClientBusinessSettingMock, googleAuthStatusMock, googleSubscriptionStatusMock, configServiceMock } =
-  vi.hoisted(() => ({
-    getClientBusinessSettingMock: vi.fn(),
-    googleAuthStatusMock: vi.fn(),
-    googleSubscriptionStatusMock: vi.fn(),
-    configServiceMock: {
-      get: vi.fn(),
-    },
-  }));
-
-vi.mock('@/renderer/services/clientBusinessSettings', () => ({
-  getClientBusinessSetting: getClientBusinessSettingMock,
-}));
-
-vi.mock('@/common', () => ({
-  ipcBridge: {
-    googleAuth: {
-      status: {
-        invoke: googleAuthStatusMock,
-      },
-    },
-    google: {
-      subscriptionStatus: {
-        invoke: googleSubscriptionStatusMock,
-      },
-    },
-  },
-}));
-
-vi.mock('@/common/config/configService', () => ({
-  configService: configServiceMock,
-}));
+import { describe, expect, it } from 'vitest';
+import { renderHook } from '@testing-library/react';
 
 import { useGoogleAuthModels } from '@/renderer/hooks/agent/useGoogleAuthModels';
 
-const createWrapper = () => {
-  const cache = new Map();
-  return ({ children }: { children: React.ReactNode }) => (
-    <SWRConfig value={{ provider: () => cache }}>{children}</SWRConfig>
-  );
-};
-
+/**
+ * Google account sign-in (the `google.config` / Google Auth path) is a GFW-blocked feature removed from this build.
+ * The hook stays so callers keep compiling, but reports "not signed in" — no Google provider is ever offered and no
+ * backend is queried.
+ */
 describe('useGoogleAuthModels', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    configServiceMock.get.mockImplementation(() => {
-      throw new Error('configService should not be used for google business settings');
-    });
-    getClientBusinessSettingMock.mockResolvedValue({ proxy: 'http://proxy.local' });
-    googleAuthStatusMock.mockResolvedValue({ success: true });
-    googleSubscriptionStatusMock.mockResolvedValue({
-      isSubscriber: true,
-      tier: 'pro',
-      lastChecked: 123,
-    });
-  });
-
-  it('reads google config from backend client settings instead of configService', async () => {
-    const { result } = renderHook(() => useGoogleAuthModels(), { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(result.current.isGoogleAuth).toBe(true);
-      expect(result.current.subscriptionStatus).toEqual({
-        isSubscriber: true,
-        tier: 'pro',
-        lastChecked: 123,
-      });
-    });
-
-    expect(getClientBusinessSettingMock).toHaveBeenCalledWith('google.config');
-    expect(googleAuthStatusMock).toHaveBeenCalledWith({ proxy: 'http://proxy.local' });
-    expect(googleSubscriptionStatusMock).toHaveBeenCalledWith({ proxy: 'http://proxy.local' });
-    expect(configServiceMock.get).not.toHaveBeenCalled();
+  it('reports no Google sign-in in this build (feature removed)', () => {
+    const { result } = renderHook(() => useGoogleAuthModels());
+    expect(result.current.isGoogleAuth).toBe(false);
+    expect(result.current.subscriptionStatus).toBeUndefined();
   });
 });

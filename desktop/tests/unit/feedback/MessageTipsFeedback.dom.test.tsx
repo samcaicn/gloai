@@ -426,7 +426,7 @@ describe('MessageTips — error chips', () => {
   it('shows the upstream product names in a backend tip as mu', () => {
     render(<MessageTips message={buildTips('warning', 'AionCore restarted the agent')} />);
 
-    expect(screen.getByText('mu restarted the agent')).toBeInTheDocument();
+    expect(screen.getByText('AiBuddy restarted the agent')).toBeInTheDocument();
     expect(screen.queryByText(/AionCore/)).not.toBeInTheDocument();
   });
 
@@ -440,7 +440,7 @@ describe('MessageTips — error chips', () => {
       />
     );
 
-    expect(screen.getAllByText('mu lost its Agent protocol connection').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('AiBuddy lost its Agent protocol connection').length).toBeGreaterThan(0);
     expect(screen.queryByText(/AionUI/)).not.toBeInTheDocument();
   });
 });

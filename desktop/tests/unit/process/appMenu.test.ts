@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const electron = vi.hoisted(() => ({
   Menu: { buildFromTemplate: vi.fn((template: unknown) => ({ template })), setApplicationMenu: vi.fn() },
-  app: { name: 'mu', isPackaged: true, on: vi.fn() },
+  app: { name: 'AiBuddy', isPackaged: true, on: vi.fn() },
   shell: { openExternal: vi.fn(() => Promise.resolve()) },
   BrowserWindow: { getAllWindows: () => [] },
 }));
@@ -72,7 +72,7 @@ const click = (item: MenuItemConstructorOptions | undefined) =>
 describe('the macOS application menu', () => {
   it('has the standard menus in the standard order', () => {
     expect(mac().map((item) => item.label)).toEqual([
-      'mu',
+      'AiBuddy',
       'common.menu.file',
       'common.menu.edit',
       'common.menu.view',
@@ -88,7 +88,7 @@ describe('the macOS application menu', () => {
   });
 
   it('keeps the app menu to about, updates, settings, services, hide and quit', () => {
-    const appMenu = submenuOf(mac(), 'mu').filter((item) => item.type !== 'separator');
+    const appMenu = submenuOf(mac(), 'AiBuddy').filter((item) => item.type !== 'separator');
 
     expect(appMenu.map((item) => item.role ?? item.label)).toEqual([
       'about',
@@ -138,7 +138,7 @@ describe('the macOS application menu', () => {
     const actions = fakeActions();
     const help = submenuOf(mac(false, actions), 'common.menu.help');
 
-    click(help.find((item) => item.label === 'common.menu.projectPage(mu)'));
+    click(help.find((item) => item.label === 'common.menu.projectPage(AiBuddy)'));
 
     expect(actions.openProjectPage).toHaveBeenCalledTimes(1);
     expect(help.some((item) => item.label === 'common.menu.checkForUpdates')).toBe(false);
@@ -258,10 +258,10 @@ describe('the installed menu', () => {
   it("opens mu's GitHub page", () => {
     setupApplicationMenu();
 
-    click(itemLabelled(installed(), i18n.t('common.menu.projectPage', { name: 'mu' })));
+    click(itemLabelled(installed(), i18n.t('common.menu.projectPage', { name: 'AiBuddy' })));
 
     expect(electron.shell.openExternal).toHaveBeenCalledWith(MU_PROJECT_URL);
-    expect(MU_PROJECT_URL).toBe('https://github.com/qybaihe/mu');
+    expect(MU_PROJECT_URL).toBe('https://github.com/samcaicn/gloai');
   });
 
   it('logs a project page that cannot be opened', async () => {
@@ -269,7 +269,7 @@ describe('the installed menu', () => {
     electron.shell.openExternal.mockImplementationOnce(() => Promise.reject(new Error('no browser')));
     setupApplicationMenu();
 
-    click(itemLabelled(installed(), i18n.t('common.menu.projectPage', { name: 'mu' })));
+    click(itemLabelled(installed(), i18n.t('common.menu.projectPage', { name: 'AiBuddy' })));
 
     await vi.waitFor(() => expect(error).toHaveBeenCalled());
     error.mockRestore();

@@ -351,9 +351,29 @@ describe('mu-only backend catalog', () => {
     expect((await initializeKyrn(request, '/kyrn/acp')).assistants).toHaveLength(1);
     expect(calls).toContainEqual({ method: 'PATCH', path: '/api/agents/other/enabled', body: { enabled: false } });
     expect(calls).toContainEqual({ method: 'PATCH', path: '/api/assistants/ao/state', body: { enabled: false } });
-    // Already called mu, with full auto set: nothing to read, nothing to update, nothing to create.
-    expect(calls.filter((call) => call.method === 'PUT' || call.path === '/api/agents/custom')).toEqual([]);
-    expect(switches(calls, 'k')).toEqual([]);
+    // Called mu before the rename, with full auto already set: renamed in place to AiBuddy, nothing created.
+    expect(calls.filter((call) => call.method === 'POST' && call.path === '/api/agents/custom')).toEqual([]);
+    expect(puts(calls)).toEqual([
+      {
+        method: 'PUT',
+        path: '/api/agents/custom/k',
+        body: {
+          name: 'AiBuddy',
+          command: '/kyrn/acp',
+          icon: undefined,
+          args: [],
+          env: [],
+          advanced: {
+            yolo_id: 'full',
+            native_skills_dirs: undefined,
+            behavior_policy: undefined,
+            description: 'AiBuddy harness · local Codex login · Jev judgment',
+          },
+        },
+      },
+    ]);
+    // The record is read by setting `enabled` to what it already is; it is never switched off.
+    expect(switches(calls, 'k')).toEqual([{ enabled: true }]);
   });
   it('renames the registration from before the rename in place, sending the whole record back', async () => {
     const { calls, request } = backend([
@@ -384,17 +404,17 @@ describe('mu-only backend catalog', () => {
         method: 'PUT',
         path: '/api/agents/custom/k',
         body: {
-          name: 'mu',
+          name: 'AiBuddy',
           command: '/kyrn/acp',
           icon: 'icon.svg',
           args: ['--flag'],
           env: [{ name: 'A', value: 'b' }],
           advanced: {
-            // AionUi's own word for full auto, which mu does not know, becomes mu's full access.
+            // AionUi's own word for full auto, which the app does not know, becomes its full access.
             yolo_id: 'full',
             native_skills_dirs: ['/skills'],
             behavior_policy: { supports_side_question: true },
-            description: 'mu harness · local Codex login · Jev judgment',
+            description: 'AiBuddy harness · local Codex login · Jev judgment',
           },
         },
       },
@@ -428,7 +448,7 @@ describe('mu-only backend catalog', () => {
     ]);
     await initializeKyrn(request, '/kyrn/acp');
     const put = puts(calls)[0]?.body as { advanced: { description: string } };
-    expect(put.advanced.description).toBe('mu harness · local Codex login · Jev judgment');
+    expect(put.advanced.description).toBe('AiBuddy harness · local Codex login · Jev judgment');
   });
   it('keeps the old name rather than update a record it could not read whole', async () => {
     const { calls, request } = backend(
@@ -460,14 +480,14 @@ describe('mu-only backend catalog', () => {
     expect(calls.filter((call) => call.path === '/api/agents/custom')).toEqual([]);
     expect(calls).toContainEqual({ method: 'PATCH', path: '/api/agents/other/enabled', body: { enabled: false } });
   });
-  it('registers once, as mu, when nothing is registered yet, with full access for runs nobody watches', async () => {
+  it('registers once, as AiBuddy, when nothing is registered yet, with full access for runs nobody watches', async () => {
     const { calls, request } = backend([{ id: 'other', enabled: true }]);
     await initializeKyrn(request, '/kyrn/acp');
     const created = calls.filter((call) => call.path === '/api/agents/custom');
     expect(created).toHaveLength(1);
-    expect(created[0].body).toMatchObject({ name: 'mu', command: '/kyrn/acp', advanced: { yolo_id: 'full' } });
+    expect(created[0].body).toMatchObject({ name: 'AiBuddy', command: '/kyrn/acp', advanced: { yolo_id: 'full' } });
   });
-  it('gives a registration without a full-auto mode mu’s full access, and keeps one of mu’s modes someone chose', async () => {
+  it('gives a registration without a full-auto mode its full access, and keeps a mode someone chose', async () => {
     const { calls, request } = backend([
       { id: 'k', name: 'mu', command: '/kyrn/acp', enabled: true, env: [{ name: 'A', value: 'b' }] },
     ]);
@@ -478,7 +498,7 @@ describe('mu-only backend catalog', () => {
         method: 'PUT',
         path: '/api/agents/custom/k',
         body: expect.objectContaining({
-          name: 'mu',
+          name: 'AiBuddy',
           env: [{ name: 'A', value: 'b' }],
           advanced: expect.objectContaining({ yolo_id: 'full' }),
         }),
@@ -486,11 +506,21 @@ describe('mu-only backend catalog', () => {
     ]);
     const chosen = backend([{ id: 'k', name: 'mu', command: '/kyrn/acp', enabled: true, yolo_id: 'jev' }]);
     await initializeKyrn(chosen.request, '/kyrn/acp');
-    expect(puts(chosen.calls)).toEqual([]);
+    // The label becomes AiBuddy, but the mode someone chose is kept — not forced to full auto.
+    expect(puts(chosen.calls)).toEqual([
+      expect.objectContaining({
+        method: 'PUT',
+        path: '/api/agents/custom/k',
+        body: expect.objectContaining({
+          name: 'AiBuddy',
+          advanced: expect.objectContaining({ yolo_id: 'jev' }),
+        }),
+      }),
+    ]);
   });
   it.each(['KYRN', 'mu'])('never replaces a different user command registered as %s', async (name) => {
     const { calls, request } = backend([{ id: 'k', name, command: '/other' }]);
-    await expect(initializeKyrn(request, '/kyrn/acp')).rejects.toThrow('different mu command');
+    await expect(initializeKyrn(request, '/kyrn/acp')).rejects.toThrow('different AiBuddy command');
     expect(calls).toHaveLength(1);
   });
 });

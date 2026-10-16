@@ -15,16 +15,8 @@ const { TINY_FILES, TINY_BYTES } = vi.hoisted(() => {
   return {
     TINY_BYTES: tinyBytes,
     TINY_FILES: [
-      {
-        name: 'model.onnx',
-        bytes: model.length,
-        sha256: '2edc986847e209b4016e141a6dc8716d3207350f416969382d431539bf292e4a',
-      },
-      {
-        name: 'onnx_config.json',
-        bytes: config.length,
-        sha256: 'a0fab1377f49a759b57f63318262ebe89fabfc990e8e93ceac2984561482b9d4',
-      },
+      { name: 'model.onnx', bytes: model.length, sha256: '2edc986847e209b4016e141a6dc8716d3207350f416969382d431539bf292e4a' },
+      { name: 'onnx_config.json', bytes: config.length, sha256: 'a0fab1377f49a759b57f63318262ebe89fabfc990e8e93ceac2984561482b9d4' },
     ],
   };
 });
@@ -43,13 +35,7 @@ vi.mock('@/common/kyrn/layaOnnx.ts', async (importOriginal) => {
   };
 });
 
-import {
-  LAYA_ONNX_FILES,
-  LAYA_ONNX_REVISION,
-  LAYA_ONNX_SOURCES,
-  layaOnnxFileUrlFor,
-  layaOnnxUrlCandidates,
-} from '@/common/kyrn/layaOnnx.ts';
+import { LAYA_ONNX_FILES, LAYA_ONNX_REVISION, LAYA_ONNX_SOURCES, layaOnnxFileUrlFor, layaOnnxUrlCandidates } from '@/common/kyrn/layaOnnx.ts';
 import { OnnxLocalJudge } from '@process/agent/kyrn/localJudgeOnnx.ts';
 
 type Call = { url: string; headers: Record<string, string>; signal?: AbortSignal | null };

@@ -8,7 +8,6 @@ import common from '@/renderer/services/i18n/locales/zh-CN/common.json';
 import mu from '@/renderer/services/i18n/locales/zh-CN/mu.json';
 import JudgePulse from '@/renderer/components/brand/JudgePulse';
 import MuBackdrop from '@/renderer/components/brand/MuBackdrop';
-import { MU_GLYPH_PATH } from '@/renderer/components/brand/glyph';
 import MuMark from '@/renderer/components/brand/MuMark';
 
 import MuStarters, { MU_STARTERS } from '@/renderer/components/brand/MuStarters';
@@ -69,7 +68,7 @@ describe('MuMark', () => {
 });
 
 describe('MuBackdrop', () => {
-  it('draws the icon’s glyph as decoration, each with its own gradients, and fades on the way out', () => {
+  it('draws the wordmark as decoration, each with its own gradients, and fades on the way out', () => {
     const { container, rerender } = render(
       <>
         <MuBackdrop />
@@ -80,9 +79,9 @@ describe('MuBackdrop', () => {
       expect(backdrop).toHaveAttribute('aria-hidden', 'true');
       expect(backdrop).toHaveAttribute('data-state', 'shown');
     }
-    // The fill and the rim are the same glyph as the icon.
-    const paths = [...container.querySelectorAll('path')].map((node) => node.getAttribute('d'));
-    expect(new Set(paths)).toEqual(new Set([MU_GLYPH_PATH]));
+    // The fill is the product wordmark, the same one the mark shows.
+    const texts = [...container.querySelectorAll('text')].map((node) => node.textContent);
+    expect(new Set(texts)).toEqual(new Set(['AiBuddy']));
     const ids = [...container.querySelectorAll('linearGradient, mask')].map((node) => node.id);
     expect(new Set(ids).size).toBe(ids.length);
     rerender(<MuBackdrop leaving />);

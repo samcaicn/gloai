@@ -747,7 +747,7 @@
     "jobs": "Arka plan işleri: /jobs, /jobs stop <id|all>",
     "commit": "Commit edilmemiş değişikliği commit’lere böler: önce planı gösterir, yalnızca onay verdiğinizde commit eder, asla push yapmaz",
     "review": "Commit edilmemiş değişikliği ya da belirttiğinizi inceleyici alt ajanla gözden geçirir; bulgular P0’dan P3’e sıralanır",
-    "mu": "AiBuddy durumu. Ayrıca: /AiBuddy judge <kademeler> | /AiBuddy route <karar noktası> <kademeler|default> | /AiBuddy mode <karar noktası|default> <off|shadow|active>",
+    "mu": "AiBuddy durumu. Ayrıca: /mu judge <kademeler> | /mu route <karar noktası> <kademeler|default> | /mu mode <karar noktası|default> <off|shadow|active>",
     "status": "Model, hakem, karar noktalarının modları, tasarruf edilen bağlam ve son kararlar",
     "help": "AiBuddy’nun neler yapabildiği ve bilinmeye değer tüm komutlar",
     "ledger": "Hakemin son kararları ve süreleri: /ledger [n]",

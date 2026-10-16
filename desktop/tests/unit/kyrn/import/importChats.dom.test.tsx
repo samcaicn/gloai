@@ -215,7 +215,7 @@ describe('the import dialog', () => {
     render(<Dialog />);
     await settle();
     const empty = screen.getByText('No Claude Code or Codex conversations were found on this computer.');
-    const hint = screen.getByText(/Each conversation you choose becomes a mu conversation/);
+    const hint = screen.getByText(/Each conversation you choose becomes an AiBuddy conversation/);
     // Both in the dialog's one column, the empty line not in the list that reaches past it.
     expect(empty.parentElement).toBe(hint.parentElement);
     expect(screen.queryByTestId('import-chats-list')).toBeNull();

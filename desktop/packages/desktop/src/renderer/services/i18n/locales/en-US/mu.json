@@ -729,7 +729,7 @@
     "open": "Choose…",
     "dialog": {
       "title": "Import conversations",
-      "hint": "Each conversation you choose becomes a AiBuddy conversation in its project folder. AiBuddy reads everything that was said; thinking and images stay behind.",
+      "hint": "Each conversation you choose becomes an AiBuddy conversation in its project folder. AiBuddy reads everything that was said; thinking and images stay behind.",
       "search": "Search by words or folder",
       "loading": "Looking for conversations…",
       "empty": "No Claude Code or Codex conversations were found on this computer.",
@@ -796,7 +796,7 @@
     "jobs": "Background jobs: /jobs, /jobs stop <id|all>",
     "commit": "Split the uncommitted change into commits: shows the plan, commits only when you say yes, never pushes",
     "review": "Review the uncommitted change, or what you name, with the reviewer sub-agent; findings sorted P0 to P3",
-    "mu": "AiBuddy status. Also: /AiBuddy judge <tiers> | /AiBuddy route <decision> <tiers|default> | /AiBuddy mode <decision|default> <off|shadow|active>",
+    "mu": "AiBuddy status. Also: /mu judge <tiers> | /mu route <decision> <tiers|default> | /mu mode <decision|default> <off|shadow|active>",
     "status": "Model, judge, decision modes, context savings and the latest verdicts",
     "help": "What AiBuddy can do and every command worth knowing",
     "ledger": "The last verdicts of the judge with timing: /ledger [n]",

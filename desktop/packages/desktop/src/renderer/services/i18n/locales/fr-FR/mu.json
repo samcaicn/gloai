@@ -747,7 +747,7 @@
     "jobs": "Processus en arrière-plan : /jobs, /jobs stop <id|all>",
     "commit": "Découper la modification non validée en commits : montre le plan, ne valide qu’avec votre accord, ne pousse jamais",
     "review": "Faire relire la modification non validée, ou ce que vous désignez, par le sous-agent relecteur ; constats classés de P0 à P3",
-    "mu": "État de AiBuddy. Aussi : /AiBuddy judge <paliers> | /AiBuddy route <point de décision> <paliers|default> | /AiBuddy mode <point de décision|default> <off|shadow|active>",
+    "mu": "État de AiBuddy. Aussi : /mu judge <paliers> | /mu route <point de décision> <paliers|default> | /mu mode <point de décision|default> <off|shadow|active>",
     "status": "Modèle, juge, modes des points de décision, contexte économisé et derniers verdicts",
     "help": "Ce que AiBuddy sait faire et toutes les commandes utiles",
     "ledger": "Les derniers verdicts du juge avec leur durée : /ledger [n]",

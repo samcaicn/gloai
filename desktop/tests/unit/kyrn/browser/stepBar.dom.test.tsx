@@ -111,7 +111,7 @@ describe('the step bar above a page mu is driving', () => {
     view.unmount();
     show(<StepBar run={run({ paused: true, pausedBy: 'interaction' })} />);
     expect(screen.queryByText('暂停')).toBeNull();
-    expect(screen.getByText(/你刚才操作了页面，mu 已自动暂停/)).toBeTruthy();
+    expect(screen.getByText(/你刚才操作了页面，AiBuddy 已自动暂停/)).toBeTruthy();
     fireEvent.click(screen.getByText('继续'));
     expect(control).toHaveBeenLastCalledWith({ tabId: 'browser-1', action: 'resume' });
     expect(screen.getByTestId('mu-step-bar').getAttribute('data-tone')).toBe('paused');
@@ -166,7 +166,7 @@ describe('the step bar above a page mu is driving', () => {
       <StepBar run={run({ phase: 'finished', status: 'blocked', finishedAt: Date.now(), reason: 'No search box' })} />
     );
     fireEvent.click(screen.getByText('步骤 3'));
-    expect(screen.getByText('mu 的说明')).toBeTruthy();
+    expect(screen.getByText('AiBuddy 的说明')).toBeTruthy();
     expect(screen.getByText('No search box')).toBeTruthy();
   });
 });
@@ -186,7 +186,7 @@ describe('the step bar after the harness said how the run ended', () => {
       />
     );
     fireEvent.click(screen.getByText('步骤 3'));
-    expect(screen.getByText('mu 的说明')).toBeTruthy();
+    expect(screen.getByText('AiBuddy 的说明')).toBeTruthy();
     expect(screen.getByText('没有判定器能选出下一步操作（判定器请求过于频繁）。')).toBeTruthy();
     expect(screen.queryByText(/no judge could choose/)).toBeNull();
   });
@@ -210,7 +210,7 @@ describe('the step bar after the harness said how the run ended', () => {
   it('falls back to the harness’s English for a code it does not know, and calls an exception a technical detail', () => {
     const view = show(<StepBar run={ended({ code: 'brand_new', reason: 'the judge went fishing' })} />);
     fireEvent.click(screen.getByText('步骤 3'));
-    expect(screen.getByText('mu 的说明')).toBeTruthy();
+    expect(screen.getByText('AiBuddy 的说明')).toBeTruthy();
     expect(screen.getByText('the judge went fishing')).toBeTruthy();
     view.unmount();
 
@@ -235,7 +235,7 @@ describe('the confirmation dialog', () => {
 
   it('shows the label and the address as plain text, with a countdown that ends in a refusal', () => {
     show(<ConfirmDialog run={asking(120)} />);
-    expect(screen.getByText('mu 想执行一个可能无法撤销的操作')).toBeTruthy();
+    expect(screen.getByText('AiBuddy 想执行一个可能无法撤销的操作')).toBeTruthy();
     expect(screen.getByText('<b>删除账号</b> [链接](javascript:alert(1))')).toBeTruthy();
     expect(screen.getByText('https://shop.test/account')).toBeTruthy();
     const body = screen.getByTestId('mu-confirm');

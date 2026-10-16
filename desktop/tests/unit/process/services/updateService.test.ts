@@ -89,12 +89,18 @@ const offer = (version: string, files = process.platform === 'darwin' ? macFiles
 
 const release = (version: string, installer: string | null = `mu-${version}-mac-arm64.dmg`): UpdateReleaseInfo => {
   const assets = installer
-    ? [{ name: installer, url: `https://github.com/qybaihe/mu/releases/download/v${version}/${installer}`, size: 1 }]
+    ? [
+        {
+          name: installer,
+          url: `https://github.com/samcaicn/gloai/releases/download/v${version}/${installer}`,
+          size: 1,
+        },
+      ]
     : [];
   return {
     tagName: `v${version}`,
     version,
-    htmlUrl: `https://github.com/qybaihe/mu/releases/tag/v${version}`,
+    htmlUrl: `https://github.com/samcaicn/gloai/releases/tag/v${version}`,
     prerelease: true,
     assets,
     recommendedAsset: assets[0],
@@ -152,7 +158,11 @@ describe('updates that install on a restart (electron-updater)', () => {
     updater.checkForUpdates.mockResolvedValue(null);
     const { service } = makeService();
     await service.check();
-    expect(updater.setFeedURL).toHaveBeenCalledWith({ provider: 'github', owner: 'qybaihe', repo: 'mu' });
+    expect(updater.setFeedURL).toHaveBeenCalledWith({
+      provider: 'github',
+      owner: 'samcaicn',
+      repo: 'gloai',
+    });
     expect(updater.allowPrerelease).toBe(true);
     expect(updater.autoDownload).toBe(false);
     expect(updater.autoInstallOnAppQuit).toBe(true);
@@ -164,7 +174,12 @@ describe('updates that install on a restart (electron-updater)', () => {
     setPlatform('darwin', 'arm64');
     updater.checkForUpdates.mockResolvedValue(offer('0.1.3'));
     updater.downloadUpdate.mockImplementation(async () => {
-      updater.emit('download-progress', { percent: 42.7, bytesPerSecond: 1, total: 100, transferred: 42 });
+      updater.emit('download-progress', {
+        percent: 42.7,
+        bytesPerSecond: 1,
+        total: 100,
+        transferred: 42,
+      });
       return [];
     });
     const { service, deps } = makeService();
@@ -243,7 +258,11 @@ describe('updates that install on a restart (electron-updater)', () => {
 
     expect(await service.run('later')).toMatchObject({ phase: 'found', dismissed: true });
     // The next check offers it again.
-    expect(await service.check()).toMatchObject({ phase: 'found', version: '0.1.3', dismissed: false });
+    expect(await service.check()).toMatchObject({
+      phase: 'found',
+      version: '0.1.3',
+      dismissed: false,
+    });
     expect(updater.downloadUpdate).not.toHaveBeenCalled();
   });
 
@@ -270,7 +289,11 @@ describe('updates that install on a restart (electron-updater)', () => {
     expect(service.getState()).toMatchObject({ phase: 'ready', version: '0.1.3', dismissed: true });
 
     updater.checkForUpdates.mockResolvedValue(offer('0.1.4'));
-    expect(await service.check()).toMatchObject({ phase: 'found', version: '0.1.4', dismissed: false });
+    expect(await service.check()).toMatchObject({
+      phase: 'found',
+      version: '0.1.4',
+      dismissed: false,
+    });
     expect(updater.downloadUpdate).toHaveBeenCalledTimes(1);
     expect(phases(deps.broadcast)).toEqual(['idle', 'found', 'downloading', 'ready', 'found']);
   });
@@ -283,13 +306,21 @@ describe('updates that install on a restart (electron-updater)', () => {
 
     updater.checkForUpdates.mockRejectedValue(new Error('HttpError: 502 Bad Gateway'));
     deps.latestRelease.mockResolvedValue(release('0.1.4'));
-    expect(await service.check()).toMatchObject({ phase: 'found', version: '0.1.3', checking: false });
+    expect(await service.check()).toMatchObject({
+      phase: 'found',
+      version: '0.1.3',
+      checking: false,
+    });
 
     updater.checkForUpdates.mockResolvedValue(offer('0.1.3'));
     await findAndDownload(service);
     await vi.waitFor(() => expect(service.getState().phase).toBe('ready'));
     updater.checkForUpdates.mockRejectedValue(new Error('HttpError: 502 Bad Gateway'));
-    expect(await service.check()).toMatchObject({ phase: 'ready', version: '0.1.3', checking: false });
+    expect(await service.check()).toMatchObject({
+      phase: 'ready',
+      version: '0.1.3',
+      checking: false,
+    });
     expect(deps.latestRelease).not.toHaveBeenCalled();
   });
 
@@ -331,8 +362,15 @@ describe('updates that install on a restart (electron-updater)', () => {
     updater.checkForUpdates.mockResolvedValue(offer('0.1.3'));
     const { service } = makeService();
     await service.check();
-    updater.checkForUpdates.mockResolvedValue({ isUpdateAvailable: false, updateInfo: { version: '0.1.2' } });
-    expect(await service.check()).toMatchObject({ phase: 'upToDate', version: undefined, size: undefined });
+    updater.checkForUpdates.mockResolvedValue({
+      isUpdateAvailable: false,
+      updateInfo: { version: '0.1.2' },
+    });
+    expect(await service.check()).toMatchObject({
+      phase: 'upToDate',
+      version: undefined,
+      size: undefined,
+    });
   });
 
   it('never offers a version that is not newer than the one running', async () => {
@@ -345,7 +383,10 @@ describe('updates that install on a restart (electron-updater)', () => {
 
   it('reports up to date, then a failed check in one sentence code', async () => {
     setPlatform('win32', 'x64');
-    updater.checkForUpdates.mockResolvedValue({ isUpdateAvailable: false, updateInfo: { version: '0.1.2' } });
+    updater.checkForUpdates.mockResolvedValue({
+      isUpdateAvailable: false,
+      updateInfo: { version: '0.1.2' },
+    });
     const { service, deps } = makeService();
     expect(await service.check()).toMatchObject({ phase: 'upToDate' });
 
@@ -417,7 +458,10 @@ describe('falling back to the installer', () => {
     await vi.waitFor(() => expect(updater.downloadUpdate).toHaveBeenCalled());
     nativeAutoUpdater.emit('error', new Error('Code signature at URL file:///x/mu.app did not pass validation'));
     await vi.waitFor(() =>
-      expect(service.getState()).toMatchObject({ phase: 'available', error: { code: 'prepareInstallFailed' } })
+      expect(service.getState()).toMatchObject({
+        phase: 'available',
+        error: { code: 'prepareInstallFailed' },
+      })
     );
   });
 
@@ -429,11 +473,14 @@ describe('falling back to the installer', () => {
     deps.latestRelease.mockRejectedValue(new Error('HttpError: 403 rate limit'));
     await findAndDownload(service);
     await vi.waitFor(() =>
-      expect(service.getState()).toMatchObject({ phase: 'available', error: { code: 'downloadFailed' } })
+      expect(service.getState()).toMatchObject({
+        phase: 'available',
+        error: { code: 'downloadFailed' },
+      })
     );
     expect(service.getState().installerName).toBeUndefined();
     await service.run('openReleasePage');
-    expect(deps.openExternal).toHaveBeenCalledWith('https://github.com/qybaihe/mu/releases/tag/v0.1.3');
+    expect(deps.openExternal).toHaveBeenCalledWith('https://github.com/samcaicn/gloai/releases/tag/v0.1.3');
   });
 
   it('starts mu again when the installer does not take over after the backend stopped', async () => {
@@ -493,7 +540,7 @@ describe('updates that come as an installer (Linux)', () => {
     const { service, deps } = makeService({ restartUpdater: undefined });
     deps.openExternal.mockRejectedValue(new Error('no browser'));
     await expect(service.run('openReleasePage')).resolves.toMatchObject({ phase: 'idle' });
-    expect(deps.openExternal).toHaveBeenCalledWith('https://github.com/qybaihe/mu/releases');
+    expect(deps.openExternal).toHaveBeenCalledWith('https://github.com/samcaicn/gloai/releases');
   });
 });
 

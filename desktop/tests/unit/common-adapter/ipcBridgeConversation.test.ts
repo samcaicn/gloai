@@ -145,8 +145,8 @@ describe('ipcBridge conversation adapter', () => {
   });
 });
 
-// The bundled backend still names the upstream products in the texts it serves; the app shows them as mu.
-describe('ipcBridge backend texts shown as mu', () => {
+// The bundled backend still names the upstream products in the texts it serves; the app shows them as its own brand.
+describe('ipcBridge backend texts shown as the app brand', () => {
   beforeEach(() => {
     httpBridgeMocks.calls.length = 0;
     httpBridgeMocks.responses.clear();
@@ -169,10 +169,10 @@ describe('ipcBridge backend texts shown as mu', () => {
     expect(await assistants.list.invoke()).toEqual([
       {
         id: 'aionui-assistant',
-        name: 'mu Butler',
-        name_i18n: { 'en-US': 'mu Butler', 'zh-CN': 'mu 管家' },
-        description: 'Helps you manage mu itself',
-        prompts: ['Open mu from my phone'],
+        name: 'AiBuddy Butler',
+        name_i18n: { 'en-US': 'AiBuddy Butler', 'zh-CN': 'AiBuddy 管家' },
+        description: 'Helps you manage AiBuddy itself',
+        prompts: ['Open AiBuddy from my phone'],
         agent_id: '632f31d2',
         context: 'You are AionUi’s built-in butler.',
       },
@@ -193,8 +193,8 @@ describe('ipcBridge backend texts shown as mu', () => {
 
     expect(detail).toMatchObject({
       id: 'aionui-assistant',
-      profile: { name: 'mu 管家', description: '管理 mu 本身', avatar: 'aion.svg' },
-      prompts: { recommended: ['把 mu 的日志给我看看'] },
+      profile: { name: 'AiBuddy 管家', description: '管理 AiBuddy 本身', avatar: 'aion.svg' },
+      prompts: { recommended: ['把 AiBuddy 的日志给我看看'] },
     });
     expect((detail as unknown as { defaults: unknown }).defaults).toBe(defaults);
   });
@@ -214,10 +214,10 @@ describe('ipcBridge backend texts shown as mu', () => {
     expect(await acpConversation.getManagedAgents.invoke()).toEqual([
       {
         id: '632f31d2',
-        name: 'mu',
+        name: 'AiBuddy',
         backend: 'aionrs',
         agent_source: 'internal',
-        last_check_error_message: 'Internal mu does not support overrides',
+        last_check_error_message: 'Internal AiBuddy does not support overrides',
       },
     ]);
   });
@@ -229,7 +229,7 @@ describe('ipcBridge backend texts shown as mu', () => {
     const { fs } = await import('@/common/adapter/ipcBridge');
 
     expect(await fs.listAvailableSkills.invoke()).toEqual([
-      { name: 'aionui-config', description: 'Manage mu configuration', source: 'builtin' },
+      { name: 'aionui-config', description: 'Manage AiBuddy configuration', source: 'builtin' },
     ]);
   });
 });

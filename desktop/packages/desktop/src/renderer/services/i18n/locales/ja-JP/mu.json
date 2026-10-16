@@ -747,7 +747,7 @@
     "jobs": "バックグラウンドジョブ：/jobs で表示、/jobs stop <ID|all> で停止",
     "commit": "未コミットの変更を複数のコミットに分けます：まず計画を示し、同意したときだけコミットし、プッシュはしません",
     "review": "レビュー担当のサブエージェントが未コミットの変更（または指定した内容）をレビューし、指摘を P0〜P3 の重さ順に並べます",
-    "mu": "AiBuddy の状態。ほかに：/AiBuddy judge <判定器> | /AiBuddy route <判定ポイント> <判定器|default> | /AiBuddy mode <判定ポイント|default> <off|shadow|active>",
+    "mu": "AiBuddy の状態。ほかに：/mu judge <判定器> | /mu route <判定ポイント> <判定器|default> | /mu mode <判定ポイント|default> <off|shadow|active>",
     "status": "モデル、判定器、各判定ポイントのモード、節約したコンテキスト、最近の判定",
     "help": "AiBuddy にできることと、知っておきたいコマンドの一覧",
     "ledger": "判定器の最近の判定と所要時間：/ledger [件数]",

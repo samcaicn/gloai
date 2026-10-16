@@ -78,7 +78,7 @@ describe('mu bridge errors', () => {
 
   it('translates a mu error headline', () => {
     const zh = translator('zh-CN', { mu: zhMu });
-    expect(zh(muTurnErrorKey('turnRunning'))).toBe('mu 还在处理上一条消息，请等待或先停止。');
+    expect(zh(muTurnErrorKey('turnRunning'))).toBe('AiBuddy 还在处理上一条消息，请等待或先停止。');
   });
 
   it('reads a missing model as such, in the bridge’s words and in pi’s, and never as a failed request', () => {

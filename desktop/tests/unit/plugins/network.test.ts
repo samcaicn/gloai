@@ -13,9 +13,7 @@ describe('createRestrictedMarketHttp — address and URL gate', () => {
 
   it('refuses non-HTTPS and a custom port before any connection', async () => {
     await expect(client.getJson('http://api.example.com/x', new AbortController().signal)).rejects.toThrow(MarketError);
-    await expect(client.getJson('https://api.example.com:8443/x', new AbortController().signal)).rejects.toThrow(
-      MarketError
-    );
+    await expect(client.getJson('https://api.example.com:8443/x', new AbortController().signal)).rejects.toThrow(MarketError);
   });
 
   it('refuses private and loopback addresses (IP literals never reach a socket)', async () => {

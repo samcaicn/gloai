@@ -128,7 +128,7 @@ describe('the settings rail', () => {
         'more-features-turn',
         'more-features-other',
       ],
-      capabilities: ['skills', 'tools', 'assistants', 'browser'],
+      capabilities: ['skills', 'tools', 'assistants', 'browser', 'plugins', 'ilink'],
       system: ['archived', 'about'],
     });
     // No group runs long: the decision points and the other features were given groups of their own for that.
@@ -230,6 +230,8 @@ describe('the settings rail', () => {
       'ext-after',
       'assistants',
       'browser',
+      'plugins',
+      'ilink',
       'ext-free',
       'ext-lost',
     ]);

@@ -1305,7 +1305,7 @@
       "mcp": {
         "line": "{{name}}: {{reason}}",
         "projectUntrusted": "プロジェクトが信頼されておらず、このサーバーはプロジェクトで定義されています",
-        "needsApproval": "プロジェクト（{{source}}）で定義されており、まだ承認されていません。AiBuddy でこのフォルダーを開いて一度許可するか、AiBuddy.json で定義してください",
+        "needsApproval": "プロジェクト（{{source}}）で定義されており、まだ承認されていません。AiBuddy でこのフォルダーを開いて一度許可するか、mu.json で定義してください",
         "aborted": "起動がキャンセルされました",
         "rpc": "エラーが返されました",
         "protocol": "MCP プロトコルに沿わない応答が返されました",
