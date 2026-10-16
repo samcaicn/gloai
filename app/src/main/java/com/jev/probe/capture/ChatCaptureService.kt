@@ -35,6 +35,8 @@ import com.jev.probe.core.Metrics
 import com.jev.probe.core.Msg
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.RankedReply
+import com.jev.probe.core.PendingSend
+import com.jev.probe.core.SendQueueStore
 import com.jev.probe.core.t
 import com.jev.probe.core.kb.ContextBuilder
 import com.jev.probe.core.kb.KbStore
@@ -452,6 +454,20 @@ open class ChatCaptureService : AccessibilityService() {
     // 重放 PendingIntent 后等微信前台落定的轮询上限（100ms 一跳）。2.5s 够微信冷启动到
     // 聊天页；再久就是重放失败，早点放行让下一轮开工（本轮按无锚点处理，不会误发）。
     private val NOTIF_FG_WAIT_TICKS = 25
+    // 单条回复自带重试上限（坐标点击 + IME 兜底各算一次尝试）。用退避间隔错开，
+    // 避免贴着屏幕狂点。超过后落盘到 SendQueueStore，等会话下次活跃再发，不丢队列。
+    private val MAX_SEND_TRIES = 6
+    private val SEND_RETRY_BASE_MS = 1500L
+    private fun sendRetryBackoff(attempt: Int) = (SEND_RETRY_BASE_MS * attempt).coerceAtMost(8000L)
+    // 持久化未发队列保鲜：一条失败回复挂超过这个时长不再重试（对方多半已自己解决）。
+    private val PENDING_TTL_MS = 10 * 60_000L
+    // 当前正在发送的目标会话与文本（供失败落盘用，免层层透传）。
+    private var currentSendConv: String? = null
+    private var currentSendText: String? = null
+    // drainPendingSends 重入保护：同时只驱动一条持久化重发。
+    @Volatile private var drainingPending = false
+    // 未发送提醒节流：IME 没激活时别每条通知轮都弹。
+    private var lastPendingReminderAt = 0L
     // by lazy：hold 期间 lambda 需 postDelayed 自己（自引用）。直接 val 初始化器里
     // 自引用 K2 报 "must be initialized"，lazy 延迟到首次访问，自引用合法。
     private val notifAdvanceRunnable: Runnable by lazy {
@@ -653,6 +669,8 @@ open class ChatCaptureService : AccessibilityService() {
         if (next == null) {
             notifRoundBusy = false
             notifRoundConv = null
+            // 通知轮空了：趁空闲把持久化的失败回复补发掉（进程重启/切走会话后遗留的）。
+            drainPendingSends()
             return
         }
         if (destroyed || !prefs.enabled) {
@@ -701,6 +719,9 @@ open class ChatCaptureService : AccessibilityService() {
             .registerOnSharedPreferenceChangeListener(preferencesListener)
         overlay = OverlayController(this)
         Metrics.init(this, prefs.metricsEnabled)
+        // 持久化未发队列初始化；进程重启后把上次遗留的失败回复重新挂上，会话下次活跃自动补发。
+        SendQueueStore.init(this)
+        main.postDelayed({ drainPendingSends() }, 3000L)
         // 硬证据日志：无障碍能力位（AOSP AccessibilityServiceInfo 常量）：
         //   0x01=RETRIEVE_WINDOW_CONTENT  0x20=CAN_PERFORM_GESTURES  0x80=CAN_TAKE_SCREENSHOT
         // 2026-10-16 实测：修前 capabilities=129（1+128）**缺 0x20** → dispatchGesture
@@ -1412,8 +1433,13 @@ open class ChatCaptureService : AccessibilityService() {
             evictExpired(now)
         }
         Log.i(TAG, "auto-send best(${(best.prob * 100).toInt()}%): ${text.take(24)}")
+        // 记录当前发送目标，供发送失败落盘（failAndQueue）按会话持久化，不丢队列。
+        currentSendConv = convKey
+        currentSendText = text
         // 通知轮：发送真正落定后推进队列（处理下一个会话）；前台/手动轮不涉及队列。
         // 回传 sent：只有真发出去了才把回复写进历史——写错等于污染 AI 对"我说过什么"的认知。
+        // 无论成败都 finishNotifRound 推进：失败那条已由 sendWeChatByVerifiedTap 落盘到
+        // SendQueueStore（drainPendingSends 会话下次活跃再补发），这里只负责让通知轮不卡死。
         val mySeq = notifRoundSeq
         val onSendComplete: ((Boolean) -> Unit)? = if (notif) ({ sent ->
             // 自己说过的话也要进历史：微信把气泡对无障碍隐藏，读不到"我"发过什么，
@@ -1902,7 +1928,17 @@ open class ChatCaptureService : AccessibilityService() {
      * 截屏失败时按旧行为点计算坐标兜底（点在绿键上发送，点空无害）。
      */
     private fun sendWeChatByVerifiedTap(token: ConversationSession.Token, onDone: ((Boolean) -> Unit)? = null) {
-        fun tapSend(): Boolean {
+        /**
+         * 发送动作统一入口：坐标点击优先，被拒（dispatchGesture 返 false，缺 canPerformGestures
+         * 能力位）立即走 IME 代发兜底。
+         *
+         * `dispatchGesture` 需要服务声明 canPerformGestures（能力位 0x20），缺这一位时它
+         * 不报错、只返回 false，触摸事件根本没进系统——2026-10-16 实测修前本探针
+         * capabilities=129（1+128，无 0x20）就是这种情况。此时继续等「读框复检发现没发出」
+         * 纯属浪费，直接改走 IME 的 performEditorAction（微信编辑器支持 IME_ACTION_SEND）。
+         */
+        var usedIme = false
+        fun tapOrIme(): Boolean {
             val (x, y) = wxSendPoint()
             val path = Path().apply { moveTo(x, y) }
             val gesture = GestureDescription.Builder()
@@ -1910,146 +1946,212 @@ open class ChatCaptureService : AccessibilityService() {
                 .build()
             val dispatched = dispatchGesture(gesture, null, null)
             Log.i(TAG, "sendTap: dispatching tap at (${x.toInt()},${y.toInt()}) win=${weChatWindowBounds()} dispatched=$dispatched")
-            return dispatched
+            if (dispatched) { usedIme = false; return true }
+            usedIme = ProbeImeBus.requestSendViaIme()
+            Log.w(TAG, "sendTap: dispatchGesture REFUSED (capabilities=${serviceInfo?.capabilities}) -> IME send=$usedIme")
+            return usedIme
         }
-        /**
-         * 发送动作统一入口：坐标点击派发**失败**（同时喂 IME 代发兜底）。
-         *
-         * `dispatchGesture` 需要服务声明 canPerformGestures（能力位 0x20），缺这一位时它
-         * 不报错、只返回 false，触摸事件根本没进系统——2026-10-16 实测修前本探针
-         * capabilities=129（1+128，无 0x20）就是这种情况，连点 3 轮 (983,2024) 输入框
-         * 12 字纹丝不动。此时继续等「读框复检发现没发出」纯属浪费 3×1.2s，直接改走 IME 的
-         * performEditorAction（不走坐标，微信编辑器支持 IME_ACTION_SEND）。
-         */
-        fun tapOrIme(): Boolean {
-            val ok = tapSend()
-            if (!ok) {
-                val viaIme = ProbeImeBus.requestSendViaIme()
-                Log.w(TAG, "sendTap: dispatchGesture REFUSED (capabilities=${serviceInfo?.capabilities}) -> IME send=$viaIme")
-            }
-            return ok
-        }
-        // 发送链开始：dwell advance 被门控（sendSettled=false），直到判定
-        // 「真发出 / 放弃」才放行——2026-10-15 实测 dwell 强切会话曾把未消费的
-        // pending 带进下一个会话发出（串缸），或把草稿烂在输入框里切走。
+        // 发送链开始：dwell advance 被门控（sendSettled=false），直到判定「真发出 / 放弃」才放行。
         sendSettled = false
-        // 发送前守卫：回复已 commit 进输入框后，某些会话形态（ColorOS 通知半屏/横幅
-        // 回复）会在写完字后自动收起 → 此刻微信已不在前台、读框为空是**假象**。
-        // 2026-10-16 07:20 实测：committed 7 chars 成功后 2 秒 fgPkg=launcher，
-        // 读框空 → 走 abort，回复烂死在框里没发出（用户看到的就是「没回复」）。
-        // 所以点发送前先确保微信在这个会话的前台：不在就用该会话的 PendingIntent
-        // 重新拉起，等前台落定再继续；拉不回来才放行原逻辑（由读框判真假）。
+        // 发送前守卫：回复已 commit 进输入框后，某些会话形态（ColorOS 通知半屏/横幅回复）会在
+        // 写完字后自动收起 → 此刻微信已不在前台、读框为空是假象。点发送前先确保微信在这个会话
+        // 的前台：不在就用该会话的 PendingIntent 重新拉起，等前台落定再继续；拉不回来才放行。
         ensureWeChatFgForSend {
             main.postDelayed({
-            if (!isCurrent(token)) { sendSettled = true; onDone?.invoke(false); return@postDelayed }
-            // 发送本体：点（坐标优先树节点 bounds，被拒立刻走 IME）→ 读框复检 → 补点/IME 兜底。
-            // 抽成局部函数是为了让「发送前读框为空」先走一次恢复（重新聚焦/重写草稿）再进来，
-            // 而不是一见空框就 abort——空框不等于没填进去（见 recoverEmptyBox 注释）。
-            fun startSend() {
-            tapOrIme()
-            var attempts = 0
-            // 判定循环：读输入框（探针 IME InputConnection）——微信发出消息后会清空
-            // 输入框，框空=真发出。这是 FLAG_SECURE 黑屏下唯一可靠信号（截屏恒黑、
-            // 绿键检测恒 0，曾假报 sent 实际没发）。框非空=没发出 → 原地补点，最多 3 次。
-            fun verifyLoop() {
+            if (!isCurrent(token)) {
+                // 用户已切走：本次不判失败，把草稿落盘等该会话下次活跃再发（不丢队列）。
+                Log.w(TAG, "sendTap: token stale before send -> queue draft for later")
+                failAndQueue()
+                sendSettled = true
+                onDone?.invoke(false)
+                return@postDelayed
+            }
+            var attempt = 0
+            // 一次完整发送尝试：读框为空先恢复聚焦 → 点/IME → 复检。
+            fun doAttempt() {
+                if (!isCurrent(token)) { failAndQueue(); sendSettled = true; onDone?.invoke(false); return }
+                val pre = ProbeImeBus.readBox()
+                if (pre != null && pre.isBlank()) {
+                    // 空框 ≠ 一定没填进去：编辑器失焦后 InputConnection 退回系统 fallback 连接，
+                    // 读框恒空。先重新聚焦复读、必要时重写草稿，再进来。
+                    recoverEmptyBox(token) { ready ->
+                        if (ready) doAttempt()
+                        else {
+                            Log.e(TAG, "sendTap: box empty + unrecoverable -> queue draft for later")
+                            failAndQueue()
+                            sendSettled = true
+                            overlay?.toast(t("消息未填入，稍后重试", "Fill failed — will retry later"))
+                            onDone?.invoke(false)
+                        }
+                    }
+                    return
+                }
+                tapOrIme()
+                verifyAfterSend()
+            }
+            // 复检：输入框空 = 真发出（FLAG_SECURE 黑屏下唯一可靠信号）。非空 = 没发出 → 退避重试。
+            fun verifyAfterSend() {
+                if (usedIme) {
+                    // IME 兜底：微信 armed 一个「自动发送 2 秒后发出」倒计时，且探针 IME 持有编辑器
+                    // 期间会卡住不跑。轮询到 ~4s 给足触发时间；期间框空即成功，仍非空才认输。
+                    var imeChecks = 0
+                    fun imePoll() {
+                        main.postDelayed({
+                            if (!isCurrent(token)) { failAndQueue(); sendSettled = true; onDone?.invoke(false); return@postDelayed }
+                            val after = ProbeImeBus.readBox()
+                            val sent = after != null && after.isBlank()
+                            Log.i(TAG, "sendTap: post-IME verify empty=$sent chars=${after?.length} check=$imeChecks")
+                            imeChecks++
+                            if (sent) {
+                                sendSettled = true
+                                overlay?.toast(t("已自动发送", "Sent automatically"))
+                                onDone?.invoke(true)
+                                return@postDelayed
+                            }
+                            if (imeChecks < 3) { imePoll(); return@postDelayed }
+                            Log.e(TAG, "sendTap: IME send failed after poll -> queue draft for retry")
+                            failAndQueue()
+                            sendSettled = true
+                            overlay?.toast(t("发送未成功，已加入重试队列", "Send failed — queued for retry"))
+                            onDone?.invoke(false)
+                        }, 1300L)
+                    }
+                    imePoll()
+                    return
+                }
                 main.postDelayed({
-                    if (!isCurrent(token)) { sendSettled = true; onDone?.invoke(true); return@postDelayed }
+                    if (!isCurrent(token)) { failAndQueue(); sendSettled = true; onDone?.invoke(false); return@postDelayed }
                     val box = ProbeImeBus.readBox()
                     if (box != null && box.isBlank()) {
-                        Log.i(TAG, "sendTap verify: box EMPTY -> message really sent (attempt=$attempts)")
+                        Log.i(TAG, "sendTap verify: box EMPTY -> message really sent (attempt=$attempt)")
                         sendSettled = true
                         overlay?.toast(t("已自动发送", "Sent automatically"))
                         onDone?.invoke(true)
                         return@postDelayed
                     }
-                    attempts++
-                    if (box != null) {
-                        Log.w(TAG, "sendTap verify: box still has ${box.length} chars -> not sent, retry ($attempts/3)")
-                        if (attempts >= 3) {
-                            // 坐标点击三连全败（实测 2026-10-16 07:33：点 (983,2024)
-                            // 输入框 12 字纹丝不动）。在放弃前让 IME 代发一次——
-                            // 它绕开了屏幕坐标这条最不可靠的环节。失败才真正认输。
-                            val viaIme = ProbeImeBus.requestSendViaIme()
-                            Log.w(TAG, "sendTap: taps exhausted, IME send -> $viaIme")
-                        if (viaIme) {
-                            // 2026-10-16 08:52 实测：performEditorAction 在微信上**不立即发**，
-                            // 而是 armed 一个「正在发送... 自动发送已开启，2 秒后发出」的倒计时
-                            // （微信语音输入自动发送那套机制），且倒计时在探针 IME 持有编辑器
-                            // 期间会卡住不跑（弹窗挂屏幕上 30 分钟不动，硬证据）。
-                            // 所以别 1.2s 就判负——轮询到 ~4s，给倒计时留够触发时间；
-                            // 仍旧非空才认输（草稿留框，toast 说明）。
-                            var imeChecks = 0
-                            fun imeVerify() {
-                                main.postDelayed({
-                                    if (!isCurrent(token)) { sendSettled = true; onDone?.invoke(true); return@postDelayed }
-                                    val after = ProbeImeBus.readBox()
-                                    val sent = after != null && after.isBlank()
-                                    Log.i(TAG, "sendTap: post-IME verify empty=$sent chars=${after?.length} check=$imeChecks")
-                                    imeChecks++
-                                    if (!sent && imeChecks < 3) {
-                                        imeVerify()
-                                        return@postDelayed
-                                    }
-                                    sendSettled = true
-                                    if (sent) {
-                                        overlay?.toast(t("已自动发送", "Sent automatically"))
-                                    } else {
-                                        overlay?.toast(t("发送未成功，消息留在输入框", "Send failed — draft left in input box"))
-                                    }
-                                    onDone?.invoke(sent)
-                                }, 1300L)
-                            }
-                            imeVerify()
-                            return@postDelayed
-                        }
-                            Log.e(TAG, "sendTap verify: 3 attempts exhausted -> give up, draft left in box")
+                    attempt++
+                    if (box != null && attempt < MAX_SEND_TRIES) {
+                        Log.w(TAG, "sendTap verify: box still has ${box.length} chars -> not sent, retry ($attempt/$MAX_SEND_TRIES) backoff=${sendRetryBackoff(attempt)}ms")
+                        main.postDelayed({ doAttempt() }, sendRetryBackoff(attempt))
+                        return@postDelayed
+                    }
+                    if (box == null) {
+                        attempt++
+                        if (attempt >= MAX_SEND_TRIES) {
+                            Log.e(TAG, "sendTap verify: box unreadable after $attempt tries -> queue draft")
+                            failAndQueue()
                             sendSettled = true
-                            overlay?.toast(t("发送未成功，消息留在输入框", "Send failed — draft left in input box"))
+                            overlay?.toast(t("发送未成功，已加入重试队列", "Send failed — queued for retry"))
                             onDone?.invoke(false)
                             return@postDelayed
                         }
-                        tapOrIme()
-                        verifyLoop()
-                    } else {
-                        // 读框不可用（IME 没激活/异常）：退回截屏软参考。绿键仍在 → 补点一次；
-                        // 截屏黑(FLAG_SECURE)/绿键消失 → 信任已发出（无信号时宁可信发了，
-                        // 盲重试有重复发送风险）。
+                        // 读框不可用（IME 未激活）：退回截屏软参考。绿键在 → 补点一次；否则信任已发。
                         screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
                             if (res is ScreenCapture.Result.Ok && weChatSendButtonPresent(res)) {
-                                Log.w(TAG, "sendTap verify: box unreadable + green button present -> retry once")
-                                tapOrIme()
+                                Log.w(TAG, "sendTap verify: box unreadable + green present -> retry once")
+                                main.postDelayed({ doAttempt() }, sendRetryBackoff(attempt))
                             } else {
-                                Log.i(TAG, "sendTap verify: box unreadable, green gone/shot unusable -> trust sent")
+                                Log.i(TAG, "sendTap verify: box unreadable, green gone -> trust sent")
+                                sendSettled = true
+                                onDone?.invoke(true)
                             }
-                            sendSettled = true
-                            onDone?.invoke(true)
                         }
+                        return@postDelayed
                     }
+                    // 框非空且次数用尽：失败落盘，等会话下次活跃重发（不丢队列）。
+                    Log.e(TAG, "sendTap verify: $attempt attempts exhausted -> queue draft for retry")
+                    failAndQueue()
+                    sendSettled = true
+                    overlay?.toast(t("发送未成功，已加入重试队列", "Send failed — queued for retry"))
+                    onDone?.invoke(false)
                 }, 1200L)
             }
-                verifyLoop()
-            }
-            val pre = ProbeImeBus.readBox()
-            if (pre != null && pre.isBlank()) {
-                // 空框 ≠ 一定没填进去：编辑器失焦后 InputConnection 会退回系统给的
-                // fallback 连接（挂在 DecorView 上），读框恒为空串——2026-10-16 07:52
-                // 实测整轮 abort 就是这么来的（IME 窗口已收起、聚焦点却按键盘弹起算，
-                // 点到屏幕中央，编辑器从未获得焦点）。先重新聚焦复读、必要时重写草稿。
-                overlay?.toast(t("正在重新聚焦输入框…", "Refocusing the input box…"))
-                recoverEmptyBox(token) { ready ->
-                    if (ready) {
-                        startSend()
-                    } else {
-                        Log.e(TAG, "sendTap: input box EMPTY and unrecoverable -> abort (no blind tap)")
-                        sendSettled = true
-                        overlay?.toast(t("消息未填入，未发送", "Fill failed — nothing sent"))
-                        onDone?.invoke(false)
-                    }
-                }
-                return@postDelayed
-            }
-            startSend()
+            doAttempt()
             }, 400L)
+        }
+    }
+
+    /**
+     * 发送失败兜底：把当前草稿按「会话」落盘到 [SendQueueStore]。
+     * 次数超限或会话下次活跃都靠 drainPendingSends 重新驱动，确保一条该发的回复不丢。
+     * 不在这里弹「失败」噪音——上层（sendWeChatByVerifiedTap）已按场景 toast 过。
+     */
+    private fun failAndQueue() {
+        val conv = currentSendConv ?: run {
+            Log.w(TAG, "failAndQueue: no currentSendConv -> drop (cannot persist)")
+            return
+        }
+        val text = (currentSendText ?: lastDraftText) ?: run {
+            Log.w(TAG, "failAndQueue: no draft text -> drop")
+            return
+        }
+        val existing = SendQueueStore.all().firstOrNull { it.conv == conv }
+        val tries = (existing?.tries ?: 0) + 1
+        if (tries > MAX_SEND_TRIES) {
+            SendQueueStore.remove(conv)
+            Log.w(TAG, "failAndQueue: conv='$conv' tries=$tries exceeded -> drop pending")
+            overlay?.toast(t("多次发送失败，已放弃该条", "Gave up after $tries tries"))
+            return
+        }
+        SendQueueStore.add(PendingSend(conv, text, tries, existing?.firstAt ?: System.currentTimeMillis()))
+        Log.i(TAG, "failAndQueue: queued conv='$conv' tries=$tries text=${text.take(20)}")
+    }
+
+    /**
+     * 驱动持久化未发队列：串行重发每条失败回复。重发前确保探针输入法已激活（否则只留提示、
+     * 不空转重试）；会话下次活跃（来通知/回前台）或进程重启都会重新触发本函数。TTL 过期清理。
+     */
+    private fun drainPendingSends() {
+        if (drainingPending || destroyed || !prefs.enabled) return
+        val now = System.currentTimeMillis()
+        SendQueueStore.all().forEach {
+            if (now - it.firstAt > PENDING_TTL_MS) {
+                SendQueueStore.remove(it.conv)
+                Log.w(TAG, "drainPendingSends: expired pending conv='${it.conv}' -> dropped")
+            }
+        }
+        val next = SendQueueStore.all().firstOrNull { now - it.firstAt <= PENDING_TTL_MS } ?: return
+        if (next.tries >= MAX_SEND_TRIES) { SendQueueStore.remove(next.conv); return }
+        // 探针输入法未激活时点了也发不出去，只留一条提醒，等用户切好再触发。
+        if (!ProbeImeBus.isEnabled(this) || !ProbeImeBus.imeActive) {
+            Log.i(TAG, "drainPendingSends: probe IME not active -> hold ${next.conv} (${SendQueueStore.all().size} pending)")
+            val now = System.currentTimeMillis()
+            if (now - lastPendingReminderAt > 60_000L) {
+                lastPendingReminderAt = now
+                overlay?.toast(t("有 ${SendQueueStore.all().size} 条未发送，切到「AI聊天助手·写入」后自动补发",
+                                 "${SendQueueStore.all().size} unsent — switch to the probe keyboard to auto-resend"))
+            }
+            return
+        }
+        drainingPending = true
+        resendPending(next.conv, next.text) { drainingPending = false; drainPendingSends() }
+    }
+
+    /** 重发一条持久化失败回复：重放该会话 PendingIntent 拉起微信 → 填字 → 走自带重试发送。 */
+    private fun resendPending(conv: String, text: String, onResolved: (Boolean) -> Unit) {
+        Log.i(TAG, "resendPending: conv='$conv' text=${text.take(20)}")
+        if (!prefs.autoFillBest || !prefs.autoSend) { SendQueueStore.remove(conv); onResolved(false); return }
+        if (destroyed || !prefs.enabled) { onResolved(false); return }
+        currentSendConv = conv
+        currentSendText = text
+        val fire = {
+            if (destroyed || !prefs.enabled) { onResolved(false); return@fire }
+            val token = session.beginNotification(PKG_WECHAT, conv)
+            fillInput(token, text, onSendComplete = { sent ->
+                if (sent) {
+                    ConversationHistory.appendOwnReply(PKG_WECHAT, conv, text)
+                    SendQueueStore.remove(conv)
+                }
+                // 失败的那条已由 sendWeChatByVerifiedTap 落盘，这里只负责继续驱动下一条。
+                onResolved(sent)
+            })
+        }
+        if (weChatForeground) {
+            main.post { fire() }
+        } else {
+            val pi = if (prefs.autoOpenChat) NotifIntentStore.fresh(conv) else null
+            if (pi != null) runCatching { pi.send() }
+            awaitWeChatForegroundThen { fire() }
         }
     }
 
