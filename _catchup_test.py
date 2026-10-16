@@ -14,6 +14,7 @@
 """
 import os
 import sys
+import time
 import types
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -368,6 +369,64 @@ def main():
     bot._catchup_primed = True
     seen = run(bot, None)
     check("已回复消息仍由 chat_history 挡住（既有逻辑不破）", len(seen) == 0)
+
+    # ---------- 9. 群聊判定：不依赖「聊天窗口是否打开」 ----------
+    # get_chat_type_info 靠扫描**当前打开的**聊天窗口；群窗口没开时返回 None。
+    # 修前：is_user_group_chat 把 None 永久缓存成 False(私聊) -> 群消息走进私聊
+    # 分支（只检查是否在监听列表，而群是被 record_user_interaction 自动加进列表的）
+    # -> 群里每条都回，绕过群白/黑名单、@/关键词触发、回复概率与群频控。
+    _real_get_chat_type = bot.get_chat_type_info
+    _real_wx = bot.wx
+    try:
+        bot.get_chat_type_info = lambda _n: None  # 模拟「群窗口没打开」
+
+        # 9a. 微信库能解析出 @chatroom -> 必须判为群（修前会被永久记成私聊）
+        bot.group_chat_cache.clear()
+        bot._group_type_negative_ts.clear()
+        bot.wx = types.SimpleNamespace(_db=MockDB(
+            contacts={"快剧运营": [{"username": "123456@chatroom", "nick_name": "快剧运营"}]}))
+        check("群判定 9a：窗口没开但微信库解析出 @chatroom -> 判为群",
+              bot.is_user_group_chat("快剧运营") is True,
+              "cache=%r" % (bot.group_chat_cache.get("快剧运营"),))
+
+        # 9b. 会话标识本身就是 @chatroom id -> 直接判群（无需查库/扫窗口）
+        bot.group_chat_cache.clear()
+        bot._group_type_negative_ts.clear()
+        bot.wx = types.SimpleNamespace(_db=MockDB(contacts={}))
+        check("群判定 9b：@chatroom 结尾的会话 id 直接判为群",
+              bot.is_user_group_chat("888888@chatroom") is True)
+
+        # 9c. 全都判定不了 -> 暂按私聊，但只做短期负向缓存（不是永久记死）
+        bot.group_chat_cache.clear()
+        bot._group_type_negative_ts.clear()
+        r9c = bot.is_user_group_chat("查不到的会话")
+        _deadline = bot._group_type_negative_ts.get("查不到的会话")
+        check("群判定 9c：无法确定时暂按私聊，且负向缓存有到期时间（可自愈）",
+              r9c is False and isinstance(_deadline, float) and _deadline > time.time(),
+              "deadline=%r" % (_deadline,))
+
+        # 9d. 负向缓存到期后能自愈成群（修前永久 False，永远自愈不了）
+        bot.wx = types.SimpleNamespace(_db=MockDB(
+            contacts={"查不到的会话": [{"username": "999@chatroom"}]}))
+        bot._group_type_negative_ts["查不到的会话"] = time.time() - 1  # 已过期
+        check("群判定 9d：负向缓存到期后重新判定，能自愈为群",
+              bot.is_user_group_chat("查不到的会话") is True,
+              "cache=%r" % (bot.group_chat_cache.get("查不到的会话"),))
+
+        # 9e. 周期性刷新 update_group_chat_cache 不再把「无法确定」永久写成私聊
+        bot.group_chat_cache.clear()
+        bot._group_type_negative_ts.clear()
+        bot.user_names = ["快剧运营"]
+        bot.wx = types.SimpleNamespace(_db=MockDB(contacts={}))
+        bot.update_group_chat_cache()
+        _ts9e = bot._group_type_negative_ts.get("快剧运营") or 0.0
+        check("群判定 9e：缓存刷新对无法确定的会话只做短期负向缓存（非永久）",
+              bot.group_chat_cache.get("快剧运营") is False
+              and 0 < _ts9e - time.time() <= bot.GROUP_TYPE_NEGATIVE_TTL + 1,
+              "cache=%r ttl_left=%r" % (bot.group_chat_cache.get("快剧运营"), _ts9e - time.time()))
+    finally:
+        bot.get_chat_type_info = _real_get_chat_type
+        bot.wx = _real_wx
 
     # ---------- 汇总 ----------
     failed = [n for n, ok in results if not ok]

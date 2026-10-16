@@ -971,18 +971,55 @@ def update_group_chat_cache():
         with group_cache_lock:
             logger.info("开始更新群聊类型缓存...")
             for user_name in user_names:
-                chat_type_result = get_chat_type_info(user_name)
+                # 优先用微信库解析（不依赖聊天窗口是否打开）；解析不了再扫窗口。
+                # 两者都判定不了时只做短期负向缓存——与 is_user_group_chat 同一套
+                # 策略，避免周期性刷新把"群"永久覆盖成"私聊"。
+                chat_type_result = _chat_type_from_db(user_name)
+                if chat_type_result is None:
+                    chat_type_result = get_chat_type_info(user_name)
                 if chat_type_result is not None:
-                    group_chat_cache[user_name] = chat_type_result
-                    logger.info(f"缓存用户 '{user_name}': {'群聊' if chat_type_result else '私聊'}")
+                    is_group = bool(chat_type_result)
+                    group_chat_cache[user_name] = is_group
+                    if is_group:
+                        _group_type_negative_ts.pop(user_name, None)
+                    else:
+                        _group_type_negative_ts[user_name] = time.time() + GROUP_TYPE_NEGATIVE_TTL * 100
+                    logger.info(f"缓存用户 '{user_name}': {'群聊' if is_group else '私聊'}")
                 else:
-                    logger.warning(f"无法确定用户 '{user_name}' 的聊天类型，将默认处理为私聊")
                     group_chat_cache[user_name] = False
+                    _group_type_negative_ts[user_name] = time.time() + GROUP_TYPE_NEGATIVE_TTL
+                    logger.warning(f"无法确定用户 '{user_name}' 的聊天类型，暂按私聊（短期缓存，稍后重试）")
             
             logger.info(f"群聊类型缓存更新完成，共缓存 {len(group_chat_cache)} 个用户信息")
             
     except Exception as e:
         logger.error(f"更新群聊缓存时出错: {e}")
+
+# 群聊判定「无法确定」时的负向缓存有效期（秒）。
+# 未打开聊天窗口时 get_chat_type_info 返回 None，此时绝不能把结论永久记成"私聊"，
+# 否则该群永远走不到群逻辑。短期缓存让它能在窗口打开后自愈。
+GROUP_TYPE_NEGATIVE_TTL = 120.0
+_group_type_negative_ts = {}
+
+
+def _chat_type_from_db(user_name):
+    """用微信库解析会话是否为群（不依赖聊天窗口是否打开）。
+
+    命中群返回 True；无法确定返回 None（不轻易下"是私聊"的结论）。
+    判据：search_contact 命中项的 username 以 '@chatroom' 结尾 —— 这是微信群
+    username 的固定后缀，比"扫描当前打开的窗口"稳定得多。
+    """
+    try:
+        _db = getattr(wx, '_db', None)
+        if _db is None or not user_name:
+            return None
+        for _h in (_db.search_contact(user_name) or []):
+            if str(_h.get('username') or '').endswith('@chatroom'):
+                return True
+    except Exception:
+        return None
+    return None
+
 
 def is_user_group_chat(user_name):
     """
@@ -995,16 +1032,43 @@ def is_user_group_chat(user_name):
         bool: True表示群聊，False表示私聊
     """
     with group_cache_lock:
-        # 如果缓存中没有该用户信息，则实时获取
-        if user_name not in group_chat_cache:
-            chat_type_result = get_chat_type_info(user_name)
-            if chat_type_result is not None:
-                group_chat_cache[user_name] = chat_type_result
+        # ① 会话标识本身就是群 id（最快，无需查库/扫窗口）
+        if isinstance(user_name, str) and user_name.endswith('@chatroom'):
+            group_chat_cache[user_name] = True
+            return True
+        # ② 已确认过的群
+        if group_chat_cache.get(user_name) is True:
+            return True
+        # ③ 负向缓存未过期 -> 仍按私聊（到期后重新判定，可自愈）
+        _neg_deadline = _group_type_negative_ts.get(user_name)
+        if group_chat_cache.get(user_name) is False and _neg_deadline \
+                and time.time() < _neg_deadline:
+            return False
+
+        # ④ 微信库解析（不依赖窗口是否打开）——最关键的一道，修掉"群窗口没开
+        #    就被永久记成私聊、进而绕过全部群策略"的问题
+        if _chat_type_from_db(user_name) is True:
+            group_chat_cache[user_name] = True
+            _group_type_negative_ts.pop(user_name, None)
+            logger.info(f"会话 '{user_name}' 经微信库判定为群聊（已缓存）")
+            return True
+
+        # ⑤ 扫描当前打开的聊天窗口
+        chat_type_result = get_chat_type_info(user_name)
+        if chat_type_result is not None:
+            is_group = bool(chat_type_result)
+            group_chat_cache[user_name] = is_group
+            if is_group:
+                _group_type_negative_ts.pop(user_name, None)
             else:
-                # 如果无法获取，默认为私聊
-                group_chat_cache[user_name] = False
-        
-        return group_chat_cache.get(user_name, False)
+                # 窗口明确是私聊 -> 结论可靠，长期缓存（过期时间设很远）
+                _group_type_negative_ts[user_name] = time.time() + GROUP_TYPE_NEGATIVE_TTL * 100
+            return is_group
+
+        # ⑥ 判定不了：按私聊处理，但只做短期负向缓存，避免永久误判
+        group_chat_cache[user_name] = False
+        _group_type_negative_ts[user_name] = time.time() + GROUP_TYPE_NEGATIVE_TTL
+        return False
 
 def parse_time(time_str):
     try:
