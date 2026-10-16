@@ -112,7 +112,7 @@ class ReplyClient(private val prefs: Prefs) {
         val resp = HttpJson.post(
             url, "", body, Route.REPLY, HttpJson.headersFor(url),
             authToken = if (prefs.isWorkerMode) prefs.accountToken else Prefs.TUPTUP_KEY,
-            instanceId = prefs.instanceId, billing = null
+            instanceId = prefs.instanceId
         )
         return resp.optJSONArray("choices")?.optJSONObject(0)
             ?.optJSONObject("message")?.optString("content") ?: ""

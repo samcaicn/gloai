@@ -41,8 +41,8 @@ class ApiException(
  * 所有失败归一化为 [ApiException]。token 与密钥均按调用传入、绝不记录内容。
  *
  * worker 模式下调用方传入 [authToken]（账户令牌）与 [instanceId]，本函数自动带上
- * `Authorization: Bearer` 与 `X-WeAuto-Instance`，并在成功后把 `X-Quota-*` 响应头
- * 填入 [billing]，供上层刷新本地额度展示。
+ * `Authorization: Bearer` 与 `X-WeAuto-Instance`，并经 [onQuota] 回调把 `X-Quota-*`
+ * 响应头交给上层（PackLedger 校准本地账本）。
  */
 object HttpJson {
 
