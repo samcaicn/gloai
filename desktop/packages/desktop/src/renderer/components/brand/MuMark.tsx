@@ -18,9 +18,16 @@ const MuMark: React.FC<MuMarkProps> = ({ size = 32, variant = 'tile', halo = fal
       style={{ width: size, height: size }}
       data-testid='mu-mark'
     >
-      <svg width={size} height={size} viewBox='0 0 100 100' fill='none'
-        role={title ? 'img' : undefined} aria-label={title}
-        aria-hidden={title ? undefined : true} focusable='false'>
+      <svg
+        width={size}
+        height={size}
+        viewBox='0 0 100 100'
+        fill='none'
+        role={title ? 'img' : undefined}
+        aria-label={title}
+        aria-hidden={title ? undefined : true}
+        focusable='false'
+      >
         <defs>
           <linearGradient id='aibuddy-mark-tile' x1='0' y1='0' x2='100' y2='100' gradientUnits='userSpaceOnUse'>
             <stop offset='0' stopColor='#5E7CFB' />
@@ -29,9 +36,18 @@ const MuMark: React.FC<MuMarkProps> = ({ size = 32, variant = 'tile', halo = fal
           </linearGradient>
         </defs>
         {tile && <rect width='100' height='100' rx='27' fill={`url(#aibuddy-mark-tile)`} />}
-        <text x='50' y='52' dominantBaseline='central' textAnchor='middle'
-          fontFamily='Arial, Helvetica, sans-serif' fontWeight='800' fontSize={tile ? 21 : 18}
-          fill={tile ? '#FFFFFF' : `url(#aibuddy-mark-tile)`}>AiBuddy</text>
+        <text
+          x='50'
+          y='52'
+          dominantBaseline='central'
+          textAnchor='middle'
+          fontFamily='Arial, Helvetica, sans-serif'
+          fontWeight='800'
+          fontSize={tile ? 21 : 18}
+          fill={tile ? '#FFFFFF' : `url(#aibuddy-mark-tile)`}
+        >
+          AiBuddy
+        </text>
       </svg>
     </span>
   );

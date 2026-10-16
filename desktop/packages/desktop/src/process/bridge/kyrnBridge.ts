@@ -140,7 +140,11 @@ export function initKyrnBridge(): void {
     if (runtime === 'gguf')
       return new GgufLocalJudge({
         fork: (env) =>
-          utilityProcess.fork(localJudgeEntry('localJudgeGguf'), [], { env, stdio: 'pipe', serviceName: 'mu local judge' }),
+          utilityProcess.fork(localJudgeEntry('localJudgeGguf'), [], {
+            env,
+            stdio: 'pipe',
+            serviceName: 'mu local judge',
+          }),
         open: (folder) => openFolder(folder, (path) => shell.openPath(path)),
       });
     if (runtime === 'onnx')

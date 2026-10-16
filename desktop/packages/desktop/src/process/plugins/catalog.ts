@@ -193,7 +193,8 @@ function store1024PackageName(install: unknown): string | undefined {
   if (typeof install !== 'string' || install.length === 0 || install.length > 1024) return undefined;
   const tokens = install.trim().split(/\s+/);
   if (tokens.length !== 6) return undefined;
-  if (tokens[0] !== 'dsh' || tokens[1] !== 'plugin' || tokens[2] !== '--profile' || tokens[4] !== 'add') return undefined;
+  if (tokens[0] !== 'dsh' || tokens[1] !== 'plugin' || tokens[2] !== '--profile' || tokens[4] !== 'add')
+    return undefined;
   const profile = tokens[3];
   const name = tokens[5];
   if (!profile || !name || !COMMAND_TOKEN.test(profile) || !/^[A-Za-z0-9_-]+$/.test(profile)) return undefined;
@@ -232,13 +233,17 @@ function parseStore1024Page(value: unknown): Store1024Page {
   const totalPages = Math.max(number(root.totalPages, 1), 1);
   const page = Math.min(Math.max(number(root.page, 1), 1), totalPages);
   return {
-    plugins: root.plugins.filter((entry): entry is Record<string, unknown> => typeof entry === 'object' && entry !== null),
+    plugins: root.plugins.filter(
+      (entry): entry is Record<string, unknown> => typeof entry === 'object' && entry !== null
+    ),
     page,
     limit,
     total: number(root.total, root.plugins.length),
     totalPages,
     categories: Array.isArray(root.categories)
-      ? root.categories.filter((entry): entry is string => typeof entry === 'string' && /^[a-z0-9][a-z0-9._:-]*$/.test(entry))
+      ? root.categories.filter(
+          (entry): entry is string => typeof entry === 'string' && /^[a-z0-9][a-z0-9._:-]*$/.test(entry)
+        )
       : [],
     generatedAt: typeof root.generatedAt === 'string' ? root.generatedAt : new Date().toISOString(),
   };
@@ -298,9 +303,9 @@ export class MarketCatalogService {
       createCachedMarketHttp(
         createRestrictedMarketHttp({
           syntheticProxyHostnames: BUILT_IN_MARKET_SOURCES.map((source) => source.syntheticProxyHostname).filter(
-            (host): host is string => typeof host === 'string',
+            (host): host is string => typeof host === 'string'
           ),
-        }),
+        })
       );
   }
 
@@ -410,7 +415,9 @@ export class MarketCatalogService {
     const manifest = await this.manifestOf(record, signal);
     const narrowed = normalizeMarketQuery(query, manifest);
     const url = marketCatalogUrl(manifest, narrowed);
-    const response = await this.http.getJson(url.href, signal, { allowedOrigin: new URL(manifest.transport.endpoint).origin });
+    const response = await this.http.getJson(url.href, signal, {
+      allowedOrigin: new URL(manifest.transport.endpoint).origin,
+    });
     if (new URL(response.finalUrl).origin !== new URL(manifest.transport.endpoint).origin)
       throw new MarketError('redirect', 'The catalog was served from another origin than the registered one');
     const limit = narrowed.limit ?? manifest.query.defaultLimit;

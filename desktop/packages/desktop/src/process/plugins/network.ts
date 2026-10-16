@@ -106,7 +106,7 @@ type Pinned = { address: string; family: number };
 async function pinAddress(
   hostname: string,
   syntheticProxyHostnames: ReadonlySet<string>,
-  resolve: RestrictedHttpOptions['resolve'],
+  resolve: RestrictedHttpOptions['resolve']
 ): Promise<Pinned> {
   const literal = hostname.replace(/^\[|\]$/g, '');
   if (isIP(literal)) return { address: literal, family: assertSafeAddress(literal, false) };
@@ -169,11 +169,11 @@ function get(url: URL, signal: AbortSignal, pinned: Pinned, maxBodyBytes: number
         });
         response.on('end', () =>
           finish(() =>
-            resolve({ statusCode: response.statusCode ?? 0, headers: response.headers, body: Buffer.concat(chunks) }),
-          ),
+            resolve({ statusCode: response.statusCode ?? 0, headers: response.headers, body: Buffer.concat(chunks) })
+          )
         );
         response.on('error', (error: NodeJS.ErrnoException) => finish(() => reject(error)));
-      },
+      }
     );
 
     const abort = (): void => {
@@ -224,7 +224,7 @@ export function createRestrictedMarketHttp(options: RestrictedHttpOptions = {}):
     start: string,
     signal: AbortSignal,
     policy: MarketHttpPolicy = {},
-    redirects = 0,
+    redirects = 0
   ): Promise<MarketHttpResponse> => {
     const url = new URL(start);
     assertFetchable(url);

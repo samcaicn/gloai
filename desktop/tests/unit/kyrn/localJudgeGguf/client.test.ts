@@ -4,7 +4,13 @@ import { GgufJudge, type FetchJson } from '@process/services/localJudgeGguf/clie
 /** A stand-in for llama.cpp's `/v1/systemone`, shaped like the real server's answers. */
 type SystemOneAnswer =
   | { type: 'choice'; choice: string; probabilities: Record<string, number>; confidence?: number }
-  | { type: 'score'; score: number; legend?: Record<string, unknown>; probabilities: Record<string, number>; confidence?: number }
+  | {
+      type: 'score';
+      score: number;
+      legend?: Record<string, unknown>;
+      probabilities: Record<string, number>;
+      confidence?: number;
+    }
   | { type: 'noul'; noul: number; confidence?: number };
 
 function server(answers: Record<string, SystemOneAnswer>, status = 200) {
@@ -24,8 +30,15 @@ const questions = {
 
 describe('GgufJudge.translate', () => {
   it('turns a llama.cpp choice answer into the gateway choice answer', async () => {
-    const fetchJson = server({ kind: { type: 'choice', choice: 'a', probabilities: { a: 0.7, b: 0.3 }, confidence: 0.9 } });
-    const judge = new GgufJudge({ upstream: 'http://127.0.0.1:47824', model: 'laya-gguf:Laya-Q8_0.gguf', preset: 'gguf-q8', fetchJson });
+    const fetchJson = server({
+      kind: { type: 'choice', choice: 'a', probabilities: { a: 0.7, b: 0.3 }, confidence: 0.9 },
+    });
+    const judge = new GgufJudge({
+      upstream: 'http://127.0.0.1:47824',
+      model: 'laya-gguf:Laya-Q8_0.gguf',
+      preset: 'gguf-q8',
+      fetchJson,
+    });
 
     const out = await judge.evaluate('state text', { kind: questions.kind });
 
@@ -54,7 +67,9 @@ describe('GgufJudge.translate', () => {
   });
 
   it('turns a score answer into the gateway score', async () => {
-    const fetchJson = server({ rate: { type: 'score', score: 3, probabilities: { '1': 0.1, '2': 0.2, '3': 0.4, '4': 0.3 } } });
+    const fetchJson = server({
+      rate: { type: 'score', score: 3, probabilities: { '1': 0.1, '2': 0.2, '3': 0.4, '4': 0.3 } },
+    });
     const judge = new GgufJudge({ upstream: 'http://127.0.0.1:47824', model: 'm', preset: 'gguf-q8', fetchJson });
 
     const out = await judge.evaluate('state', { rate: questions.rate });

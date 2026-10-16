@@ -127,7 +127,7 @@ class Context implements PluginContext {
   constructor(
     private readonly kernel: PluginKernel,
     name: string,
-    private readonly parent?: Context,
+    private readonly parent?: Context
   ) {
     this.name = name;
     this.slots = kernel.slots;
@@ -315,7 +315,7 @@ export class PluginKernel {
             settled = true;
             ctx.dispose();
             resolve(() => root.dispose());
-          },
+          }
         );
       });
       // Never resolves if a dependency never appears — by design: the plugin stays unloaded, not half-loaded.

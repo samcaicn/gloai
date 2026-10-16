@@ -147,7 +147,8 @@ function verifyRuntime(runtime: ManagedNodeRuntime, platform: NodeJS.Platform): 
  */
 export async function repairManagedNodeRuntime(options: NodeRuntimeRepairOptions): Promise<NodeRuntimeRepairResult> {
   const runtime = managedNodeRuntime(options.dataDir, options.platform, options.arch);
-  if (!runtime) return { ok: false, error: `This machine (${options.platform}-${options.arch}) has no managed Node.js runtime` };
+  if (!runtime)
+    return { ok: false, error: `This machine (${options.platform}-${options.arch}) has no managed Node.js runtime` };
   mkdirSync(options.cacheDir, { recursive: true });
   const archivePath = path.join(options.cacheDir, `node-repair-${process.pid}.zip`);
   try {

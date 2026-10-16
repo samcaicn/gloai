@@ -220,8 +220,7 @@ export const LAYA_ONNX_SOURCES: readonly LayaSource[] = [
   {
     id: 'huggingface',
     labelKey: 'mu.judges.laya.sourceHuggingface',
-    fileUrl: (name, preset) =>
-      `https://huggingface.co/${preset.repo}/resolve/${preset.revision}/${name}?download=true`,
+    fileUrl: (name, preset) => `https://huggingface.co/${preset.repo}/resolve/${preset.revision}/${name}?download=true`,
   },
   {
     id: 'hf-mirror',
@@ -243,12 +242,7 @@ export const LAYA_ONNX_SOURCES: readonly LayaSource[] = [
 ];
 
 /** The direct download URL for one file from the named source and build (default: Hugging Face, default build). */
-export function layaOnnxFileUrlFor(
-  sourceId: string,
-  name: string,
-  customBase?: string,
-  presetId?: string
-): string {
+export function layaOnnxFileUrlFor(sourceId: string, name: string, customBase?: string, presetId?: string): string {
   const source = LAYA_ONNX_SOURCES.find((candidate) => candidate.id === sourceId) ?? LAYA_ONNX_SOURCES[0]!;
   return source.fileUrl(name, layaOnnxPreset(presetId), customBase);
 }
@@ -260,7 +254,9 @@ export function layaOnnxFileUrlFor(
  */
 export function layaOnnxUrlCandidates(name: string, presetId?: string, customBase?: string): string[] {
   const preset = layaOnnxPreset(presetId);
-  const urls = LAYA_ONNX_SOURCES.filter((source) => source.id !== 'custom').map((source) => source.fileUrl(name, preset));
+  const urls = LAYA_ONNX_SOURCES.filter((source) => source.id !== 'custom').map((source) =>
+    source.fileUrl(name, preset)
+  );
   if (customBase) {
     const custom = LAYA_ONNX_SOURCES.find((source) => source.id === 'custom');
     if (custom) urls.push(custom.fileUrl(name, preset, customBase));

@@ -198,11 +198,7 @@ export const InstallationIntegrityFooter: React.FC<{
         </Button>
       ) : null}
       {actions.repairText ? (
-        <Button
-          data-testid='installation-integrity-repair-runtime'
-          loading={repairing}
-          onClick={handleRepairRuntime}
-        >
+        <Button data-testid='installation-integrity-repair-runtime' loading={repairing} onClick={handleRepairRuntime}>
           {actions.repairText}
         </Button>
       ) : null}

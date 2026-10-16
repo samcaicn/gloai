@@ -1,425 +1,1908 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>智创协同 AI - 行业专家工作台</title>
-<style>
-  *{box-sizing:border-box}
-  :root{
-    --bg:#f5f7fb; --panel:#fff; --text:#172033; --muted:#7f8aa3;
-    --line:#e7ebf2; --primary:#5a67f2; --primary2:#7c63f7;
-    --soft:#eef1ff; --ok:#20a66a; --warn:#f5a623;
-  }
-  body{margin:0;font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;background:var(--bg);color:var(--text)}
-  button,input,textarea{font:inherit}
-  .app{display:grid;grid-template-columns:228px 1fr;height:100vh;overflow:hidden}
-  .sidebar{background:#111827;color:#fff;padding:22px 16px;display:flex;flex-direction:column}
-  .brand{display:flex;gap:10px;align-items:center;font-weight:800;font-size:18px;margin:0 8px 24px}
-  .brandmark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#6d5dfc,#3c8cff);display:grid;place-items:center;font-weight:900}
-  .nav{display:flex;flex-direction:column;gap:7px}
-  .nav button{border:0;background:transparent;color:#aeb8ca;text-align:left;padding:11px 12px;border-radius:10px;cursor:pointer}
-  .nav button.active,.nav button:hover{background:#20293a;color:#fff}
-  .nav .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#6d5dfc;margin-right:9px}
-  .sidebottom{margin-top:auto;background:#192235;border:1px solid #2b3548;border-radius:14px;padding:14px}
-  .sidebottom b{display:block;margin-bottom:6px}
-  .sidebottom span{font-size:12px;color:#9aa5b8}
-  .main{overflow:auto}
-  .topbar{height:66px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 26px;position:sticky;top:0;z-index:10}
-  .crumb{font-size:14px;color:var(--muted)}
-  .account{display:flex;align-items:center;gap:10px}
-  .pill{padding:7px 10px;border-radius:999px;background:var(--soft);color:#4c57d9;font-size:12px}
-  .avatar{width:34px;height:34px;border-radius:50%;background:#dce2f3;display:grid;place-items:center}
-  .content{padding:28px;max-width:1400px;margin:auto}
-  .page{display:none}
-  .page.active{display:block}
-  .hero{padding:18px 0 10px}
-  h1{font-size:29px;margin:0 0 8px}
-  .sub{color:var(--muted);line-height:1.7}
-  .industry{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);padding:7px 11px;border-radius:10px;background:#fff;margin-top:16px;font-size:13px}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
-  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 4px 18px rgba(31,42,68,.04)}
-  .scene{cursor:pointer;transition:.2s;min-height:142px}
-  .scene:hover{transform:translateY(-2px);border-color:#cfd4ff;box-shadow:0 10px 30px rgba(79,92,230,.1)}
-  .icon{width:42px;height:42px;border-radius:12px;background:var(--soft);display:grid;place-items:center;font-size:20px;margin-bottom:15px}
-  .scene h3{margin:0 0 8px;font-size:16px}
-  .scene p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
-  .freebox{margin-top:18px;display:flex;background:#fff;border:1px solid var(--line);padding:10px;border-radius:14px}
-  .freebox input{flex:1;border:0;outline:0;padding:10px}
-  .primary{border:0;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;padding:11px 16px;border-radius:10px;cursor:pointer;font-weight:700}
-  .ghost{border:1px solid var(--line);background:#fff;color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}
-  .layout2{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px}
-  .chat{background:#fff;border:1px solid var(--line);border-radius:16px;min-height:640px;display:flex;flex-direction:column;overflow:hidden}
-  .chathead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
-  .messages{padding:22px;display:flex;flex-direction:column;gap:16px;flex:1}
-  .msg{display:flex;gap:10px;max-width:82%}
-  .msg.user{align-self:flex-end;flex-direction:row-reverse}
-  .bubble{padding:13px 15px;border-radius:14px;background:#f3f5f9;line-height:1.65;font-size:14px}
-  .user .bubble{background:#5967f2;color:#fff}
-  .miniavatar{width:30px;height:30px;border-radius:9px;background:#eef1ff;display:grid;place-items:center;flex:0 0 auto;font-size:13px}
-  .choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-  .choice{border:1px solid #dfe3ef;background:#fff;padding:8px 11px;border-radius:9px;cursor:pointer;font-size:13px}
-  .choice:hover{border-color:#7b82f6;color:#4e58df}
-  .inputbar{padding:14px;border-top:1px solid var(--line);display:flex;gap:8px}
-  .inputbar input{flex:1;border:1px solid var(--line);padding:11px;border-radius:10px;outline:none}
-  .sidecard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px;margin-bottom:14px}
-  .sidecard h4{margin:0 0 12px}
-  .tiny{font-size:12px;color:var(--muted);line-height:1.7}
-  .progress{height:8px;background:#edf0f6;border-radius:999px;overflow:hidden;margin:10px 0}
-  .progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),#8f65f6);width:45%}
-  .planlist{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
-  .task{display:flex;gap:12px;align-items:flex-start}
-  .num{width:30px;height:30px;border-radius:9px;background:var(--soft);display:grid;place-items:center;color:#5360e8;font-weight:800;flex:0 0 auto}
-  .task b{font-size:14px}
-  .task span{display:block;font-size:12px;color:var(--muted);margin-top:5px}
-  .sectiontitle{display:flex;align-items:center;justify-content:space-between;margin:22px 0 12px}
-  .sectiontitle h2{font-size:18px;margin:0}
-  .exec{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  .expertrow{display:flex;align-items:center;gap:13px}
-  .experticon{width:42px;height:42px;border-radius:12px;background:#f1f3f8;display:grid;place-items:center}
-  .status{margin-left:auto;font-size:12px;padding:6px 9px;border-radius:999px;background:#f2f4f8;color:var(--muted)}
-  .status.ok{background:#eaf8f1;color:var(--ok)}
-  .status.go{background:#fff5df;color:#c17a00}
-  .resultgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-  .result{min-height:170px;display:flex;flex-direction:column}
-  .result .preview{height:72px;border-radius:10px;background:linear-gradient(135deg,#f2f4ff,#f8f5ff);display:grid;place-items:center;font-size:30px;margin-bottom:12px}
-  .result .actions{display:flex;gap:8px;margin-top:auto}
-  .actions button{flex:1;border:1px solid var(--line);background:#fff;padding:8px;border-radius:8px;cursor:pointer;font-size:12px}
-  .expertgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-  .expertcard{text-align:center}
-  .expertcard .big{width:56px;height:56px;border-radius:16px;margin:2px auto 12px;background:var(--soft);display:grid;place-items:center;font-size:24px}
-  .expertcard b{display:block}
-  .expertcard span{font-size:12px;color:var(--muted);display:block;margin-top:6px;line-height:1.6}
-  .footer-note{font-size:12px;color:var(--muted);margin-top:22px}
-  .toast{position:fixed;right:24px;bottom:24px;background:#111827;color:#fff;padding:12px 16px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
-  .toast.show{opacity:1;transform:none}
-  @media(max-width:1000px){
-    .app{grid-template-columns:86px 1fr}
-    .sidebar .brand span,.sidebar .nav button span,.sidebottom{display:none}
-    .grid,.resultgrid{grid-template-columns:1fr 1fr}
-    .layout2{grid-template-columns:1fr}
-    .expertgrid{grid-template-columns:1fr 1fr}
-  }
-</style>
-<style>
-:root{--bg:#f8fafc;--text:#1e293b;--muted:#64748b;--line:#e2e8f0;--primary:#2563eb;--primary2:#2563eb;--soft:#eff6ff}
-body{font-size:14px}button{transition:.18s}button:focus-visible{outline:3px solid #93c5fd;outline-offset:3px}
-.global-header{height:64px;background:white;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;gap:20px}.global-brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:750}.global-brand em{font-style:normal;font-size:10px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:4px 8px;border-radius:20px}.global-brand .brandmark{width:32px;height:32px;font-size:14px;border-radius:8px}.header-context{display:flex;background:#f1f5f9;border:1px solid var(--line);padding:4px;border-radius:8px;gap:4px}.header-context button{font-size:12px;border:0;padding:7px 14px;border-radius:5px;color:#64748b;background:transparent;cursor:pointer}.header-context button:first-child{background:white;color:#2563eb;box-shadow:0 1px 3px #0f172a14}.header-account{display:flex;align-items:center;gap:14px;font-size:12px}.quota{background:#fffbeb;color:#92400e;border:1px solid #fde68a;padding:7px 12px;border-radius:20px}
-.app{height:calc(100vh - 64px);grid-template-columns:224px minmax(0,1fr) 264px}.sidebar{background:#fff;color:#334155;border-right:1px solid var(--line);padding:18px 14px}.sidebar>.brand{display:none}.new-task{width:100%;margin-bottom:22px}.nav{gap:5px}.nav button{color:#64748b;padding:12px;font-size:13px;border-radius:7px}.nav button.active,.nav button:hover{background:#eff6ff;color:#1d4ed8}.nav .dot{width:6px;height:6px;background:currentColor;margin-right:12px}.sidebottom{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:14px}.sidebottom b{font-size:12px}.sidebottom span{color:#64748b;line-height:1.8}.sidebar-label{font-size:10px;letter-spacing:1px;color:#94a3b8;margin:28px 10px 12px}.history-item{border:0;background:#f8fafc;color:#475569;text-align:left;padding:12px;border-radius:8px;line-height:1.8;font-size:12px;cursor:pointer}.history-item small{display:block;color:#94a3b8;font-size:10px}.team-ready{font-size:11px;color:#059669;margin:18px 10px}
-.topbar{height:44px;padding:0 26px;background:#ffffffed}.crumb{font-size:12px}.topbar .avatar{display:none}.pill{padding:4px 8px;font-size:10px;border-radius:5px}.content{padding:26px;max-width:1240px}.hero{padding:4px 0 16px}h1{font-size:24px;letter-spacing:-.5px;margin-bottom:10px}.sub{font-size:12px;line-height:1.9}.industry{font-size:11px;border-radius:6px;margin-top:16px}.card{border-radius:10px;box-shadow:0 1px 3px #0f172a04;padding:18px}.grid{gap:12px;margin-top:10px;grid-template-columns:repeat(2,minmax(0,1fr))}.scene{min-height:152px}.scene:hover{border-color:#93c5fd;box-shadow:0 5px 15px #2563eb0a}.icon{width:34px;height:34px;border-radius:8px;font-size:17px;margin-bottom:12px}.scene h3{font-size:14px}.scene p{font-size:12px}.primary{font-size:12px;border-radius:7px;padding:10px 15px}.primary:hover{background:#1d4ed8}.freebox{border-radius:10px;margin-top:20px}.freebox input{min-width:0;font-size:12px}.layout2{grid-template-columns:minmax(0,1fr)}.layout2>div:last-child{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.sidecard{border-radius:8px;padding:12px;margin:0}.sidecard h4{font-size:12px}.tiny{font-size:11px}.chat{min-height:490px;border-radius:10px;background:#f8fafc}.chathead{font-size:12px;background:white}.messages{padding:20px;gap:18px}.bubble{font-size:12px;background:white;border:1px solid var(--line);border-top-left-radius:3px;line-height:1.9}.user .bubble{background:#2563eb;border-color:#2563eb;border-radius:14px 3px 14px 14px}.miniavatar{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border-radius:8px}.user .miniavatar{background:#334155}.choice{font-size:11px;border-radius:6px}.inputbar{background:#fff}.inputbar input{font-size:12px;min-width:0}.planlist{gap:22px 12px}.task b,.expertrow b{font-size:12px}.task span{font-size:11px}.exec{gap:12px}.expertrow{gap:10px}.experticon{width:32px;height:32px;border-radius:8px;flex-shrink:0}.status{font-size:10px;padding:5px 7px;white-space:nowrap}.resultgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.result b{font-size:13px}.result .preview{background:linear-gradient(120deg,#eff6ff,#eef2ff);height:86px}.result .actions{padding-top:16px}.actions button{color:#2563eb;font-size:11px}.expertgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.expertcard{text-align:left;min-height:105px;display:flex;flex-direction:column;justify-content:center;border-top:3px solid #dbeafe}.expertcard b{font-size:13px}.expertcard span{font-size:11px;margin-top:10px;color:#64748b}.expertcard:hover{border-color:#93c5fd;background:#fbfdff}
-.asset-rail{background:#fff;border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}.asset-head{height:44px;border-bottom:1px solid var(--line);padding:0 16px;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700}.asset-head span{color:#94a3b8;font-size:10px;font-weight:400}.asset-body{padding:16px;overflow:auto;flex:1}.asset-intro{font-size:11px;color:#64748b;line-height:1.8;margin:0 0 18px}.asset-box{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px}.asset-box b{font-size:11px;display:block}.asset-box p{font-size:10px;color:#64748b;line-height:1.8;margin:7px 0}.asset-box button{border:0;background:none;color:#2563eb;font-size:10px;padding:0;cursor:pointer}.asset-tag{font-size:9px;color:#059669;background:#ecfdf5;border-radius:3px;padding:2px 5px;float:right}.asset-foot{border-top:1px solid var(--line);padding:16px;background:#f8fafc}.asset-foot button{width:100%;background:#0f172a}.asset-foot p{font-size:10px;text-align:center;color:#94a3b8;margin:10px 0 0}.rail-note{border:1px solid #dbeafe;background:#eff6ff;color:#475569;border-radius:8px;padding:12px;font-size:11px;line-height:1.9}.rail-note b{color:#2563eb;display:block;margin-bottom:4px}
-@media(min-width:1600px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.expertgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:1200px){.app{grid-template-columns:200px minmax(0,1fr)}.asset-rail{display:none}.header-context{display:none}.sidebar .nav button span,.sidebottom{display:revert}.expertgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.app{grid-template-columns:154px minmax(0,1fr)}.content{padding:18px}.quota,.global-brand em{display:none}.grid,.expertgrid,.exec,.planlist,.resultgrid{grid-template-columns:1fr}.layout2>div:last-child{grid-template-columns:1fr}.global-header{padding:0 16px}.header-account{font-size:10px}}
-</style>
-</head>
-<body>
-<header class="global-header"><div class="global-brand"><div class="brandmark">AI</div>智创协同 AI <em>行业专家工作台</em></div><div class="header-context"><button onclick="show('home')">教培招生与运营</button><button onclick="show('experts')">探索行业能力</button></div><div class="header-account"><span class="pill" id="creditsPill">积分 --</span><span class="quota">⚡ 剩余 5 次免费体验</span><div class="avatar">D</div><span>我的工作空间</span></div></header>
-<div class="app">
-  <aside class="sidebar">
-    <div class="brand"><div class="brandmark">AI</div><span>行业专家工作台</span></div>
-    <button class="primary new-task" onclick="startLive()">＋ 启动新策划任务</button><div class="nav">
-      <button class="active" data-page="home"><span class="dot"></span><span>AI 工作台</span></button>
-      <button data-page="tasks"><span class="dot"></span><span>我的任务</span></button>
-      <button data-page="experts"><span class="dot"></span><span>我的专家团</span></button>
-      <button onclick="toast('素材库为后续版本功能')"><span class="dot"></span><span>素材库</span></button>
-    </div>
-<div class="team-ready">● 行业协同能力已就绪</div><div class="sidebar-label">最近任务</div><button class="history-item" onclick="show('results')">园长课程直播策划<small>直播项目 · 6 项成果</small></button>    <div class="sidebottom" role="button" tabindex="0" aria-haspopup="dialog" onclick="openPricing()" onkeydown="if(event.key=== 'Enter' || event.key=== ' '){event.preventDefault();openPricing();}" style="cursor:pointer"><b id="planLabel">体验版</b><span id="planHint">剩余 5 次免费对话<br>升级后解锁完整任务</span></div>
-  </aside>
-
-  <main class="main">
-    <div class="topbar">
-      <div class="crumb" id="crumb">AI 工作台 / 教培行业</div>
-      <div class="account"><span class="pill">当前行业：教培</span><div class="avatar">D</div></div>
-    </div>
-
-    <div class="content">
-      <!-- HOME -->
-      <section class="page active" id="home">
-        <div class="hero">
-          <h1>今天想完成什么？</h1>
-          <div class="sub">告诉我你的目标，我会自动拆解任务，并调度不同 AI 专家协同完成。</div>
-          <div class="industry">🎓 教培行业知识库已启用　⌄</div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>智创协同 AI - 行业专家工作台</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #f5f7fb;
+        --panel: #fff;
+        --text: #172033;
+        --muted: #7f8aa3;
+        --line: #e7ebf2;
+        --primary: #5a67f2;
+        --primary2: #7c63f7;
+        --soft: #eef1ff;
+        --ok: #20a66a;
+        --warn: #f5a623;
+      }
+      body {
+        margin: 0;
+        font-family: Inter, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+      .app {
+        display: grid;
+        grid-template-columns: 228px 1fr;
+        height: 100vh;
+        overflow: hidden;
+      }
+      .sidebar {
+        background: #111827;
+        color: #fff;
+        padding: 22px 16px;
+        display: flex;
+        flex-direction: column;
+      }
+      .brand {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        font-weight: 800;
+        font-size: 18px;
+        margin: 0 8px 24px;
+      }
+      .brandmark {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #6d5dfc, #3c8cff);
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+      }
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .nav button {
+        border: 0;
+        background: transparent;
+        color: #aeb8ca;
+        text-align: left;
+        padding: 11px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .nav button.active,
+      .nav button:hover {
+        background: #20293a;
+        color: #fff;
+      }
+      .nav .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #6d5dfc;
+        margin-right: 9px;
+      }
+      .sidebottom {
+        margin-top: auto;
+        background: #192235;
+        border: 1px solid #2b3548;
+        border-radius: 14px;
+        padding: 14px;
+      }
+      .sidebottom b {
+        display: block;
+        margin-bottom: 6px;
+      }
+      .sidebottom span {
+        font-size: 12px;
+        color: #9aa5b8;
+      }
+      .main {
+        overflow: auto;
+      }
+      .topbar {
+        height: 66px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 26px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .crumb {
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .account {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .pill {
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: var(--soft);
+        color: #4c57d9;
+        font-size: 12px;
+      }
+      .avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #dce2f3;
+        display: grid;
+        place-items: center;
+      }
+      .content {
+        padding: 28px;
+        max-width: 1400px;
+        margin: auto;
+      }
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+      }
+      .hero {
+        padding: 18px 0 10px;
+      }
+      h1 {
+        font-size: 29px;
+        margin: 0 0 8px;
+      }
+      .sub {
+        color: var(--muted);
+        line-height: 1.7;
+      }
+      .industry {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        padding: 7px 11px;
+        border-radius: 10px;
+        background: #fff;
+        margin-top: 16px;
+        font-size: 13px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 4px 18px rgba(31, 42, 68, 0.04);
+      }
+      .scene {
+        cursor: pointer;
+        transition: 0.2s;
+        min-height: 142px;
+      }
+      .scene:hover {
+        transform: translateY(-2px);
+        border-color: #cfd4ff;
+        box-shadow: 0 10px 30px rgba(79, 92, 230, 0.1);
+      }
+      .icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: var(--soft);
+        display: grid;
+        place-items: center;
+        font-size: 20px;
+        margin-bottom: 15px;
+      }
+      .scene h3 {
+        margin: 0 0 8px;
+        font-size: 16px;
+      }
+      .scene p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .freebox {
+        margin-top: 18px;
+        display: flex;
+        background: #fff;
+        border: 1px solid var(--line);
+        padding: 10px;
+        border-radius: 14px;
+      }
+      .freebox input {
+        flex: 1;
+        border: 0;
+        outline: 0;
+        padding: 10px;
+      }
+      .primary {
+        border: 0;
+        background: linear-gradient(135deg, var(--primary), var(--primary2));
+        color: #fff;
+        padding: 11px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      .ghost {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .layout2 {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 18px;
+      }
+      .chat {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        min-height: 640px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .chathead {
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+      }
+      .messages {
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        flex: 1;
+      }
+      .msg {
+        display: flex;
+        gap: 10px;
+        max-width: 82%;
+      }
+      .msg.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+      }
+      .bubble {
+        padding: 13px 15px;
+        border-radius: 14px;
+        background: #f3f5f9;
+        line-height: 1.65;
+        font-size: 14px;
+      }
+      .user .bubble {
+        background: #5967f2;
+        color: #fff;
+      }
+      .miniavatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: #eef1ff;
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        font-size: 13px;
+      }
+      .choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .choice {
+        border: 1px solid #dfe3ef;
+        background: #fff;
+        padding: 8px 11px;
+        border-radius: 9px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .choice:hover {
+        border-color: #7b82f6;
+        color: #4e58df;
+      }
+      .inputbar {
+        padding: 14px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        gap: 8px;
+      }
+      .inputbar input {
+        flex: 1;
+        border: 1px solid var(--line);
+        padding: 11px;
+        border-radius: 10px;
+        outline: none;
+      }
+      .sidecard {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 17px;
+        margin-bottom: 14px;
+      }
+      .sidecard h4 {
+        margin: 0 0 12px;
+      }
+      .tiny {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+      .progress {
+        height: 8px;
+        background: #edf0f6;
+        border-radius: 999px;
+        overflow: hidden;
+        margin: 10px 0;
+      }
+      .progress > i {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), #8f65f6);
+        width: 45%;
+      }
+      .planlist {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 18px;
+      }
+      .task {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .num {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: var(--soft);
+        display: grid;
+        place-items: center;
+        color: #5360e8;
+        font-weight: 800;
+        flex: 0 0 auto;
+      }
+      .task b {
+        font-size: 14px;
+      }
+      .task span {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 5px;
+      }
+      .sectiontitle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 22px 0 12px;
+      }
+      .sectiontitle h2 {
+        font-size: 18px;
+        margin: 0;
+      }
+      .exec {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .expertrow {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+      .experticon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: #f1f3f8;
+        display: grid;
+        place-items: center;
+      }
+      .status {
+        margin-left: auto;
+        font-size: 12px;
+        padding: 6px 9px;
+        border-radius: 999px;
+        background: #f2f4f8;
+        color: var(--muted);
+      }
+      .status.ok {
+        background: #eaf8f1;
+        color: var(--ok);
+      }
+      .status.go {
+        background: #fff5df;
+        color: #c17a00;
+      }
+      .resultgrid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      .result {
+        min-height: 170px;
+        display: flex;
+        flex-direction: column;
+      }
+      .result .preview {
+        height: 72px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f2f4ff, #f8f5ff);
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+        margin-bottom: 12px;
+      }
+      .result .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+      }
+      .actions button {
+        flex: 1;
+        border: 1px solid var(--line);
+        background: #fff;
+        padding: 8px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .expertgrid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+      .expertcard {
+        text-align: center;
+      }
+      .expertcard .big {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        margin: 2px auto 12px;
+        background: var(--soft);
+        display: grid;
+        place-items: center;
+        font-size: 24px;
+      }
+      .expertcard b {
+        display: block;
+      }
+      .expertcard span {
+        font-size: 12px;
+        color: var(--muted);
+        display: block;
+        margin-top: 6px;
+        line-height: 1.6;
+      }
+      .footer-note {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 22px;
+      }
+      .toast {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        background: #111827;
+        color: #fff;
+        padding: 12px 16px;
+        border-radius: 10px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: 0.25s;
+        pointer-events: none;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: none;
+      }
+      @media (max-width: 1000px) {
+        .app {
+          grid-template-columns: 86px 1fr;
+        }
+        .sidebar .brand span,
+        .sidebar .nav button span,
+        .sidebottom {
+          display: none;
+        }
+        .grid,
+        .resultgrid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .layout2 {
+          grid-template-columns: 1fr;
+        }
+        .expertgrid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+    </style>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --text: #1e293b;
+        --muted: #64748b;
+        --line: #e2e8f0;
+        --primary: #2563eb;
+        --primary2: #2563eb;
+        --soft: #eff6ff;
+      }
+      body {
+        font-size: 14px;
+      }
+      button {
+        transition: 0.18s;
+      }
+      button:focus-visible {
+        outline: 3px solid #93c5fd;
+        outline-offset: 3px;
+      }
+      .global-header {
+        height: 64px;
+        background: white;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        gap: 20px;
+      }
+      .global-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 17px;
+        font-weight: 750;
+      }
+      .global-brand em {
+        font-style: normal;
+        font-size: 10px;
+        color: #2563eb;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        padding: 4px 8px;
+        border-radius: 20px;
+      }
+      .global-brand .brandmark {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        border-radius: 8px;
+      }
+      .header-context {
+        display: flex;
+        background: #f1f5f9;
+        border: 1px solid var(--line);
+        padding: 4px;
+        border-radius: 8px;
+        gap: 4px;
+      }
+      .header-context button {
+        font-size: 12px;
+        border: 0;
+        padding: 7px 14px;
+        border-radius: 5px;
+        color: #64748b;
+        background: transparent;
+        cursor: pointer;
+      }
+      .header-context button:first-child {
+        background: white;
+        color: #2563eb;
+        box-shadow: 0 1px 3px #0f172a14;
+      }
+      .header-account {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 12px;
+      }
+      .quota {
+        background: #fffbeb;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        padding: 7px 12px;
+        border-radius: 20px;
+      }
+      .app {
+        height: calc(100vh - 64px);
+        grid-template-columns: 224px minmax(0, 1fr) 264px;
+      }
+      .sidebar {
+        background: #fff;
+        color: #334155;
+        border-right: 1px solid var(--line);
+        padding: 18px 14px;
+      }
+      .sidebar > .brand {
+        display: none;
+      }
+      .new-task {
+        width: 100%;
+        margin-bottom: 22px;
+      }
+      .nav {
+        gap: 5px;
+      }
+      .nav button {
+        color: #64748b;
+        padding: 12px;
+        font-size: 13px;
+        border-radius: 7px;
+      }
+      .nav button.active,
+      .nav button:hover {
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+      .nav .dot {
+        width: 6px;
+        height: 6px;
+        background: currentColor;
+        margin-right: 12px;
+      }
+      .sidebottom {
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .sidebottom b {
+        font-size: 12px;
+      }
+      .sidebottom span {
+        color: #64748b;
+        line-height: 1.8;
+      }
+      .sidebar-label {
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: #94a3b8;
+        margin: 28px 10px 12px;
+      }
+      .history-item {
+        border: 0;
+        background: #f8fafc;
+        color: #475569;
+        text-align: left;
+        padding: 12px;
+        border-radius: 8px;
+        line-height: 1.8;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .history-item small {
+        display: block;
+        color: #94a3b8;
+        font-size: 10px;
+      }
+      .team-ready {
+        font-size: 11px;
+        color: #059669;
+        margin: 18px 10px;
+      }
+      .topbar {
+        height: 44px;
+        padding: 0 26px;
+        background: #ffffffed;
+      }
+      .crumb {
+        font-size: 12px;
+      }
+      .topbar .avatar {
+        display: none;
+      }
+      .pill {
+        padding: 4px 8px;
+        font-size: 10px;
+        border-radius: 5px;
+      }
+      .content {
+        padding: 26px;
+        max-width: 1240px;
+      }
+      .hero {
+        padding: 4px 0 16px;
+      }
+      h1 {
+        font-size: 24px;
+        letter-spacing: -0.5px;
+        margin-bottom: 10px;
+      }
+      .sub {
+        font-size: 12px;
+        line-height: 1.9;
+      }
+      .industry {
+        font-size: 11px;
+        border-radius: 6px;
+        margin-top: 16px;
+      }
+      .card {
+        border-radius: 10px;
+        box-shadow: 0 1px 3px #0f172a04;
+        padding: 18px;
+      }
+      .grid {
+        gap: 12px;
+        margin-top: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .scene {
+        min-height: 152px;
+      }
+      .scene:hover {
+        border-color: #93c5fd;
+        box-shadow: 0 5px 15px #2563eb0a;
+      }
+      .icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        font-size: 17px;
+        margin-bottom: 12px;
+      }
+      .scene h3 {
+        font-size: 14px;
+      }
+      .scene p {
+        font-size: 12px;
+      }
+      .primary {
+        font-size: 12px;
+        border-radius: 7px;
+        padding: 10px 15px;
+      }
+      .primary:hover {
+        background: #1d4ed8;
+      }
+      .freebox {
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+      .freebox input {
+        min-width: 0;
+        font-size: 12px;
+      }
+      .layout2 {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .layout2 > div:last-child {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .sidecard {
+        border-radius: 8px;
+        padding: 12px;
+        margin: 0;
+      }
+      .sidecard h4 {
+        font-size: 12px;
+      }
+      .tiny {
+        font-size: 11px;
+      }
+      .chat {
+        min-height: 490px;
+        border-radius: 10px;
+        background: #f8fafc;
+      }
+      .chathead {
+        font-size: 12px;
+        background: white;
+      }
+      .messages {
+        padding: 20px;
+        gap: 18px;
+      }
+      .bubble {
+        font-size: 12px;
+        background: white;
+        border: 1px solid var(--line);
+        border-top-left-radius: 3px;
+        line-height: 1.9;
+      }
+      .user .bubble {
+        background: #2563eb;
+        border-color: #2563eb;
+        border-radius: 14px 3px 14px 14px;
+      }
+      .miniavatar {
+        background: linear-gradient(135deg, #7c3aed, #4f46e5);
+        color: #fff;
+        border-radius: 8px;
+      }
+      .user .miniavatar {
+        background: #334155;
+      }
+      .choice {
+        font-size: 11px;
+        border-radius: 6px;
+      }
+      .inputbar {
+        background: #fff;
+      }
+      .inputbar input {
+        font-size: 12px;
+        min-width: 0;
+      }
+      .planlist {
+        gap: 22px 12px;
+      }
+      .task b,
+      .expertrow b {
+        font-size: 12px;
+      }
+      .task span {
+        font-size: 11px;
+      }
+      .exec {
+        gap: 12px;
+      }
+      .expertrow {
+        gap: 10px;
+      }
+      .experticon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+      .status {
+        font-size: 10px;
+        padding: 5px 7px;
+        white-space: nowrap;
+      }
+      .resultgrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .result b {
+        font-size: 13px;
+      }
+      .result .preview {
+        background: linear-gradient(120deg, #eff6ff, #eef2ff);
+        height: 86px;
+      }
+      .result .actions {
+        padding-top: 16px;
+      }
+      .actions button {
+        color: #2563eb;
+        font-size: 11px;
+      }
+      .expertgrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .expertcard {
+        text-align: left;
+        min-height: 105px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-top: 3px solid #dbeafe;
+      }
+      .expertcard b {
+        font-size: 13px;
+      }
+      .expertcard span {
+        font-size: 11px;
+        margin-top: 10px;
+        color: #64748b;
+      }
+      .expertcard:hover {
+        border-color: #93c5fd;
+        background: #fbfdff;
+      }
+      .asset-rail {
+        background: #fff;
+        border-left: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .asset-head {
+        height: 44px;
+        border-bottom: 1px solid var(--line);
+        padding: 0 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .asset-head span {
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 400;
+      }
+      .asset-body {
+        padding: 16px;
+        overflow: auto;
+        flex: 1;
+      }
+      .asset-intro {
+        font-size: 11px;
+        color: #64748b;
+        line-height: 1.8;
+        margin: 0 0 18px;
+      }
+      .asset-box {
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      .asset-box b {
+        font-size: 11px;
+        display: block;
+      }
+      .asset-box p {
+        font-size: 10px;
+        color: #64748b;
+        line-height: 1.8;
+        margin: 7px 0;
+      }
+      .asset-box button {
+        border: 0;
+        background: none;
+        color: #2563eb;
+        font-size: 10px;
+        padding: 0;
+        cursor: pointer;
+      }
+      .asset-tag {
+        font-size: 9px;
+        color: #059669;
+        background: #ecfdf5;
+        border-radius: 3px;
+        padding: 2px 5px;
+        float: right;
+      }
+      .asset-foot {
+        border-top: 1px solid var(--line);
+        padding: 16px;
+        background: #f8fafc;
+      }
+      .asset-foot button {
+        width: 100%;
+        background: #0f172a;
+      }
+      .asset-foot p {
+        font-size: 10px;
+        text-align: center;
+        color: #94a3b8;
+        margin: 10px 0 0;
+      }
+      .rail-note {
+        border: 1px solid #dbeafe;
+        background: #eff6ff;
+        color: #475569;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 11px;
+        line-height: 1.9;
+      }
+      .rail-note b {
+        color: #2563eb;
+        display: block;
+        margin-bottom: 4px;
+      }
+      @media (min-width: 1600px) {
+        .grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .expertgrid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 1200px) {
+        .app {
+          grid-template-columns: 200px minmax(0, 1fr);
+        }
+        .asset-rail {
+          display: none;
+        }
+        .header-context {
+          display: none;
+        }
+        .sidebar .nav button span,
+        .sidebottom {
+          display: revert;
+        }
+        .expertgrid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 760px) {
+        .app {
+          grid-template-columns: 154px minmax(0, 1fr);
+        }
+        .content {
+          padding: 18px;
+        }
+        .quota,
+        .global-brand em {
+          display: none;
+        }
+        .grid,
+        .expertgrid,
+        .exec,
+        .planlist,
+        .resultgrid {
+          grid-template-columns: 1fr;
+        }
+        .layout2 > div:last-child {
+          grid-template-columns: 1fr;
+        }
+        .global-header {
+          padding: 0 16px;
+        }
+        .header-account {
+          font-size: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="global-header">
+      <div class="global-brand">
+        <div class="brandmark">AI</div>
+        智创协同 AI <em>行业专家工作台</em>
+      </div>
+      <div class="header-context">
+        <button onclick="show('home')">教培招生与运营</button><button onclick="show('experts')">探索行业能力</button>
+      </div>
+      <div class="header-account">
+        <span class="pill" id="creditsPill">积分 --</span><span class="quota">⚡ 剩余 5 次免费体验</span>
+        <div class="avatar">D</div>
+        <span>我的工作空间</span>
+      </div>
+    </header>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brandmark">AI</div>
+          <span>行业专家工作台</span>
         </div>
-        <div class="grid">
-          <div class="card scene" onclick="startLive()"><div class="icon">📡</div><h3>我要做一场直播</h3><p>直播策划、预热文案、宣传海报、PPT、直播讲稿，一次完成。</p></div>
-          <div class="card scene" onclick="toast('招生活动场景 Demo 暂未展开')"><div class="icon">🎯</div><h3>我要做招生活动</h3><p>活动方案、邀约话术、社群内容、海报与成交跟进。</p></div>
-          <div class="card scene" onclick="toast('朋友圈宣传场景 Demo 暂未展开')"><div class="icon">💬</div><h3>我要做朋友圈宣传</h3><p>按周期生成朋友圈文案、配图建议和发布节奏。</p></div>
-          <div class="card scene" onclick="toast('短视频场景 Demo 暂未展开')"><div class="icon">🎬</div><h3>我要做短视频</h3><p>选题、脚本、口播文案、画面建议与成片生成。</p></div>
-          <div class="card scene" onclick="toast('家长会场景 Demo 暂未展开')"><div class="icon">👥</div><h3>我要做家长会</h3><p>邀约、流程、PPT、讲稿、现场成交与会后跟进。</p></div>
-          <div class="card scene" onclick="toast('校区宣传场景 Demo 暂未展开')"><div class="icon">🏫</div><h3>我要做校区宣传</h3><p>宣传主题、图文素材、社群内容与推广计划。</p></div>
+        <button class="primary new-task" onclick="startLive()">＋ 启动新策划任务</button>
+        <div class="nav">
+          <button class="active" data-page="home"><span class="dot"></span><span>AI 工作台</span></button>
+          <button data-page="tasks"><span class="dot"></span><span>我的任务</span></button>
+          <button data-page="experts"><span class="dot"></span><span>我的专家团</span></button>
+          <button onclick="toast('素材库为后续版本功能')"><span class="dot"></span><span>素材库</span></button>
         </div>
-        <div class="freebox">
-          <input value="" placeholder="也可以直接描述你的任务，例如：下周要做一场面向幼儿园园长的直播……">
-          <button class="primary" onclick="startLive()">开始任务</button>
+        <div class="team-ready">● 行业协同能力已就绪</div>
+        <div class="sidebar-label">最近任务</div>
+        <button class="history-item" onclick="show('results')">
+          园长课程直播策划<small>直播项目 · 6 项成果</small>
+        </button>
+        <div
+          class="sidebottom"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+          onclick="openPricing()"
+          onkeydown="
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              openPricing();
+            }
+          "
+          style="cursor: pointer"
+        >
+          <b id="planLabel">体验版</b><span id="planHint">剩余 5 次免费对话<br />升级后解锁完整任务</span>
         </div>
-      </section>
+      </aside>
 
-      <!-- CHAT -->
-      <section class="page" id="chat">
-        <div class="layout2">
-          <div class="chat">
-            <div class="chathead"><b>直播项目 · 需求确认</b><span class="pill">AI 总管</span></div>
-            <div class="messages" id="messages">
-              <div class="msg">
-                <div class="miniavatar">AI</div>
-                <div class="bubble">好的，我来帮你完成整场直播。为了让最后生成的内容更准确，我先确认几个关键信息。<br><br><b>这场直播主要面向谁？</b>
-                  <div class="choices">
-                    <button class="choice" onclick="answerAudience('幼儿园园长 / 校长')">幼儿园园长 / 校长</button>
-                    <button class="choice" onclick="answerAudience('家长')">家长</button>
-                    <button class="choice" onclick="answerAudience('合作伙伴')">合作伙伴</button>
-                    <button class="choice" onclick="answerAudience('其他')">其他</button>
+      <main class="main">
+        <div class="topbar">
+          <div class="crumb" id="crumb">AI 工作台 / 教培行业</div>
+          <div class="account">
+            <span class="pill">当前行业：教培</span>
+            <div class="avatar">D</div>
+          </div>
+        </div>
+
+        <div class="content">
+          <!-- HOME -->
+          <section class="page active" id="home">
+            <div class="hero">
+              <h1>今天想完成什么？</h1>
+              <div class="sub">告诉我你的目标，我会自动拆解任务，并调度不同 AI 专家协同完成。</div>
+              <div class="industry">🎓 教培行业知识库已启用　⌄</div>
+            </div>
+            <div class="grid">
+              <div class="card scene" onclick="startLive()">
+                <div class="icon">📡</div>
+                <h3>我要做一场直播</h3>
+                <p>直播策划、预热文案、宣传海报、PPT、直播讲稿，一次完成。</p>
+              </div>
+              <div class="card scene" onclick="toast('招生活动场景 Demo 暂未展开')">
+                <div class="icon">🎯</div>
+                <h3>我要做招生活动</h3>
+                <p>活动方案、邀约话术、社群内容、海报与成交跟进。</p>
+              </div>
+              <div class="card scene" onclick="toast('朋友圈宣传场景 Demo 暂未展开')">
+                <div class="icon">💬</div>
+                <h3>我要做朋友圈宣传</h3>
+                <p>按周期生成朋友圈文案、配图建议和发布节奏。</p>
+              </div>
+              <div class="card scene" onclick="toast('短视频场景 Demo 暂未展开')">
+                <div class="icon">🎬</div>
+                <h3>我要做短视频</h3>
+                <p>选题、脚本、口播文案、画面建议与成片生成。</p>
+              </div>
+              <div class="card scene" onclick="toast('家长会场景 Demo 暂未展开')">
+                <div class="icon">👥</div>
+                <h3>我要做家长会</h3>
+                <p>邀约、流程、PPT、讲稿、现场成交与会后跟进。</p>
+              </div>
+              <div class="card scene" onclick="toast('校区宣传场景 Demo 暂未展开')">
+                <div class="icon">🏫</div>
+                <h3>我要做校区宣传</h3>
+                <p>宣传主题、图文素材、社群内容与推广计划。</p>
+              </div>
+            </div>
+            <div class="freebox">
+              <input value="" placeholder="也可以直接描述你的任务，例如：下周要做一场面向幼儿园园长的直播……" />
+              <button class="primary" onclick="startLive()">开始任务</button>
+            </div>
+          </section>
+
+          <!-- CHAT -->
+          <section class="page" id="chat">
+            <div class="layout2">
+              <div class="chat">
+                <div class="chathead"><b>直播项目 · 需求确认</b><span class="pill">AI 总管</span></div>
+                <div class="messages" id="messages">
+                  <div class="msg">
+                    <div class="miniavatar">AI</div>
+                    <div class="bubble">
+                      好的，我来帮你完成整场直播。为了让最后生成的内容更准确，我先确认几个关键信息。<br /><br /><b
+                        >这场直播主要面向谁？</b
+                      >
+                      <div class="choices">
+                        <button class="choice" onclick="answerAudience('幼儿园园长 / 校长')">幼儿园园长 / 校长</button>
+                        <button class="choice" onclick="answerAudience('家长')">家长</button>
+                        <button class="choice" onclick="answerAudience('合作伙伴')">合作伙伴</button>
+                        <button class="choice" onclick="answerAudience('其他')">其他</button>
+                      </div>
+                    </div>
                   </div>
+                </div>
+                <div class="inputbar">
+                  <input id="chatInput" placeholder="补充说明你的需求……" /><button
+                    class="primary"
+                    onclick="manualSend()"
+                  >
+                    发送
+                  </button>
+                </div>
+              </div>
+              <div>
+                <div class="sidecard">
+                  <h4>任务信息</h4>
+                  <div class="tiny" id="taskInfo">
+                    场景：直播<br />行业：教培<br />目标人群：待确认<br />直播目标：待确认
+                  </div>
+                </div>
+                <div class="sidecard">
+                  <h4>AI 对你的了解程度</h4>
+                  <div class="progress"><i id="knowbar"></i></div>
+                  <div class="tiny" id="knowtext">45% · 正在补充任务上下文</div>
+                </div>
+                <div class="sidecard">
+                  <h4>将参与的专家</h4>
+                  <div class="tiny">营销策划 · 文案 · 社群运营<br />视觉设计 · PPT · 直播专家</div>
                 </div>
               </div>
             </div>
-            <div class="inputbar"><input id="chatInput" placeholder="补充说明你的需求……"><button class="primary" onclick="manualSend()">发送</button></div>
+          </section>
+
+          <!-- PLAN -->
+          <section class="page" id="plan">
+            <div class="hero">
+              <h1>任务已经拆解完成</h1>
+              <div class="sub">AI 总管会按照依赖关系调度不同专家执行，你不需要自己切换模型或工具。</div>
+            </div>
+            <div class="card">
+              <b>直播项目｜面向幼儿园园长的课程直播</b>
+              <div class="planlist">
+                <div class="task">
+                  <div class="num">1</div>
+                  <div><b>直播整体策划</b><span>主题、结构、节奏、转化目标</span></div>
+                </div>
+                <div class="task">
+                  <div class="num">2</div>
+                  <div><b>朋友圈预热文案</b><span>连续 5 天预热内容</span></div>
+                </div>
+                <div class="task">
+                  <div class="num">3</div>
+                  <div><b>社群宣传文案</b><span>邀约、提醒、开播通知</span></div>
+                </div>
+                <div class="task">
+                  <div class="num">4</div>
+                  <div><b>直播宣传海报</b><span>16:9 + 9:16 两种版式</span></div>
+                </div>
+                <div class="task">
+                  <div class="num">5</div>
+                  <div><b>直播 PPT</b><span>核心内容结构与页面建议</span></div>
+                </div>
+                <div class="task">
+                  <div class="num">6</div>
+                  <div><b>直播讲稿</b><span>完整口播与关键转场</span></div>
+                </div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-top: 22px;
+                  padding-top: 18px;
+                  border-top: 1px solid var(--line);
+                "
+              >
+                <span class="tiny">预计消耗：约 380 积分　·　预计调用 6 个专业 Skill</span>
+                <button class="primary" onclick="runTask()">开始执行</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- EXEC -->
+          <section class="page" id="exec">
+            <div class="hero">
+              <h1>AI 专家团队正在协作</h1>
+              <div class="sub">系统根据任务自动路由最适合的模型与能力，你只需要查看进度与结果。</div>
+            </div>
+            <div class="exec" id="execList">
+              <div class="card expertrow">
+                <div class="experticon">🧭</div>
+                <div>
+                  <b>营销策划专家</b>
+                  <div class="tiny">拆解直播结构与转化路径</div>
+                </div>
+                <span class="status go">执行中</span>
+              </div>
+              <div class="card expertrow">
+                <div class="experticon">✍️</div>
+                <div>
+                  <b>文案专家</b>
+                  <div class="tiny">等待策划结果</div>
+                </div>
+                <span class="status">等待</span>
+              </div>
+              <div class="card expertrow">
+                <div class="experticon">💬</div>
+                <div>
+                  <b>社群运营专家</b>
+                  <div class="tiny">等待策划结果</div>
+                </div>
+                <span class="status">等待</span>
+              </div>
+              <div class="card expertrow">
+                <div class="experticon">🎨</div>
+                <div>
+                  <b>视觉设计专家</b>
+                  <div class="tiny">等待文案结果</div>
+                </div>
+                <span class="status">等待</span>
+              </div>
+              <div class="card expertrow">
+                <div class="experticon">📊</div>
+                <div>
+                  <b>PPT 专家</b>
+                  <div class="tiny">等待直播结构</div>
+                </div>
+                <span class="status">等待</span>
+              </div>
+              <div class="card expertrow">
+                <div class="experticon">🎙</div>
+                <div>
+                  <b>直播专家</b>
+                  <div class="tiny">等待最终内容整合</div>
+                </div>
+                <span class="status">等待</span>
+              </div>
+            </div>
+            <div class="card" style="margin-top: 16px">
+              <div style="display: flex; justify-content: space-between"><b>整体进度</b><span id="pct">16%</span></div>
+              <div class="progress"><i id="execbar" style="width: 16%"></i></div>
+              <div class="tiny" id="execnote">正在生成直播整体策划……</div>
+            </div>
+          </section>
+
+          <!-- RESULTS -->
+          <section class="page" id="results">
+            <div class="hero">
+              <h1>任务完成</h1>
+              <div class="sub">这不是一段聊天记录，而是一套可以直接使用、继续修改和下载的项目成果。</div>
+            </div>
+            <div class="card" style="margin-bottom: 16px">
+              <b>直播项目｜面向幼儿园园长的课程直播</b>
+              <div class="tiny" style="margin-top: 7px">6 项成果已完成 · 由 6 个专业 Skill 协同生成</div>
+            </div>
+            <div class="resultgrid">
+              <div class="card result">
+                <div class="preview">🧭</div>
+                <b>直播策划方案</b><span class="tiny">主题、流程、节奏、转化路径</span>
+                <div class="actions">
+                  <button onclick="toast('正在预览策划方案')">预览</button
+                  ><button onclick="toast('已进入修改模式')">修改</button>
+                </div>
+              </div>
+              <div class="card result">
+                <div class="preview">✍️</div>
+                <b>朋友圈预热文案</b><span class="tiny">连续 5 天，共 10 条</span>
+                <div class="actions">
+                  <button onclick="toast('正在预览朋友圈文案')">预览</button
+                  ><button onclick="toast('已重新生成')">重生成</button>
+                </div>
+              </div>
+              <div class="card result">
+                <div class="preview">💬</div>
+                <b>社群宣传文案</b><span class="tiny">邀约、提醒、开播通知</span>
+                <div class="actions">
+                  <button onclick="toast('正在预览社群文案')">预览</button
+                  ><button onclick="toast('已复制全部文案')">复制</button>
+                </div>
+              </div>
+              <div class="card result">
+                <div class="preview">🖼️</div>
+                <b>直播宣传海报</b><span class="tiny">9:16 与 16:9 两版</span>
+                <div class="actions">
+                  <button onclick="toast('正在预览海报')">预览</button
+                  ><button onclick="toast('模拟下载完成')">下载</button>
+                </div>
+              </div>
+              <div class="card result">
+                <div class="preview">📊</div>
+                <b>直播 PPT</b><span class="tiny">24 页内容结构与页面方案</span>
+                <div class="actions">
+                  <button onclick="toast('正在预览 PPT')">预览</button
+                  ><button onclick="toast('模拟下载完成')">下载</button>
+                </div>
+              </div>
+              <div class="card result">
+                <div class="preview">🎙️</div>
+                <b>直播讲稿</b><span class="tiny">开场、主体、转化、收尾</span>
+                <div class="actions">
+                  <button onclick="toast('正在预览讲稿')">预览</button
+                  ><button onclick="toast('已进入修改模式')">修改</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TASKS -->
+          <section class="page" id="tasks">
+            <div class="hero">
+              <h1>我的任务</h1>
+              <div class="sub">所有任务按“项目”保存，而不是散落成聊天记录。</div>
+            </div>
+            <div class="card expertrow" onclick="show('results')" style="cursor: pointer">
+              <div class="experticon">📡</div>
+              <div>
+                <b>面向幼儿园园长的课程直播</b>
+                <div class="tiny">直播策划 · 文案 · 海报 · PPT · 讲稿</div>
+              </div>
+              <span class="status ok">已完成</span>
+            </div>
+          </section>
+
+          <!-- EXPERTS -->
+          <section class="page" id="experts">
+            <div class="hero">
+              <h1>我的专家团</h1>
+              <div class="sub">覆盖 15 个常见行业，为你的业务提供专业支持。</div>
+            </div>
+            <div class="expertgrid">
+              <div class="card expertcard"><b>教培教育</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>电商零售</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>餐饮</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>本地生活</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>美业</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>房地产</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>家装家居</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>汽车</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>医疗健康</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>法律服务</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>财税服务</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>人力资源</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>文旅酒店</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>企业服务/咨询</b><span>已配置行业专家能力</span></div>
+              <div class="card expertcard"><b>制造业/工厂</b><span>已配置行业专家能力</span></div>
+            </div>
+          </section>
+        </div>
+      </main>
+      <aside class="asset-rail">
+        <div class="asset-head">项目资产箱 <span>演示项目 · 6 项</span></div>
+        <div class="asset-body">
+          <p class="asset-intro">园长课程直播项目<br />所有交付成果，集中在这里。</p>
+          <div class="asset-box">
+            <span class="asset-tag">示例</span><b>▤ 直播策划方案</b>
+            <p>直播主题、内容结构与转化路径</p>
+            <button onclick="show('results')">查看成果 →</button>
           </div>
-          <div>
-            <div class="sidecard"><h4>任务信息</h4><div class="tiny" id="taskInfo">场景：直播<br>行业：教培<br>目标人群：待确认<br>直播目标：待确认</div></div>
-            <div class="sidecard"><h4>AI 对你的了解程度</h4><div class="progress"><i id="knowbar"></i></div><div class="tiny" id="knowtext">45% · 正在补充任务上下文</div></div>
-            <div class="sidecard"><h4>将参与的专家</h4><div class="tiny">营销策划 · 文案 · 社群运营<br>视觉设计 · PPT · 直播专家</div></div>
+          <div class="asset-box">
+            <span class="asset-tag">示例</span><b>▤ 宣传文案套系</b>
+            <p>朋友圈预热文案 · 社群宣传文案</p>
+            <button onclick="show('results')">查看成果 →</button>
           </div>
-        </div>
-      </section>
-
-      <!-- PLAN -->
-      <section class="page" id="plan">
-        <div class="hero">
-          <h1>任务已经拆解完成</h1>
-          <div class="sub">AI 总管会按照依赖关系调度不同专家执行，你不需要自己切换模型或工具。</div>
-        </div>
-        <div class="card">
-          <b>直播项目｜面向幼儿园园长的课程直播</b>
-          <div class="planlist">
-            <div class="task"><div class="num">1</div><div><b>直播整体策划</b><span>主题、结构、节奏、转化目标</span></div></div>
-            <div class="task"><div class="num">2</div><div><b>朋友圈预热文案</b><span>连续 5 天预热内容</span></div></div>
-            <div class="task"><div class="num">3</div><div><b>社群宣传文案</b><span>邀约、提醒、开播通知</span></div></div>
-            <div class="task"><div class="num">4</div><div><b>直播宣传海报</b><span>16:9 + 9:16 两种版式</span></div></div>
-            <div class="task"><div class="num">5</div><div><b>直播 PPT</b><span>核心内容结构与页面建议</span></div></div>
-            <div class="task"><div class="num">6</div><div><b>直播讲稿</b><span>完整口播与关键转场</span></div></div>
+          <div class="asset-box">
+            <span class="asset-tag">示例</span><b>▧ 直播宣传海报</b>
+            <p>竖版与横版，两种宣传场景</p>
+            <button onclick="show('results')">查看成果 →</button>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)">
-            <span class="tiny">预计消耗：约 380 积分　·　预计调用 6 个专业 Skill</span>
-            <button class="primary" onclick="runTask()">开始执行</button>
+          <div class="asset-box">
+            <span class="asset-tag">示例</span><b>▥ 直播内容资料</b>
+            <p>直播 PPT · 完整直播讲稿</p>
+            <button onclick="show('results')">查看成果 →</button>
           </div>
+          <div class="rail-note"><b>让想法成为完整成果</b>从需求确认到内容交付，在一个工作空间内完成。</div>
         </div>
-      </section>
-
-      <!-- EXEC -->
-      <section class="page" id="exec">
-        <div class="hero"><h1>AI 专家团队正在协作</h1><div class="sub">系统根据任务自动路由最适合的模型与能力，你只需要查看进度与结果。</div></div>
-        <div class="exec" id="execList">
-          <div class="card expertrow"><div class="experticon">🧭</div><div><b>营销策划专家</b><div class="tiny">拆解直播结构与转化路径</div></div><span class="status go">执行中</span></div>
-          <div class="card expertrow"><div class="experticon">✍️</div><div><b>文案专家</b><div class="tiny">等待策划结果</div></div><span class="status">等待</span></div>
-          <div class="card expertrow"><div class="experticon">💬</div><div><b>社群运营专家</b><div class="tiny">等待策划结果</div></div><span class="status">等待</span></div>
-          <div class="card expertrow"><div class="experticon">🎨</div><div><b>视觉设计专家</b><div class="tiny">等待文案结果</div></div><span class="status">等待</span></div>
-          <div class="card expertrow"><div class="experticon">📊</div><div><b>PPT 专家</b><div class="tiny">等待直播结构</div></div><span class="status">等待</span></div>
-          <div class="card expertrow"><div class="experticon">🎙</div><div><b>直播专家</b><div class="tiny">等待最终内容整合</div></div><span class="status">等待</span></div>
+        <div class="asset-foot">
+          <button class="primary" onclick="show('results')">打开成果工作台 ↗</button>
+          <p>原型演示 · 展示示例内容</p>
         </div>
-        <div class="card" style="margin-top:16px">
-          <div style="display:flex;justify-content:space-between"><b>整体进度</b><span id="pct">16%</span></div>
-          <div class="progress"><i id="execbar" style="width:16%"></i></div>
-          <div class="tiny" id="execnote">正在生成直播整体策划……</div>
-        </div>
-      </section>
-
-      <!-- RESULTS -->
-      <section class="page" id="results">
-        <div class="hero"><h1>任务完成</h1><div class="sub">这不是一段聊天记录，而是一套可以直接使用、继续修改和下载的项目成果。</div></div>
-        <div class="card" style="margin-bottom:16px">
-          <b>直播项目｜面向幼儿园园长的课程直播</b>
-          <div class="tiny" style="margin-top:7px">6 项成果已完成 · 由 6 个专业 Skill 协同生成</div>
-        </div>
-        <div class="resultgrid">
-          <div class="card result"><div class="preview">🧭</div><b>直播策划方案</b><span class="tiny">主题、流程、节奏、转化路径</span><div class="actions"><button onclick="toast('正在预览策划方案')">预览</button><button onclick="toast('已进入修改模式')">修改</button></div></div>
-          <div class="card result"><div class="preview">✍️</div><b>朋友圈预热文案</b><span class="tiny">连续 5 天，共 10 条</span><div class="actions"><button onclick="toast('正在预览朋友圈文案')">预览</button><button onclick="toast('已重新生成')">重生成</button></div></div>
-          <div class="card result"><div class="preview">💬</div><b>社群宣传文案</b><span class="tiny">邀约、提醒、开播通知</span><div class="actions"><button onclick="toast('正在预览社群文案')">预览</button><button onclick="toast('已复制全部文案')">复制</button></div></div>
-          <div class="card result"><div class="preview">🖼️</div><b>直播宣传海报</b><span class="tiny">9:16 与 16:9 两版</span><div class="actions"><button onclick="toast('正在预览海报')">预览</button><button onclick="toast('模拟下载完成')">下载</button></div></div>
-          <div class="card result"><div class="preview">📊</div><b>直播 PPT</b><span class="tiny">24 页内容结构与页面方案</span><div class="actions"><button onclick="toast('正在预览 PPT')">预览</button><button onclick="toast('模拟下载完成')">下载</button></div></div>
-          <div class="card result"><div class="preview">🎙️</div><b>直播讲稿</b><span class="tiny">开场、主体、转化、收尾</span><div class="actions"><button onclick="toast('正在预览讲稿')">预览</button><button onclick="toast('已进入修改模式')">修改</button></div></div>
-        </div>
-      </section>
-
-      <!-- TASKS -->
-      <section class="page" id="tasks">
-        <div class="hero"><h1>我的任务</h1><div class="sub">所有任务按“项目”保存，而不是散落成聊天记录。</div></div>
-        <div class="card expertrow" onclick="show('results')" style="cursor:pointer"><div class="experticon">📡</div><div><b>面向幼儿园园长的课程直播</b><div class="tiny">直播策划 · 文案 · 海报 · PPT · 讲稿</div></div><span class="status ok">已完成</span></div>
-      </section>
-
-      <!-- EXPERTS -->
-      <section class="page" id="experts">
-        <div class="hero"><h1>我的专家团</h1><div class="sub">覆盖 15 个常见行业，为你的业务提供专业支持。</div></div>
-        <div class="expertgrid">
-          <div class="card expertcard"><b>教培教育</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>电商零售</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>餐饮</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>本地生活</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>美业</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>房地产</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>家装家居</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>汽车</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>医疗健康</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>法律服务</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>财税服务</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>人力资源</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>文旅酒店</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>企业服务/咨询</b><span>已配置行业专家能力</span></div>
-          <div class="card expertcard"><b>制造业/工厂</b><span>已配置行业专家能力</span></div>
-        </div>
-      </section>
+      </aside>
     </div>
-  </main>
-<aside class="asset-rail"><div class="asset-head">项目资产箱 <span>演示项目 · 6 项</span></div><div class="asset-body"><p class="asset-intro">园长课程直播项目<br>所有交付成果，集中在这里。</p><div class="asset-box"><span class="asset-tag">示例</span><b>▤ 直播策划方案</b><p>直播主题、内容结构与转化路径</p><button onclick="show('results')">查看成果 →</button></div><div class="asset-box"><span class="asset-tag">示例</span><b>▤ 宣传文案套系</b><p>朋友圈预热文案 · 社群宣传文案</p><button onclick="show('results')">查看成果 →</button></div><div class="asset-box"><span class="asset-tag">示例</span><b>▧ 直播宣传海报</b><p>竖版与横版，两种宣传场景</p><button onclick="show('results')">查看成果 →</button></div><div class="asset-box"><span class="asset-tag">示例</span><b>▥ 直播内容资料</b><p>直播 PPT · 完整直播讲稿</p><button onclick="show('results')">查看成果 →</button></div><div class="rail-note"><b>让想法成为完整成果</b>从需求确认到内容交付，在一个工作空间内完成。</div></div><div class="asset-foot"><button class="primary" onclick="show('results')">打开成果工作台 ↗</button><p>原型演示 · 展示示例内容</p></div></aside>
-</div>
 
-<div class="toast" id="toast"></div>
+    <div class="toast" id="toast"></div>
 
-<script>
-const pages = document.querySelectorAll('.page');
-const navBtns = document.querySelectorAll('.nav button[data-page]');
-function show(id){
-  pages.forEach(p=>p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  navBtns.forEach(b=>b.classList.toggle('active',b.dataset.page===id));
-  const names={home:'AI 工作台 / 教培行业',chat:'新建任务 / 需求确认',plan:'任务计划',exec:'执行中心',results:'任务成果',tasks:'我的任务',experts:'我的专家团'};
-  document.getElementById('crumb').innerText=names[id]||'AI 工作台';
-}
-navBtns.forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));
-
-function startLive(){ show('chat'); }
-function addMsg(text,user=false,html=false){
-  const box=document.getElementById('messages');
-  const row=document.createElement('div');
-  row.className='msg'+(user?' user':'');
-  row.innerHTML=`<div class="miniavatar">${user?'我':'AI'}</div><div class="bubble">${html?text:text.replace(/\n/g,'<br>')}</div>`;
-  box.appendChild(row); box.scrollTop=box.scrollHeight;
-}
-function answerAudience(v){
-  addMsg(v,true);
-  document.getElementById('taskInfo').innerHTML=`场景：直播<br>行业：教培<br>目标人群：${v}<br>直播目标：待确认`;
-  document.getElementById('knowbar').style.width='62%'; document.getElementById('knowtext').innerText='62% · 已确认目标人群';
-  setTimeout(()=>addMsg(`明白了，主要面向 <b>${v}</b>。<br><br><b>这场直播最主要的目标是什么？</b><div class="choices"><button class="choice" onclick="answerGoal('招生获客')">招生获客</button><button class="choice" onclick="answerGoal('产品成交')">产品成交</button><button class="choice" onclick="answerGoal('品牌宣传')">品牌宣传</button><button class="choice" onclick="answerGoal('合作招商')">合作招商</button></div>`,false,true),300);
-}
-function answerGoal(v){
-  addMsg(v,true);
-  document.getElementById('taskInfo').innerHTML=`场景：直播<br>行业：教培<br>目标人群：幼儿园园长 / 校长<br>直播目标：${v}`;
-  document.getElementById('knowbar').style.width='82%'; document.getElementById('knowtext').innerText='82% · 已具备任务执行条件';
-  setTimeout(()=>addMsg(`好的。我已经具备完成任务所需的主要信息。接下来我会先拆解完整工作链，再交给不同专家协作执行。<br><br><button class="primary" onclick="show('plan')">查看 AI 任务计划</button>`,false,true),350);
-}
-function manualSend(){
-  const i=document.getElementById('chatInput'); if(!i.value.trim()) return;
-  addMsg(i.value,true); i.value='';
-  setTimeout(()=>addMsg('收到，我已经把这条补充信息加入任务上下文。为了演示完整流程，你可以继续使用上方快捷选项。'),250);
-}
-function runTask(){
-  show('exec');
-  const rows=[...document.querySelectorAll('#execList .expertrow')];
-  const notes=['直播整体策划已完成，正在生成预热文案……','文案已完成，正在生成社群内容……','社群方案已完成，正在生成视觉物料……','海报方案已完成，正在整理 PPT……','PPT 已完成，正在生成完整直播讲稿……','全部专家任务完成，正在打包成果……'];
-  rows.forEach((r,idx)=>{
-    setTimeout(()=>{
-      if(idx>0){ rows[idx-1].querySelector('.status').className='status ok'; rows[idx-1].querySelector('.status').innerText='已完成'; }
-      r.querySelector('.status').className='status go'; r.querySelector('.status').innerText='执行中';
-      const pct=Math.round(((idx+1)/rows.length)*100);
-      document.getElementById('execbar').style.width=pct+'%'; document.getElementById('pct').innerText=pct+'%';
-      document.getElementById('execnote').innerText=notes[idx];
-      if(idx===rows.length-1){
-        setTimeout(()=>{
-          r.querySelector('.status').className='status ok'; r.querySelector('.status').innerText='已完成';
-          document.getElementById('execnote').innerText='全部成果已完成。';
-          setTimeout(()=>show('results'),700);
-        },700)
+    <script>
+      const pages = document.querySelectorAll('.page');
+      const navBtns = document.querySelectorAll('.nav button[data-page]');
+      function show(id) {
+        pages.forEach((p) => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        navBtns.forEach((b) => b.classList.toggle('active', b.dataset.page === id));
+        const names = {
+          home: 'AI 工作台 / 教培行业',
+          chat: '新建任务 / 需求确认',
+          plan: '任务计划',
+          exec: '执行中心',
+          results: '任务成果',
+          tasks: '我的任务',
+          experts: '我的专家团',
+        };
+        document.getElementById('crumb').innerText = names[id] || 'AI 工作台';
       }
-    },idx*650);
-  })
-}
-function toast(t){
-  const el=document.getElementById('toast'); el.innerText=t; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),1800);
-}
-</script>
-<style>
-.sidebottom:hover{border-color:#93c5fd;background:#eff6ff}.sidebottom:focus-visible{outline:3px solid #93c5fd;outline-offset:3px}
-.pricing-dialog{border:1px solid #e2e8f0;border-radius:20px;padding:30px;width:min(620px,calc(100vw - 32px));max-height:90vh;overflow:auto;color:#1e293b;box-shadow:0 24px 80px #0f172a33}.pricing-dialog::backdrop{background:#0f172a80;backdrop-filter:blur(4px)}.pricing-close{position:absolute;right:16px;top:12px;border:0;background:transparent;font-size:25px;color:#64748b;cursor:pointer}.pricing-heading{text-align:center;margin-bottom:26px}.pricing-heading>span{font-size:11px;background:#eff6ff;color:#2563eb;padding:5px 10px;border-radius:20px}.pricing-heading h2{font-size:23px;margin:16px 0 8px}.pricing-heading p{color:#64748b;font-size:12px;line-height:1.8}.pricing-options{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pricing-plan{border:1px solid #e2e8f0;border-radius:12px;padding:22px;display:flex;flex-direction:column}.pricing-plan.featured{border:2px solid #2563eb;background:#f8fbff;padding:21px}.pricing-plan h3{font-size:15px;margin:0 0 8px}.pricing-plan>p{font-size:11px;color:#64748b;margin:0}.plan-price{font-size:36px;font-weight:750;margin:22px 0;color:#0f172a}.plan-price small{font-size:12px;color:#64748b;font-weight:400}.pricing-plan ul{padding:0;list-style:none;font-size:12px;line-height:2.5;margin:0 0 24px}.pricing-plan li:before{content:'✓';color:#2563eb;margin-right:8px}.pricing-plan button{margin-top:auto;width:100%}.pricing-note{text-align:center;font-size:11px;color:#94a3b8;line-height:1.8;margin:20px 0 0}.pricing-feedback{font-size:12px;color:#1d4ed8;background:#eff6ff;padding:12px;border-radius:8px;margin-top:16px;line-height:1.8}.pricing-feedback:empty{display:none}@media(max-width:540px){.pricing-options{grid-template-columns:1fr}.pricing-dialog{padding:24px}}
-</style>
-<dialog id="pricingDialog" class="pricing-dialog" aria-labelledby="pricingTitle" aria-describedby="pricingDescription">
-  <button class="pricing-close" aria-label="关闭付费窗口" onclick="closePricing()">×</button>
-  <div class="pricing-heading"><span>升级体验</span><h2 id="pricingTitle">选择适合你的创作套餐</h2><p id="pricingDescription">让行业专家团，帮你完成从策划到交付的每一步。</p></div>
-  <div class="pricing-options" id="pricingOptions"></div>
-  <div id="pricingFeedback" class="pricing-feedback" role="status"></div>
-  <p class="pricing-note" id="pricingNote">支付由微信支付提供 · 积分即时到账 · 兑换比例以页面展示为准</p>
-</dialog>
-<script>
-// ============================================================
-// 积分套餐 + 宿主支付桥
-//
-// 本页面跑在沙箱 iframe 里（无 same-origin），不能直接请求支付服务：
-// 所有支付动作经 postMessage 交给宿主（StudioPage），由宿主走主进程 IPC
-// 完成「建单 → 画二维码 → 轮询到账」，再把结果发回来。
-// ============================================================
-const pricingDialog = document.getElementById('pricingDialog');
-function openPricing(){document.getElementById('pricingFeedback').textContent='';if(!pricingDialog.open)pricingDialog.showModal();}
-function closePricing(){pricingDialog.close();}
-pricingDialog.addEventListener('click',event=>{const box=pricingDialog.getBoundingClientRect();if(event.target===pricingDialog&&(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom))closePricing();});
+      navBtns.forEach((b) => b.addEventListener('click', () => show(b.dataset.page)));
 
-// 宿主未同步档位时的内置默认值（与 wrangler.toml 的 CREDITS_PER_YUAN=50 对齐）
-const DEFAULT_TIERS=[
-  {id:'basic',name:'基础积分包',tagline:'适合首次体验完整任务',priceCents:1990,credits:995,featured:false,perks:['全行业专家团调用','营销海报 / 文案生成','项目成果打包导出','积分长期有效不清零']},
-  {id:'plus',name:'进阶积分包',tagline:'适合日常持续推广与创作',priceCents:5990,credits:2995,featured:true,perks:['全行业专家团调用','营销海报 / 文案生成','项目成果打包导出','积分长期有效不清零']},
-  {id:'pro',name:'至尊积分包',tagline:'高频创作团队最划算',priceCents:9990,credits:4995,featured:false,perks:['全部进阶权益','积分单价最低','多任务并行执行','优先客服支持']}
-];
-let TIERS=DEFAULT_TIERS;
+      function startLive() {
+        show('chat');
+      }
+      function addMsg(text, user = false, html = false) {
+        const box = document.getElementById('messages');
+        const row = document.createElement('div');
+        row.className = 'msg' + (user ? ' user' : '');
+        row.innerHTML = `<div class="miniavatar">${user ? '我' : 'AI'}</div><div class="bubble">${html ? text : text.replace(/\n/g, '<br>')}</div>`;
+        box.appendChild(row);
+        box.scrollTop = box.scrollHeight;
+      }
+      function answerAudience(v) {
+        addMsg(v, true);
+        document.getElementById('taskInfo').innerHTML =
+          `场景：直播<br>行业：教培<br>目标人群：${v}<br>直播目标：待确认`;
+        document.getElementById('knowbar').style.width = '62%';
+        document.getElementById('knowtext').innerText = '62% · 已确认目标人群';
+        setTimeout(
+          () =>
+            addMsg(
+              `明白了，主要面向 <b>${v}</b>。<br><br><b>这场直播最主要的目标是什么？</b><div class="choices"><button class="choice" onclick="answerGoal('招生获客')">招生获客</button><button class="choice" onclick="answerGoal('产品成交')">产品成交</button><button class="choice" onclick="answerGoal('品牌宣传')">品牌宣传</button><button class="choice" onclick="answerGoal('合作招商')">合作招商</button></div>`,
+              false,
+              true
+            ),
+          300
+        );
+      }
+      function answerGoal(v) {
+        addMsg(v, true);
+        document.getElementById('taskInfo').innerHTML =
+          `场景：直播<br>行业：教培<br>目标人群：幼儿园园长 / 校长<br>直播目标：${v}`;
+        document.getElementById('knowbar').style.width = '82%';
+        document.getElementById('knowtext').innerText = '82% · 已具备任务执行条件';
+        setTimeout(
+          () =>
+            addMsg(
+              `好的。我已经具备完成任务所需的主要信息。接下来我会先拆解完整工作链，再交给不同专家协作执行。<br><br><button class="primary" onclick="show('plan')">查看 AI 任务计划</button>`,
+              false,
+              true
+            ),
+          350
+        );
+      }
+      function manualSend() {
+        const i = document.getElementById('chatInput');
+        if (!i.value.trim()) return;
+        addMsg(i.value, true);
+        i.value = '';
+        setTimeout(
+          () => addMsg('收到，我已经把这条补充信息加入任务上下文。为了演示完整流程，你可以继续使用上方快捷选项。'),
+          250
+        );
+      }
+      function runTask() {
+        show('exec');
+        const rows = [...document.querySelectorAll('#execList .expertrow')];
+        const notes = [
+          '直播整体策划已完成，正在生成预热文案……',
+          '文案已完成，正在生成社群内容……',
+          '社群方案已完成，正在生成视觉物料……',
+          '海报方案已完成，正在整理 PPT……',
+          'PPT 已完成，正在生成完整直播讲稿……',
+          '全部专家任务完成，正在打包成果……',
+        ];
+        rows.forEach((r, idx) => {
+          setTimeout(() => {
+            if (idx > 0) {
+              rows[idx - 1].querySelector('.status').className = 'status ok';
+              rows[idx - 1].querySelector('.status').innerText = '已完成';
+            }
+            r.querySelector('.status').className = 'status go';
+            r.querySelector('.status').innerText = '执行中';
+            const pct = Math.round(((idx + 1) / rows.length) * 100);
+            document.getElementById('execbar').style.width = pct + '%';
+            document.getElementById('pct').innerText = pct + '%';
+            document.getElementById('execnote').innerText = notes[idx];
+            if (idx === rows.length - 1) {
+              setTimeout(() => {
+                r.querySelector('.status').className = 'status ok';
+                r.querySelector('.status').innerText = '已完成';
+                document.getElementById('execnote').innerText = '全部成果已完成。';
+                setTimeout(() => show('results'), 700);
+              }, 700);
+            }
+          }, idx * 650);
+        });
+      }
+      function toast(t) {
+        const el = document.getElementById('toast');
+        el.innerText = t;
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 1800);
+      }
+    </script>
+    <style>
+      .sidebottom:hover {
+        border-color: #93c5fd;
+        background: #eff6ff;
+      }
+      .sidebottom:focus-visible {
+        outline: 3px solid #93c5fd;
+        outline-offset: 3px;
+      }
+      .pricing-dialog {
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 30px;
+        width: min(620px, calc(100vw - 32px));
+        max-height: 90vh;
+        overflow: auto;
+        color: #1e293b;
+        box-shadow: 0 24px 80px #0f172a33;
+      }
+      .pricing-dialog::backdrop {
+        background: #0f172a80;
+        backdrop-filter: blur(4px);
+      }
+      .pricing-close {
+        position: absolute;
+        right: 16px;
+        top: 12px;
+        border: 0;
+        background: transparent;
+        font-size: 25px;
+        color: #64748b;
+        cursor: pointer;
+      }
+      .pricing-heading {
+        text-align: center;
+        margin-bottom: 26px;
+      }
+      .pricing-heading > span {
+        font-size: 11px;
+        background: #eff6ff;
+        color: #2563eb;
+        padding: 5px 10px;
+        border-radius: 20px;
+      }
+      .pricing-heading h2 {
+        font-size: 23px;
+        margin: 16px 0 8px;
+      }
+      .pricing-heading p {
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.8;
+      }
+      .pricing-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .pricing-plan {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+      }
+      .pricing-plan.featured {
+        border: 2px solid #2563eb;
+        background: #f8fbff;
+        padding: 21px;
+      }
+      .pricing-plan h3 {
+        font-size: 15px;
+        margin: 0 0 8px;
+      }
+      .pricing-plan > p {
+        font-size: 11px;
+        color: #64748b;
+        margin: 0;
+      }
+      .plan-price {
+        font-size: 36px;
+        font-weight: 750;
+        margin: 22px 0;
+        color: #0f172a;
+      }
+      .plan-price small {
+        font-size: 12px;
+        color: #64748b;
+        font-weight: 400;
+      }
+      .pricing-plan ul {
+        padding: 0;
+        list-style: none;
+        font-size: 12px;
+        line-height: 2.5;
+        margin: 0 0 24px;
+      }
+      .pricing-plan li:before {
+        content: '✓';
+        color: #2563eb;
+        margin-right: 8px;
+      }
+      .pricing-plan button {
+        margin-top: auto;
+        width: 100%;
+      }
+      .pricing-note {
+        text-align: center;
+        font-size: 11px;
+        color: #94a3b8;
+        line-height: 1.8;
+        margin: 20px 0 0;
+      }
+      .pricing-feedback {
+        font-size: 12px;
+        color: #1d4ed8;
+        background: #eff6ff;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 16px;
+        line-height: 1.8;
+      }
+      .pricing-feedback:empty {
+        display: none;
+      }
+      @media (max-width: 540px) {
+        .pricing-options {
+          grid-template-columns: 1fr;
+        }
+        .pricing-dialog {
+          padding: 24px;
+        }
+      }
+    </style>
+    <dialog
+      id="pricingDialog"
+      class="pricing-dialog"
+      aria-labelledby="pricingTitle"
+      aria-describedby="pricingDescription"
+    >
+      <button class="pricing-close" aria-label="关闭付费窗口" onclick="closePricing()">×</button>
+      <div class="pricing-heading">
+        <span>升级体验</span>
+        <h2 id="pricingTitle">选择适合你的创作套餐</h2>
+        <p id="pricingDescription">让行业专家团，帮你完成从策划到交付的每一步。</p>
+      </div>
+      <div class="pricing-options" id="pricingOptions"></div>
+      <div id="pricingFeedback" class="pricing-feedback" role="status"></div>
+      <p class="pricing-note" id="pricingNote">支付由微信支付提供 · 积分即时到账 · 兑换比例以页面展示为准</p>
+    </dialog>
+    <script>
+      // ============================================================
+      // 积分套餐 + 宿主支付桥
+      //
+      // 本页面跑在沙箱 iframe 里（无 same-origin），不能直接请求支付服务：
+      // 所有支付动作经 postMessage 交给宿主（StudioPage），由宿主走主进程 IPC
+      // 完成「建单 → 画二维码 → 轮询到账」，再把结果发回来。
+      // ============================================================
+      const pricingDialog = document.getElementById('pricingDialog');
+      function openPricing() {
+        document.getElementById('pricingFeedback').textContent = '';
+        if (!pricingDialog.open) pricingDialog.showModal();
+      }
+      function closePricing() {
+        pricingDialog.close();
+      }
+      pricingDialog.addEventListener('click', (event) => {
+        const box = pricingDialog.getBoundingClientRect();
+        if (
+          event.target === pricingDialog &&
+          (event.clientX < box.left ||
+            event.clientX > box.right ||
+            event.clientY < box.top ||
+            event.clientY > box.bottom)
+        )
+          closePricing();
+      });
 
-function priceText(c){return '¥'+(c/100).toFixed(2).replace(/\.00$/,'');}
-function renderTiers(){
-  const box=document.getElementById('pricingOptions');
-  box.innerHTML='';
-  TIERS.forEach(t=>{
-    const el=document.createElement('div');
-    el.className='pricing-plan'+(t.featured?' featured':'');
-    const perks=(t.perks||[]).map(p=>'<li>'+p+'</li>').join('');
-    el.innerHTML='<h3>'+t.name+'</h3><p>'+t.tagline+'</p>'
-      +'<div class="plan-price"><small>¥ </small>'+(t.priceCents/100).toFixed(2).replace(/\.00$/,'')+'<small> / 包</small></div>'
-      +'<ul>'+perks+'<li><b>到账 '+t.credits+' 积分</b></li></ul>'
-      +'<button class="primary" data-tier="'+t.id+'">选择'+t.name+' · '+priceText(t.priceCents)+'</button>';
-    el.querySelector('button').addEventListener('click',()=>buyTier(t.id));
-    box.appendChild(el);
-  });
-}
-function renderCredits(c){
-  const pill=document.getElementById('creditsPill');
-  if(pill)pill.textContent=c==null?'积分 --':'⚡ 积分 '+c;
-  const label=document.getElementById('planLabel');
-  const hint=document.getElementById('planHint');
-  if(label&&hint){
-    if(c!=null&&c>0){label.textContent='积分用户';hint.innerHTML='当前积分余额 '+c+'<br>继续加油创作吧';}
-    else{label.textContent='体验版';hint.innerHTML='剩余 5 次免费对话<br>升级后解锁完整任务';}
-  }
-}
-function setFeedback(text){document.getElementById('pricingFeedback').textContent=text||'';}
+      // 宿主未同步档位时的内置默认值（与 wrangler.toml 的 CREDITS_PER_YUAN=50 对齐）
+      const DEFAULT_TIERS = [
+        {
+          id: 'basic',
+          name: '基础积分包',
+          tagline: '适合首次体验完整任务',
+          priceCents: 1990,
+          credits: 995,
+          featured: false,
+          perks: ['全行业专家团调用', '营销海报 / 文案生成', '项目成果打包导出', '积分长期有效不清零'],
+        },
+        {
+          id: 'plus',
+          name: '进阶积分包',
+          tagline: '适合日常持续推广与创作',
+          priceCents: 5990,
+          credits: 2995,
+          featured: true,
+          perks: ['全行业专家团调用', '营销海报 / 文案生成', '项目成果打包导出', '积分长期有效不清零'],
+        },
+        {
+          id: 'pro',
+          name: '至尊积分包',
+          tagline: '高频创作团队最划算',
+          priceCents: 9990,
+          credits: 4995,
+          featured: false,
+          perks: ['全部进阶权益', '积分单价最低', '多任务并行执行', '优先客服支持'],
+        },
+      ];
+      let TIERS = DEFAULT_TIERS;
 
-// ---- 与宿主通信 ----
-function postToHost(msg){try{parent.postMessage(Object.assign({source:'mu-studio'},msg),'*');}catch(e){}}
-function buyTier(tierId){setFeedback('正在创建支付订单…');postToHost({type:'pay:buy',tierId:tierId});}
-window.addEventListener('message',event=>{
-  const d=event.data;
-  if(!d||d.source!=='mu-host')return;
-  if(d.type==='pay:sync'){
-    if(Array.isArray(d.tiers)&&d.tiers.length){TIERS=d.tiers;renderTiers();}
-    renderCredits(d.credits);
-  }
-  if(d.type==='pay:result'){
-    if(d.ok){
-      setFeedback('「'+(d.tierName||'套餐')+'」支付成功，'+d.credits+' 积分已到账'+(d.balance!=null?'，当前余额 '+d.balance+' 积分':'')+'。');
-      toast('支付成功，积分已到账');
-      renderCredits(d.balance!=null?d.balance:null);
-    }else{
-      setFeedback('支付未完成：'+(d.error||'未知错误'));
-    }
-  }
-});
-// 文档就绪即向宿主要数据（宿主回 pay:sync 后渲染真实档位与余额）
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>postToHost({type:'pay:hello'}));
-else postToHost({type:'pay:hello'});
-renderTiers();
-</script>
-</body>
+      function priceText(c) {
+        return '¥' + (c / 100).toFixed(2).replace(/\.00$/, '');
+      }
+      function renderTiers() {
+        const box = document.getElementById('pricingOptions');
+        box.innerHTML = '';
+        TIERS.forEach((t) => {
+          const el = document.createElement('div');
+          el.className = 'pricing-plan' + (t.featured ? ' featured' : '');
+          const perks = (t.perks || []).map((p) => '<li>' + p + '</li>').join('');
+          el.innerHTML =
+            '<h3>' +
+            t.name +
+            '</h3><p>' +
+            t.tagline +
+            '</p>' +
+            '<div class="plan-price"><small>¥ </small>' +
+            (t.priceCents / 100).toFixed(2).replace(/\.00$/, '') +
+            '<small> / 包</small></div>' +
+            '<ul>' +
+            perks +
+            '<li><b>到账 ' +
+            t.credits +
+            ' 积分</b></li></ul>' +
+            '<button class="primary" data-tier="' +
+            t.id +
+            '">选择' +
+            t.name +
+            ' · ' +
+            priceText(t.priceCents) +
+            '</button>';
+          el.querySelector('button').addEventListener('click', () => buyTier(t.id));
+          box.appendChild(el);
+        });
+      }
+      function renderCredits(c) {
+        const pill = document.getElementById('creditsPill');
+        if (pill) pill.textContent = c == null ? '积分 --' : '⚡ 积分 ' + c;
+        const label = document.getElementById('planLabel');
+        const hint = document.getElementById('planHint');
+        if (label && hint) {
+          if (c != null && c > 0) {
+            label.textContent = '积分用户';
+            hint.innerHTML = '当前积分余额 ' + c + '<br>继续加油创作吧';
+          } else {
+            label.textContent = '体验版';
+            hint.innerHTML = '剩余 5 次免费对话<br>升级后解锁完整任务';
+          }
+        }
+      }
+      function setFeedback(text) {
+        document.getElementById('pricingFeedback').textContent = text || '';
+      }
+
+      // ---- 与宿主通信 ----
+      function postToHost(msg) {
+        try {
+          parent.postMessage(Object.assign({ source: 'mu-studio' }, msg), '*');
+        } catch (e) {}
+      }
+      function buyTier(tierId) {
+        setFeedback('正在创建支付订单…');
+        postToHost({ type: 'pay:buy', tierId: tierId });
+      }
+      window.addEventListener('message', (event) => {
+        const d = event.data;
+        if (!d || d.source !== 'mu-host') return;
+        if (d.type === 'pay:sync') {
+          if (Array.isArray(d.tiers) && d.tiers.length) {
+            TIERS = d.tiers;
+            renderTiers();
+          }
+          renderCredits(d.credits);
+        }
+        if (d.type === 'pay:result') {
+          if (d.ok) {
+            setFeedback(
+              '「' +
+                (d.tierName || '套餐') +
+                '」支付成功，' +
+                d.credits +
+                ' 积分已到账' +
+                (d.balance != null ? '，当前余额 ' + d.balance + ' 积分' : '') +
+                '。'
+            );
+            toast('支付成功，积分已到账');
+            renderCredits(d.balance != null ? d.balance : null);
+          } else {
+            setFeedback('支付未完成：' + (d.error || '未知错误'));
+          }
+        }
+      });
+      // 文档就绪即向宿主要数据（宿主回 pay:sync 后渲染真实档位与余额）
+      if (document.readyState === 'loading')
+        document.addEventListener('DOMContentLoaded', () => postToHost({ type: 'pay:hello' }));
+      else postToHost({ type: 'pay:hello' });
+      renderTiers();
+    </script>
+  </body>
 </html>

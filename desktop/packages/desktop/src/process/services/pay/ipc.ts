@@ -18,12 +18,14 @@ export function registerPayIpc(): void {
 
   ipcMain.handle('pay:tiers:get', async (): Promise<PayTier[]> => payClient.getTiers());
 
-  ipcMain.handle('pay:order:create', async (_e, args: { tierId: string }): Promise<CreatedOrder> =>
-    payClient.createOrder(args),
+  ipcMain.handle(
+    'pay:order:create',
+    async (_e, args: { tierId: string }): Promise<CreatedOrder> => payClient.createOrder(args)
   );
 
-  ipcMain.handle('pay:order:status', async (_e, orderId: string): Promise<PayOrderState> =>
-    payClient.pollOrder(orderId),
+  ipcMain.handle(
+    'pay:order:status',
+    async (_e, orderId: string): Promise<PayOrderState> => payClient.pollOrder(orderId)
   );
 
   ipcMain.handle('pay:credits:get', async (): Promise<PayBalance> => payClient.getCredits());
@@ -31,6 +33,6 @@ export function registerPayIpc(): void {
   ipcMain.handle(
     'pay:mock:confirm',
     async (_e, orderId: string): Promise<{ orderId: string; status: string; credits: number }> =>
-      payClient.mockConfirm(orderId),
+      payClient.mockConfirm(orderId)
   );
 }

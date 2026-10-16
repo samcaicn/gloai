@@ -55,7 +55,8 @@ async function waitForHealth(url: string, ms: number, child: ChildProcess): Prom
     } catch {
       // not up yet
     }
-    if (Date.now() > deadline) throw new Error(`llama-server did not answer on ${url} within ${Math.round(ms / 1000)}s`);
+    if (Date.now() > deadline)
+      throw new Error(`llama-server did not answer on ${url} within ${Math.round(ms / 1000)}s`);
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 }

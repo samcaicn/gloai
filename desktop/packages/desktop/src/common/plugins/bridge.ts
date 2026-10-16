@@ -42,9 +42,7 @@ export const pluginBridge = {
   /** One page from the selected source. Empty when none is selected. */
   marketCatalog: bridge.buildProvider<MarketResult<MarketCatalogResult[]>, MarketQuery>('plugins.market.catalog'),
   /** Add, remove, reorder or select a source; answers with the whole list. */
-  marketSources: bridge.buildProvider<MarketResult<MarketSourceView[]>, MarketSourceMutation>(
-    'plugins.market.sources',
-  ),
+  marketSources: bridge.buildProvider<MarketResult<MarketSourceView[]>, MarketSourceMutation>('plugins.market.sources'),
 };
 
 /** Turns a wrapped answer back into a value, or throws what the main process threw. */

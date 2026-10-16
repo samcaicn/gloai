@@ -10,7 +10,10 @@ import { answerConfidence } from '../localJudgeOnnx/laya/calibration.ts';
 import type { Question } from '../localJudgeOnnx/laya/types.ts';
 
 /** What the upstream server needs of the transport: `fetch`, or a stand-in in tests. */
-export type FetchJson = (url: string, init: { method: string; headers: Record<string, string>; body: string }) => Promise<{
+export type FetchJson = (
+  url: string,
+  init: { method: string; headers: Record<string, string>; body: string }
+) => Promise<{
   ok: boolean;
   status: number;
   json(): Promise<unknown>;
@@ -18,7 +21,13 @@ export type FetchJson = (url: string, init: { method: string; headers: Record<st
 
 type SystemOneAnswer =
   | { type: 'choice'; choice: string; probabilities: Record<string, number>; confidence?: number }
-  | { type: 'score'; score: number; legend?: Record<string, unknown>; probabilities: Record<string, number>; confidence?: number }
+  | {
+      type: 'score';
+      score: number;
+      legend?: Record<string, unknown>;
+      probabilities: Record<string, number>;
+      confidence?: number;
+    }
   | { type: 'noul'; noul: number; confidence?: number };
 
 type SystemOneResponse = {
@@ -62,9 +71,7 @@ export class GgufJudge {
     this.fetchJson =
       options.fetchJson ??
       (async (url, init) =>
-        (await fetch(url, { ...init, signal: AbortSignal.timeout(this.timeoutMs) })) as Awaited<
-          ReturnType<FetchJson>
-        >);
+        (await fetch(url, { ...init, signal: AbortSignal.timeout(this.timeoutMs) })) as Awaited<ReturnType<FetchJson>>);
   }
 
   async evaluate(state: unknown, questions: unknown, log?: (line: string) => void) {
@@ -127,7 +134,9 @@ export class GgufJudge {
   /** One small request, so the first real one does not pay for the server's first allocation. */
   async warmUp(): Promise<void> {
     try {
-      await this.evaluate('a warm-up request', { warm: { type: 'boolean', instructions: 'Is this a warm-up request?' } });
+      await this.evaluate('a warm-up request', {
+        warm: { type: 'boolean', instructions: 'Is this a warm-up request?' },
+      });
     } finally {
       this.warm = true;
     }

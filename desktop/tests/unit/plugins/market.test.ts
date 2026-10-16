@@ -50,14 +50,33 @@ describe('parseMarketSourceManifest', () => {
   });
 
   it('rejects an endpoint that is not HTTPS, not on 443, or not ending in /v1/plugins', () => {
-    expect(() => parseMarketSourceManifest({ ...base, transport: { kind: 'https-json', endpoint: 'http://api.example.com/market/v1/plugins', method: 'GET' } })).toThrow(MarketError);
-    expect(() => parseMarketSourceManifest({ ...base, transport: { kind: 'https-json', endpoint: 'https://api.example.com:8443/market/v1/plugins', method: 'GET' } })).toThrow(MarketError);
-    expect(() => parseMarketSourceManifest({ ...base, transport: { kind: 'https-json', endpoint: 'https://api.example.com/market/plugins', method: 'GET' } })).toThrow(MarketError);
+    expect(() =>
+      parseMarketSourceManifest({
+        ...base,
+        transport: { kind: 'https-json', endpoint: 'http://api.example.com/market/v1/plugins', method: 'GET' },
+      })
+    ).toThrow(MarketError);
+    expect(() =>
+      parseMarketSourceManifest({
+        ...base,
+        transport: { kind: 'https-json', endpoint: 'https://api.example.com:8443/market/v1/plugins', method: 'GET' },
+      })
+    ).toThrow(MarketError);
+    expect(() =>
+      parseMarketSourceManifest({
+        ...base,
+        transport: { kind: 'https-json', endpoint: 'https://api.example.com/market/plugins', method: 'GET' },
+      })
+    ).toThrow(MarketError);
   });
 
   it('rejects an unknown query feature and a default limit above the max', () => {
-    expect(() => parseMarketSourceManifest({ ...base, query: { supported: ['bogus'], defaultLimit: 10, maxLimit: 50, sorts: [] } })).toThrow(MarketError);
-    expect(() => parseMarketSourceManifest({ ...base, query: { supported: ['q'], defaultLimit: 200, maxLimit: 50, sorts: [] } })).toThrow(MarketError);
+    expect(() =>
+      parseMarketSourceManifest({ ...base, query: { supported: ['bogus'], defaultLimit: 10, maxLimit: 50, sorts: [] } })
+    ).toThrow(MarketError);
+    expect(() =>
+      parseMarketSourceManifest({ ...base, query: { supported: ['q'], defaultLimit: 200, maxLimit: 50, sorts: [] } })
+    ).toThrow(MarketError);
   });
 });
 
@@ -65,7 +84,10 @@ describe('parseMarketProviderPage', () => {
   it('rejects a page with no items, an item with no source, or a duplicate id', () => {
     expect(() => parseMarketProviderPage({ schemaVersion: '1.0.0' }, 24)).toThrow(MarketError);
     expect(() =>
-      parseMarketProviderPage({ schemaVersion: '1.0.0', items: [{ id: 'a', name: 'a', displayName: 'a', summary: 's' }] }, 24)
+      parseMarketProviderPage(
+        { schemaVersion: '1.0.0', items: [{ id: 'a', name: 'a', displayName: 'a', summary: 's' }] },
+        24
+      )
     ).toThrow(MarketError);
     expect(() =>
       parseMarketProviderPage(
@@ -105,7 +127,10 @@ describe('parseMarketProviderPage', () => {
   it('rejects more items than were asked for', () => {
     expect(() =>
       parseMarketProviderPage(
-        { schemaVersion: '1.0.0', items: [{ id: 'a', name: 'a', displayName: 'a', summary: 's', package: { registry: 'npm', name: 'a' } }] },
+        {
+          schemaVersion: '1.0.0',
+          items: [{ id: 'a', name: 'a', displayName: 'a', summary: 's', package: { registry: 'npm', name: 'a' } }],
+        },
         0
       )
     ).toThrow(MarketError);

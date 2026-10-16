@@ -294,7 +294,8 @@ export class GgufLocalJudge {
   async autoStart(agentDir: string): Promise<boolean> {
     if (this.support() !== 'ok' || this.child || this.task?.phase === 'running') return false;
     if (!wantsLocalJudge(readOptional(configPath(agentDir)))) return false;
-    if (!(await this.deps.check(this.folder, false, this.preset)).ready || (await this.deps.health(this.url))) return false;
+    if (!(await this.deps.check(this.folder, false, this.preset)).ready || (await this.deps.health(this.url)))
+      return false;
     await this.run('start');
     return true;
   }

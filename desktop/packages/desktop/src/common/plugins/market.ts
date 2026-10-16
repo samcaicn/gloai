@@ -154,7 +154,15 @@ const ITEM_ID = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$/;
 const CATEGORY_ID = /^[a-z0-9][a-z0-9._:-]*$/;
 /** Control and formatting characters, and the bidi overrides that let a name read as something it is not. */
 const UNSAFE_TEXT = /[\p{Cc}\p{Cf}‪-‮⁦-⁩]/u;
-const QUERY_FEATURES: readonly MarketQueryFeature[] = ['q', 'category', 'capability', 'cursor', 'limit', 'sort', 'locale'];
+const QUERY_FEATURES: readonly MarketQueryFeature[] = [
+  'q',
+  'category',
+  'capability',
+  'cursor',
+  'limit',
+  'sort',
+  'locale',
+];
 const SORTS: readonly MarketSort[] = ['relevance', 'updated', 'name', 'downloads'];
 const LOCALE = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/;
 

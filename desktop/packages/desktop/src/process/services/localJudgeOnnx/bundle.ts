@@ -66,7 +66,8 @@ export async function checkFiles(
   let verified: Verified = { revision: options.revision ?? '', files: {} };
   try {
     const read = JSON.parse((await io.readText(memo)) ?? '') as Verified;
-    if (read?.files && typeof read.files === 'object') verified = { ...read, revision: options.revision ?? read.revision };
+    if (read?.files && typeof read.files === 'object')
+      verified = { ...read, revision: options.revision ?? read.revision };
   } catch {
     // No memo yet, or an unreadable one: hash again.
   }

@@ -40,33 +40,68 @@ const SourceRow: React.FC<{
 }> = ({ source, onEnable, onRemove, onMove }) => {
   const { t } = useT();
   return (
-    <div data-testid={`mu-plugin-source-${source.sourceRecordId}`} className='flex items-center gap-12px py-10px border-b border-[var(--color-border-1)] last:border-b-0'>
+    <div
+      data-testid={`mu-plugin-source-${source.sourceRecordId}`}
+      className='flex items-center gap-12px py-10px border-b border-[var(--color-border-1)] last:border-b-0'
+    >
       <div className={PLUGIN_TILE}>
         <Puzzle size={18} />
       </div>
       <div className='min-w-0 flex-1'>
         <div className='flex items-center gap-8px'>
           <span className='text-14px font-500 text-t-primary truncate'>{source.name}</span>
-          {source.enabled ? <Tag size='small' color='green'>{t('settings.pluginMarket.enabled')}</Tag> : null}
+          {source.enabled ? (
+            <Tag size='small' color='green'>
+              {t('settings.pluginMarket.enabled')}
+            </Tag>
+          ) : null}
         </div>
         <div className='text-12px text-t-tertiary truncate' dir='ltr'>
           {source.endpoint}
         </div>
-        {source.attribution ? <div className='text-12px text-t-tertiary truncate'>{source.attribution.name}</div> : null}
+        {source.attribution ? (
+          <div className='text-12px text-t-tertiary truncate'>{source.attribution.name}</div>
+        ) : null}
       </div>
       <div className='shrink-0 flex items-center gap-6px'>
         {!source.enabled ? (
-          <Button size='mini' type='primary' data-testid='mu-plugin-enable' onClick={() => onEnable(source.sourceRecordId)}>
+          <Button
+            size='mini'
+            type='primary'
+            data-testid='mu-plugin-enable'
+            onClick={() => onEnable(source.sourceRecordId)}
+          >
             {t('settings.pluginMarket.enable')}
           </Button>
         ) : null}
-        <Button size='mini' iconOnly type='text' aria-label={t('settings.pluginMarket.moveUp')} disabled={!source.enabled} onClick={() => onMove(source.sourceRecordId, 'up')}>
+        <Button
+          size='mini'
+          iconOnly
+          type='text'
+          aria-label={t('settings.pluginMarket.moveUp')}
+          disabled={!source.enabled}
+          onClick={() => onMove(source.sourceRecordId, 'up')}
+        >
           <ArrowUp size={14} />
         </Button>
-        <Button size='mini' iconOnly type='text' aria-label={t('settings.pluginMarket.moveDown')} disabled={!source.enabled} onClick={() => onMove(source.sourceRecordId, 'down')}>
+        <Button
+          size='mini'
+          iconOnly
+          type='text'
+          aria-label={t('settings.pluginMarket.moveDown')}
+          disabled={!source.enabled}
+          onClick={() => onMove(source.sourceRecordId, 'down')}
+        >
           <ArrowDown size={14} />
         </Button>
-        <Button size='mini' iconOnly type='text' status='danger' aria-label={t('settings.pluginMarket.remove')} onClick={() => onRemove(source.sourceRecordId)}>
+        <Button
+          size='mini'
+          iconOnly
+          type='text'
+          status='danger'
+          aria-label={t('settings.pluginMarket.remove')}
+          onClick={() => onRemove(source.sourceRecordId)}
+        >
           <Delete size={14} />
         </Button>
       </div>
@@ -103,7 +138,10 @@ const ItemCard: React.FC<{ item: MarketItem; onOpen: (item: MarketItem) => void 
 
 const PluginMarketSettings: React.FC = () => {
   const { t } = useT();
-  const [state, setState] = useState<{ sources: MarketSourceView[]; builtIns: { key: string; name: string; description?: string; endpoint: string; homepage?: string }[] }>();
+  const [state, setState] = useState<{
+    sources: MarketSourceView[];
+    builtIns: { key: string; name: string; description?: string; endpoint: string; homepage?: string }[];
+  }>();
   const [catalog, setCatalog] = useState<MarketCatalogResult[]>([]);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
@@ -120,7 +158,9 @@ const PluginMarketSettings: React.FC = () => {
       setState(next);
       return next;
     } catch (error) {
-      Message.error(t('settings.pluginMarket.stateError', { message: error instanceof Error ? error.message : String(error) }));
+      Message.error(
+        t('settings.pluginMarket.stateError', { message: error instanceof Error ? error.message : String(error) })
+      );
       return undefined;
     }
   }, [t]);
@@ -134,7 +174,9 @@ const PluginMarketSettings: React.FC = () => {
         const results = unwrapMarket(await pluginBridge.marketCatalog.invoke({ q: search, cursor, limit: 24 }));
         setCatalog((previous) => (cursor ? [...previous, ...results] : results));
       } catch (error) {
-        Message.error(t('settings.pluginMarket.catalogError', { message: error instanceof Error ? error.message : String(error) }));
+        Message.error(
+          t('settings.pluginMarket.catalogError', { message: error instanceof Error ? error.message : String(error) })
+        );
       } finally {
         setLoadingCatalog(false);
       }
@@ -163,7 +205,9 @@ const PluginMarketSettings: React.FC = () => {
           if (active) void refreshCatalog();
         }
       } catch (error) {
-        Message.error(t('settings.pluginMarket.mutationError', { message: error instanceof Error ? error.message : String(error) }));
+        Message.error(
+          t('settings.pluginMarket.mutationError', { message: error instanceof Error ? error.message : String(error) })
+        );
       } finally {
         setBusy(false);
       }
@@ -198,7 +242,12 @@ const PluginMarketSettings: React.FC = () => {
           description={t('settings.pluginMarket.description')}
           actions={
             enabledId ? (
-              <Button size='small' icon={<Refresh size={14} />} loading={loadingCatalog} onClick={() => void refreshCatalog(query || undefined)}>
+              <Button
+                size='small'
+                icon={<Refresh size={14} />}
+                loading={loadingCatalog}
+                onClick={() => void refreshCatalog(query || undefined)}
+              >
                 {t('common.refresh')}
               </Button>
             ) : null
@@ -334,7 +383,9 @@ const PluginMarketSettings: React.FC = () => {
           </div>
 
           {!enabledId ? (
-            <div className='text-13px text-t-tertiary py-24px text-center'>{t('settings.pluginMarket.pickSourceFirst')}</div>
+            <div className='text-13px text-t-tertiary py-24px text-center'>
+              {t('settings.pluginMarket.pickSourceFirst')}
+            </div>
           ) : loadingCatalog && catalog.length === 0 ? (
             <div className='flex justify-center py-32px'>
               <Spin />
@@ -342,17 +393,25 @@ const PluginMarketSettings: React.FC = () => {
           ) : activeResult?.error ? (
             <div className='text-13px text-t-tertiary py-24px text-center'>{activeResult.error}</div>
           ) : catalog.length === 0 ? (
-            <div className='text-13px text-t-tertiary py-24px text-center'>{t('settings.pluginMarket.emptyCatalog')}</div>
+            <div className='text-13px text-t-tertiary py-24px text-center'>
+              {t('settings.pluginMarket.emptyCatalog')}
+            </div>
           ) : (
             <>
               <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12px'>
-                {catalog.flatMap((result) => result.items).map((item) => (
-                  <ItemCard key={item.id} item={item} onOpen={setDetail} />
-                ))}
+                {catalog
+                  .flatMap((result) => result.items)
+                  .map((item) => (
+                    <ItemCard key={item.id} item={item} onOpen={setDetail} />
+                  ))}
               </div>
               {hasMore ? (
                 <div className='flex justify-center pt-8px'>
-                  <Button size='small' loading={loadingCatalog} onClick={() => void refreshCatalog(query || undefined, activeResult?.nextCursor)}>
+                  <Button
+                    size='small'
+                    loading={loadingCatalog}
+                    onClick={() => void refreshCatalog(query || undefined, activeResult?.nextCursor)}
+                  >
                     {t('settings.pluginMarket.loadMore')}
                   </Button>
                 </div>
@@ -376,7 +435,9 @@ const PluginMarketSettings: React.FC = () => {
         >
           <div className='flex flex-col gap-12px'>
             {detail.summary ? <p className='m-0 text-13px text-t-secondary leading-relaxed'>{detail.summary}</p> : null}
-            {detail.description ? <p className='m-0 text-13px text-t-tertiary leading-relaxed'>{detail.description}</p> : null}
+            {detail.description ? (
+              <p className='m-0 text-13px text-t-tertiary leading-relaxed'>{detail.description}</p>
+            ) : null}
             {detail.categories?.length ? (
               <div className='flex flex-wrap gap-6px'>
                 {detail.categories.map((category) => (
@@ -387,16 +448,36 @@ const PluginMarketSettings: React.FC = () => {
               </div>
             ) : null}
             <div className='flex flex-col gap-4px text-12px text-t-tertiary'>
-              {detail.publisher ? <div>{t('settings.pluginMarket.publisher')}: {detail.publisher.name}</div> : null}
-              {detail.latestVersion ? <div>{t('settings.pluginMarket.version')}: {detail.latestVersion}</div> : null}
-              {detail.license ? <div>{t('settings.pluginMarket.license')}: {detail.license}</div> : null}
+              {detail.publisher ? (
+                <div>
+                  {t('settings.pluginMarket.publisher')}: {detail.publisher.name}
+                </div>
+              ) : null}
+              {detail.latestVersion ? (
+                <div>
+                  {t('settings.pluginMarket.version')}: {detail.latestVersion}
+                </div>
+              ) : null}
+              {detail.license ? (
+                <div>
+                  {t('settings.pluginMarket.license')}: {detail.license}
+                </div>
+              ) : null}
               {detail.repository ? (
-                <button type='button' className='flex items-center gap-4px text-t-secondary hover:text-t-primary' onClick={() => openUrl(detail.repository?.url)}>
+                <button
+                  type='button'
+                  className='flex items-center gap-4px text-t-secondary hover:text-t-primary'
+                  onClick={() => openUrl(detail.repository?.url)}
+                >
                   <LinkOne size={14} /> {t('settings.pluginMarket.repository')}
                 </button>
               ) : null}
               {detail.homepage ? (
-                <button type='button' className='flex items-center gap-4px text-t-secondary hover:text-t-primary' onClick={() => openUrl(detail.homepage)}>
+                <button
+                  type='button'
+                  className='flex items-center gap-4px text-t-secondary hover:text-t-primary'
+                  onClick={() => openUrl(detail.homepage)}
+                >
                   <LinkOne size={14} /> {t('settings.pluginMarket.homepage')}
                 </button>
               ) : null}

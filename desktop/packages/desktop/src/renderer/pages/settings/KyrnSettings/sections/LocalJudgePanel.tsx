@@ -2,15 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Input, Modal, Progress, Select } from '@arco-design/web-react';
 import { useTranslation } from 'react-i18next';
 import { kyrnBridge, unwrap } from '@/common/kyrn/bridge';
-import {
-  LAYA_GGUF_DEFAULT_ID,
-  LAYA_GGUF_PRESETS,
-} from '@/common/kyrn/layaGguf';
-import {
-  LAYA_ONNX_DEFAULT_ID,
-  LAYA_ONNX_DOWNLOAD_MB,
-  LAYA_ONNX_PRESETS,
-} from '@/common/kyrn/layaOnnx';
+import { LAYA_GGUF_DEFAULT_ID, LAYA_GGUF_PRESETS } from '@/common/kyrn/layaGguf';
+import { LAYA_ONNX_DEFAULT_ID, LAYA_ONNX_DOWNLOAD_MB, LAYA_ONNX_PRESETS } from '@/common/kyrn/layaOnnx';
 import {
   LOCAL_JUDGE_DOWNLOAD_MB,
   type LocalJudgeAction,
@@ -93,7 +86,11 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  const run = async (action: LocalJudgeAction, consent = false, source?: { id?: string; base?: string; preset?: string; file?: string }): Promise<void> => {
+  const run = async (
+    action: LocalJudgeAction,
+    consent = false,
+    source?: { id?: string; base?: string; preset?: string; file?: string }
+  ): Promise<void> => {
     setProblem(undefined);
     try {
       const next = unwrap(await kyrnBridge.localJudgeRun.invoke({ action, consent, source }));
@@ -183,7 +180,9 @@ export default function LocalJudgePanel({ guide = false }: { guide?: boolean } =
             size='small'
             value={state.runtime}
             disabled={busy}
-            onChange={(value) => void choose(String(value) as LocalJudgeRuntime, defaultBuildOf(String(value) as LocalJudgeRuntime))}
+            onChange={(value) =>
+              void choose(String(value) as LocalJudgeRuntime, defaultBuildOf(String(value) as LocalJudgeRuntime))
+            }
             style={{ minWidth: 200 }}
             data-testid='mu-laya-runtime'
           >

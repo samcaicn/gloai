@@ -55,7 +55,9 @@ export const installRendererPlugin = <Config>(definition: PluginDefinition<Confi
  * compared by identity.
  */
 export const useSlotEntries = <T>(slot: string): readonly SlotEntry<T>[] => {
-  const [entries, setEntries] = useState<readonly SlotEntry<T>[]>(() => rendererKernel.slots.entries(slot) as readonly SlotEntry<T>[]);
+  const [entries, setEntries] = useState<readonly SlotEntry<T>[]>(
+    () => rendererKernel.slots.entries(slot) as readonly SlotEntry<T>[]
+  );
 
   useEffect(() => {
     const sync = (): void => {

@@ -251,9 +251,9 @@
           "runtime": "这台电脑运行不了这个模型。",
           "port": "Laya 的端口（{{port}}）已被别的程序占用。",
           "stopped": "Laya 还没准备好就停了。",
-  "foreign": "这里在运行一个不是 AiBuddy 启动的 Laya，请在启动它的地方停止它。",
-  "cancelled": "下载已取消。"
-}
+          "foreign": "这里在运行一个不是 AiBuddy 启动的 Laya，请在启动它的地方停止它。",
+          "cancelled": "下载已取消。"
+        }
       }
     },
     "clm": {

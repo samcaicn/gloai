@@ -110,7 +110,11 @@ export class LayaAgent {
    * Python `Agent.predict` / `system_one`. `sink` receives the per-question state truncation `prepare` measured; the
    * result itself is exactly Python's.
    */
-  async predict(state: State, questions: Record<string, Question>, sink?: Record<string, StateTruncation>): Promise<PredictResult> {
+  async predict(
+    state: State,
+    questions: Record<string, Question>,
+    sink?: Record<string, StateTruncation>
+  ): Promise<PredictResult> {
     const { items, internal } = this.prepare(state, questions, sink);
     const questionIds = Object.keys(questions);
     const answers: Record<string, Answer> = {};

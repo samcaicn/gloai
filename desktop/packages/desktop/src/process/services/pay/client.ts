@@ -45,7 +45,9 @@ async function request<T>(config: PayConfig, path: string, init?: RequestInit): 
       throw new PayServiceError('支付服务响应超时');
     }
     // 连接被拒 / DNS 失败：本地默认地址（wrangler dev 未起）时给出可操作提示
-    const hint = isConfigured(config) ? '请检查支付服务地址或网络' : '本地支付服务未启动（wrangler dev）或未配置线上地址';
+    const hint = isConfigured(config)
+      ? '请检查支付服务地址或网络'
+      : '本地支付服务未启动（wrangler dev）或未配置线上地址';
     throw new PayServiceError(`无法连接支付服务：${hint}`);
   } finally {
     clearTimeout(timer);

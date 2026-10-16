@@ -251,9 +251,9 @@
           "runtime": "This computer could not run the model.",
           "port": "Another program already uses Laya's port ({{port}}).",
           "stopped": "Laya stopped before it was ready.",
-  "foreign": "A Laya that AiBuddy did not start is running here. Stop it where it was started.",
-  "cancelled": "The download was cancelled."
-}
+          "foreign": "A Laya that AiBuddy did not start is running here. Stop it where it was started.",
+          "cancelled": "The download was cancelled."
+        }
       }
     },
     "clm": {

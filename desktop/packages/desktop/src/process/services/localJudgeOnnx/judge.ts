@@ -133,10 +133,7 @@ export class OnnxJudge {
   private readonly timeoutMs: number;
   private readonly startedAt = Date.now();
 
-  constructor(
-    agent: LayaAgent,
-    options: { model: string; provider: string; preset?: string; timeoutMs?: number }
-  ) {
+  constructor(agent: LayaAgent, options: { model: string; provider: string; preset?: string; timeoutMs?: number }) {
     this.agent = agent;
     this.model = options.model;
     this.provider = options.provider;

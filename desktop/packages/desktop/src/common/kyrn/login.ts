@@ -8,11 +8,7 @@
  */
 
 /** Every subscription the app knows how to sign in to, by pi's provider id, in the order they are shown. */
-export const SUBSCRIPTION_PROVIDERS = [
-  'openai-codex',
-  'anthropic',
-  'xai',
-] as const;
+export const SUBSCRIPTION_PROVIDERS = ['openai-codex', 'anthropic', 'xai'] as const;
 export type SubscriptionProvider = (typeof SUBSCRIPTION_PROVIDERS)[number];
 
 export const isSubscriptionProvider = (value: unknown): value is SubscriptionProvider =>

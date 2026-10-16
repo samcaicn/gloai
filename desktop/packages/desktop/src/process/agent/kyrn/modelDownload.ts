@@ -63,7 +63,14 @@ export async function downloadModelFiles(options: DownloadOptions): Promise<bool
     const dest = join(folder, file.name);
     if (fileIsComplete(dest, file)) {
       hooks.say(task, `Already have ${file.name}`);
-      task.progress = { file: file.name, index, total, downloadedBytes: file.bytes, totalBytes: file.bytes, percent: 1 };
+      task.progress = {
+        file: file.name,
+        index,
+        total,
+        downloadedBytes: file.bytes,
+        totalBytes: file.bytes,
+        percent: 1,
+      };
       continue;
     }
     hooks.say(task, `Downloading ${file.name} (${Math.round(file.bytes / 1_000_000)} MB)`);

@@ -115,7 +115,7 @@ const StudioPage: React.FC = () => {
       onPluginToggle((name) => {
         if (name === ZHICHUANG_ID) setInstalled(isPluginEnabled(ZHICHUANG_ID));
       }),
-    [],
+    []
   );
 
   const postToFrame = useCallback((message: HostToFrameMessage) => {
