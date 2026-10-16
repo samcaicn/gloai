@@ -10,6 +10,12 @@ PyInstaller 解压到一半就缺 base_library.zip，软件彻底起不来且无
   ROLLBACK  覆盖后内容不一致 → 用 .bak 回滚并启动旧版本（exit 2）
   WAITLOCK  copy 一直失败 → 重试到上限后放弃（exit 1），绝不启动半截文件
 
+⚠️ 现版 bat 的首选写路径是**让位法**（先 ren 旧文件让位，再 copy 新文件），
+WAITLOCK 里的 copy 只是 rename 失败后的兜底分支。注入故障必须打在**当前
+真正会执行的那条 copy** 上，否则 replace 静默失效、测试假绿
+（2026-10-16 CI 回归教训：注入还打在旧版 WAITLOCK copy 上，而 rename
+在测试目录里总是成功，那条 copy 根本不执行）。
+
 测试不联网、不动真实 EXE：全部用临时目录里的 .txt 假文件跑真实 bat。
 """
 import os
@@ -87,6 +93,11 @@ def main():
         ('copy /Y "%BAK%" "%DST%"', "回滚动作"),
         ("set N=0", "重试计数器初始化"),
         ("if !N! LSS 40 goto WAITLOCK", "锁未释放时重试"),
+        # 让位法（方案 A）关键行：bat 结构若再变，上面三条分支的注入点会失效，
+        # 这里先炸，避免测试假绿
+        ('ren "!DSTNAME!" "!OLDNAME!"', "让位法 rename"),
+        ('copy /Y "%SRC%" "!DSTNAME!"', "让位法写入"),
+        (":RNVERIFY", "让位后校验分支"),
     ):
         ok("含 %s" % desc, token in text)
     ok("start 仅在成功分支（测试版已剔除）", 'start ""' not in text)
@@ -114,9 +125,12 @@ def main():
     open(src, "wb").write(b"NEW-CONTENT-123")
     open(dst, "wb").write(b"OLD-CONTENT")
     logf = os.path.join(d, "l.log")
-    # 注入故障：模拟磁盘写满 → 覆盖只写出 0 字节
+    # 注入故障：模拟磁盘写满 → 让位后写入只产出 0 字节文件。
+    # 必须打**让位法那条 copy**（copy /Y "%SRC%" "!DSTNAME!"）：测试目录里
+    # rename 总能成功，走的就是让位分支；打 WAITLOCK 的兜底 copy 不会被执行
+    # （2026-10-16 回归教训：旧注入点成死代码，测试假绿）。
     patched = make_bat(d, src, dst, logf, patch=[
-        ('copy /Y "%SRC%" "%DST%" >> "%LOGF%" 2>&1', 'type nul > "%DST%"'),
+        ('copy /Y "%SRC%" "!DSTNAME!" >> "%LOGF%" 2>&1', 'type nul > "!DSTNAME!"'),
     ])
     rc = run(patched)
     ok("退出码 2（回滚）", rc == 2, "rc=%d" % rc)
@@ -127,15 +141,19 @@ def main():
     section("4. 放弃路径（copy 始终失败）")
     d = os.path.join(tmp, "lock")
     os.makedirs(d, exist_ok=True)
-    # SRC 存在（否则会走新增的 exit 3 保护），把 DST 设为只读 → copy 必然失败
     src = os.path.join(d, "new.bin")
     open(src, "wb").write(b"NEW-CONTENT")
     dst = os.path.join(d, "cur.bin")
     open(dst, "wb").write(b"OLD-CONTENT")
-    os.chmod(dst, 0o444)
     logf = os.path.join(d, "l.log")
-    # 把重试上限降到 1 次，避免测试跑 80 秒
+    # 注入故障：rename 与兜底 copy 都恒失败（cmd /c exit 1 置 errorlevel）。
+    # 不能用只读属性模拟「copy 必然失败」——Windows 的 copy /Y 会直接覆盖
+    # 只读文件、ren 也不受只读属性阻拦（2026-10-16 回归教训：原实现靠
+    # chmod 0o444，结果 copy 照常成功，走了 exit 0 成功分支）。
+    # 把重试上限降到 1 次，避免测试跑 80 秒。
     patched = make_bat(d, src, dst, logf, patch=[
+        ('ren "!DSTNAME!" "!OLDNAME!" >> "%LOGF%" 2>&1', 'cmd /c exit 1'),
+        ('copy /Y "%SRC%" "%DST%" >> "%LOGF%" 2>&1', 'cmd /c exit 1'),
         ("if !N! LSS 40 goto WAITLOCK", "if !N! LSS 1 goto WAITLOCK"),
     ])
     rc = run(patched)
@@ -143,7 +161,6 @@ def main():
     ok("原文件未被破坏", open(dst, "rb").read() == b"OLD-CONTENT")
     ok("日志记录了失败原因", os.path.exists(logf) and "FAILED" in open(logf, "rb").read().decode("utf-8", "replace"))
     ok("备份 .bak 保留（失败时可人工恢复）", os.path.exists(dst + ".bak"))
-    os.chmod(dst, 0o644)
 
     print("\n========================================================")
     print("自替换 bat 实测：通过 %d / 失败 %d" % (PASS, FAIL))
