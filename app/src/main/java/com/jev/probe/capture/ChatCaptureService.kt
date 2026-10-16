@@ -1920,6 +1920,10 @@ open class ChatCaptureService : AccessibilityService() {
      *  2026-10-16：新增「收起」态（imeCollapsed）→ 返回 0，输入栏坐标改贴窗口底边。 */
     private fun imeWindowHeight(): Float {
         if (com.jev.probe.input.ProbeImeBus.imeCollapsed) return 0f
+        // 2026-10-16 19:04 复盘：imeWindowHeightPx 是 IME 侧发布值，键盘收起后不会重发布，
+        // 语音态下会残留上一次的 304 → 聚焦/发送坐标全按键盘态算（y=2024），点哪都错。
+        // 没有实时 IME 窗口时一律按 0（坐标改贴窗口底边），与 imeCollapsed 同语义。
+        if (!anyImeWindowPresent()) return 0f
         val h = com.jev.probe.input.ProbeImeBus.imeWindowHeightPx
         if (h >= 100) return h.toFloat()
         return resources.displayMetrics.heightPixels * com.jev.probe.input.ProbeImeBus.KB_RATIO
@@ -2087,7 +2091,8 @@ open class ChatCaptureService : AccessibilityService() {
                         main.postDelayed({
                             if (!isCurrent(token)) { failAndQueue(); sendSettled = true; onDone?.invoke(false); return@postDelayed }
                             val after = ProbeImeBus.readBox()
-                            val sent = after != null && after.isBlank()
+                            // 同 sendTap verify 护栏：没有实时键盘窗时「框空」不是发送证据。
+                            val sent = after != null && after.isBlank() && anyImeWindowPresent()
                             Log.i(TAG, "sendTap: post-IME verify empty=$sent chars=${after?.length} check=$imeChecks")
                             imeChecks++
                             if (sent) {
@@ -2111,12 +2116,24 @@ open class ChatCaptureService : AccessibilityService() {
                 main.postDelayed({
                     if (!isCurrent(token)) { failAndQueue(); sendSettled = true; onDone?.invoke(false); return@postDelayed }
                     val box = ProbeImeBus.readBox()
-                    if (box != null && box.isBlank()) {
+                    if (box != null && box.isBlank() && anyImeWindowPresent()) {
                         Log.i(TAG, "sendTap verify: box EMPTY -> message really sent (attempt=$attempt blind=$blindTap)")
                         sendSettled = true
                         appendSendLedger(currentSendConv, true, if (blindTap) "box empty after tap (blind)" else "box empty after tap")
                         overlay?.toast(t("已自动发送", "Sent automatically"))
                         onDone?.invoke(true)
+                        return@postDelayed
+                    }
+                    if (box != null && box.isBlank()) {
+                        // 2026-10-16 19:04 真机翻车：语音态下探针 IME 连着隐藏 EditText，readBox
+                        // 恒返回空串，发送点到的是消息列表——「框空=已发」连报 3 条假阳性、
+                        // 回复从未到达。没有实时 IME 窗口（= 不在文本键盘态）时框空**不是**
+                        // 发送证据：落队重试，等切回文本态再发，绝不记假账。
+                        Log.e(TAG, "sendTap verify: box empty but NO IME window -> not evidence of send (voice mode?), queue draft")
+                        failAndQueue()
+                        sendSettled = true
+                        overlay?.toast(t("发送未确认，已加入重试队列", "Send unconfirmed — queued for retry"))
+                        onDone?.invoke(false)
                         return@postDelayed
                     }
                     attempt++
@@ -2140,11 +2157,20 @@ open class ChatCaptureService : AccessibilityService() {
                             if (res is ScreenCapture.Result.Ok && weChatSendButtonPresent(res)) {
                                 Log.w(TAG, "sendTap verify: box unreadable + green present -> retry once")
                                 main.postDelayed({ attemptSend() }, sendRetryBackoff(attempt))
-                            } else {
-                                Log.i(TAG, "sendTap verify: box unreadable, green gone -> trust sent")
+                            } else if (anyImeWindowPresent()) {
+                                // 文本键盘态 + 读框不可用 + 截图无绿键（FLAG_SECURE 恒黑，绿键检测
+                                // 本就是死逻辑）→ 维持原设计：信任已发。
+                                Log.i(TAG, "sendTap verify: box unreadable, green gone, text mode -> trust sent")
                                 sendSettled = true
                                 appendSendLedger(currentSendConv, true, "green gone, trust sent")
                                 onDone?.invoke(true)
+                            } else {
+                                // 无键盘窗（语音态/已收起）：框空与截图都没有判别力，不能记已发。
+                                Log.e(TAG, "sendTap verify: box unreadable + NO IME window -> queue draft")
+                                failAndQueue()
+                                sendSettled = true
+                                overlay?.toast(t("发送未确认，已加入重试队列", "Send unconfirmed — queued for retry"))
+                                onDone?.invoke(false)
                             }
                         }
                         return@postDelayed
@@ -2430,7 +2456,14 @@ open class ChatCaptureService : AccessibilityService() {
         // 全部不可达——唯一可靠写入通道是探针自己的输入法（ProbeInputMethod.commitText）。
         if (token.target.pkg == PKG_WECHAT && ProbeImeBus.isEnabled(this)) {
             val (fx, fy) = wxFocusPoint()
-            if (ProbeImeBus.imeActive) {
+            // 2026-10-16 19:04 真机翻车复盘（假阳性三连发）：imeActive 只代表「IME 持有编辑器
+            // 连接」，而微信语音态输入栏有隐藏 EditText，通知 reopen 时它被聚焦 →
+            // onStartInput → imeActive=true，可语音态根本没有键盘窗（getWindows 无
+            // TYPE_INPUT_METHOD）。只认 imeActive 会把语音态误判成文本态：焦点算到
+            // y=2024（语音态下那是消息列表）、8 字 commit 进隐藏框（用户不可见）、盲点后
+            // 「框空=已发」假阳性——台账连报 3 条 sent，回复从未到达。
+            // 「文本态」判据 = imeActive **且** 此刻真有 IME 窗口（实时 getWindows）。
+            if (ProbeImeBus.imeActive && anyImeWindowPresent()) {
                 // 探针已激活（用户自己在系统/通知栏切到了探针输入法）：投递 + 聚焦输入栏，
                 // 走 poll path 直接填字（输入法写入前会先清空旧草稿，防多轮回复串缸）。
                 // autoSend 开时由 sendFor 走「截图确认绿键 → 点 → 复检 → 重点」
@@ -2441,58 +2474,74 @@ open class ChatCaptureService : AccessibilityService() {
                 tapWeChatInputBar()
                 Log.i(TAG, "fillInput: probe IME active, wrote via poll path (focus=$fx,$fy, autoSend=${prefs.autoSend})")
             } else {
-                // 输入法非探针：Android 不允许 app 静默切输入法，也绝不自动弹选择器打扰。
-                // 只在界面提示用户自己去系统/通知栏切到「AI聊天助手·写入」，
-                // 回复复制剪贴板兜底（用户切好后可手动粘贴或等下次自动回复）。
-                Log.i(TAG, "fillInput: probe IME not active -> prompt to switch, clipboard fallback (focus=$fx,$fy)")
-                copyToClipboard(text)
-                overlay?.toast(t("请先在系统输入法切到「AI聊天助手·写入」才能自动回复，回复已复制可手动粘贴",
-                                 "Switch your keyboard to \"AI Assistant · Write\" to auto-reply; reply copied for manual paste"))
+                // 输入法非探针/键盘没起来：Android 不允许 app 静默切输入法，也绝不自动弹选择器
+                // 打扰。剪贴板兜底先做上（无害）；提示 toast 挪到终端分支，避免语音态下弹错提示
+                // （语音态用户早就切好了探针输入法，问题在微信侧）。
                 // 时序坑修复（2026-10-15 实测四轮全兜底定位）：用户按提示切好输入法后，
                 // 若没人点微信输入栏，探针 IME 不会 onStartInput，imeActive 永远 false
                 // ——「切了也白切」，每轮都只复制剪贴板。这里幂等点一下输入栏把用户
                 // 已切好的探针 IME 挂上去（点输入栏聚焦是既有操作，不是切输入法，
-                // 不碰铁律），600ms 后复查：确实切了这轮就直接走 poll path 发出去。
+                // 不碰铁律），复查通过就直接走 poll path 发出去。
+                Log.i(TAG, "fillInput: probe IME not active -> tap input bar, clipboard fallback (focus=$fx,$fy)")
+                copyToClipboard(text)
                 if (attempt == 0) {
                     Log.i(TAG, "fillInput: tap input bar to mount probe IME, recheck in 600ms")
                     tapWeChatInputBar()
-                    main.postDelayed({
-                        if (ProbeImeBus.imeActive) {
-                            Log.i(TAG, "fillInput: probe IME mounted after tap -> retry via poll path")
+                    // 复查判据（2026-10-16 19:04 翻车复盘后收紧）：「文本态键盘真起来了」=
+                    // imeActive **且** 有实时 IME 窗口。微信语音态输入栏有隐藏 EditText，
+                    // reopen/点按都会让它聚焦 → imeActive 恒真，但语音态永远没有键盘窗。
+                    // 键盘窗口绘制还有延迟：600ms 没起来不急着下结论，再宽限 800ms 二次复查，
+                    // 两次都无窗口才判语音态——绝不把「文本态键盘慢」误切成语音（越切越坏）。
+                    fun recheckAfterTap(round: Int) {
+                        if (ProbeImeBus.imeActive && anyImeWindowPresent()) {
+                            Log.i(TAG, "fillInput: probe IME mounted after tap (round=$round) -> retry via poll path")
                             fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
-                        } else {
-                            // 点了输入栏探针键盘仍没起来。先分清两种原因：
-                            //  ① 微信在语音态（按住说话）：根本没有文本框 → 任何输入法都不会起 → 无 IME 窗口。
-                            //     只有这种才点语音/键盘切换钮切回文本态（微信内部 UI 操作，不碰「不替用户切输入法」铁律）。
-                            //  ② 探针没被设为当前输入法：系统键盘起着（只是不是探针）→ 有 IME 窗口，
-                            //     该走上面的「提示切换」路，绝不能点切换钮（会把文本误切成语音）。
-                            if (!anyImeWindowPresent()) {
-                                Log.i(TAG, "fillInput: no IME window at all -> WeChat likely voice mode, tap voice/keyboard toggle")
-                                if (tapWeChatVoiceToggle()) {
-                                    main.postDelayed({
-                                        if (ProbeImeBus.imeActive) {
-                                            Log.i(TAG, "fillInput: probe IME up after toggle -> retry via poll path")
-                                            fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
-                                        } else {
-                                            // 切换钮点了键盘还没起：再点一次输入栏聚焦，最后一次机会。
-                                            tapWeChatInputBar()
-                                            main.postDelayed({
-                                                if (ProbeImeBus.imeActive) {
-                                                    fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
-                                                } else {
-                                                    Log.w(TAG, "fillInput: still no probe IME after toggle+focus -> clipboard only")
-                                                }
-                                            }, 700L)
-                                        }
-                                    }, 900L)
-                                } else {
-                                    Log.w(TAG, "fillInput: voice toggle gesture dispatch failed -> clipboard only")
-                                }
-                            } else {
-                                Log.i(TAG, "fillInput: probe IME still not active after tap -> clipboard only this round")
-                            }
+                            return
                         }
-                    }, 600L)
+                        if (round < 1) {
+                            main.postDelayed({ recheckAfterTap(1) }, 800L)
+                            return
+                        }
+                        // 点了输入栏、宽限 ~1.4s 仍无任何 IME 窗口。先分清两种原因：
+                        //  ① 微信在语音态（按住说话）：根本没有文本框 → 任何输入法都不会起 → 无 IME 窗口。
+                        //     只有这种才点语音/键盘切换钮切回文本态（微信内部 UI 操作，不碰「不替用户切输入法」铁律）。
+                        //  ② 探针没被设为当前输入法：系统键盘起着（只是不是探针）→ 有 IME 窗口，
+                        //     该走「提示切换」路，绝不能点切换钮（会把文本误切成语音）。
+                        if (!anyImeWindowPresent()) {
+                            Log.i(TAG, "fillInput: no IME window at all -> WeChat likely voice mode, tap voice/keyboard toggle")
+                            if (tapWeChatVoiceToggle()) {
+                                main.postDelayed({
+                                    if (ProbeImeBus.imeActive && anyImeWindowPresent()) {
+                                        Log.i(TAG, "fillInput: probe IME up after toggle -> retry via poll path")
+                                        fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
+                                    } else {
+                                        // 切换钮点了键盘还没起：再点一次输入栏聚焦，最后一次机会。
+                                        tapWeChatInputBar()
+                                        main.postDelayed({
+                                            if (ProbeImeBus.imeActive && anyImeWindowPresent()) {
+                                                fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
+                                            } else {
+                                                // 语音态切不回/切不准：草稿落盘等下次活跃重发，不丢队列。
+                                                Log.w(TAG, "fillInput: still no probe IME after toggle+focus -> queue draft for retry")
+                                                failAndQueue()
+                                            }
+                                        }, 700L)
+                                    }
+                                }, 900L)
+                            } else {
+                                Log.w(TAG, "fillInput: voice toggle gesture dispatch failed -> clipboard only")
+                            }
+                        } else {
+                            Log.i(TAG, "fillInput: probe IME still not active after tap -> clipboard only this round")
+                            overlay?.toast(t("请先在系统输入法切到「AI聊天助手·写入」才能自动回复，回复已复制可手动粘贴",
+                                             "Switch your keyboard to \"AI Assistant · Write\" to auto-reply; reply copied for manual paste"))
+                        }
+                    }
+                    main.postDelayed({ recheckAfterTap(0) }, 600L)
+                } else {
+                    // 重试一轮（attempt>0）仍拿不到探针键盘：落队重试，不丢队列。
+                    Log.w(TAG, "fillInput: retry attempt=$attempt still no probe IME -> queue draft for retry")
+                    failAndQueue()
                 }
             }
             return
