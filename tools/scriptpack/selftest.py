@@ -184,6 +184,25 @@ def test_pack_pipeline() -> None:
     except pc.PackCryptoError:
         check("错误私钥签名被拒", True)
 
+    # v1.1：带 reply_quota 但不绑机的包必须拒收（次数=商品）
+    q_script = sample_script()
+    q_script["reply_quota"] = 100
+    q_pack = pc.sign_pack(q_script, master, priv)
+    try:
+        pc.parse_and_decrypt(q_pack, master, dh, int(time.time()), point)
+        check("带次数未绑机包被拒", False)
+    except pc.PackCryptoError:
+        check("带次数未绑机包被拒", True)
+    # 反向：带次数且绑本机 → 必须放行
+    q_pack2 = pc.sign_pack(q_script, master, priv, dh)
+    try:
+        pc.parse_and_decrypt(q_pack2, master, dh, int(time.time()), point)
+        check("带次数绑机包可解", True)
+    except pc.PackCryptoError as e:
+        check("带次数绑机包可解", False, str(e))
+    # header 里 reply_quota 可读
+    check("header reply_quota=100", pc.read_header(q_pack2).get("reply_quota") == 100)
+
     # GCM round-trip 与 tamper
     key = os.urandom(32)
     nonce = os.urandom(12)

@@ -139,3 +139,49 @@ CI：`.github/workflows/scriptpack-selftest.yml` 在 push 命中 `tools/scriptpa
 3. v1.0 一个包绑一台设备；多设备 = 签多个包；
 4. `params.candidates` 偏离 3 时解析器仍取前 3 条（降级可用）；
 5. 客户端无远程撤销，v1.1 在线激活补上。
+
+---
+
+# v1.1 增补：离线授权次数（reply_quota）——2026-10-16
+
+> 对齐 PC 版（工蜂 `AImarketing/weauto:weauto`，`tools/scriptpack/packcrypto.py` +
+> `weauto_license/ledger.py` + `scriptpack.py`）。v1.1 **只加一个 header 字段、
+> 一条校验规则**，v1.0 的包（无 `reply_quota`）照常导入、按纯话术包处理。
+
+## 11. 新增 header 字段
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `reply_quota` | int | 该包携带的离线授权回复次数。`>0` = 包即授权（次数是商品）；`0`/缺省 = 纯话术包 |
+
+字段位置固定在 `min_app_version` 之后（与 PC 版 `build_header` 逐字节同序，
+保证 PC 签的包 Android 能验、反之亦然）。
+
+## 12. 新校验规则（唯一一条）
+
+**`reply_quota > 0` 的包必须绑机**（`device_hashes` 含本机 16B hash），否则拒收
+（`PackError.DEVICE`）。理由：次数是商品，不绑机 = 一个文件到处用。
+
+- Android 侧：`ScriptPack.kt` 校验链第 3b 步；
+- 生成侧：`tools/scriptpack/packcrypto.py` `parse_and_decrypt` 同步该规则，
+  `selftest.py` 有正/反两条用例（「带次数未绑机包被拒」「带次数绑机包可解」）；
+- PC 侧：`scriptpack.py import_offline_pack` 同口径。
+
+## 13. 授权记账（消费端，v1.1 核心）
+
+包导入后，次数授权由**账本**管理（对应 PC 版 `weauto_license/ledger.py`）：
+
+- 导入即写账本：`pack_id / name / total(=reply_quota) / used / max_used / expires_at`；
+- **防回滚**：`max_used` 单调递增——攻击者备份旧账本（used 小）恢复会被抬回高水位；
+- **防篡改**：账本文件 HMAC 签名（密钥在 AndroidKeyStore），验失败即视为篡改、拒绝授权；
+- 每日免费条数：无授权时按 `date/count` 计数，隔日自动重置；
+- **云端口径校准**：Worker 响应头 `X-Quota-Remaining / X-Quota-Limit` 覆盖本地计数
+  （本地计数只是体验优化，云端才是真额度）。
+
+## 14. 与 v1.0 的兼容性
+
+| v1.0 包（无 reply_quota） | v1.1 包（reply_quota>0） |
+|---|---|
+| 不绑机也能导入（纯内容） | 必须绑机 |
+| 不写账本 | 导入即写账本，按次数扣减 |
+| `min_app_version` 需 ≥ 支持 v1.1 的版本才读得到新字段（旧 App 直接忽略，无副作用） | 同左 |

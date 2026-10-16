@@ -275,3 +275,56 @@ E  sendTap: input box EMPTY before tap -> fill actually failed, abort (no blind 
 3. 是否现在补 B-03/B-04 两处引导（约 1 个小版本：首页第 5/6 步 + 双通道提示）？我建议做——**通知权限一掉，所有自愈提示静默丢失，这才是「静默卡死」的根因**。补上后即使权限又掉，首页也会直接告诉你。
 4. 是否要我把 SOP-1 并进装机脚本（下载→校验→装机→flow_check 一条龙）？
 5. 是否需要我在 Worker 侧把额度耗尽（4006）做成 `/health` 可见字段，消除静默降级？
+
+---
+
+## 十二、第三轮实测：三项修复装机后（08:12–08:25）
+
+### 装机与验收
+- APK `d14f642`（md5=77b70f7d）08:12:32 覆盖安装 Success，`flow_check.sh` **FAIL=0**
+  （OK=9 / WARN=3）。覆盖安装后五项权限全保留（无障碍/通知监听/悬浮窗/电池/默认输入法）。
+- `a11y capabilities=161`（1+32+128）——**CAPABILITY_CAN_PERFORM_GESTURES 已在**，
+  4f7c302 修复确认生效。同源坑：日志里 `gesture=false` 是**日志代码查错位**
+  （查的 16=magnification，手势位是 0x20=32），8975276 已修，未装机（仅影响日志显示）。
+
+### 链路实测（用户停在微信聊天页，OCR 读到时 6 条消息）
+| 环节 | 结果 | 证据 |
+|---|---|---|
+| 无障碍轮询 | ✅ | `wx-cycle` 每 ~25s 一轮 |
+| OCR 兜底 | ✅ | `ocr[com.tencent.mm] msgs=6 manual=false`，title=星享春 |
+| judge / reply / rank | ❌ 全 401 | `license_required` |
+
+### 新断点 B-10：卡密授权失效（根因已定位）
+
+**现象**：所有 AI 调用（judge/reply/rank/relay 四条路）一律
+`HTTP 401 无效授权…（license_required）`。
+
+**链路硬证据**：
+1. Worker `proxyAi`（`/ai/` 通配入口）先鉴权：billing token 格式（`xxx.yyy` 两段）
+   走计费路径，否则走 Creem 卡密路径 `licenseOk()`。
+2. App `LicenseClient.activate()` 把 `/license?mid=` 轮询拿到的 **Creem 卡密直接存为
+   accountToken**——卡密不是 `xxx.yyy` 格式 → 必然落 Creem 路径。
+3. `licenseOk` 打 Creem `/licenses/validate`，要求 `status==="active"`，**Worker 侧还有
+   10 分钟内存缓存**（`LICENSE_TTL`）。
+4. 对照实验：伪造 billing 格式 token 打 `/ai/v1` → `bad_token`（计费路径正常，
+   `WEAUATO_SIGN_SECRET` 已配）；非 billing token → `license_required`（复现设备报错）。
+
+**根因**：设备卡密在 Creem 侧已失效（或 instance 不匹配）。07:20 那次 relay 成功是
+**licenseCache 命中放行**；08:13 我部署 Worker（643231f1）导致 isolate 重启、缓存清空，
+真校验 Creem 才暴露失败。**不是本次代码改动破坏**（新旧产物鉴权路径 diff 无实质差异），
+也不是覆盖安装导致（SP 不清）。
+
+### 附带发现（ backlog ）
+- **relay 兜底路设计缺陷**：`/ai/tuptup/v1` 是服务端自带能力（Worker 注入 AIAPI_TOKEN），
+  却因客户端卡密失效而一起挂——「兜底路不兜底」。豁免 license 会削弱反破解
+  （未付费用户可白嫖服务端 key），需权衡；折中方案是 401 时返回可操作错误
+  （license_expired vs license_invalid），引导用户重新激活而非只给一句"无效授权"。
+- **device-id anchor 写入失败**（MediaStore insert 抛错，non-fatal 设计）：后果仅限
+  卸载重装后设备 ID 变、卡密绑机失效。低优先级。
+- LlmJudge/ReplyClient 均硬编码打 `/ai/tuptup/v1`，不走 `judgeEndpoint()` 配置——
+  worker 模式下 `/ai/jev/decisions`（L3 签名路，不过 license）反而没用上。
+
+### 下一步
+1. **用户侧**：App 设置 → 账户卡片确认激活状态；失效则重新激活卡密（或核对购买记录）。
+2. 激活恢复后装 `8975276`（日志修正版）做发送终验，目标三行：
+   `sendTap: dispatching tap` → `read box empty -> truly sent` → `advance -> next`。

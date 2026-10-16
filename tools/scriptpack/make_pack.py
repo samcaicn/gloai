@@ -11,6 +11,7 @@ sign 选项：
   --expires TS|DATE   expires_at，unix 秒或 YYYY-MM-DD（覆盖 --days）
   --device-hex H      绑一台设备：传该机 16B hash 的 hex（32 字符，App 设置页话术包区块可见）
   --device-id ID      绑一台设备：直接传 DeviceId 原始值，本工具负责哈希
+  --reply-quota N     离线授权回复次数额度（>0 = 该话术包同时带 N 次回复；导入需本机绑定）
   --master-hex H      master key hex（默认读环境变量 PACK_MASTER_HEX，再退回内置测试值）
 
 私钥文件格式（自描述 PEM，避免依赖 asn1 库）：
@@ -98,6 +99,9 @@ def cmd_sign(args) -> int:
     if not script.get("pack_id"):
         print("错误：script.json 缺少 pack_id", file=sys.stderr)
         return 2
+    # v1.1：离线授权回复次数（>0 = 该包同时是 N 次回复的授权，强制绑机）
+    if args.reply_quota:
+        script["reply_quota"] = int(args.reply_quota)
 
     device_hash = None
     if args.device_hex:
@@ -118,6 +122,11 @@ def cmd_sign(args) -> int:
         header["expires_at"],
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(header["expires_at"]))))
     print("  device_hashes: %s" % (header["device_hashes"] or "未绑设备"))
+    rq = header.get("reply_quota") or 0
+    if rq:
+        print("  reply_quota  : %d 次（离线授权，已强制绑机）" % rq)
+    else:
+        print("  reply_quota  : 无（纯话术包）")
     return 0
 
 
@@ -149,6 +158,8 @@ def main() -> int:
     s.add_argument("--expires", default=None)
     s.add_argument("--device-hex", default=None)
     s.add_argument("--device-id", default=None)
+    s.add_argument("--reply-quota", type=int, default=0,
+                   help="离线授权回复次数额度（>0 = 该话术包同时带 N 次回复；导入需本机绑定）")
     s.add_argument("--master-hex", default=None)
     s.set_defaults(func=cmd_sign)
 

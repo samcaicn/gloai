@@ -64,6 +64,26 @@ object DeviceId {
     @Volatile
     private var cached: String? = null
 
+    /**
+     * 8 位数字短识别码（对应 PC 版 device_id.py `eight_digit_code`）。
+     *
+     * 确定性：同一设备永远同一短码；不落盘、不上传——任何场景只展示。
+     * 用途：买家购买话术包时把这串码给卖家，卖家据此把设备哈希签进
+     * .wpk 的 device_hashes（绑机）。口头/截图核对都方便。
+     * 空间：10^8 组合，sha256 前 32bit 取模，分布均匀。
+     */
+    fun eightDigitCode(context: Context): String {
+        val dev = try { get(context) } catch (_: Exception) { return "00000000" }
+        if (dev.isBlank()) return "00000000"
+        val h = MessageDigest.getInstance("SHA-256")
+            .digest(("weauto.shortcode.v2|" + dev).toByteArray(Charsets.UTF_8))
+        val n = ((h[0].toLong() and 0xFF) shl 24) or
+            ((h[1].toLong() and 0xFF) shl 16) or
+            ((h[2].toLong() and 0xFF) shl 8) or
+            (h[3].toLong() and 0xFF)
+        return "%08d".format(n % 100000000L)
+    }
+
     fun get(context: Context): String {
         cached?.let { return it }
         val app = context.applicationContext

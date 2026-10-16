@@ -66,7 +66,8 @@ object HttpJson {
         extraHeaders: Map<String, String> = emptyMap(),
         authToken: String = "",
         instanceId: String = "",
-        billing: BillingState? = null
+        billing: BillingState? = null,
+        onQuota: ((Int?, Int?) -> Unit)? = null
     ): JSONObject {
         var attempt = 0
         var last: ApiException? = null
@@ -120,8 +121,9 @@ object HttpJson {
                 }
                 val text = readBody(conn.inputStream)
                 if (text.isBlank()) throw ApiException(route, code, "响应体为空")
-                // 成功：抓取计费头
+                // 成功：抓取计费头 + 配额头
                 captureBilling(conn, billing)
+                captureQuota(conn, onQuota)
                 return JSONObject(text)
             } catch (e: InterruptedException) {
                 Thread.currentThread().interrupt()
@@ -184,7 +186,19 @@ object HttpJson {
         conn.getHeaderField("X-Billing-Remain")?.toLongOrNull()?.let { billing.remain = it }
     }
 
-    private fun String.toLongOrNull(): Long? = try { this.toLong() } catch (_: Exception) { null }
+    /**
+     * 云端口径配额头（v1.1 授权账本用）：Worker 在响应头回带剩余次数/上限，
+     * 调用方据此校准本地账本（PackLedger.syncFromHeaders）。非 Worker 请求
+     * 没有这两个头，回调收 (null, null)，调用方自行忽略。
+     */
+    private fun captureQuota(conn: HttpURLConnection, onQuota: ((Int?, Int?) -> Unit)?) {
+        if (onQuota == null) return
+        val remain = conn.getHeaderField("X-Quota-Remaining")?.toIntOrNull()
+        val limit = conn.getHeaderField("X-Quota-Limit")?.toIntOrNull()
+        if (remain != null || limit != null) onQuota(remain, limit)
+    }
+
+    private fun String.toIntOrNull(): Int? = try { this.trim().toInt() } catch (_: Exception) { null }
 
     private fun readBody(stream: java.io.InputStream?): String {
         stream ?: return ""

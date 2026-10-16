@@ -6,6 +6,7 @@ import android.util.Log
 import com.jev.probe.core.DeviceId
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.SecureStore
+import com.jev.probe.core.license.PackLedger
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
@@ -128,6 +129,20 @@ object ScriptPackStore {
         saveIndex(context, idx)
         cache = null
         refreshClockOffset(context)
+        // v1.1：携带授权次数的包，导入即写授权账本（对应 PC 版
+        // import_offline_pack -> ledger.set_offline_license）。
+        // 导入后该设备凭此包走授权次数，不再受每日免费限制。
+        if (pack.header.carriesLicense) {
+            val ok = PackLedger.setOfflineLicense(
+                context,
+                pack.header.packId,
+                pack.header.name,
+                pack.header.replyQuota,
+                pack.header.expiresAt
+            )
+            Log.i(TAG, "scriptpack license: pack=${pack.header.packId} " +
+                "quota=${pack.header.replyQuota} ledger=${if (ok) "written" else "rejected"}")
+        }
         Log.i(TAG, "scriptpack imported: ${pack.header.packId} v${pack.header.version}")
         return pack.header
     }

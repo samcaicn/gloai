@@ -24,9 +24,19 @@ data class PackHeader(
     val issuedAt: Long,
     val expiresAt: Long,
     val deviceHashes: List<String>,
-    val minAppVersion: String
+    val minAppVersion: String,
+    /**
+     * v1.1（2026-10-16，对齐 PC 版）：该包携带的离线授权回复次数。
+     * >0 = 导入即授权（同时是话术包），且**必须绑机**（device_hashes 含本机），
+     * 否则任何人拿到文件都能在别的机器上用次数——次数是商品，不绑机等于白送。
+     * =0 = 纯话术包（无授权语义，旧格式兼容）。
+     */
+    val replyQuota: Int = 0
 ) {
     val deviceBound: Boolean get() = deviceHashes.isNotEmpty()
+
+    /** 携带授权次数的包（导入后要写 PackLedger）。 */
+    val carriesLicense: Boolean get() = replyQuota > 0
 }
 
 data class PackStyle(
@@ -127,7 +137,8 @@ object ScriptPackCodec {
             issuedAt = json.optLong("issued_at", 0),
             expiresAt = json.optLong("expires_at", 0),
             deviceHashes = devices,
-            minAppVersion = json.optString("min_app_version").ifBlank { "0.0.0" }
+            minAppVersion = json.optString("min_app_version").ifBlank { "0.0.0" },
+            replyQuota = json.optInt("reply_quota", 0).coerceAtLeast(0)
         )
     }
 
@@ -174,6 +185,13 @@ object ScriptPackCodec {
         val dh = if (header.deviceBound) deviceHash else ByteArray(16)
         if (header.deviceBound && !header.deviceHashes.contains(hex(dh))) {
             AppPackCrypto.logReject("device", PackError.DEVICE.name)
+            throw PackException(PackError.DEVICE)
+        }
+
+        // 3b. v1.1：携带授权次数的包必须绑机（次数=商品，不绑机=白送）。
+        //     与 PC 版 scriptpack.py import_offline_pack 同口径。
+        if (header.carriesLicense && !header.deviceBound) {
+            AppPackCrypto.logReject("quota-unbound", PackError.DEVICE.name)
             throw PackException(PackError.DEVICE)
         }
 

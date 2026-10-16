@@ -390,6 +390,9 @@ def build_header(script: dict, salt: bytes, nonce: bytes, device_hash_hexes) -> 
         "nonce": b64url_encode(nonce),
         "payload_sha256": b64url_encode(sha256(_canonical_payload(script))),
         "min_app_version": script.get("min_app_version", "0.0.0"),
+        # v1.1（2026-10-16，对齐 PC 版）：离线授权回复次数。>0 = 该包同时是
+        # N 次回复的授权，导入端强制要求绑机（见 ScriptPack.kt 3b 步）。
+        "reply_quota": int(script.get("reply_quota", 0) or 0),
     }
 
 
@@ -482,6 +485,9 @@ def parse_and_decrypt(data: bytes, master: bytes, device_hash: bytes, now_ts: in
     dh = device_hash if device_hashes else bytes(DEVICE_HASH_LEN)
     if device_hashes and device_hash.hex() not in device_hashes:
         raise PackCryptoError("设备不在允许列表（绑机话术包）")
+    # v1.1：携带授权次数的包必须绑机（次数=商品，不绑机=白送）
+    if int(header.get("reply_quota", 0) or 0) > 0 and not device_hashes:
+        raise PackCryptoError("带回复次数的授权包未绑机，已拒收")
     if now_ts >= header["expires_at"]:
         raise PackCryptoError("话术包已到期")
 

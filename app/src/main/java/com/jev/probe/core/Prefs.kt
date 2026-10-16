@@ -218,6 +218,35 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         else ""
         set(v) = sp.edit().putString(K_VISION_MODEL, v.trim()).apply()
 
+    // --------------------------------------------------------------- text
+
+    /**
+     * 文本链路（判断/回复）自定义开关（v1.1 免费模式，对齐 PC 版 guard.py
+     * 「用户自填 base_url + key → 直连自家模型」）：开启后判断/回复改发用户
+     * 自配的 OpenAI 兼容接口，**不经过 WeAuto 云端、不计免费条数、不耗
+     * Workers AI 额度**。优先级高于 worker 模式；留空 key 时部分网关仍可匿名用。
+     */
+    var textCustom: Boolean
+        get() = sp.getBoolean(K_TEXT_CUSTOM, false)
+        set(v) = sp.edit().putBoolean(K_TEXT_CUSTOM, v).apply()
+
+    var textBaseUrl: String
+        get() = sp.getString(K_TEXT_BASE, "") ?: ""
+        set(v) = sp.edit().putString(K_TEXT_BASE, v.trim()).apply()
+
+    /** 自定义文本接口的 key（加密保存，设置页不回显）。 */
+    var textKey: String
+        get() = SecureStore.decrypt(appContext, sp.getString(K_TEXT_KEY, "") ?: "")
+        set(v) = sp.edit().putString(K_TEXT_KEY, SecureStore.encrypt(appContext, v.trim())).apply()
+
+    /** 自定义文本接口的模型名；留空 = 用 App 默认模型。 */
+    var textModel: String
+        get() = sp.getString(K_TEXT_MODEL, "") ?: ""
+        set(v) = sp.edit().putString(K_TEXT_MODEL, v.trim()).apply()
+
+    /** 文本是否实际走自定义接口（开关开着且 base url 非空）。 */
+    fun isTextCustom(): Boolean = textCustom && textBaseUrl.isNotBlank()
+
     // ----------------------------------------------------- 账户 / 计费（加密）
 
     /**
@@ -473,6 +502,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     // ------------------------------------------------------------- helpers
 
     fun effectiveReplyKey(): String = when {
+        isTextCustom() -> textKey
         isWorkerMode -> accountToken
         judgeProvider == PROVIDER_TUPTUP -> TUPTUP_KEY
         else -> replyKey.ifBlank { judgeKey }
@@ -660,6 +690,10 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_VISION_KEY = "vision_key"
         private const val K_VISION_MODEL = "vision_model"
         private const val K_VISION_CUSTOM = "vision_custom"
+        private const val K_TEXT_BASE = "text_base_url"
+        private const val K_TEXT_KEY = "text_key"
+        private const val K_TEXT_MODEL = "text_model"
+        private const val K_TEXT_CUSTOM = "text_custom"
         private const val K_ACCOUNT_TOKEN = "account_token_enc"
         private const val K_BILLING_TIER = "billing_tier"
         private const val K_BILLING_USED = "billing_used"

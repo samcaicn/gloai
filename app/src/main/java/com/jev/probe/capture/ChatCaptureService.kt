@@ -940,6 +940,17 @@ open class ChatCaptureService : AccessibilityService() {
      */
     private fun weChatWindowBounds(): Rect? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        // 2026-10-16 修复（08:52 实测教训）：微信会同时挂多个无障碍窗口——聊天主窗
+        // **加各种 PopupWindow**（表情面板/更多面板/语音面板等）。旧代码取「第一个
+        // 拿到非空 bounds 的微信 root」，Popup 的 root 只有一百来像素（实测吞下一个
+        // 103x103 的假矩形 Rect(448,2065-551,2168)）→ 按比例算发送键 x = 448+103*0.9111
+        // = 541，比真键 (989,2035) 偏了 450px，三连 tap 全点在输入框里什么都没触发
+        // （日志 `box still has 11 chars -> not sent, retry`×3，用户看到「没回复」）。
+        // 改为：收集全部候选，优先 TYPE_APPLICATION，取面积最大的真实窗口。
+        var bestApp: Rect? = null
+        var bestAppArea = 0L
+        var bestOther: Rect? = null
+        var bestOtherArea = 0L
         for (w in getWindows() ?: emptyList()) {
             if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) continue
             val r = try {
@@ -947,13 +958,30 @@ open class ChatCaptureService : AccessibilityService() {
             } catch (_: Throwable) {
                 null
             } ?: continue
-            if (r.packageName?.toString() == PKG_WECHAT) {
-                val b = Rect()
+            if (r.packageName?.toString() != PKG_WECHAT) continue
+            val b = Rect()
+            try {
                 r.getBoundsInScreen(b)
-                if (!b.isEmpty) return b
+            } catch (_: Throwable) {
+                continue
+            }
+            if (b.isEmpty) continue
+            val area = b.width().toLong() * b.height().toLong()
+            if (w.type == AccessibilityWindowInfo.TYPE_APPLICATION) {
+                if (area > bestAppArea) {
+                    bestAppArea = area
+                    bestApp = b
+                }
+            } else if (area > bestOtherArea) {
+                bestOtherArea = area
+                bestOther = b
             }
         }
-        return null
+        val chosen = bestApp ?: bestOther
+        if (bestOther != null && bestOther !== bestApp) {
+            Log.i(TAG, "weChatWindowBounds: rejected popup-sized window $bestOther, using $chosen")
+        }
+        return chosen
     }
 
     private fun maybeCapture() {
@@ -1743,6 +1771,50 @@ open class ChatCaptureService : AccessibilityService() {
         return left + width * 0.462f to (yBase - barHalf)
     }
 
+    /**
+     * 从无障碍树里找微信发送按钮（SEND_ID）的真实 bounds 中心。
+     *
+     * 2026-10-16 08:52 实测教训：键盘弹起时 `rootInActiveWindow` 常常是 **IME 窗口**
+     * （SoftInputWindow），它的树里没有微信的 bql 节点——旧代码只搜这一个 root，
+     * 静默失败后回落到比例公式，又被假窗口矩形带偏 x（差 450px），三连 tap 全打空。
+     * 改为：rootInActiveWindow + getWindows() 里**全部**非 IME 微信窗口 root 都搜，
+     * 第一个拿到非空 bounds 的节点就用。不要求 refresh() 成功——节点过期时
+     * getBoundsInScreen 通常仍可读（08:52 的 `clickSend: treeNode=true` 日志证明
+     * 节点确实在树里，旧代码的 takeIf{refresh()} 却把它丢了）。
+     */
+    private fun sendButtonCenterFromTree(): Pair<Float, Float>? {
+        val roots = ArrayList<AccessibilityNodeInfo>()
+        rootInActiveWindow?.let { roots.add(it) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            for (w in getWindows() ?: emptyList()) {
+                if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) continue
+                val r = try {
+                    w.root
+                } catch (_: Throwable) {
+                    null
+                } ?: continue
+                if (r.packageName?.toString() == PKG_WECHAT) roots.add(r)
+            }
+        }
+        for (r in roots) {
+            val n = try {
+                r.findAccessibilityNodeInfosByViewId(WeChatAdapter.SEND_ID)?.firstOrNull()
+            } catch (_: Throwable) {
+                null
+            } ?: continue
+            val rect = Rect()
+            try {
+                n.getBoundsInScreen(rect)
+            } catch (_: Throwable) {
+                continue
+            }
+            if (rect.width() > 0 && rect.height() > 0) {
+                return rect.centerX().toFloat() to rect.centerY().toFloat()
+            }
+        }
+        return null
+    }
+
     private fun wxSendPoint(): Pair<Float, Float> {
         // 2026-10-16 修复：坐标优先取树里发送按钮的真实 bounds 中心。
         //
@@ -1754,15 +1826,7 @@ open class ChatCaptureService : AccessibilityService() {
         // 草稿烂在框里（用户看到的就是「没回复」）。
         //
         // 节点被标记不可见时 getBoundsInScreen() 通常仍返回有效矩形，比比例公式准。
-        val fromTree = runCatching {
-            val r = rootInActiveWindow ?: return@runCatching null
-            val n = findSendButton(r, PKG_WECHAT) ?: return@runCatching null
-            val rect = Rect()
-            n.getBoundsInScreen(rect)
-            if (rect.width() > 0 && rect.height() > 0) {
-                rect.centerX().toFloat() to rect.centerY().toFloat()
-            } else null
-        }.getOrNull()
+        val fromTree = sendButtonCenterFromTree()
         if (fromTree != null) {
             Log.i(TAG, "wxSendPoint: tree bounds -> (${fromTree.first.toInt()},${fromTree.second.toInt()})")
             return fromTree
@@ -1787,7 +1851,15 @@ open class ChatCaptureService : AccessibilityService() {
         val yBase = listOfNotNull(b?.bottom?.toFloat(), dm.heightPixels - imeH)
             .filter { it > 0f }
             .minOrNull() ?: dm.heightPixels.toFloat()
-        return left + width * 0.9111f to (yBase - barHalf)
+        val fx = left + width * 0.9111f
+        val fy = yBase - barHalf
+        // 出窗告警：树路径失败时比例公式是最后依靠，算出的点若落在窗口外
+        // （08:52 假窗口矩形事故的形态：点 y=2024 高出窗顶 2065），tap 必然打空，
+        // 日志里必须留痕，别又静默错过。
+        if (b != null && (fx < b.left - 8 || fx > b.right + 8 || fy < b.top - 8 || fy > b.bottom + 8)) {
+            Log.w(TAG, "wxSendPoint: fallback (${fx.toInt()},${fy.toInt()}) OUTSIDE window $b — tree lookup failed, tap will likely miss")
+        }
+        return fx to fy
     }
 
     /** IME 窗口实际高度：IME 活着时取其发布值（<100px 是窗口收缩瞬间的假值，弃用），否则回落键盘同高兜底。
@@ -1899,12 +1971,25 @@ open class ChatCaptureService : AccessibilityService() {
                             // 它绕开了屏幕坐标这条最不可靠的环节。失败才真正认输。
                             val viaIme = ProbeImeBus.requestSendViaIme()
                             Log.w(TAG, "sendTap: taps exhausted, IME send -> $viaIme")
-                            if (viaIme) {
+                        if (viaIme) {
+                            // 2026-10-16 08:52 实测：performEditorAction 在微信上**不立即发**，
+                            // 而是 armed 一个「正在发送... 自动发送已开启，2 秒后发出」的倒计时
+                            // （微信语音输入自动发送那套机制），且倒计时在探针 IME 持有编辑器
+                            // 期间会卡住不跑（弹窗挂屏幕上 30 分钟不动，硬证据）。
+                            // 所以别 1.2s 就判负——轮询到 ~4s，给倒计时留够触发时间；
+                            // 仍旧非空才认输（草稿留框，toast 说明）。
+                            var imeChecks = 0
+                            fun imeVerify() {
                                 main.postDelayed({
                                     if (!isCurrent(token)) { sendSettled = true; onDone?.invoke(true); return@postDelayed }
                                     val after = ProbeImeBus.readBox()
                                     val sent = after != null && after.isBlank()
-                                    Log.i(TAG, "sendTap: post-IME verify empty=$sent chars=${after?.length}")
+                                    Log.i(TAG, "sendTap: post-IME verify empty=$sent chars=${after?.length} check=$imeChecks")
+                                    imeChecks++
+                                    if (!sent && imeChecks < 3) {
+                                        imeVerify()
+                                        return@postDelayed
+                                    }
                                     sendSettled = true
                                     if (sent) {
                                         overlay?.toast(t("已自动发送", "Sent automatically"))
@@ -1912,9 +1997,11 @@ open class ChatCaptureService : AccessibilityService() {
                                         overlay?.toast(t("发送未成功，消息留在输入框", "Send failed — draft left in input box"))
                                     }
                                     onDone?.invoke(sent)
-                                }, 1200L)
-                                return@postDelayed
+                                }, 1300L)
                             }
+                            imeVerify()
+                            return@postDelayed
+                        }
                             Log.e(TAG, "sendTap verify: 3 attempts exhausted -> give up, draft left in box")
                             sendSettled = true
                             overlay?.toast(t("发送未成功，消息留在输入框", "Send failed — draft left in input box"))
