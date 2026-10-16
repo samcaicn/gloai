@@ -701,15 +701,17 @@ open class ChatCaptureService : AccessibilityService() {
             .registerOnSharedPreferenceChangeListener(preferencesListener)
         overlay = OverlayController(this)
         Metrics.init(this, prefs.metricsEnabled)
-        // 硬证据日志：无障碍能力位。16=CAN_PERFORM_GESTURES、128=CAN_TAKE_SCREENSHOT。
-        // 2026-10-16 实测本探针 capabilities=129（1+128）——**缺 16**，于是
-        // dispatchGesture 一律静默失败（返回 false、触摸事件根本没注入），
-        // 「sendTap: dispatching tap at (983,2024)」打得再准也点不动发送键，
-        // 输入框里 12 个字纹丝不动 3 轮后放弃——这就是「点了没发出」的根因
-        // （同坐标 adb shell input tap 一戳就发出去，硬对照已证）。
-        // 修法在 res/xml/config_disguised.xml 加 android:canPerformGestures="true"。
+        // 硬证据日志：无障碍能力位（AOSP AccessibilityServiceInfo 常量）：
+        //   0x01=RETRIEVE_WINDOW_CONTENT  0x20=CAN_PERFORM_GESTURES  0x80=CAN_TAKE_SCREENSHOT
+        // 2026-10-16 实测：修前 capabilities=129（1+128）**缺 0x20** → dispatchGesture
+        // 一律静默失败（返 false、触摸事件根本没注入），「sendTap: dispatching tap at
+        // (983,2024)」打得再准也点不动发送键，输入框 12 个字纹丝不动 3 轮后放弃——
+        // 「点了没发出」的根因（同坐标 adb shell input tap 一戳就发，硬对照已证）。
+        // config_disguised.xml 加 android:canPerformGestures="true" 后 =161（1+32+128），
+        // 手势位已在。**注意：别再把 16(magnification) 当手势位查——我犯过这个错，
+        // 日志显示 gesture=false 是误报，白绕一轮。**
         val caps = serviceInfo?.capabilities ?: 0
-        Log.i(TAG, "a11y capabilities=$caps gesture=${caps and 16 != 0} screenshot=${caps and 128 != 0}")
+        Log.i(TAG, "a11y capabilities=$caps gesture=${caps and 0x20 != 0} screenshot=${caps and 0x80 != 0}")
         overlay?.onManualAnalyze = {
             currentSnapshot?.let { pendingSnapshot = it; runAnalysis(manual = true) }
         }
@@ -1841,10 +1843,10 @@ open class ChatCaptureService : AccessibilityService() {
         /**
          * 发送动作统一入口：坐标点击派发**失败**（同时喂 IME 代发兜底）。
          *
-         * `dispatchGesture` 需要服务声明 canPerformGestures，缺这一位时它不报错、
-         * 只返回 false，触摸事件根本没进系统——2026-10-16 实测本探针 capabilities=129
-         * 就是这种情况，连点 3 轮 (983,2024) 输入框 12 字纹丝不动。此时继续等
-         * 「读框复检发现没发出」纯属浪费 3×1.2s，直接改走 IME 的
+         * `dispatchGesture` 需要服务声明 canPerformGestures（能力位 0x20），缺这一位时它
+         * 不报错、只返回 false，触摸事件根本没进系统——2026-10-16 实测修前本探针
+         * capabilities=129（1+128，无 0x20）就是这种情况，连点 3 轮 (983,2024) 输入框
+         * 12 字纹丝不动。此时继续等「读框复检发现没发出」纯属浪费 3×1.2s，直接改走 IME 的
          * performEditorAction（不走坐标，微信编辑器支持 IME_ACTION_SEND）。
          */
         fun tapOrIme(): Boolean {
