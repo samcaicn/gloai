@@ -1676,19 +1676,69 @@ class WeChatGUI:
             self._cached_db = WeChatDB()
         return self._cached_db
 
-    def _verify_sent(self, text: str, who: Optional[str]) -> bool:
+    def _resolve_msg_users(self, who: Optional[str]) -> List[str]:
+        """把会话显示名解析成**全部候选** username（去重，保序）。
+
+        为什么不能只取 search_contact 的第一个命中：同一联系人在 contact.db
+        里可能有多条身份（旧 wxid / 微信号 alias / openim 号），每条身份各建
+        一张 Msg_ 消息表，消息落在哪张取决于微信内部记账用哪个 id。
+        实测「凯哥」有 4 个身份，UI 侧栏打开的是 SamCai_（现号），发出的消息
+        落在 Msg_md5(SamCai_)；而 search_contact 无 ORDER BY，hits[0] 是
+        30 天前的旧 wxid_uf2jeseu443v22，对应一张只有 3 行旧消息的孤表——
+        按 hits[0] 查表必然读不到刚发的消息（发送校验假阴性）。
+        """
+        if not who:
+            return []
         try:
             db = self._get_db()
-            if not who:
-                who = db.get_self_info()['username']
-            else:
-                hits = db.search_contact(who)
-                if hits:
-                    who = hits[0]["username"]
-            msgs = db.get_messages(who, limit=3)
-            for m in msgs:
-                if m.get('sender_id') == 2 and text in (m.get('content') or ''):
-                    return True
+        except Exception:
+            return [who]
+        users: List[str] = []
+        if who in ('filehelper', '文件传输助手'):
+            return ['filehelper']
+        try:
+            hits = db.search_contact(who) or []
+        except Exception:
+            hits = []
+        for h in hits:
+            u = h.get('username')
+            if u and u not in users:
+                users.append(u)
+        # 群名不在好友表，补一次群解析（快剧运营这类群只有 group_name_to_id 能查到）
+        if not users or who.endswith('群'):
+            try:
+                gid = db.group_name_to_id(who)
+                if gid and gid not in users:
+                    users.append(gid)
+            except Exception:
+                pass
+        return users or [who]
+
+    def _verify_sent(self, text: str, who: Optional[str],
+                     since_ts: Optional[int] = None) -> bool:
+        """回读 DB 确认消息已落库。
+
+        判定**不依赖 real_sender_id**：微信 4.x 里该字段口径混乱——wechat_compat
+        的 SELF_SENDER_ID=1（bot 侧口径，UI 自动化发出的消息实测落地就是 1），
+        而本方法原来写死 ==2（正常客户端手动发送的口径），按 2 过滤必然把
+        WeAuto 自己发的消息全部漏掉（假阴性→上层误判失败→重复发送）。
+        且 sender_id=1 同时出现在对方发来的消息上，根本无法区分收发方向。
+        改用「内容匹配 + create_time 时间窗」：发送前 ~2 分钟内出现含同一文本
+        的消息即算落库，时间窗排除历史同内容消息。
+
+        扫描深度取 50 条：群里撤回/入群等系统消息刷屏时，自己刚发的那条可能
+        被挤到十名开外（实测快剧运营群 7 条消息里我们的排第 7，limit=5 必漏）。
+        """
+        try:
+            db = self._get_db()
+            if since_ts is None:
+                since_ts = int(time.time()) - 120
+            for user in self._resolve_msg_users(who):
+                for m in db.get_messages(user, limit=50):
+                    content = m.get('content') or ''
+                    ct = m.get('create_time') or 0
+                    if text and text in content and ct >= since_ts:
+                        return True
         except Exception as e:
             wxlog.debug(f'发送校验失败：{e}')
         return False
@@ -1880,17 +1930,20 @@ class WeChatGUI:
         return WxResponse.success(f'图片已发送：{path}', data={'path': path})
 
     def _target_seq(self, who: Optional[str]) -> int:
-        """取目标会话当前最大 sort_seq，作为发送后校验的基线。"""
+        """取目标会话当前最大 sort_seq，作为发送后校验的基线。
+
+        必须跨该联系人的**全部候选身份表**取 max：消息可能落在任一身份表
+        （见 _resolve_msg_users），只查 hits[0] 会拿到孤表的旧 seq 当基线，
+        导致 since_seq 基准错位、新消息被判为"基线之前"而漏检。
+        """
         try:
             db = self._get_db()
-            if not who:
-                who = db.get_self_info()['username']
-            else:
-                hits = db.search_contact(who)
-                if hits:
-                    who = hits[0]["username"]
-            msgs = db.get_messages(who, limit=1)
-            return msgs[0]['sort_seq'] if msgs else 0
+            best = 0
+            for user in self._resolve_msg_users(who):
+                msgs = db.get_messages(user, limit=1)
+                if msgs and (msgs[0].get('sort_seq') or 0) > best:
+                    best = msgs[0]['sort_seq']
+            return best
         except Exception:
             return 0
 
@@ -1898,12 +1951,6 @@ class WeChatGUI:
                                 before_seq: int = 0) -> bool:
         try:
             db = self._get_db()
-            if not who:
-                who = db.get_self_info()['username']
-            else:
-                hits = db.search_contact(who)
-                if hits:
-                    who = hits[0]["username"]
             fname = os.path.basename(path)
             fname_bytes = fname.encode('utf-8')
             # 微信会自动重名文件为 名称(n).ext，匹配文件名主干
@@ -1911,25 +1958,33 @@ class WeChatGUI:
             stem_bytes = stem.encode('utf-8')
             is_image = path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'))
             expect_type = '图片' if is_image else '文件/链接/卡片'
+            users = self._resolve_msg_users(who)
             # 微信发送后 DB 异步落库，文件消息落库更慢，轮询放宽到 10s
             deadline = time.time() + (6.0 if is_image else 10.0)
+            # 时间窗：只认刚才（3 分钟内）新增的消息，排除历史同类型消息
+            since_ts = int(time.time()) - 180
             while time.time() < deadline:
-                # 优先：发送后出现了 sort_seq 更大的同类型消息（图片消息无文件名，只能靠它）
-                for m in db.get_new_messages(who, since_seq=before_seq, limit=8):
-                    if m.get('sender_id') != 2 or m.get('type') != expect_type:
-                        continue
-                    # 文件消息再做文件名匹配，图片消息仅凭类型+时序
-                    if is_image:
-                        return True
-                    if fname in (m.get('content') or ''):
-                        return True
-                    row = db.get_message_row(who, m.get('local_id'))
-                    if row and row.get('packed_info') and isinstance(row['packed_info'], bytes):
-                        if fname_bytes in row['packed_info']:
+                for user in users:
+                    # 优先：发送后出现了 sort_seq 更大的同类型消息（图片消息无文件名，只能靠它）。
+                    # 不按 sender_id 过滤：4.x 该字段口径混乱（本人发出实测为 1 而非 2，
+                    # 且 1 也会出现在对方消息上），靠 seq 基线 + 时间窗 + 类型/文件名定位。
+                    for m in db.get_new_messages(user, since_seq=before_seq, limit=8):
+                        if m.get('type') != expect_type:
+                            continue
+                        if (m.get('create_time') or 0) < since_ts:
+                            continue
+                        # 文件消息再做文件名匹配，图片消息仅凭类型+时序
+                        if is_image:
                             return True
-                        # 兼容重命名：主干匹配 + packed_info 内同一文件（主干名出现即可）
-                        if stem_bytes in row['packed_info']:
+                        if fname in (m.get('content') or ''):
                             return True
+                        row = db.get_message_row(user, m.get('local_id'))
+                        if row and row.get('packed_info') and isinstance(row['packed_info'], bytes):
+                            if fname_bytes in row['packed_info']:
+                                return True
+                            # 兼容重命名：主干匹配 + packed_info 内同一文件（主干名出现即可）
+                            if stem_bytes in row['packed_info']:
+                                return True
                 time.sleep(0.5)
         except Exception as e:
             wxlog.debug(f'附件校验失败：{e}')

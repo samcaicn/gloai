@@ -1983,9 +1983,71 @@ _catchup_inflight = set()         # 正在补处理的会话（防重入）
 _catchup_done = {}                # who -> 已补处理过的消息 create_time（防重复补）
 
 
+def _resolve_catchup_users(who, db):
+    """把会话显示名解析成**全部候选** username（与 guia._resolve_msg_users 同口径）。
+
+    为什么必须解析：user_names 里存的是昵称（LISTEN_LIST 第一列，
+    record_user_interaction 写入的也是监听回调传来的显示名），而
+    db.get_messages 内部按 Msg_md5(username) 精确定位消息表——直接传昵称
+    永远命中不了表，get_messages 返回 []，补漏线程形同虚设（启动前未读
+    永远补不到，「有人发来但一直没回」复现）。
+
+    为什么必须全候选：同一联系人在 contact.db 可能有多条身份（旧 wxid /
+    微信号 alias / openim 号），每条身份各建一张 Msg_ 表，消息落在哪张
+    取决于微信内部记账用哪个 id；AddListenChat 只把第一个精确命中注册给
+    Listener，落在别的身份表上的消息实时监听也收不到，只能靠补漏兜底
+    （与 guia 发送校验 _resolve_msg_users 踩过的是同一个坑）。
+    """
+    if not who:
+        return []
+    if who in ('filehelper', '文件传输助手'):
+        return ['filehelper']
+    users = []
+    try:
+        hits = db.search_contact(who) or []
+    except Exception:
+        hits = []
+    for h in hits:
+        u = h.get('username')
+        if u and u not in users:
+            users.append(u)
+    # 群名不在好友表（快剧运营这类群只有 group_name_to_id 能查到）
+    if not users or who.endswith('群'):
+        try:
+            gid = db.group_name_to_id(who)
+            if gid and gid not in users:
+                users.append(gid)
+        except Exception:
+            pass
+    return users or [who]
+
+
+def _catchup_newest_incoming(rows):
+    """从一张表的最近消息里挑最新一条「对方发来的文本」。
+
+    rows 按 sort_seq DESC（最新在前）。跳过自己发的（sender_id==1，与
+    实时监听 _db_row_to_message 的 is_self 口径一致：本机微信 4.x 单聊
+    实测 1=自己 2=对方；不跳过会把机器人自己的回声当成未读消息自问自答）
+    和非文本（[图片] 等占位符以 [ 开头，一并跳过）。
+    """
+    from wechat_compat import SELF_SENDER_ID
+    for r in rows or []:
+        sid = r.get("sender_id")
+        mtype = str(r.get("type") or "")
+        if sid == SELF_SENDER_ID:          # 自己发的跳过
+            continue
+        if "文本" not in mtype:             # 只补文本消息
+            continue
+        content = (r.get("content") or "").strip()
+        if not content or content.startswith("["):
+            continue
+        return r
+    return None
+
+
 def _catchup_missed_once():
     """执行一轮补漏扫描（启动后立即 + 每 _CATCHUP_INTERVAL 秒）。"""
-    from wechat_compat import Msg, Chat, SELF_SENDER_ID
+    from wechat_compat import Msg, Chat
     wx_obj = globals().get('wx', None)
     if wx_obj is None:
         return
@@ -1996,23 +2058,20 @@ def _catchup_missed_once():
         if who in _catchup_inflight:
             continue
         try:
-            rows = db.get_messages(who, limit=_CATCHUP_SCAN_LIMIT) or []
-            if not rows:
-                continue
-            # rows 按 sort_seq DESC（最新在前）：找最新一条「对方发来的文本」
+            # 昵称 → 全部候选 username，逐表回扫，取 create_time 最新的候选消息
+            # （跨表按 create_time 比较：sort_seq 是表内序号，跨表不可比；
+            # 孤表（旧身份）里全是旧消息，create_time 自然竞争不过现表）
             cand = None
-            for r in rows:
-                sid = r.get("sender_id")
-                mtype = str(r.get("type") or "")
-                if sid == SELF_SENDER_ID:          # 自己发的跳过
+            cand_user = ""
+            for user in _resolve_catchup_users(who, db):
+                r = _catchup_newest_incoming(
+                    db.get_messages(user, limit=_CATCHUP_SCAN_LIMIT) or [])
+                if r is None:
                     continue
-                if "文本" not in mtype:             # 只补文本消息
-                    continue
-                content = (r.get("content") or "").strip()
-                if not content or content.startswith("["):
-                    continue
-                cand = r
-                break
+                if cand is None or float(r.get("create_time") or 0) > \
+                        float(cand.get("create_time") or 0):
+                    cand = r
+                    cand_user = user
             if cand is None:
                 continue
             # 已回复判定：chat_history 该会话最后一条是发出（bot 或主人手动回）且时间不早于这条消息
@@ -2029,7 +2088,9 @@ def _catchup_missed_once():
                 content = cand.get("content") or ""
                 ts = cand.get("create_time") or 0
                 _catchup_done[who] = float(ts or 0)
-                is_group = str(who).endswith("@chatroom")
+                # 群判定用解析出的 username（who 是昵称，endswith("@chatroom")
+                # 对昵称永假，原实现里群消息的 "wxid:\n" 前缀剥离从未生效）
+                is_group = str(cand_user).endswith("@chatroom")
                 sender = cand.get("sender_username") or who
                 # 群消息内容带 "wxid:\n" 前缀，剥离后取群成员
                 if is_group:
@@ -2038,7 +2099,7 @@ def _catchup_missed_once():
                         sender = mm.group(1)
                         content = content[mm.end():]
                 msg = Msg("text", content, sender, attr="friend",
-                          create_time=ts, chat_username=who,
+                          create_time=ts, chat_username=cand_user or who,
                           type_code=cand.get("type_code"))
                 logger.info(f"[补漏] 会话「{who}」有历史未回复消息，补处理: {content[:60]!r}")
                 _message_listener_impl(msg, Chat(who))
