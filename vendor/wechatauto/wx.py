@@ -147,10 +147,16 @@ class _AllMessageChat:
 
 
 def _extract_group_sender(content) -> str:
-    """群消息内容形如 ``wxid_xxx:\\n正文``，提取发送者 wxid。"""
+    """群消息内容形如 ``username:\\n正文``，提取发送者 username。
+
+    放宽到通用 username（不再只认 wxid_ 前缀）：微信群成员的 username 不
+    一定是 wxid_ 开头（自定义微信号/历史 alias 等），只认 wxid_ 会让这些
+    成员的消息解析失败，sender 回退成群名——AI 收不到「谁在说话」。
+    冒号后必须紧跟换行，避免把正文「你好: 在吗」误当前缀。
+    """
     if isinstance(content, bytes):
         content = content.decode('utf-8', errors='ignore')
-    m = re.match(r'^(wxid_[0-9a-zA-Z_]+):\s*\n', content or '')
+    m = re.match(r'^([A-Za-z0-9_-]+):\s*\n', content or '')
     return m.group(1) if m else ''
 
 
@@ -226,7 +232,11 @@ def _db_row_to_message(row: dict, chat: 'Chat', self_wxid: str = None) -> 'Messa
     msg.create_time = row.get('create_time')
     msg.wxid = sender_id
     msg.attr = 'self' if is_self else 'friend'
-    sender = _extract_group_sender(content) or getattr(chat, 'who', '')
+    # 发送者优先级：DB 索引字段（real_sender_id → SenderName2Id，全 username
+    # 格式，权威）> content 前缀解析（兜底）> 会话名。原来只用 content 前缀
+    # 且只认 wxid_，自定义微信号的群成员会解析失败回退成群名。
+    sender = (row.get('sender_username') or _extract_group_sender(content)
+              or getattr(chat, 'who', ''))
     msg.sender = sender or getattr(chat, 'who', '')
     msg.sender_remark = msg.sender
     return msg

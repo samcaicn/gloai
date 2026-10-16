@@ -104,17 +104,28 @@ def row(sender_id, mtype, content, ct, sender_username=""):
 
 
 def run(bot, monkey_impl):
-    """跑一轮补漏，返回 _message_listener_impl 收到的 (msg, chat) 列表。"""
+    """跑一轮补漏，返回 _message_listener_impl 收到的 (msg, chat) 列表。
+
+    必须 try/finally 恢复真函数：补漏内部按模块全局名调用
+    _message_listener_impl，替换生效；但若不恢复，后续场景
+    （如第 8 节 feed_listener）调到的就是 lambda，真逻辑被跳过。
+    """
     seen = []
+    orig = bot._message_listener_impl
     bot._message_listener_impl = lambda msg, chat: seen.append((msg, chat))
-    bot._catchup_missed_once()
+    try:
+        bot._catchup_missed_once()
+    finally:
+        bot._message_listener_impl = orig
     return seen
 
 
 def reset(bot):
     bot._catchup_inflight = set()
     bot._catchup_done = {}
+    bot._catchup_primed = False
     bot.user_names = []
+    bot.forward_hub = None
 
 
 def main():
@@ -232,6 +243,33 @@ def main():
           f"sender={seen[0][0].sender if seen else None!r} "
           f"content={seen[0][0].content if seen else None!r}")
 
+    # 6b. sender 以 DB 索引字段为准：content 前缀与 sender_username 不一致时
+    #     （自定义微信号成员，前缀仍是 wxid_ 历史格式）取 sender_username
+    reset(bot)
+    bot.user_names = ["快剧运营"]
+    bot.wx = types.SimpleNamespace(_db=MockDB(
+        tables={"777@chatroom": [
+            row(5, "文本", "wxid_member1:\n大家好呀", 6000, "customid_999")]},
+        groups={"快剧运营": "777@chatroom"},
+    ))
+    bot.chat_history = FakeHistory(latest=None)
+    seen = run(bot, None)
+    ok = (len(seen) == 1 and seen[0][0].sender == "customid_999"
+          and seen[0][0].content == "大家好呀")
+    check("sender 取 DB 索引字段（非 content 前缀），前缀只用于剥正文", ok,
+          f"sender={seen[0][0].sender if seen else None!r}")
+
+    # 6c. _extract_group_sender 放宽到通用 username（vendor.wx 兜底解析）
+    sys.path.insert(0, os.path.join(ROOT, "vendor"))
+    from wechatauto.wx import _extract_group_sender as _egs
+    check("wxid_ 前缀可解析", _egs("wxid_abc123:\n你好") == "wxid_abc123")
+    check("自定义微信号前缀可解析（原来只认 wxid_，漏判）",
+          _egs("customid_999:\n你好") == "customid_999")
+    check("冒号后非换不当前缀（正文「你好: 在吗」不误判）",
+          _egs("你好: 在吗") == "")
+    check("空前缀不炸", _egs("") == "" and _egs(None) == "")
+    check("中文昵称不做前缀（username 规则不含中文）", _egs("张三:\n大家好") == "")
+
     # ---------- 7. 边界不炸 ----------
     print("\n=== 7. 边界：无候选 / 空表 / 只有占位符 ===")
     reset(bot)
@@ -243,6 +281,93 @@ def main():
     bot.chat_history = FakeHistory(latest=None)
     seen = run(bot, None)
     check("无候选 + 仅占位符消息 → 静默跳过不炸", len(seen) == 0)
+
+    # ---------- 8. 监听覆盖推进水位 × 补漏不重复补（2026-10-16 二次修复） ----------
+    print("\n=== 8. 监听推水位 × 补漏联动 ===")
+
+    class ConsumeHub:
+        """水位推进后即「消费」消息并 return，把流程截断在 AI 管线之前。"""
+        def handle_incoming(self, *a, **k):
+            return True
+
+    def feed_listener(bot, who, content, ct, attr="friend"):
+        """模拟实时监听收到一条消息（走 _message_listener_impl 入口）。"""
+        msg = FakeMsg("text", content, "wxid_peer", attr=attr, create_time=ct)
+        bot._message_listener_impl(msg, FakeChat(who))
+
+    def setup_feed(bot):
+        bot.forward_hub = ConsumeHub()
+        bot.chat_history = FakeHistory(latest=None)
+        bot.record_user_interaction = lambda *a, **k: None
+
+    # 8a 核心场景：监听见过并「主动不回复」的消息，补漏不得再补
+    reset(bot)
+    bot.user_names = ["凯哥"]
+    setup_feed(bot)
+    bot.wx = types.SimpleNamespace(_db=MockDB(
+        tables={"SamCai_": [row(2, "文本", "在吗", 3000)]},
+        contacts={"凯哥": [{"username": "SamCai_"}]},
+    ))
+    bot._catchup_primed = True
+    feed_listener(bot, "凯哥", "在吗", 3000)          # 监听到位但选择不回（概率/禁词/hold）
+    check("监听覆盖后水位已推进", bot._catchup_done.get("凯哥") == 3000.0,
+          bot._catchup_done)
+    seen = run(bot, None)
+    check("监听已覆盖的消息补漏不再重复补（修复前每 30s 补一次）",
+          len(seen) == 0, f"seen={len(seen)}")
+
+    # 8b 启动保护：首扫完成前（primed=False）监听不得推水位，否则挡住启动前未读
+    reset(bot)
+    bot.user_names = ["凯哥"]
+    setup_feed(bot)
+    bot.wx = types.SimpleNamespace(_db=MockDB(
+        tables={"SamCai_": [row(2, "文本", "在吗", 3000)]},
+        contacts={"凯哥": [{"username": "SamCai_"}]},
+    ))
+    bot._catchup_primed = False
+    feed_listener(bot, "凯哥", "在吗", 3000)
+    check("首扫前监听不推水位（启动前未读可补）", bot._catchup_done.get("凯哥", 0.0) == 0.0,
+          bot._catchup_done)
+    seen = run(bot, None)
+    check("启动窗口内的新消息补漏首扫照常补", len(seen) == 1, f"seen={len(seen)}")
+
+    # 8c 水位只升不降（乱序/过期回调不得回撤）
+    reset(bot)
+    setup_feed(bot)
+    bot._catchup_primed = True
+    bot._catchup_done["凯哥"] = 5000.0
+    feed_listener(bot, "凯哥", "旧消息", 3000)
+    check("过期消息回调不回撤水位", bot._catchup_done.get("凯哥") == 5000.0,
+          bot._catchup_done)
+
+    # 8d 自己发出的回显不推进 incoming 水位
+    reset(bot)
+    setup_feed(bot)
+    bot._catchup_primed = True
+    feed_listener(bot, "凯哥", "[自动回复] 在的", 4000, attr="self")
+    check("self 回显不推水位", bot._catchup_done.get("凯哥", 0.0) == 0.0,
+          bot._catchup_done)
+
+    # 8e 群消息同样覆盖
+    reset(bot)
+    setup_feed(bot)
+    bot._catchup_primed = True
+    feed_listener(bot, "快剧运营", "大家好", 7000, attr="group")
+    check("群消息也推进水位", bot._catchup_done.get("快剧运营") == 7000.0,
+          bot._catchup_done)
+
+    # 8f 回归：监听真正回复过的消息，chat_history 挡箭牌仍然有效（不依赖水位）
+    reset(bot)
+    bot.user_names = ["凯哥"]
+    setup_feed(bot)
+    bot.chat_history = FakeHistory(latest={"direction": "outgoing", "ts": 3500})
+    bot.wx = types.SimpleNamespace(_db=MockDB(
+        tables={"SamCai_": [row(2, "文本", "在吗", 3000)]},
+        contacts={"凯哥": [{"username": "SamCai_"}]},
+    ))
+    bot._catchup_primed = True
+    seen = run(bot, None)
+    check("已回复消息仍由 chat_history 挡住（既有逻辑不破）", len(seen) == 0)
 
     # ---------- 汇总 ----------
     failed = [n for n, ok in results if not ok]

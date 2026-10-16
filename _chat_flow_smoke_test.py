@@ -118,6 +118,42 @@ def main():
     finally:
         ce._inbox_wxdb = orig_wxdb
 
+    # ---------- 2b. pending 口径：AI 接管会话不标红 ----------
+    # bot 接管的会话（LISTEN_LIST 昵称 + forward 目标）由 AI 策略决定回不回复，
+    # 消息中心不再标「未回复」——红点语义收敛为「无人接管，需人工处理」。
+    orig_parse = ce.parse_config
+    ce.parse_config = lambda: {
+        'LISTEN_LIST': [
+            ['凯哥', ''],
+            ['接管中的好友', '', {'forward': ['销售群']}],
+        ],
+    }
+    # 造一条「对方发来、bot 刻意未回」的接管会话消息（群聊概率/Jev hold 场景）
+    orig_record_in = chat_history.record_incoming
+    chat_history.record_incoming('接管中的好友', 'wxid_peer', '这条不该标红', '文本', False)
+    ce._inbox_wxdb = lambda: (None, FakeDB())
+    try:
+        managed_set = ce._bot_managed_chats()
+        check('_bot_managed_chats 含 LISTEN_LIST 昵称与 forward 目标',
+              managed_set == {'凯哥', '接管中的好友', '销售群'}, managed_set)
+        r = c.get('/api/inbox/sessions')
+        j = json.loads(r.data)
+        sess = j.get('sessions') or []
+        taken = [s for s in sess if s.get('who') == '接管中的好友']
+        fresh = [s for s in sess if s.get('who') == 'wxid_zzz999']
+        check('AI 接管会话：末条是 incoming 也不标红（bot 有意不回不骚扰主人）',
+              bool(taken) and taken[0].get('managed') is True
+              and taken[0].get('pending') is False, 'taken=%r' % (taken,))
+        check('非接管的新联系人（微信库 incoming）pending=True',
+              bool(fresh) and fresh[0].get('pending') is True
+              and fresh[0].get('managed') is False, 'fresh=%r' % (fresh,))
+        check('每条会话都带 managed 字段（UI 徽章用）',
+              all('managed' in s for s in sess))
+    finally:
+        ce.parse_config = orig_parse
+        ce._inbox_wxdb = orig_wxdb
+        chat_history.record_incoming = orig_record_in
+
     # ---------- 3. forward_page embed ----------
     r = c.get('/forward', query_string={'embed': '1'})
     html = r.data.decode('utf-8')

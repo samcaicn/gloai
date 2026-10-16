@@ -3110,14 +3110,40 @@ def _db_rows_to_msgs(db, who, rows, self_wxid):
     return out
 
 
+def _bot_managed_chats():
+    """bot 实际接管的会话名集合：LISTEN_LIST 各行昵称 + 各行 forward 目标。
+
+    这些会话的消息由 bot 自行决策（回复 / 刻意不回应：群聊概率没过、
+    Jev hold、禁词、监测不命中等）。消息中心对它们不再标「未回复」红点——
+    红点语义收敛为「无人接管，需人工处理」，否则 bot 有意不回的消息
+    （尤其是群聊概率忽略的）会每次都冒红点，主人反复白查。
+    """
+    names = set()
+    try:
+        cfg = parse_config()
+        for entry in cfg.get('LISTEN_LIST') or []:
+            if not (isinstance(entry, (list, tuple)) and entry and entry[0]):
+                continue
+            names.add(str(entry[0]).strip())
+            if len(entry) >= 3 and isinstance(entry[2], dict):
+                for t in (entry[2].get('forward') or []):
+                    if str(t).strip():
+                        names.add(str(t).strip())
+    except Exception as e:
+        app.logger.warning(f"消息中心：解析监听列表失败（pending 按不在管处理）: {e}")
+    return names
+
+
 @app.route('/api/inbox/sessions')
 @login_required
 def inbox_sessions():
     """消息中心会话列表：本地聊天记录 ∪ 微信库有消息的会话。
 
-    每条带 pending 标记（最后一条是对方发来且未回复），供 UI 红点提示。
+    pending 语义 = 「无人接管，需人工处理」：bot 接管的会话（见
+    _bot_managed_chats）不标红，由 bot 自行决定回不回复。
     """
     sessions = {}
+    managed = _bot_managed_chats()
     try:
         import chat_history as _ch
         for s in _ch.list_who(200):
@@ -3127,7 +3153,12 @@ def inbox_sessions():
                 "who": who,
                 "last_content": (last["content"] if last else "")[:80],
                 "last_ts": last["ts"] if last else 0,
-                "pending": bool(last and last["direction"] == "incoming" and last["source"] != "sys"),
+                "pending": bool(last and last["direction"] == "incoming"
+                                and last["source"] != "sys" and who not in managed),
+                "managed": who in managed,
+                # 本地记录按昵称建 key，群昵称不带 @chatroom 后缀，
+                # 群标记只能来自 chat_history 的 source 字段
+                "is_group": bool(last and last["source"] == "group"),
             }
     except Exception as e:
         app.logger.warning(f"消息中心：读取本地聊天记录失败: {e}")
@@ -3154,6 +3185,7 @@ def inbox_sessions():
                 if merge_key:
                     ent = sessions[merge_key]
                     ent["name"] = ent.get("name") or disp
+                    ent["managed"] = ent.get("managed") or merge_key in managed or disp in managed
                     if ent["last_ts"]:
                         continue
                     rows = db.get_messages(who, limit=10) or []
@@ -3161,10 +3193,14 @@ def inbox_sessions():
                     if msgs:
                         ent["last_content"] = msgs[-1]["content"][:80]
                         ent["last_ts"] = msgs[-1]["ts"]
-                        ent["pending"] = msgs[-1]["direction"] == "incoming"
+                        ent["pending"] = (msgs[-1]["direction"] == "incoming"
+                                          and not ent["managed"])
                     continue
                 ent = sessions.setdefault(who, {
                     "who": who, "last_content": "", "last_ts": 0, "pending": False,
+                    "managed": who in managed or disp in managed,
+                    # DB 侧 who 是 username，群 username 以 @chatroom 结尾
+                    "is_group": str(who).endswith("@chatroom"),
                 })
                 ent["name"] = disp
                 if ent["last_ts"]:
@@ -3174,13 +3210,15 @@ def inbox_sessions():
                 if msgs:
                     ent["last_content"] = msgs[-1]["content"][:80]
                     ent["last_ts"] = msgs[-1]["ts"]
-                    ent["pending"] = msgs[-1]["direction"] == "incoming"
+                    ent["pending"] = (msgs[-1]["direction"] == "incoming"
+                                      and not ent["managed"])
         except Exception as e:
             app.logger.warning(f"消息中心：读取微信库会话失败: {e}")
 
     for who, ent in sessions.items():
         ent.setdefault("name", _wx_name(db, who) if db is not None else who)
-        ent["is_group"] = str(who).endswith("@chatroom")
+        ent.setdefault("is_group", str(who).endswith("@chatroom"))
+        ent.setdefault("managed", False)
 
     items = sorted(sessions.values(), key=lambda x: x["last_ts"], reverse=True)
     return jsonify({"ok": True, "sessions": items})

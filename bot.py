@@ -1980,7 +1980,8 @@ def auto_add_discovered_users():
 _CATCHUP_INTERVAL = 30            # 补漏轮询间隔（秒）
 _CATCHUP_SCAN_LIMIT = 30          # 每会话回扫条数
 _catchup_inflight = set()         # 正在补处理的会话（防重入）
-_catchup_done = {}                # who -> 已补处理过的消息 create_time（防重复补）
+_catchup_done = {}                # who -> 已覆盖到的消息 create_time（补漏/监听共用水位）
+_catchup_primed = False           # 补漏首扫是否已完成（首扫前监听不得推水位，否则挡住启动前未读）
 
 
 def _resolve_catchup_users(who, db):
@@ -2091,12 +2092,13 @@ def _catchup_missed_once():
                 # 群判定用解析出的 username（who 是昵称，endswith("@chatroom")
                 # 对昵称永假，原实现里群消息的 "wxid:\n" 前缀剥离从未生效）
                 is_group = str(cand_user).endswith("@chatroom")
+                # sender 以 DB 索引字段为准（real_sender_id → SenderName2Id，
+                # 覆盖自定义微信号等非 wxid_ 成员；与实时监听 _db_row_to_message
+                # 同口径）。content 前缀只用于剥离正文，不再反过来定 sender。
                 sender = cand.get("sender_username") or who
-                # 群消息内容带 "wxid:\n" 前缀，剥离后取群成员
                 if is_group:
-                    mm = re.match(r"^\s*(wxid_[0-9A-Za-z_-]+|[A-Za-z0-9_-]+):\s*\n?", content)
+                    mm = re.match(r"^\s*([A-Za-z0-9_-]+):\s*\n?", content)
                     if mm:
-                        sender = mm.group(1)
                         content = content[mm.end():]
                 msg = Msg("text", content, sender, attr="friend",
                           create_time=ts, chat_username=cand_user or who,
@@ -2111,8 +2113,12 @@ def _catchup_missed_once():
 
 def catchup_missed():
     """补漏守护线程：启动先扫一轮（补启动前未读），之后周期扫描。"""
+    global _catchup_primed
     logger.info(f"未回复消息补漏线程已启动（间隔 {_CATCHUP_INTERVAL}s）。")
     _catchup_missed_once()
+    # 首扫打底完成才允许实时监听推水位：监听注册在补漏线程启动之前，
+    # 若窗口内的新消息提前推高水位，会把启动前的未读一起挡掉。
+    _catchup_primed = True
     while True:
         time.sleep(_CATCHUP_INTERVAL)
         try:
@@ -2156,6 +2162,20 @@ def _message_listener_impl(msg, chat):
                 chat_history.record_incoming(who, sender, original_content, msgtype, is_group=True)
         except Exception as _chr:
             logger.debug(f"记录聊天历史失败（已忽略，不影响收发）: {_chr}")
+
+    # --- 推进补漏水位（监听已覆盖此消息）---
+    # 水位与 _catchup_done 共用：实时监听一旦见过这条消息，无论后续是否回复
+    # （群聊概率没过 / 禁词 / Jev hold / 夜间静默 / 频控超限都会主动不回应），
+    # 补漏线程都不该再把它当「未回复」捡起来——否则监听刻意忽略的消息会在
+    # 30 秒后被补漏强行回复，群聊回复概率控制等策略被整体绕过。
+    # 首扫完成前不推（_catchup_primed），避免挡住启动前的未读。
+    if _catchup_primed and msgattr in ('friend', 'group'):
+        try:
+            _ct = float(getattr(msg, 'create_time', 0) or 0)
+            if _ct > _catchup_done.get(who, 0.0):
+                _catchup_done[who] = _ct
+        except Exception:
+            pass
 
     # === 固定转发拦截（必须在群聊早退/AI 判定之前，才能同时覆盖好友与群源）===
     # handle_incoming 返回 True 表示消息已被转发消费，需跳过后续 AI 处理；
