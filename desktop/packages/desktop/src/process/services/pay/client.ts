@@ -25,7 +25,7 @@ async function request<T>(config: PayConfig, path: string, init?: RequestInit): 
     const resp = await fetch(`${config.apiBase}${path}`, {
       ...init,
       signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+      headers: { 'Content-Type': 'application/json', ...init?.headers },
     });
     const text = await resp.text();
     let data: unknown = null;
