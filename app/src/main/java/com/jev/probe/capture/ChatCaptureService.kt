@@ -1995,6 +1995,13 @@ open class ChatCaptureService : AccessibilityService() {
                 return@postDelayed
             }
             var attempt = 0
+            // 本次发送链是否已走过「空框恢复」（refocus + rewrite）。走过之后读框仍盲，
+            // 不再二次恢复——那会形成 rewrite→give up→落队→立即重发→再 rewrite 的风暴
+            // （2026-10-16 15:48 实测：同一会话 30 秒 6 轮，回复直接被放弃）。
+            var recoverUsed = false
+            // 点发送这一刻读框是否盲（看不到框内容）。盲态下「点后框空」仍是唯一发送
+            // 信号，但台账要标记出来，便于和真读到空的情况区分。
+            var blindTap = false
             // 一次完整发送尝试：读框为空先恢复聚焦 → 点/IME → 复检。
             // 复检：输入框空 = 真发出（FLAG_SECURE 黑屏下唯一可靠信号）。非空 = 没发出 → 退避重试。
             fun attemptSend() {
@@ -2008,20 +2015,28 @@ open class ChatCaptureService : AccessibilityService() {
                 }
                 val pre = ProbeImeBus.readBox()
                 if (pre != null && pre.isBlank()) {
-                    // 空框 ≠ 一定没填进去：编辑器失焦后 InputConnection 退回系统 fallback 连接，
-                    // 读框恒空。先重新聚焦复读、必要时重写草稿，再进来。
-                    recoverEmptyBox(token) { ready ->
-                        if (ready) attemptSend()
-                        else {
-                            Log.e(TAG, "sendTap: box empty + unrecoverable -> queue draft for later")
-                            failAndQueue()
-                            sendSettled = true
-                            overlay?.toast(t("消息未填入，稍后重试", "Fill failed — will retry later"))
-                            onDone?.invoke(false)
+                    if (!recoverUsed) {
+                        // 空框 ≠ 一定没填进去：编辑器失焦后 InputConnection 退回系统 fallback 连接，
+                        // 读框恒空。先重新聚焦复读、必要时重写草稿，再进来。只恢复一次。
+                        recoverUsed = true
+                        recoverEmptyBox(token) { ready ->
+                            if (ready) attemptSend()
+                            else {
+                                Log.e(TAG, "sendTap: box empty + unrecoverable -> queue draft for later")
+                                failAndQueue()
+                                sendSettled = true
+                                overlay?.toast(t("消息未填入，稍后重试", "Fill failed — will retry later"))
+                                onDone?.invoke(false)
+                            }
                         }
+                        return
                     }
-                    return
+                    // 恢复过一次仍读不到框：草稿已 commit 成功（completeWrite(true)），
+                    // 大概率真在输入框里，只是读不回。放行去点——点空无害，点中这条就真发出；
+                    // 一律 give up 只会把会话推进重发风暴（见 recoverUsed 注释）。
+                    Log.w(TAG, "sendTap: box still blind after recover -> proceed to tap anyway")
                 }
+                blindTap = pre != null && pre.isBlank()
                 tapOrIme()
                 if (usedIme) {
                     // IME 兜底：微信 armed 一个「自动发送 2 秒后发出」倒计时，且探针 IME 持有编辑器
@@ -2056,9 +2071,9 @@ open class ChatCaptureService : AccessibilityService() {
                     if (!isCurrent(token)) { failAndQueue(); sendSettled = true; onDone?.invoke(false); return@postDelayed }
                     val box = ProbeImeBus.readBox()
                     if (box != null && box.isBlank()) {
-                        Log.i(TAG, "sendTap verify: box EMPTY -> message really sent (attempt=$attempt)")
+                        Log.i(TAG, "sendTap verify: box EMPTY -> message really sent (attempt=$attempt blind=$blindTap)")
                         sendSettled = true
-                        appendSendLedger(currentSendConv, true, "box empty after tap")
+                        appendSendLedger(currentSendConv, true, if (blindTap) "box empty after tap (blind)" else "box empty after tap")
                         overlay?.toast(t("已自动发送", "Sent automatically"))
                         onDone?.invoke(true)
                         return@postDelayed
@@ -2181,7 +2196,14 @@ open class ChatCaptureService : AccessibilityService() {
             return
         }
         drainingPending = true
-        resendPending(next.conv, next.text) { drainingPending = false; drainPendingSends() }
+        resendPending(next.conv, next.text) { sent ->
+            drainingPending = false
+            // 失败必须退避：旧代码立即重排，同一会话几十秒内反复 commit+落账+toast，
+            // MAX_SEND_TRIES 瞬间烧光、回复被放弃（2026-10-16 15:48 实测 6 轮/30 秒）。
+            // 按已失败次数线性退避、封顶 20s；成功则 1s 后驱动下一条。
+            val backoff = if (sent) 1_000L else (2_000L * (next.tries + 1)).coerceAtMost(20_000L)
+            main.postDelayed({ drainPendingSends() }, backoff)
+        }
     }
 
     /** 重发一条持久化失败回复：重放该会话 PendingIntent 拉起微信 → 填字 → 走自带重试发送。 */
@@ -2252,6 +2274,8 @@ open class ChatCaptureService : AccessibilityService() {
      */
     private fun recoverEmptyBox(token: ConversationSession.Token, onReady: (Boolean) -> Unit) {
         val draft = lastDraftText
+        val (fx, fy) = wxFocusPoint()
+        Log.i(TAG, "sendTap recover: enter focus=($fx,$fy) imeCollapsed=${ProbeImeBus.imeCollapsed} imeH=${ProbeImeBus.imeWindowHeightPx} imeActive=${ProbeImeBus.imeActive}")
         tapWeChatInputBar()
         main.postDelayed({
             if (!isCurrent(token)) { onReady(false); return@postDelayed }
@@ -2267,20 +2291,32 @@ open class ChatCaptureService : AccessibilityService() {
                 return@postDelayed
             }
             Log.w(TAG, "sendTap recover: box still empty after refocus -> rewrite draft (${draft.length} chars)")
-            ProbeImeBus.requestWrite(draft, prefs.autoSend) { ok ->
+            // send=false：恢复只负责把草稿写回输入框，发送统一由外层点绿键完成
+            // （IME 内直接发会吞掉 sendDelayMs 撤回窗口，2026-10-14 决定）。
+            ProbeImeBus.requestWrite(draft, false) { ok ->
                 Log.i(TAG, "sendTap recover: rewrite delivered ok=$ok")
-            }
-            main.postDelayed({
-                if (!isCurrent(token)) { onReady(false); return@postDelayed }
-                val b2 = ProbeImeBus.readBox()
-                if (!b2.isNullOrBlank()) {
-                    Log.i(TAG, "sendTap recover: rewrite landed (${b2.length} chars) -> continue")
-                    onReady(true)
-                } else {
-                    Log.e(TAG, "sendTap recover: still unreadable after rewrite -> give up")
+                if (!ok) {
+                    Log.e(TAG, "sendTap recover: rewrite failed -> give up")
                     onReady(false)
+                    return@requestWrite
                 }
-            }, 900L)
+                main.postDelayed({
+                    if (!isCurrent(token)) { onReady(false); return@postDelayed }
+                    val b2 = ProbeImeBus.readBox()
+                    if (!b2.isNullOrBlank()) {
+                        Log.i(TAG, "sendTap recover: rewrite landed (${b2.length} chars) -> continue")
+                        onReady(true)
+                    } else {
+                        // commit 已确认成功（completeWrite(true)）但读框仍盲：文本大概率
+                        // 真在输入框里，读不回是微信 8.0.78 + 失焦 fallback 的老问题。
+                        // 放行去点发送——由 attemptSend 的 recoverUsed 闸门保证不会二次恢复；
+                        // 点空无害，点中这条就真发出。旧行为在这里 give up → 落队 → 立即
+                        // 重发 → 再 give up，形成风暴（2026-10-16 15:48 实测）。
+                        Log.w(TAG, "sendTap recover: rewrite committed but box unreadable -> proceed blind")
+                        onReady(true)
+                    }
+                }, 900L)
+            }
         }, 700L)
     }
 
