@@ -30,7 +30,7 @@ function resolvePackagedApp(projectRoot) {
 
   if (process.platform === 'win32') {
     for (const dir of ['win-unpacked', 'win-x64-unpacked', 'win-arm64-unpacked']) {
-      const exe = path.join(outDir, dir, 'mu.exe');
+      const exe = path.join(outDir, dir, 'AiBuddy.exe');
       if (fs.existsSync(exe)) return { executablePath: exe, cwd: path.join(outDir, dir) };
     }
   } else if (process.platform === 'darwin') {
@@ -39,15 +39,15 @@ function resolvePackagedApp(projectRoot) {
       if (!fs.existsSync(macDir)) continue;
       const appBundle = fs.readdirSync(macDir).find((f) => f.endsWith('.app'));
       if (!appBundle) continue;
-      const exe = path.join(macDir, appBundle, 'Contents', 'MacOS', 'mu');
+      const exe = path.join(macDir, appBundle, 'Contents', 'MacOS', 'AiBuddy');
       if (fs.existsSync(exe)) return { executablePath: exe, cwd: macDir };
     }
   } else {
     for (const dir of ['linux-unpacked', 'linux-x64-unpacked', 'linux-arm64-unpacked']) {
       const dirPath = path.join(outDir, dir);
       if (!fs.existsSync(dirPath)) continue;
-      // linux.executableName is mu-desktop (`mu` on the PATH is the command line); plain `mu` is the fallback.
-      for (const name of ['mu-desktop', 'mu']) {
+      // linux.executableName is aibuddy-desktop (`mu` on the PATH is the command line); plain `mu` is the fallback.
+      for (const name of ['aibuddy-desktop', 'mu']) {
         const exe = path.join(dirPath, name);
         if (fs.existsSync(exe)) return { executablePath: exe, cwd: dirPath };
       }
@@ -73,7 +73,7 @@ async function main() {
   if (shouldClean) {
     // taskkill /IM matches the image name exactly. pkill -f matches anywhere in a command line, and "mu" is in far
     // too many of them, so elsewhere match the packaged binary's own path instead.
-    await killProcessByName(isWindows() ? 'mu.exe' : packaged.executablePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    await killProcessByName(isWindows() ? 'AiBuddy.exe' : packaged.executablePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     await killProcessByName('electron.exe');
     await killProcessByName('electron');
   }

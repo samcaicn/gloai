@@ -5,7 +5,7 @@
  *
  * Two modes:
  *   1. **Packaged mode** (CI default): Launches from electron-builder's unpacked output
- *      (e.g. out/linux-unpacked/mu-desktop, out/mac-arm64/mu.app, out/win-unpacked/mu.exe).
+ *      (e.g. out/linux-unpacked/aibuddy-desktop, out/mac-arm64/AiBuddy.app, out/win-unpacked/AiBuddy.exe).
  *      This validates that packaged resources are intact.
  *   2. **Dev mode** (local default): Launches via `electron .` from project root with
  *      the Vite dev server (electron-vite dev).
@@ -154,29 +154,29 @@ function resolvePackagedApp(): { executablePath: string; cwd: string } | null {
   const platform = process.platform;
 
   if (platform === 'win32') {
-    // out/win-unpacked/mu.exe  or  out/win-x64-unpacked/mu.exe
+    // out/win-unpacked/AiBuddy.exe  or  out/win-x64-unpacked/AiBuddy.exe
     for (const dir of ['win-unpacked', 'win-x64-unpacked', 'win-arm64-unpacked']) {
-      const exe = path.join(outDir, dir, 'mu.exe');
+      const exe = path.join(outDir, dir, 'AiBuddy.exe');
       if (fs.existsSync(exe)) return { executablePath: exe, cwd: path.join(outDir, dir) };
     }
   } else if (platform === 'darwin') {
-    // out/mac-arm64/mu.app/Contents/MacOS/mu  or  out/mac/mu.app/...
+    // out/mac-arm64/AiBuddy.app/Contents/MacOS/AiBuddy  or  out/mac/AiBuddy.app/...
     for (const dir of ['mac-arm64', 'mac-x64', 'mac', 'mac-universal']) {
       const macDir = path.join(outDir, dir);
       if (!fs.existsSync(macDir)) continue;
       const appBundle = fs.readdirSync(macDir).find((f) => f.endsWith('.app'));
       if (appBundle) {
-        const exe = path.join(macDir, appBundle, 'Contents', 'MacOS', 'mu');
+        const exe = path.join(macDir, appBundle, 'Contents', 'MacOS', 'AiBuddy');
         if (fs.existsSync(exe)) return { executablePath: exe, cwd: macDir };
       }
     }
   } else {
-    // Linux: out/linux-unpacked/mu-desktop  (linux.executableName; `mu` on the PATH is the command line)
+    // Linux: out/linux-unpacked/aibuddy-desktop  (linux.executableName; `mu` on the PATH is the command line)
     for (const dir of ['linux-unpacked', 'linux-x64-unpacked', 'linux-arm64-unpacked']) {
       const dirPath = path.join(outDir, dir);
       if (!fs.existsSync(dirPath)) continue;
       // Try common executable names
-      for (const name of ['mu-desktop', 'mu']) {
+      for (const name of ['aibuddy-desktop', 'mu']) {
         const exe = path.join(dirPath, name);
         if (fs.existsSync(exe)) return { executablePath: exe, cwd: dirPath };
       }
