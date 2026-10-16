@@ -3,7 +3,7 @@
   "groups": {
     "preferences": "偏好",
     "models": "模型",
-    "kernel": "内核",
+    "advanced": "高级",
     "capabilities": "能力",
     "system": "系统"
   },
@@ -534,7 +534,7 @@
     "matched": "命中特征",
     "bindFailed": "设备绑定失败",
     "pushTest": "推送测试",
-    "pushSample": "这是来自 AiBuddy 桌面的推送测试消息 ✅",
+    "pushSample": "这是来自 AiBuddy 桌面的推送测试消息",
     "pushOk": "推送成功",
     "pushWarn": "推送未成功",
     "pushErr": "推送出错",

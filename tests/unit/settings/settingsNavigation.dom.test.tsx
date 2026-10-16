@@ -5,7 +5,7 @@
  */
 
 /**
- * The settings rail is seven groups of short pages, and every place that used to be a page of its own still leads to
+ * The settings rail is five groups of short pages, and every place that used to be a page of its own still leads to
  * the page that holds its settings now. Both halves are tested here: the rail a person sees, and the redirects the
  * router installs for the retired paths and for the tabs that became pages.
  */
@@ -92,15 +92,13 @@ describe('the settings rail', () => {
   });
   afterEach(() => cleanup());
 
-  it('shows seven groups under muted headers, each with its pages in order', () => {
+  it('shows five groups under muted headers, each with its pages in order', () => {
     const { container } = renderRail();
     const groups = [...container.querySelectorAll('[data-settings-group]')];
     expect(groups.map((group) => group.getAttribute('data-settings-group'))).toEqual([
       'preferences',
       'models',
-      'kernel',
-      'decisions',
-      'more-features',
+      'advanced',
       'capabilities',
       'system',
     ]);
@@ -108,33 +106,35 @@ describe('the settings rail', () => {
     expect(groups.map((group) => group.querySelector('.settings-sider__group-header')?.textContent)).toEqual(
       SETTINGS_GROUPS.map((group) => group.labelKey)
     );
-    expect(screen.getByRole('group', { name: 'settings.groups.kernel' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'settings.groups.advanced' })).toBeInTheDocument();
     expect(groupRows(container)).toEqual({
       preferences: ['appearance', 'system', 'conversations'],
       models: ['providers', 'default-model'],
-      kernel: ['judges', 'features'],
-      decisions: [
+      // Everything the kernel does on its own sits under one header: the judge, the switches, the decision
+      // points and the other features, in the order they had as groups of their own.
+      advanced: [
+        'judges',
+        'features',
         'decisions-input',
         'decisions-context',
         'decisions-memory',
         'decisions-tools',
         'decisions-turn',
         'decisions-team',
-      ],
-      'more-features': [
         'more-features-input',
         'more-features-context',
         'more-features-tools',
         'more-features-turn',
         'more-features-other',
       ],
-      capabilities: ['skills', 'tools', 'assistants', 'browser'],
+      capabilities: ['skills', 'tools', 'assistants', 'browser', 'plugins', 'ilink'],
       system: ['archived', 'about'],
     });
-    // No group runs long: the decision points and the other features were given groups of their own for that.
-    for (const group of Object.values(groupRows(container))) expect(group.length).toBeLessThanOrEqual(6);
+    // Every group but the advanced one stays short: it is the one place the kernel's pages are collected.
+    for (const [group, rows] of Object.entries(groupRows(container)))
+      if (group !== 'advanced') expect(rows.length).toBeLessThanOrEqual(6);
     expect(BUILTIN_TAB_IDS).toEqual(railRows(container));
-    // No web server page any more, and no collapsed "advanced" entry anywhere.
+    // No web server page any more, and no collapsed "advanced" entry anywhere: the group is open, not a page.
     expect(container.querySelector('[data-settings-id="webui"]')).toBeNull();
     expect(container.querySelector('[data-settings-id*="advanced"]')).toBeNull();
   });
@@ -156,7 +156,7 @@ describe('the settings rail', () => {
   it('says under a group only what its header leaves out, and keeps the whole name for where a page stands alone', () => {
     const { container } = renderRail();
     const row = (id: string) => container.querySelector(`[data-settings-id="${id}"]`);
-    // Under "Decision points", the row is "Context"; the page's own title and the palette say "Decision points: Context".
+    // Under "Advanced", the row is "Context"; the page's own title and the palette say "Decision points: Context".
     expect(row('decisions-context')).toHaveTextContent('mu.decisions.groups.context');
     expect(row('more-features-other')).toHaveTextContent('mu.decisions.otherGroup');
     expect(row('decisions-memory')).toHaveTextContent('mu.decisions.groups.memory');
@@ -165,8 +165,9 @@ describe('the settings rail', () => {
     expect(pages['more-features-other'].labelKey).toBe('mu.pages.features.other');
     // A page whose name needs no group keeps it in the rail too.
     expect(row('judges')).toHaveTextContent('mu.sections.judges');
-    expect(DECISION_PAGES.map((page) => `decisions-${page}`)).toEqual(groupRows(container).decisions);
-    expect(FEATURE_PAGES.map((page) => `more-features-${page}`)).toEqual(groupRows(container)['more-features']);
+    const advanced = groupRows(container).advanced;
+    expect(DECISION_PAGES.map((page) => `decisions-${page}`)).toEqual(advanced.slice(2, 8));
+    expect(FEATURE_PAGES.map((page) => `more-features-${page}`)).toEqual(advanced.slice(8));
   });
 
   it('marks the page shown, also from one of its sub-pages, and goes to the page a row names', () => {
@@ -223,13 +224,15 @@ describe('the settings rail', () => {
     ];
     const { container } = renderRail();
     const rows = groupRows(container);
-    expect(rows.kernel).toEqual(['ext-before', 'judges', 'ext-old', 'features']);
+    expect(rows.advanced.slice(0, 4)).toEqual(['ext-before', 'judges', 'ext-old', 'features']);
     expect(rows.capabilities).toEqual([
       'skills',
       'tools',
       'ext-after',
       'assistants',
       'browser',
+      'plugins',
+      'ilink',
       'ext-free',
       'ext-lost',
     ]);

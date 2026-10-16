@@ -107,9 +107,9 @@ export function useSettingsNav(): SettingsNavGroup[] {
 }
 
 /**
- * The settings rail: seven groups under small grey headers, whitespace between them and no lines. The page shown is
+ * The settings rail: five groups under small grey headers, whitespace between them and no lines. The page shown is
  * marked by weight alone: its row reads in the body colour and bold, the others in grey, with no fill and no accent. A
- * row says only what its group's header leaves out ("Context" under "Decision points"); collapsed, only the icons
+ * row says only what its group's header leaves out ("Context" under "Advanced"); collapsed, only the icons
  * remain, and each tooltip gives the whole name. The rail is taller than most windows, so whenever the page changes (a
  * click, the palette, a link) the rail scrolls just far enough to show that page's row.
  */

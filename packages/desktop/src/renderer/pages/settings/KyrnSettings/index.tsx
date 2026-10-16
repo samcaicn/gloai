@@ -54,7 +54,7 @@ export function routeOf({ section, page, feature, part }: AreaView): string {
 /**
  * mu's own settings pages — providers, the default model, the kernel's, the decision points' and the other features'
  * — are one area on as many routes. They share the draft of {@link MuSettingsProvider} around the settings routes:
- * moving between them keeps whatever was typed and not yet saved.
+ * moving between them keeps whatever was typed and not yet saved. The rail puts all but the first two under Advanced.
  */
 export default function MuSettingsPage() {
   const { pathname, state } = useLocation();

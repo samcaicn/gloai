@@ -27,20 +27,15 @@ import {
 } from '@icon-park/react';
 
 /**
- * The settings rail: seven groups of short pages. No page holds more than twelve rows: a list that would run longer is
- * split into entries, and a group that would get too many entries hands the rest to a group of its own (the decision
- * points and the more features each have one). Never one long page, never a collapsed "advanced" part. Every entry is
- * its own route, `/settings/<id>`; pages that used to exist land on the one that holds their settings now (see
+ * The settings rail: five groups of short pages. The first three hold what a person sets up and tunes; `advanced`
+ * holds everything the kernel does on its own — the judge, the switches, the decision points, the other features —
+ * for whoever wants to look. No page holds more than twelve rows: a list that would run longer is split into
+ * entries, and a group that would get too many entries hands the rest to a group of its own (the decision points
+ * and the more features each have one). Never one long page, never a collapsed "advanced" part. Every entry is its
+ * own route, `/settings/<id>`; pages that used to exist land on the one that holds their settings now (see
  * {@link RETIRED_SETTINGS_PATHS}).
  */
-export type SettingsGroupId =
-  | 'preferences'
-  | 'models'
-  | 'kernel'
-  | 'decisions'
-  | 'more-features'
-  | 'capabilities'
-  | 'system';
+export type SettingsGroupId = 'preferences' | 'models' | 'advanced' | 'capabilities' | 'system';
 
 export type SettingsGroup = {
   id: SettingsGroupId;
@@ -51,9 +46,8 @@ export type SettingsGroup = {
 export const SETTINGS_GROUPS = [
   { id: 'preferences', labelKey: 'settings.groups.preferences' },
   { id: 'models', labelKey: 'settings.groups.models' },
-  { id: 'kernel', labelKey: 'settings.groups.kernel' },
-  { id: 'decisions', labelKey: 'mu.sections.decisions' },
-  { id: 'more-features', labelKey: 'mu.sections.moreFeatures' },
+  // One group for every page of the kernel's own: the judge, the switches, the decision points, the features.
+  { id: 'advanced', labelKey: 'settings.groups.advanced' },
   { id: 'capabilities', labelKey: 'settings.groups.capabilities' },
   { id: 'system', labelKey: 'settings.groups.system' },
 ] as const satisfies readonly SettingsGroup[];
@@ -128,7 +122,7 @@ const FEATURE_ICONS: Record<FeaturePage, unknown> = {
 
 const decisionsEntry = (page: DecisionPage): SettingsPage => ({
   id: `decisions-${page}`,
-  group: 'decisions',
+  group: 'advanced',
   path: `decisions-${page}`,
   route: `/settings/decisions-${page}`,
   labelKey: `mu.pages.decisions.${page}`,
@@ -138,7 +132,7 @@ const decisionsEntry = (page: DecisionPage): SettingsPage => ({
 
 const moreFeaturesEntry = (page: FeaturePage): SettingsPage => ({
   id: `more-features-${page}`,
-  group: 'more-features',
+  group: 'advanced',
   path: `more-features-${page}`,
   route: `/settings/more-features-${page}`,
   labelKey: `mu.pages.features.${page}`,
@@ -188,10 +182,10 @@ export const SETTINGS_PAGES = [
     labelKey: 'mu.sections.defaultModel',
     Icon: Cpu,
   },
-  // The judge to ask, and under it the order of several judges and every field of each.
+  // The judge to ask: managed by AiBuddy, so the page says who answers and that it is automatic.
   {
     id: 'judges',
-    group: 'kernel',
+    group: 'advanced',
     path: 'judges',
     route: '/settings/judges',
     labelKey: 'mu.sections.judges',
@@ -199,7 +193,7 @@ export const SETTINGS_PAGES = [
   },
   {
     id: 'features',
-    group: 'kernel',
+    group: 'advanced',
     path: 'features',
     route: '/settings/features',
     labelKey: 'mu.sections.features',
