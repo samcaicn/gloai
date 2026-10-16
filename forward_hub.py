@@ -577,6 +577,49 @@ class _ForwardHub:
                     self._rules = copy.deepcopy(DEFAULT_CONFIG)
             return self._rules
 
+    def _rule_edge(self, rule):
+        """无向边的规范化表示：(甲方成员元组, 乙方成员元组)，两边各自排序后整体排序。
+
+        用于跨规则重复检测：A↔B 与 B↔A 必须视为同一条边。
+        注意：不能直接用 frozenset 排序——frozenset 之间用 `<` 是「子集」比较，
+        两个不互为子集的集合（如 {'群X'} 与 {'好友Y'}）比较恒为 False，sorted
+        会保持原顺序，导致 A↔B 与 B↔A 算出两个不同的键、漏判重复。
+        故转成「已排序的字符串元组」再排序，得到稳定的全序规范化形式。
+        """
+        a = sorted(set(_member_names(rule.get('party_a'))))
+        b = sorted(set(_member_names(rule.get('party_b'))))
+        if not a or not b:
+            return None  # 空边不参与比较（已由 invalid 标记）
+        return tuple(sorted([tuple(a), tuple(b)]))
+
+    def _detect_rule_conflicts(self, rules):
+        """跨规则冲突检测：把警告挂到每条规则的 'conflicts' 列表。
+
+        仅比较「启用且两边非空」的规则。相同无向边（相同甲乙方）= 重复转发对：
+        handle_incoming 会按全部匹配规则逐条投递、无目标去重，于是同一条消息会被
+        重复投递到对端。这里只告警（不自动停用），因为两条规则可能用不同的
+        monitor_content 做互补过滤（合法）；但若两者都是默认「全部内容」，就会真重复。
+        """
+        by_edge = {}
+        for r in rules:
+            r['conflicts'] = []
+            if not r.get('enabled'):
+                continue
+            e = self._rule_edge(r)
+            if e is None:
+                continue
+            by_edge.setdefault(e, []).append(r)
+        for e, group in by_edge.items():
+            if len(group) <= 1:
+                continue
+            ids = [(rr.get('name') or rr.get('id') or '?') for rr in group]
+            for rr in group:
+                me = rr.get('name') or rr.get('id') or '?'
+                others = [n for n in ids if n != me]
+                if others:
+                    rr['conflicts'].append(
+                        '与规则 ' + '、'.join(others) + ' 重复（相同甲乙方），同一条消息会被转发多次')
+
     def _normalize_config(self, data):
         """补全缺省字段、剔除非法规则（含自转发/空方/甲乙重叠），不抛异常。"""
         cfg = copy.deepcopy(DEFAULT_CONFIG)
@@ -595,6 +638,7 @@ class _ForwardHub:
             rule = self._normalize_rule(r, idx=i)
             if rule is not None:
                 cfg['rules'].append(rule)
+        self._detect_rule_conflicts(cfg['rules'])
         return cfg
 
     def _normalize_rule(self, r, idx=0):
@@ -1012,9 +1056,16 @@ class _ForwardHub:
 
         forwarded_any = False
         ai_reply = False
+        delivered_dsts = set()
         for rule, kind, dests in matched:
-            if self._deliver(rule, who, sender, msgtype, msg, is_group, dests, kind, raw_content):
+            # 跨规则目标去重：同一条入站消息对同一个对端只投递一次，
+            # 兜底「相同甲乙方重复规则」造成的重复转发（冲突检测只告警，这里真正拦住）。
+            fresh = [d for d in dests if d not in delivered_dsts]
+            if not fresh:
+                continue
+            if self._deliver(rule, who, sender, msgtype, msg, is_group, fresh, kind, raw_content):
                 forwarded_any = True
+                delivered_dsts.update(fresh)
                 # 仅当本条确实命中监测/已转发，才允许 AI 回复源（使用 prompt）
                 if rule.get('ai_reply_to_source'):
                     ai_reply = True

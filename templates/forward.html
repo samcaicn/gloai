@@ -22,6 +22,7 @@
         .badge.ok{ background:var(--ok-soft); color:var(--ok-text); }
         .badge.skip{ background:var(--surface-3); color:var(--text-3); }
         .badge.err{ background:var(--danger-soft); color:var(--danger-text); }
+        .badge.warn{ background:var(--warn-soft, #fff4e0); color:var(--warn-text, #b26a00); border:1px solid var(--warn, #f0b400); }
         input[type=text], input[type=number], textarea, select{ background:var(--input-bg); color:var(--text); border:1px solid var(--border); border-radius:var(--r-sm); padding:8px 10px; font-size:13.5px; box-sizing:border-box; width:100%; }
         textarea{ min-height:60px; line-height:1.6; }
         label.fld{ display:block; font-size:12.5px; color:var(--text-3); margin:10px 0 4px; }
@@ -168,6 +169,7 @@ function renderRules(){
             +   '<span class="name">'+escapeHtml(rule.name||rule.id||('转发对'+(idx+1)))+'</span>'
             +   '<div class="row">'
             +     (invalid?'<span class="badge bad">配置有误</span>':'<span class="badge '+(rule.enabled?'on':'off')+'">'+(rule.enabled?'启用':'停用')+'</span>')
+            +     ((rule.conflicts||[]).length?'<span class="badge warn" title="'+escapeHtml((rule.conflicts||[]).join('；'))+'">⚠ 重复规则</span>':'')
             +     (String(rule.id||'').indexOf('listen_')===0?'<span class="src-tag" title="由「用户与监听」页每行的转发设置自动生成">用户列表生成</span>':'')
             +     '<label class="chk"><input type="checkbox" data-f="enabled" '+(rule.enabled?'checked':'')+'> 启用</label>'
             +     '<button class="nav-button del" data-act="del">删除</button>'
@@ -175,6 +177,7 @@ function renderRules(){
             + '</div>'
             + (String(rule.id||'').indexOf('listen_')===0?'<p class="hint" style="margin:2px 0 8px;">此规则由「用户与监听」页该行的转发设置自动生成：要改成员/开关请去那一行修改并保存配置（保存时会按行内设置重建）；在这里直接改动会在下次保存配置时被覆盖。</p>':'')
             + (invalid?'<p class="hint" style="color:var(--danger-text)">问题：'+escapeHtml((rule.invalid||[]).join('；'))+'</p>':'')
+            + ((rule.conflicts||[]).length?'<p class="hint" style="color:var(--warn-text,#b26a00)">⚠ '+escapeHtml((rule.conflicts||[]).join('；'))+'</p>':'')
             + '<div class="grid2">'
             +   '<div>'
             +     '<div class="party-label a">甲方（每行一个：会话名 或 会话名=我对他的称呼）</div>'

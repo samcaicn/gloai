@@ -282,6 +282,53 @@ def main():
     check('转发回声 D：窗口内不同正文不误拦（仍转发）',
           rD is True and any(d == '好友Y' for d, _ in sent), 'sent=%r' % (sent,))
 
+    # ---------- 6. 跨规则重复（相同甲乙方）检测 + 运行时目标去重 ----------
+    # handle_incoming 按全部匹配规则逐条投递、无目标去重：两条规则的甲乙方相同
+    # （无向边重复，含 A↔B 与 B↔A 反向书写）时，同一条消息会被重复投递到对端。
+    # 防护：① 归一化时检测重复挂 conflicts 告警；② 运行时按目标去重兜底。
+    def _mk_rule(rid, name, a, b, **kw):
+        r = {'id': rid, 'name': name, 'enabled': True, 'bidirectional': True,
+             'party_a': [{'name': a}], 'party_b': [{'name': b}],
+             'monitor_content': 'all', 'media_mode': 'original',
+             # 关掉标签/称呼处理，让「一次投递 = 一次发送」便于精确计数
+             'source_label': False, 'replace_alias': False, 'salutation_mode': 'off'}
+        r.update(kw)
+        return r
+
+    # 6a. 反向书写的相同甲乙方（群X↔好友Y 与 好友Y↔群X）应判为重复
+    cfg_dup = hub._normalize_config({'enabled': True, 'rules': [
+        _mk_rule('r1', '规则一', '群X', '好友Y'),
+        _mk_rule('r2', '规则二', '好友Y', '群X'),
+    ]})
+    c1 = cfg_dup['rules'][0].get('conflicts') or []
+    c2 = cfg_dup['rules'][1].get('conflicts') or []
+    check('重复规则 6a：反向书写的相同甲乙方被判重复（规则一有告警）', len(c1) > 0, 'conflicts=%r' % (c1,))
+    check('重复规则 6b：反向书写的相同甲乙方被判重复（规则二有告警）', len(c2) > 0, 'conflicts=%r' % (c2,))
+
+    # 6c. 不同甲乙方（同一源的扇形转发）不应告警，否则会误伤合法配置
+    cfg_ok = hub._normalize_config({'enabled': True, 'rules': [
+        _mk_rule('r1', '规则一', '群X', '好友Y'),
+        _mk_rule('r2', '规则二', '群X', '好友Z'),
+    ]})
+    oc = [(r.get('conflicts') or []) for r in cfg_ok['rules']]
+    check('重复规则 6c：不同甲乙方（扇形转发）不告警', not any(oc), 'conflicts=%r' % (oc,))
+
+    # 6d. 运行时去重兜底：重复规则下 好友Y->群X 只投递一次（不重复发）
+    hub._rules = cfg_dup
+    sent.clear()
+    rDup = hub.handle_incoming('好友Y', 'wxid_peer', 'text', 'friend', _Msg('重复测试'))
+    to_grp = [d for d, _ in sent if d == '群X']
+    check('重复规则 6d：运行时目标去重，好友Y->群X 只投递一次',
+          rDup is True and len(to_grp) == 1, 'to_群X=%r sent=%r' % (to_grp, sent))
+
+    # 6e. 扇形转发仍正常：同一源命中两条不同规则时两个对端都要收到
+    hub._rules = cfg_ok
+    sent.clear()
+    rFan = hub.handle_incoming('群X', 'wxid_other', 'text', 'group', _Msg('扇形测试'))
+    check('重复规则 6e：扇形转发两个对端都收到（去重不误伤）',
+          rFan is True and any(d == '好友Y' for d, _ in sent)
+          and any(d == '好友Z' for d, _ in sent), 'sent=%r' % (sent,))
+
     print('\n==== 汇总: %d PASS / %d FAIL ====' % (PASS, FAIL))
     return 0 if FAIL == 0 else 1
 
