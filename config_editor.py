@@ -3137,14 +3137,36 @@ def inbox_sessions():
     if db is not None:
         try:
             self_wxid = db.wxid() if hasattr(db, "wxid") else ""
+            # 显示名 → 本地会话 key 索引：微信库按 username 建会话，本地记录按昵称
+            # 建会话，同一联系人会是两个 key。归并规则：DB 侧的昵称/显示名命中
+            # 本地会话（key 或 name）时合并进去，不再单开一条。
+            name_to_local = {}
+            for k, ent in sessions.items():
+                name_to_local.setdefault(k, k)
+                if ent.get("name"):
+                    name_to_local.setdefault(ent["name"], k)
             for s in db.get_sessions(limit=200) or []:
                 who = s.get("username") or s.get("nick_name")
                 if not who:
                     continue
+                disp = s.get("nick_name") or _wx_name(db, who)
+                merge_key = name_to_local.get(disp) or name_to_local.get(who)
+                if merge_key:
+                    ent = sessions[merge_key]
+                    ent["name"] = ent.get("name") or disp
+                    if ent["last_ts"]:
+                        continue
+                    rows = db.get_messages(who, limit=10) or []
+                    msgs = _db_rows_to_msgs(db, who, rows, self_wxid)
+                    if msgs:
+                        ent["last_content"] = msgs[-1]["content"][:80]
+                        ent["last_ts"] = msgs[-1]["ts"]
+                        ent["pending"] = msgs[-1]["direction"] == "incoming"
+                    continue
                 ent = sessions.setdefault(who, {
                     "who": who, "last_content": "", "last_ts": 0, "pending": False,
                 })
-                ent["name"] = s.get("nick_name") or _wx_name(db, who)
+                ent["name"] = disp
                 if ent["last_ts"]:
                     continue
                 rows = db.get_messages(who, limit=10) or []
@@ -3233,7 +3255,12 @@ def inbox_reply():
                 pass
         try:
             import chat_history as _ch
-            _ch.record_outgoing_bot(target, text)
+            # 按原始 who（会话标识，通常为昵称）记录——与 bot 侧发送回写
+            # （bot.py record_outgoing_bot(who)）和补漏判定
+            # （chat_history.latest_message(who)，who 来自 user_names 昵称）同一 key。
+            # 曾用解析后的 username 记录，导致手动回复过的话题在补漏视角仍是
+            # 「未回复」，30 秒后 AI 又回一条（重复回复）。
+            _ch.record_outgoing_bot(who, text)
         except Exception:
             pass
         return jsonify({"ok": True, "who": target})
@@ -5836,6 +5863,10 @@ def _fh():
 @app.route('/forward', methods=['GET'])
 @login_required
 def forward_page():
+    # 内嵌模式（?embed=1）：本页作为主界面左侧菜单「固定转发」面板被 iframe 引入。
+    # 此时不渲染独立页头/「返回配置」按钮——iframe 里点返回会整页跳转，
+    # 跳出单页体验（与 quick_start/help 的 embed 处理保持一致）。
+    is_embed = request.args.get('embed') == '1'
     m = _fh()
     data = {
         "enabled": False,
@@ -5843,6 +5874,7 @@ def forward_page():
         "log": [],
         "rate_limit": {"window_sec": 10, "max_msgs": 15},
         "available": m is not None,
+        "is_embed": is_embed,
     }
     if m is not None:
         cfg = m.get_rules()

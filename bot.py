@@ -2344,21 +2344,19 @@ def _message_listener_impl(msg, chat):
 
         if not monitor_group_hit and not ACCEPT_ALL_GROUP_CHAT_MESSAGES and ENABLE_GROUP_AT_REPLY and ROBOT_WX_NAME:
             temp_content_after_at_check = processed_group_content
-            
-            unicode_at_pattern = f'@{re.escape(ROBOT_WX_NAME)}\u2005'
-            space_at_pattern = f'@{re.escape(ROBOT_WX_NAME)} '
-            exact_at_string = f'@{re.escape(ROBOT_WX_NAME)}'
-            
-            if re.search(unicode_at_pattern, processed_group_content):
+
+            # @昵称 后接空白/常见标点/结尾都算被@：微信插入的是 U+2005，但手打、
+            # 输入法或序列化差异下分隔符也可能是普通空格、中文逗号句号，或直接
+            # 结尾（消息只有 "@机器人" 四个字）。原实现只认 U+2005 / 半角空格 /
+            # 整条相等，"@机器人，你好" 这类漏判。
+            # 负向保护：昵称后紧跟其它字符（如 "@小助手长版"）不算，避免误触发。
+            at_pattern = ('@' + re.escape(ROBOT_WX_NAME)
+                          + '(?=$|[\\s,，。.!！?？、;；:：)）\\]】}"\'」])')
+
+            if re.search(at_pattern, processed_group_content):
                 at_triggered = True
-                temp_content_after_at_check = re.sub(unicode_at_pattern, '', processed_group_content, 1).strip()
-            elif re.search(space_at_pattern, processed_group_content):
-                at_triggered = True
-                temp_content_after_at_check = re.sub(space_at_pattern, '', processed_group_content, 1).strip()
-            elif processed_group_content.strip() == exact_at_string:
-                at_triggered = True
-                temp_content_after_at_check = ''
-                
+                temp_content_after_at_check = re.sub(at_pattern, '', processed_group_content, 1).strip()
+
             if at_triggered:
                 logger.info(f"群聊 '{who}' 中检测到 @机器人。")
                 processed_group_content = temp_content_after_at_check

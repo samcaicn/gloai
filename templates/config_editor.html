@@ -1500,16 +1500,15 @@
                     `<label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="${t[0]}"> ${t[1]}</label>`).join('');
                 return `
                     <div style="margin-bottom:8px;">
-                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测类型（不勾 = 全部）</label>
+                        <label style="display:block; font-weight:bold; margin-bottom:4px; color:#37474f;">① 监测内容</label>
                         <span class="mon-types">${typeBoxes}</span>
-                    </div>
-                    <div style="margin-bottom:8px;">
-                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测关键字（逗号分隔）</label>
+                        <label style="display:block; font-weight:bold; margin:8px 0 4px; color:#37474f;">监测关键字（逗号分隔，可留空）</label>
                         <input type="text" class="mon-keywords" placeholder="如：订单, 退款" style="width:90%;">
+                        <small style="display:block; color:#777; margin-top:4px;">类型与关键字都留空 = 监测全部内容；填了任一 → 只有命中的消息会处理，未命中不回应。</small>
                     </div>
-                    <div style="margin-bottom:8px;">
-                        <label style="display:block; font-weight:bold; margin-bottom:4px;">命中后</label>
-                        <select class="mon-action" title="命中监测内容后的处理方式">
+                    <div style="margin-bottom:8px; border-top:1px dashed #ddd; padding-top:8px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:4px; color:#37474f;">② 命中后</label>
+                        <select class="mon-action" title="命中监测内容后的处理方式" onchange="toggleMonPromptDisabled(this)">
                             <option value="prompt">使用Prompt回复</option>
                             <option value="ignore">不回应</option>
                         </select>
@@ -1517,12 +1516,12 @@
                             <option value="">-- 用该行Prompt --</option>
                             ${promptOptions}
                         </select>
-                        <small style="display:block; color:#777; margin-top:4px;">配置了监测类型/关键字后：仅命中的内容会处理，未命中一律不回应。</small>
+                        <small style="display:block; color:#777; margin-top:4px;">「不回应」可整体屏蔽某人/某群（类型选全部即可）。</small>
                     </div>
-                    <div>
-                        <label style="display:block; font-weight:bold; margin-bottom:4px;">转发给（逗号分隔，双向）</label>
+                    <div style="border-top:1px dashed #ddd; padding-top:8px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:4px; color:#37474f;">③ 转发给（逗号分隔，双向）</label>
                         <input type="text" class="fwd-targets" placeholder="如：李四, 销售群" style="width:90%;">
-                        <small style="display:block; color:#777; margin-top:4px;">该会话的消息自动转发给对端，对端回复也会转回来；留空 = 不转发。</small>
+                        <small style="display:block; color:#777; margin-top:4px;">该会话的消息自动转发给对端，对端回复也会转回来；留空 = 不转发。生成后可在「特色功能 → 固定转发」页查看（标注「用户列表生成」）。</small>
                     </div>`;
             }
 
@@ -1539,6 +1538,14 @@
             }
             window.toggleListenSettings = toggleListenSettings;
 
+            // 「命中后=不回应」时禁用专用 Prompt 下拉（选了也没有意义，避免误以为生效）
+            function toggleMonPromptDisabled(actionSel) {
+                const box = actionSel ? actionSel.closest('.listen-extra') : null;
+                const promptSel = box ? box.querySelector('.mon-prompt') : null;
+                if (promptSel) promptSel.disabled = (actionSel.value === 'ignore');
+            }
+            window.toggleMonPromptDisabled = toggleMonPromptDisabled;
+
             // 把隐藏 JSON 设置回填到展开面板控件
             function applyListenSettings(entry) {
                 const hid = entry.querySelector('.listen-settings-json');
@@ -1554,6 +1561,7 @@
                 extra.querySelector('.mon-action').value = (mon.action === 'ignore') ? 'ignore' : 'prompt';
                 extra.querySelector('.mon-prompt').value = mon.prompt_file || '';
                 extra.querySelector('.fwd-targets').value = (st.forward || []).join(', ');
+                toggleMonPromptDisabled(extra.querySelector('.mon-action'));
             }
             window.applyListenSettings = applyListenSettings;
 
@@ -1638,6 +1646,7 @@
             // ===== 消息中心 =====
             let inboxCurrent = null;
             let inboxTimer = null;
+            let inboxAllSessions = [];   // 全量会话（搜索在此之上过滤）
 
             function fmtTs(ts) {
                 if (!ts) return '';
@@ -1646,9 +1655,12 @@
                 return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
             }
 
+            // 属性/文本两用转义：引号也必须转（data-who="..." 等属性上下文，
+            // 群名/昵称理论上可含引号，不转会破坏属性甚至注入）
             function esc(s) {
                 return String(s == null ? '' : s)
-                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
             }
 
             async function loadInboxSessions() {
@@ -1657,8 +1669,27 @@
                     const j = await r.json();
                     const list = document.getElementById('inbox-session-list');
                     if (!j.ok) { list.innerHTML = '<div style="padding:12px;color:#999;">' + esc(j.error || '加载失败') + '</div>'; return; }
-                    if (!j.sessions.length) { list.innerHTML = '<div style="padding:12px;color:#999;">暂无消息</div>'; return; }
-                    list.innerHTML = j.sessions.map(s => `
+                    inboxAllSessions = j.sessions || [];
+                    renderInboxSessions();
+                } catch (e) {
+                    document.getElementById('inbox-session-list').innerHTML = '<div style="padding:12px;color:#999;">加载失败</div>';
+                }
+            }
+
+            // 按搜索词过滤后渲染会话列表（匹配显示名或会话标识）
+            function renderInboxSessions() {
+                const list = document.getElementById('inbox-session-list');
+                const kw = (document.getElementById('inbox-search').value || '').trim().toLowerCase();
+                const items = kw
+                    ? inboxAllSessions.filter(s =>
+                        (s.name || '').toLowerCase().indexOf(kw) >= 0
+                        || (s.who || '').toLowerCase().indexOf(kw) >= 0)
+                    : inboxAllSessions;
+                if (!items.length) {
+                    list.innerHTML = '<div style="padding:12px;color:#999;">' + (kw ? '无匹配会话' : '暂无消息') + '</div>';
+                    return;
+                }
+                list.innerHTML = items.map(s => `
                         <div class="inbox-session-item" data-who="${esc(s.who)}" style="padding:10px 12px;border-bottom:1px solid #f5f5f5;cursor:pointer;${s.who === inboxCurrent ? 'background:#eef4ff;' : ''}">
                             <div style="display:flex;justify-content:space-between;align-items:center;">
                                 <span style="font-weight:600;font-size:13px;${s.is_group ? 'color:#0b7a3b;' : ''}">${s.is_group ? '👥 ' : ''}${esc(s.name || s.who)}</span>
@@ -1667,12 +1698,9 @@
                             <div style="font-size:12px;color:#888;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(s.last_content || '（无文本消息）')}</div>
                             <div style="font-size:11px;color:#bbb;margin-top:2px;">${fmtTs(s.last_ts)}</div>
                         </div>`).join('');
-                    document.querySelectorAll('.inbox-session-item').forEach(el => {
-                        el.onclick = () => openInboxSession(el.getAttribute('data-who'));
-                    });
-                } catch (e) {
-                    document.getElementById('inbox-session-list').innerHTML = '<div style="padding:12px;color:#999;">加载失败</div>';
-                }
+                document.querySelectorAll('.inbox-session-item').forEach(el => {
+                    el.onclick = () => openInboxSession(el.getAttribute('data-who'));
+                });
             }
 
             async function openInboxSession(who) {
@@ -1709,7 +1737,6 @@
                 const input = document.getElementById('inbox-reply-text');
                 const text = input.value.trim();
                 if (!inboxCurrent || !text) return;
-                input.value = '';
                 try {
                     const r = await fetch('/api/inbox/reply', {
                         method: 'POST',
@@ -1717,10 +1744,16 @@
                         body: JSON.stringify({ who: inboxCurrent, text }),
                     });
                     const j = await r.json();
-                    if (!j.ok) { showMsg(j.error || '发送失败'); return; }
+                    if (!j.ok) {
+                        // 失败不清输入框——内容还在，改完可直接重发
+                        showMsg(j.error || '发送失败');
+                        return;
+                    }
+                    input.value = '';
                     await openInboxSession(inboxCurrent);
                     loadInboxSessions();
                 } catch (e) {
+                    // 网络异常同样保留输入内容
                     showMsg('发送失败：' + e);
                 }
             }
@@ -1731,8 +1764,21 @@
                 if (!sendBtn || !input) return;
                 sendBtn.onclick = sendInboxReply;
                 input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendInboxReply(); });
+                const search = document.getElementById('inbox-search');
+                if (search) search.addEventListener('input', renderInboxSessions);
                 if (inboxTimer) clearInterval(inboxTimer);
-                inboxTimer = setInterval(() => { if (document.getElementById('inbox-session-list').offsetParent !== null) loadInboxSessions(); }, 15000);
+                inboxTimer = setInterval(() => {
+                    if (document.getElementById('inbox-session-list').offsetParent === null) return;
+                    loadInboxSessions();
+                    // 打开的会话也轮询新消息；仅在用户停在底部附近时才刷新，
+                    // 正在往上翻历史时不抢滚动位置
+                    if (inboxCurrent) {
+                        const box = document.getElementById('inbox-messages');
+                        if (box && (box.scrollTop + box.clientHeight >= box.scrollHeight - 80)) {
+                            openInboxSession(inboxCurrent);
+                        }
+                    }
+                }, 15000);
                 loadInboxSessions();
             }
             window.initInbox = initInbox;
@@ -3673,7 +3719,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div id="section-user-list" class="content-panel active-panel">
                     <h2>用户与监听</h2>
-                    <small class="panel-lead">自动回复的好友/群，每人可指定不同人设。</small>
+                    <small class="panel-lead">自动回复的好友/群，每人可指定不同人设。好友与<b>群聊</b>都可以加；互动过的新联系人会自动出现在这里（人设留空 = 用默认人格）。</small>
                     <div class="form-group">
                         <label>用户与 Prompt：</label>
                         <div id="listen-list">
@@ -3691,7 +3737,7 @@
                                 <button type="button" onclick="removeEntry(this)">删除</button>
                                 <div class="listen-extra" style="display:none; width:100%; border:1px solid #ddd; border-radius:6px; padding:10px; margin-top:8px; background:#fafafa;">
                                     <div style="margin-bottom:8px;">
-                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测类型（不勾 = 全部）</label>
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px; color:#37474f;">① 监测内容</label>
                                         <span class="mon-types">
                                             <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="text"> 文字</label>
                                             <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="image"> 图片</label>
@@ -3703,14 +3749,13 @@
                                             <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="merge"> 合并转发</label>
                                             <label class="chk" style="margin-right:10px;"><input type="checkbox" class="mon-type" value="emotion"> 表情</label>
                                         </span>
-                                    </div>
-                                    <div style="margin-bottom:8px;">
-                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">监测关键字（逗号分隔）</label>
+                                        <label style="display:block; font-weight:bold; margin:8px 0 4px; color:#37474f;">监测关键字（逗号分隔，可留空）</label>
                                         <input type="text" class="mon-keywords" placeholder="如：订单, 退款" style="width:90%;">
+                                        <small style="display:block; color:#777; margin-top:4px;">类型与关键字都留空 = 监测全部内容；填了任一 → 只有命中的消息会处理，未命中不回应。</small>
                                     </div>
-                                    <div style="margin-bottom:8px;">
-                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">命中后</label>
-                                        <select class="mon-action" title="命中监测内容后的处理方式">
+                                    <div style="margin-bottom:8px; border-top:1px dashed #ddd; padding-top:8px;">
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px; color:#37474f;">② 命中后</label>
+                                        <select class="mon-action" title="命中监测内容后的处理方式" onchange="toggleMonPromptDisabled(this)">
                                             <option value="prompt">使用Prompt回复</option>
                                             <option value="ignore">不回应</option>
                                         </select>
@@ -3720,12 +3765,12 @@
                                             <option value="{{ file }}">{{ file }}</option>
                                             {% endfor %}
                                         </select>
-                                        <small style="display:block; color:#777; margin-top:4px;">命中才处理，未命中不回应。</small>
+                                        <small style="display:block; color:#777; margin-top:4px;">「不回应」可整体屏蔽某人/某群（类型选全部即可）。</small>
                                     </div>
-                                    <div>
-                                        <label style="display:block; font-weight:bold; margin-bottom:4px;">转发给（逗号分隔，双向）</label>
+                                    <div style="border-top:1px dashed #ddd; padding-top:8px;">
+                                        <label style="display:block; font-weight:bold; margin-bottom:4px; color:#37474f;">③ 转发给（逗号分隔，双向）</label>
                                         <input type="text" class="fwd-targets" placeholder="如：李四, 销售群" style="width:90%;">
-                                        <small style="display:block; color:#777; margin-top:4px;">自动双向转发；留空 = 不转发。</small>
+                                        <small style="display:block; color:#777; margin-top:4px;">该会话的消息自动转发给对端，对端回复也会转回来；留空 = 不转发。生成后可在「特色功能 → 固定转发」页查看（标注「用户列表生成」）。</small>
                                     </div>
                                 </div>
                             </div>
@@ -3820,6 +3865,9 @@
                     <div id="inbox-layout" style="display:flex;gap:16px;min-height:520px;">
                         <div id="inbox-sessions" style="width:280px;flex:0 0 280px;border:1px solid #e5e7eb;border-radius:8px;overflow-y:auto;max-height:560px;background:#fff;">
                             <div style="padding:10px 12px;font-weight:600;border-bottom:1px solid #f0f0f0;">会话</div>
+                            <div style="padding:8px 10px;border-bottom:1px solid #f0f0f0;">
+                                <input id="inbox-search" type="text" placeholder="搜索会话名…" style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;box-sizing:border-box;">
+                            </div>
                             <div id="inbox-session-list"></div>
                         </div>
                         <div style="flex:1;display:flex;flex-direction:column;border:1px solid #e5e7eb;border-radius:8px;background:#fff;min-width:0;">
@@ -4082,7 +4130,7 @@
 
                 <div id="section-group-chat" class="content-panel">
                     <h2>群聊回复规则</h2>
-                    <small class="panel-lead">控制 AI 在群里什么时候开口。</small>
+                    <small class="panel-lead">控制 AI 在群里什么时候开口。群本身不需要加进「用户与监听」也能按本页规则回复；<b>只有想给某个群配专属人设时</b>，才需要到「用户与监听」把群名加一行并选 Prompt。</small>
                     <div class="form-group">
                         <label>群聊消息处理模式:</label>
                         <select name="ACCEPT_ALL_GROUP_CHAT_MESSAGES" id="acceptAllGroupMessagesSelect" title="群聊消息处理模式">
@@ -4142,7 +4190,7 @@
                         <input type="text" id="groupWhitelistInput" name="GROUP_WHITELIST"
                                value="{{ config.GROUP_WHITELIST | join(', ') if config.GROUP_WHITELIST else '' }}"
                                placeholder="例如: 客户群, 售后群（留空 = 不限制）">
-                        <small>仅这些群参与自动回复，多个用逗号或空格分隔；留空表示不限制。</small>
+                        <small>仅这些群参与自动回复，多个用逗号或空格分隔；留空表示不限制。按群名<b>子串</b>匹配（填「客户」可命中「客户群①」）。</small>
                     </div>
 
                     <div class="form-group">
@@ -4150,7 +4198,7 @@
                         <input type="text" id="groupBlacklistInput" name="GROUP_BLACKLIST"
                                value="{{ config.GROUP_BLACKLIST | join(', ') if config.GROUP_BLACKLIST else '' }}"
                                placeholder="例如: 广告群, 闲聊群">
-                        <small>这些群永不自动回复（优先级高于白名单），多个用逗号或空格分隔。</small>
+                        <small>这些群永不自动回复（优先级高于白名单），多个用逗号或空格分隔；同样按群名子串匹配。</small>
                     </div>
 
                     <div class="form-group">
