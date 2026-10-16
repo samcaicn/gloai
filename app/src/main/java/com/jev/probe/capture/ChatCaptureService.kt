@@ -1940,6 +1940,47 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     /**
+     * 当前是否有任意输入法窗口（含系统讯飞）。用于分辨「微信语音态」与「探针没被设为当前输入法」：
+     *  - 语音态：没有文本框，任何输入法都不会起 → 无 IME 窗口。
+     *  - 非探针输入法：系统键盘起着 → 有 IME 窗口（只是不是探针）。
+     * 只有前者才该点语音/键盘切换钮。
+     */
+    private fun anyImeWindowPresent(): Boolean {
+        return runCatching {
+            getWindows()?.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD } == true
+        }.getOrDefault(false)
+    }
+
+    /**
+     * 微信语音态下点输入栏最左的「语音/键盘」切换钮，切回键盘（文本）态，让输入框重新出现。
+     *
+     * 为什么必须点它：语音态输入栏是「按住 说话」大按钮、没有文本框，点输入栏中心只是触发录音，
+     * 键盘永远不弹，探针输入法挂不上 → 自动回复只能走剪贴板。切换钮在输入栏最左，点一下即回文本态。
+     * 这是微信内部 UI 操作，不是切换系统输入法，不碰「App 不替用户切输入法」铁律。
+     *
+     * 坐标（2026-10-16 真机标定，双向确认）：切换钮在输入栏最左，x = 屏宽 * [WX_VOICE_TOGGLE_X_RATIO]（≈84@1080）；
+     * 语音态键盘收起、输入栏贴屏底，y 取「窗口/屏底 - 半输入栏高」（≈2335@2412），与 wxFocusPoint 同源口径，半屏小窗自适应。
+     */
+    private fun tapWeChatVoiceToggle(): Boolean {
+        val dm = resources.displayMetrics
+        val b = weChatWindowBounds()
+        val left = b?.left?.toFloat() ?: 0f
+        val width = b?.width()?.toFloat() ?: dm.widthPixels.toFloat()
+        val barHalf = com.jev.probe.input.ProbeImeBus.WX_INPUT_BAR_DP * dm.density / 2f
+        val yBase = listOfNotNull(b?.bottom?.toFloat(), dm.heightPixels.toFloat())
+            .filter { it > 0f }
+            .minOrNull() ?: dm.heightPixels.toFloat()
+        val x = left + width * WX_VOICE_TOGGLE_X_RATIO
+        val y = yBase - barHalf
+        val path = Path().apply { moveTo(x, y) }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 60L))
+            .build()
+        Log.i(TAG, "tapWeChatVoiceToggle: tap at (${x.toInt()},${y.toInt()}) ratio=$WX_VOICE_TOGGLE_X_RATIO")
+        return dispatchGesture(gesture, null, null)
+    }
+
+    /**
      * 微信发送（2026-10-14 真机复盘后重写）：截图确认 → 点绿键 → 复检 → 重点。
      *
      * 真机事实（1080x2412 + 微信 8.0.78 截图 PIL 标定）：
@@ -2420,7 +2461,36 @@ open class ChatCaptureService : AccessibilityService() {
                             Log.i(TAG, "fillInput: probe IME mounted after tap -> retry via poll path")
                             fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
                         } else {
-                            Log.i(TAG, "fillInput: probe IME still not active after tap -> clipboard only this round")
+                            // 点了输入栏探针键盘仍没起来。先分清两种原因：
+                            //  ① 微信在语音态（按住说话）：根本没有文本框 → 任何输入法都不会起 → 无 IME 窗口。
+                            //     只有这种才点语音/键盘切换钮切回文本态（微信内部 UI 操作，不碰「不替用户切输入法」铁律）。
+                            //  ② 探针没被设为当前输入法：系统键盘起着（只是不是探针）→ 有 IME 窗口，
+                            //     该走上面的「提示切换」路，绝不能点切换钮（会把文本误切成语音）。
+                            if (!anyImeWindowPresent()) {
+                                Log.i(TAG, "fillInput: no IME window at all -> WeChat likely voice mode, tap voice/keyboard toggle")
+                                if (tapWeChatVoiceToggle()) {
+                                    main.postDelayed({
+                                        if (ProbeImeBus.imeActive) {
+                                            Log.i(TAG, "fillInput: probe IME up after toggle -> retry via poll path")
+                                            fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
+                                        } else {
+                                            // 切换钮点了键盘还没起：再点一次输入栏聚焦，最后一次机会。
+                                            tapWeChatInputBar()
+                                            main.postDelayed({
+                                                if (ProbeImeBus.imeActive) {
+                                                    fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
+                                                } else {
+                                                    Log.w(TAG, "fillInput: still no probe IME after toggle+focus -> clipboard only")
+                                                }
+                                            }, 700L)
+                                        }
+                                    }, 900L)
+                                } else {
+                                    Log.w(TAG, "fillInput: voice toggle gesture dispatch failed -> clipboard only")
+                                }
+                            } else {
+                                Log.i(TAG, "fillInput: probe IME still not active after tap -> clipboard only this round")
+                            }
                         }
                     }, 600L)
                 }
@@ -2736,6 +2806,9 @@ open class ChatCaptureService : AccessibilityService() {
 
     companion object {
         private const val TAG = "JEVASSIST"
+        /** 微信输入栏最左「语音/键盘」切换钮中心的水平比例。2026-10-16 真机标定：x=84 @1080 宽
+         *  （≈0.0778），文本态/语音态同 x；语音态输入栏贴屏底 y≈屏高-半输入栏高(≈2335@2412)。 */
+        private const val WX_VOICE_TOGGLE_X_RATIO = 0.078f
 
         /** Sent by [WxNotificationListener] when a new WeChat message arrives. */
         const val ACTION_WX_MSG = "com.jev.probe.action.WX_MSG"
