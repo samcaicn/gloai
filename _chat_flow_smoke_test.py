@@ -154,6 +154,56 @@ def main():
         ce._inbox_wxdb = orig_wxdb
         chat_history.record_incoming = orig_record_in
 
+    # ---------- 2c. pending 口径：靠群聊页规则回复的群不标红 ----------
+    # 群没加进 LISTEN_LIST、只靠「群聊回复规则」页驱动 bot 按需回复时，
+    # 消息中心不能把群消息标「待处理」——群消息 bot 未回是常态（概率/Jev/
+    # 禁词/没@/没命中关键词），不是漏回。
+    orig_parse2 = ce.parse_config
+    ce.parse_config = lambda: {
+        'ACCEPT_ALL_GROUP_CHAT_MESSAGES': False,
+        'ENABLE_GROUP_AT_REPLY': True,
+        'ENABLE_GROUP_KEYWORD_REPLY': False,
+        'GROUP_WHITELIST': ['快剧运营'],
+        'GROUP_BLACKLIST': ['广告'],
+    }
+    orig_record_in2 = chat_history.record_incoming
+    # 白名单群：靠群聊页规则回复 -> 接管
+    chat_history.record_incoming('快剧运营', 'wxid_member', '群里问个事', '文本', is_group=True)
+    # 黑名单群：bot 永不回 -> 不接管，应标红
+    chat_history.record_incoming('广告群', 'wxid_spam', '加我微信', '文本', is_group=True)
+    ce._inbox_wxdb = lambda: (None, FakeDB())
+    try:
+        check('群聊白名单命中 -> _group_managed_by_bot 接管',
+              ce._group_managed_by_bot('快剧运营') is True)
+        check('群聊黑名单 -> _group_managed_by_bot 不接管',
+              ce._group_managed_by_bot('广告群') is False)
+        check('全局接收 -> 所有群接管',
+              (lambda: (setattr(ce, 'parse_config', lambda: {'ACCEPT_ALL_GROUP_CHAT_MESSAGES': True}),
+                        ce._group_managed_by_bot('任意群'))[1])() is True)
+        ce.parse_config = lambda: {
+            'ACCEPT_ALL_GROUP_CHAT_MESSAGES': False,
+            'ENABLE_GROUP_AT_REPLY': True,
+            'ENABLE_GROUP_KEYWORD_REPLY': False,
+            'GROUP_WHITELIST': ['快剧运营'],
+            'GROUP_BLACKLIST': ['广告'],
+        }
+        r = c.get('/api/inbox/sessions')
+        j = json.loads(r.data)
+        sess = j.get('sessions') or []
+        grp_ok = [s for s in sess if s.get('who') == '12345@chatroom'
+                  or s.get('name') == '快剧运营']
+        grp_bad = [s for s in sess if s.get('name') == '广告群']
+        check('白名单群：managed=True 且不标待处理',
+              bool(grp_ok) and grp_ok[0].get('managed') is True
+              and grp_ok[0].get('pending') is False, 'grp_ok=%r' % (grp_ok,))
+        check('黑名单群：managed=False 且标待处理（bot 真不回，需人工）',
+              bool(grp_bad) and grp_bad[0].get('managed') is False
+              and grp_bad[0].get('pending') is True, 'grp_bad=%r' % (grp_bad,))
+    finally:
+        ce.parse_config = orig_parse2
+        ce._inbox_wxdb = orig_wxdb
+        chat_history.record_incoming = orig_record_in2
+
     # ---------- 3. forward_page embed ----------
     r = c.get('/forward', query_string={'embed': '1'})
     html = r.data.decode('utf-8')

@@ -3134,6 +3134,33 @@ def _bot_managed_chats():
     return names
 
 
+def _group_managed_by_bot(g):
+    """群是否被 bot 按「群聊回复规则」页接管（按需回复，不保证每条都回）。
+
+    群聊页（不进 LISTEN_LIST）也能驱动 bot 回群消息：全局接收 / 被@回复 /
+    关键词回复 + 白黑名单。这些群不在 _bot_managed_chats 里，但 bot 确实在管。
+    这类群在消息中心不该标「待处理」——群消息 bot 未回复是常态（概率没过 /
+    没@ / 没命中关键词），不是漏回；标红只会造成主人反复白查。
+
+    g 为群标识（昵称或 username），白名单按群名子串匹配（与群聊页规则一致）。
+    """
+    if not g:
+        return False
+    try:
+        cfg = parse_config()
+    except Exception:
+        return False
+    if cfg.get('ACCEPT_ALL_GROUP_CHAT_MESSAGES'):
+        return True
+    bl = [str(x) for x in (cfg.get('GROUP_BLACKLIST') or []) if str(x).strip()]
+    if bl and any(b in g for b in bl):
+        return False
+    wl = [str(x) for x in (cfg.get('GROUP_WHITELIST') or []) if str(x).strip()]
+    if wl and not any(w in g for w in wl):
+        return False
+    return bool(cfg.get('ENABLE_GROUP_AT_REPLY') or cfg.get('ENABLE_GROUP_KEYWORD_REPLY'))
+
+
 @app.route('/api/inbox/sessions')
 @login_required
 def inbox_sessions():
@@ -3149,16 +3176,19 @@ def inbox_sessions():
         for s in _ch.list_who(200):
             who = s["who"]
             last = _ch.latest_message(who)
+            _is_grp = bool(last and last["source"] == "group")
+            _grp_managed = _is_grp and _group_managed_by_bot(who)
             sessions[who] = {
                 "who": who,
                 "last_content": (last["content"] if last else "")[:80],
                 "last_ts": last["ts"] if last else 0,
                 "pending": bool(last and last["direction"] == "incoming"
-                                and last["source"] != "sys" and who not in managed),
-                "managed": who in managed,
+                                and last["source"] != "sys" and who not in managed
+                                and not _grp_managed),
+                "managed": who in managed or _grp_managed,
                 # 本地记录按昵称建 key，群昵称不带 @chatroom 后缀，
                 # 群标记只能来自 chat_history 的 source 字段
-                "is_group": bool(last and last["source"] == "group"),
+                "is_group": _is_grp,
             }
     except Exception as e:
         app.logger.warning(f"消息中心：读取本地聊天记录失败: {e}")
@@ -3185,7 +3215,8 @@ def inbox_sessions():
                 if merge_key:
                     ent = sessions[merge_key]
                     ent["name"] = ent.get("name") or disp
-                    ent["managed"] = ent.get("managed") or merge_key in managed or disp in managed
+                    _grp_m = str(who).endswith("@chatroom") and _group_managed_by_bot(disp or who)
+                    ent["managed"] = ent.get("managed") or merge_key in managed or disp in managed or _grp_m
                     if ent["last_ts"]:
                         continue
                     rows = db.get_messages(who, limit=10) or []
@@ -3196,9 +3227,10 @@ def inbox_sessions():
                         ent["pending"] = (msgs[-1]["direction"] == "incoming"
                                           and not ent["managed"])
                     continue
+                _grp_m = str(who).endswith("@chatroom") and _group_managed_by_bot(disp or who)
                 ent = sessions.setdefault(who, {
                     "who": who, "last_content": "", "last_ts": 0, "pending": False,
-                    "managed": who in managed or disp in managed,
+                    "managed": who in managed or disp in managed or _grp_m,
                     # DB 侧 who 是 username，群 username 以 @chatroom 结尾
                     "is_group": str(who).endswith("@chatroom"),
                 })

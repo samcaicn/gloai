@@ -1980,6 +1980,7 @@ def auto_add_discovered_users():
 _CATCHUP_INTERVAL = 30            # 补漏轮询间隔（秒）
 _CATCHUP_SCAN_LIMIT = 30          # 每会话回扫条数
 _catchup_inflight = set()         # 正在补处理的会话（防重入）
+_sender_nick_cache = {}            # 群消息微信号->昵称 解析缓存（展示用，不影响逻辑）
 _catchup_done = {}                # who -> 已覆盖到的消息 create_time（补漏/监听共用水位）
 _catchup_primed = False           # 补漏首扫是否已完成（首扫前监听不得推水位，否则挡住启动前未读）
 
@@ -2138,6 +2139,34 @@ def message_listener(msg, chat):
         _message_listener_impl(msg, chat)
     except Exception as e:
         logger.error(f"message_listener 处理消息时发生未捕获异常（已隔离，消息循环继续）: {e}", exc_info=True)
+
+
+def _group_sender_display(sender):
+    """群聊里把发送者微信号（wxid_xxx / 自定义微信号）尽量解析成可读昵称，供 AI 上下文使用。
+
+    背景：微信库透传给 bot 的群消息发送者是**微信号**而非昵称/备注，AI 上下文里
+    出现「发送者:wxid_abc123」会导致 bot 在群里无法自然称呼对方（只能说「这位群友」）。
+    解析失败（群成员不在通讯录 / search_contact 异常）一律维持原样——纯展示优化，
+    不影响转发、存储、发送任何链路。结果按微信号缓存，避免消息热路径重复查库。
+    """
+    if not sender or str(sender).endswith('@chatroom'):
+        return sender
+    cached = _sender_nick_cache.get(sender)
+    if cached is not None:
+        return cached
+    resolved = sender
+    try:
+        _db = getattr(wx, '_db', None)
+        if _db is not None:
+            for _h in (_db.search_contact(sender) or []):
+                _nm = _h.get('nick_name') or _h.get('remark') or _h.get('username')
+                if _nm and _nm != sender:
+                    resolved = _nm
+                    break
+    except Exception:
+        pass
+    _sender_nick_cache[sender] = resolved
+    return resolved
 
 
 def _message_listener_impl(msg, chat):
@@ -2418,7 +2447,7 @@ def _message_listener_impl(msg, chat):
         
         if should_process_this_message:
             if not msgtype == 'image':
-                content_for_handler = f"[群聊消息-来自群'{who}'-发送者:{sender}]:{processed_group_content}"
+                content_for_handler = f"[群聊消息-来自群'{who}'-发送者:{_group_sender_display(sender)}]:{processed_group_content}"
             else:
                 content_for_handler = processed_group_content
             
