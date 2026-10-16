@@ -67,10 +67,21 @@ async function update(before) {
 }
 const agents = await request('/api/agents/management');
 // The adapter command identifies the registration. Its display name is a label that has changed once already.
+// A row a previous install or checkout wrote (its command points at a folder that has moved) is still ours when
+// it carries one of our names and no foreign description: adopt it, and the update below swaps the command in,
+// keeping its id and with it every conversation attached. A namesake with a person's own description is refused.
 let agent = agents.find((item) => item.command === command);
+if (!agent) {
+  agent = agents.find(
+    (item) =>
+      [NAME, ...FORMER_NAMES].includes(item.name) &&
+      typeof item.description === 'string' &&
+      OWN_DESCRIPTIONS.includes(item.description.toLowerCase())
+  );
+}
 if (!agent && agents.some((item) => [NAME, ...FORMER_NAMES].includes(item.name)))
   throw new Error('A different mu registration already exists; inspect it in Settings');
-if (agent && (agent.name !== NAME || needsFullAuto(agent))) {
+if (agent && (agent.command !== command || agent.name !== NAME || needsFullAuto(agent))) {
   const before = agent;
   agent = await update(before).catch((error) => {
     console.error(`Kept the registration as it was ("${before.name}"): ${error.message}`);

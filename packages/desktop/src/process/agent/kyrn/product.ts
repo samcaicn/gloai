@@ -26,14 +26,20 @@ export type BackendRequest = <T>(method: string, path: string, body?: unknown) =
 
 export const AGENT_NAME = 'AiBuddy';
 /** What the registration was called before the rename. Found under these names too, and then renamed. */
-const FORMER_NAMES = ['KYRN'];
+const FORMER_NAMES = ['KYRN', 'mu'];
 export const AGENT_DESCRIPTION = 'AiBuddy harness · local Codex login · Jev judgment';
 /**
  * The descriptions mu has written, compared case-insensitively: a record written before the judge's name took
  * its present capitalization is still ours to update.
  */
 const OWN_DESCRIPTIONS = new Set(
-  ['KYRN', 'KYRN harness · local Codex login · Jev judgment', AGENT_DESCRIPTION].map((text) => text.toLowerCase())
+  [
+    'KYRN',
+    'KYRN harness · local Codex login · Jev judgment',
+    'mu',
+    'mu harness · local Codex login · Jev judgment',
+    AGENT_DESCRIPTION,
+  ].map((text) => text.toLowerCase())
 );
 /**
  * The permission mode of a run nobody watches: a scheduled task, a team's agents. AionCore gives them its "full auto",
@@ -45,13 +51,30 @@ const LEGACY_FULL_AUTO = new Set(['yolo', 'yoloNoSandbox']);
 const needsFullAuto = (row: AgentRow): boolean => !row.yolo_id?.trim() || LEGACY_FULL_AUTO.has(row.yolo_id.trim());
 
 /**
+ * A row a previous install of this app wrote: it carries one of our names AND one of our descriptions. A
+ * person's own agent that merely shares the label -- in particular one with no description at all -- stays
+ * untouched, as it always has.
+ */
+const isOurs = (row: AgentRow): boolean =>
+  [AGENT_NAME, ...FORMER_NAMES].includes(row.name) &&
+  typeof row.description === 'string' &&
+  OWN_DESCRIPTIONS.has(row.description.toLowerCase());
+
+/**
  * The registration is the row that runs our adapter command. Its display name is a label that has changed
  * once already: looking it up by name would register a second agent after a rename and leave every old
  * conversation on the first one. `scripts/kyrn/register.mjs` follows the same rules.
+ *
+ * The command itself, though, points into the install directory -- and an install to a new folder (the brand
+ * rename moved it) left the old row behind with the old path. Such a row is still ours: adopting it and letting
+ * the caller write our command over it keeps its id, and with the id every conversation and assistant already
+ * attached to it. Only a namesake that is not ours by description is refused.
  */
 export function findRegistration(agents: AgentRow[], command: string): AgentRow | undefined {
   const ours = agents.find((row) => row.command === command);
   if (ours) return ours;
+  const stale = agents.find(isOurs);
+  if (stale) return stale;
   const namesake = agents.find((row) => [AGENT_NAME, ...FORMER_NAMES].includes(row.name));
   if (namesake) throw new KyrnError('otherRegistration', 'A different AiBuddy command is already registered');
   return undefined;
@@ -108,7 +131,9 @@ async function update(request: BackendRequest, before: AgentRow, command: string
 export async function initializeKyrn(request: BackendRequest, command: string): Promise<KyrnCatalog> {
   const agents = await request<AgentRow[]>('GET', '/api/agents/management');
   let agent = findRegistration(agents, command);
-  if (agent && (agent.name !== AGENT_NAME || needsFullAuto(agent))) {
+  // An adopted row (a previous install's command) is rewritten here: the update keeps its id and swaps the
+  // command for this install's, so the old conversations follow the same agent to the new folder.
+  if (agent && (agent.command !== command || agent.name !== AGENT_NAME || needsFullAuto(agent))) {
     const before = agent;
     // A label or the mode of scheduled runs must not keep the app from starting: the registration works without
     // them, and the next start tries again. The backend probes the agent before it saves, so a refusal is possible.
