@@ -251,9 +251,9 @@
           "runtime": "This computer could not run the model.",
           "port": "Another program already uses Laya's port ({{port}}).",
           "stopped": "Laya stopped before it was ready.",
-  "foreign": "A Laya that AiBuddy did not start is running here. Stop it where it was started.",
-  "cancelled": "The download was cancelled."
-}
+          "foreign": "A Laya that AiBuddy did not start is running here. Stop it where it was started.",
+          "cancelled": "The download was cancelled."
+        }
       }
     },
     "clm": {
@@ -521,8 +521,7 @@
     "reopen": "Setup guide",
     "progress": "Setup progress",
     "steps": {
-      "model": "Model",
-      "judge": "Judge",
+      "cloud": "Cloud",
       "ilink": "WeChat",
       "done": "Done"
     },
@@ -567,6 +566,12 @@
         "openai-completionsHint": "Works almost everywhere; most services and relays speak it.",
         "openai-responsesHint": "OpenAI's newer API; only some services support it."
       }
+    },
+    "cloud": {
+      "title": "Connect to AiBuddy Cloud",
+      "subtitle": "AiBuddy connects only to aiapi.tuptup.top and picks the best model for each task. Nothing to set up here.",
+      "tag": "No setup",
+      "description": "Connects only to {{host}}"
     },
     "judge": {
       "title": "Choose a judge",
@@ -729,7 +734,7 @@
     "open": "Choose…",
     "dialog": {
       "title": "Import conversations",
-      "hint": "Each conversation you choose becomes a AiBuddy conversation in its project folder. AiBuddy reads everything that was said; thinking and images stay behind.",
+      "hint": "Each conversation you choose becomes an AiBuddy conversation in its project folder. AiBuddy reads everything that was said; thinking and images stay behind.",
       "search": "Search by words or folder",
       "loading": "Looking for conversations…",
       "empty": "No Claude Code or Codex conversations were found on this computer.",
@@ -796,7 +801,7 @@
     "jobs": "Background jobs: /jobs, /jobs stop <id|all>",
     "commit": "Split the uncommitted change into commits: shows the plan, commits only when you say yes, never pushes",
     "review": "Review the uncommitted change, or what you name, with the reviewer sub-agent; findings sorted P0 to P3",
-    "mu": "AiBuddy status. Also: /AiBuddy judge <tiers> | /AiBuddy route <decision> <tiers|default> | /AiBuddy mode <decision|default> <off|shadow|active>",
+    "mu": "AiBuddy status. Also: /mu judge <tiers> | /mu route <decision> <tiers|default> | /mu mode <decision|default> <off|shadow|active>",
     "status": "Model, judge, decision modes, context savings and the latest verdicts",
     "help": "What AiBuddy can do and every command worth knowing",
     "ledger": "The last verdicts of the judge with timing: /ledger [n]",

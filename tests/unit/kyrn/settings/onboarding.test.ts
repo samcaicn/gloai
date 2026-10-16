@@ -17,6 +17,8 @@ import {
 } from '@/renderer/pages/settings/KyrnSettings/judgeChoice';
 import {
   apiModelProblem,
+  AIAPI_HOST,
+  AIAPI_PROVIDER_ID,
   markOnboardingSeen,
   needsOnboarding,
   ONBOARDING_KEY,
@@ -24,6 +26,7 @@ import {
   providerIdFor,
   providerNameFor,
   withApiModel,
+  withCloudModel,
   withSignedInModel,
 } from '@/renderer/pages/welcome/onboarding';
 
@@ -105,7 +108,7 @@ describe('the judge choice', () => {
     };
     const withClm = settings({ judges: { ...settings().judges, clm } });
     expect(JUDGE_CHOICES).toEqual(['jev', 'local', 'clm']);
-    expect(GUIDE_CHOICES).toEqual(['jev', 'local']);
+    expect(GUIDE_CHOICES).toEqual([]);
     expect(kindOf(clm)).toBe('clm');
     expect(serviceOf(clm)).toBeUndefined();
     expect(choose(withClm, 'clm').tiers).toEqual(['clm']);
@@ -365,5 +368,20 @@ describe('the first-run guide', () => {
     expect(signedIn.settings.models.providers).toEqual([]);
     expect(signedIn.providerKeys).toEqual({});
     expect(signedIn.settings.models.defaults).toMatchObject({ provider: 'openai-codex', model: 'gpt-5.6-sol' });
+  });
+
+  it('connects to the AiBuddy cloud and leaves the model to the server', () => {
+    const draft = newDraft(settings());
+    const result = withCloudModel(draft);
+    expect(result.id).toBe(AIAPI_PROVIDER_ID);
+    expect(result.draft.settings.models.providers).toMatchObject([
+      { id: AIAPI_PROVIDER_ID, name: 'AiBuddy', api: 'openai-completions', baseUrl: AIAPI_HOST },
+    ]);
+    expect(result.draft.settings.models.defaults).toMatchObject({ provider: AIAPI_PROVIDER_ID, model: 'auto' });
+    // The built-in cloud judge is asked; no user-configured key.
+    expect(result.draft.settings.tiers).toEqual(['jev']);
+    // Walking the guide again keeps a single cloud provider.
+    const again = withCloudModel(result.draft);
+    expect(again.draft.settings.models.providers.filter((provider) => provider.id === AIAPI_PROVIDER_ID)).toHaveLength(1);
   });
 });

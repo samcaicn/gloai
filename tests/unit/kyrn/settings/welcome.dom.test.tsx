@@ -148,7 +148,7 @@ describe('a settings section as its own page', () => {
       id: 1,
       action: 'setup',
       phase: 'running',
-      output: ['Resolved 26 packages', 'Downloading coremltools'],
+      progress: { file: 'coremltools-8.3.0', index: 0, percent: 0.42, total: 3 },
     };
     bridge.localJudgeState.mockResolvedValue({
       ok: true,
@@ -159,6 +159,8 @@ describe('a settings section as its own page', () => {
       data: { support: 'ok', installed: false, running: false, url, task },
     });
     at('/settings/judges', <SettingsArea section='judges' />);
+    // Laya's panel is the body of the Laya choice: the choice installs and starts it.
+    fireEvent.click(await screen.findByTestId('mu-judge-choice-local'));
     const panel = await screen.findByTestId('mu-laya');
     await waitFor(() => expect(panel).toHaveTextContent('Not installed yet.'));
     fireEvent.click(within(panel).getByTestId('mu-laya-install'));
@@ -167,8 +169,8 @@ describe('a settings section as its own page', () => {
     expect(bridge.localJudgeRun).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Download and install' }));
     await waitFor(() => expect(bridge.localJudgeRun).toHaveBeenCalledWith({ action: 'setup', consent: true }));
-    expect(await within(panel).findByTestId('mu-laya-output')).toHaveTextContent('Downloading coremltools');
-    expect(panel).toHaveTextContent('Installing Laya…');
+    // The raw output is gone: while it works the panel says what it is doing, nothing more.
+    expect(await within(panel).findByTestId('mu-laya-status')).toHaveTextContent('Installing Laya…');
     // Its state is read while it works; the setup goes on to start it.
     bridge.localJudgeState.mockResolvedValue({
       ok: true,
@@ -176,7 +178,7 @@ describe('a settings section as its own page', () => {
     });
     await waitFor(() => expect(panel).toHaveTextContent('Running on this machine'), { timeout: 3000 });
     expect(within(panel).getByTestId('mu-laya-stop')).toBeInTheDocument();
-    expect(within(panel).queryByTestId('mu-laya-output')).not.toBeInTheDocument();
+    expect(within(panel).queryByTestId('mu-laya-progress')).not.toBeInTheDocument();
   });
 
   it('says why Laya cannot be installed on this machine, and where uv comes from', async () => {
@@ -196,6 +198,7 @@ describe('a settings section as its own page', () => {
       data: { support: 'platform', installed: false, running: false, url },
     });
     at('/settings/judges', <SettingsArea section='judges' />);
+    fireEvent.click(await screen.findByTestId('mu-judge-choice-local'));
     const other = await screen.findByTestId('mu-laya');
     await waitFor(() => expect(other).toHaveTextContent('or a Mac with Apple Silicon'));
     expect(within(other).queryByRole('button')).not.toBeInTheDocument();
@@ -203,8 +206,9 @@ describe('a settings section as its own page', () => {
 
   it('keeps the order of several judges under the choice, in the open, each judge by its name', async () => {
     at('/settings/judges', <SettingsArea section='judges' />);
+    // The order is the advanced group: folded for the one judge here, open with its header.
+    fireEvent.click(await screen.findByText('Advanced'));
     const tiers = await screen.findByTestId('mu-judge-tiers');
-    expect(screen.getByRole('heading', { name: 'Judge tiers' })).toBeInTheDocument();
     expect(within(tiers).getByLabelText('Order')).toBeInTheDocument();
     // Laya, the one judge here, needs nothing in the tiers: the choice above installs and starts it.
     const laya = within(tiers).getByTestId('mu-judge-tier-0');
@@ -215,153 +219,44 @@ describe('a settings section as its own page', () => {
 });
 
 describe('the first-run guide', () => {
-  it('tags only the most common way in: the Anthropic tile’s description already names Claude', async () => {
+  it('shows the AiBuddy cloud as the only way to connect', async () => {
     at('/welcome', <Welcome />);
     fireEvent.click(await screen.findByTestId('mu-welcome-begin'));
-    expect(within(await screen.findByTestId('mu-welcome-way-openai')).getByText('Most common')).toBeInTheDocument();
-    const anthropic = screen.getByTestId('mu-welcome-way-anthropic');
-    expect(anthropic).toHaveTextContent('Claude, and services that speak the Messages format');
-    expect(within(anthropic).queryByText('Claude')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('mu-welcome-step-cloud')).toBeInTheDocument();
+    expect(screen.getByTestId('mu-welcome-way-cloud')).toBeInTheDocument();
+    // No manual API endpoint, no Anthropic, no subscription sign-in in the guide.
+    expect(screen.queryByTestId('mu-welcome-way-openai')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mu-welcome-way-anthropic')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mu-welcome-way-signedIn')).not.toBeInTheDocument();
   });
 
-  it('says what mu is, connects an API model, takes a judge key, saves once at the end, and is not shown again', async () => {
+  it('connects to the cloud, sets the built-in judge, saves once at the end, and is not shown again', async () => {
     at('/welcome', <Welcome />);
-    expect(await screen.findByText('Welcome to mu')).toBeInTheDocument();
+    expect(await screen.findByText('Welcome to AiBuddy')).toBeInTheDocument();
     expect(screen.getByText('A check at every step')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('mu-welcome-begin'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-way-openai'));
-    // Nothing filled in: the step stays and says why, and the field in question is marked.
     fireEvent.click(screen.getByTestId('mu-welcome-next'));
-    expect(screen.getByTestId('mu-welcome-step-model')).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('https://');
-    expect(screen.getByLabelText('Base URL')).toHaveClass('arco-input-error');
-
-    fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'https://relay.example.com/v1' } });
-    fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-relay' } });
-    fireEvent.change(screen.getByLabelText('Model name'), { target: { value: 'relay-large' } });
-    fireEvent.click(screen.getByTestId('mu-welcome-next'));
-
-    await screen.findByTestId('mu-welcome-step-judge');
-    fireEvent.click(screen.getByTestId('mu-judge-choice-jev'));
-    fireEvent.change(screen.getByLabelText('TypeSafe API key'), { target: { value: 'jev-key' } });
-    fireEvent.click(screen.getByTestId('mu-welcome-next'));
-
-    // Connecting WeChat is its own step now, and it is optional: straight past it to the summary.
     await screen.findByTestId('mu-welcome-step-ilink');
     fireEvent.click(screen.getByTestId('mu-welcome-next'));
-
     await screen.findByTestId('mu-welcome-step-done');
-    expect(screen.getByText('relay / relay-large')).toBeInTheDocument();
+    expect(screen.getByText('AiBuddy / auto')).toBeInTheDocument();
     expect(bridge.save).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('mu-welcome-start'));
-
     expect(await screen.findByText('landing page')).toBeInTheDocument();
     expect(bridge.save).toHaveBeenCalledTimes(1);
     const saved = bridge.save.mock.calls[0][0] as SaveSettings;
     expect(saved.models?.providers).toMatchObject([
       {
-        id: 'relay',
+        id: 'aibuddy',
         api: 'openai-completions',
-        baseUrl: 'https://relay.example.com/v1',
-        models: [{ id: 'relay-large' }],
+        baseUrl: 'https://aiapi.tuptup.top',
+        models: [{ id: 'auto' }],
       },
     ]);
-    expect(saved.models?.defaults).toMatchObject({ provider: 'relay', model: 'relay-large' });
+    expect(saved.models?.defaults).toMatchObject({ provider: 'aibuddy', model: 'auto' });
+    // The cloud judge is asked; no key the person types.
     expect(saved.tiers).toEqual(['jev']);
-    expect(saved.credentials?.map((credential) => credential.name).toSorted()).toEqual([
-      'MU_PROVIDER_RELAY_API_KEY',
-      'TYPESAFE_API_KEY',
-    ]);
     expect(localStorage.getItem(ONBOARDING_KEY)).toBeTruthy();
-  });
-
-  it('fills in the one model a connection test found, and leaves a model typed first alone', async () => {
-    bridge.testProvider.mockResolvedValue({
-      ok: true,
-      data: { ok: true, code: 'ok-models', status: 200, latencyMs: 7, detail: '', models: ['relay-large'] },
-    });
-    at('/welcome', <Welcome />);
-    fireEvent.click(await screen.findByTestId('mu-welcome-begin'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-way-openai'));
-    fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'https://relay.example.com/v1' } });
-    fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-relay' } });
-    fireEvent.click(screen.getByText('Test connection'));
-    await waitFor(() => expect(screen.getByLabelText('Model name')).toHaveValue('relay-large'));
-
-    fireEvent.change(screen.getByLabelText('Model name'), { target: { value: 'my-model' } });
-    fireEvent.click(screen.getByText('Test connection'));
-    await waitFor(() => expect(bridge.testProvider).toHaveBeenCalledTimes(2));
-    await screen.findByTestId('mu-test-result');
-    expect(screen.getByLabelText('Model name')).toHaveValue('my-model');
-  });
-
-  it('sets Laya up without its address or a Stop: those are for the settings', async () => {
-    at('/welcome', <Welcome />);
-    fireEvent.click(await screen.findByTestId('mu-welcome-begin'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-skip'));
-    await screen.findByTestId('mu-welcome-step-judge');
-    // A new user's order starts with Laya: its tile is the chosen one, open.
-    const tile = screen.getByTestId('mu-judge-choice-local');
-    const panel = await within(tile).findByTestId('mu-laya');
-    expect(await within(panel).findByTestId('mu-laya-status')).toHaveTextContent(enMu.judges.laya.running);
-    expect(within(panel).queryByTestId('mu-laya-stop')).not.toBeInTheDocument();
-    expect(tile).not.toHaveTextContent('127.0.0.1');
-  });
-
-  it('picks the service Jev is reached through, and keeps its key under that service’s own name', async () => {
-    at('/welcome', <Welcome />);
-    fireEvent.click(await screen.findByTestId('mu-welcome-begin'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-skip'));
-    await screen.findByTestId('mu-welcome-step-judge');
-    fireEvent.click(screen.getByTestId('mu-judge-choice-jev'));
-    fireEvent.click(screen.getByLabelText('Service'));
-    fireEvent.click(await screen.findByText('Vercel AI Gateway', { selector: '.arco-select-option' }));
-    fireEvent.change(await screen.findByLabelText('Vercel AI Gateway API key'), { target: { value: 'gateway-key' } });
-    fireEvent.click(screen.getByTestId('mu-welcome-next'));
-    await screen.findByTestId('mu-welcome-step-ilink');
-    fireEvent.click(screen.getByTestId('mu-welcome-next'));
-    await screen.findByTestId('mu-welcome-step-done');
-    fireEvent.click(screen.getByTestId('mu-welcome-start'));
-    expect(await screen.findByText('landing page')).toBeInTheDocument();
-    const saved = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(saved.tiers).toEqual(['jev-gateway']);
-    expect(saved.judges['jev-gateway']).toMatchObject({ type: 'gateway', apiKeyEnv: 'AI_GATEWAY_API_KEY' });
-    expect(saved.credentials).toEqual([{ name: 'AI_GATEWAY_API_KEY', value: 'gateway-key' }]);
-  });
-
-  it('speaks OpenAI Responses when that is chosen', async () => {
-    at('/welcome', <Welcome />);
-    fireEvent.click(await screen.findByTestId('mu-welcome-begin'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-way-openai'));
-    fireEvent.click(screen.getByText('Responses'));
-    fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'https://relay.example.com/v1' } });
-    fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-relay' } });
-    fireEvent.change(screen.getByLabelText('Model name'), { target: { value: 'relay-large' } });
-    fireEvent.click(screen.getByTestId('mu-welcome-next'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-start'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalledTimes(1));
-    const saved = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(saved.models?.providers?.[0]).toMatchObject({ id: 'relay', api: 'openai-responses' });
-  });
-
-  it('names a service on this machine by its address, not by the English word of its id', async () => {
-    at('/welcome', <Welcome />);
-    fireEvent.click(await screen.findByTestId('mu-welcome-begin'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-way-openai'));
-    fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'http://localhost:11434/v1' } });
-    fireEvent.change(screen.getByLabelText('Model name'), { target: { value: 'qwen3' } });
-    fireEvent.click(screen.getByTestId('mu-welcome-next'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
-    await screen.findByTestId('mu-welcome-step-ilink');
-    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
-    await screen.findByTestId('mu-welcome-step-done');
-    expect(screen.getByText('localhost:11434 / qwen3')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('mu-welcome-start'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalledTimes(1));
-    const saved = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(saved.models?.providers?.[0]).toMatchObject({ id: 'local', name: 'localhost:11434' });
   });
 
   it('offers the language before the first question, and on every step after it', async () => {
@@ -370,7 +265,7 @@ describe('the first-run guide', () => {
     expect(language).toHaveTextContent('Language');
     expect(within(language).getByTestId('language-switcher')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('mu-welcome-begin'));
-    await screen.findByTestId('mu-welcome-step-model');
+    await screen.findByTestId('mu-welcome-step-cloud');
     expect(screen.getByTestId('mu-welcome-language')).toBeInTheDocument();
   });
 
@@ -388,32 +283,22 @@ describe('the first-run guide', () => {
     fireEvent.click(screen.getByText('Reload'));
 
     fireEvent.click(await screen.findByTestId('mu-welcome-begin'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-way-openai'));
-    fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'https://relay.example.com/v1' } });
-    fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk relay' } });
-    fireEvent.change(screen.getByLabelText('Model name'), { target: { value: 'relay-large' } });
     fireEvent.click(screen.getByTestId('mu-welcome-next'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
+    fireEvent.click(screen.getByTestId('mu-welcome-next'));
     bridge.save.mockResolvedValueOnce({ ok: false, code: 'credential', error: 'Invalid credential' });
     fireEvent.click(await screen.findByTestId('mu-welcome-start'));
-    expect(
-      await screen.findByText(
-        'Saving did not work: The key contains characters a key cannot have, such as spaces, quotes or line breaks. Paste it again.'
-      )
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Saving did not work/)).toBeInTheDocument();
     expect(screen.queryByText(/Invalid credential/)).not.toBeInTheDocument();
   });
 
-  it('skips a step with a quiet text button, even after a way is picked', async () => {
+  it('skips a step with a quiet text button, even when the cloud is the only way', async () => {
     at('/welcome', <Welcome />);
     fireEvent.click(await screen.findByTestId('mu-welcome-begin'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-way-openai'));
     // The way on is the primary button; skipping is not.
     expect(screen.getByTestId('mu-welcome-next')).toHaveClass('arco-btn-primary');
     expect(screen.getByTestId('mu-welcome-skip')).not.toHaveClass('arco-btn');
     fireEvent.click(screen.getByTestId('mu-welcome-skip'));
-    expect(await screen.findByTestId('mu-welcome-step-judge')).toBeInTheDocument();
+    expect(await screen.findByTestId('mu-welcome-step-ilink')).toBeInTheDocument();
     expect(bridge.save).not.toHaveBeenCalled();
   });
 
@@ -437,227 +322,12 @@ describe('the first-run guide', () => {
     bridge.settings.mockResolvedValue({
       ok: true,
       data: newUser({
-        models: { ...newUser().models, defaults: { provider: 'relay', model: 'relay-large', thinkingLevel: '' } },
+        models: { ...newUser().models, defaults: { provider: 'aibuddy', model: 'auto', thinkingLevel: '' } },
       }),
     });
     at('/home', <Landing />);
     await waitFor(() => expect(localStorage.getItem(ONBOARDING_KEY)).toBeTruthy());
     expect(screen.getByText('landing')).toBeInTheDocument();
     expect(screen.queryByText('the guide')).not.toBeInTheDocument();
-  });
-});
-
-describe('signing in with a subscription', () => {
-  const running = { id: 1, provider: 'openai-codex', phase: 'running', url: 'https://auth.openai.com/oauth/authorize' };
-  const toSubscriptions = async () => {
-    at('/welcome', <Welcome />);
-    fireEvent.click(await screen.findByTestId('mu-welcome-begin'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-way-signedIn'));
-  };
-  const toSummary = async () => {
-    fireEvent.click(screen.getByTestId('mu-welcome-next'));
-    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
-    await screen.findByTestId('mu-welcome-step-ilink');
-    fireEvent.click(await screen.findByTestId('mu-welcome-next'));
-    await screen.findByTestId('mu-welcome-step-done');
-  };
-
-  it('signs in in the browser, takes a pasted code only when asked for it, and starts on that account', async () => {
-    await toSubscriptions();
-    bridge.loginStart.mockResolvedValue({ ok: true, data: running });
-    bridge.loginState.mockResolvedValue({
-      ok: true,
-      data: { ...running, prompt: { type: 'manual_code', message: 'Paste the code' } },
-    });
-    fireEvent.click(await screen.findByTestId('mu-login-openai-codex'));
-    expect(bridge.loginStart).toHaveBeenCalledWith({ provider: 'openai-codex' });
-    expect(await screen.findByTestId('mu-login-waiting')).toHaveTextContent('ChatGPT');
-
-    // The browser finishes it by itself; the code field is the way out, not the first thing shown.
-    fireEvent.click(await screen.findByTestId('mu-login-paste', {}, { timeout: 3000 }));
-    fireEvent.change(screen.getByLabelText('Authorization code'), { target: { value: ' the-code ' } });
-    bridge.loginAnswer.mockResolvedValue({ ok: true, data: running });
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    await waitFor(() => expect(bridge.loginAnswer).toHaveBeenCalledWith({ id: 1, value: 'the-code' }));
-
-    bridge.loginState.mockResolvedValue({
-      ok: true,
-      data: {
-        ...running,
-        phase: 'done',
-        models: [
-          { id: 'gpt-5.5', name: 'GPT-5.5' },
-          { id: 'gpt-6-astra', name: 'GPT-6 Astra' },
-        ],
-      },
-    });
-    await waitFor(() => expect(screen.getByTestId('mu-login-openai-codex')).toHaveTextContent('Signed in'), {
-      timeout: 3000,
-    });
-    expect(screen.queryByTestId('mu-login-waiting')).not.toBeInTheDocument();
-
-    await toSummary();
-    expect(screen.getByText('ChatGPT / gpt-5.5')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('mu-welcome-start'));
-    await waitFor(() => expect(bridge.save).toHaveBeenCalledTimes(1));
-    const saved = bridge.save.mock.calls[0][0] as SaveSettings;
-    expect(saved.models?.defaults).toMatchObject({ provider: 'openai-codex', model: 'gpt-5.5' });
-    expect(saved.models?.providers ?? []).toEqual([]);
-    expect(saved.credentials ?? []).toEqual([]);
-  });
-
-  it('offers an account signed in before at once, without a new sign-in', async () => {
-    bridge.loginStatus.mockResolvedValue({
-      ok: true,
-      data: { signedIn: [{ provider: 'anthropic', models: [{ id: 'claude-opus-4-8', name: 'Claude Opus 4.8' }] }] },
-    });
-    await toSubscriptions();
-    await waitFor(() => expect(screen.getByTestId('mu-login-anthropic')).toHaveTextContent('Signed in'));
-    fireEvent.click(screen.getByTestId('mu-login-anthropic'));
-    expect(bridge.loginStart).not.toHaveBeenCalled();
-    expect(screen.getByLabelText('Model')).toBeInTheDocument();
-    await toSummary();
-    expect(screen.getByText('Claude / claude-opus-4-8')).toBeInTheDocument();
-  });
-
-  it('offers Google only when the harness does, and asks about the risk before anything opens', async () => {
-    await toSubscriptions();
-    await waitFor(() => expect(bridge.loginStatus).toHaveBeenCalled());
-    expect(screen.getByTestId('mu-login-xai')).toHaveTextContent('Grok');
-    expect(screen.queryByTestId('mu-login-google-gemini-cli')).not.toBeInTheDocument();
-    cleanup();
-
-    bridge.loginStatus.mockResolvedValue({
-      ok: true,
-      data: { signedIn: [], offered: ['openai-codex', 'anthropic', 'xai', 'google-gemini-cli', 'google-antigravity'] },
-    });
-    await toSubscriptions();
-    const google = await screen.findByTestId('mu-login-google-gemini-cli');
-    expect(google).toHaveTextContent('Gemini CLI');
-    expect(google).toHaveTextContent('Experimental');
-    expect(screen.getByTestId('mu-login-google-antigravity')).toHaveTextContent('Antigravity');
-
-    const asking = {
-      id: 3,
-      provider: 'google-gemini-cli',
-      phase: 'running',
-      prompt: {
-        type: 'select',
-        message: 'Experimental: this signs in through Gemini CLI’s own login…',
-        options: [
-          { id: 'continue', label: 'I understand the risk, sign in' },
-          { id: 'cancel', label: 'Cancel' },
-        ],
-      },
-    };
-    bridge.loginStart.mockResolvedValue({ ok: true, data: asking });
-    bridge.loginState.mockResolvedValue({ ok: true, data: asking });
-    fireEvent.click(google);
-    const risk = await screen.findByTestId('mu-login-risk');
-    expect(risk).toHaveTextContent('the login Google made for Gemini CLI itself');
-    expect(risk).toHaveTextContent('Gemini API key');
-    expect(screen.queryByTestId('mu-login-waiting')).not.toBeInTheDocument();
-    // Nothing is answered for the person.
-    expect(bridge.loginAnswer).not.toHaveBeenCalled();
-
-    bridge.loginAnswer.mockResolvedValue({ ok: true, data: { ...asking, prompt: undefined } });
-    fireEvent.click(screen.getByTestId('mu-login-risk-continue'));
-    await waitFor(() => expect(bridge.loginAnswer).toHaveBeenCalledWith({ id: 3, value: 'continue' }));
-  });
-
-  it('turns a no to the risk into a cancelled sign-in', async () => {
-    bridge.loginStatus.mockResolvedValue({
-      ok: true,
-      data: { signedIn: [], offered: ['openai-codex', 'anthropic', 'xai', 'google-antigravity'] },
-    });
-    const asking = {
-      id: 4,
-      provider: 'google-antigravity',
-      phase: 'running',
-      prompt: {
-        type: 'select',
-        message: 'Experimental…',
-        options: [
-          { id: 'continue', label: 'I understand the risk, sign in' },
-          { id: 'cancel', label: 'Cancel' },
-        ],
-      },
-    };
-    bridge.loginStart.mockResolvedValue({ ok: true, data: asking });
-    bridge.loginState.mockResolvedValue({ ok: true, data: asking });
-    bridge.loginCancel.mockResolvedValue({ ok: true, data: { ...asking, phase: 'cancelled', prompt: undefined } });
-    await toSubscriptions();
-    fireEvent.click(await screen.findByTestId('mu-login-google-antigravity'));
-    fireEvent.click(await screen.findByTestId('mu-login-risk-cancel'));
-    await waitFor(() => expect(bridge.loginCancel).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByTestId('mu-login-risk')).not.toBeInTheDocument());
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(bridge.loginAnswer).not.toHaveBeenCalled();
-  });
-
-  it('shows Grok’s code while its page in the browser is waiting for it', async () => {
-    const device = {
-      id: 5,
-      provider: 'xai',
-      phase: 'running',
-      url: 'https://accounts.x.ai/device?code=WDJB-MJHT',
-      device: { userCode: 'WDJB-MJHT', verificationUri: 'https://accounts.x.ai/device?code=WDJB-MJHT' },
-    };
-    bridge.loginStart.mockResolvedValue({ ok: true, data: device });
-    bridge.loginState.mockResolvedValue({ ok: true, data: device });
-    await toSubscriptions();
-    fireEvent.click(await screen.findByTestId('mu-login-xai'));
-    expect(await screen.findByTestId('mu-login-device-code')).toHaveTextContent('WDJB-MJHT');
-    expect(screen.getByTestId('mu-login-waiting')).toHaveTextContent('The Grok verification page is open');
-    expect(screen.getByRole('button', { name: 'Open the page again' })).toBeInTheDocument();
-  });
-
-  it('says the account is signed in while its models are still being read', async () => {
-    bridge.loginStatus.mockResolvedValue({
-      ok: true,
-      data: { signedIn: [], offered: ['openai-codex', 'anthropic', 'xai', 'google-antigravity'] },
-    });
-    const reading = {
-      id: 6,
-      provider: 'google-antigravity',
-      phase: 'running',
-      url: 'https://accounts.google.com/o/oauth2/v2/auth',
-      stored: true,
-    };
-    bridge.loginStart.mockResolvedValue({ ok: true, data: reading });
-    bridge.loginState.mockResolvedValue({ ok: true, data: reading });
-    await toSubscriptions();
-    fireEvent.click(await screen.findByTestId('mu-login-google-antigravity'));
-    expect(await screen.findByTestId('mu-login-waiting')).toHaveTextContent(
-      'Signed in to Antigravity. Reading the models this account can use'
-    );
-    expect(screen.queryByRole('button', { name: 'Open the page again' })).not.toBeInTheDocument();
-  });
-
-  it('says whose question it is above a question pi asks in its own words', async () => {
-    await toSubscriptions();
-    const asking = { ...running, prompt: { type: 'text', message: 'Enter your workspace id:' } };
-    bridge.loginStart.mockResolvedValue({ ok: true, data: asking });
-    bridge.loginState.mockResolvedValue({ ok: true, data: asking });
-    fireEvent.click(screen.getByTestId('mu-login-openai-codex'));
-    const waiting = await screen.findByTestId('mu-login-waiting');
-    expect(waiting).toHaveTextContent('ChatGPT asks (in its own words):');
-    expect(waiting).toHaveTextContent('Enter your workspace id:');
-  });
-
-  it('says when a sign-in did not finish, with the reason under it, and when none was chosen', async () => {
-    await toSubscriptions();
-    fireEvent.click(screen.getByTestId('mu-welcome-next'));
-    expect(screen.getByRole('alert')).toHaveTextContent('Sign in to an account first');
-
-    bridge.loginStart.mockResolvedValue({ ok: true, data: running });
-    bridge.loginState.mockResolvedValue({
-      ok: true,
-      data: { ...running, phase: 'failed', error: 'Token exchange request failed' },
-    });
-    fireEvent.click(screen.getByTestId('mu-login-openai-codex'));
-    const alert = await screen.findByText('Signing in did not finish. You can try again.', {}, { timeout: 3000 });
-    expect(alert).toHaveTextContent('Token exchange request failed');
-    expect(screen.getByTestId('mu-login-openai-codex')).not.toBeDisabled();
   });
 });

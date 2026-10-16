@@ -150,3 +150,40 @@ export function withSignedInModel(draft: Draft, provider: string, model: string,
     },
   };
 }
+
+/** The only backend the app connects to: the AiBuddy cloud. */
+export const AIAPI_HOST = 'https://aiapi.tuptup.top';
+/** The built-in provider the first-run guide connects, pointed at the cloud. */
+export const AIAPI_PROVIDER_ID = 'aibuddy';
+
+/**
+ * The draft with the AiBuddy cloud as the startup model. The guide connects only to `aiapi.tuptup.top`; the server
+ * picks the model per task, so the default model is the `auto` sentinel it routes, and the built-in cloud judge is
+ * asked without a key the person types. Called once, so walking the guide again does not leave a second provider.
+ */
+export function withCloudModel(draft: Draft): { draft: Draft; id: string } {
+  const models = draft.settings.models;
+  const provider = {
+    ...blankProvider(AIAPI_PROVIDER_ID),
+    name: 'AiBuddy',
+    api: 'openai-completions' as const,
+    baseUrl: AIAPI_HOST,
+    models: [{ ...blankModel('auto'), name: 'auto' }],
+  };
+  return {
+    id: AIAPI_PROVIDER_ID,
+    draft: {
+      ...draft,
+      settings: {
+        ...draft.settings,
+        // The cloud judge answers every small call; no user-configured key.
+        tiers: ['jev'],
+        models: {
+          ...models,
+          providers: [...models.providers.filter((entry) => entry.id !== AIAPI_PROVIDER_ID), provider],
+          defaults: { ...models.defaults, provider: AIAPI_PROVIDER_ID, model: 'auto' },
+        },
+      },
+    },
+  };
+}

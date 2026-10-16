@@ -10,8 +10,12 @@ import type { JudgeSettings, JudgeType, KyrnSettings } from '@/common/kyrn/types
 export type JudgeChoice = 'jev' | 'local' | 'clm';
 
 export const JUDGE_CHOICES: readonly JudgeChoice[] = ['jev', 'local', 'clm'];
-/** The choices of the first-run guide. CLM needs a server with a GPU someone already runs: it waits in the settings. */
-export const GUIDE_CHOICES: readonly JudgeChoice[] = ['jev', 'local'];
+/**
+ * The choices of the first-run guide. The cloud product connects only to aiapi.tuptup.top and auto-sets its judge, so
+ * the guide no longer asks the person to pick Jev or Laya; those remain configurable in the settings. CLM waits there
+ * too. Empty on purpose.
+ */
+export const GUIDE_CHOICES: readonly JudgeChoice[] = [];
 
 const KIND_OF: Record<JudgeType, JudgeChoice | undefined> = {
   jev: 'jev',

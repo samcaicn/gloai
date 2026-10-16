@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, AutoComplete, Button, Input, Radio } from '@arco-design/web-react';
+import { Alert, Button } from '@arco-design/web-react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -7,51 +7,25 @@ import MuMark from '@renderer/components/brand/MuMark';
 import LanguageSwitcher from '@/renderer/components/settings/LanguageSwitcher';
 import ChoiceTile from '@/renderer/pages/settings/KyrnSettings/fields/ChoiceTile';
 import MuErrorMessage from '@/renderer/pages/settings/KyrnSettings/fields/MuErrorMessage';
-import {
-  choiceOf,
-  choose,
-  GUIDE_CHOICES,
-  jevKeyVariable,
-  profileFor,
-} from '@/renderer/pages/settings/KyrnSettings/judgeChoice';
-import {
-  blankModel,
-  blankProvider,
-  ENDPOINT_PLACEHOLDER,
-  providerLabel,
-} from '@/renderer/pages/settings/KyrnSettings/providers/endpoints';
-import ConnectionTest from '@/renderer/pages/settings/KyrnSettings/providers/ConnectionTest';
-import { ChoiceBody, JudgeChoiceTile } from '@/renderer/pages/settings/KyrnSettings/sections/JudgesSection';
+import { choiceOf } from '@/renderer/pages/settings/KyrnSettings/judgeChoice';
+import { providerLabel } from '@/renderer/pages/settings/KyrnSettings/providers/endpoints';
 import choiceStyles from '@/renderer/pages/settings/KyrnSettings/sections/sections.module.css';
 import { useMuSettings } from '@/renderer/pages/settings/KyrnSettings/useMuSettings';
 import { useIlinkSessionOptional } from '@renderer/services/ilinkSession';
-import {
-  apiModelProblem,
-  type ApiModel,
-  type GuideApi,
-  markOnboardingSeen,
-  withApiModel,
-  withSignedInModel,
-} from './onboarding';
-import SubscriptionLogin from './SubscriptionLogin';
+import { AIAPI_HOST, markOnboardingSeen, withCloudModel } from './onboarding';
 import IlinkStep from './IlinkStep';
 import styles from './Welcome.module.css';
 
-type Step = 'intro' | 'model' | 'judge' | 'ilink' | 'done';
+type Step = 'intro' | 'cloud' | 'ilink' | 'done';
 /** The steps of the setup itself; the introduction before them is not one. */
-const STEPS: Step[] = ['model', 'judge', 'ilink', 'done'];
-/** A tile of the model step: an account mu is signed in to, or one of the two API families. */
-type Way = 'signedIn' | 'openai' | 'anthropic';
-const API_WAYS = ['openai', 'anthropic'] as const;
-type ApiWay = (typeof API_WAYS)[number];
-type OpenAiApi = Extract<GuideApi, 'openai-completions' | 'openai-responses'>;
-const OPENAI_APIS: readonly OpenAiApi[] = ['openai-completions', 'openai-responses'];
+const STEPS: Step[] = ['cloud', 'ilink', 'done'];
 const INTRO_POINTS = ['judge', 'control', 'ready'] as const;
 
 /**
- * The first-run guide: what mu is, then connect a model, pick a judge, done. One question at a time, nothing that
- * can wait; all of it is written in one save at the end, and every step can be skipped. Everything here is also in
- * the settings.
+ * The first-run guide: what mu is, then connect to the AiBuddy cloud, done. One question at a time, nothing that can
+ * wait; all of it is written in one save at the end, and every step can be skipped. The cloud is the only backend, so
+ * the guide asks for no API endpoint or key, and the judge is the built-in cloud one. Everything here is also in the
+ * settings.
  */
 export default function Welcome() {
   const { t } = useTranslation();
@@ -60,44 +34,18 @@ export default function Welcome() {
   /** 微信那一步只是顺带一提：这份登录态读不到（单测里没有 provider）就当没连。 */
   const ilink = useIlinkSessionOptional();
   const [step, setStep] = useState<Step>('intro');
-  const [way, setWay] = useState<Way>();
-  const [openaiApi, setOpenaiApi] = useState<OpenAiApi>('openai-completions');
-  const [form, setForm] = useState<Omit<ApiModel, 'api'>>({ baseUrl: '', key: '', model: '' });
-  const [signedIn, setSignedIn] = useState('');
-  const [listed, setListed] = useState<string[]>([]);
-  const [tried, setTried] = useState(false);
-  const [added, setAdded] = useState<string>();
 
   const { base, draft } = mu;
-  const chosenWay: Way | undefined = way;
 
   const leave = () => {
     markOnboardingSeen();
     navigate('/guid', { replace: true });
   };
 
-  const apiOf = (tile: ApiWay): GuideApi => (tile === 'openai' ? openaiApi : 'anthropic-messages');
-  const apiInput = (api: GuideApi): ApiModel => ({ api, ...form });
-  const problem = chosenWay && chosenWay !== 'signedIn' ? apiModelProblem(apiInput(apiOf(chosenWay))) : undefined;
-
-  const nextFromModel = () => {
-    if (!chosenWay) return setStep('judge');
-    if (chosenWay === 'signedIn') {
-      const [provider, ...rest] = signedIn.split('/');
-      const model = rest.join('/');
-      setTried(true);
-      if (!provider || !model) return;
-      mu.edit((now) => withSignedInModel(now, provider, model, added));
-      setAdded(undefined);
-      setTried(false);
-      return setStep('judge');
-    }
-    setTried(true);
-    if (problem || !draft) return;
-    const result = withApiModel(draft, apiInput(apiOf(chosenWay)), added);
-    mu.edit(() => result.draft);
-    setAdded(result.id);
-    setStep('judge');
+  const nextFromCloud = () => {
+    if (!draft) return setStep('ilink');
+    mu.edit(() => withCloudModel(draft).draft);
+    setStep('ilink');
   };
 
   const finish = async () => {
@@ -126,17 +74,6 @@ export default function Welcome() {
 
   const { settings } = draft;
   const judge = choiceOf(settings);
-  const judgeProfile = judge ? settings.judges[profileFor(settings, judge) ?? ''] : undefined;
-  const provider = (api: GuideApi) => ({
-    ...blankProvider(added ?? 'onboarding'),
-    api,
-    baseUrl: form.baseUrl.trim(),
-    models: [blankModel(form.model.trim())],
-  });
-  const fieldProblem = (field: 'baseUrl' | 'key' | 'model') =>
-    tried && problem === field ? t(`mu.welcome.model.problems.${field}`) : undefined;
-  const fieldStatus = (field: 'baseUrl' | 'key' | 'model'): 'error' | undefined =>
-    fieldProblem(field) ? 'error' : undefined;
 
   let body: React.ReactNode;
   if (step === 'intro') {
@@ -157,133 +94,20 @@ export default function Welcome() {
         </ul>
       </>
     );
-  } else if (step === 'model') {
+  } else if (step === 'cloud') {
     body = (
       <>
-        <h1 className={styles.title}>{t('mu.welcome.model.title')}</h1>
-        <p className={styles.subtitle}>{t('mu.welcome.model.subtitle')}</p>
-        <div className={choiceStyles.choices} role='radiogroup' aria-label={t('mu.welcome.model.title')}>
+        <h1 className={styles.title}>{t('mu.welcome.cloud.title')}</h1>
+        <p className={styles.subtitle}>{t('mu.welcome.cloud.subtitle')}</p>
+        <div className={choiceStyles.choices} role='radiogroup' aria-label={t('mu.welcome.cloud.title')}>
           <ChoiceTile
-            testId='mu-welcome-way-signedIn'
-            title={t('mu.welcome.model.signedIn.title')}
-            tag={t('mu.welcome.model.signedIn.tag')}
-            description={t('mu.welcome.model.signedIn.description')}
-            active={chosenWay === 'signedIn'}
-            onPick={() => {
-              setWay('signedIn');
-              setTried(false);
-            }}
-          >
-            <SubscriptionLogin value={signedIn} onChange={setSignedIn} />
-            {tried && !signedIn ? (
-              <div className={styles.problem} role='alert'>
-                {t('mu.welcome.login.needAccount')}
-              </div>
-            ) : null}
-          </ChoiceTile>
-          {API_WAYS.map((tile) => {
-            const api = apiOf(tile);
-            return (
-              <ChoiceTile
-                key={tile}
-                testId={`mu-welcome-way-${tile}`}
-                title={t(`mu.welcome.model.${tile}.title`)}
-                // The Anthropic tile's description already names Claude: a tag saying it again adds nothing.
-                tag={tile === 'openai' ? t('mu.welcome.model.openai.tag') : undefined}
-                description={t(`mu.welcome.model.${tile}.description`)}
-                active={chosenWay === tile}
-                onPick={() => {
-                  setWay(tile);
-                  setTried(false);
-                }}
-              >
-                <div className={styles.fields}>
-                  {tile === 'openai' ? (
-                    <Field label={t('mu.welcome.model.openaiApi.label')}>
-                      <Radio.Group
-                        type='button'
-                        aria-label={t('mu.welcome.model.openaiApi.label')}
-                        value={openaiApi}
-                        onChange={(value: OpenAiApi) => setOpenaiApi(value)}
-                        options={OPENAI_APIS.map((value) => ({
-                          value,
-                          label: t(`mu.welcome.model.openaiApi.${value}`),
-                        }))}
-                      />
-                      <div className={choiceStyles.choiceHint}>{t(`mu.welcome.model.openaiApi.${openaiApi}Hint`)}</div>
-                    </Field>
-                  ) : null}
-                  <Field label={t('mu.welcome.model.baseUrl')} problem={fieldProblem('baseUrl')}>
-                    <Input
-                      aria-label={t('mu.welcome.model.baseUrl')}
-                      status={fieldStatus('baseUrl')}
-                      value={form.baseUrl}
-                      placeholder={ENDPOINT_PLACEHOLDER[api]}
-                      onChange={(baseUrl) => setForm((now) => ({ ...now, baseUrl }))}
-                    />
-                  </Field>
-                  <Field label={t('mu.welcome.model.key')} problem={fieldProblem('key')}>
-                    <Input.Password
-                      aria-label={t('mu.welcome.model.key')}
-                      status={fieldStatus('key')}
-                      autoComplete='new-password'
-                      value={form.key}
-                      placeholder={t('mu.welcome.model.keyPlaceholder')}
-                      onChange={(key) => setForm((now) => ({ ...now, key }))}
-                    />
-                  </Field>
-                  <Field label={t('mu.welcome.model.modelId')} problem={fieldProblem('model')}>
-                    <AutoComplete
-                      aria-label={t('mu.welcome.model.modelId')}
-                      status={fieldStatus('model')}
-                      value={form.model}
-                      data={listed}
-                      placeholder={t(`mu.welcome.model.${tile}.modelPlaceholder`)}
-                      onChange={(model: string) => setForm((now) => ({ ...now, model }))}
-                    />
-                  </Field>
-                  <ConnectionTest
-                    provider={provider(api)}
-                    typedKey={form.key.trim()}
-                    disabled={apiModelProblem({ ...apiInput(api), model: form.model || 'x' }) === 'baseUrl'}
-                    onModels={(models) => {
-                      setListed(models);
-                      // A service that lists one model has named it: nothing is left to choose.
-                      if (models.length === 1)
-                        setForm((now) => (now.model.trim() ? now : { ...now, model: models[0] }));
-                    }}
-                  />
-                </div>
-              </ChoiceTile>
-            );
-          })}
-        </div>
-      </>
-    );
-  } else if (step === 'judge') {
-    body = (
-      <>
-        <h1 className={styles.title}>{t('mu.welcome.judge.title')}</h1>
-        <p className={styles.subtitle}>{t('mu.welcome.judge.subtitle')}</p>
-        <div className={choiceStyles.choices} role='radiogroup' aria-label={t('mu.welcome.judge.title')}>
-          {GUIDE_CHOICES.map((choice) => (
-            <JudgeChoiceTile
-              key={choice}
-              choice={choice}
-              active={judge === choice}
-              onPick={() => mu.editSettings((now) => choose(now, choice))}
-            >
-              <ChoiceBody
-                choice={choice}
-                draft={draft}
-                guide
-                onChange={mu.editSettings}
-                onKey={(variable, value) =>
-                  mu.edit((now) => ({ ...now, judgeKeys: { ...now.judgeKeys, [variable]: value } }))
-                }
-              />
-            </JudgeChoiceTile>
-          ))}
+            testId='mu-welcome-way-cloud'
+            title={t('mu.welcome.cloud.title')}
+            tag={t('mu.welcome.cloud.tag')}
+            description={t('mu.welcome.cloud.description', { host: AIAPI_HOST })}
+            active
+            onPick={() => {}}
+          />
         </div>
       </>
     );
@@ -298,8 +122,6 @@ export default function Welcome() {
     );
   } else {
     const { provider: startProvider, model } = settings.models.defaults;
-    const jevKey = judge === 'jev' ? jevKeyVariable(judgeProfile) : undefined;
-    const keyReady = jevKey ? Boolean(settings.keys[jevKey] || draft.judgeKeys[jevKey]) : true;
     body = (
       <>
         <h1 className={styles.title}>{t('mu.welcome.done.title')}</h1>
@@ -318,10 +140,7 @@ export default function Welcome() {
           </div>
           <div className={styles.summaryRow}>
             <dt>{t('mu.welcome.done.judge')}</dt>
-            <dd>
-              {judge ? t(`mu.judges.choices.${judge}.title`) : t('mu.welcome.done.none')}
-              {judge === 'jev' && !keyReady ? <span className={styles.warn}>{t('mu.welcome.done.noKey')}</span> : null}
-            </dd>
+            <dd>{judge ? t(`mu.judges.choices.${judge}.title`) : t('mu.welcome.done.none')}</dd>
           </div>
           <div className={styles.summaryRow}>
             <dt>{t('mu.welcome.done.ilink')}</dt>
@@ -390,26 +209,22 @@ export default function Welcome() {
           )}
           <span className={styles.spacer} />
           {/* Skipping is a quiet text button on both steps; the lavender button is always the way on. */}
-          {step === 'model' || step === 'judge' || step === 'ilink' ? (
+          {step === 'cloud' || step === 'ilink' ? (
             <button
               type='button'
               className={styles.textButton}
               data-testid='mu-welcome-skip'
-              onClick={() => setStep(step === 'model' ? 'judge' : step === 'judge' ? 'ilink' : 'done')}
+              onClick={() => setStep(step === 'cloud' ? 'ilink' : 'done')}
             >
               {t('mu.welcome.skipStep')}
             </button>
           ) : null}
           {step === 'intro' ? (
-            <Button type='primary' shape='round' data-testid='mu-welcome-begin' onClick={() => setStep('model')}>
+            <Button type='primary' shape='round' data-testid='mu-welcome-begin' onClick={() => setStep('cloud')}>
               {t('mu.welcome.intro.start')}
             </Button>
-          ) : step === 'model' ? (
-            <Button type='primary' shape='round' data-testid='mu-welcome-next' onClick={nextFromModel}>
-              {t('mu.welcome.next')}
-            </Button>
-          ) : step === 'judge' ? (
-            <Button type='primary' shape='round' data-testid='mu-welcome-next' onClick={() => setStep('ilink')}>
+          ) : step === 'cloud' ? (
+            <Button type='primary' shape='round' data-testid='mu-welcome-next' onClick={nextFromCloud}>
               {t('mu.welcome.next')}
             </Button>
           ) : step === 'ilink' ? (
@@ -429,20 +244,6 @@ export default function Welcome() {
           )}
         </footer>
       </main>
-    </div>
-  );
-}
-
-function Field({ label, problem, children }: { label: string; problem?: string; children: React.ReactNode }) {
-  return (
-    <div className={styles.field}>
-      <label className={choiceStyles.choiceLabel}>{label}</label>
-      {children}
-      {problem ? (
-        <div className={styles.problem} role='alert'>
-          {problem}
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -251,9 +251,9 @@
           "runtime": "这台电脑运行不了这个模型。",
           "port": "Laya 的端口（{{port}}）已被别的程序占用。",
           "stopped": "Laya 还没准备好就停了。",
-  "foreign": "这里在运行一个不是 AiBuddy 启动的 Laya，请在启动它的地方停止它。",
-  "cancelled": "下载已取消。"
-}
+          "foreign": "这里在运行一个不是 AiBuddy 启动的 Laya，请在启动它的地方停止它。",
+          "cancelled": "下载已取消。"
+        }
       }
     },
     "clm": {
@@ -521,8 +521,7 @@
     "reopen": "新手引导",
     "progress": "引导进度",
     "steps": {
-      "model": "模型",
-      "judge": "判定器",
+      "cloud": "云端",
       "ilink": "微信",
       "done": "完成"
     },
@@ -567,6 +566,12 @@
         "openai-completionsHint": "兼容性最好，大多数服务和中转都用这个。",
         "openai-responsesHint": "OpenAI 的新接口，只有部分服务支持。"
       }
+    },
+    "cloud": {
+      "title": "连接 AiBuddy 云端",
+      "subtitle": "AiBuddy 只连接 aiapi.tuptup.top，并按任务自动选用最合适的模型，这里无需任何配置。",
+      "tag": "免配置",
+      "description": "仅连接 {{host}}"
     },
     "judge": {
       "title": "选一个判定器",
@@ -796,7 +801,7 @@
     "jobs": "后台命令：/jobs 查看，/jobs stop <编号|all> 停掉",
     "commit": "把还没提交的改动拆成几个提交：先给你看计划，你同意才提交，从不推送",
     "review": "让评审子代理审查还没提交的改动（或你指定的内容），评审发现按轻重排成 P0 到 P3",
-    "mu": "AiBuddy 的状态。另外：/AiBuddy judge <判定器> | /AiBuddy route <判定点> <判定器|default> | /AiBuddy mode <判定点|default> <off|shadow|active>",
+    "mu": "AiBuddy 的状态。另外：/mu judge <判定器> | /mu route <判定点> <判定器|default> | /mu mode <判定点|default> <off|shadow|active>",
     "status": "模型、判定器、各判定点的模式、省下的上下文和最近的判定",
     "help": "AiBuddy 能做什么，以及常用命令一览",
     "ledger": "判定器最近的判定和用时：/ledger [条数]",
