@@ -248,9 +248,7 @@ describe('who is signed in', () => {
       // google-antigravity is offered and signed in on the runner, but removed from this build: the app keeps only
       // the providers it knows.
       offered: ['openai-codex', 'anthropic', 'xai'],
-      signedIn: [
-        { provider: 'anthropic', models: [{ id: 'claude-opus-4-8', name: 'Claude Opus 4.8' }] },
-      ],
+      signedIn: [{ provider: 'anthropic', models: [{ id: 'claude-opus-4-8', name: 'Claude Opus 4.8' }] }],
     });
   });
 

@@ -27,7 +27,9 @@ describe('showAsMu', () => {
 
   it('shows the name as mu in German compound nouns, which join it to the next word with a hyphen', () => {
     expect(showAsMu('Die AionUi-Installation ist unvollständig.')).toBe('Die AiBuddy-Installation ist unvollständig.');
-    expect(showAsMu('Liebe AionUi-Nutzerin, lieber AionUi-Nutzer,')).toBe('Liebe AiBuddy-Nutzerin, lieber AiBuddy-Nutzer,');
+    expect(showAsMu('Liebe AionUi-Nutzerin, lieber AionUi-Nutzer,')).toBe(
+      'Liebe AiBuddy-Nutzerin, lieber AiBuddy-Nutzer,'
+    );
     expect(showAsMu('die AionUi-Oberfläche')).toBe('die AiBuddy-Oberfläche');
     expect(showAsMu('das lokale AionCore-Backend')).toBe('das lokale AiBuddy-Backend');
   });
