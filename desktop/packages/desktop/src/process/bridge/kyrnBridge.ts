@@ -18,6 +18,7 @@ import { importCli, importService } from '../agent/kyrn/importChats';
 import { LessonsStore, lessonsProject, type LessonsProject } from '../agent/kyrn/lessons';
 import { activityPage, modelLevels } from '../agent/kyrn/telemetry';
 import { findRegistration, initializeKyrn } from '../agent/kyrn/product';
+import { repairLauncherExe } from '../agent/kyrn/launcherRepair';
 import { muEnv, muHome } from '../agent/kyrn/naming';
 import { asRecord, text } from '../agent/kyrn/piRpc';
 import { sessionBinding } from '../agent/kyrn/sessionBinding';
@@ -103,6 +104,9 @@ export function initKyrnBridge(): void {
   // script: there the command is acp.cmd, which runs the same adapter with Node. The packaged app has no sources:
   // it carries the adapter bundled (out/main/mu-acp.js) and its launchers in resources/mu.
   const launchers = app.isPackaged ? join(process.resourcesPath, 'mu') : join(desktopRoot, 'scripts', 'kyrn');
+  // The launcher names the app binary by a build constant; after a rename the old name would 404 the health
+  // check. Repoint it at the binary actually running (best effort, see launcherRepair).
+  repairLauncherExe(launchers, process.platform, process.execPath);
   const command = join(launchers, process.platform === 'win32' ? 'acp.cmd' : 'acp');
   let initialization: Promise<KyrnCatalog> | undefined;
   const catalog = (): Promise<KyrnCatalog> => {
