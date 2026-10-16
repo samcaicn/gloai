@@ -456,8 +456,14 @@ if LIVE:
         bat = os.path.join(u.temp_dir, "apply_update.bat")
         new_exe = os.path.join(u.temp_dir, "weauto_exe", "WeAuto.exe")
         bat_text = open(bat, encoding="utf-8").read() if os.path.exists(bat) else ""
+        # bat 契约（对齐 updater.py _write_replace_bat 现版）：
+        #   copy /Y 覆盖 + start 启动新版本 + .bak 备份 + fc /b 校验 + ROLLBACK 回滚分支；
+        #   **不再自删**（del "%~f0" 已废除：cmd 删脚本文件会立刻终止批处理并吞掉
+        #   退出码，成功/回滚/放弃无从区分——2026-10-15 加固时刻意移除）。
         bat_ok = ("copy /Y" in bat_text and fake_exe in bat_text
-                  and "start" in bat_text and 'del "%~f0"' in bat_text)
+                  and "start" in bat_text
+                  and 'del "%~f0"' not in bat_text
+                  and "fc /b" in bat_text and ":ROLLBACK" in bat_text)
         ok("15b 线上下载+验签+bat 全链成功",
            res.get("success") is True and os.path.exists(new_exe) and bat_ok
            and mp.call_count == 1,
