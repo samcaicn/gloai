@@ -2,7 +2,6 @@ package com.jev.probe.core.license
 
 import android.content.Context
 import android.util.Log
-import com.jev.probe.core.Prefs
 import com.jev.probe.core.SecureStore
 import com.jev.probe.core.scriptpack.ScriptPackStore
 import org.json.JSONObject
@@ -66,7 +65,7 @@ object PackLedger {
 
     /** HMAC 密钥：32B 随机盐，经 SecureStore（AndroidKeyStore AES-GCM）加密后落盘。 */
     private fun signSalt(context: Context): ByteArray {
-        val prefs = Prefs.appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
         val enc = prefs.getString(K_SALT, "") ?: ""
         if (enc.isNotBlank()) {
             val dec = SecureStore.decrypt(context, enc)

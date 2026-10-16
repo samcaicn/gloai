@@ -543,14 +543,21 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
     /**
      * OpenAI-compatible chat completions 地址。
-     * cf worker ai 优先回复：worker / tuptup 两种云端模式都把生成式回复打到 Worker
-     * 的 /ai/v1/chat/completions（Cloudflare Workers AI，免费不限流），不再直连饱和
-     * 的 one-api 网关（aiapi.tuptup.top）；one-api 仅在 Worker 不可用时由 ReplyClient 兜底。
+     * 分流优先级（v1.1 免费模式）：
+     *   1. isTextCustom() —— 用户自填接口，直连、不过云端、不计免费条数；
+     *   2. worker / tuptup —— 打 Worker 的 /ai/v1/chat/completions
+     *      （Cloudflare Workers AI，免费条数由 Worker 侧计数）；
+     *   3. legacy 自建 —— replyBaseUrl。
      */
-    fun replyEndpoint(): String =
-        if (isWorkerMode) WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
-        else if (judgeProvider == PROVIDER_TUPTUP) WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
-        else "${replyBaseUrl.trim().trimEnd('/')}/chat/completions"
+    fun replyEndpoint(): String = when {
+        isTextCustom() -> {
+            val base = textBaseUrl.trim().trimEnd('/')
+            if (base.endsWith("/chat/completions")) base else "$base/chat/completions"
+        }
+        isWorkerMode -> WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
+        judgeProvider == PROVIDER_TUPTUP -> WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
+        else -> "${replyBaseUrl.trim().trimEnd('/')}/chat/completions"
+    }
 
     fun visionEndpoint(): String {
         if (isVisionCustom()) {

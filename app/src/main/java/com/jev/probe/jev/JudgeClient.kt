@@ -9,6 +9,7 @@ import com.jev.probe.core.Prefs
 import com.jev.probe.core.RankedReply
 import com.jev.probe.core.Score
 import com.jev.probe.core.kb.ChatContext
+import com.jev.probe.core.license.PackLedger
 import org.json.JSONObject
 
 /**
@@ -102,16 +103,20 @@ class JudgeClient(private val prefs: Prefs) {
         // jev 优先路径：无论 provider 是什么，决策协议都打 Jev 决策服务地址
         // （provider=tuptup 时即云端 worker；自建 provider 用各自配置的地址）。
         val url = prefs.jevDecisionsEndpoint()
-        // worker 模式：账户令牌鉴权 + 计费回传；legacy：原 judge key。
+        // v1.1 免费模式（对齐 PC 版 jevDecisions）：/ai/jev/decisions 无凭证放行，
+        // 不再带账户令牌鉴权；计费回传保留（Worker 不回带头时只是空转）。
         val billing = if (prefs.isWorkerMode) BillingState() else null
-        val auth = if (prefs.isWorkerMode) prefs.accountToken else prefs.judgeKey
+        val auth = if (prefs.isWorkerMode) "" else prefs.judgeKey
         val body = JSONObject()
             .put("model", prefs.judgeModel)
             .put("state", state)
             .put("questions", questions)
         val resp = HttpJson.post(
             url, "", body, Route.JUDGE, HttpJson.headersFor(url),
-            authToken = auth, instanceId = prefs.instanceId, billing = billing
+            authToken = auth, instanceId = prefs.instanceId, billing = billing,
+            onQuota = if (prefs.isWorkerMode) { r, l ->
+                PackLedger.syncFromHeaders(prefs.appContext, r, l)
+            } else null
         )
         prefs.recordBilling(billing)
         return resp.optJSONObject("answers") ?: JSONObject()

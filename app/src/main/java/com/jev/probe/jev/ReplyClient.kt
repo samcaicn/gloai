@@ -5,6 +5,7 @@ import com.jev.probe.core.BillingState
 import com.jev.probe.core.ChatSnapshot
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.kb.ChatContext
+import com.jev.probe.core.license.PackLedger
 import com.jev.probe.core.scriptpack.PackFewShot
 import com.jev.probe.core.scriptpack.PackPrompts
 import com.jev.probe.core.scriptpack.ScriptPack
@@ -49,13 +50,28 @@ class ReplyClient(private val prefs: Prefs) {
             "关系：$relationship\n\n最近对话：\n$convo\n\n请给出 $want 条候选回复。"
         // cf worker ai 优先回复：主路打 Worker（Cloudflare Workers AI），失败再兜底 one-api 网关。
         val cloudMode = prefs.isWorkerMode || prefs.judgeProvider == Prefs.PROVIDER_TUPTUP
+        // v1.1 免费模式：本地账本先自查——云端 KV 才是硬墙，本地判定避免把
+        // 已超限的流量打上去（对齐 PC 版 ledger.check_quota 的设计意图）。
+        // 授权设备走包内总次数（跨天累计）；未授权走每日免费条数。
+        if (cloudMode && !prefs.isTextCustom()) {
+            val q = PackLedger.checkQuota(prefs.appContext)
+            if (!q.allowed) {
+                Log.w(TAG, "reply quota exhausted: licensed=${q.licensed} " +
+                    "remain=${q.remaining} tampered=${q.tampered}")
+                return emptyList()
+            }
+        }
         return try {
-            parseThree(chat(sys, user, temperature = temperature, fewShot = fewShot))
+            val out = parseThree(chat(sys, user, temperature = temperature, fewShot = fewShot))
+            if (cloudMode) PackLedger.recordUsage(prefs.appContext)
+            out
         } catch (e: Exception) {
             if (!cloudMode) return emptyList()
             Log.w(TAG, "worker AI reply failed -> tuptup relay fallback: ${e.message}")
             try {
-                parseThree(chatFallback(sys, user, temperature = temperature, fewShot = fewShot))
+                val out = parseThree(chatFallback(sys, user, temperature = temperature, fewShot = fewShot))
+                PackLedger.recordUsage(prefs.appContext)
+                out
             } catch (e2: Exception) {
                 Log.w(TAG, "tuptup relay fallback also failed: ${e2.message}")
                 emptyList()
@@ -145,8 +161,12 @@ class ReplyClient(private val prefs: Prefs) {
         fewShot: List<PackFewShot> = emptyList()
     ): String {
         val url = prefs.replyEndpoint()
-        val billing = if (prefs.isWorkerMode) BillingState() else null
-        val auth = if (prefs.isWorkerMode) prefs.accountToken else prefs.effectiveReplyKey()
+        // v1.1 免费模式：自定义接口直连不过云端、不计量；云端模式（worker/tuptup）
+        // 才计费/计免费条数。
+        val custom = prefs.isTextCustom()
+        val cloud = prefs.isWorkerMode && !custom
+        val billing = if (cloud) BillingState() else null
+        val auth = prefs.effectiveReplyKey()
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", system))
         for (turn in fewShot) {
@@ -155,12 +175,14 @@ class ReplyClient(private val prefs: Prefs) {
         }
         messages.put(JSONObject().put("role", "user").put("content", user))
         val body = JSONObject()
-            .put("model", prefs.replyModel)
+            .put("model", if (custom) prefs.textModel.ifBlank { prefs.replyModel } else prefs.replyModel)
             .put("messages", messages)
             .put("temperature", temperature)
         val resp = HttpJson.post(
             url, "", body, Route.REPLY, HttpJson.headersFor(url),
-            authToken = auth, instanceId = prefs.instanceId, billing = billing
+            authToken = auth, instanceId = prefs.instanceId, billing = billing,
+            // 云端口径校准：Worker 回带剩余次数/上限，覆盖本地账本计数
+            onQuota = if (cloud) { r, l -> PackLedger.syncFromHeaders(prefs.appContext, r, l) } else null
         )
         prefs.recordBilling(billing)
         return resp.optJSONArray("choices")?.optJSONObject(0)

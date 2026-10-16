@@ -61,23 +61,28 @@ class LlmJudge(private val prefs: Prefs) {
     // ----------------------------------------------------------- 请求
 
     private fun chat(userPrompt: String, temperature: Double): String {
-        // aiapi 走 Worker 转发（/ai/tuptup/v1）：客户端不再直连 aiapi，key 在 Worker
-        // secret 里；model 由 Worker 侧强制覆盖为 auto。2026-10-15 实测 one-api
-        // default 组四模型全「无可用渠道」（火山配额耗尽），仅 auto 通（→Qwen2.5-7B），
-        // 故不再做客户端多模型降级轮询。
-        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/tuptup/v1/chat/completions"
+        // 分流（v1.1 免费模式）：
+        //   1. 用户自填接口（isTextCustom）—— 直连自家 OpenAI 兼容接口，
+        //      不过 WeAuto 云端、不计免费条数；body 与 relay 同为标准
+        //      chat completions，任何兼容端点都能吃。
+        //   2. 否则走 aiapi 转发（/ai/tuptup/v1，key 在 Worker secret 里；
+        //      model 由 Worker 侧强制覆盖为 auto）。2026-10-15 实测 one-api
+        //      default 组四模型全「无可用渠道」（火山配额耗尽），仅 auto 通
+        //      （→Qwen2.5-7B），故不再做客户端多模型降级轮询。
+        val url = if (prefs.isTextCustom()) prefs.replyEndpoint()
+        else Prefs.WORKER_BASE.trimEnd('/') + "/ai/tuptup/v1/chat/completions"
         val sys = "你是 Jev 对话判断引擎。只依据给定对话与背景给出结构化判断，绝不编造事实。" +
             "必须只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块。"
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", sys))
             .put(JSONObject().put("role", "user").put("content", userPrompt))
         val body = JSONObject()
-            .put("model", Prefs.TUPTUP_MODEL)
+            .put("model", prefs.textModel.ifBlank { Prefs.TUPTUP_MODEL })
             .put("messages", messages)
             .put("temperature", temperature)
         val resp = HttpJson.post(
             url, "", body, Route.JUDGE, HttpJson.headersFor(url),
-            authToken = if (prefs.isWorkerMode) prefs.accountToken else Prefs.TUPTUP_KEY,
+            authToken = prefs.effectiveReplyKey(),
             instanceId = prefs.instanceId
         )
         val content = resp.optJSONArray("choices")?.optJSONObject(0)
