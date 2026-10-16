@@ -1968,14 +1968,22 @@ open class ChatCaptureService : AccessibilityService() {
             }
             var attempt = 0
             // 一次完整发送尝试：读框为空先恢复聚焦 → 点/IME → 复检。
-            fun doAttempt() {
-                if (!isCurrent(token)) { failAndQueue(); sendSettled = true; onDone?.invoke(false); return }
+            // 复检：输入框空 = 真发出（FLAG_SECURE 黑屏下唯一可靠信号）。非空 = 没发出 → 退避重试。
+            fun attemptSend() {
+                if (!isCurrent(token)) {
+                    // 用户已切走：本次不判失败，把草稿落盘等该会话下次活跃再发（不丢队列）。
+                    Log.w(TAG, "sendTap: token stale before send -> queue draft for later")
+                    failAndQueue()
+                    sendSettled = true
+                    onDone?.invoke(false)
+                    return
+                }
                 val pre = ProbeImeBus.readBox()
                 if (pre != null && pre.isBlank()) {
                     // 空框 ≠ 一定没填进去：编辑器失焦后 InputConnection 退回系统 fallback 连接，
                     // 读框恒空。先重新聚焦复读、必要时重写草稿，再进来。
                     recoverEmptyBox(token) { ready ->
-                        if (ready) doAttempt()
+                        if (ready) attemptSend()
                         else {
                             Log.e(TAG, "sendTap: box empty + unrecoverable -> queue draft for later")
                             failAndQueue()
@@ -1987,10 +1995,6 @@ open class ChatCaptureService : AccessibilityService() {
                     return
                 }
                 tapOrIme()
-                verifyAfterSend()
-            }
-            // 复检：输入框空 = 真发出（FLAG_SECURE 黑屏下唯一可靠信号）。非空 = 没发出 → 退避重试。
-            fun verifyAfterSend() {
                 if (usedIme) {
                     // IME 兜底：微信 armed 一个「自动发送 2 秒后发出」倒计时，且探针 IME 持有编辑器
                     // 期间会卡住不跑。轮询到 ~4s 给足触发时间；期间框空即成功，仍非空才认输。
@@ -2032,7 +2036,7 @@ open class ChatCaptureService : AccessibilityService() {
                     attempt++
                     if (box != null && attempt < MAX_SEND_TRIES) {
                         Log.w(TAG, "sendTap verify: box still has ${box.length} chars -> not sent, retry ($attempt/$MAX_SEND_TRIES) backoff=${sendRetryBackoff(attempt)}ms")
-                        main.postDelayed({ doAttempt() }, sendRetryBackoff(attempt))
+                        main.postDelayed({ attemptSend() }, sendRetryBackoff(attempt))
                         return@postDelayed
                     }
                     if (box == null) {
@@ -2049,7 +2053,7 @@ open class ChatCaptureService : AccessibilityService() {
                         screenCapture.capture(shouldCapture = { isCurrent(token) }) { res ->
                             if (res is ScreenCapture.Result.Ok && weChatSendButtonPresent(res)) {
                                 Log.w(TAG, "sendTap verify: box unreadable + green present -> retry once")
-                                main.postDelayed({ doAttempt() }, sendRetryBackoff(attempt))
+                                main.postDelayed({ attemptSend() }, sendRetryBackoff(attempt))
                             } else {
                                 Log.i(TAG, "sendTap verify: box unreadable, green gone -> trust sent")
                                 sendSettled = true
@@ -2066,7 +2070,7 @@ open class ChatCaptureService : AccessibilityService() {
                     onDone?.invoke(false)
                 }, 1200L)
             }
-            doAttempt()
+            attemptSend()
             }, 400L)
         }
     }
@@ -2134,8 +2138,8 @@ open class ChatCaptureService : AccessibilityService() {
         if (destroyed || !prefs.enabled) { onResolved(false); return }
         currentSendConv = conv
         currentSendText = text
-        val fire = {
-            if (destroyed || !prefs.enabled) { onResolved(false); return@fire }
+        fun fire() {
+            if (destroyed || !prefs.enabled) { onResolved(false); return }
             val token = session.beginNotification(PKG_WECHAT, conv)
             fillInput(token, text, onSendComplete = { sent ->
                 if (sent) {
