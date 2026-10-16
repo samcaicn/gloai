@@ -85,7 +85,11 @@ class Handler(BaseHTTPRequestHandler):
             sig = self.headers.get("x-weauto-sig")
             length = int((self.headers.get("content-length", "0") or "0"))
             raw = self.rfile.read(length) if length else b""
-            expect = _h.new(b"s3cr3t", b"POST\n/auth\n" + (ts or "").encode() + b"\n" + (nonce or "").encode() + b"\n" + raw, _hl2.sha256).hexdigest()
+            # 密钥与客户端同一套解析：发行态（本机 _release.py 存在）_client_secret()
+            # 走 blob 真密钥、set_cfg 注入被绕过，mock 若写死 "s3cr3t" 必 401——
+            # 开发态（CI 无 _release.py）才回落注入值。两端同源才不会假红。
+            _secret = (jev_guard._client_secret() or "s3cr3t").encode("utf-8")
+            expect = _h.new(_secret, b"POST\n/auth\n" + (ts or "").encode() + b"\n" + (nonce or "").encode() + b"\n" + raw, _hl2.sha256).hexdigest()
             if ts and nonce and sig and _h.compare_digest(expect, sig):
                 self._send({"answers": GOOD_ANSWERS})
             else:
@@ -354,7 +358,14 @@ try:
     v_auth = jev_guard.judge("u", "x")
     ok("配了密钥 -> 签名被后端接受", isinstance(v_auth, dict) and len(v_auth) > 0, v_auth)
     set_cfg(WEAUATO_CLIENT_SECRET="")
-    ok("未配密钥 -> 无签名 -> 后端拒 -> None", jev_guard.judge("u", "x") is None)
+    # 发行态密钥来自 blob、set_cfg 清不掉——桩掉 _client_secret 让「未配密钥」场景
+    # 在开发态/发行态都真实成立（无签名头 -> 后端 401 -> None）。
+    _orig_secret_fn = jev_guard._client_secret
+    jev_guard._client_secret = lambda: ""
+    try:
+        ok("未配密钥 -> 无签名 -> 后端拒 -> None", jev_guard.judge("u", "x") is None)
+    finally:
+        jev_guard._client_secret = _orig_secret_fn
 
     # ---------- 12. self_test 不参与熔断 ----------
     use("/ok")

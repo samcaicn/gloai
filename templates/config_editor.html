@@ -3602,7 +3602,6 @@
             <div class="sidebar-group">
                 <div class="sidebar-group-label">让 AI 开始工作</div>
                 <ul>
-                    <li><a href="#" data-target="section-ext-quickstart">快速上手</a></li>
                     <li><a href="#" data-target="section-user-list" class="active">用户与监听</a></li>
                     <li><a href="#" data-target="section-prompt-management">AI 人设</a></li>
                     <li><a href="#" data-target="section-chat-model">AI 模型</a></li>
@@ -3660,7 +3659,12 @@
                  2026-10-05 二次精简：顶部按钮全部并入左侧菜单；联网搜索默认开启并撤掉配置页。
                  2026-10-05 三次精简：所有菜单项（含快速上手/AI分身/风格模仿/固定转发/Jev/CLI工具控制/MCP/常见问题）
                  统一为「页内面板切换」——原先这些是整页跳转 + 各自带「返回配置」按钮，点击行为不一致；
-                 现改为 iframe 内嵌面板（?embed=1 隐藏子页独立页头），左侧任意点击都只是切换当前面板。 -->
+                 现改为 iframe 内嵌面板（?embed=1 隐藏子页独立页头），左侧任意点击都只是切换当前面板。
+                 2026-10-16 四次精简：隐藏「快速上手」菜单项——向导只用一次，常驻侧栏首位对老用户是噪音。
+                 路由 /quick_start 与面板均保留：未填 API Key 时首次打开软件仍自动进入（index 302 产品行为不变），
+                 老用户可从「常见问题」③ 的链接重新打开。同轮修复「自动化中心」死链：v1.4 起面板误带
+                 行内 display:none（行内样式压过 .active-panel 类规则），侧栏点击无响应；关键词+定时
+                 规则功能 bot/API/JS 本就齐全，删掉行内样式即恢复可达。 -->
         </nav>
         
 
@@ -4168,7 +4172,7 @@
                 </div>
 
                 <!-- v1.4 自动化中心：关键词/定时规则 → 指定回复 -->
-                <div id="section-automation" class="content-panel" style="display:none;">
+                <div id="section-automation" class="content-panel">
                     <h2>自动化中心</h2>
                     <small class="panel-lead">「当 XX 触发 → 自动发送指定内容」：关键词命中直接回复，定时到点主动发送。规则在 bot 运行时实时生效，保存即用。</small>
                     <div class="form-group">
