@@ -20,7 +20,7 @@ import {
 } from './nodeRuntimeConsent';
 
 /** The native question before the Node.js download: 下载 / 稍后, with what comes from where, how large, and to where. */
-async function askNodeRuntimeDownload(runtime: ManagedNodeRuntime, t: TFunction): Promise<NodeRuntimeChoice> {
+export async function askNodeRuntimeDownload(runtime: ManagedNodeRuntime, t: TFunction): Promise<NodeRuntimeChoice> {
   // No window exists yet: bring the app forward so the question is not left behind another one. Only an unpackaged
   // build asks, and its alert would carry Electron's icon: give it the μ one the dock shows.
   app.focus({ steal: true });
