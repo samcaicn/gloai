@@ -62,7 +62,7 @@ type FixtureOptions = {
 };
 
 /** Error text of a fixture mu that has stopped, as PiRpc's. */
-const CLOSED = 'mu process is closed';
+const CLOSED = 'AiBuddy process is closed';
 
 function fixture(options: FixtureOptions = {}) {
   const store = mkdtempSync(join(tmpdir(), 'kyrn-acp-'));

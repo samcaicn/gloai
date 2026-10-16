@@ -80,7 +80,7 @@ setTimeout(() => {}, 5000);
     await vi.waitFor(() => expect(events.some((event) => event.type === 'kyrn_rpc_closed')).toBe(true), {
       timeout: 5000,
     });
-    await expect(port.send({ type: 'get_state' })).rejects.toThrow('mu process is closed');
+    await expect(port.send({ type: 'get_state' })).rejects.toThrow('AiBuddy process is closed');
     // The closed port takes further answers without a word.
     expect(() => port.respond({ id: 'ui-3', cancelled: true })).not.toThrow();
     expect(events.filter((event) => event.type === 'kyrn_rpc_closed')).toHaveLength(1);

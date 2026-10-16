@@ -84,9 +84,9 @@ GLYPH_CENTRE = (50.6, 53.2)  # centre of the glyph's bounding box, what the smal
 # 16-32 px: the glyph grows by this factor; the stroke is given in the grown glyph's own box.
 SMALL_GLYPH_SCALE = 1.24
 SMALL_GLYPH_STROKE = 11.2
-# The simplified tile: the artwork's diagonal, pink to violet to periwinkle, a shade deeper in the
+# The simplified tile: the artwork's diagonal, AiBuddy blue, a shade deeper in the
 # middle than the artwork so that a 2 px white stroke still separates from it.
-SMALL_GRADIENT = ((0.0, (0xF3, 0xC6, 0xFA)), (0.5, (0xB7, 0x9C, 0xF7)), (1.0, (0x86, 0x80, 0xEB)))
+SMALL_GRADIENT = ((0.0, (0x5E, 0x7C, 0xFB)), (0.5, (0x4D, 0x6B, 0xFE)), (1.0, (0x3C, 0x57, 0xD4)))
 
 def load_source() -> np.ndarray:
     image = Image.open(SOURCE)
