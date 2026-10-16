@@ -2123,7 +2123,11 @@ open class ChatCaptureService : AccessibilityService() {
             val line = "${System.currentTimeMillis()},${(conv ?: "-").replace(',', ';')}," +
                 (if (ok) "sent" else "failed") + "," + detail.replace(',', ';').take(80) + "\n"
             Thread {
-                try { java.io.File(dir, "send_ledger.csv").appendText(line) } catch (_: Exception) {}
+                try {
+                    val f = java.io.File(dir, "send_ledger.csv")
+                    dir.mkdirs() // 首次写入前目录可能还没建（外部目录惰性创建）
+                    f.appendText(line)
+                } catch (_: Exception) {}
             }.start()
         } catch (_: Exception) {}
     }
