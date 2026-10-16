@@ -6,6 +6,7 @@ import {
   suggestProviderId,
   type EndpointType,
 } from '@/common/kyrn/models';
+import { AIAPI_HOST } from '@/common/kyrn/cloud';
 import type { KyrnSettings } from '@/common/kyrn/types';
 import type { Draft } from '@/renderer/pages/settings/KyrnSettings/draft';
 import { blankModel, blankProvider } from '@/renderer/pages/settings/KyrnSettings/providers/endpoints';
@@ -151,8 +152,12 @@ export function withSignedInModel(draft: Draft, provider: string, model: string,
   };
 }
 
-/** The only backend the app connects to: the AiBuddy cloud. */
-export const AIAPI_HOST = 'https://aiapi.tuptup.top';
+/**
+ * The only backend the app connects to: the AiBuddy cloud. The host itself is shared with the main process,
+ * which asks the same cloud whether the judge runs (see common/kyrn/cloud.ts); it is re-exported here because
+ * the guide is where a new install first meets it.
+ */
+export { AIAPI_HOST };
 /** The built-in provider the first-run guide connects, pointed at the cloud. */
 export const AIAPI_PROVIDER_ID = 'aibuddy';
 

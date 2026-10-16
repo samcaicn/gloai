@@ -19,6 +19,7 @@ import { LessonsStore, lessonsProject, type LessonsProject } from '../agent/kyrn
 import { activityPage, modelLevels } from '../agent/kyrn/telemetry';
 import { findRegistration, initializeKyrn } from '../agent/kyrn/product';
 import { repairLauncherExe } from '../agent/kyrn/launcherRepair';
+import { JUDGE_SWITCH_INTERVAL_MS, syncJudgeSwitch } from '../agent/kyrn/judgeSwitch';
 import { muEnv, muHome } from '../agent/kyrn/naming';
 import { asRecord, text } from '../agent/kyrn/piRpc';
 import { sessionBinding } from '../agent/kyrn/sessionBinding';
@@ -107,6 +108,14 @@ export function initKyrnBridge(): void {
   // The launcher names the app binary by a build constant; after a rename the old name would 404 the health
   // check. Repoint it at the binary actually running (best effort, see launcherRepair).
   repairLauncherExe(launchers, process.platform, process.execPath);
+  // The cloud's judge switch: one line in the harness .env, asked at start and every few hours. Best effort by
+  // design (see judgeSwitch): a cloud that cannot be reached leaves the last answer in force, and the judge on
+  // for a machine that never reached one. The launcher reads the .env at every spawn, so the next start of the
+  // kernel runs with what the cloud said.
+  const judgeEnv = { envPath: envFileOf(harness, home, process.platform), home };
+  void syncJudgeSwitch(judgeEnv);
+  const judgeTimer = setInterval(() => void syncJudgeSwitch(judgeEnv), JUDGE_SWITCH_INTERVAL_MS);
+  judgeTimer.unref?.();
   const command = join(launchers, process.platform === 'win32' ? 'acp.cmd' : 'acp');
   let initialization: Promise<KyrnCatalog> | undefined;
   const catalog = (): Promise<KyrnCatalog> => {
