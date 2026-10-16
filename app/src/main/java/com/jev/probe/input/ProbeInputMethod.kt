@@ -138,6 +138,14 @@ class ProbeInputMethod : InputMethodService() {
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         ProbeImeBus.imeActive = true
+        // 编辑器身份捕获（2026-10-16 19:25 假阳性修复）：假连接（语音态隐藏 EditText /
+        // TYPE_NULL fallback）的 commitText 会静默丢失、readBox 恒空——上层据此谎报
+        // 「已发送」。onStartInput 是每个新连接的必回调，在这记录 EditorInfo 全貌，
+        // 既供写入前守卫（editorIsTextEditor），也让下次翻车能自证。
+        val ei = currentInputEditorInfo
+        ProbeImeBus.editorPkg = ei?.packageName
+        ProbeImeBus.editorInputType = ei?.inputType ?: 0
+        Log.i(TAG, "ProbeIme: editor identity pkg=${ei?.packageName} inputType=0x${Integer.toHexString(ei?.inputType ?: 0)} imeOptions=0x${Integer.toHexString(ei?.imeOptions ?: 0)}")
         publishWindowHeight()
         // poll 看门狗：onCreateInputView 只在 IME 视图首次创建时调一次，poll 链一旦
         // 断裂（onDestroy 后服务重建 / tick 里 polling=false 提前 return 就不再自恢复）
@@ -175,6 +183,9 @@ class ProbeInputMethod : InputMethodService() {
         ProbeImeBus.imeActive = false
         ProbeImeBus.boxReader = null
         ProbeImeBus.sendAction = null
+        ProbeImeBus.editorPkg = null
+        ProbeImeBus.editorInputType = 0
+        ProbeImeBus.lastWriteVerified = false
         Log.i(TAG, "ProbeIme: onFinishInput")
         super.onFinishInput()
     }
@@ -184,6 +195,9 @@ class ProbeInputMethod : InputMethodService() {
         ProbeImeBus.imeActive = false
         ProbeImeBus.boxReader = null
         ProbeImeBus.sendAction = null
+        ProbeImeBus.editorPkg = null
+        ProbeImeBus.editorInputType = 0
+        ProbeImeBus.lastWriteVerified = false
         handler.removeCallbacksAndMessages(null)
         Log.i(TAG, "ProbeIme: onDestroy")
         super.onDestroy()
@@ -223,6 +237,21 @@ class ProbeInputMethod : InputMethodService() {
         ic.performContextMenuAction(android.R.id.selectAll)
         ic.commitText(text, 1)
         Log.i(TAG, "ProbeIme: committed ${text.length} chars send=$send (box cleared first)")
+        // 读回校验（2026-10-16 19:25 假阳性修复）：commit 后立刻读框。真连接上刚提交的
+        // 文本必须读得回来（健康轮次 attemptSend 的 pre-read 就是这么拿到文本的）；
+        // 读不回 = 假连接（语音态隐藏 EditText / TYPE_NULL fallback）——字已写进虚空，
+        // 用户框里什么都没有，上层任何「框空=已发」都是谎言。直接判失败：走上层
+        // 剪贴板兜底 + 明示，绝不让死读框进发送验证链。
+        val readBack = readBoxText()
+        if (readBack.isNullOrEmpty()) {
+            Log.e(TAG, "ProbeIme: read-back EMPTY after commit -> fake connection (pkg=${ProbeImeBus.editorPkg} type=0x${Integer.toHexString(ProbeImeBus.editorInputType)}), write LOST")
+            ProbeImeBus.reportSent(false)
+            ProbeImeBus.lastWriteVerified = false
+            ProbeImeBus.completeWrite(false)
+            return
+        }
+        ProbeImeBus.lastWriteVerified = true
+        Log.i(TAG, "ProbeIme: read-back ok (${readBack.length} chars) -> write landed in a real editor")
         // 发送不归输入法管：IME 只负责写入。真正发送由 ChatCaptureService 的
         // 「截图确认绿键在 → 点 (0.9111W, H-IME实际高-56dp/2) → 1.1s 复检 →
         // 重点一次」完成——保留 sendDelayMs 倒计时撤回窗口（IME 内直接发会吞掉

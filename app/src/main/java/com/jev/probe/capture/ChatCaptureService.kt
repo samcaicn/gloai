@@ -2047,6 +2047,11 @@ open class ChatCaptureService : AccessibilityService() {
             // 点发送这一刻读框是否盲（看不到框内容）。盲态下「点后框空」仍是唯一发送
             // 信号，但台账要标记出来，便于和真读到空的情况区分。
             var blindTap = false
+            // 读框本轮是否证明过自己：读到过非空文本，或 commit 时读回校验通过
+            // （ProbeImeBus.lastWriteVerified）。死读框的「框空」零信息量——
+            // 2026-10-16 19:25 假阳性根因：假连接下读框恒空，「框空=已发」连报
+            // 3 条 sent，回复从未到达。没有这个证据链，框空一律不判已发送。
+            var sawBoxText = false
             // 一次完整发送尝试：读框为空先恢复聚焦 → 点/IME → 复检。
             // 复检：输入框空 = 真发出（FLAG_SECURE 黑屏下唯一可靠信号）。非空 = 没发出 → 退避重试。
             fun attemptSend() {
@@ -2059,6 +2064,8 @@ open class ChatCaptureService : AccessibilityService() {
                     return
                 }
                 val pre = ProbeImeBus.readBox()
+                if (!pre.isNullOrBlank()) sawBoxText = true
+                else if (ProbeImeBus.lastWriteVerified) sawBoxText = true
                 if (pre != null && pre.isBlank()) {
                     if (!recoverUsed) {
                         // 空框 ≠ 一定没填进去：编辑器失焦后 InputConnection 退回系统 fallback 连接，
@@ -2116,12 +2123,37 @@ open class ChatCaptureService : AccessibilityService() {
                 main.postDelayed({
                     if (!isCurrent(token)) { failAndQueue(); sendSettled = true; onDone?.invoke(false); return@postDelayed }
                     val box = ProbeImeBus.readBox()
-                    if (box != null && box.isBlank() && anyImeWindowPresent()) {
+                    if (box != null && box.isBlank() && anyImeWindowPresent() && sawBoxText) {
                         Log.i(TAG, "sendTap verify: box EMPTY -> message really sent (attempt=$attempt blind=$blindTap)")
                         sendSettled = true
                         appendSendLedger(currentSendConv, true, if (blindTap) "box empty after tap (blind)" else "box empty after tap")
                         overlay?.toast(t("已自动发送", "Sent automatically"))
                         onDone?.invoke(true)
+                        return@postDelayed
+                    }
+                    if (box != null && box.isBlank() && anyImeWindowPresent() && !sawBoxText) {
+                        // 死读框防护（2026-10-16 19:25 假阳性根因）：读框本轮从没读到过
+                        // 文本、commit 读回校验也没过——「框空」不是发送证据，绝不记已发。
+                        // 补一次 IME 代发（连接真就能发出），再复检；仍不可判 → 落队 + 明示。
+                        Log.e(TAG, "sendTap verify: box EMPTY but reader never proved itself -> NOT evidence of send (attempt=$attempt)")
+                        ProbeImeBus.requestSendViaIme()
+                        main.postDelayed({
+                            if (!isCurrent(token)) { failAndQueue(); sendSettled = true; onDone?.invoke(false); return@postDelayed }
+                            val box2 = ProbeImeBus.readBox()
+                            if (!box2.isNullOrBlank()) {
+                                Log.w(TAG, "sendTap: IME send dispatched but box still has ${box2.length} chars -> not sent, queue")
+                                failAndQueue()
+                                sendSettled = true
+                                overlay?.toast(t("发送未确认，已加入重试队列", "Send unconfirmed — queued for retry"))
+                                onDone?.invoke(false)
+                                return@postDelayed
+                            }
+                            Log.e(TAG, "sendTap: IME send dispatched, reader still blind -> queue (unverified)")
+                            failAndQueue()
+                            sendSettled = true
+                            overlay?.toast(t("发送未确认，请手动发送或稍后重试", "Send unconfirmed — send manually or retry later"))
+                            onDone?.invoke(false)
+                        }, 1300L)
                         return@postDelayed
                     }
                     if (box != null && box.isBlank()) {
@@ -2463,7 +2495,11 @@ open class ChatCaptureService : AccessibilityService() {
             // y=2024（语音态下那是消息列表）、8 字 commit 进隐藏框（用户不可见）、盲点后
             // 「框空=已发」假阳性——台账连报 3 条 sent，回复从未到达。
             // 「文本态」判据 = imeActive **且** 此刻真有 IME 窗口（实时 getWindows）。
-            if (ProbeImeBus.imeActive && anyImeWindowPresent()) {
+            // 第三重守卫（2026-10-16 19:25 假阳性修复）：连接身份。imeActive+IME 窗口
+            // 仍可能是假连接——微信语音态输入栏的隐藏 EditText 被聚焦时两者都真，但
+            // commitText 静默写进虚空、读框恒空。只有「微信聊天输入框的真文本编辑器」
+            // 才放行写入；假连接走下方「点输入栏重挂 + 剪贴板兜底 + 复查」。
+            if (ProbeImeBus.imeActive && anyImeWindowPresent() && ProbeImeBus.editorIsTextEditor(PKG_WECHAT)) {
                 // 探针已激活（用户自己在系统/通知栏切到了探针输入法）：投递 + 聚焦输入栏，
                 // 走 poll path 直接填字（输入法写入前会先清空旧草稿，防多轮回复串缸）。
                 // autoSend 开时由 sendFor 走「截图确认绿键 → 点 → 复检 → 重点」
@@ -2493,7 +2529,10 @@ open class ChatCaptureService : AccessibilityService() {
                     // 键盘窗口绘制还有延迟：600ms 没起来不急着下结论，再宽限 800ms 二次复查，
                     // 两次都无窗口才判语音态——绝不把「文本态键盘慢」误切成语音（越切越坏）。
                     fun recheckAfterTap(round: Int) {
-                        if (ProbeImeBus.imeActive && anyImeWindowPresent()) {
+                        // 复查判据加上连接身份（2026-10-16 19:25 假阳性修复）：点输入栏
+                        // 不仅要让 IME 挂上，还要让**真编辑器**（微信聊天输入框）聚焦——
+                        // 语音态隐藏 EditText 被聚焦时 imeActive 恒真但连接是假的。
+                        if (ProbeImeBus.imeActive && anyImeWindowPresent() && ProbeImeBus.editorIsTextEditor(PKG_WECHAT)) {
                             Log.i(TAG, "fillInput: probe IME mounted after tap (round=$round) -> retry via poll path")
                             fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
                             return

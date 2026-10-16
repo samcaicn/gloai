@@ -115,11 +115,46 @@ object ProbeImeBus {
         false
     }
 
-    /** 读当前输入框全文；IME 不在位/异常返回 null（调用方退回截屏软参考）。 */
+    /**
+     * 当前输入连接的目标编辑器身份（onStartInput 时从 EditorInfo 捕获）。
+     *
+     * 2026-10-16 19:25 真机翻车根因：微信语音态输入栏有隐藏 EditText，通知 reopen 时
+     * 它被聚焦 → onStartInput → imeActive=true、IME 窗口也在（304px），但这是个
+     * **假连接**：commitText 静默写进虚空（用户框里看不到字）、readBox 恒空串。
+     * 上层拿死读框的「框空」当已发送证据 → 台账谎报 sent，回复从未到达（用户原话：
+     * 「我发了 你没发成功」）。所以连接身份必须是一等状态：写入前先问「这是微信
+     * 聊天输入框的真文本编辑器吗」，commit 后还必须读回校验。
+     */
+    @Volatile
+    var editorPkg: String? = null
+
+    /** EditorInfo.inputType；TYPE_NULL(0) = 无编辑器（IME 被强显到非编辑窗口）。 */
+    @Volatile
+    var editorInputType: Int = 0
+
+    /** 最近一次 requestWrite 的 commit 是否读回校验通过（字真在框里）。 */
+    @Volatile
+    var lastWriteVerified: Boolean = false
+
+    /**
+     * 读当前输入框全文；IME 不在位/异常返回 null（调用方退回截屏软参考）。
+     */
     fun readBox(): String? = try {
         boxReader?.invoke()
     } catch (_: Exception) {
         null
+    }
+
+    /**
+     * 当前输入连接是不是 [pkg] 的真文本编辑器（微信聊天输入框）。
+     * 判据：包名匹配 + inputType 非 TYPE_NULL + class 为 TYPE_CLASS_TEXT。
+     * 语音态隐藏 EditText（TYPE_NULL）/ 系统 fallback 连接都过不了。
+     */
+    fun editorIsTextEditor(pkg: String): Boolean {
+        val t = editorInputType
+        return editorPkg == pkg &&
+            t != android.view.inputmethod.EditorInfo.TYPE_NULL &&
+            (t and android.view.inputmethod.EditorInfo.TYPE_MASK_CLASS) == android.view.inputmethod.EditorInfo.TYPE_CLASS_TEXT
     }
 
     @Synchronized
