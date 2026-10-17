@@ -477,8 +477,15 @@ class Updater:
             # 软件彻底起不来且无任何提示。这里覆盖前后各做一次校验：
             #   覆盖前：备份当前 exe 为 .bak
             #   覆盖后：大小 + fc /b 二进制比对，不一致立即回滚备份并启动旧版
+            # 把 zip 内签名写出为临时 .sig，bat 会一并搬运到新 exe 同目录
+            _b = locals().get("_sig_bytes")
+            _sig_out = ""
+            if _b:
+                _sig_out = os.path.join(self.temp_dir, "weauto_update.sig")
+                with open(_sig_out, "wb") as _sf:
+                    _sf.write(_b)
             with open(bat, "w", encoding="utf-8") as f:
-                self._write_replace_bat(f, os.path.abspath(src), current, logf)
+                self._write_replace_bat(f, os.path.abspath(src), _sig_out, current, logf)
             subprocess.Popen(["cmd", "/c", bat], shell=False)
             self._save_local_artifact_updated_at(update_info.get("version"), update_info.get("artifact_id"))
             return {"success": True, "output": "\n".join(progress) + "\n已下载新版本，将在退出后自动替换并重启"}
@@ -650,7 +657,8 @@ class Updater:
             logf = os.path.join(temp_dir, "apply_update.log")
             current = os.path.abspath(sys.executable)
             with open(bat, "w", encoding="utf-8") as f:
-                self._write_replace_bat(f, os.path.abspath(staged_exe), current, logf)
+                self._write_replace_bat(f, os.path.abspath(staged_exe),
+                                        staged_sig or "", current, logf)
             subprocess.Popen(["cmd", "/c", bat], shell=False)
             # 删除 pending 标记（bat 完成替换后会自行处理；标记删除避免重复触发）
             try:
@@ -663,8 +671,12 @@ class Updater:
             logger.warning("应用待更新失败: %s", e)
             return False
 
-    def _write_replace_bat(self, f, src, current, logf):
+    def _write_replace_bat(self, f, src, src_sig, current, logf):
         """写入「自替换批处理」内容（可单测：传一个 file-like 即可，不真正执行）。
+
+        src_sig 为随包下发的 WeAuto.exe.sig 路径；bat 会把新 sig 一并搬到
+        新 exe 同目录，使「已安装 EXE 被 patch」能被 hardening.self_integrity_ok()
+        用同目录 sig 揭穿（纵深防御闭环）。
 
         分支：
           WAITLOCK  copy 失败（映像锁未释放）→ 重试至 40 次仍失败则放弃（exit 1）
@@ -681,6 +693,7 @@ class Updater:
         f.write("@echo off\n")
         f.write("setlocal enabledelayedexpansion\n")
         f.write('set "SRC=%s"\n' % src)
+        f.write('set "SRCSIG=%s"\n' % (src_sig or ""))
         f.write('set "DST=%s"\n' % current)
         f.write('set "BAK=%DST%.bak"\n')
         f.write('set "LOGF=%s"\n' % logf)
@@ -694,17 +707,22 @@ class Updater:
         # 杀软扫描进一步拉长，单纯重试很容易全败）。
         f.write('for %%F in ("%DST%") do set "DSTNAME=%%~nxF"\n')
         f.write('for %%F in ("%DST%") do set "DSTDIR=%%~dpF"\n')
+        f.write('set "DSTSIG=!DSTDIR!WeAuto.exe.sig"\n')
+        f.write('set "OLDSIG=!DSTDIR!WeAuto.exe.sig.bak"\n')
+        f.write('if exist "!DSTSIG!" copy /Y "!DSTSIG!" "!OLDSIG!" >nul 2>&1\n')
         f.write('set "OLDNAME=!DSTNAME!.old"\n')
         f.write(":RENAME_TRY\n")
         f.write("pushd \"!DSTDIR!\"\n")
         f.write('ren "!DSTNAME!" "!OLDNAME!" >> "%LOGF%" 2>&1\n')
         f.write("if errorlevel 1 goto RNFAIL\n")
         f.write('copy /Y "%SRC%" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
+        f.write('if exist "%SRCSIG%" copy /Y "%SRCSIG%" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
         f.write("if not errorlevel 1 goto RNVERIFY\n")
         # 新文件写入失败：立刻把旧文件改回来；改不回来就从备份复制回来，绝不让用户无 exe 可用
         f.write('>> "%LOGF%" echo WARN 让位后写入失败，正在还原旧文件\n')
         f.write('ren "!OLDNAME!" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
         f.write('if errorlevel 1 copy /Y "%BAK%" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
+        f.write('copy /Y "!OLDSIG!" "!DSTSIG!" >nul 2>&1\n')
         f.write(":RNFAIL\n")
         f.write("popd\n")
         f.write("goto WAITLOCK\n")
@@ -716,6 +734,7 @@ class Updater:
         f.write(":WAITLOCK\n")
         f.write("timeout /t 2 /nobreak >nul\n")
         f.write('copy /Y "%SRC%" "%DST%" >> "%LOGF%" 2>&1\n')
+        f.write('if exist "%SRCSIG%" copy /Y "%SRCSIG%" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
         f.write("if not errorlevel 1 goto VERIFY\n")
         f.write("set /a N+=1\n")
         # 实测：onefile 父进程清理 _MEI（约 90MB 解压目录）需 35~40s 才释放映像锁，
@@ -738,6 +757,7 @@ class Updater:
         f.write(":ROLLBACK\n")
         f.write('>> "%LOGF%" echo FAILED 覆盖后文件不完整(!DS!/!SS!)，回滚到备份版本\n')
         f.write('copy /Y "%BAK%" "%DST%" >> "%LOGF%" 2>&1\n')
+        f.write('if exist "!OLDSIG!" copy /Y "!OLDSIG!" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
         f.write('start "" "%DST%"\n')
         f.write("exit /b 2\n")
 

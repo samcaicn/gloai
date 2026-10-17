@@ -217,6 +217,10 @@ def obfuscate(keys: dict) -> None:
 
     注意：pyarmor 可执行文件必须与目标运行时同一 Python 版本（本机构建=venv_bot 3.10），
     否则生成的 pyarmor_runtime.pyd 在运行时 DLL 加载失败。
+
+    反编译加固：优先启用 `--mix-str`（字符串字面量加密，隐藏端点路径/字段名等，
+    提高反编译成本）；若当前 pyarmor 版本不支持或需 license（返回非 0），自动回退到
+    默认混淆，保证构建绝不因加固 flag 中断。
     """
     if os.path.exists(OBF_DIR):
         shutil.rmtree(OBF_DIR)
@@ -227,12 +231,20 @@ def obfuscate(keys: dict) -> None:
         os.path.join(ROOT, "device_id.py"),
         os.path.join(ROOT, "_packcrypto_bundle.py"),
     ]
-    cmd = [_pyarmor_exe(), "gen", "-O", OBF_DIR] + targets
-    print("[build] PyArmor:", " ".join(cmd))
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if r.returncode != 0:
-        raise SystemExit("PyArmor 混淆失败: " + (r.stderr or r.stdout or "")[-1000:])
-    print("[build] PyArmor 混淆完成 ->", OBF_DIR)
+    variants = [
+        [_pyarmor_exe(), "gen", "-O", OBF_DIR, "--mix-str"] + targets,
+        [_pyarmor_exe(), "gen", "-O", OBF_DIR] + targets,
+    ]
+    last_err = ""
+    for cmd in variants:
+        print("[build] PyArmor:", " ".join(cmd))
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode == 0:
+            print("[build] PyArmor 混淆完成 ->", OBF_DIR,
+                  "（含字符串加密 --mix-str）" if "--mix-str" in cmd else "（默认模式）")
+            return
+        last_err = (r.stderr or r.stdout or "")[-1500:]
+    raise SystemExit("PyArmor 混淆失败: " + last_err)
 
 
 def run_pyinstaller() -> None:

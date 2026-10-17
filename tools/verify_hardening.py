@@ -121,5 +121,26 @@ import scriptpack
 pk = scriptpack._pack_verify_pubkey_b64()
 check("scriptpack pub from blob", pk == keys["PACK_SIGNING_PUB"])
 
+# 7) 反调试 / 自体检 / bat 搬运 sig（防破解整改新增）
+from weauto_license import hardening as H
+
+check("hardening exports", all(hasattr(H, n) for n in
+      ["detect_debugger", "self_integrity_ok", "enforce_hardening", "recheck",
+       "assert_hardening", "is_compromised"]))
+check("detect_debugger 无环境误报", H.detect_debugger() is False)
+check("self_integrity_ok 源码态 True", H.self_integrity_ok() is True)
+try:
+    import io as _io
+    from updater import Updater as _U
+    _buf = _io.StringIO()
+    _U()._write_replace_bat(_buf, "C:/x/WeAuto.exe", "C:/x/WeAuto.exe.sig",
+                            "C:/dst/WeAuto.exe", "C:/x/log.log")
+    _bat = _buf.getvalue()
+    check("bat 搬运 sig(SRCSIG/DSTSIG)",
+          ("SRCSIG" in _bat) and ("DSTSIG" in _bat)
+          and ('copy /Y "%SRCSIG%" "!DSTSIG!"' in _bat))
+except Exception as _hb:
+    check("bat 搬运 sig(SRCSIG/DSTSIG)", False, repr(_hb))
+
 print("RESULT: " + ("ALL PASS" if _ok else "SOME FAILED"))
 sys.exit(0 if _ok else 1)

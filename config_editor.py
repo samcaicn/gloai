@@ -6376,6 +6376,35 @@ if __name__ == '__main__':
             return False
         serve(app, **kwargs)
 
+    # 冻结发行态防护总闸：被篡改（自体检失败）/ 被调试 → 拒绝启动（防破解）。
+    # 开发/测试态（非 frozen 或 RELEASE=False）直接放行，不影响本地调试与 UX 测试。
+    _hw = None
+    try:
+        from weauto_license import hardening as _hw
+        _hw.enforce_hardening()
+    except SystemExit:
+        raise  # 防护拒绝启动：直接退出（防破解）
+    except Exception as _e:
+        _hw = None
+        app.logger.warning("防护总闸异常: %s", _e)
+
+    # 周期复检线程（冻结发行态）：捕捉运行中挂调试器 / 运行时防护被拆，
+    # 任一异常即 os._exit，使被调试/被破解的会话无法持续。
+    if _hw is not None and getattr(sys, "frozen", False) and _hw.is_release():
+        def _hardening_watchdog():
+            import time as _t
+            while True:
+                _t.sleep(300)
+                try:
+                    if _hw.detect_debugger():
+                        _hw._LOGGER.critical("运行中检测到调试器，终止会话")
+                        os._exit(1)
+                    _hw.recheck()
+                except Exception:
+                    pass
+        threading.Thread(target=_hardening_watchdog, daemon=True,
+                         name="hardening-watchdog").start()
+
     # 冻结态（EXE）后台自动更新检查；源码态由 Run.bat 的 updater.py 负责
     _maybe_auto_update()
 
