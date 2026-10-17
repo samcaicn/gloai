@@ -123,6 +123,7 @@ class SettingsActivity : AppCompatActivity() {
         buildNoReplyCard(root)
         buildProactiveSendCard(root)
         buildRelationshipCard(root)
+        buildSendLedgerCard(root)
         buildAppearanceCard(root)
         buildCloudSyncCard(root)
         buildScriptPackCard(root)
@@ -491,6 +492,46 @@ class SettingsActivity : AppCompatActivity() {
             }
         })
 
+        root.addView(c)
+    }
+
+    /**
+     * 发送记录回放：把 send_ledger.csv 尾部若干条（时间/会话/结果/原因）展示出来。
+     * 「我发了 你没发成功」这类争议以前只能靠 adb 抓文件，现在用户自己就能查——
+     * 每行都有发送链路落下的真实证据（box empty after tap / no anchor / queue draft 等）。
+     */
+    private fun buildSendLedgerCard(root: LinearLayout) {
+        root.addView(section(t("发送记录", "Send log")))
+        val c = card()
+        val logView = TextView(this).apply {
+            textSize = 11f
+            setTextColor(sub)
+            setLineSpacing(dp(2), 1f)
+            fontFamily = "monospace"
+        }
+        fun refresh() {
+            val lines = try {
+                val f = java.io.File(getExternalFilesDir(null), "send_ledger.csv")
+                if (f.exists()) f.readLines().filter { it.isNotBlank() }.takeLast(12) else emptyList()
+            } catch (_: Exception) { emptyList() }
+            if (lines.isEmpty()) {
+                logView.text = t("还没有发送记录。", "No send records yet.")
+                return
+            }
+            val fmt = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+            logView.text = lines.reversed().joinToString("\n") { raw ->
+                val p = raw.split(",", limit = 4)
+                val time = p.getOrNull(0)?.toLongOrNull()?.let { fmt.format(java.util.Date(it)) } ?: "?"
+                val conv = p.getOrNull(1) ?: "-"
+                val result = p.getOrNull(2) ?: "?"
+                val detail = p.getOrNull(3) ?: ""
+                "$time  ${if (result == "sent") "✓" else "✗"} $conv" +
+                    (if (detail.isNotBlank()) "  · $detail" else "")
+            }
+        }
+        refresh()
+        c.addView(logView)
+        c.addView(cardBtn(t("刷新", "Refresh")) { refresh() })
         root.addView(c)
     }
 

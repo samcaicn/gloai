@@ -1593,7 +1593,7 @@ open class ChatCaptureService : AccessibilityService() {
         judgment?.trueIntent?.takeIf { it.confidence >= INTENT_CONF_MIN }?.choice?.let { intent ->
             when (intent) {
                 "skip_now" -> {
-                    Log.i(TAG, "intent gate: skip_now conf=${judgment.trueIntent?.confidence} -> silent this round conv='$convKey'")
+                    Log.i(TAG, "intent gate: skip_now conf=${judgment?.trueIntent?.confidence} -> silent this round conv='$convKey'")
                     Metrics.log("intent_gate", "kind" to "skip_now",
                         "conv" to Metrics.hash(convKey))
                     overlay?.toast(t("判断对方此刻不便回应，本轮不回", "They're not available now — staying silent"))
@@ -1601,7 +1601,7 @@ open class ChatCaptureService : AccessibilityService() {
                     return
                 }
                 "defer_later" -> {
-                    Log.i(TAG, "intent gate: defer_later conf=${judgment.trueIntent?.confidence} -> queue deferred reply conv='$convKey'")
+                    Log.i(TAG, "intent gate: defer_later conf=${judgment?.trueIntent?.confidence} -> queue deferred reply conv='$convKey'")
                     Metrics.log("intent_gate", "kind" to "defer_later",
                         "conv" to Metrics.hash(convKey))
                     queueDeferredReply(convKey, text)
