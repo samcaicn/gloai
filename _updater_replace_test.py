@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 FAKE_UPDATER = """
 import sys, os
 class Updater:
-    def _write_replace_bat(self, f, src, current, logf):
+    def _write_replace_bat(self, f, src, src_sig, current, logf):
         pass
 """
 
@@ -56,11 +56,12 @@ def section(t):
 import updater as _upd
 
 
-def make_bat(tmp, src, dst, logf, *, drop_start=True, patch=None):
-    """用真实代码生成 bat；drop_start=True 时去掉 start 行（测试里不真拉起进程）。"""
+def make_bat(tmp, src, dst, logf, *, src_sig="", drop_start=True, patch=None):
+    """用真实代码生成 bat；drop_start=True 时去掉 start 行（测试里不真拉起进程）。
+    src_sig 为随包 .sig 路径；缺省空串时 bat 不输出 sig 搬运逻辑（非发行态）。"""
     bat = os.path.join(tmp, "apply_update.bat")
     with open(bat, "w", encoding="utf-8") as f:
-        _upd.Updater._write_replace_bat(object.__new__(_upd.Updater), f, src, dst, logf)
+        _upd.Updater._write_replace_bat(object.__new__(_upd.Updater), f, src, src_sig, dst, logf)
     with open(bat, "r", encoding="utf-8") as f:
         text = f.read()
     if drop_start:
@@ -101,6 +102,15 @@ def main():
     ):
         ok("含 %s" % desc, token in text)
     ok("start 仅在成功分支（测试版已剔除）", 'start ""' not in text)
+    # sig 搬运结构：仅当传入 src_sig 时才输出（自体检闭环）
+    text_sig = open(make_bat(tmp, r"C:\x\new.exe", r"C:\x\old.exe",
+                             os.path.join(tmp, "l2.log"), src_sig=r"C:\x\new.sig"),
+                    encoding="utf-8").read()
+    ok("含 SRCSIG 定义", 'set "SRCSIG=' in text_sig)
+    ok("含 DSTSIG 目标", "DSTSIG" in text_sig)
+    ok("含 sig 随 exe 搬运", 'copy /Y "%SRCSIG%" "!DSTSIG!"' in text_sig)
+    # 未传 src_sig 时不得出现 sig 搬运逻辑（避免 if exist "" 空路径歧义）
+    ok("无 src_sig 时不输出 SRCSIG", "SRCSIG" not in text)
 
     # ------------------------------------------------ 2. 成功路径：覆盖+校验通过
     section("2. 成功路径（覆盖并校验通过）")
@@ -108,13 +118,19 @@ def main():
     os.makedirs(d, exist_ok=True)
     src = os.path.join(d, "new.bin")
     dst = os.path.join(d, "cur.bin")
+    src_sig = os.path.join(d, "new.sig")
     open(src, "wb").write(b"NEW-CONTENT-123")
+    open(src_sig, "wb").write(b"NEW-SIG-BYTES")
     open(dst, "wb").write(b"OLD-CONTENT")
     logf = os.path.join(d, "l.log")
-    rc = run(make_bat(d, src, dst, logf))
+    rc = run(make_bat(d, src, dst, logf, src_sig=src_sig))
     ok("退出码 0", rc == 0, "rc=%d" % rc)
     ok("目标已换成新内容", open(dst, "rb").read() == b"NEW-CONTENT-123")
     ok("备份 .bak 已删除（成功不留垃圾）", not os.path.exists(dst + ".bak"))
+    # sig 随 exe 一并搬到 DSTDIR/WeAuto.exe.sig（自体检闭环）
+    dst_sig = os.path.join(d, "WeAuto.exe.sig")
+    ok("签名 .sig 已随新 exe 搬运", os.path.exists(dst_sig)
+       and open(dst_sig, "rb").read() == b"NEW-SIG-BYTES")
 
     # ------------------------------------------------ 3. 回滚路径：覆盖成截断文件
     section("3. 回滚路径（覆盖后文件被写坏）")

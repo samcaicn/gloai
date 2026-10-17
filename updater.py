@@ -693,7 +693,8 @@ class Updater:
         f.write("@echo off\n")
         f.write("setlocal enabledelayedexpansion\n")
         f.write('set "SRC=%s"\n' % src)
-        f.write('set "SRCSIG=%s"\n' % (src_sig or ""))
+        if src_sig:
+            f.write('set "SRCSIG=%s"\n' % src_sig)
         f.write('set "DST=%s"\n' % current)
         f.write('set "BAK=%DST%.bak"\n')
         f.write('set "LOGF=%s"\n' % logf)
@@ -707,22 +708,25 @@ class Updater:
         # 杀软扫描进一步拉长，单纯重试很容易全败）。
         f.write('for %%F in ("%DST%") do set "DSTNAME=%%~nxF"\n')
         f.write('for %%F in ("%DST%") do set "DSTDIR=%%~dpF"\n')
-        f.write('set "DSTSIG=!DSTDIR!WeAuto.exe.sig"\n')
-        f.write('set "OLDSIG=!DSTDIR!WeAuto.exe.sig.bak"\n')
-        f.write('if exist "!DSTSIG!" copy /Y "!DSTSIG!" "!OLDSIG!" >nul 2>&1\n')
+        if src_sig:
+            f.write('set "DSTSIG=!DSTDIR!WeAuto.exe.sig"\n')
+            f.write('set "OLDSIG=!DSTDIR!WeAuto.exe.sig.bak"\n')
+            f.write('if exist "!DSTSIG!" copy /Y "!DSTSIG!" "!OLDSIG!" >nul 2>&1\n')
         f.write('set "OLDNAME=!DSTNAME!.old"\n')
         f.write(":RENAME_TRY\n")
         f.write("pushd \"!DSTDIR!\"\n")
         f.write('ren "!DSTNAME!" "!OLDNAME!" >> "%LOGF%" 2>&1\n')
         f.write("if errorlevel 1 goto RNFAIL\n")
         f.write('copy /Y "%SRC%" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
-        f.write('if exist "%SRCSIG%" copy /Y "%SRCSIG%" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
+        if src_sig:
+            f.write('copy /Y "%SRCSIG%" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
         f.write("if not errorlevel 1 goto RNVERIFY\n")
         # 新文件写入失败：立刻把旧文件改回来；改不回来就从备份复制回来，绝不让用户无 exe 可用
         f.write('>> "%LOGF%" echo WARN 让位后写入失败，正在还原旧文件\n')
         f.write('ren "!OLDNAME!" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
         f.write('if errorlevel 1 copy /Y "%BAK%" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
-        f.write('copy /Y "!OLDSIG!" "!DSTSIG!" >nul 2>&1\n')
+        if src_sig:
+            f.write('if exist "!OLDSIG!" copy /Y "!OLDSIG!" "!DSTSIG!" >nul 2>&1\n')
         f.write(":RNFAIL\n")
         f.write("popd\n")
         f.write("goto WAITLOCK\n")
@@ -734,7 +738,8 @@ class Updater:
         f.write(":WAITLOCK\n")
         f.write("timeout /t 2 /nobreak >nul\n")
         f.write('copy /Y "%SRC%" "%DST%" >> "%LOGF%" 2>&1\n')
-        f.write('if exist "%SRCSIG%" copy /Y "%SRCSIG%" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
+        if src_sig:
+            f.write('copy /Y "%SRCSIG%" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
         f.write("if not errorlevel 1 goto VERIFY\n")
         f.write("set /a N+=1\n")
         # 实测：onefile 父进程清理 _MEI（约 90MB 解压目录）需 35~40s 才释放映像锁，
@@ -757,7 +762,8 @@ class Updater:
         f.write(":ROLLBACK\n")
         f.write('>> "%LOGF%" echo FAILED 覆盖后文件不完整(!DS!/!SS!)，回滚到备份版本\n')
         f.write('copy /Y "%BAK%" "%DST%" >> "%LOGF%" 2>&1\n')
-        f.write('if exist "!OLDSIG!" copy /Y "!OLDSIG!" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
+        if src_sig:
+            f.write('if exist "!OLDSIG!" copy /Y "!OLDSIG!" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
         f.write('start "" "%DST%"\n')
         f.write("exit /b 2\n")
 
