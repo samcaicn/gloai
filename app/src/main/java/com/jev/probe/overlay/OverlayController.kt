@@ -1101,7 +1101,9 @@ class OverlayController(private val ctx: Context) {
             "request_action" to ("要你办事" to "asking you to do something"),
             "seek_explanation" to ("要个解释" to "wanting an explanation"),
             "casual_chat" to ("随便聊聊" to "just chatting"),
-            "close_topic" to ("事情过去了" to "moving on"))
+            "close_topic" to ("事情过去了" to "moving on"),
+            "defer_later" to ("稍后再说" to "talk later"),
+            "skip_now" to ("本次不回" to "stay silent now"))
         private val NEEDS = mapOf(
             "apology" to ("道歉" to "an apology"),
             "action" to ("具体行动" to "concrete action"),

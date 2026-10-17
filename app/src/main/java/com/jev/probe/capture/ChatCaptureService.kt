@@ -500,6 +500,25 @@ open class ChatCaptureService : AccessibilityService() {
     private fun sendRetryBackoff(attempt: Int) = (SEND_RETRY_BASE_MS * attempt).coerceAtMost(8000L)
     // 持久化未发队列保鲜：一条失败回复挂超过这个时长不再重试（对方多半已自己解决）。
     private val PENDING_TTL_MS = 10 * 60_000L
+    /** 「稍后再说」(defer_later) 延时补发的 TTL：主动触达不是回复，迟到不伤关系，
+     *  给对方留出 2 小时的空闲窗口（亮屏/解锁/锚点新鲜时由队列 tick 投递）。 */
+    private val DEFER_TTL_MS = 2 * 60 * 60_000L
+    /** 意图闸门的最低把握度：低于它按普通意图放行，不给「不回/稍后」误判扣下正常回复。 */
+    private const val INTENT_CONF_MIN = 0.6
+
+    // 本轮 judge 与 reply 是两个并行 LLM 调用，谁先回不确定。发送决策必须等两者都落定
+    // （意图闸门要看 judge 的 true_intent），所以 reply 回调只暂存结果，completed() 里合流。
+    private var roundJudgment: com.jev.probe.core.Analysis? = null
+    private var pendingAutoSend: PendingAutoSend? = null
+
+    /** reply 回调暂存的一轮自动发送待决材料，等 judge 到齐后在 completed() 里裁决。 */
+    private class PendingAutoSend(
+        val token: ConversationSession.Token,
+        val snapshot: ChatSnapshot,
+        val ranked: List<RankedReply>,
+        val replyError: String?
+    )
+
     // 当前正在发送的目标会话与文本（供失败落盘用，免层层透传）。
     private var currentSendConv: String? = null
     private var currentSendText: String? = null
@@ -1391,12 +1410,26 @@ open class ChatCaptureService : AccessibilityService() {
                 // （冷却 / 无锚点会提前收尾），这时绝不能再给新一轮重排一个 6s 推进定时器——
                 // 那会在 6s 处把下一轮硬砍掉。只认"还是我这一轮"才排。
                 val roundSeq = if (token.target.windowId == ConversationSession.NOTIF_WINDOW) notifRoundSeq else -1L
+                // 新一轮开始：清掉上一轮的合流残留（watchdog 兜底路径不会走 completed()，
+                // 不清的话旧材料会被这一轮误用）。
+                roundJudgment = null
+                pendingAutoSend = null
                 fun completed() {
                     remaining--
                     if (remaining <= 0) {
                         analyzing = false
                         analysisTasks.clear()
                         main.removeCallbacks(analysisWatchdog)
+                        // judge 与 reply 都已落定：此刻才能做意图闸门（defer_later/skip_now
+                        // 要看 judge 结果，reply 回调单方面决定会踩进竞态）。
+                        pendingAutoSend?.let { pend ->
+                            pendingAutoSend = null
+                            if (isCurrent(pend.token)) {
+                                maybeAutoSendBest(pend.token, pend.snapshot, pend.ranked,
+                                    pend.replyError, roundJudgment)
+                            }
+                        }
+                        roundJudgment = null
                         finishRound()
                         Log.d(TAG, "analysis round finished")
                         // 通知轮：分析已跑完，转入"发送落定"宽限；发送回调先到则立即推进，
@@ -1427,6 +1460,9 @@ open class ChatCaptureService : AccessibilityService() {
                             if (isCurrent(token)) overlay?.showOcrResult(augmented.messages, failure = v)
                         } else {
                             roundOk = true
+                            // 存下本轮 judge 结果供 completed() 的意图闸门使用（失败则留 null，
+                            // 闸门按「无意图信号」放行，不能因为 judge 挂了就扣下正常回复）。
+                            roundJudgment = judgment
                             if (isCurrent(token)) overlay?.showJudgment(judgment)
                         }
                         completed()
@@ -1446,9 +1482,12 @@ open class ChatCaptureService : AccessibilityService() {
                         }
                         if (isCurrent(token)) {
                             overlay?.showReplies(ranked, replyError) { text -> fillInput(token, text) }
-                            // 真·无人值守（微信）：worker/jev 返回候选后直接按打分最高的
-                            // 一条填入，autoSend 开着就再延迟 sendDelayMs（默认 2s）发出。
-                            maybeAutoSendBest(token, augmented, ranked, replyError)
+                            // 真·无人值守（微信）：候选由 worker/jev 产出。发送决策**不在这里做**——
+                            // judge 与 reply 并行，意图闸门要等 judge 的 true_intent 到齐，
+                            // 只把材料暂存，completed() 里两路合流后由 maybeAutoSendBest 裁决。
+                            if (token.target.pkg == PKG_WECHAT) {
+                                pendingAutoSend = PendingAutoSend(token, augmented, ranked, replyError)
+                            }
                         }
                         completed()
                     }
@@ -1514,7 +1553,8 @@ open class ChatCaptureService : AccessibilityService() {
         token: ConversationSession.Token,
         snapshot: ChatSnapshot,
         ranked: List<RankedReply>,
-        replyError: String?
+        replyError: String?,
+        judgment: com.jev.probe.core.Analysis? = null
     ) {
         val notif = token.target.windowId == ConversationSession.NOTIF_WINDOW
         Log.i(TAG, "maybeAutoSendBest enter notif=$notif autoFillBest=${prefs.autoFillBest} ranked=${ranked.size} latestFrom=${snapshot.latestFrom} replyError=$replyError")
@@ -1543,6 +1583,33 @@ open class ChatCaptureService : AccessibilityService() {
         if (!draft.isNullOrEmpty()) { bail("input box not empty (user is typing)"); return }
         val convKey = snapshot.title ?: ""
         val now = System.currentTimeMillis()
+        // ---- 意图闸门（judge 与 reply 已在 completed() 合流后才到这里）----
+        //  skip_now   ：此刻任何回复都会让情绪/沟通恶化或打扰对方 → 本轮彻底静默，
+        //                不发也不排队（沉默是唯一安全的动作），让对方先冷下来。
+        //  defer_later ：对方在推迟本轮交流但事情没结束（在忙/开会/开车、晚点继续）→
+        //                现在发长篇不合适，把最佳候选排进「延时补发」队列（TTL 2h），
+        //                等对方可能空闲、屏幕可交互时由队列 tick 投递——绝不立即发送。
+        //  低于 INTENT_CONF_MIN 的判定不生效，按普通意图走原有发送链路。
+        judgment?.trueIntent?.takeIf { it.confidence >= INTENT_CONF_MIN }?.choice?.let { intent ->
+            when (intent) {
+                "skip_now" -> {
+                    Log.i(TAG, "intent gate: skip_now conf=${judgment.trueIntent?.confidence} -> silent this round conv='$convKey'")
+                    Metrics.log("intent_gate", "kind" to "skip_now",
+                        "conv" to Metrics.hash(convKey))
+                    overlay?.toast(t("判断对方此刻不便回应，本轮不回", "They're not available now — staying silent"))
+                    bail("intent=skip_now -> suppressed")
+                    return
+                }
+                "defer_later" -> {
+                    Log.i(TAG, "intent gate: defer_later conf=${judgment.trueIntent?.confidence} -> queue deferred reply conv='$convKey'")
+                    Metrics.log("intent_gate", "kind" to "defer_later",
+                        "conv" to Metrics.hash(convKey))
+                    queueDeferredReply(convKey, text)
+                    bail("intent=defer_later -> queued for later")
+                    return
+                }
+            }
+        }
         // 同一会话冷却：刚回过就别再回（真人连发 / 通知重复投递会触发连回两次，一眼假）。
         if (notif) {
             val lastAt = lastAutoSentAtByConv[convKey]
@@ -2570,6 +2637,28 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     /**
+     * 「稍后再说」(defer_later) 的延时补发：把候选回复排进持久化队列，kind=defer、TTL 2h。
+     * 投递条件与常规补发一致（亮屏 + 探针 IME 激活），额外多一道安全门——见
+     * [drainPendingSends] 里 defer 条目的锚点检查：锚点过期绝不盲填前台会话。
+     * 空 conv（连空串）一律不排：没有会话名就无法定位「那个」会话，宁可不发。
+     */
+    private fun queueDeferredReply(conv: String, text: String) {
+        if (conv.isBlank()) {
+            Log.i(TAG, "queueDeferredReply: blank conv -> drop (cannot locate chat safely)")
+            return
+        }
+        currentSendConv = conv
+        currentSendText = text
+        currentSendForce = false
+        SendQueueStore.add(
+            PendingSend(conv, text, tries = 0, firstAt = System.currentTimeMillis(),
+                force = false, kind = "defer")
+        )
+        schedulePendingTick()
+        overlay?.toast(t("对方在忙，回复已安排稍后自动发出", "They're busy — reply scheduled for later"))
+    }
+
+    /**
      * 驱动持久化未发队列：串行重发每条失败回复。重发前确保探针输入法已激活（否则只留提示、
      * 不空转重试）；会话下次活跃（来通知/回前台）或进程重启都会重新触发本函数。TTL 过期清理。
      */
@@ -2577,18 +2666,31 @@ open class ChatCaptureService : AccessibilityService() {
         if (drainingPending || destroyed || !prefs.enabled) return
         val now = System.currentTimeMillis()
         SendQueueStore.all().forEach {
-            if (now - it.firstAt > PENDING_TTL_MS) {
+            // 分级 TTL：reply（回复补发）10 分钟——迟到十几分钟比不回更糟；defer（稍后再说
+            // 的延时补发）2 小时——主动触达不怕迟，值得等对方空闲。
+            val ttl = if (it.kind == "defer") DEFER_TTL_MS else PENDING_TTL_MS
+            if (now - it.firstAt > ttl) {
                 SendQueueStore.remove(it.conv)
-                Log.w(TAG, "drainPendingSends: expired pending conv='${it.conv}' -> dropped")
-                if (it.force) overlay?.toast(t("「${it.conv}」的待发消息超时（10 分钟）已放弃",
-                                                "Pending message to \"${it.conv}\" dropped — 10 min timeout"))
+                Log.w(TAG, "drainPendingSends: expired pending kind=${it.kind} conv='${it.conv}' -> dropped")
+                if (it.force) overlay?.toast(t("「${it.conv}」的待发消息超时已放弃",
+                                                "Pending message to \"${it.conv}\" dropped — timeout"))
             }
         }
-        val next = SendQueueStore.all().firstOrNull { now - it.firstAt <= PENDING_TTL_MS } ?: return
+        val next = SendQueueStore.all().firstOrNull {
+            now - it.firstAt <= (if (it.kind == "defer") DEFER_TTL_MS else PENDING_TTL_MS)
+        } ?: return
         if (next.tries >= MAX_SEND_TRIES) {
             SendQueueStore.remove(next.conv)
             if (next.force) overlay?.toast(t("「${next.conv}」已多次发送失败，已放弃",
                                               "\"${next.conv}\" failed too many times — given up"))
+            return
+        }
+        // defer 条目的防发错人门：延时补发必须靠新鲜锚点重开「那个」会话。锚点已过期
+        // （30 分钟内没来过通知）时哪怕微信正前台，也不能证明前台就是这个会话——盲填
+        // 可能把给 A 的私聊话发进 B 的窗口。这里只 hold 不删：TTL 内同会话再来通知会
+        // 刷新锚点（NotifIntentStore.put），条目自动恢复可投递。
+        if (next.kind == "defer" && !next.force && NotifIntentStore.fresh(next.conv) == null) {
+            Log.i(TAG, "drainPendingSends: defer conv='${next.conv}' anchor stale -> hold (never fill blind)")
             return
         }
         // 探针输入法未激活时点了也发不出去，只留一条提醒，等用户切好再触发。
@@ -2603,7 +2705,7 @@ open class ChatCaptureService : AccessibilityService() {
             return
         }
         drainingPending = true
-        resendPending(next.conv, next.text, force = next.force) { sent ->
+        resendPending(next.conv, next.text, force = next.force, kind = next.kind) { sent ->
             drainingPending = false
             // 失败必须退避：旧代码立即重排，同一会话几十秒内反复 commit+落账+toast，
             // MAX_SEND_TRIES 瞬间烧光、回复被放弃（2026-10-16 15:48 实测 6 轮/30 秒）。
@@ -2627,7 +2729,8 @@ open class ChatCaptureService : AccessibilityService() {
      */
 
     /** 重发一条持久化失败回复（或强制主动发送）：重放该会话 PendingIntent 拉起微信 → 填字 → 走自带重试发送。 */
-    private fun resendPending(conv: String, text: String, force: Boolean = false, onResolved: (Boolean) -> Unit) {
+    private fun resendPending(conv: String, text: String, force: Boolean = false,
+                              kind: String = "reply", onResolved: (Boolean) -> Unit) {
         Log.i(TAG, "resendPending: conv='$conv' text=${text.take(20)} force=$force")
         // 主动发送（force）跳过所有闸门：用户本意就是发出去。非 force 仍守原闸门。
         if (!force) {
@@ -2656,8 +2759,10 @@ open class ChatCaptureService : AccessibilityService() {
         } else {
             // 主动发送（force）一律用新鲜锚点重开会话，且锚点缺失直接放弃——没有它就无法
             // 定位到"那个"会话（FLAG_SECURE 读不到标题），宁可不发也不发错人。
-            // 非 force（自动补发）维持原行为：仅当 prefs.autoOpenChat 才取锚点。
-            val pi = if (force || prefs.autoOpenChat) NotifIntentStore.fresh(conv) else null
+            // defer（延时补发）同样必须锚点重开：drainPendingSends 已保证到这里锚点新鲜，
+            // 这里无论 autoOpenChat 开关如何都重放它，绝不盲填前台会话。
+            // 非 force 的常规回复补发维持原行为：仅当 prefs.autoOpenChat 才取锚点。
+            val pi = if (force || kind == "defer" || prefs.autoOpenChat) NotifIntentStore.fresh(conv) else null
             if (force && pi == null) {
                 Log.w(TAG, "resendPending: force send but no fresh anchor conv='$conv' -> give up (can't locate chat)")
                 SendQueueStore.remove(conv)

@@ -201,7 +201,8 @@ class LlmJudge(private val prefs: Prefs) {
 
         private val TRUE_INTENT_OPTS = listOf(
             "confirm_you_care", "vent_anger", "request_action",
-            "seek_explanation", "casual_chat", "close_topic"
+            "seek_explanation", "casual_chat", "close_topic",
+            "defer_later", "skip_now"
         )
         private val SHE_NEEDS_OPTS = listOf(
             "apology", "action", "explanation", "care", "nothing"
@@ -214,7 +215,7 @@ class LlmJudge(private val prefs: Prefs) {
         private val JUDGE_SCHEMA_PROMPT = """
 请只输出一个 JSON 对象，字段严格如下（不要多余字段）：
 {
-  "true_intent": {"choice": "confirm_you_care|vent_anger|request_action|seek_explanation|casual_chat|close_topic", "confidence": 0.0-1.0},
+  "true_intent": {"choice": "confirm_you_care|vent_anger|request_action|seek_explanation|casual_chat|close_topic|defer_later|skip_now", "confidence": 0.0-1.0},
   "danger_level": {"score": 1-9 的整数, "confidence": 0.0-1.0},
   "she_needs": {"choice": "apology|action|explanation|care|nothing", "confidence": 0.0-1.0},
   "should_reply_now": 0.0-1.0 的数字,
@@ -223,7 +224,7 @@ class LlmJudge(private val prefs: Prefs) {
   "literal_question": 0.0-1.0 的数字
 }
 判断口径（沿用 Jev 校准口径）：
-- true_intent：对方最新一句的真实意图。若对方在测试你是否记得/还在乎，选 confirm_you_care；已平和收尾选 close_topic（分手/拉黑/别理我属于 vent_anger，不是 close_topic）。
+- true_intent：对方最新一句的真实意图。若对方在测试你是否记得/还在乎，选 confirm_you_care；已平和收尾选 close_topic（分手/拉黑/别理我属于 vent_anger，不是 close_topic）。对方在推迟本轮交流但事情没结束（在忙/开车/开会、晚点继续）选 defer_later；此刻任何回复都会让情绪/沟通恶化或打扰到对方（吵得正凶/最后通牒发热/对方明说别回/场景不便）选 skip_now。
 - danger_level：当前对话离吵架/伤关系的接近度，1 最轻 9 最重（已生效的最后通牒仍按高位计）。
 - she_needs：对方此刻需要你给什么。若对方已真正接受（谢了/收到了/没事了）选 nothing；讽刺式「习惯了」算 care 不是 nothing。
 - should_reply_now：下一句是否该含实质内容（认具体错/给具体时间或承诺/解释你知道的事实），仅看本片段里是否已有该实质，与时机无关。

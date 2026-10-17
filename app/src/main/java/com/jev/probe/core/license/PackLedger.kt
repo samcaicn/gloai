@@ -15,7 +15,8 @@ import javax.crypto.spec.SecretKeySpec
  * 两层额度，一个账本：
  *  1. **离线授权**（v1.1 话术包）：导入带 `reply_quota` 的 .wpk 后，回复走
  *     **授权总次数**（跨天累计、用一次扣一次、用完需再购）；
- *  2. **每日免费**：无授权设备按自然日计数（默认 30 条/天，隔日重置）。
+ *  2. **每日免费**：无授权设备按自然日计数（随导入话术包条数 / 自定义大模型
+ *     100 条 / 基线 30 条，见 [dailyFreeLimit]，隔日重置）。
  *
  * 四道防线（与 PC 版逐条对应）：
  *  1. **HMAC 防篡改**——账本 JSON 带签名，密钥材料在 AndroidKeyStore 里
@@ -35,9 +36,13 @@ object PackLedger {
     private const val TAG = "PackLedger"
 
     /**
-     * 每日免费条数（与 PC 版 FREE_QUOTA_DEFAULT 一致）。
+     * 每日免费条数基线（与 PC 版 FREE_QUOTA_DEFAULT 一致）。
+     * 实际生效值见 [dailyFreeLimit]：随导入话术包条数变化 / 自定义大模型放宽到 100。
      */
     const val FREE_QUOTA_DEFAULT = 30
+
+    /** 用户自定义大模型（自带接口直连）时的每日免费上限。 */
+    const val FREE_QUOTA_CUSTOM_MODEL = 100
 
     private const val SP_NAME = "pack_ledger"
     private const val K_BLOB = "blob"
@@ -200,9 +205,26 @@ object PackLedger {
     // ------------------------------------------------------------ 额度判定
 
     /**
+     * 当前生效的每日免费上限（无授权时用）：
+     * - 用户自定义大模型（自带接口直连，不走云端）→ 固定 [FREE_QUOTA_CUSTOM_MODEL] 条/天；
+     * - 导入了生效话术包 → 随包内话术条数（fewShot 数量）；
+     * - 都没有 → 基线 [FREE_QUOTA_DEFAULT] 条/天。
+     * 注意：云端 KV 的免费硬墙口径需与服务端同步调整，本地值只是第二道闸。
+     */
+    fun dailyFreeLimit(context: Context): Int {
+        if (com.jev.probe.core.Prefs.isTextCustom()) return FREE_QUOTA_CUSTOM_MODEL
+        val entries = try {
+            ScriptPackStore.effectivePack(context)?.fewShot?.size ?: 0
+        } catch (_: Exception) {
+            0
+        }
+        return if (entries > 0) entries else FREE_QUOTA_DEFAULT
+    }
+
+    /**
      * 是否还能用（对应 PC 版 check_quota）：
      * - 有有效授权 → 按授权总次数判定（跨天累计，不受每日限制）；
-     * - 无授权 → 每日免费条数（隔日重置）；
+     * - 无授权 → 每日免费条数（[dailyFreeLimit]，隔日重置）；
      * - 账本被篡改 → (false, 0, limit)（不默认放行）。
      */
     fun checkQuota(context: Context): QuotaState {
@@ -220,12 +242,13 @@ object PackLedger {
                 tampered = false
             )
         }
+        val limit = dailyFreeLimit(context)
         val day = today(context)
         val used = if (cur.date == day) cur.count else 0
         return QuotaState(
-            allowed = used < FREE_QUOTA_DEFAULT,
-            remaining = (FREE_QUOTA_DEFAULT - used).coerceAtLeast(0),
-            limit = FREE_QUOTA_DEFAULT,
+            allowed = used < limit,
+            remaining = (limit - used).coerceAtLeast(0),
+            limit = limit,
             licensed = false,
             tampered = false
         )

@@ -21,7 +21,14 @@ data class PendingSend(
     val firstAt: Long,
     /** 主动发送（用户在设置页/adb 显式触发）。为 true 时跳过 autoSend/autoFill 闸门与
      *  暂停总开关，按用户本意直接发出；落盘后也让 drainPendingSends 走强制发送。 */
-    val force: Boolean = false
+    val force: Boolean = false,
+    /**
+     * 队列条目类型：
+     *  - "reply"：自动回复发送失败落盘的常规补发，TTL 10 分钟（回复迟到比不回更糟）；
+     *  - "defer"：judge 判定「稍后再说」（defer_later）时排队的延时补发，TTL 2 小时——
+     *    它是主动触达不是回复，迟到不伤害关系，值得等对方空闲。
+     */
+    val kind: String = "reply"
 )
 
 object SendQueueStore {
@@ -48,7 +55,8 @@ object SendQueueStore {
                         text = o.getString("text"),
                         tries = o.optInt("tries", 0),
                         firstAt = o.optLong("firstAt", 0L),
-                        force = o.optBoolean("force", false)
+                        force = o.optBoolean("force", false),
+                        kind = o.optString("kind", "reply")
                     )
                 )
             }
@@ -83,6 +91,7 @@ object SendQueueStore {
                     put("tries", ps.tries)
                     put("firstAt", ps.firstAt)
                     put("force", ps.force)
+                    put("kind", ps.kind)
                     arr.put(this)
                 }
         }

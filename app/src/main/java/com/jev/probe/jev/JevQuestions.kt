@@ -56,6 +56,8 @@ object JevQuestions {
                 "If they are checking whether you remember something or still care, choose confirm_you_care " +
                 "even if the words look like a request to 'say it' or to do something. " +
                 "If they already accepted and closed the matter peacefully, choose close_topic. " +
+                "If they are postponing this round of contact (busy now, will continue later), choose defer_later. " +
+                "If ANY reply right now would make things worse or intrude on them, choose skip_now. " +
                 "Ending the relationship, deleting you, or 'don't talk to me' is vent_anger, never close_topic.",
             linkedMapOf(
                 "confirm_you_care" to ("They are testing whether you remember, pay attention, or still care. " +
@@ -73,7 +75,17 @@ object JevQuestions {
                     "if the thread is warm."),
                 "close_topic" to ("Peaceful wrap-up only: they accepted an apology, confirmed a happy plan, said thanks, " +
                     "or clearly signaled they need nothing more. " +
-                    "Not a breakup, not 'don't contact me', not sarcastic 'I'm used to it'.")
+                    "Not a breakup, not 'don't contact me', not sarcastic 'I'm used to it'."),
+                "defer_later" to ("They are putting THIS round of contact on hold: busy, driving, in a meeting, " +
+                    "eating, at work, not available now — but the matter is open and they plan to continue later. " +
+                    "Signals: 'in a meeting, talk later', 'driving, will text back', 'busy, tonight', " +
+                    "'not now, later'. An OPEN loop, unlike close_topic (closed loop). " +
+                    "Not defer_later if they ask you to send/do something right now ('send it over later' is request_action)."),
+                "skip_now" to ("ANY reply from you right now would make the mood or communication worse, " +
+                    "or would intrude on them. Signals: they are mid-argument and boiling, an ultimatum is hot, " +
+                    "they explicitly said don't reply / leave me alone for now, they are with family or in a scene " +
+                    "where a phone buzz would cause trouble. Only when staying silent this round is clearly safer " +
+                    "than saying anything. Do NOT use for ordinary busy signals — that is defer_later.")
             )
         ))
         put("danger_level", score(
