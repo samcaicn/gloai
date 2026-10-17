@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.widget.Toast
+import com.jev.probe.R
+import com.jev.probe.core.PendingSend
 import com.jev.probe.core.Prefs
 import com.jev.probe.core.SendQueueStore
 
@@ -42,7 +44,7 @@ class ProactiveSendReceiver : BroadcastReceiver() {
         }
         // 服务可能还没初始化 SendQueueStore，这里兜底 init（幂等）。
         runCatching { SendQueueStore.init(ctx) }
-        SendQueueStore.add(SendQueueStore.PendingSend(conv, text, tries = 0,
+        SendQueueStore.add(PendingSend(conv, text, tries = 0,
             firstAt = System.currentTimeMillis(), force = true))
         Log.i(TAG, "proactive: queued force conv='$conv' textLen=${text.length}")
         // 唤醒探针服务立即补发（仅本 App，NOT_EXPORTED）。服务没运行则队列稍后由
