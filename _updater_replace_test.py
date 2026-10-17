@@ -93,12 +93,16 @@ def main():
         (":ROLLBACK", "回滚分支"),
         ('copy /Y "%BAK%" "%DST%"', "回滚动作"),
         ("set N=0", "重试计数器初始化"),
-        ("if !N! LSS 40 goto WAITLOCK", "锁未释放时重试"),
+        ("if !N! LSS 60 goto WAITLOCK", "锁未释放时重试"),
         # 让位法（方案 A）关键行：bat 结构若再变，上面三条分支的注入点会失效，
         # 这里先炸，避免测试假绿
         ('ren "!DSTNAME!" "!OLDNAME!"', "让位法 rename"),
         ('copy /Y "%SRC%" "!DSTNAME!"', "让位法写入"),
         (":RNVERIFY", "让位后校验分支"),
+        # exe 写入结果必须立即检查：sig copy 紧跟其后会掩盖 exe 的 errorlevel
+        # （if not errorlevel 1 看的是最后一条命令）→ exe 没换却进 VERIFY → 静默失败
+        ("if errorlevel 1 goto RNRESTORE", "让位后 exe 写入失败立即还原"),
+        ("if not errorlevel 1 goto WLSIG", "WAITLOCK exe 成功才搬 sig"),
     ):
         ok("含 %s" % desc, token in text)
     ok("start 仅在成功分支（测试版已剔除）", 'start ""' not in text)
@@ -170,13 +174,36 @@ def main():
     patched = make_bat(d, src, dst, logf, patch=[
         ('ren "!DSTNAME!" "!OLDNAME!" >> "%LOGF%" 2>&1', 'cmd /c exit 1'),
         ('copy /Y "%SRC%" "%DST%" >> "%LOGF%" 2>&1', 'cmd /c exit 1'),
-        ("if !N! LSS 40 goto WAITLOCK", "if !N! LSS 1 goto WAITLOCK"),
+        ("if !N! LSS 60 goto WAITLOCK", "if !N! LSS 1 goto WAITLOCK"),
     ])
     rc = run(patched)
     ok("退出码 1（放弃，未启动）", rc == 1, "rc=%d" % rc)
     ok("原文件未被破坏", open(dst, "rb").read() == b"OLD-CONTENT")
     ok("日志记录了失败原因", os.path.exists(logf) and "FAILED" in open(logf, "rb").read().decode("utf-8", "replace"))
     ok("备份 .bak 保留（失败时可人工恢复）", os.path.exists(dst + ".bak"))
+
+    # ------------------------------------------------ 5. errorlevel 掩盖回归（2026-10-17 真事）
+    section("5. exe copy 失败不得被 sig copy 成功掩盖")
+    d5 = os.path.join(tmp, "mask")
+    os.makedirs(d5, exist_ok=True)
+    src5 = os.path.join(d5, "new.bin")
+    dst5 = os.path.join(d5, "cur.bin")
+    sig5 = os.path.join(d5, "new.sig")
+    open(src5, "wb").write(b"NEW-CONTENT")
+    open(dst5, "wb").write(b"OLD-CONTENT")
+    open(sig5, "wb").write(b"NEW-SIG")
+    logf5 = os.path.join(d5, "l.log")
+    # 注入：exe copy 恒失败，sig copy 照常成功。旧实现的 bug——`if not errorlevel 1`
+    # 看的是最后一条命令（sig），exe 没换却进 VERIFY → fc 失败 → 回滚 rc=2，
+    # 表现为「更新静默不生效」。新实现 exe 失败立即重试，必须 rc=1 放弃。
+    patched5 = make_bat(d5, src5, dst5, logf5, src_sig=sig5, patch=[
+        ('copy /Y "%SRC%" "!DSTNAME!" >> "%LOGF%" 2>&1', 'cmd /c exit 1'),
+        ('copy /Y "%SRC%" "%DST%" >> "%LOGF%" 2>&1', 'cmd /c exit 1'),
+        ("if !N! LSS 60 goto WAITLOCK", "if !N! LSS 1 goto WAITLOCK"),
+    ])
+    rc5 = run(patched5)
+    ok("退出码 1（重试后放弃，未被掩盖）", rc5 == 1, "rc=%d" % rc5)
+    ok("目标保持旧内容（未被半更新）", open(dst5, "rb").read() == b"OLD-CONTENT")
 
     print("\n========================================================")
     print("自替换 bat 实测：通过 %d / 失败 %d" % (PASS, FAIL))

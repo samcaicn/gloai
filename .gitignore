@@ -136,6 +136,7 @@ _worker_gate_test*.js
 # ---- 根目录 EXE 运行副本与运行时子目录（不入库）----
 /WeAuto.exe
 /WeAuto.exe.sig
+/WeAuto.exe.sig.bak
 /WeAuto.exe.bak
 /WeAuto.exe.old
 /temp_update/

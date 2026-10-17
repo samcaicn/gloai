@@ -776,9 +776,17 @@ class Updater:
         f.write('ren "!DSTNAME!" "!OLDNAME!" >> "%LOGF%" 2>&1\n')
         f.write("if errorlevel 1 goto RNFAIL\n")
         f.write('copy /Y "%SRC%" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
+        # ⚠️ exe 写入结果必须【立即】检查：旧写法把 sig copy 紧跟其后，sig 成功会把
+        # exe 的 errorlevel 掩盖掉（if not errorlevel 1 看的是最后一条命令），
+        # 导致 exe 没换成却直接进 VERIFY → fc 失败回滚（实测发生过：更新静默不生效）。
+        f.write("if errorlevel 1 goto RNRESTORE\n")
         if src_sig:
             f.write('copy /Y "%SRCSIG%" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
-        f.write("if not errorlevel 1 goto RNVERIFY\n")
+            # sig 搬运失败只告警：不掩盖 exe 成功、不阻断更新（缺 sig 时自体检
+            # 放行+告警，不会变砖）
+            f.write('if errorlevel 1 >> "%LOGF%" echo WARN sig 搬运失败（自体检将放行+告警，不阻断更新）\n')
+        f.write("goto RNVERIFY\n")
+        f.write(":RNRESTORE\n")
         # 新文件写入失败：立刻把旧文件改回来；改不回来就从备份复制回来，绝不让用户无 exe 可用
         f.write('>> "%LOGF%" echo WARN 让位后写入失败，正在还原旧文件\n')
         f.write('ren "!OLDNAME!" "!DSTNAME!" >> "%LOGF%" 2>&1\n')
@@ -796,15 +804,19 @@ class Updater:
         f.write(":WAITLOCK\n")
         f.write("timeout /t 2 /nobreak >nul\n")
         f.write('copy /Y "%SRC%" "%DST%" >> "%LOGF%" 2>&1\n')
-        if src_sig:
-            f.write('copy /Y "%SRCSIG%" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
-        f.write("if not errorlevel 1 goto VERIFY\n")
+        # exe 写入成功才去搬 sig（与让位路径同修：sig 的 errorlevel 不许掩盖 exe）
+        f.write("if not errorlevel 1 goto WLSIG\n")
         f.write("set /a N+=1\n")
         # 实测：onefile 父进程清理 _MEI（约 90MB 解压目录）需 35~40s 才释放映像锁，
-        # 重试窗口必须覆盖它并留足余量（40 次 × 约 3s ≈ 2 分钟）。
-        f.write("if !N! LSS 40 goto WAITLOCK\n")
-        f.write('>> "%LOGF%" echo FAILED 目标文件仍被占用，已重试40次放弃\n')
+        # 重试窗口必须覆盖它并留足余量（60 次 × 约 3s ≈ 3 分钟）。
+        f.write("if !N! LSS 60 goto WAITLOCK\n")
+        f.write('>> "%LOGF%" echo FAILED 目标文件仍被占用，已重试60次放弃\n')
         f.write("exit /b 1\n")
+        f.write(":WLSIG\n")
+        if src_sig:
+            f.write('copy /Y "%SRCSIG%" "!DSTSIG!" >> "%LOGF%" 2>&1\n')
+            f.write('if errorlevel 1 >> "%LOGF%" echo WARN sig 搬运失败（自体检将放行+告警，不阻断更新）\n')
+        f.write("goto VERIFY\n")
         f.write(":VERIFY\n")
         f.write('>> "%LOGF%" echo 已覆盖，正在校验完整性...\n')
         f.write('for %%F in ("%SRC%") do set SS=%%~zF\n')
