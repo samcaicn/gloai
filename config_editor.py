@@ -6113,7 +6113,8 @@ def _maybe_auto_update():
     - 仅 frozen 生效。源码态由 Run.bat 单独跑 updater.py，此处不重复下载。
     - 全程后台线程 + 延迟启动，不阻塞界面、不影响 WebUI 可用性。
     - 更新包经 Ed25519 验签（发行版强制），验签失败一律不安装。
-    - 用户点「否」即完全跳过，本次启动不再打扰。
+    - 默认免确认直接自更新（双击 exe 即自动更新，无需任何命令行参数/点击）；
+      WEAUTO_NO_AUTO_UPDATE=1 可完全关闭（本地冒烟/离线环境用）。
     - 替换前 apply_artifact_update 已拉起 apply_update.bat（等 2s→覆盖→校验→重启），
       本进程随后 os._exit(0) 释放文件锁，bat 才能覆盖正在运行的 EXE。
     - WEAUTO_NO_AUTO_UPDATE=1 完全跳过（本地冒烟/离线环境用）。
@@ -6130,31 +6131,13 @@ def _maybe_auto_update():
     import updater as _updater_mod
 
     def _ask_restart(version):
-        """GUI 询问（不弹控制台）。弹窗不可用时保守返回 False，绝不擅自重启。
+        """默认免确认直接自更新（产品要求：双击 WeAuto.exe 即自动更新，无需任何参数/点击）。
 
-        WEAUTO_AUTO_UPDATE_YES=1 时免确认（无人值守 / 自动化实测用），
-        默认仍需用户点确认，避免用户正在使用时被擅自重启。
+        原 tkinter 确认弹窗已移除——发现新版本后自动下载→Ed25519 验签→自替换重启，
+        全程无需用户交互。仅 WEAUTO_NO_AUTO_UPDATE=1 能在更上层完全关闭自动更新。
         """
-        if os.environ.get("WEAUTO_AUTO_UPDATE_YES") == "1":
-            app.logger.info("自动更新免确认模式（WEAUTO_AUTO_UPDATE_YES=1）")
-            return True
-        try:
-            import tkinter as _tk
-            from tkinter import messagebox as _mb
-            _root = _tk.Tk()
-            _root.withdraw()
-            _root.attributes("-topmost", True)
-            yes = _mb.askyesno(
-                "WeAuto 更新",
-                "发现新版本（%s）。\n\n是否立即下载并在完成后重启应用？（配置不会丢失）" % version)
-            try:
-                _root.destroy()
-            except Exception:
-                pass
-            return bool(yes)
-        except Exception as _e:
-            app.logger.info("更新确认弹窗不可用，本次跳过: %s", _e)
-            return False
+        app.logger.info("自动更新默认免确认，将直接下载并重启应用（WEAUTO_NO_AUTO_UPDATE=1 可关闭）")
+        return True
 
     def _worker():
         try:

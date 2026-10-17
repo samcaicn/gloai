@@ -136,9 +136,14 @@ _worker_gate_test*.js
 # ---- 根目录 EXE 运行副本与运行时子目录（不入库）----
 /WeAuto.exe
 /WeAuto.exe.sig
+/WeAuto.exe.bak
+/WeAuto.exe.old
+/temp_update/
+/_upd_new/
 /WeAuto.lnk
 /weauto/
 .weauto_clock.json
+.weauto_artifact.json
 
 # ---- CI artifact 下载临时目录 ----
 _dl_ci*/
