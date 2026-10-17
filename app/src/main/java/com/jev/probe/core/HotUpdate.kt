@@ -32,12 +32,13 @@ object HotUpdate {
 
     /** 查询最新构建；无更新/网络失败/任何异常都返回 null（热更新绝不能影响主功能）。 */
     fun check(context: Context, force: Boolean = false): Info? {
-        val prefs = Prefs
+        val prefs = Prefs(context)
+        val now = System.currentTimeMillis()
         if (!force) {
             val last = prefs.hotUpdateLastCheck
-            if (last > 0 && System.currentTimeMillis() - last < CHECK_INTERVAL_MS) return null
+            if (last > 0 && now - last < CHECK_INTERVAL_MS) return null
         }
-        prefs.hotUpdateLastCheck = System.currentTimeMillis()
+        prefs.hotUpdateLastCheck = now
         return try {
             val cur = context.packageManager.getPackageInfo(context.packageName, 0).versionCode
             val resp = HttpJson.getJson(Prefs.WORKER_BASE.trimEnd('/') + "/api/update-android")
