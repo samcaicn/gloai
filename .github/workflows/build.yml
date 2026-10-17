@@ -109,7 +109,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build release APK (keystore-signed)
-        run: ./gradlew :app:assembleRelease --stacktrace > build_release.log 2>&1
+        run: ./gradlew :app:assembleRelease -PciRun=${{ github.run_number }} --stacktrace > build_release.log 2>&1
 
       - name: Collect APKs
         run: |
@@ -162,7 +162,7 @@ jobs:
       # 驱动 enqueueNotif→flushNotifBatch→回复 整条生产线测多消息/群发送人。
       # 出现在本仓库 CI（有 SIGNING_* secret）时即为 release 同证书签名；release 产物流程不受影响。
       - name: Build debug APK (release-keystore signed, for on-device E2E)
-        run: ./gradlew :app:assembleDebug --stacktrace > build_debug.log 2>&1 || true
+        run: ./gradlew :app:assembleDebug -PciRun=${{ github.run_number }} --stacktrace > build_debug.log 2>&1 || true
 
       - name: Collect & upload debug APK
         if: always()

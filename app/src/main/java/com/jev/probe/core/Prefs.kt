@@ -263,6 +263,16 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     // 配额与授权由 PackLedger 统一管理（每日免费条数 + 话术包离线回复次数），
     // 不再有 Creem 卡密 / 云端计费字段。
 
+    /** 上次热更新检查时间（节流：6 小时一次）。 */
+    var hotUpdateLastCheck: Long
+        get() = sp.getLong("hot_update_last_check", 0)
+        set(v) = sp.edit().putLong("hot_update_last_check", v).apply()
+
+    /** 用户点「跳过」的构建号：该版本不再提示，更新的构建照常提示。 */
+    var hotUpdateDismissedRun: Int
+        get() = sp.getInt("hot_update_dismissed_run", 0)
+        set(v) = sp.edit().putInt("hot_update_dismissed_run", v).apply()
+
     // -------------------------------------------------------- context (D)
 
     var contextEnabled: Boolean
@@ -751,13 +761,13 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val OCR_VISION = "vision"
 
         // ---- WeAuto 云端（唯一 LLM 出口）----
-        // 2026-10-15 起切到 weauto-license Worker 自定义域 wetech.jukuai.net：
-        // Pages 版（weauto-license.pages.dev）代码停在 1 天前快照——没有 /ai/tuptup/v1
-        // 转发路由，且带 KV daily 30 条硬限额（今日实测打满两次，整条回复链 429 死）。
-        // Worker 版（今天部署，含 aiapi 转发供应商 + secret AIAPI_TOKEN）功能是超集，
-        // LLM / 支付 / 激活 / 升级接口全部同源。
-        const val WORKER_HOST = "wetech.jukuai.net"
-        const val WORKER_BASE = "https://wetech.jukuai.net"
+        // 2026-10-17 起主用 Pages 域 weauto-app.pages.dev（业务代码与 Worker 版同源，
+        // 经 Pages Functions 转交同一份 cf_worker.js；*.pages.dev 大陆可达。
+        // wetech.jukuai.net 的 Worker 版保留作备份域名（仍部署），域名切换只改这里。
+        // AI / 更新包回包 / 账户接口全部同源。
+        // 功能对齐记录：Pages 版今日起与 Worker 版同码（quota 动态 / /ai/custom / 更新代理）。
+        const val WORKER_HOST = "weauto-app.pages.dev"
+        const val WORKER_BASE = "https://weauto-app.pages.dev"
 
         // ---- tuptup.top OpenAI 兼容网关（用户自备 LLM）----
         // 2026-10-15 起客户端不再直连 aiapi：改打 Worker 的 /ai/tuptup/v1 转发路由

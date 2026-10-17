@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.provider.Settings
+import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -131,6 +132,11 @@ class MainActivity : AppCompatActivity() {
         if (alert.isNotBlank()) {
             container.addView(pendingAlertBanner(alert, prefs.pendingAlertKind))
         }
+
+        // 热更新：后台查云端构建（内部 6h 节流），发现比当前版本新的构建才出横幅
+        val hotUpdateSlot = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        container.addView(hotUpdateSlot)
+        startHotUpdateCheck(hotUpdateSlot)
 
         // Readiness card
         container.addView(statusCard(ready, permsOk, a11y, overlay, notify, battery, imeDefault, postNotif, key))
@@ -285,6 +291,82 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** 已开启但无障碍被系统关掉时的恢复横幅：点一下直接回无障碍设置页。 */
+    // ----------------------------------------------------------- 热更新
+
+    private fun startHotUpdateCheck(slot: LinearLayout) {
+        Thread {
+            val info = try { com.jev.probe.core.HotUpdate.check(this) } catch (_: Exception) { null }
+            if (info == null || info.versionCode <= prefs.hotUpdateDismissedRun) return@Thread
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                slot.removeAllViews()
+                slot.addView(hotUpdateBanner(info))
+            }
+        }.start()
+    }
+
+    private fun hotUpdateBanner(info: com.jev.probe.core.HotUpdate.Info): View {
+        val c = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundBg(dp(14), Color.parseColor("#EFF6FF"), stroke = true).apply {
+                setStroke(dp(1), Color.parseColor("#3B82F6"))
+            }
+            setPadding(dp(14), dp(13), dp(14), dp(13))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(12) }
+        }
+        val sizeMb = info.sizeBytes / (1024 * 1024)
+        c.addView(text(t("发现新版本（构建 ${info.versionCode}）",
+            "Update available (build ${info.versionCode})"), 14f, ink, bold = true))
+        c.addView(text(
+            if (sizeMb > 0) t("安装包约 ${sizeMb} MB，经云端加速下载。点「立即更新」后由系统安装器完成安装。",
+                "About ${sizeMb} MB, accelerated via cloud relay. Tap \"Update now\" — the system installer handles the rest.")
+            else t("点「立即更新」下载并由系统安装器完成安装。",
+                "Tap \"Update now\" to download — the system installer handles the rest."),
+            12f, sub).apply { setPadding(0, dp(3), 0, dp(10)) })
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        row.addView(btn(t("立即更新", "Update now"), true) { startHotUpdateDownload(info.versionCode) })
+        row.addView(btn(t("跳过该版本", "Skip this build"), true) {
+            prefs.hotUpdateDismissedRun = info.versionCode
+            c.visibility = View.GONE
+        }.apply {
+            setPadding(dp(18), 0, dp(18), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { leftMargin = dp(10) }
+        })
+        c.addView(row)
+        return c
+    }
+
+    private fun startHotUpdateDownload(versionCode: Int) {
+        Toast.makeText(this, t("开始后台下载更新包…", "Downloading update in the background…"), Toast.LENGTH_SHORT).show()
+        Thread {
+            try {
+                val apk = com.jev.probe.core.HotUpdate.downloadApk(this)
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    if (com.jev.probe.core.HotUpdate.canInstall(this)) {
+                        com.jev.probe.core.HotUpdate.install(this, apk)
+                    } else {
+                        Toast.makeText(this, t("请先允许「安装未知应用」，再点一次立即更新",
+                            "Allow \"install unknown apps\" first, then tap Update again"), Toast.LENGTH_LONG).show()
+                        com.jev.probe.core.HotUpdate.openInstallPermSettings(this)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("HotUpdate", "download failed: ${e.message}")
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) {
+                        Toast.makeText(this, t("更新包下载失败，稍后自动重试",
+                            "Update download failed; will retry automatically later"), Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }.start()
+    }
+
     private fun recoveryBanner(): View {
         val c = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

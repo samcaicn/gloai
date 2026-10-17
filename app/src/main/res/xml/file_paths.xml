@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 热更新安装包只暴露 cache/updates/ 目录（HotUpdate.downloadApk 的输出位置） -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+</paths>

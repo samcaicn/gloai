@@ -43,7 +43,9 @@ android {
         applicationId = "com.jev.probe"
         minSdk = 30
         targetSdk = 35
-        versionCode = 5
+        // CI 构建时注入 run_number（-PciRun=...），与云端更新代理回传的
+        // artifact 尾号同口径，热更新直接比大小；本地构建回落 5。
+        versionCode = (project.findProperty("ciRun") as? String)?.toIntOrNull() ?: 5
         versionName = "1.4"
 
         // 编译期反马甲包（L1）：native 完整性模块需要 NDK 编译 libintegrity.so。
