@@ -522,6 +522,62 @@ def main():
         bot.user_queues = {}
         bot.chat_contexts = {}
 
+    # ---------- 12. 实时消息去重：防重复注册/重投导致的双重回复 ----------
+    _real_impl = bot._message_listener_impl
+    _calls = []
+    def _spy_impl(msg, chat):
+        _calls.append((getattr(chat, '_wxid', None), getattr(msg, 'local_id', None)))
+    bot._message_listener_impl = _spy_impl
+    try:
+        bot._msg_dedup.clear()
+
+        class _DedupMsg:
+            def __init__(self, lid):
+                self.local_id = lid
+        class _DedupChat:
+            def __init__(self, who, wxid=None):
+                self.who = who
+                self._wxid = wxid if wxid is not None else who
+
+        # 12a. 同一会话被注册两次（昵称 vs 真实 wxid 两套 key），同一条消息两次
+        #      投递到两个回调 → 第二次应被去重（只处理一次）
+        _calls.clear()
+        m = _DedupMsg(12345)
+        bot.message_listener(m, _DedupChat('wxid_abc'))
+        bot.message_listener(m, _DedupChat('wxid_abc'))
+        check("去重 12a：同会话同 local_id 重复投递只处理一次",
+              len(_calls) == 1, "calls=%r" % (_calls,))
+
+        # 12b. 不同 local_id（用户连发的两条，即便内容相同）不误拦
+        _calls.clear()
+        bot.message_listener(_DedupMsg(12346), _DedupChat('wxid_abc'))
+        bot.message_listener(_DedupMsg(12347), _DedupChat('wxid_abc'))
+        check("去重 12b：不同 local_id 不误拦（均处理）",
+              len(_calls) == 2, "calls=%r" % (_calls,))
+
+        # 12c. 跨注册 key 不一致但 _wxid 相同（昵称注册 vs 窗口id注册）也应去重：
+        #       bot 启动 AddListenChat("小明") 底层 _callbacks key=wxid_abc；
+        #       守护线程 AddListenChat("wxid_abc") 又追加一个回调，两者 _wxid 相同。
+        _calls.clear()
+        bot._msg_dedup.clear()
+        bot.message_listener(_DedupMsg(555), _DedupChat('小明', 'wxid_abc'))
+        bot.message_listener(_DedupMsg(555), _DedupChat('wxid_abc', 'wxid_abc'))
+        check("去重 12c：昵称/窗口id 重复注册（_wxid 相同）去重",
+              len(_calls) == 1, "calls=%r" % (_calls,))
+
+        # 12d. 无 local_id（如补漏合成的 Msg）不过滤，交水位负责
+        _calls.clear()
+        bot._msg_dedup.clear()
+        class _NoLid:
+            pass
+        bot.message_listener(_NoLid(), _DedupChat('wxid_x'))
+        bot.message_listener(_NoLid(), _DedupChat('wxid_x'))
+        check("去重 12d：无 local_id 不去重（补漏路径交水位负责）",
+              len(_calls) == 2, "calls=%r" % (_calls,))
+    finally:
+        bot._message_listener_impl = _real_impl
+        bot._msg_dedup.clear()
+
     # ---------- 汇总 ----------
     failed = [n for n, ok in results if not ok]
     print("\n===== 汇总: %d/%d 通过 =====" % (len(results) - len(failed), len(results)))

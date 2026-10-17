@@ -2192,6 +2192,27 @@ def catchup_missed():
             logger.error(f"补漏扫描异常（已隔离，下轮继续）: {e}", exc_info=True)
 
 
+# ===== 实时消息去重（防同一条消息被投递多次导致双重回复）=====
+# 背景：wechatauto 的 db.Listener 对每个会话的回调是「追加」注册
+# （add_listener 用 list.append，db.py:2069），且 wx.listen 用昵称做 key、
+# 底层 _callbacks 用 Chat._wxid（解析后的真实 wxid）做 key。bot 启动时按
+# 昵称 AddListenChat(nickname="小明")，底层 _callbacks key = "wxid_xxx"；
+# 守护线程 auto_add_discovered_users 用 GetAllSubWindow 返回的 chat.who（真实
+# wxid）去比 wx.listen 的昵称 key，比不中 → 又 AddListenChat(nickname="wxid_xxx")
+# → _callbacks["wxid_xxx"] 被追加第二个回调。于是同一条消息行被两个回调各处理
+# 一次 → 机器人对同一消息回复两次。个别微信 4.x 版本在窗口聚焦/事件重放时也会把
+# 最近消息再投递一次。
+# 以 (会话真实 wxid, 消息 local_id) 为键做短窗口去重：local_id 是会话内单调递
+# 增的 DB 行号、永不复用，因此只拦「同一行被投递多次」，绝不会误伤用户连发的两条
+# 不同消息（即便内容完全相同也各自有不同 local_id）。用 chat._wxid（解析后的真实
+# wxid）而非 chat.who（原始传入值，昵称/窗口id 两套命名空间不一致），才能保证
+# 「昵称注册」与「窗口id注册」两种路径识别为同一会话。补漏路径合成的 Msg 没有
+# local_id，不经过 message_listener，由 _catchup_done 水位负责去重，不受影响。
+MSG_DEDUP_TTL = 20            # 去重窗口（秒）
+_msg_dedup = {}              # (wxid, local_id) -> 过期时间戳
+_msg_dedup_lock = threading.Lock()
+
+
 def message_listener(msg, chat):
     """对外回调：包裹实现层，确保单条消息处理异常不会中断整个消息接收循环（24h 鲁棒性）。
 
@@ -2199,6 +2220,23 @@ def message_listener(msg, chat):
     会冒泡到引擎并导致其停止派发后续消息——进程虽仍在，却“活但失聪”。
     因此所有异常都在本层兜底，绝不让其外泄。
     """
+    # --- 同一条消息去重（必须在 _message_listener_impl 之前）---
+    _lid = getattr(msg, 'local_id', None)
+    _wxid = getattr(chat, '_wxid', None) or getattr(chat, 'who', None)
+    if _lid is not None and _wxid:
+        _dk = (_wxid, _lid)
+        _now = time.time()
+        with _msg_dedup_lock:
+            # 集合上限 256 条（≈20s 窗口内远超所需）；接近上限时清一遍过期项，
+            # 平时让过期项自然滞留也无妨——最多 256 条，内存可忽略。
+            if len(_msg_dedup) > 256:
+                _exp = [k for k, v in _msg_dedup.items() if v < _now]
+                for _k in _exp:
+                    _msg_dedup.pop(_k, None)
+            if _dk in _msg_dedup:
+                logger.info(f"消息去重：会话 {_wxid} 的 local_id={_lid} 已处理过，跳过重复投递。")
+                return
+            _msg_dedup[_dk] = _now + MSG_DEDUP_TTL
     try:
         _message_listener_impl(msg, chat)
     except Exception as e:
@@ -2348,7 +2386,7 @@ def _message_listener_impl(msg, chat):
                                 # 保存当前状态
                                 original_can_send_messages = can_send_messages
                                 # 处理图片
-                                content = recognize_image_with_moonshot(image_path, is_emoji=False)
+                                content = recognize_image(image_path, is_emoji=False)
                                 if content:
                                     logger.info(f"图片识别成功: {content}")
                                     content = f"[图片识别结果]: {content}"
@@ -2371,7 +2409,7 @@ def _message_listener_impl(msg, chat):
                                 # 保存当前状态
                                 original_can_send_messages = can_send_messages
                                 # 处理图片
-                                image_content = recognize_image_with_moonshot(content, is_emoji=False)
+                                image_content = recognize_image(content, is_emoji=False)
                                 if image_content:
                                     logger.info(f"图片识别成功: {image_content}")
                                     content = f"[图片识别结果]: {image_content}"
@@ -2612,6 +2650,69 @@ def recognize_image_with_moonshot(image_path, is_emoji=False):
     except Exception as e:
         logger.error(f"调用AI识别图片失败: {str(e)}", exc_info=True)
         return ""
+    finally:
+        # 无论成功/失败/异常，都恢复消息队列，避免永久失声
+        can_send_messages = True
+
+def recognize_image(image_path, is_emoji=False):
+    """图片识别统一入口：本地 OCR / 本地视觉优先（可选），失败回落云端 Moonshot。
+
+    优先级：本地 OCR 文字提取(LOCAL_OCR_ENABLE) → 本地视觉语义(LOCAL_VISION_ENABLE)
+    → 云端 Moonshot。任何本地环节失败都自动降级，绝不阻断。
+    """
+    global can_send_messages
+
+    # 首次使用的依赖安装（约100MB，多镜像源）放在暂停发送队列之前执行，
+    # 避免下载期间机器人长时间失声。已就绪时此处瞬时返回。
+    _ocr_ok = False
+    if LOCAL_OCR_ENABLE:
+        try:
+            from local_vision import ensure_rapidocr
+            _ocr_ok, _ocr_info = ensure_rapidocr(LOCAL_OCR_USE_GPU)
+            if not _ocr_ok:
+                logger.warning(f"[本地OCR] 引擎不可用，将跳过: {_ocr_info}")
+        except Exception as _oe:
+            logger.warning(f"[本地OCR] 引擎初始化异常，将跳过: {_oe}")
+
+    can_send_messages = False
+    try:
+        # —— 第一优先：本地 OCR（纯文字，快且免费）——
+        if LOCAL_OCR_ENABLE and _ocr_ok:
+            try:
+                from local_vision import recognize_image_ocr
+                ok, ocr_text, info = recognize_image_ocr(
+                    image_path, LOCAL_OCR_USE_GPU, auto_install=False)
+                if ok and ocr_text:
+                    logger.info(f"本地OCR识别结果: {ocr_text}")
+                    return ('发送了表情包：' + ocr_text) if is_emoji else ('发送了图片，图中文字：' + ocr_text)
+                if ok:
+                    logger.info("本地OCR未识别到图中文字，转后续引擎")
+                else:
+                    logger.warning(f"本地OCR失败: {info}")
+            except Exception as _oe:
+                logger.warning(f"本地OCR异常: {_oe}")
+
+        # —— 第二优先：本地视觉语义（llama.cpp Vulkan GPU）——
+        if LOCAL_VISION_ENABLE:
+            try:
+                from local_vision import recognize_image_llamaserver, ensure_llamaserver
+                if LOCAL_VISION_AUTO_START:
+                    ensure_llamaserver(LOCAL_VISION_BASE_URL,
+                                       LOCAL_VISION_SERVER_EXE, LOCAL_VISION_MODEL_DIR)
+                lv_text = recognize_image_llamaserver(
+                    image_path, LOCAL_VISION_BASE_URL, LOCAL_VISION_API_KEY,
+                    LOCAL_VISION_MODEL, is_emoji=is_emoji,
+                    timeout=LOCAL_VISION_TIMEOUT)
+                if lv_text:
+                    return ('发送了表情包：' + lv_text) if is_emoji else ('发送了图片：' + lv_text)
+            except Exception as _le:
+                logger.warning(f"本地视觉服务异常: {_le}")
+            if not LOCAL_VISION_FALLBACK_CLOUD:
+                logger.warning("本地视觉识别失败且已关闭云端回落")
+                return ""
+
+        # —— 兜底：云端 Moonshot ——
+        return recognize_image_with_moonshot(image_path, is_emoji)
     finally:
         # 无论成功/失败/异常，都恢复消息队列，避免永久失声
         can_send_messages = True
@@ -3142,7 +3243,7 @@ def handle_wechat_message(msg, who):
         if img_path:
             logger.info(f"开始识别图片/表情 - 用户 {username}: {img_path}")
             # 调用识别函数
-            recognized_text = recognize_image_with_moonshot(img_path, is_emoji=is_emoji)
+            recognized_text = recognize_image(img_path, is_emoji=is_emoji)
             # 使用识别结果或回退占位符更新 processed_content
             processed_content = recognized_text if recognized_text else ("[图片]" if not is_emoji else "[动画表情]")
             clean_up_temp_files() # 清理临时截图文件
