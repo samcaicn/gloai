@@ -88,6 +88,99 @@ function writeJson(filePath, payload) {
   fs.writeFileSync(filePath, JSON.stringify(payload, null, 2) + '\n', 'utf-8');
 }
 
+// Entries that ship inside a bundled Node.js distribution but are package-manager
+// tooling we never use at runtime — the agent kernel only needs node.exe. They
+// account for ~75% of the installed file count, which is what makes the NSIS
+// unpack step slow, so we strip them from the packaged bundle. Safe: the
+// managed-resources contract (verify-bundled-aioncore-resources) only ever
+// requires node.exe + a valid manifest, never npm/npx/corepack.
+const NODE_PACKAGE_MANAGER_ENTRIES = [
+  'npm', 'npm.cmd', 'npm.ps1',
+  'npx', 'npx.cmd', 'npx.ps1',
+  'corepack', 'corepack.cmd',
+  'node_modules',
+  'blank_global_npmrc', 'blank_user_npmrc',
+  'install_tools.bat', 'nodevars.bat',
+];
+
+function listFilesRecursive(dir) {
+  const out = [];
+  const stack = [dir];
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(cur, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const full = path.join(cur, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else out.push(full);
+    }
+  }
+  return out;
+}
+
+function pruneManagedNodePackageManagers(managedResourcesDir, runtimeKey) {
+  if (process.env.AIONUI_KEEP_NODE_PACKAGE_MANAGERS === '1') {
+    console.log('  Skipping node package-manager prune (AIONUI_KEEP_NODE_PACKAGE_MANAGERS=1)');
+    return;
+  }
+
+  // Locate the node root from the contract so we never hard-code a version.
+  const contractPath = path.join(managedResourcesDir, 'manifest.json');
+  let nodeRoot = null;
+  try {
+    const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+    if (contract && contract.node && typeof contract.node.root === 'string') {
+      nodeRoot = contract.node.root;
+    }
+  } catch {}
+  if (!nodeRoot) {
+    console.warn('  Skipping node package-manager prune: managed-resources contract missing node.root');
+    return;
+  }
+
+  const nodeDir = path.join(managedResourcesDir, nodeRoot);
+  if (!fs.existsSync(nodeDir)) {
+    console.warn(`  Skipping node package-manager prune: node root not found at ${nodeRoot}`);
+    return;
+  }
+
+  let removedFiles = 0;
+  let freedBytes = 0;
+  for (const entry of NODE_PACKAGE_MANAGER_ENTRIES) {
+    const target = path.join(nodeDir, entry);
+    if (!fs.existsSync(target)) continue;
+    try {
+      const stat = fs.statSync(target);
+      if (stat.isDirectory()) {
+        const files = listFilesRecursive(target);
+        for (const f of files) {
+          try {
+            freedBytes += fs.statSync(f).size;
+          } catch {}
+        }
+        removedFiles += files.length;
+      } else {
+        freedBytes += stat.size;
+        removedFiles += 1;
+      }
+      fs.rmSync(target, { recursive: true, force: true });
+    } catch (err) {
+      console.warn(`  Failed to prune ${entry}: ${err.message}`);
+    }
+  }
+
+  if (removedFiles > 0) {
+    console.log(
+      `  Pruned ${removedFiles} npm/corepack file(s) from ${nodeRoot} (freed ~${(freedBytes / 1e6).toFixed(1)} MB)`
+    );
+  }
+}
+
 function getBinaryName(platform) {
   return platform === 'win32' ? 'aioncore.exe' : 'aioncore';
 }
@@ -485,6 +578,7 @@ function prepareAioncore(options) {
       fs.existsSync(localManagedResourcesDir)
     ) {
       copyDirectorySafe(resolvedLocalBundleDir, targetDir);
+      pruneManagedNodePackageManagers(path.join(targetDir, 'managed-resources'), runtimeKey);
       ensureExecutableMode(targetBinaryPath);
       const manifest = {
         platform,
@@ -557,6 +651,7 @@ function prepareAioncore(options) {
     copyFileSafe(sourcePath, targetBinaryPath);
     ensureExecutableMode(targetBinaryPath);
     const bundledManagedResourcesDir = prepareManagedResources(targetBinaryPath, targetDir);
+    pruneManagedNodePackageManagers(bundledManagedResourcesDir, runtimeKey);
 
     // The release tag is the authoritative version — the aioncore
     // binary does not expose a --version flag (it has --app-version which
@@ -589,5 +684,6 @@ module.exports = {
   getActionsArtifactMissingMessage,
   getActionsArtifactName,
   prepareAioncore,
+  pruneManagedNodePackageManagers,
   verifyPreparedAioncoreBundle,
 };
