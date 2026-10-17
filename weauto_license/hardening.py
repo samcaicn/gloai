@@ -29,6 +29,9 @@ _LOGGER = logging.getLogger("weauto.license")
 # 发行态防护被突破的全局标志：一旦置 True，config_trusted() 等判定会强制走
 # 网关/禁用付费功能（降级），使被 patch / 被调试的客户端无法使用付费能力。
 _COMPROMISED = False
+# sig 过渡态自愈的进程内防抖：自愈要下载完整构件（~83MB），每次启动/复检都试
+# 会把离线用户卡死在启动边界。进程内只尝试一次，失败则交给 compromised 降级。
+_REPAIR_TRIED = False
 
 
 def is_compromised() -> bool:
@@ -42,6 +45,12 @@ def _set_compromised(reason: str) -> None:
         _LOGGER.critical("HARDENING COMPROMISED: %s", reason)
     except Exception:
         pass
+
+
+def _clear_compromised() -> None:
+    """自愈成功后解除降级（过渡态误判的恢复路径）。"""
+    global _COMPROMISED
+    _COMPROMISED = False
 
 
 def is_release() -> bool:
@@ -206,6 +215,24 @@ def self_integrity_ok() -> bool:
         ed25519.Ed25519PublicKey.from_public_bytes(pub).verify(sig, digest)
         return True
     except InvalidSignature:
+        # sig 存在但验不过。两种可能：① 真被 patch；② **更新过渡态**——旧版
+        # updater 自动更新只搬 exe 不搬 sig，磁盘是「新 exe + 旧 sig」。先尝试
+        # 自愈：本地 exe 与 Worker 最新版逐字节一致时拉取对应 sig 覆盖。
+        global _REPAIR_TRIED
+        if not _REPAIR_TRIED:
+            _REPAIR_TRIED = True  # 进程内只试一次（见 _REPAIR_TRIED 注释）
+            try:
+                import updater as _upd
+                if _upd.Updater().repair_sig_if_transitional():
+                    with open(exe, "rb") as f:
+                        digest = hashlib.sha256(f.read()).digest()
+                    with open(sig_path, "rb") as f:
+                        sig = f.read()
+                    ed25519.Ed25519PublicKey.from_public_bytes(pub).verify(sig, digest)
+                    _LOGGER.warning("EXE sig 过渡态已自愈（旧版 updater 更新未同步 sig）")
+                    return True
+            except Exception:
+                pass
         return False
     except Exception:
         return False
@@ -252,8 +279,16 @@ def assert_hardening() -> bool:
         from weauto_license import guard  # noqa: F401
         from weauto_license import secrets  # noqa: F401
         if not self_integrity_ok():
-            _set_compromised("self integrity failed")
-            return False
+            # ⚠️ 自愈后仍不过 = 两种不可区分的情形：① 真被 patch；② 旧版 updater
+            # 的更新过渡态但自愈失败（如离线）。启动边界【不因此拒绝启动】——
+            # 硬拒会让正版用户变砖（已实测：旧版更新后新 exe+旧 sig 直接 os._exit）。
+            # 处置：降级（compromised → 强制走网关/禁付费功能）让破解无利可图，
+            # 防破解的硬拒由 config 签名 / 防护模块存在性 / 调试器探测承担。
+            _set_compromised("self integrity failed (unrepaired)")
+            _LOGGER.warning(
+                "EXE 自体检未通过且自愈失败，已降级但不拒绝启动（避免更新过渡态误杀正版用户）")
+        else:
+            _clear_compromised()  # 自愈成功/本就清白：解除过渡态误判
     except Exception as _e:
         _set_compromised("hardening check error: %r" % _e)
         return False

@@ -126,9 +126,13 @@ from weauto_license import hardening as H
 
 check("hardening exports", all(hasattr(H, n) for n in
       ["detect_debugger", "self_integrity_ok", "enforce_hardening", "recheck",
-       "assert_hardening", "is_compromised"]))
+       "assert_hardening", "is_compromised", "_clear_compromised"]))
 check("detect_debugger 无环境误报", H.detect_debugger() is False)
 check("self_integrity_ok 源码态 True", H.self_integrity_ok() is True)
+# sig 过渡态自愈（防变砖）：旧版 updater 更新只搬 exe 不搬 sig → 新 exe+旧 sig
+# 会误判被 patch。自愈函数必须存在且可无参调用探测。
+from updater import Updater as _U2
+check("updater 有 sig 过渡态自愈", hasattr(_U2, "repair_sig_if_transitional"))
 try:
     import io as _io
     from updater import Updater as _U

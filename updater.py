@@ -362,6 +362,12 @@ class Updater:
                             "error": f"更新代理返回了错误项目的构件（{ret_artifact}），已拒绝下载"}
                 latest_updated = data.get("version")  # updated_at 时间戳
                 local_updated = self._get_local_artifact_updated_at()
+                # 防呆：本地状态值必须是 ISO 时间戳（YYYY-MM-…）。测试残留/文件损坏的
+                # 非标值（如 "CACHED-…"）字典序会压过真版本号（'C'>'2'），导致该机器
+                # 永远判定"已是最新"、永远收不到更新。非标值一律视为"无本地状态"。
+                if local_updated and not re.match(r"^\d{4}-\d{2}-\d{2}", str(local_updated)):
+                    logger.warning("本地构件状态时间戳非标，已忽略: %r", local_updated)
+                    local_updated = None
                 has_update = (local_updated is None) or bool(latest_updated and latest_updated > local_updated)
                 return {
                     "has_update": bool(has_update),
@@ -378,6 +384,58 @@ class Updater:
                 if attempt < 2:
                     time.sleep(2 * (attempt + 1))
         return {"has_update": False, "error": f"检查更新代理失败: {last_err}"}
+
+    def repair_sig_if_transitional(self) -> bool:
+        """更新过渡态自愈：本地 exe 与 Worker 最新版逐字节一致时，用其 sig 覆盖本地。
+
+        场景（已实测发生）：旧版 updater（< 0397405）的自动更新只搬 exe 不搬 sig，
+        磁盘出现「新 exe + 旧 sig」→ 新 EXE 自体检 sig 不匹配。若本地 exe 恰与线上
+        最新版一致，说明是过渡态而非被 patch；拉取对应 sig 覆盖即可自愈
+        （Ed25519 验签保证拉来的 sig 确实对得上本地 exe）。
+        返回 True = 已修复；False = 无法确认是过渡态 / 下载失败（交由上层判死刑）。
+        """
+        try:
+            exe = getattr(sys, "executable", "") or ""
+            if not exe.lower().endswith(".exe") or not os.path.exists(exe):
+                return False
+            sig_path = os.path.join(os.path.dirname(os.path.abspath(exe)), "WeAuto.exe.sig")
+            info = self.check_for_updates()
+            url = info.get("download_url")
+            if not url:
+                return False
+            os.makedirs(self.temp_dir, exist_ok=True)
+            zip_path = os.path.join(self.temp_dir, "_sig_repair.zip")
+            with _http_get(url, headers={"User-Agent": f"{self.REPO_NAME}-UpdateChecker"},
+                           timeout=180, stream=True) as r:
+                r.raise_for_status()
+                with open(zip_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+            with zipfile.ZipFile(zip_path) as z:
+                names = z.namelist()
+                exe_name = next((n for n in names if n.lower().endswith("weauto.exe")), None)
+                sig_name = next((n for n in names if n.lower().endswith("weauto.exe.sig")), None)
+                if not exe_name or not sig_name:
+                    return False
+                if z.read(exe_name) != open(exe, "rb").read():
+                    # 本地 exe 与线上不一致：不是过渡态（被 patch 或本地定制版），不自愈
+                    return False
+                new_sig = z.read(sig_name)
+            # 原子写入：先 .tmp 再 replace，避免写一半留下更坏的状态
+            tmp_sig = sig_path + ".tmp"
+            with open(tmp_sig, "wb") as f:
+                f.write(new_sig)
+            os.replace(tmp_sig, sig_path)
+            try:
+                os.remove(zip_path)
+            except Exception:
+                pass
+            logger.info("EXE sig 过渡态自愈完成: %s", sig_path)
+            return True
+        except Exception as e:
+            logger.warning("sig 过渡态自愈失败: %s", e)
+            return False
 
     def apply_artifact_update(self, update_info: dict) -> dict:
         """下载加密 exe 构件并自替换（自更新通道，不经源码补丁逻辑）。"""
