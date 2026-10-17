@@ -165,8 +165,8 @@ class MainActivity : AppCompatActivity() {
         // 第 5 步：写入通道。系统禁止 App 代切输入法，所以这里只能给入口让用户自己切。
         // 文案必须说清「去系统输入法列表里选」，否则用户不知道要点哪里。
         container.addView(permCard(stepTitle(IME), t(
-            "部分聊天软件新版本起读不到聊天文字，回复只能靠本 App 的输入法写入。请在系统输入法列表里勾选并切到「AI聊天助手·写入」",
-            "Some chat apps' newer versions block chat text, so replies can only be written through this app's keyboard. Enable and switch to \"AI Chat Assistant · write\" in the system keyboard list"),
+            "回复由本 App 的输入法写入：请在系统输入法列表里勾选并切到「AI聊天助手·写入」",
+            "Replies are written through this app's keyboard. Enable and switch to \"AI Chat Assistant · write\" in the system keyboard list"),
             imeDefault, next == IME) {
             runCatching { (getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showInputMethodPicker() }
         })

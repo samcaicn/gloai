@@ -1638,7 +1638,7 @@ open class ChatCaptureService : AccessibilityService() {
         // WeChat's anti-screenshot risk control makes an in-WeChat screenshot
         // unreliable and risky, so manual OCR is disabled there; tree capture
         // (the bubble's auto analysis) still works.
-        if (pkg == PKG_WECHAT) { overlay?.toast(t("聊天内暂不支持截屏识别，已用树读取", "Screen capture isn\u0027t supported inside the chat app — used tree reading instead")); return }
+        if (pkg == PKG_WECHAT) { overlay?.toast(t("聊天内不支持截屏识别", "Screen capture isn\u0027t supported inside the chat app")); return }
         // Top bar text, if this app has one we can read; else the first OCR line.
         val title = root?.let {
             findTitleInActionBar(it, Int.MAX_VALUE, resources.displayMetrics.widthPixels, resources, 0.15, 0.85)
@@ -3336,7 +3336,7 @@ open class ChatCaptureService : AccessibilityService() {
 
         /** Said on the panel when the chat text came from the notification preview
          *  instead of the (WeChat-8.0.78-blocked) live screen read. */
-        private const val NOTIFY_NOTE = "来自通知预览（聊天前台屏蔽了读屏，已用通知文本兜底）"
+        private const val NOTIFY_NOTE = "来自通知预览"
 
         private val PURE_TIME = Regex("""\d{1,2}[:：]\d{2}""")
         private val TAIL_TIME = Regex("""\d{1,2}[:：]\d{2}$""")

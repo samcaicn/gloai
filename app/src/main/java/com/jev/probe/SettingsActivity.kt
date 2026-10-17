@@ -232,7 +232,7 @@ class SettingsActivity : AppCompatActivity() {
         } else if (imeActive) {
             t("已设为当前输入法，自动回复直接写入并发送", "Active — replies are written and sent directly")
         } else {
-            t("已启用但未设为当前输入法：自动回复会提示你去切换。点下方「切换为探针输入法」把它设为当前", "Enabled but not current — auto-reply will prompt you to switch. Tap \"Switch to probe IME\" below to make it current")
+            t("已启用，但还不是当前输入法。点下方按钮切换", "Enabled but not current. Tap the button below to switch")
         }
         c.addView(permRow(
             t("写入输入法", "Write input method"),
@@ -244,11 +244,11 @@ class SettingsActivity : AppCompatActivity() {
         // 写入输入法启用后，还须把它设为「当前输入法」自动发送才会真正落键——
         // 否则每次填完都弹系统选择器、需手动点一次。这里给一键切换入口（弹选择器选探针）。
         if (imeOn) {
-            c.addView(cardBtn(t("切换为探针输入法（自动发送需它当前）", "Switch to probe IME (auto-send needs it current)")) {
+            c.addView(cardBtn(t("切换为「AI聊天助手 · 写入」", "Switch to \"AI Assistant · Write\"")) {
                 val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
                 imm?.showInputMethodPicker()
-                Toast.makeText(this, t("在弹出列表里选「AI聊天助手 · 写入」，设为默认后自动发送最稳",
-                    "Pick \"AI Assistant · Write\" — setting it as default makes auto-send reliable"), Toast.LENGTH_LONG).show()
+                Toast.makeText(this, t("在弹出列表里选「AI聊天助手 · 写入」",
+                    "Pick \"AI Assistant · Write\" in the list"), Toast.LENGTH_LONG).show()
             })
         }
 
@@ -261,14 +261,12 @@ class SettingsActivity : AppCompatActivity() {
             prefs.randomSendDelay
         ) { prefs.randomSendDelay = it })
         c.addView(text(
-            t("开启后，每条自动回复前会随机等 2–300 秒再发，不会每次都卡同一节奏。" +
-                "这段等待里悬浮窗有倒计时，你可以直接在对话框里改草稿、或点「本次不发送」拦下。",
-              "When on, each auto-reply waits a random 2–300s before sending so it never looks mechanical. " +
-                "During the wait a countdown floats on screen — you can edit the draft right in WeChat, or tap \"Skip this time\"."),
+            t("每条自动回复前随机等 2–300 秒再发出。等待时可改草稿，或点「本次不发送」拦下。",
+              "Each auto-reply waits a random 2–300s. During the wait you can edit the draft or tap \"Skip this time\"."),
             11f, sub).apply { setPadding(dp(2), dp(2), 0, dp(2)) })
 
         // 发送延迟：固定等待（随机关闭、或主动发送时用的兜底值）。太快会点空。
-        c.addView(label(t("发出前等几秒（兜底）", "Wait before sending, fallback (seconds)")))
+        c.addView(label(t("发出前固定等待（秒）", "Fixed wait before sending (seconds)")))
         val delayEdit = edit(
             if (prefs.sendDelayMs % 1000 == 0) (prefs.sendDelayMs / 1000).toString()
             else String.format("%.1f", prefs.sendDelayMs / 1000f),
@@ -278,10 +276,8 @@ class SettingsActivity : AppCompatActivity() {
         }
         c.addView(delayEdit)
         c.addView(text(
-            t("「随机等待」关掉、或你主动发消息时，用这个固定秒数。太快的话聊天还没准备好发送，" +
-                "点下去消息就丢了；这段时间里悬浮窗会出现倒计时，可以点「本次不发送」拦下来。",
-              "Used when random wait is off, or for messages you send on purpose. If it's too short, " +
-                "WeChat isn't ready and the tap misses; a countdown appears where you can skip this one."),
+            t("「随机等待」关掉、或你主动发消息时使用。",
+              "Used when random wait is off, or for messages you send on purpose."),
             11f, sub).apply { setPadding(0, dp(4), 0, 0) })
         // 离开设置页时兜底保存。只挂失焦是不够的：软键盘收起、系统返回手势都可能
         // 不经过 onBlur，用户改完直接退出就会丢掉这个值（而页面上已经不再有「保存」按钮）。
@@ -495,16 +491,6 @@ class SettingsActivity : AppCompatActivity() {
             }
         })
 
-        // 调试令牌：adb 命令 / 自动化用。明文展示无妨（仅本机、可手动重置）。
-        c.addView(text(t("调试令牌（adb / 自动化用）", "Debug token (for adb / automation)"), 11f, sub).apply {
-            setPadding(0, dp(8), 0, dp(2))
-        })
-        c.addView(text(prefs.proactiveToken, 13f, accent, bold = true).apply {
-            setPadding(0, dp(2), 0, dp(2))
-        })
-        c.addView(text(
-            "adb shell am broadcast -a com.jev.probe.action.SEND_TO_CHAT --es conv \"会话名\" --es text \"内容\" --es token ${prefs.proactiveToken}",
-            11f, sub).apply { setPadding(0, dp(2), 0, dp(2)) })
         root.addView(c)
     }
 
