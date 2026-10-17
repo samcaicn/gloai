@@ -218,7 +218,8 @@ object PackLedger {
         } catch (_: Exception) {
             0
         }
-        return if (entries > 0) entries else FREE_QUOTA_DEFAULT
+        // 话术包条数只准上调、不准压到基线以下：保底 FREE_QUOTA_DEFAULT（与云端 freeLimitFor 一致）
+        return if (entries > 0) maxOf(FREE_QUOTA_DEFAULT, entries) else FREE_QUOTA_DEFAULT
     }
 
     /**
