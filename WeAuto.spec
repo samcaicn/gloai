@@ -3,7 +3,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [('C:/d/weauto/_pybuild_work/config.py', '.'), ('C:/d/weauto/_pybuild_work/config.py.sig', '.'), ('C:/d/weauto/templates', 'templates'), ('C:/d/weauto/emojis', 'emojis'), ('C:/d/weauto/prompts', 'prompts'), ('C:/d/weauto/Demo_Image', 'Demo_Image'), ('C:/d/weauto/release_secrets.enc', '.')]
 binaries = []
-hiddenimports = ['bot', 'wechat_compat', 'wechatauto', 'forward_hub', 'jev_guard', 'weauto_stdio', 'cli', 'weauto_mcp', 'weauto_license', 'weauto_license.guard', 'mcp', 'uiautomation', 'comtypes', 'colorama', 'webview.platforms.edgechromium', 'webview.platforms.winforms', 'updater']
+hiddenimports = ['bot', 'wechat_compat', 'wechatauto', 'forward_hub', 'jev_guard', 'weauto_stdio', 'cli', 'weauto_mcp', 'weauto_license', 'weauto_license.guard', 'weauto_license.hardening', 'weauto_license.secrets', 'mcp', 'uiautomation', 'comtypes', 'colorama', 'webview.platforms.edgechromium', 'webview.platforms.winforms', 'updater']
 tmp_ret = collect_all('mcp')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('wechatauto')

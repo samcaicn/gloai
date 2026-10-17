@@ -142,5 +142,27 @@ try:
 except Exception as _hb:
     check("bat 搬运 sig(SRCSIG/DSTSIG)", False, repr(_hb))
 
+# 8) 入口防护覆盖铁律：所有 EXE 入口的 main() 都必须调用 enforce_hardening
+#    （新增入口漏接 = 防破解出现缺口，CI 必须拦住）
+def _main_calls_enforce(path):
+    src = open(path, "r", encoding="utf-8", errors="replace").read()
+    lines = src.splitlines()
+    # 找每个 def main() 的函数体（到下一个同级 def/EOF），检查体内有 enforce_hardening
+    import re as _re
+    for i, ln in enumerate(lines):
+        if _re.match(r"^def main\(\)\s*:", ln):
+            body = []
+            for l2 in lines[i + 1:]:
+                if _re.match(r"^(def |class |@)", l2):
+                    break
+                body.append(l2)
+            if "enforce_hardening" not in "\n".join(body):
+                return False
+    return True
+
+for _ep in ["config_editor.py", "cli.py", "weauto_mcp.py"]:
+    _p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), _ep)
+    check("入口防护总闸: " + _ep, os.path.exists(_p) and _main_calls_enforce(_p))
+
 print("RESULT: " + ("ALL PASS" if _ok else "SOME FAILED"))
 sys.exit(0 if _ok else 1)

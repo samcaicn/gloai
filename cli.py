@@ -357,6 +357,15 @@ def build_parser():
 
 
 def main():
+    # 防护总闸（反调试/EXE自体检）：冻结发行态下被调试或被 patch → 拒绝启动。
+    # 放在 License 门禁之前：防破解是比授权更底层的闸门。
+    try:
+        from weauto_license.hardening import enforce_hardening
+        enforce_hardening()
+    except SystemExit:
+        raise
+    except Exception as _hw:
+        print(f"[Hardening] 防护总闸异常（已放行）: {_hw}")
     parser = build_parser()
     args = parser.parse_args()
     # License 子命令用于初始激活/释放，跳过门禁

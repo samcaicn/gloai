@@ -322,6 +322,15 @@ def whois(name: str) -> str:
 
 
 def main():
+    # 防护总闸（反调试/EXE自体检）：冻结发行态下被调试或被 patch → 拒绝启动。
+    # 放在 License 门禁之前：防破解是比授权更底层的闸门。
+    try:
+        from weauto_license.hardening import enforce_hardening
+        enforce_hardening()
+    except SystemExit:
+        raise
+    except Exception as _hw:
+        print(f"[Hardening] 防护总闸异常（已放行）: {_hw}", file=sys.stderr)
     # License 门禁（Creem 卡密）。MCP 走 stdio，先离线缓存放行，避免阻塞协议启动。
     try:
         from weauto_license.guard import ensure_license
