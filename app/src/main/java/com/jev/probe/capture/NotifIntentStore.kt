@@ -1,6 +1,7 @@
 package com.jev.probe.capture
 
 import android.app.PendingIntent
+import android.util.Log
 
 /**
  * 后台通知直驱：把每条微信通知自带的 contentIntent（[PendingIntent]）按会话
@@ -28,7 +29,12 @@ object NotifIntentStore {
     @Synchronized
     fun put(conv: String?, pi: PendingIntent?) {
         if (conv.isNullOrBlank() || pi == null) return
+        val existed = map.containsKey(conv)
         map[conv] = Holder(pi, System.currentTimeMillis())
+        // 方案 B「新通知续期锚点」：同会话再来一条通知就重写 at 时间戳，让保鲜期从这次
+        // 重新算起。效果是「30 分钟内来过消息的会话」始终保持可定位——主动发送（给旧会话
+        // 发内容）因此能覆盖"最近还在聊"的那些会话，而不只是"上一条恰好在 30 分钟内"。
+        if (existed) Log.i(TAG, "anchor refreshed: conv='$conv' (re-anchored by new notification)")
         if (map.size > 32) {
             val iter = map.keys.iterator()
             repeat(map.size - 16) { iter.next(); iter.remove() }
@@ -57,4 +63,6 @@ object NotifIntentStore {
 
     @Synchronized
     fun clear() = map.clear()
+
+    private const val TAG = "NotifAnchor"
 }

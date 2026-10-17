@@ -79,6 +79,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- 主动发送入口（方案 A/B）：用户在设置页/adb 显式给旧会话发内容。
+             export + 令牌校验（Prefs.proactiveToken），校验失败静默丢弃，防冒发。 -->
+        <receiver
+            android:name=".capture.ProactiveSendReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.jev.probe.action.SEND_TO_CHAT" />
+            </intent-filter>
+        </receiver>
+
         <!-- WeChat notification listener: the RECEIVE side of unattended mode. -->
         <service
             android:name=".capture.WxNotificationListener"

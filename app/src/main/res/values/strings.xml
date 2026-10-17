@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">AI聊天助手</string>
     <string name="a11y_desc_disguised">读取微信等聊天窗口文字，生成回复建议，可按配置自动填入并由你选定的回复发送。所有判断与回复均经云端接口。</string>
+    <string name="proactive_queued">已加入待发队列：%1$s</string>
 </resources>

@@ -503,6 +503,9 @@ open class ChatCaptureService : AccessibilityService() {
     // 当前正在发送的目标会话与文本（供失败落盘用，免层层透传）。
     private var currentSendConv: String? = null
     private var currentSendText: String? = null
+    // 当前发送是否被「主动发送」强制触发：失败落盘时要原样带进队列（force），
+    // 否则 drainPendingSends 会重新被 autoSend 闸门拦下、再也发不出去。
+    private var currentSendForce: Boolean = false
     // drainPendingSends 重入保护：同时只驱动一条持久化重发。
     @Volatile private var drainingPending = false
 
@@ -529,6 +532,18 @@ open class ChatCaptureService : AccessibilityService() {
         main.postDelayed(pendingTick, PENDING_TICK_MS)
     }
 
+    // 把主动发送令牌镜像到外部私有目录，方便 adb / 自动化读取（ColorOS 允许 shell 列
+    // Android/data，与 send_ledger.csv 同理）。令牌本身无敏感信息，明文落盘仅本机可读。
+    private fun mirrorProactiveToken() {
+        Thread {
+            runCatching {
+                val dir = getExternalFilesDir(null) ?: return@Thread
+                dir.mkdirs()
+                java.io.File(dir, "proactive_token.txt").writeText(prefs.proactiveToken)
+            }
+        }.start()
+    }
+
     // 亮屏/解锁：设备重新可用时立刻驱动一次补发。探针 IME 只有在屏幕亮着时才可能
     // 被激活，锁屏期间的重发一律被 drainPendingSends 的 imeActive 门 hold 住；
     // 没有这个接收器，用户解锁后也要等到下一次通知轮结束才会补发。
@@ -547,6 +562,16 @@ open class ChatCaptureService : AccessibilityService() {
     }
     // 未发送提醒节流：IME 没激活时别每条通知轮都弹。
     private var lastPendingReminderAt = 0L
+    // 主动发送令牌校验通过后，ProactiveSendReceiver 发来的「立刻补发」唤醒。
+    // 仅本 App 可发（NOT_EXPORTED），避免被外部广播骚扰。
+    private val drainReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context?, intent: Intent?) {
+            if (intent?.action != ACTION_DRAIN_PENDING) return
+            if (destroyed || !prefs.enabled) return
+            Log.i(TAG, "drainReceiver: ACTION_DRAIN_PENDING -> drainPendingSends")
+            main.post { drainPendingSends(); schedulePendingTick() }
+        }
+    }
     // by lazy：hold 期间 lambda 需 postDelayed 自己（自引用）。直接 val 初始化器里
     // 自引用 K2 报 "must be initialized"，lazy 延迟到首次访问，自引用合法。
     private val notifAdvanceRunnable: Runnable by lazy {
@@ -783,14 +808,14 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     /** 轮询等待微信前台落定（重开 PendingIntent 后需要点时间），超时(~2s)也放行。 */
-    private fun awaitWeChatForegroundThen(attempt: Int = 0, block: () -> Unit) {
-        if (destroyed || !prefs.enabled) return
+    private fun awaitWeChatForegroundThen(attempt: Int = 0, force: Boolean = false, block: () -> Unit) {
+        if (destroyed || (!force && !prefs.enabled)) return
         if (weChatForeground || attempt >= NOTIF_FG_WAIT_TICKS) {
             if (attempt >= NOTIF_FG_WAIT_TICKS) Log.w(TAG, "notif-round: WeChat fg wait timeout, proceeding anyway")
             block()
             return
         }
-        main.postDelayed({ awaitWeChatForegroundThen(attempt + 1, block) }, 100L)
+        main.postDelayed({ awaitWeChatForegroundThen(attempt + 1, force, block) }, 100L)
     }
 
     /** What the screen looked like the last time we fired an automatic shot.
@@ -806,6 +831,7 @@ open class ChatCaptureService : AccessibilityService() {
         Metrics.init(this, prefs.metricsEnabled)
         // 持久化未发队列初始化；进程重启后把上次遗留的失败回复重新挂上，会话下次活跃自动补发。
         SendQueueStore.init(this)
+        mirrorProactiveToken()
         main.postDelayed({ drainPendingSends() }, 3000L)
         // 亮屏/解锁触发补发 + 队列非空时的周期 tick（见 pendingTick 注释：
         // 没有这两者，锁屏期间失败的回复会被 TTL 静默判死）。
@@ -816,6 +842,13 @@ open class ChatCaptureService : AccessibilityService() {
             })
             Log.i(TAG, "screen receiver registered (USER_PRESENT/SCREEN_ON)")
         }.onFailure { Log.w(TAG, "screen receiver register failed: ${it.javaClass.simpleName}") }
+        // 主动发送的「立刻补发」唤醒（仅本 App 可发）。
+        runCatching {
+            ContextCompat.registerReceiver(
+                this, drainReceiver, IntentFilter(ACTION_DRAIN_PENDING),
+                ContextCompat.RECEIVER_NOT_EXPORTED)
+            Log.i(TAG, "drainReceiver registered (ACTION_DRAIN_PENDING)")
+        }.onFailure { Log.w(TAG, "drainReceiver register failed: ${it.javaClass.simpleName}") }
         main.postDelayed({ schedulePendingTick() }, 5000L)
         // 硬证据日志：无障碍能力位（AOSP AccessibilityServiceInfo 常量）：
         //   0x01=RETRIEVE_WINDOW_CONTENT  0x20=CAN_PERFORM_GESTURES  0x80=CAN_TAKE_SCREENSHOT
@@ -2530,7 +2563,7 @@ open class ChatCaptureService : AccessibilityService() {
             overlay?.toast(t("多次发送失败，已放弃该条", "Gave up after $tries tries"))
             return
         }
-        SendQueueStore.add(PendingSend(conv, text, tries, existing?.firstAt ?: System.currentTimeMillis()))
+        SendQueueStore.add(PendingSend(conv, text, tries, existing?.firstAt ?: System.currentTimeMillis(), force = currentSendForce))
         Log.i(TAG, "failAndQueue: queued conv='$conv' tries=$tries text=${text.take(20)}")
         // 挂上周期补发 tick：不再等下一次通知轮/进程重启才想起队列里还有货。
         schedulePendingTick()
@@ -2547,10 +2580,17 @@ open class ChatCaptureService : AccessibilityService() {
             if (now - it.firstAt > PENDING_TTL_MS) {
                 SendQueueStore.remove(it.conv)
                 Log.w(TAG, "drainPendingSends: expired pending conv='${it.conv}' -> dropped")
+                if (it.force) overlay?.toast(t("「${it.conv}」的待发消息超时（10 分钟）已放弃",
+                                                "Pending message to \"${it.conv}\" dropped — 10 min timeout"))
             }
         }
         val next = SendQueueStore.all().firstOrNull { now - it.firstAt <= PENDING_TTL_MS } ?: return
-        if (next.tries >= MAX_SEND_TRIES) { SendQueueStore.remove(next.conv); return }
+        if (next.tries >= MAX_SEND_TRIES) {
+            SendQueueStore.remove(next.conv)
+            if (next.force) overlay?.toast(t("「${next.conv}」已多次发送失败，已放弃",
+                                              "\"${next.conv}\" failed too many times — given up"))
+            return
+        }
         // 探针输入法未激活时点了也发不出去，只留一条提醒，等用户切好再触发。
         if (!ProbeImeBus.isEnabled(this) || !ProbeImeBus.imeActive) {
             Log.i(TAG, "drainPendingSends: probe IME not active -> hold ${next.conv} (${SendQueueStore.all().size} pending)")
@@ -2563,7 +2603,7 @@ open class ChatCaptureService : AccessibilityService() {
             return
         }
         drainingPending = true
-        resendPending(next.conv, next.text) { sent ->
+        resendPending(next.conv, next.text, force = next.force) { sent ->
             drainingPending = false
             // 失败必须退避：旧代码立即重排，同一会话几十秒内反复 commit+落账+toast，
             // MAX_SEND_TRIES 瞬间烧光、回复被放弃（2026-10-16 15:48 实测 6 轮/30 秒）。
@@ -2573,17 +2613,36 @@ open class ChatCaptureService : AccessibilityService() {
         }
     }
 
-    /** 重发一条持久化失败回复：重放该会话 PendingIntent 拉起微信 → 填字 → 走自带重试发送。 */
-    private fun resendPending(conv: String, text: String, onResolved: (Boolean) -> Unit) {
-        Log.i(TAG, "resendPending: conv='$conv' text=${text.take(20)}")
-        if (!prefs.autoFillBest || !prefs.autoSend) { SendQueueStore.remove(conv); onResolved(false); return }
-        if (destroyed || !prefs.enabled) { onResolved(false); return }
+    /**
+     * 主动发送（方案 A/B）的入口在 [com.jev.probe.capture.ProactiveSendReceiver]：它校验令牌后
+     * 把请求入持久化待发队列（force=true）并发 [ACTION_DRAIN_PENDING] 唤醒本服务。之后本方法
+     * 是这条链路唯一的实际执行体——由 drainPendingSends 以 force=true 调用。它复用自动回复
+     * 全套校验与重试，只多两处放权：跳过 autoSend/总开关闸门（用户亲自点了"发送"），
+     * 以及不依赖 prefs.autoOpenChat（主动发必须重开会话，一律用新鲜锚点）。
+     *
+     * 硬约束不可绕过：该会话必须在 30 分钟内来过一条通知（NotifIntentStore 有新鲜锚点），
+     * 否则无法定位到那个会话（FLAG_SECURE 读不到标题）——force 路径下锚点缺失直接放弃并提示，
+     * 绝不把内容填进"此刻恰好前台"的任意会话（发错人比不回严重得多）。屏幕关着/IME 未激活时
+     * 由 drainPendingSends 的既有门 hold 住，亮屏解锁后自动补发。
+     */
+
+    /** 重发一条持久化失败回复（或强制主动发送）：重放该会话 PendingIntent 拉起微信 → 填字 → 走自带重试发送。 */
+    private fun resendPending(conv: String, text: String, force: Boolean = false, onResolved: (Boolean) -> Unit) {
+        Log.i(TAG, "resendPending: conv='$conv' text=${text.take(20)} force=$force")
+        // 主动发送（force）跳过所有闸门：用户本意就是发出去。非 force 仍守原闸门。
+        if (!force) {
+            if (!prefs.autoFillBest || !prefs.autoSend) { SendQueueStore.remove(conv); onResolved(false); return }
+            if (destroyed || !prefs.enabled) { onResolved(false); return }
+        } else {
+            if (destroyed) { onResolved(false); return }
+        }
         currentSendConv = conv
         currentSendText = text
+        currentSendForce = force
         fun fire() {
-            if (destroyed || !prefs.enabled) { onResolved(false); return }
+            if (destroyed || (!force && !prefs.enabled)) { onResolved(false); return }
             val token = session.beginNotification(PKG_WECHAT, conv)
-            fillInput(token, text, onSendComplete = { sent ->
+            fillInput(token, text, forceSend = force, onSendComplete = { sent ->
                 if (sent) {
                     ConversationHistory.appendOwnReply(PKG_WECHAT, conv, text)
                     SendQueueStore.remove(conv)
@@ -2595,9 +2654,20 @@ open class ChatCaptureService : AccessibilityService() {
         if (weChatForeground) {
             main.post { fire() }
         } else {
-            val pi = if (prefs.autoOpenChat) NotifIntentStore.fresh(conv) else null
+            // 主动发送（force）一律用新鲜锚点重开会话，且锚点缺失直接放弃——没有它就无法
+            // 定位到"那个"会话（FLAG_SECURE 读不到标题），宁可不发也不发错人。
+            // 非 force（自动补发）维持原行为：仅当 prefs.autoOpenChat 才取锚点。
+            val pi = if (force || prefs.autoOpenChat) NotifIntentStore.fresh(conv) else null
+            if (force && pi == null) {
+                Log.w(TAG, "resendPending: force send but no fresh anchor conv='$conv' -> give up (can't locate chat)")
+                SendQueueStore.remove(conv)
+                appendSendLedger(conv, false, "proactive no anchor -> give up")
+                overlay?.toast(t("定位不到「$conv」：它 30 分钟内要来过一条通知才能重开。先在微信打开这个会话再发",
+                                 "Can't locate \"$conv\": it must have received a notification in the last 30 min. Open the chat in WeChat first"))
+                onResolved(false); return
+            }
             if (pi != null) runCatching { pi.send() }
-            awaitWeChatForegroundThen { fire() }
+            awaitWeChatForegroundThen(force = force) { fire() }
         }
     }
 
@@ -2717,7 +2787,7 @@ open class ChatCaptureService : AccessibilityService() {
     }
 
     /** Fill without blocking the main thread; all retries re-resolve the original target. */
-    private fun fillInput(token: ConversationSession.Token, text: String, attempt: Int = 0, onSendComplete: ((Boolean) -> Unit)? = null) {
+    private fun fillInput(token: ConversationSession.Token, text: String, attempt: Int = 0, forceSend: Boolean = false, onSendComplete: ((Boolean) -> Unit)? = null) {
         // 新一轮回复开始：清掉上轮发送键复用位（键盘位置随会话/面板形态变化，
         // 陈旧中心比比例公式更危险）。clickSend 会在本轮重新写入。
         sendBtnCenter = null
@@ -2733,10 +2803,10 @@ open class ChatCaptureService : AccessibilityService() {
                 // 「已发送」就跳过 sendFor，验证链整段被绕过。autoSend 开就
                 // 一律走 sendFor（倒计时 → 截图确认绿键 → 点 → 复检 → 重点），
                 // 真发没发出去以截屏复检为准，不以任何返回值承诺为准。
-                Log.i(TAG, "fillInput ok: autoSend=${prefs.autoSend} imeClaimedSent=${ProbeImeBus.lastSent} -> ${if (prefs.autoSend) "sendFor" else "toast-only"}")
+                Log.i(TAG, "fillInput ok: autoSend=${prefs.autoSend} forceSend=$forceSend imeClaimedSent=${ProbeImeBus.lastSent} -> ${if (prefs.autoSend || forceSend) "sendFor" else "toast-only"}")
                 // sendFor announces the countdown itself; don't double-toast here.
-                if (prefs.autoSend) {
-                    sendFor(token, onSendComplete)
+                if (prefs.autoSend || forceSend) {
+                    sendFor(token, onSendComplete, force = forceSend)
                 } else {
                     overlay?.toast(t("已填入，确认后自己发送", "Filled in — review it and send yourself"))
                     // 只填入模式：填完就是本轮终点（没人会再去点发送），通知轮立刻推进下一个会话。
@@ -2776,7 +2846,7 @@ open class ChatCaptureService : AccessibilityService() {
                 // autoSend 开时由 sendFor 走「截图确认绿键 → 点 → 复检 → 重点」
                 // 完成真正发送，倒计时撤回窗口保留。
                 // App 全程不弹选择器、不替用户切输入法。
-                ProbeImeBus.requestWrite(text, prefs.autoSend) { ok -> finish(ok) }
+                ProbeImeBus.requestWrite(text, prefs.autoSend || forceSend) { ok -> finish(ok) }
                 lastDraftText = text
                 tapWeChatInputBar()
                 Log.i(TAG, "fillInput: probe IME active, wrote via poll path (focus=$fx,$fy, autoSend=${prefs.autoSend})")
@@ -2805,7 +2875,7 @@ open class ChatCaptureService : AccessibilityService() {
                         // 语音态隐藏 EditText 被聚焦时 imeActive 恒真但连接是假的。
                         if (ProbeImeBus.imeActive && anyImeWindowPresent() && ProbeImeBus.editorIsTextEditor(PKG_WECHAT)) {
                             Log.i(TAG, "fillInput: probe IME mounted after tap (round=$round) -> retry via poll path")
-                            fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
+                            fillInput(token, text, attempt = 1, forceSend = forceSend, onSendComplete = onSendComplete)
                             return
                         }
                         if (round < 1) {
@@ -2824,13 +2894,13 @@ open class ChatCaptureService : AccessibilityService() {
                                 main.postDelayed({
                                     if (ProbeImeBus.imeActive && anyImeWindowPresent()) {
                                         Log.i(TAG, "fillInput: probe IME up after toggle -> retry via poll path")
-                                        fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
+                                        fillInput(token, text, attempt = 1, forceSend = forceSend, onSendComplete = onSendComplete)
                                     } else {
                                         // 切换钮点了键盘还没起：再点一次输入栏聚焦，最后一次机会。
                                         tapWeChatInputBar()
                                         main.postDelayed({
                                             if (ProbeImeBus.imeActive && anyImeWindowPresent()) {
-                                                fillInput(token, text, attempt = 1, onSendComplete = onSendComplete)
+                                                fillInput(token, text, attempt = 1, forceSend = forceSend, onSendComplete = onSendComplete)
                                             } else {
                                                 // 语音态切不回/切不准：草稿落盘等下次活跃重发，不丢队列。
                                                 Log.w(TAG, "fillInput: still no probe IME after toggle+focus -> queue draft for retry")
@@ -2889,7 +2959,7 @@ open class ChatCaptureService : AccessibilityService() {
             // 非微信 app 或树可读时：点一下底部输入栏再试。
             if (attempt == 0 && tapWeChatInputBar()) {
                 Log.i(TAG, "fillInput: tapped input bar, retrying in 450ms")
-                main.postDelayed({ fillInput(token, text, attempt = 1, onSendComplete = onSendComplete) }, 450L)
+                main.postDelayed({ fillInput(token, text, attempt = 1, forceSend = forceSend, onSendComplete = onSendComplete) }, 450L)
                 return
             }
             Log.w(TAG, "fillInput: no retry possible -> clipboard")
@@ -2956,10 +3026,10 @@ open class ChatCaptureService : AccessibilityService() {
      * 不可点、还可能被别的通知顶掉）。改成在悬浮窗上摆一张带「本次不发送」的
      * 倒计时卡：发出去的消息收不回来，给一个能点的撤销口是最低成本的对价。
      */
-    private fun sendFor(token: ConversationSession.Token, onSendComplete: ((Boolean) -> Unit)? = null) {
+    private fun sendFor(token: ConversationSession.Token, onSendComplete: ((Boolean) -> Unit)? = null, force: Boolean = false) {
         val delay = prefs.sendDelayMs.toLong()
         skipThisSend = false
-        Log.i(TAG, "sendFor: delay=${delay}ms autoSend=${prefs.autoSend} notifToken=${token.target.windowId == ConversationSession.NOTIF_WINDOW}")
+        Log.i(TAG, "sendFor: delay=${delay}ms autoSend=${prefs.autoSend} force=$force notifToken=${token.target.windowId == ConversationSession.NOTIF_WINDOW}")
         if (delay > 0) {
             overlay?.showSendCountdown(delay.toInt()) {
                 skipThisSend = true
@@ -2972,7 +3042,9 @@ open class ChatCaptureService : AccessibilityService() {
             if (skipThisSend) { skipThisSend = false; Log.i(TAG, "sendFor: user held back this one"); onSendComplete?.invoke(false); return@postDelayed }
             // 发送不可逆：用户可能在这 2 秒等待里点了「暂停自动收发」（气泡菜单一步可达）。
             // 这里必须重新读开关，让暂停立刻生效——否则「随时收回控制权」就是空话。
-            if (!prefs.autoSend) { overlay?.toast(t("已暂停自动发送，本次未发出", "Auto-send paused — not sent this time")); onSendComplete?.invoke(false); return@postDelayed }
+            // 主动发送（force）以用户刚刚点下的"发送"为准，不受自动发送总开关约束；
+            // 但 skipThisSend（悬浮窗撤回）仍生效——那是用户对"这一条"的即时否决，永远优先。
+            if (!prefs.autoSend && !force) { overlay?.toast(t("已暂停自动发送，本次未发出", "Auto-send paused — not sent this time")); onSendComplete?.invoke(false); return@postDelayed }
             val root = rootInActiveWindow
             // 微信 8.0.78 聊天页 rootInActiveWindow 恒 null（树被剥光），旧代码在这里
             // 直接 abort——发送永远走不到。null 时只认 NOTIF token / isCurrent 放行。
@@ -3215,6 +3287,16 @@ open class ChatCaptureService : AccessibilityService() {
          *  R8 removes the branch), so it leaves no test surface in shipped APKs. */
         const val ACTION_TEST_WX_MSG = "com.jev.probe.action.TEST_WX_MSG"
 
+        /** 主动发送入口（方案 A/B）：用户在设置页或 adb 显式给某个旧会话发内容。
+         *  extra: conv(会话名) + text(内容) + token(防冒发，见 [Prefs.proactiveToken])。
+         * 由 [com.jev.probe.capture.ProactiveSendReceiver]（manifest exported）收下、
+         * 校验令牌后入持久化待发队列，再发 [ACTION_DRAIN_PENDING] 唤醒本服务补发。 */
+        const val ACTION_SEND_TO_CHAT = "com.jev.probe.action.SEND_TO_CHAT"
+
+        /** 内部（同 App）：让本服务立刻驱动一次持久化待发队列补发。主动发送令牌校验
+         *  通过后由 ProactiveSendReceiver 发出；仅本 App 可发（NOT_EXPORTED）。 */
+        const val ACTION_DRAIN_PENDING = "com.jev.probe.action.DRAIN_PENDING"
+
         /** Live: is WeChat the foreground app right now? Updated every accessibility
          *  event so [WxNotificationListener] can decide whether to auto-open a chat
          *  without needing a restricted usage/running-tasks permission. */
@@ -3235,7 +3317,7 @@ open class ChatCaptureService : AccessibilityService() {
         /** WeChat's package. Now wired in via [WeChatAdapter]; the capture service
          *  is disguised as SelectToSpeakService so WeChat exposes its node tree.
          *  Screenshots inside WeChat are still avoided (risk control). */
-        private const val PKG_WECHAT = "com.tencent.mm"
+        const val PKG_WECHAT = "com.tencent.mm"
 
         /** Whole-screen OCR keeps the middle: no action bar, no input area. */
         private const val TOP_CROP = 0.12f

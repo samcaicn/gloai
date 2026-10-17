@@ -403,6 +403,24 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getBoolean(K_ONBOARDED, false)
         set(v) = sp.edit().putBoolean(K_ONBOARDED, v).apply()
 
+    /**
+     * 主动发送令牌：给「主动给旧会话发消息」功能做一层轻量鉴权。
+     *
+     * 该入口（[com.jev.probe.capture.ProactiveSendReceiver]）是 exported 广播——任何
+     * App 都能发。无令牌会有人借最近来过通知的会话（= 有锚点）冒发消息。令牌是首启时
+     * 生成的 12 位随机串，显示在设置页，adb 调试时也用得上（见 proactive_token.txt 镜像）。
+     * 校验失败一律静默丢弃，不弹 toast（避免被扫频刷提醒）。
+     */
+    var proactiveToken: String
+        get() {
+            val cur = sp.getString(K_PROACTIVE_TOKEN, "") ?: ""
+            if (cur.isNotBlank()) return cur
+            val gen = java.util.UUID.randomUUID().toString().replace("-", "").take(12)
+            sp.edit().putString(K_PROACTIVE_TOKEN, gen).apply()
+            return gen
+        }
+        set(v) = sp.edit().putString(K_PROACTIVE_TOKEN, v.trim()).apply()
+
     // --------------------------------------------------- 无人值守（微信）
 
     /**
@@ -694,6 +712,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_SYNC_ENABLED = "sync_enabled"
         private const val K_TAMPERED = "integrity_tampered_v1"
         private const val K_ONBOARDED = "onboarded_v1"
+        private const val K_PROACTIVE_TOKEN = "proactive_token_v1"
 
         // ---- provider ----
         const val PROVIDER_WORKER = "worker"

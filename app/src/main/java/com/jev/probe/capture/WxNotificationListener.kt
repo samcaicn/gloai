@@ -104,6 +104,10 @@ class WxNotificationListener : NotificationListenerService() {
         // 每条回复发送前重放它、把微信重开到"这个"会话（8.0.78 读不到标题，PendingIntent
         // 是唯一可靠的定位锚点，见 NotifIntentStore）。
         //
+        // 续期锚点（方案 B）：NotifIntentStore.put 会用当前时间重写该会话的保鲜戳，
+        // 所以"同会话再来一条通知"就等于把 30 分钟窗口顺延——最近仍在聊的会话始终可定位，
+        // 主动发送功能因此能覆盖它们；真没人聊的会话才会在 30 分钟后过期、被 fresh() 拒发。
+        //
         // 这里**不再**立刻 contentIntent.send()：那会在通知到达的瞬间就把微信抢到前台，
         // 用户正在用手机（打字 / 看视频 / 别的 App）时体验极差；而且队列每轮本来就会重放
         // 一次，抢在前面没有任何收益。开窗统一交给队列按序处理。

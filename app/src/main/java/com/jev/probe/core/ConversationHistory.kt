@@ -115,6 +115,23 @@ object ConversationHistory {
      * 不用于常规读取——前台实时消息（对方在你看着屏幕时发，微信不弹通知）
      * 不在历史里，本方法也捞不到，那是微信的限制。
      */
+    /**
+     * 该 pkg 下所有已知会话标题（群名 / 对方昵称），用于设置页「主动发送」入口的
+     * 最近会话候选。首启往往只有通知里见过的会话——恰好就是有锚点、能定位的那些，
+     * 与主动参与发送的能力天然对齐。
+     */
+    @Synchronized
+    fun convsForPkg(pkg: String): List<String> {
+        val out = LinkedHashSet<String>()
+        for (k in store.keys) {
+            if (k.startsWith("$pkg|")) {
+                val title = k.substringAfter('|')
+                if (title.isNotBlank()) out.add(title)
+            }
+        }
+        return out.toList()
+    }
+
     @Synchronized
     fun latestOtherForPkg(pkg: String): String? {
         var best: Entry? = null

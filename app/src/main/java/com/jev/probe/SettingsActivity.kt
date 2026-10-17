@@ -35,6 +35,8 @@ import com.jev.probe.core.license.PackLedger
 import com.jev.probe.core.scriptpack.PackError
 import com.jev.probe.core.scriptpack.ScriptPackStore
 import com.jev.probe.core.t
+import com.jev.probe.core.ConversationHistory
+import com.jev.probe.capture.ChatCaptureService
 import com.jev.probe.core.kb.KbStore
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
@@ -100,6 +102,8 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
+        // 确保最近会话候选桶已加载（主动发送卡片用）。幂等；load 在磁盘线程跑。
+        ConversationHistory.attach(this)
         Log.i(TAG, "settings opened workerMode=${prefs.isWorkerMode}")
         window.decorView.setBackgroundColor(Color.parseColor("#F2F3F5"))
 
@@ -117,6 +121,7 @@ class SettingsActivity : AppCompatActivity() {
 
         buildAutoReplyCard(root)
         buildNoReplyCard(root)
+        buildProactiveSendCard(root)
         buildRelationshipCard(root)
         buildAppearanceCard(root)
         buildCloudSyncCard(root)
@@ -397,7 +402,101 @@ class SettingsActivity : AppCompatActivity() {
         root.addView(c)
     }
 
-    private fun buildRelationshipCard(root: LinearLayout) {        root.addView(section(t("我和对方的关系", "My relationship with them")))
+    // ------------------------------------------------------- 主动发送（方案 A/B）
+    /**
+     * 主动给旧会话发消息。硬约束（和自动回复一致，绕不开）：
+     *  - 目标会话须在 30 分钟内来过一条通知（微信前台读不到标题，只能靠通知锚点定位）；
+     *  - 发送瞬间屏幕要亮着 + 探针输入法激活 + 微信在前台（或能自动重开会话）。
+     * 没有"枚举所有会话"的能力（FLAG_SECURE），会话名由用户自己填，最近来过的列成快捷标签。
+     */
+    private fun buildProactiveSendCard(root: LinearLayout) {
+        root.addView(section(t("主动发送（给旧会话发消息）", "Proactive send (to an old chat)")))
+        val c = card()
+        c.addView(text(t(
+            "填会话名（群名/对方昵称）+ 内容，点发送。只能发给 30 分钟内来过通知的会话；" +
+            "发送时需屏幕亮着、探针输入法已激活、微信在前台（或能自动重开）。",
+            "Enter a chat name (group/contact) and text, then tap send. Only chats that got a " +
+            "notification in the last 30 min can be located; the screen must be on with the probe keyboard active."
+        ), 12f, sub).apply { setPadding(0, dp(2), 0, dp(6)) })
+
+        val convEdit = edit("", t("会话名（群名 / 对方昵称）", "Chat name (group / contact)"))
+        c.addView(convEdit)
+
+        // 最近来过的会话：恰好就是有锚点、能定位的那些，点一下填进输入框。
+        val recent = ConversationHistory.convsForPkg(ChatCaptureService.PKG_WECHAT)
+        if (recent.isNotEmpty()) {
+            c.addView(text(t("最近会话（点一下填入）", "Recent chats (tap to fill)"), 12f, sub).apply {
+                setPadding(0, dp(6), 0, dp(2))
+            })
+            val chipHost = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                // 横向滚动，标签多了不撑高页面。
+            }
+            val chipScroll = android.widget.HorizontalScrollView(this).apply {
+                setPadding(0, 0, 0, dp(2))
+            }
+            for (r in recent) {
+                val chip = TextView(this).apply {
+                    text = r
+                    textSize = 13f
+                    setTextColor(ink)
+                    background = round(dp(8), Color.parseColor("#EEF2FF"))
+                    setPadding(dp(10), dp(6), dp(10), dp(6))
+                    val lp = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    lp.rightMargin = dp(8); lp.topMargin = dp(2); lp.bottomMargin = dp(2)
+                    layoutParams = lp
+                    setOnClickListener { convEdit.setText(r) }
+                }
+                chipHost.addView(chip)
+            }
+            chipScroll.addView(chipHost)
+            c.addView(chipScroll)
+        }
+
+        c.addView(label(t("要发送的内容", "Message to send")))
+        val msgEdit = edit("", t("在这里输入要发的内容", "Type the message here")).apply {
+            minLines = 2; gravity = Gravity.START or Gravity.TOP
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        }
+        c.addView(msgEdit)
+
+        c.addView(cardBtn(t("发送", "Send")) {
+            val conv = convEdit.text.toString().trim()
+            val text = msgEdit.text.toString().trim()
+            if (conv.isBlank() || text.isBlank()) {
+                Toast.makeText(this, t("会话名和内容都要填", "Both chat name and message are required"),
+                    Toast.LENGTH_SHORT).show()
+                return@cardBtn
+            }
+            // 走和 adb 同一条校验过的入口：令牌 + 持久化队列 + 服务补发。
+            val token = prefs.proactiveToken
+            runCatching {
+                sendBroadcast(Intent(ChatCaptureService.ACTION_SEND_TO_CHAT).apply {
+                    `package` = packageName
+                    putExtra("conv", conv)
+                    putExtra("text", text)
+                    putExtra("token", token)
+                })
+                Toast.makeText(this, t("已加入待发队列：$conv", "Queued: $conv"), Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        // 调试令牌：adb 命令 / 自动化用。明文展示无妨（仅本机、可手动重置）。
+        c.addView(text(t("调试令牌（adb / 自动化用）", "Debug token (for adb / automation)"), 11f, sub).apply {
+            setPadding(0, dp(8), 0, dp(2))
+        })
+        c.addView(text(prefs.proactiveToken, 13f, accent, bold = true).apply {
+            setPadding(0, dp(2), 0, dp(2))
+        })
+        c.addView(text(
+            "adb shell am broadcast -a com.jev.probe.action.SEND_TO_CHAT --es conv \"会话名\" --es text \"内容\" --es token ${prefs.proactiveToken}",
+            11f, sub).apply { setPadding(0, dp(2), 0, dp(2)) })
+        root.addView(c)
+    }
+
+    private fun buildRelationshipCard(root: LinearLayout) {
+        root.addView(section(t("我和对方的关系", "My relationship with them")))
         val c = card()
         c.addView(text(t("写清你们是什么关系、现在怎么样，AI 判断时会更准。",
             "Describe your relationship and where things stand — the AI judges more accurately."), 12f, sub))

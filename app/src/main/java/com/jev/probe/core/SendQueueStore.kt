@@ -18,7 +18,10 @@ data class PendingSend(
     val conv: String,
     val text: String,
     val tries: Int,
-    val firstAt: Long
+    val firstAt: Long,
+    /** 主动发送（用户在设置页/adb 显式触发）。为 true 时跳过 autoSend/autoFill 闸门与
+     *  暂停总开关，按用户本意直接发出；落盘后也让 drainPendingSends 走强制发送。 */
+    val force: Boolean = false
 )
 
 object SendQueueStore {
@@ -44,7 +47,8 @@ object SendQueueStore {
                         conv = o.getString("conv"),
                         text = o.getString("text"),
                         tries = o.optInt("tries", 0),
-                        firstAt = o.optLong("firstAt", 0L)
+                        firstAt = o.optLong("firstAt", 0L),
+                        force = o.optBoolean("force", false)
                     )
                 )
             }
@@ -73,13 +77,14 @@ object SendQueueStore {
     private fun save(list: List<PendingSend>) {
         val arr = JSONArray()
         list.forEach { ps ->
-            JSONObject().apply {
-                put("conv", ps.conv)
-                put("text", ps.text)
-                put("tries", ps.tries)
-                put("firstAt", ps.firstAt)
-                arr.put(this)
-            }
+                JSONObject().apply {
+                    put("conv", ps.conv)
+                    put("text", ps.text)
+                    put("tries", ps.tries)
+                    put("firstAt", ps.firstAt)
+                    put("force", ps.force)
+                    arr.put(this)
+                }
         }
         prefs?.edit()?.putString(KEY, arr.toString())?.apply()
     }
