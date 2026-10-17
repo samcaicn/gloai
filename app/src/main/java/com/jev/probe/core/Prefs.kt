@@ -223,9 +223,10 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
     /**
      * 文本链路（判断/回复）自定义开关（v1.1 免费模式，对齐 PC 版 guard.py
-     * 「用户自填 base_url + key → 直连自家模型」）：开启后判断/回复改发用户
-     * 自配的 OpenAI 兼容接口，**不经过 WeAuto 云端、不计免费条数、不耗
-     * Workers AI 额度**。优先级高于 worker 模式；留空 key 时部分网关仍可匿名用。
+     * 「用户自填 base_url + key」）：开启后回复改经云端 /ai/custom **SSE 转发**
+     * 到用户自配的 OpenAI 兼容接口（大陆直连境外网关常被墙，统一走云端保可达），
+     * 每日免费 100 条（FREE_QUOTA_CUSTOM_MODEL，云端 KV 硬墙）。优先级高于
+     * worker 模式；留空 key 时部分网关仍可匿名用。
      */
     var textCustom: Boolean
         get() = sp.getBoolean(K_TEXT_CUSTOM, false)

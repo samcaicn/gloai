@@ -49,10 +49,10 @@ class ReplyClient(private val prefs: Prefs) {
             "关系：$relationship\n\n最近对话：\n$convo\n\n请给出 $want 条候选回复。"
         // cf worker ai 优先回复：主路打 Worker（Cloudflare Workers AI），失败再兜底 one-api 网关。
         val cloudMode = prefs.isWorkerMode || prefs.judgeProvider == Prefs.PROVIDER_TUPTUP
-        // v1.1 免费模式：本地账本先自查——云端 KV 才是硬墙，本地判定避免把
-        // 已超限的流量打上去（对齐 PC 版 ledger.check_quota 的设计意图）。
-        // 授权设备走包内总次数（跨天累计）；未授权走每日免费条数。
-        if (cloudMode && !prefs.isTextCustom()) {
+        // 自定义大模型现在也经云端 /ai/custom 转发（SSE 直通），每日 100 条有云端硬墙，
+        // 本地账本同样先自查，避免把已超限的流量打上去。
+        val useLedger = cloudMode || prefs.isTextCustom()
+        if (useLedger) {
             val q = PackLedger.checkQuota(prefs.appContext)
             if (!q.allowed) {
                 Log.w(TAG, "reply quota exhausted: licensed=${q.licensed} " +
@@ -62,10 +62,10 @@ class ReplyClient(private val prefs: Prefs) {
         }
         return try {
             val out = parseThree(chat(sys, user, temperature = temperature, fewShot = fewShot))
-            if (cloudMode) PackLedger.recordUsage(prefs.appContext)
+            if (useLedger) PackLedger.recordUsage(prefs.appContext)
             out
         } catch (e: Exception) {
-            if (!cloudMode) return emptyList()
+            if (!useLedger) return emptyList()
             Log.w(TAG, "worker AI reply failed -> tuptup relay fallback: ${e.message}")
             try {
                 val out = parseThree(chatFallback(sys, user, temperature = temperature, fewShot = fewShot))
@@ -159,11 +159,11 @@ class ReplyClient(private val prefs: Prefs) {
         system: String, user: String, temperature: Double,
         fewShot: List<PackFewShot> = emptyList()
     ): String {
-        val url = prefs.replyEndpoint()
-        // v1.1 免费模式：自定义接口直连不过云端、不计量；云端模式（worker/tuptup）
-        // 才计费/计免费条数。
         val custom = prefs.isTextCustom()
-        val cloud = prefs.isWorkerMode && !custom
+        // 自定义大模型：不再直连用户自配接口（大陆直连境外网关经常被墙/慢），
+        // 改经云端 /ai/custom 转发——SSE 流式直通，每日 100 条云端硬墙。
+        if (custom) return chatViaRelay(system, user, temperature, fewShot)
+        val url = prefs.replyEndpoint()
         val auth = prefs.effectiveReplyKey()
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", system))
@@ -173,17 +173,80 @@ class ReplyClient(private val prefs: Prefs) {
         }
         messages.put(JSONObject().put("role", "user").put("content", user))
         val body = JSONObject()
-            .put("model", if (custom) prefs.textModel.ifBlank { prefs.replyModel } else prefs.replyModel)
+            .put("model", prefs.replyModel)
             .put("messages", messages)
             .put("temperature", temperature)
         val resp = HttpJson.post(
             url, "", body, Route.REPLY, HttpJson.headersFor(url),
             authToken = auth, instanceId = prefs.instanceId,
             // 云端口径校准：Worker 回带剩余次数/上限，覆盖本地账本计数
-            onQuota = if (cloud) { r, l -> PackLedger.syncFromHeaders(prefs.appContext, r, l) } else null
+            onQuota = { r, l -> PackLedger.syncFromHeaders(prefs.appContext, r, l) }
         )
         return resp.optJSONArray("choices")?.optJSONObject(0)
             ?.optJSONObject("message")?.optString("content") ?: ""
+    }
+
+    /**
+     * 自定义大模型云端转发路：把用户自配的 {base, key, model} 与原始 payload
+     * 装进信封发到 Worker /ai/custom，云端代请求上游并直通回传响应流。
+     * 上游 stream:true 时回传 text/event-stream，按增量拼出正文；
+     * 上游不支持流式时回传普通 JSON，两条路都能解析。
+     */
+    private fun chatViaRelay(
+        system: String, user: String, temperature: Double,
+        fewShot: List<PackFewShot> = emptyList()
+    ): String {
+        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/custom"
+        val messages = JSONArray()
+            .put(JSONObject().put("role", "system").put("content", system))
+        for (turn in fewShot) {
+            messages.put(JSONObject().put("role", "user").put("content", turn.user))
+            messages.put(JSONObject().put("role", "assistant").put("content", turn.assistant))
+        }
+        messages.put(JSONObject().put("role", "user").put("content", user))
+        val payload = JSONObject()
+            .put("model", prefs.textModel.ifBlank { prefs.replyModel })
+            .put("messages", messages)
+            .put("temperature", temperature)
+            .put("stream", true)
+        val envelope = JSONObject()
+            .put("cfg", JSONObject()
+                .put("base", prefs.textBaseUrl)
+                .put("key", prefs.textKey)
+                .put("model", prefs.textModel))
+            .put("payload", payload)
+        val raw = HttpJson.postRaw(
+            url, envelope, Route.REPLY,
+            authToken = prefs.accountToken, instanceId = prefs.instanceId,
+            // 云端自定义路（100 条/天）回带配额头，同样校准本地账本
+            onQuota = { r, l -> PackLedger.syncFromHeaders(prefs.appContext, r, l) }
+        )
+        return relayContent(raw)
+    }
+
+    /** 解析 /ai/custom 直通响应：text/event-stream 增量拼接，或普通 JSON 取正文。 */
+    private fun relayContent(raw: String): String {
+        val t = raw.trim()
+        if (t.startsWith("data:") || t.contains("\ndata:")) {
+            val sb = StringBuilder()
+            for (line in t.lineSequence()) {
+                val s = line.trim()
+                if (!s.startsWith("data:")) continue
+                val data = s.removePrefix("data:").trim()
+                if (data.isEmpty() || data == "[DONE]") continue
+                runCatching {
+                    val o = JSONObject(data)
+                    val delta = o.optJSONArray("choices")?.optJSONObject(0)
+                        ?.optJSONObject("delta")?.optString("content")
+                    if (!delta.isNullOrEmpty()) sb.append(delta)
+                }
+            }
+            return sb.toString()
+        }
+        return runCatching {
+            JSONObject(t).optJSONArray("choices")?.optJSONObject(0)
+                ?.optJSONObject("message")?.optString("content") ?: ""
+        }.getOrDefault("")
     }
 
     companion object { private const val TAG = "JEVASSIST" }

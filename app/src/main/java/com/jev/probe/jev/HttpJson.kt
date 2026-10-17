@@ -86,6 +86,15 @@ object HttpJson {
                         setRequestProperty("Authorization", "Bearer $key")
                     }
                     if (instanceId.isNotBlank()) setRequestProperty("X-WeAuto-Instance", instanceId)
+                    // 云端免费墙随导入话术包条数动态调整：把当前生效上限报给云端
+                    // （X-WeAuto-Pack-Quota；无包/自定义大模型时云端按各自基线处理）
+                    if (url.contains(Prefs.WORKER_HOST, ignoreCase = true)) {
+                        runCatching {
+                            com.jev.probe.core.license.PackLedger.dailyFreeLimit(com.jev.probe.App.APP_CONTEXT)
+                        }.getOrNull()?.let {
+                            setRequestProperty("X-WeAuto-Pack-Quota", it.toString())
+                        }
+                    }
                     setRequestProperty("Content-Type", "application/json; charset=utf-8")
                     // L3：对 WeAuto 云端请求自动附加官方签名指纹 + HMAC（服务端按官方指纹放行）。
                     workerIntegrityHeaders(url, "POST")
@@ -139,6 +148,58 @@ object HttpJson {
             }
         }
         throw last ?: ApiException(route, null, "请求失败")
+    }
+
+    /**
+     * POST 并返回**原始响应文本**（不解析 JSON）。用于自定义大模型云端 SSE 转发
+     * （/ai/custom）：响应可能是 text/event-stream（流式增量）或普通 JSON，
+     * 由调用方自行解析。配额头回调语义与 [post] 相同。
+     * 流式响应无法重放，失败不重试，直接抛 [ApiException]。
+     */
+    fun postRaw(
+        url: String,
+        body: JSONObject,
+        route: String,
+        authToken: String = "",
+        instanceId: String = "",
+        onQuota: ((Int?, Int?) -> Unit)? = null
+    ): String {
+        var conn: HttpURLConnection? = null
+        try {
+            conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 8000
+                // SSE 转发可能等上游慢网关出首包 + 长流输出，读超时放宽到 60s
+                readTimeout = 60000
+                doOutput = true
+                if (authToken.isNotBlank()) setRequestProperty("Authorization", "Bearer $authToken")
+                if (instanceId.isNotBlank()) setRequestProperty("X-WeAuto-Instance", instanceId)
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                setRequestProperty("Accept", "text/event-stream, application/json")
+                workerIntegrityHeaders(url, "POST")
+                    .forEach { (k, v) -> setRequestProperty(k, v) }
+            }
+            conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            val code = conn.responseCode
+            if (code !in 200..299) {
+                val rawErr = readBody(conn.errorStream)
+                throw ApiException(
+                    route, code,
+                    rawErr.extractGatewayReason().ifBlank { rawErr.ifBlank { "（响应体为空）" } }
+                )
+            }
+            captureQuota(conn, onQuota)
+            return readBody(conn.inputStream)
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw e
+        } catch (e: ApiException) {
+            throw e
+        } catch (e: Exception) {
+            throw ApiException(route, null, describe(e))
+        } finally {
+            conn?.disconnect()
+        }
     }
 
     /** 简单 GET-JSON（用于 /token/status 等无 body 端点）。 */

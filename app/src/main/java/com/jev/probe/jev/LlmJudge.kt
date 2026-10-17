@@ -62,15 +62,14 @@ class LlmJudge(private val prefs: Prefs) {
 
     private fun chat(userPrompt: String, temperature: Double): String {
         // 分流（v1.1 免费模式）：
-        //   1. 用户自填接口（isTextCustom）—— 直连自家 OpenAI 兼容接口，
-        //      不过 WeAuto 云端、不计免费条数；body 与 relay 同为标准
-        //      chat completions，任何兼容端点都能吃。
+        //   1. 用户自填接口（isTextCustom）—— 经云端 /ai/custom 转发（不再直连，
+        //      大陆直连境外网关常被墙），每日 100 条云端硬墙；非流式往返。
         //   2. 否则走 aiapi 转发（/ai/tuptup/v1，key 在 Worker secret 里；
         //      model 由 Worker 侧强制覆盖为 auto）。2026-10-15 实测 one-api
         //      default 组四模型全「无可用渠道」（火山配额耗尽），仅 auto 通
         //      （→Qwen2.5-7B），故不再做客户端多模型降级轮询。
-        val url = if (prefs.isTextCustom()) prefs.replyEndpoint()
-        else Prefs.WORKER_BASE.trimEnd('/') + "/ai/tuptup/v1/chat/completions"
+        if (prefs.isTextCustom()) return chatViaCustomRelay(userPrompt, temperature)
+        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/tuptup/v1/chat/completions"
         val sys = "你是 Jev 对话判断引擎。只依据给定对话与背景给出结构化判断，绝不编造事实。" +
             "必须只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块。"
         val messages = JSONArray()
@@ -88,6 +87,36 @@ class LlmJudge(private val prefs: Prefs) {
         val content = resp.optJSONArray("choices")?.optJSONObject(0)
             ?.optJSONObject("message")?.optString("content")
         if (content.isNullOrBlank()) throw ApiException(Route.JUDGE, null, "aiapi 转发返回空回复")
+        return content
+    }
+
+    /** 自定义大模型 judge 路：经云端 /ai/custom 非流式转发，解析标准 JSON 响应。 */
+    private fun chatViaCustomRelay(userPrompt: String, temperature: Double): String {
+        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/custom"
+        val sys = "你是 Jev 对话判断引擎。只依据给定对话与背景给出结构化判断，绝不编造事实。" +
+            "必须只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块。"
+        val messages = JSONArray()
+            .put(JSONObject().put("role", "system").put("content", sys))
+            .put(JSONObject().put("role", "user").put("content", userPrompt))
+        val payload = JSONObject()
+            .put("model", prefs.textModel.ifBlank { Prefs.TUPTUP_MODEL })
+            .put("messages", messages)
+            .put("temperature", temperature)
+        val envelope = JSONObject()
+            .put("cfg", JSONObject()
+                .put("base", prefs.textBaseUrl)
+                .put("key", prefs.textKey)
+                .put("model", prefs.textModel))
+            .put("payload", payload)
+        val raw = HttpJson.postRaw(
+            url, envelope, Route.JUDGE,
+            authToken = prefs.accountToken, instanceId = prefs.instanceId
+        )
+        val content = runCatching {
+            org.json.JSONObject(raw).optJSONArray("choices")?.optJSONObject(0)
+                ?.optJSONObject("message")?.optString("content")
+        }.getOrNull()
+        if (content.isNullOrBlank()) throw ApiException(Route.JUDGE, null, "自定义模型转发返回空回复")
         return content
     }
 
