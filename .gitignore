@@ -82,6 +82,10 @@ user_timers.json
 style_settings.json
 style_profile.json
 .weauto_license.json
+# 自愈/防护产物（冻结态落在 exe 目录 weauto/ 下）
+weauto/config.py.broken
+weauto/hardening_exit.log
+WeAuto.exe.sig.bak
 
 # ---- Runtime download copy of config.py (may contain live API key) ----
 _downloads/
