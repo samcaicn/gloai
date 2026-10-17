@@ -480,6 +480,13 @@ open class ChatCaptureService : AccessibilityService() {
     // 草稿烂在输入框里切走。门控最多 hold 20×2s=40s，超时强制放行防死锁。
     @Volatile private var sendSettled = true
     private var advanceHoldTicks = 0
+    // 发送键中心（树路径复用位）。clickSend 用 refresh 后的节点 bounds 中心写入，
+    // wxSendPoint 优先取它——避免 sendButtonCenterFromTree 二次查找同一节点时
+    // 撞上「没 refresh → bounds 空 rect」的竞态（2026-10-17 语音态实测：
+    // treeNode=true 但坐标回落比例公式 (983,2024)，连点 3 次打空第 4 次才蒙对）。
+    // 带 10s 时效：键盘位置会随动画/面板漂移，陈旧中心比公式更危险。
+    @Volatile private var sendBtnCenter: Pair<Float, Float>? = null
+    @Volatile private var sendBtnCenterAt: Long = 0L
     // 本轮已交给探针 IME 写入的草稿全文。发送前读框为空时（编辑器失焦 → 读的是
     // fallback 连接，恒空）用它原地重写一次，见 recoverEmptyBox（2026-10-16）。
     private var lastDraftText: String? = null
@@ -1927,6 +1934,12 @@ open class ChatCaptureService : AccessibilityService() {
             } catch (_: Throwable) {
                 null
             } ?: continue
+            // refresh 必须有：失效缓存节点的 getBoundsInScreen 返回 (0,0,0,0)，
+            // 与 findSendButton 的行为对齐（2026-10-17 语音态 sendTap 三次打空根因）。
+            if (!n.refresh()) {
+                Log.w(TAG, "sendButtonCenterFromTree: node found but refresh FAILED -> rect unusable")
+                continue
+            }
             val rect = Rect()
             try {
                 n.getBoundsInScreen(rect)
@@ -1936,7 +1949,9 @@ open class ChatCaptureService : AccessibilityService() {
             if (rect.width() > 0 && rect.height() > 0) {
                 return rect.centerX().toFloat() to rect.centerY().toFloat()
             }
+            Log.w(TAG, "sendButtonCenterFromTree: node OK but EMPTY rect $rect (hidden by WeChat anti-automation)")
         }
+        Log.w(TAG, "sendButtonCenterFromTree: MISS (roots=${roots.size}) -> fallback to ratio formula")
         return null
     }
 
@@ -1951,6 +1966,12 @@ open class ChatCaptureService : AccessibilityService() {
         // 草稿烂在框里（用户看到的就是「没回复」）。
         //
         // 节点被标记不可见时 getBoundsInScreen() 通常仍返回有效矩形，比比例公式准。
+        // 优先用 clickSend 已 refresh 过的复用位（10s 时效），拿不到再现场查树。
+        val reused = sendBtnCenter
+        if (reused != null && System.currentTimeMillis() - sendBtnCenterAt < 10_000L) {
+            Log.i(TAG, "wxSendPoint: reuse clickSend node -> (${reused.first.toInt()},${reused.second.toInt()})")
+            return reused
+        }
         val fromTree = sendButtonCenterFromTree()
         if (fromTree != null) {
             Log.i(TAG, "wxSendPoint: tree bounds -> (${fromTree.first.toInt()},${fromTree.second.toInt()})")
@@ -2697,6 +2718,9 @@ open class ChatCaptureService : AccessibilityService() {
 
     /** Fill without blocking the main thread; all retries re-resolve the original target. */
     private fun fillInput(token: ConversationSession.Token, text: String, attempt: Int = 0, onSendComplete: ((Boolean) -> Unit)? = null) {
+        // 新一轮回复开始：清掉上轮发送键复用位（键盘位置随会话/面板形态变化，
+        // 陈旧中心比比例公式更危险）。clickSend 会在本轮重新写入。
+        sendBtnCenter = null
         fun finish(ok: Boolean) {
             if (!isCurrent(token)) {
                 Log.w(TAG, "fillInput finish: token stale, drop")
@@ -2965,10 +2989,24 @@ open class ChatCaptureService : AccessibilityService() {
                 if (r != null) {
                     val send = findSendButton(r, token.target.pkg)
                     Log.i(TAG, "clickSend: treeNode=${send != null} fgPkg=${r.packageName}")
-                    if (send != null && send.refresh() && send.isVisibleToUser && send.isEnabled) {
-                        send.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                        Log.i(TAG, "clickSend: clicked via tree node")
-                        return true
+                    if (send != null && send.refresh()) {
+                        // 节点在手（已 refresh）：bounds 中心写进复用位，供 verified-tap
+                        // 的坐标点击直接用——visibility/enabled 被微信关掉也不丢坐标。
+                        val rect = Rect()
+                        try {
+                            send.getBoundsInScreen(rect)
+                        } catch (_: Throwable) {
+                        }
+                        if (rect.width() > 0 && rect.height() > 0) {
+                            sendBtnCenter = rect.centerX().toFloat() to rect.centerY().toFloat()
+                            sendBtnCenterAt = System.currentTimeMillis()
+                            Log.i(TAG, "clickSend: send node bounds=(${rect.left},${rect.top}-${rect.right},${rect.bottom}) center=(${rect.centerX()},${rect.centerY()}) -> reuse slot")
+                        }
+                        if (send.isVisibleToUser && send.isEnabled) {
+                            send.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                            Log.i(TAG, "clickSend: clicked via tree node")
+                            return true
+                        }
                     }
                 } else {
                     Log.i(TAG, "clickSend: root=null, tree path skipped")
