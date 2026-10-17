@@ -2692,11 +2692,13 @@ def recognize_image(image_path, is_emoji=False):
             except Exception as _oe:
                 logger.warning(f"本地OCR异常: {_oe}")
 
-        # —— 第二优先：本地视觉语义（llama.cpp Vulkan GPU）——
+        # —— 第二优先：本地视觉语义（llama.cpp，按显卡自适应；组件未就绪直接回落）——
         if LOCAL_VISION_ENABLE:
             try:
-                from local_vision import recognize_image_llamaserver, ensure_llamaserver
-                if LOCAL_VISION_AUTO_START:
+                from local_vision import recognize_image_llamaserver, ensure_llamaserver, vision_ready
+                # 组件（llama-server/模型）未就绪时绝不在此下载（会阻塞发送队列），
+                # 后台预取线程下载完成后后续图片自动走本地。
+                if LOCAL_VISION_AUTO_START and vision_ready(LOCAL_VISION_SERVER_EXE, LOCAL_VISION_MODEL_DIR):
                     ensure_llamaserver(LOCAL_VISION_BASE_URL,
                                        LOCAL_VISION_SERVER_EXE, LOCAL_VISION_MODEL_DIR)
                 lv_text = recognize_image_llamaserver(
@@ -6087,6 +6089,15 @@ def main():
         catchup_thread.daemon = True
         catchup_thread.start()
         logger.info("未回复消息补漏线程已启动。")
+
+        # --- 本地视觉组件预取线程（llama-server/模型按显卡自适应自动下载，不阻塞主流程）---
+        if LOCAL_VISION_ENABLE:
+            try:
+                from local_vision import start_prefetch
+                start_prefetch(LOCAL_VISION_MODEL_DIR)
+                logger.info("本地视觉组件预取线程已启动（缺组件时自动按显卡下载）。")
+            except Exception as _vpe:
+                logger.warning(f"本地视觉预取线程启动失败（不影响主流程）: {_vpe}")
 
         checker_thread = threading.Thread(target=check_inactive_users, name="InactiveUserChecker")
         checker_thread.daemon = True

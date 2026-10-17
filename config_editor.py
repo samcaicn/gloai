@@ -423,7 +423,7 @@ def validate_config_types(config_path):
         int_fields = ['MAX_GROUPS', 'MAX_TOKEN', 'QUEUE_WAITING_TIME', 'EMOJI_SENDING_PROBABILITY', 
                      'MAX_MESSAGE_LOG_ENTRIES', 'MAX_MEMORY_NUMBER', 'PORT', 'ONLINE_API_MAX_TOKEN',
                      'REQUESTS_TIMEOUT', 'MAX_WEB_CONTENT_LENGTH', 'RESTART_INACTIVITY_MINUTES',
-                     'GROUP_CHAT_RESPONSE_PROBABILITY', 'ASSISTANT_MAX_TOKEN']
+                     'GROUP_CHAT_RESPONSE_PROBABILITY', 'ASSISTANT_MAX_TOKEN', 'LOCAL_VISION_TIMEOUT']
         
         # 检查应该是浮点数但被保存为字符串的配置项  
         float_fields = ['TEMPERATURE', 'MOONSHOT_TEMPERATURE', 'MIN_COUNTDOWN_HOURS', 'MAX_COUNTDOWN_HOURS',
@@ -1180,7 +1180,9 @@ def submit_config():
             'ENABLE_ASSISTANT_MODEL', 'USE_ASSISTANT_FOR_MEMORY_SUMMARY', 'ENABLE_FORUM_CUSTOM_MODEL',
             'ENABLE_SENSITIVE_CONTENT_CLEARING',
             'ENABLE_TEXT_COMMANDS',
-            'ENABLE_IMAGE_RECOG_AUTO_REPLY'  # v1.4 感知联动
+            'ENABLE_IMAGE_RECOG_AUTO_REPLY',  # v1.4 感知联动
+            'LOCAL_VISION_ENABLE', 'LOCAL_VISION_FALLBACK_CLOUD', 'LOCAL_VISION_AUTO_START',  # 本地视觉识别
+            'LOCAL_OCR_ENABLE', 'LOCAL_OCR_AUTO_INSTALL'  # 本地 OCR
         ]
         for field in boolean_fields:
             new_values_for_config_py[field] = field in request.form
@@ -1924,7 +1926,9 @@ def index():
                 'ENABLE_ONLINE_API',
                 'ENABLE_GROUP_AT_REPLY', 'ENABLE_GROUP_KEYWORD_REPLY','GROUP_KEYWORD_REPLY_IGNORE_PROBABILITY','REMOVE_PARENTHESES',
                 'ENABLE_ASSISTANT_MODEL', 'USE_ASSISTANT_FOR_MEMORY_SUMMARY',
-                'ENABLE_SENSITIVE_CONTENT_CLEARING'
+                'ENABLE_SENSITIVE_CONTENT_CLEARING',
+                'LOCAL_VISION_ENABLE', 'LOCAL_VISION_FALLBACK_CLOUD', 'LOCAL_VISION_AUTO_START',  # 本地视觉识别
+                'LOCAL_OCR_ENABLE', 'LOCAL_OCR_AUTO_INSTALL'  # 本地 OCR
             ]
             for field in boolean_fields_from_editor:
                  # 确保这些字段在表单中存在才处理，否则它们可能来自 quick_start
@@ -5084,6 +5088,18 @@ def get_default_config():
         "MOONSHOT_TEMPERATURE": 0.8,
         "ENABLE_IMAGE_RECOGNITION": True,
         "ENABLE_EMOJI_RECOGNITION": True,
+        "LOCAL_VISION_ENABLE": False,
+        "LOCAL_VISION_BASE_URL": 'http://127.0.0.1:8080/v1',
+        "LOCAL_VISION_API_KEY": '',
+        "LOCAL_VISION_MODEL": '',
+        "LOCAL_VISION_TIMEOUT": 15,
+        "LOCAL_VISION_FALLBACK_CLOUD": True,
+        "LOCAL_VISION_AUTO_START": False,
+        "LOCAL_VISION_SERVER_EXE": '',
+        "LOCAL_VISION_MODEL_DIR": '',
+        "LOCAL_OCR_ENABLE": False,
+        "LOCAL_OCR_USE_GPU": 'auto',
+        "LOCAL_OCR_AUTO_INSTALL": True,
         "QUEUE_WAITING_TIME": 7,
         "EMOJI_DIR": 'emojis',
         "ENABLE_EMOJI_SENDING": True,

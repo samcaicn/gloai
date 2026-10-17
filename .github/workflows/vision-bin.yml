@@ -1,0 +1,45 @@
+name: vision-bin
+
+# 本地视觉引擎（llama.cpp llama-server）运行时分发包重建流水线。
+# 产出 = GitHub Release `vision-bin` 的匿名可下载资产（artifact 匿名下载
+# 是 401，只有 Release 资产真正公开只读）。local_vision.py 的
+# VISION_BIN_URLS 第三源指向本 release；前两源（hf-mirror 镜像 / 官方
+# release）失效时它兜底。每月自动重建一次，也可手动触发。
+
+on:
+  schedule:
+    - cron: '0 3 1 * *'   # 每月 1 日 03:00 UTC
+  workflow_dispatch: {}    # 手动触发
+  push:
+    branches: [weauto]
+    paths: ['.github/workflows/vision-bin.yml']   # 仅自身变更时随 push 重建
+
+permissions:
+  contents: write          # 创建/更新 release 需要写权限
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: 下载官方 llama.cpp Windows 构建（固定版本 b9637）
+        shell: pwsh
+        run: |
+          $v = 'b9637'
+          foreach ($kind in @('vulkan', 'cpu')) {
+            $url = "https://github.com/ggml-org/llama.cpp/releases/download/$v/llama-$v-bin-win-$kind-x64.zip"
+            $out = "llama-$v-bin-win-$kind-x64.zip"
+            Invoke-WebRequest -Uri $url -OutFile $out -MaximumRedirection 10
+            Get-Item $out | Select-Object Name, Length
+          }
+
+      - name: 发布到 Release vision-bin（匿名可下载）
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view vision-bin --repo samcaicn/gloai >/dev/null 2>&1 \
+            || gh release create vision-bin --repo samcaicn/gloai \
+                 --title "vision-bin: llama.cpp llama-server runtime" \
+                 --notes "WeAuto 本地视觉引擎运行时分发包（llama.cpp b9637 官方预编译，MIT）。由 vision-bin.yml 每月自动重建。"
+          gh release upload vision-bin --repo samcaicn/gloai --clobber \
+            llama-b9637-bin-win-vulkan-x64.zip llama-b9637-bin-win-cpu-x64.zip

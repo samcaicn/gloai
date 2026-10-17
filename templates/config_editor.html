@@ -4117,6 +4117,84 @@
 {%- endfor -%}</textarea>
                         <small>关键词支持用 | 分隔多个；识别文本命中即回复。建议与「图片识别」开关一起使用。</small>
                     </div>
+
+                    <!-- 本地 OCR：RapidOCR / PP-OCR ONNX（可选，GPU 自适应） -->
+                    <hr class="panel-divider">
+                    <div class="form-group">
+                        <div class="switch-item">
+                            <label>本地 OCR 文字识别（GPU 自适应，零 API 成本）</label>
+                            <div class="switch"><label class="switch-label"><input type="checkbox" name="LOCAL_OCR_ENABLE" {% if config.LOCAL_OCR_ENABLE %}checked{% endif %}><span class="slider round"></span></label></div>
+                        </div>
+                        <small>开启后优先在本机识别图片中的文字（RapidOCR / PP-OCR ONNX）：自动探测显卡，有 GPU 用 DirectML 加速，无 GPU 用 CPU。首次使用会自动从国内多镜像源临时下载依赖（约 100MB，需等待几分钟），识别不到文字或失败时自动回落后续引擎。</small>
+                    </div>
+                    <details class="advanced-block">
+                        <summary>本地 OCR 参数（默认即可）</summary>
+                        <div class="form-group">
+                            <label>计算设备:</label>
+                            <select name="LOCAL_OCR_USE_GPU">
+                                <option value="auto" {% if config.LOCAL_OCR_USE_GPU == 'auto' %}selected{% endif %}>自动（有 GPU 用 GPU，否则 CPU）</option>
+                                <option value="true" {% if config.LOCAL_OCR_USE_GPU == 'true' %}selected{% endif %}>强制 GPU (DirectML)</option>
+                                <option value="false" {% if config.LOCAL_OCR_USE_GPU == 'false' %}selected{% endif %}>强制 CPU</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <div class="switch-item">
+                                <label>首次使用自动下载安装依赖（国内多镜像源）</label>
+                                <div class="switch"><label class="switch-label"><input type="checkbox" name="LOCAL_OCR_AUTO_INSTALL" {% if config.LOCAL_OCR_AUTO_INSTALL %}checked{% endif %}><span class="slider round"></span></label></div>
+                            </div>
+                            <small>关闭则需自行安装依赖：pip install rapidocr_onnxruntime onnxruntime-directml</small>
+                        </div>
+                    </details>
+
+                    <!-- 本地视觉语义：llama.cpp Vulkan GPU（可选，进阶） -->
+                    <hr class="panel-divider">
+                    <div class="form-group">
+                        <div class="switch-item">
+                            <label>本地视觉语义识别（llama.cpp GPU，进阶）</label>
+                            <div class="switch"><label class="switch-label"><input type="checkbox" name="LOCAL_VISION_ENABLE" {% if config.LOCAL_VISION_ENABLE %}checked{% endif %}><span class="slider round"></span></label></div>
+                        </div>
+                        <small>比 OCR 更进一步：能理解图片含义（表情包情绪、截图场景等）。需先在本机部署 llama.cpp Vulkan 版 llama-server + 视觉模型（如 Qwen3-VL-2B，约 1.6GB，参见 vision_server/ 目录）。失败时自动回落云端识别。</small>
+                    </div>
+                    <details class="advanced-block">
+                        <summary>本地视觉服务参数（默认即可）</summary>
+                        <div class="form-group">
+                            <label>服务地址:</label>
+                            <input type="text" name="LOCAL_VISION_BASE_URL" value="{{ config.LOCAL_VISION_BASE_URL }}" placeholder="http://127.0.0.1:8080/v1">
+                        </div>
+                        <div class="form-group">
+                            <label>访问密钥（本地服务留空）:</label>
+                            <input type="text" name="LOCAL_VISION_API_KEY" value="{{ config.LOCAL_VISION_API_KEY }}" placeholder="">
+                        </div>
+                        <div class="form-group">
+                            <label>模型名（留空用服务端当前加载的）:</label>
+                            <input type="text" name="LOCAL_VISION_MODEL" value="{{ config.LOCAL_VISION_MODEL }}" placeholder="">
+                        </div>
+                        <div class="form-group">
+                            <label>识别超时（秒）:</label>
+                            <input type="number" name="LOCAL_VISION_TIMEOUT" value="{{ config.LOCAL_VISION_TIMEOUT }}" min="5" max="120">
+                            <small>本地推理较慢，超时后自动回落云端。</small>
+                        </div>
+                        <div class="form-group">
+                            <div class="switch-item">
+                                <label>本地失败回落云端识别</label>
+                                <div class="switch"><label class="switch-label"><input type="checkbox" name="LOCAL_VISION_FALLBACK_CLOUD" {% if config.LOCAL_VISION_FALLBACK_CLOUD %}checked{% endif %}><span class="slider round"></span></label></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="switch-item">
+                                <label>识别时自动拉起本地视觉服务</label>
+                                <div class="switch"><label class="switch-label"><input type="checkbox" name="LOCAL_VISION_AUTO_START" {% if config.LOCAL_VISION_AUTO_START %}checked{% endif %}><span class="slider round"></span></label></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>llama-server.exe 路径（留空用 vision_server 默认）:</label>
+                            <input type="text" name="LOCAL_VISION_SERVER_EXE" value="{{ config.LOCAL_VISION_SERVER_EXE }}" placeholder="">
+                        </div>
+                        <div class="form-group">
+                            <label>模型目录（留空用 vision_server\models）:</label>
+                            <input type="text" name="LOCAL_VISION_MODEL_DIR" value="{{ config.LOCAL_VISION_MODEL_DIR }}" placeholder="">
+                        </div>
+                    </details>
                 </div>
 
                 <!-- 联网搜索已作为默认能力开启（2026-10-05），不再提供配置页：

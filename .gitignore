@@ -28,6 +28,11 @@ config_backups/
 Memory_Temp/
 CoreMemory/
 chat_contexts.json
+vision_server/models/
+vision_server/packages/
+vision_server/*.exe
+vision_server/*.dll
+config.py.bak_test
 
 # ---- Legacy offline wheel bundle (cp39 wheels, unused; project requires Python 3.12+) ----
 libs/

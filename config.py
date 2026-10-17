@@ -63,6 +63,23 @@ MOONSHOT_TEMPERATURE = 0.8
 ENABLE_IMAGE_RECOGNITION = False
 ENABLE_EMOJI_RECOGNITION = False
 
+# ===== 本地 OCR 文字识别（RapidOCR / PP-OCR ONNX）=====
+LOCAL_OCR_ENABLE = False                            # 本地 OCR 优先于云端识别
+LOCAL_OCR_USE_GPU = 'auto'                          # auto=按显卡自适应(DirectML/CPU) / true / false
+LOCAL_OCR_AUTO_INSTALL = True                       # 首次使用自动多镜像安装依赖（约100MB）
+
+# ===== 本地视觉语义识别（llama.cpp，HunyuanOCR-1.5/Qwen3-VL）=====
+# 仅当 LOCAL_VISION_ENABLE=True 时启用；本地失败可回落云端（LOCAL_VISION_FALLBACK_CLOUD）。
+LOCAL_VISION_ENABLE = False
+LOCAL_VISION_BASE_URL = 'http://127.0.0.1:8080/v1'  # 本地 vision server 的 OpenAI 兼容地址
+LOCAL_VISION_API_KEY = ''                            # 本地服务一般无需密钥，出厂留空
+LOCAL_VISION_MODEL = ''                              # 视觉模型名（留空则请求时用 server 当前加载的模型）
+LOCAL_VISION_TIMEOUT = 15                            # 单次识别硬超时（秒），防卡死消息发送队列
+LOCAL_VISION_FALLBACK_CLOUD = True                   # 本地失败/无响应时回落云端 Moonshot
+LOCAL_VISION_AUTO_START = False                      # 是否由 WeAuto 自动拉起本地 vision server
+LOCAL_VISION_SERVER_EXE = ''                         # llama-server.exe 绝对路径（留空用 vision_server/ 默认）
+LOCAL_VISION_MODEL_DIR = ''                          # 模型目录（留空用 vision_server/models/ 默认）
+
 # ===== v1.4 感知联动：图片识别自动回复规则 =====
 # 开启后，图片识别文本命中关键词时直接发送指定回复（跳过通用 AI）。
 # 典型场景：客户发来商品图 → 识别文本含「产品/价格/报价」→ 自动回复报价话术。

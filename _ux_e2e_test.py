@@ -82,9 +82,11 @@ def parse_form(html):
 
 
 def main():
-    if not os.path.exists(BAK):
-        shutil.copy(CFG, BAK)
-        print("[备份] config.py -> config.py.bak_test")
+    # 总是覆盖备份：还原目标必须是「本次运行前」的状态。
+    # 旧逻辑 if not exists(BAK) 会用陈旧快照还原，吞掉工作区未提交的
+    # config.py 改动（真实发生过：LOCAL_* 12 个字段被旧快照覆盖丢失）。
+    shutil.copy(CFG, BAK)
+    print("[备份] config.py -> config.py.bak_test")
 
     import config_editor as ce
 
