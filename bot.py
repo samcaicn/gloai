@@ -1489,8 +1489,10 @@ def get_deepseek_response(message, user_id, store_context=True, is_summary=False
 
     except Exception as e:
         logger.error(f"Chat 调用失败 (ID: {user_id}): {str(e)}", exc_info=True)
-        # call_chat_api_with_retry 抛出的 RuntimeError 已带友好文案；其余意外异常用通用兜底
-        return str(e) if (isinstance(e, RuntimeError) and str(e)) else "抱歉，我这边出了点小状况，稍后再聊吧~"
+        # AI 故障时不再发兜底客套话：有 Jev 判断闸门在，不需要假装镇定的一句
+        # 「稍后再聊」。返回空串，调用方的 `if reply:` 守卫会静默跳过发送，
+        # 失败原因记在日志里由主人排查（静默好过假客套）。
+        return ""
 
 
 def strip_before_thought_tags(text):
@@ -1502,28 +1504,6 @@ def strip_before_thought_tags(text):
         return match.group(1)
     else:
         return text
-
-def _friendly_api_error(error_info):
-    """把 API 异常信息翻译成口语化兜底话术，避免对用户暴露技术细节、也更像真人。"""
-    if not error_info:
-        return "抱歉，我这边出了点小状况，稍后再聊吧~"
-    e = error_info.lower()
-    if "real name verification" in e:
-        return "我的 AI 密钥还差实名认证，得让主人去弄一下~"
-    if "rate limit" in e:
-        return "最近问的人有点多，我喘口气再回你哈~"
-    if "payment required" in e:
-        return "我的额度用完啦，等主人给我充个值就好~"
-    if "user quota" in e or "is not enough" in e or "unlimitedquota" in e:
-        return "我的额度不够用啦，等主人充个值就好~"
-    if "api key is invalid" in e:
-        return "我的密钥好像失效了，得让主人看看~"
-    if "service unavailable" in e:
-        return "服务器有点忙，我待会儿再回你~"
-    if "sensitive" in e:
-        return "刚才那句可能踩到敏感词了，换个说法试试？"
-    return "抱歉，我这边出了点小状况，稍后再聊吧~"
-
 
 def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summary=False):
     """
@@ -1661,7 +1641,9 @@ def call_chat_api_with_retry(messages_to_send, user_id, max_retries=2, is_summar
 
         attempt += 1
 
-    raise RuntimeError(_friendly_api_error(last_error_info))
+    # 不再把异常翻译成发给用户的兜底客套话（get_deepseek_response 统一静默处理），
+    # 这里只带技术详情供日志排查。
+    raise RuntimeError(f"chat api call failed: {last_error_info}")
 
 def get_assistant_response(message, user_id, is_summary=False):
     """
