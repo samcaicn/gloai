@@ -21,6 +21,11 @@ name: Sync Tencent → GitHub CI
 #
 # 关于「同步了但没触发构建」：下游 build.yml 带 paths-ignore（'**.md'、'site/**'、'docs/**'），
 # 只改文档/站点文件的提交不会触发 Build APK，这是预期行为，不是同步失败。
+#
+# ⭐ 同步状态用 tag（tencent-synced）记录，而非分支 HEAD：
+#   下游 build.yml 构建结束后会**删除 jev-chat-jarvis 分支**（只留 Actions artifact 作只读升级通道）。
+#   若这里比对「分支 HEAD」，分支被删后 GitHub HEAD 变空 → 每轮 cron 都误判未同步 → 狂触发重建死循环。
+#   改用持久 tag tencent-synced 记录「上次已同步的 commit」，分支删了 tag 还在，比对 tag 即可避免风暴。
 
 on:
   schedule:
@@ -90,16 +95,18 @@ jobs:
             git@git.code.tencent.com:AImarketing/weauto.git _tencent
           echo "TENCENT_HEAD=$(git -C _tencent rev-parse HEAD)" >> "$GITHUB_ENV"
 
-      - name: Compare with GitHub jev-chat-jarvis HEAD
+      - name: Compare with last-synced tag (tencent-synced)
         id: cmp
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eu
-          GH_HEAD=$(git ls-remote \
+          # 比对持久 tag 而非分支 HEAD：build.yml 构建后会删掉 jev-chat-jarvis 分支，
+          # 分支被删后若比对分支 HEAD 会误判「未同步」，导致每轮 cron 都重建。
+          SYNCED_SHA=$(git ls-remote \
             "https://x-access-token:${GITHUB_TOKEN}@github.com/samcaicn/gloai.git" \
-            refs/heads/jev-chat-jarvis | cut -f1)
-          echo "github_head=$GH_HEAD"
+            refs/tags/tencent-synced | cut -f1)
+          echo "synced_tag_sha=${SYNCED_SHA:-<none>}"
           echo "tencent_head=$TENCENT_HEAD"
           {
             echo "### 同步比对"
@@ -107,17 +114,17 @@ jobs:
             echo "| 端 | HEAD |"
             echo "|---|---|"
             echo "| 腾讯 android | \`$TENCENT_HEAD\` |"
-            echo "| GitHub jev-chat-jarvis | \`$GH_HEAD\` |"
+            echo "| GitHub 上次同步(tag tencent-synced) | \`${SYNCED_SHA:-<none>}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
-          if [ "$GH_HEAD" = "$TENCENT_HEAD" ]; then
+          if [ "$SYNCED_SHA" = "$TENCENT_HEAD" ]; then
             echo "in_sync=true" >> "$GITHUB_OUTPUT"
-            echo "already in sync, nothing to do"
+            echo "already in sync (tag matches), skip rebuild"
           else
             echo "in_sync=false" >> "$GITHUB_OUTPUT"
             echo "diff detected, will sync"
           fi
 
-      - name: Push Tencent android → GitHub jev-chat-jarvis
+      - name: Push Tencent android → GitHub jev-chat-jarvis + bump synced tag
         if: steps.cmp.outputs.in_sync == 'false'
         env:
           SYNC_PAT: ${{ secrets.SYNC_PAT }}
@@ -136,26 +143,30 @@ jobs:
             git fetch --unshallow origin || true
             git push github android:jev-chat-jarvis --force
           fi
+          # 记录「上次已同步 commit」：build.yml 构建后会删掉 jev-chat-jarvis 分支，
+          # 用持久 tag 标记，避免同步工作流每轮误判未同步而狂触发重建。
+          git tag -f tencent-synced HEAD
+          git push github refs/tags/tencent-synced --force
           echo "synced -> Build APK should now be triggered"
 
-      - name: Verify GitHub branch matches Tencent
+      - name: Verify synced tag matches Tencent
         if: steps.cmp.outputs.in_sync == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eu
-          # 推送是异步可见的，最多等 60s 让 GitHub 更新分支引用
+          # 推送是异步可见的，最多等 60s 让 GitHub 更新 tag 引用
           for i in $(seq 1 12); do
-            GH=$(git ls-remote \
+            SYNCED=$(git ls-remote \
               "https://x-access-token:${GITHUB_TOKEN}@github.com/samcaicn/gloai.git" \
-              refs/heads/jev-chat-jarvis | cut -f1)
-            if [ "$GH" = "$TENCENT_HEAD" ]; then
-              echo "同步校验通过：$GH"
+              refs/tags/tencent-synced | cut -f1)
+            if [ "$SYNCED" = "$TENCENT_HEAD" ]; then
+              echo "同步校验通过(tag=$SYNCED)"
               echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "✅ 已同步到 \`$GH\`，下游 Build APK 会被触发（若改动命中 build.yml 的 paths-ignore 则不会）" >> "$GITHUB_STEP_SUMMARY"
+              echo "✅ 已同步到 \`$SYNCED\`，下游 Build APK 会被触发（若改动命中 build.yml 的 paths-ignore 则不会）" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             sleep 5
           done
-          echo "::error::同步后 GitHub HEAD($GH) 与腾讯 HEAD($TENCENT_HEAD) 不一致"
+          echo "::error::同步后 tag($SYNCED) 与腾讯 HEAD($TENCENT_HEAD) 不一致"
           exit 1

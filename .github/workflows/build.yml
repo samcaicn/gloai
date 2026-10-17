@@ -9,9 +9,12 @@ on:
       - '**.md'
   workflow_dispatch:
 
+# 构建后经 cleanup job 删除同步镜像分支与任何残留 release，
+# 仅保留 Actions artifact 作为只读升级通道（参考 pc-ref/build.yml 的「不发布 Release」思路）。
+# 需要 contents: write 才能删除分支/Release；不再需要 issues: write
+# （失败诊断改为打印日志，对齐 pc-ref 的只读收紧策略）。
 permissions:
   contents: write
-  issues: write
 
 # 同一分支连续推送时只保留最新一次构建，避免排队烧分钟数
 concurrency:
@@ -185,28 +188,20 @@ jobs:
           path: dist/app-debug.apk
           retention-days: 30
 
-      - name: Report failure log to public issue
+      # 失败诊断改为打印日志（2026-10-17 对齐 pc-ref 只读收紧策略）：
+      # 不再 gh issue create，避免需要 issues:write 权限，报错直接在 Actions 日志看。
+      - name: Report build failure (print logs, no issue)
         if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          BODY=$(mktemp)
-          {
-            echo "## jev-chat-jarvis APK build failure (run ${{ github.run_number }})"
-            echo "Commit: ${{ github.sha }}"
-            echo '### key lines'
-            grep -nE "FAILURE:|What went wrong|Caused by:|error:|Error:|FAILED" build_release.log 2>/dev/null | head -40 || true
-            echo '### Kotlin compiler errors'
-            grep -hE "^e: " build_release.log 2>/dev/null | head -40 || true
-            echo '### What went wrong section'
-            L=$(grep -n "What went wrong" build_release.log 2>/dev/null | head -1 | cut -d: -f1)
-            [ -n "$L" ] && sed -n "${L},$((L+30))p" build_release.log
-            echo '### last 60 lines'
-            tail -60 build_release.log 2>/dev/null || true
-          } > "$BODY"
-          gh issue create --repo "$GITHUB_REPOSITORY" \
-            --title "jev-chat-jarvis APK build failure (run ${{ github.run_number }})" \
-            --body-file "$BODY" || true
+          echo "===== build_release.log (key lines) ====="
+          grep -nE "FAILURE:|What went wrong|Caused by:|error:|Error:|FAILED" build_release.log 2>/dev/null | head -40 || true
+          echo "===== Kotlin compiler errors ====="
+          grep -hE "^e: " build_release.log 2>/dev/null | head -40 || true
+          echo "===== What went wrong section ====="
+          L=$(grep -n "What went wrong" build_release.log 2>/dev/null | head -1 | cut -d: -f1)
+          [ -n "$L" ] && sed -n "${L},$((L+30))p" build_release.log
+          echo "===== last 60 lines ====="
+          tail -60 build_release.log 2>/dev/null || true
 
       # 产物策略：只保留 Actions artifact（人工去 Actions 页下载安装），
       # 刻意**不**发 GitHub Release、不打自动更新推送。App 侧「升级」只是只读提示：
@@ -221,4 +216,52 @@ jobs:
             echo "构建完成。安装包在本次 Actions 的 artifacts 里，名字："
             echo '`jev-chat-jarvis-apk-'"${{ github.run_number }}"'`，下载 `app-release.apk` 手动安装。'
             echo "本工作流不发布 GitHub Release、不做自动更新推送——App 只会在设置里提示有新版，由你决定什么时候装。"
+            echo "构建结束后 cleanup job 会删除同步镜像分支 \`jev-chat-jarvis\` 与任何残留 Release，"
+            echo "GitHub 仓库只保留 Actions artifact 作为只读升级通道。"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # ------------------------------------------------------------------
+  # 清理：构建（成功/失败）后删除同步镜像分支 jev-chat-jarvis 与任何残留
+  # Release，只留 Actions artifact 作为 App 侧的「只读升级」通道。
+  # 参考 pc-ref/build.yml 的「不发布 Release、靠 Artifact 分发」思路，
+  # 但 Android 这边因 工蜂→GitHub 同步会落一个临时分支，故构建后顺手清掉它。
+  #   - 只删 jev-chat-jarvis（同步镜像分支），绝不碰 main 等常驻分支；
+  #   - Release 本工作流从不创建，删除步骤仅为兜底历史残留；
+  #   - artifact 与分支/Release 解耦，删分支不影响 App 经 worker 拉取构件。
+  cleanup:
+    name: Cleanup (keep Actions artifacts only)
+    needs: build
+    # build 真跑过（成功/失败/取消）才清理；paths-ignore 跳过的 .md 提交不删分支
+    if: ${{ always() && needs.build.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete transient sync branch & stray release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          RUN: ${{ github.run_number }}
+        run: |
+          set -u
+          # ① 只删同步镜像分支，绝不误删 main / 其他常驻分支
+          if [ "$BRANCH" = "jev-chat-jarvis" ]; then
+            echo "deleting transient sync branch: $BRANCH"
+            gh api -X DELETE "/repos/$REPO/git/refs/heads/$BRANCH" \
+              || git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" --delete "$BRANCH" \
+              || echo "::warning::branch deletion failed (may be branch-protected), ignoring"
+          else
+            echo "skip: ref_name=$BRANCH is not the sync mirror branch, leaving it intact"
+          fi
+
+          # ② 防御性清 release（本工作流不发布 Release，这里兜底历史残留）
+          TAG="v${RUN}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "deleting stray release: $TAG"
+            gh release delete "$TAG" -y || echo "::warning::release deletion failed, ignoring"
+          else
+            echo "no release $TAG (expected — distribution is via Actions artifacts only)"
+          fi
+
+          echo "✅ cleanup done: only Actions artifacts (jev-chat-jarvis-apk-${RUN} / debug) remain as the read-only upgrade channel"
