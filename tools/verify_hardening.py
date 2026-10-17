@@ -168,5 +168,22 @@ for _ep in ["config_editor.py", "cli.py", "weauto_mcp.py"]:
     _p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), _ep)
     check("入口防护总闸: " + _ep, os.path.exists(_p) and _main_calls_enforce(_p))
 
+# 9) config 落盘闭环（防变砖整改）：引导段必须成对落地 config.py.sig；
+#    main() 必须在防护闸前有 config 自愈；拒启必须落盘 hardening_exit.log
+_ce_src = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "config_editor.py"), "r", encoding="utf-8", errors="replace").read()
+check("引导段成对落地 config.py.sig", '"config.py.sig"' in _ce_src)
+check("main() 防护闸前 config 自愈", "config_signature_valid" in _ce_src
+      and "config.py.broken" in _ce_src)
+check("hardening._write_exit_log 存在", hasattr(H, "_write_exit_log"))
+try:
+    _cwd0 = os.getcwd()
+    os.chdir(work)  # 源码态写 cwd，别污染仓库根
+    H._write_exit_log("回归测试探针")
+    os.chdir(_cwd0)
+    check("_write_exit_log 可写", os.path.exists(os.path.join(work, "hardening_exit.log")))
+except Exception as _xl_e:
+    check("_write_exit_log 可写", False, repr(_xl_e))
+
 print("RESULT: " + ("ALL PASS" if _ok else "SOME FAILED"))
 sys.exit(0 if _ok else 1)

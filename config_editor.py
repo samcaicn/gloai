@@ -95,13 +95,16 @@ if getattr(sys, "frozen", False):
     if _base_dir not in sys.path:
         sys.path.insert(0, _base_dir)
     if _meipass:
-        for _item in ("config.py", "templates", "emojis", "prompts", "static", "Demo_Image"):
+        for _item in ("config.py", "config.py.sig", "templates", "emojis", "prompts", "static", "Demo_Image"):
             _src = _os.path.join(_meipass, _item)
             _dst = _os.path.join(_base_dir, _item)
             if not _os.path.exists(_src):
                 continue
-            if _item == "config.py":
-                # 用户运行时配置：仅首次创建，后续升级保留用户修改
+            if _item in ("config.py", "config.py.sig"):
+                # 用户运行时配置及其签名：仅首次创建，后续升级保留用户修改。
+                # ⚠️ config.py.sig 必须与 config.py 成对落地——历史 bug 只拷 config.py
+                # 不拷 sig，导致发行版启动期 config 签名校验必然失败 → 防护总闸拒启，
+                # 全新用户 100% 变砖。缺 sig 一律补拷。
                 if _os.path.exists(_dst):
                     continue
                 try:
@@ -6375,6 +6378,35 @@ if __name__ == '__main__':
                 time.sleep(0.2)
             return False
         serve(app, **kwargs)
+
+    # 持久 weauto/config.py(.sig) 自愈：必须在防护总闸【之前】执行。
+    # 不同步来源：① 历史 bug 只落 config.py 不落 sig（已修引导段，但存量用户磁盘
+    # 状态已坏）；② 升级残留（旧构建展开的 config.py + 新构建 sig）；③ 保存配置时
+    # 重签中断（断电/磁盘满）→ config.py 新 + sig 旧。任一情况都会让发行版启动期
+    # config 签名校验失败 → 防护总闸拒启 → 正版用户变砖。此处用安装包版本刷新
+    # （旧文件备份为 config.py.broken 防数据丢失）。
+    if getattr(sys, "frozen", False):
+        try:
+            from weauto_license import secrets as _sec
+            if not _sec.config_signature_valid():
+                _cfgd = _sec.project_root()
+                _cfg = os.path.join(_cfgd, "config.py")
+                _sig = os.path.join(_cfgd, "config.py.sig")
+                _mei = getattr(sys, "_MEIPASS", None)
+                if _mei and os.path.isfile(os.path.join(_mei, "config.py")):
+                    import shutil as _sh
+                    if os.path.exists(_cfg):
+                        try:
+                            _sh.copy2(_cfg, _cfg + ".broken")
+                        except Exception:
+                            pass
+                    _sh.copy2(os.path.join(_mei, "config.py"), _cfg)
+                    if os.path.isfile(os.path.join(_mei, "config.py.sig")):
+                        _sh.copy2(os.path.join(_mei, "config.py.sig"), _sig)
+                    app.logger.warning(
+                        "config 签名校验失败，已用安装包版本自愈（旧文件备份为 config.py.broken）")
+        except Exception as _e:
+            app.logger.warning("config 自愈异常: %s", _e)
 
     # 冻结发行态防护总闸：被篡改（自体检失败）/ 被调试 → 拒绝启动（防破解）。
     # 开发/测试态（非 frozen 或 RELEASE=False）直接放行，不影响本地调试与 UX 测试。

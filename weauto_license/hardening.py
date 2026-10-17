@@ -273,8 +273,15 @@ def assert_hardening() -> bool:
         return True
     try:
         if not config_trusted():
+            # config.py 是运行时被合法重签的文件（用户保存配置即重签），校验失败
+            # 更可能是不同步/重签中断而非攻击。与 self_integrity 同原则：降级 +
+            # 告警，【不 return False 硬拒】——config_editor.main() 已在防护闸前
+            # 用安装包版本自愈；即便自愈失败，降级（强制走网关/禁付费/不信任自填
+            # 字段）已让攻击无利可图，而硬拒会让正版用户变砖。
             _set_compromised("config sig invalid")
-            return False
+            _LOGGER.warning(
+                "config 签名校验失败，已降级但不拒绝启动（config.py 为合法重签文件，"
+                "硬拒变砖风险大于收益）")
         # 关键防护模块必须可导入（被删 = 被拆防护）
         from weauto_license import guard  # noqa: F401
         from weauto_license import secrets  # noqa: F401
@@ -295,6 +302,24 @@ def assert_hardening() -> bool:
     return True
 
 
+def _write_exit_log(reason: str) -> None:
+    """拒启前落盘原因。logger 无 handler 时 os._exit 是完全静默的——
+    用户双击「什么都没发生」且无从排查。必须留痕。"""
+    try:
+        import datetime as _dt
+        if getattr(sys, "frozen", False):
+            base = os.path.join(os.path.dirname(os.path.abspath(sys.executable)), "weauto")
+        else:
+            base = os.getcwd()
+        os.makedirs(base, exist_ok=True)
+        p = os.path.join(base, "hardening_exit.log")
+        with open(p, "a", encoding="utf-8") as f:
+            f.write("%s 拒绝启动: %s\n" % (
+                _dt.datetime.now().isoformat(timespec="seconds"), reason))
+    except Exception:
+        pass
+
+
 def enforce_hardening() -> None:
     """冻结发行态【启动边界】调用：任一防护失效 / 检测到调试器 → 拒绝启动（防破解）。
 
@@ -303,9 +328,11 @@ def enforce_hardening() -> None:
     if not (getattr(sys, "frozen", False) and is_release()):
         return
     if not assert_hardening():
+        _write_exit_log("防护校验失败，疑似被篡改（config 签名/防护模块）")
         _LOGGER.critical("防护校验失败，拒绝启动（疑似被篡改）")
         os._exit(1)
     if detect_debugger():
+        _write_exit_log("检测到调试器")
         _LOGGER.critical("检测到调试器，拒绝启动")
         os._exit(1)
 
