@@ -185,5 +185,25 @@ try:
 except Exception as _xl_e:
     check("_write_exit_log 可写", False, repr(_xl_e))
 
+# 9) 微信库 property/方法误用回归（实测真事：db.wxid 是 @property，
+#    `db.wxid()` 抛 'str' object is not callable，把消息中心整个微信库侧
+#    补充块吞进 except，页面只剩本地记录且无任何提示）
+import re as _re9
+_ce_full = open(os.path.join(ROOT, "config_editor.py"), "r", encoding="utf-8", errors="replace").read()
+# 只匹配真实调用模式（docstring/注释里的示例文字不误伤）
+check("config_editor 无 db.wxid() 方法式误用",
+      _re9.search(r"=\s*(?:db|getattr\([^)]*\))\s*\.wxid\(\)", _ce_full) is None
+      and _re9.search(r"^\s*\w+\s*=\s*\w+\.wxid\(\)", _ce_full, _re9.M) is None)
+check("config_editor 用 _db_self_wxid 兼容取 wxid",
+      "def _db_self_wxid" in _ce_full and "self_wxid = _db_self_wxid(db)" in _ce_full)
+_vdb = os.path.join(ROOT, "vendor", "wechatauto", "db.py")
+_wxid_is_prop = False
+if os.path.exists(_vdb):
+    _lines = open(_vdb, "r", encoding="utf-8", errors="replace").read().splitlines()
+    for _i, _l in enumerate(_lines):
+        if _re9.match(r"\s*def wxid\(", _l) and _i > 0 and "@property" in _lines[_i - 1]:
+            _wxid_is_prop = True
+check("db.wxid 确为 @property（误用前提仍在，回归不能删）", _wxid_is_prop)
+
 print("RESULT: " + ("ALL PASS" if _ok else "SOME FAILED"))
 sys.exit(0 if _ok else 1)

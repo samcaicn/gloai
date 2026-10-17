@@ -22,6 +22,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -204,6 +205,43 @@ def main():
     rc5 = run(patched5)
     ok("退出码 1（重试后放弃，未被掩盖）", rc5 == 1, "rc=%d" % rc5)
     ok("目标保持旧内容（未被半更新）", open(dst5, "rb").read() == b"OLD-CONTENT")
+
+    section("6. 构件状态 exe 哈希自愈（替换回滚不死锁）")
+    # 实测真事：旧 bat 回滚式静默失败后，状态文件已写新版本、磁盘还是旧 exe、
+    # pending 已消费 → 机器永远判定「已是最新」。现在状态附 exe 哈希，启动时
+    # 比对磁盘真相，不一致即强制更新。
+    d6 = os.path.join(tmp, "statehash")
+    os.makedirs(d6, exist_ok=True)
+    _orig_base = _upd._base_dir
+    _upd._base_dir = lambda: d6
+    try:
+        up = object.__new__(_upd.Updater)
+        disk_exe = os.path.join(d6, "WeAuto.exe")
+        open(disk_exe, "wb").write(b"DISK-EXE-NEW")
+        h_new = _upd.Updater._sha256_file(disk_exe)
+        up._save_local_artifact_updated_at("2026-10-17T23:00:00Z", 7, h_new)
+        st = json.load(open(up._artifact_state_path(), encoding="utf-8"))
+        ok("状态文件记录 exe_sha256", st.get("exe_sha256") == h_new)
+        ok("源码态不做磁盘校验（恒 True）", up._disk_exe_matches_state() is True)
+        # 模拟冻结态 + 磁盘是旧 exe（上次替换回滚了）
+        _frozen = getattr(sys, "frozen", False)
+        _exe = sys.executable
+        try:
+            sys.frozen = True
+            sys.executable = disk_exe
+            ok("磁盘与状态一致 → True", up._disk_exe_matches_state() is True)
+            open(disk_exe, "wb").write(b"DISK-EXE-OLD-ROLLED-BACK")
+            ok("磁盘与状态不一致（回滚）→ False（触发强制更新）",
+               up._disk_exe_matches_state() is False)
+            # 旧格式状态（无哈希）不做判断
+            json.dump({"updated_at": "2026-10-17T23:00:00Z", "artifact_id": 7},
+                      open(up._artifact_state_path(), "w", encoding="utf-8"))
+            ok("旧格式状态（无 exe_sha256）不误判", up._disk_exe_matches_state() is True)
+        finally:
+            sys.frozen = _frozen
+            sys.executable = _exe
+    finally:
+        _upd._base_dir = _orig_base
 
     print("\n========================================================")
     print("自替换 bat 实测：通过 %d / 失败 %d" % (PASS, FAIL))

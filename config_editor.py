@@ -3070,6 +3070,22 @@ def _inbox_wxdb():
         return None, None
 
 
+def _db_self_wxid(db):
+    """取当前账号 wxid，兼容「property」与「方法」两种实现。
+
+    实测坑（消息中心「读取微信库会话失败: 'str' object is not callable」）：
+    vendor/wechatauto/db.py 的 wxid 是 @property（返回 str），而这里按
+    `db.wxid()` 调用 → 'str' object is not callable → 整个微信库侧补充块被
+    except 吞掉，消息中心只剩本地记录。hasattr 查不出这差异（属性存在），
+    必须 callable() 判断。
+    """
+    try:
+        v = getattr(db, "wxid", "")
+        return (v() if callable(v) else (v or "")) or ""
+    except Exception:
+        return ""
+
+
 def _wx_name(db, who):
     """会话显示名：群 → 群名；好友 → 昵称/备注；失败原样返回。"""
     try:
@@ -3204,7 +3220,7 @@ def inbox_sessions():
     wx, db = _inbox_wxdb()
     if db is not None:
         try:
-            self_wxid = db.wxid() if hasattr(db, "wxid") else ""
+            self_wxid = _db_self_wxid(db)
             # 显示名 → 本地会话 key 索引：微信库按 username 建会话，本地记录按昵称
             # 建会话，同一联系人会是两个 key。归并规则：DB 侧的昵称/显示名命中
             # 本地会话（key 或 name）时合并进去，不再单开一条。
@@ -3271,7 +3287,7 @@ def inbox_messages(who):
     wx, db = _inbox_wxdb()
     if db is not None:
         try:
-            self_wxid = db.wxid() if hasattr(db, "wxid") else ""
+            self_wxid = _db_self_wxid(db)
             rows = db.get_messages(who, limit=60) or []
             for m in _db_rows_to_msgs(db, who, rows, self_wxid):
                 merged[(round(m["ts"], 1), m["content"])] = m

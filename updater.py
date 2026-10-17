@@ -28,6 +28,7 @@ import requests
 import zipfile
 import shutil
 import json
+import hashlib
 import logging
 from typing import Tuple
 import sys
@@ -321,12 +322,55 @@ class Updater:
         except Exception:
             return None
 
-    def _save_local_artifact_updated_at(self, updated_at, artifact_id):
+    @staticmethod
+    def _sha256_file(path):
+        """流式计算文件 sha256（83MB exe 也不必占内存）。"""
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                h.update(chunk)
+        return h.hexdigest()
+
+    def _save_local_artifact_updated_at(self, updated_at, artifact_id, exe_sha256=None):
+        """写本地构件状态。
+
+        exe_sha256 = 本次将要应用到磁盘的那份 exe 的哈希（暂存/下载时就算好）。
+        用途（实测真事）：旧 bat 的 errorlevel 掩盖 bug 会让自替换「回滚式静默
+        失败」——状态已写新版本、磁盘却还是旧 exe、pending 已消费 → 该机器永远
+        判定「已是最新」，收不到任何后续更新。启动时比对「状态记录的哈希 vs
+        磁盘 exe 实际哈希」，不一致即说明上次替换没真正生效 → 视为无状态强制更新。
+        """
         try:
+            state = {"updated_at": updated_at, "artifact_id": artifact_id}
+            if exe_sha256:
+                state["exe_sha256"] = exe_sha256
             with open(self._artifact_state_path(), "w", encoding="utf-8") as f:
-                json.dump({"updated_at": updated_at, "artifact_id": artifact_id}, f)
+                json.dump(state, f)
         except Exception:
             pass
+
+    def _disk_exe_matches_state(self) -> bool:
+        """冻结态：磁盘 exe 哈希是否与状态文件记录一致。
+
+        - 源码态/无记录哈希 → True（不做判断，避免开发态被强制更新）。
+        - 不一致（上次替换回滚/外部替换）→ False，调用方应强制更新。
+        """
+        if not getattr(sys, "frozen", False):
+            return True
+        try:
+            with open(self._artifact_state_path(), encoding="utf-8") as f:
+                want = (json.load(f) or {}).get("exe_sha256")
+        except Exception:
+            return True
+        if not want:
+            return True
+        try:
+            cur = getattr(sys, "executable", "") or ""
+            if not cur.lower().endswith(".exe") or not os.path.exists(cur):
+                return True
+            return self._sha256_file(cur) == want
+        except Exception:
+            return True
 
     def _check_artifact_updates(self) -> dict:
         """向 Worker 更新代理查询最新 CI 构件（EXE 零密钥）。"""
@@ -367,6 +411,14 @@ class Updater:
                 # 永远判定"已是最新"、永远收不到更新。非标值一律视为"无本地状态"。
                 if local_updated and not re.match(r"^\d{4}-\d{2}-\d{2}", str(local_updated)):
                     logger.warning("本地构件状态时间戳非标，已忽略: %r", local_updated)
+                    local_updated = None
+                # 磁盘真相校验：状态说「已是 V」但磁盘 exe 哈希与状态记录不符 →
+                # 上次自替换回滚式失败了（旧 bat errorlevel 掩盖 bug 的实况）→
+                # 视为无状态强制更新，把卡死的机器救回来（自愈，不变砖）。
+                if local_updated and not self._disk_exe_matches_state():
+                    logger.warning(
+                        "本地构件状态与磁盘 exe 不一致（上次替换未生效），强制重新更新: %s",
+                        local_updated)
                     local_updated = None
                 has_update = (local_updated is None) or bool(latest_updated and latest_updated > local_updated)
                 return {
@@ -545,7 +597,8 @@ class Updater:
             with open(bat, "w", encoding="utf-8") as f:
                 self._write_replace_bat(f, os.path.abspath(src), _sig_out, current, logf)
             subprocess.Popen(["cmd", "/c", bat], shell=False)
-            self._save_local_artifact_updated_at(update_info.get("version"), update_info.get("artifact_id"))
+            self._save_local_artifact_updated_at(update_info.get("version"), update_info.get("artifact_id"),
+                                                 self._sha256_file(src))
             return {"success": True, "output": "\n".join(progress) + "\n已下载新版本，将在退出后自动替换并重启"}
         except Exception as e:
             return {"success": False, "output": "\n".join(progress) + f"\n更新失败: {e}"}
@@ -651,8 +704,9 @@ class Updater:
             }
             with open(os.path.join(self.temp_dir, "pending_update.json"), "w", encoding="utf-8") as f:
                 json.dump(pending, f, ensure_ascii=False, indent=2)
-            # 写本地构件状态，避免重复下载
-            self._save_local_artifact_updated_at(update_info.get("version"), update_info.get("artifact_id"))
+            # 写本地构件状态，避免重复下载（附 exe 哈希：替换回滚可自愈）
+            self._save_local_artifact_updated_at(update_info.get("version"), update_info.get("artifact_id"),
+                                                 self._sha256_file(staged_exe))
             return {"success": True,
                     "output": "\n".join(progress) + "\n已下载并验签新版本，将在下次启动时应用（不打断当前使用）"}
         except Exception as e:
