@@ -329,6 +329,68 @@ def main():
           rFan is True and any(d == '好友Y' for d, _ in sent)
           and any(d == '好友Z' for d, _ in sent), 'sent=%r' % (sent,))
 
+    # ---------- 7. 敏感信息拦截（中间商防飞单）----------
+    # 中间商场景：需求方/供应商之间自动互转业务内容；若消息里出现手机号/微信号/
+    # 金额等，说明双方可能试图绕过中间商直接交易——这类消息不自动转发，
+    # 拦下来通知中间商人工处理（fail-safe：宁可多拦，人工放行很快）。
+    cfg_sens = hub._normalize_config({'enabled': True, 'rules': [
+        _mk_rule('s1', '业务互转', '需求方', '供应商', sensitive_hold=True),
+    ]})
+    # 7g. 归一化补全敏感字段默认值
+    s1 = cfg_sens['rules'][0]
+    check('敏感拦截 7g：归一化补全 sensitive_hold/words/notify_to 默认值',
+          s1.get('sensitive_hold') is True and s1.get('sensitive_words') == []
+          and s1.get('sensitive_notify_to') == '文件传输助手',
+          'rule=%r' % (s1,))
+
+    hub._rules = cfg_sens
+    # 7a. 手机号命中：不转发，通知文件传输助手，返回 True（已消费，AI 不回）
+    sent.clear()
+    rS = hub.handle_incoming('需求方', 'wxid_a', 'text', 'friend', _Msg('这套方案不错，我微信 13812345678'))
+    notified = [t for d, t in sent if d == '文件传输助手']
+    check('敏感拦截 7a：手机号消息不转发给供应商、通知发文件传输助手、已消费',
+          rS is True and not any(d == '供应商' for d, _ in sent) and len(notified) == 1
+          and '13812345678' in notified[0] and '敏感拦截' in notified[0],
+          'sent=%r' % (sent,))
+    # 7b. 金额+微信号多标签命中（直接测特征）
+    hits = hub._hit_sensitive(s1, '价格 ¥3500，加我微信 abc12345')
+    check('敏感拦截 7b：金额与微信号同时命中',
+          '金额' in hits and '微信号' in hits, 'hits=%r' % (hits,))
+    # 7c. 自定义敏感词命中
+    cfg_custom = hub._normalize_config({'enabled': True, 'rules': [
+        _mk_rule('s2', '含自定义词', '需求方', '供应商', sensitive_hold=True,
+                 sensitive_words=['报价单', '底价']),
+    ]})
+    hub._rules = cfg_custom
+    sent.clear()
+    rC2 = hub.handle_incoming('供应商', 'wxid_b', 'text', 'friend', _Msg('这是我们的底价，你看下'))
+    check('敏感拦截 7c：自定义敏感词「底价」命中拦截',
+          rC2 is True and not any(d == '需求方' for d, _ in sent)
+          and any(d == '文件传输助手' for d, _ in sent), 'sent=%r' % (sent,))
+    # 7d. 未开启拦截的规则：含手机号照常转发（不误拦）
+    cfg_off = hub._normalize_config({'enabled': True, 'rules': [
+        _mk_rule('s3', '不拦截', '需求方', '供应商'),
+    ]})
+    hub._rules = cfg_off
+    sent.clear()
+    rD2 = hub.handle_incoming('需求方', 'wxid_a', 'text', 'friend', _Msg('联系方式 13812345678'))
+    check('敏感拦截 7d：未开启拦截时含手机号仍正常转发',
+          rD2 is True and any(d == '供应商' for d, _ in sent), 'sent=%r' % (sent,))
+    # 7e. 同一条消息重复触发只通知一次（TTL 内同会话同正文不重复轰炸）
+    hub._rules = cfg_sens
+    sent.clear()
+    hub.handle_incoming('需求方', 'wxid_a', 'text', 'friend', _Msg('再发一次 13998887777'))
+    n1 = len([1 for d, _ in sent if d == '文件传输助手'])
+    hub.handle_incoming('需求方', 'wxid_a', 'text', 'friend', _Msg('再发一次 13998887777'))
+    n2 = len([1 for d, _ in sent if d == '文件传输助手'])
+    check('敏感拦截 7e：TTL 内同会话同正文只通知一次',
+          n1 == 1 and n2 == 1, 'n1=%d n2=%d sent=%r' % (n1, n2, sent))
+    # 7f. 开启拦截但普通消息（无敏感）仍正常转发
+    sent.clear()
+    rF2 = hub.handle_incoming('需求方', 'wxid_a', 'text', 'friend', _Msg('今天天气不错，方案我看完了'))
+    check('敏感拦截 7f：普通消息不受拦截影响（正常转发）',
+          rF2 is True and any(d == '供应商' for d, _ in sent), 'sent=%r' % (sent,))
+
     print('\n==== 汇总: %d PASS / %d FAIL ====' % (PASS, FAIL))
     return 0 if FAIL == 0 else 1
 

@@ -77,6 +77,23 @@ ECHO_GUARD_TTL = 6.0            # 回显防护窗口（秒）：本机刚转发�
 DEFAULT_RATE_WINDOW = 10        # 限流窗口（秒）
 DEFAULT_RATE_MAX = 15          # 限流窗口内最大条数
 LOG_DISPLAY_LIMIT = 10          # WebUI 展示的最近流水条数
+SENSITIVE_NOTIFY_TTL = 15       # 同一条消息的「敏感拦截」通知去重窗口（秒，多规则同消息只通知一次）
+SENSITIVE_PREVIEW_LEN = 200     # 拦截通知里附带的原文预览最大长度
+DEFAULT_SENSITIVE_NOTIFY_TO = "文件传输助手"   # 拦截通知默认发给我（文件传输助手，私有）
+
+# 内置敏感信息特征（中间商场景：转发通道里若出现手机号/微信号/金额等，
+# 说明买卖双方可能试图绕过中间商直接交易——这类消息不自动转发，
+# 拦下来通知中间商人工处理，防「飞单」）。均为宽松启发式：宁可多拦
+# （拦错的消息由人工快速放行），不可漏拦（漏一条联系方式就可能丢单）。
+SENSITIVE_PATTERNS = [
+    ("手机号", re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)")),
+    ("座机号", re.compile(r"(?<!\d)0\d{2,3}[-—]\d{7,8}(?!\d)")),
+    ("微信号", re.compile(r"(?i)微信[号vV]?\s*[:：]?\s*[a-zA-Z][a-zA-Z0-9_-]{5,19}")),
+    ("加微信", re.compile(r"(?i)(?:加|添加|扫)(?:一下|下)?(?:我|个)?(?:的)?(?:微信|vx|wx|v心|V信)")),
+    ("vx口令", re.compile(r"(?<![a-zA-Z])vx(?:号|hao)?\s*[:：]?\s*[a-zA-Z0-9_-]{6,20}", re.IGNORECASE)),
+    ("QQ号", re.compile(r"(?i)(?:qq|扣扣|扣我|q我)\s*[号:：]?\s*[1-9]\d{4,10}")),
+    ("金额", re.compile(r"(?:[¥￥]\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?\s*(?:元|块钱|块|rmb|cny|美元|美金))", re.IGNORECASE)),
+]
 DEFAULT_LABEL_FORMAT = "[来自 {src}{member}]"
 
 # ---- 成员「称呼」与句首称呼语处理 ----
@@ -486,6 +503,7 @@ class _ForwardHub:
         self._buckets = {}      # (src, dst) -> deque(时间戳)
         self._sal_cache = {}    # 称呼处理结果缓存 -> (过期时间戳, 结果)
         self._recent_sent = {}  # (who, text) -> 过期时间戳：本机刚发出的文本，用于回环防护
+        self._sens_notified = {}  # (who, 正文hash) -> 过期时间戳：同一条消息的拦截通知只发一次
 
     # ----- 路径常量（供 WebUI 进程与 bot 进程共享同一组文件）-----
     @property
@@ -682,6 +700,14 @@ class _ForwardHub:
             # placeholder=只发 [图片] 占位；skip=丢弃
             "media_mode": r.get('media_mode') or "original",
             "respect_quiet_time": bool(r.get('respect_quiet_time', False)),
+            # 敏感信息拦截（中间商防飞单）：命中手机号/微信号/金额等内置特征或
+            # 自定义敏感词时，本条不自动转发，改为通知 sensitive_notify_to 人工处理。
+            # 只扫文本（文字/引用/链接/合并转发的正文）；语音转写与媒体无法可靠扫描。
+            "sensitive_hold": bool(r.get('sensitive_hold', False)),
+            "sensitive_words": [w for w in (r.get('sensitive_words') or [])
+                                if isinstance(w, str) and w.strip()],
+            "sensitive_notify_to": (r.get('sensitive_notify_to') or '').strip()
+                                   or DEFAULT_SENSITIVE_NOTIFY_TO,
         }
         return rule
 
@@ -1055,6 +1081,7 @@ class _ForwardHub:
             return False
 
         forwarded_any = False
+        held_any = False
         ai_reply = False
         delivered_dsts = set()
         for rule, kind, dests in matched:
@@ -1063,6 +1090,14 @@ class _ForwardHub:
             fresh = [d for d in dests if d not in delivered_dsts]
             if not fresh:
                 continue
+            # 敏感信息拦截（中间商防飞单）：本条不转发给任何对端，通知人工处理。
+            # 拦截视为「已消费」（返回 True 让调用方跳过 AI），避免 bot 在人工
+            # 处理的同时又用 AI 自动回复源，产生自相矛盾的双线应答。
+            hits = self._hit_sensitive(rule, raw_content)
+            if hits:
+                held_any = True
+                self._hold_sensitive(rule, who, msgtype, raw_content, kind, hits)
+                continue
             if self._deliver(rule, who, sender, msgtype, msg, is_group, fresh, kind, raw_content):
                 forwarded_any = True
                 delivered_dsts.update(fresh)
@@ -1070,6 +1105,9 @@ class _ForwardHub:
                 if rule.get('ai_reply_to_source'):
                     ai_reply = True
 
+        if held_any:
+            # 只要有任一规则拦截本条消息，就整条交给人工：不转发、AI 也不回。
+            return True
         if not forwarded_any:
             return False
         # ai_reply_to_source=True 时，仍放行给 AI 处理源侧
@@ -1114,6 +1152,64 @@ class _ForwardHub:
             hay = text if isinstance(text, str) else ''
             return any(k in hay for k in kws)
         return True
+
+    # ----- 敏感信息拦截（中间商防飞单）-----
+    def _hit_sensitive(self, rule, text):
+        """返回命中的敏感特征标签列表（如 ['手机号','金额']）；未启用或未命中返回 []。
+
+        只扫文本（raw_content 已含 引用/链接/合并转发 的正文）；媒体/语音转写
+        传 None 或空串自然跳过。内置特征 + 规则自定义词（子串、忽略大小写）。
+        """
+        if not rule.get('sensitive_hold'):
+            return []
+        if not isinstance(text, str) or not text:
+            return []
+        hits = []
+        for label, pat in SENSITIVE_PATTERNS:
+            try:
+                if pat.search(text):
+                    hits.append(label)
+            except Exception:
+                continue
+        for w in rule.get('sensitive_words') or []:
+            w = (w or '').strip()
+            if w and w.lower() in text.lower() and w not in hits:
+                hits.append(w)
+        return hits
+
+    def _hold_sensitive(self, rule, who, msgtype, raw_content, kind, hits):
+        """敏感消息拦截动作：不转发，记流水 + 通知中间商人工处理。
+
+        同一条消息（同会话同正文）在 SENSITIVE_NOTIFY_TTL 内只通知一次——
+        多条规则同时命中同一消息时不重复轰炸。通知发送失败只记日志，
+        绝不影响消息本身已被拦截的事实（fail-safe：拦下来的不会因通知失败而漏出）。
+        """
+        rule_name = rule.get('name') or rule.get('id') or '?'
+        preview = (raw_content or '').strip()
+        if len(preview) > SENSITIVE_PREVIEW_LEN:
+            preview = preview[:SENSITIVE_PREVIEW_LEN] + '…'
+        self._warn(f"固定转发：{who} 的消息命中敏感信息（{'、'.join(hits)}），已拦截待人工处理（规则={rule_name}）")
+        # 流水：dst 记「人工处理」，result='hold'（WebUI 以黄色徽标展示）
+        self._append_log(self._mk_entry(kind, who, '人工处理', msgtype,
+                                        (preview or msgtype)[:40], 'hold'))
+        # 同一条消息只通知一次
+        key = (who, hash(raw_content or ''))
+        now = time.time()
+        if key in self._sens_notified and self._sens_notified[key] > now:
+            return
+        self._sens_notified[key] = now + SENSITIVE_NOTIFY_TTL
+        if len(self._sens_notified) > 200:
+            self._sens_notified = {k: v for k, v in self._sens_notified.items() if v > now}
+        target = rule.get('sensitive_notify_to') or DEFAULT_SENSITIVE_NOTIFY_TO
+        text = (f"[固定转发·敏感拦截] 来自「{who}」的消息未自动转发，请人工处理。\n"
+                f"规则：{rule_name}\n"
+                f"命中：{'、'.join(hits)}\n"
+                f"内容：{preview}")
+        try:
+            self._send(text, target)
+            self._info(f"固定转发：敏感拦截通知已发给 {target}")
+        except Exception as e:  # noqa: BLE001
+            self._error(f"固定转发：敏感拦截通知发送失败（目标={target}）: {e}")
 
     def _process_salutation_cached(self, text, roster, mode, self_names=(), ttl=60):
         """带缓存的称呼处理：同一正文 + 同一名单在 ttl 秒内复用结果，避免重复问 AI。"""

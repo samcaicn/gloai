@@ -214,7 +214,16 @@ function renderRules(){
             +   '<label class="chk"><input type="checkbox" data-f="replace_alias" '+((rule.replace_alias===false)?'':'checked')+'> 正文本名替换为称呼</label>'
             +   '<label class="chk"><input type="checkbox" data-f="ai_reply_to_source" '+(rule.ai_reply_to_source?'checked':'')+'> 同时让 AI 回复源</label>'
             +   '<label class="chk"><input type="checkbox" data-f="respect_quiet_time" '+(rule.respect_quiet_time?'checked':'')+'> 受静默期限制</label>'
-            + '</div>';
+            + '</div>'
+            + '<details class="advanced-block" style="margin-top:10px;">'
+            +   '<summary>敏感信息拦截（防飞单，默认关）</summary>'
+            +   '<div style="margin-top:8px;">'
+            +     '<label class="chk"><input type="checkbox" data-f="sensitive_hold" '+(rule.sensitive_hold?'checked':'')+'> 消息含手机号 / 微信号 / 金额等敏感信息时，不自动转发，通知我人工处理</label>'
+            +     '<p class="hint">内置识别：手机号、座机号、微信号（"微信号:xxx"、"加我微信"、vx:xxx）、QQ号、金额（¥/元/块/RMB）。命中后本条不转发给对方，改为把原文发给下方联系人由你人工决定；bot 也不会再用 AI 自动回复该消息。只扫文字/引用/链接正文，语音与图片无法扫描。</p>'
+            +     '<div><label class="fld">自定义敏感词（逗号分隔，可选，忽略大小写）</label><input type="text" data-f="sensitive_words" value="'+escapeHtml((rule.sensitive_words||[]).join(', '))+'"></div>'
+            +     '<div><label class="fld">拦截通知发给我（默认 文件传输助手）</label><input type="text" data-f="sensitive_notify_to" value="'+escapeHtml(rule.sensitive_notify_to||'')+'" placeholder="文件传输助手"></div>'
+            +   '</div>'
+            + '</details>';
         card.querySelectorAll('[data-f]').forEach(function(el){
             el.addEventListener('change', function(){ collectRule(rule, card); });
             el.addEventListener('input', function(){ collectRule(rule, card); });
@@ -244,6 +253,7 @@ function collectRule(rule, card){
         else if(f==='party_a'){ rule.party_a = parseMembers(el.value); }
         else if(f==='party_b'){ rule.party_b = parseMembers(el.value); }
         else if(f==='monitor_keywords'){ rule.monitor_keywords = splitList(el.value); }
+        else if(f==='sensitive_words'){ rule.sensitive_words = splitList(el.value); }
         else if(f==='monitor_content'){ rule.monitor_content = el.value; }
         else { rule[f] = el.value; }
     });
@@ -283,6 +293,7 @@ function addRule(){
         salutation_mode:'auto',
         ai_reply_to_source:false,
         monitor_content:'all', monitor_types:[], monitor_keywords:[],
+        sensitive_hold:false, sensitive_words:[], sensitive_notify_to:'',
         respect_quiet_time:false, invalid:[]
     });
     renderRules();
@@ -295,7 +306,7 @@ function renderLog(){
         let dir = '—';
         if(e.direction==='a_to_b') dir = '甲方→乙方';
         else if(e.direction==='b_to_a') dir = '乙方→甲方';
-        const rcls = e.result==='ok'?'ok':(e.result==='error'?'err':'skip');
+        const rcls = e.result==='ok'?'ok':(e.result==='error'?'err':(e.result==='hold'?'warn':'skip'));
         rows += '<tr><td class="c">'+escapeHtml(e.time||'')+'</td>'
             + '<td class="c">'+dir+'</td>'
             + '<td class="c">'+escapeHtml(e.src||'')+' → '+escapeHtml(e.dst||'')+'</td>'
