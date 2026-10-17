@@ -485,6 +485,184 @@ class Updater:
         except Exception as e:
             return {"success": False, "output": "\n".join(progress) + f"\n更新失败: {e}"}
 
+    def prepare_artifact_update(self, update_info: dict) -> dict:
+        """下载 + 验签 + 暂存更新包并写入「待应用」标记，但【不立即替换/重启】。
+
+        与 apply_artifact_update（立即可替换并重启）的区别：把实际文件替换延后到
+        下次启动（apply_pending_update），避免用户正在用 bot 时被强制重启。
+        返回 success 表示新版本已就绪、待下次启动生效。
+        """
+        progress = []
+        try:
+            download_url = update_info["download_url"]
+            headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
+            if "github.com" in download_url or "api.github.com" in download_url:
+                headers = self._auth_headers(headers)
+            log_progress = lambda s: progress.append(s)
+            log_progress("开始下载加密 exe 构件...")
+
+            last_dl_err = None
+            for attempt in range(3):
+                try:
+                    with _http_get(download_url, headers=headers, timeout=120,
+                                   stream=True) as r:
+                        r.raise_for_status()
+                        os.makedirs(self.temp_dir, exist_ok=True)
+                        zip_path = os.path.join(self.temp_dir, "weauto_artifact.zip")
+                        with open(zip_path, "wb") as f:
+                            for chunk in r.iter_content(chunk_size=8192):
+                                if chunk:
+                                    f.write(chunk)
+                    last_dl_err = None
+                    break
+                except requests.RequestException as e:
+                    last_dl_err = e
+                    logger.warning(f"下载构件第 {attempt + 1} 次失败: {e}")
+                    if attempt < 2:
+                        time.sleep(3 * (attempt + 1))
+            if last_dl_err is not None:
+                return {"success": False,
+                        "output": "\n".join(progress) + f"\n下载更新包失败: {last_dl_err}"}
+            log_progress("下载完成，正在解压 WeAuto.exe...")
+
+            extract_dir = os.path.join(self.temp_dir, "weauto_exe")
+            os.makedirs(extract_dir, exist_ok=True)
+            with zipfile.ZipFile(zip_path) as z:
+                cand = [n for n in z.namelist() if n.lower().endswith("weauto.exe")]
+                if not cand:
+                    return {"success": False, "output": "\n".join(progress) + "\n构件中未找到 WeAuto.exe"}
+                z.extract(cand[0], extract_dir)
+                src = os.path.join(extract_dir, cand[0])
+
+                # 发行版更新包 Ed25519 签名校验（与 apply_artifact_update 同款）
+                try:
+                    from weauto_license import secrets as _sec_up
+                    if _sec_up.is_release():
+                        _sig_bytes = None
+                        for _n in z.namelist():
+                            if _n.lower().endswith(".sig"):
+                                _sig_bytes = z.read(_n)
+                                break
+                        if not _sig_bytes:
+                            return {"success": False,
+                                    "output": "\n".join(progress) + "\n发行版更新缺少签名文件，已拒绝安装。"}
+                        _pub = _sec_up.get_bytes("UPDATER_VERIFY_KEY")
+                        if not _pub or len(_pub) != 32:
+                            return {"success": False,
+                                    "output": "\n".join(progress) + "\n发行版缺少验签公钥，已拒绝安装。"}
+                        import hashlib as _hl
+                        from cryptography.exceptions import InvalidSignature
+                        from cryptography.hazmat.primitives.asymmetric import ed25519
+                        with open(src, "rb") as _f:
+                            _digest = _hl.sha256(_f.read()).digest()
+                        ed25519.Ed25519PublicKey.from_public_bytes(_pub).verify(_sig_bytes, _digest)
+                        log_progress("更新包签名校验通过")
+                except InvalidSignature:
+                    return {"success": False,
+                            "output": "\n".join(progress) + "\n更新包签名校验失败（内容被篡改），已拒绝安装。"}
+                except Exception as _up_e:
+                    return {"success": False,
+                            "output": "\n".join(progress) + f"\n更新包校验异常，已拒绝安装: {_up_e}"}
+
+            current = os.path.abspath(sys.executable)
+            if not current.lower().endswith(".exe"):
+                return {"success": False, "output": "\n".join(progress) + "\n当前非 exe 运行环境，无法暂存更新"}
+
+            # ---- 暂存到 staged_update 区（不在当前进程内替换）----
+            stage_dir = os.path.join(self.temp_dir, "staged_update")
+            os.makedirs(stage_dir, exist_ok=True)
+            staged_exe = os.path.join(stage_dir, "WeAuto.exe")
+            staged_sig = os.path.join(stage_dir, "WeAuto.exe.sig")
+            shutil.copy2(src, staged_exe)
+            if _sig_bytes:
+                with open(staged_sig, "wb") as f:
+                    f.write(_sig_bytes)
+            pending = {
+                "version": update_info.get("version"),
+                "artifact_id": update_info.get("artifact_id"),
+                "staged_exe": staged_exe,
+                "staged_sig": staged_sig,
+                "updated_at": update_info.get("version"),
+            }
+            with open(os.path.join(self.temp_dir, "pending_update.json"), "w", encoding="utf-8") as f:
+                json.dump(pending, f, ensure_ascii=False, indent=2)
+            # 写本地构件状态，避免重复下载
+            self._save_local_artifact_updated_at(update_info.get("version"), update_info.get("artifact_id"))
+            return {"success": True,
+                    "output": "\n".join(progress) + "\n已下载并验签新版本，将在下次启动时应用（不打断当前使用）"}
+        except Exception as e:
+            return {"success": False, "output": "\n".join(progress) + f"\n更新准备失败: {e}"}
+
+    def apply_pending_update(self) -> bool:
+        """启动期调用（冻结态）：若存在已暂存且验签通过的更新包，则在当前进程外
+        替换磁盘上的 exe 并拉起新版本，随后当前（旧）进程退出——即「下次重启即可」：
+        用户本次打开的若仍是旧版本，会在启动瞬间自动换成新版本并重开，全程不打断
+        正在进行的会话（替换发生在启动边界，而非会话中途）。
+
+        - 仅冻结态、且未设置 WEAUTO_NO_AUTO_UPDATE 时生效。
+        - 再次验签（纵深防御：暂存文件在磁盘期间可能被篡改）。
+        - 复用 _write_replace_bat（默认 relaunch=True）做「让位法」替换 + 拉起新版。
+        返回 True 表示已触发替换（调用方应 os._exit(0) 让出文件锁）。
+        """
+        if not getattr(sys, "frozen", False):
+            return False
+        if os.environ.get("WEAUTO_NO_AUTO_UPDATE") == "1":
+            return False
+        import subprocess
+        try:
+            temp_dir = self.temp_dir
+            pending_path = os.path.join(temp_dir, "pending_update.json")
+            if not os.path.exists(pending_path):
+                return False
+            with open(pending_path, "r", encoding="utf-8") as f:
+                pending = json.load(f)
+            staged_exe = pending.get("staged_exe")
+            staged_sig = pending.get("staged_sig")
+            if not staged_exe or not os.path.exists(staged_exe):
+                logger.warning("待应用更新包缺失，跳过: %s", staged_exe)
+                try:
+                    os.remove(pending_path)
+                except Exception:
+                    pass
+                return False
+            # 再次验签（纵深防御）
+            try:
+                from weauto_license import secrets as _sec_up
+                if _sec_up.is_release():
+                    _pub = _sec_up.get_bytes("UPDATER_VERIFY_KEY")
+                    if _pub and len(_pub) == 32 and os.path.exists(staged_sig):
+                        import hashlib as _hl
+                        from cryptography.exceptions import InvalidSignature
+                        from cryptography.hazmat.primitives.asymmetric import ed25519
+                        with open(staged_exe, "rb") as _f:
+                            _digest = _hl.sha256(_f.read()).digest()
+                        with open(staged_sig, "rb") as _f:
+                            _sig = _f.read()
+                        ed25519.Ed25519PublicKey.from_public_bytes(_pub).verify(_sig, _digest)
+                        logger.info("待应用更新包二次验签通过")
+            except InvalidSignature:
+                logger.warning("待应用更新包验签失败，已放弃: %s", staged_exe)
+                return False
+            except Exception:
+                pass  # 非发行版/无公钥时跳过二次验签
+            # 写自替换 bat（让位法 + 拉起新版）并启动它
+            bat = os.path.join(temp_dir, "apply_update.bat")
+            logf = os.path.join(temp_dir, "apply_update.log")
+            current = os.path.abspath(sys.executable)
+            with open(bat, "w", encoding="utf-8") as f:
+                self._write_replace_bat(f, os.path.abspath(staged_exe), current, logf)
+            subprocess.Popen(["cmd", "/c", bat], shell=False)
+            # 删除 pending 标记（bat 完成替换后会自行处理；标记删除避免重复触发）
+            try:
+                os.remove(pending_path)
+            except Exception:
+                pass
+            logger.info("已触发下次启动生效的更新替换（当前旧进程即将退出，新版将启动）")
+            return True
+        except Exception as e:
+            logger.warning("应用待更新失败: %s", e)
+            return False
+
     def _write_replace_bat(self, f, src, current, logf):
         """写入「自替换批处理」内容（可单测：传一个 file-like 即可，不真正执行）。
 

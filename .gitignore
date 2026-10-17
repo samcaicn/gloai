@@ -145,6 +145,12 @@ _worker_gate_test*.js
 .weauto_clock.json
 .weauto_artifact.json
 
+# ---- 构建密钥（含 Ed25519 更新签名私钥 + 全部运行时密钥，绝不能入库）----
+weauto_license/build_keys.json
+build_keys.json
+.secret_key
+weauto/.secret_key
+
 # ---- CI artifact 下载临时目录 ----
 _dl_ci*/
 _c7.txt

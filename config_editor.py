@@ -6107,16 +6107,16 @@ def _webview2_runtime_available():
     return os.path.isdir(os.path.join(prog, r'Microsoft\EdgeWebView\Application'))
 
 def _maybe_auto_update():
-    """冻结态（WeAuto.exe）启动后的自动更新：后台检查→询问→下载验签→自替换重启。
+    """冻结态（WeAuto.exe）启动后的自动更新：后台检查→下载验签→暂存，下次启动生效。
 
     设计约束：
     - 仅 frozen 生效。源码态由 Run.bat 单独跑 updater.py，此处不重复下载。
     - 全程后台线程 + 延迟启动，不阻塞界面、不影响 WebUI 可用性。
     - 更新包经 Ed25519 验签（发行版强制），验签失败一律不安装。
-    - 默认免确认直接自更新（双击 exe 即自动更新，无需任何命令行参数/点击）；
-      WEAUTO_NO_AUTO_UPDATE=1 可完全关闭（本地冒烟/离线环境用）。
-    - 替换前 apply_artifact_update 已拉起 apply_update.bat（等 2s→覆盖→校验→重启），
-      本进程随后 os._exit(0) 释放文件锁，bat 才能覆盖正在运行的 EXE。
+    - 默认全自动（双击 exe 即自动更新，无需任何命令行参数/点击）：发现新版本后
+      自动下载并验签，暂存到本地，但【不打断当前会话】，实际替换延后到下次启动
+      （启动边界由 apply_pending_update 完成「让位法」替换 + 拉起新版）。
+      这样避免用户正在用 bot 时被强制重启。
     - WEAUTO_NO_AUTO_UPDATE=1 完全跳过（本地冒烟/离线环境用）。
     """
     if not getattr(sys, "frozen", False):
@@ -6130,15 +6130,6 @@ def _maybe_auto_update():
         return
     import updater as _updater_mod
 
-    def _ask_restart(version):
-        """默认免确认直接自更新（产品要求：双击 WeAuto.exe 即自动更新，无需任何参数/点击）。
-
-        原 tkinter 确认弹窗已移除——发现新版本后自动下载→Ed25519 验签→自替换重启，
-        全程无需用户交互。仅 WEAUTO_NO_AUTO_UPDATE=1 能在更上层完全关闭自动更新。
-        """
-        app.logger.info("自动更新默认免确认，将直接下载并重启应用（WEAUTO_NO_AUTO_UPDATE=1 可关闭）")
-        return True
-
     def _worker():
         try:
             time.sleep(15)  # 让主界面先完整起来再联网，避免拖慢启动
@@ -6147,16 +6138,12 @@ def _maybe_auto_update():
             if not info.get("has_update"):
                 app.logger.info("自动更新检查：已是最新（%s）", version)
                 return
-            app.logger.info("自动更新检查：发现新版本 %s", version)
-            if not _ask_restart(version):
-                app.logger.info("用户选择暂不更新（%s）", version)
-                return
-            res = _updater_mod.Updater().apply_artifact_update(info)
+            app.logger.info("自动更新检查：发现新版本 %s，开始下载并暂存（下次启动生效）", version)
+            res = _updater_mod.Updater().prepare_artifact_update(info)
             if res.get("success"):
-                app.logger.info("更新包已就绪，即将重启应用完成替换")
-                time.sleep(1.0)
-                os._exit(0)
-            app.logger.warning("自动更新失败: %s", str(res.get("output", ""))[-300:])
+                app.logger.info("新版本已下载并验签完成，将在下次启动时自动应用（不打断当前使用）")
+            else:
+                app.logger.warning("自动更新准备失败: %s", str(res.get("output", ""))[-300:])
         except Exception as _e:
             app.logger.warning("自动更新检查异常: %s", _e)
 
@@ -6391,6 +6378,20 @@ if __name__ == '__main__':
 
     # 冻结态（EXE）后台自动更新检查；源码态由 Run.bat 的 updater.py 负责
     _maybe_auto_update()
+
+    # 启动期应用「上次暂存、待下次启动生效」的更新：若磁盘上已暂存验签通过的更新包，
+    # 在此启动边界完成「让位法」替换并拉起新版本，随后旧进程退出（即「下次重启即可」，
+    # 不打断正在进行的会话）。attach 模式（已有实例在跑）跳过，避免重复拉起。
+    if (getattr(sys, "frozen", False)
+            and os.environ.get("WEAUTO_NO_AUTO_UPDATE") != "1"
+            and not ATTACH_MODE):
+        try:
+            import updater as _upd_mod
+            if _upd_mod.Updater().apply_pending_update():
+                time.sleep(1.0)
+                os._exit(0)
+        except Exception as _e:
+            app.logger.warning("启动期应用更新失败: %s", _e)
 
     if not WEB_MODE:
         # 默认：内嵌 WebView2 桌面窗口
