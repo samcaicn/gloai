@@ -470,6 +470,25 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getInt(K_SEND_DELAY, 2000)
         set(v) = sp.edit().putInt(K_SEND_DELAY, v.coerceIn(0, 30_000)).apply()
 
+    /**
+     * 自动发送前是否随机等待一段时间（而非固定 [sendDelayMs]），让回复发得更像人、
+     * 同时给用户一段窗口直接进微信改草稿。默认开。仅作用于自动回复（force 主动发送
+     * 仍走固定 [sendDelayMs]，用户刚亲手点了"发送"不该再被随机拖延）。
+     */
+    var randomSendDelay: Boolean
+        get() = sp.getBoolean(K_RANDOM_SEND_DELAY, true)
+        set(v) = sp.edit().putBoolean(K_RANDOM_SEND_DELAY, v).apply()
+
+    /** 随机等待下限（毫秒），默认 2s。 */
+    var randomSendDelayMinMs: Int
+        get() = sp.getInt(K_RANDOM_SEND_DELAY_MIN, 2000)
+        set(v) = sp.edit().putInt(K_RANDOM_SEND_DELAY_MIN, v.coerceAtLeast(0)).apply()
+
+    /** 随机等待上限（毫秒），默认 300s。 */
+    var randomSendDelayMaxMs: Int
+        get() = sp.getInt(K_RANDOM_SEND_DELAY_MAX, 300_000)
+        set(v) = sp.edit().putInt(K_RANDOM_SEND_DELAY_MAX, v.coerceAtLeast(0)).apply()
+
     // ------------------------------------------------------------- helpers
 
     fun effectiveReplyKey(): String = when {
@@ -707,6 +726,9 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_OCR_IMAGES = "ocr_images"
         private const val K_AUTO_FILL = "auto_fill_best"
         private const val K_SEND_DELAY = "send_delay_ms"
+        private const val K_RANDOM_SEND_DELAY = "random_send_delay"
+        private const val K_RANDOM_SEND_DELAY_MIN = "random_send_delay_min_ms"
+        private const val K_RANDOM_SEND_DELAY_MAX = "random_send_delay_max_ms"
         private const val K_SYNC_RESTORED = "sync_restored"
         private const val K_LAST_SYNC = "last_sync_at"
         private const val K_SYNC_ENABLED = "sync_enabled"

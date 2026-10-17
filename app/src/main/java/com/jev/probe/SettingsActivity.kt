@@ -255,8 +255,20 @@ class SettingsActivity : AppCompatActivity() {
         // 「自动分析」开关已去掉（2026-10-15 用户要求）：只要软件在跑就自动分析，
         // 设置页不再给这一项。上面保留的只有「自动收发」——发送权仍在人手里。
 
-        // 发送延迟：一个数字，但它直接决定「自动发送能不能成功」——太快会点空。
-        c.addView(label(t("发出前等几秒", "Wait before sending (seconds)")))
+        // 随机等待：自动回复前随机等 2–300 秒，更像人、也留出窗口直接在微信里改草稿。
+        c.addView(toggleRow(
+            t("随机等待（更自然）", "Random wait (more human-like)"),
+            prefs.randomSendDelay
+        ) { prefs.randomSendDelay = it })
+        c.addView(text(
+            t("开启后，每条自动回复前会随机等 2–300 秒再发，不会每次都卡同一节奏。" +
+                "这段等待里悬浮窗有倒计时，你可以直接在微信里改草稿、或点「本次不发送」拦下。",
+              "When on, each auto-reply waits a random 2–300s before sending so it never looks mechanical. " +
+                "During the wait a countdown floats on screen — you can edit the draft right in WeChat, or tap \"Skip this time\"."),
+            11f, sub).apply { setPadding(dp(2), dp(2), 0, dp(2)) })
+
+        // 发送延迟：固定等待（随机关闭、或主动发送时用的兜底值）。太快会点空。
+        c.addView(label(t("发出前等几秒（兜底）", "Wait before sending, fallback (seconds)")))
         val delayEdit = edit(
             if (prefs.sendDelayMs % 1000 == 0) (prefs.sendDelayMs / 1000).toString()
             else String.format("%.1f", prefs.sendDelayMs / 1000f),
@@ -266,9 +278,10 @@ class SettingsActivity : AppCompatActivity() {
         }
         c.addView(delayEdit)
         c.addView(text(
-            t("太快的话微信还没准备好发送，点下去消息就丢了。这段时间里悬浮窗会出现一条倒计时，" +
-                "可以点「本次不发送」拦下来。",
-              "If it's too short, WeChat isn't ready to send and the tap misses. During this window a countdown appears on the floating card where you can tap \"Skip this time\" to stop it."),
+            t("「随机等待」关掉、或你主动发消息时，用这个固定秒数。太快的话微信还没准备好发送，" +
+                "点下去消息就丢了；这段时间里悬浮窗会出现倒计时，可以点「本次不发送」拦下来。",
+              "Used when random wait is off, or for messages you send on purpose. If it's too short, " +
+                "WeChat isn't ready and the tap misses; a countdown appears where you can skip this one."),
             11f, sub).apply { setPadding(0, dp(4), 0, 0) })
         // 离开设置页时兜底保存。只挂失焦是不够的：软键盘收起、系统返回手势都可能
         // 不经过 onBlur，用户改完直接退出就会丢掉这个值（而页面上已经不再有「保存」按钮）。

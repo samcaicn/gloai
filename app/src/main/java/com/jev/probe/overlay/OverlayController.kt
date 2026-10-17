@@ -683,8 +683,8 @@ class OverlayController(private val ctx: Context) {
             }
             addView(line)
             addView(TextView(ctx).apply {
-                text = ctx.t("自动发送已开启，${totalSec} 秒后发出。点下面可以拦下这一条。",
-                    "Auto-send is on; it goes out in ${totalSec}s. Tap below to stop this one.")
+                text = ctx.t("自动发送已开启，${totalSec} 秒后发出。可直接在微信里改草稿，或点下面拦下。",
+                    "Auto-send is on; goes out in ${totalSec}s. Edit the draft in WeChat, or tap below to stop.")
                 setTextColor(Color.parseColor("#6B7280")); textSize = 11.5f
                 setPadding(0, dp(3), 0, 0)
             })

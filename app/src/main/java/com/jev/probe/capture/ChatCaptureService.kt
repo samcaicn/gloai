@@ -3027,9 +3027,17 @@ open class ChatCaptureService : AccessibilityService() {
      * 倒计时卡：发出去的消息收不回来，给一个能点的撤销口是最低成本的对价。
      */
     private fun sendFor(token: ConversationSession.Token, onSendComplete: ((Boolean) -> Unit)? = null, force: Boolean = false) {
-        val delay = prefs.sendDelayMs.toLong()
+        // 自动回复走随机等待（2s–300s 不等），更自然也留出人工改草稿的窗口；
+        // 主动发送（force，用户刚亲手点"发送"）不打随机，仍用固定 sendDelayMs。
+        val delay = if (prefs.randomSendDelay && !force) {
+            val lo = prefs.randomSendDelayMinMs.coerceAtLeast(0)
+            val hi = prefs.randomSendDelayMaxMs.coerceAtLeast(lo)
+            (if (hi > lo) lo + kotlin.random.Random.nextInt(hi - lo + 1) else lo).toLong()
+        } else {
+            prefs.sendDelayMs.toLong()
+        }
         skipThisSend = false
-        Log.i(TAG, "sendFor: delay=${delay}ms autoSend=${prefs.autoSend} force=$force notifToken=${token.target.windowId == ConversationSession.NOTIF_WINDOW}")
+        Log.i(TAG, "sendFor: delay=${delay}ms autoSend=${prefs.autoSend} force=$force random=${prefs.randomSendDelay && !force} notifToken=${token.target.windowId == ConversationSession.NOTIF_WINDOW}")
         if (delay > 0) {
             overlay?.showSendCountdown(delay.toInt()) {
                 skipThisSend = true
