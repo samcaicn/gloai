@@ -683,8 +683,8 @@ class OverlayController(private val ctx: Context) {
             }
             addView(line)
             addView(TextView(ctx).apply {
-                text = ctx.t("自动发送已开启，${totalSec} 秒后发出。可直接在对话框里改草稿，或点下面拦下。",
-                    "Auto-send is on; goes out in ${totalSec}s. Edit the draft in WeChat, or tap below to stop.")
+                text = ctx.t("自动发送已开启，${totalSec} 秒后发出。可直接在对话框改草稿；悬浮窗可拖动，挪到不挡处，或点下面拦下。",
+                    "Auto-send is on; goes out in ${totalSec}s. Edit the draft in WeChat. The floating bubble is draggable — move it out of the way, or tap below to skip.")
                 setTextColor(Color.parseColor("#6B7280")); textSize = 11.5f
                 setPadding(0, dp(3), 0, 0)
             })

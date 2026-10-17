@@ -262,8 +262,8 @@ class SettingsActivity : AppCompatActivity() {
             prefs.randomSendDelay
         ) { prefs.randomSendDelay = it })
         c.addView(text(
-            t("每条自动回复前随机等 2–300 秒再发出。等待时可改草稿，或点「本次不发送」拦下。",
-              "Each auto-reply waits a random 2–300s. During the wait you can edit the draft or tap \"Skip this time\"."),
+            t("每条自动回复前随机等 2–300 秒再发出。等待时可改草稿，或点「本次不发送」拦下。悬浮窗可拖动，半屏或前台时把它移到屏幕边缘，免得误点红按钮。",
+              "Each auto-reply waits a random 2–300s. Edit the draft, or tap \"Skip this time\". The bubble is draggable — in split-screen or foreground, move it to a screen edge so you don't tap the red button by mistake."),
             11f, sub).apply { setPadding(dp(2), dp(2), 0, dp(2)) })
 
         // 发送延迟：固定等待（随机关闭、或主动发送时用的兜底值）。太快会点空。
