@@ -228,6 +228,9 @@ jobs:
   #   - 只删 jev-chat-jarvis（同步镜像分支），绝不碰 main 等常驻分支；
   #   - Release 本工作流从不创建，删除步骤仅为兜底历史残留；
   #   - artifact 与分支/Release 解耦，删分支不影响 App 经 worker 拉取构件。
+  # ⚠️ 工蜂 git.code.tencent.com:AImarketing/weauto 的 android 源分支是
+  #    唯一可信源，本 job 仅在 GitHub 仓库上下文运行、不持有工蜂凭证，
+  #    **绝不删除/触碰工蜂任何内容**，清理范围严格限定在 GitHub 侧。
   cleanup:
     name: Cleanup (keep Actions artifacts only)
     needs: build

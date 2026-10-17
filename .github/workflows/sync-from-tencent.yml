@@ -26,6 +26,9 @@ name: Sync Tencent → GitHub CI
 #   下游 build.yml 构建结束后会**删除 jev-chat-jarvis 分支**（只留 Actions artifact 作只读升级通道）。
 #   若这里比对「分支 HEAD」，分支被删后 GitHub HEAD 变空 → 每轮 cron 都误判未同步 → 狂触发重建死循环。
 #   改用持久 tag tencent-synced 记录「上次已同步的 commit」，分支删了 tag 还在，比对 tag 即可避免风暴。
+#
+# ⚠️ 工蜂 android 源分支受保护：本工作流只 clone（读）工蜂、push 到 GitHub，
+#    任何环节不删除/不覆盖工蜂；清理逻辑只在 build.yml 的 cleanup job 里作用于 GitHub 侧。
 
 on:
   schedule:
