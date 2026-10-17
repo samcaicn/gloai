@@ -330,13 +330,20 @@ class Updater:
 
     def _check_artifact_updates(self) -> dict:
         """向 Worker 更新代理查询最新 CI 构件（EXE 零密钥）。"""
-        url = f"{self._update_worker_url().rstrip('/')}/api/update"
+        # 线上 Worker（weauto-app）已把 /api/update 划给 Android APK（jev 侧），
+        # Windows EXE 更新走专属端点 /api/update-windows（Worker 侧注释明确约定）。
+        # 旧版 Worker 无此端点时 404，退回 /api/update + 构件名校验兜底。
+        url = f"{self._update_worker_url().rstrip('/')}/api/update-windows"
         headers = {"User-Agent": f"{self.REPO_NAME}-UpdateChecker"}
         # 网络抖动容错：CDN 握手间歇丢包时单发必挂，带退避重试 3 轮
         last_err = None
         for attempt in range(3):
             try:
                 resp = _http_get(url, headers=headers, timeout=15)
+                if resp.status_code == 404 and url.endswith("/api/update-windows"):
+                    # 旧版 Worker 没有 Windows 专属端点，退回通用端点再试
+                    url = f"{self._update_worker_url().rstrip('/')}/api/update"
+                    continue
                 if resp.status_code in (401, 403, 404, 503):
                     try:
                         err = resp.json().get("error", "")
@@ -347,6 +354,12 @@ class Updater:
                 data = resp.json()
                 if not data.get("ok"):
                     return {"has_update": False, "error": f"更新代理返回: {data.get('error')}"}
+                # 防串台：代理可能被其他项目的部署改掉默认 artifact（真实发生过：
+                # 返回过 jev APK，下载 83MB 后 zip 里没有 WeAuto.exe）。显式校验。
+                ret_artifact = (data.get("artifact") or "").lower()
+                if ret_artifact and "weauto" not in ret_artifact:
+                    return {"has_update": False,
+                            "error": f"更新代理返回了错误项目的构件（{ret_artifact}），已拒绝下载"}
                 latest_updated = data.get("version")  # updated_at 时间戳
                 local_updated = self._get_local_artifact_updated_at()
                 has_update = (local_updated is None) or bool(latest_updated and latest_updated > local_updated)
