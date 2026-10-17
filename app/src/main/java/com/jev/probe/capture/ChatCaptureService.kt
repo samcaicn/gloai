@@ -504,7 +504,7 @@ open class ChatCaptureService : AccessibilityService() {
      *  给对方留出 2 小时的空闲窗口（亮屏/解锁/锚点新鲜时由队列 tick 投递）。 */
     private val DEFER_TTL_MS = 2 * 60 * 60_000L
     /** 意图闸门的最低把握度：低于它按普通意图放行，不给「不回/稍后」误判扣下正常回复。 */
-    private const val INTENT_CONF_MIN = 0.6
+    private val INTENT_CONF_MIN = 0.6
 
     // 本轮 judge 与 reply 是两个并行 LLM 调用，谁先回不确定。发送决策必须等两者都落定
     // （意图闸门要看 judge 的 true_intent），所以 reply 回调只暂存结果，completed() 里合流。
@@ -1608,6 +1608,7 @@ open class ChatCaptureService : AccessibilityService() {
                     bail("intent=defer_later -> queued for later")
                     return
                 }
+                else -> {}
             }
         }
         // 同一会话冷却：刚回过就别再回（真人连发 / 通知重复投递会触发连回两次，一眼假）。

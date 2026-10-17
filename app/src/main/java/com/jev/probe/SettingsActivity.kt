@@ -506,8 +506,8 @@ class SettingsActivity : AppCompatActivity() {
         val logView = TextView(this).apply {
             textSize = 11f
             setTextColor(sub)
-            setLineSpacing(dp(2), 1f)
-            fontFamily = "monospace"
+            setLineSpacing(dp(2).toFloat(), 1f)
+            typeface = android.graphics.Typeface.MONOSPACE
         }
         fun refresh() {
             val lines = try {

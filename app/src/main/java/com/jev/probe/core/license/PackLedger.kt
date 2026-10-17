@@ -212,7 +212,7 @@ object PackLedger {
      * 注意：云端 KV 的免费硬墙口径需与服务端同步调整，本地值只是第二道闸。
      */
     fun dailyFreeLimit(context: Context): Int {
-        if (com.jev.probe.core.Prefs.isTextCustom()) return FREE_QUOTA_CUSTOM_MODEL
+        if (com.jev.probe.core.Prefs(context).isTextCustom()) return FREE_QUOTA_CUSTOM_MODEL
         val entries = try {
             ScriptPackStore.effectivePack(context)?.fewShot?.size ?: 0
         } catch (_: Exception) {
