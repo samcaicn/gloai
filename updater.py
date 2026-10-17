@@ -772,6 +772,15 @@ class Updater:
                 self._write_replace_bat(f, os.path.abspath(staged_exe),
                                         staged_sig or "", current, logf)
             subprocess.Popen(["cmd", "/c", bat], shell=False)
+            # 补写构件状态哈希（旧版 updater 暂存时没写；此刻 staged_exe 已验签读过，
+            # 哈希就算它将来的落盘形态）：替换成功 → 磁盘与状态一致；替换失败回滚 →
+            # 磁盘与状态不符 → 下次启动 _check_artifact_updates 判定强制更新，不死锁。
+            try:
+                self._save_local_artifact_updated_at(pending.get("version"),
+                                                     pending.get("artifact_id"),
+                                                     self._sha256_file(staged_exe))
+            except Exception:
+                pass
             # 删除 pending 标记（bat 完成替换后会自行处理；标记删除避免重复触发）
             try:
                 os.remove(pending_path)

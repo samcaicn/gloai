@@ -243,6 +243,41 @@ def main():
     finally:
         _upd._base_dir = _orig_base
 
+    section("7. apply_pending_update 补写状态哈希（旧版升级上来的那一跳也纳入自愈）")
+    d7 = os.path.join(tmp, "applypending")
+    os.makedirs(d7, exist_ok=True)
+    staged7 = os.path.join(d7, "staged_update")
+    os.makedirs(staged7, exist_ok=True)
+    sexe = os.path.join(staged7, "WeAuto.exe")
+    ssig = os.path.join(staged7, "WeAuto.exe.sig")
+    open(sexe, "wb").write(b"STAGED-EXE-BYTES")
+    open(ssig, "wb").write(b"STAGED-SIG-BYTES")
+    pend7 = {"version": "2026-10-17T16:00:33Z", "artifact_id": 99,
+             "staged_exe": sexe, "staged_sig": ssig,
+             "updated_at": "2026-10-17T16:00:33Z"}
+    with open(os.path.join(d7, "pending_update.json"), "w", encoding="utf-8") as f:
+        json.dump(pend7, f)
+    up7 = object.__new__(_upd.Updater)
+    up7.temp_dir = d7
+    _orig_base7 = _upd._base_dir
+    _upd._base_dir = lambda: d7
+    _orig_popen = subprocess.Popen
+    _frozen7 = getattr(sys, "frozen", False)
+    subprocess.Popen = lambda *a, **k: None  # 不真跑 bat
+    try:
+        sys.frozen = True
+        ok("apply_pending_update 返回 True", up7.apply_pending_update() is True)
+        ok("pending 已消费", not os.path.exists(os.path.join(d7, "pending_update.json")))
+        st7 = json.load(open(up7._artifact_state_path(), encoding="utf-8"))
+        ok("状态补写 exe_sha256（=staged 哈希）",
+           st7.get("exe_sha256") == _upd.Updater._sha256_file(sexe))
+        ok("版本/artifact_id 不丢", st7.get("updated_at") == pend7["version"]
+           and st7.get("artifact_id") == pend7["artifact_id"])
+    finally:
+        sys.frozen = _frozen7
+        subprocess.Popen = _orig_popen
+        _upd._base_dir = _orig_base7
+
     print("\n========================================================")
     print("自替换 bat 实测：通过 %d / 失败 %d" % (PASS, FAIL))
     print("========================================================")
