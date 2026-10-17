@@ -3274,15 +3274,13 @@ def process_user_messages(user_id):
     online_info = None
 
     try:
-        # 思考占位：AI 生成回复前先给轻量反馈，消除“对方长时间无反应”的空窗焦虑（不写入上下文）
-        if not is_auto_message:
-            _send_thinking_placeholder(user_id)
-
         # --- Jev 判断式闸门（内置能力，出厂自动运行、零配置）---
         # 生成回复前先体检这段对话：对方真实意图 / 危险度 / 需要什么 / 最佳动作。
         # 结论注入提示词约束语气；危险度过高时可收声（jev_guard.JEV_HOLD_ON_DANGER）交给真人。
         # 红线：这里任何异常、超时、失败都必须降级为「照常回复」，绝不让 bot 变哑巴。
         # enabled() 恒为 True（唯一例外是端点连续失败触发熔断，此时直接跳过判断）。
+        # 注意：判定必须放在「思考占位」之前——若判定收声，绝不能再发「在想…」占位，
+        # 否则用户会看到机器人显示正在输入却永远不回复，像卡死。
         jev_verdict = None
         jev_hold = False
         try:
@@ -3302,6 +3300,11 @@ def process_user_messages(user_id):
             logger.warning(f"Jev 闸门异常（已降级为照常回复）: {_je}")
             jev_verdict = None
             jev_hold = False
+
+        # 思考占位：AI 生成回复前先给轻量反馈，消除“对方长时间无反应”的空窗焦虑（不写入上下文）。
+        # 仅在不收声时发送——收声交真人的场景不再发占位，避免「在想…」后却永不回复的观感。
+        if not is_auto_message and not jev_hold:
+            _send_thinking_placeholder(user_id)
 
         # --- 新增：联网搜索逻辑 ---
         if ENABLE_ONLINE_API and not jev_hold:

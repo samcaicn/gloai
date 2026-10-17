@@ -463,6 +463,65 @@ def main():
             bot.emoji_timer = None
         bot.can_send_messages = True
 
+    # ---------- 11. Jev 收声时不应发「思考占位」 ----------
+    # 修前：_send_thinking_placeholder 在 Jev 判定之前就发出「在想…」，若 Jev
+    # 判定危险等级过高触发收声（jev_hold），机器人随后不再回复，用户看到「在想…」
+    # 却永远等不到回复，像卡死。修后：Jev 判定提到占位之前，收声时不再发占位。
+    _real_jev = getattr(bot, "jev_guard", None)
+    _real_gsm = getattr(bot, "get_deepseek_response", None)
+    _real_wx = bot.wx
+    _real_flags = (bot.ENABLE_THINKING_PLACEHOLDER, bot.THINKING_PLACEHOLDERS,
+                   bot.ENABLE_ONLINE_API)
+    _sent = []
+    try:
+        bot.ENABLE_THINKING_PLACEHOLDER = True
+        bot.THINKING_PLACEHOLDERS = ["在想…"]
+        bot.ENABLE_ONLINE_API = False
+        bot.wx = types.SimpleNamespace(SendMsg=lambda **kw: (_sent.append(kw.get("msg")), True)[1])
+        bot.get_deepseek_response = lambda *a, **k: "这是正常回复"
+
+        class _FakeJev:
+            def __init__(self, hold):
+                self._hold = hold
+            def enabled(self):
+                return True
+            def judge(self, uid, msg, hist):
+                return {"danger_level": 9 if self._hold else 1}
+            def should_hold(self, verdict):
+                return self._hold
+
+        # 11a. 收声场景：占位 + 回复都不发
+        bot.user_queues = {"危险用户": {
+            "messages": ["[2026-01-01 Monday 00:00:00] 你地址发我"],
+            "sender_name": "危险用户", "username": "危险用户",
+            "last_message_time": time.time()}}
+        bot.chat_contexts = {}
+        bot.jev_guard = _FakeJev(hold=True)
+        _sent.clear()
+        bot.process_user_messages("危险用户")
+        check("占位 11a：Jev 收声时不发「思考占位」、也不发任何回复（避免假死观感）",
+              len(_sent) == 0, "sent=%r" % (_sent,))
+
+        # 11b. 正常场景：占位照常发（且最终回复也发出）
+        bot.user_queues = {"普通用户": {
+            "messages": ["[2026-01-01 Monday 00:00:00] 你好"],
+            "sender_name": "普通用户", "username": "普通用户",
+            "last_message_time": time.time()}}
+        bot.jev_guard = _FakeJev(hold=False)
+        _sent.clear()
+        bot.process_user_messages("普通用户")
+        check("占位 11b：正常场景占位照常发出、且最终回复也发出",
+              any("在想" in s for s in _sent) and any(s == "这是正常回复" for s in _sent),
+              "sent=%r" % (_sent,))
+    finally:
+        bot.ENABLE_THINKING_PLACEHOLDER, bot.THINKING_PLACEHOLDERS, bot.ENABLE_ONLINE_API = _real_flags
+        bot.wx = _real_wx
+        bot.get_deepseek_response = _real_gsm
+        if _real_jev is not None:
+            bot.jev_guard = _real_jev
+        bot.user_queues = {}
+        bot.chat_contexts = {}
+
     # ---------- 汇总 ----------
     failed = [n for n, ok in results if not ok]
     print("\n===== 汇总: %d/%d 通过 =====" % (len(results) - len(failed), len(results)))
