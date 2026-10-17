@@ -870,7 +870,7 @@ open class ChatCaptureService : AccessibilityService() {
                 // → 用户在微信内点「重新分析」必然没反应且无任何反馈。改为 log + toast 说明原因。
                 Log.w(TAG, "onManualAnalyze: currentSnapshot=null 无可分析快照（微信前台树被剪/不在聊天页）")
                 overlay?.toast(t(
-                    "没读到当前聊天的内容（微信前台页面文字不可读时就这样）。回到聊天页等一条新消息，或从通知栏点那条消息进入后再分析",
+                    "没读到当前聊天的内容（聊天前台页面文字不可读时就这样）。回到聊天页等一条新消息，或从通知栏点那条消息进入后再分析",
                     "No chat content captured (WeChat hides its own page text). Open the chat, wait for a new message, or enter from the notification and retry"))
             }
         }
@@ -1638,7 +1638,7 @@ open class ChatCaptureService : AccessibilityService() {
         // WeChat's anti-screenshot risk control makes an in-WeChat screenshot
         // unreliable and risky, so manual OCR is disabled there; tree capture
         // (the bubble's auto analysis) still works.
-        if (pkg == PKG_WECHAT) { overlay?.toast(t("微信内暂不支持截屏识别，已用树读取", "Screen capture isn\u0027t supported inside WeChat — used tree reading instead")); return }
+        if (pkg == PKG_WECHAT) { overlay?.toast(t("聊天内暂不支持截屏识别，已用树读取", "Screen capture isn\u0027t supported inside the chat app — used tree reading instead")); return }
         // Top bar text, if this app has one we can read; else the first OCR line.
         val title = root?.let {
             findTitleInActionBar(it, Int.MAX_VALUE, resources.displayMetrics.widthPixels, resources, 0.15, 0.85)
@@ -2662,7 +2662,7 @@ open class ChatCaptureService : AccessibilityService() {
                 Log.w(TAG, "resendPending: force send but no fresh anchor conv='$conv' -> give up (can't locate chat)")
                 SendQueueStore.remove(conv)
                 appendSendLedger(conv, false, "proactive no anchor -> give up")
-                overlay?.toast(t("定位不到「$conv」：它 30 分钟内要来过一条通知才能重开。先在微信打开这个会话再发",
+                overlay?.toast(t("定位不到「$conv」：它 30 分钟内要来过一条通知才能重开。先在聊天里打开这个会话再发",
                                  "Can't locate \"$conv\": it must have received a notification in the last 30 min. Open the chat in WeChat first"))
                 onResolved(false); return
             }
@@ -3336,7 +3336,7 @@ open class ChatCaptureService : AccessibilityService() {
 
         /** Said on the panel when the chat text came from the notification preview
          *  instead of the (WeChat-8.0.78-blocked) live screen read. */
-        private const val NOTIFY_NOTE = "来自通知预览（微信前台屏蔽了读屏，已用通知文本兜底）"
+        private const val NOTIFY_NOTE = "来自通知预览（聊天前台屏蔽了读屏，已用通知文本兜底）"
 
         private val PURE_TIME = Regex("""\d{1,2}[:：]\d{2}""")
         private val TAIL_TIME = Regex("""\d{1,2}[:：]\d{2}$""")

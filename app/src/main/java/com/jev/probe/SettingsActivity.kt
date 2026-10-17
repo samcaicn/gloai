@@ -218,7 +218,7 @@ class SettingsActivity : AppCompatActivity() {
 
         // 通知读取权限：没开就自动收发不了，所以放在这一组里而不是另起一节。
         val notifyOn = isNotifListenerEnabled()
-        c.addView(permRow(t("通知读取权限", "Notification access"), t("用来知道微信来了新消息", "So the app knows when a new WeChat message arrives"), notifyOn) {
+        c.addView(permRow(t("通知读取权限", "Notification access"), t("用来知道聊天来了新消息", "So the app knows when a new chat message arrives"), notifyOn) {
             startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
         })
 
@@ -262,7 +262,7 @@ class SettingsActivity : AppCompatActivity() {
         ) { prefs.randomSendDelay = it })
         c.addView(text(
             t("开启后，每条自动回复前会随机等 2–300 秒再发，不会每次都卡同一节奏。" +
-                "这段等待里悬浮窗有倒计时，你可以直接在微信里改草稿、或点「本次不发送」拦下。",
+                "这段等待里悬浮窗有倒计时，你可以直接在对话框里改草稿、或点「本次不发送」拦下。",
               "When on, each auto-reply waits a random 2–300s before sending so it never looks mechanical. " +
                 "During the wait a countdown floats on screen — you can edit the draft right in WeChat, or tap \"Skip this time\"."),
             11f, sub).apply { setPadding(dp(2), dp(2), 0, dp(2)) })
@@ -278,7 +278,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         c.addView(delayEdit)
         c.addView(text(
-            t("「随机等待」关掉、或你主动发消息时，用这个固定秒数。太快的话微信还没准备好发送，" +
+            t("「随机等待」关掉、或你主动发消息时，用这个固定秒数。太快的话聊天还没准备好发送，" +
                 "点下去消息就丢了；这段时间里悬浮窗会出现倒计时，可以点「本次不发送」拦下来。",
               "Used when random wait is off, or for messages you send on purpose. If it's too short, " +
                 "WeChat isn't ready and the tap misses; a countdown appears where you can skip this one."),
@@ -427,7 +427,7 @@ class SettingsActivity : AppCompatActivity() {
         val c = card()
         c.addView(text(t(
             "填会话名（群名/对方昵称）+ 内容，点发送。只能发给 30 分钟内来过通知的会话；" +
-            "发送时需屏幕亮着、探针输入法已激活、微信在前台（或能自动重开）。",
+            "发送时需屏幕亮着、探针输入法已激活、聊天在前台（或能自动重开）。",
             "Enter a chat name (group/contact) and text, then tap send. Only chats that got a " +
             "notification in the last 30 min can be located; the screen must be on with the probe keyboard active."
         ), 12f, sub).apply { setPadding(0, dp(2), 0, dp(6)) })

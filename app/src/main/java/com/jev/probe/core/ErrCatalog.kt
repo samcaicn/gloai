@@ -164,10 +164,10 @@ object ErrCatalog {
         if (low.contains("没认出") || low.contains("没有文字") || low.contains("没读到")) {
             return if (inWeChat) View(
                 Kind.NO_TEXT, w("这一屏没读到文字", "No text read on this screen"),
-                w("微信里的消息文字读不到了。可以先点「重新分析」再试一次（微信版本更新后" +
-                    "节点结构常变）；仍然读不到的话，等下次微信更新或长按气泡做一次自检。",
-                    "Message text in WeChat can't be read right now. Tap \"Analyze again\" to retry (WeChat updates often change the node structure); " +
-                        "if it still fails, wait for the next WeChat update or run a self-check via long-press on the bubble."),
+                w("聊天里的消息文字读不到了。可以先点「重新分析」再试一次（聊天软件版本更新后" +
+                    "节点结构常变）；仍然读不到的话，等下次更新或长按气泡做一次自检。",
+                    "Message text can't be read right now. Tap \"Analyze again\" to retry (chat app updates often change the node structure); " +
+                        "if it still fails, wait for the next update or run a self-check via long-press on the bubble."),
                 Action.RETRY, w("重新分析", "Analyze again")
             ) else View(
                 Kind.NO_TEXT, w("这一屏没读到文字", "No text read on this screen"),

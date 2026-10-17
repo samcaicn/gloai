@@ -46,7 +46,7 @@ object SelfCheck {
             else t(ctx, "未允许 —— 分析结果没有地方显示", ": not allowed — results have nowhere to show"))
         l.add("${mark(notify)} " + t(ctx, "通知监听", "Notification access") +
             if (notify) t(ctx, "已启用", ": enabled")
-            else t(ctx, "未启用 —— 微信来新消息不会自动触发", ": not enabled — new WeChat messages won't trigger analysis"))
+            else t(ctx, "未启用 —— 聊天来新消息不会自动触发", ": not enabled — new chat messages won't trigger analysis"))
         l.add("${mark(battery)} " + t(ctx, "省电无限制", "Battery unrestricted") +
             if (battery) t(ctx, "已放开", ": yes")
             else t(ctx, "未放开 —— 国产 ROM 会冻结后台，气泡会消失", ": no — Chinese ROMs freeze background apps and the bubble disappears"))

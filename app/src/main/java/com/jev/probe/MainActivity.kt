@@ -88,8 +88,8 @@ class MainActivity : AppCompatActivity() {
 
         container.addView(text(t("Jev 聊天助手", "Jev Chat Assistant"), 24f, ink, bold = true))
         container.addView(text(t(
-            "在聊天 App 旁读对方消息（已支持 QQ、X、飞书、微信），给出判断和候选回复。微信开启后可在手机端无人值守收发。",
-            "Reads messages next to your chat apps (QQ, X, Feishu, WeChat) and suggests judgments plus candidate replies. With WeChat it can run fully hands-free."), 13f, sub).apply { setPadding(0, dp(6), 0, dp(16)) })
+            "在聊天 App 旁读对方消息，给出判断和候选回复。开启后可在手机端无人值守收发。",
+            "Reads messages next to your chat apps and suggests judgments plus candidate replies. Once enabled it can run fully hands-free."), 13f, sub).apply { setPadding(0, dp(6), 0, dp(16)) })
 
         val a11y = isA11yEnabled()
         val overlay = Settings.canDrawOverlays(this)
@@ -154,7 +154,7 @@ class MainActivity : AppCompatActivity() {
         container.addView(permCard(stepTitle(OVERLAY), t("在聊天窗口上方显示分析卡片", "Show the analysis card above chat windows"), overlay, next == OVERLAY) {
             startActivity(Settings.ACTION_MANAGE_OVERLAY_PERMISSION.let { Intent(it, Uri.parse("package:$packageName")) })
         })
-        container.addView(permCard(stepTitle(NOTIFY), t("监听微信新消息，触发自动收发", "Listen for new WeChat messages to trigger auto send/receive"), notify, next == NOTIFY) {
+        container.addView(permCard(stepTitle(NOTIFY), t("监听聊天新消息，触发自动收发", "Listen for new chat messages to trigger auto send/receive"), notify, next == NOTIFY) {
             startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
         })
         container.addView(permCard(stepTitle(BATTERY), t("小米 / HyperOS 必做，否则后台被冻结、读不到消息", "Required on Xiaomi / HyperOS, otherwise the background process is frozen and messages can't be read"), battery, next == BATTERY) {
@@ -165,8 +165,8 @@ class MainActivity : AppCompatActivity() {
         // 第 5 步：写入通道。系统禁止 App 代切输入法，所以这里只能给入口让用户自己切。
         // 文案必须说清「去系统输入法列表里选」，否则用户不知道要点哪里。
         container.addView(permCard(stepTitle(IME), t(
-            "微信 8.0.78 起读不到聊天文字，回复只能靠本 App 的输入法写入。请在系统输入法列表里勾选并切到「AI聊天助手·写入」",
-            "WeChat 8.0.78 blocks chat text, so replies can only be written through this app's keyboard. Enable and switch to \"AI Chat Assistant · write\" in the system keyboard list"),
+            "部分聊天软件新版本起读不到聊天文字，回复只能靠本 App 的输入法写入。请在系统输入法列表里勾选并切到「AI聊天助手·写入」",
+            "Some chat apps' newer versions block chat text, so replies can only be written through this app's keyboard. Enable and switch to \"AI Chat Assistant · write\" in the system keyboard list"),
             imeDefault, next == IME) {
             runCatching { (getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showInputMethodPicker() }
         })

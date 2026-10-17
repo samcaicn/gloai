@@ -138,10 +138,10 @@ class BootReceiver : BroadcastReceiver() {
             val pi = PendingIntent.getActivity(ctx, 1, go, flags)
             val n = NotificationCompat.Builder(ctx, CH_ID)
                 .setContentTitle("输入法被系统重置，自动回复已暂停")
-                .setContentText("在微信点输入框 → 键盘图标 → 选「AI聊天助手·写入」即可恢复")
+                .setContentText("在聊天里点输入框 → 键盘图标 → 选「AI聊天助手·写入」即可恢复")
                 .setStyle(NotificationCompat.BigTextStyle().bigText(
                     "系统（覆盖安装后）把默认输入法重置回了讯飞，回复写不进输入框。" +
-                    "请在微信里点一下输入框 → 讯飞工具栏键盘图标 → 选「AI聊天助手·写入」，" +
+                    "请在聊天里点一下输入框 → 讯飞工具栏键盘图标 → 选「AI聊天助手·写入」，" +
                     "之后每轮自动生效，不用再切。"))
                 .setSmallIcon(android.R.drawable.ic_menu_edit)
                 .setContentIntent(pi)

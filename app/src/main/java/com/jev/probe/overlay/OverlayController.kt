@@ -551,8 +551,8 @@ class OverlayController(private val ctx: Context) {
         if (!prefs.onboarded) {
             views.add(line(ctx.t("我是 AI 聊天助手", "Hi, I'm your AI chat assistant"), "#3A7AFE", 15f, true))
             views.add(hint(ctx.t(
-                "在聊天 App 里，我读对方最新的消息，给你「对方意图」判断和几条回复建议。\n\n· 微信：对方发消息我就自动读并生成回复，可「自动填入并发送」；配合通知读取，你不在手机旁也能收发\n· QQ / 飞书等：给建议并把最佳回复自动填好，你点一下发送\n· 点气泡：随时手动分析 · 长按气泡：暂停自动 / 诊断 / 设置",
-                "In chat apps I read their latest messages and give you an \"intent\" read plus candidate replies.\n\n· WeChat: I read and draft automatically, and can \"auto-fill and send\"; with notification access this works even when you're away from the phone\n· QQ / Feishu etc.: I suggest and auto-fill the best reply, you tap send\n· Tap the bubble: analyze anytime · Long-press: pause auto / diagnostics / settings")))
+                "在聊天 App 里，我读对方最新的消息，给你「对方意图」判断和几条回复建议。\n\n· 对方发消息我就自动读并生成回复，可「自动填入并发送」；配合通知读取，你不在手机旁也能收发\n· 也支持其它聊天：给建议并把最佳回复自动填好，你点一下发送\n· 点气泡：随时手动分析 · 长按气泡：暂停自动 / 诊断 / 设置",
+                "In chat apps I read their latest messages and give you an \"intent\" read plus candidate replies.\n\n· When a message arrives I read and draft automatically, and can \"auto-fill and send\"; with notification access this works even when you're away from the phone\n· Other chats are supported too: I suggest and auto-fill the best reply, you tap send\n· Tap the bubble: analyze anytime · Long-press: pause auto / diagnostics / settings")))
             // 开启自动收发 = 唯一不可逆的动作。首启卡是用户看到的第一屏，
             // 也是最容易顺手点掉的地方，所以和设置页一样先过一道确认——
             // 「读完再决定」的默认值应该是安全的那个。
@@ -683,7 +683,7 @@ class OverlayController(private val ctx: Context) {
             }
             addView(line)
             addView(TextView(ctx).apply {
-                text = ctx.t("自动发送已开启，${totalSec} 秒后发出。可直接在微信里改草稿，或点下面拦下。",
+                text = ctx.t("自动发送已开启，${totalSec} 秒后发出。可直接在对话框里改草稿，或点下面拦下。",
                     "Auto-send is on; goes out in ${totalSec}s. Edit the draft in WeChat, or tap below to stop.")
                 setTextColor(Color.parseColor("#6B7280")); textSize = 11.5f
                 setPadding(0, dp(3), 0, 0)
@@ -901,7 +901,7 @@ class OverlayController(private val ctx: Context) {
 
         // 合规角标：自动发送开着时必须让用户一眼看见，不能只在设置页里写着。
         if (AutoReply.isOn(ctx)) {
-            views.add(line(ctx.t("⚠ 自动发送已开启（仅微信）", "⚠ Auto-send is on (WeChat only)"), "#DC2626", 12f, bold = true))
+            views.add(line(ctx.t("⚠ 自动发送已开启（仅聊天内）", "⚠ Auto-send is on (chat only)"), "#DC2626", 12f, bold = true))
         }
 
         // What context this read was based on (knowledge base / remembered history).
