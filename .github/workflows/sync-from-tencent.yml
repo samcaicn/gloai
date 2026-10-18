@@ -114,12 +114,29 @@ jobs:
         env:
           SYNC_PAT: ${{ secrets.SYNC_PAT }}
         run: |
-          set -eu
+          set -euo pipefail
           # 必须用 SYNC_PAT：GITHUB_TOKEN 只对当前仓库（gloai）有权限，
           # 跨仓库读 samcaicn/buddybuddy 会 not found。
-          GH_HEAD=$(git ls-remote \
+          # fail-closed：ls-remote 网络抖动时 $() 管道退出码取的是 cut（恒 0），
+          # set -e 不拦 → GH_HEAD 为空 → 误判"不同步" → force push 相同 sha，
+          # GitHub 对 ref 更新一律触发 push event → 下游 Build APK 无谓重建，
+          # artifact updated_at 刷新 → 客户端把同代码当新版本重复下载。
+          # 因此：ls-remote 失败或 HEAD 不是 40 位 hex，直接报错退出，绝不 Push。
+          if ! GH_REFS=$(git ls-remote \
             "https://x-access-token:${SYNC_PAT}@github.com/samcaicn/${{ matrix.dest_repo }}.git" \
-            refs/heads/${{ matrix.target }} | cut -f1)
+            "refs/heads/${{ matrix.target }}" 2>&1); then
+            echo "::error::ls-remote GitHub ${{ matrix.target }} 失败，放弃本次同步: $GH_REFS"
+            exit 1
+          fi
+          GH_HEAD=$(printf '%s\n' "$GH_REFS" | awk '{print $1}' | head -1)
+          if ! printf '%s' "$GH_HEAD" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::GitHub ${{ matrix.target }} HEAD 解析失败（'$GH_HEAD'），放弃本次同步"
+            exit 1
+          fi
+          if ! printf '%s' "$TENCENT_HEAD" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::工蜂 HEAD 异常（'$TENCENT_HEAD'），放弃本次同步"
+            exit 1
+          fi
           echo "github_head=$GH_HEAD"
           echo "tencent_head=$TENCENT_HEAD"
           {
@@ -143,12 +160,32 @@ jobs:
         env:
           SYNC_PAT: ${{ secrets.SYNC_PAT }}
         run: |
-          set -eu
+          set -euo pipefail
           cd _tencent
           # 必须用 PAT（而非 GITHUB_TOKEN）推送：GitHub 规定用 GITHUB_TOKEN
           # 发起的 push 不会再触发任何工作流（防死循环），只有 PAT 的 push
           # 才会真正触发下游的 Build APK 构建。
-          git remote add github \
-            "https://x-access-token:${SYNC_PAT}@github.com/samcaicn/${{ matrix.dest_repo }}.git"
-          git push github HEAD:refs/heads/${{ matrix.target }} --force
-          echo "synced: tencent ${{ matrix.repo }} ${{ matrix.branch }} -> github ${{ matrix.target }}"
+          # Push 前二次读取远端 HEAD 再确认一次（Compare 与 Push 之间有分钟级
+          # 间隔，期间远端可能已被别的同步/人工推送改变）：
+          #   - 已相同 → 什么都不做（相同 sha 的 force push 也会触发下游重建）；
+          #   - 仍不同 → --force-with-lease 锁定 Compare 读到的 old 值，
+          #     远端若在两步之间被改过则拒绝推送，避免误覆盖。
+          DEST="https://x-access-token:${SYNC_PAT}@github.com/samcaicn/${{ matrix.dest_repo }}.git"
+          if ! REMOTE_REFS=$(git ls-remote "$DEST" "refs/heads/${{ matrix.target }}" 2>&1); then
+            echo "::error::Push 前二次 ls-remote 失败，放弃推送: $REMOTE_REFS"
+            exit 1
+          fi
+          REMOTE_HEAD=$(printf '%s\n' "$REMOTE_REFS" | awk '{print $1}' | head -1)
+          T_HEAD=$(git rev-parse HEAD)
+          if [ "$REMOTE_HEAD" = "$T_HEAD" ]; then
+            echo "push-time re-check: already in sync at $T_HEAD, nothing to do"
+            exit 0
+          fi
+          git remote add github "$DEST"
+          if [ -n "$REMOTE_HEAD" ]; then
+            git push github "HEAD:refs/heads/${{ matrix.target }}" \
+              "--force-with-lease=refs/heads/${{ matrix.target }}:$REMOTE_HEAD"
+          else
+            git push github "HEAD:refs/heads/${{ matrix.target }}"
+          fi
+          echo "synced: tencent ${{ matrix.repo }} ${{ matrix.branch }} -> github ${{ matrix.target }} ($T_HEAD)"
