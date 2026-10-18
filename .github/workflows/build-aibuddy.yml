@@ -35,12 +35,29 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: 克隆工蜂源码（仅 runner 临时目录，永不落 GitHub 仓库）
+      - name: 配置 SSH 并克隆工蜂源码（仅 runner 临时目录，永不落 GitHub 仓库）
         shell: bash
         env:
-          TENCENT_TOKEN: ${{ secrets.TENCENT_TOKEN }}
+          TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
+          TENCENT_GIT_URL: ${{ secrets.TENCENT_GIT_URL }}
         run: |
-          git clone --depth 1 "https://oauth2:${TENCENT_TOKEN}@git.code.tencent.com/clawclaw/aibuddy.git" _src
+          set -eu
+          mkdir -p ~/.ssh
+          # 腾讯 git 服务器只提供 ssh-rsa 主机密钥；现代 OpenSSH 默认禁用，需显式开启
+          ssh-keyscan -H -t rsa git.code.tencent.com >> ~/.ssh/known_hosts 2>/dev/null || true
+          printf '%s\n' "$TENCENT_SSH_KEY" > ~/.ssh/id_rsa_tencent
+          chmod 600 ~/.ssh/id_rsa_tencent
+          cat > ~/.ssh/config <<'EOF'
+          Host git.code.tencent.com
+              IdentityFile ~/.ssh/id_rsa_tencent
+              IdentitiesOnly yes
+              HostKeyAlgorithms +ssh-rsa
+              PubkeyAcceptedAlgorithms +ssh-rsa,ssh-ed25519
+          EOF
+          chmod 600 ~/.ssh/config
+          # 工蜂仓库 SSH 地址；TENCENT_GIT_URL 若存在则优先使用
+          REMOTE="${TENCENT_GIT_URL:-git@git.code.tencent.com:clawclaw/aibuddy.git}"
+          git clone --depth 1 "$REMOTE" _src
           echo "cloned HEAD: $(git -C _src rev-parse HEAD)"
 
       - uses: oven-sh/setup-bun@v2
