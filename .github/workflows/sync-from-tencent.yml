@@ -41,9 +41,11 @@ jobs:
           - repo: weauto
             branch: android
             target: jev-chat-jarvis
+            dest_repo: gloai
           - repo: buddybuddy
             branch: main
             target: main
+            dest_repo: buddybuddy
     # 同一时刻每个项目只允许一个同步任务（避免两次 cron 重叠时并发 force-push 互相打架）
     concurrency:
       group: sync-tencent-${{ matrix.repo }}
@@ -104,7 +106,7 @@ jobs:
         run: |
           set -eu
           GH_HEAD=$(git ls-remote \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/samcaicn/gloai.git" \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/samcaicn/${{ matrix.dest_repo }}.git" \
             refs/heads/${{ matrix.target }} | cut -f1)
           echo "github_head=$GH_HEAD"
           echo "tencent_head=$TENCENT_HEAD"
@@ -135,6 +137,6 @@ jobs:
           # 发起的 push 不会再触发任何工作流（防死循环），只有 PAT 的 push
           # 才会真正触发下游的 Build APK 构建。
           git remote add github \
-            "https://x-access-token:${SYNC_PAT}@github.com/samcaicn/gloai.git"
+            "https://x-access-token:${SYNC_PAT}@github.com/samcaicn/${{ matrix.dest_repo }}.git"
           git push github HEAD:refs/heads/${{ matrix.target }} --force
           echo "synced: tencent ${{ matrix.repo }} ${{ matrix.branch }} -> github ${{ matrix.target }}"
