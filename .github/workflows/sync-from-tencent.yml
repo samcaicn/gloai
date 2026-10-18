@@ -42,10 +42,12 @@ jobs:
             branch: android
             target: jev-chat-jarvis
             dest_repo: gloai
+            depth: 1
           - repo: buddybuddy
             branch: main
             target: main
             dest_repo: buddybuddy
+            depth: 0
     # 同一时刻每个项目只允许一个同步任务（避免两次 cron 重叠时并发 force-push 互相打架）
     concurrency:
       group: sync-tencent-${{ matrix.repo }}
@@ -92,21 +94,31 @@ jobs:
         env:
           TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
 
-      - name: Clone Tencent ${{ matrix.repo }} ${{ matrix.branch }} (shallow)
+      - name: Clone Tencent ${{ matrix.repo }} ${{ matrix.branch }}
         run: |
           set -eu
-          git clone --branch ${{ matrix.branch }} --single-branch --depth 1 \
-            git@git.code.tencent.com:AImarketing/${{ matrix.repo }}.git _tencent
+          # depth=0 → 完整 clone（buddybuddy 首次同步要跨无关历史 force push，
+          # shallow pack 缺 parent 对象会被 GitHub index-pack 拒）；
+          # depth=1 → shallow（weauto 增量同步，省流量）。
+          if [ "${{ matrix.depth }}" = "0" ]; then
+            git clone --branch ${{ matrix.branch }} --single-branch \
+              git@git.code.tencent.com:AImarketing/${{ matrix.repo }}.git _tencent
+          else
+            git clone --branch ${{ matrix.branch }} --single-branch --depth 1 \
+              git@git.code.tencent.com:AImarketing/${{ matrix.repo }}.git _tencent
+          fi
           echo "TENCENT_HEAD=$(git -C _tencent rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Compare with GitHub ${{ matrix.target }} HEAD
         id: cmp
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SYNC_PAT: ${{ secrets.SYNC_PAT }}
         run: |
           set -eu
+          # 必须用 SYNC_PAT：GITHUB_TOKEN 只对当前仓库（gloai）有权限，
+          # 跨仓库读 samcaicn/buddybuddy 会 not found。
           GH_HEAD=$(git ls-remote \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/samcaicn/${{ matrix.dest_repo }}.git" \
+            "https://x-access-token:${SYNC_PAT}@github.com/samcaicn/${{ matrix.dest_repo }}.git" \
             refs/heads/${{ matrix.target }} | cut -f1)
           echo "github_head=$GH_HEAD"
           echo "tencent_head=$TENCENT_HEAD"
