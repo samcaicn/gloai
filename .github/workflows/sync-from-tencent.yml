@@ -1,8 +1,9 @@
 name: Sync Tencent → GitHub CI
 
-# 自动同步：推到 git.code.tencent.com/AImarketing/weauto 的 android 分支后，
-# 本工作流把该分支镜像到 GitHub 的 jev-chat-jarvis 分支，从而自动触发
-# build.yml 构建 APK。
+# 自动同步（多项目矩阵，复用同一对工蜂/GitHub 密钥）：
+#   - git.code.tencent.com:AImarketing/weauto.git     android → GitHub jev-chat-jarvis
+#   - git.code.tencent.com:AImarketing/buddybuddy.git main    → GitHub main
+# 各自在推送后自动触发对应仓库的 build.yml 构建 APK。
 #
 # 触发方式：
 #   - 定时（每 10 分钟轮询一次，发现有新提交即同步）
@@ -18,9 +19,6 @@ name: Sync Tencent → GitHub CI
 # 需要的仓库密钥（GitHub 仓库 Settings → Secrets）：
 #   TENCENT_SSH_KEY = 本地 ~/.ssh/id_rsa_tencent 的私钥全文（含 BEGIN/END 行）
 #   SYNC_PAT       = 有 repo/workflow 权限的 GitHub PAT（用于推送以触发下游构建）
-#
-# 关于「同步了但没触发构建」：下游 build.yml 带 paths-ignore（'**.md'、'site/**'、'docs/**'），
-# 只改文档/站点文件的提交不会触发 Build APK，这是预期行为，不是同步失败。
 
 on:
   schedule:
@@ -32,15 +30,24 @@ on:
 permissions:
   contents: write
 
-# 同一时刻只允许一个同步任务（避免两次 cron 重叠时并发 force-push 互相打架）
-concurrency:
-  group: sync-tencent-to-github
-  cancel-in-progress: false
-
 jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repo: weauto
+            branch: android
+            target: jev-chat-jarvis
+          - repo: buddybuddy
+            branch: main
+            target: main
+    # 同一时刻每个项目只允许一个同步任务（避免两次 cron 重叠时并发 force-push 互相打架）
+    concurrency:
+      group: sync-tencent-${{ matrix.repo }}
+      cancel-in-progress: false
     steps:
       - name: Check required secrets
         env:
@@ -83,14 +90,14 @@ jobs:
         env:
           TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
 
-      - name: Clone Tencent android branch (shallow)
+      - name: Clone Tencent ${{ matrix.repo }} ${{ matrix.branch }} (shallow)
         run: |
           set -eu
-          git clone --branch android --single-branch --depth 1 \
-            git@git.code.tencent.com:AImarketing/weauto.git _tencent
+          git clone --branch ${{ matrix.branch }} --single-branch --depth 1 \
+            git@git.code.tencent.com:AImarketing/${{ matrix.repo }}.git _tencent
           echo "TENCENT_HEAD=$(git -C _tencent rev-parse HEAD)" >> "$GITHUB_ENV"
 
-      - name: Compare with GitHub jev-chat-jarvis HEAD
+      - name: Compare with GitHub ${{ matrix.target }} HEAD
         id: cmp
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -98,16 +105,16 @@ jobs:
           set -eu
           GH_HEAD=$(git ls-remote \
             "https://x-access-token:${GITHUB_TOKEN}@github.com/samcaicn/gloai.git" \
-            refs/heads/jev-chat-jarvis | cut -f1)
+            refs/heads/${{ matrix.target }} | cut -f1)
           echo "github_head=$GH_HEAD"
           echo "tencent_head=$TENCENT_HEAD"
           {
-            echo "### 同步比对"
+            echo "### 同步比对（${{ matrix.repo }} ${{ matrix.branch }} → ${{ matrix.target }}）"
             echo ""
             echo "| 端 | HEAD |"
             echo "|---|---|"
-            echo "| 腾讯 android | \`$TENCENT_HEAD\` |"
-            echo "| GitHub jev-chat-jarvis | \`$GH_HEAD\` |"
+            echo "| 腾讯 ${{ matrix.branch }} | \`$TENCENT_HEAD\` |"
+            echo "| GitHub ${{ matrix.target }} | \`$GH_HEAD\` |"
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$GH_HEAD" = "$TENCENT_HEAD" ]; then
             echo "in_sync=true" >> "$GITHUB_OUTPUT"
@@ -117,7 +124,7 @@ jobs:
             echo "diff detected, will sync"
           fi
 
-      - name: Push Tencent android → GitHub jev-chat-jarvis
+      - name: Push Tencent ${{ matrix.repo }} → GitHub ${{ matrix.target }}
         if: steps.cmp.outputs.in_sync == 'false'
         env:
           SYNC_PAT: ${{ secrets.SYNC_PAT }}
@@ -129,33 +136,5 @@ jobs:
           # 才会真正触发下游的 Build APK 构建。
           git remote add github \
             "https://x-access-token:${SYNC_PAT}@github.com/samcaicn/gloai.git"
-          # 浅克隆推送在「GitHub 缺少父提交」时会失败（两端历史分叉 / 分支被回退过），
-          # 这时补齐完整历史再推一次即可。
-          if ! git push github android:jev-chat-jarvis --force; then
-            echo "::warning::浅克隆推送失败，补齐完整历史后重试"
-            git fetch --unshallow origin || true
-            git push github android:jev-chat-jarvis --force
-          fi
-          echo "synced -> Build APK should now be triggered"
-
-      - name: Verify GitHub branch matches Tencent
-        if: steps.cmp.outputs.in_sync == 'false'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -eu
-          # 推送是异步可见的，最多等 60s 让 GitHub 更新分支引用
-          for i in $(seq 1 12); do
-            GH=$(git ls-remote \
-              "https://x-access-token:${GITHUB_TOKEN}@github.com/samcaicn/gloai.git" \
-              refs/heads/jev-chat-jarvis | cut -f1)
-            if [ "$GH" = "$TENCENT_HEAD" ]; then
-              echo "同步校验通过：$GH"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "✅ 已同步到 \`$GH\`，下游 Build APK 会被触发（若改动命中 build.yml 的 paths-ignore 则不会）" >> "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::error::同步后 GitHub HEAD($GH) 与腾讯 HEAD($TENCENT_HEAD) 不一致"
-          exit 1
+          git push github HEAD:refs/heads/${{ matrix.target }} --force
+          echo "synced: tencent ${{ matrix.repo }} ${{ matrix.branch }} -> github ${{ matrix.target }}"
