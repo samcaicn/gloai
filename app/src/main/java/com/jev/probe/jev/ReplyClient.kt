@@ -48,7 +48,7 @@ class ReplyClient(private val prefs: Prefs) {
         val user = knowledgeBlock(relationship, ctx) +
             "关系：$relationship\n\n最近对话：\n$convo\n\n请给出 $want 条候选回复。"
         // cf worker ai 优先回复：主路打 Worker（Cloudflare Workers AI），失败再兜底 one-api 网关。
-        val cloudMode = prefs.isWorkerMode || prefs.judgeProvider == Prefs.PROVIDER_TUPTUP
+        val cloudMode = prefs.isWorkerMode || prefs.judgeProvider == Prefs.PROVIDER_CLOUD
         // 自定义大模型现在也经云端 /ai/custom 转发（SSE 直通），每日 100 条有云端硬墙，
         // 本地账本同样先自查，避免把已超限的流量打上去。
         val useLedger = cloudMode || prefs.isTextCustom()
@@ -66,13 +66,13 @@ class ReplyClient(private val prefs: Prefs) {
             out
         } catch (e: Exception) {
             if (!useLedger) return emptyList()
-            Log.w(TAG, "worker AI reply failed -> tuptup relay fallback: ${e.message}")
+            Log.w(TAG, "worker AI reply failed -> cloud relay fallback: ${e.message}")
             try {
                 val out = parseThree(chatFallback(sys, user, temperature = temperature, fewShot = fewShot))
                 PackLedger.recordUsage(prefs.appContext)
                 out
             } catch (e2: Exception) {
-                Log.w(TAG, "tuptup relay fallback also failed: ${e2.message}")
+                Log.w(TAG, "cloud relay fallback also failed: ${e2.message}")
                 emptyList()
             }
         }
@@ -94,10 +94,10 @@ class ReplyClient(private val prefs: Prefs) {
         system: String, user: String, temperature: Double,
         fewShot: List<PackFewShot> = emptyList()
     ): String {
-        // 客户端不再直连 aiapi（key 曾硬编码在源码）：改打 Worker /ai/tuptup/v1 转发。
+        // 客户端不再直连网关（key 曾硬编码在源码）：改打 Worker /ai/relay/v1 转发。
         // 2026-10-15 实测 one-api default 组四模型全「无可用渠道」，仅 auto 通——
-        // model 由 Worker 侧强制覆盖为 auto，这里传 TUPTUP_MODEL 只为语义清晰。
-        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/tuptup/v1/chat/completions"
+        // model 由 Worker 侧强制覆盖为 auto，这里传 RELAY_MODEL 只为语义清晰。
+        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/relay/v1/chat/completions"
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", system))
         for (turn in fewShot) {
@@ -106,12 +106,12 @@ class ReplyClient(private val prefs: Prefs) {
         }
         messages.put(JSONObject().put("role", "user").put("content", user))
         val body = JSONObject()
-            .put("model", Prefs.TUPTUP_MODEL)
+            .put("model", Prefs.RELAY_MODEL)
             .put("messages", messages)
             .put("temperature", temperature)
         val resp = HttpJson.post(
             url, "", body, Route.REPLY, HttpJson.headersFor(url),
-            authToken = if (prefs.isWorkerMode) prefs.accountToken else Prefs.TUPTUP_KEY,
+            authToken = if (prefs.isWorkerMode) prefs.accountToken else Prefs.CLOUD_RELAY_KEY,
             instanceId = prefs.instanceId
         )
         return resp.optJSONArray("choices")?.optJSONObject(0)

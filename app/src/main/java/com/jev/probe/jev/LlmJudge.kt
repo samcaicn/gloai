@@ -17,11 +17,11 @@ import org.json.JSONObject
  * 并把返回的结构化 JSON 解析回与原 [Analysis] 完全一致的字段，悬浮窗与排序逻辑无需改动。
  *
  * 用途：
- *  - provider=tuptup 时作为判断主路径（tuptup.top 是 OpenAI 兼容网关，跑不了 Jev 自定义协议）；
+ *  - provider=cloud 时作为判断主路径（云端 OpenAI 兼容网关，跑不了 Jev 自定义协议）；
  *  - 其它 provider（worker / 自建 Jev）判断失败时，作为兜底退回这里，符合「优先 jev，不行再 llm」。
  *
- * 请求经 Worker 的 /ai/tuptup/v1 转发（Worker 注入 AIAPI_KEY 并强制 model=auto），
- * 客户端不再直连 aiapi；[Prefs.TUPTUP_KEY] 仅在非 worker 模式作 legacy 兜底。
+ * 请求经 Worker 的 /ai/relay/v1 转发（Worker 注入上游 key 并强制 model=auto），
+ * 客户端不直连网关；[Prefs.CLOUD_RELAY_KEY] 仅在非 worker 模式作 legacy 兜底。
  */
 class LlmJudge(private val prefs: Prefs) {
 
@@ -64,19 +64,19 @@ class LlmJudge(private val prefs: Prefs) {
         // 分流（v1.1 免费模式）：
         //   1. 用户自填接口（isTextCustom）—— 经云端 /ai/custom 转发（不再直连，
         //      大陆直连境外网关常被墙），每日 100 条云端硬墙；非流式往返。
-        //   2. 否则走 aiapi 转发（/ai/tuptup/v1，key 在 Worker secret 里；
+        //   2. 否则走云端 relay 转发（/ai/relay/v1，key 在 Worker secret 里；
         //      model 由 Worker 侧强制覆盖为 auto）。2026-10-15 实测 one-api
         //      default 组四模型全「无可用渠道」（火山配额耗尽），仅 auto 通
         //      （→Qwen2.5-7B），故不再做客户端多模型降级轮询。
         if (prefs.isTextCustom()) return chatViaCustomRelay(userPrompt, temperature)
-        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/tuptup/v1/chat/completions"
+        val url = Prefs.WORKER_BASE.trimEnd('/') + "/ai/relay/v1/chat/completions"
         val sys = "你是 Jev 对话判断引擎。只依据给定对话与背景给出结构化判断，绝不编造事实。" +
             "必须只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块。"
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put("content", sys))
             .put(JSONObject().put("role", "user").put("content", userPrompt))
         val body = JSONObject()
-            .put("model", prefs.textModel.ifBlank { Prefs.TUPTUP_MODEL })
+            .put("model", prefs.textModel.ifBlank { Prefs.RELAY_MODEL })
             .put("messages", messages)
             .put("temperature", temperature)
         val resp = HttpJson.post(
@@ -99,7 +99,7 @@ class LlmJudge(private val prefs: Prefs) {
             .put(JSONObject().put("role", "system").put("content", sys))
             .put(JSONObject().put("role", "user").put("content", userPrompt))
         val payload = JSONObject()
-            .put("model", prefs.textModel.ifBlank { Prefs.TUPTUP_MODEL })
+            .put("model", prefs.textModel.ifBlank { Prefs.RELAY_MODEL })
             .put("messages", messages)
             .put("temperature", temperature)
         val envelope = JSONObject()

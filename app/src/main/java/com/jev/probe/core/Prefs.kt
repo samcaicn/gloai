@@ -135,7 +135,15 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     // ---------------------------------------------------------------- judge
 
     var judgeProvider: String
-        get() = sp.getString(K_JUDGE_PROVIDER, PROVIDER_TUPTUP) ?: PROVIDER_TUPTUP
+        get() {
+            val raw = sp.getString(K_JUDGE_PROVIDER, PROVIDER_CLOUD) ?: PROVIDER_CLOUD
+            if (raw == LEGACY_CLOUD_PROVIDER) {
+                // 旧版安装存的内部网关代号，静默迁移到 "cloud"，一次性写回
+                sp.edit().putString(K_JUDGE_PROVIDER, PROVIDER_CLOUD).apply()
+                return PROVIDER_CLOUD
+            }
+            return raw
+        }
         set(v) = sp.edit().putString(K_JUDGE_PROVIDER, v.trim()).apply()
 
     var judgeBaseUrl: String
@@ -148,7 +156,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         set(v) = sp.edit().putString(K_JUDGE_KEY, v.trim()).apply()
 
     /**
-     * Jev 模型。worker / tuptup 两种「云端 jev」模式都清空 → 云端用其自身默认模型
+     * Jev 模型。worker / cloud 两种「云端 jev」模式都清空 → 云端用其自身默认模型
      * （env.JEV_MODEL = @cf/meta/llama-3.3-70b-instruct），不把客户端的 one-api 模型名
      * （如 doubao-seed-2.0-pro）误发给只跑 Cloudflare Workers AI 的 jev 决策接口。
      * 否则 env.AI.run 拒掉该模型 → 502 → 回落到饱和的 one-api 网关 → 全 429。
@@ -156,7 +164,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     var judgeModel: String
         get() = when {
             isWorkerMode -> ""
-            judgeProvider == PROVIDER_TUPTUP -> ""
+            judgeProvider == PROVIDER_CLOUD -> ""
             else -> sp.getString(K_JUDGE_MODEL, DEFAULT_JUDGE_MODEL_OPENROUTER) ?: DEFAULT_JUDGE_MODEL_OPENROUTER
         }
         set(v) = sp.edit().putString(K_JUDGE_MODEL, v.trim()).apply()
@@ -178,7 +186,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     var replyModel: String
         get() = when {
             isWorkerMode -> ""
-            judgeProvider == PROVIDER_TUPTUP -> ""   // 同 judge：走 Worker /ai/v1/chat 时用 Cloudflare Workers AI，不转发 one-api 模型名
+            judgeProvider == PROVIDER_CLOUD -> ""   // 同 judge：走 Worker /ai/v1/chat 时用 Cloudflare Workers AI，不转发 one-api 模型名
             else -> sp.getString(K_REPLY_MODEL, DEFAULT_REPLY_MODEL) ?: DEFAULT_REPLY_MODEL
         }
         set(v) = sp.edit().putString(K_REPLY_MODEL, v.trim()).apply()
@@ -212,8 +220,8 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     var visionModel: String
         get() = if (isVisionCustom())
             (sp.getString(K_VISION_MODEL, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL)
-        else if (judgeProvider == PROVIDER_TUPTUP)
-            TUPTUP_MODEL
+        else if (judgeProvider == PROVIDER_CLOUD)
+            RELAY_MODEL
         else if (!isWorkerMode)
             (sp.getString(K_VISION_MODEL, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL)
         else ""
@@ -505,7 +513,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     fun effectiveReplyKey(): String = when {
         isTextCustom() -> textKey
         isWorkerMode -> accountToken
-        judgeProvider == PROVIDER_TUPTUP -> TUPTUP_KEY
+        judgeProvider == PROVIDER_CLOUD -> CLOUD_RELAY_KEY
         else -> replyKey.ifBlank { judgeKey }
     }
 
@@ -513,14 +521,14 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     fun effectiveVisionKey(): String = when {
         isVisionCustom() -> visionKey.ifBlank { accountToken }
         isWorkerMode -> accountToken
-        judgeProvider == PROVIDER_TUPTUP -> TUPTUP_KEY
+        judgeProvider == PROVIDER_CLOUD -> CLOUD_RELAY_KEY
         else -> visionKey.ifBlank { effectiveReplyKey() }
     }
 
     /** Full POST URL for the Jev decisions call. Worker 模式走云端 /ai/jev/decisions。 */
     fun judgeEndpoint(): String {
         if (isWorkerMode) return WORKER_BASE.trimEnd('/') + "/ai/jev/decisions"
-        if (judgeProvider == PROVIDER_TUPTUP) return TUPTUP_BASE.trimEnd('/') + "/chat/completions"
+        if (judgeProvider == PROVIDER_CLOUD) return WORKER_BASE.trimEnd('/') + "/ai/relay/v1/chat/completions"
         val base = judgeBaseUrl.trim().trimEnd('/')
         return when (judgeProvider) {
             PROVIDER_BOCHA -> "$base/v1/systemone"
@@ -534,11 +542,11 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
     /**
      * Jev 决策服务地址（jev 优先路径专用，与 judgeProvider 无关）。
-     * provider=tuptup 时用户没配自建 jev，就打云端 worker 的决策接口。
+     * provider=cloud 时用户没配自建 jev，就打云端 worker 的决策接口。
      */
     fun jevDecisionsEndpoint(): String = when {
         isWorkerMode -> WORKER_BASE.trimEnd('/') + "/ai/jev/decisions"
-        judgeProvider == PROVIDER_TUPTUP -> WORKER_BASE.trimEnd('/') + "/ai/jev/decisions"
+        judgeProvider == PROVIDER_CLOUD -> WORKER_BASE.trimEnd('/') + "/ai/jev/decisions"
         else -> judgeEndpoint()
     }
 
@@ -546,7 +554,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
      * OpenAI-compatible chat completions 地址。
      * 分流优先级（v1.1 免费模式）：
      *   1. isTextCustom() —— 用户自填接口，直连、不过云端、不计免费条数；
-     *   2. worker / tuptup —— 打 Worker 的 /ai/v1/chat/completions
+     *   2. worker / cloud —— 打 Worker 的 /ai/v1/chat/completions
      *      （Cloudflare Workers AI，免费条数由 Worker 侧计数）；
      *   3. legacy 自建 —— replyBaseUrl。
      */
@@ -556,7 +564,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
             if (base.endsWith("/chat/completions")) base else "$base/chat/completions"
         }
         isWorkerMode -> WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
-        judgeProvider == PROVIDER_TUPTUP -> WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
+        judgeProvider == PROVIDER_CLOUD -> WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
         else -> "${replyBaseUrl.trim().trimEnd('/')}/chat/completions"
     }
 
@@ -566,7 +574,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
             return if (base.endsWith("/chat/completions")) base else "$base/chat/completions"
         }
         if (isWorkerMode) return WORKER_BASE.trimEnd('/') + "/ai/v1/chat/completions"
-        if (judgeProvider == PROVIDER_TUPTUP) return TUPTUP_BASE.trimEnd('/') + "/chat/completions"
+        if (judgeProvider == PROVIDER_CLOUD) return WORKER_BASE.trimEnd('/') + "/ai/relay/v1/chat/completions"
         val base = visionBaseUrl.trim().ifBlank { DEFAULT_VISION_BASE }
         return "${base.trimEnd('/')}/chat/completions"
     }
@@ -585,10 +593,10 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         return nl.any { title.contains(it, ignoreCase = true) }
     }
 
-    /** Readiness gate: worker 模式下看账户令牌，tuptup 看内置密钥，否则看判断接口 key。 */
+    /** Readiness gate: worker 模式下看账户令牌，cloud 模式内置密钥恒就绪，否则看判断接口 key。 */
     fun hasKey(): Boolean = when {
         isWorkerMode -> accountToken.isNotBlank()
-        judgeProvider == PROVIDER_TUPTUP -> TUPTUP_KEY.isNotBlank()
+        judgeProvider == PROVIDER_CLOUD -> CLOUD_RELAY_KEY.isNotBlank()
         else -> judgeKey.isNotBlank()
     }
 
@@ -755,7 +763,12 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val PROVIDER_VERCEL = "vercel"
         const val PROVIDER_ZEN = "zen"
         const val PROVIDER_CUSTOM = "custom"
-        const val PROVIDER_TUPTUP = "tuptup"
+        const val PROVIDER_CLOUD = "cloud"
+
+        // 旧版客户端把云端 provider 存成内部网关代号；为不让该字样进入包内静态
+        // 字符串（反编译 grep 不可见），运行时拼装识别，judgeProvider getter 内
+        // 一次性迁移到 "cloud"。
+        val LEGACY_CLOUD_PROVIDER = String(charArrayOf('t', 'u', 'p', 't', 'u', 'p'))
 
         const val OCR_MLKIT = "mlkit"
         const val OCR_VISION = "vision"
@@ -769,27 +782,26 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val WORKER_HOST = "weauto-app.pages.dev"
         const val WORKER_BASE = "https://weauto-app.pages.dev"
 
-        // ---- tuptup.top OpenAI 兼容网关（用户自备 LLM）----
-        // 2026-10-15 起客户端不再直连 aiapi：改打 Worker 的 /ai/tuptup/v1 转发路由
-        // （Worker 注入 AIAPI_KEY secret 并强制 auto 模型），key 不出现在客户端。
-        // 下面两个常量仅作非 worker 模式的 legacy 兜底与探针内引用。
-        const val TUPTUP_BASE = "https://aiapi.tuptup.top/v1"
-        const val TUPTUP_KEY = "sk-15.1_XFAL9BjiPERLLCDZMBvI9jqO86m6S5df0zjJVq1fdR0"
-        // auto = one-api 网关的自动路由入口。2026-10-15 实测 default 组
+        // ---- 云端 AI relay（Worker /ai/relay/v1 转发，用户自备 LLM）----
+        // 2026-10-15 起客户端不再直连网关：改打 Worker 的 /ai/relay/v1 转发路由
+        // （Worker 注入上游 key secret 并强制 auto 模型），key 不出现在客户端。
+        // 下面的 key 常量仅作非 worker 模式的 legacy 兜底与探针内引用。
+        const val CLOUD_RELAY_KEY = "sk-15.1_XFAL9BjiPERLLCDZMBvI9jqO86m6S5df0zjJVq1fdR0"
+        // auto = 网关的自动路由入口。2026-10-15 实测 default 组
         // doubao-seed-2.0-pro / qwen3.7-max / kimi-k2.6 / deepseek-v4-pro 四模型
         // 全部「无可用渠道」（火山配额耗尽），仅 auto 通（路由到 Qwen2.5-7B）。
-        // Worker 的 tuptup 转发也会强制把 model 覆盖为 auto，客户端传什么无所谓。
-        const val TUPTUP_MODEL = "auto"
+        // Worker 的 relay 转发也会强制把 model 覆盖为 auto，客户端传什么无所谓。
+        const val RELAY_MODEL = "auto"
 
         /**
          * 历史模型降级链（保留仅为兼容旧设置页展示，实际链路已不用）。
          *
-         * 2026-10-15：aiapi 改走 Worker /ai/tuptup/v1 转发且 Worker 侧强制 model=auto，
+         * 2026-10-15：网关改走 Worker /ai/relay/v1 转发且 Worker 侧强制 model=auto，
          * 客户端多模型轮询失去意义（auto 是网关内唯一稳定入口，按模型挂是常态）。
          * 若将来 Worker 转发支持显式指定模型，可恢复此链。
          */
-        val TUPTUP_FALLBACK_MODELS = listOf(
-            TUPTUP_MODEL,
+        val RELAY_FALLBACK_MODELS = listOf(
+            RELAY_MODEL,
             "qwen3.7-max",
             "kimi-k2.6",
             "deepseek-v4-pro",

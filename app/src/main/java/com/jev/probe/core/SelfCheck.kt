@@ -57,7 +57,7 @@ object SelfCheck {
         val live = probeEndpoint(ctx)
         l.add("")
         l.add(t(ctx, "【服务接口】", "[Cloud service]"))
-        // 给用户看的只说「云端服务」，不露具体域名（safeopc.cn / tuptup.top 等内部信息）；
+        // 给用户看的只说「云端服务」，不露内部域名等敏感信息；
         // 真要做服务端排查时域名仍在 logcat（Live.host）里，作者自己看。
         when {
             live.code == 200 -> l.add("✓ " + t(ctx, "云端服务可达", "Cloud service reachable"))

@@ -26,9 +26,9 @@ class JudgeClient(private val prefs: Prefs) {
      */
     fun judge(snapshot: ChatSnapshot, relationship: String, ctx: ChatContext? = null): Analysis {
         val start = System.currentTimeMillis()
-        // jev 优先：worker 与 tuptup（免费）两种云端模式都先打云端 jev 决策服务
+        // jev 优先：worker 与 cloud（免费）两种云端模式都先打云端 jev 决策服务
         // （CF Workers AI，免费且不饱和）。Worker 对无签名头的免费请求直接放行，
-        // 只有带错签名的请求才 401，所以默认（tuptup）探针也能走通判断而不必撞
+        // 只有带错签名的请求才 401，所以默认（cloud）探针也能走通判断而不必撞
         // 饱和的 one-api 网关。失败（Worker 挂了 / 超时）再退回本地 LLM 版 jev 协议。
         return try {
             val answers = postDecisions(
@@ -100,7 +100,7 @@ class JudgeClient(private val prefs: Prefs) {
 
     private fun send(state: JSONObject, questions: JSONObject): JSONObject {
         // jev 优先路径：无论 provider 是什么，决策协议都打 Jev 决策服务地址
-        // （provider=tuptup 时即云端 worker；自建 provider 用各自配置的地址）。
+        // （provider=cloud 时即云端 worker；自建 provider 用各自配置的地址）。
         val url = prefs.jevDecisionsEndpoint()
         // v1.1 免费模式（对齐 PC 版 jevDecisions）：/ai/jev/decisions 无凭证放行，
         // 不再带账户令牌鉴权。
