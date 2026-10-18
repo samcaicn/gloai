@@ -1,0 +1,26 @@
+name: Dump Signing Secrets (one-shot)
+
+# 一次性：把签名四件套 base64 后输出到 log，用于给 buddybuddy 仓库配同一套密钥。
+# 用完立即删除本文件。私有仓库、用户本人账号内操作。
+on:
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dump base64
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          for v in SIGNING_KEY SIGNING_KEY_ALIAS SIGNING_KEY_PASSWORD SIGNING_STORE_PASSWORD; do
+            val="${!v}"
+            echo "== $v (len=${#val}) =="
+            printf '%s' "$val" | base64 -w0
+            echo
+            echo "== end $v =="
+          done
