@@ -39,7 +39,6 @@ jobs:
         shell: bash
         env:
           TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
-          TENCENT_GIT_URL: ${{ secrets.TENCENT_GIT_URL }}
         run: |
           set -eu
           mkdir -p ~/.ssh
@@ -55,8 +54,8 @@ jobs:
               PubkeyAcceptedAlgorithms +ssh-rsa,ssh-ed25519
           EOF
           chmod 600 ~/.ssh/config
-          # 工蜂仓库 SSH 地址；TENCENT_GIT_URL 若存在则优先使用
-          REMOTE="${TENCENT_GIT_URL:-git@git.code.tencent.com:clawclaw/aibuddy.git}"
+          # aibuddy 工蜂仓库（固定 SSH 地址；TENCENT_GIT_URL 是其它项目的，不可复用）
+          REMOTE="git@git.code.tencent.com:clawclaw/aibuddy.git"
           git clone --depth 1 "$REMOTE" _src
           echo "cloned HEAD: $(git -C _src rev-parse HEAD)"
 
