@@ -2,14 +2,16 @@ name: build-aibuddy
 
 # 智创协同 AI 工作台（mu-desktop / AiBuddy）GitHub 构建载体。
 #
-# 两条硬规矩（用户 2026-10-18 立规）：
+# 三条硬规矩（用户 2026-10-18 立规）：
 #   1) 源码唯一事实源在腾讯工蜂 clawclaw/aibuddy，**绝不上 GitHub**——
 #      本工作流在 runner 临时目录里 git clone 工蜂，源码不写入本仓库任何
-#      分支 / commit / artifact（artifact 只含编译产物 exe，非源码）。
-#   2) 不创建 GitHub Release（release 要自动删）：构建产物（exe + latest.yml）
-#      直接传到 Cloudflare R2，由 aibuddy-update worker 用只读 token 读
-#      Actions 构建状态后对外提供热更新，绕开 400MB 直链 / Release 限制。
-#   3) 只保留 Actions 运行记录 + artifact（90 天）以及 R2 上的热更新包。
+#      分支 / commit / artifact（artifact 只含编译产物，非源码）。
+#   2) 不创建 GitHub Release（release 会强制附带 "Source code (zip/tar.gz)"，
+#      来源是 tag 指向的 commit 树，一旦该 commit 含源码即泄露）。热更新包
+#      只以 **GitHub Actions artifact** 形式留存（artifact 不会自动挂源码包）。
+#   3) 节省流量费：exe 走 GitHub Actions artifact 带宽（免费），由 aibuddy-update
+#      worker 用**只读 token** 读 Actions 把 exe 流式吐给客户端，不落地 Cloudflare
+#      R2（R2 出流量要钱）。几乎零成本、零泄露。
 #
 # 触发：repository_dispatch(event_type=aibuddy-build) 或手动 workflow_dispatch。
 # 工蜂提交版本后运行 ci-artifacts/trigger_build.sh 发送 dispatch 即可，无需
@@ -24,9 +26,10 @@ on:
   repository_dispatch:
     types: [aibuddy-build]
 
-# 不需要 contents:write：不写分支、不建 Release、不推代码。
+# 不写分支、不建 Release、不推代码：contents 仅读；artifact 上传需 actions:write。
 permissions:
   contents: read
+  actions: write
 
 jobs:
   build:
@@ -69,17 +72,6 @@ jobs:
         working-directory: _src/desktop
         run: bun run build-win:x64:fast
 
-      # 单 artifact 上限 500MB：只发 NSIS（exe ~404MB）。不发 msi——
-      # electron-updater 的通用/NSIS 自动更新链路只认 NSIS 安装包。
-      # artifact 仅含编译产物，不含源码，作为 Actions 运行记录保留 90 天。
-      - name: 上传只读升级包 · NSIS 安装程序（artifact，留 action 记录，90 天）
-        uses: actions/upload-artifact@v4
-        with:
-          name: aibuddy-win-x64-exe
-          path: _src/desktop/out/AiBuddy-*-win-x64.exe
-          retention-days: 90
-          if-no-files-found: error
-
       # 生成 electron-updater 通用源 latest.yml（sha512/size 由 CI 现算，避免本地预生成错位）。
       - name: 生成 latest.yml（electron-updater 通用源）
         working-directory: _src/desktop/out
@@ -99,17 +91,43 @@ jobs:
             console.log(yml);
           '
 
-      # 上传到 R2（热更新 CDN，无 GitHub Release）：
-      # worker 用只读 token 读 Actions 构建状态后，把 R2 上的 exe/latest.yml
-      # 经 azure 直链 / R2 流式返回给客户端，绕开 400MB 直链与 Release 限制。
-      - name: 上传到 R2（热更新 CDN，无 GitHub Release）
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        working-directory: _src/desktop/out
+      # 只发 NSIS（exe ~404MB）。不发 msi——electron-updater 的通用/NSIS 自动更新
+      # 链路只认 NSIS 安装包。artifact 仅含编译产物，不含源码，作为 Actions 运行
+      # 记录保留（retention 设长，保证"最新版"长期可取）。
+      - name: 上传只读升级包 · NSIS 安装程序（Actions artifact，免费带宽，留 action 记录）
+        uses: actions/upload-artifact@v4
+        with:
+          name: aibuddy-exe
+          path: _src/desktop/out/AiBuddy-*-win-x64.exe
+          retention-days: 365
+          if-no-files-found: error
+
+      - name: 上传 latest.yml（Actions artifact，极小，供 worker 只读读取）
+        uses: actions/upload-artifact@v4
+        with:
+          name: aibuddy-latest-yml
+          path: _src/desktop/out/latest.yml
+          retention-days: 365
+          if-no-files-found: error
+
+      # 清理旧 artifact（仅保留本次，避免长期堆积；失败不阻断主流程）。
+      - name: 清理旧 artifact（仅保留本次 run）
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        continue-on-error: true
         run: |
-          EXE=$(ls AiBuddy-*-win-x64.exe | head -n1)
-          echo "uploading $EXE and latest.yml to R2 bucket aibuddy-update"
-          npx -y wrangler@latest r2 object put aibuddy-update/update/"$EXE" --file "$EXE" --remote
-          npx -y wrangler@latest r2 object put aibuddy-update/update/latest.yml --file latest.yml --remote
-          echo "done"
+          RUN_ID="${{ github.run_id }}"
+          echo "保留 run=$RUN_ID，删除其余 artifact"
+          gh api -X GET "repos/${{ github.repository }}/actions/artifacts?per_page=100" \
+            | python -c "
+          import sys,json,os
+          d=json.load(sys.stdin)
+          run_id=os.environ['RUN_ID']
+          for a in d.get('artifacts',[]):
+              if a['name'] in ('aibuddy-exe','aibuddy-latest-yml') and str(a['run_id'])!=run_id:
+                  print('DELETE', a['id'], a['name'])
+          " | while read _ id _name; do
+            gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
+          done
+          echo "cleanup done"
