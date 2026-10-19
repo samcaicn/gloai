@@ -776,7 +776,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         // ---- WeAuto 云端（唯一 LLM 出口）----
         // 2026-10-17 起主用 Pages 域 weauto-app.pages.dev（业务代码与 Worker 版同源，
         // 经 Pages Functions 转交同一份 cf_worker.js；*.pages.dev 大陆可达。
-        // wetech.jukuai.net 的 Worker 版保留作备份域名（仍部署），域名切换只改这里。
+        // 旧自定义域备份已于 2026-10-19 删除（Cloudflare 绑定与 DNS 一并移除），域名切换只改这里。
         // AI / 更新包回包 / 账户接口全部同源。
         // 功能对齐记录：Pages 版今日起与 Worker 版同码（quota 动态 / /ai/custom / 更新代理）。
         const val WORKER_HOST = "weauto-app.pages.dev"

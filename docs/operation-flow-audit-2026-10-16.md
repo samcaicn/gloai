@@ -60,7 +60,7 @@
 |---|---|---|---|---|
 | S12 | 异常兜底 | `NOTIF_HARD_MAX=60s` 兜底推进 + `analyzing` 强制复位 + `KIND.QUOTA` 冷却 | OK | 已修「analyzing 永久卡死雪崩」 |
 | S13 | 自愈巡检 | `KeepAliveService.heal`，60s 一轮、首检 10s | **OK 检测 / FAIL 触达** | 三条检测都在（无障碍掉→发恢复通知、输入法被重置→发引导通知、通知监听掉→`requestRebind`），**但通知发不出去**（断点 3） |
-| S14 | 服务端 AI 通路 | Worker `https://wetech.jukuai.net/health` | OK | `workers_ai_ready=true`、`ai_relay_ready=true`、`ai_ready=true`、`integrity_enforced=true`；未签名直连 `/ai/*` 返回 `403 integrity_signature`（防刷生效） |
+| S14 | 服务端 AI 通路 | Worker `https://weauto-app.pages.dev/health` | OK | `workers_ai_ready=true`、`ai_relay_ready=true`、`ai_ready=true`、`integrity_enforced=true`；未签名直连 `/ai/*` 返回 `403 integrity_signature`（防刷生效） |
 
 服务端额外发现（**非阻塞，属收敛 TODO**）：旧 Pages 版本 `weauto-license.pages.dev` 仍在公网存活，且 `has_api_key=false / integrity_enforced=false / ai_ready=false`——探针自 ce8c9ee 起已不打它，但它是遗留暴露面，建议下线或 301 到 Worker 域名。
 
@@ -89,7 +89,7 @@
 | B-03 | 通知权限从未申请、已被关 | 产品设计缺陷 | 全项目 **零处** `requestPermissions(POST_NOTIFICATIONS)`；而自愈提示只走通知单通道 | 首页引导新增「通知权限」为第 5 步；自愈提示改双通道（悬浮球/首页横幅 + 通知） | **Must** | 我（代码） |
 | B-04 | 首启引导缺「输入通道」一项 | 产品设计缺陷 | 首页 4 步 = 无障碍/悬浮窗/通知监听/电池，不含输入法；用户不知道要切 IME | 首页增加「自动收发写入通道」状态行 + 手动切法图示（不含自动切换） | **Should** | 我（代码） |
 | B-05 | 装机后无版本台账 | 流程 | 装机动作未留痕 | `flow_check.sh` 已自带台账；装机脚本统一改为「下载→校验→装机→跑 flow_check→贴输出」五步 | **Should** | 我（脚本） |
-| B-06 | 旧 Pages 残留 | 服务端 | 双胞胎（Pages + Worker）历史产物 | 下线或 301 → `wetech.jukuai.net` | **Could** | 我（运维） |
+| B-06 | 旧 Pages 残留 | 服务端 | 双胞胎（Pages + Worker）历史产物 | 下线或 301 → `weauto-app.pages.dev` | **Could** | 我（运维） |
 | B-07 | AI 主路依赖 CF 免费额度（滚动 24h 窗口，非零点重置） | 容量 | 免费 10k neurons/天 | 已双路（CF→AI relay），保持 `/health` 轮询 + 耗尽冷却；长期建议 Workers Paid 或给 Worker 配 Volcano key | **Should** | 我（运维） |
 | B-08 | 多会话排队进度用户不可见 | 体验 | 队列在内存，用户看不到「还有 2 个会话在等」 | 悬浮球/通知待办显示队列深度 | **Could** | 待定 |
 
