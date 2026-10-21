@@ -1,0 +1,65 @@
+name: Publish Artifact Release
+
+# 把某次 build-aibuddy run 的 Actions artifact（aibuddy-exe / aibuddy-latest-yml）
+# 解包后发布为「已发布（非 draft）prerelease」，使 aibuddy-update worker 切换到
+# Release 直链 302 模式（azure 免鉴权直链，全速下载），规避 artifact 流式代理的
+# 14KB/s 瓶颈与 CF 30s 超时截断。
+#
+# 用法：workflow_dispatch，传 run_id + tag（如 39589524436 / v1.1.21）
+# target_commitish 用空分支 tmp-empty，GitHub 自动附带的 Source code 包为空，无源码泄露。
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Build run id whose artifacts to publish'
+        required: true
+      tag:
+        description: 'Release tag (e.g. v1.1.21)'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download exe artifact
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.inputs.run_id }}
+          name: aibuddy-exe
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: dist/exe
+
+      - name: Download latest.yml artifact
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.inputs.run_id }}
+          name: aibuddy-latest-yml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: dist/yml
+
+      - name: Unzip artifacts
+        run: |
+          cd dist/exe && unzip -o "*.zip"
+          cd dist/yml && unzip -o "*.zip"
+          echo "=== dist files ==="
+          find dist -type f -exec ls -la {} \;
+
+      - name: Create / update release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          TAG="${{ github.event.inputs.tag }}"
+          EXE=$(ls dist/exe/*.exe | head -n1)
+          YML=$(ls dist/yml/latest.yml | head -n1)
+          echo "publishing $TAG exe=$EXE yml=$YML"
+          gh release create "$TAG" --target tmp-empty --draft=false --prerelease \
+            --title "AiBuddy ${TAG#v}" \
+            --notes "Automated windows-x64 hot-update package (artifact -> release direct link)." \
+            --repo samcaicn/gloai "$EXE" "$YML" \
+          || gh release upload "$TAG" --repo samcaicn/gloai "$EXE" "$YML"
+          echo "=== release assets ==="
+          gh release view "$TAG" --repo samcaicn/gloai --json assets -q '.assets[].name'
