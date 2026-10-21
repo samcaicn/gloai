@@ -6,6 +6,7 @@ name: Publish Artifact Release
 # 14KB/s 瓶颈与 CF 30s 超时截断。
 #
 # 用法：workflow_dispatch，传 run_id + tag（如 39589524436 / v1.1.21）
+# 注意：actions/download-artifact@v4 下载时已自动解包（无需再 unzip）。
 # target_commitish 用空分支 tmp-empty，GitHub 自动附带的 Source code 包为空，无源码泄露。
 
 on:
@@ -40,12 +41,20 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: dist/yml
 
-      - name: Unzip artifacts
+      - name: Locate artifacts
         run: |
-          cd dist/exe && unzip -o "*.zip"
-          cd dist/yml && unzip -o "*.zip"
-          echo "=== dist files ==="
+          echo "=== dist tree ==="
           find dist -type f -exec ls -la {} \;
+          EXE=$(find dist -name '*.exe' | head -n1)
+          YML=$(find dist -name 'latest.yml' | head -n1)
+          if [ -z "$EXE" ] || [ -z "$YML" ]; then
+            echo "ERROR: exe or latest.yml not found"; exit 1
+          fi
+          echo "EXE=$EXE"
+          echo "YML=$YML"
+          echo "exe_size=$(stat -c%s "$EXE")"
+          echo "$EXE" > /tmp/exe_path
+          echo "$YML" > /tmp/yml_path
 
       - name: Create / update release
         env:
@@ -53,8 +62,8 @@ jobs:
         run: |
           set -e
           TAG="${{ github.event.inputs.tag }}"
-          EXE=$(ls dist/exe/*.exe | head -n1)
-          YML=$(ls dist/yml/latest.yml | head -n1)
+          EXE=$(cat /tmp/exe_path)
+          YML=$(cat /tmp/yml_path)
           echo "publishing $TAG exe=$EXE yml=$YML"
           gh release create "$TAG" --target tmp-empty --draft=false --prerelease \
             --title "AiBuddy ${TAG#v}" \
