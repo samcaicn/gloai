@@ -2,16 +2,19 @@ name: build-aibuddy
 
 # 智创协同 AI 工作台（mu-desktop / AiBuddy）GitHub 构建载体。
 #
-# 三条硬规矩（用户 2026-10-18 立规）：
-#   1) 源码唯一事实源在腾讯工蜂 clawclaw/aibuddy，**绝不上 GitHub**——
+# 三条硬规矩（用户 2026-10-18 立规，2026-10-21 修正）：
+#   1) 源码唯一事实源在腾讯工蜂 clawclaw/aibuddy，绝不上 GitHub——
 #      本工作流在 runner 临时目录里 git clone 工蜂，源码不写入本仓库任何
-#      分支 / commit / artifact（artifact 只含编译产物，非源码）。
-#   2) 不创建 GitHub Release（release 会强制附带 "Source code (zip/tar.gz)"，
-#      来源是 tag 指向的 commit 树，一旦该 commit 含源码即泄露）。热更新包
-#      只以 **GitHub Actions artifact** 形式留存（artifact 不会自动挂源码包）。
-#   3) 节省流量费：exe 走 GitHub Actions artifact 带宽（免费），由 aibuddy-update
-#      worker 用**只读 token** 读 Actions 把 exe 流式吐给客户端，不落地 Cloudflare
-#      R2（R2 出流量要钱）。几乎零成本、零泄露。
+#      分支 / commit / artifact（artifact 只含编译产物）。
+#   2) 【2026-10-21 修正】构建成功后必须自动发布 GitHub Release（已发布、非 draft、
+#      target=空分支 tmp-empty），含 exe + latest.yml。原因：aibuddy-update worker 仅
+#      在「已发布的非 draft Release」存在时才走 302 azure 直链全速下载；否则退化到
+#      Actions artifact 流式代理（14KB/s + CF 30s 截断 → 客户端热更新卡 0% 死循环）。
+#      无泄露：gloai 仓库不含 aibuddy 源码（源码仅在工蜂、runner 临时 clone），
+#      Release 的 Source code 包来自空分支 tmp-empty，内容为空。旧「不建 Release」
+#      规矩系误判（以为会泄露工蜂源码），现修正。
+#   3) 省流量费：客户端经 worker 302 直链到 GitHub Releases（azure 免鉴权 CDN，免费），
+#      worker 仅做元数据 + 302，不落地 Cloudflare R2（R2 出流量要钱）。
 #
 # 触发：repository_dispatch(event_type=aibuddy-build) 或手动 workflow_dispatch。
 # 工蜂提交版本后运行 ci-artifacts/trigger_build.sh 发送 dispatch 即可，无需
@@ -26,7 +29,8 @@ on:
   repository_dispatch:
     types: [aibuddy-build]
 
-# 不写分支、不建 Release、不推代码：contents 仅读；artifact 上传需 actions:write。
+# 顶层权限保持最小：contents 读，actions 写（上传 artifact）。
+# publish-release job 单独声明 contents: write 覆盖。
 permissions:
   contents: read
   actions: write
@@ -147,3 +151,51 @@ jobs:
             gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
           done
           echo "cleanup done"
+
+  # ============================================================
+  # 自动发布 Release（根治热更新卡 0%）
+  # 构建成功即把 exe+latest.yml 发布为「已发布非 draft」Release，
+  # 使 aibuddy-update worker 走 302 azure 直链全速下载。
+  # target=空分支 tmp-empty → Source code 包为空，gloai 仓库无 aibuddy 源码，零泄露。
+  # ============================================================
+  publish-release:
+    name: Publish Release (302 direct-link, no source leak)
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download exe artifact (same run)
+        uses: actions/download-artifact@v4
+        with:
+          name: aibuddy-exe
+          path: dist/exe
+
+      - name: Download latest.yml artifact (same run)
+        uses: actions/download-artifact@v4
+        with:
+          name: aibuddy-latest-yml
+          path: dist/yml
+
+      - name: Publish release (idempotent, empty-branch target)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -eu
+          EXE=$(find dist -name '*.exe' | head -n1)
+          YML=$(find dist -name 'latest.yml' | head -n1)
+          test -f "$EXE" && test -f "$YML" || { echo "ERROR: artifacts missing"; exit 1; }
+          VER=$(echo "$EXE" | sed -E 's#.*AiBuddy-(.+)-win-x64\.exe#\1#')
+          TAG="v$VER"
+          echo "publishing $TAG (exe=$EXE yml=$YML)"
+          # 幂等：同版本重跑时先清旧的 Release + tag
+          gh release delete "$TAG" --yes --repo samcaicn/gloai 2>/dev/null || true
+          gh api -X DELETE "repos/samcaicn/gloai/git/refs/tags/$TAG" 2>/dev/null || true
+          # 新建：target 空分支 tmp-empty，Source code 包为空，无 aibuddy 源码泄露
+          gh release create "$TAG" --target tmp-empty --draft=false --prerelease \
+            --title "AiBuddy $VER" \
+            --notes "Automated windows-x64 hot-update package (direct-link release)." \
+            --repo samcaicn/gloai "$EXE" "$YML"
+          echo "=== release assets ==="
+          gh release view "$TAG" --repo samcaicn/gloai --json assets -q '.assets[].name'
