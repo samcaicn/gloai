@@ -179,18 +179,64 @@ jobs:
             done
           fi
 
+      # ── Generate latest.yml (hot-update feed) ─────────────────────────────
+      # 更新渠道（2026-10-23 起，COS 渠道已废弃）：
+      #   CI 只留 Actions artifact -> 服务端 (tupaisaasmcp update_server) 只读解析
+      #   本 yml -> download_url 吐 Azure 签名直链 -> app 边下边算 sha256 后静默安装。
+      # 服务端按 <BRAND>-<platform>-latest-yml 精确查找，platform 用
+      # TAURI_TO_BRAND_KEY 的 key（windows / macosintel / macosarm）。
+      # sha256 是给 app 侧 updater_client 校验的，必须是 sha256 而不是 sha512。
+      - name: Generate latest.yml (hot-update feed)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          nsis_dir="src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis"
+          exe=$(ls -1 "$nsis_dir"/*-setup.exe 2>/dev/null | head -1 || true)
+          if [ -z "$exe" ]; then
+            echo "no NSIS installer found, skipping latest.yml"
+            exit 0
+          fi
+          name=$(basename "$exe")
+          ver=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          sha256=$(sha256sum "$exe" | cut -d' ' -f1)
+          sha512=$(sha512sum "$exe" | cut -d' ' -f1)
+          size=$(stat -c%s "$exe")
+          {
+            echo "version: $ver"
+            echo "platform: windows"
+            echo "filename: $name"
+            echo "sha256: $sha256"
+            echo "sha512: $sha512"
+            echo "size: $size"
+            echo "artifact: ${{ env.BRAND }}-windows-x64"
+            echo "notes: build ${{ github.sha }}"
+          } > "$nsis_dir/latest.yml"
+          echo "--- latest.yml ---"
+          cat "$nsis_dir/latest.yml"
+
       - name: Upload NSIS installer (CI)
-        if: env.TAG_NAME == '' && always()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BRAND }}-windows-x64
           path: |
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.sha256
-          retention-days: 30
+          retention-days: 90
           if-no-files-found: warn
 
-      # Tag push: build + create release
+      - name: Upload latest.yml (hot-update feed)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BRAND }}-windows-latest-yml
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/latest.yml
+          retention-days: 90
+          if-no-files-found: warn
+
+      # Tag push: 同样只构建 + 留 artifact，不再创建 GitHub Release
+      # （渠道已是 artifact-only；release/tag 只会和 wipe 策略打架）。
       - name: Build and release
         if: env.TAG_NAME != ''
         uses: tauri-apps/tauri-action@v0
@@ -199,11 +245,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
-          tagName: ${{ env.TAG_NAME }}
-          releaseName: "${{ env.BRAND }} ${{ github.ref_name }}"
-          releaseBody: "See the assets below for download."
-          releaseDraft: false
-          prerelease: false
           args: --target x86_64-pc-windows-msvc --config src-tauri/tauri.${{ env.BRAND }}.conf.json --bundles nsis
 
   # 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
@@ -285,18 +326,61 @@ jobs:
             done
           fi
 
+      # ── Generate latest.yml (hot-update feed) ─────────────────────────────
+      # 同 Windows job：服务端按 <BRAND>-<platform>-latest-yml 查找。
+      # arch-label -> platform key: aarch64 -> macosarm, x64 -> macosintel。
+      - name: Generate latest.yml (hot-update feed)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          dmg_dir="src-tauri/target/${{ matrix.target }}/release/bundle/dmg"
+          dmg=$(ls -1 "$dmg_dir"/*.dmg 2>/dev/null | head -1 || true)
+          if [ -z "$dmg" ]; then
+            echo "no DMG found, skipping latest.yml"
+            exit 0
+          fi
+          name=$(basename "$dmg")
+          ver=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          sha256=$(shasum -a 256 "$dmg" | cut -d' ' -f1)
+          sha512=$(shasum -a 512 "$dmg" | cut -d' ' -f1)
+          size=$(stat -c%s "$dmg")
+          if [ "${{ matrix.arch-label }}" = "aarch64" ]; then pf=macosarm; else pf=macosintel; fi
+          {
+            echo "version: $ver"
+            echo "platform: $pf"
+            echo "filename: $name"
+            echo "sha256: $sha256"
+            echo "sha512: $sha512"
+            echo "size: $size"
+            echo "artifact: ${{ env.BRAND }}-macos-${{ matrix.arch-label }}"
+            echo "notes: build ${{ github.sha }}"
+          } > "$dmg_dir/latest.yml"
+          echo "--- latest.yml ---"
+          cat "$dmg_dir/latest.yml"
+
       - name: Upload DMG (CI)
-        if: env.TAG_NAME == '' && always()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BRAND }}-macos-${{ matrix.arch-label }}
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.sha256
-          retention-days: 30
+          retention-days: 90
           if-no-files-found: warn
 
-      # Tag push: build + create release. Only build dmg on macOS.
+      - name: Upload latest.yml (hot-update feed)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BRAND }}-${{ matrix.arch-label == 'aarch64' && 'macosarm' || 'macosintel' }}-latest-yml
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/latest.yml
+          retention-days: 90
+          if-no-files-found: warn
+
+      # Tag push: 同样只构建 + 留 artifact，不再创建 GitHub Release
+      # （渠道已是 artifact-only）。Only build dmg on macOS.
       - name: Build and release
         if: env.TAG_NAME != ''
         uses: tauri-apps/tauri-action@v0
@@ -305,11 +389,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
-          tagName: ${{ env.TAG_NAME }}
-          releaseName: "${{ env.BRAND }} ${{ github.ref_name }}"
-          releaseBody: "See the assets below for download."
-          releaseDraft: false
-          prerelease: false
           args: --target ${{ matrix.target }} --config src-tauri/tauri.${{ env.BRAND }}.conf.json --bundles dmg
 
   # 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
