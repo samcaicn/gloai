@@ -344,7 +344,8 @@ jobs:
           ver=$(node -p "require('./src-tauri/tauri.conf.json').version")
           sha256=$(shasum -a 256 "$dmg" | cut -d' ' -f1)
           sha512=$(shasum -a 512 "$dmg" | cut -d' ' -f1)
-          size=$(stat -c%s "$dmg")
+          # macOS uses BSD stat (-f%z); Linux/Windows Git Bash use GNU stat (-c%s)
+          size=$(stat -c%s "$dmg" 2>/dev/null || stat -f%z "$dmg")
           if [ "${{ matrix.arch-label }}" = "aarch64" ]; then pf=macosarm; else pf=macosintel; fi
           {
             echo "version: $ver"
