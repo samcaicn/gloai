@@ -128,11 +128,12 @@ jobs:
           BBT_SIGN_KEY: ${{ secrets.BBT_SIGN_KEY }}
         run: |
           if [ -z "$BBT_SIGN_KEY" ]; then
-            echo "FAIL: 缺少 GitHub Secret BBT_SIGN_KEY（Ed25519 私钥 64 hex，配对公钥已嵌入 update.rs）"
+            echo "::error::Secret BBT_SIGN_KEY 取到空值 —— 请在 samcaicn/gloai 仓库 Settings→Secrets and variables→Actions 的【Repository secrets】里添加（不是 Environment secrets / Variables），名字必须精确为 BBT_SIGN_KEY，值=weauto build_keys.json 的 UPDATER_SIGN_KEY(64 hex)"
             exit 1
           fi
-          pip install cryptography
-          python tools/sign_release.py "${{ steps.exe.outputs.exe }}"
+          echo "BBT_SIGN_KEY 已就绪（长度 ${#BBT_SIGN_KEY}，应为 64）"
+          pip install --quiet cryptography || { echo "::error::pip install cryptography 失败"; exit 1; }
+          python tools/sign_release.py "${{ steps.exe.outputs.exe }}" || { echo "::error::sign_release.py 签名失败（检查 BBT_SIGN_KEY 是否 64 hex）"; exit 1; }
           ls -lh "${{ steps.exe.outputs.exe }}" "${{ steps.exe.outputs.exe }}.sig"
 
       - name: Generate updates/version.json

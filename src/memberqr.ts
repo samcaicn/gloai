@@ -15,8 +15,15 @@ import { ilink, onIlinkEvent } from "./ilink";
 interface MemberInfo {
   id: string;
   name: string;
+  realName: string;
+  status: string;
   telephone: string;
   telephoneMask: string;
+}
+
+interface GroupInfo {
+  id: string;
+  name: string;
 }
 
 // ---- hub 成员映射：member_id -> bot_id（持久化在 config.json 的 memberqr.map）----
@@ -103,6 +110,7 @@ export async function renderMemberQr(root: HTMLElement) {
           <h2>BBT-ZB 团员名册</h2>
           <button class="btn small" id="mq-refresh-roster">刷新名册</button>
         </div>
+        <div id="mq-group-bar" class="mt8"></div>
         <p class="hint">每个团员可生成 1 个 iLink 二维码，团员用微信扫码即可把其微信绑定上线。点击「生成二维码」后请尽快扫码（二维码约 2 分钟有效）。</p>
         <div id="mq-roster" class="member-grid">
           <div class="empty">尚未登录或名册为空</div>
@@ -191,15 +199,12 @@ async function onLogin() {
   }
 }
 
-function extractRoster(data: any): MemberInfo[] {
-  // 兼容多种返回结构：{list:[...]} / {members:[...]} / [...] / {data:{...}}
-  let arr: any[] = [];
-  if (Array.isArray(data)) arr = data;
-  else if (data?.list && Array.isArray(data.list)) arr = data.list;
-  else if (data?.members && Array.isArray(data.members)) arr = data.members;
-  return arr.map((m, i) => ({
+function extractRoster(arr: any[]): MemberInfo[] {
+  return (Array.isArray(arr) ? arr : []).map((m, i) => ({
     id: String(m.id ?? m.user_id ?? m.telephone ?? i),
     name: m.name || m.nickname || m.displayName || "",
+    realName: m.realName || "",
+    status: m.status || "active",
     telephone: m.telephone || "",
     telephoneMask: m.telephoneMask || m.telephoneMasked || (m.telephone ? maskTel(m.telephone) : ""),
   }));
@@ -214,35 +219,85 @@ async function loadRoster() {
   const box = g("mq-roster");
   if (!box) return;
   try {
-    const r: any = await api.call("leader/listMembers", {});
-    const data = r?.result?.data ?? r?.data ?? r;
-    const members = extractRoster(data);
-    if (members.length === 0) {
-      box.innerHTML = `<div class="empty">名册为空（或当前团长账号无此权限 / 需指定团）</div>`;
+    // 1) leader/ledger 取团长管理的团列表（官方前端 round.js 同款链路）
+    const lr: any = await api.call("leader/ledger", {});
+    const groups: GroupInfo[] = (((lr?.result?.data ?? lr?.data)?.list) || []).map((x: any) => ({
+      id: String(x.id),
+      name: x.name || `团#${x.id}`,
+    }));
+    if (groups.length === 0) {
+      box.innerHTML = `<div class="empty">当前团长账号还没有管理任何团</div>`;
       return;
     }
-    box.innerHTML = members.map((m) => rosterCard(m)).join("");
-    members.forEach((m) => {
-      memberNames.set(m.id, m.name || m.telephoneMask || m.id);
-      g(`mqgen-${m.id}`)?.addEventListener("click", () => genRosterQr(m));
-    });
+    // 团选择器（多团可切换；单团直接显示）
+    const bar = g("mq-group-bar");
+    if (bar) {
+      bar.innerHTML = groups.length > 1
+        ? `<select id="mq-group" class="input" style="max-width:220px">${groups
+            .map((gp) => `<option value="${esc(gp.id)}">${esc(gp.name)}</option>`)
+            .join("")}</select>`
+        : `<span class="hint">团：${esc(groups[0].name)}</span>`;
+      bar.querySelector("#mq-group")?.addEventListener("change", () => loadMembersOf(currentGroupId()));
+    }
+    await loadMembersOf(currentGroupId());
   } catch (e: any) {
     const msg = e?.message || String(e);
-    const friendly = /未登录|失效|未配置|token/i.test(msg)
+    const friendly = /未登录|失效|未配置|token|会话/i.test(msg)
       ? "请先在上方「团长身份登录」后再查看名册"
       : `拉取名册失败：${esc(msg)}`;
     box.innerHTML = `<div class="empty">${friendly}</div>`;
   }
 }
 
+function currentGroupId(): string {
+  const sel = document.getElementById("mq-group") as HTMLSelectElement | null;
+  if (sel?.value) return sel.value;
+  // 单团时从提示条取，兜底取 ledger 第一团
+  return (window as any).__mqGroupId || "";
+}
+
+async function loadMembersOf(groupId: string) {
+  const box = g("mq-roster");
+  if (!box) return;
+  if (!groupId) {
+    box.innerHTML = `<div class="empty">请先选择团</div>`;
+    return;
+  }
+  (window as any).__mqGroupId = groupId;
+  box.innerHTML = `<div class="empty">加载中…</div>`;
+  try {
+    // 2) leader/listMembers 按团拉成员（condition 必须带 groupId）
+    const r: any = await api.call("leader/listMembers", { groupId: Number(groupId) || groupId });
+    const data = r?.result?.data ?? r?.data ?? {};
+    const members = extractRoster(data?.list ?? []);
+    if (members.length === 0) {
+      box.innerHTML = `<div class="empty">该团暂无成员</div>`;
+      return;
+    }
+    box.innerHTML = members.map((m) => rosterCard(m)).join("");
+    members.forEach((m) => {
+      memberNames.set(m.id, m.name || m.realName || m.telephoneMask || m.id);
+      g(`mqgen-${m.id}`)?.addEventListener("click", () => genRosterQr(m));
+    });
+  } catch (e: any) {
+    const msg = e?.message || String(e);
+    const friendly = /未登录|失效|未配置|token|会话/i.test(msg)
+      ? "请先在上方「团长身份登录」后再查看名册"
+      : `拉取成员失败：${esc(msg)}`;
+    box.innerHTML = `<div class="empty">${friendly}</div>`;
+  }
+}
+
 function rosterCard(m: MemberInfo): string {
-  const title = m.name || m.telephoneMask || m.telephone || m.id;
+  const title = m.name || m.realName || m.telephoneMask || m.id;
   const boundBot = botOfMember(m.id);
+  const stLabel: Record<string, string> = { active: "在团", disabled: "停用", pendingJoin: "审批中" };
+  const stCls = m.status === "active" ? "badge-running" : "";
   return `
     <div class="mcard" data-mid="${esc(m.id)}">
       <div class="row-between">
-        <div class="mcard-name">${esc(title)}</div>
-        ${boundBot ? `<span class="badge badge-running">已绑定</span>` : ""}
+        <div class="mcard-name">${esc(title)}${m.realName && m.realName !== title ? `<span class="mcard-sub">（${esc(m.realName)}）</span>` : ""}</div>
+        ${boundBot ? `<span class="badge badge-running">已绑定</span>` : `<span class="badge ${stCls}">${stLabel[m.status] || m.status}</span>`}
       </div>
       ${m.telephoneMask ? `<div class="mcard-sub">${esc(m.telephoneMask)}</div>` : ""}
       <div class="mcard-qr" id="mqr-${esc(m.id)}"></div>
@@ -297,6 +352,8 @@ async function genAllRosterQr() {
       const m: MemberInfo = {
         id,
         name: c.querySelector(".mcard-name")?.textContent || "",
+        realName: "",
+        status: "active",
         telephone: "",
         telephoneMask: c.querySelector(".mcard-sub")?.textContent || "",
       };

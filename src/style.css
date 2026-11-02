@@ -279,3 +279,4 @@ textarea { resize: vertical; line-height: 1.5; }
 .badge-error { color: var(--err); border-color: var(--err); }
 .warn-btn { border-color: var(--err); color: var(--err); }
 .warn-btn:hover { background: var(--err); color: #fff; }
+.mt8 { margin-top: 8px; }
