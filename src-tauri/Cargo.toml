@@ -1,6 +1,6 @@
 [package]
 name = "bbt-zb-tauri"
-version = "0.1.0"
+version = "0.1.1"
 description = "BBT-ZB 控制台 — 基于 WeAuto 骨架的 Tauri 2 桌面客户端"
 authors = ["zhifu"]
 edition = "2021"
@@ -31,6 +31,11 @@ md-5 = "0.10"
 rand = "0.8"
 hex = "0.4"
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+hmac = "0.12"
+
+# 防破解：设备指纹读 MachineGuid（仅 Windows）
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
 
 [features]
 default = []

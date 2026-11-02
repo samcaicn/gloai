@@ -20,7 +20,7 @@ jobs:
       - name: Verify checkout contains real bbt-zb wiring (anti stale-checkout)
         shell: bash
         run: |
-          for f in src-tauri/src/bbt.rs src-tauri/src/update.rs src/config.ts tools/sign_release.py tools/make_version.py; do
+          for f in src-tauri/src/bbt.rs src-tauri/src/update.rs src-tauri/src/guard.rs src/config.ts tools/sign_release.py tools/make_version.py; do
             [ -s "$f" ] || { echo "FAIL: checkout 缺少 $f（疑似旧树）"; exit 1; }
           done
           grep -q "account/login" src-tauri/src/bbt.rs || { echo "FAIL: bbt.rs 无 account/login"; exit 1; }
@@ -61,8 +61,31 @@ jobs:
         # 故 --frozen-lockfile 可直接通过（无需额外 flag）。
         run: pnpm install --frozen-lockfile
 
+      - name: Generate build secrets (防破解，weauto 模式：每次发行随机)
+        id: secrets
+        shell: bash
+        run: |
+          # 构建期随机密钥 → base64(JSON) → 注入编译期常量（二进制无明文密钥）。
+          # 与 weauto 一致：每次发行随机生成（换盐即换设备 ID/签名域）。
+          BLOB=$(python - <<'PY'
+          import base64, json, secrets
+          blob = {
+              "DEVICE_SALT":    "bz." + secrets.token_hex(16),
+              "CONFIG_SIG_KEY": secrets.token_hex(32),
+              "CLOCK_SALT":     secrets.token_hex(16),
+          }
+          print(base64.b64encode(json.dumps(blob).encode()).decode())
+          PY
+          )
+          echo "blob=$BLOB" >> "$GITHUB_OUTPUT"
+          echo "build secrets generated (base64 len=${#BLOB})"
+
       - name: Build EXE (no bundle)
         shell: pwsh
+        env:
+          # 防破解注入：发行版固杀标记 + 构建期密钥 blob（guard.rs 编译期读取）
+          BBT_RELEASE: "1"
+          BBT_BUILD_SECRETS: ${{ steps.secrets.outputs.blob }}
         run: |
           pnpm tauri build --no-bundle 2>&1 | Tee-Object -FilePath build-output.log
           $code = $LASTEXITCODE

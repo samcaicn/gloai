@@ -10,3 +10,4 @@ tools/build_keys.json
 
 # CI 诊断文件（失败时由 CI 提交回分支，本地忽略）
 ci-diag.txt
+selftest/

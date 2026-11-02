@@ -1,4 +1,5 @@
 mod state;
+mod guard;
 mod autoreply;
 mod wxauto;
 mod bbt;
@@ -28,36 +29,51 @@ pub fn run() {
                     eprintln!("应用待升级包失败: {}", e);
                 }
             }
+            // 防启动竞态：Tauri 2 的配置窗口先于 setup 完成加载，页面会立刻 invoke
+            // 命令（bridge_get_config 等）。State 参数在命令解析期提取，state 未注册
+            // 会直接 panic（CI 产物自测复现）。故先以默认值 manage 全部 state，
+            // 再读盘填充配置。
+            let cfg_dir = handle
+                .path()
+                .app_config_dir()
+                .unwrap_or_else(|_| std::env::temp_dir());
+            let sm = Arc::new(ilink_session::SessionManager::new(handle.clone(), cfg_dir.clone()));
+            let bs = Arc::new(bridge::BridgeState::new());
+            let ars = Arc::new(autoreply::AutoReplyState::new());
+            let ws = Arc::new(wxauto::WxAutoState::new());
+            app.manage(sm.clone());
+            app.manage(bs.clone());
+            app.manage(ars.clone());
+            app.manage(ws.clone());
+
             // 启动时把磁盘上的本地配置载入内存
             let state = app.state::<state::AppState>();
             state.init(&handle);
 
             // iLink 多账号会话管理：载入已登录账号并恢复会话（本地保活）
-            let cfg_dir = handle
-                .path()
-                .app_config_dir()
-                .unwrap_or_else(|_| std::env::temp_dir());
-            let sm = Arc::new(ilink_session::SessionManager::new(handle.clone(), cfg_dir));
             sm.init();
+
+            // 防破解（weauto 移植）：发行版输出设备指纹与加固态（只打哈希，无 PII）
+            eprintln!(
+                "[guard] release={} device={:?} rollback={}",
+                guard::is_release(),
+                guard::device_id(&cfg_dir),
+                guard::rollback_count(&cfg_dir),
+            );
 
             // 团长聊天桥：配置持久化在 config.json 的 bridge 字段
             let bridge_cfg: bridge::BridgeConfig = serde_json::from_value(
                 state.config.lock().unwrap().get("bridge").cloned().unwrap_or(serde_json::json!({})),
             )
             .unwrap_or_default();
-            let bs = Arc::new(bridge::BridgeState::new());
             *bs.config.lock().unwrap() = bridge_cfg;
             // 微信自动回复：配置持久化在 config.json 的 autoreply 字段
             let ar_cfg: autoreply::AutoReplyConfig = serde_json::from_value(
                 state.config.lock().unwrap().get("autoreply").cloned().unwrap_or(serde_json::json!({})),
             )
             .unwrap_or_default();
-            let ars = Arc::new(autoreply::AutoReplyState::new());
             *ars.config.lock().unwrap() = ar_cfg;
-            // 顺序：先 manage，再拉起桥任务（任务内部每轮从 state 取最新配置）
-            app.manage(sm.clone());
-            app.manage(bs.clone());
-            app.manage(ars.clone());
+            // 顺序：state 已全部注册，此时拉起桥任务（任务内部每轮从 state 取最新配置）
             bridge::ensure_started(handle.clone());
             autoreply::ensure_started(handle.clone());
 
@@ -66,9 +82,7 @@ pub fn run() {
                 state.config.lock().unwrap().get("wxauto").cloned().unwrap_or(serde_json::json!({})),
             )
             .unwrap_or_default();
-            let ws = Arc::new(wxauto::WxAutoState::new());
             *ws.config.lock().unwrap() = wx_cfg.clone();
-            app.manage(ws.clone());
             if wx_cfg.enabled {
                 wxauto::ensure_started(handle.clone());
             }

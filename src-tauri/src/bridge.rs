@@ -146,7 +146,9 @@ fn extract_msg_list(data: &Value) -> Vec<Value> {
 /// 读取最新配置与 bbt-zb 连接（支持启动后才登录）。
 pub fn ensure_started(app: AppHandle) {
     {
-        let bs = app.state::<BridgeState>();
+        // 注意类型必须与 lib.rs 注册的一致：manage 的是 Arc<BridgeState>，
+        // 用裸 BridgeState 取会 state() panic（CI 产物自测抓到的启动崩溃根因）
+        let bs = app.state::<Arc<BridgeState>>();
         let mut r = bs.running.lock().unwrap();
         if *r {
             return;
