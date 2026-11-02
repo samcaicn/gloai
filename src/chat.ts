@@ -1,6 +1,6 @@
 // 团长聊天工作台：iLink 多账号扫码 + 会话收发（文本/图片/语音）+ 1对多桥开关。
 // 数据面全部走 ilink.ts -> Rust 后端；Rust 经 "ilink-event" 事件实时推送。
-import { ilink, bridgeApi, autoreplyApi, onIlinkEvent, onAutoreplyEvent, IlinkEvent, AccountInfo, ChatRecord, BridgeConfig, AutoReplyConfig, AutoReplyLog, mediaDataUrl, fileToB64 } from "./ilink";
+import { ilink, bridgeApi, autoreplyApi, wxautoApi, onIlinkEvent, onAutoreplyEvent, onWxautoEvent, IlinkEvent, AccountInfo, ChatRecord, BridgeConfig, AutoReplyConfig, AutoReplyLog, mediaDataUrl, fileToB64 } from "./ilink";
 
 interface ChatState {
   accounts: AccountInfo[];
@@ -76,6 +76,15 @@ export function renderChat(container: HTMLElement) {
             <button class="btn small" id="ar-save">保存自动回复</button>
           </div>
           <div class="ar-log" id="ar-log"></div>
+          <div class="acc-head mt8"><span>微信通道（wxauto · 私聊+群聊）</span></div>
+          <label class="switch"><input type="checkbox" id="wx-toggle"/><span></span></label>
+          <div class="bridge-hint">开启后：本机微信（需已登录桌面端）的<b>私聊/群聊</b>新消息经 wechatauto 通道进入同一条 AI 回复管线——过滤规则、团员账号、配额与上方面板共用，回复经 UI 自动化发回微信。</div>
+          <input id="wx-python" class="input" placeholder="Python 解释器路径（空=自动探测 weauto venv）" />
+          <div class="ar-row" id="wx-status">状态：未知</div>
+          <div class="btn-row">
+            <button class="btn small" id="wx-save">保存微信通道</button>
+            <button class="btn small" id="wx-restart">重启通道</button>
+          </div>
         </div>
       </aside>
       <div class="chat-main">
@@ -109,6 +118,7 @@ export function renderChat(container: HTMLElement) {
   refreshAccounts();
   refreshBridge();
   refreshAutoreply();
+  void refreshWxChannel();
 }
 
 function toast(msg: string, ok = true) {
@@ -128,6 +138,9 @@ function wire() {
   document.getElementById("bridge-save")?.addEventListener("click", saveBridgeTargets);
   document.getElementById("ar-toggle")?.addEventListener("change", onArToggle);
   document.getElementById("ar-save")?.addEventListener("click", saveAutoreply);
+  document.getElementById("wx-toggle")?.addEventListener("change", onWxToggle);
+  document.getElementById("wx-save")?.addEventListener("click", saveWxChannel);
+  document.getElementById("wx-restart")?.addEventListener("click", restartWxChannel);
   document.getElementById("btn-send")?.addEventListener("click", sendCurrent);
   document.getElementById("msg-input")?.addEventListener("keydown", (e) => {
     if ((e as KeyboardEvent).key === "Enter") sendCurrent();
@@ -566,6 +579,59 @@ async function saveAutoreply() {
   }
 }
 
+// ---------------- 微信 wxauto 通道 ----------------
+
+async function refreshWxChannel() {
+  let cfg;
+  try {
+    cfg = await wxautoApi.getConfig();
+  } catch {
+    return;
+  }
+  const t = document.getElementById("wx-toggle") as HTMLInputElement | null;
+  const py = document.getElementById("wx-python") as HTMLInputElement | null;
+  const st = document.getElementById("wx-status");
+  if (t) t.checked = !!cfg.enabled;
+  if (py) py.value = cfg.python_path || "";
+  if (st) {
+    st.textContent = `状态：${cfg.enabled ? (cfg.running ? "运行中（私聊+群聊监听）" : "已开启，sidecar 启动中…") : "已关闭"}`;
+  }
+}
+
+async function onWxToggle(e: Event) {
+  const on = (e.target as HTMLInputElement).checked;
+  try {
+    await wxautoApi.setConfig({ enabled: on });
+    toast(on ? "微信通道已开启（需本机微信已登录）" : "微信通道已关闭");
+  } catch (err: any) {
+    toast("切换失败：" + (err?.message || err), false);
+    (e.target as HTMLInputElement).checked = !on;
+  }
+  void refreshWxChannel();
+}
+
+async function saveWxChannel() {
+  const py = document.getElementById("wx-python") as HTMLInputElement | null;
+  try {
+    await wxautoApi.setConfig({ python_path: py?.value.trim() || "" });
+    toast("微信通道配置已保存");
+  } catch (err: any) {
+    toast("保存失败：" + (err?.message || err), false);
+  }
+  void refreshWxChannel();
+}
+
+async function restartWxChannel() {
+  try {
+    await wxautoApi.stop();
+    await wxautoApi.start();
+    toast("微信通道已重启");
+  } catch (err: any) {
+    toast("重启失败：" + (err?.message || err), false);
+  }
+  void refreshWxChannel();
+}
+
 // ---------------- 事件 ----------------
 
 export async function initChatEvents() {
@@ -590,6 +656,15 @@ export async function initChatEvents() {
     const div = document.createElement("div");
     div.className = "ar-line " + l.level;
     div.innerHTML = `<span class="ar-t">${fmtTime(l.ts)}</span>${esc(l.msg)}`;
+    box.prepend(div);
+    while (box.children.length > 40) box.lastChild?.remove();
+  });
+  await onWxautoEvent((l: AutoReplyLog) => {
+    const box = document.getElementById("ar-log");
+    if (!box) return;
+    const div = document.createElement("div");
+    div.className = "ar-line " + l.level;
+    div.innerHTML = `<span class="ar-t">${fmtTime(l.ts)}</span>[微信] ${esc(l.msg)}`;
     box.prepend(div);
     while (box.children.length > 40) box.lastChild?.remove();
   });

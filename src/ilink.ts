@@ -108,6 +108,27 @@ export function onAutoreplyEvent(cb: (e: AutoReplyLog) => void): Promise<Unliste
   return listen<AutoReplyLog>("autoreply-event", (ev) => cb(ev.payload));
 }
 
+// ---------------- 微信 wxauto 通道（wechatauto sidecar） ----------------
+
+export interface WxAutoConfig {
+  enabled: boolean;
+  python_path: string;
+  vendor_path: string;
+  running?: boolean;
+}
+
+export const wxautoApi = {
+  getConfig: () => invoke<WxAutoConfig>("wxauto_get_config"),
+  setConfig: (value: Partial<WxAutoConfig>) => invoke<WxAutoConfig>("wxauto_set_config", { value }),
+  start: () => invoke<{ ok: boolean }>("wxauto_start"),
+  stop: () => invoke<{ ok: boolean }>("wxauto_stop"),
+  logs: (limit = 50) => invoke<AutoReplyLog[]>("wxauto_logs", { limit }),
+};
+
+export function onWxautoEvent(cb: (e: AutoReplyLog) => void): Promise<UnlistenFn> {
+  return listen<AutoReplyLog>("wxauto-event", (ev) => cb(ev.payload));
+}
+
 // 媒体 data-URL 缓存（避免重复下载）
 const mediaCache = new Map<string, string>();
 

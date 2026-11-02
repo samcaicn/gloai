@@ -1,5 +1,6 @@
 mod state;
 mod autoreply;
+mod wxauto;
 mod bbt;
 mod bridge;
 mod commands;
@@ -58,7 +59,19 @@ pub fn run() {
             app.manage(bs.clone());
             app.manage(ars.clone());
             bridge::ensure_started(handle.clone());
-            autoreply::ensure_started(handle);
+            autoreply::ensure_started(handle.clone());
+
+            // 微信 wxauto 通道：配置持久化在 config.json 的 wxauto 字段
+            let wx_cfg: wxauto::WxAutoConfig = serde_json::from_value(
+                state.config.lock().unwrap().get("wxauto").cloned().unwrap_or(serde_json::json!({})),
+            )
+            .unwrap_or_default();
+            let ws = Arc::new(wxauto::WxAutoState::new());
+            *ws.config.lock().unwrap() = wx_cfg.clone();
+            app.manage(ws.clone());
+            if wx_cfg.enabled {
+                wxauto::ensure_started(handle.clone());
+            }
             Ok(())
         })
         .manage(state::AppState::new())
@@ -98,6 +111,12 @@ pub fn run() {
             // 团员 iLink 二维码（hub 成员映射）
             commands::memberqr_get_map,
             commands::memberqr_set_map,
+            // 微信 wxauto 通道
+            commands::wxauto_get_config,
+            commands::wxauto_set_config,
+            commands::wxauto_start,
+            commands::wxauto_stop,
+            commands::wxauto_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running bbt-zb-tauri");

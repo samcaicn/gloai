@@ -447,3 +447,102 @@ pub async fn memberqr_set_map(app: tauri::AppHandle, map: Value) -> Result<Value
     let _ = state.save_config();
     Ok(map)
 }
+
+// ============================================================================
+//  微信 wxauto 通道（wechatauto sidecar：私聊+群聊 → 统一 AI 回复管线）
+// ============================================================================
+
+#[tauri::command]
+pub async fn wxauto_get_config(
+    app: tauri::AppHandle,
+    wx: State<'_, Arc<crate::wxauto::WxAutoState>>,
+) -> Result<Value, String> {
+    let c = wx.config.lock().unwrap().clone();
+    let running = crate::wxauto::is_running(&app);
+    let mut v = serde_json::to_value(c).map_err(|e| e.to_string())?;
+    if let Some(o) = v.as_object_mut() {
+        o.insert("running".into(), json!(running));
+    }
+    Ok(v)
+}
+
+#[tauri::command]
+pub async fn wxauto_set_config(
+    app: tauri::AppHandle,
+    wx: State<'_, Arc<crate::wxauto::WxAutoState>>,
+    value: Value,
+) -> Result<Value, String> {
+    let cfg: crate::wxauto::WxAutoConfig =
+        serde_json::from_value(value).map_err(|e| format!("配置格式错误: {}", e))?;
+    *wx.config.lock().unwrap() = cfg.clone();
+    {
+        let state = app.state::<AppState>();
+        {
+            let mut g = state.config.lock().unwrap();
+            if let Some(obj) = g.as_object_mut() {
+                obj.insert("wxauto".into(), serde_json::to_value(&cfg).unwrap_or(json!({})));
+            }
+        }
+        let _ = state.save_config();
+    }
+    // 开关即生效：关=停子进程；开=supervisor 下一轮自动拉起
+    if cfg.enabled {
+        crate::wxauto::ensure_started(app.clone());
+    } else {
+        crate::wxauto::stop(&app).await;
+    }
+    serde_json::to_value(cfg).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn wxauto_start(app: tauri::AppHandle) -> Result<Value, String> {
+    {
+        let wx = app.state::<Arc<crate::wxauto::WxAutoState>>();
+        wx.config.lock().unwrap().enabled = true;
+        let cfg = wx.config.lock().unwrap().clone();
+        {
+            let state = app.state::<AppState>();
+            {
+                let mut g = state.config.lock().unwrap();
+                if let Some(obj) = g.as_object_mut() {
+                    obj.insert("wxauto".into(), serde_json::to_value(&cfg).unwrap_or(json!({})));
+                }
+            }
+            let _ = state.save_config();
+        }
+    }
+    crate::wxauto::ensure_started(app.clone());
+    Ok(json!({"ok": true}))
+}
+
+#[tauri::command]
+pub async fn wxauto_stop(app: tauri::AppHandle) -> Result<Value, String> {
+    {
+        let wx = app.state::<Arc<crate::wxauto::WxAutoState>>();
+        wx.config.lock().unwrap().enabled = false;
+        let cfg = wx.config.lock().unwrap().clone();
+        {
+            let state = app.state::<AppState>();
+            {
+                let mut g = state.config.lock().unwrap();
+                if let Some(obj) = g.as_object_mut() {
+                    obj.insert("wxauto".into(), serde_json::to_value(&cfg).unwrap_or(json!({})));
+                }
+            }
+            let _ = state.save_config();
+        }
+    }
+    crate::wxauto::stop(&app).await;
+    Ok(json!({"ok": true}))
+}
+
+/// wxauto 通道最近日志
+#[tauri::command]
+pub async fn wxauto_logs(
+    wx: State<'_, Arc<crate::wxauto::WxAutoState>>,
+    limit: Option<usize>,
+) -> Result<Value, String> {
+    let lg = wx.logs.lock().unwrap();
+    let n = limit.unwrap_or(50).min(lg.len());
+    Ok(json!(lg[lg.len() - n..].to_vec()))
+}

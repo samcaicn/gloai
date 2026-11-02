@@ -121,6 +121,28 @@ fn now_ms() -> i64 {
         .unwrap_or(0)
 }
 
+/// 供其他模块（wxauto 等）记日志用的时间戳
+pub fn now_ms_pub() -> i64 {
+    now_ms()
+}
+
+/// 统一入站消息（多通道）：iLink 团员 / 微信 wxauto，都是「客户」。
+#[derive(Debug, Clone)]
+pub struct WxMsg {
+    /// "ilink" | "wx"
+    pub channel: String,
+    /// ilink：该消息所属 bot 账号（回复走它）；wx：空
+    pub bot_id: String,
+    /// 回复目标：ilink 私聊=peer / 群聊=group_id；wx=会话 username（wxid_xxx / xxx@chatroom）
+    pub peer: String,
+    pub is_group: bool,
+    /// "text" | "voice"
+    pub kind: String,
+    pub text: String,
+    /// 发送者标识（wx=群成员昵称，ilink=空），仅日志用
+    pub sender: String,
+}
+
 /// 启动自动回复任务（幂等）。每轮从 state 读最新配置，支持运行中改配置。
 pub fn ensure_started(app: AppHandle) {
     {
@@ -143,6 +165,7 @@ pub fn ensure_started(app: AppHandle) {
             };
             let mgr = Arc::clone(&mgr);
             let mut inbound_rx = mgr.subscribe_inbound();
+            let _ = &mgr;
             loop {
                 // 每条事件都取最新配置（运行中改配置立即生效）
                 match inbound_rx.recv().await {
@@ -151,7 +174,7 @@ pub fn ensure_started(app: AppHandle) {
                         if !cfg.enabled {
                             continue;
                         }
-                        if let Err(e) = handle_inbound(&app, &ar, &mgr, &cfg, &ev).await {
+                        if let Err(e) = handle_inbound(&app, &ar, &ev).await {
                             ar.log(&app, "warn", &e, json!({}));
                         }
                     }
@@ -193,8 +216,6 @@ fn at_triggered(text: &str, at_names: &[String], keywords: &[String]) -> bool {
 async fn handle_inbound(
     app: &AppHandle,
     ar: &Arc<AutoReplyState>,
-    mgr: &Arc<SessionManager>,
-    cfg: &AutoReplyConfig,
     ev: &Value,
 ) -> Result<(), String> {
     if ev.get("kind").and_then(|v| v.as_str()) != Some("message")
@@ -204,7 +225,7 @@ async fn handle_inbound(
     }
     let rec = ev.get("record").cloned().unwrap_or(json!(null));
     let kind = rec.get("kind").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let mut text = rec.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let text = rec.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let bot_id = rec.get("bot_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let peer = rec.get("peer").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let group_id = ev
@@ -212,16 +233,70 @@ async fn handle_inbound(
         .and_then(|v| v.as_str())
         .unwrap_or("")
         .to_string();
-    let is_group = !group_id.is_empty();
-    let to = if is_group { group_id.clone() } else { peer.clone() };
+    // 回复目标：群聊回 group_id，私聊回 peer
+    let reply_to = if !group_id.is_empty() { group_id.clone() } else { peer.clone() };
+    let msg = WxMsg {
+        channel: "ilink".into(),
+        bot_id,
+        peer: reply_to,
+        is_group: !group_id.is_empty(),
+        kind,
+        text,
+        sender: String::new(),
+    };
+    process_msg_with(app, ar, msg).await
+}
+
+/// wxauto 通道入口（wxauto.rs 调用）：微信私聊/群聊消息进统一管线。
+pub async fn process_wx_msg(
+    app: &AppHandle,
+    peer: String,
+    is_group: bool,
+    text: String,
+    sender: String,
+) -> Result<(), String> {
+    let Some(ar) = app.try_state::<Arc<AutoReplyState>>() else {
+        return Err("自动回复模块未初始化".into());
+    };
+    let msg = WxMsg {
+        channel: "wx".into(),
+        bot_id: String::new(),
+        peer,
+        is_group,
+        kind: "text".into(),
+        text,
+        sender,
+    };
+    process_msg_with(app, &ar, msg).await
+}
+
+/// wxauto 通道便捷入口（从 app 取状态）。
+pub async fn process_msg(app: &AppHandle, msg: WxMsg) -> Result<(), String> {
+    let Some(ar) = app.try_state::<Arc<AutoReplyState>>() else {
+        return Err("自动回复模块未初始化".into());
+    };
+    process_msg_with(app, &ar, msg).await
+}
+
+/// 统一管线：过滤 → 团员 chat/send 触发服务端 AI → 按 channel 原路回发。
+async fn process_msg_with(
+    app: &AppHandle,
+    ar: &Arc<AutoReplyState>,
+    msg: WxMsg,
+) -> Result<(), String> {
+    let cfg = ar.config.lock().unwrap().clone();
+    let to = msg.peer.clone();
+    let mut text = msg.text.clone();
+    let is_group = msg.is_group;
+    let ch = msg.channel.as_str();
 
     // ---- 触发过滤 ----
-    let trigger = match kind.as_str() {
+    let trigger = match msg.kind.as_str() {
         "text" => true,
         "voice" => cfg.reply_voice && !text.trim().is_empty(),
         _ => false,
     };
-    if !trigger || bot_id.is_empty() || to.is_empty() {
+    if !trigger || to.is_empty() {
         return Ok(());
     }
     if is_group {
@@ -247,24 +322,25 @@ async fn handle_inbound(
     if text.trim().is_empty() {
         return Ok(());
     }
-    // 冷却
+    // 冷却（key = 通道|会话，wx 与 ilink 互不挤占）
     {
         let mut lr = ar.last_reply.lock().unwrap();
         let now = now_ms();
         let cd = (cfg.cooldown_sec.max(1) as i64) * 1000;
-        if let Some(t) = lr.get(&to) {
+        let key = format!("{}|{}", ch, to);
+        if let Some(t) = lr.get(&key) {
             if now - *t < cd {
                 return Ok(());
             }
         }
-        lr.insert(to.clone(), now);
+        lr.insert(key, now);
         if lr.len() > 2000 {
             lr.clear();
         }
     }
 
     // ---- 团员身份：拿可用的 bbt-zb 连接（含 token）----
-    let member_conn = ensure_member_conn(app, ar, cfg).await?;
+    let member_conn = ensure_member_conn(app, ar, &cfg).await?;
 
     // ---- 调 chat/send 触发服务端 AI ----
     let result = match bbt::call(&member_conn, "chat/send", &json!({ "content": text })).await {
@@ -274,7 +350,7 @@ async fn handle_inbound(
             if e.contains("失效") || e.contains("未登录") {
                 ar.log(app, "info", "团员会话失效，重新登录…", json!({}));
                 *ar.member.lock().unwrap() = None;
-                let mc = ensure_member_conn(app, ar, cfg).await?;
+                let mc = ensure_member_conn(app, ar, &cfg).await?;
                 bbt::call(&mc, "chat/send", &json!({ "content": text })).await?
             } else {
                 return Err(format!("chat/send 失败: {}", e));
@@ -283,9 +359,9 @@ async fn handle_inbound(
     };
     let ok = result.get("status").and_then(|s| s.as_bool()).unwrap_or(false);
     if !ok {
-        let msg = result.get("msg").and_then(|m| m.as_str()).unwrap_or("chat/send 被拒绝");
-        ar.log(app, "warn", &format!("bbt-zb 拒绝: {}", msg), json!({"to": to, "text": text}));
-        return Err(msg.to_string());
+        let msg_s = result.get("msg").and_then(|m| m.as_str()).unwrap_or("chat/send 被拒绝");
+        ar.log(app, "warn", &format!("bbt-zb 拒绝: {}", msg_s), json!({"channel": ch, "to": to, "text": text}));
+        return Err(msg_s.to_string());
     }
     let data = result.get("data").cloned().unwrap_or(json!(null));
     // 缓存 sessionId（团员与团长的平台会话，日志排查用）
@@ -305,28 +381,50 @@ async fn handle_inbound(
         } else {
             "AI 无回复：服务端未返回 autoReply"
         };
-        ar.log(app, "warn", reason, json!({"to": to, "text": text}));
+        ar.log(app, "warn", reason, json!({"channel": ch, "to": to, "text": text}));
         return Err(reason.to_string());
     }
 
-    // ---- 回发微信 ----
-    let (tx, rx) = tokio::sync::oneshot::channel();
-    let sent = mgr
-        .send_cmd(&bot_id, SessionCmd::SendText { to: to.clone(), text: reply.clone(), reply: tx })
-        .is_ok();
-    let send_result = if sent { rx.await.unwrap_or_else(|_| Err("会话无响应".into())) } else { Err("该账号未在线".into()) };
-    match send_result {
+    // ---- 原路回发 ----
+    let ch_label = if is_group { "群" } else { "私聊" };
+    let send_res = match ch {
+        "wx" => crate::wxauto::send_text(app, &to, &reply).await,
+        _ => {
+            // ilink：经该消息所属 bot 账号回发
+            let Some(mgr) = app.try_state::<Arc<SessionManager>>() else {
+                return Err("iLink 会话管理未初始化".into());
+            };
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            let sent = mgr
+                .send_cmd(&msg.bot_id, SessionCmd::SendText { to: to.clone(), text: reply.clone(), reply: tx })
+                .is_ok();
+            if sent {
+                rx.await
+                    .unwrap_or_else(|_| Err("会话无响应".into()))
+                    .map(|_| ())
+            } else {
+                Err("该账号未在线".into())
+            }
+        }
+    };
+    match send_res {
         Ok(_) => {
             ar.log(
                 app,
                 "info",
-                &format!("已自动回复 {} ← AI({} 字)", if is_group { "群" } else { "私聊" }, reply.chars().count()),
-                json!({"to": to, "question": text, "reply": reply}),
+                &format!(
+                    "[{}]已自动回复 {}{} ← AI({} 字)",
+                    if ch == "wx" { "微信" } else { "iLink" },
+                    ch_label,
+                    if is_group && !msg.sender.is_empty() { format!("·{}", msg.sender) } else { String::new() },
+                    reply.chars().count()
+                ),
+                json!({"channel": ch, "to": to, "question": text, "reply": reply}),
             );
             Ok(())
         }
         Err(e) => {
-            ar.log(app, "warn", &format!("回发微信失败: {}", e), json!({"to": to, "reply": reply}));
+            ar.log(app, "warn", &format!("回发失败({}): {}", ch, e), json!({"channel": ch, "to": to, "reply": reply}));
             Err(e)
         }
     }

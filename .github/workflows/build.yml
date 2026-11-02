@@ -133,7 +133,15 @@ jobs:
           fi
           echo "BBT_SIGN_KEY 已就绪（长度 ${#BBT_SIGN_KEY}，应为 64）"
           pip install --quiet cryptography || { echo "::error::pip install cryptography 失败"; exit 1; }
-          python tools/sign_release.py "${{ steps.exe.outputs.exe }}" || { echo "::error::sign_release.py 签名失败（检查 BBT_SIGN_KEY 是否 64 hex）"; exit 1; }
+          if ! printf '%s' "$BBT_SIGN_KEY" | grep -qE '^[0-9a-fA-F]{64}$'; then
+            echo "::error::BBT_SIGN_KEY 不是 64 位纯 hex（实际长度 ${#BBT_SIGN_KEY}）。请粘贴 weauto tools/build_keys.json 中 UPDATER_SIGN_KEY 的裸 hex 值：不要引号、不要 0x 前缀、无空格/换行"
+            exit 1
+          fi
+          OUT=$(python tools/sign_release.py "${{ steps.exe.outputs.exe }}" 2>&1) || {
+            echo "::error::sign_release.py 失败(KEY长度 ${#BBT_SIGN_KEY})。输出摘要: ${OUT:0:600}"
+            exit 1
+          }
+          echo "$OUT"
           ls -lh "${{ steps.exe.outputs.exe }}" "${{ steps.exe.outputs.exe }}.sig"
 
       - name: Generate updates/version.json
