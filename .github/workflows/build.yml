@@ -127,6 +127,11 @@ jobs:
         env:
           BBT_SIGN_KEY: ${{ secrets.BBT_SIGN_KEY }}
         run: |
+          {
+            echo "=== sign @ $(date -u +%FT%TZ)"
+            echo "key_len=${#BBT_SIGN_KEY} (应为64)"
+            if printf '%s' "$BBT_SIGN_KEY" | grep -qE '^[0-9a-fA-F]{64}$'; then echo "key_format=ok"; else echo "key_format=BAD(非64位纯hex)"; fi
+          } > ci-diag.txt
           if [ -z "$BBT_SIGN_KEY" ]; then
             echo "::error::Secret BBT_SIGN_KEY 取到空值 —— 请在 samcaicn/gloai 仓库 Settings→Secrets and variables→Actions 的【Repository secrets】里添加（不是 Environment secrets / Variables），名字必须精确为 BBT_SIGN_KEY，值=weauto build_keys.json 的 UPDATER_SIGN_KEY(64 hex)"
             exit 1
@@ -137,10 +142,12 @@ jobs:
             echo "::error::BBT_SIGN_KEY 不是 64 位纯 hex（实际长度 ${#BBT_SIGN_KEY}）。请粘贴 weauto tools/build_keys.json 中 UPDATER_SIGN_KEY 的裸 hex 值：不要引号、不要 0x 前缀、无空格/换行"
             exit 1
           fi
-          OUT=$(python tools/sign_release.py "${{ steps.exe.outputs.exe }}" 2>&1) || {
-            echo "::error::sign_release.py 失败(KEY长度 ${#BBT_SIGN_KEY})。输出摘要: ${OUT:0:600}"
+          OUT=$(python tools/sign_release.py "${{ steps.exe.outputs.exe }}" 2>&1); RC=$?
+          { echo "--- sign_release.py (exit=$RC)"; echo "$OUT"; } >> ci-diag.txt
+          if [ $RC -ne 0 ]; then
+            echo "::error::sign_release.py 签名失败(KEY长度 ${#BBT_SIGN_KEY})。输出摘要: ${OUT:0:500}"
             exit 1
-          }
+          fi
           echo "$OUT"
           ls -lh "${{ steps.exe.outputs.exe }}" "${{ steps.exe.outputs.exe }}.sig"
 
@@ -161,14 +168,14 @@ jobs:
         run: |
           TAG="${{ steps.ver.outputs.tag }}"
           # 已存在则删除重建（升级包幂等）
-          gh release delete "$TAG" --yes || true
+          gh release delete "$TAG" --yes >> ci-diag.txt 2>&1 || true
           gh release create "$TAG" \
             --title "BBT-ZB 控制台 ${{ steps.ver.outputs.version }}" \
             --notes "${{ steps.ver.outputs.version }}" \
             --prerelease=false \
             "${{ steps.exe.outputs.exe }}" \
             "${{ steps.exe.outputs.exe }}.sig" \
-            updates/version.json
+            updates/version.json >> ci-diag.txt 2>&1 || { echo "::error::gh release create 失败，详见 ci-diag.txt(已提交回分支)"; exit 1; }
 
       - name: Commit version.json back to pcapp (raw 升级源)
         shell: bash
@@ -184,6 +191,18 @@ jobs:
         shell: bash
         run: |
           tail -c 60000 src-tauri/target/x86_64-pc-windows-msvc/release/build/*/output 2>/dev/null || true
+
+      - name: Commit diagnostics to pcapp on failure
+        if: failure()
+        shell: bash
+        run: |
+          # 诊断落盘到仓库（git 可读，绕开 logs API 的权限/限流）
+          { echo "=== failure @ $(date -u +%FT%TZ) sha=${{ github.sha }}"; tail -c 2500 build-output.log 2>/dev/null; } >> ci-diag.txt 2>/dev/null || true
+          git config user.email "ci@bbt-zb.dev"
+          git config user.name "bbt-zb CI"
+          git add -f ci-diag.txt
+          git commit -m "chore: CI failure diagnostics [skip ci]" || { echo "no diag change"; exit 0; }
+          git push origin HEAD:pcapp
 
       - name: Upload Artifact (90d)
         uses: actions/upload-artifact@v4

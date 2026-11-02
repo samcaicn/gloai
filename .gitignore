@@ -7,3 +7,6 @@ src-tauri/gen
 
 # 升级签名私钥 —— 绝不入库（CI 用 GitHub Secret BBT_SIGN_KEY）
 tools/build_keys.json
+
+# CI 诊断文件（失败时由 CI 提交回分支，本地忽略）
+ci-diag.txt

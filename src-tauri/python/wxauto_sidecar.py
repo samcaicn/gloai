@@ -11,12 +11,20 @@
     {"type":"ping","ts":1690000000}
 
   stdin <- Rust
-    {"cmd":"send","peer":"wxid_xxx|xxx@chatroom","text":"..."}
+    {"cmd":"send","peer":"wxid_xxx|xxx@chatroom","text":"...","req":"id1"}
+    {"cmd":"send_image","peer":"...","b64":"<base64 png/jpg>","req":"id2"}
+    {"cmd":"sessions","limit":100,"req":"id3"}
+
+  响应（均回带 req 原样回传）：
+    {"type":"sent","peer":"...","ok":true|false,"msg":"...","req":"id1"}
+    {"type":"sent_image","peer":"...","ok":true|false,"msg":"...","req":"id2"}
+    {"type":"sessions","sessions":[{"id","name","is_group","summary","last_time"}],"req":"id3"}
 
 行为：
   * WeChatDB + Listener 全会话增量监听（私聊+群聊，新会话自动发现）；
     只转发「他人发的文本消息」（type==1，sender_id==2 视为自己，跳过）。
   * 发送用 guia.quick_send(text, who)，who 传会话 username（wxid_xxx / xxx@chatroom）。
+  * 发图用 guia.quick_send_image(path, who)：b64 先落临时文件再发。
   * 心跳每 15s 一条 ping，Rust 侧据此判活。
 """
 
@@ -56,7 +64,7 @@ def main() -> int:
 
     try:
         from wechatauto.db import WeChatDB, Listener
-        from wechatauto.guia import quick_send
+        from wechatauto.guia import quick_send, quick_send_image
     except Exception as e:
         out({"type": "status", "event": "error", "msg": f"wechatauto 导入失败: {e}"})
         return 2
@@ -124,20 +132,77 @@ def main() -> int:
             cmd = json.loads(line)
         except Exception:
             continue
-        if cmd.get("cmd") != "send":
-            continue
-        peer = (cmd.get("peer") or "").strip()
-        text = cmd.get("text") or ""
-        if not peer or not text:
-            out({"type": "sent", "peer": peer, "ok": False, "msg": "peer/text 为空"})
-            continue
-        try:
-            r = quick_send(text, peer)
-            ok = bool(r.get("ok", True)) if isinstance(r, dict) else True
-            msg = (r.get("msg") or "") if isinstance(r, dict) else ""
-            out({"type": "sent", "peer": peer, "ok": ok, "msg": str(msg)})
-        except Exception as e:
-            out({"type": "sent", "peer": peer, "ok": False, "msg": repr(e)})
+        kind = cmd.get("cmd")
+        req = cmd.get("req") or ""
+
+        if kind == "send":
+            peer = (cmd.get("peer") or "").strip()
+            text = cmd.get("text") or ""
+            if not peer or not text:
+                out({"type": "sent", "peer": peer, "ok": False, "msg": "peer/text 为空", "req": req})
+                continue
+            try:
+                r = quick_send(text, peer)
+                ok = bool(r.get("ok", True)) if isinstance(r, dict) else True
+                msg = (r.get("msg") or "") if isinstance(r, dict) else ""
+                out({"type": "sent", "peer": peer, "ok": ok, "msg": str(msg), "req": req})
+            except Exception as e:
+                out({"type": "sent", "peer": peer, "ok": False, "msg": repr(e), "req": req})
+
+        elif kind == "send_image":
+            peer = (cmd.get("peer") or "").strip()
+            b64 = cmd.get("b64") or ""
+            if not peer or not b64:
+                out({"type": "sent_image", "peer": peer, "ok": False, "msg": "peer/b64 为空", "req": req})
+                continue
+            tmp = None
+            try:
+                import base64
+                import tempfile
+                raw = base64.b64decode(b64)
+                # 扩展名按图片魔数判断（jpg/png），wechatauto 发图按扩展名处理
+                ext = ".jpg" if raw[:3] == b"\xff\xd8\xff" else ".png"
+                fd, tmp = tempfile.mkstemp(prefix="wxauto_", suffix=ext)
+                with os.fdopen(fd, "wb") as f:
+                    f.write(raw)
+                r = quick_send_image(tmp, peer)
+                ok = bool(r.get("ok", True)) if isinstance(r, dict) else True
+                msg = (r.get("msg") or "") if isinstance(r, dict) else ""
+                out({"type": "sent_image", "peer": peer, "ok": ok, "msg": str(msg), "req": req})
+            except Exception as e:
+                out({"type": "sent_image", "peer": peer, "ok": False, "msg": repr(e), "req": req})
+            finally:
+                try:
+                    if tmp and os.path.exists(tmp):
+                        os.remove(tmp)
+                except Exception:
+                    pass
+
+        elif kind == "sessions":
+            try:
+                limit = int(cmd.get("limit") or 100)
+                rows = db.get_sessions(limit) or []
+                sessions = []
+                for s in rows:
+                    uname = (s.get("username") or "").strip()
+                    if not uname or uname.startswith("gh_"):
+                        continue  # 跳过公众号
+                    is_group = uname.endswith("@chatroom")
+                    name = ""
+                    try:
+                        name = db.get_nickname(uname) or ""
+                    except Exception:
+                        name = ""
+                    sessions.append({
+                        "id": uname,
+                        "name": name or s.get("summary") or uname,
+                        "is_group": is_group,
+                        "summary": s.get("summary") or "",
+                        "last_time": s.get("last_time") or 0,
+                    })
+                out({"type": "sessions", "sessions": sessions, "req": req})
+            except Exception as e:
+                out({"type": "sessions", "sessions": [], "msg": repr(e), "req": req})
 
     lst.stop()
     return 0

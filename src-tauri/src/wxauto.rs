@@ -14,12 +14,16 @@
 use crate::autoreply;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
+
+static REQ_SEQ: AtomicU64 = AtomicU64::new(1);
 
 const SIDECAR_SRC: &str = include_str!("../python/wxauto_sidecar.py");
 const DEFAULT_PY: &str = r"C:\d\weauto\.venv_bot\Scripts\python.exe";
@@ -49,6 +53,8 @@ impl Default for WxAutoConfig {
 struct ProcHandle {
     child: Child,
     stdin_tx: mpsc::Sender<String>,
+    /// 请求-响应关联：req id → 等待者（sessions / send_image 等同步请求用）
+    pending: Mutex<HashMap<String, tokio::sync::oneshot::Sender<Value>>>,
 }
 
 pub struct WxAutoState {
@@ -247,7 +253,7 @@ async fn run_once(app: &AppHandle, st: &Arc<WxAutoState>, cfg: &WxAutoConfig) ->
         });
     }
 
-    *st.inner.lock().unwrap() = Some(ProcHandle { child, stdin_tx: tx.clone() });
+    *st.inner.lock().unwrap() = Some(ProcHandle { child, stdin_tx: tx.clone(), pending: Mutex::new(HashMap::new()) });
 
     // 4) 读 stdout 事件循环
     let mut lines = BufReader::new(stdout).lines();
@@ -308,14 +314,36 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
                 st.log(app, "debug", &e, json!({}));
             }
         }
-        "sent" => {
+        "sent" | "sent_image" => {
             let peer = v.get("peer").and_then(|p| p.as_str()).unwrap_or("");
             let ok = v.get("ok").and_then(|o| o.as_bool()).unwrap_or(false);
             let msg = v.get("msg").and_then(|m| m.as_str()).unwrap_or("");
+            let what = if v.get("type").and_then(|t| t.as_str()) == Some("sent_image") { "图片" } else { "消息" };
+            // 请求-响应关联：resolve pending 等待者
+            if let Some(req) = v.get("req").and_then(|r| r.as_str()) {
+                let waiter = {
+                    let guard = st.inner.lock().unwrap();
+                    guard.as_ref().and_then(|h| h.pending.lock().unwrap().remove(req))
+                };
+                if let Some(tx) = waiter {
+                    let _ = tx.send(v.clone());
+                }
+            }
             if ok {
-                st.log(app, "info", &format!("微信已送达 {}", peer), json!({"peer": peer}));
+                st.log(app, "info", &format!("微信{}已送达 {}", what, peer), json!({"peer": peer}));
             } else {
-                st.log(app, "warn", &format!("微信发送失败 {}：{}", peer, msg), json!({"peer": peer}));
+                st.log(app, "warn", &format!("微信{}发送失败 {}：{}", what, peer, msg), json!({"peer": peer}));
+            }
+        }
+        "sessions" => {
+            if let Some(req) = v.get("req").and_then(|r| r.as_str()) {
+                let waiter = {
+                    let guard = st.inner.lock().unwrap();
+                    guard.as_ref().and_then(|h| h.pending.lock().unwrap().remove(req))
+                };
+                if let Some(tx) = waiter {
+                    let _ = tx.send(v.clone());
+                }
             }
         }
         _ => {}
