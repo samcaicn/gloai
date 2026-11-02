@@ -1,0 +1,29 @@
+// 对 Tauri command 的薄封装。所有 bbt-zb / 本地配置请求都经由 Rust 后端，
+// 避免 webview 直接跨域 fetch（绕开 CORS / CSP 限制）。
+import { invoke } from "@tauri-apps/api/core";
+
+export const api = {
+  loadConfig: () => invoke<any>("load_config"),
+  saveConfig: (value: any) => invoke("save_config", { value }),
+  resetConfig: () => invoke("reset_config"),
+
+  setConnection: (base_url: string, token?: string, telephone?: string) =>
+    invoke("set_connection", {
+      base_url,
+      token: token || undefined,
+      telephone: telephone || undefined,
+    }),
+
+  login: (base_url: string, telephone: string, password: string) =>
+    invoke<any>("login", { base_url, telephone, password }),
+
+  call: (action: string, condition?: any) =>
+    invoke<any>("bbt_call", { action, condition: condition || {} }),
+
+  testConnection: () => invoke<any>("test_connection"),
+  fetchRemoteConfig: () => invoke<any>("fetch_remote_config"),
+  pushRemoteConfig: (value: any) => invoke("push_remote_config", { value }),
+
+  updateCheck: (base_url: string) => invoke<any>("update_check", { base_url }),
+  updatePrepare: (base_url: string) => invoke<any>("update_prepare", { base_url }),
+};

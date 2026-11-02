@@ -1,0 +1,6 @@
+{
+  "version": "0.1.0",
+  "notes": "BBT-ZB 控制台首个 Tauri 2 版本：接入 bbt-zb 真实接口（account/login / chat/configGet / chat/configSave），含 Ed25519 验签自动更新（weauto 模式）",
+  "exe_url": "https://github.com/eeshop/zhifutuan/releases/download/v0.1.0/bbt-zb-tauri.exe",
+  "sig_url": "https://github.com/eeshop/zhifutuan/releases/download/v0.1.0/bbt-zb-tauri.exe.sig"
+}

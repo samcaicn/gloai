@@ -1,0 +1,155 @@
+name: Build BBT-ZB EXE (Tauri 2) + 发布升级包
+
+"on":
+  push:
+    branches: [pcapp]
+  workflow_dispatch:
+
+# weauto 模式（2026-10-14 收紧版）：构建后仅签名 + 发 GitHub Release 作为升级源；
+# 版本清单 updates/version.json 提交回 pcapp 分支，供客户端 raw 读取（含 gh-proxy 镜像回退）。
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify checkout contains real bbt-zb wiring (anti stale-checkout)
+        shell: bash
+        run: |
+          for f in src-tauri/src/bbt.rs src-tauri/src/update.rs src/config.ts tools/sign_release.py tools/make_version.py; do
+            [ -s "$f" ] || { echo "FAIL: checkout 缺少 $f（疑似旧树）"; exit 1; }
+          done
+          grep -q "account/login" src-tauri/src/bbt.rs || { echo "FAIL: bbt.rs 无 account/login"; exit 1; }
+          grep -q "chat/configSave" src-tauri/src/bbt.rs || { echo "FAIL: bbt.rs 无 chat/configSave"; exit 1; }
+          grep -q "UPDATER_VERIFY_KEY" src-tauri/src/update.rs || { echo "FAIL: update.rs 无验签公钥"; exit 1; }
+          echo "checkout 校验 OK @ $(git rev-parse --short HEAD)"
+
+      - name: Read version
+        id: ver
+        shell: bash
+        run: |
+          VER=$(grep -m1 '^version' src-tauri/Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Rust (MSVC)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build EXE (no bundle)
+        shell: pwsh
+        run: pnpm tauri build --no-bundle
+
+      - name: Locate EXE
+        id: exe
+        shell: bash
+        run: |
+          CAND=$(ls src-tauri/target/x86_64-pc-windows-msvc/release/bbt-zb-tauri.exe src-tauri/target/release/bbt-zb-tauri.exe 2>/dev/null | head -1)
+          [ -n "$CAND" ] || { echo "FAIL: 未找到构建产物 exe"; ls -R src-tauri/target | head -40; exit 1; }
+          echo "exe=$CAND" >> "$GITHUB_OUTPUT"
+          echo "EXE: $CAND ($(stat -c%s "$CAND") bytes)"
+
+      - name: Verify EXE is a GUI (no console) build
+        shell: bash
+        run: |
+          python - <<'PY'
+          import struct, sys
+          p = "${{ steps.exe.outputs.exe }}"
+          with open(p, 'rb') as f:
+              dos = f.read(64)
+              if dos[:2] != b'MZ': sys.exit('FAIL: not a PE file')
+              e_lfanew = struct.unpack_from('<I', dos, 0x3C)[0]
+              f.seek(e_lfanew)
+              if f.read(4) != b'PE\0\0': sys.exit('FAIL: bad PE signature')
+              f.seek(e_lfanew + 4 + 20 + 68)
+              subsystem = struct.unpack('<H', f.read(2))[0]
+          print('PE subsystem =', subsystem, '(2=GUI, 3=CUI)')
+          if subsystem != 2: sys.exit('FAIL: EXE is a console build')
+          print('OK: GUI build')
+          PY
+
+      - name: Sign EXE (Ed25519)
+        shell: bash
+        env:
+          BBT_SIGN_KEY: ${{ secrets.BBT_SIGN_KEY }}
+        run: |
+          if [ -z "$BBT_SIGN_KEY" ]; then
+            echo "FAIL: 缺少 GitHub Secret BBT_SIGN_KEY（Ed25519 私钥 64 hex，配对公钥已嵌入 update.rs）"
+            exit 1
+          fi
+          pip install cryptography
+          python tools/sign_release.py "${{ steps.exe.outputs.exe }}"
+          ls -lh "${{ steps.exe.outputs.exe }}" "${{ steps.exe.outputs.exe }}.sig"
+
+      - name: Generate updates/version.json
+        shell: bash
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          REPO="${{ github.repository }}"
+          EXE_URL="https://github.com/${REPO}/releases/download/${TAG}/bbt-zb-tauri.exe"
+          SIG_URL="https://github.com/${REPO}/releases/download/${TAG}/bbt-zb-tauri.exe.sig"
+          python tools/make_version.py "${{ steps.ver.outputs.version }}" "$EXE_URL" "$SIG_URL"
+          echo "--- updates/version.json ---"; cat updates/version.json
+
+      - name: Create GitHub Release (升级源)
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          # 已存在则删除重建（升级包幂等）
+          gh release delete "$TAG" --yes || true
+          gh release create "$TAG" \
+            --title "BBT-ZB 控制台 ${{ steps.ver.outputs.version }}" \
+            --notes "${{ steps.ver.outputs.version }}" \
+            --prerelease=false \
+            "${{ steps.exe.outputs.exe }}" \
+            "${{ steps.exe.outputs.exe }}.sig" \
+            updates/version.json
+
+      - name: Commit version.json back to pcapp (raw 升级源)
+        shell: bash
+        run: |
+          git config user.email "ci@bbt-zb.dev"
+          git config user.name "bbt-zb CI"
+          git add updates/version.json
+          git commit -m "chore: bump updates/version.json -> ${{ steps.ver.outputs.version }} [skip ci]" || echo "no change"
+          git push origin HEAD:pcapp
+
+      - name: Report build failure (print logs)
+        if: failure()
+        shell: bash
+        run: |
+          tail -c 60000 src-tauri/target/x86_64-pc-windows-msvc/release/build/*/output 2>/dev/null || true
+
+      - name: Upload Artifact (90d)
+        uses: actions/upload-artifact@v4
+        with:
+          name: bbt-zb-windows-exe
+          path: |
+            ${{ steps.exe.outputs.exe }}
+            ${{ steps.exe.outputs.exe }}.sig
+          retention-days: 90

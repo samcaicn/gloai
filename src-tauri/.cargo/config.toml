@@ -1,0 +1,8 @@
+# 本机 cargo 默认 target 是 windows-gnu（无 MinGW 链接器），Tauri 桌面端必须走 MSVC。
+# 钉死 target：rustc 在 MSVC 下原生生成 raw-dylib 导入库，无需 dlltool。
+[build]
+target = "x86_64-pc-windows-msvc"
+
+[env]
+INCLUDE = 'C:/Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include;C:/Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\ucrt;C:/Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um;C:/Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared;C:/Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\winrt;C:/Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\cppwinrt'
+LIB = 'C:/Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\lib\x64;C:/Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\ucrt\x64;C:/Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64'

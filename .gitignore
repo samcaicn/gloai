@@ -1,0 +1,9 @@
+node_modules
+dist
+src-tauri/target
+src-tauri/gen
+.DS_Store
+*.log
+
+# 升级签名私钥 —— 绝不入库（CI 用 GitHub Secret BBT_SIGN_KEY）
+tools/build_keys.json

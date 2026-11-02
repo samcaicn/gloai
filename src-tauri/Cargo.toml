@@ -1,0 +1,39 @@
+[package]
+name = "bbt-zb-tauri"
+version = "0.1.0"
+description = "BBT-ZB 控制台 — 基于 WeAuto 骨架的 Tauri 2 桌面客户端"
+authors = ["zhifu"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "bbt_zb_tauri_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+ed25519-dalek = "2"
+sha2 = "0.10"
+tokio = { version = "1", features = ["time", "sync", "macros", "rt"] }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+# iLink 协议（移植自 openilink/openilink-sdk-go，MIT）
+aes = "0.8"
+ecb = "0.1"
+cipher = { version = "0.4", features = ["block-padding", "alloc"] }
+base64 = "0.22"
+md-5 = "0.10"
+rand = "0.8"
+hex = "0.4"
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+
+[features]
+default = []
+
+[profile.release]
+strip = true
