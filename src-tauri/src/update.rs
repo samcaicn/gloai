@@ -17,7 +17,7 @@ use tauri::Manager;
 
 /// 升级验签公钥（Ed25519，64 hex 字符 = 32 字节）。配对私钥见 tools/build_keys.json。
 pub const UPDATER_VERIFY_KEY: &str =
-    "bc28a828ac4d7b0e5dc82a6dc6478c90ad083a6ccb0730c4f4d3480b2ed37f78";
+    "51a16ab8efa4ca55173e739140150ca7daf70d95f0122e7925a7500ba4163393";
 
 const HTTP_TIMEOUT: Duration = Duration::from_secs(120);
 
