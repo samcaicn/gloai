@@ -368,6 +368,52 @@ pub async fn send_text(app: &AppHandle, peer: &str, text: &str) -> Result<(), St
     tx.send(line).await.map_err(|_| "微信通道已关闭".to_string())
 }
 
+/// 同步请求：带 req id 写 stdin，等待 sidecar 回带 req 的响应（超时清理）。
+async fn request(app: &AppHandle, mut payload: Value, timeout: Duration) -> Result<Value, String> {
+    let req = format!("r{}-{}", autoreply::now_ms_pub(), REQ_SEQ.fetch_add(1, Ordering::Relaxed));
+    payload["req"] = json!(req);
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    {
+        let st = app.state::<Arc<WxAutoState>>();
+        let guard = st.inner.lock().unwrap();
+        let h = guard.as_ref().ok_or("微信通道未运行")?;
+        h.pending.lock().unwrap().insert(req.clone(), tx);
+        h.stdin_tx
+            .try_send(payload.to_string())
+            .map_err(|_| "微信通道队列满或已关闭".to_string())?;
+    }
+    match tokio::time::timeout(timeout, rx).await {
+        Ok(Ok(v)) => Ok(v),
+        Ok(Err(_)) => Err("微信通道响应通道关闭".into()),
+        Err(_) => {
+            // 超时：清掉 pending 防泄漏
+            let st = app.state::<Arc<WxAutoState>>();
+            if let Some(h) = st.inner.lock().unwrap().as_ref() {
+                h.pending.lock().unwrap().remove(&req);
+            }
+            Err("微信通道响应超时".into())
+        }
+    }
+}
+
+/// 经 sidecar 向微信会话发图片（peer = wxid_xxx 或 xxx@chatroom，b64 = png/jpg base64）。
+pub async fn send_image(app: &AppHandle, peer: &str, b64: &str) -> Result<(), String> {
+    let v = request(app, json!({"cmd": "send_image", "peer": peer, "b64": b64}), Duration::from_secs(90)).await?;
+    let ok = v.get("ok").and_then(|o| o.as_bool()).unwrap_or(false);
+    let msg = v.get("msg").and_then(|m| m.as_str()).unwrap_or("");
+    if ok {
+        Ok(())
+    } else {
+        Err(format!("微信发图失败: {}", msg))
+    }
+}
+
+/// 微信会话列表（私聊+群聊，来自微信本地 session.db）。
+pub async fn list_sessions(app: &AppHandle, limit: u32) -> Result<Vec<Value>, String> {
+    let v = request(app, json!({"cmd": "sessions", "limit": limit}), Duration::from_secs(20)).await?;
+    Ok(v.get("sessions").and_then(|s| s.as_array()).cloned().unwrap_or_default())
+}
+
 /// 手动停止（关子进程；supervisor 因开关判断不会立刻重启）。
 pub async fn stop(app: &AppHandle) {
     let st = app.state::<Arc<WxAutoState>>();

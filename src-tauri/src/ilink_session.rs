@@ -98,6 +98,8 @@ pub struct SessionManager {
     logins: Mutex<HashMap<String, Arc<Mutex<LoginSession>>>>,
     /// 入站事件广播（bridge 订阅）
     inbound_tx: broadcast::Sender<Value>,
+    /// 每个 bot 最近一次会话对象（bot_id → peer/is_group/ts），订单/互动消息按此定向
+    last_peer: Mutex<HashMap<String, (String, bool, i64)>>,
     counter: AtomicU64,
     /// 匿名 client（只用于 CDN 下载，无需 bot token）
     cdn_client: IlinkClient,
@@ -115,6 +117,7 @@ impl SessionManager {
             sessions: Mutex::new(HashMap::new()),
             logins: Mutex::new(HashMap::new()),
             inbound_tx: tx,
+            last_peer: Mutex::new(HashMap::new()),
             counter: AtomicU64::new(1),
             cdn_client: IlinkClient::new("", None, None),
         }
@@ -313,6 +316,12 @@ impl SessionManager {
     }
 
     // ---------------- 账号管理 ----------------
+
+    /// bot 最近会话对象（peer, is_group）；无记录返回 None
+    pub fn last_peer_of(&self, bot_id: &str) -> Option<(String, bool)> {
+        let lp = self.last_peer.lock().unwrap();
+        lp.get(bot_id).map(|(p, g, _)| (p.clone(), *g))
+    }
 
     pub fn list_accounts(&self) -> Vec<Value> {
         let sessions = self.sessions.lock().unwrap();
@@ -526,6 +535,17 @@ impl SessionManager {
     }
 
     async fn handle_inbound(&self, client: &IlinkClient, bot_id: &str, msg: WeixinMessage) {
+        // 记录该 bot 最近会话对象（群消息记群，私聊记对方）；订单/互动消息定向用
+        {
+            let peer = if msg.group_id.is_empty() { msg.from_user_id.clone() } else { msg.group_id.clone() };
+            if !peer.is_empty() {
+                let mut lp = self.last_peer.lock().unwrap();
+                lp.insert(bot_id.to_string(), (peer, !msg.group_id.is_empty(), self.now_ms()));
+                if lp.len() > 500 {
+                    lp.clear();
+                }
+            }
+        }
         // 缓存 context token（主动 Push 的凭据）
         if !msg.context_token.is_empty() && !msg.from_user_id.is_empty() {
             client.set_context_token(&msg.from_user_id, &msg.context_token);

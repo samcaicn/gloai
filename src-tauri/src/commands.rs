@@ -1,6 +1,6 @@
 use crate::bbt;
 use crate::bridge::{BridgeConfig, BridgeState};
-use crate::ilink_session::SessionManager;
+use crate::ilink_session::{SessionCmd, SessionManager};
 use crate::state::AppState;
 use crate::update;
 use serde_json::{json, Value};
@@ -545,4 +545,198 @@ pub async fn wxauto_logs(
     let lg = wx.logs.lock().unwrap();
     let n = limit.unwrap_or(50).min(lg.len());
     Ok(json!(lg[lg.len() - n..].to_vec()))
+}
+
+// ============================================================================
+//  统一渠道路由（订单消息 / 互动消息页）：微信私聊、微信群聊、iLink、团员
+//  target 约定：
+//    wx_private / wx_group → 微信会话 id（wxid_xxx / xxx@chatroom，sidecar 会话列表）
+//    ilink                 → bot_id（发送走该 bot 最近会话对象）
+//    member                → bbt-zb 团员 id（发送经 memberqr 绑定映射找 bot）
+// ============================================================================
+
+fn read_member_map(app: &tauri::AppHandle) -> serde_json::Map<String, Value> {
+    app.try_state::<AppState>()
+        .and_then(|state| {
+            let g = state.config.lock().unwrap();
+            g.get("memberqr").and_then(|m| m.get("map")).cloned()
+        })
+        .and_then(|v| v.as_object().cloned())
+        .unwrap_or_default()
+}
+
+/// iLink 侧发送：经指定 bot 的最近会话对象回发
+async fn ilink_route_send(
+    app: &tauri::AppHandle,
+    bot_id: &str,
+    text: Option<&str>,
+    image: Option<(&str, &str)>, // (data_b64, filename)
+) -> Result<Value, String> {
+    let mgr = app
+        .try_state::<Arc<SessionManager>>()
+        .ok_or("iLink 会话管理未初始化")?;
+    let (to, _is_group) = mgr
+        .last_peer_of(bot_id)
+        .ok_or("该 iLink 账号还没有会话对象（等对方先来一条消息）")?;
+    match (text, image) {
+        (Some(t), _) => {
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            mgr.send_cmd(bot_id, SessionCmd::SendText { to, text: t.to_string(), reply: tx })?;
+            rx.await.map_err(|_| "会话无响应".to_string())?.map(|_| json!({"ok": true}))
+        }
+        (None, Some((b64, filename))) => {
+            use base64::Engine as _;
+            let data = base64::engine::general_purpose::STANDARD
+                .decode(b64)
+                .map_err(|e| format!("图片 base64 解码失败: {}", e))?;
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            mgr.send_cmd(bot_id, SessionCmd::SendImage { to, data, filename: filename.to_string(), reply: tx })?;
+            rx.await.map_err(|_| "会话无响应".to_string())?.map(|_| json!({"ok": true}))
+        }
+        (None, None) => Err("空消息".into()),
+    }
+}
+
+#[tauri::command]
+pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
+    // 1) 微信：sidecar 会话列表（私聊/群聊分组）
+    let mut wx_private: Vec<Value> = Vec::new();
+    let mut wx_group: Vec<Value> = Vec::new();
+    let mut wx_note = String::new();
+    if crate::wxauto::is_running(&app) {
+        match crate::wxauto::list_sessions(&app, 100).await {
+            Ok(rows) => {
+                for s in rows {
+                    let is_group = s.get("is_group").and_then(|g| g.as_bool()).unwrap_or(false);
+                    if is_group {
+                        wx_group.push(s);
+                    } else {
+                        wx_private.push(s);
+                    }
+                }
+            }
+            Err(e) => wx_note = e,
+        }
+    } else {
+        wx_note = "微信通道未开启（AI 自动回复面板 → 微信通道开关）".into();
+    }
+
+    // 2) iLink：已绑定账号
+    let ilink_accounts = app
+        .try_state::<Arc<SessionManager>>()
+        .map(|mgr| json!(mgr.list_accounts()))
+        .unwrap_or(json!([]));
+
+    // 3) 团员：bbt-zb 名册（先 ledger 取团，再 listMembers）
+    let mut members: Vec<Value> = Vec::new();
+    let mut member_note = String::new();
+    if let Some(state) = app.try_state::<AppState>() {
+        let conn = state.conn.lock().unwrap().clone();
+        if conn.token.as_deref().unwrap_or("").is_empty() {
+            member_note = "请先在「团员二维码」页完成团长登录".into();
+        } else {
+            let group_id = match bbt::call(&conn, "leader/ledger", &json!({})).await {
+                Ok(r) => {
+                    let list = r.pointer("/result/data/list").and_then(|l| l.as_array()).cloned().unwrap_or_default();
+                    list.first()
+                        .and_then(|g0| g0.get("id"))
+                        .and_then(|i| i.as_i64())
+                        .unwrap_or(0)
+                }
+                Err(e) => {
+                    member_note = format!("拉取团列表失败: {}", e);
+                    0
+                }
+            };
+            if group_id > 0 {
+                match bbt::call(&conn, "leader/listMembers", &json!({"groupId": group_id})).await {
+                    Ok(r) => {
+                        members = r
+                            .pointer("/result/data/list")
+                            .and_then(|l| l.as_array())
+                            .cloned()
+                            .unwrap_or_default();
+                    }
+                    Err(e) => member_note = format!("拉取名册失败: {}", e),
+                }
+            }
+        }
+    } else {
+        member_note = "AppState 未初始化".into();
+    }
+    // 附上绑定映射，前端标注「已绑定」
+    let map = read_member_map(&app);
+
+    Ok(json!({
+        "wx_private": wx_private,
+        "wx_group": wx_group,
+        "wx_note": wx_note,
+        "ilink": ilink_accounts,
+        "member": members,
+        "member_map": map,
+    }))
+}
+
+#[tauri::command]
+pub async fn channel_send_text(
+    app: tauri::AppHandle,
+    channel: String,
+    target: String,
+    text: String,
+) -> Result<Value, String> {
+    match channel.as_str() {
+        "wx_private" | "wx_group" | "wx" => {
+            crate::wxauto::send_text(&app, &target, &text).await?;
+            Ok(json!({"ok": true}))
+        }
+        "ilink" => ilink_route_send(&app, &target, Some(&text), None).await,
+        "member" => {
+            let bot = read_member_map(&app)
+                .get(&target)
+                .and_then(|v| v.as_str())
+                .ok_or("该团员还没有绑定 iLink 账号（团员二维码页扫码绑定）")?
+                .to_string();
+            ilink_route_send(&app, &bot, Some(&text), None).await
+        }
+        _ => Err(format!("未知渠道: {}", channel)),
+    }
+}
+
+#[tauri::command]
+pub async fn channel_send_image(
+    app: tauri::AppHandle,
+    channel: String,
+    target: String,
+    data_b64: String,
+    filename: Option<String>,
+) -> Result<Value, String> {
+    let filename = filename.unwrap_or_else(|| "order.png".into());
+    match channel.as_str() {
+        "wx_private" | "wx_group" | "wx" => {
+            crate::wxauto::send_image(&app, &target, &data_b64).await?;
+            Ok(json!({"ok": true}))
+        }
+        "ilink" => ilink_route_send(&app, &target, None, Some((&data_b64, &filename))).await,
+        "member" => {
+            let bot = read_member_map(&app)
+                .get(&target)
+                .and_then(|v| v.as_str())
+                .ok_or("该团员还没有绑定 iLink 账号（团员二维码页扫码绑定）")?
+                .to_string();
+            ilink_route_send(&app, &bot, None, Some((&data_b64, &filename))).await
+        }
+        _ => Err(format!("未知渠道: {}", channel)),
+    }
+}
+
+/// 拉取远程图片转 base64（订单图合成用，绕开 webview canvas 跨域污染）
+#[tauri::command]
+pub async fn fetch_image_b64(url: String) -> Result<String, String> {
+    let resp = reqwest::get(&url).await.map_err(|e| format!("拉取图片失败: {}", e))?;
+    if !resp.status().is_success() {
+        return Err(format!("拉取图片 HTTP {}", resp.status()));
+    }
+    let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
+    use base64::Engine as _;
+    Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
 }

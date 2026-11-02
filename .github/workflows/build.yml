@@ -137,7 +137,8 @@ jobs:
             exit 1
           fi
           echo "BBT_SIGN_KEY 已就绪（长度 ${#BBT_SIGN_KEY}，应为 64）"
-          pip install --quiet cryptography || { echo "::error::pip install cryptography 失败"; exit 1; }
+          # cryptography 仅作可选加速；失败/缺失时脚本自动回退内置纯 Python Ed25519（RFC 8032）
+          python -m pip install --quiet cryptography >> ci-diag.txt 2>&1 || echo "pip 不可用/失败 —— 使用内置纯 Python Ed25519 签名（不影响结果）"
           if ! printf '%s' "$BBT_SIGN_KEY" | grep -qE '^[0-9a-fA-F]{64}$'; then
             echo "::error::BBT_SIGN_KEY 不是 64 位纯 hex（实际长度 ${#BBT_SIGN_KEY}）。请粘贴 weauto tools/build_keys.json 中 UPDATER_SIGN_KEY 的裸 hex 值：不要引号、不要 0x 前缀、无空格/换行"
             exit 1

@@ -280,3 +280,36 @@ textarea { resize: vertical; line-height: 1.5; }
 .warn-btn { border-color: var(--err); color: var(--err); }
 .warn-btn:hover { background: var(--err); color: #fff; }
 .mt8 { margin-top: 8px; }
+
+/* ---------------- 订单消息 / 互动消息（渠道下拉 + 合成预览） ---------------- */
+.ord-chans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+.ord-chan {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  background: var(--card-2);
+  opacity: 0.75;
+}
+.ord-chan.active {
+  border-color: var(--accent);
+  opacity: 1;
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+.ord-chan-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600; }
+.ord-chan.active .ord-chan-label { color: var(--accent); }
+.ord-select { width: 100%; box-sizing: border-box; font-size: 12px; }
+.ord-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.ord-row label { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+.ord-row .input { flex: 1; min-width: 120px; font-size: 12px; }
+.ord-row select.input { flex: 0 0 auto; }
+.ord-preview {
+  display: flex; justify-content: center; align-items: center;
+  min-height: 120px; margin: 10px 0;
+  border: 1px dashed var(--border); border-radius: var(--radius); padding: 10px;
+}
+.ord-preview img { max-width: 300px; width: 100%; height: auto; border-radius: 8px; background: #fff; }

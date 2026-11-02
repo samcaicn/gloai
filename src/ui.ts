@@ -6,6 +6,8 @@ import { kv } from "./kv";
 import { bbt } from "./bbt";
 import { renderChat } from "./chat";
 import { renderMemberQr } from "./memberqr";
+import { renderOrdersPage } from "./orderspage";
+import { renderInteractPage } from "./interact";
 
 interface AppState {
   connection: Record<string, any>;
@@ -24,7 +26,7 @@ function $(id: string) {
   return document.getElementById(id) as HTMLInputElement | null;
 }
 
-function toast(msg: string, ok = true) {
+export function toast(msg: string, ok = true) {
   const box = $("toast-box");
   if (!box) return;
   const el = document.createElement("div");
@@ -122,6 +124,8 @@ function render() {
         <button class="tab active" id="tab-params-btn">参数调整</button>
         <button class="tab" id="tab-chat-btn">团长聊天</button>
         <button class="tab" id="tab-members-btn">团员二维码</button>
+        <button class="tab" id="tab-orders-btn">订单消息</button>
+        <button class="tab" id="tab-interact-btn">互动消息</button>
       </nav>
       <div class="btn-row right params-only">
         <button class="btn" id="btn-fetch">拉取远程</button>
@@ -136,28 +140,39 @@ function render() {
     </main>
     <main class="content chat-page hidden" id="page-chat"></main>
     <main class="content members-page hidden" id="page-members"></main>
+    <main class="content orders-page hidden" id="page-orders"></main>
+    <main class="content interact-page hidden" id="page-interact"></main>
     <div id="toast-box" class="toast-box"></div>`;
 
   wire();
   renderChat(document.getElementById("page-chat") as HTMLElement);
   renderMemberQr(document.getElementById("page-members") as HTMLElement);
+  renderOrdersPage(document.getElementById("page-orders") as HTMLElement);
+  renderInteractPage(document.getElementById("page-interact") as HTMLElement);
 
   const pBtn = $("tab-params-btn"), cBtn = $("tab-chat-btn"), mBtn = $("tab-members-btn");
+  const oBtn = $("tab-orders-btn"), iBtn = $("tab-interact-btn");
   pBtn?.addEventListener("click", () => setActiveTab("params"));
   cBtn?.addEventListener("click", () => setActiveTab("chat"));
   mBtn?.addEventListener("click", () => setActiveTab("members"));
+  oBtn?.addEventListener("click", () => setActiveTab("orders"));
+  iBtn?.addEventListener("click", () => setActiveTab("interact"));
 }
 
-function setActiveTab(tab: "params" | "chat" | "members") {
+function setActiveTab(tab: "params" | "chat" | "members" | "orders" | "interact") {
   const tabs: Record<string, string> = {
     params: "tab-params-btn",
     chat: "tab-chat-btn",
     members: "tab-members-btn",
+    orders: "tab-orders-btn",
+    interact: "tab-interact-btn",
   };
   const pages: Record<string, string> = {
     params: "page-params",
     chat: "page-chat",
     members: "page-members",
+    orders: "page-orders",
+    interact: "page-interact",
   };
   Object.entries(tabs).forEach(([name, btnId]) => {
     $(btnId)?.classList.toggle("active", name === tab);

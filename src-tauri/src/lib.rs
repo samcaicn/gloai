@@ -117,6 +117,11 @@ pub fn run() {
             commands::wxauto_start,
             commands::wxauto_stop,
             commands::wxauto_logs,
+            // 统一渠道路由（订单消息 / 互动消息）
+            commands::channel_targets,
+            commands::channel_send_text,
+            commands::channel_send_image,
+            commands::fetch_image_b64,
         ])
         .run(tauri::generate_context!())
         .expect("error while running bbt-zb-tauri");
