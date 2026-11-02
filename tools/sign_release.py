@@ -20,6 +20,13 @@ import json
 import os
 import sys
 
+try:
+    # Windows 默认 cp1252 下 print 中文会 UnicodeEncodeError，强制 UTF-8 + replace
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEYS_FILE = os.path.join(ROOT, "tools", "build_keys.json")
 

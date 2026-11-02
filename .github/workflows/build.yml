@@ -126,12 +126,13 @@ jobs:
         shell: bash
         env:
           BBT_SIGN_KEY: ${{ secrets.BBT_SIGN_KEY }}
+          PYTHONIOENCODING: utf-8
         run: |
-          # bash -e -o pipefail 陷阱：OUT=$(cmd) 在 cmd 非零时会直接杀掉脚本，
-          # 故签名逻辑全部在 tools/ci_sign.py 内（自带诊断落盘），此处显式 set +e。
+          # bash -e -o pipefail 陷阱 + runner python 默认 cp1252（print 中文即崩）：
+          # 签名与诊断全部在 tools/ci_sign.py 内（ASCII 输出 + 诊断直写 ci-diag.txt）。
           set +e
-          python tools/ci_sign.py "${{ steps.exe.outputs.exe }}" 2>&1 | tee -a ci-diag.txt
-          rc=${PIPESTATUS[0]}
+          python tools/ci_sign.py "${{ steps.exe.outputs.exe }}"
+          rc=$?
           [ "$rc" -eq 0 ] || exit 1
           ls -lh "${{ steps.exe.outputs.exe }}" "${{ steps.exe.outputs.exe }}.sig"
 
