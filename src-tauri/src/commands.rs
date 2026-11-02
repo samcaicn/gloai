@@ -8,14 +8,14 @@ use std::sync::Arc;
 use tauri::{Manager, State};
 
 /// 读取本地配置（首次启动时可能是空对象 {}）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn load_config(state: State<'_, AppState>) -> Result<Value, String> {
     let g = state.config.lock().unwrap();
     Ok((*g).clone())
 }
 
 /// 写入本地配置并落盘
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn save_config(state: State<'_, AppState>, value: Value) -> Result<Value, String> {
     *state.config.lock().unwrap() = value.clone();
     state.save_config()?;
@@ -23,7 +23,7 @@ pub async fn save_config(state: State<'_, AppState>, value: Value) -> Result<Val
 }
 
 /// 清空本地配置（恢复为 {}）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn reset_config(state: State<'_, AppState>) -> Result<Value, String> {
     *state.config.lock().unwrap() = json!({});
     state.save_config()?;
@@ -31,7 +31,7 @@ pub async fn reset_config(state: State<'_, AppState>) -> Result<Value, String> {
 }
 
 /// 仅设置基础连接信息（不登录，适合已持有 token 的场景）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn set_connection(
     state: State<'_, AppState>,
     base_url: String,
@@ -46,7 +46,7 @@ pub async fn set_connection(
 }
 
 /// 登录 bbt-zb（action=account/login），取得 token 并写入内存连接状态
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn login(
     state: State<'_, AppState>,
     base_url: String,
@@ -65,7 +65,7 @@ pub async fn login(
 }
 
 /// 通用 action 调用（透传给 bbt-zb 单端点 API，便于扩展话术库等操作）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn bbt_call(
     state: State<'_, AppState>,
     action: String,
@@ -76,7 +76,7 @@ pub async fn bbt_call(
 }
 
 /// 探活：检查 bbt-zb 是否可达（不要求已登录）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn test_connection(state: State<'_, AppState>) -> Result<Value, String> {
     let c = state.conn.lock().unwrap().clone();
     if c.base_url.is_empty() {
@@ -90,7 +90,7 @@ pub async fn test_connection(state: State<'_, AppState>) -> Result<Value, String
 }
 
 /// 拉取远程聊天参数（chat/configGet）并写回本地
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn fetch_remote_config(state: State<'_, AppState>) -> Result<Value, String> {
     let c = state.conn.lock().unwrap().clone();
     if c.base_url.is_empty() {
@@ -111,7 +111,7 @@ pub async fn fetch_remote_config(state: State<'_, AppState>) -> Result<Value, St
 }
 
 /// 推送聊天参数到 bbt-zb（chat/configSave）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn push_remote_config(
     state: State<'_, AppState>,
     value: Value,
@@ -126,13 +126,13 @@ pub async fn push_remote_config(
 // ---------------- 自动更新（weauto 模式）----------------
 
 /// 检查更新：GET {base}/updates/version.json，对比当前版本
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn update_check(base_url: String) -> Result<Value, String> {
     update::check_update(&base_url, env!("CARGO_PKG_VERSION")).await
 }
 
 /// 下载新版本 + 验签 + 暂存（重启后自动替换）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn update_prepare(app: tauri::AppHandle, base_url: String) -> Result<Value, String> {
     update::prepare_update(&base_url, &app).await
 }
@@ -142,7 +142,7 @@ pub async fn update_prepare(app: tauri::AppHandle, base_url: String) -> Result<V
 // ============================================================================
 
 /// 发起扫码登录：返回 {login_id, content, svg}
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_begin_login(
     mgr: State<'_, Arc<SessionManager>>,
 ) -> Result<Value, String> {
@@ -151,7 +151,7 @@ pub async fn ilink_begin_login(
 }
 
 /// 轮询扫码状态一次（前端 1~2s 一次）：{status, svg?, content?, account?}
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_poll_login(
     mgr: State<'_, Arc<SessionManager>>,
     login_id: String,
@@ -159,7 +159,7 @@ pub async fn ilink_poll_login(
     mgr.poll_login(&login_id).await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_cancel_login(
     mgr: State<'_, Arc<SessionManager>>,
     login_id: String,
@@ -168,12 +168,12 @@ pub async fn ilink_cancel_login(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_list_accounts(mgr: State<'_, Arc<SessionManager>>) -> Result<Value, String> {
     Ok(json!(mgr.list_accounts()))
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_remove_account(
     mgr: State<'_, Arc<SessionManager>>,
     bot_id: String,
@@ -182,7 +182,7 @@ pub async fn ilink_remove_account(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_send_text(
     mgr: State<'_, Arc<SessionManager>>,
     bot_id: String,
@@ -196,7 +196,7 @@ pub async fn ilink_send_text(
     r.map(|_| json!({"ok": true}))
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_send_image(
     mgr: State<'_, Arc<SessionManager>>,
     bot_id: String,
@@ -217,7 +217,7 @@ pub async fn ilink_send_image(
 }
 
 /// 发语音：data_b64 为已编码语音（silk/mp3 等），encode_type 4=SILK 2=MP3 3=WAV
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_send_voice(
     mgr: State<'_, Arc<SessionManager>>,
     bot_id: String,
@@ -247,7 +247,7 @@ pub async fn ilink_send_voice(
 }
 
 /// 1 对多群发：多个 bot 账号给同一微信用户发同一条文本
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_broadcast_text(
     mgr: State<'_, Arc<SessionManager>>,
     bot_ids: Vec<String>,
@@ -259,7 +259,7 @@ pub async fn ilink_broadcast_text(
 }
 
 /// 读取本地消息存档（尾部 limit 条）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_local_history(
     mgr: State<'_, Arc<SessionManager>>,
     bot_id: String,
@@ -269,7 +269,7 @@ pub async fn ilink_local_history(
 }
 
 /// 下载并解密 CDN 媒体（media 为消息记录里的 media 对象），返回 {mime, data_b64}
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_read_media(
     mgr: State<'_, Arc<SessionManager>>,
     media: Value,
@@ -281,7 +281,7 @@ pub async fn ilink_read_media(
 //  团长聊天桥（bbt-zb ↔ iLink 1 对多）
 // ============================================================================
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn bridge_get_config(
     bridge: State<'_, Arc<BridgeState>>,
 ) -> Result<Value, String> {
@@ -290,7 +290,7 @@ pub async fn bridge_get_config(
 }
 
 /// 保存桥配置（合并进本地 config.json 的 bridge 字段并落盘）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn bridge_set_config(
     app: tauri::AppHandle,
     bridge: State<'_, Arc<BridgeState>>,
@@ -314,7 +314,7 @@ pub async fn bridge_set_config(
 }
 
 /// 仅切换启用开关（保留其他配置）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn bridge_set_enabled(
     app: tauri::AppHandle,
     bridge: State<'_, Arc<BridgeState>>,
@@ -340,7 +340,7 @@ pub async fn bridge_set_enabled(
 //  微信自动回复（iLink 入站 → bbt-zb 服务端 AI → iLink 回发）
 // ============================================================================
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn autoreply_get_config(
     ar: State<'_, Arc<crate::autoreply::AutoReplyState>>,
 ) -> Result<Value, String> {
@@ -350,7 +350,7 @@ pub async fn autoreply_get_config(
 
 /// 保存自动回复配置（合并进本地 config.json 的 autoreply 字段并落盘）。
 /// 团员密码仅落本地盘，不回传前端（前端传回的空 password 视为「不修改」）。
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn autoreply_set_config(
     app: tauri::AppHandle,
     ar: State<'_, Arc<crate::autoreply::AutoReplyState>>,
@@ -378,7 +378,7 @@ pub async fn autoreply_set_config(
     serde_json::to_value(cur).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn autoreply_set_enabled(
     app: tauri::AppHandle,
     ar: State<'_, Arc<crate::autoreply::AutoReplyState>>,
@@ -402,7 +402,7 @@ pub async fn autoreply_set_enabled(
 }
 
 /// 最近自动回复日志（尾部 limit 条）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn autoreply_logs(
     ar: State<'_, Arc<crate::autoreply::AutoReplyState>>,
     limit: Option<usize>,
@@ -419,7 +419,7 @@ pub async fn autoreply_logs(
 // ============================================================================
 
 /// 读取团员→机器人映射（member_id -> bot_id）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn memberqr_get_map(app: tauri::AppHandle) -> Result<Value, String> {
     let state = app.state::<AppState>();
     let g = state.config.lock().unwrap();
@@ -432,7 +432,7 @@ pub async fn memberqr_get_map(app: tauri::AppHandle) -> Result<Value, String> {
 }
 
 /// 写入团员→机器人映射（member_id -> bot_id）。传入完整 map 对象覆盖保存。
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn memberqr_set_map(app: tauri::AppHandle, map: Value) -> Result<Value, String> {
     let state = app.state::<AppState>();
     {
@@ -452,7 +452,7 @@ pub async fn memberqr_set_map(app: tauri::AppHandle, map: Value) -> Result<Value
 //  微信 wxauto 通道（wechatauto sidecar：私聊+群聊 → 统一 AI 回复管线）
 // ============================================================================
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn wxauto_get_config(
     app: tauri::AppHandle,
     wx: State<'_, Arc<crate::wxauto::WxAutoState>>,
@@ -466,7 +466,7 @@ pub async fn wxauto_get_config(
     Ok(v)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn wxauto_set_config(
     app: tauri::AppHandle,
     wx: State<'_, Arc<crate::wxauto::WxAutoState>>,
@@ -494,7 +494,7 @@ pub async fn wxauto_set_config(
     serde_json::to_value(cfg).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn wxauto_start(app: tauri::AppHandle) -> Result<Value, String> {
     {
         let wx = app.state::<Arc<crate::wxauto::WxAutoState>>();
@@ -515,7 +515,7 @@ pub async fn wxauto_start(app: tauri::AppHandle) -> Result<Value, String> {
     Ok(json!({"ok": true}))
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn wxauto_stop(app: tauri::AppHandle) -> Result<Value, String> {
     {
         let wx = app.state::<Arc<crate::wxauto::WxAutoState>>();
@@ -537,7 +537,7 @@ pub async fn wxauto_stop(app: tauri::AppHandle) -> Result<Value, String> {
 }
 
 /// wxauto 通道最近日志
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn wxauto_logs(
     wx: State<'_, Arc<crate::wxauto::WxAutoState>>,
     limit: Option<usize>,
@@ -597,7 +597,7 @@ async fn ilink_route_send(
     }
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
     // 1) 微信：sidecar 会话列表（私聊/群聊分组）
     let mut wx_private: Vec<Value> = Vec::new();
@@ -677,7 +677,7 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
     }))
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn channel_send_text(
     app: tauri::AppHandle,
     channel: String,
@@ -702,7 +702,7 @@ pub async fn channel_send_text(
     }
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn channel_send_image(
     app: tauri::AppHandle,
     channel: String,
@@ -730,7 +730,7 @@ pub async fn channel_send_image(
 }
 
 /// 拉取远程图片转 base64（订单图合成用，绕开 webview canvas 跨域污染）
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn fetch_image_b64(url: String) -> Result<String, String> {
     let resp = reqwest::get(&url).await.map_err(|e| format!("拉取图片失败: {}", e))?;
     if !resp.status().is_success() {

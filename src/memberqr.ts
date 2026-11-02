@@ -136,7 +136,7 @@ export async function renderMemberQr(root: HTMLElement) {
   try {
     const cfg: any = await api.loadConfig();
     const base = cfg?.connection?.base_url || cfg?.base_url || "";
-    if (base) (g("mq-base") as HTMLInputElement).value = base;
+    (g("mq-base") as HTMLInputElement).value = base || "https://bbt-zb.pages.dev";
   } catch {}
   try {
     memberMap = (await api.memberqrGetMap()) || {};

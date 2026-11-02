@@ -1,6 +1,6 @@
 [package]
 name = "bbt-zb-tauri"
-version = "0.1.1"
+version = "0.1.2"
 description = "BBT-ZB 控制台 — 基于 WeAuto 骨架的 Tauri 2 桌面客户端"
 authors = ["zhifu"]
 edition = "2021"
@@ -39,6 +39,9 @@ winreg = "0.55"
 
 [features]
 default = []
+# 生产模式开关：启用后 Tauri 内嵌 frontendDist（否则 dev 模式加载 devUrl localhost:5173，
+# 直接 cargo run 会白屏/显示"localhost 拒绝连接"错误页）。tauri build 会自动带上。
+custom-protocol = ["tauri/custom-protocol"]
 
 [profile.release]
 strip = true
