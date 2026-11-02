@@ -63,14 +63,43 @@ jobs:
 
       - name: Build EXE (no bundle)
         shell: pwsh
-        run: pnpm tauri build --no-bundle
+        run: |
+          pnpm tauri build --no-bundle 2>&1 | Tee-Object -FilePath build-output.log
+          $code = $LASTEXITCODE
+          if (Test-Path build-output.log) {
+            "### tauri build key lines" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            Get-Content build-output.log |
+              Select-String -Pattern "Built application|Finished|Compiling bbt|error(\[|\b)" |
+              ForEach-Object { "``$($_.Line)``" } |
+              Out-File -Append $env:GITHUB_STEP_SUMMARY
+          }
+          exit $code
 
       - name: Locate EXE
         id: exe
         shell: bash
         run: |
-          CAND=$(ls src-tauri/target/x86_64-pc-windows-msvc/release/bbt-zb-tauri.exe src-tauri/target/release/bbt-zb-tauri.exe 2>/dev/null | head -1)
-          [ -n "$CAND" ] || { echo "FAIL: 未找到构建产物 exe"; ls -R src-tauri/target | head -40; exit 1; }
+          # 不预设子目录：全 target 树 find（CI 与本机 target 布局可能不同）
+          {
+            echo "### exe search (all *.exe under src-tauri/target)"
+            echo '```'
+            find src-tauri/target -type f -name '*.exe' 2>/dev/null | head -30 || true
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY:-/dev/null}" || true
+          CAND=$(find src-tauri/target -type f -path '*release*' -name 'bbt-zb-tauri.exe' 2>/dev/null | head -1)
+          [ -n "$CAND" ] || CAND=$(find src-tauri/target -type f -name 'bbt-zb-tauri.exe' 2>/dev/null | head -1)
+          if [ -z "$CAND" ]; then
+            {
+              echo "### FAIL: bbt-zb-tauri.exe not found"
+              echo '```'
+              ls -la src-tauri 2>/dev/null || true
+              ls -la src-tauri/target 2>/dev/null || echo "(no target dir)"
+              find src-tauri -maxdepth 4 -type d 2>/dev/null | head -40
+              echo '```'
+            } >> "${GITHUB_STEP_SUMMARY:-/dev/null}" || true
+            echo "FAIL: 未找到构建产物 exe"
+            exit 1
+          fi
           echo "exe=$CAND" >> "$GITHUB_OUTPUT"
           echo "EXE: $CAND ($(stat -c%s "$CAND") bytes)"
 

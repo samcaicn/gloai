@@ -26,4 +26,8 @@ export const api = {
 
   updateCheck: (base_url: string) => invoke<any>("update_check", { base_url }),
   updatePrepare: (base_url: string) => invoke<any>("update_prepare", { base_url }),
+
+  // 团员 iLink 二维码：成员 ↔ 机器人账号映射（hub 持久化）
+  memberqrGetMap: () => invoke<Record<string, string>>("memberqr_get_map"),
+  memberqrSetMap: (map: Record<string, string>) => invoke("memberqr_set_map", { map }),
 };

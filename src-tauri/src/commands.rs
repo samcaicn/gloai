@@ -411,3 +411,39 @@ pub async fn autoreply_logs(
     let n = limit.unwrap_or(50).min(lg.len());
     Ok(json!(lg[lg.len() - n..].to_vec()))
 }
+
+// ============================================================================
+//  团员 iLink 二维码（hub：团员 ↔ iLink 机器人账号 映射持久化）
+//  每个团员对应一个 iLink 机器人账号（bot_id）。扫码确认后记录映射，
+//  以便「已绑定账号」区能回显团员身份、并在过期重建后保持关联。
+// ============================================================================
+
+/// 读取团员→机器人映射（member_id -> bot_id）
+#[tauri::command]
+pub async fn memberqr_get_map(app: tauri::AppHandle) -> Result<Value, String> {
+    let state = app.state::<AppState>();
+    let g = state.config.lock().unwrap();
+    let map = g
+        .get("memberqr")
+        .and_then(|v| v.get("map"))
+        .cloned()
+        .unwrap_or(json!({}));
+    Ok(map)
+}
+
+/// 写入团员→机器人映射（member_id -> bot_id）。传入完整 map 对象覆盖保存。
+#[tauri::command]
+pub async fn memberqr_set_map(app: tauri::AppHandle, map: Value) -> Result<Value, String> {
+    let state = app.state::<AppState>();
+    {
+        let mut g = state.config.lock().unwrap();
+        if let Some(obj) = g.as_object_mut() {
+            let entry = obj.entry("memberqr".to_string()).or_insert(json!({}));
+            if let Some(e) = entry.as_object_mut() {
+                e.insert("map".into(), map.clone());
+            }
+        }
+    }
+    let _ = state.save_config();
+    Ok(map)
+}

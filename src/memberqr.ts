@@ -19,6 +19,30 @@ interface MemberInfo {
   telephoneMask: string;
 }
 
+// ---- hub 成员映射：member_id -> bot_id（持久化在 config.json 的 memberqr.map）----
+// 对齐 openilink-hub 思路：每个成员对应一个 iLink 机器人账号，hub 记录绑定关系，
+// 扫码确认后落盘，过期重建后自动更新指向新 bot。
+let memberMap: Record<string, string> = {};
+// member_id -> 团员名（名册加载时缓存，用于账号卡片回显团员身份）
+const memberNames = new Map<string, string>();
+
+function botOfMember(memberId: string): string {
+  return memberMap[memberId] || "";
+}
+function memberOfBot(botId: string): string {
+  for (const [mid, bot] of Object.entries(memberMap)) {
+    if (bot === botId) return mid;
+  }
+  return "";
+}
+async function persistMap(): Promise<void> {
+  try {
+    await api.memberqrSetMap(memberMap);
+  } catch {
+    /* 落盘失败不阻塞 UI，内存态仍可用 */
+  }
+}
+
 // loginId -> 轮询句柄（用于停止）
 const polls = new Map<string, number>();
 // bot_id -> 该账号当前处于「重新生成二维码」状态（refreshAccounts 重建容器时保留 SVG）
@@ -100,12 +124,17 @@ export async function renderMemberQr(root: HTMLElement) {
       </section>
     </div>`;
 
-  // 预填接口地址
+  // 预填接口地址 + 加载 hub 成员映射
   try {
     const cfg: any = await api.loadConfig();
     const base = cfg?.connection?.base_url || cfg?.base_url || "";
     if (base) (g("mq-base") as HTMLInputElement).value = base;
   } catch {}
+  try {
+    memberMap = (await api.memberqrGetMap()) || {};
+  } catch {
+    memberMap = {};
+  }
 
   g("mq-login")?.addEventListener("click", onLogin);
   g("mq-refresh-roster")?.addEventListener("click", loadRoster);
@@ -194,6 +223,7 @@ async function loadRoster() {
     }
     box.innerHTML = members.map((m) => rosterCard(m)).join("");
     members.forEach((m) => {
+      memberNames.set(m.id, m.name || m.telephoneMask || m.id);
       g(`mqgen-${m.id}`)?.addEventListener("click", () => genRosterQr(m));
     });
   } catch (e: any) {
@@ -207,12 +237,16 @@ async function loadRoster() {
 
 function rosterCard(m: MemberInfo): string {
   const title = m.name || m.telephoneMask || m.telephone || m.id;
+  const boundBot = botOfMember(m.id);
   return `
     <div class="mcard" data-mid="${esc(m.id)}">
-      <div class="mcard-name">${esc(title)}</div>
+      <div class="row-between">
+        <div class="mcard-name">${esc(title)}</div>
+        ${boundBot ? `<span class="badge badge-running">已绑定</span>` : ""}
+      </div>
       ${m.telephoneMask ? `<div class="mcard-sub">${esc(m.telephoneMask)}</div>` : ""}
       <div class="mcard-qr" id="mqr-${esc(m.id)}"></div>
-      <div class="mcard-status" id="mqrs-${esc(m.id)}">未生成二维码</div>
+      <div class="mcard-status" id="mqrs-${esc(m.id)}">${boundBot ? "已有绑定账号，可重新扫码更换" : "未生成二维码"}</div>
       <button class="btn small" id="mqgen-${esc(m.id)}">生成 iLink 二维码</button>
     </div>`;
 }
@@ -228,10 +262,18 @@ async function genRosterQr(m: MemberInfo) {
     const r: any = await ilink.beginLogin();
     paintQr(qrId, r, m.id);
     st.textContent = "请用微信扫码";
-    startPoll(r.login_id, qrId, (status) => {
+    startPoll(r.login_id, qrId, (status, resp) => {
       if (status === "confirmed") {
+        // hub：记录该成员绑定的 bot_id（服务端确认时返回 account.bot_id）
+        const botId = resp?.account?.bot_id || "";
+        if (botId) {
+          memberMap[m.id] = botId;
+          memberNames.set(m.id, m.name || m.telephoneMask || m.id);
+          void persistMap();
+        }
         st.textContent = "✅ 已绑定上线";
         toast(`团员 ${m.telephoneMask || m.name || m.id} 已绑定`);
+        void loadRoster();
         void refreshAccounts();
       } else if (status === "scaned") {
         st.textContent = "已扫码，请确认";
@@ -305,6 +347,9 @@ async function refreshAccounts() {
 function accountCard(a: any): string {
   const status = a.status || "offline";
   const expired = status === "session_expired";
+  // hub：回显该机器人对应的团员身份
+  const mid = memberOfBot(a.bot_id);
+  const memberLabel = mid ? memberNames.get(mid) || mid : "";
   const label: Record<string, string> = {
     running: "在线",
     offline: "离线",
@@ -314,10 +359,10 @@ function accountCard(a: any): string {
   return `
     <div class="mcard ${expired ? "expired" : ""}" data-bot="${esc(a.bot_id)}">
       <div class="row-between">
-        <div class="mcard-name">${esc(a.label || a.user_id || a.bot_id)}</div>
+        <div class="mcard-name">${esc(memberLabel ? `${memberLabel}` : a.label || a.user_id || a.bot_id)}</div>
         <span class="badge badge-${esc(status)}">${label[status] || status}</span>
       </div>
-      <div class="mcard-sub">${esc(a.user_id || "")}</div>
+      <div class="mcard-sub">${esc([memberLabel ? a.label : "", a.user_id].filter(Boolean).join(" · ") || "")}</div>
       <div class="mcard-qr" id="mqra-${esc(a.bot_id)}"></div>
       ${expired ? `<button class="btn small warn-btn" id="mqregen-${esc(a.bot_id)}">生成新二维码</button>` : ""}
     </div>`;
@@ -328,11 +373,18 @@ async function regenAccountQr(botId: string) {
   const qr = g(qrId);
   if (!qr) return;
   regenMode.add(botId);
+  // 记住该 bot 对应的成员，确认后把映射指向新 bot
+  const mid = memberOfBot(botId);
   try {
     const r: any = await ilink.beginLogin();
     paintQr(qrId, r, botId);
-    startPoll(r.login_id, qrId, (status) => {
+    startPoll(r.login_id, qrId, (status, resp) => {
       if (status === "confirmed") {
+        const newBot = resp?.account?.bot_id || "";
+        if (mid && newBot) {
+          memberMap[mid] = newBot;
+          void persistMap();
+        }
         regenMode.delete(botId);
         regenSvg.delete(botId);
         toast("账号已重新绑定上线");
@@ -348,7 +400,8 @@ async function regenAccountQr(botId: string) {
 
 // 通用轮询：对 login_id 周期 poll；仅 confirmed 时停止（"expired" 表示二维码已刷新，继续轮询）。
 // qrElId 每次 tick 重新解析，避免 refreshAccounts 重建 DOM 后写到游离节点。
-function startPoll(loginId: string, qrElId: string, onStatus: (status: string) => void) {
+// 回调携带完整 poll 响应（confirmed 时含 account.bot_id，供 hub 记录成员映射）。
+function startPoll(loginId: string, qrElId: string, onStatus: (status: string, resp?: any) => void) {
   if (polls.has(loginId)) {
     clearInterval(polls.get(loginId)!);
     polls.delete(loginId);
@@ -361,7 +414,7 @@ function startPoll(loginId: string, qrElId: string, onStatus: (status: string) =
         const el = g(qrElId);
         if (el) paintQr(qrElId, r, qrElId.replace(/^mqra-/, ""));
       }
-      onStatus(status);
+      onStatus(status, r);
       if (status === "confirmed") {
         clearInterval(timer);
         polls.delete(loginId);

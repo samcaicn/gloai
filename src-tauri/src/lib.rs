@@ -95,6 +95,9 @@ pub fn run() {
             commands::autoreply_set_config,
             commands::autoreply_set_enabled,
             commands::autoreply_logs,
+            // 团员 iLink 二维码（hub 成员映射）
+            commands::memberqr_get_map,
+            commands::memberqr_set_map,
         ])
         .run(tauri::generate_context!())
         .expect("error while running bbt-zb-tauri");
