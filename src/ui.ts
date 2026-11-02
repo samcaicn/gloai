@@ -5,6 +5,7 @@ import { SCHEMA, CONNECTION_FIELDS, defaultParams, defaultConnection, mergeParam
 import { kv } from "./kv";
 import { bbt } from "./bbt";
 import { renderChat } from "./chat";
+import { renderMemberQr } from "./memberqr";
 
 interface AppState {
   connection: Record<string, any>;
@@ -120,6 +121,7 @@ function render() {
       <nav class="tabs">
         <button class="tab active" id="tab-params-btn">参数调整</button>
         <button class="tab" id="tab-chat-btn">团长聊天</button>
+        <button class="tab" id="tab-members-btn">团员二维码</button>
       </nav>
       <div class="btn-row right params-only">
         <button class="btn" id="btn-fetch">拉取远程</button>
@@ -133,26 +135,38 @@ function render() {
       ${groupCards}
     </main>
     <main class="content chat-page hidden" id="page-chat"></main>
+    <main class="content members-page hidden" id="page-members"></main>
     <div id="toast-box" class="toast-box"></div>`;
 
   wire();
   renderChat(document.getElementById("page-chat") as HTMLElement);
+  renderMemberQr(document.getElementById("page-members") as HTMLElement);
 
-  const pBtn = $("tab-params-btn"), cBtn = $("tab-chat-btn");
-  pBtn?.addEventListener("click", () => switchTab(true));
-  cBtn?.addEventListener("click", () => switchTab(false));
+  const pBtn = $("tab-params-btn"), cBtn = $("tab-chat-btn"), mBtn = $("tab-members-btn");
+  pBtn?.addEventListener("click", () => setActiveTab("params"));
+  cBtn?.addEventListener("click", () => setActiveTab("chat"));
+  mBtn?.addEventListener("click", () => setActiveTab("members"));
 }
 
-function switchTab(params: boolean) {
-  const pBtn = $("tab-params-btn"), cBtn = $("tab-chat-btn");
-  const p = $("page-params"), c = $("page-chat");
+function setActiveTab(tab: "params" | "chat" | "members") {
+  const tabs: Record<string, string> = {
+    params: "tab-params-btn",
+    chat: "tab-chat-btn",
+    members: "tab-members-btn",
+  };
+  const pages: Record<string, string> = {
+    params: "page-params",
+    chat: "page-chat",
+    members: "page-members",
+  };
+  Object.entries(tabs).forEach(([name, btnId]) => {
+    $(btnId)?.classList.toggle("active", name === tab);
+  });
+  Object.entries(pages).forEach(([name, pageId]) => {
+    $(pageId)?.classList.toggle("hidden", name !== tab);
+  });
   const btnRow = document.querySelector(".topbar .params-only");
-  if (!pBtn || !cBtn || !p || !c) return;
-  pBtn.classList.toggle("active", params);
-  cBtn.classList.toggle("active", !params);
-  p.classList.toggle("hidden", !params);
-  c.classList.toggle("hidden", params);
-  btnRow?.classList.toggle("hidden", !params);
+  btnRow?.classList.toggle("hidden", tab !== "params");
 }
 
 function wire() {

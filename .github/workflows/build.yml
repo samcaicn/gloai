@@ -57,6 +57,8 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend deps
+        # esbuild 的 build script 批准写在 pnpm-workspace.yaml 的 allowBuilds 中，
+        # 故 --frozen-lockfile 可直接通过（无需额外 flag）。
         run: pnpm install --frozen-lockfile
 
       - name: Build EXE (no bundle)

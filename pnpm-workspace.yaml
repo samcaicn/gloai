@@ -1,2 +1,8 @@
-onlyBuiltDependencies:
-  - esbuild
+packages:
+  - '.'
+
+# pnpm 12 默认不运行任何依赖的 build script（含 esbuild 的 postinstall 校验/链接）。
+# 批准机制是 allowBuilds（非 package.json 的 pnpm.*，也非 onlyBuiltDependencies）。
+# 写上后本地与 CI 的 `pnpm install --frozen-lockfile` 均会放行 esbuild 的构建脚本。
+allowBuilds:
+  esbuild: true

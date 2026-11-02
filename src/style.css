@@ -236,3 +236,46 @@ textarea { resize: vertical; line-height: 1.5; }
 .ar-line .ar-t { color: var(--text-dim); margin-right: 6px; font-family: Consolas, monospace; }
 .ar-line.warn { color: var(--err); }
 .ar-line.debug { color: var(--text-dim); }
+
+/* ---------------- 团员二维码面板 ---------------- */
+.members-wrap { display: flex; flex-direction: column; gap: 14px; }
+.member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.mcard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card-2);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mcard.expired { border-color: var(--err); box-shadow: 0 0 0 1px var(--err) inset; }
+.mcard-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.mcard-sub { font-size: 11.5px; color: var(--text-dim); }
+.mcard-qr {
+  display: flex; justify-content: center; align-items: center;
+  min-height: 40px; margin: 4px 0;
+}
+.mcard-qr svg, .mcard-qr img {
+  width: 168px; height: 168px; border-radius: 8px; background: #fff;
+}
+.mcard-status { font-size: 11.5px; color: var(--text-dim); min-height: 14px; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hint { color: var(--text-dim); font-size: 11.5px; line-height: 1.5; margin: 2px 0; }
+.warn { color: var(--err); }
+.ml8 { margin-left: 8px; }
+.badge {
+  font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;
+}
+.badge-running { color: #2ea043; border-color: #2ea04355; background: #2ea04315; }
+.badge-offline { color: var(--text-dim); }
+.badge-session_expired { color: var(--err); border-color: var(--err); background: #e3494915; }
+.badge-error { color: var(--err); border-color: var(--err); }
+.warn-btn { border-color: var(--err); color: var(--err); }
+.warn-btn:hover { background: var(--err); color: #fff; }
