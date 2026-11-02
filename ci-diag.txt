@@ -1,8 +1,11 @@
-=== sign @ 2026-11-02T12:22:30Z
+=== sign @ 2026-11-02T12:34:44Z
 key_len=64 (应为64)
 key_format=ok
-=== failure @ 2026-11-02T12:22:38Z sha=774cacd96b2960245c97476b661972db6490a2dc
-  |            -------------- field in this struct
+=== failure @ 2026-11-02T12:34:50Z sha=381febadb8a2bab9e57727622923b05e595c6b88
+c\ilink.rs:257:9
+    |
+245 | pub struct GetUpdatesResp {
+    |            -------------- field in this struct
 ...
 257 |     pub sync_buf: String,
     |         ^^^^^^^^
@@ -67,6 +70,6 @@ warning: fields `file_key` and `file_size` are never read
     |
     = note: `UploadResult` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
 
-warning: `bbt-zb-tauri` (lib) generated 13 warnings (run `cargo fix --lib -p bbt-zb-tauri` to apply 1 suggestion)
-    Finished `release` profile [optimized] target(s) in 5m 24s
+warning: `bbt-zb-tauri` (lib) generated 16 warnings
+    Finished `release` profile [optimized] target(s) in 3m 37s
        Built application at: D:\a\gloai\gloai\src-tauri\target\x86_64-pc-windows-msvc\release\bbt-zb-tauri.exe
