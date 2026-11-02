@@ -50,7 +50,7 @@ export const CONNECTION_FIELDS: FieldDef[] = [
     key: "update_base_url",
     label: "升级源地址",
     type: "text",
-    default: "https://raw.githubusercontent.com/eeshop/zhifutuan/pcapp",
+    default: "https://raw.githubusercontent.com/samcaicn/gloai/pcapp",
     help: "读取 /updates/version.json 检查新版本（weauto 模式：下载→验签→重启生效）；国内走 gh-proxy 镜像自动回退",
   },
 ];
