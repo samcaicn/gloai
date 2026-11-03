@@ -1,5 +1,5 @@
-// 参数调整面板：按 schema 渲染表单，提供 本地保存 / 登录 / 连接测试 /
-// 拉取远程 / 推送到 BBT-ZB / 重置。所有网络动作经由 src/bbt.ts -> Rust 后端。
+// 参数调整面板：按 schema 渲染表单，登录 / 连接测试 / 扫码。所有网络动作经由
+// src/bbt.ts -> Rust 后端。字段改动自动保存本地；登录成功后自动拉取远程参数。
 // 另含「团长聊天」页签（chat.ts）。
 import { SCHEMA, CONNECTION_FIELDS, defaultParams, defaultConnection, mergeParams, mergeConnection, FieldDef } from "./config";
 import { kv } from "./kv";
@@ -22,8 +22,8 @@ const state: AppState = {
   params: defaultParams(),
 };
 
-const fieldById = new Map<string, FieldDef>();
-[...SCHEMA.flatMap((g) => g.fields), ...CONNECTION_FIELDS].forEach((f) => fieldById.set(f.key, f));
+// 自动保存防抖句柄（字段改动 500ms 后落盘）
+let saveTimer: number | null = null;
 
 function $(id: string) {
   return document.getElementById(id) as HTMLInputElement | null;
@@ -164,18 +164,7 @@ function render() {
         </div>
       </div>
     </section>
-
-    <section class="card span2">
-      <h2>快捷入口</h2>
-      <p class="card-desc">常用功能一键直达。</p>
-      <div class="quick-grid">
-        <button class="quick-item" data-goto="chat"><span class="quick-emoji">💬</span><span>聊天配置</span></button>
-        <button class="quick-item" data-goto="members"><span class="quick-emoji">👥</span><span>团员二维码</span></button>
-        <button class="quick-item" data-goto="orders"><span class="quick-emoji">📦</span><span>订单消息</span></button>
-        <button class="quick-item" data-goto="interact"><span class="quick-emoji">📢</span><span>互动消息</span></button>
-      </div>
-    </section>`;
-
+`;
   // 次要配置块：浮层启动按钮 + 浮层本体（字段仍在 DOM 中，collect 正常读取）
   const moreLaunchers = SCHEMA.map(
     (g) => `<button class="btn" id="btn-ov-${g.id}">${g.title}</button>`
@@ -200,12 +189,6 @@ function render() {
         <button class="tab" id="tab-orders-btn">📦 订单</button>
         <button class="tab" id="tab-interact-btn">📢 互动</button>
       </nav>
-      <div class="btn-row right params-only">
-        <button class="btn" id="btn-fetch">拉取远程</button>
-        <button class="btn" id="btn-push">推送到 BBT-ZB</button>
-        <button class="btn" id="btn-reset">重置</button>
-        <button class="btn primary" id="btn-save">本地保存</button>
-      </div>
     </header>
     <main class="content" id="page-params">
       ${connCard}
@@ -278,12 +261,9 @@ function setActiveTab(tab: "params" | "chat" | "members" | "orders" | "interact"
   Object.entries(pages).forEach(([name, pageId]) => {
     $(pageId)?.classList.toggle("hidden", name !== tab);
   });
-  const btnRow = document.querySelector(".topbar .params-only");
-  btnRow?.classList.toggle("hidden", tab !== "params");
 }
 
 function wire() {
-  $("btn-save")?.addEventListener("click", onSaveLocal);
   $("btn-open-login")?.addEventListener("click", () => { openOverlay("ov-login"); setLoginMode("pwd"); });
   $("btn-login")?.addEventListener("click", onLogin);
   $("seg-pwd")?.addEventListener("click", () => setLoginMode("pwd"));
@@ -294,16 +274,6 @@ function wire() {
     el.addEventListener("click", () => stopQrPoll())
   );
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") stopQrPoll(); });
-  // 快捷入口：点击切 tab
-  document.querySelectorAll(".quick-item").forEach((el) =>
-    el.addEventListener("click", () => {
-      const t = (el as HTMLElement).dataset.goto as any;
-      if (t) setActiveTab(t);
-    })
-  );
-  $("btn-fetch")?.addEventListener("click", onFetch);
-  $("btn-push")?.addEventListener("click", onPush);
-  $("btn-reset")?.addEventListener("click", onReset);
   // 总开关
   $("sw-autoreply")?.addEventListener("change", async (e) => {
     const on = (e.target as HTMLInputElement).checked;
@@ -337,22 +307,44 @@ function wire() {
   });
 }
 
-async function onSaveLocal() {
-  const btn = $("btn-save") as HTMLButtonElement | null;
-  btn?.classList.add("loading");
+// ---- 自动保存：表单改动 500ms 防抖后落盘（替代原「本地保存」按钮）----
+async function persistNow() {
+  const conn = collect("conn", CONNECTION_FIELDS);
+  const params = collect("fld", SCHEMA.flatMap((g) => g.fields));
+  const savedConn = {
+    base_url: conn.base_url,
+    telephone: conn.telephone,
+    token: state.connection.token || "",
+  };
   try {
-    const conn = collect("conn", CONNECTION_FIELDS);
-    const params = collect("fld", SCHEMA.flatMap((g) => g.fields));
-    const savedConn = {
-      base_url: conn.base_url,
-      telephone: conn.telephone,
-      token: state.connection.token || "",
-    };
-    const payload = { connection: savedConn, ...params };
-    await kv.put(payload);
+    await kv.put({ connection: savedConn, ...params });
     await bbt.setConnection(savedConn.base_url, savedConn.token || undefined, savedConn.telephone || undefined);
-    toast("已保存到本地");
-  } finally { btn?.classList.remove("loading"); }
+  } catch (e: any) {
+    console.warn("自动保存失败", e);
+  }
+}
+
+function scheduleSave() {
+  if (saveTimer !== null) clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(() => { saveTimer = null; void persistNow(); }, 500);
+}
+
+// 事件委托：任意表单字段（首页 + 浮层）改动即触发自动保存，render 重建 DOM 后依然有效
+function bindAutoSave(root: HTMLElement) {
+  root.addEventListener("change", (e) => {
+    const t = e.target as HTMLElement;
+    if (t.id?.startsWith("conn-") || t.id?.startsWith("fld-")) scheduleSave();
+  });
+}
+
+// 登录成功后自动拉取远程参数（替代原「拉取远程」按钮）
+async function syncRemote() {
+  try {
+    const res: any = await bbt.fetch();
+    state.params = mergeParams(res);
+  } catch (e: any) {
+    console.warn("同步远程参数失败", e);
+  }
 }
 
 async function onLogin() {
@@ -375,6 +367,7 @@ async function onLogin() {
     await bbt.setConnection(conn.base_url, res.token, conn.telephone);
     closeOverlay("ov-login");
     stopQrPoll();
+    await syncRemote();
     render();
     const role = res.account?.role ? `（角色：${res.account.role}）` : "";
     toast(`登录成功，已建立连接${role}`);
@@ -484,6 +477,7 @@ async function startPcQr() {
           state.connection.telephone = tel;
           await bbt.setConnection(baseUrl, token, tel || undefined);
           closeOverlay("ov-login");
+          await syncRemote();
           render();
           const role = pd.role ? `（角色：${pd.role}）` : "";
           toast(`扫码登录成功${role}`);
@@ -499,49 +493,9 @@ async function startPcQr() {
   }
 }
 
-async function onFetch() {
-  const btn = $("btn-fetch") as HTMLButtonElement | null;
-  btn?.classList.add("loading");
-  try {
-    const res: any = await bbt.fetch();
-    state.params = mergeParams(res);
-    render();
-    toast("已从 BBT-ZB 拉取参数");
-  } catch (e: any) {
-    toast("拉取失败：" + (e?.message || e), false);
-  } finally { btn?.classList.remove("loading"); }
-}
-
-async function onPush() {
-  const all = collect("fld", SCHEMA.flatMap((g) => g.fields));
-  const params: Record<string, any> = {};
-  for (const g of SCHEMA) {
-    if (g.id === "readonly") continue;
-    for (const f of g.fields) params[f.key] = all[f.key];
-  }
-  const btn = $("btn-push") as HTMLButtonElement | null;
-  btn?.classList.add("loading");
-  try {
-    await bbt.push(params);
-    toast("已推送到 BBT-ZB");
-  } catch (e: any) {
-    toast("推送失败：" + (e?.message || e), false);
-  } finally { btn?.classList.remove("loading"); }
-}
-
-async function onReset() {
-  state.params = defaultParams();
-  state.connection = defaultConnection();
-  try {
-    await kv.put({ connection: defaultConnection(), ...defaultParams() });
-  } catch (e: any) {
-    toast("重置落盘失败：" + (e?.message || e), false);
-  }
-  render();
-  toast("已重置为默认值");
-}
-
 export async function init() {
+  const appRoot = document.getElementById("app");
+  if (appRoot) bindAutoSave(appRoot);
   // 静默更新事件（Rust 后台下载验签暂存完成 → 提示重启生效）
   listen("update-event", (ev: any) => {
     const d = ev.payload || {};

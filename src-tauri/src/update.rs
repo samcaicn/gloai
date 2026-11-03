@@ -301,18 +301,20 @@ pub fn apply_pending_update(app: &tauri::AppHandle) -> Result<bool, String> {
         .unwrap_or_else(|| cfg.clone());
     let bat = temp.join("apply_update.bat");
     let logf = temp.join("apply_update.log");
-    let pid = std::process::id();
     let cur_sig = current.with_extension("exe.sig");
 
+    // waitloop 不再等「写死的 PID」：进程被强杀后 PID 会被系统复用给无关进程，
+    // tasklist 永远命中导致 bat 卡死。改为直接尝试覆盖 exe —— 旧进程还活着时
+    // 文件被独占占用，copy 必败；进程一退出 copy 即成功，天然等价于「等退出」。
+    // 120 次（约 2 分钟）仍失败则放弃本次替换并保留 pending，下次重启再试，绝不卡死。
     let script = format!(
-        "@echo off\r\nchcp 65001 >nul\r\nset LOG={log}\r\nset CURRENT={cur}\r\nset STAGED={se}\r\nset STAGEDSIG={ss}\r\nset CURSIG={cs}\r\nset PENDING={pd}\r\necho [%date% %time%] apply update start >> \"%LOG%\"\r\n:waitloop\r\ntasklist /FI \"PID eq {pid}\" | find \"{pid}\" >nul 2>&1\r\nif not errorlevel 1 (\r\n  timeout /t 1 /nobreak >nul\r\n  goto waitloop\r\n)\r\ncopy /y \"%STAGED%\" \"%CURRENT%\" >> \"%LOG%\" 2>&1\r\ncopy /y \"%STAGEDSIG%\" \"%CURSIG%\" >> \"%LOG%\" 2>&1\r\nif exist \"%PENDING%\" del /f /q \"%PENDING%\"\r\necho [%date% %time%] replaced, restarting >> \"%LOG%\"\r\nstart \"\" \"%CURRENT%\"\r\n",
+        "@echo off\r\nchcp 65001 >nul\r\nset LOG={log}\r\nset CURRENT={cur}\r\nset STAGED={se}\r\nset STAGEDSIG={ss}\r\nset CURSIG={cs}\r\nset PENDING={pd}\r\nset /a tries=0\r\necho [%date% %time%] apply update start >> \"%LOG%\"\r\n:waitloop\r\nset /a tries+=1\r\nif %tries% gtr 120 (\r\n  echo [%date% %time%] FAIL: exe still locked after 120s, pending kept >> \"%LOG%\"\r\n  exit /b 1\r\n)\r\ncopy /y \"%STAGED%\" \"%CURRENT%\" >nul 2>&1\r\nif not errorlevel 1 goto replaced\r\n%SystemRoot%\\System32\\ping.exe -n 2 127.0.0.1 >nul\r\ngoto waitloop\r\n:replaced\r\ncopy /y \"%STAGEDSIG%\" \"%CURSIG%\" >> \"%LOG%\" 2>&1\r\nif exist \"%PENDING%\" del /f /q \"%PENDING%\"\r\necho [%date% %time%] replaced, restarting >> \"%LOG%\"\r\nstart \"\" \"%CURRENT%\"\r\nexit /b 0\r\n",
         log = logf.to_string_lossy(),
         cur = current.to_string_lossy(),
         se = staged_exe.to_string_lossy(),
         ss = staged_sig.to_string_lossy(),
         cs = cur_sig.to_string_lossy(),
         pd = pending_path.to_string_lossy(),
-        pid = pid,
     );
     std::fs::write(&bat, script).map_err(|e| format!("写替换脚本失败: {}", e))?;
 

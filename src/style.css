@@ -652,4 +652,4 @@ textarea { resize: vertical; line-height: 1.5; }
   transition: all .2s ease;
 }
 .quick-item:hover { background: #fff; border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-lift); }
-.quick-emoji { font-size: 24px; }
+.quick-emoji { font-size: 28px; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; line-height: 1; }

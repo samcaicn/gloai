@@ -86,7 +86,7 @@ impl Default for AutoReplyConfig {
             group_mode: "at".into(),
             at_names: Vec::new(),
             group_keywords: vec!["在吗".into(), "机器人".into(), "你好".into()],
-            cooldown_sec: 5,
+            cooldown_sec: 15,
             strip_at_prefix: true,
             reply_voice: false,
             listen_list: Vec::new(),
@@ -160,6 +160,15 @@ fn now_ms() -> i64 {
 /// 供其他模块（wxauto 等）记日志用的时间戳
 pub fn now_ms_pub() -> i64 {
     now_ms()
+}
+
+/// 反检测：返回 [0.0, max) 之间的随机浮点数（无外部依赖，用系统时间做种子）
+fn rand_interval(max: f64) -> f64 {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos())
+        .unwrap_or(0) as f64;
+    (nanos % 1_000_000.0) / 1_000_000.0 * max
 }
 
 /// 统一入站消息（多通道）：iLink 团员 / 微信 wxauto，都是「客户」。
@@ -432,7 +441,10 @@ async fn process_msg_with(
     {
         let mut lr = ar.last_reply.lock().unwrap();
         let now = now_ms();
-        let cd = (cfg.cooldown_sec.max(1) as i64) * 1000;
+        // 冷却加 ±20% 随机抖动，避免固定间隔被识别为机器人
+        let cd_base = cfg.cooldown_sec.max(1) as f64;
+        let cd_jitter = cd_base * 0.8 + rand_interval(cd_base * 0.4);
+        let cd = (cd_jitter * 1000.0) as i64;
         let key = format!("{}|{}", ch, to);
         if let Some(t) = lr.get(&key) {
             if now - *t < cd {
@@ -459,6 +471,14 @@ async fn process_msg_with(
             gr.clear();
         }
     }
+
+    // ---- 反检测：随机思考延迟（模拟真人看到消息后反应时间）----
+    // 私聊 1.5~4s，群聊 2.5~6s；短消息反应快，长消息反应慢。
+    let think_min = if is_group { 2.5f64 } else { 1.5f64 };
+    let think_max = if is_group { 6.0f64 } else { 4.0f64 };
+    let think_secs = think_min + rand_interval(think_max - think_min) * (1.0 + text.len() as f64 / 100.0).min(2.0);
+    ar.log(app, "debug", &format!("反检测：思考延迟 {:.1}s", think_secs), json!({"peer": to}));
+    tokio::time::sleep(Duration::from_secs_f64(think_secs)).await;
 
     // ---- 团员身份：拿可用的 bbt-zb 连接（含 token）----
     let member_conn = ensure_member_conn(app, ar, &cfg).await?;
