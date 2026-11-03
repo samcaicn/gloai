@@ -1,22 +1,17 @@
 // 聊天配置页（原「团长聊天」改造）：照搬 weauto 的聊天对象菜单界面 ——
-//   * 微信通道（wxauto）：开关 + 自动启动 Python sidecar（应用启动/开启即自动拉起）
 //   * 聊天对象（私聊和群聊）：逐对象列表（窗口名 + 类型 + ⚙监测设置 + 删除）
 //   * 回复规则（私聊+群聊）：私聊开关 / 群聊模式 / @名单 / 关键词 / 白名单 / 黑名单 /
 //     禁词 / 群内频控 / 冷却 —— 后端 autoreply 管线按同规则真实过滤
-//   * 团员账号：触发 bbt-zb 服务端 AI 的身份
-//   * 团长桥路由（高级，折叠）
-// 数据面走 ilink.ts -> Rust autoreply/wxauto/bridge 命令。
+//   * AI 回复日志
+// 数据面走 ilink.ts -> Rust autoreply 命令。
 import {
   autoreplyApi,
-  wxautoApi,
-  bridgeApi,
   onAutoreplyEvent,
   onWxautoEvent,
   AutoReplyConfig,
   ListenEntry,
   AutoReplyLog,
 } from "./ilink";
-import { BridgeConfig } from "./ilink";
 
 const MON_TYPES = ["text", "voice", "image", "video", "file", "link", "quote", "merge", "emotion"];
 const MON_LABELS: Record<string, string> = {
@@ -26,10 +21,9 @@ const MON_LABELS: Record<string, string> = {
 
 interface ChatCfgState {
   cfg: AutoReplyConfig | null;
-  bridge: BridgeConfig | null;
 }
 
-const state: ChatCfgState = { cfg: null, bridge: null };
+const state: ChatCfgState = { cfg: null };
 
 function esc(s: string): string {
   return (s || "").replace(/[&<>"']/g, (c) =>
@@ -67,28 +61,6 @@ export function renderChat(container: HTMLElement) {
 
       <section class="card">
         <div class="row-between">
-          <h2>微信通道（wxauto · 私聊+群聊）</h2>
-          <label class="switch"><input type="checkbox" id="wx-toggle"/><span></span></label>
-        </div>
-        <p class="card-desc">开启后<b>自动启动 Python</b>（wechatauto sidecar）：本机微信（需已登录桌面端）的私聊/群聊新消息进入 AI 回复管线，回复经 UI 自动化发回微信。应用启动时若通道已开启也会自动拉起，无需手动干预。</p>
-        <div class="grid2">
-          <div class="field">
-            <div class="field-label">Python 解释器路径<span class="hint">留空 = 自动探测（weauto venv → PATH）</span></div>
-            <input id="wx-python" class="input" placeholder="如 C:\\d\\weauto\\.venv_bot\\Scripts\\python.exe"/>
-          </div>
-          <div class="field">
-            <div class="field-label">通道状态</div>
-            <div class="ar-row" id="wx-status">状态：读取中…</div>
-          </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn small primary" id="wx-save">保存</button>
-          <button class="btn small" id="wx-restart">重启通道</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="row-between">
           <h2>聊天对象（私聊和群聊）</h2>
           <button class="btn small" id="listen-add">＋添加聊天对象</button>
         </div>
@@ -101,8 +73,14 @@ export function renderChat(container: HTMLElement) {
       </section>
 
       <section class="card">
-        <h2>回复规则（私聊+群聊）</h2>
-        <p class="card-desc">控制 AI 在什么情况下开口。群本身不需要加进「聊天对象」也能按本规则回复；<b>只有想给某个对象配专属监测时</b>才需要加到上方列表。</p>
+        <div class="row-between">
+          <h2>回复规则（私聊+群聊）</h2>
+          <button class="btn small" id="ov-open-rules">打开设置</button>
+        </div>
+        <p class="card-desc">控制 AI 在什么情况下开口。群本身不需要加进「聊天对象」也能按本规则回复；<b>只有想给某个对象配专属监测时</b>才需要加到上方列表。规则较多，收进浮层统一编辑。</p>
+      </section>
+
+      ${overlayHtml("ov-rules", "回复规则（私聊+群聊）", `
         <div class="grid2">
           <div class="field">
             <div class="field-label">私聊自动回复</div>
@@ -158,27 +136,6 @@ export function renderChat(container: HTMLElement) {
       </section>
 
       <section class="card">
-        <h2>团员账号（AI 服务身份）</h2>
-        <p class="card-desc">用该团员账号调 bbt-zb chat/send 触发服务端 AI 生成回复（仅本机保存，密码留空 = 不修改）。</p>
-        <div class="grid2">
-          <div class="field"><div class="field-label">团员账号手机号</div><input id="ac-tel" class="input" placeholder="团员账号手机号"/></div>
-          <div class="field"><div class="field-label">团员账号密码</div><input id="ac-pwd" class="input" type="password" placeholder="已保存，留空 = 不修改"/></div>
-        </div>
-        <div class="btn-row">
-          <button class="btn small primary" id="ac-save">保存团员账号</button>
-        </div>
-      </section>
-
-      <details class="card adv-card">
-        <summary>团长桥路由（高级）</summary>
-        <p class="card-desc">总开关在「首页」。开启后：团长在 bbt-zb 发出的新消息自动转发到路由表的所有 iLink 账号；iLink 收到的消息按路由回传团长会话。</p>
-        <textarea id="bridge-targets" rows="5" placeholder='[{"bot_id":"…","wechat_user_id":"…","bbt_session_id":"…"}]'></textarea>
-        <div class="btn-row">
-          <button class="btn small" id="bridge-save">保存路由</button>
-        </div>
-      </details>
-
-      <section class="card">
         <h2>AI 回复日志</h2>
         <div class="ar-log" id="ar-log"></div>
       </section>
@@ -198,8 +155,6 @@ async function loadAll() {
   }
   fillRules();
   renderListenList();
-  void refreshWx();
-  void refreshBridge();
   void loadLogs();
 }
 
@@ -227,10 +182,6 @@ function fillRules() {
   val("rl-rate-max", c.group_rate_max_replies ?? 10);
   val("rl-cd", c.cooldown_sec ?? 5);
   chk("rl-voice", c.reply_voice);
-  const tel = g("ac-tel") as HTMLInputElement | null;
-  if (tel) tel.value = c.member_telephone || "";
-  const pwd = g("ac-pwd") as HTMLInputElement | null;
-  if (pwd) pwd.placeholder = c.member_telephone ? "密码已保存（留空 = 不修改）" : "团员账号密码";
 }
 
 async function saveRules() {
@@ -252,22 +203,6 @@ async function saveRules() {
   try {
     state.cfg = await autoreplyApi.setConfig(value);
     toast("回复规则已保存");
-  } catch (e: any) {
-    toast("保存失败：" + (e?.message || e), false);
-  }
-}
-
-async function saveAccount() {
-  const tel = (g("ac-tel") as HTMLInputElement).value.trim();
-  const pwd = (g("ac-pwd") as HTMLInputElement).value;
-  if (!tel) return toast("请填写团员账号手机号", false);
-  try {
-    state.cfg = await autoreplyApi.setConfig({
-      member_telephone: tel,
-      member_password: pwd, // 空值后端视为「不修改」
-    });
-    toast("团员账号已保存");
-    fillRules();
   } catch (e: any) {
     toast("保存失败：" + (e?.message || e), false);
   }
@@ -367,81 +302,6 @@ async function saveListenList() {
   }
 }
 
-// ---------------- 微信通道（wxauto） ----------------
-
-async function refreshWx() {
-  let cfg;
-  try {
-    cfg = await wxautoApi.getConfig();
-  } catch (e: any) {
-    toast("加载微信通道配置失败：" + (e?.message || e), false);
-    return;
-  }
-  const t = g("wx-toggle") as HTMLInputElement | null;
-  const py = g("wx-python") as HTMLInputElement | null;
-  const st = g("wx-status");
-  if (t) t.checked = !!cfg.enabled;
-  if (py) py.value = cfg.python_path || "";
-  if (st) {
-    st.textContent = cfg.enabled
-      ? cfg.running
-        ? "✅ 运行中（Python sidecar 已启动，私聊+群聊监听）"
-        : "已开启，Python sidecar 启动中…"
-      : "已关闭";
-  }
-}
-
-async function saveWx() {
-  const py = g("wx-python") as HTMLInputElement | null;
-  try {
-    await wxautoApi.setConfig({ python_path: py?.value.trim() || "" });
-    toast("微信通道配置已保存");
-  } catch (e: any) {
-    toast("保存失败：" + (e?.message || e), false);
-  }
-  void refreshWx();
-}
-
-async function restartWx() {
-  try {
-    await wxautoApi.stop();
-    await wxautoApi.start();
-    toast("微信通道已重启");
-  } catch (e: any) {
-    toast("重启失败：" + (e?.message || e), false);
-  }
-  void refreshWx();
-}
-
-// ---------------- 团长桥 ----------------
-
-async function refreshBridge() {
-  try {
-    state.bridge = await bridgeApi.getConfig();
-  } catch {
-    return;
-  }
-  const ta = document.getElementById("bridge-targets") as HTMLTextAreaElement | null;
-  if (ta && state.bridge) ta.value = JSON.stringify(state.bridge.targets || [], null, 1);
-}
-
-async function saveBridgeTargets() {
-  const ta = document.getElementById("bridge-targets") as HTMLTextAreaElement | null;
-  if (!ta) return;
-  let targets: any[];
-  try {
-    targets = JSON.parse(ta.value || "[]");
-  } catch {
-    return toast("路由表 JSON 格式错误", false);
-  }
-  try {
-    state.bridge = await bridgeApi.setConfig({ targets });
-    toast("路由表已保存");
-  } catch (e: any) {
-    toast("保存失败：" + (e?.message || e), false);
-  }
-}
-
 // ---------------- 日志 ----------------
 
 async function loadLogs() {
@@ -483,19 +343,6 @@ export async function initChatEvents() {
 // ---------------- 接线 ----------------
 
 function wire() {
-  g("wx-toggle")?.addEventListener("change", async (e) => {
-    const on = (e.target as HTMLInputElement).checked;
-    try {
-      await wxautoApi.setConfig({ enabled: on });
-      toast(on ? "微信通道已开启（自动启动 Python）" : "微信通道已关闭");
-    } catch (err: any) {
-      toast("切换失败：" + (err?.message || err), false);
-      (e.target as HTMLInputElement).checked = !on;
-    }
-    void refreshWx();
-  });
-  g("wx-save")?.addEventListener("click", saveWx);
-  g("wx-restart")?.addEventListener("click", restartWx);
   g("listen-add")?.addEventListener("click", () => {
     const box = g("listen-list");
     if (!box) return;
@@ -508,6 +355,4 @@ function wire() {
   });
   g("listen-save")?.addEventListener("click", saveListenList);
   g("rl-save")?.addEventListener("click", saveRules);
-  g("ac-save")?.addEventListener("click", saveAccount);
-  g("bridge-save")?.addEventListener("click", saveBridgeTargets);
 }

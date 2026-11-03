@@ -9,6 +9,7 @@ import { renderChat } from "./chat";
 import { renderMemberQr } from "./memberqr";
 import { renderOrdersPage } from "./orderspage";
 import { renderInteractPage } from "./interact";
+import { overlayHtml, openOverlay, wireOverlayClose, bindOverlayEsc } from "./overlay";
 
 interface AppState {
   connection: Record<string, any>;
@@ -102,9 +103,6 @@ function render() {
       </div>
       <div class="btn-row">
         <button class="btn primary" id="btn-login">登录并连接</button>
-        <button class="btn" id="btn-test">连接测试</button>
-        <button class="btn" id="btn-update-check">检查更新</button>
-        <button class="btn" id="btn-update-apply">下载更新</button>
       </div>
     </section>`;
 
@@ -129,15 +127,18 @@ function render() {
       </div>
     </section>`;
 
-  const groupCards = SCHEMA.map(
-    (g) => `
-    <section class="card">
-      <h2>${g.title}</h2>
-      ${g.desc ? `<p class="card-desc">${g.desc}</p>` : ""}
-      <div class="fields">
-        ${g.fields.map((f) => fieldHtml(f, state.params[f.key], "fld")).join("")}
-      </div>
-    </section>`
+  // 次要配置块：浮层启动按钮 + 浮层本体（字段仍在 DOM 中，collect 正常读取）
+  const moreLaunchers = SCHEMA.map(
+    (g) => `<button class="btn" id="btn-ov-${g.id}">${g.title}</button>`
+  ).join("");
+  const moreOverlays = SCHEMA.map(
+    (g) =>
+      overlayHtml(
+        `ov-${g.id}`,
+        g.title,
+        `<div class="fields">${g.fields.map((f) => fieldHtml(f, state.params[f.key], "fld")).join("")}</div>`,
+        g.desc
+      )
   ).join("");
 
   app.innerHTML = `
@@ -160,7 +161,12 @@ function render() {
     <main class="content" id="page-params">
       ${connCard}
       ${switchesCard}
-      ${groupCards}
+      <section class="card span2">
+        <h2>更多设置</h2>
+        <p class="card-desc">次要配置以浮层打开，保持首页简洁。</p>
+        <div class="btn-row">${moreLaunchers}</div>
+      </section>
+      ${moreOverlays}
     </main>
     <main class="content chat-page hidden" id="page-chat"></main>
     <main class="content members-page hidden" id="page-members"></main>
@@ -169,6 +175,11 @@ function render() {
     <div id="toast-box" class="toast-box"></div>`;
 
   wire();
+  wireOverlayClose(app);
+  bindOverlayEsc();
+  SCHEMA.forEach((g) => {
+    $(`btn-ov-${g.id}`)?.addEventListener("click", () => openOverlay(`ov-${g.id}`));
+  });
   renderChat(document.getElementById("page-chat") as HTMLElement);
   renderMemberQr(document.getElementById("page-members") as HTMLElement);
   renderOrdersPage(document.getElementById("page-orders") as HTMLElement);
@@ -224,12 +235,9 @@ function setActiveTab(tab: "params" | "chat" | "members" | "orders" | "interact"
 function wire() {
   $("btn-save")?.addEventListener("click", onSaveLocal);
   $("btn-login")?.addEventListener("click", onLogin);
-  $("btn-test")?.addEventListener("click", onTest);
   $("btn-fetch")?.addEventListener("click", onFetch);
   $("btn-push")?.addEventListener("click", onPush);
   $("btn-reset")?.addEventListener("click", onReset);
-  $("btn-update-check")?.addEventListener("click", onUpdateCheck);
-  $("btn-update-apply")?.addEventListener("click", onUpdateApply);
   // 总开关
   $("sw-autoreply")?.addEventListener("change", async (e) => {
     const on = (e.target as HTMLInputElement).checked;
@@ -295,23 +303,10 @@ async function onLogin() {
     state.connection.telephone = conn.telephone;
     await bbt.setConnection(conn.base_url, res.token, conn.telephone);
     render();
-    const t = $("conn-token");
-    if (t) t.value = res.token;
     const role = res.account?.role ? `（角色：${res.account.role}）` : "";
     toast(`登录成功，已建立连接${role}`);
   } catch (e: any) {
     toast("登录失败：" + (e?.message || e), false);
-  }
-}
-
-async function onTest() {
-  const conn = collect("conn", CONNECTION_FIELDS);
-  if (conn.base_url) await bbt.setConnection(conn.base_url);
-  try {
-    const res: any = await bbt.test();
-    toast(res?.message || (res?.ok ? "连接成功" : "连接失败"), !!res?.ok);
-  } catch (e: any) {
-    toast("测试失败：" + (e?.message || e), false);
   }
 }
 
@@ -352,39 +347,6 @@ async function onReset() {
   }
   render();
   toast("已重置为默认值");
-}
-
-// ---- 自动更新（weauto 模式：检查 → 下载验签暂存 → 重启自动替换）----
-async function onUpdateCheck() {
-  const base = ($("conn-update_base_url") as HTMLInputElement)?.value?.trim();
-  if (!base) return toast("请先填写升级源地址", false);
-  try {
-    const r: any = await bbt.updateCheck(base);
-    if (r?.update_available) {
-      toast(`发现新版本 ${r.latest}（当前 ${r.current}），可点「下载更新」`, true);
-    } else if (r) {
-      toast(`已是最新版本 ${r.current}`, true);
-    } else {
-      toast("检查更新失败", false);
-    }
-  } catch (e: any) {
-    toast("检查更新失败：" + (e?.message || e), false);
-  }
-}
-
-async function onUpdateApply() {
-  const base = ($("conn-update_base_url") as HTMLInputElement)?.value?.trim();
-  if (!base) return toast("请先填写升级源地址", false);
-  try {
-    const r: any = await bbt.updatePrepare(base);
-    if (r?.success) {
-      toast(r.message || "新版本已就绪，重启后自动升级", true);
-    } else {
-      toast(r?.message || "下载更新失败", false);
-    }
-  } catch (e: any) {
-    toast("下载更新失败：" + (e?.message || e), false);
-  }
 }
 
 export async function init() {

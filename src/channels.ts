@@ -50,15 +50,16 @@ export interface PayImageOpts {
   qrDataUrl: string;       // 收款码图片 dataURL
   kind?: string;           // 微信 / 支付宝
   note?: string;           // 备注（订单号等）
+  orderCount?: number;     // 订单笔数（一键拉取自动填充）
 }
 
 /**
- * canvas 合成订单支付图（600×860）：
- * 头部「抱抱团 · 订单收款」+ 收款对象 + 大字金额 + 收款码 + 底部扫码提示。
+ * canvas 合成订单支付图（640×920）：
+ * 头部「抱抱团 · 订单收款」+ 收款对象 + 大字金额 + 订单笔数 + 收款码 + 底部扫码提示。
  */
 export function composePayImage(opts: PayImageOpts): Promise<string> {
   return new Promise((resolve, reject) => {
-    const W = 600, H = 860;
+    const W = 640, H = 920;
     const cv = document.createElement("canvas");
     cv.width = W;
     cv.height = H;
@@ -85,25 +86,35 @@ export function composePayImage(opts: PayImageOpts): Promise<string> {
       // 收款对象
       ctx.fillStyle = "#333333";
       ctx.font = "28px 'Microsoft YaHei', sans-serif";
-      ctx.fillText(`收款对象：${opts.payeeName || "—"}`, W / 2, 218);
+      ctx.fillText(`收款对象：${opts.payeeName || "—"}`, W / 2, 210);
 
       // 金额大字
       const amt = opts.amount.replace(/^¥/, "").trim();
       ctx.fillStyle = "#e34949";
-      ctx.font = "bold 76px 'Microsoft YaHei', sans-serif";
-      ctx.fillText(`¥${amt}`, W / 2, 320);
+      ctx.font = "bold 72px 'Microsoft YaHei', sans-serif";
+      ctx.fillText(`¥${amt}`, W / 2, 296);
+
+      // 订单笔数（一键拉取时自动填充）
+      let y = 352;
+      if (opts.orderCount !== undefined && opts.orderCount >= 0) {
+        ctx.fillStyle = "#333333";
+        ctx.font = "30px 'Microsoft YaHei', sans-serif";
+        ctx.fillText(`订单 ${opts.orderCount} 笔`, W / 2, y);
+        y += 46;
+      }
 
       // 备注
       if (opts.note && opts.note.trim()) {
         ctx.fillStyle = "#888888";
         ctx.font = "22px 'Microsoft YaHei', sans-serif";
-        ctx.fillText(`备注：${opts.note.trim()}`, W / 2, 368);
+        ctx.fillText(`备注：${opts.note.trim()}`, W / 2, y);
+        y += 40;
       }
 
       // 收款码白底卡片 + 描边
-      const qrSize = 360;
+      const qrSize = 340;
       const qx = (W - qrSize) / 2;
-      const qy = 410;
+      const qy = Math.max(y, 440);
       ctx.strokeStyle = "#eeeeee";
       ctx.lineWidth = 2;
       ctx.strokeRect(qx - 14, qy - 14, qrSize + 28, qrSize + 28);
@@ -116,10 +127,10 @@ export function composePayImage(opts: PayImageOpts): Promise<string> {
       const kind = opts.kind || "微信";
       ctx.fillStyle = "#555555";
       ctx.font = "26px 'Microsoft YaHei', sans-serif";
-      ctx.fillText(`请使用${kind}扫一扫，向上方金额付款`, W / 2, qy + qrSize + 70);
+      ctx.fillText(`请使用${kind}扫一扫，向上方金额付款`, W / 2, qy + qrSize + 60);
       ctx.fillStyle = "#bbbbbb";
       ctx.font = "20px 'Microsoft YaHei', sans-serif";
-      ctx.fillText("付款后请在订单页上传支付凭证", W / 2, qy + qrSize + 112);
+      ctx.fillText("付款后请在订单页上传支付凭证", W / 2, qy + qrSize + 98);
 
       resolve(cv.toDataURL("image/png"));
     };

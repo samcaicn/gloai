@@ -35,6 +35,7 @@ export interface GroupDef {
 }
 
 // ---- 连接设置（仅本地使用，不上传 bbt-zb）----
+// 注意：token 不做表单字段（登录成功后写入 state，界面不展示）；升级源为内置常量，无需配置项。
 export const CONNECTION_FIELDS: FieldDef[] = [
   {
     key: "base_url",
@@ -45,15 +46,10 @@ export const CONNECTION_FIELDS: FieldDef[] = [
   },
   { key: "telephone", label: "手机号", type: "text", default: "" },
   { key: "password", label: "密码", type: "password", default: "" },
-  { key: "token", label: "Token（登录后自动填入）", type: "text", default: "" },
-  {
-    key: "update_base_url",
-    label: "升级源地址",
-    type: "text",
-    default: "https://raw.githubusercontent.com/samcaicn/gloai/pcapp",
-    help: "读取 /updates/version.json 检查新版本（weauto 模式：下载→验签→重启生效）；国内走 gh-proxy 镜像自动回退",
-  },
 ];
+
+// 升级源（内置常量，供 updateCheck/updatePrepare 使用；不在界面暴露）
+export const UPDATE_BASE_URL = "https://raw.githubusercontent.com/samcaicn/gloai/pcapp";
 
 // ---- 聊天参数（chat/configGet ↔ chat/configSave，真实字段）----
 export const SCHEMA: GroupDef[] = [
