@@ -3,9 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BBT-ZB 控制台</title>
+    <meta name="theme-color" content="#E8A33D" />
+    <title>抱抱团 · 控制台</title>
+    <style>
+      /* 启动底色与页面同色，避免 WebView 初始化白闪 */
+      html, body { background: #faf7f2; margin: 0; }
+      /* 首帧品牌加载条（对齐官方 nav-bar 语言），JS 渲染接管后自动被覆盖 */
+      #boot-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9999;
+        overflow: hidden; }
+      #boot-bar::before { content: ""; position: absolute; top: 0; left: 0; height: 100%; width: 40%;
+        background: linear-gradient(90deg, #E8A33D, #07c160); border-radius: 0 3px 3px 0;
+        animation: boot-slide 1s ease-in-out infinite; }
+      @keyframes boot-slide { 0% { left: -40%; } 100% { left: 100%; } }
+    </style>
   </head>
   <body>
+    <div id="boot-bar"></div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
