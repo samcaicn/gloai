@@ -1,8 +1,7 @@
-// 团员 iLink 二维码管理：团长身份登录 → 查看 BBT-ZB 团员名册 → 给每个团员
+// 团员 iLink 二维码管理：复用「首页」团长登录态 → 查看 BBT-ZB 团员名册 → 给每个团员
 // 生成 iLink 绑定二维码并展示 → 绑定过期（微信会话失效）提示并支持点击重新生成。
 //
 // 复用既有后端命令：
-//   - login(base_url, tel, pwd)             团长登录（account/login，写 conn.token）
 //   - bbt_call("leader/listMembers", {})   拉取团员名册
 //   - ilink_begin_login()                   取 iLink 扫码二维码（返回 login_id/content/svg）
 //   - ilink_poll_login(login_id)           轮询扫码状态（confirmed 即该微信上线）
@@ -10,7 +9,7 @@
 //   - onIlinkEvent                         监听 session_expired 等事件
 
 import { api } from "./api";
-import { ilink, onIlinkEvent } from "./ilink";
+import { ilink, onIlinkEvent, autoreplyApi, onAutoreplyEvent } from "./ilink";
 
 interface MemberInfo {
   id: string;
@@ -56,6 +55,11 @@ const polls = new Map<string, number>();
 const regenMode = new Set<string>();
 const regenSvg = new Map<string, string>();
 
+// 当前名册总人数（用于绑定状态总览）
+let rosterSize = 0;
+// AI 自动回复是否已开启（用于绑定卡片的 AI 徽标）
+let arEnabled = false;
+
 let started = false;
 
 function esc(s: string): string {
@@ -81,37 +85,18 @@ function g(id: string): HTMLElement | null {
 export async function renderMemberQr(root: HTMLElement) {
   root.innerHTML = `
     <div class="members-wrap">
-      <section class="card">
-        <h2>团长身份登录</h2>
-        <p class="card-desc">登录 BBT-ZB 团长账号后，可查看团员名册并为每个团员生成 iLink 绑定二维码。</p>
-        <div class="grid2">
-          <div class="field">
-            <div class="field-label">接口地址</div>
-            <input id="mq-base" class="input" placeholder="https://bbt-zb.pages.dev"/>
-          </div>
-          <div class="field">
-            <div class="field-label">手机号</div>
-            <input id="mq-tel" class="input" value="19999999999"/>
-          </div>
-          <div class="field">
-            <div class="field-label">密码</div>
-            <input id="mq-pwd" class="input" type="password" value="666666"/>
-          </div>
-          <div class="field">
-            <div class="field-label">&nbsp;</div>
-            <button class="btn primary" id="mq-login">团长身份登录</button>
-            <span id="mq-login-status" class="ml8"></span>
-          </div>
-        </div>
-      </section>
-
+      <div class="bind-status" id="mq-bind-status">加载绑定状态…</div>
       <section class="card">
         <div class="row-between">
           <h2>BBT-ZB 团员名册</h2>
-          <button class="btn small" id="mq-refresh-roster">刷新名册</button>
+          <div>
+            <span id="mq-login-state" class="hint mr8"></span>
+            <button class="btn small primary hidden" id="mq-goto-login">去首页登录</button>
+            <button class="btn small" id="mq-refresh-roster">刷新名册</button>
+          </div>
         </div>
         <div id="mq-group-bar" class="mt8"></div>
-        <p class="hint">每个团员可生成 1 个 iLink 二维码，团员用微信扫码即可把其微信绑定上线。点击「生成二维码」后请尽快扫码（二维码约 2 分钟有效）。</p>
+        <p class="hint">团长账号在「首页」登录，本页直接共用该连接。每个团员可生成 1 个 iLink 二维码，团员用微信扫码即可把其微信绑定上线。点击「生成二维码」后请尽快扫码（二维码约 2 分钟有效）。</p>
         <div id="mq-roster" class="member-grid">
           <div class="empty">尚未登录或名册为空</div>
         </div>
@@ -125,78 +110,84 @@ export async function renderMemberQr(root: HTMLElement) {
           <h2>已绑定 iLink 账号（团员微信）</h2>
           <button class="btn small" id="mq-refresh-accounts">刷新</button>
         </div>
-        <p class="hint">账号状态变为「绑定过期」表示该团员微信会话已失效（约 24h 无互动）。点击「生成新二维码」让团员重新扫码即可恢复。</p>
+        <p class="hint">账号状态变为「绑定过期」表示该团员微信会话已失效（约 24h 无互动）。点击「生成新二维码」让团员重新扫码即可恢复。AI 自动回复的接通与团员账号配置已移至「聊天配置」页。</p>
         <div id="mq-accounts" class="member-grid">
           <div class="empty">暂无已绑定账号</div>
         </div>
       </section>
     </div>`;
 
-  // 预填接口地址 + 加载 hub 成员映射
-  try {
-    const cfg: any = await api.loadConfig();
-    const base = cfg?.connection?.base_url || cfg?.base_url || "";
-    (g("mq-base") as HTMLInputElement).value = base || "https://bbt-zb.pages.dev";
-  } catch {}
+  // 加载 hub 成员映射
   try {
     memberMap = (await api.memberqrGetMap()) || {};
   } catch {
     memberMap = {};
   }
 
-  g("mq-login")?.addEventListener("click", onLogin);
+  g("mq-goto-login")?.addEventListener("click", () => {
+    window.dispatchEvent(new CustomEvent("goto-tab", { detail: "params" }));
+  });
   g("mq-refresh-roster")?.addEventListener("click", loadRoster);
   g("mq-refresh-accounts")?.addEventListener("click", refreshAccounts);
   g("mq-gen-all")?.addEventListener("click", genAllRosterQr);
 
   if (!started) {
     started = true;
+    // 读取 AI 自动回复开关（仅用于账号卡片 AI 徽标与绑定总览）
+    void loadArEnabled();
     // 监听 iLink 账号状态变化（含 session_expired）
     onIlinkEvent((ev: any) => {
-      if (ev?.kind === "account" && ev?.event === "status" && ev?.status === "session_expired") {
+      if (ev?.kind === "account" && ev?.event === "status") {
         refreshAccounts();
       }
     });
-    // 定时刷新已绑定账号状态（捕获会话过期等）
+    // AI 自动回复开关变化时刷新徽标（在聊天配置页改动后同步过来）
+    onAutoreplyEvent(() => {
+      void loadArEnabled();
+    });
+    // 定时刷新已绑定账号状态（捕获会话过期等）+ 绑定总览
     setInterval(() => {
-      if (document.visibilityState === "visible") refreshAccounts();
+      if (document.visibilityState === "visible") {
+        refreshAccounts();
+        refreshBindStatus();
+      }
     }, 6000);
   }
 
+  // 登录状态提示（token 就绪与否）
+  void refreshLoginState();
   // 首次进入若已登录则自动拉名册
   void loadRoster();
   void refreshAccounts();
 }
 
-async function onLogin() {
-  const base = (g("mq-base") as HTMLInputElement)?.value.trim();
-  const tel = (g("mq-tel") as HTMLInputElement)?.value.trim();
-  const pwd = (g("mq-pwd") as HTMLInputElement)?.value;
-  const st = g("mq-login-status");
-  if (!base || !tel || !pwd) {
-    if (st) st.textContent = "请填写 接口地址 / 手机号 / 密码";
-    return;
-  }
-  if (st) st.textContent = "登录中…";
+async function refreshLoginState() {
+  const st = g("mq-login-state");
+  const btn = g("mq-goto-login");
+  let token = "";
   try {
-    const res: any = await api.login(base, tel, pwd);
-    if (!res || !res.token) {
-      if (st) st.textContent = "登录失败：未返回 token";
-      toast("登录失败：未返回 token", false);
-      return;
-    }
-    // 确保后端连接信息已写入（含 token），后续 bbt_call 才能带鉴权
-    await api.setConnection(base, res.token, tel);
-    const role = res.account?.role ? `（角色：${res.account.role}）` : "";
-    if (st) st.textContent = `已登录${role}`;
-    toast("团长身份登录成功");
-    void loadRoster();
-    void refreshAccounts();
-  } catch (e: any) {
-    const msg = e?.message || String(e);
-    if (st) st.textContent = "登录失败：" + msg;
-    toast("登录失败：" + msg, false);
+    const cfg: any = await api.loadConfig();
+    token = cfg?.connection?.token || "";
+  } catch {}
+  if (token) {
+    if (st) st.textContent = "✅ 团长已登录（首页连接）";
+    btn?.classList.add("hidden");
+  } else {
+    if (st) st.textContent = "未登录";
+    btn?.classList.remove("hidden");
   }
+}
+
+// 仅读取 AI 自动回复开关（徽标/总览用），配置维护在「聊天配置」页
+async function loadArEnabled() {
+  try {
+    const cfg: any = await autoreplyApi.getConfig();
+    arEnabled = !!cfg?.enabled;
+  } catch {
+    arEnabled = false;
+  }
+  refreshBindStatus();
+  refreshAccounts();
 }
 
 function extractRoster(arr: any[]): MemberInfo[] {
@@ -215,6 +206,13 @@ function maskTel(t: string): string {
   return t;
 }
 
+function fmtTime(ts: number): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 async function loadRoster() {
   const box = g("mq-roster");
   if (!box) return;
@@ -229,21 +227,25 @@ async function loadRoster() {
       box.innerHTML = `<div class="empty">当前团长账号还没有管理任何团</div>`;
       return;
     }
+    // 默认选中第一个团（单团即唯一团；多团由下方下拉切换）。
+    // 必须先落 __mqGroupId 再调用，否则单团时 currentGroupId() 读到空串会提前返回。
+    const defaultGid = groups[0].id;
+    (window as any).__mqGroupId = defaultGid;
     // 团选择器（多团可切换；单团直接显示）
     const bar = g("mq-group-bar");
     if (bar) {
       bar.innerHTML = groups.length > 1
         ? `<select id="mq-group" class="input" style="max-width:220px">${groups
-            .map((gp) => `<option value="${esc(gp.id)}">${esc(gp.name)}</option>`)
+            .map((gp) => `<option value="${esc(gp.id)}"${gp.id === defaultGid ? " selected" : ""}>${esc(gp.name)}</option>`)
             .join("")}</select>`
         : `<span class="hint">团：${esc(groups[0].name)}</span>`;
       bar.querySelector("#mq-group")?.addEventListener("change", () => loadMembersOf(currentGroupId()));
     }
-    await loadMembersOf(currentGroupId());
+    await loadMembersOf(defaultGid);
   } catch (e: any) {
     const msg = e?.message || String(e);
     const friendly = /未登录|失效|未配置|token|会话/i.test(msg)
-      ? "请先在上方「团长身份登录」后再查看名册"
+      ? "请先到「首页」登录团长账号后再查看名册"
       : `拉取名册失败：${esc(msg)}`;
     box.innerHTML = `<div class="empty">${friendly}</div>`;
   }
@@ -272,17 +274,21 @@ async function loadMembersOf(groupId: string) {
     const members = extractRoster(data?.list ?? []);
     if (members.length === 0) {
       box.innerHTML = `<div class="empty">该团暂无成员</div>`;
+      rosterSize = 0;
+      refreshBindStatus();
       return;
     }
+    rosterSize = members.length;
     box.innerHTML = members.map((m) => rosterCard(m)).join("");
     members.forEach((m) => {
       memberNames.set(m.id, m.name || m.realName || m.telephoneMask || m.id);
       g(`mqgen-${m.id}`)?.addEventListener("click", () => genRosterQr(m));
     });
+    refreshBindStatus();
   } catch (e: any) {
     const msg = e?.message || String(e);
     const friendly = /未登录|失效|未配置|token|会话/i.test(msg)
-      ? "请先在上方「团长身份登录」后再查看名册"
+      ? "请先到「首页」登录团长账号后再查看名册"
       : `拉取成员失败：${esc(msg)}`;
     box.innerHTML = `<div class="empty">${friendly}</div>`;
   }
@@ -383,6 +389,7 @@ async function refreshAccounts() {
   }
   if (accounts.length === 0) {
     box.innerHTML = `<div class="empty">暂无已绑定账号</div>`;
+    refreshBindStatus(0);
     return;
   }
   box.innerHTML = accounts.map((a) => accountCard(a)).join("");
@@ -399,11 +406,14 @@ async function refreshAccounts() {
       }
     }
   });
+  const online = accounts.filter((a) => a.status === "running").length;
+  refreshBindStatus(online);
 }
 
 function accountCard(a: any): string {
   const status = a.status || "offline";
   const expired = status === "session_expired";
+  const dotCls = status === "running" ? "ok" : expired ? "warn" : "off";
   // hub：回显该机器人对应的团员身份
   const mid = memberOfBot(a.bot_id);
   const memberLabel = mid ? memberNames.get(mid) || mid : "";
@@ -416,8 +426,11 @@ function accountCard(a: any): string {
   return `
     <div class="mcard ${expired ? "expired" : ""}" data-bot="${esc(a.bot_id)}">
       <div class="row-between">
-        <div class="mcard-name">${esc(memberLabel ? `${memberLabel}` : a.label || a.user_id || a.bot_id)}</div>
-        <span class="badge badge-${esc(status)}">${label[status] || status}</span>
+        <div class="mcard-name"><span class="dot ${dotCls}"></span>${esc(memberLabel ? `${memberLabel}` : a.label || a.user_id || a.bot_id)}</div>
+        <div class="badge-row">
+          ${arEnabled ? `<span class="badge badge-ai">AI 回复</span>` : ""}
+          <span class="badge badge-${esc(status)}">${label[status] || status}</span>
+        </div>
       </div>
       <div class="mcard-sub">${esc([memberLabel ? a.label : "", a.user_id].filter(Boolean).join(" · ") || "")}</div>
       <div class="mcard-qr" id="mqra-${esc(a.bot_id)}"></div>
@@ -454,6 +467,31 @@ async function regenAccountQr(botId: string) {
     toast("生成二维码失败：" + (e?.message || e), false);
   }
 }
+
+// ---------------- 绑定状态总览 ----------------
+async function refreshBindStatus(online?: number) {
+  const el = g("mq-bind-status");
+  if (!el) return;
+  const bound = Object.keys(memberMap).length;
+  let on = online;
+  if (on === undefined) {
+    try {
+      const accounts = (await ilink.listAccounts()) || [];
+      on = accounts.filter((a: any) => a.status === "running").length;
+    } catch {
+      on = 0;
+    }
+  }
+  const arCls = arEnabled ? "on" : "off";
+  const arTxt = arEnabled ? "已接通" : "未接通";
+  el.innerHTML = `
+    <span class="bs-pill">名册 <b>${rosterSize}</b> 人</span>
+    <span class="bs-pill">已绑定 <b>${bound}</b></span>
+    <span class="bs-pill">在线 <b>${on}</b></span>
+    <span class="bs-pill ai ${arCls}">AI 回复 ${arTxt}</span>`;
+}
+
+// ---------------- AI 自动回复开关读取（徽标/总览用，配置维护在「聊天配置」页） ----------------
 
 // 通用轮询：对 login_id 周期 poll；仅 confirmed 时停止（"expired" 表示二维码已刷新，继续轮询）。
 // qrElId 每次 tick 重新解析，避免 refreshAccounts 重建 DOM 后写到游离节点。

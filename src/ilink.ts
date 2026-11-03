@@ -75,6 +75,15 @@ export const bridgeApi = {
   setEnabled: (enabled: boolean) => invoke<BridgeConfig>("bridge_set_enabled", { enabled }),
 };
 
+/** 聊天对象（weauto「用户与监听」风格的单个私聊/群聊配置） */
+export interface ListenEntry {
+  name: string; // 窗口名（微信昵称/群名，子串匹配）
+  kind: string; // "private" | "group"
+  mon_types: string[]; // 监测内容类型，空=全部
+  mon_keywords: string[]; // 监测关键字
+  action: string; // "reply" | "ignore"（不回应）
+}
+
 export interface AutoReplyConfig {
   enabled: boolean;
   member_telephone: string;
@@ -86,6 +95,12 @@ export interface AutoReplyConfig {
   cooldown_sec: number;
   strip_at_prefix: boolean;
   reply_voice: boolean;
+  listen_list: ListenEntry[];
+  group_whitelist: string[];
+  group_blacklist: string[];
+  banned_words: string[];
+  group_rate_window_sec: number;
+  group_rate_max_replies: number;
 }
 
 export interface AutoReplyLog {

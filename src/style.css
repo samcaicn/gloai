@@ -280,6 +280,24 @@ textarea { resize: vertical; line-height: 1.5; }
 .warn-btn { border-color: var(--err); color: var(--err); }
 .warn-btn:hover { background: var(--err); color: #fff; }
 .mt8 { margin-top: 8px; }
+.badge-ai { color: #2ea043; border-color: #2ea04355; background: #2ea04315; }
+.badge-row { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+
+/* 绑定状态总览条 */
+.bind-status {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 14px;
+}
+.bs-pill {
+  font-size: 12.5px; color: var(--text-dim);
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px 12px;
+}
+.bs-pill b { color: var(--text); font-weight: 700; }
+.bs-pill.ai { margin-left: auto; }
+.bs-pill.ai.on { color: #2ea043; border-color: #2ea04355; background: #2ea04315; }
+.bs-pill.ai.off { color: var(--text-dim); }
 
 /* ---------------- 订单消息 / 互动消息（渠道下拉 + 合成预览） ---------------- */
 .ord-chans {
@@ -313,3 +331,28 @@ textarea { resize: vertical; line-height: 1.5; }
   border: 1px dashed var(--border); border-radius: var(--radius); padding: 10px;
 }
 .ord-preview img { max-width: 300px; width: 100%; height: auto; border-radius: 8px; background: #fff; }
+
+/* ===== 首页总开关 & 聊天配置页（weauto 菜单风格） ===== */
+.mr8 { margin-right: 8px; }
+.switches-grid .switch-field { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.switches-grid .switch-field .field-label { margin-bottom: 0; }
+
+.chatcfg-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+.chatcfg-wrap .card { margin: 0; }
+.chatcfg-wrap .card:first-child, .chatcfg-wrap .card:nth-child(2) { grid-column: span 2; }
+
+.adv-card summary { cursor: pointer; font-weight: 600; }
+.adv-card textarea { width: 100%; font-family: var(--mono, monospace); font-size: 12px; }
+
+.listen-row { border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; margin-bottom: 8px; background: var(--bg-soft, rgba(127,127,127,.06)); }
+.lr-main { display: flex; gap: 8px; align-items: center; }
+.lr-main .lr-name { flex: 1; min-width: 140px; }
+.lr-main .lr-kind { width: 88px; flex: none; }
+.listen-extra { margin-top: 8px; border-top: 1px dashed var(--border); padding-top: 8px; }
+.lr-block { margin-bottom: 8px; }
+.lr-block b { display: block; margin-bottom: 4px; font-size: 12px; }
+.lr-block small { display: block; color: var(--text-dim, #888); margin-top: 4px; }
+.mon-types { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 4px 0 6px; }
+.mon-types .chk { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
+.listen-row .input, .chatcfg-wrap .input { width: 100%; box-sizing: border-box; }
+.chatcfg-wrap select.input { width: auto; min-width: 120px; }

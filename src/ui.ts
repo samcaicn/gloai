@@ -4,6 +4,7 @@
 import { SCHEMA, CONNECTION_FIELDS, defaultParams, defaultConnection, mergeParams, mergeConnection, FieldDef } from "./config";
 import { kv } from "./kv";
 import { bbt } from "./bbt";
+import { bridgeApi, autoreplyApi, wxautoApi } from "./ilink";
 import { renderChat } from "./chat";
 import { renderMemberQr } from "./memberqr";
 import { renderOrdersPage } from "./orderspage";
@@ -94,7 +95,8 @@ function render() {
 
   const connCard = `
     <section class="card span2">
-      <h2>BBT-ZB 连接</h2>
+      <h2>团长登录</h2>
+      <p class="card-desc">登录 BBT-ZB 团长账号后，所有页签共用此连接（其余页不再单独登录）。</p>
       <div class="grid2">
         ${CONNECTION_FIELDS.map((f) => fieldHtml(f, state.connection[f.key], "conn")).join("")}
       </div>
@@ -103,6 +105,27 @@ function render() {
         <button class="btn" id="btn-test">连接测试</button>
         <button class="btn" id="btn-update-check">检查更新</button>
         <button class="btn" id="btn-update-apply">下载更新</button>
+      </div>
+    </section>`;
+
+  // 总开关卡：三个全局开关，状态从各自后端拉取
+  const switchesCard = `
+    <section class="card span2">
+      <h2>总开关</h2>
+      <p class="card-desc">全局功能开关，改动即时生效（各页签共用）。</p>
+      <div class="grid2 switches-grid">
+        <div class="field switch-field">
+          <div class="field-label">AI 自动回复<span class="hint">团员/微信消息由 AI 接管回复</span></div>
+          <label class="switch"><input type="checkbox" id="sw-autoreply"/><span></span></label>
+        </div>
+        <div class="field switch-field">
+          <div class="field-label">微信通道<span class="hint">wxauto 自动启动 Python 收发</span></div>
+          <label class="switch"><input type="checkbox" id="sw-wxauto"/><span></span></label>
+        </div>
+        <div class="field switch-field">
+          <div class="field-label">团长桥<span class="hint">bbt-zb ↔ iLink 消息互通</span></div>
+          <label class="switch"><input type="checkbox" id="sw-bridge"/><span></span></label>
+        </div>
       </div>
     </section>`;
 
@@ -121,8 +144,8 @@ function render() {
     <header class="topbar">
       <div class="brand">BBT-ZB 控制台</div>
       <nav class="tabs">
-        <button class="tab active" id="tab-params-btn">参数调整</button>
-        <button class="tab" id="tab-chat-btn">团长聊天</button>
+        <button class="tab active" id="tab-params-btn">首页</button>
+        <button class="tab" id="tab-chat-btn">聊天配置</button>
         <button class="tab" id="tab-members-btn">团员二维码</button>
         <button class="tab" id="tab-orders-btn">订单消息</button>
         <button class="tab" id="tab-interact-btn">互动消息</button>
@@ -136,6 +159,7 @@ function render() {
     </header>
     <main class="content" id="page-params">
       ${connCard}
+      ${switchesCard}
       ${groupCards}
     </main>
     <main class="content chat-page hidden" id="page-chat"></main>
@@ -149,6 +173,7 @@ function render() {
   renderMemberQr(document.getElementById("page-members") as HTMLElement);
   renderOrdersPage(document.getElementById("page-orders") as HTMLElement);
   renderInteractPage(document.getElementById("page-interact") as HTMLElement);
+  void loadSwitches();
 
   const pBtn = $("tab-params-btn"), cBtn = $("tab-chat-btn"), mBtn = $("tab-members-btn");
   const oBtn = $("tab-orders-btn"), iBtn = $("tab-interact-btn");
@@ -157,6 +182,18 @@ function render() {
   mBtn?.addEventListener("click", () => setActiveTab("members"));
   oBtn?.addEventListener("click", () => setActiveTab("orders"));
   iBtn?.addEventListener("click", () => setActiveTab("interact"));
+}
+
+// ---- 总开关：拉取三个全局开关的当前状态 ----
+async function loadSwitches() {
+  const ar = $("sw-autoreply") as HTMLInputElement | null;
+  const wx = $("sw-wxauto") as HTMLInputElement | null;
+  const br = $("sw-bridge") as HTMLInputElement | null;
+  const jobs: Promise<void>[] = [];
+  if (ar) jobs.push(autoreplyApi.getConfig().then((c: any) => { ar.checked = !!c?.enabled; }).catch(() => {}));
+  if (wx) jobs.push(wxautoApi.getConfig().then((c: any) => { wx.checked = !!c?.enabled; }).catch(() => {}));
+  if (br) jobs.push(bridgeApi.getConfig().then((c: any) => { br.checked = !!c?.enabled; }).catch(() => {}));
+  await Promise.allSettled(jobs);
 }
 
 function setActiveTab(tab: "params" | "chat" | "members" | "orders" | "interact") {
@@ -193,6 +230,37 @@ function wire() {
   $("btn-reset")?.addEventListener("click", onReset);
   $("btn-update-check")?.addEventListener("click", onUpdateCheck);
   $("btn-update-apply")?.addEventListener("click", onUpdateApply);
+  // 总开关
+  $("sw-autoreply")?.addEventListener("change", async (e) => {
+    const on = (e.target as HTMLInputElement).checked;
+    try {
+      await autoreplyApi.setEnabled(on);
+      toast(on ? "AI 自动回复已开启" : "AI 自动回复已关闭");
+    } catch (err: any) {
+      toast("切换失败：" + (err?.message || err), false);
+      (e.target as HTMLInputElement).checked = !on;
+    }
+  });
+  $("sw-wxauto")?.addEventListener("change", async (e) => {
+    const on = (e.target as HTMLInputElement).checked;
+    try {
+      await wxautoApi.setConfig({ enabled: on });
+      toast(on ? "微信通道已开启（自动启动 Python）" : "微信通道已关闭");
+    } catch (err: any) {
+      toast("切换失败：" + (err?.message || err), false);
+      (e.target as HTMLInputElement).checked = !on;
+    }
+  });
+  $("sw-bridge")?.addEventListener("change", async (e) => {
+    const on = (e.target as HTMLInputElement).checked;
+    try {
+      await bridgeApi.setEnabled(on);
+      toast(on ? "团长桥已开启" : "团长桥已关闭");
+    } catch (err: any) {
+      toast("切换失败：" + (err?.message || err), false);
+      (e.target as HTMLInputElement).checked = !on;
+    }
+  });
 }
 
 async function onSaveLocal() {
@@ -279,7 +347,9 @@ async function onReset() {
   state.connection = defaultConnection();
   try {
     await kv.put({ connection: defaultConnection(), ...defaultParams() });
-  } catch {}
+  } catch (e: any) {
+    toast("重置落盘失败：" + (e?.message || e), false);
+  }
   render();
   toast("已重置为默认值");
 }
@@ -318,6 +388,13 @@ async function onUpdateApply() {
 }
 
 export async function init() {
+  // 其他页签可派发 window 事件跳转页签（如 团员二维码 → 去首页登录）
+  window.addEventListener("goto-tab", (e) => {
+    const tab = (e as CustomEvent).detail;
+    if (typeof tab === "string" && ["params", "chat", "members", "orders", "interact"].includes(tab)) {
+      setActiveTab(tab as any);
+    }
+  });
   try {
     const loaded = await kv.get();
     if (loaded && typeof loaded === "object") {

@@ -26,6 +26,21 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
+/// 聊天对象（weauto「用户与监听」风格）：对单个私聊/群聊窗口的精细化配置。
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ListenEntry {
+    /// 窗口名（微信昵称/群名，按子串匹配 peer 或 sender）
+    pub name: String,
+    /// "private" | "group"
+    pub kind: String,
+    /// 监测内容类型：text/voice/image/... 空 = 全部
+    pub mon_types: Vec<String>,
+    /// 监测关键字（与类型任一命中即算命中；都空 = 监测全部内容）
+    pub mon_keywords: Vec<String>,
+    /// 命中后动作："reply"（正常 AI 回复）| "ignore"（不回应，可整体屏蔽该对象）
+    pub action: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AutoReplyConfig {
@@ -47,6 +62,18 @@ pub struct AutoReplyConfig {
     pub strip_at_prefix: bool,
     /// 语音转写文本也回复（kind=voice 且带转写）
     pub reply_voice: bool,
+    /// 聊天对象列表（私聊/群聊逐对象配置）
+    pub listen_list: Vec<ListenEntry>,
+    /// 群白名单（按群名子串匹配；空 = 不限制）
+    pub group_whitelist: Vec<String>,
+    /// 群黑名单（永不自动回复，优先级高于白名单）
+    pub group_blacklist: Vec<String>,
+    /// 禁词过滤（私聊+群聊，消息包含任一禁词则忽略）
+    pub banned_words: Vec<String>,
+    /// 群内频控窗口（秒）
+    pub group_rate_window_sec: u64,
+    /// 群内频控：窗口内最多回复条数（0 = 不限）
+    pub group_rate_max_replies: u32,
 }
 
 impl Default for AutoReplyConfig {
@@ -62,6 +89,12 @@ impl Default for AutoReplyConfig {
             cooldown_sec: 5,
             strip_at_prefix: true,
             reply_voice: false,
+            listen_list: Vec::new(),
+            group_whitelist: Vec::new(),
+            group_blacklist: Vec::new(),
+            banned_words: Vec::new(),
+            group_rate_window_sec: 60,
+            group_rate_max_replies: 10,
         }
     }
 }
@@ -75,6 +108,8 @@ pub struct AutoReplyState {
     pub logs: Mutex<Vec<Value>>,
     /// peer -> 上次回复时间戳(ms)
     last_reply: Mutex<HashMap<String, i64>>,
+    /// 群内频控：群 -> 窗口内回复时间戳列表(ms)
+    group_rate: Mutex<HashMap<String, Vec<i64>>>,
 }
 
 impl AutoReplyState {
@@ -85,6 +120,7 @@ impl AutoReplyState {
             member: Mutex::new(None),
             logs: Mutex::new(Vec::new()),
             last_reply: Mutex::new(HashMap::new()),
+            group_rate: Mutex::new(HashMap::new()),
         }
     }
 
@@ -189,14 +225,18 @@ pub fn ensure_started(app: AppHandle) {
 }
 
 /// 解析 @ 前缀（微信 @ 消息文本形如 "@昵称 内容"，昵称后可能跟 \u2005/空格）。
+/// 仅剥离 "@昵称" 这一段（含其后空白），保留剩余正文；全文即昵称时返回空。
 fn strip_at(text: &str) -> String {
     let t = text.trim_start();
     if let Some(rest) = t.strip_prefix('@') {
-        // @昵称以空白（含 \u2005）结束
-        let trimmed = rest.trim_start_matches(|c: char| !c.is_whitespace());
-        return trimmed.trim_start().to_string();
+        // 找到 @昵称 后的第一个空白位置，去掉昵称段及其后空白，保留正文
+        match rest.find(|c: char| c.is_whitespace()) {
+            Some(i) => rest[i..].trim_start().to_string(),
+            None => String::new(), // 整个文本就是 @昵称，无后续内容
+        }
+    } else {
+        t.to_string()
     }
-    t.to_string()
 }
 
 fn at_triggered(text: &str, at_names: &[String], keywords: &[String]) -> bool {
@@ -278,6 +318,62 @@ pub async fn process_msg(app: &AppHandle, msg: WxMsg) -> Result<(), String> {
     process_msg_with(app, &ar, msg).await
 }
 
+/// 规则过滤（weauto 风格）。返回 Some(原因) = 忽略该消息；None = 放行。
+/// 优先级：聊天对象(ignore) > 群黑名单 > 群白名单 > 禁词 > 监测条件。
+async fn filtered_by_rules(
+    _ar: &Arc<AutoReplyState>,
+    cfg: &AutoReplyConfig,
+    msg: &WxMsg,
+) -> Option<String> {
+    let peer = msg.peer.trim();
+    let sender = msg.sender.trim();
+    let name_hit = |name: &str| {
+        let n = name.trim();
+        !n.is_empty() && (peer.contains(n) || sender.contains(n))
+    };
+    let text = msg.text.trim();
+
+    // ① 聊天对象（listen_list）：命中的行按其配置决定放行/屏蔽/监测条件
+    for e in &cfg.listen_list {
+        if !name_hit(&e.name) {
+            continue;
+        }
+        if e.action == "ignore" {
+            return Some(format!("聊天对象「{}」设为不回应", e.name));
+        }
+        // 监测条件：类型与关键字都留空 = 全部内容；填了任一 → 只有命中才处理
+        let type_hit = e.mon_types.iter().any(|t| !t.trim().is_empty() && t.trim() == msg.kind);
+        let kw_hit = e
+            .mon_keywords
+            .iter()
+            .any(|k| !k.trim().is_empty() && text.contains(k.trim()));
+        if !e.mon_types.is_empty() || !e.mon_keywords.is_empty() {
+            if !type_hit && !kw_hit {
+                return Some(format!("聊天对象「{}」未命中监测条件", e.name));
+            }
+        }
+        return None; // 命中的对象行优先级最高，直接放行
+    }
+
+    // ② 群黑名单（优先级高于白名单）
+    if msg.is_group && cfg.group_blacklist.iter().any(|n| name_hit(n)) {
+        return Some("群在黑名单中".into());
+    }
+    // ③ 群白名单（非空时仅名单内群参与）
+    if msg.is_group && !cfg.group_whitelist.is_empty() && !cfg.group_whitelist.iter().any(|n| name_hit(n)) {
+        return Some("群不在白名单中".into());
+    }
+    // ④ 禁词过滤（私聊+群聊）
+    if cfg
+        .banned_words
+        .iter()
+        .any(|w| !w.trim().is_empty() && text.contains(w.trim()))
+    {
+        return Some("消息包含禁词".into());
+    }
+    None
+}
+
 /// 统一管线：过滤 → 团员 chat/send 触发服务端 AI → 按 channel 原路回发。
 async fn process_msg_with(
     app: &AppHandle,
@@ -297,6 +393,16 @@ async fn process_msg_with(
         _ => false,
     };
     if !trigger || to.is_empty() {
+        return Ok(());
+    }
+    // ---- 聊天对象 / 黑白名单 / 禁词过滤（weauto 规则）----
+    if let Some(blocked) = filtered_by_rules(ar, &cfg, &msg).await {
+        ar.log(
+            app,
+            "info",
+            &format!("已按规则忽略「{}」：{}", to, blocked),
+            json!({ "peer": to, "rule": blocked }),
+        );
         return Ok(());
     }
     if is_group {
@@ -336,6 +442,21 @@ async fn process_msg_with(
         lr.insert(key, now);
         if lr.len() > 2000 {
             lr.clear();
+        }
+    }
+    // 群内频控（防刷屏）：窗口时间内同一群最多回复 N 条（0 = 不限）
+    if is_group && cfg.group_rate_max_replies > 0 && cfg.group_rate_window_sec > 0 {
+        let mut gr = ar.group_rate.lock().unwrap();
+        let now = now_ms();
+        let win = (cfg.group_rate_window_sec as i64) * 1000;
+        let e = gr.entry(to.clone()).or_default();
+        e.retain(|t| now - *t < win);
+        if e.len() >= cfg.group_rate_max_replies as usize {
+            return Ok(());
+        }
+        e.push(now);
+        if gr.len() > 500 {
+            gr.clear();
         }
     }
 

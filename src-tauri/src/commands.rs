@@ -39,9 +39,29 @@ pub async fn set_connection(
     telephone: Option<String>,
 ) -> Result<(), String> {
     let mut c = state.conn.lock().unwrap();
-    c.base_url = base_url;
+    c.base_url = base_url.clone();
     c.token = token.filter(|s| !s.trim().is_empty());
-    c.telephone = telephone;
+    c.telephone = telephone.clone();
+    drop(c);
+    // 持久化 base_url / telephone（不含 token：安全起见 token 不落盘，重启后需重新登录；
+    // 但 base_url 必须落盘，否则 autoreply 等模块在重启后取不到接口地址而失效）
+    {
+        let mut g = state.config.lock().unwrap();
+        if let Some(obj) = g.as_object_mut() {
+            let mut conn = json!({});
+            if let Some(existing) = obj.get("connection") {
+                if let Some(o) = existing.as_object() {
+                    conn = serde_json::Value::Object(o.clone());
+                }
+            }
+            conn["base_url"] = json!(base_url);
+            if let Some(t) = &telephone {
+                conn["telephone"] = json!(t);
+            }
+            obj.insert("connection".into(), conn);
+        }
+    }
+    let _ = state.save_config();
     Ok(())
 }
 
@@ -60,7 +80,23 @@ pub async fn login(
     };
     let (token, account) = bbt::login(&c, &telephone, &password).await?;
     c.token = Some(token.clone());
-    *state.conn.lock().unwrap() = c;
+    *state.conn.lock().unwrap() = c.clone();
+    // 持久化 base_url / telephone（不含 token）
+    {
+        let mut g = state.config.lock().unwrap();
+        if let Some(obj) = g.as_object_mut() {
+            let mut conn = json!({});
+            if let Some(existing) = obj.get("connection") {
+                if let Some(o) = existing.as_object() {
+                    conn = serde_json::Value::Object(o.clone());
+                }
+            }
+            conn["base_url"] = json!(c.base_url);
+            conn["telephone"] = json!(c.telephone);
+            obj.insert("connection".into(), conn);
+        }
+    }
+    let _ = state.save_config();
     Ok(json!({ "ok": true, "token": token, "account": account }))
 }
 
@@ -732,7 +768,13 @@ pub async fn channel_send_image(
 /// 拉取远程图片转 base64（订单图合成用，绕开 webview canvas 跨域污染）
 #[tauri::command(rename_all = "snake_case")]
 pub async fn fetch_image_b64(url: String) -> Result<String, String> {
-    let resp = reqwest::get(&url).await.map_err(|e| format!("拉取图片失败: {}", e))?;
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(&url)
+        .timeout(std::time::Duration::from_secs(15))
+        .send()
+        .await
+        .map_err(|e| format!("拉取图片失败: {}", e))?;
     if !resp.status().is_success() {
         return Err(format!("拉取图片 HTTP {}", resp.status()));
     }

@@ -1,31 +1,38 @@
-// 团长聊天工作台：iLink 多账号扫码 + 会话收发（文本/图片/语音）+ 1对多桥开关。
-// 数据面全部走 ilink.ts -> Rust 后端；Rust 经 "ilink-event" 事件实时推送。
-import { ilink, bridgeApi, autoreplyApi, wxautoApi, onIlinkEvent, onAutoreplyEvent, onWxautoEvent, IlinkEvent, AccountInfo, ChatRecord, BridgeConfig, AutoReplyConfig, AutoReplyLog, mediaDataUrl, fileToB64 } from "./ilink";
+// 聊天配置页（原「团长聊天」改造）：照搬 weauto 的聊天对象菜单界面 ——
+//   * 微信通道（wxauto）：开关 + 自动启动 Python sidecar（应用启动/开启即自动拉起）
+//   * 聊天对象（私聊和群聊）：逐对象列表（窗口名 + 类型 + ⚙监测设置 + 删除）
+//   * 回复规则（私聊+群聊）：私聊开关 / 群聊模式 / @名单 / 关键词 / 白名单 / 黑名单 /
+//     禁词 / 群内频控 / 冷却 —— 后端 autoreply 管线按同规则真实过滤
+//   * 团员账号：触发 bbt-zb 服务端 AI 的身份
+//   * 团长桥路由（高级，折叠）
+// 数据面走 ilink.ts -> Rust autoreply/wxauto/bridge 命令。
+import {
+  autoreplyApi,
+  wxautoApi,
+  bridgeApi,
+  onAutoreplyEvent,
+  onWxautoEvent,
+  AutoReplyConfig,
+  ListenEntry,
+  AutoReplyLog,
+} from "./ilink";
+import { BridgeConfig } from "./ilink";
 
-interface ChatState {
-  accounts: AccountInfo[];
-  activeBot: string;
-  // bot_id -> peer -> records
-  history: Map<string, Map<string, ChatRecord[]>>;
-  activePeer: string;
-  bridge: BridgeConfig | null;
-  autoreply: AutoReplyConfig | null;
-}
-
-const state: ChatState = {
-  accounts: [],
-  activeBot: "",
-  history: new Map(),
-  activePeer: "",
-  bridge: null,
-  autoreply: null,
+const MON_TYPES = ["text", "voice", "image", "video", "file", "link", "quote", "merge", "emotion"];
+const MON_LABELS: Record<string, string> = {
+  text: "文字", voice: "语音", image: "图片", video: "视频", file: "文件",
+  link: "链接", quote: "引用", merge: "合并转发", emotion: "表情",
 };
 
-let chatRoot: HTMLElement | null = null;
-let qrTimer: number | null = null;
+interface ChatCfgState {
+  cfg: AutoReplyConfig | null;
+  bridge: BridgeConfig | null;
+}
+
+const state: ChatCfgState = { cfg: null, bridge: null };
 
 function esc(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
+  return (s || "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
   );
 }
@@ -33,92 +40,12 @@ function esc(s: string): string {
 function fmtTime(ts: number): string {
   if (!ts) return "";
   const d = new Date(ts);
-  return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export function renderChat(container: HTMLElement) {
-  chatRoot = container;
-  container.innerHTML = `
-    <div class="chat-layout">
-      <aside class="chat-accounts">
-        <div class="acc-head">
-          <span>iLink 账号</span>
-          <button class="btn small" id="ilink-add">＋扫码登录</button>
-        </div>
-        <div class="acc-list" id="acc-list"></div>
-        <div class="bridge-panel">
-          <div class="acc-head"><span>团长桥（bbt-zb ↔ iLink）</span></div>
-          <label class="switch"><input type="checkbox" id="bridge-toggle"/><span></span></label>
-          <div class="bridge-hint">开启后：团长在 bbt-zb 发出的新消息自动转发到下方路由表的所有 iLink 账号；iLink 收到的消息按路由回传团长会话。</div>
-          <textarea id="bridge-targets" rows="6" placeholder='[{"bot_id":"…","wechat_user_id":"…","bbt_session_id":"…"}]'></textarea>
-          <div class="btn-row">
-            <button class="btn small" id="bridge-save">保存路由</button>
-          </div>
-        </div>
-        <div class="bridge-panel" id="ar-panel">
-          <div class="acc-head"><span>AI 自动回复（bbt-zb 生成）</span></div>
-          <label class="switch"><input type="checkbox" id="ar-toggle"/><span></span></label>
-          <div class="bridge-hint">开启后：iLink 收到的<b>私聊/群聊</b>消息自动调 bbt-zb（团员身份 chat/send）由服务端 AI 生成回复并回发微信。人设/FAQ/话术在「参数调整」页维护，配额与接管状态以平台为准。</div>
-          <input id="ar-tel" class="input" placeholder="团员账号手机号（触发服务端 AI）" />
-          <input id="ar-pwd" class="input" type="password" placeholder="团员账号密码（留空 = 不修改）" />
-          <label class="ar-check"><input type="checkbox" id="ar-private"/> 私聊自动回复</label>
-          <div class="ar-row">群聊：
-            <select id="ar-gmode">
-              <option value="off">不回复</option>
-              <option value="at">@触发</option>
-              <option value="all">全部回复</option>
-            </select>
-          </div>
-          <input id="ar-atnames" class="input" placeholder="@触发名单（逗号分隔，空=任意@都触发）" />
-          <input id="ar-kw" class="input" placeholder="群聊关键词触发（逗号分隔，可空）" />
-          <div class="ar-row">冷却：<input id="ar-cd" class="input" type="number" min="1" style="width:64px"/> 秒／会话</div>
-          <div class="btn-row">
-            <button class="btn small" id="ar-save">保存自动回复</button>
-          </div>
-          <div class="ar-log" id="ar-log"></div>
-          <div class="acc-head mt8"><span>微信通道（wxauto · 私聊+群聊）</span></div>
-          <label class="switch"><input type="checkbox" id="wx-toggle"/><span></span></label>
-          <div class="bridge-hint">开启后：本机微信（需已登录桌面端）的<b>私聊/群聊</b>新消息经 wechatauto 通道进入同一条 AI 回复管线——过滤规则、团员账号、配额与上方面板共用，回复经 UI 自动化发回微信。</div>
-          <input id="wx-python" class="input" placeholder="Python 解释器路径（空=自动探测 weauto venv）" />
-          <div class="ar-row" id="wx-status">状态：未知</div>
-          <div class="btn-row">
-            <button class="btn small" id="wx-save">保存微信通道</button>
-            <button class="btn small" id="wx-restart">重启通道</button>
-          </div>
-        </div>
-      </aside>
-      <div class="chat-main">
-        <div class="conv-head" id="conv-head">选择左侧账号查看会话</div>
-        <div class="chat-body">
-          <div class="conv-list" id="conv-list"></div>
-          <div class="msg-pane">
-            <div class="msg-list" id="msg-list"></div>
-            <div class="composer">
-              <input type="file" id="file-image" accept="image/*" hidden/>
-              <input type="file" id="file-voice" accept=".silk,.mp3" hidden/>
-              <button class="btn small" id="btn-image" title="发图片">🖼</button>
-              <button class="btn small" id="btn-voice" title="发语音（silk/mp3）">🎤</button>
-              <input type="text" id="msg-input" placeholder="输入消息，回车发送…"/>
-              <button class="btn primary small" id="btn-send">发送</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="qr-modal" class="modal hidden">
-      <div class="modal-card">
-        <h3>微信扫码登录 iLink</h3>
-        <div class="qr-box" id="qr-box"></div>
-        <div class="qr-status" id="qr-status">正在获取二维码…</div>
-        <div class="btn-row center"><button class="btn" id="qr-cancel">取消</button></div>
-      </div>
-    </div>
-    <div id="toast-box-chat" class="toast-box"></div>`;
-  wire();
-  refreshAccounts();
-  refreshBridge();
-  refreshAutoreply();
-  void refreshWxChannel();
+function g(id: string): HTMLElement | null {
+  return document.getElementById(id);
 }
 
 function toast(msg: string, ok = true) {
@@ -131,339 +58,362 @@ function toast(msg: string, ok = true) {
   setTimeout(() => el.remove(), 3200);
 }
 
-function wire() {
-  document.getElementById("ilink-add")?.addEventListener("click", startLogin);
-  document.getElementById("qr-cancel")?.addEventListener("click", cancelLogin);
-  document.getElementById("bridge-toggle")?.addEventListener("change", onBridgeToggle);
-  document.getElementById("bridge-save")?.addEventListener("click", saveBridgeTargets);
-  document.getElementById("ar-toggle")?.addEventListener("change", onArToggle);
-  document.getElementById("ar-save")?.addEventListener("click", saveAutoreply);
-  document.getElementById("wx-toggle")?.addEventListener("change", onWxToggle);
-  document.getElementById("wx-save")?.addEventListener("click", saveWxChannel);
-  document.getElementById("wx-restart")?.addEventListener("click", restartWxChannel);
-  document.getElementById("btn-send")?.addEventListener("click", sendCurrent);
-  document.getElementById("msg-input")?.addEventListener("keydown", (e) => {
-    if ((e as KeyboardEvent).key === "Enter") sendCurrent();
-  });
-  document.getElementById("btn-image")?.addEventListener("click", () => (document.getElementById("file-image") as HTMLInputElement)?.click());
-  document.getElementById("btn-voice")?.addEventListener("click", () => (document.getElementById("file-voice") as HTMLInputElement)?.click());
-  document.getElementById("file-image")?.addEventListener("change", onPickImage);
-  document.getElementById("file-voice")?.addEventListener("change", onPickVoice);
-}
+const splitList = (s: string) =>
+  (s || "").split(/[，,]/).map((x) => x.trim()).filter(Boolean);
 
-// ---------------- 账号 ----------------
+export function renderChat(container: HTMLElement) {
+  container.innerHTML = `
+    <div class="chatcfg-wrap">
 
-async function refreshAccounts() {
-  try {
-    state.accounts = (await ilink.listAccounts()) || [];
-  } catch (e: any) {
-    toast("账号列表获取失败：" + (e?.message || e), false);
-    return;
-  }
-  const list = document.getElementById("acc-list");
-  if (!list) return;
-  list.innerHTML = state.accounts
-    .map(
-      (a) => `
-      <div class="acc-item ${a.bot_id === state.activeBot ? "active" : ""}" data-bot="${esc(a.bot_id)}">
-        <span class="dot ${statusClass(a.status)}"></span>
-        <div class="acc-meta">
-          <div class="acc-label">${esc(a.label || a.bot_id)}</div>
-          <div class="acc-sub">${statusText(a.status)}</div>
+      <section class="card">
+        <div class="row-between">
+          <h2>微信通道（wxauto · 私聊+群聊）</h2>
+          <label class="switch"><input type="checkbox" id="wx-toggle"/><span></span></label>
         </div>
-        <button class="icon-btn acc-del" data-bot="${esc(a.bot_id)}" title="移除账号">✕</button>
-      </div>`
-    )
-    .join("");
-  list.querySelectorAll(".acc-item").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      if ((e.target as HTMLElement).classList.contains("acc-del")) return;
-      selectBot((el as HTMLElement).dataset.bot || "");
-    })
-  );
-  list.querySelectorAll(".acc-del").forEach((el) =>
-    el.addEventListener("click", async () => {
-      const bot = (el as HTMLElement).dataset.bot || "";
-      if (!confirm("移除该账号？本地消息会保留。")) return;
-      await ilink.removeAccount(bot);
-      if (state.activeBot === bot) { state.activeBot = ""; state.activePeer = ""; }
-      refreshAccounts();
-    })
-  );
+        <p class="card-desc">开启后<b>自动启动 Python</b>（wechatauto sidecar）：本机微信（需已登录桌面端）的私聊/群聊新消息进入 AI 回复管线，回复经 UI 自动化发回微信。应用启动时若通道已开启也会自动拉起，无需手动干预。</p>
+        <div class="grid2">
+          <div class="field">
+            <div class="field-label">Python 解释器路径<span class="hint">留空 = 自动探测（weauto venv → PATH）</span></div>
+            <input id="wx-python" class="input" placeholder="如 C:\\d\\weauto\\.venv_bot\\Scripts\\python.exe"/>
+          </div>
+          <div class="field">
+            <div class="field-label">通道状态</div>
+            <div class="ar-row" id="wx-status">状态：读取中…</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn small primary" id="wx-save">保存</button>
+          <button class="btn small" id="wx-restart">重启通道</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="row-between">
+          <h2>聊天对象（私聊和群聊）</h2>
+          <button class="btn small" id="listen-add">＋添加聊天对象</button>
+        </div>
+        <p class="card-desc">自动回复的好友/群，每个对象可单独设置监测范围与动作。好友与<b>群聊</b>都可以加；人设/监测留空 = 用下方回复规则与平台团长人设。</p>
+        <div id="listen-list"></div>
+        <div class="btn-row">
+          <button class="btn small primary" id="listen-save">保存聊天对象</button>
+          <span class="hint ml8">类型与关键字都留空 = 监测全部内容；「不回应」可整体屏蔽某人/某群。</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>回复规则（私聊+群聊）</h2>
+        <p class="card-desc">控制 AI 在什么情况下开口。群本身不需要加进「聊天对象」也能按本规则回复；<b>只有想给某个对象配专属监测时</b>才需要加到上方列表。</p>
+        <div class="grid2">
+          <div class="field">
+            <div class="field-label">私聊自动回复</div>
+            <label class="switch"><input type="checkbox" id="rl-private"/><span></span></label>
+          </div>
+          <div class="field">
+            <div class="field-label">群聊消息处理模式</div>
+            <select id="rl-gmode" class="input">
+              <option value="off">不自动回复</option>
+              <option value="at">仅接收满足条件的消息（@/关键词）</option>
+              <option value="all">接收所有群聊消息</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="field-label">@触发名单<span class="hint">逗号分隔，空 = 任何 @ 都触发</span></div>
+            <input id="rl-atnames" class="input" placeholder="如：小助手, 团长机器人"/>
+          </div>
+          <div class="field">
+            <div class="field-label">回复触发关键词<span class="hint">多个逗号分隔</span></div>
+            <input id="rl-keywords" class="input" placeholder="如：在吗, 机器人, 你好"/>
+          </div>
+          <div class="field">
+            <div class="field-label">群白名单<span class="hint">仅这些群参与（按群名子串匹配），留空 = 不限制</span></div>
+            <input id="rl-whitelist" class="input" placeholder="如：客户群, 售后群"/>
+          </div>
+          <div class="field">
+            <div class="field-label">群黑名单<span class="hint">这些群永不回复（优先级高于白名单）</span></div>
+            <input id="rl-blacklist" class="input" placeholder="如：广告群, 闲聊群"/>
+          </div>
+          <div class="field">
+            <div class="field-label">禁词过滤（私聊+群聊）<span class="hint">包含任一禁词则忽略</span></div>
+            <input id="rl-banned" class="input" placeholder="如：广告, 加微信"/>
+          </div>
+          <div class="field">
+            <div class="field-label">群内频控（防刷屏）</div>
+            <div class="ar-row">
+              <input id="rl-rate-win" class="input" type="number" min="1" max="3600" style="width:76px"/> 秒内最多回复
+              <input id="rl-rate-max" class="input" type="number" min="0" max="50" style="width:60px"/> 条（0=不限）
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">每会话冷却<span class="hint">同一会话最小回复间隔</span></div>
+            <div class="ar-row"><input id="rl-cd" class="input" type="number" min="1" style="width:64px"/> 秒</div>
+          </div>
+          <div class="field">
+            <div class="field-label">语音消息也回复<span class="hint">需消息带转写文本</span></div>
+            <label class="switch"><input type="checkbox" id="rl-voice"/><span></span></label>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn small primary" id="rl-save">保存回复规则</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>团员账号（AI 服务身份）</h2>
+        <p class="card-desc">用该团员账号调 bbt-zb chat/send 触发服务端 AI 生成回复（仅本机保存，密码留空 = 不修改）。</p>
+        <div class="grid2">
+          <div class="field"><div class="field-label">团员账号手机号</div><input id="ac-tel" class="input" placeholder="团员账号手机号"/></div>
+          <div class="field"><div class="field-label">团员账号密码</div><input id="ac-pwd" class="input" type="password" placeholder="已保存，留空 = 不修改"/></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn small primary" id="ac-save">保存团员账号</button>
+        </div>
+      </section>
+
+      <details class="card adv-card">
+        <summary>团长桥路由（高级）</summary>
+        <p class="card-desc">总开关在「首页」。开启后：团长在 bbt-zb 发出的新消息自动转发到路由表的所有 iLink 账号；iLink 收到的消息按路由回传团长会话。</p>
+        <textarea id="bridge-targets" rows="5" placeholder='[{"bot_id":"…","wechat_user_id":"…","bbt_session_id":"…"}]'></textarea>
+        <div class="btn-row">
+          <button class="btn small" id="bridge-save">保存路由</button>
+        </div>
+      </details>
+
+      <section class="card">
+        <h2>AI 回复日志</h2>
+        <div class="ar-log" id="ar-log"></div>
+      </section>
+    </div>
+    <div id="toast-box-chat" class="toast-box"></div>`;
+
+  wire();
+  void loadAll();
 }
 
-function statusClass(s: string) {
-  return s === "running" ? "ok" : s === "session_expired" ? "warn" : "off";
-}
-function statusText(s: string) {
-  return s === "running" ? "在线" : s === "session_expired" ? "会话过期（需重新扫码）" : s === "offline" ? "离线" : s.startsWith("error") ? s : "离线";
-}
-
-async function selectBot(bot: string) {
-  state.activeBot = bot;
-  if (!state.history.has(bot)) {
-    try {
-      const recs = (await ilink.localHistory(bot, 500)) || [];
-      const byPeer = new Map<string, ChatRecord[]>();
-      for (const r of recs) {
-        if (!byPeer.has(r.peer)) byPeer.set(r.peer, []);
-        byPeer.get(r.peer)!.push(r);
-      }
-      state.history.set(bot, byPeer);
-    } catch {
-      state.history.set(bot, new Map());
-    }
+async function loadAll() {
+  try {
+    state.cfg = await autoreplyApi.getConfig();
+  } catch (e: any) {
+    toast("加载聊天配置失败：" + (e?.message || e), false);
+    state.cfg = null;
   }
-  renderConvList();
-  renderAccountsOnly();
-  renderMsgs();
+  fillRules();
+  renderListenList();
+  void refreshWx();
+  void refreshBridge();
+  void loadLogs();
 }
 
-function renderAccountsOnly() {
-  const list = document.getElementById("acc-list");
-  if (!list) return;
-  list.querySelectorAll(".acc-item").forEach((el) => {
-    el.classList.toggle("active", (el as HTMLElement).dataset.bot === state.activeBot);
-  });
+// ---------------- 回复规则 ----------------
+
+function fillRules() {
+  const c = state.cfg;
+  if (!c) return;
+  const val = (id: string, v: any) => {
+    const el = g(id) as HTMLInputElement | HTMLSelectElement | null;
+    if (el) el.value = String(v ?? "");
+  };
+  const chk = (id: string, v: boolean) => {
+    const el = g(id) as HTMLInputElement | null;
+    if (el) el.checked = !!v;
+  };
+  chk("rl-private", c.private_reply);
+  val("rl-gmode", c.group_mode);
+  val("rl-atnames", (c.at_names || []).join("，"));
+  val("rl-keywords", (c.group_keywords || []).join("，"));
+  val("rl-whitelist", (c.group_whitelist || []).join("，"));
+  val("rl-blacklist", (c.group_blacklist || []).join("，"));
+  val("rl-banned", (c.banned_words || []).join("，"));
+  val("rl-rate-win", c.group_rate_window_sec ?? 60);
+  val("rl-rate-max", c.group_rate_max_replies ?? 10);
+  val("rl-cd", c.cooldown_sec ?? 5);
+  chk("rl-voice", c.reply_voice);
+  const tel = g("ac-tel") as HTMLInputElement | null;
+  if (tel) tel.value = c.member_telephone || "";
+  const pwd = g("ac-pwd") as HTMLInputElement | null;
+  if (pwd) pwd.placeholder = c.member_telephone ? "密码已保存（留空 = 不修改）" : "团员账号密码";
 }
 
-// ---------------- 会话列表 / 消息 ----------------
-
-function peersOf(bot: string): string[] {
-  const m = state.history.get(bot);
-  if (!m) return [];
-  return [...m.keys()].sort((a, b) => {
-    const la = m.get(a) || [];
-    const lb = m.get(b) || [];
-    return (lb[lb.length - 1]?.ts || 0) - (la[la.length - 1]?.ts || 0);
-  });
-}
-
-function renderConvList() {
-  const el = document.getElementById("conv-list");
-  if (!el) return;
-  const peers = peersOf(state.activeBot);
-  el.innerHTML = peers.length
-    ? peers
-        .map((p) => {
-          const recs = state.history.get(state.activeBot)!.get(p) || [];
-          const last = recs[recs.length - 1];
-          const preview = last?.kind === "text" ? last.text : last?.kind === "image" ? "[图片]" : last?.kind === "voice" ? `[语音]${last.text ? " " + last.text : ""}` : `[${last?.kind || "?"}]`;
-          return `
-          <div class="conv-item ${p === state.activePeer ? "active" : ""}" data-peer="${esc(p)}">
-            <div class="conv-name">${esc(p)}</div>
-            <div class="conv-preview">${esc((preview || "").slice(0, 40))}</div>
-            <div class="conv-time">${fmtTime(last?.ts || 0)}</div>
-          </div>`;
-        })
-        .join("")
-    : `<div class="empty">暂无会话<br/><small>对方在微信里给该账号发一条消息后出现</small></div>`;
-  el.querySelectorAll(".conv-item").forEach((n) =>
-    n.addEventListener("click", () => {
-      state.activePeer = (n as HTMLElement).dataset.peer || "";
-      renderConvList();
-      renderMsgs();
-    })
-  );
-  const head = document.getElementById("conv-head");
-  if (head) {
-    const acc = state.accounts.find((a) => a.bot_id === state.activeBot);
-    head.textContent = acc ? `${acc.label} · ${state.activePeer || "选择会话"}` : "选择左侧账号查看会话";
+async function saveRules() {
+  const c = state.cfg || (await safeCfg());
+  const gm = (g("rl-gmode") as HTMLSelectElement).value as AutoReplyConfig["group_mode"];
+  const value: Partial<AutoReplyConfig> = {
+    private_reply: !!(g("rl-private") as HTMLInputElement).checked,
+    group_mode: gm,
+    at_names: splitList((g("rl-atnames") as HTMLInputElement).value),
+    group_keywords: splitList((g("rl-keywords") as HTMLInputElement).value),
+    group_whitelist: splitList((g("rl-whitelist") as HTMLInputElement).value),
+    group_blacklist: splitList((g("rl-blacklist") as HTMLInputElement).value),
+    banned_words: splitList((g("rl-banned") as HTMLInputElement).value),
+    group_rate_window_sec: Math.max(1, parseInt((g("rl-rate-win") as HTMLInputElement).value || "60", 10) || 60),
+    group_rate_max_replies: Math.max(0, parseInt((g("rl-rate-max") as HTMLInputElement).value || "10", 10) || 0),
+    cooldown_sec: Math.max(1, parseInt((g("rl-cd") as HTMLInputElement).value || "5", 10) || 5),
+    reply_voice: !!(g("rl-voice") as HTMLInputElement).checked,
+  };
+  try {
+    state.cfg = await autoreplyApi.setConfig(value);
+    toast("回复规则已保存");
+  } catch (e: any) {
+    toast("保存失败：" + (e?.message || e), false);
   }
 }
 
-function renderMsgs() {
-  const el = document.getElementById("msg-list");
-  if (!el) return;
-  const recs = state.history.get(state.activeBot)?.get(state.activePeer) || [];
-  el.innerHTML = recs
-    .map((r) => bubbleHtml(r))
-    .join("");
-  el.querySelectorAll("[data-media-idx]").forEach((n) => loadMedia(n as HTMLElement));
-  el.scrollTop = el.scrollHeight;
+async function saveAccount() {
+  const tel = (g("ac-tel") as HTMLInputElement).value.trim();
+  const pwd = (g("ac-pwd") as HTMLInputElement).value;
+  if (!tel) return toast("请填写团员账号手机号", false);
+  try {
+    state.cfg = await autoreplyApi.setConfig({
+      member_telephone: tel,
+      member_password: pwd, // 空值后端视为「不修改」
+    });
+    toast("团员账号已保存");
+    fillRules();
+  } catch (e: any) {
+    toast("保存失败：" + (e?.message || e), false);
+  }
 }
 
-function bubbleHtml(r: ChatRecord): string {
-  const side = r.dir === "out" ? "out" : "in";
-  let body = "";
-  if (r.kind === "text") {
-    body = `<div class="bubble-text">${esc(r.text).replace(/\n/g, "<br/>")}</div>`;
-  } else if (r.kind === "image") {
-    body = `<div class="bubble-media" data-media-idx="1"><span class="media-ph">图片加载中…</span></div>`;
-  } else if (r.kind === "voice") {
-    const secs = Math.max(1, Math.round((r.playtime_ms || 0) / 1000));
-    body = `<div class="bubble-voice">🎤 语音 ${secs}″${r.text ? `<div class="voice-text">${esc(r.text)}</div>` : ""}</div>`;
-  } else {
-    body = `<div class="bubble-text">[${r.kind}] ${esc(r.text || "")}</div>`;
+async function safeCfg(): Promise<AutoReplyConfig> {
+  try {
+    state.cfg = await autoreplyApi.getConfig();
+  } catch {
+    state.cfg = null;
   }
-  const status = r.status === "failed" ? `<span class="msg-fail">发送失败</span>` : "";
+  return state.cfg as AutoReplyConfig;
+}
+
+// ---------------- 聊天对象（listen_list） ----------------
+
+function listenRowHtml(e: ListenEntry, idx: number): string {
+  const types = MON_TYPES.map((t) =>
+    `<label class="chk"><input type="checkbox" class="lr-mon-type" value="${t}" ${e.mon_types?.includes(t) ? "checked" : ""}/> ${MON_LABELS[t]}</label>`
+  ).join("");
   return `
-    <div class="msg-row ${side}" data-id="${esc(r.id)}">
-      <div class="bubble ${side}">
-        ${body}
-        <div class="bubble-time">${fmtTime(r.ts)} ${status}</div>
+    <div class="listen-row" data-idx="${idx}">
+      <div class="lr-main">
+        <input class="lr-name input" placeholder="微信昵称 / 群名" value="${esc(e.name || "")}"/>
+        <select class="lr-kind input">
+          <option value="private" ${e.kind !== "group" ? "selected" : ""}>私聊</option>
+          <option value="group" ${e.kind === "group" ? "selected" : ""}>群聊</option>
+        </select>
+        <button class="btn small lr-gear" title="监测设置">⚙ 设置</button>
+        <button class="btn small lr-del" title="删除">删除</button>
+      </div>
+      <div class="listen-extra hidden">
+        <div class="lr-block"><b>① 监测内容</b>
+          <div class="mon-types">${types}</div>
+          <input class="lr-mon-kw input" placeholder="监测关键字（逗号分隔，可留空）" value="${esc((e.mon_keywords || []).join("，"))}"/>
+          <small>类型与关键字都留空 = 监测全部内容；填了任一 → 只有命中的消息会处理。</small>
+        </div>
+        <div class="lr-block"><b>② 命中后</b>
+          <select class="lr-action input">
+            <option value="reply" ${e.action !== "ignore" ? "selected" : ""}>正常 AI 回复</option>
+            <option value="ignore" ${e.action === "ignore" ? "selected" : ""}>不回应（整体屏蔽该对象）</option>
+          </select>
+        </div>
       </div>
     </div>`;
 }
 
-async function loadMedia(el: HTMLElement) {
-  const row = el.closest(".msg-row") as HTMLElement | null;
-  const id = row?.dataset.id;
-  if (!id) return;
-  const recs = state.history.get(state.activeBot)?.get(state.activePeer) || [];
-  const rec = recs.find((r) => r.id === id);
-  if (!rec || !rec.media) return;
-  try {
-    const url = await mediaDataUrl(rec);
-    if (rec.kind === "image") {
-      el.innerHTML = `<img class="msg-img" src="${url}"/>`;
-    } else {
-      el.innerHTML = `<audio controls src="${url}"></audio>`;
-    }
-  } catch (e: any) {
-    el.innerHTML = `<span class="media-ph">媒体加载失败：${esc(String(e?.message || e)).slice(0, 60)}</span>`;
-  }
-}
-
-// ---------------- 发送 ----------------
-
-async function sendCurrent() {
-  const input = document.getElementById("msg-input") as HTMLInputElement | null;
-  const text = input?.value.trim() || "";
-  if (!text) return;
-  if (!state.activeBot || !state.activePeer) return toast("先选择账号与会话", false);
-  input!.value = "";
-  try {
-    await ilink.sendText(state.activeBot, state.activePeer, text);
-    pushLocal({
-      id: `local-${Date.now()}`, bot_id: state.activeBot, dir: "out", peer: state.activePeer,
-      kind: "text", text, ts: Date.now(), status: "sent",
-    });
-  } catch (e: any) {
-    toast("发送失败：" + (e?.message || e), false);
-  }
-}
-
-async function onPickImage(e: Event) {
-  const inp = e.target as HTMLInputElement;
-  const f = inp.files?.[0];
-  inp.value = "";
-  if (!f || !state.activeBot || !state.activePeer) return;
-  try {
-    const b64 = await fileToB64(f);
-    await ilink.sendImage(state.activeBot, state.activePeer, b64, f.name);
-    pushLocal({
-      id: `local-${Date.now()}`, bot_id: state.activeBot, dir: "out", peer: state.activePeer,
-      kind: "image", text: "", media: { data_b64: b64, mime: f.type || "image/jpeg" }, ts: Date.now(), status: "sent",
-    });
-  } catch (err: any) {
-    toast("图片发送失败：" + (err?.message || err), false);
-  }
-}
-
-async function onPickVoice(e: Event) {
-  const inp = e.target as HTMLInputElement;
-  const f = inp.files?.[0];
-  inp.value = "";
-  if (!f || !state.activeBot || !state.activePeer) return;
-  try {
-    const b64 = await fileToB64(f);
-    const lower = f.name.toLowerCase();
-    const encodeType = lower.endsWith(".mp3") ? 2 : 4; // 4=SILK 2=MP3
-    const secs = Math.max(1, Math.round(f.size / 3000)); // 粗估时长
-    await ilink.sendVoice(state.activeBot, state.activePeer, b64, encodeType, 24000, secs * 1000);
-    pushLocal({
-      id: `local-${Date.now()}`, bot_id: state.activeBot, dir: "out", peer: state.activePeer,
-      kind: "voice", text: "", ts: Date.now(), status: "sent", playtime_ms: secs * 1000,
-    });
-  } catch (err: any) {
-    toast("语音发送失败：" + (err?.message || err), false);
-  }
-}
-
-function pushLocal(rec: ChatRecord) {
-  if (!state.history.has(rec.bot_id)) state.history.set(rec.bot_id, new Map());
-  const m = state.history.get(rec.bot_id)!;
-  if (!m.has(rec.peer)) m.set(rec.peer, []);
-  m.get(rec.peer)!.push(rec);
-  if (rec.bot_id === state.activeBot) {
-    renderConvList();
-    if (rec.peer === state.activePeer) renderMsgs();
-  }
-}
-
-// ---------------- 扫码登录 ----------------
-
-async function startLogin() {
-  const modal = document.getElementById("qr-modal");
-  const box = document.getElementById("qr-box");
-  const st = document.getElementById("qr-status");
-  if (!modal || !box || !st) return;
-  modal.classList.remove("hidden");
-  st.textContent = "正在获取二维码…";
-  box.innerHTML = "";
-  try {
-    const r = await ilink.beginLogin();
-    showQr(r.content, r.svg);
-    st.textContent = "请用微信扫码并确认";
-    pollLoop(r.login_id);
-  } catch (e: any) {
-    st.textContent = "获取二维码失败：" + (e?.message || e);
-  }
-}
-
-function showQr(content: string, svg: string) {
-  const box = document.getElementById("qr-box");
+function renderListenList() {
+  const box = g("listen-list");
   if (!box) return;
-  if (/^(https?:\/\/|data:image)/.test(content)) {
-    box.innerHTML = `<img src="${esc(content)}" alt="二维码"/>`;
-  } else if (svg) {
-    box.innerHTML = svg;
-  } else {
-    box.textContent = "无法渲染二维码";
+  const list = state.cfg?.listen_list || [];
+  box.innerHTML = list.length
+    ? list.map((e, i) => listenRowHtml(e, i)).join("")
+    : `<div class="empty">暂无聊天对象，点右上角「＋添加聊天对象」</div>`;
+  wireListenRows();
+}
+
+function wireListenRows() {
+  const box = g("listen-list");
+  if (!box) return;
+  box.querySelectorAll(".lr-gear").forEach((b) =>
+    b.addEventListener("click", () => {
+      const extra = (b.closest(".listen-row") as HTMLElement)?.querySelector(".listen-extra");
+      extra?.classList.toggle("hidden");
+    })
+  );
+  box.querySelectorAll(".lr-del").forEach((b) =>
+    b.addEventListener("click", () => {
+      (b.closest(".listen-row") as HTMLElement)?.remove();
+    })
+  );
+}
+
+function readListenList(): ListenEntry[] {
+  const box = g("listen-list");
+  if (!box) return [];
+  return Array.from(box.querySelectorAll(".listen-row")).map((row) => {
+    const el = row as HTMLElement;
+    return {
+      name: (el.querySelector(".lr-name") as HTMLInputElement).value.trim(),
+      kind: (el.querySelector(".lr-kind") as HTMLSelectElement).value,
+      mon_types: Array.from(el.querySelectorAll(".lr-mon-type:checked")).map((c) => (c as HTMLInputElement).value),
+      mon_keywords: splitList((el.querySelector(".lr-mon-kw") as HTMLInputElement).value),
+      action: (el.querySelector(".lr-action") as HTMLSelectElement).value,
+    };
+  }).filter((e) => e.name);
+}
+
+async function saveListenList() {
+  const list = readListenList();
+  try {
+    state.cfg = await autoreplyApi.setConfig({ listen_list: list });
+    renderListenList();
+    toast(`聊天对象已保存（${list.length} 个）`);
+  } catch (e: any) {
+    toast("保存失败：" + (e?.message || e), false);
   }
 }
 
-function pollLoop(loginId: string) {
-  cancelQrTimer();
-  qrTimer = window.setInterval(async () => {
-    try {
-      const r = await ilink.pollLogin(loginId);
-      const st = document.getElementById("qr-status");
-      if (r.svg || r.content) showQr(r.content, r.svg);
-      if (st) {
-        if (r.status === "scaned") st.textContent = "已扫码，请在手机上确认";
-        else if (r.status === "confirmed") st.textContent = "登录成功！";
-        else if (r.status === "wait") st.textContent = "等待扫码…";
-      }
-      if (r.status === "confirmed") {
-        cancelQrTimer();
-        setTimeout(() => {
-          document.getElementById("qr-modal")?.classList.add("hidden");
-          refreshAccounts();
-          toast("iLink 账号已上线");
-        }, 800);
-      }
-    } catch (e: any) {
-      const st = document.getElementById("qr-status");
-      if (st) st.textContent = "轮询失败：" + (e?.message || e);
-    }
-  }, 1500);
-}
+// ---------------- 微信通道（wxauto） ----------------
 
-function cancelQrTimer() {
-  if (qrTimer !== null) {
-    clearInterval(qrTimer);
-    qrTimer = null;
+async function refreshWx() {
+  let cfg;
+  try {
+    cfg = await wxautoApi.getConfig();
+  } catch (e: any) {
+    toast("加载微信通道配置失败：" + (e?.message || e), false);
+    return;
+  }
+  const t = g("wx-toggle") as HTMLInputElement | null;
+  const py = g("wx-python") as HTMLInputElement | null;
+  const st = g("wx-status");
+  if (t) t.checked = !!cfg.enabled;
+  if (py) py.value = cfg.python_path || "";
+  if (st) {
+    st.textContent = cfg.enabled
+      ? cfg.running
+        ? "✅ 运行中（Python sidecar 已启动，私聊+群聊监听）"
+        : "已开启，Python sidecar 启动中…"
+      : "已关闭";
   }
 }
 
-function cancelLogin() {
-  cancelQrTimer();
-  document.getElementById("qr-modal")?.classList.add("hidden");
+async function saveWx() {
+  const py = g("wx-python") as HTMLInputElement | null;
+  try {
+    await wxautoApi.setConfig({ python_path: py?.value.trim() || "" });
+    toast("微信通道配置已保存");
+  } catch (e: any) {
+    toast("保存失败：" + (e?.message || e), false);
+  }
+  void refreshWx();
 }
 
-// ---------------- 桥 ----------------
+async function restartWx() {
+  try {
+    await wxautoApi.stop();
+    await wxautoApi.start();
+    toast("微信通道已重启");
+  } catch (e: any) {
+    toast("重启失败：" + (e?.message || e), false);
+  }
+  void refreshWx();
+}
+
+// ---------------- 团长桥 ----------------
 
 async function refreshBridge() {
   try {
@@ -471,21 +421,8 @@ async function refreshBridge() {
   } catch {
     return;
   }
-  const t = document.getElementById("bridge-toggle") as HTMLInputElement | null;
   const ta = document.getElementById("bridge-targets") as HTMLTextAreaElement | null;
-  if (t && state.bridge) t.checked = state.bridge.enabled;
   if (ta && state.bridge) ta.value = JSON.stringify(state.bridge.targets || [], null, 1);
-}
-
-async function onBridgeToggle(e: Event) {
-  const on = (e.target as HTMLInputElement).checked;
-  try {
-    state.bridge = await bridgeApi.setEnabled(on);
-    toast(on ? "团长桥已开启" : "团长桥已关闭");
-  } catch (err: any) {
-    toast("切换失败：" + (err?.message || err), false);
-    (e.target as HTMLInputElement).checked = !on;
-  }
 }
 
 async function saveBridgeTargets() {
@@ -500,172 +437,77 @@ async function saveBridgeTargets() {
   try {
     state.bridge = await bridgeApi.setConfig({ targets });
     toast("路由表已保存");
-  } catch (err: any) {
-    toast("保存失败：" + (err?.message || err), false);
+  } catch (e: any) {
+    toast("保存失败：" + (e?.message || e), false);
   }
 }
 
-// ---------------- AI 自动回复 ----------------
+// ---------------- 日志 ----------------
 
-async function refreshAutoreply() {
+async function loadLogs() {
   try {
-    state.autoreply = await autoreplyApi.getConfig();
-  } catch {
-    return;
-  }
-  const c = state.autoreply;
-  if (!c) return;
-  const t = document.getElementById("ar-toggle") as HTMLInputElement | null;
-  const tel = document.getElementById("ar-tel") as HTMLInputElement | null;
-  const pwd = document.getElementById("ar-pwd") as HTMLInputElement | null;
-  const priv = document.getElementById("ar-private") as HTMLInputElement | null;
-  const gm = document.getElementById("ar-gmode") as HTMLSelectElement | null;
-  const atn = document.getElementById("ar-atnames") as HTMLInputElement | null;
-  const kw = document.getElementById("ar-kw") as HTMLInputElement | null;
-  const cd = document.getElementById("ar-cd") as HTMLInputElement | null;
-  if (t) t.checked = c.enabled;
-  if (tel) tel.value = c.member_telephone || "";
-  if (priv) priv.checked = !!c.private_reply;
-  if (gm) gm.value = c.group_mode || "at";
-  if (atn) atn.value = (c.at_names || []).join("，");
-  if (kw) kw.value = (c.group_keywords || []).join("，");
-  if (cd) cd.value = String(c.cooldown_sec || 5);
-  // 密码不回显；占位提示已设置与否由后端忽略空值决定
-  if (pwd) pwd.placeholder = c.member_telephone ? "密码已保存（留空 = 不修改）" : "团员账号密码";
-  // 拉最近日志
-  try {
-    const logs = (await autoreplyApi.logs(30)) || [];
-    const box = document.getElementById("ar-log");
+    const logs = (await autoreplyApi.logs(40)) || [];
+    const box = g("ar-log");
     if (box) {
       box.innerHTML = logs
         .slice()
         .reverse()
-        .map((l) => `<div class="ar-line ${l.level}"><span class="ar-t">${fmtTime(l.ts)}</span>${esc(l.msg)}</div>`)
+        .map((l: AutoReplyLog) => logLine(l))
         .join("");
     }
-  } catch {}
+  } catch { /* 忽略 */ }
 }
 
-async function onArToggle(e: Event) {
-  const on = (e.target as HTMLInputElement).checked;
-  try {
-    state.autoreply = await autoreplyApi.setEnabled(on);
-    toast(on ? "AI 自动回复已开启" : "AI 自动回复已关闭");
-  } catch (err: any) {
-    toast("切换失败：" + (err?.message || err), false);
-    (e.target as HTMLInputElement).checked = !on;
-  }
-}
-
-async function saveAutoreply() {
-  const g = (id: string) => document.getElementById(id) as HTMLInputElement | null;
-  const gm = document.getElementById("ar-gmode") as HTMLSelectElement | null;
-  const split = (s: string) => (s || "").split(/[，,]/).map((x) => x.trim()).filter(Boolean);
-  const value: Partial<AutoReplyConfig> = {
-    member_telephone: g("ar-tel")?.value.trim() || "",
-    member_password: g("ar-pwd")?.value || "", // 空值后端视为「不修改」
-    private_reply: !!g("ar-private")?.checked,
-    group_mode: (gm?.value as AutoReplyConfig["group_mode"]) || "at",
-    at_names: split(g("ar-atnames")?.value || ""),
-    group_keywords: split(g("ar-kw")?.value || ""),
-    cooldown_sec: Math.max(1, parseInt(g("ar-cd")?.value || "5", 10) || 5),
-  };
-  try {
-    state.autoreply = await autoreplyApi.setConfig(value);
-    toast("自动回复配置已保存");
-    refreshAutoreply();
-  } catch (err: any) {
-    toast("保存失败：" + (err?.message || err), false);
-  }
-}
-
-// ---------------- 微信 wxauto 通道 ----------------
-
-async function refreshWxChannel() {
-  let cfg;
-  try {
-    cfg = await wxautoApi.getConfig();
-  } catch {
-    return;
-  }
-  const t = document.getElementById("wx-toggle") as HTMLInputElement | null;
-  const py = document.getElementById("wx-python") as HTMLInputElement | null;
-  const st = document.getElementById("wx-status");
-  if (t) t.checked = !!cfg.enabled;
-  if (py) py.value = cfg.python_path || "";
-  if (st) {
-    st.textContent = `状态：${cfg.enabled ? (cfg.running ? "运行中（私聊+群聊监听）" : "已开启，sidecar 启动中…") : "已关闭"}`;
-  }
-}
-
-async function onWxToggle(e: Event) {
-  const on = (e.target as HTMLInputElement).checked;
-  try {
-    await wxautoApi.setConfig({ enabled: on });
-    toast(on ? "微信通道已开启（需本机微信已登录）" : "微信通道已关闭");
-  } catch (err: any) {
-    toast("切换失败：" + (err?.message || err), false);
-    (e.target as HTMLInputElement).checked = !on;
-  }
-  void refreshWxChannel();
-}
-
-async function saveWxChannel() {
-  const py = document.getElementById("wx-python") as HTMLInputElement | null;
-  try {
-    await wxautoApi.setConfig({ python_path: py?.value.trim() || "" });
-    toast("微信通道配置已保存");
-  } catch (err: any) {
-    toast("保存失败：" + (err?.message || err), false);
-  }
-  void refreshWxChannel();
-}
-
-async function restartWxChannel() {
-  try {
-    await wxautoApi.stop();
-    await wxautoApi.start();
-    toast("微信通道已重启");
-  } catch (err: any) {
-    toast("重启失败：" + (err?.message || err), false);
-  }
-  void refreshWxChannel();
+function logLine(l: AutoReplyLog): string {
+  return `<div class="ar-line ${l.level}"><span class="ar-t">${fmtTime(l.ts)}</span>${esc(l.msg)}</div>`;
 }
 
 // ---------------- 事件 ----------------
 
 export async function initChatEvents() {
-  await onIlinkEvent((ev: IlinkEvent) => {
-    if (ev.kind === "message" && ev.record) {
-      const rec = ev.record as ChatRecord;
-      if (!state.history.has(rec.bot_id)) state.history.set(rec.bot_id, new Map());
-      const m = state.history.get(rec.bot_id)!;
-      if (!m.has(rec.peer)) m.set(rec.peer, []);
-      m.get(rec.peer)!.push(rec);
-      if (rec.bot_id === state.activeBot) {
-        renderConvList();
-        if (rec.peer === state.activePeer) renderMsgs();
-      }
-    } else if (ev.kind === "account" && ev.event === "status") {
-      refreshAccounts();
-    }
-  });
   await onAutoreplyEvent((l: AutoReplyLog) => {
     const box = document.getElementById("ar-log");
     if (!box) return;
-    const div = document.createElement("div");
-    div.className = "ar-line " + l.level;
-    div.innerHTML = `<span class="ar-t">${fmtTime(l.ts)}</span>${esc(l.msg)}`;
-    box.prepend(div);
-    while (box.children.length > 40) box.lastChild?.remove();
+    box.insertAdjacentHTML("afterbegin", logLine(l));
+    while (box.children.length > 60) box.lastChild?.remove();
   });
   await onWxautoEvent((l: AutoReplyLog) => {
     const box = document.getElementById("ar-log");
     if (!box) return;
-    const div = document.createElement("div");
-    div.className = "ar-line " + l.level;
-    div.innerHTML = `<span class="ar-t">${fmtTime(l.ts)}</span>[微信] ${esc(l.msg)}`;
-    box.prepend(div);
-    while (box.children.length > 40) box.lastChild?.remove();
+    const line = { ...l, msg: "[微信] " + l.msg };
+    box.insertAdjacentHTML("afterbegin", logLine(line));
+    while (box.children.length > 60) box.lastChild?.remove();
   });
+}
+
+// ---------------- 接线 ----------------
+
+function wire() {
+  g("wx-toggle")?.addEventListener("change", async (e) => {
+    const on = (e.target as HTMLInputElement).checked;
+    try {
+      await wxautoApi.setConfig({ enabled: on });
+      toast(on ? "微信通道已开启（自动启动 Python）" : "微信通道已关闭");
+    } catch (err: any) {
+      toast("切换失败：" + (err?.message || err), false);
+      (e.target as HTMLInputElement).checked = !on;
+    }
+    void refreshWx();
+  });
+  g("wx-save")?.addEventListener("click", saveWx);
+  g("wx-restart")?.addEventListener("click", restartWx);
+  g("listen-add")?.addEventListener("click", () => {
+    const box = g("listen-list");
+    if (!box) return;
+    box.insertAdjacentHTML(
+      "beforeend",
+      listenRowHtml({ name: "", kind: "private", mon_types: [], mon_keywords: [], action: "reply" }, box.children.length)
+    );
+    wireListenRows();
+    box.querySelector(".listen-extra.hidden")?.classList.remove("hidden");
+  });
+  g("listen-save")?.addEventListener("click", saveListenList);
+  g("rl-save")?.addEventListener("click", saveRules);
+  g("ac-save")?.addEventListener("click", saveAccount);
+  g("bridge-save")?.addEventListener("click", saveBridgeTargets);
 }

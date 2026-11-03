@@ -150,8 +150,9 @@ async function refreshAiState() {
     if (st) st.textContent = on ? "AI 互动：开启中（消息自动调 bbt-zb 生成回复）" : "AI 互动：已关闭";
     const btn = g("ia-ai-toggle");
     if (btn) btn.textContent = on ? "关闭 AI 互动" : "开启 AI 互动";
-  } catch {
-    /* 忽略 */
+  } catch (e: any) {
+    const st = g("ia-ai-state");
+    if (st) st.textContent = "AI 状态获取失败：" + (e?.message || e);
   }
 }
 
