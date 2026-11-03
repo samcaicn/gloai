@@ -103,12 +103,61 @@ pub async fn login(
 /// 通用 action 调用（透传给 bbt-zb 单端点 API，便于扩展话术库等操作）
 #[tauri::command(rename_all = "snake_case")]
 pub async fn bbt_call(
-    state: State<'_, AppState>,
+    app: tauri::AppHandle,
     action: String,
     condition: Option<Value>,
 ) -> Result<Value, String> {
-    let c = state.conn.lock().unwrap().clone();
-    bbt::call(&c, &action, &condition.unwrap_or(json!({}))).await
+    call_with_relogin(&app, &action, &condition.unwrap_or(json!({}))).await
+}
+
+/// 统一 bbt 调用：会话失效时用本地保存的账号密码自动重登一次再重试。
+/// 订单页一键拉取 / 团员名册 / 远程参数同步等所有透传动作共用，
+/// 避免 token 过期后功能中断（重登失败才把「会话已失效」抛回前端）。
+async fn call_with_relogin(
+    app: &tauri::AppHandle,
+    action: &str,
+    condition: &Value,
+) -> Result<Value, String> {
+    let c = app.state::<AppState>().conn.lock().unwrap().clone();
+    match bbt::call(&c, action, condition).await {
+        Ok(r) => return Ok(r),
+        Err(e) if e.contains("失效") || e.contains("未登录") => {
+            // 从本地 config.json 读保存的账号密码（前端登录时随配置落盘）
+            let (tel, pwd) = {
+                let g = app.state::<AppState>().config.lock().unwrap();
+                let conn = g.get("connection").cloned().unwrap_or(json!({}));
+                (
+                    conn.get("telephone").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                    conn.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                )
+            };
+            if tel.is_empty() || pwd.is_empty() {
+                return Err(e);
+            }
+            let base = {
+                let cc = app.state::<AppState>().conn.lock().unwrap();
+                cc.base_url.clone()
+            };
+            // 重新登录刷新 token（密码错误等失败场景原样抛回）
+            let mut fresh = bbt::BbtConnection {
+                base_url: base.clone(),
+                token: None,
+                telephone: Some(tel.clone()),
+            };
+            let (token, _account) = bbt::login(&fresh, &tel, &pwd).await.map_err(|_| e.clone())?;
+            fresh.token = Some(token.clone());
+            {
+                let mut cc = app.state::<AppState>().conn.lock().unwrap();
+                cc.base_url = base;
+                cc.token = Some(token);
+                cc.telephone = Some(tel);
+            }
+            // 用新 token 重试一次
+            let c = app.state::<AppState>().conn.lock().unwrap().clone();
+            bbt::call(&c, action, condition).await
+        }
+        Err(e) => Err(e),
+    }
 }
 
 /// 探活：检查 bbt-zb 是否可达（不要求已登录）
@@ -127,20 +176,22 @@ pub async fn test_connection(state: State<'_, AppState>) -> Result<Value, String
 
 /// 拉取远程聊天参数（chat/configGet）并写回本地
 #[tauri::command(rename_all = "snake_case")]
-pub async fn fetch_remote_config(state: State<'_, AppState>) -> Result<Value, String> {
-    let c = state.conn.lock().unwrap().clone();
+pub async fn fetch_remote_config(app: tauri::AppHandle) -> Result<Value, String> {
+    let c = app.state::<AppState>().conn.lock().unwrap().clone();
     if c.base_url.is_empty() {
         return Err("未配置接口地址".into());
     }
-    let data = bbt::get_chat_config(&c).await?;
+    let data = call_with_relogin(&app, "chat/configGet", &json!({})).await?;
+    let data = bbt::data_of(&data)?;
     // 远程值合并进本地配置（connection 字段保留）
     {
-        let mut g = state.config.lock().unwrap();
+        let mut g = app.state::<AppState>().config.lock().unwrap();
         if let (Some(obj), Some(src)) = (g.as_object_mut(), data.as_object()) {
             for (k, v) in src {
                 obj.insert(k.clone(), v.clone());
             }
         }
+        let state = app.state::<AppState>();
         let _ = state.save_config();
     }
     Ok(data)
@@ -149,14 +200,16 @@ pub async fn fetch_remote_config(state: State<'_, AppState>) -> Result<Value, St
 /// 推送聊天参数到 bbt-zb（chat/configSave）
 #[tauri::command(rename_all = "snake_case")]
 pub async fn push_remote_config(
-    state: State<'_, AppState>,
+    app: tauri::AppHandle,
     value: Value,
 ) -> Result<Value, String> {
-    let c = state.conn.lock().unwrap().clone();
+    let c = app.state::<AppState>().conn.lock().unwrap().clone();
     if c.base_url.is_empty() {
         return Err("未配置接口地址".into());
     }
-    bbt::save_chat_config(&c, &value).await
+    let condition = bbt::build_config_save_condition(&value);
+    let result = call_with_relogin(&app, "chat/configSave", &condition).await?;
+    bbt::data_of(&result)
 }
 
 // ---------------- 自动更新（weauto 模式）----------------
@@ -671,7 +724,7 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
         if conn.token.as_deref().unwrap_or("").is_empty() {
             member_note = "请先在「团员二维码」页完成团长登录".into();
         } else {
-            let group_id = match bbt::call(&conn, "leader/ledger", &json!({})).await {
+            let group_id = match call_with_relogin(&app, "leader/ledger", &json!({})).await {
                 Ok(r) => {
                     let list = r.pointer("/result/data/list").and_then(|l| l.as_array()).cloned().unwrap_or_default();
                     list.first()
@@ -685,7 +738,7 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
                 }
             };
             if group_id > 0 {
-                match bbt::call(&conn, "leader/listMembers", &json!({"groupId": group_id})).await {
+                match call_with_relogin(&app, "leader/listMembers", &json!({"groupId": group_id})).await {
                     Ok(r) => {
                         members = r
                             .pointer("/result/data/list")

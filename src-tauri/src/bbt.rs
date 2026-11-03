@@ -134,14 +134,20 @@ pub async fn get_chat_config(conn: &BbtConnection) -> Result<Value, String> {
     data_of(&result)
 }
 
-/// 推送聊天参数：action=chat/configSave
-pub async fn save_chat_config(conn: &BbtConnection, params: &Value) -> Result<Value, String> {
+/// 构造 chat/configSave 的 condition（键过滤 + 类型归一，与官方前端提交形态一致）
+pub fn build_config_save_condition(params: &Value) -> Value {
     let mut condition = json!({});
     for k in CONFIG_KEYS {
         if let Some(v) = params.get(*k) {
             condition[*k] = normalize_config_value(*k, v);
         }
     }
+    condition
+}
+
+/// 推送聊天参数：action=chat/configSave
+pub async fn save_chat_config(conn: &BbtConnection, params: &Value) -> Result<Value, String> {
+    let condition = build_config_save_condition(params);
     let result = call(conn, "chat/configSave", &condition).await?;
     data_of(&result)
 }

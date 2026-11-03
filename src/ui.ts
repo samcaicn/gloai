@@ -314,6 +314,7 @@ async function persistNow() {
   const savedConn = {
     base_url: conn.base_url,
     telephone: conn.telephone,
+    password: conn.password || "",
     token: state.connection.token || "",
   };
   try {
