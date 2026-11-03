@@ -1,0 +1,10 @@
+=== failure @ 2026-11-03T01:27:41Z sha=e6157b35559c6d98fc35a41c5c6a8d8ee3d5fa96
+$ tauri build --no-bundle
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `pnpm build`
+$ tsc && vite build
+src/chat.ts(143,55): error TS1005: ')' expected.
+[ELIFECYCLE] Command failed with exit code 2.
+beforeBuildCommand `pnpm build` failed with exit code 2
+       Error beforeBuildCommand `pnpm build` failed with exit code 2
+[ELIFECYCLE] Command failed with exit code 1.
