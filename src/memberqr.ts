@@ -150,8 +150,9 @@ export async function renderMemberQr(root: HTMLElement) {
       void loadArEnabled();
     });
     // 监听团长登录态变化：登录成功后自动拉名册/账号，无需手动点
-    window.addEventListener("login-changed", () => {
-      void refreshLoginState();
+    window.addEventListener("login-changed", (e: any) => {
+      const d = e.detail || {};
+      updateLoginStateUI(!!d.loggedIn, d.telephone || "");
       void loadRoster();
       void refreshAccounts();
     });
@@ -171,21 +172,26 @@ export async function renderMemberQr(root: HTMLElement) {
   void refreshAccounts();
 }
 
-async function refreshLoginState() {
+function updateLoginStateUI(loggedIn: boolean, telephone?: string) {
   const st = g("mq-login-state");
   const btn = g("mq-goto-login");
-  let token = "";
-  try {
-    const cfg: any = await api.loadConfig();
-    token = cfg?.connection?.token || "";
-  } catch {}
-  if (token) {
-    if (st) st.textContent = "✅ 团长已登录（首页连接）";
+  if (loggedIn) {
+    if (st) st.textContent = "✅ 已连接" + (telephone ? `（${telephone}）` : "");
     btn?.classList.add("hidden");
   } else {
     if (st) st.textContent = "未登录";
     btn?.classList.remove("hidden");
   }
+}
+
+async function refreshLoginState() {
+  let token = "", tel = "";
+  try {
+    const cfg: any = await api.loadConfig();
+    token = cfg?.connection?.token || "";
+    tel = cfg?.connection?.telephone || "";
+  } catch {}
+  updateLoginStateUI(!!token, tel);
 }
 
 // 仅读取 AI 自动回复开关（徽标/总览用），配置维护在「聊天配置」页

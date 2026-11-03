@@ -432,7 +432,9 @@ function onSessionExpired(msg: string) {
 
 // 登录态变化时通知所有子页面自动刷新（无需手动点）
 function notifyLoginChanged(loggedIn: boolean) {
-  window.dispatchEvent(new CustomEvent("login-changed", { detail: { loggedIn } }));
+  window.dispatchEvent(new CustomEvent("login-changed", {
+    detail: { loggedIn, telephone: state.connection.telephone || "", token: loggedIn ? "1" : "" }
+  }));
 }
 
 // -------- PC 扫码登录（pc/create → 渲染二维码 → 轮询 pc/poll）--------
