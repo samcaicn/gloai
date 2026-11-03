@@ -102,7 +102,7 @@ function render() {
       <div class="row-between">
         <div>
           <h2>团长连接</h2>
-          <p class="card-desc">${
+          <p class="card-desc"><span class="conn-dot ${loggedIn ? "on" : "off"}"></span>${
             loggedIn
               ? `已登录 ${state.connection.telephone || ""} · ${state.connection.base_url}`
               : "未登录。登录 BBT-ZB 团长账号后，所有页签共用此连接。"
@@ -116,20 +116,23 @@ function render() {
     "ov-login",
     "团长登录",
     `<div class="fields" id="login-fields">${CONNECTION_FIELDS.map((f) => fieldHtml(f, state.connection[f.key], "conn")).join("")}</div>
-     <div style="display:flex;gap:8px;margin:14px 0 12px;">
-       <button class="btn small" id="seg-pwd" type="button" style="flex:1;">账号登录</button>
-       <button class="btn small" id="seg-qr" type="button" style="flex:1;">扫码登录</button>
+     <div class="seg-group" role="tablist">
+       <button class="seg-btn" id="seg-pwd" type="button">账号登录</button>
+       <button class="seg-btn" id="seg-qr" type="button">扫码登录</button>
      </div>
      <div id="pwdc">
        <div class="btn-row"><button class="btn primary" id="btn-login">登录并连接</button></div>
      </div>
-     <div id="pcqr" style="display:none;text-align:center;">
-       <div id="pcqr-code" style="display:inline-block;padding:10px;background:#fff;border-radius:10px;min-width:200px;min-height:200px;line-height:200px;color:#999;font-size:13px;">生成二维码中…</div>
-       <div id="pcqr-status" style="margin-top:10px;color:#666;font-size:13px;">请用手机端「我的」页点头像扫码</div>
-       <button class="btn small hidden" id="pcqr-refresh" type="button" style="margin-top:8px;">刷新二维码</button>
-       <div style="margin-top:10px;color:#999;font-size:12px;line-height:1.6;">手机端：我的 → 点头像 → 扫此码 → 确认</div>
+     <div id="pcqr" class="qr-pane" style="display:none">
+       <div class="qr-frame">
+         <div id="pcqr-code" class="qr-code">生成二维码中…</div>
+         <div class="qr-scanline"></div>
+       </div>
+       <div id="pcqr-status" class="qr-status">请用手机端「我的」页点头像扫码</div>
+       <button class="btn small hidden" id="pcqr-refresh" type="button">刷新二维码</button>
+       <div class="qr-hint">手机端：我的 → 点头像 → 扫此码 → 确认</div>
      </div>`,
-    "登录 BBT-ZB 团长账号后，所有页签共用此连接（其余页不再单独登录）。"
+    "登录 BBT-ZB 团长账号后，所有页签共用此连接。"
   );
 
   // 总开关卡：三个全局开关，状态从各自后端拉取
@@ -357,15 +360,12 @@ function stopQrPoll() {
 
 function setLoginMode(m: "pwd" | "qr") {
   const segPwd = $("seg-pwd"), segQr = $("seg-qr");
-  segPwd?.classList.toggle("primary", m === "pwd");
-  segQr?.classList.toggle("primary", m === "qr");
+  segPwd?.classList.toggle("on", m === "pwd");
+  segQr?.classList.toggle("on", m === "qr");
   const pwdc = document.getElementById("pwdc");
   const pcqr = document.getElementById("pcqr");
-  const fields = document.getElementById("login-fields");
   if (pwdc) pwdc.style.display = m === "pwd" ? "" : "none";
   if (pcqr) pcqr.style.display = m === "qr" ? "" : "none";
-  // base_url 在两种模式都需要（扫码登录也要先知道接口地址）
-  if (fields) fields.style.display = "";
   if (m === "qr") void startPcQr(); else stopQrPoll();
 }
 
@@ -390,8 +390,10 @@ async function startPcQr() {
   stopQrPoll();
   const codeEl = document.getElementById("pcqr-code");
   const statusEl = document.getElementById("pcqr-status");
+  const pcqr = document.getElementById("pcqr");
   const refreshEl = $("pcqr-refresh") as HTMLElement | null;
-  if (!codeEl || !statusEl) return;
+  if (!codeEl || !statusEl || !pcqr) return;
+  pcqr.classList.remove("expired", "scanned");
   // 从表单读 base_url（用户可能改过）
   const baseUrlEl = $("conn-base_url");
   const baseUrl = (baseUrlEl as HTMLInputElement | null)?.value?.trim() || state.connection.base_url;
@@ -411,18 +413,17 @@ async function startPcQr() {
     const scanId: string = d.scanId;
     const payload: string = d.payload;
     codeEl.innerHTML = "";
-    codeEl.style.lineHeight = "normal";
+    codeEl.classList.add("has-img");
     const qrcode = await ensureQrcode();
     const q = qrcode(0, "M");
     q.addData(payload);
     q.make();
     const img = document.createElement("img");
     img.src = q.createDataURL(8, 4);
-    img.style.width = "200px";
-    img.style.height = "200px";
     img.alt = "PC 登录二维码";
     codeEl.appendChild(img);
     statusEl.textContent = "请用手机端「我的」页点头像扫码";
+    pcqr.classList.add("waiting");
 
     qrTimer = window.setInterval(async () => {
       try {
@@ -431,12 +432,18 @@ async function startPcQr() {
         if (!pr?.status || !pd) {
           stopQrPoll();
           statusEl.textContent = (pr?.msg || "二维码已失效") + "，请刷新";
+          pcqr.classList.remove("waiting", "scanned");
+          pcqr.classList.add("expired");
           if (refreshEl) refreshEl.classList.remove("hidden");
           return;
         }
-        if (pd.status === "pending") statusEl.textContent = "等待手机端扫码…";
-        else if (pd.status === "scanned") statusEl.textContent = "已扫码，请在手机端确认";
-        else if (pd.status === "confirmed") {
+        if (pd.status === "pending") {
+          statusEl.textContent = "等待手机端扫码…";
+          pcqr.classList.add("waiting"); pcqr.classList.remove("scanned", "expired");
+        } else if (pd.status === "scanned") {
+          statusEl.textContent = "已扫码，请在手机端确认";
+          pcqr.classList.remove("waiting"); pcqr.classList.add("scanned");
+        } else if (pd.status === "confirmed") {
           stopQrPoll();
           const token: string = pd.token;
           const tel: string = pd.telephone || pd.name || "";

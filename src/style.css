@@ -496,3 +496,75 @@ textarea { resize: vertical; line-height: 1.5; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ============================================================
+   登录浮层：分段控制器 + 扫码二维码（2026-11-03 美化）
+   ============================================================ */
+#ov-login .overlay-panel { width: min(420px, calc(100vw - 48px)); padding: 20px 22px; }
+
+/* 分段控制器：胶囊底 + 选中项渐变滑块 */
+.seg-group {
+  display: flex; gap: 4px;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 4px; margin: 14px 0 16px;
+}
+.seg-btn {
+  flex: 1; padding: 7px 0; border: none; background: transparent;
+  border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--text-dim);
+  cursor: pointer; transition: all .22s ease;
+}
+.seg-btn:hover { color: var(--accent-dark); }
+.seg-btn.on {
+  background: var(--grad-hero); color: #fff;
+  box-shadow: 0 2px 8px rgba(184, 121, 28, .35);
+  text-shadow: 0 1px 2px rgba(90, 50, 0, .25);
+}
+
+/* 二维码框：白底 + 金色细边 + 扫描线动效 */
+.qr-pane { text-align: center; padding: 4px 0; }
+.qr-frame {
+  position: relative; display: inline-block;
+  padding: 12px; background: #fff; border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lift);
+  transition: box-shadow .3s ease, border-color .3s ease;
+}
+.qr-code {
+  width: 208px; height: 208px; display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim); font-size: 13px; line-height: 1.5;
+  background: #fff; border-radius: 8px; overflow: hidden;
+}
+.qr-code.has-img { line-height: 0; }
+.qr-code img { width: 208px; height: 208px; display: block; }
+
+/* 扫描线：等待扫码时上下扫动 */
+.qr-scanline {
+  position: absolute; left: 12px; right: 12px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  border-radius: 2px; opacity: 0; pointer-events: none;
+}
+.qr-pane.waiting .qr-scanline {
+  opacity: .9; animation: qr-scan 2.2s ease-in-out infinite;
+}
+@keyframes qr-scan {
+  0%, 100% { top: 14px; }
+  50%      { top: calc(100% - 14px); }
+}
+
+/* 状态色：等待=金 · 已扫=绿 · 失效=红 */
+.qr-pane.waiting .qr-frame  { border-color: var(--accent);    box-shadow: 0 0 0 3px rgba(232,163,61,.15), var(--shadow-lift); }
+.qr-pane.scanned .qr-frame   { border-color: var(--ok);       box-shadow: 0 0 0 3px rgba(7,193,96,.18),  var(--shadow-lift); }
+.qr-pane.expired .qr-frame   { border-color: var(--err);      box-shadow: 0 0 0 3px rgba(230,67,64,.15); }
+.qr-status { margin-top: 12px; font-size: 13px; color: var(--text-dim); min-height: 20px; transition: color .2s; }
+.qr-pane.waiting .qr-status  { color: var(--accent-deep); }
+.qr-pane.scanned .qr-status  { color: #068b4c; font-weight: 600; }
+.qr-pane.expired .qr-status  { color: var(--err); }
+.qr-hint { margin-top: 8px; color: var(--text-dim); font-size: 11.5px; line-height: 1.6; }
+
+/* 连接状态卡：状态指示灯 */
+.conn-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 6px; vertical-align: 1px;
+}
+.conn-dot.on  { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.conn-dot.off { background: #c8c8c8; }
