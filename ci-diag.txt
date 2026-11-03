@@ -8,3 +8,64 @@ src/chat.ts(143,55): error TS1005: ')' expected.
 beforeBuildCommand `pnpm build` failed with exit code 2
        Error beforeBuildCommand `pnpm build` failed with exit code 2
 [ELIFECYCLE] Command failed with exit code 1.
+=== failure @ 2026-11-03T04:24:42Z sha=3c4f0da027736e13e1050a08c2eade9552f03e6a
+ dropped while borrowed
+   --> src\commands.rs:188:21
+    |
+188 |         let mut g = app.state::<AppState>().config.lock().unwrap();
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^                       - temporary value is freed at the end of this statement
+    |                     |
+    |                     creates a temporary value which is freed while still in use
+189 |         if let (Some(obj), Some(src)) = (g.as_object_mut(), data.as_object()) {
+    |                                          - borrow later used here
+    |
+    = note: consider using a `let` binding to create a longer lived value
+
+warning: variable `member_note` is assigned to, but never used
+   --> src\commands.rs:721:9
+    |
+721 |     let mut member_note = String::new();
+    |         ^^^^^^^^^^^^^^^
+    |
+    = note: consider using `_member_note` instead
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:749:31
+    |
+749 |                     Err(e) => member_note = format!("拉取名册失败: {}", e),
+    |                               ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:736:21
+    |
+736 |                     member_note = format!("拉取团列表失败: {}", e);
+    |                     ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:725:13
+    |
+725 |             member_note = "请先在「团员二维码」页完成团长登录".into();
+    |             ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:754:9
+    |
+754 |         member_note = "AppState 未初始化".into();
+    |         ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+For more information about this error, try `rustc --explain E0716`.
+warning: `bbt-zb-tauri` (lib) generated 5 warnings
+error: could not compile `bbt-zb-tauri` (lib) due to 4 previous errors; 5 warnings emitted
+failed to build app: failed to build app
+       Error failed to build app: failed to build app
+[ELIFECYCLE] Command failed with exit code 1.
