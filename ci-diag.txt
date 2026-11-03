@@ -69,3 +69,66 @@ error: could not compile `bbt-zb-tauri` (lib) due to 4 previous errors; 5 warnin
 failed to build app: failed to build app
        Error failed to build app: failed to build app
 [ELIFECYCLE] Command failed with exit code 1.
+=== failure @ 2026-11-03T05:15:15Z sha=be835341148d252662d2950ede1876a9e66934e4
+m
+[32m✓ built in 458ms[39m
+    Updating crates.io index
+   Compiling bbt-zb-tauri v0.2.5 (D:\a\gloai\gloai\src-tauri)
+error[E0599]: no method named `gzip` found for struct `ClientBuilder` in the current scope
+   --> src\bbt.rs:17:14
+    |
+ 11 | /         reqwest::Client::builder()
+ 12 | |             .timeout(Duration::from_secs(10))
+ 13 | |             .connect_timeout(Duration::from_secs(5))
+ 14 | |             .pool_idle_timeout(Duration::from_secs(30))
+ 15 | |             .tcp_keepalive(Duration::from_secs(30))
+ 16 | |             .user_agent("bbt-zb-tauri/1.0")
+ 17 | |             .gzip(true)
+    | |_____________-^^^^
+    |
+help: there is a method `vzip` with a similar name, but with different arguments
+   --> C:\Users\runneradmin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ppv-lite86-0.2.21\src\types.rs:218:5
+    |
+218 |     fn vzip(self) -> V;
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: variable `member_note` is assigned to, but never used
+   --> src\commands.rs:734:9
+    |
+734 |     let mut member_note = String::new();
+    |         ^^^^^^^^^^^^^^^
+    |
+    = note: consider using `_member_note` instead
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:758:27
+    |
+758 |                 Err(e) => member_note = format!("拉取名册失败: {}", e),
+    |                           ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:745:17
+    |
+745 |                 member_note = format!("拉取团列表失败: {}", e);
+    |                 ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:762:9
+    |
+762 |         member_note = "AppState 未初始化".into();
+    |         ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+For more information about this error, try `rustc --explain E0599`.
+warning: `bbt-zb-tauri` (lib) generated 4 warnings
+error: could not compile `bbt-zb-tauri` (lib) due to 1 previous error; 4 warnings emitted
+failed to build app: failed to build app
+       Error failed to build app: failed to build app
+[ELIFECYCLE] Command failed with exit code 1.
