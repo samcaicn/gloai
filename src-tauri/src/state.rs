@@ -1,4 +1,5 @@
 use crate::bbt::BbtConnection;
+use crate::util;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -68,7 +69,7 @@ impl AppState {
         } else {
             plain
         };
-        std::fs::write(p, text).map_err(|e| e.to_string())
+        util::write_atomic(p, &text).map_err(|e| e.to_string())
     }
 }
 

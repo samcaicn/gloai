@@ -1,5 +1,6 @@
 mod state;
 mod guard;
+mod util;
 mod autoreply;
 mod wxauto;
 mod bbt;

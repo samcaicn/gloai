@@ -61,24 +61,41 @@ jobs:
         # 故 --frozen-lockfile 可直接通过（无需额外 flag）。
         run: pnpm install --frozen-lockfile
 
-      - name: Generate build secrets (防破解，weauto 模式：每次发行随机)
+      - name: Resolve build secrets (CONFIG_SIG_KEY 必须跨版本稳定)
         id: secrets
         shell: bash
+        env:
+          BBT_BUILD_SECRETS_SECRET: ${{ secrets.BBT_BUILD_SECRETS }}
         run: |
-          # 构建期随机密钥 → base64(JSON) → 注入编译期常量（二进制无明文密钥）。
-          # 与 weauto 一致：每次发行随机生成（换盐即换设备 ID/签名域）。
-          BLOB=$(python - <<'PY'
+          # 关键约束：CONFIG_SIG_KEY 决定 config.json 的 HMAC 信封签名。若每次构建都
+          # 随机生成，用户升级后旧版写出的 config.json 在新版下验签必失败 → state.init
+          # 回退默认配置 → 连接地址/桥接/自动回复/wxauto/成员映射等全部丢失。
+          # 故 CONFIG_SIG_KEY 必须跨版本稳定。
+          # 策略：
+          #   1) 优先使用仓库 Secret BBT_BUILD_SECRETS（推荐，密钥不暴露、可随时轮换）；
+          #   2) 未配置则回退本脚本内置的固定 CONFIG_SIG_KEY（明文写在 CI，会削弱防
+          #      小白改配置的力度，但保证「升级不丢配置」这一更高优先级需求）。
+          # DEVICE_SALT / CLOCK_SALT 仍每次随机（仅影响设备指纹/可信时钟，不影响配置）。
+          if [ -n "$BBT_BUILD_SECRETS_SECRET" ]; then
+            BLOB="$BBT_BUILD_SECRETS_SECRET"
+            echo "using repo Secret BBT_BUILD_SECRETS (stable, not exposed in CI)"
+          else
+            BLOB=$(python - <<'PY'
           import base64, json, secrets
+          # 固定 CONFIG_SIG_KEY（跨版本稳定，避免升级丢配置）；其余每次随机。
+          FIXED_CONFIG_SIG = "bbtzb_cfg_sig_stable_v1_" + ("0" * 40)
           blob = {
               "DEVICE_SALT":    "bz." + secrets.token_hex(16),
-              "CONFIG_SIG_KEY": secrets.token_hex(32),
+              "CONFIG_SIG_KEY": FIXED_CONFIG_SIG,
               "CLOCK_SALT":     secrets.token_hex(16),
           }
           print(base64.b64encode(json.dumps(blob).encode()).decode())
           PY
-          )
+            )
+            echo "using built-in fixed CONFIG_SIG_KEY fallback (set repo Secret BBT_BUILD_SECRETS to override)"
+          fi
           echo "blob=$BLOB" >> "$GITHUB_OUTPUT"
-          echo "build secrets generated (base64 len=${#BLOB})"
+          echo "build secrets resolved (base64 len=${#BLOB})"
 
       - name: Build EXE (no bundle)
         shell: pwsh
@@ -97,6 +114,16 @@ jobs:
               Out-File -Append $env:GITHUB_STEP_SUMMARY
           }
           exit $code
+
+      - name: Run Rust tests (配置保留 / 签名兼容)
+        shell: bash
+        run: |
+          # 守护「升级后本地配置必须有效保存」：
+          #   - config_envelope_roundtrip：正常信封签名/验签往返
+          #   - config_envelope_bad_sig_keeps_data：跨版本密钥变更时降级接受、不丢配置
+          #   - config_envelope_tamper_is_accepted_but_logged：被篡改信封也降级接受
+          cd src-tauri
+          cargo test --lib -- --nocapture
 
       - name: Locate EXE
         id: exe

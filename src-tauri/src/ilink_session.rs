@@ -7,6 +7,7 @@
 //!   * 对外通过 Tauri event（"ilink-event"）把扫码状态/入站消息/会话状态推给前端
 
 use crate::ilink::{self, IlinkClient, WeixinMessage};
+use crate::util;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -156,7 +157,7 @@ impl SessionManager {
     fn save_accounts(&self) {
         let list = self.accounts.lock().unwrap().clone();
         let s = serde_json::to_string_pretty(&list).unwrap_or_else(|_| "[]".into());
-        let _ = std::fs::write(self.accounts_path(), s);
+        let _ = util::write_atomic(&self.accounts_path(), &s);
     }
 
     fn update_account<F: FnOnce(&mut AccountInfo)>(&self, bot_id: &str, f: F) {

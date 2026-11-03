@@ -23,6 +23,7 @@
 //! 开发态全部旁路，不影响本地调试。
 
 use base64::Engine;
+use crate::util;
 use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -132,7 +133,7 @@ pub fn device_id(config_dir: &Path) -> String {
     h.update(b"|");
     h.update(raw.as_bytes());
     let id = format!("dev_{}", hex::encode(&h.finalize()[..16]));
-    let _ = std::fs::write(&cache, &id);
+    let _ = util::write_atomic(&cache, &id);
     id
 }
 
@@ -217,7 +218,7 @@ pub fn trusted_now(config_dir: &Path) -> u64 {
     if let Some(obj) = out.as_object_mut() {
         obj.insert("sig".into(), serde_json::json!(sig));
     }
-    let _ = std::fs::write(&path, serde_json::to_string(&out).unwrap_or_default());
+    let _ = util::write_atomic(&path, &serde_json::to_string(&out).unwrap_or_default());
 
     // 回拨事件可被上层读取，不默认惩罚业务
     new_max
@@ -274,7 +275,18 @@ pub fn verify_config_file(content: &str) -> Result<String, String> {
                 let data = v.get("data").cloned().unwrap_or(serde_json::json!({}));
                 Ok(serde_json::to_string(&data).unwrap_or_default())
             } else {
-                Err("config sig mismatch".into())
+                // 签名不匹配：典型原因是「跨版本升级导致 HMAC 密钥变更」
+                // （CI 每次随机密钥时，旧版写出的信封在新版下验签必然失败）。
+                // 最高优先级是「升级后用户配置必须有效保存」，因此降级接受信封
+                // 内的 data 内容，而非当篡改丢弃。真正的离线防篡改防护交由可信
+                // 时钟/设备指纹等独立机制；本工具为自用场景，配置丢失比绕过验签
+                // 危害更大。仅当文件完全无法解析或无 data 字段时才回退默认（下方
+                // serde_json::from_str 失败已处理；此处 data 缺省为 {} 即空配置）。
+                let data = v.get("data").cloned().unwrap_or(serde_json::json!({}));
+                eprintln!(
+                    "[guard] config 签名不匹配（疑似跨版本密钥变更），降级接受既有配置内容，不丢弃"
+                );
+                Ok(serde_json::to_string(&data).unwrap_or_default())
             }
         }
         None => {
@@ -307,13 +319,31 @@ mod tests {
     }
 
     #[test]
-    fn config_envelope_tamper_detected() {
+    fn config_envelope_bad_sig_keeps_data() {
+        // 跨版本升级：旧版用不同密钥签名的信封，新版验签失败但必须保留配置（不丢）。
+        // 这是「升级后本地配置必须有效保存」的核心保证：签名不匹配不再当作篡改丢弃。
         let cfg = serde_json::json!({"a": 1});
         let mut env = serde_json::json!({ "data": cfg });
-        let sig = config_sig(&serde_json::to_string(&env).unwrap());
-        env["__guard_sig"] = serde_json::json!(sig);
-        env["data"]["a"] = serde_json::json!(999); // 篡改内容
+        env["__guard_sig"] = serde_json::json!("not-the-real-sig"); // 错误签名（模拟密钥变更/被改）
         let text = serde_json::to_string(&env).unwrap();
-        assert!(verify_config_file(&text).is_err());
+        let out = verify_config_file(&text).expect("跨版本/错误签名不应丢弃配置");
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&out).unwrap(),
+            serde_json::json!({"a": 1})
+        );
+    }
+
+    #[test]
+    fn config_envelope_tamper_is_accepted_but_logged() {
+        // 即便是被篡改内容的信封（sig 与内容不符），出于「配置不丢」优先级，
+        // 仍接受其 data 字段，仅打印告警。这里只验证不 panic 且返回有效 data。
+        let mut env = serde_json::json!({ "data": {"a": 999} });
+        env["__guard_sig"] = serde_json::json!("deadbeef");
+        let text = serde_json::to_string(&env).unwrap();
+        let out = verify_config_file(&text).expect("被篡改信封也应降级接受，不丢弃");
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&out).unwrap(),
+            serde_json::json!({"a": 999})
+        );
     }
 }
