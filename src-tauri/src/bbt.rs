@@ -1,5 +1,24 @@
 use serde_json::{json, Value};
 use std::time::Duration;
+use std::sync::OnceLock;
+
+/// 全局共享 HTTP client（连接池复用，避免每次请求重做 TLS 握手）。
+/// 短超时：卡死快速失败，不傻等 30 秒。
+static HTTP: OnceLock<reqwest::Client> = OnceLock::new();
+
+fn http() -> &'static reqwest::Client {
+    HTTP.get_or_init(|| {
+        reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .connect_timeout(Duration::from_secs(5))
+            .pool_idle_timeout(Duration::from_secs(30))
+            .tcp_keepalive(Duration::from_secs(30))
+            .user_agent("bbt-zb-tauri/1.0")
+            .gzip(true)
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new())
+    })
+}
 
 /// bbt-zb 连接信息（仅存于内存；token/账号由前端并入本地 config.json 持久化）。
 #[derive(Default, Clone)]
@@ -10,14 +29,6 @@ pub struct BbtConnection {
 }
 
 impl BbtConnection {
-    fn client() -> reqwest::Client {
-        reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .user_agent("bbt-zb-tauri/1.0")
-            .build()
-            .unwrap_or_else(|_| reqwest::Client::new())
-    }
-
     fn api_url(&self) -> String {
         format!("{}/api", self.base_url.trim_end_matches('/'))
     }
@@ -61,7 +72,7 @@ pub async fn call(conn: &BbtConnection, action: &str, condition: &Value) -> Resu
         ("token", token),
         ("condition", cond_str),
     ];
-    let resp = BbtConnection::client()
+    let resp = http()
         .post(conn.api_url())
         .form(&form)
         .send()
@@ -174,7 +185,7 @@ pub async fn health(conn: &BbtConnection) -> Result<bool, String> {
         return Err("未配置接口地址".into());
     }
     let url = conn.base_url.trim_end_matches('/').to_string();
-    let resp = BbtConnection::client()
+    let resp = http()
         .get(&url)
         .send()
         .await
