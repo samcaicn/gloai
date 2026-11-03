@@ -1,6 +1,6 @@
 [package]
 name = "bbt-zb-tauri"
-version = "0.2.1"
+version = "0.2.2"
 description = "BBT-ZB 控制台 — 基于 WeAuto 骨架的 Tauri 2 桌面客户端"
 authors = ["zhifu"]
 edition = "2021"

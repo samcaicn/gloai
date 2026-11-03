@@ -589,8 +589,17 @@ async fn ensure_member_conn(
             return Ok(c);
         }
     }
+    // 未配置团员账号 → fallback 用团长自己的连接（团长有权限调 chat/send）
     if cfg.member_telephone.trim().is_empty() || cfg.member_password.is_empty() {
-        return Err("未配置团员账号（触发服务端 AI 需要团员身份调 chat/send）".into());
+        let leader_conn = app.try_state::<crate::state::AppState>()
+            .map(|s| s.conn.lock().unwrap().clone());
+        if let Some(lc) = leader_conn {
+            if !lc.token.as_ref().map(|t| t.is_empty()).unwrap_or(true) {
+                ar.log(app, "info", "未配置团员账号，使用团长连接调 chat/send", json!({}));
+                return Ok(lc);
+            }
+        }
+        return Err("未登录团长账号，且未配置团员账号".into());
     }
     let mut c = BbtConnection {
         base_url,

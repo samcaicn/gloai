@@ -386,16 +386,24 @@ async function onLogin() {
 // 局部刷新状态条（不重建整个页面，避免丢子页面轮询/状态）
 function refreshStatusBar() {
   const loggedIn = !!state.connection.token;
-  const dot = document.querySelector(".conn-dot");
-  const title = document.querySelector(".status-title");
-  const sub = document.querySelector(".status-sub");
-  const btn = $("btn-open-login");
-  if (dot) dot.className = "conn-dot " + (loggedIn ? "on" : "off");
-  if (title) title.textContent = loggedIn ? "已连接 BBT-ZB" : "未连接";
-  if (sub) sub.textContent = loggedIn
-    ? [state.connection.telephone, state.connection.base_url].filter(Boolean).join(" · ")
-    : "登录后所有页签共用此连接";
-  if (btn) btn.textContent = loggedIn ? "连接设置" : "立即登录";
+  const bar = document.querySelector(".status-bar");
+  if (!bar) return;
+  const tel = state.connection.telephone || "";
+  const url = state.connection.base_url || "";
+  const sub = loggedIn ? [tel, url].filter(Boolean).join(" · ") : "登录后所有页签共用此连接";
+  bar.innerHTML = `
+    <div class="status-left">
+      <span class="conn-dot ${loggedIn ? "on" : "off"}"></span>
+      <div>
+        <div class="status-title">${loggedIn ? "已连接 BBT-ZB" : "未连接"}</div>
+        <div class="status-sub">${sub}</div>
+      </div>
+    </div>
+    <div class="btn-row" style="gap:8px">
+      ${loggedIn ? `<button class="btn" id="btn-logout">登出</button><button class="btn primary" id="btn-open-login">连接设置</button>` : `<button class="btn primary" id="btn-open-login">立即登录</button>`}
+    </div>`;
+  $("btn-open-login")?.addEventListener("click", () => { openOverlay("ov-login"); setLoginMode("pwd"); });
+  $("btn-logout")?.addEventListener("click", onLogout);
 }
 
 // 登出：清 token + 本地持久化 + 局部刷新
