@@ -115,8 +115,20 @@ function render() {
   const loginOverlay = overlayHtml(
     "ov-login",
     "团长登录",
-    `<div class="fields">${CONNECTION_FIELDS.map((f) => fieldHtml(f, state.connection[f.key], "conn")).join("")}</div>
-     <div class="btn-row"><button class="btn primary" id="btn-login">登录并连接</button></div>`,
+    `<div class="fields" id="login-fields">${CONNECTION_FIELDS.map((f) => fieldHtml(f, state.connection[f.key], "conn")).join("")}</div>
+     <div style="display:flex;gap:8px;margin:14px 0 12px;">
+       <button class="btn small" id="seg-pwd" type="button" style="flex:1;">账号登录</button>
+       <button class="btn small" id="seg-qr" type="button" style="flex:1;">扫码登录</button>
+     </div>
+     <div id="pwdc">
+       <div class="btn-row"><button class="btn primary" id="btn-login">登录并连接</button></div>
+     </div>
+     <div id="pcqr" style="display:none;text-align:center;">
+       <div id="pcqr-code" style="display:inline-block;padding:10px;background:#fff;border-radius:10px;min-width:200px;min-height:200px;line-height:200px;color:#999;font-size:13px;">生成二维码中…</div>
+       <div id="pcqr-status" style="margin-top:10px;color:#666;font-size:13px;">请用手机端「我的」页点头像扫码</div>
+       <button class="btn small hidden" id="pcqr-refresh" type="button" style="margin-top:8px;">刷新二维码</button>
+       <div style="margin-top:10px;color:#999;font-size:12px;line-height:1.6;">手机端：我的 → 点头像 → 扫此码 → 确认</div>
+     </div>`,
     "登录 BBT-ZB 团长账号后，所有页签共用此连接（其余页不再单独登录）。"
   );
 
@@ -249,8 +261,16 @@ function setActiveTab(tab: "params" | "chat" | "members" | "orders" | "interact"
 
 function wire() {
   $("btn-save")?.addEventListener("click", onSaveLocal);
-  $("btn-open-login")?.addEventListener("click", () => openOverlay("ov-login"));
+  $("btn-open-login")?.addEventListener("click", () => { openOverlay("ov-login"); setLoginMode("pwd"); });
   $("btn-login")?.addEventListener("click", onLogin);
+  $("seg-pwd")?.addEventListener("click", () => setLoginMode("pwd"));
+  $("seg-qr")?.addEventListener("click", () => setLoginMode("qr"));
+  $("pcqr-refresh")?.addEventListener("click", () => startPcQr());
+  // 关闭登录浮层时停轮询（遮罩 / ✕）
+  document.querySelectorAll("#ov-login [data-close-ov]").forEach((el) =>
+    el.addEventListener("click", () => stopQrPoll())
+  );
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") stopQrPoll(); });
   $("btn-fetch")?.addEventListener("click", onFetch);
   $("btn-push")?.addEventListener("click", onPush);
   $("btn-reset")?.addEventListener("click", onReset);
@@ -319,11 +339,124 @@ async function onLogin() {
     state.connection.telephone = conn.telephone;
     await bbt.setConnection(conn.base_url, res.token, conn.telephone);
     closeOverlay("ov-login");
+    stopQrPoll();
     render();
     const role = res.account?.role ? `（角色：${res.account.role}）` : "";
     toast(`登录成功，已建立连接${role}`);
   } catch (e: any) {
     toast("登录失败：" + (e?.message || e), false);
+  }
+}
+
+// -------- PC 扫码登录（pc/create → 渲染二维码 → 轮询 pc/poll）--------
+let qrTimer: number | null = null;
+
+function stopQrPoll() {
+  if (qrTimer !== null) { clearInterval(qrTimer); qrTimer = null; }
+}
+
+function setLoginMode(m: "pwd" | "qr") {
+  const segPwd = $("seg-pwd"), segQr = $("seg-qr");
+  segPwd?.classList.toggle("primary", m === "pwd");
+  segQr?.classList.toggle("primary", m === "qr");
+  const pwdc = document.getElementById("pwdc");
+  const pcqr = document.getElementById("pcqr");
+  const fields = document.getElementById("login-fields");
+  if (pwdc) pwdc.style.display = m === "pwd" ? "" : "none";
+  if (pcqr) pcqr.style.display = m === "qr" ? "" : "none";
+  // base_url 在两种模式都需要（扫码登录也要先知道接口地址）
+  if (fields) fields.style.display = "";
+  if (m === "qr") void startPcQr(); else stopQrPoll();
+}
+
+// 动态加载 qrcode-generator（与 H5 版同源，从 bbt-zb CDN 拉）
+let qrLibPromise: Promise<any> | null = null;
+function ensureQrcode(): Promise<any> {
+  if (typeof window !== "undefined" && (window as any).qrcode) {
+    return Promise.resolve((window as any).qrcode);
+  }
+  if (qrLibPromise) return qrLibPromise;
+  qrLibPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://bbt-zb.pages.dev/static/js/qrcode-generator.js";
+    s.onload = () => ((window as any).qrcode ? resolve((window as any).qrcode) : reject(new Error("qrcode 未就绪")));
+    s.onerror = () => reject(new Error("二维码组件加载失败"));
+    document.head.appendChild(s);
+  });
+  return qrLibPromise;
+}
+
+async function startPcQr() {
+  stopQrPoll();
+  const codeEl = document.getElementById("pcqr-code");
+  const statusEl = document.getElementById("pcqr-status");
+  const refreshEl = $("pcqr-refresh") as HTMLElement | null;
+  if (!codeEl || !statusEl) return;
+  // 从表单读 base_url（用户可能改过）
+  const baseUrlEl = $("conn-base_url");
+  const baseUrl = (baseUrlEl as HTMLInputElement | null)?.value?.trim() || state.connection.base_url;
+  if (!baseUrl) { statusEl.textContent = "请先填写接口地址"; return; }
+  statusEl.textContent = "生成二维码中…";
+  if (refreshEl) refreshEl.classList.add("hidden");
+  try {
+    // 先把 base_url 灌进 Rust state（未带 token，pc/create 不需要）
+    await bbt.setConnection(baseUrl);
+    const r: any = await bbt.call("pc/create", {});
+    const d = r?.data;
+    if (!r?.status || !d) {
+      statusEl.textContent = (r?.msg || "生成二维码失败") + "，请改用账号登录";
+      if (refreshEl) refreshEl.classList.remove("hidden");
+      return;
+    }
+    const scanId: string = d.scanId;
+    const payload: string = d.payload;
+    codeEl.innerHTML = "";
+    codeEl.style.lineHeight = "normal";
+    const qrcode = await ensureQrcode();
+    const q = qrcode(0, "M");
+    q.addData(payload);
+    q.make();
+    const img = document.createElement("img");
+    img.src = q.createDataURL(8, 4);
+    img.style.width = "200px";
+    img.style.height = "200px";
+    img.alt = "PC 登录二维码";
+    codeEl.appendChild(img);
+    statusEl.textContent = "请用手机端「我的」页点头像扫码";
+
+    qrTimer = window.setInterval(async () => {
+      try {
+        const pr: any = await bbt.call("pc/poll", { scanId });
+        const pd = pr?.data;
+        if (!pr?.status || !pd) {
+          stopQrPoll();
+          statusEl.textContent = (pr?.msg || "二维码已失效") + "，请刷新";
+          if (refreshEl) refreshEl.classList.remove("hidden");
+          return;
+        }
+        if (pd.status === "pending") statusEl.textContent = "等待手机端扫码…";
+        else if (pd.status === "scanned") statusEl.textContent = "已扫码，请在手机端确认";
+        else if (pd.status === "confirmed") {
+          stopQrPoll();
+          const token: string = pd.token;
+          const tel: string = pd.telephone || pd.name || "";
+          state.connection.token = token;
+          state.connection.base_url = baseUrl;
+          state.connection.telephone = tel;
+          await bbt.setConnection(baseUrl, token, tel || undefined);
+          closeOverlay("ov-login");
+          render();
+          const role = pd.role ? `（角色：${pd.role}）` : "";
+          toast(`扫码登录成功${role}`);
+        }
+      } catch (e: any) {
+        // 单次轮询失败不中断，下一轮再试
+        console.warn("pc/poll err", e);
+      }
+    }, 1500);
+  } catch (e: any) {
+    statusEl.textContent = "二维码启动失败：" + (e?.message || e);
+    if (refreshEl) refreshEl.classList.remove("hidden");
   }
 }
 
