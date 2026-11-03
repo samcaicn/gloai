@@ -50,6 +50,19 @@ fn client() -> reqwest::Client {
         .unwrap_or_else(|_| reqwest::Client::new())
 }
 
+/// 清单检查专用短超时客户端：被墙源（如 raw.githubusercontent.com 被 fake-IP
+/// 黑洞挂起）会吃满整个超时才轮到镜像，长超时会让「静默检查」首轮卡数分钟。
+fn client_short() -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .user_agent("bbt-zb-tauri-updater/1.0")
+        .build()
+        .unwrap_or_else(|_| reqwest::Client::new())
+}
+
+/// 默认升级源（与前端 config.ts::UPDATE_BASE_URL 保持一致；自动静默更新用）
+pub const DEFAULT_UPDATE_BASE: &str = "https://raw.githubusercontent.com/samcaicn/gloai/pcapp";
+
 fn manifest_url(base: &str) -> String {
     format!("{}/updates/version.json", base.trim_end_matches('/'))
 }
@@ -86,7 +99,7 @@ pub async fn check_update(base_url: &str, current_version: &str) -> Result<Value
     let mut last_err = format!("所有升级源（含镜像）均不可用");
     let m: Manifest = 'outer: {
         for url in &candidates {
-            match client().get(url).send().await {
+            match client_short().get(url).send().await {
                 Ok(r) => match r.error_for_status() {
                     Ok(r) => match r.json::<Manifest>().await {
                         Ok(m) => break 'outer m,
@@ -198,7 +211,7 @@ pub async fn prepare_update(base_url: &str, app: &tauri::AppHandle) -> Result<Va
     let mut last_err = format!("所有升级源（含镜像）均不可用");
     let m: Manifest = 'outer: {
         for url in &candidates {
-            match client().get(url).send().await {
+            match client_short().get(url).send().await {
                 Ok(r) => match r.error_for_status() {
                     Ok(r) => match r.json::<Manifest>().await {
                         Ok(m) => break 'outer m,

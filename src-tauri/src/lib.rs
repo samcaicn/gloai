@@ -10,7 +10,7 @@ mod ilink_session;
 mod update;
 
 use std::sync::Arc;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -100,6 +100,46 @@ pub fn run() {
             *ws.config.lock().unwrap() = wx_cfg.clone();
             if wx_cfg.enabled {
                 wxauto::ensure_started(handle.clone());
+            }
+
+            // 自动静默更新（抄 weauto deferred autoupdate）：
+            //   启动 15s 后首轮检查（避开 apply_pending 的替换窗口），此后每 6h 轮询；
+            //   发现新版 → 后台下载 + Ed25519 验签 + 暂存 staged_update/ → emit 事件
+            //   「重启后自动生效」；不打断当前使用，下次启动 apply_pending_update 自动替换。
+            {
+                let h = handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    const FIRST_DELAY_SECS: u64 = 15;
+                    const POLL_INTERVAL_SECS: u64 = 6 * 3600;
+                    let base = update::DEFAULT_UPDATE_BASE;
+                    let cur = h.package_info().version.to_string();
+                    let mut first = true;
+                    loop {
+                        let wait = if first { FIRST_DELAY_SECS } else { POLL_INTERVAL_SECS };
+                        tokio::time::sleep(std::time::Duration::from_secs(wait)).await;
+                        first = false;
+                        match update::check_update(base, &cur).await {
+                            Ok(v) if v.get("update_available").and_then(|b| b.as_bool()).unwrap_or(false) => {
+                                eprintln!("[auto-update] 发现新版 {}，后台静默下载", v["latest"]);
+                                match update::prepare_update(base, &h).await {
+                                    Ok(r) => {
+                                        let _ = h.emit(
+                                            "update-event",
+                                            serde_json::json!({
+                                                "kind": "staged",
+                                                "version": r.get("version").cloned().unwrap_or(serde_json::json!(cur)),
+                                                "message": r.get("message").cloned().unwrap_or_else(|| serde_json::json!("新版本已下载并通过验签，重启后自动替换并升级")),
+                                            }),
+                                        );
+                                    }
+                                    Err(e) => eprintln!("[auto-update] 静默下载失败: {}", e),
+                                }
+                            }
+                            Ok(_) => eprintln!("[auto-update] 已是最新 {}", cur),
+                            Err(e) => eprintln!("[auto-update] 检查失败: {}", e),
+                        }
+                    }
+                });
             }
             Ok(())
         })

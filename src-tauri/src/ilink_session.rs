@@ -209,7 +209,16 @@ impl SessionManager {
     pub fn init(self: &Arc<Self>) {
         self.load_accounts();
         let accounts = self.accounts.lock().unwrap().clone();
+        eprintln!(
+            "[ilink] 本地持久化恢复 {} 个账号会话（{}）",
+            accounts.len(),
+            self.accounts_path().display()
+        );
         for acc in accounts {
+            self.emit(json!({
+                "kind": "account", "event": "restored",
+                "bot_id": acc.bot_id, "label": acc.label,
+            }));
             self.spawn_session(acc);
         }
     }

@@ -9,7 +9,8 @@ import { renderChat } from "./chat";
 import { renderMemberQr } from "./memberqr";
 import { renderOrdersPage } from "./orderspage";
 import { renderInteractPage } from "./interact";
-import { overlayHtml, openOverlay, wireOverlayClose, bindOverlayEsc } from "./overlay";
+import { overlayHtml, openOverlay, closeOverlay, wireOverlayClose, bindOverlayEsc } from "./overlay";
+import { listen } from "@tauri-apps/api/event";
 
 interface AppState {
   connection: Record<string, any>;
@@ -94,17 +95,30 @@ function render() {
   const app = $("app");
   if (!app) return;
 
+  // 连接状态卡：首页只留状态 + 打开登录浮层按钮（登录表单收进浮层，保持首页简洁）
+  const loggedIn = !!state.connection.token;
   const connCard = `
     <section class="card span2">
-      <h2>团长登录</h2>
-      <p class="card-desc">登录 BBT-ZB 团长账号后，所有页签共用此连接（其余页不再单独登录）。</p>
-      <div class="grid2">
-        ${CONNECTION_FIELDS.map((f) => fieldHtml(f, state.connection[f.key], "conn")).join("")}
-      </div>
-      <div class="btn-row">
-        <button class="btn primary" id="btn-login">登录并连接</button>
+      <div class="row-between">
+        <div>
+          <h2>团长连接</h2>
+          <p class="card-desc">${
+            loggedIn
+              ? `已登录 ${state.connection.telephone || ""} · ${state.connection.base_url}`
+              : "未登录。登录 BBT-ZB 团长账号后，所有页签共用此连接。"
+          }</p>
+        </div>
+        <button class="btn primary" id="btn-open-login">${loggedIn ? "连接设置" : "登录"}</button>
       </div>
     </section>`;
+
+  const loginOverlay = overlayHtml(
+    "ov-login",
+    "团长登录",
+    `<div class="fields">${CONNECTION_FIELDS.map((f) => fieldHtml(f, state.connection[f.key], "conn")).join("")}</div>
+     <div class="btn-row"><button class="btn primary" id="btn-login">登录并连接</button></div>`,
+    "登录 BBT-ZB 团长账号后，所有页签共用此连接（其余页不再单独登录）。"
+  );
 
   // 总开关卡：三个全局开关，状态从各自后端拉取
   const switchesCard = `
@@ -167,6 +181,7 @@ function render() {
         <div class="btn-row">${moreLaunchers}</div>
       </section>
       ${moreOverlays}
+      ${loginOverlay}
     </main>
     <main class="content chat-page hidden" id="page-chat"></main>
     <main class="content members-page hidden" id="page-members"></main>
@@ -234,6 +249,7 @@ function setActiveTab(tab: "params" | "chat" | "members" | "orders" | "interact"
 
 function wire() {
   $("btn-save")?.addEventListener("click", onSaveLocal);
+  $("btn-open-login")?.addEventListener("click", () => openOverlay("ov-login"));
   $("btn-login")?.addEventListener("click", onLogin);
   $("btn-fetch")?.addEventListener("click", onFetch);
   $("btn-push")?.addEventListener("click", onPush);
@@ -302,6 +318,7 @@ async function onLogin() {
     state.connection.base_url = conn.base_url;
     state.connection.telephone = conn.telephone;
     await bbt.setConnection(conn.base_url, res.token, conn.telephone);
+    closeOverlay("ov-login");
     render();
     const role = res.account?.role ? `（角色：${res.account.role}）` : "";
     toast(`登录成功，已建立连接${role}`);
@@ -350,6 +367,11 @@ async function onReset() {
 }
 
 export async function init() {
+  // 静默更新事件（Rust 后台下载验签暂存完成 → 提示重启生效）
+  listen("update-event", (ev: any) => {
+    const d = ev.payload || {};
+    toast(`🆕 新版 v${d.version} 已下载并通过验签，重启后自动升级`, true);
+  }).catch(() => {});
   // 其他页签可派发 window 事件跳转页签（如 团员二维码 → 去首页登录）
   window.addEventListener("goto-tab", (e) => {
     const tab = (e as CustomEvent).detail;
