@@ -44,7 +44,7 @@ function g(id: string): HTMLElement | null {
 }
 
 function toast(msg: string, ok = true) {
-  const box = document.getElementById("toast-box-chat");
+  const box = document.getElementById("toast-box");
   if (!box) return;
   const el = document.createElement("div");
   el.className = "toast " + (ok ? "ok" : "err");
