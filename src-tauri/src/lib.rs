@@ -54,8 +54,10 @@ pub fn run() {
             let state = app.state::<state::AppState>();
             state.init(&handle);
 
-            // 恢复连接信息 base_url / telephone（token 不落盘，需重新登录；
-            // base_url 恢复后 autoreply 等依赖接口地址的模块在重启后仍可用）
+            // 恢复连接信息 base_url / telephone / token：
+            // token 现在随 config 落盘（见 commands::login），重启/升级后免重登，
+            // 团员名册等透传动作可直接用会话态；token 若已过期，call_with_relogin
+            // 会用落盘的 password 自动重登。
             if let Some(conn_v) = state.config.lock().unwrap().get("connection").cloned() {
                 let mut c = state.conn.lock().unwrap();
                 c.base_url = conn_v
@@ -67,6 +69,11 @@ pub fn run() {
                     .get("telephone")
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
+                if let Some(t) = conn_v.get("token").and_then(|v| v.as_str()) {
+                    if !t.is_empty() {
+                        c.token = Some(t.to_string());
+                    }
+                }
             }
 
             // iLink 多账号会话管理：载入已登录账号并恢复会话（本地保活）

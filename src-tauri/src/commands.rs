@@ -81,7 +81,10 @@ pub async fn login(
     let (token, account) = bbt::login(&c, &telephone, &password).await?;
     c.token = Some(token.clone());
     *state.conn.lock().unwrap() = c.clone();
-    // 持久化 base_url / telephone（不含 token）
+    // 持久化 base_url / telephone / token / password：
+    // - token 落盘使升级/重启后免重登（解决「刷新团员名册检测不到登录」）；
+    // - password 落盘使 token 过期时 call_with_relogin 能自动重登，避免再次丢失登录。
+    //   凭证仅存于本机 config.json（本地可信环境），与 base_url 同处理。
     {
         let mut g = state.config.lock().unwrap();
         if let Some(obj) = g.as_object_mut() {
@@ -93,6 +96,8 @@ pub async fn login(
             }
             conn["base_url"] = json!(c.base_url);
             conn["telephone"] = json!(c.telephone);
+            conn["token"] = json!(token);
+            conn["password"] = json!(password);
             obj.insert("connection".into(), conn);
         }
     }

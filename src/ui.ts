@@ -319,7 +319,10 @@ async function persistNow() {
   const savedConn = {
     base_url: conn.base_url,
     telephone: conn.telephone,
-    password: conn.password || "",
+    // 表单 password 输入框不回显（type=password），初始为空：若用户只是改动某个
+    // 参数触发防抖保存，不能把磁盘上已落盘的密码覆盖成空，否则 token 过期后
+    // 无法自动重登。表单有值用表单值，否则继承已加载的 state.connection.password。
+    password: conn.password || state.connection.password || "",
     token: state.connection.token || "",
   };
   try {
