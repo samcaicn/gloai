@@ -9,7 +9,7 @@
 //   - onIlinkEvent                         监听 session_expired 等事件
 
 import { api } from "./api";
-import { ilink, onIlinkEvent, autoreplyApi, onAutoreplyEvent } from "./ilink";
+import { ilink, onIlinkEvent, autoreplyApi, onAutoreplyEvent, wxautoApi, bridgeApi } from "./ilink";
 
 interface MemberInfo {
   id: string;
@@ -353,25 +353,11 @@ async function genRosterQr(m: MemberInfo) {
         }
         st.textContent = "✅ 已绑定上线，接通AI回复…";
         toast(`团员 ${m.telephoneMask || m.name || m.id} 已绑定`);
-        // 自动接通 AI 回复：开启开关 + 把该团员加入监听列表
+        // 自动接通 AI 回复：确保三个开关全部打开
         try {
-          const cfg: any = await autoreplyApi.getConfig();
-          const name = m.name || m.realName || m.telephoneMask || m.id;
-          const exists = (cfg.listen_list || []).some((e: any) => e.name === name);
-          if (!exists) {
-            await autoreplyApi.setConfig({
-              enabled: true,
-              listen_list: [...(cfg.listen_list || []), {
-                name,
-                kind: "private",
-                mon_types: [],
-                mon_keywords: [],
-                action: "reply",
-              }],
-            });
-          } else if (!cfg.enabled) {
-            await autoreplyApi.setEnabled(true);
-          }
+          await autoreplyApi.setEnabled(true);    // AI 自动回复
+          await wxautoApi.setConfig({ enabled: true });  // 微信通道
+          await bridgeApi.setConfig({ enabled: true });  // 团长桥
           st.textContent = "✅ 已绑定 · AI回复已接通";
           toast("AI 自动回复已接通");
         } catch (e: any) {
