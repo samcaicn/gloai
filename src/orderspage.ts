@@ -4,6 +4,7 @@
 import { api } from "./api";
 import { toast } from "./ui";
 import { CHANNELS, ChannelKey, channelsApi, ChannelTargets, composePayImage, fetchImageDataUrl } from "./channels";
+import { onIlinkEvent } from "./ilink";
 
 let g: (id: string) => HTMLElement | null = (id) => document.getElementById(id);
 let targets: ChannelTargets | null = null;
@@ -21,6 +22,7 @@ let orders: any[] = [];
 let stats: { count: number; amountYuan: string; roundNo?: number } | null = null;
 // 拉取状态文案
 let pulled = false;
+let started = false;
 
 export function renderOrdersPage(root: HTMLElement) {
   g = (id) => root.querySelector(`#${id}`);
@@ -95,6 +97,14 @@ export function renderOrdersPage(root: HTMLElement) {
 
   wire();
   void refreshTargets();
+
+  if (!started) {
+    started = true;
+    // 登录成功后自动刷新渠道目标（iLink/团员），不用手动点
+    window.addEventListener("login-changed", () => { void refreshTargets(); });
+    // iLink 账号上下线/绑定时自动刷新
+    void onIlinkEvent(() => { void refreshTargets(); });
+  }
 }
 
 function logLine(msg: string, cls = "") {
