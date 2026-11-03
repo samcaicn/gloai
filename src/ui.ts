@@ -311,18 +311,21 @@ function wire() {
 }
 
 async function onSaveLocal() {
-  const conn = collect("conn", CONNECTION_FIELDS);
-  const params = collect("fld", SCHEMA.flatMap((g) => g.fields));
-  // 不持久化密码；token 单独保留
-  const savedConn = {
-    base_url: conn.base_url,
-    telephone: conn.telephone,
-    token: state.connection.token || "",
-  };
-  const payload = { connection: savedConn, ...params };
-  await kv.put(payload);
-  await bbt.setConnection(savedConn.base_url, savedConn.token || undefined, savedConn.telephone || undefined);
-  toast("已保存到本地");
+  const btn = $("btn-save") as HTMLButtonElement | null;
+  btn?.classList.add("loading");
+  try {
+    const conn = collect("conn", CONNECTION_FIELDS);
+    const params = collect("fld", SCHEMA.flatMap((g) => g.fields));
+    const savedConn = {
+      base_url: conn.base_url,
+      telephone: conn.telephone,
+      token: state.connection.token || "",
+    };
+    const payload = { connection: savedConn, ...params };
+    await kv.put(payload);
+    await bbt.setConnection(savedConn.base_url, savedConn.token || undefined, savedConn.telephone || undefined);
+    toast("已保存到本地");
+  } finally { btn?.classList.remove("loading"); }
 }
 
 async function onLogin() {
@@ -331,6 +334,8 @@ async function onLogin() {
     toast("请填写 接口地址 / 手机号 / 密码", false);
     return;
   }
+  const btn = $("btn-login") as HTMLButtonElement | null;
+  btn?.classList.add("loading");
   try {
     const res: any = await bbt.login(conn.base_url, conn.telephone, conn.password);
     if (!res || !res.token) {
@@ -348,7 +353,7 @@ async function onLogin() {
     toast(`登录成功，已建立连接${role}`);
   } catch (e: any) {
     toast("登录失败：" + (e?.message || e), false);
-  }
+  } finally { btn?.classList.remove("loading"); }
 }
 
 // -------- PC 扫码登录（pc/create → 渲染二维码 → 轮询 pc/poll）--------
@@ -468,6 +473,8 @@ async function startPcQr() {
 }
 
 async function onFetch() {
+  const btn = $("btn-fetch") as HTMLButtonElement | null;
+  btn?.classList.add("loading");
   try {
     const res: any = await bbt.fetch();
     state.params = mergeParams(res);
@@ -475,23 +482,24 @@ async function onFetch() {
     toast("已从 BBT-ZB 拉取参数");
   } catch (e: any) {
     toast("拉取失败：" + (e?.message || e), false);
-  }
+  } finally { btn?.classList.remove("loading"); }
 }
 
 async function onPush() {
-  // 只推送 chat/configSave 接受的字段（排除只读组）
   const all = collect("fld", SCHEMA.flatMap((g) => g.fields));
   const params: Record<string, any> = {};
   for (const g of SCHEMA) {
     if (g.id === "readonly") continue;
     for (const f of g.fields) params[f.key] = all[f.key];
   }
+  const btn = $("btn-push") as HTMLButtonElement | null;
+  btn?.classList.add("loading");
   try {
     await bbt.push(params);
     toast("已推送到 BBT-ZB");
   } catch (e: any) {
     toast("推送失败：" + (e?.message || e), false);
-  }
+  } finally { btn?.classList.remove("loading"); }
 }
 
 async function onReset() {
