@@ -12,6 +12,7 @@ import {
   ListenEntry,
   AutoReplyLog,
 } from "./ilink";
+import { overlayHtml, openOverlay, wireOverlayClose, bindOverlayEsc } from "./overlay";
 
 const MON_TYPES = ["text", "voice", "image", "video", "file", "link", "quote", "merge", "emotion"];
 const MON_LABELS: Record<string, string> = {
@@ -133,16 +134,25 @@ export function renderChat(container: HTMLElement) {
         <div class="btn-row">
           <button class="btn small primary" id="rl-save">保存回复规则</button>
         </div>
-      </section>
+        `)}
 
       <section class="card">
-        <h2>AI 回复日志</h2>
-        <div class="ar-log" id="ar-log"></div>
+        <div class="row-between">
+          <h2>AI 回复日志</h2>
+          <button class="btn small" id="ov-open-log">打开日志</button>
+        </div>
+        <p class="card-desc">实时记录自动回复管线的命中/回复/失败事件（浮层查看）。</p>
       </section>
+
+      ${overlayHtml("ov-log", "AI 回复日志", `<div class="ar-log" id="ar-log"></div>`)}
     </div>
     <div id="toast-box-chat" class="toast-box"></div>`;
 
   wire();
+  g("ov-open-rules")?.addEventListener("click", () => openOverlay("ov-rules"));
+  g("ov-open-log")?.addEventListener("click", () => openOverlay("ov-log"));
+  wireOverlayClose(container);
+  bindOverlayEsc();
   void loadAll();
 }
 
