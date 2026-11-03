@@ -14,7 +14,6 @@ fn http() -> &'static reqwest::Client {
             .pool_idle_timeout(Duration::from_secs(30))
             .tcp_keepalive(Duration::from_secs(30))
             .user_agent("bbt-zb-tauri/1.0")
-            .gzip(true)
             .build()
             .unwrap_or_else(|_| reqwest::Client::new())
     })
