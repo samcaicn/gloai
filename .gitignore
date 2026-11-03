@@ -13,3 +13,9 @@ ci-diag.txt
 selftest/
 selftest/
 bin/
+
+# Python 运行时缓存（不应入库）
+__pycache__/
+*.pyc
+src-tauri/python/__pycache__/
+tools/__pycache__/

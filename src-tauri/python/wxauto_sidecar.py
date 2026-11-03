@@ -8,9 +8,15 @@
   * 收到消息后 1.2~3.5s 随机延迟再回复（模拟真人思考 + 打字起手）；
   * 发送消息前按字数模拟打字耗时（0.08~0.25s/字 随机）；
   * 两条消息间隔 ≥ 0.8s，群聊 ≥ 1.5s；
-  * 消息内容做「真人化」微调（偶尔加语气词、换行节奏）；
   * 心跳 20s（原 15s），减少固定指纹；
   * 启动时随机延迟 2~5s 再开始监听，避开整点启动特征。
+
+消息类型（微信 MsgType）：
+  * 1  = 文本        → 直接进自动回复管线
+  * 3  = 图片        → 取字节 → 离线 OCR(PP-OCRv4) → 以 kind="image" 进管线
+  * 34 = 语音(SILK)  → 取字节 → SILK 解码 + sherpa-onnx 离线转写 → kind="voice" 进管线
+  * 其它（链接/名片/小程序等）暂忽略，仅记日志。
+OCR/ASR 引擎见同目录 ocrengine.py / asrengine.py（懒加载，缺依赖/缺模型即降级）。
 """
 
 from __future__ import annotations
@@ -28,12 +34,6 @@ try:
 except AttributeError:
     pass
 
-# os.system("chcp 65001 ...") 会弹 cmd 黑窗，已用 sys.stdout.reconfigure(encoding="utf-8") 替代
-# try:
-#     os.system("chcp 65001 >nul 2>&1")
-# except Exception:
-#     pass
-
 
 # ── 反检测配置 ──────────────────────────────────────────────
 REPLY_DELAY_MIN = 1.2       # 收到消息后最少思考秒数
@@ -49,6 +49,10 @@ STARTUP_JITTER = (2.0, 5.0) # 启动随机延迟
 
 _last_send_ts: dict[str, float] = {}   # peer -> 上次发送时间
 
+# OCR / ASR 引擎（懒加载，进程内缓存）
+_ocr = None
+_asr = None
+
 
 def out(obj: dict) -> None:
     try:
@@ -62,7 +66,6 @@ def human_thinking_delay(text_len: int, is_group: bool) -> float:
     """模拟真人思考 + 打字的总延迟（秒）。"""
     base = random.uniform(REPLY_DELAY_MIN, REPLY_DELAY_MAX)
     typing = text_len * random.uniform(TYPING_SPEED_MIN, TYPING_SPEED_MAX)
-    # 群聊反应稍慢
     group_extra = random.uniform(0.3, 1.0) if is_group else 0.0
     return base + typing + group_extra
 
@@ -74,6 +77,36 @@ def ensure_send_gap(peer: str, is_group: bool) -> None:
     elapsed = time.time() - last
     if elapsed < gap:
         time.sleep(gap - elapsed + random.uniform(0.1, 0.4))
+
+
+def get_ocr():
+    """返回 OCR 引擎（缓存），不可用返回 None。"""
+    global _ocr
+    if _ocr is not None:
+        return _ocr if _ocr is not False else None
+    try:
+        from ocrengine import make_engine as make_ocr
+        e = make_ocr()
+        _ocr = e if e is not None else False
+    except Exception as e:
+        sys.stderr.write(f"[sidecar] OCR 模块加载失败: {e!r}\n")
+        _ocr = False
+    return _ocr if _ocr is not False else None
+
+
+def get_asr():
+    """返回 ASR 引擎（缓存），不可用返回 None。"""
+    global _asr
+    if _asr is not None:
+        return _asr if _asr is not False else None
+    try:
+        from asrengine import make_engine as make_asr
+        e = make_asr()
+        _asr = e if e is not None else False
+    except Exception as e:
+        sys.stderr.write(f"[sidecar] ASR 模块加载失败: {e!r}\n")
+        _asr = False
+    return _asr if _asr is not False else None
 
 
 def main() -> int:
@@ -122,25 +155,112 @@ def main() -> int:
         except Exception:
             return str(sender)
 
+    # ── 媒体字节提取（wechatauto 各版本接口名不一，逐一尝试）──
+    def fetch_image_bytes(msg: dict):
+        for fn in ("get_msg_image", "get_image", "get_msg_img", "get_image_data"):
+            m = getattr(db, fn, None)
+            if m is None:
+                continue
+            try:
+                r = m(msg)
+                if isinstance(r, (bytes, bytearray)):
+                    return bytes(r)
+                if isinstance(r, str) and os.path.isfile(r):
+                    with open(r, "rb") as f:
+                        return f.read()
+                if isinstance(r, tuple) and r and isinstance(r[0], (bytes, bytearray)):
+                    return bytes(r[0])
+            except Exception as e:
+                sys.stderr.write(f"[sidecar] {fn} 取图异常: {e!r}\n")
+        return None
+
+    def fetch_voice_bytes(msg: dict):
+        for fn in ("get_msg_voice", "get_voice", "get_msg_audio"):
+            m = getattr(db, fn, None)
+            if m is None:
+                continue
+            try:
+                r = m(msg)
+                if isinstance(r, (bytes, bytearray)):
+                    return bytes(r)
+                if isinstance(r, str) and os.path.isfile(r):
+                    with open(r, "rb") as f:
+                        return f.read()
+            except Exception as e:
+                sys.stderr.write(f"[sidecar] {fn} 取语音异常: {e!r}\n")
+        return None
+
+    def emit_in(peer: str, is_group: bool, kind: str, text: str, sender_name: str, media: str = "") -> None:
+        out({
+            "type": "in",
+            "peer": peer,
+            "is_group": is_group,
+            "kind": kind,
+            "text": text,
+            "sender": "",
+            "sender_name": sender_name,
+            "media": media,
+        })
+
+    def handle_image(msg: dict, peer: str, is_group: bool, sender_name: str) -> None:
+        raw = fetch_image_bytes(msg)
+        if not raw:
+            out({"type": "status", "event": "warn",
+                 "msg": f"图片取不到字节（peer={peer}），已忽略；若 wechatauto 接口名不同请在 fetch_image_bytes 补充"})
+            return
+        engine = get_ocr()
+        if engine is None:
+            out({"type": "status", "event": "warn",
+                 "msg": "OCR 引擎不可用，图片消息暂不自动回复（请把 PP-OCRv4 模型放进 ocr_models/）"})
+            return
+        try:
+            text = engine.ocr_bytes(raw)
+        except Exception as e:
+            out({"type": "status", "event": "warn", "msg": f"OCR 失败: {e!r}"})
+            return
+        emit_in(peer, is_group, "image", text or "", sender_name, "图片")
+
+    def handle_voice(msg: dict, peer: str, is_group: bool, sender_name: str) -> None:
+        raw = fetch_voice_bytes(msg)
+        if not raw:
+            out({"type": "status", "event": "warn",
+                 "msg": f"语音取不到字节（peer={peer}），已忽略；若 wechatauto 接口名不同请在 fetch_voice_bytes 补充"})
+            return
+        engine = get_asr()
+        if engine is None:
+            out({"type": "status", "event": "warn",
+                 "msg": "语音转写引擎不可用，语音消息暂不自动回复（请把 sherpa-onnx 模型放进 asr_models/ 并装 sherpa-onnx/pysilk）"})
+            return
+        try:
+            text = engine.transcribe_silk(raw)
+        except Exception as e:
+            out({"type": "status", "event": "warn", "msg": f"语音转写失败: {e!r}"})
+            return
+        emit_in(peer, is_group, "voice", text or "", sender_name, "语音")
+
     def on_msg(msg: dict, lst) -> None:
         try:
-            if msg.get("type") != 1:
+            mtype = msg.get("type")
+            sender_id = msg.get("sender_id")
+            if sender_id in (2, "2"):
                 return
-            if msg.get("sender_id") in (2, "2"):
-                return
-            text = (msg.get("content") or "").strip()
             peer = (msg.get("username") or "").strip()
-            if not text or not peer:
+            if not peer:
                 return
             is_group = peer.endswith("@chatroom")
-            out({
-                "type": "in",
-                "peer": peer,
-                "is_group": is_group,
-                "sender": str(msg.get("sender_id") or ""),
-                "sender_name": nick_of(msg.get("sender_id")),
-                "text": text,
-            })
+            sender_name = nick_of(sender_id)
+
+            if mtype == 1:
+                text = (msg.get("content") or "").strip()
+                if not text:
+                    return
+                emit_in(peer, is_group, "text", text, sender_name)
+            elif mtype == 3:
+                handle_image(msg, peer, is_group, sender_name)
+            elif mtype == 34:
+                handle_voice(msg, peer, is_group, sender_name)
+            else:
+                out({"type": "status", "event": "warn", "msg": f"忽略未知消息类型 {mtype} from {peer}"})
         except Exception as e:
             sys.stderr.write(f"[sidecar] on_msg error: {e!r}\n")
 
@@ -177,13 +297,10 @@ def main() -> int:
                 continue
             try:
                 is_group = peer.endswith("@chatroom")
-                # 反检测：确保发送间隔
                 ensure_send_gap(peer, is_group)
-                # 反检测：模拟打字延迟（根据字数）
                 typing_delay = len(text) * random.uniform(TYPING_SPEED_MIN, TYPING_SPEED_MAX)
                 if typing_delay > 0.3:
-                    time.sleep(min(typing_delay, 4.0))  # 最多等4秒，避免太长
-                # 用全局 gui 实例发送
+                    time.sleep(min(typing_delay, 4.0))
                 wx = get_gui()
                 r = wx.send_msg(text, peer)
                 ok = bool(r.get("ok", True)) if isinstance(r, dict) else True
@@ -210,7 +327,7 @@ def main() -> int:
                     f.write(raw)
                 is_group = peer.endswith("@chatroom")
                 ensure_send_gap(peer, is_group)
-                time.sleep(random.uniform(0.5, 1.5))  # 发图前停顿
+                time.sleep(random.uniform(0.5, 1.5))
                 wx = get_gui()
                 r = wx.send_image(tmp, peer)
                 ok = bool(r.get("ok", True)) if isinstance(r, dict) else True

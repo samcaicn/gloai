@@ -25,6 +25,8 @@ pub struct BbtConnection {
     pub base_url: String, // 例如 https://bbt-zb.pages.dev
     pub token: Option<String>,
     pub telephone: Option<String>,
+    /// 持久化自 config.json 的登录密码（仅本地明文，用于 token 失效/重启后自动重登；不回传前端）。
+    pub password: Option<String>,
 }
 
 impl BbtConnection {

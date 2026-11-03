@@ -88,7 +88,7 @@ impl Default for AutoReplyConfig {
             group_keywords: vec!["在吗".into(), "机器人".into(), "你好".into()],
             cooldown_sec: 15,
             strip_at_prefix: true,
-            reply_voice: false,
+            reply_voice: true,
             listen_list: Vec::new(),
             group_whitelist: Vec::new(),
             group_blacklist: Vec::new(),
@@ -397,7 +397,9 @@ async fn process_msg_with(
 
     // ---- 触发过滤 ----
     let trigger = match msg.kind.as_str() {
-        "text" => true,
+        // text：纯文本；image：图片经离线 OCR 得到的文本（sidecar 已转成文字）
+        "text" | "image" => true,
+        // voice：语音经离线转写得到的文本（需开启 reply_voice）
         "voice" => cfg.reply_voice && !text.trim().is_empty(),
         _ => false,
     };
@@ -589,14 +591,46 @@ async fn ensure_member_conn(
             return Ok(c);
         }
     }
-    // 未配置团员账号 → fallback 用团长自己的连接（团长有权限调 chat/send）
+    // 未配置团员账号 → fallback 用团长自己的连接（团长有权限调 chat/send）。
+    // 团长 token 可能为空（刚重启、token 已失效）或过期：优先用内存 token，否则用
+    // 持久化的 telephone/password 自动重登，确保自动回复在重启/过期后仍能恢复。
     if cfg.member_telephone.trim().is_empty() || cfg.member_password.is_empty() {
-        let leader_conn = app.try_state::<crate::state::AppState>()
-            .map(|s| s.conn.lock().unwrap().clone());
-        if let Some(lc) = leader_conn {
-            if !lc.token.as_ref().map(|t| t.is_empty()).unwrap_or(true) {
-                ar.log(app, "info", "未配置团员账号，使用团长连接调 chat/send", json!({}));
-                return Ok(lc);
+        if let Some(state) = app.try_state::<crate::state::AppState>() {
+            // 1) 内存中已有有效 token → 直接复用
+            {
+                let lc = state.conn.lock().unwrap();
+                if !lc.token.as_ref().map(|t| t.is_empty()).unwrap_or(true) {
+                    ar.log(app, "info", "未配置团员账号，使用团长连接调 chat/send", json!({}));
+                    return Ok(lc.clone());
+                }
+            }
+            // 2) 无 token：从 config.json 读持久化的账号密码自动重登
+            let (tel, pwd) = {
+                let g = state.config.lock().unwrap();
+                let conn = g.get("connection").cloned().unwrap_or(json!({}));
+                (
+                    conn.get("telephone").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                    conn.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                )
+            };
+            if !tel.is_empty() && !pwd.is_empty() {
+                let mut fresh = BbtConnection {
+                    base_url: base_url.clone(),
+                    token: None,
+                    telephone: Some(tel.clone()),
+                    password: Some(pwd.clone()),
+                };
+                match bbt::login(&fresh, &tel, &pwd).await {
+                    Ok((token, _acct)) => {
+                        fresh.token = Some(token.clone());
+                        *state.conn.lock().unwrap() = fresh.clone();
+                        ar.log(app, "info", "团长连接已用持久化账号自动重登", json!({}));
+                        return Ok(fresh);
+                    }
+                    Err(e) => {
+                        ar.log(app, "warn", &format!("团长自动重登失败: {}", e), json!({}));
+                    }
+                }
             }
         }
         return Err("未登录团长账号，且未配置团员账号".into());
@@ -605,6 +639,7 @@ async fn ensure_member_conn(
         base_url,
         token: None,
         telephone: Some(cfg.member_telephone.clone()),
+        password: None,
     };
     let (token, account) = bbt::login(&c, &cfg.member_telephone.trim(), &cfg.member_password).await?;
     let role = account.get("role").and_then(|r| r.as_str()).unwrap_or("").to_string();

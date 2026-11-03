@@ -26,6 +26,8 @@ use tokio::sync::mpsc;
 static REQ_SEQ: AtomicU64 = AtomicU64::new(1);
 
 const SIDECAR_SRC: &str = include_str!("../python/wxauto_sidecar.py");
+const OCR_ENGINE_SRC: &str = include_str!("../python/ocrengine.py");
+const ASR_ENGINE_SRC: &str = include_str!("../python/asrengine.py");
 const DEFAULT_PY: &str = r"C:\d\weauto\.venv_bot\Scripts\python.exe";
 const MAX_RESTARTS: u32 = 5;
 
@@ -196,6 +198,14 @@ async fn run_once(app: &AppHandle, st: &Arc<WxAutoState>, cfg: &WxAutoConfig) ->
     std::fs::create_dir_all(&data_dir).map_err(|e| format!("创建数据目录: {}", e))?;
     let script_path = data_dir.join("wxauto_sidecar.py");
     std::fs::write(&script_path, SIDECAR_SRC).map_err(|e| format!("写 sidecar 脚本: {}", e))?;
+    // 离线 OCR / ASR 引擎随 sidecar 一起落盘（与脚本同目录，sidecar 直接 import）
+    std::fs::write(data_dir.join("ocrengine.py"), OCR_ENGINE_SRC).map_err(|e| format!("写 OCR 引擎: {}", e))?;
+    std::fs::write(data_dir.join("asrengine.py"), ASR_ENGINE_SRC).map_err(|e| format!("写 ASR 引擎: {}", e))?;
+    // 模型目录：默认放在 app_data_dir 下的 ocr_models / asr_models，用户把权重丢进去即可
+    let ocr_dir = data_dir.join("ocr_models");
+    let asr_dir = data_dir.join("asr_models");
+    let _ = std::fs::create_dir_all(&ocr_dir);
+    let _ = std::fs::create_dir_all(&asr_dir);
 
     // 2) 找 python
     let py = if !cfg.python_path.trim().is_empty() {
@@ -215,6 +225,9 @@ async fn run_once(app: &AppHandle, st: &Arc<WxAutoState>, cfg: &WxAutoConfig) ->
     if !cfg.vendor_path.trim().is_empty() {
         cmd.env("WX_VENDOR", cfg.vendor_path.trim());
     }
+    // 离线 OCR / ASR 模型目录（默认 app_data_dir 下的 ocr_models / asr_models）
+    cmd.env("OCR_MODEL_DIR", ocr_dir.to_string_lossy().to_string());
+    cmd.env("ASR_MODEL_DIR", asr_dir.to_string_lossy().to_string());
     #[cfg(windows)]
     {
         // CREATE_NO_WINDOW：不在任务栏弹黑窗
@@ -298,7 +311,11 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
             let text = v.get("text").and_then(|t| t.as_str()).unwrap_or("").to_string();
             let is_group = v.get("is_group").and_then(|g| g.as_bool()).unwrap_or(false);
             let sender = v.get("sender_name").and_then(|s| s.as_str()).unwrap_or("");
-            if peer.is_empty() || text.trim().is_empty() {
+            // kind 由 sidecar 透传：text / image（离线 OCR 文本）/ voice（离线转写文本）
+            let kind = v.get("kind").and_then(|k| k.as_str()).unwrap_or("text").to_string();
+            // 纯图片/语音在 OCR/转写失败时文本可能为空：仍允许进入管线，由 autoreply
+            // 规则层（空文本直接忽略）统一处理并记日志，避免静默吞掉事件。
+            if peer.is_empty() {
                 return;
             }
             let msg = autoreply::WxMsg {
@@ -306,7 +323,7 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
                 bot_id: String::new(),
                 peer,
                 is_group,
-                kind: "text".into(),
+                kind,
                 text,
                 sender: sender.to_string(),
             };

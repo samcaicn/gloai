@@ -40,11 +40,12 @@ pub async fn set_connection(
 ) -> Result<(), String> {
     let mut c = state.conn.lock().unwrap();
     c.base_url = base_url.clone();
-    c.token = token.filter(|s| !s.trim().is_empty());
+    c.token = token.as_ref().filter(|s| !s.trim().is_empty()).cloned();
     c.telephone = telephone.clone();
     drop(c);
-    // 持久化 base_url / telephone（不含 token：安全起见 token 不落盘，重启后需重新登录；
-    // 但 base_url 必须落盘，否则 autoreply 等模块在重启后取不到接口地址而失效）
+    // 持久化连接信息（重启后自动回复/桥等模块仍可用）：base_url / telephone 必存；
+    // token 一并落盘（HMAC 信封仅防篡改、本地明文，与 member_password 同级别），
+    // 重启后团长连接可直接复用、无需重新登录。
     {
         let mut g = state.config.lock().unwrap();
         if let Some(obj) = g.as_object_mut() {
@@ -57,6 +58,11 @@ pub async fn set_connection(
             conn["base_url"] = json!(base_url);
             if let Some(t) = &telephone {
                 conn["telephone"] = json!(t);
+            }
+            if let Some(tok) = &token {
+                if !tok.trim().is_empty() {
+                    conn["token"] = json!(tok);
+                }
             }
             obj.insert("connection".into(), conn);
         }
@@ -77,6 +83,7 @@ pub async fn login(
         base_url: base_url.clone(),
         token: None,
         telephone: Some(telephone.clone()),
+        password: Some(password.clone()),
     };
     let (token, account) = bbt::login(&c, &telephone, &password).await?;
     c.token = Some(token.clone());
@@ -154,6 +161,7 @@ async fn call_with_relogin(
                 base_url: base.clone(),
                 token: None,
                 telephone: Some(tel.clone()),
+                password: Some(pwd.clone()),
             };
             let (token, _account) = bbt::login(&fresh, &tel, &pwd).await.map_err(|_| e.clone())?;
             fresh.token = Some(token.clone());
