@@ -18,7 +18,13 @@ export const api = {
     invoke<any>("login", { base_url, telephone, password }),
 
   call: (action: string, condition?: any) =>
-    invoke<any>("bbt_call", { action, condition: condition || {} }),
+    invoke<any>("bbt_call", { action, condition: condition || {} }).catch((e: any) => {
+      const msg = String(e?.message || e || "");
+      if (/会话已失效|未登录|token|登录过期|401|unauthorized/i.test(msg)) {
+        window.dispatchEvent(new CustomEvent("session-expired", { detail: { msg, action } }));
+      }
+      throw e;
+    }),
 
   testConnection: () => invoke<any>("test_connection"),
   fetchRemoteConfig: () => invoke<any>("fetch_remote_config"),

@@ -79,7 +79,7 @@ pub struct AutoReplyConfig {
 impl Default for AutoReplyConfig {
     fn default() -> Self {
         AutoReplyConfig {
-            enabled: false,
+            enabled: true,
             member_telephone: String::new(),
             member_password: String::new(),
             private_reply: true,

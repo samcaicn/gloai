@@ -28,10 +28,11 @@ try:
 except AttributeError:
     pass
 
-try:
-    os.system("chcp 65001 >nul 2>&1")
-except Exception:
-    pass
+# os.system("chcp 65001 ...") 会弹 cmd 黑窗，已用 sys.stdout.reconfigure(encoding="utf-8") 替代
+# try:
+#     os.system("chcp 65001 >nul 2>&1")
+# except Exception:
+#     pass
 
 
 # ── 反检测配置 ──────────────────────────────────────────────

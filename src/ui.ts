@@ -96,28 +96,15 @@ function render() {
   if (!app) return;
 
   // 连接状态条：窄条横置（替代原大卡），常驻首页顶部
-  const loggedIn = !!state.connection.token;
-  const connCard = `
-    <section class="card status-bar span2">
-      <div class="status-left">
-        <span class="conn-dot ${loggedIn ? "on" : "off"}"></span>
-        <div>
-          <div class="status-title">${loggedIn ? "已连接 BBT-ZB" : "未连接"}</div>
-          <div class="status-sub">${loggedIn ? `${state.connection.telephone || ""} · ${state.connection.base_url}` : "登录后所有页签共用此连接"}</div>
-        </div>
-      </div>
-      <button class="btn primary" id="btn-open-login">${loggedIn ? "连接设置" : "立即登录"}</button>
-    </section>`;
-
   const loginOverlay = overlayHtml(
     "ov-login",
     "团长登录",
-    `<div class="fields" id="login-fields">${CONNECTION_FIELDS.map((f) => fieldHtml(f, state.connection[f.key], "conn")).join("")}</div>
-     <div class="seg-group" role="tablist">
-       <button class="seg-btn" id="seg-pwd" type="button">账号登录</button>
+    `<div class="seg-group" role="tablist">
+       <button class="seg-btn on" id="seg-pwd" type="button">账号登录</button>
        <button class="seg-btn" id="seg-qr" type="button">扫码登录</button>
      </div>
      <div id="pwdc">
+       <div class="fields" id="login-fields">${CONNECTION_FIELDS.map((f) => fieldHtml(f, state.connection[f.key], "conn")).join("")}</div>
        <div class="btn-row"><button class="btn primary" id="btn-login">登录并连接</button></div>
      </div>
      <div id="pcqr" class="qr-pane" style="display:none">
@@ -131,6 +118,23 @@ function render() {
      </div>`,
     "登录 BBT-ZB 团长账号后，所有页签共用此连接。"
   );
+
+  // 状态条：已登录显示"连接设置 + 登出"，未登录显示"立即登录"
+  const loggedIn = !!state.connection.token;
+  const connActions = loggedIn
+    ? `<button class="btn" id="btn-logout">登出</button><button class="btn primary" id="btn-open-login">连接设置</button>`
+    : `<button class="btn primary" id="btn-open-login">立即登录</button>`;
+  const connCard = `
+    <section class="card status-bar span2">
+      <div class="status-left">
+        <span class="conn-dot ${loggedIn ? "on" : "off"}"></span>
+        <div>
+          <div class="status-title">${loggedIn ? "已连接 BBT-ZB" : "未连接"}</div>
+          <div class="status-sub">${loggedIn ? [state.connection.telephone, state.connection.base_url].filter(Boolean).join(" · ") : "登录后所有页签共用此连接"}</div>
+        </div>
+      </div>
+      <div class="btn-row" style="gap:8px">${connActions}</div>
+    </section>`;
 
   // 运行状态：三列等宽紧凑卡（替代原 span2 总开关）
   const switchesCard = `
@@ -265,6 +269,7 @@ function setActiveTab(tab: "params" | "chat" | "members" | "orders" | "interact"
 
 function wire() {
   $("btn-open-login")?.addEventListener("click", () => { openOverlay("ov-login"); setLoginMode("pwd"); });
+  $("btn-logout")?.addEventListener("click", onLogout);
   $("btn-login")?.addEventListener("click", onLogin);
   $("seg-pwd")?.addEventListener("click", () => setLoginMode("pwd"));
   $("seg-qr")?.addEventListener("click", () => setLoginMode("qr"));
@@ -391,6 +396,30 @@ function refreshStatusBar() {
     ? [state.connection.telephone, state.connection.base_url].filter(Boolean).join(" · ")
     : "登录后所有页签共用此连接";
   if (btn) btn.textContent = loggedIn ? "连接设置" : "立即登录";
+}
+
+// 登出：清 token + 本地持久化 + 局部刷新
+async function onLogout() {
+  state.connection.token = "";
+  state.connection.telephone = "";
+  try {
+    await bbt.setConnection(state.connection.base_url, "", undefined);
+    const savedConn = { base_url: state.connection.base_url, telephone: "", token: "" };
+    await kv.put({ connection: savedConn, ...state.params });
+  } catch {}
+  refreshStatusBar();
+  notifyLoginChanged(false);
+  toast("已登出");
+}
+
+// token 失效时自动弹登录浮层（全局监听错误事件）
+function onSessionExpired(msg: string) {
+  toast("登录已失效，请重新登录", false);
+  state.connection.token = "";
+  refreshStatusBar();
+  notifyLoginChanged(false);
+  openOverlay("ov-login");
+  setLoginMode("pwd");
 }
 
 // 登录态变化时通知所有子页面自动刷新（无需手动点）
@@ -530,6 +559,10 @@ export async function init() {
     if (typeof tab === "string" && ["params", "chat", "members", "orders", "interact"].includes(tab)) {
       setActiveTab(tab as any);
     }
+  });
+  // token 失效自动弹登录
+  window.addEventListener("session-expired", () => {
+    onSessionExpired("会话已失效");
   });
   try {
     const loaded = await kv.get();

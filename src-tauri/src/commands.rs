@@ -118,13 +118,18 @@ async fn call_with_relogin(
     action: &str,
     condition: &Value,
 ) -> Result<Value, String> {
-    let c = app.state::<AppState>().conn.lock().unwrap().clone();
+    let c = {
+        let st = app.state::<AppState>();
+        let guard = st.conn.lock().unwrap();
+        guard.clone()
+    };
     match bbt::call(&c, action, condition).await {
         Ok(r) => return Ok(r),
         Err(e) if e.contains("失效") || e.contains("未登录") => {
             // 从本地 config.json 读保存的账号密码（前端登录时随配置落盘）
             let (tel, pwd) = {
-                let g = app.state::<AppState>().config.lock().unwrap();
+                let st = app.state::<AppState>();
+                let g = st.config.lock().unwrap();
                 let conn = g.get("connection").cloned().unwrap_or(json!({}));
                 (
                     conn.get("telephone").and_then(|v| v.as_str()).unwrap_or("").to_string(),
@@ -135,8 +140,9 @@ async fn call_with_relogin(
                 return Err(e);
             }
             let base = {
-                let cc = app.state::<AppState>().conn.lock().unwrap();
-                cc.base_url.clone()
+                let st = app.state::<AppState>();
+                let guard = st.conn.lock().unwrap();
+                guard.base_url.clone()
             };
             // 重新登录刷新 token（密码错误等失败场景原样抛回）
             let mut fresh = bbt::BbtConnection {
@@ -147,13 +153,18 @@ async fn call_with_relogin(
             let (token, _account) = bbt::login(&fresh, &tel, &pwd).await.map_err(|_| e.clone())?;
             fresh.token = Some(token.clone());
             {
-                let mut cc = app.state::<AppState>().conn.lock().unwrap();
+                let st = app.state::<AppState>();
+                let mut cc = st.conn.lock().unwrap();
                 cc.base_url = base;
                 cc.token = Some(token);
                 cc.telephone = Some(tel);
             }
             // 用新 token 重试一次
-            let c = app.state::<AppState>().conn.lock().unwrap().clone();
+            let c = {
+                let st = app.state::<AppState>();
+                let guard = st.conn.lock().unwrap();
+                guard.clone()
+            };
             bbt::call(&c, action, condition).await
         }
         Err(e) => Err(e),
@@ -177,7 +188,8 @@ pub async fn test_connection(state: State<'_, AppState>) -> Result<Value, String
 /// 拉取远程聊天参数（chat/configGet）并写回本地
 #[tauri::command(rename_all = "snake_case")]
 pub async fn fetch_remote_config(app: tauri::AppHandle) -> Result<Value, String> {
-    let c = app.state::<AppState>().conn.lock().unwrap().clone();
+    let state = app.state::<AppState>();
+    let c = state.conn.lock().unwrap().clone();
     if c.base_url.is_empty() {
         return Err("未配置接口地址".into());
     }
@@ -185,14 +197,14 @@ pub async fn fetch_remote_config(app: tauri::AppHandle) -> Result<Value, String>
     let data = bbt::data_of(&data)?;
     // 远程值合并进本地配置（connection 字段保留）
     {
-        let mut g = app.state::<AppState>().config.lock().unwrap();
+        let st = app.state::<AppState>();
+        let mut g = st.config.lock().unwrap();
         if let (Some(obj), Some(src)) = (g.as_object_mut(), data.as_object()) {
             for (k, v) in src {
                 obj.insert(k.clone(), v.clone());
             }
         }
-        let state = app.state::<AppState>();
-        let _ = state.save_config();
+        let _ = st.save_config();
     }
     Ok(data)
 }
@@ -203,7 +215,8 @@ pub async fn push_remote_config(
     app: tauri::AppHandle,
     value: Value,
 ) -> Result<Value, String> {
-    let c = app.state::<AppState>().conn.lock().unwrap().clone();
+    let state = app.state::<AppState>();
+    let c = state.conn.lock().unwrap().clone();
     if c.base_url.is_empty() {
         return Err("未配置接口地址".into());
     }
@@ -719,35 +732,30 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
     // 3) 团员：bbt-zb 名册（先 ledger 取团，再 listMembers）
     let mut members: Vec<Value> = Vec::new();
     let mut member_note = String::new();
-    if let Some(state) = app.try_state::<AppState>() {
-        let conn = state.conn.lock().unwrap().clone();
-        if conn.token.as_deref().unwrap_or("").is_empty() {
-            member_note = "请先在「团员二维码」页完成团长登录".into();
-        } else {
-            let group_id = match call_with_relogin(&app, "leader/ledger", &json!({})).await {
+    if let Some(_state) = app.try_state::<AppState>() {
+        let group_id = match call_with_relogin(&app, "leader/ledger", &json!({})).await {
+            Ok(r) => {
+                let list = r.pointer("/result/data/list").and_then(|l| l.as_array()).cloned().unwrap_or_default();
+                list.first()
+                    .and_then(|g0| g0.get("id"))
+                    .and_then(|i| i.as_i64())
+                    .unwrap_or(0)
+            }
+            Err(e) => {
+                member_note = format!("拉取团列表失败: {}", e);
+                0
+            }
+        };
+        if group_id > 0 {
+            match call_with_relogin(&app, "leader/listMembers", &json!({"groupId": group_id})).await {
                 Ok(r) => {
-                    let list = r.pointer("/result/data/list").and_then(|l| l.as_array()).cloned().unwrap_or_default();
-                    list.first()
-                        .and_then(|g0| g0.get("id"))
-                        .and_then(|i| i.as_i64())
-                        .unwrap_or(0)
+                    members = r
+                        .pointer("/result/data/list")
+                        .and_then(|l| l.as_array())
+                        .cloned()
+                        .unwrap_or_default();
                 }
-                Err(e) => {
-                    member_note = format!("拉取团列表失败: {}", e);
-                    0
-                }
-            };
-            if group_id > 0 {
-                match call_with_relogin(&app, "leader/listMembers", &json!({"groupId": group_id})).await {
-                    Ok(r) => {
-                        members = r
-                            .pointer("/result/data/list")
-                            .and_then(|l| l.as_array())
-                            .cloned()
-                            .unwrap_or_default();
-                    }
-                    Err(e) => member_note = format!("拉取名册失败: {}", e),
-                }
+                Err(e) => member_note = format!("拉取名册失败: {}", e),
             }
         }
     } else {

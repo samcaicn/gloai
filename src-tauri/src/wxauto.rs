@@ -43,7 +43,7 @@ pub struct WxAutoConfig {
 impl Default for WxAutoConfig {
     fn default() -> Self {
         WxAutoConfig {
-            enabled: false,
+            enabled: true,
             python_path: String::new(),
             vendor_path: String::new(),
         }

@@ -50,7 +50,7 @@ pub struct BridgeConfig {
 impl Default for BridgeConfig {
     fn default() -> Self {
         BridgeConfig {
-            enabled: false,
+            enabled: true,
             poll_interval_sec: 5,
             session_list_action: "chat/sessionList".into(),
             history_action: "chat/history".into(),
