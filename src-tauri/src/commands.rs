@@ -459,8 +459,17 @@ pub async fn autoreply_set_config(
     value: Value,
 ) -> Result<Value, String> {
     let mut cur = ar.config.lock().unwrap().clone();
+    // 把现有配置序列化成 JSON，然后 merge incoming（前端可能只传部分字段）
+    let mut merged = serde_json::to_value(&cur).unwrap_or(json!({}));
+    if let Some(obj) = merged.as_object_mut() {
+        if let Some(incoming_obj) = value.as_object() {
+            for (k, v) in incoming_obj {
+                obj.insert(k.clone(), v.clone());
+            }
+        }
+    }
     let incoming: crate::autoreply::AutoReplyConfig =
-        serde_json::from_value(value).map_err(|e| format!("配置格式错误: {}", e))?;
+        serde_json::from_value(merged).map_err(|e| format!("配置格式错误: {}", e))?;
     let keep_pwd = incoming.member_password.is_empty() && !cur.member_password.is_empty();
     let old_pwd = cur.member_password.clone();
     cur = incoming;
