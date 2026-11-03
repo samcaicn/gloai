@@ -337,7 +337,7 @@ async function genRosterQr(m: MemberInfo) {
     paintQr(qrId, r, m.id);
     st.textContent = "请用微信扫码（约 2 分钟有效）";
     toast(`已生成团员 ${m.telephoneMask || m.name || m.id} 的扫码二维码`);
-    startPoll(r.login_id, qrId, (status, resp) => {
+    startPoll(r.login_id, qrId, async (status, resp) => {
       if (status === "confirmed") {
         const botId = resp?.account?.bot_id || "";
         if (botId) {
@@ -345,8 +345,33 @@ async function genRosterQr(m: MemberInfo) {
           memberNames.set(m.id, m.name || m.telephoneMask || m.id);
           void persistMap();
         }
-        st.textContent = "✅ 已绑定上线";
+        st.textContent = "✅ 已绑定上线，接通AI回复…";
         toast(`团员 ${m.telephoneMask || m.name || m.id} 已绑定`);
+        // 自动接通 AI 回复：开启开关 + 把该团员加入监听列表
+        try {
+          const cfg: any = await autoreplyApi.getConfig();
+          const name = m.name || m.realName || m.telephoneMask || m.id;
+          const exists = (cfg.listen_list || []).some((e: any) => e.name === name);
+          if (!exists) {
+            await autoreplyApi.setConfig({
+              enabled: true,
+              listen_list: [...(cfg.listen_list || []), {
+                name,
+                kind: "private",
+                mon_types: [],
+                mon_keywords: [],
+                action: "reply",
+              }],
+            });
+          } else if (!cfg.enabled) {
+            await autoreplyApi.setEnabled(true);
+          }
+          st.textContent = "✅ 已绑定 · AI回复已接通";
+          toast("AI 自动回复已接通");
+        } catch (e: any) {
+          st.textContent = "✅ 已绑定上线";
+          console.warn("接通AI回复失败:", e);
+        }
         void loadRoster();
         void refreshAccounts();
       } else if (status === "scaned") {
