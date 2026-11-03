@@ -485,13 +485,15 @@ async function startPcQr() {
   statusEl.textContent = "生成二维码中…";
   if (refreshEl) refreshEl.classList.add("hidden");
   try {
-    // 先把 base_url 灌进 Rust state（未带 token，pc/create 不需要）
-    await bbt.setConnection(baseUrl);
+    // 先把 base_url 灌进 Rust state（保留当前 token，不要清掉）
+    await bbt.setConnection(baseUrl, state.connection.token || undefined, state.connection.telephone || undefined);
     const r: any = await bbt.call("pc/create", {});
     const d = r?.data;
     if (!r?.status || !d) {
-      statusEl.textContent = (r?.msg || "生成二维码失败") + "，请改用账号登录";
+      const msg = r?.msg || "生成二维码失败";
+      statusEl.textContent = msg + "，请改用账号登录";
       if (refreshEl) refreshEl.classList.remove("hidden");
+      toast(msg, false);
       return;
     }
     const scanId: string = d.scanId;
@@ -548,8 +550,10 @@ async function startPcQr() {
       }
     }, 1500);
   } catch (e: any) {
-    statusEl.textContent = "二维码启动失败：" + (e?.message || e);
+    const msg = e?.message || String(e);
+    statusEl.textContent = "二维码启动失败：" + msg;
     if (refreshEl) refreshEl.classList.remove("hidden");
+    toast("二维码生成失败：" + msg, false);
   }
 }
 
