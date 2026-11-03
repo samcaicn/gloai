@@ -11,20 +11,23 @@
   * 心跳 20s（原 15s），减少固定指纹；
   * 启动时随机延迟 2~5s 再开始监听，避开整点启动特征。
 
-消息类型（微信 MsgType）：
-  * 1  = 文本        → 直接进自动回复管线
-  * 3  = 图片        → 取字节 → 离线 OCR(PP-OCRv4) → 以 kind="image" 进管线
-  * 34 = 语音(SILK)  → 取字节 → SILK 解码 + sherpa-onnx 离线转写 → kind="voice" 进管线
+消息类型（wechatauto db.Listener 透传的本地 local_type：1=文本 / 3=图片 / 34=语音 SILK）：
+  * 文本   → 直接进自动回复管线
+  * 图片   → MediaDownloader 解密 .dat → 离线 OCR(PP-OCRv4) → kind="image" 进管线
+  * 语音   → MediaDownloader 读 media_*.db 的 SILK → 离线转写(sherpa-onnx) → kind="voice" 进管线
   * 其它（链接/名片/小程序等）暂忽略，仅记日志。
+（db.Listener 回调里 type 是中文名「文本/图片/语音」，本脚本同时按 local_type 兜底，跨版本稳。）
 OCR/ASR 引擎见同目录 ocrengine.py / asrengine.py（懒加载，缺依赖/缺模型即降级）。
 """
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import random
 import sys
+import tempfile
 import threading
 import time
 
@@ -52,6 +55,7 @@ _last_send_ts: dict[str, float] = {}   # peer -> 上次发送时间
 # OCR / ASR 引擎（懒加载，进程内缓存）
 _ocr = None
 _asr = None
+_md = None
 
 
 def out(obj: dict) -> None:
@@ -121,6 +125,7 @@ def main() -> int:
     try:
         from wechatauto.db import WeChatDB, Listener
         from wechatauto.guia import WeChatGUI
+        from wechatauto.media import MediaDownloader
     except Exception as e:
         out({"type": "status", "event": "error", "msg": f"wechatauto 导入失败: {e}"})
         return 2
@@ -155,40 +160,43 @@ def main() -> int:
         except Exception:
             return str(sender)
 
-    # ── 媒体字节提取（wechatauto 各版本接口名不一，逐一尝试）──
-    def fetch_image_bytes(msg: dict):
-        for fn in ("get_msg_image", "get_image", "get_msg_img", "get_image_data"):
-            m = getattr(db, fn, None)
-            if m is None:
-                continue
-            try:
-                r = m(msg)
-                if isinstance(r, (bytes, bytearray)):
-                    return bytes(r)
-                if isinstance(r, str) and os.path.isfile(r):
-                    with open(r, "rb") as f:
-                        return f.read()
-                if isinstance(r, tuple) and r and isinstance(r[0], (bytes, bytearray)):
-                    return bytes(r[0])
-            except Exception as e:
-                sys.stderr.write(f"[sidecar] {fn} 取图异常: {e!r}\n")
-        return None
+    # ── 媒体字节提取（对齐 weauto：用 wechatauto MediaDownloader 从本地微信库
+    #    解密 .dat 图片 / 读 media_*.db 的 SILK 语音；db.get_msg_image 等接口不存在）──
+    MEDIA_TMP = os.path.join(tempfile.gettempdir(), "bbt_zb_media")
+    try:
+        os.makedirs(MEDIA_TMP, exist_ok=True)
+    except Exception:
+        pass
 
-    def fetch_voice_bytes(msg: dict):
-        for fn in ("get_msg_voice", "get_voice", "get_msg_audio"):
-            m = getattr(db, fn, None)
-            if m is None:
-                continue
-            try:
-                r = m(msg)
-                if isinstance(r, (bytes, bytearray)):
-                    return bytes(r)
-                if isinstance(r, str) and os.path.isfile(r):
-                    with open(r, "rb") as f:
-                        return f.read()
-            except Exception as e:
-                sys.stderr.write(f"[sidecar] {fn} 取语音异常: {e!r}\n")
-        return None
+    def get_md() -> "MediaDownloader":
+        global _md
+        if _md is None:
+            _md = MediaDownloader(db)
+        return _md
+
+    def fetch_media(user: str, local_id, kind: str):
+        """返回 (bytes, path)；失败 (None, None)。
+
+        user = 会话 wxid（群为 xxx@chatroom），local_id = 消息行号。
+        图片走 MediaDownloader.download_image（AES+XOR 解密 .dat → jpg/png/gif）；
+        语音走 download_voice（读 media_*.db 的 voice_data SILK 二进制）。
+        """
+        if not local_id:
+            return None, None
+        try:
+            md = get_md()
+            if kind == "image":
+                p = md.download_image(user, int(local_id), save_dir=MEDIA_TMP)
+            elif kind == "voice":
+                p = md.download_voice(user, int(local_id), save_dir=MEDIA_TMP)
+            else:
+                return None, None
+            if p and os.path.isfile(p):
+                with open(p, "rb") as f:
+                    return f.read(), p
+        except Exception as e:
+            sys.stderr.write(f"[sidecar] 媒体下载失败({kind} peer={user} lid={local_id}): {e!r}\n")
+        return None, None
 
     def emit_in(peer: str, is_group: bool, kind: str, text: str, sender_name: str, media: str = "") -> None:
         out({
@@ -197,16 +205,16 @@ def main() -> int:
             "is_group": is_group,
             "kind": kind,
             "text": text,
-            "sender": "",
+            "sender": sender_name,
             "sender_name": sender_name,
             "media": media,
         })
 
-    def handle_image(msg: dict, peer: str, is_group: bool, sender_name: str) -> None:
-        raw = fetch_image_bytes(msg)
+    def handle_image(local_id, peer: str, is_group: bool, sender_name: str) -> None:
+        raw, _path = fetch_media(peer, local_id, "image")
         if not raw:
             out({"type": "status", "event": "warn",
-                 "msg": f"图片取不到字节（peer={peer}），已忽略；若 wechatauto 接口名不同请在 fetch_image_bytes 补充"})
+                 "msg": f"图片取不到字节（peer={peer}）：MediaDownloader 解密失败，可能需先在微信中打开该图片（触发密钥派生）"})
             return
         engine = get_ocr()
         if engine is None:
@@ -220,11 +228,11 @@ def main() -> int:
             return
         emit_in(peer, is_group, "image", text or "", sender_name, "图片")
 
-    def handle_voice(msg: dict, peer: str, is_group: bool, sender_name: str) -> None:
-        raw = fetch_voice_bytes(msg)
+    def handle_voice(local_id, peer: str, is_group: bool, sender_name: str) -> None:
+        raw, _path = fetch_media(peer, local_id, "voice")
         if not raw:
             out({"type": "status", "event": "warn",
-                 "msg": f"语音取不到字节（peer={peer}），已忽略；若 wechatauto 接口名不同请在 fetch_voice_bytes 补充"})
+                 "msg": f"语音取不到字节（peer={peer}）：MediaDownloader 读 media_*.db 失败（语音可能未下载到本地）"})
             return
         engine = get_asr()
         if engine is None:
@@ -240,27 +248,39 @@ def main() -> int:
 
     def on_msg(msg: dict, lst) -> None:
         try:
-            mtype = msg.get("type")
             sender_id = msg.get("sender_id")
             if sender_id in (2, "2"):
-                return
+                return  # 自己发的，跳过
             peer = (msg.get("username") or "").strip()
             if not peer:
                 return
             is_group = peer.endswith("@chatroom")
             sender_name = nick_of(sender_id)
 
-            if mtype == 1:
+            # wechatauto db.Listener 透传的 type 是中文名（文本/图片/语音）；
+            # 兜底按 local_type 数字再判一次，跨版本/语言更稳。
+            KIND = {"文本": "text", "图片": "image", "语音": "voice"}
+            kind = KIND.get(msg.get("type"))
+            if kind is None and msg.get("local_id"):
+                try:
+                    row = db.get_message_row(peer, msg["local_id"])
+                    if row:
+                        kind = {1: "text", 3: "image", 34: "voice"}.get(row.get("local_type"))
+                except Exception:
+                    pass
+            if not kind:
+                out({"type": "status", "event": "warn", "msg": f"忽略未知消息类型 {msg.get('type')!r} from {peer}"})
+                return
+
+            if kind == "text":
                 text = (msg.get("content") or "").strip()
                 if not text:
                     return
                 emit_in(peer, is_group, "text", text, sender_name)
-            elif mtype == 3:
-                handle_image(msg, peer, is_group, sender_name)
-            elif mtype == 34:
-                handle_voice(msg, peer, is_group, sender_name)
-            else:
-                out({"type": "status", "event": "warn", "msg": f"忽略未知消息类型 {mtype} from {peer}"})
+            elif kind == "image":
+                handle_image(msg.get("local_id"), peer, is_group, sender_name)
+            elif kind == "voice":
+                handle_voice(msg.get("local_id"), peer, is_group, sender_name)
         except Exception as e:
             sys.stderr.write(f"[sidecar] on_msg error: {e!r}\n")
 
@@ -318,8 +338,6 @@ def main() -> int:
                 continue
             tmp = None
             try:
-                import base64
-                import tempfile
                 raw = base64.b64decode(b64)
                 ext = ".jpg" if raw[:3] == b"\xff\xd8\xff" else ".png"
                 fd, tmp = tempfile.mkstemp(prefix="wxauto_", suffix=ext)
