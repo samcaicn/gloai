@@ -14,6 +14,9 @@ use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // ── 隐藏 cmd 黑窗：分离控制台，不再弹黑窗（weauto 用 --noconsole，这边运行时 FreeConsole）──
+    hide_console_window();
+
     tauri::Builder::default()
         .setup(|app| {
             let handle = app.handle().clone();
@@ -194,4 +197,19 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running bbt-zb-tauri");
+}
+
+/// 隐藏 cmd 黑窗：分离本进程的控制台。weauto 用 PyInstaller --noconsole 解决，
+/// Tauri 这边运行时调 kernel32!FreeConsole，把控制台窗口关掉。
+fn hide_console_window() {
+    #[cfg(windows)]
+    {
+        #[link(name = "kernel32")]
+        extern "system" {
+            fn FreeConsole() -> i32;
+        }
+        unsafe {
+            let _ = FreeConsole();
+        }
+    }
 }

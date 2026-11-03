@@ -1,0 +1,65 @@
+    Checking bbt-zb-tauri v0.1.8 (C:\d\zhifu\bbt-zb-tauri\src-tauri)
+error[E0425]: cannot find function `set_stdout` in module `std::io`
+   --> src\lib.rs:221:30
+    |
+221 |             let _ = std::io::set_stdout(Box::new(writer.try_clone().unwrap()));
+    |                              ^^^^^^^^^^ not found in `std::io`
+
+error[E0425]: cannot find function `set_stderr` in module `std::io`
+   --> src\lib.rs:222:30
+    |
+222 |             let _ = std::io::set_stderr(Box::new(writer));
+    |                              ^^^^^^^^^^ not found in `std::io`
+
+error[E0599]: no method named `try_clone` found for struct `LineWriter<W>` in the current scope
+   --> src\lib.rs:221:57
+    |
+221 |             let _ = std::io::set_stdout(Box::new(writer.try_clone().unwrap()));
+    |                                                         ^^^^^^^^^ method not found in `LineWriter<std::fs::File>`
+
+warning: variable `member_note` is assigned to, but never used
+   --> src\commands.rs:668:9
+    |
+668 |     let mut member_note = String::new();
+    |         ^^^^^^^^^^^^^^^
+    |
+    = note: consider using `_member_note` instead
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:696:31
+    |
+696 |                     Err(e) => member_note = format!("拉取名册失败: {}", e),
+    |                               ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:683:21
+    |
+683 |                     member_note = format!("拉取团列表失败: {}", e);
+    |                     ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:672:13
+    |
+672 |             member_note = "请先在「团员二维码」页完成团长登录".into();
+    |             ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: value assigned to `member_note` is never read
+   --> src\commands.rs:701:9
+    |
+701 |         member_note = "AppState 未初始化".into();
+    |         ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+Some errors have detailed explanations: E0425, E0599.
+For more information about an error, try `rustc --explain E0425`.
+warning: `bbt-zb-tauri` (lib) generated 5 warnings
+error: could not compile `bbt-zb-tauri` (lib) due to 3 previous errors; 5 warnings emitted

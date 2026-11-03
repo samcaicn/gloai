@@ -368,12 +368,33 @@ async function onLogin() {
     closeOverlay("ov-login");
     stopQrPoll();
     await syncRemote();
-    render();
+    refreshStatusBar();
+    notifyLoginChanged(true);
     const role = res.account?.role ? `（角色：${res.account.role}）` : "";
     toast(`登录成功，已建立连接${role}`);
   } catch (e: any) {
     toast("登录失败：" + (e?.message || e), false);
   } finally { btn?.classList.remove("loading"); }
+}
+
+// 局部刷新状态条（不重建整个页面，避免丢子页面轮询/状态）
+function refreshStatusBar() {
+  const loggedIn = !!state.connection.token;
+  const dot = document.querySelector(".conn-dot");
+  const title = document.querySelector(".status-title");
+  const sub = document.querySelector(".status-sub");
+  const btn = $("btn-open-login");
+  if (dot) dot.className = "conn-dot " + (loggedIn ? "on" : "off");
+  if (title) title.textContent = loggedIn ? "已连接 BBT-ZB" : "未连接";
+  if (sub) sub.textContent = loggedIn
+    ? [state.connection.telephone, state.connection.base_url].filter(Boolean).join(" · ")
+    : "登录后所有页签共用此连接";
+  if (btn) btn.textContent = loggedIn ? "连接设置" : "立即登录";
+}
+
+// 登录态变化时通知所有子页面自动刷新（无需手动点）
+function notifyLoginChanged(loggedIn: boolean) {
+  window.dispatchEvent(new CustomEvent("login-changed", { detail: { loggedIn } }));
 }
 
 // -------- PC 扫码登录（pc/create → 渲染二维码 → 轮询 pc/poll）--------
@@ -478,7 +499,8 @@ async function startPcQr() {
           await bbt.setConnection(baseUrl, token, tel || undefined);
           closeOverlay("ov-login");
           await syncRemote();
-          render();
+          refreshStatusBar();
+          notifyLoginChanged(true);
           const role = pd.role ? `（角色：${pd.role}）` : "";
           toast(`扫码登录成功${role}`);
         }

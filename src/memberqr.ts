@@ -139,11 +139,21 @@ export async function renderMemberQr(root: HTMLElement) {
     onIlinkEvent((ev: any) => {
       if (ev?.kind === "account" && ev?.event === "status") {
         refreshAccounts();
+        // 会话过期明显提示
+        if (ev?.account?.status === "session_expired") {
+          toast(`团员 ${ev.account.label || ev.account.user_id || ""} 绑定已过期，请重新扫码`, false);
+        }
       }
     });
     // AI 自动回复开关变化时刷新徽标（在聊天配置页改动后同步过来）
     onAutoreplyEvent(() => {
       void loadArEnabled();
+    });
+    // 监听团长登录态变化：登录成功后自动拉名册/账号，无需手动点
+    window.addEventListener("login-changed", () => {
+      void refreshLoginState();
+      void loadRoster();
+      void refreshAccounts();
     });
     // 定时刷新已绑定账号状态（捕获会话过期等）+ 绑定总览
     setInterval(() => {
@@ -321,11 +331,14 @@ async function genRosterQr(m: MemberInfo) {
   st.textContent = "正在获取二维码…";
   try {
     const r: any = await ilink.beginLogin();
+    if (!r?.svg && !r?.content) {
+      throw new Error("iLink 服务端未返回二维码");
+    }
     paintQr(qrId, r, m.id);
-    st.textContent = "请用微信扫码";
+    st.textContent = "请用微信扫码（约 2 分钟有效）";
+    toast(`已生成团员 ${m.telephoneMask || m.name || m.id} 的扫码二维码`);
     startPoll(r.login_id, qrId, (status, resp) => {
       if (status === "confirmed") {
-        // hub：记录该成员绑定的 bot_id（服务端确认时返回 account.bot_id）
         const botId = resp?.account?.bot_id || "";
         if (botId) {
           memberMap[m.id] = botId;
@@ -337,13 +350,19 @@ async function genRosterQr(m: MemberInfo) {
         void loadRoster();
         void refreshAccounts();
       } else if (status === "scaned") {
-        st.textContent = "已扫码，请确认";
+        st.textContent = "已扫码，请在手机微信确认";
       } else if (status === "wait") {
         st.textContent = "等待扫码…";
+      } else if (status === "expired") {
+        st.textContent = "二维码已过期，请点按钮重新生成";
+        toast("二维码已过期，请重新生成", false);
+        btn.removeAttribute("disabled");
       }
     });
   } catch (e: any) {
-    st.textContent = "获取失败：" + (e?.message || e);
+    const msg = e?.message || String(e);
+    st.textContent = "获取失败";
+    toast("团员二维码获取失败：" + msg, false);
     btn.removeAttribute("disabled");
   }
 }
