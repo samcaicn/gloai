@@ -1,6 +1,6 @@
 {
-  "version": "0.1.4",
-  "notes": "BBT-ZB 控制台 0.1.4",
-  "exe_url": "https://github.com/samcaicn/gloai/releases/download/v0.1.4/bbt-zb-tauri.exe",
-  "sig_url": "https://github.com/samcaicn/gloai/releases/download/v0.1.4/bbt-zb-tauri.exe.sig"
+  "version": "0.1.5",
+  "notes": "BBT-ZB 控制台 0.1.5",
+  "exe_url": "https://github.com/samcaicn/gloai/releases/download/v0.1.5/bbt-zb-tauri.exe",
+  "sig_url": "https://github.com/samcaicn/gloai/releases/download/v0.1.5/bbt-zb-tauri.exe.sig"
 }
