@@ -95,21 +95,18 @@ function render() {
   const app = $("app");
   if (!app) return;
 
-  // 连接状态卡：首页只留状态 + 打开登录浮层按钮（登录表单收进浮层，保持首页简洁）
+  // 连接状态条：窄条横置（替代原大卡），常驻首页顶部
   const loggedIn = !!state.connection.token;
   const connCard = `
-    <section class="card span2">
-      <div class="row-between">
+    <section class="card status-bar span2">
+      <div class="status-left">
+        <span class="conn-dot ${loggedIn ? "on" : "off"}"></span>
         <div>
-          <h2>团长连接</h2>
-          <p class="card-desc"><span class="conn-dot ${loggedIn ? "on" : "off"}"></span>${
-            loggedIn
-              ? `已登录 ${state.connection.telephone || ""} · ${state.connection.base_url}`
-              : "未登录。登录 BBT-ZB 团长账号后，所有页签共用此连接。"
-          }</p>
+          <div class="status-title">${loggedIn ? "已连接 BBT-ZB" : "未连接"}</div>
+          <div class="status-sub">${loggedIn ? `${state.connection.telephone || ""} · ${state.connection.base_url}` : "登录后所有页签共用此连接"}</div>
         </div>
-        <button class="btn primary" id="btn-open-login">${loggedIn ? "连接设置" : "登录"}</button>
       </div>
+      <button class="btn primary" id="btn-open-login">${loggedIn ? "连接设置" : "立即登录"}</button>
     </section>`;
 
   const loginOverlay = overlayHtml(
@@ -135,24 +132,47 @@ function render() {
     "登录 BBT-ZB 团长账号后，所有页签共用此连接。"
   );
 
-  // 总开关卡：三个全局开关，状态从各自后端拉取
+  // 运行状态：三列等宽紧凑卡（替代原 span2 总开关）
   const switchesCard = `
     <section class="card span2">
-      <h2>总开关</h2>
-      <p class="card-desc">全局功能开关，改动即时生效（各页签共用）。</p>
-      <div class="grid2 switches-grid">
-        <div class="field switch-field">
-          <div class="field-label">AI 自动回复<span class="hint">团员/微信消息由 AI 接管回复</span></div>
+      <h2>运行状态</h2>
+      <p class="card-desc">全局功能开关，改动即时生效。</p>
+      <div class="sw-run">
+        <div class="sw-run-item">
+          <div class="sw-run-icon" style="background:var(--ok-soft)">🤖</div>
+          <div class="sw-run-body">
+            <div class="sw-run-name">AI 自动回复</div>
+            <div class="sw-run-hint">团员/微信消息 AI 接管</div>
+          </div>
           <label class="switch"><input type="checkbox" id="sw-autoreply"/><span></span></label>
         </div>
-        <div class="field switch-field">
-          <div class="field-label">微信通道<span class="hint">wxauto 自动启动 Python 收发</span></div>
+        <div class="sw-run-item">
+          <div class="sw-run-icon" style="background:#e8f0ff">💬</div>
+          <div class="sw-run-body">
+            <div class="sw-run-name">微信通道</div>
+            <div class="sw-run-hint">wxauto 自动收发</div>
+          </div>
           <label class="switch"><input type="checkbox" id="sw-wxauto"/><span></span></label>
         </div>
-        <div class="field switch-field">
-          <div class="field-label">团长桥<span class="hint">bbt-zb ↔ iLink 消息互通</span></div>
+        <div class="sw-run-item">
+          <div class="sw-run-icon" style="background:var(--accent-soft)">🌉</div>
+          <div class="sw-run-body">
+            <div class="sw-run-name">团长桥</div>
+            <div class="sw-run-hint">bbt-zb ↔ iLink 互通</div>
+          </div>
           <label class="switch"><input type="checkbox" id="sw-bridge"/><span></span></label>
         </div>
+      </div>
+    </section>
+
+    <section class="card span2">
+      <h2>快捷入口</h2>
+      <p class="card-desc">常用功能一键直达。</p>
+      <div class="quick-grid">
+        <button class="quick-item" data-goto="chat"><span class="quick-emoji">💬</span><span>聊天配置</span></button>
+        <button class="quick-item" data-goto="members"><span class="quick-emoji">👥</span><span>团员二维码</span></button>
+        <button class="quick-item" data-goto="orders"><span class="quick-emoji">📦</span><span>订单消息</span></button>
+        <button class="quick-item" data-goto="interact"><span class="quick-emoji">📢</span><span>互动消息</span></button>
       </div>
     </section>`;
 
@@ -174,11 +194,11 @@ function render() {
     <header class="topbar">
       <div class="brand">BBT-ZB 控制台</div>
       <nav class="tabs">
-        <button class="tab active" id="tab-params-btn">首页</button>
-        <button class="tab" id="tab-chat-btn">聊天配置</button>
-        <button class="tab" id="tab-members-btn">团员二维码</button>
-        <button class="tab" id="tab-orders-btn">订单消息</button>
-        <button class="tab" id="tab-interact-btn">互动消息</button>
+        <button class="tab active" id="tab-params-btn">🏠 首页</button>
+        <button class="tab" id="tab-chat-btn">💬 聊天</button>
+        <button class="tab" id="tab-members-btn">👥 团员</button>
+        <button class="tab" id="tab-orders-btn">📦 订单</button>
+        <button class="tab" id="tab-interact-btn">📢 互动</button>
       </nav>
       <div class="btn-row right params-only">
         <button class="btn" id="btn-fetch">拉取远程</button>
@@ -274,6 +294,13 @@ function wire() {
     el.addEventListener("click", () => stopQrPoll())
   );
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") stopQrPoll(); });
+  // 快捷入口：点击切 tab
+  document.querySelectorAll(".quick-item").forEach((el) =>
+    el.addEventListener("click", () => {
+      const t = (el as HTMLElement).dataset.goto as any;
+      if (t) setActiveTab(t);
+    })
+  );
   $("btn-fetch")?.addEventListener("click", onFetch);
   $("btn-push")?.addEventListener("click", onPush);
   $("btn-reset")?.addEventListener("click", onReset);
