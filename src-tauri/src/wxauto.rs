@@ -25,6 +25,24 @@ use tokio::sync::mpsc;
 
 static REQ_SEQ: AtomicU64 = AtomicU64::new(1);
 
+/// 毫秒时间戳 → "HH:MM:SS.mmm"（本地时区），日志用。
+fn fmt_ts(ms: i64) -> String {
+    use std::time::{Duration, SystemTime};
+    let secs = ms / 1000;
+    let millis = (ms % 1000) as u32;
+    // 本地时区偏移：从 UNIX_EPOCH 到现在的本地时间差
+    let local = SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    let offset = local - secs; // 本地时间 - UTC = 偏移秒数
+    let local_secs = secs + offset;
+    let h = (local_secs / 3600) % 24;
+    let m = (local_secs / 60) % 60;
+    let s = local_secs % 60;
+    format!("{:02}:{:02}:{:02}.{:03}", h, m, s, millis)
+}
+
 const SIDECAR_SRC: &str = include_str!("../python/wxauto_sidecar.py");
 const OCR_ENGINE_SRC: &str = include_str!("../python/ocrengine.py");
 const ASR_ENGINE_SRC: &str = include_str!("../python/asrengine.py");
@@ -104,6 +122,18 @@ impl WxAutoState {
         }
         let _ = app.emit("wxauto-event", entry);
         eprintln!("[wxauto] {} {}", level, msg);
+        // 落盘到 app_data_dir/logs/wxauto.log（追加，UTF-8）
+        if let Ok(dir) = app.path().app_data_dir() {
+            let log_dir = dir.join("logs");
+            let _ = std::fs::create_dir_all(&log_dir);
+            let line = format!(
+                "[{}] {} {}\n",
+                fmt_ts(autoreply::now_ms_pub()),
+                level,
+                msg
+            );
+            let _ = std::fs::append(log_dir.join("wxauto.log"), line);
+        }
     }
 }
 

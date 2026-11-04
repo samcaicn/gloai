@@ -144,6 +144,13 @@ impl AutoReplyState {
         }
         let _ = app.emit("autoreply-event", entry);
         eprintln!("[autoreply] {} {}", level, msg);
+        // 落盘到 app_data_dir/logs/autoreply.log
+        if let Ok(dir) = app.path().app_data_dir() {
+            let log_dir = dir.join("logs");
+            let _ = std::fs::create_dir_all(&log_dir);
+            let line = format!("[{}] {} {}\n", now_ms(), level, msg);
+            let _ = std::fs::append(log_dir.join("autoreply.log"), line);
+        }
     }
 }
 
