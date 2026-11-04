@@ -1,12 +1,13 @@
 // 团员 iLink 二维码管理：复用「首页」团长登录态 → 查看 BBT-ZB 团员名册 → 给每个团员
-// 生成 iLink 绑定二维码并展示 → 绑定过期（微信会话失效）提示并支持点击重新生成。
+// 生成 iLink 绑定二维码。扫码成功即完成绑定（后端直接落盘 memberqr.map 与 accounts.json），
+// 名册卡片直接显示「✅ 已登录」，不再单独维护一份「已绑定账号」列表。
 //
 // 复用既有后端命令：
 //   - bbt_call("leader/listMembers", {})   拉取团员名册
-//   - ilink_begin_login()                   取 iLink 扫码二维码（返回 login_id/content/svg）
-//   - ilink_poll_login(login_id)           轮询扫码状态（confirmed 即该微信上线）
-//   - ilink_list_accounts()                当前已绑定账号及状态
-//   - onIlinkEvent                         监听 session_expired 等事件
+//   - ilink_begin_login(member_id)          取二维码，并把团员 id 绑定到本次扫码会话
+//   - ilink_poll_login(login_id)           轮询扫码状态（confirmed 即后端完成绑定）
+//   - ilink_list_accounts()                当前已登录账号及状态
+//   - onIlinkEvent                         监听会话失效等事件
 
 import { api } from "./api";
 import { ilink, onIlinkEvent, autoreplyApi, onAutoreplyEvent, wxautoApi, bridgeApi } from "./ilink";
@@ -29,8 +30,6 @@ interface GroupInfo {
 // 对齐 openilink-hub 思路：每个成员对应一个 iLink 机器人账号，hub 记录绑定关系，
 // 扫码确认后落盘，过期重建后自动更新指向新 bot。
 let memberMap: Record<string, string> = {};
-// member_id -> 团员名（名册加载时缓存，用于账号卡片回显团员身份）
-const memberNames = new Map<string, string>();
 // bot_id -> 已绑定账号状态快照（ilink_list_accounts）；用于判断「已登录/已过期」
 let accountByBot = new Map<string, any>();
 // 正在展示扫码二维码的团员 id：定时刷新不覆盖用户正在扫的二维码
@@ -39,25 +38,16 @@ const qrActive = new Set<string>();
 function botOfMember(memberId: string): string {
   return memberMap[memberId] || "";
 }
-function memberOfBot(botId: string): string {
-  for (const [mid, bot] of Object.entries(memberMap)) {
-    if (bot === botId) return mid;
-  }
-  return "";
-}
 async function persistMap(): Promise<void> {
   try {
     await api.memberqrSetMap(memberMap);
   } catch {
-    /* 落盘失败不阻塞 UI，内存态仍可用 */
+    /* 落盘失败不阻塞 UI；后端在扫码成功时也会直接落盘，见 ilink_begin_login */
   }
 }
 
 // loginId -> 轮询句柄（用于停止）
 const polls = new Map<string, number>();
-// bot_id -> 该账号当前处于「重新生成二维码」状态（refreshAccounts 重建容器时保留 SVG）
-const regenMode = new Set<string>();
-const regenSvg = new Map<string, string>();
 
 // 当前名册总人数（用于绑定状态总览）
 let rosterSize = 0;
@@ -100,23 +90,12 @@ export async function renderMemberQr(root: HTMLElement) {
           </div>
         </div>
         <div id="mq-group-bar" class="mt8"></div>
-        <p class="hint">团长账号在「首页」登录，本页直接共用该连接。每个团员可生成 1 个 iLink 二维码，团员用微信扫码即可把其微信绑定上线。点击「生成二维码」后请尽快扫码（二维码约 2 分钟有效）。</p>
+        <p class="hint">扫码成功即完成绑定，登录态自动缓存在本机，未过期无需重复扫码。</p>
         <div id="mq-roster" class="member-grid">
           <div class="empty">尚未登录或名册为空</div>
         </div>
         <div class="btn-row">
           <button class="btn small" id="mq-gen-all">为全部团员生成二维码</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="row-between">
-          <h2>已绑定 iLink 账号（团员微信）</h2>
-          <button class="btn small" id="mq-refresh-accounts">刷新</button>
-        </div>
-        <p class="hint">账号状态变为「绑定过期」表示该团员微信会话已失效（约 24h 无互动）。点击「生成新二维码」让团员重新扫码即可恢复。AI 自动回复的接通与团员账号配置已移至「聊天配置」页。</p>
-        <div id="mq-accounts" class="member-grid">
-          <div class="empty">暂无已绑定账号</div>
         </div>
       </section>
     </div>`;
@@ -132,7 +111,6 @@ export async function renderMemberQr(root: HTMLElement) {
     window.dispatchEvent(new CustomEvent("goto-tab", { detail: "params" }));
   });
   g("mq-refresh-roster")?.addEventListener("click", loadRoster);
-  g("mq-refresh-accounts")?.addEventListener("click", refreshAccounts);
   g("mq-gen-all")?.addEventListener("click", genAllRosterQr);
 
   if (!started) {
@@ -146,7 +124,7 @@ export async function renderMemberQr(root: HTMLElement) {
         void refreshAccounts();
         const st = ev?.status || ev?.account?.status || "";
         if (st === "session_expired") {
-          toast(`团员 ${ev?.label || ev?.account?.label || ev?.bot_id || ""} 绑定已过期，请重新扫码`, false);
+          toast(`团员 ${ev?.label || ev?.account?.label || ev?.bot_id || ""} 微信会话已失效，请重新扫码`, false);
         }
       }
     });
@@ -304,7 +282,6 @@ async function loadMembersOf(groupId: string) {
     rosterSize = members.length;
     box.innerHTML = members.map((m) => rosterCard(m)).join("");
     members.forEach((m) => {
-      memberNames.set(m.id, m.name || m.realName || m.telephoneMask || m.id);
       g(`mqgen-${m.id}`)?.addEventListener("click", () => genRosterQr(m));
     });
     refreshBindStatus();
@@ -319,6 +296,7 @@ async function loadMembersOf(groupId: string) {
 
 interface LoginView {
   badge: string; badgeCls: string; qr: string; status: string; btn: string; btnCls: string;
+  expired: boolean;
 }
 
 /**
@@ -329,30 +307,32 @@ function loginView(bot: string, acc: any): LoginView {
   const st = String(acc?.status || "");
   const expired = !!acc?.expired || st === "session_expired";
   if (!bot) {
-    return { badge: "", badgeCls: "", qr: "", status: "未生成二维码", btn: "生成 iLink 二维码", btnCls: "" };
+    return { badge: "", badgeCls: "", qr: "", status: "未生成二维码", btn: "生成 iLink 二维码", btnCls: "", expired: false };
   }
   if (expired) {
     return {
-      badge: "绑定过期",
+      badge: "需重新扫码",
       badgeCls: "badge-session_expired",
-      qr: `<div class="mqr-state is-expired"><div class="mqr-state-title">⚠ 微信会话已失效</div><div class="mqr-state-sub">需重新扫码一次，之后继续自动缓存</div></div>`,
-      status: "绑定已过期，请重新扫码",
+      qr: `<div class="mqr-state is-expired"><div class="mqr-state-title">⚠ 微信会话已失效</div><div class="mqr-state-sub">点下方按钮重新扫码，之后自动继续缓存</div></div>`,
+      status: "微信会话已失效，重新扫码即可恢复",
       btn: "重新扫码",
       btnCls: "primary",
+      expired: true,
     };
   }
   const online = st === "running";
   return {
-    badge: "已登录",
+    badge: "已绑定",
     badgeCls: "badge-running",
     qr: `<div class="mqr-state is-logged">
-      <div class="mqr-state-title">✅ 已登录</div>
-      <div class="mqr-state-sub">登录态已缓存在本机，重启后未过期无需重复扫码</div>
+      <div class="mqr-state-title">✅ 已绑定</div>
+      <div class="mqr-state-sub">登录态已缓存在本机，未过期无需重复扫码</div>
       <div class="mqr-state-meta">${esc(acc?.label || acc?.user_id || bot)}${online ? " · 在线" : " · 待连接"}</div>
     </div>`,
-    status: online ? "已登录 · 在线，无需扫码" : "已缓存登录态 · 无需扫码",
+    status: online ? "已绑定 · 在线，无需扫码" : "已缓存登录态 · 无需扫码",
     btn: "重新扫码（更换微信）",
     btnCls: "",
+    expired: false,
   };
 }
 
@@ -373,7 +353,7 @@ function syncRosterLoginStates() {
     if (btn) { btn.textContent = v.btn; btn.className = `btn small ${v.btnCls}`.trim(); }
     if (badge && v.badge) badge.className = `badge ${v.badgeCls}`.trim();
     if (badge && v.badge) badge.textContent = v.badge;
-    card.classList.toggle("expired", v.badge === "绑定过期");
+    card.classList.toggle("expired", v.expired);
   });
 }
 
@@ -387,7 +367,7 @@ function rosterCard(m: MemberInfo): string {
     ? `<span class="badge ${v.badgeCls}">${v.badge}</span>`
     : `<span class="badge ${stCls}">${stLabel[m.status] || m.status}</span>`;
   return `
-    <div class="mcard ${v.badge === "绑定过期" ? "expired" : ""}" data-mid="${esc(m.id)}">
+    <div class="mcard ${v.expired ? "expired" : ""}" data-mid="${esc(m.id)}">
       <div class="row-between">
         <div class="mcard-name">${esc(title)}${m.realName && m.realName !== title ? `<span class="mcard-sub">（${esc(m.realName)}）</span>` : ""}</div>
         ${badge}
@@ -413,11 +393,13 @@ async function genRosterQr(m: MemberInfo) {
   qrActive.add(m.id);
   st.textContent = "正在获取二维码…";
   try {
-    const r: any = await ilink.beginLogin();
+    // member_id 随扫码会话交给后端：扫码成功由后端直接落盘「团员→bot」绑定，
+    // 不再依赖前端异步写盘（前端异步写曾导致绑定丢失、订单页下拉为空）。
+    const r: any = await ilink.beginLogin(m.id);
     if (!r?.svg && !r?.content) {
       throw new Error("iLink 服务端未返回二维码");
     }
-    paintQr(qrId, r, m.id);
+    paintQr(qrId, r);
     st.textContent = "请用微信扫码（约 2 分钟有效）";
     toast(`已生成团员 ${m.telephoneMask || m.name || m.id} 的扫码二维码`);
     startPoll(r.login_id, qrId, async (status, resp) => {
@@ -429,15 +411,27 @@ async function genRosterQr(m: MemberInfo) {
             try { await ilink.removeAccount(oldBot); } catch { /* 忽略 */ }
           }
           memberMap[m.id] = botId;
-          memberNames.set(m.id, m.name || m.telephoneMask || m.id);
-          void persistMap();
         }
         qrActive.delete(m.id);
+        // 以后端落盘结果为准，重新读取映射（避免前端写盘竞态覆盖）；
+        // 若后端未写入则前端兜底再写一次，保证「扫码成功 = 已绑定」。
+        let persisted = false;
+        try {
+          const fresh = await api.memberqrGetMap();
+          if (fresh) {
+            memberMap = fresh;
+            persisted = !!fresh[m.id];
+          }
+        } catch { /* 保留内存态 */ }
+        if (!persisted && botId) {
+          memberMap[m.id] = botId;
+          await persistMap();
+        }
         // 立刻把二维码区替换成「已登录」状态卡，不等名册重渲染
         await refreshAccounts();
         syncRosterLoginStates();
-        st.textContent = "✅ 已登录 · 登录态已缓存到本机";
-        toast(`团员 ${m.telephoneMask || m.name || m.id} 已登录，登录态已缓存`);
+        st.textContent = "✅ 已绑定 · 登录态已缓存到本机";
+        toast(`团员 ${m.telephoneMask || m.name || m.id} 已绑定，登录态已缓存`);
         // 自动接通 AI 回复：确保三个开关全部打开
         try {
           await autoreplyApi.setEnabled(true);    // AI 自动回复
@@ -496,114 +490,28 @@ async function genAllRosterQr() {
   }
 }
 
-function paintQr(qrId: string, r: any, botIdHint?: string) {
+function paintQr(qrId: string, r: any) {
   const el = g(qrId);
   if (!el) return;
   if (r?.svg) el.innerHTML = r.svg;
   else if (r?.content) el.innerHTML = `<img src="${esc(r.content)}" alt="二维码"/>`;
   else el.textContent = "无法渲染二维码";
-  // 账号重生成态：缓存 SVG 供 refreshAccounts 重建容器后回填
-  if (botIdHint && regenMode.has(botIdHint)) regenSvg.set(botIdHint, el.innerHTML);
 }
 
+/**
+ * 刷新已绑定账号状态。只维护内存快照 + 局部更新名册卡片，
+ * 不依赖任何「已绑定账号列表」容器（该区块已移除：扫码成功即绑定，名册卡片直接显示已登录）。
+ */
 async function refreshAccounts() {
-  const box = g("mq-accounts");
-  if (!box) return;
   let accounts: any[] = [];
   try {
     accounts = (await ilink.listAccounts()) || [];
-    accountByBot = new Map(accounts.map((a: any) => [a.bot_id, a]));
   } catch {
     return;
   }
+  accountByBot = new Map(accounts.map((a: any) => [a.bot_id, a]));
   syncRosterLoginStates();
-  if (accounts.length === 0) {
-    box.innerHTML = `<div class="empty">暂无已绑定账号</div>`;
-    refreshBindStatus(0);
-    return;
-  }
-  box.innerHTML = accounts.map((a) => accountCard(a)).join("");
-  accounts.forEach((a) => {
-    const bot = a.bot_id;
-    const regenBtn = g(`mqregen-${bot}`);
-    if (regenBtn) regenBtn.addEventListener("click", () => regenAccountQr(bot));
-    // 若处于重新生成状态，把缓存的二维码重新注入（容器刚被重建）
-    if (regenMode.has(bot)) {
-      const svg = regenSvg.get(bot);
-      if (svg) {
-        const el = g(`mqra-${bot}`);
-        if (el) el.innerHTML = svg;
-      }
-    }
-  });
-  const online = accounts.filter((a) => a.status === "running").length;
-  refreshBindStatus(online);
-}
-
-function accountCard(a: any): string {
-  const status = a.status || "offline";
-  const expired = status === "session_expired";
-  const dotCls = status === "running" ? "ok" : expired ? "warn" : "off";
-  // hub：回显该机器人对应的团员身份
-  const mid = memberOfBot(a.bot_id);
-  const memberLabel = mid ? memberNames.get(mid) || mid : "";
-  const label: Record<string, string> = {
-    running: "在线",
-    offline: "离线",
-    session_expired: "绑定过期",
-    error: "异常",
-  };
-  return `
-    <div class="mcard ${expired ? "expired" : ""}" data-bot="${esc(a.bot_id)}">
-      <div class="row-between">
-        <div class="mcard-name"><span class="dot ${dotCls}"></span>${esc(memberLabel ? `${memberLabel}` : a.label || a.user_id || a.bot_id)}</div>
-        <div class="badge-row">
-          ${arEnabled ? `<span class="badge badge-ai">AI 回复</span>` : ""}
-          <span class="badge badge-${esc(status)}">${label[status] || status}</span>
-        </div>
-      </div>
-      <div class="mcard-sub">${esc([memberLabel ? a.label : "", a.user_id].filter(Boolean).join(" · ") || "")}</div>
-      <div class="mcard-qr" id="mqra-${esc(a.bot_id)}"></div>
-      ${expired ? `<button class="btn small warn-btn" id="mqregen-${esc(a.bot_id)}">生成新二维码</button>` : ""}
-    </div>`;
-}
-
-async function regenAccountQr(botId: string) {
-  const qrId = `mqra-${botId}`;
-  const qr = g(qrId);
-  if (!qr) return;
-  regenMode.add(botId);
-  // 记住该 bot 对应的成员，确认后把映射指向新 bot
-  const mid = memberOfBot(botId);
-  try {
-    const r: any = await ilink.beginLogin();
-    paintQr(qrId, r, botId);
-    startPoll(r.login_id, qrId, async (status, resp) => {
-      if (status === "confirmed") {
-        const newBot = resp?.account?.bot_id || "";
-        // 旧账号已失效，清掉避免残留成「绑定过期」
-        if (newBot && newBot !== botId) {
-          try { await ilink.removeAccount(botId); } catch { /* 忽略 */ }
-        }
-        if (mid && newBot) {
-          memberMap[mid] = newBot;
-          void persistMap();
-        }
-        regenMode.delete(botId);
-        regenSvg.delete(botId);
-        toast("账号已重新登录，登录态已缓存到本机");
-        await refreshAccounts();
-        syncRosterLoginStates();
-      } else if (status === "error") {
-        regenMode.delete(botId);
-        regenSvg.delete(botId);
-      }
-    });
-  } catch (e: any) {
-    regenMode.delete(botId);
-    regenSvg.delete(botId);
-    toast("生成二维码失败：" + (e?.message || e), false);
-  }
+  refreshBindStatus(accounts.filter((a) => a.status === "running").length);
 }
 
 // ---------------- 绑定状态总览 ----------------
@@ -645,7 +553,7 @@ function startPoll(loginId: string, qrElId: string, onStatus: (status: string, r
       const status = r?.status || "wait";
       if (r?.svg || r?.content) {
         const el = g(qrElId);
-        if (el) paintQr(qrElId, r, qrElId.replace(/^mqra-/, ""));
+        if (el) paintQr(qrElId, r);
       }
       onStatus(status, r);
       if (status === "confirmed") {

@@ -120,8 +120,12 @@ async function refreshTargets() {
   fill("wx_group", targets.wx_group, targets.wx_note || "微信群聊：无");
   fill(
     "ilink",
-    (targets.ilink || []).map((a: any) => ({ ...a, id: a.bot_id || a.user_id, name: a.label || a.user_id || a.bot_id })),
-    "iLink：无已绑定账号"
+    (targets.ilink || []).map((a: any) => ({
+      ...a,
+      id: a.id || a.bot_id || a.user_id,
+      name: `${a.name || a.label || a.user_id || a.bot_id}${a.expired ? " · 需重新扫码" : a.online ? " · 在线" : " · 离线"}`,
+    })),
+    targets.ilink_note || "iLink：无已绑定团员（先在「团员二维码」页扫码）"
   );
   const map = targets.member_map || {};
   fill(

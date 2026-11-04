@@ -41,7 +41,8 @@ export interface BridgeConfig {
 }
 
 export const ilink = {
-  beginLogin: () => invoke<any>("ilink_begin_login"),
+  // member_id：本次二维码对应的团员，扫码成功由后端直接落盘绑定（扫码成功 = 已绑定）
+  beginLogin: (member_id?: string) => invoke<any>("ilink_begin_login", { memberId: member_id || null }),
   pollLogin: (login_id: string) => invoke<any>("ilink_poll_login", { loginId: login_id }),
   cancelLogin: (login_id: string) => invoke("ilink_cancel_login", { loginId: login_id }),
   listAccounts: () => invoke<AccountInfo[]>("ilink_list_accounts"),

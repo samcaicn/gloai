@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::{broadcast, mpsc, oneshot};
 
 // ---------------------------------------------------------------------------
@@ -93,6 +93,9 @@ pub struct LoginSession {
     pub qr_content: String,
     pub poll_base: String,
     pub status: String,
+    /// 本次二维码对应的团员 id：扫码成功时由后端直接落盘「团员 → bot」绑定，
+    /// 不依赖前端异步写盘（曾出现扫码成功但绑定丢失、订单页下拉为空）。
+    pub member_id: Option<String>,
 }
 
 pub struct SessionManager {
@@ -173,6 +176,34 @@ impl SessionManager {
         }
     }
 
+    /// 扫码成功即绑定：把「团员 id -> bot_id」直接写进 config.json。
+    /// 后端落盘为准，前端只刷新 UI —— 避免前端异步写盘竞态导致「扫码成功却没绑定」，
+    /// 进而订单页 / 互动页的 iLink 下拉为空。
+    fn bind_member(&self, member_id: &str, bot_id: &str) {
+        let Some(state) = self.app.try_state::<crate::state::AppState>() else {
+            eprintln!("[ilink] 绑定落盘失败：AppState 未就绪");
+            return;
+        };
+        {
+            let mut g = state.config.lock().unwrap();
+            if let Some(obj) = g.as_object_mut() {
+                let entry = obj.entry("memberqr".to_string()).or_insert(json!({}));
+                if let Some(e) = entry.as_object_mut() {
+                    let m = e.entry("map".to_string()).or_insert(json!({}));
+                    if let Some(mo) = m.as_object_mut() {
+                        // 同一 microsignal 换绑到别的团员时清掉旧映射，避免一个 bot 指向两个团员
+                        mo.retain(|_, v| v.as_str() != Some(bot_id));
+                        mo.insert(member_id.to_string(), json!(bot_id));
+                    }
+                }
+            }
+        }
+        match state.save_config() {
+            Ok(()) => eprintln!("[ilink] 扫码成功，已绑定团员 {} -> {}", member_id, bot_id),
+            Err(e) => eprintln!("[ilink] 绑定落盘失败：{}", e),
+        }
+    }
+
     fn messages_dir(&self) -> PathBuf {
         self.dir.join("messages")
     }
@@ -249,8 +280,12 @@ impl SessionManager {
 
     // ---------------- 扫码登录 ----------------
 
-    /// 发起一次扫码登录：取二维码，渲染成 SVG，返回 (login_id, 二维码内容, svg)
-    pub async fn begin_login(self: &Arc<Self>) -> Result<(String, String, String), String> {
+    /// 发起一次扫码登录：取二维码，渲染成 SVG，返回 (login_id, 二维码内容, svg)。
+    /// member_id 非空时，confirmed 会由后端把该团员绑定到新账号并落盘。
+    pub async fn begin_login(
+        self: &Arc<Self>,
+        member_id: Option<String>,
+    ) -> Result<(String, String, String), String> {
         let client = IlinkClient::new("", None, None);
         let qr = client.fetch_qr_code().await?;
         let login_id = self.next_id("login");
@@ -261,6 +296,7 @@ impl SessionManager {
             qr_content: qr.qrcode_img_content.clone(),
             poll_base: ilink::DEFAULT_BASE_URL.to_string(),
             status: "wait".into(),
+            member_id,
         }));
         self.logins.lock().unwrap().insert(login_id.clone(), ls);
         self.emit(json!({"kind": "login", "event": "qr", "login_id": login_id, "content": qr.qrcode_img_content, "svg": svg}));
@@ -326,10 +362,23 @@ impl SessionManager {
                     list.push(acc.clone());
                 }
                 self.save_accounts();
+                // 扫码成功 = 绑定团员：后端直接落盘，前端不再承担写盘职责
+                let member_id = self
+                    .logins
+                    .lock()
+                    .unwrap()
+                    .get(login_id)
+                    .and_then(|ls| ls.lock().unwrap().member_id.clone());
+                if let Some(mid) = member_id.as_deref() {
+                    if !mid.trim().is_empty() {
+                        self.bind_member(mid.trim(), &acc.bot_id);
+                    }
+                }
                 self.spawn_session(acc.clone());
                 self.logins.lock().unwrap().remove(login_id);
                 out["account"] = json!({
                     "bot_id": acc.bot_id, "label": acc.label, "user_id": acc.user_id,
+                    "member_id": member_id,
                 });
             }
             _ => {}

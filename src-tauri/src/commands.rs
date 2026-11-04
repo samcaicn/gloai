@@ -260,8 +260,9 @@ pub async fn update_prepare(app: tauri::AppHandle, base_url: String) -> Result<V
 #[tauri::command(rename_all = "snake_case")]
 pub async fn ilink_begin_login(
     mgr: State<'_, Arc<SessionManager>>,
+    member_id: Option<String>,
 ) -> Result<Value, String> {
-    let (login_id, content, svg) = mgr.begin_login().await?;
+    let (login_id, content, svg) = mgr.begin_login(member_id).await?;
     Ok(json!({"login_id": login_id, "content": content, "svg": svg}))
 }
 
@@ -723,6 +724,7 @@ async fn ilink_route_send(
 
 #[tauri::command(rename_all = "snake_case")]
 pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
+    use std::collections::HashSet;
     // 1) 微信：sidecar 会话列表（私聊/群聊分组）
     let mut wx_private: Vec<Value> = Vec::new();
     let mut wx_group: Vec<Value> = Vec::new();
@@ -745,17 +747,17 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
         wx_note = "微信通道未开启（AI 自动回复面板 → 微信通道开关）".into();
     }
 
-    // 2) iLink：已绑定账号
-    let (ilink_accounts, ilink_note) = match app.try_state::<Arc<SessionManager>>() {
-        Some(mgr) => (json!(mgr.list_accounts()), String::new()),
-        None => (json!([]), "iLink 会话管理未初始化（管理器未注册）".into()),
-    };
+    // 2) iLink 账号快照（后面与「已绑定团员映射」合并成下拉目标）
+    let (ilink_raw, mut ilink_note): (Vec<Value>, String) =
+        match app.try_state::<Arc<SessionManager>>() {
+            Some(mgr) => (mgr.list_accounts(), String::new()),
+            None => (Vec::new(), "iLink 会话管理未初始化（管理器未注册）".into()),
+        };
 
     // 3) 团员：bbt-zb 名册（先 ledger 取团，再 listMembers）
     let mut members: Vec<Value> = Vec::new();
     let mut member_note = String::new();
     if let Some(_state) = app.try_state::<AppState>() {
-        use std::collections::HashSet;
         // leader/ledger 返回的团 id 官方前端用 String(x.id) 防御性转换，
         // 实际可能是字符串或数字，这里两者都兼容（as_i64 对字符串返回 None）。
         // 关键：必须遍历【所有】团，只取第一个团会让其它团的团员在订单页/互动页识别不到。
@@ -826,8 +828,105 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
     } else {
         member_note = "AppState 未初始化".into();
     }
-    // 附上绑定映射，前端标注「已绑定」
+    // 4) iLink 下拉目标：以「已绑定团员」映射为准（扫码成功即由后端落盘），
+    //    叠加 accounts.json 里的在线账号状态。
+    //    这样即便 accounts.json 被清、会话过期或账号不在线，订单页/互动页下拉
+    //    仍能列出「哪个团员已绑定」并选中发送，而不是只有一句「无已绑定账号」。
     let map = read_member_map(&app);
+    let acc_by_bot: std::collections::HashMap<String, &Value> = ilink_raw
+        .iter()
+        .filter_map(|a| {
+            a.get("bot_id")
+                .and_then(|v| v.as_str())
+                .map(|b| (b.to_string(), a))
+        })
+        .collect();
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut ilink_accounts: Vec<Value> = Vec::new();
+
+    // 4a) 已绑定团员优先：label 用团员名，value 用 bot_id（发送路由需要 bot_id）
+    for (member_id, bot_val) in &map {
+        let Some(bot) = bot_val.as_str().filter(|s| !s.is_empty()) else {
+            continue;
+        };
+        let acc = acc_by_bot.get(bot).copied();
+        let status = acc
+            .and_then(|a| a.get("status"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("offline");
+        let expired = acc
+            .and_then(|a| a.get("expired"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+            || status == "session_expired";
+        let name = members
+            .iter()
+            .find(|m| {
+                m.get("id").map(|v| match v {
+                    Value::String(s) => s == member_id,
+                    Value::Number(n) => n.to_string() == *member_id,
+                    _ => false,
+                }).unwrap_or(false)
+            })
+            .and_then(|m| {
+                m.get("name")
+                    .or_else(|| m.get("realName"))
+                    .or_else(|| m.get("nickname"))
+                    .or_else(|| m.get("telephoneMask"))
+            })
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .unwrap_or(member_id.as_str())
+            .to_string();
+        ilink_accounts.push(json!({
+            "id": bot,
+            "bot_id": bot,
+            "user_id": acc.and_then(|a| a.get("user_id")).and_then(|v| v.as_str()).unwrap_or(""),
+            "member_id": member_id,
+            "name": name,
+            "label": name,
+            "status": status,
+            "expired": expired,
+            "online": status == "running",
+        }));
+        seen.insert(bot.to_string());
+    }
+
+    // 4b) 有账号但没绑定映射的（历史扫码、或映射丢失）：仍列出，保证不漏
+    for a in &ilink_raw {
+        let Some(bot) = a.get("bot_id").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) else {
+            continue;
+        };
+        if seen.contains(bot) {
+            continue;
+        }
+        let label = a
+            .get("label")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .or_else(|| a.get("user_id").and_then(|v| v.as_str()))
+            .unwrap_or(bot)
+            .to_string();
+        let status = a.get("status").and_then(|v| v.as_str()).unwrap_or("offline");
+        ilink_accounts.push(json!({
+            "id": bot,
+            "bot_id": bot,
+            "user_id": a.get("user_id").and_then(|v| v.as_str()).unwrap_or(""),
+            "member_id": "",
+            "name": label,
+            "label": label,
+            "status": status,
+            "expired": a.get("expired").and_then(|v| v.as_bool()).unwrap_or(false) || status == "session_expired",
+            "online": status == "running",
+        }));
+        seen.insert(bot.to_string());
+    }
+
+    if ilink_accounts.is_empty() && ilink_note.is_empty() {
+        ilink_note = "尚无已绑定团员（到「团员二维码」页扫码，扫码成功即自动绑定）".into();
+    } else if ilink_accounts.is_empty() {
+        ilink_note = format!("{}；尚无已绑定团员", ilink_note);
+    }
 
     Ok(json!({
         "wx_private": wx_private,
