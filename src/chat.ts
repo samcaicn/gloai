@@ -6,6 +6,7 @@
 // 数据面走 ilink.ts -> Rust autoreply 命令。
 import {
   autoreplyApi,
+  aiGatewayApi,
   onAutoreplyEvent,
   onWxautoEvent,
   AutoReplyConfig,
@@ -132,15 +133,13 @@ export function renderChat(container: HTMLElement) {
             <label class="switch"><input type="checkbox" id="rl-voice"/><span></span></label>
           </div>
           <div class="field" style="grid-column: 1 / -1">
-            <div class="field-label">团员账号（触发 AI 的身份）<span class="hint">必填：平台 chat/send 仅团员有权限，团长 token 实测返回「无权限」（2026-11-04 线上核实）。填团员手机号+密码，AI 才生效</span></div>
-            <div class="ar-row">
-              <input id="rl-member-tel" class="input" placeholder="团员手机号"/>
-              <input id="rl-member-pwd" class="input" type="password" placeholder="团员登录密码（改时再填，留空保留原值）"/>
-            </div>
+            <div class="field-label">AI 身份<span class="hint">无需配置团员账号：多个微信私聊/群聊/iLink 渠道就是多个团员，消息都只向同一个团长发，由团长 AI 统一回复</span></div>
+            <div id="gw-status" class="ar-log">正在读取登录身份…</div>
           </div>
         </div>
         <div class="btn-row">
           <button class="btn small primary" id="rl-save">保存回复规则</button>
+          <button class="btn small" id="gw-refresh">刷新 AI 身份</button>
         </div>
         `)}
 
@@ -149,7 +148,7 @@ export function renderChat(container: HTMLElement) {
           <h2>AI 消息自测</h2>
           <span class="hint">核心链路一键体检</span>
         </div>
-        <p class="card-desc">验证「客户消息 → 团员身份 → 平台 AI → 回复」整条链路。<b>发送测试问题</b>会真实调用平台 AI（消耗 1 条当日配额）；<b>仅检查链路</b>不消耗；<b>模拟客户消息</b>走完整规则管线（AI 回复只记日志、不外发微信/iLink）。</p>
+        <p class="card-desc">所有渠道消息（多群聊 / 私聊 / iLink）都汇聚成「向团长发消息」，由团长 AI 统一回复后原路分发。<b>发送测试问题</b>会真实调用团长 AI（消耗 1 条当日配额）；<b>仅检查链路</b>不消耗；<b>模拟客户消息</b>走完整规则管线（AI 回复只记日志、不外发微信/iLink）。</p>
         <div class="ar-row">
           <input id="st-q" class="input" style="flex:1" placeholder="测试问题，如：你好，在吗？"/>
           <button class="btn small" id="st-check">仅检查链路</button>
@@ -189,6 +188,7 @@ async function loadAll() {
   fillRules();
   renderListenList();
   void loadLogs();
+  void loadGatewayStatus();
 }
 
 // ---------------- 回复规则 ----------------
@@ -215,8 +215,6 @@ function fillRules() {
   val("rl-rate-max", c.group_rate_max_replies ?? 10);
   val("rl-cd", c.cooldown_sec ?? 5);
   chk("rl-voice", c.reply_voice);
-  val("rl-member-tel", c.member_telephone || "");
-  // 密码不回显（type=password 且属敏感信息），仅作占位；保存时留空则保留原值
 }
 
 async function saveRules() {
@@ -234,12 +232,7 @@ async function saveRules() {
     group_rate_max_replies: Math.max(0, parseInt((g("rl-rate-max") as HTMLInputElement).value || "10", 10) || 0),
     cooldown_sec: Math.max(1, parseInt((g("rl-cd") as HTMLInputElement).value || "5", 10) || 5),
     reply_voice: !!(g("rl-voice") as HTMLInputElement).checked,
-    member_telephone: (g("rl-member-tel") as HTMLInputElement).value.trim(),
   };
-  const member_pwd = (g("rl-member-pwd") as HTMLInputElement).value;
-  if (member_pwd) {
-    value.member_password = member_pwd;
-  }
   try {
     state.cfg = await autoreplyApi.setConfig(value);
     toast("回复规则已保存");
@@ -342,6 +335,27 @@ async function saveListenList() {
   }
 }
 
+// ---------------- AI 消息网关状态 ----------------
+
+async function loadGatewayStatus() {
+  const box = g("gw-status");
+  if (!box) return;
+  try {
+    const s = await aiGatewayApi.status();
+    const c = s.channels || {};
+    const roleTxt = s.role === "member" ? "团员（向团长发消息）" : s.role === "leader" ? "团长" : s.role || "未知";
+    const leaderName = s.leader?.name || "—";
+    const left = s.quota?.left;
+    box.innerHTML = [
+      `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">${s.ok ? "✓" : "✕"}</span><b>${esc(roleTxt)}</b> · 绑定团长「${esc(leaderName)}」${s.ai_enabled === false ? " · AI 代聊未开启" : ""}${left !== undefined ? ` · 今日剩余 ${left} 条` : ""}</div>`,
+      `<div class="ar-line info"><span class="ar-t">·</span>渠道对应关系：微信私聊 ${c.wx_private ?? 0} · 群聊 ${c.wx_group ?? 0} · iLink ${c.ilink ?? 0} · 团员 ${c.member ?? 0}（已绑定 ${c.mapped ?? 0}）</div>`,
+      `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">i</span>${esc(s.hint || "")}</div>`,
+    ].join("");
+  } catch (e: any) {
+    box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>读取失败：${esc(String(e?.message || e))}</div>`;
+  }
+}
+
 // ---------------- AI 消息自测 ----------------
 
 function renderTestResult(r: AutoReplyTestResult) {
@@ -382,7 +396,7 @@ async function runInject() {
         ? `<div class="ar-line info"><span class="ar-t">✓</span>完整管线通过，AI 回复（${r.reply.length} 字，已记入日志、未外发）：</div><div class="ar-line info"><span class="ar-t">AI</span>${esc(r.reply)}</div>`
         : `<div class="ar-line warn"><span class="ar-t">✕</span>管线已执行但没有 AI 回复（详见 AI 回复日志）</div>`;
   } catch (e: any) {
-    if (box) box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>注入失败：${esc(String(e?.message || e))}<br/>详见 AI 回复日志（常见：未配团员账号 / 消息被规则过滤 / 冷却）</div>`;
+    if (box) box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>注入失败：${esc(String(e?.message || e))}<br/>详见 AI 回复日志（常见：登录态过期 / 消息被规则过滤 / 冷却）</div>`;
   }
 }
 
@@ -439,6 +453,7 @@ function wire() {
   });
   g("listen-save")?.addEventListener("click", saveListenList);
   g("rl-save")?.addEventListener("click", saveRules);
+  g("gw-refresh")?.addEventListener("click", () => void loadGatewayStatus());
   g("st-check")?.addEventListener("click", () => void runSelfTest(false));
   g("st-send")?.addEventListener("click", () => void runSelfTest(true));
   g("st-inject")?.addEventListener("click", () => void runInject());

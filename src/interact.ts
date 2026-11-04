@@ -1,8 +1,19 @@
 // 互动消息页：4 渠道下拉框（微信私聊/群聊/iLink/团员）→ 事件驱动的 AI 互动控制台
 // 入站消息（ilink-event / wxauto-event）驱动统一管线调 bbt-zb 接口生成 AI 回复（autoreply-event），
 // 本页实时展示所选目标的事件流，并可手动向所选目标发文本。
+// 0.3.0：新增「AI 消息网关」——多渠道消息都只向同一个团长发，由团长 AI 统一回复。
 import { toast } from "./ui";
-import { autoreplyApi, AutoReplyLog, onAutoreplyEvent, onIlinkEvent, onWxautoEvent, IlinkEvent } from "./ilink";
+import {
+  autoreplyApi,
+  aiGatewayApi,
+  AiGatewayStatus,
+  AutoReplyLog,
+  onAutoreplyEvent,
+  onAiGatewayEvent,
+  onIlinkEvent,
+  onWxautoEvent,
+  IlinkEvent,
+} from "./ilink";
 import { CHANNELS, ChannelKey, channelsApi, ChannelTargets } from "./channels";
 
 let g: (id: string) => HTMLElement | null = (id) => document.getElementById(id);
@@ -15,7 +26,7 @@ export function renderInteractPage(root: HTMLElement) {
   root.innerHTML = `
     <div class="panel">
       <h1>互动消息</h1>
-      <p class="hint">事件驱动：所选目标的新消息自动调 bbt-zb AI（团员 chat/send）生成回复并原路回发；本页实时展示事件流。</p>
+      <p class="hint">事件驱动：所选目标的新消息自动发往团长，由团长 AI 生成回复后原路回发；本页实时展示事件流。</p>
     </div>
 
     <div class="panel">
@@ -37,7 +48,19 @@ export function renderInteractPage(root: HTMLElement) {
     </div>
 
     <div class="panel">
-      <h2>② 手动发一条</h2>
+      <div class="row-between"><h2>② AI 消息网关</h2><button class="btn small" id="ia-gw-refresh">刷新状态</button></div>
+      <p class="hint">多个群聊 / 私聊 / iLink 渠道就是多个团员，消息都只向同一个团长发，由团长 AI 统一回复。下方按「① 选择互动目标」所选渠道真发一条测试问题（消耗 1 条当日配额）。</p>
+      <div class="ar-log" id="ia-gw-status">正在读取登录身份…</div>
+      <div class="ord-row mt8">
+        <input class="input" id="ia-gw-text" type="text" placeholder="测试问题，如：你好，在吗？" />
+        <button class="btn small primary" id="ia-gw-send">向团长发消息</button>
+        <label class="hint" style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="ia-gw-autosend" /> 同时回发到所选目标</label>
+      </div>
+      <div class="ar-log mt8" id="ia-gw-reply"></div>
+    </div>
+
+    <div class="panel">
+      <h2>③ 手动发一条</h2>
       <div class="ord-row">
         <input class="input" id="ia-text" type="text" placeholder="输入要发给所选目标的内容…" />
         <button class="btn small primary" id="ia-send">发送</button>
@@ -45,13 +68,14 @@ export function renderInteractPage(root: HTMLElement) {
     </div>
 
     <div class="panel">
-      <div class="row-between"><h2>③ 事件流（实时）</h2><button class="btn small" id="ia-clear">清空</button></div>
+      <div class="row-between"><h2>④ 事件流（实时）</h2><button class="btn small" id="ia-clear">清空</button></div>
       <div class="ar-log" id="ia-log"></div>
     </div>`;
 
   wire();
   void refreshTargets();
   void refreshAiState();
+  void refreshGatewayStatus();
   void subscribeEvents();
 }
 
@@ -150,6 +174,49 @@ async function refreshTargets() {
   }
 }
 
+async function refreshGatewayStatus() {
+  const box = g("ia-gw-status");
+  if (!box) return;
+  try {
+    const s: AiGatewayStatus = await aiGatewayApi.status();
+    const c = s.channels || {};
+    const role = s.role === "member" ? "团员（已绑定团长）" : s.role === "leader" ? "团长" : s.role || "未知";
+    const leader = s.leader?.name || "—";
+    box.innerHTML = [
+      `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">${s.ok ? "✓" : "✕"}</span><b>${escapeHtml(role)}</b> · 团长「${escapeHtml(leader)}」${s.quota?.left !== undefined ? ` · 今日剩余 ${s.quota.left} 条` : ""}</div>`,
+      `<div class="ar-line info"><span class="ar-t">·</span>对应关系：私聊 ${c.wx_private ?? 0} · 群聊 ${c.wx_group ?? 0} · iLink ${c.ilink ?? 0} · 团员 ${c.member ?? 0}（已绑定 ${c.mapped ?? 0}）</div>`,
+      `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">i</span>${escapeHtml(s.hint || "")}</div>`,
+    ].join("");
+  } catch (e: any) {
+    box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>状态读取失败：${escapeHtml(String(e?.message || e))}</div>`;
+  }
+}
+
+async function runGatewaySend() {
+  const input = g("ia-gw-text") as HTMLInputElement | null;
+  const text = (input?.value || "").trim() || "你好，在吗？";
+  const box = g("ia-gw-reply");
+  const target = (g(`ia-sel-${active}`) as HTMLSelectElement)?.value || "";
+  const autoSend = !!(g("ia-gw-autosend") as HTMLInputElement | null)?.checked;
+  if (autoSend && !target) {
+    toast("勾选了回发，请先在①里选择具体目标", false);
+    return;
+  }
+  if (box) box.innerHTML = `<div class="ar-line info"><span class="ar-t">…</span>正在向团长发消息（${escapeHtml(active)}${target ? " → " + escapeHtml(target) : ""}），等待 AI 回复…</div>`;
+  try {
+    const r = await aiGatewayApi.send(text, active, target, autoSend);
+    if (box) {
+      box.innerHTML =
+        `<div class="ar-line info"><span class="ar-t">✓</span>团长 AI 回复（${r.reply.length} 字${r.quota_left !== undefined && r.quota_left !== null ? `，剩余 ${r.quota_left} 条` : ""}${r.sent ? "，已原路回发" : ""}）：</div>` +
+        `<div class="ar-line info"><span class="ar-t">AI</span>${escapeHtml(r.reply)}</div>` +
+        (r.send_error ? `<div class="ar-line warn"><span class="ar-t">✕</span>回发失败：${escapeHtml(r.send_error)}</div>` : "");
+    }
+    void refreshGatewayStatus();
+  } catch (e: any) {
+    if (box) box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>失败：${escapeHtml(String(e?.message || e))}</div>`;
+  }
+}
+
 async function refreshAiState() {
   try {
     const cfg = await autoreplyApi.getConfig();
@@ -197,6 +264,12 @@ async function subscribeEvents() {
     }
   });
   unlistenFns.push(un3);
+
+  // 统一 AI 消息网关日志（多渠道 → 团长 → AI 回复）
+  const un4 = await onAiGatewayEvent((l: AutoReplyLog) => {
+    logLine(`[网关] ${l.msg}`, l.level === "warn" ? "warn" : "");
+  });
+  unlistenFns.push(un4);
 }
 
 async function sendText() {
@@ -231,6 +304,8 @@ function wire() {
     });
   });
   g("ia-refresh")?.addEventListener("click", () => void refreshTargets());
+  g("ia-gw-refresh")?.addEventListener("click", () => void refreshGatewayStatus());
+  g("ia-gw-send")?.addEventListener("click", () => void runGatewaySend());
   g("ia-ai-toggle")?.addEventListener("click", async () => {
     try {
       const cfg: any = await autoreplyApi.getConfig();

@@ -1,23 +1,21 @@
-//! 微信自动回复：iLink 入站消息 → bbt-zb 服务端 AI 生成 → iLink 回发。
+//! 微信/iLink 自动回复：多渠道入站消息 → 统一 AI 网关 → 原路回发（0.3.0）。
 //!
-//! bbt-zb 平台的 AI 自动回复只在「团员 chat/send」时由服务端触发（同步返回
-//! autoReply 并落库，senderType='ai'）。团长登录态没有 AI 生成端点，因此本模块
-//! 采用双账号设计：
-//!   * 主连接（AppState.conn）：团长账号，负责转发/人工回复（bridge.rs 管）。
-//!   * 团员账号（本模块配置）：telephone+password 登录取 token，专用于
-//!     chat/send 触发服务端 AI。所有微信联系人的消息汇聚到该团员与团长的
-//!     平台会话（服务端按 personaPrompt/FAQ/话术库生成回复）。
+//! ## 业务模型（别再理解反了）
+//! bbt-zb 的 AI 代聊是团长配置的：团员给团长发消息（`chat/send`），服务端用团长
+//! 的人设/话术库/FAQ 生成 `autoReply`。PC 端多个微信私聊 / 群聊 / iLink 渠道就是
+//! **多个团员**的消息来源，不管多少个，**都只向同一个团长发消息**：全部汇聚到
+//! 「当前登录账号 ↔ 团长」这唯一一个会话，由团长 AI 统一回复，再按渠道原路分发。
+//!
+//! 因此**不需要配置任何团员账号信息**（手机号/密码）。身份、sessionId、登录态
+//! 恢复、配额、AI 回复解析全部由 [`crate::ai_gateway`] 统一处理；本模块只负责
+//! 触发规则过滤、冷却/反检测、以及「哪个渠道进来的就回哪个渠道」的原路分发。
 //!
 //! 数据流：
-//!   [微信用户] → iLink(getupdates) → ilink_session 入站广播
-//!     → 本模块过滤（私聊开关 / 群聊 at·all·off 模式 / 冷却）
-//!     → chat/send{content} → result.data.autoReply.content
-//!     → iLink sendmessage 回发（私聊回 peer，群聊回 group_id）
+//!   [微信私聊/群聊/iLink] → 规则过滤 → ai_gateway::ask_leader(向团长发消息)
+//!     → 团长 AI 回复 → 原路回发（wxauto / iLink 对应 bot）
 //!
-//! 失败语义：配额用尽（响应 auto=true 无 autoReply）、人工接管中（takeoverMode）、
-//! 团员身份缺失、会话失效（自动重登一次）——全部记入日志并推送前端事件。
+//! 失败语义：配额用尽 / 人工接管 / 登录态过期 / 身份不符 —— 全部记入日志并推前端事件。
 
-use crate::bbt::{self, BbtConnection};
 use crate::ilink_session::{SessionCmd, SessionManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -45,7 +43,8 @@ pub struct ListenEntry {
 #[serde(default)]
 pub struct AutoReplyConfig {
     pub enabled: bool,
-    /// 团员账号（触发 bbt-zb 服务端 AI 的身份）。留空则仅当主账号 role==member 时可用。
+    /// 兼容旧版 config.json（0.2.x 曾要求填团员账号）。新版本绝不读取、不要求：
+    /// AI 身份直接用当前登录连接；这两个字段仅保证旧配置能反序列化。
     pub member_telephone: String,
     pub member_password: String,
     /// 私聊自动回复
@@ -102,12 +101,6 @@ impl Default for AutoReplyConfig {
 pub struct AutoReplyState {
     pub config: Mutex<AutoReplyConfig>,
     running: Mutex<bool>,
-    /// 团员 token 运行时缓存（会话失效自动重登）
-    member: Mutex<Option<BbtConnection>>,
-    /// 团员与团长平台会话的 sessionId 缓存（chat/send 必须带，否则 AI 回复不路由）。
-    /// ⚠️ 线上 sessionId 是数字（如 7），必须保留原始 JSON 类型透传，
-    /// 不能字符串化——官方前端直接回传数字。
-    member_session: Mutex<Option<(Value, i64)>>, // (sessionId 原始值, 获取时间戳 ms)
     /// 最近日志（环形，最多 200 条）
     pub logs: Mutex<Vec<Value>>,
     /// peer -> 上次回复时间戳(ms)
@@ -121,8 +114,6 @@ impl AutoReplyState {
         AutoReplyState {
             config: Mutex::new(AutoReplyConfig::default()),
             running: Mutex::new(false),
-            member: Mutex::new(None),
-            member_session: Mutex::new(None),
             logs: Mutex::new(Vec::new()),
             last_reply: Mutex::new(HashMap::new()),
             group_rate: Mutex::new(HashMap::new()),
@@ -314,30 +305,6 @@ async fn handle_inbound(
     process_msg_with(app, ar, msg).await
 }
 
-/// wxauto 通道入口（wxauto.rs 调用）：微信私聊/群聊消息进统一管线。
-pub async fn process_wx_msg(
-    app: &AppHandle,
-    peer: String,
-    is_group: bool,
-    text: String,
-    sender: String,
-) -> Result<(), String> {
-    let Some(ar) = app.try_state::<Arc<AutoReplyState>>() else {
-        return Err("自动回复模块未初始化".into());
-    };
-    let msg = WxMsg {
-        channel: "wx".into(),
-        bot_id: String::new(),
-        peer,
-        is_group,
-        kind: "text".into(),
-        text,
-        sender,
-        mentioned_self: false,
-    };
-    process_msg_with(app, &ar, msg).await
-}
-
 /// wxauto 通道便捷入口（从 app 取状态）。
 pub async fn process_msg(app: &AppHandle, msg: WxMsg) -> Result<(), String> {
     let Some(ar) = app.try_state::<Arc<AutoReplyState>>() else {
@@ -507,78 +474,17 @@ async fn process_msg_with(
         tokio::time::sleep(Duration::from_secs_f64(think_secs)).await;
     }
 
-    // ---- 团员身份：拿可用的 bbt-zb 连接（含 token）----
-    let member_conn = ensure_member_conn(app, ar, &cfg).await?;
-
-    // ---- 取团员与团长的平台会话 sessionId（chat/send 必须带，否则 AI 回复不路由）----
-    let session_id = match ensure_member_session(app, ar, &member_conn).await {
-        Ok(s) => s,
-        Err(e) => return Err(format!("获取团员会话失败: {}", e)),
-    };
-
-    // ---- 调 chat/send 触发服务端 AI（带 sessionId，保留线上数字类型）----
-    let result = match bbt::call(
-        &member_conn,
-        "chat/send",
-        &json!({ "content": text, "sessionId": session_id }),
-    )
-    .await
-    {
-        Ok(r) => r,
+    // ---- 统一 AI 网关：不管哪个渠道、哪个团员，消息都只向同一个团长发 ----
+    // 身份 / sessionId / 登录态恢复 / AI 回复解析全部由网关处理；
+    // route 仅作日志标记（渠道|会话），不参与身份选择。
+    let route = format!("{}|{}", ch, to);
+    let reply = match crate::ai_gateway::ask_leader(app, &text, &route).await {
+        Ok(ans) => ans.reply,
         Err(e) => {
-            // 会话失效 → 清缓存、重登一次再试
-            if e.contains("失效") || e.contains("未登录") {
-                ar.log(app, "info", "团员会话失效，重新登录…", json!({}));
-                *ar.member.lock().unwrap() = None;
-                *ar.member_session.lock().unwrap() = None;
-                let mc = ensure_member_conn(app, ar, &cfg).await?;
-                let sid = ensure_member_session(app, ar, &mc).await?;
-                bbt::call(&mc, "chat/send", &json!({ "content": text, "sessionId": sid })).await?
-            } else {
-                return Err(format!("chat/send 失败: {}", e));
-            }
+            ar.log(app, "warn", &format!("AI 网关失败：{}", e), json!({"channel": ch, "to": to, "text": text}));
+            return Err(e);
         }
     };
-    let ok = result.get("status").and_then(|s| s.as_bool()).unwrap_or(false);
-    if !ok {
-        let msg_s = result.get("msg").and_then(|m| m.as_str()).unwrap_or("chat/send 被拒绝");
-        // 「无权限」= 身份不是团员：清缓存，下次自测重新走身份预检
-        if msg_s.contains("无权限") || msg_s.contains("权限") {
-            *ar.member.lock().unwrap() = None;
-            *ar.member_session.lock().unwrap() = None;
-            let hint = format!(
-                "{}（AI 回复必须用团员身份触发；请在 聊天配置 → 回复规则 填团员账号）",
-                msg_s
-            );
-            ar.log(app, "warn", &format!("bbt-zb 拒绝: {}", hint), json!({"channel": ch, "to": to, "text": text}));
-            return Err(hint);
-        }
-        ar.log(app, "warn", &format!("bbt-zb 拒绝: {}", msg_s), json!({"channel": ch, "to": to, "text": text}));
-        return Err(msg_s.to_string());
-    }
-    let data = result.get("data").cloned().unwrap_or(json!(null));
-    // chat/send 成功后服务端会回 sessionId（官方前端 sid = sd.sessionId）→ 回写缓存
-    let new_sid = extract_session_id(&data);
-    if let Some(sid) = &new_sid {
-        *ar.member_session.lock().unwrap() = Some((sid.clone(), now_ms()));
-        ar.log(app, "debug", &format!("平台会话 sessionId={}", sid), json!({}));
-    }
-    let auto = data.get("auto").and_then(|v| v.as_bool()).unwrap_or(false);
-    // autoReply 兼容对象 {content} 与纯字符串两种形态
-    let reply = match data.get("autoReply") {
-        Some(Value::String(s)) => s.clone(),
-        Some(v) => v.get("content").and_then(|c| c.as_str()).unwrap_or("").to_string(),
-        _ => String::new(),
-    };
-    if reply.trim().is_empty() {
-        let reason = if auto {
-            "AI 无回复：团员今日配额已用尽，或团长已开启人工接管"
-        } else {
-            "AI 无回复：服务端未返回 autoReply"
-        };
-        ar.log(app, "warn", reason, json!({"channel": ch, "to": to, "text": text}));
-        return Err(reason.to_string());
-    }
 
     // ---- 原路回发 ----
     let ch_label = if is_group { "群" } else { "私聊" };
@@ -637,181 +543,22 @@ async fn process_msg_with(
     }
 }
 
-/// 取团员连接：优先用缓存 token；无则用配置的 telephone/password 登录。
-async fn ensure_member_conn(
-    app: &AppHandle,
-    ar: &Arc<AutoReplyState>,
-    cfg: &AutoReplyConfig,
-) -> Result<BbtConnection, String> {
-    let base_url = app
-        .try_state::<crate::state::AppState>()
-        .map(|s| s.conn.lock().unwrap().base_url.clone())
-        .unwrap_or_default();
-    if base_url.is_empty() {
-        return Err("未配置 bbt-zb 接口地址".into());
-    }
-    if let Some(c) = ar.member.lock().unwrap().clone() {
-        if c.base_url == base_url {
-            return Ok(c);
-        }
-    }
-    // 未配置团员账号 → fallback 用团长自己的连接（仅兜底：团长 token 实测调 chat/send
-    // 返回「无权限」，真正触发 AI 仍需团员账号；走这条路径时 sessionList 的身份预检
-    // 会给出明确提示）。团长 token 可能为空（刚重启、token 已失效）或过期：优先用
-    // 内存 token，否则用持久化的 telephone/password 自动重登，确保重启/过期后可恢复。
-    if cfg.member_telephone.trim().is_empty() || cfg.member_password.is_empty() {
-        if let Some(state) = app.try_state::<crate::state::AppState>() {
-            // 1) 内存中已有有效 token → 直接复用
-            {
-                let lc = state.conn.lock().unwrap();
-                if !lc.token.as_ref().map(|t| t.is_empty()).unwrap_or(true) {
-                    ar.log(app, "info", "未配置团员账号，使用团长连接调 chat/send", json!({}));
-                    return Ok(lc.clone());
-                }
-            }
-            // 2) 无 token：从 config.json 读持久化的账号密码自动重登
-            let (tel, pwd) = {
-                let g = state.config.lock().unwrap();
-                let conn = g.get("connection").cloned().unwrap_or(json!({}));
-                (
-                    conn.get("telephone").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                    conn.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                )
-            };
-            if !tel.is_empty() && !pwd.is_empty() {
-                let mut fresh = BbtConnection {
-                    base_url: base_url.clone(),
-                    token: None,
-                    telephone: Some(tel.clone()),
-                    password: Some(pwd.clone()),
-                };
-                match bbt::login(&fresh, &tel, &pwd).await {
-                    Ok((token, _acct)) => {
-                        fresh.token = Some(token.clone());
-                        *state.conn.lock().unwrap() = fresh.clone();
-                        ar.log(app, "info", "团长连接已用持久化账号自动重登", json!({}));
-                        return Ok(fresh);
-                    }
-                    Err(e) => {
-                        ar.log(app, "warn", &format!("团长自动重登失败: {}", e), json!({}));
-                    }
-                }
-            }
-        }
-        return Err("未登录团长账号，且未配置团员账号".into());
-    }
-    let mut c = BbtConnection {
-        base_url,
-        token: None,
-        telephone: Some(cfg.member_telephone.clone()),
-        password: None,
-    };
-    let (token, account) = bbt::login(&c, &cfg.member_telephone.trim(), &cfg.member_password).await?;
-    let role = account.get("role").and_then(|r| r.as_str()).unwrap_or("").to_string();
-    c.token = Some(token);
-    *ar.member.lock().unwrap() = Some(c.clone());
-    ar.log(
-        app,
-        "info",
-        &format!("团员账号已登录（role={}）", if role.is_empty() { "?" } else { &role }),
-        json!({}),
-    );
-    Ok(c)
-}
-
-/// 从 sessionList 的 data 里提取 sessionId（兼容数字/字符串，2026-11-04 实测线上是数字）。
-/// 候选位置：{session:{sessionId}} / {session:{id}} / {sessionId} / {list:[{sessionId}]}
-/// （前两种是团员视角，list 形态是团长视角；官方 features/chat.js 两种都处理）。
-fn extract_session_id(data: &Value) -> Option<Value> {
-    let norm = |v: &Value| -> Option<Value> {
-        if let Some(n) = v.as_i64() {
-            return Some(json!(n));
-        }
-        if let Some(s) = v.as_str() {
-            let s = s.trim();
-            if s.is_empty() {
-                return None;
-            }
-            // 纯数字字符串归一成数字（与服务端严格比较兼容）
-            return Some(s.parse::<i64>().map(|n| json!(n)).unwrap_or_else(|_| json!(s)));
-        }
-        None
-    };
-    let sess = data.get("session");
-    for c in [
-        sess.and_then(|s| s.get("sessionId")),
-        sess.and_then(|s| s.get("id")),
-        data.get("sessionId"),
-        data.get("list")
-            .and_then(|l| l.as_array())
-            .and_then(|l| l.first())
-            .and_then(|s| s.get("sessionId")),
-    ] {
-        if let Some(v) = c.and_then(norm) {
-            return Some(v);
-        }
-    }
-    None
-}
-
-/// 取团员与团长的平台会话 sessionId（chat/send 必须带，否则 AI 回复不路由）。
-/// 经 chat/sessionList 取（团员身份），缓存 10 分钟；失效时由调用方清除后重试。
-/// ⚠️ 身份预检：团长 token 调 chat/send 平台返回「无权限」（2026-11-04 实测），
-/// 因此 sessionList 返回 role=leader 时直接给出可操作错误，不再白跑。
-async fn ensure_member_session(
-    app: &AppHandle,
-    ar: &Arc<AutoReplyState>,
-    conn: &BbtConnection,
-) -> Result<Value, String> {
-    const TTL_MS: i64 = 10 * 60 * 1000;
-    {
-        let g = ar.member_session.lock().unwrap();
-        if let Some((sid, ts)) = g.as_ref() {
-            if now_ms() - *ts < TTL_MS {
-                return Ok(sid.clone());
-            }
-        }
-    }
-    let r = bbt::call(conn, "chat/sessionList", &json!({})).await?;
-    let data = bbt::data_of(&r)?;
-    if data.get("role").and_then(|v| v.as_str()) == Some("leader") {
-        return Err(
-            "当前是团长身份：平台 chat/send 仅团员有权限（实测返回「无权限」）。\
-             请在 聊天配置 → 回复规则 填写团员账号（手机号+密码）后再测"
-                .into(),
-        );
-    }
-    match extract_session_id(&data) {
-        Some(sid) => {
-            *ar.member_session.lock().unwrap() = Some((sid.clone(), now_ms()));
-            ar.log(app, "debug", &format!("团员 sessionId={}", sid), json!({}));
-            Ok(sid)
-        }
-        _ => Err("团员 sessionList 未返回可用 sessionId（团员账号是否已归属团长/在团内？）".into()),
-    }
-}
-
 // ============================================================================
 //  AI 消息自测（核心业务一键体检，tauri dev / 生产均可反复验证）
 // ============================================================================
 
-/// 分步体检 AI 回复链路：本地配置 → 团员登录 → 会话 sessionId →（可选）chat/send 实发 → AI 回复解析。
+/// 分步体检 AI 消息网关：登录态 → 身份/绑定团长 → 配额 →（可选）真实发一条并解析 AI 回复。
 /// `send=false` 只做链路检查不消耗平台配额；`send=true` 真发一条测试问题并返回 AI 回复原文。
 pub async fn self_test(app: &AppHandle, question: &str, send: bool) -> Value {
     let Some(ar) = app.try_state::<Arc<AutoReplyState>>() else {
         return json!({ "ok": false, "steps": [ { "name": "模块", "ok": false, "detail": "自动回复模块未初始化" } ], "reply": "" });
     };
-    let cfg = ar.config.lock().unwrap().clone();
     let mut steps: Vec<Value> = Vec::new();
-    let mut ok_all = true;
     macro_rules! step {
         ($name:expr, $ok:expr, $detail:expr) => {{
             let ok: bool = $ok;
             let detail: String = $detail;
             steps.push(json!({ "name": $name, "ok": ok, "detail": detail }));
-            if !ok {
-                ok_all = false;
-            }
             ar.log(
                 app,
                 if ok { "info" } else { "warn" },
@@ -822,101 +569,63 @@ pub async fn self_test(app: &AppHandle, question: &str, send: bool) -> Value {
         }};
     }
 
-    // ① 本地配置
-    let base_url = app
-        .try_state::<crate::state::AppState>()
-        .map(|s| s.conn.lock().unwrap().base_url.clone())
-        .unwrap_or_default();
-    let has_member = !cfg.member_telephone.trim().is_empty() && !cfg.member_password.is_empty();
-    if !step!(
-        "本地配置",
-        !base_url.is_empty() && has_member,
-        if base_url.is_empty() {
-            "未配置 bbt-zb 接口地址".into()
-        } else if has_member {
-            format!("接口 {} · 团员账号 {} 已配置", base_url, cfg.member_telephone.trim())
-        } else {
-            "团员账号未配置：AI 回复必须用团员身份（团长 token 平台返回「无权限」），请在下方填写".into()
-        }
-    ) {
+    // ① 登录态 / 身份 / 绑定团长（网关统一探测，不需要任何团员账号信息）
+    let st = crate::ai_gateway::status(app).await;
+    let logged = st.get("logged_in").and_then(|v| v.as_bool()).unwrap_or(false);
+    let role = st.get("role").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let hint = st.get("hint").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    if !step!("登录身份", logged && role == "member", if logged { hint.clone() } else { hint.clone() }) {
         return json!({ "ok": false, "steps": steps, "reply": "" });
     }
 
-    // ② 团员登录
-    let conn = match ensure_member_conn(app, &ar, &cfg).await {
-        Ok(c) => {
-            if step!("团员登录", true, "token 可用（缓存或重新登录成功）".into()) {
-                c
-            } else {
-                return json!({ "ok": false, "steps": steps, "reply": "" });
-            }
-        }
-        Err(e) => {
-            step!("团员登录", false, e);
-            return json!({ "ok": false, "steps": steps, "reply": "" });
-        }
-    };
+    // ② 团长 AI 代聊是否开启
+    let ai_on = st.get("ai_enabled").and_then(|v| v.as_bool()).unwrap_or(true);
+    if !step!("团长 AI 代聊", ai_on, if ai_on { "已开启".into() } else { "团长后台未开启 AI 代聊".into() }) {
+        return json!({ "ok": false, "steps": steps, "reply": "" });
+    }
 
-    // ③ 会话 sessionId
-    let sid = match ensure_member_session(app, &ar, &conn).await {
-        Ok(s) => {
-            if step!("会话 sessionId", true, format!("sessionId={}（已缓存）", s)) {
-                s
-            } else {
-                return json!({ "ok": false, "steps": steps, "reply": "" });
-            }
-        }
-        Err(e) => {
-            step!("会话 sessionId", false, e);
-            return json!({ "ok": false, "steps": steps, "reply": "" });
-        }
-    };
+    // ③ 今日配额（0 = 已用尽）
+    let left = st.get("quota").and_then(|q| q.get("left")).and_then(|v| v.as_i64());
+    let quota_ok = left.map(|n| n > 0).unwrap_or(true);
+    step!(
+        "今日配额",
+        quota_ok,
+        left.map(|n| format!("剩余 {} 条", n)).unwrap_or_else(|| "平台未返回配额（不阻断）".into())
+    );
+
+    // ④ 渠道对应关系（仅展示，不阻断：对应关系只影响回发路由）
+    let chs = st.get("channels").cloned().unwrap_or(json!({}));
+    step!(
+        "渠道对应关系",
+        true,
+        format!(
+            "微信私聊 {} · 群聊 {} · iLink {} · 团员 {}（已绑定映射 {}）",
+            chs.get("wx_private").and_then(|v| v.as_i64()).unwrap_or(0),
+            chs.get("wx_group").and_then(|v| v.as_i64()).unwrap_or(0),
+            chs.get("ilink").and_then(|v| v.as_i64()).unwrap_or(0),
+            chs.get("member").and_then(|v| v.as_i64()).unwrap_or(0),
+            chs.get("mapped").and_then(|v| v.as_i64()).unwrap_or(0)
+        )
+    );
 
     if !send {
-        return json!({ "ok": ok_all, "steps": steps, "reply": "" });
+        let ok = steps.iter().all(|s| s.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
+        return json!({ "ok": ok, "steps": steps, "reply": "" });
     }
 
-    // ④ 实发 chat/send
+    // ⑤ 真实发一条「向团长发消息」，拿 AI 回复
     let q = if question.trim().is_empty() { "你好，在吗？" } else { question.trim() };
-    let result = match bbt::call(&conn, "chat/send", &json!({ "content": q, "sessionId": sid })).await {
-        Ok(r) => r,
+    match crate::ai_gateway::ask_leader(app, q, "self_test").await {
+        Ok(ans) => {
+            step!("发送测试问题", true, format!("已受理，剩余配额 {:?}", ans.quota_left));
+            step!("团长 AI 回复", true, format!("{} 字", ans.reply.chars().count()));
+            json!({ "ok": true, "steps": steps, "reply": ans.reply })
+        }
         Err(e) => {
-            step!("发送测试问题", false, format!("chat/send 失败: {}", e));
-            return json!({ "ok": false, "steps": steps, "reply": "" });
+            step!("团长 AI 回复", false, e);
+            json!({ "ok": false, "steps": steps, "reply": "" })
         }
-    };
-    if result.get("status").and_then(|s| s.as_bool()) != Some(true) {
-        let msg_s = result.get("msg").and_then(|m| m.as_str()).unwrap_or("被拒绝").to_string();
-        if msg_s.contains("权限") {
-            *ar.member.lock().unwrap() = None;
-            *ar.member_session.lock().unwrap() = None;
-        }
-        step!("发送测试问题", false, format!("平台拒绝：{}", msg_s));
-        return json!({ "ok": false, "steps": steps, "reply": "" });
     }
-    let data = result.get("data").cloned().unwrap_or(json!(null));
-    let new_sid = extract_session_id(&data);
-    if let Some(s) = &new_sid {
-        *ar.member_session.lock().unwrap() = Some((s.clone(), now_ms()));
-    }
-    let auto = data.get("auto").and_then(|v| v.as_bool()).unwrap_or(false);
-    let reply = match data.get("autoReply") {
-        Some(Value::String(s)) => s.clone(),
-        Some(v) => v.get("content").and_then(|c| c.as_str()).unwrap_or("").to_string(),
-        _ => String::new(),
-    };
-    if reply.trim().is_empty() {
-        let reason = if auto {
-            "平台已受理但无 AI 回复：团员今日配额已用尽，或团长开启了人工接管".into()
-        } else {
-            "平台未返回 autoReply（检查平台聊天参数 aiEnabled / 人设配置）".into()
-        };
-        step!("AI 回复", false, reason);
-        return json!({ "ok": false, "steps": steps, "reply": "" });
-    }
-    step!("发送测试问题", true, format!("已受理，sessionId={}", new_sid.map(|s| s.to_string()).unwrap_or_default()));
-    step!("AI 回复", true, format!("{} 字", reply.chars().count()));
-    json!({ "ok": true, "steps": steps, "reply": reply })
 }
 
 /// 注入一条模拟客户消息，走完整自动回复管线（规则过滤 → AI → 回发）。

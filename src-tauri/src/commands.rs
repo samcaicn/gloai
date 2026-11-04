@@ -537,7 +537,7 @@ pub async fn autoreply_logs(
     Ok(json!(lg[lg.len() - n..].to_vec()))
 }
 
-/// AI 消息自测：分步体检 配置→团员登录→sessionId→（实发）chat/send→AI 回复。
+/// AI 消息自测：分步体检 登录身份→绑定团长→配额→（实发）向团长发消息→AI 回复。
 /// send=false 只查链路不消耗平台配额；send=true 真发一条测试问题。
 #[tauri::command(rename_all = "snake_case")]
 pub async fn autoreply_self_test(
@@ -560,6 +560,64 @@ pub async fn autoreply_inject(
     let reply = crate::autoreply::inject(&app, text, peer.unwrap_or_default(), group.unwrap_or(false))
         .await?;
     Ok(json!({ "ok": true, "reply": reply }))
+}
+
+// ============================================================================
+//  PC 端统一 AI 消息网关（0.3.0）
+//  多个微信私聊/群聊/iLink 渠道 = 多个团员，消息都只向同一个团长发，
+//  由团长 AI 统一回复；channel/target 只用于「哪个渠道来的就回哪个渠道」。
+// ============================================================================
+
+/// 网关状态：登录身份、绑定团长、AI 代聊开关、今日配额、渠道对应关系数量。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn ai_gateway_status(app: tauri::AppHandle) -> Result<Value, String> {
+    Ok(crate::ai_gateway::status(&app).await)
+}
+
+/// 统一入口：向团长发一条消息，返回团长的 AI 回复。
+/// channel/target 仅用于日志标记与回发路由；auto_send=true 时按渠道原路回发。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn ai_gateway_send(
+    app: tauri::AppHandle,
+    text: String,
+    channel: Option<String>,
+    target: Option<String>,
+    auto_send: Option<bool>,
+) -> Result<Value, String> {
+    let ch = channel.unwrap_or_else(|| "test".into());
+    let to = target.unwrap_or_default();
+    let route = if to.is_empty() { ch.clone() } else { format!("{}|{}", ch, to) };
+    let ans = crate::ai_gateway::ask_leader(&app, &text, &route).await?;
+    let mut sent = false;
+    let mut send_err = String::new();
+    if auto_send.unwrap_or(false) && !to.is_empty() {
+        match crate::ai_gateway::dispatch(&app, &ch, &to, &ans.reply).await {
+            Ok(_) => sent = true,
+            Err(e) => send_err = e,
+        }
+    }
+    Ok(json!({
+        "ok": true,
+        "reply": ans.reply,
+        "session_id": ans.session_id,
+        "quota_left": ans.quota_left,
+        "auto": ans.auto,
+        "channel": ch,
+        "target": to,
+        "sent": sent,
+        "send_error": send_err
+    }))
+}
+
+/// 网关日志（尾部 limit 条）
+#[tauri::command(rename_all = "snake_case")]
+pub async fn ai_gateway_logs(
+    ag: State<'_, Arc<crate::ai_gateway::AiGatewayState>>,
+    limit: Option<usize>,
+) -> Result<Value, String> {
+    let lg = ag.logs.lock().unwrap();
+    let n = limit.unwrap_or(50).min(lg.len());
+    Ok(json!(lg[lg.len() - n..].to_vec()))
 }
 
 // ============================================================================

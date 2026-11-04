@@ -2,6 +2,7 @@ mod state;
 mod guard;
 mod util;
 mod autoreply;
+mod ai_gateway;
 mod wxauto;
 mod bbt;
 mod bridge;
@@ -45,10 +46,12 @@ pub fn run() {
             let bs = Arc::new(bridge::BridgeState::new());
             let ars = Arc::new(autoreply::AutoReplyState::new());
             let ws = Arc::new(wxauto::WxAutoState::new());
+            let ags = Arc::new(ai_gateway::AiGatewayState::new());
             app.manage(sm.clone());
             app.manage(bs.clone());
             app.manage(ars.clone());
             app.manage(ws.clone());
+            app.manage(ags.clone());
 
             // 启动时把磁盘上的本地配置载入内存
             let state = app.state::<state::AppState>();
@@ -190,6 +193,10 @@ pub fn run() {
             commands::autoreply_logs,
             commands::autoreply_self_test,
             commands::autoreply_inject,
+            // PC 端统一 AI 消息网关
+            commands::ai_gateway_status,
+            commands::ai_gateway_send,
+            commands::ai_gateway_logs,
             // 团员 iLink 二维码（hub 成员映射）
             commands::memberqr_get_map,
             commands::memberqr_set_map,

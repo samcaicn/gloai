@@ -123,6 +123,55 @@ export interface AutoReplyTestResult {
   reply: string;
 }
 
+/** PC 端统一 AI 消息网关：多渠道消息都只向同一个团长发，由团长 AI 回复 */
+export interface AiGatewayStatus {
+  ok: boolean;
+  logged_in: boolean;
+  role: string;
+  leader: any;
+  ai_enabled: boolean | null;
+  session_id: any;
+  quota: { limit?: number; used?: number; left?: number } | null;
+  channels: {
+    wx_private?: number;
+    wx_group?: number;
+    ilink?: number;
+    member?: number;
+    mapped?: number;
+  };
+  hint: string;
+}
+
+export interface AiGatewaySendResult {
+  ok: boolean;
+  reply: string;
+  session_id?: any;
+  quota_left?: number | null;
+  auto?: boolean;
+  channel: string;
+  target: string;
+  sent: boolean;
+  send_error: string;
+}
+
+export const aiGatewayApi = {
+  /** 登录身份 / 绑定团长 / AI 开关 / 今日配额 / 渠道对应关系 */
+  status: () => invoke<AiGatewayStatus>("ai_gateway_status"),
+  /** 统一入口：向团长发一条消息并拿 AI 回复；autoSend=true 按渠道原路回发 */
+  send: (text: string, channel?: string, target?: string, autoSend = false) =>
+    invoke<AiGatewaySendResult>("ai_gateway_send", {
+      text,
+      channel: channel ?? null,
+      target: target ?? null,
+      auto_send: autoSend,
+    }),
+  logs: (limit = 50) => invoke<AutoReplyLog[]>("ai_gateway_logs", { limit }),
+};
+
+export function onAiGatewayEvent(cb: (e: AutoReplyLog) => void): Promise<UnlistenFn> {
+  return listen<AutoReplyLog>("ai-gateway-event", (ev) => cb(ev.payload));
+}
+
 export const autoreplyApi = {
   getConfig: () => invoke<AutoReplyConfig>("autoreply_get_config"),
   setConfig: (value: Partial<AutoReplyConfig>) =>
