@@ -111,6 +111,18 @@ export interface AutoReplyLog {
   extra?: any;
 }
 
+export interface AutoReplyTestStep {
+  name: string;
+  ok: boolean;
+  detail: string;
+}
+
+export interface AutoReplyTestResult {
+  ok: boolean;
+  steps: AutoReplyTestStep[];
+  reply: string;
+}
+
 export const autoreplyApi = {
   getConfig: () => invoke<AutoReplyConfig>("autoreply_get_config"),
   setConfig: (value: Partial<AutoReplyConfig>) =>
@@ -118,6 +130,12 @@ export const autoreplyApi = {
   setEnabled: (enabled: boolean) =>
     invoke<AutoReplyConfig>("autoreply_set_enabled", { enabled }),
   logs: (limit = 50) => invoke<AutoReplyLog[]>("autoreply_logs", { limit }),
+  /** AI 消息自测：send=false 仅检查链路（不消耗平台配额），send=true 实发一条测试问题 */
+  selfTest: (question: string, send: boolean) =>
+    invoke<AutoReplyTestResult>("autoreply_self_test", { question, send }),
+  /** 注入一条模拟客户消息走完整管线（AI 回复只记日志、不外发） */
+  inject: (text: string, peer?: string, group?: boolean) =>
+    invoke<{ ok: boolean; reply: string }>("autoreply_inject", { text, peer: peer ?? null, group: !!group }),
 };
 
 export function onAutoreplyEvent(cb: (e: AutoReplyLog) => void): Promise<UnlistenFn> {

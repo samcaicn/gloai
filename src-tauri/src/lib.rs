@@ -188,6 +188,8 @@ pub fn run() {
             commands::autoreply_set_config,
             commands::autoreply_set_enabled,
             commands::autoreply_logs,
+            commands::autoreply_self_test,
+            commands::autoreply_inject,
             // 团员 iLink 二维码（hub 成员映射）
             commands::memberqr_get_map,
             commands::memberqr_set_map,

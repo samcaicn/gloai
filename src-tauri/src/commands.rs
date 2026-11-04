@@ -537,6 +537,31 @@ pub async fn autoreply_logs(
     Ok(json!(lg[lg.len() - n..].to_vec()))
 }
 
+/// AI 消息自测：分步体检 配置→团员登录→sessionId→（实发）chat/send→AI 回复。
+/// send=false 只查链路不消耗平台配额；send=true 真发一条测试问题。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn autoreply_self_test(
+    app: tauri::AppHandle,
+    question: Option<String>,
+    send: Option<bool>,
+) -> Result<Value, String> {
+    let q = question.unwrap_or_default();
+    Ok(crate::autoreply::self_test(&app, &q, send.unwrap_or(true)).await)
+}
+
+/// 注入一条模拟客户消息走完整自动回复管线（channel=test：AI 回复只记日志、不外发）。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn autoreply_inject(
+    app: tauri::AppHandle,
+    text: String,
+    peer: Option<String>,
+    group: Option<bool>,
+) -> Result<Value, String> {
+    let reply = crate::autoreply::inject(&app, text, peer.unwrap_or_default(), group.unwrap_or(false))
+        .await?;
+    Ok(json!({ "ok": true, "reply": reply }))
+}
+
 // ============================================================================
 //  团员 iLink 二维码（hub：团员 ↔ iLink 机器人账号 映射持久化）
 //  每个团员对应一个 iLink 机器人账号（bot_id）。扫码确认后记录映射，

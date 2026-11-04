@@ -11,6 +11,7 @@ import {
   AutoReplyConfig,
   ListenEntry,
   AutoReplyLog,
+  AutoReplyTestResult,
 } from "./ilink";
 import { overlayHtml, openOverlay, wireOverlayClose, bindOverlayEsc } from "./overlay";
 
@@ -131,7 +132,7 @@ export function renderChat(container: HTMLElement) {
             <label class="switch"><input type="checkbox" id="rl-voice"/><span></span></label>
           </div>
           <div class="field" style="grid-column: 1 / -1">
-            <div class="field-label">团员账号（触发 AI 的身份）<span class="hint">关键：留空则自动回复 fallback 到团长连接，而团长没有 AI 端点 → 回复必失败；填团员手机号+密码，AI 才生效</span></div>
+            <div class="field-label">团员账号（触发 AI 的身份）<span class="hint">必填：平台 chat/send 仅团员有权限，团长 token 实测返回「无权限」（2026-11-04 线上核实）。填团员手机号+密码，AI 才生效</span></div>
             <div class="ar-row">
               <input id="rl-member-tel" class="input" placeholder="团员手机号"/>
               <input id="rl-member-pwd" class="input" type="password" placeholder="团员登录密码（改时再填，留空保留原值）"/>
@@ -142,6 +143,21 @@ export function renderChat(container: HTMLElement) {
           <button class="btn small primary" id="rl-save">保存回复规则</button>
         </div>
         `)}
+
+      <section class="card">
+        <div class="row-between">
+          <h2>AI 消息自测</h2>
+          <span class="hint">核心链路一键体检</span>
+        </div>
+        <p class="card-desc">验证「客户消息 → 团员身份 → 平台 AI → 回复」整条链路。<b>发送测试问题</b>会真实调用平台 AI（消耗 1 条当日配额）；<b>仅检查链路</b>不消耗；<b>模拟客户消息</b>走完整规则管线（AI 回复只记日志、不外发微信/iLink）。</p>
+        <div class="ar-row">
+          <input id="st-q" class="input" style="flex:1" placeholder="测试问题，如：你好，在吗？"/>
+          <button class="btn small" id="st-check">仅检查链路</button>
+          <button class="btn small primary" id="st-send">发送测试问题</button>
+          <button class="btn small" id="st-inject">模拟客户消息</button>
+        </div>
+        <div id="st-result" class="ar-log" style="margin-top:10px"></div>
+      </section>
 
       <section class="card">
         <div class="row-between">
@@ -326,6 +342,50 @@ async function saveListenList() {
   }
 }
 
+// ---------------- AI 消息自测 ----------------
+
+function renderTestResult(r: AutoReplyTestResult) {
+  const box = g("st-result");
+  if (!box) return;
+  box.innerHTML =
+    r.steps
+      .map(
+        (s) =>
+          `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">${s.ok ? "✓" : "✕"}</span><b>${esc(s.name)}</b> · ${esc(s.detail)}</div>`
+      )
+      .join("") +
+    (r.reply ? `<div class="ar-line info"><span class="ar-t">AI</span>${esc(r.reply)}</div>` : "");
+}
+
+async function runSelfTest(send: boolean) {
+  const q = ((g("st-q") as HTMLInputElement | null)?.value || "").trim();
+  const box = g("st-result");
+  if (box) box.innerHTML = `<div class="ar-line info"><span class="ar-t">…</span>${send ? "正在发送测试问题并等待 AI 回复（最长约 20s）" : "正在检查链路…"}</div>`;
+  try {
+    const r = await autoreplyApi.selfTest(q, send);
+    renderTestResult(r);
+    if (r.ok && send && r.reply) toast("AI 已回复：" + (r.reply.length > 24 ? r.reply.slice(0, 24) + "…" : r.reply));
+    else if (r.ok) toast("链路检查通过");
+  } catch (e: any) {
+    if (box) box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>自测失败：${esc(String(e?.message || e))}</div>`;
+  }
+}
+
+async function runInject() {
+  const q = ((g("st-q") as HTMLInputElement | null)?.value || "").trim() || "你好，在吗？";
+  const box = g("st-result");
+  if (box) box.innerHTML = `<div class="ar-line info"><span class="ar-t">…</span>正在把「${esc(q)}」当客户消息走完整管线（过滤→AI→日志，不外发）…</div>`;
+  try {
+    const r = await autoreplyApi.inject(q);
+    if (box)
+      box.innerHTML = r.reply
+        ? `<div class="ar-line info"><span class="ar-t">✓</span>完整管线通过，AI 回复（${r.reply.length} 字，已记入日志、未外发）：</div><div class="ar-line info"><span class="ar-t">AI</span>${esc(r.reply)}</div>`
+        : `<div class="ar-line warn"><span class="ar-t">✕</span>管线已执行但没有 AI 回复（详见 AI 回复日志）</div>`;
+  } catch (e: any) {
+    if (box) box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>注入失败：${esc(String(e?.message || e))}<br/>详见 AI 回复日志（常见：未配团员账号 / 消息被规则过滤 / 冷却）</div>`;
+  }
+}
+
 // ---------------- 日志 ----------------
 
 async function loadLogs() {
@@ -379,4 +439,7 @@ function wire() {
   });
   g("listen-save")?.addEventListener("click", saveListenList);
   g("rl-save")?.addEventListener("click", saveRules);
+  g("st-check")?.addEventListener("click", () => void runSelfTest(false));
+  g("st-send")?.addEventListener("click", () => void runSelfTest(true));
+  g("st-inject")?.addEventListener("click", () => void runInject());
 }
