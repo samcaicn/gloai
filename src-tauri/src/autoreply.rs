@@ -149,7 +149,10 @@ impl AutoReplyState {
             let log_dir = dir.join("logs");
             let _ = std::fs::create_dir_all(&log_dir);
             let line = format!("[{}] {} {}\n", now_ms(), level, msg);
-            let _ = std::fs::append(log_dir.join("autoreply.log"), line);
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(log_dir.join("autoreply.log")) {
+                use std::io::Write;
+                let _ = f.write_all(line.as_bytes());
+            }
         }
     }
 }

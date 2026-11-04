@@ -27,15 +27,14 @@ static REQ_SEQ: AtomicU64 = AtomicU64::new(1);
 
 /// 毫秒时间戳 → "HH:MM:SS.mmm"（本地时区），日志用。
 fn fmt_ts(ms: i64) -> String {
-    use std::time::{Duration, SystemTime};
+    use std::time::SystemTime;
     let secs = ms / 1000;
     let millis = (ms % 1000) as u32;
-    // 本地时区偏移：从 UNIX_EPOCH 到现在的本地时间差
     let local = SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0);
-    let offset = local - secs; // 本地时间 - UTC = 偏移秒数
+    let offset = local - secs;
     let local_secs = secs + offset;
     let h = (local_secs / 3600) % 24;
     let m = (local_secs / 60) % 60;
@@ -132,7 +131,10 @@ impl WxAutoState {
                 level,
                 msg
             );
-            let _ = std::fs::append(log_dir.join("wxauto.log"), line);
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(log_dir.join("wxauto.log")) {
+                use std::io::Write;
+                let _ = f.write_all(line.as_bytes());
+            }
         }
     }
 }
