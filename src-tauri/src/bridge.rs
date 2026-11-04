@@ -168,6 +168,8 @@ pub fn ensure_started(app: AppHandle) {
             };
             let mut inbound_rx = mgr.subscribe_inbound();
             let mut seen: HashSet<String> = HashSet::new();
+            let mut consecutive_errors: u32 = 0;
+            let mut auth_failed: bool = false;
             loop {
                 let (enabled, interval, cfg, conn) = {
                     let c = bridge.config.lock().unwrap().clone();
@@ -178,20 +180,40 @@ pub fn ensure_started(app: AppHandle) {
                     (c.enabled, c.poll_interval_sec.max(2), c, conn)
                 };
                 if !enabled {
-                    // 关闭态：慢轮询等待开关
                     tokio::time::sleep(Duration::from_secs(3)).await;
                     continue;
                 }
 
+                // token 为空 = 未登录，不轮询
+                let token_empty = conn.token.as_deref().map(|t| t.is_empty()).unwrap_or(true);
+                if token_empty || conn.base_url.is_empty() {
+                    auth_failed = false;
+                    consecutive_errors = 0;
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    continue;
+                }
+
                 // --- 方向 1：团长消息 → iLink ---
-                if cfg.forward_leader_to_bots && !conn.base_url.is_empty() {
-                    if let Err(e) = poll_bbt_once(&conn, &cfg, &mgr, &mut seen).await {
-                        eprintln!("[bridge] bbt 轮询失败: {}", e);
+                if cfg.forward_leader_to_bots && !auth_failed {
+                    match poll_bbt_once(&conn, &cfg, &mgr, &mut seen).await {
+                        Ok(()) => {
+                            consecutive_errors = 0;
+                        }
+                        Err(e) => {
+                            consecutive_errors += 1;
+                            if e.contains("会话已失效") || e.contains("未登录") || e.contains("401") {
+                                auth_failed = true;
+                                eprintln!("[bridge] 会话失效，停止轮询等待重新登录: {}", e);
+                            } else if consecutive_errors <= 3 || consecutive_errors % 10 == 0 {
+                                // 前3次+每10次打一次，避免刷屏
+                                eprintln!("[bridge] bbt 轮询失败({}): {}", consecutive_errors, e);
+                            }
+                        }
                     }
                 }
 
                 // --- 方向 2：iLink 入站 → bbt-zb（非阻塞收一批） ---
-                if cfg.forward_inbound_to_bbt {
+                if cfg.forward_inbound_to_bbt && !auth_failed {
                     loop {
                         match inbound_rx.try_recv() {
                             Ok(ev) => {
@@ -209,7 +231,15 @@ pub fn ensure_started(app: AppHandle) {
                     }
                 }
 
-                tokio::time::sleep(Duration::from_secs(interval)).await;
+                // 退避：连续错误时拉长间隔，会话失效时慢等
+                let sleep_sec = if auth_failed {
+                    10
+                } else if consecutive_errors > 5 {
+                    30.min(interval * consecutive_errors as u64)
+                } else {
+                    interval
+                };
+                tokio::time::sleep(Duration::from_secs(sleep_sec)).await;
             }
         }
     });

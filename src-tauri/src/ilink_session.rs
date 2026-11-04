@@ -35,6 +35,10 @@ pub struct AccountInfo {
     pub sync_buf: String,
     #[serde(default)]
     pub created_at: i64,
+    /// 会话是否已失效（errcode -14）。落盘后重启不再用失效 token 空轮询，
+    /// 前端据此提示重新扫码；未失效的账号重启直接恢复，无需重复扫码。
+    #[serde(default)]
+    pub expired: bool,
 }
 
 /// 本地消息记录（in/out 通用）
@@ -216,6 +220,17 @@ impl SessionManager {
             self.accounts_path().display()
         );
         for acc in accounts {
+            if acc.expired {
+                // 已失效 token 不再启动长轮询（否则每次重启都立刻过期、刷屏且状态抖动）；
+                // 前端看到 session_expired 才会给出「重新扫码」入口。
+                eprintln!("[ilink] 账号 {} 会话已失效，等待重新扫码", acc.bot_id);
+                self.emit(json!({
+                    "kind": "account", "event": "status",
+                    "bot_id": acc.bot_id, "label": acc.label, "status": "session_expired",
+                }));
+                continue;
+            }
+            eprintln!("[ilink] 恢复已登录账号 {}（本机缓存，无需重新扫码）", acc.bot_id);
             self.emit(json!({
                 "kind": "account", "event": "restored",
                 "bot_id": acc.bot_id, "label": acc.label,
@@ -262,6 +277,7 @@ impl SessionManager {
             (l.client.clone(), l.qrcode.clone(), l.poll_base.clone())
         };
         let st = client.poll_qr_status(&qrcode, &poll_base).await?;
+        eprintln!("[ilink] poll_login {} → status={}", login_id, st.status);
         let mut out = json!({"status": st.status});
         match st.status.as_str() {
             "wait" => {}
@@ -302,6 +318,7 @@ impl SessionManager {
                     user_id: st.ilink_user_id.clone(),
                     sync_buf: String::new(),
                     created_at: self.now_ms(),
+                    expired: false,
                 };
                 {
                     let mut list = self.accounts.lock().unwrap();
@@ -343,10 +360,14 @@ impl SessionManager {
                 let status = sessions
                     .get(&a.bot_id)
                     .map(|s| s.status.lock().unwrap().clone())
-                    .unwrap_or_else(|| "offline".into());
+                    .unwrap_or_else(|| {
+                        // session handle 在会话结束后被移除，此时以持久化的 expired 为准，
+                        // 否则前端会误显示「离线」而不给重新扫码入口。
+                        if a.expired { "session_expired".into() } else { "offline".into() }
+                    });
                 json!({
                     "bot_id": a.bot_id, "label": a.label, "user_id": a.user_id,
-                    "base_url": a.base_url, "status": status,
+                    "base_url": a.base_url, "status": status, "expired": a.expired,
                 })
             })
             .collect()
@@ -416,6 +437,8 @@ impl SessionManager {
             let p_client = Arc::clone(&client);
             let mut buf = acc.sync_buf.clone();
             let p_status = Arc::clone(&status);
+            let p_this = Arc::clone(&self);
+            let p_bot = bot_id.clone();
             tauri::async_runtime::spawn(async move {
                 let mut failures: u32 = 0;
                 let mut next_timeout_ms: u64 = 0;
@@ -424,6 +447,8 @@ impl SessionManager {
                         Ok(resp) => {
                             if ilink::is_session_expired(resp.ret, resp.errcode) {
                                 *p_status.lock().unwrap() = "session_expired".into();
+                                // 失效状态落盘：重启后不再拿失效 token 空轮询，前端直接提示重新扫码
+                                p_this.update_account(&p_bot, |a| a.expired = true);
                                 let _ = poll_tx.send(Err("__SESSION_EXPIRED__".into()));
                                 break;
                             }

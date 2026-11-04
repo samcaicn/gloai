@@ -755,53 +755,73 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
     let mut members: Vec<Value> = Vec::new();
     let mut member_note = String::new();
     if let Some(_state) = app.try_state::<AppState>() {
+        use std::collections::HashSet;
         // leader/ledger 返回的团 id 官方前端用 String(x.id) 防御性转换，
         // 实际可能是字符串或数字，这里两者都兼容（as_i64 对字符串返回 None）。
-        let (group_id_val, group_id) = match call_with_relogin(&app, "leader/ledger", &json!({})).await {
+        // 关键：必须遍历【所有】团，只取第一个团会让其它团的团员在订单页/互动页识别不到。
+        let (group_ids, ledger_err) = match call_with_relogin(&app, "leader/ledger", &json!({})).await {
             Ok(r) => {
                 let list = r
                     .pointer("/result/data/list")
                     .and_then(|l| l.as_array())
                     .cloned()
                     .unwrap_or_default();
-                let id_val = list
-                    .first()
-                    .and_then(|g0| g0.get("id"))
-                    .cloned()
-                    .unwrap_or(Value::Null);
-                let gid = match &id_val {
-                    Value::Number(n) => n.as_i64().unwrap_or(0),
-                    Value::String(s) => s.trim().parse::<i64>().unwrap_or(0),
-                    _ => 0,
-                };
-                (id_val, gid)
+                let ids: Vec<Value> = list
+                    .iter()
+                    .filter_map(|g0| g0.get("id").cloned())
+                    .filter(|v| match v {
+                        Value::Null => false,
+                        Value::String(s) => !s.trim().is_empty(),
+                        _ => true,
+                    })
+                    .collect();
+                (ids, String::new())
             }
-            Err(e) => {
-                member_note = format!("拉取团列表失败: {}", e);
-                (Value::Null, 0)
-            }
+            Err(e) => (Vec::new(), format!("拉取团列表失败: {}", e)),
         };
-        if group_id > 0 {
-            // 兼容 id 为字符串/数字两种：原样回传，避免 listMembers 因类型不符返回空。
-            let gid_param = match &group_id_val {
-                Value::String(s) if !s.trim().is_empty() => json!(s.trim().to_string()),
-                _ => json!(group_id),
+        if !ledger_err.is_empty() {
+            member_note = ledger_err;
+        } else if group_ids.is_empty() {
+            member_note = "leader/ledger 未返回可用团（团长账号未管理任何团？）".into();
+        }
+        let mut seen: HashSet<String> = HashSet::new();
+        let mut errs: Vec<String> = Vec::new();
+        for id_val in &group_ids {
+            // 原样回传 groupId，避免 id 类型不符导致 listMembers 返回空
+            let gid_param = match id_val {
+                Value::String(s) => json!(s.trim().to_string()),
+                v => v.clone(),
             };
             match call_with_relogin(&app, "leader/listMembers", &json!({ "groupId": gid_param })).await {
                 Ok(r) => {
-                    members = r
+                    let rows = r
                         .pointer("/result/data/list")
                         .and_then(|l| l.as_array())
                         .cloned()
                         .unwrap_or_default();
-                    if members.is_empty() {
-                        member_note = format!("该团名册为空（groupId={}）", gid_param);
+                    for m in rows {
+                        let key = m
+                            .get("id")
+                            .map(|v| v.to_string())
+                            .unwrap_or_else(|| serde_json::to_string(&m).unwrap_or_default());
+                        if seen.insert(key) {
+                            members.push(m);
+                        }
                     }
                 }
-                Err(e) => member_note = format!("拉取名册失败: {}", e),
+                Err(e) => errs.push(format!("团{}: {}", gid_param, e)),
             }
-        } else if member_note.is_empty() {
-            member_note = "leader/ledger 未返回可用团（团长账号未管理任何团？）".into();
+        }
+        if members.is_empty() {
+            member_note = if !errs.is_empty() {
+                format!("拉取名册失败: {}", errs.join("；"))
+            } else if !group_ids.is_empty() {
+                format!("已查 {} 个团，名册均为空", group_ids.len())
+            } else {
+                member_note
+            };
+        } else if !errs.is_empty() {
+            member_note = format!("部分团拉取失败: {}", errs.join("；"));
         }
     } else {
         member_note = "AppState 未初始化".into();

@@ -151,6 +151,10 @@ async function refreshTargets() {
     return;
   }
   if (!targets) return;
+  // 可观测：把各渠道实际识别到的数量与后端真实原因写进日志，便于定位「识别不到」
+  logLine(`渠道目标：微信私聊 ${targets.wx_private?.length || 0} / 微信群 ${targets.wx_group?.length || 0} / iLink ${targets.ilink?.length || 0} / 团员 ${targets.member?.length || 0}`);
+  if (targets.member_note) logLine("团员：" + targets.member_note, "warn");
+  if (targets.ilink_note) logLine("iLink：" + targets.ilink_note, "warn");
 
   const fill = (key: ChannelKey, rows: any[], emptyText: string) => {
     const sel = g(`ord-sel-${key}`) as HTMLSelectElement | null;
@@ -176,7 +180,7 @@ async function refreshTargets() {
   fill(
     "ilink",
     (targets.ilink || []).map((a: any) => ({ ...a, id: a.bot_id || a.user_id, name: a.label || a.user_id || a.bot_id })),
-    "iLink：无已绑定账号"
+    targets.ilink_note || "iLink：无已绑定账号"
   );
   const map = targets.member_map || {};
   fill(
@@ -186,13 +190,13 @@ async function refreshTargets() {
       id: String(m.id),
       name: `${m.name || m.realName || m.id}${map[String(m.id)] ? " ✓已绑定" : ""}`,
     })),
-    "团员：未登录或名册为空"
+    targets.member_note || "团员：未登录或名册为空"
   );
   if (note) {
     const parts: string[] = [];
     if (targets.wx_note) parts.push("微信：" + targets.wx_note);
-    if (!targets.ilink?.length) parts.push("iLink：无已绑定账号");
-    if (!targets.member?.length) parts.push("团员：未登录或名册为空");
+    if (!targets.ilink?.length) parts.push("iLink：" + (targets.ilink_note || "无已绑定账号"));
+    if (!targets.member?.length) parts.push("团员：" + (targets.member_note || "未登录或名册为空"));
     note.textContent = parts.join("；") || "四渠道目标已就绪。";
   }
 }
@@ -238,8 +242,8 @@ async function pullAll() {
       }
     }
 
-    // 2) 收款码（account/info，团长本人）
-    if (!qrCache) {
+    // 2) 收款码（account/info，团长本人）；两码皆空时不缓存空结果，下次可重拉
+    if (!qrCache || (!qrCache.wechat && !qrCache.alipay)) {
       const info = await api.call("account/info", {});
       const d = info?.result?.data || {};
       qrCache = {
@@ -265,6 +269,8 @@ async function pullAll() {
     }
     await compose();
     logLine(`一键拉取完成：订单 ${stats?.count ?? 0} 笔 · 合计 ¥${stats?.amountYuan ?? "0.00"}`);
+    // 拉取成功后立刻刷新渠道目标：登录态/绑定/名册刚就绪时无需再手动点「刷新」
+    void refreshTargets();
   } catch (e: any) {
     const msg = e?.message || String(e);
     if (sum) sum.textContent = "拉取失败：" + msg;
@@ -284,8 +290,10 @@ async function loadOrdersOf(groupId: string) {
   if (!groupId) throw new Error("未选择团");
   const r: any = await api.call("leader/orders", { groupId: Number(groupId) || groupId });
   const d = r?.result?.data ?? r?.data ?? {};
-  orders = d.list || [];
+  // 兼容 data 直接是数组 / {list} / {orders} 三种返回形态
+  orders = Array.isArray(d) ? d : (d.list || d.orders || []);
   stats = computeStats();
+  logLine(`订单接口返回 ${orders.length} 笔（groupId=${groupId}），轮次统计 ${stats.count} 笔 / ¥${stats.amountYuan}`);
   renderSummary();
 }
 
@@ -309,15 +317,23 @@ function computeStats(): { count: number; amountYuan: string; roundNo?: number }
 async function applyMemberStats() {
   if (active !== "member") { renderSummary(); return; }
   const raw = activeTargetRaw();
-  const name = raw?.name || raw?.realName || "";
-  if (!name) { renderSummary(); return; }
+  // 收集团员所有可能的身份名（微信昵称/真实姓名/脱敏手机）
+  const candidateNames: string[] = [];
+  for (const k of ["name", "realName", "nickname", "displayName", "label"]) {
+    const v = raw?.[k];
+    if (v && typeof v === "string" && v.trim()) candidateNames.push(v.trim());
+  }
+  const tel = raw?.telephoneMask || raw?.telephoneMasked || "";
+  if (!candidateNames.length && !tel) { renderSummary(); return; }
   const grp = groups.find((gp) => gp.id === currentGroupId());
   const curNo = grp?.rounds?.[0]?.roundNo;
   const mine = orders.filter((o) => {
-    const bn = String(o.buyerName || "");
+    const bn = String(o.buyerName || "").trim();
     if (!bn) return false;
     if (curNo && o.roundNo && Number(o.roundNo) !== Number(curNo)) return false;
-    return bn === name || bn.includes(name) || name.includes(bn);
+    // buyerName 可能是微信昵称，也可能是脱敏手机尾号
+    return candidateNames.some((n) => bn === n || bn.includes(n) || n.includes(bn))
+      || (tel && (bn.includes(tel) || tel.includes(bn)));
   });
   if (mine.length) {
     stats = { count: mine.length, amountYuan: mine.reduce((s, o) => s + parseYuan(o.amountYuan), 0).toFixed(2), roundNo: curNo };
@@ -325,10 +341,10 @@ async function applyMemberStats() {
     const cnt = g("ord-count") as HTMLInputElement | null;
     if (amt) amt.value = stats.amountYuan;
     if (cnt) cnt.value = String(stats.count);
-    renderSummary(`已按「${name}」过滤订单`);
+    renderSummary(`已按「${candidateNames[0] || tel}」过滤订单`);
   } else {
     stats = computeStats();
-    renderSummary(`未在订单中匹配到「${name}」，显示全团统计`);
+    renderSummary(`未在订单中匹配到团员（试过: ${candidateNames.join("/") || tel}），显示全团统计`);
   }
 }
 
@@ -354,7 +370,7 @@ function renderSummary(prefix = "") {
 
 async function loadQr(): Promise<{ dataUrl: string; kind: string; payee: string }> {
   const kind = (g("ord-qr-kind") as HTMLSelectElement)?.value || "wechat";
-  if (!qrCache) {
+  if (!qrCache || (!qrCache.wechat && !qrCache.alipay)) {
     const info = await api.call("account/info", {});
     const d = info?.result?.data || {};
     qrCache = {
@@ -362,13 +378,16 @@ async function loadQr(): Promise<{ dataUrl: string; kind: string; payee: string 
       alipay: d.alipayQrcode || "",
       payee: d.name || d.telephoneMask || "团长",
     };
-    if (!qrCache.wechat && !qrCache.alipay) throw new Error("团长账号未上传收款码");
   }
   const path = kind === "alipay" ? qrCache!.alipay : qrCache!.wechat;
   if (!path) throw new Error(kind === "alipay" ? "未上传支付宝收款码" : "未上传微信收款码");
   const cfg2: any = await api.loadConfig();
   const base2 = (cfg2?.connection?.base_url || "").replace(/\/$/, "");
-  const url = `${base2}/files/${path}`;
+  // 官方前端 _bbt_core.js:12 常量 FILES = BASE + 'api/files/'，少了 /api 会 404
+  const url = /^https?:\/\//i.test(path)
+    ? path
+    : `${base2}/api/files/${String(path).replace(/^\/+/, "")}`;
+  logLine(`加载收款码：${url}`);
   const dataUrl = await fetchImageDataUrl(url);
   return { dataUrl, kind: kind === "alipay" ? "支付宝" : "微信", payee: qrCache!.payee };
 }

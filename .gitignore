@@ -19,3 +19,6 @@ __pycache__/
 *.pyc
 src-tauri/python/__pycache__/
 tools/__pycache__/
+
+# 项目内置 Python 运行环境（体积大、含二进制，不入库）
+.venv_bot/

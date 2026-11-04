@@ -31,6 +31,10 @@ interface GroupInfo {
 let memberMap: Record<string, string> = {};
 // member_id -> 团员名（名册加载时缓存，用于账号卡片回显团员身份）
 const memberNames = new Map<string, string>();
+// bot_id -> 已绑定账号状态快照（ilink_list_accounts）；用于判断「已登录/已过期」
+let accountByBot = new Map<string, any>();
+// 正在展示扫码二维码的团员 id：定时刷新不覆盖用户正在扫的二维码
+const qrActive = new Set<string>();
 
 function botOfMember(memberId: string): string {
   return memberMap[memberId] || "";
@@ -137,11 +141,12 @@ export async function renderMemberQr(root: HTMLElement) {
     void loadArEnabled();
     // 监听 iLink 账号状态变化（含 session_expired）
     onIlinkEvent((ev: any) => {
-      if (ev?.kind === "account" && ev?.event === "status") {
-        refreshAccounts();
-        // 会话过期明显提示
-        if (ev?.account?.status === "session_expired") {
-          toast(`团员 ${ev.account.label || ev.account.user_id || ""} 绑定已过期，请重新扫码`, false);
+      if (ev?.kind === "account") {
+        // status / restored / error 都刷新一次，保证「已登录」状态及时回显
+        void refreshAccounts();
+        const st = ev?.status || ev?.account?.status || "";
+        if (st === "session_expired") {
+          toast(`团员 ${ev?.label || ev?.account?.label || ev?.bot_id || ""} 绑定已过期，请重新扫码`, false);
         }
       }
     });
@@ -167,9 +172,11 @@ export async function renderMemberQr(root: HTMLElement) {
 
   // 登录状态提示（token 就绪与否）
   void refreshLoginState();
-  // 首次进入若已登录则自动拉名册
-  void loadRoster();
-  void refreshAccounts();
+  // 先加载已缓存的 iLink 登录态，再渲染名册卡片——否则卡片会误判成「未绑定，请扫码」
+  void (async () => {
+    await refreshAccounts();
+    void loadRoster();
+  })();
 }
 
 function updateLoginStateUI(loggedIn: boolean, telephone?: string) {
@@ -310,21 +317,85 @@ async function loadMembersOf(groupId: string) {
   }
 }
 
+interface LoginView {
+  badge: string; badgeCls: string; qr: string; status: string; btn: string; btnCls: string;
+}
+
+/**
+ * 团员绑定卡片的展示状态。核心规则：只要账号未过期，就一律显示「已登录」——
+ * 登录态已缓存在本机 accounts.json，重启后由后端自动恢复，不要求用户重复扫码。
+ */
+function loginView(bot: string, acc: any): LoginView {
+  const st = String(acc?.status || "");
+  const expired = !!acc?.expired || st === "session_expired";
+  if (!bot) {
+    return { badge: "", badgeCls: "", qr: "", status: "未生成二维码", btn: "生成 iLink 二维码", btnCls: "" };
+  }
+  if (expired) {
+    return {
+      badge: "绑定过期",
+      badgeCls: "badge-session_expired",
+      qr: `<div class="mqr-state is-expired"><div class="mqr-state-title">⚠ 微信会话已失效</div><div class="mqr-state-sub">需重新扫码一次，之后继续自动缓存</div></div>`,
+      status: "绑定已过期，请重新扫码",
+      btn: "重新扫码",
+      btnCls: "primary",
+    };
+  }
+  const online = st === "running";
+  return {
+    badge: "已登录",
+    badgeCls: "badge-running",
+    qr: `<div class="mqr-state is-logged">
+      <div class="mqr-state-title">✅ 已登录</div>
+      <div class="mqr-state-sub">登录态已缓存在本机，重启后未过期无需重复扫码</div>
+      <div class="mqr-state-meta">${esc(acc?.label || acc?.user_id || bot)}${online ? " · 在线" : " · 待连接"}</div>
+    </div>`,
+    status: online ? "已登录 · 在线，无需扫码" : "已缓存登录态 · 无需扫码",
+    btn: "重新扫码（更换微信）",
+    btnCls: "",
+  };
+}
+
+/** 局部刷新名册卡片的登录态（不重建 DOM，避免打断用户正在扫的二维码） */
+function syncRosterLoginStates() {
+  document.querySelectorAll("#mq-roster .mcard").forEach((el) => {
+    const card = el as HTMLElement;
+    const mid = card.dataset.mid || "";
+    if (!mid || qrActive.has(mid)) return;
+    const bot = botOfMember(mid);
+    const v = loginView(bot, bot ? accountByBot.get(bot) : null);
+    const qrEl = card.querySelector(".mcard-qr");
+    const stEl = card.querySelector(".mcard-status");
+    const btn = card.querySelector("button");
+    const badge = card.querySelector(".badge");
+    if (qrEl) qrEl.innerHTML = v.qr;
+    if (stEl) stEl.textContent = v.status;
+    if (btn) { btn.textContent = v.btn; btn.className = `btn small ${v.btnCls}`.trim(); }
+    if (badge && v.badge) badge.className = `badge ${v.badgeCls}`.trim();
+    if (badge && v.badge) badge.textContent = v.badge;
+    card.classList.toggle("expired", v.badge === "绑定过期");
+  });
+}
+
 function rosterCard(m: MemberInfo): string {
   const title = m.name || m.realName || m.telephoneMask || m.id;
   const boundBot = botOfMember(m.id);
+  const v = loginView(boundBot, boundBot ? accountByBot.get(boundBot) : null);
   const stLabel: Record<string, string> = { active: "在团", disabled: "停用", pendingJoin: "审批中" };
   const stCls = m.status === "active" ? "badge-running" : "";
+  const badge = v.badge
+    ? `<span class="badge ${v.badgeCls}">${v.badge}</span>`
+    : `<span class="badge ${stCls}">${stLabel[m.status] || m.status}</span>`;
   return `
-    <div class="mcard" data-mid="${esc(m.id)}">
+    <div class="mcard ${v.badge === "绑定过期" ? "expired" : ""}" data-mid="${esc(m.id)}">
       <div class="row-between">
         <div class="mcard-name">${esc(title)}${m.realName && m.realName !== title ? `<span class="mcard-sub">（${esc(m.realName)}）</span>` : ""}</div>
-        ${boundBot ? `<span class="badge badge-running">已绑定</span>` : `<span class="badge ${stCls}">${stLabel[m.status] || m.status}</span>`}
+        ${badge}
       </div>
       ${m.telephoneMask ? `<div class="mcard-sub">${esc(m.telephoneMask)}</div>` : ""}
-      <div class="mcard-qr" id="mqr-${esc(m.id)}"></div>
-      <div class="mcard-status" id="mqrs-${esc(m.id)}">${boundBot ? "已有绑定账号，可重新扫码更换" : "未生成二维码"}</div>
-      <button class="btn small" id="mqgen-${esc(m.id)}">生成 iLink 二维码</button>
+      <div class="mcard-qr" id="mqr-${esc(m.id)}">${v.qr}</div>
+      <div class="mcard-status" id="mqrs-${esc(m.id)}">${esc(v.status)}</div>
+      <button class="btn small ${v.btnCls}" id="mqgen-${esc(m.id)}">${v.btn}</button>
     </div>`;
 }
 
@@ -333,7 +404,13 @@ async function genRosterQr(m: MemberInfo) {
   const st = g(`mqrs-${m.id}`);
   const btn = g(`mqgen-${m.id}`);
   if (!st || !btn) return;
+  const oldBot = botOfMember(m.id);
+  const oldAcc = oldBot ? accountByBot.get(oldBot) : null;
+  if (oldAcc && !oldAcc.expired && oldAcc.status !== "session_expired") {
+    toast("该团员已登录；继续扫码会更换绑定的微信", true);
+  }
   btn.setAttribute("disabled", "true");
+  qrActive.add(m.id);
   st.textContent = "正在获取二维码…";
   try {
     const r: any = await ilink.beginLogin();
@@ -347,36 +424,47 @@ async function genRosterQr(m: MemberInfo) {
       if (status === "confirmed") {
         const botId = resp?.account?.bot_id || "";
         if (botId) {
+          // 更换绑定时清掉旧账号，避免旧记录残留成「绑定过期」
+          if (oldBot && oldBot !== botId) {
+            try { await ilink.removeAccount(oldBot); } catch { /* 忽略 */ }
+          }
           memberMap[m.id] = botId;
           memberNames.set(m.id, m.name || m.telephoneMask || m.id);
           void persistMap();
         }
-        st.textContent = "✅ 已绑定上线，接通AI回复…";
-        toast(`团员 ${m.telephoneMask || m.name || m.id} 已绑定`);
+        qrActive.delete(m.id);
+        // 立刻把二维码区替换成「已登录」状态卡，不等名册重渲染
+        await refreshAccounts();
+        syncRosterLoginStates();
+        st.textContent = "✅ 已登录 · 登录态已缓存到本机";
+        toast(`团员 ${m.telephoneMask || m.name || m.id} 已登录，登录态已缓存`);
         // 自动接通 AI 回复：确保三个开关全部打开
         try {
           await autoreplyApi.setEnabled(true);    // AI 自动回复
           await wxautoApi.setConfig({ enabled: true });  // 微信通道
           await bridgeApi.setConfig({ enabled: true });  // 团长桥
-          st.textContent = "✅ 已绑定 · AI回复已接通";
           toast("AI 自动回复已接通");
         } catch (e: any) {
-          st.textContent = "✅ 已绑定上线";
           console.warn("接通AI回复失败:", e);
         }
         void loadRoster();
-        void refreshAccounts();
       } else if (status === "scaned") {
         st.textContent = "已扫码，请在手机微信确认";
       } else if (status === "wait") {
         st.textContent = "等待扫码…";
       } else if (status === "expired") {
+        qrActive.delete(m.id);
         st.textContent = "二维码已过期，请点按钮重新生成";
         toast("二维码已过期，请重新生成", false);
+        btn.removeAttribute("disabled");
+      } else if (status === "error") {
+        qrActive.delete(m.id);
+        st.textContent = "轮询失败，请重新生成二维码";
         btn.removeAttribute("disabled");
       }
     });
   } catch (e: any) {
+    qrActive.delete(m.id);
     const msg = e?.message || String(e);
     st.textContent = "获取失败";
     toast("团员二维码获取失败：" + msg, false);
@@ -389,6 +477,10 @@ async function genAllRosterQr() {
   for (const c of cards) {
     const id = c.getAttribute("data-mid");
     if (!id) continue;
+    // 已登录且未过期：登录态已缓存，跳过，不要求重复扫码
+    const bot = botOfMember(id);
+    const acc = bot ? accountByBot.get(bot) : null;
+    if (bot && acc && !acc.expired && acc.status !== "session_expired") continue;
     const btn = c.querySelector(`#mqgen-${CSS.escape(id)}`) as HTMLButtonElement | null;
     if (btn && !btn.hasAttribute("disabled")) {
       const m: MemberInfo = {
@@ -420,9 +512,11 @@ async function refreshAccounts() {
   let accounts: any[] = [];
   try {
     accounts = (await ilink.listAccounts()) || [];
+    accountByBot = new Map(accounts.map((a: any) => [a.bot_id, a]));
   } catch {
     return;
   }
+  syncRosterLoginStates();
   if (accounts.length === 0) {
     box.innerHTML = `<div class="empty">暂无已绑定账号</div>`;
     refreshBindStatus(0);
@@ -484,17 +578,25 @@ async function regenAccountQr(botId: string) {
   try {
     const r: any = await ilink.beginLogin();
     paintQr(qrId, r, botId);
-    startPoll(r.login_id, qrId, (status, resp) => {
+    startPoll(r.login_id, qrId, async (status, resp) => {
       if (status === "confirmed") {
         const newBot = resp?.account?.bot_id || "";
+        // 旧账号已失效，清掉避免残留成「绑定过期」
+        if (newBot && newBot !== botId) {
+          try { await ilink.removeAccount(botId); } catch { /* 忽略 */ }
+        }
         if (mid && newBot) {
           memberMap[mid] = newBot;
           void persistMap();
         }
         regenMode.delete(botId);
         regenSvg.delete(botId);
-        toast("账号已重新绑定上线");
-        void refreshAccounts();
+        toast("账号已重新登录，登录态已缓存到本机");
+        await refreshAccounts();
+        syncRosterLoginStates();
+      } else if (status === "error") {
+        regenMode.delete(botId);
+        regenSvg.delete(botId);
       }
     });
   } catch (e: any) {

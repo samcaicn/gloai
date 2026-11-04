@@ -376,14 +376,16 @@ async function onLogin() {
     await bbt.setConnection(conn.base_url, res.token, conn.telephone);
     closeOverlay("ov-login");
     stopQrPoll();
-    toast("登录成功，正在加载数据…");
-    // 串行协调：先同步远程参数，再加载开关，最后通知子页面
-    await syncRemote();
-    await loadSwitches();
+    toast("登录成功，正在后台加载数据…");
     refreshStatusBar();
     notifyLoginChanged(true);
-    const role = res.account?.role ? `（角色：${res.account.role}）` : "";
-    toast(`登录成功${role}，所有页面已就绪`);
+    // 并行加载，不阻塞 UI
+    Promise.all([syncRemote(), loadSwitches()]).then(() => {
+      const role = res.account?.role ? `（角色：${res.account.role}）` : "";
+      toast(`登录成功${role}，所有页面已就绪`);
+    }).catch(() => {
+      toast("数据加载部分失败，可手动刷新", false);
+    });
   } catch (e: any) {
     toast("登录失败：" + (e?.message || e), false);
   } finally { btn?.classList.remove("loading"); }
@@ -546,13 +548,16 @@ async function startPcQr() {
           state.connection.telephone = tel;
           await bbt.setConnection(baseUrl, token, tel || undefined);
           closeOverlay("ov-login");
-          toast("扫码成功，正在加载数据…");
-          await syncRemote();
-          await loadSwitches();
+          toast("扫码登录成功，正在后台加载数据…");
           refreshStatusBar();
           notifyLoginChanged(true);
-          const role = pd.role ? `（角色：${pd.role}）` : "";
-          toast(`扫码登录成功${role}，所有页面已就绪`);
+          // 并行加载，不阻塞 UI
+          Promise.all([syncRemote(), loadSwitches()]).then(() => {
+            const role = pd.role ? `（角色：${pd.role}）` : "";
+            toast(`扫码登录成功${role}，所有页面已就绪`);
+          }).catch(() => {
+            toast("数据加载部分失败，可手动刷新", false);
+          });
         }
       } catch (e: any) {
         // 单次轮询失败不中断，下一轮再试

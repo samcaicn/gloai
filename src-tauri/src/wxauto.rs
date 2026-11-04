@@ -8,8 +8,8 @@
 //!     quick_send 到微信（私聊/群聊），结果以 {"type":"sent",...} 回报。
 //!   * 进程退出且开关仍开 → 5s 后自动重启（连续失败 5 次停，避免死循环）。
 //!
-//! 依赖：本机微信已登录（桌面端 4.x）；Python 解释器默认探测
-//! C:/d/weauto/.venv_bot/Scripts/python.exe（wechatauto 依赖齐全）。
+//! 依赖：本机微信已登录（桌面端 4.x）；Python 解释器默认探测项目内置的
+//! `.venv_bot`（见 `resolve_python`），找不到再回退 PATH 里的 python。
 
 use crate::autoreply;
 use serde::{Deserialize, Serialize};
@@ -45,7 +45,8 @@ fn fmt_ts(ms: i64) -> String {
 const SIDECAR_SRC: &str = include_str!("../python/wxauto_sidecar.py");
 const OCR_ENGINE_SRC: &str = include_str!("../python/ocrengine.py");
 const ASR_ENGINE_SRC: &str = include_str!("../python/asrengine.py");
-const DEFAULT_PY: &str = r"C:\d\weauto\.venv_bot\Scripts\python.exe";
+/// 内置 venv 的相对位置（venv 根目录名 → Scripts → python.exe）
+const VENV_PY_REL: &str = r".venv_bot\Scripts\python.exe";
 const MAX_RESTARTS: u32 = 5;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,7 +54,7 @@ const MAX_RESTARTS: u32 = 5;
 pub struct WxAutoConfig {
     /// 通道开关（关=停止 sidecar 且不收发）
     pub enabled: bool,
-    /// Python 解释器路径；空 = 自动探测（默认 weauto venv → PATH python）
+    /// Python 解释器路径；空 = 自动探测（项目内置 .venv_bot → PATH python）
     pub python_path: String,
     /// wechatauto vendor 目录；空 = 脚本内默认 C:\d\weauto\vendor
     pub vendor_path: String,
@@ -228,6 +229,53 @@ async fn kill_inner(st: &Arc<WxAutoState>) {
     }
 }
 
+/// 解析 Python 解释器，按优先级返回首个可用的：
+///   1. 配置里的 `python_path`（用户显式指定）
+///   2. 环境变量 `BBT_PYTHON`
+///   3. `<exe 所在目录>\.venv_bot\Scripts\python.exe`
+///      —— 绿色版/免安装：把 `.venv_bot` 与 exe 放在同一目录
+///   4. `<exe 所在目录>\..\..\..\.venv_bot\Scripts\python.exe`
+///      —— dev：exe 在 `src-tauri\target\debug`，向上三级即项目根
+///   5. Tauri 资源目录下 `\.venv_bot\Scripts\python.exe`
+///      —— 若将来把 venv 作为 bundle resources 打进安装包
+///   6. `"python"`（走 PATH）
+fn resolve_python(app: &AppHandle, cfg: &WxAutoConfig) -> String {
+    let explicit = cfg.python_path.trim();
+    if !explicit.is_empty() {
+        return explicit.to_string();
+    }
+    if let Ok(env_py) = std::env::var("BBT_PYTHON") {
+        let env_py = env_py.trim();
+        if !env_py.is_empty() && std::path::Path::new(env_py).exists() {
+            return env_py.to_string();
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let candidates = [
+                dir.join(VENV_PY_REL),
+                dir.parent()
+                    .and_then(|p| p.parent())
+                    .and_then(|p| p.parent())
+                    .map(|p| p.join(VENV_PY_REL))
+                    .unwrap_or_default(),
+            ];
+            for p in candidates.iter() {
+                if p.exists() {
+                    return p.to_string_lossy().to_string();
+                }
+            }
+        }
+    }
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let p = resource_dir.join(VENV_PY_REL);
+        if p.exists() {
+            return p.to_string_lossy().to_string();
+        }
+    }
+    "python".to_string()
+}
+
 /// 拉起一次 sidecar 并读 stdout 直到进程退出。返回 Err=启动失败。
 async fn run_once(app: &AppHandle, st: &Arc<WxAutoState>, cfg: &WxAutoConfig) -> Result<(), String> {
     st.ready_seen.store(false, Ordering::SeqCst);
@@ -248,14 +296,8 @@ async fn run_once(app: &AppHandle, st: &Arc<WxAutoState>, cfg: &WxAutoConfig) ->
     let _ = std::fs::create_dir_all(&ocr_dir);
     let _ = std::fs::create_dir_all(&asr_dir);
 
-    // 2) 找 python
-    let py = if !cfg.python_path.trim().is_empty() {
-        cfg.python_path.trim().to_string()
-    } else if std::path::Path::new(DEFAULT_PY).exists() {
-        DEFAULT_PY.to_string()
-    } else {
-        "python".to_string()
-    };
+    // 2) 找 python（配置 → BBT_PYTHON → 随程序的内置 venv → PATH）
+    let py = resolve_python(app, cfg);
 
     // 3) spawn
     let mut cmd = Command::new(&py);

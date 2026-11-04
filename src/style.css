@@ -347,6 +347,20 @@ textarea { resize: vertical; line-height: 1.5; }
 .mcard-qr svg, .mcard-qr img {
   width: 168px; height: 168px; border-radius: 8px; background: #fff;
 }
+/* 扫码后二维码区改为「已登录 / 已过期」状态卡（文字+图标双通道，不只靠颜色） */
+.mqr-state {
+  width: 100%; min-height: 96px; padding: 14px 12px; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 10px; text-align: center;
+  border: 1px solid var(--border-strong); background: var(--card-2);
+}
+.mqr-state.is-logged { border-color: #07c16055; background: var(--ok-soft); }
+.mqr-state.is-expired { border-color: var(--err); background: rgba(214, 69, 69, .06); }
+.mqr-state-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.mqr-state.is-logged .mqr-state-title { color: #068b4c; }
+.mqr-state.is-expired .mqr-state-title { color: var(--err); }
+.mqr-state-sub { font-size: 11.5px; line-height: 1.55; color: var(--text-dim); }
+.mqr-state-meta { font-size: 11px; color: var(--text-dim); }
 .mcard-status { font-size: 11.5px; color: var(--text-dim); min-height: 14px; }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .hint { color: var(--text-dim); font-size: 11.5px; line-height: 1.5; margin: 2px 0; }
