@@ -174,7 +174,7 @@ export async function renderMemberQr(root: HTMLElement) {
   void refreshLoginState();
   // 先加载已缓存的 iLink 登录态，再渲染名册卡片——否则卡片会误判成「未绑定，请扫码」
   void (async () => {
-    await refreshAccounts();
+    await refreshAccounts().catch(() => { /* 账号态拉不到也要继续渲染名册 */ });
     void loadRoster();
   })();
 }
