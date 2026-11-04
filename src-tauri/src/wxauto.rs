@@ -15,7 +15,7 @@ use crate::autoreply;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
@@ -67,6 +67,11 @@ pub struct WxAutoState {
     inner: std::sync::Mutex<Option<ProcHandle>>,
     /// 最近日志（环形 200）
     pub logs: std::sync::Mutex<Vec<Value>>,
+    /// sidecar ready 后上报的自己 wxid / 昵称（自消息回环兜底过滤用）
+    self_user: std::sync::Mutex<String>,
+    self_nick: std::sync::Mutex<String>,
+    /// 本轮 sidecar 是否已发过 ready（启动失败重启计数用）
+    ready_seen: AtomicBool,
 }
 
 impl WxAutoState {
@@ -76,6 +81,9 @@ impl WxAutoState {
             running: std::sync::Mutex::new(false),
             inner: std::sync::Mutex::new(None),
             logs: std::sync::Mutex::new(Vec::new()),
+            self_user: std::sync::Mutex::new(String::new()),
+            self_nick: std::sync::Mutex::new(String::new()),
+            ready_seen: AtomicBool::new(false),
         }
     }
 
@@ -190,6 +198,7 @@ async fn kill_inner(st: &Arc<WxAutoState>) {
 
 /// 拉起一次 sidecar 并读 stdout 直到进程退出。返回 Err=启动失败。
 async fn run_once(app: &AppHandle, st: &Arc<WxAutoState>, cfg: &WxAutoConfig) -> Result<(), String> {
+    st.ready_seen.store(false, Ordering::SeqCst);
     // 1) 写脚本到 app_data_dir（保证版本与二进制一致）
     let data_dir = app
         .path()
@@ -290,7 +299,24 @@ async fn run_once(app: &AppHandle, st: &Arc<WxAutoState>, cfg: &WxAutoConfig) ->
             }
         }
     }
-    Ok(())
+    // stdout EOF = 子进程已退出。从 inner 取出当前 child wait() 拿 exit code，
+    // 判断是「启动早期崩溃」（算启动失败，restarts++，避免无限 5s 重启）
+    // 还是「ready 后正常退出」（5s 后重启即可，不累加失败计数）。
+    let proc = st.inner.lock().unwrap().take();
+    let code = match proc {
+        Some(mut h) => match h.child.wait().await {
+            Ok(s) => Some(s.code().unwrap_or(-1)),
+            Err(_) => None,
+        },
+        None => None, // 被外部 stop() kill 掉
+    };
+    let ready = st.ready_seen.load(Ordering::SeqCst);
+    match (ready, code) {
+        (true, _) => Ok(()), // 曾 ready 后退出，正常重启即可
+        (false, Some(0)) => Err("sidecar 启动后立即退出（exit 0），未发出 ready".into()),
+        (false, Some(c)) => Err(format!("sidecar 启动失败（exit code={}），未发出 ready", c)),
+        (false, None) => Err("sidecar 启动后退出，无法获取 exit code".into()),
+    }
 }
 
 async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) {
@@ -298,9 +324,15 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
         "status" => {
             let event = v.get("event").and_then(|e| e.as_str()).unwrap_or("");
             let self_nick = v.get("self").and_then(|s| s.as_str()).unwrap_or("");
+            let self_user = v.get("self_user").and_then(|s| s.as_str()).unwrap_or("");
             let msg = v.get("msg").and_then(|m| m.as_str()).unwrap_or("");
             match event {
-                "ready" => st.log(app, "info", &format!("微信通道就绪（账号：{}，私聊+群聊全会话监听）", self_nick), json!({})),
+                "ready" => {
+                    *st.self_nick.lock().unwrap() = self_nick.to_string();
+                    *st.self_user.lock().unwrap() = self_user.to_string();
+                    st.ready_seen.store(true, Ordering::SeqCst);
+                    st.log(app, "info", &format!("微信通道就绪（账号：{}，wxid={}，私聊+群聊全会话监听）", self_nick, self_user), json!({}));
+                }
                 "error" => st.log(app, "warn", &format!("微信通道错误: {}", msg), json!({})),
                 _ => {}
             }
@@ -313,9 +345,17 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
             let sender = v.get("sender_name").and_then(|s| s.as_str()).unwrap_or("");
             // kind 由 sidecar 透传：text / image（离线 OCR 文本）/ voice（离线转写文本）
             let kind = v.get("kind").and_then(|k| k.as_str()).unwrap_or("text").to_string();
+            // 群聊 @ 自己标志（sidecar 从 packed_info XML 解析）
+            let mentioned_self = v.get("mentioned_self").and_then(|m| m.as_bool()).unwrap_or(false);
             // 纯图片/语音在 OCR/转写失败时文本可能为空：仍允许进入管线，由 autoreply
             // 规则层（空文本直接忽略）统一处理并记日志，避免静默吞掉事件。
             if peer.is_empty() {
+                return;
+            }
+            // 兜底：self_nick 匹配到 sender 说明是自己发的消息（sidecar 已按 sender_id==2 过滤，
+            // 双保险防止 wechatauto 库版本变化漏过滤导致回复自己死循环）
+            let self_n = st.self_nick.lock().unwrap().clone();
+            if !self_n.is_empty() && sender == self_n {
                 return;
             }
             let msg = autoreply::WxMsg {
@@ -326,6 +366,7 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
                 kind,
                 text,
                 sender: sender.to_string(),
+                mentioned_self,
             };
             if let Err(e) = autoreply::process_msg(app, msg).await {
                 st.log(app, "debug", &e, json!({}));

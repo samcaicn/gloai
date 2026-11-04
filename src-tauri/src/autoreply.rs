@@ -104,6 +104,8 @@ pub struct AutoReplyState {
     running: Mutex<bool>,
     /// 团员 token 运行时缓存（会话失效自动重登）
     member: Mutex<Option<BbtConnection>>,
+    /// 团员与团长平台会话的 sessionId 缓存（chat/send 必须带，否则 AI 回复不路由）
+    member_session: Mutex<Option<(String, i64)>>, // (sessionId, 获取时间戳 ms)
     /// 最近日志（环形，最多 200 条）
     pub logs: Mutex<Vec<Value>>,
     /// peer -> 上次回复时间戳(ms)
@@ -118,6 +120,7 @@ impl AutoReplyState {
             config: Mutex::new(AutoReplyConfig::default()),
             running: Mutex::new(false),
             member: Mutex::new(None),
+            member_session: Mutex::new(None),
             logs: Mutex::new(Vec::new()),
             last_reply: Mutex::new(HashMap::new()),
             group_rate: Mutex::new(HashMap::new()),
@@ -181,11 +184,13 @@ pub struct WxMsg {
     /// 回复目标：ilink 私聊=peer / 群聊=group_id；wx=会话 username（wxid_xxx / xxx@chatroom）
     pub peer: String,
     pub is_group: bool,
-    /// "text" | "voice"
+    /// "text" | "voice" | "image"
     pub kind: String,
     pub text: String,
     /// 发送者标识（wx=群成员昵称，ilink=空），仅日志用
     pub sender: String,
+    /// wx 通道群消息：是否 @ 了自己（由 sidecar 从 packed_info XML 解析）
+    pub mentioned_self: bool,
 }
 
 /// 启动自动回复任务（幂等）。每轮从 state 读最新配置，支持运行中改配置。
@@ -292,6 +297,7 @@ async fn handle_inbound(
         kind,
         text,
         sender: String::new(),
+        mentioned_self: false,
     };
     process_msg_with(app, ar, msg).await
 }
@@ -315,6 +321,7 @@ pub async fn process_wx_msg(
         kind: "text".into(),
         text,
         sender,
+        mentioned_self: false,
     };
     process_msg_with(app, &ar, msg).await
 }
@@ -417,10 +424,13 @@ async fn process_msg_with(
         return Ok(());
     }
     if is_group {
+        // wx 通道群消息：sidecar 已从 XML 解析出 @ 自己，直接触发；
+        // ilink 群消息没有 mentioned_self，走原 at_triggered 逻辑。
+        let at_self = msg.mentioned_self;
         match cfg.group_mode.as_str() {
             "off" => return Ok(()),
             "at" => {
-                if !at_triggered(&text, &cfg.at_names, &cfg.group_keywords) {
+                if !at_self && !at_triggered(&text, &cfg.at_names, &cfg.group_keywords) {
                     return Ok(());
                 }
             }
@@ -485,16 +495,30 @@ async fn process_msg_with(
     // ---- 团员身份：拿可用的 bbt-zb 连接（含 token）----
     let member_conn = ensure_member_conn(app, ar, &cfg).await?;
 
-    // ---- 调 chat/send 触发服务端 AI ----
-    let result = match bbt::call(&member_conn, "chat/send", &json!({ "content": text })).await {
+    // ---- 取团员与团长的平台会话 sessionId（chat/send 必须带，否则 AI 回复不路由）----
+    let session_id = match ensure_member_session(app, ar, &member_conn).await {
+        Ok(s) => s,
+        Err(e) => return Err(format!("获取团员会话失败: {}", e)),
+    };
+
+    // ---- 调 chat/send 触发服务端 AI（带 sessionId）----
+    let result = match bbt::call(
+        &member_conn,
+        "chat/send",
+        &json!({ "content": text, "sessionId": session_id }),
+    )
+    .await
+    {
         Ok(r) => r,
         Err(e) => {
-            // 会话失效 → 重登一次再试
+            // 会话失效 → 清缓存、重登一次再试
             if e.contains("失效") || e.contains("未登录") {
                 ar.log(app, "info", "团员会话失效，重新登录…", json!({}));
                 *ar.member.lock().unwrap() = None;
+                *ar.member_session.lock().unwrap() = None;
                 let mc = ensure_member_conn(app, ar, &cfg).await?;
-                bbt::call(&mc, "chat/send", &json!({ "content": text })).await?
+                let sid = ensure_member_session(app, ar, &mc).await?;
+                bbt::call(&mc, "chat/send", &json!({ "content": text, "sessionId": sid })).await?
             } else {
                 return Err(format!("chat/send 失败: {}", e));
             }
@@ -652,4 +676,46 @@ async fn ensure_member_conn(
         json!({}),
     );
     Ok(c)
+}
+
+/// 取团员与团长的平台会话 sessionId（chat/send 必须带，否则 AI 回复不路由）。
+/// 经 chat/sessionList 取（团员身份），缓存 10 分钟；失效时由调用方清除后重试。
+async fn ensure_member_session(
+    app: &AppHandle,
+    ar: &Arc<AutoReplyState>,
+    conn: &BbtConnection,
+) -> Result<String, String> {
+    const TTL_MS: i64 = 10 * 60 * 1000;
+    {
+        let g = ar.member_session.lock().unwrap();
+        if let Some((sid, ts)) = g.as_ref() {
+            if now_ms() - *ts < TTL_MS {
+                return Ok(sid.clone());
+            }
+        }
+    }
+    let r = bbt::call(conn, "chat/sessionList", &json!({})).await?;
+    let data = bbt::data_of(&r)?;
+    // 兼容 {session:{sessionId}} 与 {list:[{sessionId}]} 两种返回（官方前端两种都有）
+    let sid = data
+        .get("session")
+        .and_then(|s| s.get("sessionId"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .or_else(|| {
+            data.get("list")
+                .and_then(|l| l.as_array())
+                .and_then(|list| list.first())
+                .and_then(|s| s.get("sessionId"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+        });
+    match sid {
+        Some(s) if !s.is_empty() => {
+            *ar.member_session.lock().unwrap() = Some((s.clone(), now_ms()));
+            ar.log(app, "debug", &format!("团员 sessionId={}", s), json!({}));
+            Ok(s)
+        }
+        _ => Err("团员 sessionList 未返回可用 sessionId（团员账号是否与团长在同一团？）".into()),
+    }
 }

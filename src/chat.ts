@@ -130,6 +130,13 @@ export function renderChat(container: HTMLElement) {
             <div class="field-label">语音消息也回复<span class="hint">需消息带转写文本</span></div>
             <label class="switch"><input type="checkbox" id="rl-voice"/><span></span></label>
           </div>
+          <div class="field" style="grid-column: 1 / -1">
+            <div class="field-label">团员账号（触发 AI 的身份）<span class="hint">关键：留空则自动回复 fallback 到团长连接，而团长没有 AI 端点 → 回复必失败；填团员手机号+密码，AI 才生效</span></div>
+            <div class="ar-row">
+              <input id="rl-member-tel" class="input" placeholder="团员手机号"/>
+              <input id="rl-member-pwd" class="input" type="password" placeholder="团员登录密码（改时再填，留空保留原值）"/>
+            </div>
+          </div>
         </div>
         <div class="btn-row">
           <button class="btn small primary" id="rl-save">保存回复规则</button>
@@ -192,6 +199,8 @@ function fillRules() {
   val("rl-rate-max", c.group_rate_max_replies ?? 10);
   val("rl-cd", c.cooldown_sec ?? 5);
   chk("rl-voice", c.reply_voice);
+  val("rl-member-tel", c.member_telephone || "");
+  // 密码不回显（type=password 且属敏感信息），仅作占位；保存时留空则保留原值
 }
 
 async function saveRules() {
@@ -209,7 +218,12 @@ async function saveRules() {
     group_rate_max_replies: Math.max(0, parseInt((g("rl-rate-max") as HTMLInputElement).value || "10", 10) || 0),
     cooldown_sec: Math.max(1, parseInt((g("rl-cd") as HTMLInputElement).value || "5", 10) || 5),
     reply_voice: !!(g("rl-voice") as HTMLInputElement).checked,
+    member_telephone: (g("rl-member-tel") as HTMLInputElement).value.trim(),
   };
+  const member_pwd = (g("rl-member-pwd") as HTMLInputElement).value;
+  if (member_pwd) {
+    value.member_password = member_pwd;
+  }
   try {
     state.cfg = await autoreplyApi.setConfig(value);
     toast("回复规则已保存");

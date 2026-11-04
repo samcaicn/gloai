@@ -136,8 +136,12 @@ async function refreshTargets() {
   if (note) {
     const parts: string[] = [];
     if (targets.wx_note) parts.push("微信：" + targets.wx_note);
-    if (!targets.ilink?.length) parts.push("iLink：无已绑定账号");
-    if (!targets.member?.length) parts.push("团员：未登录或名册为空");
+    if (!targets.ilink?.length) {
+      parts.push("iLink：无已绑定账号" + (targets.ilink_note ? `（${targets.ilink_note}）` : ""));
+    }
+    if (!targets.member?.length) {
+      parts.push("团员：" + (targets.member_note || "未登录或名册为空"));
+    }
     note.textContent = parts.join("；") || "目标就绪；下拉选「全部」可看全渠道事件。";
   }
 }

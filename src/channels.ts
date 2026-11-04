@@ -15,7 +15,9 @@ export interface ChannelTargets {
   wx_group: WxSession[];
   wx_note: string;
   ilink: any[];
+  ilink_note: string;
   member: any[];
+  member_note: string;
   member_map: Record<string, string>;
 }
 

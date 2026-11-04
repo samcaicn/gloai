@@ -746,39 +746,62 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
     }
 
     // 2) iLink：已绑定账号
-    let ilink_accounts = app
-        .try_state::<Arc<SessionManager>>()
-        .map(|mgr| json!(mgr.list_accounts()))
-        .unwrap_or(json!([]));
+    let (ilink_accounts, ilink_note) = match app.try_state::<Arc<SessionManager>>() {
+        Some(mgr) => (json!(mgr.list_accounts()), String::new()),
+        None => (json!([]), "iLink 会话管理未初始化（管理器未注册）".into()),
+    };
 
     // 3) 团员：bbt-zb 名册（先 ledger 取团，再 listMembers）
     let mut members: Vec<Value> = Vec::new();
     let mut member_note = String::new();
     if let Some(_state) = app.try_state::<AppState>() {
-        let group_id = match call_with_relogin(&app, "leader/ledger", &json!({})).await {
+        // leader/ledger 返回的团 id 官方前端用 String(x.id) 防御性转换，
+        // 实际可能是字符串或数字，这里两者都兼容（as_i64 对字符串返回 None）。
+        let (group_id_val, group_id) = match call_with_relogin(&app, "leader/ledger", &json!({})).await {
             Ok(r) => {
-                let list = r.pointer("/result/data/list").and_then(|l| l.as_array()).cloned().unwrap_or_default();
-                list.first()
+                let list = r
+                    .pointer("/result/data/list")
+                    .and_then(|l| l.as_array())
+                    .cloned()
+                    .unwrap_or_default();
+                let id_val = list
+                    .first()
                     .and_then(|g0| g0.get("id"))
-                    .and_then(|i| i.as_i64())
-                    .unwrap_or(0)
+                    .cloned()
+                    .unwrap_or(Value::Null);
+                let gid = match &id_val {
+                    Value::Number(n) => n.as_i64().unwrap_or(0),
+                    Value::String(s) => s.trim().parse::<i64>().unwrap_or(0),
+                    _ => 0,
+                };
+                (id_val, gid)
             }
             Err(e) => {
                 member_note = format!("拉取团列表失败: {}", e);
-                0
+                (Value::Null, 0)
             }
         };
         if group_id > 0 {
-            match call_with_relogin(&app, "leader/listMembers", &json!({"groupId": group_id})).await {
+            // 兼容 id 为字符串/数字两种：原样回传，避免 listMembers 因类型不符返回空。
+            let gid_param = match &group_id_val {
+                Value::String(s) if !s.trim().is_empty() => json!(s.trim().to_string()),
+                _ => json!(group_id),
+            };
+            match call_with_relogin(&app, "leader/listMembers", &json!({ "groupId": gid_param })).await {
                 Ok(r) => {
                     members = r
                         .pointer("/result/data/list")
                         .and_then(|l| l.as_array())
                         .cloned()
                         .unwrap_or_default();
+                    if members.is_empty() {
+                        member_note = format!("该团名册为空（groupId={}）", gid_param);
+                    }
                 }
                 Err(e) => member_note = format!("拉取名册失败: {}", e),
             }
+        } else if member_note.is_empty() {
+            member_note = "leader/ledger 未返回可用团（团长账号未管理任何团？）".into();
         }
     } else {
         member_note = "AppState 未初始化".into();
@@ -791,7 +814,9 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
         "wx_group": wx_group,
         "wx_note": wx_note,
         "ilink": ilink_accounts,
+        "ilink_note": ilink_note,
         "member": members,
+        "member_note": member_note,
         "member_map": map,
     }))
 }

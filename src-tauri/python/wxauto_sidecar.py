@@ -26,10 +26,12 @@ import base64
 import json
 import os
 import random
+import re
 import sys
 import tempfile
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -57,13 +59,22 @@ _ocr = None
 _asr = None
 _md = None
 
+# stdout 写锁：on_msg 回调线程（每会话一条）、heartbeat 线程、stdin 主线程并发 out()，
+# 无锁 write+flush 会导致 JSON 行交错，Rust 端 serde_json 解析失败丢消息。
+_out_lock = threading.Lock()
+
+# 媒体处理线程池：OCR/ASR 秒级耗时，丢后台线程做，不阻塞同会话后续文本消息。
+_media_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="wxmedia")
+
 
 def out(obj: dict) -> None:
-    try:
-        sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
-        sys.stdout.flush()
-    except Exception:
-        pass
+    line = (json.dumps(obj, ensure_ascii=False) + "\n").encode("utf-8")
+    with _out_lock:
+        try:
+            sys.stdout.buffer.write(line)
+            sys.stdout.buffer.flush()
+        except Exception:
+            pass
 
 
 def human_thinking_delay(text_len: int, is_group: bool) -> float:
@@ -134,11 +145,12 @@ def main() -> int:
         db = WeChatDB()
         info = db.get_self_info() or {}
         self_nick = info.get("nick_name") or info.get("username") or ""
+        self_user = info.get("username") or getattr(db, "wxid", "") or ""
     except Exception as e:
         out({"type": "status", "event": "error", "msg": f"微信本地库打开失败（微信未登录？）: {e}"})
         return 3
 
-    out({"type": "status", "event": "ready", "self": self_nick})
+    out({"type": "status", "event": "ready", "self": self_nick, "self_user": self_user})
 
     # 全局 WeChatGUI 单例（复用窗口句柄，避免反复初始化暴露）
     gui: WeChatGUI | None = None
@@ -198,7 +210,25 @@ def main() -> int:
             sys.stderr.write(f"[sidecar] 媒体下载失败({kind} peer={user} lid={local_id}): {e!r}\n")
         return None, None
 
-    def emit_in(peer: str, is_group: bool, kind: str, text: str, sender_name: str, media: str = "") -> None:
+    def extract_mentioned_self(packed) -> bool:
+        """从 packed_info_data XML 解析 <atuserlist>，判断是否 @ 了自己或 @所有人。"""
+        if not packed:
+            return False
+        try:
+            if isinstance(packed, bytes):
+                packed = packed.decode("utf-8", errors="ignore")
+            m = re.search(r"<atuserlist>([^<]*)</atuserlist>", packed)
+            if not m:
+                return False
+            lst = [u for u in m.group(1).split(",") if u]
+            if "notify@all" in lst:
+                return True
+            return bool(self_user) and self_user in lst
+        except Exception:
+            return False
+
+    def emit_in(peer: str, is_group: bool, kind: str, text: str, sender_name: str,
+                media: str = "", mentioned_self: bool = False) -> None:
         out({
             "type": "in",
             "peer": peer,
@@ -208,9 +238,10 @@ def main() -> int:
             "sender": sender_name,
             "sender_name": sender_name,
             "media": media,
+            "mentioned_self": mentioned_self,
         })
 
-    def handle_image(local_id, peer: str, is_group: bool, sender_name: str) -> None:
+    def handle_image(local_id, peer: str, is_group: bool, sender_name: str, mentioned_self: bool) -> None:
         raw, _path = fetch_media(peer, local_id, "image")
         if not raw:
             out({"type": "status", "event": "warn",
@@ -226,9 +257,9 @@ def main() -> int:
         except Exception as e:
             out({"type": "status", "event": "warn", "msg": f"OCR 失败: {e!r}"})
             return
-        emit_in(peer, is_group, "image", text or "", sender_name, "图片")
+        emit_in(peer, is_group, "image", text or "", sender_name, "图片", mentioned_self)
 
-    def handle_voice(local_id, peer: str, is_group: bool, sender_name: str) -> None:
+    def handle_voice(local_id, peer: str, is_group: bool, sender_name: str, mentioned_self: bool) -> None:
         raw, _path = fetch_media(peer, local_id, "voice")
         if not raw:
             out({"type": "status", "event": "warn",
@@ -244,7 +275,7 @@ def main() -> int:
         except Exception as e:
             out({"type": "status", "event": "warn", "msg": f"语音转写失败: {e!r}"})
             return
-        emit_in(peer, is_group, "voice", text or "", sender_name, "语音")
+        emit_in(peer, is_group, "voice", text or "", sender_name, "语音", mentioned_self)
 
     def on_msg(msg: dict, lst) -> None:
         try:
@@ -261,13 +292,26 @@ def main() -> int:
             # 兜底按 local_type 数字再判一次，跨版本/语言更稳。
             KIND = {"文本": "text", "图片": "image", "语音": "voice"}
             kind = KIND.get(msg.get("type"))
+            packed = None
             if kind is None and msg.get("local_id"):
                 try:
                     row = db.get_message_row(peer, msg["local_id"])
                     if row:
                         kind = {1: "text", 3: "image", 34: "voice"}.get(row.get("local_type"))
+                        packed = row.get("packed_info")
                 except Exception:
                     pass
+            # 群消息：额外从 packed_info 解析 @ 列表（text 消息 content 不带 @ 前缀）
+            mentioned_self = False
+            if is_group and packed is None and msg.get("local_id"):
+                try:
+                    row = db.get_message_row(peer, msg["local_id"])
+                    if row:
+                        packed = row.get("packed_info")
+                except Exception:
+                    packed = None
+            if is_group:
+                mentioned_self = extract_mentioned_self(packed)
             if not kind:
                 out({"type": "status", "event": "warn", "msg": f"忽略未知消息类型 {msg.get('type')!r} from {peer}"})
                 return
@@ -276,11 +320,13 @@ def main() -> int:
                 text = (msg.get("content") or "").strip()
                 if not text:
                     return
-                emit_in(peer, is_group, "text", text, sender_name)
+                emit_in(peer, is_group, "text", text, sender_name, mentioned_self=mentioned_self)
             elif kind == "image":
-                handle_image(msg.get("local_id"), peer, is_group, sender_name)
+                lid = msg.get("local_id")
+                _media_pool.submit(handle_image, lid, peer, is_group, sender_name, mentioned_self)
             elif kind == "voice":
-                handle_voice(msg.get("local_id"), peer, is_group, sender_name)
+                lid = msg.get("local_id")
+                _media_pool.submit(handle_voice, lid, peer, is_group, sender_name, mentioned_self)
         except Exception as e:
             sys.stderr.write(f"[sidecar] on_msg error: {e!r}\n")
 
