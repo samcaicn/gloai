@@ -39,6 +39,17 @@ pub struct AccountInfo {
     /// 前端据此提示重新扫码；未失效的账号重启直接恢复，无需重复扫码。
     #[serde(default)]
     pub expired: bool,
+    /// 最近一次与 iLink 服务器成功互动（长轮询/收发消息）的时间戳 ms。
+    /// 平台规则：约 48 小时无互动会话才失效；本地不按时间自行判过期，
+    /// 该字段只用于「48h 内免扫码」展示与升级后的自动恢复判断。
+    #[serde(default)]
+    pub last_active_ms: i64,
+    /// 平台明确返回会话失效的时间戳 ms（0 = 从未失效）
+    #[serde(default)]
+    pub expired_ms: i64,
+    /// 最近一次「48h 内自动重试恢复」的时间戳 ms（避免每次启动反复空跑）
+    #[serde(default)]
+    pub recover_ms: i64,
 }
 
 /// 本地消息记录（in/out 通用）
@@ -153,10 +164,21 @@ impl SessionManager {
         self.dir.join("accounts.json")
     }
 
+    fn accounts_backup_path(&self) -> PathBuf {
+        self.dir.join("accounts.json.bak")
+    }
+
     fn load_accounts(&self) {
-        if let Ok(s) = std::fs::read_to_string(self.accounts_path()) {
+        // 主文件缺失/损坏（升级或断电写盘中断）时从备份恢复，保证登录态缓存不丢。
+        // 注意：合法空数组 [] 也直接采用，避免把用户主动删除的账号从备份里复活。
+        for f in [self.accounts_path(), self.accounts_backup_path()] {
+            let Ok(s) = std::fs::read_to_string(&f) else { continue };
             if let Ok(v) = serde_json::from_str::<Vec<AccountInfo>>(&s) {
+                if f != self.accounts_path() {
+                    eprintln!("[ilink] 主账号缓存损坏，已从 accounts.json.bak 恢复");
+                }
                 *self.accounts.lock().unwrap() = v;
+                return;
             }
         }
     }
@@ -164,7 +186,31 @@ impl SessionManager {
     fn save_accounts(&self) {
         let list = self.accounts.lock().unwrap().clone();
         let s = serde_json::to_string_pretty(&list).unwrap_or_else(|_| "[]".into());
+        if let Ok(old) = std::fs::read_to_string(self.accounts_path()) {
+            if serde_json::from_str::<Value>(&old).is_ok() {
+                let _ = util::write_atomic(&self.accounts_backup_path(), &old);
+            }
+        }
         let _ = util::write_atomic(&self.accounts_path(), &s);
+    }
+
+    /// 记录一次成功互动（节流 60s 落盘，避免长轮询每次都写文件）。
+    /// 长轮询持续运行 = 持续有互动，配合平台「48h 无互动才失效」规则实现免扫码。
+    fn touch_account(&self, bot_id: &str) {
+        let now = self.now_ms();
+        {
+            let mut list = self.accounts.lock().unwrap();
+            match list.iter_mut().find(|a| a.bot_id == bot_id) {
+                Some(a) => {
+                    if now - a.last_active_ms < 60_000 {
+                        return;
+                    }
+                    a.last_active_ms = now;
+                }
+                None => return,
+            }
+        }
+        self.save_accounts();
     }
 
     fn update_account<F: FnOnce(&mut AccountInfo)>(&self, bot_id: &str, f: F) {
@@ -250,16 +296,33 @@ impl SessionManager {
             accounts.len(),
             self.accounts_path().display()
         );
-        for acc in accounts {
+        for mut acc in accounts {
             if acc.expired {
-                // 已失效 token 不再启动长轮询（否则每次重启都立刻过期、刷屏且状态抖动）；
-                // 前端看到 session_expired 才会给出「重新扫码」入口。
-                eprintln!("[ilink] 账号 {} 会话已失效，等待重新扫码", acc.bot_id);
-                self.emit(json!({
-                    "kind": "account", "event": "status",
-                    "bot_id": acc.bot_id, "label": acc.label, "status": "session_expired",
-                }));
-                continue;
+                // 平台规则是「约 48h 无互动才失效」。本地缓存的 token 不按时间判过期；
+                // 若上次活跃仍在 48h 内且尚未自动重试过，清掉失效标记恢复一次——
+                // 升级/重启后无需重新扫码。若服务端确实已失效，会立刻再返回 -14 并重新标记。
+                let now = self.now_ms();
+                const TTL_MS: i64 = 48 * 60 * 60 * 1000;
+                let recent = acc.last_active_ms > 0 && now - acc.last_active_ms < TTL_MS;
+                let retried = acc.recover_ms > 0 && now - acc.recover_ms < TTL_MS;
+                if recent && !retried {
+                    eprintln!(
+                        "[ilink] 账号 {} 上次活跃在 48h 内，自动恢复缓存会话（免扫码）",
+                        acc.bot_id
+                    );
+                    self.update_account(&acc.bot_id, |a| {
+                        a.expired = false;
+                        a.recover_ms = now;
+                    });
+                    acc.expired = false;
+                } else {
+                    eprintln!("[ilink] 账号 {} 会话已失效，等待重新扫码", acc.bot_id);
+                    self.emit(json!({
+                        "kind": "account", "event": "status",
+                        "bot_id": acc.bot_id, "label": acc.label, "status": "session_expired",
+                    }));
+                    continue;
+                }
             }
             eprintln!("[ilink] 恢复已登录账号 {}（本机缓存，无需重新扫码）", acc.bot_id);
             self.emit(json!({
@@ -355,6 +418,9 @@ impl SessionManager {
                     sync_buf: String::new(),
                     created_at: self.now_ms(),
                     expired: false,
+                    last_active_ms: self.now_ms(),
+                    expired_ms: 0,
+                    recover_ms: 0,
                 };
                 {
                     let mut list = self.accounts.lock().unwrap();
@@ -417,6 +483,8 @@ impl SessionManager {
                 json!({
                     "bot_id": a.bot_id, "label": a.label, "user_id": a.user_id,
                     "base_url": a.base_url, "status": status, "expired": a.expired,
+                    "last_active_ms": a.last_active_ms, "expired_ms": a.expired_ms,
+                    "ttl_hours": 48, "cached": !a.bot_token.is_empty(),
                 })
             })
             .collect()
@@ -497,10 +565,16 @@ impl SessionManager {
                             if ilink::is_session_expired(resp.ret, resp.errcode) {
                                 *p_status.lock().unwrap() = "session_expired".into();
                                 // 失效状态落盘：重启后不再拿失效 token 空轮询，前端直接提示重新扫码
-                                p_this.update_account(&p_bot, |a| a.expired = true);
+                                let now = p_this.now_ms();
+                                p_this.update_account(&p_bot, |a| {
+                                    a.expired = true;
+                                    a.expired_ms = now;
+                                });
                                 let _ = poll_tx.send(Err("__SESSION_EXPIRED__".into()));
                                 break;
                             }
+                            // 成功与服务器通信 = 一次互动，刷新 48h 活跃窗口（节流落盘）
+                            p_this.touch_account(&p_bot);
                             if resp.ret != 0 || resp.errcode != 0 {
                                 failures += 1;
                                 let _ = poll_tx.send(Err(format!("ret={} errcode={} {}", resp.ret, resp.errcode, resp.errmsg)));

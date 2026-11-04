@@ -161,6 +161,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::load_config,
             commands::save_config,
+            commands::patch_config,
+            commands::local_cache_status,
             commands::reset_config,
             commands::set_connection,
             commands::login,

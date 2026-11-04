@@ -9,6 +9,10 @@ class LocalKV {
   async put(value: any): Promise<any> {
     return api.saveConfig(value);
   }
+  /** 局部更新（深合并）：只覆盖传入的字段，不抹掉其它页面写入的配置节点。 */
+  async patch(value: any): Promise<any> {
+    return api.patchConfig(value);
+  }
 }
 
 export const kv = new LocalKV();

@@ -14,7 +14,84 @@ pub async fn load_config(state: State<'_, AppState>) -> Result<Value, String> {
     Ok((*g).clone())
 }
 
-/// 写入本地配置并落盘
+/// 深合并两个 JSON：对象递归合并，数组/标量以新值覆盖。
+/// 用于「局部更新」本地配置——避免参数面板保存时抹掉 autoreply / memberqr /
+/// channel_settings 等由其它页面维护的节点（0.4.0 修复的配置丢失根因）。
+fn merge_json(base: &mut Value, incoming: &Value) {
+    match (base, incoming) {
+        (Value::Object(b), Value::Object(i)) => {
+            for (k, v) in i {
+                match b.get_mut(k) {
+                    Some(slot) => merge_json(slot, v),
+                    None => {
+                        b.insert(k.clone(), v.clone());
+                    }
+                }
+            }
+        }
+        (b, i) => *b = i.clone(),
+    }
+}
+
+/// 局部更新本地配置（深合并）并落盘。返回合并后的完整配置。
+/// 所有「只改自己那几个字段」的 UI 都应走这里，不要走 save_config 全量覆盖。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn patch_config(state: State<'_, AppState>, value: Value) -> Result<Value, String> {
+    let out = {
+        let mut g = state.config.lock().unwrap();
+        merge_json(&mut *g, &value);
+        g.clone()
+    };
+    state.save_config()?;
+    Ok(out)
+}
+
+/// 本地缓存体检：配置文件/备份、渠道配置、绑定关系、iLink 登录态缓存。
+/// 供「渠道配置」面板展示「已缓存到本机，升级/重启不丢失」的真实依据。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn local_cache_status(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Value, String> {
+    let p: std::path::PathBuf = state.config_path.lock().unwrap().clone().unwrap_or_default();
+    let bak = p.with_extension("json.bak");
+    let saved_at = std::fs::metadata(&p)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0);
+    let g = state.config.lock().unwrap().clone();
+    let accounts = app
+        .try_state::<Arc<SessionManager>>()
+        .map(|m| m.list_accounts())
+        .unwrap_or_default();
+    let active = accounts
+        .iter()
+        .filter(|a| !a.get("expired").and_then(|v| v.as_bool()).unwrap_or(false))
+        .count();
+    let last_active = accounts
+        .iter()
+        .filter_map(|a| a.get("last_active_ms").and_then(|v| v.as_i64()))
+        .max()
+        .unwrap_or(0);
+    Ok(json!({
+        "config_path": p.to_string_lossy(),
+        "config_exists": p.exists(),
+        "backup_exists": bak.exists(),
+        "saved_at": saved_at,
+        "channel_settings": g.get("channel_settings").cloned().unwrap_or(json!({})),
+        "autoreply_saved": g.get("autoreply").is_some(),
+        "memberqr_bindings": g.get("memberqr").and_then(|m| m.get("map")).and_then(|v| v.as_object()).map(|m| m.len()).unwrap_or(0),
+        "ilink_total": accounts.len(),
+        "ilink_active": active,
+        "ilink_expired": accounts.len().saturating_sub(active),
+        "ilink_last_active_ms": last_active,
+        "ilink_ttl_hours": 48
+    }))
+}
+
+/// 写入本地配置并落盘（全量覆盖，仅用于确实要替换整份配置的场景）
 #[tauri::command(rename_all = "snake_case")]
 pub async fn save_config(state: State<'_, AppState>, value: Value) -> Result<Value, String> {
     *state.config.lock().unwrap() = value.clone();
@@ -971,6 +1048,8 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
             "status": status,
             "expired": expired,
             "online": status == "running",
+            "last_active_ms": acc.and_then(|a| a.get("last_active_ms")).and_then(|v| v.as_i64()).unwrap_or(0),
+            "ttl_hours": 48,
         }));
         seen.insert(bot.to_string());
     }
@@ -1001,6 +1080,8 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
             "status": status,
             "expired": a.get("expired").and_then(|v| v.as_bool()).unwrap_or(false) || status == "session_expired",
             "online": status == "running",
+            "last_active_ms": a.get("last_active_ms").and_then(|v| v.as_i64()).unwrap_or(0),
+            "ttl_hours": 48,
         }));
         seen.insert(bot.to_string());
     }

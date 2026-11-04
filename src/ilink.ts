@@ -102,6 +102,11 @@ export interface AutoReplyConfig {
   banned_words: string[];
   group_rate_window_sec: number;
   group_rate_max_replies: number;
+  /** 交互优化：真人思考随机延迟（秒），私聊/群聊各自可配 */
+  think_min_sec: number;
+  think_max_sec: number;
+  group_think_min_sec: number;
+  group_think_max_sec: number;
 }
 
 export interface AutoReplyLog {

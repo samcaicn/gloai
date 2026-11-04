@@ -326,7 +326,9 @@ async function persistNow() {
     token: state.connection.token || "",
   };
   try {
-    await kv.put({ connection: savedConn, ...params });
+    // 局部合并保存：绝不能全量覆盖，否则会抹掉 autoreply / memberqr 绑定 /
+    // channel_settings 等由其它页面维护的节点（升级后「配置失效」的根因）。
+    await kv.patch({ connection: savedConn, ...params });
     await bbt.setConnection(savedConn.base_url, savedConn.token || undefined, savedConn.telephone || undefined);
   } catch (e: any) {
     console.warn("自动保存失败", e);
@@ -421,7 +423,7 @@ async function onLogout() {
   try {
     await bbt.setConnection(state.connection.base_url, "", undefined);
     const savedConn = { base_url: state.connection.base_url, telephone: "", token: "" };
-    await kv.put({ connection: savedConn, ...state.params });
+    await kv.patch({ connection: savedConn, ...state.params });
   } catch {}
   refreshStatusBar();
   notifyLoginChanged(false);

@@ -183,7 +183,7 @@ async function refreshTargets() {
       ...a,
       id: a.id || a.bot_id || a.user_id,
       // 扫码成功即绑定：下拉直接显示团员名，而不是一串 bot_id
-      name: `${a.name || a.label || a.user_id || a.bot_id}${a.expired ? " · 需重新扫码" : a.online ? " · 在线" : " · 离线"}`,
+      name: `${a.name || a.label || a.user_id || a.bot_id}${a.expired ? " · 需重新扫码（48h 无互动）" : a.online ? " · 在线（48h 内免扫码）" : " · 本机缓存有效"}`,
     })),
     targets.ilink_note || "iLink：无已绑定团员（先在「团员二维码」页扫码）"
   );

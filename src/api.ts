@@ -5,6 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 export const api = {
   loadConfig: () => invoke<any>("load_config"),
   saveConfig: (value: any) => invoke("save_config", { value }),
+  patchConfig: (value: any) => invoke<any>("patch_config", { value }),
+  localCacheStatus: () => invoke<any>("local_cache_status"),
   resetConfig: () => invoke("reset_config"),
 
   setConnection: (base_url: string, token?: string, telephone?: string) =>

@@ -90,7 +90,7 @@ export async function renderMemberQr(root: HTMLElement) {
           </div>
         </div>
         <div id="mq-group-bar" class="mt8"></div>
-        <p class="hint">扫码成功即完成绑定，登录态自动缓存在本机，未过期无需重复扫码。</p>
+        <p class="hint">扫码成功即完成绑定，登录态自动缓存在本机；48 小时内无需重复扫码，升级 / 重启同样有效。</p>
         <div id="mq-roster" class="member-grid">
           <div class="empty">尚未登录或名册为空</div>
         </div>
@@ -303,6 +303,13 @@ interface LoginView {
  * 团员绑定卡片的展示状态。核心规则：只要账号未过期，就一律显示「已登录」——
  * 登录态已缓存在本机 accounts.json，重启后由后端自动恢复，不要求用户重复扫码。
  */
+function fmtActive(ms?: number): string {
+  if (!ms) return "";
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return ` · 最近活跃 ${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 function loginView(bot: string, acc: any): LoginView {
   const st = String(acc?.status || "");
   const expired = !!acc?.expired || st === "session_expired";
@@ -313,8 +320,8 @@ function loginView(bot: string, acc: any): LoginView {
     return {
       badge: "需重新扫码",
       badgeCls: "badge-session_expired",
-      qr: `<div class="mqr-state is-expired"><div class="mqr-state-title">⚠ 微信会话已失效</div><div class="mqr-state-sub">点下方按钮重新扫码，之后自动继续缓存</div></div>`,
-      status: "微信会话已失效，重新扫码即可恢复",
+      qr: `<div class="mqr-state is-expired"><div class="mqr-state-title">⚠ 微信会话已失效</div><div class="mqr-state-sub">通常 48 小时无互动后失效；点下方按钮重新扫码，之后自动继续缓存</div></div>`,
+      status: "微信会话已失效（48h 无互动），重新扫码即可恢复",
       btn: "重新扫码",
       btnCls: "primary",
       expired: true,
@@ -326,8 +333,8 @@ function loginView(bot: string, acc: any): LoginView {
     badgeCls: "badge-running",
     qr: `<div class="mqr-state is-logged">
       <div class="mqr-state-title">✅ 已绑定</div>
-      <div class="mqr-state-sub">登录态已缓存在本机，未过期无需重复扫码</div>
-      <div class="mqr-state-meta">${esc(acc?.label || acc?.user_id || bot)}${online ? " · 在线" : " · 待连接"}</div>
+      <div class="mqr-state-sub">登录态已缓存在本机 · 48 小时内无需重复扫码（升级 / 重启同样有效）</div>
+      <div class="mqr-state-meta">${esc(acc?.label || acc?.user_id || bot)}${online ? " · 在线" : " · 待连接"}${esc(fmtActive(acc?.last_active_ms))}</div>
     </div>`,
     status: online ? "已绑定 · 在线，无需扫码" : "已缓存登录态 · 无需扫码",
     btn: "重新扫码（更换微信）",

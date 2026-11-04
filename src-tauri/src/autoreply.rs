@@ -73,6 +73,14 @@ pub struct AutoReplyConfig {
     pub group_rate_window_sec: u64,
     /// 群内频控：窗口内最多回复条数（0 = 不限）
     pub group_rate_max_replies: u32,
+    /// 交互优化：私聊「真人思考」随机延迟下限（秒）
+    pub think_min_sec: f64,
+    /// 交互优化：私聊「真人思考」随机延迟上限（秒）
+    pub think_max_sec: f64,
+    /// 交互优化：群聊「真人思考」随机延迟下限（秒）
+    pub group_think_min_sec: f64,
+    /// 交互优化：群聊「真人思考」随机延迟上限（秒）
+    pub group_think_max_sec: f64,
 }
 
 impl Default for AutoReplyConfig {
@@ -94,6 +102,10 @@ impl Default for AutoReplyConfig {
             banned_words: Vec::new(),
             group_rate_window_sec: 60,
             group_rate_max_replies: 10,
+            think_min_sec: 1.5,
+            think_max_sec: 4.0,
+            group_think_min_sec: 2.5,
+            group_think_max_sec: 6.0,
         }
     }
 }
@@ -465,13 +477,19 @@ async fn process_msg_with(
         }
 
         // ---- 反检测：随机思考延迟（模拟真人看到消息后反应时间）----
-        // 私聊 1.5~4s，群聊 2.5~6s；短消息反应快，长消息反应慢。
-        let think_min = if is_group { 2.5f64 } else { 1.5f64 };
-        let think_max = if is_group { 6.0f64 } else { 4.0f64 };
+        // 0.4.0 起可在「互动消息 → 渠道配置 / 交互优化」里调整；配置随本地
+        // config.json 持久化，升级/重启后保持。设为 0 则即时回复（自测常用）。
+        let (think_min, think_max) = if is_group {
+            (cfg.group_think_min_sec.max(0.0), cfg.group_think_max_sec.max(cfg.group_think_min_sec.max(0.0)))
+        } else {
+            (cfg.think_min_sec.max(0.0), cfg.think_max_sec.max(cfg.think_min_sec.max(0.0)))
+        };
         let think_secs =
             think_min + rand_interval(think_max - think_min) * (1.0 + text.len() as f64 / 100.0).min(2.0);
-        ar.log(app, "debug", &format!("反检测：思考延迟 {:.1}s", think_secs), json!({"peer": to}));
-        tokio::time::sleep(Duration::from_secs_f64(think_secs)).await;
+        if think_secs > 0.05 {
+            ar.log(app, "debug", &format!("反检测：思考延迟 {:.1}s", think_secs), json!({"peer": to}));
+            tokio::time::sleep(Duration::from_secs_f64(think_secs)).await;
+        }
     }
 
     // ---- 统一 AI 网关：不管哪个渠道、哪个团员，消息都只向同一个团长发 ----
