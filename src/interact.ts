@@ -389,7 +389,7 @@ async function refreshCacheStatus() {
     box.innerHTML = [
       `<div class="ar-line info"><span class="ar-t">${c.config_exists ? "✓" : "✕"}</span>配置已缓存到本机${c.backup_exists ? " · 备份已就绪" : ""} · 最近保存 ${fmtDateTime(c.saved_at)}</div>`,
       `<div class="ar-line info"><span class="ar-t">·</span>渠道：iLink 缓存 ${c.ilink_active}/${c.ilink_total} 个有效 · 团员绑定 ${c.memberqr_bindings} 条${c.autoreply_saved ? " · 回复规则已缓存" : ""}</div>`,
-      `<div class="ar-line ${c.ilink_expired ? "warn" : "info"}"><span class="ar-t">i</span>iLink 登录态 ${c.ilink_ttl_hours}h 内免扫码（${last}）${c.ilink_expired ? ` · ${c.ilink_expired} 个会话已失效，需重新扫码` : ""}</div>`,
+      `<div class="ar-line ${c.ilink_expired ? "warn" : "info"}"><span class="ar-t">·</span>iLink 登录态 ${c.ilink_ttl_hours}h 内免扫码（${last}）${c.ilink_expired ? ` · ${c.ilink_expired} 个会话已失效，需重新扫码` : ""}</div>`,
     ].join("");
   } catch (e: any) {
     box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>缓存状态读取失败：${escapeHtml(String(e?.message || e))}</div>`;
