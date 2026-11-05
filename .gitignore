@@ -22,3 +22,7 @@ tools/__pycache__/
 
 # 项目内置 Python 运行环境（体积大、含二进制，不入库）
 .venv_bot/
+
+# 本地 UI 走查产物（浏览器截图）与使用 npm 临时安装时生成的锁文件
+.preview/*.png
+package-lock.json

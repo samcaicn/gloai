@@ -61,6 +61,11 @@ jobs:
         # 故 --frozen-lockfile 可直接通过（无需额外 flag）。
         run: pnpm install --frozen-lockfile
 
+      - name: Run UI shell regression tests
+        # 纯静态断言（不启浏览器）：锁住页面单列布局、浮层焦点闭环、页签键盘、
+        # 版本四处一致等一改就回归的外壳契约。失败即中止，不发带缺陷的升级包。
+        run: pnpm test
+
       - name: Resolve build secrets (CONFIG_SIG_KEY 必须跨版本稳定)
         id: secrets
         shell: bash

@@ -25,6 +25,18 @@ const state: AppState = {
 // 自动保存防抖句柄（字段改动 500ms 后落盘）
 let saveTimer: number | null = null;
 
+// 页签单一事实源：顺序 = Alt+1~5 / 方向键顺序 / 顶栏渲染顺序 / 恢复顺序
+export type TabKey = "params" | "chat" | "members" | "orders" | "interact";
+const TAB_ORDER: TabKey[] = ["params", "chat", "members", "orders", "interact"];
+const TAB_META: Record<TabKey, { label: string; emoji: string; title: string }> = {
+  params: { label: "首页", emoji: "🏠", title: "首页" },
+  chat: { label: "聊天", emoji: "💬", title: "聊天" },
+  members: { label: "团员", emoji: "👥", title: "团员" },
+  orders: { label: "订单", emoji: "📦", title: "订单" },
+  interact: { label: "互动", emoji: "📢", title: "互动" },
+};
+const LAST_TAB_KEY = "bbt-pc-last-tab";
+
 function $(id: string) {
   return document.getElementById(id) as HTMLInputElement | null;
 }
@@ -34,8 +46,12 @@ export function toast(msg: string, ok = true) {
   if (!box) return;
   const el = document.createElement("div");
   el.className = "toast " + (ok ? "ok" : "err");
+  el.setAttribute("role", "status");
+  el.setAttribute("aria-live", ok ? "polite" : "assertive");
   el.textContent = msg;
   box.appendChild(el);
+  // 同时最多留 3 条，避免连续操作把右下角堆满挡住内容
+  while (box.children.length > 3) box.firstElementChild?.remove();
   setTimeout(() => el.remove(), 3200);
 }
 
@@ -44,6 +60,11 @@ function fieldHtml(f: FieldDef, value: any, prefix: string): string {
   const id = `${prefix}-${f.key}`;
   const val = value === undefined || value === null ? f.default : value;
   let control = "";
+  // 桌面客户端表单：让系统/密码管理器能正确识别并填充，登录少打一遍
+  const AUTOCOMPLETE: Record<string, string> = {
+    base_url: "url", telephone: "username", password: "current-password",
+  };
+  const autocomplete = AUTOCOMPLETE[f.key] ? ` autocomplete="${AUTOCOMPLETE[f.key]}"` : "";
   if (f.type === "toggle") {
     control = `<label class="switch"><input type="checkbox" id="${id}" ${val ? "checked" : ""}/><span></span></label>`;
   } else if (f.type === "select") {
@@ -57,7 +78,7 @@ function fieldHtml(f: FieldDef, value: any, prefix: string): string {
     control = `<input type="number" id="${id}" value="${val}" step="${f.step || "any"}"/>`;
   } else {
     const t = f.type === "password" ? "password" : "text";
-    control = `<input type="${t}" id="${id}" value="${escapeHtml(String(val))}"/>`;
+    control = `<input type="${t}" id="${id}" value="${escapeHtml(String(val))}"${autocomplete}/>`;
   }
   return `
     <div class="field">
@@ -70,6 +91,20 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
   );
+}
+
+/** 顶栏常驻连接态：任意页签都能一眼看到是否已连接，点击直接进连接设置。 */
+function updateConnBadge() {
+  const el = document.getElementById("conn-badge");
+  if (!el) return;
+  const on = !!state.connection.token;
+  const tel = state.connection.telephone || "";
+  el.className = `conn-badge ${on ? "on" : "off"}`;
+  el.innerHTML = `<span class="conn-dot ${on ? "on" : "off"}"></span>${on ? escapeHtml(tel || "已连接") : "未连接"}`;
+  el.title = on
+    ? `已连接 ${state.connection.base_url || ""} · 点击管理连接`
+    : "未连接 · 点击登录并连接";
+  el.setAttribute("aria-label", el.title);
 }
 
 // ---- 收集值 ----
@@ -142,37 +177,61 @@ function render() {
       <h2>运行状态</h2>
       <p class="card-desc">全局功能开关，改动即时生效。</p>
       <div class="sw-run">
-        <div class="sw-run-item">
+        <div class="sw-run-item" data-sw="autoreply">
           <div class="sw-run-icon" style="background:var(--ok-soft)">🤖</div>
           <div class="sw-run-body">
             <div class="sw-run-name">AI 自动回复</div>
             <div class="sw-run-hint">团员/微信消息 AI 接管</div>
           </div>
-          <label class="switch"><input type="checkbox" id="sw-autoreply"/><span></span></label>
+          <span class="sw-run-state" id="sw-state-autoreply">读取中…</span>
+          <label class="switch"><input type="checkbox" id="sw-autoreply" aria-label="AI 自动回复开关"/><span></span></label>
         </div>
-        <div class="sw-run-item">
+        <div class="sw-run-item" data-sw="wxauto">
           <div class="sw-run-icon" style="background:#e8f0ff">💬</div>
           <div class="sw-run-body">
             <div class="sw-run-name">微信通道</div>
             <div class="sw-run-hint">wxauto 自动收发</div>
           </div>
-          <label class="switch"><input type="checkbox" id="sw-wxauto"/><span></span></label>
+          <span class="sw-run-state" id="sw-state-wxauto">读取中…</span>
+          <label class="switch"><input type="checkbox" id="sw-wxauto" aria-label="微信通道开关"/><span></span></label>
         </div>
-        <div class="sw-run-item">
+        <div class="sw-run-item" data-sw="bridge">
           <div class="sw-run-icon" style="background:var(--accent-soft)">🌉</div>
           <div class="sw-run-body">
             <div class="sw-run-name">团长桥</div>
             <div class="sw-run-hint">bbt-zb ↔ iLink 互通</div>
           </div>
-          <label class="switch"><input type="checkbox" id="sw-bridge"/><span></span></label>
+          <span class="sw-run-state" id="sw-state-bridge">读取中…</span>
+          <label class="switch"><input type="checkbox" id="sw-bridge" aria-label="团长桥开关"/><span></span></label>
         </div>
       </div>
     </section>
 `;
-  // 次要配置块：浮层启动按钮 + 浮层本体（字段仍在 DOM 中，collect 正常读取）
+  // 次要配置块：带说明/字段数的可点设置卡（原为一排无说明裸按钮，看不出里面是什么）
   const moreLaunchers = SCHEMA.map(
-    (g) => `<button class="btn" id="btn-ov-${g.id}">${g.title}</button>`
+    (g) => `<button class="set-item" id="btn-ov-${g.id}" type="button">
+       <span class="set-emoji">${g.id === "readonly" ? "📊" : "⚙️"}</span>
+       <span class="set-body"><b>${g.title}</b><small>${g.desc || "点击查看与修改"}</small></span>
+       <span class="set-count">${g.fields.length} 项</span><span class="set-go">›</span>
+     </button>`
   ).join("");
+  // 首页快捷入口：桌面端最常用的是直接跳到某个工作页，避免每次都先读一遍首页
+  const QUICK = [
+    { tab: "chat", emoji: "💬", name: "聊天", sub: "回复规则 · 自测" },
+    { tab: "members", emoji: "👥", name: "团员", sub: "名册 · 绑定码" },
+    { tab: "orders", emoji: "📦", name: "订单", sub: "收款图 · 发送" },
+    { tab: "interact", emoji: "📢", name: "互动", sub: "渠道 · 事件流" },
+  ];
+  const quickCard = `
+    <section class="card span2">
+      <h2>快捷入口</h2>
+      <p class="card-desc">常用工作页一键直达，也可用 Alt + 2~5 切换。</p>
+      <div class="quick-grid">
+        ${QUICK.map((q) => `<button class="quick-item" type="button" data-goto="${q.tab}">
+          <span class="quick-emoji">${q.emoji}</span><span>${q.name}</span><small>${q.sub}</small>
+        </button>`).join("")}
+      </div>
+    </section>`;
   const moreOverlays = SCHEMA.map(
     (g) =>
       overlayHtml(
@@ -183,33 +242,43 @@ function render() {
       )
   ).join("");
 
+  const tabButtons = TAB_ORDER.map((k, i) => `
+    <button class="tab${i === 0 ? " active" : ""}" id="tab-${k}-btn" type="button"
+      role="tab" aria-selected="${i === 0}" aria-controls="page-${k}"
+      tabindex="${i === 0 ? "0" : "-1"}" title="Alt+${i + 1} 切换到${TAB_META[k].title}"
+      data-tab="${k}">${TAB_META[k].emoji} ${TAB_META[k].label}<kbd>${i + 1}</kbd></button>`).join("");
+
   app.innerHTML = `
     <header class="topbar">
       <div class="brand">BBT-ZB 控制台</div>
-      <nav class="tabs">
-        <button class="tab active" id="tab-params-btn">🏠 首页</button>
-        <button class="tab" id="tab-chat-btn">💬 聊天</button>
-        <button class="tab" id="tab-members-btn">👥 团员</button>
-        <button class="tab" id="tab-orders-btn">📦 订单</button>
-        <button class="tab" id="tab-interact-btn">📢 互动</button>
-      </nav>
+      <nav class="tabs" role="tablist" aria-label="主导航">${tabButtons}</nav>
+      <div class="topbar-right">
+        <span class="kbd-hint">Alt + 1~5 切换</span>
+        <button class="conn-badge off" id="conn-badge" type="button" title="点击登录并连接">
+          <span class="conn-dot off"></span>未连接
+        </button>
+      </div>
     </header>
-    <main class="content" id="page-params">
+    <main class="content" id="page-params" role="tabpanel" aria-labelledby="tab-params-btn" tabindex="-1">
       ${connCard}
       ${switchesCard}
+      ${quickCard}
       <section class="card span2">
         <h2>更多设置</h2>
-        <p class="card-desc">次要配置以浮层打开，保持首页简洁。</p>
-        <div class="btn-row">${moreLaunchers}</div>
+        <p class="card-desc">次要配置以浮层打开，保持首页简洁；改动自动保存到本机。</p>
+        <div class="set-grid">${moreLaunchers}</div>
       </section>
-      ${moreOverlays}
-      ${loginOverlay}
     </main>
-    <main class="content chat-page hidden" id="page-chat"></main>
-    <main class="content members-page hidden" id="page-members"></main>
-    <main class="content orders-page hidden" id="page-orders"></main>
-    <main class="content interact-page hidden" id="page-interact"></main>
-    <div id="toast-box" class="toast-box"></div>`;
+    <main class="content chat-page hidden" id="page-chat" role="tabpanel" aria-labelledby="tab-chat-btn" tabindex="-1"></main>
+    <main class="content members-page hidden" id="page-members" role="tabpanel" aria-labelledby="tab-members-btn" tabindex="-1"></main>
+    <main class="content orders-page hidden" id="page-orders" role="tabpanel" aria-labelledby="tab-orders-btn" tabindex="-1"></main>
+    <main class="content interact-page hidden" id="page-interact" role="tabpanel" aria-labelledby="tab-interact-btn" tabindex="-1"></main>
+    <div id="toast-box" class="toast-box" aria-live="polite"></div>
+    ${moreOverlays}
+    ${loginOverlay}`;
+  // 浮层挂在 #app 根层而非 #page-params：页签切换时 page-params 会 display:none，
+  // 若登录浮层是其子节点，在「聊天/订单」页触发 session-expired 就会「弹了但看不见」。
+  updateConnBadge();
 
   wire();
   wireOverlayClose(app);
@@ -223,48 +292,122 @@ function render() {
   renderInteractPage(document.getElementById("page-interact") as HTMLElement);
   void loadSwitches();
 
-  const pBtn = $("tab-params-btn"), cBtn = $("tab-chat-btn"), mBtn = $("tab-members-btn");
-  const oBtn = $("tab-orders-btn"), iBtn = $("tab-interact-btn");
-  pBtn?.addEventListener("click", () => setActiveTab("params"));
-  cBtn?.addEventListener("click", () => setActiveTab("chat"));
-  mBtn?.addEventListener("click", () => setActiveTab("members"));
-  oBtn?.addEventListener("click", () => setActiveTab("orders"));
-  iBtn?.addEventListener("click", () => setActiveTab("interact"));
+  app.querySelectorAll<HTMLElement>("[data-tab]").forEach((btn) =>
+    btn.addEventListener("click", () => setActiveTab(btn.dataset.tab as TabKey))
+  );
+  app.querySelectorAll<HTMLElement>("[data-goto]").forEach((btn) =>
+    btn.addEventListener("click", () => setActiveTab(btn.dataset.goto as TabKey))
+  );
+  wireTabKeys(app);
+}
+
+// 页签键盘：Alt+1~5 全局直达；tablist 内 ←/→/Home/End 移动并激活。
+// 浮层打开时不响应（否则焦点会留在浮层、页面却切走了）。
+function wireTabKeys(app: HTMLElement) {
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (document.querySelector(".overlay:not(.hidden)")) return;
+    if (e.altKey && /^[1-5]$/.test(e.key)) {
+      e.preventDefault();
+      setActiveTab(TAB_ORDER[Number(e.key) - 1]);
+    }
+  });
+  const list = app.querySelector<HTMLElement>('.tabs[role="tablist"]');
+  if (!list) return;
+  list.addEventListener("keydown", (e) => {
+    const cur = TAB_ORDER.indexOf((document.activeElement as HTMLElement)?.dataset?.tab as TabKey);
+    if (cur < 0) return;
+    let next = -1;
+    if (e.key === "ArrowRight") next = (cur + 1) % TAB_ORDER.length;
+    else if (e.key === "ArrowLeft") next = (cur - 1 + TAB_ORDER.length) % TAB_ORDER.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = TAB_ORDER.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    setActiveTab(TAB_ORDER[next]);
+    $(`tab-${TAB_ORDER[next]}-btn`)?.focus();
+  });
 }
 
 // ---- 总开关：拉取三个全局开关的当前状态 ----
-async function loadSwitches() {
-  const ar = $("sw-autoreply") as HTMLInputElement | null;
-  const wx = $("sw-wxauto") as HTMLInputElement | null;
-  const br = $("sw-bridge") as HTMLInputElement | null;
-  const jobs: Promise<void>[] = [];
-  if (ar) jobs.push(autoreplyApi.getConfig().then((c: any) => { ar.checked = !!c?.enabled; }).catch(() => {}));
-  if (wx) jobs.push(wxautoApi.getConfig().then((c: any) => { wx.checked = !!c?.enabled; }).catch(() => {}));
-  if (br) jobs.push(bridgeApi.getConfig().then((c: any) => { br.checked = !!c?.enabled; }).catch(() => {}));
-  await Promise.allSettled(jobs);
+// 桌面端必须有文字状态（「已开启/已关闭/切换中…」），不能只靠一个绿色滑块：
+// 颜色 + 位置是单通道信息，且开关切换是异步 Rust 调用，没有进行中反馈会被反复点。
+type SwKey = "autoreply" | "wxauto" | "bridge";
+
+function showSwitchState(key: SwKey, on: boolean | null, mode: "" | "pending" | "error" = "") {
+  const item = document.querySelector<HTMLElement>(`.sw-run-item[data-sw="${key}"]`);
+  const label = document.getElementById(`sw-state-${key}`);
+  if (!item || !label) return;
+  item.classList.toggle("on", on === true);
+  label.className = "sw-run-state" + (mode ? ` ${mode}` : "");
+  label.textContent =
+    on === null ? "读取中…" :
+    mode === "pending" ? "切换中…" :
+    mode === "error" ? "切换失败" :
+    on ? "已开启" : "已关闭";
 }
 
-function setActiveTab(tab: "params" | "chat" | "members" | "orders" | "interact") {
-  const tabs: Record<string, string> = {
-    params: "tab-params-btn",
-    chat: "tab-chat-btn",
-    members: "tab-members-btn",
-    orders: "tab-orders-btn",
-    interact: "tab-interact-btn",
-  };
-  const pages: Record<string, string> = {
-    params: "page-params",
-    chat: "page-chat",
-    members: "page-members",
-    orders: "page-orders",
-    interact: "page-interact",
-  };
-  Object.entries(tabs).forEach(([name, btnId]) => {
-    $(btnId)?.classList.toggle("active", name === tab);
+function switchInput(key: SwKey): HTMLInputElement | null {
+  return $(`sw-${key}`) as HTMLInputElement | null;
+}
+
+async function loadSwitches() {
+  const readers: Array<[SwKey, Promise<any>]> = [
+    ["autoreply", autoreplyApi.getConfig()],
+    ["wxauto", wxautoApi.getConfig()],
+    ["bridge", bridgeApi.getConfig()],
+  ];
+  await Promise.all(readers.map(async ([key, p]) => {
+    try {
+      const c: any = await p;
+      const on = !!c?.enabled;
+      const input = switchInput(key);
+      if (input) input.checked = on;
+      showSwitchState(key, on);
+    } catch {
+      showSwitchState(key, null, "error");
+    }
+  }));
+}
+
+/** 统一的开关切换封装：禁用 → 进行中 → 成功/失败回滚，杜绝异步期间的重复点击。 */
+async function toggleSwitch(key: SwKey, apply: (on: boolean) => Promise<any>, onLabel: string, offLabel: string) {
+  const input = switchInput(key);
+  if (!input) return;
+  const on = input.checked;
+  input.disabled = true;
+  showSwitchState(key, on, "pending");
+  try {
+    await apply(on);
+    showSwitchState(key, on);
+    toast(on ? onLabel : offLabel);
+  } catch (err: any) {
+    input.checked = !on;                       // 回滚到服务端真实状态
+    showSwitchState(key, !on, "error");
+    toast("切换失败：" + (err?.message || err), false);
+    window.setTimeout(() => showSwitchState(key, !on), 2000);
+  } finally {
+    input.disabled = false;
+  }
+}
+
+function setActiveTab(tab: TabKey) {
+  if (!TAB_ORDER.includes(tab)) return;
+  TAB_ORDER.forEach((name) => {
+    const btn = $(`tab-${name}-btn`);
+    const on = name === tab;
+    btn?.classList.toggle("active", on);
+    btn?.setAttribute("aria-selected", String(on));
+    btn?.setAttribute("tabindex", on ? "0" : "-1");
+    $(`page-${name}`)?.classList.toggle("hidden", !on);
   });
-  Object.entries(pages).forEach(([name, pageId]) => {
-    $(pageId)?.classList.toggle("hidden", name !== tab);
-  });
+  document.title = `抱抱团 · ${TAB_META[tab].title}`;
+  try { localStorage.setItem(LAST_TAB_KEY, tab); } catch { /* 隐私模式下忽略 */ }
+  // 键盘用户切页后把焦点送进新页面（不滚动、不画焦点框），读屏能接续朗读
+  const page = $(`page-${tab}`);
+  if (page && document.activeElement?.closest(".tabs, [data-goto]")) {
+    page.focus({ preventScroll: true });
+  }
 }
 
 function wire() {
@@ -279,35 +422,21 @@ function wire() {
     el.addEventListener("click", () => stopQrPoll())
   );
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") stopQrPoll(); });
-  // 总开关
-  $("sw-autoreply")?.addEventListener("change", async (e) => {
-    const on = (e.target as HTMLInputElement).checked;
-    try {
-      await autoreplyApi.setEnabled(on);
-      toast(on ? "AI 自动回复已开启" : "AI 自动回复已关闭");
-    } catch (err: any) {
-      toast("切换失败：" + (err?.message || err), false);
-      (e.target as HTMLInputElement).checked = !on;
-    }
-  });
-  $("sw-wxauto")?.addEventListener("change", async (e) => {
-    const on = (e.target as HTMLInputElement).checked;
-    try {
-      await wxautoApi.setConfig({ enabled: on });
-      toast(on ? "微信通道已开启（自动启动 Python）" : "微信通道已关闭");
-    } catch (err: any) {
-      toast("切换失败：" + (err?.message || err), false);
-      (e.target as HTMLInputElement).checked = !on;
-    }
-  });
-  $("sw-bridge")?.addEventListener("change", async (e) => {
-    const on = (e.target as HTMLInputElement).checked;
-    try {
-      await bridgeApi.setEnabled(on);
-      toast(on ? "团长桥已开启" : "团长桥已关闭");
-    } catch (err: any) {
-      toast("切换失败：" + (err?.message || err), false);
-      (e.target as HTMLInputElement).checked = !on;
+  // 总开关（统一走 toggleSwitch，含进行中/失败回滚）
+  $("sw-autoreply")?.addEventListener("change", () =>
+    void toggleSwitch("autoreply", (on) => autoreplyApi.setEnabled(on), "AI 自动回复已开启", "AI 自动回复已关闭"));
+  $("sw-wxauto")?.addEventListener("change", () =>
+    void toggleSwitch("wxauto", (on) => wxautoApi.setConfig({ enabled: on }), "微信通道已开启（自动启动 Python）", "微信通道已关闭"));
+  $("sw-bridge")?.addEventListener("change", () =>
+    void toggleSwitch("bridge", (on) => bridgeApi.setEnabled(on), "团长桥已开启", "团长桥已关闭"));
+
+  // 顶栏连接徽标：任意页签点击都能进连接设置
+  $("conn-badge")?.addEventListener("click", () => { openOverlay("ov-login"); setLoginMode("pwd"); });
+  // 登录表单 Enter 直接提交（桌面端登录最高频的操作，原实现只能鼠标点按钮）
+  $("login-fields")?.addEventListener("keydown", (e) => {
+    if ((e as KeyboardEvent).key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+      e.preventDefault();
+      void onLogin();
     }
   });
 }
@@ -362,6 +491,8 @@ async function onLogin() {
   const conn = collect("conn", CONNECTION_FIELDS);
   if (!conn.base_url || !conn.telephone || !conn.password) {
     toast("请填写 接口地址 / 手机号 / 密码", false);
+    const missing = ["base_url", "telephone", "password"].find((k) => !conn[k]);
+    if (missing) $(`conn-${missing}`)?.focus();
     return;
   }
   const btn = $("btn-login") as HTMLButtonElement | null;
@@ -396,6 +527,7 @@ async function onLogin() {
 // 局部刷新状态条（不重建整个页面，避免丢子页面轮询/状态）
 function refreshStatusBar() {
   const loggedIn = !!state.connection.token;
+  updateConnBadge();                 // 顶栏徽标与状态条同源同步
   const bar = document.querySelector(".status-bar");
   if (!bar) return;
   const tel = state.connection.telephone || "";
@@ -585,8 +717,8 @@ export async function init() {
   // 其他页签可派发 window 事件跳转页签（如 团员二维码 → 去首页登录）
   window.addEventListener("goto-tab", (e) => {
     const tab = (e as CustomEvent).detail;
-    if (typeof tab === "string" && ["params", "chat", "members", "orders", "interact"].includes(tab)) {
-      setActiveTab(tab as any);
+    if (typeof tab === "string" && TAB_ORDER.includes(tab as TabKey)) {
+      setActiveTab(tab as TabKey);
     }
   });
   // token 失效自动弹登录
@@ -603,4 +735,9 @@ export async function init() {
     // 首次运行无配置，使用默认值
   }
   render();
+  // 恢复上次工作页：桌面客户端重启/升级后回到原岗位，不用每次从首页点进去
+  try {
+    const last = localStorage.getItem(LAST_TAB_KEY) as TabKey | null;
+    if (last && TAB_ORDER.includes(last)) setActiveTab(last);
+  } catch { /* 隐私模式下忽略 */ }
 }

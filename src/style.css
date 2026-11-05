@@ -106,13 +106,21 @@ html, body {
 .btn.primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
 .btn.small { padding: 5px 10px; font-size: 12px; border-radius: 7px; }
 
+/* 内容区：单列块流（2026-11-05 桌面交互优化根修）
+   原为 2 列 grid：首页所有卡片都是 .span2 用不上，但「互动 / 订单 / 团员 / 聊天」
+   子页的 .panel 被强行塞进左右两列 —— 互动页 ①~⑤ 步骤左右交错、订单页三栏被
+   压成半屏（「合成预览」竖排断字）、团员页右半屏全空。子页需要按阅读顺序纵向
+   排列，自己内部再分栏（.ord-cols / .chatcfg-wrap / .member-grid）。
+   限宽 1280px 居中：超宽屏不拉出无法阅读的长行，1180 默认窗口仍是满宽。 */
 .content {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  display: block;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   padding: 18px 22px;
-  align-items: start;
 }
+.content > .card { margin-bottom: 14px; }
+.members-page, .orders-page, .interact-page { display: block; }
 
 /* ---------- 卡片：官方白卡语言 ---------- */
 .card {
@@ -170,10 +178,12 @@ textarea { resize: vertical; line-height: 1.5; }
 .switch input:checked + span { background: var(--ok); }
 .switch input:checked + span::after { transform: translateX(18px); }
 
-/* ---------- Toast：顶部居中胶囊 ---------- */
+/* ---------- Toast：右下角堆叠（桌面端不遮挡顶栏导航） ----------
+   原为顶部居中 top:18px，与 sticky 顶栏/页签重叠，切页时提示正好盖住按钮；
+   改右下后既不挡主导航，也符合桌面应用通知习惯。 */
 .toast-box {
-  position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; gap: 8px; z-index: 2000; align-items: center;
+  position: fixed; bottom: 20px; right: 20px;
+  display: flex; flex-direction: column; gap: 8px; z-index: 2000; align-items: flex-end;
   pointer-events: none;
 }
 .toast {
@@ -437,7 +447,8 @@ textarea { resize: vertical; line-height: 1.5; }
 /* 订单消息：左（对应关系）右（合成预览+确认发送）两列 */
 .ord-cols {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  /* minmax 让左列在 900~1200 窗口内可收缩，避免右侧预览区被挤到竖排断字 */
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
@@ -502,12 +513,17 @@ textarea { resize: vertical; line-height: 1.5; }
 
 /* ================= 响应式 ================= */
 @media (max-width: 900px) {
-  .content { grid-template-columns: 1fr; padding: 12px; }
-  .card.span2 { grid-column: auto; }
+  .content { padding: 12px; }
   .grid2 { grid-template-columns: 1fr; }
   .chat-layout { grid-template-columns: 240px 1fr; }
   .chat-body { grid-template-columns: 180px 1fr; }
+  .ord-cols { grid-template-columns: 1fr; }
+}
+/* Tauri 窗口最小 900px，顶栏右侧徽标在 900px 仍与页签同排；
+   只有低于 720px（例如浏览器里手动缩窗/远程调试）才换行。 */
+@media (max-width: 720px) {
   .topbar { flex-wrap: wrap; padding: 10px 14px; }
+  .topbar-right { width: 100%; justify-content: flex-end; margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
@@ -667,3 +683,105 @@ textarea { resize: vertical; line-height: 1.5; }
 }
 .quick-item:hover { background: #fff; border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-lift); }
 .quick-emoji { font-size: 28px; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; line-height: 1; }
+
+/* ==========================================================================
+   PC 工作台交互优化（2026-11-05）
+   目标：桌面客户端（Tauri 2 / WebView2，默认 1180×800，最小 900×600）下
+   ① 顶栏常驻连接态 ② 页签键盘可达 ③ 浮层焦点闭环 ④ 首页 IA 压缩
+   只增/改选择器，不动 Rust 侧与任何业务流程；窄窗口（<900px）有回落。
+   ========================================================================== */
+
+/* ---- 顶栏右侧：连接状态徽标 + 快捷键提示 ---- */
+.topbar-right { margin-left: auto; flex: none; display: flex; align-items: center; gap: 12px; }
+.kbd-hint { flex: none; font-size: 11px; color: var(--text-dim); white-space: nowrap; letter-spacing: .2px; }
+/* 最小窗口 900px：先收掉键盘提示，保证页签与连接徽标永不被压叠 */
+@media (max-width: 1100px) {
+  .kbd-hint { display: none; }
+  .tab kbd { display: none; }
+}
+.conn-badge {
+  flex: none;
+  display: inline-flex; align-items: center; gap: 7px;
+  max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 6px 12px; border-radius: 999px; font-size: 12px; font-family: inherit;
+  border: 1px solid var(--border); background: var(--card-2); color: var(--text-dim);
+  cursor: pointer; transition: border-color .2s, background .2s, color .2s;
+}
+.conn-badge:hover { border-color: var(--accent); color: var(--accent-dark); }
+.conn-badge.on { color: #068b4c; border-color: #07c16055; background: var(--ok-soft); }
+.conn-badge.off { color: var(--warn); border-color: #b4530933; background: #fff7ed; }
+.conn-badge .conn-dot { margin-right: 0; flex: none; }
+
+/* ---- 页签：ARIA tablist + 键盘焦点 ---- */
+.tabs { gap: 4px; }
+.tab[role="tab"] { outline-offset: 3px; }
+.tab[aria-selected="true"] {
+  background: var(--grad-hero); color: #fff; font-weight: 600;
+  box-shadow: 0 2px 8px rgba(184, 121, 28, .35);
+  text-shadow: 0 1px 2px rgba(90, 50, 0, .25);
+}
+.tab kbd {
+  font: inherit; font-size: 10px; opacity: .62; margin-left: 5px;
+  border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; line-height: 1.4;
+}
+.tab[aria-selected="true"] kbd { opacity: .8; }
+/* 切页后的焦点目标不显示焦点框（focus 只为读屏接续，不干扰视觉） */
+.content[tabindex="-1"]:focus { outline: none; }
+
+/* ---- 浮层：焦点闭环 / 背景滚动锁 / 禁用态 ---- */
+body.ov-open { overflow: hidden; }
+.overlay-panel :focus-visible { outline-offset: 3px; }
+.switch input:disabled + span { opacity: .5; cursor: wait; }
+
+/* ---- 首页：运行状态三列化 + 状态文字 ---- */
+.sw-run {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px; margin-top: 10px;
+}
+.sw-run-item { min-width: 0; }
+.sw-run-item.on { border-color: #07c16044; background: var(--ok-soft); }
+.sw-run-state {
+  flex: none; font-size: 11px; font-weight: 600; color: var(--text-dim);
+  white-space: nowrap; min-width: 46px; text-align: right;
+}
+.sw-run-item.on .sw-run-state { color: #068b4c; }
+.sw-run-state.pending { color: var(--accent-deep); }
+.sw-run-state.error { color: var(--err); }
+@media (max-width: 900px) { .sw-run { grid-template-columns: 1fr; } }
+
+/* ---- 首页：设置入口描述卡（替代一排无说明的裸按钮） ---- */
+.set-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px; margin-top: 12px;
+}
+.set-item {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--card); font-family: inherit; color: var(--text); cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.set-item:hover { border-color: var(--accent); background: var(--card-2); transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.set-item:active { transform: translateY(0) scale(.99); }
+.set-emoji { font-size: 22px; line-height: 1; flex: none; }
+.set-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.set-body b { font-size: 13px; font-weight: 600; }
+.set-body small { font-size: 11px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-count { flex: none; font-size: 11px; color: var(--accent-deep); background: var(--accent-soft); border-radius: 999px; padding: 2px 9px; }
+.set-go { flex: none; color: var(--text-dim); font-size: 15px; }
+
+/* ---- 首页：快捷入口宫格 ---- */
+.quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.quick-item { font-family: inherit; }
+.quick-item:hover .quick-emoji { transform: scale(1.12); }
+.quick-emoji { transition: transform .18s ease; }
+.quick-item small { color: var(--text-dim); font-size: 11px; }
+@media (max-width: 900px) { .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---- Toast 可访问性 ---- */
+.toast[role="status"] { pointer-events: none; }
+
+/* .card-desc 的 -6px 上外边距原本用于紧贴 h2，但卡片头部换成 .row-between
+   （h2 + 右侧说明）后会把正文拉到说明文字下面 1px，视觉上像叠字。
+   凡是「标题行 + 右侧说明」的卡片，正文统一留 8px 呼吸。 */
+.card .row-between + .card-desc { margin-top: 8px; }
+.row-between .hint { flex: none; text-align: right; }
