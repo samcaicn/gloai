@@ -1,0 +1,261 @@
+Requirement already satisfied: pip in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (26.3)
+Collecting pyinstaller
+  Downloading pyinstaller-6.22.3-py3-none-win_amd64.whl.metadata (8.5 kB)
+Collecting altgraph (from pyinstaller)
+  Downloading altgraph-0.17.5-py2.py3-none-any.whl.metadata (7.5 kB)
+Collecting packaging>=22.0 (from pyinstaller)
+  Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting pefile>=2022.5.30 (from pyinstaller)
+  Downloading pefile-2024.8.26-py3-none-any.whl.metadata (1.4 kB)
+Collecting pyinstaller-hooks-contrib>=2026.7 (from pyinstaller)
+  Downloading pyinstaller_hooks_contrib-2026.9-py3-none-any.whl.metadata (16 kB)
+Collecting pywin32-ctypes>=0.2.1 (from pyinstaller)
+  Downloading pywin32_ctypes-0.2.3-py3-none-any.whl.metadata (3.9 kB)
+Requirement already satisfied: setuptools>=42.0.0 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from pyinstaller) (65.5.0)
+Downloading pyinstaller-6.22.3-py3-none-win_amd64.whl (1.5 MB)
+   ---------------------------------------- 1.5/1.5 MB 9.5 MB/s  0:00:00
+Downloading packaging-26.3-py3-none-any.whl (129 kB)
+Downloading pefile-2024.8.26-py3-none-any.whl (74 kB)
+Downloading pyinstaller_hooks_contrib-2026.9-py3-none-any.whl (462 kB)
+Downloading pywin32_ctypes-0.2.3-py3-none-any.whl (30 kB)
+Downloading altgraph-0.17.5-py2.py3-none-any.whl (21 kB)
+Installing collected packages: altgraph, pywin32-ctypes, pefile, packaging, pyinstaller-hooks-contrib, pyinstaller
+
+Successfully installed altgraph-0.17.5 packaging-26.3 pefile-2024.8.26 pyinstaller-6.22.3 pyinstaller-hooks-contrib-2026.9 pywin32-ctypes-0.2.3
+Collecting onnxruntime
+  Downloading onnxruntime-1.31.1-cp311-cp311-win_amd64.whl.metadata (6.1 kB)
+Collecting opencv-python
+  Downloading opencv_python-5.0.0.93-cp37-abi3-win_amd64.whl.metadata (20 kB)
+Collecting numpy
+  Downloading numpy-2.4.6-cp311-cp311-win_amd64.whl.metadata (6.6 kB)
+Collecting pillow
+  Downloading pillow-13.0.0-cp311-cp311-win_amd64.whl.metadata (9.3 kB)
+Collecting imageio
+  Downloading imageio-2.38.1-py3-none-any.whl.metadata (9.7 kB)
+Collecting imageio-ffmpeg
+  Downloading imageio_ffmpeg-0.8.1-py3-none-win_amd64.whl.metadata (1.5 kB)
+Collecting flatbuffers (from onnxruntime)
+  Downloading flatbuffers-25.12.19-py2.py3-none-any.whl.metadata (1.0 kB)
+Requirement already satisfied: packaging in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from onnxruntime) (26.3)
+Collecting protobuf>=4.25.8 (from onnxruntime)
+  Downloading protobuf-7.36.2-cp310-abi3-win_amd64.whl.metadata (595 bytes)
+Downloading onnxruntime-1.31.1-cp311-cp311-win_amd64.whl (14.9 MB)
+   ---------------------------------------- 14.9/14.9 MB 93.7 MB/s  0:00:00
+Downloading opencv_python-5.0.0.93-cp37-abi3-win_amd64.whl (44.0 MB)
+   ---------------------------------------- 44.0/44.0 MB 77.7 MB/s  0:00:00
+Downloading numpy-2.4.6-cp311-cp311-win_amd64.whl (12.6 MB)
+   ---------------------------------------- 12.6/12.6 MB 132.8 MB/s  0:00:00
+Downloading pillow-13.0.0-cp311-cp311-win_amd64.whl (7.3 MB)
+   ---------------------------------------- 7.3/7.3 MB 90.0 MB/s  0:00:00
+Downloading imageio-2.38.1-py3-none-any.whl (328 kB)
+Downloading imageio_ffmpeg-0.8.1-py3-none-win_amd64.whl (38.9 MB)
+   ---------------------------------------- 38.9/38.9 MB 48.5 MB/s  0:00:00
+Downloading protobuf-7.36.2-cp310-abi3-win_amd64.whl (456 kB)
+Downloading flatbuffers-25.12.19-py2.py3-none-any.whl (26 kB)
+Installing collected packages: flatbuffers, protobuf, pillow, numpy, imageio-ffmpeg, opencv-python, onnxruntime, imageio
+
+Successfully installed flatbuffers-25.12.19 imageio-2.38.1 imageio-ffmpeg-0.8.1 numpy-2.4.6 onnxruntime-1.31.1 opencv-python-5.0.0.93 pillow-13.0.0 protobuf-7.36.2
+built D:\a\gloai\gloai\deb\dist\wmremover_1.0.2_all.deb (0.1 MB, hand-rolled ar (no dpkg-deb on PATH))
+verify with:
+  dpkg-deb --info D:\a\gloai\gloai\deb\dist\wmremover_1.0.2_all.deb
+  dpkg-deb --contents D:\a\gloai\gloai\deb\dist\wmremover_1.0.2_all.deb
+WMRemover test runner -- 23 test file(s), python=C:\hostedtoolcache\windows\Python\3.11.9\x64\python.exe
+================================================================
+================================================================
+  [PASS] _m2_equivalence_test.py                2.6s  (rc=0)
+  [PASS] deb/deb_test.py                        0.5s  (rc=0)
+  [PASS] updater_test.py                        1.3s  (rc=0)
+  [PASS] wm_audio_test.py                       0.9s  (rc=0)
+  [PASS] wm_bench_test.py                       0.4s  (rc=0)
+  [PASS] wm_bundle_test.py                      0.1s  (rc=0)
+  [PASS] wm_core_test.py                        9.7s  (rc=0)
+  [PASS] wm_docs_test.py                        0.5s  (rc=0)
+  [PASS] wm_download_test.py                    9.1s  (rc=0)
+  [PASS] wm_exception_test.py                   0.2s  (rc=0)
+  [PASS] wm_guard_test.py                       0.2s  (rc=0)
+  [PASS] wm_hotswap_test.py                     3.7s  (rc=0)
+  [PASS] wm_interrupt_test.py                 303.7s  (rc=0)
+  [PASS] wm_launch_test.py                      0.8s  (rc=0)
+  [PASS] wm_offline_test.py                     0.4s  (rc=0)
+  [PASS] wm_perf_test.py                        0.6s  (rc=0)
+  [PASS] wm_product_test.py                     0.4s  (rc=0)
+  [PASS] wm_sam_contract_test.py                0.2s  (rc=0)
+  [PASS] wm_temporal_test.py                    0.3s  (rc=0)
+  [PASS] wm_tooling_test.py                     0.8s  (rc=0)
+  [PASS] wm_tui_test.py                         1.1s  (rc=0)
+  [PASS] worker/pages_test.mjs                  3.3s  (rc=0)
+  [PASS] worker/worker_test.mjs                 0.2s  (rc=0)
+----------------------------------------------------------------
+  23/23 passed
+  slowest: wm_interrupt_test.py  303.7s
+  slowest: wm_core_test.py  9.7s
+  slowest: wm_download_test.py  9.1s
+== healthz / CORS ==
+  [PASS] healthz ok 
+  [PASS] CORS header 
+  [PASS] preflight 204 
+== manifest.json ==
+  [PASS] newest artifact wins (got 1.0.0)
+  [PASS] expired artifact skipped 
+  [PASS] download path relative 
+  [PASS] size from listing 
+  [PASS] sha256 merged from manifest artifact 
+  [PASS] exe_sha256 merged 
+  [PASS] notes/mandatory fields present 
+== listing cache ==
+  [PASS] second manifest served from cache (api calls 1 -> 1)
+== artifact streaming ==
+  [PASS] artifact 200 
+  [PASS] content-disposition 
+  [PASS] content-length passed through 
+  [PASS] bytes streamed 
+  [PASS] case-insensitive name ok 
+  [PASS] expired artifact 404 
+  [PASS] traversal name 403 
+  [PASS] bad-format name 403 
+  [PASS] well-formed but absent 404 
+== failure modes ==
+  [PASS] github down -> 502 json 
+
+ALL PASS
+  [PASS] healthz ok + channel 
+  [PASS] manifest version 
+  [PASS] manifest download is a pages.dev relative path 
+  [PASS] manifest keeps zip sha256 for client verification 
+  [PASS] manifest only calls the releases API (one metadata hop) 
+  [PASS] manifest ignores other projects' releases 
+  [PASS] marker-less release falls back to manifest.json asset 
+  [PASS] broken newest release does not poison the feed 
+  [PASS] artifact streams exact upstream bytes 
+  [PASS] artifact content-type is zip 
+  [PASS] redirect=1 gives a 302 to the release asset 
+  [PASS] non-package artifact rejected 
+  [PASS] path traversal rejected 
+  [PASS] unknown version -> 404 
+  [PASS] dead upstream falls back to a 302 instead of a broken 200 
+  [PASS] no releases -> artifact list still reports the current version 
+  [PASS] artifact fallback never fabricates a download url or sha256 
+  [PASS] both sources empty -> honest 404 
+  [PASS] fresh manifest is written to the edge cache 
+  [PASS] GitHub 403 -> stale cache keeps 检查更新 alive 
+  [PASS] no live source and no cache -> honest 404 
+  [PASS] mirror streams nightly.link bytes via pages.dev 
+  [PASS] mirror rejects a foreign repo 
+  [PASS] mirror rejects a non-numeric run id 
+  [PASS] mirror rejects an unknown artifact name 
+  [PASS] dead mirror upstream -> 502 
+  [PASS] upstream 404 is preserved so the client can fall back 
+  [PASS] mirror HEAD answers locally without pulling 131 MB upstream 
+  [PASS] mirror exposes content-length + filename 
+  [PASS] api pass-through works 
+  [PASS] api pass-through is locked to our repo 
+  [PASS] successful artifact list is cached for rate-limit fallback 
+  [PASS] GitHub 403 -> cached artifact list keeps 升级 alive 
+  [PASS] 403 with no cache stays an honest 403 
+  [PASS] write methods rejected 
+  [PASS] OPTIONS preflight allowed 
+  [PASS] unknown route -> 404 
+  [PASS] catch-all serves the landing page at / 
+  [PASS] marker parser tolerates junk 
+  [PASS] package name regex pins the WMRemover-v prefix 
+
+PASS: Cloudflare Pages update feed (all checks)
+193 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.9
+194 INFO: Python: 3.11.9
+202 INFO: Platform: Windows-10-10.0.26100-SP0
+202 INFO: Python environment: C:\hostedtoolcache\windows\Python\3.11.9\x64
+223 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\wm_stage_gghza4ic',
+ 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\python311.zip',
+ 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\DLLs',
+ 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib',
+ 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64',
+ 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages',
+ 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\wm_stage_gghza4ic']
+527 INFO: Appending 'binaries' from .spec
+528 INFO: Appending 'datas' from .spec
+528 INFO: checking Analysis
+529 INFO: Building Analysis because Analysis-00.toc is non existent
+529 INFO: Looking for Python shared library...
+529 INFO: Using Python shared library: C:\hostedtoolcache\windows\Python\3.11.9\x64\python311.dll
+529 INFO: Running Analysis Analysis-00.toc
+529 INFO: Target bytecode optimization level: 0
+529 INFO: Initializing module dependency graph...
+533 INFO: Initializing module graph hook caches...
+554 INFO: Analyzing modules for base_library.zip ...
+1456 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+1562 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+3396 INFO: Processing standard module hook 'hook-math.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+3533 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+5535 INFO: Caching module dependency graph...
+5572 INFO: Analyzing C:\Users\RUNNER~1\AppData\Local\Temp\wm_stage_gghza4ic\wm_main.py
+5591 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+6146 INFO: Processing standard module hook 'hook-numpy.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+6469 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+6469 INFO: SetuptoolsInfo: initializing cached setuptools info...
+7795 INFO: Processing standard module hook 'hook-difflib.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+8104 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+8191 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+9240 INFO: Processing standard module hook 'hook-sysconfig.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+9331 INFO: Processing standard module hook 'hook-platform.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+9766 INFO: Processing standard module hook 'hook-webbrowser.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+10834 INFO: Processing standard module hook 'hook-cv2.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+11200 INFO: Processing standard module hook 'hook-PIL.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+11322 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+11627 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+11793 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+12048 INFO: Processing standard module hook 'hook-onnxruntime.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+12160 INFO: Processing standard module hook 'hook-imageio_ffmpeg.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+12230 INFO: Processing standard module hook 'hook-imageio.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+12916 INFO: Processing module hooks (post-graph stage)...
+13306 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+13310 INFO: Processing pre-find-module-path hook 'hook-tkinter.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+13312 INFO: TclTkInfo: initializing cached Tcl/Tk info...
+14474 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+15063 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+15149 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks'
+15161 INFO: Performing binary vs. data reclassification (943 entries)
+15770 INFO: Looking for ctypes DLLs
+15919 INFO: Analyzing run-time hooks ...
+15922 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+15924 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+15926 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+15928 INFO: Including run-time hook 'pyi_rth__tkinter.py' from 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+16334 INFO: Looking for dynamic libraries
+16830 INFO: Extra DLL search directories (AddDllDirectory): ['C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\numpy.libs', 'C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\cv2\\../../x64/vc17/bin']
+16830 INFO: Extra DLL search directories (PATH): ['C:\\hostedtoolcache\\windows\\Python\\3.11.9\\x64\\Lib\\site-packages\\cv2\\../../x64/vc17/bin']
+18305 INFO: Warnings written to D:\a\gloai\gloai\build_pyi\WMRemover\warn-WMRemover.txt
+18368 INFO: Graph cross-reference written to D:\a\gloai\gloai\build_pyi\WMRemover\xref-WMRemover.html
+18431 INFO: checking PYZ
+18431 INFO: Building PYZ because PYZ-00.toc is non existent
+18431 INFO: Building PYZ (ZlibArchive) D:\a\gloai\gloai\build_pyi\WMRemover\PYZ-00.pyz
+18431 INFO: Building PYZ (ZlibArchive) D:\a\gloai\gloai\build_pyi\WMRemover\PYZ-00.pyz completed successfully.
+18443 INFO: checking PKG
+18443 INFO: Building PKG because PKG-00.toc is non existent
+18443 INFO: Building PKG (CArchive) WMRemover.pkg
+18457 INFO: Building PKG (CArchive) WMRemover.pkg completed successfully.
+18457 INFO: Bootloader C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+18457 INFO: checking EXE
+18457 INFO: Building EXE because EXE-00.toc is non existent
+18457 INFO: Building EXE from EXE-00.toc
+18459 INFO: Copying bootloader EXE to D:\a\gloai\gloai\build_pyi\WMRemover\WMRemover.exe
+18461 INFO: Copying icon to EXE
+18463 INFO: Copying 0 resources to EXE
+18463 INFO: Embedding manifest in EXE
+18463 INFO: Appending PKG archive to EXE
+18465 INFO: Fixing EXE headers
+18534 INFO: Building EXE from EXE-00.toc completed successfully.
+18547 INFO: checking COLLECT
+18547 INFO: Building COLLECT because COLLECT-00.toc is non existent
+18547 INFO: Building COLLECT COLLECT-00.toc
+19900 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+19932 INFO: Build complete! The results are available in: D:\a\gloai\gloai\dist
+[build] version -> 1.0.2 (_build_version.py)
+[build] obfuscated 7 core modules in staging
+[build] wrote wm_guard_data.py (7 fingerprints)
+[build] PyInstaller (cwd=stage): C:\Users\RUNNER~1\AppData\Local\Temp\wm_stage_gghza4ic mode=onedir
+[build] dist -> D:\a\gloai\gloai\dist
+[build] built: D:\a\gloai\gloai\dist\WMRemover\WMRemover.exe 404291 bytes
+artifact: WMRemover-manifest.zip  0 MB
+artifact: WMRemover-v1.0.2.zip  125.6 MB
+zip sha256: 4ffcebe8faff773b68fd36865f47dbfb5175cc00ea9900370dfde0ebc24cba00
