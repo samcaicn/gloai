@@ -3,10 +3,12 @@ mod guard;
 mod util;
 mod autoreply;
 mod ai_gateway;
+mod payment_verify;
 mod wxauto;
 mod bbt;
 mod bridge;
 mod commands;
+mod roster_cache;
 mod ilink;
 mod ilink_session;
 mod update;
@@ -23,15 +25,20 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle().clone();
             // weauto 模式：启动时如有待应用升级包，拉起替换脚本（等本进程退出后
-            // 覆盖 exe 并重启），随后本进程立即退出。
-            match update::apply_pending_update(&handle) {
-                Ok(true) => {
-                    app.handle().exit(0);
-                    return Ok(());
-                }
-                Ok(false) => {}
-                Err(e) => {
-                    eprintln!("应用待升级包失败: {}", e);
+            // 覆盖 exe 并重启），随后本进程立即退出。dev 构建跳过：否则一次调试期
+            // 误下载的 release 包会把 target/debug 的调试 exe 替换掉并强制退出。
+            if cfg!(debug_assertions) {
+                eprintln!("[auto-update] dev 构建：跳过待升级包（保护调试二进制）");
+            } else {
+                match update::apply_pending_update(&handle) {
+                    Ok(true) => {
+                        app.handle().exit(0);
+                        return Ok(());
+                    }
+                    Ok(false) => {}
+                    Err(e) => {
+                        eprintln!("应用待升级包失败: {}", e);
+                    }
                 }
             }
             // 防启动竞态：Tauri 2 的配置窗口先于 setup 完成加载，页面会立刻 invoke
@@ -47,11 +54,13 @@ pub fn run() {
             let ars = Arc::new(autoreply::AutoReplyState::new());
             let ws = Arc::new(wxauto::WxAutoState::new());
             let ags = Arc::new(ai_gateway::AiGatewayState::new());
+            let pvs = Arc::new(payment_verify::PaymentVerifyState::new());
             app.manage(sm.clone());
             app.manage(bs.clone());
             app.manage(ars.clone());
             app.manage(ws.clone());
             app.manage(ags.clone());
+            app.manage(pvs.clone());
 
             // 启动时把磁盘上的本地配置载入内存
             let state = app.state::<state::AppState>();
@@ -77,6 +86,15 @@ pub fn run() {
                         c.token = Some(t.to_string());
                     }
                 }
+            }
+
+            // 团员名册预热：缓存新鲜时纯内存命中；缺失/过期则在后台补齐，
+            // 用户打开订单页 / 互动页 / 名册页时无需等待网络。
+            {
+                let h = handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    roster_cache::warm_up(h).await;
+                });
             }
 
             // iLink 多账号会话管理：载入已登录账号并恢复会话（本地保活）
@@ -120,7 +138,13 @@ pub fn run() {
             //   启动 15s 后首轮检查（避开 apply_pending 的替换窗口），此后每 6h 轮询；
             //   发现新版 → 后台下载 + Ed25519 验签 + 暂存 staged_update/ → emit 事件
             //   「重启后自动生效」；不打断当前使用，下次启动 apply_pending_update 自动替换。
-            {
+            // dev 调试时绝不跑自动更新：线上 version.json 的版本号高于本地 dev 版本时，
+            // 会把 release exe 下载并 staged，下次启动 apply_pending_update 直接覆盖
+            // target/debug/bbt-zb-tauri.exe（调试二进制被换成发行版），表现为 dev 反复
+            // 重启 / 端口占用 / 微信通道掉线，且配置被发行版逻辑改写。
+            if cfg!(debug_assertions) {
+                eprintln!("[auto-update] dev 构建：跳过自动更新（避免覆盖调试二进制）");
+            } else {
                 let h = handle.clone();
                 tauri::async_runtime::spawn(async move {
                     const FIRST_DELAY_SECS: u64 = 15;
@@ -193,23 +217,34 @@ pub fn run() {
             commands::autoreply_set_config,
             commands::autoreply_set_enabled,
             commands::autoreply_logs,
+            commands::autoreply_safety_status,
+            commands::autoreply_safety_resume,
             commands::autoreply_self_test,
             commands::autoreply_inject,
             // PC 端统一 AI 消息网关
             commands::ai_gateway_status,
+            commands::ai_gateway_fault_reset,
             commands::ai_gateway_send,
             commands::ai_gateway_logs,
             // 团员 iLink 二维码（hub 成员映射）
             commands::memberqr_get_map,
             commands::memberqr_set_map,
+            // 团员 ↔ 微信私聊/群聊 配对
+            commands::wechat_pairing_get,
+            commands::wechat_pairing_set,
             // 微信 wxauto 通道
             commands::wxauto_get_config,
             commands::wxauto_set_config,
             commands::wxauto_start,
             commands::wxauto_stop,
             commands::wxauto_logs,
+            commands::wxauto_ocr_test,
+            commands::wxauto_send_test,
             // 统一渠道路由（订单消息 / 互动消息）
             commands::channel_targets,
+            commands::member_roster,
+            commands::roster_cache_status,
+            commands::roster_cache_clear,
             commands::channel_send_text,
             commands::channel_send_image,
             commands::fetch_image_b64,

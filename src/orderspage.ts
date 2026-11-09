@@ -3,7 +3,7 @@
 // → 自动算出订单笔数与合计金额 → canvas 合成（收款码 + 笔数 + 金额）→ 原路发送。
 import { api } from "./api";
 import { toast } from "./ui";
-import { CHANNELS, ChannelKey, channelsApi, ChannelTargets, composePayImage, fetchImageDataUrl } from "./channels";
+import { CHANNELS, ChannelKey, channelsApi, ChannelTargets, memberCacheLabel, composePayImage, fetchImageDataUrl, onRosterUpdated } from "./channels";
 import { onIlinkEvent } from "./ilink";
 
 let g: (id: string) => HTMLElement | null = (id) => document.getElementById(id);
@@ -101,9 +101,11 @@ export function renderOrdersPage(root: HTMLElement) {
   if (!started) {
     started = true;
     // 登录成功后自动刷新渠道目标（iLink/团员），不用手动点
-    window.addEventListener("login-changed", () => { void refreshTargets(); });
+    window.addEventListener("login-changed", () => { void refreshTargets(true); });
     // iLink 账号上下线/绑定时自动刷新
     void onIlinkEvent(() => { void refreshTargets(); });
+    // 名册后台刷新完成后自动补齐下拉（0 网络）
+    void onRosterUpdated(() => { void refreshTargets(); });
   }
 }
 
@@ -142,10 +144,10 @@ function activeTargetRaw(): any {
   return null;
 }
 
-async function refreshTargets() {
+async function refreshTargets(force = false) {
   const note = g("ord-note");
   try {
-    targets = await channelsApi.targets();
+    targets = await channelsApi.targets(force);
   } catch (e: any) {
     if (note) note.textContent = "拉取目标失败：" + (e?.message || e);
     return;
@@ -153,6 +155,7 @@ async function refreshTargets() {
   if (!targets) return;
   // 可观测：把各渠道实际识别到的数量与后端真实原因写进日志，便于定位「识别不到」
   logLine(`渠道目标：微信私聊 ${targets.wx_private?.length || 0} / 微信群 ${targets.wx_group?.length || 0} / iLink ${targets.ilink?.length || 0} / 团员 ${targets.member?.length || 0}`);
+  if (targets.member_cache?.count) logLine("团员名册：" + memberCacheLabel(targets.member_cache));
   if (targets.member_note) logLine("团员：" + targets.member_note, "warn");
   if (targets.ilink_note) logLine("iLink：" + targets.ilink_note, "warn");
 
@@ -202,7 +205,8 @@ async function refreshTargets() {
     if (targets.wx_note) parts.push("微信：" + targets.wx_note);
     if (!targets.ilink?.length) parts.push("iLink：" + (targets.ilink_note || "无已绑定账号"));
     if (!targets.member?.length) parts.push("团员：" + (targets.member_note || "未登录或名册为空"));
-    note.textContent = parts.join("；") || "四渠道目标已就绪。";
+    const cacheTxt = targets.member_cache?.count ? `团员名册：${memberCacheLabel(targets.member_cache)}` : "";
+    note.textContent = parts.join("；") || (cacheTxt ? `四渠道目标已就绪。${cacheTxt}` : "四渠道目标已就绪。");
   }
 }
 
@@ -467,7 +471,7 @@ function wire() {
       }
     })();
   });
-  g("ord-refresh")?.addEventListener("click", () => void refreshTargets());
+  g("ord-refresh")?.addEventListener("click", () => void refreshTargets(true));
   g("ord-compose")?.addEventListener("click", () => void compose());
   g("ord-send")?.addEventListener("click", () => void send());
   pickChannel(active);

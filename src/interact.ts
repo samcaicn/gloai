@@ -16,7 +16,7 @@ import {
   onWxautoEvent,
   IlinkEvent,
 } from "./ilink";
-import { CHANNELS, ChannelKey, channelsApi, ChannelTargets } from "./channels";
+import { CHANNELS, ChannelKey, channelsApi, ChannelTargets, memberCacheLabel, onRosterUpdated } from "./channels";
 
 let g: (id: string) => HTMLElement | null = (id) => document.getElementById(id);
 let targets: ChannelTargets | null = null;
@@ -76,14 +76,14 @@ export function renderInteractPage(root: HTMLElement) {
 
     <div class="panel">
       <div class="row-between"><h2>③ AI 消息网关</h2><button class="btn small" id="ia-gw-refresh">刷新状态</button></div>
-      <p class="hint">多个群聊 / 私聊 / iLink 渠道就是多个团员，消息都只向同一个团长发，由团长 AI 统一回复。下方按「① 选择互动目标」所选渠道真发一条测试问题（消耗 1 条当日配额）。</p>
-      <div class="ar-log" id="ia-gw-status">正在读取登录身份…</div>
+      <p class="hint">多个群聊 / 私聊 / iLink 渠道就是多个团员，消息都只向同一个团长发，由团长 AI 统一回复后原路分发。<b>本面板不向团长发送任何自测消息</b>；验证 AI 实际回复请用另一个微信 / iLink 给本机渠道发一条真实消息。</p>
+      <div class="ar-log" id="ia-gw-status">正在读取网关状态…</div>
       <div class="ord-row mt8">
-        <input class="input" id="ia-gw-text" type="text" placeholder="测试问题，如：你好，在吗？" />
-        <button class="btn small primary" id="ia-gw-send">向团长发消息</button>
-        <label class="hint" style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="ia-gw-autosend" /> 同时回发到所选目标</label>
+        <button class="btn small" id="ia-gw-ocr">图片 OCR 自测</button>
+        <button class="btn small" id="ia-sf-resume">解除微信急停</button>
       </div>
-      <div class="ar-log mt8" id="ia-gw-reply"></div>
+      <div class="ar-log mt8" id="ia-sf-status">正在读取微信发送安全状态…</div>
+      <div class="ar-log mt8" id="ia-gw-ocr-result">从微信本地库取最近一张图片，离线识别文字（不调用团长 AI、不向团长发送消息）。</div>
     </div>
 
     <div class="panel">
@@ -140,10 +140,10 @@ function matchActive(peer: string, botId: string, channel: string): boolean {
   return false;
 }
 
-async function refreshTargets() {
+async function refreshTargets(force = false) {
   const note = g("ia-note");
   try {
-    targets = await channelsApi.targets();
+    targets = await channelsApi.targets(force);
   } catch (e: any) {
     if (note) note.textContent = "拉取目标失败：" + (e?.message || e);
     return;
@@ -197,7 +197,12 @@ async function refreshTargets() {
     if (!targets.member?.length) {
       parts.push("团员：" + (targets.member_note || "未登录或名册为空"));
     }
-    note.textContent = parts.join("；") || "目标就绪；下拉选「全部」可看全渠道事件。";
+    if (targets.member_note) parts.push(targets.member_note);
+    const cacheTxt = targets.member_cache?.count
+      ? `团员名册：${memberCacheLabel(targets.member_cache)}`
+      : "";
+    const base = parts.join("；") || "目标就绪；下拉选「全部」可看全渠道事件。";
+    note.textContent = cacheTxt ? `${base} · ${cacheTxt}` : base;
   }
   // 目标列表重建后，恢复本机缓存的上次选择（升级/重启不丢）
   applySavedSelections();
@@ -209,40 +214,60 @@ async function refreshGatewayStatus() {
   try {
     const s: AiGatewayStatus = await aiGatewayApi.status();
     const c = s.channels || {};
-    const role = s.role === "member" ? "团员（已绑定团长）" : s.role === "leader" ? "团长" : s.role || "未知";
-    const leader = s.leader?.name || "—";
+    // role 仅描述登录账号，不参与可用性判定：PC 端登录团长账号是正常态。
+    const role = s.role === "leader" ? "团长账号登录" : s.role === "member" ? "团员账号登录" : s.role === "deputy" ? "团副账号登录" : "已登录";
+    const leader = s.leader?.name || "";
+    const total = c.total ?? (c.wx_private ?? 0) + (c.wx_group ?? 0) + (c.ilink ?? 0);
+    const bf = s.backend_fault;
+    const faultLine = bf?.active
+      ? `<div class="ar-line warn"><span class="ar-t">!</span><b>后端写入故障</b> · ${escapeHtml(bf.hint || "服务端写接口暂不可用")} <button class="btn small" id="ia-gw-fault-reset" style="margin-left:8px">立即重试</button></div>`
+      : "";
     box.innerHTML = [
-      `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">${s.ok ? "✓" : "✕"}</span><b>${escapeHtml(role)}</b> · 团长「${escapeHtml(leader)}」${s.quota?.left !== undefined ? ` · 今日剩余 ${s.quota.left} 条` : ""}</div>`,
-      `<div class="ar-line info"><span class="ar-t">·</span>对应关系：私聊 ${c.wx_private ?? 0} · 群聊 ${c.wx_group ?? 0} · iLink ${c.ilink ?? 0} · 团员 ${c.member ?? 0}（已绑定 ${c.mapped ?? 0}）</div>`,
+      faultLine,
+      `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">${s.ok ? "✓" : "✕"}</span><b>${escapeHtml(role)}</b>${leader ? ` · 团长「${escapeHtml(leader)}」` : ""}${s.quota?.left !== undefined ? (s.quota.left === 0 ? " · 今日额度 0（将自动换备用团员；彻底不限额请调高后台条数）" : ` · 今日剩余 ${s.quota.left} 条`) : ""}</div>`,
+      `<div class="ar-line info"><span class="ar-t">·</span>渠道 = 团员：共 ${total} 个（每个私聊 / 群聊 / iLink 各是 1 个团员）｜私聊 ${c.wx_private ?? 0} · 群聊 ${c.wx_group ?? 0} · iLink ${c.ilink ?? 0}（已绑定映射 ${c.mapped ?? 0}）｜聊天接口 ${escapeHtml(s.chat_action || "chat/send")}</div>`,
       `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">i</span>${escapeHtml(s.hint || "")}</div>`,
     ].join("");
   } catch (e: any) {
     box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>状态读取失败：${escapeHtml(String(e?.message || e))}</div>`;
   }
+  void refreshSafetyStatus();
 }
 
-async function runGatewaySend() {
-  const input = g("ia-gw-text") as HTMLInputElement | null;
-  const text = (input?.value || "").trim() || "你好，在吗？";
-  const box = g("ia-gw-reply");
-  const target = (g(`ia-sel-${active}`) as HTMLSelectElement)?.value || "";
-  const autoSend = !!(g("ia-gw-autosend") as HTMLInputElement | null)?.checked;
-  if (autoSend && !target) {
-    toast("勾选了回发，请先在①里选择具体目标", false);
-    return;
-  }
-  if (box) box.innerHTML = `<div class="ar-line info"><span class="ar-t">…</span>正在向团长发消息（${escapeHtml(active)}${target ? " → " + escapeHtml(target) : ""}），等待 AI 回复…</div>`;
+/** 微信发送安全：急停 / 预算 / 时段 / 仅前台会话，与网关状态一起刷新。 */
+async function refreshSafetyStatus() {
+  const box = g("ia-sf-status");
+  if (!box) return;
   try {
-    const r = await aiGatewayApi.send(text, active, target, autoSend);
-    if (box) {
-      box.innerHTML =
-        `<div class="ar-line info"><span class="ar-t">✓</span>团长 AI 回复（${r.reply.length} 字${r.quota_left !== undefined && r.quota_left !== null ? `，剩余 ${r.quota_left} 条` : ""}${r.sent ? "，已原路回发" : ""}）：</div>` +
-        `<div class="ar-line info"><span class="ar-t">AI</span>${escapeHtml(r.reply)}</div>` +
-        (r.send_error ? `<div class="ar-line warn"><span class="ar-t">✕</span>回发失败：${escapeHtml(r.send_error)}</div>` : "");
-    }
-    void refreshGatewayStatus();
+    const s = await autoreplyApi.safetyStatus();
+    const head = s.paused
+      ? `<div class="ar-line warn"><span class="ar-t">!</span><b>微信通道已急停</b> · 剩余 ${s.paused_remaining_sec}s（连续回发失败）· 确认微信登录态后点「解除微信急停」</div>`
+      : !s.within_active_hours
+        ? `<div class="ar-line warn"><span class="ar-t">!</span><b>当前不在允许发送时段</b> · 本机 ${escapeHtml(s.local_time)} / 允许 ${escapeHtml(s.active_hours)}</div>`
+        : `<div class="ar-line info"><span class="ar-t">✓</span>发送安全 · 近 1 小时发起 ${s.budget_used}/${s.hourly_budget || "不限"} 次发送 · 连败 ${s.fail_streak}/${s.fail_streak_threshold} · 本机 ${escapeHtml(s.local_time)}</div>`;
+    box.innerHTML = head +
+      `<div class="ar-line info"><span class="ar-t">·</span>仅前台会话发送：${s.require_foreground ? "开启（不抢焦点/不切会话，目标会话不在前台时本条不回复）" : "关闭（每条自动置前+切会话，行为特征明显）"}</div>` +
+      (s.last_reason ? `<div class="ar-line warn"><span class="ar-t">i</span>最近拦截：${escapeHtml(s.last_reason)}</div>` : "");
   } catch (e: any) {
-    if (box) box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>失败：${escapeHtml(String(e?.message || e))}</div>`;
+    box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>发送安全状态读取失败：${escapeHtml(String(e?.message || e))}</div>`;
+  }
+}
+
+
+/** 图片 OCR 自测：脱离 Listener 水位线，直接取本地库最近一张图片做离线识别（不调用团长 AI、不写团长会话）。 */
+async function runOcrTest() {
+  const box = g("ia-gw-ocr-result");
+  if (!box) return;
+  box.innerHTML = `<div class="ar-line info"><span class="ar-t">…</span>正在取最近一张图片并离线识别…</div>`;
+  try {
+    const r = await aiGatewayApi.ocrTest("", false);
+    const text = String(r?.text || "");
+    box.innerHTML = r?.ok
+      ? `<div class="ar-line info"><span class="ar-t">✓</span>OCR 成功 · 会话 ${escapeHtml(String(r?.peer || ""))} · local_id=${escapeHtml(String(r?.local_id ?? ""))} · 识别 ${text.length} 字</div>` +
+        `<div class="ar-line info"><span class="ar-t">TXT</span>${escapeHtml(text || "（图中未识别到文字）")}</div>`
+      : `<div class="ar-line warn"><span class="ar-t">✕</span>OCR 失败：${escapeHtml(String(r?.msg || "未知原因"))}</div>`;
+  } catch (e: any) {
+    box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>OCR 失败：${escapeHtml(String(e?.message || e))}</div>`;
   }
 }
 
@@ -316,7 +341,6 @@ function applySavedSelections() {
       el.classList.toggle("active", (el as HTMLElement).dataset.ch === a);
     });
   }
-  if (savedSettings.auto_send !== undefined) setChk("ia-gw-autosend", savedSettings.auto_send);
 }
 
 /** 渠道选择变化即落盘（局部合并，不覆盖其它配置节点） */
@@ -329,7 +353,6 @@ async function persistChannelSelection() {
   const patch = {
     active,
     selected,
-    auto_send: !!(g("ia-gw-autosend") as HTMLInputElement | null)?.checked,
     selection_saved_at: Date.now(),
   };
   savedSettings = { ...(savedSettings || {}), ...patch };
@@ -414,7 +437,9 @@ async function subscribeEvents() {
   // wxauto 通道日志（收发）
   const un2 = await onWxautoEvent((l: AutoReplyLog) => {
     const peer = l?.extra?.peer || "";
-    if (matchActive(peer, "", "wx")) {
+    // 通道级日志（启动/失败/告警）大多没有 peer，选中某个目标时也必须显示，
+    // 否则「微信有消息没反应」时事件流一片空白，无法定位。
+    if (!peer || l.level === "warn" || matchActive(peer, "", "wx")) {
       logLine(`[微信] ${l.msg}`, l.level === "warn" ? "warn" : "");
     }
   });
@@ -422,9 +447,11 @@ async function subscribeEvents() {
 
   // AI 回复管线日志（chat/send → autoReply → 回发）
   const un3 = await onAutoreplyEvent((l: AutoReplyLog) => {
-    const peer = l?.extra?.to || "";
+    // 管线日志里静默忽略用 peer、AI 网关/回发用 to，两个都要认；
+    // warn（失败/未回复）即使没有会话信息也要显示。
+    const peer = l?.extra?.to || l?.extra?.peer || "";
     const chanHit = matchActive(peer, l?.extra?.bot_id || "", "wx") || matchActive(peer, l?.extra?.bot_id || "", "ilink");
-    if (chanHit || !peer) {
+    if (chanHit || !peer || l.level === "warn") {
       logLine(`[AI] ${l.msg}`, l.level === "warn" ? "warn" : l.level === "debug" ? "debug" : "");
     }
   });
@@ -435,6 +462,10 @@ async function subscribeEvents() {
     logLine(`[网关] ${l.msg}`, l.level === "warn" ? "warn" : "");
   });
   unlistenFns.push(un4);
+
+  // 名册后台更新完成（内容真变化）→ 读缓存重填下拉，不等用户手动点刷新
+  const un5 = await onRosterUpdated(() => { void refreshTargets(); });
+  unlistenFns.push(un5);
 }
 
 async function sendText() {
@@ -470,12 +501,30 @@ function wire() {
     });
   });
   g("ia-refresh")?.addEventListener("click", () => {
-    void refreshTargets();
+    void refreshTargets(true);
     void refreshCacheStatus();
   });
   g("ia-gw-refresh")?.addEventListener("click", () => void refreshGatewayStatus());
-  g("ia-gw-send")?.addEventListener("click", () => void runGatewaySend());
-  g("ia-gw-autosend")?.addEventListener("change", () => void persistChannelSelection());
+  g("ia-gw-status")?.addEventListener("click", async (ev) => {
+    if (!(ev.target as HTMLElement)?.closest("#ia-gw-fault-reset")) return;
+    try {
+      await aiGatewayApi.faultReset();
+      toast("已解除熔断，下一次写请求将立即发出");
+      await refreshGatewayStatus();
+    } catch (e: any) {
+      toast("解除失败：" + (e?.message || e), false);
+    }
+  });
+  g("ia-gw-ocr")?.addEventListener("click", () => void runOcrTest());
+  g("ia-sf-resume")?.addEventListener("click", async () => {
+    try {
+      await autoreplyApi.safetyResume();
+      toast("已解除微信通道急停");
+      await refreshSafetyStatus();
+    } catch (e: any) {
+      toast("解除失败：" + (e?.message || e), false);
+    }
+  });
   g("ia-cfg-save")?.addEventListener("click", () => void saveInteractionSettings(true));
   ["ia-cfg-enabled", "ia-cfg-cooldown", "ia-cfg-rate-win", "ia-cfg-rate-max",
     "ia-cfg-tmin", "ia-cfg-tmax", "ia-cfg-gtmin", "ia-cfg-gtmax"].forEach((id) => {

@@ -2,22 +2,25 @@
 """ocrengine.py —— 离线图片 OCR 引擎（PP-OCRv4 · ONNX Runtime，无网络依赖）
 
 设计目标：
-  * 完全离线：模型文件放在本地目录（默认脚本同级的 ocr_models/，可用
-    OCR_MODEL_DIR 环境变量覆盖），不调用任何远程 OCR 服务。
+  * 完全离线：不调用任何远程 OCR 服务，模型全部来自本地文件。
   * 与 bbt-zb 前端 OCR 同技术栈：PP-OCRv4 检测 + 识别（det + rec + 可选 cls），
     权重用 .onnx 格式（bbt-zb 前端即 PaddleOCR/PP-OCRv4 的 onnx 导出）。
-  * 懒加载：首次 OCR 时才 import onnxruntime/opencv/numpy，缺依赖即返回 None，
-    不影响纯文本消息收发。
+  * 懒加载：首次 OCR 才 import 引擎，缺依赖即返回 None，不影响纯文本消息收发。
 
-所需文件（OCR_MODEL_DIR 下）：
-  ch_PP-OCRv4_det_infer.onnx   检测模型
-  ch_PP-OCRv4_rec_infer.onnx   识别模型
-  ppocr_keys_v1.txt            中文字典（6629 类 + blank）
-  ch_ppocr_mobile_v2.0_cls_infer.onnx  （可选）方向分类，省略则不做 180° 校正
+后端优先级（make_engine）：
+  ① rapidocr_onnxruntime —— 首选。包内自带 PP-OCRv4 det/rec/cls ONNX 权重与
+     字符表，无需另外下载模型；weauto 的 .venv_bot 与本项目 .venv_bot 均已装。
+     本机实测：900x300 中文图 0.68s 识别完成。
+  ② 本文件手写的 OcrEngine —— 仅在没装 rapidocr 时兜底，要求 OCR_MODEL_DIR
+     （默认脚本同级 ocr_models/，可用环境变量覆盖）下放齐文件：
+       ch_PP-OCRv4_det_infer.onnx   检测模型
+       ch_PP-OCRv4_rec_infer.onnx   识别模型
+       ppocr_keys_v1.txt            中文字典（6629 类 + blank）
+       ch_ppocr_mobile_v2.0_cls_infer.onnx  （可选）方向分类
 
 依赖（本机需装）：
-  pip install onnxruntime opencv-python-headless numpy
-（bbt-zb 的 ocr 模型与字典可从 bbt-zb 站点用账号密码获取，见 tools/fetch_models.py）
+  pip install rapidocr_onnxruntime
+  或（仅兜底后端）：pip install onnxruntime opencv-python-headless numpy
 """
 
 from __future__ import annotations
@@ -227,10 +230,58 @@ class OcrEngine:
         return "\n".join(texts).strip()
 
 
+class RapidOcrAdapter:
+    """首选后端：rapidocr_onnxruntime（包内自带 PP-OCRv4 权重 + 字符表）。
+
+    对外只暴露 ``ocr_bytes(raw) -> str``，与手写 OcrEngine 接口一致，
+    sidecar 无需关心用的是哪个后端。完全离线、纯 ONNX Runtime CPU 推理。
+    """
+
+    def __init__(self):
+        from rapidocr_onnxruntime import RapidOCR
+        self.engine = RapidOCR()
+
+    def ocr_bytes(self, raw: bytes) -> str:
+        result, _elapse = self.engine(raw)  # RapidOCR 可直接吃图片字节
+        if not result:
+            return ""
+        # result: [[box(4x2), text, score], ...]
+        items = []
+        for r in result:
+            if not isinstance(r, (list, tuple)) or len(r) < 2:
+                continue
+            text = str(r[1] or "").strip()
+            if not text:
+                continue
+            # 低置信度框通常识别错误（碎字/误检），混入会污染喂给团长 AI 的文本，
+            # 阈值 0.4 是 PP-OCRv4 常用可信下限；缺 score 字段时默认保留。
+            if len(r) >= 3 and isinstance(r[2], (int, float)) and r[2] < 0.4:
+                continue
+            box = r[0] if isinstance(r[0], (list, tuple)) else None
+            try:
+                y = min(float(p[1]) for p in box) if box else 0.0
+                x = min(float(p[0]) for p in box) if box else 0.0
+            except Exception:
+                y = x = 0.0
+            items.append((y, x, text))
+        # 12px 容差归并同一行，再按坐标排序，保证多文本框的阅读顺序
+        items.sort(key=lambda t: (t[0] // 12, t[1]))
+        return "\n".join(t[2] for t in items).strip()
+
+
 def make_engine(model_dir: str | None = None):
-    """工厂：模型目录不存在/缺文件则返回 None（调用方降级处理）。"""
+    """工厂：优先 RapidOCR（免模型配置）；不可用再回退显式模型目录的手写引擎。"""
     if model_dir is None:
         model_dir = os.environ.get("OCR_MODEL_DIR") or str(Path(__file__).resolve().parent / "ocr_models")
+
+    # ① RapidOCR：自带 PP-OCRv4 权重，本机 venv 已装，开箱即用
+    try:
+        return RapidOcrAdapter()
+    except Exception as e:
+        import sys
+        sys.stderr.write(f"[ocrengine] RapidOCR 不可用，尝试显式模型目录：{e!r}\n")
+
+    # ② 手写 ONNX 引擎：需 OCR_MODEL_DIR 下放齐 det/rec 模型与字典
     if not os.path.isdir(model_dir):
         return None
     try:

@@ -11,6 +11,7 @@
 
 import { api } from "./api";
 import { ilink, onIlinkEvent, autoreplyApi, onAutoreplyEvent, wxautoApi, bridgeApi } from "./ilink";
+import { channelsApi, memberCacheLabel, onRosterUpdated } from "./channels";
 
 interface MemberInfo {
   id: string;
@@ -30,6 +31,11 @@ interface GroupInfo {
 // 对齐 openilink-hub 思路：每个成员对应一个 iLink 机器人账号，hub 记录绑定关系，
 // 扫码确认后落盘，过期重建后自动更新指向新 bot。
 let memberMap: Record<string, string> = {};
+// 团员名册本地缓存镜像：切团 / 重绘画卡片全部走内存，0 网络请求。
+// 数据由 Rust roster_cache 提供（升级/重启后从 member_roster.json 恢复）。
+let rosterGroups: GroupInfo[] = [];
+let rosterByGroup: Record<string, any[]> = {};
+let rosterCache: any = null;
 // bot_id -> 已绑定账号状态快照（ilink_list_accounts）；用于判断「已登录/已过期」
 let accountByBot = new Map<string, any>();
 // 正在展示扫码二维码的团员 id：定时刷新不覆盖用户正在扫的二维码
@@ -55,6 +61,9 @@ let rosterSize = 0;
 let arEnabled = false;
 
 let started = false;
+
+// 配对区块临时数据（保存时复用，避免二次拉取微信会话列表）
+let pairingTargets: any = null;
 
 function esc(s: string): string {
   return (s || "").replace(/[&<>"']/g, (c) =>
@@ -90,13 +99,30 @@ export async function renderMemberQr(root: HTMLElement) {
           </div>
         </div>
         <div id="mq-group-bar" class="mt8"></div>
-        <p class="hint">扫码成功即完成绑定，登录态自动缓存在本机；48 小时内无需重复扫码，升级 / 重启同样有效。</p>
+        <div class="hint mt8" id="mq-cache-state">名册读取中…</div>
+        <p class="hint">扫码成功即完成绑定，登录态与团员名册都缓存在本机；48 小时内无需重复扫码，升级 / 重启、短暂离线同样有效。「刷新名册」才在线回源。</p>
         <div id="mq-roster" class="member-grid">
           <div class="empty">尚未登录或名册为空</div>
         </div>
         <div class="btn-row">
           <button class="btn small" id="mq-gen-all">为全部团员生成二维码</button>
         </div>
+      </section>
+
+      <section class="card">
+        <div class="row-between">
+          <h2>团员 ↔ 微信私聊/群聊 配对</h2>
+          <div>
+            <button class="btn small" id="mq-pair-refresh">刷新列表</button>
+            <button class="btn small primary" id="mq-pair-save">保存配对</button>
+          </div>
+        </div>
+        <p class="hint">身份模型：每个微信私聊 / 群聊就是 1 个团员。在此把「团员名册」与「微信会话」手动配对，配对后系统能精确识别「这条微信消息来自哪个团员」，图片支付校验也会据此比对<b>该团员</b>的订单金额。</p>
+        <div class="hint" id="mq-pair-note"></div>
+        <div id="mq-pair-list" class="pair-list">
+          <div class="empty">加载中…</div>
+        </div>
+        <div class="hint mt8" id="mq-pair-state"></div>
       </section>
     </div>`;
 
@@ -110,8 +136,10 @@ export async function renderMemberQr(root: HTMLElement) {
   g("mq-goto-login")?.addEventListener("click", () => {
     window.dispatchEvent(new CustomEvent("goto-tab", { detail: "params" }));
   });
-  g("mq-refresh-roster")?.addEventListener("click", loadRoster);
+  g("mq-refresh-roster")?.addEventListener("click", () => void loadRoster(true));
   g("mq-gen-all")?.addEventListener("click", genAllRosterQr);
+  g("mq-pair-refresh")?.addEventListener("click", () => void loadPairing(true));
+  g("mq-pair-save")?.addEventListener("click", savePairing);
 
   if (!started) {
     started = true;
@@ -132,12 +160,16 @@ export async function renderMemberQr(root: HTMLElement) {
     onAutoreplyEvent(() => {
       void loadArEnabled();
     });
+    // 后台刷新拿到新名册时自动重绘（读缓存，0 网络）；只在内容真变化时推送
+    void onRosterUpdated(() => { void loadRoster(); });
     // 监听团长登录态变化：登录成功后自动拉名册/账号，无需手动点
     window.addEventListener("login-changed", (e: any) => {
       const d = e.detail || {};
       updateLoginStateUI(!!d.loggedIn, d.telephone || "");
-      void loadRoster();
+      // 换登录账号 = 名册归属变了，强制回源（缓存按账号隔离，不会串号）
+      void loadRoster(!!d.loggedIn);
       void refreshAccounts();
+      void loadPairing();
     });
     // 定时刷新已绑定账号状态（捕获会话过期等）+ 绑定总览
     setInterval(() => {
@@ -154,6 +186,7 @@ export async function renderMemberQr(root: HTMLElement) {
   void (async () => {
     await refreshAccounts().catch(() => { /* 账号态拉不到也要继续渲染名册 */ });
     void loadRoster();
+    void loadPairing();
   })();
 }
 
@@ -214,41 +247,52 @@ function fmtTime(ts: number): string {
   return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-async function loadRoster() {
+/** 取名册：默认读本地缓存（0 网络），force=true 才同步在线回源。
+ *  名册、团列表、缓存状态都来自 Rust roster_cache；刷新失败时后端会自动
+ *  回退旧缓存，因此这里不会因一次网络抖动变成「名册为空」。 */
+async function loadRoster(force = false) {
   const box = g("mq-roster");
   if (!box) return;
+  const stateEl = g("mq-cache-state");
+  if (force) {
+    if (stateEl) stateEl.textContent = "正在在线刷新名册…";
+    box.innerHTML = `<div class="empty">正在在线刷新名册…</div>`;
+  }
   try {
-    // 1) leader/ledger 取团长管理的团列表（官方前端 round.js 同款链路）
-    const lr: any = await api.call("leader/ledger", {});
-    const groups: GroupInfo[] = (((lr?.result?.data ?? lr?.data)?.list) || []).map((x: any) => ({
+    const r: any = await api.memberRoster(force);
+    rosterCache = r?.cache || null;
+    rosterGroups = (r?.groups || []).map((x: any) => ({
       id: String(x.id),
       name: x.name || `团#${x.id}`,
     }));
-    if (groups.length === 0) {
-      box.innerHTML = `<div class="empty">当前团长账号还没有管理任何团</div>`;
+    rosterByGroup = r?.by_group || {};
+    if (stateEl) {
+      stateEl.textContent = memberCacheLabel(rosterCache) + (r?.note ? ` · ${r.note}` : "");
+    }
+    if (rosterGroups.length === 0) {
+      box.innerHTML = `<div class="empty">${esc(r?.note || "当前团长账号还没有管理任何团")}</div>`;
+      rosterSize = 0;
+      refreshBindStatus();
       return;
     }
-    // 默认选中第一个团（单团即唯一团；多团由下方下拉切换）。
-    // 必须先落 __mqGroupId 再调用，否则单团时 currentGroupId() 读到空串会提前返回。
-    const defaultGid = groups[0].id;
+    // 多团切换保留用户当前选择；只有第一次或被删掉的团才回到第一个
+    const cur = currentGroupId();
+    const defaultGid = rosterGroups.some((gp) => gp.id === cur) ? cur : rosterGroups[0].id;
     (window as any).__mqGroupId = defaultGid;
-    // 团选择器（多团可切换；单团直接显示）
     const bar = g("mq-group-bar");
     if (bar) {
-      bar.innerHTML = groups.length > 1
-        ? `<select id="mq-group" class="input" style="max-width:220px">${groups
+      bar.innerHTML = rosterGroups.length > 1
+        ? `<select id="mq-group" class="input" style="max-width:220px">${rosterGroups
             .map((gp) => `<option value="${esc(gp.id)}"${gp.id === defaultGid ? " selected" : ""}>${esc(gp.name)}</option>`)
             .join("")}</select>`
-        : `<span class="hint">团：${esc(groups[0].name)}</span>`;
+        : `<span class="hint">团：${esc(rosterGroups[0].name)}</span>`;
       bar.querySelector("#mq-group")?.addEventListener("change", () => loadMembersOf(currentGroupId()));
     }
     await loadMembersOf(defaultGid);
   } catch (e: any) {
     const msg = e?.message || String(e);
-    const friendly = /未登录|失效|未配置|token|会话/i.test(msg)
-      ? "请先到「首页」登录团长账号后再查看名册"
-      : `拉取名册失败：${esc(msg)}`;
-    box.innerHTML = `<div class="empty">${friendly}</div>`;
+    if (stateEl) stateEl.textContent = "名册读取失败（可点「刷新名册」重试）";
+    box.innerHTML = `<div class="empty">拉取名册失败：${esc(msg)}</div>`;
   }
 }
 
@@ -259,6 +303,7 @@ function currentGroupId(): string {
   return (window as any).__mqGroupId || "";
 }
 
+/** 切团 = 纯内存渲染：名册已按团缓存在 rosterByGroup，不再打一次线上接口。 */
 async function loadMembersOf(groupId: string) {
   const box = g("mq-roster");
   if (!box) return;
@@ -267,31 +312,19 @@ async function loadMembersOf(groupId: string) {
     return;
   }
   (window as any).__mqGroupId = groupId;
-  box.innerHTML = `<div class="empty">加载中…</div>`;
-  try {
-    // 2) leader/listMembers 按团拉成员（condition 必须带 groupId）
-    const r: any = await api.call("leader/listMembers", { groupId: Number(groupId) || groupId });
-    const data = r?.result?.data ?? r?.data ?? {};
-    const members = extractRoster(data?.list ?? []);
-    if (members.length === 0) {
-      box.innerHTML = `<div class="empty">该团暂无成员</div>`;
-      rosterSize = 0;
-      refreshBindStatus();
-      return;
-    }
-    rosterSize = members.length;
-    box.innerHTML = members.map((m) => rosterCard(m)).join("");
-    members.forEach((m) => {
-      g(`mqgen-${m.id}`)?.addEventListener("click", () => genRosterQr(m));
-    });
+  const members = extractRoster(rosterByGroup[groupId] || []);
+  if (members.length === 0) {
+    box.innerHTML = `<div class="empty">该团暂无成员（可点「刷新名册」在线更新）</div>`;
+    rosterSize = 0;
     refreshBindStatus();
-  } catch (e: any) {
-    const msg = e?.message || String(e);
-    const friendly = /未登录|失效|未配置|token|会话/i.test(msg)
-      ? "请先到「首页」登录团长账号后再查看名册"
-      : `拉取成员失败：${esc(msg)}`;
-    box.innerHTML = `<div class="empty">${friendly}</div>`;
+    return;
   }
+  rosterSize = members.length;
+  box.innerHTML = members.map((m) => rosterCard(m)).join("");
+  members.forEach((m) => {
+    g(`mqgen-${m.id}`)?.addEventListener("click", () => genRosterQr(m));
+  });
+  refreshBindStatus();
 }
 
 interface LoginView {
@@ -574,4 +607,134 @@ function startPoll(loginId: string, qrElId: string, onStatus: (status: string, r
     }
   }, 1500);
   polls.set(loginId, timer);
+}
+
+// ---------------- 团员 ↔ 微信私聊/群聊 配对 ----------------
+
+function pairMemberName(m: any): string {
+  return m?.name || m?.realName || m?.telephoneMask || m?.id || "";
+}
+
+function pairWxLabel(s: any): string {
+  const name = s?.name || s?.id || "未知会话";
+  return name;
+}
+
+async function loadPairing(force = false) {
+  const box = g("mq-pair-list");
+  const note = g("mq-pair-note");
+  const stateEl = g("mq-pair-state");
+  if (!box) return;
+  if (note) note.textContent = "";
+  if (stateEl) stateEl.textContent = force ? "正在在线刷新团员列表…" : "读取本地缓存与微信会话中…";
+  try {
+    const [targets, pairing] = await Promise.all([
+      channelsApi.targets(force),
+      api.wechatPairingGet().catch(() => ({})),
+    ]);
+    pairingTargets = targets;
+    const members: any[] = (targets?.member || []).map((m: any) => ({
+      id: String(m.id),
+      name: m.name || m.realName || "",
+      realName: m.realName || "",
+      telephoneMask: m.telephoneMask || "",
+    }));
+    const wxPrivate: any[] = targets?.wx_private || [];
+    const wxGroup: any[] = targets?.wx_group || [];
+    const map: Record<string, any> = pairing || {};
+
+    if (members.length === 0) {
+      box.innerHTML = `<div class="empty">团员名册为空（请先到首页登录团长账号，或刷新名册）</div>`;
+      if (stateEl) stateEl.textContent = "";
+      return;
+    }
+    if (wxPrivate.length === 0 && wxGroup.length === 0) {
+      if (note) note.textContent = "提示：当前微信通道未开启或无会话，无法列出微信私聊/群聊，开启后刷新即可配对。";
+    }
+
+    const optsPrivate = wxPrivate
+      .map((s) => `<option value="${esc(s.id || "")}">${esc(pairWxLabel(s))}</option>`)
+      .join("");
+    const optsGroup = wxGroup
+      .map((s) => `<option value="${esc(s.id || "")}">${esc(pairWxLabel(s))}</option>`)
+      .join("");
+
+    box.innerHTML = members
+      .map((m) => {
+        const mid = String(m.id);
+        const cur = map[mid];
+        const curLabel = cur?.wxname
+          ? `${esc(cur.wxname)}${cur?.is_group ? "（群）" : ""}`
+          : "未配对";
+        return `
+        <div class="pair-row" data-mid="${esc(mid)}">
+          <div class="pair-name">${esc(pairMemberName(m))}${m.realName && m.realName !== pairMemberName(m) ? `<span class="pair-sub">（${esc(m.realName)}）</span>` : ""}</div>
+          <select class="input pair-sel" data-mid="${esc(mid)}">
+            <option value="">— 未配对 —</option>
+            ${optsPrivate ? `<optgroup label="微信私聊">${optsPrivate}</optgroup>` : ""}
+            ${optsGroup ? `<optgroup label="微信群聊">${optsGroup}</optgroup>` : ""}
+          </select>
+          <div class="pair-cur">当前：${curLabel}</div>
+        </div>`;
+      })
+      .join("");
+
+    // 事后逐个设置选中态（避免 optgroup 内 option 选中态错乱）
+    members.forEach((m) => {
+      const mid = String(m.id);
+      const curWxid = map[mid]?.wxid || "";
+      const sel = box.querySelector<HTMLSelectElement>(`.pair-sel[data-mid="${CSS.escape(mid)}"]`);
+      if (sel && curWxid) sel.value = curWxid;
+    });
+
+    if (stateEl) {
+      const n = Object.keys(map).filter((k) => map[k]?.wxid).length;
+      stateEl.textContent = `已配对 ${n} / ${members.length} 名团员 · ${memberCacheLabel(targets?.member_cache)}`;
+    }
+    if (targets?.member_note && note) note.textContent = targets.member_note;
+  } catch (e: any) {
+    const msg = e?.message || String(e);
+    if (box) box.innerHTML = `<div class="empty">加载失败：${esc(msg)}</div>`;
+    if (stateEl) stateEl.textContent = "";
+    if (note) note.textContent = /未登录|失效|token|会话/i.test(msg) ? "请先到首页登录团长账号" : "";
+  }
+}
+
+async function savePairing() {
+  const box = g("mq-pair-list");
+  const stateEl = g("mq-pair-state");
+  if (!box) return;
+  if (!pairingTargets) {
+    toast("请先刷新列表再保存", false);
+    return;
+  }
+  const members: any[] = pairingTargets.member || [];
+  const wxAll: any[] = [...(pairingTargets.wx_private || []), ...(pairingTargets.wx_group || [])];
+  const map: Record<string, any> = {};
+  let saved = 0;
+  box.querySelectorAll<HTMLElement>(".pair-row").forEach((row) => {
+    const mid = row.getAttribute("data-mid") || "";
+    const sel = row.querySelector<HTMLSelectElement>(".pair-sel");
+    const wxid = sel?.value || "";
+    if (!mid || !wxid) return;
+    const wx = wxAll.find((s) => String(s.id) === wxid);
+    const m = members.find((x) => String(x.id) === mid);
+    if (!wx || !m) return;
+    map[mid] = {
+      wxid,
+      wxname: wx.name || wxid,
+      is_group: !!wx.is_group,
+      member_name: pairMemberName(m),
+    };
+    saved++;
+  });
+  try {
+    await api.wechatPairingSet(map);
+    if (stateEl) stateEl.textContent = `已保存 ${saved} 条配对（本机持久化，升级/重启有效）`;
+    toast(`已保存 ${saved} 条团员 ↔ 微信会话配对`);
+  } catch (e: any) {
+    const msg = e?.message || String(e);
+    if (stateEl) stateEl.textContent = "保存失败：" + msg;
+    toast("配对保存失败：" + msg, false);
+  }
 }

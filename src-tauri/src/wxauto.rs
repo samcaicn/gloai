@@ -25,21 +25,12 @@ use tokio::sync::mpsc;
 
 static REQ_SEQ: AtomicU64 = AtomicU64::new(1);
 
-/// 毫秒时间戳 → "HH:MM:SS.mmm"（本地时区），日志用。
+/// 毫秒时间戳 → "HH:MM:SS.mmm"（本机本地时间）。
+/// 原实现用 `offset = now - secs` 当作时区偏移，对刚写入的日志恒为 0，
+/// 实际打印的是 UTC 时分（比北京时间少 8 小时），与 Python sidecar 的
+/// 本地时间日志对不上，排查收发时序时极易误判。统一复用 autoreply::fmt_ts。
 fn fmt_ts(ms: i64) -> String {
-    use std::time::SystemTime;
-    let secs = ms / 1000;
-    let millis = (ms % 1000) as u32;
-    let local = SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .unwrap_or(0);
-    let offset = local - secs;
-    let local_secs = secs + offset;
-    let h = (local_secs / 3600) % 24;
-    let m = (local_secs / 60) % 60;
-    let s = local_secs % 60;
-    format!("{:02}:{:02}:{:02}.{:03}", h, m, s, millis)
+    autoreply::fmt_ts(ms)
 }
 
 const SIDECAR_SRC: &str = include_str!("../python/wxauto_sidecar.py");
@@ -232,13 +223,14 @@ async fn kill_inner(st: &Arc<WxAutoState>) {
 /// 解析 Python 解释器，按优先级返回首个可用的：
 ///   1. 配置里的 `python_path`（用户显式指定）
 ///   2. 环境变量 `BBT_PYTHON`
-///   3. `<exe 所在目录>\.venv_bot\Scripts\python.exe`
-///      —— 绿色版/免安装：把 `.venv_bot` 与 exe 放在同一目录
-///   4. `<exe 所在目录>\..\..\..\.venv_bot\Scripts\python.exe`
-///      —— dev：exe 在 `src-tauri\target\debug`，向上三级即项目根
-///   5. Tauri 资源目录下 `\.venv_bot\Scripts\python.exe`
+///   3. 从 exe 所在目录起逐级向上（最多 6 级）找 `.venv_bot\Scripts\python.exe`
+///      —— 同时覆盖：绿色版（venv 与 exe 同级）、
+///         dev（exe 在 `src-tauri\target\debug` 或 `src-tauri\target\<triple>\debug`）、
+///         安装版（venv 在程序目录附近）。层级写死曾因 target 多一层而漏判，
+///         漏判会 fallback 到 PATH 的 python，导致 wechatauto 依赖缺失。
+///   4. Tauri 资源目录下 `\.venv_bot\Scripts\python.exe`
 ///      —— 若将来把 venv 作为 bundle resources 打进安装包
-///   6. `"python"`（走 PATH）
+///   5. `"python"`（走 PATH）
 fn resolve_python(app: &AppHandle, cfg: &WxAutoConfig) -> String {
     let explicit = cfg.python_path.trim();
     if !explicit.is_empty() {
@@ -251,20 +243,14 @@ fn resolve_python(app: &AppHandle, cfg: &WxAutoConfig) -> String {
         }
     }
     if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            let candidates = [
-                dir.join(VENV_PY_REL),
-                dir.parent()
-                    .and_then(|p| p.parent())
-                    .and_then(|p| p.parent())
-                    .map(|p| p.join(VENV_PY_REL))
-                    .unwrap_or_default(),
-            ];
-            for p in candidates.iter() {
-                if p.exists() {
-                    return p.to_string_lossy().to_string();
-                }
+        let mut dir = exe.parent().map(|p| p.to_path_buf());
+        for _ in 0..=6 {
+            let Some(d) = dir.as_ref() else { break };
+            let p = d.join(VENV_PY_REL);
+            if p.exists() {
+                return p.to_string_lossy().to_string();
             }
+            dir = d.parent().map(|p| p.to_path_buf());
         }
     }
     if let Ok(resource_dir) = app.path().resource_dir() {
@@ -298,10 +284,23 @@ async fn run_once(app: &AppHandle, st: &Arc<WxAutoState>, cfg: &WxAutoConfig) ->
 
     // 2) 找 python（配置 → BBT_PYTHON → 随程序的内置 venv → PATH）
     let py = resolve_python(app, cfg);
+    // 落到裸 "python" 时 PATH 里的解释器往往缺 colorama / winsdk / pyautogui，
+    // 表现为「微信通道启动失败: No module named 'colorama'」且时好时坏。
+    // 把解释器路径明确写进通道日志，一眼可定位。
+    if py.eq_ignore_ascii_case("python") {
+        st.log(app, "warn", "未找到项目内置 .venv_bot，回退 PATH 的 python（可能缺 wechatauto 依赖）；请在「渠道配置」里指定 python_path", json!({"python": py}));
+    } else {
+        st.log(app, "info", &format!("Python 解释器：{}", py), json!({"python": py}));
+    }
 
     // 3) spawn
     let mut cmd = Command::new(&py);
     cmd.arg(&script_path)
+        // wechatauto 的 logger 会在「当前工作目录」建 wechatauto_logs/，Python 也会
+        // 为 import 的模块建 __pycache__/；dev 时默认 cwd 是 src-tauri（被 tauri dev
+        // 的文件监听覆盖），这些运行时文件每次写入都会触发整包重编译 + 应用重启，
+        // 导致微信通道反复掉线、CDP 断连。统一把工作目录指到 app_data_dir。
+        .current_dir(&data_dir)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
@@ -408,6 +407,11 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
                     st.log(app, "info", &format!("微信通道就绪（账号：{}，wxid={}，私聊+群聊全会话监听）", self_nick, self_user), json!({}));
                 }
                 "error" => st.log(app, "warn", &format!("微信通道错误: {}", msg), json!({})),
+                // sidecar 的诊断事件（入站消息 / 自消息过滤 / OCR 失败等）以前被 `_ => {}`
+                // 整批吞掉，导致「微信有消息但没反应」时日志一片空白。全部落到通道日志。
+                "warn" => st.log(app, "warn", msg, json!({})),
+                "info" => st.log(app, "info", msg, json!({})),
+                "debug" => st.log(app, "debug", msg, json!({})),
                 _ => {}
             }
         }
@@ -421,6 +425,12 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
             let kind = v.get("kind").and_then(|k| k.as_str()).unwrap_or("text").to_string();
             // 群聊 @ 自己标志（sidecar 从 packed_info XML 解析）
             let mentioned_self = v.get("mentioned_self").and_then(|m| m.as_bool()).unwrap_or(false);
+            st.log(
+                app,
+                "info",
+                &format!("微信入站 → 自动回复管线 · {} · {} · {} 字", peer, kind, text.chars().count()),
+                json!({"peer": peer, "kind": kind, "sender": sender, "is_group": is_group}),
+            );
             // 纯图片/语音在 OCR/转写失败时文本可能为空：仍允许进入管线，由 autoreply
             // 规则层（空文本直接忽略）统一处理并记日志，避免静默吞掉事件。
             if peer.is_empty() {
@@ -467,7 +477,7 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
                 st.log(app, "warn", &format!("微信{}发送失败 {}：{}", what, peer, msg), json!({"peer": peer}));
             }
         }
-        "sessions" => {
+        "sessions" | "ocr_last" | "check_foreground" => {
             if let Some(req) = v.get("req").and_then(|r| r.as_str()) {
                 let waiter = {
                     let guard = st.inner.lock().unwrap();
@@ -486,18 +496,68 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
 // 发送 / 状态 / 停止
 // ---------------------------------------------------------------------------
 
+/// 只读探测结果：目标会话是否已经是微信当前前台会话。
+/// 全程不激活窗口、不点击侧栏、不切换会话；用于「仅前台会话发送」安全策略。
+#[derive(Debug, Clone)]
+pub struct ForegroundCheck {
+    pub ok: bool,
+    pub current: String,
+    pub target: String,
+    pub foreground: bool,
+}
+
+/// 询问 sidecar：微信窗口是否在前台，且当前打开的会话是否就是 peer 对应会话。
+/// sidecar 侧纯只读（win32 前台句柄 + UIA 读输入框 Name），超时按「放行失败」处理，
+/// 由调用方决定是否跳过发送——绝不因为探测失败就退回「抢焦点 + 切会话」老路。
+pub async fn check_foreground(app: &AppHandle, peer: &str) -> Result<ForegroundCheck, String> {
+    let v = request(
+        app,
+        json!({"cmd": "check_foreground", "peer": peer}),
+        Duration::from_secs(10),
+    )
+    .await?;
+    Ok(ForegroundCheck {
+        ok: v.get("ok").and_then(|x| x.as_bool()).unwrap_or(false),
+        current: v.get("current").and_then(|x| x.as_str()).unwrap_or("").to_string(),
+        target: v.get("target").and_then(|x| x.as_str()).unwrap_or("").to_string(),
+        foreground: v.get("foreground").and_then(|x| x.as_bool()).unwrap_or(false),
+    })
+}
+
 /// 经 sidecar 向微信会话发文本（peer = wxid_xxx 或 xxx@chatroom）。
+/// 手动发送走这里，保持原有「自动切到会话」行为，不受自动回复的安全策略影响。
 pub async fn send_text(app: &AppHandle, peer: &str, text: &str) -> Result<(), String> {
-    let st = app.state::<Arc<WxAutoState>>();
-    let tx = {
-        let guard = st.inner.lock().unwrap();
-        match guard.as_ref() {
-            Some(h) => h.stdin_tx.clone(),
-            None => return Err("微信通道未运行".into()),
-        }
-    };
-    let line = json!({"cmd": "send", "peer": peer, "text": text}).to_string();
-    tx.send(line).await.map_err(|_| "微信通道已关闭".to_string())
+    send_text_ex(app, peer, text, false).await
+}
+
+/// `require_foreground=true`：子进程发送前再次校验目标会话仍在前台，否则直接拒绝，
+/// 不 SetForegroundWindow、不点侧栏切会话（避免自动回复每条都抢焦点留下明显特征）。
+pub async fn send_text_ex(
+    app: &AppHandle,
+    peer: &str,
+    text: &str,
+    require_foreground: bool,
+) -> Result<(), String> {
+    // 以前是 fire-and-forget：只要写进 stdin 就返回 Ok，上层误以为「已发出」，
+    // 实际 sidecar 的 UI 发送可能卡死，微信里根本没消息，日志也没有任何失败记录。
+    // 改为带 req 的请求-响应（与 send_image 对称），等 sidecar 回报 `sent` 并检查 ok；
+    // 超时即明确报错，自动回复管线会记「回发失败」，不再静默吞掉。
+    let v = request(
+        app,
+        json!({"cmd": "send", "peer": peer, "text": text, "require_foreground": require_foreground}),
+        // 发送在独立子进程里执行（UIA 优先，OCR 兜底 45s 会被 kill），
+        // 这里留 60s 余量覆盖子进程启动 + GUI 初始化 + 兜底超时。
+        Duration::from_secs(60),
+    )
+    .await
+    .map_err(|e| format!("微信发送超时/无响应（{}）：sidecar 可能卡在 UI 自动化，请重启微信通道", e))?;
+    let ok = v.get("ok").and_then(|o| o.as_bool()).unwrap_or(false);
+    let msg = v.get("msg").and_then(|m| m.as_str()).unwrap_or("");
+    if ok {
+        Ok(())
+    } else {
+        Err(format!("微信发送失败: {}", msg))
+    }
 }
 
 /// 同步请求：带 req id 写 stdin，等待 sidecar 回带 req 的响应（超时清理）。
@@ -538,6 +598,24 @@ pub async fn send_image(app: &AppHandle, peer: &str, b64: &str) -> Result<(), St
     } else {
         Err(format!("微信发图失败: {}", msg))
     }
+}
+
+/// 图片 OCR 验收入口：让 sidecar 从微信本地库取最近一张图片 → 离线 OCR。
+/// `inject=true` 时 sidecar 会把 OCR 文本按 kind="image" 发回，走完整自动回复管线
+/// （团长 AI → 原路回发）。用于脱离 Listener 水位线独立验证「图片 OCR + AI」链路：
+/// 真实图片消息只有 sidecar 启动后新到达才会被推送，重启前发的图片收不到。
+pub async fn ocr_test(app: &AppHandle, peer: Option<String>, inject: Option<bool>) -> Result<Value, String> {
+    request(
+        app,
+        json!({
+            "cmd": "ocr_last",
+            "peer": peer.unwrap_or_default(),
+            "inject": inject.unwrap_or(false),
+        }),
+        Duration::from_secs(60),
+    )
+    .await
+    .map_err(|e| format!("图片 OCR 自测超时/无响应（{}）：请确认微信通道已就绪", e))
 }
 
 /// 微信会话列表（私聊+群聊，来自微信本地 session.db）。

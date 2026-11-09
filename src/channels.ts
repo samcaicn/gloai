@@ -1,6 +1,7 @@
 // 统一渠道路由前端封装 + 订单支付图 canvas 合成
 // 渠道：wx_private 微信私聊 / wx_group 微信群聊 / ilink iLink 账号 / member 团员(经绑定 bot)
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 export interface WxSession {
   id: string;
@@ -8,6 +9,35 @@ export interface WxSession {
   is_group: boolean;
   summary: string;
   last_time: number;
+}
+
+/** 团员名册缓存状态（Rust roster_cache 透传，用于向用户说明数据来源与新鲜度） */
+export interface MemberCache {
+  source: "memory" | "disk" | "stale" | "network" | "error";
+  age_ms: number;
+  cached_at: number;
+  count: number;
+  stale: boolean;
+  refreshing: boolean;
+  ttl_ms: number;
+  retry_ms: number;
+  last_attempt_ms: number;
+  last_success_ms: number;
+  path: string;
+  backup: string;
+  error?: string;
+}
+
+/** 后端名册刷新完成（内容确有变化）时推送，前端据此 0 网络重绘 */
+export interface RosterUpdatedEvent {
+  source: "network" | "cleared";
+  changed: boolean;
+  count: number;
+  cache?: MemberCache;
+}
+
+export function onRosterUpdated(cb: (e: RosterUpdatedEvent) => void): Promise<UnlistenFn> {
+  return listen<RosterUpdatedEvent>("roster-updated", (ev) => cb(ev.payload));
 }
 
 export interface ChannelTargets {
@@ -18,7 +48,28 @@ export interface ChannelTargets {
   ilink_note: string;
   member: any[];
   member_note: string;
+  member_cache?: MemberCache;
   member_map: Record<string, string>;
+}
+
+/** 人可读的缓存来源说明，不只用颜色传达状态 */
+export function memberCacheLabel(c?: MemberCache): string {
+  if (!c || !c.count) return c?.error ? `名册异常：${c.error}` : "名册暂无本地缓存";
+  const mins = Math.max(0, Math.floor(c.age_ms / 60000));
+  const age = mins < 1 ? "刚刚" : mins < 60 ? `${mins} 分钟前` : `${Math.floor(mins / 60)} 小时前`;
+  const src: Record<string, string> = {
+    memory: "本地缓存",
+    disk: "本地缓存（重启恢复）",
+    stale: "本地缓存",
+    network: "本次在线更新",
+    error: "本地缓存",
+  };
+  let label = `${src[c.source] || "本地缓存"} · ${age}更新 · ${c.count} 名团员`;
+  // 「缓存过期但正在后台更新」≠「刷新失败离线可用」，之前两者都写成离线可用会误导排障
+  if (c.error) label += ` · 在线更新失败，显示离线缓存（${c.error}）`;
+  else if (c.refreshing) label += " · 后台更新中";
+  else if (c.source === "stale") label += " · 待更新";
+  return label;
 }
 
 export const CHANNELS = [
@@ -31,7 +82,8 @@ export const CHANNELS = [
 export type ChannelKey = (typeof CHANNELS)[number]["key"];
 
 export const channelsApi = {
-  targets: () => invoke<ChannelTargets>("channel_targets"),
+  /** force=true 才同步回源；默认走本地缓存（过期先给旧数据 + 后台刷新） */
+  targets: (force = false) => invoke<ChannelTargets>("channel_targets", { force }),
   sendText: (channel: ChannelKey | string, target: string, text: string) =>
     invoke<any>("channel_send_text", { channel, target, text }),
   sendImage: (channel: ChannelKey | string, target: string, dataB64: string, filename?: string) =>

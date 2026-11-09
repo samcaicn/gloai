@@ -107,6 +107,38 @@ export interface AutoReplyConfig {
   think_max_sec: number;
   group_think_min_sec: number;
   group_think_max_sec: number;
+  /** 服务端写故障时是否回中性兜底话术（其它失败原因不回复） */
+  fallback_on_fault: boolean;
+  fallback_text: string;
+  /** 同一会话兜底回复最小间隔（秒） */
+  fallback_cooldown_sec: number;
+  /** 发送安全（仅微信 PC 通道）：每小时最多发起的发送次数，0=不限 */
+  hourly_send_budget: number;
+  /** 允许自动发送的本地时段 "HH:MM"，留空=不限 */
+  active_hours_start: string;
+  active_hours_end: string;
+  /** 连续回发失败达到该次数后急停微信通道，0=关闭 */
+  fail_streak_threshold: number;
+  /** 急停时长（秒） */
+  pause_sec: number;
+  /** 仅当目标会话已在微信前台时发送（不抢焦点、不切会话） */
+  require_foreground: boolean;
+}
+
+/** 微信通道发送安全的实时状态（状态条展示） */
+export interface AutoReplySafetyStatus {
+  paused: boolean;
+  paused_remaining_sec: number;
+  hourly_budget: number;
+  budget_used: number;
+  local_time: string;
+  active_hours: string;
+  within_active_hours: boolean;
+  fail_streak: number;
+  fail_streak_threshold: number;
+  pause_sec: number;
+  require_foreground: boolean;
+  last_reason: string;
 }
 
 export interface AutoReplyLog {
@@ -143,6 +175,21 @@ export interface AiGatewayStatus {
     ilink?: number;
     member?: number;
     mapped?: number;
+    /** 渠道总数 = 团员总数（每个私聊 / 群聊 / iLink 渠道各代表 1 个团员） */
+    total?: number;
+  };
+  /** 当前生效的「向团长发消息」action；后端目前只有 chat/send，PC 专用接口是预留开关、未部署 */
+  chat_action?: string;
+  /** 备用团员账号数（额度用尽时自动换团员 id 继续请求） */
+  member_pool?: number;
+  /** 本机「渠道 ↔ 团员」映射里的团员 id */
+  member_ids?: any[];
+  /** 服务端写故障熔断状态（读正常、写全挂，如 D1 当日写入配额打满） */
+  backend_fault?: {
+    active: boolean;
+    remaining_sec?: number;
+    reason?: string;
+    hint?: string;
   };
   hint: string;
 }
@@ -160,16 +207,22 @@ export interface AiGatewaySendResult {
 }
 
 export const aiGatewayApi = {
-  /** 登录身份 / 绑定团长 / AI 开关 / 今日配额 / 渠道对应关系 */
+  /** 登录态 / 角色(仅展示) / AI 开关 / 今日配额 / 渠道=团员 / 后端写故障 */
   status: () => invoke<AiGatewayStatus>("ai_gateway_status"),
+  /** 后端恢复后手动解除写故障熔断，立即放行下一次写请求 */
+  faultReset: () => invoke<any>("ai_gateway_fault_reset"),
   /** 统一入口：向团长发一条消息并拿 AI 回复；autoSend=true 按渠道原路回发 */
-  send: (text: string, channel?: string, target?: string, autoSend = false) =>
+  send: (text: string, channel?: string, target?: string, autoSend = false, memberId?: any) =>
     invoke<AiGatewaySendResult>("ai_gateway_send", {
       text,
       channel: channel ?? null,
       target: target ?? null,
       auto_send: autoSend,
+      member_id: memberId ?? null,
     }),
+  /** 取微信本地库最近一张图片做离线 OCR；inject=true 时把结果按图片消息注入自动回复管线 */
+  ocrTest: (peer?: string, inject = false) =>
+    invoke<any>("wxauto_ocr_test", { peer: peer ?? null, inject }),
   logs: (limit = 50) => invoke<AutoReplyLog[]>("ai_gateway_logs", { limit }),
 };
 
@@ -184,6 +237,10 @@ export const autoreplyApi = {
   setEnabled: (enabled: boolean) =>
     invoke<AutoReplyConfig>("autoreply_set_enabled", { enabled }),
   logs: (limit = 50) => invoke<AutoReplyLog[]>("autoreply_logs", { limit }),
+  /** 微信发送安全实时状态：急停 / 每小时预算 / 允许时段 / 最近拦截原因 */
+  safetyStatus: () => invoke<AutoReplySafetyStatus>("autoreply_safety_status"),
+  /** 人工确认微信恢复后解除急停并清零连败计数 */
+  safetyResume: () => invoke<AutoReplySafetyStatus>("autoreply_safety_resume"),
   /** AI 消息自测：send=false 仅检查链路（不消耗平台配额），send=true 实发一条测试问题 */
   selfTest: (question: string, send: boolean) =>
     invoke<AutoReplyTestResult>("autoreply_self_test", { question, send }),

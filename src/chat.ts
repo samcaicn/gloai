@@ -133,8 +133,40 @@ export function renderChat(container: HTMLElement) {
             <label class="switch"><input type="checkbox" id="rl-voice"/><span></span></label>
           </div>
           <div class="field" style="grid-column: 1 / -1">
+            <div class="field-label">后端故障兜底<span class="hint">服务端写接口暂不可用（如数据库当日写入配额打满）时，自动回一句中性话术，避免客户消息完全没人应；其它失败原因（配额、权限、人工接管）仍不回复</span></div>
+            <div class="ar-row" style="align-items:center;flex-wrap:wrap;gap:8px">
+              <label class="switch"><input type="checkbox" id="rl-fb-on"/><span></span></label>
+              <input id="rl-fb-text" class="input" style="flex:1;min-width:200px" placeholder="消息已收到，稍后回复您～"/>
+              <span class="hint">同一会话间隔</span>
+              <input id="rl-fb-cd" class="input" type="number" min="0" style="width:76px"/>
+              <span class="hint">秒</span>
+            </div>
+          </div>
+          <div class="field" style="grid-column: 1 / -1">
+            <div class="field-label">发送安全（仅微信 PC 通道）<span class="hint">只收敛行为特征，不做任何反检测；iLink 官方通道不受影响。出现「被要求重新登录」时建议保持默认</span></div>
+            <div class="ar-row" style="align-items:center;flex-wrap:wrap;gap:8px">
+              <label class="switch"><input type="checkbox" id="rl-sf-front"/><span></span></label>
+              <span class="hint">仅前台会话发送</span>
+              <span class="hint">每小时上限</span>
+              <input id="rl-sf-budget" class="input" type="number" min="0" max="200" style="width:70px"/>
+              <span class="hint">条（0=不限）</span>
+              <span class="hint">允许时段</span>
+              <input id="rl-sf-start" class="input" type="time" style="width:112px"/>
+              <span class="hint">—</span>
+              <input id="rl-sf-end" class="input" type="time" style="width:112px"/>
+            </div>
+            <div class="ar-row" style="align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px">
+              <span class="hint">连续回发失败</span>
+              <input id="rl-sf-streak" class="input" type="number" min="0" max="20" style="width:64px"/>
+              <span class="hint">次 → 急停微信通道</span>
+              <input id="rl-sf-pause" class="input" type="number" min="0" max="86400" style="width:88px"/>
+              <span class="hint">秒（0 次=关闭急停）</span>
+            </div>
+            <div class="hint" style="margin-top:6px">「仅前台会话发送」开启后：目标会话必须已经是微信当前前台会话，否则本条不回复（不抢焦点、不点侧栏切会话）。关闭会恢复每条消息自动置前 + 切换会话，行为特征明显。</div>
+          </div>
+          <div class="field" style="grid-column: 1 / -1">
             <div class="field-label">AI 身份<span class="hint">无需配置团员账号：多个微信私聊/群聊/iLink 渠道就是多个团员，消息都只向同一个团长发，由团长 AI 统一回复</span></div>
-            <div id="gw-status" class="ar-log">正在读取登录身份…</div>
+            <div id="gw-status" class="ar-log">正在读取网关状态…</div>
           </div>
         </div>
         <div class="btn-row">
@@ -145,15 +177,24 @@ export function renderChat(container: HTMLElement) {
 
       <section class="card">
         <div class="row-between">
-          <h2>AI 消息自测</h2>
-          <span class="hint">核心链路一键体检</span>
+          <h2>微信发送安全</h2>
+          <div class="btn-row" style="margin:0">
+            <button class="btn small" id="sf-refresh">刷新</button>
+            <button class="btn small" id="sf-resume">解除急停</button>
+          </div>
         </div>
-        <p class="card-desc">所有渠道消息（多群聊 / 私聊 / iLink）都汇聚成「向团长发消息」，由团长 AI 统一回复后原路分发。<b>发送测试问题</b>会真实调用团长 AI（消耗 1 条当日配额）；<b>仅检查链路</b>不消耗；<b>模拟客户消息</b>走完整规则管线（AI 回复只记日志、不外发微信/iLink）。</p>
+        <p class="card-desc">自动回复只做行为侧收敛：限制发送量、只在营业时段发、连续回发失败自动急停、只在目标会话已在前台时才发送。<b>不做任何反检测/绕过技术保护措施</b>；iLink 官方 Bot 通道不受这些限制。</p>
+        <div id="sf-status" class="ar-log">正在读取发送安全状态…</div>
+      </section>
+
+      <section class="card">
+        <div class="row-between">
+          <h2>AI 消息网关体检</h2>
+          <span class="hint">不向团长发送任何消息</span>
+        </div>
+        <p class="card-desc">所有渠道消息（多群聊 / 私聊 / iLink）都汇聚成「向团长发消息」，由团长 AI 统一回复后原路分发。下方<b>仅检查链路</b>只校验登录态 / AI 代聊开关 / 今日配额 / 渠道，<b>不会向团长 H5 会话发送任何消息</b>；要验证 AI 实际回复，请用另一个微信 / iLink 给本机渠道发一条真实消息即可。</p>
         <div class="ar-row">
-          <input id="st-q" class="input" style="flex:1" placeholder="测试问题，如：你好，在吗？"/>
           <button class="btn small" id="st-check">仅检查链路</button>
-          <button class="btn small primary" id="st-send">发送测试问题</button>
-          <button class="btn small" id="st-inject">模拟客户消息</button>
         </div>
         <div id="st-result" class="ar-log" style="margin-top:10px"></div>
       </section>
@@ -189,6 +230,34 @@ async function loadAll() {
   renderListenList();
   void loadLogs();
   void loadGatewayStatus();
+  void loadSafetyStatus();
+}
+
+// ---------------- 微信发送安全状态 ----------------
+
+async function loadSafetyStatus() {
+  const box = g("sf-status");
+  if (!box) return;
+  try {
+    const s = await autoreplyApi.safetyStatus();
+    const lines: string[] = [];
+    if (s.paused) {
+      lines.push(`<div class="ar-line warn"><span class="ar-t">!</span><b>微信通道已急停</b> · 剩余 ${s.paused_remaining_sec}s（连续 ${s.fail_streak_threshold} 次回发失败）· 先确认微信登录态，再点「解除急停」</div>`);
+    } else if (!s.within_active_hours) {
+      lines.push(`<div class="ar-line warn"><span class="ar-t">!</span><b>当前不在允许发送时段</b> · 本机 ${esc(s.local_time)}，允许 ${esc(s.active_hours)}，此时段微信消息不自动回复</div>`);
+    } else if (s.hourly_budget > 0 && s.budget_used >= s.hourly_budget) {
+      lines.push(`<div class="ar-line warn"><span class="ar-t">!</span><b>每小时发送预算已用尽</b> · ${s.budget_used}/${s.hourly_budget}，按 1 小时滑动窗口自动恢复</div>`);
+    } else {
+      lines.push(`<div class="ar-line info"><span class="ar-t">✓</span>微信通道可发送 · 本机 ${esc(s.local_time)}（允许 ${esc(s.active_hours)}）· 近 1 小时已发起 ${s.budget_used}/${s.hourly_budget || "不限"} 次发送 · 连败 ${s.fail_streak}/${s.fail_streak_threshold}</div>`);
+    }
+    lines.push(`<div class="ar-line info"><span class="ar-t">·</span>仅前台会话发送：<b>${s.require_foreground ? "开启" : "关闭"}</b> · ${s.require_foreground ? "不抢焦点、不切会话；目标会话不在前台时本条不回复" : "每条自动置前并切换会话，行为特征明显"}</div>`);
+    if (s.last_reason) {
+      lines.push(`<div class="ar-line warn"><span class="ar-t">i</span>最近一次拦截：${esc(s.last_reason)}</div>`);
+    }
+    box.innerHTML = lines.join("");
+  } catch (e: any) {
+    box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>读取失败：${esc(String(e?.message || e))}</div>`;
+  }
 }
 
 // ---------------- 回复规则 ----------------
@@ -215,6 +284,15 @@ function fillRules() {
   val("rl-rate-max", c.group_rate_max_replies ?? 10);
   val("rl-cd", c.cooldown_sec ?? 5);
   chk("rl-voice", c.reply_voice);
+  chk("rl-fb-on", c.fallback_on_fault ?? true);
+  val("rl-fb-text", c.fallback_text ?? "消息已收到，稍后回复您～");
+  val("rl-fb-cd", c.fallback_cooldown_sec ?? 600);
+  chk("rl-sf-front", c.require_foreground ?? true);
+  val("rl-sf-budget", c.hourly_send_budget ?? 30);
+  val("rl-sf-start", c.active_hours_start ?? "09:00");
+  val("rl-sf-end", c.active_hours_end ?? "22:00");
+  val("rl-sf-streak", c.fail_streak_threshold ?? 2);
+  val("rl-sf-pause", c.pause_sec ?? 1800);
 }
 
 async function saveRules() {
@@ -232,9 +310,19 @@ async function saveRules() {
     group_rate_max_replies: Math.max(0, parseInt((g("rl-rate-max") as HTMLInputElement).value || "10", 10) || 0),
     cooldown_sec: Math.max(1, parseInt((g("rl-cd") as HTMLInputElement).value || "5", 10) || 5),
     reply_voice: !!(g("rl-voice") as HTMLInputElement).checked,
+    fallback_on_fault: !!(g("rl-fb-on") as HTMLInputElement).checked,
+    fallback_text: (g("rl-fb-text") as HTMLInputElement).value.trim() || "消息已收到，稍后回复您～",
+    fallback_cooldown_sec: Math.max(0, parseInt((g("rl-fb-cd") as HTMLInputElement).value || "600", 10) || 0),
+    require_foreground: !!(g("rl-sf-front") as HTMLInputElement).checked,
+    hourly_send_budget: Math.max(0, parseInt((g("rl-sf-budget") as HTMLInputElement).value || "30", 10) || 0),
+    active_hours_start: (g("rl-sf-start") as HTMLInputElement).value || "",
+    active_hours_end: (g("rl-sf-end") as HTMLInputElement).value || "",
+    fail_streak_threshold: Math.max(0, parseInt((g("rl-sf-streak") as HTMLInputElement).value || "2", 10) || 0),
+    pause_sec: Math.max(0, parseInt((g("rl-sf-pause") as HTMLInputElement).value || "1800", 10) || 0),
   };
   try {
     state.cfg = await autoreplyApi.setConfig(value);
+    void loadSafetyStatus();
     toast("回复规则已保存");
   } catch (e: any) {
     toast("保存失败：" + (e?.message || e), false);
@@ -343,12 +431,19 @@ async function loadGatewayStatus() {
   try {
     const s = await aiGatewayApi.status();
     const c = s.channels || {};
-    const roleTxt = s.role === "member" ? "团员（向团长发消息）" : s.role === "leader" ? "团长" : s.role || "未知";
-    const leaderName = s.leader?.name || "—";
+    // role 只是登录账号的角色，不参与可用性判定：PC 端登录团长账号是正常态。
+    const roleTxt = s.role === "leader" ? "团长账号登录" : s.role === "member" ? "团员账号登录" : s.role === "deputy" ? "团副账号登录" : "已登录";
+    const leaderName = s.leader?.name || "";
     const left = s.quota?.left;
+    const total = c.total ?? (c.wx_private ?? 0) + (c.wx_group ?? 0) + (c.ilink ?? 0);
+    const bf = s.backend_fault;
+    const faultLine = bf?.active
+      ? `<div class="ar-line warn"><span class="ar-t">!</span><b>后端写入故障</b> · ${esc(bf.hint || "服务端写接口暂不可用")} <button class="btn small" id="gw-fault-reset" style="margin-left:8px">立即重试</button></div>`
+      : "";
     box.innerHTML = [
-      `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">${s.ok ? "✓" : "✕"}</span><b>${esc(roleTxt)}</b> · 绑定团长「${esc(leaderName)}」${s.ai_enabled === false ? " · AI 代聊未开启" : ""}${left !== undefined ? ` · 今日剩余 ${left} 条` : ""}</div>`,
-      `<div class="ar-line info"><span class="ar-t">·</span>渠道对应关系：微信私聊 ${c.wx_private ?? 0} · 群聊 ${c.wx_group ?? 0} · iLink ${c.ilink ?? 0} · 团员 ${c.member ?? 0}（已绑定 ${c.mapped ?? 0}）</div>`,
+      faultLine,
+      `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">${s.ok ? "✓" : "✕"}</span><b>${esc(roleTxt)}</b>${leaderName ? ` · 团长「${esc(leaderName)}」` : ""}${s.ai_enabled === false ? " · AI 代聊未开启" : ""}${left !== undefined ? (left === 0 ? " · 今日额度 0（将自动换备用团员；彻底不限额请调高后台条数）" : ` · 今日剩余 ${left} 条`) : ""}</div>`,
+      `<div class="ar-line info"><span class="ar-t">·</span>渠道 = 团员：共 ${total} 个（每个微信私聊 / 群聊 / iLink 各是 1 个团员）｜私聊 ${c.wx_private ?? 0} · 群聊 ${c.wx_group ?? 0} · iLink ${c.ilink ?? 0}（已绑定映射 ${c.mapped ?? 0}）｜聊天接口 ${esc(s.chat_action || "chat/send")}</div>`,
       `<div class="ar-line ${s.ok ? "info" : "warn"}"><span class="ar-t">i</span>${esc(s.hint || "")}</div>`,
     ].join("");
   } catch (e: any) {
@@ -371,32 +466,15 @@ function renderTestResult(r: AutoReplyTestResult) {
     (r.reply ? `<div class="ar-line info"><span class="ar-t">AI</span>${esc(r.reply)}</div>` : "");
 }
 
-async function runSelfTest(send: boolean) {
-  const q = ((g("st-q") as HTMLInputElement | null)?.value || "").trim();
+async function runSelfTest() {
   const box = g("st-result");
-  if (box) box.innerHTML = `<div class="ar-line info"><span class="ar-t">…</span>${send ? "正在发送测试问题并等待 AI 回复（最长约 20s）" : "正在检查链路…"}</div>`;
+  if (box) box.innerHTML = `<div class="ar-line info"><span class="ar-t">…</span>正在检查链路（不向团长发送消息）…</div>`;
   try {
-    const r = await autoreplyApi.selfTest(q, send);
+    const r = await autoreplyApi.selfTest("", false);
     renderTestResult(r);
-    if (r.ok && send && r.reply) toast("AI 已回复：" + (r.reply.length > 24 ? r.reply.slice(0, 24) + "…" : r.reply));
-    else if (r.ok) toast("链路检查通过");
+    if (r.ok) toast("链路检查通过");
   } catch (e: any) {
     if (box) box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>自测失败：${esc(String(e?.message || e))}</div>`;
-  }
-}
-
-async function runInject() {
-  const q = ((g("st-q") as HTMLInputElement | null)?.value || "").trim() || "你好，在吗？";
-  const box = g("st-result");
-  if (box) box.innerHTML = `<div class="ar-line info"><span class="ar-t">…</span>正在把「${esc(q)}」当客户消息走完整管线（过滤→AI→日志，不外发）…</div>`;
-  try {
-    const r = await autoreplyApi.inject(q);
-    if (box)
-      box.innerHTML = r.reply
-        ? `<div class="ar-line info"><span class="ar-t">✓</span>完整管线通过，AI 回复（${r.reply.length} 字，已记入日志、未外发）：</div><div class="ar-line info"><span class="ar-t">AI</span>${esc(r.reply)}</div>`
-        : `<div class="ar-line warn"><span class="ar-t">✕</span>管线已执行但没有 AI 回复（详见 AI 回复日志）</div>`;
-  } catch (e: any) {
-    if (box) box.innerHTML = `<div class="ar-line warn"><span class="ar-t">✕</span>注入失败：${esc(String(e?.message || e))}<br/>详见 AI 回复日志（常见：登录态过期 / 消息被规则过滤 / 冷却）</div>`;
   }
 }
 
@@ -454,7 +532,26 @@ function wire() {
   g("listen-save")?.addEventListener("click", saveListenList);
   g("rl-save")?.addEventListener("click", saveRules);
   g("gw-refresh")?.addEventListener("click", () => void loadGatewayStatus());
-  g("st-check")?.addEventListener("click", () => void runSelfTest(false));
-  g("st-send")?.addEventListener("click", () => void runSelfTest(true));
-  g("st-inject")?.addEventListener("click", () => void runInject());
+  g("sf-refresh")?.addEventListener("click", () => void loadSafetyStatus());
+  g("sf-resume")?.addEventListener("click", async () => {
+    try {
+      await autoreplyApi.safetyResume();
+      toast("已解除微信通道急停");
+      await loadSafetyStatus();
+    } catch (e: any) {
+      toast("解除失败：" + (e?.message || e), false);
+    }
+  });
+  g("st-check")?.addEventListener("click", () => void runSelfTest());
+  // 「立即重试」按钮是状态区动态渲染的，用事件委托绑定一次
+  g("gw-status")?.addEventListener("click", async (ev) => {
+    if (!(ev.target as HTMLElement)?.closest("#gw-fault-reset")) return;
+    try {
+      await aiGatewayApi.faultReset();
+      toast("已解除熔断，下一次写请求将立即发出");
+      await loadGatewayStatus();
+    } catch (e: any) {
+      toast("解除失败：" + (e?.message || e), false);
+    }
+  });
 }

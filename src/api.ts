@@ -38,4 +38,13 @@ export const api = {
   // 团员 iLink 二维码：成员 ↔ 机器人账号映射（hub 持久化）
   memberqrGetMap: () => invoke<Record<string, string>>("memberqr_get_map"),
   memberqrSetMap: (map: Record<string, string>) => invoke("memberqr_set_map", { map }),
+
+  // 团员 ↔ 微信私聊/群聊 配对（每个微信会话 = 1 个团员）
+  wechatPairingGet: () => invoke<Record<string, any>>("wechat_pairing_get"),
+  wechatPairingSet: (map: Record<string, any>) => invoke("wechat_pairing_set", { map }),
+
+  // 团员名册：本地缓存 + 并发回源（groups / by_group / members / cache）
+  memberRoster: (force = false) => invoke<any>("member_roster", { force }),
+  rosterCacheStatus: () => invoke<any>("roster_cache_status"),
+  rosterCacheClear: () => invoke<any>("roster_cache_clear"),
 };

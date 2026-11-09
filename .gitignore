@@ -11,8 +11,12 @@ tools/build_keys.json
 # CI 诊断文件（失败时由 CI 提交回分支，本地忽略）
 ci-diag.txt
 selftest/
-selftest/
 bin/
+
+# 本地构建/诊断产物（不入库）
+target_check/
+@AutomationLog.txt
+*.tmp
 
 # Python 运行时缓存（不应入库）
 __pycache__/

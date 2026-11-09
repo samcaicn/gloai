@@ -17,14 +17,22 @@
 //!     和消息标记，不用于选择 AI 身份。
 //!   * `sessionId` 实测可选（不带也能触发 AI），能取到就带上，取不到就裸发。
 //!
-//! ## 身份自适应
-//!   * 当前登录 = 团员（role=member，sessionList 返回 leader/session）→ 直接可用。
-//!   * 当前登录 = 团长（sessionList 返回 list）→ 平台拒绝 chat/send「无权限」；
-//!     若旧版配置里还留着团员账号则静默兜底一次，否则给出可操作的明确提示。
+//! ## 身份模型（2026-11-07 用户纠正「这个理解是错的」，别再理解反了）
+//!   * **PC 端登录的就是团长账号**（首页登录 → 拉团员名册 / 订单 / 配置 AI 人设，
+//!     memberqr.ts / orderspage.ts 都依赖它）。这是正常且唯一预期的登录态，
+//!     **绝不能**因为 role=leader 就报错，更不能要求「改用团员账号登录 PC 端」。
+//!   * **每个微信私聊 / 群聊 / iLink 渠道 = 1 个团员**。发信主体是渠道对应的团员，
+//!     不是登录账号；登录账号只提供平台登录态。所有渠道的消息统一「向团长发消息」，
+//!     由团长 AI 回复后按「哪个渠道来的就回哪个渠道」原路分发。
+//!     所以不存在「团长账号无法向自己发消息」这回事。
+//!   * 因此**不做任何 role=leader 身份预检硬报错**，也不要求/填写任何团员账号信息
+//!     （手机号/密码）。状态与自检只看：登录态、AI 代聊开关、今日配额。
 //!   * token 过期 / 未登录 → 用 config.json 持久化的账号密码自动重登一次。
+//!   * 兼容：极旧版本配置若残留团员账号，仅在平台明确返回「无权限」时静默尝试一次，
+//!     不暴露给用户、不作为前置要求。
 //!
 //! ## 对外接口（Tauri commands，见 commands.rs）
-//!   * `ai_gateway_status`  登录身份 / 绑定团长 / 配额 / 渠道对应关系 / 提示
+//!   * `ai_gateway_status`  登录态 / 角色(仅展示) / 配额 / 渠道=团员 / 提示
 //!   * `ai_gateway_send`    多渠道统一入口：向团长发消息 → AI 回复 →（可选）原路回发
 //!   * `ai_gateway_logs`    网关日志
 
@@ -37,6 +45,126 @@ use tauri::{AppHandle, Emitter, Manager};
 const SESSION_TTL_MS: i64 = 10 * 60 * 1000;
 const IDENTITY_TTL_MS: i64 = 60 * 1000;
 const LOG_MAX: usize = 200;
+
+/// 「向团长发消息」默认 action。2026-11-07 线上实测：
+///   * 团员登录态：`chat/send` → status:true + `data.autoReply`（AI 回复）、`auto:true`、`quotaLeft` 递减。
+///   * 团长登录态：`chat/send` → 「无权限」。
+///   * 全量探测 47 个候选：`pc/*` 只有 `pc/create` / `pc/poll`（扫码登录）存在，
+///     **后端目前没有 PC 专用聊天接口**，也不存在「PC 通道天然跳过配额」的代码路径。
+/// 因此 PC 通道不受条数限制只能在团长侧配额配置 / 备用团员账号池上落地；
+/// `ai_gateway.pc_chat_action`（或顶层 `pc_chat_action`）作为未来后端上线专用 action
+/// 时的开关保留，未部署时会自动回退 `chat/send`，不丢客户消息。
+const DEFAULT_CHAT_ACTION: &str = "chat/send";
+
+/// 读取当前生效的聊天 action（配置覆盖优先，缺省回默认值）。
+fn chat_action(app: &AppHandle) -> String {
+    if let Some(state) = app.try_state::<AppState>() {
+        let g = state.config.lock().unwrap();
+        let configured = g
+            .get("ai_gateway")
+            .and_then(|v| v.get("pc_chat_action"))
+            .or_else(|| g.get("pc_chat_action"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.trim().to_string())
+            .unwrap_or_default();
+        if !configured.is_empty() {
+            return configured;
+        }
+    }
+    DEFAULT_CHAT_ACTION.to_string()
+}
+
+/// 备用团员账号池（可选）。config.json：
+///   "ai_gateway": { "member_accounts": [ {"id":5,"telephone":"138...","password":"..."}, "138...:pwd" ] }
+/// 每个微信私聊/群聊/iLink 渠道各是 1 个团员，平台配额按团员账号计。某个团员今日
+/// 额度用尽时自动登录下一个团员继续「向团长发消息」（用户「换个团员 id 继续请求」）。
+/// 未配置时仍可用下面的 member_ids() 按渠道 id 轮换请求参数。
+fn member_accounts(app: &AppHandle) -> Vec<(Value, String, String)> {
+    let Some(state) = app.try_state::<AppState>() else { return Vec::new() };
+    let g = state.config.lock().unwrap();
+    let mut out: Vec<(Value, String, String)> = Vec::new();
+    if let Some(arr) = g
+        .get("ai_gateway")
+        .and_then(|a| a.get("member_accounts"))
+        .and_then(|v| v.as_array())
+    {
+        for (i, v) in arr.iter().enumerate() {
+            let (id, tel, pwd) = match v {
+                Value::String(s) => {
+                    let mut p = s.splitn(2, ':');
+                    (json!(i + 1), p.next().unwrap_or("").trim().to_string(), p.next().unwrap_or("").to_string())
+                }
+                Value::Object(_) => (
+                    v.get("id").cloned().unwrap_or_else(|| json!(i + 1)),
+                    v.get("telephone").and_then(|x| x.as_str()).unwrap_or("").trim().to_string(),
+                    v.get("password").and_then(|x| x.as_str()).unwrap_or("").to_string(),
+                ),
+                _ => continue,
+            };
+            if !tel.is_empty() && !pwd.is_empty() {
+                out.push((id, tel, pwd));
+            }
+        }
+    }
+    // 兼容 0.2.x 残留的单团员配置（不作为前置要求）
+    if out.is_empty() {
+        let ar = g.get("autoreply").cloned().unwrap_or(json!({}));
+        let tel = ar.get("member_telephone").and_then(|x| x.as_str()).unwrap_or("").trim().to_string();
+        let pwd = ar.get("member_password").and_then(|x| x.as_str()).unwrap_or("").to_string();
+        if !tel.is_empty() && !pwd.is_empty() && !pwd.starts_with("__test") {
+            out.push((json!(1), tel, pwd));
+        }
+    }
+    out
+}
+
+/// 本机「渠道 ↔ 团员」映射里出现过的团员 id（memberqr.map 的 key / 选中团员），
+/// 用于 PC 专用接口或后端支持 memberId 时按渠道指定团员身份。
+fn member_ids(app: &AppHandle) -> Vec<Value> {
+    let Some(state) = app.try_state::<AppState>() else { return Vec::new() };
+    let g = state.config.lock().unwrap();
+    let mut out: Vec<Value> = Vec::new();
+    if let Some(m) = g.get("memberqr").and_then(|m| m.get("map")).and_then(|m| m.as_object()) {
+        for k in m.keys() {
+            let v = k.parse::<i64>().map(|n| json!(n)).unwrap_or_else(|_| json!(k.clone()));
+            if !out.contains(&v) { out.push(v); }
+        }
+    }
+    if let Some(s) = g.get("channel_settings").and_then(|c| c.get("selected")).and_then(|s| s.get("member")) {
+        let v = match s { Value::Null => None, _ => Some(s.clone()) };
+        if let Some(v) = v {
+            let t = v.as_str().map(|x| x.to_string()).unwrap_or_else(|| v.to_string());
+            if !t.is_empty() && t != "null" {
+                let n = t.parse::<i64>().map(|i| json!(i)).unwrap_or_else(|_| json!(t));
+                if !out.contains(&n) { out.push(n); }
+            }
+        }
+    }
+    // 没绑定映射时，按监听渠道序号生成 id，保证「换团员 id」仍能发起不同身份的请求
+    if out.is_empty() {
+        let n = g.get("autoreply").and_then(|a| a.get("listen_list")).and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0);
+        for i in 1..=n.max(1).min(8) { out.push(json!(i as i64)); }
+    }
+    out
+}
+
+/// 从一次平台响应里解析 AI 回复（兼容 autoReply 为对象或字符串）
+fn parse_reply(result: &Value) -> Option<AiAnswer> {
+    if result.get("status").and_then(|s| s.as_bool()) != Some(true) { return None }
+    let data = result.get("data").cloned().unwrap_or(json!(null));
+    let reply = match data.get("autoReply") {
+        Some(Value::String(s)) => s.clone(),
+        Some(v) => v.get("content").and_then(|c| c.as_str()).unwrap_or("").to_string(),
+        _ => String::new(),
+    };
+    if reply.trim().is_empty() { return None }
+    Some(AiAnswer {
+        reply,
+        session_id: extract_session_id(&data),
+        quota_left: data.get("quotaLeft").and_then(|v| v.as_i64()),
+        auto: data.get("auto").and_then(|v| v.as_bool()).unwrap_or(false),
+    })
+}
 
 fn now_ms() -> i64 {
     std::time::SystemTime::now()
@@ -54,7 +182,7 @@ pub struct AiAnswer {
     pub auto: bool,
 }
 
-/// 登录身份快照
+/// 登录账号角色快照（仅展示用）
 #[derive(Debug, Clone, Default)]
 pub struct Identity {
     pub role: String,
@@ -101,6 +229,27 @@ fn log(app: &AppHandle, level: &str, msg: &str, extra: Value) {
         }
     }
     let _ = app.emit("ai-gateway-event", &entry);
+    // 网关是最容易「静默失败」的一层（autoReply 为空 / 无权限 / 配额用尽）。
+    // 以前只存内存环形缓冲，应用一重启日志全丢，事后「查日志」只剩微信与
+    // 管线两层，无法还原原因。这里同步落盘到 logs/ai_gateway.log。
+    if let Ok(dir) = app.path().app_data_dir() {
+        let log_dir = dir.join("logs");
+        let _ = std::fs::create_dir_all(&log_dir);
+        let line = format!(
+            "[{}] {} {}\n",
+            crate::autoreply::fmt_ts(now_ms()),
+            level,
+            msg
+        );
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_dir.join("ai_gateway.log"))
+        {
+            use std::io::Write;
+            let _ = f.write_all(line.as_bytes());
+        }
+    }
 }
 
 /// 从 sessionList / chat/send 的 data 里取 sessionId。
@@ -138,7 +287,8 @@ pub fn extract_session_id(data: &Value) -> Option<Value> {
 }
 
 /// 当前登录连接（内存 token 优先；无 token 用持久化账号密码自动重登）
-async fn connection(app: &AppHandle) -> Result<BbtConnection, String> {
+/// pub(crate)：payment_verify 等模块需要拿同一个团长连接去查 leader/orders。
+pub(crate) async fn connection(app: &AppHandle) -> Result<BbtConnection, String> {
     let state = app.try_state::<AppState>().ok_or("AppState 未初始化")?;
     let c = state.conn.lock().unwrap().clone();
     if c.base_url.trim().is_empty() {
@@ -204,7 +354,8 @@ async fn session_of(app: &AppHandle, conn: &BbtConnection) -> Option<Value> {
     Some(sid)
 }
 
-/// 探测登录身份（缓存 1 分钟）。团员视角能拿到 leader + session + aiEnabled。
+/// 探测登录账号角色（缓存 1 分钟，仅用于展示，不参与可用性判定）。
+/// 团员视角能拿到 leader + session + aiEnabled；团长视角 sessionList 返回 list（每个团员一个会话）。
 pub async fn identity(app: &AppHandle, refresh: bool) -> Result<Identity, String> {
     if !refresh {
         if let Some(st) = app.try_state::<Arc<AiGatewayState>>() {
@@ -223,10 +374,24 @@ pub async fn identity(app: &AppHandle, refresh: bool) -> Result<Identity, String
     if role.is_empty() {
         role = if d.get("list").is_some() { "leader" } else { "unknown" }.into();
     }
+    // 线上 sessionList 的 leader.aiEnabled 是数字 1/0（不是 bool），需兼容两种；
+    // 早期只认 bool 会解析成 None，导致状态条误显示「AI 代聊状态未知」。
+    let parse_flag = |v: &Value| -> Option<bool> {
+        match v {
+            Value::Bool(b) => Some(*b),
+            Value::Number(n) => n.as_i64().map(|i| i != 0),
+            Value::String(s) => match s.trim() {
+                "1" | "true" | "on" => Some(true),
+                "0" | "false" | "off" | "" => Some(false),
+                _ => None,
+            },
+            _ => None,
+        }
+    };
     let ai_enabled = leader
         .get("aiEnabled")
-        .and_then(|v| v.as_bool())
-        .or_else(|| d.get("aiEnabled").and_then(|v| v.as_bool()));
+        .and_then(parse_flag)
+        .or_else(|| d.get("aiEnabled").and_then(parse_flag));
     let session_id = extract_session_id(&d);
     if let Some(s) = &session_id {
         if let Some(st) = app.try_state::<Arc<AiGatewayState>>() {
@@ -273,51 +438,80 @@ fn local_channels(app: &AppHandle) -> Value {
         .try_state::<Arc<crate::ilink_session::SessionManager>>()
         .map(|m| m.list_accounts().len())
         .unwrap_or(0);
+    // total = 渠道总数 = 团员总数（每个私聊 / 群聊 / iLink 渠道各代表 1 个团员）
     json!({
         "wx_private": wx_private,
         "wx_group": wx_group,
         "ilink": ilink,
         "member": mapped,
-        "mapped": mapped
+        "mapped": mapped,
+        "total": wx_private + wx_group + ilink
     })
 }
 
 /// 网关状态（前端互动页 / 聊天配置页展示）
 pub async fn status(app: &AppHandle) -> Value {
+    // 服务端写故障是「登录态/配额都正常，但发消息必失败」的特殊态：
+    // 只用 identity（读接口）判断会误报一切正常，必须单独暴露给前端。
+    let fault = bbt::fault_status();
+    let fault_active = fault.get("active").and_then(|v| v.as_bool()).unwrap_or(false);
     let id = match identity(app, true).await {
         Ok(v) => v,
         Err(e) => {
             return json!({
                 "ok": false, "logged_in": false, "role": "", "leader": null,
                 "ai_enabled": null, "session_id": null, "quota": null,
-                "channels": {}, "hint": e
+                "channels": {}, "hint": e, "backend_fault": fault
             });
         }
     };
     let leader_name = id.leader.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let left = id.quota.get("left").and_then(|v| v.as_i64());
-    let (hint, ok) = match id.role.as_str() {
-        "member" => {
-            if id.ai_enabled == Some(false) {
-                ("当前登录为团员，但团长尚未开启 AI 代聊（后台「自动回复设置」里开启）".to_string(), false)
-            } else if left == Some(0) {
-                ("今日 AI 回复配额已用尽（每团员每日限额由团长设定，可在后台调高）".to_string(), false)
-            } else {
-                (format!(
-                    "已绑定团长「{}」：所有微信私聊 / 群聊 / iLink 渠道的消息都会发往团长，由团长的 AI 统一回复后原路返回",
-                    if leader_name.is_empty() { "—" } else { &leader_name }
-                ), true)
-            }
-        }
-        "leader" => (
-            "当前登录的是团长账号。AI 代聊是「团员 → 团长」方向，团长账号无法向自己发消息；请用已绑定团长的团员账号登录 PC 端".into(),
-            false,
-        ),
-        _ => ("无法确定登录身份，请确认账号已归属某个团长".into(), false),
-    };
-    // 渠道对应关系 = PC 端本地配置界面里配好的映射（不依赖平台 leader/* 接口：
-    // 团员登录态下那些接口全部「无权限」，且对应关系本来就与身份无关）。
+
+    // 关键：role **只用于文案描述，绝不作为可用性判定**。
+    // PC 端登录团长账号是正常态（名册 / 订单 / AI 人设都靠它）；每个微信私聊 / 群聊 /
+    // iLink 渠道各自代表 1 个团员，发信主体是渠道而不是登录账号。
+    // 因此历史那种「role=leader → 报错要求换团员账号登录」的判定是错误理解，已删除。
     let channels = local_channels(app);
+    let total = channels.get("total").and_then(|v| v.as_i64()).unwrap_or(0);
+    let role_desc = match id.role.as_str() {
+        "leader" => "团长账号登录",
+        "member" => "团员账号登录",
+        "deputy" => "团副账号登录",
+        _ => "已登录",
+    };
+    let leader_label = if leader_name.is_empty() {
+        "本团团长".to_string()
+    } else {
+        leader_name.clone()
+    };
+    let (hint, ok) = if fault_active {
+        (
+            format!(
+                "{}｜期间客户消息由本机兜底话术回复（可在「回复规则」关闭），AI 回复暂不可用；后端恢复后点「立即重试」可马上解除熔断",
+                fault.get("hint").and_then(|v| v.as_str()).unwrap_or("服务端写接口暂不可用")
+            ),
+            false,
+        )
+    } else if id.ai_enabled == Some(false) {
+        ("团长后台尚未开启 AI 代聊：请在「自动回复设置」里开启".to_string(), false)
+    } else if left == Some(0) {
+        // 用户 2026-11-07：「团员的 10 条限制到了，换个团员 / PC 通道不要限制」。
+        // 配额 0 不再判为不可用：ask_leader 会自动登录备用团员账号继续请求。
+        // 后端目前没有 PC 专用聊天接口，所以同时提示在团长后台调高每日条数才是一劳永逸。
+        (format!(
+            "当前团员今日 AI 配额已用尽；将自动换备用团员继续请求（{} 个备用账号）。要彻底不限额，请在团长后台「自动回复设置」把「每人每日免费条数」调高",
+            member_accounts(app).len()
+        ), true)
+    } else {
+        (
+            format!(
+                "{}（正常）· 共 {} 个渠道 = {} 个团员：每个微信私聊 / 群聊 / iLink 各是 1 个团员，消息统一发往团长「{}」，由团长 AI 回复后原路分发",
+                role_desc, total, total, leader_label
+            ),
+            true,
+        )
+    };
     json!({
         "ok": ok,
         "logged_in": true,
@@ -327,12 +521,17 @@ pub async fn status(app: &AppHandle) -> Value {
         "session_id": id.session_id,
         "quota": id.quota,
         "channels": channels,
+        "chat_action": chat_action(app),
+        "member_pool": member_accounts(app).len(),
+        "member_ids": member_ids(app),
+        "backend_fault": fault,
         "hint": hint
     })
 }
 
-/// 静默兜底：旧版配置里若还留着团员账号（0.2.x 的 member_telephone/password），
-/// 且当前登录是团长身份时，用它登录一次再发。新版本 UI 不再暴露、也不要求填写。
+/// 兼容兜底：极旧版本配置里可能残留团员账号（0.2.x 的 member_telephone/password）。
+/// 仅在平台明确返回「无权限」时静默尝试一次；新版本 UI 不暴露、不要求填写，
+/// 也不是前置条件 —— PC 端登录团长账号本来就是正常态。
 async fn legacy_member_conn(app: &AppHandle) -> Option<BbtConnection> {
     let state = app.try_state::<AppState>()?;
     let (base, tel, pwd) = {
@@ -355,28 +554,165 @@ async fn legacy_member_conn(app: &AppHandle) -> Option<BbtConnection> {
     Some(fresh)
 }
 
+/// 当前团员额度用尽时，**换一个团员继续请求**。
+/// 用户 2026-11-07：「团员的 10 条限制到了，换个团员」。平台配额按团员账号计
+/// （bbt_chat_daily.memberId），所以换账号即换额度；配额 0 不再是终点：
+///   ① 配置了 `ai_gateway.member_accounts` → 依次登录下一个团员，用其登录态再发
+///      （平台配额是按团员账号计的，换账号即换额度）；
+///   ② 未配置账号池 → 用当前登录态按「渠道 ↔ 团员」映射轮换 memberId 再发
+///      （后端 PC 专用接口支持 memberId 时即可生效）；
+///   ③ 仍无回复 → 明确报出已尝试的团员 id，便于继续排障。
+async fn rotate_member_retry(
+    app: &AppHandle,
+    text: &str,
+    route: &str,
+    action: &str,
+    conn: &BbtConnection,
+) -> Result<AiAnswer, String> {
+    let mut tried: Vec<String> = Vec::new();
+    // ① 备用团员账号池
+    for (id, tel, pwd) in member_accounts(app) {
+        let c = BbtConnection {
+            base_url: conn.base_url.clone(),
+            token: None,
+            telephone: Some(tel.clone()),
+            password: Some(pwd.clone()),
+        };
+        let (token, _) = match bbt::login(&c, &tel, &pwd).await {
+            Ok(v) => v,
+            Err(e) => { tried.push(format!("{}（登录失败 {}）", id, e)); continue }
+        };
+        let mut fresh = c.clone();
+        fresh.token = Some(token);
+        // 先查额度再发：chat/send 即使被配额拦下也会往团长会话写一条消息，
+        // 不能为了「换团员」把会话刷满测试消息。
+        let left = bbt::call(&fresh, "chat/quota", &json!({}))
+            .await
+            .ok()
+            .and_then(|r| bbt::data_of(&r).ok())
+            .and_then(|d| d.get("left").and_then(|v| v.as_i64()));
+        if left == Some(0) {
+            tried.push(format!("{}（额度 0）", id));
+            continue;
+        }
+        let cond = json!({ "content": text, "memberId": id });
+        if let Ok(r) = bbt::call(&fresh, action, &cond).await {
+            if let Some(ans) = parse_reply(&r) {
+                log(app, "info", &format!("[{}] 当前账号额度用尽，换团员 {} 继续请求 → AI 回复 {} 字",
+                    route, id, ans.reply.chars().count()), json!({ "route": route, "member_id": id, "reply": ans.reply }));
+                return Ok(ans);
+            }
+        }
+        tried.push(id.to_string());
+        if tried.len() >= 6 { break }
+    }
+    // ② 按渠道团员 id 轮换：只在配置了 PC 专用接口时做。
+    // 官方 chat/send 服务端按 token 固定 sessionId，忽略 memberId，盲重试只会
+    // 往团长会话写重复消息；PC 专用接口（不受条数限制）才需要按团员 id 路由。
+    if action != DEFAULT_CHAT_ACTION {
+        for id in member_ids(app).into_iter().take(3) {
+            let mut cond = json!({ "content": text, "memberId": id });
+            if let Some(sid) = session_of(app, conn).await { cond["sessionId"] = sid; }
+            if let Ok(r) = bbt::call(conn, action, &cond).await {
+                if let Some(ans) = parse_reply(&r) {
+                    log(app, "info", &format!("[{}] 换团员 id={} 继续请求 → AI 回复 {} 字",
+                        route, id, ans.reply.chars().count()), json!({ "route": route, "member_id": id }));
+                    return Ok(ans);
+                }
+            }
+            tried.push(id.to_string());
+        }
+    }
+    Err(format!(
+        "已换 {} 个团员继续请求仍未拿到 AI 回复（{}）：请等次日配额重置、在团长后台调高「每人每日免费条数」，或在 config.json 的 ai_gateway.member_accounts 补充还有额度的备用团员账号",
+        tried.len(), tried.join("/")
+    ))
+}
+
 /// 核心：**所有渠道消息统一「向团长发消息」，拿团长 AI 回复**。
-/// `route` 仅作日志标记（如 "wx|凯哥" / "ilink|bot_xxx"），不影响身份选择。
+/// `route` 仅作日志标记（如 "wx|凯哥" / "ilink|bot_xxx"）；`member_id` 可选，
+/// 用于按渠道指定团员身份（PC 专用接口 / 换团员 id 继续请求）。
 pub async fn ask_leader(app: &AppHandle, text: &str, route: &str) -> Result<AiAnswer, String> {
+    ask_leader_ex(app, text, route, None).await
+}
+
+pub async fn ask_leader_ex(
+    app: &AppHandle,
+    text: &str,
+    route: &str,
+    member_id: Option<Value>,
+) -> Result<AiAnswer, String> {
     let text = text.trim();
     if text.is_empty() {
         return Err("消息内容为空".into());
     }
+    // 熔断期内连读接口都不打，直接快速失败：写接口注定不可用，AI 回复必然拿不到，
+    // 提前走自动回复的兜底话术，客户不用白等一整个生成超时。
+    // 注意：图片支付校验是本地确定性逻辑（只读订单），不受此限制，故障期间仍可正常核验。
+    let fs = bbt::fault_status();
+    if fs.get("active").and_then(|v| v.as_bool()) == Some(true) {
+        return Err(format!(
+            "{}（熔断中，{} 秒后自动重试）：{}｜服务端写接口暂不可用，本次未向团长发消息",
+            bbt::FAULT_TAG,
+            fs.get("remaining_sec").and_then(|v| v.as_i64()).unwrap_or(0),
+            fs.get("reason").and_then(|v| v.as_str()).unwrap_or("服务器繁忙")
+        ));
+    }
     let mut conn = connection(app).await?;
+    // 后端为 PC 端专开的聊天接口名可配置；缺省仍是官方团员侧 chat/send。
+    let action = chat_action(app);
+    log(app, "debug", &format!("向团长发消息 action={}", action), json!({ "route": route }));
 
     let mut cond = json!({ "content": text });
     if let Some(sid) = session_of(app, &conn).await {
         cond["sessionId"] = sid;
     }
+    // 每个渠道 = 1 个团员：显式指定团员 id 时带上，供 PC 专用接口 / 后端按团员路由。
+    if let Some(mid) = &member_id {
+        cond["memberId"] = mid.clone();
+    }
 
-    // chat/send：网络抖动（国内出口到 pages.dev）自动重试一次，避免客户消息丢失
-    let mut result = bbt::call(&conn, "chat/send", &cond).await;
-    if let Err(e) = &result {
-        if e.contains("网络错误") || e.contains("timed out") || e.contains("timeout") {
-            log(app, "info", &format!("网络抖动，重试一次：{}", e), json!({ "route": route }));
-            tokio::time::sleep(std::time::Duration::from_millis(800)).await;
-            result = bbt::call(&conn, "chat/send", &cond).await;
+    // AI 生成类请求走长超时（见 bbt::needs_long_timeout，现 120s）；后端尾延迟实测
+    // 偶发 >60s。生成排队 / 网络抖动导致的超时，先用**同一登录态重发**（最多 2 次），
+    // 不触发重登（重登反而更慢、且可能把同一句话重复写进团长会话）。2026-11-08 十轮
+    // 自测证实：第一轮超时后立刻重发，第二轮往往在数秒内被服务端正常响应。
+    let mut result = bbt::call(&conn, &action, &cond).await;
+    for attempt in 1..=2 {
+        let is_transient = result
+            .as_ref()
+            .err()
+            .map(|e| {
+                // 服务端写故障是确定性失败，重发只会重复打已经打满的数据库；
+                // 只有网络抖动/超时才值得重发。
+                !e.contains(bbt::FAULT_TAG)
+                    && (e.contains("网络错误") || e.contains("timed out") || e.contains("timeout"))
+            })
+            .unwrap_or(false);
+        if !is_transient {
+            break;
         }
+        log(
+            app,
+            "info",
+            &format!("网络抖动/超时，第 {} 次重发：{}", attempt, result.as_ref().err().unwrap()),
+            json!({ "route": route }),
+        );
+        tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+        result = bbt::call(&conn, &action, &cond).await;
+    }
+    // 配置了 PC 专用接口但后端还没部署（返回「未知 action」）→ 自动回退官方 chat/send，
+    // 保证升级过渡期不丢客户消息。
+    if action != DEFAULT_CHAT_ACTION
+        && result
+            .as_ref()
+            .ok()
+            .and_then(|r| r.get("msg"))
+            .and_then(|m| m.as_str())
+            .map(|m| m.contains("未知 action"))
+            .unwrap_or(false)
+    {
+        log(app, "warn", "配置的 PC 端聊天接口后端未部署，已回退 chat/send", json!({ "route": route, "action": action }));
+        result = bbt::call(&conn, DEFAULT_CHAT_ACTION, &cond).await;
     }
     // 登录态过期（平台返回 status=false + 「未登录/登录已过期/登录已失效」）→ 重登重试一次
     let expired = result
@@ -389,7 +725,13 @@ pub async fn ask_leader(app: &AppHandle, text: &str, route: &str) -> Result<AiAn
                     .map(|m| m.contains("登录") || m.contains("未登录"))
                     .unwrap_or(false)
         })
-        .unwrap_or_else(|| result.as_ref().err().map(|e| e.contains("失效")).unwrap_or(false));
+        .unwrap_or_else(|| {
+            result
+                .as_ref()
+                .err()
+                .map(|e| e.contains("失效") && !e.contains(bbt::FAULT_TAG))
+                .unwrap_or(false)
+        });
     if expired {
         log(app, "info", "登录态失效，自动重登后重试", json!({ "route": route }));
         conn = relogin(app).await?;
@@ -397,10 +739,11 @@ pub async fn ask_leader(app: &AppHandle, text: &str, route: &str) -> Result<AiAn
         if let Some(sid) = session_of(app, &conn).await {
             c2["sessionId"] = sid;
         }
-        result = bbt::call(&conn, "chat/send", &c2).await;
+        result = bbt::call(&conn, &action, &c2).await;
     }
 
-    // 团长身份（或旧配置兜底）
+    // 平台明确返回「无权限」时，仅对极旧配置的残留团员账号做一次静默兼容兜底
+    // （不是前置要求，也不影响「团长账号登录是正常态」这一身份模型）。
     let mut denied = false;
     if let Ok(r) = &result {
         if r.get("status").and_then(|s| s.as_bool()) == Some(false) {
@@ -416,7 +759,7 @@ pub async fn ask_leader(app: &AppHandle, text: &str, route: &str) -> Result<AiAn
             if let Some(sid) = session_of(app, &alt).await {
                 c2["sessionId"] = sid;
             }
-            let r2 = bbt::call(&alt, "chat/send", &c2).await;
+            let r2 = bbt::call(&alt, &action, &c2).await;
             if r2.as_ref().map(|r| r.get("status").and_then(|s| s.as_bool()) == Some(true)).unwrap_or(false) {
                 log(app, "info", "已用旧版配置的团员账号兜底发送", json!({ "route": route }));
                 result = r2;
@@ -427,10 +770,20 @@ pub async fn ask_leader(app: &AppHandle, text: &str, route: &str) -> Result<AiAn
     let result = result?;
     if result.get("status").and_then(|s| s.as_bool()) != Some(true) {
         let m = result.get("msg").and_then(|m| m.as_str()).unwrap_or("平台拒绝").to_string();
-        let hint = if m.contains("权限") {
-            format!("{}：当前登录可能是团长账号，而 AI 代聊是「团员 → 团长」方向。请用已绑定团长的团员账号登录 PC 端", m)
+        let hint = if bbt::is_backend_fault_msg(&m) {
+            // 首次撞上写故障（熔断刚建立）也要带标记，自动回复才能走兜底话术，
+            // 而不是让客户消息直接黑洞。
+            format!(
+                "{}：{}｜服务端写入暂不可用（读接口正常），PC 端已自动熔断并降低重试频率",
+                bbt::FAULT_TAG, m
+            )
+        } else if m.contains("权限") {
+            format!(
+                "{}：团长登录态需要使用后端为 PC 端专开的聊天接口（在 config.json 配置 ai_gateway.pc_chat_action 为后端提供的 action 名）；也可确认团长后台 AI 代聊已开启并重新登录刷新令牌",
+                m
+            )
         } else {
-            m
+            m.clone()
         };
         log(app, "warn", &format!("向团长发消息失败：{}", hint), json!({ "route": route, "text": text }));
         return Err(hint);
@@ -452,12 +805,53 @@ pub async fn ask_leader(app: &AppHandle, text: &str, route: &str) -> Result<AiAn
         _ => String::new(),
     };
     if reply.trim().is_empty() {
-        let reason = if auto {
-            "团长 AI 未回复：今日配额可能已用尽（每团员每日限额由团长设定，可在后台调高），或团长开启了「人工接管」".to_string()
-        } else {
-            "团长 AI 未回复：请检查团长后台「自动回复设置」是否开启 AI 代聊，或今日配额是否已用尽".to_string()
+        // 「微信有消息但没反应」最常见原因：平台没有生成 autoReply。
+        // 以前一律报「检查 AI 代聊开关」，用户无从分辨是配额用尽还是配置问题；
+        // 这里按 quotaLeft / auto 拆成可执行的三种结论。
+        // chat/send 的响应不一定带 quotaLeft，缺失时补查一次 chat/quota 再判定。
+        let left = match quota_left {
+            Some(v) => Some(v),
+            None => bbt::call(&conn, "chat/quota", &json!({}))
+                .await
+                .ok()
+                .and_then(|r| bbt::data_of(&r).ok())
+                .and_then(|d| d.get("left").and_then(|v| v.as_i64())),
         };
-        log(app, "warn", &reason, json!({ "route": route, "text": text, "data": data }));
+        let quota_exhausted = left == Some(0);
+        let reason = match (left, auto) {
+            (Some(0), _) => "当前团员今日 AI 配额已用尽（剩余 0 条），平台不再生成自动回复".to_string(),
+            (_, false) => format!(
+                "团长 AI 代聊未生效（auto=false{}）：请确认团长后台「自动回复设置」已开启 AI 代聊、未处于人工接管",
+                left.map(|q| format!("，今日剩余 {} 条", q)).unwrap_or_default()
+            ),
+            (_, true) => format!(
+                "团长 AI 已受理但未产出回复（auto=true{}）：可能是平台侧生成失败或触发了敏感词/人工接管，稍后重试或查看团长后台会话记录",
+                left.map(|q| format!("，今日剩余 {} 条", q)).unwrap_or_default()
+            ),
+        };
+        // 用户 2026-11-07：「团员的 10 条限制到了，换个团员」。只有**配额用尽**才
+        // 换团员重试：代聊关闭 / 生成失败 / 敏感词这些原因换账号只会把同一句话重复
+        // 写进团长会话，还会掩盖真实故障。后端没有 PC 专用聊天接口，轮换走的是
+        // config.json 的 ai_gateway.member_accounts 备用团员账号池。
+        if quota_exhausted {
+            match rotate_member_retry(app, text, route, &action, &conn).await {
+                Ok(ans) => return Ok(ans),
+                Err(e) => {
+                    log(app, "warn", &format!("[{}] {}；{}", route, reason, e), json!({
+                        "route": route, "text": text, "auto": auto,
+                        "quota_left": left, "data": data, "rotate": e,
+                    }));
+                    return Err(format!("{}；{}", reason, e));
+                }
+            }
+        }
+        log(app, "warn", &format!("[{}] {}", route, reason), json!({
+            "route": route,
+            "text": text,
+            "auto": auto,
+            "quota_left": left,
+            "data": data,
+        }));
         return Err(reason);
     }
     log(

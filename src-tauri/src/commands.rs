@@ -199,63 +199,95 @@ pub async fn bbt_call(
     call_with_relogin(&app, &action, &condition.unwrap_or(json!({}))).await
 }
 
+/// 重登串行化：团员名册一次并发拉 N 个团，若 token 恰好过期，N 个请求会
+/// 同时收到「会话已失效」并各自发一次 `account/login`（互相覆盖 token、无谓
+/// 打服务端写配额）。这里用一把进程级锁 + token 版本比对，把风暴合并成一次。
+static RELOGIN_LOCK: std::sync::OnceLock<tokio::sync::Mutex<()>> = std::sync::OnceLock::new();
+
+fn relogin_lock() -> &'static tokio::sync::Mutex<()> {
+    RELOGIN_LOCK.get_or_init(|| tokio::sync::Mutex::new(()))
+}
+
+fn current_conn(app: &tauri::AppHandle) -> bbt::BbtConnection {
+    let st = app.state::<AppState>();
+    let out = st.conn.lock().unwrap_or_else(|p| p.into_inner()).clone();
+    out
+}
+
 /// 统一 bbt 调用：会话失效时用本地保存的账号密码自动重登一次再重试。
 /// 订单页一键拉取 / 团员名册 / 远程参数同步等所有透传动作共用，
 /// 避免 token 过期后功能中断（重登失败才把「会话已失效」抛回前端）。
-async fn call_with_relogin(
+pub(crate) async fn call_with_relogin(
     app: &tauri::AppHandle,
     action: &str,
     condition: &Value,
 ) -> Result<Value, String> {
-    let c = {
-        let st = app.state::<AppState>();
-        let guard = st.conn.lock().unwrap();
-        guard.clone()
-    };
+    let c = current_conn(app);
+    let old_token = c.token.clone();
     match bbt::call(&c, action, condition).await {
         Ok(r) => return Ok(r),
         Err(e) if e.contains("失效") || e.contains("未登录") => {
-            // 从本地 config.json 读保存的账号密码（前端登录时随配置落盘）
-            let (tel, pwd) = {
-                let st = app.state::<AppState>();
-                let g = st.config.lock().unwrap();
-                let conn = g.get("connection").cloned().unwrap_or(json!({}));
-                (
-                    conn.get("telephone").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                    conn.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                )
+            // 只在「重登」这一小段持锁；重试放锁外，避免 N 个请求排队等网络。
+            let retry_conn = {
+                let _guard = relogin_lock().lock().await;
+                let cur = current_conn(app);
+                // 别的并发请求已经重登成功 → 直接复用新 token，不再重复登录。
+                if cur.token != old_token && cur.token.as_deref().unwrap_or("").len() > 0 {
+                    cur
+                } else {
+                    // 从本地 config.json 读保存的账号密码（前端登录时随配置落盘）
+                    let (tel, pwd) = {
+                        let st = app.state::<AppState>();
+                        let g = st.config.lock().unwrap_or_else(|p| p.into_inner());
+                        let conn = g.get("connection").cloned().unwrap_or(json!({}));
+                        (
+                            conn.get("telephone").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                            conn.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                        )
+                    };
+                    if tel.is_empty() || pwd.is_empty() {
+                        return Err(e);
+                    }
+                    let base = cur.base_url.clone();
+                    // 重新登录刷新 token（密码错误等失败场景原样抛回）
+                    let mut fresh = bbt::BbtConnection {
+                        base_url: base.clone(),
+                        token: None,
+                        telephone: Some(tel.clone()),
+                        password: Some(pwd.clone()),
+                    };
+                    let (token, _account) =
+                        bbt::login(&fresh, &tel, &pwd).await.map_err(|_| e.clone())?;
+                    fresh.token = Some(token.clone());
+                    {
+                        let st = app.state::<AppState>();
+                        let mut cc = st.conn.lock().unwrap_or_else(|p| p.into_inner());
+                        cc.base_url = base;
+                        cc.token = Some(token.clone());
+                        cc.telephone = Some(tel);
+                    }
+                    // 新 token 必须同步落盘：否则重启后又拿旧 token 走一遍重登，
+                    // 「本地缓存 / 免登录」在升级后形同虚设。
+                    {
+                        let st = app.state::<AppState>();
+                        {
+                            let mut g = st.config.lock().unwrap_or_else(|p| p.into_inner());
+                            if let Some(obj) = g.as_object_mut() {
+                                let mut conn = obj
+                                    .get("connection")
+                                    .and_then(|v| v.as_object())
+                                    .cloned()
+                                    .unwrap_or_default();
+                                conn.insert("token".into(), json!(token));
+                                obj.insert("connection".into(), Value::Object(conn));
+                            }
+                        }
+                        let _ = st.save_config();
+                    }
+                    fresh
+                }
             };
-            if tel.is_empty() || pwd.is_empty() {
-                return Err(e);
-            }
-            let base = {
-                let st = app.state::<AppState>();
-                let guard = st.conn.lock().unwrap();
-                guard.base_url.clone()
-            };
-            // 重新登录刷新 token（密码错误等失败场景原样抛回）
-            let mut fresh = bbt::BbtConnection {
-                base_url: base.clone(),
-                token: None,
-                telephone: Some(tel.clone()),
-                password: Some(pwd.clone()),
-            };
-            let (token, _account) = bbt::login(&fresh, &tel, &pwd).await.map_err(|_| e.clone())?;
-            fresh.token = Some(token.clone());
-            {
-                let st = app.state::<AppState>();
-                let mut cc = st.conn.lock().unwrap();
-                cc.base_url = base;
-                cc.token = Some(token);
-                cc.telephone = Some(tel);
-            }
-            // 用新 token 重试一次
-            let c = {
-                let st = app.state::<AppState>();
-                let guard = st.conn.lock().unwrap();
-                guard.clone()
-            };
-            bbt::call(&c, action, condition).await
+            bbt::call(&retry_conn, action, condition).await
         }
         Err(e) => Err(e),
     }
@@ -614,7 +646,25 @@ pub async fn autoreply_logs(
     Ok(json!(lg[lg.len() - n..].to_vec()))
 }
 
-/// AI 消息自测：分步体检 登录身份→绑定团长→配额→（实发）向团长发消息→AI 回复。
+/// 发送安全状态：微信通道急停 / 每小时预算用量 / 允许时段 / 连败计数 / 最近拦截原因。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn autoreply_safety_status(
+    ar: State<'_, Arc<crate::autoreply::AutoReplyState>>,
+) -> Result<Value, String> {
+    Ok(ar.safety_status())
+}
+
+/// 人工确认微信客户端恢复后解除急停（同时清零连败计数），立即恢复自动回复。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn autoreply_safety_resume(
+    ar: State<'_, Arc<crate::autoreply::AutoReplyState>>,
+) -> Result<Value, String> {
+    ar.resume_wx();
+    Ok(ar.safety_status())
+}
+
+/// AI 消息自测：分步体检 登录态→团长 AI 代聊开关→配额→渠道/团员→（实发）向团长发消息→AI 回复。
+/// 不做 role 预检：PC 端登录团长账号是正常态，每个渠道各代表 1 个团员。
 /// send=false 只查链路不消耗平台配额；send=true 真发一条测试问题。
 #[tauri::command(rename_all = "snake_case")]
 pub async fn autoreply_self_test(
@@ -645,10 +695,17 @@ pub async fn autoreply_inject(
 //  由团长 AI 统一回复；channel/target 只用于「哪个渠道来的就回哪个渠道」。
 // ============================================================================
 
-/// 网关状态：登录身份、绑定团长、AI 代聊开关、今日配额、渠道对应关系数量。
+/// 网关状态：登录态 / 账号角色（仅展示）、AI 代聊开关、今日配额、渠道=团员数量。
 #[tauri::command(rename_all = "snake_case")]
 pub async fn ai_gateway_status(app: tauri::AppHandle) -> Result<Value, String> {
     Ok(crate::ai_gateway::status(&app).await)
+}
+
+/// 手动解除「服务端写故障」熔断（后端写入配额重置后点「立即重试」，不必等满退避）。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn ai_gateway_fault_reset() -> Result<Value, String> {
+    crate::bbt::reset_fault();
+    Ok(crate::bbt::fault_status())
 }
 
 /// 统一入口：向团长发一条消息，返回团长的 AI 回复。
@@ -660,11 +717,14 @@ pub async fn ai_gateway_send(
     channel: Option<String>,
     target: Option<String>,
     auto_send: Option<bool>,
+    member_id: Option<Value>,
 ) -> Result<Value, String> {
     let ch = channel.unwrap_or_else(|| "test".into());
     let to = target.unwrap_or_default();
     let route = if to.is_empty() { ch.clone() } else { format!("{}|{}", ch, to) };
-    let ans = crate::ai_gateway::ask_leader(&app, &text, &route).await?;
+    // member_id：按渠道指定团员身份（每个微信私聊/群聊/iLink 渠道 = 1 个团员），
+    // 可用于「换个团员 id 继续请求」和后端 PC 专用聊天接口。
+    let ans = crate::ai_gateway::ask_leader_ex(&app, &text, &route, member_id.clone()).await?;
     let mut sent = false;
     let mut send_err = String::new();
     if auto_send.unwrap_or(false) && !to.is_empty() {
@@ -681,6 +741,7 @@ pub async fn ai_gateway_send(
         "auto": ans.auto,
         "channel": ch,
         "target": to,
+        "member_id": member_id,
         "sent": sent,
         "send_error": send_err
     }))
@@ -719,18 +780,55 @@ pub async fn memberqr_get_map(app: tauri::AppHandle) -> Result<Value, String> {
 /// 写入团员→机器人映射（member_id -> bot_id）。传入完整 map 对象覆盖保存。
 #[tauri::command(rename_all = "snake_case")]
 pub async fn memberqr_set_map(app: tauri::AppHandle, map: Value) -> Result<Value, String> {
-    let state = app.state::<AppState>();
-    {
-        let mut g = state.config.lock().unwrap();
-        if let Some(obj) = g.as_object_mut() {
-            let entry = obj.entry("memberqr".to_string()).or_insert(json!({}));
-            if let Some(e) = entry.as_object_mut() {
-                e.insert("map".into(), map.clone());
-            }
-        }
+  let state = app.state::<AppState>();
+  {
+    let mut g = state.config.lock().unwrap();
+    if let Some(obj) = g.as_object_mut() {
+      let entry = obj.entry("memberqr".to_string()).or_insert(json!({}));
+      if let Some(e) = entry.as_object_mut() {
+        e.insert("map".into(), map.clone());
+      }
     }
-    let _ = state.save_config();
-    Ok(map)
+  }
+  let _ = state.save_config();
+  Ok(map)
+}
+
+// ============================================================================
+//  团员 ↔ 微信私聊/群聊 配对（每个微信会话 = 1 个团员；界面手动配对并落盘）
+//  配置节点：config.wechat_pairing.map : member_id -> {wxid, wxname, is_group, member_name}
+//  用途：入站微信消息携带的是 wxid/@chatroom，配对后可精确反查「该团员」，
+//        直接服务于 payment_verify「根据该团员的订单值比对图片支付金额」。
+// ============================================================================
+
+/// 读取团员→微信会话配对（member_id -> {wxid, wxname, is_group, member_name}）
+#[tauri::command(rename_all = "snake_case")]
+pub async fn wechat_pairing_get(app: tauri::AppHandle) -> Result<Value, String> {
+  let state = app.state::<AppState>();
+  let g = state.config.lock().unwrap();
+  let map = g
+    .get("wechat_pairing")
+    .and_then(|v| v.get("map"))
+    .cloned()
+    .unwrap_or(json!({}));
+  Ok(map)
+}
+
+/// 写入团员→微信会话配对（传入完整 map 对象覆盖保存）
+#[tauri::command(rename_all = "snake_case")]
+pub async fn wechat_pairing_set(app: tauri::AppHandle, map: Value) -> Result<Value, String> {
+  let state = app.state::<AppState>();
+  {
+    let mut g = state.config.lock().unwrap();
+    if let Some(obj) = g.as_object_mut() {
+      let entry = obj.entry("wechat_pairing".to_string()).or_insert(json!({}));
+      if let Some(e) = entry.as_object_mut() {
+        e.insert("map".into(), map.clone());
+      }
+    }
+  }
+  let _ = state.save_config();
+  Ok(map)
 }
 
 // ============================================================================
@@ -832,6 +930,32 @@ pub async fn wxauto_logs(
     Ok(json!(lg[lg.len() - n..].to_vec()))
 }
 
+/// 图片 OCR 验收入口：从微信本地库取最近一张图片，离线 OCR 后返回识别文本。
+/// inject=true 时把识别结果按「图片消息」注入自动回复管线（团长 AI → 原路回发）。
+/// 返回 {ok, peer, local_id, path, text, msg}。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn wxauto_ocr_test(
+    app: tauri::AppHandle,
+    peer: Option<String>,
+    inject: Option<bool>,
+) -> Result<Value, String> {
+    crate::wxauto::ocr_test(&app, peer, inject).await
+}
+
+/// 直接发送一条文本到指定微信会话（不经过 AI），用于验收「自动切到前台」回发。
+/// peer 传 wxid / @chatroom；worker 内部会反查显示名并强制把目标会话切到前台再发。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn wxauto_send_test(
+    app: tauri::AppHandle,
+    peer: String,
+    text: String,
+) -> Result<Value, String> {
+    match crate::wxauto::send_text(&app, &peer, &text).await {
+        Ok(_) => Ok(json!({ "ok": true, "peer": peer, "msg": "已发送（目标会话应已被切到前台）" })),
+        Err(e) => Ok(json!({ "ok": false, "peer": peer, "msg": e })),
+    }
+}
+
 // ============================================================================
 //  统一渠道路由（订单消息 / 互动消息页）：微信私聊、微信群聊、iLink、团员
 //  target 约定：
@@ -883,7 +1007,7 @@ async fn ilink_route_send(
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
+pub async fn channel_targets(app: tauri::AppHandle, force: Option<bool>) -> Result<Value, String> {
     use std::collections::HashSet;
     // 1) 微信：sidecar 会话列表（私聊/群聊分组）
     let mut wx_private: Vec<Value> = Vec::new();
@@ -914,80 +1038,13 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
             None => (Vec::new(), "iLink 会话管理未初始化（管理器未注册）".into()),
         };
 
-    // 3) 团员：bbt-zb 名册（先 ledger 取团，再 listMembers）
-    let mut members: Vec<Value> = Vec::new();
-    let mut member_note = String::new();
-    if let Some(_state) = app.try_state::<AppState>() {
-        // leader/ledger 返回的团 id 官方前端用 String(x.id) 防御性转换，
-        // 实际可能是字符串或数字，这里两者都兼容（as_i64 对字符串返回 None）。
-        // 关键：必须遍历【所有】团，只取第一个团会让其它团的团员在订单页/互动页识别不到。
-        let (group_ids, ledger_err) = match call_with_relogin(&app, "leader/ledger", &json!({})).await {
-            Ok(r) => {
-                let list = r
-                    .pointer("/result/data/list")
-                    .and_then(|l| l.as_array())
-                    .cloned()
-                    .unwrap_or_default();
-                let ids: Vec<Value> = list
-                    .iter()
-                    .filter_map(|g0| g0.get("id").cloned())
-                    .filter(|v| match v {
-                        Value::Null => false,
-                        Value::String(s) => !s.trim().is_empty(),
-                        _ => true,
-                    })
-                    .collect();
-                (ids, String::new())
-            }
-            Err(e) => (Vec::new(), format!("拉取团列表失败: {}", e)),
-        };
-        if !ledger_err.is_empty() {
-            member_note = ledger_err;
-        } else if group_ids.is_empty() {
-            member_note = "leader/ledger 未返回可用团（团长账号未管理任何团？）".into();
-        }
-        let mut seen: HashSet<String> = HashSet::new();
-        let mut errs: Vec<String> = Vec::new();
-        for id_val in &group_ids {
-            // 原样回传 groupId，避免 id 类型不符导致 listMembers 返回空
-            let gid_param = match id_val {
-                Value::String(s) => json!(s.trim().to_string()),
-                v => v.clone(),
-            };
-            match call_with_relogin(&app, "leader/listMembers", &json!({ "groupId": gid_param })).await {
-                Ok(r) => {
-                    let rows = r
-                        .pointer("/result/data/list")
-                        .and_then(|l| l.as_array())
-                        .cloned()
-                        .unwrap_or_default();
-                    for m in rows {
-                        let key = m
-                            .get("id")
-                            .map(|v| v.to_string())
-                            .unwrap_or_else(|| serde_json::to_string(&m).unwrap_or_default());
-                        if seen.insert(key) {
-                            members.push(m);
-                        }
-                    }
-                }
-                Err(e) => errs.push(format!("团{}: {}", gid_param, e)),
-            }
-        }
-        if members.is_empty() {
-            member_note = if !errs.is_empty() {
-                format!("拉取名册失败: {}", errs.join("；"))
-            } else if !group_ids.is_empty() {
-                format!("已查 {} 个团，名册均为空", group_ids.len())
-            } else {
-                member_note
-            };
-        } else if !errs.is_empty() {
-            member_note = format!("部分团拉取失败: {}", errs.join("；"));
-        }
-    } else {
-        member_note = "AppState 未初始化".into();
-    }
+    // 3) 团员名册：统一走本地缓存（多团并发拉取 / TTL 内存命中 / 磁盘持久化 /
+    //    离线回退）。以前这里每次调用都串行打 ledger + N 次 listMembers，
+    //    订单页 / 互动页 / 配对页各刷一次 = 3×(1+N) 次 RTT，网络一抖就「识别不到」。
+    let roster = crate::roster_cache::get(&app, force.unwrap_or(false)).await;
+    let members: Vec<Value> = roster.members;
+    let member_note = roster.note;
+    let member_cache = roster.cache;
     // 4) iLink 下拉目标：以「已绑定团员」映射为准（扫码成功即由后端落盘），
     //    叠加 accounts.json 里的在线账号状态。
     //    这样即便 accounts.json 被清、会话过期或账号不在线，订单页/互动页下拉
@@ -1100,8 +1157,36 @@ pub async fn channel_targets(app: tauri::AppHandle) -> Result<Value, String> {
         "ilink_note": ilink_note,
         "member": members,
         "member_note": member_note,
+        "member_cache": member_cache,
         "member_map": map,
     }))
+}
+
+/// 团员名册（含团列表 / 按团分组 / 合并去重成员 / 缓存状态）。
+/// 名册页切团是纯内存操作；force=true 才同步回源，失败自动回退本地缓存。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn member_roster(app: tauri::AppHandle, force: Option<bool>) -> Result<Value, String> {
+    let r = crate::roster_cache::get(&app, force.unwrap_or(false)).await;
+    Ok(json!({
+        "groups": r.groups,
+        "by_group": r.by_group,
+        "members": r.members,
+        "note": r.note,
+        "cache": r.cache,
+    }))
+}
+
+/// 名册缓存诊断状态（不触网）。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn roster_cache_status(app: tauri::AppHandle) -> Result<Value, String> {
+    Ok(crate::roster_cache::status(&app))
+}
+
+/// 清空名册缓存（换账号 / 排障用），下次取名册会重新回源。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn roster_cache_clear(app: tauri::AppHandle) -> Result<Value, String> {
+    crate::roster_cache::clear(&app);
+    Ok(json!({ "ok": true }))
 }
 
 #[tauri::command(rename_all = "snake_case")]

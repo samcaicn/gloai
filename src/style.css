@@ -408,6 +408,29 @@ textarea { resize: vertical; line-height: 1.5; }
 .bs-pill.ai.on { color: #068b4c; border-color: #07c16055; background: var(--ok-soft); }
 .bs-pill.ai.off { color: var(--text-dim); }
 
+/* ---------------- 团员 ↔ 微信会话配对 ---------------- */
+.pair-list {
+  display: flex; flex-direction: column; gap: 8px; margin-top: 10px;
+}
+.pair-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(200px, 2fr) auto;
+  align-items: center; gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.pair-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.pair-sub { font-size: 11.5px; color: var(--text-dim); font-weight: 400; }
+.pair-sel { width: 100%; }
+.pair-cur { font-size: 11.5px; color: var(--text-dim); white-space: nowrap; }
+@media (max-width: 900px) {
+  .pair-row { grid-template-columns: 1fr; gap: 6px; }
+  .pair-cur { white-space: normal; }
+}
+
 /* ---------------- 订单消息 / 互动消息 ---------------- */
 .ord-chans {
   display: grid;

@@ -1,0 +1,15 @@
+# tauri dev 的文件监听会把这些运行时产物当成源码改动，
+# 每次写入都触发整包重编译 + 应用重启，微信 sidecar 被反复杀掉。
+# 语法与 .gitignore 相同（tauri-cli v2 支持 src-tauri/.taurignore）。
+
+# Python sidecar / vendor 运行时日志
+wechatauto_logs/
+*.log
+
+# Python 字节码缓存
+__pycache__/
+*.pyc
+
+# 目标产物与临时文件（保险起见）
+target/
+*.tmp
