@@ -10,7 +10,7 @@
 //   - onIlinkEvent                         监听会话失效等事件
 
 import { api } from "./api";
-import { ilink, onIlinkEvent, autoreplyApi, onAutoreplyEvent, wxautoApi, bridgeApi } from "./ilink";
+import { ilink, onIlinkEvent, autoreplyApi, onAutoreplyEvent, wxautoApi, bridgeApi, onWxautoEvent } from "./ilink";
 import { channelsApi, memberCacheLabel, onRosterUpdated } from "./channels";
 
 interface MemberInfo {
@@ -162,6 +162,17 @@ export async function renderMemberQr(root: HTMLElement) {
     });
     // 后台刷新拿到新名册时自动重绘（读缓存，0 网络）；只在内容真变化时推送
     void onRosterUpdated(() => { void loadRoster(); });
+    // 微信通道状态变化（就绪/重启/报错）时自动补拉配对列表：只在上一帧没有任何
+    // 微信会话时才刷新——没有会话时用户无可选、无未保存选择，刷新零风险；
+    // 一旦有会话就停止自动刷，避免覆盖用户下拉到一半还没点保存的配对。
+    void onWxautoEvent((l: any) => {
+      if (pairHadWx || l?.level === "debug") return;
+      if (pairReloadTimer !== null) window.clearTimeout(pairReloadTimer);
+      pairReloadTimer = window.setTimeout(() => {
+        pairReloadTimer = null;
+        void loadPairing();
+      }, 1500);
+    });
     // 监听团长登录态变化：登录成功后自动拉名册/账号，无需手动点
     window.addEventListener("login-changed", (e: any) => {
       const d = e.detail || {};
@@ -620,6 +631,11 @@ function pairWxLabel(s: any): string {
   return name;
 }
 
+// 上一帧配对列表里有没有微信会话：空的时候才允许「微信通道就绪」自动补拉，
+// 有会话后绝不自动刷新（避免覆盖用户下拉到一半、还没点保存的选择）。
+let pairHadWx = false;
+let pairReloadTimer: number | null = null;
+
 async function loadPairing(force = false) {
   const box = g("mq-pair-list");
   const note = g("mq-pair-note");
@@ -641,6 +657,7 @@ async function loadPairing(force = false) {
     }));
     const wxPrivate: any[] = targets?.wx_private || [];
     const wxGroup: any[] = targets?.wx_group || [];
+    const wxNote: string = targets?.wx_note || "";
     const map: Record<string, any> = pairing || {};
 
     if (members.length === 0) {
@@ -648,8 +665,11 @@ async function loadPairing(force = false) {
       if (stateEl) stateEl.textContent = "";
       return;
     }
-    if (wxPrivate.length === 0 && wxGroup.length === 0) {
-      if (note) note.textContent = "提示：当前微信通道未开启或无会话，无法列出微信私聊/群聊，开启后刷新即可配对。";
+    const hasWx = wxPrivate.length > 0 || wxGroup.length > 0;
+    pairHadWx = hasWx;
+    if (!hasWx) {
+      // 空列表必须说明原因（后端给了具体 wx_note：通道未开启 / sidecar 报错），不能只给一句模糊提示
+      if (note) note.textContent = wxNote || "提示：微信通道暂无会话列表，通道就绪后会自动出现私聊/群聊，无需手动刷新。";
     }
 
     const optsPrivate = wxPrivate
@@ -689,9 +709,10 @@ async function loadPairing(force = false) {
 
     if (stateEl) {
       const n = Object.keys(map).filter((k) => map[k]?.wxid).length;
-      stateEl.textContent = `已配对 ${n} / ${members.length} 名团员 · ${memberCacheLabel(targets?.member_cache)}`;
+      const wxPart = hasWx ? ` · 微信私聊 ${wxPrivate.length} · 群聊 ${wxGroup.length}` : " · 微信会话暂无";
+      stateEl.textContent = `已配对 ${n} / ${members.length} 名团员${wxPart} · ${memberCacheLabel(targets?.member_cache)}`;
     }
-    if (targets?.member_note && note) note.textContent = targets.member_note;
+    if (targets?.member_note && note && !note.textContent) note.textContent = targets.member_note;
   } catch (e: any) {
     const msg = e?.message || String(e);
     if (box) box.innerHTML = `<div class="empty">加载失败：${esc(msg)}</div>`;

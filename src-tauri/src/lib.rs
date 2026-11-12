@@ -219,6 +219,7 @@ pub fn run() {
             commands::autoreply_logs,
             commands::autoreply_safety_status,
             commands::autoreply_safety_resume,
+            commands::autoreply_temp_allow,
             commands::autoreply_self_test,
             commands::autoreply_inject,
             // PC 端统一 AI 消息网关
@@ -232,6 +233,10 @@ pub fn run() {
             // 团员 ↔ 微信私聊/群聊 配对
             commands::wechat_pairing_get,
             commands::wechat_pairing_set,
+            // 图片支付校验 · 本地订单种子
+            commands::payment_verify_seed_set,
+            commands::payment_verify_seed_get,
+            commands::payment_verify_test,
             // 微信 wxauto 通道
             commands::wxauto_get_config,
             commands::wxauto_set_config,

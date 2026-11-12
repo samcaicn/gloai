@@ -81,6 +81,12 @@ pub struct WxAutoState {
     self_nick: std::sync::Mutex<String>,
     /// 本轮 sidecar 是否已发过 ready（启动失败重启计数用）
     ready_seen: AtomicBool,
+    /// 入站消息串行闸门：process_msg 内部经 send_text_ex → request() 等待 sidecar
+    /// 的 `sent` 回执，而该回执同样由 stdout 读循环分发。若在读循环里直接 await
+    /// process_msg，读循环被自己占住 → 回执永远读不到 → 必然 75s 超时 → 误报
+    /// 「回发失败」→ 连败急停挡掉后续消息。故把管线移到独立任务，用此锁保持
+    /// 同一时刻只跑一条，避免多条并发抢微信窗口/焦点。
+    inbound_gate: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl WxAutoState {
@@ -93,6 +99,7 @@ impl WxAutoState {
             self_user: std::sync::Mutex::new(String::new()),
             self_nick: std::sync::Mutex::new(String::new()),
             ready_seen: AtomicBool::new(false),
+            inbound_gate: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
@@ -361,7 +368,10 @@ async fn run_once(app: &AppHandle, st: &Arc<WxAutoState>, cfg: &WxAutoConfig) ->
                 }
                 let v: Value = match serde_json::from_str(&line) {
                     Ok(v) => v,
-                    Err(_) => continue,
+                    Err(e) => {
+                        st.log(app, "debug", &format!("[diag] stdout 行 JSON 解析失败: {} | 行前120字={}", e, line.chars().take(120).collect::<String>()), json!({}));
+                        continue;
+                    }
                 };
                 handle_sidecar_event(app, st, v).await;
             }
@@ -452,15 +462,29 @@ async fn handle_sidecar_event(app: &AppHandle, st: &Arc<WxAutoState>, v: Value) 
                 sender: sender.to_string(),
                 mentioned_self,
             };
-            if let Err(e) = autoreply::process_msg(app, msg).await {
-                st.log(app, "debug", &e, json!({}));
-            }
+            // 🔴 不能在本 stdout 读循环里 await process_msg：
+            // process_msg → send_text_ex → request() 要等 sidecar 回报 `sent`，
+            // 而 `sent` 恰恰是「本读循环」要读的下一行。内联 await 会把读循环
+            // 自己锁死，回执滞留管道直到 75s 超时 → 误判回发失败 → 连败急停。
+            // 交给独立 task 跑；读循环立刻回到 next_line() 继续分发 sent/status。
+            // 串行闸门保证同一时刻只跑一条管线，避免多条并发抢微信窗口焦点。
+            let app2 = app.clone();
+            let st2 = Arc::clone(st);
+            tauri::async_runtime::spawn(async move {
+                let _guard = st2.inbound_gate.lock().await;
+                if let Err(e) = autoreply::process_msg(&app2, msg).await {
+                    st2.log(&app2, "debug", &e, json!({}));
+                }
+            });
         }
         "sent" | "sent_image" => {
             let peer = v.get("peer").and_then(|p| p.as_str()).unwrap_or("");
             let ok = v.get("ok").and_then(|o| o.as_bool()).unwrap_or(false);
             let msg = v.get("msg").and_then(|m| m.as_str()).unwrap_or("");
+            let req = v.get("req").and_then(|r| r.as_str()).unwrap_or("");
             let what = if v.get("type").and_then(|t| t.as_str()) == Some("sent_image") { "图片" } else { "消息" };
+            // 诊断：确认 sent 是否真的到达 Rust（worker 成功但 request() 仍超时的排查）
+            st.log(app, "debug", &format!("[diag] RECV sent req={} ok={} peer={} msg={}", req, ok, peer, msg.chars().take(60).collect::<String>()), json!({}));
             // 请求-响应关联：resolve pending 等待者
             if let Some(req) = v.get("req").and_then(|r| r.as_str()) {
                 let waiter = {
@@ -545,9 +569,9 @@ pub async fn send_text_ex(
     let v = request(
         app,
         json!({"cmd": "send", "peer": peer, "text": text, "require_foreground": require_foreground}),
-        // 发送在独立子进程里执行（UIA 优先，OCR 兜底 45s 会被 kill），
-        // 这里留 60s 余量覆盖子进程启动 + GUI 初始化 + 兜底超时。
-        Duration::from_secs(60),
+        // 发送在独立子进程里执行（UIA 优先，OCR 兜底会被 kill）；worker 超时已提到 55s，
+        // 这里留 75s 余量覆盖子进程启动 + GUI 初始化 + 兜底超时。
+        Duration::from_secs(75),
     )
     .await
     .map_err(|e| format!("微信发送超时/无响应（{}）：sidecar 可能卡在 UI 自动化，请重启微信通道", e))?;

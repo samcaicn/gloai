@@ -229,12 +229,32 @@ pub async fn call(conn: &BbtConnection, action: &str, condition: &Value) -> Resu
         ("condition", cond_str),
     ];
     let client = if needs_long_timeout(action) { http_slow() } else { http() };
-    let resp = client
-        .post(conn.api_url())
-        .form(&form)
-        .send()
-        .await
-        .map_err(|e| format!("网络错误: {}", e))?;
+    // 后端（Cloudflare Pages）在中国网络下偶发连接超时（实测约 40% 概率 5s connect timeout）。
+    // 单次网络错误直接判失败会导致「消息收到但不回复」。对纯网络错误做有限重试 + 递增退避：
+    // 后端瞬时抖动通常在第 2~3 次就通。重试安全——网络错误发生在请求尚未抵达服务端前
+    // （connect 阶段），不会重复触发服务端写入；写故障熔断（fault）在上方已先行拦截。
+    let max_retry: u32 = 4;
+    let mut last_net_err = String::new();
+    let mut resp_opt: Option<reqwest::Response> = None;
+    for attempt in 0..=max_retry {
+        match client.post(conn.api_url()).form(&form).send().await {
+            Ok(r) => {
+                resp_opt = Some(r);
+                break;
+            }
+            Err(e) => {
+                last_net_err = format!("网络错误: {}", e);
+                if attempt < max_retry {
+                    tokio::time::sleep(std::time::Duration::from_millis(400 * (attempt as u64 + 1))).await;
+                    continue;
+                }
+            }
+        }
+    }
+    let resp = match resp_opt {
+        Some(r) => r,
+        None => return Err(last_net_err),
+    };
 
     let status = resp.status();
     let text = resp.text().await.unwrap_or_default();

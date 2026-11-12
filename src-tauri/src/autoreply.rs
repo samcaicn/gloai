@@ -96,13 +96,30 @@ pub struct AutoReplyConfig {
     pub active_hours_start: String,
     /// 允许自动发送的本地时段终点 "HH:MM"（空 = 不限）；起点 > 终点表示跨午夜
     pub active_hours_end: String,
+    /// 一次性「临时放行」截止时间（Unix 秒，0 = 不启用）。
+    /// 调试/验收时设成 now + N 分钟即可越过 active_hours 时段限制，**到点自动失效**
+    /// 回落到常规时段，无需手工改回配置。根治「临时窗口跨天遗留」：11-10 凌晨
+    /// 为验收设的 00:00–00:40 一直没恢复，导致 11-11 全天只有凌晨 40 分钟能回复，
+    /// 用户 22:37 发的付款截图被「发送安全」直接拦掉、完全没进金额核对。
+    pub temp_allow_until: u64,
     /// 连续回发失败达到该次数后急停微信通道（0 = 关闭急停）
     pub fail_streak_threshold: u32,
     /// 急停时长（秒）
     pub pause_sec: u64,
     /// 仅当目标会话已经是微信当前前台会话时才发送：不抢焦点、不点侧栏切会话。
-    /// 关闭后每条回复都会 SetForegroundWindow + UIA 切会话，行为特征显著、易被客户端识别。
+    /// 关闭(默认)后，每条回复会 UIA 点侧栏把目标会话切到前台再发送——这是 WeChat 4.x
+    /// 下真正能把字发出去的方式（open_chat/搜索框对多数新会话/群会失败）。
+    /// 注意：自动切会话属「模拟人操作 PC 客户端」行为，特征比纯前台发送明显，
+    /// 若后续被客户端识别重新登录，可改回 true（但那样自动回复基本只在你正看着该会话时才发）。
     pub require_foreground: bool,
+    // ---- 图片金额核对（用户 2026-11-09 定稿）----
+    /// 图片消息一律走「金额核对」确定性回复：金额一致回「谢谢」，不一致回
+    /// 「请核对下付款金额…」，连金额/订单都判定不了也只回确定性核对提示，
+    /// **绝不把付款截图交给团长 AI 自由发挥**（实测 AI 会回「这是啥新花样呀」之类闲聊）。
+    /// 置 false 可恢复旧行为（未判定成功时回退 AI）。
+    pub payment_image_only: bool,
+    /// 未识别到付款金额 / 找不到订单时的核对提示文案（可在界面改）
+    pub payment_unverified_text: String,
 }
 
 impl Default for AutoReplyConfig {
@@ -135,9 +152,12 @@ impl Default for AutoReplyConfig {
             hourly_send_budget: 30,
             active_hours_start: "09:00".into(),
             active_hours_end: "22:00".into(),
-            fail_streak_threshold: 2,
-            pause_sec: 1800,
-            require_foreground: true,
+            temp_allow_until: 0,
+            fail_streak_threshold: 5,
+            pause_sec: 600,
+            require_foreground: false,
+            payment_image_only: true,
+            payment_unverified_text: "请核对下付款截图，未识别到付款金额，麻烦发一张包含金额的完整截图".into(),
         }
     }
 }
@@ -241,16 +261,20 @@ impl AutoReplyState {
                 (until - now) / 1000 + 1
             ));
         }
-        if let (Some(s), Some(e)) = (
-            parse_hhmm(&cfg.active_hours_start),
-            parse_hhmm(&cfg.active_hours_end),
-        ) {
-            let cur = local_minute_now();
-            if !within_active_hours(cur, s, e) {
-                return Some(format!(
-                    "本机时间 {} 不在允许发送时段 {}–{}",
-                    fmt_minute(cur), cfg.active_hours_start, cfg.active_hours_end
-                ));
+        // 一次性临时放行：到点自动失效回落到常规时段，不需要人工改回配置。
+        let temp_left = cfg.temp_allow_until.saturating_sub((now / 1000) as u64);
+        if temp_left == 0 {
+            if let (Some(s), Some(e)) = (
+                parse_hhmm(&cfg.active_hours_start),
+                parse_hhmm(&cfg.active_hours_end),
+            ) {
+                let cur = local_minute_now();
+                if !within_active_hours(cur, s, e) {
+                    return Some(format!(
+                        "本机时间 {} 不在允许发送时段 {}–{}",
+                        fmt_minute(cur), cfg.active_hours_start, cfg.active_hours_end
+                    ));
+                }
             }
         }
         if cfg.hourly_send_budget > 0
@@ -341,13 +365,14 @@ impl AutoReplyState {
         let streak = *self.wx_fail_streak.lock().unwrap();
         let reason = self.last_gate_reason.lock().unwrap().clone();
         let cur = local_minute_now();
-        let in_hours = match (
+        let temp_left = cfg.temp_allow_until.saturating_sub((now / 1000) as u64);
+        let in_hours = temp_left > 0 || (match (
             parse_hhmm(&cfg.active_hours_start),
             parse_hhmm(&cfg.active_hours_end),
         ) {
             (Some(s), Some(e)) => within_active_hours(cur, s, e),
             _ => true,
-        };
+        });
         json!({
             "paused": until > now,
             "paused_remaining_sec": if until > now { (until - now) / 1000 + 1 } else { 0 },
@@ -356,6 +381,8 @@ impl AutoReplyState {
             "local_time": fmt_minute(cur),
             "active_hours": format!("{}–{}", cfg.active_hours_start, cfg.active_hours_end),
             "within_active_hours": in_hours,
+            "temp_allow_remaining_sec": temp_left,
+            "temp_allow_until": cfg.temp_allow_until,
             "fail_streak": streak,
             "fail_streak_threshold": cfg.fail_streak_threshold,
             "pause_sec": cfg.pause_sec,
@@ -707,6 +734,9 @@ async fn process_msg_with(
     let cfg = ar.config.lock().unwrap().clone();
     let to = msg.peer.clone();
     let mut text = msg.text.clone();
+    // 图片 OCR 原文：支付校验必须吃「干净」的 OCR 文本，不能带后面给团长 AI
+    // 加的「（客户发来一张图片…）」前缀，否则关键词/金额判定会被噪声干扰。
+    let ocr_raw = msg.text.trim().to_string();
     let is_group = msg.is_group;
     let ch = msg.channel.as_str();
 
@@ -867,6 +897,11 @@ async fn process_msg_with(
         // ---- 反检测：随机思考延迟（模拟真人看到消息后反应时间）----
         // 0.4.0 起可在「互动消息 → 渠道配置 / 交互优化」里调整；配置随本地
         // config.json 持久化，升级/重启后保持。设为 0 则即时回复（自测常用）。
+        // 图片金额核对是确定性回复（谢谢 / 请核对下），不是「真人读消息后组织语言」：
+        // 付款截图客户在等确认，秒级回更合理；且 OCR 解密本身已耗时数秒，
+        // 再叠加 3~6s 思考延迟纯属浪费。仅 payment_image_only=true 时跳过，
+        // 关闭该开关（图片回退团长 AI）时仍保留延迟，避免 AI 通道秒回露馅。
+        let deterministic_image = msg.kind == "image" && cfg.payment_image_only;
         let (think_min, think_max) = if is_group {
             (cfg.group_think_min_sec.max(0.0), cfg.group_think_max_sec.max(cfg.group_think_min_sec.max(0.0)))
         } else {
@@ -874,18 +909,22 @@ async fn process_msg_with(
         };
         let think_secs =
             think_min + rand_interval(think_max - think_min) * (1.0 + text.len() as f64 / 100.0).min(2.0);
-        if think_secs > 0.05 {
+        if deterministic_image {
+            ar.log(app, "debug", "图片金额核对为确定性回复，跳过真人思考延迟", json!({"peer": to}));
+        } else if think_secs > 0.05 {
             ar.log(app, "debug", &format!("反检测：思考延迟 {:.1}s", think_secs), json!({"peer": to}));
             tokio::time::sleep(Duration::from_secs_f64(think_secs)).await;
         }
     }
 
-    // ---- 图片支付校验（确定性，优先于 AI）----
-    // OCR 识别出付款截图时，按发消息这位团员的订单金额核验：一致回「收到 感谢X」、
-    // 不一致回「貌似有些不太对，辛苦核实下付款人和金额」；非支付截图 / 找不到该团员
-    // 订单 / 订单接口无权限 → 返回 None，继续走下面的 AI 流程。仅支付截图会打网络。
-    let payment_reply: Option<String> = if msg.kind == "image" {
-        match crate::payment_verify::verify_image(app, &text, &to, &msg.sender, is_group).await {
+    // ---- 图片金额核对（确定性，优先于 AI；用户 2026-11-09 定稿）----
+    // 图片一律视为付款截图候选：
+    //   ① 金额一致 → 「谢谢」  ② 金额不一致 → 「请核对下付款金额，截图 ¥X，订单 ¥Y」
+    //   ③ 判定不了（非支付截图 / OCR 没金额 / 找不到订单）→ 确定性核对提示，
+    //      **不再交给团长 AI**（旧行为会对付款截图回「这是啥新花样呀」这类闲聊）。
+    // 仅当 cfg.payment_image_only=false 时才恢复「判定失败回退 AI」的旧行为。
+    let payment_reply: Option<(String, &'static str)> = if msg.kind == "image" {
+        match crate::payment_verify::verify_image(app, &ocr_raw, &to, &msg.sender, is_group).await {
             Some(v) => {
                 // 把核验结果（金额比对）写进日志，便于排查付款核验；字段被读取也消除 dead-code 警告
                 ar.log(
@@ -905,7 +944,23 @@ async fn process_msg_with(
                         "reply": v.reply
                     }),
                 );
-                Some(v.reply)
+                Some((v.reply, "payment_verify"))
+            }
+            None if cfg.payment_image_only => {
+                ar.log(
+                    app,
+                    "warn",
+                    &format!(
+                        "[{}] 图片未能完成金额核对（OCR {} 字），回确定性核对提示（略过团长 AI）",
+                        ch,
+                        ocr_raw.chars().count()
+                    ),
+                    json!({
+                        "channel": ch, "to": to, "kind": "payment_unverified",
+                        "ocr": ocr_raw.as_str()
+                    }),
+                );
+                Some((cfg.payment_unverified_text.clone(), "payment_unverified"))
             }
             None => None,
         }
@@ -918,14 +973,14 @@ async fn process_msg_with(
     // route 仅作日志标记（渠道|会话），不参与身份选择。
     let route = format!("{}|{}", ch, to);
     // reply_kind: "payment_verify" | "ai" | "fallback"，用于日志区分回复来源
-    let (reply, reply_kind) = if let Some(pr) = payment_reply {
+    let (reply, reply_kind) = if let Some((pr, rk)) = payment_reply {
         ar.log(
             app,
             "info",
-            &format!("[{}] 图片支付校验已判定（略过团长 AI）：{}", ch, pr),
-            json!({"channel": ch, "to": to, "reply": pr, "kind": "payment_verify"}),
+            &format!("[{}] 图片金额核对已判定（略过团长 AI）：{}", ch, pr),
+            json!({"channel": ch, "to": to, "reply": pr, "kind": rk}),
         );
-        (pr, "payment_verify")
+        (pr, rk)
     } else {
         match crate::ai_gateway::ask_leader(app, &text, &route).await {
             Ok(ans) => (ans.reply, "ai"),
@@ -1028,6 +1083,7 @@ async fn process_msg_with(
             if ch != "test" {
                 let kind_label = match reply_kind {
                     "payment_verify" => "支付校验",
+                    "payment_unverified" => "支付核对提示",
                     "fallback" => "故障兜底",
                     _ => "AI",
                 };
@@ -1297,7 +1353,7 @@ mod tests {
 
         let s = st.safety_status();
         assert_eq!(s["hourly_budget"], 30);
-        assert_eq!(s["require_foreground"], true);
+        assert_eq!(s["require_foreground"], false);
         assert!(s["paused"].as_bool().unwrap() == false);
     }
 }

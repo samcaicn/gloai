@@ -5,9 +5,19 @@
 //!   团员（微信私聊/群聊）发来一张付款截图 → 离线 OCR 出文字 →
 //!   ① 提取支付金额（及是否确为支付截图）② 用发消息这位团员的微信昵称（=订单 buyerName）
 //!      去 `leader/orders` 找其订单并汇总 amountYuan ③ 比对：
-//!        - 金额一致 → 回复「收到 感谢{团员}」
-//!        - 金额不一致 → 回复「貌似有些不太对，辛苦核实下付款人和金额」
-//!   非支付截图 / 找不到该团员订单 / 订单接口无权限（如 PC 非团长态）→ 回退 AI 流程。
+//!        - 金额一致 → 回复「谢谢」
+//!        - 金额不一致 → 回复「请核对下付款金额，截图 ¥X，订单 ¥Y」
+//!   非支付截图 / 找不到该团员订单 / 订单接口无权限（如 PC 非团长态）→ 返回 None，
+//!   由 autoreply 的 `payment_image_only` 决定是否改回确定性「请核对下…」提示，
+//!   **不再让团长 AI 对付款截图自由发挥**（用户 2026-11-09 明确要求）。
+//!
+//! 本地订单种子（0.4.0 补充）：`leader/orders` 需团长 token，而 PC 端实际以**团员**账号
+//! 登录（status 里 role=member），对该接口返回「无权限」导致校验永远走不到订单比对。
+//! 为在本地让这一确定性校验可用，新增 `app_data_dir/payment_orders_seed.json` 作回退：
+//! 后端拉订单失败时读本地种子；种子为空才回退 AI。种子由 `payment_verify_seed_set`
+//! 写入，格式 `[{buyerName, amountYuan}, ...]`（与该团员在 bbt-zb 后台的订单一致即可）。
+//! 根因是后端权限模型（单登录无法同时持有「读订单的团长 token」与「发 chat/send 的团员 token」），
+//! 故种子是本地可用方案，不是实时后端数据。
 //!
 //! 关联键说明（与前端 orderspage.ts::applyMemberStats 对齐）：订单 `buyerName` 即团员的
 //! 微信昵称或脱敏手机尾号；入站消息的 `sender_name`（`WxMsg.sender`）正是发消息这位团员的
@@ -16,22 +26,34 @@
 use crate::ai_gateway::connection;
 use crate::bbt;
 use crate::state::AppState;
+use crate::util;
 use serde_json::{json, Value};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 use tauri::{AppHandle, Manager};
 
 /// 订单快照缓存 TTL（ms）：同一团员连发多张截图时避免每次都打 leader/orders
 const ORDER_CACHE_TTL_MS: i64 = 60_000;
+/// 后端明确「无权限」后的退避（ms）：PC 端登录后 leader/ledger、leader/orders 是团长
+/// 后台接口，多数部署下必然返回「无权限」。每张付款截图都空打一次后端（还有网络
+/// 重试退避）纯属拖慢回复；退避期内直接用本地订单种子，到期再探一次（换团长
+/// token / 重新登录后能自动恢复实时订单）。
+const ORDER_PERM_BACKOFF_MS: i64 = 10 * 60_000;
 
 pub struct PaymentVerifyState {
     /// 全团订单快照：(buyerName, amountYuan) 列表 + 时间戳
     cache: Mutex<Option<(Vec<(String, f64)>, i64)>>,
+    /// 后端明确「无权限」的退避截止时刻（Unix ms），期间直接用本地种子
+    perm_denied_until: Mutex<i64>,
 }
 
 impl PaymentVerifyState {
     pub fn new() -> Self {
-        Self { cache: Mutex::new(None) }
+        Self {
+            cache: Mutex::new(None),
+            perm_denied_until: Mutex::new(0),
+        }
     }
 }
 
@@ -88,9 +110,11 @@ const PAY_KEYWORDS: &[&str] = &[
     "支付宝", "汇款", "付款", "账单", "交易",
 ];
 
-/// 手写金额提取（不引入 regex 依赖）：仅识别「货币锚定」的数字
+/// 手写金额提取（不引入 regex 依赖）：默认仅识别「货币锚定」的数字
 /// —— 前面带 ¥/￥ 或后面带 元/块/圆，支持千分位逗号与小数。
-fn extract_amounts(text: &str) -> Vec<f64> {
+/// `require_anchor=false` 时额外放行「形如 250.00 的两位小数」——微信/支付宝
+/// 付款截图里金额常单独成行、不带 ¥ 或 元，只按锚定会整张漏判（用户 11-09 实测）。
+fn extract_amounts_with(text: &str, require_anchor: bool) -> Vec<f64> {
     let chars: Vec<char> = text.chars().collect();
     let n = chars.len();
     let mut out: Vec<f64> = Vec::new();
@@ -147,7 +171,12 @@ fn extract_amounts(text: &str) -> Vec<f64> {
                         || next == '圆'
                         || next == '￥'
                         || next == '¥';
-                    if has_cur {
+                    // 放宽路径：仅接受「两位小数」且 ≥1 的数字，避免把时间/序号当金额
+                    let loose_ok = !require_anchor && {
+                        let parts: Vec<&str> = s.split('.').collect();
+                        parts.len() == 2 && parts[1].len() == 2 && v >= 1.0 && v <= 1_000_000.0
+                    };
+                    if has_cur || loose_ok {
                         let v = (v * 100.0).round() / 100.0;
                         if !out.contains(&v) {
                             out.push(v);
@@ -163,9 +192,59 @@ fn extract_amounts(text: &str) -> Vec<f64> {
     out
 }
 
-/// 是否为支付截图：有关键词且至少含一个货币锚定金额
+fn extract_amounts(text: &str) -> Vec<f64> {
+    extract_amounts_with(text, true)
+}
+
+fn extract_amounts_loose(text: &str) -> Vec<f64> {
+    extract_amounts_with(text, false)
+}
+
+/// 从 OCR 文本里挑「实付金额」：优先「支付成功 / 付款金额」附近出现的第一个金额。
+/// 付款截图里常同时有商品原价（¥103.00）、立减金（-¥0.17）、代金券（¥100）、
+/// 免息额度（200 元）等，直接取全局最大会拿错数字（11-09 实测评 ¥102.83 的
+/// 截图里还有 ¥103.00）。找不到主金额时才回退到最大金额。
+fn pick_paid_amount(text: &str, amounts: &[f64]) -> f64 {
+    let lines: Vec<&str> = text.lines().collect();
+    // OCR 常把「支付成功」误认成「支付或功 / 支付成力 / 支寸或功」（11-09 两张
+    // 真实截图都这样），强匹配「成功」会整行漏掉 → 回退到 max() 取成商品原价
+    // （实测 ¥102.83 的截图被判成 ¥904/¥105，¥6317.69 的被判成 ¥6318）。
+    // 故标题行只要求含支付类关键词且是短行（≤8 字）：「付款方式 / 支付有礼」
+    // 这类说明行排在标题之后，先命中即返回，且其后通常紧跟不到锚定金额。
+    let keys = ["支付", "付款", "转账", "收款", "实付"];
+    for (i, line) in lines.iter().enumerate() {
+        let t = line.trim();
+        if t.chars().count() > 8 || !keys.iter().any(|k| t.contains(k)) {
+            continue;
+        }
+        for w in 0..=3 {
+            let l = match lines.get(i + w) {
+                Some(x) => *x,
+                None => break,
+            };
+            let mut v = extract_amounts(l);
+            if v.is_empty() {
+                v = extract_amounts_loose(l);
+            }
+            if let Some(c) = v.first() {
+                if amounts.iter().any(|a| (a - c).abs() < 0.005) {
+                    return *c;
+                }
+            }
+        }
+    }
+    // 兜底：付款截图里实付金额几乎总在正文最靠前（时间/状态行之后就是它），
+    // 取「文本顺序第一个金额」远稳于取全局最大 —— 最大常是原价 / 代金券面额。
+    // `extract_amounts*` 按文本顺序 push，故 first() 即最早出现的金额。
+    amounts.first().copied().unwrap_or(0.0)
+}
+
+/// 是否为支付截图：命中支付关键词，且含货币锚定金额或两位小数金额。
 fn is_payment_text(text: &str) -> bool {
-    PAY_KEYWORDS.iter().any(|k| text.contains(k)) && !extract_amounts(text).is_empty()
+    if !PAY_KEYWORDS.iter().any(|k| text.contains(k)) {
+        return false;
+    }
+    !extract_amounts(text).is_empty() || !extract_amounts_loose(text).is_empty()
 }
 
 /// 按 buyerName 双向宽松匹配候选名，汇总订单金额（元）
@@ -197,6 +276,84 @@ fn parse_yuan(v: Option<&Value>) -> f64 {
     cleaned.parse::<f64>().unwrap_or(0.0)
 }
 
+/// 本地订单种子文件名（落在 app_data_dir）。
+const ORDER_SEED_FILE: &str = "payment_orders_seed.json";
+
+/// 解析本地订单种子（与 leader/orders 返回同形态）：支持
+///   [ {buyerName, amountYuan}, ... ]  或  { "orders": [ ... ] }
+/// amountYuan 可为数字或字符串（含千分位 / 元）。buyerName 为空或金额 ≤0 的条目跳过。
+fn parse_seed_entries(v: &Value) -> Vec<(String, f64)> {
+    let arr = if let Some(a) = v.as_array() {
+        a.clone()
+    } else if let Some(a) = v.get("orders").and_then(|x| x.as_array()) {
+        a.clone()
+    } else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for o in &arr {
+        let bn = o
+            .get("buyerName")
+            .and_then(|x| x.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if bn.is_empty() {
+            continue;
+        }
+        let amt = parse_yuan(o.get("amountYuan").or_else(|| o.get("amount")));
+        if amt > 0.0 {
+            out.push((bn, amt));
+        }
+    }
+    out
+}
+
+/// 后端 leader/orders 无权限（PC 团员登录态）时的本地回退：读 app_data_dir 下的订单种子。
+fn load_seed_orders(app: &AppHandle) -> Vec<(String, f64)> {
+    let dir = match app.path().app_data_dir() {
+        Ok(d) => d,
+        Err(_) => return Vec::new(),
+    };
+    let p = dir.join(ORDER_SEED_FILE);
+    let text = match std::fs::read_to_string(&p) {
+        Ok(t) => t,
+        Err(_) => return Vec::new(),
+    };
+    match serde_json::from_str::<Value>(&text) {
+        Ok(v) => parse_seed_entries(&v),
+        Err(_) => Vec::new(),
+    }
+}
+
+/// 写入本地订单种子（供无 leader/orders 权限的部署用）。返回写入条数。
+pub fn save_seed_orders(app: &AppHandle, orders: &Value) -> Result<usize, String> {
+    let parsed = parse_seed_entries(orders);
+    if parsed.is_empty() {
+        return Err("订单种子为空或格式不对（需 [{buyerName, amountYuan}, ...]）".into());
+    }
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("取 app_data_dir 失败: {}", e))?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("创建目录失败: {}", e))?;
+    let p = dir.join(ORDER_SEED_FILE);
+    let body = json!({
+        "orders": parsed
+            .iter()
+            .map(|(n, a)| json!({ "buyerName": n, "amountYuan": a }))
+            .collect::<Vec<_>>()
+    });
+    let text = serde_json::to_string_pretty(&body).map_err(|e| format!("序列化失败: {}", e))?;
+    util::write_atomic(Path::new(&p), &text).map_err(|e| format!("写种子文件失败: {}", e))?;
+    log(
+        app,
+        "info",
+        &format!("已写入本地订单种子 {} 条 → {}", parsed.len(), p.display()),
+    );
+    Ok(parsed.len())
+}
+
 /// 拉取全团订单快照（遍历 leader/ledger 各团 → leader/orders），带 TTL 缓存。
 /// leader/orders 需团长 token；PC 端登录团长账号即具备（见 ai_gateway 身份模型）。
 async fn load_all_orders(app: &AppHandle) -> Result<Vec<(String, f64)>, String> {
@@ -211,6 +368,14 @@ async fn load_all_orders(app: &AppHandle) -> Result<Vec<(String, f64)>, String> 
             if now_ms() - ts < ORDER_CACHE_TTL_MS {
                 return Ok(data);
             }
+        }
+    }
+    // 后端明确「无权限」后的退避：不再每张截图都空打一次 leader/ledger（含网络重试），
+    // 直接让调用方回退本地订单种子。到期自动再探，换团长 token 后无需重启即可恢复。
+    {
+        let st = app.state::<Arc<PaymentVerifyState>>();
+        if now_ms() < *st.perm_denied_until.lock().unwrap() {
+            return Err("订单接口无权限（退避中，使用本地种子）".into());
         }
     }
     let conn = connection(app).await?;
@@ -318,8 +483,13 @@ pub async fn verify_image(
   if !is_payment_text(ocr_text) {
     return None;
   }
-  let amounts = extract_amounts(ocr_text);
-  let paid = amounts.iter().cloned().fold(0.0f64, |a, b| a.max(b)); // 取最大金额
+  // 先用严格锚定金额；截图里金额单独成行（无 ¥ / 元）时回退到两位小数候选
+  let mut amounts = extract_amounts(ocr_text);
+  if amounts.is_empty() {
+    amounts = extract_amounts_loose(ocr_text);
+  }
+  // 优先取「支付成功」附近的实付金额，避免把原价/立减金/代金券当成付款额
+  let paid = pick_paid_amount(ocr_text, &amounts);
 
   // 候选买家名：优先用「微信会话↔团员」配对得到的团员名（精确），
   // 其次回退发消息者昵称（兼容未配对 / iLink 渠道）。
@@ -334,13 +504,29 @@ pub async fn verify_image(
   let orders = match load_all_orders(app).await {
     Ok(o) => o,
     Err(e) => {
-      // 订单拉取失败（PC 非团长态/无权限/网络）→ 回退 AI，不误判
-      log(app, "warn", &format!("订单拉取失败（{}），回退 AI 流程", e));
-      return None;
+      // 后端 leader/orders 无权限（PC 团员登录态）→ 回退本地订单种子；
+      // 种子仍为空才回退 AI，避免对付款截图误下结论。
+      // 仅「无权限」这类确定性失败进入退避（网络抖动仍每次重试，避免缓存住故障）；
+      // 退避期内不打后端也不刷 warn 日志，只留 debug。
+      let in_backoff = e.contains("退避中");
+      if !in_backoff && (e.contains("无权限") || e.contains("权限")) {
+        let st = app.state::<Arc<PaymentVerifyState>>();
+        *st.perm_denied_until.lock().unwrap() = now_ms() + ORDER_PERM_BACKOFF_MS;
+      }
+      log(
+        app,
+        if in_backoff { "debug" } else { "warn" },
+        &format!("订单接口失败（{}），尝试本地订单种子", e),
+      );
+      load_seed_orders(app)
     }
   };
   if orders.is_empty() {
-    log(app, "info", "无订单数据，回退 AI 流程");
+    log(
+      app,
+      "info",
+      "无订单数据（后端无权限且无本地种子），回退 AI 流程",
+    );
     return None;
   }
 
@@ -373,7 +559,9 @@ pub async fn verify_image(
       ),
     );
     Some(PaymentVerdict {
-      reply: format!("收到 感谢{}", name),
+      // 用户 2026-11-09 定稿：「金额对就说 谢谢」。不带称呼，避免配对名（如 k）
+      // 错配成「谢谢k」这种尴尬文案。
+      reply: "谢谢".to_string(),
       matched: true,
       expected,
       paid,
@@ -388,7 +576,9 @@ pub async fn verify_image(
       ),
     );
     Some(PaymentVerdict {
-      reply: "貌似有些不太对，辛苦核实下付款人和金额".to_string(),
+      // 用户 2026-11-09 定稿：「不对就提示 请核对下xxxx」——把双方金额都写清楚，
+      // 团员才知道差在哪，不用再追问。
+      reply: format!("请核对下付款金额，截图 ¥{:.2}，订单 ¥{:.2}", paid, expected),
       matched: false,
       expected,
       paid,
@@ -446,6 +636,29 @@ mod tests {
         assert_eq!(parse_yuan(Some(&json!(888))), 888.0);
         assert_eq!(parse_yuan(Some(&json!("1,234.56"))), 1234.56);
         assert_eq!(parse_yuan(None), 0.0);
+    }
+
+    #[test]
+    fn seed_entry_parsing() {
+        let v = json!([
+            {"buyerName": "凯哥", "amountYuan": 250.0},
+            {"buyerName": "小美", "amountYuan": "888.00"},
+            {"buyerName": "", "amountYuan": 1.0},     // 无名跳过
+            {"amountYuan": 10.0}                       // 缺名跳过
+        ]);
+        let o = parse_seed_entries(&v);
+        assert_eq!(o.len(), 2);
+        assert_eq!(order_total_for_buyer(&o, &["凯哥".to_string()]), 250.0);
+        assert_eq!(order_total_for_buyer(&o, &["小美".to_string()]), 888.0);
+        // 兼容 { "orders": [...] } 包裹
+        let w = json!({ "orders": [{"buyerName":"张三","amountYuan":99}] });
+        let o2 = parse_seed_entries(&w);
+        assert_eq!(o2.len(), 1);
+        assert_eq!(o2[0].0, "张三");
+        assert_eq!(o2[0].1, 99.0);
+        // 其它形态 → 空
+        assert!(parse_seed_entries(&json!({"foo": 1})).is_empty());
+        assert!(parse_seed_entries(&json!("not array")).is_empty());
     }
 }
 

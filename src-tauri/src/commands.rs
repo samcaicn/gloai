@@ -663,6 +663,38 @@ pub async fn autoreply_safety_resume(
     Ok(ar.safety_status())
 }
 
+/// 一次性临时放开发送时段限制 N 分钟（默认 90），**到点自动失效**回落到常规
+/// active_hours，无需人工改回。用于调试/验收，根治「临时窗口跨天遗留」：
+/// 11-10 凌晨把 active_hours 改成 00:00–00:40 后没恢复，11-11 全天只有凌晨
+/// 40 分钟能回复，用户晚间发的付款截图被发送安全闸门直接拦掉。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn autoreply_temp_allow(
+    app: tauri::AppHandle,
+    ar: State<'_, Arc<crate::autoreply::AutoReplyState>>,
+    minutes: Option<u64>,
+) -> Result<Value, String> {
+    let mins = minutes.unwrap_or(90).clamp(1, 24 * 60);
+    let until = (crate::autoreply::now_ms_pub() / 1000) as u64 + mins * 60;
+    let cur = {
+        let mut guard = ar.config.lock().unwrap();
+        guard.temp_allow_until = until;
+        guard.clone()
+    };
+    let state = app.state::<AppState>();
+    {
+        let mut g = state.config.lock().unwrap();
+        if let Some(obj) = g.as_object_mut() {
+            obj.insert("autoreply".into(), serde_json::to_value(&cur).unwrap_or(json!({})));
+        }
+    }
+    let _ = state.save_config();
+    let mut v = ar.safety_status();
+    if let Some(o) = v.as_object_mut() {
+        o.insert("minutes".into(), json!(mins));
+    }
+    Ok(v)
+}
+
 /// AI 消息自测：分步体检 登录态→团长 AI 代聊开关→配额→渠道/团员→（实发）向团长发消息→AI 回复。
 /// 不做 role 预检：PC 端登录团长账号是正常态，每个渠道各代表 1 个团员。
 /// send=false 只查链路不消耗平台配额；send=true 真发一条测试问题。
@@ -829,6 +861,63 @@ pub async fn wechat_pairing_set(app: tauri::AppHandle, map: Value) -> Result<Val
   }
   let _ = state.save_config();
   Ok(map)
+}
+
+// ============================================================================
+//  图片支付校验 · 本地订单种子（leader/orders 无权限时的本地回退）
+
+/// 写入本地订单种子：后端 leader/orders 需团长 token，而 PC 以团员账号登录拿不到订单，
+/// 故用本地种子让确定性支付校验可用。参数 `orders` 为 JSON 字符串，形态
+/// `[{buyerName, amountYuan}, ...]` 或 `{"orders":[...]}`。
+/// （用 String 而非 Value 接收，规避 Tauri v2 对 Value 参数的「bytes payload」序列化冲突。）
+#[tauri::command(rename_all = "snake_case")]
+pub async fn payment_verify_seed_set(app: tauri::AppHandle, orders: String) -> Result<Value, String> {
+    let v: Value = serde_json::from_str(&orders).map_err(|e| format!("订单 JSON 解析失败: {}", e))?;
+    let n = crate::payment_verify::save_seed_orders(&app, &v)?;
+    Ok(json!({ "ok": true, "count": n }))
+}
+
+/// 读取本地订单种子（无则返回空数组）。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn payment_verify_seed_get(app: tauri::AppHandle) -> Result<Value, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("取 app_data_dir 失败: {}", e))?;
+    let p = dir.join("payment_orders_seed.json");
+    let v = if p.exists() {
+        serde_json::from_str(&std::fs::read_to_string(&p).unwrap_or_default())
+            .unwrap_or(json!([]))
+    } else {
+        json!([])
+    };
+    Ok(json!({ "ok": true, "seed": v }))
+}
+
+/// 只读诊断：直接跑一遍图片支付校验（OCR 文本 → 订单比对），返回判定，
+/// 不调用 AI 网关（不写 chat/send）、不碰微信，用于验证订单种子/比对逻辑。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn payment_verify_test(
+    app: tauri::AppHandle,
+    ocr_text: String,
+    peer: String,
+    sender: String,
+) -> Result<Value, String> {
+    match crate::payment_verify::verify_image(&app, &ocr_text, &peer, &sender, false).await {
+        Some(v) => Ok(json!({
+            "ok": true,
+            "verdict": "payment_verify",
+            "matched": v.matched,
+            "paid": v.paid,
+            "expected": v.expected,
+            "reply": v.reply
+        })),
+        None => Ok(json!({
+            "ok": true,
+            "verdict": null,
+            "note": "非支付截图 / 未匹配到订单 / 订单接口无权限且无种子 → autoreply 回确定性核对提示（payment_image_only=true 时不再走 AI）"
+        })),
+    }
 }
 
 // ============================================================================
