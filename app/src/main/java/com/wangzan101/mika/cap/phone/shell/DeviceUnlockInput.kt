@@ -25,7 +25,15 @@ internal class DeviceUnlockInput(private val context: Context, private val injec
     /** 锁屏界面属于 SystemUI;查不到它的 uid 时不输入凭据。 */
     private val systemUiUid: Int? by lazy { runCatching { context.packageManager.getPackageUid(SYSTEM_UI, 0) }.getOrNull() }
 
-    fun wake(): Boolean = key(KeyEvent.KEYCODE_WAKEUP, send = inject) || command(listOf("input", "keyevent", "224"))
+    @Suppress("DEPRECATION")
+    fun wake(): Boolean {
+        // WakeLock + ACQUIRE_CAUSES_WAKEUP 是旧式但兼容的亮屏路;注入 KEYCODE_WAKEUP / input keyevent 224 在部分 ROM 上失效(#618)。
+        // 这里只负责「尽力唤醒」，是否真亮屏由 DeviceAccess 读系统状态判断。
+        val woken = runCatching {
+            power.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "mika:wake").acquire(1_000)
+        }.isSuccess
+        return woken || key(KeyEvent.KEYCODE_WAKEUP, send = inject) || command(listOf("input", "keyevent", "224"))
+    }
 
     fun dismiss(): Boolean = command(listOf("wm", "dismiss-keyguard"))
 
