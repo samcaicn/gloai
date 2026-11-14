@@ -535,6 +535,89 @@ class TaskRun(
         return RetestHint.apply(end, ProviderStore.get(service).untestedMainProvider()) { tr(R.string.fail_model_untested, it) }
     }
 
+    /** execute 收尾用的本地状态;把 finally 拆成独立函数以缩小 execute 的 suspend 状态机(超大 suspend 函数会被 ART 校验器拒绝)。 */
+    private class RunCleanup(
+        val side: CoroutineScope,
+        val resources: ResourceScope,
+        val tally: RunUsageTally,
+        val approvalControl: com.wangzan101.mika.settings.ApprovalControl,
+        val connection: com.wangzan101.mika.cap.phone.shell.ShellBinding?,
+        val smsLogin: com.wangzan101.mika.cap.phone.sms.AndroidSmsLogin?,
+        val watcher: DeviceStateWatcher?,
+        val mute: AudioMute?,
+        val afterTask: com.wangzan101.mika.core.uistate.AfterTaskMarks?,
+        val shellDeath: IBinder.DeathRecipient?,
+        val shellBinder: IBinder?,
+        val record: RunHandle?,
+        val runStore: RunStore?,
+        val mcpEvents: AutoCloseable?,
+        val liveFeed: AutoCloseable?,
+        val approval: RunApproval?,
+    )
+
+    private suspend fun cleanup(c: RunCleanup) {
+        if (resultReadyAtMs == 0L) resultReadyAtMs = SystemClock.elapsedRealtime()
+        handoffUnconsumed()
+        c.side.cancel()
+        _frames.value = null
+        _phoneFrames.value = null
+        _webOpen.value = false
+        synchronized(publishLock) { ended = true }
+        if (awake != null && service.hasQueuedRuns()) wakeHandoff = service.wakeLock.lease().also { it.acquire() }
+        awake?.close()
+        awake = null
+        c.shellDeath?.let { d -> runCatching { c.shellBinder?.unlinkToDeath(d, 0) } }
+        loop = null
+        children = null
+        // 早点关:后面收尾要等屏和网页;resources 关时还会再关一次(只关一次,不重复)
+        mcpConnections?.close()
+        mcpConnections = null
+        c.mcpEvents?.close()
+        c.liveFeed?.close()
+        c.approval?.let { c.approvalControl.end(it) }
+        gate = null
+        takeover = null
+        handoverRef = null
+        sideScope = null
+        // 借来的页面还回浏览器页(在关掉网页这一套之前)
+        withContext(Dispatchers.Main + NonCancellable) { runCatching { UserBrowser.existing()?.loans?.end(key) } }
+        withContext(Dispatchers.IO + NonCancellable) {
+            // 前面哪步抛错,屏和网页显示也照放(按建的反序)
+            try {
+                // 先定 Mika 屏上 App 的去留(留下的挪到主屏后面、正在出声的关掉)并释放屏,再还原静音:留下的不会突然出声
+                val apps = phone?.takeIf { !shellDied }?.let { p ->
+                    p.display.current?.let { d -> AppsAfterTaskEnd.finish(p.shell, d.displayId, c.afterTask) }
+                }
+                c.record?.let { r ->
+                    apps?.let { r.event(RunEvent.State(System.currentTimeMillis(), "apps_after_task", it.detail)) }
+                    val cost = c.tally.deepSeekCost?.let { usage ->
+                        val table = if (usage.hasUsage()) {
+                            withTimeoutOrNull(2_000L) { deepSeekPrices.prices() }.also {
+                                if (it == null) Log.d(TAG, "DeepSeek 价目表暂不可用")
+                            }
+                        } else null
+                        usage.estimate(table)
+                    }
+                    r.event(c.tally.event(System.currentTimeMillis(), cost))
+                    r.close()
+                    if (BuildConfig.DEBUG) c.runStore?.mirrorToExternal(r.runId)
+                }
+                // 恢复抛错也要撤掉「在跑」的登记,否则这份记录永远不归恢复处理
+                try { c.mute?.restoreAll() } finally { recovery.endRun(key) }
+                c.watcher?.close()
+            } finally {
+                try { c.resources.close() } finally { c.smsLogin?.close() }
+            }
+        }
+        phone = null
+        // 屏释放后、对外报结束前清掉:界面看到任务结束时已经没有屏了
+        _displayId.value = -1
+        _pipInput.value = null
+        _pipSoundOn.value = false
+        _appShown.value = false
+        if (c.connection != null) phoneServices.sharedShell.release()
+    }
+
     suspend fun execute(priorTurns: List<Turn>): TaskState {
         noticeTainted = NoticeTurn.tainted(priorTurns)
         // 手机一侧(内置助手、无障碍、虚拟屏)第一次 launch_app 时才接上:只用网页、沙箱的任务不需要它们
@@ -1133,66 +1216,7 @@ class TaskRun(
             resultReadyAtMs = SystemClock.elapsedRealtime()
             return end.also { usedGroups = agent.usedGroups.toList() }.let(::localizeTaskFailure).let(::withRetestHint)
         } finally {
-            if (resultReadyAtMs == 0L) resultReadyAtMs = SystemClock.elapsedRealtime()
-            handoffUnconsumed()
-            side.cancel()
-            _frames.value = null
-            _phoneFrames.value = null
-            _webOpen.value = false
-            synchronized(publishLock) { ended = true }
-            if (awake != null && service.hasQueuedRuns()) wakeHandoff = service.wakeLock.lease().also { it.acquire() }
-            awake?.close()
-            awake = null
-            shellDeath?.let { d -> runCatching { shellBinder?.unlinkToDeath(d, 0) } }
-            loop = null
-            children = null
-            // 早点关:后面收尾要等屏和网页;resources 关时还会再关一次(只关一次,不重复)
-            mcpConnections?.close()
-            mcpConnections = null
-            mcpEvents?.close()
-            liveFeed?.close()
-            approval?.let { approvalControl.end(it) }
-            gate = null
-            takeover = null
-            handoverRef = null
-            sideScope = null
-            // 借来的页面还回浏览器页(在关掉网页这一套之前)
-            withContext(Dispatchers.Main + NonCancellable) { runCatching { UserBrowser.existing()?.loans?.end(key) } }
-            withContext(Dispatchers.IO + NonCancellable) {
-                // 前面哪步抛错,屏和网页显示也照放(按建的反序)
-                try {
-                    // 先定 Mika 屏上 App 的去留(留下的挪到主屏后面、正在出声的关掉)并释放屏,再还原静音:留下的不会突然出声
-                    val apps = phone?.takeIf { !shellDied }?.let { p ->
-                        p.display.current?.let { d -> AppsAfterTaskEnd.finish(p.shell, d.displayId, afterTask) }
-                    }
-                    record?.let { r ->
-                        apps?.let { r.event(RunEvent.State(System.currentTimeMillis(), "apps_after_task", it.detail)) }
-                        val cost = tally.deepSeekCost?.let { usage ->
-                            val table = if (usage.hasUsage()) {
-                                withTimeoutOrNull(2_000L) { deepSeekPrices.prices() }.also {
-                                    if (it == null) Log.d(TAG, "DeepSeek 价目表暂不可用")
-                                }
-                            } else null
-                            usage.estimate(table)
-                        }
-                        r.event(tally.event(System.currentTimeMillis(), cost))
-                        r.close()
-                        if (BuildConfig.DEBUG) runStore?.mirrorToExternal(r.runId)
-                    }
-                    // 恢复抛错也要撤掉「在跑」的登记,否则这份记录永远不归恢复处理
-                    try { mute?.restoreAll() } finally { recovery.endRun(key) }
-                    watcher?.close()
-                } finally {
-                    try { resources.close() } finally { smsLogin?.close() }
-                }
-            }
-            phone = null
-            // 屏释放后、对外报结束前清掉:界面看到任务结束时已经没有屏了
-            _displayId.value = -1
-            _pipInput.value = null
-            _pipSoundOn.value = false
-            _appShown.value = false
-            if (connection != null) phoneServices.sharedShell.release()
+            cleanup(RunCleanup(side, resources, tally, approvalControl, connection, smsLogin, watcher, mute, afterTask, shellDeath, shellBinder, record, runStore, mcpEvents, liveFeed, approval))
         }
     }
 
