@@ -57,6 +57,29 @@ class LockStateTest {
         assertEquals(unlocked, reads)
     }
 
+    // 部分 ROM 上锁屏界面先退下去(keyguardLocked 已 false)、设备仍未解锁(deviceLocked 仍 true):
+    // 不能因为锁屏界面没了就停轮询,否则 deviceLocked 永远读不到 false,任务卡在「等你解锁手机」。
+    @Test fun unlockSeenWhenKeyguardClearsBeforeDevice() = runTest {
+        interactive = true
+        keyguardLocked = true
+        deviceLocked = true
+        val lock = lockState()
+        val gate = TaskGate(lock.locked, MutableStateFlow(true)) { true }
+        val reported = mutableListOf<TaskState?>()
+        var passed = false
+        launch { gate.pass { reported += it }; passed = true }
+        runCurrent()
+        assertEquals(TaskState.Held(TaskGate.LOCKED), reported.last())
+
+        keyguardLocked = false // 锁屏界面先退
+        tick()
+        assertFalse(passed) // 设备还锁着,不能放行
+        deviceLocked = false // 设备真正解锁,没有广播
+        tick()
+        assertTrue(passed)
+        assertEquals(null, reported.last())
+    }
+
     // 没人看这份状态时不读
     @Test fun noReadsWithoutSubscribers() = runTest {
         interactive = true

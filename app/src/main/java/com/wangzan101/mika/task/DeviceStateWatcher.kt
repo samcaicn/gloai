@@ -97,8 +97,11 @@ class DeviceStateWatcher(
 /**
  * 主屏是否不可操作(熄屏或锁屏)。广播来了重读一次;但解锁时系统先发 USER_PRESENT,
  * [android.app.KeyguardManager.isKeyguardLocked] 要等锁屏界面真的退下去才变,这一刻读到的还是「锁着」,
- * 之后不会再有广播。所以读到「亮着但锁着」时,只要有人在看这份状态,就每 [DeviceStateWatcher.POLL_MS] 再读一次,
+ * 之后不会再有广播。所以只要有人在看这份状态,就每 [DeviceStateWatcher.POLL_MS] 重读一次,
  * 直到读到解锁或熄屏;熄屏时不读,等 SCREEN_ON。
+ * 轮询的判据用 [Reading.locked](= 熄屏或 deviceLocked),而不是 keyguardLocked:部分 ROM 上锁屏界面
+ * 先于设备解锁状态退下去(keyguardLocked 已变 false、deviceLocked 仍 true),若只看 keyguardLocked 会提前停轮询,
+ * 任务就卡在「等你解锁手机」(#590 / #627)。
  */
 internal class LockState(private val read: () -> Reading, scope: CoroutineScope) {
     data class Reading(val interactive: Boolean, val keyguardLocked: Boolean, val deviceLocked: Boolean) {
@@ -125,7 +128,7 @@ internal class LockState(private val read: () -> Reading, scope: CoroutineScope)
             _locked.subscriptionCount.map { it > 0 }.distinctUntilChanged().collectLatest { watched ->
                 while (watched) {
                     delay(DeviceStateWatcher.POLL_MS)
-                    if (last.interactive && last.keyguardLocked) refresh()
+                    if (last.interactive && last.locked) refresh()
                 }
             }
         }
