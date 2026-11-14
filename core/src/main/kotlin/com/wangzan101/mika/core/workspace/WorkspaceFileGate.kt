@@ -144,6 +144,8 @@ class WorkspaceFileGate(private val sys: FdSys) {
         val st = sys.lstat(dir, name) ?: return
         if (st.kind == FdStat.Kind.DIR) {
             if (depth > MAX_DEPTH) throw IOException("directory tree too deep to delete")
+            // 打开前先按名字把目录改成可写(不打开、不跟链接):只读目录也能打开再删,而不是卡在 EACCES(#629)。
+            runCatching { sys.chmodAt(dir, name, 448 /* 0700 */) }
             val sub = try { sys.openDir(dir, name, create = false) } catch (e: FdSysException) { null }
             if (sub != null) sub.use {
                 // 删的过程中被挪到根目录外面的,不跟着删

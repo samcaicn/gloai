@@ -13,6 +13,7 @@
     <string name="install_exit_code">exit code %1$d</string>
     <string name="install_no_client">The mika command is missing (incomplete package)</string>
     <string name="sandbox_resetting">Resetting</string>
+    <string name="sandbox_reset_failed">Reset failed: %1$s</string>
     <string name="sandbox_incomplete">Environment files are incomplete; you can reset it in Settings → Advanced</string>
     <string name="sandbox_not_finished">Setup didn’t finish; you can retry</string>
     <string name="sandbox_network">Allow scripts to go online</string>

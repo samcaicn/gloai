@@ -13,6 +13,7 @@
     <string name="install_exit_code">終了コード %1$d</string>
     <string name="install_no_client">mika コマンドがありません(パッケージが不完全です)</string>
     <string name="sandbox_resetting">リセット中</string>
+    <string name="sandbox_reset_failed">リセットに失敗しました: %1$s</string>
     <string name="sandbox_incomplete">環境のファイルが不完全です。「設定 → 詳細設定」でリセットできます</string>
     <string name="sandbox_not_finished">セットアップが完了しませんでした。もう一度お試しください</string>
     <string name="sandbox_network">スクリプトのネットワーク接続を許可</string>

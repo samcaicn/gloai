@@ -13,6 +13,7 @@
     <string name="install_exit_code">kode keluar %1$d</string>
     <string name="install_no_client">Perintah mika tidak ada (paket tidak lengkap)</string>
     <string name="sandbox_resetting">Mereset</string>
+    <string name="sandbox_reset_failed">Gagal mereset: %1$s</string>
     <string name="sandbox_incomplete">Berkas lingkungan tidak lengkap; Anda bisa meresetnya di Pengaturan → Lanjutan</string>
     <string name="sandbox_not_finished">Penyiapan belum selesai; Anda bisa mencoba lagi</string>
     <string name="sandbox_network">Izinkan skrip online</string>

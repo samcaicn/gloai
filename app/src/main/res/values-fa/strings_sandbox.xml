@@ -13,6 +13,7 @@
     <string name="install_exit_code">کد خروج %1$d</string>
     <string name="install_no_client">دستور mika وجود ندارد (بسته ناقص است)</string>
     <string name="sandbox_resetting">در حال بازنشانی</string>
+    <string name="sandbox_reset_failed">بازنشانی ناموفق بود: %1$s</string>
     <string name="sandbox_incomplete">فایل‌های محیط ناقص هستند؛ می‌توانید در تنظیمات ← پیشرفته آن را بازنشانی کنید</string>
     <string name="sandbox_not_finished">راه‌اندازی کامل نشد؛ می‌توانید دوباره تلاش کنید</string>
     <string name="sandbox_network">اجازهٔ دسترسی اسکریپت‌ها به اینترنت</string>

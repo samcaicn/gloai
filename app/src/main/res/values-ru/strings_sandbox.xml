@@ -13,6 +13,7 @@
     <string name="install_exit_code">код завершения %1$d</string>
     <string name="install_no_client">Отсутствует команда mika (пакет неполный)</string>
     <string name="sandbox_resetting">Сброс</string>
+    <string name="sandbox_reset_failed">Не удалось сбросить: %1$s</string>
     <string name="sandbox_incomplete">Файлы среды неполные; её можно сбросить в разделе «Настройки» → «Дополнительно»</string>
     <string name="sandbox_not_finished">Настройка не завершена; можно повторить</string>
     <string name="sandbox_network">Разрешить скриптам выходить в интернет</string>

@@ -13,6 +13,7 @@
     <string name="install_exit_code">종료 코드 %1$d</string>
     <string name="install_no_client">mika 명령이 없어요 (패키지가 불완전해요)</string>
     <string name="sandbox_resetting">초기화 중</string>
+    <string name="sandbox_reset_failed">초기화 실패: %1$s</string>
     <string name="sandbox_incomplete">환경 파일이 불완전해요. 설정 → 고급에서 초기화할 수 있어요</string>
     <string name="sandbox_not_finished">설정이 끝나지 않았어요. 다시 시도할 수 있어요</string>
     <string name="sandbox_network">스크립트의 인터넷 사용 허용</string>

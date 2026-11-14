@@ -113,6 +113,11 @@ class RootfsInstaller(
             // 这些目录沙箱里的命令碰得到:按句柄删,不跟进中途换成的链接
             deleteReachable(dirs.root)
             deleteReachable(dirs.tmp)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // 删不掉也把状态标成「损坏」并报出原因,而不是让 App 崩掉(#629)
+            state.markBroken(tr(R.string.sandbox_reset_failed, e.message ?: e.javaClass.simpleName))
         } finally {
             state.cleared()
         }
