@@ -13,6 +13,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import java.io.File
 import com.wangzan101.mika.core.assembly.knownTools
+import com.wangzan101.mika.ui.components.TileTone
 
 enum class TagTone { Ok, Warn, Bad }
 
@@ -58,6 +59,8 @@ data class TimelineHeader(
     val goal: String,
     val criteria: List<String>,
     val outcome: String,
+    /** 结局的基调:已办成(绿)、没办成(红)、只办成一部分(黄)、其余(灰)。 */
+    val outcomeTone: TileTone = TileTone.Neutral,
     /** 这次运行还没结束:结局、核查、统计都还没写齐,页面按秒接着读(见 [RunTimelineScreen])。 */
     val running: Boolean = false,
     val verdict: String,
@@ -113,6 +116,9 @@ class RunTimelineViewModel(
                 ?: events.filterIsInstance<RunEvent.Criteria>().lastOrNull()?.criteria.orEmpty(),
             outcome = outcomeLabel(summary?.outcome ?: ended?.outcome,
                 summary?.judged ?: events.filterIsInstance<RunEvent.OutcomeJudged>().lastOrNull()?.outcome),
+            outcomeTone = outcomeTone(summary?.outcome ?: ended?.outcome,
+                summary?.judged ?: events.filterIsInstance<RunEvent.OutcomeJudged>().lastOrNull()?.outcome,
+                running = ended == null && summary?.endedAtMs == null && alive(runId)),
             // 结束事件或结束时间只要有一个就算跑完了;都没有时还要任务真在跑,界面据此决定要不要按秒重读
             running = ended == null && summary?.endedAtMs == null && alive(runId),
             verdict = verdictLabel(summary?.verdict ?: events.filterIsInstance<RunEvent.Verifier>().lastOrNull()?.verdict),
@@ -339,6 +345,15 @@ class RunTimelineViewModel(
         }
 
         private fun verdictLabel(verdict: String?) = if (verdict == null) tr(R.string.verify_none) else verifierTag(verdict).text
+
+        /** 结局的基调:已办成绿、没办成红、只办成一部分/做不了黄、进行中或没核实的灰。 */
+        private fun outcomeTone(outcome: String?, judged: String?, running: Boolean): TileTone = when {
+            running -> TileTone.Neutral
+            outcome == "failed" || outcome == "error" -> TileTone.Bad
+            judged == "partial" || judged == "not_possible" -> TileTone.Warn
+            outcome == "succeeded" -> TileTone.Ok
+            else -> TileTone.Neutral
+        }
 
         /** [judged]:交出回答后判的结局;回答如实说没办成、只办了一部分的按它写。 */
         private fun outcomeLabel(outcome: String?, judged: String?) = when {

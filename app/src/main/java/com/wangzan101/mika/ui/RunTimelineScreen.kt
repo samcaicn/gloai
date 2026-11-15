@@ -13,6 +13,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -24,9 +25,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,6 +60,7 @@ import com.wangzan101.mika.ui.components.RowChevron
 import com.wangzan101.mika.ui.components.RowValue
 import com.wangzan101.mika.ui.components.StepItem
 import com.wangzan101.mika.ui.components.StepState
+import com.wangzan101.mika.ui.components.TileTone
 import com.wangzan101.mika.ui.components.TopBar
 import com.wangzan101.mika.ui.components.ValueTone
 import com.wangzan101.mika.ui.theme.MikaIcons
@@ -111,7 +116,7 @@ fun RunTimelineScreen(vm: RunTimelineViewModel, onBack: () -> Unit) {
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottom + 16.dp),
                 ) {
                     item("header") {
-                        HeaderGroup(u.header) {
+                        HeaderGroup(u.header, u.steps.size) {
                             try {
                                 saveLog.launch("mika-usage-${vm.runId}.jsonl")
                             } catch (_: ActivityNotFoundException) {
@@ -139,50 +144,51 @@ fun RunTimelineScreen(vm: RunTimelineViewModel, onBack: () -> Unit) {
 }
 
 @Composable
-private fun HeaderGroup(h: TimelineHeader, onExport: () -> Unit) {
+private fun HeaderGroup(h: TimelineHeader, stepCount: Int, onExport: () -> Unit) {
     val c = MikaTheme.colors
     var more by rememberSaveable { mutableStateOf(false) }
+    // 1. 目标:一句人话,Markdown 正常渲染
     GroupCard {
-        Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 12.dp)) {
-            Text(h.goal, style = MikaType.Title, color = c.ink)
-            if (h.criteria.isNotEmpty()) {
-                Text(stringResource(R.string.timeline_criteria), Modifier.padding(top = 10.dp), style = MikaType.Label, color = c.ink3)
+        MarkdownText(
+            h.goal, MikaType.Title.copy(color = c.ink),
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
+        )
+    }
+    // 2. 结果横幅:一眼看清办没办成 + 用时
+    OutcomeBanner(h, stepCount)
+    // 3. 完成标准(有才显示)
+    if (h.criteria.isNotEmpty()) {
+        GroupCard {
+            Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 13.dp, bottom = 13.dp)) {
+                Text(stringResource(R.string.timeline_criteria), style = MikaType.Label, color = c.ink3)
                 h.criteria.forEachIndexed { i, text ->
                     Text(
-                        if (h.criteria.size > 1) "${i + 1}. $text" else text, Modifier.padding(top = 3.dp),
+                        if (h.criteria.size > 1) "${i + 1}. $text" else text, Modifier.padding(top = 4.dp),
                         style = MikaType.Caption, color = c.ink2,
                     )
                 }
             }
         }
-        h.metrics?.let { RunMetricsSummary(it) }
-        h.stepLimit?.let { limit ->
-            ListRow(null, stringResource(R.string.timeline_step_limit)) {
-                RowValue(stringResource(R.string.timeline_step_limit_value, h.stepsUsed, limit))
-            }
-        }
-        h.tokenBudget?.let { limit ->
-            ListRow(null, stringResource(R.string.timeline_token_budget)) {
-                RowValue(stringResource(R.string.timeline_token_budget_value, UsageCopy.tokens(h.tokensUsed), UsageCopy.tokens(limit)))
-            }
-        }
-        // 还没跑完:这里说「进行中」,下面这些小结(核查、结局)等结束了才有
-        if (h.running) {
-            ListRow(null, stringResource(R.string.timeline_outcome)) { RowValue(stringResource(R.string.timeline_running), ValueTone.Plain) }
-        } else {
-            ListRow(null, stringResource(R.string.timeline_outcome)) {
-                RowValue(h.outcome, if (h.outcome == stringResource(R.string.outcome_succeeded)) ValueTone.Ok else ValueTone.Plain)
-            }
-        }
-        if (h.verdict != stringResource(R.string.verify_none)) ListRow(null, stringResource(R.string.timeline_check)) { RowValue(h.verdict) }
-        // 小结那一行已经写了用时
-        if (h.metrics == null) h.duration?.let { d -> ListRow(null, stringResource(R.string.timeline_duration)) { RowValue(d) } }
-        ListRow(null, stringResource(R.string.timeline_export), stringResource(R.string.timeline_export_hint), onClick = onExport) { RowChevron() }
+    }
+    // 4. 技术详情(折叠):模型来回、Token、步数上限这些细节收起来
+    GroupCard {
         ListRow(null, stringResource(R.string.timeline_more), onClick = { more = !more }) {
             RowValue(if (more) stringResource(R.string.collapse) else stringResource(R.string.expand))
             RowChevron()
         }
         if (more) {
+            h.metrics?.let { RunMetricsSummary(it) }
+            h.stepLimit?.let { limit ->
+                ListRow(null, stringResource(R.string.timeline_step_limit)) {
+                    RowValue(stringResource(R.string.timeline_step_limit_value, h.stepsUsed, limit))
+                }
+            }
+            h.tokenBudget?.let { limit ->
+                ListRow(null, stringResource(R.string.timeline_token_budget)) {
+                    RowValue(stringResource(R.string.timeline_token_budget_value, UsageCopy.tokens(h.tokensUsed), UsageCopy.tokens(limit)))
+                }
+            }
+            if (h.verdict != stringResource(R.string.verify_none)) ListRow(null, stringResource(R.string.timeline_check)) { RowValue(h.verdict) }
             ListRow(null, stringResource(R.string.timeline_model_calls)) { RowValue(trPlural(R.plurals.times, h.modelCalls)) }
             if (h.usedMemory.isNotEmpty()) {
                 ListRow(null, stringResource(R.string.timeline_memory_used)) { RowValue(trPlural(R.plurals.items, h.usedMemory.size)) }
@@ -192,11 +198,42 @@ private fun HeaderGroup(h: TimelineHeader, onExport: () -> Unit) {
                     }
                 }
             }
+            ListRow(null, stringResource(R.string.timeline_export), stringResource(R.string.timeline_export_hint), onClick = onExport) { RowChevron() }
             Text(
                 stringResource(R.string.timeline_timing_note),
                 Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp),
                 style = MikaType.Hint, color = c.ink3,
             )
+        }
+    }
+}
+
+/** 结果横幅:整块上色,左边白底圆图标 + 结局一句 + 用时·步数,一眼看清办没办成。 */
+@Composable
+private fun OutcomeBanner(h: TimelineHeader, stepCount: Int) {
+    val c = MikaTheme.colors
+    val (bg, fg) = h.outcomeTone.colors(c)
+    val icon = when (h.outcomeTone) {
+        TileTone.Ok -> MikaIcons.Check
+        TileTone.Bad -> MikaIcons.Close
+        else -> MikaIcons.Info
+    }
+    val title = if (h.running) stringResource(R.string.timeline_running) else h.outcome
+    val durationText = h.duration?.let { stringResource(R.string.timeline_duration) + " " + it }
+    val stepsText = if (stepCount > 0) trPlural(R.plurals.timeline_total_steps, stepCount) else null
+    val subtitle = listOfNotNull(durationText, stepsText).joinToString(" · ")
+    Row(
+        Modifier.fillMaxWidth().padding(bottom = 12.dp).background(bg, RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(11.dp),
+    ) {
+        Box(Modifier.size(34.dp).background(c.surface, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(icon, null, Modifier.size(18.dp), tint = fg)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MikaType.BodyStrong, color = fg)
+            if (subtitle.isNotEmpty()) Text(subtitle, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink2)
         }
     }
 }
@@ -235,7 +272,7 @@ private fun TimelineRow(s: TimelineStep, first: Boolean, last: Boolean, vm: RunT
             }
             Text(RunTimelineViewModel.timingLabel(s.timing), Modifier.padding(top = 2.dp), style = MikaType.Hint, color = c.ink3)
             if (s.said.isNotEmpty()) {
-                Text(s.said, Modifier.padding(top = 3.dp), style = MikaType.Caption, color = c.ink2)
+                MarkdownText(s.said, MikaType.Caption.copy(color = c.ink2), Modifier.padding(top = 3.dp))
             }
             s.activities.forEach { a ->
                 val action = if (a.count > 1) trPlural(R.plurals.timeline_viewed_times, a.count) else a.label
