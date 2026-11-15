@@ -25,6 +25,7 @@
     <string name="tool_process_files">Работа с файлами</string>
     <string name="tool_run_script">Запустить встроенный скрипт</string>
     <string name="tool_read_file">Прочитать файл</string>
+    <string name="tool_view_image">Просмотр изображения</string>
     <string name="tool_write_file">Записать файл</string>
     <string name="tool_search_files">Поиск по файлам</string>
     <string name="tool_export_file">Экспортировать файл</string>

@@ -1,0 +1,1 @@
+Read an image file under /workspace (png, jpg or webp) with the vision model and report what it shows. Use this when you cannot see images yourself but a vision model is configured, and the task needs to read text or understand content in an image file (for example an attachment). If you can see images, read_file already returns the image.

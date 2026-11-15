@@ -2389,6 +2389,7 @@ class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames =
             "处理文件" to R.string.tool_process_files,
             "运行自带脚本" to R.string.tool_run_script,
             "读文件" to R.string.tool_read_file,
+            "看图" to R.string.tool_view_image,
             "写文件" to R.string.tool_write_file,
             "搜索文件" to R.string.tool_search_files,
             "导出文件" to R.string.tool_export_file,

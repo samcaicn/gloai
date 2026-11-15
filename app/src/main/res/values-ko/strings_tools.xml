@@ -25,6 +25,7 @@
     <string name="tool_process_files">파일 다루기</string>
     <string name="tool_run_script">내장 스크립트 실행</string>
     <string name="tool_read_file">파일 읽기</string>
+    <string name="tool_view_image">이미지 보기</string>
     <string name="tool_write_file">파일 쓰기</string>
     <string name="tool_search_files">파일 검색</string>
     <string name="tool_export_file">파일 내보내기</string>

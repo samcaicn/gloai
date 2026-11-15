@@ -25,6 +25,7 @@
     <string name="tool_process_files">ファイルを扱う</string>
     <string name="tool_run_script">内蔵スクリプトを実行</string>
     <string name="tool_read_file">ファイルを読む</string>
+    <string name="tool_view_image">画像を見る</string>
     <string name="tool_write_file">ファイルに書き込む</string>
     <string name="tool_search_files">ファイルを検索</string>
     <string name="tool_export_file">ファイルをエクスポート</string>

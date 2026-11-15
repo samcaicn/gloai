@@ -512,7 +512,7 @@ Besides the phone, you have a Linux sandbox (Alpine with Python 3 and Node). Use
 - Use only `mika phone` to reach the task's virtual display from a command. For device files use the device file tools when available; do not try to access other apps' data directly from the sandbox or reach the internet when the network is off.
 - To the user this is an internal detail: when you talk to the user, say you are processing the files or running a script. Do not mention a sandbox, Linux, Alpine or PRoot.
 
-==== tools (82) ====
+==== tools (83) ====
 ## wait
 Wait briefly for an app to load or an animation to finish.
 {"type":"object","properties":{"seconds":{"type":"number","description":"0.2-10 seconds.","minimum":0.2,"maximum":10},"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":["seconds"],"additionalProperties":false}
@@ -850,4 +850,8 @@ Search file contents under /workspace or /opt/mika/skills with a regular express
 ## share_file
 Save a file from /workspace to the phone's Download/Mika folder (at most 100 MB) and show it to the user as a file card. Use it to hand results to the user. For a task received through an image-capable messaging channel, exported PNG, JPEG, GIF and WebP images are also sent back to that conversation when the task finishes. Screenshots that you only inspect are not sent; save and share the intended image explicitly.
 {"type":"object","properties":{"path":{"type":"string","description":"Sandbox path of the file under /workspace."},"name":{"type":"string","description":"Optional file name to save as (default: the file's own name)."},"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":["path"],"additionalProperties":false}
+
+## view_image
+Read an image file under /workspace (png, jpg or webp) with the vision model and report what it shows. Use this when you cannot see images yourself but a vision model is configured, and the task needs to read text or understand content in an image file (for example an attachment). If you can see images, read_file already returns the image.
+{"type":"object","properties":{"path":{"type":"string","description":"Sandbox path of the image, absolute or relative to /workspace."},"question":{"type":"string","description":"What to look for in the image, 1-300 characters."},"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":["path"],"additionalProperties":false}
 

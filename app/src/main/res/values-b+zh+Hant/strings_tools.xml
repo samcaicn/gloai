@@ -25,6 +25,7 @@
     <string name="tool_process_files">處理檔案</string>
     <string name="tool_run_script">執行內建腳本</string>
     <string name="tool_read_file">讀檔案</string>
+    <string name="tool_view_image">看圖</string>
     <string name="tool_write_file">寫檔案</string>
     <string name="tool_search_files">搜尋檔案</string>
     <string name="tool_export_file">匯出檔案</string>

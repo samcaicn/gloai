@@ -25,6 +25,7 @@
     <string name="tool_process_files">Trabalhar com arquivos</string>
     <string name="tool_run_script">Executar script integrado</string>
     <string name="tool_read_file">Ler arquivo</string>
+    <string name="tool_view_image">Ver imagem</string>
     <string name="tool_write_file">Gravar arquivo</string>
     <string name="tool_search_files">Buscar arquivos</string>
     <string name="tool_export_file">Exportar arquivo</string>

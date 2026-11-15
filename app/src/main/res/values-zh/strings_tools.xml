@@ -25,6 +25,7 @@
     <string name="tool_process_files">处理文件</string>
     <string name="tool_run_script">运行自带脚本</string>
     <string name="tool_read_file">读文件</string>
+    <string name="tool_view_image">看图</string>
     <string name="tool_write_file">写文件</string>
     <string name="tool_search_files">搜索文件</string>
     <string name="tool_export_file">导出文件</string>

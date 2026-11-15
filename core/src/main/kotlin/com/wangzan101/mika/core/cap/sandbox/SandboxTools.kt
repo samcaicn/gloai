@@ -269,6 +269,21 @@ internal class SandboxTools(
         return g.use { readOpened(t.path, g, offset, limit) }
     }
 
+    /** 读一张图给看图模型看:不检查主模型能不能看图,越界/非图/过大照 read_file 拒绝。 */
+    internal fun readImage(a: Args, ws: String): ToolExecution {
+        val t = resolve(ws, a.str("path", max = 4096)!!, write = false) ?: return outside()
+        val g = try { sandbox.files.openRead(t.root, t.rel) } catch (e: SandboxError) { return refused(t.path, e) }
+        return g.use { readImageOpened(t.path, it) }
+    }
+
+    private fun readImageOpened(path: String, g: GatedFile): ToolExecution {
+        val size = g.size
+        val ext = g.name.substringAfterLast('.', "").lowercase()
+        val type = IMAGE_TYPES[ext] ?: return notText(path, size, KNOWN_TYPES[ext] ?: "application/octet-stream", "This file is not an image (png/jpg/webp).")
+        if (size > MAX_IMAGE) return fail("file_too_large", "$path is ${size / MB} MB; images over 5 MB are not viewed. Make a smaller copy first.")
+        return ToolExecution(okObj { put("path", path); put("size", size); put("type", type) }, image = g.read(0, size.toInt()))
+    }
+
     private fun readOpened(path: String, g: GatedFile, offset: Int, limit: Int): ToolExecution {
         val size = g.size
         val ext = g.name.substringAfterLast('.', "").lowercase()

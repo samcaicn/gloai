@@ -25,6 +25,7 @@
     <string name="tool_process_files">العمل مع الملفات</string>
     <string name="tool_run_script">تشغيل نص برمجي مضمّن</string>
     <string name="tool_read_file">قراءة ملف</string>
+    <string name="tool_view_image">عرض الصورة</string>
     <string name="tool_write_file">كتابة ملف</string>
     <string name="tool_search_files">البحث في الملفات</string>
     <string name="tool_export_file">تصدير ملف</string>

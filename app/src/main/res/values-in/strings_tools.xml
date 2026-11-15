@@ -25,6 +25,7 @@
     <string name="tool_process_files">Olah berkas</string>
     <string name="tool_run_script">Jalankan skrip bawaan</string>
     <string name="tool_read_file">Baca berkas</string>
+    <string name="tool_view_image">Lihat gambar</string>
     <string name="tool_write_file">Tulis berkas</string>
     <string name="tool_search_files">Cari berkas</string>
     <string name="tool_export_file">Ekspor berkas</string>

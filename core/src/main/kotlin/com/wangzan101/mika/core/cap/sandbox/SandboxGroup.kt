@@ -1,5 +1,6 @@
 package com.wangzan101.mika.core.cap.sandbox
 
+import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.tool.Entry
 import com.wangzan101.mika.core.observation.ObsKind
 import com.wangzan101.mika.core.observation.Observation
@@ -16,9 +17,11 @@ import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.tool.argStr
 import com.wangzan101.mika.core.tool.bool
+import com.wangzan101.mika.core.tool.fail
 import com.wangzan101.mika.core.tool.int
 import com.wangzan101.mika.core.tool.str
 import com.wangzan101.mika.core.tool.strArray
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
@@ -180,6 +183,43 @@ internal object ShareFile : SandboxTool {
 private fun output(text: String, place: Place? = null, authored: String? = null) =
     Observation(ObsKind.Output, text, source = SANDBOX, place = place, authored = authored)
 
+/**
+ * 用看图模型读一张工作区里的图。主模型看不到图、但设置里配了看图模型时,附件里的截图、照片靠它认字、说内容;
+ * 主模型自己能看到图时用 read_file 直接把图带回来。没配看图模型不提供。
+ */
+internal object ViewImage : SandboxTool {
+    override val verb = Verb.ViewImage
+    override val label = "看图"
+    override val risk = Risk.Read
+    override val concurrency = Concurrency.ParallelSafe
+    override val def = ToolDef("view_image",
+        Prompts.tool("view_image"),
+        mapOf(
+            "path" to str("Sandbox path of the image, absolute or relative to /workspace."),
+            "question" to str("What to look for in the image, 1-300 characters."),
+        ), listOf("path"))
+
+    override fun offered(ctx: ToolContext) = ctx.sandboxAvailable() && ctx.config.vision != null
+
+    override suspend fun execute(a: Args, ctx: ToolContext): ToolExecution {
+        val read = ctx.sandboxRunner!!.run { ws, _ -> withContext(Dispatchers.IO) { readImage(a, ws) } }
+        val bytes = read.image ?: return read
+        val vision = ctx.config.vision ?: return fail("vision_unavailable", "No vision model is configured; read the image another way.")
+        val question = a.str("question", max = 300)?.trim()?.takeIf { it.isNotEmpty() }
+            ?: "Describe this image and transcribe any text in it."
+        val seen = try {
+            vision.ask(ROLE, question, listOf(bytes))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: ModelError) {
+            return fail("vision_failed", "The vision model could not read the image: ${e.message}")
+        }
+        return ToolExecution(JsonObject(read.content + ("seen" to JsonPrimitive(seen))))
+    }
+
+    private val ROLE: String by lazy { Prompts.role("view_image") }
+}
+
 internal object SandboxGroup {
-    val tools: List<AgentTool> = listOf(RunCommand, RunBundledScript, ReadFile, WriteFile, SearchFiles, ShareFile)
+    val tools: List<AgentTool> = listOf(RunCommand, RunBundledScript, ReadFile, WriteFile, SearchFiles, ShareFile, ViewImage)
 }

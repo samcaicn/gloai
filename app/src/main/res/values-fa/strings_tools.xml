@@ -25,6 +25,7 @@
     <string name="tool_process_files">کار با فایل‌ها</string>
     <string name="tool_run_script">اجرای اسکریپت داخلی</string>
     <string name="tool_read_file">خواندن فایل</string>
+    <string name="tool_view_image">مشاهده تصویر</string>
     <string name="tool_write_file">نوشتن فایل</string>
     <string name="tool_search_files">جست‌وجوی فایل‌ها</string>
     <string name="tool_export_file">دریافت خروجی فایل</string>
