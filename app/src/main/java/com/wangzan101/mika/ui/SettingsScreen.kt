@@ -97,6 +97,7 @@ fun SettingsScreen(
     onOpenBrowser: () -> Unit = {},
     onOpenFiles: () -> Unit = {},
     onOpenPersonal: () -> Unit = {},
+    onOpenPlans: () -> Unit = {},
     /** 任务运行里的「自主模式」:当前值和换它的办法。 */
     autonomous: Boolean = false,
     onAutonomous: (Boolean) -> Unit = {},
@@ -237,6 +238,7 @@ fun SettingsScreen(
             onOpenBrowser = onOpenBrowser,
             onOpenFiles = onOpenFiles,
             onOpenPersonal = onOpenPersonal,
+            onOpenPlans = onOpenPlans,
             versionName = BuildConfig.VERSION_NAME, updateVersion = updateVersion, onOpenAbout = onOpenAbout,
         )
         SettingsPage.Advanced -> AdvancedSettingsContent(
@@ -426,6 +428,7 @@ fun SettingsContent(
     onOpenBrowser: () -> Unit = {},
     onOpenFiles: () -> Unit = {},
     onOpenPersonal: () -> Unit = {},
+    onOpenPlans: () -> Unit = {},
     versionName: String = "",
     updateVersion: String? = null,
     onOpenAbout: () -> Unit = {},
@@ -453,6 +456,7 @@ fun SettingsContent(
                 PhoneOpsPill(status)
                 RowChevron()
             }
+            ListRow(MikaIcons.Clock, stringResource(R.string.drawer_plans), onClick = onOpenPlans) { RowChevron() }
             ListRow(MikaIcons.Globe, stringResource(R.string.drawer_browser), onClick = onOpenBrowser) { RowChevron() }
             ListRow(MikaIcons.Paperclip, stringResource(R.string.file_library_title), onClick = onOpenFiles) { RowChevron() }
             ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), stringResource(R.string.calls_entry_sub), onClick = onOpenCalls) { RowChevron() }

@@ -88,12 +88,14 @@ internal fun ConversationMenu(
     onTerminal: () -> Unit,
     onExport: () -> Unit,
     onDelete: () -> Unit,
+    onSelect: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val c = MikaTheme.colors
     LongPressMenu(
         bounds, progress, pane = stringResource(R.string.drawer_actions), tag = "drawer-menu",
         entries = listOfNotNull(
+            MenuEntry(stringResource(R.string.drawer_select), MikaIcons.ListChecks, "drawer-menu-select", onClick = onSelect),
             if (item.archived) null else MenuEntry(stringResource(if (item.pinned) R.string.unpin else R.string.pin), MikaIcons.Pin, "drawer-menu-pin", onClick = onPin),
             when {
                 item.archived -> MenuEntry(stringResource(R.string.drawer_unarchive), MikaIcons.Archive, "drawer-menu-unarchive", onClick = onUnarchive)

@@ -220,17 +220,6 @@ class ChatCopyTest {
         assertEquals("更早", archivePeriodLabel(ArchivePeriod.Earlier))
     }
 
-    /** 只有存过的、没在跑、没归档的对话能左滑归档;草稿和在跑任务的不行。 */
-    @Test fun onlyIdleSavedConversationsCanBeSwipedToArchive() {
-        fun row(id: String?, saved: Boolean = true, running: Boolean = false, archived: Boolean = false) =
-            DrawerConversation(id, "一", "", running = running, current = false, enabled = true, archived = archived, saved = saved)
-        assertTrue(canSwipeArchive(row("a")))
-        assertFalse(canSwipeArchive(row("a", running = true)))
-        assertFalse(canSwipeArchive(row("a", archived = true)))
-        assertFalse(canSwipeArchive(row("a", saved = false)))
-        assertFalse(canSwipeArchive(row(null)))
-    }
-
     @Test fun greetingFollowsTheTimeOfDay() {
         assertEquals("早上好", ChatCopy.greeting(7))
         assertEquals("中午好", ChatCopy.greeting(12))

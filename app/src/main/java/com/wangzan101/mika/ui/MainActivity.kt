@@ -540,7 +540,6 @@ private fun MikaRoot(
                 conversationChanges = ConversationStore.shared(context).changes,
                 conversationTitle = { ConversationStore.shared(context).title(it) },
                 search = ConversationStore.shared(context).search,
-                onPlans = { nav.pushFromDrawer(Route.Plans) },
                 onSettings = { nav.pushFromDrawer(Route.Settings) },
                 onScreens = { nav.pushFromDrawer(Route.Screens) },
                 onAbout = { nav.pushFromDrawer(Route.About) },
@@ -623,6 +622,7 @@ private fun MikaRoot(
                 onOpenBrowser = { nav.push(Route.Browser) },
                 onOpenFiles = { filesFromDrawer = false; filesConversation = app.chat.ui.value.conversationId; nav.push(Route.Files) },
                 onOpenPersonal = { nav.show(Route.Personal) },
+                onOpenPlans = { nav.push(Route.Plans) },
                 autonomous = autonomous, onAutonomous = app.approvalControl::setAutonomous,
                 updateVersion = updateState.update?.version, onOpenAbout = { nav.push(Route.About) },
                 mcpServers = app.mcpServers)
