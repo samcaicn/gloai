@@ -33,6 +33,23 @@ object LocalHosts {
     private fun privateIpv4(a: Int, b: Int) =
         a == 127 || a == 10 || (a == 172 && b in 16..31) || (a == 192 && b == 168) || (a == 169 && b == 254)
 
+    /**
+     * 是不是本机、局域网,或组网工具常用的 CGNAT 网段 100.64/10。
+     * Tailscale 这类 VPN 给设备分这段地址、流量已在网络层加密,明文 http 也安全;
+     * 所以「明文 http 可不可接受」这类判断把它当私有地址看。比 [isLocal] 多认这一段。
+     */
+    fun isPrivateOrMesh(host: String): Boolean {
+        if (isLocal(host)) return true
+        val h = normalize(host)
+        if (h.isEmpty()) return false
+        ipv4(h)?.let { (a, b) -> return a == 100 && b in 64..127 }
+        if (h.startsWith("::ffff:")) {
+            val (a, b) = ipv4(h.removePrefix("::ffff:")) ?: return false
+            return a == 100 && b in 64..127
+        }
+        return false
+    }
+
     /** 走网络代理时这个主机照旧直连。 */
     fun bypassesProxy(host: String): Boolean {
         if (isLocal(host)) return true

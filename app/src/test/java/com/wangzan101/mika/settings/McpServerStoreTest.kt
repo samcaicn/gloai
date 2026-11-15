@@ -99,6 +99,19 @@ class McpServerStoreTest {
         assertEquals(null, s.validate(ok.copy(url = "http://localhost:1/mcp")))
     }
 
+    @Test fun cgnatMeshHostCountsAsPrivateForHttp() {
+        val s = store()
+        fun config(url: String, allowLocalHttp: Boolean) =
+            McpServerConfig(name = "m", url = url, allowLocalHttp = allowLocalHttp)
+        // Tailscale 等组网工具用的 100.64/10:勾选允许本地 http 后应视为私有地址放行
+        assertEquals(null, s.validate(config("http://100.64.0.1:8080/mcp", allowLocalHttp = true)))
+        assertEquals(null, s.validate(config("http://100.127.255.254/mcp", allowLocalHttp = true)))
+        // 没勾选仍然不放行 http(和本地地址一致)
+        assertNotNull(s.validate(config("http://100.64.0.1:8080/mcp", allowLocalHttp = false)))
+        // 公网地址即使勾选也不放行
+        assertNotNull(s.validate(config("http://8.8.8.8/mcp", allowLocalHttp = true)))
+    }
+
     @Test fun connectionsConnectsEnabledServersAndReportsFailures() = runBlocking {
         val server = MockWebServer().also { it.start() }
         try {
