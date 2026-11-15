@@ -2,6 +2,7 @@
 <resources>
     <string name="about_tagline">مساعدك الشخصي على هاتفك، ينجز المهام نيابةً عنك</string>
     <string name="about_check">التحقق من وجود تحديثات</string>
+    <string name="drawer_update">تحديث</string>
     <string name="about_check_sub">احصل على الإصدارات الجديدة من GitHub Releases</string>
     <string name="about_check_sub_new">يتوفر إصدار جديد</string>
     <string name="about_up_to_date">محدّث</string>

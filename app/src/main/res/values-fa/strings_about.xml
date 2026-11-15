@@ -2,6 +2,7 @@
 <resources>
     <string name="about_tagline">دستیار شخصی شما در گوشی، برای انجام کارهایتان</string>
     <string name="about_check">بررسی به‌روزرسانی‌ها</string>
+    <string name="drawer_update">به‌روزرسانی</string>
     <string name="about_check_sub">دریافت نسخه‌های جدید از GitHub Releases</string>
     <string name="about_check_sub_new">نسخهٔ جدید موجود است</string>
     <string name="about_up_to_date">به‌روز است</string>

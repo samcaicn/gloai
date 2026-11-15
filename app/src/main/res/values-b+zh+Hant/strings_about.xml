@@ -2,6 +2,7 @@
 <resources>
     <string name="about_tagline">你手機上的私人助理，替你把事辦成</string>
     <string name="about_check">檢查更新</string>
+    <string name="drawer_update">更新</string>
     <string name="about_check_sub">從 GitHub 釋出頁取得新版本</string>
     <string name="about_check_sub_new">有新版本</string>
     <string name="about_up_to_date">已是最新</string>

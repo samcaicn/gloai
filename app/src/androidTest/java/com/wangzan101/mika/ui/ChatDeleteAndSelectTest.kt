@@ -92,7 +92,7 @@ class ChatDeleteAndSelectTest {
             ChatWithDrawer(
                 vm, Prerequisites.Check(emptyList()), reduceMotion = true,
                 conversations = { store.list() }, conversationChanges = store.changes, conversationTitle = store::title,
-                onPlans = {}, onMemory = {}, onBrowser = {}, onSettings = {}, reopen = drawerOpen,
+                onSettings = {}, reopen = drawerOpen,
             ) { open ->
                 ChatScreen(vm, Prerequisites.Check(emptyList()), MutableStateFlow(null), MutableStateFlow(false), reduceMotion = true,
                     onOpenDrawer = open, openSettings = {}, recommendations = recommendations)

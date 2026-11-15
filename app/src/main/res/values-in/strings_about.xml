@@ -2,6 +2,7 @@
 <resources>
     <string name="about_tagline">Asisten pribadi di ponsel Anda, yang mengerjakan banyak hal untuk Anda</string>
     <string name="about_check">Periksa pembaruan</string>
+    <string name="drawer_update">Perbarui</string>
     <string name="about_check_sub">Dapatkan versi baru dari GitHub Releases</string>
     <string name="about_check_sub_new">Versi baru tersedia</string>
     <string name="about_up_to_date">Sudah terbaru</string>

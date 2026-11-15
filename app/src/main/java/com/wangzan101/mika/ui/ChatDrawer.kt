@@ -46,11 +46,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
@@ -413,13 +413,24 @@ fun ChatDrawer(
             // 多选从长按菜单进;进去以后这里换成「取消」,返回键同样能退出
             if (selecting) HeaderAction(stringResource(R.string.cancel), "drawer-select-cancel", c.ink2, onExitSelect)
         }
-        if (canSearch && !selecting && !archivedView) DrawerSearchField(query, onQueryChange)
+        // 搜索框和新对话并成一行:搜索框占满,右边一个中性圆加号(没在搜时才有);没有可搜的对话时也留那个加号
+        val showNew = !searchActive && !selecting && !archivedView
+        if (canSearch && !selecting && !archivedView) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DrawerSearchField(query, onQueryChange, Modifier.weight(1f))
+                if (showNew) NewConversationButton(canSwitch, onNew)
+            }
+        } else if (showNew) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+                NewConversationButton(canSwitch, onNew)
+            }
+        }
         // 搜索时搜索框下面按归档状态筛;归档视图里没有搜索,自然也没有这一行
         if (searchActive) SearchArchiveFilterRow(searchFilter, onSearchFilterChange)
-        // 搜索、多选、归档视图时把几个入口收起来，把高度让给列表;退出后原样回来
-        if (!searchActive && !selecting && !archivedView) Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-            NavEntry(MikaIcons.New, stringResource(R.string.chat_new), enabled = canSwitch, onClick = onNew)
-        }
         // 侧栏关着时列表只剩末尾那一项;打开时对话插在它前面,列表会按原来那一项停在最底下。最上面一项变了就回到顶上
         val list = rememberLazyListState()
         val first = when {
@@ -521,14 +532,14 @@ fun ChatDrawer(
         if (selecting) {
             SelectBar(selectedCount, allSelected, onSelectAll, archivedView, onArchiveSelected, onUnarchiveSelected, onDeleteSelected)
         } else {
-            // 设置和关于并排固定在侧栏最底下,对话再多也不被挤走:设置靠左,关于靠右,中间留空
+            // 设置固定在侧栏最底下靠左;有新版时右边才出现「更新」带红点,点它进「关于 Mika」
             Row(
                 Modifier.fillMaxWidth().drawBehind { drawLine(c.hair, Offset(0f, 0f), Offset(size.width, 0f), 0.5.dp.toPx()) }
                     .padding(horizontal = 12.dp, vertical = 6.dp).testTag("drawer-footer"),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 NavEntry(MikaIcons.Gear, stringResource(R.string.settings_title), Modifier, onClick = onSettings)
-                NavEntry(MikaIcons.Info, AboutCopy.TITLE, Modifier, dot = aboutDot, onClick = onAbout)
+                if (aboutDot) NavEntry(MikaIcons.Refresh, stringResource(R.string.drawer_update), Modifier, dot = true, onClick = onAbout)
             }
         }
     }
@@ -712,6 +723,20 @@ private fun NavEntry(
             Text(text, style = MikaType.Body, color = c.ink, maxLines = 1, softWrap = false)
             if (dot) UpdateDot()
         }
+    }
+}
+
+/** 侧栏搜索框右边的新对话按钮:中性圆底 + 深色加号,和顶栏 ✚ 一个样子。 */
+@Composable
+private fun NewConversationButton(enabled: Boolean, onClick: () -> Unit) {
+    val c = MikaTheme.colors
+    Box(
+        Modifier.size(38.dp).clip(CircleShape).background(c.fill)
+            .clickable(enabled = enabled, role = Role.Button, onClickLabel = stringResource(R.string.chat_new), onClick = onClick)
+            .alpha(if (enabled) 1f else 0.4f),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(MikaIcons.New, stringResource(R.string.chat_new), Modifier.size(18.dp), tint = c.ink)
     }
 }
 
@@ -976,13 +1001,13 @@ fun ChatWithDrawer(
     resetKey: Int = 0,
     content: @Composable (openDrawer: () -> Unit) -> Unit,
 ) {
-    val drawer = rememberDrawerState(DrawerValue.Closed)
+    // 抽屉状态别用 rememberDrawerState(它带 rememberSaveable):从侧栏进去的页面退回来时,
+    // SaveableStateProvider 会先把状态恢复成离开前「关着」的样子,再由 LaunchedEffect 弹开,会闪一下。
+    // 用普通 remember 当场按 reopen 决定初始状态,第一帧就是打开的。
+    val drawer = remember { DrawerState(if (reopen) DrawerValue.Open else DrawerValue.Closed) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(reopen) {
-        if (reopen) {
-            drawer.snapTo(DrawerValue.Open)
-            onReopened()
-        }
+        if (reopen) onReopened()
     }
     val ui by vm.ui.collectAsState()
     val others by vm.otherRunning.collectAsState()

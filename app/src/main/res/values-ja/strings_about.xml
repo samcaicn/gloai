@@ -2,6 +2,7 @@
 <resources>
     <string name="about_tagline">スマホの中のあなた専用アシスタント。用事をまるごと片付けます</string>
     <string name="about_check">アップデートを確認</string>
+    <string name="drawer_update">更新</string>
     <string name="about_check_sub">GitHub Releases から新しいバージョンを入手</string>
     <string name="about_check_sub_new">新しいバージョンがあります</string>
     <string name="about_up_to_date">最新です</string>

@@ -83,22 +83,6 @@ class BrowserScreenTest {
     }
 
     @Test
-    fun drawerHasBrowserEntryThatOpensIt() {
-        compose.setContent {
-            MikaTheme {
-                ChatDrawer(
-                    Prerequisites.Check(emptyList()), DrawerSections(emptyList(), emptyList()), canSwitch = true,
-                    onNew = {}, onPlans = {}, onMemory = {},
-                    onBrowser = { calls += "browser" },
-                    onSettings = {}, onOpen = {},
-                )
-            }
-        }
-        compose.onNodeWithText("浏览器").assertIsDisplayed().performClick()
-        assertEquals(listOf("browser"), calls)
-    }
-
-    @Test
     fun startPageShowsSearchSitesAndRecent() {
         start()
         compose.onNodeWithText(BROWSER_SEARCH_HINT).assertIsDisplayed()

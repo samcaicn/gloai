@@ -67,7 +67,7 @@ class ChatSearchTest {
                 vm, Prerequisites.Check(emptyList()), reduceMotion = true,
                 conversations = { store.list() }, conversationChanges = store.changes, conversationTitle = store::title,
                 search = store.search,
-                onPlans = {}, onMemory = {}, onBrowser = {}, onSettings = {}, reopen = true,
+                onSettings = {}, reopen = true,
             ) { open ->
                 ChatScreen(vm, Prerequisites.Check(emptyList()), MutableStateFlow(null), MutableStateFlow(false), reduceMotion = true,
                     onOpenDrawer = open, openSettings = {})

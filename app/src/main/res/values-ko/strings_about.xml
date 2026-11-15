@@ -2,6 +2,7 @@
 <resources>
     <string name="about_tagline">내 휴대전화 속 개인 비서, 일을 대신 해 줘요</string>
     <string name="about_check">업데이트 확인</string>
+    <string name="drawer_update">업데이트</string>
     <string name="about_check_sub">GitHub Releases에서 새 버전 받기</string>
     <string name="about_check_sub_new">새 버전이 있어요</string>
     <string name="about_up_to_date">최신 버전</string>
