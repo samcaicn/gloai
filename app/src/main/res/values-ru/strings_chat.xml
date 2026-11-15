@@ -313,4 +313,13 @@
         <item quantity="many">%1$d не архивировано</item>
         <item quantity="other">%1$d не архивированы</item>
     </plurals>
+    <string name="chat_example_github_star_title">Поставьте звезду проекту GitHub</string>
+    <string name="chat_example_follow_title">Подпишитесь на автора</string>
+    <string name="chat_example_group_summary_title">Суммируйте групповой чат</string>
+    <string name="chat_example_alarms_title">Установите будильники</string>
+    <string name="chat_example_pdf_title">Суммируйте PDF</string>
+    <string name="chat_example_schedule_title">Установите ежедневное напоминание</string>
+    <string name="chat_example_pdf">Суммируй PDF, который я пришлю, в короткую выжимку.</string>
+    <string name="chat_example_schedule">Каждое утро в 8 напоминай мне проверить погоду.</string>
+    <string name="chat_empty_value">Скажи одной фразой, и я запущу приложения, выйду в сеть и доведу дело до конца.</string>
 </resources>

@@ -271,4 +271,13 @@
     <plurals name="drawer_archive_many_skipped">
         <item quantity="other">%1$d개는 보관하지 않음</item>
     </plurals>
+    <string name="chat_example_github_star_title">GitHub 프로젝트에 스타 주기</string>
+    <string name="chat_example_follow_title">크리에이터 팔로우</string>
+    <string name="chat_example_group_summary_title">단체 채팅 요약</string>
+    <string name="chat_example_alarms_title">알람 몇 개 설정</string>
+    <string name="chat_example_pdf_title">PDF 요약</string>
+    <string name="chat_example_schedule_title">매일 알림 설정</string>
+    <string name="chat_example_pdf">보내드린 PDF를 짧은 요약으로 정리해 줘</string>
+    <string name="chat_example_schedule">매일 아침 8시에 오늘 날씨 확인하라고 알림해 줘</string>
+    <string name="chat_empty_value">한마디만 하면 앱을 조작하고 웹을 탐색해서 일을 끝내드려요.</string>
 </resources>

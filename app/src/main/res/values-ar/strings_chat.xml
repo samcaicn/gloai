@@ -341,4 +341,13 @@
         <item quantity="many">%1$d غير مؤرشفة</item>
         <item quantity="other">%1$d غير مؤرشفة</item>
     </plurals>
+    <string name="chat_example_github_star_title">أضِف نجمة لمشروع على GitHub</string>
+    <string name="chat_example_follow_title">تابِع أحد صنّاع المحتوى</string>
+    <string name="chat_example_group_summary_title">لخّص دردشة مجموعة</string>
+    <string name="chat_example_alarms_title">اضبط بعض المنبّهات</string>
+    <string name="chat_example_pdf_title">لخّص ملف PDF</string>
+    <string name="chat_example_schedule_title">اضبط تذكيرًا يوميًا</string>
+    <string name="chat_example_pdf">لخّص ملف PDF الذي سأرسله في ملخص قصير</string>
+    <string name="chat_example_schedule">كل صباح في الثامنة، ذكّرني بمراجعة الطقس</string>
+    <string name="chat_empty_value">قلها بجملة واحدة، وسأشغّل تطبيقاتك وأتصفح الويب وأنجزها.</string>
 </resources>

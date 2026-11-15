@@ -285,4 +285,13 @@
         <item quantity="one">%1$d not archived</item>
         <item quantity="other">%1$d not archived</item>
     </plurals>
+    <string name="chat_example_github_star_title">Star a GitHub project</string>
+    <string name="chat_example_follow_title">Follow a creator</string>
+    <string name="chat_example_group_summary_title">Summarize a group chat</string>
+    <string name="chat_example_alarms_title">Set some alarms</string>
+    <string name="chat_example_pdf_title">Summarize a PDF</string>
+    <string name="chat_example_schedule_title">Set a daily reminder</string>
+    <string name="chat_example_pdf">Summarize the PDF you send into a short digest.</string>
+    <string name="chat_example_schedule">Every morning at 8, remind me to check the weather.</string>
+    <string name="chat_empty_value">One sentence, and I\'ll run your apps, browse the web, and get it done.</string>
 </resources>

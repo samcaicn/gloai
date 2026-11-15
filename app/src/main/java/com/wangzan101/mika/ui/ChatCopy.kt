@@ -18,22 +18,26 @@ object ChatCopy {
     }
 
     val EMPTY_PROMPT get() = tr(R.string.chat_empty_prompt)
+    /** 空对话里的一句价值主张:说明 Mika 能干嘛。 */
+    val EMPTY_VALUE get() = tr(R.string.chat_empty_value)
 
     /**
      * 内置推荐任务的原文。只在本机还没有保存过推荐任务时用来初始化一次;
      * 标题和提示词都用这一句,之后用户在设置里改,不会因为换语言或升级被加回来。
      */
     enum class ExampleKind { App, Web, File, Schedule, Device }
-    data class Example(val kind: ExampleKind, val text: String)
+    data class Example(val kind: ExampleKind, val title: String, val prompt: String)
 
     val examples get() = listOf(
-        Example(ExampleKind.Web, tr(R.string.chat_example_github_star)),
-        Example(ExampleKind.App, tr(R.string.chat_example_follow)),
-        Example(ExampleKind.App, tr(R.string.chat_example_group_summary)),
-        Example(ExampleKind.Device, tr(R.string.chat_example_alarms)),
+        Example(ExampleKind.Web, tr(R.string.chat_example_github_star_title), tr(R.string.chat_example_github_star)),
+        Example(ExampleKind.App, tr(R.string.chat_example_follow_title), tr(R.string.chat_example_follow)),
+        Example(ExampleKind.App, tr(R.string.chat_example_group_summary_title), tr(R.string.chat_example_group_summary)),
+        Example(ExampleKind.Device, tr(R.string.chat_example_alarms_title), tr(R.string.chat_example_alarms)),
+        Example(ExampleKind.File, tr(R.string.chat_example_pdf_title), tr(R.string.chat_example_pdf)),
+        Example(ExampleKind.Schedule, tr(R.string.chat_example_schedule_title), tr(R.string.chat_example_schedule)),
     )
 
-    fun recommendationSeeds(): List<Pair<String, String>> = examples.map { it.text to it.text }
+    fun recommendationSeeds(): List<Pair<String, String>> = examples.map { it.title to it.prompt }
 
     /** 对话页顶栏的标题:固定是 App 名;副标题说此刻在做什么。 */
     const val APP_TITLE = "Mika"

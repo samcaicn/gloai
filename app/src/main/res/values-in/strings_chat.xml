@@ -271,4 +271,13 @@
     <plurals name="drawer_archive_many_skipped">
         <item quantity="other">%1$d tidak diarsipkan</item>
     </plurals>
+    <string name="chat_example_github_star_title">Beri bintang pada proyek GitHub</string>
+    <string name="chat_example_follow_title">Ikuti seorang kreator</string>
+    <string name="chat_example_group_summary_title">Ringkas obrolan grup</string>
+    <string name="chat_example_alarms_title">Atur beberapa alarm</string>
+    <string name="chat_example_pdf_title">Ringkas PDF</string>
+    <string name="chat_example_schedule_title">Atur pengingat harian</string>
+    <string name="chat_example_pdf">Ringkas PDF yang saya kirim menjadi intisari singkat.</string>
+    <string name="chat_example_schedule">Setiap pagi jam 8, ingatkan saya untuk memeriksa cuaca.</string>
+    <string name="chat_empty_value">Katakan dalam satu kalimat, dan saya akan menjalankan aplikasi, menjelajah web, dan menyelesaikannya.</string>
 </resources>

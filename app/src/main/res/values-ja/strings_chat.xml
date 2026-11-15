@@ -271,4 +271,13 @@
     <plurals name="drawer_archive_many_skipped">
         <item quantity="other">%1$d 件は未アーカイブ</item>
     </plurals>
+    <string name="chat_example_github_star_title">GitHub プロジェクトにスターを付ける</string>
+    <string name="chat_example_follow_title">クリエイターをフォローする</string>
+    <string name="chat_example_group_summary_title">グループチャットを要約</string>
+    <string name="chat_example_alarms_title">アラームをいくつか設定</string>
+    <string name="chat_example_pdf_title">PDF を要約</string>
+    <string name="chat_example_schedule_title">毎日のリマインダーを設定</string>
+    <string name="chat_example_pdf">送った PDF を短い要約にまとめて</string>
+    <string name="chat_example_schedule">毎朝 8 時に今日の天気を確認するようリマインドして</string>
+    <string name="chat_empty_value">一言で伝えれば、アプリを操作し、ウェブを見て、用事を片づけます。</string>
 </resources>

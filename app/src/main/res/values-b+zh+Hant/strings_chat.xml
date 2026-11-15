@@ -271,4 +271,13 @@
     <plurals name="drawer_archive_many_skipped">
         <item quantity="other">%1$d 個未歸檔</item>
     </plurals>
+    <string name="chat_example_github_star_title">給 GitHub 專案點 star</string>
+    <string name="chat_example_follow_title">追蹤小紅書博主</string>
+    <string name="chat_example_group_summary_title">總結群組聊天</string>
+    <string name="chat_example_alarms_title">設幾個鬧鐘</string>
+    <string name="chat_example_pdf_title">整理 PDF 摘要</string>
+    <string name="chat_example_schedule_title">設定每日提醒</string>
+    <string name="chat_example_pdf">把傳來的 PDF 整理成一段摘要</string>
+    <string name="chat_example_schedule">每天早上 8 點提醒我查今天的天氣</string>
+    <string name="chat_empty_value">一句話，讓我幫你操作 App、上網、把事情辦成</string>
 </resources>

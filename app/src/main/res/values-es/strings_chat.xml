@@ -299,4 +299,13 @@
         <item quantity="many">%1$d sin archivar</item>
         <item quantity="other">%1$d sin archivar</item>
     </plurals>
+    <string name="chat_example_github_star_title">Dale una estrella a un proyecto de GitHub</string>
+    <string name="chat_example_follow_title">Sigue a un creador</string>
+    <string name="chat_example_group_summary_title">Resume un chat grupal</string>
+    <string name="chat_example_alarms_title">Pon algunas alarmas</string>
+    <string name="chat_example_pdf_title">Resume un PDF</string>
+    <string name="chat_example_schedule_title">Pon un recordatorio diario</string>
+    <string name="chat_example_pdf">Resume el PDF que te envío en un resumen corto.</string>
+    <string name="chat_example_schedule">Cada mañana a las 8, recuérdame consultar el tiempo.</string>
+    <string name="chat_empty_value">Dilo en una frase y usaré tus apps, navegaré por la web y lo dejaré hecho.</string>
 </resources>

@@ -395,7 +395,7 @@ fun ChatScreen(
             ) {
                 if (ui.exchanges.isEmpty() && ui.blocked == null) {
                     item("empty") {
-                        EmptyState(ui.conversationId, recommendedTasks) { prompt ->
+                        EmptyState(ui.conversationId, recommendedTasks, Modifier.fillParentMaxHeight()) { prompt ->
                             if (input.isEmpty()) vm.input(prompt) else pendingExample = prompt
                         }
                     }
@@ -697,44 +697,44 @@ private fun LazyListState.nearTail(thresholdPx: Int): Boolean {
 
 // ---------- 空对话 ----------
 
-/** 问候、一句「想让 Mika 做什么？」和推荐任务。点一条把提示词填进输入框,改好了再发;一条都没有时不显示列表。 */
+/** 空对话:居中问候 + 一句价值主张 + 自动换行的建议胶囊。点一条把完整提示词填进输入框,改好了再发;一条都没有时不显示。 */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EmptyState(conversation: String?, tasks: List<RecommendedTask>, onPick: (String) -> Unit) {
+private fun EmptyState(conversation: String?, tasks: List<RecommendedTask>, modifier: Modifier = Modifier, onPick: (String) -> Unit) {
     val c = MikaTheme.colors
     val hour = remember(conversation) { LocalTime.now().hour }
-    Column(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 52.dp)) {
-            Text(ChatCopy.greeting(hour), style = MikaType.LargeTitle, color = c.ink)
-            Text(ChatCopy.EMPTY_PROMPT, Modifier.padding(top = 6.dp), style = EmptyLead, color = c.ink2)
-        }
+    Column(
+        modifier.fillMaxWidth().padding(horizontal = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(ChatCopy.greeting(hour), style = MikaType.LargeTitle, color = c.ink, textAlign = TextAlign.Center)
+        Text(ChatCopy.EMPTY_VALUE, Modifier.padding(top = 11.dp), style = EmptyLead, color = c.ink2, textAlign = TextAlign.Center)
         if (tasks.isNotEmpty()) {
-            MikaCard(Modifier.padding(top = 28.dp)) {
-                tasks.forEachIndexed { i, task ->
-                    ExampleRow(MikaIcons.Message, task.title, first = i == 0) { onPick(task.prompt) }
-                }
+            Spacer(Modifier.height(28.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                tasks.forEach { task -> SuggestionChip(task.title) { onPick(task.prompt) } }
             }
         }
     }
 }
 
+/** 建议胶囊:白底 + 细描边 + 短标题,点它把完整提示词填进输入框。 */
 @Composable
-private fun ExampleRow(icon: ImageVector, text: String, first: Boolean, onClick: () -> Unit) {
+private fun SuggestionChip(text: String, onClick: () -> Unit) {
     val c = MikaTheme.colors
-    Row(
-        Modifier.fillMaxWidth()
-            .then(if (first) Modifier else Modifier.drawBehind {
-                val y = 0.25.dp.toPx()
-                drawLine(c.hair, Offset(52.dp.toPx(), y), Offset(size.width, y), strokeWidth = 0.5.dp.toPx())
-            })
+    Text(
+        text,
+        Modifier.clip(MikaShapes.Pill).background(c.surface, MikaShapes.Pill).border(0.5.dp, c.edge, MikaShapes.Pill)
             .clickable(role = Role.Button, onClick = onClick)
-            .heightIn(min = 56.dp)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Icon(icon, null, Modifier.size(MikaSize.Icon), tint = c.ink2)
-        Text(text, Modifier.weight(1f), style = ExampleText, color = c.ink, maxLines = 3, overflow = TextOverflow.Ellipsis)
-    }
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        style = SuggestionText,
+        color = c.ink2,
+        maxLines = 1,
+    )
 }
 
 // ---------- 一问一答 ----------
@@ -1696,6 +1696,7 @@ private val StepRail = 8.dp
 private val FileTileShape = RoundedCornerShape(10.dp)
 private val EmptyLead = TextStyle(fontSize = 15.sp, lineHeight = 21.sp)
 private val ExampleText = TextStyle(fontSize = 15.sp, lineHeight = 21.sp)
+private val SuggestionText = TextStyle(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
 private val BubbleText = TextStyle(fontSize = 15.5.sp, lineHeight = 22.5.sp)
 /** 回答:正文字号,行距放宽到 1.7。 */
 private val AnswerText = TextStyle(fontSize = 15.5.sp, lineHeight = 26.sp)

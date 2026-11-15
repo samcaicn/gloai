@@ -177,7 +177,7 @@ class RecommendedTaskStore(private val file: File, private val ids: () -> String
     }
 
     companion object {
-        const val FILE = "recommended-tasks.json"
+        const val FILE = "recommended-tasks-v2.json"
         const val TITLE_MAX = 500
         const val PROMPT_MAX = 8_000
         const val MAX_TASKS = 50

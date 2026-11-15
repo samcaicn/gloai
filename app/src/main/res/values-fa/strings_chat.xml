@@ -285,4 +285,13 @@
     <string name="chat_task_cost_estimate">تقریباً %1$s</string>
     <string name="chat_task_cost_partial">%1$s (ناقص)</string>
     <string name="chat_task_cost_unavailable">هزینه در دسترس نیست</string>
+    <string name="chat_example_github_star_title">به پروژه گیت‌هاب ستاره بده</string>
+    <string name="chat_example_follow_title">دنبال یک تولیدکننده محتوا</string>
+    <string name="chat_example_group_summary_title">خلاصه‌کردن گفتگوی گروهی</string>
+    <string name="chat_example_alarms_title">تنظیم چند زنگ هشدار</string>
+    <string name="chat_example_pdf_title">خلاصه‌کردن PDF</string>
+    <string name="chat_example_schedule_title">تنظیم یادآور روزانه</string>
+    <string name="chat_example_pdf">PDFای که میفرستم را در یک خلاصه کوتاه جمعبندی کن</string>
+    <string name="chat_example_schedule">هر روز صبح ساعت ۸ یادم بینداز هوا را چک کنم</string>
+    <string name="chat_empty_value">یک جمله بگو تا اپ‌هایت را اجرا کنم، وب بگردم و کارت را تمام کنم.</string>
 </resources>
