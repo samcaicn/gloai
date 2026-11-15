@@ -8,12 +8,7 @@
 
 It works on a hidden background screen, so you can keep using your phone.
 
-<div style="background:#fff7d6;border:1.5px solid #f0b429;border-radius:12px;padding:16px 20px;max-width:520px;margin:0 auto;">
-  <b>⭐ Like Mika? Give it a star — it helps more people find it.</b>
-  <br/><span style="font-size:14px;color:#5a4a00;">A star is the simplest way to support open source.</span>
-  <br/><br/>
-  <a href="https://github.com/wangzan101/Mika" style="display:inline-block;background:#f0b429;color:#4a3200;font-weight:bold;padding:8px 16px;border-radius:8px;text-decoration:none;">⭐ Star this repo</a>
-</div>
+<a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/badge/%E2%AD%90%20Like%20Mika%3F%20Give%20it%20a%20star%21-FFD700?style=for-the-badge" alt="Like Mika? Give it a star!" /></a>
 
 <br/>
 

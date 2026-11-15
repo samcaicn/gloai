@@ -1,4 +1,4 @@
-<!-- translated-from: README.md @ ff7bf138544a -->
+<!-- translated-from: README.md @ e375b22db66a -->
 <div align="center">
 
 <img src="../media/logo.png" alt="Mika" width="88" />
@@ -9,12 +9,7 @@
 
 它在一块看不见的后台屏上干活，你照样刷你的手机。
 
-<div style="background:#fff7d6;border:1.5px solid #f0b429;border-radius:12px;padding:16px 20px;max-width:520px;margin:0 auto;">
-  <b>⭐ 喜欢 Mika？点个 Star，帮更多人找到它！</b>
-  <br/><span style="font-size:14px;color:#5a4a00;">Star 是支持开源最简单的方式。</span>
-  <br/><br/>
-  <a href="https://github.com/wangzan101/Mika" style="display:inline-block;background:#f0b429;color:#4a3200;font-weight:bold;padding:8px 16px;border-radius:8px;text-decoration:none;">⭐ 点个 Star</a>
-</div>
+<a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/badge/%E2%AD%90%20%E5%96%9C%E6%AC%A2%20Mika%EF%BC%9F%E7%82%B9%E4%B8%AA%20Star%EF%BC%81-FFD700?style=for-the-badge" alt="喜欢 Mika？点个 Star！" /></a>
 
 <br/>
 <a href="https://github.com/wangzan101/Mika/releases/latest"><img src="https://img.shields.io/badge/%E4%B8%8B%E8%BD%BD%20APK-%E5%AE%89%E5%8D%93%2011%2B-2ea043?style=for-the-badge&logo=android&logoColor=white" alt="下载 APK" /></a> <a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/github/stars/wangzan101/Mika?style=for-the-badge&logo=github&label=Star&color=FFD700&logoColor=white" alt="Star this repo" /></a>

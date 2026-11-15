@@ -1,4 +1,4 @@
-<!-- translated-from: README.md @ ff7bf138544a -->
+<!-- translated-from: README.md @ e375b22db66a -->
 <div align="center">
 
 <img src="../media/logo.png" alt="Mika" width="88" />
@@ -9,12 +9,7 @@
 
 Trabaja en una pantalla en segundo plano que no ves, así que puedes seguir usando el móvil con normalidad.
 
-<div style="background:#fff7d6;border:1.5px solid #f0b429;border-radius:12px;padding:16px 20px;max-width:520px;margin:0 auto;">
-  <b>⭐ ¿Te gusta Mika? Dale una estrella para que más gente lo descubra.</b>
-  <br/><span style="font-size:14px;color:#5a4a00;">Una estrella es la forma más sencilla de apoyar el código abierto.</span>
-  <br/><br/>
-  <a href="https://github.com/wangzan101/Mika" style="display:inline-block;background:#f0b429;color:#4a3200;font-weight:bold;padding:8px 16px;border-radius:8px;text-decoration:none;">⭐ Dale una estrella</a>
-</div>
+<a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/badge/%E2%AD%90%20%C2%BFTe%20gusta%20Mika%3F%20%C2%A1Dale%20una%20estrella%21-FFD700?style=for-the-badge" alt="¿Te gusta Mika? ¡Dale una estrella!" /></a>
 
 <br/>
 <a href="https://github.com/wangzan101/Mika/releases/latest"><img src="https://img.shields.io/badge/Descargar%20APK-Android%2011%2B-2ea043?style=for-the-badge&logo=android&logoColor=white" alt="Descargar APK" /></a> <a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/github/stars/wangzan101/Mika?style=for-the-badge&logo=github&label=Star&color=FFD700&logoColor=white" alt="Star this repo" /></a>
