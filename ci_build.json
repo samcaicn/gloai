@@ -1,0 +1,13 @@
+{
+  "commit": "73977d6dad15cf540367e958e8b8f0f7d5cc38ce",
+  "version": "1.0.2",
+  "tag": "v1.0.2",
+  "status": "success",
+  "failed_step": "unknown",
+  "built_at": "2026-11-15T02:47:08Z",
+  "run_id": "43668995172",
+  "exe_sha256": "de0fb76b2aca46ab4652b0e4d90f3476f0af2e26822adcebbb0e6fd29c7add67",
+  "zip_sha256": "97e3975f7606ad678e21dcb71e8216cccf430d99953df625556efa54a12d58d3",
+  "artifact": "WMRemover-v1.0.2.zip",
+  "repo": "samcaicn/gloai"
+}
