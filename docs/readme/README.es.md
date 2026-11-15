@@ -1,4 +1,4 @@
-<!-- translated-from: README.md @ 8042312fa3ce -->
+<!-- translated-from: README.md @ 9156538d7b51 -->
 <div align="center">
 
 <img src="../media/logo.png" alt="Mika" width="88" />
@@ -9,7 +9,7 @@
 
 Trabaja en una pantalla en segundo plano que no ves, así que puedes seguir usando el móvil con normalidad.
 
-<a href="https://github.com/wangzan101/Mika"><img src="../media/star-banner.png" alt="¿Te gusta Mika? Dale una estrella — haz clic en Star arriba a la derecha" width="620" /></a>
+<a href="https://github.com/wangzan101/Mika"><img src="../media/star-banner-v2.png" alt="¿Te gusta Mika? Dale una estrella — haz clic en Star arriba a la derecha" width="620" /></a>
 
 <br/>
 <a href="https://github.com/wangzan101/Mika/releases/latest"><img src="https://img.shields.io/badge/Descargar%20APK-Android%2011%2B-2ea043?style=for-the-badge&logo=android&logoColor=white" alt="Descargar APK" /></a> <a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/github/stars/wangzan101/Mika?style=for-the-badge&logo=github&label=Star&color=FFD700&logoColor=white" alt="Star this repo" /></a>

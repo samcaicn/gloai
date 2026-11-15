@@ -1,4 +1,4 @@
-<!-- translated-from: README.md @ 8042312fa3ce -->
+<!-- translated-from: README.md @ 9156538d7b51 -->
 <div align="center">
 
 <img src="../media/logo.png" alt="Mika" width="88" />
@@ -9,7 +9,7 @@
 
 보이지 않는 백그라운드 화면에서 일하기 때문에, 그동안에도 휴대폰은 평소처럼 쓰면 됩니다.
 
-<a href="https://github.com/wangzan101/Mika"><img src="../media/star-banner.png" alt="Mika가 마음에 들면 Star를 —— 오른쪽 위 Star 버튼을 클릭" width="620" /></a>
+<a href="https://github.com/wangzan101/Mika"><img src="../media/star-banner-v2.png" alt="Mika가 마음에 들면 Star를 —— 오른쪽 위 Star 버튼을 클릭" width="620" /></a>
 
 <br/>
 <a href="https://github.com/wangzan101/Mika/releases/latest"><img src="https://img.shields.io/badge/APK%20%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C-Android%2011%2B-2ea043?style=for-the-badge&logo=android&logoColor=white" alt="APK 다운로드" /></a> <a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/github/stars/wangzan101/Mika?style=for-the-badge&logo=github&label=Star&color=FFD700&logoColor=white" alt="Star this repo" /></a>

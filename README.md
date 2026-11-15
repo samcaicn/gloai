@@ -8,7 +8,7 @@
 
 It works on a hidden background screen, so you can keep using your phone.
 
-<a href="https://github.com/wangzan101/Mika"><img src="docs/media/star-banner.png" alt="Like Mika? Give it a star — click Star in the top-right corner" width="620" /></a>
+<a href="https://github.com/wangzan101/Mika"><img src="docs/media/star-banner-v2.png" alt="Like Mika? Give it a star — click Star in the top-right corner" width="620" /></a>
 
 <br/>
 
