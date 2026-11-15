@@ -392,7 +392,7 @@ fun ChatDrawer(
     val searchActive = canSearch && !selecting && !archivedView && query.isNotBlank()
     Column(
         Modifier.fillMaxHeight().widthIn(max = DrawerWidth).fillMaxWidth()
-            .clip(DrawerShape).background(c.bg, DrawerShape)
+            .clip(DrawerShape).background(c.glass, DrawerShape)
             .windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.navigationBars))
             .testTag("drawer"),
     ) {

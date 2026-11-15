@@ -9,6 +9,7 @@ import com.wangzan101.mika.core.usage.DeepSeekCost
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.core.agent.AttachedPage
 import com.wangzan101.mika.ui.components.DirectionalIcon
+import com.wangzan101.mika.ui.components.GlassSurface
 import com.wangzan101.mika.ui.components.keepsKeyboard
 import com.wangzan101.mika.ui.components.pageBackground
 import android.content.Context
@@ -52,6 +53,7 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -428,28 +430,45 @@ fun ChatScreen(
             }
         }
 
-        // 没有任务在跑、这个对话留着一页在后台运行时:顶栏写「后台保持着 1 个网页」;都没有时写这个对话用了多少 token
-        // (对话合计只在最后这一行,不要它时删掉这一行)
-        val sub: Pair<String, ChatCopy.Tone?>? = ChatCopy.subtitle(last, last?.let(vm::livePlace))
-            ?: kept?.let { ChatCopy.KEPT_PAGE to ChatCopy.Tone.Ok }
-            ?: ChatTokensCopy.conversationSubtitle(endedRuns, runMetrics)?.let { it to null }
         Column(Modifier.behindMenu(menuOpen) { lift.value }.onSizeChanged { topHeight = it.height }) {
-            TopBar(
-                ChatCopy.APP_TITLE,
-                left = MikaIcons.Menu, leftLabel = stringResource(R.string.chat_menu), onLeft = onOpenDrawer,
-                // 别的对话里还有任务在跑(并行时):菜单上一个小圆点,侧栏「进行中」里能切过去
-                leftBadge = others.isNotEmpty(),
-                right = {
-                    BarIconButton(MikaIcons.New, stringResource(R.string.chat_new), { vm.newConversation() }, enabled = vm.canSwitch())
-                },
-                subtitle = sub?.first,
-                subtitleColor = when (sub?.second) {
-                    ChatCopy.Tone.Accent -> c.accent
-                    ChatCopy.Tone.Warn -> c.warn
-                    ChatCopy.Tone.Ok -> c.ok
-                    null -> Color.Unspecified
-                },
-            )
+            // 悬浮玻璃三件套:菜单 / 标题 / 新建,各自一小块磨砂玻璃,不铺一整条
+            Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
+                        Box(
+                            Modifier.fillMaxSize().clip(CircleShape)
+                                .clickable(onClickLabel = stringResource(R.string.chat_menu), onClick = onOpenDrawer),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            DirectionalIcon(MikaIcons.Menu, stringResource(R.string.chat_menu), Modifier.size(MikaSize.Icon), tint = c.ink)
+                            // 别的对话里还有任务在跑(并行时):右上角一个小圆点,侧栏「进行中」里能切过去
+                            if (others.isNotEmpty()) {
+                                Box(
+                                    Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 7.dp).size(8.dp)
+                                        .background(c.bg, CircleShape).padding(1.dp).background(c.accent, CircleShape),
+                                )
+                            }
+                        }
+                    }
+                    GlassSurface(backdrop = backdrop) {
+                        Text(ChatCopy.APP_TITLE, Modifier.padding(horizontal = 18.dp, vertical = 8.dp), style = MikaType.Title, color = c.ink, maxLines = 1)
+                    }
+                    GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
+                        Box(
+                            Modifier.fillMaxSize().clip(CircleShape)
+                                .clickable(enabled = vm.canSwitch(), onClickLabel = stringResource(R.string.chat_new), onClick = { vm.newConversation() })
+                                .alpha(if (vm.canSwitch()) 1f else 0.35f),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(MikaIcons.New, stringResource(R.string.chat_new), Modifier.size(MikaSize.Icon), tint = c.ink)
+                        }
+                    }
+                }
+            }
         }
 
         Composer(
