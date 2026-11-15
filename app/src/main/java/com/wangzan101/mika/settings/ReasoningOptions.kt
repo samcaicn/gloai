@@ -6,8 +6,9 @@ import com.wangzan101.mika.core.model.ListedModel
 /**
  * 思考档位。服务商列表写明档位的模型,四种协议(Chat Completions、Messages、generateContent、Responses)都照它给
  * (Anthropic 列表逐项写明每个模型支持的档位和思考方式,见 ModelCatalog;OpenAI 兼容协议另补官方文档写明的 `none`,见 [withDocumentedOff]);
- * 没写明时:Responses 一族给通用手动档位,OpenAI 兼容协议按预设里官方文档写明的档位给(见 [ProviderPreset.reasoningLevels])
- * ——两者都带提示,实际支持情况以服务端为准;其余协议不猜:各模型认的档位和写法不一样,猜错了每次请求都被拒。
+ * 没写明时:Responses 一族给通用手动档位,OpenAI 兼容协议先按预设里官方文档写明的档位给(见 [ProviderPreset.reasoningLevels]),
+ * 对不上预设的第三方网关也给通用手动档位——两者都带提示,实际支持情况以服务端为准、默认不发字段;其余协议不猜:
+ * 各模型认的档位和写法不一样,猜错了每次请求都被拒。
  */
 data class ReasoningOptions(val levels: List<String>, val fromProvider: Boolean) {
     companion object {
@@ -26,10 +27,12 @@ data class ReasoningOptions(val levels: List<String>, val fromProvider: Boolean)
             return when (ProviderStore.adapterFor(config, listed?.endpoint).first) {
                 ProviderConfig.Kind.OpenAiResponses, ProviderConfig.Kind.ChatGpt, ProviderConfig.Kind.Xai ->
                     ReasoningOptions(manualLevels, fromProvider = false)
-                // 预设里这家官方文档写明了几档就给几档;自定义地址对不上预设,照旧不猜
+                // 预设里这家官方文档写明了几档就给几档;对不上预设的 OpenAI 兼容地址(第三方网关)
+                // 也照给通用档位并标「来源不是服务商」,让入口能渲染、由用户显式承担风险;默认仍是「默认」不发字段。
                 ProviderConfig.Kind.OpenAiCompat ->
                     ProviderPresets.forBaseUrl(config.baseUrl)?.reasoningLevels
                         ?.takeIf { it.isNotEmpty() }?.let { ReasoningOptions(it, fromProvider = false) }
+                        ?: ReasoningOptions(manualLevels, fromProvider = false)
                 ProviderConfig.Kind.Anthropic, ProviderConfig.Kind.Gemini -> null
             }
         }
