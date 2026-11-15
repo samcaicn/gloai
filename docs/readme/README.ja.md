@@ -1,4 +1,4 @@
-<!-- translated-from: README.md @ e375b22db66a -->
+<!-- translated-from: README.md @ 8042312fa3ce -->
 <div align="center">
 
 <img src="../media/logo.png" alt="Mika" width="88" />
@@ -9,7 +9,7 @@
 
 作業は見えないバックグラウンド画面で進むので、その間もスマホはいつもどおり使えます。
 
-<a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/badge/%E2%AD%90%20Mika%20%E3%81%8C%E6%B0%97%E3%81%AB%E5%85%A5%E3%81%A3%E3%81%9F%E3%82%89%20Star%20%E3%82%92%EF%BC%81-FFD700?style=for-the-badge" alt="Mika が気に入ったら Star を！" /></a>
+<a href="https://github.com/wangzan101/Mika"><img src="../media/star-banner.png" alt="Mika が気に入ったら Star を —— 右上の Star ボタンをクリック" width="620" /></a>
 
 <br/>
 <a href="https://github.com/wangzan101/Mika/releases/latest"><img src="https://img.shields.io/badge/APK%20%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89-Android%2011%2B-2ea043?style=for-the-badge&logo=android&logoColor=white" alt="APK をダウンロード" /></a> <a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/github/stars/wangzan101/Mika?style=for-the-badge&logo=github&label=Star&color=FFD700&logoColor=white" alt="Star this repo" /></a>

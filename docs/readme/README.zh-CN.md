@@ -1,4 +1,4 @@
-<!-- translated-from: README.md @ e375b22db66a -->
+<!-- translated-from: README.md @ 8042312fa3ce -->
 <div align="center">
 
 <img src="../media/logo.png" alt="Mika" width="88" />
@@ -9,7 +9,7 @@
 
 它在一块看不见的后台屏上干活，你照样刷你的手机。
 
-<a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/badge/%E2%AD%90%20%E5%96%9C%E6%AC%A2%20Mika%EF%BC%9F%E7%82%B9%E4%B8%AA%20Star%EF%BC%81-FFD700?style=for-the-badge" alt="喜欢 Mika？点个 Star！" /></a>
+<a href="https://github.com/wangzan101/Mika"><img src="../media/star-banner.png" alt="喜欢 Mika？点个 Star —— 点右上角的 Star 按钮" width="620" /></a>
 
 <br/>
 <a href="https://github.com/wangzan101/Mika/releases/latest"><img src="https://img.shields.io/badge/%E4%B8%8B%E8%BD%BD%20APK-%E5%AE%89%E5%8D%93%2011%2B-2ea043?style=for-the-badge&logo=android&logoColor=white" alt="下载 APK" /></a> <a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/github/stars/wangzan101/Mika?style=for-the-badge&logo=github&label=Star&color=FFD700&logoColor=white" alt="Star this repo" /></a>

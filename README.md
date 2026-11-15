@@ -8,7 +8,7 @@
 
 It works on a hidden background screen, so you can keep using your phone.
 
-<a href="https://github.com/wangzan101/Mika"><img src="https://img.shields.io/badge/%E2%AD%90%20Like%20Mika%3F%20Give%20it%20a%20star%21-FFD700?style=for-the-badge" alt="Like Mika? Give it a star!" /></a>
+<a href="https://github.com/wangzan101/Mika"><img src="docs/media/star-banner.png" alt="Like Mika? Give it a star — click Star in the top-right corner" width="620" /></a>
 
 <br/>
 
