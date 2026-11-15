@@ -17,7 +17,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -27,10 +26,6 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +33,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -45,6 +42,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
@@ -758,8 +756,6 @@ private fun LazyListScope.exchange(
     val answering = ex.status == ExchangeStatus.Working && !ex.draft.isNullOrBlank()
     if (active) {
         if (!answering) item("s$index") { WorkBlock(ex, reduceMotion, backgroundNote, openRun) }
-    } else if (ex.steps.isNotEmpty() || ex.recordedRun != null) {
-        item("s$index") { DoneLine(ex, reduceMotion, openRun, tokens, cost) }
     }
     // 引导进当前任务的话只带一个弯箭头;没赶上当前任务、转入下一件的不带标记。
     // 插话之前已经说完的回复照常显示;插话打断的那段留在原处(淡色、标「被你的新消息打断」);接着才是插话。
@@ -785,10 +781,14 @@ private fun LazyListScope.exchange(
     joined.forEach(::steer)
     ex.draft?.takeIf(String::isNotBlank)?.let { draft -> item("d$index") { DraftText(draft, ex.waitingForModel) } }
     waiting.forEach(::steer)
+    val receipt = if (ex.steps.isNotEmpty() || ex.recordedRun != null) {
+        val usage = listOfNotNull(tokens?.let(ChatTokensCopy::amount), cost?.let(ChatTokensCopy::cost)).joinToString(" · ")
+        if (ex.steps.isNotEmpty()) listOf(stepsSummary(ex), usage).filter(String::isNotEmpty).joinToString(" · ") else usage
+    } else ""
     item("r$index") {
         JumpHighlight(highlightKey == "r$index", reduceMotion) {
-            StatusCard(ex.status, stage, vm, ex.recordedRun, loadSource, openSource, "r$index",
-                recover = recover, goal = ex.goal, openReport = openReport, openPlayback = openPlayback)
+            StatusCard(ex.status, stage, vm, ex.recordedRun, loadSource, openSource, openRun, "r$index",
+                recover = recover, goal = ex.goal, receipt = receipt, openReport = openReport, openPlayback = openPlayback)
         }
     }
     // 这一轮结束后留在后台运行的那一页:还开着是绿色一行(能关),关了是一句原因
@@ -1133,47 +1133,6 @@ internal fun Spinner(modifier: Modifier, spinning: Boolean, track: Color, head: 
  * 没做步骤的(只聊了几句)只写 token;[tokens] 为 null(还没读到小结、服务商没报用量)时不写。
  */
 @Composable
-private fun DoneLine(ex: Exchange, reduceMotion: Boolean, openRun: (String) -> Unit, tokens: Long?, cost: DeepSeekCost?) {
-    val usage = listOfNotNull(tokens?.let(ChatTokensCopy::amount), cost?.let(ChatTokensCopy::cost)).joinToString(" · ")
-    val c = MikaTheme.colors
-    var open by rememberSaveable { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
-        Row(
-            Modifier.heightIn(min = 28.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            if (ex.status is ExchangeStatus.Done) Icon(MikaIcons.Check, null, Modifier.size(16.dp), tint = c.ink3)
-            if (ex.steps.isNotEmpty()) {
-                Text(
-                    listOf(stepsSummary(ex), usage).filter(String::isNotEmpty).joinToString(" · "),
-                    Modifier.clickable(onClickLabel = if (open) stringResource(R.string.chat_collapse_steps) else stringResource(R.string.chat_expand_steps)) { open = !open },
-                    style = DoneText, color = c.ink3,
-                )
-            } else if (usage.isNotEmpty()) {
-                Text(usage, style = DoneText, color = c.ink3)
-            }
-            ex.recordedRun?.let { id ->
-                Text(
-                    // 灰色斜体加下划线:和回答融在一起,又看得出能点
-                    stringResource(R.string.chat_view_process), Modifier.clip(MikaShapes.Pill).clickable(role = Role.Button) { openRun(id) }.padding(horizontal = 4.dp, vertical = 4.dp),
-                    style = DoneText.copy(fontStyle = FontStyle.Italic, textDecoration = TextDecoration.Underline), color = c.ink3,
-                )
-            }
-        }
-        Reveal(open && ex.steps.isNotEmpty(), reduceMotion) { StepLine(ex.steps, ex.stepActions, live = false, paused = false) }
-    }
-}
-
-/** 点开的内容:平时展开收起带动画,关了动画时直接出现、消失。 */
-@Composable
-private fun Reveal(visible: Boolean, reduceMotion: Boolean, content: @Composable () -> Unit) {
-    if (reduceMotion) {
-        if (visible) content()
-    } else {
-        AnimatedVisibility(visible, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) { content() }
-    }
-}
-
 // ---------- 状态与结果 ----------
 
 @StringRes
@@ -1191,10 +1150,11 @@ fun takeoverReasonLabel(reason: String): Int? = when (reason) {
 private fun StatusCard(
     status: ExchangeStatus, stage: Takeover.Stage, vm: ChatViewModel, runId: String?,
     loadSource: suspend (String) -> EvidenceSource?, openSource: (String?, String?) -> Unit,
+    openRun: (String) -> Unit,
     /** 回答的长按菜单认这一条用的(见 [MessageArea])。 */
     key: String,
     recover: (Boolean) -> Unit = {},
-    goal: String, openReport: (String) -> Unit, openPlayback: (String) -> Unit,
+    goal: String, receipt: String, openReport: (String) -> Unit, openPlayback: (String) -> Unit,
 ) {
     when (status) {
         ExchangeStatus.Working -> Unit
@@ -1243,7 +1203,6 @@ private fun StatusCard(
         }
         // 长按整块回答弹菜单;复制、引用的只是回答的字,不带上面的提示和下面的来源
         is ExchangeStatus.Done -> Box(Modifier.padding(bottom = 12.dp)) {
-            var expanded by rememberSaveable(key) { mutableStateOf(false) }
             AnswerArea(key, status.answer, Modifier.fillMaxWidth().answerSurface()) {
                 Column {
                     if (runId != null) Text(goal, Modifier.padding(bottom = 12.dp), style = MikaType.BodyStrong,
@@ -1256,12 +1215,8 @@ private fun StatusCard(
                             Text(line, style = MikaType.Caption, fontWeight = FontWeight.SemiBold, color = MikaTheme.colors.ink2)
                         }
                     }
-                    MarkdownText(if (runId != null && !expanded) TaskReportViewModel.excerpt(status.answer) else status.answer, AnswerText.copy(color = MikaTheme.colors.ink))
-                    // 运行记录会被轮换清理；对话里的完整回答始终可以直接展开。
-                    if (runId != null && status.answer.length > 240) TextLink(stringResource(if (expanded) R.string.collapse else R.string.expand)) { expanded = !expanded }
-                    // 来源:旧记录里模型写的依据文字,或运行记录里代码记下的来源;都没有就不显示
-                    if (status.evidence != null || runId != null) SourceChip(status.evidence, runId, loadSource, openSource)
-                    if (runId != null) TaskReportEntries({ openReport(runId) }, { openPlayback(runId) })
+                    MarkdownText(status.answer, AnswerText.copy(color = MikaTheme.colors.ink))
+                    ReplyActions(runId, openRun, loadSource, openSource, status.evidence, receipt, openReport, openPlayback)
                 }
             }
         }
@@ -1272,7 +1227,7 @@ private fun StatusCard(
             }
             Text(status.reason, Modifier.padding(top = 4.dp), style = CardBody, color = MikaTheme.colors.ink2)
             RecoveryActions(runId, recover)
-            if (runId != null) TaskReportEntries({ openReport(runId) }, { openPlayback(runId) })
+            ReplyActions(runId, openRun, loadSource, openSource, null, receipt, openReport, openPlayback)
         }
         // 停止后补上的交代当作这一轮的回答,排在「已停止」下面;还在写时一行小字
         is ExchangeStatus.Cancelled -> Column(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
@@ -1288,7 +1243,7 @@ private fun StatusCard(
                 }
             }
             RecoveryActions(runId, recover)
-            if (runId != null) TaskReportEntries({ openReport(runId) }, { openPlayback(runId) })
+            ReplyActions(runId, openRun, loadSource, openSource, null, receipt, openReport, openPlayback)
         }
     }
 }
@@ -1303,22 +1258,50 @@ private fun RecoveryActions(runId: String?, recover: (Boolean) -> Unit) {
     }
 }
 
-/** 回答下面的「来源」小胶囊,只是入口;依据和截图在独立页面看。 */
+/** 回答正文下方的操作区:一条淡分隔线 + 一排中性小胶囊(查看过程 / 来源 / 任务报告 / 操作回放)。 */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SourceChip(text: String?, runId: String?, loadSource: suspend (String) -> EvidenceSource?, openSource: (String?, String?) -> Unit) {
-    val source by produceState<EvidenceSource?>(null, runId) { value = runId?.let { loadSource(it) } }
-    if (text == null && source?.items.isNullOrEmpty() && source?.screenshots.isNullOrEmpty()) return
+private fun ReplyActions(
+    runId: String?,
+    openRun: (String) -> Unit,
+    loadSource: suspend (String) -> EvidenceSource?,
+    openSource: (String?, String?) -> Unit,
+    evidence: String?,
+    receipt: String,
+    openReport: (String) -> Unit,
+    openPlayback: (String) -> Unit,
+) {
+    if (runId == null) return
+    val source by produceState<EvidenceSource?>(null, runId) { value = loadSource(runId) }
+    val hasSource = evidence != null || !source?.items.isNullOrEmpty() || !source?.screenshots.isNullOrEmpty()
+    val c = MikaTheme.colors
+    Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+        Box(Modifier.fillMaxWidth().height(1.dp).background(c.hair))
+        Spacer(Modifier.height(11.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            ReplyChip(MikaIcons.ListChecks, stringResource(R.string.chat_view_process)) { openRun(runId) }
+            if (hasSource) ReplyChip(MikaIcons.Link, sourceLabel(source)) { openSource(runId, evidence) }
+            ReplyChip(MikaIcons.Doc, stringResource(R.string.report_title)) { openReport(runId) }
+            ReplyChip(MikaIcons.Route, stringResource(R.string.playback_title)) { openPlayback(runId) }
+        }
+        if (receipt.isNotEmpty()) {
+            Text(receipt, Modifier.fillMaxWidth().padding(top = 8.dp), style = ChipText.copy(fontWeight = FontWeight.Normal), color = c.ink3, textAlign = TextAlign.End)
+        }
+    }
+}
+
+/** 操作区里的一枚中性小胶囊:浅灰底 + 细描边 + 灰色小图标与文字,不抢正文的视觉。 */
+@Composable
+private fun ReplyChip(icon: ImageVector, label: String, onClick: () -> Unit) {
     val c = MikaTheme.colors
     Row(
-        Modifier.padding(top = 12.dp).heightIn(min = 30.dp)
-            .cardSurface(c, MikaShapes.Pill).clip(MikaShapes.Pill)
-            .clickable(onClickLabel = stringResource(R.string.chat_view_source)) { openSource(runId, text) }
-            .padding(horizontal = 12.dp),
+        Modifier.clip(MikaShapes.Pill).background(c.fill).border(0.5.dp, c.edge, MikaShapes.Pill)
+            .clickable(onClickLabel = label, onClick = onClick).padding(horizontal = 11.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        Icon(MikaIcons.Link, null, Modifier.size(15.dp), tint = c.ink2)
-        Text(sourceLabel(source), style = PillText, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Icon(icon, null, Modifier.size(13.dp), tint = c.ink2)
+        Text(label, style = ChipText, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -1708,5 +1691,6 @@ private val DoneText = TextStyle(fontSize = 13.sp, lineHeight = 18.sp)
 private val NeedTitle = TextStyle(fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold)
 private val CardBody = TextStyle(fontSize = 14.sp, lineHeight = 21.5.sp)
 private val PillText = TextStyle(fontSize = 13.sp, lineHeight = 18.sp)
+private val ChipText = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
 private val FileName = TextStyle(fontSize = 14.5.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium)
 private val FileMeta = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp)
