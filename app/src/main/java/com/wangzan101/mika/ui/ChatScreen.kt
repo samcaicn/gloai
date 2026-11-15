@@ -483,7 +483,7 @@ fun ChatScreen(
                         }) else null)
                 }
             }) else null,
-            attachBlocked = false,
+            attachBlocked = ui.attachEnabled && !ui.importing && ui.composer != ComposerMode.Idle && ui.followUpMode == FollowUpMode.Steer,
             attachments = ui.attachments,
             importing = ui.importing,
             rejected = ui.rejectedAttachments,
