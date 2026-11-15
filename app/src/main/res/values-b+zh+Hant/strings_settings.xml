@@ -5,7 +5,6 @@
     <string name="language_title">語言</string>
     <string name="language_system">跟隨系統</string>
     <string name="language_system_detail">系統語言 Mika 有譯文時用它,沒有時用英文</string>
-    <string name="settings_basic">常用</string>
     <string name="settings_language_appearance">語言與外觀</string>
     <string name="settings_model">模型</string>
     <string name="settings_model_sub">模型、服務商與 Token 用量</string>
@@ -14,7 +13,6 @@
     <string name="settings_during_work">任務運行</string>
     <string name="settings_during_work_sub">自主模式、操作節奏、步數上限與聲音</string>
     <string name="settings_notif_sub">什麼時候彈出、去系統裡改</string>
-    <string name="settings_privacy">我的資料</string>
     <string name="settings_memory_data">記憶與資料</string>
     <string name="settings_memory_sub">記憶、技能、操作路線與網站登入</string>
     <string name="settings_saved_data">儲存的資料</string>
@@ -22,10 +20,8 @@
     <plurals name="settings_count_sites">
         <item quantity="other">%1$d 個</item>
     </plurals>
-    <string name="settings_other">其他</string>
-    <string name="settings_advanced">進階與其他</string>
-    <string name="settings_advanced_sub">代理、計算環境、連接與修復</string>
-    <string name="settings_connections">網路與連接</string>
+    <string name="settings_advanced">進階</string>
+    <string name="settings_advanced_sub">擴充、網路、執行環境與維護</string>
     <string name="settings_maintenance">維護</string>
     <string name="settings_sandbox">檔案與計算環境</string>
     <string name="settings_routes">記住的操作路線</string>
@@ -215,4 +211,10 @@
     <string name="settings_scheduled_quiet_start">開始時間</string>
     <string name="settings_scheduled_quiet_end">結束時間</string>
     <string name="settings_scheduled_quiet_equal">請設定不同的開始與結束時間，通知才會靜音。</string>
+    <string name="settings_capabilities">能力</string>
+    <string name="settings_preferences">偏好</string>
+    <string name="settings_data">資料</string>
+    <string name="settings_extensions">擴充與連線</string>
+    <string name="settings_network">網路</string>
+    <string name="settings_runtime">執行環境</string>
 </resources>

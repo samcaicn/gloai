@@ -94,6 +94,9 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenModels: () -> Unit,
     onOpenMemory: (() -> Unit)? = null,
+    onOpenBrowser: () -> Unit = {},
+    onOpenFiles: () -> Unit = {},
+    onOpenPersonal: () -> Unit = {},
     /** 任务运行里的「自主模式」:当前值和换它的办法。 */
     autonomous: Boolean = false,
     onAutonomous: (Boolean) -> Unit = {},
@@ -231,6 +234,9 @@ fun SettingsScreen(
             onOpenMemory = onOpenMemory,
             onOpenRecommendations = { page = SettingsPage.Recommendations },
             onOpenAdvanced = { page = SettingsPage.Advanced },
+            onOpenBrowser = onOpenBrowser,
+            onOpenFiles = onOpenFiles,
+            onOpenPersonal = onOpenPersonal,
             versionName = BuildConfig.VERSION_NAME, updateVersion = updateVersion, onOpenAbout = onOpenAbout,
         )
         SettingsPage.Advanced -> AdvancedSettingsContent(
@@ -417,6 +423,9 @@ fun SettingsContent(
     onOpenMemory: (() -> Unit)? = null,
     onOpenRecommendations: () -> Unit = {},
     onOpenAdvanced: () -> Unit = {},
+    onOpenBrowser: () -> Unit = {},
+    onOpenFiles: () -> Unit = {},
+    onOpenPersonal: () -> Unit = {},
     versionName: String = "",
     updateVersion: String? = null,
     onOpenAbout: () -> Unit = {},
@@ -430,28 +439,36 @@ fun SettingsContent(
     PageScaffold(stringResource(R.string.settings_title), onBack) {
         StatusSummary(check, onProblem)
 
-        GroupLabel(stringResource(R.string.settings_basic))
+        GroupLabel(stringResource(R.string.settings_model))
         GroupCard {
             ListRow(MikaIcons.Spark, stringResource(R.string.settings_model), stringResource(R.string.settings_model_sub), first = true, onClick = onOpenModels) {
                 RowValue(mainModel ?: stringResource(R.string.settings_not_set))
                 RowChevron()
             }
-            ListRow(MikaIcons.Phone, stringResource(R.string.settings_phone_ops), onClick = onOpenPhoneOps) {
+        }
+
+        GroupLabel(stringResource(R.string.settings_capabilities))
+        GroupCard {
+            ListRow(MikaIcons.Phone, stringResource(R.string.settings_phone_ops), first = true, onClick = onOpenPhoneOps) {
                 PhoneOpsPill(status)
                 RowChevron()
             }
+            ListRow(MikaIcons.Globe, stringResource(R.string.drawer_browser), onClick = onOpenBrowser) { RowChevron() }
+            ListRow(MikaIcons.Paperclip, stringResource(R.string.file_library_title), onClick = onOpenFiles) { RowChevron() }
             ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), stringResource(R.string.calls_entry_sub), onClick = onOpenCalls) { RowChevron() }
             ListRow(MikaIcons.Chats, stringResource(R.string.wechat_title), stringResource(R.string.wechat_settings_sub), onClick = onOpenWechat) {
                 WechatEntryStatus(wechatState, wechatBound)
                 RowChevron()
             }
             ListRow(MikaIcons.Ripple, stringResource(R.string.proactive_title), stringResource(R.string.proactive_entry_sub), onClick = onOpenProactive) { RowChevron() }
-            ListRow(MikaIcons.Moon, stringResource(R.string.settings_during_work), stringResource(R.string.settings_during_work_sub), onClick = onOpenDuringWork) { RowChevron() }
-            wakeActive?.let { on ->
-                ListRow(MikaIcons.Bell, stringResource(R.string.wake_settings_title), stringResource(R.string.wake_settings_subtitle), onClick = onWakeToggle) {
-                    RowValue(stringResource(if (on) R.string.wake_listening else R.string.wake_off))
-                }
+            if (personalStart) {
+                ListRow(MikaIcons.Message, stringResource(R.string.drawer_personal), onClick = onOpenPersonal) { RowChevron() }
             }
+        }
+
+        GroupLabel(stringResource(R.string.settings_preferences))
+        GroupCard {
+            ListRow(MikaIcons.Moon, stringResource(R.string.settings_during_work), stringResource(R.string.settings_during_work_sub), first = true, onClick = onOpenDuringWork) { RowChevron() }
             ListRow(MikaIcons.Message, CapsuleSettingsCopy.TITLE, CapsuleSettingsCopy.SUBTITLE, onClick = onOpenCapsule) {
                 RowValue(CapsuleSettingsCopy.label(capsuleMode))
                 RowChevron()
@@ -460,10 +477,9 @@ fun SettingsContent(
                 RowValue(languageLabel(language))
                 RowChevron()
             }
-            onPersonalStart?.let { change ->
-                val label = stringResource(R.string.settings_personal_start)
-                ListRow(MikaIcons.Spark, label, stringResource(R.string.settings_personal_start_sub)) {
-                    MikaSwitch(personalStart, change, Modifier.semantics { contentDescription = label })
+            wakeActive?.let { on ->
+                ListRow(MikaIcons.Bell, stringResource(R.string.wake_settings_title), stringResource(R.string.wake_settings_subtitle), onClick = onWakeToggle) {
+                    RowValue(stringResource(if (on) R.string.wake_listening else R.string.wake_off))
                 }
             }
             val (notifText, notifTone) = StatusCopy.notificationSummary(status.notificationOverview().summary)
@@ -471,12 +487,18 @@ fun SettingsContent(
                 RowValue(notifText, notifTone)
                 RowChevron()
             }
+            onPersonalStart?.let { change ->
+                val label = stringResource(R.string.settings_personal_start)
+                ListRow(MikaIcons.Spark, label, stringResource(R.string.settings_personal_start_sub)) {
+                    MikaSwitch(personalStart, change, Modifier.semantics { contentDescription = label })
+                }
+            }
         }
 
-        GroupLabel(stringResource(R.string.settings_privacy))
+        GroupLabel(stringResource(R.string.settings_data))
         GroupCard {
             onOpenMemory?.let {
-                ListRow(MikaIcons.Heart, stringResource(R.string.settings_memory_data), stringResource(R.string.settings_memory_sub), first = true, onClick = it) { RowChevron() }
+                ListRow(MikaIcons.Heart, stringResource(R.string.memory_and_skills), stringResource(R.string.settings_memory_sub), first = true, onClick = it) { RowChevron() }
             }
             ListRow(
                 MikaIcons.Archive,
@@ -501,7 +523,7 @@ fun SettingsContent(
             ListRow(MikaIcons.Shield, stringResource(R.string.sms_login_title), stringResource(R.string.sms_login_default_off), onClick = onOpenSmsLogin) { RowChevron() }
         }
 
-        GroupLabel(stringResource(R.string.settings_other))
+        GroupLabel(stringResource(R.string.settings_advanced))
         GroupCard {
             ListRow(MikaIcons.Wrench, stringResource(R.string.settings_advanced), stringResource(R.string.settings_advanced_sub), first = true, onClick = onOpenAdvanced) { RowChevron() }
         }
@@ -542,8 +564,35 @@ fun AdvancedSettingsContent(
 ) {
     PageScaffold(stringResource(R.string.settings_advanced), onBack) {
         val sandboxRow = sandbox?.takeIf { it !is SandboxStatus.Unsupported }
-        if (proxy != null || webSearch != null || sandboxRow != null || pluginsCount != null || computerAccess != null || mcpServersCount != null || showRoot) {
-            GroupLabel(stringResource(R.string.settings_connections))
+        if (computerAccess != null || mcpServersCount != null || pluginsCount != null || showRoot) {
+            GroupLabel(stringResource(R.string.settings_extensions))
+            GroupCard {
+                var first = true
+                fun take(): Boolean = first.also { first = false }
+                computerAccess?.let { on ->
+                    ListRow(MikaIcons.Desktop, stringResource(R.string.mcp_title), first = take(), onClick = onOpenComputerAccess) {
+                        RowValue(stringResource(if (on) R.string.state_on else R.string.state_off)); RowChevron()
+                    }
+                }
+                mcpServersCount?.let { count ->
+                    ListRow(MikaIcons.Link, stringResource(R.string.mcp_servers_title), first = take(), onClick = onOpenMcpServers) {
+                        RowValue(stringResource(R.string.mcp_servers_count, count)); RowChevron()
+                    }
+                }
+                pluginsCount?.let {
+                    ListRow(MikaIcons.Spark, stringResource(R.string.plugins_title), first = take(), onClick = onOpenPlugins) {
+                        RowValue(trPlural(R.plurals.plugins_count, it)); RowChevron()
+                    }
+                }
+                if (showRoot) {
+                    ListRow(MikaIcons.Key, PhoneSetupCopy.ROOT_GROUP, PhoneSetupCopy.rootEntryLine(rootCommands), first = take(), onClick = onOpenRoot) {
+                        RowChevron()
+                    }
+                }
+            }
+        }
+        if (proxy != null || webSearch != null) {
+            GroupLabel(stringResource(R.string.settings_network))
             GroupCard {
                 var first = true
                 fun take(): Boolean = first.also { first = false }
@@ -558,30 +607,13 @@ fun AdvancedSettingsContent(
                         RowValue(WebSearchCopy.value(config)); RowChevron()
                     }
                 }
-                if (sandboxRow != null) {
-                    ListRow(MikaIcons.Terminal, stringResource(R.string.settings_sandbox), first = take(), onClick = onOpenSandbox) {
-                        RowValue(sandboxValue(sandboxRow)); RowChevron()
-                    }
-                }
-                pluginsCount?.let {
-                    ListRow(MikaIcons.Spark, stringResource(R.string.plugins_title), first = take(), onClick = onOpenPlugins) {
-                        RowValue(trPlural(R.plurals.plugins_count, it)); RowChevron()
-                    }
-                }
-                computerAccess?.let { on ->
-                    ListRow(MikaIcons.Desktop, stringResource(R.string.mcp_title), first = take(), onClick = onOpenComputerAccess) {
-                        RowValue(stringResource(if (on) R.string.state_on else R.string.state_off)); RowChevron()
-                    }
-                }
-                mcpServersCount?.let { count ->
-                    ListRow(MikaIcons.Link, stringResource(R.string.mcp_servers_title), first = take(), onClick = onOpenMcpServers) {
-                        RowValue(stringResource(R.string.mcp_servers_count, count)); RowChevron()
-                    }
-                }
-                if (showRoot) {
-                    ListRow(MikaIcons.Key, PhoneSetupCopy.ROOT_GROUP, PhoneSetupCopy.rootEntryLine(rootCommands), first = take(), onClick = onOpenRoot) {
-                        RowChevron()
-                    }
+            }
+        }
+        if (sandboxRow != null) {
+            GroupLabel(stringResource(R.string.settings_runtime))
+            GroupCard {
+                ListRow(MikaIcons.Terminal, stringResource(R.string.settings_sandbox), first = true, onClick = onOpenSandbox) {
+                    RowValue(sandboxValue(sandboxRow)); RowChevron()
                 }
             }
         }

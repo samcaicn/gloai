@@ -14,7 +14,6 @@
     <string name="language_indonesian" translatable="false">Bahasa Indonesia</string>
     <string name="language_arabic" translatable="false">العربية</string>
     <string name="language_persian" translatable="false">فارسی</string>
-    <string name="settings_basic">Common</string>
     <string name="settings_language_appearance">Language &amp; appearance</string>
     <string name="settings_personal_start">Open Personal Assistant on launch</string>
     <string name="settings_personal_start_sub">Use Personal Assistant as your first screen</string>
@@ -25,7 +24,6 @@
     <string name="settings_during_work">Task running</string>
     <string name="settings_during_work_sub">Autonomous mode, pace, step limit &amp; sound</string>
     <string name="settings_notif_sub">When they pop up, change in system settings</string>
-    <string name="settings_privacy">My data</string>
     <string name="settings_memory_data">Memory &amp; data</string>
     <string name="settings_memory_sub">Memories, skills, saved routes &amp; website sign-ins</string>
     <string name="settings_saved_data">Saved data</string>
@@ -34,10 +32,8 @@
         <item quantity="one">%1$d site</item>
         <item quantity="other">%1$d sites</item>
     </plurals>
-    <string name="settings_other">Other</string>
-    <string name="settings_advanced">Advanced &amp; other</string>
-    <string name="settings_advanced_sub">Proxy, computing, connections &amp; repair</string>
-    <string name="settings_connections">Network &amp; connections</string>
+    <string name="settings_advanced">Advanced</string>
+    <string name="settings_advanced_sub">Extensions, network, runtime &amp; maintenance</string>
     <string name="settings_maintenance">Maintenance</string>
     <string name="settings_sandbox">Files &amp; computing environment</string>
     <string name="settings_routes">Saved routes</string>
@@ -231,4 +227,10 @@
     <string name="settings_scheduled_quiet_start">Start time</string>
     <string name="settings_scheduled_quiet_end">End time</string>
     <string name="settings_scheduled_quiet_equal">Choose different start and end times to silence notifications.</string>
+    <string name="settings_capabilities">Capabilities</string>
+    <string name="settings_preferences">Preferences</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_extensions">Extensions &amp; connections</string>
+    <string name="settings_network">Network</string>
+    <string name="settings_runtime">Runtime</string>
 </resources>

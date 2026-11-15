@@ -5,7 +5,6 @@
     <string name="language_title">言語</string>
     <string name="language_system">システムに合わせる</string>
     <string name="language_system_detail">Mika が対応していればシステムの言語を使い、対応していなければ英語を使います</string>
-    <string name="settings_basic">よく使う項目</string>
     <string name="settings_language_appearance">言語と外観</string>
     <string name="settings_model">モデル</string>
     <string name="settings_model_sub">モデル、プロバイダー、Token 使用量</string>
@@ -14,7 +13,6 @@
     <string name="settings_during_work">タスクの実行</string>
     <string name="settings_during_work_sub">自律モード、操作ペース、ステップ上限、音声</string>
     <string name="settings_notif_sub">ポップアップ表示の変更はシステム設定で行います</string>
-    <string name="settings_privacy">自分のデータ</string>
     <string name="settings_memory_data">メモリとデータ</string>
     <string name="settings_memory_sub">メモリ、スキル、保存した手順、ウェブサイトのログイン</string>
     <string name="settings_saved_data">保存したデータ</string>
@@ -22,10 +20,8 @@
     <plurals name="settings_count_sites">
         <item quantity="other">%1$d サイト</item>
     </plurals>
-    <string name="settings_other">その他</string>
-    <string name="settings_advanced">詳細設定とその他</string>
-    <string name="settings_advanced_sub">プロキシ、計算環境、接続、修復</string>
-    <string name="settings_connections">ネットワークと接続</string>
+    <string name="settings_advanced">詳細設定</string>
+    <string name="settings_advanced_sub">拡張、ネットワーク、ランタイムとメンテナンス</string>
     <string name="settings_maintenance">メンテナンス</string>
     <string name="settings_sandbox">ファイルと計算環境</string>
     <string name="settings_routes">保存した手順</string>
@@ -215,4 +211,10 @@
     <string name="settings_scheduled_quiet_start">開始時刻</string>
     <string name="settings_scheduled_quiet_end">終了時刻</string>
     <string name="settings_scheduled_quiet_equal">通知を静かにするには、開始時刻と終了時刻を別々に設定してください。</string>
+    <string name="settings_capabilities">機能</string>
+    <string name="settings_preferences">設定</string>
+    <string name="settings_data">データ</string>
+    <string name="settings_extensions">拡張と接続</string>
+    <string name="settings_network">ネットワーク</string>
+    <string name="settings_runtime">ランタイム</string>
 </resources>

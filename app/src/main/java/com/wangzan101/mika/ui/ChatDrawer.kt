@@ -356,22 +356,14 @@ fun ChatDrawer(
     onSearchFilterChange: (SearchArchiveFilter) -> Unit = {},
     onNew: () -> Unit,
     onPlans: () -> Unit,
-    onMemory: () -> Unit,
-    onBrowser: () -> Unit,
-    onFiles: () -> Unit = {},
     onScreens: () -> Unit = {},
     onSettings: () -> Unit,
     onOpen: (DrawerConversation) -> Unit,
     onAbout: () -> Unit = {},
-    /** 完全退出 Mika(先问一句)。 */
-    onQuit: () -> Unit = {},
     /** 有新版本:「关于 Mika」带小红点。 */
     aboutDot: Boolean = false,
     /** 长按一条存过的对话:在它原地弹出操作菜单(置顶、改名、删除);带上那一行在窗口里的位置和大小。 */
     onActions: (DrawerConversation, Rect) -> Unit = { _, _ -> },
-    onPersonal: () -> Unit = {},
-    /** 个人助手开关关着时不显示入口,整个功能藏起来;开着才在侧栏露出。 */
-    showPersonal: Boolean = true,
     /** 多选模式:每行左边出现勾选框,点一行是勾选;底部换成「已选 N 条 / 全选 / 删除」。 */
     selecting: Boolean = false,
     selected: Set<String> = emptySet(),
@@ -441,16 +433,8 @@ fun ChatDrawer(
         if (searchActive) SearchArchiveFilterRow(searchFilter, onSearchFilterChange)
         // 搜索、多选、归档视图时把几个入口收起来，把高度让给列表;退出后原样回来
         if (!searchActive && !selecting && !archivedView) Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-            if (showPersonal) NavEntry(MikaIcons.Message, stringResource(R.string.drawer_personal), onClick = onPersonal)
             NavEntry(MikaIcons.New, stringResource(R.string.chat_new), enabled = canSwitch, onClick = onNew)
             NavEntry(MikaIcons.Clock, stringResource(R.string.drawer_plans), onClick = onPlans)
-            NavEntry(MikaIcons.Heart, stringResource(R.string.memory_and_skills), onClick = onMemory)
-            NavEntry(MikaIcons.Globe, stringResource(R.string.drawer_browser), onClick = onBrowser)
-            NavEntry(MikaIcons.Paperclip, stringResource(R.string.file_library_title), onClick = onFiles)
-            // 和上面几项隔开一点:这是把 Mika 整个停下来,不是换一页
-            Box(Modifier.padding(top = 4.dp)) {
-                NavEntry(MikaIcons.Power, stringResource(R.string.quit_title), onClick = onQuit)
-            }
         }
         // 侧栏关着时列表只剩末尾那一项;打开时对话插在它前面,列表会按原来那一项停在最底下。最上面一项变了就回到顶上
         val list = rememberLazyListState()
@@ -1034,9 +1018,6 @@ fun ChatWithDrawer(
     /** 侧栏搜索用的索引;没有时侧栏不显示搜索框。 */
     search: ConversationSearch? = null,
     onPlans: () -> Unit,
-    onMemory: () -> Unit,
-    onBrowser: () -> Unit,
-    onFiles: () -> Unit = {},
     onScreens: () -> Unit = {},
     onSettings: () -> Unit,
     onAbout: () -> Unit = {},
@@ -1045,8 +1026,6 @@ fun ChatWithDrawer(
     /** 从侧栏进去的页面刚退回来:当场打开侧栏,回到进去之前的样子。 */
     reopen: Boolean = false,
     onReopened: () -> Unit = {},
-    onPersonal: () -> Unit = {},
-    showPersonal: Boolean = true,
     onRegularChat: () -> Unit = {},
     /** 外部跳回对话页时变化:若之前因返回键留在展开的侧栏,当场收起侧栏。 */
     resetKey: Int = 0,
@@ -1170,8 +1149,6 @@ fun ChatWithDrawer(
     var exporting by remember { mutableStateOf<DrawerConversation?>(null) }
     /** 要删的那条和删它会连带什么;确认弹窗开着。 */
     var confirming by remember { mutableStateOf<Pair<DrawerConversation, DeleteImpact>?>(null) }
-    /** 「完全退出」的确认弹窗开着。 */
-    var confirmingQuit by remember { mutableStateOf(false) }
     var lastReset by remember { mutableIntStateOf(resetKey) }
     LaunchedEffect(resetKey) {
         if (resetKey != lastReset) {
@@ -1183,7 +1160,6 @@ fun ChatWithDrawer(
             selected = emptySet()
             archivedView = false
             confirmingMany = null
-            confirmingQuit = false
             archiveBatch = null
             archiveUndo = null
             query = ""
@@ -1295,16 +1271,10 @@ fun ChatWithDrawer(
                     searchFilter = searchFilter,
                     onSearchFilterChange = { searchFilter = it },
                     onNew = { close { vm.newConversation(); onRegularChat() } },
-                    onPersonal = { leave(onPersonal) },
-                    showPersonal = showPersonal,
                     onPlans = { leave(onPlans) },
-                    onMemory = { leave(onMemory) },
                     onSettings = { leave(onSettings) },
-                    onBrowser = { leave(onBrowser) },
-                    onFiles = { leave(onFiles) },
                     onScreens = { leave(onScreens) },
                     onAbout = { leave(onAbout) },
-                    onQuit = { leave { confirmingQuit = true } },
                     aboutDot = updateAvailable,
                     onActions = { item, bounds -> if (item.id != null) acting = item to bounds },
                     onOpen = { item ->
@@ -1430,19 +1400,6 @@ fun ChatWithDrawer(
                 vm.deleteConversations(ids)
             },
             onDismiss = { confirmingMany = null },
-        )
-    }
-    if (confirmingQuit) {
-        AlertDialog(
-            onDismissRequest = { confirmingQuit = false },
-            title = { Text(stringResource(R.string.quit_title)) },
-            text = { Text(stringResource(R.string.quit_confirm_body)) },
-            confirmButton = {
-                TextButton({ confirmingQuit = false; com.wangzan101.mika.quit.MikaQuit.quit(context) }) {
-                    Text(stringResource(R.string.quit_confirm_action), color = MikaTheme.colors.bad)
-                }
-            },
-            dismissButton = { TextButton({ confirmingQuit = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     exporting?.let { item ->

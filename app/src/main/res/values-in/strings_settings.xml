@@ -5,7 +5,6 @@
     <string name="language_title">Bahasa</string>
     <string name="language_system">Ikuti sistem</string>
     <string name="language_system_detail">Memakai bahasa sistem Anda jika Mika mendukungnya, jika tidak memakai bahasa Inggris</string>
-    <string name="settings_basic">Umum</string>
     <string name="settings_language_appearance">Bahasa &amp; tampilan</string>
     <string name="settings_model">Model</string>
     <string name="settings_model_sub">Model, penyedia &amp; penggunaan token</string>
@@ -14,7 +13,6 @@
     <string name="settings_during_work">Menjalankan tugas</string>
     <string name="settings_during_work_sub">Mode mandiri, kecepatan, batas langkah &amp; suara</string>
     <string name="settings_notif_sub">Saat muncul, ubah di setelan sistem</string>
-    <string name="settings_privacy">Data saya</string>
     <string name="settings_memory_data">Memori &amp; data</string>
     <string name="settings_memory_sub">Memori, keterampilan, rute tersimpan &amp; akun situs web</string>
     <string name="settings_saved_data">Data tersimpan</string>
@@ -22,10 +20,8 @@
     <plurals name="settings_count_sites">
         <item quantity="other">%1$d situs</item>
     </plurals>
-    <string name="settings_other">Lainnya</string>
-    <string name="settings_advanced">Lanjutan &amp; lainnya</string>
-    <string name="settings_advanced_sub">Proxy, komputasi, koneksi &amp; perbaikan</string>
-    <string name="settings_connections">Jaringan &amp; koneksi</string>
+    <string name="settings_advanced">Lanjutan</string>
+    <string name="settings_advanced_sub">Ekstensi, jaringan, runtime &amp; pemeliharaan</string>
     <string name="settings_maintenance">Pemeliharaan</string>
     <string name="settings_sandbox">Berkas &amp; lingkungan komputasi</string>
     <string name="settings_routes">Rute tersimpan</string>
@@ -215,4 +211,10 @@
     <string name="settings_scheduled_quiet_start">Waktu mulai</string>
     <string name="settings_scheduled_quiet_end">Waktu selesai</string>
     <string name="settings_scheduled_quiet_equal">Pilih waktu mulai dan selesai yang berbeda untuk membisukan notifikasi.</string>
+    <string name="settings_capabilities">Kemampuan</string>
+    <string name="settings_preferences">Preferensi</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_extensions">Ekstensi &amp; koneksi</string>
+    <string name="settings_network">Jaringan</string>
+    <string name="settings_runtime">Runtime</string>
 </resources>

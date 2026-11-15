@@ -3,7 +3,6 @@
     <string name="language_title">语言</string>
     <string name="language_system">跟随系统</string>
     <string name="language_system_detail">系统语言 Mika 有译文时用它,没有时用英文</string>
-    <string name="settings_basic">常用</string>
     <string name="settings_language_appearance">语言与外观</string>
     <string name="settings_personal_start">启动时打开个人助手</string>
     <string name="settings_personal_start_sub">把个人助手设为 Mika 首屏</string>
@@ -14,7 +13,6 @@
     <string name="settings_during_work">任务运行</string>
     <string name="settings_during_work_sub">自主模式、操作节奏、步数上限与声音</string>
     <string name="settings_notif_sub">什么时候弹出、去系统里改</string>
-    <string name="settings_privacy">我的数据</string>
     <string name="settings_memory_data">记忆与数据</string>
     <string name="settings_memory_sub">记忆、技能、操作路线与网站登录</string>
     <string name="settings_saved_data">保存的数据</string>
@@ -22,10 +20,8 @@
     <plurals name="settings_count_sites">
         <item quantity="other">%1$d 个</item>
     </plurals>
-    <string name="settings_other">其他</string>
-    <string name="settings_advanced">高级与其他</string>
-    <string name="settings_advanced_sub">代理、计算环境、连接与修复</string>
-    <string name="settings_connections">网络与连接</string>
+    <string name="settings_advanced">高级</string>
+    <string name="settings_advanced_sub">扩展、网络、运行环境与维护</string>
     <string name="settings_maintenance">维护</string>
     <string name="settings_sandbox">文件与计算环境</string>
     <string name="settings_routes">记住的操作路线</string>
@@ -215,4 +211,10 @@
     <string name="settings_scheduled_quiet_start">开始时间</string>
     <string name="settings_scheduled_quiet_end">结束时间</string>
     <string name="settings_scheduled_quiet_equal">开始和结束时间设为不同时间后，通知才会静音。</string>
+    <string name="settings_capabilities">能力</string>
+    <string name="settings_preferences">偏好</string>
+    <string name="settings_data">数据</string>
+    <string name="settings_extensions">扩展与连接</string>
+    <string name="settings_network">网络</string>
+    <string name="settings_runtime">运行环境</string>
 </resources>

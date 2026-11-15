@@ -5,7 +5,6 @@
     <string name="language_title">اللغة</string>
     <string name="language_system">اتباع لغة النظام</string>
     <string name="language_system_detail">يستخدم لغة النظام إذا كانت Mika تدعمها، وإلا يستخدم الإنجليزية</string>
-    <string name="settings_basic">الشائع</string>
     <string name="settings_language_appearance">اللغة والمظهر</string>
     <string name="settings_model">النموذج</string>
     <string name="settings_model_sub">النماذج ومقدمو الخدمة واستخدام الرموز</string>
@@ -14,7 +13,6 @@
     <string name="settings_during_work">تشغيل المهام</string>
     <string name="settings_during_work_sub">الوضع المستقل، والسرعة، وحد الخطوات، والصوت</string>
     <string name="settings_notif_sub">لتغيير طريقة ظهورها، انتقل إلى إعدادات النظام</string>
-    <string name="settings_privacy">بياناتي</string>
     <string name="settings_memory_data">الذاكرة والبيانات</string>
     <string name="settings_memory_sub">الذكريات والمهارات والمسارات المحفوظة وتسجيلات الدخول إلى المواقع</string>
     <string name="settings_saved_data">البيانات المحفوظة</string>
@@ -27,10 +25,8 @@
         <item quantity="many">%1$d موقعًا</item>
         <item quantity="other">%1$d موقع</item>
     </plurals>
-    <string name="settings_other">أخرى</string>
-    <string name="settings_advanced">متقدم وأخرى</string>
-    <string name="settings_advanced_sub">الوكيل والحوسبة والاتصالات والإصلاح</string>
-    <string name="settings_connections">الشبكة والاتصالات</string>
+    <string name="settings_advanced">متقدم</string>
+    <string name="settings_advanced_sub">الإضافات والشبكة وبيئة التشغيل والصيانة</string>
     <string name="settings_maintenance">الصيانة</string>
     <string name="settings_sandbox">الملفات وبيئة الحوسبة</string>
     <string name="settings_routes">المسارات المحفوظة</string>
@@ -240,4 +236,10 @@
     <string name="settings_scheduled_quiet_start">وقت البدء</string>
     <string name="settings_scheduled_quiet_end">وقت الانتهاء</string>
     <string name="settings_scheduled_quiet_equal">اختر وقتَي بدء وانتهاء مختلفين لكتم الإشعارات.</string>
+    <string name="settings_capabilities">القدرات</string>
+    <string name="settings_preferences">التفضيلات</string>
+    <string name="settings_data">البيانات</string>
+    <string name="settings_extensions">الإضافات والاتصالات</string>
+    <string name="settings_network">الشبكة</string>
+    <string name="settings_runtime">بيئة التشغيل</string>
 </resources>

@@ -5,7 +5,6 @@
     <string name="language_title">Язык</string>
     <string name="language_system">Как в системе</string>
     <string name="language_system_detail">Используется язык системы, если Mika его знает, иначе английский</string>
-    <string name="settings_basic">Основные</string>
     <string name="settings_language_appearance">Язык и оформление</string>
     <string name="settings_model">Модель</string>
     <string name="settings_model_sub">Модели, провайдеры и расход токенов</string>
@@ -14,7 +13,6 @@
     <string name="settings_during_work">Выполнение задач</string>
     <string name="settings_during_work_sub">Автономный режим, темп, лимит шагов и звук</string>
     <string name="settings_notif_sub">Когда они всплывают; меняется в системных настройках</string>
-    <string name="settings_privacy">Мои данные</string>
     <string name="settings_memory_data">Память и данные</string>
     <string name="settings_memory_sub">Память, навыки, сохранённые маршруты и входы на сайты</string>
     <string name="settings_saved_data">Сохранённые данные</string>
@@ -25,10 +23,8 @@
         <item quantity="many">%1$d сайтов</item>
         <item quantity="other">%1$d сайта</item>
     </plurals>
-    <string name="settings_other">Другое</string>
-    <string name="settings_advanced">Дополнительно и другое</string>
-    <string name="settings_advanced_sub">Прокси, вычисления, подключения и восстановление</string>
-    <string name="settings_connections">Сеть и подключения</string>
+    <string name="settings_advanced">Дополнительно</string>
+    <string name="settings_advanced_sub">Расширения, сеть, среда выполнения и обслуживание</string>
     <string name="settings_maintenance">Обслуживание</string>
     <string name="settings_sandbox">Файлы и среда вычислений</string>
     <string name="settings_routes">Сохранённые маршруты</string>
@@ -230,4 +226,10 @@
     <string name="settings_scheduled_quiet_start">Время начала</string>
     <string name="settings_scheduled_quiet_end">Время окончания</string>
     <string name="settings_scheduled_quiet_equal">Чтобы отключить звук уведомлений, выберите разное время начала и окончания.</string>
+    <string name="settings_capabilities">Возможности</string>
+    <string name="settings_preferences">Настройки</string>
+    <string name="settings_data">Данные</string>
+    <string name="settings_extensions">Расширения и подключения</string>
+    <string name="settings_network">Сеть</string>
+    <string name="settings_runtime">Среда выполнения</string>
 </resources>

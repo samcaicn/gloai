@@ -5,7 +5,6 @@
     <string name="language_title">Idioma</string>
     <string name="language_system">Seguir o sistema</string>
     <string name="language_system_detail">Usa o idioma do sistema se o Mika o tiver; caso contrário, inglês</string>
-    <string name="settings_basic">Frequentes</string>
     <string name="settings_language_appearance">Idioma e aparência</string>
     <string name="settings_model">Modelo</string>
     <string name="settings_model_sub">Modelos, provedores e uso de tokens</string>
@@ -14,7 +13,6 @@
     <string name="settings_during_work">Execução de tarefas</string>
     <string name="settings_during_work_sub">Modo autônomo, ritmo, limite de etapas e som</string>
     <string name="settings_notif_sub">Quando elas aparecem, mude nas configurações do sistema</string>
-    <string name="settings_privacy">Meus dados</string>
     <string name="settings_memory_data">Memória e dados</string>
     <string name="settings_memory_sub">Memórias, habilidades, roteiros salvos e logins em sites</string>
     <string name="settings_saved_data">Dados salvos</string>
@@ -24,10 +22,8 @@
         <item quantity="many">%1$d sites</item>
         <item quantity="other">%1$d sites</item>
     </plurals>
-    <string name="settings_other">Outros</string>
-    <string name="settings_advanced">Avançado e outros</string>
-    <string name="settings_advanced_sub">Proxy, computação, conexões e reparo</string>
-    <string name="settings_connections">Rede e conexões</string>
+    <string name="settings_advanced">Avançado</string>
+    <string name="settings_advanced_sub">Extensões, rede, runtime e manutenção</string>
     <string name="settings_maintenance">Manutenção</string>
     <string name="settings_sandbox">Arquivos e ambiente de computação</string>
     <string name="settings_routes">Roteiros salvos</string>
@@ -225,4 +221,10 @@
     <string name="settings_scheduled_quiet_start">Hora de início</string>
     <string name="settings_scheduled_quiet_end">Hora de término</string>
     <string name="settings_scheduled_quiet_equal">Escolha horários de início e término diferentes para silenciar as notificações.</string>
+    <string name="settings_capabilities">Recursos</string>
+    <string name="settings_preferences">Preferências</string>
+    <string name="settings_data">Dados</string>
+    <string name="settings_extensions">Extensões e conexões</string>
+    <string name="settings_network">Rede</string>
+    <string name="settings_runtime">Ambiente de execução</string>
 </resources>

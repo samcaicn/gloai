@@ -14,7 +14,6 @@
 
 
 
-    <string name="settings_basic">عمومی</string>
     <string name="settings_language_appearance">زبان و ظاهر</string>
     <string name="settings_personal_start">باز کردن دستیار شخصی هنگام راه‌اندازی</string>
     <string name="settings_personal_start_sub">استفاده از دستیار شخصی به عنوان نخستین صفحه میکا</string>
@@ -25,7 +24,6 @@
     <string name="settings_during_work">هنگام اجرای کار</string>
     <string name="settings_during_work_sub">حالت خودکار، سرعت، محدودیت مراحل و صدا</string>
     <string name="settings_notif_sub">زمان نمایش اعلان‌ها را در تنظیمات سیستم تغییر دهید</string>
-    <string name="settings_privacy">داده‌های من</string>
     <string name="settings_memory_data">حافظه و داده‌ها</string>
     <string name="settings_memory_sub">خاطره‌ها، مهارت‌ها، مسیرهای ذخیره‌شده و ورود به وب‌سایت‌ها</string>
     <string name="settings_saved_data">داده‌های ذخیره‌شده</string>
@@ -34,10 +32,8 @@
         <item quantity="one">%1$d سایت</item>
         <item quantity="other">%1$d سایت</item>
     </plurals>
-    <string name="settings_other">سایر</string>
-    <string name="settings_advanced">پیشرفته و سایر موارد</string>
-    <string name="settings_advanced_sub">پروکسی، پردازش، اتصال‌ها و تعمیر</string>
-    <string name="settings_connections">شبکه و اتصال‌ها</string>
+    <string name="settings_advanced">پیشرفته</string>
+    <string name="settings_advanced_sub">افزونه‌ها، شبکه، محیط اجرا و نگهداری</string>
     <string name="settings_maintenance">نگهداری</string>
     <string name="settings_sandbox">محیط فایل‌ها و پردازش</string>
     <string name="settings_routes">مسیرهای ذخیره‌شده</string>
@@ -231,4 +227,10 @@
     <string name="settings_scheduled_quiet_equal">برای بی‌صدا کردن اعلان‌ها، زمان شروع و پایان متفاوتی انتخاب کنید.</string>
     <string name="settings_show_task_cost">نمایش هزینه کار</string>
     <string name="settings_show_task_cost_sub">تخمین هزینه API DeepSeek به یوان چین برای کارهای جدید.</string>
+    <string name="settings_capabilities">قابلیت‌ها</string>
+    <string name="settings_preferences">ترجیحات</string>
+    <string name="settings_data">داده‌ها</string>
+    <string name="settings_extensions">افزونه‌ها و اتصالات</string>
+    <string name="settings_network">شبکه</string>
+    <string name="settings_runtime">محیط اجرا</string>
 </resources>
