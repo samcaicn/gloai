@@ -34,12 +34,7 @@ class VoiceInput(
      * 开一次会话,按下时调(要在主线程)。[language] 是识别语言(BCP-47);null 跟 App 界面语言。
      * 没有录音权限、引擎用不了时,给出只发一个 Failed 的会话,界面按同一套处理。
      */
-    override fun start(language: String?): SpeechSession = startInternal(language, ShortArray(0))
-
-    /** Include audio captured while the wake-word model was finishing its decision. */
-    fun startWithPreroll(language: String?, preroll: ShortArray): SpeechSession = startInternal(language, preroll)
-
-    private fun startInternal(language: String?, preroll: ShortArray): SpeechSession {
+    override fun start(language: String?): SpeechSession {
         val spec = spec()
         if (spec is SpeechEngineSpec.Unavailable) return FailedSession(SpeechFailure.Unavailable(spec.why))
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -50,7 +45,7 @@ class VoiceInput(
             is SpeechEngineSpec.Doubao -> {
                 val credentials = settings.doubaoCredentials()
                     ?: return FailedSession(SpeechFailure.Unavailable(SpeechEngineSpec.Why.DoubaoNotConfigured))
-                DoubaoSpeech(PcmRecorder(streaming = true, initialPcm = preroll), { DoubaoTransport().connect(credentials, spec.resourceId) })
+                DoubaoSpeech(PcmRecorder(streaming = true), { DoubaoTransport().connect(credentials, spec.resourceId) })
             }
             is SpeechEngineSpec.FunAsr -> LiveSpeech(PcmRecorder(streaming = true, unbounded = true), FunAsrProtocol(spec.language), { LiveAsrTransport().connect(spec.url) })
             is SpeechEngineSpec.Bailian -> {
@@ -69,7 +64,7 @@ class VoiceInput(
                 val p = spec.provider
                 val t = transcriber(p)
                 val iso = SystemSpeech.isoCode(tag)
-                ProviderSpeech(PcmRecorder(initialPcm = preroll), { wav ->
+                ProviderSpeech(PcmRecorder(), { wav ->
                     t.transcribe(p, providers.providerKey(p.id), spec.model, spec.method, wav, iso)
                 })
             }

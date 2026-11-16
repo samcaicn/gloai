@@ -4,4 +4,3 @@ app/src/main/assets/sandbox/mika text eol=lf
 # text=auto 不碰二进制文件;gradlew.bat 保持 CRLF(Windows 批处理对纯 LF 兼容性不稳)。
 * text=auto eol=lf
 *.bat text eol=crlf
-app/src/main/assets/wake/*.txt -text

@@ -17,9 +17,6 @@ sealed interface SpeechEvent {
     /** 到此刻听到的全文:[tail] 是末尾还可能变的几个字,其余是 [stable]。 */
     data class Partial(val stable: String, val tail: String) : SpeechEvent
 
-    /** Provider marked the latest recognized sentence stable; recording may still continue. */
-    data class SegmentFinal(val text: String) : SpeechEvent
-
     /** 服务商:松开后在转。 */
     data object Converting : SpeechEvent
 

@@ -16,22 +16,6 @@
 - Modifications: 默认问候语等产品文案按 Mika 调整为「Mika AI 电话助手」,相关测试断言随之同步。
 - Service: 实时语音经火山引擎（Volcengine）的 WebSocket 接口,凭证由用户在通话设置页填写。
 
-## Sherpa-ONNX
-
-- Project: https://github.com/k2-fsa/sherpa-onnx
-- Artifact: Android AAR v2.0.1 (`app/libs/sherpa-onnx-2.0.1.aar`).
-- License: Apache-2.0 (https://github.com/k2-fsa/sherpa-onnx/blob/master/LICENSE).
-- Usage: Local, on-device keyword spotting after the user enables the microphone service.
-- Source and integrity details: `docs/voice-edition.md`.
-
-## Sherpa-ONNX Chinese-English KWS model
-
-- Project: https://www.modelscope.cn/models/pkufool/icefall-kws-zipformer-zh-en-3M-2025-12-20
-- Artifact: `sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20` ONNX weights and token list in `app/src/main/assets/wake/`.
-- License: Apache-2.0, as confirmed by the model author and Sherpa maintainer at https://github.com/k2-fsa/sherpa-onnx/issues/3802 .
-- Usage: Local, on-device recognition of the user-selected wake phrase.
-- Source and integrity details: `docs/voice-edition.md`.
-
 ## scrcpy
 
 - Project: https://github.com/Genymobile/scrcpy

@@ -34,8 +34,6 @@ class DoubaoProtocolTest {
         assertEquals(16, audio.getValue("bits").jsonPrimitive.int)
         assertEquals(1, audio.getValue("channel").jsonPrimitive.int)
         assertEquals("full", json.getValue("request").jsonObject.getValue("result_type").jsonPrimitive.content)
-        assertEquals(true, json.getValue("request").jsonObject.getValue("show_utterances").jsonPrimitive.boolean)
-        assertEquals(1000, json.getValue("request").jsonObject.getValue("end_window_size").jsonPrimitive.int)
         assertFalse(json.containsKey("user"))
     }
 
@@ -61,13 +59,6 @@ class DoubaoProtocolTest {
         assertNull(DoubaoProtocol.response(asrResponse()).text)
         assertEquals("", DoubaoProtocol.response(asrResponse("""{"result":{"text":""}}""")).text)
         assertFalse(DoubaoProtocol.response(asrResponse(flags = 0)).last)
-    }
-
-    @Test fun onlyTheLatestDefiniteUtteranceMarksTheCurrentTranscriptSettled() {
-        val settled = asrResponse("""{"result":{"text":"现在几点？","utterances":[{"text":"现在几点？","definite":true}]}}""")
-        assertEquals(DoubaoProtocol.Response("现在几点？", false, true), DoubaoProtocol.response(settled))
-        val continuing = asrResponse("""{"result":{"text":"打开微信然后","utterances":[{"text":"打开微信","definite":true},{"text":"然后","definite":false}]}}""")
-        assertEquals(DoubaoProtocol.Response("打开微信然后", false, false), DoubaoProtocol.response(continuing))
     }
 
     @Test fun errorFrameAndJsonCodesDoNotExposeServerText() {

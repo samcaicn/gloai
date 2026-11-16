@@ -28,11 +28,9 @@ class PcmRecorder(
     private val streaming: Boolean = false,
     /** 流式时不留整段录音、录多久都行(不预留 [maxMs] 的缓冲,也不到点自停);[stop] 返回空。用于不封顶的会话。 */
     private val unbounded: Boolean = false,
-    private val initialPcm: ShortArray = ShortArray(0),
 ) : StreamingRecorder {
-    // Hold wake-word preroll plus audio captured while a connection is opening.
-    override val prerollSamples: Int get() = initialPcm.size
-    private val audio = Channel<ShortArray>(300)
+    // At most five seconds while a connection is opening. Never silently drop a sample.
+    private val audio = Channel<ShortArray>(100)
     override val chunks: ReceiveChannel<ShortArray> = audio
     private val _level = MutableStateFlow(0f)
     override val level: StateFlow<Float> = _level
@@ -77,15 +75,7 @@ class PcmRecorder(
                 return false
             }
             pcm = ShortArray(if (unbounded && streaming) 0 else Wav.RATE * maxMs / 1000)
-            val prerollSize = minOf(initialPcm.size, pcm.size)
-            initialPcm.copyInto(pcm, 0, initialPcm.size - prerollSize)
-            size = prerollSize
-            if (streaming) {
-                val chunkSize = Wav.RATE / 20
-                for (offset in 0 until prerollSize step chunkSize) {
-                    audio.trySend(pcm.copyOfRange(offset, minOf(offset + chunkSize, prerollSize)))
-                }
-            }
+            size = 0
             _level.value = 0f
             record = rec
             job = scope.launch { readLoop(rec, chunk) }

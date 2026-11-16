@@ -57,18 +57,6 @@ class DoubaoSpeechTest {
         assertTrue(socket.closed); assertTrue(capture.cancelled)
     }
 
-    @Test fun forwardsStableSentenceWithoutEndingTheRecording() = test {
-        val capture = Capture(); val socket = Socket()
-        val session = DoubaoSpeech(capture, { socket }, this)
-        val events = collect(session)
-        socket.sent.receive(); socket.incoming.send(asrResponse())
-        socket.incoming.send(asrResponse("""{"result":{"text":"现在几点？","utterances":[{"text":"现在几点？","definite":true}]}}"""))
-        assertEquals(SpeechEvent.Partial("", "现在几点？"), events.receive())
-        assertEquals(SpeechEvent.SegmentFinal("现在几点？"), events.receive())
-        assertTrue(events.tryReceive().isFailure)
-        session.cancel()
-    }
-
     @Test fun releaseBeforeConnectionFlushesShortTailAndEmptyFinalRetainsLatestSnapshot() = test {
         val capture = Capture(); val socket = Socket(); val ready = CompletableDeferred<Unit>()
         val session = DoubaoSpeech(capture, { ready.await(); socket }, this)

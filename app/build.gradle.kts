@@ -45,7 +45,7 @@ android {
         }
     }
     // 自带的运行环境(assets/runtime/rootfs.tar.xz,tools/sandbox/build-runtime.py 生成)已是 xz,不再压一遍
-    androidResources { noCompress += listOf("xz", "onnx") }
+    androidResources { noCompress += "xz" }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -59,7 +59,7 @@ android {
         // 真机验收时并排安装,保留发行版和用户数据;默认构建标识不变。
         if (providers.gradleProperty("devInstall").isPresent) getByName("debug") {
             applicationIdSuffix = ".dev"
-            resValue("string", "app_name", "Mika Voice Edition")
+            resValue("string", "app_name", "Mika Dev")
         }
         // 看流畅度用的包:和发布版一样不可调试(调试包不做预先编译,界面慢好几倍,手感不作数),
         // 用本机调试签名,能直接覆盖调试包、保留数据;可被性能工具采样。./gradlew :app:assemblePerf
@@ -94,7 +94,6 @@ kotlin {
 }
 
 dependencies {
-    implementation(files("libs/sherpa-onnx-2.0.1.aar"))
     implementation(project(":core"))
     implementation(libs.protobuf.lite)
     implementation(platform(libs.compose.bom))

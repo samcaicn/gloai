@@ -17,7 +17,7 @@ internal object DoubaoProtocol {
     const val CHUNK_SAMPLES = 3200 // 200 ms, 16 kHz mono PCM16
     private const val MAX_PAYLOAD = 1024 * 1024
 
-    data class Response(val text: String?, val last: Boolean, val settled: Boolean = false)
+    data class Response(val text: String?, val last: Boolean)
     class ServiceError(val code: Long) : IOException("Doubao ASR code $code")
 
     fun initial(): ByteArray = packet(0x10, 1, buildJsonObject {
@@ -28,7 +28,6 @@ internal object DoubaoProtocol {
         putJsonObject("request") {
             put("model_name", "bigmodel"); put("result_type", "full")
             put("enable_itn", true); put("enable_punc", true)
-            put("show_utterances", true); put("end_window_size", 1000)
         }
     }.toString().toByteArray(Charsets.UTF_8))
 
@@ -86,17 +85,12 @@ internal object DoubaoProtocol {
         val root = Json.parseToJsonElement(payload.toString(Charsets.UTF_8)).jsonObject
         root["code"]?.jsonPrimitive?.longOrNull?.let { if (it != 0L && it != 20000000L) throw ServiceError(it) }
         val body = root["payload_msg"] as? JsonObject ?: root
-        val result = body["result"]
-        val text = when (result) {
+        val text = when (val result = body["result"]) {
             is JsonObject -> result["text"]?.jsonPrimitive?.contentOrNull
             is JsonArray -> result.joinToString("") { it.jsonObject["text"]?.jsonPrimitive?.contentOrNull.orEmpty() }
             else -> null // Initial acknowledgement or an empty final packet.
         }
-        val utterances = (result as? JsonObject)?.get("utterances") as? JsonArray
-        val settled = utterances?.lastOrNull()?.let { utterance ->
-            (utterance as? JsonObject)?.get("definite")?.jsonPrimitive?.booleanOrNull
-        } == true
-        return Response(text, flags and 2 != 0 || sequence < 0 || root["is_last_package"]?.jsonPrimitive?.booleanOrNull == true, settled)
+        return Response(text, flags and 2 != 0 || sequence < 0 || root["is_last_package"]?.jsonPrimitive?.booleanOrNull == true)
     }
 }
 

@@ -16,8 +16,6 @@ import okio.ByteString.Companion.toByteString
 /** A bounded stream: capture must fail rather than silently drop audio when the network stalls. */
 interface StreamingRecorder : Recorder {
     val chunks: ReceiveChannel<ShortArray>
-    /** Audio captured before the streaming session was created. */
-    val prerollSamples: Int get() = 0
 }
 
 internal interface DoubaoSocket {
@@ -123,10 +121,7 @@ internal class DoubaoSpeech(
                 val first = withTimeout(connectTimeoutMs) { DoubaoProtocol.response(connection.incoming.receive()) }
                 var text = first.text.orEmpty()
                 if (first.last) { out.finish(SpeechEvent.Final(text)); return@withTimeout }
-                if (first.text != null) {
-                    out.send(SpeechEvent.Partial("", text))
-                    if (first.settled) out.send(SpeechEvent.SegmentFinal(text))
-                }
+                if (first.text != null) out.send(SpeechEvent.Partial("", text))
                 coroutineScope {
                     val result = async {
                         for (bytes in connection.incoming) {
@@ -134,10 +129,7 @@ internal class DoubaoSpeech(
                             response.text?.let {
                                 // result_type=full is a replacement snapshot, never an append delta.
                                 text = it
-                                if (!response.last) {
-                                    out.send(SpeechEvent.Partial("", it))
-                                    if (response.settled) out.send(SpeechEvent.SegmentFinal(it))
-                                }
+                                if (!response.last) out.send(SpeechEvent.Partial("", it))
                             }
                             if (response.last) return@async text
                         }
@@ -148,16 +140,11 @@ internal class DoubaoSpeech(
                         val buffer = ShortArray(DoubaoProtocol.CHUNK_SAMPLES)
                         var size = 0
                         var nextPacketNanos = 0L
-                        var sentPackets = 0
-                        val catchUpPackets = (recorder.prerollSamples + buffer.size - 1) / buffer.size
                         suspend fun sendAudio(pcm: ShortArray, last: Boolean) {
                             val remaining = nextPacketNanos - System.nanoTime()
                             if (remaining > 0) delay((remaining + 999_999) / 1_000_000)
                             connection.send(DoubaoProtocol.audio(pcm, last))
-                            // Preroll is already in the past. Send it at the provider's allowed
-                            // 100 ms interval, then return to real-time 200 ms pacing.
-                            nextPacketNanos = System.nanoTime() +
-                                if (sentPackets++ < catchUpPackets) 100_000_000L else 200_000_000L
+                            nextPacketNanos = System.nanoTime() + 200_000_000L
                         }
                         for (chunk in recorder.chunks) {
                             var offset = 0

@@ -1,34 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="wake_settings_title">你好米卡</string>
-    <string name="wake_settings_subtitle">后台监听唤醒词，使用已配置的云端语音识别</string>
-    <string name="wake_listening">监听中</string>
-    <string name="wake_off">已关闭</string>
-    <string name="wake_channel">Mika 语音唤醒</string>
-    <string name="wake_loading">正在准备语音唤醒…</string>
-    <string name="wake_waiting">正在等待“你好米卡”</string>
-    <string name="wake_failed">语音唤醒启动失败，请重新开启</string>
-    <string name="wake_retrying">麦克风暂时不可用，正在重试</string>
-    <string name="wake_need_cloud">请先在语音设置中选择云端识别</string>
-    <string name="wake_say_command">已唤醒，请说中文指令</string>
-    <string name="wake_transcribing">正在转换语音</string>
-    <string name="wake_received">已收到：%1$s</string>
-    <string name="wake_task_starting">正在启动任务</string>
-    <string name="wake_task_running">Mika 正在执行</string>
-    <string name="wake_task_paused">任务已暂停</string>
-    <string name="wake_task_answer">Mika 在等你回答</string>
-    <string name="wake_task_done">任务已完成</string>
-    <string name="wake_task_failed">任务执行失败</string>
-    <string name="wake_task_missing">暂时无法跟踪任务，请打开 Mika 查看</string>
-    <string name="wake_task_cancelled">任务已取消</string>
-    <string name="wake_new_task_ready">已准备新会话，再说“你好米卡”和新任务</string>
-    <string name="wake_no_match">没有听清，请再说一次唤醒词</string>
-    <string name="wake_transcribe_failed">语音转文字失败，请检查识别设置</string>
-    <string name="wake_tap_execute">已识别指令，点击“执行”继续</string>
-    <string name="wake_manual_confirmation">此操作需要你在 Mika 中确认</string>
-    <string name="wake_manual_takeover">此操作需要你在 Mika 中接管处理</string>
-    <string name="wake_stop">停止监听</string>
-    <string name="wake_run">执行</string>
     <string name="voice_placeholder_idle">按住说话，点一下打字</string>
     <string name="voice_placeholder_busy">按住说话插话，点一下打字</string>
     <string name="voice_placeholder_answer">按住说话回答，点一下打字</string>

@@ -1,34 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="wake_settings_title">Hello Mika</string>
-    <string name="wake_settings_subtitle">Listen for the wake phrase in the background; uses your configured cloud speech model</string>
-    <string name="wake_listening">Listening</string>
-    <string name="wake_off">Off</string>
-    <string name="wake_channel">Mika voice wake</string>
-    <string name="wake_loading">Preparing voice wake…</string>
-    <string name="wake_waiting">Waiting for “Hello Mika”</string>
-    <string name="wake_failed">Voice wake failed to start. Try again.</string>
-    <string name="wake_retrying">Microphone unavailable. Retrying.</string>
-    <string name="wake_need_cloud">Choose a cloud speech model in voice settings first</string>
-    <string name="wake_say_command">Awake. Say your command now.</string>
-    <string name="wake_transcribing">Converting speech to text</string>
-    <string name="wake_received">Received: %1$s</string>
-    <string name="wake_task_starting">Starting your task</string>
-    <string name="wake_task_running">Mika is working</string>
-    <string name="wake_task_paused">Task paused</string>
-    <string name="wake_task_answer">Mika needs your answer</string>
-    <string name="wake_task_done">Task complete</string>
-    <string name="wake_task_failed">Task failed</string>
-    <string name="wake_task_missing">Could not track this task. Open Mika to check it.</string>
-    <string name="wake_task_cancelled">Task cancelled</string>
-    <string name="wake_new_task_ready">New conversation ready. Say “Hello Mika” and your task.</string>
-    <string name="wake_no_match">I didn’t catch that. Say the wake phrase again.</string>
-    <string name="wake_transcribe_failed">Speech conversion failed. Check voice settings.</string>
-    <string name="wake_tap_execute">Command recognized. Tap Run to continue.</string>
-    <string name="wake_manual_confirmation">Confirm this action in Mika</string>
-    <string name="wake_manual_takeover">Take over this action in Mika</string>
-    <string name="wake_stop">Stop listening</string>
-    <string name="wake_run">Run</string>
     <!-- Chat composer: hold to talk -->
     <string name="voice_placeholder_idle">Hold to talk, tap to type</string>
     <string name="voice_placeholder_busy">Hold to talk to the task, tap to type</string>

@@ -50,8 +50,6 @@ object Licenses {
 
     val ENTRIES = listOf(
         Entry("Mika", "Apache-2.0", "Mika 本身,包括运行环境的启动器、其中的 mika 命令与技能脚本。许可证全文见本页顶上。"),
-        Entry("Sherpa-ONNX", "Apache-2.0", "版本 2.0.1，本地识别唤醒词。https://github.com/k2-fsa/sherpa-onnx"),
-        Entry("Sherpa-ONNX Chinese-English KWS model", "Apache-2.0", "本地唤醒词模型。https://www.modelscope.cn/models/pkufool/icefall-kws-zipformer-zh-en-3M-2025-12-20"),
         Entry("PRoot", "GPL-2.0-or-later", "运行 Python、Node 等程序用的环境,版本 5.4.0,打了一个补丁(PRoot 退出时结束所有子进程)。$GPL_SOURCE_OFFER"),
         Entry("talloc", "LGPL-3.0-or-later", "版本 2.4.3,未修改,静态链接进 PRoot 程序。可用 tools/sandbox/ 的源码与脚本重新链接。"),
         Entry("Apache Commons Compress", "Apache-2.0", "首次启动时解包自带的运行环境。Copyright 2002-2025 The Apache Software Foundation."),

@@ -136,7 +136,6 @@ class HoldToTalk(private val clock: () -> Long, private val maxMs: Long = 60_000
             // 转文字以后服务商的引擎可能晚到一个音量:只在听的时候才认
             is SpeechEvent.Level -> if (now is State.Listening) _state.value = now.copy(level = e.value)
             is SpeechEvent.Partial -> if (now is State.Listening) _state.value = now.copy(stable = e.stable, tail = e.tail)
-            is SpeechEvent.SegmentFinal -> Unit
             SpeechEvent.Converting -> _state.value = State.Converting
             is SpeechEvent.Final -> {
                 session = null
