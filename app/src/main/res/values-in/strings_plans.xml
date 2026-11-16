@@ -34,6 +34,9 @@
     <string name="plans_repeat_weekly">Mingguan</string>
     <string name="plans_interval_minutes">Ulangi setiap (menit)</string>
     <string name="plans_clock">Waktu setempat (pisahkan dengan koma)</string>
+    <string name="plans_pick_time">Pilih waktu</string>
+    <string name="plans_add_time">Tambah waktu</string>
+    <string name="plans_remove_time">Hapus waktu ini</string>
     <string name="plans_zone">ID zona waktu</string>
     <string name="plans_condition_optional">Kondisi (opsional)</string>
     <string name="plans_notify_change">Saat berubah</string>

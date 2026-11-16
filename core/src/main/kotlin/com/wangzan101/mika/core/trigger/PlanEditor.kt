@@ -2,9 +2,11 @@ package com.wangzan101.mika.core.trigger
 
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
+import java.util.Locale
 
 /** 手动编辑器和模型编辑共用的重复方式。 */
 enum class PlanRepeat { Once, Interval, Daily, Weekly }
@@ -47,6 +49,30 @@ private val EDIT_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-
 
 fun formatPlanEditorTime(atMs: Long, zone: String): String =
     EDIT_TIME.format(Instant.ofEpochMilli(atMs).atZone(ZoneId.of(zone)))
+
+fun formatPlanEditorTime(at: LocalDateTime): String = EDIT_TIME.format(at)
+
+/** 编辑框里的「首次执行」转成当地日期时间;模型写下的 ISO 时间也认,解析不了返回 null。 */
+fun parsePlanEditorTime(text: String, zone: String): LocalDateTime? {
+    val trimmed = text.trim()
+    if (trimmed.isEmpty()) return null
+    val zoneId = runCatching { ZoneId.of(zone.trim()) }.getOrNull() ?: return null
+    runCatching { Instant.parse(trimmed) }.getOrNull()?.let { return it.atZone(zoneId).toLocalDateTime() }
+    return runCatching { LocalDateTime.parse(trimmed, EDIT_TIME) }.getOrNull()
+}
+
+private val PLAN_CLOCK: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
+
+/** 编辑框里的当地时刻;只要有一条填错就返回 null,页面继续让用户改原文。 */
+fun planClockEntries(text: String): List<LocalTime>? = runCatching {
+    normalizedCalendarTimes(text.split(',', '，', '、', ';', '；', '،', '\n')).map(LocalTime::parse)
+}.getOrNull()
+
+fun formatPlanClock(time: LocalTime): String = PLAN_CLOCK.format(time)
+
+/** 时间选择器写回编辑框:补零、去重、排序,和保存时的钟点规则一致。 */
+fun normalizedClockText(times: List<LocalTime>): String =
+    times.map(::formatPlanClock).distinct().sorted().joinToString(", ")
 
 fun newPlanDraft(nowMs: Long, zone: ZoneId = ZoneId.systemDefault()): PlanDraft {
     val first = Instant.ofEpochMilli(nowMs).atZone(zone).plusHours(1).withSecond(0).withNano(0)

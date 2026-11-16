@@ -34,6 +34,9 @@
     <string name="plans_repeat_weekly">每周</string>
     <string name="plans_interval_minutes">每隔多少分钟重复</string>
     <string name="plans_clock">当地时刻（逗号分隔）</string>
+    <string name="plans_pick_time">选择时刻</string>
+    <string name="plans_add_time">添加时刻</string>
+    <string name="plans_remove_time">删除这个时刻</string>
     <string name="plans_zone">时区 ID</string>
     <string name="plans_condition_optional">执行条件（可选）</string>
     <string name="plans_notify_change">条件刚满足时</string>

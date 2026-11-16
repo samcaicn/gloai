@@ -34,6 +34,9 @@
     <string name="plans_repeat_weekly">Semanal</string>
     <string name="plans_interval_minutes">Repetir a cada (minutos)</string>
     <string name="plans_clock">Horários locais (separados por vírgulas)</string>
+    <string name="plans_pick_time">Escolher um horário</string>
+    <string name="plans_add_time">Adicionar um horário</string>
+    <string name="plans_remove_time">Remover este horário</string>
     <string name="plans_zone">ID do fuso horário</string>
     <string name="plans_condition_optional">Condição (opcional)</string>
     <string name="plans_notify_change">Ao mudar</string>

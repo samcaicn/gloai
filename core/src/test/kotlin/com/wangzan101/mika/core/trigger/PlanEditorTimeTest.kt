@@ -1,9 +1,12 @@
 package com.wangzan101.mika.core.trigger
 
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -75,6 +78,34 @@ class PlanEditorTimeTest {
         val edited = edit(original, original.toPlanDraft().copy(firstAt = newTime.toString()))
 
         assertEquals(newTime.toEpochMilli(), edited.nextAtMs)
+    }
+
+    /** 日期/时间选择器读编辑框:当地格式和 ISO 都要认,填错的返回空让用户继续改。 */
+    @Test fun pickersReadLocalAndIsoEditorTimes() {
+        assertEquals(
+            LocalDateTime.of(2026, 11, 13, 9, 30),
+            parsePlanEditorTime("2026-11-13 09:30", "Asia/Shanghai"),
+        )
+        assertEquals(
+            LocalDateTime.of(2026, 11, 13, 9, 30, 45),
+            parsePlanEditorTime("2026-11-13T01:30:45Z", "Asia/Shanghai"),
+        )
+        assertNull(parsePlanEditorTime("2026-02-30 08:30", "Asia/Shanghai"))
+        assertNull(parsePlanEditorTime("", "Asia/Shanghai"))
+        assertNull(parsePlanEditorTime("2026-11-13 09:30", "not/a zone"))
+    }
+
+    /** 时刻芯片的解析和写回与保存规则一致:排序、去重、补零;有坏条目就不出芯片。 */
+    @Test fun clockChipsRoundTripTheSameTextTheEditorSaves() {
+        assertEquals(
+            listOf(LocalTime.of(8, 0), LocalTime.of(12, 30), LocalTime.of(20, 0)),
+            planClockEntries("12:30，08:00、20:00"),
+        )
+        assertEquals("08:00, 09:30", normalizedClockText(listOf(LocalTime.of(9, 30), LocalTime.of(8, 0), LocalTime.of(9, 30))))
+        assertEquals("00:05", normalizedClockText(listOf(LocalTime.of(0, 5))))
+        assertNull(planClockEntries("25:00"))
+        assertNull(planClockEntries("08:00, later"))
+        assertNull(planClockEntries(""))
     }
 
     @Test fun preservingTheTimeDoesNotAllowResumingAnOverduePlan() {

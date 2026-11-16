@@ -34,6 +34,9 @@
     <string name="plans_repeat_weekly">هفتگی</string>
     <string name="plans_interval_minutes">تکرار هر چند دقیقه</string>
     <string name="plans_clock">زمان‌های محلی (با ویرگول جدا کنید)</string>
+    <string name="plans_pick_time">انتخاب زمان</string>
+    <string name="plans_add_time">افزودن زمان</string>
+    <string name="plans_remove_time">حذف این زمان</string>
     <string name="plans_zone">شناسهٔ منطقهٔ زمانی</string>
     <string name="plans_condition_optional">شرط (اختیاری)</string>
     <string name="plans_notify_change">هنگام تغییر</string>
