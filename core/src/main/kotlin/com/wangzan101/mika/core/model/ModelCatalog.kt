@@ -318,13 +318,15 @@ class ModelCatalog(private val http: OkHttpClient) {
     }
 
     private fun failureFor(status: Int, body: String): ModelListResult.Failed = when {
-        status == 401 || status == 403 -> ModelListResult.Failed(ListFailure.Auth)
+        status == 401 -> ModelListResult.Failed(ListFailure.Auth)
+        // 403 带 insufficient_quota 是额度用尽,不是 Key 无效;和 [ModelHttp.openAiError] 保持同一顺序(额度先于 403)。
+        status == 402 || body.contains("insufficient_quota") -> ModelListResult.Failed(ListFailure.Quota)
         // Gemini 对无效 Key 回 400 INVALID_ARGUMENT,原因写在内容里
         status == 400 && (body.contains("API_KEY_INVALID") || body.contains("API key not valid")) -> ModelListResult.Failed(ListFailure.Auth)
-        status == 402 || body.contains("insufficient_quota") -> ModelListResult.Failed(ListFailure.Quota)
         status == 429 -> ModelListResult.Failed(ListFailure.RateLimited)
         status == 404 || status == 405 || status == 501 -> ModelListResult.Failed(ListFailure.NotSupported)
         status in 500..599 -> ModelListResult.Failed(ListFailure.Server, "HTTP $status")
+        status == 403 -> ModelListResult.Failed(ListFailure.Auth)
         else -> ModelListResult.Failed(ListFailure.BadResponse, "HTTP $status")
     }
 

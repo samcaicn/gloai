@@ -251,6 +251,11 @@ class ModelCatalogTest {
         }
     }
 
+    @Test fun quotaBodyOn403IsQuotaNotAuth() = runTest {
+        server.enqueue(MockResponse().setResponseCode(403).setBody("""{"error":{"code":"insufficient_quota","message":"Insufficient quota"}}"""))
+        assertEquals(ListFailure.Quota, failure(catalog.openAiCompat(base, "sk")))
+    }
+
     @Test fun geminiInvalidKeyIsAuth() = runTest {
         server.enqueue(MockResponse().setResponseCode(400).setBody("""{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT"}}"""))
         assertEquals(ListFailure.Auth, failure(catalog.gemini(base, "bad")))
