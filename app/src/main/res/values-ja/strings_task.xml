@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">2 つ目の仮想画面を作成できなかったため、今は一度に 1 つのタスクだけを実行します</string>
     <string name="parallel_needs_14">複数のタスクを同時に実行するには Android 14 以降が必要です</string>
     <string name="parallel_low_ram">このスマホはメモリが少ないため、一度に 1 つのタスクだけを実行します</string>
-    <string name="skill_suspended">このスキルは最近うまく動いていないため、一時停止しました</string>
+    <string name="skill_suspended">このスキルは最近うまく動いていないため、一時停止しました: %1$s</string>
     <string name="skill_verified">スキルが有効でした。通常の利用に移りました: %1$s</string>
     <string name="skill_learned">Mika がスキルを学習しました: %1$s</string>
     <string name="skill_app_draft">Mika が %1$s についてのメモを作りました。ご確認ください</string>

@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">第二块虚拟屏没能建起来,这次运行期间一次只进行一个任务</string>
     <string name="parallel_needs_14">安卓 14 以上才支持同时进行多个任务</string>
     <string name="parallel_low_ram">这台手机内存较小,一次只进行一个任务</string>
-    <string name="skill_suspended">这项技能最近不灵,先停用了</string>
+    <string name="skill_suspended">这项技能最近不灵,先停用了:%1$s</string>
     <string name="skill_verified">这项技能用它办成了事，转为正式:%1$s</string>
     <string name="skill_learned">Mika 学会了一项技能:%1$s</string>
     <string name="skill_app_draft">Mika 记下了几条关于%1$s的知识，等你确认</string>

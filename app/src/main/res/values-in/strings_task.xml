@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">Gagal membuat layar virtual kedua, jadi untuk sementara hanya satu tugas yang berjalan sekaligus</string>
     <string name="parallel_needs_14">Menjalankan beberapa tugas sekaligus memerlukan Android 14 atau lebih baru</string>
     <string name="parallel_low_ram">Ponsel ini memorinya kecil, jadi satu tugas berjalan sekaligus</string>
-    <string name="skill_suspended">Keterampilan ini belakangan tidak berhasil, jadi dijeda</string>
+    <string name="skill_suspended">Keterampilan ini belakangan tidak berhasil, jadi dijeda: %1$s</string>
     <string name="skill_verified">Keterampilan berhasil, kini dipakai secara rutin: %1$s</string>
     <string name="skill_learned">Mika mempelajari keterampilan: %1$s</string>
     <string name="skill_app_draft">Mika mencatat beberapa fakta tentang %1$s untuk Anda tinjau</string>

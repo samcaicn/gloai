@@ -128,15 +128,19 @@ class RunLearning(
         return RunNotes(a.conversationId, a.runId.orEmpty(), MemoryExtractor.notes(changes), a.usedMemory, skillNotes)
     }
 
-    /** 每份技能单独读改写(和别的任务同时记结果也不丢);一份出错不影响别的。 */
+    /**
+     * 每份技能单独读改写(和别的任务同时记结果也不丢);一份出错不影响别的。
+     * 这次读了不止一份个人技能时分不清照着哪份做的:结果不记到任何一份上,免得只是翻看过的技能跟着被记成没办成、被停用(#569)。
+     */
     private suspend fun recordOutcomes(used: List<RunEvent.SkillUsed>, end: TaskState, outcome: RunOutcome): List<SkillNote> {
         val result = SkillOutcomes.resultOf(end, outcome) ?: return emptyList()
+        if (used.map { it.name }.distinct().size > 1) return emptyList()
         return used.groupBy { it.name }.mapNotNull { (name, uses) ->
             val next = guarded(null) {
                 skills.update(name) { s -> if (s.status == SkillStatus.active || s.status == SkillStatus.trial) SkillOutcomes.record(s, result, followed = true) else null }
             } ?: return@mapNotNull null
             when (next.status) {
-                SkillStatus.suspended -> SkillNote(tr(R.string.skill_suspended), suspended = name)
+                SkillStatus.suspended -> SkillNote(tr(R.string.skill_suspended, name), suspended = name)
                 SkillStatus.active -> if (uses.isNotEmpty() && result == SkillResult.verified) SkillNote(tr(R.string.skill_verified, name)) else null
                 else -> null
             }

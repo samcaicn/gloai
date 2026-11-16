@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">Couldn’t create a second virtual screen, so only one task runs at a time for now</string>
     <string name="parallel_needs_14">Running several tasks at once needs Android 14 or later</string>
     <string name="parallel_low_ram">This phone has little memory, so one task runs at a time</string>
-    <string name="skill_suspended">This skill hasn’t been working lately, so it’s paused</string>
+    <string name="skill_suspended">This skill hasn’t been working lately, so it’s paused: %1$s</string>
     <string name="skill_verified">Skill worked, now in regular use: %1$s</string>
     <string name="skill_learned">Mika learned a skill: %1$s</string>
     <string name="skill_app_draft">Mika noted a few facts about %1$s for you to review</string>

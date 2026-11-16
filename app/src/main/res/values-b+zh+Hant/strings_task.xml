@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">第二塊虛擬螢幕沒能建起來,這次執行期間一次只進行一個任務</string>
     <string name="parallel_needs_14">Android 14 以上才支援同時進行多個任務</string>
     <string name="parallel_low_ram">這臺手機記憶體較小,一次只進行一個任務</string>
-    <string name="skill_suspended">這項技能最近不靈,先停用了</string>
+    <string name="skill_suspended">這項技能最近不靈,先停用了:%1$s</string>
     <string name="skill_verified">這項技能用它辦成了事，轉為正式:%1$s</string>
     <string name="skill_learned">Mika 學會了一項技能:%1$s</string>
     <string name="skill_app_draft">Mika 記下了幾條關於%1$s的知識，等你確認</string>

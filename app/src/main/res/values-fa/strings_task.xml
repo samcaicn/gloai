@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">ساخت صفحهٔ مجازی دوم ممکن نشد، بنابراین فعلاً هر بار فقط یک کار اجرا می‌شود</string>
     <string name="parallel_needs_14">اجرای هم‌زمان چند کار به اندروید ۱۴ یا جدیدتر نیاز دارد</string>
     <string name="parallel_low_ram">حافظهٔ این گوشی کم است، بنابراین هر بار یک کار اجرا می‌شود</string>
-    <string name="skill_suspended">این مهارت اخیراً درست کار نکرده است، بنابراین موقتاً متوقف شده است</string>
+    <string name="skill_suspended">این مهارت اخیراً درست کار نکرده است، بنابراین موقتاً متوقف شده است: %1$s</string>
     <string name="skill_verified">مهارت موفق بود و اکنون به‌طور معمول استفاده می‌شود: %1$s</string>
     <string name="skill_learned">میکا مهارتی یاد گرفت: %1$s</string>
     <string name="skill_app_draft">میکا چند نکته دربارهٔ %1$s یادداشت کرد تا بررسی کنید</string>

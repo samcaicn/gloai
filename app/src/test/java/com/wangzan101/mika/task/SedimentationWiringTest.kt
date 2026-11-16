@@ -140,6 +140,33 @@ class SedimentationWiringTest {
         assertNull(cancelled.get("wechat-msg")!!.outcomes.firstOrNull())
     }
 
+    // 一次读了两份个人技能、这次没办成:分不清照着哪份做的,两份都不记、都不停用(#569)
+    @Test fun skillsOnlyBrowsedTogetherAreNotBlamed() {
+        val md = draftMd.replace("send-wechat-message", "wechat-msg")
+        val keepOn = PersonalSkill("keep-screen-on", md.replace("wechat-msg", "keep-screen-on"), SkillStatus.active, "r0", null, 0, emptyList())
+        val drama = PersonalSkill("drama-coins", md.replace("wechat-msg", "drama-coins"), SkillStatus.active, "r0", null, 0, emptyList())
+        val browsed = listOf(RunEvent.SkillUsed(41, "keep-screen-on", "viewed"), RunEvent.SkillUsed(42, "drama-coins", "viewed"), RunEvent.SkillUsed(43, "keep-screen-on", "viewed"))
+        val rejected = TaskState.Failed("核查未通过:没办成", FailKind.GaveUp)
+        // 连着两次也一样(以前两次没办成就会停用)
+        val both = MapSkills(keepOn, drama)
+        repeat(2) {
+            val notes = runBlocking { learning(both, learn = false).learn(after(events(verdict = "fail", extra = browsed), rejected)) }
+            assertTrue(notes.skillNotes.isEmpty())
+        }
+        assertEquals(emptyList<String>(), both.get("keep-screen-on")!!.outcomes)
+        assertEquals(emptyList<String>(), both.get("drama-coins")!!.outcomes)
+        assertEquals(SkillStatus.active, both.get("keep-screen-on")!!.status)
+        assertEquals(SkillStatus.active, both.get("drama-coins")!!.status)
+        // 只读了一份(看了两次也是同一份):照旧记到它头上,提示里写明是哪一份
+        val skills = MapSkills(keepOn, drama)
+        val once = listOf(RunEvent.SkillUsed(41, "keep-screen-on", "viewed"), RunEvent.SkillUsed(43, "keep-screen-on", "viewed"))
+        val notes = runBlocking { learning(skills, learn = false).learn(after(events(verdict = "fail", extra = once), rejected)) }
+        assertEquals(listOf("verifier_rejected"), skills.get("keep-screen-on")!!.outcomes)
+        assertEquals(SkillStatus.suspended, skills.get("keep-screen-on")!!.status)
+        assertEquals(emptyList<String>(), skills.get("drama-coins")!!.outcomes)
+        assertTrue(notes.skillNotes.single().text.endsWith("keep-screen-on"))
+    }
+
     // 试用中的个人技能:Agent 用 skill_read 读过、这次办成了,转为正式
     @Test fun viewedTrialSkillPromotesOnDoneRun() {
         val skill = PersonalSkill("wechat-msg", draftMd.replace("send-wechat-message", "wechat-msg"), SkillStatus.trial, "r0", null, 0, emptyList())

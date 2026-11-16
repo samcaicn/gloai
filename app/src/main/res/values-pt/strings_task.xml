@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">Não foi possível criar uma segunda tela virtual, então por enquanto só uma tarefa roda por vez</string>
     <string name="parallel_needs_14">Executar várias tarefas ao mesmo tempo exige Android 14 ou superior</string>
     <string name="parallel_low_ram">Este celular tem pouca memória, então uma tarefa roda por vez</string>
-    <string name="skill_suspended">Esta habilidade não tem funcionado bem ultimamente, então foi pausada</string>
+    <string name="skill_suspended">Esta habilidade não tem funcionado bem ultimamente, então foi pausada: %1$s</string>
     <string name="skill_verified">A habilidade funcionou e agora está em uso regular: %1$s</string>
     <string name="skill_learned">O Mika aprendeu uma habilidade: %1$s</string>
     <string name="skill_app_draft">O Mika anotou alguns fatos sobre %1$s para você revisar</string>

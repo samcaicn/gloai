@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">تعذّر إنشاء شاشة افتراضية ثانية، لذا لا يمكن تشغيل أكثر من مهمة واحدة في الوقت الحالي</string>
     <string name="parallel_needs_14">يتطلب تشغيل عدة مهام في آنٍ واحد Android 14 أو أحدث</string>
     <string name="parallel_low_ram">ذاكرة هذا الهاتف قليلة، لذا تُشغّل مهمة واحدة في كل مرة</string>
-    <string name="skill_suspended">لم تكن هذه المهارة تعمل مؤخرًا، لذا أُوقفت مؤقتًا</string>
+    <string name="skill_suspended">لم تكن هذه المهارة تعمل مؤخرًا، لذا أُوقفت مؤقتًا: %1$s</string>
     <string name="skill_verified">نجحت المهارة، وهي الآن قيد الاستخدام المعتاد: %1$s</string>
     <string name="skill_learned">تعلّم Mika مهارة: %1$s</string>
     <string name="skill_app_draft">دوّن Mika بعض المعلومات عن %1$s لمراجعتها</string>

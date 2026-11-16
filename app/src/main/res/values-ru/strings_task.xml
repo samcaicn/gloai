@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">Не удалось создать второй виртуальный экран, поэтому пока выполняется только одна задача за раз</string>
     <string name="parallel_needs_14">Для одновременного выполнения нескольких задач нужен Android 14 или новее</string>
     <string name="parallel_low_ram">У этого телефона мало памяти, поэтому задачи выполняются по одной</string>
-    <string name="skill_suspended">Этот навык в последнее время не срабатывал, поэтому он приостановлен</string>
+    <string name="skill_suspended">Этот навык в последнее время не срабатывал, поэтому он приостановлен: %1$s</string>
     <string name="skill_verified">Навык сработал и теперь используется постоянно: %1$s</string>
     <string name="skill_learned">Mika выучила навык: %1$s</string>
     <string name="skill_app_draft">Mika записала несколько фактов о приложении «%1$s», чтобы вы их просмотрели</string>

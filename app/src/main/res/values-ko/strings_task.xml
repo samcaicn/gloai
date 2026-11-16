@@ -6,7 +6,7 @@
     <string name="parallel_second_display_failed">두 번째 가상 화면을 만들지 못해서 지금은 작업을 하나씩만 실행해요</string>
     <string name="parallel_needs_14">여러 작업을 동시에 실행하려면 Android 14 이상이 필요해요</string>
     <string name="parallel_low_ram">이 휴대전화는 메모리가 적어서 작업을 하나씩 실행해요</string>
-    <string name="skill_suspended">이 스킬이 최근에 잘 동작하지 않아서 일시 중지했어요</string>
+    <string name="skill_suspended">이 스킬이 최근에 잘 동작하지 않아서 일시 중지했어요: %1$s</string>
     <string name="skill_verified">스킬이 잘 동작해서 이제 정식으로 사용해요: %1$s</string>
     <string name="skill_learned">Mika가 스킬을 배웠어요: %1$s</string>
     <string name="skill_app_draft">Mika가 %1$s에 대해 몇 가지 사실을 적어 두었어요. 검토해 주세요</string>
