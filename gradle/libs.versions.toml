@@ -10,6 +10,7 @@ serializationJson = "1.7.3"
 coroutines = "1.10.2"
 androidxTestRunner = "1.6.2"
 androidxTestExtJunit = "1.2.1"
+espresso = "3.7.0"
 commonsCompress = "1.28.0"
 webkit = "1.12.1"
 xz = "1.10"
@@ -36,6 +37,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
+androidx-test-espresso = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
 xz = { module = "org.tukaani:xz", version.ref = "xz" }
