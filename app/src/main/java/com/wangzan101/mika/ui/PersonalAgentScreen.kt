@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -214,9 +215,9 @@ fun PersonalAgentScreen(
                             .background(if (user) c.accent else c.answer, if (user) MikaShapes.UserBubble else MikaShapes.AnswerBubble)
                             .padding(horizontal = 14.dp, vertical = 10.dp)
                         if (user) {
-                            Text(message.text, bubble, style = MikaType.Body, color = c.onAccent)
+                            SelectionContainer { Text(message.text, bubble, style = MikaType.Body, color = c.onAccent) }
                         } else {
-                            MarkdownText(message.displayText(context), MikaType.Body.copy(color = if (message.error) c.bad else c.ink), bubble)
+                            SelectionContainer { MarkdownText(message.displayText(context), MikaType.Body.copy(color = if (message.error) c.bad else c.ink), bubble) }
                         }
                         if (!message.handled) Text(stringResource(R.string.personal_received), Modifier.padding(top = 4.dp, end = 5.dp), fontSize = 10.sp, color = c.ink3)
                         if (task != null) TextButton(onClick = { selectedTask = task.id }) { Text(stringResource(R.string.personal_view_task), fontSize = 12.sp) }
