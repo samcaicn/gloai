@@ -29,6 +29,7 @@ data class CallSummary(
     val conclusion: String? = null,
     val uncertainties: List<String> = emptyList(),
     val actions: List<CallFollowUp> = emptyList(),
+    val followUpDraft: String? = null,
 )
 
 @Serializable
@@ -126,6 +127,15 @@ internal class CallHistory(private val storage: Storage) {
 
     suspend fun setSummary(id: String, summary: CallSummary?, status: SummaryStatus): Result =
         edit(id) { records -> records.map { if (it.id == id) it.copy(summary = summary, summaryStatus = status) else it } }
+
+    suspend fun saveFollowUpDraft(id: String, text: String): Result {
+        require(text.length <= MAX_DRAFT_LENGTH)
+        return edit(id) { records -> records.map { record ->
+            if (record.id == id) record.copy(summary = (record.summary ?: CallSummary()).copy(
+                followUpDraft = text.trim().takeIf(String::isNotBlank),
+            )) else record
+        } }
+    }
 
     suspend fun retryFailedSummary(id: String, generate: suspend (CallRecord) -> Boolean): Boolean {
         var started: CallRecord? = null
@@ -231,6 +241,7 @@ internal class CallHistory(private val storage: Storage) {
     }
 
     companion object {
+        const val MAX_DRAFT_LENGTH = 600
         const val MAX_CALLS = 50
         // Preserve substantially longer calls; history now uses a bounded encrypted file.
         const val MAX_LINES = 128

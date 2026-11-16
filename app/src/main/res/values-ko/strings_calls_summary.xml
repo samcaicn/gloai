@@ -4,7 +4,7 @@
     <string name="calls_completed_notification_title">AI가 전화를 받았습니다</string>
     <string name="calls_completed_notification_title_outgoing">AI 발신 통화가 종료되었습니다</string>
     <string name="calls_completed_notification_text">눌러서 통화 세부정보 보기</string>
-    <string name="calls_summary_enable">AI 통화 요약 및 후속 작업 생성</string>
+    <string name="calls_summary_enable">통화 요약, 할 일 및 메시지 초안 생성</string>
     <string name="calls_summary_cloud_consent">켜면 통화 내용이 현재 선택한 AI 모델 서비스로 전송되어 요약됩니다. 원본 내용은 이 기기에 암호화되어 저장됩니다. 끄면 통화 내용이 전송되지 않습니다.</string>
     <string name="calls_summary_failed">요약을 만들지 못했습니다. 이 통화 세부정보에서 다시 시도할 수 있습니다.</string>
     <string name="calls_summary_generating">요약 생성 중…</string>

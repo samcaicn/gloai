@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_draft_title">Borrador de seguimiento para WeChat</string>
+    <string name="calls_draft_edit">Editar</string>
+    <string name="calls_draft_copy">Copiar</string>
+    <string name="calls_draft_copied">Copiado</string>
+    <string name="calls_draft_saved">Borrador guardado</string>
+    <string name="calls_draft_save_failed">No se pudo guardar el borrador. Inténtalo de nuevo.</string>
+</resources>

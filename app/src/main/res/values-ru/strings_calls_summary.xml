@@ -4,7 +4,7 @@
     <string name="calls_completed_notification_title">ИИ ответил на звонок</string>
     <string name="calls_completed_notification_title_outgoing">Исходящий вызов ИИ завершён</string>
     <string name="calls_completed_notification_text">Нажмите, чтобы посмотреть подробности звонка</string>
-    <string name="calls_summary_enable">Создавать сводки звонков и задачи с помощью ИИ</string>
+    <string name="calls_summary_enable">Создавать сводки, задачи и черновики сообщений</string>
     <string name="calls_summary_cloud_consent">После включения расшифровка отправляется выбранному сервису модели ИИ для составления сводки. Исходная расшифровка хранится на устройстве в зашифрованном виде. Когда функция выключена, расшифровка не отправляется.</string>
     <string name="calls_summary_failed">Не удалось создать сводку. Повторите попытку в подробностях этого звонка.</string>
     <string name="calls_summary_generating">Создание сводки…</string>

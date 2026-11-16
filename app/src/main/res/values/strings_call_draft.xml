@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_draft_title">WeChat follow-up draft</string>
+    <string name="calls_draft_edit">Edit</string>
+    <string name="calls_draft_copy">Copy</string>
+    <string name="calls_draft_copied">Copied</string>
+    <string name="calls_draft_saved">Draft saved</string>
+    <string name="calls_draft_save_failed">Could not save the draft. Please try again.</string>
+</resources>

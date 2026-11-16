@@ -437,3 +437,7 @@ The MCP client passes each connected server's `instructions` to the model as bou
 - **存储与界面**(`app/settings/AppAccessStore.kt`、`app/ui/AppAccessScreen.kt`):进程共享、原子写入；打开设置页不上传列表，刷新分类前确认发送应用名称和包名。`AppClassifier` 复用现有模型配置，失败不改变权限。页面、分类和分享文案支持英文、简体和繁体。
 - **主动分享**(`app/cap/phone/a11y/ScreenShareConsent.kt`、`ShareChoice.kt`):用户可允许仅分享屏幕、允许此应用或取消；独立分享许可不解除自动操作限制，采集前后复核来源与权限。敏感授权界面只能由用户操作。
 - **边界**:shell 命令、沙箱、电脑接入（MCP）不受此门禁限制；脚本内调用标准手机工具仍受检查。模型遇到受限应用应重新评估路线，确实需要时说明「设置 › 应用访问」中的允许位置。
+
+## 通话结束后的摘要与跟进草稿
+
+`CallRuntime.summarizeCall`（`app/calls/CallRuntime.kt`） 沿用通话摘要开关与发送前授权检查，在结束后的摘要请求中由 `CallSummaryGenerator` 同时生成结构化摘要及可空的 `CallSummary.followUpDraft`。不增加额外模型请求；草稿最多保存 600 个字符。缺少或格式不正确的可选草稿不影响其余摘要，旧记录默认没有草稿。`CallHistory.saveFollowUpDraft` 通过既有互斥锁、加密文件与写成功后发布的路径保存编辑，不覆盖转写、待办或处理状态，不复活已删除记录。`app/ui/CallFollowUpDraft.kt` 仅提供编辑、保存、复制，保存失败保留编辑内容；没有联系人查找或发送能力。

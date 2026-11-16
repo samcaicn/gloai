@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_draft_title">مسودة متابعة على WeChat</string>
+    <string name="calls_draft_edit">تعديل</string>
+    <string name="calls_draft_copy">نسخ</string>
+    <string name="calls_draft_copied">تم النسخ</string>
+    <string name="calls_draft_saved">تم حفظ المسودة</string>
+    <string name="calls_draft_save_failed">تعذر حفظ المسودة. حاول مرة أخرى.</string>
+</resources>

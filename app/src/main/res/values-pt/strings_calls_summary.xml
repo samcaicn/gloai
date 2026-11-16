@@ -4,7 +4,7 @@
     <string name="calls_completed_notification_title">A IA atendeu uma chamada</string>
     <string name="calls_completed_notification_title_outgoing">Chamada de IA concluída</string>
     <string name="calls_completed_notification_text">Toque para ver os detalhes da chamada</string>
-    <string name="calls_summary_enable">Gerar resumos e tarefas de chamadas com IA</string>
+    <string name="calls_summary_enable">Gerar resumos, tarefas e rascunhos de mensagens</string>
     <string name="calls_summary_cloud_consent">Quando ativada, a transcrição é enviada ao serviço do modelo de IA selecionado para ser resumida. A transcrição original permanece criptografada neste dispositivo. Quando desativada, nenhuma transcrição é enviada.</string>
     <string name="calls_summary_failed">Não foi possível gerar o resumo. Tente novamente nos detalhes desta chamada.</string>
     <string name="calls_summary_generating">Gerando resumo…</string>

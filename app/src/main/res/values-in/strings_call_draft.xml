@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_draft_title">Draf tindak lanjut WeChat</string>
+    <string name="calls_draft_edit">Edit</string>
+    <string name="calls_draft_copy">Salin</string>
+    <string name="calls_draft_copied">Disalin</string>
+    <string name="calls_draft_saved">Draf disimpan</string>
+    <string name="calls_draft_save_failed">Draf tidak dapat disimpan. Coba lagi.</string>
+</resources>

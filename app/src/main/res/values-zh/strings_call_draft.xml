@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_draft_title">微信跟进草稿</string>
+    <string name="calls_draft_edit">编辑</string>
+    <string name="calls_draft_copy">复制</string>
+    <string name="calls_draft_copied">已复制</string>
+    <string name="calls_draft_saved">草稿已保存</string>
+    <string name="calls_draft_save_failed">草稿保存失败，请重试。</string>
+</resources>

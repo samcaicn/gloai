@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_draft_title">Черновик сообщения в WeChat</string>
+    <string name="calls_draft_edit">Изменить</string>
+    <string name="calls_draft_copy">Копировать</string>
+    <string name="calls_draft_copied">Скопировано</string>
+    <string name="calls_draft_saved">Черновик сохранён</string>
+    <string name="calls_draft_save_failed">Не удалось сохранить черновик. Повторите попытку.</string>
+</resources>

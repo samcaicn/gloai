@@ -4,7 +4,7 @@
     <string name="calls_completed_notification_title">AI 已接聽電話</string>
     <string name="calls_completed_notification_title_outgoing">AI 撥打已結束</string>
     <string name="calls_completed_notification_text">點按查看通話詳情</string>
-    <string name="calls_summary_enable">產生 AI 通話摘要和待辦事項</string>
+    <string name="calls_summary_enable">產生通話摘要、待辦與訊息草稿</string>
     <string name="calls_summary_cloud_consent">開啟後，通話轉寫會傳送給目前選定的 AI 模型服務進行摘要；原文仍會加密儲存在本機。關閉時不會傳送轉寫。</string>
     <string name="calls_summary_failed">摘要產生失敗，可在此通話詳情中重試。</string>
     <string name="calls_summary_generating">正在產生摘要…</string>

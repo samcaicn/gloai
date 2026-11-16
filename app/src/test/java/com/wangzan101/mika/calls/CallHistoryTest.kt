@@ -104,11 +104,34 @@ class CallHistoryTest {
     @Test fun summaryAndFollowUpStatusesSurviveSerialization() {
         val original = record(1).copy(summary = CallSummary(
             purpose = "询问营业时间",
+            followUpDraft = "关于刚才的电话，请问周五几点营业？",
             uncertainties = listOf("时间尚未确认"),
             actions = listOf(CallFollowUp("回复来电", CallFollowUp.Status.PENDING)),
         ))
         assertEquals(original, Json.decodeFromString<CallRecord>(Json.encodeToString(original)))
         assertEquals(CallFollowUp.Status.UNKNOWN, CallFollowUp("待确认").status)
+    }
+
+    @Test fun editedDraftSurvivesReopenAndFailedSavePreservesOriginal() = runBlocking {
+        val original = record(1).copy(summary = CallSummary(purpose = "询价", followUpDraft = "原草稿"), summaryStatus = SummaryStatus.READY)
+        val storage = MemoryStorage(listOf(original))
+        val history = CallHistory(storage)
+        assertEquals(CallHistory.Result.SAVED, history.saveFollowUpDraft(original.id, "  修改后的跟进消息  "))
+        val reopened = CallHistory(storage)
+        reopened.load()
+        val expected = original.copy(summary = original.summary!!.copy(followUpDraft = "修改后的跟进消息"))
+        assertEquals(expected, reopened.state.value.single())
+        storage.failWrite = true
+        assertEquals(CallHistory.Result.WRITE_FAILED, reopened.saveFollowUpDraft(original.id, "不能丢掉旧草稿"))
+        assertEquals(expected, reopened.state.value.single())
+        storage.failWrite = false
+        reopened.delete(original.id)
+        assertEquals(CallHistory.Result.NOT_FOUND, reopened.saveFollowUpDraft(original.id, "不复活已删除的通话"))
+    }
+
+    @Test fun oldSummaryDecodesWithoutDraft() {
+        val summary = Json.decodeFromString<CallSummary>("""{"purpose":"询价","actions":[]}""")
+        assertNull(summary.followUpDraft)
     }
 
     @Test fun cancelledSummaryRetryRestoresFailedStatus() = runBlocking {

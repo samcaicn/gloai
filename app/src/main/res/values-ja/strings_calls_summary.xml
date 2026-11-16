@@ -4,7 +4,7 @@
     <string name="calls_completed_notification_title">AIが電話に応答しました</string>
     <string name="calls_completed_notification_title_outgoing">AI発信が終了しました</string>
     <string name="calls_completed_notification_text">タップして通話の詳細を表示</string>
-    <string name="calls_summary_enable">AI通話の要約とフォローアップを作成</string>
+    <string name="calls_summary_enable">通話の要約・タスク・メッセージ下書きを作成</string>
     <string name="calls_summary_cloud_consent">有効にすると、通話の文字起こしが選択中のAIモデルサービスに送信され、要約されます。原文はこの端末に暗号化して保存されます。無効の場合、文字起こしは送信されません。</string>
     <string name="calls_summary_failed">要約を作成できませんでした。この通話の詳細から再試行できます。</string>
     <string name="calls_summary_generating">要約を作成しています…</string>

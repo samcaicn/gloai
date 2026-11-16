@@ -4,7 +4,7 @@
     <string name="calls_completed_notification_title">هوش مصنوعی به تماس پاسخ داد</string>
     <string name="calls_completed_notification_title_outgoing">تماس خروجی هوش مصنوعی پایان یافت</string>
     <string name="calls_completed_notification_text">برای دیدن جزئیات تماس بزنید</string>
-    <string name="calls_summary_enable">ساخت خلاصه و پیگیری تماس با هوش مصنوعی</string>
+    <string name="calls_summary_enable">ایجاد خلاصه تماس، کارها و پیش‌نویس پیام</string>
     <string name="calls_summary_cloud_consent">با فعال‌کردن، متن تماس برای خلاصه‌سازی به سرویس مدل هوش مصنوعی انتخاب‌شده فرستاده می‌شود. متن اصلی به‌صورت رمزگذاری‌شده روی این دستگاه می‌ماند. با غیرفعال‌بودن، متنی فرستاده نمی‌شود.</string>
     <string name="calls_summary_failed">ساخت خلاصه ناموفق بود. از جزئیات این تماس دوباره تلاش کنید.</string>
     <string name="calls_summary_generating">در حال ساخت خلاصه…</string>

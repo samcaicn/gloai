@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_draft_title">پیش‌نویس پیگیری در WeChat</string>
+    <string name="calls_draft_edit">ویرایش</string>
+    <string name="calls_draft_copy">کپی</string>
+    <string name="calls_draft_copied">کپی شد</string>
+    <string name="calls_draft_saved">پیش‌نویس ذخیره شد</string>
+    <string name="calls_draft_save_failed">ذخیره پیش‌نویس ناموفق بود. دوباره تلاش کنید.</string>
+</resources>

@@ -4,7 +4,7 @@
     <string name="calls_completed_notification_title">ردّ الذكاء الاصطناعي على مكالمة</string>
     <string name="calls_completed_notification_title_outgoing">انتهت مكالمة الذكاء الاصطناعي الصادرة</string>
     <string name="calls_completed_notification_text">انقر لعرض تفاصيل المكالمة</string>
-    <string name="calls_summary_enable">إنشاء ملخصات ومتابعات للمكالمات بالذكاء الاصطناعي</string>
+    <string name="calls_summary_enable">إنشاء ملخصات المكالمات والمهام ومسودات الرسائل</string>
     <string name="calls_summary_cloud_consent">عند التفعيل، يُرسل نص المكالمة إلى خدمة نموذج الذكاء الاصطناعي المحددة لإنشاء ملخص. يظل النص الأصلي مشفّرًا على هذا الجهاز. عند الإيقاف، لا يُرسل النص.</string>
     <string name="calls_summary_failed">تعذّر إنشاء الملخص. يمكنك إعادة المحاولة من تفاصيل هذه المكالمة.</string>
     <string name="calls_summary_generating">جارٍ إنشاء الملخص…</string>

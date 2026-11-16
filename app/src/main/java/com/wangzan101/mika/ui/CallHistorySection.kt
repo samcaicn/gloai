@@ -48,6 +48,7 @@ internal fun CallHistorySection(
     onClear: suspend () -> CallActionResult,
     focusRecordId: String? = null,
     onReuseTask: ((String, CallTaskBrief) -> Unit)? = null,
+    onSaveDraft: (suspend (String, String) -> CallActionResult)? = null,
 ) {
     var filter by rememberSaveable { mutableStateOf(HistoryFilter.ALL) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -92,7 +93,7 @@ internal fun CallHistorySection(
                 direction.contains(text, ignoreCase = true) || record.result.contains(text, ignoreCase = true) ||
                 record.transcript.any { it.text.contains(text, ignoreCase = true) } ||
                 record.summary?.let { summary ->
-                    listOfNotNull(summary.purpose, summary.conclusion).plus(summary.highlights)
+                    listOfNotNull(summary.purpose, summary.conclusion, summary.followUpDraft).plus(summary.highlights)
                         .plus(summary.uncertainties).plus(summary.actions.map { it.text })
                         .any { it.contains(text, ignoreCase = true) }
                 } == true ||
@@ -171,6 +172,7 @@ internal fun CallHistorySection(
                             change(if (next) handled else unhandled) { onMark(record.id, next) }
                         },
                         onDelete = { pendingDelete = record.id },
+                        onSaveDraft = onSaveDraft?.let { save -> { text -> save(record.id, text) } },
                         onRetrySummary = { change("摘要已更新", summaryFailure) { onRetrySummary(record.id) } },
                         onReuse = if (record.number != null && record.task != null && onReuseTask != null) {
                             { onReuseTask(record.number, record.task) }
@@ -238,6 +240,7 @@ private fun CallHistoryItem(
     record: CallRecord, expanded: Boolean, first: Boolean, busy: Boolean,
     onExpand: () -> Unit, onMark: () -> Unit, onDelete: () -> Unit, onRetrySummary: () -> Unit,
     onReuse: (() -> Unit)?,
+    onSaveDraft: (suspend (String) -> CallActionResult)?,
 ) {
     var showTask by rememberSaveable(record.id) { mutableStateOf(false) }
     var showTranscript by rememberSaveable(record.id) { mutableStateOf(false) }
@@ -283,6 +286,9 @@ private fun CallHistoryItem(
                             Text("${stringResource(state)}：${item.text}")
                         }
                     }
+                }
+                record.summary?.followUpDraft?.let { draft ->
+                    CallFollowUpDraft(record.id, draft, onSaveDraft)
                 }
                 if (record.summaryStatus == SummaryStatus.PENDING) {
                     Text(stringResource(R.string.calls_summary_generating), color = MikaTheme.colors.ink3)

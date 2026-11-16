@@ -436,6 +436,11 @@ class CallRuntime(private val app: MikaApp) {
         historyResult(records.setHandled(id, handled), if (handled) "已标为已处理" else "已标为待处理")
     }
 
+    suspend fun saveFollowUpDraft(id: String, text: String): CallActionResult = onMain {
+        if (text.length > CallHistory.MAX_DRAFT_LENGTH) return@onMain fail(app.getString(R.string.calls_draft_save_failed))
+        historyResult(records.saveFollowUpDraft(id, text), app.getString(R.string.calls_draft_saved))
+    }
+
     suspend fun deleteHistory(id: String): CallActionResult = onMain {
         historyResult(records.delete(id), "已删除通话记录")
     }

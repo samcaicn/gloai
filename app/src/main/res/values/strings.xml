@@ -4,7 +4,7 @@
     <string name="calls_completed_notification_title">AI answered a call</string>
     <string name="calls_completed_notification_title_outgoing">AI call completed</string>
     <string name="calls_completed_notification_text">Tap to view call details</string>
-    <string name="calls_summary_enable">Generate AI call summaries and follow-ups</string>
+    <string name="calls_summary_enable">Generate call summaries, tasks and message drafts</string>
     <string name="calls_summary_cloud_consent">When enabled, the transcript is sent to your selected AI model service for summarization. The original transcript remains encrypted on this device. No transcript is sent while this is off.</string>
     <string name="calls_summary_failed">Could not generate a summary. You can retry from this call\'s details.</string>
     <string name="calls_summary_generating">Generating summary…</string>

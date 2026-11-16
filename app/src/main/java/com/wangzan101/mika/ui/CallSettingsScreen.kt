@@ -292,6 +292,7 @@ private fun CallSettingsWorkspace(
                             CallHistorySection(
                                 history, state.historyWriteFailed, onMark = runtime::setHistoryHandled, onDelete = runtime::deleteHistory,
                                 onRetrySummary = runtime::retrySummary,
+                                onSaveDraft = runtime::saveFollowUpDraft,
                                 focusRecordId = initialHistoryCallId,
                                 onClear = runtime::clearHistory,
                                 onReuseTask = if (pendingLockedDial != null || busy || controlBusy) null else { number, brief ->

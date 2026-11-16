@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_draft_title">WeChatのフォローアップ下書き</string>
+    <string name="calls_draft_edit">編集</string>
+    <string name="calls_draft_copy">コピー</string>
+    <string name="calls_draft_copied">コピーしました</string>
+    <string name="calls_draft_saved">下書きを保存しました</string>
+    <string name="calls_draft_save_failed">下書きを保存できません。再試行してください。</string>
+</resources>

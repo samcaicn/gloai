@@ -133,3 +133,9 @@ An empty conversation shows a few examples you can tap, edit and send. Or try so
 ## FAQ
 
 The FAQ now has its own page: [FAQ](faq.en.md). For phone control, see [Troubleshooting](setup-guide.en.md#troubleshooting) in the setup guide.
+
+## Follow up after an AI call
+
+Enable call summaries, tasks and message drafts in AI calling settings. After an AI call, the selected main model summarizes the available transcript and drafts a short WeChat follow-up in the same request. Calls without a transcript do not trigger generation; small talk, a refusal to be contacted or no useful follow-up may produce no draft.
+
+Open the call record to review, edit, save and copy the draft. It stays encrypted with the call history. This does not find contacts, open WeChat or send messages. Failed summaries can be retried from the call record; legacy records are not regenerated automatically. Review facts and commitments before using a draft.
