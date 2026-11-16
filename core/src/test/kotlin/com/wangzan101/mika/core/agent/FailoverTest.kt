@@ -16,6 +16,7 @@ class FailoverTest {
 
     @Test fun modelSideFailuresSwitch() {
         assertEquals(1, Failover.nextIndex(ModelError.Auth(), 0, tags, 3))
+        assertEquals(1, Failover.nextIndex(ModelError.IllegalHeader("Authorization"), 0, tags, 3))
         assertEquals(1, Failover.nextIndex(ModelError.ModelNotFound("x"), 0, tags, 3))
         assertEquals(1, Failover.nextIndex(ModelError.ModelNotAvailable("x"), 0, tags, 3))
         assertEquals(1, Failover.nextIndex(ModelError.ToolsUnsupported("x"), 0, tags, 3))

@@ -2,6 +2,7 @@ package com.wangzan101.mika.ui
 
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
+import com.wangzan101.mika.core.model.ApiKeyText
 import com.wangzan101.mika.core.model.ListFailure
 import com.wangzan101.mika.core.net.ProxyFailure
 import com.wangzan101.mika.core.model.Capabilities
@@ -115,6 +116,11 @@ data class AddForm(
     val kind: ProviderConfig.Kind,
     val baseUrl: String,
     val apiKey: String,
+    /**
+     * 最近一次改 Key 的提示:零宽被去掉,或还留着放不进请求头的字符(含换行)。
+     * [ApiKeyText.Notice.IllegalCharacters] 时不能测试、也不能保存。
+     */
+    val keyNotice: ApiKeyText.Notice = ApiKeyText.Notice.None,
     val test: ListState = ListState.Idle,
     val model: String = "",
     val noList: Boolean = false,
@@ -149,11 +155,15 @@ data class AddForm(
     /** 自己跑的服务和自定义的 OpenAI 兼容接口(多半是本地服务)可以不填 Key,其余都要。 */
     val keyRequired: Boolean get() = !isSelfHosted && !(isCustom && kind == ProviderConfig.Kind.OpenAiCompat)
 
-    val canTest: Boolean get() =
-        urlProblem == null && (!keyRequired || apiKey.isNotBlank()) && test != ListState.Running && (!noList || model.isNotBlank())
+    /** Key 里还有放不进请求头的字符:两个保存动作都不能发请求、也不能把 Key 存下来。 */
+    val keyRejected: Boolean get() = keyNotice == ApiKeyText.Notice.IllegalCharacters
 
-    /** 不测试也能存:地址格式对、该有 Key 的有 Key。和 [canTest] 不同,不看测试进度,也不要求填模型名。 */
-    val canSaveUntested: Boolean get() = urlProblem == null && (!keyRequired || apiKey.isNotBlank()) && test != ListState.Running
+    val canTest: Boolean get() =
+        urlProblem == null && !keyRejected && (!keyRequired || apiKey.isNotBlank()) && test != ListState.Running && (!noList || model.isNotBlank())
+
+    /** 不测试也能存:地址格式对、该有 Key 的有 Key、Key 放得进请求头。和 [canTest] 不同,不看测试进度,也不要求填模型名。 */
+    val canSaveUntested: Boolean get() =
+        urlProblem == null && !keyRejected && (!keyRequired || apiKey.isNotBlank()) && test != ListState.Running
 
     /** 自定义填的是某家服务商的官方地址(主机名对得上,见 [ProviderPresets.forHost]):建议改用那个预设。 */
     val suggestedPreset: ProviderPreset? get() = if (isCustom && urlProblem == null) ProviderPresets.forHost(baseUrl) else null
@@ -414,14 +424,18 @@ class ModelSetupViewModel(
     fun selectPreset(label: String) {
         val p = AddForm.presetFor(label)
         if (p.label == _state.value.form.preset) return
-        val key = _state.value.form.apiKey
-        edit { AddForm.of(p).copy(apiKey = key) }
+        val form = _state.value.form
+        edit { AddForm.of(p).copy(apiKey = form.apiKey, keyNotice = form.keyNotice) }
     }
 
     // 换了接口类型或地址,上次「没列出模型」就不作数了,要重新列
     fun setKind(kind: ProviderConfig.Kind) = edit { it.copy(kind = kind, noList = false) }
     fun setBaseUrl(url: String) = edit { it.copy(baseUrl = url, noList = false) }
-    fun setApiKey(key: String) = edit { it.copy(apiKey = key) }
+    /** 粘贴或逐字改 Key:去掉零宽;换行和其它放不进请求头的字符原样留下并立刻标出来。 */
+    fun setApiKey(key: String) {
+        val accepted = ApiKeyText.accept(key)
+        edit { it.copy(apiKey = accepted.text, keyNotice = accepted.notice) }
+    }
     fun setModel(model: String) = edit { it.copy(model = model) }
 
     /** 「手动填写模型名」:打开时显示模型名一栏;收起时清掉填的(没列出模型时那一栏一直在)。 */
@@ -457,17 +471,17 @@ class ModelSetupViewModel(
     fun testAndSave() {
         val f = _state.value.form
         if (!f.canTest) return
+        val key = headerKey(f.apiKey) ?: return rejectKey()
         testJob?.cancel()
         _state.update { it.copy(form = it.form.copy(test = ListState.Running), probeNote = null, pickToProbe = null) }
         testJob = scope.launch {
-            val key = f.apiKey.trim()
             val baseUrl = f.baseUrl.trim()
             val typed = f.typedModel
-            val models = when (val r = withContext(io) { store.listModels(f.kind, baseUrl, key.ifEmpty { null }, f.sessionHeader) }) {
+            val models = when (val r = listSafely { store.listModels(f.kind, baseUrl, key.ifEmpty { null }, f.sessionHeader) }) {
                 is ModelListResult.Ok -> r.models
                 is ModelListResult.Failed -> {
                     if (r.reason != ListFailure.NotSupported && typed.isEmpty()) {
-                        _state.update { it.copy(form = it.form.copy(test = ListState.Failed(r.message), manual = true)) }
+                        _state.update { it.copy(form = it.form.copy(test = ListState.Failed(listMessage(r)), manual = true)) }
                         return@launch
                     }
                     emptyList()
@@ -542,16 +556,23 @@ class ModelSetupViewModel(
     fun saveWithoutTest() {
         val f = _state.value.form
         if (!f.canSaveUntested) return
+        val key = headerKey(f.apiKey) ?: return rejectKey()
         testJob?.cancel()
         _state.update { it.copy(form = it.form.copy(test = ListState.Running), probeNote = null, pickToProbe = null) }
         testJob = scope.launch {
-            val key = f.apiKey.trim()
             val baseUrl = f.baseUrl.trim()
             val typed = f.typedModel
-            val saved = withContext(io) {
-                store.connect(
-                    f.providerName, f.kind, baseUrl, key.ifEmpty { null }, emptyList(), f.sessionHeader, untested = true,
-                ).also { p -> if (typed.isNotEmpty()) store.markTyped(p.id, typed) }
+            val saved = try {
+                withContext(io) {
+                    store.connect(
+                        f.providerName, f.kind, baseUrl, key.ifEmpty { null }, emptyList(), f.sessionHeader, untested = true,
+                    ).also { p -> if (typed.isNotEmpty()) store.markTyped(p.id, typed) }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(form = it.form.copy(test = ListState.Failed(listFailureText(e)))) }
+                return@launch
             }
             _state.update {
                 snapshot(it.copy(
@@ -562,6 +583,45 @@ class ModelSetupViewModel(
                 ))
             }
         }
+    }
+
+    /**
+     * 拿去放进请求头的 Key:再收一次(零宽去掉),首尾空白去掉。换行算放不进头。
+     * 还含有放不进头的字符时为 null,调用方不能发请求、也不能保存。
+     */
+    private fun headerKey(raw: String): String? {
+        val accepted = ApiKeyText.accept(raw)
+        if (accepted.notice == ApiKeyText.Notice.IllegalCharacters) return null
+        val key = accepted.text.trim()
+        return if (ApiKeyText.isHeaderLegal(key)) key else null
+    }
+
+    /** 表单上的 Key 放不进请求头:标红,停在表单上,不发请求。 */
+    private fun rejectKey() {
+        _state.update { it.copy(form = it.form.copy(keyNotice = ApiKeyText.Notice.IllegalCharacters, test = ListState.Idle)) }
+    }
+
+    /** 列模型。头值仍让 OkHttp 抛时收成失败结果,不让异常逃出协程把进程打掉。消息里不带头的原文。 */
+    private suspend fun listSafely(block: suspend () -> ModelListResult): ModelListResult = try {
+        withContext(io) { block() }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        listFailure(e)
+    }
+
+    private fun listFailure(e: Exception): ModelListResult.Failed = when (e) {
+        is ModelError.IllegalHeader, is IllegalArgumentException -> ModelListResult.Failed(ListFailure.IllegalKey)
+        else -> ModelListResult.Failed(ListFailure.of(e), e.message.orEmpty())
+    }
+
+    private fun listMessage(r: ModelListResult.Failed): String =
+        if (r.reason == ListFailure.IllegalKey) tr(R.string.model_key_illegal_chars) else r.message
+
+    /** 列模型以外的失败给人看的一句。头值不合法时不把异常原文(可能含 Key)露出去。 */
+    private fun listFailureText(e: Exception): String = when (e) {
+        is ModelError.IllegalHeader, is IllegalArgumentException -> tr(R.string.model_key_illegal_chars)
+        else -> e.message.orEmpty()
     }
 
     /**
@@ -718,6 +778,7 @@ class ModelSetupViewModel(
                 )
                 // 代理那一段的问题:说是代理,不说成模型或服务商不行
                 is ModelError.Proxy -> ProbeOutcome.Failed(tr(R.string.model_probe_failed, model, proxyReason(e)))
+                is ModelError.IllegalHeader -> ProbeOutcome.Failed(tr(R.string.model_key_illegal_chars))
                 else -> ProbeOutcome.Failed(tr(R.string.model_probe_failed, model, e.message.orEmpty()))
             }
         }
@@ -1134,13 +1195,13 @@ class ModelSetupViewModel(
         if (refreshJobs[providerId]?.isActive == true) return
         _state.update { it.copy(listing = it.listing + (providerId to ListState.Running)) }
         refreshJobs[providerId] = scope.launch {
-            val r = withContext(io) { store.listModels(p) }
+            val r = listSafely { store.listModels(p) }
             val models: List<ListedModel>? = when (r) {
                 is ModelListResult.Ok -> r.models
                 is ModelListResult.Failed -> if (r.reason == ListFailure.NotSupported) emptyList() else null
             }
             if (models != null) withContext(io) { store.rememberModels(p.id, models) }
-            val after = if (r is ModelListResult.Failed && models == null) ListState.Failed(r.message) else ListState.Idle
+            val after = if (r is ModelListResult.Failed && models == null) ListState.Failed(listMessage(r)) else ListState.Idle
             _state.update { snapshot(it.copy(listing = it.listing + (providerId to after))) }
         }
     }
@@ -1157,12 +1218,21 @@ class ModelSetupViewModel(
         else -> true
     }
 
-    /** 换 Key,然后用新 Key 重新列一次模型。 */
+    /**
+     * 换 Key,然后用新 Key 重新列一次模型。零宽先去掉;换行和其它放不进请求头的字符不保存、不列模型。
+     */
     fun changeKey(providerId: String, apiKey: String) {
-        val k = apiKey.trim()
+        val k = headerKey(apiKey) ?: return
         if (k.isEmpty()) return
         scope.launch {
-            withContext(io) { store.updateProviderKey(providerId, k) }
+            try {
+                withContext(io) { store.updateProviderKey(providerId, k) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(listing = it.listing + (providerId to ListState.Failed(listFailureText(e)))) }
+                return@launch
+            }
             refreshJobs.remove(providerId)?.cancel()
             refresh(providerId)
         }

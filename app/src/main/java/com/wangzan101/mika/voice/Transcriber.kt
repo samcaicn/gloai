@@ -3,6 +3,7 @@ package com.wangzan101.mika.voice
 import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.model.ModelHttp
+import com.wangzan101.mika.core.model.headerOrReject
 import com.wangzan101.mika.settings.Provider
 import com.wangzan101.mika.settings.ProviderConfig
 import kotlinx.serialization.json.Json
@@ -126,8 +127,10 @@ class Transcriber(
         (e is ModelError.Server && e.status in 400..499)
 
     private fun builder(url: String, key: String?, gemini: Boolean): Request.Builder = Request.Builder().url(url).apply {
-        headers.forEach { (k, v) -> header(k, v) }
-        if (!key.isNullOrEmpty()) { if (gemini) header("x-goog-api-key", key) else header("Authorization", "Bearer $key") }
+        headers.forEach { (k, v) -> headerOrReject(k, v) }
+        if (!key.isNullOrEmpty()) {
+            if (gemini) headerOrReject("x-goog-api-key", key) else headerOrReject("Authorization", "Bearer $key")
+        }
     }
 
     private fun parse(method: TranscribeMethod, body: String): String {

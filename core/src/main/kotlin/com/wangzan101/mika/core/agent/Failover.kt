@@ -23,7 +23,7 @@ internal object Failover {
                 candidate != null && candidate != exhausted
             }
         }
-        is ModelError.QuotaExceeded, is ModelError.Auth, is ModelError.ModelNotFound, is ModelError.ModelNotAvailable,
+        is ModelError.QuotaExceeded, is ModelError.Auth, is ModelError.IllegalHeader, is ModelError.ModelNotFound, is ModelError.ModelNotAvailable,
         is ModelError.ToolsUnsupported, is ModelError.SignInExpired, is ModelError.AccountPlanNotAllowed,
         is ModelError.ChatGptLimitReached, is ModelError.ChatGptNotEligible,
         is ModelError.RateLimited, is ModelError.Network, is ModelError.StreamCut,

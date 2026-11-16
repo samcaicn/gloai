@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -206,6 +207,7 @@ private fun RadioMark(selected: Boolean, enabled: Boolean = true) {
 /**
  * 卡片里的输入行:左边固定宽的标题,右边单行输入框(空时显示 [placeholder])。
  * [secret] 为真时按密码显示;[trailing] 放在输入框右边(例如「显示」)。
+ * [onClear] 非空且输入框里有字时,在文字右边放一个清空按钮(和搜索框的叉同一套)。
  */
 @Composable
 fun InputRow(
@@ -218,6 +220,9 @@ fun InputRow(
     secret: Boolean = false,
     labelWidth: Dp = 84.dp,
     modifier: Modifier = Modifier,
+    onClear: (() -> Unit)? = null,
+    clearDescription: String = "",
+    clearModifier: Modifier = Modifier,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val c = MikaTheme.colors
@@ -237,7 +242,22 @@ fun InputRow(
                 visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
             )
         }
+        if (onClear != null && value.isNotEmpty()) {
+            FieldClearButton(clearDescription, onClear, clearModifier.padding(start = 4.dp))
+        }
         if (trailing != null) Box(Modifier.padding(start = 8.dp)) { trailing() }
+    }
+}
+
+/** 输入框末尾的叉:点一下清空。和搜索框的清空按钮同一套大小和颜色,只在有内容时由调用方放出来。 */
+@Composable
+fun FieldClearButton(description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier.size(30.dp).clip(CircleShape)
+            .clickable(role = Role.Button, onClickLabel = description) { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(MikaIcons.Close, description, Modifier.size(14.dp), tint = MikaTheme.colors.ink3)
     }
 }
 

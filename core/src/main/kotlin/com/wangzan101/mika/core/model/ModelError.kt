@@ -4,6 +4,12 @@ import com.wangzan101.mika.core.net.ProxyFailure
 
 sealed class ModelError(message: String, cause: Throwable? = null) : Exception(message, cause) {
     class Auth : ModelError("API Key 无效或没有权限")
+    /**
+     * 请求头的值含有 OkHttp 拒绝的字符(换行、其它控制字符、非 ASCII)。在调用 `header()` 之前抛出,
+     * 避免构造 Request 时 [IllegalArgumentException] 把进程打掉。消息里不带头的原文,免得把 Key 打进日志。
+     * [header] 只是头的名字。
+     */
+    class IllegalHeader(val header: String) : ModelError("请求头含有无法使用的字符")
     class QuotaExceeded : ModelError("额度已用完")
     /** 本任务的已报告用量达到预算；不再发起任何收尾或重试请求。 */
     class TaskBudgetExceeded(val limit: Long, val used: Long) : ModelError("本任务的 Token 预算已用完")

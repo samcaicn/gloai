@@ -2,6 +2,7 @@ package com.wangzan101.mika.core.usage
 
 import com.wangzan101.mika.core.model.HttpSupport
 import com.wangzan101.mika.core.model.ModelError
+import com.wangzan101.mika.core.model.headerOrReject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -40,7 +41,7 @@ class ProviderAllowanceClient(http: OkHttpClient) {
         .build()
 
     suspend fun query(source: AllowanceSource, apiKey: String): ProviderAllowance {
-        val request = Request.Builder().url(source.url).header("Authorization", "Bearer $apiKey").build()
+        val request = Request.Builder().url(source.url).headerOrReject("Authorization", "Bearer $apiKey").build()
         val response = HttpSupport.execute(http, request)
         when (response.status) {
             401, 403 -> throw ModelError.Auth()

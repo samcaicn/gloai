@@ -24,6 +24,9 @@
     <string name="model_provider_name_hint">可不填，默认用地址的主机名</string>
     <string name="model_key_hint">粘贴服务商给的 Key</string>
     <string name="model_key_optional">本地服务可不填</string>
+    <string name="model_key_clear">清空</string>
+    <string name="model_key_invisible_removed">已去掉 Key 里的不可见字符。</string>
+    <string name="model_key_illegal_chars">Key 里有无法使用的字符，请只粘贴密钥本身。</string>
     <string name="model_test_save">测试并保存</string>
     <string name="model_testing">正在测试…</string>
     <string name="model_test_note">先列出这家的模型，再试着让其中一个调用一次工具，都成了才保存。</string>

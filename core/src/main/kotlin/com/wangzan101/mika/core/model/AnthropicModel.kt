@@ -139,7 +139,7 @@ class AnthropicModel(
         }
         return Request.Builder().url(endpoint)
             .withHeaders(headers)
-            .header("x-api-key", apiKey)
+            .headerOrReject("x-api-key", apiKey)
             .header("anthropic-version", "2023-06-01")
             .postInference(InferenceProtocol.Anthropic, payload)
             .build()

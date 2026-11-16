@@ -35,6 +35,15 @@ class OpenAiCompatModelTest {
     private fun body(): kotlinx.serialization.json.JsonObject =
         Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject
 
+    /** Key 里的换行或中文不能在构造请求时把进程打掉,也不能把 Key 发出去。 */
+    @Test fun illegalApiKeyFailsBeforeAnyRequest() = runTest {
+        val newline = runCatching { model(key = "sk-\nabc").complete("s", user, emptyList()) }.exceptionOrNull()
+        val chinese = runCatching { model(key = "密钥：sk").complete("s", user, emptyList()) }.exceptionOrNull()
+        assertTrue(newline is ModelError.IllegalHeader)
+        assertTrue(chinese is ModelError.IllegalHeader)
+        assertEquals(0, server.requestCount)
+    }
+
     @Test fun parsesToolCalls() = runTest {
         server.enqueue(ok("""{"choices":[{"finish_reason":"tool_calls","message":{"content":null,"tool_calls":[{"id":"c1","type":"function","function":{"name":"phone_tap","arguments":"{\"ref\":\"a1\"}"}}]}}],"usage":{"prompt_tokens":10,"completion_tokens":3,"prompt_tokens_details":{"cached_tokens":4}}}"""))
         val r = model().complete("sys", user, listOf(ToolSpec("phone_tap", "d", """{"type":"object"}""")))

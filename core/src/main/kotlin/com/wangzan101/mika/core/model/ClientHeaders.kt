@@ -31,4 +31,4 @@ object ClientHeaders {
 }
 
 internal fun Request.Builder.withHeaders(headers: Map<String, String>): Request.Builder =
-    apply { headers.forEach { (k, v) -> header(k, v) } }
+    apply { headers.forEach { (k, v) -> headerOrReject(k, v) } }

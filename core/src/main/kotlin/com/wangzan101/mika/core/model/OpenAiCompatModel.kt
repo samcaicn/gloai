@@ -110,7 +110,7 @@ class OpenAiCompatModel(
         return Request.Builder().url(endpoint)
             .withHeaders(headers)
             .header("Accept", if (stream) "text/event-stream" else "application/json")
-            .apply { if (!apiKey.isNullOrEmpty()) header("Authorization", "Bearer $apiKey") }
+            .apply { if (!apiKey.isNullOrEmpty()) headerOrReject("Authorization", "Bearer $apiKey") }
             .postInference(InferenceProtocol.Chat, payload)
             .build()
     }

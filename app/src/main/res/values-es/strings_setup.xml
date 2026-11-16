@@ -24,6 +24,9 @@
     <string name="model_provider_name_hint">Opcional, por defecto el host</string>
     <string name="model_key_hint">Pega la clave de tu proveedor</string>
     <string name="model_key_optional">Opcional en servicios locales</string>
+    <string name="model_key_clear">Borrar</string>
+    <string name="model_key_invisible_removed">Se quitaron los caracteres invisibles de la clave.</string>
+    <string name="model_key_illegal_chars">La clave tiene caracteres que no se pueden usar. Pega solo la clave.</string>
     <string name="model_test_save">Probar y guardar</string>
     <string name="model_testing">Probando…</string>
     <string name="model_test_note">Mika lista los modelos de este proveedor y luego le pide a uno que llame a una herramienta de prueba; si ambas cosas funcionan, se guarda.</string>

@@ -134,7 +134,7 @@ internal class ModelCaller(
             throw e
         } catch (e: Exception) {
             // Key、额度、模型名、请求本身不对,重试也没用:本任务余下的步都用主模型
-            if (e is ModelError.Auth || e is ModelError.QuotaExceeded || e is ModelError.DailyBudgetExceeded || e is ModelError.ModelNotFound ||
+            if (e is ModelError.Auth || e is ModelError.IllegalHeader || e is ModelError.QuotaExceeded || e is ModelError.DailyBudgetExceeded || e is ModelError.ModelNotFound ||
                 e is ModelError.ModelNotAvailable || e is ModelError.ToolsUnsupported ||
                 e is ModelError.ChatGptLimitReached || e is ModelError.ChatGptNotEligible || e is ModelError.SignInExpired || e is ModelError.AccountPlanNotAllowed ||
                 (e is ModelError.Server && e.status in 400..499)) r.disable()

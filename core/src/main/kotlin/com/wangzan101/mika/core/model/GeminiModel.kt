@@ -94,7 +94,7 @@ class GeminiModel(
         }
         return Request.Builder().url(if (stream) streamEndpoint else endpoint)
             .withHeaders(headers)
-            .header("x-goog-api-key", apiKey)
+            .headerOrReject("x-goog-api-key", apiKey)
             .postInference(InferenceProtocol.Gemini, payload)
             .build()
     }

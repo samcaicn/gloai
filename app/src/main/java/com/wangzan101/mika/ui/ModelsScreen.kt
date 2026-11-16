@@ -57,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.core.chatgpt.SignInFailure
+import com.wangzan101.mika.core.model.ApiKeyText
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.settings.ModelOption
 import com.wangzan101.mika.settings.ModelOptions
@@ -70,6 +71,7 @@ import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize
 import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.MikaSwitch
+import com.wangzan101.mika.ui.components.FieldClearButton
 import com.wangzan101.mika.ui.components.FooterNote
 import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.GroupLabel
@@ -421,26 +423,58 @@ fun ProviderDetailContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetail
     using?.let { o -> UseAsSheet(ui, p, o.id, onUse = { role -> actions.use(role, o.id) }, onVision = { actions.setVision(o.id, it) }, onDismiss = { using = null }) }
     if (changingKey) {
         var key by remember { mutableStateOf("") }
+        var notice by remember { mutableStateOf(ApiKeyText.Notice.None) }
+        val blocked = notice == ApiKeyText.Notice.IllegalCharacters
         MikaDialog(
             onDismissRequest = { changingKey = false },
             title = { Text(ModelsCopy.CHANGE_KEY) },
             text = {
                 KeyboardDismissArea {
-                    Box(Modifier.fillMaxWidth().keepsKeyboard().background(c.fill, MikaShapes.Button).padding(12.dp)) {
-                        if (key.isEmpty()) Text(ModelsCopy.NEW_KEY_HINT, style = MikaType.Body, color = c.ink3)
-                        BasicTextField(
-                            key, { key = it }, Modifier.fillMaxWidth().testTag("new-key"), singleLine = true,
-                            textStyle = MikaType.Body.copy(color = c.ink), cursorBrush = SolidColor(c.accent),
-                            visualTransformation = PasswordVisualTransformation(),
-                        )
+                    Column(Modifier.fillMaxWidth()) {
+                        Row(
+                            Modifier.fillMaxWidth().keepsKeyboard().background(c.fill, MikaShapes.Button)
+                                .padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(Modifier.weight(1f)) {
+                                if (key.isEmpty()) Text(ModelsCopy.NEW_KEY_HINT, style = MikaType.Body, color = c.ink3)
+                                BasicTextField(
+                                    key,
+                                    { raw ->
+                                        val accepted = ApiKeyText.accept(raw)
+                                        key = accepted.text
+                                        notice = accepted.notice
+                                    },
+                                    Modifier.fillMaxWidth().testTag("new-key"), singleLine = true,
+                                    textStyle = MikaType.Body.copy(color = c.ink), cursorBrush = SolidColor(c.accent),
+                                    visualTransformation = PasswordVisualTransformation(),
+                                )
+                            }
+                            if (key.isNotEmpty()) {
+                                FieldClearButton(
+                                    stringResource(R.string.model_key_clear),
+                                    {
+                                        val cleared = ApiKeyText.accept("")
+                                        key = cleared.text
+                                        notice = cleared.notice
+                                    },
+                                    Modifier.testTag("new-key-clear"),
+                                )
+                            }
+                        }
+                        ApiKeyNoticeNote(notice, tag = "new-key-notice")
                     }
                 }
             },
             confirmButton = {
-                TextButton({
-                    changingKey = false
-                    if (key.isNotBlank()) actions.changeKey(key)
-                }) { Text(ModelsCopy.SAVE) }
+                TextButton(
+                    onClick = {
+                        if (blocked || key.isBlank() || !ApiKeyText.isHeaderLegal(key.trim())) return@TextButton
+                        changingKey = false
+                        actions.changeKey(key)
+                    },
+                    enabled = key.isNotBlank() && !blocked,
+                ) { Text(ModelsCopy.SAVE) }
             },
             dismissButton = { TextButton({ changingKey = false }) { Text(ModelSetupCopy.CANCEL) } },
         )

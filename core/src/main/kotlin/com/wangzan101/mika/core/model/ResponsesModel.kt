@@ -107,7 +107,7 @@ class ResponsesModel(
     private suspend fun request(bearer: String?, system: String, messages: List<Message>, tools: List<ToolSpec>, includeReasoning: Boolean): Request =
         Request.Builder().url(endpoint)
             .withHeaders(headers)
-            .apply { if (!bearer.isNullOrEmpty()) header("Authorization", "Bearer $bearer") }
+            .apply { if (!bearer.isNullOrEmpty()) headerOrReject("Authorization", "Bearer $bearer") }
             .header("Accept", "text/event-stream")
             .postInference(InferenceProtocol.Responses, body(system, messages, tools, includeReasoning)) {
                 if (chatGptPlan || endpoint.toHttpUrlOrNull()?.host == "api.openai.com") "openai" else "openai_compatible"

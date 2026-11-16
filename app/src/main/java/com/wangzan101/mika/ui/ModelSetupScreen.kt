@@ -60,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wangzan101.mika.core.model.ApiKeyText
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.settings.ModelContextSettings
 import com.wangzan101.mika.settings.MODEL_READ_TIMEOUT_SECONDS
@@ -455,6 +456,9 @@ private fun AddProviderForm(ui: ModelSetupUi, actions: ModelSetupActions) {
             ModelSetupCopy.API_KEY, f.apiKey, actions.setApiKey,
             if (f.keyRequired) ModelSetupCopy.KEY_HINT else ModelSetupCopy.KEY_OPTIONAL, first = !f.urlEditable,
             keyboard = KeyboardType.Password, secret = !showKey, modifier = Modifier.testTag("setup-api-key"),
+            onClear = { actions.setApiKey("") },
+            clearDescription = stringResource(R.string.model_key_clear),
+            clearModifier = Modifier.testTag("setup-api-key-clear"),
         ) {
             Text(if (showKey) stringResource(R.string.hide) else stringResource(R.string.show), Modifier.clickable { showKey = !showKey }, fontSize = 13.sp, color = c.accent)
         }
@@ -465,6 +469,7 @@ private fun AddProviderForm(ui: ModelSetupUi, actions: ModelSetupActions) {
             )
         }
     }
+    ApiKeyNoticeNote(f.keyNotice)
     // 列表里没有要的模型、或这家不提供列表时,随时可以自己填(没列出模型时那一栏已经在了)
     if (!f.noList) {
         Text(
@@ -511,6 +516,22 @@ private fun AddProviderForm(ui: ModelSetupUi, actions: ModelSetupActions) {
         },
     )
     FooterNote(ModelSetupCopy.TEST_NOTE, Modifier.padding(top = 6.dp))
+}
+
+/**
+ * API Key 这一栏下面的一句:零宽被去掉时用次要文字色,换行或其它放不进请求头的字符用错误色。
+ * 和表单上其它 [FooterNote] 同一套字号。
+ */
+@Composable
+internal fun ApiKeyNoticeNote(notice: ApiKeyText.Notice, tag: String = "setup-key-notice") {
+    val c = MikaTheme.colors
+    when (notice) {
+        ApiKeyText.Notice.None -> Unit
+        ApiKeyText.Notice.InvisibleRemoved ->
+            FooterNote(ModelSetupCopy.KEY_INVISIBLE_REMOVED, Modifier.testTag(tag), color = c.ink2)
+        ApiKeyText.Notice.IllegalCharacters ->
+            FooterNote(ModelSetupCopy.KEY_ILLEGAL, Modifier.testTag("$tag-illegal"), color = c.bad)
+    }
 }
 
 /** 自定义填的是某家的官方地址:建议改用那家的预设(不拦着),接口类型对不上时一并说;点一下就换过去,Key 留着。 */
@@ -715,6 +736,8 @@ object ModelSetupCopy {
     const val API_KEY = "API Key"
     val KEY_HINT: String get() = tr(R.string.model_key_hint)
     val KEY_OPTIONAL: String get() = tr(R.string.model_key_optional)
+    val KEY_INVISIBLE_REMOVED: String get() = tr(R.string.model_key_invisible_removed)
+    val KEY_ILLEGAL: String get() = tr(R.string.model_key_illegal_chars)
     val TEST_AND_SAVE: String get() = tr(R.string.model_test_save)
     val TESTING: String get() = tr(R.string.model_testing)
     val PICK_MAIN: String get() = tr(R.string.model_pick_main)

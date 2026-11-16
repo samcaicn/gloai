@@ -107,6 +107,8 @@ data class ModelEndpoint(val protocol: ModelProtocol, val baseUrl: String, val r
 enum class ListFailure(val text: String) {
     BadUrl("接口地址不对,要以 http:// 或 https:// 开头"),
     Auth("API Key 无效或没有权限"),
+    /** 粘贴进来的 Key 含有放不进 HTTP 头的字符。请求没有发出。 */
+    IllegalKey("API Key 含有无法使用的字符，请只粘贴密钥本身"),
     Quota("账户额度已用完"),
     RateLimited("请求太频繁,请稍后再试"),
     Network("连不上这个地址,请检查网络和接口地址"),
@@ -154,8 +156,10 @@ class ModelCatalog(private val http: OkHttpClient) {
 
     suspend fun openAiCompat(baseUrl: String, apiKey: String?, headers: Map<String, String> = emptyMap()): ModelListResult = run {
         val url = endpoint(baseUrl, "/models") ?: return@run badUrl()
-        val req = Request.Builder().url(url).get().withHeaders(headers)
-            .apply { if (!apiKey.isNullOrEmpty()) header("Authorization", "Bearer $apiKey") }.build()
+        val req = buildRequest {
+            Request.Builder().url(url).get().withHeaders(headers)
+                .apply { if (!apiKey.isNullOrEmpty()) headerOrReject("Authorization", "Bearer $apiKey") }.build()
+        } ?: return@run illegalKey()
         val root = fetch(req).getOrElse { return@run it.asFailure() }
         val data = (root["data"] ?: root["models"]) as? JsonArray ?: return@run ModelListResult.Failed(ListFailure.BadResponse)
         ModelListResult.Ok(data.mapNotNull { (it as? JsonObject)?.let(::openAiModel) }.distinctBy { it.id })
@@ -168,8 +172,10 @@ class ModelCatalog(private val http: OkHttpClient) {
         repeat(MAX_PAGES) {
             val url = base.newBuilder().addQueryParameter("limit", "1000")
                 .apply { if (after != null) addQueryParameter("after_id", after) }.build()
-            val req = Request.Builder().url(url).get().withHeaders(headers)
-                .header("x-api-key", apiKey).header("anthropic-version", "2023-06-01").build()
+            val req = buildRequest {
+                Request.Builder().url(url).get().withHeaders(headers)
+                    .headerOrReject("x-api-key", apiKey).header("anthropic-version", "2023-06-01").build()
+            } ?: return@run illegalKey()
             val root = fetch(req).getOrElse { return@run it.asFailure() }
             val data = root["data"] as? JsonArray ?: return@run ModelListResult.Failed(ListFailure.BadResponse)
             all += data.mapNotNull { (it as? JsonObject)?.let(::anthropicModel) }
@@ -186,7 +192,9 @@ class ModelCatalog(private val http: OkHttpClient) {
         repeat(MAX_PAGES) {
             val url = base.newBuilder().addQueryParameter("pageSize", "1000")
                 .apply { if (token != null) addQueryParameter("pageToken", token) }.build()
-            val req = Request.Builder().url(url).get().withHeaders(headers).header("x-goog-api-key", apiKey).build()
+            val req = buildRequest {
+                Request.Builder().url(url).get().withHeaders(headers).headerOrReject("x-goog-api-key", apiKey).build()
+            } ?: return@run illegalKey()
             val root = fetch(req).getOrElse { return@run it.asFailure() }
             val data = root["models"] as? JsonArray ?: JsonArray(emptyList())
             all += data.mapNotNull { (it as? JsonObject)?.let(::geminiModel) }
@@ -331,6 +339,20 @@ class ModelCatalog(private val http: OkHttpClient) {
     }
 
     private fun badUrl() = ModelListResult.Failed(ListFailure.BadUrl)
+
+    private fun illegalKey() = ModelListResult.Failed(ListFailure.IllegalKey)
+
+    /**
+     * 构造请求。头值放不进 OkHttp 时返回 null,不让 [IllegalArgumentException] 逃出去
+     * (那条异常的消息里带着头的原文)。
+     */
+    private fun buildRequest(build: () -> Request): Request? = try {
+        build()
+    } catch (e: ModelError.IllegalHeader) {
+        null
+    } catch (e: IllegalArgumentException) {
+        null
+    }
 
     private fun endpoint(baseUrl: String, path: String) = (baseUrl.trim().trimEnd('/') + path).toHttpUrlOrNull()
 
