@@ -58,6 +58,7 @@ class ExportRuntime(private val context: Context) {
     fun formats() = registry.formats()
 
     suspend fun export(
+        source: ConversationExportSource,
         title: String,
         selection: ExportSelection,
         content: ExportContent,
@@ -69,7 +70,6 @@ class ExportRuntime(private val context: Context) {
     ): ExportOutcome = withContext(Dispatchers.IO) {
         val format = registry.format(formatId) ?: throw IOException("unknown format: $formatId")
         val backend = registry.defaultBackend(formatId)
-        val source = ConversationExportSource(context, selection.conversationId)
         val staging = File(context.cacheDir, "exports/staging/${UUID.randomUUID()}")
         val temp = File(context.cacheDir, "exports/${UUID.randomUUID()}.${format.extension}")
         try {
@@ -120,13 +120,13 @@ class ExportRuntime(private val context: Context) {
             }
 
             val entries = ExportPackage.contentEntries(staging)
-            val asBundle = bundle || entries.size > 1 || document.assets.isNotEmpty()
-            val bytes = if (asBundle) {
+            val bytes = if (bundle) {
                 val manifest = manifest(document, selection, content, entries, warnings)
                 ExportPackage.writeManifest(staging, manifest)
                 ExportPackage.zip(staging, temp)
                 temp.length()
             } else {
+                if (document.assets.isNotEmpty()) throw IOException("assets require a ZIP destination")
                 if (!ExportPackage.copySingle(staging, temp)) throw IOException("nothing to export")
                 temp.length()
             }

@@ -4,7 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
-import com.wangzan101.mika.chat.ConversationStore
+import com.wangzan101.mika.chat.SharedFile
+import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.export.AssetKind
 import com.wangzan101.mika.core.export.AssetRequest
 import com.wangzan101.mika.core.export.ExportAsset
@@ -25,14 +26,15 @@ import java.io.InputStream
 class ConversationExportSource(
     context: Context,
     private val conversationId: String,
+    internal val records: List<Pair<Turn, List<SharedFile>>>,
 ) : ExportSource, ExportAssetReader {
     private val app = context.applicationContext
-    private val conversations = ConversationStore.shared(app)
     private val runs = RunStore(app)
     private val dirs = SandboxDirs(app)
 
-    override suspend fun turns(conversationId: String): List<ExportTurnRecord> = withContext(Dispatchers.IO) {
-        conversations.records(conversationId).mapIndexed { index, (turn, files) ->
+    override suspend fun turns(conversationId: String): List<ExportTurnRecord> {
+        require(conversationId == this.conversationId)
+        return records.mapIndexed { index, (turn, files) ->
             ExportTurnRecord(
                 index = index,
                 userText = turn.userText,

@@ -28,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,15 +62,19 @@ import java.util.Locale
 
 private data class ExportCandidate(val id: ExportBlockId, val title: String, val preview: String)
 
-private data class ExportUiOptions(
+private data class ExportPreview(
+    val source: ConversationExportSource,
+    val candidates: List<ExportCandidate>,
+    val fileAssets: Boolean,
+    val screenAssets: Boolean,
+)
+
+private data class ExportRequest(
+    val source: ConversationExportSource,
+    val selection: ExportSelection,
+    val content: ExportContent,
     val format: String,
-    val selected: Set<ExportBlockId>,
-    val toolSteps: Boolean,
-    val attachments: Boolean,
-    val screens: Boolean,
-    val timestamps: Boolean,
-    val model: Boolean,
-    val pii: Boolean,
+    val bundle: Boolean,
 )
 
 /**
@@ -87,7 +90,8 @@ internal fun ExportConversationDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val handler = remember { Handler(Looper.getMainLooper()) }
-    var candidates by remember { mutableStateOf<List<ExportCandidate>?>(null) }
+    var exportPreview by remember(conversationId) { mutableStateOf<ExportPreview?>(null) }
+    var pending by remember(conversationId) { mutableStateOf<ExportRequest?>(null) }
     var selected by remember { mutableStateOf<Set<ExportBlockId>>(emptySet()) }
     var format by remember { mutableStateOf("markdown") }
     var toolSteps by remember { mutableStateOf(false) }
@@ -101,8 +105,6 @@ internal fun ExportConversationDialog(
     var outcome by remember { mutableStateOf<ExportOutcome?>(null) }
     var failure by remember { mutableStateOf<String?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
-    var fileAssets by remember { mutableStateOf(false) }
-    var screenAssets by remember { mutableStateOf(false) }
 
     LaunchedEffect(conversationId) {
         val records = withContext(Dispatchers.IO) { ConversationStore.shared(context).records(conversationId) }
@@ -116,8 +118,6 @@ internal fun ExportConversationDialog(
                 if (UserScreenMessage.has(steer)) screens = true
             }
         }
-        fileAssets = files
-        screenAssets = screens
         val list = buildList {
             records.forEachIndexed { index, (turn, _) ->
                 add(ExportCandidate(ExportIds.user(index), context.getString(R.string.export_label_user), preview(turn.userText)))
@@ -127,16 +127,17 @@ internal fun ExportConversationDialog(
                 add(ExportCandidate(ExportIds.answer(index), context.getString(R.string.export_label_mika), preview(turn.outcome)))
             }
         }
-        candidates = list
+        exportPreview = ExportPreview(ConversationExportSource(context, conversationId, records), list, files, screens)
         selected = list.map { it.id }.toSet()
     }
 
-    val options = rememberUpdatedState(ExportUiOptions(format, selected, toolSteps, attachments, screens, timestamps, model, pii))
-    val all = candidates.orEmpty()
-    val bundle = (attachments && fileAssets) || (screens && screenAssets)
+    val all = exportPreview?.candidates.orEmpty()
+    val bundle = exportPreview?.let { (attachments && it.fileAssets) || (screens && it.screenAssets) } == true
 
-    fun start(uri: Uri) {
-        val opts = options.value
+    fun start(uri: Uri?) {
+        val request = pending
+        pending = null
+        if (uri == null || request == null) return
         running = true
         failure = null
         outcome = null
@@ -144,20 +145,14 @@ internal fun ExportConversationDialog(
         job = scope.launch {
             try {
                 val result = ExportRuntime(context).export(
+                    source = request.source,
                     title = title,
-                    selection = ExportSelection(conversationId, opts.selected, allSelected = opts.selected.size == all.size),
-                    content = ExportContent(
-                        includeToolSteps = opts.toolSteps,
-                        includeAttachments = opts.attachments,
-                        includeScreens = opts.screens,
-                        includeTimestamps = opts.timestamps,
-                        includeModel = opts.model,
-                        redaction = if (opts.pii) RedactionLevel.SecretsAndPii else RedactionLevel.Secrets,
-                    ),
+                    selection = request.selection,
+                    content = request.content,
                     presentation = ExportPresentation(),
-                    formatId = opts.format,
+                    formatId = request.format,
                     destination = uri,
-                    bundle = bundle,
+                    bundle = request.bundle,
                 ) { p -> handler.post { progress = p } }
                 outcome = result
             } catch (e: CancellationException) {
@@ -171,9 +166,9 @@ internal fun ExportConversationDialog(
         }
     }
 
-    val md = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri -> uri?.let(::start) }
-    val json = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let(::start) }
-    val zip = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri -> uri?.let(::start) }
+    val md = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown"), ::start)
+    val json = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json"), ::start)
+    val zip = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip"), ::start)
     val suggested = suggestedName(title, bundle, format, context.getString(R.string.export_filename_fallback), pii)
 
     AlertDialog(
@@ -220,7 +215,7 @@ internal fun ExportConversationDialog(
                                 modifier = Modifier.padding(start = 8.dp),
                             )
                         }
-                        if (candidates == null) {
+                        if (exportPreview == null) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 CircularProgressIndicator(Modifier.size(20.dp))
                                 Text(stringResource(R.string.export_preparing))
@@ -254,8 +249,23 @@ internal fun ExportConversationDialog(
                 TextButton(onClick = { job?.cancel() }) { Text(stringResource(R.string.export_cancel)) }
             } else {
                 TextButton(
-                    enabled = selected.isNotEmpty() && all.isNotEmpty(),
+                    enabled = selected.isNotEmpty() && all.isNotEmpty() && pending == null,
                     onClick = {
+                        val source = exportPreview?.source ?: return@TextButton
+                        pending = ExportRequest(
+                            source = source,
+                            selection = ExportSelection(conversationId, selected, allSelected = selected.size == all.size),
+                            content = ExportContent(
+                                includeToolSteps = toolSteps,
+                                includeAttachments = attachments,
+                                includeScreens = screens,
+                                includeTimestamps = timestamps,
+                                includeModel = model,
+                                redaction = if (pii) RedactionLevel.SecretsAndPii else RedactionLevel.Secrets,
+                            ),
+                            format = format,
+                            bundle = bundle,
+                        )
                         when {
                             bundle -> zip.launch(suggested)
                             format == "json" -> json.launch(suggested)
