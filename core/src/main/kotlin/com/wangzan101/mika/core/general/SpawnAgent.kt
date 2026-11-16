@@ -1,6 +1,7 @@
 package com.wangzan101.mika.core.general
 
 import com.wangzan101.mika.core.child.ChildPhase
+import com.wangzan101.mika.core.child.ChildRunHost
 import com.wangzan101.mika.core.observation.ObsKind
 import com.wangzan101.mika.core.observation.Observation
 import com.wangzan101.mika.core.observation.Trust
@@ -20,7 +21,12 @@ import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.tool.int
 import com.wangzan101.mika.core.tool.str
+import com.wangzan101.mika.core.tool.strArray
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -32,28 +38,49 @@ internal object SpawnAgent : AgentTool {
     const val DEFAULT_RESULT_CHARS = 4_000
     const val MAX_RESULT_CHARS = 8_000
     const val MIN_RESULT_CHARS = 500
+    /** 一次最多并排派几个。再多分几次调用,免得一轮的 token 预算被一次吃光。 */
+    const val MAX_BATCH = 20
 
     override val verb = Verb.SpawnAgent
     override val risk = Risk.Write
     override val offScreen = true
     override val def = ToolDef("spawn_agent", Prompts.tool("spawn_agent",
         "steps" to DEFAULT_STEPS, "maxSteps" to MAX_STEPS, "chars" to DEFAULT_RESULT_CHARS, "maxChars" to MAX_RESULT_CHARS), mapOf(
-        "goal" to str("A bounded research question for the child agent, using web and sandbox reads only."),
+        "goal" to str("One bounded research question, for a single child agent. Use tasks instead to run several at once."),
+        "tasks" to strArray("Run several child agents at the same time, one goal per item. They all run in parallel and this call returns when every one is done; use it whenever the answers do not depend on each other. Up to $MAX_BATCH items.", MAX_BATCH),
         "format" to str("Optional output format.", listOf("text", "json")),
         "maxSteps" to int("Optional step budget for the child, 1-$MAX_STEPS (default $DEFAULT_STEPS); larger values are lowered to $MAX_STEPS.", 1),
         "maxResultChars" to int("Optional length limit of the returned result in characters, $MIN_RESULT_CHARS-$MAX_RESULT_CHARS (default $DEFAULT_RESULT_CHARS); values outside are moved into range.", 1),
-    ), listOf("goal"))
+    ), listOf())
 
     override fun available(ctx: ToolContext) = ctx.config.childHost != null && ctx.config.runSpec != null
 
     override suspend fun execute(a: Args, ctx: ToolContext): ToolExecution {
         val parent = ctx.config.runSpec ?: error("no parent RunSpec")
         val host = ctx.config.childHost ?: error("no child host")
-        val goal = a.str("goal", max = 4000)!!
         val format = a.str("format")
         // 只校验是整数;超出范围的拉回范围内,不当错误(子任务照样能派)
         val steps = (a.int("maxSteps", Int.MIN_VALUE, Int.MAX_VALUE) ?: DEFAULT_STEPS).coerceIn(1, MAX_STEPS)
         val limit = (a.int("maxResultChars", Int.MIN_VALUE, Int.MAX_VALUE) ?: DEFAULT_RESULT_CHARS).coerceIn(MIN_RESULT_CHARS, MAX_RESULT_CHARS)
+        val goals = a.strList("tasks", min = 1, max = MAX_BATCH, itemMax = 4000)
+            ?: listOfNotNull(a.str("goal", max = 4000)).takeIf { it.isNotEmpty() }
+            ?: return failure("给一个 goal,或用 tasks 一次派几个")
+        if (goals.size == 1) return runOne(goals[0], parent, host, format, steps, limit)
+        // 多个:同时开跑,全等完成再回;任何一个失败都不影响别的,各自结果单独报
+        val results = coroutineScope {
+            goals.map { goal ->
+                async {
+                    goal to try { runOne(goal, parent, host, format, steps, limit) }
+                    catch (e: CancellationException) { throw e }
+                    catch (e: Exception) { failure("子任务起不来: ${e.message ?: e::class.simpleName}") }
+                }
+            }.awaitAll()
+        }
+        return merge(results)
+    }
+
+    private suspend fun runOne(goal: String, parent: RunSpec, host: ChildRunHost,
+                               format: String?, steps: Int, limit: Int): ToolExecution {
         val child = RunSpec(RunId(UUID.randomUUID().toString()), goal, parent.threadId,
             provenance = RunProvenance(RunOrigin.Child, Attendance.Unattended),
             capabilities = setOf("web", "sandbox"), readOnly = true, parent = parent.id, stepBudget = steps)
@@ -61,6 +88,7 @@ internal object SpawnAgent : AgentTool {
         val text = result.text.take(limit)
         return ToolExecution(buildJsonObject {
             put("ok", result.phase == ChildPhase.Completed)
+            put("goal", goal.take(200))
             put("childRunId", result.id.value)
             put("status", result.phase.name.lowercase())
             put("maxSteps", steps)
@@ -71,4 +99,22 @@ internal object SpawnAgent : AgentTool {
             }
         }, observations = listOf(Observation(ObsKind.Reply, text, source = "child", trust = Trust.Untrusted)))
     }
+
+    /** 把几个子任务的结果汇成一条:每个的结局、正文都在自己的那一节里。 */
+    private fun merge(results: List<Pair<String, ToolExecution>>): ToolExecution {
+        val okAll = results.all { (_, r) -> r.content["ok"].toString() == "true" }
+        val text = results.joinToString("\n\n") { (goal, r) ->
+            "### ${goal.take(200)}\n${r.observations.firstOrNull()?.text.orEmpty()}"
+        }
+        return ToolExecution(buildJsonObject {
+            put("ok", okAll)
+            put("ranInParallel", results.size)
+            put("result", Untrusted.wrap(text))
+        }, observations = results.mapNotNull { it.second.observations.firstOrNull() })
+    }
+
+    private fun failure(message: String) = ToolExecution(buildJsonObject {
+        put("ok", false)
+        put("error", message)
+    })
 }

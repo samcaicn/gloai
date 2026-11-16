@@ -11,10 +11,12 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-@Serializable enum class ChildPhase { Running, Completed, Interrupted, Unknown }
+@Serializable enum class ChildPhase { Running, Completed, Failed, Interrupted, Unknown }
 
 @Serializable data class ChildRecord(val id: String, val parentId: String, val phase: ChildPhase,
-    val result: String? = null, val atMs: Long)
+    val result: String? = null, val atMs: Long,
+    /** 派下去的问题;界面上一行字说清这个子任务在干什么。 */
+    val goal: String = "")
 
 interface ChildRunStore {
     fun save(record: ChildRecord)
@@ -46,8 +48,9 @@ class ChildAgentRunner(
         require(spec.parent != null && spec.provenance.origin == com.wangzan101.mika.core.run.RunOrigin.Child)
         val parent = spec.parent
         val agent = create(spec)
+        val goal = spec.goal.take(200)
         synchronized(active) { active.getOrPut(parent) { mutableSetOf() } += agent }
-        store.save(ChildRecord(spec.id.value, parent.value, ChildPhase.Running, atMs = clock()))
+        store.save(ChildRecord(spec.id.value, parent.value, ChildPhase.Running, atMs = clock(), goal = goal))
         try {
             val end = agent.run(spec, RunInbox())
             val raw = when (end) {
@@ -56,19 +59,25 @@ class ChildAgentRunner(
                 TaskState.Cancelled -> INTERRUPTED
                 else -> "no result"
             }
-            val phase = if (end == TaskState.Cancelled) ChildPhase.Interrupted else ChildPhase.Completed
+            // 失败不能记成完成:spawn_agent 的 ok 就是按 Completed 判的,以前 Failed 被写成 Completed,
+            // 父模型会把失败的子任务当成成功结果汇总。
+            val phase = when (end) {
+                is TaskState.Failed -> ChildPhase.Failed
+                TaskState.Cancelled -> ChildPhase.Interrupted
+                else -> ChildPhase.Completed
+            }
             val checked = if (format == "json" && runCatching { Json.parseToJsonElement(raw) }.isFailure)
                 "$raw\n(the child run's JSON did not pass validation; the original text is kept)" else raw
             // 只截短落盘预览;交回父 Run 的原文由 spawn_agent 按本次请求的额度截断并报告原长。
             val preview = checked.take(MAX_RESULT_CHARS)
-            store.save(ChildRecord(spec.id.value, parent.value, phase, preview, clock()))
+            store.save(ChildRecord(spec.id.value, parent.value, phase, preview, clock(), goal = goal))
             if (!ownerAlive(parent)) {
-                store.save(ChildRecord(spec.id.value, parent.value, ChildPhase.Unknown, preview, clock()))
+                store.save(ChildRecord(spec.id.value, parent.value, ChildPhase.Unknown, preview, clock(), goal = goal))
                 return ChildResult(spec.id, ChildPhase.Unknown, checked)
             }
             return ChildResult(spec.id, phase, checked)
         } catch (e: CancellationException) {
-            withContext(NonCancellable) { store.save(ChildRecord(spec.id.value, parent.value, ChildPhase.Interrupted, INTERRUPTED, clock())) }
+            withContext(NonCancellable) { store.save(ChildRecord(spec.id.value, parent.value, ChildPhase.Interrupted, INTERRUPTED, clock(), goal = goal)) }
             throw e
         } finally {
             synchronized(active) { active[parent]?.remove(agent); if (active[parent]?.isEmpty() == true) active.remove(parent) }

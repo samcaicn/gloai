@@ -526,7 +526,7 @@ memory_search #12531379cecf
 memory_save #c2efe9339e0a
 memory_edit #068a88b7d6b4
 history_read #8d934afe3320
-spawn_agent #35b86c5e11e0
+spawn_agent #8a5144c0fc6b
 view_past_screens #ffbc0c2b9665
 hand_to_user #26582d67eb46
 handle_obstacle #31695598de59

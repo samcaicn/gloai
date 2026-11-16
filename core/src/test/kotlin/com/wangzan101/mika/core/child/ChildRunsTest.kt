@@ -13,6 +13,7 @@ import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.run.RunProvenance
 import com.wangzan101.mika.core.run.RunSpec
 import com.wangzan101.mika.core.testing.answerReply
+import com.wangzan101.mika.core.testing.fakeModel
 import com.wangzan101.mika.core.tool.ActionPass
 import com.wangzan101.mika.core.tool.FakeScreen
 import kotlinx.coroutines.runBlocking
@@ -166,5 +167,35 @@ class ChildRunsTest {
             childHost = ChildRunHost { _, _ -> error("must not spawn") })
         val r = tools.execute(Part.ToolCall("s", "spawn_agent", """{"goal":"g","maxSteps":2.5}"""), ActionPass())
         assertEquals("invalid_arguments", r.content["error"].toString().trim('"'))
+    }
+
+    @Test fun tasksRunSeveralChildrenInParallelAndMerge() = runBlocking {
+        val seen = mutableListOf<String>()
+        val host = ChildRunHost { spec, _ ->
+            seen += spec.goal
+            ChildResult(spec.id, ChildPhase.Completed, "结果-${spec.goal}")
+        }
+        val tools = toolDispatcher(FakeScreen(), runSpec = RunSpec(RunId("parent"), "goal", "thread"), childHost = host)
+        val r = tools.execute(Part.ToolCall("s", "spawn_agent", """{"tasks":["查甲","查乙","查丙"]}"""), ActionPass())
+        assertEquals(setOf("查甲", "查乙", "查丙"), seen.toSet())
+        assertEquals("3", r.content["ranInParallel"].toString())
+        assertEquals("true", r.content["ok"].toString())
+        val merged = (r.content["result"] as kotlinx.serialization.json.JsonPrimitive).content
+        assertTrue("查甲" in merged && "查乙" in merged && "查丙" in merged)
+        assertEquals(3, r.observations.size)
+    }
+
+    @Test fun failedChildIsRecordedAsFailedNotCompleted() = runBlocking {
+        val store = MemoryChildRunStore()
+        val runner = ChildAgentRunner({ spec ->
+            AgentLoop(fakeModel { serverError(401) },
+                toolDispatcher(FakeScreen(), web = FakeWebPort(), runSpec = spec), "BASE", confirmations = null)
+        }, store)
+        val parent = RunSpec(RunId("p"), "goal", "thread")
+        val child = RunSpec(RunId("c"), "research", "thread",
+            provenance = RunProvenance(RunOrigin.Child, Attendance.Unattended), parent = parent.id)
+        val result = runner.spawn(child, null)
+        assertEquals(ChildPhase.Failed, result.phase)
+        assertEquals(ChildPhase.Failed, store.get("c")?.phase)
     }
 }
