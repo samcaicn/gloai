@@ -68,6 +68,11 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             isProfileable = true
             matchingFallbacks += "release"
+            // 真机比较滑动手感也用优化包,仍覆盖 .dev 测试版并保留它的数据。
+            if (providers.gradleProperty("devInstall").isPresent) {
+                applicationIdSuffix = ".dev"
+                resValue("string", "app_name", "Mika Dev")
+            }
         }
         // 本地日志检查包：并排安装，允许 adb run-as，首次启动即记录详细 Trace。
         create("logs") {

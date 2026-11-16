@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
@@ -108,7 +109,7 @@ class ChatSearchTest {
         // 清空:入口回来,搜索框的清除按钮消失
         compose.onNodeWithTag("drawer-search-clear").performClick()
         compose.onNodeWithTag("drawer-search-clear").assertDoesNotExist()
-        compose.onNodeWithText("定时任务").assertExists()
+        compose.onNodeWithContentDescription("新对话").assertExists()
 
         // 再搜另一个对话,点结果打开它
         compose.onNodeWithTag("drawer-search").performTextReplacement("天气")
