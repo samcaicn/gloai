@@ -53,9 +53,15 @@ def main():
     try:
         with tempfile.NamedTemporaryFile(dir=args.output.parent, delete=False) as dest:
             temporary = Path(dest.name)
-            subprocess.run(adb + ["tar", "-cf", "-", *paths], stdout=dest, check=True)
+            # The phone can drop off while the export streams; report adb's words like every
+            # other failure here instead of letting CalledProcessError surface as a traceback.
+            subprocess.run(adb + ["tar", "-cf", "-", *paths], stdout=dest,
+                           stderr=subprocess.PIPE, check=True)
         temporary.replace(args.output)
         print(args.output.resolve())
+    except subprocess.CalledProcessError as error:
+        raise SystemExit(adb_message(error.stderr, "adb tar exited {}".format(
+            error.returncode))) from None
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)

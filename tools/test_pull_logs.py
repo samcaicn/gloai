@@ -23,20 +23,25 @@ def answered(returncode=0, stderr=b""):
 class FakeAdb:
     """Answer as adb does: report the remote exit status and honour check=True."""
 
-    def __init__(self, run_as=(0, b""), directories=None, missing=False):
+    def __init__(self, run_as=(0, b""), directories=None, missing=False, transfer=None):
         self.run_as = run_as
         self.directories = directories or {}
         self.missing = missing
+        self.transfer = transfer
 
     def __call__(self, command, **options):
         if self.missing:
             raise FileNotFoundError(2, "No such file or directory", command[0])
         if "test" in command:
             returncode, stderr = self.directories.get(command[-1], (1, b""))
+        elif "tar" in command and self.transfer is not None:
+            returncode, stderr = self.transfer
         else:
             returncode, stderr = self.run_as
         if options.get("check") and returncode != 0:
-            raise subprocess.CalledProcessError(returncode, command, stderr=stderr)
+            # subprocess keeps the message only when the caller asked for it.
+            raise subprocess.CalledProcessError(returncode, command,
+                                                stderr=stderr if options.get("stderr") else None)
         return answered(returncode, stderr)
 
 
@@ -85,6 +90,16 @@ class PullLogsTest(unittest.TestCase):
         # `test -d` reports an absent directory this way, so it must not become an error.
         adb = FakeAdb(run_as=(0, PRESENT))
         self.assertEqual("No records yet. Run a task in Mika Logs first.", self.message(adb))
+
+    def test_a_failed_transfer_names_adb_instead_of_a_traceback(self):
+        # The phone can drop off while tar streams the export. Every other failure in this tool
+        # is reported in adb's own words, so this one must be too, not as a Python traceback.
+        adb = FakeAdb(run_as=(0, PRESENT),
+                      directories={"files/runs": (0, b""), "no_backup/harness-traces": (0, b"")},
+                      transfer=(1, b"adb: error: failed to read from device: device offline\n"))
+        self.assertEqual("adb: error: failed to read from device: device offline",
+                         self.message(adb))
+        self.assertFalse(self.output.exists())
 
     def test_a_warning_on_stderr_does_not_stop_a_successful_export(self):
         adb = FakeAdb(run_as=(0, b"adb server version doesn't match this client\n"),
