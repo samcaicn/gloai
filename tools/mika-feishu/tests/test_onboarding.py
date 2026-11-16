@@ -1,4 +1,5 @@
 import contextlib
+import errno
 import io
 import json
 import os
@@ -112,6 +113,20 @@ class OnboardingTests(unittest.TestCase):
                         pass
             with instance_lock(path):
                 pass
+
+    def test_a_filesystem_that_cannot_lock_is_not_reported_as_a_busy_config(self):
+        # Contention means another process holds the lock. A filesystem without lock support
+        # (a network or container mount) reports ENOLCK instead, and there is no other connector
+        # to stop: naming one sends the user hunting for a process that does not exist.
+        target = "msvcrt.locking" if os.name == "nt" else "fcntl.flock"
+        with tempfile.TemporaryDirectory() as directory:
+            with patch(target, side_effect=OSError(errno.ENOLCK, "No locks available")):
+                with self.assertRaises(ValueError) as error:
+                    with instance_lock(Path(directory) / "connector.lock"):
+                        pass
+        message = str(error.exception)
+        self.assertNotIn("Another connector", message)
+        self.assertIn("No locks available", message)
 
     def test_authentication_probe_sends_no_message_and_omits_token(self):
         response = Mock(status_code=200)

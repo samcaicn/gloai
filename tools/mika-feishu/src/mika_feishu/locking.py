@@ -1,6 +1,12 @@
 """One event consumer per configuration, using OS locks released on process exit."""
 from contextlib import contextmanager
+import errno
 import os
+
+
+# A lock request that failed because another process holds it: fcntl reports EACCES or
+# EWOULDBLOCK, and msvcrt.locking reports EACCES or EDEADLK.
+CONTENDED = {errno.EACCES, errno.EAGAIN, errno.EWOULDBLOCK, errno.EDEADLK}
 
 
 @contextmanager
@@ -18,8 +24,14 @@ def instance_lock(path):
             else:
                 import fcntl
                 fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            raise ValueError("Another connector or setup process is using this config") from None
+        except OSError as exc:
+            if exc.errno in CONTENDED:
+                raise ValueError("Another connector or setup process is using this config") from None
+            # The lock itself failed, so no other connector is involved: ENOLCK and EOPNOTSUPP come
+            # from filesystems without lock support, e.g. some network and container mounts.
+            raise ValueError("Cannot lock this configuration ("
+                             + (exc.strerror or "os error " + str(exc.errno))
+                             + "); check that this directory is on a local filesystem that supports locking") from None
         try:
             yield
         finally:
