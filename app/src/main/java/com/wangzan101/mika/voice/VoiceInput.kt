@@ -55,11 +55,16 @@ class VoiceInput(
                     LiveAsrTransport().connect(spec.region.endpoint(spec.workspace), mapOf("Authorization" to "Bearer $key"))
                 })
             }
-            is SpeechEngineSpec.System -> SystemSpeechSession(
-                context, spec.onDevice, tag,
-                onNoResponse = settings::noteSystemSilent, onAnswered = settings::noteSystemAnswered,
-                attempts = SystemSpeech.attempts(SystemSpeech.services(context), settings.systemService),
-            )
+            is SpeechEngineSpec.System -> {
+                val compatibility = SystemSpeech.serviceCompatibility()
+                SystemSpeechSession(
+                    context, spec.onDevice, tag,
+                    onNoResponse = settings::noteSystemSilent, onAnswered = settings::noteSystemAnswered,
+                    attempts = SystemSpeech.attempts(SystemSpeech.services(context), settings.systemService, compatibility),
+                    compatibility = compatibility,
+                    serviceWithoutMic = { named, onDevice -> SpeechServiceMic.missing(context, named, onDevice) },
+                )
+            }
             is SpeechEngineSpec.Provider -> {
                 val p = spec.provider
                 val t = transcriber(p)

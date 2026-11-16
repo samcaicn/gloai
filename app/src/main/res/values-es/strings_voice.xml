@@ -31,6 +31,10 @@
     <string name="voice_unavailable_no_engine">Este teléfono no tiene reconocimiento de voz integrado y no se ha elegido ningún modelo de voz a texto. Elige el modelo de voz de un proveedor en Ajustes › Modelos › Voz a texto y funcionará.</string>
     <string name="voice_unavailable_system_gone">Voz a texto está configurado con el reconocimiento integrado del teléfono, pero este teléfono ya no lo tiene. Elige otro en Ajustes › Modelos › Voz a texto.</string>
     <string name="voice_unavailable_system_silent">El reconocimiento de voz integrado del teléfono no respondió, así que no llegó ninguna palabra. Elige el modelo de voz de un proveedor en Ajustes › Modelos › Voz a texto y funcionará.</string>
+    <string name="voice_unavailable_system_failed">No se pudo iniciar el reconocimiento de voz integrado del teléfono. Inténtalo de nuevo o elige otro método de reconocimiento en Ajustes › Modelos › Voz a texto.</string>
+    <string name="voice_service_permission_title">El reconocimiento de voz del teléfono aún no puede grabar</string>
+    <string name="voice_service_permission_body">«%1$s» es la app que hace el reconocimiento de voz en este teléfono y aún no tiene permiso para grabar audio, así que no puede oírte. El permiso de micrófono de Mika está bien. Abre su página de permisos y activa el micrófono; después vuelve y mantén pulsado para hablar. También puedes elegir otro método de reconocimiento en Ajustes › Modelos › Voz a texto.</string>
+    <string name="voice_service_settings_failed">No se pudo abrir la página de ajustes de «%1$s». Búscala en la lista de apps del sistema y activa el micrófono.</string>
     <string name="voice_unavailable_provider_gone">Se eliminó el proveedor del modelo de voz elegido. Elige otro en Ajustes › Modelos › Voz a texto.</string>
     <string name="voice_unavailable_off">Voz a texto está desactivado. Elige uno en Ajustes › Modelos › Voz a texto.</string>
     <string name="voice_go_pick">Elegir uno</string>
@@ -56,5 +60,6 @@
     <string name="capsule_voice_sent">Enviado: %1$s</string>
     <string name="capsule_voice_need_mic">Toca para permitir el micrófono en Mika</string>
     <string name="capsule_voice_not_ready">La entrada de voz no está lista · toca</string>
+    <string name="capsule_voice_service_need_mic">El reconocimiento de voz aún no puede grabar · toca</string>
     <string name="capsule_voice_open">Abrir Mika</string>
 </resources>

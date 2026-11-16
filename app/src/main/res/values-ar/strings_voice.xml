@@ -31,6 +31,10 @@
     <string name="voice_unavailable_no_engine">لا يتضمن هذا الهاتف ميزة مدمجة للتعرّف على الكلام، ولم يتم اختيار نموذج لتحويل الكلام إلى نص. اختر نموذجًا صوتيًا من أحد المزوّدين ضمن الإعدادات › النماذج › تحويل الكلام إلى نص لتفعيل الميزة.</string>
     <string name="voice_unavailable_system_gone">تم ضبط تحويل الكلام إلى نص لاستخدام ميزة التعرّف المدمجة في الهاتف، لكنها غير متوفرة الآن. اختر خيارًا آخر ضمن الإعدادات › النماذج › تحويل الكلام إلى نص.</string>
     <string name="voice_unavailable_system_silent">لم تستجب ميزة التعرّف على الكلام المدمجة في الهاتف، لذا لم يصل أي كلام. اختر نموذجًا صوتيًا من أحد المزوّدين ضمن الإعدادات › النماذج › تحويل الكلام إلى نص لتفعيل الميزة.</string>
+    <string name="voice_unavailable_system_failed">تعذّر بدء التعرّف على الكلام المدمج في الهاتف. حاول مجددًا أو اختر طريقة تعرّف أخرى ضمن الإعدادات › النماذج › تحويل الكلام إلى نص.</string>
+    <string name="voice_service_permission_title">التعرّف على الكلام في الهاتف لا يستطيع التسجيل بعد</string>
+    <string name="voice_service_permission_body">«%1$s» هو التطبيق المسؤول عن التعرّف على الكلام في هذا الهاتف، ولم يُسمح له بتسجيل الصوت بعد، لذلك لا يستطيع سماعك. إذن الميكروفون الخاص بـ Mika سليم. افتح صفحة أذونات ذلك التطبيق وفعّل الميكروفون، ثم عُد واضغط مطولًا للتحدث مجددًا. يمكنك أيضًا اختيار طريقة تعرّف أخرى ضمن الإعدادات › النماذج › تحويل الكلام إلى نص.</string>
+    <string name="voice_service_settings_failed">تعذّر فتح صفحة إعدادات «%1$s». ابحث عنه في قائمة تطبيقات النظام وفعّل الميكروفون.</string>
     <string name="voice_unavailable_provider_gone">أُزيل المزوّد الخاص بنموذج الكلام المحدد. اختر مزوّدًا آخر ضمن الإعدادات › النماذج › تحويل الكلام إلى نص.</string>
     <string name="voice_unavailable_off">ميزة تحويل الكلام إلى نص متوقفة. اختر واحدة ضمن الإعدادات › النماذج › تحويل الكلام إلى نص.</string>
     <string name="voice_go_pick">اختيار</string>
@@ -56,5 +60,6 @@
     <string name="capsule_voice_sent">تم الإرسال: %1$s</string>
     <string name="capsule_voice_need_mic">انقر للسماح للميكروفون في Mika</string>
     <string name="capsule_voice_not_ready">الإدخال الصوتي غير جاهز · انقر</string>
+    <string name="capsule_voice_service_need_mic">التعرّف على الكلام لا يستطيع التسجيل بعد · انقر</string>
     <string name="capsule_voice_open">فتح Mika</string>
 </resources>

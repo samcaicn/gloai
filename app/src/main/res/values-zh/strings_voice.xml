@@ -30,6 +30,10 @@
     <string name="voice_unavailable_no_engine">这台手机没有自带的语音识别，也还没选转文字的模型。到「设置 › 模型 › 语音转文字」选一个服务商的语音模型就能用。</string>
     <string name="voice_unavailable_system_gone">语音转文字选的是手机自带的识别，这台手机现在没有。到「设置 › 模型 › 语音转文字」换一个就能用。</string>
     <string name="voice_unavailable_system_silent">手机自带的语音识别没有响应，听不到字。到「设置 › 模型 › 语音转文字」选一个服务商的语音模型就能用。</string>
+    <string name="voice_unavailable_system_failed">手机自带的语音识别没能启动。可以再试一次，或到「设置 › 模型 › 语音转文字」换一种识别方式。</string>
+    <string name="voice_service_permission_title">手机的语音识别还不能录音</string>
+    <string name="voice_service_permission_body">「%1$s」是这台手机上负责语音识别的应用，它自己还没有录音权限，所以听不到你说话。Mika 的录音权限没有问题。到它的权限页打开「麦克风」，回来再按住说话；也可以到「设置 › 模型 › 语音转文字」换一种识别方式。</string>
+    <string name="voice_service_settings_failed">没能打开「%1$s」的设置页。请到系统的应用管理里找到它，打开「麦克风」。</string>
     <string name="voice_unavailable_provider_gone">选的语音模型所在的服务商已经删掉了。到「设置 › 模型 › 语音转文字」重新选一个就能用。</string>
     <string name="voice_unavailable_off">语音转文字设成了不用。到「设置 › 模型 › 语音转文字」选一个就能用。</string>
     <string name="voice_go_pick">去选</string>
@@ -55,5 +59,6 @@
     <string name="capsule_voice_sent">已发出：%1$s</string>
     <string name="capsule_voice_need_mic">点这里到 Mika 允许录音</string>
     <string name="capsule_voice_not_ready">还不能语音输入 · 点这里</string>
+    <string name="capsule_voice_service_need_mic">语音识别还不能录音 · 点这里</string>
     <string name="capsule_voice_open">打开 Mika</string>
 </resources>

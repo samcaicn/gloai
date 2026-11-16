@@ -31,6 +31,10 @@
     <string name="voice_unavailable_no_engine">این گوشی تشخیص گفتار داخلی ندارد و مدل گفتار به متنی نیز انتخاب نشده است. یک مدل گفتار از ارائه‌دهنده را در تنظیمات › مدل‌ها › گفتار به متن انتخاب کنید.</string>
     <string name="voice_unavailable_system_gone">گفتار به متن روی تشخیص داخلی گوشی تنظیم شده، اما اکنون این قابلیت در گوشی موجود نیست. گزینهٔ دیگری در تنظیمات › مدل‌ها › گفتار به متن انتخاب کنید.</string>
     <string name="voice_unavailable_system_silent">تشخیص گفتار داخلی گوشی پاسخ نداد و متنی دریافت نشد. یک مدل گفتار از ارائه‌دهنده را در تنظیمات › مدل‌ها › گفتار به متن انتخاب کنید.</string>
+    <string name="voice_unavailable_system_failed">تشخیص گفتار داخلی گوشی شروع نشد. دوباره تلاش کنید یا روش تشخیص دیگری را در تنظیمات › مدل‌ها › گفتار به متن انتخاب کنید.</string>
+    <string name="voice_service_permission_title">تشخیص گفتار گوشی هنوز نمی‌تواند ضبط کند</string>
+    <string name="voice_service_permission_body">«%1$s» برنامه‌ای است که تشخیص گفتار این گوشی را انجام می‌دهد و هنوز اجازهٔ ضبط صدا ندارد، برای همین صدای شما را نمی‌شنود. مجوز میکروفون خود میکا مشکلی ندارد. صفحهٔ مجوزهای آن برنامه را باز کنید و میکروفون را روشن کنید، سپس برگردید و دوباره برای صحبت نگه دارید. همچنین می‌توانید روش تشخیص دیگری را در تنظیمات › مدل‌ها › گفتار به متن انتخاب کنید.</string>
+    <string name="voice_service_settings_failed">صفحهٔ تنظیمات «%1$s» باز نشد. آن را در فهرست برنامه‌های سیستم پیدا کنید و میکروفون را روشن کنید.</string>
     <string name="voice_unavailable_provider_gone">ارائه‌دهندهٔ مدل گفتاری انتخاب‌شده حذف شده است. گزینهٔ دیگری در تنظیمات › مدل‌ها › گفتار به متن انتخاب کنید.</string>
     <string name="voice_unavailable_off">گفتار به متن خاموش است. یک گزینه در تنظیمات › مدل‌ها › گفتار به متن انتخاب کنید.</string>
     <string name="voice_go_pick">انتخاب</string>
@@ -56,5 +60,6 @@
     <string name="capsule_voice_sent">ارسال شد: %1$s</string>
     <string name="capsule_voice_need_mic">برای اجازه به میکروفون در میکا بزنید</string>
     <string name="capsule_voice_not_ready">ورودی صوتی آماده نیست · بزنید</string>
+    <string name="capsule_voice_service_need_mic">تشخیص گفتار هنوز نمی‌تواند ضبط کند · بزنید</string>
     <string name="capsule_voice_open">باز کردن میکا</string>
 </resources>

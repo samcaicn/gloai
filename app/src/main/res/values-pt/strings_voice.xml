@@ -30,6 +30,10 @@
     <string name="voice_unavailable_no_engine">Este celular não tem reconhecimento de fala integrado, e nenhum modelo de fala para texto foi escolhido. Escolha o modelo de fala de um provedor em Configurações › Modelos › Fala para texto e vai funcionar.</string>
     <string name="voice_unavailable_system_gone">Fala para texto está definido como o reconhecimento integrado do celular, mas este celular não o tem agora. Escolha outro em Configurações › Modelos › Fala para texto.</string>
     <string name="voice_unavailable_system_silent">O reconhecimento de fala integrado do celular não respondeu, então nenhuma palavra chegou. Escolha o modelo de fala de um provedor em Configurações › Modelos › Fala para texto e vai funcionar.</string>
+    <string name="voice_unavailable_system_failed">Não foi possível iniciar o reconhecimento de fala integrado do celular. Tente novamente ou escolha outra forma de reconhecimento em Configurações › Modelos › Fala para texto.</string>
+    <string name="voice_service_permission_title">O reconhecimento de fala do celular ainda não pode gravar</string>
+    <string name="voice_service_permission_body">“%1$s” é o app que faz o reconhecimento de fala neste celular e ainda não tem permissão para gravar áudio, então não consegue ouvir você. A permissão de microfone do Mika está correta. Abra a página de permissões desse app e ative o microfone; depois volte e segure para falar de novo. Você também pode escolher outra forma de reconhecimento em Configurações › Modelos › Fala para texto.</string>
+    <string name="voice_service_settings_failed">Não foi possível abrir a página de configurações de “%1$s”. Procure o app na lista de apps do sistema e ative o microfone.</string>
     <string name="voice_unavailable_provider_gone">O provedor do modelo de fala escolhido foi removido. Escolha outro em Configurações › Modelos › Fala para texto.</string>
     <string name="voice_unavailable_off">Fala para texto está desativado. Escolha uma opção em Configurações › Modelos › Fala para texto.</string>
     <string name="voice_go_pick">Escolher</string>
@@ -54,5 +58,6 @@
     <string name="capsule_voice_sent">Enviado: %1$s</string>
     <string name="capsule_voice_need_mic">Toque para permitir o microfone no Mika</string>
     <string name="capsule_voice_not_ready">A entrada por voz não está pronta · toque</string>
+    <string name="capsule_voice_service_need_mic">O reconhecimento de fala ainda não pode gravar · toque</string>
     <string name="capsule_voice_open">Abrir o Mika</string>
 </resources>

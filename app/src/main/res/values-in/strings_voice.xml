@@ -30,6 +30,10 @@
     <string name="voice_unavailable_no_engine">Ponsel ini tidak punya pengenalan ucapan bawaan, dan belum ada model ucapan ke teks yang dipilih. Pilih model ucapan dari penyedia di Pengaturan › Model › Ucapan ke teks dan fitur ini akan berfungsi.</string>
     <string name="voice_unavailable_system_gone">Ucapan ke teks diatur ke pengenalan bawaan ponsel, tetapi ponsel ini tidak memilikinya sekarang. Pilih yang lain di Pengaturan › Model › Ucapan ke teks.</string>
     <string name="voice_unavailable_system_silent">Pengenalan ucapan bawaan ponsel tidak merespons, jadi tidak ada kata yang masuk. Pilih model ucapan dari penyedia di Pengaturan › Model › Ucapan ke teks dan fitur ini akan berfungsi.</string>
+    <string name="voice_unavailable_system_failed">Pengenalan ucapan bawaan ponsel tidak dapat dimulai. Coba lagi atau pilih metode pengenalan lain di Pengaturan › Model › Ucapan ke teks.</string>
+    <string name="voice_service_permission_title">Pengenalan ucapan ponsel belum bisa merekam</string>
+    <string name="voice_service_permission_body">“%1$s” adalah aplikasi yang menangani pengenalan ucapan di ponsel ini, dan aplikasi itu belum diizinkan merekam audio sehingga tidak bisa mendengar Anda. Izin mikrofon Mika sendiri tidak bermasalah. Buka halaman izin aplikasi itu dan aktifkan mikrofon, lalu kembali dan tahan untuk bicara lagi. Anda juga bisa memilih metode pengenalan lain di Pengaturan › Model › Ucapan ke teks.</string>
+    <string name="voice_service_settings_failed">Halaman setelan “%1$s” tidak dapat dibuka. Cari aplikasi itu di daftar aplikasi sistem dan aktifkan mikrofon.</string>
     <string name="voice_unavailable_provider_gone">Penyedia model ucapan yang dipilih sudah dihapus. Pilih yang lain di Pengaturan › Model › Ucapan ke teks.</string>
     <string name="voice_unavailable_off">Ucapan ke teks dimatikan. Pilih salah satu di Pengaturan › Model › Ucapan ke teks.</string>
     <string name="voice_go_pick">Pilih</string>
@@ -54,5 +58,6 @@
     <string name="capsule_voice_sent">Terkirim: %1$s</string>
     <string name="capsule_voice_need_mic">Ketuk untuk mengizinkan mikrofon di Mika</string>
     <string name="capsule_voice_not_ready">Input suara belum siap · ketuk</string>
+    <string name="capsule_voice_service_need_mic">Pengenalan ucapan belum bisa merekam · ketuk</string>
     <string name="capsule_voice_open">Buka Mika</string>
 </resources>

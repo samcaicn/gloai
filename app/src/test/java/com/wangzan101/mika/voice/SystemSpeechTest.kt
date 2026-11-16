@@ -15,7 +15,7 @@ class SystemSpeechTest {
         assertEquals(SpeechFailure.Network, SystemSpeech.failureOf(SpeechRecognizer.ERROR_NETWORK_TIMEOUT))
         assertEquals(SpeechFailure.NoPermission, SystemSpeech.failureOf(SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS))
         assertEquals(SpeechFailure.AudioError, SystemSpeech.failureOf(SpeechRecognizer.ERROR_AUDIO))
-        assertEquals(SpeechFailure.MicUnavailable, SystemSpeech.failureOf(SpeechRecognizer.ERROR_CLIENT))
+        assertEquals(SpeechFailure.Unavailable(SpeechEngineSpec.Why.SystemFailed), SystemSpeech.failureOf(SpeechRecognizer.ERROR_CLIENT))
     }
 
     @Test
@@ -116,4 +116,42 @@ class SystemSpeechTest {
         assertEquals(listOf("a.b/.Two", null, "a.b/.One"), SystemSpeech.attempts(services, remembered = "a.b/.Two"))
         assertEquals(listOf(null, "a.b/.One", "a.b/.Two"), SystemSpeech.attempts(services, remembered = "a.b/.Gone"))
     }
+
+    @Test fun compatibilityIsLimitedToTheVerifiedBuildFamilyAndApi() {
+        assertEquals(true, SystemSpeech.serviceCompatibility("Xiaomi", "OS3.0.1.0.TEST", 36))
+        assertEquals(true, SystemSpeech.serviceCompatibility("POCO", "OS3.1.0.0.TEST", 36))
+        assertEquals(true, SystemSpeech.serviceCompatibility(" Redmi ", " OS4.0.0.0.TEST ", 37))
+        assertEquals(false, SystemSpeech.serviceCompatibility("Other", "OS3.0.1.0.TEST", 36))
+        assertEquals(false, SystemSpeech.serviceCompatibility("Xiaomi", "AOSP.TEST", 36))
+        assertEquals(false, SystemSpeech.serviceCompatibility("Xiaomi", "V14.0.1.0.TEST", 36))
+        assertEquals(true, SystemSpeech.serviceCompatibility("Xiaomi", "OS1.0.1.0.TEST", 34))
+        assertEquals(true, SystemSpeech.serviceCompatibility("Xiaomi", "OS2.0.1.0.TEST", 35))
+        assertEquals(false, SystemSpeech.serviceCompatibility("Xiaomi", "OS1.0.1.0.TEST", 33))
+        assertEquals(false, SystemSpeech.serviceCompatibility("Xiaomi", "OS-preview", 36))
+    }
+
+    @Test fun compatibleSingleServiceStillHasAnExplicitFallback() {
+        val one = listOf(svc("Only"))
+        assertEquals(listOf(null, "a.b/.Only"), SystemSpeech.attempts(one, null, compatibility = true))
+        assertEquals(listOf("a.b/.Only", null), SystemSpeech.attempts(one, "a.b/.Only", compatibility = true))
+        assertEquals(listOf<String?>(null), SystemSpeech.attempts(emptyList(), null, compatibility = true))
+        assertEquals(SystemSpeech.MAX_ATTEMPTS,
+            SystemSpeech.attempts(listOf(svc("One"), svc("Two"), svc("Three"), svc("Four")), null, compatibility = true).size)
+    }
+
+    @Test fun clientFallbackIsBoundedAndNeverReopensAfterReleaseOrLosesText() {
+        val client = SpeechRecognizer.ERROR_CLIENT
+        assertEquals(SystemSpeech.Outcome.NextService, SystemSpeech.afterError(client, true, false, canTryNext = true))
+        assertEquals(SystemSpeech.Outcome.Fail(SpeechFailure.Unavailable(SpeechEngineSpec.Why.SystemFailed)),
+            SystemSpeech.afterError(client, true, false, canTryNext = false))
+        assertEquals(SystemSpeech.Outcome.Finish, SystemSpeech.afterError(client, false, false, canTryNext = true))
+        assertEquals(SystemSpeech.Outcome.Finish, SystemSpeech.afterError(client, true, true, canTryNext = true))
+        assertEquals(SystemSpeech.Outcome.Fail(SpeechFailure.NoPermission),
+            SystemSpeech.afterError(SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS, true, false, canTryNext = true))
+        assertEquals(SystemSpeech.Outcome.Fail(SpeechFailure.AudioError),
+            SystemSpeech.afterError(SpeechRecognizer.ERROR_AUDIO, true, false, canTryNext = true))
+        assertEquals(SystemSpeech.Outcome.Fail(SpeechFailure.Network),
+            SystemSpeech.afterError(SpeechRecognizer.ERROR_NETWORK, true, false, canTryNext = true))
+    }
+
 }

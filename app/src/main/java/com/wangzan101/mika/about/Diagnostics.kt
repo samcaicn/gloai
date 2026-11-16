@@ -108,7 +108,8 @@ data class DiagnosticsSnapshot(
 
     /**
      * [choice] 是用户的选择(auto、system、off,或服务商模型「模型 @ 地址」);[systemAvailable]、[onDevice] 是系统说的能力,
-     * [silent] 是记成了不响应;[remembered] 是点名试通过的识别服务;[services] 是手机上登记的识别服务,每个一行。
+     * [silent] 是记成了不响应;[remembered] 是点名试通过的识别服务;[services] 是手机上登记的识别服务,每个一行
+     * (带着它所在的应用有没有录音权限);[defaultService] 是系统设的默认识别服务(没设、读不出来为 null)。
      */
     data class Speech(
         val choice: String,
@@ -117,6 +118,7 @@ data class DiagnosticsSnapshot(
         val silent: Boolean,
         val remembered: String?,
         val services: List<String>,
+        val defaultService: String? = null,
     )
 }
 
@@ -177,6 +179,7 @@ object Diagnostics {
             line("speech to text", v.choice)
             line("built-in recognition", if (!v.systemAvailable) "none" else "present" + (if (v.onDevice) ", on-device" else "") + (if (v.silent) ", marked no response" else ""))
             v.remembered?.let { line("recognition service used", it) }
+            line("default recognition service", v.defaultService ?: "not set")
             line("recognition services", if (v.services.isEmpty()) "none" else "${v.services.size}")
             v.services.forEach { appendLine("- $it") }
         }

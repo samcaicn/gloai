@@ -31,6 +31,10 @@
     <string name="voice_unavailable_no_engine">This phone has no built-in speech recognition, and no speech-to-text model has been picked. Pick a provider’s speech model in Settings › Models › Speech to text and it will work.</string>
     <string name="voice_unavailable_system_gone">Speech to text is set to the phone’s built-in recognition, but this phone doesn’t have it now. Pick another one in Settings › Models › Speech to text.</string>
     <string name="voice_unavailable_system_silent">The phone’s built-in speech recognition didn’t respond, so no words came through. Pick a provider’s speech model in Settings › Models › Speech to text and it will work.</string>
+    <string name="voice_unavailable_system_failed">The phone’s built-in speech recognition couldn’t start. Try again, or choose another recognition method in Settings › Models › Speech to text.</string>
+    <string name="voice_service_permission_title">The phone’s speech recognition can’t record yet</string>
+    <string name="voice_service_permission_body">“%1$s” is the app that does speech recognition on this phone, and it hasn’t been allowed to record audio, so it can’t hear you. Mika’s own microphone permission is fine. Open its permission page and turn on the microphone, then come back and hold to talk again. You can also choose another recognition method in Settings › Models › Speech to text.</string>
+    <string name="voice_service_settings_failed">Couldn’t open the settings page for “%1$s”. Find it in the system’s app list and turn on the microphone.</string>
     <string name="voice_unavailable_provider_gone">The provider of the chosen speech model has been removed. Pick another one in Settings › Models › Speech to text.</string>
     <string name="voice_unavailable_off">Speech to text is turned off. Pick one in Settings › Models › Speech to text.</string>
     <string name="voice_go_pick">Pick one</string>
@@ -56,5 +60,6 @@
     <string name="capsule_voice_sent">Sent: %1$s</string>
     <string name="capsule_voice_need_mic">Tap to allow the mic in Mika</string>
     <string name="capsule_voice_not_ready">Voice input isn’t ready · tap</string>
+    <string name="capsule_voice_service_need_mic">Speech recognition can’t record yet · tap</string>
     <string name="capsule_voice_open">Open Mika</string>
 </resources>

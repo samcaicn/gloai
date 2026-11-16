@@ -30,6 +30,10 @@
     <string name="voice_unavailable_no_engine">이 휴대전화에는 내장 음성 인식이 없고 음성 텍스트 변환 모델도 선택되지 않았어요. 설정 › 모델 › 음성 텍스트 변환에서 제공업체의 음성 모델을 선택하면 쓸 수 있어요.</string>
     <string name="voice_unavailable_system_gone">음성 텍스트 변환이 휴대전화 내장 인식으로 설정되어 있지만 지금은 이 휴대전화에 없어요. 설정 › 모델 › 음성 텍스트 변환에서 다른 것을 선택하세요.</string>
     <string name="voice_unavailable_system_silent">휴대전화 내장 음성 인식이 응답하지 않아 아무 말도 전달되지 않았어요. 설정 › 모델 › 음성 텍스트 변환에서 제공업체의 음성 모델을 선택하면 쓸 수 있어요.</string>
+    <string name="voice_unavailable_system_failed">휴대전화 내장 음성 인식을 시작하지 못했어요. 다시 시도하거나 설정 › 모델 › 음성 텍스트 변환에서 다른 인식 방식을 선택하세요.</string>
+    <string name="voice_service_permission_title">휴대전화의 음성 인식이 아직 녹음할 수 없어요</string>
+    <string name="voice_service_permission_body">“%1$s”은(는) 이 휴대전화에서 음성 인식을 맡는 앱인데, 아직 녹음이 허용되지 않아 목소리를 들을 수 없어요. Mika의 마이크 권한에는 문제가 없어요. 이 앱의 권한 페이지에서 마이크를 켠 다음 돌아와서 다시 길게 눌러 말하세요. 설정 › 모델 › 음성 텍스트 변환에서 다른 인식 방식을 선택할 수도 있어요.</string>
+    <string name="voice_service_settings_failed">“%1$s”의 설정 페이지를 열지 못했어요. 시스템의 앱 목록에서 찾아 마이크를 켜세요.</string>
     <string name="voice_unavailable_provider_gone">선택한 음성 모델의 제공업체가 삭제됐어요. 설정 › 모델 › 음성 텍스트 변환에서 다른 것을 선택하세요.</string>
     <string name="voice_unavailable_off">음성 텍스트 변환이 꺼져 있어요. 설정 › 모델 › 음성 텍스트 변환에서 선택하세요.</string>
     <string name="voice_go_pick">선택하기</string>
@@ -54,5 +58,6 @@
     <string name="capsule_voice_sent">보냄: %1$s</string>
     <string name="capsule_voice_need_mic">눌러서 Mika의 마이크 허용</string>
     <string name="capsule_voice_not_ready">음성 입력이 준비되지 않았어요 · 누르기</string>
+    <string name="capsule_voice_service_need_mic">음성 인식이 아직 녹음할 수 없어요 · 누르기</string>
     <string name="capsule_voice_open">Mika 열기</string>
 </resources>

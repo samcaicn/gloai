@@ -31,6 +31,10 @@
     <string name="voice_unavailable_no_engine">このスマホには内蔵の音声認識がなく、音声文字変換のモデルも選ばれていません。「設定 › モデル › 音声文字変換」でプロバイダーの音声モデルを選ぶと使えます。</string>
     <string name="voice_unavailable_system_gone">音声文字変換はスマホ内蔵の音声認識に設定されていますが、このスマホには今はありません。「設定 › モデル › 音声文字変換」で別のものを選んでください。</string>
     <string name="voice_unavailable_system_silent">スマホ内蔵の音声認識が応答せず、言葉が届きませんでした。「設定 › モデル › 音声文字変換」でプロバイダーの音声モデルを選ぶと使えます。</string>
+    <string name="voice_unavailable_system_failed">スマホ内蔵の音声認識を開始できませんでした。もう一度試すか、「設定 › モデル › 音声文字変換」で別の認識方法を選んでください。</string>
+    <string name="voice_service_permission_title">スマホの音声認識がまだ録音できません</string>
+    <string name="voice_service_permission_body">「%1$s」はこのスマホで音声認識を担当するアプリですが、録音がまだ許可されていないため、あなたの声を聞き取れません。Mika 自身のマイク権限には問題ありません。このアプリの権限ページでマイクをオンにしてから、戻ってもう一度長押しで話してください。「設定 › モデル › 音声文字変換」で別の認識方法を選ぶこともできます。</string>
+    <string name="voice_service_settings_failed">「%1$s」の設定ページを開けませんでした。システムのアプリ一覧から探して、マイクをオンにしてください。</string>
     <string name="voice_unavailable_provider_gone">選んだ音声モデルのプロバイダーは削除されました。「設定 › モデル › 音声文字変換」で別のものを選んでください。</string>
     <string name="voice_unavailable_off">音声文字変換がオフです。「設定 › モデル › 音声文字変換」で選んでください。</string>
     <string name="voice_go_pick">選ぶ</string>
@@ -56,5 +60,6 @@
     <string name="capsule_voice_sent">送信しました: %1$s</string>
     <string name="capsule_voice_need_mic">タップして Mika のマイクを許可</string>
     <string name="capsule_voice_not_ready">音声入力の準備ができていません · タップ</string>
+    <string name="capsule_voice_service_need_mic">音声認識がまだ録音できません · タップ</string>
     <string name="capsule_voice_open">Mika を開く</string>
 </resources>

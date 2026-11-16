@@ -44,13 +44,15 @@ object SystemSpeech {
         SpeechRecognizer.ERROR_SERVER, ERROR_SERVER_DISCONNECTED -> SpeechFailure.Network
         SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> SpeechFailure.NoPermission
         SpeechRecognizer.ERROR_AUDIO -> SpeechFailure.AudioError
-        SpeechRecognizer.ERROR_CLIENT -> SpeechFailure.MicUnavailable
+        SpeechRecognizer.ERROR_CLIENT -> SpeechFailure.Unavailable(SpeechEngineSpec.Why.SystemFailed)
         else -> SpeechFailure.Unavailable(SpeechEngineSpec.Why.SystemGone)
     }
 
     /** 一个错误码到了之后怎么办:重开、按已听到的收尾、报失败。 */
     sealed interface Outcome {
         data object Retry : Outcome
+        /** 当前入口用不了,改试这次会话的下一个识别服务。 */
+        data object NextService : Outcome
         data object Finish : Outcome
         data class Fail(val why: SpeechFailure) : Outcome
     }
@@ -59,12 +61,13 @@ object SystemSpeech {
      * [holding] 是手还按着,[heard] 是已经听到过字。已经听到的字不丢:松开后、或按着时中途出错,都按听到的收尾。
      * 松开后有的服务在 stopListening 之后报 ERROR_CLIENT,什么都没听到时那是没听清,不是麦克风坏了。
      */
-    fun afterError(code: Int, holding: Boolean, heard: Boolean): Outcome {
+    fun afterError(code: Int, holding: Boolean, heard: Boolean, canTryNext: Boolean = false): Outcome {
         val failure = failureOf(code)
         return when {
             failure == null && holding -> Outcome.Retry
             failure == null || heard -> Outcome.Finish
             !holding && code == SpeechRecognizer.ERROR_CLIENT -> Outcome.Finish
+            code == SpeechRecognizer.ERROR_CLIENT && canTryNext -> Outcome.NextService
             else -> Outcome.Fail(failure)
         }
     }
@@ -98,14 +101,26 @@ object SystemSpeech {
     /**
      * 一次会话依次去试的识别服务,null 是系统默认的那个(不点名,由系统挑)。
      * 之前点名试过、回了话的([remembered],还在手机上)排最前;默认的一个回调都不给时,再点名试其余的,对别的 App 开放的先试。
-     * 手机上只有一个服务时它就是默认的,不再点名重试;最多试 [MAX_ATTEMPTS] 个,免得按着的人干等。
+     * 兼容模式下即使只登记了一个服务,也保留点名的候选:登记了服务不代表系统已选好默认的。
+     * 其他设备保持原有的候选规则;最多试 [MAX_ATTEMPTS] 个,免得按着的人干等。
      */
-    fun attempts(services: List<RecognizerService>, remembered: String?): List<String?> {
+    fun attempts(services: List<RecognizerService>, remembered: String?, compatibility: Boolean = false): List<String?> {
         val known = remembered?.takeIf { r -> services.any { it.component == r } }
-        val others = if (services.size < 2) emptyList() else
+        val others = if (services.size < 2 && !compatibility) emptyList() else
             services.filter { it.component != known }.sortedBy { !it.open }.map { it.component }
         return (listOfNotNull(known) + listOf(null) + others).take(MAX_ATTEMPTS)
     }
+
+    /**
+     * 只对已验证的设备系列启用识别服务兼容路径,不根据单个机型列白名单。
+     * 用公开的厂商和增量构建号识别,不读取或修改系统的默认识别设置;别的设备仍走原来的调用方式。
+     */
+    fun serviceCompatibility(
+        manufacturer: String = Build.MANUFACTURER,
+        incremental: String = Build.VERSION.INCREMENTAL,
+        sdk: Int = Build.VERSION.SDK_INT,
+    ): Boolean = sdk >= 34 && manufacturer.trim().lowercase(Locale.ROOT) in setOf("xiaomi", "redmi", "poco") &&
+        Regex("""^OS[0-9]+\..*""").matches(incremental.trim())
 
     /** 一次会话最多试几个识别服务(含默认的)。 */
     const val MAX_ATTEMPTS = 3
@@ -177,6 +192,13 @@ class SystemSpeechSession(
     private val onAnswered: (String?) -> Unit = {},
     /** 依次去试的识别服务,见 [SystemSpeech.attempts];null 是系统默认的。 */
     private val attempts: List<String?> = listOf(null),
+    /** 默认关着:只由入口对已经确认需要兼容的设备开启。 */
+    private val compatibility: Boolean = false,
+    /**
+     * 识别服务说没有权限时问一句:是不是这次用的那个服务自己没有录音权限。给的是这次点名的服务的包名(没点名为 null)、
+     * 用的是不是本机识别;确定是它缺权限才返回它(见 [SpeechServiceMic.missing]),别的情况为 null。
+     */
+    private val serviceWithoutMic: (String?, Boolean) -> SpeechServiceTarget? = { _, _ -> null },
 ) : SpeechSession {
     private val context = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
@@ -187,6 +209,10 @@ class SystemSpeechSession(
 
     // 下面这些只在主线程读写
     private var recognizer: SpeechRecognizer? = null
+    private var serviceLease: SpeechServiceLease? = null
+    private var bindingPending = false
+    /** 换识别器或结束时作废旧连接回调。 */
+    private var generation = 0L
     private var usingOnDevice = false
     /** 这次送给识别服务的语言;本机识别装的是另一种写法时换成那个,见 [retag]。 */
     private var tag = languageTag
@@ -199,9 +225,9 @@ class SystemSpeechSession(
     private var holding = true
     private val restarts = Restarts()
     private var restartPending = false
-    /** 当前识别器回过话没有(任何回调都算)。 */
+    /** 当前识别器回过话没有(决定收尾方式);错误不据此记为下次优先使用的服务。 */
     private var answered = false
-    /** 这次会话已经报过 [onAnswered];每次会话只报一次,免得每个音量回调都写设置。 */
+    /** 当前识别器已经报过 [onAnswered];每个识别器只报一次,切换后再记,免得每个音量回调都写设置。 */
     private var reported = false
     /** 这次会话已经因为不响应记过一次。松开后的等待和静默计时可能先后到,不能记成两次。 */
     private var notedSilent = false
@@ -216,6 +242,16 @@ class SystemSpeechSession(
             return@Runnable
         }
         concludeSilence()
+    }
+
+    /** 额外绑定也要有等待上限,取消/松开不能留下等连接的会话。 */
+    private val bindingTimeout = Runnable {
+        if (!bindingPending || done()) return@Runnable
+        bindingPending = false
+        if (holding && attempt + 1 < attempts.size) {
+            attempt++
+            open(preferOnDevice = false)
+        } else concludeSilence()
     }
 
     /** 静默到点、且不再换下一个服务:按有没有回过话收尾。不响应同一次会话只记一次。 */
@@ -262,6 +298,11 @@ class SystemSpeechSession(
     override fun release() = onMain {
         if (!holding || done()) return@onMain
         holding = false
+        if (bindingPending) {
+            // 还没连上,也就还没开始听:松开后不再突然打开录音。
+            finish(SpeechEvent.Final(segments.full()))
+            return@onMain
+        }
         if (restartPending) {
             // 上一段已经结束、还没重开:没有在听的,直接按已听到的收尾
             finish(SpeechEvent.Final(segments.full()))
@@ -270,6 +311,8 @@ class SystemSpeechSession(
         try {
             // 正在问本机识别装了哪些语言时没有在听的;问完重新听了再停,见 [afterSwitch]
             if (!asking) recognizer?.stopListening()
+        } catch (_: RuntimeException) {
+            handleError(SpeechRecognizer.ERROR_CLIENT)
         } finally {
             // stopListening 里同步回调可能已经结束会话,也可能拆掉了等待;没结束就一定再排上
             if (!done()) main.postDelayed(timeout, FINAL_WAIT_MS)
@@ -280,8 +323,9 @@ class SystemSpeechSession(
         // 先关事件出口(任何线程都立刻生效),再到主线程收拾识别器
         if (!out.cancel()) return
         onMain {
-            recognizer?.cancel()
-            teardown()
+            try { recognizer?.cancel() } catch (_: RuntimeException) {
+                // 取消失败也必须释放额外绑定。
+            } finally { teardown() }
         }
     }
 
@@ -290,23 +334,97 @@ class SystemSpeechSession(
     private fun open(preferOnDevice: Boolean) {
         if (done()) return
         teardown()
-        val r = if (preferOnDevice && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        answered = false
+        reported = false
+        val thisGeneration = generation
+        val local = if (preferOnDevice && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             runCatching { SpeechRecognizer.createOnDeviceSpeechRecognizer(context) }.getOrNull()
-        } else {
-            null
-        }
-        usingOnDevice = r != null
-        // 点名的服务用它;没点名(或名字认不出)交给系统默认的
-        val named = attempts.getOrNull(attempt)?.let(ComponentName::unflattenFromString)
-        val rec = r ?: runCatching { SpeechRecognizer.createSpeechRecognizer(context, named) }.getOrNull()
-        if (rec == null) {
-            finish(SpeechEvent.Failed(SpeechFailure.Unavailable(SpeechEngineSpec.Why.SystemGone)))
+        } else null
+        usingOnDevice = local != null
+        if (local != null) {
+            startRecognizer(local)
             return
         }
+        val named = attempts.getOrNull(attempt)?.let(ComponentName::unflattenFromString)
+        fun begin() {
+            if (done() || generation != thisGeneration) return
+            val rec = runCatching { SpeechRecognizer.createSpeechRecognizer(context, named) }.getOrNull()
+            if (rec == null) handleError(SpeechRecognizer.ERROR_CLIENT) else startRecognizer(rec)
+        }
+        // 默认入口照旧由系统绑定。兼容路径点名的公开服务,在本次语音会话期间带上调用方已有的前台能力;
+        // 等连接建立才开始听,不改默认服务、不替用户授予权限,结束时由 teardown 一并解绑。
+        val lease = if (compatibility && named != null) SpeechServiceLease.forService(context, named,
+            onReady = {
+                if (generation == thisGeneration && !done() && bindingPending) {
+                    bindingPending = false
+                    main.removeCallbacks(bindingTimeout)
+                    begin()
+                }
+            },
+            onUnavailable = {
+                if (generation == thisGeneration && !done()) {
+                    bindingPending = false
+                    main.removeCallbacks(bindingTimeout)
+                    handleError(SpeechRecognizer.ERROR_CLIENT)
+                }
+            },
+        ) else null
+        if (lease != null) {
+            serviceLease = lease
+            bindingPending = true
+            main.postDelayed(bindingTimeout, NO_RESPONSE_MS)
+            if (lease.start() || done() || generation != thisGeneration) return
+            serviceLease = null
+            bindingPending = false
+            main.removeCallbacks(bindingTimeout)
+            lease.close()
+        }
+        begin()
+    }
+
+    private fun startRecognizer(rec: SpeechRecognizer) {
         recognizer = rec
-        answered = false
-        rec.setRecognitionListener(listener)
-        listen()
+        try {
+            rec.setRecognitionListener(listenerFor(rec))
+            listen()
+        } catch (_: RuntimeException) {
+            handleError(SpeechRecognizer.ERROR_CLIENT)
+        }
+    }
+
+    /** 初始化失败可在兼容模式内换一个入口;已听到的字、松开后的收尾优先,绝不重新录音。 */
+    private fun handleError(error: Int) {
+        if (done()) return
+        if (usingOnDevice && SystemSpeech.languageMissing(error) && segments.full().isEmpty()) {
+            heard(remember = false)
+            if (!retag()) toOnline()
+            return
+        }
+        val outcome = SystemSpeech.afterError(error, holding, heard = segments.full().isNotEmpty(),
+            canTryNext = compatibility && attempt + 1 < attempts.size)
+        if (outcome == SystemSpeech.Outcome.NextService) {
+            attempt++
+            open(preferOnDevice = false)
+            return
+        }
+        // 仅有错误回调不能证明服务可用,不能据此把组件记成下次优先使用的服务。
+        heard(remember = SystemSpeech.failureOf(error) == null)
+        when (outcome) {
+            SystemSpeech.Outcome.Retry -> emptySegment()
+            SystemSpeech.Outcome.Finish -> finish(SpeechEvent.Final(segments.full()))
+            is SystemSpeech.Outcome.Fail -> finish(SpeechEvent.Failed(explained(outcome.why)))
+            SystemSpeech.Outcome.NextService -> Unit
+        }
+    }
+
+    /**
+     * 识别服务说没有权限:Mika 的录音权限是开会话前查过的,所以多半是识别服务自己的没给。查得出来就照实说是它,
+     * 查不出来的照原来的说法。要在收拾识别器之前问:这次用的是哪个入口那时才知道。
+     */
+    private fun explained(why: SpeechFailure): SpeechFailure {
+        if (why != SpeechFailure.NoPermission) return why
+        val named = attempts.getOrNull(attempt)?.let(ComponentName::unflattenFromString)?.packageName
+        return serviceWithoutMic(named, usingOnDevice)?.let { SpeechFailure.ServiceNoPermission(it) } ?: why
     }
 
     private fun request(): Intent =
@@ -325,8 +443,8 @@ class SystemSpeechSession(
         main.postDelayed(silence, NO_RESPONSE_MS)
         try {
             recognizer?.startListening(intent)
-        } catch (e: RuntimeException) {
-            finish(SpeechEvent.Failed(SpeechFailure.MicUnavailable))
+        } catch (_: RuntimeException) {
+            handleError(SpeechRecognizer.ERROR_CLIENT)
         }
     }
 
@@ -394,16 +512,19 @@ class SystemSpeechSession(
     }
 
     /** 服务回了话:这一段不算没响应。 */
-    private fun heard() {
+    private fun heard(remember: Boolean = true) {
         answered = true
         main.removeCallbacks(silence)
-        if (!reported) {
+        if (remember && !reported) {
             reported = true
             onAnswered(if (usingOnDevice) null else attempts.getOrNull(attempt))
         }
     }
 
     private fun teardown() {
+        generation++
+        bindingPending = false
+        main.removeCallbacks(bindingTimeout)
         main.removeCallbacks(timeout)
         main.removeCallbacks(silence)
         main.removeCallbacks(restart)
@@ -415,6 +536,9 @@ class SystemSpeechSession(
         // 先摘掉再 destroy:destroy 里可能同步回调 onError,这时不能再换引擎,否则会在失败处理里嵌套重开
         usingOnDevice = false
         rec?.let { runCatching { it.destroy() } }
+        val lease = serviceLease
+        serviceLease = null
+        lease?.close()
     }
 
     private fun onMain(block: () -> Unit) {
@@ -424,23 +548,25 @@ class SystemSpeechSession(
     private fun firstText(results: Bundle?): String =
         results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
 
-    private val listener = object : RecognitionListener {
-        override fun onReadyForSpeech(params: Bundle?) = heard()
-        override fun onBeginningOfSpeech() = heard()
-        override fun onBufferReceived(buffer: ByteArray?) = heard()
-        override fun onEndOfSpeech() = heard()
-        override fun onEvent(eventType: Int, params: Bundle?) = heard()
+    private fun listenerFor(rec: SpeechRecognizer) = object : RecognitionListener {
+        // 一个默认入口可能连续回两个客户端错误;切换后的旧回调不能结束或污染新识别器。
+        private fun current() = recognizer === rec && !done()
+        override fun onReadyForSpeech(params: Bundle?) { if (current()) heard() }
+        override fun onBeginningOfSpeech() { if (current()) heard() }
+        override fun onBufferReceived(buffer: ByteArray?) { if (current()) heard() }
+        override fun onEndOfSpeech() { if (current()) heard() }
+        override fun onEvent(eventType: Int, params: Bundle?) { if (current()) heard() }
 
         override fun onRmsChanged(rmsdB: Float) {
+            if (!current()) return
             heard()
-            if (done()) return
             // 识别服务给的大致在 -2..10 dB,压到 0..1 画波形
             out.send(SpeechEvent.Level(((rmsdB + 2f) / 12f).coerceIn(0f, 1f)))
         }
 
         override fun onPartialResults(partialResults: Bundle?) {
+            if (!current()) return
             heard()
-            if (done()) return
             val text = firstText(partialResults)
             if (text.isBlank()) return
             restarts.onSpeech()
@@ -448,8 +574,8 @@ class SystemSpeechSession(
         }
 
         override fun onResults(results: Bundle?) {
+            if (!current()) return
             heard()
-            if (done()) return
             val text = firstText(results)
             segments.segmentDone(text)
             if (holding) {
@@ -468,23 +594,12 @@ class SystemSpeechSession(
         }
 
         override fun onError(error: Int) {
-            if (recognizer == null || done()) return
-            heard()
-            if (recognizer == null || done()) return
-            if (usingOnDevice && SystemSpeech.languageMissing(error) && segments.full().isEmpty()) {
-                // 可能只是语言的写法对不上:先问它装了哪些,问不了才换联网识别
-                if (!retag()) toOnline()
-                return
-            }
-            when (val o = SystemSpeech.afterError(error, holding, heard = segments.full().isNotEmpty())) {
-                SystemSpeech.Outcome.Retry -> emptySegment()
-                SystemSpeech.Outcome.Finish -> finish(SpeechEvent.Final(segments.full()))
-                is SystemSpeech.Outcome.Fail -> finish(SpeechEvent.Failed(o.why))
-            }
+            if (!current()) return
+            handleError(error)
         }
     }
 
-    // 放在所有属性之后:onMain 在主线程上是当场执行,open 用到的 listener 等属性此时都已初始化
+    // 放在所有属性之后:onMain 在主线程上是当场执行,open 用到的计时器等属性此时都已初始化
     init {
         onMain { open(onDevice && attempts.firstOrNull() == null) }
     }
