@@ -34,10 +34,12 @@ public class FieldsTestActivity extends Activity {
         root.addView(result);
         Button seven = new Button(this);
         seven.setText("7");
+        useResourceId(seven, "send_code");
         seven.setOnClickListener(v -> result.append("7"));
         root.addView(seven);
         EditText empty = new EditText(this);
         empty.setHint("空输入框");
+        useResourceId(empty, "verification_code");
         empty.setContentDescription(null);
         root.addView(empty);
         EditText hinted = new EditText(this);
@@ -59,6 +61,16 @@ public class FieldsTestActivity extends Activity {
         root.addView(fake);
         root.addView(real);
         setContentView(root);
+    }
+
+    private void useResourceId(View view, String id) {
+        view.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, android.view.accessibility.AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setViewIdResourceName(getPackageName() + ":id/" + id);
+            }
+        });
     }
 
     private static LinearLayout.LayoutParams fullWidth() {

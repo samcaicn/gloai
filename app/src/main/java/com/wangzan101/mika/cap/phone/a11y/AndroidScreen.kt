@@ -184,7 +184,11 @@ class AndroidScreen(
     // 不进编号登记表:模型手里最新的 ref 仍然有效
     override suspend fun peek(): ScreenSnapshot = capture(register = false)
 
-    private suspend fun capture(register: Boolean): ScreenSnapshot = withContext(Dispatchers.IO) {
+    /** Device-local SMS verification needs the exact IDs, including IDs on labelled buttons. */
+    internal suspend fun smsSnapshot(register: Boolean): ScreenSnapshot =
+        capture(register, fullResourceIds = true)
+
+    private suspend fun capture(register: Boolean, fullResourceIds: Boolean = false): ScreenSnapshot = withContext(Dispatchers.IO) {
         if (!hasDisplay) return@withContext ScreenSnapshot(snapshotId(), null, emptyList(), screenWidth, screenHeight, hasWindow = false)
         // 上一个动作过了一会儿才开到用户主屏上的:先挪回来再读(只在模型要读的这一屏上做,不在判效果的那一眼里做)
         val late = if (register) lateSpill() else null
@@ -196,7 +200,9 @@ class AndroidScreen(
         ScreenSnapshot(
             snapshotId = snap.id,
             packageName = r.topPackage,
-            elements = r.entries.map { it.element },
+            elements = r.entries.map { entry ->
+                if (fullResourceIds) entry.element.copy(resourceId = entry.locator.resourceId) else entry.element
+            },
             width = screenWidth,
             height = screenHeight,
             changedDuringRead = after != r.hash,
@@ -545,7 +551,7 @@ class AndroidScreen(
     suspend fun prepareSmsLogin(p: com.wangzan101.mika.core.cap.phone.sms.SmsLoginProfile,
         authorize: (() -> Boolean) -> Boolean): Boolean = withContext(Dispatchers.IO) {
         if (!smsPrimaryUser()) return@withContext false
-        val s = snapshot()
+        val s = smsSnapshot(register = true)
         if (!com.wangzan101.mika.core.cap.phone.sms.SmsLoginMatcher.target(s, p.app, p.codeField)) return@withContext false
         val field = s.elements.filter { it.resourceId == p.accountField }.singleOrNull() ?: return@withContext false
         val found = findField(field.ref, s.snapshotId, tapToFocus = false) as? Field.Found ?: return@withContext false
@@ -575,7 +581,7 @@ class AndroidScreen(
 
     suspend fun smsLoginOutcome(p: com.wangzan101.mika.core.cap.phone.sms.SmsLoginProfile, code: CharArray): com.wangzan101.mika.core.cap.phone.sms.SmsLoginOutcome = withContext(Dispatchers.IO) {
         if (!smsPrimaryUser()) return@withContext com.wangzan101.mika.core.cap.phone.sms.SmsLoginOutcome.Unsafe
-        val s = peek()
+        val s = smsSnapshot(register = false)
         val outcome = com.wangzan101.mika.core.cap.phone.sms.SmsLoginEvidence.outcome(p, s, code)
         if (outcome != com.wangzan101.mika.core.cap.phone.sms.SmsLoginOutcome.Verified) return@withContext outcome
         // OCR stays on device. Missing OCR or residual code pixels cannot authorize resuming observations.
@@ -583,7 +589,7 @@ class AndroidScreen(
             ?: return@withContext com.wangzan101.mika.core.cap.phone.sms.SmsLoginOutcome.Pending
         if (com.wangzan101.mika.core.cap.phone.sms.SmsLoginEvidence.containsCode(lines.joinToString(" ") { it.text }, code))
             com.wangzan101.mika.core.cap.phone.sms.SmsLoginOutcome.Pending
-        else com.wangzan101.mika.core.cap.phone.sms.SmsLoginEvidence.outcome(p, peek(), code)
+        else com.wangzan101.mika.core.cap.phone.sms.SmsLoginEvidence.outcome(p, smsSnapshot(register = false), code)
     }
 
     private fun smsPrimaryUser(): Boolean {
@@ -640,7 +646,7 @@ class AndroidScreen(
         val top = runCatching { shell.topTaskId(displayId) }.getOrDefault(-1)
         if (top < 0 || userOf(top) != 0) return null
         appAccess.current().denial(pkg)?.let { return null }
-        val current = snapshot()
+        val current = smsSnapshot(register = true)
         return current.takeIf { com.wangzan101.mika.core.cap.phone.sms.SmsLoginMatcher.target(it, pkg, resourceId, scope) }
     }
 
