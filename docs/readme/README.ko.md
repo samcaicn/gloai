@@ -26,7 +26,7 @@
 
 <br/>
 
-[English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · 한국어 · [Español](README.es.md)
+[English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · 한국어 · [Español](README.es.md) · [Türkçe](README.tr.md)
 
 <sub>이 한국어판은 중국어(간체) 원문을 번역한 것입니다. 어색한 표현이나 원문과 다른 부분이 보이면 PR로 고쳐 주세요.</sub>
 
