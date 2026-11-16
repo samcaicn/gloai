@@ -12,13 +12,17 @@ import com.wangzan101.mika.core.model.ModelError
  */
 internal object Failover {
     /**
-     * [e] 是链上第 [fromIndex] 个模型失败的错误;[tags] 与链平行,是各自的服务商名
-     * (与 [ModelError.DailyBudgetExceeded.providerName] 同源),可为空表。返回下一个要试的下标,不换为 null。
+     * [e] 是链上第 [fromIndex] 个模型失败的错误；[providerIds] 与链平行，可为空表。
+     * 服务商身份和每日预算使用同一个 ID。返回下一个要试的下标，不换为 null。
      */
-    fun nextIndex(e: ModelError, fromIndex: Int, tags: List<String?>, chainSize: Int): Int? = when (e) {
+    fun nextIndex(e: ModelError, fromIndex: Int, providerIds: List<String?>, chainSize: Int): Int? = when (e) {
         is ModelError.TaskBudgetExceeded -> null
-        is ModelError.DailyBudgetExceeded ->
-            (fromIndex + 1 until chainSize).firstOrNull { tags.getOrNull(it) != null && tags[it] != e.providerName }
+        is ModelError.DailyBudgetExceeded -> e.providerId?.let { exhausted ->
+            (fromIndex + 1 until chainSize).firstOrNull { index ->
+                val candidate = providerIds.getOrNull(index)
+                candidate != null && candidate != exhausted
+            }
+        }
         is ModelError.QuotaExceeded, is ModelError.Auth, is ModelError.ModelNotFound, is ModelError.ModelNotAvailable,
         is ModelError.ToolsUnsupported, is ModelError.SignInExpired, is ModelError.AccountPlanNotAllowed,
         is ModelError.ChatGptLimitReached, is ModelError.ChatGptNotEligible,

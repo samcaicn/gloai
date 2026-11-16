@@ -39,13 +39,13 @@ class FailoverTest {
     }
 
     @Test fun dailyBudgetOnlySwitchesAcrossProviders() {
-        val blown = ModelError.DailyBudgetExceeded("OpenRouter", 100, 100)
+        val blown = ModelError.DailyBudgetExceeded("Gateway", 100, 100, providerId = "primary-id")
         // 下一个是同一家:不换
-        assertNull(Failover.nextIndex(blown, 0, listOf("OpenRouter", "OpenRouter"), 2))
+        assertNull(Failover.nextIndex(blown, 0, listOf("primary-id", "primary-id"), 2))
         // 同家的跳过,换到不同家
-        assertEquals(2, Failover.nextIndex(blown, 0, listOf("OpenRouter", "OpenRouter", "APInex"), 3))
-        // 服务商名不知道时不换(分不清是不是同一家)
-        assertNull(Failover.nextIndex(blown, 0, listOf("OpenRouter", null), 2))
+        assertEquals(2, Failover.nextIndex(blown, 0, listOf("primary-id", "primary-id", "backup-id"), 3))
+        // 备援的身份未知时不换。
+        assertNull(Failover.nextIndex(blown, 0, listOf("primary-id", null), 2))
     }
 
     @Test fun nonModelFailuresDoNotSwitch() {

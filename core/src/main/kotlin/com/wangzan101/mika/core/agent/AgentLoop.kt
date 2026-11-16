@@ -185,9 +185,9 @@ class AgentLoop(
     private val reviewFinalAnswer: Boolean = true,
     /** 同一网站、App 里连着做对外动作(发送、提交)时两次之间的间隔;默认不等。 */
     private val outwardPacing: OutwardPacing = OutwardPacing.Off,
-    /** 主模型的备援链(项目 3);默认没有。[modelChainTags] 与主模型加备援平行,是各自的服务商名。 */
+    /** 主模型的备援链；[modelChainProviderIds] 与主模型和备援模型平行。 */
     private val modelFallbacks: List<ChatModel> = emptyList(),
-    private val modelChainTags: List<String?> = emptyList(),
+    private val modelChainProviderIds: List<String?> = emptyList(),
     private val trace: RunTrace? = null,
 ) {
     init {
@@ -206,7 +206,7 @@ class AgentLoop(
         tools.observer = { record { order.observed(RunEvent.Observed.of(it)) } }
     }
 
-    private val caller = ModelCaller(model, tools, router, flags, retry, ::emit, ::now, autonomous, trace, modelFallbacks, modelChainTags)
+    private val caller = ModelCaller(model, tools, router, flags, retry, ::emit, ::now, autonomous, trace, modelFallbacks, modelChainProviderIds)
     private val intentGate = intentJudge?.let {
         IntentGate(it, model.takeUnless { main -> main === it }, intentDecision) { detail ->
             emit(RunEvent.State(now(), "jev_intent", detail))

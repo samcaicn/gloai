@@ -35,7 +35,7 @@ class ModelCallerChainTest {
 
     private fun caller(main: ChatModel, fallbacks: List<ChatModel>, tags: List<String?> = emptyList()) =
         ModelCaller(main, toolDispatcher(FakeScreen()), null, SpeedFlags.OFF, RetryPolicy.NONE, {}, { 0 },
-            fallbacks = fallbacks, chainTags = tags).also { it.reset("") }
+            fallbacks = fallbacks, chainProviderIds = tags).also { it.reset("") }
 
     @Test fun quotaFallsToFallbackAndSticks() = runTest {
         val main = Scripted("main", ModelError.QuotaExceeded())
@@ -124,10 +124,10 @@ class ModelCallerChainTest {
     }
 
     @Test fun primaryBudgetErrorSurfacesOverFallbackFailure() = runTest {
-        val budget = ModelError.DailyBudgetExceeded("OpenRouter", 100, 100)
+        val budget = ModelError.DailyBudgetExceeded("Gateway", 100, 100, providerId = "primary-id")
         val main = Scripted("main", budget)
         val backup = Scripted("backup", ModelError.BadResponse("bad"))
-        val caller = caller(main, listOf(backup), tags = listOf("OpenRouter", "APInex"))
+        val caller = caller(main, listOf(backup), tags = listOf("primary-id", "backup-id"))
         var thrown: Throwable? = null
         try { caller.ask(history, emptyList(), step = 1) } catch (e: ModelError) { thrown = e }
         assertSame(budget, thrown)
@@ -135,10 +135,10 @@ class ModelCallerChainTest {
     }
 
     @Test fun currentBudgetErrorWinsOverEarlierDailyBudget() = runTest {
-        val main = Scripted("main", ModelError.DailyBudgetExceeded("OpenRouter", 100, 100))
+        val main = Scripted("main", ModelError.DailyBudgetExceeded("Gateway", 100, 100, providerId = "primary-id"))
         val taskBudget = ModelError.TaskBudgetExceeded(100, 100)
         val backup = Scripted("backup", taskBudget)
-        val caller = caller(main, listOf(backup), tags = listOf("OpenRouter", "APInex"))
+        val caller = caller(main, listOf(backup), tags = listOf("primary-id", "backup-id"))
         var thrown: Throwable? = null
         try { caller.ask(history, emptyList(), step = 1) } catch (e: ModelError) { thrown = e }
         assertSame(taskBudget, thrown)
@@ -180,10 +180,10 @@ class ModelCallerChainTest {
     }
 
     @Test fun dailyBudgetSkipsSameProvider() = runTest {
-        val main = Scripted("main", ModelError.DailyBudgetExceeded("OpenRouter", 100, 100))
+        val main = Scripted("main", ModelError.DailyBudgetExceeded("Gateway", 100, 100, providerId = "primary-id"))
         val same = Scripted("same", null)
         val other = Scripted("other", null)
-        val caller = caller(main, listOf(same, other), tags = listOf("OpenRouter", "OpenRouter", "APInex"))
+        val caller = caller(main, listOf(same, other), tags = listOf("primary-id", "primary-id", "backup-id"))
         caller.ask(history, emptyList(), step = 1)
         assertSame(other, caller.lastMainUsed)
         assertEquals(0, same.calls)

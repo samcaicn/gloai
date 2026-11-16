@@ -39,8 +39,8 @@ internal class ModelCaller(
     private val trace: RunTrace? = null,
     /** 主模型的备援(项目 3):主模型这一步失败且 [Failover] 说换,就按序接手;默认没有,行为和原来一样。 */
     private val fallbacks: List<ChatModel> = emptyList(),
-    /** 与主模型链平行的服务商名(和 [ModelError.DailyBudgetExceeded.providerName] 同源),只给每日预算判断跨不跨服务商;可为空。 */
-    private val chainTags: List<String?> = emptyList(),
+    /** 与主模型链平行的服务商 ID，用来判断每日预算是否适用于备援。 */
+    private val chainProviderIds: List<String?> = emptyList(),
 ) {
     /** 每个模型一份压缩状态:各自的上下文、各自发出的那份历史,轻量模型那次压缩不连累主模型的请求前缀。 */
     private val compressors = java.util.IdentityHashMap<ChatModel, ContextCompressor>()
@@ -178,7 +178,7 @@ internal class ModelCaller(
             } catch (e: ModelError) {
                 if (trialLog.none { it.first == chainIndex }) trialLog += chainIndex to e
                 if (chainIndex == 0 && headError == null) headError = e
-                val next = Failover.nextIndex(e, chainIndex, chainTags, chain.size) ?: throw terminalError(e)
+                val next = Failover.nextIndex(e, chainIndex, chainProviderIds, chain.size) ?: throw terminalError(e)
                 onText?.invoke("")
                 emit(RunEvent.State(now(), "model_switch", "${current.name} -> ${chain[next].name} ${RetryPolicy.label(e)}"))
                 chainIndex = next

@@ -787,13 +787,12 @@ class ProviderStore(
     }
 
     /**
-     * 主模型备援链(项目 3):按 [RoleChoices.mainFallbacks] 的顺序建出备援模型,和各自的服务商名平行返回,
-     * 供主模型链切换时判断每日预算跨不跨服务商(名字和 [ModelError.DailyBudgetExceeded] 里的同源)。
+     * 按 [RoleChoices.mainFallbacks] 的顺序返回备援模型及其服务商 ID，供故障转移判断预算归属。
      * 配置没了、建不出的位子跳过,链短一点照样能跑。
      */
     fun mainFallbackChain(session: ModelSession = ModelSession.fresh()): Pair<List<ChatModel>, List<String?>> {
         val models = ArrayList<ChatModel>()
-        val tags = ArrayList<String?>()
+        val providerIds = ArrayList<String>()
         // 旧设定里若把主模型自己也排进备援,载入时略过:切给自己没有意义(MK-1 B-D2)。
         val mainId = _roles.value.resolve(ModelRole.Main)
         for (id in _roles.value.mainFallbacks) {
@@ -801,20 +800,19 @@ class ProviderStore(
             val cfg = configById(id) ?: continue
             val m = modelForConfig(id, session) ?: continue
             models += m
-            tags += provider(cfg.providerId)?.name ?: cfg.name
+            providerIds += cfg.providerId
         }
-        return models to tags
+        return models to providerIds
     }
 
-    /** 主模型那一位的服务商名(主模型链标签的第一位)。 */
-    fun mainProviderTag(): String? = configFor(ModelRole.Main)?.let { cfg -> provider(cfg.providerId)?.name ?: cfg.name }
+    fun mainProviderId(): String? = configFor(ModelRole.Main)?.providerId
 
     /** 每次实际请求前重查配置和账本；达到预算时不发请求，也不记一笔虚假调用。 */
     private fun checkDailyBudget(source: UsageSource) {
         val p = provider(source.providerId) ?: return
         val limit = p.dailyTokenBudget ?: return
         val used = dailyUsage(source.providerId)
-        if (used >= limit) throw ModelError.DailyBudgetExceeded(p.name, limit, used)
+        if (used >= limit) throw ModelError.DailyBudgetExceeded(p.name, limit, used, providerId = source.providerId)
     }
 
     /**

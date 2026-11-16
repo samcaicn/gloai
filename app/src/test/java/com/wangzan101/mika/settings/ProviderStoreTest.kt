@@ -127,6 +127,18 @@ class ProviderStoreTest {
         assertEquals(1, models.size)
     }
 
+    @Test fun fallbackChainIdentifiesProvidersWithTheSameDisplayNameSeparately() {
+        val s = store()
+        val primary = connected(s, name = "Gateway")
+        val backup = s.connect("Gateway", ProviderConfig.Kind.OpenAiCompat,
+            "https://backup.test/v1", "backup-key", listOf(ListedModel("m1")))
+        s.use(ModelRole.Main, primary.id, "m1", none)
+        s.use(ModelRole.Light, backup.id, "m1", none)
+        assertTrue(s.setMainFallback(0, s.configFor(ModelRole.Light)!!.id))
+
+        assertEquals(listOf(backup.id), s.mainFallbackChain().second)
+    }
+
     @Test fun isMainModelMatchesCurrentMain() {
         // 手填备援时挡主模型自己,靠这个判断(MK-1 D1)。
         val s = store()
@@ -1173,6 +1185,7 @@ class ProviderStoreTest {
             fail("达到每日预算的服务商应停止下一次请求")
         } catch (e: ModelError.DailyBudgetExceeded) {
             assertEquals("Limited", e.providerName)
+            assertEquals(limited.id, e.providerId)
             assertEquals(10_000L, e.limit)
             assertEquals(10_000L, e.used)
         }
