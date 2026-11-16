@@ -53,6 +53,8 @@ import com.wangzan101.mika.ui.MainActivity
 import com.wangzan101.mika.ui.ScreenCopy
 import com.wangzan101.mika.ui.StatusCopy
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -462,8 +464,14 @@ class TaskService : Service() {
     private fun launch(run: TaskRun, store: ConversationStore) {
         run.job = scope.launch {
             center.markRunning(run)
+            // 定时任务没人在场,卡住了没人停:跑过设置里的最长运行时间就停下(默认不限制)
+            val limitMinutes = if (run.triggerWindowKey != null) FeatureFlags.get(this@TaskService).triggerRunMinutes() else null
             val result = try {
-                run.execute(runCatching { store.turns(run.conversationId) }.getOrDefault(emptyList()).map(::withKeptState))
+                val prior = runCatching { store.turns(run.conversationId) }.getOrDefault(emptyList()).map(::withKeptState)
+                if (limitMinutes == null) run.execute(prior) else withTimeout(limitMinutes * 60_000L) { run.execute(prior) }
+            } catch (e: TimeoutCancellationException) {
+                if (limitMinutes != null) TaskState.Failed(tr(R.string.task_trigger_time_limit, limitMinutes), FailKind.TimeLimit)
+                else TaskState.Cancelled
             } catch (e: CancellationException) {
                 TaskState.Cancelled
             } catch (e: RemoteException) {
@@ -899,7 +907,10 @@ class TaskService : Service() {
 
     private suspend fun notifyResult(run: TaskRun, end: TaskState, deliveryId: String): DeliveryState {
         prepareResult(run, end, deliveryId)
-        val (title, text) = describe(end)
+        val (title, text) = describe(end).let { plain ->
+            val streak = failureStreak(run, end) ?: return@let plain
+            tr(R.string.trigger_failed_streak, streak) to "${plain.second}\n${tr(R.string.trigger_failed_streak_hint)}"
+        }
         val peer = run.channelPeer ?: ChannelPeer(LocalChannel.ID, "phone-owner", run.conversationId)
         val started = SystemClock.elapsedRealtime()
         val delivered = ResultDelivery.send(outbox, channelFor(peer, run.triggerWindowKey != null), peer,
@@ -908,6 +919,17 @@ class TaskService : Service() {
         val sinceReady = if (run.resultReadyAtMs > 0) finished - run.resultReadyAtMs else -1
         Log.i(TAG, "result $delivered: delivery ${finished - started} ms, since ready $sinceReady ms")
         return delivered
+    }
+
+    /**
+     * 定时任务这次又没成,连上之前接连失败的到了 [FAILURE_STREAK_NOTICE] 次及以上时是总次数(含这次):
+     * 通知标题写明连着失败了几次、提醒去暂停或修改,免得每次只看到一条普通的失败。查不到记录时按没有连续失败算。
+     */
+    private fun failureStreak(run: TaskRun, end: TaskState): Int? {
+        val key = run.triggerWindowKey ?: return null
+        if (end is TaskState.Succeeded || end == TaskState.Cancelled) return null
+        val streak = runCatching { TriggerRuntime.failureStreakBefore(this, key) }.getOrDefault(0) + 1
+        return streak.takeIf { it >= FAILURE_STREAK_NOTICE }
     }
 
     private fun action(run: TaskRun, title: String, action: String, code: Int): Notification.Action {
@@ -1011,6 +1033,8 @@ class TaskService : Service() {
         /** 关掉任务结束后留在后台的那一页(通知上的按钮)。 */
         const val ACTION_CLOSE_KEPT_PAGE = "com.wangzan101.mika.task.CLOSE_KEPT_PAGE"
         const val ACTION_DECLINE = "com.wangzan101.mika.task.DECLINE"
+        /** 定时任务连着失败到这么多次(含这次)起,结果通知里写明连续失败。 */
+        internal const val FAILURE_STREAK_NOTICE = 3
         private const val EXTRA_GOAL = "goal"
         private const val EXTRA_MESSAGE_ID = "message_id"
         private const val EXTRA_SOURCE = "source"

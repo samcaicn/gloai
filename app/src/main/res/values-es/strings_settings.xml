@@ -227,4 +227,11 @@
     <string name="settings_extensions">Extensiones y conexiones</string>
     <string name="settings_network">Red</string>
     <string name="settings_runtime">Entorno de ejecución</string>
+    <string name="settings_trigger_run_limit">Tiempo máximo de las tareas programadas</string>
+    <string name="settings_trigger_run_limit_sub">Las tareas programadas se ejecutan sin que estés pendiente. Desactivado significa sin límite; al acabarse el tiempo, la tarea se detiene e indica que se agotó el tiempo.</string>
+    <plurals name="settings_trigger_run_minutes_n">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="many">%1$d minutos</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
 </resources>

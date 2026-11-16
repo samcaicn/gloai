@@ -70,6 +70,16 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         prefs.edit().putInt(TASK_STEP_LIMIT, (limit ?: 0).coerceIn(0, MAX_TASK_STEP_LIMIT)).commit()
     }
 
+    /**
+     * 定时任务一次最多跑多少分钟(无人在场,卡住了没人停);null 表示不限制。默认不限制,和步数上限一样,下次触发起生效。
+     * 只认 [TRIGGER_RUN_MINUTES] 里的几档,存了别的值按不限制算。
+     */
+    fun triggerRunMinutes(): Int? = prefs.getInt(TRIGGER_RUN_LIMIT, 0).takeIf { it in TRIGGER_RUN_MINUTES }
+
+    fun setTriggerRunMinutes(minutes: Int?) {
+        prefs.edit().putInt(TRIGGER_RUN_LIMIT, minutes?.takeIf { it in TRIGGER_RUN_MINUTES } ?: 0).commit()
+    }
+
     /** 每个任务允许已报告的输入加输出 Token 总量;null 表示不限制,下次任务起生效。 */
     fun taskTokenBudget(): Long? = prefs.getLong(TASK_TOKEN_BUDGET, 0L).takeIf(TokenBudgetLimits::valid)
 
@@ -379,6 +389,8 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val SCHEDULED_QUIET_HOURS = "scheduled_quiet_hours"
         /** 每个任务步数上限能设的最大值;0/null 表示不限制。 */
         const val MAX_TASK_STEP_LIMIT = 500
+        /** 定时任务最长运行时间可选的几档(分钟)。 */
+        val TRIGGER_RUN_MINUTES = listOf(15, 30, 60, 120)
         private const val SPEED_FLAGS = "speed_flags"
         /**
          * 提速开关默认值的升级,按先后各做一次(键记下做过没有):v2 打开分级读屏、连续操作、按需看图;
@@ -390,6 +402,7 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         )
         private const val PARALLEL_MAX = "parallel_max"
         private const val TASK_STEP_LIMIT = "task_step_limit"
+        private const val TRIGGER_RUN_LIMIT = "trigger_run_limit_minutes"
         private const val TASK_TOKEN_BUDGET = "task_token_budget"
         private const val PROACTIVE_DAILY_TOKEN_BUDGET = "proactive_daily_token_budget"
         private const val KEEP_SCREEN_ON = "keep_screen_on"

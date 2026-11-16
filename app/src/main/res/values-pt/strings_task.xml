@@ -84,4 +84,7 @@
     <string name="screens_waiting">Aguardando</string>
     <string name="screens_needs_you">Precisa de você</string>
     <string name="screens_zoom">Ampliar esta tela</string>
+    <string name="task_trigger_time_limit">A tarefa agendada passou de %1$d minutos e foi interrompida.</string>
+    <string name="trigger_failed_streak">A tarefa agendada falhou %1$d vezes seguidas</string>
+    <string name="trigger_failed_streak_hint">Você pode pausar ou alterar este plano na página de tarefas agendadas.</string>
 </resources>

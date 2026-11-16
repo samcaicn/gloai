@@ -271,10 +271,12 @@ fun DuringWorkScreen(
     pipOperate: Boolean = false, onPipOperate: (Boolean) -> Unit = {},
     externalSchedule: Boolean = false, onExternalSchedule: (Boolean) -> Unit = {},
     stepLimit: Int? = null, onStepLimit: (Int?) -> Unit = {},
+    triggerRunMinutes: Int? = null, onTriggerRunMinutes: (Int?) -> Unit = {},
     tokenBudget: Long? = null, onTokenBudget: (Long?) -> Unit = {},
     showTaskCost: Boolean = false, onShowTaskCost: (Boolean) -> Unit = {},
 ) {
     var editingLimit by remember { mutableStateOf(false) }
+    var editingTriggerLimit by remember { mutableStateOf(false) }
     var customLimit by remember { mutableStateOf("") }
     var editingTokenBudget by remember { mutableStateOf(false) }
     var customTokenBudget by remember { mutableStateOf("") }
@@ -300,6 +302,12 @@ fun DuringWorkScreen(
                 onClick = { customLimit = stepLimit?.takeIf { it !in STEP_LIMIT_PRESETS }?.toString().orEmpty(); editingLimit = true },
             )
             ListRow(
+                MikaIcons.Clock, stringResource(R.string.settings_trigger_run_limit),
+                triggerRunMinutes?.let { trPlural(R.plurals.settings_trigger_run_minutes_n, it) }
+                    ?: stringResource(R.string.settings_step_limit_off),
+                onClick = { editingTriggerLimit = true },
+            )
+            ListRow(
                 MikaIcons.Clock, stringResource(R.string.settings_task_token_budget),
                 tokenBudget?.let(::tokenBudgetNumber) ?: stringResource(R.string.settings_token_budget_unlimited),
                 onClick = {
@@ -321,6 +329,11 @@ fun DuringWorkScreen(
             onCustom = { customLimit = it.filter(Char::isDigit).take(3) },
             onPick = { onStepLimit(it); editingLimit = false },
             onDismiss = { editingLimit = false },
+        )
+        if (editingTriggerLimit) TriggerRunLimitDialog(
+            current = triggerRunMinutes,
+            onPick = { onTriggerRunMinutes(it); editingTriggerLimit = false },
+            onDismiss = { editingTriggerLimit = false },
         )
         if (editingTokenBudget) TokenBudgetDialog(
             title = stringResource(R.string.settings_task_token_budget),
@@ -387,6 +400,26 @@ fun DuringWorkScreen(
 
 /** 步数上限的几个现成选项;别的数在输入框里填。 */
 private val STEP_LIMIT_PRESETS = listOf(30, 60, 120, 240)
+
+/** 定时任务最长运行时间:不限制或几档分钟数,选了就生效。 */
+@Composable
+private fun TriggerRunLimitDialog(current: Int?, onPick: (Int?) -> Unit, onDismiss: () -> Unit) {
+    MikaDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_trigger_run_limit)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.settings_trigger_run_limit_sub), Modifier.padding(bottom = 8.dp))
+                RadioRow(stringResource(R.string.settings_step_limit_off), selected = current == null, onClick = { onPick(null) }, first = true)
+                FeatureFlags.TRIGGER_RUN_MINUTES.forEach { m ->
+                    RadioRow(trPlural(R.plurals.settings_trigger_run_minutes_n, m), selected = current == m, onClick = { onPick(m) })
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
 
 @Composable
 private fun StepLimitDialog(

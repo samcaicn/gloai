@@ -75,6 +75,23 @@ data class TriggerWindow(
     val key get() = "$triggerId:$dueAtMs"
 }
 
+/**
+ * 这个计划在 [currentKey] 这一次之前已经接连失败了几次:从紧挨着的上一次往前数失败的,遇到送达了的或结果不明的就停;
+ * 条件没满足而跳过的、还没出结果的不算数,也不打断。认不出 [currentKey] 时为 0。
+ */
+fun failureStreakBefore(windows: List<TriggerWindow>, currentKey: String): Int {
+    val current = windows.firstOrNull { it.key == currentKey } ?: return 0
+    var streak = 0
+    for (w in windows.filter { it.triggerId == current.triggerId && it.dueAtMs < current.dueAtMs }.sortedByDescending { it.dueAtMs }) {
+        when (w.state) {
+            TriggerWindowState.Failed -> streak++
+            TriggerWindowState.Delivered, TriggerWindowState.Unknown -> return streak
+            else -> Unit
+        }
+    }
+    return streak
+}
+
 /** claimDue 必须把下次时间与待处理账本一起写入，返回后才可派发。 */
 interface TriggerStore {
     fun upsert(trigger: TriggerDefinition)

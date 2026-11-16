@@ -81,4 +81,7 @@
     <string name="screens_waiting">در انتظار</string>
     <string name="screens_needs_you">به توجه شما نیاز دارد</string>
     <string name="screens_zoom">بزرگ کردن این صفحه</string>
+    <string name="task_trigger_time_limit">کار زمان‌بندی‌شده بیش از %1$d دقیقه طول کشید و متوقف شد.</string>
+    <string name="trigger_failed_streak">کار زمان‌بندی‌شده %1$d بار پشت سر هم ناموفق بود</string>
+    <string name="trigger_failed_streak_hint">می‌توانید این برنامه را در صفحهٔ کارهای زمان‌بندی‌شده متوقف یا تغییر دهید.</string>
 </resources>

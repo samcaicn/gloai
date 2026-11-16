@@ -217,4 +217,9 @@
     <string name="settings_extensions">Ekstensi &amp; koneksi</string>
     <string name="settings_network">Jaringan</string>
     <string name="settings_runtime">Runtime</string>
+    <string name="settings_trigger_run_limit">Batas waktu tugas terjadwal</string>
+    <string name="settings_trigger_run_limit_sub">Tugas terjadwal berjalan saat Anda tidak memantau. Mati berarti tanpa batas; saat waktunya habis, tugas berhenti dan menjelaskan bahwa waktunya habis.</string>
+    <plurals name="settings_trigger_run_minutes_n">
+        <item quantity="other">%1$d menit</item>
+    </plurals>
 </resources>

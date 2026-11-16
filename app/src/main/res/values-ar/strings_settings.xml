@@ -242,4 +242,14 @@
     <string name="settings_extensions">الإضافات والاتصالات</string>
     <string name="settings_network">الشبكة</string>
     <string name="settings_runtime">بيئة التشغيل</string>
+    <string name="settings_trigger_run_limit">الحد الزمني للمهام المجدولة</string>
+    <string name="settings_trigger_run_limit_sub">تعمل المهام المجدولة في غيابك. الإيقاف يعني بلا حد؛ وعند انتهاء الوقت تتوقف المهمة وتوضح أن الوقت نفد.</string>
+    <plurals name="settings_trigger_run_minutes_n">
+        <item quantity="zero">%1$d دقيقة</item>
+        <item quantity="one">دقيقة واحدة (%1$d)</item>
+        <item quantity="two">دقيقتان (%1$d)</item>
+        <item quantity="few">%1$d دقائق</item>
+        <item quantity="many">%1$d دقيقة</item>
+        <item quantity="other">%1$d دقيقة</item>
+    </plurals>
 </resources>

@@ -87,4 +87,7 @@
     <string name="screens_waiting">Ожидание</string>
     <string name="screens_needs_you">Нужны вы</string>
     <string name="screens_zoom">Увеличить этот экран</string>
+    <string name="task_trigger_time_limit">Задача по расписанию работала дольше %1$d мин., поэтому остановлена.</string>
+    <string name="trigger_failed_streak">Задача по расписанию: неудачных запусков подряд — %1$d</string>
+    <string name="trigger_failed_streak_hint">Можно приостановить или изменить этот план на странице задач по расписанию.</string>
 </resources>

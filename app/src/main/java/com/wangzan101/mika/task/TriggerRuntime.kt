@@ -155,6 +155,9 @@ object TriggerRuntime {
 
     @Synchronized fun list(context: Context): List<TriggerDefinition> = store(context).all()
 
+    /** 这个计划在 [key] 这一次之前接连失败了几次,见 [com.wangzan101.mika.core.trigger.failureStreakBefore]。 */
+    @Synchronized fun failureStreakBefore(context: Context, key: String): Int = com.wangzan101.mika.core.trigger.failureStreakBefore(store(context).windows(), key)
+
     fun canScheduleExactly(context: Context): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
         context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
 

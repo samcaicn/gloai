@@ -78,4 +78,7 @@
     <string name="screens_waiting">대기 중</string>
     <string name="screens_needs_you">확인 필요</string>
     <string name="screens_zoom">이 화면 확대</string>
+    <string name="task_trigger_time_limit">예약 작업이 %1$d분을 넘겨서 멈췄어요.</string>
+    <string name="trigger_failed_streak">예약 작업이 %1$d번 연속 실패했어요</string>
+    <string name="trigger_failed_streak_hint">예약 작업 페이지에서 이 계획을 일시 중지하거나 바꿀 수 있어요.</string>
 </resources>

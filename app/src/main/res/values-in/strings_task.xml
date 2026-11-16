@@ -78,4 +78,7 @@
     <string name="screens_waiting">Menunggu</string>
     <string name="screens_needs_you">Perlu Anda</string>
     <string name="screens_zoom">Perbesar layar ini</string>
+    <string name="task_trigger_time_limit">Tugas terjadwal berjalan lebih dari %1$d menit, jadi dihentikan.</string>
+    <string name="trigger_failed_streak">Tugas terjadwal gagal %1$d kali berturut-turut</string>
+    <string name="trigger_failed_streak_hint">Anda bisa menjeda atau mengubah rencana ini di halaman Tugas terjadwal.</string>
 </resources>

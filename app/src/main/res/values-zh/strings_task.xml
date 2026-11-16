@@ -78,4 +78,7 @@
     <string name="screens_waiting">等待中</string>
     <string name="screens_needs_you">等你处理</string>
     <string name="screens_zoom">放大这块屏</string>
+    <string name="task_trigger_time_limit">定时任务运行超过 %1$d 分钟，已停下。</string>
+    <string name="trigger_failed_streak">定时任务已连续失败 %1$d 次</string>
+    <string name="trigger_failed_streak_hint">可以在定时任务页暂停或修改这个计划。</string>
 </resources>

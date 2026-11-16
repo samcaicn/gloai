@@ -78,4 +78,7 @@
     <string name="screens_waiting">待機中</string>
     <string name="screens_needs_you">あなたの対応が必要</string>
     <string name="screens_zoom">この画面を拡大</string>
+    <string name="task_trigger_time_limit">スケジュールタスクが %1$d 分を超えたため停止しました。</string>
+    <string name="trigger_failed_streak">スケジュールタスクが %1$d 回続けて失敗しました</string>
+    <string name="trigger_failed_streak_hint">スケジュールタスクのページでこの予定を一時停止または変更できます。</string>
 </resources>

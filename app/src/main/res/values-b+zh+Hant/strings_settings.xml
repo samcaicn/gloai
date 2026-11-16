@@ -217,4 +217,9 @@
     <string name="settings_extensions">擴充與連線</string>
     <string name="settings_network">網路</string>
     <string name="settings_runtime">執行環境</string>
+    <string name="settings_trigger_run_limit">定時任務最長執行時間</string>
+    <string name="settings_trigger_run_limit_sub">定時任務執行時沒人看著。關著表示不限制；到時間任務會停下，並說明是逾時。</string>
+    <plurals name="settings_trigger_run_minutes_n">
+        <item quantity="other">%1$d 分鐘</item>
+    </plurals>
 </resources>

@@ -81,4 +81,7 @@
     <string name="screens_waiting">Waiting</string>
     <string name="screens_needs_you">Needs you</string>
     <string name="screens_zoom">Enlarge this screen</string>
+    <string name="task_trigger_time_limit">The scheduled task ran longer than %1$d minutes, so it stopped.</string>
+    <string name="trigger_failed_streak">Scheduled task failed %1$d times in a row</string>
+    <string name="trigger_failed_streak_hint">You can pause or change this plan on the Scheduled tasks page.</string>
 </resources>

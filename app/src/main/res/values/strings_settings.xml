@@ -233,4 +233,10 @@
     <string name="settings_extensions">Extensions &amp; connections</string>
     <string name="settings_network">Network</string>
     <string name="settings_runtime">Runtime</string>
+    <string name="settings_trigger_run_limit">Time limit for scheduled tasks</string>
+    <string name="settings_trigger_run_limit_sub">Scheduled tasks run while you’re away. Off means no limit; when time is up, the task stops and says it ran out of time.</string>
+    <plurals name="settings_trigger_run_minutes_n">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
 </resources>

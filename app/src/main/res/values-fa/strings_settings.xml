@@ -233,4 +233,10 @@
     <string name="settings_extensions">افزونه‌ها و اتصالات</string>
     <string name="settings_network">شبکه</string>
     <string name="settings_runtime">محیط اجرا</string>
+    <string name="settings_trigger_run_limit">حداکثر زمان اجرای کارهای زمان‌بندی‌شده</string>
+    <string name="settings_trigger_run_limit_sub">کارهای زمان‌بندی‌شده بدون حضور شما اجرا می‌شوند. خاموش یعنی بدون محدودیت؛ با تمام شدن زمان، کار متوقف می‌شود و می‌گوید زمانش تمام شده است.</string>
+    <plurals name="settings_trigger_run_minutes_n">
+        <item quantity="one">%1$d دقیقه</item>
+        <item quantity="other">%1$d دقیقه</item>
+    </plurals>
 </resources>

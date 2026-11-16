@@ -227,4 +227,11 @@
     <string name="settings_extensions">Extensões e conexões</string>
     <string name="settings_network">Rede</string>
     <string name="settings_runtime">Ambiente de execução</string>
+    <string name="settings_trigger_run_limit">Tempo máximo das tarefas agendadas</string>
+    <string name="settings_trigger_run_limit_sub">As tarefas agendadas rodam sem você acompanhar. Desativado significa sem limite; quando o tempo acaba, a tarefa para e avisa que o tempo esgotou.</string>
+    <plurals name="settings_trigger_run_minutes_n">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="many">%1$d minutos</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
 </resources>

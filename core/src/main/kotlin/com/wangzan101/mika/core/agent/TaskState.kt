@@ -106,6 +106,8 @@ enum class FailKind {
     StepLimit,
     /** 每任务或每服务商的 Token 预算用完；不再发收尾请求。 */
     TokenLimit,
+    /** 定时任务跑过了设置里的最长运行时间,停下;和预算用完一样,说明不了做法灵不灵。 */
+    TimeLimit,
     /** 运行环境不满足或出错(手机操作助手、无障碍、没配模型、虚拟屏断开等)。 */
     Environment,
     /**

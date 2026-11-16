@@ -84,4 +84,7 @@
     <string name="screens_waiting">En espera</string>
     <string name="screens_needs_you">Te necesita</string>
     <string name="screens_zoom">Ampliar esta pantalla</string>
+    <string name="task_trigger_time_limit">La tarea programada duró más de %1$d minutos, así que se detuvo.</string>
+    <string name="trigger_failed_streak">La tarea programada falló %1$d veces seguidas</string>
+    <string name="trigger_failed_streak_hint">Puedes pausar o cambiar este plan en la página de tareas programadas.</string>
 </resources>

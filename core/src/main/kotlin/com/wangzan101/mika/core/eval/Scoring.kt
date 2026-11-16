@@ -51,7 +51,7 @@ object Scoring {
     fun failReason(f: TaskState.Failed): String = when (f.kind) {
         FailKind.GaveUp -> GAVE_UP
         FailKind.Model -> "模型出错:${f.reason}"
-        FailKind.Guard, FailKind.StepLimit, FailKind.TokenLimit -> f.reason
+        FailKind.Guard, FailKind.StepLimit, FailKind.TokenLimit, FailKind.TimeLimit -> f.reason
         // 进程或服务中途没了也是运行环境的事,不算 Agent 的错
         FailKind.Environment, FailKind.Interrupted -> "${HARNESS_PREFIX}运行环境:${f.reason}"
     }

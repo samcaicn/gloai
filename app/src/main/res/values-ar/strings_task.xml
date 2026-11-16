@@ -93,4 +93,7 @@
     <string name="screens_waiting">بانتظار</string>
     <string name="screens_needs_you">تحتاج إليك</string>
     <string name="screens_zoom">تكبير هذه الشاشة</string>
+    <string name="task_trigger_time_limit">استغرقت المهمة المجدولة أكثر من %1$d دقيقة، لذا توقفت.</string>
+    <string name="trigger_failed_streak">المهمة المجدولة: عدد مرات الفشل المتتالية %1$d</string>
+    <string name="trigger_failed_streak_hint">يمكنك إيقاف هذه الخطة مؤقتًا أو تغييرها من صفحة المهام المجدولة.</string>
 </resources>
