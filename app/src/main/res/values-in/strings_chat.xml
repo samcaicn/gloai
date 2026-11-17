@@ -281,4 +281,10 @@
     <string name="chat_example_schedule">Setiap pagi jam 8, ingatkan saya untuk memeriksa cuaca.</string>
     <string name="chat_empty_value">Katakan dalam satu kalimat, dan saya akan menjalankan aplikasi, menjelajah web, dan menyelesaikannya.</string>
     <string name="saved_task_save">Simpan sebagai tugas</string>
+    <string name="task_field_add">Tambah isian</string>
+    <string name="task_field_name">Nama isian</string>
+    <string name="task_field_name_invalid">Gunakan 1–40 karakter, tanpa kurung kurawal atau baris baru.</string>
+    <string name="task_field_insert">Sisipkan</string>
+    <string name="task_fields_too_many">Gunakan maksimal %1$d isian berbeda.</string>
+    <string name="task_fill_apply">Isi kotak pesan</string>
 </resources>

@@ -122,4 +122,33 @@ class RecommendedTaskStoreTest {
         assertEquals(RecommendedTaskError.SaveFailed, tasks.add("新的", "新的提示词"))
         assertEquals(listOf("原来"), tasks.tasks.value.map { it.title })
     }
+    @Test fun legacyMarkersStayLiteralAndFillInOptInSurvivesReloadAndEdit() {
+        val file = File(tmp.root, "tasks.json")
+        file.writeText("""[{"id":"old","title":"旧任务","prompt":"保留{{原样}}"}]""")
+        val tasks = RecommendedTaskStore(file)
+        tasks.ensureLoaded { emptyList() }
+        assertFalse(tasks.tasks.value.single().fillIn)
+        assertNull(tasks.add("整理需求", "查看{{联系人}}", fillIn = true))
+        val id = tasks.tasks.value.last().id
+        assertNull(tasks.update(id, "整理新需求", "查看{{联系人}}的近期消息"))
+        val reopened = RecommendedTaskStore(file).also { it.ensureLoaded { emptyList() } }
+        assertFalse(reopened.tasks.value.first().fillIn)
+        assertTrue(reopened.tasks.value.last().fillIn)
+        assertEquals(tasks.tasks.value, reopened.tasks.value)
+        assertNull(reopened.update(id, "普通任务", "查看{{联系人}}", fillIn = false))
+        assertFalse(reopened.tasks.value.last().fillIn)
+    }
+
+    @Test fun tooManyFieldsDoNotOverwriteStoredTasks() {
+        val tasks = store()
+        tasks.ensureLoaded { emptyList() }
+        assertNull(tasks.add("已有", "{{联系人}}", fillIn = true))
+        val before = tasks.tasks.value
+        val prompt = (1..TaskTemplate.MAX_FIELDS + 1).joinToString { "{{字段$it}}" }
+        assertEquals(RecommendedTaskError.TooManyFields, tasks.add("新增", prompt, fillIn = true))
+        assertEquals(RecommendedTaskError.TooManyFields, tasks.update(before.single().id, "更改", prompt))
+        assertEquals(before, tasks.tasks.value)
+        assertNull(tasks.add("普通文字", prompt))
+    }
+
 }

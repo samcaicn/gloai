@@ -130,6 +130,7 @@ import com.wangzan101.mika.chat.SharedFile
 import com.wangzan101.mika.confirm.ConfirmationCopy
 import com.wangzan101.mika.settings.Prerequisites
 import com.wangzan101.mika.settings.RecommendedTask
+import com.wangzan101.mika.settings.TaskTemplate
 import com.wangzan101.mika.settings.RecommendedTaskStore
 import com.wangzan101.mika.takeover.Takeover
 import com.wangzan101.mika.task.SteerNote
@@ -251,9 +252,20 @@ fun ChatScreen(
     )) { vm }
     val input = ui.input
     // 推荐任务可以直接填进空输入框;已有内容时先确认,不能因误触把草稿换掉。
-    var pendingExample by remember(ui.conversationId) { mutableStateOf<String?>(null) }
+    var pendingExample by rememberSaveable(ui.conversationId) { mutableStateOf<String?>(null) }
     var showSavedTasks by remember(ui.conversationId) { mutableStateOf(false) }
     var saveTaskPrompt by remember(ui.conversationId) { mutableStateOf<String?>(null) }
+    var fillTaskPrompt by rememberSaveable(ui.conversationId) { mutableStateOf<String?>(null) }
+    var fillTaskTitle by rememberSaveable(ui.conversationId) { mutableStateOf("") }
+    val fillDraft: (String) -> Unit = { prompt ->
+        if (vm.ui.value.input.isEmpty()) vm.input(prompt) else pendingExample = prompt
+    }
+    val pickTask: (RecommendedTask) -> Unit = { task ->
+        if (task.fillIn && TaskTemplate.fields(task.prompt).isNotEmpty()) {
+            fillTaskTitle = task.title
+            fillTaskPrompt = task.prompt
+        } else fillDraft(task.prompt)
+    }
     var retryFailures by remember { mutableStateOf<Pair<String, String>?>(null) }
     var voiceHolding by remember { mutableStateOf(false) }
     var editRequest by remember { mutableIntStateOf(0) }
@@ -368,6 +380,7 @@ fun ChatScreen(
     LaunchedEffect(ui.pendingSharedDraft, ui.sharedDraft) {
         if (ui.pendingSharedDraft != null || ui.sharedDraft != null) {
             pendingExample = null
+            fillTaskPrompt = null
             if (menu != null) {
                 lift.snapTo(0f)
                 menu = null
@@ -397,9 +410,7 @@ fun ChatScreen(
             ) {
                 if (ui.exchanges.isEmpty() && ui.blocked == null) {
                     item("empty") {
-                        EmptyState(ui.conversationId, recommendedTasks, Modifier.fillParentMaxHeight()) { prompt ->
-                            if (input.isEmpty()) vm.input(prompt) else pendingExample = prompt
-                        }
+                        EmptyState(ui.conversationId, recommendedTasks, Modifier.fillParentMaxHeight(), onPick = pickTask)
                     }
                 }
                 ui.exchanges.forEachIndexed { i, ex ->
@@ -658,9 +669,9 @@ fun ChatScreen(
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
     ) {
         androidx.compose.material3.Surface(Modifier.fillMaxSize()) {
-            RecommendedTasksScreen(recommendationStore, onBack = { showSavedTasks = false }, onPick = { prompt ->
+            RecommendedTasksScreen(recommendationStore, onBack = { showSavedTasks = false }, onPick = { task ->
                 showSavedTasks = false
-                if (vm.ui.value.input.isEmpty()) vm.input(prompt) else pendingExample = prompt
+                pickTask(task)
             })
         }
     }
@@ -668,6 +679,13 @@ fun ChatScreen(
         recommendationStore?.let { store ->
             RecommendedTaskDialog(store, initial = null, onDismiss = { saveTaskPrompt = null }, seedPrompt = prompt)
         }
+    }
+
+    fillTaskPrompt?.let { prompt ->
+        TaskFillDialog(fillTaskTitle, prompt, onDismiss = { fillTaskPrompt = null }, onFill = { filled ->
+            fillTaskPrompt = null
+            fillDraft(filled)
+        })
     }
 
     pendingExample?.let { example ->
@@ -723,7 +741,7 @@ private fun LazyListState.nearTail(thresholdPx: Int): Boolean {
 /** 空对话:居中问候 + 一句价值主张 + 自动换行的建议胶囊。点一条把完整提示词填进输入框,改好了再发;一条都没有时不显示。 */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EmptyState(conversation: String?, tasks: List<RecommendedTask>, modifier: Modifier = Modifier, onPick: (String) -> Unit) {
+private fun EmptyState(conversation: String?, tasks: List<RecommendedTask>, modifier: Modifier = Modifier, onPick: (RecommendedTask) -> Unit) {
     val c = MikaTheme.colors
     val hour = remember(conversation) { LocalTime.now().hour }
     Column(
@@ -739,7 +757,7 @@ private fun EmptyState(conversation: String?, tasks: List<RecommendedTask>, modi
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                tasks.forEach { task -> SuggestionChip(task.title) { onPick(task.prompt) } }
+                tasks.forEach { task -> SuggestionChip(task.title) { onPick(task) } }
             }
         }
     }

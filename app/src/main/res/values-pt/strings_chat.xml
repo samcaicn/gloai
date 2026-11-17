@@ -309,4 +309,10 @@
     <string name="chat_example_schedule">Toda manhã às 8h, lembre-me de ver o tempo.</string>
     <string name="chat_empty_value">Diga em uma frase, e eu uso seus apps, navego na web e concluo a tarefa.</string>
     <string name="saved_task_save">Salvar como tarefa</string>
+    <string name="task_field_add">Adicionar campo</string>
+    <string name="task_field_name">Nome do campo</string>
+    <string name="task_field_name_invalid">Use de 1 a 40 caracteres, sem chaves nem quebras de linha.</string>
+    <string name="task_field_insert">Inserir</string>
+    <string name="task_fields_too_many">Use no máximo %1$d campos diferentes.</string>
+    <string name="task_fill_apply">Preencher entrada</string>
 </resources>

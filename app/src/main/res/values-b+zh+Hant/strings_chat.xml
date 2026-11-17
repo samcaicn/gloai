@@ -281,4 +281,10 @@
     <string name="chat_example_schedule">每天早上 8 點提醒我查今天的天氣</string>
     <string name="chat_empty_value">一句話，讓我幫你操作 App、上網、把事情辦成</string>
     <string name="saved_task_save">存為常用任務</string>
+    <string name="task_field_add">新增填寫項目</string>
+    <string name="task_field_name">填寫項目名稱</string>
+    <string name="task_field_name_invalid">名稱限 1–40 字，不能包含大括號或換行。</string>
+    <string name="task_field_insert">插入</string>
+    <string name="task_fields_too_many">最多新增 %1$d 個不同的填寫項目。</string>
+    <string name="task_fill_apply">填入輸入框</string>
 </resources>

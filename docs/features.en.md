@@ -8,7 +8,9 @@ Tell Mika what you want in one sentence, and it gets it done on your phone. This
 
 - Long-press one of your text messages and choose “Save as task”, then edit its title and instructions. You can also add, edit, or delete tasks using the star beside the composer or “Saved tasks” in Settings.
 - Choosing a task on a new chat or through the star fills the current composer for editing before sending. Existing text requires confirmation before replacement.
-- Tasks are stored locally, preserving the previous recommended-task list. Saving and selecting tasks do not call a model or execute a task.
+- While editing, place the cursor where the text should vary and choose “Add a fill-in field”, then name it (for example, “Contact” or “Time range”). Selected text can also be replaced by a field. Choosing this task asks for those values before filling the composer. Repeated names share one value, with up to 12 distinct fields.
+- You can still edit before sending. Cancelling the form or draft replacement leaves the original input untouched. Entered values do not change the saved task and are requested afresh next time.
+- Tasks are stored locally, preserving the previous recommended-task list. Existing tasks remain literal until “Add a fill-in field” is used. Saving, filling and selecting tasks do not call a model or execute a task.
 
 ## Operates any app without taking over your screen
 

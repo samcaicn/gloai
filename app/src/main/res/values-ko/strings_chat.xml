@@ -281,4 +281,10 @@
     <string name="chat_example_schedule">매일 아침 8시에 오늘 날씨 확인하라고 알림해 줘</string>
     <string name="chat_empty_value">한마디만 하면 앱을 조작하고 웹을 탐색해서 일을 끝내드려요.</string>
     <string name="saved_task_save">작업으로 저장</string>
+    <string name="task_field_add">입력 항목 추가</string>
+    <string name="task_field_name">항목 이름</string>
+    <string name="task_field_name_invalid">중괄호나 줄바꿈 없이 1~40자로 입력하세요.</string>
+    <string name="task_field_insert">삽입</string>
+    <string name="task_fields_too_many">서로 다른 항목은 최대 %1$d개입니다.</string>
+    <string name="task_fill_apply">입력란에 채우기</string>
 </resources>

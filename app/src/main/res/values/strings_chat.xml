@@ -295,4 +295,10 @@
     <string name="chat_example_schedule">Every morning at 8, remind me to check the weather.</string>
     <string name="chat_empty_value">One sentence, and I\'ll run your apps, browse the web, and get it done.</string>
     <string name="saved_task_save">Save as task</string>
+    <string name="task_field_add">Add a fill-in field</string>
+    <string name="task_field_name">Field name</string>
+    <string name="task_field_name_invalid">Use 1–40 characters, without braces or line breaks.</string>
+    <string name="task_field_insert">Insert</string>
+    <string name="task_fields_too_many">Use at most %1$d different fields.</string>
+    <string name="task_fill_apply">Fill input</string>
 </resources>

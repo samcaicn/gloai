@@ -351,4 +351,10 @@
     <string name="chat_example_schedule">كل صباح في الثامنة، ذكّرني بمراجعة الطقس</string>
     <string name="chat_empty_value">قلها بجملة واحدة، وسأشغّل تطبيقاتك وأتصفح الويب وأنجزها.</string>
     <string name="saved_task_save">حفظ كمهمة</string>
+    <string name="task_field_add">إضافة حقل</string>
+    <string name="task_field_name">اسم الحقل</string>
+    <string name="task_field_name_invalid">استخدم من 1 إلى 40 حرفًا دون أقواس معقوفة أو أسطر جديدة.</string>
+    <string name="task_field_insert">إدراج</string>
+    <string name="task_fields_too_many">استخدم %1$d حقول مختلفة كحد أقصى.</string>
+    <string name="task_fill_apply">ملء مربع الإدخال</string>
 </resources>

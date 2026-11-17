@@ -281,4 +281,10 @@
     <string name="chat_example_schedule">毎朝 8 時に今日の天気を確認するようリマインドして</string>
     <string name="chat_empty_value">一言で伝えれば、アプリを操作し、ウェブを見て、用事を片づけます。</string>
     <string name="saved_task_save">タスクとして保存</string>
+    <string name="task_field_add">入力項目を追加</string>
+    <string name="task_field_name">項目名</string>
+    <string name="task_field_name_invalid">名前は1〜40文字で、波括弧や改行は使えません。</string>
+    <string name="task_field_insert">挿入</string>
+    <string name="task_fields_too_many">入力項目は最大%1$d種類です。</string>
+    <string name="task_fill_apply">入力欄に反映</string>
 </resources>

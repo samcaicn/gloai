@@ -281,4 +281,10 @@
     <string name="chat_example_schedule">每天早上 8 点提醒我查今天的天气</string>
     <string name="chat_empty_value">一句话，让我帮你操作 App、上网、把事办成</string>
     <string name="saved_task_save">存为常用任务</string>
+    <string name="task_field_add">添加填写项</string>
+    <string name="task_field_name">填写项名称</string>
+    <string name="task_field_name_invalid">名称限 1–40 字，不能包含花括号或换行。</string>
+    <string name="task_field_insert">插入</string>
+    <string name="task_fields_too_many">最多添加 %1$d 个不同的填写项。</string>
+    <string name="task_fill_apply">填入输入框</string>
 </resources>

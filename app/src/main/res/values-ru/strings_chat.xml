@@ -323,4 +323,10 @@
     <string name="chat_example_schedule">Каждое утро в 8 напоминай мне проверить погоду.</string>
     <string name="chat_empty_value">Скажи одной фразой, и я запущу приложения, выйду в сеть и доведу дело до конца.</string>
     <string name="saved_task_save">Сохранить как задачу</string>
+    <string name="task_field_add">Добавить поле</string>
+    <string name="task_field_name">Название поля</string>
+    <string name="task_field_name_invalid">От 1 до 40 символов, без фигурных скобок и переносов строк.</string>
+    <string name="task_field_insert">Вставить</string>
+    <string name="task_fields_too_many">Не более %1$d разных полей.</string>
+    <string name="task_fill_apply">Заполнить ввод</string>
 </resources>

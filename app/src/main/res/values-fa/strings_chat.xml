@@ -295,4 +295,10 @@
     <string name="chat_example_schedule">هر روز صبح ساعت ۸ یادم بینداز هوا را چک کنم</string>
     <string name="chat_empty_value">یک جمله بگو تا اپ‌هایت را اجرا کنم، وب بگردم و کارت را تمام کنم.</string>
     <string name="saved_task_save">ذخیره به‌عنوان کار</string>
+    <string name="task_field_add">افزودن فیلد</string>
+    <string name="task_field_name">نام فیلد</string>
+    <string name="task_field_name_invalid">از ۱ تا ۴۰ نویسه، بدون آکولاد یا خط جدید استفاده کنید.</string>
+    <string name="task_field_insert">درج</string>
+    <string name="task_fields_too_many">حداکثر %1$d فیلد متفاوت استفاده کنید.</string>
+    <string name="task_fill_apply">پر کردن کادر ورودی</string>
 </resources>

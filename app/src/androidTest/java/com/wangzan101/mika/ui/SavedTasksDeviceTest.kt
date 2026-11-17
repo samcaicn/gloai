@@ -132,6 +132,84 @@ class SavedTasksDeviceTest {
         assertTrue(started.isEmpty())
     }
 
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test fun insertFieldsAndReuseForPurchasingLearningAndRepairs() {
+        conversations.append("history", Turn("你好", "有什么可以帮你？", "succeeded"))
+        show()
+        compose.onNodeWithTag("composer-saved-tasks").performClick()
+        compose.onNodeWithText("添加常用任务").performClick()
+        compose.onNodeWithTag("saved-task-title").performTextReplacement("整理沟通需求")
+        compose.onNodeWithTag("saved-task-prompt").performTextReplacement("查看测试联系人")
+        compose.onNodeWithTag("saved-task-prompt").performTextInputSelection(androidx.compose.ui.text.TextRange(2, 7))
+        for ((name, suffix) in listOf("联系人" to "在", "时间范围" to "的消息，整理", "关注内容" to "。")) {
+            compose.onNodeWithTag("task-field-add").performScrollTo().performClick()
+            compose.onNodeWithTag("task-field-insert").assertIsNotEnabled()
+            compose.onNodeWithTag("task-field-name").performTextReplacement(name)
+            compose.onNodeWithTag("task-field-insert").performClick()
+            compose.onNodeWithTag("saved-task-prompt").performTextInput(suffix)
+        }
+        val template = "查看{{联系人}}在{{时间范围}}的消息，整理{{关注内容}}。"
+        compose.onNodeWithTag("saved-task-prompt").assert(hasText(template))
+        snapshot("template-editor")
+        compose.onNodeWithTag("recommendations-save").performClick()
+        compose.waitUntil(5_000) { tasks.tasks.value.size == 1 }
+        assertTrue(tasks.tasks.value.single().fillIn)
+        compose.onNodeWithText("整理沟通需求").performClick()
+        compose.onNodeWithTag("task-fill-apply").assertIsNotEnabled()
+        compose.onNodeWithText("取消").performClick()
+        compose.onNodeWithTag("composer-field").assertTextEquals("")
+
+        var previous = ""
+        val scenarios = listOf(
+            listOf("测试采购", "近三天", "尺寸、数量和交期"),
+            listOf("日语学习群", "今天", "五十音记忆方法"),
+            listOf("维修师傅", "本周", "故障现象、地址和上门时间"),
+        )
+        for ((index, values) in scenarios.withIndex()) {
+            compose.onNodeWithTag("composer-saved-tasks").performClick()
+            compose.onNodeWithText("整理沟通需求").performClick()
+            compose.onNodeWithTag("task-fill-0").assert(hasText(""))
+            compose.onNodeWithTag("task-fill-apply").assertIsNotEnabled()
+            values.forEachIndexed { i, value -> compose.onNodeWithTag("task-fill-$i").performTextReplacement(value) }
+            if (index == 0) snapshot("template-form")
+            compose.onNodeWithTag("task-fill-apply").performClick()
+            if (previous.isNotEmpty()) {
+                compose.onNodeWithTag("composer-field").assertTextEquals(previous)
+                compose.onNodeWithTag("confirm-replace-draft").performClick()
+            }
+            previous = "查看${values[0]}在${values[1]}的消息，整理${values[2]}。"
+            compose.onNodeWithTag("composer-field").assertTextEquals(previous)
+            if (index == 0) snapshot("template-filled")
+        }
+        assertEquals(template, tasks.tasks.value.single().prompt)
+        val reopened = RecommendedTaskStore(taskFile).also { it.ensureLoaded { emptyList() } }
+        assertEquals(tasks.tasks.value, reopened.tasks.value)
+        assertFalse(taskFile.readText().contains("测试采购"))
+        assertTrue(started.isEmpty())
+    }
+
+    @Test fun homeTemplatesProtectDraftAndLegacyBracesStayLiteral() {
+        tasks.add("普通文字", "原样保留{{内容}}")
+        tasks.add("学习方法", "搜索{{主题}}，整理{{主题}}的练习方法。", fillIn = true)
+        show()
+        compose.onNodeWithText("普通文字").performClick()
+        compose.onNodeWithTag("composer-field").assertTextEquals("原样保留{{内容}}")
+        compose.onNodeWithTag("task-fill-apply").assertDoesNotExist()
+        compose.onNodeWithText("学习方法").performClick()
+        compose.onNodeWithTag("task-fill-1").assertDoesNotExist()
+        compose.onNodeWithTag("task-fill-0").performTextReplacement("日语五十音")
+        compose.onNodeWithTag("task-fill-apply").performClick()
+        compose.onNodeWithText("取消").performClick()
+        compose.onNodeWithTag("composer-field").assertTextEquals("原样保留{{内容}}")
+        compose.onNodeWithText("学习方法").performClick()
+        compose.onNodeWithTag("task-fill-0").performTextReplacement("日语五十音")
+        compose.onNodeWithTag("task-fill-apply").performClick()
+        compose.onNodeWithTag("confirm-replace-draft").performClick()
+        compose.onNodeWithTag("composer-field").assertTextEquals("搜索日语五十音，整理日语五十音的练习方法。")
+        assertTrue(started.isEmpty())
+    }
+
     private fun snapshot(name: String) {
         compose.waitForIdle()
         // Window-manager dialog animations are outside Compose idling. Capture the settled window.
