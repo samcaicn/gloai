@@ -134,6 +134,7 @@ internal fun MessageMenu(
     onBranch: (() -> Unit)? = null,
     onBranchRetry: (() -> Unit)? = null,
     onSaveTask: (() -> Unit)? = null,
+    onSaveChecklist: (() -> Unit)? = null,
 ) {
     LongPressMenu(
         target.bounds, progress, pane = stringResource(R.string.chat_message_actions), tag = "message-menu",
@@ -141,6 +142,7 @@ internal fun MessageMenu(
             add(MenuEntry(stringResource(R.string.chat_copy), MikaIcons.Copy, "message-menu-copy", onClick = onCopy))
             add(MenuEntry(stringResource(R.string.chat_quote), MikaIcons.Quote, "message-menu-quote", onClick = onQuote))
             add(MenuEntry(stringResource(R.string.chat_select_text), MikaIcons.SelectText, "message-menu-select", onClick = onSelect))
+            onSaveChecklist?.let { add(MenuEntry(stringResource(R.string.checklist_save_reply), MikaIcons.ListChecks, "message-menu-checklist", onClick = it)) }
             onSaveTask?.let { add(MenuEntry(stringResource(R.string.saved_task_save), MikaIcons.Star, "message-menu-save-task", onClick = it)) }
             onBranch?.let { add(MenuEntry(stringResource(R.string.chat_branch), MikaIcons.Route, "message-menu-branch", onClick = it)) }
             onBranchRetry?.let { add(MenuEntry(stringResource(R.string.chat_branch_retry), MikaIcons.Route, "message-menu-branch-retry", onClick = it)) }

@@ -126,6 +126,8 @@ import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.cap.web.KeptPage
+import com.wangzan101.mika.chat.ChecklistSource
+import com.wangzan101.mika.chat.SavedChecklistStore
 import com.wangzan101.mika.chat.SharedFile
 import com.wangzan101.mika.confirm.ConfirmationCopy
 import com.wangzan101.mika.settings.Prerequisites
@@ -207,9 +209,11 @@ fun ChatScreen(
     onOpenTeach: (String) -> Unit = {},
     /** 首页推荐任务。不传时用本机保存的那一份;测试传入单独的存储,避免改到用户的数据。 */
     recommendations: RecommendedTaskStore? = null,
+    checklists: SavedChecklistStore? = null,
     openReport: (String) -> Unit = {},
     openPlayback: (String) -> Unit = {},
 ) {
+    val checklistStore = checklists ?: (LocalContext.current.applicationContext as? MikaApp)?.savedChecklists
     val recommendationStore = recommendations
         ?: (LocalContext.current.applicationContext as? MikaApp)?.recommendedTasks
     val recommendedTasksFlow = remember(recommendationStore) {
@@ -254,6 +258,9 @@ fun ChatScreen(
     // 推荐任务可以直接填进空输入框;已有内容时先确认,不能因误触把草稿换掉。
     var pendingExample by rememberSaveable(ui.conversationId) { mutableStateOf<String?>(null) }
     var showSavedTasks by remember(ui.conversationId) { mutableStateOf(false) }
+    var showChecklists by remember(ui.conversationId) { mutableStateOf(false) }
+    var checklistIncoming by remember(ui.conversationId) { mutableStateOf<ChecklistSource?>(null) }
+    var pendingChecklistDraft by remember(ui.conversationId) { mutableStateOf<String?>(null) }
     var saveTaskPrompt by remember(ui.conversationId) { mutableStateOf<String?>(null) }
     var fillTaskPrompt by rememberSaveable(ui.conversationId) { mutableStateOf<String?>(null) }
     var fillTaskTitle by rememberSaveable(ui.conversationId) { mutableStateOf("") }
@@ -381,6 +388,8 @@ fun ChatScreen(
         if (ui.pendingSharedDraft != null || ui.sharedDraft != null) {
             pendingExample = null
             fillTaskPrompt = null
+            pendingChecklistDraft = null
+            showChecklists = false
             if (menu != null) {
                 lift.snapTo(0f)
                 menu = null
@@ -595,6 +604,12 @@ fun ChatScreen(
                 onSaveTask = if (recommendationStore != null && m.from == QuoteMessage.From.You && m.text.isNotBlank()) ({
                     closeMenu { saveTaskPrompt = m.text }
                 }) else null,
+                onSaveChecklist = if (checklistStore != null && m.from == QuoteMessage.From.Mika && m.text.isNotBlank() && ui.conversationId != null) ({
+                    closeMenu {
+                        checklistIncoming = ChecklistSource(ui.conversationId!!, m.key, m.text)
+                        showChecklists = true
+                    }
+                }) else null,
                 onCopy = { closeMenu { copyMessage(context, m.text) } },
                 onQuote = { closeMenu { vm.quote(m.from, m.text) } },
                 onSelect = {
@@ -669,12 +684,39 @@ fun ChatScreen(
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
     ) {
         androidx.compose.material3.Surface(Modifier.fillMaxSize()) {
-            RecommendedTasksScreen(recommendationStore, onBack = { showSavedTasks = false }, onPick = { task ->
+            RecommendedTasksScreen(recommendationStore, onBack = { showSavedTasks = false },
+                onOpenChecklists = if (checklistStore != null) ({ showSavedTasks = false; checklistIncoming = null; showChecklists = true }) else null,
+                onPick = { task ->
                 showSavedTasks = false
                 pickTask(task)
             })
         }
     }
+    if (showChecklists && checklistStore != null) androidx.compose.ui.window.Dialog(
+        onDismissRequest = { showChecklists = false; checklistIncoming = null },
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        androidx.compose.material3.Surface(Modifier.fillMaxSize()) {
+            SavedChecklistsScreen(checklistStore, incoming = checklistIncoming,
+                onBack = { showChecklists = false; checklistIncoming = null },
+                onUseDraft = { text ->
+                    showChecklists = false; checklistIncoming = null
+                    if (vm.ui.value.input.isEmpty()) vm.input(text) else pendingChecklistDraft = text
+                })
+        }
+    }
+    pendingChecklistDraft?.let { text ->
+        MikaDialog(
+            onDismissRequest = { pendingChecklistDraft = null },
+            title = { Text(stringResource(R.string.chat_example_replace_title)) },
+            text = { Text(stringResource(R.string.share_draft_replace_body)) },
+            confirmButton = { TextButton({ vm.input(text); pendingChecklistDraft = null }, Modifier.testTag("checklist-replace-draft")) {
+                Text(stringResource(R.string.chat_example_replace_action))
+            } },
+            dismissButton = { TextButton({ pendingChecklistDraft = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+
     saveTaskPrompt?.let { prompt ->
         recommendationStore?.let { store ->
             RecommendedTaskDialog(store, initial = null, onDismiss = { saveTaskPrompt = null }, seedPrompt = prompt)

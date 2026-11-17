@@ -12,6 +12,14 @@ Tell Mika what you want in one sentence, and it gets it done on your phone. This
 - You can still edit before sending. Cancelling the form or draft replacement leaves the original input untouched. Entered values do not change the saved task and are requested afresh next time.
 - Tasks are stored locally, preserving the previous recommended-task list. Existing tasks remain literal until “Add a fill-in field” is used. Saving, filling and selecting tasks do not call a model or execute a task.
 
+## Checklist updates and reuse
+
+- Long-press a text reply from Mika and choose “Save to checklist”. Create a list or select an existing one, review the complete reply, and save it as a new version. Earlier versions remain available. “Saved checklists” is also accessible from the star beside the composer.
+- Choose “Add information” to put the current list and your additions into a draft update request. Send it through the existing chat flow, then long-press the complete updated reply and save it to the original checklist. There is no background overwrite or separate model call.
+- “Changes and history” keeps the latest 10 versions, showing added/rewritten and removed/replaced nonempty text lines plus the saved source reply. These are text differences, not judgments about which business facts are correct. Manual edits also create versions.
+- “Use next” combines your next instruction with the latest checklist in the composer. Existing drafts can be kept or replaced. The latest content can also be copied. Failed writes retain edits, and stale editors cannot overwrite newer versions.
+- Up to 30 lists are stored locally with encryption, independently of conversations; titles allow 100 characters and content allows 12000. Deleting a conversation does not delete its lists. Deleting a checklist removes its history as well.
+
 ## Operates any app without taking over your screen
 
 Any app installed on your phone works, with no per-app integration: Mika looks at the screen, finds buttons, taps and types like a person would. If it can see it, it can operate it.

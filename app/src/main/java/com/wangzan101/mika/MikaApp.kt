@@ -295,6 +295,13 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
         com.wangzan101.mika.settings.RecommendedTaskStore(java.io.File(filesDir, com.wangzan101.mika.settings.RecommendedTaskStore.FILE))
     }
 
+    val savedChecklists by lazy {
+        com.wangzan101.mika.chat.SavedChecklistStore(
+            java.io.File(filesDir, com.wangzan101.mika.chat.SavedChecklistStore.FILE),
+            com.wangzan101.mika.settings.KeystoreKeyCipher("mika-saved-checklists"),
+        )
+    }
+
     /** 全局的询问 / 自主和各任务自己的那一份;开发者选项里的「自主模式」经它改。 */
     val approvalControl: ApprovalControl by lazy { ApprovalControl(approvals) }
 
