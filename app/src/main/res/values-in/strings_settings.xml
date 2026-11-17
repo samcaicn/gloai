@@ -62,6 +62,15 @@
     <string name="settings_pace_human">Seperti manusia</string>
     <string name="settings_pace_human_detail">Lambat di semua aplikasi, membaca tiap layar sebelum lanjut</string>
     <string name="settings_pace_foot">Beberapa aplikasi mengeluarkan Anda atau meminta verifikasi jika dipakai terlalu cepat. Semakin lambat kecepatannya, semakin lama tugas selesai.</string>
+    <string name="settings_pace_per_app">Pace per aplikasi</string>
+    <string name="settings_pace_per_app_sub">Perlambat aplikasi dengan pemeriksaan bot ketat, atau percepat yang santai; sisanya mengikuti pace global</string>
+    <string name="settings_pace_per_app_intro">Aplikasi dalam daftar ini memakai pace sendiri; sisanya mengikuti pace global (sekarang %1$s).</string>
+    <string name="settings_pace_per_app_empty">Belum ada aplikasi yang diatur per aplikasi.</string>
+    <string name="settings_pace_per_app_add">Tambah aplikasi</string>
+    <string name="settings_pace_per_app_search">Cari aplikasi</string>
+    <string name="settings_pace_per_app_none">Tidak ada aplikasi yang cocok</string>
+    <string name="settings_pace_per_app_pick">Pilih</string>
+    <string name="settings_pace_per_app_remove">Hapus (ikuti pace global)</string>
     <string name="settings_parallel">Tugas sekaligus</string>
     <string name="settings_parallel_sub">Tugas dari obrolan berbeda masing-masing mendapat layar virtual sendiri</string>
     <plurals name="settings_count_tasks">

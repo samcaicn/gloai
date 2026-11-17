@@ -72,6 +72,15 @@
     <string name="settings_pace_human">أقرب إلى تصرف البشر</string>
     <string name="settings_pace_human_detail">بطيء في كل التطبيقات، إذ يقرأ كل شاشة قبل المتابعة</string>
     <string name="settings_pace_foot">قد تسجّل بعض التطبيقات خروجك أو تطلب التحقق عند استخدامها بسرعة كبيرة. وكلما انخفضت السرعة طال تنفيذ المهمة.</string>
+    <string name="settings_pace_per_app">سرعة لكل تطبيق</string>
+    <string name="settings_pace_per_app_sub">أبطئ التطبيقات التي تتحقق من الروبوتات، أو أسرع التي لا تمانع؛ البقية تتبع السرعة العامة</string>
+    <string name="settings_pace_per_app_intro">التطبيقات في هذه القائمة تستخدم سرعتها الخاصة؛ وكل ما عداها يتبع السرعة العامة (حاليًا %1$s).</string>
+    <string name="settings_pace_per_app_empty">لا توجد تطبيقات مضبوطة بعد.</string>
+    <string name="settings_pace_per_app_add">إضافة تطبيق</string>
+    <string name="settings_pace_per_app_search">ابحث في التطبيقات</string>
+    <string name="settings_pace_per_app_none">لا تطبيقات مطابقة</string>
+    <string name="settings_pace_per_app_pick">اختيار</string>
+    <string name="settings_pace_per_app_remove">إزالة (يتبع السرعة العامة)</string>
     <string name="settings_parallel">المهام المتزامنة</string>
     <string name="settings_parallel_sub">تُخصّص شاشة افتراضية مستقلة لمهام المحادثات المختلفة</string>
     <plurals name="settings_count_tasks">

@@ -10,6 +10,7 @@ import com.wangzan101.mika.capsule.CapsuleMode
 import com.wangzan101.mika.capsule.DockSide
 import com.wangzan101.mika.core.agent.SpeedFlags
 import com.wangzan101.mika.core.cap.phone.OperatingPace
+import com.wangzan101.mika.core.knowledge.GuideCatalog
 import com.wangzan101.mika.chat.AutoArchive
 import com.wangzan101.mika.core.usage.ProactiveBudget
 import com.wangzan101.mika.core.usage.TokenBudgetLimits
@@ -131,6 +132,39 @@ class FeatureFlags(private val prefs: SharedPreferences) {
     fun setOperatingPace(pace: OperatingPace) {
         prefs.edit().putString(OPERATING_PACE, pace.name).commit()
     }
+
+    /**
+     * 按应用的操作节奏覆盖(包名 → 档位)。列表还没初始化过时先把内置 App 知识标 careful 的 App 预置为「像人」
+     * (见 [GuideCatalog.carefulApps]);之后运行时只看这份列表,App 知识的 pace 不再参与。
+     * 解析失败按没初始化处理(下次读取重新预置)。
+     */
+    fun appPaceOverrides(): Map<String, OperatingPace> {
+        val stored = prefs.getString(APP_PACE_OVERRIDES, null)
+        if (stored != null) {
+            val parsed = runCatching { parseAppPaceOverrides(stored) }.getOrNull()
+            if (parsed != null) return parsed
+        }
+        val seeded = GuideCatalog.loadBundled().carefulApps().associateWith { OperatingPace.HUMAN }
+        setAppPaceOverrides(seeded)
+        return seeded
+    }
+
+    /** 整表写回(设置页增删改后调用);空表也落盘(用户删光 = 明确不再按应用区分,别再重新预置)。 */
+    fun setAppPaceOverrides(overrides: Map<String, OperatingPace>) {
+        val json = overrides.toSortedMap().entries.joinToString(prefix = "{", postfix = "}") { (pkg, pace) ->
+            "\"${pkg.replace("\\", "\\\\").replace("\"", "\\\"")}\":\"${pace.name}\""
+        }
+        prefs.edit().putString(APP_PACE_OVERRIDES, json).commit()
+    }
+
+    private fun parseAppPaceOverrides(json: String): Map<String, OperatingPace> =
+        kotlinx.serialization.json.Json.parseToJsonElement(json).let { o ->
+            buildMap {
+                for ((k, v) in (o as kotlinx.serialization.json.JsonObject)) {
+                    OperatingPace.parse((v as kotlinx.serialization.json.JsonPrimitive).content)?.let { pace -> put(k, pace) }
+                }
+            }
+        }
 
     /** 界面配色:跟随系统、一直浅色、一直深色(见 [ThemeMode])。界面跟着 [themeModeChanges] 当场换,不用重建。 */
     fun themeMode(): ThemeMode = ThemeMode.parse(prefs.getString(THEME_MODE, null))
@@ -409,6 +443,7 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val SHOW_TASK_COST = "show_task_cost"
         private const val MUTE_TARGET = "mute_target"
         private const val OPERATING_PACE = "operating_pace"
+        private const val APP_PACE_OVERRIDES = "app_pace_overrides"
         private const val AUTO_ARCHIVE_DAYS = "auto_archive_days"
         private const val SELF_CONFIG = "self_config"
         private const val SELF_OPERATE = "self_operate"

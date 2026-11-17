@@ -6,7 +6,6 @@ import com.wangzan101.mika.core.action.Origin
 import com.wangzan101.mika.core.action.execution
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.uistate.IdleScroll
-import com.wangzan101.mika.core.uistate.PlacePace
 import com.wangzan101.mika.core.guard.OperationGuards
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.record.RunSink
@@ -49,7 +48,7 @@ class AppDwellTest {
     }
 
     private fun tools(screen: ScreenPort, pacing: AppPacing, idle: IdleScroll? = null): ToolDispatcher =
-        toolDispatcher(screen, appPacing = { pacing }, appPace = { if (it == "com.slow") PlacePace.CAREFUL else PlacePace.NORMAL }, appIdleScroll = { idle })
+        toolDispatcher(screen, appPacing = { pacing }, appTempo = { if (it == "com.slow") AppTempo.CAREFUL else AppTempo.NORMAL }, appCapped = { it == "com.slow" }, appIdleScroll = { idle })
 
     private fun executor(t: ToolDispatcher) = ActionExecutor(t, OperationGuards(), null, gate = {}, recorder = ActionRecorder(RunSink.NONE))
 
@@ -67,6 +66,17 @@ class AppDwellTest {
         val start = currentTime
         repeat(5) { assertEquals(0L, ex.tap(t).waitMs) }
         // 屏数也不设上限
+        assertEquals(5, screen.page)
+        assertEquals(0L, currentTime - start)
+    }
+
+    @Test fun perAppFastTempoSkipsDwellEvenWhenOthersWait() = runTest {
+        // 停留引擎开着(别的 App 在等),这个 App 覆盖成「快」:里面不停也不看上限
+        val screen = Pages("com.quick")
+        val t = toolDispatcher(screen, appPacing = { AppPacing.human(Random(3)) }, appTempo = { AppTempo.FAST }, appIdleScroll = { null })
+        val ex = executor(t)
+        val start = currentTime
+        repeat(5) { assertEquals(0L, ex.tap(t).waitMs) }
         assertEquals(5, screen.page)
         assertEquals(0L, currentTime - start)
     }

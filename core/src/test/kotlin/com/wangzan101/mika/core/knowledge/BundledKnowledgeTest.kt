@@ -43,6 +43,9 @@ class BundledKnowledgeTest {
         }
         apps.filter { it.name !in careful }.flatMap { it.packages }.forEach { assertEquals(it, null, catalog.appPace(it)) }
         assertEquals(null, catalog.appPace("com.example.unknown"))
+        // carefulApps 给设置里按应用操作节奏列表当初始内容:恰好是这些 App 的全部包名
+        val carefulPkgs = careful.mapNotNull { n -> apps.singleOrNull { it.name == n } }.flatMap { it.packages }.sorted()
+        assertEquals(carefulPkgs, catalog.carefulApps())
     }
 
     @Test fun everyEntryHasABody() {

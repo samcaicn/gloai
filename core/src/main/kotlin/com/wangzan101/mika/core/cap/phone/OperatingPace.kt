@@ -8,18 +8,28 @@ import kotlin.random.Random
  *
  * - [FAST]:动作之间不另停、打字一次写入全文、不设屏数上限(以前的做法);
  * - [STANDARD](默认):打字一段一段打出来,动作之间停一小会儿(同一屏约 0.5–1.2 秒、新的一屏约 1–2 秒),
- *   App 知识说限制浏览快慢的 App 按慢的那一套(停得更久、按字数读、屏数有上限、打字更慢);
+ *   限制浏览快慢的 App 按慢的那一套(停得更久、按字数读、屏数有上限、打字更慢);
  * - [HUMAN]:所有 App 都按慢的那一套停留和打字;屏数上限仍只给限制浏览快慢的 App。
+ *
+ * 全局档位和按应用覆盖([AppPacePlan])一起决定每个 App 的实际节奏。
  */
 enum class OperatingPace {
     FAST, STANDARD, HUMAN;
 
-    /** 这个任务在 App 里一步一步操作的节奏。 */
+    /** 这个任务在 App 里一步一步操作的节奏(没有按应用覆盖时的样子;有覆盖见 [AppPacePlan])。 */
     fun appPacing(random: Random = Random.Default): AppPacing = when (this) {
         FAST -> AppPacing.Off
         STANDARD -> AppPacing.human(random)
         HUMAN -> AppPacing.human(random, limits = AppPacing.Limits.CAREFUL)
     }
+
+    /** 这个档位下 App 里按哪套节奏操作(停留与打字;见 [AppTempo])。 */
+    val tempo: AppTempo
+        get() = when (this) {
+            FAST -> AppTempo.FAST
+            STANDARD -> AppTempo.NORMAL
+            HUMAN -> AppTempo.CAREFUL
+        }
 
     /** 在 App 知识说 [pace] 的 App 里打字的节奏。 */
     fun typing(pace: PlacePace, random: Random = Random.Default): TypingPacing = when {
@@ -27,6 +37,16 @@ enum class OperatingPace {
         this == HUMAN || pace == PlacePace.CAREFUL -> TypingPacing.human(random, TypingPacing.Limits.CAREFUL)
         else -> TypingPacing.human(random)
     }
+
+    /** 在按 [tempo] 节奏的 App 里打字的节奏(快一次写入,careful 打得更慢)。 */
+    fun typing(tempo: AppTempo, random: Random = Random.Default): TypingPacing = when (tempo) {
+        AppTempo.FAST -> TypingPacing.Instant
+        AppTempo.CAREFUL -> TypingPacing.human(random, TypingPacing.Limits.CAREFUL)
+        AppTempo.NORMAL -> TypingPacing.human(random)
+    }
+
+    /** 这个档位下 App 里打字的节奏(快一次写入,像人/careful 更慢;按应用覆盖后的档位用它)。 */
+    fun typing(random: Random = Random.Default): TypingPacing = typing(tempo, random)
 
     companion object {
         val DEFAULT = STANDARD

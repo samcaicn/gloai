@@ -28,18 +28,20 @@ import kotlinx.serialization.json.contentOrNull
 /**
  * 手机:手机那一套屏幕工具、打开 App 与链接。
  * [pacing] 是在 App 里一步一步操作的节奏(见 [AppPacing]):改动屏幕的动作之前补足停留,限制浏览快慢的 App 屏数有上限;
- * [appPace] 按包名给出 App 知识对浏览快慢的说法;[idle] 给了时新的一屏上的停留里轻轻滚几下(见 [IdleScroll])。
+ * [appTempo] 按包名给出这个 App 的实际节奏([AppTempo]),[appCapped] 说哪些 App 限制浏览快慢(计屏数、受上限);
+ * [idle] 给了时新的一屏上的停留里轻轻滚几下(见 [IdleScroll])。
  */
 internal class PhoneCapability(
     val screen: ScreenPort,
     /** 提速开关 deepLinks:提供打开链接的工具。 */
     val deepLinks: Boolean,
     pacing: AppPacing = AppPacing.Off,
-    appPace: (String) -> PlacePace = { PlacePace.NORMAL },
+    appTempo: (String) -> AppTempo = { AppTempo.NORMAL },
+    appCapped: (String) -> Boolean = { false },
     idle: IdleScroll? = null,
     val smsLogin: com.wangzan101.mika.core.cap.phone.sms.SmsLoginPort? = null,
 ) : Capability {
-    val dwell = AppDwell(pacing, appPace, idle)
+    val dwell = AppDwell(pacing, appTempo, appCapped, idle)
 
     override val id = PHONE
     private val tools = PhoneGroup.tools

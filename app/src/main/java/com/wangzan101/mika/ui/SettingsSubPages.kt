@@ -266,6 +266,7 @@ fun DuringWorkScreen(
     parallel: ParallelSetting?, onParallelMax: (Int) -> Unit, onBack: () -> Unit,
     autonomous: Boolean = false, onAutonomous: (Boolean) -> Unit = {},
     operatingPace: OperatingPace = OperatingPace.DEFAULT, onOperatingPace: (OperatingPace) -> Unit = {},
+    onOpenAppPace: () -> Unit = {},
     selfConfig: Boolean = false, onSelfConfig: (Boolean) -> Unit = {},
     selfOperate: Boolean = false, onSelfOperate: (Boolean) -> Unit = {},
     pipOperate: Boolean = false, onPipOperate: (Boolean) -> Unit = {},
@@ -393,6 +394,11 @@ fun DuringWorkScreen(
             OperatingPace.entries.forEachIndexed { i, p ->
                 RadioRow(paceLabel(p), selected = p == operatingPace, onClick = { onOperatingPace(p) }, subtitle = paceDetail(p), first = i == 0)
             }
+            // 按应用覆盖:单个 App 单独设快慢,没设的跟着上面选的全局档
+            ListRow(
+                null, stringResource(R.string.settings_pace_per_app), stringResource(R.string.settings_pace_per_app_sub),
+                onClick = onOpenAppPace,
+            )
         }
         FooterNote(stringResource(R.string.settings_pace_foot))
     }

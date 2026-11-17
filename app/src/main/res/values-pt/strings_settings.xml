@@ -66,6 +66,15 @@
     <string name="settings_pace_human">Como uma pessoa</string>
     <string name="settings_pace_human_detail">Lento em todos os apps, lendo cada tela antes de seguir</string>
     <string name="settings_pace_foot">Alguns apps desconectam você ou pedem verificação quando são usados rápido demais. Quanto mais lento o ritmo, mais tempo uma tarefa leva.</string>
+    <string name="settings_pace_per_app">Ritmo por aplicativo</string>
+    <string name="settings_pace_per_app_sub">Desacelere apps com verificação antirrobô ou acelere os tranquilos; o resto segue o ritmo global</string>
+    <string name="settings_pace_per_app_intro">Os apps desta lista usam o próprio ritmo; todo o resto segue o ritmo global (agora %1$s).</string>
+    <string name="settings_pace_per_app_empty">Ainda não há apps com ritmo próprio.</string>
+    <string name="settings_pace_per_app_add">Adicionar um app</string>
+    <string name="settings_pace_per_app_search">Pesquisar apps</string>
+    <string name="settings_pace_per_app_none">Nenhum app correspondente</string>
+    <string name="settings_pace_per_app_pick">Escolher</string>
+    <string name="settings_pace_per_app_remove">Remover (seguir o ritmo global)</string>
     <string name="settings_parallel">Tarefas ao mesmo tempo</string>
     <string name="settings_parallel_sub">As tarefas de conversas diferentes ganham cada uma a sua tela virtual</string>
     <plurals name="settings_count_tasks">

@@ -62,6 +62,15 @@
     <string name="settings_pace_human">像人</string>
     <string name="settings_pace_human_detail">在所有 App 裡都放慢，每個畫面先看一會兒再往下點</string>
     <string name="settings_pace_foot">有的 App 發現操作太快會退出登入或要求驗證。節奏越慢，任務用時越長。</string>
+    <string name="settings_pace_per_app">按應用設定</string>
+    <string name="settings_pace_per_app_sub">給風控嚴的 App 單獨放慢，或把不需要等的單獨加快；沒設的跟隨上面的全域檔</string>
+    <string name="settings_pace_per_app_intro">列表裡的 App 按自己的檔位執行；未列入的跟隨全域檔位（現在是 %1$s）。</string>
+    <string name="settings_pace_per_app_empty">還沒有按應用設定的 App。</string>
+    <string name="settings_pace_per_app_add">新增 App</string>
+    <string name="settings_pace_per_app_search">搜尋 App</string>
+    <string name="settings_pace_per_app_none">沒有相符的 App</string>
+    <string name="settings_pace_per_app_pick">選它</string>
+    <string name="settings_pace_per_app_remove">刪除（跟隨全域檔位）</string>
     <string name="settings_parallel">同時進行的任務</string>
     <string name="settings_parallel_sub">不同對話的任務各佔一塊虛擬螢幕</string>
     <plurals name="settings_count_tasks">

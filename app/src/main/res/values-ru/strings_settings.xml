@@ -68,6 +68,15 @@
     <string name="settings_pace_human">Как человек</string>
     <string name="settings_pace_human_detail">Медленно в каждом приложении, перед следующим шагом читает каждый экран</string>
     <string name="settings_pace_foot">Некоторые приложения выводят вас из аккаунта или просят подтверждение, если ими пользоваться слишком быстро. Чем медленнее темп, тем дольше выполняется задача.</string>
+    <string name="settings_pace_per_app">Темп по приложениям</string>
+    <string name="settings_pace_per_app_sub">Замедлите приложения с жёсткой проверкой на ботов или ускорите спокойные; остальные — глобальный темп</string>
+    <string name="settings_pace_per_app_intro">Приложения из этого списка идут в своём темпе; все остальные — в глобальном (сейчас %1$s).</string>
+    <string name="settings_pace_per_app_empty">Пока нет приложений с отдельным темпом.</string>
+    <string name="settings_pace_per_app_add">Добавить приложение</string>
+    <string name="settings_pace_per_app_search">Поиск приложений</string>
+    <string name="settings_pace_per_app_none">Нет подходящих приложений</string>
+    <string name="settings_pace_per_app_pick">Выбрать</string>
+    <string name="settings_pace_per_app_remove">Убрать (глобальный темп)</string>
     <string name="settings_parallel">Задач одновременно</string>
     <string name="settings_parallel_sub">Задачи из разных чатов получают каждая свой виртуальный экран</string>
     <plurals name="settings_count_tasks">

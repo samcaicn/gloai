@@ -267,6 +267,10 @@ class GuideCatalog private constructor(
     fun appPace(packageName: String): String? =
         rows.firstOrNull { it.kind == KnowledgeIndex.APP && packageName in it.packages }?.pace
 
+    /** 内置 App 知识里标了限制浏览快慢(pace: careful)的 App 的包名(设置里按应用操作节奏列表的初始内容)。 */
+    fun carefulApps(): List<String> =
+        rows.filter { it.kind == KnowledgeIndex.APP && it.pace == "careful" }.flatMap { it.packages }.sorted()
+
     private fun resource(rel: String): ByteArray? = loader.getResourceAsStream(rel)?.use { it.readBytes() }
 
     /** [body] 为 null:SKILL.md 头部缺失、名字对不上或正文为空。 */

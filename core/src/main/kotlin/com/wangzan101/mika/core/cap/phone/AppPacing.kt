@@ -1,6 +1,5 @@
 package com.wangzan101.mika.core.cap.phone
 
-import com.wangzan101.mika.core.uistate.PlacePace
 import com.wangzan101.mika.core.uistate.Pace
 import kotlin.random.Random
 import com.wangzan101.mika.core.uistate.IdleScroll
@@ -15,10 +14,11 @@ import com.wangzan101.mika.core.uistate.IdleScroll
  *   ([Limits.readMsPerChar],至多 [Limits.maxReadMs]);
  * - 偶尔([Limits.pauseChance])多停一会儿([Limits.pauseMs]);一次停留不超过 [Limits.maxDwellMs];
  * - 停留从上一个动作做完算起,模型想、读屏花掉的时间都算在内,只补不够的部分。
- * - App 知识说这个 App 限制浏览快慢([PlacePace.CAREFUL])时按 [careful] 的范围停(更久),
- *   一个任务里在这个 App 里换到新的一屏的次数有上限([screenCap]),到了之后 [capReached] 为真,调用方不再换屏;
- *   用户答过话([userAnswered])后重新计数;本任务在这个 App 里做成过对外动作([outwardDone],发送、提交一类)之后不再设上限。
- *   和网页一页一页看的节奏([com.wangzan101.mika.core.cap.web.PagePacing])是同一套说法。
+ * - 这个 App 的实际节奏是 [AppTempo.CAREFUL](设置里像人、按应用覆盖、App 知识说它限制浏览快慢)时按 [careful] 的范围停(更久);
+ *   [AppTempo.FAST] 的 App 里做完的动作不记停留,还把之前记下的清掉:里面不等,出去也不补旧的停留。
+ * - 限制浏览快慢的 App([capped] 为真:一个任务里换到新的一屏的次数有上限([screenCap]),到了之后 [capReached] 为真,
+ *   调用方不再换屏;用户答过话([userAnswered])后重新计数;本任务在这个 App 里做成过对外动作([outwardDone],发送、提交一类)
+ *   之后不再设上限。和网页一页一页看的节奏([com.wangzan101.mika.core.cap.web.PagePacing])是同一套说法。
  *
  * [Off] 从不等待,也不设上限(「快」、测试、不需要节奏的调用方用它)。
  */
@@ -72,16 +72,22 @@ class AppPacing(
 
     /**
      * 在 [app](包名;不知道为 null)里做完了一个改动屏幕的动作:[newScreen] 是换到了新的一屏,
-     * [counts] 时这一屏算进限制浏览快慢的 App 的屏数(往下滚读同一页余下的内容不算)。[pace] 是 App 知识对这个 App 浏览快慢的说法。
+     * [counts] 时这一屏算进限制浏览快慢的 App 的屏数(往下滚读同一页余下的内容不算)。
+     * [tempo] 是这个 App 的实际节奏([AppTempo.FAST] 的不记停留),[capped] 说它是否限制浏览快慢(计屏数、受上限)。
      */
     @Synchronized
-    fun noteAction(app: String?, nowMs: Long, newScreen: Boolean, pace: PlacePace = PlacePace.NORMAL, counts: Boolean = newScreen) {
+    fun noteAction(app: String?, nowMs: Long, newScreen: Boolean, tempo: AppTempo = AppTempo.NORMAL, counts: Boolean = newScreen, capped: Boolean = false) {
         val r = random ?: return
-        val l = limitsFor(pace)
+        // 「快」的 App 里做完的动作把之前记下的停留清掉:里面不等,出去也不补旧的停留
+        if (tempo == AppTempo.FAST) {
+            last = null
+            return
+        }
+        val l = limitsFor(tempo)
         var base = Pace.pick(r, if (newScreen) l.newScreenMs else l.sameScreenMs)
         if (r.nextDouble() < l.pauseChance) base += Pace.pick(r, l.pauseMs)
         last = Last(app, nowMs, newScreen, base.coerceAtMost(l.maxDwellMs), l)
-        if (newScreen && counts && pace == PlacePace.CAREFUL && app != null) screens[app] = (screens[app] ?: 0) + 1
+        if (newScreen && counts && capped && app != null) screens[app] = (screens[app] ?: 0) + 1
     }
 
     /**
@@ -104,10 +110,10 @@ class AppPacing(
     @Synchronized
     fun screensIn(app: String): Int = screens[app] ?: 0
 
-    /** [app] 换到新的一屏的次数已到上限:再换屏之前要先停下(用户答应了再看)。普通 App、做过对外动作的 App、[Off] 恒为 false。 */
+    /** [app] 换到新的一屏的次数已到上限([capped] 的 App 才查):再换屏之前要先停下(用户答应了再看)。普通 App、做过对外动作的 App、[Off] 恒为 false。 */
     @Synchronized
-    fun capReached(app: String?, pace: PlacePace): Boolean =
-        random != null && app != null && pace == PlacePace.CAREFUL && app !in outward && screensIn(app) >= screenCap
+    fun capReached(app: String?, capped: Boolean): Boolean =
+        random != null && app != null && capped && app !in outward && screensIn(app) >= screenCap
 
     /** 本任务在 [app] 里做了一次对外动作(发送、提交):这个 App 余下的时间里不再设屏数上限。 */
     @Synchronized
@@ -119,7 +125,7 @@ class AppPacing(
     @Synchronized
     fun userAnswered() = screens.clear()
 
-    private fun limitsFor(pace: PlacePace) = if (pace == PlacePace.CAREFUL) careful else limits
+    private fun limitsFor(tempo: AppTempo) = if (tempo == AppTempo.CAREFUL) careful else limits
 
     companion object {
         /** 限制浏览快慢的 App 一个任务里最多换到多少次新的一屏(App 里一屏比网页的一页碎:点开、返回各算一次)。 */

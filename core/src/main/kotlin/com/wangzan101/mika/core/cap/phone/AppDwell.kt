@@ -3,7 +3,6 @@ package com.wangzan101.mika.core.cap.phone
 import com.wangzan101.mika.core.uistate.DwellInterrupted
 import com.wangzan101.mika.core.uistate.IdleScroll
 import com.wangzan101.mika.core.uistate.PageLimitReached
-import com.wangzan101.mika.core.uistate.PlacePace
 import com.wangzan101.mika.core.run.waitOrSteer
 import com.wangzan101.mika.core.uistate.ScreenPort
 import kotlinx.coroutines.CancellationException
@@ -11,14 +10,15 @@ import kotlinx.coroutines.delay
 
 /**
  * 一个任务里在 App 里按 [AppPacing] 停留:每个改动屏幕的动作做完记下([after]),下一个之前补足没停够的时间([before])。
- * [pace] 按包名给出 App 知识对这个 App 浏览快慢的说法。
+ * [tempo] 按包名给出这个 App 的实际节奏([AppTempo];「快」的 App 不记也不等),[capped] 说哪些 App 限制浏览快慢(计屏数、受上限)。
  * 给了 [idle]、这次的范围允许、且调用方交了屏幕端口(接下来的动作不按屏上的位置做)时,停留里按它的安排轻轻滚几下([ScreenPort.idleScroll])。
  * 限制浏览快慢的 App 本任务里换屏到了上限,[before] 不再等,抛 [PageLimitReached](和网页同一个结果 page_limit);
  * 停留中用户插了话([waitOrSteer]),抛 [DwellInterrupted]:调用方不做这个动作,没停够的部分下次照样补足。
  */
 internal class AppDwell(
     private val pacing: AppPacing,
-    private val pace: (String) -> PlacePace = { PlacePace.NORMAL },
+    private val tempo: (String) -> AppTempo = { AppTempo.NORMAL },
+    private val capped: (String) -> Boolean = { false },
     private val idle: IdleScroll? = null,
     private val clock: () -> Long = System::currentTimeMillis,
     private val sleep: suspend (Long) -> Unit = { delay(it) },
@@ -29,25 +29,28 @@ internal class AppDwell(
     /** 停留里轻轻滚了一下之后调用(模型手里那一屏的位置已不准)。 */
     var onIdleScroll: () -> Unit = {}
 
-    private val paces = HashMap<String, PlacePace>()
+    private val tempos = HashMap<String?, AppTempo>()
+    private val caps = HashMap<String, Boolean>()
 
     val paced: Boolean get() = pacing.paced
 
     /** 在 [app] 里做完了一个改动屏幕的动作:[newScreen] 换到了新的一屏,[counts] 时算进屏数(见 [AppPacing.noteAction])。 */
     fun after(app: String?, newScreen: Boolean, counts: Boolean = newScreen) {
         if (!paced) return
-        pacing.noteAction(app, clock(), newScreen, app?.let(::paceOf) ?: PlacePace.NORMAL, counts)
+        val t = tempoOf(app)
+        if (t == AppTempo.FAST) return
+        pacing.noteAction(app, clock(), newScreen, t, counts, app?.let(::cappedOf) ?: false)
     }
 
     /**
      * 在 [app] 里要做下一个改动屏幕的动作之前:没停够就补足。[textChars] 是此刻这一屏上的字数(新的一屏按它加读的时间)。
-     * [gate] 时先看屏数上限,到了抛 [PageLimitReached]。[port] 给了时停留里可以轻轻滚几下。
+     * 「快」的 App 不等也不看上限。[gate] 时先看屏数上限,到了抛 [PageLimitReached]。[port] 给了时停留里可以轻轻滚几下。
      */
     suspend fun before(app: String?, textChars: Int, gate: Boolean, port: ScreenPort? = null): Dwelt {
         if (!paced) return Dwelt(0, 0)
-        val p = app?.let(::paceOf) ?: PlacePace.NORMAL
-        if (gate && pacing.capReached(app, p)) {
-            throw PageLimitReached(app!!, pacing.screensIn(app), pacing.screenCap, PageLimitReached.Scope.APP_SCREENS)
+        if (tempoOf(app) == AppTempo.FAST) return Dwelt(0, 0)
+        if (gate && app != null && cappedOf(app) && pacing.capReached(app, true)) {
+            throw PageLimitReached(app, pacing.screensIn(app), pacing.screenCap, PageLimitReached.Scope.APP_SCREENS)
         }
         val wait = pacing.waitBefore(clock(), textChars)
         if (wait <= 0) return Dwelt(0, 0)
@@ -86,5 +89,6 @@ internal class AppDwell(
         return done
     }
 
-    private fun paceOf(app: String): PlacePace = synchronized(paces) { paces.getOrPut(app) { pace(app) } }
+    private fun tempoOf(app: String?): AppTempo = if (app == null) AppTempo.NORMAL else synchronized(tempos) { tempos.getOrPut(app) { tempo(app) } }
+    private fun cappedOf(app: String): Boolean = synchronized(caps) { caps.getOrPut(app) { capped(app) } }
 }

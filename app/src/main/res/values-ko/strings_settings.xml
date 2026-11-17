@@ -62,6 +62,15 @@
     <string name="settings_pace_human">사람처럼</string>
     <string name="settings_pace_human_detail">모든 앱에서 느리게, 화면을 읽고 나서 다음으로 넘어가요</string>
     <string name="settings_pace_foot">너무 빠르게 쓰면 로그아웃되거나 인증을 요구하는 앱이 있어요. 속도가 느릴수록 작업에 시간이 더 걸려요.</string>
+    <string name="settings_pace_per_app">앱별 속도</string>
+    <string name="settings_pace_per_app_sub">봇 검사가 엄격한 앱만 느리게, 여유 있는 앱만 빠르게; 나머지는 전역 속도를 따릅니다</string>
+    <string name="settings_pace_per_app_intro">이 목록의 앱은 각자의 속도로 동작하고, 나머지는 전역 속도(현재 %1$s)를 따릅니다.</string>
+    <string name="settings_pace_per_app_empty">아직 앱별로 설정된 앱이 없습니다.</string>
+    <string name="settings_pace_per_app_add">앱 추가</string>
+    <string name="settings_pace_per_app_search">앱 검색</string>
+    <string name="settings_pace_per_app_none">일치하는 앱이 없습니다</string>
+    <string name="settings_pace_per_app_pick">선택</string>
+    <string name="settings_pace_per_app_remove">삭제(전역 속도 따르기)</string>
     <string name="settings_parallel">동시 작업</string>
     <string name="settings_parallel_sub">서로 다른 채팅의 작업이 각자 가상 화면을 가져요</string>
     <plurals name="settings_count_tasks">

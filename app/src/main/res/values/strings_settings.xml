@@ -75,6 +75,15 @@
     <string name="settings_pace_human">Human-like</string>
     <string name="settings_pace_human_detail">Slow in every app, reading each screen before going on</string>
     <string name="settings_pace_foot">Some apps log you out or ask for verification when they are used too fast. The slower the pace, the longer a task takes.</string>
+    <string name="settings_pace_per_app">Per-app pace</string>
+    <string name="settings_pace_per_app_sub">Slow down apps with strict bot checks, or speed up the patient ones; the rest follow the global pace</string>
+    <string name="settings_pace_per_app_intro">Apps in this list use their own pace; everything else follows the global pace (now %1$s).</string>
+    <string name="settings_pace_per_app_empty">No apps are set per-app yet.</string>
+    <string name="settings_pace_per_app_add">Add an app</string>
+    <string name="settings_pace_per_app_search">Search apps</string>
+    <string name="settings_pace_per_app_none">No matching apps</string>
+    <string name="settings_pace_per_app_pick">Pick</string>
+    <string name="settings_pace_per_app_remove">Remove (follow the global pace)</string>
     <string name="settings_parallel">Tasks at once</string>
     <string name="settings_parallel_sub">Tasks from different chats each get their own virtual screen</string>
     <plurals name="settings_count_tasks">

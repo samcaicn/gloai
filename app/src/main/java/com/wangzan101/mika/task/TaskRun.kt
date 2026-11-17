@@ -8,6 +8,7 @@ import com.wangzan101.mika.core.cap.web.PagePacing
 import com.wangzan101.mika.core.uistate.PlacePace
 import kotlin.random.Random
 import com.wangzan101.mika.core.action.OutwardPacing
+import com.wangzan101.mika.core.cap.phone.AppPacePlan
 import com.wangzan101.mika.core.cap.phone.OperatingPace
 import com.wangzan101.mika.core.usage.DeepSeekPriceCache
 import com.wangzan101.mika.core.usage.DeepSeekRunCost
@@ -695,8 +696,10 @@ class TaskRun(
                 catch (_: com.wangzan101.mika.core.access.AppAccessDenied) { false }
             }
             val metrics = mainScreenMetrics()
-            // 在 App 里操作的节奏(设置 › 任务运行);评测、真机验收按钩子覆盖
-            val pace = env.evalHooks.operatingPace ?: FeatureFlags.get(service).operatingPace()
+            // 在 App 里操作的节奏(设置 › 任务运行,未覆盖的 App 跟随全局;评测、真机验收按钩子覆盖,
+            // 钩子设了档位时按应用覆盖不参与——评测要的是确定)
+            val hooked = env.evalHooks.operatingPace
+            val pace = AppPacePlan(hooked ?: FeatureFlags.get(service).operatingPace(), if (hooked == null) FeatureFlags.get(service).appPaceOverrides() else emptyMap())
             // 助手是否连着;没接上手机之前当作连着(网页、沙箱的步骤不看它)
             val shellUp = MutableStateFlow(true)
             val states = DeviceStateWatcher(service) { id -> phone?.shell?.topTaskId(id) ?: -1 }.also { watcher = it }
@@ -781,8 +784,8 @@ class TaskRun(
                     },
                     clipSaved = { original, ours -> recovery.saveClip(original, ours) },
                     handedOver = { handoverRef?.handedOver == true },
-                    // 打字一段一段出来;App 知识说限制浏览快慢的 App 打得更慢
-                    typing = { pkg -> pace.typing(PlacePace.of(pkg?.let(skills::appPace))) },
+                    // 打字一段一段出来;限制浏览快慢的 App(设置里像人/覆盖)打得更慢
+                    typing = { pkg -> pace.of(pkg).typing() },
                     // 启动前就静上,开头几秒也没声;启动被拒就还原
                     beforeOpen = muter::beforeOpen,
                     notOpened = muter::notOpened,
@@ -967,7 +970,7 @@ class TaskRun(
                     val childTools = toolDispatcher(privatePhone, model.capabilities.vision,
                         web = childWeb, webPacing = { PagePacing.human() }, webPlacePace = { PlacePace.of(catalog.sitePace(it)) },
                         webIdleScroll = { IdleScroll(Random.Default) },
-                        appPacing = { pace.appPacing() }, appPace = { PlacePace.of(catalog.appPace(it)) }, appIdleScroll = { IdleScroll(Random.Default) },
+                        appPacing = { pace.appPacing() }, appTempo = { pace.of(it).tempo }, appCapped = { pace.capped(it) }, appIdleScroll = { IdleScroll(Random.Default) },
                         sandbox = sandbox, workspace = { conversationId }, runSpec = childSpec,
                         conversationId = conversationId, inlineScreen = speed.inlineScreen,
                         adaptiveVision = speed.adaptiveVision)
@@ -1006,8 +1009,11 @@ class TaskRun(
                 webPacing = { PagePacing.human() },
                 // 停留时像人一样把页面轻轻滚几下
                 webIdleScroll = { IdleScroll(Random.Default) },
-                // 在 App 里一步一步操作:动作之间停一会儿,限制浏览快慢的 App 停得更久、屏数有上限(按设置里的操作节奏)
+                // 在 App 里一步一步操作:动作之间停一会儿,限制浏览快慢的 App 停得更久、屏数有上限
+                // (全局档位 + 设置里的按应用覆盖)
                 appPacing = { pace.appPacing() },
+                appTempo = { pace.of(it).tempo },
+                appCapped = { pace.capped(it) },
                 appIdleScroll = { IdleScroll(Random.Default) },
                 // 上传只认本对话工作区里的普通文件(与沙箱同一套路径规则);技能目录、工作区外一律越界
                 workspacePath = web?.let { { p: String -> sandbox.uploadCheck(conversationId, p) } },

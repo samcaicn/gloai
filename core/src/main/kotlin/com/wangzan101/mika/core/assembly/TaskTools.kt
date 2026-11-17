@@ -3,6 +3,7 @@ package com.wangzan101.mika.core.assembly
 import com.wangzan101.mika.core.agent.CoreSections
 import com.wangzan101.mika.core.agent.DO_STEPS_TOOL
 import com.wangzan101.mika.core.cap.phone.AppPacing
+import com.wangzan101.mika.core.cap.phone.AppTempo
 import com.wangzan101.mika.core.cap.phone.PHONE
 import com.wangzan101.mika.core.cap.phone.PhoneCapability
 import com.wangzan101.mika.core.cap.root.RootCapability
@@ -69,8 +70,10 @@ fun toolDispatcher(
     webIdleScroll: () -> IdleScroll? = { null },
     /** 在 App 里一步一步操作的节奏(改动屏幕的动作之前补足停留,见 [AppPacing]);默认不等。 */
     appPacing: () -> AppPacing = { AppPacing.Off },
-    /** App 对浏览快慢的要求(按包名);默认按 [skills] 里 App 知识的 pace。 */
-    appPace: (String) -> PlacePace = { pkg -> PlacePace.of(skills?.appPace(pkg)) },
+    /** App 的实际操作节奏(按包名,见 [AppTempo]);默认按 [skills] 里 App 知识的 pace。 */
+    appTempo: (String) -> AppTempo = { pkg -> AppTempo.of(skills?.appPace(pkg)) },
+    /** 哪些 App 限制浏览快慢(按包名,计屏数、受上限);默认同 [appTempo] 取 App 知识里标 careful 的。 */
+    appCapped: (String) -> Boolean = { pkg -> PlacePace.of(skills?.appPace(pkg)) == PlacePace.CAREFUL },
     /** App 里新的一屏上的停留时轻轻滚几下(见 [IdleScroll]);默认不滚。 */
     appIdleScroll: () -> IdleScroll? = { null },
     /** 跨读屏的稳定编号:读屏给模型编号和 s<N>,动作前翻译回端口编号。 */
@@ -146,7 +149,7 @@ fun toolDispatcher(
     val providers: List<CapabilityProvider> = listOf(
         object : CapabilityProvider {
             override val id = PHONE
-            override fun open(spec: RunSpec) = PhoneCapability(screen, deepLinks, appPacing(), appPace, appIdleScroll(), smsLogin)
+            override fun open(spec: RunSpec) = PhoneCapability(screen, deepLinks, appPacing(), appTempo, appCapped, appIdleScroll(), smsLogin)
         },
         object : CapabilityProvider {
             override val id = WEB

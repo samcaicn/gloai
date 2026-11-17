@@ -75,6 +75,15 @@
     <string name="settings_pace_human">شبیه انسان</string>
     <string name="settings_pace_human_detail">در همهٔ برنامه‌ها آهسته عمل می‌کند و پیش از ادامه هر صفحه را می‌خواند</string>
     <string name="settings_pace_foot">بعضی برنامه‌ها هنگام استفادهٔ بیش از حد سریع شما را از حساب خارج می‌کنند یا تأیید می‌خواهند. سرعت کمتر باعث طولانی‌تر شدن کار می‌شود.</string>
+    <string name="settings_pace_per_app">سرعت به‌ازای هر برنامه</string>
+    <string name="settings_pace_per_app_sub">برنامه‌های سخت‌گیر را کندتر و برنامه‌هایی که سخت‌گیری نمی‌کنند را تندتر کن؛ بقیه از سرعت کلی پیروی می‌کنند</string>
+    <string name="settings_pace_per_app_intro">برنامه‌های این فهرست سرعت خودشان را دارند؛ بقیه از سرعت کلی پیروی می‌کنند (الان %1$s).</string>
+    <string name="settings_pace_per_app_empty">هنوز برنامه‌ای با سرعت جدا تنظیم نشده است.</string>
+    <string name="settings_pace_per_app_add">افزودن برنامه</string>
+    <string name="settings_pace_per_app_search">جست‌وجوی برنامه‌ها</string>
+    <string name="settings_pace_per_app_none">برنامه‌ای پیدا نشد</string>
+    <string name="settings_pace_per_app_pick">انتخاب</string>
+    <string name="settings_pace_per_app_remove">حذف (پیروی از سرعت کلی)</string>
     <string name="settings_parallel">کارهای هم‌زمان</string>
     <string name="settings_parallel_sub">کارهای گفتگوهای مختلف هر کدام صفحهٔ مجازی خود را دارند</string>
     <plurals name="settings_count_tasks">
