@@ -13,14 +13,14 @@
     <string name="chat_example_replace_title">Substituir o rascunho atual?</string>
     <string name="chat_example_replace_body">A tarefa recomendada substituirá o que você já digitou.</string>
     <string name="chat_example_replace_action">Substituir rascunho</string>
-    <string name="recommendations_title">Tarefas recomendadas</string>
+    <string name="recommendations_title">Tarefas salvas</string>
     <string name="recommendations_drag">Arraste para mudar a ordem</string>
     <string name="recommendations_drag_hint">Arraste a alça para mudar a ordem de exibição.</string>
     <string name="recommendations_move_up">Mover para cima</string>
     <string name="recommendations_move_down">Mover para baixo</string>
     <string name="recommendations_sub">Gerencie as tarefas e os prompts da tela inicial</string>
-    <string name="recommendations_add">Adicionar tarefa recomendada</string>
-    <string name="recommendations_edit">Editar tarefa recomendada</string>
+    <string name="recommendations_add">Adicionar tarefa</string>
+    <string name="recommendations_edit">Editar tarefa</string>
     <string name="recommendations_empty">Nenhuma tarefa recomendada</string>
     <string name="recommendations_empty_sub">As tarefas adicionadas aparecem em um novo chat</string>
     <string name="recommendations_title_label">Título</string>
@@ -308,4 +308,5 @@
     <string name="chat_example_pdf">Resuma o PDF que eu enviar em um resumo curto.</string>
     <string name="chat_example_schedule">Toda manhã às 8h, lembre-me de ver o tempo.</string>
     <string name="chat_empty_value">Diga em uma frase, e eu uso seus apps, navego na web e concluo a tarefa.</string>
+    <string name="saved_task_save">Salvar como tarefa</string>
 </resources>

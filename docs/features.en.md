@@ -4,6 +4,12 @@
 
 Tell Mika what you want in one sentence, and it gets it done on your phone. This page has the details behind each item under "What it can do" in the [README](../README.md).
 
+## Saved tasks
+
+- Long-press one of your text messages and choose “Save as task”, then edit its title and instructions. You can also add, edit, or delete tasks using the star beside the composer or “Saved tasks” in Settings.
+- Choosing a task on a new chat or through the star fills the current composer for editing before sending. Existing text requires confirmation before replacement.
+- Tasks are stored locally, preserving the previous recommended-task list. Saving and selecting tasks do not call a model or execute a task.
+
 ## Operates any app without taking over your screen
 
 Any app installed on your phone works, with no per-app integration: Mika looks at the screen, finds buttons, taps and types like a person would. If it can see it, it can operate it.

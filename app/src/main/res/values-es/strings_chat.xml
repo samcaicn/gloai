@@ -13,14 +13,14 @@
     <string name="chat_example_replace_title">¿Reemplazar el borrador actual?</string>
     <string name="chat_example_replace_body">La tarea recomendada reemplazará lo que ya escribiste.</string>
     <string name="chat_example_replace_action">Reemplazar borrador</string>
-    <string name="recommendations_title">Tareas recomendadas</string>
+    <string name="recommendations_title">Tareas guardadas</string>
     <string name="recommendations_drag">Arrastra para cambiar el orden</string>
     <string name="recommendations_drag_hint">Arrastra el control para cambiar el orden.</string>
     <string name="recommendations_move_up">Subir</string>
     <string name="recommendations_move_down">Bajar</string>
     <string name="recommendations_sub">Administra las tareas y los prompts de la pantalla de inicio</string>
-    <string name="recommendations_add">Añadir tarea recomendada</string>
-    <string name="recommendations_edit">Editar tarea recomendada</string>
+    <string name="recommendations_add">Añadir tarea</string>
+    <string name="recommendations_edit">Editar tarea</string>
     <string name="recommendations_empty">No hay tareas recomendadas</string>
     <string name="recommendations_empty_sub">Las tareas añadidas aparecen en un chat nuevo</string>
     <string name="recommendations_title_label">Título</string>
@@ -308,4 +308,5 @@
     <string name="chat_example_pdf">Resume el PDF que te envío en un resumen corto.</string>
     <string name="chat_example_schedule">Cada mañana a las 8, recuérdame consultar el tiempo.</string>
     <string name="chat_empty_value">Dilo en una frase y usaré tus apps, navegaré por la web y lo dejaré hecho.</string>
+    <string name="saved_task_save">Guardar como tarea</string>
 </resources>

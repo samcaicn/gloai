@@ -13,7 +13,7 @@
     <string name="chat_example_replace_title">Заменить текущий черновик?</string>
     <string name="chat_example_replace_body">Рекомендуемая задача заменит уже введённый текст.</string>
     <string name="chat_example_replace_action">Заменить черновик</string>
-    <string name="recommendations_title">Рекомендуемые задачи</string>
+    <string name="recommendations_title">Сохранённые задачи</string>
     <string name="recommendations_drag">Перетащите для изменения порядка</string>
     <string name="recommendations_drag_hint">Перетащите значок, чтобы изменить порядок отображения.</string>
     <string name="recommendations_move_up">Переместить вверх</string>
@@ -322,4 +322,5 @@
     <string name="chat_example_pdf">Суммируй PDF, который я пришлю, в короткую выжимку.</string>
     <string name="chat_example_schedule">Каждое утро в 8 напоминай мне проверить погоду.</string>
     <string name="chat_empty_value">Скажи одной фразой, и я запущу приложения, выйду в сеть и доведу дело до конца.</string>
+    <string name="saved_task_save">Сохранить как задачу</string>
 </resources>

@@ -251,7 +251,9 @@ fun ChatScreen(
     )) { vm }
     val input = ui.input
     // 推荐任务可以直接填进空输入框;已有内容时先确认,不能因误触把草稿换掉。
-    var pendingExample by remember { mutableStateOf<String?>(null) }
+    var pendingExample by remember(ui.conversationId) { mutableStateOf<String?>(null) }
+    var showSavedTasks by remember(ui.conversationId) { mutableStateOf(false) }
+    var saveTaskPrompt by remember(ui.conversationId) { mutableStateOf<String?>(null) }
     var retryFailures by remember { mutableStateOf<Pair<String, String>?>(null) }
     var voiceHolding by remember { mutableStateOf(false) }
     var editRequest by remember { mutableIntStateOf(0) }
@@ -480,6 +482,7 @@ fun ChatScreen(
             mode = ui.composer,
             hasHistory = ui.exchanges.isNotEmpty(),
             onSend = { vm.send(input, check) },
+            onSavedTasks = if (recommendationStore != null && ui.composer == ComposerMode.Idle) ({ showSavedTasks = true }) else null,
             onTeach = if (ui.composer == ComposerMode.Idle) ({ onOpenTeach(input.trim()) }) else null,
             onStop = vm::cancel,
             queued = ui.queued,
@@ -578,6 +581,9 @@ fun ChatScreen(
             val retryTurn = vm.retryTurn(m.key)
             MessageMenu(
                 m, progress = { lift.value },
+                onSaveTask = if (recommendationStore != null && m.from == QuoteMessage.From.You && m.text.isNotBlank()) ({
+                    closeMenu { saveTaskPrompt = m.text }
+                }) else null,
                 onCopy = { closeMenu { copyMessage(context, m.text) } },
                 onQuote = { closeMenu { vm.quote(m.from, m.text) } },
                 onSelect = {
@@ -645,6 +651,23 @@ fun ChatScreen(
             text = { Text(details) },
             confirmButton = { TextButton({ retryFailures = null }) { Text(stringResource(R.string.ok_got_it)) } },
         )
+    }
+
+    if (showSavedTasks && recommendationStore != null) androidx.compose.ui.window.Dialog(
+        onDismissRequest = { showSavedTasks = false },
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        androidx.compose.material3.Surface(Modifier.fillMaxSize()) {
+            RecommendedTasksScreen(recommendationStore, onBack = { showSavedTasks = false }, onPick = { prompt ->
+                showSavedTasks = false
+                if (vm.ui.value.input.isEmpty()) vm.input(prompt) else pendingExample = prompt
+            })
+        }
+    }
+    saveTaskPrompt?.let { prompt ->
+        recommendationStore?.let { store ->
+            RecommendedTaskDialog(store, initial = null, onDismiss = { saveTaskPrompt = null }, seedPrompt = prompt)
+        }
     }
 
     pendingExample?.let { example ->
@@ -1431,6 +1454,7 @@ internal fun Composer(
     attachBlocked: Boolean = false,
     /** 「＋」面板里的「教 Mika」。点了先收起面板。 */
     onTeach: (() -> Unit)? = null,
+    onSavedTasks: (() -> Unit)? = null,
     attachments: List<PendingAttachment> = emptyList(),
     importing: Boolean = false,
     rejected: List<AttachmentFailure> = emptyList(),
@@ -1586,6 +1610,12 @@ internal fun Composer(
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(MikaIcons.Plus, label, Modifier.size(20.dp).graphicsLayer { rotationZ = turn }, tint = c.ink)
+                    }
+                }
+                if (onSavedTasks != null) {
+                    androidx.compose.material3.IconButton(onClick = { keyboard?.hide(); onSavedTasks() },
+                        modifier = Modifier.testTag("composer-saved-tasks")) {
+                        Icon(MikaIcons.Star, stringResource(R.string.recommendations_title), Modifier.size(MikaSize.Icon), tint = c.ink)
                     }
                 }
                 Box(Modifier.weight(1f).padding(start = if (showAttach) 2.dp else 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)) {

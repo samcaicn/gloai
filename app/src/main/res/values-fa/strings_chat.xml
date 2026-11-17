@@ -241,11 +241,11 @@
     <string name="drawer_search_results">نتایج جست‌وجو</string>
     <string name="drawer_search_truncated">نمایش اولین %1$d نتیجه</string>
     <string name="drawer_searching">در حال جست‌وجو…</string>
-    <string name="recommendations_add">افزودن کار پیشنهادی</string>
+    <string name="recommendations_add">افزودن کار</string>
     <string name="recommendations_delete">حذف</string>
     <string name="recommendations_delete_body">دیگر در صفحهٔ اصلی نمایش داده نمی‌شود.</string>
     <string name="recommendations_delete_title">این کار پیشنهادی حذف شود؟</string>
-    <string name="recommendations_edit">ویرایش کار پیشنهادی</string>
+    <string name="recommendations_edit">ویرایش کار</string>
     <string name="recommendations_empty">کار پیشنهادی وجود ندارد</string>
     <string name="recommendations_empty_sub">کارهای افزوده‌شده در گفتگوی جدید نمایش داده می‌شوند</string>
     <string name="recommendations_footer">در گفتگوی جدید، روی یک کار بزنید تا متن آن در ورودی قرار گیرد. به‌صورت خودکار ارسال نمی‌شود.</string>
@@ -255,7 +255,7 @@
     <string name="recommendations_reset_body">فایل غیرقابل‌خواندن با یک فهرست خالی جایگزین می‌شود.</string>
     <string name="recommendations_save_failed">ذخیره ممکن نشد. دوباره تلاش کنید.</string>
     <string name="recommendations_sub">مدیریت کارها و متن‌های صفحهٔ اصلی</string>
-    <string name="recommendations_title">کارهای پیشنهادی</string>
+    <string name="recommendations_title">کارهای ذخیره‌شده</string>
     <string name="recommendations_drag">برای تغییر ترتیب بکشید</string>
     <string name="recommendations_drag_hint">دستگیره را بکشید تا ترتیب نمایش تغییر کند.</string>
     <string name="recommendations_move_up">انتقال به بالا</string>
@@ -294,4 +294,5 @@
     <string name="chat_example_pdf">PDFای که میفرستم را در یک خلاصه کوتاه جمعبندی کن</string>
     <string name="chat_example_schedule">هر روز صبح ساعت ۸ یادم بینداز هوا را چک کنم</string>
     <string name="chat_empty_value">یک جمله بگو تا اپ‌هایت را اجرا کنم، وب بگردم و کارت را تمام کنم.</string>
+    <string name="saved_task_save">ذخیره به‌عنوان کار</string>
 </resources>

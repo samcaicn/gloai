@@ -13,14 +13,14 @@
     <string name="chat_example_replace_title">현재 초안을 바꿀까요?</string>
     <string name="chat_example_replace_body">추천 작업이 이미 입력한 내용을 대체합니다.</string>
     <string name="chat_example_replace_action">초안 바꾸기</string>
-    <string name="recommendations_title">추천 작업</string>
+    <string name="recommendations_title">저장한 작업</string>
     <string name="recommendations_drag">드래그하여 순서 변경</string>
     <string name="recommendations_drag_hint">손잡이를 드래그하여 표시 순서를 바꾸세요.</string>
     <string name="recommendations_move_up">위로 이동</string>
     <string name="recommendations_move_down">아래로 이동</string>
     <string name="recommendations_sub">홈에 표시되는 작업과 프롬프트 관리</string>
-    <string name="recommendations_add">추천 작업 추가</string>
-    <string name="recommendations_edit">추천 작업 편집</string>
+    <string name="recommendations_add">작업 추가</string>
+    <string name="recommendations_edit">작업 편집</string>
     <string name="recommendations_empty">추천 작업이 없습니다</string>
     <string name="recommendations_empty_sub">추가하면 새 대화 홈에 표시됩니다</string>
     <string name="recommendations_title_label">제목</string>
@@ -280,4 +280,5 @@
     <string name="chat_example_pdf">보내드린 PDF를 짧은 요약으로 정리해 줘</string>
     <string name="chat_example_schedule">매일 아침 8시에 오늘 날씨 확인하라고 알림해 줘</string>
     <string name="chat_empty_value">한마디만 하면 앱을 조작하고 웹을 탐색해서 일을 끝내드려요.</string>
+    <string name="saved_task_save">작업으로 저장</string>
 </resources>

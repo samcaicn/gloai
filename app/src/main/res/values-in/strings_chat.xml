@@ -13,14 +13,14 @@
     <string name="chat_example_replace_title">Ganti draf saat ini?</string>
     <string name="chat_example_replace_body">Tugas yang direkomendasikan akan mengganti teks yang sudah Anda ketik.</string>
     <string name="chat_example_replace_action">Ganti draf</string>
-    <string name="recommendations_title">Tugas rekomendasi</string>
+    <string name="recommendations_title">Tugas tersimpan</string>
     <string name="recommendations_drag">Seret untuk mengubah urutan</string>
     <string name="recommendations_drag_hint">Seret pegangan untuk mengubah urutan tampilan.</string>
     <string name="recommendations_move_up">Pindahkan ke atas</string>
     <string name="recommendations_move_down">Pindahkan ke bawah</string>
     <string name="recommendations_sub">Kelola tugas dan prompt yang tampil di beranda</string>
-    <string name="recommendations_add">Tambah tugas rekomendasi</string>
-    <string name="recommendations_edit">Edit tugas rekomendasi</string>
+    <string name="recommendations_add">Tambah tugas</string>
+    <string name="recommendations_edit">Edit tugas</string>
     <string name="recommendations_empty">Belum ada tugas rekomendasi</string>
     <string name="recommendations_empty_sub">Tugas yang ditambahkan muncul di chat baru</string>
     <string name="recommendations_title_label">Judul</string>
@@ -280,4 +280,5 @@
     <string name="chat_example_pdf">Ringkas PDF yang saya kirim menjadi intisari singkat.</string>
     <string name="chat_example_schedule">Setiap pagi jam 8, ingatkan saya untuk memeriksa cuaca.</string>
     <string name="chat_empty_value">Katakan dalam satu kalimat, dan saya akan menjalankan aplikasi, menjelajah web, dan menyelesaikannya.</string>
+    <string name="saved_task_save">Simpan sebagai tugas</string>
 </resources>

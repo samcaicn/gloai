@@ -13,14 +13,14 @@
     <string name="chat_example_replace_title">現在の下書きを置き換えますか？</string>
     <string name="chat_example_replace_body">おすすめのタスクで、入力済みの内容が置き換えられます。</string>
     <string name="chat_example_replace_action">下書きを置き換える</string>
-    <string name="recommendations_title">おすすめタスク</string>
+    <string name="recommendations_title">保存したタスク</string>
     <string name="recommendations_drag">ドラッグして順序を変更</string>
     <string name="recommendations_drag_hint">ハンドルをドラッグして表示順を変更できます。</string>
     <string name="recommendations_move_up">上に移動</string>
     <string name="recommendations_move_down">下に移動</string>
     <string name="recommendations_sub">ホームに表示するタスクとプロンプトを管理</string>
-    <string name="recommendations_add">おすすめタスクを追加</string>
-    <string name="recommendations_edit">おすすめタスクを編集</string>
+    <string name="recommendations_add">タスクを追加</string>
+    <string name="recommendations_edit">タスクを編集</string>
     <string name="recommendations_empty">おすすめタスクはまだありません</string>
     <string name="recommendations_empty_sub">追加すると新しいチャットのホームに表示されます</string>
     <string name="recommendations_title_label">タイトル</string>
@@ -280,4 +280,5 @@
     <string name="chat_example_pdf">送った PDF を短い要約にまとめて</string>
     <string name="chat_example_schedule">毎朝 8 時に今日の天気を確認するようリマインドして</string>
     <string name="chat_empty_value">一言で伝えれば、アプリを操作し、ウェブを見て、用事を片づけます。</string>
+    <string name="saved_task_save">タスクとして保存</string>
 </resources>

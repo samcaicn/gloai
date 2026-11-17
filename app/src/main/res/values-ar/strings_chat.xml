@@ -13,14 +13,14 @@
     <string name="chat_example_replace_title">استبدال المسودة الحالية؟</string>
     <string name="chat_example_replace_body">ستستبدل المهمة المقترحة ما كتبته بالفعل.</string>
     <string name="chat_example_replace_action">استبدال المسودة</string>
-    <string name="recommendations_title">المهام المقترحة</string>
+    <string name="recommendations_title">المهام المحفوظة</string>
     <string name="recommendations_drag">اسحب لتغيير الترتيب</string>
     <string name="recommendations_drag_hint">اسحب المقبض لتغيير ترتيب العرض.</string>
     <string name="recommendations_move_up">نقل لأعلى</string>
     <string name="recommendations_move_down">نقل لأسفل</string>
     <string name="recommendations_sub">إدارة المهام والنصوص المعروضة في الشاشة الرئيسية</string>
-    <string name="recommendations_add">إضافة مهمة مقترحة</string>
-    <string name="recommendations_edit">تعديل مهمة مقترحة</string>
+    <string name="recommendations_add">إضافة مهمة</string>
+    <string name="recommendations_edit">تعديل مهمة</string>
     <string name="recommendations_empty">لا توجد مهام مقترحة</string>
     <string name="recommendations_empty_sub">تظهر المهام المضافة في محادثة جديدة</string>
     <string name="recommendations_title_label">العنوان</string>
@@ -350,4 +350,5 @@
     <string name="chat_example_pdf">لخّص ملف PDF الذي سأرسله في ملخص قصير</string>
     <string name="chat_example_schedule">كل صباح في الثامنة، ذكّرني بمراجعة الطقس</string>
     <string name="chat_empty_value">قلها بجملة واحدة، وسأشغّل تطبيقاتك وأتصفح الويب وأنجزها.</string>
+    <string name="saved_task_save">حفظ كمهمة</string>
 </resources>
