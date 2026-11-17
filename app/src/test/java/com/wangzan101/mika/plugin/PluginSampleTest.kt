@@ -55,11 +55,11 @@ class PluginSampleTest {
         assertTrue(body.contains("连接器"))
     }
 
-    @Test fun fullManifestAwaitsP1b() {
+    @Test fun fullManifestRejectedForNonShScriptAndPermissions() {
         val m = PluginManifest.parse(File(feishu, "manifest.full.json").readText())
         val problems = m.validate("0.1.33")
-        assertTrue(problems.toString(), PluginManifest.ERR_PERMISSIONS in problems)
-        assertTrue(problems.toString(), PluginManifest.ERR_ONLY_SKILLS in problems)
+        assertTrue(problems.toString(), PluginManifest.ERR_INVALID_PERMISSION in problems)
+        assertTrue(problems.toString(), PluginManifest.ERR_SCRIPT_NOT_SH in problems)
         assertTrue(File(feishu, "scripts/send.py").isFile)
     }
 

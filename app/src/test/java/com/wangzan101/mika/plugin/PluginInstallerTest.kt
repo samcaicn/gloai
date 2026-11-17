@@ -106,12 +106,12 @@ class PluginInstallerTest {
         assertEquals(PluginErrors.INVALID_MANIFEST, failureCode(installer().installZip(z)))
     }
 
-    @Test fun rejectsFeaturesThisVersionDoesNotSupport() {
+    @Test fun rejectsNonShScriptTool() {
         val withTools = manifest(
             id = "com.example.tools",
             skills = "[]",
         ).replace("\"kind\"", "\"tools\":[{\"name\":\"send\",\"script\":\"scripts/send.py\"}],\"kind\"")
-        assertEquals(PluginManifest.ERR_ONLY_SKILLS, failureCode(installer().installZip(pluginZip(manifest = withTools))))
+        assertEquals(PluginManifest.ERR_SCRIPT_NOT_SH, failureCode(installer().installZip(pluginZip(manifest = withTools))))
     }
 
     @Test fun brokenManifestRejected() {

@@ -21,6 +21,7 @@ data class PluginManifest(
     val skills: List<PluginSkillDecl> = emptyList(),
     val pages: List<PluginPageDecl> = emptyList(),
     val settings: List<PluginSettingDecl> = emptyList(),
+    val promptTransform: String? = null,
 ) {
     /**
      * 校验 manifest;返回问题编码(空表示通过)。P1a 的 fail closed:只接受只带技能的插件,
@@ -36,8 +37,10 @@ data class PluginManifest(
             if (!SemVer.isValid(it)) add(ERR_MIN_APP)
             else if (SemVer.compare(it, currentAppVersion) > 0) add(ERR_MIN_APP_TOO_HIGH)
         }
-        if (permissions.isNotEmpty()) add(ERR_PERMISSIONS)
-        if (tools.isNotEmpty() || pages.isNotEmpty() || settings.isNotEmpty()) add(ERR_ONLY_SKILLS)
+        for (p in permissions) if (p !in ALLOWED_PLUGIN_PERMISSIONS) add(ERR_INVALID_PERMISSION)
+        if (pages.isNotEmpty() || settings.isNotEmpty()) add(ERR_ONLY_SKILLS)
+        for (t in tools) if (!validScriptPath(t.script)) add(ERR_SCRIPT_NOT_SH)
+        if (promptTransform != null && !validScriptPath(promptTransform)) add(ERR_INVALID_PROMPT_TRANSFORM)
         val seen = mutableSetOf<String>()
         for (s in skills) {
             if (!SKILL_NAME.matches(s.name) || !seen.add(s.name)) add(ERR_SKILL)
@@ -63,6 +66,9 @@ data class PluginManifest(
         const val ERR_MIN_APP_TOO_HIGH = "app_too_old"
         const val ERR_PERMISSIONS = "permissions_unsupported"
         const val ERR_ONLY_SKILLS = "only_skills_supported"
+        const val ERR_SCRIPT_NOT_SH = "script_not_sh"
+        const val ERR_INVALID_PERMISSION = "invalid_permission"
+        const val ERR_INVALID_PROMPT_TRANSFORM = "invalid_prompt_transform"
         const val ERR_SKILL = "invalid_skill"
         const val ERR_SKILL_PATH = "invalid_skill_path"
 
@@ -151,3 +157,11 @@ internal object SemVer {
 
     private fun Int.sign(): Int = if (this < 0) -1 else if (this > 0) 1 else 0
 }
+
+/** 插件脚本目前能声明的权限白名单;不在这里的一律拒装。 */
+private val ALLOWED_PLUGIN_PERMISSIONS = setOf("run-scripts", "rewrite-prompt")
+
+/** 脚本路径必须落在插件包内且是 `.sh`:非空、以 `.sh` 结尾、非绝对路径、无反斜杠、不含 `..` 或空段。 */
+private fun validScriptPath(p: String?): Boolean =
+    p != null && p.endsWith(".sh") && !p.startsWith("/") && !p.contains('\\') &&
+        p.split('/').none { it == ".." || it.isEmpty() }

@@ -51,11 +51,43 @@ class PluginManifestTest {
         }
     }
 
-    @Test fun permissionsAndNonSkillFeaturesAreRejectedInP1a() {
-        assertTrue(PluginManifest.ERR_PERMISSIONS in problems(json(extra = ",\"permissions\":[\"network\"]")))
-        assertTrue(PluginManifest.ERR_ONLY_SKILLS in problems(json(extra = ",\"tools\":[{\"name\":\"send\"}]")))
+    @Test fun unsupportedPagesSettingsStillRejected() {
         assertTrue(PluginManifest.ERR_ONLY_SKILLS in problems(json(extra = ",\"pages\":[{\"id\":\"home\",\"entry\":\"pages/index.html\"}]")))
         assertTrue(PluginManifest.ERR_ONLY_SKILLS in problems(json(extra = ",\"settings\":[{\"key\":\"webhook\"}]")))
+    }
+
+    private val validP1b = """
+        {"schema":1,"id":"com.example.translate","name":"x","version":"1.0.0","kind":"capability",
+         "permissions":["run-scripts"],
+         "tools":[{"name":"translate","description":"d","script":"scripts/translate.sh","timeoutSec":120,"risk":"read","inputSchema":{"type":"object","properties":{}}}],
+         "promptTransform":"scripts/rewrite_prompt.sh",
+         "skills":[]}
+    """.trimIndent()
+
+    @Test fun toolsPermissionsPromptTransformAccepted() {
+        val m = PluginManifest.parse(validP1b)
+        assertEquals(emptyList<String>(), m.validate("0.1.45"))
+        assertEquals("scripts/rewrite_prompt.sh", m.promptTransform)
+    }
+
+    @Test fun scriptMustBeSh() {
+        assertTrue("script_not_sh" in problems(json(extra = ",\"tools\":[{\"name\":\"t\",\"script\":\"scripts/foo.py\"}]")))
+        assertTrue("script_not_sh" in problems(json(extra = ",\"tools\":[{\"name\":\"t\"}]")))
+    }
+
+    @Test fun scriptPathMustStayInPackage() {
+        assertTrue("script_not_sh" in problems(json(extra = ",\"tools\":[{\"name\":\"t\",\"script\":\"../evil.sh\"}]")))
+        assertTrue("script_not_sh" in problems(json(extra = ",\"tools\":[{\"name\":\"t\",\"script\":\"/abs/evil.sh\"}]")))
+    }
+
+    @Test fun unknownPermissionRejected() {
+        assertTrue("invalid_permission" in problems(json(extra = ",\"permissions\":[\"do-anything\"]")))
+        assertTrue("invalid_permission" in problems(json(extra = ",\"permissions\":[\"network\"]")))
+    }
+
+    @Test fun promptTransformPathValidated() {
+        assertTrue("invalid_prompt_transform" in problems(json(extra = ",\"promptTransform\":\"../evil.sh\"")))
+        assertTrue("invalid_prompt_transform" in problems(json(extra = ",\"promptTransform\":\"scripts/hook.py\"")))
     }
 
     @Test fun minAppMustBeCompatibleWithThisApp() {
