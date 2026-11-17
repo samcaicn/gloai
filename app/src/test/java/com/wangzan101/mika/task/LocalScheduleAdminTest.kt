@@ -22,10 +22,10 @@ class LocalScheduleAdminTest {
             com.wangzan101.mika.core.trigger.EditedSchedule(change(plans.single { it.id == id }), com.wangzan101.mika.core.trigger.Scheduled(true)) },
     )
 
-    @Test fun listsOnlyPlansFromTheCurrentConversation() {
-        assertEquals(listOf(first), admin.list("thread-a"))
-        assertEquals(listOf(second), admin.list("thread-b"))
-        assertTrue(admin.list("empty-thread").isEmpty())
+    @Test fun listsAllPlansRegardlessOfConversation() {
+        assertEquals(listOf(first, second), admin.list("thread-a"))
+        assertEquals(listOf(first, second), admin.list("thread-b"))
+        assertEquals(listOf(first, second), admin.list("empty-thread"))
         assertTrue(calls.isEmpty())
     }
 
@@ -46,8 +46,15 @@ class LocalScheduleAdminTest {
         assertEquals(listOf("enabled:plan-a:true"), calls)
     }
 
-    @Test fun foreignAndMissingPlansNeverReachTheRuntime() {
-        for (id in listOf(second.id, "missing-plan")) {
+    @Test fun foreignPlansAreManagedByAnyConversation() {
+        // 计划是设备全局的,别的对话建的计划也能从任意对话管理(#478)
+        assertTrue(admin.setEnabled("thread-a", second.id, false))
+        assertTrue(admin.remove("thread-a", second.id))
+        assertEquals(listOf("enabled:plan-b:false", "delete:plan-b"), calls)
+    }
+
+    @Test fun missingPlansNeverReachTheRuntime() {
+        for (id in listOf("missing-plan")) {
             assertFalse(admin.setEnabled("thread-a", id, false))
             assertFalse(admin.setEnabled("thread-a", id, true))
             assertFalse(admin.remove("thread-a", id))
@@ -58,20 +65,10 @@ class LocalScheduleAdminTest {
         assertEquals(listOf(first, second), plans)
     }
 
-    @Test fun ownershipIsCheckedAgainstTheCurrentPlans() {
-        assertEquals(listOf(first), admin.list("thread-a"))
-        plans[0] = first.copy(threadId = "thread-b")
-        assertTrue(admin.list("thread-a").isEmpty())
-        assertFalse(admin.remove("thread-a", first.id))
-        assertTrue(calls.isEmpty())
-        assertTrue(admin.remove("thread-b", first.id))
-        assertEquals(listOf("delete:plan-a"), calls)
-    }
-
-    @Test fun editDoesNotReachTheRuntimeForAForeignPlan() {
-        assertEquals(null, admin.edit("thread-a", second.id) { error("must not edit a foreign plan") })
-        assertTrue(calls.isEmpty())
-        assertEquals(true, admin.edit("thread-a", first.id) { it.copy(goal = "changed") }?.scheduled?.onTime)
-        assertEquals(listOf("edit:thread-a:plan-a"), calls)
+    @Test fun editUsesThePlansOwnConversation() {
+        // 编辑别的对话建的计划时,用计划自己所属的对话去匹配,而不是当前对话
+        assertEquals(null, admin.edit("thread-a", "missing-plan") { it.copy(goal = "changed") })
+        assertEquals(true, admin.edit("thread-a", second.id) { it.copy(goal = "changed") }?.scheduled?.onTime)
+        assertEquals(listOf("edit:thread-b:plan-b"), calls)
     }
 }
