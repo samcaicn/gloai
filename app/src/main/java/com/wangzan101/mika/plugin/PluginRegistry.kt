@@ -1,7 +1,9 @@
 package com.wangzan101.mika.plugin
 
 import com.wangzan101.mika.BuildConfig
+import com.wangzan101.mika.core.plugin.PluginToolSpec
 import com.wangzan101.mika.core.skills.PluginSkills
+import com.wangzan101.mika.core.tool.Risk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import java.io.File
 
 /**
@@ -54,6 +57,23 @@ class PluginRegistry(
         return runCatching { PluginManifest.parse(File(File(root, id), PluginInstaller.MANIFEST).readText()) }
             .onFailure { log("could not read manifest of $id", it) }
             .getOrNull()
+    }
+
+    /** 启用插件的工具规格(名字拼成 `plugin_<id去点>_<工具名>`);脚本目录是插件目录。 */
+    fun toolSpecs(): List<PluginToolSpec> = enabledPlugins().flatMap { record ->
+        val m = manifest(record.id) ?: return@flatMap emptyList<PluginToolSpec>()
+        val dir = pluginDir(record.id) ?: return@flatMap emptyList<PluginToolSpec>()
+        m.tools.map { tool ->
+            PluginToolSpec(
+                name = "plugin_${record.id.replace('.', '_')}_${tool.name}",
+                description = tool.description,
+                scriptPath = tool.script ?: "",
+                scriptDir = dir,
+                inputSchema = tool.inputSchema ?: JsonObject(emptyMap()),
+                timeoutSec = tool.timeoutSec,
+                risk = tool.risk.toRisk(),
+            )
+        }
     }
 
     /** 重新扫目录对账;启动时和安装后调用。 */
@@ -152,4 +172,11 @@ class PluginRegistry(
         const val STAGING = ".staging"
         const val TRASH = ".trash"
     }
+}
+
+/** 插件工具声明的风险等级(manifest 里的字符串)映射到 core 的 [Risk];不认识的按只读算。 */
+private fun String?.toRisk(): Risk = when (this?.lowercase()) {
+    "write" -> Risk.Write
+    "external" -> Risk.External
+    else -> Risk.Read
 }
