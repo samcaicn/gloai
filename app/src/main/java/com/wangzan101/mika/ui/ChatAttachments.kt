@@ -314,9 +314,14 @@ private fun RecentCell(photo: PendingAttachment, order: Int?, onClick: () -> Uni
 
 // ---------- 待发 ----------
 
-/** 输入框上方一排待发的附件:照片是方块缩略图,文件是小卡片(类型、名字、大小),右上角 × 去掉。 */
+/** 输入框上方一排待发的附件:照片是方块缩略图,文件是小卡片(类型、名字、大小),点一下预览或打开,右上角 × 去掉。 */
 @Composable
-internal fun PendingTray(items: List<PendingAttachment>, onRemove: (String) -> Unit, modifier: Modifier = Modifier) {
+internal fun PendingTray(
+    items: List<PendingAttachment>,
+    onRemove: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    onOpen: ((PendingAttachment) -> Unit)? = null,
+) {
     val c = MikaTheme.colors
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -328,18 +333,23 @@ internal fun PendingTray(items: List<PendingAttachment>, onRemove: (String) -> U
             val conversationId = a.workspaceConversationId
             val path = a.workspacePath
             val workspaceImage = if (conversationId != null && path != null) AttachImage.Sent(conversationId, path) else null
-            val openModifier = if (workspaceImage != null) {
-                Modifier.clickable(
-                    role = if (a.photo) Role.Image else Role.Button,
-                    onClickLabel = stringResource(if (a.photo) R.string.attach_view_large else R.string.chat_open),
-                ) {
+            val openModifier = Modifier.clickable(
+                role = if (a.photo) Role.Image else Role.Button,
+                onClickLabel = stringResource(if (a.photo) R.string.attach_view_large else R.string.chat_open),
+            ) {
+                if (onOpen != null) {
+                    onOpen(a)
+                } else {
                     scope.launch {
-                        if (!AttachFiles.openSent(context, workspaceImage.conversationId, workspaceImage.path)) {
-                            Toast.makeText(context, AttachCopy.GONE, Toast.LENGTH_SHORT).show()
+                        val opened = if (workspaceImage != null) {
+                            AttachFiles.openSent(context, workspaceImage.conversationId, workspaceImage.path)
+                        } else {
+                            AttachFiles.openPending(context, a.uri, a.name)
                         }
+                        if (!opened) Toast.makeText(context, AttachCopy.GONE, Toast.LENGTH_SHORT).show()
                     }
                 }
-            } else Modifier
+            }
             Box {
                 if (a.photo) {
                     val thumb = rememberAttachImage(workspaceImage ?: AttachImage.Picked(a.uri), TRAY_PX)
