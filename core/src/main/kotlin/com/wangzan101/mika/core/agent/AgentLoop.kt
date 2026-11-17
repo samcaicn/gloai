@@ -189,6 +189,8 @@ class AgentLoop(
     private val modelFallbacks: List<ChatModel> = emptyList(),
     private val modelChainProviderIds: List<String?> = emptyList(),
     private val trace: RunTrace? = null,
+    /** 这一轮用的人格(名字 · 修订号);只写进运行记录,不参与提示词拼装。没有人格为 null。 */
+    private val personaLabel: String? = null,
 ) {
     init {
         require(maxSteps > 0) { "maxSteps must be positive" }
@@ -299,6 +301,8 @@ class AgentLoop(
         emit(RunEvent.TaskStarted(now(), Redactor.text(task), model.name,
             origin = runProvenance.origin.takeIf { it != RunOrigin.Ui }?.name?.lowercase(),
             stepLimit = maxSteps.takeIf { it != Int.MAX_VALUE }, tokenBudget = tokenBudget))
+        // 人格在 TaskStarted 之后记,时间线按「开始时用了谁」读;没有人格不写
+        personaLabel?.let { emit(RunEvent.State(now(), "persona", it)) }
         var end: TaskState? = null
         replay?.reset()
         lastEnd = null

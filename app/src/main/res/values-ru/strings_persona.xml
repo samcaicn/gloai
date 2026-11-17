@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="persona_title">Персона</string>
+    <string name="persona_sub">Выберите, как Mika говорит с вами</string>
+    <string name="persona_default">По умолчанию</string>
+    <string name="persona_default_sub">Обычный голос Mika</string>
+    <string name="persona_empty">Персон пока нет</string>
+    <string name="persona_empty_sub">Персона меняет то, как Mika говорит, а не то, что он может делать.</string>
+    <string name="persona_new">Новая персона</string>
+    <string name="persona_edit">Изменить персону</string>
+    <string name="persona_name">Название</string>
+    <string name="persona_description">Краткое описание</string>
+    <string name="persona_prompt">Инструкции</string>
+    <string name="persona_prompt_hint">Тон, длина, формулировки, оформление…</string>
+    <string name="persona_empty_prompt">Без инструкций эта персона ничего не изменит.</string>
+    <string name="persona_counter">%1$d символов · около %2$d токенов</string>
+    <string name="persona_preview">Предпросмотр полного запроса</string>
+    <string name="persona_preview_hide">Скрыть предпросмотр</string>
+    <string name="persona_preview_note">Серые правила неизменны. Персона может менять тон и формулировки, но не безопасность, разрешения и то, что Mika сообщает.</string>
+    <string name="persona_chip">Персона: %1$s</string>
+    <string name="persona_manage">Управление персонами</string>
+    <string name="persona_switch_note">Переключение влияет только на следующие сообщения в этом чате.</string>
+    <string name="persona_delete_title">Удалить «%1$s»?</string>
+    <string name="persona_delete_body">Чаты с этой персоной вернутся к персоне по умолчанию. Отменить нельзя.</string>
+    <string name="persona_copy">Дублировать</string>
+    <string name="persona_missing">Удалённая персона</string>
+    <string name="persona_name_required">Введите название.</string>
+    <string name="persona_name_too_long">Название слишком длинное.</string>
+    <string name="persona_description_too_long">Описание слишком длинное (не более %1$d символов).</string>
+    <string name="persona_prompt_too_long">Инструкции слишком длинные (не более %1$d символов).</string>
+    <string name="persona_save_failed">Не удалось сохранить персону.</string>
+</resources>

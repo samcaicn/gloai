@@ -101,6 +101,8 @@ fun SettingsScreen(
     onOpenAbout: () -> Unit = {},
     /** 外部 MCP server 设置(outbound);为空时不显示入口。 */
     mcpServers: com.wangzan101.mika.settings.McpServerStore? = null,
+    /** 人格设置;为空时不显示入口。 */
+    onOpenPersonas: (() -> Unit)? = null,
 ) {
     val configs by store.configs.collectAsState()
     val roles by store.roles.collectAsState()
@@ -222,6 +224,7 @@ fun SettingsScreen(
             onOpenAutoArchive = { editingAutoArchive = true },
             onOpenMemory = onOpenMemory,
             onOpenRecommendations = { page = SettingsPage.Recommendations },
+            onOpenPersonas = onOpenPersonas,
             onOpenAdvanced = { page = SettingsPage.Advanced },
             onOpenBrowser = onOpenBrowser,
             onOpenFiles = onOpenFiles,
@@ -415,6 +418,7 @@ fun SettingsContent(
     onOpenLanguage: () -> Unit = {},
     onOpenMemory: (() -> Unit)? = null,
     onOpenRecommendations: () -> Unit = {},
+    onOpenPersonas: (() -> Unit)? = null,
     onOpenAdvanced: () -> Unit = {},
     onOpenBrowser: () -> Unit = {},
     onOpenFiles: () -> Unit = {},
@@ -490,11 +494,14 @@ fun SettingsContent(
             onOpenMemory?.let {
                 ListRow(MikaIcons.Heart, stringResource(R.string.memory_and_skills), stringResource(R.string.settings_memory_sub), first = true, onClick = it) { RowChevron() }
             }
+            onOpenPersonas?.let {
+                ListRow(MikaIcons.Spark, stringResource(R.string.persona_title), stringResource(R.string.persona_sub), first = onOpenMemory == null, onClick = it) { RowChevron() }
+            }
             ListRow(
                 MikaIcons.Archive,
                 stringResource(R.string.settings_auto_archive),
                 stringResource(R.string.settings_auto_archive_sub),
-                first = onOpenMemory == null,
+                first = onOpenMemory == null && onOpenPersonas == null,
                 onClick = onOpenAutoArchive,
             ) {
                 RowValue(

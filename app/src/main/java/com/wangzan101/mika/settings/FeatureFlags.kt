@@ -3,6 +3,7 @@ package com.wangzan101.mika.settings
 import android.content.Context
 import android.content.SharedPreferences
 import com.wangzan101.mika.capsule.CapsuleCardScale
+import com.wangzan101.mika.BuildConfig
 import com.wangzan101.mika.capsule.CapsuleDock
 import com.wangzan101.mika.capsule.CardDocking
 import com.wangzan101.mika.capsule.CapsuleIdleOpacity
@@ -301,6 +302,12 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
 
+    /** 人格:调试版默认可见,发布版默认关;合并前再决定默认值。 */
+    fun persona(): Boolean = prefs.getBoolean(PERSONA, BuildConfig.DEBUG)
+
+    fun setPersona(on: Boolean) {
+        prefs.edit().putBoolean(PERSONA, on).commit()
+    }
     /** 悬浮胶囊:关闭、有任务时显示(默认)、一直显示。 */
     fun capsuleMode(): CapsuleMode = CapsuleMode.parse(prefs.getString(CAPSULE_MODE, null))
 
@@ -451,6 +458,7 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val PIP_OPERATE = "pip_operate"
         private const val EXTERNAL_SCHEDULE = "external_schedule"
         private const val PROACTIVE = "proactive"
+        private const val PERSONA = "persona"
         private const val THEME_MODE = "theme_mode"
         private const val PERSONAL_START = "personal_start"
         private const val THEME_ACCENT = "theme_accent"

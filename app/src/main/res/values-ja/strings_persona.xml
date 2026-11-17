@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="persona_title">ペルソナ</string>
+    <string name="persona_sub">Mika の話し方を選びます</string>
+    <string name="persona_default">デフォルト</string>
+    <string name="persona_default_sub">Mika のいつもの話し方</string>
+    <string name="persona_empty">ペルソナはまだありません</string>
+    <string name="persona_empty_sub">ペルソナは Mika の話し方を変えるだけで、できることは変えません。</string>
+    <string name="persona_new">新しいペルソナ</string>
+    <string name="persona_edit">ペルソナを編集</string>
+    <string name="persona_name">名前</string>
+    <string name="persona_description">短い説明</string>
+    <string name="persona_prompt">指示</string>
+    <string name="persona_prompt_hint">口調、長さ、言い回し、書式…</string>
+    <string name="persona_empty_prompt">指示がない場合、このペルソナは何も変えません。</string>
+    <string name="persona_counter">%1$d 文字 · 約 %2$d トークン</string>
+    <string name="persona_preview">プロンプト全体をプレビュー</string>
+    <string name="persona_preview_hide">プレビューを閉じる</string>
+    <string name="persona_preview_note">灰色の部分は固定ルールです。ペルソナは口調と言い回しを変えられますが、安全、権限、Mika が報告する内容は変えられません。</string>
+    <string name="persona_chip">ペルソナ：%1$s</string>
+    <string name="persona_manage">ペルソナを管理</string>
+    <string name="persona_switch_note">切り替えはこのチャットの次のメッセージから反映されます。</string>
+    <string name="persona_delete_title">「%1$s」を削除しますか？</string>
+    <string name="persona_delete_body">これを使っているチャットはデフォルトのペルソナに戻ります。元に戻せません。</string>
+    <string name="persona_copy">複製</string>
+    <string name="persona_missing">削除されたペルソナ</string>
+    <string name="persona_name_required">名前を入力してください。</string>
+    <string name="persona_name_too_long">名前が長すぎます。</string>
+    <string name="persona_description_too_long">説明が長すぎます（最大 %1$d 文字）。</string>
+    <string name="persona_prompt_too_long">指示が長すぎます（最大 %1$d 文字）。</string>
+    <string name="persona_save_failed">ペルソナを保存できませんでした。</string>
+</resources>

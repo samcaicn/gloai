@@ -183,6 +183,9 @@ private fun HeaderGroup(h: TimelineHeader, stepCount: Int, onExport: () -> Unit)
                     RowValue(stringResource(R.string.timeline_step_limit_value, h.stepsUsed, limit))
                 }
             }
+            h.persona?.let { persona ->
+                ListRow(null, stringResource(R.string.persona_title)) { RowValue(persona) }
+            }
             h.tokenBudget?.let { limit ->
                 ListRow(null, stringResource(R.string.timeline_token_budget)) {
                     RowValue(stringResource(R.string.timeline_token_budget_value, UsageCopy.tokens(h.tokensUsed), UsageCopy.tokens(limit)))

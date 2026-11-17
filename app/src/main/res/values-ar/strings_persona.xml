@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="persona_title">الشخصية</string>
+    <string name="persona_sub">اختر طريقة تحدث Mika معك</string>
+    <string name="persona_default">الافتراضية</string>
+    <string name="persona_default_sub">نبرة Mika المعتادة</string>
+    <string name="persona_empty">لا توجد شخصيات بعد</string>
+    <string name="persona_empty_sub">الشخصية تغيّر طريقة تحدث Mika فقط، لا ما يمكنه فعله.</string>
+    <string name="persona_new">شخصية جديدة</string>
+    <string name="persona_edit">تعديل الشخصية</string>
+    <string name="persona_name">الاسم</string>
+    <string name="persona_description">وصف قصير</string>
+    <string name="persona_prompt">التعليمات</string>
+    <string name="persona_prompt_hint">النبرة، الطول، الصياغة، التنسيق…</string>
+    <string name="persona_empty_prompt">بدون تعليمات لن تغيّر هذه الشخصية أي شيء.</string>
+    <string name="persona_counter">%1$d حرفًا · نحو %2$d رمزًا</string>
+    <string name="persona_preview">معاينة المطالبة الكاملة</string>
+    <string name="persona_preview_hide">إخفاء المعاينة</string>
+    <string name="persona_preview_note">القواعد الرمادية ثابتة. يمكن للشخصية تغيير النبرة والصياغة، لكن ليس الأمان أو الأذونات أو ما يبلغ عنه Mika.</string>
+    <string name="persona_chip">الشخصية: %1$s</string>
+    <string name="persona_manage">إدارة الشخصيات</string>
+    <string name="persona_switch_note">التبديل يؤثر على الرسائل التالية في هذه المحادثة فقط.</string>
+    <string name="persona_delete_title">حذف «%1$s»؟</string>
+    <string name="persona_delete_body">ستعود المحادثات التي تستخدمها إلى الشخصية الافتراضية. لا يمكن التراجع.</string>
+    <string name="persona_copy">تكرار</string>
+    <string name="persona_missing">شخصية محذوفة</string>
+    <string name="persona_name_required">أدخل اسمًا.</string>
+    <string name="persona_name_too_long">الاسم طويل جدًا.</string>
+    <string name="persona_description_too_long">الوصف طويل جدًا (الحد الأقصى %1$d حرفًا).</string>
+    <string name="persona_prompt_too_long">التعليمات طويلة جدًا (الحد الأقصى %1$d حرفًا).</string>
+    <string name="persona_save_failed">تعذّر حفظ الشخصية.</string>
+</resources>

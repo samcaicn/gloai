@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="persona_title">페르소나</string>
+    <string name="persona_sub">Mika가 말하는 방식을 선택하세요</string>
+    <string name="persona_default">기본</string>
+    <string name="persona_default_sub">Mika의 평소 말투</string>
+    <string name="persona_empty">아직 페르소나가 없습니다</string>
+    <string name="persona_empty_sub">페르소나는 Mika의 말투만 바꾸며, 할 수 있는 일은 바꾸지 않습니다.</string>
+    <string name="persona_new">새 페르소나</string>
+    <string name="persona_edit">페르소나 편집</string>
+    <string name="persona_name">이름</string>
+    <string name="persona_description">짧은 설명</string>
+    <string name="persona_prompt">지시</string>
+    <string name="persona_prompt_hint">말투, 길이, 표현, 서식…</string>
+    <string name="persona_empty_prompt">지시가 없으면 이 페르소나는 아무것도 바꾸지 않습니다.</string>
+    <string name="persona_counter">%1$d자 · 약 %2$d 토큰</string>
+    <string name="persona_preview">전체 프롬프트 미리보기</string>
+    <string name="persona_preview_hide">미리보기 닫기</string>
+    <string name="persona_preview_note">회색 부분은 고정 규칙입니다. 페르소나는 말투와 표현을 바꿀 수 있지만 안전, 권한, Mika가 보고하는 내용은 바꿀 수 없습니다.</string>
+    <string name="persona_chip">페르소나: %1$s</string>
+    <string name="persona_manage">페르소나 관리</string>
+    <string name="persona_switch_note">전환은 이 대화의 다음 메시지부터 적용됩니다.</string>
+    <string name="persona_delete_title">“%1$s”을(를) 삭제할까요?</string>
+    <string name="persona_delete_body">이 페르소나를 쓰는 대화는 기본 페르소나로 돌아갑니다. 되돌릴 수 없습니다.</string>
+    <string name="persona_copy">복제</string>
+    <string name="persona_missing">삭제된 페르소나</string>
+    <string name="persona_name_required">이름을 입력하세요.</string>
+    <string name="persona_name_too_long">이름이 너무 깁니다.</string>
+    <string name="persona_description_too_long">설명이 너무 깁니다(최대 %1$d자).</string>
+    <string name="persona_prompt_too_long">지시가 너무 깁니다(최대 %1$d자).</string>
+    <string name="persona_save_failed">페르소나를 저장하지 못했습니다.</string>
+</resources>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="persona_title">Persona</string>
+    <string name="persona_sub">Escolha como a Mika fala com você</string>
+    <string name="persona_default">Padrão</string>
+    <string name="persona_default_sub">A voz habitual da Mika</string>
+    <string name="persona_empty">Ainda não há personas</string>
+    <string name="persona_empty_sub">Uma persona muda como a Mika fala, não o que ela pode fazer.</string>
+    <string name="persona_new">Nova persona</string>
+    <string name="persona_edit">Editar persona</string>
+    <string name="persona_name">Nome</string>
+    <string name="persona_description">Descrição curta</string>
+    <string name="persona_prompt">Instruções</string>
+    <string name="persona_prompt_hint">Tom, comprimento, redação, formatação…</string>
+    <string name="persona_empty_prompt">Sem instruções, esta persona não muda nada.</string>
+    <string name="persona_counter">%1$d caracteres · cerca de %2$d tokens</string>
+    <string name="persona_preview">Pré-visualizar o prompt completo</string>
+    <string name="persona_preview_hide">Ocultar a pré-visualização</string>
+    <string name="persona_preview_note">As regras cinzentas são fixas. Uma persona pode mudar o tom e a redação, nunca a segurança, as permissões ou o que a Mika relata.</string>
+    <string name="persona_chip">Persona: %1$s</string>
+    <string name="persona_manage">Gerir personas</string>
+    <string name="persona_switch_note">A mudança afeta apenas as próximas mensagens deste chat.</string>
+    <string name="persona_delete_title">Eliminar «%1$s»?</string>
+    <string name="persona_delete_body">Os chats que a usam voltam à persona padrão. Não é possível anular.</string>
+    <string name="persona_copy">Duplicar</string>
+    <string name="persona_missing">Persona eliminada</string>
+    <string name="persona_name_required">Introduza um nome.</string>
+    <string name="persona_name_too_long">O nome é demasiado longo.</string>
+    <string name="persona_description_too_long">A descrição é demasiado longa (máx. %1$d caracteres).</string>
+    <string name="persona_prompt_too_long">As instruções são demasiado longas (máx. %1$d caracteres).</string>
+    <string name="persona_save_failed">Não foi possível guardar a persona.</string>
+</resources>

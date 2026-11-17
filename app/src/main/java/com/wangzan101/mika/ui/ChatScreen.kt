@@ -218,6 +218,8 @@ fun ChatScreen(
     workflows: com.wangzan101.mika.workflow.WorkflowRuntime? = null,
     openReport: (String) -> Unit = {},
     openPlayback: (String) -> Unit = {},
+    /** 人格选择器里的「管理人格」:打开设置里的人格页。 */
+    onOpenPersonas: () -> Unit = {},
 ) {
     val checklistStore = checklists ?: (LocalContext.current.applicationContext as? MikaApp)?.savedChecklists
     val workflowRuntime = workflows ?: (LocalContext.current.applicationContext as? MikaApp)?.workflows
@@ -237,6 +239,8 @@ fun ChatScreen(
         DeviceFileBrowser(vm, id) { deviceBrowserConversation = null }
     }
     val pendingJump by vm.jump.collectAsState()
+    val personas by vm.personas.collectAsState()
+    var personaPicker by remember { mutableStateOf(false) }
     val others by vm.otherRunning.collectAsState()
     val keptAny by vm.keptPage.collectAsState()
     // 只管这个对话留下的那一页
@@ -563,6 +567,16 @@ fun ChatScreen(
             steerTarget = null,
             onVoiceHolding = { voiceHolding = it },
             editRequest = editRequest,
+            personaBar = if (personas.isNotEmpty() || ui.personaId != null) {
+                {
+                    PersonaChip(
+                        current = ui.personaId,
+                        personas = personas,
+                        enabled = vm.canSwitchPersona(),
+                        onClick = { personaPicker = true },
+                    )
+                }
+            } else null,
         )
 
         val pipOccupiesCorner = ui.pip.visible && ui.pip.mode != PipMode.Done
@@ -594,6 +608,16 @@ fun ChatScreen(
             backdrop = backdrop,
             reduceMotion = reduceMotion,
         )
+
+        if (personaPicker) {
+            PersonaPicker(
+                current = ui.personaId,
+                personas = personas,
+                onSelect = { vm.selectPersona(it) },
+                onManage = { personaPicker = false; onOpenPersonas() },
+                onDismiss = { personaPicker = false },
+            )
+        }
 
         AgentPip(
             pip = ui.pip,
@@ -1626,6 +1650,8 @@ internal fun Composer(
     onVoiceHolding: (Boolean) -> Unit = {},
     sendFromIme: Boolean = false,
     draftKey: String? = null,
+    /** 输入栏上方的人格 chip;为 null 时不显示。 */
+    personaBar: (@Composable () -> Unit)? = null,
 ) {
     val c = MikaTheme.colors
     var fieldFocused by remember { mutableStateOf(false) }
@@ -1705,6 +1731,7 @@ internal fun Composer(
             .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 6.dp),
     ) {
         Column(Modifier.fillMaxWidth()) {
+            personaBar?.let { it() }
             FollowUpTray(
                 queued, active = mode != ComposerMode.Idle, canGuide = mode == ComposerMode.Busy, onGuide = onGuideQueued,
                 onEdit = onEditQueued, onCancel = onCancelQueued, onStartNow = onStartQueued, onActions = onQueueActions,

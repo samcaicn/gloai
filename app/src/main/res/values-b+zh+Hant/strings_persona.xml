@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="persona_title">人格</string>
+    <string name="persona_sub">選擇 Mika 和你說話的方式</string>
+    <string name="persona_default">預設</string>
+    <string name="persona_default_sub">Mika 平常的說話方式</string>
+    <string name="persona_empty">還沒有人格</string>
+    <string name="persona_empty_sub">人格只改變 Mika 怎麼說話，不改變 Mika 能做什麼。</string>
+    <string name="persona_new">新增人格</string>
+    <string name="persona_edit">編輯人格</string>
+    <string name="persona_name">名稱</string>
+    <string name="persona_description">簡短說明</string>
+    <string name="persona_prompt">指令</string>
+    <string name="persona_prompt_hint">語氣、長度、措辭、格式……</string>
+    <string name="persona_empty_prompt">沒有指令時，這個人格不會改變任何行為。</string>
+    <string name="persona_counter">%1$d 字 · 約 %2$d token</string>
+    <string name="persona_preview">預覽完整提示詞</string>
+    <string name="persona_preview_hide">收起預覽</string>
+    <string name="persona_preview_note">灰色部分是固定規則。人格可以改變語氣和措辭，但不能改變安全、權限或 Mika 報告的內容。</string>
+    <string name="persona_chip">人格：%1$s</string>
+    <string name="persona_manage">管理人格</string>
+    <string name="persona_switch_note">切換只影響這個對話接下來的訊息。</string>
+    <string name="persona_delete_title">刪除「%1$s」？</string>
+    <string name="persona_delete_body">用它的對話會回到預設人格。刪除後不能恢復。</string>
+    <string name="persona_copy">複製一份</string>
+    <string name="persona_missing">已刪除的人格</string>
+    <string name="persona_name_required">請填寫名稱。</string>
+    <string name="persona_name_too_long">名稱太長。</string>
+    <string name="persona_description_too_long">說明太長（最多 %1$d 字）。</string>
+    <string name="persona_prompt_too_long">指令太長（最多 %1$d 字）。</string>
+    <string name="persona_save_failed">儲存人格失敗。</string>
+</resources>
