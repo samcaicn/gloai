@@ -120,6 +120,7 @@ class TaskService : Service() {
     /** 前台常驻通知属于哪个任务;收尾后留着,直到换成别的任务。 */
     @Volatile private var foreground: TaskRun? = null
     private val notifyLock = Any()
+    private val workflowStarts = AtomicInteger()
     @Volatile private var lastStartId = 0
 
     internal val clipLock get() = center.clipLock
@@ -272,6 +273,36 @@ class TaskService : Service() {
                 triggerActionGoal = intent.getStringExtra(EXTRA_TRIGGER_ACTION),
                 triggerThreadId = intent.getStringExtra(EXTRA_TRIGGER_THREAD),
                 triggerCondition = intent.getStringExtra(EXTRA_TRIGGER_CONDITION))
+            ACTION_START_WORKFLOW -> {
+                workflowStarts.incrementAndGet()
+                keepForeground()
+                scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    val workflows = (application as com.wangzan101.mika.MikaApp).workflows
+                    val attemptId = intent.getStringExtra(EXTRA_WORKFLOW_ATTEMPT).orEmpty()
+                    try {
+                        val dispatch = withContext(Dispatchers.IO) {
+                            workflows.store.claim(attemptId)?.also {
+                                ConversationStore.shared(this@TaskService).setTitle(it.conversationId, it.step.title)
+                            }
+                        }
+                        if (dispatch != null) {
+                            if (teachingBlocks()) withContext(Dispatchers.IO) { workflows.complete(attemptId, false, "", "start_failed") }
+                            else withContext(Dispatchers.Main) {
+                                begin(getString(R.string.workflow_step_prompt, dispatch.step.instruction, dispatch.input, dispatch.previous),
+                                    dispatch.conversationId, workflowAttemptId = dispatch.attemptId)
+                            }
+                        }
+                    } catch (e: CancellationException) {
+                        (application as com.wangzan101.mika.MikaApp).workflowInterrupted(attemptId)
+                        throw e
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.IO) { workflows.complete(attemptId, false, "", "start_failed") }
+                    } finally {
+                        if (workflowStarts.decrementAndGet() == 0 && !taskState._busy.value && keeper.page.value == null) stopSelf(lastStartId)
+                    }
+                }
+                return START_NOT_STICKY
+            }
             ACTION_START_MCP -> intent.getStringExtra(EXTRA_MCP_ID)?.let { id ->
                 if ((application as com.wangzan101.mika.MikaApp).remoteTasks.claimStart(id)) {
                     begin(intent.getStringExtra(EXTRA_GOAL).orEmpty(), intent.getStringExtra(EXTRA_CONVERSATION),
@@ -307,7 +338,7 @@ class TaskService : Service() {
                 run?.confirm(if (intent.action == ACTION_APPROVE) ConfirmChoice.Once else ConfirmChoice.Deny, key)
             }
         }
-        if (!taskState._busy.value && keeper.page.value == null) stopSelf(startId)
+        if (workflowStarts.get() == 0 && !taskState._busy.value && keeper.page.value == null) stopSelf(startId)
         return START_NOT_STICKY
     }
 
@@ -320,7 +351,7 @@ class TaskService : Service() {
     private fun begin(newGoal: String, requestedConversation: String?,
         provenance: RunProvenance = RunProvenance(), triggerKey: String? = null,
         triggerActionGoal: String? = null, triggerThreadId: String? = null, mcpExternalId: String? = null, messageId: String? = null,
-        channelPeer: ChannelPeer? = null, channelMessageId: String? = null, triggerCondition: String? = null) {
+        channelPeer: ChannelPeer? = null, channelMessageId: String? = null, triggerCondition: String? = null, workflowAttemptId: String? = null) {
         if (teachingBlocks()) {
             if (provenance.origin == RunOrigin.Ui) {
                 android.widget.Toast.makeText(this, tr(R.string.teach_blocked_task), android.widget.Toast.LENGTH_LONG).show()
@@ -351,7 +382,7 @@ class TaskService : Service() {
             return
         }
         startNew(newGoal, requestedConversation, provenance, triggerKey, triggerActionGoal, triggerThreadId, mcpExternalId,
-            triggerCondition = triggerCondition, channelPeer = channelPeer, channelMessageId = channelMessageId)
+            triggerCondition = triggerCondition, channelPeer = channelPeer, channelMessageId = channelMessageId, workflowAttemptId = workflowAttemptId)
     }
 
     /**
@@ -362,7 +393,7 @@ class TaskService : Service() {
         provenance: RunProvenance = RunProvenance(), triggerKey: String? = null,
         triggerActionGoal: String? = null, triggerThreadId: String? = null, mcpExternalId: String? = null,
         followUp: QueuedFollowUp? = null, triggerCondition: String? = null,
-        channelPeer: ChannelPeer? = null, channelMessageId: String? = null) {
+        channelPeer: ChannelPeer? = null, channelMessageId: String? = null, workflowAttemptId: String? = null) {
         if (teachingBlocks()) {
             if (followUp != null) center.followUps.add(followUp)
             else if (provenance.origin == RunOrigin.Ui) {
@@ -393,6 +424,7 @@ class TaskService : Service() {
                     center.store.save(it.copy(triggerWindowKey = triggerKey, userText = triggerCondition))
                 }
                 r.run.mcpExternalId = mcpExternalId
+                r.run.workflowAttemptId = workflowAttemptId
                 r.run.channelPeer = channelPeer
                 r.run.channelMessageId = channelMessageId
                 acceptChannel(r.run)
@@ -421,6 +453,7 @@ class TaskService : Service() {
                     center.store.save(it.copy(triggerWindowKey = triggerKey, userText = triggerCondition))
                 }
                 run.mcpExternalId = mcpExternalId
+                run.workflowAttemptId = workflowAttemptId
                 run.channelPeer = channelPeer
                 run.channelMessageId = channelMessageId
                 acceptChannel(run)
@@ -499,6 +532,17 @@ class TaskService : Service() {
             run.mcpExternalId?.let { (application as com.wangzan101.mika.MikaApp).remoteTasks.ended(it, end, run.steers.value, run.runId.value, run.sharedFiles.value) }
             run.end(end)
             if (!run.conditionCheck) recordTurn(store, run, end, run.runId.value, run.sharedFiles.value, run.joinedSteers(), run.usedGroups, run.joinedInterrupted(), run.joinedFinished())
+            // Sequential workflows must know whether the step actually completed before dispatching the next one.
+            // Reuse the existing outcome judge once; unknown/partial results remain for the user to resolve.
+            val workflowJudged = if (run.workflowAttemptId != null) runCatching { run.settleOutcome(end, store) }.getOrNull() else null
+            run.workflowAttemptId?.let { attempt ->
+                withContext(Dispatchers.IO) {
+                    (application as com.wangzan101.mika.MikaApp).workflows.complete(attempt,
+                        end is TaskState.Succeeded && workflowJudged?.outcome == RunOutcome.Done,
+                        (end as? TaskState.Succeeded)?.answer.orEmpty(),
+                        (end as? TaskState.Failed)?.reason ?: workflowJudged?.reason.orEmpty())
+                }
+            }
             stopRunId?.let { summarizeStop(run, it, draft, store) }
             if (end is TaskState.Failed && !run.conditionCheck) run.runId.value?.let { summarizeFailure(run, it, end.reason, store) }
             if (run.conditionCheck) {
@@ -538,14 +582,14 @@ class TaskService : Service() {
                     }
                 }) {
                     // 交出之后:回答按用户的要求判结局(记进运行记录和这一轮对话),只从办成的学
-                    val judged = runCatching { run.settleOutcome(end, store) }.onFailure { Log.w(TAG, "outcome judging failed", it) }.getOrNull()
+                    val judged = if (run.workflowAttemptId != null) workflowJudged else runCatching { run.settleOutcome(end, store) }.onFailure { Log.w(TAG, "outcome judging failed", it) }.getOrNull()
                     // 回答如实说没办成、只办了一部分的,和放弃一样记成没办成;没判成的照交出算
                     val notDone = judged?.outcome == RunOutcome.Partial || judged?.outcome == RunOutcome.NotPossible
                     if (delivered && notDone && end is TaskState.Succeeded) run.triggerWindowKey?.let { key ->
                         runCatching { TriggerRuntime.actionFailed(app, key, judged?.reason?.ifBlank { null } ?: describe(end).second) }
                             .onFailure { Log.w(TAG, "could not downgrade trigger result", it) }
                     }
-                    if (run.provenance.origin == RunOrigin.Ui) runCatching { run.learnAfter(end, judged?.outcome, store) }
+                    if (run.provenance.origin == RunOrigin.Ui && run.workflowAttemptId == null) runCatching { run.learnAfter(end, judged?.outcome, store) }
                         .onFailure { Log.w(TAG, "learning after run failed", it) }
                 }
             }.onFailure { Log.w(TAG, "result notification failed", it) }
@@ -615,6 +659,12 @@ class TaskService : Service() {
                 taskState._busy.value = false
                 return
             }
+            if (workflowStarts.get() > 0) {
+                foreground = null
+                taskState._busy.value = false
+                keepForeground()
+                return
+            }
             stopForeground(STOP_FOREGROUND_REMOVE)
             // 先取编号再放开:放开之后才到的新任务会带来更新的编号,这里的 stopSelf 就不会把它停掉
             val id = lastStartId
@@ -642,6 +692,9 @@ class TaskService : Service() {
     private fun cancelQueued(run: TaskRun) {
         run.handoffUnconsumed(cancelled = true)
         run.mcpExternalId?.let { (application as com.wangzan101.mika.MikaApp).remoteTasks.ended(it, TaskState.Cancelled, run.steers.value, run.runId.value, run.sharedFiles.value) }
+        run.workflowAttemptId?.let { attempt ->
+            (application as com.wangzan101.mika.MikaApp).workflowInterrupted(attempt)
+        }
         run.end(TaskState.Cancelled)
         recordTurn(ConversationStore.shared(this), run, TaskState.Cancelled, null)
         publishRuns()
@@ -662,7 +715,7 @@ class TaskService : Service() {
                 return
             }
             nm.cancel(ID_KEPT)
-            if (!idle || taskState._busy.value) return
+            if (!idle || taskState._busy.value || workflowStarts.get() > 0) return
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf(lastStartId)
         }
@@ -945,6 +998,7 @@ class TaskService : Service() {
             // 标中断后当场善后(定时窗口、补送、告知、写进对话):进程还在,不等下次启动;用 App 级作用域,服务没了也做完
             center.store.interruptUnfinished()
             val app = application as com.wangzan101.mika.MikaApp
+            center.runs().forEach { r -> r.workflowAttemptId?.let(app::workflowInterrupted) }
             center.runs().forEach { r -> r.mcpExternalId?.let { app.remoteTasks.ended(it, TaskState.Failed(tr(R.string.task_interrupted), FailKind.Interrupted), r.steers.value, r.runId.value, r.sharedFiles.value) } }
             (application as com.wangzan101.mika.MikaApp).runRecovery.settleInterrupted()
             taskState._state.value = TaskState.Failed(tr(R.string.task_interrupted), FailKind.Interrupted)
@@ -1009,6 +1063,8 @@ class TaskService : Service() {
         const val ACTION_ENQUEUE_FOLLOWUP = "com.wangzan101.mika.task.ENQUEUE_FOLLOWUP"
         const val ACTION_DRAIN_FOLLOWUPS = "com.wangzan101.mika.task.DRAIN_FOLLOWUPS"
         const val ACTION_START_TRIGGER = "com.wangzan101.mika.task.START_TRIGGER"
+        private const val ACTION_START_WORKFLOW = "com.wangzan101.mika.task.START_WORKFLOW"
+        private const val EXTRA_WORKFLOW_ATTEMPT = "workflow_attempt"
         const val ACTION_START_MCP = "com.wangzan101.mika.task.START_MCP"
         const val ACTION_START_CHANNEL = "com.wangzan101.mika.task.START_CHANNEL"
         const val ACTION_CANCEL_MCP = "com.wangzan101.mika.task.CANCEL_MCP"
@@ -1079,8 +1135,14 @@ class TaskService : Service() {
         /** 循环的状态里哪些可以由发布写出去。 */
         internal fun loopMayPublish(state: TaskState) = state.isActive()
 
-        /** 开始一个任务;别的对话的任务在跑而不能同时跑时排在它后面。[conversationId] 为空表示新开一个对话(编号见 [conversationId])。 */
-        /** [messageId] 给了时这是任务进行中插的话,界面按它跟这句话的去向。 */
+        /** Starts only the persisted, claimable workflow attempt named by this ID. */
+        fun startWorkflow(context: Context, attemptId: String) {
+            check(!FeatureFlags.get(context).quitRequested())
+            context.startForegroundService(Intent(context, TaskService::class.java).setAction(ACTION_START_WORKFLOW)
+                .putExtra(EXTRA_WORKFLOW_ATTEMPT, attemptId))
+        }
+
+        /** 开始任务;其他对话忙时排队。messageId 非空时按插话处理。 */
         fun start(context: Context, goal: String, conversationId: String? = null, messageId: String? = null) {
             if (FeatureFlags.get(context).quitRequested()) return
             context.startForegroundService(

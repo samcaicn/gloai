@@ -1425,6 +1425,22 @@ class ChatViewModel(
     }
 
     /** 个人助手打开其委派任务：只切换展示，不启动另一项工作。 */
+    /** Open a workflow-owned step, including a running step, while preserving the user's draft. */
+    fun openWorkflowConversation(conversationId: String) {
+        if (conversationId == _ui.value.conversationId) { refresh(); return }
+        refreshParallel()
+        cancelPendingSharedDraft()
+        keepDraft()
+        lingerJob?.cancel()
+        parkLive()
+        val past = saved(conversationId)
+        liveIndex = -1
+        _ui.update { restoreDraft(it.rebuildForConversation(conversationId = conversationId, exchanges = past)) }
+        markCurrent(CurrentChat.Open(conversationId))
+        if (conversationId !in activeConversations.value) { unpark(conversationId); return }
+        follow(conversationId, unpark(conversationId))
+    }
+
     fun openPersonalTask(conversationId: String) {
         refreshParallel()
         lingerJob?.cancel()

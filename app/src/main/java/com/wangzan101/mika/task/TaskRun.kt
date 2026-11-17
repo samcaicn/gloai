@@ -185,6 +185,7 @@ class TaskRun(
     internal var triggerCondition: String? = null
     internal var triggerThreadId: String? = null
     internal var mcpExternalId: String? = null
+    internal var workflowAttemptId: String? = null
     internal var channelPeer: ChannelPeer? = null
     internal var channelMessageId: String? = null
     /** 主循环已经给出结局的时间；与结果实际发出之间的耗时用于定位渠道回传延迟。 */
@@ -1439,7 +1440,7 @@ class TaskRun(
         }
         k.agent.noteOutcome(judged.outcome)
         // 只有办成的才记成路线;从落盘的运行事件里取
-        if (runId != null && LearnGate.shouldSaveRoute(k.routesOn, end, judged.outcome, runId, goal)) k.runStore?.let { s ->
+        if (workflowAttemptId == null && runId != null && LearnGate.shouldSaveRoute(k.routesOn, end, judged.outcome, runId, goal)) k.runStore?.let { s ->
             saveRoute(goal, withContext(Dispatchers.IO) { s.events(runId) }, k.dispatcher.index)
         }
         return judged

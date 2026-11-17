@@ -91,6 +91,18 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
     val detailedTraces by lazy { DetailedTraces(this) }
 
     val remoteTasks by lazy { RemoteTaskHub(this) }
+    internal fun workflowInterrupted(attemptId: String) {
+        scope.launch(Dispatchers.IO) { workflows.complete(attemptId, false, "", "interrupted") }
+    }
+    val workflows by lazy {
+        com.wangzan101.mika.workflow.WorkflowRuntime(
+            com.wangzan101.mika.workflow.WorkflowStore(
+                java.io.File(filesDir, com.wangzan101.mika.workflow.WorkflowStore.FILE),
+                com.wangzan101.mika.settings.KeystoreKeyCipher("mika-workflows"),
+            ),
+        ) { dispatch -> TaskService.startWorkflow(this, dispatch.attemptId) }
+    }
+
 
     /** 通话功能：设置页负责开关与凭证；CallRuntime 是本地状态与实时语音的宿主，AndroidPhoneCallPort 是交给模型的工具入口。 */
     val calls by lazy { com.wangzan101.mika.calls.CallRuntime(this) }

@@ -157,6 +157,27 @@ class ChatViewModelTest {
         assertEquals(listOf("我从通知里挑出 1 条", "已回复", "我从通知里挑出 2 条"), vm.ui.value.exchanges.map { (it.status as ExchangeStatus.Done).answer })
     }
 
+    @Test fun workflowConversationCanOpenWhileRunningAndPreservesDraft() = runTest {
+        val active = MutableStateFlow<List<String>>(emptyList())
+        val vm = ChatViewModel(backgroundScope, state, stage, actions, ConversationStore(tmp.newFolder()),
+            activeConversations = active, parallelFlag = { false }, runGoal = { "workflow step" })
+        runCurrent()
+        vm.openConversation("original")
+        vm.input("draft to keep")
+        vm.quote(QuoteMessage.From.Mika, "quoted result")
+        active.value = listOf("step")
+        emit(TaskState.Running(1, "working"))
+        vm.openWorkflowConversation("step")
+        assertEquals("step", vm.ui.value.conversationId)
+        assertTrue(calls.contains("show:step"))
+        assertFalse(calls.any { it.startsWith("start:") })
+        active.value = emptyList()
+        emit(TaskState.Idle)
+        vm.openWorkflowConversation("original")
+        assertEquals("draft to keep", vm.ui.value.input)
+        assertEquals("quoted result", vm.ui.value.quote?.text)
+    }
+
     @Test fun draftsStayWithTheirConversationInSerialAndParallelModes() = runTest {
         for (parallel in listOf(false, true)) {
             val vm = ChatViewModel(backgroundScope, MutableStateFlow(TaskState.Idle), stage, actions,

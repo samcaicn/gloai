@@ -58,7 +58,7 @@ import kotlinx.coroutines.withContext
 
 /** 常用任务共用首页的本地列表；设置入口编辑，聊天入口选取并填入输入框。 */
 @Composable
-fun RecommendedTasksScreen(store: RecommendedTaskStore, onBack: () -> Unit, onPick: ((RecommendedTask) -> Unit)? = null, onOpenChecklists: (() -> Unit)? = null) {
+fun RecommendedTasksScreen(store: RecommendedTaskStore, onBack: () -> Unit, onPick: ((RecommendedTask) -> Unit)? = null, onOpenChecklists: (() -> Unit)? = null, onOpenWorkflows: (() -> Unit)? = null) {
     remember(store) { store.ensureLoaded { ChatCopy.recommendationSeeds() } }
     val tasks by store.tasks.collectAsState()
     val unreadable by store.unreadable.collectAsState()
@@ -86,6 +86,9 @@ fun RecommendedTasksScreen(store: RecommendedTaskStore, onBack: () -> Unit, onPi
         viewportModifier = Modifier.onGloballyPositioned { reorder.viewport = it.boundsInWindow() }) {
         onOpenChecklists?.let { open ->
             ListRow(MikaIcons.ListChecks, stringResource(R.string.checklists_title), first = true, onClick = open)
+        }
+        onOpenWorkflows?.let { open ->
+            ListRow(MikaIcons.Route, stringResource(R.string.workflows_title), first = false, onClick = open)
         }
         if (unreadable) {
             FooterNote(stringResource(R.string.recommendations_unreadable), color = c.bad)
