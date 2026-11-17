@@ -73,7 +73,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** 设置里能进入的子页面;[Home] 是设置首页,[Advanced] 集中放置连接、维护和工程能力。 */
-private enum class SettingsPage { Home, Advanced, AppAccess, SmsLogin, PhoneOps, Calls, Wechat, DuringWork, AppPace, Capsule, Language, Notifications, Recommendations, Sandbox, Plugins, Recovery, SelfCheck, ComputerAccess, McpServers, Root, Developer, DeviceDirectories, RunStats, Proactive }
+private enum class SettingsPage { Home, Advanced, AppAccess, SmsLogin, PhoneOps, Calls, Wechat, DuringWork, AppPace, Capsule, Language, Notifications, Recommendations, Sandbox, Plugins, EnvVars, Recovery, SelfCheck, ComputerAccess, McpServers, Root, Developer, DeviceDirectories, RunStats, Proactive }
 
 /**
  * 设置页:总状态卡 + 常用 / 我的数据 / 其他。高级与其他只增加一层,各子页返回来时的页面。
@@ -184,7 +184,7 @@ fun SettingsScreen(
             SettingsPage.RunStats, SettingsPage.DeviceDirectories -> SettingsPage.Developer
             SettingsPage.SelfCheck -> SettingsPage.Recovery
             SettingsPage.Sandbox, SettingsPage.Recovery, SettingsPage.ComputerAccess,
-            SettingsPage.McpServers, SettingsPage.Root, SettingsPage.Developer -> SettingsPage.Advanced
+            SettingsPage.McpServers, SettingsPage.Root, SettingsPage.Developer, SettingsPage.EnvVars -> SettingsPage.Advanced
             SettingsPage.AppPace -> SettingsPage.DuringWork
             else -> SettingsPage.Home
         }
@@ -231,6 +231,7 @@ fun SettingsScreen(
             webSearch = webSearch, onOpenWebSearch = { editingSearch = true },
             sandbox = sandboxStatus, onOpenSandbox = { page = SettingsPage.Sandbox },
             pluginsCount = pluginRecords.size, onOpenPlugins = { page = SettingsPage.Plugins },
+            onOpenEnvVars = { page = SettingsPage.EnvVars },
             showRecovery = status.sdkInt >= Prerequisites.MIN_SDK, onOpenRecovery = { page = SettingsPage.Recovery },
             computerAccess = mcpOn, onOpenComputerAccess = { page = SettingsPage.ComputerAccess },
             mcpServersCount = mcpServers?.servers?.value?.size, onOpenMcpServers = { page = SettingsPage.McpServers },
@@ -278,6 +279,7 @@ fun SettingsScreen(
             onCardScale = { flags.setCapsuleCardScale(it); capsuleCardScale = it },
         )
         SettingsPage.Plugins -> PluginsScreen(pluginRegistry, onBack = toHome)
+        SettingsPage.EnvVars -> EnvVarSettingsScreen(remember { com.wangzan101.mika.settings.EnvVarStore.get(context) }, onBack = toAdvanced)
         SettingsPage.Sandbox -> SandboxScreen(onBack = toAdvanced)
         SettingsPage.Recovery -> RecoveryScreen(onBack = toAdvanced, onOpenSelfCheck = { page = SettingsPage.SelfCheck })
         SettingsPage.SelfCheck -> SelfCheckScreen(status, onBack = back)
@@ -534,6 +536,7 @@ fun AdvancedSettingsContent(
     onOpenSandbox: () -> Unit = {},
     pluginsCount: Int? = null,
     onOpenPlugins: () -> Unit = {},
+    onOpenEnvVars: () -> Unit = {},
     showRecovery: Boolean = true,
     onOpenRecovery: () -> Unit = {},
     computerAccess: Boolean? = null,
@@ -575,6 +578,9 @@ fun AdvancedSettingsContent(
                     }
                 }
             }
+        }
+        GroupCard {
+            ListRow(MikaIcons.Code, stringResource(R.string.env_vars_title), first = true, onClick = onOpenEnvVars) { RowChevron() }
         }
         if (proxy != null || webSearch != null) {
             GroupLabel(stringResource(R.string.settings_network))

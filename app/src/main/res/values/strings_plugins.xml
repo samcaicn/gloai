@@ -29,4 +29,9 @@
         <item quantity="one">%1$d plugin</item>
         <item quantity="other">%1$d plugins</item>
     </plurals>
+    <string name="env_vars_title">Environment variables</string>
+    <string name="env_vars_add">Add variable</string>
+    <string name="env_vars_name">Name</string>
+    <string name="env_vars_value">Value</string>
+    <string name="env_vars_empty">No environment variables yet</string>
 </resources>
