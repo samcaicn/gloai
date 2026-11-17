@@ -6,4 +6,5 @@
     <string name="calls_draft_copied">کپی شد</string>
     <string name="calls_draft_saved">پیش‌نویس ذخیره شد</string>
     <string name="calls_draft_save_failed">ذخیره پیش‌نویس ناموفق بود. دوباره تلاش کنید.</string>
+    <string name="calls_draft_create">نوشتن پیام پیگیری</string>
 </resources>

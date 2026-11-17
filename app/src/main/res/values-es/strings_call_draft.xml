@@ -6,4 +6,5 @@
     <string name="calls_draft_copied">Copiado</string>
     <string name="calls_draft_saved">Borrador guardado</string>
     <string name="calls_draft_save_failed">No se pudo guardar el borrador. Inténtalo de nuevo.</string>
+    <string name="calls_draft_create">Escribir mensaje de seguimiento</string>
 </resources>

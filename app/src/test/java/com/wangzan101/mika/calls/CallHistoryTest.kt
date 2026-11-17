@@ -129,6 +129,17 @@ class CallHistoryTest {
         assertEquals(CallHistory.Result.NOT_FOUND, reopened.saveFollowUpDraft(original.id, "不复活已删除的通话"))
     }
 
+    @Test fun manuallyWrittenDraftPreservesLegacySummaryAndHandlingState() = runBlocking {
+        val original = record(1).copy(handled = true, summaryStatus = SummaryStatus.READY,
+            summary = CallSummary(purpose = "确认床垫尺寸", actions = listOf(CallFollowUp("补充尺寸"))))
+        val storage = MemoryStorage(listOf(original))
+        val history = CallHistory(storage)
+        assertEquals(CallHistory.Result.SAVED, history.saveFollowUpDraft(original.id, "请补充床垫尺寸。"))
+        val reopened = CallHistory(storage).also { it.load() }
+        assertEquals(original.copy(summary = original.summary!!.copy(followUpDraft = "请补充床垫尺寸。")),
+            reopened.state.value.single())
+    }
+
     @Test fun oldSummaryDecodesWithoutDraft() {
         val summary = Json.decodeFromString<CallSummary>("""{"purpose":"询价","actions":[]}""")
         assertNull(summary.followUpDraft)

@@ -6,4 +6,5 @@
     <string name="calls_draft_copied">コピーしました</string>
     <string name="calls_draft_saved">下書きを保存しました</string>
     <string name="calls_draft_save_failed">下書きを保存できません。再試行してください。</string>
+    <string name="calls_draft_create">フォローメッセージを書く</string>
 </resources>

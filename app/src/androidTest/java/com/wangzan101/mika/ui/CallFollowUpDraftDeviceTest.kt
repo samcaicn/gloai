@@ -29,9 +29,13 @@ import java.io.File
 class CallFollowUpDraftDeviceTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun failedSaveKeepsEditsAndSuccessfulSaveCanBeCopiedAndReopened() {
+    @Test fun failedSaveKeepsEditsAndSuccessfulSaveCanBeCopiedAndReopened() =
+        exerciseDraft("关于刚才的电话，已记下您需要了解床垫的需求。尺寸和数量还待确认，方便时请补充一下，便于整理报价。")
+
+    @Test fun missingDraftCanBeWrittenSavedAndCopied() = exerciseDraft(null)
+
+    private fun exerciseDraft(draft: String?) {
         val app = ApplicationProvider.getApplicationContext<MikaApp>()
-        val draft = "关于刚才的电话，已记下您需要了解床垫的需求。尺寸和数量还待确认，方便时请补充一下，便于整理报价。"
         val edited = "关于刚才的电话，请补充床垫尺寸和数量，收到后再整理报价。"
         val record = CallRecord("follow-up-fixture", "测试客户", CallDirection.OUTGOING,
             1794691200000, 1794691260000, "通话已结束", emptyList(),
@@ -60,9 +64,12 @@ class CallFollowUpDraftDeviceTest {
                 }
             }
         }
-        compose.onNodeWithTag("call-draft-copy").performScrollTo()
-        snapshot(app, "draft")
-        compose.onNodeWithTag("call-draft-edit").performClick()
+        val entry = if (draft == null) "call-draft-create" else "call-draft-edit"
+        compose.onNodeWithTag(entry).performScrollTo()
+        snapshot(app, if (draft == null) "create" else "draft")
+        if (draft == null) compose.onNodeWithTag("call-draft-copy").assertDoesNotExist()
+        compose.onNodeWithTag(entry).performClick()
+        if (draft == null) compose.onNodeWithTag("call-draft-save").assertIsNotEnabled()
         compose.onNodeWithTag("call-draft-input").performTextReplacement(edited)
         compose.onNodeWithTag("call-draft-save").performClick()
         compose.onNodeWithText(app.getString(R.string.calls_draft_save_failed)).assertExists()

@@ -287,8 +287,8 @@ private fun CallHistoryItem(
                         }
                     }
                 }
-                record.summary?.followUpDraft?.let { draft ->
-                    CallFollowUpDraft(record.id, draft, onSaveDraft)
+                if (record.summaryStatus == SummaryStatus.READY && record.summary != null) {
+                    CallFollowUpDraft(record.id, record.summary.followUpDraft, onSaveDraft)
                 }
                 if (record.summaryStatus == SummaryStatus.PENDING) {
                     Text(stringResource(R.string.calls_summary_generating), color = MikaTheme.colors.ink3)

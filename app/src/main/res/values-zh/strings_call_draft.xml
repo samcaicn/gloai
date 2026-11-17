@@ -6,4 +6,5 @@
     <string name="calls_draft_copied">已复制</string>
     <string name="calls_draft_saved">草稿已保存</string>
     <string name="calls_draft_save_failed">草稿保存失败，请重试。</string>
+    <string name="calls_draft_create">写跟进消息</string>
 </resources>

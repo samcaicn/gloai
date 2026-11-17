@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun CallFollowUpDraft(
     recordId: String,
-    draft: String,
+    draft: String?,
     onSave: (suspend (String) -> CallActionResult)?,
 ) {
     val context = LocalContext.current
@@ -31,22 +31,27 @@ internal fun CallFollowUpDraft(
     val copied = stringResource(R.string.calls_draft_copied)
     val saveFailed = stringResource(R.string.calls_draft_save_failed)
     var editing by rememberSaveable(recordId) { mutableStateOf(false) }
-    var text by rememberSaveable(recordId) { mutableStateOf(draft) }
+    var text by rememberSaveable(recordId) { mutableStateOf(draft.orEmpty()) }
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Text(title, style = MaterialTheme.typography.titleSmall)
-    SelectionContainer { Text(draft, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("call-draft-text")) }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (onSave != null) TextButton(onClick = { text = draft; error = false; editing = true },
-            modifier = Modifier.testTag("call-draft-edit")) { Text(stringResource(R.string.calls_draft_edit)) }
-        OutlinedButton(onClick = {
-            context.getSystemService(ClipboardManager::class.java)?.let { clipboard ->
-                clipboard.setPrimaryClip(ClipData.newPlainText(title, draft))
-                Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-            }
-        }, modifier = Modifier.testTag("call-draft-copy")) { Text(stringResource(R.string.calls_draft_copy)) }
+    if (draft != null) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        SelectionContainer { Text(draft, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("call-draft-text")) }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (onSave != null) TextButton(onClick = { text = draft; error = false; editing = true },
+                modifier = Modifier.testTag("call-draft-edit")) { Text(stringResource(R.string.calls_draft_edit)) }
+            OutlinedButton(onClick = {
+                context.getSystemService(ClipboardManager::class.java)?.let { clipboard ->
+                    clipboard.setPrimaryClip(ClipData.newPlainText(title, draft))
+                    Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                }
+            }, modifier = Modifier.testTag("call-draft-copy")) { Text(stringResource(R.string.calls_draft_copy)) }
+        }
+    } else if (onSave != null) {
+        TextButton(onClick = { text = ""; error = false; editing = true },
+            modifier = Modifier.testTag("call-draft-create")) { Text(stringResource(R.string.calls_draft_create)) }
     }
     if (editing && onSave != null) AlertDialog(
         onDismissRequest = { if (!saving) editing = false },

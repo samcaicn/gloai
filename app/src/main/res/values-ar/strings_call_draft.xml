@@ -6,4 +6,5 @@
     <string name="calls_draft_copied">تم النسخ</string>
     <string name="calls_draft_saved">تم حفظ المسودة</string>
     <string name="calls_draft_save_failed">تعذر حفظ المسودة. حاول مرة أخرى.</string>
+    <string name="calls_draft_create">كتابة رسالة متابعة</string>
 </resources>
