@@ -1,13 +1,16 @@
-name: AI智播 — 原型体检 + 热更新产物
+name: AI智播 — 体检 + Web热更新产物 + APK构建
 
-# 参考 weauto 的 CI 模式：push / 手动双触发，产物走 Actions Artifact 供热更新。
-# 与 weauto 的差异：本项目是纯静态 HTML 原型，无需 Python/EXE 构建，
-# 因此只做「结构体检 + 版本标记 + 产物上传」三步，秒内完成。
+# 三条腿：
+#   1. check    —— 原型结构体检（秒级，最早暴露漏改产品名/标签不闭合）。
+#   2. package  —— web 热更新产物（index.html + 版本指纹），供热替换分发。
+#   3. apk      —— Android WebView 壳打 debug APK，把原型装进手机。
+#                  用 debug 而非 release：无需签名密钥，CI 一定能出包。
+#                  参考 jev-chat-jarvis/.github/workflows/build.yml 的 Android 构建流程。
 #
-# 热更新链路（对齐 weauto）：
-#   push 代码 → 本 CI 产出 ai-zhibo-web artifact（含 index.html + version.json + manifest）
-#             → 分发端按 artifact 拉取最新 index.html 热替换（无需重装/重编译）。
-#   artifact 里带 version.json / manifest.json，客户端比对 version 决定是否更新。
+# 热更新链路：
+#   web —— push → artifact(ai-zhibo-web) → 分发端按 version/sha256 热替换 index.html
+#   apk —— push → artifact(ai-zhibo-apk) → 下载安装；壳优先加载 files/index.html，
+#          因此 APK 装一次后，后续只热替换 index.html 即可，无需重装（与 web 同源）。
 on:
   push:
     branches: ['aizhibo']
@@ -17,6 +20,11 @@ on:
 
 permissions:
   contents: read
+
+# 同分支连续推送只保留最新构建，避免排队烧分钟数。
+concurrency:
+  group: aizhibo-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -30,7 +38,6 @@ jobs:
         shell: bash
         run: |
           set -e
-          # 防「静默旧构建」：先断言入口文件存在且带新品牌，避免推错分支/漏改产品名。
           [ -s index.html ] || { echo "FAIL: 缺少 index.html"; exit 1; }
           [ -s version.json ] || { echo "FAIL: 缺少 version.json"; exit 1; }
           grep -q "AI智播" index.html || { echo "FAIL: index.html 未标记产品名 AI智播"; exit 1; }
@@ -40,29 +47,27 @@ jobs:
         shell: bash
         run: |
           set -e
-          # 用 Python 标准库做轻量体检：标签闭合 + JS 函数定义完整性。
           python3 - <<'PY'
           import re, json, sys
           html = open('index.html', encoding='utf-8').read()
           errs = []
-          for tag in ('script', 'style', 'div'):
+          for tag in ('script', 'style'):
             o = len(re.findall(r'<%s[ >]' % tag, html))
             c = len(re.findall(r'</%s>' % tag, html))
-            if tag in ('script', 'style') and o != c:
+            if o != c:
               errs.append('<%s> 未闭合: %d 开 / %d 闭' % (tag, o, c))
-          for ch_open, ch_close in (('{','}'), ('(',')'), ('[',']')):
-            if html.count(ch_open) != html.count(ch_close):
-              errs.append('括号不匹配: %s%d / %s%d' % (ch_open, html.count(ch_open), ch_close, html.count(ch_close)))
+          for a, b in (('{','}'), ('(',')'), ('[',']')):
+            if html.count(a) != html.count(b):
+              errs.append('括号不匹配: %s%d / %s%d' % (a, html.count(a), b, html.count(b)))
           v = json.load(open('version.json', encoding='utf-8'))
           assert v.get('product') == 'AI智播', 'version.json 产品名错误'
-          print('version:', v.get('version'))
           if errs:
             print('FAIL:', '; '.join(errs)); sys.exit(1)
-          print('OK: HTML 结构与版本文件校验通过（%d 字符）' % len(html))
+          print('OK: HTML 结构通过，版本', v.get('version'), '（%d 字符）' % len(html))
           PY
 
   package:
-    name: 打包热更新产物
+    name: Web热更新产物
     runs-on: ubuntu-latest
     needs: check
     steps:
@@ -89,7 +94,7 @@ jobs:
           print(json.dumps(manifest, ensure_ascii=False, indent=2))
           PY
 
-      - name: Upload Artifact (热更新产物)
+      - name: Upload Artifact (web 热更新产物)
         uses: actions/upload-artifact@v4
         with:
           name: ai-zhibo-web
@@ -97,4 +102,63 @@ jobs:
             index.html
             version.json
             manifest.json
+          retention-days: 90
+
+  apk:
+    name: 构建 Android APK
+    runs-on: ubuntu-latest
+    needs: check
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # ubuntu-latest 预装 Android SDK，只需接受许可证，AGP 会按需拉平台。
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+
+      - name: Set up Gradle (cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 同步原型到 assets（防两个 index.html 不一致）
+        shell: bash
+        run: |
+          cp index.html app/src/main/assets/index.html
+          echo "synced: $(md5sum index.html app/src/main/assets/index.html)"
+
+      - name: Build debug APK
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug -PciRun=${{ github.run_number }} --no-daemon --stacktrace 2>&1 | tail -60
+
+      - name: 校验 APK 产物
+        shell: bash
+        run: |
+          set -e
+          APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
+          [ -n "$APK" ] || { echo "FAIL: 未找到 APK 产物"; exit 1; }
+          ls -lh "$APK"
+          # PE/zip 头校验：APK 本质是 zip，确认不是空文件/损坏。
+          python3 - "$APK" <<'PY'
+          import sys, zipfile
+          p = sys.argv[1]
+          z = zipfile.ZipFile(p)
+          names = z.namelist()
+          assert 'assets/index.html' in names, 'APK 缺少 assets/index.html'
+          assert 'AndroidManifest.xml' in names, 'APK 缺少 AndroidManifest.xml'
+          print('OK: APK 结构有效，含 assets/index.html，共 %d 条目' % len(names))
+          PY
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-zhibo-apk
+          path: app/build/outputs/apk/debug/*.apk
           retention-days: 90
