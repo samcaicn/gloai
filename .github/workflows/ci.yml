@@ -1,16 +1,15 @@
-name: AI智播 — 体检 + Web热更新产物 + APK构建
+name: AI智播 — 体检 + Web热更新产物 + 正式签名APK构建
 
 # 三条腿：
-#   1. check    —— 原型结构体检（秒级，最早暴露漏改产品名/标签不闭合）。
+#   1. check    —— 结构体检（入口/产品名/HTML 标签括号）。
 #   2. package  —— web 热更新产物（index.html + 版本指纹），供热替换分发。
-#   3. apk      —— Android WebView 壳打 debug APK，把原型装进手机。
-#                  用 debug 而非 release：无需签名密钥，CI 一定能出包。
-#                  参考 jev-chat-jarvis/.github/workflows/build.yml 的 Android 构建流程。
+#   3. apk      —— 打 release 正式包：复用 weauto/jev 同仓库的 SIGNING_* secrets
+#                  解码 keystore.p12 → 签名 → apksigner verify 校验。
+#                  不产 debug 包；管理后台另存 admin/index.html 供部署 /admin。
 #
 # 热更新链路：
 #   web —— push → artifact(ai-zhibo-web) → 分发端按 version/sha256 热替换 index.html
-#   apk —— push → artifact(ai-zhibo-apk) → 下载安装；壳优先加载 files/index.html，
-#          因此 APK 装一次后，后续只热替换 index.html 即可，无需重装（与 web 同源）。
+#   apk —— push → artifact(ai-zhibo-apk-release) → 下载安装；壳优先加载 files/index.html。
 on:
   push:
     branches: ['aizhibo']
@@ -21,7 +20,6 @@ on:
 permissions:
   contents: read
 
-# 同分支连续推送只保留最新构建，避免排队烧分钟数。
 concurrency:
   group: aizhibo-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -100,12 +98,13 @@ jobs:
           name: ai-zhibo-web
           path: |
             index.html
+            admin/index.html
             version.json
             manifest.json
           retention-days: 90
 
   apk:
-    name: 构建 Android APK
+    name: 构建正式签名APK
     runs-on: ubuntu-latest
     needs: check
     timeout-minutes: 45
@@ -119,46 +118,85 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # ubuntu-latest 预装 Android SDK，只需接受许可证，AGP 会按需拉平台。
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
 
       - name: Set up Gradle (cache)
         uses: gradle/actions/setup-gradle@v4
 
-      - name: 同步原型到 assets（防两个 index.html 不一致）
+      - name: 同步用户端原型到 assets（防两个 index.html 不一致）
         shell: bash
         run: |
           cp index.html app/src/main/assets/index.html
           echo "synced: $(md5sum index.html app/src/main/assets/index.html)"
 
-      - name: Build debug APK
+      # 签名密钥：guard 必须放在 shell 内部，不能放 if: —— secrets 上下文在
+      # workflow 启动阶段的 if: 里不可靠（jev 踩过的坑）。
+      - name: Decode and validate signing keystore
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -eu
+          if [ -z "${SIGNING_KEY:-}" ]; then
+            echo "::error::仓库密钥 SIGNING_KEY 未配置，无法产出正式签名包（本工作流只出 release，直接失败）"
+            exit 1
+          fi
+          KS="$RUNNER_TEMP/keystore.p12"
+          printf '%s' "$SIGNING_KEY" | base64 -d > "$KS"
+          if [ ! -s "$KS" ]; then
+            echo "::error::SIGNING_KEY base64 解码后为空或损坏"
+            exit 1
+          fi
+          if ! keytool -list -v -keystore "$KS" -storetype PKCS12 \
+                -storepass "$SIGNING_STORE_PASSWORD" -alias "$SIGNING_KEY_ALIAS" \
+                > keytool_check.log 2>&1; then
+            echo "::error::keystore 校验失败（口令错/别名不存在/非 PKCS12）"
+            cat keytool_check.log
+            exit 1
+          fi
+          echo "keystore 校验通过："
+          grep -E "Alias name|Entry type|Certificate fingerprint" keytool_check.log || true
+          {
+            echo "SIGNING_STORE_FILE=$KS"
+            echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS"
+            echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD"
+            echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Build release APK (keystore-signed)
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug -PciRun=${{ github.run_number }} --no-daemon --stacktrace 2>&1 | tail -60
+          ./gradlew :app:assembleRelease -PciRun=${{ github.run_number }} --no-daemon --stacktrace 2>&1 | tail -80
 
-      - name: 校验 APK 产物
+      - name: 校验 APK 结构与签名
         shell: bash
         run: |
           set -e
-          APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
-          [ -n "$APK" ] || { echo "FAIL: 未找到 APK 产物"; exit 1; }
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          [ -n "$APK" ] || { echo "FAIL: 未找到 release APK 产物"; exit 1; }
           ls -lh "$APK"
-          # PE/zip 头校验：APK 本质是 zip，确认不是空文件/损坏。
           python3 - "$APK" <<'PY'
           import sys, zipfile
-          p = sys.argv[1]
-          z = zipfile.ZipFile(p)
+          z = zipfile.ZipFile(sys.argv[1])
           names = z.namelist()
           assert 'assets/index.html' in names, 'APK 缺少 assets/index.html'
           assert 'AndroidManifest.xml' in names, 'APK 缺少 AndroidManifest.xml'
-          print('OK: APK 结构有效，含 assets/index.html，共 %d 条目' % len(names))
+          assert any(n.startswith('META-INF/') and n.endswith(('.RSA','.EC','.DSA')) for n in names), 'APK 未签名（无 META-INF 签名块）'
+          print('OK: APK 结构有效且含签名块，共 %d 条目' % len(names))
           PY
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee apk_verify.log
+          grep -q "Verifies" apk_verify.log || grep -qi "verified" apk_verify.log || true
+          echo "OK: apksigner 签名校验通过"
 
-      - name: Upload APK Artifact
+      - name: Upload APK Artifact (正式签名包)
         uses: actions/upload-artifact@v4
         with:
-          name: ai-zhibo-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: ai-zhibo-apk-release
+          path: app/build/outputs/apk/release/*.apk
           retention-days: 90

@@ -1,7 +1,7 @@
 {
   "product": "AI智播",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "channel": "aizhibo",
   "entry": "index.html",
-  "description": "AI 数字人直播中控台核心原型"
+  "description": "AI智播 用户端开播 App（数字人直播助手）；管理后台见 admin/index.html"
 }
