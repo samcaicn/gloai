@@ -65,6 +65,12 @@ private val SEEN = Regex("\"seen\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"")
 private val YES = Regex("^(是|yes(?![A-Za-z0-9_]))", RegexOption.IGNORE_CASE)
 private const val MAX_SEEN = 120
 
+/** 视觉定位一共尝试几次(一次失败再重试一次):模型框选/复看会抖,别把一次抖动判成任务无进展。 */
+private const val VISION_ATTEMPTS = 2
+
+/** 视觉定位里值得重试的瞬态失败;环境类失败(防截屏、没开 App、截不到屏)和「找到了但不对/没佐证」(name_mismatch、unverified_grounding)不重试。 */
+private val TRANSIENT_VISION = setOf("not_found", "not_confirmed", "vision_unavailable")
+
 private val PROMPTS: Pair<String, String> by lazy {
     val (locate, confirm) = Prompts.role("locate").split("<!-- confirm -->")
     locate.trim() to confirm.trim()
@@ -97,9 +103,31 @@ class Locator(private val screen: ScreenPort, private val vision: VisionService,
         }
 
         clearForVision()?.let { return it.asNotFound() }
+        return locateByVision(target, text, elements, synced, second)
+    }
+
+    /**
+     * 视觉定位(框选 + 复看确认)本身会抖:模型非确定,瞬态失败(框选没给、复看没确认、名字对不上、
+     * 视觉调用失败、佐证没过)重试一次再放弃,不把一次抖动直接判成任务无进展。环境类失败在 [locate] 里已经拦掉,不会走到这。
+     */
+    private suspend fun locateByVision(target: String, text: String?, elements: List<UiElement>?, synced: Boolean, shot: Shot.Ok): LocateResult {
         val (locatePrompt, confirmPrompt) = PROMPTS
+        var last: LocateResult.NotFound? = null
+        repeat(VISION_ATTEMPTS) {
+            when (val r = visionOnce(target, text, elements, synced, shot, locatePrompt, confirmPrompt)) {
+                is LocateResult.Found -> return r
+                is LocateResult.NotFound -> {
+                    if (r.reason !in TRANSIENT_VISION) return r
+                    last = r
+                }
+            }
+        }
+        return last!!
+    }
+
+    private suspend fun visionOnce(target: String, text: String?, elements: List<UiElement>?, synced: Boolean, shot: Shot.Ok, locatePrompt: String, confirmPrompt: String): LocateResult {
         val box = try {
-            parseBox(vision.ask(locatePrompt, if (text != null) "$target (label: \"$text\")" else target, listOf(second.png)))
+            parseBox(vision.ask(locatePrompt, if (text != null) "$target (label: \"$text\")" else target, listOf(shot.png)))
         } catch (e: CancellationException) { throw e } catch (e: Exception) {
             return LocateResult.NotFound("vision_unavailable", "Locating by sight failed this time. ${m.notFoundNext}")
         } ?: return LocateResult.NotFound("not_found", "The described element was not found on the screen. ${m.notFoundNext}")
@@ -115,7 +143,7 @@ class Locator(private val screen: ScreenPort, private val vision: VisionService,
 
         val boxArr = intArrayOf(box.l, box.t, box.r, box.b)
         val confirmed = try {
-            val framed = vision.ops.drawFrame(second.png, boxArr)
+            val framed = vision.ops.drawFrame(shot.png, boxArr)
             YES.containsMatchIn(vision.ask(confirmPrompt.replace("{target}", target), "Yes or no?", listOf(framed)).trim())
         } catch (e: CancellationException) { throw e } catch (e: Exception) {
             return LocateResult.NotFound("vision_unavailable", "Locating by sight failed this time. ${m.notFoundNext}")
@@ -128,14 +156,14 @@ class Locator(private val screen: ScreenPort, private val vision: VisionService,
         val visionOnly = !vision.groundingVerified && !nameChecked && nothingToCheckAgainst(text)
         if (!vision.groundingVerified && !nameChecked && !visionOnly) {
             val again = try {
-                secondLook(target, text, box, second.png, locatePrompt, confirmPrompt)
+                secondLook(target, text, box, shot.png, locatePrompt, confirmPrompt)
             } catch (e: CancellationException) { throw e } catch (e: Exception) {
                 return LocateResult.NotFound("vision_unavailable", "Locating by sight failed this time. ${m.notFoundNext}")
             }
             if (!again) return LocateResult.NotFound("unverified_grounding", m.uncorroborated)
         }
 
-        val (ref, sid) = registry.put(x, y, second.hash)
+        val (ref, sid) = registry.put(x, y, shot.hash)
         if (visionOnly) return LocateResult.Found(ref, sid, x, y, boxArr, box.seen, "vision", m.visionOnly, unverified = true)
         return LocateResult.Found(ref, sid, x, y, boxArr, box.seen, "vision", m.checkSeen.takeUnless { nameChecked && box.seen != null })
     }

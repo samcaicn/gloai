@@ -53,6 +53,7 @@ import com.wangzan101.mika.core.uistate.TextField
 import com.wangzan101.mika.core.uistate.typeAndVerify
 import com.wangzan101.mika.core.uistate.relocate
 import com.wangzan101.mika.core.uistate.RELOCATE_MAX_SHIFT
+import com.wangzan101.mika.core.uistate.BackAffordance
 import com.wangzan101.mika.cap.phone.display.FrameMath
 import com.wangzan101.mika.cap.phone.display.LazyAgentDisplay
 import com.wangzan101.mika.shell.IMikaShell
@@ -520,7 +521,14 @@ class AndroidScreen(
 
     override suspend fun back(): ActionResult = withContext(Dispatchers.IO) {
         if (!hasDisplay) return@withContext NO_APP_OPEN
-        verified { shell.injectKey(displayId, KeyEvent.KEYCODE_BACK) }
+        verified(fallback = { clock -> tapBackControl(clock) }) { shell.injectKey(displayId, KeyEvent.KEYCODE_BACK) }
+    }
+
+    /** back 注入没生效时,点屏上可见的返回控件。认不到返回控件就 false,不硬点。 */
+    private suspend fun tapBackControl(clock: EventClock): Boolean {
+        val c = BackAffordance.find(peek().elements, screenWidth, screenHeight) ?: return false
+        clock.mark()
+        return tapAt(c.centerX, c.centerY)
     }
 
     override suspend fun pressKey(keyCode: Int): ActionResult = withContext(Dispatchers.IO) {
