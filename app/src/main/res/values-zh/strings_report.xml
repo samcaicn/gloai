@@ -19,6 +19,16 @@
     <string name="playback_image">任务记录截图</string>
     <string name="playback_missing">截图未保存或已被清理</string>
     <string name="report_export">导出</string>
+    <string name="report_copy_markdown">复制为 Markdown</string>
+    <string name="report_copy_text">复制为纯文本</string>
+    <string name="report_share">分享报告</string>
+    <string name="report_share_text">纯文本</string>
+    <string name="report_share_txt">TXT 文件</string>
+    <string name="report_share_md">Markdown 文件</string>
+    <string name="report_share_docx">Word 文件</string>
+    <string name="report_share_failed">分享失败，请重试或先导出报告。</string>
+    <string name="report_share_too_long">报告太长，文本分享失败；请改用 TXT、Markdown 或 Word 文件分享。</string>
+    <string name="report_copied">报告已复制</string>
     <string name="report_saved">报告已保存</string>
     <string name="report_save_failed">保存失败，请检查记录和保存位置后重试。</string>
     <string name="report_close">关闭</string>

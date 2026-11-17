@@ -40,6 +40,16 @@ class TaskReportExportTest {
         assertTrue(document.getElementsByTagNameNS(ns, "b").length > 0)
         assertTrue(document.getElementsByTagNameNS(ns, "br").length > 0)
     }
+    @Test fun copiedPlainTextKeepsHeaderAndAnswerWithoutMarkup() {
+        val text = TaskReportExport.text(report)
+        assertTrue(text.startsWith("查询 <车票> & 时间"))
+        assertTrue(text.contains("已完成 · 2 分钟"))
+        assertTrue(text.contains("G6042"))
+        assertTrue(text.contains("中文项目"))
+        assertFalse(text.contains("**"))
+        assertFalse(text.contains("## "))
+    }
+
     @Test fun literalMarkdownInsideCodeIsNeverRewritten() {
         val source = "`**原样： **`\n\n```text\n**原样： **\n```"
         assertEquals(source, TaskReportExport.displayMarkdown(source))

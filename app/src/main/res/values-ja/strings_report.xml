@@ -19,6 +19,16 @@
     <string name="playback_image">タスクのスクリーンショット</string>
     <string name="playback_missing">画像が保存されていないか削除されました</string>
     <string name="report_export">エクスポート</string>
+    <string name="report_copy_markdown">Markdown としてコピー</string>
+    <string name="report_copy_text">プレーンテキストとしてコピー</string>
+    <string name="report_share">レポートを共有</string>
+    <string name="report_share_text">プレーンテキスト</string>
+    <string name="report_share_txt">TXT ファイル</string>
+    <string name="report_share_md">Markdown ファイル</string>
+    <string name="report_share_docx">Word ファイル</string>
+    <string name="report_share_failed">共有できませんでした。再試行するか、先にレポートをエクスポートしてください。</string>
+    <string name="report_share_too_long">レポートが長すぎてテキストで共有できません。TXT、Markdown、Word ファイルで共有してください。</string>
+    <string name="report_copied">レポートをコピーしました</string>
     <string name="report_saved">レポートを保存しました</string>
     <string name="report_save_failed">保存できませんでした。記録と保存先を確認してください。</string>
     <string name="report_close">閉じる</string>

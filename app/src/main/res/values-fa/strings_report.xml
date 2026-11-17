@@ -19,6 +19,16 @@
     <string name="playback_image">تصویر ثبت‌شدهٔ کار</string>
     <string name="playback_missing">تصویر در دسترس نیست</string>
     <string name="report_export">صدور</string>
+    <string name="report_copy_markdown">رونوشت به‌صورت Markdown</string>
+    <string name="report_copy_text">رونوشت به‌صورت متن ساده</string>
+    <string name="report_share">هم‌رسانی گزارش</string>
+    <string name="report_share_text">متن ساده</string>
+    <string name="report_share_txt">پروندهٔ TXT</string>
+    <string name="report_share_md">پروندهٔ Markdown</string>
+    <string name="report_share_docx">پروندهٔ Word</string>
+    <string name="report_share_failed">هم‌رسانی نشد. دوباره تلاش کنید یا ابتدا گزارش را صادر کنید.</string>
+    <string name="report_share_too_long">گزارش برای هم‌رسانی متنی بیش از حد طولانی است. آن را به‌صورت پروندهٔ TXT، Markdown یا Word هم‌رسانی کنید.</string>
+    <string name="report_copied">گزارش رونوشت شد</string>
     <string name="report_saved">گزارش ذخیره شد</string>
     <string name="report_save_failed">ذخیره نشد. سابقه و مقصد را بررسی و دوباره تلاش کنید.</string>
     <string name="report_close">بستن</string>

@@ -1,5 +1,6 @@
 package com.wangzan101.mika.ui
 
+import android.content.ClipboardManager
 import android.graphics.Bitmap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +17,7 @@ import com.wangzan101.mika.record.RunStore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.After
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.runner.RunWith
 import java.io.ByteArrayOutputStream
@@ -82,6 +84,28 @@ class TaskReportScreenTest {
         compose.onNodeWithText("1×").performClick()
         compose.onNodeWithText("2×").assertExists()
     }
+    @Test fun exportMenuCopiesAndSharesTheReportWithoutSavingAFile() {
+        val vm = vm()
+        compose.setContent { TaskReportScreen(vm, {}, {}, {}) }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("完整的测试报告。").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("导出").performClick()
+        compose.onNodeWithText("复制为 Markdown").assertExists()
+        compose.onNodeWithText("分享报告").performClick()
+        compose.onNodeWithText("纯文本").assertExists()
+        compose.onNodeWithText("TXT 文件").assertExists()
+        compose.onNodeWithText("Markdown 文件").assertExists()
+        compose.onNodeWithText("Word 文件").assertExists()
+        compose.onNodeWithText("关闭").performClick()
+        compose.onNodeWithText("导出").performClick()
+        compose.onNodeWithText("复制为纯文本").performClick()
+        val clipboard = InstrumentationRegistry.getInstrumentation().targetContext.getSystemService(ClipboardManager::class.java)
+        compose.waitUntil(5_000) { clipboard.primaryClip?.getItemAt(0)?.text?.toString()?.contains("完整的测试报告。") == true }
+        val copied = clipboard.primaryClip?.getItemAt(0)?.text?.toString().orEmpty()
+        assertTrue(copied.contains("报告界面测试"))
+        assertTrue(copied.contains("完整的测试报告。"))
+        assertFalse(copied.contains("**"))
+    }
+
     @Test fun keyScreenshotOpensItsResultInsteadOfThePrecedingGesture() {
         val vm = vm()
         compose.setContent {

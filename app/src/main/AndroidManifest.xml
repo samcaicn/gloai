@@ -340,6 +340,17 @@
                 android:resource="@xml/attach_files" />
         </provider>
 
+        <!-- 任务报告分享:cache/report-share/ 里的临时正文,以只读地址交给系统分享面板,不对外导出 -->
+        <provider
+            android:name=".ui.ReportFilesProvider"
+            android:authorities="${applicationId}.reportfiles"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/report_files" />
+        </provider>
+
         <!-- 走网络代理时 Mika 自己下的更新安装包:只读交给系统安装器,不对外导出,安装时临时授权 -->
         <provider
             android:name=".about.UpdateFilesProvider"

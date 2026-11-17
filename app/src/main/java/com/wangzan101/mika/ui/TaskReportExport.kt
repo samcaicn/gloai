@@ -73,11 +73,14 @@ object TaskReportExport {
         append(displayMarkdown(report.answer, report.header.goal)).append('\n')
     }
 
+    /** 纯文本正文:去掉 Markdown 标记,供复制和分享直接粘贴到聊天、邮件和笔记。 */
+    fun text(report: TaskReport): String = MarkdownModel.toPlainText(markdown(report))
+
     fun write(report: TaskReport, format: Format, output: OutputStream) {
         val md = markdown(report)
         when (format) {
             Format.Markdown -> output.write(md.toByteArray(Charsets.UTF_8))
-            Format.Text -> output.write(MarkdownModel.toPlainText(md).toByteArray(Charsets.UTF_8))
+            Format.Text -> output.write(text(report).toByteArray(Charsets.UTF_8))
             Format.Word -> writeDocx(MarkdownModel.parse(md), output)
         }
     }
