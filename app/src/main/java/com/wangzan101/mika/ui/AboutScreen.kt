@@ -94,6 +94,10 @@ fun AboutScreen(
     diagnostics: () -> String = { "" },
     autoUpdate: Boolean = false,
     onAutoUpdate: (Boolean) -> Unit = {},
+    mirrorEnabled: Boolean = false,
+    mirrorCount: Int = 0,
+    onMirrorEnabled: (Boolean) -> Unit = {},
+    onOpenMirrors: () -> Unit = {},
 ) {
     val c = MikaTheme.colors
     val context = LocalContext.current
@@ -138,6 +142,22 @@ fun AboutScreen(
                 stringResource(R.string.about_auto_update_detail),
             ) {
                 MikaSwitch(autoUpdate, onAutoUpdate, Modifier.testTag("auto-update-switch"))
+            }
+            ListRow(
+                MikaIcons.Link,
+                stringResource(R.string.about_mirror_download),
+                stringResource(R.string.about_mirror_download_detail),
+            ) {
+                MikaSwitch(mirrorEnabled, onMirrorEnabled, Modifier.testTag("mirror-download-switch"))
+            }
+            ListRow(
+                MikaIcons.Shield,
+                stringResource(R.string.about_mirror_sources),
+                stringResource(R.string.about_mirror_sources_detail),
+                onClick = onOpenMirrors,
+            ) {
+                RowValue(stringResource(R.string.about_mirrors_count, mirrorCount))
+                RowChevron()
             }
             ListRow(MikaIcons.Lines, AboutCopy.CHANGELOG, AboutCopy.CHANGELOG_SUB, onClick = { sheet = AboutSheet.Changelog }) { RowChevron() }
         }

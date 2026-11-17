@@ -28,6 +28,25 @@ class ApkIntegrityTest {
         )) rejects { ApkIntegrity.requireOfficialUrl(url) }
     }
 
+    /** 下载地址只信 GitHub 官方,或「镜像前缀 + 官方地址」这个精确形式;别的主机、路径和参数都不行。 */
+    @Test fun acceptsOnlyOfficialOrConfiguredMirrorUrls() {
+        val official = "https://github.com/wangzan101/Mika/releases/download/v0.2.0/Mika.apk"
+        val mirrors = listOf(UpdateMirror("m", "GhFast", "https://ghfast.top/"))
+        ApkIntegrity.requireTrustedDownloadUrl(official, official, mirrors)
+        ApkIntegrity.requireTrustedDownloadUrl("https://ghfast.top/$official", official, mirrors)
+        for ((url, allowed) in listOf(
+            "https://ghfast.top/$official" to emptyList(),
+            "http://ghfast.top/$official" to mirrors,
+            "https://evil.test/$official" to mirrors,
+            "https://ghfast.top/$official?x=1" to mirrors,
+            "https://user:pass@ghfast.top/$official" to mirrors,
+            "https://ghfast.top/https://github.com/wangzan101/Mika/releases/download/v0.2.0/other.apk" to mirrors,
+            "https://ghfast.top/https://github.com/wangzan101/Mika/releases/tag/v0.2.0" to mirrors,
+        )) {
+            rejects { ApkIntegrity.requireTrustedDownloadUrl(url, official, allowed) }
+        }
+    }
+
     @Test fun verifiesSizeAndDigestAndRejectsPartialOrModifiedFiles() {
         val file = temp.newFile().apply { writeText("abc") }
         val digest = "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
@@ -40,6 +59,12 @@ class ApkIntegrityTest {
         rejects { ApkIntegrity.verify(file, 3, digest) }
         file.writeText("")
         rejects { ApkIntegrity.verify(file, null, null) }
+    }
+
+    @Test fun archiveVersionMustMatchRelease() {
+        ApkIntegrity.requireReleaseVersion("0.3.0", "v0.3.0")
+        rejects { ApkIntegrity.requireReleaseVersion("0.2.0", "v0.3.0") }
+        rejects { ApkIntegrity.requireReleaseVersion(null, "v0.3.0") }
     }
 
     @Test fun signerMustMatchInstalledOrCarryItInHistory() {

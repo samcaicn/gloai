@@ -31,6 +31,22 @@ internal object ApkIntegrity {
         require(parsed.encodedPath.endsWith(".apk", ignoreCase = true))
     }
 
+    /**
+     * 下载地址只能是官方发布附件,或「内置/用户添加的镜像前缀 + 官方附件地址」。
+     * 镜像本身仍由用户信任;下载完照样校验大小、摘要和签名,地址放宽不会让别的包装进来。
+     */
+    fun requireTrustedDownloadUrl(url: String, officialUrl: String, mirrors: List<UpdateMirror>) {
+        if (url == officialUrl) {
+            requireOfficialUrl(url)
+            return
+        }
+        require(mirrors.any { url == it.prefix + officialUrl }) { "not an official or configured mirror URL" }
+        val parsed = url.toHttpUrl()
+        require(parsed.isHttps)
+        require(parsed.username.isEmpty() && parsed.password.isEmpty())
+        require(parsed.encodedPath.endsWith(".apk", ignoreCase = true))
+    }
+
     /** 给了摘要就必须是 sha256 且对得上;别的写法也算对不上,不放过。 */
     fun verify(file: File, size: Long?, digest: String?) {
         corruptUnless(file.isFile && file.length() > 0)
@@ -39,6 +55,10 @@ internal object ApkIntegrity {
             corruptUnless(digest.matches(Regex("sha256:[0-9a-fA-F]{64}")))
             corruptUnless(sha256(file).equals(digest.substringAfter(':'), ignoreCase = true))
         }
+    }
+
+    fun requireReleaseVersion(archiveVersion: String?, releaseVersion: String) {
+        corruptUnless(archiveVersion != null && AppVersion.compare(archiveVersion, releaseVersion) == 0)
     }
 
     /**

@@ -411,6 +411,9 @@ private fun MikaRoot(
     val updateState by app.updates.state.collectAsState()
     val autoUpdate by app.automaticUpdates.enabled.collectAsState()
     val readyUpdate by app.automaticUpdates.ready.collectAsState()
+    val mirrorEnabled by app.updateMirrors.enabled.collectAsState()
+    val mirrors by app.updateMirrors.mirrors.collectAsState()
+    val mirrorScope = rememberCoroutineScope()
     LaunchedEffect(requestedConversation) {
         if (requestedConversation != null) {
             if (requestedConversation == "personal-main") nav.show(Route.Personal)
@@ -641,6 +644,15 @@ private fun MikaRoot(
             onCheck = app.updates::checkInBackground,
             autoUpdate = autoUpdate,
             onAutoUpdate = app.automaticUpdates::setEnabled,
+            mirrorEnabled = mirrorEnabled,
+            mirrorCount = mirrors.size,
+            onMirrorEnabled = { on ->
+                mirrorScope.launch {
+                    val error = withContext(Dispatchers.IO) { app.updateMirrors.setEnabled(on) }
+                    if (error != null) Toast.makeText(context, R.string.about_mirrors_save_failed, Toast.LENGTH_SHORT).show()
+                }
+            },
+            onOpenMirrors = { nav.push(Route.UpdateMirrors) },
             onOpenUrl = { openInBrowser(context, it) },
             onSaveQr = { QrImage.saveToPictures(context) },
             onOpenLicense = { nav.push(Route.License) },
@@ -649,6 +661,7 @@ private fun MikaRoot(
                 Diagnostics.render(DiagnosticsCollector.collect(context, status))
             },
         )
+        Route.UpdateMirrors -> UpdateMirrorsScreen(app.updateMirrors, onBack = back)
         Route.License -> LicensesScreen(onBack = back)
         Route.Browser -> BrowserScreen(remember { UserBrowser.of(context) }, onBack = back)
         Route.Files -> FileLibraryScreen(app.chat, filesConversation, filesFromDrawer, onBack = back, onAdded = { id ->

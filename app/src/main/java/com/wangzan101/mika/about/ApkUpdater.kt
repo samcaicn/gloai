@@ -12,7 +12,6 @@ import androidx.core.content.FileProvider
 import com.wangzan101.mika.core.net.NetProxy
 import okhttp3.OkHttpClient
 import java.io.File
-import java.net.Proxy
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -31,7 +30,12 @@ data class ApkDownloadState(
  * 文件放在本应用的外部专属目录(别的 App 读写不到),同一时间只留一个;换版本、删除、装好后都清掉。
  * 自动下载和经代理的手动下载由 Mika 在进程里执行,以便绑定 Wi-Fi 或使用应用代理([ProxiedApkDownload])。
  */
-class ApkUpdater(private val context: Context, private val net: NetProxy = NetProxy.shared) {
+class ApkUpdater(
+    private val context: Context,
+    private val net: NetProxy = NetProxy.shared,
+    /** 当前的镜像设置;下载开始时取一次,下载途中改开关或顺序不影响这一次。 */
+    private val mirrorSettings: () -> MirrorSettings = { MirrorSettings.OFF },
+) {
     private val manager = context.getSystemService(DownloadManager::class.java)
     private val prefs = context.getSharedPreferences("apk-update", Context.MODE_PRIVATE)
     private val directory: File get() = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
@@ -66,12 +70,14 @@ class ApkUpdater(private val context: Context, private val net: NetProxy = NetPr
     @Synchronized
     /** 自动下载传入当前 Wi-Fi，手动下载沿用系统默认网络。 */
     fun download(release: ReleaseInfo, wifi: Network? = null) {
-        val url = requireNotNull(release.apkUrl)
-        ApkIntegrity.requireOfficialUrl(url)
-        val proxy = net.proxyFor(Uri.parse(url).host.orEmpty())
-        // OkHttp creates SOCKS sockets outside the configured Wi-Fi socket factory.
-        if (wifi != null && proxy?.socks == true) return
-        if (prefs.getString("url", null) == url && state(release).phase in
+        val official = requireNotNull(release.apkUrl)
+        ApkIntegrity.requireOfficialUrl(official)
+        val settings = mirrorSettings()
+        val sources = UpdateMirrors.candidates(official, settings)
+        sources.forEach { ApkIntegrity.requireTrustedDownloadUrl(it, official, settings.mirrors) }
+        val proxy = net.proxyFor(Uri.parse(official).host.orEmpty())
+        // 下载的「身份」始终是官方地址:镜像开关或顺序变了,已经下好的同一份包不用重下。
+        if (prefs.getString("url", null) == official && state(release).phase in
             listOf(DownloadPhase.Downloading, DownloadPhase.Paused, DownloadPhase.Ready)) return
         cancel()
         val folder = directory
@@ -80,11 +86,15 @@ class ApkUpdater(private val context: Context, private val net: NetProxy = NetPr
         folder.listFiles()?.forEach { it.delete() }
         // remove 的后台清理可能晚于下一次下载,不能复用旧任务的文件名。
         val target = File(folder, "update-${UUID.randomUUID()}.apk")
-        if (wifi != null || proxy != null) {
-            check(prefs.edit().putBoolean("viaApp", true).putString("url", url).putString("file", target.name).commit()) { "could not save download" }
-            proxied.start(url, target, wifi, proxy?.javaProxy() ?: Proxy.NO_PROXY)
+        // 镜像可能不止一个,要在一次任务里逐个换;系统下载器做不到,所以开了镜像就由 Mika 自己下。
+        if (wifi != null || proxy != null || sources.size > 1) {
+            check(prefs.edit().putBoolean("viaApp", true).putString("url", official).putString("file", target.name).commit()) { "could not save download" }
+            proxied.start(sources, target, wifi) {
+                verifyApk(it, release)
+            }
             return
         }
+        val url = official
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle("Mika ${release.version}")
             .setMimeType("application/vnd.android.package-archive")
@@ -128,13 +138,7 @@ class ApkUpdater(private val context: Context, private val net: NetProxy = NetPr
         ApkIntegrity.requireOfficialUrl(requireNotNull(release.apkUrl))
         val target = requireNotNull(file)
         try {
-            ApkIntegrity.verify(target, release.apkSize, release.apkDigest)
-            val archive = archiveInfo(target, SIGNING_FLAGS) ?: throw ApkRejected(ApkRejected.Reason.Corrupt)
-            val installed = installedInfo(SIGNING_FLAGS)
-            if (archive.packageName != context.packageName || archive.longVersionCode <= installed.longVersionCode) {
-                throw ApkRejected(ApkRejected.Reason.NotNewer)
-            }
-            ApkIntegrity.requireSameSigner(installed.signers(), archive.signers(), archive.signerHistory())
+            verifyApk(target, release)
         } catch (e: ApkRejected) {
             cancel()
             throw e
@@ -143,6 +147,17 @@ class ApkUpdater(private val context: Context, private val net: NetProxy = NetPr
             else manager.getUriForDownloadedFile(prefs.getLong("id", -1)) ?: error("missing APK")
         return Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+
+    private fun verifyApk(target: File, release: ReleaseInfo) {
+        ApkIntegrity.verify(target, release.apkSize, release.apkDigest)
+        val archive = archiveInfo(target, SIGNING_FLAGS) ?: throw ApkRejected(ApkRejected.Reason.Corrupt)
+        val installed = installedInfo(SIGNING_FLAGS)
+        if (archive.packageName != context.packageName || archive.longVersionCode <= installed.longVersionCode) {
+            throw ApkRejected(ApkRejected.Reason.NotNewer)
+        }
+        ApkIntegrity.requireReleaseVersion(archive.versionName, release.version)
+        ApkIntegrity.requireSameSigner(installed.signers(), archive.signers(), archive.signerHistory())
     }
 
     @Suppress("DEPRECATION")

@@ -32,7 +32,7 @@
     <string name="about_repo_sub">%1$s · stars welcome</string>
     <string name="about_guide">Guide &amp; how to contribute</string>
     <string name="about_guide_sub">Getting started; add app knowledge even without coding</string>
-    <string name="about_data_note">What you send Mika — messages, screen content and screenshots — goes only to the model provider you set up. Mika has no servers of its own and collects none of your data; checking for updates only contacts GitHub.</string>
+    <string name="about_data_note">What you send Mika — messages, screen content and screenshots — goes only to the model provider you set up. Mika has no servers of its own and collects none of your data; update checks contact GitHub or your enabled mirrors.</string>
     <string name="about_license_link">Apache-2.0 license</string>
     <string name="about_author">Made by Wang Zan · © 2026</string>
     <string name="about_license_title">Apache-2.0 License</string>
@@ -77,4 +77,34 @@
     <string name="about_auto_update_confirm_title">A new Mika version is ready</string>
     <string name="about_auto_update_confirm_detail">Install %1$s now, or turn off auto-update and check for updates manually in Settings.</string>
     <string name="about_auto_update_now">Update now</string>
+    <string name="about_mirror_download">Use mirrors for updates</string>
+    <string name="about_mirror_download_detail">Check for updates using mirrors and GitHub; downloads try mirrors first. Packages are still signature-checked.</string>
+    <string name="about_mirror_sources">Update mirrors</string>
+    <string name="about_mirror_sources_detail">Change order, add or remove</string>
+    <string name="about_mirrors_intro">Update checks try mirrors and GitHub in parallel. Downloads try mirrors in order, then GitHub. Packages are still checked by package name, version and signing certificate before install.</string>
+    <string name="about_mirrors_empty">No mirrors</string>
+    <string name="about_mirrors_empty_sub">Add a mirror below, or keep using GitHub official.</string>
+    <string name="about_mirrors_official">GitHub official</string>
+    <string name="about_mirrors_official_sub">Always the last fallback; cannot be removed</string>
+    <string name="about_mirrors_add">Add mirror</string>
+    <string name="about_mirrors_edit">Edit mirror</string>
+    <string name="about_mirrors_name">Name (optional)</string>
+    <string name="about_mirrors_prefix">Address</string>
+    <string name="about_mirrors_invalid_prefix">Use an https:// address without a query or login.</string>
+    <string name="about_mirrors_invalid_name">Name is too long.</string>
+    <string name="about_mirrors_duplicate">This mirror is already in the list.</string>
+    <string name="about_mirrors_too_many">You can add up to %1$d mirrors.</string>
+    <string name="about_mirrors_save_failed">Couldn’t save. Please try again.</string>
+    <string name="about_mirrors_unreadable">The saved mirror list can’t be read. Restore the presets to continue.</string>
+    <string name="about_mirrors_delete_title">Delete this mirror?</string>
+    <string name="about_mirrors_delete_body">It will no longer be used for update checks or downloads.</string>
+    <string name="about_mirrors_delete">Delete</string>
+    <string name="about_mirrors_reset">Restore presets</string>
+    <string name="about_mirrors_reset_title">Restore preset mirrors?</string>
+    <string name="about_mirrors_reset_body">Custom mirrors will be removed and the preset list restored.</string>
+    <string name="about_mirrors_test">Test</string>
+    <string name="about_mirrors_testing">Testing…</string>
+    <string name="about_mirrors_test_ok">Works for update checks.</string>
+    <string name="about_mirrors_test_fail">Update checks can’t use this mirror. Downloads may still work.</string>
+    <string name="about_mirrors_count" translatable="false">%1$d</string>
 </resources>
