@@ -13,7 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** SearXNG、Jina、Exa、Keirolabs 四家的请求形状、解析和出错时的说法。 */
+/** SearXNG、Jina、Exa、Keirolabs、TinyFish 几家的请求形状、解析和出错时的说法。 */
 class ProviderSearchTest {
     private fun ok(body: String) = MockResponse().setResponseCode(200).setHeader("Content-Type", "application/json").setBody(body)
 
@@ -166,6 +166,38 @@ class ProviderSearchTest {
         assertEquals("invalid_response", (KeirolabsSearch("k", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).code)
     }
 
+    // ---------- TinyFish ----------
+
+    @Test fun tinyFishIsAnApiKeyGetWithTheQuery() = withServer(ok("""{"query":"mika","results":[
+        {"position":1,"site_name":"a.example","title":"T1","url":"https://a.example/1","snippet":"S1"},
+        {"position":2,"site_name":"b.example","title":"T2","url":"https://b.example/2","snippet":"S2"},
+        {"position":3,"title":"T4","url":"https://d.example/4","snippet":"S4"},
+        {"position":4,"title":"no url","url":"","snippet":"dropped"},
+        {"position":5,"title":"over count","url":"https://e.example/5","snippet":"S5"}],"total_results":5,"page":0}""")) { server ->
+        val result = TinyFishSearch(" tinyfish-key ", client, server.url("/")).search("mika", 3)
+        val request = server.takeRequest()
+        assertEquals("GET", request.method)
+        assertEquals("/?query=mika", request.path)
+        assertEquals("tinyfish-key", request.getHeader("X-API-Key"))
+        assertEquals("application/json", request.getHeader("Accept"))
+        assertEquals(
+            listOf(WebSearchHit("T1", "https://a.example/1", "S1"), WebSearchHit("T2", "https://b.example/2", "S2"), WebSearchHit("T4", "https://d.example/4", "S4")),
+            (result as WebSearchResult.Success).hits,
+        )
+    }
+
+    @Test fun tinyFishWithoutResultsArrayIsInvalidResponse() = withServer(ok("""{"error":"x"}""")) { server ->
+        assertEquals("invalid_response", (TinyFishSearch("k", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).code)
+    }
+
+    @Test fun tinyFishRejectedKeyIsAuthenticationFailure() = withServer(MockResponse().setResponseCode(401).setBody("""{"detail":"Invalid API key"}""")) { server ->
+        assertEquals("authentication_failed", (TinyFishSearch("bad", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).code)
+    }
+
+    @Test fun tinyFishRateLimitCarriesRetryAfter() = withServer(MockResponse().setResponseCode(429).setHeader("Retry-After", "7").setBody("{}")) { server ->
+        assertEquals(7L, (TinyFishSearch("k", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).retryAfterSeconds)
+    }
+
     // ---------- 共用 ----------
 
     @Test fun providersNeedTheRightFields() {
@@ -175,6 +207,8 @@ class ProviderSearchTest {
         assertEquals(null, WebSearchProvider.Exa.problem("", "k"))
         assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.Keirolabs.problem("", ""))
         assertEquals(null, WebSearchProvider.Keirolabs.problem("", "k"))
+        assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.TinyFish.problem("", ""))
+        assertEquals(null, WebSearchProvider.TinyFish.problem("", "k"))
         assertEquals(WebSearchProvider.Problem.Endpoint, WebSearchProvider.SearXNG.problem("not a url", ""))
         assertEquals(null, WebSearchProvider.SearXNG.problem("https://searx.example.org", ""))
     }

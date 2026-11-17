@@ -146,7 +146,7 @@
 能力由 `CapabilityProvider` 按 `RunSpec` 装配(`core/assembly/RunAssembler.kt`、`TaskTools.kt`),每个 Run 开局装一次:
 
 - 按 `spec.capabilities` 选能力;无人在场的运行去掉追问、确认、接管、建定时、改画像这几个工具;只读运行只留只读工具(外加网页打开地址)。
-- 通用工具(`core/general/`)一直都在:`ask_user`、`hand_to_user`、`handle_obstacle`、`end_not_done`、`wait`、`view_past_screens` 等。条件满足才提供的:`request_confirmation`(花钱前请用户同意;有确认关卡才有:询问模式、有人在场时)、记忆工具(「使用记忆」打开才有)、知识与技能查阅(有知识目录才有,`LookupTools`)、`schedule_task`、`spawn_agent`、`history_read`(有运行记录、之前有记过运行的轮次才有)、`notices_read`(读这两天的通知原文,和存着的各天、各周、各月的归纳;主动能力的「当日消息归纳」开着、激进程度不是最保守的一档、任务是用户在手机上发起的才有)。
+- 通用工具(`core/general/`)一直都在:`ask_user`、`hand_to_user`、`handle_obstacle`、`end_not_done`、`wait`、`view_past_screens` 等。条件满足才提供的:`request_confirmation`(花钱前请用户同意;有确认关卡才有:询问模式、有人在场时)、记忆工具(「使用记忆」打开才有)、知识与技能查阅(有知识目录才有,`LookupTools`)、`schedule_task`、`spawn_agent`、`history_read`(有运行记录、之前有记过运行的轮次才有)、`notices_read`(读这两天的通知原文,和存着的各天、各周、各月的归纳;主动能力的「当日消息归纳」开着、激进程度不是最保守的一档、任务是用户在手机上发起的才有)、`web_search` / `web_fetch`(用户在设置里配好网页搜索、网页抓取服务才有;没配时走浏览器)。
 
 ### phone:手机 App
 

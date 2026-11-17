@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_fetch_title">페이지 가져오기</string>
+    <string name="web_fetch_enabled">페이지 가져오기 사용</string>
+    <string name="web_fetch_provider">가져오기 서비스</string>
+    <string name="web_fetch_note_tinyfish">API 키가 필요해요. TinyFish Fetch API(api.fetch.tinyfish.ai)로 페이지를 가져옵니다.</string>
+    <string name="web_fetch_row_sub">페이지 가져오기는 선택 사항이며 브라우저는 언제나 사용할 수 있습니다</string>
+    <string name="web_fetch_privacy">키는 암호화되어 이 기기에 저장됩니다. 가져온 페이지는 신뢰할 수 없는 콘텐츠로 처리됩니다.</string>
+</resources>

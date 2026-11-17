@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_fetch_title">Загрузка страниц</string>
+    <string name="web_fetch_enabled">Включить загрузку страниц</string>
+    <string name="web_fetch_provider">Сервис загрузки</string>
+    <string name="web_fetch_note_tinyfish">Нужен ключ API. Страницы загружаются через Fetch API TinyFish (api.fetch.tinyfish.ai).</string>
+    <string name="web_fetch_row_sub">Необязательная загрузка страниц; браузер доступен всегда</string>
+    <string name="web_fetch_privacy">Ключ хранится на этом телефоне в зашифрованном виде. Загруженные страницы считаются ненадёжным содержимым.</string>
+</resources>

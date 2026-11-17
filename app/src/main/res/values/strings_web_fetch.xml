@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_fetch_title">Page fetching</string>
+    <string name="web_fetch_enabled">Enable page fetching</string>
+    <string name="web_fetch_provider">Fetching service</string>
+    <string name="web_fetch_note_tinyfish">Needs an API key. Pages are fetched with the TinyFish Fetch API (api.fetch.tinyfish.ai).</string>
+    <string name="web_fetch_row_sub">Optional page fetching; the browser is always available</string>
+    <string name="web_fetch_privacy">The key is stored encrypted on this phone. Fetched pages are treated as untrusted.</string>
+</resources>

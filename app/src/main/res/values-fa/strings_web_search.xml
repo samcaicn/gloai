@@ -7,6 +7,7 @@
     <string name="web_search_note_jina">به کلید API نیاز دارد. نتایج از جست‌وجوی Jina (s.jina.ai) دریافت می‌شوند.</string>
     <string name="web_search_note_exa">به کلید API نیاز دارد. نتایج از جست‌وجوی Exa (api.exa.ai) دریافت می‌شوند.</string>
     <string name="web_search_note_keirolabs">به کلید API نیاز دارد. نتایج از جست‌وجوی Keirolabs (api.keirolabs.cloud) دریافت می‌شوند.</string>
+    <string name="web_search_note_tinyfish">به کلید API نیاز دارد. نتایج از جست‌وجوی TinyFish (api.search.tinyfish.ai) دریافت می‌شوند.</string>
     <string name="web_search_note_searxng">نمونهٔ شخصی SearXNG شما؛ بدون نیاز به کلید. نمونه باید خروجی JSON را مجاز کند (در settings.yml، مقدار json را به search.formats اضافه کنید).</string>
     <string name="web_search_api_key_required">کلید API (الزامی)</string>
     <string name="web_search_missing_key">%1$s برای کار کردن به کلید API نیاز دارد.</string>

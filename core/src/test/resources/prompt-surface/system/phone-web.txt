@@ -524,7 +524,7 @@ web_back #cb1aae4e6be5
 web_press_key #979daf875fa3
 web_diagnose #c20b22b9f28d
 web_navigate #c5eb3ecfe815
-web_read_page #be248c1c67e6
+web_read_page #3688e8b87301
 web_evaluate_js #b005df046d94
 web_tabs #c1d1d2f140ac
 web_downloads #28413ee8b7f8

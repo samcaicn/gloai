@@ -44,6 +44,8 @@ import com.wangzan101.mika.settings.Prerequisites
 import com.wangzan101.mika.settings.Problem
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.NetProxyStore
+import com.wangzan101.mika.settings.WebFetchConfig
+import com.wangzan101.mika.settings.WebFetchSettings
 import com.wangzan101.mika.settings.WebSearchConfig
 import com.wangzan101.mika.settings.WebSearchSettings
 import com.wangzan101.mika.cap.web.WebProxy
@@ -166,6 +168,10 @@ fun SettingsScreen(
     var webSearch by remember { mutableStateOf<WebSearchConfig?>(null) }
     var editingSearch by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { webSearch = withContext(Dispatchers.IO) { searchSettings.get() } }
+    val fetchSettings = remember { WebFetchSettings.get(context) }
+    var webFetch by remember { mutableStateOf<WebFetchConfig?>(null) }
+    var editingFetch by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { webFetch = withContext(Dispatchers.IO) { fetchSettings.get() } }
     val mcp = remember { (context.applicationContext as com.wangzan101.mika.MikaApp).mcp }
     val mcpNetworkOn by mcp.settings.enabled.collectAsState()
     val mcpUsbOn by mcp.usb.enabled.collectAsState()
@@ -235,6 +241,7 @@ fun SettingsScreen(
         SettingsPage.Advanced -> AdvancedSettingsContent(
             proxy = proxy, proxyNote = proxy?.let { NetProxyCopy.subtitle(it, browserProxy) }, onOpenProxy = { editingProxy = true },
             webSearch = webSearch, onOpenWebSearch = { editingSearch = true },
+            webFetch = webFetch, onOpenWebFetch = { editingFetch = true },
             sandbox = sandboxStatus, onOpenSandbox = { page = SettingsPage.Sandbox },
             pluginsCount = pluginRecords.size, onOpenPlugins = { page = SettingsPage.Plugins },
             showRecovery = status.sdkInt >= Prerequisites.MIN_SDK, onOpenRecovery = { page = SettingsPage.Recovery },
@@ -329,6 +336,18 @@ fun SettingsScreen(
                 withContext(Dispatchers.IO) { searchSettings.set(config) }
                 webSearch = searchSettings.get()
                 editingSearch = false
+            }
+        },
+    )
+
+    if (editingFetch) WebFetchDialog(
+        initial = webFetch ?: WebFetchConfig(),
+        onDismiss = { editingFetch = false },
+        onSave = { config ->
+            scope.launch {
+                withContext(Dispatchers.IO) { fetchSettings.set(config) }
+                webFetch = fetchSettings.get()
+                editingFetch = false
             }
         },
     )
@@ -542,6 +561,8 @@ fun AdvancedSettingsContent(
     onOpenProxy: () -> Unit = {},
     webSearch: WebSearchConfig? = null,
     onOpenWebSearch: () -> Unit = {},
+    webFetch: WebFetchConfig? = null,
+    onOpenWebFetch: () -> Unit = {},
     sandbox: SandboxStatus? = null,
     onOpenSandbox: () -> Unit = {},
     pluginsCount: Int? = null,
@@ -588,7 +609,7 @@ fun AdvancedSettingsContent(
                 }
             }
         }
-        if (proxy != null || webSearch != null) {
+        if (proxy != null || webSearch != null || webFetch != null) {
             GroupLabel(stringResource(R.string.settings_network))
             GroupCard {
                 var first = true
@@ -602,6 +623,11 @@ fun AdvancedSettingsContent(
                 webSearch?.let { config ->
                     ListRow(MikaIcons.Globe, stringResource(R.string.web_search_title), stringResource(R.string.web_search_row_sub), first = take(), onClick = onOpenWebSearch) {
                         RowValue(WebSearchCopy.value(config)); RowChevron()
+                    }
+                }
+                webFetch?.let { config ->
+                    ListRow(MikaIcons.Doc, stringResource(R.string.web_fetch_title), stringResource(R.string.web_fetch_row_sub), first = take(), onClick = onOpenWebFetch) {
+                        RowValue(WebFetchCopy.value(config)); RowChevron()
                     }
                 }
             }

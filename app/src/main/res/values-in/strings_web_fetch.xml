@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_fetch_title">Pengambilan halaman</string>
+    <string name="web_fetch_enabled">Aktifkan pengambilan halaman</string>
+    <string name="web_fetch_provider">Layanan pengambilan</string>
+    <string name="web_fetch_note_tinyfish">Perlu kunci API. Halaman diambil dengan API Fetch TinyFish (api.fetch.tinyfish.ai).</string>
+    <string name="web_fetch_row_sub">Pengambilan halaman opsional; browser selalu tersedia</string>
+    <string name="web_fetch_privacy">Kunci disimpan terenkripsi di ponsel ini. Halaman yang diambil diperlakukan sebagai konten yang tidak tepercaya.</string>
+</resources>
