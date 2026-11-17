@@ -58,11 +58,14 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.collectLatest
+import com.wangzan101.mika.pocket.LockTriggerPolicy
 import java.util.concurrent.atomic.AtomicInteger
 import java.time.LocalTime
 import com.wangzan101.mika.core.cap.web.KeptPageClose
@@ -215,8 +218,11 @@ class TaskService : Service() {
     internal fun hasActiveRuns() = center.running().isNotEmpty()
     internal fun hasQueuedRuns() = center.queued().isNotEmpty()
 
+    private val pocketGuard by lazy { com.wangzan101.mika.pocket.PocketGuardManager(this) }
+
     private fun publishRuns() {
         val r = center.runs()
+        pocketGuard.setTasksActive(center.running().isNotEmpty())
         taskState._runs.value = r
         taskState._activeConversations.value = r.map { it.conversationId }
     }
@@ -495,6 +501,18 @@ class TaskService : Service() {
     }
 
     private fun launch(run: TaskRun, store: ConversationStore) {
+        val waitingLockWatcher = scope.launch {
+            run.state.collectLatest { state ->
+                if (LockTriggerPolicy.isWaiting(state)) {
+                    pocketGuard.lockWhileWaitingIfCovered {
+                        LockTriggerPolicy.isWaiting(run.state.value) && run in center.running() &&
+                            center.running().none { it !== run } && center.queued().isEmpty()
+                    }
+                } else if (state is TaskState.Running) {
+                    pocketGuard.onTaskResumed()
+                }
+            }
+        }
         run.job = scope.launch {
             center.markRunning(run)
             // 定时任务没人在场,卡住了没人停:跑过设置里的最长运行时间就停下(默认不限制)
@@ -557,6 +575,11 @@ class TaskService : Service() {
                         .onFailure { Log.w(TAG, "condition failure notification failed", it) }
                 }
                 center.markDelivered(run)
+                if (outcome is ConditionOutcome.Error) withContext(NonCancellable) {
+                    pocketGuard.lockAfterStopIfCovered {
+                        center.running().none { it !== run } && center.queued().isEmpty()
+                    }
+                }
                 onRunEnded(run, store)
                 return@launch
             }
@@ -594,10 +617,17 @@ class TaskService : Service() {
                 }
             }.onFailure { Log.w(TAG, "result notification failed", it) }
             if (delivered) center.markDelivered(run)
+            if (LockTriggerPolicy.shouldCheck(end)) {
+                withContext(NonCancellable) {
+                    pocketGuard.lockAfterStopIfCovered {
+                        center.running().none { it !== run } && center.queued().isEmpty()
+                    }
+                }
+            }
             onRunEnded(run, store)
         }
         // 收尾前被取消(服务退出)、放出来还没跑就被停掉时,替它拿着的屏幕锁没交出去也没放开:这里放开
-        run.job?.invokeOnCompletion { run.wakeHandoff?.release(); run.wakeHandoff = null }
+        run.job?.invokeOnCompletion { waitingLockWatcher.cancel(); run.wakeHandoff?.release(); run.wakeHandoff = null }
     }
 
     /**
@@ -990,6 +1020,7 @@ class TaskService : Service() {
     private fun openApp(threadId: String? = null) = openApp(this, threadId)
 
     override fun onDestroy() {
+        pocketGuard.close()
         scope.cancel()
         // 服务没了就撑不住进程:留着的那一页如实关掉,对话里记下
         keeper.close(KeptPageClose.AppExit)

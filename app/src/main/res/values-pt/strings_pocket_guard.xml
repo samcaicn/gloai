@@ -1,0 +1,8 @@
+<resources>
+    <string name="pocket_guard_title">Proteção contra toques no bolso</string>
+    <string name="pocket_guard_summary">Durante tarefas, bloqueia toques quando o telefone está coberto e no escuro. Deslize para sair.</string>
+    <string name="pocket_guard_unavailable">São necessários sensores de proximidade e luz.</string>
+    <string name="pocket_guard_exit">Deslize para a direita para sair</string>
+    <string name="pocket_completion_lock_title">Bloquear ao parar com o telefone coberto</string>
+    <string name="pocket_completion_lock_summary">Bloqueia a tela se o telefone estiver coberto e no escuro quando a tarefa terminar ou aguardar.</string>
+</resources>

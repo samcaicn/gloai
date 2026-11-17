@@ -1,0 +1,8 @@
+<resources>
+    <string name="pocket_guard_title">주머니 터치 방지</string>
+    <string name="pocket_guard_summary">작업 중 휴대전화가 가려지고 어두우면 터치를 차단합니다. 밀어서 해제하세요.</string>
+    <string name="pocket_guard_unavailable">근접 센서와 조도 센서가 필요합니다.</string>
+    <string name="pocket_guard_exit">오른쪽으로 밀어 해제</string>
+    <string name="pocket_completion_lock_title">가려진 상태에서 작업 중단 시 잠금</string>
+    <string name="pocket_completion_lock_summary">작업이 끝나거나 대기할 때 휴대전화가 가려져 어두우면 화면을 잠급니다.</string>
+</resources>

@@ -1,0 +1,8 @@
+<resources>
+    <string name="pocket_guard_title">Protección táctil en el bolsillo</string>
+    <string name="pocket_guard_summary">Durante las tareas, bloquea los toques si el teléfono está cubierto y a oscuras. Desliza para salir.</string>
+    <string name="pocket_guard_unavailable">Se necesitan sensores de proximidad y luz.</string>
+    <string name="pocket_guard_exit">Desliza a la derecha para salir</string>
+    <string name="pocket_completion_lock_title">Bloquear si la tarea se detiene con el teléfono cubierto</string>
+    <string name="pocket_completion_lock_summary">Bloquea la pantalla si el teléfono está cubierto y a oscuras al terminar o esperar una tarea.</string>
+</resources>

@@ -1,0 +1,8 @@
+<resources>
+    <string name="pocket_guard_title">جلوگیری از لمس در جیب</string>
+    <string name="pocket_guard_summary">هنگام اجرای کار، اگر گوشی پوشیده و در تاریکی باشد لمس را مسدود می‌کند. برای خروج بکشید.</string>
+    <string name="pocket_guard_unavailable">به حسگرهای مجاورت و نور نیاز است.</string>
+    <string name="pocket_guard_exit">برای خروج به راست بکشید</string>
+    <string name="pocket_completion_lock_title">قفل صفحه هنگام توقف کار و پوشیده بودن گوشی</string>
+    <string name="pocket_completion_lock_summary">وقتی کار پایان می‌یابد یا منتظر می‌ماند، اگر گوشی پوشیده و محیط تاریک باشد، صفحه قفل می‌شود.</string>
+</resources>

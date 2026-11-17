@@ -1,0 +1,8 @@
+<resources>
+    <string name="pocket_guard_title">ポケット内の誤操作防止</string>
+    <string name="pocket_guard_summary">タスク中に端末が覆われ暗くなるとタッチを防止します。スライドで解除。</string>
+    <string name="pocket_guard_unavailable">近接センサーと照度センサーが必要です。</string>
+    <string name="pocket_guard_exit">右にスライドして解除</string>
+    <string name="pocket_completion_lock_title">遮光時はタスク停止後にロック</string>
+    <string name="pocket_completion_lock_summary">タスク終了時や待機時に端末が覆われて暗ければ画面をロックします。</string>
+</resources>

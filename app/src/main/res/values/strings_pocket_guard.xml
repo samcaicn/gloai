@@ -1,0 +1,8 @@
+<resources>
+    <string name="pocket_guard_title">Pocket touch protection</string>
+    <string name="pocket_guard_summary">During tasks, block touches when the phone is covered and dark. Swipe to exit.</string>
+    <string name="pocket_guard_unavailable">Requires proximity and light sensors on this phone.</string>
+    <string name="pocket_guard_exit">Slide right to exit</string>
+    <string name="pocket_completion_lock_title">Lock when a covered task stops</string>
+    <string name="pocket_completion_lock_summary">Lock the screen if the phone is covered and dark when a task ends or waits.</string>
+</resources>
