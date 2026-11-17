@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "id": "com.mika.purge-lite",
+  "name": "提示词体检",
+  "version": "0.5.3",
+  "kind": "capability",
+  "description": "拦截 Mika 的系统提示词,按 persona.conf 改写后再发给模型;另外能扫目录、读片段、打补丁、回滚。",
+  "author": "Mika",
+  "minApp": "0.1.46",
+  "permissions": [
+    "run-scripts",
+    "rewrite-prompt"
+  ],
+  "promptTransform": "scripts/rewrite_prompt.sh",
+  "tools": [
+    {
+      "name": "scan",
+      "description": "扫描一个目录，找出像系统提示词或宿主配置的文件，按命中数列出来。只读，不改任何东西。",
+      "script": "scripts/scan.sh",
+      "timeoutSec": 60,
+      "risk": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dir": {
+            "type": "string",
+            "description": "要扫描的目录，例如 /sdcard/Documents"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "最多列几个文件，1-200（默认 40）"
+          }
+        },
+        "required": [
+          "dir"
+        ]
+      }
+    },
+    {
+      "name": "read_part",
+      "description": "只读一份文件的前 N 行，先判断它到底是什么再动手。",
+      "script": "scripts/read_part.sh",
+      "timeoutSec": 30,
+      "risk": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "要读的文件"
+          },
+          "lines": {
+            "type": "integer",
+            "description": "读多少行，1-400（默认 80）"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "backup",
+      "description": "把一份文件复制到插件自己的备份目录，并给出版份路径。插件目录之外什么都不动。",
+      "script": "scripts/backup.sh",
+      "timeoutSec": 30,
+      "risk": "write",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "要备份的文件"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "patch",
+      "description": "在一份文件里按字面替换一段文字（不是正则）。会先自动备份；文字找不到、或命中数与预期不符时拒绝写入，一个字都不改。用 expect 指定你要替换几处。",
+      "script": "scripts/patch.sh",
+      "timeoutSec": 60,
+      "risk": "write",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "要修改的文件"
+          },
+          "find": {
+            "type": "string",
+            "description": "要查找的原文（按字面匹配，不是正则）"
+          },
+          "replace": {
+            "type": "string",
+            "description": "替换成什么；留空就是删掉"
+          },
+          "expect": {
+            "type": "integer",
+            "description": "你预计命中几处；实际数目对不上就不写"
+          }
+        },
+        "required": [
+          "path",
+          "find",
+          "replace"
+        ]
+      }
+    },
+    {
+      "name": "restore",
+      "description": "把一份文件最近一次的备份放回去。当前内容会先备份，所以回滚本身也能撤回。",
+      "script": "scripts/restore.sh",
+      "timeoutSec": 30,
+      "risk": "write",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "要还原的文件"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "apply",
+      "description": "检查提示词规则，并用一段样例提示词试跑一遍，看它到底会改成什么样。只读，不修改任何东西。",
+      "script": "scripts/apply.sh",
+      "timeoutSec": 30,
+      "risk": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "可选：按哪个模型试跑规则"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "reset",
+      "description": "把提示词规则恢复成默认（全是注释，等于不改提示词）。当前的配置会先备份。",
+      "script": "scripts/reset.sh",
+      "timeoutSec": 30,
+      "risk": "write",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "name": "ledger",
+      "description": "记一条公开信息线索，或列出台账里已有的条目。没有 http(s) 来源的条目一律不收。",
+      "script": "scripts/ledger.sh",
+      "timeoutSec": 30,
+      "risk": "write",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "add（默认，记一条）或 list（列出来）"
+          },
+          "text": {
+            "type": "string",
+            "description": "这条线索，一行写完"
+          },
+          "source": {
+            "type": "string",
+            "description": "来源链接，必须是 http(s)，记账时必填"
+          },
+          "tag": {
+            "type": "string",
+            "description": "可选标签，比如主体名称"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "列出几条，1-200（默认 20）"
+          }
+        },
+        "required": []
+      }
+    }
+  ],
+  "skills": [
+    {
+      "name": "purge-method",
+      "path": "skills/purge-method",
+      "display": "提示词审改方法"
+    },
+    {
+      "name": "passive-recon",
+      "path": "skills/passive-recon",
+      "display": "公开信息检索"
+    },
+    {
+      "name": "asset-correlation",
+      "path": "skills/asset-correlation",
+      "display": "线索关联台账"
+    }
+  ]
+}

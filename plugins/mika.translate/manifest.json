@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "id": "mika.translate",
+  "name": "页面翻译",
+  "version": "1.1.0",
+  "kind": "capability",
+  "minApp": "0.1.46",
+  "author": "Mika",
+  "description": "把 Mika 浏览器里打开的网页翻译成你要的语言（简体/繁体中文、英文、日文、韩语或任何其他语言）：读取页面正文、按自然边界切段、逐段翻译并给出原文对照。翻译通道用你自己的 OpenAI 兼容接口，密钥走环境变量，不进对话。",
+  "permissions": [
+    "run-scripts"
+  ],
+  "tools": [
+    {
+      "name": "translate",
+      "description": "Translate text into any target language. Accepts a page read verbatim and splits it into safe-size chunks itself; returns JSON with either `translation` (whole translated text) or, when no translation endpoint is configured, `segments` (numbered chunks) so you can translate them with your own model and label each part. Use it once per page, not once per paragraph. The user picks the language by asking ('翻成繁体/英文/日文'): pass their words through as `target`.",
+      "script": "scripts/translate.sh",
+      "timeoutSec": 120,
+      "risk": "external",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The text to translate. For a page, paste the page text here as-is (line breaks are fine). Long lists are fine: it keeps them chunked so a cheaper model still holds quality."
+          },
+          "target": {
+            "type": "string",
+            "description": "Target language, in the user's own words or a language code: 简体中文 (default), 繁體中文, English, 日本語, 한국어, 德语, Tiếng Việt, العربية … Any language works. Pass what the user asked for; do not translate the language name into English unless they said so."
+          },
+          "source": {
+            "type": "string",
+            "description": "Source language when you know it (e.g. English, 日本語). Leave empty to let the translator detect it."
+          },
+          "style": {
+            "type": "string",
+            "description": "literal (close to the original wording) | polish (readability first) | default (accurate and natural)."
+          },
+          "chunk": {
+            "type": "string",
+            "description": "Approximate characters per chunk before each model call, 200-6000, default 1800. Lower it when the source is dense."
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "translate_languages",
+      "description": "Show how to choose the translation language (any language, spoken in the chat, plus the default via MIKA_TRANSLATE_TARGET). Call it when the user asks which languages are supported or how to change the default.",
+      "script": "scripts/translate_languages.sh",
+      "timeoutSec": 20,
+      "risk": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "document name, default translate-languages"
+          }
+        }
+      }
+    },
+    {
+      "name": "translate_setup",
+      "description": "Show how to configure this plugin (which environment variables the translation endpoint needs) and whether it is configured now. Call it when the user asks how to set up translation, or when translate returns mode=segments and you want to tell them why.",
+      "script": "scripts/translate_setup.sh",
+      "timeoutSec": 20,
+      "risk": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "document name, default translate-setup"
+          }
+        }
+      }
+    }
+  ],
+  "skills": [
+    {
+      "name": "page-translate",
+      "path": "skills/page-translate",
+      "display": "页面翻译"
+    }
+  ]
+}
