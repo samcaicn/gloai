@@ -9,7 +9,8 @@ from their signed metadata, so apk inside the runtime sees a consistent database
 Usage:
   build-runtime.py --resolve   re-resolve the package closure from the signed v3.22 APKINDEX, rewrite runtime/sources.lock
   build-runtime.py             build from runtime/sources.lock; write the asset, BundledRuntime.kt and runtime/packages.json
-  build-runtime.py --check     build into a temp dir and compare with the committed BundledRuntime.kt; exit 1 on mismatch
+  build-runtime.py --check     build into a temp dir and compare both committed artifacts with it;
+                               exit 1 on a mismatch or on a missing artifact
 
 Every download is https only and verified: the minirootfs by SHA-256; each .apk by SHA-256 from the lock,
 by its own RSA signature (keys from the pinned minirootfs), by its control checksum (the APKINDEX `C:` value),
@@ -665,10 +666,15 @@ def main():
     if a.check:
         with tempfile.TemporaryDirectory() as d:
             r = build(os.path.join(d, "rootfs.tar.xz"))
-        committed = open(KOTLIN, encoding="utf-8").read() if os.path.isfile(KOTLIN) else ""
+        # --check proves the committed artifacts match a rebuild, so an absent one fails here:
+        # skipping its comparison would report "ok" for an artifact it never looked at.
+        for path in (KOTLIN, ASSET):
+            if not os.path.isfile(path):
+                die(f"{os.path.relpath(path, ROOT)} is missing; --check compares it with a rebuild")
+        committed = open(KOTLIN, encoding="utf-8").read()
         if kotlin(r) != committed:
             die(f"rebuilt runtime {r['sha256']} differs from BundledRuntime.kt")
-        if os.path.isfile(ASSET) and sha256(open(ASSET, "rb").read()) != r["sha256"]:
+        if sha256(open(ASSET, "rb").read()) != r["sha256"]:
             die("assets/runtime/rootfs.tar.xz differs from the rebuild")
         print(f"ok {version_id(r)} ({r['bytes']} bytes)")
         return

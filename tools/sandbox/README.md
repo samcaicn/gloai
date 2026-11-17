@@ -29,7 +29,7 @@ Mika 只以子进程方式运行它们,不链接它们。
 ```bash
 python3 tools/sandbox/build-runtime.py --resolve   # 换 Alpine 小版本或软件包后重新求依赖,改写 runtime/sources.lock
 python3 tools/sandbox/build-runtime.py             # 生成 rootfs.tar.xz、BundledRuntime.kt、packages.json
-python3 tools/sandbox/build-runtime.py --check     # 重新生成并与仓库里的产物比较,不一致退出 1
+python3 tools/sandbox/build-runtime.py --check     # 重新生成并与仓库里的产物比较,不一致或产物缺失退出 1
 ```
 
 `build-runtime.py` 里的 `WANT` 必须与 core 的 `SANDBOX_PACKAGES` 一致(`BundledRuntimeTest` 核对)。
