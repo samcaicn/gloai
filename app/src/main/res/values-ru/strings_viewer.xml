@@ -7,4 +7,14 @@
     <string name="viewer_read_error">Не удалось прочитать этот файл.</string>
     <string name="viewer_page">Страница %1$d</string>
     <string name="viewer_truncated">Файл большой; показано только его начало.</string>
+    <string name="viewer_find">Поиск в файле</string>
+    <string name="viewer_find_hint">Введите запрос</string>
+    <string name="viewer_find_prev">Предыдущее совпадение</string>
+    <string name="viewer_find_next">Следующее совпадение</string>
+    <string name="viewer_find_close">Закрыть поиск</string>
+    <string name="viewer_find_no_matches">Совпадений нет</string>
+    <string name="viewer_copy">Копировать всё</string>
+    <string name="viewer_copied">Скопировано</string>
+    <string name="viewer_copied_part">Скопировано (только начало)</string>
+    <string name="viewer_copy_failed">Слишком большой объём для копирования</string>
 </resources>

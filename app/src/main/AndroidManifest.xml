@@ -165,11 +165,12 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.NoDisplay" />
 
-        <!-- App 里的文件查看页(网页、Markdown、PDF、图片、文本) -->
+        <!-- App 里的文件查看页(网页、Markdown、PDF、图片、文本);页内查找时输入法调窗口高度 -->
         <activity
             android:name=".ui.viewer.FileViewerActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|uiMode|density"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Mika" />
 
         <!-- 用户自己打开的终端:只从 App 内进,不导出;转屏不重建,输入法调窗口高度 -->

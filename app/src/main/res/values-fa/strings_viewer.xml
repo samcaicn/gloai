@@ -7,4 +7,14 @@
     <string name="viewer_read_error">خواندن این فایل با مشکل مواجه شد.</string>
     <string name="viewer_page">صفحهٔ %1$d</string>
     <string name="viewer_truncated">این فایل بزرگ است؛ فقط ابتدای آن نمایش داده می‌شود.</string>
+    <string name="viewer_find">جست‌وجو در فایل</string>
+    <string name="viewer_find_hint">برای جست‌وجو بنویسید</string>
+    <string name="viewer_find_prev">نتیجهٔ قبلی</string>
+    <string name="viewer_find_next">نتیجهٔ بعدی</string>
+    <string name="viewer_find_close">بستن جست‌وجو</string>
+    <string name="viewer_find_no_matches">نتیجه‌ای پیدا نشد</string>
+    <string name="viewer_copy">رونوشت همه</string>
+    <string name="viewer_copied">رونوشت شد</string>
+    <string name="viewer_copied_part">رونوشت شد (فقط ابتدا)</string>
+    <string name="viewer_copy_failed">محتوا برای رونوشت بیش از حد بزرگ است</string>
 </resources>

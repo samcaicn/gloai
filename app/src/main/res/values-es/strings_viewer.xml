@@ -7,4 +7,14 @@
     <string name="viewer_read_error">Algo salió mal al leer este archivo.</string>
     <string name="viewer_page">Página %1$d</string>
     <string name="viewer_truncated">Este archivo es grande; solo se muestra el principio.</string>
+    <string name="viewer_find">Buscar en el archivo</string>
+    <string name="viewer_find_hint">Escribe para buscar</string>
+    <string name="viewer_find_prev">Coincidencia anterior</string>
+    <string name="viewer_find_next">Coincidencia siguiente</string>
+    <string name="viewer_find_close">Cerrar búsqueda</string>
+    <string name="viewer_find_no_matches">Sin coincidencias</string>
+    <string name="viewer_copy">Copiar todo</string>
+    <string name="viewer_copied">Copiado</string>
+    <string name="viewer_copied_part">Copiado (solo el principio)</string>
+    <string name="viewer_copy_failed">Demasiado grande para copiar</string>
 </resources>

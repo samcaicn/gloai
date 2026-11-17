@@ -7,4 +7,14 @@
     <string name="viewer_read_error">このファイルの読み込み中に問題が発生しました。</string>
     <string name="viewer_page">%1$d ページ</string>
     <string name="viewer_truncated">このファイルは大きいため、最初の部分だけを表示しています。</string>
+    <string name="viewer_find">ファイル内を検索</string>
+    <string name="viewer_find_hint">検索する文字を入力</string>
+    <string name="viewer_find_prev">前を検索</string>
+    <string name="viewer_find_next">次を検索</string>
+    <string name="viewer_find_close">検索を閉じる</string>
+    <string name="viewer_find_no_matches">一致なし</string>
+    <string name="viewer_copy">すべてコピー</string>
+    <string name="viewer_copied">コピーしました</string>
+    <string name="viewer_copied_part">コピーしました（最初の部分のみ）</string>
+    <string name="viewer_copy_failed">大きすぎてコピーできません</string>
 </resources>

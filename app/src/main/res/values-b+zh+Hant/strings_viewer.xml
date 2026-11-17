@@ -7,4 +7,14 @@
     <string name="viewer_read_error">讀取這個檔案時出錯了。</string>
     <string name="viewer_page">第 %1$d 頁</string>
     <string name="viewer_truncated">檔案較大，只顯示前面一部分。</string>
+    <string name="viewer_find">在檔案中尋找</string>
+    <string name="viewer_find_hint">搜尋檔案內容</string>
+    <string name="viewer_find_prev">上一處</string>
+    <string name="viewer_find_next">下一處</string>
+    <string name="viewer_find_close">關閉搜尋</string>
+    <string name="viewer_find_no_matches">沒有符合項目</string>
+    <string name="viewer_copy">複製全部</string>
+    <string name="viewer_copied">已複製</string>
+    <string name="viewer_copied_part">已複製，只含前面一部分</string>
+    <string name="viewer_copy_failed">內容太大，無法複製</string>
 </resources>

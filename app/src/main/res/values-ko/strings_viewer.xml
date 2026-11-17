@@ -7,4 +7,14 @@
     <string name="viewer_read_error">이 파일을 읽는 중 문제가 생겼어요.</string>
     <string name="viewer_page">%1$d페이지</string>
     <string name="viewer_truncated">파일이 커서 앞부분만 표시해요.</string>
+    <string name="viewer_find">파일에서 찾기</string>
+    <string name="viewer_find_hint">검색어 입력</string>
+    <string name="viewer_find_prev">이전 찾기</string>
+    <string name="viewer_find_next">다음 찾기</string>
+    <string name="viewer_find_close">찾기 닫기</string>
+    <string name="viewer_find_no_matches">일치 항목 없음</string>
+    <string name="viewer_copy">모두 복사</string>
+    <string name="viewer_copied">복사했어요</string>
+    <string name="viewer_copied_part">복사했어요(앞부분만)</string>
+    <string name="viewer_copy_failed">너무 커서 복사할 수 없어요</string>
 </resources>

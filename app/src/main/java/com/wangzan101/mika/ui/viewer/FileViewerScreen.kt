@@ -1,8 +1,8 @@
 package com.wangzan101.mika.ui.viewer
 
-import com.wangzan101.mika.R
-import androidx.compose.ui.res.stringResource
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -10,23 +10,30 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.webkit.WebView
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,46 +42,72 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.wangzan101.mika.ui.MarkdownText
+import com.wangzan101.mika.R
+import com.wangzan101.mika.ui.FindHighlight
+import com.wangzan101.mika.ui.LocalFindHighlight
+import com.wangzan101.mika.ui.MarkdownBlock
+import com.wangzan101.mika.ui.MarkdownDocument
 import com.wangzan101.mika.ui.components.BarIconButton
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize
 import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.PageBackground
 import com.wangzan101.mika.ui.components.TopBar
+import com.wangzan101.mika.ui.theme.MikaColors
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaTheme
@@ -82,10 +115,14 @@ import com.wangzan101.mika.ui.theme.MikaType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
 
 /** 文本类和 Markdown 最多读这么多字节,再多只显示前面一部分。 */
@@ -96,6 +133,9 @@ private const val IMAGE_MAX_SIDE = 4096
 
 /** 每段文本的行数:长文本分段放进懒加载列表,只排看得见的几段。 */
 private const val LINES_PER_CHUNK = 200
+
+/** 跳到命中处时上面留一点空,好看见上下文。 */
+private val FindTopMargin = 8.dp
 
 private val MonoText = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.5.sp, lineHeight = 18.sp)
 
@@ -108,43 +148,62 @@ private sealed interface Loaded {
 
 /**
  * 文件查看页:顶栏是返回、文件名和「分享」「用其他应用打开」;下面按 [kind] 显示内容。
+ * 文本和 Markdown 还能在页内查找、一键复制全文,入口在顶栏。
  * [kind] 为 null(这里不认识的类型)时只说一句,并给「用其他应用打开」。
  */
 @Composable
 fun FileViewerScreen(uri: Uri, name: String, kind: ViewerKind?, onBack: () -> Unit) {
     val context = LocalContext.current
+    val focus = LocalFocusManager.current
     val openElsewhere = { FileViewer.openElsewhere(context, uri, name) }
+    val find = remember { FindState() }
+    val closeFind = {
+        find.close()
+        focus.clearFocus()
+    }
+    // 查找开着时,返回键先收起查找条,而不是退出查看页
+    BackHandler(enabled = find.active, onBack = closeFind)
+
+    // PDF 走自己的加载器;其余类型在这里读好,顶栏的搜索、复制才知道有没有内容可用
+    val loaded by produceState<Result<Loaded>?>(null, uri, kind) {
+        if (kind == null || kind == ViewerKind.Pdf) return@produceState
+        value = withContext(Dispatchers.IO) { runCatching { load(context, uri, kind) } }
+    }
+    val content = loaded?.getOrNull() as? Loaded.Text
+    val text = content?.text?.takeIf { it.isNotEmpty() }
+    val truncated = content?.truncated == true
+
     PageBackground {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().imePadding()) {
             TopBar(name, MikaIcons.Back, onBack, stringResource(R.string.back), right = {
+                if (text != null) {
+                    BarIconButton(MikaIcons.Search, stringResource(R.string.viewer_find), {
+                        if (find.active) closeFind() else find.open()
+                    })
+                    BarIconButton(MikaIcons.Copy, stringResource(R.string.viewer_copy), { copyText(context, name, text, truncated) })
+                }
                 BarIconButton(MikaIcons.Share, stringResource(R.string.share), { FileViewer.share(context, uri, name) })
                 BarIconButton(MikaIcons.External, stringResource(R.string.viewer_open_elsewhere), openElsewhere)
             })
+            if (find.active && text != null) {
+                ViewerFindBar(find, onQuery = find::updateQuery, onClose = closeFind)
+            }
             Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
+                val result = loaded
                 when (kind) {
                     null -> Failure(stringResource(R.string.viewer_unsupported), openElsewhere, Modifier.testTag("viewer.unsupported"))
                     ViewerKind.Pdf -> PdfView(uri, openElsewhere)
-                    else -> LoadedView(uri, kind, openElsewhere)
+                    else -> when {
+                        result == null -> Loading()
+                        result.isFailure -> Failure(stringResource(R.string.viewer_read_error), openElsewhere)
+                        else -> when (val l = result.getOrThrow()) {
+                            is Loaded.Html -> HtmlView(l.html)
+                            is Loaded.Picture -> PictureView(l.bitmap)
+                            is Loaded.Text -> if (kind == ViewerKind.Markdown) MarkdownView(l, find) else PlainTextView(l, find)
+                        }
+                    }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun LoadedView(uri: Uri, kind: ViewerKind, openElsewhere: () -> Unit) {
-    val context = LocalContext.current
-    val result by produceState<Result<Loaded>?>(null, uri, kind) {
-        value = withContext(Dispatchers.IO) { runCatching { load(context, uri, kind) } }
-    }
-    val loaded = result
-    when {
-        loaded == null -> Loading()
-        loaded.isFailure -> Failure(stringResource(R.string.viewer_read_error), openElsewhere)
-        else -> when (val l = loaded.getOrThrow()) {
-            is Loaded.Html -> HtmlView(l.html)
-            is Loaded.Picture -> PictureView(l.bitmap)
-            is Loaded.Text -> if (kind == ViewerKind.Markdown) MarkdownView(l) else PlainTextView(l)
         }
     }
 }
@@ -181,37 +240,176 @@ private fun load(context: Context, uri: Uri, kind: ViewerKind): Loaded = when (k
 private fun open(context: Context, uri: Uri) =
     context.contentResolver.openInputStream(uri) ?: error("打不开 $uri")
 
-// ---------- 各类内容 ----------
+/** 把文本放进剪贴板;太长放不下时说一声,别假装复制成功;文件只读到一部分时也照实说。 */
+private fun copyText(context: Context, name: String, text: String, truncated: Boolean) {
+    val copied = runCatching {
+        context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(name, text))
+    }.isSuccess
+    val message = when {
+        !copied -> R.string.viewer_copy_failed
+        truncated -> R.string.viewer_copied_part
+        else -> R.string.viewer_copied
+    }
+    Toast.makeText(context, context.getString(message), Toast.LENGTH_SHORT).show()
+}
 
+// ---------- 查找条 ----------
+
+/** 页内查找条:输入后自动搜,显示第几处/共几处,上一个、下一个、关闭。 */
 @Composable
-private fun MarkdownView(l: Loaded.Text) {
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 20.dp, vertical = 16.dp)
-            .testTag("viewer.markdown"),
+private fun ViewerFindBar(find: FindState, onQuery: (String) -> Unit, onClose: () -> Unit) {
+    val c = MikaTheme.colors
+    val focusManager = LocalFocusManager.current
+    var text by remember { mutableStateOf(find.query) }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    LaunchedEffect(text) {
+        delay(200)
+        onQuery(text)
+    }
+    Row(
+        Modifier.fillMaxWidth().background(c.surface).padding(horizontal = 8.dp, vertical = 6.dp).testTag("viewer-find"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        if (l.truncated) TruncatedNote(Modifier.padding(bottom = 12.dp))
-        MarkdownText(l.text, MikaType.Body)
+        Row(
+            Modifier.weight(1f).height(40.dp).background(c.fill, MikaShapes.Pill).padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(MikaIcons.Search, null, Modifier.size(16.dp), tint = c.ink3)
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (text.isEmpty()) {
+                    Text(stringResource(R.string.viewer_find_hint), style = MikaType.Body, color = c.ink3, maxLines = 1)
+                }
+                BasicTextField(
+                    text, { text = it },
+                    Modifier.fillMaxWidth().padding(horizontal = 8.dp).focusRequester(focus).testTag("viewer-find-input"),
+                    singleLine = true,
+                    textStyle = MikaType.Body.copy(color = c.ink),
+                    cursorBrush = SolidColor(c.accent),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                )
+            }
+        }
+        val count = when {
+            find.query.isEmpty() -> ""
+            find.count == 0 -> stringResource(R.string.viewer_find_no_matches)
+            find.more -> "${find.index + 1}/${find.count}+"
+            else -> "${find.index + 1}/${find.count}"
+        }
+        if (count.isNotEmpty()) {
+            Text(
+                count, style = MikaType.Hint, color = c.ink3, maxLines = 1,
+                modifier = Modifier.padding(horizontal = 2.dp).testTag("viewer-find-count"),
+            )
+        }
+        FindAction(MikaIcons.Back, stringResource(R.string.viewer_find_prev), "viewer-find-prev", find::prev)
+        FindAction(MikaIcons.Forward, stringResource(R.string.viewer_find_next), "viewer-find-next", find::next)
+        FindAction(MikaIcons.Close, stringResource(R.string.viewer_find_close), "viewer-find-close", onClose)
     }
 }
 
-/** 等宽、可选中;按行分段放进懒加载列表,长文件也只排看得见的部分。长行自动折行。 */
 @Composable
-private fun PlainTextView(l: Loaded.Text) {
+private fun FindAction(icon: ImageVector, label: String, tag: String, onClick: () -> Unit) {
+    Box(
+        Modifier.size(36.dp).clip(CircleShape).clickable(role = Role.Button, onClickLabel = label, onClick = onClick).testTag(tag),
+        contentAlignment = Alignment.Center,
+    ) { Icon(icon, label, Modifier.size(17.dp), tint = MikaTheme.colors.ink3) }
+}
+
+/** 命中处的底色:当前那一处用实色,其余淡一点。 */
+private fun findColors(c: MikaColors): Pair<Color, Color> =
+    c.warnSolid.copy(alpha = if (c.isDark) 0.45f else 0.32f) to c.warnSolid
+
+// ---------- 各类内容 ----------
+
+/**
+ * Markdown:按块懒加载(大文件不再一次排完),用和对话里同一个解析器和块样式。
+ * 查找时命中处标色,「下一处」滚到命中所在的块。
+ */
+@Composable
+private fun MarkdownView(l: Loaded.Text, find: FindState) {
+    val c = MikaTheme.colors
+    val (soft, strong) = findColors(c)
+    MarkdownDocument(l.text) { blocks ->
+        val finds = remember(blocks, find.query) { findInBlocks(blocks, find.query) }
+        LaunchedEffect(finds) { find.report(finds.hits.size, finds.more) }
+        val current = finds.hits.getOrNull(find.index)
+        val list = rememberLazyListState()
+        LaunchedEffect(current, find.active) {
+            val hit = current ?: return@LaunchedEffect
+            list.scrollToItem(hit.block + if (l.truncated) 1 else 0)
+        }
+        val highlight = remember(find.query, current, soft, strong) {
+            if (find.query.isEmpty()) null
+            else FindHighlight(find.query, soft, strong, current?.text, current?.occurrence ?: 0)
+        }
+        CompositionLocalProvider(LocalFindHighlight provides highlight) {
+            LazyColumn(
+                Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars).testTag("viewer.markdown"),
+                state = list,
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (l.truncated) item { TruncatedNote(Modifier.padding(bottom = 4.dp)) }
+                itemsIndexed(blocks) { _, block -> MarkdownBlock(block, MikaType.Body) }
+            }
+        }
+    }
+}
+
+/**
+ * 等宽、可选中;按行分段放进懒加载列表,长文件也只排看得见的部分。长行自动折行。
+ * 查找命中处标色;跳到某一处时先滚到它所在的段,再按文字排版的结果挪到那一行。
+ */
+@Composable
+private fun PlainTextView(l: Loaded.Text, find: FindState) {
     val c = MikaTheme.colors
     val chunks = remember(l.text) { l.text.lines().chunked(LINES_PER_CHUNK).map { it.joinToString("\n") } }
+    val finds = remember(chunks, find.query) { findInChunks(chunks, find.query) }
+    LaunchedEffect(finds) { find.report(finds.hits.size, finds.more) }
+    val current = finds.hits.getOrNull(find.index)
+    val list = rememberLazyListState()
+    val layouts = remember { mutableStateMapOf<Int, TextLayoutResult>() }
+    // 排版结果只在查找时用来对准命中的那一行,查完就放掉,别让整份文件的排版一直留在内存里
+    LaunchedEffect(find.active) { if (!find.active) layouts.clear() }
+    val density = LocalDensity.current
+    val (soft, strong) = findColors(c)
+    LaunchedEffect(current, find.active) {
+        val hit = current ?: return@LaunchedEffect
+        val item = hit.chunk + if (l.truncated) 1 else 0
+        list.scrollToItem(item)
+        // 段可能比屏幕高(也可能在文件末尾,滚不到顶):等这一段排好版,再按它在视口里的位置挪到命中的那一行
+        val layout = withTimeoutOrNull(1_000) { snapshotFlow { layouts[hit.chunk] }.filterNotNull().first() } ?: return@LaunchedEffect
+        val box = runCatching { layout.getBoundingBox(hit.range.first) }.getOrNull() ?: return@LaunchedEffect
+        val itemTop = list.layoutInfo.visibleItemsInfo.firstOrNull { it.index == item }?.offset ?: 0
+        list.scrollBy(itemTop + box.top - with(density) { FindTopMargin.toPx() })
+    }
     SelectionContainer {
         LazyColumn(
             Modifier.fillMaxSize().testTag("viewer.text"),
+            state = list,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
         ) {
             if (l.truncated) item { TruncatedNote(Modifier.padding(bottom = 12.dp)) }
-            itemsIndexed(chunks) { _, chunk -> Text(chunk, style = MonoText, color = c.ink) }
+            itemsIndexed(chunks) { index, chunk ->
+                val focused = current?.takeIf { it.chunk == index }?.range
+                val ranges = finds.byChunk[index].orEmpty()
+                val shown = remember(chunk, ranges, focused, soft, strong) { chunk.withFind(ranges, focused, soft, strong) }
+                Text(shown, style = MonoText, color = c.ink, onTextLayout = { if (find.active) layouts[index] = it })
+            }
             item { Box(Modifier.windowInsetsPadding(WindowInsets.navigationBars)) }
         }
     }
 }
+
+/** 给 [ranges] 标上底色;[focused] 那一处用深色,好看出当前停在哪儿。 */
+private fun String.withFind(ranges: List<IntRange>, focused: IntRange?, soft: Color, strong: Color): AnnotatedString =
+    if (ranges.isEmpty()) AnnotatedString(this) else buildAnnotatedString {
+        append(this@withFind)
+        ranges.forEach { addStyle(SpanStyle(background = if (it == focused) strong else soft), it.first, it.last + 1) }
+    }
 
 /** 网页:一个新的 WebView,脚本打开、可双指缩放、按宽视口排版;点链接交给系统处理。 */
 @SuppressLint("SetJavaScriptEnabled")
