@@ -288,4 +288,6 @@
     <string name="task_field_insert">삽입</string>
     <string name="task_fields_too_many">서로 다른 항목은 최대 %1$d개입니다.</string>
     <string name="task_fill_apply">입력란에 채우기</string>
+    <string name="chat_read_aloud">Read aloud</string>
+    <string name="chat_stop_speaking">Stop speaking</string>
 </resources>

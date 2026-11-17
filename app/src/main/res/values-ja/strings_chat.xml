@@ -288,4 +288,6 @@
     <string name="task_field_insert">挿入</string>
     <string name="task_fields_too_many">入力項目は最大%1$d種類です。</string>
     <string name="task_fill_apply">入力欄に反映</string>
+    <string name="chat_read_aloud">Read aloud</string>
+    <string name="chat_stop_speaking">Stop speaking</string>
 </resources>

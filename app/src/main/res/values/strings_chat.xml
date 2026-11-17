@@ -302,4 +302,6 @@
     <string name="task_field_insert">Insert</string>
     <string name="task_fields_too_many">Use at most %1$d different fields.</string>
     <string name="task_fill_apply">Fill input</string>
+    <string name="chat_read_aloud">Read aloud</string>
+    <string name="chat_stop_speaking">Stop speaking</string>
 </resources>

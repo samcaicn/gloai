@@ -288,4 +288,6 @@
     <string name="task_field_insert">插入</string>
     <string name="task_fields_too_many">最多添加 %1$d 个不同的填写项。</string>
     <string name="task_fill_apply">填入输入框</string>
+    <string name="chat_read_aloud">朗读</string>
+    <string name="chat_stop_speaking">停止朗读</string>
 </resources>

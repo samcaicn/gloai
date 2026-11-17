@@ -302,4 +302,6 @@
     <string name="task_field_insert">درج</string>
     <string name="task_fields_too_many">حداکثر %1$d فیلد متفاوت استفاده کنید.</string>
     <string name="task_fill_apply">پر کردن کادر ورودی</string>
+    <string name="chat_read_aloud">Read aloud</string>
+    <string name="chat_stop_speaking">Stop speaking</string>
 </resources>

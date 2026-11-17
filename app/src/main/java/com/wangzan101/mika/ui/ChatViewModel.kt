@@ -472,9 +472,26 @@ class ChatViewModel(
     /** 正在跟用户学习时不另开任务，也不把这句话记成已经开始。 */
     private val teaching: () -> Boolean = { false },
     private val onTeachingBlocked: () -> Unit = {},
+    /** 朗读一条回答;没配置声音模型时不做。 */
+    private val speakText: suspend (String) -> Unit = {},
+    private val stopVoice: () -> Unit = {},
+    private val voicePlayback: StateFlow<com.wangzan101.mika.voice.VoicePlayback> =
+        MutableStateFlow(com.wangzan101.mika.voice.VoicePlayback.Idle),
+    private val voiceReady: StateFlow<Boolean> = MutableStateFlow(false),
 ) {
     /** 用户在对话页上关掉留在后台的那一页。 */
     fun closeKeptPage() = closeKept()
+
+    /** 说话状态;回答下面的「朗读/停止」按它显示。 */
+    val voice: StateFlow<com.wangzan101.mika.voice.VoicePlayback> get() = voicePlayback
+    /** 有没有可用的声音模型;没有时不显示朗读入口。 */
+    val canSpeak: StateFlow<Boolean> get() = voiceReady
+
+    fun speak(text: String) {
+        scope.launch { speakText(text) }
+    }
+
+    fun stopSpeaking() = stopVoice()
 
     private val _ui = MutableStateFlow(ChatUi())
     val ui: StateFlow<ChatUi> = _ui.asStateFlow()

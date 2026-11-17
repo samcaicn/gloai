@@ -166,6 +166,7 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.viewer.FileViewer
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.voice.HoldToTalk
+import com.wangzan101.mika.voice.VoicePlayback
 import com.wangzan101.mika.voice.VoiceSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -1376,6 +1377,7 @@ private fun StatusCard(
                         }
                     }
                     MarkdownText(status.answer, AnswerText.copy(color = MikaTheme.colors.ink))
+                    ReadAloudRow(status.answer, vm)
                     ReplyActions(runId, openRun, loadSource, openSource, status.evidence, receipt, openReport, openPlayback)
                 }
             }
@@ -1404,6 +1406,29 @@ private fun StatusCard(
             }
             RecoveryActions(runId, recover)
             ReplyActions(runId, openRun, loadSource, openSource, null, receipt, openReport, openPlayback)
+        }
+    }
+}
+
+/** 回答下面的「朗读/停止」;没有配置声音模型时不显示。 */
+@Composable
+private fun ReadAloudRow(answer: String, vm: ChatViewModel) {
+    val ready by vm.canSpeak.collectAsState()
+    if (!ready) return
+    val playback by vm.voice.collectAsState()
+    val playing = playback is VoicePlayback.Playing || playback is VoicePlayback.Loading
+    val c = MikaTheme.colors
+    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.clip(MikaShapes.Pill).clickable(role = Role.Button) { if (playing) vm.stopSpeaking() else vm.speak(answer) }
+                .padding(horizontal = 8.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Icon(MikaIcons.Sound, null, Modifier.size(14.dp), tint = if (playing) c.accent else c.ink3)
+            Text(
+                stringResource(if (playing) R.string.chat_stop_speaking else R.string.chat_read_aloud),
+                style = MikaType.Caption, color = if (playing) c.accent else c.ink3,
+            )
         }
     }
 }
