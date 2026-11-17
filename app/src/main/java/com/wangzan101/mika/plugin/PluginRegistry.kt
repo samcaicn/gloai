@@ -73,7 +73,7 @@ class PluginRegistry(
                 timeoutSec = tool.timeoutSec,
                 risk = tool.risk.toRisk(),
             )
-        }
+        }.distinctBy { it.name }
     }
 
     /** 重新扫目录对账;启动时和安装后调用。 */

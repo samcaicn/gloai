@@ -58,4 +58,9 @@ class PluginScriptRunnerTest {
         assertEquals(Risk.Write, specs[1].risk)
         assertEquals("scripts/scan.sh", specs[0].scriptPath)
     }
+
+    @Test fun readCappedLimitsOutput() {
+        val input = java.io.ByteArrayInputStream("a".repeat(1000).toByteArray())
+        assertEquals(100, readCapped(input, 100).length)
+    }
 }

@@ -1058,7 +1058,8 @@ class TaskRun(
                 // 看/操作 Mika 自己;开关关着时只给只读状态
                 self = selfPort,
                 selfOperate = selfPort?.takeIf { FeatureFlags.get(service).selfOperate() },
-                pluginTools = pluginTools, pluginScriptRunner = pluginRunner)
+                pluginTools = pluginTools, pluginScriptRunner = pluginRunner,
+                pluginArgsDir = java.io.File(service.cacheDir, "plugin-args"))
             dispatcher = tools
             // 主动能力从通知里攒下、够格带进任务的那一段:只给用户在手机上发起的任务(不给定时、渠道、电脑交来的,也不给条件检查和子任务);
             // 主动能力没开时不去碰它(连对象都不建)

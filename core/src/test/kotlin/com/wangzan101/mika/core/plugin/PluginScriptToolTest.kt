@@ -26,9 +26,11 @@ class PluginScriptToolTest {
     private class FakeRunner(var result: ScriptResult) : ScriptRunner {
         var script: File? = null
         var argsContent: String? = null
+        var argsPath: String? = null
         override suspend fun run(script: File, argsFile: File, env: Map<String, String>, timeoutMs: Long): ScriptResult {
             this.script = script
             this.argsContent = argsFile.readText()
+            this.argsPath = argsFile.absolutePath
             return result
         }
     }
@@ -66,6 +68,13 @@ class PluginScriptToolTest {
         val parsed = Json.parseToJsonElement(runner.argsContent!!) as JsonObject
         assertEquals("hi", parsed["text"]!!.jsonPrimitive.content)
         assertEquals("translate.sh", runner.script!!.name)
+    }
+
+    @Test fun argsFileWrittenToProvidedDir() = runTest {
+        val runner = FakeRunner(ScriptResult(0, """{"ok":true}""", "", false))
+        val d = toolDispatcher(FakeScreen(), pluginTools = listOf(spec()), pluginScriptRunner = runner, pluginArgsDir = tmp.root)
+        d.execute(call("plugin_mika_translate_translate", """{"text":"hi"}"""), ActionPass())
+        assertTrue(runner.argsPath!!.startsWith(tmp.root.absolutePath + File.separator))
     }
 
     @Test fun nonJsonStdoutIsCleanFailure() = runTest {

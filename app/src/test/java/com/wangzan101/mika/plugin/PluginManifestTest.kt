@@ -102,6 +102,16 @@ class PluginManifestTest {
         assertTrue(DEFAULT_PERSONA_CONF.contains("replace"))
     }
 
+    @Test fun duplicateToolNamesRejected() {
+        val dup = """
+            {"schema":1,"id":"com.example.x","name":"x","version":"1.0.0","kind":"capability",
+             "permissions":["run-scripts"],
+             "tools":[{"name":"scan","script":"scripts/scan.sh"},{"name":"scan","script":"scripts/patch.sh"}],
+             "skills":[]}
+        """.trimIndent()
+        assertTrue("invalid_tool" in problems(dup))
+    }
+
     @Test fun minAppMustBeCompatibleWithThisApp() {
         assertTrue(PluginManifest.ERR_MIN_APP_TOO_HIGH in problems(json(extra = ",\"minApp\":\"9.0.0\""), app = "0.1.33"))
         assertTrue(problems(json(extra = ",\"minApp\":\"0.1.33\""), app = "0.1.33").isEmpty())

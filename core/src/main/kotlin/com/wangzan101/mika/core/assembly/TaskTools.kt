@@ -48,6 +48,7 @@ import com.wangzan101.mika.core.trigger.TriggerDefinition
 import com.wangzan101.mika.core.trigger.ScheduleAdmin
 import com.wangzan101.mika.core.child.ChildRunHost
 import com.wangzan101.mika.core.userscreen.UserScreenSource
+import java.io.File
 
 /**
  * 一个任务的工具:装上手机、网页、沙箱三种能力和核心工具。这是唯一同时认识几种能力的地方。
@@ -145,6 +146,8 @@ fun toolDispatcher(
     pluginTools: List<PluginToolSpec> = emptyList(),
     /** 在 App 进程内跑插件脚本的入口;为空时插件工具不登记。 */
     pluginScriptRunner: ScriptRunner? = null,
+    /** 插件脚本参数临时文件放哪;App 用 cacheDir,JVM 测试用 java.io.tmpdir。 */
+    pluginArgsDir: File = File(System.getProperty("java.io.tmpdir"), "mika-plugin-args"),
 ): ToolDispatcher {
     val screenshotStore = sandbox?.takeIf {
         it.status() !is com.wangzan101.mika.core.cap.sandbox.SandboxStatus.Unsupported &&
@@ -188,7 +191,7 @@ fun toolDispatcher(
     }, pluginScriptRunner?.takeIf { pluginTools.isNotEmpty() }?.let { runner ->
         object : CapabilityProvider {
             override val id = "plugin"
-            override fun open(spec: RunSpec) = PluginCapability(pluginTools.map { PluginScriptTool(it, runner) })
+            override fun open(spec: RunSpec) = PluginCapability(pluginTools.map { PluginScriptTool(it, runner, pluginArgsDir) })
         }
     }) + mcpServers.map(::McpClientProvider)
     return RunAssembler(providers).assemble(runSpec, config, stableRefs, FORMER_PREFIX, RENAMED, RETIRED, MOVED)

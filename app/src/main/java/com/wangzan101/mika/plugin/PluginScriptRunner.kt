@@ -25,8 +25,8 @@ class PluginScriptRunner(
                 putAll(env)
             }
             val process = pb.start()
-            val outF = CompletableFuture.supplyAsync { process.inputStream.readBytes().toString(Charsets.UTF_8) }
-            val errF = CompletableFuture.supplyAsync { process.errorStream.readBytes().toString(Charsets.UTF_8) }
+            val outF = CompletableFuture.supplyAsync { readCapped(process.inputStream, MAX_OUTPUT_BYTES) }
+            val errF = CompletableFuture.supplyAsync { readCapped(process.errorStream, MAX_OUTPUT_BYTES) }
             val finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
             if (!finished) {
                 process.destroyForcibly()
@@ -45,8 +45,8 @@ class PluginScriptRunner(
                 putAll(env)
             }
             val process = pb.start()
-            val outF = CompletableFuture.supplyAsync { process.inputStream.readBytes().toString(Charsets.UTF_8) }
-            val errF = CompletableFuture.supplyAsync { process.errorStream.readBytes().toString(Charsets.UTF_8) }
+            val outF = CompletableFuture.supplyAsync { readCapped(process.inputStream, MAX_OUTPUT_BYTES) }
+            val errF = CompletableFuture.supplyAsync { readCapped(process.errorStream, MAX_OUTPUT_BYTES) }
             CompletableFuture.runAsync { runCatching { process.outputStream.use { it.write(stdin.toByteArray(Charsets.UTF_8)) } } }
             val finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
             if (!finished) {
@@ -57,4 +57,22 @@ class PluginScriptRunner(
             fun read(f: CompletableFuture<String>): String = runCatching { f.get(2, TimeUnit.SECONDS) }.getOrDefault("")
             ScriptResult(exitCode, read(outF), read(errF), !finished)
         }
+}
+
+/** 插件脚本输出最多进内存这么多;再多的丢弃(免得一个脚本把内存写爆)。 */
+private const val MAX_OUTPUT_BYTES = 1_000_000
+
+/** 读 [input] 最多 [maxBytes] 字节,其余读完丢弃后返回。 */
+internal fun readCapped(input: java.io.InputStream, maxBytes: Int): String {
+    val out = java.io.ByteArrayOutputStream()
+    val chunk = ByteArray(8192)
+    var total = 0
+    while (total < maxBytes) {
+        val n = input.read(chunk, 0, minOf(chunk.size, maxBytes - total))
+        if (n < 0) break
+        out.write(chunk, 0, n)
+        total += n
+    }
+    while (input.read(chunk) >= 0) { /* drain the rest so the process isn't blocked on a full pipe */ }
+    return out.toString(Charsets.UTF_8)
 }

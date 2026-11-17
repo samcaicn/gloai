@@ -39,7 +39,11 @@ data class PluginManifest(
         }
         for (p in permissions) if (p !in ALLOWED_PLUGIN_PERMISSIONS) add(ERR_INVALID_PERMISSION)
         if (pages.isNotEmpty() || settings.isNotEmpty()) add(ERR_ONLY_SKILLS)
-        for (t in tools) if (!validScriptPath(t.script)) add(ERR_SCRIPT_NOT_SH)
+        val toolNames = mutableSetOf<String>()
+        for (t in tools) {
+            if (!validScriptPath(t.script)) add(ERR_SCRIPT_NOT_SH)
+            if (!toolNames.add(t.name)) add(ERR_TOOL)
+        }
         if (promptTransform != null && !validScriptPath(promptTransform)) add(ERR_INVALID_PROMPT_TRANSFORM)
         val seen = mutableSetOf<String>()
         for (s in skills) {
@@ -69,6 +73,7 @@ data class PluginManifest(
         const val ERR_SCRIPT_NOT_SH = "script_not_sh"
         const val ERR_INVALID_PERMISSION = "invalid_permission"
         const val ERR_INVALID_PROMPT_TRANSFORM = "invalid_prompt_transform"
+        const val ERR_TOOL = "invalid_tool"
         const val ERR_SKILL = "invalid_skill"
         const val ERR_SKILL_PATH = "invalid_skill_path"
 
