@@ -94,4 +94,10 @@
     <string name="skills_imported">مستوردة</string>
     <string name="skill_builtin_name">توجد مهارة مدمجة بهذا الاسم بالفعل. غيّر الاسم وحاول مجددًا.</string>
     <string name="skill_draft_pending">توجد مسودة بهذا الاسم بانتظار المراجعة بالفعل. تعامل معها أولًا.</string>
+    <string name="market_title">سوق المهارات</string>
+    <string name="market_sub">تصفح المهارات المشتركة على GitHub</string>
+    <string name="market_source">مصدر المهارات</string>
+    <string name="market_add">إضافة للمراجعة</string>
+    <string name="market_network_error">تعذر التنزيل. تحقق من المستودع والاتصال ثم حاول مجدداً.</string>
+    <string name="market_invalid">المحتوى غير صالح أو تغير. أعد فتح السوق لتحديث القائمة.</string>
 </resources>

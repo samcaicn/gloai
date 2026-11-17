@@ -94,4 +94,10 @@
     <string name="skills_imported">匯入的</string>
     <string name="skill_builtin_name">和內建技能重名了，改個名字再試。</string>
     <string name="skill_draft_pending">已經有一份同名草稿在等你確認，先處理那份。</string>
+    <string name="market_title">技能市場</string>
+    <string name="market_sub">瀏覽 GitHub 上分享的技能</string>
+    <string name="market_source">技能來源</string>
+    <string name="market_add">加入待確認</string>
+    <string name="market_network_error">下載失敗，請檢查儲存庫名稱和網路後重試。</string>
+    <string name="market_invalid">內容格式有誤或已更新，請重新開啟市場以重新整理目錄。</string>
 </resources>

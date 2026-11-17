@@ -94,4 +94,10 @@
     <string name="skills_imported">Импортирован</string>
     <string name="skill_builtin_name">Встроенный навык с таким названием уже есть. Переименуйте и попробуйте снова.</string>
     <string name="skill_draft_pending">Черновик с таким названием уже ждёт проверки. Сначала разберитесь с ним.</string>
+    <string name="market_title">Каталог навыков</string>
+    <string name="market_sub">Просмотр навыков из GitHub</string>
+    <string name="market_source">Источник навыков</string>
+    <string name="market_add">Добавить на проверку</string>
+    <string name="market_network_error">Не удалось загрузить. Проверьте репозиторий и подключение.</string>
+    <string name="market_invalid">Содержимое недопустимо или изменилось. Откройте каталог заново.</string>
 </resources>

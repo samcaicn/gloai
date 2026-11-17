@@ -94,4 +94,10 @@
     <string name="skills_imported">インポート済み</string>
     <string name="skill_builtin_name">同じ名前の組み込みスキルがあります。名前を変えてもう一度試してください。</string>
     <string name="skill_draft_pending">同じ名前の下書きが確認待ちです。先にそちらを処理してください。</string>
+    <string name="market_title">スキルマーケット</string>
+    <string name="market_sub">GitHub で共有されたスキルを見る</string>
+    <string name="market_source">スキルの提供元</string>
+    <string name="market_add">確認待ちに追加</string>
+    <string name="market_network_error">ダウンロードできません。リポジトリと接続を確認してください。</string>
+    <string name="market_invalid">内容が無効または更新されています。マーケットを開き直してください。</string>
 </resources>
