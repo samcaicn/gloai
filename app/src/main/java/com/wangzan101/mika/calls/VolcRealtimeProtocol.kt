@@ -2,6 +2,7 @@ package com.wangzan101.mika.calls
 
 import java.util.Base64
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -12,6 +13,8 @@ data class VolcRealtimeConfig(
     val systemPrompt: String = "",
     val speaker: String = DEFAULT_SPEAKER,
     val model: String = MODEL,
+    /** Tools are enabled only for an owned carrier call, never a briefing or connection test. */
+    val enablePhoneDtmf: Boolean = false,
 ) {
     init {
         require(systemPrompt.length <= MAX_PROMPT_CHARS) { "Realtime system prompt is too long" }
@@ -39,6 +42,14 @@ internal object VolcRealtimeProtocol {
     private const val MAX_OUTPUT_BYTES = OUTPUT_RATE * 2 // At most one second in one packet.
 
     const val SESSION_CREATED = "session.created"
+    const val SESSION_UPDATED = "session.updated"
+    const val FUNCTION_CALL = "response.function_call_arguments.done"
+    const val DTMF_FUNCTION = "send_dtmf"
+    const val MAX_DTMF_DIGITS = 32
+    const val MAX_FUNCTION_CALLS = 128
+    const val MAX_FUNCTION_BATCH = 8
+    const val MAX_FUNCTION_ARGUMENT_CHARS = 256
+    const val MAX_TOOL_RESULT_CHARS = 2048
     const val SESSION_CLOSED = "session.closed"
     const val INPUT_AUDIO_COMMITTED = "input_audio_buffer.committed"
     const val USER_STARTED = "conversation.item.input_audio_transcription.started"
@@ -77,6 +88,51 @@ internal object VolcRealtimeProtocol {
 
     fun audio(eventId: String, bytes: ByteArray, count: Int): String = message("input_audio_buffer.append", eventId) {
         put("audio", Base64.getEncoder().encodeToString(if (bytes.size == count) bytes else bytes.copyOf(count)))
+    }
+
+    /** tools is a complete replacement, not an incremental addition (Seeduplex API). */
+    fun enablePhoneTools(eventId: String): String = message("session.update", eventId) {
+        putJsonObject("session") {
+            put("tools", JsonArray(listOf(buildJsonObject {
+                put("type", "function")
+                put("name", DTMF_FUNCTION)
+                put("description", "在电话语音菜单明确要求按键时，发送真正的电话DTMF按键；说出数字不能代替按键。仅按本次任务和听到的菜单选择，不猜测密码或验证码。等待工具结果，失败时不得声称按键成功。")
+                putJsonObject("parameters") {
+                    put("type", "object")
+                    putJsonObject("properties") {
+                        putJsonObject("digits") {
+                            put("type", "string")
+                            put("pattern", "^[0-9*#]{1,32}$")
+                            put("minLength", 1)
+                            put("maxLength", MAX_DTMF_DIGITS)
+                            put("description", "按顺序发送的电话按键，只能含0-9、*、#，最多32个。")
+                        }
+                    }
+                    put("required", JsonArray(listOf(JsonPrimitive("digits"))))
+                    put("additionalProperties", false)
+                }
+            })))
+        }
+    }
+
+    fun toolResults(eventId: String, results: List<Pair<String, JsonObject>>): String =
+        message("conversation.item.create", eventId) {
+            put("items", JsonArray(results.map { (callId, result) -> buildJsonObject {
+                put("call_id", callId)
+                put("role", "tool")
+                put("content", JsonArray(listOf(buildJsonObject {
+                    put("type", "input_text")
+                    put("text", result.toString())
+                })))
+            } }))
+        }
+
+    fun validCallId(id: String): Boolean = id.length in 1..128 && id.all { it in '!'..'~' }
+
+    fun validDtmfArguments(arguments: JsonObject): Boolean {
+        val digits = arguments.string("digits") ?: return false
+        return arguments.keys == setOf("digits") && digits.length in 1..MAX_DTMF_DIGITS &&
+            digits.all { it in '0'..'9' || it == '*' || it == '#' }
     }
 
     fun greeting(eventId: String, text: String): String = message("speech_text_buffer.commit", eventId) {

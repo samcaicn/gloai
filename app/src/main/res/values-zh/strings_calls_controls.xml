@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_dtmf_status_label">通话状态</string>
+    <string name="calls_dtmf_open">按键</string>
+    <string name="calls_dtmf_title">通话按键</string>
+    <string name="calls_dtmf_close">关闭</string>
+    <string name="calls_dtmf_batch">连续输入</string>
+    <string name="calls_dtmf_hint">按下即发送，请按语音提示操作。</string>
+    <string name="calls_dtmf_batch_hint">最多输入 32 个按键，再点发送。</string>
+    <string name="calls_dtmf_input">0–9、* 或 #</string>
+    <string name="calls_dtmf_delete">删除</string>
+    <string name="calls_dtmf_send">发送</string>
+    <string name="calls_dtmf_sending">正在发送…</string>
+    <string name="calls_dtmf_sent">按键已提交，等待对方响应</string>
+    <string name="calls_dtmf_failed">未能完成按键提交，请等待对方响应后再操作。</string>
+    <string name="calls_dtmf_invalid">仅支持 0–9、*、#，最多 32 个按键。</string>
+    <string name="calls_voice_briefing_start">语音交代任务</string>
+    <string name="calls_voice_briefing_note">请用普通话交代；完成后，单独说“%1$s”才会拨出。</string>
+    <string name="calls_voice_briefing_stopped">语音交代已中断，未拨号</string>
+    <string name="calls_voice_briefing_authorized">交代已确认，正在提交拨号</string>
+    <string name="calls_voice_briefing_permission_granted">麦克风已允许，请再次点语音交代按钮开始。</string>
+    <string name="calls_voice_briefing_permission_denied">未获得麦克风权限；可以在任务页填写文字交代。</string>
+    <string name="calls_voice_briefing_incomplete">原有文字交代尚不完整，请补充或清空后再开始。</string>
+    <string name="calls_voice_briefing_configure">请先在设置中配置实时语音。</string>
+</resources>

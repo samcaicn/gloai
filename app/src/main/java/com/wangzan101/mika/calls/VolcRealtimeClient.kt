@@ -17,6 +17,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -65,6 +70,8 @@ sealed interface VolcRealtimeEvent {
         val isCompleteFinal: Boolean = isFinal,
         /** A late identified final is history, never control of the current speaking turn. */
         val isCurrentTurn: Boolean = true,
+        /** Earlier captured instructions have not received a final or failure yet. */
+        val hasUnresolvedPriorTurn: Boolean = false,
     ) : VolcRealtimeEvent
     data object UserSpeechEnded : VolcRealtimeEvent
     /** Provider observations only; these do not start, stop, or retry a turn. */
@@ -76,6 +83,8 @@ sealed interface VolcRealtimeEvent {
     data object AssistantInterrupted : VolcRealtimeEvent
     data class AssistantTranscript(val delta: String) : VolcRealtimeEvent
     data object AssistantTextEnded : VolcRealtimeEvent
+    /** Only an enabled, validated tool call can reach the phone bridge. */
+    data class FunctionCall(val callId: String, val name: String, val arguments: JsonObject) : VolcRealtimeEvent
     data class Failed(val error: VolcRealtimeException) : VolcRealtimeEvent
     data object Closed : VolcRealtimeEvent
 }
@@ -93,7 +102,7 @@ class VolcRealtimeClient internal constructor(
     private val client = http.newBuilder().followRedirects(false).followSslRedirects(false)
         .retryOnConnectionFailure(false).build()
 
-    /** Returns after the provider acknowledges session.create, not just the HTTP upgrade. */
+    /** Returns after session.create and, when enabled, the phone tools update are acknowledged. */
     suspend fun connect(
         credentials: VolcRealtimeCredentials,
         config: VolcRealtimeConfig = VolcRealtimeConfig(),
@@ -130,17 +139,27 @@ class VolcRealtimeSession internal constructor(
     private val config: VolcRealtimeConfig,
     private val closeTimeoutMs: Long,
 ) : CallRealtimeSession {
-    private enum class Phase { CONNECTING, CREATING, ACTIVE, ENDING_SESSION, ENDING_SOCKET, ENDED }
+    private enum class Phase { CONNECTING, CREATING, CONFIGURING_TOOLS, ACTIVE, ENDING_SESSION, ENDING_SOCKET, ENDED }
     private var phase = Phase.CONNECTING
     private var socket: WebSocket? = null
     private var closeWatchdog: Job? = null
     private var sequence = 0L
     private var muted = false
+    private class ToolBatch(val ids: List<String>)
+    private class ToolCall(val batch: ToolBatch, val responseId: String?) {
+        var result: JsonObject? = null
+        var sent = false
+    }
+    // Never evict IDs: eviction would allow an old delivery to press the keys twice.
+    private val toolCalls = LinkedHashMap<String, ToolCall>()
     private var currentUserItem: String? = null
     private var userText = StringBuilder()
+    private var userTextTruncated = false
     private var userTurnActive = false
+    private var unresolvedAnonymousTurn = false
     private class UserItemState {
         val text = StringBuilder()
+        var truncated = false
         var started = false
         var ended = false
         var finalEmitted = false
@@ -161,7 +180,8 @@ class VolcRealtimeSession internal constructor(
     /** Single consumer. Keep the collector responsive; overflowing the buffer ends the session. */
     override val events: Flow<VolcRealtimeEvent> = flow {
         check(collecting.compareAndSet(false, true)) { "Realtime events have one consumer" }
-        for (event in output) if (!discardPending) emit(event)
+        for (event in output) if (!discardPending && (event !is VolcRealtimeEvent.FunctionCall ||
+                canDeliverFunctionCall(event))) emit(event)
         emit(terminal)
     }
 
@@ -216,12 +236,22 @@ class VolcRealtimeSession internal constructor(
         return send(VolcRealtimeProtocol.mute(nextId(), muted)).also { if (it) this.muted = muted }
     }
 
+    /** Once per call ID. A provider batch is returned together after all its tools finish. */
+    @Synchronized override fun sendToolResult(callId: String, result: JsonObject): Boolean {
+        if (phase != Phase.ACTIVE || !config.enablePhoneDtmf ||
+            result.toString().length > VolcRealtimeProtocol.MAX_TOOL_RESULT_CHARS) return false
+        val call = toolCalls[callId] ?: return false
+        if (call.result != null || call.sent) return false
+        call.result = result
+        return flushToolBatch(call.batch)
+    }
+
     /** Stops local media immediately; waits briefly for session.closed before closing the socket. */
     @Synchronized override fun close() {
         if (phase == Phase.ENDED) return
         discardPending = true
         when (phase) {
-            Phase.ACTIVE, Phase.CREATING -> {
+            Phase.ACTIVE, Phase.CREATING, Phase.CONFIGURING_TOOLS -> {
                 phase = Phase.ENDING_SESSION
                 if (send(VolcRealtimeProtocol.close(nextId()))) armCloseWatchdog()
             }
@@ -237,7 +267,7 @@ class VolcRealtimeSession internal constructor(
     }
 
     @Synchronized private fun invalidFrame() {
-        if (phase == Phase.CREATING || phase == Phase.ACTIVE) abort(VolcRealtimeException(VolcRealtimeException.Kind.PROTOCOL))
+        if (phase == Phase.CREATING || phase == Phase.CONFIGURING_TOOLS || phase == Phase.ACTIVE) abort(VolcRealtimeException(VolcRealtimeException.Kind.PROTOCOL))
     }
 
     @Synchronized private fun received(text: String) {
@@ -247,11 +277,21 @@ class VolcRealtimeSession internal constructor(
         val type = frame.string("type")
         when (type) {
             VolcRealtimeProtocol.SESSION_CREATED -> if (phase == Phase.CREATING) {
+                if (config.enablePhoneDtmf) {
+                    phase = Phase.CONFIGURING_TOOLS
+                    send(VolcRealtimeProtocol.enablePhoneTools(nextId()))
+                } else {
+                    phase = Phase.ACTIVE
+                    ready.complete(Unit)
+                }
+            }
+            VolcRealtimeProtocol.SESSION_UPDATED -> if (phase == Phase.CONFIGURING_TOOLS) {
+                // Only one update is outstanding. event_id may identify the server event itself.
                 phase = Phase.ACTIVE
                 ready.complete(Unit)
             }
             VolcRealtimeProtocol.SESSION_CLOSED -> {
-                if (phase == Phase.CREATING) {
+                if (phase == Phase.CREATING || phase == Phase.CONFIGURING_TOOLS) {
                     abort(VolcRealtimeException(VolcRealtimeException.Kind.PROVIDER))
                 } else {
                     phase = Phase.ENDING_SOCKET
@@ -272,14 +312,21 @@ class VolcRealtimeSession internal constructor(
         if (phase != Phase.ACTIVE) return
         val responseId = frame.string("response_id")?.takeIf { it.isNotBlank() }
         when (type) {
+            VolcRealtimeProtocol.FUNCTION_CALL -> receiveFunctionCalls(frame, responseId)
             VolcRealtimeProtocol.INPUT_AUDIO_COMMITTED -> publish(VolcRealtimeEvent.InputAudioCommitted)
             VolcRealtimeProtocol.USER_STARTED -> {
                 val itemId = frame.string("item_id")?.takeIf { it.isNotBlank() }
                 val item = itemId?.let(::userItem)
                 if (item?.ended == true || item?.started == true) return
                 item?.started = true
+                // An anonymous partial cannot be recovered by item identity once replaced.
+                // Keep that uncertainty for the session instead of silently dropping a restriction.
+                if (currentUserItem == null && userTurnActive) {
+                    unresolvedAnonymousTurn = true
+                }
                 currentUserItem = itemId
                 userText = item?.text ?: StringBuilder()
+                userTextTruncated = item?.truncated ?: false
                 userTurnActive = true
                 interruptAudio()
                 publish(VolcRealtimeEvent.UserSpeaking)
@@ -289,23 +336,31 @@ class VolcRealtimeSession internal constructor(
                 val isNewItem = itemId != null && itemId !in userItems
                 val item = itemId?.let(::userItem)
                 if (item?.ended == true) return
-                val delta = frame.string("delta") ?: return
+                val snapshot = asrText(frame) ?: return
                 if (isNewItem) {
                     // Adopt an explicitly new ID, including a current anonymous turn. Known parked
                     // items can keep accumulating history but must never reclaim the current lane.
                     if (currentUserItem == null && userTurnActive && userText.isNotEmpty()) {
                         item!!.text.append(userText)
+                        item.truncated = userTextTruncated
                     }
                     currentUserItem = itemId
                     userText = item!!.text
                 }
                 val text = item?.text ?: userText
-                val remaining = MAX_TRANSCRIPT_CHARS - text.length
-                if (remaining > 0 && delta.isNotEmpty()) text.append(delta, 0, minOf(remaining, delta.length))
+                // Seeduplex's official Web demo replaces the owner question for each ASR
+                // delta (setQuestion), while appending assistant text (appendAnswer). ASR
+                // events are full, revisable snapshots despite the event's "delta" name.
+                // Never infer this by text overlap: genuine repeated words must survive.
+                text.setLength(0)
+                text.append(snapshot, 0, minOf(MAX_TRANSCRIPT_CHARS, snapshot.length))
+                val truncated = snapshot.length > MAX_TRANSCRIPT_CHARS
+                item?.truncated = truncated
                 // Unidentified events retain the legacy in-order current lane; never guess an ID by delay.
                 if (itemId == null || itemId == currentUserItem) {
                     userTurnActive = true
-                    if (delta.isNotEmpty()) publish(VolcRealtimeEvent.UserTranscript(text.toString(), isFinal = false))
+                    userTextTruncated = truncated
+                    publish(VolcRealtimeEvent.UserTranscript(text.toString(), isFinal = false))
                 }
             }
             VolcRealtimeProtocol.USER_COMPLETED -> {
@@ -313,13 +368,20 @@ class VolcRealtimeSession internal constructor(
                 val item = itemId?.let(::userItem)
                 if (item?.finalEmitted == true) return
                 val isCurrent = itemId == null || itemId == currentUserItem
-                val explicitFinal = (frame.string("transcript") ?: frame.string("text"))?.takeIf { it.isNotBlank() }
+                val explicitFinal = asrText(frame)?.takeIf { it.isNotBlank() }
+                val hasFinalText = ASR_TEXT_FIELDS.any { frame.string(it) != null }
                 val transcript = explicitFinal ?: (item?.text ?: userText).toString()
                 if (transcript.isNotBlank()) publish(VolcRealtimeEvent.UserTranscript(
                     transcript.take(MAX_TRANSCRIPT_CHARS),
                     isFinal = true,
-                    isCompleteFinal = explicitFinal != null && explicitFinal.length <= MAX_TRANSCRIPT_CHARS,
+                    // A payload-free completed event finalizes the latest full snapshot.
+                    // Explicitly blank results and truncated snapshots cannot authorize.
+                    isCompleteFinal = if (explicitFinal != null) explicitFinal.length <= MAX_TRANSCRIPT_CHARS
+                        else !hasFinalText && !(item?.truncated ?: userTextTruncated),
                     isCurrentTurn = isCurrent,
+                    hasUnresolvedPriorTurn = unresolvedAnonymousTurn || userItems.any { (id, prior) ->
+                        id != (itemId ?: currentUserItem) && !prior.ended && (prior.started || prior.text.isNotBlank())
+                    },
                 ))
                 (item ?: currentUserItem?.let(userItems::get))?.let {
                     it.ended = true
@@ -392,11 +454,80 @@ class VolcRealtimeSession internal constructor(
         }
     }
 
+    private fun receiveFunctionCalls(frame: JsonObject, responseId: String?) {
+        if (!config.enablePhoneDtmf) { invalidFrame(); return }
+        val items = frame["items"] as? JsonArray
+        if (items == null || items.size !in 1..VolcRealtimeProtocol.MAX_FUNCTION_BATCH) {
+            invalidFrame(); return
+        }
+        // Validate the complete envelope before publishing anything that can press a key.
+        val parsed = items.map { element ->
+            val item = element as? JsonObject ?: run { invalidFrame(); return }
+            val id = item.string("call_id") ?: run { invalidFrame(); return }
+            if (!VolcRealtimeProtocol.validCallId(id)) { invalidFrame(); return }
+            id to item
+        }
+        if (parsed.groupBy { it.first }.values.any { group -> group.map { it.second }.distinct().size > 1 }) {
+            invalidFrame(); return
+        }
+        val newCalls = parsed.distinctBy { it.first }.filter { it.first !in toolCalls }
+        if (toolCalls.size + newCalls.size > VolcRealtimeProtocol.MAX_FUNCTION_CALLS) {
+            invalidFrame(); return
+        }
+        if (newCalls.isEmpty()) return // At-most-once, including failed or still-running calls.
+        val batch = ToolBatch(newCalls.map { it.first })
+        newCalls.forEach { (id, _) -> toolCalls[id] = ToolCall(batch, responseId) }
+        val stale = isRetiredResponse(responseId)
+        if (!stale) acceptResponseIdentity(responseId)
+        for ((id, item) in newCalls) {
+            val name = item.string("name")
+            val rawArguments = item.string("arguments")
+            val arguments = if (rawArguments != null && rawArguments.length <= VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS) {
+                try { Json.parseToJsonElement(rawArguments) as? JsonObject } catch (_: IllegalArgumentException) { null }
+            } else null
+            val error = when {
+                stale -> "stale_response"
+                name != VolcRealtimeProtocol.DTMF_FUNCTION -> "unsupported_tool"
+                arguments == null || !VolcRealtimeProtocol.validDtmfArguments(arguments) -> "invalid_arguments"
+                else -> null
+            }
+            if (error != null) {
+                toolCalls.getValue(id).result = buildJsonObject { put("ok", false); put("error", error) }
+            } else {
+                publish(VolcRealtimeEvent.FunctionCall(id, name!!, arguments!!))
+                if (phase != Phase.ACTIVE) return
+            }
+        }
+        flushToolBatch(batch)
+    }
+
+    @Synchronized private fun canDeliverFunctionCall(event: VolcRealtimeEvent.FunctionCall): Boolean {
+        if (phase != Phase.ACTIVE) return false
+        val call = toolCalls[event.callId] ?: return false
+        if (call.sent || call.result != null) return false
+        if (!isRetiredResponse(call.responseId)) return true
+        // A queued call may become stale while its consumer is handling earlier audio.
+        call.result = buildJsonObject { put("ok", false); put("error", "stale_response") }
+        flushToolBatch(call.batch)
+        return false
+    }
+
+    private fun flushToolBatch(batch: ToolBatch): Boolean {
+        val calls = batch.ids.map { toolCalls.getValue(it) }
+        if (calls.any { it.sent }) return false
+        if (calls.any { it.result == null }) return true
+        val sent = send(VolcRealtimeProtocol.toolResults(nextId(), batch.ids.map { it to toolCalls.getValue(it).result!! }))
+        if (sent) calls.forEach { it.sent = true; it.result = null }
+        return sent
+    }
+
     private fun userItem(id: String): UserItemState {
         userItems[id]?.let { return it }
         if (userItems.size >= MAX_TRACKED_USER_ITEMS) {
             val oldest = userItems.keys.firstOrNull { it != currentUserItem } ?: userItems.keys.first()
-            userItems.remove(oldest)
+            userItems.remove(oldest)?.let { evicted ->
+                if (!evicted.ended && (evicted.started || evicted.text.isNotBlank())) unresolvedAnonymousTurn = true
+            }
         }
         return UserItemState().also { userItems[id] = it }
     }
@@ -404,7 +535,13 @@ class VolcRealtimeSession internal constructor(
     private fun finishCurrentUser() {
         currentUserItem = null
         userText = StringBuilder()
+        userTextTruncated = false
         userTurnActive = false
+    }
+
+    // Same field priority as the official Seeduplex Web demo's extractEventText.
+    private fun asrText(frame: JsonObject): String? = ASR_TEXT_FIELDS.firstNotNullOfOrNull { key ->
+        frame.string(key)?.takeIf { it.isNotEmpty() }
     }
 
     private fun isRetiredResponse(id: String?): Boolean = id != null && id in retiredResponseIds
@@ -434,7 +571,7 @@ class VolcRealtimeSession internal constructor(
 
     @Synchronized private fun closing(webSocket: WebSocket, code: Int) {
         if (phase == Phase.ENDED) return
-        if (phase == Phase.CONNECTING || phase == Phase.CREATING || (!discardPending && code != 1000)) {
+        if (phase == Phase.CONNECTING || phase == Phase.CREATING || phase == Phase.CONFIGURING_TOOLS || (!discardPending && code != 1000)) {
             abort(VolcRealtimeException(VolcRealtimeException.Kind.NETWORK, code.toLong()))
             return
         }
@@ -490,6 +627,7 @@ class VolcRealtimeSession internal constructor(
     }
 
     private companion object {
+        val ASR_TEXT_FIELDS = listOf("text", "delta", "transcript", "content")
         const val MAX_SEND_QUEUE_BYTES = 32 * 1024 // Well below OkHttp's 16 MiB default WebSocket queue.
         const val MAX_TRANSCRIPT_CHARS = 16_384
         const val MAX_TRACKED_USER_ITEMS = 64

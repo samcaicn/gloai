@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_dtmf_status_label">通話狀態</string>
+    <string name="calls_dtmf_open">按鍵</string>
+    <string name="calls_dtmf_title">通話按鍵</string>
+    <string name="calls_dtmf_close">關閉</string>
+    <string name="calls_dtmf_batch">輸入連續按鍵</string>
+    <string name="calls_dtmf_hint">輕點即傳送。請依語音提示操作。</string>
+    <string name="calls_dtmf_batch_hint">輸入最多 32 個按鍵後點擊傳送。</string>
+    <string name="calls_dtmf_input">0–9、* 或 #</string>
+    <string name="calls_dtmf_delete">刪除</string>
+    <string name="calls_dtmf_send">傳送</string>
+    <string name="calls_dtmf_sending">正在傳送…</string>
+    <string name="calls_dtmf_sent">按鍵已提交，等待對方回應</string>
+    <string name="calls_dtmf_failed">無法完成傳送，請先等待對方回應。</string>
+    <string name="calls_dtmf_invalid">僅限 0–9、*、#，最多 32 個。</string>
+    <string name="calls_voice_briefing_start">語音交代任務</string>
+    <string name="calls_voice_briefing_note">請用普通話交代；完成後，單獨說「%1$s」才會撥出。</string>
+    <string name="calls_voice_briefing_stopped">語音交代已中斷，未撥號</string>
+    <string name="calls_voice_briefing_authorized">交代已確認，正在提交撥號</string>
+    <string name="calls_voice_briefing_permission_granted">麥克風已允許，請再次點語音交代按鈕開始。</string>
+    <string name="calls_voice_briefing_permission_denied">未獲得麥克風權限；可在任務頁填寫文字交代。</string>
+    <string name="calls_voice_briefing_incomplete">原有文字交代尚不完整，請補充或清空後再開始。</string>
+    <string name="calls_voice_briefing_configure">請先在設定中配置即時語音。</string>
+</resources>

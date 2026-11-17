@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_dtmf_status_label">Состояние звонка</string>
+    <string name="calls_dtmf_open">Клавиатура</string>
+    <string name="calls_dtmf_title">Клавиатура звонка</string>
+    <string name="calls_dtmf_close">Закрыть</string>
+    <string name="calls_dtmf_batch">Ввести последовательность</string>
+    <string name="calls_dtmf_hint">Каждая клавиша отправляется сразу. Следуйте голосовым подсказкам.</string>
+    <string name="calls_dtmf_batch_hint">Введите до 32 символов и нажмите «Отправить».</string>
+    <string name="calls_dtmf_input">0–9, * или #</string>
+    <string name="calls_dtmf_delete">Удалить</string>
+    <string name="calls_dtmf_send">Отправить</string>
+    <string name="calls_dtmf_sending">Отправка…</string>
+    <string name="calls_dtmf_sent">Клавиши отправлены; дождитесь ответа</string>
+    <string name="calls_dtmf_failed">Не удалось завершить отправку. Дождитесь ответа.</string>
+    <string name="calls_dtmf_invalid">Только 0–9, * и #, до 32 символов.</string>
+    <string name="calls_voice_briefing_start">Описать задачу голосом</string>
+    <string name="calls_voice_briefing_note">Говорите на путунхуа. Чтобы разрешить звонок, в конце отдельно произнесите «%1$s».</string>
+    <string name="calls_voice_briefing_stopped">Описание остановлено; звонок не выполнен</string>
+    <string name="calls_voice_briefing_authorized">Задача подтверждена; запрос звонка</string>
+    <string name="calls_voice_briefing_permission_granted">Микрофон разрешён. Нажмите кнопку голоса ещё раз.</string>
+    <string name="calls_voice_briefing_permission_denied">Нет разрешения на микрофон. Можно заполнить текстовую форму.</string>
+    <string name="calls_voice_briefing_incomplete">Дополните или очистите имеющиеся инструкции.</string>
+    <string name="calls_voice_briefing_configure">Сначала настройте голос в реальном времени.</string>
+</resources>

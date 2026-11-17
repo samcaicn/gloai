@@ -60,6 +60,18 @@ class CallSummaryGeneratorTest {
         assertNull(CallSummaryGenerator.generate(FakeModel("这通电话很好。"), listOf(CallTranscriptLine("caller", "你好"))))
     }
 
+    @Test fun deviceKeySubmissionIsNotAttributedToEitherParty() = runBlocking {
+        val model = FakeModel("{}")
+        CallSummaryGenerator.generate(model, listOf(
+            CallTranscriptLine("system", "已提交 3 个按键，等待对方响应"),
+            CallTranscriptLine("caller", "请选择业务"),
+        ))
+        assertEquals("来电者: 请选择业务", model.received)
+        val onlyStatus = FakeModel("{}")
+        assertNull(CallSummaryGenerator.generate(onlyStatus, listOf(CallTranscriptLine("system", "已提交按键"))))
+        assertTrue(onlyStatus.received.isEmpty())
+    }
+
     @Test fun emptyTranscriptDoesNotCallModel() = runBlocking {
         val model = FakeModel("{}")
         assertNull(CallSummaryGenerator.generate(model, emptyList()))

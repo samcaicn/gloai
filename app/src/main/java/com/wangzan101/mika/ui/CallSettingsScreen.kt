@@ -205,6 +205,7 @@ private fun CallSettingsWorkspace(
                         }
                     },
                     onCancelAuto = { callId?.let { perform(priority = true) { runtime.cancelAutoAnswer(it) } } },
+                    onSendDtmf = { expectedCallId, digits -> runtime.sendDtmf(expectedCallId, digits) },
                     onTranscript = {
                         tab = CallWorkspaceTab.Receive
                         liveNavigation++
@@ -274,6 +275,13 @@ private fun CallSettingsWorkspace(
                             canDial = idle && pendingLockedDial == null && !busy && !controlBusy,
                             feedback = visibleFeedback, onSetup = ::openDeviceSettings,
                             voiceProfile = runtime.activeVoiceProfile(), onVoiceProfiles = onVoiceProfiles,
+                            voiceBriefing = rememberCallVoiceBriefing(
+                                runtime, taskDraft,
+                                allowed = ready && idle && pendingLockedDial == null && !busy && !controlBusy,
+                                profile = runtime.activeVoiceProfile(),
+                            ) { submission ->
+                                perform { runtime.dial(submission.number, simId = submission.simId, task = submission.brief) }
+                            },
                             onConfirm = { submission ->
                                 perform {
                                     runtime.dial(submission.number, simId = submission.simId, task = submission.brief)
@@ -392,7 +400,7 @@ internal fun CallFeedback(result: CallActionResult) {
 }
 
 @Composable
-private fun CurrentCallCard(
+internal fun CurrentCallCard(
     state: CallRuntimeState,
     feedback: CallActionResult?,
     canAnswer: Boolean,
@@ -403,7 +411,36 @@ private fun CurrentCallCard(
     onTakeover: () -> Unit,
     onCancelAuto: () -> Unit,
     onTranscript: () -> Unit,
+    onSendDtmf: (suspend (String, String) -> CallActionResult)? = null,
 ) {
+    var showActiveTask by rememberSaveable(state.callId) { mutableStateOf(false) }
+    if (showActiveTask && state.activeTask != null) {
+        val task = state.activeTask
+        AlertDialog(
+            onDismissRequest = { showActiveTask = false },
+            title = { Text(stringResource(R.string.calls_record_brief)) },
+            text = {
+                Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(task.goal)
+                    task.questions.forEach { Text("• $it") }
+                    if (task.context.isNotBlank()) Text(task.context)
+                    if (task.constraints.isNotBlank()) Text(task.constraints)
+                }
+            },
+            confirmButton = { TextButton(onClick = { showActiveTask = false }) { Text(stringResource(R.string.calls_collapse)) } },
+            modifier = Modifier.testTag("call-active-task-dialog"),
+        )
+    }
+    var keypadCallId by remember { mutableStateOf<String?>(null) }
+    val canUseKeypad = state.phase == CallPhase.ACTIVE && state.canSendDtmf && state.callId != null && onSendDtmf != null
+    LaunchedEffect(state.callId, state.phase, canUseKeypad) {
+        if (!canUseKeypad || keypadCallId != state.callId) keypadCallId = null
+    }
+    if (canUseKeypad && keypadCallId == state.callId) key(keypadCallId) {
+        CallDtmfKeypadDialog(checkNotNull(keypadCallId), { keypadCallId = null }, checkNotNull(onSendDtmf), state.dtmfBusy)
+    }
+
     val cancelAuto = state.autoAnswerStage == CallAutoAnswerStage.COUNTDOWN ||
         state.autoAnswerStage == CallAutoAnswerStage.PREPARING
     val ringing = state.phase == CallPhase.RINGING && state.autoAnswerStage != CallAutoAnswerStage.ANSWERING
@@ -438,6 +475,16 @@ private fun CurrentCallCard(
                     }
                 }
             }
+            state.liveTranscript.lastOrNull { it.text.isNotBlank() }?.let { latest ->
+                Row(Modifier.fillMaxWidth().testTag("call-current-latest"),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(callTranscriptSpeakerLabel(latest.role)),
+                        style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 80.dp))
+                    Text(latest.text, style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink2,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                }
+            }
             if (ringing || showTakeover || cancelAuto || state.canHangUp) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalAlignment = Alignment.CenterVertically) {
@@ -464,6 +511,15 @@ private fun CurrentCallCard(
                         color = if (canControl) MaterialTheme.colorScheme.error else MikaTheme.colors.ink3) }
                 }
             }
+            if (canUseKeypad) TextButton(
+                onClick = { keypadCallId = state.callId }, enabled = canControl && !state.dtmfBusy,
+                modifier = Modifier.testTag("call-dtmf-open"),
+            ) { Text(stringResource(R.string.calls_dtmf_title)) }
+            state.activeTask?.let { task ->
+                TextButton(onClick = { showActiveTask = true }, modifier = Modifier.testTag("call-active-task")) {
+                    Text(stringResource(R.string.calls_record_brief) + ": " + task.goal, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            }
             feedback?.let {
                 Text(it.message, Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis,
@@ -474,7 +530,7 @@ private fun CurrentCallCard(
 }
 
 @Composable
-private fun LiveCallTranscript(callId: String?, lines: List<CallTranscriptLine>) {
+internal fun LiveCallTranscript(callId: String?, lines: List<CallTranscriptLine>) {
     var expanded by rememberSaveable(callId) { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.calls_live_transcript), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)

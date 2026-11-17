@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_dtmf_status_label">حالة المكالمة</string>
+    <string name="calls_dtmf_open">لوحة المفاتيح</string>
+    <string name="calls_dtmf_title">لوحة مفاتيح المكالمة</string>
+    <string name="calls_dtmf_close">إغلاق</string>
+    <string name="calls_dtmf_batch">إدخال تسلسل</string>
+    <string name="calls_dtmf_hint">يتم إرسال كل مفتاح فورًا. اتبع التعليمات الصوتية.</string>
+    <string name="calls_dtmf_batch_hint">أدخل حتى 32 مفتاحًا، ثم اضغط إرسال.</string>
+    <string name="calls_dtmf_input">0–9 أو * أو #</string>
+    <string name="calls_dtmf_delete">حذف</string>
+    <string name="calls_dtmf_send">إرسال</string>
+    <string name="calls_dtmf_sending">جارٍ الإرسال…</string>
+    <string name="calls_dtmf_sent">تم إرسال المفاتيح؛ انتظر الرد</string>
+    <string name="calls_dtmf_failed">تعذر إكمال الإرسال. انتظر الرد.</string>
+    <string name="calls_dtmf_invalid">استخدم 0–9 و* و# فقط، حتى 32 مفتاحًا.</string>
+    <string name="calls_voice_briefing_start">وصف المهمة صوتيًا</string>
+    <string name="calls_voice_briefing_note">تحدث بالصينية المندرينية. للسماح بالاتصال، قل «%1$s» وحدها بعد الانتهاء.</string>
+    <string name="calls_voice_briefing_stopped">توقف الوصف؛ لم يتم إجراء مكالمة</string>
+    <string name="calls_voice_briefing_authorized">تم تأكيد المهمة؛ جارٍ طلب الاتصال</string>
+    <string name="calls_voice_briefing_permission_granted">تم السماح بالميكروفون. اضغط زر الصوت مرة أخرى.</string>
+    <string name="calls_voice_briefing_permission_denied">لم يتم منح إذن الميكروفون. يمكنك استخدام النموذج النصي.</string>
+    <string name="calls_voice_briefing_incomplete">أكمل التعليمات الحالية أو امسحها قبل البدء.</string>
+    <string name="calls_voice_briefing_configure">اضبط الصوت في الوقت الفعلي في الإعدادات أولًا.</string>
+</resources>

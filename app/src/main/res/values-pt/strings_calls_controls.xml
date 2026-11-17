@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_dtmf_status_label">Estado da chamada</string>
+    <string name="calls_dtmf_open">Teclado</string>
+    <string name="calls_dtmf_title">Teclado da chamada</string>
+    <string name="calls_dtmf_close">Fechar</string>
+    <string name="calls_dtmf_batch">Inserir sequência</string>
+    <string name="calls_dtmf_hint">Cada tecla é enviada imediatamente. Siga as instruções de voz.</string>
+    <string name="calls_dtmf_batch_hint">Insira até 32 teclas e toque em Enviar.</string>
+    <string name="calls_dtmf_input">0–9, * ou #</string>
+    <string name="calls_dtmf_delete">Apagar</string>
+    <string name="calls_dtmf_send">Enviar</string>
+    <string name="calls_dtmf_sending">Enviando…</string>
+    <string name="calls_dtmf_sent">Teclas enviadas; aguarde a resposta</string>
+    <string name="calls_dtmf_failed">Não foi possível concluir o envio. Aguarde a resposta.</string>
+    <string name="calls_dtmf_invalid">Use apenas 0–9, * e #, até 32 teclas.</string>
+    <string name="calls_voice_briefing_start">Descrever tarefa por voz</string>
+    <string name="calls_voice_briefing_note">Fale em mandarim. Para autorizar a chamada, diga apenas “%1$s” ao terminar.</string>
+    <string name="calls_voice_briefing_stopped">Descrição interrompida; nenhuma chamada feita</string>
+    <string name="calls_voice_briefing_authorized">Tarefa autorizada; iniciando chamada</string>
+    <string name="calls_voice_briefing_permission_granted">Microfone permitido. Toque novamente no botão de voz.</string>
+    <string name="calls_voice_briefing_permission_denied">Sem permissão do microfone. Use o formulário de texto.</string>
+    <string name="calls_voice_briefing_incomplete">Complete ou apague as instruções existentes antes de começar.</string>
+    <string name="calls_voice_briefing_configure">Configure primeiro a voz em tempo real nos Ajustes.</string>
+</resources>
