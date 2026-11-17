@@ -78,6 +78,7 @@
     <string name="chat_attach_rejected">추가하지 못했어요: %1$s (파일당 200MB 미만이어야 해요)</string>
     <string name="chat_stop">중지</string>
     <string name="chat_send">보내기</string>
+    <string name="chat_scroll_to_bottom">맨 아래로 이동</string>
     <string name="drawer_running_task">실행 중인 작업</string>
     <string name="drawer_running">실행 중</string>
     <string name="drawer_yesterday">어제</string>

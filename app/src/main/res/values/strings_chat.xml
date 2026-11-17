@@ -79,6 +79,7 @@
     <string name="chat_attach_rejected">Couldn’t add: %1$s (each file must be under 200 MB)</string>
     <string name="chat_stop">Stop</string>
     <string name="chat_send">Send</string>
+    <string name="chat_scroll_to_bottom">Scroll to bottom</string>
     <string name="drawer_running_task">Running task</string>
     <string name="drawer_running">Running</string>
     <string name="drawer_yesterday">Yesterday</string>

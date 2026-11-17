@@ -80,6 +80,7 @@
     <string name="chat_attach_rejected">No se pudo añadir: %1$s (cada archivo debe pesar menos de 200 MB)</string>
     <string name="chat_stop">Detener</string>
     <string name="chat_send">Enviar</string>
+    <string name="chat_scroll_to_bottom">Ir al final</string>
     <string name="drawer_running_task">Tarea en ejecución</string>
     <string name="drawer_running">En ejecución</string>
     <string name="drawer_yesterday">Ayer</string>

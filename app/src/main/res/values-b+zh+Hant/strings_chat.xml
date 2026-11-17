@@ -78,6 +78,7 @@
     <string name="chat_attach_rejected">沒能新增:%1$s(單個檔案不超過 200 MB)</string>
     <string name="chat_stop">停止</string>
     <string name="chat_send">傳送</string>
+    <string name="chat_scroll_to_bottom">回到底部</string>
     <string name="drawer_running_task">進行中的任務</string>
     <string name="drawer_running">進行中</string>
     <string name="drawer_yesterday">昨天</string>

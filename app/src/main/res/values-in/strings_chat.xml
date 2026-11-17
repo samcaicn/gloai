@@ -78,6 +78,7 @@
     <string name="chat_attach_rejected">Gagal menambahkan: %1$s (setiap berkas harus di bawah 200 MB)</string>
     <string name="chat_stop">Hentikan</string>
     <string name="chat_send">Kirim</string>
+    <string name="chat_scroll_to_bottom">Gulir ke bawah</string>
     <string name="drawer_running_task">Tugas berjalan</string>
     <string name="drawer_running">Berjalan</string>
     <string name="drawer_yesterday">Kemarin</string>

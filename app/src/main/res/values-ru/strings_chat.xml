@@ -81,6 +81,7 @@
     <string name="chat_attach_rejected">Не удалось добавить: %1$s (каждый файл должен быть меньше 200 МБ)</string>
     <string name="chat_stop">Остановить</string>
     <string name="chat_send">Отправить</string>
+    <string name="chat_scroll_to_bottom">Перейти вниз</string>
     <string name="drawer_running_task">Идёт задача</string>
     <string name="drawer_running">Выполняется</string>
     <string name="drawer_yesterday">Вчера</string>

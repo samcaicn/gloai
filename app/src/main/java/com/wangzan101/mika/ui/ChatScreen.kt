@@ -73,6 +73,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -150,11 +151,13 @@ import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.MikaCard
 import com.wangzan101.mika.ui.components.MikaDialog
 import com.wangzan101.mika.ui.components.PageBackground
+import com.wangzan101.mika.ui.components.ScrollToBottomButton
 import com.wangzan101.mika.ui.components.TopBar
 import com.wangzan101.mika.ui.components.cardSurface
 import com.wangzan101.mika.ui.components.floatShadow
 import com.wangzan101.mika.ui.components.glassSource
 import com.wangzan101.mika.ui.components.rememberGlassBackdrop
+import com.wangzan101.mika.ui.components.scrollListToBottom
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaMotion
 import com.wangzan101.mika.ui.theme.MikaShapes
@@ -164,6 +167,7 @@ import com.wangzan101.mika.ui.viewer.FileViewer
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.voice.HoldToTalk
 import com.wangzan101.mika.voice.VoiceSource
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -295,13 +299,15 @@ fun ChatScreen(
 
     // 只有原本跟着最新消息时才继续跟随。这个状态与列表位置一起跨页面保存。
     var followingTail by rememberSaveable { mutableStateOf(true) }
+    var scrollingToBottom by remember(ui.conversationId) { mutableStateOf(false) }
+    var scrollToBottomJob by remember(ui.conversationId) { mutableStateOf<Job?>(null) }
     var previousScrollMarker by rememberSaveable { mutableStateOf<String?>(null) }
     var previousConversation by rememberSaveable { mutableStateOf<String?>(null) }
     val tailThresholdPx = with(density) { 240.dp.roundToPx() }
     LaunchedEffect(listState, tailThresholdPx) {
         var wasScrolling = false
         snapshotFlow { listState.isScrollInProgress to listState.nearTail(tailThresholdPx) }.collect { (scrolling, nearTail) ->
-            if (scrolling || wasScrolling) followingTail = nearTail
+            if (!scrollingToBottom && (scrolling || wasScrolling)) followingTail = nearTail
             wasScrolling = scrolling
         }
     }
@@ -310,6 +316,8 @@ fun ChatScreen(
     // 目标行直接由当前 UI 状态计算:layoutInfo 还是上一帧的测量结果,发送后立即读它会滚到旧的末尾。
     val last = ui.exchanges.lastOrNull()
     val rowCount = chatItemCount(ui.exchanges, kept, phoneSetupNeeded, hasBlocked = ui.blocked != null)
+    val canScrollForward by remember { derivedStateOf { listState.canScrollForward } }
+    val showScrollToBottom = ui.exchanges.isNotEmpty() && !followingTail && canScrollForward
     val scrollMarker = "${ui.conversationId}:${ui.exchanges.size}:${last?.steps?.size}:${last?.steers?.size}:${last?.status?.hashCode()}:${ui.blocked?.hashCode()}"
     val jump = pendingJump?.takeIf { it.conversationId == ui.conversationId }
     // 目标行的高亮:只在目标还是当前对话时算。
@@ -324,6 +332,7 @@ fun ChatScreen(
             if (index >= 0) {
                 previousScrollMarker = scrollMarker
                 previousConversation = ui.conversationId
+                scrollToBottomJob?.cancel()
                 followingTail = false
                 listState.scrollToItem(index)
                 jumpHighlight = jump
@@ -337,7 +346,10 @@ fun ChatScreen(
         val changedConversation = previousConversation != ui.conversationId
         previousScrollMarker = scrollMarker
         previousConversation = ui.conversationId
-        if (changedConversation) followingTail = true
+        if (changedConversation) {
+            scrollToBottomJob?.cancel()
+            followingTail = true
+        }
         if (!firstEntry && !changedConversation && !followingTail) return@LaunchedEffect
         if (rowCount > 0) {
             if (firstEntry || changedConversation || reduceMotion) listState.scrollToItem(rowCount - 1)
@@ -413,7 +425,7 @@ fun ChatScreen(
     PageBackground {
         CompositionLocalProvider(LocalMessageMenu provides menuHost) {
             LazyColumn(
-                Modifier.fillMaxSize().behindMenu(menuOpen) { lift.value }.voiceDim(voiceHolding, reduceMotion).glassSource(backdrop),
+                Modifier.fillMaxSize().testTag("chat-list").behindMenu(menuOpen) { lift.value }.voiceDim(voiceHolding, reduceMotion).glassSource(backdrop),
                 state = listState,
                 contentPadding = with(density) {
                     PaddingValues(
@@ -550,6 +562,36 @@ fun ChatScreen(
             steerTarget = null,
             onVoiceHolding = { voiceHolding = it },
             editRequest = editRequest,
+        )
+
+        val pipOccupiesCorner = ui.pip.visible && ui.pip.mode != PipMode.Done
+        val composerBottomDp = with(density) { composerHeight.toDp() }
+        ScrollToBottomButton(
+            visible = showScrollToBottom,
+            onClick = {
+                if (rowCount <= 0) return@ScrollToBottomButton
+                scrollToBottomJob?.cancel()
+                followingTail = true
+                scrollToBottomJob = scope.launch {
+                    scrollingToBottom = true
+                    try {
+                        scrollListToBottom(listState, density, reduceMotion)
+                        followingTail = listState.nearTail(tailThresholdPx)
+                    } finally {
+                        scrollingToBottom = false
+                    }
+                }
+            },
+            modifier = Modifier
+                .align(if (pipOccupiesCorner) Alignment.BottomCenter else Alignment.BottomEnd)
+                .behindMenu(menuOpen) { lift.value }
+                .voiceDim(voiceHolding, reduceMotion)
+                .padding(
+                    end = if (pipOccupiesCorner) 0.dp else 16.dp,
+                    bottom = composerBottomDp + 8.dp,
+                ),
+            backdrop = backdrop,
+            reduceMotion = reduceMotion,
         )
 
         AgentPip(

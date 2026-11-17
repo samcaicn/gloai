@@ -78,6 +78,7 @@
     <string name="chat_attach_rejected">追加できませんでした: %1$s(ファイルは 1 つあたり 200 MB 未満にしてください)</string>
     <string name="chat_stop">停止</string>
     <string name="chat_send">送信</string>
+    <string name="chat_scroll_to_bottom">一番下へ移動</string>
     <string name="drawer_running_task">実行中のタスク</string>
     <string name="drawer_running">実行中</string>
     <string name="drawer_yesterday">昨日</string>

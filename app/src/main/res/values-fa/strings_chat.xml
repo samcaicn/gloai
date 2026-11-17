@@ -53,6 +53,7 @@
     <string name="chat_attach_rejected">افزودن ممکن نشد: %1$s (حجم هر فایل باید کمتر از ۲۰۰ مگابایت باشد)</string>
     <string name="chat_stop">توقف</string>
     <string name="chat_send">ارسال</string>
+    <string name="chat_scroll_to_bottom">رفتن به پایین</string>
     <string name="drawer_running_task">کار در حال اجرا</string>
     <string name="drawer_running">در حال اجرا</string>
     <string name="drawer_yesterday">دیروز</string>
