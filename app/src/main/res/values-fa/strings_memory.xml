@@ -94,4 +94,10 @@
     <string name="skills_imported">وارد شد</string>
     <string name="skill_builtin_name">یک مهارت داخلی از قبل این نام را دارد. نام را تغییر دهید و دوباره تلاش کنید.</string>
     <string name="skill_draft_pending">پیش‌نویسی با این نام از قبل در انتظار بررسی است. ابتدا به آن رسیدگی کنید.</string>
+    <string name="market_title">بازار مهارت‌ها</string>
+    <string name="market_sub">مهارت‌های به‌اشتراک‌گذاشته‌شده در GitHub را ببینید</string>
+    <string name="market_source">منبع مهارت‌ها</string>
+    <string name="market_add">افزودن برای بررسی</string>
+    <string name="market_network_error">بارگیری نشد. مخزن و اتصال را بررسی و دوباره تلاش کنید.</string>
+    <string name="market_invalid">محتوا نامعتبر است یا تغییر کرده است. بازار را دوباره باز کنید.</string>
 </resources>

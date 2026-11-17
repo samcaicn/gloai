@@ -94,4 +94,10 @@
     <string name="skills_imported">가져옴</string>
     <string name="skill_builtin_name">같은 이름의 기본 스킬이 있습니다. 이름을 바꿔 다시 시도하세요.</string>
     <string name="skill_draft_pending">같은 이름의 초안이 이미 검토를 기다리고 있습니다. 그것부터 처리하세요.</string>
+    <string name="market_title">스킬 마켓</string>
+    <string name="market_sub">GitHub에서 공유한 스킬 둘러보기</string>
+    <string name="market_source">스킬 출처</string>
+    <string name="market_add">검토 목록에 추가</string>
+    <string name="market_network_error">다운로드할 수 없습니다. 저장소와 네트워크를 확인하세요.</string>
+    <string name="market_invalid">내용이 잘못되었거나 변경되었습니다. 마켓을 다시 여세요.</string>
 </resources>

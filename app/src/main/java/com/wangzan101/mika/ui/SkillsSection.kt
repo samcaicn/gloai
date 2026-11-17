@@ -47,7 +47,7 @@ import com.wangzan101.mika.ui.theme.MikaType
  * 个人技能可以分享全文出去,别人分享来的全文从「导入技能」粘进来,先进「待确认」(#165)。
  */
 @Composable
-internal fun SkillsSection(vm: MemoryViewModel, ui: SkillsUi, pending: Boolean) {
+internal fun SkillsSection(vm: MemoryViewModel, ui: SkillsUi, pending: Boolean, onMarket: () -> Unit = {}) {
     var viewing by remember { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf<SkillRow?>(null) }
     var acting by remember { mutableStateOf<SkillRow?>(null) }
@@ -100,6 +100,9 @@ internal fun SkillsSection(vm: MemoryViewModel, ui: SkillsUi, pending: Boolean) 
         GroupLabel(stringResource(R.string.skills_get))
         GroupCard {
             ListRow(null, stringResource(R.string.skills_import), stringResource(R.string.skills_import_sub), first = true, onClick = { importing = true }) {
+                RowChevron()
+            }
+            ListRow(null, stringResource(R.string.market_title), stringResource(R.string.market_sub), onClick = onMarket) {
                 RowChevron()
             }
         }

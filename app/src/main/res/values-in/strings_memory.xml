@@ -94,4 +94,10 @@
     <string name="skills_imported">Diimpor</string>
     <string name="skill_builtin_name">Sudah ada keterampilan bawaan dengan nama ini. Ganti namanya lalu coba lagi.</string>
     <string name="skill_draft_pending">Draf dengan nama ini masih menunggu ditinjau. Selesaikan yang itu dulu.</string>
+    <string name="market_title">Pasar keterampilan</string>
+    <string name="market_sub">Jelajahi keterampilan yang dibagikan di GitHub</string>
+    <string name="market_source">Sumber keterampilan</string>
+    <string name="market_add">Tambahkan untuk ditinjau</string>
+    <string name="market_network_error">Gagal mengunduh. Periksa repositori dan jaringan, lalu coba lagi.</string>
+    <string name="market_invalid">Konten tidak valid atau telah berubah. Buka kembali pasar untuk memuat ulang.</string>
 </resources>
