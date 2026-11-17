@@ -47,7 +47,10 @@ import com.wangzan101.mika.ui.theme.MikaColors
 sealed interface MdBlock {
     data class Para(val text: AnnotatedString) : MdBlock
     data class Heading(val level: Int, val text: AnnotatedString) : MdBlock
-    data class Code(val info: String, val code: String) : MdBlock
+    data class Code(val info: String, val code: String) : MdBlock {
+        /** 顶栏显示的语言标签:CommonMark info 串首个空白分隔词(如 `kotlin {1}` 取 `kotlin`),无则为空。 */
+        val language: String get() = info.trim().takeWhile { !it.isWhitespace() }
+    }
     data class Quote(val blocks: List<MdBlock>) : MdBlock
     /** [start] 为 null 是无序列表;每个列表项是一组块。 */
     data class ListBlock(val start: Int?, val tight: Boolean, val items: List<List<MdBlock>>) : MdBlock

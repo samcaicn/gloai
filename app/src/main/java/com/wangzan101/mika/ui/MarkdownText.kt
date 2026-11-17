@@ -3,47 +3,66 @@ package com.wangzan101.mika.ui
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.DisableSelection
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
+import com.wangzan101.mika.ui.theme.MikaType
 
 /** 按 Markdown 显示一段回答；流式草稿用临时闭合的语法预览。 */
 private val LocalReportStyle = staticCompositionLocalOf { false }
@@ -103,12 +122,7 @@ private fun Block(b: MdBlock, style: TextStyle, depth: Int) {
                 fontWeight = if (LocalReportStyle.current) FontWeight.Bold else FontWeight.SemiBold,
             ),
         )
-        is MdBlock.Code -> Box(
-            Modifier.fillMaxWidth().background(MikaTheme.colors.fill, RoundedCornerShape(10.dp))
-                .horizontalScroll(rememberScrollState()).padding(horizontal = 11.dp, vertical = 9.dp),
-        ) {
-            Text(b.code, style = style.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp, lineHeight = 19.sp), softWrap = false)
-        }
+        is MdBlock.Code -> CodeBlock(b, style)
         is MdBlock.Quote -> Row(Modifier.height(IntrinsicSize.Min)) {
             Box(Modifier.width(3.dp).fillMaxHeight().background(MikaTheme.colors.hair, RoundedCornerShape(2.dp)))
             MarkdownBlocks(b.blocks, style.copy(color = MikaTheme.colors.ink2), Modifier.padding(start = 10.dp), depth + 1)
@@ -176,6 +190,72 @@ private fun TableBlock(t: MdBlock.Table, style: TextStyle) {
                     y += heights[r]
                 }
             }
+        }
+    }
+}
+
+/** 代码块:顶部一条轻量顶栏(左显示语言标签,右放「复制 / 已复制」按钮),下面横向滚动显示代码正文。 */
+@Composable
+private fun CodeBlock(b: MdBlock.Code, style: TextStyle) {
+    val c = MikaTheme.colors
+    val context = LocalContext.current
+    var copyVersion by remember(b.code) { mutableIntStateOf(0) }
+    val copied = copyVersion > 0
+    LaunchedEffect(copyVersion) {
+        if (copyVersion > 0) {
+            delay(2_000)
+            copyVersion = 0
+        }
+    }
+    val shape = RoundedCornerShape(10.dp)
+    val language = b.language
+    Column(Modifier.fillMaxWidth().clip(shape).background(c.fill)) {
+        // 包进 SelectionContainer(如「选择文字」模式或个人助理回答)时,顶栏标签和按钮不参与拖选。
+        DisableSelection {
+            Row(
+                Modifier.fillMaxWidth().padding(start = 11.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (language.isNotEmpty()) {
+                    Text(
+                        text = language,
+                        modifier = Modifier.weight(1f).padding(end = 8.dp).testTag("code-block-language"),
+                        style = MikaType.Hint.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium),
+                        color = c.ink2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Spacer(Modifier.weight(1f))
+                }
+                val label = stringResource(if (copied) R.string.chat_copied else R.string.chat_copy)
+                val tint = if (copied) c.ok else c.ink2
+                Row(
+                    Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .alpha(if (b.code.isNotEmpty()) 1f else 0.4f)
+                        .clickable(
+                            enabled = b.code.isNotEmpty(),
+                            role = Role.Button,
+                            onClick = {
+                                context.getSystemService(ClipboardManager::class.java)
+                                    ?.setPrimaryClip(ClipData.newPlainText(language.ifEmpty { "code" }, b.code))
+                                copyVersion++
+                            },
+                        )
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .testTag("code-block-copy"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(if (copied) MikaIcons.Check else MikaIcons.Copy, contentDescription = null, modifier = Modifier.size(14.dp), tint = tint)
+                    Text(label, style = MikaType.Hint.copy(fontWeight = FontWeight.Medium), color = tint, maxLines = 1)
+                }
+            }
+        }
+        Box(Modifier.fillMaxWidth().height(0.5.dp).background(c.hair))
+        Box(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 11.dp, vertical = 9.dp)) {
+            Text(b.code, style = style.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp, lineHeight = 19.sp), softWrap = false)
         }
     }
 }
