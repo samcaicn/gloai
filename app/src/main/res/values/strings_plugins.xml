@@ -34,4 +34,10 @@
     <string name="env_vars_name">Name</string>
     <string name="env_vars_value">Value</string>
     <string name="env_vars_empty">No environment variables yet</string>
+    <string name="plugins_disclosure_title">What this plugin can do</string>
+    <string name="plugins_disclosure_prompt">Rewrites the system prompt</string>
+    <string name="plugins_disclosure_reads">Can read your conversations, memory, and model keys</string>
+    <string name="plugins_rules">Prompt rules</string>
+    <string name="plugins_rules_view">View</string>
+    <string name="plugins_rules_restore">Restore default</string>
 </resources>

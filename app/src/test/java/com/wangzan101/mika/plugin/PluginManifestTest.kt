@@ -90,6 +90,18 @@ class PluginManifestTest {
         assertTrue("invalid_prompt_transform" in problems(json(extra = ",\"promptTransform\":\"scripts/hook.py\"")))
     }
 
+    @Test fun disclosureListsToolsAndRisks() {
+        val m = PluginManifest.parse(validP1b)
+        val d = m.disclosure()
+        assertEquals(listOf("translate" to "read"), d.tools)
+        assertTrue(d.rewritesPrompt)
+    }
+
+    @Test fun defaultPromptRulesTemplateIsNonEmpty() {
+        assertTrue(DEFAULT_PERSONA_CONF.contains("prefix"))
+        assertTrue(DEFAULT_PERSONA_CONF.contains("replace"))
+    }
+
     @Test fun minAppMustBeCompatibleWithThisApp() {
         assertTrue(PluginManifest.ERR_MIN_APP_TOO_HIGH in problems(json(extra = ",\"minApp\":\"9.0.0\""), app = "0.1.33"))
         assertTrue(problems(json(extra = ",\"minApp\":\"0.1.33\""), app = "0.1.33").isEmpty())
