@@ -31,4 +31,15 @@
         <item quantity="many">%1$d plugins</item>
         <item quantity="other">%1$d plugins</item>
     </plurals>
+    <string name="env_vars_title">Variables de entorno</string>
+    <string name="env_vars_add">Añadir variable</string>
+    <string name="env_vars_name">Nombre</string>
+    <string name="env_vars_value">Valor</string>
+    <string name="env_vars_empty">Aún no hay variables de entorno</string>
+    <string name="plugins_disclosure_title">Qué puede hacer este complemento</string>
+    <string name="plugins_disclosure_prompt">Reescribe la indicación del sistema</string>
+    <string name="plugins_disclosure_reads">Puede leer tus conversaciones, memoria y claves de modelo</string>
+    <string name="plugins_rules">Reglas de indicación</string>
+    <string name="plugins_rules_view">Ver</string>
+    <string name="plugins_rules_restore">Restaurar predeterminado</string>
 </resources>

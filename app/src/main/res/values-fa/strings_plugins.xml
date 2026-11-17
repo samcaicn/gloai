@@ -29,4 +29,15 @@
         <item quantity="one">%1$d افزونه</item>
         <item quantity="other">%1$d افزونه</item>
     </plurals>
+    <string name="env_vars_title">متغیرهای محیطی</string>
+    <string name="env_vars_add">افزودن متغیر</string>
+    <string name="env_vars_name">نام</string>
+    <string name="env_vars_value">مقدار</string>
+    <string name="env_vars_empty">هنوز متغیر محیطی وجود ندارد</string>
+    <string name="plugins_disclosure_title">این افزونه چه می‌کند</string>
+    <string name="plugins_disclosure_prompt">پرامپت سیستم را بازنویسی می‌کند</string>
+    <string name="plugins_disclosure_reads">می‌تواند گفتگوها، حافظه و کلیدهای مدل را بخواند</string>
+    <string name="plugins_rules">قوانین پرامپت</string>
+    <string name="plugins_rules_view">مشاهده</string>
+    <string name="plugins_rules_restore">بازگردانی پیش‌فرض</string>
 </resources>

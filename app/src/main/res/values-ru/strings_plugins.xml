@@ -33,4 +33,15 @@
         <item quantity="many">%1$d плагинов</item>
         <item quantity="other">%1$d плагина</item>
     </plurals>
+    <string name="env_vars_title">Переменные окружения</string>
+    <string name="env_vars_add">Добавить переменную</string>
+    <string name="env_vars_name">Имя</string>
+    <string name="env_vars_value">Значение</string>
+    <string name="env_vars_empty">Переменных окружения пока нет</string>
+    <string name="plugins_disclosure_title">Что умеет этот плагин</string>
+    <string name="plugins_disclosure_prompt">Переписывает системную подсказку</string>
+    <string name="plugins_disclosure_reads">Может читать диалоги, память и ключи моделей</string>
+    <string name="plugins_rules">Правила подсказки</string>
+    <string name="plugins_rules_view">Просмотр</string>
+    <string name="plugins_rules_restore">Восстановить по умолчанию</string>
 </resources>

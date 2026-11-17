@@ -37,4 +37,15 @@
         <item quantity="many">%1$d مكوّنًا</item>
         <item quantity="other">%1$d مكوّن</item>
     </plurals>
+    <string name="env_vars_title">متغيرات البيئة</string>
+    <string name="env_vars_add">إضافة متغير</string>
+    <string name="env_vars_name">الاسم</string>
+    <string name="env_vars_value">القيمة</string>
+    <string name="env_vars_empty">لا توجد متغيرات بيئة بعد</string>
+    <string name="plugins_disclosure_title">ما يمكن أن يفعله هذا الملحق</string>
+    <string name="plugins_disclosure_prompt">يعيد كتابة توجيه النظام</string>
+    <string name="plugins_disclosure_reads">يمكنه قراءة المحادثات والذاكرة ومفاتيح النماذج</string>
+    <string name="plugins_rules">قواعد التوجيه</string>
+    <string name="plugins_rules_view">عرض</string>
+    <string name="plugins_rules_restore">استعادة الافتراضي</string>
 </resources>

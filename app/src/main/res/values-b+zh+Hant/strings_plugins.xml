@@ -27,4 +27,15 @@
     <plurals name="plugins_count">
         <item quantity="other">%1$d 個外掛</item>
     </plurals>
+    <string name="env_vars_title">環境變數</string>
+    <string name="env_vars_add">新增變數</string>
+    <string name="env_vars_name">名稱</string>
+    <string name="env_vars_value">值</string>
+    <string name="env_vars_empty">還沒有環境變數</string>
+    <string name="plugins_disclosure_title">這個外掛能做什麼</string>
+    <string name="plugins_disclosure_prompt">改寫系統提示詞</string>
+    <string name="plugins_disclosure_reads">能讀到對話、記憶和模型金鑰</string>
+    <string name="plugins_rules">提示詞規則</string>
+    <string name="plugins_rules_view">查看</string>
+    <string name="plugins_rules_restore">還原預設</string>
 </resources>

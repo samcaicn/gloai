@@ -27,4 +27,15 @@
     <plurals name="plugins_count">
         <item quantity="other">%1$d 个插件</item>
     </plurals>
+    <string name="env_vars_title">环境变量</string>
+    <string name="env_vars_add">添加变量</string>
+    <string name="env_vars_name">名字</string>
+    <string name="env_vars_value">值</string>
+    <string name="env_vars_empty">还没有环境变量</string>
+    <string name="plugins_disclosure_title">这个插件能做什么</string>
+    <string name="plugins_disclosure_prompt">改写系统提示词</string>
+    <string name="plugins_disclosure_reads">能读到对话、记忆和模型密钥</string>
+    <string name="plugins_rules">提示词规则</string>
+    <string name="plugins_rules_view">查看</string>
+    <string name="plugins_rules_restore">还原默认</string>
 </resources>

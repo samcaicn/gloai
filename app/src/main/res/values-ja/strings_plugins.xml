@@ -27,4 +27,15 @@
     <plurals name="plugins_count">
         <item quantity="other">%1$d 個のプラグイン</item>
     </plurals>
+    <string name="env_vars_title">環境変数</string>
+    <string name="env_vars_add">変数を追加</string>
+    <string name="env_vars_name">名前</string>
+    <string name="env_vars_value">値</string>
+    <string name="env_vars_empty">環境変数はまだありません</string>
+    <string name="plugins_disclosure_title">このプラグインができること</string>
+    <string name="plugins_disclosure_prompt">システムプロンプトを書き換える</string>
+    <string name="plugins_disclosure_reads">会話・記憶・モデルキーを読める</string>
+    <string name="plugins_rules">プロンプト規則</string>
+    <string name="plugins_rules_view">表示</string>
+    <string name="plugins_rules_restore">既定に戻す</string>
 </resources>

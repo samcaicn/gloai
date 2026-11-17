@@ -27,4 +27,15 @@
     <plurals name="plugins_count">
         <item quantity="other">%1$d plugin</item>
     </plurals>
+    <string name="env_vars_title">Variabel lingkungan</string>
+    <string name="env_vars_add">Tambah variabel</string>
+    <string name="env_vars_name">Nama</string>
+    <string name="env_vars_value">Nilai</string>
+    <string name="env_vars_empty">Belum ada variabel lingkungan</string>
+    <string name="plugins_disclosure_title">Apa yang bisa dilakukan plugin ini</string>
+    <string name="plugins_disclosure_prompt">Menulis ulang prompt sistem</string>
+    <string name="plugins_disclosure_reads">Dapat membaca percakapan, memori, dan kunci model</string>
+    <string name="plugins_rules">Aturan prompt</string>
+    <string name="plugins_rules_view">Lihat</string>
+    <string name="plugins_rules_restore">Pulihkan default</string>
 </resources>
