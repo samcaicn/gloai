@@ -21,6 +21,10 @@ import com.wangzan101.mika.core.uistate.IdleScroll
 import com.wangzan101.mika.core.cap.web.PagePacing
 import com.wangzan101.mika.core.uistate.PlacePace
 import com.wangzan101.mika.core.cap.mcp.McpConnection
+import com.wangzan101.mika.core.plugin.PluginCapability
+import com.wangzan101.mika.core.plugin.PluginScriptTool
+import com.wangzan101.mika.core.plugin.PluginToolSpec
+import com.wangzan101.mika.core.plugin.ScriptRunner
 import com.wangzan101.mika.core.general.GeneralGroup
 import com.wangzan101.mika.core.knowledge.GuideCatalog
 import com.wangzan101.mika.core.memory.MemoryStore
@@ -137,6 +141,10 @@ fun toolDispatcher(
     notices: com.wangzan101.mika.core.proactive.NoticeSource? = null,
     /** 用户在 UI 发起任务时可访问的设备文件。 */
     deviceFiles: com.wangzan101.mika.core.cap.devicefiles.DeviceFilesPort? = null,
+    /** 启用的插件工具(名字已拼成 plugin_<id>_<name>);给了 [pluginScriptRunner] 才放进任务。 */
+    pluginTools: List<PluginToolSpec> = emptyList(),
+    /** 在 App 进程内跑插件脚本的入口;为空时插件工具不登记。 */
+    pluginScriptRunner: ScriptRunner? = null,
 ): ToolDispatcher {
     val screenshotStore = sandbox?.takeIf {
         it.status() !is com.wangzan101.mika.core.cap.sandbox.SandboxStatus.Unsupported &&
@@ -176,6 +184,11 @@ fun toolDispatcher(
             override fun open(spec: RunSpec) = if (spec.provenance.origin == com.wangzan101.mika.core.run.RunOrigin.Ui &&
                 spec.provenance.attendance != com.wangzan101.mika.core.run.Attendance.Unattended)
                 com.wangzan101.mika.core.cap.devicefiles.DeviceFilesCapability(port, workspace) else null
+        }
+    }, pluginScriptRunner?.takeIf { pluginTools.isNotEmpty() }?.let { runner ->
+        object : CapabilityProvider {
+            override val id = "plugin"
+            override fun open(spec: RunSpec) = PluginCapability(pluginTools.map { PluginScriptTool(it, runner) })
         }
     }) + mcpServers.map(::McpClientProvider)
     return RunAssembler(providers).assemble(runSpec, config, stableRefs, FORMER_PREFIX, RENAMED, RETIRED, MOVED)
