@@ -1,0 +1,100 @@
+name: AI智播 — 原型体检 + 热更新产物
+
+# 参考 weauto 的 CI 模式：push / 手动双触发，产物走 Actions Artifact 供热更新。
+# 与 weauto 的差异：本项目是纯静态 HTML 原型，无需 Python/EXE 构建，
+# 因此只做「结构体检 + 版本标记 + 产物上传」三步，秒内完成。
+#
+# 热更新链路（对齐 weauto）：
+#   push 代码 → 本 CI 产出 ai-zhibo-web artifact（含 index.html + version.json + manifest）
+#             → 分发端按 artifact 拉取最新 index.html 热替换（无需重装/重编译）。
+#   artifact 里带 version.json / manifest.json，客户端比对 version 决定是否更新。
+on:
+  push:
+    branches: ['aizhibo']
+  pull_request:
+    branches: ['aizhibo']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: 原型结构体检
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 校验入口文件与产品标识
+        shell: bash
+        run: |
+          set -e
+          # 防「静默旧构建」：先断言入口文件存在且带新品牌，避免推错分支/漏改产品名。
+          [ -s index.html ] || { echo "FAIL: 缺少 index.html"; exit 1; }
+          [ -s version.json ] || { echo "FAIL: 缺少 version.json"; exit 1; }
+          grep -q "AI智播" index.html || { echo "FAIL: index.html 未标记产品名 AI智播"; exit 1; }
+          echo "OK: 入口文件与产品标识校验通过"
+
+      - name: 校验 HTML 结构完整性
+        shell: bash
+        run: |
+          set -e
+          # 用 Python 标准库做轻量体检：标签闭合 + JS 函数定义完整性。
+          python3 - <<'PY'
+          import re, json, sys
+          html = open('index.html', encoding='utf-8').read()
+          errs = []
+          for tag in ('script', 'style', 'div'):
+            o = len(re.findall(r'<%s[ >]' % tag, html))
+            c = len(re.findall(r'</%s>' % tag, html))
+            if tag in ('script', 'style') and o != c:
+              errs.append('<%s> 未闭合: %d 开 / %d 闭' % (tag, o, c))
+          for ch_open, ch_close in (('{','}'), ('(',')'), ('[',']')):
+            if html.count(ch_open) != html.count(ch_close):
+              errs.append('括号不匹配: %s%d / %s%d' % (ch_open, html.count(ch_open), ch_close, html.count(ch_close)))
+          v = json.load(open('version.json', encoding='utf-8'))
+          assert v.get('product') == 'AI智播', 'version.json 产品名错误'
+          print('version:', v.get('version'))
+          if errs:
+            print('FAIL:', '; '.join(errs)); sys.exit(1)
+          print('OK: HTML 结构与版本文件校验通过（%d 字符）' % len(html))
+          PY
+
+  package:
+    name: 打包热更新产物
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 生成版本清单 manifest
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, datetime
+          v = json.load(open('version.json', encoding='utf-8'))
+          html = open('index.html', 'rb').read()
+          manifest = {
+            "product": v['product'],
+            "version": v['version'],
+            "entry": v['entry'],
+            "sha256": hashlib.sha256(html).hexdigest(),
+            "size": len(html),
+            "built_at": datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            "commit": "${{ github.sha }}"
+          }
+          json.dump(manifest, open('manifest.json', 'w'), ensure_ascii=False, indent=2)
+          print(json.dumps(manifest, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload Artifact (热更新产物)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-zhibo-web
+          path: |
+            index.html
+            version.json
+            manifest.json
+          retention-days: 90

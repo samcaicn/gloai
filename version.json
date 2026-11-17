@@ -1,0 +1,7 @@
+{
+  "product": "AI智播",
+  "version": "1.0.0",
+  "channel": "aizhibo",
+  "entry": "index.html",
+  "description": "AI 数字人直播中控台核心原型"
+}

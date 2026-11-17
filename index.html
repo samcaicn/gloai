@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI智播 · AI 数字人直播中控</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#141924; --panel2:#1b2130; --card:#1a2030;
+    --line:#2a3245; --line2:#353f57;
+    --txt:#e7ecf5; --sub:#98a3ba; --dim:#6b7590;
+    --brand:#6d7dff; --brand2:#8b7cff; --cyan:#3fd0d4;
+    --live:#ff4d5e; --ok:#37d39b; --warn:#ffb020; --gold:#ffcf5c;
+    --shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;overflow:hidden}
+  .app{display:flex;height:100vh;width:100vw}
+
+  /* ============ 侧边栏 ============ */
+  .side{width:224px;flex:none;background:linear-gradient(180deg,#121724,#0e121c);border-right:1px solid var(--line);display:flex;flex-direction:column}
+  .logo{height:74px;display:flex;align-items:center;gap:11px;padding:0 20px;border-bottom:1px solid var(--line)}
+  .logo .mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;box-shadow:0 6px 18px rgba(109,125,255,.4)}
+  .logo .t1{font-size:16px;font-weight:700;letter-spacing:.5px}
+  .logo .t2{font-size:10px;color:var(--dim);letter-spacing:1.6px;margin-top:1px}
+  .nav{flex:1;padding:14px 10px;overflow-y:auto}
+  .nav .grp{font-size:11px;color:var(--dim);padding:12px 12px 6px;letter-spacing:1px}
+  .nav a{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:10px;color:var(--sub);cursor:pointer;margin-bottom:3px;font-size:13.5px;transition:.18s;user-select:none}
+  .nav a:hover{background:#1b2233;color:var(--txt)}
+  .nav a.on{background:linear-gradient(90deg,rgba(109,125,255,.22),rgba(109,125,255,.06));color:#fff;box-shadow:inset 3px 0 0 var(--brand)}
+  .nav a .ic{width:20px;text-align:center;font-size:16px}
+  .nav a .badge{margin-left:auto;background:var(--live);color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700}
+  .side .foot{padding:14px 18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim)}
+  .side .foot b{color:var(--sub);font-weight:600}
+
+  /* ============ 主体 ============ */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .top{height:74px;flex:none;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 26px;gap:16px;background:rgba(15,19,29,.7)}
+  .top h1{font-size:19px;font-weight:700}
+  .top .desc{color:var(--dim);font-size:12.5px;margin-left:2px}
+  .top .spacer{flex:1}
+  .pill{display:inline-flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:7px 14px;font-size:12.5px;color:var(--sub)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .view{flex:1;overflow-y:auto;padding:24px 26px 40px}
+  .view::-webkit-scrollbar,.nav::-webkit-scrollbar{width:8px}
+  .view::-webkit-scrollbar-thumb,.nav::-webkit-scrollbar-thumb{background:#2b344a;border-radius:8px}
+
+  /* ============ 通用组件 ============ */
+  .cards{display:grid;gap:16px}
+  .g4{grid-template-columns:repeat(4,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g2{grid-template-columns:repeat(2,1fr)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .stat{position:relative;overflow:hidden}
+  .stat .lbl{color:var(--sub);font-size:12.5px;display:flex;align-items:center;gap:8px}
+  .stat .num{font-size:30px;font-weight:750;margin-top:8px;letter-spacing:.5px}
+  .stat .delta{font-size:11.5px;margin-top:4px;color:var(--dim)}
+  .stat .delta up,.stat .up{color:var(--ok)}
+  .stat .ico{position:absolute;right:16px;top:16px;width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:.85}
+  .sec-title{font-size:15px;font-weight:700;margin:26px 0 14px;display:flex;align-items:center;gap:9px}
+  .sec-title .bar{width:3px;height:16px;background:var(--brand);border-radius:2px}
+  .sec-title .more{margin-left:auto;font-size:12px;color:var(--brand);font-weight:500;cursor:pointer}
+  .btn{border:1px solid var(--line2);background:var(--panel2);color:var(--txt);padding:9px 16px;border-radius:9px;cursor:pointer;font-size:13px;transition:.18s;font-family:inherit}
+  .btn:hover{border-color:var(--brand);background:#232b40}
+  .btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand2));border:none;color:#fff;font-weight:600;box-shadow:0 6px 16px rgba(109,125,255,.3)}
+  .btn.primary:hover{filter:brightness(1.12)}
+  .btn.live{background:linear-gradient(135deg,#ff4d5e,#ff7a5c);border:none;color:#fff;font-weight:700}
+  .btn.sm{padding:6px 11px;font-size:12px}
+  .tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:6px;background:#232b40;color:var(--sub)}
+  .tag.g{background:rgba(55,211,155,.14);color:var(--ok)}
+  .tag.r{background:rgba(255,77,94,.14);color:var(--live)}
+  .tag.y{background:rgba(255,176,32,.14);color:var(--warn)}
+  .tag.b{background:rgba(109,125,255,.16);color:#a9b3ff}
+
+  /* 直播间列表 */
+  .room{display:flex;align-items:center;gap:15px;padding:15px 17px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:11px}
+  .room .thumb{width:96px;height:58px;border-radius:9px;flex:none;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600}
+  .room .thumb.live::after{content:"● 直播中";position:absolute;left:5px;top:5px;background:var(--live);font-size:9px;padding:2px 6px;border-radius:5px}
+  .room .info{flex:1;min-width:0}
+  .room .info .n{font-weight:650;font-size:14.5px;display:flex;align-items:center;gap:8px}
+  .room .info .m{color:var(--dim);font-size:12px;margin-top:5px;display:flex;gap:16px;flex-wrap:wrap}
+  .room .info .m span b{color:var(--sub);font-weight:600}
+
+  /* 快捷入口 */
+  .quick{display:flex;align-items:center;gap:12px;padding:15px;border:1px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;transition:.18s}
+  .quick:hover{transform:translateY(-2px);border-color:var(--brand)}
+  .quick .qi{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex:none}
+  .quick .qt{font-weight:600;font-size:13.5px}
+  .quick .qd{color:var(--dim);font-size:11.5px;margin-top:3px}
+
+  /* ============ 开播向导 ============ */
+  .overlay{position:fixed;inset:0;background:rgba(4,6,11,.72);backdrop-filter:blur(4px);z-index:50;display:none;align-items:center;justify-content:center;padding:24px}
+  .overlay.show{display:flex}
+  .wizard{width:820px;max-width:100%;max-height:92vh;background:var(--panel);border:1px solid var(--line2);border-radius:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+  .wizard .wh{padding:22px 26px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center}
+  .wizard .wh h2{font-size:18px}
+  .wizard .wh .x{margin-left:auto;cursor:pointer;color:var(--dim);font-size:22px;line-height:1}
+  .steps{display:flex;padding:18px 26px;gap:0}
+  .step{flex:1;display:flex;align-items:center;gap:9px;color:var(--dim);font-size:12.5px;position:relative}
+  .step .sn{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;z-index:1;background:var(--panel)}
+  .step.on{color:#fff} .step.on .sn{background:var(--brand);border-color:var(--brand)}
+  .step.done{color:var(--ok)} .step.done .sn{background:var(--ok);border-color:var(--ok);color:#06160f}
+  .step:not(:last-child)::after{content:"";position:absolute;height:1.5px;background:var(--line2);left:35px;right:8px;top:13px}
+  .step.done::after{background:var(--ok)}
+  .wbody{padding:8px 26px 20px;overflow-y:auto;min-height:330px}
+  .wfoot{padding:16px 26px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+  .wpage{display:none} .wpage.on{display:block}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12.5px;color:var(--sub);margin-bottom:7px}
+  .inp{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 13px;color:var(--txt);font-family:inherit;font-size:13px;outline:none}
+  .inp:focus{border-color:var(--brand)}
+  .pf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+  .pf{border:1.5px solid var(--line);border-radius:11px;padding:15px 10px;text-align:center;cursor:pointer;transition:.18s;background:var(--panel2)}
+  .pf:hover{border-color:var(--brand2)} .pf.sel{border-color:var(--brand);background:rgba(109,125,255,.12)}
+  .pf .e{font-size:26px} .pf .n{font-size:12.5px;margin-top:7px;font-weight:600}
+  .opt-row{display:flex;gap:10px;flex-wrap:wrap}
+  .opt{border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:12.5px;color:var(--sub);background:var(--panel2)}
+  .opt.sel{border-color:var(--brand);color:#fff;background:rgba(109,125,255,.14)}
+  .selcard{display:flex;align-items:center;gap:13px;border:1.5px solid var(--line);border-radius:11px;padding:12px 14px;cursor:pointer;margin-bottom:10px;background:var(--panel2);transition:.18s}
+  .selcard.sel{border-color:var(--brand);background:rgba(109,125,255,.1)}
+  .selcard .av{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex:none}
+  .selcard b{font-size:13.5px} .selcard .sd{font-size:11.5px;color:var(--dim);margin-top:3px}
+  .selcard .ck{margin-left:auto;color:var(--brand);font-size:18px;opacity:0}
+  .selcard.sel .ck{opacity:1}
+
+  /* ============ 直播中控 ============ */
+  .control{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;height:calc(100vh - 122px)}
+  .stage{display:flex;flex-direction:column;gap:16px;min-height:0}
+  .screen{background:#000;border:1px solid var(--line);border-radius:14px;position:relative;flex:1;min-height:0;overflow:hidden}
+  .screen .video{position:absolute;inset:0;background:
+      radial-gradient(circle at 50% 38%,#3a3f6b 0%,#1a1d33 42%,#0a0b14 100%);}
+  .screen .grid-lines{position:absolute;inset:0;opacity:.15;background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);background-size:40px 40px}
+  .avatar{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);text-align:center}
+  .avatar .face{width:150px;height:150px;border-radius:50%;margin:0 auto;background:linear-gradient(135deg,#7d8cff,#c88bff 55%,#ff9ec4);display:flex;align-items:center;justify-content:center;font-size:64px;box-shadow:0 0 60px rgba(140,120,255,.55);animation:breathe 3.2s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+  .avatar .nm{margin-top:12px;font-size:12px;color:#c9cee6;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:20px;display:inline-block}
+  .screen .overlay-paster{position:absolute;right:14px;top:14px;background:linear-gradient(135deg,rgba(255,90,120,.9),rgba(255,160,80,.9));padding:8px 13px;border-radius:9px;font-size:12px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+  .screen .caption{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:82%;text-align:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);border:1px solid rgba(255,255,255,.12);padding:10px 16px;border-radius:11px;font-size:14px;color:#fff;min-height:44px}
+  .screen .rec{position:absolute;left:14px;top:14px;display:flex;align-items:center;gap:7px;font-size:11px;color:#fff;background:rgba(0,0,0,.4);padding:5px 10px;border-radius:7px}
+  .screen .rec .d{width:8px;height:8px;border-radius:50%;background:var(--live);animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .screen .stat-line{position:absolute;right:14px;bottom:14px;display:flex;gap:8px}
+  .screen .stat-line .s{background:rgba(0,0,0,.45);padding:5px 10px;border-radius:7px;font-size:11px;color:#fff}
+  .live-head{display:flex;align-items:center;gap:12px}
+  .live-head .lt{font-weight:700;font-size:15px}
+  .live-head .timer{font-variant-numeric:tabular-nums;color:var(--warn);font-weight:700}
+  .bar-panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .bar-panel .ph{display:flex;align-items:center;font-size:12.5px;color:var(--sub);margin-bottom:10px}
+  .bar-panel .ph .right{margin-left:auto;color:var(--cyan);font-size:12px}
+  .progress{height:8px;background:#0c1018;border-radius:6px;overflow:hidden}
+  .progress .fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--cyan));border-radius:6px;transition:width .4s}
+  .script-line{display:flex;gap:8px;margin-top:11px;overflow-x:auto;padding-bottom:3px}
+  .script-line .seg{flex:none;font-size:11px;padding:5px 10px;border-radius:7px;background:#222a3d;color:var(--sub);white-space:nowrap;border:1px solid transparent}
+  .script-line .seg.active{background:rgba(109,125,255,.2);color:#fff;border-color:var(--brand)}
+  .script-line .seg.done{color:var(--ok)}
+
+  .side-panel{display:flex;flex-direction:column;gap:16px;min-height:0}
+  .tabs{display:flex;gap:4px;background:var(--panel2);padding:4px;border-radius:10px}
+  .tabs .tb{flex:1;text-align:center;padding:8px;border-radius:7px;font-size:12.5px;color:var(--sub);cursor:pointer}
+  .tabs .tb.on{background:var(--card);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  .pane{display:none;flex-direction:column;min-height:0;flex:1}
+  .pane.on{display:flex}
+
+  /* 弹幕 */
+  .barrage-box{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:180px}
+  .barrage-box .bh{padding:12px 15px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--sub);display:flex;align-items:center}
+  .barrage-box .bh .liveCnt{margin-left:auto;color:var(--live);font-weight:600}
+  .barrage-list{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:9px}
+  .barrage-list::-webkit-scrollbar{width:6px}.barrage-list::-webkit-scrollbar-thumb{background:#2b344a;border-radius:6px}
+  .dm{display:flex;gap:8px;font-size:12.5px;animation:slidein .3s ease}
+  @keyframes slidein{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+  .dm .u{color:var(--cyan);flex:none;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dm .c{color:var(--txt)}
+  .dm .c .kw{color:var(--gold)}
+  .dm.reply .u{color:var(--brand2)} .dm.reply .c{color:#cfd6ff}
+  .dm.sys{color:var(--dim);font-style:italic;font-size:11.5px;justify-content:center}
+
+  /* 互动控制 */
+  .ctrl-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px}
+  .ctrl-card h4{font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .toggle-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #222a3b;font-size:12.5px}
+  .toggle-row:last-child{border:none}
+  .toggle-row .td{color:var(--sub);flex:1}
+  .sw{width:38px;height:21px;border-radius:12px;background:#333c52;position:relative;cursor:pointer;transition:.2s;flex:none}
+  .sw::after{content:"";position:absolute;width:15px;height:15px;border-radius:50%;background:#9aa5bd;top:3px;left:3px;transition:.2s}
+  .sw.on{background:var(--brand)} .sw.on::after{left:20px;background:#fff}
+  .act-btns{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:6px}
+  .act{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border:1px solid var(--line2);border-radius:9px;background:var(--panel2);cursor:pointer;font-size:12px;transition:.15s}
+  .act:hover{border-color:var(--brand);color:#fff}
+  .act.hot{border-color:rgba(255,77,94,.4);color:#ff9aa6}
+  .log-line{font-size:11px;color:var(--dim);padding:3px 0;font-family:ui-monospace,monospace}
+  .log-line b{color:var(--ok);font-weight:600}
+
+  /* 数字员工/素材 网格 */
+  .asset{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px;cursor:pointer;transition:.18s}
+  .asset:hover{transform:translateY(-2px);border-color:var(--brand)}
+  .asset .cover{height:88px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:11px}
+  .asset b{font-size:13px} .asset .sub{font-size:11.5px;color:var(--dim);margin-top:4px}
+  .asset .row{display:flex;align-items:center;margin-top:10px;gap:8px}
+  .channels{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+  /* 数据表 */
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line)}
+  th{color:var(--dim);font-weight:500;font-size:11.5px}
+  tr:hover td{background:#171d2b}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#222b40;border:1px solid var(--line2);padding:12px 20px;border-radius:11px;font-size:13px;box-shadow:var(--shadow);opacity:0;transition:.3s;z-index:80;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .ic{color:var(--ok);margin-right:8px}
+
+  .note{background:rgba(109,125,255,.08);border:1px solid rgba(109,125,255,.25);border-radius:10px;padding:12px 15px;font-size:12px;color:#b9c0e8;margin-bottom:18px;line-height:1.7}
+  .note b{color:#dfe3ff}
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;margin-top:10px}
+  .flow .node{background:var(--panel2);border:1px solid var(--line);padding:6px 11px;border-radius:7px;color:var(--sub)}
+  .flow .arr{color:var(--brand)}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 侧边栏 -->
+  <aside class="side">
+    <div class="logo">
+      <div class="mark">导</div>
+      <div><div class="t1">AI智播</div><div class="t2">AI LIVE DIRECTOR</div></div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="grp">工作台</div>
+      <a data-v="dash" class="on"><span class="ic">▦</span>控制台</a>
+      <a data-v="rooms"><span class="ic">◉</span>直播间管理 <span class="badge">3</span></a>
+      <a data-v="assets"><span class="ic">▤</span>素材中心</a>
+      <div class="grp">AI 能力</div>
+      <a data-v="script"><span class="ic">✎</span>剧本工坊</a>
+      <a data-v="ai"><span class="ic">✦</span>数字员工</a>
+      <div class="grp">直播</div>
+      <a data-v="control"><span class="ic">◉</span>直播中控 <span class="badge" id="navLive" style="display:none">LIVE</span></a>
+      <a data-v="data"><span class="ic">▥</span>数据中心</a>
+    </nav>
+    <div class="foot">AI智播 · <b>v1.0.0</b><br>AI 数字人直播中控台</div>
+  </aside>
+
+  <!-- 主体 -->
+  <div class="main">
+    <div class="top">
+      <div><h1 id="title">控制台</h1></div>
+      <div class="desc" id="subtitle">AI 数字人无人直播全链路管理</div>
+      <div class="spacer"></div>
+      <div class="pill"><span class="dot"></span>云端服务正常</div>
+      <div class="pill">🎙 火山 TTS 已连接</div>
+      <button class="btn primary" onclick="openWizard()">＋ 新建直播</button>
+    </div>
+
+    <div class="view" id="view"></div>
+  </div>
+</div>
+
+<!-- 开播向导 -->
+<div class="overlay" id="wizard">
+  <div class="wizard">
+    <div class="wh"><h2>新建直播 · 开播向导</h2><span class="x" onclick="closeWizard()">×</span></div>
+    <div class="steps" id="wsteps">
+      <div class="step on"><div class="sn">1</div>选择平台</div>
+      <div class="step"><div class="sn">2</div>直播设置</div>
+      <div class="step"><div class="sn">3</div>配置数字人</div>
+      <div class="step"><div class="sn">4</div>确认开播</div>
+    </div>
+    <div class="wbody">
+      <!-- step1 -->
+      <div class="wpage on" data-wp="0">
+        <div class="note">选择要开播的电商平台。App 会通过 <b>RPA + 无障碍服务</b> 自动操作对应的主播 App（抖音/快手等）完成开播，支持挂载团购商品与自动点击「讲解」。</div>
+        <div class="pf-grid">
+          <div class="pf sel" data-pf="抖音直播" onclick="selPf(this)"><div class="e">🎵</div><div class="n">抖音直播</div></div>
+          <div class="pf" data-pf="快手直播" onclick="selPf(this)"><div class="e">⚡</div><div class="n">快手直播</div></div>
+          <div class="pf" data-pf="小红书直播" onclick="selPf(this)"><div class="e">📕</div><div class="n">小红书</div></div>
+          <div class="pf" data-pf="淘宝直播" onclick="selPf(this)"><div class="e">🛒</div><div class="n">淘宝直播</div></div>
+          <div class="pf" data-pf="拼多多直播" onclick="selPf(this)"><div class="e">🧧</div><div class="n">拼多多</div></div>
+          <div class="pf" data-pf="视频号直播" onclick="selPf(this)"><div class="e">💬</div><div class="n">视频号</div></div>
+          <div class="pf" data-pf="本地生活团购" onclick="selPf(this)"><div class="e">🏪</div><div class="n">本地团购</div></div>
+          <div class="pf" data-pf="品牌品宣直播" onclick="selPf(this)"><div class="e">🏷</div><div class="n">品牌品宣</div></div>
+        </div>
+      </div>
+      <!-- step2 -->
+      <div class="wpage" data-wp="1">
+        <div class="field"><label>直播标题</label><input class="inp" id="wTitle" value="秋冬新款羽绒服 · 限时秒杀专场"></div>
+        <div class="field"><label>直播封面</label><div class="opt-row"><div class="opt sel" onclick="selOpt(this)">默认封面</div><div class="opt" onclick="selOpt(this)">视频截取</div><div class="opt" onclick="selOpt(this)">本地上传</div></div></div>
+        <div class="field"><label>画质 / 比例</label><div class="opt-row" id="qualityOpts"><div class="opt" onclick="selOpt(this)">480p 竖屏</div><div class="opt" onclick="selOpt(this)">720p 竖屏</div><div class="opt sel" onclick="selOpt(this)">1080p 竖屏</div><div class="opt" onclick="selOpt(this)">1080p 横屏</div></div></div>
+        <div class="field"><label>开播方式</label><div class="opt-row" id="startMode"><div class="opt sel" onclick="selOpt(this)">⚡ 立即开播</div><div class="opt" onclick="selOpt(this)">⏰ 定时开播</div><div class="opt" onclick="selOpt(this)">🤖 智能渐进式</div></div></div>
+      </div>
+      <!-- step3 -->
+      <div class="wpage" data-wp="2">
+        <div class="note">数字人 = <b>形象 + 音色 + 剧本</b>。直播时数字人按剧本口播，弹幕触发时可被 AI 回复打断（支持句间打断与续播）。</div>
+        <div class="field"><label>选择数字人形象</label>
+          <div class="selcard sel" onclick="selCard(this)"><div class="av" style="background:linear-gradient(135deg,#7d8cff,#c88bff)">👩</div><div><b>知性主播 · 小美</b><div class="sd">1080P · 实时驱动 · 对口型</div></div><span class="ck">✓</span></div>
+          <div class="selcard" onclick="selCard(this)"><div class="av" style="background:linear-gradient(135deg,#ff9a76,#ff6b9d)">👨</div><div><b>活力导购 · 阿杰</b><div class="sd">1080P · 手势动作 · 热情风格</div></div><span class="ck">✓</span></div>
+          <div class="selcard" onclick="selCard(this)"><div class="av" style="background:linear-gradient(135deg,#3fd0d4,#5b8def)">🧑‍💼</div><div><b>专业讲解 · 老师</b><div class="sd">知识型 · 适合品宣/课程</div></div><span class="ck">✓</span></div>
+        </div>
+        <div class="field"><label>口播剧本</label><div class="opt-row" id="scriptOpts"><div class="opt sel" onclick="selOpt(this)">📄 羽绒服带货话术 v3</div><div class="opt" onclick="selOpt(this)">＋ 从剧本库选择</div><div class="opt" onclick="selOpt(this)">✦ AI 生成剧本</div></div></div>
+      </div>
+      <!-- step4 -->
+      <div class="wpage" data-wp="3">
+        <div class="note">配置确认。开播后 App 会依次执行：<b>剧本播放 → TTS 合成 → 数字人驱动 → 弹幕监听 → AI 互动 → 商品自动讲解 → 数据上报</b>。</div>
+        <div class="card" style="background:var(--panel2)">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><span style="color:var(--sub)">开播平台</span><b id="cfPf">抖音直播</b></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><span style="color:var(--sub)">直播标题</span><b id="cfTitle">秋冬新款羽绒服 · 限时秒杀专场</b></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><span style="color:var(--sub)">画质比例</span><b>1080p 竖屏</b></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><span style="color:var(--sub)">数字人 / 剧本</span><b>知性主播·小美 / 羽绒服带货话术 v3</b></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--sub)">互动能力</span><b><span class="tag g">关键词回复</span> <span class="tag b">大模型 AI 回复</span> <span class="tag y">商品自动讲解</span></b></div>
+        </div>
+      </div>
+    </div>
+    <div class="wfoot">
+      <button class="btn" onclick="closeWizard()">取消</button>
+      <button class="btn" id="wPrev" onclick="wizStep(-1)" style="display:none">上一步</button>
+      <button class="btn primary" id="wNext" onclick="wizStep(1)">下一步</button>
+      <button class="btn live" id="wStart" onclick="startLive()" style="display:none">● 开始直播</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="ic">✓</span><span id="toastMsg"></span></div>
+
+<script>
+/* ================= 数据 ================= */
+const ROOMS = [
+  {n:'秋冬羽绒服 · 秒杀专场', pf:'抖音直播', st:'live', people:'2,341', goods:'12', script:'羽绒服带货话术 v3', g1:'linear-gradient(135deg,#ff6b6b,#ff9a76)'},
+  {n:'新品美妆 · 品牌日', pf:'快手直播', st:'wait', people:'—', goods:'8', script:'美妆种草话术', g1:'linear-gradient(135deg,#a86bff,#ff6bd6)'},
+  {n:'家居好物 · 晚八点场', pf:'淘宝直播', st:'timer', people:'—', goods:'23', script:'家居场景口播', g1:'linear-gradient(135deg,#3fd0d4,#5b8def)'},
+];
+const ASSETS = [
+  {e:'📄',n:'剧本库',d:'36 个剧本 · AI 生成 / 手动 / 云端',c:'linear-gradient(135deg,#6d7dff,#8b7cff)'},
+  {e:'🎬',n:'视频素材',d:'128 个视频 · 前景/背景/循环',c:'linear-gradient(135deg,#ff7a6b,#ffab5c)'},
+  {e:'🎙',n:'语音素材',d:'54 段语音 · 本地/云端语音库',c:'linear-gradient(135deg,#3fd0d4,#5b8def)'},
+  {e:'🎵',n:'背景音乐',d:'42 首 BGM · 自动混音',c:'linear-gradient(135deg,#a86bff,#e06bff)'},
+  {e:'🏷',n:'贴片组件',d:'200+ 贴片场景 · 定时切换',c:'linear-gradient(135deg,#ffcf5c,#ff9a5c)'},
+  {e:'🛍',n:'商品库',d:'89 个商品 · 团购/小黄车',c:'linear-gradient(135deg,#37d39b,#3fd0a0)'},
+  {e:'🗣',n:'音色管理',d:'中文音色 · 声音克隆/试听',c:'linear-gradient(135deg,#7d8cff,#c88bff)'},
+  {e:'🧑‍💼',n:'数字人形象',d:'12 个形象 · 1080P 实时驱动',c:'linear-gradient(135deg,#ff6b9d,#ff9ec4)'},
+];
+const AGENTS = [
+  {e:'💁',n:'售前导购助手',d:'回答尺码/价格/发货问题 · 已绑定知识库「羽绒服FAQ」',k:'知识库 2',c:'linear-gradient(135deg,#6d7dff,#8b7cff)'},
+  {e:'🎉',n:'暖场互动助手',d:'欢迎新人、引导关注、带动气氛 · 高活跃模式',k:'话术 18',c:'linear-gradient(135deg,#ff7a6b,#ffab5c)'},
+  {e:'📢',n:'商品讲解助手',d:'自动点击讲解、循环播报卖点 · RPA 驱动',k:'规则 6',c:'linear-gradient(135deg,#37d39b,#3fd0a0)'},
+];
+const DM_POOL = [
+  ['小橘子','这个羽绒服保暖吗？'],
+  ['阿明','多少钱一件 有优惠吗'],
+  ['用户8823','什么面料的呀'],
+  ['甜甜','身高160能穿吗'],
+  ['风轻轻','已下单 支持主播'],
+  ['老张','怎么买 求链接'],
+  ['月亮','发货快不快呀'],
+  ['Amy','有大码吗 我120斤'],
+  ['路人甲','讲讲那件黑色的'],
+  ['小鱼儿','关注了 主播加油'],
+];
+const KW = {'保暖':'保暖','价格':'价格','多少钱':'价格','面料':'面料','发货':'发货','尺码':'尺码','怎么买':'购买','链接':'购买','大码':'尺码','优惠':'价格'};
+
+let curView='dash', wizardStep=0, selPlatform='抖音直播';
+let isLive=false, liveTimer=null, sec=0, barrageTimer=null, capTimer=null, capIdx=0, replyOn=true, kwOn=true, autoGoods=true, likeBase=82;
+
+/* ================= 视图渲染 ================= */
+const VIEWS={};
+VIEWS.dash=()=>`
+  <div class="note"><b>AI智播</b> 是一款 <b>AI 数字人无人直播中控</b>：云端配置直播间 → RPA 自动开播 → 数字人按剧本口播 → 实时监听弹幕 → AI 自动互动 / 商品自动讲解 → 数据上报。点击下方「新建直播」或「直播中控」体验核心流程。
+    <div class="flow"><span class="node">云端配置</span><span class="arr">→</span><span class="node">RPA 开播</span><span class="arr">→</span><span class="node">数字人口播</span><span class="arr">→</span><span class="node">弹幕监听</span><span class="arr">→</span><span class="node">AI 互动/讲解</span><span class="arr">→</span><span class="node">数据上报</span></div>
+  </div>
+  <div class="cards g4">
+    <div class="card stat"><div class="lbl">今日直播场次</div><div class="num">6 <span style="font-size:14px;color:var(--dim)">场</span></div><div class="delta"><span class="up">↑ 20%</span> 较昨日</div><div class="ico" style="background:rgba(109,125,255,.15);color:var(--brand)">◉</div></div>
+    <div class="card stat"><div class="lbl">累计观看人次</div><div class="num">18.6<span style="font-size:16px">万</span></div><div class="delta"><span class="up">↑ 34%</span> 较昨日</div><div class="ico" style="background:rgba(63,208,212,.15);color:var(--cyan)">👁</div></div>
+    <div class="card stat"><div class="lbl">新增粉丝</div><div class="num">2,847</div><div class="delta"><span class="up">↑ 12%</span> 较昨日</div><div class="ico" style="background:rgba(55,211,155,.15);color:var(--ok)">＋</div></div>
+    <div class="card stat"><div class="lbl">正在直播</div><div class="num" style="color:var(--live)">1 <span style="font-size:14px;color:var(--dim)">场</span></div><div class="delta">抖音 · 2,341 人在线</div><div class="ico" style="background:rgba(255,77,94,.15);color:var(--live)">●</div></div>
+  </div>
+  <div class="sec-title"><span class="bar"></span>正在直播 / 待开播<span class="more" onclick="go('rooms')">查看全部 →</span></div>
+  ${ROOMS.map(r=>roomHtml(r)).join('')}
+  <div class="sec-title"><span class="bar"></span>快捷入口</div>
+  <div class="cards g4">
+    ${quickHtml('▤','素材中心','视频 / 语音 / 贴片 / 商品','assets','linear-gradient(135deg,#6d7dff,#8b7cff)')}
+    ${quickHtml('✎','AI 生成剧本','输入卖点一键出带货话术','script','linear-gradient(135deg,#a86bff,#ff6bd6)')}
+    ${quickHtml('✦','数字员工','智能体 + 知识库自动回复','ai','linear-gradient(135deg,#37d39b,#3fd0a0)')}
+    ${quickHtml('◉','进入中控','实时监控弹幕与互动','control','linear-gradient(135deg,#ff7a6b,#ffab5c)')}
+  </div>`;
+
+VIEWS.rooms=()=>`
+  <div class="note">直播间是开播配置的载体：一个直播间绑定 <b>平台 + 标题封面 + 数字人 + 剧本 + 商品 + 互动规则</b>。支持立即开播、定时开播、智能渐进式开播。</div>
+  <div style="display:flex;gap:10px;margin-bottom:16px"><button class="btn primary" onclick="openWizard()">＋ 新建直播间</button><button class="btn">全部平台 ▾</button><button class="btn">状态筛选 ▾</button></div>
+  ${ROOMS.map(r=>roomHtml(r)).join('')}`;
+
+VIEWS.assets=()=>`
+  <div class="note">素材中心为直播提供「演什么、放什么、卖什么」。剧本/视频/语音/贴片/商品均支持 <b>本地上传 + 云端素材库</b>，直播时由组件引擎按时间轴调度（Audio/BGMusic/Camera/DigitalPerson/Image/Script/ShopCar 组件）。</div>
+  <div class="sec-title"><span class="bar"></span>素材库分类</div>
+  <div class="cards g4">${ASSETS.map(a=>assetHtml(a)).join('')}</div>`;
+
+VIEWS.script=()=>`
+  <div class="note">剧本工坊：可 <b>AI 生成</b>（填入商品卖点，大模型产出 3000-4000 字分端口播稿）、手动输入、或从云端剧本库选择。生成的剧本切分为多个段落，交由 TTS 分段合成 + 预加载，直播时按时间轴播放并支持弹幕打断续播。</div>
+  <div style="display:flex;gap:10px;margin-bottom:18px"><button class="btn primary" onclick="genScript()">✦ AI 生成剧本</button><button class="btn" onclick="go('assets')">从剧本库选择</button><button class="btn">＋ 手动新建</button></div>
+  <div class="cards g2">
+    <div class="card" style="background:linear-gradient(135deg,#1a2030,#1d2340)">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">✦</span><b>羽绒服带货话术 v3</b><span class="tag g" style="margin-left:auto">已就绪</span></div>
+      <div style="color:var(--dim);font-size:12px;margin:12px 0">AI 生成 · 8 段 · 约 3,600 字 · 预计 12 分钟</div>
+      <div class="script-line" style="margin-top:0">
+        <span class="seg done">① 开场留人</span><span class="seg done">② 痛点引入</span><span class="seg active">③ 卖点讲解</span><span class="seg">④ 上身展示</span><span class="seg">⑤ 逼单转化</span><span class="seg">⑥ 循环返场</span>
+      </div>
+      <div style="background:#0e1320;border-radius:9px;padding:13px;margin-top:13px;font-size:12.5px;color:#c9d0e6;line-height:1.9">
+        「姐妹们看过来，今年这台<b style="color:var(--gold)">90 白鸭绒</b>羽绒服，零下十度都不带怕的……轻盈不臃肿，上身特别显瘦……」
+      </div>
+      <div style="display:flex;gap:9px;margin-top:13px"><button class="btn sm" onclick="toast('已开始试听 TTS 合成')">▶ 试听</button><button class="btn sm" onclick="toast('已绑定到直播间')">绑定直播间</button><button class="btn sm">编辑</button></div>
+    </div>
+    <div class="card">
+      <h4 style="font-size:13px;margin-bottom:12px">生成参数</h4>
+      <div class="field"><label>商品名称</label><input class="inp" value="90 白鸭绒加厚羽绒服"></div>
+      <div class="field"><label>核心卖点</label><input class="inp" value="保暖 / 显瘦 / 百搭 / 限时 5 折"></div>
+      <div class="field"><label>话术风格</label><div class="opt-row"><div class="opt sel" onclick="selOpt(this)">热情带货</div><div class="opt" onclick="selOpt(this)">专业讲解</div><div class="opt" onclick="selOpt(this)">温柔种草</div></div></div>
+      <button class="btn primary" style="width:100%;margin-top:4px" onclick="genScript()">✦ 一键生成口播稿</button>
+    </div>
+  </div>`;
+
+VIEWS.ai=()=>`
+  <div class="note">数字员工 = <b>智能体（Agent）+ 知识库 + 大模型</b>。直播中弹幕进来后，由互动引擎判断：命中关键词规则 → 关键词回复；否则交给大模型结合知识库生成回复 → TTS 语音播报。支持「数字员工对话」实时调试。</div>
+  <div class="sec-title"><span class="bar"></span>我的数字员工<span class="more" onclick="toast('新建智能体（原型演示）')">＋ 新建</span></div>
+  <div class="cards g3">${AGENTS.map(a=>`
+    <div class="asset" onclick="toast('已打开「${a.n}」配置')">
+      <div class="cover" style="background:${a.c};color:#fff">${a.e}</div>
+      <b>${a.n}</b><div class="sub">${a.d}</div>
+      <div class="row"><span class="tag b">${a.k}</span><span class="tag g" style="margin-left:auto">运行中</span></div>
+    </div>`).join('')}</div>
+  <div class="sec-title"><span class="bar"></span>知识库</div>
+  <div class="cards g4">
+    ${[['📚','羽绒服 FAQ','128 条问答 · 已向量化'],['📖','美妆产品手册','86 条 · 已向量化'],['📋','售后政策','32 条 · 已向量化'],['＋','新建知识库','上传文档自动切片']].map(k=>assetHtml({e:k[0],n:k[1],d:k[2],c:'linear-gradient(135deg,#232b40,#2a3350)'})).join('')}
+  </div>`;
+
+VIEWS.data=()=>`
+  <div class="note">直播结束后自动上报本场数据：观看 / 点赞 / 关注 / 分享 / 评论 / 商品曝光，并由 MQTT 心跳维持云端长连接。原型展示一场直播的数据报表。</div>
+  <div class="cards g4">
+    <div class="card stat"><div class="lbl">本场观看</div><div class="num">12,486</div><div class="delta"><span class="up">↑ 28%</span></div><div class="ico" style="background:rgba(109,125,255,.15);color:var(--brand)">👁</div></div>
+    <div class="card stat"><div class="lbl">点赞数</div><div class="num">8.2万</div><div class="delta">互动率 34%</div><div class="ico" style="background:rgba(255,77,94,.15);color:var(--live)">♥</div></div>
+    <div class="card stat"><div class="lbl">新增关注</div><div class="num">1,203</div><div class="delta">转化率 9.6%</div><div class="ico" style="background:rgba(55,211,155,.15);color:var(--ok)">＋</div></div>
+    <div class="card stat"><div class="lbl">商品曝光</div><div class="num">6,842</div><div class="delta">点击讲解 42 次</div><div class="ico" style="background:rgba(255,207,92,.15);color:var(--gold)">🛍</div></div>
+  </div>
+  <div class="sec-title"><span class="bar"></span>近期直播记录</div>
+  <div class="card"><table>
+    <tr><th>直播间</th><th>平台</th><th>时长</th><th>观看</th><th>新增粉丝</th><th>状态</th></tr>
+    <tr><td>秋冬羽绒服 · 秒杀专场</td><td><span class="tag r">抖音</span></td><td>03:24:16</td><td>12,486</td><td>1,203</td><td><span class="tag g">已完成</span></td></tr>
+    <tr><td>新品美妆 · 品牌日</td><td><span class="tag y">快手</span></td><td>02:11:08</td><td>8,742</td><td>864</td><td><span class="tag g">已完成</span></td></tr>
+    <tr><td>家居好物 · 晚八点场</td><td><span class="tag b">淘宝</span></td><td>04:02:31</td><td>21,093</td><td>2,041</td><td><span class="tag g">已完成</span></td></tr>
+  </table></div>`;
+
+VIEWS.control=()=>`
+  <div class="note" style="margin-bottom:14px;padding:10px 14px">直播中控台：左侧为数字人直播画面与剧本进度，右侧为弹幕流与互动控制。<b>定时会模拟弹幕流入</b>，可开关「AI 回复 / 关键词回复」观察不同效果。</div>
+  <div class="control">
+    <div class="stage">
+      <div class="live-head"><span class="lt">🔴 直播中 · 秋冬羽绒服秒杀专场</span><span class="timer" id="liveTimer">00:00:00</span><span class="tag r" style="margin-left:auto">抖音直播</span><button class="btn sm" onclick="stopLive()">■ 结束直播</button></div>
+      <div class="screen">
+        <div class="video"></div><div class="grid-lines"></div>
+        <div class="rec"><span class="d"></span> REC · 1080P</div>
+        <div class="overlay-paster">🔥 限时 5 折 · 仅剩 2 小时</div>
+        <div class="avatar"><div class="face">👩</div><div class="nm">数字人主播 · 小美</div></div>
+        <div class="caption" id="caption">「姐妹们看过来，今年这款 90 白鸭绒羽绒服，零下十度都不带怕的……」</div>
+        <div class="stat-line"><div class="s">👁 <span id="sPeople">2,341</span></div><div class="s">♥ <span id="sLike">8.2万</span></div><div class="s">➕ <span id="sFans">1,203</span></div></div>
+      </div>
+      <div class="bar-panel">
+        <div class="ph">📄 剧本播放进度 · 羽绒服带货话术 v3 <span class="right" id="scriptPct">段落 3/6 · 45%</span></div>
+        <div class="progress"><div class="fill" id="scriptFill" style="width:45%"></div></div>
+        <div class="script-line">
+          <span class="seg done">① 开场留人</span><span class="seg done">② 痛点引入</span><span class="seg active">③ 卖点讲解</span><span class="seg">④ 上身展示</span><span class="seg">⑤ 逼单转化</span><span class="seg">⑥ 循环返场</span>
+        </div>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="tabs"><div class="tb on" data-tb="dm" onclick="switchTab('dm')">💬 弹幕互动</div><div class="tb" data-tb="ctrl" onclick="switchTab('ctrl')">⚙ 场控设置</div><div class="tb" data-tb="log" onclick="switchTab('log')">📋 执行日志</div></div>
+      <div class="pane on" data-pane="dm">
+        <div class="barrage-box">
+          <div class="bh">实时弹幕流 <span class="liveCnt" id="dmCount">0 条</span></div>
+          <div class="barrage-list" id="barrageList"><div class="dm sys">— 开始监听弹幕 —</div></div>
+        </div>
+      </div>
+      <div class="pane" data-pane="ctrl">
+        <div class="ctrl-card">
+          <h4>🤖 AI 互动策略</h4>
+          <div class="toggle-row"><span class="td">关键词自动回复</span><div class="sw on" id="swKw" onclick="toggle('kw')"></div></div>
+          <div class="toggle-row"><span class="td">大模型 AI 回复</span><div class="sw on" id="swReply" onclick="toggle('reply')"></div></div>
+          <div class="toggle-row"><span class="td">商品自动讲解（RPA）</span><div class="sw on" id="swGoods" onclick="toggle('goods')"></div></div>
+          <div class="toggle-row"><span class="td">新人进来自动欢迎</span><div class="sw on" onclick="toggleSw(this)"></div></div>
+        </div>
+        <div class="ctrl-card" style="margin-top:14px">
+          <h4>⚡ 快捷场控操作</h4>
+          <div class="act-btns">
+            <div class="act hot" onclick="doAct('讲解商品')">🛍 讲解商品</div>
+            <div class="act" onclick="doAct('引导关注')">➕ 引导关注</div>
+            <div class="act" onclick="doAct('发优惠券')">🎟 发优惠券</div>
+            <div class="act" onclick="doAct('切换剧本段')">⏭ 下一段</div>
+          </div>
+        </div>
+      </div>
+      <div class="pane" data-pane="log">
+        <div class="ctrl-card" style="flex:1;overflow:auto">
+          <h4>📋 执行日志（实时）</h4>
+          <div id="logBox">
+            <div class="log-line">[<b>OK</b>] 无障碍服务已授权</div>
+            <div class="log-line">[<b>OK</b>] RPA 已启动抖音 App</div>
+            <div class="log-line">[<b>OK</b>] 点击「开始直播」成功</div>
+            <div class="log-line">[<b>OK</b>] 数字人形象加载完成</div>
+            <div class="log-line">[<b>OK</b>] TTS 连接 · 音色「知性女声」</div>
+            <div class="log-line">[<b>OK</b>] 剧本段落预合成 6/6</div>
+            <div class="log-line">[<b>OK</b>] WebSocket 弹幕通道已连接</div>
+            <div class="log-line">[<b>OK</b>] MQTT 心跳上报启动</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+function roomHtml(r){
+  const stMap={live:'<span class="tag r">● 直播中</span>',wait:'<span class="tag y">待开播</span>',timer:'<span class="tag b">⏰ 已定时</span>'};
+  return `<div class="room"><div class="thumb ${r.st==='live'?'live':''}" style="background:${r.g1}">${r.pf}</div>
+    <div class="info"><div class="n">${r.n} ${stMap[r.st]}</div><div class="m"><span>平台 <b>${r.pf}</b></span><span>在线 <b>${r.people}</b></span><span>商品 <b>${r.goods}</b></span><span>剧本 <b>${r.script}</b></span></div></div>
+    <button class="btn ${r.st==='live'?'':'primary'} sm" onclick="${r.st==='live'?"go('control')":"openWizard()"}">${r.st==='live'?'进入中控':'配置开播'}</button></div>`;
+}
+function quickHtml(e,t,d,v,c){return `<div class="quick" onclick="go('${v}')"><div class="qi" style="background:${c};color:#fff">${e}</div><div><div class="qt">${t}</div><div class="qd">${d}</div></div></div>`;}
+function assetHtml(a){return `<div class="asset" onclick="toast('已打开「${a.n}」')"><div class="cover" style="background:${a.c};color:#fff">${a.e}</div><b>${a.n}</b><div class="sub">${a.d}</div></div>`;}
+
+/* ================= 导航 ================= */
+const TITLES={dash:['控制台','AI 数字人无人直播全链路管理'],rooms:['直播间管理','配置平台、封面、数字人与开播策略'],assets:['素材中心','剧本 / 视频 / 语音 / 贴片 / 商品统一管理'],script:['剧本工坊','AI 生成 · 手动输入 · 云端剧本库'],ai:['数字员工','智能体 + 知识库 + 大模型自动回复'],control:['直播中控','实时监控数字人直播、弹幕与互动'],data:['数据中心','直播场次数据与效果分析']};
+function go(v){
+  if(v==='control'&&!isLive){ startLive(true); }
+  curView=v;
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
+  document.getElementById('title').textContent=TITLES[v][0];
+  document.getElementById('subtitle').textContent=TITLES[v][1];
+  document.getElementById('view').innerHTML=VIEWS[v]();
+  document.getElementById('view').scrollTop=0;
+}
+document.getElementById('nav').addEventListener('click',e=>{const a=e.target.closest('a');if(a)go(a.dataset.v);});
+
+/* ================= 交互通用 ================= */
+function toast(msg){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+function selOpt(el){el.parentElement.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');}
+function selCard(el){el.parentElement.querySelectorAll('.selcard').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');}
+function selPf(el){document.querySelectorAll('.pf').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');selPlatform=el.dataset.pf;}
+
+/* ================= 向导 ================= */
+function openWizard(){wizardStep=0;document.getElementById('wizard').classList.add('show');renderWiz();}
+function closeWizard(){document.getElementById('wizard').classList.remove('show');}
+function renderWiz(){
+  document.querySelectorAll('.wpage').forEach((p,i)=>p.classList.toggle('on',i===wizardStep));
+  document.querySelectorAll('#wsteps .step').forEach((s,i)=>{s.classList.toggle('on',i===wizardStep);s.classList.toggle('done',i<wizardStep);});
+  document.getElementById('wPrev').style.display=wizardStep>0?'':'none';
+  document.getElementById('wNext').style.display=wizardStep<3?'':'none';
+  document.getElementById('wStart').style.display=wizardStep===3?'':'none';
+  if(wizardStep===3){
+    document.getElementById('cfPf').textContent=selPlatform;
+    document.getElementById('cfTitle').textContent=document.getElementById('wTitle').value||'（未填写标题）';
+  }
+}
+function wizStep(d){wizardStep=Math.max(0,Math.min(3,wizardStep+d));renderWiz();}
+function startLive(fromNav){
+  closeWizard();isLive=true;sec=0;
+  document.getElementById('navLive').style.display='';
+  go('control');
+  toast('● 开播成功！RPA 已自动进入直播间');
+  addLog('OK','直播间已创建 · '+selPlatform);
+  startEngines();
+}
+function stopLive(){
+  if(!isLive)return;
+  isLive=false;clearInterval(liveTimer);clearInterval(barrageTimer);clearInterval(capTimer);
+  document.getElementById('navLive').style.display='none';
+  addLog('OK','本场直播已结束，数据已上报云端');
+  toast('直播已结束，数据已上报');
+  go('data');
+}
+
+/* ================= 直播引擎模拟 ================= */
+const CAPTIONS=[
+  '「姐妹们看过来，今年这款 90 白鸭绒羽绒服，零下十度都不带怕的……」',
+  '「轻盈不臃肿，上身特别显瘦，160 的小个子也能轻松驾驭。」',
+  '「现在下单享限时 5 折，前 100 名还送围巾，手慢无哦！」',
+  '「黑色显瘦、米色百搭，两个颜色都是今年的爆款色系。」',
+  '「想要链接的朋友扣 1，我把小黄车挂上来给大家。」',
+];
+function startEngines(){
+  clearInterval(liveTimer);clearInterval(barrageTimer);clearInterval(capTimer);
+  liveTimer=setInterval(()=>{
+    sec++;const h=String(Math.floor(sec/3600)).padStart(2,'0'),m=String(Math.floor(sec%3600/60)).padStart(2,'0'),s=String(sec%60).padStart(2,'0');
+    const el=document.getElementById('liveTimer');if(el)el.textContent=`${h}:${m}:${s}`;
+    // 剧本进度
+    const pct=Math.min(100,45+Math.floor(sec/3));
+    const f=document.getElementById('scriptFill');if(f){f.style.width=pct+'%';document.getElementById('scriptPct').textContent=`段落 ${Math.min(6,3+Math.floor(sec/15))}/6 · ${pct}%`;}
+    // 在线人数轻微波动
+    if(sec%4===0){const p=document.getElementById('sPeople');if(p){let n=+p.textContent.replace(/,/g,'')+Math.floor(Math.random()*21-8);p.textContent=n.toLocaleString();}}
+  },1000);
+  capTimer=setInterval(()=>{capIdx=(capIdx+1)%CAPTIONS.length;const c=document.getElementById('caption');if(c){c.style.opacity=0;setTimeout(()=>{c.textContent=CAPTIONS[capIdx];c.style.opacity=1;},250);}},5000);
+  barrageTimer=setInterval(()=>{ if(curView==='control'&&document.querySelector('[data-pane="dm"]').classList.contains('on')) pushBarrage(); },2200);
+}
+function pushBarrage(){
+  const list=document.getElementById('barrageList');if(!list)return;
+  if(list.children.length>1&&list.querySelector('.sys'))list.querySelector('.sys').remove();
+  const [u,c]=DM_POOL[Math.floor(Math.random()*DM_POOL.length)];
+  const div=document.createElement('div');div.className='dm';
+  let html=`<span class="u">${u}</span><span class="c">`;
+  let matched=null;
+  for(const k in KW){if(c.includes(k)){matched=KW[k];break;}}
+  html+=c.replace(/(保暖|价格|多少钱|面料|发货|尺码|怎么买|链接|大码|优惠)/g,'<span class="kw">$1</span>')+'</span>';
+  div.innerHTML=html;list.appendChild(div);
+  const cnt=document.getElementById('dmCount');if(cnt)cnt.textContent=(parseInt(cnt.textContent)+1)+' 条';
+  list.scrollTop=list.scrollHeight;
+  // AI 回复
+  if(matched&&kwOn){
+    setTimeout(()=>{addReply(`@${u} ${replyText(matched)}`,list);addLog('OK',`关键词「${matched}」命中 → 自动回复`);},700);
+  }else if(replyOn&&Math.random()<0.5){
+    setTimeout(()=>{addReply(`@${u} ${AI_REPLIES[Math.floor(Math.random()*AI_REPLIES.length)]}`,list);addLog('OK','大模型生成回复 → TTS 播报');},900);
+  }
+  // 随机点赞（内部以"千"为单位计数，展示为 x.x万）
+  if(Math.random()<0.3){const l=document.getElementById('sLike');if(l){likeBase+=Math.floor(Math.random()*30);l.textContent=(likeBase/10).toFixed(1)+'万';}}
+}
+const AI_REPLIES=['亲，这款周一统一发货哦～','有的，S 到 3XL 都可以选～','点下方小黄车就能下单啦！','已经在讲解这款了，稍等一下下～'];
+function replyText(k){return {'保暖':'添绒加厚，零下十度妥妥的！','价格':'现在限时 5 折，超划算！','面料':'90 白鸭绒，轻盈又保暖。','发货':'48 小时内发货哦～','尺码':'S 到 3XL 都有，正常尺码拍。','购买':'点小黄车 1 号链接就行～'}[k]||'稍等，主播马上为您解答～';}
+function addReply(text,list){const d=document.createElement('div');d.className='dm reply';d.innerHTML=`<span class="u">🤖 数字人主播</span><span class="c">${text}</span>`;list.appendChild(d);list.scrollTop=list.scrollHeight;}
+function addLog(status,msg){const b=document.getElementById('logBox');if(!b)return;const d=document.createElement('div');d.className='log-line';d.innerHTML=`[<b>${status}</b>] ${msg}`;b.appendChild(d);b.scrollTop=b.scrollHeight;}
+
+function switchTab(t){document.querySelectorAll('.tabs .tb').forEach(b=>b.classList.toggle('on',b.dataset.tb===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.dataset.pane===t));}
+function toggle(k){
+  if(k==='kw')kwOn=!kwOn;if(k==='reply')replyOn=!replyOn;if(k==='goods')autoGoods=!autoGoods;
+  const el=document.getElementById('sw'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.classList.toggle('on');
+  toast(({kw:'关键词回复',reply:'AI 回复',goods:'自动讲解'})[k]+(k==='kw'?kwOn:k==='reply'?replyOn:autoGoods?' 已开启':' 已关闭'));
+}
+function toggleSw(el){el.classList.toggle('on');toast('设置已更新');}
+function doAct(a){
+  toast('已执行：'+a);addLog('OK','场控操作 → '+a);
+  if(a==='讲解商品'){const c=document.getElementById('caption');if(c){c.textContent='「来，看这款爆款羽绒服，现在点小黄车 1 号链接，限时 5 折！」';}addLog('OK','RPA 点击「讲解」按钮成功');}
+}
+function genScript(){toast('✦ AI 正在生成口播稿（原型演示）');}
+function selOptAll(){}
+
+/* 初始化 */
+go('dash');
+</script>
+</body>
+</html>
