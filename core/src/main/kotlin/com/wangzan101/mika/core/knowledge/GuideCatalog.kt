@@ -20,6 +20,11 @@ data class GuideInfo(
     val sites: List<String> = emptyList(),
 )
 
+/** 一份技能写明要用的 App(包名)和网站(域名);都空表示没写。 */
+data class SkillPlaces(val packages: Set<String> = emptySet(), val domains: Set<String> = emptySet()) {
+    val declared: Boolean get() = packages.isNotEmpty() || domains.isNotEmpty()
+}
+
 sealed interface GuideView {
     data class Found(
         val info: GuideInfo, val file: String, val content: String, val truncated: Boolean, val totalChars: Int,
@@ -229,6 +234,34 @@ class GuideCatalog private constructor(
     /** 主机 [host] 所属站点知识写的 pace(认站点的规则同 [siteCommands]);没有为 null。 */
     fun sitePace(host: String): String? =
         SiteMatch.best(host, rows.filter { it.kind == KnowledgeIndex.SITE }) { it.domains }.firstOrNull()?.pace
+
+    /**
+     * 个人技能 [name] 头部写明的 App 和网站,换成包名和域名。每一项按 App / 网站知识的名字、别名认(大小写不计),
+     * 认出来的换成那份知识登记的包名、域名,并顺着 App 与网站知识互相登记的关联一起算(写了网站、实际在它的 App 里做也算);
+     * 认不出来的,长得像包名、域名(带点、没有空格)的照原样留着(自学的技能写包名),别的(显示名、写错的)不算写了,
+     * 免得一项对不上就让这份技能永远认不出照着做了。没有这份个人技能(或它不在用、不在试用)为 null。
+     */
+    fun skillPlaces(name: String): SkillPlaces? {
+        val skill = personal?.get(name)?.takeIf { it.status == SkillStatus.active || it.status == SkillStatus.trial } ?: return null
+        val meta = FrontMatter.parse(skill.markdown).first
+        fun many(k: String) = (meta[k] as? List<*>)?.filterIsInstance<String>() ?: listOfNotNull((meta[k] as? String)?.takeIf { it.isNotEmpty() })
+        fun known(kind: String, entry: String) = rows.filter { r ->
+            r.kind == kind && (r.name.equals(entry, true) || r.aliases.any { it.equals(entry, true) } ||
+                entry in r.packages || r.domains.any { it.equals(entry, true) })
+        }
+        fun raw(entry: String) = entry.takeIf { '.' in it && entry.none(Char::isWhitespace) }
+        val entries = many("apps") + many("sites") + many("domains")
+        val apps = entries.flatMap { known(KnowledgeIndex.APP, it) }.toMutableSet()
+        val sites = entries.flatMap { known(KnowledgeIndex.SITE, it) }.toMutableSet()
+        // App 和网站知识互相登记的:B 站 App 写了 sites: [bilibili.com],站点写了 apps: [bilibili]
+        apps += sites.flatMap { s -> s.apps.flatMap { known(KnowledgeIndex.APP, it) } }
+        sites += apps.flatMap { a -> a.sites.flatMap { known(KnowledgeIndex.SITE, it) } }
+        val unresolved = entries.filter { e -> known(KnowledgeIndex.APP, e).isEmpty() && known(KnowledgeIndex.SITE, e).isEmpty() }.mapNotNull(::raw)
+        return SkillPlaces(
+            packages = apps.flatMap { it.packages }.toSet() + unresolved,
+            domains = sites.flatMap { it.domains }.toSet() + unresolved,
+        )
+    }
 
     /** 包名 [packageName] 所属 App 知识写的 pace(包名在它的 packages 里);没有为 null。 */
     fun appPace(packageName: String): String? =

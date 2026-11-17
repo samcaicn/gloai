@@ -7,6 +7,7 @@ import com.wangzan101.mika.core.agent.RunOutcome
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.knowledge.GuideCatalog
 import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.observation.Place
 import com.wangzan101.mika.core.skills.PersonalSkill
 import com.wangzan101.mika.core.skills.SkillDrafter
 import com.wangzan101.mika.core.skills.SkillStatus
@@ -30,12 +31,17 @@ class SedimentationWiringTest {
     private val draftMd = "---\nname: send-wechat-message\ndisplay: 发微信消息\ndescription: 给指定联系人发一条微信消息\napps: [com.tencent.mm]\nsource: learned\n---\n" +
         "## 入口\n用 `phone_launch_app` 打开。\n## 步骤\n1. 点搜索\n## 容易出错的地方\n同名群聊。\n## 怎样算办成(核实证据)\n消息出现在聊天里。\n## 什么时候停下交给用户\n要登录时。"
 
-    private fun events(verdict: String = "pass", extra: List<RunEvent> = emptyList()): List<RunEvent> {
-        var t = 0L
-        val ev = mutableListOf<RunEvent>(RunEvent.TaskStarted(++t, "发微信", "m"))
+    /**
+     * 一次发微信的运行:在微信([app])里做 6 个动作。动作从时刻 100 起,[extra] 里的事件按自己写的时刻算先后
+     * (技能读在 41 这样的时刻,就是先读了技能再动手)。
+     */
+    private fun events(verdict: String = "pass", extra: List<RunEvent> = emptyList(), app: String = "com.tencent.mm"): List<RunEvent> {
+        var t = 99L
+        val ev = mutableListOf<RunEvent>(RunEvent.TaskStarted(1, "发微信", "m"))
         listOf("phone_launch_app", "phone_tap", "phone_tap", "phone_type_text", "phone_tap", "phone_tap").forEachIndexed { i, tool ->
             ev += RunEvent.ModelReply(++t, i + 1, "", tool, "{}", null, null, null)
             ev += RunEvent.ToolResult(++t, i + 1, tool, """{"ok":true}""", true, null)
+            ev += RunEvent.Observed(++t, i + 1, "界面", place = Place.app(app))
         }
         ev += extra
         ev += RunEvent.Verifier(++t, verdict, """{"reason":"","checks":[]}""")
@@ -165,6 +171,41 @@ class SedimentationWiringTest {
         assertEquals(SkillStatus.suspended, skills.get("keep-screen-on")!!.status)
         assertEquals(emptyList<String>(), skills.get("drama-coins")!!.outcomes)
         assertTrue(notes.skillNotes.single().text.endsWith("keep-screen-on"))
+    }
+
+    // 读过、但没照着做:读完之后在别的 App 里动手,或者读完没再动手,结果都不记到它头上(#569)
+    @Test fun skillReadButNotFollowedIsNotBlamed() {
+        val skill = PersonalSkill("wechat-msg", draftMd.replace("send-wechat-message", "wechat-msg"), SkillStatus.active, "r0", null, 0, emptyList())
+        val rejected = TaskState.Failed("核查未通过:没办成", FailKind.GaveUp)
+        val elsewhere = MapSkills(skill)
+        runBlocking { learning(elsewhere, learn = false).learn(after(events(verdict = "fail", extra = listOf(RunEvent.SkillUsed(41, "wechat-msg", "viewed")), app = "com.ss.android.ugc.aweme"), rejected)) }
+        assertEquals(emptyList<String>(), elsewhere.get("wechat-msg")!!.outcomes)
+        // 动完手才去读,读完就收尾了
+        val late = MapSkills(skill)
+        runBlocking { learning(late, learn = false).learn(after(events(verdict = "fail", extra = listOf(RunEvent.SkillUsed(500, "wechat-msg", "viewed"))), rejected)) }
+        assertEquals(emptyList<String>(), late.get("wechat-msg")!!.outcomes)
+        assertEquals(SkillStatus.active, late.get("wechat-msg")!!.status)
+    }
+
+    // 读过一份没照着做、这次自己办成了:不记到它头上,也不挡起草
+    @Test fun skillReadButNotFollowedStillDrafts() {
+        val skill = PersonalSkill("wechat-msg", draftMd.replace("send-wechat-message", "wechat-msg"), SkillStatus.active, "r0", null, 0, emptyList())
+        val skills = MapSkills(skill)
+        runBlocking { learning(skills, learn = true).learn(after(events(extra = listOf(RunEvent.SkillUsed(41, "wechat-msg", "viewed")), app = "com.ss.android.ugc.aweme"))) }
+        assertEquals(emptyList<String>(), skills.get("wechat-msg")!!.outcomes)
+        assertEquals(listOf("draft-1"), skills.drafts.keys.toList())
+    }
+
+    // 读了两份,只进过其中一份写明的 App:照着做的就是那一份,结果记给它
+    @Test fun outcomeGoesToTheSkillWhoseAppWasUsed() {
+        val md = draftMd.replace("send-wechat-message", "wechat-msg")
+        val wechat = PersonalSkill("wechat-msg", md, SkillStatus.active, "r0", null, 0, emptyList())
+        val douyin = PersonalSkill("douyin-like", md.replace("wechat-msg", "douyin-like").replace("com.tencent.mm", "com.ss.android.ugc.aweme"), SkillStatus.active, "r0", null, 0, emptyList())
+        val skills = MapSkills(wechat, douyin)
+        val read = listOf(RunEvent.SkillUsed(41, "douyin-like", "viewed"), RunEvent.SkillUsed(42, "wechat-msg", "viewed"))
+        runBlocking { learning(skills, learn = true).learn(after(events(extra = read))) }
+        assertEquals(listOf("verified"), skills.get("wechat-msg")!!.outcomes)
+        assertEquals(emptyList<String>(), skills.get("douyin-like")!!.outcomes)
     }
 
     // 试用中的个人技能:Agent 用 skill_read 读过、这次办成了,转为正式

@@ -26,6 +26,7 @@ import com.wangzan101.mika.core.skills.DraftResult
 import com.wangzan101.mika.core.skills.Eligibility
 import com.wangzan101.mika.core.skills.PersonalSkills
 import com.wangzan101.mika.core.skills.SkillDrafter
+import com.wangzan101.mika.core.skills.SkillFollow
 import com.wangzan101.mika.core.skills.SkillNote
 import com.wangzan101.mika.core.skills.SkillOutcomes
 import com.wangzan101.mika.core.skills.SkillResult
@@ -94,7 +95,9 @@ class RunLearning(
         yieldToForeground()
         val events = guarded(emptyList()) { a.events() }
         val used = events.filterIsInstance<RunEvent.SkillUsed>()
-        val skillNotes = recordOutcomes(used, a.end, a.outcome).toMutableList()
+        // 照着做了的技能(只读过的不算):记结果和要不要起草都看它
+        val followed = SkillFollow.followed(events, used, a.tools, catalog::skillPlaces)
+        val skillNotes = recordOutcomes(followed, used, a.end, a.outcome).toMutableList()
         // 试用中的 App 知识和个人技能按同一种结果算:取消的、没判成的不记
         val trial = SkillOutcomes.resultOf(a.end, a.outcome)?.takeIf { it != SkillResult.unreviewed }
         val trialNames = events.filterIsInstance<RunEvent.State>().filter { it.name == "knowledge_trial_used" }.map { it.detail }.distinct()
@@ -122,7 +125,7 @@ class RunLearning(
 
         // 做法只从办成的学:回答如实说没办成、只办了一部分,或没判成的,不起草
         val done = learnable && LearnGate.done(a.end, a.outcome)
-        if (done) draft(a, events, used.map { it.name }.distinct())?.let(skillNotes::add)
+        if (done) draft(a, events, followed.toList())?.let(skillNotes::add)
         // App 知识也从没办成、磕磕绊绊的运行里学(值不值得由 AppKnowledgeDrafter 按经过判)
         if (a.origin == RunOrigin.Ui) skillNotes += draftApps(a, events)
         return RunNotes(a.conversationId, a.runId.orEmpty(), MemoryExtractor.notes(changes), a.usedMemory, skillNotes)
@@ -130,12 +133,13 @@ class RunLearning(
 
     /**
      * 每份技能单独读改写(和别的任务同时记结果也不丢);一份出错不影响别的。
-     * 这次读了不止一份个人技能时分不清照着哪份做的:结果不记到任何一份上,免得只是翻看过的技能跟着被记成没办成、被停用(#569)。
+     * 结果只记到这次照着做了的技能上([followed],见 [SkillFollow]):只是读过的不记;
+     * 照着做了的不止一份时分不清结果归谁,一份也不记,免得没用上的技能跟着被记成没办成、被停用(#569)。
      */
-    private suspend fun recordOutcomes(used: List<RunEvent.SkillUsed>, end: TaskState, outcome: RunOutcome): List<SkillNote> {
+    private suspend fun recordOutcomes(followed: Set<String>, used: List<RunEvent.SkillUsed>, end: TaskState, outcome: RunOutcome): List<SkillNote> {
         val result = SkillOutcomes.resultOf(end, outcome) ?: return emptyList()
-        if (used.map { it.name }.distinct().size > 1) return emptyList()
-        return used.groupBy { it.name }.mapNotNull { (name, uses) ->
+        if (followed.size != 1) return emptyList()
+        return used.filter { it.name in followed }.groupBy { it.name }.mapNotNull { (name, uses) ->
             val next = guarded(null) {
                 skills.update(name) { s -> if (s.status == SkillStatus.active || s.status == SkillStatus.trial) SkillOutcomes.record(s, result, followed = true) else null }
             } ?: return@mapNotNull null
@@ -152,7 +156,7 @@ class RunLearning(
         val runId = a.runId ?: return null
         if (!switches.learnSkills) return null
         if (events.any { it is RunEvent.Replay && it.matched }) return null
-        // 照着个人技能做成的只记一次结果,不再起草
+        // 照着个人技能做成的只记一次结果,不再起草;只是读过、没照着做的不挡起草(这次是自己办成的)
         val followed = used.firstOrNull().takeIf { SkillOutcomes.resultOf(a.end, a.outcome) == SkillResult.verified }
         val done = a.end as? TaskState.Succeeded
         if (Eligibility.check(events, followed, a.tools, done = LearnGate.done(a.end, a.outcome)) != null) return null
