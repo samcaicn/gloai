@@ -28,6 +28,12 @@ data class TtsRequest(
 /** 合成好的音频。原始 PCM 已由适配器包成 WAV；[sampleRate] 读不出来时为 null。 */
 class TtsResponse(val bytes: ByteArray, val mime: String, val sampleRate: Int? = null, val durationMs: Long? = null)
 
+/** 已经写进工作区的一段音频。 */
+class StoredAudio(val path: String, val bytes: Int, val mime: String, val durationMs: Long? = null)
+
+/** 已经存进音乐库的一段音频。 */
+class SavedAudio(val savedAs: String, val uri: String, val bytes: Long)
+
 /**
  * 一个声音模型能做什么。[voices] 为 null 表示不限制/未知（音色名由服务商校验）；
  * [maxChars] 是单次文本上限；[formats] 是能输出的容器格式。

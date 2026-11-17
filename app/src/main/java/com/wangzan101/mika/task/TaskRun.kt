@@ -236,6 +236,7 @@ class TaskRun(
 
     private val _runId = Mirrored<String?>(null, service.taskState._runId)
     private val _sharedFiles = Mirrored<List<SharedFile>>(emptyList(), service.taskState._sharedFiles)
+    private val _audios = Mirrored<List<com.wangzan101.mika.core.chat.GeneratedAudio>>(emptyList(), service.taskState._audios)
     private val _state = Mirrored<TaskState>(TaskState.Running(0, TaskService.PREPARING), service.taskState._state)
     /** 同一状态带上对话编号,和 [_state] 一起写:界面据此只收屏上那个对话的状态。 */
     private val _tagged = Mirrored<Pair<String, TaskState>?>(conversationId to _state.value, service.taskState._shownTask)
@@ -264,6 +265,8 @@ class TaskRun(
     val runId: StateFlow<String?> = _runId.flow
     /** 本任务导出的文件;结束时随这一轮存进对话。 */
     val sharedFiles: StateFlow<List<SharedFile>> = _sharedFiles.flow
+    /** 本任务生成并留在工作区里的音频;结束时随这一轮存进对话。 */
+    val audios: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>> = _audios.flow
     val takeoverStage: StateFlow<Takeover.Stage> = _takeoverStage.flow
     val frames: StateFlow<Bitmap?> = _frames.flow
     /** 个人助手的缩略图只收本任务获准展示的手机画面。 */
@@ -281,7 +284,7 @@ class TaskRun(
     /** 本任务进行中插的话和它们的去向;悬浮胶囊的对话卡片按任务取。 */
     val steers: StateFlow<List<SteerNote>> = _steers.flow
     // 带对话编号的那份先写:收不带编号的状态时读到的编号就已经是这个任务的(界面据此不把别的对话的状态接到屏上)
-    private val mirrored = listOf(_runId, _sharedFiles, _tagged, _state, _takeoverStage, _frames, _displayId, _pipInput, _pipSoundOn, _appShown, _webOpen, _activities, _steers)
+    private val mirrored = listOf(_runId, _sharedFiles, _audios, _tagged, _state, _takeoverStage, _frames, _displayId, _pipInput, _pipSoundOn, _appShown, _webOpen, _activities, _steers)
 
     private fun setState(s: TaskState) = synchronized(service.taskState.shownLock) {
         _tagged.value = conversationId to s
@@ -525,8 +528,64 @@ class TaskRun(
     /** 本任务的沙箱:一个任务一份(导出额度按任务算),工作区是本对话的。 */
     private val sandbox by lazy { AndroidSandbox(service, SandboxState.get(service), onShared = ::addShared) }
 
+    private val audioSettings by lazy { com.wangzan101.mika.settings.VoiceSettings.get(service) }
+
+    /** 本任务的转写端口:用户选的是服务商转写模型、且这是手机上开始的任务时才建。 */
+    private val transcribePort by lazy {
+        val choice = com.wangzan101.mika.voice.SpeechSettings.get(service).choice.value as? com.wangzan101.mika.voice.SpeechChoice.Provider
+            ?: return@lazy null
+        if (provenance.origin != RunOrigin.Ui) null
+        else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice)
+    }
+
+    /** 把工作区里的一段音频复制成别的 App 可读的 content URI(分享用);越界、不是音频、太大时为 null。 */
+    private suspend fun shareWorkspaceAudio(path: String): com.wangzan101.mika.media.ShareableFile? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val trimmed = path.trim()
+        val prefix = com.wangzan101.mika.core.workspace.SandboxPaths.WORKSPACE + "/"
+        if (!trimmed.startsWith(prefix)) return@withContext null
+        val rel = trimmed.removePrefix(prefix)
+        if (rel.isEmpty() || rel.split('/').any { it.isEmpty() || it == "." || it == ".." }) return@withContext null
+        val dirs = com.wangzan101.mika.cap.sandbox.SandboxDirs(service)
+        val bytes = dirs.tree.shared {
+            dirs.gate.openRead(dirs.workspace(conversationId), rel).use { g ->
+                if (g.size > 20L * 1024 * 1024) null else g.read(0, g.size.toInt())
+            }
+        } ?: return@withContext null
+        val mime = android.webkit.MimeTypeMap.getSingleton()
+            .getMimeTypeFromExtension(trimmed.substringAfterLast('.', "").lowercase())
+            ?.takeIf { it.startsWith("audio/") } ?: "audio/wav"
+        com.wangzan101.mika.media.AudioShareExporter(service).save(bytes, mime, trimmed.substringAfterLast('/'))
+    }
+
+    /**
+     * 本任务的音频端口:用户配置并打开了声音模型、且这是手机上开始的任务时才建。
+     * 定时、远程、子任务、条件检查没有它,音频工具也就不会发给模型。
+     */
+    private val audioPort by lazy {
+        val state = audioSettings.state.value
+        val choice = state.choice
+        if (!state.enabled || choice == null || provenance.origin != RunOrigin.Ui) null
+        else audioSettings.capabilities()?.let { caps ->
+            com.wangzan101.mika.settings.ProviderStore.get(service).ttsModel(choice, caps)?.let { model ->
+                com.wangzan101.mika.media.AndroidAudioPort(service, conversationId, model, caps, onSaved = ::addSavedAudio,
+                    onGenerated = ::addAudio,
+                    onSpeak = { response -> (service.application as com.wangzan101.mika.MikaApp).voicePlayer.play(response.bytes, response.mime) })
+            }
+        }
+    }
+
     /** 沙箱导出了一个文件(share_file 或 `mika share`)。 */
     fun addShared(f: SharedFile) = synchronized(service.taskState.shownLock) { _sharedFiles.value = _sharedFiles.value + f }
+
+    /** 音频能力生成了一段音频(写进工作区时由端口回调)。 */
+    fun addAudio(a: com.wangzan101.mika.core.chat.GeneratedAudio) = synchronized(service.taskState.shownLock) {
+        _audios.value = _audios.value + a
+    }
+
+    /** 音频能力把一段音频存进了音乐库:当作这一轮导出的文件,聊天里出现卡片。 */
+    fun addSavedAudio(s: com.wangzan101.mika.core.model.SavedAudio) {
+        addShared(SharedFile(s.savedAs.substringAfterLast('/'), s.bytes, s.savedAs, s.uri))
+    }
 
     fun clearTakeoverStage() { _takeoverStage.value = Takeover.Stage.None }
 
@@ -793,6 +852,7 @@ class TaskRun(
                     beforeOpen = muter::beforeOpen,
                     notOpened = muter::notOpened,
                     appAccess = appAccess,
+                    shareAudioFile = { path -> shareWorkspaceAudio(path) },
                 )
                 val side0 = PhoneSide(shell, a11y, screen, agentDisplay, muter)
                 phone = side0
@@ -1039,6 +1099,11 @@ class TaskRun(
                     AndroidDeviceFiles(phoneServices.hub, com.wangzan101.mika.cap.sandbox.SandboxDirs(service), sandbox,
                         com.wangzan101.mika.settings.DeviceDirectoryStore.get(service), DeviceImportStore.get(service))
                 } else null,
+                audio = audioPort,
+                transcribe = transcribePort,
+                audioSaveEnabled = audioSettings.state.value.saveEnabled,
+                audioAskBeforeSave = audioSettings.state.value.askBeforeSave,
+                audioSpeakTool = audioSettings.state.value.speakTool,
                 onSandboxCommand = { sandboxNote(StatusCopy.sandboxCommand(it, sandboxOnline())) },
                 onSandboxProgress = { sandboxNote(StatusCopy.sandboxProgress(it, sandboxOnline())) },
                 onSandboxPreparing = { sandboxNote(StatusCopy.RUNTIME_PREPARING) },

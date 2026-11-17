@@ -232,4 +232,11 @@
     <string name="voice_playing">Speaking…</string>
     <string name="voice_loading">Preparing the voice…</string>
     <string name="voice_play_failed">Could not play the voice: %1$s</string>
+    <string name="voice_save_enabled">Allow saving audio to the music library</string>
+    <string name="voice_save_note">Off by default. Saving writes to Music/Mika</string>
+    <string name="voice_ask_before_save">Ask before each audio save</string>
+    <string name="tool_audio_generate">Generate speech</string>
+    <string name="tool_audio_save">Save audio</string>
+    <string name="tool_share_audio">Share audio to app</string>
+    <string name="tool_audio_transcribe">Transcribe audio</string>
 </resources>

@@ -101,7 +101,11 @@ class RunLearningMemoryTest {
             val screen = java.lang.reflect.Proxy.newProxyInstance(
                 com.wangzan101.mika.core.uistate.ScreenPort::class.java.classLoader, arrayOf(com.wangzan101.mika.core.uistate.ScreenPort::class.java),
             ) { _, m, _ ->
-                if (m.name == "getAppAccess") com.wangzan101.mika.core.access.AppAccessPolicy.ALLOW else error("Unexpected screen access: ${m.name}")
+                when {
+                    m.name == "getAppAccess" -> com.wangzan101.mika.core.access.AppAccessPolicy.ALLOW
+                    m.returnType == Boolean::class.javaPrimitiveType -> false
+                    else -> error("Unexpected screen access: ${m.name}")
+                }
             } as com.wangzan101.mika.core.uistate.ScreenPort
             val dispatcher = com.wangzan101.mika.core.assembly.toolDispatcher(screen, memory = store, utterances = utterances)
             val agent = com.wangzan101.mika.core.agent.AgentLoop(TextModel("好的"), dispatcher, "base", memory = store, observed = observed,

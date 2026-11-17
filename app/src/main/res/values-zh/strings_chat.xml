@@ -290,4 +290,7 @@
     <string name="task_fill_apply">填入输入框</string>
     <string name="chat_read_aloud">朗读</string>
     <string name="chat_stop_speaking">停止朗读</string>
+    <string name="chat_audio">音频</string>
+    <string name="chat_audio_play">播放</string>
+    <string name="chat_audio_stop">停止</string>
 </resources>

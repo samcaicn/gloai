@@ -1,0 +1,81 @@
+package com.wangzan101.mika.cap.audio
+
+import android.content.ContentResolver
+import android.content.ContentUris
+import android.content.ContentValues
+import android.content.Context
+import android.os.Bundle
+import android.provider.MediaStore
+import com.wangzan101.mika.core.model.SavedAudio
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayInputStream
+
+/** 把一段音频存到手机的「音乐/Mika」(MediaStore.Audio,不需要存储权限)。 */
+class AudioExporter(private val context: Context) {
+    suspend fun save(bytes: ByteArray, mime: String, name: String): SavedAudio = withContext(Dispatchers.IO) {
+        val resolver = context.contentResolver
+        val display = if (name.substringAfterLast('.', "").isEmpty()) "$name.${extensionOf(mime)}" else name
+        val values = ContentValues().apply {
+            put(MediaStore.Audio.Media.DISPLAY_NAME, display)
+            put(MediaStore.Audio.Media.RELATIVE_PATH, "$DIRECTORY/")
+            put(MediaStore.Audio.Media.MIME_TYPE, mime)
+            put(MediaStore.Audio.Media.IS_PENDING, 1)
+        }
+        val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
+            ?: throw IllegalStateException("MediaStore insert failed")
+        try {
+            resolver.openOutputStream(uri)?.use { out ->
+                ByteArrayInputStream(bytes).use { input ->
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        currentCoroutineContext().ensureActive()
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                    }
+                }
+            } ?: throw IllegalStateException("MediaStore openOutputStream failed")
+            resolver.update(uri, ContentValues().apply { put(MediaStore.Audio.Media.IS_PENDING, 0) }, null, null)
+        } catch (e: Throwable) {
+            runCatching { resolver.delete(uri, null, null) }
+            throw e
+        }
+        val actual = displayName(resolver, uri) ?: display
+        SavedAudio("$DIRECTORY/$actual", uri.toString(), bytes.size.toLong())
+    }
+
+    /** 删掉上次进程留下的、没写完的音乐库条目;启动时调用。 */
+    fun cleanPending() {
+        val resolver = context.contentResolver
+        val args = Bundle().apply {
+            putString(ContentResolver.QUERY_ARG_SQL_SELECTION,
+                "${MediaStore.MediaColumns.IS_PENDING} = 1 AND ${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ? AND ${MediaStore.MediaColumns.OWNER_PACKAGE_NAME} = ?")
+            putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, arrayOf("$DIRECTORY/%", context.packageName))
+            putInt(MediaStore.QUERY_ARG_MATCH_PENDING, MediaStore.MATCH_INCLUDE)
+        }
+        val ids = resolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.MediaColumns._ID), args, null)?.use { c ->
+            buildList { while (c.moveToNext()) add(c.getLong(0)) }
+        }.orEmpty()
+        for (id in ids) runCatching { resolver.delete(ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id), null, null) }
+    }
+
+    private fun displayName(resolver: ContentResolver, uri: android.net.Uri): String? =
+        resolver.query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        }
+
+    private fun extensionOf(mime: String): String = when (mime.substringAfter('/', "").lowercase()) {
+        "mpeg", "mp3" -> "mp3"
+        "ogg", "opus" -> "ogg"
+        "aac" -> "aac"
+        "flac" -> "flac"
+        else -> "wav"
+    }
+
+    private companion object {
+        const val DIRECTORY = "Music/Mika"
+    }
+}

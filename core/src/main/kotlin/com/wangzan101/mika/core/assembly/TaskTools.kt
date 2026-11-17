@@ -121,6 +121,16 @@ fun toolDispatcher(
     selfConfig: com.wangzan101.mika.core.settings.SelfConfig? = null,
     /** 存下的运行记录;给了、而这个对话之前有记过运行的轮次时提供 history_read(查之前几轮读到的东西)。 */
     runRecords: RunRecords? = null,
+    /** 声音生成/保存;为空时不装音频能力(没配置声音模型或用户没打开)。 */
+    audio: com.wangzan101.mika.core.cap.audio.AudioPort? = null,
+    /** 用户允许把音频存进音乐库;默认关。 */
+    audioSaveEnabled: Boolean = false,
+    /** 每次保存前是否问用户;默认问。 */
+    audioAskBeforeSave: Boolean = true,
+    /** 用户允许模型主动说话;默认关。 */
+    audioSpeakTool: Boolean = false,
+    /** 音频转写;为空时不装转写能力(没配置服务商转写模型)。 */
+    transcribe: com.wangzan101.mika.core.cap.transcribe.TranscribePort? = null,
     /** 以 root 跑命令(已 root 的手机上用户打开了「允许 Mika 执行 root 命令」才给);为空时 root 工具不登记。 */
     root: RootPort? = null,
     /** 用户配置并启用的通用网页搜索;为空时保持原有浏览器搜索路径。 */
@@ -164,7 +174,17 @@ fun toolDispatcher(
                 folderAccess = spec.provenance.origin == com.wangzan101.mika.core.run.RunOrigin.Ui &&
                     spec.provenance.attendance != com.wangzan101.mika.core.run.Attendance.Unattended && !spec.readOnly)
         },
-    ) + listOfNotNull(root?.let { port ->
+    ) + listOfNotNull(transcribe?.let { port ->
+        object : CapabilityProvider {
+            override val id = com.wangzan101.mika.core.cap.transcribe.TRANSCRIBE
+            override fun open(spec: RunSpec) = com.wangzan101.mika.core.cap.transcribe.TranscribeCapability(port)
+        }
+    }) + listOfNotNull(audio?.let { port ->
+        object : CapabilityProvider {
+            override val id = com.wangzan101.mika.core.cap.audio.AUDIO
+            override fun open(spec: RunSpec) = com.wangzan101.mika.core.cap.audio.AudioCapability(port, audioSaveEnabled, audioAskBeforeSave, audioSpeakTool)
+        }
+    }) + listOfNotNull(root?.let { port ->
         object : CapabilityProvider {
             override val id = RootCapability.KEY.name
             override fun open(spec: RunSpec) = RootCapability(port)
@@ -227,7 +247,7 @@ fun recordedTools(): ToolIndex = legacyNames().let { legacy -> ToolIndex(allTool
 
 /** Mika 所有可能提供的工具,按发给模型的顺序。 */
 internal fun allTools(): List<AgentTool> =
-    GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools + com.wangzan101.mika.core.cap.devicefiles.DeviceFilesGroup.tools
+    GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + com.wangzan101.mika.core.cap.audio.AudioGroup.tools + com.wangzan101.mika.core.cap.transcribe.TranscribeGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools + com.wangzan101.mika.core.cap.devicefiles.DeviceFilesGroup.tools
 
 /** Mika 所有可能提供的工具的声明。 */
 fun knownTools(): ToolIndex = ToolIndex(allTools())

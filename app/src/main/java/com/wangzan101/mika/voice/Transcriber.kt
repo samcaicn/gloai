@@ -33,23 +33,28 @@ class Transcriber(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    /** 转一段 WAV;失败抛 [ModelError](和对话模型同一套)。返回的文字可能是空串(没听到话)。 */
+    /**
+     * 转一段音频;失败抛 [ModelError](和对话模型同一套)。返回的文字可能是空串(没听到话)。
+     * [mime]/[filename] 给服务商看文件类型;默认按录音的 WAV,文件转写传原文件的类型。
+     */
     suspend fun transcribe(
         p: Provider, key: String?, model: String, method: TranscribeMethod, wav: ByteArray, language: String?,
+        mime: String = "audio/wav", filename: String = "audio.wav",
     ): String {
         val base = p.baseUrl.trim().trimEnd('/')
         val gemini = p.kind == ProviderConfig.Kind.Gemini
+        val format = formatOf(mime)
         val request = when (method) {
             TranscribeMethod.AudioTranscriptions -> {
                 val body = MultipartBody.Builder().setType(MultipartBody.FORM)
-                    .addFormDataPart("file", "audio.wav", wav.toRequestBody("audio/wav".toMediaType()))
+                    .addFormDataPart("file", filename, wav.toRequestBody(mime.toMediaType()))
                     .addFormDataPart("model", model)
                     .apply { if (!language.isNullOrBlank()) addFormDataPart("language", language) }
                     .build()
                 builder("$base/audio/transcriptions", key, gemini).post(body).build()
             }
             TranscribeMethod.ChatInputAudio, TranscribeMethod.ChatInputAudioUri, TranscribeMethod.ChatInputAudioOnly -> {
-                val data = if (method == TranscribeMethod.ChatInputAudio) base64(wav) else "data:audio/wav;base64,${base64(wav)}"
+                val data = if (method == TranscribeMethod.ChatInputAudio) base64(wav) else "data:$mime;base64,${base64(wav)}"
                 val payload = buildJsonObject {
                     put("model", model)
                     put("stream", false)
@@ -59,7 +64,7 @@ class Transcriber(
                             put("content", buildJsonArray {
                                 add(buildJsonObject {
                                     put("type", "input_audio")
-                                    putJsonObject("input_audio") { put("data", data); put("format", "wav") }
+                                    putJsonObject("input_audio") { put("data", data); put("format", format) }
                                 })
                                 // 专做转写的模型不收文字块;通用模型没有这句指令会当成聊天回话
                                 if (method != TranscribeMethod.ChatInputAudioOnly) {
@@ -77,7 +82,7 @@ class Transcriber(
                         add(buildJsonObject {
                             put("parts", buildJsonArray {
                                 add(buildJsonObject {
-                                    putJsonObject("inline_data") { put("mime_type", "audio/wav"); put("data", base64(wav)) }
+                                    putJsonObject("inline_data") { put("mime_type", mime); put("data", base64(wav)) }
                                 })
                                 add(buildJsonObject { put("text", INSTRUCTION) })
                             })
@@ -160,6 +165,15 @@ class Transcriber(
     private fun JsonObject.str(k: String): String? = (this[k] as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
 
     private fun base64(b: ByteArray): String = Base64.getEncoder().encodeToString(b)
+
+    /** OpenAI 的 input_audio 只认几种格式名;认不出按 wav。 */
+    private fun formatOf(mime: String): String = when (mime.substringAfter('/', "").substringBefore(';').lowercase()) {
+        "mpeg", "mp3" -> "mp3"
+        "mp4", "m4a", "x-m4a" -> "m4a"
+        "webm" -> "webm"
+        "ogg", "opus" -> "ogg"
+        else -> "wav"
+    }
 
     companion object {
         private val JSON = "application/json".toMediaType()

@@ -92,6 +92,9 @@ class TaskCenterState {
     val _runId = MutableStateFlow<String?>(null)
     val _sharedFiles = MutableStateFlow<List<SharedFile>>(emptyList())
     val sharedFiles: StateFlow<List<SharedFile>> = _sharedFiles.asStateFlow()
+    /** 显示中的任务到此刻生成的音频;结束时随这一轮存进对话。 */
+    val _audios = MutableStateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>>(emptyList())
+    val audios: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>> = _audios.asStateFlow()
     val _endedRunId = MutableStateFlow<String?>(null)
     val endedRunId: StateFlow<String?> = _endedRunId.asStateFlow()
     val _endedRunIds = MutableStateFlow<Map<String, String?>>(emptyMap())

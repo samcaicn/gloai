@@ -3,6 +3,7 @@ package com.wangzan101.mika.chat
 import android.content.Context
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.settings.PersonaStore
+import com.wangzan101.mika.core.chat.GeneratedAudio
 import com.wangzan101.mika.core.memory.MemoryNote
 import com.wangzan101.mika.core.memory.NoteKind
 import com.wangzan101.mika.core.skills.SkillNote
@@ -530,6 +531,7 @@ class ConversationStore(
                 keptPage = field("keptPage"),
                 keptPageClosed = field("keptPageClosed"),
                 atMs = field("atMs")?.toLongOrNull(),
+                audios = objects(o, "audios").mapNotNull(::audioOf),
                 verified = field("verified")?.toBooleanStrictOrNull(),
                 remoteTaskId = field("remoteTaskId"),
                 outcomeSystemType = field("outcomeSystemType"),
@@ -550,6 +552,11 @@ class ConversationStore(
      * 往对话里存进一轮。有新的一轮就是又有动静了,归档的对话自动取消归档(和主流聊天软件一致);
      * 只改已有那一轮的 [updateTurn] 不算。
      */
+    private fun audioOf(o: JsonObject): GeneratedAudio? {
+        val path = str(o, "path") ?: return null
+        return GeneratedAudio(path, str(o, "durationMs")?.toLongOrNull(), str(o, "text"), str(o, "atMs")?.toLongOrNull())
+    }
+
     @Synchronized
     fun append(conversationId: String, turn: Turn, files: List<SharedFile> = emptyList()) {
         bumpArchiveVersion(conversationId)
@@ -614,6 +621,12 @@ class ConversationStore(
                 if (it.groups.isNotEmpty()) put("groups", JsonArray(it.groups.map(::JsonPrimitive)))
                 it.keptPage?.let { h -> put("keptPage", h) }; it.keptPageClosed?.let { r -> put("keptPageClosed", r) }
                 it.atMs?.let { t -> put("atMs", t) }
+                if (it.audios.isNotEmpty()) put("audios", JsonArray(it.audios.map { a ->
+                    buildJsonObject {
+                        put("path", a.path); a.durationMs?.let { d -> put("durationMs", d) }
+                        a.text?.let { t -> put("text", t) }; a.atMs?.let { t -> put("atMs", t) }
+                    }
+                }))
                 if (it.skillNotes.isNotEmpty()) put("skillNotes", JsonArray(it.skillNotes.map { n ->
                     buildJsonObject { put("text", n.text); n.draftId?.let { d -> put("draftId", d) }; n.suspended?.let { x -> put("suspended", x) } }
                 }))

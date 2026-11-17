@@ -268,6 +268,15 @@ interface ScreenPort {
      */
     suspend fun shareText(packageName: String, text: String): ActionResult = ActionResult.Failed("unsupported")
 
+    /** 这个端口能不能分享音频;不能时手机工具不提供 phone_share_audio。 */
+    val canShareAudio: Boolean get() = false
+
+    /**
+     * 把工作区里的一段音频分享给 [packageName](ACTION_SEND + EXTRA_STREAM,content URI 允许对方读取),在 Agent 的屏上打开它的分享页;
+     * 只打开,不发出。这个 App 没有收音频分享的页面时失败 cannot_share;不支持的端口返回 unsupported。
+     */
+    suspend fun shareAudio(packageName: String, path: String, text: String?): ActionResult = ActionResult.Failed("unsupported")
+
     /**
      * 经安卓标准接口做一个系统动作(见 [SystemAction]):先查有没有 App 接,没有报 not_supported;有就在 Agent 的屏上交给它
      * (第一次用时建屏,用户正在主屏用那个 App 时不打开)。不支持的端口返回 unsupported。

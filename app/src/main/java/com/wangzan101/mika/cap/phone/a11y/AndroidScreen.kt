@@ -23,6 +23,7 @@ import android.view.accessibility.AccessibilityWindowInfo
 import com.wangzan101.mika.core.cap.phone.GesturePacing
 import com.wangzan101.mika.core.cap.phone.TypingPacing
 import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.media.ShareableFile
 import com.wangzan101.mika.core.uistate.APP_IN_USE_BY_OTHER_TASK
 import com.wangzan101.mika.core.uistate.AppWait
 import com.wangzan101.mika.core.uistate.AppCopy
@@ -122,6 +123,8 @@ class AndroidScreen(
     /** 启动被拒、没开出来:撤回 [beforeOpen] 提前做的。 */
     private val notOpened: (packageName: String, user: Int?) -> Unit = { _, _ -> },
     override val appAccess: com.wangzan101.mika.core.access.AppAccessPolicy = com.wangzan101.mika.core.access.AppAccessPolicy.ALLOW,
+    /** 把工作区里的音频变成可分享的 content URI;为空时这个屏不支持音频分享。 */
+    private val shareAudioFile: (suspend (path: String) -> ShareableFile?)? = null,
     /** 并行任务时:按占用登记,本任务此刻能不能占这个包([user] 那份;null 为本来那份)。只查不占。 */
     private val appFree: (packageName: String, user: Int?) -> Boolean = { _, _ -> true },
     /**
@@ -1225,6 +1228,33 @@ class AndroidScreen(
         val startedAt = System.nanoTime()
         beforeOpen(packageName, null)
         val code = runCatching { shell.startShare(id, packageName, text) }.getOrDefault(ShellService.START_ERROR)
+        if (code != ShellService.START_OK) notOpened(packageName, null)
+        when (code) {
+            ShellService.START_OK -> Unit
+            ShellService.START_IN_USE_ON_MAIN -> return@withContext ActionResult.Failed("app_in_use_by_user")
+            ShellService.START_IN_USE_BY_OTHER -> return@withContext IN_USE_BY_OTHER
+            ShellService.START_UNRESOLVED -> return@withContext ActionResult.Failed("cannot_share")
+            else -> return@withContext ActionResult.Failed("launch_failed")
+        }
+        awaitOpened(packageName, before, hint = null, sharing = true, launchedAt = startedAt)
+    }
+
+    override val canShareAudio: Boolean get() = shareAudioFile != null
+
+    /** 和 [shareText] 相同的打开/占用/等待流程;音频先由 [shareAudioFile] 变成 content URI。只打开分享页,不发出。 */
+    override suspend fun shareAudio(packageName: String, path: String, text: String?): ActionResult = withContext(Dispatchers.IO) {
+        val share = shareAudioFile?.invoke(path) ?: return@withContext ActionResult.Failed("unsupported")
+        if (checkOtherTasks) {
+            val other = runCatching { shell.displayOfPackage(packageName) }.getOrDefault(-1)
+            if (other >= 0 && other != display.current?.displayId) return@withContext IN_USE_BY_OTHER
+            if (!reserve(packageName)) return@withContext IN_USE_BY_OTHER
+        }
+        val before = if (hasDisplay) topWindowPackage().takeIf { it != chooserPackage } else null
+        val id = display.get().displayId
+        val startedAt = System.nanoTime()
+        beforeOpen(packageName, null)
+        val code = runCatching { shell.startShareFile(id, packageName, share.uri.toString(), share.mime, text.orEmpty()) }
+            .getOrDefault(ShellService.START_ERROR)
         if (code != ShellService.START_OK) notOpened(packageName, null)
         when (code) {
             ShellService.START_OK -> Unit

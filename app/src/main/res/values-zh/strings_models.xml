@@ -225,4 +225,11 @@
     <string name="voice_playing">正在说话…</string>
     <string name="voice_loading">正在准备声音…</string>
     <string name="voice_play_failed">播放失败：%1$s</string>
+    <string name="voice_save_enabled">允许把音频存进音乐库</string>
+    <string name="voice_save_note">默认关闭。保存写入 Music/Mika</string>
+    <string name="voice_ask_before_save">每次保存音频前先问我</string>
+    <string name="tool_audio_generate">生成语音</string>
+    <string name="tool_audio_save">保存音频</string>
+    <string name="tool_share_audio">分享音频到 App</string>
+    <string name="tool_audio_transcribe">转写音频</string>
 </resources>

@@ -122,10 +122,26 @@ fun VoiceModelScreen(store: ProviderStore, onBack: () -> Unit) {
         }
 
         GroupCard {
+            ListRow(
+                null, tr(R.string.voice_auto_read), first = true,
+                trailing = { MikaSwitch(state.autoRead, settings::setAutoRead) },
+            )
+            ListRow(
+                null, tr(R.string.voice_speak_tool),
+                trailing = { MikaSwitch(state.speakTool, settings::setSpeakTool) },
+            )
+            ListRow(
+                null, tr(R.string.voice_save_enabled), tr(R.string.voice_save_note),
+                trailing = { MikaSwitch(state.saveEnabled, settings::setSaveEnabled) },
+            )
+            ListRow(
+                null, tr(R.string.voice_ask_before_save),
+                trailing = { MikaSwitch(state.askBeforeSave, settings::setAskBeforeSave, enabled = state.saveEnabled) },
+            )
             InputRow(
                 tr(R.string.voice_max_chars), state.maxCharsPerSpeak.toString(),
                 onChange = { it.toIntOrNull()?.let(settings::setMaxChars) }, placeholder = "2000",
-                keyboard = KeyboardType.Number, first = true,
+                keyboard = KeyboardType.Number,
             )
         }
 

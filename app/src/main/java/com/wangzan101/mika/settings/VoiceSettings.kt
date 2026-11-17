@@ -49,6 +49,10 @@ data class VoiceSettingsState(
     val choice: VoiceChoice? = null,
     val autoRead: Boolean = false,
     val speakTool: Boolean = false,
+    /** 允许把生成的音频存进手机音乐库;默认关。 */
+    val saveEnabled: Boolean = false,
+    /** 每次保存前是否问用户;默认问。 */
+    val askBeforeSave: Boolean = true,
     val maxCharsPerSpeak: Int = DEFAULT_MAX_CHARS,
 ) {
     companion object {
@@ -70,6 +74,10 @@ class VoiceSettings(private val prefs: SharedPreferences) {
     fun setAutoRead(on: Boolean) = update { copy(autoRead = on) }
 
     fun setSpeakTool(on: Boolean) = update { copy(speakTool = on) }
+
+    fun setSaveEnabled(on: Boolean) = update { copy(saveEnabled = on) }
+
+    fun setAskBeforeSave(on: Boolean) = update { copy(askBeforeSave = on) }
 
     fun setMaxChars(n: Int) = update { copy(maxCharsPerSpeak = n.coerceIn(1, VoiceSettingsState.MAX_CHARS_LIMIT)) }
 
@@ -105,6 +113,8 @@ class VoiceSettings(private val prefs: SharedPreferences) {
         put("enabled", state.enabled)
         put("autoRead", state.autoRead)
         put("speakTool", state.speakTool)
+        put("saveEnabled", state.saveEnabled)
+        put("askBeforeSave", state.askBeforeSave)
         put("maxCharsPerSpeak", state.maxCharsPerSpeak)
         state.choice?.let { c ->
             put("providerId", c.providerId)
@@ -133,6 +143,8 @@ class VoiceSettings(private val prefs: SharedPreferences) {
             choice = choice,
             autoRead = bool("autoRead", false),
             speakTool = bool("speakTool", false),
+            saveEnabled = bool("saveEnabled", false),
+            askBeforeSave = bool("askBeforeSave", true),
             maxCharsPerSpeak = ((obj["maxCharsPerSpeak"] as? JsonPrimitive)?.intOrNull ?: VoiceSettingsState.DEFAULT_MAX_CHARS)
                 .coerceIn(1, VoiceSettingsState.MAX_CHARS_LIMIT),
         )

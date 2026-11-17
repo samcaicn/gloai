@@ -1,6 +1,7 @@
 package com.wangzan101.mika.chat
 
 import com.wangzan101.mika.core.agent.Turn
+import com.wangzan101.mika.core.chat.GeneratedAudio
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -701,5 +702,16 @@ class ConversationStoreTest {
 
         assertNull(store.archivedAt("a"))
         assertTrue(store.list().any { it.id == "a" })
+    }
+
+    @Test fun generatedAudiosSurviveReopen() {
+        val dir = tmp.newFolder("audio")
+        val store = ConversationStore(dir)
+        val audios = listOf(
+            GeneratedAudio("/workspace/out/audio/line.wav", 1_200L, "你好", 42L),
+            GeneratedAudio("/workspace/out/audio/two.mp3", null, null, null),
+        )
+        store.append("a", Turn("说一段", "好", "succeeded", audios = audios))
+        assertEquals(audios, ConversationStore(dir).turns("a").single().audios)
     }
 }

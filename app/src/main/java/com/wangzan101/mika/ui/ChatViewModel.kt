@@ -190,6 +190,8 @@ data class Exchange(
     val skillNotes: List<SkillNote> = emptyList(),
     /** 这一轮导出到「下载/Mika」的文件,显示成文件卡片。 */
     val files: List<SharedFile> = emptyList(),
+    /** 这一轮 Mika 生成并留在工作区里的音频,显示成音频卡片。 */
+    val audios: List<com.wangzan101.mika.core.chat.GeneratedAudio> = emptyList(),
     /** 这次打开 App 后开始跟的时刻(毫秒);不知道时为 0。 */
     val startedAt: Long = 0L,
     /** 结束时算出的用时;没结束或不知道开始时刻时为 null。 */
@@ -440,6 +442,8 @@ class ChatViewModel(
     private val sandboxReady: StateFlow<Boolean> = MutableStateFlow(false),
     /** 当前任务导出的文件;任务开始时由服务清空。 */
     private val sharedFiles: StateFlow<List<SharedFile>> = MutableStateFlow(emptyList()),
+    /** 当前任务生成并留在工作区里的音频;任务开始时由服务清空。 */
+    private val generatedAudios: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>> = MutableStateFlow(emptyList()),
     /** 把选中的文件(内容 URI 字符串)复制进对话工作区的 inbox/。 */
     private val importAttachments: suspend (conversationId: String, uris: List<String>) -> ImportResult = { _, _ -> ImportResult(emptyList(), emptyList()) },
     /** 读出选中文件(内容 URI 字符串)的名字、大小和是不是照片;读盘的活由调用方放到后台线程。 */
@@ -484,6 +488,10 @@ class ChatViewModel(
     private val voiceReady: StateFlow<Boolean> = MutableStateFlow(false),
     /** 人格;为 null 时不提供选择(测试或没有此功能)。 */
     private val personaStore: PersonaStore? = null,
+    /** 每条完成的回答自动朗读;默认关。 */
+    private val autoRead: StateFlow<Boolean> = MutableStateFlow(false),
+    /** 播放工作区里的一段音频(对话编号, 路径);默认不做。 */
+    private val playAudio: suspend (String, String) -> Unit = { _, _ -> },
 ) {
     /** 用户在对话页上关掉留在后台的那一页。 */
     fun closeKeptPage() = closeKept()
@@ -498,6 +506,24 @@ class ChatViewModel(
     }
 
     fun stopSpeaking() = stopVoice()
+
+    /** 播放这一轮生成的一段音频;没有对话编号时不做。 */
+    fun playAudio(path: String) {
+        val id = _ui.value.conversationId ?: return
+        scope.launch { playAudio(id, path) }
+    }
+
+    /** 已经自动朗读过的那条回答;同一条不重复读。 */
+    private var autoReadKey: String? = null
+
+    private fun maybeAutoRead(ex: Exchange) {
+        if (!autoRead.value) return
+        val status = ex.status as? ExchangeStatus.Done ?: return
+        val key = ex.runId ?: "${ex.startedAt}-${status.answer.hashCode()}"
+        if (key == autoReadKey) return
+        autoReadKey = key
+        speak(status.answer)
+    }
 
     private val _ui = MutableStateFlow(ChatUi())
     val ui: StateFlow<ChatUi> = _ui.asStateFlow()
@@ -719,6 +745,8 @@ class ChatViewModel(
         scope.launch { screenOpen.collect { if (it && ownTask()) onScreenOpened() } }
         scope.launch { sandboxReady.collect { r -> _ui.update { it.copy(attachEnabled = r) } } }
         scope.launch { sharedFiles.collect { if (ownTask()) onSharedFiles(it) } }
+        scope.launch { autoRead.collect { if (!it) autoReadKey = null } }
+        scope.launch { generatedAudios.collect { if (ownTask()) onAudios(it) } }
         scope.launch { runNotes.collect { notes -> _ui.update { ui -> ui.copy(exchanges = ui.exchanges.map { withNotes(it, notes) }) } } }
         scope.launch { activities.collect { if (ownTask()) onActivities(it) } }
         scope.launch { steers.collect { if (ownTask()) onSteers(it) } }
@@ -853,6 +881,15 @@ class ChatViewModel(
         val ex = saved ?: return
         val conversation = _ui.value.conversationId ?: return
         learning?.save(RunNotes(conversation, runId, ex.memoryNotes, ex.usedMemory, ex.skillNotes))
+    }
+
+    private fun onAudios(audios: List<com.wangzan101.mika.core.chat.GeneratedAudio>) {
+        if (liveIndex < 0) return
+        _ui.update { ui ->
+            val exchanges = ui.exchanges.toMutableList()
+            if (liveIndex in exchanges.indices) exchanges[liveIndex] = exchanges[liveIndex].copy(audios = audios)
+            ui.copy(exchanges = exchanges)
+        }
     }
 
     private fun onSharedFiles(files: List<SharedFile>) {
@@ -1517,6 +1554,7 @@ class ChatViewModel(
         if (!screenSeen && screenOpen.value) screenSeen = true
         _ui.update { it.copy(takeoverStage = takeoverStage.value) }
         onSharedFiles(sharedFiles.value)
+        onAudios(generatedAudios.value)
         onActivities(activities.value)
         onSteers(steers.value)
         onState(shown.second)
@@ -2125,7 +2163,8 @@ class ChatViewModel(
                 // 原话、文件按对话取:这条状态属于屏上这个对话的任务
                 val goal = it.conversationId?.let(runGoal).orEmpty()
                 val files = if (ownTask()) sharedFiles.value else emptyList()
-                val ex = Exchange(goal, emptyList(), ExchangeStatus.Working, live = true, files = files, startedAt = clock())
+                val audios = if (ownTask()) generatedAudios.value else emptyList()
+                val ex = Exchange(goal, emptyList(), ExchangeStatus.Working, live = true, files = files, audios = audios, startedAt = clock())
                 it.copy(exchanges = it.exchanges + ex,
                     followUpMode = when {
                         it.attachments.isNotEmpty() -> FollowUpMode.Queue
@@ -2158,6 +2197,7 @@ class ChatViewModel(
                 },
             )
         }
+        _ui.value.exchanges.getOrNull(liveIndex)?.let(::maybeAutoRead)
         if (!s.active() && s != TaskState.Idle) {
             liveIndex = -1
             // 这一轮可能已先一步存进对话、补到了屏上:按运行编号并成一条
@@ -2337,6 +2377,7 @@ class ChatViewModel(
             }
             return Exchange(t.userText, emptyList(), status, live = false, runId = t.runId,
                 memoryNotes = t.memoryNotes, usedMemory = t.usedMemory, skillNotes = t.skillNotes,
+                audios = t.audios,
                 keptPage = t.keptPage, keptPageClosed = t.keptPageClosed,
                 steers = t.steers.mapIndexed { i, text ->
                     SteerNote("turn-$i", text, SteerState.Joined, t.interruptedReplies.getOrNull(i)?.takeIf(String::isNotEmpty),
@@ -2429,6 +2470,11 @@ class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames =
             "查看已装的 App" to R.string.tool_list_apps,
             "打开 App" to R.string.tool_open_app,
             "分享文字到 App" to R.string.tool_share_text,
+            "分享音频到 App" to R.string.tool_share_audio,
+            "生成语音" to R.string.tool_audio_generate,
+            "保存音频" to R.string.tool_audio_save,
+            "转写音频" to R.string.tool_audio_transcribe,
+            "说话" to R.string.tool_speak,
             "设闹钟" to R.string.tool_set_alarm,
             "设计时器" to R.string.tool_set_timer,
             "查看闹钟" to R.string.tool_show_alarms,

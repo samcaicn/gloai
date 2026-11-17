@@ -977,6 +977,7 @@ private fun LazyListScope.exchange(
     }
     // 这一轮结束后留在后台运行的那一页:还开着是绿色一行(能关),关了是一句原因
     keptPageRow(index, ex, kept, vm::closeKeptPage)
+    if (ex.audios.isNotEmpty()) item("au$index") { GeneratedAudioCards(ex.audios, vm) }
     if (ex.files.isNotEmpty()) item("f$index") {
         JumpHighlight(highlightKey == "f$index", reduceMotion) { FileCards(ex.files) }
     }
@@ -1455,6 +1456,46 @@ private fun ReadAloudRow(answer: String, vm: ChatViewModel) {
             )
         }
     }
+}
+
+/** 这一轮生成的音频:名字/稿子开头、时长、播放/停止;点整张卡播放,再点停止。 */
+@Composable
+private fun GeneratedAudioCards(audios: List<com.wangzan101.mika.core.chat.GeneratedAudio>, vm: ChatViewModel) {
+    val playback by vm.voice.collectAsState()
+    val playing = playback is VoicePlayback.Playing || playback is VoicePlayback.Loading
+    val c = MikaTheme.colors
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        audios.forEach { a ->
+            Row(
+                Modifier.fillMaxWidth().cardSurface(c, MikaShapes.Card).clip(MikaShapes.Card)
+                    .clickable(role = Role.Button) { if (playing) vm.stopSpeaking() else vm.playAudio(a.path) }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(Modifier.size(36.dp).background(c.neutralSoft, FileTileShape), contentAlignment = Alignment.Center) {
+                    Icon(MikaIcons.Sound, null, Modifier.size(20.dp), tint = c.ink)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        a.text?.lineSequence()?.firstOrNull()?.take(80)?.takeIf { it.isNotBlank() } ?: stringResource(R.string.chat_audio),
+                        style = FileName, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        listOfNotNull(
+                            a.durationMs?.let { secondsLabel(it) },
+                            stringResource(if (playing) R.string.chat_audio_stop else R.string.chat_audio_play),
+                        ).joinToString(" · "),
+                        style = FileMeta, color = if (playing) c.accent else c.ink3, maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun secondsLabel(ms: Long): String {
+    val total = (ms / 1000).coerceAtLeast(0)
+    return "%d:%02d".format(total / 60, total % 60)
 }
 
 /** 终态后旧现场已经释放:两个按钮都开新运行,区别只是是否沿用摘要里的已确认进度。 */

@@ -536,6 +536,40 @@ class ShellService(
     }
 
     /**
+     * 把一个工作区文件分享给 [packageName]:ACTION_SEND + EXTRA_STREAM,content URI 允许对方读,只交给这个包。
+     * 它没有收这类分享的页面返回 [START_UNRESOLVED];用户在主屏用着它时不启动。只打开分享页,发不发由模型在那一页上点。
+     */
+    override fun startShareFile(displayId: Int, packageName: String, uri: String, mime: String, text: String): Int = synchronized(launchLock) {
+        if (!ownDisplay(displayId)) return START_ERROR
+        val target = Uri.parse(uri)
+        val intent = ShareIntent.ofFile(packageName, target, mime, text)
+        val candidates = activitiesFor(intent, mime) ?: return START_ERROR
+        if (candidates.isEmpty()) return START_UNRESOLVED
+        try {
+            if (inUseOnMainScreen(packageName)) return START_IN_USE_ON_MAIN
+            if (onOtherOwnDisplay(listOf(packageName), displayId)) return START_IN_USE_BY_OTHER
+        } catch (t: Throwable) {
+            Log.e(TAG, "cannot inspect main-screen tasks", t)
+            return START_ERROR
+        }
+        candidates.singleOrNull()?.let { (pkg, cls) -> intent.component = ComponentName(pkg, cls) }
+        val options = ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle()
+        val ok = try {
+            val start = taskManager.javaClass.methods.first { it.name == "startActivityAsUser" && it.parameterTypes.size == 12 }
+            val result = start.invoke(
+                taskManager, null, ShellContext.SHELL_PACKAGE, null, intent, mime, null, null,
+                0, 0, null, options, USER_CURRENT,
+            ) as Int
+            if (result < 0) Log.w(TAG, "startActivityAsUser(share file) -> $result")
+            result >= 0
+        } catch (t: Throwable) {
+            Log.w(TAG, "startActivityAsUser unavailable, falling back to am start", t)
+            exec(*ShareIntent.amArgsFile(displayId, packageName, target, mime, text, intent.component?.flattenToShortString()).toTypedArray()) == 0
+        }
+        if (ok) START_OK else START_ERROR
+    }
+
+    /**
      * 系统动作(见 [SystemIntents]):只放行那几种 intent。没有页面接返回 [START_UNRESOLVED];和 [startView] 一样,
      * 接手的 App 在主屏有任务就不启动。先以 shell 身份启动;不成(接手的页面要求 shell 没有的权限,如设闹钟)时发出 Mika 做好的
      * [asMika]:以 Mika 的身份启动(权限按 Mika 查),屏和后台启动按发出的这一方(shell)查,仍落在这块屏上。
