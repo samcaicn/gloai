@@ -143,6 +143,7 @@ class ChildRunsTest {
         val (spec, content) = spawnWith("""{"goal":"查一条"}""")
         assertEquals(15, spec.stepBudget)
         assertTrue(spec.readOnly)
+        assertFalse(spec.parallelChild)
         assertEquals(setOf("web", "sandbox"), spec.capabilities)
         assertEquals(4000, resultLength(content))
         assertEquals("true", content["truncated"].toString())
@@ -170,14 +171,15 @@ class ChildRunsTest {
     }
 
     @Test fun tasksRunSeveralChildrenInParallelAndMerge() = runBlocking {
-        val seen = mutableListOf<String>()
+        val seen = mutableListOf<RunSpec>()
         val host = ChildRunHost { spec, _ ->
-            seen += spec.goal
+            seen += spec
             ChildResult(spec.id, ChildPhase.Completed, "结果-${spec.goal}")
         }
         val tools = toolDispatcher(FakeScreen(), runSpec = RunSpec(RunId("parent"), "goal", "thread"), childHost = host)
         val r = tools.execute(Part.ToolCall("s", "spawn_agent", """{"tasks":["查甲","查乙","查丙"]}"""), ActionPass())
-        assertEquals(setOf("查甲", "查乙", "查丙"), seen.toSet())
+        assertEquals(setOf("查甲", "查乙", "查丙"), seen.map { it.goal }.toSet())
+        assertTrue(seen.all { it.parallelChild })
         assertEquals("3", r.content["ranInParallel"].toString())
         assertEquals("true", r.content["ok"].toString())
         val merged = (r.content["result"] as kotlinx.serialization.json.JsonPrimitive).content

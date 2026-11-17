@@ -959,9 +959,13 @@ class TaskRun(
             // 对话里有通知提醒(第三方文字)时和电脑交来的任务一样:不管「自主模式」开没开,付款照样先问
             val runApproval = approvalControl.start(alwaysAsk = provenance.origin == RunOrigin.Mcp || noticeTainted).also { approval = it }
             val childRunner = if (provenance.origin == RunOrigin.Ui && web != null) ChildAgentRunner(
-                create = { childSpec ->
+                create = { childSpec, childResources ->
+                    val childWeb = if (childSpec.parallelChild) {
+                        WebStack.childPort(service, childSpec.id.value, metrics.widthPixels, metrics.heightPixels,
+                            metrics.densityDpi, childResources)
+                    } else web
                     val childTools = toolDispatcher(privatePhone, model.capabilities.vision,
-                        web = web, webPacing = { PagePacing.human() }, webPlacePace = { PlacePace.of(catalog.sitePace(it)) },
+                        web = childWeb, webPacing = { PagePacing.human() }, webPlacePace = { PlacePace.of(catalog.sitePace(it)) },
                         webIdleScroll = { IdleScroll(Random.Default) },
                         appPacing = { pace.appPacing() }, appPace = { PlacePace.of(catalog.appPace(it)) }, appIdleScroll = { IdleScroll(Random.Default) },
                         sandbox = sandbox, workspace = { conversationId }, runSpec = childSpec,

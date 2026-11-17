@@ -70,7 +70,9 @@ internal object SpawnAgent : AgentTool {
         val results = coroutineScope {
             goals.map { goal ->
                 async {
-                    goal to try { runOne(goal, parent, host, format, steps, limit) }
+                    goal to try {
+                        runOne(goal, parent, host, format, steps, limit, parallelChild = true)
+                    }
                     catch (e: CancellationException) { throw e }
                     catch (e: Exception) { failure("子任务起不来: ${e.message ?: e::class.simpleName}") }
                 }
@@ -80,10 +82,11 @@ internal object SpawnAgent : AgentTool {
     }
 
     private suspend fun runOne(goal: String, parent: RunSpec, host: ChildRunHost,
-                               format: String?, steps: Int, limit: Int): ToolExecution {
+                               format: String?, steps: Int, limit: Int, parallelChild: Boolean = false): ToolExecution {
         val child = RunSpec(RunId(UUID.randomUUID().toString()), goal, parent.threadId,
             provenance = RunProvenance(RunOrigin.Child, Attendance.Unattended),
-            capabilities = setOf("web", "sandbox"), readOnly = true, parent = parent.id, stepBudget = steps)
+            capabilities = setOf("web", "sandbox"), readOnly = true, parent = parent.id, stepBudget = steps,
+            parallelChild = parallelChild)
         val result = host.spawn(child, format)
         val text = result.text.take(limit)
         return ToolExecution(buildJsonObject {

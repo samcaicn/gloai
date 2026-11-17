@@ -2,6 +2,7 @@ package com.wangzan101.mika.core.child
 
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.TaskState
+import com.wangzan101.mika.core.resource.ResourceScope
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunInbox
 import com.wangzan101.mika.core.run.RunSpec
@@ -37,21 +38,37 @@ fun interface ChildRunHost { suspend fun spawn(spec: RunSpec, format: String?): 
 
 /** 子 Run 先保存结论预览再交给父 Run；父 Run 消失时保留 Unknown 记录，不自动重跑。 */
 class ChildAgentRunner(
-    private val create: (RunSpec) -> AgentLoop,
+    private val create: (RunSpec, ResourceScope) -> AgentLoop,
     private val store: ChildRunStore,
     private val ownerAlive: (RunId) -> Boolean = { true },
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ChildRunHost {
+    constructor(
+        create: (RunSpec) -> AgentLoop,
+        store: ChildRunStore,
+        ownerAlive: (RunId) -> Boolean = { true },
+        clock: () -> Long = System::currentTimeMillis,
+    ) : this({ spec, _ -> create(spec) }, store, ownerAlive, clock)
+
     private val active = HashMap<RunId, MutableSet<AgentLoop>>()
 
     override suspend fun spawn(spec: RunSpec, format: String?): ChildResult {
+        val resources = ResourceScope()
+        try {
+            return runChild(spec, format, resources)
+        } finally {
+            resources.close()
+        }
+    }
+
+    private suspend fun runChild(spec: RunSpec, format: String?, resources: ResourceScope): ChildResult {
         require(spec.parent != null && spec.provenance.origin == com.wangzan101.mika.core.run.RunOrigin.Child)
         val parent = spec.parent
-        val agent = create(spec)
+        val agent = create(spec, resources)
         val goal = spec.goal.take(200)
         synchronized(active) { active.getOrPut(parent) { mutableSetOf() } += agent }
-        store.save(ChildRecord(spec.id.value, parent.value, ChildPhase.Running, atMs = clock(), goal = goal))
         try {
+            store.save(ChildRecord(spec.id.value, parent.value, ChildPhase.Running, atMs = clock(), goal = goal))
             val end = agent.run(spec, RunInbox())
             val raw = when (end) {
                 is TaskState.Succeeded -> end.answer

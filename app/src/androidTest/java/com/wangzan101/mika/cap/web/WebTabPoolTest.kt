@@ -8,6 +8,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.webkit.WebViewAssetLoader
 import com.wangzan101.mika.cap.phone.a11y.DeviceSupport
+import com.wangzan101.mika.core.cap.web.PageRead
+import com.wangzan101.mika.core.resource.ResourceScope
 import com.wangzan101.mika.core.uistate.ActionResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -99,6 +101,35 @@ class WebTabPoolTest {
         val forbidden = s.navigate("https://appassets.androidplatform.net/status/403", newTab = false)
         assertEquals(403, forbidden.httpStatus)
         assertFalse(forbidden.newTab)
+    }
+
+    @Test
+    fun parallelChildrenKeepTheirCurrentPagesAfterAnotherChildNavigates() = runBlocking<Unit> {
+        val parent = screen("parent")
+        val firstResources = ResourceScope()
+        val secondResources = ResourceScope()
+        val loader = WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(instr.context)).build()
+        val density = ctx.resources.displayMetrics.densityDpi
+        val first = WebStack.childPort(ctx, "child-a", host.width, host.height, density, firstResources, listOf(loader))
+        val second = WebStack.childPort(ctx, "child-b", host.width, host.height, density, secondResources, listOf(loader))
+        val currentPage = PageRead(maxChars = 2_000, offset = 0, lazy = false)
+        try {
+            assertTrue(parent.navigate(fixture("host.html"), newTab = false).loaded)
+            assertTrue(first.navigate(fixture("digest.html"), newTab = false).loaded)
+            assertTrue(second.navigate(fixture("elements.html"), newTab = false).loaded)
+
+            assertEquals(fixture("digest.html"), first.read(currentPage).url)
+            assertEquals(fixture("elements.html"), second.read(currentPage).url)
+            assertEquals(fixture("host.html"), parent.read(currentPage).url)
+
+            firstResources.close()
+            assertTrue(first.tabs().isEmpty())
+            assertEquals(fixture("elements.html"), second.read(currentPage).url)
+        } finally {
+            secondResources.close()
+            firstResources.close()
+        }
     }
 
     @Test
