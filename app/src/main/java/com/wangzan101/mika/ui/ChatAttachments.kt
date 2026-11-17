@@ -228,7 +228,7 @@ internal fun AttachPanel(
             Tile(MikaIcons.PhotoCamera, AttachCopy.CAMERA, onCamera)
             Tile(MikaIcons.Photo, AttachCopy.ALBUM, onAlbum)
             Tile(MikaIcons.Paperclip, AttachCopy.FILES, onFiles)
-            if (onDeviceFiles != null) Tile(MikaIcons.Paperclip, stringResource(R.string.device_browser_title), onDeviceFiles)
+            if (onDeviceFiles != null) Tile(MikaIcons.Folder, stringResource(R.string.device_browser_title), onDeviceFiles)
         }
         if (access == PhotoAccess.None) {
             Column(

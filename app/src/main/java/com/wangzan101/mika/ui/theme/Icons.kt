@@ -70,6 +70,11 @@ object MikaIcons {
     val Doc = stroke(
         "doc", "M14 3 H7 a2 2 0 0 0 -2 2 v14 a2 2 0 0 0 2 2 h10 a2 2 0 0 0 2 -2 V8 z", "M14 3 v5 h5 M9 13 h6 M9 17 h4",
     )
+    /** 文件夹:设备目录。 */
+    val Folder = stroke(
+        "folder",
+        "M3.5 6.5 a2 2 0 0 1 2 -2 h4 l2 2.5 h7 a2 2 0 0 1 2 2 v8.5 a2 2 0 0 1 -2 2 h-13 a2 2 0 0 1 -2 -2 z",
+    )
     /** 柱状图:Token 用量。 */
     val Chart = stroke("chart", "M4 20 h16", "M7 16 v-4 M12 16 V6 M17 16 v-7")
     val Clock = stroke("clock", "M3 12 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0", "M12 7 v5 l3 2")

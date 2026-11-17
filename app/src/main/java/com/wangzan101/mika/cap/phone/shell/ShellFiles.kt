@@ -95,6 +95,9 @@ internal object ShellFiles {
             (after >= 0 && before >= 0 && after > before)) return result("invalid")
         val start = android.os.SystemClock.elapsedRealtime()
         val matches = ArrayList<String>()
+        val types = ArrayList<Int>()
+        val sizes = ArrayList<Long>()
+        val modified = ArrayList<Long>()
         var visited = 0
         var reason: String? = null
         return try {
@@ -106,42 +109,95 @@ internal object ShellFiles {
                 val boundary = actualFd(base, root)
                 if (!policy.allowsDirectory(boundary)) return result("denied")
                 val effectiveDepth = if (policy.allowsDescendants(boundary)) depth else 0
-                fun walk(fd: java.io.FileDescriptor, level: Int) {
-                    ParcelFileDescriptor.dup(fd).use { dir ->
-                        val prefix = "/proc/self/fd/${dir.fd}"
-                        Files.newDirectoryStream(Paths.get(prefix)).use { stream ->
-                            for (entry in stream) {
-                                if (android.os.SystemClock.elapsedRealtime() - start >= timeout) { reason = "timeout"; return }
-                                if (visited >= budget) { reason = "max_entries"; return }
-                                visited++
-                                val child = entry.toString()
-                                val stat = Os.lstat(child)
-                                val filename = entry.fileName.toString()
-                                if (OsConstants.S_ISREG(stat.st_mode) &&
-                                    (name.isNullOrEmpty() || filename.contains(name, ignoreCase = true)) &&
-                                    (extension.isNullOrEmpty() || filename.endsWith("." + extension.trimStart('.'), ignoreCase = true)) &&
-                                    (after < 0 || stat.st_mtime * 1000 >= after) && (before < 0 || stat.st_mtime * 1000 <= before)) {
-                                    val resolved = java.io.File(child).canonicalPath
-                                    if (!inside(resolved, boundary) || !policy.allowsFile(resolved)) throw SecurityException("outside authorized search directory")
-                                    matches.add(resolved)
-                                    if (matches.size >= 100) { reason = "max_results"; return }
+                val queue = ArrayDeque<Pair<ParcelFileDescriptor, Int>>()
+                queue.addLast(ParcelFileDescriptor.dup(base) to 0)
+                try {
+                    while (queue.isNotEmpty() && (reason == null || reason == "max_depth")) {
+                        val (dir, level) = queue.removeFirst()
+                        val deferredDirs = ArrayList<Pair<ParcelFileDescriptor, Int>>()
+                        try {
+                            dir.use { openDir ->
+                                val prefix = "/proc/self/fd/${openDir.fd}"
+                                val stream = try {
+                                    Files.newDirectoryStream(Paths.get(prefix))
+                                } catch (_: IOException) {
+                                    return@use
+                                } catch (_: SecurityException) {
+                                    return@use
                                 }
-                                if (OsConstants.S_ISDIR(stat.st_mode)) {
-                                    if (level >= effectiveDepth) { reason = reason ?: "max_depth"; continue }
-                                    val next = Os.open(child, OsConstants.O_RDONLY or OsConstants.O_NONBLOCK or OsConstants.O_CLOEXEC or OsConstants.O_NOFOLLOW, 0)
-                                    try {
-                                        checkFd(next, boundary)
-                                        if (!OsConstants.S_ISDIR(Os.fstat(next).st_mode)) throw SecurityException("directory changed")
-                                        walk(next, level + 1)
-                                    } finally { Os.close(next) }
-                                    if (reason != null && reason != "max_depth") return
+                                stream.use { entries ->
+                                    for (entry in entries) {
+                                        if (android.os.SystemClock.elapsedRealtime() - start >= timeout) { reason = "timeout"; break }
+                                        if (visited >= budget) { reason = "max_entries"; break }
+                                        visited++
+                                        val child = entry.toString()
+                                        val stat = try { Os.lstat(child) } catch (_: ErrnoException) { continue }
+                                        val filename = entry.fileName.toString()
+                                        val isReg = OsConstants.S_ISREG(stat.st_mode)
+                                        val isDir = OsConstants.S_ISDIR(stat.st_mode)
+                                        val nameMatches = name.isNullOrEmpty() || filename.contains(name, ignoreCase = true)
+                                        val extMatches = extension.isNullOrEmpty() || filename.endsWith("." + extension.trimStart('.'), ignoreCase = true)
+                                        val timeMatches = (after < 0 || stat.st_mtime * 1000 >= after) && (before < 0 || stat.st_mtime * 1000 <= before)
+                                        val dirMatches = isDir && !name.isNullOrEmpty() && extension.isNullOrEmpty() && after < 0 && before < 0 && nameMatches
+                                        if ((isReg && nameMatches && extMatches && timeMatches) || dirMatches) {
+                                            val resolved = try { java.io.File(child).canonicalPath } catch (_: IOException) { continue }
+                                            val allowed = if (isDir) {
+                                                inside(resolved, boundary) && policy.allowsDirectory(resolved)
+                                            } else {
+                                                inside(resolved, boundary) && policy.allowsFile(resolved)
+                                            }
+                                            if (!allowed) {
+                                                if (isDir) continue
+                                                throw SecurityException("outside authorized search directory")
+                                            }
+                                            matches.add(resolved)
+                                            types.add(if (isDir) 2 else 1)
+                                            sizes.add(if (isReg && stat.st_size >= 0) stat.st_size else -1L)
+                                            modified.add(stat.st_mtime.takeIf { it in 0..Long.MAX_VALUE / 1000 }?.times(1000) ?: -1L)
+                                            if (matches.size >= 100) { reason = "max_results"; break }
+                                        }
+                                        if (isDir) {
+                                            if (level >= effectiveDepth) { reason = reason ?: "max_depth"; continue }
+                                            val next = try {
+                                                Os.open(child, OsConstants.O_RDONLY or OsConstants.O_NONBLOCK or OsConstants.O_CLOEXEC or OsConstants.O_NOFOLLOW, 0)
+                                            } catch (_: ErrnoException) {
+                                                continue
+                                            } catch (_: SecurityException) {
+                                                continue
+                                            }
+                                            val nextPfd = try {
+                                                checkFd(next, boundary)
+                                                if (!OsConstants.S_ISDIR(Os.fstat(next).st_mode)) throw SecurityException("directory changed")
+                                                ParcelFileDescriptor.dup(next)
+                                            } finally {
+                                                Os.close(next)
+                                            }
+                                            if (filename.startsWith('.')) deferredDirs.add(nextPfd to (level + 1))
+                                            else queue.addLast(nextPfd to (level + 1))
+                                        }
+                                    }
                                 }
                             }
+                            if (reason == null || reason == "max_depth") {
+                                queue.addAll(deferredDirs)
+                                deferredDirs.clear()
+                            }
+                        } finally {
+                            deferredDirs.forEach { runCatching { it.first.close() } }
                         }
                     }
+                } finally {
+                    while (queue.isNotEmpty()) runCatching { queue.removeFirst().first.close() }
                 }
-                walk(base, 0)
-                result("ok").apply { putStringArrayList("paths", matches); putInt("visited", visited); putBoolean("truncated", reason != null); putString("reason", reason) }
+                result("ok").apply {
+                    putStringArrayList("paths", matches)
+                    putIntArray("types", types.toIntArray())
+                    putLongArray("sizes", sizes.toLongArray())
+                    putLongArray("modified", modified.toLongArray())
+                    putInt("visited", visited)
+                    putBoolean("truncated", reason != null)
+                    putString("reason", reason)
+                }
             } finally { Os.close(base) }
         } catch (e: Exception) { result(error(e)) }
     }
