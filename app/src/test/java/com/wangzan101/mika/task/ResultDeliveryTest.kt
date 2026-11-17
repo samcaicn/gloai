@@ -1,6 +1,8 @@
 package com.wangzan101.mika.task
 
 import com.wangzan101.mika.chat.SharedFile
+import com.wangzan101.mika.core.agent.FailKind
+import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.run.Channel
 import com.wangzan101.mika.core.run.ChannelInputSink
 import com.wangzan101.mika.core.run.ChannelPeer
@@ -39,6 +41,20 @@ class ResultDeliveryTest {
         assertEquals(listOf("result:run", "result:run:image:0", "result:run:image:1"), channel.sent.map { it.id })
         assertEquals(image.uri, (channel.sent[1] as Delivery.Image).uri)
         assertEquals(image.sha256, (channel.sent[1] as Delivery.Image).sha256)
+    }
+
+    @Test fun scheduledFailureStreakIsSavedBeforeSending() = runTest {
+        val outbox = Outbox()
+        val channel = RecordingChannel()
+        val failure = TaskState.Failed("没有打开网页", FailKind.Environment)
+        val result = TaskService.resultDelivery("result:plan", peer.threadId, failure, failureStreak = 3)
+
+        ResultDelivery.prepare(outbox, channel, peer, result, emptyList())
+        val saved = outbox.pendingRecovery().single().delivery as Delivery.Result
+        assertEquals("定时任务已连续失败 3 次", saved.title)
+        assertEquals("没有打开网页\n可以在定时任务页暂停或修改这个计划。", saved.text)
+        assertEquals(DeliveryState.Delivered, ResultDelivery.send(outbox, channel, peer, result))
+        assertEquals(listOf(saved), channel.sent)
     }
 
     @Test fun uncertainImageDoesNotResendSuccessfulTextOrImages() = runTest {

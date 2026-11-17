@@ -509,7 +509,7 @@ class TaskService : Service() {
                 if (outcome is ConditionOutcome.Error) {
                     val failure = TaskState.Failed(tr(R.string.task_check_unfinished, outcome.reason), FailKind.Environment)
                     recordTurn(store, run, failure, run.runId.value)
-                    runCatching { notifyResult(run, failure, "condition:${run.key}") }
+                    runCatching { notifyResult(run, prepareResult(run, failure, "condition:${run.key}")) }
                         .onFailure { Log.w(TAG, "condition failure notification failed", it) }
                 }
                 center.markDelivered(run)
@@ -525,10 +525,10 @@ class TaskService : Service() {
             runCatching {
                 // Persist the whole delivery before marking the result ready; recovery must know about its images too.
                 // A storage failure skips sending but must still release this task's slot below.
-                prepareResult(run, end, deliveryId)
+                val delivery = prepareResult(run, end, deliveryId)
                 center.markResult(run, describe(end).second, deliveryId, successful = end is TaskState.Succeeded)
                 RunLearning.launchAfter(MemoryRuntime.of(this@TaskService).scope, {
-                    delivered = notifyResult(run, end, deliveryId) == DeliveryState.Delivered
+                    delivered = notifyResult(run, delivery) == DeliveryState.Delivered
                     // 定时任务的结果当场按结局记(和以前一样),判下来没办成再改记;不靠服务一直在
                     if (delivered) run.triggerWindowKey?.let { key ->
                         runCatching {
@@ -898,23 +898,17 @@ class TaskService : Service() {
         return Notification.Action.Builder(null, option, pi).build()
     }
 
-    private suspend fun prepareResult(run: TaskRun, end: TaskState, deliveryId: String) {
-        val (title, text) = describe(end)
+    private suspend fun prepareResult(run: TaskRun, end: TaskState, deliveryId: String): Delivery.Result {
+        val result = resultDelivery(deliveryId, run.conversationId, end, failureStreak(run, end))
         val peer = run.channelPeer ?: ChannelPeer(LocalChannel.ID, "phone-owner", run.conversationId)
-        ResultDelivery.prepare(outbox, channelFor(peer, run.triggerWindowKey != null), peer,
-            Delivery.Result(deliveryId, run.conversationId, text, title = title), run.sharedFiles.value)
+        ResultDelivery.prepare(outbox, channelFor(peer, run.triggerWindowKey != null), peer, result, run.sharedFiles.value)
+        return result
     }
 
-    private suspend fun notifyResult(run: TaskRun, end: TaskState, deliveryId: String): DeliveryState {
-        prepareResult(run, end, deliveryId)
-        val (title, text) = describe(end).let { plain ->
-            val streak = failureStreak(run, end) ?: return@let plain
-            tr(R.string.trigger_failed_streak, streak) to "${plain.second}\n${tr(R.string.trigger_failed_streak_hint)}"
-        }
+    private suspend fun notifyResult(run: TaskRun, result: Delivery.Result): DeliveryState {
         val peer = run.channelPeer ?: ChannelPeer(LocalChannel.ID, "phone-owner", run.conversationId)
         val started = SystemClock.elapsedRealtime()
-        val delivered = ResultDelivery.send(outbox, channelFor(peer, run.triggerWindowKey != null), peer,
-            Delivery.Result(deliveryId, run.conversationId, text, title = title))
+        val delivered = ResultDelivery.send(outbox, channelFor(peer, run.triggerWindowKey != null), peer, result)
         val finished = SystemClock.elapsedRealtime()
         val sinceReady = if (run.resultReadyAtMs > 0) finished - run.resultReadyAtMs else -1
         Log.i(TAG, "result $delivered: delivery ${finished - started} ms, since ready $sinceReady ms")
@@ -1229,6 +1223,13 @@ class TaskService : Service() {
         internal fun TaskState.isActive() = when (this) {
             TaskState.Idle, is TaskState.Succeeded, is TaskState.Failed, TaskState.Cancelled -> false
             else -> true
+        }
+
+        internal fun resultDelivery(deliveryId: String, threadId: String, end: TaskState, failureStreak: Int?): Delivery.Result {
+            val (title, text) = describe(end)
+            return if (failureStreak == null) Delivery.Result(deliveryId, threadId, text, title = title)
+            else Delivery.Result(deliveryId, threadId, "$text\n${tr(R.string.trigger_failed_streak_hint)}",
+                title = tr(R.string.trigger_failed_streak, failureStreak))
         }
 
         /** 通知的标题和正文;[appLabel] 把包名换成 App 名。 */
