@@ -36,4 +36,25 @@ class PluginScriptRunner(
             fun read(f: CompletableFuture<String>): String = runCatching { f.get(2, TimeUnit.SECONDS) }.getOrDefault("")
             ScriptResult(exitCode, read(outF), read(errF), !finished)
         }
+
+    override suspend fun runStdin(script: File, stdin: String, env: Map<String, String>, timeoutMs: Long): ScriptResult =
+        withContext(Dispatchers.IO) {
+            val pb = ProcessBuilder(shell, script.absolutePath)
+            pb.environment().apply {
+                putAll(envProvider())
+                putAll(env)
+            }
+            val process = pb.start()
+            val outF = CompletableFuture.supplyAsync { process.inputStream.readBytes().toString(Charsets.UTF_8) }
+            val errF = CompletableFuture.supplyAsync { process.errorStream.readBytes().toString(Charsets.UTF_8) }
+            CompletableFuture.runAsync { runCatching { process.outputStream.use { it.write(stdin.toByteArray(Charsets.UTF_8)) } } }
+            val finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+            if (!finished) {
+                process.destroyForcibly()
+                process.waitFor(2, TimeUnit.SECONDS)
+            }
+            val exitCode = if (finished) process.exitValue() else -1
+            fun read(f: CompletableFuture<String>): String = runCatching { f.get(2, TimeUnit.SECONDS) }.getOrDefault("")
+            ScriptResult(exitCode, read(outF), read(errF), !finished)
+        }
 }

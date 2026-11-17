@@ -66,6 +66,9 @@ internal class ModelCaller(
     /** 本任务的系统提示词:开工时按发给模型的同一份工具列表拼([SystemPrompt.assemble]),任务内不变。 */
     var systemPrompt: String = ""
 
+    /** 插件提示词钩子:拼好的系统提示词发模型前过它;为 null 时原样发。 */
+    var promptTransform: (suspend (String) -> String)? = null
+
     /** 最近一次调用在成功那次请求之前花掉的时间(失败的请求、退避)。 */
     var lastRetryWaitMs = 0L
         private set
@@ -244,12 +247,15 @@ internal class ModelCaller(
                 if (tools.inlineScreen) tools.setVisibleObservations(visibleReads(sent.messages))
                 // 这一次之前花掉的(失败的请求、退避)都算重试等待
                 lastRetryWaitMs = now() - began
-                suspend fun send(): ModelReply = if (onText == null) using.complete(systemPrompt, sent.messages, specs)
-                    else if (using is StreamingChatModel) using.completeStreaming(systemPrompt, sent.messages, specs, onText)
-                    else using.complete(systemPrompt, sent.messages, specs).also { result ->
+                suspend fun send(): ModelReply {
+                    val prompt = promptTransform?.invoke(systemPrompt) ?: systemPrompt
+                    return if (onText == null) using.complete(prompt, sent.messages, specs)
+                    else if (using is StreamingChatModel) using.completeStreaming(prompt, sent.messages, specs, onText)
+                    else using.complete(prompt, sent.messages, specs).also { result ->
                         result.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }
                             .takeIf(String::isNotEmpty)?.let(onText)
                     }
+                }
                 val reply = if (trace == null) send() else {
                     val change = when {
                         overflowRewrote -> "overflow_compaction folded=" + raw.foldedSteps

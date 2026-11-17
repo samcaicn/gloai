@@ -189,6 +189,8 @@ class AgentLoop(
     private val modelFallbacks: List<ChatModel> = emptyList(),
     private val modelChainProviderIds: List<String?> = emptyList(),
     private val trace: RunTrace? = null,
+    /** 插件提示词钩子:拼好的系统提示词发模型前过它;为 null 时原样发。 */
+    private val promptTransform: (suspend (String) -> String)? = null,
 ) {
     init {
         require(maxSteps > 0) { "maxSteps must be positive" }
@@ -293,6 +295,7 @@ class AgentLoop(
             override fun cancel() = this@AgentLoop.cancel()
         })
         caller.reset(basePrompt)
+        caller.promptTransform = promptTransform
         // 同意只在一次任务内有效
         confirmations?.reset()
         utterances?.clear()

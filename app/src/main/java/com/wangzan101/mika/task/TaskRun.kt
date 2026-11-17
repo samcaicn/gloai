@@ -962,6 +962,13 @@ class TaskRun(
             }
             // 对话里有通知提醒(第三方文字)时和电脑交来的任务一样:不管「自主模式」开没开,付款照样先问
             val runApproval = approvalControl.start(alwaysAsk = provenance.origin == RunOrigin.Mcp || noticeTainted).also { approval = it }
+            // 插件:环境变量、工具规格、提示词钩子共用同一个脚本入口
+            val pluginRunner = com.wangzan101.mika.plugin.PluginScriptRunner(
+                envProvider = { com.wangzan101.mika.settings.EnvVarStore.get(service).all() })
+            val pluginTools = (service.application as MikaApp).plugins.toolSpecs()
+            val promptHook = com.wangzan101.mika.plugin.PluginPromptHook(
+                (service.application as MikaApp).plugins, pluginRunner, { model.name },
+                { com.wangzan101.mika.settings.EnvVarStore.get(service).all() })
             val childRunner = if (provenance.origin == RunOrigin.Ui && web != null) ChildAgentRunner(
                 create = { childSpec, childResources ->
                     val childWeb = if (childSpec.parallelChild) {
@@ -978,6 +985,7 @@ class TaskRun(
                     AgentLoop(model, childTools, SystemPrompt.identity(), maxSteps = childSpec.stepBudget ?: AgentLoop.UNLIMITED_STEPS,
                         // 子任务跟着询问 / 自主;询问时它也过关卡,子任务里花钱的一步一律不做
                         confirmations = runApproval.gate(), approvals = runApproval, autonomous = runApproval.startedAutonomous,
+                        promptTransform = { promptHook.transform(it) },
                         reviewFinalAnswer = false, flags = speed, outwardPacing = OutwardPacing.human())
                 },
                 store = (service.application as MikaApp).childRuns,
@@ -1049,7 +1057,8 @@ class TaskRun(
                     ?.let { r -> RootCommands(RootShell::su, r::commandsAllowed) { a -> if (a == null) r.suGone() else r.commandsDenied(a) } },
                 // 看/操作 Mika 自己;开关关着时只给只读状态
                 self = selfPort,
-                selfOperate = selfPort?.takeIf { FeatureFlags.get(service).selfOperate() })
+                selfOperate = selfPort?.takeIf { FeatureFlags.get(service).selfOperate() },
+                pluginTools = pluginTools, pluginScriptRunner = pluginRunner)
             dispatcher = tools
             // 主动能力从通知里攒下、够格带进任务的那一段:只给用户在手机上发起的任务(不给定时、渠道、电脑交来的,也不给条件检查和子任务);
             // 主动能力没开时不去碰它(连对象都不建)
@@ -1072,6 +1081,7 @@ class TaskRun(
             val agent = AgentLoop(
                 model, tools,
                 SystemPrompt.identity(),
+                promptTransform = { promptHook.transform(it) },
                 // 助手断开、被挪走只在这一步用的是手机时才查
                 gate = { w ->
                     if (phoneScreen.acquired && dispatcher?.surface != WEB) phone?.screen?.let { awaitUserPick(it, taskGate, w) }

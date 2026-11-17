@@ -33,8 +33,12 @@ data class PluginToolSpec(
 )
 
 /** 跑一条插件脚本(在 App 进程内跑 sh)。[env] 是额外要加进进程环境的环境变量。 */
-fun interface ScriptRunner {
+interface ScriptRunner {
     suspend fun run(script: File, argsFile: File, env: Map<String, String>, timeoutMs: Long): ScriptResult
+
+    /** 把 [stdin] 写进脚本的 stdin、读 stdout 当结果(提示词钩子用);默认不支持。 */
+    suspend fun runStdin(script: File, stdin: String, env: Map<String, String>, timeoutMs: Long): ScriptResult =
+        ScriptResult(1, "", "stdin execution not supported", timedOut = false)
 }
 
 /** 脚本跑完的样子:退出码、输出、有没有超时被掐掉。 */
