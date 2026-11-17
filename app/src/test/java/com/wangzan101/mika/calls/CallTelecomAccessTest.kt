@@ -22,6 +22,36 @@ class CallTelecomAccessTest {
         }
     }
 
+    @Test fun successfulCommandWithDefaultReadbackReportsSystemRejection() {
+        val result = CallTelecomCommandOutcome.classify(0, "")
+        val readBack = CallPolicy.previousAppOpMode("No operations.\nDefault mode: default")
+        assertEquals("已尝试授权，但系统读回的通话管理权限仍为 default，无法启用电话伴侣",
+            result.verificationFailure(readBack, false))
+    }
+
+    @Test fun failedReadbackIsNotReportedAsPermissionDenied() {
+        assertEquals("授权命令已执行，但无法读回通话管理权限状态，请重试",
+            CallTelecomCommandOutcome.OK.verificationFailure(null, false))
+    }
+
+    @Test fun allowedAppOpStillRequiresTelecomPermission() {
+        assertEquals("通话管理权限已读回 allow，但系统通话服务仍未授权，无法启用电话伴侣",
+            CallTelecomCommandOutcome.OK.verificationFailure("allow", false))
+        assertEquals(null, CallTelecomCommandOutcome.OK.verificationFailure("allow", true))
+    }
+
+    @Test fun commandFailuresTakePriorityAndUnknownReadbackNeverLeaks() {
+        for (outcome in listOf(CallTelecomCommandOutcome.FAILED, CallTelecomCommandOutcome.SHELL_APP_OPS_DENIED)) {
+            assertEquals(outcome.appOpsFailureMessage, outcome.verificationFailure("allow", true))
+        }
+        assertEquals("授权命令已执行，但无法读回通话管理权限状态，请重试",
+            CallTelecomCommandOutcome.OK.verificationFailure("private-device-data", false))
+        for (mode in listOf("ignore", "deny", "errored", "foreground")) {
+            assertEquals("已尝试授权，但系统读回的通话管理权限仍为 $mode，无法启用电话伴侣",
+                CallTelecomCommandOutcome.OK.verificationFailure(mode, true))
+        }
+    }
+
     @Test fun unknownFailuresDoNotSuggestShellAppOpsPermissionDenial() {
         listOf(
             "java.lang.SecurityException: uid 2000 does not have android.permission.GRANT_RUNTIME_PERMISSIONS.",

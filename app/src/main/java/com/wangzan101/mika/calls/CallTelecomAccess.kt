@@ -44,9 +44,11 @@ internal class CallTelecomAccess(private val context: Context) {
         if (original != "allow") {
             if (!journal.edit().putString(PREVIOUS_OP, original).commit()) return "无法保存电话权限还原信息"
             val change = command(shell, "cmd appops set --user $user $pkg MANAGE_ONGOING_CALLS allow")
-            if (change != CallTelecomCommandOutcome.OK || readOp(shell) != "allow" || !managePermission()) {
+            val readBack = if (change == CallTelecomCommandOutcome.OK) readOp(shell) else null
+            val failure = change.verificationFailure(readBack, readBack == "allow" && managePermission())
+            if (failure != null) {
                 rollback(shell)
-                return change.appOpsFailureMessage
+                return failure
             }
         } else if (!managePermission()) {
             return "此系统不允许 Mika 管理运营商通话"
@@ -129,6 +131,16 @@ internal enum class CallTelecomCommandOutcome {
             SHELL_APP_OPS_DENIED -> "系统限制 ADB 修改通话管理权限（缺少 MANAGE_APP_OPS_MODES），无法启用电话伴侣"
             else -> "系统未授予管理通话权限"
         }
+
+    /** Report the verified post-command state, never raw shell output or a guessed permission. */
+    fun verificationFailure(readBack: String?, telecomGranted: Boolean): String? = when {
+        this != OK -> appOpsFailureMessage
+        readBack in setOf("default", "ignore", "deny", "errored", "foreground") ->
+            "已尝试授权，但系统读回的通话管理权限仍为 $readBack，无法启用电话伴侣"
+        readBack != "allow" -> "授权命令已执行，但无法读回通话管理权限状态，请重试"
+        !telecomGranted -> "通话管理权限已读回 allow，但系统通话服务仍未授权，无法启用电话伴侣"
+        else -> null
+    }
 
     companion object {
         private val shellAppOpsDenied = Regex(
