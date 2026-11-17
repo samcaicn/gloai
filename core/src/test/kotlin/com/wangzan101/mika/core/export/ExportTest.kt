@@ -124,7 +124,35 @@ class ExportTest {
         val long = ExportNames.fit("很".repeat(200) + ".md")
         assertTrue(long.endsWith(".md"))
         assertTrue(long.codePointCount(0, long.length) <= ExportNames.MAX_NAME)
+        val longWithoutExtension = ExportNames.fit("x".repeat(200))
+        assertTrue(longWithoutExtension.codePointCount(0, longWithoutExtension.length) <= ExportNames.MAX_NAME)
+        assertTrue(longWithoutExtension.toByteArray(Charsets.UTF_8).size <= ExportNames.MAX_NAME_BYTES)
         assertFalse(ExportNames.entryPath("assets/a.txt").startsWith("/"))
+    }
+
+    @Test fun unicodeAssetNamesFitFilesystemLimitsAndKeepTheirExtension() {
+        val root = createTempDir()
+        try {
+            val name = ExportNames.safeFileName("界".repeat(120) + ".txt")
+            File(root, name).writeText("asset")
+            assertEquals("asset", File(root, name).readText())
+            assertTrue(name.endsWith(".txt"))
+            assertTrue(name.codePointCount(0, name.length) <= ExportNames.MAX_NAME)
+            assertTrue(name.toByteArray(Charsets.UTF_8).size <= ExportNames.MAX_NAME_BYTES)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test fun uniqueUnicodeNamesStayWithinTheFilesystemByteLimit() {
+        val name = ExportNames.fit("界".repeat(200) + ".txt")
+        val used = mutableSetOf(name)
+        val duplicate = ExportNames.unique(name, used)
+
+        assertTrue(duplicate.endsWith(".txt"))
+        assertTrue(duplicate.codePointCount(0, duplicate.length) <= ExportNames.MAX_NAME)
+        assertTrue(duplicate.toByteArray(Charsets.UTF_8).size <= ExportNames.MAX_NAME_BYTES)
+        assertTrue(used.contains(duplicate))
     }
 
     @Test(expected = IllegalArgumentException::class)
