@@ -52,7 +52,7 @@ internal object StopRules {
         val treeBlind = v.evidence["treeBlind"] == JsonPrimitive(true)
         val why = when (v.code) {
             "repeating_action" -> "同一个操作反复执行仍没有效果"
-            "no_progress" -> if (treeBlind) "控件树读不到操作位置,连续操作后画面仍无可见变化,无法确认操作是否生效,已停止重试"
+            "no_progress" -> if (treeBlind) "读不到这个界面的控件,点击和滑动画面也没有反应,该应用可能不响应 Mika 的自动化操作"
                 else "操作多次后画面一直没有变化"
             "read_loop" -> "页面没有变化,反复读也读不出要找的内容"
             "too_many_failures" -> "操作连续失败"
