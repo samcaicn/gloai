@@ -58,7 +58,7 @@ class ToolDispatcherVisionTest {
         assertEquals(4, r["box"]!!.jsonArray.size)
         val bad = dispatcher(LocScreen()).execute(call("phone_find_visually", """{"target":"x","text":"${"字".repeat(61)}"}""")).content
         assertEquals("invalid_arguments", bad.s("error"))
-        val none = dispatcher(LocScreen(), "null").execute(call("phone_find_visually", """{"target":"某个图标"}""")).content
+        val none = dispatcher(LocScreen(), "null", "null").execute(call("phone_find_visually", """{"target":"某个图标"}""")).content
         assertEquals("true", none.s("ok")); assertEquals("false", none.s("found")); assertEquals("not_found", none.s("reason"))
     }
 

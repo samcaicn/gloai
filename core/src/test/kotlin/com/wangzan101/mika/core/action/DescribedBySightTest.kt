@@ -68,7 +68,7 @@ class DescribedBySightTest {
 
     @Test fun notSeenIsReportedAndNothingIsTyped() = runTest {
         val screen = Blind()
-        val c = content(type(executor(screen, model("null")), """{"element":"底部的消息输入框","text":"明天见"}"""))
+        val c = content(type(executor(screen, model("null", "null")), """{"element":"底部的消息输入框","text":"明天见"}"""))
         assertEquals("element_not_found", c.s("error"))
         assertTrue(c.s("message"), "not_found" in c.s("message") && Feedback["described.not_seen.retry"] in c.s("message"))
         assertTrue(screen.calls.isEmpty())
