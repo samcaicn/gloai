@@ -10,7 +10,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 照着做了才算:读完之后动过手,写了 App / 网站的还要读完之后进过其中一个(#569)。 */
+/** 照着做了才算，声明了地点时必须有发生在该地点的成功动作。 */
 class SkillFollowTest {
     private val tools = knownTools()
     private fun read(name: String, at: Long) = RunEvent.SkillUsed(at, name, "viewed")
@@ -31,24 +31,33 @@ class SkillFollowTest {
         assertTrue(followed(listOf(read("s", 10), act(20, tool = "phone_observe"), act(21, tool = "skill_read"))).isEmpty())
     }
 
-    @Test fun declaredAppMustBeVisitedAfterReading() {
+    @Test fun actionMustMatchDeclaredAppAfterReading() {
         val wechat = mapOf("s" to SkillPlaces(packages = setOf("com.tencent.mm")))
-        assertEquals(setOf("s"), followed(listOf(read("s", 10), act(20), saw(21, Place.app("com.tencent.mm"))), wechat))
-        assertTrue(followed(listOf(read("s", 10), act(20), saw(21, Place.app("com.ss.android.ugc.aweme"))), wechat).isEmpty())
+        val inWechat = act(20).copy(resultJson = """{"ok":true,"actionApp":"com.tencent.mm"}""")
+        assertEquals(setOf("s"), followed(listOf(read("s", 10), inWechat), wechat))
+        assertTrue(followed(listOf(read("s", 10), act(20), saw(21, Place.app("com.tencent.mm"))), wechat).isEmpty())
         // 进微信是在读技能之前,读完以后在别处动手
         assertTrue(followed(listOf(saw(5, Place.app("com.tencent.mm")), read("s", 10), act(20)), wechat).isEmpty())
     }
 
+    @Test fun visitingSkillAppDoesNotAttributeAnActionInAnotherApp() {
+        val wechat = mapOf("s" to SkillPlaces(packages = setOf("com.tencent.mm")))
+        val unrelated = act(20).copy(resultJson = """{"ok":true,"screen":{"currentApp":"com.android.settings"}}""")
+        assertTrue(followed(listOf(read("s", 10), saw(15, Place.app("com.tencent.mm")), unrelated), wechat).isEmpty())
+    }
+
     @Test fun declaredSiteMatchesSubdomainsAndPages() {
         val bili = mapOf("s" to SkillPlaces(domains = setOf("bilibili.com")))
-        assertEquals(setOf("s"), followed(listOf(read("s", 10), act(20), saw(21, Place.site("m.bilibili.com"))), bili))
-        assertEquals(setOf("s"), followed(listOf(read("s", 10), act(20), saw(21, Place.page("https://www.bilibili.com/video/1"))), bili))
-        assertTrue(followed(listOf(read("s", 10), act(20), saw(21, Place.site("notbilibili.com"))), bili).isEmpty())
+        val page = act(20, "web_navigate").copy(resultJson = """{"ok":true,"url":"https://m.bilibili.com/video/1"}""")
+        assertEquals(setOf("s"), followed(listOf(read("s", 10), page), bili))
+        val unrelated = page.copy(resultJson = """{"ok":true,"url":"https://notbilibili.com/video/1"}""")
+        assertTrue(followed(listOf(read("s", 10), unrelated), bili).isEmpty())
     }
 
     @Test fun eachSkillIsJudgedOnItsOwn() {
         val places = mapOf("wx" to SkillPlaces(packages = setOf("com.tencent.mm")), "dy" to SkillPlaces(packages = setOf("com.ss.android.ugc.aweme")))
-        val events = listOf(read("dy", 10), read("wx", 11), act(20), saw(21, Place.app("com.tencent.mm")))
+        val tap = act(20).copy(resultJson = """{"ok":true,"actionApp":"com.tencent.mm","screen":{"currentApp":"com.ss.android.ugc.aweme"}}""")
+        val events = listOf(read("dy", 10), read("wx", 11), tap)
         assertEquals(setOf("wx"), followed(events, places))
     }
 
@@ -91,7 +100,7 @@ class SkillFollowTest {
         val places = GuideCatalog.withPersonal(GuideCatalog.loadBundled(), skills).skillPlaces("bili")!!
         val biliApp = GuideCatalog.loadBundled().rows.first { it.name == "bilibili" && it.packages.isNotEmpty() }.packages.first()
         assertTrue(biliApp in places.packages)
-        val events = listOf(read("bili", 10), act(20), saw(21, Place.app(biliApp)))
+        val events = listOf(read("bili", 10), act(20).copy(resultJson = """{"ok":true,"actionApp":"$biliApp"}"""))
         assertEquals(setOf("bili"), SkillFollow.followed(events, events.filterIsInstance<RunEvent.SkillUsed>(), tools) { places })
     }
 }

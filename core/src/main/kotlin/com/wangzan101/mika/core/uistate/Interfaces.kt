@@ -1,5 +1,6 @@
 package com.wangzan101.mika.core.uistate
 
+import com.wangzan101.mika.core.net.UrlHost
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.replay.Anchors
 import com.wangzan101.mika.core.replay.Selector
@@ -196,6 +197,14 @@ internal class Interfaces(
         if (ok && probe != null && aimed != null) {
             val typed = if (tool.verb == Verb.TypeText) o.argStr("text") else null
             result = session.withEffect(result, probe, tool.verb, readsAtAction, aimed.first, aimed.second, typed)
+        }
+        // 动作前的地点用于归因，打开应用和网页则读它们各自返回的目的地。
+        if (ok && tool.verb != Verb.LaunchApp && tool.verb != Verb.Navigate) {
+            probe?.before?.let { before ->
+                val location = if (before.web != null) UrlHost.of(before.web.url)?.let { "actionSite" to JsonPrimitive(it) }
+                else (before.packageName ?: before.unreadableApp)?.let { "actionApp" to JsonPrimitive(it) }
+                if (location != null) result = result.with(record = JsonObject(result.record + location))
+            }
         }
         if (tool.writesScreen && result.content["error"] != JsonPrimitive("invalid_arguments")) session.clearLocated()
         if (config.recordFrames && tool.writesScreen && result.content["error"] != JsonPrimitive("invalid_arguments")) {

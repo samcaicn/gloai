@@ -40,7 +40,9 @@ class SedimentationWiringTest {
         val ev = mutableListOf<RunEvent>(RunEvent.TaskStarted(1, "发微信", "m"))
         listOf("phone_launch_app", "phone_tap", "phone_tap", "phone_type_text", "phone_tap", "phone_tap").forEachIndexed { i, tool ->
             ev += RunEvent.ModelReply(++t, i + 1, "", tool, "{}", null, null, null)
-            ev += RunEvent.ToolResult(++t, i + 1, tool, """{"ok":true}""", true, null)
+            val result = if (tool == "phone_launch_app") """{"ok":true,"opened":{"package":"$app"}}"""
+                else """{"ok":true,"screen":{"currentApp":"$app"}}"""
+            ev += RunEvent.ToolResult(++t, i + 1, tool, result, true, null)
             ev += RunEvent.Observed(++t, i + 1, "界面", place = Place.app(app))
         }
         ev += extra
@@ -178,7 +180,9 @@ class SedimentationWiringTest {
         val skill = PersonalSkill("wechat-msg", draftMd.replace("send-wechat-message", "wechat-msg"), SkillStatus.active, "r0", null, 0, emptyList())
         val rejected = TaskState.Failed("核查未通过:没办成", FailKind.GaveUp)
         val elsewhere = MapSkills(skill)
-        runBlocking { learning(elsewhere, learn = false).learn(after(events(verdict = "fail", extra = listOf(RunEvent.SkillUsed(41, "wechat-msg", "viewed")), app = "com.ss.android.ugc.aweme"), rejected)) }
+        val browsedWechat = listOf(RunEvent.SkillUsed(41, "wechat-msg", "viewed"),
+            RunEvent.Observed(50, 1, "只读到微信界面", place = Place.app("com.tencent.mm")))
+        runBlocking { learning(elsewhere, learn = false).learn(after(events(verdict = "fail", extra = browsedWechat, app = "com.ss.android.ugc.aweme"), rejected)) }
         assertEquals(emptyList<String>(), elsewhere.get("wechat-msg")!!.outcomes)
         // 动完手才去读,读完就收尾了
         val late = MapSkills(skill)

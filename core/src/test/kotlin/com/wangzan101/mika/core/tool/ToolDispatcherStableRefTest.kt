@@ -119,7 +119,8 @@ class ToolDispatcherStableRefTest {
         assertEquals("p1", d.execute(call("phone_observe")).content.s("snapshotId"))
         val r = d.execute(call("phone_tap", """{"ref":"@e1","snapshotId":"p1"}"""))
         assertEquals(listOf("tapRef @e1 p1"), s.calls)
-        assertTrue(r.record.isEmpty())
+        assertNull(r.record["portRef"])
+        assertNull(r.record["portSnapshotId"])
     }
 
     @Test fun runRecordKeepsBothRefs() {

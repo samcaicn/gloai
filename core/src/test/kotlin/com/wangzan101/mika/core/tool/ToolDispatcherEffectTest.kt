@@ -48,6 +48,14 @@ class ToolDispatcherEffectTest {
         assertEquals(true, r.changed)
     }
 
+    @Test fun actionRecordsTheSourceAppWhenTheScreenChangesApps() = runTest {
+        val s = LateScreen({ currentTime }, page("列表"), page("设置").copy(packageName = "com.android.settings"), afterMs = 0)
+        val r = toolDispatcher(s, inlineScreen = false).execute(call("phone_tap", """{"x":500,"y":500}"""))
+        assertEquals("place_changed", r.content.kind())
+        assertEquals("com.x", r.record["actionApp"]?.jsonPrimitive?.content)
+        assertEquals(null, r.content["actionApp"])
+    }
+
     // 动作之后新出现「到上限了」的提示:结果里写 limitReached 和停下的提示;动作前就在屏上的说明文字不算
     @Test fun limitNoticeAfterTheActionIsReported() = runTest {
         val s = LateScreen({ currentTime }, page("职位详情", "立即沟通"), page("职位详情", "立即沟通", "今日沟通次数已用完，明天再来吧"), afterMs = 0)
