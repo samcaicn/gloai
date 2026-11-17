@@ -310,6 +310,39 @@ class UpdateCheckerTest {
     }
 
     @Test
+    fun publishedIncompatibleAssetsReplaceTheCachedGuessedUrl() = runTest {
+        val mirror = UpdateMirror("m", "Mirror", server.url("/mirror/").toString())
+        var assetsAvailable = false
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                val path = request.path.orEmpty()
+                return when {
+                    path.endsWith("/api") -> MockResponse().setResponseCode(403)
+                    path.endsWith("/releases/latest") ->
+                        MockResponse().setResponseCode(302).setHeader("Location", "/releases/tag/v0.2.0")
+                    assetsAvailable -> MockResponse().setBody(
+                        """<ul><li><a href="/releases/download/v0.2.0/Mika-v0.2.0-arm64.apk">arm64</a></li></ul>""",
+                    )
+                    else -> MockResponse().setResponseCode(404)
+                }
+            }
+        }
+        val settings = MirrorSettings(enabled = true, mirrors = listOf(mirror))
+        checker(mirrors = settings).apply {
+            check(manual = true)
+            assertNotNull(state.value.update?.apkUrl)
+        }
+        val restarted = checker(mirrors = settings)
+        assetsAvailable = true
+        restarted.check(manual = true)
+        assertNotNull(restarted.state.value.update)
+        assertNull(restarted.state.value.update?.apkUrl)
+        assetsAvailable = false
+        restarted.check(manual = true)
+        assertNull(restarted.state.value.update?.apkUrl)
+    }
+
+    @Test
     fun switchingToArchitectureDoesNotReuseUniversalIntegrity() = runTest {
         val c = checker(abis = listOf("arm64-v8a"))
         github = MockResponse().setBody(

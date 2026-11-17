@@ -163,6 +163,23 @@ class UpdateProbeTest {
         assertNull(found?.apkDigest)
     }
 
+    @Test fun publishedAssetsWithoutACompatibleApkOnlyOfferTheReleasePage() = runTest {
+        for (assets in listOf(assetsPage("Mika-v0.3.0-arm64.apk" to null), assetsPage())) {
+            server.dispatcher = dispatcher { path ->
+                when {
+                    path.endsWith("/api") -> MockResponse().setResponseCode(403)
+                    path.endsWith("/releases/latest") ->
+                        MockResponse().setResponseCode(302).setHeader("Location", "/releases/tag/v0.3.0")
+                    else -> MockResponse().setBody(assets)
+                }
+            }
+            val found = UpdateProbe.fetch(UpdateChecker.defaultClient(), mirror, api, releases, listOf("x86_64"), "Mika/test")
+            assertEquals("0.3.0", found?.version)
+            assertEquals("$releases/tag/v0.3.0", found?.pageUrl)
+            assertNull(found?.apkUrl)
+        }
+    }
+
     /** 直连 GitHub 时 API 明确回了 HTTP 错误(限流等),就认这一次没查到,不再多打一个网页请求。 */
     @Test fun directGitHubApiFailureDoesNotFetchTheReleasePage() = runTest {
         var requests = 0

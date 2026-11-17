@@ -180,12 +180,18 @@ class UpdateChecker(
 
     /** 同版本补全缺失信息；校验数据只属于其对应的 APK 地址。 */
     private fun mergeRelease(previous: ReleaseInfo, candidate: ReleaseInfo, previousOfficial: Boolean, candidateOfficial: Boolean): ReleaseInfo {
-        if (previousOfficial && !candidateOfficial) return previous
+        val clearsGuess = candidate.apkListKnown && candidate.apkUrl == null &&
+            !previous.apkListKnown && previous.apkSize == null && previous.apkDigest == null
+        if (previousOfficial && !candidateOfficial) {
+            return if (clearsGuess) previous.copy(apkUrl = null, apkListKnown = true) else previous
+        }
         val previousPreference = Releases.apkPreference(previous.apkUrl, deviceAbis)
         val candidatePreference = Releases.apkPreference(candidate.apkUrl, deviceAbis)
         fun completeness(release: ReleaseInfo) = (if (release.apkDigest != null) 2 else 0) + (if (release.apkSize != null) 1 else 0)
         val selected = when {
             candidateOfficial && !previousOfficial && candidate.apkUrl != null -> candidate
+            clearsGuess -> candidate
+            previous.apkListKnown && previous.apkUrl == null && !candidate.apkListKnown -> previous
             candidate.apkUrl == null -> previous
             previous.apkUrl == null -> candidate
             candidatePreference == 0 && previousPreference > 0 -> previous
@@ -208,6 +214,7 @@ class UpdateChecker(
             },
             date = candidate.date ?: previous.date,
             apkUrl = selected.apkUrl,
+            apkListKnown = selected.apkListKnown,
             apkSize = selected.apkUrl?.let { candidate.apkSize.takeIf { candidateOfficial && candidate.apkUrl == selected.apkUrl } ?: selected.apkSize.takeIf { trustedSelected } ?: other.apkSize.takeIf { sameApk && trustedOther } },
             apkDigest = selected.apkUrl?.let { candidate.apkDigest.takeIf { candidateOfficial && candidate.apkUrl == selected.apkUrl } ?: selected.apkDigest.takeIf { trustedSelected } ?: other.apkDigest.takeIf { sameApk && trustedOther } },
         )

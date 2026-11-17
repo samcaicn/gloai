@@ -1,10 +1,11 @@
 package com.wangzan101.mika.about
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 
@@ -22,6 +23,8 @@ data class ReleaseInfo(
     val apkSize: Long? = null,
     /** APK 附件的摘要,形如 `sha256:<hex>`;较早的附件没有,这时只靠包名、版本号和签名把关。 */
     val apkDigest: String? = null,
+    /** 已读到附件列表，空的 apkUrl 表示列表里没有兼容包。 */
+    val apkListKnown: Boolean = false,
 ) {
     /** 「从 GitHub 下载」打开的地址:有 APK 直链就下 APK,没有就打开发布页。 */
     val downloadUrl: String get() = apkUrl ?: pageUrl
@@ -48,10 +51,8 @@ object Releases {
         val o = json.parseToJsonElement(text).jsonObject
         val tag = o.str("tag_name") ?: error("no tag_name")
         val body = o.str("body").orEmpty()
-        val assets = o["assets"]?.let { a ->
-            runCatching { a.jsonArray }.getOrNull()?.mapNotNull { it.jsonObject.toAsset() }.orEmpty()
-        }.orEmpty()
-        val apk = pickAsset(assets, deviceAbis)
+        val assets = (o["assets"] as? JsonArray)?.mapNotNull { (it as? JsonObject)?.toAsset() }
+        val apk = pickAsset(assets.orEmpty(), deviceAbis)
         val version = AppVersion.normalize(tag)
         return ReleaseInfo(
             version = version,
@@ -62,16 +63,18 @@ object Releases {
             apkUrl = apk?.url,
             apkSize = apk?.size,
             apkDigest = apk?.digest,
+            apkListKnown = assets != null,
         )
     }
 
     /**
      * 从发布页兜底查到的版本:只有 tag,更新说明为空(说明只在 API 里)。
-     * [assets] 是附件页里解析出来的 APK;解析不到时按 Mika 的固定命名拼出全架构包地址,下载失败还能回退到发布页。
+     * [assets] 为 null 表示附件页无法读取，此时按 Mika 的固定命名推测全架构包地址。
+     * 已读取附件页时，只提供列表里与设备兼容的包。
      */
-    internal fun fromPage(tag: String, assets: List<ReleaseAsset>, deviceAbis: List<String>, releasesUrl: String): ReleaseInfo {
+    internal fun fromPage(tag: String, assets: List<ReleaseAsset>?, deviceAbis: List<String>, releasesUrl: String): ReleaseInfo {
         val base = releasesUrl.trimEnd('/')
-        val apk = pickAsset(assets, deviceAbis)
+        val apk = assets?.let { pickAsset(it, deviceAbis) }
         val version = AppVersion.normalize(tag)
         return ReleaseInfo(
             version = version,
@@ -79,9 +82,10 @@ object Releases {
             notes = "",
             date = null,
             pageUrl = "$base/tag/$tag",
-            apkUrl = apk?.url ?: "$base/download/$tag/Mika-$tag.apk",
+            apkUrl = apk?.url ?: if (assets == null) "$base/download/$tag/Mika-$tag.apk" else null,
             apkSize = apk?.size,
             apkDigest = apk?.digest,
+            apkListKnown = assets != null,
         )
     }
 
@@ -123,6 +127,7 @@ object Releases {
         r.apkUrl?.let { put("apkUrl", it) }
         r.apkSize?.let { put("apkSize", it) }
         r.apkDigest?.let { put("apkDigest", it) }
+        if (r.apkListKnown) put("apkListKnown", true)
     }
 
     fun fromJson(o: JsonObject): ReleaseInfo? = runCatching {
@@ -130,6 +135,7 @@ object Releases {
             version = o.str("version")!!, name = o.str("name") ?: o.str("version")!!, notes = o.str("notes").orEmpty(),
             date = o.str("date"), pageUrl = o.str("pageUrl") ?: MikaLinks.RELEASES, apkUrl = o.str("apkUrl"),
             apkSize = o.strOrNumber("apkSize")?.toLongOrNull(), apkDigest = o.str("apkDigest"),
+            apkListKnown = (o["apkListKnown"] as? JsonPrimitive)?.booleanOrNull == true,
         )
     }.getOrNull()
 

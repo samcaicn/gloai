@@ -82,7 +82,7 @@ internal object UpdateProbe {
         } catch (_: Exception) {
             null
         }
-        val assets = assetsPage?.let { parseAssets(it, tag, base) }.orEmpty()
+        val assets = assetsPage?.takeIf(String::isNotBlank)?.let { parseAssets(it, tag, base) }
         return Releases.fromPage(tag, assets, deviceAbis, base)
     }
 
