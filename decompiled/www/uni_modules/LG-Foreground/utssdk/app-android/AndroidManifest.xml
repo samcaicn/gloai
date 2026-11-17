@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- LG-Foreground 插件清单：声明直播进程常驻的前台服务与所需权限。
+     合并进主工程后即生效（需 HBuilderX 自定义基座出包，见 docs）。
+     包名规则：uni_modules 下 UTS 插件为 uts.sdk.modules.(插件ID转驼峰)。
+     本插件目录 LG-Foreground → uts.sdk.modules.LGForeground。
+     注意：Service 的 android:name 必须与 index.uts 中 SERVICE_CLASS 常量严格一致，
+     若 HBuilderX 实际生成包名不同（真机报 ClassNotFoundException），两处同步修正。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="uts.sdk.modules.LGForeground">
+
+    <!-- 前台服务权限（类型 mediaPlayback，与 src/manifest.json 的 permissions 保持一致）。
+         POST_NOTIFICATIONS 由宿主在运行时申请（Android 13+）。 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application>
+        <!-- 直播进程常驻前台服务：targetSdk 34 必须显式声明 foregroundServiceType。
+             stopWithTask=false：划掉任务卡片后服务仍驻留，确保后台直播不断。 -->
+        <service
+            android:name="uts.sdk.modules.LGForeground.LGForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false" />
+    </application>
+</manifest>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- LG-Accessibility 插件清单：声明无障碍服务（AccessibilityService）所需的系统节点。
+     合并进主工程后即生效（需 HBuilderX 自定义基座出包，见 docs）。
+     包名规则：uni_modules 下 UTS 插件为 uts.sdk.modules.(插件ID转驼峰)。
+     本插件目录 LG-Accessibility → uts.sdk.modules.LGAccessibility。
+     注意：Service 的 android:name 必须与 index.uts 中 SERVICE_CLASS 常量严格一致，
+     若 HBuilderX 实际生成包名不同（真机报 ClassNotFoundException / 服务列表里看不到），两处同步修正。
+
+     无障碍服务声明要点：
+       android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+       intent-filter: android.accessibilityservice.AccessibilityService
+       meta-data android:name="android.accessibilityservice" android:resource="@xml/..."
+     差异：历史实现的 xml 描述用 @string/accessibility_reply（本插件不带 string 资源，改为 android:label
+     直接给中文名，见下方 android:label）。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="uts.sdk.modules.LGAccessibility">
+
+    <application>
+        <!-- 无障碍读屏回复服务：exported 供系统无障碍框架绑定；permission 限定仅系统可绑定。
+             android:label 决定「设置 → 无障碍」列表中显示的服务名（历史实现用 string 资源，本插件内联中文）。
+             推断/需真机确认：custom accessibility-service 配置 xml 的 resource 引用方式——
+             UTS 插件 res 合并进宿主包后，@xml/lg_accessibility_config 是否可直接解析，需真机核对。 -->
+        <service
+            android:name="uts.sdk.modules.LGAccessibility.LGAccessibilityService"
+            android:enabled="true"
+            android:exported="true"
+            android:label="公屏回复（LG 无障碍）"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/lg_accessibility_config" />
+        </service>
+    </application>
+</manifest>

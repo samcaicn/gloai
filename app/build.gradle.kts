@@ -27,16 +27,16 @@ val releaseProps = Properties().apply {
 }
 
 android {
-    namespace = "com.aizhibo.app"
+    namespace = "com.vboke.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.aizhibo.app"
+        applicationId = "com.vboke.app"
         minSdk = 26
         targetSdk = 35
         // CI 通过 -PciRun=<run_number> 注入构建序号，便于热更新比对；本地回落为 1。
         versionCode = (project.findProperty("ciRun") as? String)?.toIntOrNull() ?: 1
-        versionName = "1.1.0"
+        versionName = "1.3.0"
     }
 
     signingConfigs {

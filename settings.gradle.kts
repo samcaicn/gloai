@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AI智播"
+rootProject.name = "V播客"
 include(":app")

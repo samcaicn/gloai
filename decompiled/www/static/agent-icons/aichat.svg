@@ -1,0 +1,26 @@
+<svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Squircle background -->
+  <rect x="6" y="6" width="1012" height="1012" rx="231" fill="url(#aichat-bg)"></rect>
+  <rect x="6" y="6" width="1012" height="1012" rx="231" fill="url(#aichat-glow)"></rect>
+  <!-- Speech bubble: circle body + lower-left tail -->
+  <g fill="#FFFFFF">
+    <circle cx="512" cy="505" r="310"></circle>
+    <path d="M264 686 C256 740 248 790 246 812 C245 823 253 828 263 824 C300 812 345 792 380 768 L300 700 Z"></path>
+  </g>
+  <!-- Four-point sparkle -->
+  <path d="M512 350 Q537 475 662 500 Q537 525 512 650 Q487 525 362 500 Q487 475 512 350 Z" fill="url(#aichat-star)"></path>
+  <defs>
+    <linearGradient id="aichat-bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0FB4FE"></stop>
+      <stop offset="1" stop-color="#7420F1"></stop>
+    </linearGradient>
+    <radialGradient id="aichat-glow" cx="512" cy="470" r="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.14"></stop>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop>
+    </radialGradient>
+    <linearGradient id="aichat-star" x1="380" y1="368" x2="644" y2="632" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#26B5FD"></stop>
+      <stop offset="1" stop-color="#6040F5"></stop>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,66 +1,39 @@
-# AI智播
+# V播客 · AI直播助手
 
-AI 数字人直播助手。仓库包含两套前端产物：
+由 `vbaokebase.apk` 反编译还原的**第二版本**。与 `aizhibo` 分支（AI智播）同仓库、不同分支、不同产物，互不影响。
 
 | 文件 | 说明 | 目标形态 |
 |---|---|---|
-| `index.html` | **用户端开播 App**（移动竖屏）：首页 / 开播配置 / 直播中 / 互动消息 / 我的 | APK 内嵌主界面 |
-| `admin/index.html` | **管理后台**（从 APK 反编译还原的完整中控台） | 部署到 `aizhibo.tuptup.top/admin` |
+| `index.html` | **V播客用户端原型**（移动竖屏）：首页数据 / 快捷入口 / 导播控制台（话术下发 + 场控弹幕 AI 回复 + 单品讲解）/ 我的 | APK 内嵌主界面 |
+| `admin/index.html` | 完整中控台原型（沿用） | 部署到 `/admin` |
+| `decompiled/` | `vbaokebase.apk` 反编译产物（H5 源码 + 清单 + DEX 类表 + 中文串） | 溯源与二次开发 |
 
-用户端界面已预留接口接入层（`index.html` 内的 `API` 对象）：
-- 短视频接口 → `API.loadShortVideos()`
-- 数字人直播接口 → `API.startLiveApi()` / `API.stopLiveApi()`
+## 反编译结论
 
-后续对接百度一镜 PaaS 时只替换这几个 mock 方法即可，UI 与交互无需改动。
+- **应用名**：AI直播助手（启动标签 `Ai无人直播`），包名 `com.vbaoke.zhibo`
+- **版本**：1.3.0（versionCode 132），DCloud uni-app（Vue3 / 编译器 4.84），minSdk 24 / targetSdk 33
+- **后端**：`https://aizhibo.vbaoke.top`，集成 火山方舟 / 通义 / OpenAI 兼容模型、腾讯云直播、个推、微信/微博登录
+- **能力**：一键开播、导播控制台、话术下发、场控与弹幕 AI 回复、数字人播报、单品讲解、音色复刻、智能体/漫剧/电商、RPA 无障碍服务（`LGAccessibilityService`）/前台保活
+- **与 aizhibo 分支差异**：包名 `com.vboke.app` vs `com.aizhibo.app`；主题色 微信绿 `#07C160` vs 青蓝；产物名 `vboke-*` vs `ai-zhibo-*`
 
-## 分支
+## 分支与 CI
 
-- `aizhibo` — 本项目原型与 CI 热更新产物分支
+- 分支：`vboke`（本项目第二版本分支）
+- Push 到 `vboke`（或 Actions 手动 Run）触发 `ci.yml`：
+  - `check`：结构体检（产品名/HTML 标签/括号匹配）
+  - `package`：web 热更新产物 → artifact `vboke-web`
+  - `apk`：正式签名 APK → artifact `vboke-apk-release`（复用同仓库 SIGNING_* secrets，与 aizhibo 同证书可覆盖）
 
 ## 本地预览
 
-浏览器直接打开 `index.html`（用户端）或 `admin/index.html`（管理后台）即可，无需构建。
-
-## CI 产物
-
-`ci.yml` 三条腿（push 到 `aizhibo` 自动触发，也支持 Actions 手动 Run）：
-
-| 产物 | Artifact 名 | 用途 |
-|---|---|---|
-| Web 热更新包 | `ai-zhibo-web` | 用户端 index.html + 管理后台 admin/index.html + version.json + manifest.json |
-| 正式签名 APK | `ai-zhibo-apk-release` | WebView 壳把**用户端**界面打成 APK，复用 weauto/jev 同证书签名 |
-
-## 热更新流程
-
-参考 weauto 的 Artifact 分发模式：
-
-1. 修改根目录 `index.html`（用户端）/ `admin/index.html`（后台）/ `version.json`（递增版本）
-2. `git push origin aizhibo`
-3. CI 体检 → 生成 `manifest.json` → 上传两个 Artifact（保留 90 天）
-   - APK job 自动把根目录 `index.html` 同步进 `app/src/main/assets/`
-4. **Web 端**：分发端按 `ai-zhibo-web` 拉取，按 `version`/`sha256` 比对热替换
-5. **APK 端**：壳优先加载 `filesDir/index.html`，装一次后只替换该文件即可更新界面，无需重装
-
-## 签名说明
-
-正式包使用与 weauto / jev-chat-jarvis **同一份 keystore**（证书 SHA1 `0E:66:...:20:55`），
-由仓库 Secrets 提供，CI 解码后签名并用 `apksigner verify` 校验。**不再产出 debug 包**，
-同证书可直接覆盖安装旧版本，不丢数据。
-
-CI 需要的仓库 Secrets（Settings → Secrets → Actions，与 jev 分支共用）：
-- `SIGNING_KEY` = base64(keystore.p12 全文)
-- `SIGNING_KEY_ALIAS` / `SIGNING_KEY_PASSWORD` / `SIGNING_STORE_PASSWORD`
+浏览器直接打开 `index.html`（用户端）或 `admin/index.html`（中控台），无需构建。
 
 ## 本地构建正式 APK
 
-需要 Android SDK + JDK 17 + keystore：
-
 ```bash
 cp index.html app/src/main/assets/index.html
-# 方式一：环境变量
 export SIGNING_STORE_FILE=/path/to/keystore.p12
 export SIGNING_KEY_ALIAS=... SIGNING_KEY_PASSWORD=... SIGNING_STORE_PASSWORD=...
-# 方式二：本地属性文件（AIZhibo_KEYSTORE_PROPS 或 ../keys/release.properties）
 ./gradlew :app:assembleRelease
 # 产物：app/build/outputs/apk/release/app-release.apk
 ```

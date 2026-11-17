@@ -1,4 +1,4 @@
-package com.aizhibo.app
+package com.vboke.app
 
 import android.annotation.SuppressLint
 import android.graphics.Color
@@ -13,7 +13,7 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 
 /**
- * AI智播 Android 壳。
+ * AI直播助手 Android 壳。
  *
  * 只做一件事：全屏加载 assets/index.html（原型本体）。
  * 原型是纯前端单文件，所有业务逻辑都在 HTML 里；壳负责提供 Android 运行环境，

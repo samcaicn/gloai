@@ -1,372 +1,229 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>AI智播 · 用户端开播</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>AI直播助手 · V播客</title>
 <style>
-:root{
-  --bg:#0b0e14; --card:#151a24; --card2:#1c2230; --line:#252d3d;
-  --txt:#e8edf6; --sub:#8b95a7; --dim:#5a6478;
-  --cyan:#2ee6c8; --blue:#4a8cff; --purple:#8b6cff;
-  --red:#ff4d6a; --gold:#ffb648; --grad:linear-gradient(135deg,#2ee6c8,#4a8cff);
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{background:#05070b;color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
-body{display:flex;justify-content:center;min-height:100vh}
-.app{width:100%;max-width:430px;min-height:100vh;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column}
-.status{height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:12px;color:var(--sub);flex:none;position:relative;z-index:5}
-.status .notch{position:absolute;left:50%;transform:translateX(-50%);top:6px;width:96px;height:22px;background:#000;border-radius:14px}
-.status .ico{display:flex;gap:6px;align-items:center}
-.content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:70px;scrollbar-width:none}
-.content::-webkit-scrollbar{display:none}
-.page{display:none;animation:fade .25s ease}
-.page.on{display:block}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 14px}
-.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:19px;letter-spacing:.5px}
-.brand .logo{width:30px;height:30px;border-radius:9px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 4px 16px rgba(46,230,200,.25)}
-.brand small{display:block;font-size:9px;color:var(--sub);font-weight:600;letter-spacing:2px}
-.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8b6cff,#4a8cff);display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #2a3345}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 14px 14px}
-.sec-t{font-size:15px;font-weight:700;margin:18px 18px 10px;display:flex;align-items:center;justify-content:space-between}
-.sec-t .more{font-size:12px;color:var(--sub);font-weight:400}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:0 14px 14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 6px}
-.stat{text-align:center;border-right:1px solid var(--line)}
-.stat:last-child{border-right:0}
-.stat .num{font-size:18px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.stat .lbl{font-size:11px;color:var(--sub);margin-top:3px}
-.goLive{margin:0 14px 16px;background:var(--grad);border-radius:18px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 10px 30px rgba(74,140,255,.25);cursor:pointer;position:relative;overflow:hidden}
-.goLive:after{content:"";position:absolute;right:-20px;top:-40px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12)}
-.goLive h3{font-size:18px;margin-bottom:3px}
-.goLive p{font-size:12px;opacity:.9}
-.goLive .btn{background:#fff;color:var(--blue);font-weight:800;padding:9px 16px;border-radius:20px;font-size:13px;z-index:1}
-.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
-.row:last-child{border-bottom:0}
-.row .ic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
-.row .tx{flex:1;min-width:0}
-.row .tx b{display:block;font-size:14px;font-weight:600}
-.row .tx span{font-size:12px;color:var(--sub)}
-.row .ar{color:var(--dim);font-size:18px}
-.videos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 14px 14px}
-.vcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.vthumb{height:120px;position:relative;display:flex;align-items:center;justify-content:center;font-size:34px}
-.vthumb .play{position:absolute;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}
-.vthumb .dur{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.6);font-size:10px;padding:1px 6px;border-radius:6px}
-.vinfo{padding:9px 10px}
-.vinfo b{font-size:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
-.vinfo .meta{font-size:10px;color:var(--sub);margin-top:5px;display:flex;justify-content:space-between}
-.field{margin-bottom:16px}
-.field label{display:block;font-size:13px;font-weight:600;margin-bottom:9px;color:#cdd5e2}
-.opts{display:flex;gap:8px;flex-wrap:wrap}
-.opt{padding:9px 14px;border-radius:10px;background:var(--card2);border:1px solid var(--line);font-size:13px;cursor:pointer;transition:.15s;user-select:none}
-.opt.sel{border-color:var(--cyan);background:rgba(46,230,200,.12);color:var(--cyan);font-weight:600}
-.pf{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.pf .opt{text-align:center;padding:12px 4px}
-.pf .opt .pico{display:block;font-size:20px;margin-bottom:4px}
-.avatars{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
-.avatars::-webkit-scrollbar{display:none}
-.av{flex:none;width:74px;text-align:center;cursor:pointer}
-.av .pic{width:74px;height:88px;border-radius:12px;display:flex;align-items:flex-end;justify-content:center;font-size:34px;border:2px solid transparent;position:relative;overflow:hidden}
-.av.sel .pic{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(46,230,200,.2)}
-.av .pic:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.35))}
-.av span{font-size:11px;color:var(--sub);display:block;margin-top:5px}
-.av.sel span{color:var(--cyan)}
-.bigbtn{display:block;width:calc(100% - 28px);margin:6px 14px 20px;padding:15px;border:0;border-radius:15px;background:var(--grad);color:#04121a;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(46,230,200,.25)}
-.bigbtn:active{transform:scale(.98)}
-.living-wrap{position:relative;height:100%;min-height:calc(100vh - 100px)}
-.stage{position:relative;height:340px;background:radial-gradient(circle at 50% 30%,#24304a,#0d1220 70%);overflow:hidden;display:flex;align-items:center;justify-content:center}
-.stage .halo{position:absolute;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle,rgba(74,140,255,.25),transparent 70%);filter:blur(10px)}
-.dh{position:relative;width:150px;height:220px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;animation:breathe 3s ease-in-out infinite}
-@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.dh .face{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#ffd9b3,#e8a978);display:flex;align-items:center;justify-content:center;font-size:48px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
-.dh .body{width:150px;height:120px;margin-top:-6px;border-radius:60px 60px 20px 20px;background:linear-gradient(135deg,#4a8cff,#8b6cff);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;opacity:.95}
-.dh .speak{position:absolute;bottom:-2px;display:flex;gap:3px;align-items:center;height:20px}
-.dh .speak i{width:3px;background:var(--cyan);border-radius:2px;animation:wave .6s ease-in-out infinite}
-.dh .speak i:nth-child(1){animation-delay:0s}.dh .speak i:nth-child(2){animation-delay:.15s}.dh .speak i:nth-child(3){animation-delay:.3s}.dh .speak i:nth-child(4){animation-delay:.1s}.dh .speak i:nth-child(5){animation-delay:.25s}
-@keyframes wave{0%,100%{height:5px}50%{height:18px}}
-.live-top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;z-index:2}
-.badge{background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;display:flex;align-items:center;gap:5px}
-.badge i{width:6px;height:6px;background:#fff;border-radius:50%;animation:blink 1s infinite}
-@keyframes blink{50%{opacity:.3}}
-.viewers{background:rgba(0,0,0,.5);backdrop-filter:blur(6px);font-size:11px;padding:4px 9px;border-radius:6px}
-.script-now{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);border-radius:10px;padding:9px 12px;font-size:12px;z-index:2;border:1px solid rgba(255,255,255,.1)}
-.script-now .tag{color:var(--cyan);font-weight:700;margin-right:6px}
-.live-body{padding:14px}
-.danmu{height:120px;overflow:hidden;position:relative;margin-bottom:12px}
-.danmu .dm{position:absolute;right:0;background:rgba(255,255,255,.08);padding:5px 10px;border-radius:14px;font-size:12px;white-space:nowrap;animation:dmMove 6s linear forwards}
-@keyframes dmMove{from{transform:translateX(100%)}to{transform:translateX(-110%)}}
-.dm b{color:var(--gold)}
-.live-ctl{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-.lc{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:12px 4px;text-align:center;cursor:pointer}
-.lc .ci{font-size:21px;display:block;margin-bottom:4px}
-.lc span{font-size:11px;color:var(--sub)}
-.logs{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px;max-height:150px;overflow-y:auto}
-.logs .lg{font-size:11px;color:var(--sub);padding:3px 0;border-bottom:1px dashed var(--line)}
-.logs .lg:last-child{border:0}
-.logs .lg b{color:var(--cyan)}
-.live-bottom{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,var(--bg) 30%);padding:10px 14px 14px;display:flex;gap:8px;align-items:center}
-.chat-in{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:22px;padding:11px 15px;color:var(--dim);font-size:13px}
-.end-live{background:var(--red);color:#fff;border:0;border-radius:22px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer}
-.msg-item{display:flex;gap:11px;padding:13px 0;border-bottom:1px solid var(--line)}
-.msg-item .ma{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:16px}
-.msg-item b{font-size:13px}.msg-item p{font-size:12px;color:var(--sub);margin-top:2px}
-.msg-item .time{margin-left:auto;font-size:10px;color:var(--dim);flex:none}
-.me-head{text-align:center;padding:24px 0 18px}
-.me-head .avatar{margin:0 auto 10px;width:64px;height:64px;font-size:28px}
-.me-head h3{font-size:17px}.me-head p{font-size:12px;color:var(--sub);margin-top:3px}
-.me-grid{display:grid;grid-template-columns:repeat(3,1fr);margin:0 14px 14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 0}
-.me-grid div{text-align:center;border-right:1px solid var(--line)}
-.me-grid div:last-child{border:0}
-.me-grid b{display:block;font-size:17px}.me-grid span{font-size:11px;color:var(--sub)}
-.tabbar{position:absolute;bottom:0;left:0;right:0;height:66px;background:rgba(18,23,33,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);z-index:10}
-.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--dim);font-size:10px}
-.tab .ti{font-size:21px;line-height:1}
-.tab.on{color:var(--cyan)}
-.tab .live-dot{width:34px;height:34px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:17px;color:#04121a;margin-top:-14px;box-shadow:0 4px 14px rgba(46,230,200,.4)}
-#toast{position:fixed;top:50px;left:50%;transform:translateX(-50%);background:rgba(20,26,38,.96);border:1px solid var(--line);padding:10px 18px;border-radius:10px;font-size:13px;z-index:99;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
-#toast.show{opacity:1}
-.hint{font-size:10px;color:var(--dim);text-align:center;padding:4px 14px 10px}
-.api-tag{display:inline-block;font-size:9px;color:var(--purple);border:1px solid var(--purple);border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:middle}
+  :root{
+    --bg:#08080f; --bg2:#0f1018; --card:#14151f; --card2:#1b1d29;
+    --line:#252836; --tx:#e9ecf2; --sub:#8c8a9a; --green:#07c160;
+    --lime:#c7ff3d; --red:#e65232; --blue:#5b8cff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%;background:#000;color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  #phone{width:100%;max-width:430px;height:100dvh;max-height:932px;margin:0 auto;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .hidden{display:none !important}
+  .status{height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#fff;position:relative;z-index:5}
+  .status .dot{display:inline-flex;align-items:center;gap:6px}
+  .status .dot i{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 8px var(--green)}
+  .screen{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:78px;scrollbar-width:none}
+  .screen::-webkit-scrollbar{display:none}
+  .page{display:none;padding:0 16px}
+  .page.on{display:block}
+  .hd{display:flex;align-items:center;justify-content:space-between;padding:10px 2px 16px}
+  .hd .brand{font-size:22px;font-weight:800;letter-spacing:.5px}
+  .hd .brand b{color:var(--green)}
+  .hd .tag{font-size:11px;color:var(--lime);border:1px solid #3d4a1f;background:#1b2010;padding:3px 8px;border-radius:20px}
+  .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2b3040,#454b64);display:grid;place-items:center;font-size:14px;font-weight:700;color:#cfd6ff}
+  .hero{background:linear-gradient(135deg,#111520,#0c1d16);border:1px solid #1d3327;border-radius:18px;padding:18px;margin-bottom:16px;position:relative;overflow:hidden}
+  .hero:after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(7,193,96,.22),transparent 70%)}
+  .hero .ttl{font-size:12px;color:var(--sub);margin-bottom:6px}
+  .hero .big{font-size:30px;font-weight:800;line-height:1.1}
+  .hero .big small{font-size:12px;color:var(--sub);font-weight:500;margin-left:6px}
+  .hero .row{display:flex;gap:0;margin-top:18px;position:relative;z-index:2}
+  .hero .row div{flex:1;text-align:center;border-right:1px solid #223}
+  .hero .row div:last-child{border:0}
+  .hero .row b{display:block;font-size:17px;font-weight:700}
+  .hero .row span{font-size:10px;color:var(--sub)}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;margin:20px 2px 12px}
+  .sec-h h3{font-size:15px;font-weight:700}
+  .sec-h span{font-size:11px;color:var(--sub)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .q{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 4px 10px;text-align:center;transition:.15s}
+  .q:active{transform:scale(.95)}
+  .q .ic{width:38px;height:38px;border-radius:12px;margin:0 auto 8px;display:grid;place-items:center;font-size:19px;font-weight:700}
+  .q p{font-size:11px;color:#c9ccd6}
+  .ic.g{background:rgba(7,193,96,.15);color:var(--green)}
+  .ic.l{background:rgba(199,255,61,.12);color:var(--lime)}
+  .ic.b{background:rgba(91,140,255,.15);color:var(--blue)}
+  .ic.r{background:rgba(230,82,50,.15);color:var(--red)}
+  .scene{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+  .scene .thumb{width:52px;height:52px;border-radius:10px;flex:0 0 52px;background:linear-gradient(135deg,#203048,#101826);display:grid;place-items:center;font-size:20px}
+  .scene .meta{flex:1;min-width:0}
+  .scene .meta b{font-size:13px;display:block;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .scene .meta span{font-size:10px;color:var(--sub)}
+  .pill{font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px}
+  .pill.live{background:rgba(230,82,50,.18);color:#ff8a6b}
+  .pill.off{background:#222431;color:var(--sub)}
+  .btn{border:0;border-radius:9px;padding:8px 13px;font-size:11px;font-weight:700;cursor:pointer;color:#04140b;background:var(--green)}
+  .btn.ghost{background:#222431;color:#c9ccd6}
+  .live-top{background:linear-gradient(160deg,#101318,#0a0b10);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:14px}
+  .stage{height:200px;position:relative;background:radial-gradient(ellipse at 50% 30%,#2a2140,#0c0d14 70%);display:grid;place-items:center;overflow:hidden}
+  .stage .avatar-dh{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#5b6cff,#c74dff);box-shadow:0 0 40px rgba(140,90,255,.5);display:grid;place-items:center;font-size:34px;animation:float 3s ease-in-out infinite}
+  @keyframes float{50%{transform:translateY(-8px)}}
+  .stage .lbl{position:absolute;bottom:12px;left:14px;font-size:11px;color:#cfd2e0;background:rgba(0,0,0,.45);padding:4px 9px;border-radius:8px}
+  .stage .rec{position:absolute;top:12px;left:12px;font-size:10px;color:#fff;background:rgba(230,82,50,.9);padding:3px 8px;border-radius:6px;display:flex;align-items:center;gap:5px}
+  .stage .rec i{width:6px;height:6px;background:#fff;border-radius:50%;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.2}}
+  .stage .goods-tag{position:absolute;right:12px;bottom:40px;width:64px;height:64px;border-radius:10px;background:#fff2;border:1px solid #fff4;display:grid;place-items:center;font-size:10px;color:#fff;text-align:center;padding:4px;backdrop-filter:blur(4px)}
+  .live-ctrl{display:flex;align-items:center;gap:8px;padding:12px}
+  .live-ctrl .state{flex:1;font-size:12px}
+  .live-ctrl .state b{font-size:14px;color:var(--green)}
+  .live-ctrl .state.off b{color:var(--sub)}
+  .btn.sm{padding:9px 12px;font-size:11px}
+  .btn.red{background:var(--red);color:#fff}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .panel h4{font-size:13px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+  .panel h4 i{width:4px;height:13px;background:var(--green);border-radius:2px;display:inline-block}
+  .rowline{display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:8px 0;border-top:1px solid #1e202b}
+  .rowline:first-of-type{border:0}
+  .rowline .k{color:var(--sub)}
+  .switch{width:38px;height:22px;border-radius:12px;background:#333646;position:relative;cursor:pointer;transition:.2s}
+  .switch:after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}
+  .switch.on{background:var(--green)}
+  .switch.on:after{left:19px}
+  textarea{width:100%;min-height:64px;background:#0d0e15;border:1px solid var(--line);border-radius:10px;color:var(--tx);font-size:12px;padding:10px;resize:none;outline:none;font-family:inherit}
+  .dm{height:150px;overflow:hidden;background:#0a0b11;border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;justify-content:flex-end}
+  .dm-item{font-size:11px;line-height:1.5;animation:slide .35s ease}
+  @keyframes slide{from{opacity:0;transform:translateX(-10px)}}
+  .dm-item .u{color:var(--blue)}
+  .dm-item .ai{color:var(--lime);background:rgba(199,255,61,.08);padding:2px 6px;border-radius:6px;display:inline-block;margin-top:2px}
+  .me-hd{background:linear-gradient(135deg,#121826,#0c1d16);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  .me-hd .avatar{width:54px;height:54px;font-size:18px}
+  .me-hd b{font-size:16px;display:block}
+  .me-hd span{font-size:11px;color:var(--sub)}
+  .quota{display:flex;gap:10px;margin-bottom:16px}
+  .quota div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+  .quota b{font-size:19px;display:block;color:var(--lime)}
+  .quota span{font-size:10px;color:var(--sub)}
+  .mlist{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .mi{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #1e202b;font-size:13px}
+  .mi:last-child{border:0}
+  .mi .ic{width:30px;height:30px;border-radius:9px;font-size:14px}
+  .mi .arrow{margin-left:auto;color:var(--sub);font-size:16px}
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:66px;background:rgba(13,12,24,.96);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom);z-index:10;backdrop-filter:blur(10px)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--sub);font-size:10px;cursor:pointer}
+  .tab .ti{font-size:20px;line-height:1}
+  .tab.on{color:var(--green)}
+  .toast{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:#2b2e3d;color:#fff;font-size:12px;padding:9px 16px;border-radius:20px;z-index:30;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
+  .toast.show{opacity:1}
+  .foot{text-align:center;color:#4d5060;font-size:10px;padding:16px 0 4px}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="status"><span>9:41</span><span class="notch"></span><span class="ico">📶 🔋</span></div>
-  <div class="content">
-
-    <!-- ============ 首页 ============ -->
+<div id="phone">
+  <div class="status"><span>9:41</span><span class="dot"><i></i> AI直播助手</span><span>●●● ▰</span></div>
+  <div class="screen">
     <div class="page on" id="p-home">
-      <div class="topbar">
-        <div class="brand"><div class="logo">智</div><div>AI智播<small>数字人直播助手</small></div></div>
-        <div class="avatar">主</div>
+      <div class="hd"><div><div class="brand">AI<b>直播</b>助手</div><div style="font-size:11px;color:var(--sub);margin-top:2px">无人直播 · 数字人中控</div></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="tag">V播客 v1.3.0</span><div class="avatar">播</div></div></div>
+      <div class="hero">
+        <div class="ttl">今日直播概览</div>
+        <div class="big" id="statDuration">06<small>小时 32 分</small></div>
+        <div class="row">
+          <div><b>3</b><span>直播场次</span></div><div><b>1,284</b><span>互动弹幕</span></div><div><b>¥ 8,640</b><span>成交金额</span></div>
+        </div>
       </div>
-      <div class="stats">
-        <div class="stat"><div class="num" id="sHours">0.0h</div><div class="lbl">今日时长</div></div>
-        <div class="stat"><div class="num" id="sView">0</div><div class="lbl">累计观看</div></div>
-        <div class="stat"><div class="num" id="sFans">+0</div><div class="lbl">新增粉丝</div></div>
-        <div class="stat"><div class="num" id="sInc">¥0</div><div class="lbl">预估收益</div></div>
+      <div class="sec-h"><h3>快捷入口</h3><span>常用功能</span></div>
+      <div class="grid">
+        <div class="q" onclick="go('live');toast('进入导播控制台')"><div class="ic g">▶</div><p>一键开播</p></div>
+        <div class="q" onclick="toast('数字人形象库')"><div class="ic b">人</div><p>数字人</p></div>
+        <div class="q" onclick="toast('智能体工作台')"><div class="ic l">AI</div><p>智能体</p></div>
+        <div class="q" onclick="toast('爆款复刻')"><div class="ic r">复</div><p>爆款复刻</p></div>
+        <div class="q" onclick="toast('漫剧工场')"><div class="ic b">剧</div><p>漫剧工场</p></div>
+        <div class="q" onclick="toast('商品库')"><div class="ic g">品</div><p>商品库</p></div>
+        <div class="q" onclick="toast('话术库')"><div class="ic l">话</div><p>话术库</p></div>
+        <div class="q" onclick="toast('更多功能')"><div class="ic r">···</div><p>更多</p></div>
       </div>
-      <div class="goLive" onclick="go('setup')">
-        <div><h3>🎥 一键开播</h3><p>数字人自动口播 · 智能互动</p></div>
-        <div class="btn">去开播 →</div>
-      </div>
-      <div class="sec-t">📹 我的作品 <span class="more" onclick="toast('作品管理（数字人直播接口）')">全部 ›</span></div>
-      <div class="videos" id="videoList"></div>
-      <div class="hint">作品数据来自短视频接口 · 点击开播体验数字人直播</div>
+      <div class="sec-h"><h3>直播场景</h3><span id="sceneCount">3 个场景</span></div>
+      <div id="scenes"></div>
     </div>
-
-    <!-- ============ 开播配置 ============ -->
-    <div class="page" id="p-setup">
-      <div class="topbar"><div class="brand"><div class="logo">智</div><div>开播设置</div></div></div>
-      <div class="card">
-        <div class="field">
-          <label>① 选择直播平台</label>
-          <div class="pf" id="pfList"></div>
-        </div>
-        <div class="field">
-          <label>② 选择数字人形象</label>
-          <div class="avatars" id="avList"></div>
-        </div>
-        <div class="field">
-          <label>③ 直播话术剧本</label>
-          <div class="opts" id="scriptList"></div>
-        </div>
-        <div class="field">
-          <label>④ 讲解商品</label>
-          <div class="opts" id="goodsList"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="row"><div class="ic" style="background:rgba(74,140,255,.15)">⏰</div><div class="tx"><b>定时开播</b><span>立即开播</span></div><div class="ar" onclick="toast('定时开播设置')">›</div></div>
-        <div class="row"><div class="ic" style="background:rgba(139,108,255,.15)">🎙️</div><div class="tx"><b>音色</b><span>温柔女声 · 火山 TTS</span></div><div class="ar" onclick="toast('音色选择')">›</div></div>
-        <div class="row"><div class="ic" style="background:rgba(46,230,200,.15)">💬</div><div class="tx"><b>智能互动</b><span>弹幕关键词自动回复</span></div><div class="ar" onclick="toast('互动设置')">›</div></div>
-      </div>
-      <button class="bigbtn" onclick="startLive()">🚀 开始直播</button>
-      <div class="hint">开播将调用数字人直播接口创建直播任务 <span class="api-tag">API</span></div>
-    </div>
-
-    <!-- ============ 直播中 ============ -->
     <div class="page" id="p-live">
-      <div class="living-wrap">
+      <div class="hd"><div><div class="brand" style="font-size:18px">导播控制台</div><div style="font-size:11px;color:var(--sub);margin-top:2px">场景：家电好物专场</div></div><span class="tag" id="livePlat">抖音平台</span></div>
+      <div class="live-top">
         <div class="stage">
-          <div class="halo"></div>
-          <div class="live-top">
-            <div class="badge"><i></i> 直播中</div>
-            <div class="viewers">👁 <span id="sViewer">128</span> · ⏱ <span id="sTime">00:00</span></div>
-          </div>
-          <div class="dh">
-            <div class="face">👩</div>
-            <div class="body">AI 数字人主播</div>
-            <div class="speak"><i></i><i></i><i></i><i></i><i></i></div>
-          </div>
-          <div class="script-now"><span class="tag">正在口播</span><span id="sScript">欢迎来到直播间，今天给大家介绍我们的爆款好物…</span></div>
+          <div class="rec" id="rec"><i></i> <span id="recTxt">待开播</span></div>
+          <div class="avatar-dh">主</div>
+          <div class="goods-tag">1号商品<br>讲解中</div>
+          <div class="lbl">数字人 · 主播「小播」</div>
         </div>
-        <div class="live-body">
-          <div class="danmu" id="danmuBox"></div>
-          <div class="live-ctl">
-            <div class="lc" onclick="toast('商品讲解列表')"><span class="ci">🛍️</span><span>商品</span></div>
-            <div class="lc" onclick="toast('点赞 +1 ❤️')"><span class="ci">❤️</span><span>点赞</span></div>
-            <div class="lc" onclick="toast('AI 自动回复已开启')"><span class="ci">🤖</span><span>AI回复</span></div>
-            <div class="lc" onclick="toast('更多设置')"><span class="ci">⚙️</span><span>设置</span></div>
-          </div>
-          <div class="logs" id="logBox"><div class="lg">[系统] 直播任务已创建，等待推流…</div></div>
-        </div>
-        <div class="live-bottom">
-          <div class="chat-in" onclick="toast('输入评论（演示）')">说点什么…</div>
-          <button class="end-live" onclick="stopLive()">结束直播</button>
+        <div class="live-ctrl">
+          <div class="state off" id="liveState"><b id="liveStateTxt">未开播</b><br><span id="liveTime" style="font-size:10px;color:var(--sub)">准备就绪</span></div>
+          <button class="btn ghost sm" onclick="toast('场景设置')">设置</button>
+          <button class="btn sm" id="startBtn" onclick="toggleLive()">一键开播</button>
         </div>
       </div>
+      <div class="panel">
+        <h4><i></i>话术下发</h4>
+        <textarea id="script" placeholder="输入主播话术，数字人将按剧本口播…">欢迎来到直播间，今天这款破壁机限时特惠，原价599，现在只要299！</textarea>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" onclick="pushScript()">下发话术</button><button class="btn ghost sm" onclick="toast('已选择话术模板')">话术模板</button><button class="btn ghost sm" onclick="toast('语音合成播报')">🔊 播报</button></div>
+      </div>
+      <div class="panel">
+        <h4><i></i>场控与弹幕回复</h4>
+        <div class="rowline"><span class="k">AI 智能回复</span><div class="switch on" onclick="this.classList.toggle('on');toast('AI 智能回复开关')"></div></div>
+        <div class="rowline"><span class="k">自动点「讲解」</span><div class="switch on" onclick="this.classList.toggle('on');toast('自动讲解开关')"></div></div>
+        <div class="rowline"><span class="k">回复音色</span><span style="color:var(--lime)">助播 · 甜美女声</span></div>
+        <div class="dm" id="dm"><div style="font-size:10px;color:#5a5d6b;text-align:center">— 弹幕流（模拟）—</div></div>
+      </div>
+      <div class="panel">
+        <h4><i></i>单品讲解</h4>
+        <div class="rowline"><span class="k">当前讲解</span><span>第 1 件 · 破壁机</span></div>
+        <div class="rowline"><span class="k">讲解间隔</span><span>每 5 分钟切换</span></div>
+        <div class="rowline"><span class="k">随机语速</span><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
     </div>
-
-    <!-- ============ 消息 ============ -->
-    <div class="page" id="p-msg">
-      <div class="topbar"><div class="brand"><div class="logo">智</div><div>互动消息</div></div></div>
-      <div class="card" style="padding:2px 14px" id="msgList"></div>
-    </div>
-
-    <!-- ============ 我的 ============ -->
     <div class="page" id="p-me">
-      <div class="me-head"><div class="avatar">主</div><h3>AI智播 用户</h3><p>ID: 10086 · 专业版</p></div>
-      <div class="me-grid">
-        <div><b>12</b><span>直播场次</span></div>
-        <div><b>36h</b><span>总时长</span></div>
-        <div><b>2.4w</b><span>总观看</span></div>
+      <div class="me-hd"><div class="avatar">播</div><div><b>V播客用户</b><span>ID: VB-88231 · 普通会员</span></div><span class="tag" style="margin-left:auto">v1.3.0</span></div>
+      <div class="quota"><div><b>2,400</b><span>剩余算力(分钟)</span></div><div><b>3</b><span>音色克隆</span></div><div><b>12</b><span>直播场次</span></div></div>
+      <div class="mlist">
+        <div class="mi"><div class="ic g">额</div>我的额度<span class="arrow">›</span></div>
+        <div class="mi"><div class="ic b">音</div>音色复刻<span class="arrow">›</span></div>
+        <div class="mi"><div class="ic l">卡</div>卡密充值<span class="arrow">›</span></div>
+        <div class="mi"><div class="ic r">算</div>算力明细<span class="arrow">›</span></div>
+        <div class="mi"><div class="ic b">号</div>平台账号<span class="arrow">›</span></div>
+        <div class="mi"><div class="ic g">乐</div>音乐库<span class="arrow">›</span></div>
+        <div class="mi"><div class="ic l">控</div>场控管理<span class="arrow">›</span></div>
+        <div class="mi"><div class="ic r">图</div>贴图库<span class="arrow">›</span></div>
+        <div class="mi"><div class="ic b">备</div>数据备份<span class="arrow">›</span></div>
       </div>
-      <div class="card" style="padding:2px 14px">
-        <div class="row"><div class="ic" style="background:rgba(74,140,255,.15)">👤</div><div class="tx"><b>数字人形象管理</b></div><div class="ar">›</div></div>
-        <div class="row"><div class="ic" style="background:rgba(139,108,255,.15)">🎙️</div><div class="tx"><b>音色管理</b></div><div class="ar">›</div></div>
-        <div class="row"><div class="ic" style="background:rgba(46,230,200,.15)">📜</div><div class="tx"><b>话术剧本库</b></div><div class="ar">›</div></div>
-        <div class="row"><div class="ic" style="background:rgba(255,182,72,.15)">📊</div><div class="tx"><b>直播数据报表</b></div><div class="ar">›</div></div>
-        <div class="row"><div class="ic" style="background:rgba(255,77,106,.15)">⚙️</div><div class="tx"><b>设置</b></div><div class="ar">›</div></div>
-      </div>
-      <div class="hint">AI智播 · 用户端 v1.1.0 · 数字人直播助手</div>
+      <div class="foot">AI直播助手 · V播客 · 反编译还原原型</div>
     </div>
-
   </div>
   <div class="tabbar">
-    <div class="tab on" data-p="home" onclick="switchTab('home')"><span class="ti">🏠</span><span>首页</span></div>
-    <div class="tab" data-p="setup" onclick="switchTab('setup')"><span class="ti">🎬</span><span>开播</span></div>
-    <div class="tab" id="tab-live" style="visibility:hidden"><span class="live-dot">●</span><span>直播中</span></div>
-    <div class="tab" data-p="msg" onclick="switchTab('msg')"><span class="ti">💬</span><span>消息</span></div>
-    <div class="tab" data-p="me" onclick="switchTab('me')"><span class="ti">👤</span><span>我的</span></div>
+    <div class="tab on" data-p="home" onclick="go('home')"><span class="ti">⌂</span>首页</div>
+    <div class="tab" data-p="live" onclick="go('live')"><span class="ti">▶</span>直播</div>
+    <div class="tab" data-p="me" onclick="go('me')"><span class="ti">◉</span>我的</div>
   </div>
+  <div class="toast" id="toast"></div>
 </div>
-<div id="toast"></div>
 <script>
-/* ================= 接口接入层 =================
-   后续对接「百度一镜」PaaS 时，只需在这里替换 mock 实现：
-   - 短视频接口：GET /api/short-videos  → loadShortVideos()
-   - 数字人直播接口：POST /api/live/start → startLiveApi(params)
-                    POST /api/live/stop  → stopLiveApi(taskId)
-   界面与交互无需改动。 */
-const API = {
-  loadShortVideos(){
-    return [
-      {emoji:'🎤',title:'数字人讲解 · 夏季新款连衣裙爆款话术',dur:'01:28',view:'2.1w',bg:'linear-gradient(135deg,#2a4a7a,#123)'},
-      {emoji:'🎁',title:'好物推荐 · 直播间高转化开场白',dur:'00:56',view:'8,940',bg:'linear-gradient(135deg,#6a3a7a,#213)'},
-      {emoji:'☕',title:'咖啡机数字人演示 · 卖点口播',dur:'02:14',view:'1.5w',bg:'linear-gradient(135deg,#7a5a2a,#312)'},
-      {emoji:'💄',title:'美妆专场 · 智能互动答疑片段',dur:'00:43',view:'6,720',bg:'linear-gradient(135deg,#7a2a4a,#312)'}
-    ];
-  },
-  startLiveApi(params){ console.log('[API] 数字人直播开播参数:', params); return {taskId:'task_'+Date.now()}; },
-  stopLiveApi(taskId){ console.log('[API] 停止直播任务:', taskId); return {ok:true}; }
-};
-
-let curPf='抖音', curAv='晓雅', curScript='爆款带货', curGoods='夏季连衣裙';
-let isLive=false, liveSec=0, liveTimer=null, dmTimer=null, viewer=128, taskId=null;
-let danmuIdx=0;
-
-const PF=[['抖音','🎵'],['快手','⚡'],['视频号','💬'],['淘宝','🛒']];
-const AV=[['晓雅','👩','linear-gradient(135deg,#ffd9b3,#e8a978)'],['志强','👨','linear-gradient(135deg,#b8d8ff,#7aa8e8)'],['小美','👩‍🦰','linear-gradient(135deg,#ffc9d9,#e890b0)'],['阿杰','🧑','linear-gradient(135deg,#c9ffe0,#7ae0a8)'],['主播欣','👩‍🦱','linear-gradient(135deg,#e6c9ff,#b08ae8)']];
-const SCRIPTS=['爆款带货','品牌宣传','知识科普','互动答疑'];
-const GOODS=['夏季连衣裙','咖啡机','美妆套装','数码好物','不讲解'];
-const DANMU=['这个多少钱呀','想要链接','主播好漂亮','已下单','讲讲第二个商品','有没有优惠','关注了','怎么买','物流快吗','再介绍一下'];
-const SCRIPT_LINES=['欢迎来到直播间，今天给大家介绍我们的爆款好物…','这款连衣裙采用冰丝面料，夏天穿特别凉快…','现在下单立减三十，还送运费险哦…','想要的家人扣 1，我给大家上链接…','感谢新进直播间的朋友，点个关注不迷路…'];
-
-function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)}
-function go(p){ switchTab(p); }
-function switchTab(p){
-  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
-  const pg=document.getElementById('p-'+p); if(pg) pg.classList.add('on');
-  document.querySelectorAll('.tab[data-p]').forEach(t=>t.classList.toggle('on',t.dataset.p===p));
-  document.querySelector('.content').scrollTop=0;
-  if(p==='home') refreshStats();
+const scenes=[
+  {icon:'🛋',name:'家电好物专场',time:'今日 09:30 · 已结束',live:false},
+  {icon:'🍲',name:'食品生鲜日播',time:'每日 14:00 · 定时',live:false},
+  {icon:'👗',name:'服饰上新直播间',time:'直播中 · 01:12:36',live:true},
+];
+const sc=document.getElementById('scenes');
+sc.innerHTML=scenes.map(s=>`<div class="scene"><div class="thumb">${s.icon}</div><div class="meta"><b>${s.name}<span class="pill ${s.live?'live':'off'}">${s.live?'直播中':'待开播'}</span></b><span>${s.time}</span></div><button class="btn ${s.live?'ghost':''}" onclick="go('live');toast('${s.name}')">${s.live?'进入':'开播'}</button></div>`).join('');
+function go(p){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('on'));
+  document.getElementById('p-'+p).classList.add('on');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.p===p));
+  document.querySelector('.screen').scrollTop=0;
 }
-function renderHome(){
-  const vs=API.loadShortVideos();
-  document.getElementById('videoList').innerHTML=vs.map(v=>
-    '<div class="vcard"><div class="vthumb" style="background:'+v.bg+'">'+v.emoji+'<span class="play">▶</span><span class="dur">'+v.dur+'</span></div>'+
-    '<div class="vinfo"><b>'+v.title+'</b><div class="meta"><span>▶ '+v.view+'</span><span>短视频</span></div></div></div>'
-  ).join('');
+let toastT;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1600)}
+let living=false,sec=0,timer=null;
+function toggleLive(){
+  living=!living;const b=document.getElementById('startBtn'),s=document.getElementById('liveState'),r=document.getElementById('rec');
+  if(living){b.textContent='结束直播';b.classList.add('red');s.classList.remove('off');document.getElementById('liveStateTxt').textContent='直播中';r.style.display='flex';document.getElementById('recTxt').textContent='直播中';
+    timer=setInterval(()=>{sec++;const h=String(Math.floor(sec/3600)).padStart(2,'0'),m=String(Math.floor(sec%3600/60)).padStart(2,'0'),s2=String(sec%60).padStart(2,'0');document.getElementById('liveTime').textContent='已持续 '+h+':'+m+':'+s2;pushDM()},1000);
+    toast('已开播 · 数字人开始口播');
+  }else{clearInterval(timer);b.textContent='一键开播';b.classList.remove('red');s.classList.add('off');document.getElementById('liveStateTxt').textContent='未开播';document.getElementById('liveTime').textContent='已结束';document.getElementById('recTxt').textContent='待开播';toast('直播已结束')}
 }
-function renderSetup(){
-  document.getElementById('pfList').innerHTML=PF.map(p=>'<div class="opt'+(p[0]===curPf?' sel':'')+'" onclick="selPf(\''+p[0]+'\')"><span class="pico">'+p[1]+'</span>'+p[0]+'</div>').join('');
-  document.getElementById('avList').innerHTML=AV.map(a=>'<div class="av'+(a[0]===curAv?' sel':'')+'" onclick="selAv(\''+a[0]+'\')"><div class="pic" style="background:'+a[2]+'">'+a[1]+'</div><span>'+a[0]+'</span></div>').join('');
-  document.getElementById('scriptList').innerHTML=SCRIPTS.map(s=>'<div class="opt'+(s===curScript?' sel':'')+'" onclick="selOpt(\'script\',\''+s+'\')">'+s+'</div>').join('');
-  document.getElementById('goodsList').innerHTML=GOODS.map(g=>'<div class="opt'+(g===curGoods?' sel':'')+'" onclick="selOpt(\'goods\',\''+g+'\')">'+g+'</div>').join('');
-}
-function selPf(v){curPf=v;renderSetup()}
-function selAv(v){curAv=v;renderSetup()}
-function selOpt(k,v){if(k==='script')curScript=v;else curGoods=v;renderSetup()}
-function startLive(){
-  const params={platform:curPf,avatar:curAv,script:curScript,goods:curGoods};
-  const r=API.startLiveApi(params); taskId=r.taskId;
-  isLive=true; liveSec=0; viewer=128;
-  document.getElementById('tab-live').style.visibility='visible';
-  switchTab('live');
-  addLog('<b>任务已创建</b> · '+curPf+' / '+curAv);
-  addLog('数字人开始口播 · '+curScript);
-  liveTimer=setInterval(()=>{
-    liveSec++; viewer+=Math.floor(Math.random()*5)-1;
-    document.getElementById('sTime').textContent=fmt(liveSec);
-    document.getElementById('sViewer').textContent=viewer;
-    if(liveSec%6===0){const l=SCRIPT_LINES[danmuIdx%SCRIPT_LINES.length];document.getElementById('sScript').textContent=l;danmuIdx++;addLog('<b>口播</b> 切换到下一话术段')}
-  },1000);
-  dmTimer=setInterval(pushDanmu,1400);
-  toast('开播成功，数字人开始口播');
-}
-function stopLive(){
-  if(!confirm('确定结束本次直播？'))return;
-  API.stopLiveApi(taskId);
-  clearInterval(liveTimer);clearInterval(dmTimer);isLive=false;
-  document.getElementById('tab-live').style.visibility='hidden';
-  addLog('<b>直播已结束</b>');
-  toast('直播已结束');
-  setTimeout(()=>switchTab('home'),600);
-}
-function fmt(s){const m=Math.floor(s/60),ss=s%60;return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss}
-function pushDanmu(){
-  const box=document.getElementById('danmuBox');
-  const txt=DANMU[Math.floor(Math.random()*DANMU.length)];
-  const d=document.createElement('div');d.className='dm';
-  d.innerHTML='<b>用户'+Math.floor(Math.random()*900+100)+'</b>：'+txt;
-  d.style.top=(Math.random()*80)+'px';
-  box.appendChild(d);setTimeout(()=>d.remove(),6000);
-  if(Math.random()<0.4)addLog('<b>AI回复</b> 已自动回应弹幕');
-}
-function addLog(t){
-  const box=document.getElementById('logBox');
-  const d=document.createElement('div');d.className='lg';
-  d.innerHTML='['+fmt(liveSec)+'] '+t;box.insertBefore(d,box.firstChild);
-  if(box.children.length>8)box.removeChild(box.lastChild);
-}
-function refreshStats(){
-  document.getElementById('sHours').textContent=(12+liveSec/3600).toFixed(1)+'h';
-  document.getElementById('sView').textContent=(24000+viewer).toLocaleString();
-  document.getElementById('sFans').textContent='+'+Math.floor(120+viewer/3);
-  document.getElementById('sInc').textContent='¥'+(3680+viewer*3).toLocaleString();
-}
-function renderMsg(){
-  const msgs=[['🤖','AI智播助手','数字人话术已更新，爆款带货脚本 v2 已就绪','刚刚','#8b6cff'],
-    ['👩','晓雅（数字人）','本次直播口播流畅度 98%，互动响应正常','10:32','#2ee6c8'],
-    ['🎵','抖音平台','直播任务同步成功，推流稳定','昨天','#4a8cff'],
-    ['💬','观众 小李','主播什么时候再上那款连衣裙呀？','昨天','#ffb648']];
-  document.getElementById('msgList').innerHTML=msgs.map(m=>
-    '<div class="msg-item"><div class="ma" style="background:'+m[4]+'33">'+m[0]+'</div><div style="flex:1"><b>'+m[1]+'</b><p>'+m[2]+'</p></div><span class="time">'+m[3]+'</span></div>'
-  ).join('');
-}
-renderHome();renderSetup();renderMsg();refreshStats();
+const dmPool=[['用户_8821','这个多少钱呀？','主播：299 包邮哦～'],['采购老王','有质保吗','一年质保，放心购买'],['小刚','能开发票吗','支持电子发票'],['用户_3390','链接在哪','点击左下角小黄车'],['阿美','声音好听','感谢关注，点个灯牌']];let di=0;
+function pushDM(){const d=document.getElementById('dm'),p=dmPool[di++%dmPool.length],el=document.createElement('div');el.className='dm-item';el.innerHTML=`<span class="u">${p[0]}：</span>${p[1]}<br><span class="ai">AI：${p[2]}</span>`;d.appendChild(el);while(d.children.length>6)d.removeChild(d.firstChild);d.scrollTop=d.scrollHeight}
+function pushScript(){const v=document.getElementById('script').value.trim();toast(v?'话术已下发 · 数字人开始口播':'请先输入话术')}
 </script>
 </body>
 </html>

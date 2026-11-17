@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- LG-Sticker 插件清单：贴图编辑器需要相机预览与读取相册素材。
+     合并进主工程后即生效（需 HBuilderX 自定义基座出包）。
+     包名规则：uni_modules 下 UTS 插件为 uts.sdk.modules.(插件ID转驼峰)。
+     本插件目录 LG-Sticker → uts.sdk.modules.LGSticker。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="uts.sdk.modules.LGSticker">
+
+    <!-- 摄像头预览：贴图场景的实景层（画中画）依赖 Camera2 预览。 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 贴图素材选择/短视频背景：Android 13+ 走系统照片选择器，低版本回落到外部存储读权限。 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+</manifest>

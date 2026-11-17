@@ -1,7 +1,7 @@
 {
-  "product": "AI智播",
-  "version": "1.1.0",
-  "channel": "aizhibo",
+  "product": "AI直播助手",
+  "version": "1.3.0",
+  "channel": "vboke",
   "entry": "index.html",
-  "description": "AI智播 用户端开播 App（数字人直播助手）；管理后台见 admin/index.html"
+  "description": "V播客 · AI直播助手（数字人无人直播中控）；由 vbaokebase.apk 反编译还原，管理后台见 admin/index.html"
 }

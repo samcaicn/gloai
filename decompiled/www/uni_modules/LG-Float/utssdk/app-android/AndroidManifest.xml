@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- LG-Float 插件清单：声明系统级悬浮窗（数据显示在其他应用上层）所需的权限。
+     合并进主工程后即生效（需 HBuilderX 自定义基座出包，见 docs）。
+     包名规则：uni_modules 下 UTS 插件为 uts.sdk.modules.(插件ID转驼峰)。
+     本插件目录 LG-Float → uts.sdk.modules.LGFloat。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="uts.sdk.modules.LGFloat">
+
+    <!-- 悬浮窗权限：Android 6.0+ 为特殊权限，需用户在系统设置手动授予。
+         未声明时系统不把本应用列入「显示在其他应用上层」列表，
+         Settings.canDrawOverlays 恒为 false → 悬浮窗无法显示、也无法引导开启。 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+</manifest>

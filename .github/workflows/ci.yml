@@ -1,4 +1,4 @@
-name: AI智播 — 体检 + Web热更新产物 + 正式签名APK构建
+name: V播客/AI直播助手 — 体检 + Web热更新产物 + 正式签名APK构建
 
 # 三条腿：
 #   1. check    —— 结构体检（入口/产品名/HTML 标签括号）。
@@ -12,16 +12,16 @@ name: AI智播 — 体检 + Web热更新产物 + 正式签名APK构建
 #   apk —— push → artifact(ai-zhibo-apk-release) → 下载安装；壳优先加载 files/index.html。
 on:
   push:
-    branches: ['aizhibo']
+    branches: ['vboke']
   pull_request:
-    branches: ['aizhibo']
+    branches: ['vboke']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: aizhibo-ci-${{ github.ref }}
+  group: vboke-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -38,7 +38,7 @@ jobs:
           set -e
           [ -s index.html ] || { echo "FAIL: 缺少 index.html"; exit 1; }
           [ -s version.json ] || { echo "FAIL: 缺少 version.json"; exit 1; }
-          grep -q "AI智播" index.html || { echo "FAIL: index.html 未标记产品名 AI智播"; exit 1; }
+          grep -q "AI直播助手" index.html || { echo "FAIL: index.html 未标记产品名 AI直播助手"; exit 1; }
           echo "OK: 入口文件与产品标识校验通过"
 
       - name: 校验 HTML 结构完整性
@@ -58,7 +58,7 @@ jobs:
             if html.count(a) != html.count(b):
               errs.append('括号不匹配: %s%d / %s%d' % (a, html.count(a), b, html.count(b)))
           v = json.load(open('version.json', encoding='utf-8'))
-          assert v.get('product') == 'AI智播', 'version.json 产品名错误'
+          assert v.get('product') == 'AI直播助手', 'version.json 产品名错误'
           if errs:
             print('FAIL:', '; '.join(errs)); sys.exit(1)
           print('OK: HTML 结构通过，版本', v.get('version'), '（%d 字符）' % len(html))
@@ -95,7 +95,7 @@ jobs:
       - name: Upload Artifact (web 热更新产物)
         uses: actions/upload-artifact@v4
         with:
-          name: ai-zhibo-web
+          name: vboke-web
           path: |
             index.html
             admin/index.html
@@ -197,6 +197,6 @@ jobs:
       - name: Upload APK Artifact (正式签名包)
         uses: actions/upload-artifact@v4
         with:
-          name: ai-zhibo-apk-release
+          name: vboke-apk-release
           path: app/build/outputs/apk/release/*.apk
           retention-days: 90

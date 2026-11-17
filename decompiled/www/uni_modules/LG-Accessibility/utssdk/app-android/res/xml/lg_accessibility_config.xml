@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 无障碍服务能力配置（行为对齐历史实现 res/xml/accessibilityreply.xml）。
+     android:description：历史实现用 @string/accessibility_reply；本插件不携带 string 资源，
+     故省略 description，服务列表名由 AndroidManifest 的 android:label 提供。
+     推断/需真机确认：省略 description 时系统仍可正常绑定（AccessibilityServiceInfo.getDescription
+     为 null，仅影响设置页描述文案，不影响读屏/手势能力）。 -->
+<accessibility-service
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:notificationTimeout="100"
+    android:accessibilityFlags="flagReportViewIds|flagRequestFilterKeyEvents|flagRetrieveInteractiveWindows"
+    android:canRetrieveWindowContent="true"
+    android:canRequestFilterKeyEvents="true"
+    android:canPerformGestures="true" />
