@@ -17,6 +17,9 @@ import com.wangzan101.mika.core.testing.fakeModel
 import com.wangzan101.mika.core.tool.ActionPass
 import com.wangzan101.mika.core.tool.FakeScreen
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -199,5 +202,29 @@ class ChildRunsTest {
         val result = runner.spawn(child, null)
         assertEquals(ChildPhase.Failed, result.phase)
         assertEquals(ChildPhase.Failed, store.get("c")?.phase)
+    }
+
+    @Test fun batchReportsEachChildStatusAndStartupErrorInTaskOrder() = runBlocking {
+        val host = ChildRunHost { spec, _ ->
+            when (spec.goal) {
+                "查甲" -> ChildResult(RunId("child-a"), ChildPhase.Completed, "x".repeat(750))
+                "查乙" -> ChildResult(RunId("child-b"), ChildPhase.Failed, "网页未加载")
+                else -> error("子任务存储不可用")
+            }
+        }
+        val tools = toolDispatcher(FakeScreen(), runSpec = RunSpec(RunId("parent"), "goal", "thread"), childHost = host)
+        val result = tools.execute(Part.ToolCall("s", "spawn_agent",
+            """{"tasks":["查甲","查乙","查丙"],"maxResultChars":500}"""), ActionPass())
+        val entries = checkNotNull(result.content["results"]).jsonArray.map { it.jsonObject }
+
+        assertEquals("false", result.content["ok"].toString())
+        assertEquals(listOf("查甲", "查乙", "查丙"), entries.map { it.getValue("goal").jsonPrimitive.content })
+        assertEquals(listOf("completed", "failed", "failed"), entries.map { it.getValue("status").jsonPrimitive.content })
+        assertEquals("child-a", entries[0].getValue("childRunId").jsonPrimitive.content)
+        assertEquals("true", entries[0]["truncated"].toString())
+        assertEquals("750", entries[0]["fullLength"].toString())
+        assertEquals("child-b", entries[1].getValue("childRunId").jsonPrimitive.content)
+        assertTrue(entries[2].getValue("error").jsonPrimitive.content.contains("子任务存储不可用"))
+        assertTrue(result.content.getValue("result").jsonPrimitive.content.contains("网页未加载"))
     }
 }

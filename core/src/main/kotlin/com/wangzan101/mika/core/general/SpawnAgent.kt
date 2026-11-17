@@ -7,6 +7,7 @@ import com.wangzan101.mika.core.observation.Observation
 import com.wangzan101.mika.core.observation.Trust
 import com.wangzan101.mika.core.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Prompts
+import com.wangzan101.mika.core.record.Redactor
 import com.wangzan101.mika.core.run.Attendance
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunOrigin
@@ -27,6 +28,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -74,7 +78,15 @@ internal object SpawnAgent : AgentTool {
                         runOne(goal, parent, host, format, steps, limit, parallelChild = true)
                     }
                     catch (e: CancellationException) { throw e }
-                    catch (e: Exception) { failure("子任务起不来: ${e.message ?: e::class.simpleName}") }
+                    catch (e: Exception) {
+                        val message = Redactor.text("子任务起不来: ${e.message ?: e::class.simpleName}").take(limit)
+                        ToolExecution(buildJsonObject {
+                            put("ok", false)
+                            put("goal", goal.take(200))
+                            put("status", "failed")
+                            put("error", Untrusted.wrap(message))
+                        })
+                    }
                 }
             }.awaitAll()
         }
@@ -103,9 +115,9 @@ internal object SpawnAgent : AgentTool {
         }, observations = listOf(Observation(ObsKind.Reply, text, source = "child", trust = Trust.Untrusted)))
     }
 
-    /** 把几个子任务的结果汇成一条:每个的结局、正文都在自己的那一节里。 */
+    /** 合并正文，并按同一顺序返回每项的状态等元数据。 */
     private fun merge(results: List<Pair<String, ToolExecution>>): ToolExecution {
-        val okAll = results.all { (_, r) -> r.content["ok"].toString() == "true" }
+        val okAll = results.all { (_, r) -> r.content["ok"] == JsonPrimitive(true) }
         val text = results.joinToString("\n\n") { (goal, r) ->
             "### ${goal.take(200)}\n${r.observations.firstOrNull()?.text.orEmpty()}"
         }
@@ -113,6 +125,7 @@ internal object SpawnAgent : AgentTool {
             put("ok", okAll)
             put("ranInParallel", results.size)
             put("result", Untrusted.wrap(text))
+            put("results", JsonArray(results.map { (_, r) -> JsonObject(r.content - "result") }))
         }, observations = results.mapNotNull { it.second.observations.firstOrNull() })
     }
 
