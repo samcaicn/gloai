@@ -22,6 +22,8 @@ import kotlin.coroutines.resumeWithException
  * 请求用 OkHttp 的异步接口,响应体读取期间也保持可取消。
  */
 internal object UpdateProbe {
+    private const val MAX_METADATA_BYTES = 2L * 1024 * 1024
+
     /** 发布页里的最新版本链接。脚本里拼接出来的 `releases/tag/' + ...` 不会匹配。 */
     private val TAG = Regex("""releases/tag/([A-Za-z0-9._+-]+)""")
 
@@ -44,6 +46,8 @@ internal object UpdateProbe {
             get(client, source + apiUrl, userAgent, json = true)
         } catch (e: CancellationException) {
             throw e
+        } catch (_: MetadataTooLarge) {
+            return null
         } catch (e: Exception) {
             apiFailure = e
             null
@@ -73,6 +77,8 @@ internal object UpdateProbe {
             get(client, source + base + "/expanded_assets/$tag", userAgent, json = false)
         } catch (e: CancellationException) {
             throw e
+        } catch (_: MetadataTooLarge) {
+            return null
         } catch (_: Exception) {
             null
         }
@@ -109,7 +115,7 @@ internal object UpdateProbe {
         return execute(noRedirect, request) { resp ->
             if (resp.code in 300..399) resp.header("Location")?.let(::tagIn)
             else if (!resp.isSuccessful) null
-            else resp.body?.string()?.let(::tagIn)
+            else tagIn(resp.readMetadata())
         }
     }
 
@@ -123,8 +129,17 @@ internal object UpdateProbe {
         }
         return execute(client, builder.build()) { resp ->
             if (!resp.isSuccessful) throw HttpFailure(resp.code)
-            resp.body?.string() ?: throw IOException("empty body")
+            resp.readMetadata()
         }
+    }
+
+    /** 已知长度可以提前拒绝，实际读取上限也覆盖分块和解压后的响应。 */
+    private fun Response.readMetadata(): String {
+        val metadata = body ?: throw IOException("empty body")
+        if (metadata.contentLength() > MAX_METADATA_BYTES || metadata.source().request(MAX_METADATA_BYTES + 1)) {
+            throw MetadataTooLarge()
+        }
+        return metadata.string()
     }
 
     private suspend fun <T> execute(client: OkHttpClient, request: Request, read: (Response) -> T): T =
@@ -171,4 +186,5 @@ internal object UpdateProbe {
     }
 
     private class HttpFailure(val code: Int) : IOException("HTTP $code")
+    private class MetadataTooLarge : IOException("update metadata exceeds $MAX_METADATA_BYTES bytes")
 }

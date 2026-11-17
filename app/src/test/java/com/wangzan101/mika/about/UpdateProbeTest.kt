@@ -77,6 +77,34 @@ class UpdateProbeTest {
         assertEquals(digest, found.apkDigest)
     }
 
+    @Test fun rejectsOversizedMetadataWithoutAContentLength() = runTest {
+        val metadata = """{"tag_name":"v0.3.0","assets":[]}"""
+        server.enqueue(MockResponse().setChunkedBody(metadata.padEnd(2 * 1024 * 1024 + 1), 8192))
+        val found = UpdateProbe.fetch(UpdateChecker.defaultClient(), mirror, api, releases, emptyList(), "Mika/test")
+        assertNull(found)
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test fun rejectsOversizedReleaseAndAssetPages() = runTest {
+        val releasePage = """<a href="/releases/tag/v0.3.0">latest</a>"""
+        server.dispatcher = dispatcher { path ->
+            when {
+                path.endsWith("/api") -> MockResponse().setResponseCode(403)
+                path.endsWith("/latest") -> MockResponse().setBody(releasePage.padEnd(2 * 1024 * 1024 + 1))
+                else -> MockResponse().setResponseCode(404)
+            }
+        }
+        assertNull(UpdateProbe.fetch(UpdateChecker.defaultClient(), mirror, api, releases, emptyList(), "Mika/test"))
+        server.dispatcher = dispatcher { path ->
+            when {
+                path.endsWith("/api") -> MockResponse().setResponseCode(403)
+                path.endsWith("/latest") -> MockResponse().setBody(releasePage)
+                else -> MockResponse().setBody(assetsPage("Mika-v0.3.0.apk" to null).padEnd(2 * 1024 * 1024 + 1))
+            }
+        }
+        assertNull(UpdateProbe.fetch(UpdateChecker.defaultClient(), mirror, api, releases, emptyList(), "Mika/test"))
+    }
+
     /** 镜像不代理 API(403)时退到发布页:302 的 Location 里取 tag,再从附件页取文件名和摘要。 */
     @Test fun mirrorApi403FallsBackToRedirectingReleasePage() = runTest {
         server.dispatcher = dispatcher { path ->
