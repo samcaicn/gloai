@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">Pilih folder untuk baca dan tulis</string>
+    <string name="folder_grant_writable">Baca dan tulis</string>
+    <string name="folder_grant_readonly">Hanya baca</string>
+    <string name="folder_grant_unavailable">Folder tidak tersedia; pilih kembali</string>
+    <string name="folder_grant_revoke">Hapus akses</string>
+    <string name="folder_grant_loading">Memuat folder…</string>
+    <string name="folder_grant_error">Tidak dapat mengakses folder. Pilih folder yang dapat dibaca dan ditulis atau coba lagi.</string>
+    <string name="tool_list_folder_files">Lihat folder yang diizinkan</string>
+</resources>

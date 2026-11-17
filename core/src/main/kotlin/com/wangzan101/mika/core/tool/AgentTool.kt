@@ -29,7 +29,7 @@ enum class Verb {
     ListApps, LaunchApp, OpenLink, ShareText, AppAfterTask, SmsLogin,
     SetAlarm, SetTimer, ShowAlarms, AddCalendarEvent, BulkAddCalendarEvents, SetWheel,
     Navigate, ReadPage, EvaluateJs, SiteCommand, Tabs, Downloads, Upload, SiteMode, Script, Interact, Capture, WaitFor, KeepOpen,
-    RunCommand, RunBundledScript, ReadFile, WriteFile, SearchFiles, ShareFile, ViewImage,
+    RunCommand, RunBundledScript, ReadFile, WriteFile, SearchFiles, ShareFile, ViewImage, ListFolderFiles,
     ListDeviceFiles, CopyDeviceFile, SearchDeviceFiles, ListDeviceDirectoryHints, UpdateDeviceDirectoryDescription,
     RootCommand,
     CallState, CallDial, CallAnswer, CallHangup, CallTakeover,

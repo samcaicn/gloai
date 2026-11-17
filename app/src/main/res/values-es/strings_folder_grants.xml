@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">Elegir carpeta para leer y guardar</string>
+    <string name="folder_grant_writable">Lectura y escritura</string>
+    <string name="folder_grant_readonly">Solo lectura</string>
+    <string name="folder_grant_unavailable">Carpeta no disponible; selecciónala de nuevo</string>
+    <string name="folder_grant_revoke">Quitar acceso</string>
+    <string name="folder_grant_loading">Cargando carpetas…</string>
+    <string name="folder_grant_error">No se pudo acceder. Elige una carpeta con permiso de lectura y escritura o inténtalo de nuevo.</string>
+    <string name="tool_list_folder_files">Ver carpetas autorizadas</string>
+</resources>

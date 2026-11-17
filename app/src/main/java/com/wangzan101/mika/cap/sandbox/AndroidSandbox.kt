@@ -121,6 +121,7 @@ class AndroidSandbox internal constructor(
     private val proxy: () -> String = { "" },
     /** APK 内的桥客户端；已有运行环境也要随 APK 更新。 */
     private val clientScript: () -> ByteArray? = { null },
+    override val folderFiles: com.wangzan101.mika.core.cap.sandbox.FolderFiles? = null,
 ) : SandboxPort {
     override val tree get() = dirs.tree
 
@@ -132,6 +133,7 @@ class AndroidSandbox internal constructor(
         allowNetwork = { state.networkAllowed },
         proxy = { NetProxyStore.get(context).get() },
         clientScript = { context.assets.open("sandbox/mika").use { it.readBytes() } },
+        folderFiles = GrantedFolderFiles(context.applicationContext.contentResolver),
     )
 
     private val quota = ShareQuota()

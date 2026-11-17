@@ -2,7 +2,7 @@
 <resources>
     <string name="device_dirs_title">Папки устройства</string>
     <string name="device_dirs_explanation">Подсказки помогают Mika находить файлы. Добавление подсказки не даёт доступа; разрешите доступ к каждой сохранённой папке отдельно.</string>
-    <string name="device_dirs_authorize">Разрешить доступ к папке</string>
+    <string name="device_dirs_authorize">Разрешить чтение этой папки</string>
     <string name="device_dirs_recursive">Включая вложенные папки</string>
     <string name="device_dirs_not_synced">Разрешение не синхронизировано</string>
     <string name="device_dirs_synced">Разрешение синхронизировано</string>
@@ -19,7 +19,7 @@
     <string name="device_dirs_delete">Удалить подсказку</string>
     <string name="device_dirs_save">Сохранить</string>
     <string name="device_dirs_cancel">Отмена</string>
-    <string name="device_dirs_available">Доступна</string>
+    <string name="device_dirs_available">Только чтение и импорт</string>
     <string name="device_dirs_missing">Папка не найдена</string>
     <string name="device_dirs_denied">Доступ запрещён</string>
     <string name="device_dirs_unknown">Статус недоступен</string>

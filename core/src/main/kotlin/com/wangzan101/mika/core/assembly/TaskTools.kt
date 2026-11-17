@@ -158,7 +158,9 @@ fun toolDispatcher(
         object : CapabilityProvider {
             override val id = SANDBOX
             override fun open(spec: RunSpec) = SandboxCapability(sandbox, workspace, visionEnabled,
-                onSandboxCommand, onSandboxProgress, onSandboxPreparing, onSandboxScript)
+                onSandboxCommand, onSandboxProgress, onSandboxPreparing, onSandboxScript,
+                folderAccess = spec.provenance.origin == com.wangzan101.mika.core.run.RunOrigin.Ui &&
+                    spec.provenance.attendance != com.wangzan101.mika.core.run.Attendance.Unattended && !spec.readOnly)
         },
     ) + listOfNotNull(root?.let { port ->
         object : CapabilityProvider {

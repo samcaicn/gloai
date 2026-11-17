@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">Выбрать папку для чтения и записи</string>
+    <string name="folder_grant_writable">Чтение и запись</string>
+    <string name="folder_grant_readonly">Только чтение</string>
+    <string name="folder_grant_unavailable">Папка недоступна — выберите её снова</string>
+    <string name="folder_grant_revoke">Убрать доступ</string>
+    <string name="folder_grant_loading">Загрузка папок…</string>
+    <string name="folder_grant_error">Нет доступа к папке. Выберите папку с правом чтения и записи или повторите попытку.</string>
+    <string name="tool_list_folder_files">Просмотр разрешённых папок</string>
+</resources>

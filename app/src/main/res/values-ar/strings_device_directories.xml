@@ -2,7 +2,7 @@
 <resources>
     <string name="device_dirs_title">مجلدات الجهاز</string>
     <string name="device_dirs_explanation">تساعد تلميحات المجلدات Mika في العثور على الملفات. لا تمنح إضافة تلميح إذن الوصول؛ اسمح بالوصول لكل مجلد محفوظ بشكل منفصل.</string>
-    <string name="device_dirs_authorize">السماح بالوصول إلى المجلد</string>
+    <string name="device_dirs_authorize">السماح بقراءة هذا المجلد</string>
     <string name="device_dirs_recursive">تضمين المجلدات الفرعية</string>
     <string name="device_dirs_not_synced">لم تتم مزامنة الإذن</string>
     <string name="device_dirs_synced">تمت مزامنة الإذن</string>
@@ -19,7 +19,7 @@
     <string name="device_dirs_delete">حذف التلميح</string>
     <string name="device_dirs_save">حفظ</string>
     <string name="device_dirs_cancel">إلغاء</string>
-    <string name="device_dirs_available">يمكن الوصول إليه</string>
+    <string name="device_dirs_available">قراءة واستيراد فقط</string>
     <string name="device_dirs_missing">المجلد غير موجود</string>
     <string name="device_dirs_denied">تم رفض الوصول</string>
     <string name="device_dirs_unknown">الحالة غير متاحة</string>

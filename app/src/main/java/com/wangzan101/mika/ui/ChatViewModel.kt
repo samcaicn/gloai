@@ -2409,6 +2409,7 @@ class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames =
             "写文件" to R.string.tool_write_file,
             "搜索文件" to R.string.tool_search_files,
             "导出文件" to R.string.tool_export_file,
+            "查看授权文件夹" to R.string.tool_list_folder_files,
             "打开网页" to R.string.tool_open_page,
             "搜索网页" to R.string.web_search_action,
             "切换网页标签" to R.string.tool_switch_tab,

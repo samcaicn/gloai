@@ -1,0 +1,1 @@
+List folders explicitly granted by the user, or up to 200 immediate children of a returned /folders directory. Returns paths, names, read/write status and truncation. These identifiers are not Linux paths.

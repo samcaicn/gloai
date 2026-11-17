@@ -59,6 +59,7 @@ fun DeviceDirectoriesScreen(store: DeviceDirectoryStore, hub: HelperHub, onBack:
         }
     }
     PageScaffold(stringResource(R.string.device_dirs_title), onBack) {
+        GrantedFoldersSection()
         FooterNote(stringResource(R.string.device_dirs_explanation))
         if (writeError) FooterNote(stringResource(R.string.device_dirs_write_failed))
         if (authorizationInvalid) FooterNote(stringResource(R.string.device_dirs_invalid) + " " + stringResource(R.string.device_dirs_edit_path))

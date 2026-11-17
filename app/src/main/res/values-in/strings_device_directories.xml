@@ -2,7 +2,7 @@
 <resources>
     <string name="device_dirs_title">Folder perangkat</string>
     <string name="device_dirs_explanation">Petunjuk folder membantu Mika menemukan file. Menambahkan petunjuk tidak memberikan akses; izinkan setiap folder yang disimpan secara terpisah.</string>
-    <string name="device_dirs_authorize">Izinkan akses folder</string>
+    <string name="device_dirs_authorize">Izinkan membaca folder ini</string>
     <string name="device_dirs_recursive">Sertakan subfolder</string>
     <string name="device_dirs_not_synced">Izin belum disinkronkan</string>
     <string name="device_dirs_synced">Izin telah disinkronkan</string>
@@ -19,7 +19,7 @@
     <string name="device_dirs_delete">Hapus petunjuk</string>
     <string name="device_dirs_save">Simpan</string>
     <string name="device_dirs_cancel">Batal</string>
-    <string name="device_dirs_available">Dapat diakses</string>
+    <string name="device_dirs_available">Hanya baca dan impor</string>
     <string name="device_dirs_missing">Folder tidak ditemukan</string>
     <string name="device_dirs_denied">Akses ditolak</string>
     <string name="device_dirs_unknown">Status tidak tersedia</string>

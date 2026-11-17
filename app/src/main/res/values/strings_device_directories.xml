@@ -2,7 +2,7 @@
 <resources>
     <string name="device_dirs_title">Device folders</string>
     <string name="device_dirs_explanation">Folder hints help Mika find files. Adding a hint does not grant access; authorize each saved folder separately.</string>
-    <string name="device_dirs_authorize">Authorize folder access</string>
+    <string name="device_dirs_authorize">Allow reading this directory</string>
     <string name="device_dirs_recursive">Include subfolders</string>
     <string name="device_dirs_not_synced">Authorization not synced</string>
     <string name="device_dirs_synced">Authorization synced</string>
@@ -19,7 +19,7 @@
     <string name="device_dirs_delete">Delete hint</string>
     <string name="device_dirs_save">Save</string>
     <string name="device_dirs_cancel">Cancel</string>
-    <string name="device_dirs_available">Accessible</string>
+    <string name="device_dirs_available">Read / import only</string>
     <string name="device_dirs_missing">Folder not found</string>
     <string name="device_dirs_denied">Access denied</string>
     <string name="device_dirs_unknown">Status unavailable</string>

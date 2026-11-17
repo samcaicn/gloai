@@ -103,7 +103,7 @@ internal object ReadFile : SandboxTool {
     override val def = ToolDef("read_file",
         Prompts.tool("read_file"),
         mapOf(
-            "path" to str("Sandbox path, absolute or relative to /workspace."),
+            "path" to str("Workspace/skill path, or a /folders file returned by list_folder_files."),
             "offset" to int("Byte offset to start at (default 0).", 0),
             "limit" to int("Bytes to read, 1-262144 (default 65536).", 1, MAX_READ_BYTES),
         ), listOf("path"))
@@ -123,9 +123,10 @@ internal object WriteFile : SandboxTool {
     override val def = ToolDef("write_file",
         Prompts.tool("write_file"),
         mapOf(
-            "path" to str("Sandbox path under /workspace, absolute or relative."),
+            "path" to str("Workspace path, or a file in a granted /folders directory returned by list_folder_files."),
             "content" to str("The text to write, at most 1 MB."),
             "append" to bool("Append instead of replacing (default false)."),
+            "expectedSha256" to str("For an existing /folders file, sha256 from its latest read_file result. Omit only to create a new file."),
         ), listOf("path", "content"))
 
     override suspend fun execute(a: Args, ctx: ToolContext) = ctx.sandboxRunner!!.run { ws, _ -> tree.shared { withContext(Dispatchers.IO) { writeFile(a, ws) } } }
@@ -171,6 +172,8 @@ internal object ShareFile : SandboxTool {
         mapOf(
             "path" to str("Sandbox path of the file under /workspace."),
             "name" to str("Optional file name to save as (default: the file's own name)."),
+            "folderPath" to str("Optional destination /folders path for a UTF-8 text file up to 1 MiB; otherwise saves to Downloads."),
+            "expectedSha256" to str("Required when folderPath already exists; use sha256 from its latest read_file result."),
         ), listOf("path"))
 
     override suspend fun execute(a: Args, ctx: ToolContext) = ctx.sandboxRunner!!.run { ws, _ -> shareFile(a, ws) }
@@ -220,6 +223,20 @@ internal object ViewImage : SandboxTool {
     private val ROLE: String by lazy { Prompts.role("view_image") }
 }
 
+internal object ListFolderFiles : SandboxTool {
+    override val verb = Verb.ListFolderFiles
+    override val label = "查看授权文件夹"
+    override val risk = Risk.Read
+    override val entry = Entry.Opens
+    override val def = ToolDef("list_folder_files", Prompts.tool("list_folder_files"), mapOf(
+        "path" to str("Directory path from a previous listing; omit to list user-granted folders."),
+    ), emptyList())
+    override fun offered(ctx: ToolContext) = ctx.sandboxAvailable() && ctx.sandboxRunner?.foldersAvailable == true
+    override suspend fun execute(a: Args, ctx: ToolContext) = ctx.sandboxRunner!!.run { _, _ ->
+        withContext(Dispatchers.IO) { listFolders(a) }
+    }
+}
+
 internal object SandboxGroup {
-    val tools: List<AgentTool> = listOf(RunCommand, RunBundledScript, ReadFile, WriteFile, SearchFiles, ShareFile, ViewImage)
+    val tools: List<AgentTool> = listOf(RunCommand, RunBundledScript, ReadFile, WriteFile, SearchFiles, ShareFile, ViewImage, ListFolderFiles)
 }

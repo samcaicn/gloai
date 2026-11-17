@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">読み書きするフォルダを選択</string>
+    <string name="folder_grant_writable">読み書き可能</string>
+    <string name="folder_grant_readonly">読み取り専用</string>
+    <string name="folder_grant_unavailable">フォルダを再選択してください</string>
+    <string name="folder_grant_revoke">アクセスを解除</string>
+    <string name="folder_grant_loading">フォルダを読み込み中…</string>
+    <string name="folder_grant_error">フォルダにアクセスできません。読み書き可能なフォルダを選ぶか、再試行してください。</string>
+    <string name="tool_list_folder_files">許可したフォルダを表示</string>
+</resources>

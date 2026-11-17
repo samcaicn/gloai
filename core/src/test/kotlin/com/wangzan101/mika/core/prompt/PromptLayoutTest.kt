@@ -51,7 +51,7 @@ class PromptLayoutTest {
     /** 入口工具(能力那一组收着时也提供的)各有一份短说明,没有多余的;短说明只点名本任务登记的工具。 */
     @Test fun everyEntryToolHasShortDescription() {
         val entries = allTools().filter { it.entry != null }.map { it.name }
-        assertEquals(setOf("phone_launch_app", "phone_list_apps", "phone_set_alarm", "phone_set_timer", "phone_add_calendar_event", "phone_calendar_bulk_insert", "web_navigate", "web_read_page", "run_command"), entries.toSet())
+        assertEquals(setOf("phone_launch_app", "phone_list_apps", "phone_set_alarm", "phone_set_timer", "phone_add_calendar_event", "phone_calendar_bulk_insert", "web_navigate", "web_read_page", "run_command", "list_folder_files"), entries.toSet())
         assertEquals(entries.map { "$it.md" }.toSet(), files("entries"))
         for (e in entries) {
             val text = File(root, "entries/$e.md").readText()

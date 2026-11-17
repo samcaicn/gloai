@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">انتخاب پوشه برای خواندن و نوشتن</string>
+    <string name="folder_grant_writable">خواندن و نوشتن</string>
+    <string name="folder_grant_readonly">فقط خواندن</string>
+    <string name="folder_grant_unavailable">پوشه در دسترس نیست؛ دوباره انتخاب کنید</string>
+    <string name="folder_grant_revoke">لغو دسترسی</string>
+    <string name="folder_grant_loading">در حال بارگیری پوشه‌ها…</string>
+    <string name="folder_grant_error">دسترسی به پوشه ممکن نیست. پوشه‌ای با اجازهٔ خواندن و نوشتن انتخاب کنید یا دوباره تلاش کنید.</string>
+    <string name="tool_list_folder_files">نمایش پوشه‌های مجاز</string>
+</resources>

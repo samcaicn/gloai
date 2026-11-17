@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">Escolher pasta para ler e gravar</string>
+    <string name="folder_grant_writable">Leitura e gravação</string>
+    <string name="folder_grant_readonly">Somente leitura</string>
+    <string name="folder_grant_unavailable">Pasta indisponível; selecione novamente</string>
+    <string name="folder_grant_revoke">Remover acesso</string>
+    <string name="folder_grant_loading">Carregando pastas…</string>
+    <string name="folder_grant_error">Não foi possível acessar. Escolha uma pasta com permissão de leitura e gravação ou tente novamente.</string>
+    <string name="tool_list_folder_files">Ver pastas autorizadas</string>
+</resources>

@@ -2,7 +2,7 @@
 <resources>
     <string name="device_dirs_title">端末のフォルダ</string>
     <string name="device_dirs_explanation">フォルダの手がかりは Mika がファイルを見つけるのに役立ちます。手がかりの追加だけではアクセスは許可されません。保存したフォルダごとに許可してください。</string>
-    <string name="device_dirs_authorize">フォルダへのアクセスを許可</string>
+    <string name="device_dirs_authorize">このフォルダの読み取りを許可</string>
     <string name="device_dirs_recursive">サブフォルダを含める</string>
     <string name="device_dirs_not_synced">許可は未同期です</string>
     <string name="device_dirs_synced">許可は同期済みです</string>
@@ -19,7 +19,7 @@
     <string name="device_dirs_delete">手がかりを削除</string>
     <string name="device_dirs_save">保存</string>
     <string name="device_dirs_cancel">キャンセル</string>
-    <string name="device_dirs_available">アクセス可能</string>
+    <string name="device_dirs_available">読み取り・インポートのみ</string>
     <string name="device_dirs_missing">フォルダが見つかりません</string>
     <string name="device_dirs_denied">アクセスが拒否されました</string>
     <string name="device_dirs_unknown">状態を確認できません</string>

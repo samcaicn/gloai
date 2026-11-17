@@ -27,6 +27,8 @@ sealed interface SandboxStatus {
 
 /** Agent 接触 Linux 沙箱的唯一入口;路径都是沙箱里的路径([SandboxPaths])。 */
 interface SandboxPort {
+    val folderFiles: FolderFiles? get() = null
+
     /** 沙箱目录的树锁:往工作区写的都在它的许可里写。 */
     val tree: SandboxTree
 

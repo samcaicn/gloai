@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">選擇可讀寫的資料夾</string>
+    <string name="folder_grant_writable">可讀取和儲存</string>
+    <string name="folder_grant_readonly">僅可讀取</string>
+    <string name="folder_grant_unavailable">資料夾無法使用，請重新選擇</string>
+    <string name="folder_grant_revoke">取消授權</string>
+    <string name="folder_grant_loading">正在讀取資料夾…</string>
+    <string name="folder_grant_error">無法存取資料夾，請選擇允許讀寫的資料夾或重試。</string>
+    <string name="tool_list_folder_files">檢視授權資料夾</string>
+</resources>
