@@ -416,7 +416,7 @@ private fun PipWindow(
                         )
                     }
                     PipButton(
-                        icon = if (soundOn) MikaIcons.Mute else MikaIcons.Sound,
+                        icon = if (soundOn) MikaIcons.Sound else MikaIcons.Mute,
                         label = stringResource(if (soundOn) R.string.pip_mute else R.string.pip_unmute),
                         onClick = onToggleSound,
                         tag = if (soundOn) "pip-mute" else "pip-unmute",
