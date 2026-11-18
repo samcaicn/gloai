@@ -4,9 +4,6 @@ import androidx.compose.foundation.gestures.scrollBy
 import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.cap.sandbox.AttachmentFailureReason
 import com.wangzan101.mika.core.agent.QuoteMessage
-import com.wangzan101.mika.core.record.ConversationTokens
-import com.wangzan101.mika.core.usage.DeepSeekCost
-import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.core.agent.AttachedPage
 import com.wangzan101.mika.ui.components.DirectionalIcon
 import com.wangzan101.mika.ui.components.GlassSurface
@@ -382,12 +379,7 @@ fun ChatScreen(
         if (grown > 0 && followingTail && !listState.isScrollInProgress) listState.scrollBy(grown.toFloat())
     }
 
-    // 已结束各轮的运行小结:每轮结束那一行写这一轮的 token,顶栏闲着时写这个对话合起来的
-    val endedRuns = ui.exchanges.filter { !it.status.isActive() }.mapNotNull { it.recordedRun }
-    val runMetrics = rememberRunMetrics(endedRuns)
     val context = LocalContext.current
-    val flags = remember(context) { FeatureFlags.get(context) }
-    val showTaskCost by remember(flags) { flags.showTaskCostChanges() }.collectAsState(initial = flags.showTaskCost())
 
     val c = MikaTheme.colors
     val backdrop = rememberGlassBackdrop()
@@ -444,12 +436,9 @@ fun ChatScreen(
                 }
                 ui.exchanges.forEachIndexed { i, ex ->
                     val backgroundNote = i == ui.exchanges.lastIndex && ui.operatingPhone
-                    val metrics = ex.runId?.let(runMetrics::get)
-                    val cost = metrics?.deepSeekCost?.takeIf { showTaskCost }
                     exchange(
                         i, ex, ui.conversationId, ui.takeoverStage, vm, reduceMotion, backgroundNote, openRun, loadSource, openSource, kept,
                         highlightKey = highlightKey,
-                        tokens = ConversationTokens.turn(metrics, includeSideCalls = cost != null), cost = cost,
                         recover = { resume ->
                             val label = if (resume) R.string.chat_resume_request else R.string.chat_restart_request
                             vm.send(context.getString(label, ex.goal), check)
@@ -907,9 +896,6 @@ private fun LazyListScope.exchange(
     kept: KeptPage? = null,
     /** 从搜索或文件库跳过来时要高亮的行 key。 */
     highlightKey: String? = null,
-    /** 这一轮用了多少 token(结束后、读到运行小结时才有)。 */
-    tokens: Long? = null,
-    cost: DeepSeekCost? = null,
     /** 终态后的两个新运行入口:true 从摘要断点继续,false 按原目标重新开始。 */
     recover: (Boolean) -> Unit = {},
     openReport: (String) -> Unit = {}, openPlayback: (String) -> Unit = {},
@@ -949,14 +935,10 @@ private fun LazyListScope.exchange(
     joined.forEach(::steer)
     ex.draft?.takeIf(String::isNotBlank)?.let { draft -> item("d$index") { DraftText(draft, ex.waitingForModel) } }
     waiting.forEach(::steer)
-    val receipt = if (ex.steps.isNotEmpty() || ex.recordedRun != null) {
-        val usage = listOfNotNull(tokens?.let(ChatTokensCopy::amount), cost?.let(ChatTokensCopy::cost)).joinToString(" · ")
-        if (ex.steps.isNotEmpty()) listOf(stepsSummary(ex), usage).filter(String::isNotEmpty).joinToString(" · ") else usage
-    } else ""
     item("r$index") {
         JumpHighlight(highlightKey == "r$index", reduceMotion) {
             StatusCard(ex.status, stage, vm, ex.recordedRun, loadSource, openSource, openRun, "r$index",
-                recover = recover, goal = ex.goal, receipt = receipt, openReport = openReport, openPlayback = openPlayback)
+                recover = recover, goal = ex.goal, openReport = openReport, openPlayback = openPlayback)
         }
     }
     // 这一轮结束后留在后台运行的那一页:还开着是绿色一行(能关),关了是一句原因
@@ -1324,7 +1306,7 @@ private fun StatusCard(
     /** 回答的长按菜单认这一条用的(见 [MessageArea])。 */
     key: String,
     recover: (Boolean) -> Unit = {},
-    goal: String, receipt: String, openReport: (String) -> Unit, openPlayback: (String) -> Unit,
+    goal: String, openReport: (String) -> Unit, openPlayback: (String) -> Unit,
 ) {
     when (status) {
         ExchangeStatus.Working -> Unit
@@ -1387,7 +1369,7 @@ private fun StatusCard(
                     }
                     MarkdownText(status.answer, AnswerText.copy(color = MikaTheme.colors.ink))
                     ReadAloudRow(status.answer, vm)
-                    ReplyActions(runId, openRun, loadSource, openSource, status.evidence, receipt, openReport, openPlayback)
+                    ReplyActions(runId, openRun, loadSource, openSource, status.evidence, openReport, openPlayback)
                 }
             }
         }
@@ -1398,7 +1380,7 @@ private fun StatusCard(
             }
             MarkdownText(status.reason, AnswerText.copy(color = MikaTheme.colors.ink), Modifier.fillMaxWidth().padding(top = 6.dp).answerSurface())
             RecoveryActions(runId, recover)
-            ReplyActions(runId, openRun, loadSource, openSource, null, receipt, openReport, openPlayback)
+            ReplyActions(runId, openRun, loadSource, openSource, null, openReport, openPlayback)
         }
         // 停止后补上的交代当作这一轮的回答,排在「已停止」下面;还在写时一行小字
         is ExchangeStatus.Cancelled -> Column(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
@@ -1414,7 +1396,7 @@ private fun StatusCard(
                 }
             }
             RecoveryActions(runId, recover)
-            ReplyActions(runId, openRun, loadSource, openSource, null, receipt, openReport, openPlayback)
+            ReplyActions(runId, openRun, loadSource, openSource, null, openReport, openPlayback)
         }
     }
 }
@@ -1501,7 +1483,6 @@ private fun ReplyActions(
     loadSource: suspend (String) -> EvidenceSource?,
     openSource: (String?, String?) -> Unit,
     evidence: String?,
-    receipt: String,
     openReport: (String) -> Unit,
     openPlayback: (String) -> Unit,
 ) {
@@ -1517,9 +1498,6 @@ private fun ReplyActions(
             if (hasSource) ReplyChip(MikaIcons.Link, sourceLabel(source)) { openSource(runId, evidence) }
             ReplyChip(MikaIcons.Doc, stringResource(R.string.report_title)) { openReport(runId) }
             ReplyChip(MikaIcons.Route, stringResource(R.string.playback_title)) { openPlayback(runId) }
-        }
-        if (receipt.isNotEmpty()) {
-            Text(receipt, Modifier.fillMaxWidth().padding(top = 8.dp), style = ChipText.copy(fontWeight = FontWeight.Normal), color = c.ink3, textAlign = TextAlign.End)
         }
     }
 }

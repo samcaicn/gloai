@@ -69,6 +69,7 @@
     <string name="timeline_check">Проверка</string>
     <string name="timeline_duration">Затраченное время</string>
     <string name="timeline_more">Подробнее</string>
+    <string name="timeline_cost">Стоимость</string>
     <string name="expand">Развернуть</string>
     <string name="timeline_model_calls">Обращения к модели</string>
     <plurals name="times">

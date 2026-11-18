@@ -151,7 +151,7 @@ class RunTimelineViewModelTest {
         val ui = ready(id)
         assertEquals(listOf(1, 2, 3, 4), ui.steps.map { it.step })
         val (launch, look, tap, stale) = ui.steps
-        assertEquals("先".repeat(80) + "…", launch.said)
+        assertEquals(long, launch.said)
         assertEquals("打开 App", launch.tool)
         assertEquals("com.android.settings", launch.detail)
         assertEquals("生效", launch.result)

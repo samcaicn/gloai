@@ -68,6 +68,7 @@
     <string name="timeline_check">Verificación</string>
     <string name="timeline_duration">Tiempo empleado</string>
     <string name="timeline_more">Más detalles</string>
+    <string name="timeline_cost">Coste</string>
     <string name="expand">Ampliar</string>
     <string name="timeline_model_calls">Llamadas al modelo</string>
     <plurals name="times">

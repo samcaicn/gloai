@@ -19,10 +19,12 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -147,16 +149,9 @@ fun RunTimelineScreen(vm: RunTimelineViewModel, onBack: () -> Unit) {
 private fun HeaderGroup(h: TimelineHeader, stepCount: Int, onExport: () -> Unit) {
     val c = MikaTheme.colors
     var more by rememberSaveable { mutableStateOf(false) }
-    // 1. 目标:一句人话,Markdown 正常渲染
-    GroupCard {
-        MarkdownText(
-            h.goal, MikaType.Title.copy(color = c.ink),
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
-        )
-    }
-    // 2. 结果横幅:一眼看清办没办成 + 用时
-    OutcomeBanner(h, stepCount)
-    // 3. 完成标准(有才显示)
+    // 1. 结果总览:一眼看清办没办成 + 目标 + 用时/步数/Token
+    ResultSummaryCard(h, stepCount)
+    // 2. 完成标准(有才显示)
     if (h.criteria.isNotEmpty()) {
         GroupCard {
             Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 13.dp, bottom = 13.dp)) {
@@ -170,7 +165,7 @@ private fun HeaderGroup(h: TimelineHeader, stepCount: Int, onExport: () -> Unit)
             }
         }
     }
-    // 4. 技术详情(折叠):模型来回、Token、步数上限这些细节收起来
+    // 3. 技术详情(折叠):模型来回、Token、步数上限这些细节收起来
     GroupCard {
         ListRow(null, stringResource(R.string.timeline_more), onClick = { more = !more }) {
             RowValue(if (more) stringResource(R.string.collapse) else stringResource(R.string.expand))
@@ -178,6 +173,9 @@ private fun HeaderGroup(h: TimelineHeader, stepCount: Int, onExport: () -> Unit)
         }
         if (more) {
             h.metrics?.let { RunMetricsSummary(it) }
+            h.metrics?.deepSeekCost?.let { cost ->
+                ListRow(null, stringResource(R.string.timeline_cost)) { RowValue(ChatTokensCopy.cost(cost)) }
+            }
             h.stepLimit?.let { limit ->
                 ListRow(null, stringResource(R.string.timeline_step_limit)) {
                     RowValue(stringResource(R.string.timeline_step_limit_value, h.stepsUsed, limit))
@@ -211,33 +209,49 @@ private fun HeaderGroup(h: TimelineHeader, stepCount: Int, onExport: () -> Unit)
     }
 }
 
-/** 结果横幅:整块上色,左边白底圆图标 + 结局一句 + 用时·步数,一眼看清办没办成。 */
+/** 结果总览卡:左边圆形状态图标 + 结局一句 + 目标,下面分隔线和用时/步数/Token 三栏,一眼看清办没办成。 */
 @Composable
-private fun OutcomeBanner(h: TimelineHeader, stepCount: Int) {
+private fun ResultSummaryCard(h: TimelineHeader, stepCount: Int) {
     val c = MikaTheme.colors
-    val (bg, fg) = h.outcomeTone.colors(c)
     val icon = when (h.outcomeTone) {
         TileTone.Ok -> MikaIcons.Check
         TileTone.Bad -> MikaIcons.Close
         else -> MikaIcons.Info
     }
     val title = if (h.running) stringResource(R.string.timeline_running) else h.outcome
-    val durationText = h.duration?.let { stringResource(R.string.timeline_duration) + " " + it }
-    val stepsText = if (stepCount > 0) trPlural(R.plurals.timeline_total_steps, stepCount) else null
-    val subtitle = listOfNotNull(durationText, stepsText).joinToString(" · ")
-    Row(
-        Modifier.fillMaxWidth().padding(bottom = 12.dp).background(bg, RoundedCornerShape(16.dp))
-            .padding(horizontal = 16.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(11.dp),
-    ) {
-        Box(Modifier.size(34.dp).background(c.surface, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(icon, null, Modifier.size(18.dp), tint = fg)
+    GroupCard {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            val (bg, fg) = h.outcomeTone.colors(c)
+            Box(Modifier.size(36.dp).background(bg, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(icon, null, Modifier.size(20.dp), tint = fg)
+            }
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MikaType.BodyStrong, color = c.ink)
+                if (h.goal.isNotBlank()) Text(
+                    MarkdownModel.toPlainText(h.goal), Modifier.padding(top = 2.dp),
+                    style = MikaType.Caption, color = c.ink3, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MikaType.BodyStrong, color = fg)
-            if (subtitle.isNotEmpty()) Text(subtitle, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink2)
+        Box(Modifier.fillMaxWidth().height(0.5.dp).background(c.hair))
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+            SummaryStat(stringResource(R.string.timeline_duration), h.duration ?: "—")
+            SummaryStat(stringResource(R.string.metrics_steps), stepCount.toString())
+            SummaryStat(UsageCopy.UNIT, UsageCopy.tokens(h.tokensUsed))
         }
+    }
+}
+
+@Composable
+private fun RowScope.SummaryStat(label: String, value: String) {
+    val c = MikaTheme.colors
+    Column(Modifier.weight(1f)) {
+        Text(label, style = MikaType.Hint, color = c.ink3)
+        Text(value, Modifier.padding(top = 2.dp), style = MikaType.BodyStrong, color = c.ink, maxLines = 1)
     }
 }
 
@@ -248,55 +262,53 @@ private fun TimelineRow(s: TimelineStep, first: Boolean, last: Boolean, vm: RunT
     var open by rememberSaveable(s.step) { mutableStateOf(false) }
     val shot = s.screenshotId
     val failed = s.result?.startsWith(stringResource(R.string.result_error_prefix)) == true
+    val hasMore = s.said.isNotEmpty() || s.activities.isNotEmpty() || s.tags.isNotEmpty() || shot != null
+    val title = listOfNotNull(s.tool, s.detail).joinToString(" · ")
+        .ifEmpty { s.activities.firstOrNull()?.let { listOfNotNull(it.label, it.target).joinToString(" · ") }.orEmpty() }
     StepItem(
         if (failed) StepState.Failed else StepState.Done, first, last,
-        Modifier.then(if (shot != null) Modifier.clickable { open = !open } else Modifier),
+        Modifier.then(if (hasMore) Modifier.clickable { open = !open } else Modifier),
         dotY = 20.dp,
     ) {
         Column(Modifier.fillMaxWidth().padding(end = 16.dp, top = 11.dp, bottom = 11.dp)) {
-            Row(verticalAlignment = Alignment.Top) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.step_number, s.step), style = MikaType.Label, color = c.ink3)
                 Text(
-                    if (s.activities.isEmpty()) listOfNotNull(s.tool, s.detail).joinToString(" · ") else "",
-                    Modifier.weight(1f).padding(start = 8.dp),
-                    style = MikaType.Body, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    title, Modifier.weight(1f).padding(start = 8.dp),
+                    style = MikaType.Body, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
-                s.result?.let {
+                s.result?.let { result ->
+                    val (bg, fg) = when {
+                        failed -> c.badSoft to c.bad
+                        result == stringResource(R.string.result_effective) -> c.okSoft to c.ok
+                        else -> c.neutralSoft to c.ink2
+                    }
                     Text(
-                        it, Modifier.padding(start = 8.dp).widthIn(max = 120.dp), style = MikaType.Caption,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        color = when {
-                            failed -> c.bad
-                            it == stringResource(R.string.result_effective) -> c.ok
-                            else -> c.ink3
-                        },
+                        result, Modifier.padding(start = 8.dp).background(bg, RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MikaType.Hint, fontWeight = FontWeight.SemiBold, color = fg, maxLines = 1,
                     )
                 }
+                if (hasMore) Icon(MikaIcons.Chevron, null, Modifier.size(16.dp).padding(start = 2.dp), tint = c.ink3)
             }
             Text(RunTimelineViewModel.timingLabel(s.timing), Modifier.padding(top = 2.dp), style = MikaType.Hint, color = c.ink3)
-            if (s.said.isNotEmpty()) {
-                MarkdownText(s.said, MikaType.Caption.copy(color = c.ink2), Modifier.padding(top = 3.dp))
-            }
-            s.activities.forEach { a ->
-                val action = if (a.count > 1) trPlural(R.plurals.timeline_viewed_times, a.count) else a.label
-                // 和对话里点开一步用的是同一份说法(错误码只对开发有意义,给人看的是没成功)
-                val effect = ChatCopy.effectLabel(a.effect)
-                Text(
-                    listOfNotNull(action, a.target?.takeIf(String::isNotBlank), effect.takeIf(String::isNotBlank)).joinToString(" · "),
-                    Modifier.padding(top = 3.dp), style = MikaType.Caption, color = c.ink2,
-                )
-            }
-            if (s.tags.isNotEmpty()) {
-                FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    s.tags.forEach { TagChip(it) }
+            if (open && hasMore) {
+                if (s.said.isNotEmpty()) {
+                    MarkdownText(s.said, MikaType.Caption.copy(color = c.ink2), Modifier.padding(top = 9.dp))
                 }
-            }
-            if (shot != null) {
-                Text(
-                    if (open) stringResource(R.string.timeline_hide_screen) else stringResource(R.string.timeline_show_screen), Modifier.padding(top = 6.dp),
-                    style = MikaType.Label, color = c.accent,
-                )
-                if (open) Shot(vm, shot, s.step)
+                s.activities.forEach { a ->
+                    val action = if (a.count > 1) trPlural(R.plurals.timeline_viewed_times, a.count) else a.label
+                    val effect = ChatCopy.effectLabel(a.effect)
+                    Text(
+                        listOfNotNull(action, a.target?.takeIf(String::isNotBlank), effect.takeIf(String::isNotBlank)).joinToString(" · "),
+                        Modifier.padding(top = 3.dp), style = MikaType.Caption, color = c.ink2,
+                    )
+                }
+                if (s.tags.isNotEmpty()) {
+                    FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        s.tags.forEach { TagChip(it) }
+                    }
+                }
+                if (shot != null) Shot(vm, shot, s.step)
             }
         }
     }

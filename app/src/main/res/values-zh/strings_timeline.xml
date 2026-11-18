@@ -66,6 +66,7 @@
     <string name="timeline_check">核查</string>
     <string name="timeline_duration">用时</string>
     <string name="timeline_more">更多详情</string>
+    <string name="timeline_cost">费用</string>
     <string name="expand">展开</string>
     <string name="timeline_model_calls">模型调用</string>
     <plurals name="times">

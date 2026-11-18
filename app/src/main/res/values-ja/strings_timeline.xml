@@ -66,6 +66,7 @@
     <string name="timeline_check">確認</string>
     <string name="timeline_duration">所要時間</string>
     <string name="timeline_more">詳細を見る</string>
+    <string name="timeline_cost">費用</string>
     <string name="expand">開く</string>
     <string name="timeline_model_calls">モデルの呼び出し</string>
     <plurals name="times">

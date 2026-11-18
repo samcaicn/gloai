@@ -67,6 +67,7 @@
     <string name="timeline_check">Check</string>
     <string name="timeline_duration">Time taken</string>
     <string name="timeline_more">More details</string>
+    <string name="timeline_cost">Cost</string>
     <string name="expand">Expand</string>
     <string name="timeline_model_calls">Model calls</string>
     <plurals name="times">

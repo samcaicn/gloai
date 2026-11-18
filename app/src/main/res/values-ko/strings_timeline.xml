@@ -66,6 +66,7 @@
     <string name="timeline_check">점검</string>
     <string name="timeline_duration">소요 시간</string>
     <string name="timeline_more">자세히 보기</string>
+    <string name="timeline_cost">비용</string>
     <string name="expand">펼치기</string>
     <string name="timeline_model_calls">모델 호출</string>
     <plurals name="times">

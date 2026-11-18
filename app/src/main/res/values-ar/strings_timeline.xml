@@ -73,6 +73,7 @@
     <string name="timeline_step_limit">الخطوات</string>
     <string name="timeline_step_limit_value">%1$d / %2$d</string>
     <string name="timeline_more">مزيد من التفاصيل</string>
+    <string name="timeline_cost">التكلفة</string>
     <string name="expand">توسيع</string>
     <string name="timeline_model_calls">استدعاءات النموذج</string>
     <plurals name="times">

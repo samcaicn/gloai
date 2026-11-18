@@ -865,7 +865,7 @@ class ChatViewModelTest {
         assertNull((vm.ui.value.exchanges.last().status as ExchangeStatus.Done).unverifiedLine)
     }
 
-    @Test fun liveLineUsesTheModelsReasonAndCollapsesToASummary() = runTest {
+    @Test fun liveLineUsesTheModelsReason() = runTest {
         var now = 1_000L
         val screen = MutableStateFlow(false)
         val vm = ChatViewModel(backgroundScope, state, stage, actions, ConversationStore(tmp.newFolder()), screenOpen = screen, clock = { now },
@@ -900,10 +900,7 @@ class ChatViewModelTest {
         emit(TaskState.Succeeded("有 3 趟\n依据:12306 查询结果页"))
         ex = vm.ui.value.exchanges.single()
         assertEquals(80_000L, ex.elapsedMs)
-        assertEquals("做了 3 步 · 1 分 20 秒", stepsSummary(ex))
         assertFalse(vm.ui.value.operatingPhone)
-        // 不知道用时就只说步数
-        assertEquals("做了 3 步", stepsSummary(ex.copy(elapsedMs = null)))
     }
 
     /** 顶栏副标题「正在操作 …」:最近一件有对象的事所在的 App(包名换成 App 名)。 */

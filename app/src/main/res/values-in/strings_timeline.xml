@@ -66,6 +66,7 @@
     <string name="timeline_check">Pemeriksaan</string>
     <string name="timeline_duration">Waktu yang dibutuhkan</string>
     <string name="timeline_more">Detail lainnya</string>
+    <string name="timeline_cost">Biaya</string>
     <string name="expand">Perluas</string>
     <string name="timeline_model_calls">Panggilan model</string>
     <plurals name="times">

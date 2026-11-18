@@ -67,6 +67,7 @@
     <string name="timeline_check">بررسی</string>
     <string name="timeline_duration">زمان صرف‌شده</string>
     <string name="timeline_more">جزئیات بیشتر</string>
+    <string name="timeline_cost">هزینه</string>
     <string name="expand">باز کردن</string>
     <string name="timeline_model_calls">فراخوانی‌های مدل</string>
     <plurals name="times">

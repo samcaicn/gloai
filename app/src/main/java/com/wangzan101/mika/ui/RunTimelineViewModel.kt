@@ -208,7 +208,7 @@ class RunTimelineViewModel(
                 val outer = results.filter { it.source == "model" && it.durationMs > 0 }
                 val measured = (outer.ifEmpty { results.filter { it.durationMs > 0 } }).sumOf { it.durationMs }
                 row.copy(
-                    said = clipSaid(row.said),
+                    said = row.said,
                     timing = StepTiming(modelTimes[row.step], measured.takeIf { it > 0 }, retryTimes[row.step] ?: 0),
                 )
             }
