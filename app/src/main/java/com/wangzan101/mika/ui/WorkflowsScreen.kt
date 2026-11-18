@@ -28,7 +28,7 @@ import java.util.Date
 import java.util.UUID
 
 @Composable
-internal fun WorkflowsScreen(runtime: WorkflowRuntime, onBack: () -> Unit, onOpenConversation: (String) -> Unit, onUseResult: (String) -> Unit) {
+internal fun WorkflowsScreen(runtime: WorkflowRuntime, onBack: () -> Unit, onOpenConversation: ((String) -> Unit)? = null, onUseResult: ((String) -> Unit)? = null) {
     val data by runtime.store.data.collectAsState()
     val loaded by runtime.store.loaded.collectAsState()
     val saveError by runtime.saveError.collectAsState()
@@ -91,7 +91,7 @@ internal fun WorkflowsScreen(runtime: WorkflowRuntime, onBack: () -> Unit, onOpe
                             "result_too_long" -> stringResource(R.string.workflow_result_too_long)
                             else -> current.problem
                         }, color = MikaTheme.colors.bad)
-                        MikaButton(stringResource(R.string.workflow_view_chat), { onOpenConversation(current.conversationId) }, kind = ButtonKind.Secondary)
+                        if (onOpenConversation != null) MikaButton(stringResource(R.string.workflow_view_chat), { onOpenConversation(current.conversationId) }, kind = ButtonKind.Secondary)
                     }
                     MikaButton(stringResource(R.string.workflow_mark_done), { resolving = run }, modifier = Modifier.testTag("workflow-resolve"), enabled = !busy)
                     TextButton({ retrying = run }, enabled = !busy, modifier = Modifier.testTag("workflow-retry")) { Text(stringResource(R.string.workflow_retry_step)) }
@@ -99,7 +99,7 @@ internal fun WorkflowsScreen(runtime: WorkflowRuntime, onBack: () -> Unit, onOpe
                 WorkflowPhase.Completed -> {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         MikaButton(stringResource(R.string.chat_copy), { copyMessage(context, run.result) }, modifier = Modifier.weight(1f))
-                        MikaButton(stringResource(R.string.workflow_use_result), { onUseResult(run.result) }, kind = ButtonKind.Secondary, modifier = Modifier.weight(1f).testTag("workflow-use-result"))
+                        if (onUseResult != null) MikaButton(stringResource(R.string.workflow_use_result), { onUseResult(run.result) }, kind = ButtonKind.Secondary, modifier = Modifier.weight(1f).testTag("workflow-use-result"))
                     }
                     SelectionContainer { Text(run.result, Modifier.padding(vertical = 16.dp).testTag("workflow-final-result")) }
                     data.templates.find { it.id == run.template.id }?.let { current ->
@@ -178,7 +178,7 @@ internal fun WorkflowsScreen(runtime: WorkflowRuntime, onBack: () -> Unit, onOpe
             text = { Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (item.manual) FooterNote(stringResource(R.string.workflow_manual_result))
                 if (item.result.isNotBlank()) SelectionContainer { Text(item.result) }
-                TextButton({ viewing = null; onOpenConversation(item.conversationId) }) { Text(stringResource(R.string.workflow_view_chat)) }
+                if (onOpenConversation != null) TextButton({ viewing = null; onOpenConversation(item.conversationId) }) { Text(stringResource(R.string.workflow_view_chat)) }
             } }, confirmButton = { TextButton({ viewing = null }) { Text(stringResource(R.string.ok_got_it)) } })
     }
     deleting?.let { (id, record) ->
