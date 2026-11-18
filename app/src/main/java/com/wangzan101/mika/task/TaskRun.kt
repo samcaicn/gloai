@@ -216,85 +216,40 @@ class TaskRun(
     private val routeStore = FileRouteStore.shared(service)
     private val recovery = TaskRecovery.of(service)
 
-    private inner class Mirrored<T>(initial: T, private val shown: MutableStateFlow<T>) {
-        private val own = MutableStateFlow(initial)
-        val flow: StateFlow<T> = own.asStateFlow()
-        var value: T
-            get() = own.value
-            set(v) {
-                synchronized(service.taskState.shownLock) {
-                    own.value = v
-                    if (service.taskState.shownRun === this@TaskRun) shown.value = v
-                }
-            }
-        fun copyOut() { shown.value = own.value }
-    }
+    /** 本任务的界面可见状态(14 个 Mirrored 状态流 + 发布锁 + 结束标志)。 */
+    private val runState = TaskRunState(service, conversationId, env) { service.taskState.shownRun === this }
 
     /** 静音等恢复记录按它分开,几个任务各记各的。 */
     val key: String = UUID.randomUUID().toString()
     private val inbox = RunInbox()
 
-    private val _runId = Mirrored<String?>(null, service.taskState._runId)
-    private val _sharedFiles = Mirrored<List<SharedFile>>(emptyList(), service.taskState._sharedFiles)
-    private val _audios = Mirrored<List<com.wangzan101.mika.core.chat.GeneratedAudio>>(emptyList(), service.taskState._audios)
-    private val _state = Mirrored<TaskState>(TaskState.Running(0, TaskService.PREPARING), service.taskState._state)
-    /** 同一状态带上对话编号,和 [_state] 一起写:界面据此只收屏上那个对话的状态。 */
-    private val _tagged = Mirrored<Pair<String, TaskState>?>(conversationId to _state.value, service.taskState._shownTask)
-    private val _takeoverStage = Mirrored(Takeover.Stage.None, service.taskState._takeoverStage)
-    private val _frames = Mirrored<Bitmap?>(null, service.taskState._frames)
-    private val _phoneFrames = MutableStateFlow<Bitmap?>(null)
-    private val _activities = Mirrored<List<RunEvent.Activity>>(emptyList(), service.taskState._activities)
-    /** 活动只追加;发布的是前 n 条的只读视图,每来一条不复制已有的。 */
-    private val activityLog = ArrayList<RunEvent.Activity>()
-    private fun logView(n: Int): List<RunEvent.Activity> = object : AbstractList<RunEvent.Activity>() {
-        override val size = n
-        override fun get(index: Int): RunEvent.Activity = synchronized(activityLog) { activityLog[index] }
-    }
-    private val _steers = Mirrored<List<SteerNote>>(emptyList(), service.taskState._steers)
-    private val _displayId = Mirrored(-1, env.agentDisplayId)
-    /** 小窗直接操作的口子:屏建好才有,释放时清空。 */
-    private val _pipInput = Mirrored<PipInput?>(null, service.taskState._pipInput)
-    /** 小窗目标 App 的声音被用户恢复过(按钮转向「静音」);跟着真实音频记录走,手机侧清掉时回到 false。 */
-    private val _pipSoundOn = Mirrored(false, service.taskState._pipSoundOn)
-    /** 虚拟屏上打开过 App:画中画据此才出来(只建了空屏、没打开过 App 时没有画面)。 */
-    private val _appShown = Mirrored(false, env.agentAppShown)
-    /** 正在用内置浏览器:画中画改显示网页画面。 */
-    private val _webOpen = Mirrored(false, env.webScreenOpen)
-
-    val state: StateFlow<TaskState> = _state.flow
-    val runId: StateFlow<String?> = _runId.flow
+    val state: StateFlow<TaskState> get() = runState.state
+    val runId: StateFlow<String?> get() = runState.runId
     /** 本任务导出的文件;结束时随这一轮存进对话。 */
-    val sharedFiles: StateFlow<List<SharedFile>> = _sharedFiles.flow
+    val sharedFiles: StateFlow<List<SharedFile>> get() = runState.sharedFiles
     /** 本任务生成并留在工作区里的音频;结束时随这一轮存进对话。 */
-    val audios: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>> = _audios.flow
-    val takeoverStage: StateFlow<Takeover.Stage> = _takeoverStage.flow
-    val frames: StateFlow<Bitmap?> = _frames.flow
+    val audios: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>> get() = runState.audios
+    val takeoverStage: StateFlow<Takeover.Stage> get() = runState.takeoverStage
+    val frames: StateFlow<Bitmap?> get() = runState.frames
     /** 个人助手的缩略图只收本任务获准展示的手机画面。 */
-    val phoneFrames: StateFlow<Bitmap?> = _phoneFrames.asStateFlow()
+    val phoneFrames: StateFlow<Bitmap?> get() = runState.phoneFrames
     /** 本任务到此刻的活动(实际做过的事);悬浮胶囊的卡片按任务取,不只看显示中的那个。 */
-    val activities: StateFlow<List<RunEvent.Activity>> = _activities.flow
+    val activities: StateFlow<List<RunEvent.Activity>> get() = runState.activities
     /** 本任务的虚拟屏编号;屏到用到系统命令、事件工具或第一次打开 App 时才建,之前和释放之后为 -1。 */
-    val displayId: StateFlow<Int> = _displayId.flow
+    val displayId: StateFlow<Int> get() = runState.displayId
     /** 本任务小窗的直接操作口;屏建好才有,释放后回到 null。 */
-    val pipInput: StateFlow<PipInput?> = _pipInput.flow
+    val pipInput: StateFlow<PipInput?> get() = runState.pipInput
     /** 本任务小窗目标的声音是否被用户恢复过;界面据此把按钮显示成「恢复声音」或「静音」。 */
-    val pipSoundOn: StateFlow<Boolean> = _pipSoundOn.flow
+    val pipSoundOn: StateFlow<Boolean> get() = runState.pipSoundOn
     /** 此刻在用内置浏览器(工具的界面是网页);没用、任务结束后为 false。 */
-    val webOpen: StateFlow<Boolean> = _webOpen.flow
+    val webOpen: StateFlow<Boolean> get() = runState.webOpen
     /** 本任务进行中插的话和它们的去向;悬浮胶囊的对话卡片按任务取。 */
-    val steers: StateFlow<List<SteerNote>> = _steers.flow
-    // 带对话编号的那份先写:收不带编号的状态时读到的编号就已经是这个任务的(界面据此不把别的对话的状态接到屏上)
-    private val mirrored = listOf(_runId, _sharedFiles, _audios, _tagged, _state, _takeoverStage, _frames, _displayId, _pipInput, _pipSoundOn, _appShown, _webOpen, _activities, _steers)
-
-    private fun setState(s: TaskState) = synchronized(service.taskState.shownLock) {
-        _tagged.value = conversationId to s
-        _state.value = s
-    }
+    val steers: StateFlow<List<SteerNote>> get() = runState.steers
 
     /** 让界面显示这个任务:成为显示中的任务,并把自己的各项抄到服务对外的流。 */
     fun show() = synchronized(service.taskState.shownLock) {
         service.taskState.shownRun = this
-        mirrored.forEach { it.copyOut() }
+        runState.copyOut()
     }
 
     /** 跑 [execute] 的协程,由服务启动后填上。 */
@@ -325,10 +280,6 @@ class TaskRun(
         internal set
     /** 已接上的手机侧;浮层恢复声音据此找到当前目标 App,收尾时清空。 */
     @Volatile private var phone: PhoneSide? = null
-    /** 发布与收尾互斥;[ended] 之后不再写状态,迟到的发布不能盖掉终态或重新拿锁。 */
-    private val publishLock = Any()
-    private var ended = false
-
     fun cancel() {
         stopPressed = true
         children?.cancelAll(RunId(key))
@@ -393,7 +344,7 @@ class TaskRun(
     /** 回答提问;已经不在等(超时后才答、已答过)时调 [tooLate] 告诉用户这条回答没用上。 */
     fun answer(text: String, tooLate: () -> Unit) {
         if (loop == null) return
-        if (_state.value is TaskState.WaitingInput) scope.launch {
+        if (runState._state.value is TaskState.WaitingInput) scope.launch {
             if (inbox.send(RunInput.Answer(text)) != InputReceipt.Accepted) tooLate()
         }
         else tooLate()
@@ -412,7 +363,7 @@ class TaskRun(
      */
     fun steer(text: String, messageId: String = UUID.randomUUID().toString()) {
         synchronized(service.taskState.shownLock) {
-            _steers.value = _steers.value + SteerNote(messageId, text, SteerState.Pending)
+            runState._steers.value = runState._steers.value + SteerNote(messageId, text, SteerState.Pending)
             // 收件箱收下了就马上告诉用户:模型此刻的请求已撤掉,下一步就带着这句话想(交给模型时再改成已加入)
             if (inbox.steer(messageId, text) == InputReceipt.Accepted) markSteers(setOf(messageId), SteerState.Received, from = SteerState.Pending)
             else {
@@ -426,15 +377,15 @@ class TaskRun(
     }
 
     /** 远程追加只归当前任务;与状态发布互斥,收件箱再原子核对是否已经结束/取消。 */
-    fun steerRemote(text: String): String? = synchronized(publishLock) delivery@{
-        if (ended || stopPressed || mcpExternalId == null || _state.value !is TaskState.Running) return@delivery null
+    fun steerRemote(text: String): String? = synchronized(runState.publishLock) delivery@{
+        if (runState.ended || stopPressed || mcpExternalId == null || runState._state.value !is TaskState.Running) return@delivery null
         if (loop?.state?.value?.let { it !is TaskState.Running } == true) return@delivery null
         val id = UUID.randomUUID().toString()
         synchronized(service.taskState.shownLock) {
             // 先记消息,再唤醒模型;消费事件可能紧跟着发生,不能把 Joined 改回 Received。
-            _steers.value = _steers.value + SteerNote(id, text, SteerState.Received, remote = true)
+            runState._steers.value = runState._steers.value + SteerNote(id, text, SteerState.Received, remote = true)
             if (inbox.steerCurrent(id, text) != InputReceipt.Accepted) {
-                _steers.value = _steers.value.filterNot { it.id == id }
+                runState._steers.value = runState._steers.value.filterNot { it.id == id }
                 return@delivery null
             }
             id
@@ -470,20 +421,20 @@ class TaskRun(
     /** 和 [joinedSteers] 一一对应:每句插话交给模型之前已经说完的那段回复,没有的是空串。 */
     fun joinedFinished(): List<String> = joined().map { it.finished.orEmpty() }
 
-    private fun joined() = _steers.value.filter { it.state == SteerState.Joined }
+    private fun joined() = runState._steers.value.filter { it.state == SteerState.Joined }
 
     /** 插话撤掉的那段回复,等这一批插话里第一句交给模型时挂到它上面。 */
     private val steerJoin = SteerJoin()
 
     private fun joinSteer(id: String) {
-        synchronized(service.taskState.shownLock) { _steers.value = steerJoin.joined(_steers.value, id) }
+        synchronized(service.taskState.shownLock) { runState._steers.value = steerJoin.joined(runState._steers.value, id) }
     }
 
     /** 把 [ids] 这几句改成 [to];给了 [from] 时只改还在那个状态的(收下和交给模型可能先后颠倒,不往回改)。 */
     private fun markSteers(ids: Set<String>, to: SteerState, from: SteerState? = null) {
         if (ids.isEmpty()) return
         synchronized(service.taskState.shownLock) {
-            _steers.value = _steers.value.map { if (it.id in ids && (from == null || it.state == from)) it.copy(state = to) else it }
+            runState._steers.value = runState._steers.value.map { if (it.id in ids && (from == null || it.state == from)) it.copy(state = to) else it }
         }
     }
 
@@ -492,8 +443,8 @@ class TaskRun(
         override fun event(e: RunEvent) {
             when {
                 e is RunEvent.Activity -> synchronized(service.taskState.shownLock) {
-                    val n = synchronized(activityLog) { activityLog += e; activityLog.size }
-                    _activities.value = logView(n)
+                    val n = synchronized(runState.activityLog) { runState.activityLog += e; runState.activityLog.size }
+                    runState._activities.value = runState.logView(n)
                 }
                 e is RunEvent.State && e.name == "reply_interrupted" -> steerJoin.interrupted(e.detail)
                 e is RunEvent.State && e.name == "reply_finished_before_steer" -> steerJoin.finished(e.detail)
@@ -505,7 +456,7 @@ class TaskRun(
     /** 通知和卡片的按钮都带着它所属的申报 [key];点在已经换掉的旧通知、旧卡片上不算数。 */
     fun confirm(choice: ConfirmChoice, key: Int?) {
         val running = loop
-        val waiting = _state.value as? TaskState.WaitingConfirmation
+        val waiting = runState._state.value as? TaskState.WaitingConfirmation
         if (running != null && waiting != null && key == ConfirmationNotifier.requestKey(waiting)) {
             scope.launch { inbox.send(RunInput.Confirm(choice)) }
         }
@@ -516,14 +467,14 @@ class TaskRun(
      * 自己对话名下([TaskService.endedRunIds]),界面收到结束状态时按对话取;显示中时也写 [TaskService.endedRunId]。
      */
     fun end(end: TaskState) = synchronized(service.taskState.shownLock) {
-        service.taskState._endedRunIds.value = service.taskState._endedRunIds.value + (conversationId to _runId.value)
-        if (service.taskState.shownRun === this) service.taskState._endedRunId.value = _runId.value
-        setState(end)
+        service.taskState._endedRunIds.value = service.taskState._endedRunIds.value + (conversationId to runState._runId.value)
+        if (service.taskState.shownRun === this) service.taskState._endedRunId.value = runState._runId.value
+        runState.setState(end)
     }
 
     /** 超出并行上限在排队;放出来开跑时 [dequeue]。 */
-    fun queue(position: Int) { setState(TaskState.Held(GateReason.queued(trPlural(R.plurals.queue_ahead, position)))) }
-    fun dequeue() { setState(TaskState.Running(0, TaskService.PREPARING)) }
+    fun queue(position: Int) { runState.setState(TaskState.Held(GateReason.queued(trPlural(R.plurals.queue_ahead, position)))) }
+    fun dequeue() { runState.setState(TaskState.Running(0, TaskService.PREPARING)) }
 
     /** 本任务的沙箱:一个任务一份(导出额度按任务算),工作区是本对话的。 */
     private val sandbox by lazy { AndroidSandbox(service, SandboxState.get(service), onShared = ::addShared) }
@@ -575,22 +526,18 @@ class TaskRun(
     }
 
     /** 沙箱导出了一个文件(share_file 或 `mika share`)。 */
-    fun addShared(f: SharedFile) = synchronized(service.taskState.shownLock) { _sharedFiles.value = _sharedFiles.value + f }
+    fun addShared(f: SharedFile) = runState.addShared(f)
 
     /** 音频能力生成了一段音频(写进工作区时由端口回调)。 */
-    fun addAudio(a: com.wangzan101.mika.core.chat.GeneratedAudio) = synchronized(service.taskState.shownLock) {
-        _audios.value = _audios.value + a
-    }
+    fun addAudio(a: com.wangzan101.mika.core.chat.GeneratedAudio) = runState.addAudio(a)
 
     /** 音频能力把一段音频存进了音乐库:当作这一轮导出的文件,聊天里出现卡片。 */
-    fun addSavedAudio(s: com.wangzan101.mika.core.model.SavedAudio) {
-        addShared(SharedFile(s.savedAs.substringAfterLast('/'), s.bytes, s.savedAs, s.uri))
-    }
+    fun addSavedAudio(s: com.wangzan101.mika.core.model.SavedAudio) = runState.addSavedAudio(s)
 
-    fun clearTakeoverStage() { _takeoverStage.value = Takeover.Stage.None }
+    fun clearTakeoverStage() = runState.clearTakeoverStage()
 
     /** 此刻要显示的状态;已收尾时为空,不再重画通知。 */
-    fun shownState(): TaskState? = synchronized(publishLock) { if (ended) null else _state.value }
+    fun shownState(): TaskState? = runState.shownState()
 
     /** 因模型失败、主模型在它那家还没测试通过时,提示去那家「重新测试」(见 [RetestHint])。测试换了主模型时不看设置里的配置。 */
     private fun withRetestHint(end: TaskState): TaskState {
@@ -622,10 +569,10 @@ class TaskRun(
         if (resultReadyAtMs == 0L) resultReadyAtMs = SystemClock.elapsedRealtime()
         handoffUnconsumed()
         c.side.cancel()
-        _frames.value = null
-        _phoneFrames.value = null
-        _webOpen.value = false
-        synchronized(publishLock) { ended = true }
+        runState._frames.value = null
+        runState._phoneFrames.value = null
+        runState._webOpen.value = false
+        synchronized(runState.publishLock) { runState.ended = true }
         if (awake != null && service.hasQueuedRuns()) wakeHandoff = service.wakeLock.lease().also { it.acquire() }
         awake?.close()
         awake = null
@@ -674,10 +621,10 @@ class TaskRun(
         }
         phone = null
         // 屏释放后、对外报结束前清掉:界面看到任务结束时已经没有屏了
-        _displayId.value = -1
-        _pipInput.value = null
-        _pipSoundOn.value = false
-        _appShown.value = false
+        runState._displayId.value = -1
+        runState._pipInput.value = null
+        runState._pipSoundOn.value = false
+        runState._appShown.value = false
         if (c.connection != null) phoneServices.sharedShell.release()
     }
 
@@ -721,7 +668,7 @@ class TaskRun(
         try {
             // 用户在「干活时」关掉了常亮就不拿唤醒锁;开跑就按此刻的状态(准备中)拿上:
             // 开模型、读知识、选路线、判断意图这些第一步之前的准备和推理期间屏幕也不熄
-            awake = if (FeatureFlags.get(service).keepScreenOn()) KeepAwake(service.wakeLock.lease(), side).also { it.onState(_state.value) } else null
+            awake = if (FeatureFlags.get(service).keepScreenOn()) KeepAwake(service.wakeLock.lease(), side).also { it.onState(runState._state.value) } else null
             // 前一个任务替这个拿着的那份,自己的拿上了就放开
             wakeHandoff?.release()
             wakeHandoff = null
@@ -804,15 +751,15 @@ class TaskRun(
                         while (service.otherRunHasDisplay(this@TaskRun)) delay(DISPLAY_RETRY_MS)
                         create()
                     }.also { d ->
-                        _displayId.value = d.displayId
-                        _pipInput.value = PipInputImpl(shell, d)
+                        runState._displayId.value = d.displayId
+                        runState._pipInput.value = PipInputImpl(shell, d)
                         side.launch {
-                            combine(d.frames, _appShown.flow) { frame, shown -> frame to shown }.collect { (frame, shown) ->
+                            combine(d.frames, runState._appShown.flow) { frame, shown -> frame to shown }.collect { (frame, shown) ->
                                 if (dispatcher?.surface != WEB) {
                                     val allowed = frame.takeIf { previewAllowed() }
                                     if (dispatcher?.surface != WEB) {
-                                        _frames.value = allowed
-                                        _phoneFrames.value = allowed.takeIf { shown }
+                                        runState._frames.value = allowed
+                                        runState._phoneFrames.value = allowed.takeIf { shown }
                                     }
                                 }
                             }
@@ -820,8 +767,8 @@ class TaskRun(
                         side.launch {
                             appAccess.state.collect {
                                 if (dispatcher?.surface != WEB && !previewAllowed()) {
-                                    _frames.value = null
-                                    _phoneFrames.value = null
+                                    runState._frames.value = null
+                                    runState._phoneFrames.value = null
                                 }
                             }
                         }
@@ -916,7 +863,7 @@ class TaskRun(
                     val runs = RunStore(service).also { runStore = it }
                     runs.open(goal).also { opened ->
                         record = opened
-                        _runId.value = opened.runId
+                        runState._runId.value = opened.runId
                         service.rememberRecord(this@TaskRun, opened.runId)
                         mcpExternalId?.let { ext ->
                             (service.application as? com.wangzan101.mika.MikaApp)?.remoteTasks?.rememberRun(ext, opened.runId)
@@ -958,26 +905,26 @@ class TaskRun(
                     ) }
                 webStack = stack
                 // 模型用 web_keep_open 标过的那一页,任务结束时留在后台,记在这一轮名下(对话里那一轮下面显示、关了补一句)
-                stack.keepOrigin = { KeptOrigin(conversationId, _runId.value, goal) }
+                stack.keepOrigin = { KeptOrigin(conversationId, runState._runId.value, goal) }
                 side.launch {
                     // 网页界面时画中画显示网页显示的画面;换界面时先清掉上一边的画面;怎么显示见 WebPreview
                     var last: String? = null
                     while (true) {
                         delay(WEB_FRAME_MS)
                         val surface = dispatcher?.surface
-                        if (surface == WEB) _phoneFrames.value = null
+                        if (surface == WEB) runState._phoneFrames.value = null
                         if (surface != last) {
-                            _frames.value = null
+                            runState._frames.value = null
                             last = surface
                         }
                         // 当前标签是借来的那一页时它就在用户眼前,和接管中一样不放画面
                         val show = WebPreview.of(onWeb = surface == WEB, hasTab = stack.hasVisibleTab, handedOver = stack.handedOver || stack.onBorrowedTab)
                         when (show) {
-                            WebPreview.Frames -> withContext(Dispatchers.IO) { stack.host.latestFrame() }?.let { _frames.value = it }
-                            WebPreview.Hidden, WebPreview.NoPage -> _frames.value = null
+                            WebPreview.Frames -> withContext(Dispatchers.IO) { stack.host.latestFrame() }?.let { runState._frames.value = it }
+                            WebPreview.Hidden, WebPreview.NoPage -> runState._frames.value = null
                             WebPreview.Off -> Unit
                         }
-                        _webOpen.value = show.open
+                        runState._webOpen.value = show.open
                     }
                 }
                 stack.screen
@@ -1030,7 +977,7 @@ class TaskRun(
                 mcpConnections?.failures?.takeIf { it.isNotEmpty() }?.let { failures ->
                     val store = (service.application as MikaApp).mcpServers
                     val names = store.servers.value.associate { it.id to it.name }
-                    (_state.value as? TaskState.Running)?.let {
+                    (runState._state.value as? TaskState.Running)?.let {
                         publish(it.copy(note = tr(R.string.mcp_servers_run_failed, failures.joinToString(", ") { f -> names[f.first] ?: f.first })))
                     }
                 }
@@ -1278,7 +1225,7 @@ class TaskRun(
                     // 没打开过网页就不会在网页界面上
                     val w = webStack ?: return null
                     if (tools.surface != WEB) return null
-                    val message = takeoverMessage(_state.value)
+                    val message = takeoverMessage(runState._state.value)
                     return withContext(Dispatchers.Main) {
                         w.showForTakeover(reason, message, key, WebHandover.taskActions(service, key, this@TaskRun.key)) { takeover?.waitKey }
                     }
@@ -1296,11 +1243,11 @@ class TaskRun(
                 agent.state.collect {
                     if (it == TaskState.Idle) return@collect
                     if (it is TaskState.Running && it.preview != null && (gate?.movedAwayPending == true || gate?.userOnPagePending == true)) return@collect
-                    val previous = _state.value as? TaskState.Running
+                    val previous = runState._state.value as? TaskState.Running
                     if (it is TaskState.Running && previous != null && previous.preview != it.preview &&
                         previous.copy(preview = it.preview) == it) {
                         // 文字增量只刷新聊天；通知、接管和设备唤醒不需要每个 token 都重跑。
-                        synchronized(publishLock) { if (!ended) setState(it) }
+                        synchronized(runState.publishLock) { if (!runState.ended) runState.setState(it) }
                         return@collect
                     }
                     handover.onState(it)
@@ -1313,7 +1260,7 @@ class TaskRun(
             if (parallel) side.launch { service.takeoverQueue.changes.collect { service.refreshNotifications(this@TaskRun) } }
             side.launch {
                 combine(handover.stage, handover.problem) { stage, _ -> stage }.collect {
-                    _takeoverStage.value = it
+                    runState._takeoverStage.value = it
                     service.refreshNotifications(this@TaskRun)
                 }
             }
@@ -1387,7 +1334,7 @@ class TaskRun(
             onMainScreen = { pkg, user -> runCatching { shell.visibleOnMainScreen(pkg, user ?: AppCopyReader.myUser) }.getOrDefault(true) },
             failed = { pkg ->
                 muteFailedFor = pkg
-                publish(_state.value)
+                publish(runState._state.value)
             },
         )
     }
@@ -1428,12 +1375,12 @@ class TaskRun(
         side.launch(Dispatchers.IO) {
             val stage = takeover?.stage ?: MutableStateFlow(Takeover.Stage.None)
             combine(p.screen.target, p.audio.userUnmuted, stage) { _, _, _ -> }.collect {
-                _pipSoundOn.value = pipSoundRestored()
+                runState._pipSoundOn.value = pipSoundRestored()
             }
         }
         side.launch(Dispatchers.IO) {
             p.screen.target.filterNotNull().collectLatest { t ->
-                _appShown.value = true
+                runState._appShown.value = true
                 if (handoverRef?.handedOver != true) p.audio.opened(t.packageName, copyUser(t.userId))
                 // 有目标 App 就说明 launch_app 已经建好了屏
                 val displayId = p.display.current?.displayId
@@ -1442,7 +1389,7 @@ class TaskRun(
                         // 用户点「我来处理」后 App 本来就该在主屏
                         if (handoverRef?.handedOver == true) return@collect
                         gate?.onTaskMovedAway()
-                        publish(_state.value) // 立即显示暂停,不等下一个改动屏幕的工具
+                        publish(runState._state.value) // 立即显示暂停,不等下一个改动屏幕的工具
                     }
                 }
             }
@@ -1454,10 +1401,10 @@ class TaskRun(
      * 用户点「继续」再接着做(见 [TaskGate.onUserOnPage])。等用户回答、接管中等别的状态不动。主线程。
      */
     private fun userOnPage() {
-        if (_state.value !is TaskState.Running) return
+        if (runState._state.value !is TaskState.Running) return
         val g = gate ?: return
         g.onUserOnPage()
-        publish(_state.value)
+        publish(runState._state.value)
     }
 
     /** 任务收尾后判结局、学东西要用的;[execute] 里填上。 */
@@ -1470,15 +1417,15 @@ class TaskRun(
     @Volatile private var kit: LearnKit? = null
 
     /** 停下时正在写的那段字(模型请求已流出的可见文字);收尾前取,收尾后状态就换成终态了。 */
-    fun draftText(): String? = (_state.value as? TaskState.Running)?.preview?.takeIf(String::isNotBlank)
+    fun draftText(): String? = runState.draftText()
 
     /** 停止后有没有可交代的:做过至少一件事,或停下时已经写出了字。 */
-    fun hasStopMaterial(draft: String?): Boolean = synchronized(activityLog) { activityLog.isNotEmpty() } || !draft.isNullOrBlank()
+    fun hasStopMaterial(draft: String?): Boolean = runState.hasStopMaterial(draft)
 
     /** 真正失败后的断点交代:只按记录拼,不再请模型,也不把短失败原因改写成成功。 */
     suspend fun checkpointSummary(): String? {
         val k = kit
-        val runId = _runId.value
+        val runId = runState._runId.value
         val recorded = withContext(Dispatchers.IO) {
             try {
                 runId?.let { id -> k?.runStore?.events(id) }
@@ -1488,7 +1435,7 @@ class TaskRun(
                 null
             }
         }
-        val events = recorded?.takeIf { StopSummary.worthSaying(it, null) } ?: synchronized(activityLog) { activityLog.toList() }
+        val events = recorded?.takeIf { StopSummary.worthSaying(it, null) } ?: synchronized(runState.activityLog) { runState.activityLog.toList() }
         if (!StopSummary.worthSaying(events, null)) return null
         val labels = ToolLabels(knownTools())
         return StopSummary.plain(k?.agent?.taskText ?: goal, events, null, labels::label) {
@@ -1502,9 +1449,9 @@ class TaskRun(
      */
     suspend fun stopSummary(draft: String?): String? {
         val k = kit
-        val runId = _runId.value
+        val runId = runState._runId.value
         val recorded = withContext(Dispatchers.IO) { runId?.let { id -> runCatching { k?.runStore?.events(id) }.getOrNull() } }
-        val events = recorded?.takeIf { e -> e.any { it is RunEvent.Activity } } ?: synchronized(activityLog) { activityLog.toList() }
+        val events = recorded?.takeIf { e -> e.any { it is RunEvent.Activity } } ?: synchronized(runState.activityLog) { runState.activityLog.toList() }
         if (!StopSummary.worthSaying(events, draft)) return null
         // 还没开出模型就停下的(准备阶段):按设置现取
         val (main, light) = if (k != null) k.model to k.light else withContext(Dispatchers.IO) {
@@ -1525,7 +1472,7 @@ class TaskRun(
         val k = kit ?: return null
         if (end !is TaskState.Succeeded) return null
         val judged = OutcomeJudge(k.light ?: k.model, k.model).judge(k.agent.taskText ?: goal, end.answer, k.priorTurns)
-        val runId = _runId.value
+        val runId = runState._runId.value
         if (runId != null) withContext(Dispatchers.IO) {
             k.runStore?.append(runId, judged.event(System.currentTimeMillis()))
             if (BuildConfig.DEBUG) k.runStore?.mirrorToExternal(runId)
@@ -1550,7 +1497,7 @@ class TaskRun(
     suspend fun learnAfter(end: TaskState, outcome: RunOutcome?, conversations: ConversationStore) {
         rememberTask()
         val k = kit ?: return
-        val runId = _runId.value
+        val runId = runState._runId.value
         val learning = RunLearning(
             k.switches, k.memory, memoryRuntime.skills(), k.catalog,
             extractor = k.memory?.let { MemoryExtractor(k.light ?: k.model) },
@@ -1586,7 +1533,7 @@ class TaskRun(
      * 开关关着、没有运行编号、没读到事件、没什么可记的都不记。
      */
     private suspend fun rememberTask() {
-        val runId = _runId.value ?: return
+        val runId = runState._runId.value ?: return
         val settings = memoryRuntime.settings()
         if (!settings.switches.value.taskMemoryEnabled) return
         val events = withContext(Dispatchers.IO) { runCatching { kit?.runStore?.events(runId) }.getOrNull() } ?: return
@@ -1623,7 +1570,7 @@ class TaskRun(
 
     /** 沙箱这一步的说明写到任务卡片上(当前这一步的 note)。 */
     private fun sandboxNote(text: String) {
-        val s = _state.value as? TaskState.Running ?: return
+        val s = runState._state.value as? TaskState.Running ?: return
         publish(s.copy(note = text))
     }
 
@@ -1634,13 +1581,13 @@ class TaskRun(
      * 等完(放开了、等不到、被停掉)把等之前那一句放回去。等之前不在干活(比如已经停下来要你处理)就不改。
      */
     private suspend fun <T> waitingForApp(app: String, wait: suspend () -> T): T {
-        val before = _state.value as? TaskState.Running ?: return wait()
+        val before = runState._state.value as? TaskState.Running ?: return wait()
         val waiting = before.copy(progress = RunProgress.WaitingForApp(app))
         publish(waiting)
         try {
             return wait()
         } finally {
-            if (_state.value == waiting) publish(before)
+            if (runState._state.value == waiting) publish(before)
         }
     }
 
@@ -1654,9 +1601,9 @@ class TaskRun(
             state is TaskState.Running && gate?.userOnPagePending == true -> TaskState.Held(TaskGate.paused(TaskGate.USER_ON_PAGE))
             else -> state
         }
-        synchronized(publishLock) {
-            if (ended) return
-            setState(shown)
+        synchronized(runState.publishLock) {
+            if (runState.ended) return
+            runState.setState(shown)
             awake?.onState(state)
         }
         service.refreshNotifications(this)
