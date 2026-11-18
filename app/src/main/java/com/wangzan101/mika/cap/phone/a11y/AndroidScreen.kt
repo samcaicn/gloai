@@ -198,130 +198,23 @@ class AndroidScreen(
     @Volatile internal var frameGuardSince: Long? = null
 
 
-    override suspend fun systemCommand(command: String): SystemCommandResult? = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext null
-        val result = shell.runSystemCommand(displayId, command)
-        SystemCommandResult(result.getInt("exitCode", -1), result.getString("output").orEmpty())
-    }
-
     // ---------- 动作 ----------
 
-    override suspend fun tapRef(ref: String, snapshotId: String): ActionResult = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext NO_APP_OPEN
-        val (node, relocatedTo) = resolve(ref, snapshotId) ?: return@withContext ActionResult.Failed("ref_expired")
-        val target = ancestorOrSelf(node) { isClickableTarget(it) }
-        val rect = Rect().also(node::getBoundsInScreen)
-        val touchFallback: suspend (EventClock) -> Boolean = { clock ->
-            clock.mark()
-            touch(pacing.within(rect.left, rect.top, rect.right, rect.bottom))
-        }
-        if (target == null) return@withContext verified(relocatedTo = relocatedTo) {
-            touch(pacing.within(rect.left, rect.top, rect.right, rect.bottom))
-        }
-        val outward = ClickFallback.mayBeOutward(ScreenReader.labelOf(node), node.viewIdResourceName) ||
-            ClickFallback.mayBeOutward(ScreenReader.labelOf(target), target.viewIdResourceName)
-        verified(relocatedTo = relocatedTo, fallback = touchFallback, retryWhenUnchanged = !outward) {
-            target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-        }
-    }
+    /** 点 / 滑 / 滚 / 返回等动作,见 [ScreenActions]。 */
+    internal val actions = ScreenActions(this)
 
-    override suspend fun tapXY(x: Int, y: Int): ActionResult = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext NO_APP_OPEN
-        verified(fallback = { clock -> clickNodeAt(x, y, clock) }) { tapAt(x, y) }
-    }
+    override suspend fun systemCommand(command: String): SystemCommandResult? = actions.systemCommand(command)
+    override suspend fun tapRef(ref: String, snapshotId: String): ActionResult = actions.tapRef(ref, snapshotId)
+    override suspend fun tapXY(x: Int, y: Int): ActionResult = actions.tapXY(x, y)
+    override suspend fun doubleTapRef(ref: String, snapshotId: String): ActionResult = actions.doubleTapRef(ref, snapshotId)
+    override suspend fun doubleTapXY(x: Int, y: Int): ActionResult = actions.doubleTapXY(x, y)
+    override suspend fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Long): ActionResult = actions.swipe(x1, y1, x2, y2, durationMs)
+    override suspend fun gesture(paths: List<List<Pair<Int, Int>>>, durationMs: Long): ActionResult = actions.gesture(paths, durationMs)
+    override suspend fun scroll(ref: String?, snapshotId: String?, down: Boolean): ActionResult = actions.scroll(ref, snapshotId, down)
+    override suspend fun idleScroll(fraction: Double): Boolean = actions.idleScroll(fraction)
+    override suspend fun back(): ActionResult = actions.back()
+    override suspend fun pressKey(keyCode: Int): ActionResult = actions.pressKey(keyCode)
 
-    override suspend fun doubleTapRef(ref: String, snapshotId: String): ActionResult = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext NO_APP_OPEN
-        val target = resolve(ref, snapshotId) ?: return@withContext ActionResult.Failed("ref_expired")
-        val rect = android.graphics.Rect().also { target.first.getBoundsInScreen(it) }
-        verified(relocatedTo = target.second) { doubleTapAt(pacing.within(rect.left, rect.top, rect.right, rect.bottom)) }
-    }
-
-    override suspend fun doubleTapXY(x: Int, y: Int): ActionResult = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext NO_APP_OPEN
-        verified { doubleTapAt(pacing.near(x, y)) }
-    }
-
-    // 双击只能是一次手势里的两笔:分两次下发,中间的回调延迟可能超过系统认双击的时限
-    internal suspend fun doubleTapAt(at: Pair<Int, Int>): Boolean {
-        delay(pacing.approach())
-        return a11y.taps(displayId, at.first.toFloat(), at.second.toFloat(), 2, pacing.doublePress(), pacing.doubleGap())
-    }
-
-    override suspend fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Long): ActionResult = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext NO_APP_OPEN
-        verified { drag(listOf(x1 to y1, x2 to y2), durationMs, bow = true) }
-    }
-
-    override suspend fun gesture(paths: List<List<Pair<Int, Int>>>, durationMs: Long): ActionResult = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext NO_APP_OPEN
-        if (paths.isEmpty() || paths.size > 2 || paths.any { it.size < 2 || it.size > 32 }) return@withContext ActionResult.Failed("invalid_gesture")
-        verified {
-            // 一根手指照着画好的路径走,按节奏排快慢;几根手指一起动的只让时长浮动一点
-            if (paths.size == 1) return@verified drag(paths.single(), durationMs, bow = false)
-            delay(pacing.approach())
-            a11y.gesture(displayId, paths.map(::pathOf), pacing.duration(durationMs))
-        }
-    }
-
-    override suspend fun scroll(ref: String?, snapshotId: String?, down: Boolean): ActionResult = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext NO_APP_OPEN
-        var relocatedTo: String? = null
-        val start = if (ref != null && snapshotId != null) {
-            val target = resolve(ref, snapshotId) ?: return@withContext ActionResult.Failed("ref_expired")
-            relocatedTo = target.second
-            target.first
-        } else {
-            read().entries.firstOrNull { it.element.scrollable }?.node
-        }
-        val node = start?.let { ancestorOrSelf(it) { n -> n.isScrollable } }
-        if (node == null) {
-            // 没有可滚动的控件时用屏幕中部的滑动代替
-            val cx = screenWidth / 2
-            val (from, to) = if (down) screenHeight * 3 / 4 to screenHeight / 4 else screenHeight / 4 to screenHeight * 3 / 4
-            val r = swipe(cx, from, cx, to)
-            return@withContext if (r is ActionResult.Ok && relocatedTo != null) r.copy(relocated = true, relocatedTo = relocatedTo) else r
-        }
-        val action = if (down) AccessibilityNodeInfo.ACTION_SCROLL_FORWARD else AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
-        verified(relocatedTo = relocatedTo) { node.performAction(action) }
-    }
-
-    /**
-     * 停留时顺手轻轻滚一下:在占了大半屏的那块可滚动内容(信息流、正文)正中慢慢划 [fraction] 个屏高,停稳再抬手、不甩。
-     * 弹着输入法、输入框拿着焦点、上面盖着别的窗口(弹框、浮层)、没有够大的可滚动内容时不滚。
-     */
-    override suspend fun idleScroll(fraction: Double): Boolean = withContext(Dispatchers.IO) {
-        if (!hasDisplay || textInput.imeBox() != null || focusedEditable() != null) return@withContext false
-        if (ScreenReader.contentWindows(windows()).count { it.type == AccessibilityWindowInfo.TYPE_APPLICATION } > 1) return@withContext false
-        val area = read().entries.filter { it.element.scrollable }
-            .map { e -> android.graphics.Rect().also { e.node.getBoundsInScreen(it) } }
-            .maxByOrNull { it.width().toLong() * it.height() } ?: return@withContext false
-        if (area.width().toLong() * area.height() < screenWidth.toLong() * screenHeight * IDLE_MIN_AREA) return@withContext false
-        val dist = (screenHeight * kotlin.math.abs(fraction)).roundToInt().coerceAtMost(area.height() / 2)
-        if (dist < IDLE_MIN_PX) return@withContext false
-        val cx = area.centerX()
-        val mid = area.centerY()
-        // 往下看(fraction 为正)手指往上划
-        val (from, to) = if (fraction > 0) mid + dist / 2 to mid - dist / 2 else mid - dist / 2 to mid + dist / 2
-        drag(listOf(cx to from, cx to to), IDLE_SCROLL_MS, bow = true)
-    }
-
-    override suspend fun back(): ActionResult = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext NO_APP_OPEN
-        verified(fallback = { clock -> tapBackControl(clock) }) { shell.injectKey(displayId, KeyEvent.KEYCODE_BACK) }
-    }
-
-    /** back 注入没生效时,点屏上可见的返回控件。认不到返回控件就 false,不硬点。 */
-    internal suspend fun tapBackControl(clock: EventClock): Boolean {
-        val c = BackAffordance.find(peek().elements, screenWidth, screenHeight) ?: return false
-        clock.mark()
-        return tapAt(c.centerX, c.centerY)
-    }
-
-    override suspend fun pressKey(keyCode: Int): ActionResult = withContext(Dispatchers.IO) {
-        if (!hasDisplay) return@withContext NO_APP_OPEN
-        verified { shell.injectKey(displayId, keyCode) }
-    }
 
     /** 打字 / 粘贴 / 清空,见 [TextInput]。 */
     internal val textInput = TextInput(this)
