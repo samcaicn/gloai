@@ -222,6 +222,11 @@ class TaskRun(
     /** 静音等恢复记录按它分开,几个任务各记各的。 */
     val key: String = UUID.randomUUID().toString()
     private val inbox = RunInbox()
+    /** 插话的收发、去向与撤回。 */
+    private val steerCoordinator = SteerCoordinator(
+        service, conversationId, runState, inbox,
+        loop = { loop }, stopPressed = { stopPressed }, mcpExternalId = { mcpExternalId },
+    )
 
     val state: StateFlow<TaskState> get() = runState.state
     val runId: StateFlow<String?> get() = runState.runId
@@ -357,86 +362,30 @@ class TaskRun(
     /** 新指令取代尚未回答的普通提问；旧任务按取消收尾，排队的新指令随后执行。 */
     fun cancelAsk(askId: String): Boolean = loop?.cancelInput(askId) == true
 
-    /**
-     * 同一对话在任务进行中的新原话，交给下一次模型步；准备阶段也会先排在 Inbox。
-     * [messageId] 是界面给这句话的编号,界面据此标出它的去向(见 [SteerNote])。
-     */
-    fun steer(text: String, messageId: String = UUID.randomUUID().toString()) {
-        synchronized(service.taskState.shownLock) {
-            runState._steers.value = runState._steers.value + SteerNote(messageId, text, SteerState.Pending)
-            // 收件箱收下了就马上告诉用户:模型此刻的请求已撤掉,下一步就带着这句话想(交给模型时再改成已加入)
-            if (inbox.steer(messageId, text) == InputReceipt.Accepted) markSteers(setOf(messageId), SteerState.Received, from = SteerState.Pending)
-            else {
-                if (stopPressed) markSteers(setOf(messageId), SteerState.Cancelled)
-                else {
-                    markSteers(setOf(messageId), SteerState.Next)
-                    service.deferMessage(conversationId, text, messageId)
-                }
-            }
-        }
-    }
+    /** 同一对话在任务进行中的新原话，交给下一次模型步；准备阶段也会先排在 Inbox。 */
+    fun steer(text: String, messageId: String = UUID.randomUUID().toString()) = steerCoordinator.steer(text, messageId)
 
     /** 远程追加只归当前任务;与状态发布互斥,收件箱再原子核对是否已经结束/取消。 */
-    fun steerRemote(text: String): String? = synchronized(runState.publishLock) delivery@{
-        if (runState.ended || stopPressed || mcpExternalId == null || runState._state.value !is TaskState.Running) return@delivery null
-        if (loop?.state?.value?.let { it !is TaskState.Running } == true) return@delivery null
-        val id = UUID.randomUUID().toString()
-        synchronized(service.taskState.shownLock) {
-            // 先记消息,再唤醒模型;消费事件可能紧跟着发生,不能把 Joined 改回 Received。
-            runState._steers.value = runState._steers.value + SteerNote(id, text, SteerState.Received, remote = true)
-            if (inbox.steerCurrent(id, text) != InputReceipt.Accepted) {
-                runState._steers.value = runState._steers.value.filterNot { it.id == id }
-                return@delivery null
-            }
-            id
-        }
-    }
+    fun steerRemote(text: String): String? = steerCoordinator.steerRemote(text)
 
     /** 撤回手机上插的、模型还没取走的那句;已取走、已收尾或是电脑追加的(收件箱拒绝)返回 false,去向不变。 */
-    fun withdrawSteer(messageId: String): Boolean = synchronized(service.taskState.shownLock) {
-        if (!inbox.withdrawSteer(messageId)) return@synchronized false
-        markSteers(setOf(messageId), SteerState.Withdrawn)
-        true
-    }
+    fun withdrawSteer(messageId: String): Boolean = steerCoordinator.withdrawSteer(messageId)
 
     /** 手机插话可转下一任务;远程插话只能用于当前任务,未消费的一律作废,不改变来源和权限。 */
-    fun handoffUnconsumed(cancelled: Boolean = stopPressed) {
-        val left = inbox.handoffUnconsumed()
-        val (discard, next) = left.partition { cancelled || it.currentTaskOnly }
-        markSteers(discard.map { it.messageId }.toSet(), SteerState.Cancelled)
-        markSteers(next.map { it.messageId }.toSet(), SteerState.Next)
-        next.forEach { service.deferMessage(conversationId, it.text, it.messageId) }
-    }
+    fun handoffUnconsumed(cancelled: Boolean = stopPressed) = steerCoordinator.handoffUnconsumed(cancelled)
 
     /** 已交给这个任务的插话,随这一轮存进对话。 */
     /** 这次任务真的用过的能力组(手机、网页、沙箱);记进这一轮,下一轮开局预先展开。 */
     @Volatile var usedGroups: List<String> = emptyList()
         private set
 
-    fun joinedSteers(): List<String> = joined().map { it.text }
+    fun joinedSteers(): List<String> = steerCoordinator.joinedSteers()
 
     /** 和 [joinedSteers] 一一对应:每句插话打断的那段回复,没打断的是空串。 */
-    fun joinedInterrupted(): List<String> = joined().map { it.interrupted.orEmpty() }
+    fun joinedInterrupted(): List<String> = steerCoordinator.joinedInterrupted()
 
     /** 和 [joinedSteers] 一一对应:每句插话交给模型之前已经说完的那段回复,没有的是空串。 */
-    fun joinedFinished(): List<String> = joined().map { it.finished.orEmpty() }
-
-    private fun joined() = runState._steers.value.filter { it.state == SteerState.Joined }
-
-    /** 插话撤掉的那段回复,等这一批插话里第一句交给模型时挂到它上面。 */
-    private val steerJoin = SteerJoin()
-
-    private fun joinSteer(id: String) {
-        synchronized(service.taskState.shownLock) { runState._steers.value = steerJoin.joined(runState._steers.value, id) }
-    }
-
-    /** 把 [ids] 这几句改成 [to];给了 [from] 时只改还在那个状态的(收下和交给模型可能先后颠倒,不往回改)。 */
-    private fun markSteers(ids: Set<String>, to: SteerState, from: SteerState? = null) {
-        if (ids.isEmpty()) return
-        synchronized(service.taskState.shownLock) {
-            runState._steers.value = runState._steers.value.map { if (it.id in ids && (from == null || it.state == from)) it.copy(state = to) else it }
-        }
-    }
+    fun joinedFinished(): List<String> = steerCoordinator.joinedFinished()
 
     /** 运行事件里界面要跟的两样:实际做过的事,和插话已交给模型。 */
     private val liveEvents = object : RunSink {
@@ -446,9 +395,9 @@ class TaskRun(
                     val n = synchronized(runState.activityLog) { runState.activityLog += e; runState.activityLog.size }
                     runState._activities.value = runState.logView(n)
                 }
-                e is RunEvent.State && e.name == "reply_interrupted" -> steerJoin.interrupted(e.detail)
-                e is RunEvent.State && e.name == "reply_finished_before_steer" -> steerJoin.finished(e.detail)
-                e is RunEvent.State && e.name == "steer_received" -> joinSteer(e.detail)
+                e is RunEvent.State && e.name == "reply_interrupted" -> steerCoordinator.onInterrupted(e.detail)
+                e is RunEvent.State && e.name == "reply_finished_before_steer" -> steerCoordinator.onFinished(e.detail)
+                e is RunEvent.State && e.name == "steer_received" -> steerCoordinator.onSteerReceived(e.detail)
             }
         }
     }
