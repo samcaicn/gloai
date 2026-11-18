@@ -38,7 +38,7 @@ internal class TextInput(private val screen: AndroidScreen) {
                             pasteFromContextMenu(anchor, text)?.let { return@withContext it }
                         }
                     }
-                    ActionResult.Failed(f.reason, "The referenced control did not expose an editor or a screen.verified Paste menu.")
+                    ActionResult.Failed(f.reason, "The referenced control did not expose an editor or a verified Paste menu.")
                 }
                 f.reason != AndroidScreen.NO_FOCUS -> ActionResult.Failed(f.reason)
                 // 屏上什么都没拿着输入焦点、也没弹输入法:没有框接得住粘贴,不去粘(粘了界面别处一动就会被当成「可能打进去了」)
@@ -495,7 +495,7 @@ internal class TextInput(private val screen: AndroidScreen) {
             }
             else -> screen.ok(
                 verification = Verification.UNKNOWN,
-                hint = "The Paste menu screen.click did not confirm delivery. Check the field before retrying.",
+                hint = "The Paste menu click did not confirm delivery. Check the field before retrying.",
             )
         }
     }
