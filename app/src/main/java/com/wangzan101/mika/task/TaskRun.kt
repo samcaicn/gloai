@@ -227,6 +227,17 @@ class TaskRun(
         service, conversationId, runState, inbox,
         loop = { loop }, stopPressed = { stopPressed }, mcpExternalId = { mcpExternalId },
     )
+    /** 生命周期控制与用户交互(取消、接管、问答、确认、收尾)。 */
+    private val runControl = TaskRunControl(
+        service, conversationId, scope, runState, inbox,
+        loop = { loop }, gate = { gate }, takeover = { takeover },
+        children = { children }, job = { job },
+        cancelRequested = { cancelRequested }, setCancelRequested = { cancelRequested = it },
+        shownRef = { service.taskState.shownRun === this },
+        publish = ::publish,
+        key = key,
+        setStopPressed = { stopPressed = it },
+    )
 
     val state: StateFlow<TaskState> get() = runState.state
     val runId: StateFlow<String?> get() = runState.runId
@@ -267,7 +278,7 @@ class TaskRun(
     /** 用户点了停止:还没交给模型的插话一起作废,不当成下一件事。 */
     @Volatile private var stopPressed = false
     @Volatile private var loop: AgentLoop? = null
-    val activeAsk: Delivery.Ask? get() = loop?.activeAsk
+    val activeAsk: Delivery.Ask? get() = runControl.activeAsk
     @Volatile private var gate: TaskGate? = null
     @Volatile var takeover: Takeover? = null
         private set
@@ -285,34 +296,14 @@ class TaskRun(
         internal set
     /** 已接上的手机侧;浮层恢复声音据此找到当前目标 App,收尾时清空。 */
     @Volatile private var phone: PhoneSide? = null
-    fun cancel() {
-        stopPressed = true
-        children?.cancelAll(RunId(key))
-        val running = loop
-        val t = takeover
-        when {
-            t != null -> scope.launch { t.cancel() }
-            running != null -> inbox.cancel()
-            else -> {
-                // 刚从队里放出来、协程还没挂上时点的取消:挂上时立即取消
-                cancelRequested = true
-                job?.cancel()
-            }
-        }
-    }
+    fun cancel() = runControl.cancel()
 
-    fun resume() {
-        val g = gate ?: return
-        val wasOnPage = g.userOnPagePending
-        g.resume()
-        // 用户在页面上操作的那种暂停:循环可能还没走到关卡(还在想),按它此刻的状态重新显示,不再写着暂停
-        if (wasOnPage) loop?.state?.value?.takeIf { it is TaskState.Running }?.let(::publish)
-    }
-    fun takeOver(waitKey: Int?) { takeover?.let { t -> scope.launch { t.handOver(waitKey) } } }
-    fun handBack(waitKey: Int?) { takeover?.let { t -> scope.launch { t.handBack(waitKey) } } }
-    fun finishedMyself(waitKey: Int?) { takeover?.let { t -> scope.launch { t.finishedMyself(waitKey) } } }
-    fun skip(waitKey: Int?) { takeover?.let { t -> scope.launch { t.skip(waitKey) } } }
-    fun putAside(waitKey: Int?) { takeover?.let { t -> scope.launch { t.putAside(waitKey) } } }
+    fun resume() = runControl.resume()
+    fun takeOver(waitKey: Int?) = runControl.takeOver(waitKey)
+    fun handBack(waitKey: Int?) = runControl.handBack(waitKey)
+    fun finishedMyself(waitKey: Int?) = runControl.finishedMyself(waitKey)
+    fun skip(waitKey: Int?) = runControl.skip(waitKey)
+    fun putAside(waitKey: Int?) = runControl.putAside(waitKey)
 
     /** 浮层上的声音开关:恢复过声音的再按一次静回去,没恢复的按一次恢复(重复点击重试真实动作);没有手机侧或目标 App 时不动。 */
     fun togglePipSound() {
@@ -347,20 +338,13 @@ class TaskRun(
     }
 
     /** 回答提问;已经不在等(超时后才答、已答过)时调 [tooLate] 告诉用户这条回答没用上。 */
-    fun answer(text: String, tooLate: () -> Unit) {
-        if (loop == null) return
-        if (runState._state.value is TaskState.WaitingInput) scope.launch {
-            if (inbox.send(RunInput.Answer(text)) != InputReceipt.Accepted) tooLate()
-        }
-        else tooLate()
-    }
+    fun answer(text: String, tooLate: () -> Unit) = runControl.answer(text, tooLate)
 
     /** 渠道已经核对过提问编号；仍由同一个收件箱回答，避免绕过运行生命周期。 */
-    suspend fun answerFromChannel(text: String, askId: String): Boolean =
-        inbox.send(RunInput.Answer(text, askId)) == InputReceipt.Accepted
+    suspend fun answerFromChannel(text: String, askId: String): Boolean = runControl.answerFromChannel(text, askId)
 
     /** 新指令取代尚未回答的普通提问；旧任务按取消收尾，排队的新指令随后执行。 */
-    fun cancelAsk(askId: String): Boolean = loop?.cancelInput(askId) == true
+    fun cancelAsk(askId: String): Boolean = runControl.cancelAsk(askId)
 
     /** 同一对话在任务进行中的新原话，交给下一次模型步；准备阶段也会先排在 Inbox。 */
     fun steer(text: String, messageId: String = UUID.randomUUID().toString()) = steerCoordinator.steer(text, messageId)
@@ -403,27 +387,17 @@ class TaskRun(
     }
 
     /** 通知和卡片的按钮都带着它所属的申报 [key];点在已经换掉的旧通知、旧卡片上不算数。 */
-    fun confirm(choice: ConfirmChoice, key: Int?) {
-        val running = loop
-        val waiting = runState._state.value as? TaskState.WaitingConfirmation
-        if (running != null && waiting != null && key == ConfirmationNotifier.requestKey(waiting)) {
-            scope.launch { inbox.send(RunInput.Confirm(choice)) }
-        }
-    }
+    fun confirm(choice: ConfirmChoice, key: Int?) = runControl.confirm(choice, key)
 
     /**
      * 任务的终态:[execute] 收尾之后才写,不经 [publish]。不论显示的是不是自己,都先把本次的运行编号记到
      * 自己对话名下([TaskService.endedRunIds]),界面收到结束状态时按对话取;显示中时也写 [TaskService.endedRunId]。
      */
-    fun end(end: TaskState) = synchronized(service.taskState.shownLock) {
-        service.taskState._endedRunIds.value = service.taskState._endedRunIds.value + (conversationId to runState._runId.value)
-        if (service.taskState.shownRun === this) service.taskState._endedRunId.value = runState._runId.value
-        runState.setState(end)
-    }
+    fun end(end: TaskState) = runControl.end(end)
 
     /** 超出并行上限在排队;放出来开跑时 [dequeue]。 */
-    fun queue(position: Int) { runState.setState(TaskState.Held(GateReason.queued(trPlural(R.plurals.queue_ahead, position)))) }
-    fun dequeue() { runState.setState(TaskState.Running(0, TaskService.PREPARING)) }
+    fun queue(position: Int) = runControl.queue(position)
+    fun dequeue() = runControl.dequeue()
 
     /** 本任务的沙箱:一个任务一份(导出额度按任务算),工作区是本对话的。 */
     private val sandbox by lazy { AndroidSandbox(service, SandboxState.get(service), onShared = ::addShared) }
@@ -1564,15 +1538,7 @@ class TaskRun(
     }
 
     /** 网页接管界面顶部的说明:接管原因的话,付款时再带上商品、金额、地址。 */
-    private fun takeoverMessage(state: TaskState): String? {
-        val w = state as? TaskState.WaitingTakeover ?: return null
-        return listOfNotNull(
-            w.message.takeIf { it.isNotBlank() },
-            w.item?.let { tr(R.string.payment_item, it) },
-            w.amount?.let { tr(R.string.payment_amount, it) },
-            w.address?.let { tr(R.string.payment_address, it) },
-        ).joinToString("\n").ifEmpty { null }
-    }
+    private fun takeoverMessage(state: TaskState): String? = runControl.takeoverMessage(state)
 
     private companion object {
         /** 网页界面时画中画取画面的间隔。 */
