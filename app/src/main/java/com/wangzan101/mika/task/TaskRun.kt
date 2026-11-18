@@ -245,6 +245,14 @@ class TaskRun(
         routeStore = routeStore,
         workflowAttemptId = { workflowAttemptId }, noticeTainted = { noticeTainted }, provenance = { provenance },
     )
+    /** 手机侧运行时(浮层声音、静音、目标监视、浏览器页触摸暂停)。 */
+    private val phoneRuntime = PhoneRuntime(
+        service, conversationId, scope, runState,
+        publish = ::publish,
+        phone = { phone }, takeover = { takeover }, gate = { gate },
+        handoverRef = { handoverRef }, sideScope = { sideScope }, sandbox = { sandbox },
+        setMuteFailedFor = { muteFailedFor = it },
+    )
 
     val state: StateFlow<TaskState> get() = runState.state
     val runId: StateFlow<String?> get() = runState.runId
@@ -313,36 +321,7 @@ class TaskRun(
     fun putAside(waitKey: Int?) = runControl.putAside(waitKey)
 
     /** 浮层上的声音开关:恢复过声音的再按一次静回去,没恢复的按一次恢复(重复点击重试真实动作);没有手机侧或目标 App 时不动。 */
-    fun togglePipSound() {
-        scope.launch(Dispatchers.IO) {
-            val restored = pipSoundRestored()
-            val targetPkg = phone?.screen?.target?.value?.packageName
-            val handed = takeover?.handedOverPackage
-            Log.i(TAG, "togglePipSound restored=$restored target=$targetPkg handed=$handed unmuted=${phone?.audio?.userUnmuted?.value}")
-            if (restored) mutePipSound(takeover) {
-                val p = phone ?: return@mutePipSound
-                val target = p.screen.target.value ?: return@mutePipSound
-                if (!p.audio.muteAgain(target.packageName, copyUser(target.userId))) {
-                    Log.w(TAG, "could not mute again ${target.packageName} from pip")
-                }
-            } else restorePipSound(takeover) {
-                val p = phone ?: return@restorePipSound
-                val target = p.screen.target.value ?: return@restorePipSound
-                if (!p.audio.unmute(target.packageName, copyUser(target.userId))) {
-                    Log.w(TAG, "could not restore sound of ${target.packageName} from pip")
-                }
-            }
-        }
-    }
-
-    /** 小窗当前目标的声音是否已被用户恢复过:接管中看交出去的包,否则看虚拟屏目标;键的取法与 unmute/muteAgain 一致。 */
-    private fun pipSoundRestored(): Boolean {
-        val p = phone ?: return false
-        val target = p.screen.target.value
-        val pkg = takeover?.handedOverPackage ?: target?.packageName ?: return false
-        val user = target?.takeIf { it.packageName == pkg }?.let { copyUser(it.userId) }
-        return AppAudioKey.of(pkg, user) in p.audio.userUnmuted.value
-    }
+    fun togglePipSound() = phoneRuntime.togglePipSound()
 
     /** 回答提问;已经不在等(超时后才答、已答过)时调 [tooLate] 告诉用户这条回答没用上。 */
     fun answer(text: String, tooLate: () -> Unit) = runControl.answer(text, tooLate)
@@ -420,24 +399,6 @@ class TaskRun(
     }
 
     /** 把工作区里的一段音频复制成别的 App 可读的 content URI(分享用);越界、不是音频、太大时为 null。 */
-    private suspend fun shareWorkspaceAudio(path: String): com.wangzan101.mika.media.ShareableFile? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        val trimmed = path.trim()
-        val prefix = com.wangzan101.mika.core.workspace.SandboxPaths.WORKSPACE + "/"
-        if (!trimmed.startsWith(prefix)) return@withContext null
-        val rel = trimmed.removePrefix(prefix)
-        if (rel.isEmpty() || rel.split('/').any { it.isEmpty() || it == "." || it == ".." }) return@withContext null
-        val dirs = com.wangzan101.mika.cap.sandbox.SandboxDirs(service)
-        val bytes = dirs.tree.shared {
-            dirs.gate.openRead(dirs.workspace(conversationId), rel).use { g ->
-                if (g.size > 20L * 1024 * 1024) null else g.read(0, g.size.toInt())
-            }
-        } ?: return@withContext null
-        val mime = android.webkit.MimeTypeMap.getSingleton()
-            .getMimeTypeFromExtension(trimmed.substringAfterLast('.', "").lowercase())
-            ?.takeIf { it.startsWith("audio/") } ?: "audio/wav"
-        com.wangzan101.mika.media.AudioShareExporter(service).save(bytes, mime, trimmed.substringAfterLast('/'))
-    }
-
     /**
      * 本任务的音频端口:用户配置并打开了声音模型、且这是手机上开始的任务时才建。
      * 定时、远程、子任务、条件检查没有它,音频工具也就不会发给模型。
@@ -634,7 +595,7 @@ class TaskRun(
                 } catch (e: CancellationException) { throw e }
                 catch (_: com.wangzan101.mika.core.access.AppAccessDenied) { false }
             }
-            val metrics = mainScreenMetrics()
+            val metrics = phoneRuntime.mainScreenMetrics()
             // 在 App 里操作的节奏(设置 › 任务运行,未覆盖的 App 跟随全局;评测、真机验收按钩子覆盖,
             // 钩子设了档位时按应用覆盖不参与——评测要的是确定)
             val hooked = env.evalHooks.operatingPace
@@ -705,7 +666,7 @@ class TaskRun(
                     }
                 }
                 val audio = recovery.audioMute(shell, key).also { mute = it }
-                val muter = appMuter(shell, audio)
+                val muter = phoneRuntime.appMuter(shell, audio)
                 // 占用登记里的名字:另一份用户里的那份单独占,和本来那份互不挡;占着的任务还在不在用它,问内置助手
                 fun claimKey(pkg: String, user: Int?) = if (user == null) pkg else "$pkg@$user"
                 fun stillUsed(pkg: String, user: Int?): () -> Boolean = {
@@ -719,7 +680,7 @@ class TaskRun(
                     appFree = { pkg, user -> service.packageFree(claimKey(pkg, user), key, stillUsed(pkg, user)) },
                     // 模型要了等:等的时候界面写「等另一个任务用完某 App」(仍是在干活,不算要你处理),等完放回原来那句
                     awaitApp = { pkg, user, timeoutMs, free ->
-                        waitingForApp(ConfirmationNotifier.appLabel(service, pkg)) { service.awaitPackage(claimKey(pkg, user), key, timeoutMs, free) }
+                        phoneRuntime.waitingForApp(ConfirmationNotifier.appLabel(service, pkg)) { service.awaitPackage(claimKey(pkg, user), key, timeoutMs, free) }
                     },
                     clipSaved = { original, ours -> recovery.saveClip(original, ours) },
                     handedOver = { handoverRef?.handedOver == true },
@@ -729,11 +690,11 @@ class TaskRun(
                     beforeOpen = muter::beforeOpen,
                     notOpened = muter::notOpened,
                     appAccess = appAccess,
-                    shareAudioFile = { path -> shareWorkspaceAudio(path) },
+                    shareAudioFile = { path -> phoneRuntime.shareWorkspaceAudio(path) },
                 )
                 val side0 = PhoneSide(shell, a11y, screen, agentDisplay, muter)
                 phone = side0
-                watchTarget(side0, states)
+                phoneRuntime.watchTarget(side0, states)
                 return screen
             }
             val phoneScreen = LazyPhoneScreen(metrics.widthPixels, metrics.heightPixels,
@@ -870,7 +831,7 @@ class TaskRun(
                         override fun swap(prev: WebTab, next: WebTab) = stack.swapBorrowed(prev, next)
                         override fun adopt(tab: WebTab) = stack.adopt(tab)
                         override fun touched() {
-                            if (stack.onBorrowedTab && !(phoneScreen.acquired && dispatcher?.surface != WEB)) userOnPage()
+                            if (stack.onBorrowedTab && !(phoneScreen.acquired && dispatcher?.surface != WEB)) phoneRuntime.userOnPage()
                         }
                     })
                 }
@@ -989,10 +950,10 @@ class TaskRun(
                 audioSaveEnabled = audioSettings.state.value.saveEnabled,
                 audioAskBeforeSave = audioSettings.state.value.askBeforeSave,
                 audioSpeakTool = audioSettings.state.value.speakTool,
-                onSandboxCommand = { sandboxNote(StatusCopy.sandboxCommand(it, sandboxOnline())) },
-                onSandboxProgress = { sandboxNote(StatusCopy.sandboxProgress(it, sandboxOnline())) },
-                onSandboxPreparing = { sandboxNote(StatusCopy.RUNTIME_PREPARING) },
-                onSandboxScript = { sandboxNote(StatusCopy.sandboxScript(sandboxOnline())) },
+                onSandboxCommand = { phoneRuntime.sandboxNote(StatusCopy.sandboxCommand(it, phoneRuntime.sandboxOnline())) },
+                onSandboxProgress = { phoneRuntime.sandboxNote(StatusCopy.sandboxProgress(it, phoneRuntime.sandboxOnline())) },
+                onSandboxPreparing = { phoneRuntime.sandboxNote(StatusCopy.RUNTIME_PREPARING) },
+                onSandboxScript = { phoneRuntime.sandboxNote(StatusCopy.sandboxScript(phoneRuntime.sandboxOnline())) },
                 imageOps = BitmapImageOps, runSpec = runSpec,
                 userScreens = userScreens,
                 scheduleTrigger = if (provenance.origin == RunOrigin.Ui) { trigger -> TriggerRuntime.schedule(service, trigger) } else null,
@@ -1044,7 +1005,7 @@ class TaskRun(
                 promptTransform = { promptHook.transform(it) },
                 // 助手断开、被挪走只在这一步用的是手机时才查
                 gate = { w ->
-                    if (phoneScreen.acquired && dispatcher?.surface != WEB) phone?.screen?.let { awaitUserPick(it, taskGate, w) }
+                    if (phoneScreen.acquired && dispatcher?.surface != WEB) phone?.screen?.let { phoneRuntime.awaitUserPick(it, taskGate, w) }
                     taskGate.pass({ phoneScreen.acquired && dispatcher?.surface != WEB }, w)
                 }, knowledge = knowledge, sink = sink, trace = trace, installedApps = { apps },
                 // 选渠道用的事实:装了哪些 App、在 Mika 里登录过哪些网站、有没有内置浏览器
@@ -1108,7 +1069,7 @@ class TaskRun(
                 override fun setSound(packageName: String, on: Boolean) {
                     val p = phone ?: return
                     // 交出去的若是目标 App,按目标所属的那份算;别的按本来那份
-                    val user = p.screen.target.value?.takeIf { it.packageName == packageName }?.let { copyUser(it.userId) }
+                    val user = p.screen.target.value?.takeIf { it.packageName == packageName }?.let { phoneRuntime.copyUser(it.userId) }
                     if (on) {
                         if (!p.audio.release(packageName, user)) Log.w(TAG, "could not restore sound of $packageName for takeover")
                     } else {
@@ -1117,12 +1078,12 @@ class TaskRun(
                 }
                 override fun unmute(packageName: String) {
                     val p = phone ?: return
-                    val user = p.screen.target.value?.takeIf { it.packageName == packageName }?.let { copyUser(it.userId) }
+                    val user = p.screen.target.value?.takeIf { it.packageName == packageName }?.let { phoneRuntime.copyUser(it.userId) }
                     if (!p.audio.unmute(packageName, user)) Log.w(TAG, "could not restore sound of $packageName from pip takeover")
                 }
                 override fun muteAgain(packageName: String) {
                     val p = phone ?: return
-                    val user = p.screen.target.value?.takeIf { it.packageName == packageName }?.let { copyUser(it.userId) }
+                    val user = p.screen.target.value?.takeIf { it.packageName == packageName }?.let { phoneRuntime.copyUser(it.userId) }
                     if (!p.audio.muteAgain(packageName, user)) Log.w(TAG, "could not mute again $packageName from pip takeover")
                 }
                 override fun watchInput(packageName: String) {
@@ -1140,7 +1101,7 @@ class TaskRun(
                     val c = counter ?: return null
                     val pm = service.packageManager
                     val label = runCatching { pm.getApplicationLabel(pm.getApplicationInfo(c.packageName, 0)).toString() }.getOrNull()
-                    return HandoverActivity(c.inputCount, stoppedAt(phone?.a11y?.let { mainWindowTitle(it, c.packageName) }, label, c.lastActivity))
+                    return HandoverActivity(c.inputCount, stoppedAt(phone?.a11y?.let { phoneRuntime.mainWindowTitle(it, c.packageName) }, label, c.lastActivity))
                 }
                 override fun stopWatching() {
                     counting?.cancel()
@@ -1203,139 +1164,8 @@ class TaskRun(
     }
 
     /** 手机一侧:用过手机的任务才有。 */
-    private class PhoneSide(
-        val shell: com.wangzan101.mika.shell.IMikaShell, val a11y: ScreenAccessibility, val screen: AndroidScreen,
-        val display: LazyAgentDisplay, val audio: AppMuter,
-    )
-
-    /**
-     * 小窗直接操作的口子:把预览画面上的归一化坐标换算成虚拟屏逻辑坐标,交给内置助手注入。
-     * 注入走后台线程:injectStroke 会按笔迹时长逐点 sleep,不能占着界面线程。
-     */
-    private class PipInputImpl(
-        private val shell: com.wangzan101.mika.shell.IMikaShell,
-        private val display: AgentDisplay,
-    ) : PipInput {
-        override suspend fun tap(fx: Float, fy: Float) {
-            withContext(Dispatchers.IO) {
-                runCatching { shell.injectTap(display.displayId, (fx * display.width).toInt(), (fy * display.height).toInt()) }
-            }
-        }
-
-        override suspend fun swipe(points: List<Pair<Float, Float>>, durationMs: Long) {
-            if (points.size < 2) {
-                if (points.size == 1) tap(points[0].first, points[0].second)
-                return
-            }
-            withContext(Dispatchers.IO) {
-                val n = points.size
-                runCatching {
-                    shell.injectStroke(
-                        display.displayId,
-                        IntArray(n) { (points[it].first * display.width).toInt() },
-                        IntArray(n) { (points[it].second * display.height).toInt() },
-                        LongArray(n) { durationMs * it / (n - 1) },
-                    )
-                }
-            }
-        }
-
-        override suspend fun back() {
-            withContext(Dispatchers.IO) {
-                runCatching { shell.injectKey(display.displayId, android.view.KeyEvent.KEYCODE_BACK) }
-            }
-        }
-    }
-
-    /**
-     * 这次任务的静音规则(见 [AppMuter]):Mika 自己不静;没有桌面入口的系统包不静(系统界面、选择框一类);
-     * 用户在主屏上看得见的不静;没静成的记下,任务进度上提示可能出声。
-     */
-    private fun appMuter(shell: com.wangzan101.mika.shell.IMikaShell, audio: AudioMute): AppMuter {
-        val pm = service.packageManager
-        val own = service.packageName
-        fun system(pkg: String) = runCatching {
-            pm.getApplicationInfo(pkg, 0).flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-        }.getOrElse { runCatching { shell.isSystemPackage(pkg) }.getOrDefault(false) }
-        return AppMuter(
-            audio,
-            enabled = { FeatureFlags.get(service).muteTarget() },
-            mutable = { pkg -> pkg != own && (runCatching { pm.getLaunchIntentForPackage(pkg) }.getOrNull() != null || !system(pkg)) },
-            onMainScreen = { pkg, user -> runCatching { shell.visibleOnMainScreen(pkg, user ?: AppCopyReader.myUser) }.getOrDefault(true) },
-            failed = { pkg ->
-                muteFailedFor = pkg
-                publish(runState._state.value)
-            },
-        )
-    }
-
-    /** 任务所属的用户 → 静音按哪一份:本来那份(或读不到)为 null,另一份用户里的为那个用户编号。 */
-    private fun copyUser(userId: Int): Int? = userId.takeIf { it >= 0 && it != AppCopyReader.myUser }
-
     @Volatile private var handoverRef: Takeover? = null
     @Volatile private var sideScope: CoroutineScope? = null
-
-    /**
-     * 系统在用户主屏上问打开哪一个(见 [AndroidScreen.userPick]):停在这里,胶囊上请用户在屏幕上选一下,选好自动接着做;
-     * 选出来的 App 要用户亲手处理的,留在主屏,请用户处理好了点继续。不在等时直接返回。
-     */
-    private suspend fun awaitUserPick(screen: AndroidScreen, gate: TaskGate, setWaiting: (TaskState?) -> Unit) {
-        val pick = screen.userPick.value ?: return
-        setWaiting(TaskState.Held(TaskGate.userStep(TaskGate.pickCopy(pick.app))))
-        val r = screen.awaitUserPick() as? AndroidScreen.PickResult.NeedsUser ?: return
-        gate.pauseForUser(TaskGate.finishCopy(r.app), setWaiting)
-        screen.afterUserStep(r)
-    }
-
-    /**
-     * 目标 App 换了就静音(启动前多半已静上,这里补上没静成的),并盯着它有没有被用户挪到主屏。
-     * Mika 屏上冒出别的 App(从目标 App 里点开的、另一份顶上来的)也是第一次看到就静;静音按「包 + 用户」,另一份单独静。
-     * 用户接管期间屏上的事归用户,不去静。
-     */
-    private fun watchTarget(p: PhoneSide, states: DeviceStateWatcher) {
-        val side = sideScope ?: return
-        side.launch(Dispatchers.IO) {
-            p.screen.foregroundApps().collect { t ->
-                if (handoverRef?.handedOver != true) p.audio.opened(t.packageName, copyUser(t.userId))
-                // 窗口变得很密:两次之间至少隔一会儿,中间的变化合成一次
-                delay(FOREGROUND_GAP_MS)
-            }
-        }
-        // 小窗声音按钮的方向:跟着目标、用户恢复记录和接管状态重算,不另存一份可能过期的开关态
-        side.launch(Dispatchers.IO) {
-            val stage = takeover?.stage ?: MutableStateFlow(Takeover.Stage.None)
-            combine(p.screen.target, p.audio.userUnmuted, stage) { _, _, _ -> }.collect {
-                runState._pipSoundOn.value = pipSoundRestored()
-            }
-        }
-        side.launch(Dispatchers.IO) {
-            p.screen.target.filterNotNull().collectLatest { t ->
-                runState._appShown.value = true
-                if (handoverRef?.handedOver != true) p.audio.opened(t.packageName, copyUser(t.userId))
-                // 有目标 App 就说明 launch_app 已经建好了屏
-                val displayId = p.display.current?.displayId
-                if (t.taskId >= 0 && displayId != null) {
-                    states.taskMovedAway(displayId, t.taskId).collect {
-                        // 用户点「我来处理」后 App 本来就该在主屏
-                        if (handoverRef?.handedOver == true) return@collect
-                        gate?.onTaskMovedAway()
-                        publish(runState._state.value) // 立即显示暂停,不等下一个改动屏幕的工具
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * 用户在浏览器页上亲手摸了借给这个任务的页面:正在干活时马上显示暂停,下一个会改动屏幕的工具之前停下,
-     * 用户点「继续」再接着做(见 [TaskGate.onUserOnPage])。等用户回答、接管中等别的状态不动。主线程。
-     */
-    private fun userOnPage() {
-        if (runState._state.value !is TaskState.Running) return
-        val g = gate ?: return
-        g.onUserOnPage()
-        publish(runState._state.value)
-    }
 
     /** 任务收尾后判结局、学东西要用的;[execute] 里填上。 */
     @Volatile private var kit: LearnKit? = null
@@ -1371,36 +1201,6 @@ class TaskRun(
 
     suspend fun learnAfter(end: TaskState, outcome: RunOutcome?, conversations: ConversationStore) = runTeardown.learnAfter(end, outcome, conversations)
 
-    /** 主屏上该包最上面那个窗口的标题;窗口按从上到下排列。 */
-    private fun mainWindowTitle(a11y: ScreenAccessibility, packageName: String): String? = runCatching {
-        a11y.windowsOn(Display.DEFAULT_DISPLAY).firstNotNullOfOrNull { w ->
-            w.title?.toString()?.takeIf { it.isNotBlank() && w.root?.packageName?.toString() == packageName }
-        }
-    }.getOrNull()
-
-    /** 沙箱这一步的说明写到任务卡片上(当前这一步的 note)。 */
-    private fun sandboxNote(text: String) {
-        val s = runState._state.value as? TaskState.Running ?: return
-        publish(s.copy(note = text))
-    }
-
-    private fun sandboxOnline() = (sandbox.status() as? SandboxStatus.Ready)?.network == true
-
-    /**
-     * 等另一个任务放开 [app] 的这段时间:对外的进展写「等另一个任务用完 [app]」,仍是 Running,不是暂停、也不要你处理;
-     * 等完(放开了、等不到、被停掉)把等之前那一句放回去。等之前不在干活(比如已经停下来要你处理)就不改。
-     */
-    private suspend fun <T> waitingForApp(app: String, wait: suspend () -> T): T {
-        val before = runState._state.value as? TaskState.Running ?: return wait()
-        val waiting = before.copy(progress = RunProgress.WaitingForApp(app))
-        publish(waiting)
-        try {
-            return wait()
-        } finally {
-            if (runState._state.value == waiting) publish(before)
-        }
-    }
-
     private fun publish(state: TaskState) {
         // 被挪走后到 gate 拦下之前,循环可能还在推理:对外先显示暂停
         // 循环自己报的终态不往外发:终态只由 [end] 在记好运行编号之后写,否则界面先收到结束、拿不到编号
@@ -1417,11 +1217,6 @@ class TaskRun(
             awake?.onState(state)
         }
         service.refreshNotifications(this)
-    }
-
-    @Suppress("DEPRECATION")
-    private fun mainScreenMetrics(): DisplayMetrics = DisplayMetrics().also {
-        service.getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY).getRealMetrics(it)
     }
 
     /** 网页接管界面顶部的说明:接管原因的话,付款时再带上商品、金额、地址。 */
