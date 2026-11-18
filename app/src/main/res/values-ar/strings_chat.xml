@@ -274,6 +274,9 @@
     <string name="zoom_in">تكبير</string>
     <string name="chat_message_actions">خيارات الرسالة</string>
     <string name="chat_copy">نسخ</string>
+    <string name="share_card_question">سؤال</string>
+    <string name="share_card_answer">الإجابة</string>
+    <string name="share_card_made_by">أنجزها Mika</string>
     <string name="chat_quote">اقتباس</string>
     <string name="chat_select_text">تحديد النص</string>
     <string name="chat_copied">تم النسخ</string>

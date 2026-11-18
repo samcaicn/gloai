@@ -226,6 +226,9 @@
     <string name="zoom_in">Zoom in</string>
     <string name="chat_message_actions">Message options</string>
     <string name="chat_copy">Copy</string>
+    <string name="share_card_question">Q</string>
+    <string name="share_card_answer">A</string>
+    <string name="share_card_made_by">Completed by Mika</string>
     <string name="chat_quote">Quote</string>
     <string name="chat_select_text">Select text</string>
     <string name="chat_copied">Copied</string>

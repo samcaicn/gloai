@@ -214,6 +214,9 @@
     <string name="zoom_in">放大看</string>
     <string name="chat_message_actions">訊息操作</string>
     <string name="chat_copy">複製</string>
+    <string name="share_card_question">問</string>
+    <string name="share_card_answer">答</string>
+    <string name="share_card_made_by">由 Mika 完成</string>
     <string name="chat_quote">引用</string>
     <string name="chat_select_text">選取文字</string>
     <string name="chat_copied">已複製</string>

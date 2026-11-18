@@ -238,6 +238,9 @@
     <string name="zoom_in">Ampliar</string>
     <string name="chat_message_actions">Opções da mensagem</string>
     <string name="chat_copy">Copiar</string>
+    <string name="share_card_question">Pergunta</string>
+    <string name="share_card_answer">Resposta</string>
+    <string name="share_card_made_by">Concluído por Mika</string>
     <string name="chat_quote">Citar</string>
     <string name="chat_select_text">Selecionar texto</string>
     <string name="chat_copied">Copiado</string>

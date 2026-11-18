@@ -250,6 +250,9 @@
     <string name="zoom_in">Увеличить</string>
     <string name="chat_message_actions">Действия с сообщением</string>
     <string name="chat_copy">Копировать</string>
+    <string name="share_card_question">Вопрос</string>
+    <string name="share_card_answer">Ответ</string>
+    <string name="share_card_made_by">Выполнено Mika</string>
     <string name="chat_quote">Цитировать</string>
     <string name="chat_select_text">Выделить текст</string>
     <string name="chat_copied">Скопировано</string>

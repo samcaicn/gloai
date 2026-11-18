@@ -214,6 +214,9 @@
     <string name="zoom_in">Perbesar</string>
     <string name="chat_message_actions">Opsi pesan</string>
     <string name="chat_copy">Salin</string>
+    <string name="share_card_question">Pertanyaan</string>
+    <string name="share_card_answer">Jawaban</string>
+    <string name="share_card_made_by">Diselesaikan oleh Mika</string>
     <string name="chat_quote">Kutip</string>
     <string name="chat_select_text">Pilih teks</string>
     <string name="chat_copied">Disalin</string>

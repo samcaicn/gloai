@@ -214,6 +214,9 @@
     <string name="zoom_in">拡大</string>
     <string name="chat_message_actions">メッセージのオプション</string>
     <string name="chat_copy">コピー</string>
+    <string name="share_card_question">質問</string>
+    <string name="share_card_answer">回答</string>
+    <string name="share_card_made_by">Mika が完了</string>
     <string name="chat_quote">引用</string>
     <string name="chat_select_text">テキストを選択</string>
     <string name="chat_copied">コピーしました</string>
