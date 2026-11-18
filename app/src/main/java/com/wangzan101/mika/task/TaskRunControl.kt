@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
  * 一个任务的生命周期控制与用户交互(取消、接管、问答、确认、收尾)。原 TaskRun 里的对应函数整体搬到这里。
  * 需要读/写的 TaskRun 瞬时字段经 lambda 注入。
  */
-class TaskRunControl(
+internal class TaskRunControl(
     private val service: TaskService,
     private val conversationId: String,
     private val scope: CoroutineScope,

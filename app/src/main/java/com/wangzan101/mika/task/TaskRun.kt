@@ -16,19 +16,16 @@ import com.wangzan101.mika.core.usage.RunUsageTally
 import com.wangzan101.mika.core.shell.AccessibilityRepair
 import com.wangzan101.mika.core.shell.HelperRestart
 import com.wangzan101.mika.ui.StatusCopy
-import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.cap.sandbox.SandboxState
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.chat.SharedFile
-import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.IBinder
 import android.os.RemoteException
 import android.os.SystemClock
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Display
 import com.wangzan101.mika.BuildConfig
@@ -38,7 +35,6 @@ import com.wangzan101.mika.cap.phone.a11y.LazyPhoneScreen
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.cap.phone.a11y.PhoneUnavailable
 import com.wangzan101.mika.cap.phone.PhoneServices
-import com.wangzan101.mika.cap.phone.shell.AppAudioKey
 import com.wangzan101.mika.cap.phone.setup.RootShell
 import com.wangzan101.mika.cap.root.RootCommands
 import com.wangzan101.mika.cap.phone.a11y.launchableApps
@@ -60,7 +56,6 @@ import com.wangzan101.mika.core.model.ModelSession
 import com.wangzan101.mika.core.skills.SkillDrafter
 import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.memory.MemoryRuntime
-import com.wangzan101.mika.settings.MemorySwitches
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.record.RunEvent
@@ -344,7 +339,6 @@ class TaskRun(
     /** 手机插话可转下一任务;远程插话只能用于当前任务,未消费的一律作废,不改变来源和权限。 */
     fun handoffUnconsumed(cancelled: Boolean = stopPressed) = steerCoordinator.handoffUnconsumed(cancelled)
 
-    /** 已交给这个任务的插话,随这一轮存进对话。 */
     /** 这次任务真的用过的能力组(手机、网页、沙箱);记进这一轮,下一轮开局预先展开。 */
     @Volatile var usedGroups: List<String> = emptyList()
         private set
@@ -398,7 +392,6 @@ class TaskRun(
         else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice)
     }
 
-    /** 把工作区里的一段音频复制成别的 App 可读的 content URI(分享用);越界、不是音频、太大时为 null。 */
     /**
      * 本任务的音频端口:用户配置并打开了声音模型、且这是手机上开始的任务时才建。
      * 定时、远程、子任务、条件检查没有它,音频工具也就不会发给模型。
@@ -1163,7 +1156,6 @@ class TaskRun(
         }
     }
 
-    /** 手机一侧:用过手机的任务才有。 */
     @Volatile private var handoverRef: Takeover? = null
     @Volatile private var sideScope: CoroutineScope? = null
 
@@ -1227,8 +1219,6 @@ class TaskRun(
         const val WEB_FRAME_MS = 500L
         const val SHELL_WAIT_MS = 15_000L
         const val DISPLAY_RETRY_MS = 1_000L
-        /** Mika 屏上的前台 App 两次重读之间至少隔这么久。 */
-        const val FOREGROUND_GAP_MS = 300L
         val WAITING_DISPLAY: String get() = tr(R.string.task_waiting_display)
         const val A11Y_WAIT_MS = 5_000L
         val NO_PHONE_HELPER: String get() = tr(R.string.task_no_phone_helper)

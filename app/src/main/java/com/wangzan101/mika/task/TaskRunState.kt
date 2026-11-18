@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * 原 TaskRun 里的状态机整体搬到这里；[shownRef] 替代原 `service.taskState.shownRun === this@TaskRun` 的判断。
  * 字段用 [internal] 暴露给同模块的 TaskRun 及其拆出的子对象直接读写（这是纯移动，不引入新的封装）。
  */
-class TaskRunState(
+internal class TaskRunState(
     private val service: TaskService,
     private val conversationId: String,
     private val env: TaskEnvironment,

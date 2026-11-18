@@ -11,7 +11,7 @@ import java.util.UUID
  * 一个任务进行中插的话的收发、去向与撤回。原 TaskRun 里的插话逻辑整体搬到这里。
  * 需要读的 TaskRun 瞬时字段([loop]/[stopPressed]/[mcpExternalId])经 lambda 注入,读当前值。
  */
-class SteerCoordinator(
+internal class SteerCoordinator(
     private val service: TaskService,
     private val conversationId: String,
     private val state: TaskRunState,
