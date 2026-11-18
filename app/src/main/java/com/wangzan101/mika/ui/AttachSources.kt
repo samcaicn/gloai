@@ -11,8 +11,10 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.OpenableColumns
+import android.util.Log
 import android.util.LruCache
 import android.util.Size
+import android.webkit.MimeTypeMap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -23,6 +25,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.wangzan101.mika.cap.sandbox.Attachments
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.chat.AttachFilesProvider
 import com.wangzan101.mika.core.workspace.SandboxPaths
@@ -78,6 +81,24 @@ object AttachFiles {
     fun relative(path: String): String? =
         path.removePrefix(SandboxPaths.WORKSPACE + "/").takeIf { it != path && it.isNotEmpty() }
 
+    /** 把待查看的流写进缓存里的 viewing/(先清掉上一次的),返回可供 [FileViewer] 授权打开的内容地址。 */
+    private suspend fun copyToViewing(context: Context, name: String, copyTo: (File) -> Unit): Uri? {
+        val safe = Attachments.safeName(name)
+        val file = withContext(Dispatchers.IO) {
+            runCatching {
+                val root = File(context.cacheDir, "attach/viewing")
+                root.deleteRecursively()
+                File(root, UUID.randomUUID().toString().take(8) + "/" + safe).apply {
+                    parentFile?.mkdirs()
+                    copyTo(this)
+                }
+            }.onFailure {
+                Log.w("AttachFiles", "copyToViewing failed name=$safe", it)
+            }.getOrNull()
+        } ?: return null
+        return FileProvider.getUriForFile(context, AttachFilesProvider.authority(context.packageName), file)
+    }
+
     /**
      * 点开已发出的附件:从对话工作区(经文件闸门)复制一份到缓存里的 viewing/(先清掉上一次的),
      * 交给 App 里的查看页;看不了的类型交给系统里能打开它的 App。读不到时返回 false。
@@ -85,18 +106,43 @@ object AttachFiles {
     suspend fun openSent(context: Context, conversationId: String, path: String): Boolean {
         val rel = relative(path) ?: return false
         val name = path.substringAfterLast('/')
-        val copy = withContext(Dispatchers.IO) {
-            runCatching {
-                val root = File(context.cacheDir, "attach/viewing")
-                root.deleteRecursively()
-                val f = File(root, UUID.randomUUID().toString().take(8) + "/" + name).apply { parentFile?.mkdirs() }
-                val dirs = SandboxDirs(context)
-                dirs.gate.openRead(dirs.workspace(conversationId), rel).use { g -> f.outputStream().use { g.input().copyTo(it) } }
-                f
-            }.getOrNull()
+        val uri = copyToViewing(context, name) { out ->
+            val dirs = SandboxDirs(context)
+            dirs.gate.openRead(dirs.workspace(conversationId), rel).use { g -> out.outputStream().use { g.input().copyTo(it) } }
         } ?: return false
-        FileViewer.open(context, FileProvider.getUriForFile(context, AttachFilesProvider.authority(context.packageName), copy), name)
+        FileViewer.open(context, uri, name)
         return true
+    }
+
+    /**
+     * 点开待发出的本地附件:App 自己的文件地址确认可读后直接打开,其余内容地址先复制到缓存 viewing/ 再交给 [FileViewer]
+     * (系统文件选择器授予的临时权限不能再经 Intent 转发给查看页或第三方应用)。读不到或打不开时返回 false。
+     */
+    suspend fun openPending(context: Context, uri: String, name: String): Boolean {
+        val parsed = runCatching { Uri.parse(uri) }.getOrNull()?.takeIf { !it.scheme.isNullOrBlank() } ?: return false
+        val ownProvider = parsed.scheme == ContentResolver.SCHEME_CONTENT &&
+            parsed.authority == AttachFilesProvider.authority(context.packageName)
+        val viewUri = if (ownProvider) {
+            val readable = withContext(Dispatchers.IO) {
+                runCatching { context.contentResolver.openInputStream(parsed)?.use { true } ?: false }.getOrDefault(false)
+            }
+            if (!readable) return false
+            parsed
+        } else {
+            val mime = runCatching { context.contentResolver.getType(parsed) }.getOrNull()
+            val ext = mime?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) }
+            val copyName = if ('.' in name || ext.isNullOrBlank()) name else "$name.$ext"
+            copyToViewing(context, copyName) { out ->
+                val input = context.contentResolver.openInputStream(parsed) ?: error("Cannot open $parsed")
+                input.use { src -> out.outputStream().use { dst -> src.copyTo(dst) } }
+            } ?: return false
+        }
+        return runCatching {
+            FileViewer.open(context, viewUri, name)
+            true
+        }.onFailure {
+            Log.w("AttachFiles", "openPending failed uri=$uri", it)
+        }.getOrDefault(false)
     }
 }
 

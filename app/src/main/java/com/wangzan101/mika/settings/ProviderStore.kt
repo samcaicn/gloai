@@ -17,6 +17,10 @@ import com.wangzan101.mika.core.model.Author
 import com.wangzan101.mika.core.model.ChatModel
 import com.wangzan101.mika.core.model.ClientHeaders
 import com.wangzan101.mika.core.model.GeminiModel
+import com.wangzan101.mika.core.model.GeminiTtsModel
+import com.wangzan101.mika.core.model.OpenAiSpeechModel
+import com.wangzan101.mika.core.model.TtsCapabilities
+import com.wangzan101.mika.core.model.TtsModel
 import com.wangzan101.mika.core.model.ListFailure
 import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.core.model.Message
@@ -813,6 +817,21 @@ class ProviderStore(
         val limit = p.dailyTokenBudget ?: return
         val used = dailyUsage(source.providerId)
         if (used >= limit) throw ModelError.DailyBudgetExceeded(p.name, limit, used, providerId = source.providerId)
+    }
+
+    /**
+     * 声音模型:地址、Key、请求头取这家服务商;不套对话模型的计量(朗读用量由调用方另记)。
+     * 服务商、模型或协议缺失时为 null。合成比一句话慢,读超时放到 120 秒。
+     */
+    fun ttsModel(choice: VoiceChoice, capabilities: TtsCapabilities): TtsModel? {
+        val p = provider(choice.providerId) ?: return null
+        val client = modelHttp.newBuilder().readTimeout(120, TimeUnit.SECONDS).build()
+        val header = headers(p.sessionHeader, ModelSession.fresh())
+        val key = providerKey(p.id)
+        return when (choice.protocol) {
+            TtsProtocol.OpenAiSpeech -> OpenAiSpeechModel(p.baseUrl, key, choice.model, capabilities, client, header)
+            TtsProtocol.GeminiTts -> GeminiTtsModel(p.baseUrl, key.orEmpty(), choice.model, capabilities, client, header)
+        }
     }
 
     /**

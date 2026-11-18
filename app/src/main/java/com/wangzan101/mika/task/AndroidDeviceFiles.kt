@@ -78,7 +78,21 @@ internal class AndroidDeviceFiles(
         val response = callHelper { hub.searchFiles(query.path, query.name, query.extension, query.modifiedAfter ?: -1, query.modifiedBefore ?: -1, query.maxDepth, query.maxEntries, query.timeoutMs) }
         requireOk(response)
         val paths = response.getStringArrayList("paths") ?: throw failure("helper_error", "Invalid search response from phone helper.")
-        DeviceFileSearchResult(paths.map { DeviceFileEntry(File(it).name, it, false) }, response.getInt("visited"), response.getBoolean("truncated"), response.getString("reason"))
+        val types = response.getIntArray("types")?.takeIf { it.size == paths.size }
+        val sizes = response.getLongArray("sizes")?.takeIf { it.size == paths.size }
+        val modified = response.getLongArray("modified")?.takeIf { it.size == paths.size }
+        val entries = paths.mapIndexedNotNull { index, path ->
+            val isDirectory = types?.get(index) == 2
+            if (isDirectory && !query.includeDirectories) return@mapIndexedNotNull null
+            DeviceFileEntry(
+                name = File(path).name,
+                path = path,
+                isDirectory = isDirectory,
+                size = sizes?.get(index)?.takeIf { it >= 0 && !isDirectory },
+                modifiedAt = modified?.get(index)?.takeIf { it >= 0 },
+            )
+        }
+        DeviceFileSearchResult(entries, response.getInt("visited"), response.getBoolean("truncated"), response.getString("reason"))
     }
 
     override suspend fun importFile(path: String, workspace: String): DeviceFileImport = dirs.tree.shared {

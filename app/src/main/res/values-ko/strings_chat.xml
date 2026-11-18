@@ -78,6 +78,7 @@
     <string name="chat_attach_rejected">추가하지 못했어요: %1$s (파일당 200MB 미만이어야 해요)</string>
     <string name="chat_stop">중지</string>
     <string name="chat_send">보내기</string>
+    <string name="chat_scroll_to_bottom">맨 아래로 이동</string>
     <string name="drawer_running_task">실행 중인 작업</string>
     <string name="drawer_running">실행 중</string>
     <string name="drawer_yesterday">어제</string>
@@ -287,4 +288,9 @@
     <string name="task_field_insert">삽입</string>
     <string name="task_fields_too_many">서로 다른 항목은 최대 %1$d개입니다.</string>
     <string name="task_fill_apply">입력란에 채우기</string>
+    <string name="chat_read_aloud">Read aloud</string>
+    <string name="chat_stop_speaking">Stop speaking</string>
+    <string name="chat_audio">Audio</string>
+    <string name="chat_audio_play">Play</string>
+    <string name="chat_audio_stop">Stop</string>
 </resources>

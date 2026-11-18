@@ -7,6 +7,7 @@
     <string name="web_search_note_jina">Necesita una clave de API. Usa la búsqueda de Jina (s.jina.ai).</string>
     <string name="web_search_note_exa">Necesita una clave de API. Usa la búsqueda de Exa (api.exa.ai).</string>
     <string name="web_search_note_keirolabs">Necesita una clave de API. Usa la búsqueda de Keirolabs (api.keirolabs.cloud).</string>
+    <string name="web_search_note_tinyfish">Necesita una clave de API. Los resultados vienen de la búsqueda de TinyFish (api.search.tinyfish.ai).</string>
     <string name="web_search_note_searxng">Tu propia instancia de SearXNG, sin clave. Debe permitir salida JSON (añade json a search.formats en settings.yml).</string>
     <string name="web_search_api_key_required">Clave de API (obligatoria)</string>
     <string name="web_search_missing_key">%1$s necesita una clave de API para funcionar.</string>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_fetch_title">ページ取得</string>
+    <string name="web_fetch_enabled">ページ取得を有効にする</string>
+    <string name="web_fetch_provider">取得サービス</string>
+    <string name="web_fetch_note_tinyfish">API キーが必要です。TinyFish の Fetch API（api.fetch.tinyfish.ai）でページを取得します。</string>
+    <string name="web_fetch_row_sub">ページ取得は任意です。ブラウザーは常に利用できます</string>
+    <string name="web_fetch_privacy">キーはこの端末に暗号化して保存されます。取得したページは信頼できない情報として扱われます。</string>
+</resources>

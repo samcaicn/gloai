@@ -78,6 +78,7 @@
     <string name="chat_attach_rejected">追加できませんでした: %1$s(ファイルは 1 つあたり 200 MB 未満にしてください)</string>
     <string name="chat_stop">停止</string>
     <string name="chat_send">送信</string>
+    <string name="chat_scroll_to_bottom">一番下へ移動</string>
     <string name="drawer_running_task">実行中のタスク</string>
     <string name="drawer_running">実行中</string>
     <string name="drawer_yesterday">昨日</string>
@@ -287,4 +288,9 @@
     <string name="task_field_insert">挿入</string>
     <string name="task_fields_too_many">入力項目は最大%1$d種類です。</string>
     <string name="task_fill_apply">入力欄に反映</string>
+    <string name="chat_read_aloud">Read aloud</string>
+    <string name="chat_stop_speaking">Stop speaking</string>
+    <string name="chat_audio">Audio</string>
+    <string name="chat_audio_play">Play</string>
+    <string name="chat_audio_stop">Stop</string>
 </resources>

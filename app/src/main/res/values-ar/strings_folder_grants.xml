@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">اختيار مجلد للقراءة والكتابة</string>
+    <string name="folder_grant_writable">قراءة وكتابة</string>
+    <string name="folder_grant_readonly">للقراءة فقط</string>
+    <string name="folder_grant_unavailable">المجلد غير متاح؛ اختره مجددًا</string>
+    <string name="folder_grant_revoke">إزالة الإذن</string>
+    <string name="folder_grant_loading">جارٍ تحميل المجلدات…</string>
+    <string name="folder_grant_error">تعذر الوصول إلى المجلد. اختر مجلدًا يسمح بالقراءة والكتابة أو حاول مجددًا.</string>
+    <string name="tool_list_folder_files">عرض المجلدات المسموح بها</string>
+</resources>

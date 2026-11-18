@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_dtmf_status_label">Call status</string>
+    <string name="calls_dtmf_open">Keypad</string>
+    <string name="calls_dtmf_title">Call keypad</string>
+    <string name="calls_dtmf_close">Close</string>
+    <string name="calls_dtmf_batch">Enter a sequence</string>
+    <string name="calls_dtmf_hint">Each key sends immediately. Follow the voice prompts.</string>
+    <string name="calls_dtmf_batch_hint">Enter up to 32 keys, then tap Send.</string>
+    <string name="calls_dtmf_input">0–9, * or #</string>
+    <string name="calls_dtmf_delete">Delete</string>
+    <string name="calls_dtmf_send">Send</string>
+    <string name="calls_dtmf_sending">Sending…</string>
+    <string name="calls_dtmf_sent">Keys submitted; wait for a response</string>
+    <string name="calls_dtmf_failed">Could not complete submission. Wait for a response before acting again.</string>
+    <string name="calls_dtmf_invalid">Use only 0–9, * and #, up to 32 keys.</string>
+    <string name="calls_voice_briefing_start">Describe task by voice</string>
+    <string name="calls_voice_briefing_note">Speak in Mandarin. To authorize dialing, say “%1$s” on its own after describing the task.</string>
+    <string name="calls_voice_briefing_stopped">Briefing stopped; no call was placed</string>
+    <string name="calls_voice_briefing_authorized">Task authorized; submitting the call</string>
+    <string name="calls_voice_briefing_permission_granted">Microphone allowed. Tap the voice button again to begin.</string>
+    <string name="calls_voice_briefing_permission_denied">Microphone permission was not granted. You can use the text task form.</string>
+    <string name="calls_voice_briefing_incomplete">Complete or clear the existing text instructions before starting.</string>
+    <string name="calls_voice_briefing_configure">Configure realtime voice in Settings first.</string>
+</resources>

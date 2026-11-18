@@ -94,4 +94,10 @@
     <string name="skills_imported">Imported</string>
     <string name="skill_builtin_name">A built-in skill already has this name. Rename it and try again.</string>
     <string name="skill_draft_pending">A draft with this name is already waiting for review. Handle that one first.</string>
+    <string name="market_title">Skill market</string>
+    <string name="market_sub">Browse shared skills on GitHub</string>
+    <string name="market_source">Skill source</string>
+    <string name="market_add">Add to review</string>
+    <string name="market_network_error">Could not download. Check the repository and network, then try again.</string>
+    <string name="market_invalid">This content is invalid or has changed. Reopen the market to refresh the catalog.</string>
 </resources>

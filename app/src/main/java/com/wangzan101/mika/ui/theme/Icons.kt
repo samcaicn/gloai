@@ -38,6 +38,8 @@ object MikaIcons {
     val Plus = stroke("plus", "M12 5 v14 M5 12 h14")
     /** 发送。 */
     val Up = stroke("up", "M12 19 V5 M6 11 l6 -6 l6 6", width = 2.2f)
+    /** 回到底部。 */
+    val Down = stroke("down", "M12 5 V19 M6 13 l6 6 l6 -6", width = 2.2f)
     val Check = stroke("check", "M5 12.5 l4.5 4.5 L19 7.5", width = 2.2f)
     val Close = stroke("close", "M6 6 l12 12 M18 6 L6 18", width = 2f)
     /** 多选:勾选清单。 */
@@ -67,6 +69,11 @@ object MikaIcons {
     )
     val Doc = stroke(
         "doc", "M14 3 H7 a2 2 0 0 0 -2 2 v14 a2 2 0 0 0 2 2 h10 a2 2 0 0 0 2 -2 V8 z", "M14 3 v5 h5 M9 13 h6 M9 17 h4",
+    )
+    /** 文件夹:设备目录。 */
+    val Folder = stroke(
+        "folder",
+        "M3.5 6.5 a2 2 0 0 1 2 -2 h4 l2 2.5 h7 a2 2 0 0 1 2 2 v8.5 a2 2 0 0 1 -2 2 h-13 a2 2 0 0 1 -2 -2 z",
     )
     /** 柱状图:Token 用量。 */
     val Chart = stroke("chart", "M4 20 h16", "M7 16 v-4 M12 16 V6 M17 16 v-7")

@@ -2,7 +2,7 @@
 <resources>
     <string name="device_dirs_title">Carpetas del dispositivo</string>
     <string name="device_dirs_explanation">Las pistas ayudan a Mika a encontrar archivos. Añadir una pista no concede acceso; autoriza cada carpeta guardada por separado.</string>
-    <string name="device_dirs_authorize">Autorizar acceso a la carpeta</string>
+    <string name="device_dirs_authorize">Permitir leer esta carpeta</string>
     <string name="device_dirs_recursive">Incluir subcarpetas</string>
     <string name="device_dirs_not_synced">Autorización sin sincronizar</string>
     <string name="device_dirs_synced">Autorización sincronizada</string>
@@ -19,7 +19,7 @@
     <string name="device_dirs_delete">Eliminar pista</string>
     <string name="device_dirs_save">Guardar</string>
     <string name="device_dirs_cancel">Cancelar</string>
-    <string name="device_dirs_available">Accesible</string>
+    <string name="device_dirs_available">Solo lectura e importación</string>
     <string name="device_dirs_missing">Carpeta no encontrada</string>
     <string name="device_dirs_denied">Acceso denegado</string>
     <string name="device_dirs_unknown">Estado no disponible</string>

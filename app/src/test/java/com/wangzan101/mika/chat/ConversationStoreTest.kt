@@ -1,6 +1,7 @@
 package com.wangzan101.mika.chat
 
 import com.wangzan101.mika.core.agent.Turn
+import com.wangzan101.mika.core.chat.GeneratedAudio
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -560,21 +561,50 @@ class ConversationStoreTest {
     }
 
     /** 重新问也拒绝坏输入:源不存在、轮次越界、目标已有文件。 */
-    @Test fun branchBeforeRejectsBadInput() {
+    /** 人格绑定读得回来;切换只记变化,同一个再写不重复记;null 表示回到默认。 */
+    @Test fun personaBindingRoundTripsAndRecordsSwitches() {
+        val dir = tmp.newFolder("c")
+        val store = ConversationStore(dir)
+        val id = store.newConversation()
+        assertNull(store.persona(id))
+        assertTrue(store.setPersona(id, "p1", at = 10L))
+        assertEquals("p1", ConversationStore(dir).persona(id)?.personaId)
+        assertEquals(emptyList<PersonaSwitch>(), store.persona(id)?.history)
+        assertTrue(store.setPersona(id, "p2", at = 20L))
+        assertEquals(listOf(PersonaSwitch(20L, "p1", "p2")), store.persona(id)?.history)
+        assertTrue(store.setPersona(id, "p2", at = 30L))
+        assertEquals(1, store.persona(id)?.history?.size)
+        assertTrue(store.setPersona(id, null))
+        assertNull(store.persona(id))
+        assertFalse(java.io.File(dir, "$id.persona").exists())
+    }
+
+    /** 分支复制当前人格,不复制切换记录;删对话连旁文件一起删。 */
+    @Test fun personaBindingFollowsBranchesAndDeletion() {
         val dir = tmp.newFolder("c")
         val store = ConversationStore(dir)
         val source = store.newConversation()
         store.append(source, Turn("一", "甲", "succeeded"))
+        store.append(source, Turn("二", "乙", "succeeded"))
+        store.setPersona(source, "p1", at = 10L)
+        store.setPersona(source, "p2", at = 20L)
         val target = store.newConversation()
+        assertTrue(store.branch(source, target, throughTurn = 0))
+        assertEquals("p2", store.persona(target)?.personaId)
+        assertEquals(emptyList<PersonaSwitch>(), store.persona(target)?.history)
+        store.delete(source)
+        assertFalse(java.io.File(dir, "$source.persona").exists())
+    }
 
-        assertFalse(store.branchBefore("missing", target, 0))
-        assertFalse(store.branchBefore(source, target, 1))
-        assertFalse(store.branchBefore(source, target, -1))
-        assertFalse(java.io.File(dir, "$target.json").exists())
-
-        store.append(target, Turn("已有", "好", "succeeded"))
-        assertFalse(store.branchBefore(source, target, 0))
-        assertEquals(listOf("已有"), store.turns(target).map { it.userText })
+    /** 不合法的人格 id 不写;旁文件里的坏 id 当没有。 */
+    @Test fun personaBindingRejectsBadIds() {
+        val dir = tmp.newFolder("c")
+        val store = ConversationStore(dir)
+        val id = store.newConversation()
+        assertFalse(store.setPersona(id, "../escape"))
+        assertNull(store.persona(id))
+        java.io.File(dir, "$id.persona").writeText("""{"current":"../escape"}""")
+        assertNull(store.persona(id))
     }
 
     /** 归档的对话默认不进侧栏;要全部时用 includeArchived;换个实例也还在,取消归档后回来。 */
@@ -672,5 +702,16 @@ class ConversationStoreTest {
 
         assertNull(store.archivedAt("a"))
         assertTrue(store.list().any { it.id == "a" })
+    }
+
+    @Test fun generatedAudiosSurviveReopen() {
+        val dir = tmp.newFolder("audio")
+        val store = ConversationStore(dir)
+        val audios = listOf(
+            GeneratedAudio("/workspace/out/audio/line.wav", 1_200L, "你好", 42L),
+            GeneratedAudio("/workspace/out/audio/two.mp3", null, null, null),
+        )
+        store.append("a", Turn("说一段", "好", "succeeded", audios = audios))
+        assertEquals(audios, ConversationStore(dir).turns("a").single().audios)
     }
 }

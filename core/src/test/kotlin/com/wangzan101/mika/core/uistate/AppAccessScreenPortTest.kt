@@ -137,7 +137,11 @@ class AppAccessScreenPortTest {
     private fun recordingPort(reached: MutableSet<String>): ScreenPort =
         Proxy.newProxyInstance(ScreenPort::class.java.classLoader, arrayOf(ScreenPort::class.java)) { _, m, _ ->
             reached += m.name
-            if (m.name == "snapshot" || m.name == "peek") ScreenSnapshot("s", "bank", emptyList(), 1, 1) else null
+            when {
+                m.name == "snapshot" || m.name == "peek" -> ScreenSnapshot("s", "bank", emptyList(), 1, 1)
+                m.returnType == Boolean::class.javaPrimitiveType -> false
+                else -> null
+            }
         } as ScreenPort
 
     /** 按参数类型给样例值调一次(挂起函数最后一个参数是续体,这里的调用都不会真挂起);抛出的异常原样抛出。 */
@@ -250,6 +254,6 @@ class AppAccessScreenPortTest {
         val OWN = setOf("getAppAccess", "checkAppAccess")
 
         /** 不碰任何 App 界面、原样转交的成员;按目标挑 App 的系统动作由端口自己看名单。加进来要说得出为什么。 */
-        val PASS_THROUGH = setOf("systemAction", "systemCommand", "bulkCalendarInsert", "listApps", "otherProfiles", "appCopies", "getAfterTask")
+        val PASS_THROUGH = setOf("systemAction", "systemCommand", "bulkCalendarInsert", "listApps", "otherProfiles", "appCopies", "getAfterTask", "getCanShareAudio")
     }
 }

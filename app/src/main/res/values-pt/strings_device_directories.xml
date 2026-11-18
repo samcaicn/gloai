@@ -2,7 +2,7 @@
 <resources>
     <string name="device_dirs_title">Pastas do dispositivo</string>
     <string name="device_dirs_explanation">As dicas de pasta ajudam o Mika a encontrar arquivos. Adicionar uma dica não concede acesso; autorize cada pasta salva separadamente.</string>
-    <string name="device_dirs_authorize">Autorizar acesso à pasta</string>
+    <string name="device_dirs_authorize">Permitir leitura desta pasta</string>
     <string name="device_dirs_recursive">Incluir subpastas</string>
     <string name="device_dirs_not_synced">Autorização não sincronizada</string>
     <string name="device_dirs_synced">Autorização sincronizada</string>
@@ -19,7 +19,7 @@
     <string name="device_dirs_delete">Excluir dica</string>
     <string name="device_dirs_save">Salvar</string>
     <string name="device_dirs_cancel">Cancelar</string>
-    <string name="device_dirs_available">Acessível</string>
+    <string name="device_dirs_available">Somente leitura e importação</string>
     <string name="device_dirs_missing">Pasta não encontrada</string>
     <string name="device_dirs_denied">Acesso negado</string>
     <string name="device_dirs_unknown">Status indisponível</string>

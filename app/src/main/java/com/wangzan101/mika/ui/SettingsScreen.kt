@@ -44,6 +44,8 @@ import com.wangzan101.mika.settings.Prerequisites
 import com.wangzan101.mika.settings.Problem
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.NetProxyStore
+import com.wangzan101.mika.settings.WebFetchConfig
+import com.wangzan101.mika.settings.WebFetchSettings
 import com.wangzan101.mika.settings.WebSearchConfig
 import com.wangzan101.mika.settings.WebSearchSettings
 import com.wangzan101.mika.cap.web.WebProxy
@@ -101,6 +103,8 @@ fun SettingsScreen(
     onOpenAbout: () -> Unit = {},
     /** 外部 MCP server 设置(outbound);为空时不显示入口。 */
     mcpServers: com.wangzan101.mika.settings.McpServerStore? = null,
+    /** 人格设置;为空时不显示入口。 */
+    onOpenPersonas: (() -> Unit)? = null,
 ) {
     val configs by store.configs.collectAsState()
     val roles by store.roles.collectAsState()
@@ -126,6 +130,9 @@ fun SettingsScreen(
     var personalStart by remember { mutableStateOf(flags.personalStart()) }
     var parallelMax by remember { mutableIntStateOf(flags.parallelMax()) }
     var keepScreenOn by remember { mutableStateOf(flags.keepScreenOn()) }
+    val pocketPrefs = remember { context.getSharedPreferences(com.wangzan101.mika.pocket.PocketGuardManager.PREFS, 0) }
+    var pocketGuard by remember { mutableStateOf(pocketPrefs.getBoolean(com.wangzan101.mika.pocket.PocketGuardManager.ENABLED, false)) }
+    var pocketCompletionLock by remember { mutableStateOf(pocketPrefs.getBoolean(com.wangzan101.mika.pocket.PocketGuardManager.LOCK_ON_COMPLETION, false)) }
     var showTaskCost by remember { mutableStateOf(flags.showTaskCost()) }
     var muteTarget by remember { mutableStateOf(flags.muteTarget()) }
     var operatingPace by remember { mutableStateOf(flags.operatingPace()) }
@@ -161,6 +168,10 @@ fun SettingsScreen(
     var webSearch by remember { mutableStateOf<WebSearchConfig?>(null) }
     var editingSearch by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { webSearch = withContext(Dispatchers.IO) { searchSettings.get() } }
+    val fetchSettings = remember { WebFetchSettings.get(context) }
+    var webFetch by remember { mutableStateOf<WebFetchConfig?>(null) }
+    var editingFetch by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { webFetch = withContext(Dispatchers.IO) { fetchSettings.get() } }
     val mcp = remember { (context.applicationContext as com.wangzan101.mika.MikaApp).mcp }
     val mcpNetworkOn by mcp.settings.enabled.collectAsState()
     val mcpUsbOn by mcp.usb.enabled.collectAsState()
@@ -219,6 +230,7 @@ fun SettingsScreen(
             onOpenAutoArchive = { editingAutoArchive = true },
             onOpenMemory = onOpenMemory,
             onOpenRecommendations = { page = SettingsPage.Recommendations },
+            onOpenPersonas = onOpenPersonas,
             onOpenAdvanced = { page = SettingsPage.Advanced },
             onOpenBrowser = onOpenBrowser,
             onOpenFiles = onOpenFiles,
@@ -229,6 +241,7 @@ fun SettingsScreen(
         SettingsPage.Advanced -> AdvancedSettingsContent(
             proxy = proxy, proxyNote = proxy?.let { NetProxyCopy.subtitle(it, browserProxy) }, onOpenProxy = { editingProxy = true },
             webSearch = webSearch, onOpenWebSearch = { editingSearch = true },
+            webFetch = webFetch, onOpenWebFetch = { editingFetch = true },
             sandbox = sandboxStatus, onOpenSandbox = { page = SettingsPage.Sandbox },
             pluginsCount = pluginRecords.size, onOpenPlugins = { page = SettingsPage.Plugins },
             onOpenEnvVars = { page = SettingsPage.EnvVars },
@@ -259,6 +272,8 @@ fun SettingsScreen(
             triggerRunMinutes = triggerRunMinutes, onTriggerRunMinutes = { flags.setTriggerRunMinutes(it); triggerRunMinutes = it },
             tokenBudget = tokenBudget, onTokenBudget = { flags.setTaskTokenBudget(it); tokenBudget = it },
             showTaskCost = showTaskCost, onShowTaskCost = { flags.setShowTaskCost(it); showTaskCost = it },
+            pocketGuard = pocketGuard, onPocketGuard = { pocketPrefs.edit().putBoolean(com.wangzan101.mika.pocket.PocketGuardManager.ENABLED, it).apply(); pocketGuard = it },
+            pocketCompletionLock = pocketCompletionLock, onPocketCompletionLock = { pocketPrefs.edit().putBoolean(com.wangzan101.mika.pocket.PocketGuardManager.LOCK_ON_COMPLETION, it).apply(); pocketCompletionLock = it },
             selfConfig = selfConfig, onSelfConfig = { flags.setSelfConfig(it); selfConfig = it },
             selfOperate = selfOperate, onSelfOperate = { flags.setSelfOperate(it); selfOperate = it },
             pipOperate = pipOperate, onPipOperate = { flags.setPipOperate(it); pipOperate = it },
@@ -323,6 +338,18 @@ fun SettingsScreen(
                 withContext(Dispatchers.IO) { searchSettings.set(config) }
                 webSearch = searchSettings.get()
                 editingSearch = false
+            }
+        },
+    )
+
+    if (editingFetch) WebFetchDialog(
+        initial = webFetch ?: WebFetchConfig(),
+        onDismiss = { editingFetch = false },
+        onSave = { config ->
+            scope.launch {
+                withContext(Dispatchers.IO) { fetchSettings.set(config) }
+                webFetch = fetchSettings.get()
+                editingFetch = false
             }
         },
     )
@@ -412,6 +439,7 @@ fun SettingsContent(
     onOpenLanguage: () -> Unit = {},
     onOpenMemory: (() -> Unit)? = null,
     onOpenRecommendations: () -> Unit = {},
+    onOpenPersonas: (() -> Unit)? = null,
     onOpenAdvanced: () -> Unit = {},
     onOpenBrowser: () -> Unit = {},
     onOpenFiles: () -> Unit = {},
@@ -487,11 +515,14 @@ fun SettingsContent(
             onOpenMemory?.let {
                 ListRow(MikaIcons.Heart, stringResource(R.string.memory_and_skills), stringResource(R.string.settings_memory_sub), first = true, onClick = it) { RowChevron() }
             }
+            onOpenPersonas?.let {
+                ListRow(MikaIcons.Spark, stringResource(R.string.persona_title), stringResource(R.string.persona_sub), first = onOpenMemory == null, onClick = it) { RowChevron() }
+            }
             ListRow(
                 MikaIcons.Archive,
                 stringResource(R.string.settings_auto_archive),
                 stringResource(R.string.settings_auto_archive_sub),
-                first = onOpenMemory == null,
+                first = onOpenMemory == null && onOpenPersonas == null,
                 onClick = onOpenAutoArchive,
             ) {
                 RowValue(
@@ -532,6 +563,8 @@ fun AdvancedSettingsContent(
     onOpenProxy: () -> Unit = {},
     webSearch: WebSearchConfig? = null,
     onOpenWebSearch: () -> Unit = {},
+    webFetch: WebFetchConfig? = null,
+    onOpenWebFetch: () -> Unit = {},
     sandbox: SandboxStatus? = null,
     onOpenSandbox: () -> Unit = {},
     pluginsCount: Int? = null,
@@ -582,7 +615,7 @@ fun AdvancedSettingsContent(
         GroupCard {
             ListRow(MikaIcons.Code, stringResource(R.string.env_vars_title), first = true, onClick = onOpenEnvVars) { RowChevron() }
         }
-        if (proxy != null || webSearch != null) {
+        if (proxy != null || webSearch != null || webFetch != null) {
             GroupLabel(stringResource(R.string.settings_network))
             GroupCard {
                 var first = true
@@ -596,6 +629,11 @@ fun AdvancedSettingsContent(
                 webSearch?.let { config ->
                     ListRow(MikaIcons.Globe, stringResource(R.string.web_search_title), stringResource(R.string.web_search_row_sub), first = take(), onClick = onOpenWebSearch) {
                         RowValue(WebSearchCopy.value(config)); RowChevron()
+                    }
+                }
+                webFetch?.let { config ->
+                    ListRow(MikaIcons.Doc, stringResource(R.string.web_fetch_title), stringResource(R.string.web_fetch_row_sub), first = take(), onClick = onOpenWebFetch) {
+                        RowValue(WebFetchCopy.value(config)); RowChevron()
                     }
                 }
             }

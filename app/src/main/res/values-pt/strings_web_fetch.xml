@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_fetch_title">Obtenção de páginas</string>
+    <string name="web_fetch_enabled">Ativar a obtenção de páginas</string>
+    <string name="web_fetch_provider">Serviço de obtenção</string>
+    <string name="web_fetch_note_tinyfish">Precisa de uma chave de API. As páginas são obtidas com a API Fetch do TinyFish (api.fetch.tinyfish.ai).</string>
+    <string name="web_fetch_row_sub">Obtenção de páginas opcional; o navegador está sempre disponível</string>
+    <string name="web_fetch_privacy">A chave é armazenada criptografada neste telefone. As páginas obtidas são tratadas como conteúdo não confiável.</string>
+</resources>

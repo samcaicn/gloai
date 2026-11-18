@@ -544,4 +544,34 @@ class CapsuleCardContentTest {
         compose.onNodeWithTag("capsule-quit-cancel").performClick()
         compose.runOnIdle { assertEquals(listOf("quit", "cancelQuit"), calls) }
     }
+
+    @Test fun chatThreadShowsScrollToBottomWhenAwayFromTailAndReturnsOnClick() {
+        val longAnswer = (1..30).joinToString("\n\n") { "胶囊第 $it 段回答内容" } + "\n\n胶囊结尾标记-CAPSULE_END"
+        val past = listOf(
+            PastTurn(com.wangzan101.mika.core.agent.Turn("第一句", "第一条回复", "succeeded", runId = "r1")),
+            PastTurn(com.wangzan101.mika.core.agent.Turn("第二句", longAnswer, "succeeded", runId = "r2")),
+        )
+        show(CardView.Chat("c1", title = "第二句"), thread = CapsuleThreads.build(past, CapsuleThreads.PAGE, emptyList()))
+
+        // 打开时锚点停在最后一问开头,回答超过卡片高度,直接显示回到底部按钮
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("capsule-scroll-to-bottom").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("capsule-scroll-to-bottom").assertIsDisplayed().performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("capsule-scroll-to-bottom").fetchSemanticsNodes().isEmpty()
+        }
+        compose.onNodeWithText("CAPSULE_END", substring = true).assertIsDisplayed()
+
+        // 往上翻看历史后再次出现
+        repeat(3) { compose.onNodeWithTag("capsule-thread").performTouchInput { swipeDown() } }
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("capsule-scroll-to-bottom").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("capsule-scroll-to-bottom").performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("capsule-scroll-to-bottom").fetchSemanticsNodes().isEmpty()
+        }
+        compose.onNodeWithText("CAPSULE_END", substring = true).assertIsDisplayed()
+    }
 }

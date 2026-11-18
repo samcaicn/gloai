@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">选择可读写的文件夹</string>
+    <string name="folder_grant_writable">可读取和保存</string>
+    <string name="folder_grant_readonly">仅可读取</string>
+    <string name="folder_grant_unavailable">文件夹不可用，请重新选择</string>
+    <string name="folder_grant_revoke">取消授权</string>
+    <string name="folder_grant_loading">正在读取文件夹…</string>
+    <string name="folder_grant_error">无法访问文件夹，请选择允许读写的文件夹或重试。</string>
+    <string name="tool_list_folder_files">查看授权文件夹</string>
+</resources>

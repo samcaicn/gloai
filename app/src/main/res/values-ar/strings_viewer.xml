@@ -7,4 +7,14 @@
     <string name="viewer_read_error">حدث خطأ أثناء قراءة هذا الملف.</string>
     <string name="viewer_page">الصفحة %1$d</string>
     <string name="viewer_truncated">هذا الملف كبير؛ لا يُعرض سوى بدايته.</string>
+    <string name="viewer_find">البحث في الملف</string>
+    <string name="viewer_find_hint">اكتب للبحث</string>
+    <string name="viewer_find_prev">النتيجة السابقة</string>
+    <string name="viewer_find_next">النتيجة التالية</string>
+    <string name="viewer_find_close">إغلاق البحث</string>
+    <string name="viewer_find_no_matches">لا توجد نتائج</string>
+    <string name="viewer_copy">نسخ الكل</string>
+    <string name="viewer_copied">تم النسخ</string>
+    <string name="viewer_copied_part">تم النسخ (البداية فقط)</string>
+    <string name="viewer_copy_failed">المحتوى كبير جدًا للنسخ</string>
 </resources>

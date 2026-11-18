@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="persona_title">Persona</string>
+    <string name="persona_sub">Pilih cara Mika berbicara dengan Anda</string>
+    <string name="persona_default">Default</string>
+    <string name="persona_default_sub">Suara biasa Mika</string>
+    <string name="persona_empty">Belum ada persona</string>
+    <string name="persona_empty_sub">Persona mengubah cara Mika berbicara, bukan apa yang boleh dilakukan Mika.</string>
+    <string name="persona_new">Persona baru</string>
+    <string name="persona_edit">Edit persona</string>
+    <string name="persona_name">Nama</string>
+    <string name="persona_description">Deskripsi singkat</string>
+    <string name="persona_prompt">Instruksi</string>
+    <string name="persona_prompt_hint">Nada, panjang, susunan kata, format…</string>
+    <string name="persona_empty_prompt">Tanpa instruksi, persona ini tidak akan mengubah apa pun.</string>
+    <string name="persona_counter">%1$d karakter · sekitar %2$d token</string>
+    <string name="persona_preview">Pratinjau prompt lengkap</string>
+    <string name="persona_preview_hide">Sembunyikan pratinjau</string>
+    <string name="persona_preview_note">Aturan abu-abu bersifat tetap. Persona dapat mengubah nada dan susunan kata, tetapi tidak keselamatan, izin, atau apa yang dilaporkan Mika.</string>
+    <string name="persona_chip">Persona: %1$s</string>
+    <string name="persona_manage">Kelola persona</string>
+    <string name="persona_switch_note">Pergantian hanya berlaku untuk pesan berikutnya di obrolan ini.</string>
+    <string name="persona_delete_title">Hapus “%1$s”?</string>
+    <string name="persona_delete_body">Obrolan yang memakainya akan kembali ke persona default. Tidak dapat dibatalkan.</string>
+    <string name="persona_copy">Duplikat</string>
+    <string name="persona_missing">Persona yang dihapus</string>
+    <string name="persona_name_required">Masukkan nama.</string>
+    <string name="persona_name_too_long">Nama terlalu panjang.</string>
+    <string name="persona_description_too_long">Deskripsi terlalu panjang (maks. %1$d karakter).</string>
+    <string name="persona_prompt_too_long">Instruksi terlalu panjang (maks. %1$d karakter).</string>
+    <string name="persona_save_failed">Tidak dapat menyimpan persona.</string>
+</resources>

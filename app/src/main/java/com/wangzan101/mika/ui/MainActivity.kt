@@ -48,7 +48,6 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import androidx.compose.ui.platform.LocalContext
-import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.cap.web.WebHandover
 import com.wangzan101.mika.cap.web.WebSites
 import com.wangzan101.mika.browser.UserBrowser
@@ -69,6 +68,7 @@ import com.wangzan101.mika.record.RunStore
 import com.wangzan101.mika.replay.FileRouteStore
 import com.wangzan101.mika.task.TaskService
 import com.wangzan101.mika.settings.Prerequisites
+import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.SystemStatusMonitor
 import com.wangzan101.mika.cap.phone.PhoneServices
@@ -407,6 +407,7 @@ private fun MikaRoot(
     val hasMain = roles.main != null
     val check = Prerequisites.check(status, hasMain)
     val app = context.applicationContext as MikaApp
+    val personasOn = FeatureFlags.get(context).persona()
     // 查到的新版本:侧栏、设置首页、关于页的红点都看它
     val updateState by app.updates.state.collectAsState()
     val autoUpdate by app.automaticUpdates.enabled.collectAsState()
@@ -588,6 +589,7 @@ private fun MikaRoot(
                             },
                             voice = app.voice,
                             openSpeechModel = { nav.push(Route.SpeechModel) },
+                            onOpenPersonas = if (personasOn) ({ nav.push(Route.Persona) }) else ({}),
                             onOpenTeach = { hint ->
                                 app.teach.prefill(hint)
                                 nav.push(Route.Teach)
@@ -623,11 +625,14 @@ private fun MikaRoot(
                 onOpenFiles = { filesFromDrawer = false; filesConversation = app.chat.ui.value.conversationId; nav.push(Route.Files) },
                 onOpenPersonal = { nav.show(Route.Personal) },
                 onOpenPlans = { nav.push(Route.Plans) },
+                onOpenPersonas = if (personasOn) ({ nav.push(Route.Persona) }) else null,
                 autonomous = autonomous, onAutonomous = app.approvalControl::setAutonomous,
                 updateVersion = updateState.update?.version, onOpenAbout = { nav.push(Route.About) },
                 mcpServers = app.mcpServers)
         }
-        Route.Models -> ModelsScreen(store, onBack = back, onOpenSpeech = { nav.push(Route.SpeechModel) }, onOpenUsage = { nav.push(Route.Usage) })
+        Route.Models -> ModelsScreen(store, onBack = back, onOpenSpeech = { nav.push(Route.SpeechModel) }, onOpenVoice = { nav.push(Route.VoiceModel) }, onOpenUsage = { nav.push(Route.Usage) })
+        Route.VoiceModel -> VoiceModelScreen(store, onBack = back)
+        Route.Persona -> if (personasOn) PersonaScreen(app.personas, onBack = back) else LaunchedEffect(Unit) { nav.back() }
         Route.Usage -> UsageScreen(app.usage, store, onBack = back, onOpenUrl = { openInBrowser(context, it) })
         Route.SpeechModel -> SpeechModelScreen(store, onBack = back)
         Route.About -> AboutScreen(

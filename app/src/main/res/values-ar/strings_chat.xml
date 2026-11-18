@@ -83,6 +83,7 @@
     <string name="chat_attach_rejected">تعذّر الإضافة: %1$s (يجب أن يكون حجم كل ملف أقل من 200 MB)</string>
     <string name="chat_stop">إيقاف</string>
     <string name="chat_send">إرسال</string>
+    <string name="chat_scroll_to_bottom">الانتقال إلى الأسفل</string>
     <string name="drawer_running_task">مهمة قيد التشغيل</string>
     <string name="drawer_running">قيد التشغيل</string>
     <string name="drawer_yesterday">أمس</string>
@@ -357,4 +358,9 @@
     <string name="task_field_insert">إدراج</string>
     <string name="task_fields_too_many">استخدم %1$d حقول مختلفة كحد أقصى.</string>
     <string name="task_fill_apply">ملء مربع الإدخال</string>
+    <string name="chat_read_aloud">Read aloud</string>
+    <string name="chat_stop_speaking">Stop speaking</string>
+    <string name="chat_audio">Audio</string>
+    <string name="chat_audio_play">Play</string>
+    <string name="chat_audio_stop">Stop</string>
 </resources>

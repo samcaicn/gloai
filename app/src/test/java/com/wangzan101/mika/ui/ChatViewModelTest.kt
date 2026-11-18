@@ -27,6 +27,7 @@ import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.record.RunEvent
 import com.wangzan101.mika.settings.AccessibilityState
 import com.wangzan101.mika.settings.Prerequisites
+import com.wangzan101.mika.settings.PersonaStore
 import com.wangzan101.mika.settings.Problem
 import com.wangzan101.mika.core.shell.BuiltinShellStatus
 import com.wangzan101.mika.settings.SystemStatus
@@ -3777,4 +3778,35 @@ class ChatViewModelTest {
         assertEquals(1, calls.count { it.startsWith("start:") })
     }
 
+    /** 新对话选的人格先写进旁文件,再交给服务;任务开局才能读到。 */
+    @Test fun personaIsWrittenBeforeTheTaskStarts() = runTest {
+        val conversations = ConversationStore(tmp.newFolder())
+        val personas = PersonaStore(tmp.newFolder())
+        val p = personas.add("写作助手", "", "先给结论。").getOrThrow()
+        val vm = ChatViewModel(
+            backgroundScope, state, stage, actions, conversations,
+            appLabel = { it }, activities = acts, steers = steerFlow, personaStore = personas,
+        ).also { runCurrent() }
+
+        assertTrue(vm.selectPersona(p.id))
+        assertEquals(p.id, vm.ui.value.personaId)
+        assertTrue(vm.send("查天气", ok))
+        val id = vm.ui.value.conversationId!!
+        assertEquals(p.id, conversations.persona(id)?.personaId)
+    }
+
+    /** 功能关闭时界面不读也不写人格旁文件;任务层也会忽略绑定。 */
+    @Test fun personaBindingIsIgnoredWhenTheFeatureIsOff() = runTest {
+        val conversations = ConversationStore(tmp.newFolder())
+        val id = conversations.newConversation()
+        assertTrue(conversations.setPersona(id, "p1"))
+        val vm = ChatViewModel(
+            backgroundScope, state, stage, actions, conversations,
+            appLabel = { it }, activities = acts, steers = steerFlow, personaStore = null,
+        ).also { runCurrent() }
+
+        vm.openConversation(id)
+        assertNull(vm.ui.value.personaId)
+        assertFalse(vm.selectPersona("p1"))
+    }
 }

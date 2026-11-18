@@ -2,7 +2,7 @@
 <resources>
     <string name="device_dirs_title">手機目錄</string>
     <string name="device_dirs_explanation">目錄線索幫助 Mika 尋找檔案。新增線索不會授予存取權限；請個別授權已儲存的目錄。</string>
-    <string name="device_dirs_authorize">授權存取此目錄</string>
+    <string name="device_dirs_authorize">允許讀取此目錄</string>
     <string name="device_dirs_recursive">包含子目錄</string>
     <string name="device_dirs_not_synced">授權尚未同步</string>
     <string name="device_dirs_synced">授權已同步</string>
@@ -19,7 +19,7 @@
     <string name="device_dirs_delete">刪除線索</string>
     <string name="device_dirs_save">儲存</string>
     <string name="device_dirs_cancel">取消</string>
-    <string name="device_dirs_available">可存取</string>
+    <string name="device_dirs_available">僅可讀取、匯入</string>
     <string name="device_dirs_missing">目錄不存在</string>
     <string name="device_dirs_denied">無權存取</string>
     <string name="device_dirs_unknown">狀態暫不可用</string>

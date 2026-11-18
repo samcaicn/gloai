@@ -19,6 +19,16 @@
     <string name="playback_image">작업 스크린샷</string>
     <string name="playback_missing">스크린샷이 저장되지 않았거나 삭제되었습니다</string>
     <string name="report_export">내보내기</string>
+    <string name="report_copy_markdown">Markdown으로 복사</string>
+    <string name="report_copy_text">일반 텍스트로 복사</string>
+    <string name="report_share">보고서 공유</string>
+    <string name="report_share_text">일반 텍스트</string>
+    <string name="report_share_txt">TXT 파일</string>
+    <string name="report_share_md">Markdown 파일</string>
+    <string name="report_share_docx">Word 파일</string>
+    <string name="report_share_failed">공유하지 못했습니다. 다시 시도하거나 먼저 보고서를 내보내세요.</string>
+    <string name="report_share_too_long">보고서가 너무 길어 텍스트로 공유할 수 없습니다. TXT, Markdown 또는 Word 파일로 공유하세요.</string>
+    <string name="report_copied">보고서를 복사했습니다</string>
     <string name="report_saved">보고서를 저장했습니다</string>
     <string name="report_save_failed">저장하지 못했습니다. 기록과 저장 위치를 확인하세요.</string>
     <string name="report_close">닫기</string>

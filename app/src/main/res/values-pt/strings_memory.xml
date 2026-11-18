@@ -94,4 +94,10 @@
     <string name="skills_imported">Importada</string>
     <string name="skill_builtin_name">Já existe uma habilidade integrada com esse nome. Mude o nome e tente de novo.</string>
     <string name="skill_draft_pending">Já há um rascunho com esse nome esperando revisão. Resolva esse primeiro.</string>
+    <string name="market_title">Mercado de habilidades</string>
+    <string name="market_sub">Explore habilidades compartilhadas no GitHub</string>
+    <string name="market_source">Fonte das habilidades</string>
+    <string name="market_add">Adicionar para revisão</string>
+    <string name="market_network_error">Não foi possível baixar. Verifique o repositório e a conexão.</string>
+    <string name="market_invalid">O conteúdo é inválido ou mudou. Reabra o mercado para atualizar a lista.</string>
 </resources>

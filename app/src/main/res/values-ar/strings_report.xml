@@ -19,6 +19,16 @@
     <string name="playback_image">لقطة شاشة المهمة</string>
     <string name="playback_missing">لقطة الشاشة غير متاحة</string>
     <string name="report_export">تصدير</string>
+    <string name="report_copy_markdown">نسخ بتنسيق Markdown</string>
+    <string name="report_copy_text">نسخ كنص عادي</string>
+    <string name="report_share">مشاركة التقرير</string>
+    <string name="report_share_text">نص عادي</string>
+    <string name="report_share_txt">ملف TXT</string>
+    <string name="report_share_md">ملف Markdown</string>
+    <string name="report_share_docx">ملف Word</string>
+    <string name="report_share_failed">تعذرت المشاركة. أعد المحاولة أو صدّر التقرير أولًا.</string>
+    <string name="report_share_too_long">التقرير طويل جدًا للمشاركة كنص. شاركه كملف TXT أو Markdown أو Word.</string>
+    <string name="report_copied">تم نسخ التقرير</string>
     <string name="report_saved">تم حفظ التقرير</string>
     <string name="report_save_failed">تعذر الحفظ. تحقق من السجل وموقع الحفظ ثم أعد المحاولة.</string>
     <string name="report_close">إغلاق</string>

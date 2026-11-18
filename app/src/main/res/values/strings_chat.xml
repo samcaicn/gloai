@@ -79,6 +79,7 @@
     <string name="chat_attach_rejected">Couldn’t add: %1$s (each file must be under 200 MB)</string>
     <string name="chat_stop">Stop</string>
     <string name="chat_send">Send</string>
+    <string name="chat_scroll_to_bottom">Scroll to bottom</string>
     <string name="drawer_running_task">Running task</string>
     <string name="drawer_running">Running</string>
     <string name="drawer_yesterday">Yesterday</string>
@@ -301,4 +302,9 @@
     <string name="task_field_insert">Insert</string>
     <string name="task_fields_too_many">Use at most %1$d different fields.</string>
     <string name="task_fill_apply">Fill input</string>
+    <string name="chat_read_aloud">Read aloud</string>
+    <string name="chat_stop_speaking">Stop speaking</string>
+    <string name="chat_audio">Audio</string>
+    <string name="chat_audio_play">Play</string>
+    <string name="chat_audio_stop">Stop</string>
 </resources>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_dtmf_status_label">Status panggilan</string>
+    <string name="calls_dtmf_open">Papan tombol</string>
+    <string name="calls_dtmf_title">Papan tombol panggilan</string>
+    <string name="calls_dtmf_close">Tutup</string>
+    <string name="calls_dtmf_batch">Masukkan urutan</string>
+    <string name="calls_dtmf_hint">Setiap tombol langsung dikirim. Ikuti petunjuk suara.</string>
+    <string name="calls_dtmf_batch_hint">Masukkan hingga 32 tombol, lalu ketuk Kirim.</string>
+    <string name="calls_dtmf_input">0–9, * atau #</string>
+    <string name="calls_dtmf_delete">Hapus</string>
+    <string name="calls_dtmf_send">Kirim</string>
+    <string name="calls_dtmf_sending">Mengirim…</string>
+    <string name="calls_dtmf_sent">Tombol dikirim; tunggu tanggapan</string>
+    <string name="calls_dtmf_failed">Pengiriman tidak selesai. Tunggu tanggapan.</string>
+    <string name="calls_dtmf_invalid">Hanya 0–9, * dan #, maksimal 32 tombol.</string>
+    <string name="calls_voice_briefing_start">Jelaskan tugas dengan suara</string>
+    <string name="calls_voice_briefing_note">Gunakan bahasa Mandarin. Untuk mengizinkan panggilan, ucapkan hanya “%1$s” setelah selesai.</string>
+    <string name="calls_voice_briefing_stopped">Penjelasan dihentikan; tidak ada panggilan</string>
+    <string name="calls_voice_briefing_authorized">Tugas diizinkan; mengajukan panggilan</string>
+    <string name="calls_voice_briefing_permission_granted">Mikrofon diizinkan. Ketuk lagi tombol suara.</string>
+    <string name="calls_voice_briefing_permission_denied">Izin mikrofon tidak diberikan. Gunakan formulir teks.</string>
+    <string name="calls_voice_briefing_incomplete">Lengkapi atau hapus petunjuk yang ada sebelum memulai.</string>
+    <string name="calls_voice_briefing_configure">Atur suara waktu nyata di Setelan terlebih dahulu.</string>
+</resources>

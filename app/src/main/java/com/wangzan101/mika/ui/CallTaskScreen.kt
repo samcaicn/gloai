@@ -52,6 +52,8 @@ internal class CallTaskDraft {
         simOverride = null
     }
 
+    fun snapshotFields(): List<String> = listOf(number, goal, questions, context, constraints, simOverride.orEmpty())
+
     companion object {
         val Saver = listSaver<CallTaskDraft, String>(
             save = { draft -> listOf(draft.number, draft.goal, draft.questions, draft.context,
@@ -86,6 +88,7 @@ internal fun CallTaskScreen(
     onConfirmLocked: (CallTaskSubmission) -> Unit,
     voiceProfile: com.wangzan101.mika.calls.CallVoiceProfile,
     onVoiceProfiles: () -> Unit,
+    voiceBriefing: VoiceBriefingLauncher? = null,
 ) {
     var questionsOpen by rememberSaveable { mutableStateOf(false) }
     var contextOpen by rememberSaveable { mutableStateOf(false) }
@@ -199,6 +202,13 @@ internal fun CallTaskScreen(
         },
         Modifier.testTag("call-task-review"),
     )
+    voiceBriefing?.let { voice ->
+        OutlinedButton(
+            onClick = { if (number != null && sim != null) voice.start(number, sim.id, sim.label) },
+            enabled = ready && canDial && editable && !voice.busy && number != null && sim != null,
+            modifier = Modifier.fillMaxWidth().testTag("call-task-voice"),
+        ) { Text(stringResource(R.string.calls_voice_briefing_start)) }
+    }
     Spacer(Modifier.height(8.dp))
     FooterNote(stringResource(R.string.calls_task_one_off))
 

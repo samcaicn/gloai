@@ -19,6 +19,16 @@
     <string name="playback_image">Recorded task screenshot</string>
     <string name="playback_missing">Screenshot unavailable</string>
     <string name="report_export">Export</string>
+    <string name="report_copy_markdown">Copy as Markdown</string>
+    <string name="report_copy_text">Copy as plain text</string>
+    <string name="report_share">Share report</string>
+    <string name="report_share_text">Plain text</string>
+    <string name="report_share_txt">TXT file</string>
+    <string name="report_share_md">Markdown file</string>
+    <string name="report_share_docx">Word file</string>
+    <string name="report_share_failed">Could not share. Try again, or export the report first.</string>
+    <string name="report_share_too_long">The report is too long for text sharing. Share it as a TXT, Markdown or Word file instead.</string>
+    <string name="report_copied">Report copied</string>
     <string name="report_saved">Report saved</string>
     <string name="report_save_failed">Could not save. Check the record and destination, then retry.</string>
     <string name="report_close">Close</string>

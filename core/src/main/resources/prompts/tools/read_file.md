@@ -1,1 +1,1 @@
-Read a text file under /workspace or /opt/mika/skills, by byte offset and limit. Binary files return only their size and type; images are returned as images when you can see images.
+Read a text file under /workspace or /opt/mika/skills, by byte offset and limit. For /folders paths returned by list_folder_files, reads UTF-8 text files up to 1 MiB and returns sha256 for a subsequent update. Binary files return only their size and type; images are returned as images when you can see images.

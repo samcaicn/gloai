@@ -51,6 +51,20 @@ class MarkdownModelTest {
     }
 
     @Test
+    fun codeBlockLanguageTag() {
+        val fenced = MarkdownModel.parse("```bash -e\necho hi\n```").single() as MdBlock.Code
+        assertEquals("bash -e", fenced.info)
+        assertEquals("bash", fenced.language)
+
+        val plain = MarkdownModel.parse("```\n{\"ok\": true}\n```").single() as MdBlock.Code
+        assertEquals("", plain.info)
+        assertEquals("", plain.language)
+
+        val indented = MarkdownModel.parse("    val a = 1").single() as MdBlock.Code
+        assertEquals("", indented.language)
+    }
+
+    @Test
     fun nestedLists() {
         val l = MarkdownModel.parse("1. 一\n   - 甲\n   - 乙\n2. 二\n").single() as MdBlock.ListBlock
         assertEquals(1, l.start)

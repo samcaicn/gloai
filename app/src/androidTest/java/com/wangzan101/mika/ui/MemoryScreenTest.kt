@@ -1,9 +1,13 @@
 package com.wangzan101.mika.ui
 
 import com.wangzan101.mika.ChineseUi
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -17,6 +21,7 @@ import com.wangzan101.mika.core.memory.MemoryPersistence
 import com.wangzan101.mika.core.memory.MemorySource
 import com.wangzan101.mika.core.memory.MemoryStatus
 import com.wangzan101.mika.core.memory.MemoryStore
+import com.wangzan101.mika.skills.PersonalSkillFiles
 import com.wangzan101.mika.settings.MemorySettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,9 +44,9 @@ class MemoryScreenTest {
         override fun save(items: List<MemoryItem>) {}
     }, System::currentTimeMillis, { java.util.UUID.randomUUID().toString() })
 
-    private fun show(opened: MutableList<String>? = null) {
+    private fun show(opened: MutableList<String>? = null, skills: PersonalSkillFiles? = null) {
         val dir = InstrumentationRegistry.getInstrumentation().targetContext.cacheDir
-        val vm = MemoryViewModel(store, MemorySettings(File(dir, "memory-screen-test.json").apply { delete() }), null,
+        val vm = MemoryViewModel(store, MemorySettings(File(dir, "memory-screen-test.json").apply { delete() }), skills,
             CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate))
         compose.setContent {
             MemoryScreen(
@@ -82,6 +87,33 @@ class MemoryScreenTest {
         compose.onNodeWithText("没有等你确认的东西").assertExists()
         compose.onNodeWithTag("segment-Memories").performClick()
         assertEquals(1, compose.onAllNodesWithTag("memory-row").fetchSemanticsNodes().size)
+    }
+
+    /** Explicit device smoke test: runs against the public sample repository only when requested. */
+    @Test fun liveMarketSkillGoesToPending() {
+        org.junit.Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("liveSkillMarket") == "true")
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val files = PersonalSkillFiles(File(context.cacheDir, "market-test-" + java.util.UUID.randomUUID()))
+        fun capture(page: String) {
+            File(context.cacheDir, "market-$page.png").outputStream().use { output ->
+                compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output)
+            }
+        }
+        show(skills = files)
+        compose.onNodeWithTag("segment-Skills").performClick()
+        compose.onNodeWithText("导入技能").assertExists()
+        compose.onNodeWithText("技能市场").performScrollTo().performClick()
+        val title = "会议纪要转行动清单"
+        compose.waitUntil(30_000) { compose.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty() }
+        capture("list")
+        compose.onNodeWithText(title).performScrollTo().performClick()
+        compose.waitUntil(30_000) { compose.onAllNodesWithText("加入待确认").fetchSemanticsNodes().isNotEmpty() }
+        capture("preview")
+        compose.onNodeWithText("加入待确认").performScrollTo().performClick()
+        compose.waitUntil(10_000) { files.pending().size == 1 }
+        assertEquals("meeting-action-list", files.pending().single().name)
+        assertTrue(files.list().isEmpty())
+        compose.onNodeWithText(title).assertExists()
     }
 
     @Test fun savedDataRowsOpenWebsiteSignInsAndRoutes() {

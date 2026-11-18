@@ -648,7 +648,7 @@ internal fun FileLibraryScreen(
     if (savedElsewhere) AlertDialog(onDismissRequest = { savedElsewhere = false }, text = { Text(stringResource(R.string.file_library_draft_saved)) }, confirmButton = { TextButton(onClick = { savedElsewhere = false }) { Text(stringResource(R.string.done)) } })
 }
 
-private val LibraryTitleStyle = TextStyle(
+internal val LibraryTitleStyle = TextStyle(
     fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.4).sp,
 )
 
@@ -930,7 +930,7 @@ private fun ArchivedTag() {
 
 /** 文件类型块:上面一个图形,下面扩展名。 */
 @Composable
-private fun FileTypeTile(name: String) {
+internal fun FileTypeTile(name: String) {
     val c = MikaTheme.colors
     val (icon, label) = fileBadge(name)
     Column(
@@ -948,7 +948,7 @@ private fun FileTypeTile(name: String) {
 }
 
 /** 文件块的图形和扩展名;图片、代码、文档各一种图形。 */
-private fun fileBadge(name: String): Pair<ImageVector, String> {
+internal fun fileBadge(name: String): Pair<ImageVector, String> {
     val ext = name.substringAfterLast('.', "").uppercase(Locale.ROOT)
     val icon = if (LibraryFileType.of(name) == LibraryFileType.Image) MikaIcons.Photo else when (ext) {
         "HTML", "HTM", "CSS", "JS", "JSX", "TS", "TSX", "JSON", "KT", "KTS", "JAVA", "PY", "SH",

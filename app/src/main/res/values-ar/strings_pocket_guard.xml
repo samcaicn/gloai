@@ -1,0 +1,8 @@
+<resources>
+    <string name="pocket_guard_title">منع اللمس في الجيب</string>
+    <string name="pocket_guard_summary">أثناء المهام، يمنع اللمس عندما يكون الهاتف مغطى وفي الظلام. اسحب للخروج.</string>
+    <string name="pocket_guard_unavailable">يتطلب مستشعرَي القرب والضوء.</string>
+    <string name="pocket_guard_exit">اسحب لليمين للخروج</string>
+    <string name="pocket_completion_lock_title">قفل الشاشة عند توقف المهمة والهاتف مغطى</string>
+    <string name="pocket_completion_lock_summary">تُقفل الشاشة إذا كان الهاتف مغطى وفي مكان مظلم عند انتهاء المهمة أو انتظارها.</string>
+</resources>

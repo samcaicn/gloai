@@ -2,7 +2,7 @@
 <resources>
     <string name="device_dirs_title">手机目录</string>
     <string name="device_dirs_explanation">目录线索帮助 Mika 查找文件。添加线索不会授予访问权限；请单独授权已保存的目录。</string>
-    <string name="device_dirs_authorize">授权访问此目录</string>
+    <string name="device_dirs_authorize">允许读取此目录</string>
     <string name="device_dirs_recursive">包含子目录</string>
     <string name="device_dirs_not_synced">授权尚未同步</string>
     <string name="device_dirs_synced">授权已同步</string>
@@ -19,7 +19,7 @@
     <string name="device_dirs_delete">删除线索</string>
     <string name="device_dirs_save">保存</string>
     <string name="device_dirs_cancel">取消</string>
-    <string name="device_dirs_available">可访问</string>
+    <string name="device_dirs_available">仅可读取、导入</string>
     <string name="device_dirs_missing">目录不存在</string>
     <string name="device_dirs_denied">无权访问</string>
     <string name="device_dirs_unknown">状态暂不可用</string>

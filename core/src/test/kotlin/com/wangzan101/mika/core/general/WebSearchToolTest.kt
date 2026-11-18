@@ -1,6 +1,8 @@
 package com.wangzan101.mika.core.general
 
 import com.wangzan101.mika.core.assembly.toolDispatcher
+import com.wangzan101.mika.core.fetch.WebFetch
+import com.wangzan101.mika.core.fetch.WebFetchResult
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.observation.Trust
 import com.wangzan101.mika.core.search.WebSearch
@@ -27,6 +29,10 @@ class WebSearchToolTest {
             calls += query to count
             return result
         }
+    }
+
+    private class FakeFetch : WebFetch {
+        override suspend fun fetch(url: String): WebFetchResult = WebFetchResult.Failure("unused", "")
     }
 
     private fun call(arguments: String) = Part.ToolCall("c1", "web_search", arguments)
@@ -57,6 +63,16 @@ class WebSearchToolTest {
         assertEquals(Trust.Untrusted, observation.trust)
         assertEquals("web_search", observation.source)
         assertEquals("https://example.com/", observation.place?.name)
+    }
+
+    @Test fun pickedResultsPointAtFetchOnlyWhenFetchIsConfigured() = runTest {
+        val search = FakeSearch(WebSearchResult.Success(listOf(WebSearchHit("T", "https://example.com/", "S"))))
+        val without = toolDispatcher(FakeScreen(), webSearch = search)
+            .execute(call("""{"query":"q"}"""), ActionPass()).content
+        assertFalse("hint" in without)
+        val with = toolDispatcher(FakeScreen(), webSearch = search, webFetch = FakeFetch())
+            .execute(call("""{"query":"q"}"""), ActionPass()).content
+        assertTrue(with.text("hint").contains("web_fetch"))
     }
 
     @Test fun failureAlwaysNamesBrowserFallback() = runTest {

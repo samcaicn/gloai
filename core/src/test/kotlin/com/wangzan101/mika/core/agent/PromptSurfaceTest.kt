@@ -119,6 +119,11 @@ class PromptSurfaceTest {
         PromptSurface.check("roles", PromptSurface.roles())
     }
 
+    /** 人格层:固定头尾和正文的全文,审改动时直接看差在哪。没有人格时其余金样不受影响。 */
+    @Test fun personaLayer() {
+        PromptSurface.check("persona/layer", com.wangzan101.mika.core.prompt.PersonaPrompt.layer("测试人格", "先给结论,再展开;少用感叹号。")!!)
+    }
+
     @Test fun feedbackFromTools() {
         PromptSurface.check("feedback-tools", runBlocking { PromptSurfaceFeedback.tools() })
     }

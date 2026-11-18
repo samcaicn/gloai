@@ -144,6 +144,9 @@ interface IMikaShell {
     // Replace the device-file bridge policy. Empty roots deny all access; protocol and revision are separate.
     Bundle setDeviceFilePolicy(int protocol, String session, long revision, in String[] roots, in boolean[] recursive) = 60;
 
+    // 把工作区里的一个文件分享给一个包:ACTION_SEND + EXTRA_STREAM,content URI 已授权可读;只打开分享页,不发出。
+    int startShareFile(int displayId, String packageName, String uri, String mime, String text) = 61;
+
     // 沿用早先定下的销毁事务号;AIDL 要求要么全部方法编号要么都不编号
     void destroy() = 16777114;
 }

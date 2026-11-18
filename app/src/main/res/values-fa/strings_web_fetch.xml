@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_fetch_title">دریافت صفحات</string>
+    <string name="web_fetch_enabled">فعال کردن دریافت صفحات</string>
+    <string name="web_fetch_provider">سرویس دریافت</string>
+    <string name="web_fetch_note_tinyfish">به کلید API نیاز دارد. صفحات با Fetch API از TinyFish (api.fetch.tinyfish.ai) دریافت می‌شوند.</string>
+    <string name="web_fetch_row_sub">دریافت صفحات اختیاری است؛ مرورگر همیشه در دسترس است</string>
+    <string name="web_fetch_privacy">کلید به‌صورت رمزگذاری‌شده در این گوشی ذخیره می‌شود. صفحات دریافت‌شده غیرقابل اعتماد در نظر گرفته می‌شوند.</string>
+</resources>

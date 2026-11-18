@@ -101,7 +101,7 @@ class VolcRealtimeClientTest {
                 """{"type":"conversation.item.input_audio_transcription.started","item_id":"user-1"}""",
                 """{"type":"response.output_audio.delta","response_id":"old","delta":"AgI="}""",
                 """{"type":"conversation.item.input_audio_transcription.delta","item_id":"user-1","delta":"你好"}""",
-                """{"type":"conversation.item.input_audio_transcription.delta","item_id":"user-1","delta":"呀"}""",
+                """{"type":"conversation.item.input_audio_transcription.delta","item_id":"user-1","delta":"你好呀"}""",
                 """{"type":"conversation.item.input_audio_transcription.completed","item_id":"user-1","transcript":"你好呀。"}""",
                 """{"type":"response.output_audio.started","response_id":"new"}""",
                 // The previous response's cancel acknowledgment may follow the replacement's start.
@@ -177,7 +177,7 @@ class VolcRealtimeClientTest {
             val expected = listOf(
                 VolcRealtimeEvent.UserTranscript("再见", isFinal = false),
                 VolcRealtimeEvent.InputAudioCommitted,
-                VolcRealtimeEvent.UserTranscript("再见", isFinal = true, isCompleteFinal = false),
+                VolcRealtimeEvent.UserTranscript("再见", isFinal = true),
                 VolcRealtimeEvent.UserSpeechEnded,
                 VolcRealtimeEvent.UserTranscript(longText.take(limit), isFinal = true, isCompleteFinal = false),
                 VolcRealtimeEvent.UserSpeechEnded,
@@ -292,6 +292,72 @@ class VolcRealtimeClientTest {
 
     private val JsonObject.type get() = getValue("type").jsonPrimitive.content
 
+    @Test fun seeduplexAsrSnapshotsReplaceProgressivePrefixesAndPreserveLegitimateRepeats() = runBlocking {
+        // The official Seeduplex Web demo calls setQuestion for ASR delta, but
+        // appendAnswer for assistant delta. These are revisable full snapshots.
+        val observed = observeFrames(listOf(
+            """{"type":"conversation.item.input_audio_transcription.started","item_id":"u1"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u1","delta":"问"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u1","delta":"问明天"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u1","delta":"问明天几点开门"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u1","delta":"问后天几点开门，不要不要预约"}""",
+            """{"type":"conversation.item.input_audio_transcription.completed","item_id":"u1"}""",
+            """{"type":"response.output_text.delta","delta":"好"}""",
+            """{"type":"response.output_text.delta","delta":"好"}""",
+        ))
+        val transcripts = observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>()
+        assertEquals(listOf("问", "问明天", "问明天几点开门", "问后天几点开门，不要不要预约"),
+            transcripts.filterNot { it.isFinal }.map { it.text })
+        assertEquals(VolcRealtimeEvent.UserTranscript("问后天几点开门，不要不要预约", true), transcripts.last())
+        assertEquals(listOf("好", "好"), observed.filterIsInstance<VolcRealtimeEvent.AssistantTranscript>().map { it.delta })
+    }
+
+    @Test fun seeduplexAsrUsesOfficialDemoTextFieldPriorityAndCompletedPayload() = runBlocking {
+        val observed = observeFrames(listOf(
+            """{"type":"conversation.item.input_audio_transcription.started"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","text":"完整快照","delta":"不能追加"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","text":"","transcript":"修改后的快照"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","content":"最终快照"}""",
+            """{"type":"conversation.item.input_audio_transcription.completed","delta":"最终完整定稿"}""",
+        ))
+        assertEquals(listOf("完整快照", "修改后的快照", "最终快照", "最终完整定稿"),
+            observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>().map { it.text })
+        assertTrue(observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>().last().isCompleteFinal)
+    }
+
+    @Test fun seeduplexCompletedCannotAuthorizeTruncatedSnapshotOrExplicitlyBlankFinal() = runBlocking {
+        val tooLong = "长".repeat(16_385)
+        val observed = observeFrames(listOf(
+            """{"type":"conversation.item.input_audio_transcription.started","item_id":"long"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"long","delta":"$tooLong"}""",
+            """{"type":"conversation.item.input_audio_transcription.completed","item_id":"long"}""",
+            """{"type":"conversation.item.input_audio_transcription.started","item_id":"blank"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"blank","delta":"我说完了，你去打"}""",
+            """{"type":"conversation.item.input_audio_transcription.completed","item_id":"blank","text":" "}""",
+        ))
+        val finals = observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>().filter { it.isFinal }
+        assertEquals(2, finals.size)
+        assertEquals(16_384, finals.first().text.length)
+        assertTrue(finals.none { it.isCompleteFinal })
+    }
+
+    @Test fun seeduplexSnapshotAuthorizationNeedsCurrentCompletedEventAndNotJustPartialText() = runBlocking {
+        val observed = observeFrames(listOf(
+            """{"type":"conversation.item.input_audio_transcription.started","item_id":"old"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"old","delta":"我说完了，你去打"}""",
+            """{"type":"conversation.item.input_audio_transcription.started","item_id":"current"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"current","delta":"先别打，还有一个限制"}""",
+            """{"type":"conversation.item.input_audio_transcription.completed","item_id":"old"}""",
+            """{"type":"conversation.item.input_audio_transcription.completed","item_id":"current"}""",
+        ))
+        val transcripts = observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>()
+        assertFalse(transcripts.first().isFinal)
+        val finals = transcripts.filter { it.isFinal }
+        assertTrue(finals.all { it.isCompleteFinal })
+        assertEquals(listOf(false, true), finals.map { it.isCurrentTurn })
+        assertEquals(listOf("我说完了，你去打", "先别打，还有一个限制"), finals.map { it.text })
+    }
+
     @Test fun lateUserFinalIsArchivedOnceWithoutConsumingTheCurrentTurn() = runBlocking {
         val observed = observeFrames(listOf(
             """{"type":"conversation.item.input_audio_transcription.started","item_id":"u1"}""",
@@ -301,7 +367,7 @@ class VolcRealtimeClientTest {
             """{"type":"conversation.item.input_audio_transcription.completed","item_id":"u1","transcript":"第一句完成"}""",
             """{"type":"conversation.item.input_audio_transcription.completed","item_id":"u1","transcript":"第一句完成"}""",
             """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u1","delta":"旧的增量"}""",
-            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u2","delta":"继续"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u2","delta":"第二句继续"}""",
             """{"type":"conversation.item.input_audio_transcription.completed","item_id":"u2"}""",
         ))
         assertEquals(listOf("第一句完成", "第二句继续"), observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>().filter { it.isFinal }.map { it.text })
@@ -316,7 +382,7 @@ class VolcRealtimeClientTest {
             """{"type":"conversation.item.input_audio_transcription.started","item_id":"u2"}""",
             """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u2","delta":"第二句"}""",
             """{"type":"conversation.item.input_audio_transcription.failed","item_id":"u1"}""",
-            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u2","delta":"继续"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u2","delta":"第二句继续"}""",
             """{"type":"conversation.item.input_audio_transcription.completed","item_id":"u2"}""",
         ))
         assertEquals(listOf("第二句继续"), observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>().filter { it.isFinal }.map { it.text })
@@ -366,7 +432,7 @@ class VolcRealtimeClientTest {
             """{"type":"conversation.item.input_audio_transcription.started","item_id":"u2"}""",
             """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u2","delta":"第二句"}""",
             """{"type":"conversation.item.input_audio_transcription.started","item_id":"u1"}""",
-            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u2","delta":"继续"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"u2","delta":"第二句继续"}""",
             """{"type":"conversation.item.input_audio_transcription.completed","item_id":"u2"}""",
             """{"type":"conversation.item.input_audio_transcription.completed","item_id":"u1","transcript":"第一句完成"}""",
         ))
@@ -404,7 +470,7 @@ class VolcRealtimeClientTest {
             """{"type":"conversation.item.input_audio_transcription.started"}""",
             """{"type":"conversation.item.input_audio_transcription.delta","item_id":"old","delta":"旧后缀"}""",
             """{"type":"conversation.item.input_audio_transcription.delta","delta":"当前前缀"}""",
-            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"new","delta":"当前后缀"}""",
+            """{"type":"conversation.item.input_audio_transcription.delta","item_id":"new","delta":"当前前缀当前后缀"}""",
             """{"type":"conversation.item.input_audio_transcription.completed","item_id":"old","text":"旧问题完成"}""",
             """{"type":"conversation.item.input_audio_transcription.completed","item_id":"new"}""",
         ))
@@ -413,6 +479,38 @@ class VolcRealtimeClientTest {
         assertEquals(listOf(false, true), finals.map { it.isCurrentTurn })
         assertFalse(observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>().any { !it.isFinal && it.text.contains("旧后缀") })
         assertEquals(1, observed.count { it == VolcRealtimeEvent.UserSpeechEnded })
+    }
+
+    @Test fun authorizationCannotSkipAnOlderUnfinishedRestriction() = runBlocking {
+        for (identified in listOf(true, false)) for (hasPartial in listOf(true, false)) {
+            val id = if (identified) ",\"item_id\":\"restriction\"" else ""
+            val frames = mutableListOf("""{"type":"conversation.item.input_audio_transcription.started"$id}""")
+            if (hasPartial) frames += """{"type":"conversation.item.input_audio_transcription.delta"$id,"delta":"不要同意任何付费项目"}"""
+            frames += """{"type":"conversation.item.input_audio_transcription.started","item_id":"authorization"}"""
+            frames += """{"type":"conversation.item.input_audio_transcription.completed","item_id":"authorization","text":"我说完了，你去打"}"""
+            val observed = observeFrames(frames)
+            val authorization = observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>().single { it.isFinal }
+            val conversation = com.wangzan101.mika.calls.briefing.VoiceBriefingConversation(
+                CallTaskBrief(goal = "询问服务价格"),
+            )
+            assertTrue("Unfinished restriction must prevent dialing; identified=$identified partial=$hasPartial",
+                runCatching { conversation.accept(authorization) }.isFailure)
+        }
+    }
+
+    @Test fun finalizedOrEmptyEarlierTurnDoesNotBlockLaterAuthorization() = runBlocking {
+        for (text in listOf("不要同意任何付费项目", "")) {
+            val observed = observeFrames(listOf(
+                """{"type":"conversation.item.input_audio_transcription.started","item_id":"restriction"}""",
+                """{"type":"conversation.item.input_audio_transcription.completed","item_id":"restriction","text":"$text"}""",
+                """{"type":"conversation.item.input_audio_transcription.started","item_id":"authorization"}""",
+                """{"type":"conversation.item.input_audio_transcription.completed","item_id":"authorization","text":"我说完了，你去打"}""",
+            ))
+            val authorization = observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>().last()
+            assertFalse(authorization.hasUnresolvedPriorTurn)
+            val conversation = com.wangzan101.mika.calls.briefing.VoiceBriefingConversation(CallTaskBrief(goal = "询问服务价格"))
+            assertNotNull(conversation.accept(authorization))
+        }
     }
 
     private suspend fun observeFrames(frames: List<String>): List<VolcRealtimeEvent> {

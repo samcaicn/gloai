@@ -1,5 +1,9 @@
 package com.wangzan101.mika.calls
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,15 +34,18 @@ internal class CallPcmBridge(
         onFinalTranscript: (String, String) -> Unit = { _, _ -> },
         awaitFarewellDrain: suspend (CallFarewellFence) -> Boolean = { false },
         commitFarewell: () -> Boolean = { false },
+        sendDtmf: suspend (String) -> CallDtmfResult = { CallDtmfResult.rejected("unavailable", it.length) },
     ): Unit = coroutineScope {
         val playbackQueue = CallPlaybackQueue()
         val writerLock = Mutex()
         val assistantText = StringBuilder()
         val farewell = CallFarewellPlayback()
         val finished = CompletableDeferred<Unit>()
+        var toolJob: Job? = null
         var farewellWaiter: Job? = null
         fun cancelFarewellWaiter() { farewellWaiter?.cancel(); farewellWaiter = null }
         fun checkFarewell() {
+            if (toolJob?.isActive == true) return
             val fence = farewell.takeFence() ?: return
             farewellWaiter = launch {
                 if (awaitFarewellDrain(fence) && commitDrainedFarewell(commitFarewell)) finished.complete(Unit)
@@ -125,7 +132,7 @@ internal class CallPcmBridge(
                             is VolcRealtimeEvent.UserTranscript -> {
                                 if (event.isCurrentTurn) cancelFarewellWaiter()
                                 if (event.isFinal) {
-                                    if (event.isCurrentTurn) farewell.callerFinal(event.text, event.isCompleteFinal)
+                                    if (event.isCurrentTurn) farewell.callerFinal(event.text, event.isCompleteFinal && !event.hasUnresolvedPriorTurn)
                                     onTranscript("caller", event.text)
                                     onFinalTranscript("caller", event.text)
                                 } else if (event.isCurrentTurn) farewell.cancelCandidate()
@@ -147,6 +154,37 @@ internal class CallPcmBridge(
                                 flushAssistantText(completed = true)
                                 checkFarewell()
                             }
+                            is VolcRealtimeEvent.FunctionCall -> {
+                                // Tool execution must not block the microphone or incoming audio/events.
+                                // A function request invalidates any pending natural-hangup candidate.
+                                cancelFarewellWaiter()
+                                farewell.cancelCandidate()
+                                val digits = event.arguments["digits"]?.jsonPrimitive?.content.orEmpty()
+                                fun reply(result: CallDtmfResult) {
+                                    if (!session.sendToolResult(event.callId, buildJsonObject {
+                                        put("status", result.status)
+                                        put("sent_digits", result.sentDigits)
+                                        put("requested_digits", result.requestedDigits)
+                                        put("remote_confirmed", false)
+                                        put("next", "Wait for the next phone prompt; never retry uncertain or partial input automatically.")
+                                    })) throw CallMediaFailure("电话按键结果无法回传，已交还系统")
+                                }
+                                if (event.name != "send_dtmf" || digits.isEmpty() || digits.length > 32 ||
+                                    digits.any { it !in "0123456789*#" }) {
+                                    reply(CallDtmfResult.rejected("invalid_digits"))
+                                } else if (toolJob?.isActive == true) {
+                                    reply(CallDtmfResult.rejected("busy", digits.length))
+                                } else {
+                                    toolJob = launch {
+                                        val result = try { sendDtmf(digits) }
+                                        catch (cancelled: CancellationException) { throw cancelled }
+                                        catch (_: Exception) { CallDtmfResult.rejected("execution_uncertain", digits.length) }
+                                        // No raw entered identifiers are copied into transcripts or diagnostics.
+                                        reply(result)
+                                        farewell.cancelCandidate()
+                                    }
+                                }
+                            }
                             is VolcRealtimeEvent.Failed -> throw event.error
                             VolcRealtimeEvent.Closed -> throw CallMediaFailure("火山语音会话已结束，电话由系统处理")
                             else -> Unit
@@ -164,6 +202,7 @@ internal class CallPcmBridge(
                 eventReader.cancelAndJoin()
             } finally {
                 cancelFarewellWaiter()
+                toolJob?.cancel()
                 eventReader.cancel()
             }
         } finally {

@@ -7,4 +7,14 @@
     <string name="viewer_read_error">Something went wrong reading this file.</string>
     <string name="viewer_page">Page %1$d</string>
     <string name="viewer_truncated">This file is large; only the beginning is shown.</string>
+    <string name="viewer_find">Search in file</string>
+    <string name="viewer_find_hint">Type to search</string>
+    <string name="viewer_find_prev">Previous match</string>
+    <string name="viewer_find_next">Next match</string>
+    <string name="viewer_find_close">Close search</string>
+    <string name="viewer_find_no_matches">No matches</string>
+    <string name="viewer_copy">Copy all</string>
+    <string name="viewer_copied">Copied</string>
+    <string name="viewer_copied_part">Copied (beginning only)</string>
+    <string name="viewer_copy_failed">Too large to copy</string>
 </resources>

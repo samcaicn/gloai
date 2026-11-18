@@ -19,6 +19,16 @@
     <string name="playback_image">Captura da tarefa</string>
     <string name="playback_missing">Captura indisponível</string>
     <string name="report_export">Exportar</string>
+    <string name="report_copy_markdown">Copiar como Markdown</string>
+    <string name="report_copy_text">Copiar como texto simples</string>
+    <string name="report_share">Compartilhar relatório</string>
+    <string name="report_share_text">Texto simples</string>
+    <string name="report_share_txt">Arquivo TXT</string>
+    <string name="report_share_md">Arquivo Markdown</string>
+    <string name="report_share_docx">Arquivo Word</string>
+    <string name="report_share_failed">Não foi possível compartilhar. Tente novamente ou exporte o relatório primeiro.</string>
+    <string name="report_share_too_long">O relatório é longo demais para compartilhar como texto. Compartilhe como arquivo TXT, Markdown ou Word.</string>
+    <string name="report_copied">Relatório copiado</string>
     <string name="report_saved">Relatório salvo</string>
     <string name="report_save_failed">Não foi possível salvar. Verifique o registro e o destino.</string>
     <string name="report_close">Fechar</string>

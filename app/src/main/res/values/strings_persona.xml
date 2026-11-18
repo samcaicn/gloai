@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="persona_title">Persona</string>
+    <string name="persona_sub">Choose how Mika speaks with you</string>
+    <string name="persona_default">Default</string>
+    <string name="persona_default_sub">Mika’s usual voice</string>
+    <string name="persona_empty">No personas yet</string>
+    <string name="persona_empty_sub">A persona changes how Mika speaks, not what Mika may do.</string>
+    <string name="persona_new">New persona</string>
+    <string name="persona_edit">Edit persona</string>
+    <string name="persona_name">Name</string>
+    <string name="persona_description">Short description</string>
+    <string name="persona_prompt">Instructions</string>
+    <string name="persona_prompt_hint">Tone, length, phrasing, formatting…</string>
+    <string name="persona_empty_prompt">Without instructions this persona won’t change anything.</string>
+    <string name="persona_counter">%1$d characters · about %2$d tokens</string>
+    <string name="persona_preview">Preview the full prompt</string>
+    <string name="persona_preview_hide">Hide the preview</string>
+    <string name="persona_preview_note">The grey rules are fixed. A persona can change tone and wording, never safety, permissions, or what Mika reports.</string>
+    <string name="persona_chip">Persona: %1$s</string>
+    <string name="persona_manage">Manage personas</string>
+    <string name="persona_switch_note">Switching affects only the next messages in this chat.</string>
+    <string name="persona_delete_title">Delete “%1$s”?</string>
+    <string name="persona_delete_body">Chats using it will go back to the default persona. This can’t be undone.</string>
+    <string name="persona_copy">Duplicate</string>
+    <string name="persona_missing">Deleted persona</string>
+    <string name="persona_name_required">Enter a name.</string>
+    <string name="persona_name_too_long">Name is too long.</string>
+    <string name="persona_description_too_long">Description is too long (max %1$d characters).</string>
+    <string name="persona_prompt_too_long">Instructions are too long (max %1$d characters).</string>
+    <string name="persona_save_failed">Couldn’t save the persona.</string>
+</resources>

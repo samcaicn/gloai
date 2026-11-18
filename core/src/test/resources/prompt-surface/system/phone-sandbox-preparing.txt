@@ -464,7 +464,7 @@ phone_add_calendar_event #3f6e40cadb1a
 phone_calendar_bulk_insert #5ed09ed2c263
 run_command #69bc057cc9fd
 run_bundled_script #54259e6ba008
-read_file #e444edafa8ea
-write_file #6ee88b0765ca
+read_file #47a65217e352
+write_file #c4ed274f19b0
 search_files #9ca7b1f1e9d4
-share_file #9fef2a15f837
+share_file #d1c61492e6a3

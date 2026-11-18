@@ -99,6 +99,7 @@ internal class SandboxTools(
     /** 开始跑技能脚本时(参数:技能目录/脚本 与参数);不给就按命令报。 */
     private val onScript: ((String) -> Unit)? = null,
     private val prepareWaitMs: Long = PREPARE_WAIT_MS,
+    private val folderAccess: Boolean = false,
 ) {
     /** 设备支持就提供工具:运行环境首次启动时在后台准备,工具调用时等它。 */
     fun available(): Boolean = sandbox.status() !is SandboxStatus.Unsupported
@@ -128,6 +129,48 @@ internal class SandboxTools(
         val note = if (ready.network) NOTE_NETWORK_ON else NOTE_NETWORK_OFF
         return ToolExecution(JsonObject(result.content + ("networkNote" to JsonPrimitive(note))), changed = result.changed,
             outcome = result.outcome, frame = result.frame, images = result.images, record = result.record, screenElements = result.screenElements)
+    }
+
+    val foldersAvailable get() = folderAccess && sandbox.folderFiles != null
+    private fun folders(): FolderFiles = sandbox.folderFiles?.takeIf { folderAccess }
+        ?: throw SandboxError("folder_access_denied", "Folder access is unavailable for this task.", true)
+
+    internal fun listFolders(a: Args): ToolExecution {
+        val page = folders().list(a.str("path", max = 4096))
+        return ToolExecution(okObj {
+            put("entries", JsonArray(page.entries.map { e -> buildJsonObject {
+                put("path", e.path); put("name", e.name); put("isDirectory", e.directory); put("writable", e.writable)
+                e.size?.let { put("size", it) }
+            } }))
+            put("truncated", page.truncated)
+            if (page.entries.isEmpty()) put("hint", "No entries. To grant a folder, use Mika settings > Device folders > Choose folder.")
+        })
+    }
+
+    private fun readFolder(a: Args, path: String): ToolExecution {
+        val bytes = folders().read(path)
+        val offset = a.int("offset", 0, Int.MAX_VALUE) ?: 0
+        val limit = a.int("limit", 1, MAX_READ_BYTES) ?: DEFAULT_READ
+        val chunk = bytes.copyOfRange(offset.coerceAtMost(bytes.size), (offset.toLong() + limit).coerceAtMost(bytes.size.toLong()).toInt())
+        var skip = 0
+        if (offset > 0) while (skip < 3 && skip < chunk.size && (chunk[skip].toInt() and 0xC0) == 0x80) skip++
+        val (content, used) = decodeUtf8(chunk, skip, offset.toLong() + chunk.size >= bytes.size)
+            ?: return notText(path, bytes.size.toLong(), "application/octet-stream", "Only UTF-8 text is supported in granted folders.")
+        val next = offset.toLong() + skip + used
+        return ToolExecution(okObj {
+            put("path", path); put("size", bytes.size); put("offset", offset); put("content", content)
+            put("sha256", FolderFiles.hash(bytes)); put("eof", next >= bytes.size)
+            if (next < bytes.size) put("nextOffset", next)
+        })
+    }
+
+    private fun writeFolder(a: Args, path: String, bytes: ByteArray, append: Boolean): ToolExecution {
+        if (bytes.size > FolderFiles.MAX_BYTES) return fail("file_too_large", "Granted-folder text files are limited to 1 MiB.")
+        if (decodeUtf8(bytes, 0, true) == null) return fail("not_text", "Only UTF-8 text is supported in granted folders.")
+        val saved = folders().write(path, bytes, a.str("expectedSha256", max = 64), append)
+        return ToolExecution(okObj {
+            put("path", path); put("bytesWritten", bytes.size); put("size", saved.size); put("sha256", FolderFiles.hash(saved))
+        })
     }
 
     private var lastNetwork: Boolean? = null
@@ -262,7 +305,9 @@ internal class SandboxTools(
     }
 
     internal fun readFile(a: Args, ws: String): ToolExecution {
-        val t = resolve(ws, a.str("path", max = 4096)!!, write = false) ?: return outside()
+        val path = a.str("path", max = 4096)!!
+        if (FolderFiles.owns(path)) return readFolder(a, path)
+        val t = resolve(ws, path, write = false) ?: return outside()
         val offset = a.int("offset", 0, Int.MAX_VALUE) ?: 0
         val limit = a.int("limit", 1, MAX_READ_BYTES) ?: DEFAULT_READ
         val g = try { sandbox.files.openRead(t.root, t.rel) } catch (e: SandboxError) { return refused(t.path, e) }
@@ -320,10 +365,12 @@ internal class SandboxTools(
     }
 
     internal fun writeFile(a: Args, ws: String): ToolExecution {
-        val t = resolve(ws, a.str("path", max = 4096)!!, write = true) ?: return outside()
-        val path = t.path
+        val raw = a.str("path", max = 4096)!!
         val content = a.str("content", min = 0)!!.toByteArray(Charsets.UTF_8)
         val append = a.bool("append", false)
+        if (FolderFiles.owns(raw)) return writeFolder(a, raw, content, append)
+        val t = resolve(ws, raw, write = true) ?: return outside()
+        val path = t.path
         if (content.size > MAX_WRITE) return fail("file_too_large", "content is ${content.size} bytes; at most 1 MB per write. Write in parts with append.")
         if (sandbox.workspaceBytes(ws) > WORKSPACE_MAX) return fail("storage_low", "The workspace uses more than 4 GB, so writing is refused. Delete files you no longer need.", recoverable = false)
         // 已有的文件在句柄上核实(普通文件、一个硬链接、在工作区里)之后才截断或接着写
@@ -408,6 +455,19 @@ internal class SandboxTools(
 
     internal suspend fun shareFile(a: Args, ws: String): ToolExecution {
         val (f, name) = withContext(Dispatchers.IO) { ShareRules.check(sandbox, ws, a.str("path", max = 4096)!!, a.str("name", min = 0, max = 200)) }
+        a.str("folderPath", max = 4096)?.let { target ->
+            if (!FolderFiles.owns(target)) return fail("invalid_folder_path", "folderPath must be under a granted /folders path.")
+            return sandbox.tree.shared { withContext(Dispatchers.IO) {
+                val source = resolve(ws, a.str("path", max = 4096)!!, write = false) ?: return@withContext outside()
+                sandbox.files.openRead(source.root, source.rel).use { g ->
+                    if (g.size > FolderFiles.MAX_BYTES) return@withContext fail("file_too_large", "Granted-folder text files are limited to 1 MiB.")
+                    val result = writeFolder(a, target, g.read(0, g.size.toInt()), false)
+                    if (result.content["ok"] == JsonPrimitive(true))
+                        ToolExecution(JsonObject(result.content + ("savedAs" to JsonPrimitive(target))))
+                    else result
+                }
+            } }
+        }
         val saved = sandbox.share(f, name)
         return ToolExecution(okObj { put("savedAs", saved) })
     }

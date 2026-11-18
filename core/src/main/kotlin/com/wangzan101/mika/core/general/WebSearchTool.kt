@@ -5,6 +5,7 @@ import com.wangzan101.mika.core.observation.Observation
 import com.wangzan101.mika.core.observation.Place
 import com.wangzan101.mika.core.observation.Trust
 import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.search.WebSearch
 import com.wangzan101.mika.core.search.WebSearchResult
@@ -55,7 +56,11 @@ internal object WebSearchTool : AgentTool {
                                 put("snippet", Untrusted.wrap(hit.snippet))
                             }
                         }))
-                        if (result.hits.isEmpty()) put("hint", "No results. Try a different query or use the browser tools to search.")
+                        when {
+                            result.hits.isEmpty() -> put("hint", "No results. Try a different query or use the browser tools to search.")
+                            // 配了抓取服务时,搜索完就把「怎么读这几页」说清楚,免得不看工具说明也去开浏览器
+                            ctx.config.webFetch != null -> put("hint", Feedback["web_search.read_with_fetch"])
+                        }
                     },
                     observations = result.hits.map { hit ->
                         Observation(

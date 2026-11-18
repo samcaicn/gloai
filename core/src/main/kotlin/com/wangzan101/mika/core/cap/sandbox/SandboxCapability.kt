@@ -26,10 +26,11 @@ internal class SandboxCapability(
     onProgress: (String) -> Unit,
     onPreparing: () -> Unit,
     onScript: ((String) -> Unit)?,
+    folderAccess: Boolean = false,
 ) : Capability {
     override val id = SANDBOX
 
-    val runner = port?.let { SandboxTools(it, workspace, visionEnabled, onCommand = onCommand, onProgress = onProgress, onPreparing = onPreparing, onScript = onScript) }
+    val runner = port?.let { SandboxTools(it, workspace, visionEnabled, onCommand = onCommand, onProgress = onProgress, onPreparing = onPreparing, onScript = onScript, folderAccess = folderAccess) }
 
     /** 设备支持沙箱(工具已提供,可能还在准备)。 */
     fun available(): Boolean = runner?.available() == true

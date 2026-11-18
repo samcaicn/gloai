@@ -78,6 +78,7 @@
     <string name="chat_attach_rejected">没能添加:%1$s(单个文件不超过 200 MB)</string>
     <string name="chat_stop">停止</string>
     <string name="chat_send">发送</string>
+    <string name="chat_scroll_to_bottom">回到底部</string>
     <string name="drawer_running_task">进行中的任务</string>
     <string name="drawer_running">进行中</string>
     <string name="drawer_yesterday">昨天</string>
@@ -287,4 +288,9 @@
     <string name="task_field_insert">插入</string>
     <string name="task_fields_too_many">最多添加 %1$d 个不同的填写项。</string>
     <string name="task_fill_apply">填入输入框</string>
+    <string name="chat_read_aloud">朗读</string>
+    <string name="chat_stop_speaking">停止朗读</string>
+    <string name="chat_audio">音频</string>
+    <string name="chat_audio_play">播放</string>
+    <string name="chat_audio_stop">停止</string>
 </resources>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_dtmf_status_label">وضعیت تماس</string>
+    <string name="calls_dtmf_open">صفحه‌کلید</string>
+    <string name="calls_dtmf_title">صفحه‌کلید تماس</string>
+    <string name="calls_dtmf_close">بستن</string>
+    <string name="calls_dtmf_batch">ورود دنباله</string>
+    <string name="calls_dtmf_hint">هر کلید بلافاصله ارسال می‌شود. راهنمای صوتی را دنبال کنید.</string>
+    <string name="calls_dtmf_batch_hint">تا 32 کلید وارد کنید و ارسال را بزنید.</string>
+    <string name="calls_dtmf_input">0–9 یا * یا #</string>
+    <string name="calls_dtmf_delete">حذف</string>
+    <string name="calls_dtmf_send">ارسال</string>
+    <string name="calls_dtmf_sending">در حال ارسال…</string>
+    <string name="calls_dtmf_sent">کلیدها ارسال شدند؛ منتظر پاسخ بمانید</string>
+    <string name="calls_dtmf_failed">ارسال کامل نشد. منتظر پاسخ بمانید.</string>
+    <string name="calls_dtmf_invalid">فقط 0–9 و * و #، حداکثر 32 کلید.</string>
+    <string name="calls_voice_briefing_start">شرح صوتی کار</string>
+    <string name="calls_voice_briefing_note">به زبان ماندارین صحبت کنید. برای اجازه تماس، در پایان فقط «%1$s» را بگویید.</string>
+    <string name="calls_voice_briefing_stopped">شرح متوقف شد؛ تماسی برقرار نشد</string>
+    <string name="calls_voice_briefing_authorized">کار تأیید شد؛ در حال درخواست تماس</string>
+    <string name="calls_voice_briefing_permission_granted">میکروفون مجاز شد. دوباره دکمه صدا را بزنید.</string>
+    <string name="calls_voice_briefing_permission_denied">مجوز میکروفون داده نشد. از فرم متنی استفاده کنید.</string>
+    <string name="calls_voice_briefing_incomplete">پیش از شروع، دستورهای موجود را کامل یا پاک کنید.</string>
+    <string name="calls_voice_briefing_configure">ابتدا صدای زنده را در تنظیمات پیکربندی کنید.</string>
+</resources>

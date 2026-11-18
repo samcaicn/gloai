@@ -19,6 +19,16 @@
     <string name="playback_image">Tangkapan layar tugas</string>
     <string name="playback_missing">Tangkapan layar tidak tersedia</string>
     <string name="report_export">Ekspor</string>
+    <string name="report_copy_markdown">Salin sebagai Markdown</string>
+    <string name="report_copy_text">Salin sebagai teks biasa</string>
+    <string name="report_share">Bagikan laporan</string>
+    <string name="report_share_text">Teks biasa</string>
+    <string name="report_share_txt">File TXT</string>
+    <string name="report_share_md">File Markdown</string>
+    <string name="report_share_docx">File Word</string>
+    <string name="report_share_failed">Tidak dapat membagikan. Coba lagi atau ekspor laporan terlebih dahulu.</string>
+    <string name="report_share_too_long">Laporan terlalu panjang untuk dibagikan sebagai teks. Bagikan sebagai file TXT, Markdown, atau Word.</string>
+    <string name="report_copied">Laporan disalin</string>
     <string name="report_saved">Laporan disimpan</string>
     <string name="report_save_failed">Tidak dapat menyimpan. Periksa rekaman dan lokasi tujuan.</string>
     <string name="report_close">Tutup</string>

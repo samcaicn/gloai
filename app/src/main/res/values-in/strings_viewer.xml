@@ -7,4 +7,14 @@
     <string name="viewer_read_error">Terjadi kesalahan saat membaca berkas ini.</string>
     <string name="viewer_page">Halaman %1$d</string>
     <string name="viewer_truncated">Berkas ini besar; hanya bagian awal yang ditampilkan.</string>
+    <string name="viewer_find">Cari di berkas</string>
+    <string name="viewer_find_hint">Ketik untuk mencari</string>
+    <string name="viewer_find_prev">Hasil sebelumnya</string>
+    <string name="viewer_find_next">Hasil berikutnya</string>
+    <string name="viewer_find_close">Tutup pencarian</string>
+    <string name="viewer_find_no_matches">Tidak ada hasil</string>
+    <string name="viewer_copy">Salin semua</string>
+    <string name="viewer_copied">Disalin</string>
+    <string name="viewer_copied_part">Disalin (hanya bagian awal)</string>
+    <string name="viewer_copy_failed">Terlalu besar untuk disalin</string>
 </resources>

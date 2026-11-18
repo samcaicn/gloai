@@ -9,6 +9,7 @@ import android.os.Looper
 import android.util.Base64
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -54,6 +55,7 @@ internal fun createTerminalWebView(context: Context, session: TerminalSession): 
         .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
         .build()
     val view = WebView(context).apply {
+        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = false
         settings.allowFileAccess = false

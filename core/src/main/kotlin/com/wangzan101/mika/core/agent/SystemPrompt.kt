@@ -13,6 +13,9 @@ import com.wangzan101.mika.core.prompt.Prompts
 object SystemPrompt {
     fun identity(): String = listOf(Prompts.system("identity"), Prompts.system("principles"), read(GENERAL)).joinToString("\n\n")
 
+    /** 在身份、准则、通用规则之后接人格层;没有人格时原样返回。 */
+    fun withPersona(base: String, layer: String?): String = if (layer == null) base else "$base\n\n$layer"
+
     fun assemble(identity: String, sections: List<String>): String = (listOf(identity) + sections).joinToString("\n\n")
 
     private const val GENERAL = "general"

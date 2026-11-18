@@ -19,6 +19,16 @@
     <string name="playback_image">Снимок экрана задачи</string>
     <string name="playback_missing">Снимок недоступен</string>
     <string name="report_export">Экспорт</string>
+    <string name="report_copy_markdown">Копировать как Markdown</string>
+    <string name="report_copy_text">Копировать как обычный текст</string>
+    <string name="report_share">Поделиться отчётом</string>
+    <string name="report_share_text">Обычный текст</string>
+    <string name="report_share_txt">Файл TXT</string>
+    <string name="report_share_md">Файл Markdown</string>
+    <string name="report_share_docx">Файл Word</string>
+    <string name="report_share_failed">Не удалось поделиться. Повторите попытку или сначала экспортируйте отчёт.</string>
+    <string name="report_share_too_long">Отчёт слишком длинный для отправки текстом. Отправьте его файлом TXT, Markdown или Word.</string>
+    <string name="report_copied">Отчёт скопирован</string>
     <string name="report_saved">Отчёт сохранён</string>
     <string name="report_save_failed">Не удалось сохранить. Проверьте запись и место сохранения.</string>
     <string name="report_close">Закрыть</string>

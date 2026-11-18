@@ -536,6 +536,40 @@ class ShellService(
     }
 
     /**
+     * 把一个工作区文件分享给 [packageName]:ACTION_SEND + EXTRA_STREAM,content URI 允许对方读,只交给这个包。
+     * 它没有收这类分享的页面返回 [START_UNRESOLVED];用户在主屏用着它时不启动。只打开分享页,发不发由模型在那一页上点。
+     */
+    override fun startShareFile(displayId: Int, packageName: String, uri: String, mime: String, text: String): Int = synchronized(launchLock) {
+        if (!ownDisplay(displayId)) return START_ERROR
+        val target = Uri.parse(uri)
+        val intent = ShareIntent.ofFile(packageName, target, mime, text)
+        val candidates = activitiesFor(intent, mime) ?: return START_ERROR
+        if (candidates.isEmpty()) return START_UNRESOLVED
+        try {
+            if (inUseOnMainScreen(packageName)) return START_IN_USE_ON_MAIN
+            if (onOtherOwnDisplay(listOf(packageName), displayId)) return START_IN_USE_BY_OTHER
+        } catch (t: Throwable) {
+            Log.e(TAG, "cannot inspect main-screen tasks", t)
+            return START_ERROR
+        }
+        candidates.singleOrNull()?.let { (pkg, cls) -> intent.component = ComponentName(pkg, cls) }
+        val options = ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle()
+        val ok = try {
+            val start = taskManager.javaClass.methods.first { it.name == "startActivityAsUser" && it.parameterTypes.size == 12 }
+            val result = start.invoke(
+                taskManager, null, ShellContext.SHELL_PACKAGE, null, intent, mime, null, null,
+                0, 0, null, options, USER_CURRENT,
+            ) as Int
+            if (result < 0) Log.w(TAG, "startActivityAsUser(share file) -> $result")
+            result >= 0
+        } catch (t: Throwable) {
+            Log.w(TAG, "startActivityAsUser unavailable, falling back to am start", t)
+            exec(*ShareIntent.amArgsFile(displayId, packageName, target, mime, text, intent.component?.flattenToShortString()).toTypedArray()) == 0
+        }
+        if (ok) START_OK else START_ERROR
+    }
+
+    /**
      * 系统动作(见 [SystemIntents]):只放行那几种 intent。没有页面接返回 [START_UNRESOLVED];和 [startView] 一样,
      * 接手的 App 在主屏有任务就不启动。先以 shell 身份启动;不成(接手的页面要求 shell 没有的权限,如设闹钟)时发出 Mika 做好的
      * [asMika]:以 Mika 的身份启动(权限按 Mika 查),屏和后台启动按发出的这一方(shell)查,仍落在这块屏上。
@@ -1101,7 +1135,32 @@ class ShellService(
         val now = SystemClock.uptimeMillis()
         val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, 0, VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_KEYBOARD)
         val up = KeyEvent.changeAction(down, KeyEvent.ACTION_UP)
-        return injectPair(down, up, displayId) { exec("input", "-d", "$displayId", "keyevent", "$keyCode") == 0 }
+        val shellFallback = { exec("input", "-d", "$displayId", "keyevent", "$keyCode") == 0 }
+        // 按键由系统按全局输入焦点路由,不认 event 上的 displayId:不定向的话会投到主屏焦点,虚拟屏上的 App 收不到返回键。
+        // 解析到虚拟屏顶部任务的 uid 时定向投给它;定向没投出去再退回非定向注入(和旧路径一致),最后才走 shell 命令,
+        // 保证在原本就正常的设备上只会更好、不会变差。
+        val uid = topTaskUid(displayId)
+        return if (uid != null) {
+            injectPairTo(down, up, displayId, uid) { injectPair(down, up, displayId, shellFallback) }
+        } else {
+            injectPair(down, up, displayId, shellFallback)
+        }
+    }
+
+    /** 虚拟屏顶部任务的 uid(定向注入的目标);解析不到返回 null(退回非定向注入)。 */
+    private fun topTaskUid(displayId: Int): Int? = try {
+        val task = tasksOn(displayId).firstOrNull() ?: return null
+        val top = TASK_INFO.getField("topActivity").get(task) as? ComponentName
+        val packageName = top?.packageName ?: return null
+        val userId = TASK_INFO.getField("userId").getInt(task)
+        resolveTargetUid(Build.VERSION.SDK_INT, packageName, userId) { pkg, user ->
+            val pm = context.packageManager
+            pm.javaClass.getMethod("getPackageUidAsUser", String::class.java, Int::class.java, Int::class.java)
+                .invoke(pm, pkg, 0, user) as Int
+        }
+    } catch (t: Throwable) {
+        Log.w(TAG, "resolve top task uid on display $displayId failed", t)
+        null
     }
 
     /** 自有虚拟屏上的 Ctrl+A / Ctrl+V,同时发送修饰键按下和抬起;松开修饰键失败不会把已经发出的正文判成未发送。 */
@@ -1226,9 +1285,14 @@ class ShellService(
     private inline fun injectPair(down: InputEvent, up: InputEvent, displayId: Int, fallback: () -> Boolean): Boolean =
         sendPair({ inject(down, displayId) }, { inject(up, displayId) }, fallback)
 
+    /** 同 [injectPair],但定向投给 [targetUid] 拥有的焦点窗口,不经过全局输入焦点。 */
+    private inline fun injectPairTo(down: InputEvent, up: InputEvent, displayId: Int, targetUid: Int, fallback: () -> Boolean): Boolean =
+        sendPair({ injectTo(down, displayId, targetUid) }, { injectTo(up, displayId, targetUid) }, fallback)
+
     /**
-     * `appops set <pkg> PLAY_AUDIO ignore`;首次静音时记下原模式(同时落文件),取消静音时恢复。
-     * 原来没设置过的恢复成 allow,不写 default(见 [AudioMuteLedger.restoreMode])。
+     * `appops set <pkg> PLAY_AUDIO deny`;首次静音时记下原模式(同时落文件),取消静音时恢复。
+     * 用 deny 而不是 ignore:`ignore` 只是把声音压掉,App 仍处于「在播」、仍持有音频焦点,会抢走前台正在播的 App 的声音(#483/#228);
+     * `deny` 让它的音频起不来,也就不占焦点。原来没设置过的恢复成 allow,不写 default(见 [AudioMuteLedger.restoreMode])。
      * 命令失败返回 false,且不记录原模式(读不到原值就不改)。作用在 Mika 所在的用户上(本来那份)。
      */
     override fun setAudioMuted(packageName: String, muted: Boolean): Boolean = audioMuted(packageName, null, muted)
@@ -1247,7 +1311,7 @@ class ShellService(
                 if (code != 0) return false
                 this.muted.put(key, parsePlayAudioMode(out))
             }
-            appops("set", packageName, user, "ignore").first == 0
+            appops("set", packageName, user, "deny").first == 0
         } else {
             val ok = appops("set", packageName, user, AudioMuteLedger.restoreMode(this.muted[key])).first == 0
             if (ok) this.muted.remove(key)
@@ -1809,6 +1873,13 @@ class ShellService(
             if (!down()) return fallback()
             return up() || up()
         }
+
+        /**
+         * 有没有可定向注入的目标 uid。安卓 13 起才有定向注入重载(`injectInputEvent(event, mode, targetUid)`),
+         * 更早只能走非定向注入;包名缺失或 uid 解析为负(未装)也视为不可定向。
+         */
+        internal fun resolveTargetUid(sdkInt: Int, packageName: String?, userId: Int, uidLookup: (String, Int) -> Int): Int? =
+            if (sdkInt < 33 || packageName == null) null else uidLookup(packageName, userId).takeIf { it >= 0 }
 
         /** 只有缺权限(SecurityException,如 shell 没有 ADD_TRUSTED_DISPLAY)才值得去掉可信标志再试;别的失败照旧报错。 */
         internal fun retryWithoutTrust(t: Throwable): Boolean = t is SecurityException

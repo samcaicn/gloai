@@ -3,50 +3,89 @@ package com.wangzan101.mika.ui
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.DisableSelection
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
+import com.wangzan101.mika.ui.theme.MikaType
 
 /** 按 Markdown 显示一段回答；流式草稿用临时闭合的语法预览。 */
 private val LocalReportStyle = staticCompositionLocalOf { false }
+
+/**
+ * 页内查找要在 Markdown 里标出的词:命中的字都标 [soft]。
+ * [focus] 指向的那一段文字(按对象本身认)里的第 [focusIndex] 处标 [strong];其余命中不受影响。
+ * 为 null 时和平常一样,所以对话里显示回答不会多花一点力气。
+ */
+internal class FindHighlight(
+    val query: String,
+    val soft: Color,
+    val strong: Color,
+    val focus: CharSequence? = null,
+    val focusIndex: Int = 0,
+)
+
+internal val LocalFindHighlight = compositionLocalOf<FindHighlight?> { null }
 
 @Composable
 fun MarkdownText(markdown: String, style: TextStyle, modifier: Modifier = Modifier, streaming: Boolean = false, reportStyle: Boolean = false) {
@@ -90,12 +129,34 @@ internal fun MarkdownBlocks(blocks: List<MdBlock>, style: TextStyle, modifier: M
     }
 }
 
+/** 单独一块 Markdown:给要按块懒加载的地方(文件查看页)用,块里的样式和 [MarkdownText] 一样。 */
+@Composable
+internal fun MarkdownBlock(b: MdBlock, style: TextStyle) {
+    Block(b, style, depth = 0)
+}
+
+/** 命中处标底色;[FindHighlight.focus] 那一处用更深的颜色,好让人一眼看到「下一处」跳到了哪里。 */
+private fun CharSequence.withFind(find: FindHighlight?): AnnotatedString {
+    val base = this as? AnnotatedString ?: AnnotatedString(toString())
+    if (find == null || find.query.isEmpty()) return base
+    val ranges = findRanges(this, find.query, FIND_LIMIT)
+    if (ranges.isEmpty()) return base
+    val focus = if (this === find.focus) ranges.getOrNull(find.focusIndex) else null
+    return buildAnnotatedString {
+        append(base)
+        ranges.forEach {
+            addStyle(SpanStyle(background = if (it == focus) find.strong else find.soft), it.first, it.last + 1)
+        }
+    }
+}
+
 @Composable
 private fun Block(b: MdBlock, style: TextStyle, depth: Int) {
+    val find = LocalFindHighlight.current
     when (b) {
-        is MdBlock.Para -> Text(b.text, style = style)
+        is MdBlock.Para -> Text(remember(b.text, find) { b.text.withFind(find) }, style = style)
         is MdBlock.Heading -> Text(
-            b.text,
+            remember(b.text, find) { b.text.withFind(find) },
             Modifier.padding(top = if (LocalReportStyle.current) 12.dp else 2.dp),
             style = style.copy(
                 fontSize = when (b.level) { 1 -> 19.sp; 2 -> 17.5.sp; 3 -> 16.sp; else -> style.fontSize },
@@ -103,12 +164,7 @@ private fun Block(b: MdBlock, style: TextStyle, depth: Int) {
                 fontWeight = if (LocalReportStyle.current) FontWeight.Bold else FontWeight.SemiBold,
             ),
         )
-        is MdBlock.Code -> Box(
-            Modifier.fillMaxWidth().background(MikaTheme.colors.fill, RoundedCornerShape(10.dp))
-                .horizontalScroll(rememberScrollState()).padding(horizontal = 11.dp, vertical = 9.dp),
-        ) {
-            Text(b.code, style = style.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp, lineHeight = 19.sp), softWrap = false)
-        }
+        is MdBlock.Code -> CodeBlock(b, style)
         is MdBlock.Quote -> Row(Modifier.height(IntrinsicSize.Min)) {
             Box(Modifier.width(3.dp).fillMaxHeight().background(MikaTheme.colors.hair, RoundedCornerShape(2.dp)))
             MarkdownBlocks(b.blocks, style.copy(color = MikaTheme.colors.ink2), Modifier.padding(start = 10.dp), depth + 1)
@@ -133,6 +189,7 @@ private fun Block(b: MdBlock, style: TextStyle, depth: Int) {
 @Composable
 private fun TableBlock(t: MdBlock.Table, style: TextStyle) {
     val report = LocalReportStyle.current
+    val find = LocalFindHighlight.current
     val cols = t.header.size
     if (cols == 0) return
     val cellStyle = style.copy(fontSize = 13.5.sp, lineHeight = 19.sp)
@@ -148,7 +205,10 @@ private fun TableBlock(t: MdBlock.Table, style: TextStyle) {
                                 .then(if (r == 0) Modifier.background(MikaTheme.colors.fill) else Modifier)
                                 .padding(horizontal = if (report) 12.dp else 9.dp, vertical = if (report) 12.dp else 6.dp),
                         ) {
-                            Text(cell, style = if (r == 0) cellStyle.copy(fontWeight = FontWeight.SemiBold) else cellStyle)
+                            Text(
+                                remember(cell, find) { cell.withFind(find) },
+                                style = if (r == 0) cellStyle.copy(fontWeight = FontWeight.SemiBold) else cellStyle,
+                            )
                         }
                     }
                 }
@@ -176,6 +236,73 @@ private fun TableBlock(t: MdBlock.Table, style: TextStyle) {
                     y += heights[r]
                 }
             }
+        }
+    }
+}
+
+/** 代码块:顶部一条轻量顶栏(左显示语言标签,右放「复制 / 已复制」按钮),下面横向滚动显示代码正文。 */
+@Composable
+private fun CodeBlock(b: MdBlock.Code, style: TextStyle) {
+    val c = MikaTheme.colors
+    val find = LocalFindHighlight.current
+    val context = LocalContext.current
+    var copyVersion by remember(b.code) { mutableIntStateOf(0) }
+    val copied = copyVersion > 0
+    LaunchedEffect(copyVersion) {
+        if (copyVersion > 0) {
+            delay(2_000)
+            copyVersion = 0
+        }
+    }
+    val shape = RoundedCornerShape(10.dp)
+    val language = b.language
+    Column(Modifier.fillMaxWidth().clip(shape).background(c.fill)) {
+        // 包进 SelectionContainer(如「选择文字」模式或个人助理回答)时,顶栏标签和按钮不参与拖选。
+        DisableSelection {
+            Row(
+                Modifier.fillMaxWidth().padding(start = 11.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (language.isNotEmpty()) {
+                    Text(
+                        text = language,
+                        modifier = Modifier.weight(1f).padding(end = 8.dp).testTag("code-block-language"),
+                        style = MikaType.Hint.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium),
+                        color = c.ink2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Spacer(Modifier.weight(1f))
+                }
+                val label = stringResource(if (copied) R.string.chat_copied else R.string.chat_copy)
+                val tint = if (copied) c.ok else c.ink2
+                Row(
+                    Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .alpha(if (b.code.isNotEmpty()) 1f else 0.4f)
+                        .clickable(
+                            enabled = b.code.isNotEmpty(),
+                            role = Role.Button,
+                            onClick = {
+                                context.getSystemService(ClipboardManager::class.java)
+                                    ?.setPrimaryClip(ClipData.newPlainText(language.ifEmpty { "code" }, b.code))
+                                copyVersion++
+                            },
+                        )
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .testTag("code-block-copy"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(if (copied) MikaIcons.Check else MikaIcons.Copy, contentDescription = null, modifier = Modifier.size(14.dp), tint = tint)
+                    Text(label, style = MikaType.Hint.copy(fontWeight = FontWeight.Medium), color = tint, maxLines = 1)
+                }
+            }
+        }
+        Box(Modifier.fillMaxWidth().height(0.5.dp).background(c.hair))
+        Box(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 11.dp, vertical = 9.dp)) {
+            Text(remember(b.code, find) { b.code.withFind(find) }, style = style.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp, lineHeight = 19.sp), softWrap = false)
         }
     }
 }

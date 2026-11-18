@@ -6,6 +6,7 @@ import com.wangzan101.mika.core.search.ExaSearch
 import com.wangzan101.mika.core.search.JinaSearch
 import com.wangzan101.mika.core.search.KeirolabsSearch
 import com.wangzan101.mika.core.search.SearxngSearch
+import com.wangzan101.mika.core.search.TinyFishSearch
 import com.wangzan101.mika.core.search.WebSearch
 import com.wangzan101.mika.core.search.WebSearchProvider
 import com.wangzan101.mika.core.search.YouSearch
@@ -89,6 +90,7 @@ class WebSearchSettings(
             WebSearchProvider.Jina -> JinaSearch(entry.apiKey)
             WebSearchProvider.Exa -> ExaSearch(entry.apiKey)
             WebSearchProvider.Keirolabs -> KeirolabsSearch(entry.apiKey)
+            WebSearchProvider.TinyFish -> TinyFishSearch(entry.apiKey)
             WebSearchProvider.SearXNG -> SearxngSearch(checkNotNull(WebSearch.parseEndpoint(entry.endpoint)))
         }
     }

@@ -165,11 +165,12 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.NoDisplay" />
 
-        <!-- App 里的文件查看页(网页、Markdown、PDF、图片、文本) -->
+        <!-- App 里的文件查看页(网页、Markdown、PDF、图片、文本);页内查找时输入法调窗口高度 -->
         <activity
             android:name=".ui.viewer.FileViewerActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|uiMode|density"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Mika" />
 
         <!-- 用户自己打开的终端:只从 App 内进,不导出;转屏不重建,输入法调窗口高度 -->
@@ -338,6 +339,17 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/attach_files" />
+        </provider>
+
+        <!-- 任务报告分享:cache/report-share/ 里的临时正文,以只读地址交给系统分享面板,不对外导出 -->
+        <provider
+            android:name=".ui.ReportFilesProvider"
+            android:authorities="${applicationId}.reportfiles"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/report_files" />
         </provider>
 
         <!-- 走网络代理时 Mika 自己下的更新安装包:只读交给系统安装器,不对外导出,安装时临时授权 -->

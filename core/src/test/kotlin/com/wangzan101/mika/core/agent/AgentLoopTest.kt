@@ -726,7 +726,7 @@ class AgentLoopTest {
         val m = FakeModel(*(1..4).map { tools(call("phone_tap", """{"x":500,"y":500}""")) }.toTypedArray())
         val r = AgentLoop(m, toolDispatcher(s), "BASE", retry = FIXED_RETRY).run("t")
         assertTrue("$r", r is TaskState.Failed && r.kind == FailKind.Guard)
-        assertTrue("$r", r is TaskState.Failed && "无法确认操作是否生效" in r.reason)
+        assertTrue("$r", r is TaskState.Failed && "不响应" in r.reason)
         assertEquals(3, m.requests.size)
     }
 

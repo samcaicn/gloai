@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">Choose a folder to read and write</string>
+    <string name="folder_grant_writable">Read and write</string>
+    <string name="folder_grant_readonly">Read only</string>
+    <string name="folder_grant_unavailable">Folder unavailable — choose it again</string>
+    <string name="folder_grant_revoke">Remove access</string>
+    <string name="folder_grant_loading">Loading folders…</string>
+    <string name="folder_grant_error">Could not access the folder. Choose a folder that allows reading and writing, or try again.</string>
+    <string name="tool_list_folder_files">Browse granted folders</string>
+</resources>
