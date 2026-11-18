@@ -75,6 +75,12 @@ class SavedChecklistsDeviceTest {
         return vm
     }
 
+    /** 清单管理页现在只经设置页进入;管理类用例直接组合这个屏,不再走输入栏星标。 */
+    private fun showChecklists() {
+        compose.setContent { SavedChecklistsScreen(lists, onBack = {}) }
+        compose.waitForIdle()
+    }
+
 
     @Test fun saveSupplementUpdateCompareAndReuseLatestReply() {
         val first = "已确定：数量20件。\n\n待补充：交期。"
@@ -126,8 +132,8 @@ class SavedChecklistsDeviceTest {
         compose.onNodeWithTag("checklist-action-apply").performClick()
         compose.onNodeWithText("取消").performClick()
         compose.onNodeWithTag("composer-field").assertTextEquals(updateRequest)
-        compose.onNodeWithTag("composer-saved-tasks").performClick()
-        compose.onNodeWithText("已存清单").performClick()
+        compose.onNodeWithText("已确定：数量30件，周五交付。").performTouchInput { longClick() }
+        compose.onNodeWithTag("message-menu-checklist").performClick()
         compose.onNodeWithText("采购需求").performClick()
         compose.onNodeWithTag("checklist-reuse").performClick()
         compose.onNodeWithTag("checklist-action-input").performTextReplacement("拟一条确认消息")
@@ -144,10 +150,7 @@ class SavedChecklistsDeviceTest {
     }
 
     @Test fun failedSavePreservesEditsAndHistoryThenDeletionPersists() {
-        conversations.append("history", Turn("维修需求", "设备无法启动", "succeeded"))
-        show()
-        compose.onNodeWithTag("composer-saved-tasks").performClick()
-        compose.onNodeWithText("已存清单").performClick()
+        showChecklists()
         compose.onNodeWithText("新建清单").performClick()
         compose.onNodeWithTag("checklist-title").performTextReplacement("维修安排")
         compose.onNodeWithTag("checklist-input").performTextReplacement("故障：无法启动\n上门时间：待确认")

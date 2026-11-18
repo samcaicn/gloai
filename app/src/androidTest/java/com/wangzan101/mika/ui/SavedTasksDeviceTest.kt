@@ -64,6 +64,12 @@ class SavedTasksDeviceTest {
         return vm
     }
 
+    /** 推荐任务页现在只经设置页进入;管理类用例直接组合这个屏,不再走输入栏星标。 */
+    private fun showSavedTasks() {
+        compose.setContent { RecommendedTasksScreen(tasks, onBack = {}, onPick = {}) }
+        compose.waitForIdle()
+    }
+
     @Test fun saveHistoryEditAndReuseWithoutSendingOrLosingDraft() {
         val prompt = "打开浏览器，搜索日语五十音学习资料，整理三个适合初学者的练习方法。"
         val original = Turn("> [Quoting your earlier reply]\n> 先学五十音，再练习单词。\n\n$prompt", "已整理好学习资料。", "succeeded")
@@ -83,34 +89,20 @@ class SavedTasksDeviceTest {
         compose.waitUntil(5_000) { tasks.tasks.value.size == 1 }
         assertEquals(historyBefore, conversations.turns("history"))
 
-        compose.onNodeWithTag("composer-saved-tasks").performClick()
+        showSavedTasks()
         snapshot("list")
         compose.onNodeWithContentDescription("编辑常用任务").performClick()
         val edited = "$prompt\n附上来源链接。"
         compose.onNodeWithTag("saved-task-prompt").performTextReplacement(edited)
         compose.onNodeWithTag("recommendations-save").performClick()
         compose.waitUntil(5_000) { tasks.tasks.value.single().prompt == edited }
-        compose.onNodeWithText("日语入门资料").performClick()
-        compose.onNodeWithTag("composer-field").assertTextEquals(edited)
-        snapshot("filled")
-        compose.onNodeWithTag("composer-field").performTextReplacement("我还没写完的草稿")
-        compose.onNodeWithTag("composer-saved-tasks").performClick()
-        compose.onNodeWithText("日语入门资料").performClick()
-        compose.onNodeWithText("取消").performClick()
-        compose.onNodeWithTag("composer-field").assertTextEquals("我还没写完的草稿")
-        compose.onNodeWithTag("composer-saved-tasks").performClick()
-        compose.onNodeWithText("日语入门资料").performClick()
-        compose.onNodeWithTag("confirm-replace-draft").performClick()
-        compose.onNodeWithTag("composer-field").assertTextEquals(edited)
         val reopened = RecommendedTaskStore(taskFile).also { it.ensureLoaded { emptyList() } }
         assertEquals(tasks.tasks.value, reopened.tasks.value)
         assertTrue(started.isEmpty())
     }
 
     @Test fun manuallyCreateValidateCancelAndDelete() {
-        conversations.append("history", Turn("你好", "你好，有什么可以帮你？", "succeeded"))
-        show()
-        compose.onNodeWithTag("composer-saved-tasks").performClick()
+        showSavedTasks()
         compose.onNodeWithText("添加常用任务").performClick()
         compose.onNodeWithTag("recommendations-save").performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithText("请填写标题").fetchSemanticsNodes().isNotEmpty() }
@@ -135,9 +127,7 @@ class SavedTasksDeviceTest {
 
     @OptIn(ExperimentalTestApi::class)
     @Test fun insertFieldsAndReuseForPurchasingLearningAndRepairs() {
-        conversations.append("history", Turn("你好", "有什么可以帮你？", "succeeded"))
-        show()
-        compose.onNodeWithTag("composer-saved-tasks").performClick()
+        showSavedTasks()
         compose.onNodeWithText("添加常用任务").performClick()
         compose.onNodeWithTag("saved-task-title").performTextReplacement("整理沟通需求")
         compose.onNodeWithTag("saved-task-prompt").performTextReplacement("查看测试联系人")
@@ -155,6 +145,7 @@ class SavedTasksDeviceTest {
         compose.onNodeWithTag("recommendations-save").performClick()
         compose.waitUntil(5_000) { tasks.tasks.value.size == 1 }
         assertTrue(tasks.tasks.value.single().fillIn)
+        show()
         compose.onNodeWithText("整理沟通需求").performClick()
         compose.onNodeWithTag("task-fill-apply").assertIsNotEnabled()
         compose.onNodeWithText("取消").performClick()
@@ -167,7 +158,6 @@ class SavedTasksDeviceTest {
             listOf("维修师傅", "本周", "故障现象、地址和上门时间"),
         )
         for ((index, values) in scenarios.withIndex()) {
-            compose.onNodeWithTag("composer-saved-tasks").performClick()
             compose.onNodeWithText("整理沟通需求").performClick()
             compose.onNodeWithTag("task-fill-0").assert(hasText(""))
             compose.onNodeWithTag("task-fill-apply").assertIsNotEnabled()
