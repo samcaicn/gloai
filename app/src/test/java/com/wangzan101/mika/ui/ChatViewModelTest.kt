@@ -64,8 +64,9 @@ class ChatViewModelTest {
     @Test fun readAloudReportsFailureAndAllowsRetry() = runTest {
         val errors = mutableListOf<String>()
         var attempts = 0
+        val app = com.wangzan101.mika.MikaApp()
         val vm = ChatViewModel(backgroundScope, state, stage, actions, ConversationStore(tmp.newFolder()),
-            speakText = { if (++attempts == 1) throw java.io.IOException("offline") },
+            speakText = { text -> app.speak(text) { if (++attempts == 1) throw java.io.IOException("offline") } },
             voiceFailed = errors::add)
         vm.speak("你好")
         runCurrent()
