@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.core.search.WebSearchProvider
 import com.wangzan101.mika.i18n.tr
+import com.wangzan101.mika.settings.GroundingStatus
 import com.wangzan101.mika.settings.WebSearchConfig
 import com.wangzan101.mika.settings.WebSearchEntry
 import com.wangzan101.mika.ui.components.GroupLabel
@@ -41,6 +44,7 @@ import com.wangzan101.mika.ui.theme.MikaType
 internal object WebSearchCopy {
     /** 服务商在界面上的名字:品牌名,不翻译。 */
     fun name(p: WebSearchProvider): String = when (p) {
+        WebSearchProvider.Google -> "Google Search"
         WebSearchProvider.You -> "You.com"
         WebSearchProvider.Jina -> "Jina"
         WebSearchProvider.Exa -> "Exa"
@@ -51,6 +55,7 @@ internal object WebSearchCopy {
     /** 选中这一家时,服务商下面那一行:它怎么用、要填什么。 */
     fun note(p: WebSearchProvider): String = tr(
         when (p) {
+            WebSearchProvider.Google -> R.string.web_search_note_google
             WebSearchProvider.You -> R.string.web_search_note_you
             WebSearchProvider.Jina -> R.string.web_search_note_jina
             WebSearchProvider.Exa -> R.string.web_search_note_exa
@@ -59,6 +64,13 @@ internal object WebSearchCopy {
         },
     )
 
+    fun groundingUnavailableMessage(grounding: GroundingStatus): String =
+        if (grounding.providerName.isNullOrBlank()) {
+            tr(R.string.web_search_google_unavailable_none)
+        } else {
+            tr(R.string.web_search_google_unavailable_provider, grounding.providerName)
+        }
+
     fun keyLabel(p: WebSearchProvider): String = tr(if (p.keyRequired) R.string.web_search_api_key_required else R.string.web_search_api_key)
 
     /** 要填地址的只有 SearXNG:它的实例地址。 */
@@ -66,9 +78,14 @@ internal object WebSearchCopy {
 
     const val ENDPOINT_PLACEHOLDER = "https://searx.example.org"
 
-    fun problem(p: WebSearchProvider, why: WebSearchProvider.Problem): String = when (why) {
+    fun problem(
+        p: WebSearchProvider,
+        why: WebSearchProvider.Problem,
+        grounding: GroundingStatus = GroundingStatus(),
+    ): String = when (why) {
         WebSearchProvider.Problem.Endpoint -> tr(R.string.web_search_invalid_endpoint)
         WebSearchProvider.Problem.Key -> tr(R.string.web_search_missing_key, name(p))
+        WebSearchProvider.Problem.UnsupportedProvider -> groundingUnavailableMessage(grounding)
     }
 
     /** 有密钥框的那几家去哪里拿密钥(官方的密钥页);You.com 不填也能用,填了额度更高。 */
@@ -81,7 +98,12 @@ internal object WebSearchCopy {
     }
 
     /** 高级与其他那一行右边:开着时写用的哪一家,关着写「关闭」。 */
-    fun value(config: WebSearchConfig): String = if (config.enabled) name(config.provider) else tr(R.string.state_off)
+    fun value(config: WebSearchConfig): String = when {
+        !config.enabled -> tr(R.string.state_off)
+        config.provider == WebSearchProvider.Google && !config.grounding.available ->
+            tr(R.string.web_search_google_unavailable_value)
+        else -> name(config.provider)
+    }
 }
 
 /**
@@ -95,15 +117,16 @@ internal object WebSearchCopy {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WebSearchDialog(initial: WebSearchConfig, onDismiss: () -> Unit, onSave: (WebSearchConfig) -> Unit) {
-    var enabled by remember { mutableStateOf(initial.enabled) }
-    var provider by remember { mutableStateOf(initial.provider) }
-    val entries = remember { mutableStateMapOf<WebSearchProvider, WebSearchEntry>().apply { putAll(initial.entries) } }
+    var enabled by remember(initial) { mutableStateOf(initial.enabled) }
+    var provider by remember(initial) { mutableStateOf(initial.provider) }
+    val entries = remember(initial) { mutableStateMapOf<WebSearchProvider, WebSearchEntry>().apply { putAll(initial.entries) } }
+    val grounding = initial.grounding
     val entry = entries[provider] ?: WebSearchEntry()
-    val config = WebSearchConfig(enabled, provider, entries.toMap())
+    val config = WebSearchConfig(enabled, provider, entries.toMap(), grounding)
     val problem = config.problem
     // 点过保存(换一家就重新算)、填过的那几栏:只有这时才把缺的标红
-    var tried by remember { mutableStateOf(false) }
-    val touched = remember { mutableStateMapOf<Pair<WebSearchProvider, WebSearchProvider.Problem>, Boolean>() }
+    var tried by remember(initial) { mutableStateOf(false) }
+    val touched = remember(initial) { mutableStateMapOf<Pair<WebSearchProvider, WebSearchProvider.Problem>, Boolean>() }
     fun shows(why: WebSearchProvider.Problem) = problem == why && (tried || touched[provider to why] == true)
     val endpointFocus = remember { FocusRequester() }
     val keyFocus = remember { FocusRequester() }
@@ -112,25 +135,92 @@ fun WebSearchDialog(initial: WebSearchConfig, onDismiss: () -> Unit, onSave: (We
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.web_search_title)) },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.web_search_enabled), Modifier.weight(1f))
-                    MikaSwitch(enabled, { enabled = it }, Modifier.testTag("web-search-enabled"))
+                    MikaSwitch(
+                        enabled,
+                        { next ->
+                            if (!enabled && next && grounding.available &&
+                                (provider == WebSearchProvider.Google ||
+                                    (provider == WebSearchProvider.You && entries[WebSearchProvider.You]?.apiKey.isNullOrBlank()))
+                            ) {
+                                provider = WebSearchProvider.Google
+                                tried = false
+                            }
+                            enabled = next
+                        },
+                        Modifier.testTag("web-search-enabled"),
+                    )
                 }
-                GroupLabel(stringResource(R.string.web_search_provider), Modifier.padding(top = 4.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
+                    Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                        Text(stringResource(R.string.web_search_google_grounding_toggle))
+                        if (grounding.available) {
+                            if (provider != WebSearchProvider.Google) {
+                                Text(
+                                    stringResource(R.string.web_search_note_google),
+                                    modifier = Modifier.padding(top = 2.dp),
+                                    style = MikaType.Hint,
+                                    color = MikaTheme.colors.ink3,
+                                )
+                            }
+                        } else {
+                            Text(
+                                WebSearchCopy.groundingUnavailableMessage(grounding),
+                                modifier = Modifier.padding(top = 2.dp).testTag("web-search-grounding-unavailable"),
+                                style = MikaType.Hint,
+                                color = MikaTheme.colors.ink3,
+                            )
+                        }
+                    }
+                    MikaSwitch(
+                        checked = enabled && provider == WebSearchProvider.Google,
+                        onCheckedChange = { next ->
+                            if (next && grounding.available) {
+                                enabled = true
+                                provider = WebSearchProvider.Google
+                                tried = false
+                            } else if (!next && provider == WebSearchProvider.Google) {
+                                enabled = false
+                            }
+                        },
+                        modifier = Modifier.testTag("web-search-grounding-toggle"),
+                        enabled = grounding.available,
+                    )
+                }
+                GroupLabel(stringResource(R.string.web_search_provider), Modifier.padding(top = 8.dp))
                 FlowRow(
                     Modifier.fillMaxWidth().testTag("web-search-provider"),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     WebSearchProvider.entries.forEach { p ->
-                        SelectChip(WebSearchCopy.name(p), p == provider, { provider = p; tried = false }, Modifier.testTag("web-search-provider-${p.wire}"))
+                        val chipEnabled = p != WebSearchProvider.Google || grounding.available
+                        SelectChip(
+                            WebSearchCopy.name(p),
+                            p == provider,
+                            { if (chipEnabled) { provider = p; tried = false } },
+                            Modifier.testTag("web-search-provider-${p.wire}"),
+                            enabled = chipEnabled,
+                        )
                     }
                 }
                 Text(
                     WebSearchCopy.note(provider), Modifier.padding(top = 8.dp).testTag("web-search-note"),
                     style = MikaType.Hint, color = MikaTheme.colors.ink3,
                 )
+                if (shows(WebSearchProvider.Problem.UnsupportedProvider)) {
+                    Text(
+                        WebSearchCopy.problem(provider, WebSearchProvider.Problem.UnsupportedProvider, grounding),
+                        modifier = Modifier.padding(top = 4.dp).testTag("web-search-error"),
+                        style = MikaType.Hint,
+                        color = MikaTheme.colors.bad,
+                    )
+                }
                 if (provider.needsEndpoint) {
                     val error = shows(WebSearchProvider.Problem.Endpoint)
                     OutlinedTextField(
@@ -138,7 +228,7 @@ fun WebSearchDialog(initial: WebSearchConfig, onDismiss: () -> Unit, onSave: (We
                         Modifier.fillMaxWidth().padding(top = 8.dp).focusRequester(endpointFocus).testTag("web-search-endpoint"),
                         singleLine = true, isError = error,
                         label = { Text(WebSearchCopy.endpointLabel()) }, placeholder = { Text(WebSearchCopy.ENDPOINT_PLACEHOLDER) },
-                        supportingText = if (error) ({ Text(WebSearchCopy.problem(provider, WebSearchProvider.Problem.Endpoint)) }) else null,
+                        supportingText = if (error) ({ Text(WebSearchCopy.problem(provider, WebSearchProvider.Problem.Endpoint, grounding)) }) else null,
                     )
                 }
                 if (provider.takesKey) {
@@ -149,7 +239,7 @@ fun WebSearchDialog(initial: WebSearchConfig, onDismiss: () -> Unit, onSave: (We
                         singleLine = true, visualTransformation = PasswordVisualTransformation(),
                         isError = error,
                         label = { Text(WebSearchCopy.keyLabel(provider)) },
-                        supportingText = if (error) ({ Text(WebSearchCopy.problem(provider, WebSearchProvider.Problem.Key)) }) else null,
+                        supportingText = if (error) ({ Text(WebSearchCopy.problem(provider, WebSearchProvider.Problem.Key, grounding)) }) else null,
                     )
                     WebSearchCopy.keyPage(provider)?.let { page ->
                         // 没有能打开网页的应用时 openUri 会抛错:这时什么都不做
@@ -169,7 +259,13 @@ fun WebSearchDialog(initial: WebSearchConfig, onDismiss: () -> Unit, onSave: (We
                     null -> onSave(config)
                     else -> {
                         tried = true
-                        runCatching { (if (problem == WebSearchProvider.Problem.Key) keyFocus else endpointFocus).requestFocus() }
+                        runCatching {
+                            when (problem) {
+                                WebSearchProvider.Problem.Key -> keyFocus.requestFocus()
+                                WebSearchProvider.Problem.Endpoint -> endpointFocus.requestFocus()
+                                WebSearchProvider.Problem.UnsupportedProvider -> Unit
+                            }
+                        }
                     }
                 }
             }, Modifier.testTag("web-search-save")) { Text(stringResource(R.string.save)) }

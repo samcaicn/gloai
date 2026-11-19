@@ -14,6 +14,12 @@ import java.util.Base64
 /** 一家搜索服务自己的设置:地址(只有要填地址的那几家用)和密钥。 */
 data class WebSearchEntry(val endpoint: String = "", val apiKey: String = "")
 
+/** Whether Google Search grounding is available for the current main model. */
+data class GroundingStatus(
+    val available: Boolean = false,
+    val providerName: String? = null,
+)
+
 /**
  * 网页搜索设置。默认关闭;只有用户明确选好服务商、填好它要的东西并启用后才创建服务。
  * 各家的地址和密钥分开存([entries]),切换服务商不会把一家的密钥发给另一家。
@@ -22,6 +28,7 @@ data class WebSearchConfig(
     val enabled: Boolean = false,
     val provider: WebSearchProvider = WebSearchProvider.You,
     val entries: Map<WebSearchProvider, WebSearchEntry> = emptyMap(),
+    val grounding: GroundingStatus = GroundingStatus(),
 ) {
     val current: WebSearchEntry get() = entries[provider] ?: WebSearchEntry()
 
@@ -31,7 +38,7 @@ data class WebSearchConfig(
      */
     val problem: WebSearchProvider.Problem? get() = when {
         provider.keyRequired && current.apiKey.isBlank() -> WebSearchProvider.Problem.Key
-        enabled -> provider.problem(current.endpoint, current.apiKey)
+        enabled -> provider.problem(current.endpoint, current.apiKey, grounding.available)
         else -> null
     }
 }
@@ -39,8 +46,11 @@ data class WebSearchConfig(
 class WebSearchSettings(
     private val prefs: SharedPreferences,
     private val cipher: KeyCipher = KeystoreKeyCipher("mika-web-search-key"),
+    private val groundingStatus: () -> GroundingStatus = { GroundingStatus() },
+    private val googleSearch: () -> WebSearch? = { null },
 ) {
     fun get(): WebSearchConfig {
+        val grounding = groundingStatus()
         val stored = WebSearchProvider.entries.associateWith { p ->
             WebSearchEntry(
                 if (p.needsEndpoint) prefs.getString(endpointKey(p), null).orEmpty() else "",
@@ -49,16 +59,22 @@ class WebSearchSettings(
         }
         val enabled = prefs.getBoolean(ENABLED, false)
         val saved = WebSearchProvider.of(prefs.getString(PROVIDER, null))
-        if (saved != null) return WebSearchConfig(enabled, saved, stored)
+        if (saved != null) return WebSearchConfig(enabled, saved, stored, grounding)
         // 升级前的设置:那时只有一个「搜索端点网址 + 可选密钥」。网址是 Exa、Jina 的官方接口时归到那一家、密钥跟过去
         // (原来的请求方式它们不认,这样升级后直接能用)。别的网址没有对应的服务商:归到 You.com 但先关掉、旧密钥不要,
         // 免得用户不知道就把搜索词改发给另一家、把给别家的密钥发出去。下次保存时写成新的样子,旧的两个键随之删掉。
         val legacyEndpoint = prefs.getString(LEGACY_ENDPOINT, null).orEmpty()
         val official = legacyOfficial(legacyEndpoint)
         return when {
-            official != null -> WebSearchConfig(enabled, official, stored + (official to WebSearchEntry(apiKey = decrypt(prefs.getString(LEGACY_API_KEY, null)))))
-            legacyEndpoint.isNotBlank() -> WebSearchConfig(false, WebSearchProvider.You, stored)
-            else -> WebSearchConfig(enabled, WebSearchProvider.You, stored)
+            official != null -> WebSearchConfig(
+                enabled,
+                official,
+                stored + (official to WebSearchEntry(apiKey = decrypt(prefs.getString(LEGACY_API_KEY, null)))),
+                grounding,
+            )
+            legacyEndpoint.isNotBlank() -> WebSearchConfig(false, WebSearchProvider.You, stored, grounding)
+            grounding.available -> WebSearchConfig(false, WebSearchProvider.Google, stored, grounding)
+            else -> WebSearchConfig(enabled, WebSearchProvider.You, stored, grounding)
         }
     }
 
@@ -85,6 +101,7 @@ class WebSearchSettings(
         if (!config.enabled || config.problem != null) return null
         val entry = config.current
         return when (config.provider) {
+            WebSearchProvider.Google -> if (config.grounding.available) googleSearch() else null
             WebSearchProvider.You -> YouSearch(entry.apiKey)
             WebSearchProvider.Jina -> JinaSearch(entry.apiKey)
             WebSearchProvider.Exa -> ExaSearch(entry.apiKey)
@@ -115,6 +132,14 @@ class WebSearchSettings(
         private fun endpointKey(p: WebSearchProvider) = "endpoint_${p.wire}"
         private fun apiKeyKey(p: WebSearchProvider) = "api_key_encrypted_${p.wire}"
 
-        fun get(context: Context) = WebSearchSettings(context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE))
+        fun get(context: Context): WebSearchSettings {
+            val app = context.applicationContext
+            val providers = { (app as? ProviderStore.Owner)?.providers }
+            return WebSearchSettings(
+                app.getSharedPreferences(PREFS, Context.MODE_PRIVATE),
+                groundingStatus = { providers()?.groundingStatus() ?: GroundingStatus() },
+                googleSearch = { providers()?.googleGroundingSearch() },
+            )
+        }
     }
 }

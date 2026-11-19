@@ -14,6 +14,8 @@ import com.wangzan101.mika.core.model.ModelSession
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.model.Usage
+import com.wangzan101.mika.core.search.GoogleGroundingSearch
+import com.wangzan101.mika.core.search.WebSearchResult
 import com.wangzan101.mika.core.usage.ProactiveBudget
 import com.wangzan101.mika.core.usage.UsageKey
 import com.wangzan101.mika.core.usage.UsageLedger
@@ -1487,6 +1489,85 @@ class ProviderStoreTest {
         s.removeProvider(gemFirst.id)
         s.removeProvider(gemMain.id)
         assertNull(s.geminiDeveloperApiKey())
+    }
+
+    @Test fun googleGroundingAvailabilityFollowsMainModelProviderKind() {
+        val s = store()
+        assertEquals(GroundingStatus(available = false, providerName = null), s.groundingStatus())
+        assertNull(s.googleGroundingSearch())
+
+        val gemini = s.connect(
+            "Gemini", ProviderConfig.Kind.Gemini, "https://generativelanguage.googleapis.com",
+            "gem-key", listOf(ListedModel("gemini-2.5-flash")),
+        )
+        assertTrue(s.use(ModelRole.Main, gemini.id, "gemini-2.5-flash", none))
+        assertEquals(GroundingStatus(available = true, providerName = "Gemini"), s.groundingStatus())
+        assertTrue(s.googleGroundingSearch() is GoogleGroundingSearch)
+
+        val gemNoKey = s.connect(
+            "Gemini Empty", ProviderConfig.Kind.Gemini, "https://generativelanguage.googleapis.com",
+            "", listOf(ListedModel("gemini-2.5-flash")),
+        )
+        assertTrue(s.use(ModelRole.Main, gemNoKey.id, "gemini-2.5-flash", none))
+        assertEquals(GroundingStatus(available = false, providerName = "Gemini Empty"), s.groundingStatus())
+        assertNull(s.googleGroundingSearch())
+
+        val local = s.connect(
+            "LM Studio", ProviderConfig.Kind.OpenAiCompat, "http://127.0.0.1:1234/v1",
+            "local-key", listOf(ListedModel("qwen-local")),
+        )
+        assertTrue(s.use(ModelRole.Main, local.id, "qwen-local", none))
+        assertEquals(GroundingStatus(available = false, providerName = "LM Studio"), s.groundingStatus())
+        assertNull(s.googleGroundingSearch())
+
+        val anthropic = s.connect(
+            "Anthropic", ProviderConfig.Kind.Anthropic, "https://api.anthropic.com",
+            "sk-ant", listOf(ListedModel("claude-sonnet-4-6")),
+        )
+        assertTrue(s.use(ModelRole.Main, anthropic.id, "claude-sonnet-4-6", none))
+        assertEquals(GroundingStatus(available = false, providerName = "Anthropic"), s.groundingStatus())
+        assertNull(s.googleGroundingSearch())
+
+        val responses = s.connect(
+            "OpenAI Responses", ProviderConfig.Kind.OpenAiResponses, "https://api.openai.com/v1",
+            "sk-oai", listOf(ListedModel("gpt-5")),
+        )
+        assertTrue(s.use(ModelRole.Main, responses.id, "gpt-5", none))
+        assertEquals(GroundingStatus(available = false, providerName = "OpenAI Responses"), s.groundingStatus())
+        assertNull(s.googleGroundingSearch())
+    }
+
+    @Test fun googleGroundingSearchExecutesGeminiRequestAndSessionHeadersAgainstMockServer() = runTest {
+        val server = MockWebServer().also { it.start() }
+        try {
+            val dir = tmp.newFolder("grounding-gem")
+            val s = ProviderStore(dir, AesGcmKeyCipher { key }, userAgent = "Mika/1.2.3")
+            val base = server.url("/").toString().trimEnd('/')
+            val p = s.connect(
+                "Gemini", ProviderConfig.Kind.Gemini, base, "gem-secret",
+                listOf(ListedModel("gemini-2.5-flash")), sessionHeader = "x-test-session",
+            )
+            assertTrue(s.use(ModelRole.Main, p.id, "gemini-2.5-flash", none))
+            server.enqueue(
+                MockResponse().setHeader("Content-Type", "application/json").setBody(
+                    """{"candidates":[{"content":{"parts":[{"text":"Sunny in Tokyo."}]},"groundingMetadata":{"groundingChunks":[{"web":{"uri":"https://example.com/wx","title":"Tokyo Weather"}}],"groundingSupports":[{"segment":{"text":"Sunny in Tokyo."},"groundingChunkIndices":[0]}]}}]}""",
+                ),
+            )
+            val result = s.googleGroundingSearch(ModelSession.of("conv-g"))!!.search("tokyo weather", 3)
+            val success = result as WebSearchResult.Success
+            assertEquals(1, success.hits.size)
+            assertEquals("Tokyo Weather", success.hits[0].title)
+            assertEquals("https://example.com/wx", success.hits[0].url)
+
+            val req = server.takeRequest()
+            assertEquals("/v1beta/models/gemini-2.5-flash:generateContent", req.path)
+            assertEquals("gem-secret", req.getHeader("x-goog-api-key"))
+            assertEquals("Mika/1.2.3", req.getHeader("User-Agent"))
+            assertEquals(ModelSession.of("conv-g").id, req.getHeader("x-test-session"))
+            assertTrue(req.body.readUtf8().contains("googleSearch"))
+        } finally {
+            server.shutdown()
+        }
     }
 
     @Suppress("TestFunctionName")

@@ -283,27 +283,39 @@ fun TopBar(
 
 /** 可选的胶囊(服务商、接口类型):34 高,白卡底;选中时深色实底、反色字。[small] 是行内的小号。 */
 @Composable
-fun SelectChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, small: Boolean = false) {
+fun SelectChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    small: Boolean = false,
+    enabled: Boolean = true,
+) {
     val c = MikaTheme.colors
     val shape = if (small) SmallChipShape else MikaShapes.Pill
     Box(
         modifier
             .then(
                 when {
+                    selected && !enabled -> Modifier.background(c.ink.copy(alpha = 0.38f), shape)
                     selected -> Modifier.background(c.ink, shape)
                     small -> Modifier.background(c.fill, shape)
                     else -> Modifier.cardSurface(c, shape)
                 },
             )
             .clip(shape)
-            .selectable(selected, role = Role.RadioButton, onClick = onClick)
+            .selectable(selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .height(if (small) 28.dp else 34.dp)
             .padding(horizontal = if (small) 10.dp else 14.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text, style = if (small) SmallChipText else ChipText, maxLines = 1, softWrap = false,
-            color = if (selected) c.bg else c.ink,
+            color = when {
+                selected -> c.bg
+                !enabled -> c.ink.copy(alpha = 0.38f)
+                else -> c.ink
+            },
         )
     }
 }
