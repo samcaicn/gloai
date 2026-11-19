@@ -1489,8 +1489,7 @@ class ChatViewModel(
         follow(conversationId, unpark(conversationId))
     }
 
-    /** 个人助手打开其委派任务：只切换展示，不启动另一项工作。 */
-    /** Open a workflow-owned step, including a running step, while preserving the user's draft. */
+    /** 打开个人助手或工作流拥有的对话:只切换展示,不启动另一项工作,并保留用户草稿。 */
     fun openWorkflowConversation(conversationId: String) {
         if (conversationId == _ui.value.conversationId) { refresh(); return }
         refreshParallel()
@@ -1507,16 +1506,7 @@ class ChatViewModel(
     }
 
     fun openPersonalTask(conversationId: String) {
-        refreshParallel()
-        lingerJob?.cancel()
-        if (conversationId != _ui.value.conversationId) parkLive()
-        val past = saved(conversationId)
-        liveIndex = -1
-        // 没有任务的对话不带别的任务的接管进度
-        _ui.update { ChatUi(conversationId = conversationId, exchanges = past, takeoverStage = Takeover.Stage.None, personaId = personaFor(conversationId)) }
-        markCurrent(CurrentChat.Open(conversationId))
-        if (conversationId !in activeConversations.value) { unpark(conversationId); return }
-        follow(conversationId, unpark(conversationId))
+        openWorkflowConversation(conversationId)
     }
 
     /**
