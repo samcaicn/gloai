@@ -4,7 +4,6 @@ import com.wangzan101.mika.core.search.DeepSeekSearch
 import com.wangzan101.mika.core.search.ExaSearch
 import com.wangzan101.mika.core.search.JinaSearch
 import com.wangzan101.mika.core.search.SearxngSearch
-import com.wangzan101.mika.core.search.TinyFishSearch
 import com.wangzan101.mika.core.search.WebSearchProvider
 import com.wangzan101.mika.core.search.YouSearch
 import com.wangzan101.mika.settings.FeatureFlagsCapsuleTest.MemoryPrefs
@@ -100,19 +99,8 @@ class WebSearchSettingsTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun tinyFishCannotBeSavedWithoutAKey() {
-        settings().set(WebSearchConfig(true, WebSearchProvider.TinyFish))
-    }
-
-    @Test(expected = IllegalArgumentException::class)
     fun exaCannotBeSavedWithoutAKeyEvenWhenOff() {
         settings().set(WebSearchConfig(false, WebSearchProvider.Exa, mapOf(WebSearchProvider.Exa to WebSearchEntry(apiKey = " "))))
-    }
-
-    @Test fun tinyFishUsesOnlyItsKey() {
-        val prefs = MemoryPrefs()
-        settings(prefs).set(WebSearchConfig(true, WebSearchProvider.TinyFish, mapOf(WebSearchProvider.TinyFish to WebSearchEntry(apiKey = "tinyfish-key"))))
-        assertTrue(settings(prefs).service() is TinyFishSearch)
     }
 
     @Test fun deepSeekUsesOnlyItsKey() {

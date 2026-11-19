@@ -6,8 +6,6 @@
     <string name="web_search_searxng_url">Адрес экземпляра</string>
     <string name="web_search_note_jina">Нужен ключ API. Используется поиск Jina (s.jina.ai).</string>
     <string name="web_search_note_exa">Нужен ключ API. Используется поиск Exa (api.exa.ai).</string>
-    <string name="web_search_note_keirolabs">Нужен ключ API. Используется поиск Keirolabs (api.keirolabs.cloud).</string>
-    <string name="web_search_note_tinyfish">Нужен ключ API. Результаты берутся из поиска TinyFish (api.search.tinyfish.ai).</string>
     <string name="web_search_note_deepseek">Нужен ключ API (подойдёт тот же, что для чата). Результаты берутся из поиска DeepSeek (api.deepseek.com).</string>
     <string name="web_search_note_searxng">Ваш собственный экземпляр SearXNG, ключ не нужен. В нём должен быть включён вывод JSON (добавьте json в search.formats в settings.yml).</string>
     <string name="web_search_api_key_required">Ключ API (обязательно)</string>

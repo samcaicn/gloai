@@ -83,13 +83,4 @@ class ProviderPresetsTest {
         assertEquals(ProviderConfig.Kind.OpenAiCompat, coding.kind)
         assertNotEquals(standard.baseUrl, coding.baseUrl)
     }
-
-    /** 托管多家模型的 OpenAI 兼容网关:不给 familyTokens,地址认得出是它。 */
-    @Test fun requestyIsAnOpenAiCompatGateway() {
-        val requesty = preset("Requesty")
-        assertEquals("https://router.requesty.ai/v1", requesty.baseUrl)
-        assertEquals(ProviderConfig.Kind.OpenAiCompat, requesty.kind)
-        assertEquals(emptyList<String>(), requesty.familyTokens)
-        assertEquals("Requesty", ProviderPresets.forHost("https://router.requesty.ai/v1/")?.label)
-    }
 }

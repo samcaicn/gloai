@@ -6,8 +6,6 @@
     <string name="web_search_searxng_url">URL instans</string>
     <string name="web_search_note_jina">Perlu kunci API. Memakai pencarian Jina (s.jina.ai).</string>
     <string name="web_search_note_exa">Perlu kunci API. Memakai pencarian Exa (api.exa.ai).</string>
-    <string name="web_search_note_keirolabs">Perlu kunci API. Memakai pencarian Keirolabs (api.keirolabs.cloud).</string>
-    <string name="web_search_note_tinyfish">Perlu kunci API. Hasil berasal dari pencarian TinyFish (api.search.tinyfish.ai).</string>
     <string name="web_search_note_deepseek">Perlu kunci API (kunci obrolan bisa dipakai). Hasil berasal dari pencarian DeepSeek (api.deepseek.com).</string>
     <string name="web_search_note_searxng">Instans SearXNG milik Anda sendiri, tanpa kunci. Instans harus mengizinkan keluaran JSON (tambahkan json ke search.formats di settings.yml).</string>
     <string name="web_search_api_key_required">Kunci API (wajib)</string>

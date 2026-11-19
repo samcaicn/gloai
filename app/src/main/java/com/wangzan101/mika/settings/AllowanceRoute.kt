@@ -40,7 +40,6 @@ internal data class AllowanceRoute(
                 "阶跃星辰" -> AllowanceRoute(dashboard = "https://platform.stepfun.com/")
                 "腾讯混元" -> AllowanceRoute(dashboard = "https://console.cloud.tencent.com/tokenhub")
                 "百度千帆" -> AllowanceRoute(dashboard = "https://console.bce.baidu.com/finance/")
-                "Requesty" -> AllowanceRoute(dashboard = "https://app.requesty.ai/")
                 "OpenCode Go" -> AllowanceRoute(dashboard = "https://opencode.ai/console")
                 "Anthropic" -> AllowanceRoute(dashboard = "https://platform.claude.com/cost")
                 "Gemini" -> AllowanceRoute(dashboard = "https://aistudio.google.com/usage")

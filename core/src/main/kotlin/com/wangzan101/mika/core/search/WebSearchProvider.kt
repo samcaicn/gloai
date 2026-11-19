@@ -12,10 +12,6 @@ enum class WebSearchProvider(val wire: String) {
     Jina("jina"),
     /** Exa 搜索(api.exa.ai):必须有密钥。 */
     Exa("exa"),
-    /** Keirolabs 搜索(api.keirolabs.cloud):必须有密钥。 */
-    Keirolabs("keirolabs"),
-    /** TinyFish 搜索(api.search.tinyfish.ai):必须有密钥。 */
-    TinyFish("tinyfish"),
     /** DeepSeek 搜索(api.deepseek.com/v1/tools/search):必须有密钥,和对话用的是同一个 DeepSeek API Key。 */
     DeepSeek("deepseek"),
     /** 自建的 SearXNG 实例:填实例地址,不要密钥;实例要打开 JSON 输出。 */
@@ -28,7 +24,7 @@ enum class WebSearchProvider(val wire: String) {
     val takesKey: Boolean get() = this != SearXNG
 
     /** 不填密钥不能用,也不让保存。 */
-    val keyRequired: Boolean get() = this == Jina || this == Exa || this == Keirolabs || this == TinyFish || this == DeepSeek
+    val keyRequired: Boolean get() = this == Jina || this == Exa || this == DeepSeek
 
     /** 照 [endpoint]、[apiKey] 这一家能不能用;能用为 null。 */
     fun problem(endpoint: String, apiKey: String): Problem? = when {

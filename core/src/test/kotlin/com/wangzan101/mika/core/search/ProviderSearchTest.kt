@@ -13,7 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** SearXNG、Jina、Exa、Keirolabs、TinyFish、DeepSeek 几家的请求形状、解析和出错时的说法。 */
+/** SearXNG、Jina、Exa、DeepSeek 几家的请求形状、解析和出错时的说法。 */
 class ProviderSearchTest {
     private fun ok(body: String) = MockResponse().setResponseCode(200).setHeader("Content-Type", "application/json").setBody(body)
 
@@ -131,73 +131,6 @@ class ProviderSearchTest {
         assertEquals(5L, (ExaSearch("k", client, server.url("/search")).search("q", 5) as WebSearchResult.Failure).retryAfterSeconds)
     }
 
-    // ---------- Keirolabs ----------
-
-    @Test fun keirolabsIsABearerPostWithMaxResults() = withServer(ok("""{"query":"mika","results":[
-        {"position":1,"title":"K1","url":"https://k.example/1","snippet":"first","publishedDate":"","score":0.5,"tags":["a"]},
-        {"position":2,"title":"K2","url":"https://k.example/2","snippet":"second"},
-        {"position":3,"title":"no url","url":"","snippet":"dropped"},
-        {"position":4,"title":"K4","url":"https://k.example/4","snippet":"fourth"},
-        {"position":5,"title":"K5","url":"https://k.example/5","snippet":"over count"}],"count":5}""")) { server ->
-        val result = KeirolabsSearch(" keiro-key ", client, server.url("/api/v2/keiro")).search("mika", 3)
-        val request = server.takeRequest()
-        assertEquals("POST", request.method)
-        assertEquals("/api/v2/keiro", request.path)
-        assertEquals("Bearer keiro-key", request.getHeader("Authorization"))
-        val sent = Json.parseToJsonElement(request.body.readUtf8()).jsonObject
-        assertEquals("mika", sent["query"]!!.jsonPrimitive.content)
-        assertEquals(3, sent["maxResults"]!!.jsonPrimitive.int)
-        assertEquals(
-            listOf(WebSearchHit("K1", "https://k.example/1", "first"), WebSearchHit("K2", "https://k.example/2", "second"), WebSearchHit("K4", "https://k.example/4", "fourth")),
-            (result as WebSearchResult.Success).hits,
-        )
-    }
-
-    @Test fun keirolabsAsksForAtMostTheSharedMaximum() = withServer(ok("""{"results":[]}""")) { server ->
-        KeirolabsSearch("k", client, server.url("/")).search("q", 50)
-        assertEquals(WebSearch.MAX_COUNT, Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject["maxResults"]!!.jsonPrimitive.int)
-    }
-
-    @Test fun keirolabsRejectedKeyIsAuthenticationFailure() = withServer(MockResponse().setResponseCode(401).setBody("""{"error":"Invalid API key","code":"INVALID_API_KEY"}""")) { server ->
-        assertEquals("authentication_failed", (KeirolabsSearch("bad", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).code)
-    }
-
-    @Test fun keirolabsWithoutResultsArrayIsInvalidResponse() = withServer(ok("""{"error":"x"}""")) { server ->
-        assertEquals("invalid_response", (KeirolabsSearch("k", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).code)
-    }
-
-    // ---------- TinyFish ----------
-
-    @Test fun tinyFishIsAnApiKeyGetWithTheQuery() = withServer(ok("""{"query":"mika","results":[
-        {"position":1,"site_name":"a.example","title":"T1","url":"https://a.example/1","snippet":"S1"},
-        {"position":2,"site_name":"b.example","title":"T2","url":"https://b.example/2","snippet":"S2"},
-        {"position":3,"title":"T4","url":"https://d.example/4","snippet":"S4"},
-        {"position":4,"title":"no url","url":"","snippet":"dropped"},
-        {"position":5,"title":"over count","url":"https://e.example/5","snippet":"S5"}],"total_results":5,"page":0}""")) { server ->
-        val result = TinyFishSearch(" tinyfish-key ", client, server.url("/")).search("mika", 3)
-        val request = server.takeRequest()
-        assertEquals("GET", request.method)
-        assertEquals("/?query=mika", request.path)
-        assertEquals("tinyfish-key", request.getHeader("X-API-Key"))
-        assertEquals("application/json", request.getHeader("Accept"))
-        assertEquals(
-            listOf(WebSearchHit("T1", "https://a.example/1", "S1"), WebSearchHit("T2", "https://b.example/2", "S2"), WebSearchHit("T4", "https://d.example/4", "S4")),
-            (result as WebSearchResult.Success).hits,
-        )
-    }
-
-    @Test fun tinyFishWithoutResultsArrayIsInvalidResponse() = withServer(ok("""{"error":"x"}""")) { server ->
-        assertEquals("invalid_response", (TinyFishSearch("k", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).code)
-    }
-
-    @Test fun tinyFishRejectedKeyIsAuthenticationFailure() = withServer(MockResponse().setResponseCode(401).setBody("""{"detail":"Invalid API key"}""")) { server ->
-        assertEquals("authentication_failed", (TinyFishSearch("bad", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).code)
-    }
-
-    @Test fun tinyFishRateLimitCarriesRetryAfter() = withServer(MockResponse().setResponseCode(429).setHeader("Retry-After", "7").setBody("{}")) { server ->
-        assertEquals(7L, (TinyFishSearch("k", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).retryAfterSeconds)
-    }
-
     // ---------- DeepSeek ----------
 
     @Test fun deepSeekIsAPostWithBearerAndCount() = withServer(ok("""{"results":[
@@ -235,10 +168,6 @@ class ProviderSearchTest {
         assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.Jina.problem("", " "))
         assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.Exa.problem("", ""))
         assertEquals(null, WebSearchProvider.Exa.problem("", "k"))
-        assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.Keirolabs.problem("", ""))
-        assertEquals(null, WebSearchProvider.Keirolabs.problem("", "k"))
-        assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.TinyFish.problem("", ""))
-        assertEquals(null, WebSearchProvider.TinyFish.problem("", "k"))
         assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.DeepSeek.problem("", ""))
         assertEquals(null, WebSearchProvider.DeepSeek.problem("", "k"))
         assertEquals(WebSearchProvider.Problem.Endpoint, WebSearchProvider.SearXNG.problem("not a url", ""))
