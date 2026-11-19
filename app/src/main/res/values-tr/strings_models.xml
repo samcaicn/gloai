@@ -63,15 +63,15 @@
     <string name="role_main_what">Düşünme ve yapma</string>
     <string name="role_vision_what">Ekran görüntülerine bakar</string>
     <string name="role_light_what">Kontroller ve notlar gibi küçük işler</string>
-    <string name="role_main_hint">Tüm düşünmeyi ve eylemi yapar. Görevler güvenilir olsun diye araç çağırma özellikli bir model seçin.</string>
+    <string name="role_main_hint">Görevler güvenilir olsun diye araç çağırma özellikli bir model seçin.</string>
     <string name="main_fallback_name">Yedek model %1$d</string>
     <string name="main_fallback_what">Ana model kullanılamadığında devralır</string>
     <string name="main_fallback_pick">Bir yedek model seçin</string>
     <string name="main_fallback_clear">Yedek yok</string>
     <string name="main_fallback_failed">Yedek model ayarlanamadı</string>
     <string name="main_fallback_is_main">Bu şu anki ana model, bu yüzden kendi yedeği de olamaz</string>
-    <string name="role_vision_hint">Ekranı okurken ekran görüntülerini alır; karmaşık ekranlarda daha doğrudur. İsteğe bağlı: olmadan Mika ekranı metin olarak okur.</string>
-    <string name="role_light_hint">Görevin bitip bitmediğini kontrol etmek ve belleği düzenlemek gibi küçük işleri halleder. Ucuz ve hızlı olması en iyisidir.</string>
+    <string name="role_vision_hint">İsteğe bağlı: olmadan Mika ekranı metin olarak okur.</string>
+    <string name="role_light_hint">Ucuz ve hızlı olması en iyisidir.</string>
     <string name="models_delete_title">\“%1$s\” silinsin mi?</string>
     <string name="models_delete_body">"API anahtarı da silinecek. "</string>
     <string name="models_delete_unused">Hiçbir rol için kullanılmıyor.</string>
@@ -180,7 +180,7 @@
     <!-- Settings > Models: speech-to-text usage and its picker page -->
     <string name="role_speech">Konuşmadan yazıya</string>
     <string name="role_speech_what">Konuşmak için basılı tutarken kullanılır</string>
-    <string name="speech_hint">Telefonun yerleşik tanımasını, canlı bir konuşma hizmetini veya bitirdikten sonra yazıya döken bir sağlayıcı modelini seçin. Çevrimiçi hizmetler sağlayıcı kotanızı kullanır.</string>
+    <string name="speech_hint">Çevrimiçi hizmetler sağlayıcı kotanızı kullanır.</string>
     <string name="speech_system">Telefonda yerleşik</string>
     <string name="speech_system_offline">Çevrimdışı çalışır</string>
     <string name="speech_system_online">İnternet gerekir</string>

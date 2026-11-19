@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="calls_title">Yapay zeka telefon aramaları</string>
-    <string name="calls_entry_sub">Volcengine gerçek zamanlı sesiyle hücresel aramalar</string>
+    <string name="calls_entry_sub">Gerçek zamanlı sesle hücresel aramalar</string>
     <string name="calls_action_failed">Arama eylemi başarısız oldu. Hazır olup olmadığını kontrol edip tekrar deneyin.</string>
     <string name="calls_permissions_required">Telefon ve bildirim izinleri gerekir.</string>
     <string name="calls_ai_active">Aramayı yapay zeka yürütüyor</string>
@@ -19,7 +19,7 @@
     <string name="calls_sim">Giden SIM</string>
     <string name="calls_default">Varsayılan</string>
     <string name="calls_dial">Yapay zekayla ara</string>
-    <string name="calls_call_note">Aramalar mevcut SIM\'i kullanır. Operatör ve Volcengine kullanım ücretleri geçerli olabilir. Aramadan önce amacı ve karşılamayı Ayarlar\'da belirleyin.</string>
+    <string name="calls_call_note">Aramalar mevcut SIM\'i kullanır. Operatör ve ses hizmeti kullanım ücretleri geçerli olabilir. Aramadan önce amacı ve karşılamayı Ayarlar\'da belirleyin.</string>
     <string name="calls_prepare">Kontrol et ve hazırla</string>
     <string name="calls_enable">Yapay zeka aramayı etkinleştir</string>
     <string name="calls_disable">Devre dışı bırak ve normal aramaya dön</string>
@@ -35,7 +35,7 @@
     <string name="calls_all_note">Liste dışındaki numaraları ve bilinmeyen arayanları içerir</string>
     <string name="calls_allowlist">İzin verilen gelen numaralar</string>
     <string name="calls_allowlist_empty">Boş liste: tüm arayanlar etkinleştirilmedikçe otomatik yanıt yok</string>
-    <string name="calls_privacy_note">Arama sesi yalnızca yapay zeka yürütmesi sırasında Volcengine\'e gönderilir. Hiçbir ses kaydı saklanmaz. Deşifreler bu telefonda şifrelenir; istediğiniz an Bizzat konuş\'u kullanın.</string>
+    <string name="calls_privacy_note">Arama sesi yalnızca yapay zeka yürütmesi sırasında seçilen ses hizmetine gönderilir. Hiçbir ses kaydı saklanmaz. Deşifreler bu telefonda şifrelenir; istediğiniz an Bizzat konuş\'u kullanın.</string>
     <string name="calls_history_empty">Henüz yapay zeka arama kaydı yok</string>
     <string name="calls_collapse">Daralt</string>
     <string name="calls_transcript">Deşifreyi göster</string>
@@ -53,7 +53,7 @@
     <string name="calls_greeting">Karşılama</string>
     <string name="calls_instructions">Amaç ve talimatlar</string>
     <string name="calls_duration">En fazla yapay zeka saniyesi (15–600)</string>
-    <string name="calls_speaker">Volcengine ses kimliği</string>
+    <string name="calls_speaker">Ses kimliği</string>
     <string name="calls_audio_route">Arama ses yolu</string>
     <string name="calls_audio_verified">Bu telefonda her iki tarafın da yapay zeka aramalarını duyabildiğini onayladım</string>
     <string name="calls_verify_note">Önce manuel bir test araması yapın veya yanıtlayın ve her iki yönü de onaylayın, sonra otomatik yanıtlamayı etkinleştirin.</string>
@@ -89,7 +89,7 @@
     <string name="calls_original_transcript">Arama deşifresi</string>
     <string name="calls_outgoing_title">Arama yap</string>
     <string name="calls_rules">Yanıtlama kuralları</string>
-    <string name="calls_setup_credentials">Volcengine gerçek zamanlı ses kimlik bilgilerini yapılandırın.</string>
+    <string name="calls_setup_credentials">Gerçek zamanlı ses kimlik bilgilerini yapılandırın.</string>
     <string name="calls_setup_shell">Önce yerleşik Mika asistanını bağlayın.</string>
     <string name="calls_sim_clear_preferred">Tercih edilen SIM\'i temizle</string>
     <string name="calls_sim_preferred">Tercih edilen SIM: %1$s</string>

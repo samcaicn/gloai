@@ -86,8 +86,8 @@
     <string name="speech_doubao_plan">Faturalandırma</string>
     <string name="speech_doubao_duration_note">Tanıma süresine göre ücretlendirilir</string>
     <string name="speech_doubao_concurrent_note">Eşzamanlı bağlantılara göre ücretlendirilir</string>
-    <string name="speech_funasr_model">Fun-ASR (kendi sunucunuzda)</string>
-    <string name="speech_funasr_setup_hint">Kendiniz çalıştırdığınız bir Fun-ASR gerçek zamanlı sunucusu (Fun-ASR projesinden serve_realtime_ws.py) tarafından tanınan kelimeler konuştukça görünür; genellikle yerel ağınızda. Hesap veya anahtar gerekmez.</string>
+    <string name="speech_funasr_model">Qwen (kendi sunucunuzda)</string>
+    <string name="speech_funasr_setup_hint">Kendiniz çalıştırdığınız bir gerçek zamanlı sunucu tarafından tanınan kelimeler konuştukça görünür; genellikle yerel ağınızda. Hesap veya anahtar gerekmez. Fun-ASR-Nano ve Qwen3-ASR ile çalışır.</string>
     <string name="speech_funasr_deploy_guide">Dağıtım kılavuzu</string>
     <string name="speech_funasr_server">Sunucu</string>
     <string name="speech_funasr_address">Adres</string>
@@ -110,7 +110,7 @@
     <string name="speech_live_auth">Hizmet anahtarı reddetti. Anahtarı ve seçilen bölgeye ait olduğunu kontrol edin.</string>
     <string name="speech_live_refused">Hizmet isteği reddetti (%1$s).</string>
     <string name="speech_live_unreachable">Hizmete ulaşılamadı. Adresi ve hizmetin çalıştığını kontrol edin.</string>
-    <string name="speech_funasr_service">Fun-ASR gerçek zamanlı konuşma tanıma</string>
+    <string name="speech_funasr_service">Qwen gerçek zamanlı konuşma tanıma</string>
     <string name="speech_funasr_choose_note">Kendi sunucunuz veya Alibaba Cloud Bailian</string>
     <string name="speech_funasr_tab_local">Kendi sunucunuzda</string>
     <string name="speech_bailian_tab">Bailian · %1$s</string>

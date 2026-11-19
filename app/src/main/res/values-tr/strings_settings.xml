@@ -215,7 +215,7 @@
     <string name="settings_token_budget_invalid">%1$s ile %2$s arasında bir tam sayı girin.</string>
     <string name="settings_auto_archive">Sohbetleri otomatik arşivle</string>
     <string name="settings_auto_archive_sub">Bir süredir yeni mesajı olmayan sohbetler arşive taşınır</string>
-    <string name="settings_auto_archive_hint">Seçilen süre boyunca yeni mesajı olmayan sohbetler arşive taşınır. Sabitlenmiş sohbetler ve çalışan görevi olan sohbetler yerinde kalır. Bunları istediğiniz zaman sohbet listesindeki arşivden geri yükleyebilirsiniz.</string>
+    <string name="settings_auto_archive_hint">Seçilen süre boyunca yeni mesajı olmayan sohbetler arşive taşınır.</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="other">%1$d gün</item>
     </plurals>

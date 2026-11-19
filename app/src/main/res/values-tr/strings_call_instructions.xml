@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="call_instructions_title">Arama talimatları</string>
-    <string name="call_instructions_intro">Kayıtlı talimatlar gelecekteki aramalara uygulanır. Tüm etkin talimatlar, arama yanıtlanmasa bile bir yapay zeka arama oturumu hazırlanırken Volcengine\'e gönderilir. Arayanın söyledikleri onları değiştirmez.</string>
+    <string name="call_instructions_intro">Kayıtlı talimatlar gelecekteki aramalara uygulanır. Tüm etkin talimatlar, arama yanıtlanmasa bile bir yapay zeka arama oturumu hazırlanırken seçilen ses hizmetine gönderilir. Arayanın söyledikleri onları değiştirmez.</string>
     <string name="call_instructions_add">Talimat ekle</string>
     <string name="call_instructions_empty">Asistanın neler söyleyebileceğini ve neleri sorması gerektiğini ekleyin. Değişiklikler sonraki aramaya uygulanır.</string>
     <string name="call_instructions_heading">Başlık</string>
