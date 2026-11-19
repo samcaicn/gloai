@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="appaccess_title">Uygulama erişimi</string>
+    <string name="appaccess_row_sub">Uygulamaları ve ekran paylaşımını uygulama bazında engelle</string>
+    <string name="appaccess_intro">Mika\'nın standart telefon araçlarıyla hangi uygulamaları okuyup çalıştırabileceğini seçin. Kabuk komutları, korumalı alan ve bilgisayar erişimi (MCP) bu ayarla kısıtlanmaz.</string>
+    <string name="appaccess_privacy">Kategorilendirme, uygulama adlarını ve paket adlarını yapay zeka modeline gönderir; \“Uygulama listesini yenile\” önce size sorar.</string>
+    <string name="appaccess_unavailable">Uygulama erişim ayarları okunamıyor, bu yüzden standart telefon erişimi duraklatıldı. Sıfırlamak, kayıtlı izinleri ve kategorileri temizler.</string>
+    <string name="appaccess_reset">Uygulama erişimini sıfırla</string>
+    <string name="appaccess_search">Ad veya paket ara</string>
+    <string name="appaccess_refreshing">Kategorilendiriliyor…</string>
+    <string name="appaccess_refresh">Uygulama listesini yenile</string>
+    <string name="appaccess_recommend">Engellenmesi önerilir</string>
+    <string name="appaccess_recommend_count">Engellenmesi önerilir · %1$d</string>
+    <string name="appaccess_allow_all">Tümüne izin ver</string>
+    <string name="appaccess_risk_note">Otomatik çalıştırma bunlar için hesap sınırları getirebilir; ihtiyacınız olmayanları engelleyin.</string>
+    <string name="appaccess_blocked">Engellendi</string>
+    <string name="appaccess_allowed">İzin verildi</string>
+    <string name="appaccess_revoke_share">%1$s için ekran paylaşımını iptal et</string>
+
+    <string name="appaccess_send_title">Uygulama listesi yapay zekaya gönderilsin mi?</string>
+    <string name="appaccess_send_body">Yenilemek, yüklü uygulamalarınızı okur ve risk kategorisine karar vermesi için adlarını ve paket adlarını yapılandırdığınız yapay zeka modeline gönderir. Uygulamaların içindeki hiçbir şey gönderilmez.</string>
+    <string name="appaccess_send_confirm">Devam et ve kategorilendir</string>
+    <string name="appaccess_cancel">İptal</string>
+
+    <string name="appaccess_recommend_title">Engellenmesi önerilir: finans uygulamaları</string>
+    <string name="appaccess_recommend_body">Bu uygulamalar finans veya ödeme olarak sınıflandırıldı ve Mika onları yine de çalıştırabilir. Tek tek veya toplu engelleyin.</string>
+    <string name="appaccess_recommend_empty">Engellenecek bir şey yok.</string>
+    <string name="appaccess_block">Engelle</string>
+    <string name="appaccess_block_all">Tümünü engelle</string>
+
+    <string name="appaccess_edit_category">Kategoriyi değiştir</string>
+    <string name="appaccess_category_manual">Sizin belirlediğiniz</string>
+
+    <string name="appaccess_error_save">Kaydedilemedi</string>
+    <string name="appaccess_error_no_model">Model kullanılamıyor. Uygulama listesi yenilendi ancak kategorilendirilemiyor.</string>
+    <string name="appaccess_error_refresh">Yenileme başarısız</string>
+    <string name="appaccess_error_load">Uygulama listesi okunamadı</string>
+
+    <string name="appaccess_category_finance">Finans</string>
+    <string name="appaccess_category_social">Sosyal</string>
+    <string name="appaccess_category_game">Oyunlar</string>
+    <string name="appaccess_category_shopping">Alışveriş</string>
+    <string name="appaccess_category_productivity">Üretkenlik</string>
+    <string name="appaccess_category_media">Medya</string>
+    <string name="appaccess_category_other">Diğer</string>
+    <string name="appaccess_category_unknown">Kategorisiz</string>
+
+    <string name="appaccess_share_title">%1$s ekranını paylaş</string>
+    <string name="appaccess_share_body">Bu uygulama engellendi. Ekran paylaşımı, onu bilerek paylaşmanızı sağlar; otomatik okuma ve çalıştırma engelli kalır.</string>
+    <string name="appaccess_share_allow">Yalnızca ekran paylaşımına izin ver</string>
+    <string name="appaccess_share_unblock">Engellenenlerden kaldır</string>
+    <string name="appaccess_share_cancel">Paylaşımı iptal et</string>
+    <string name="appaccess_share_expired">Ekran paylaşımı izninin süresi doldu. Yeni bir ekran görüntüsü alın.</string>
+</resources>

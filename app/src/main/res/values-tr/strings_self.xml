@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_self_operate">Mika\'nın kendi ekranlarını çalıştırmasına izin ver</string>
+    <string name="settings_self_operate_sub">Mika\'nın sayfalarını ve dosyalarını açın; tarayıcınızda bir bağlantı açmadan önce sorun</string>
+    <string name="settings_pip_operate">Küçük görünümü doğrudan çalıştır</string>
+    <string name="settings_pip_operate_sub">Ekranı kontrol etmek için küçük pencerede dokunun ve kaydırın</string>
+    <string name="settings_external_schedule">Betiklerin zamanlanmış görev oluşturmasına izin ver</string>
+    <string name="settings_external_schedule_sub">Diğer uygulamalardan yayın üzerinden görev isteklerini kabul edin; dakikada en fazla birkaç tane ve betik oluşturdu olarak işaretlenir</string>
+    <string name="self_notify_channel">Mika eylemleri</string>
+    <string name="self_notify_channel_desc">Mika\'nın açtıkları veya görmenizi istedikleri</string>
+    <string name="self_notify_open">Görüntüle</string>
+    <string name="self_screen_notice">Mika size %1$s göstermek istiyor</string>
+    <string name="self_file_notice">Mika\'nın size göstereceği bir dosya var</string>
+    <string name="self_file_failed">Bu dosya açılamadı</string>
+    <string name="self_consent_open">Mika bu sayfayı tarayıcınızda açmak istiyor. İzin verilsin mi?\n%1$s</string>
+    <string name="self_consent_search">Mika tarayıcınızda \“%1$s\” aramak istiyor. İzin verilsin mi?</string>
+    <string name="self_consent_login">Mika, oturum açmanız için %1$s açmak istiyor. İzin verilsin mi?</string>
+    <string name="self_consent_replace">Bu, açık olan sayfanızın yerini alacak.</string>
+    <string name="self_consent_allow">Aç</string>
+    <string name="self_consent_deny">Açma</string>
+    <string name="self_browser_notice">Tarayıcınızda %1$s açmak için dokunun</string>
+    <string name="self_browser_failed">Bu sayfa açılamadı</string>
+</resources>

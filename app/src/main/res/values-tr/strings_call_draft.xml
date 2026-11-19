@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_draft_title">WeChat takip taslağı</string>
+    <string name="calls_draft_edit">Düzenle</string>
+    <string name="calls_draft_copy">Kopyala</string>
+    <string name="calls_draft_copied">Kopyalandı</string>
+    <string name="calls_draft_saved">Taslak kaydedildi</string>
+    <string name="calls_draft_save_failed">Taslak kaydedilemedi. Lütfen tekrar deneyin.</string>
+    <string name="calls_draft_create">Takip mesajı yaz</string>
+</resources>

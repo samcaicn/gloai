@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_search_title">Web araması</string>
+    <string name="web_search_provider">Arama hizmeti</string>
+    <string name="web_search_note_you">Anahtarsız çalışır (ücretsiz, günde 100 arama); anahtarla ücretli API\'yi kullanır.</string>
+    <string name="web_search_searxng_url">Örnek URL</string>
+    <string name="web_search_note_jina">Bir API anahtarı gerekir. Sonuçlar Jina aramasından (s.jina.ai) gelir.</string>
+    <string name="web_search_note_exa">Bir API anahtarı gerekir. Sonuçlar Exa aramasından (api.exa.ai) gelir.</string>
+    <string name="web_search_note_deepseek">Bir API anahtarı gerekir (sohbet için aynısı çalışır). Sonuçlar DeepSeek aramasından (api.deepseek.com) gelir.</string>
+    <string name="web_search_note_searxng">Kendi SearXNG örneğiniz; anahtar yok. Örnek, JSON çıktısına izin vermeli (settings.yml\'de search.formats\'a json ekleyin).</string>
+    <string name="web_search_api_key_required">API anahtarı (gerekli)</string>
+    <string name="web_search_missing_key">%1$s çalışmak için bir API anahtarı gerektirir.</string>
+    <string name="web_search_get_key">API anahtarı al</string>
+    <string name="web_search_privacy">Anahtar bu telefonda şifrelenmiş saklanır. Arama sonuçları güvenilmez olarak ele alınır.</string>
+    <string name="web_search_row_sub">İsteğe bağlı arama hizmeti; tarayıcı araması her zaman kullanılabilir</string>
+    <string name="web_search_enabled">Web aramasını etkinleştir</string>
+    <string name="web_search_api_key">API anahtarı (isteğe bağlı)</string>
+    <string name="web_search_invalid_endpoint">Sorgu parametresi olmayan bir HTTP veya HTTPS URL\'si girin.</string>
+    <string name="web_search_action">Web\'de ara</string>
+</resources>

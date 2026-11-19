@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_status_running">Çalışıyor</string>
+    <string name="personal_status_queued">Sırada</string>
+    <string name="personal_status_needs_you">Size ihtiyaç duyuyor</string>
+    <string name="personal_status_paused">Devam etmeyi bekliyor</string>
+    <string name="personal_status_finishing">Bitiriliyor</string>
+    <string name="personal_status_completed">Tamamlandı</string>
+    <string name="personal_status_cancelled">Durduruldu</string>
+    <string name="personal_status_partial">Kısmen tamamlandı</string>
+    <string name="personal_status_incomplete">Eksik</string>
+    <string name="personal_send_failed">Gönderilemedi. Lütfen tekrar deneyin.</string>
+    <string name="personal_welcome_title">Konuşmaya devam edin.</string>
+    <string name="personal_welcome_body">Fikirler, günlük yaşam ve benden yapmamı istediğiniz şeyler.\nİstediğiniz zaman dönün ve kaldığımız yerden devam edin.</string>
+    <string name="personal_view_model">Mevcut modeli görüntüle</string>
+    <string name="personal_received">Alındı</string>
+    <string name="personal_view_task">Görevi görüntüle</string>
+    <string name="personal_latest">En sona dön</string>
+    <string name="personal_ok">Anladım</string>
+    <string name="personal_close">Kapat</string>
+    <string name="personal_no_tasks">Henüz görev yok.</string>
+    <string name="personal_open_sidebar">Kenar çubuğunu aç</string>
+    <string name="personal_view_activity">Etkinliği görüntüle</string>
+    <string name="personal_expand_phone">Telefon ekranını büyüt</string>
+    <string name="personal_task_details">Görev ayrıntılarını görüntüle</string>
+    <string name="personal_goal">Görev amacı</string>
+    <string name="personal_progress">İlerleme</string>
+    <string name="personal_result">Görev sonucu</string>
+    <string name="personal_handle_task">İşlem yapmak için görevi aç</string>
+    <string name="personal_view_execution">Yürütmeyi görüntüle</string>
+    <string name="personal_view_replay">Tekrarı görüntüle</string>
+    <string name="personal_stop_task">Bu görevi durdur</string>
+    <string name="personal_tab_tasks">Görevler</string>
+    <string name="personal_tab_memory">Bellek</string>
+    <string name="personal_tab_skills">Beceriler</string>
+</resources>

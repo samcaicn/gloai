@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_default_sim_settings">Varsayılan giden SIM</string>
+    <string name="calls_device_and_permissions">Cihaz ve izinler</string>
+    <string name="calls_edit_rule">Düzenle</string>
+    <string name="calls_nav_receive">Yanıtla</string>
+    <string name="calls_nav_task">Ara</string>
+    <string name="calls_pause_enable_first">Geçici duraklatmak için önce otomatik yanıtı açın.</string>
+    <string name="calls_rule_delay_summary">Yanıt gecikmesi: %1$d sn</string>
+    <string name="calls_rule_pause">Geçici duraklatma</string>
+    <string name="calls_rule_scope">Yapay zeka kimleri yanıtlar</string>
+    <string name="calls_sim_ask_each_time">Tercih edilen SIM yok</string>
+    <string name="calls_task_back_to_edit">Düzenlemeye dön</string>
+    <string name="calls_task_confirm_dial">Onayla ve ara</string>
+    <string name="calls_task_confirm_note">Mika bu arama için bu özeti kullanır. Arama, seçilen SIM\'i kullanır ve operatör ile gerçek zamanlı ses ücretleri doğurabilir.</string>
+    <string name="calls_task_constraints">Neyin vaat edilmemesi gerektiği</string>
+    <string name="calls_task_context">Ek bağlam</string>
+    <string name="calls_task_filled">Eklendi</string>
+    <string name="calls_task_goal">Bu arama neyi başarmalı? (gerekli)</string>
+    <string name="calls_task_goal_example">Örneğin, Cuma uygunluğunu onayla ve fiyatı not et.</string>
+    <string name="calls_task_limit">%1$d / %2$d karakter</string>
+    <string name="calls_task_number_hint">7–15 haneli normal bir telefon numarası girin.</string>
+    <string name="calls_task_one_off">Özet yalnızca bu arama için geçerli. Aramayı ve özetini Geçmiş\'te bulun.</string>
+    <string name="calls_task_optional">İsteğe bağlı</string>
+    <string name="calls_task_pick_sim">Bu arama için bir SIM seçin</string>
+    <string name="calls_task_questions">Sorulacak sorular</string>
+    <string name="calls_task_questions_hint">Her satıra bir soru</string>
+    <string name="calls_task_questions_limit">En fazla %1$d soru, her biri %2$d karakter.</string>
+    <string name="calls_task_replace_action">Taslağı değiştir</string>
+    <string name="calls_task_replace_note">Bu, mevcut arama taslağını Geçmiş\'ten bir görevle değiştirir. Aramaz.</string>
+    <string name="calls_task_replace_title">Bu taslak değiştirilsin mi?</string>
+    <string name="calls_task_review">Arama görevini incele</string>
+    <string name="calls_task_review_blocked">Aramak için telefon hazır ve boşta olmalı, bir SIM seçilmiş olmalı.</string>
+    <string name="calls_task_sim_override_summary">Bu arama: %1$s · Tercih edilen: %2$s</string>
+    <string name="calls_voice_settings">Ses</string>
+</resources>

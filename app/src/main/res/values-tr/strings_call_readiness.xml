@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_device_allow_notifications">Bildirimlere izin ver</string>
+    <string name="calls_device_allow_phone">Telefon izinlerine izin ver</string>
+    <string name="calls_device_helper">Yerleşik yardımcı</string>
+    <string name="calls_device_helper_connected">Bağlandı</string>
+    <string name="calls_device_notifications">Arama bildirimleri</string>
+    <string name="calls_device_notifications_app_off">Uygulama bildirimleri kapalı</string>
+    <string name="calls_device_notifications_calls_off">Yapay zeka aramaları kanalı kapalı</string>
+    <string name="calls_device_notifications_permission_missing">Bildirim izni verilmedi</string>
+    <string name="calls_device_notifications_standby_off">Bekleme kanalı kapalı</string>
+    <string name="calls_device_notifications_unknown">Bildirim durumu kontrol edilemedi</string>
+    <string name="calls_device_open_app_settings">Uygulama izin ayarlarını aç</string>
+    <string name="calls_device_pair_helper">Yardımcıyı bağla</string>
+    <string name="calls_device_permission_granted">İzin verildi</string>
+    <string name="calls_device_phone_permissions">Telefon izinleri</string>
+    <string name="calls_device_phone_permissions_note">Arama durumunu okumaya ve arama yapmaya izin verin</string>
+    <string name="calls_device_ready_to_test">Manuel ses testi için hazır</string>
+    <string name="calls_device_system_settings_failed">Sistem ayarları açılamadı. Android Ayarları\'nda uygulama bilgisi sayfasını açın.</string>
+    <string name="calls_background_auto_off">Otomatik yanıt kapalı</string>
+    <string name="calls_background_battery">Pil ve arka plan etkinliği</string>
+    <string name="calls_background_battery_managed">Android pil optimizasyonu uyguluyor</string>
+    <string name="calls_background_battery_restricted">Android, arka plan etkinliğinin kısıtlı olduğunu bildiriyor</string>
+    <string name="calls_background_battery_unknown">Pil ilkesi kontrol edilemedi</string>
+    <string name="calls_background_battery_unrestricted">Android, pil optimizasyonundan muafiyet bildiriyor</string>
+    <string name="calls_background_lock_screen_note">Gelen aramalar için kilit ekranında arama bildirimlerine izin verin. Bekleme sürekli duruyorsa pil ve arka plan ayarlarını kontrol edin. Çalışan bir hizmet, aramaların kilitliyken yanıtlanabileceğini doğrulamaz.</string>
+    <string name="calls_background_not_running">Durdu · otomatik yanıt yalnızca uygulama görünür ve kilidi açıkken çalışır</string>
+    <string name="calls_background_open_battery">Pil ayarlarını aç</string>
+    <string name="calls_background_running">Şimdi çalışıyor</string>
+    <string name="calls_background_service">Gelen arama beklemesi</string>
+    <string name="calls_background_settings">Arka plan ve kilit ekranı</string>
+    <string name="calls_background_start">Arka plan beklemesini başlat</string>
+    <string name="calls_background_starting">Başlatılıyor…</string>
+    <string name="calls_device_locked_dial_pending">Kilitledikten sonra ara</string>
+    <string name="calls_device_locked_dial_remaining">%1$d sn içinde telefonu kilitleyin</string>
+    <string name="calls_device_locked_dial_preparing">Kilitli ekran araması hazırlanıyor</string>
+    <string name="calls_device_locked_dial_cancel">İptal</string>
+</resources>

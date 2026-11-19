@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="teach_title">Mika\'ya öğret</string>
+    <string name="teach_menu">Mika\'ya öğret</string>
+    <string name="teach_goal_label">Amaç</string>
+    <string name="teach_goal_hint">Mika ne öğrenmeli? Tek cümle.</string>
+    <string name="teach_disclosure">Adımlar bu telefonda kalır ve yalnızca Gösterimi başlat\'a dokunduktan sonra. Bir model kuruluysa, beceri oluşturmak amacın ve adımların redakte edilmiş bir özetini o modele gönderir. Parolalar, doğrulama kodları ve ödeme ayrıntıları hariç tutulur. Model kurulu değilse taslak bu telefonda yazılır ve hiçbir şey yüklenmez. Taslak siz kabul edene kadar kullanılmaz ve deneme çalıştırması yapılmamıştır.</string>
+    <string name="teach_continue">Devam et</string>
+    <string name="teach_ready_body">Mika izler ve telefonu çalıştırmaz. Duraklatabilir, bitirebilir veya atabilirsiniz. Gösterimi başlat\'a dokunana kadar hiçbir şey kaydedilmez.</string>
+    <string name="teach_start">Gösterimi başlat</string>
+    <string name="teach_learning">Öğreniyor</string>
+    <string name="teach_paused">Duraklatıldı</string>
+    <string name="teach_pause">Duraklat</string>
+    <string name="teach_resume">Sürdür</string>
+    <string name="teach_end">Gösterimi bitir</string>
+    <string name="teach_discard">At</string>
+    <string name="teach_discard_body">Bu gösterim atılsın ve kayıtlı adımlar silinsin mi?</string>
+    <string name="teach_review">Gözden geçir</string>
+    <string name="teach_correct">Bu adımı düzelt</string>
+    <string name="teach_clarify">Bu adım ne anlama geliyordu?</string>
+    <string name="teach_remove">Kaldır</string>
+    <string name="teach_generate">Beceri taslağı oluştur</string>
+    <string name="teach_busy">Bir görev çalışıyor. Öğretmeden önce bitmesini bekleyin.</string>
+    <string name="teach_need_a11y">Gösterimden önce erişilebilirliği açın. Mika, onsuz dokunuşları göremez.</string>
+    <string name="teach_interrupted">Uygulama yeniden başladığı veya erişilebilirlik kapandığı için gösterim durdu. Sürdür\'e dokunana kadar hiçbir şey kaydedilmez.</string>
+    <string name="teach_need_goal">Önce bir amaç girin.</string>
+    <string name="teach_secret_goal">Bu amaç bir parola veya koda benziyor, bu yüzden kaydedilmedi.</string>
+    <string name="teach_draft_failed">Taslak yazılamadı. Adımlar hâlâ burada.</string>
+    <string name="teach_draft_ready">Bellek ve beceriler\'de bir taslak bekliyor. Siz kabul edene kadar kullanılmaz ve deneme çalıştırması yapılmamıştır.</string>
+    <string name="teach_open_drafts">Taslakları incele</string>
+    <string name="teach_no_steps">Hiçbir adım tutulmadı.</string>
+    <string name="teach_blocked_task">Mika sizden öğreniyor, bu yüzden bu görev başlatılmadı.</string>
+    <string name="teach_channel">Öğretme</string>
+    <string name="teach_sensitive_note">Hassas giriş hariç tutuldu.</string>
+    <string name="teach_insufficient_note">Yetersiz arayüz bilgisi. Bu bir koordinat eylemi değil.</string>
+    <string name="teach_notification">Mika telefonu çalıştırmıyor.</string>
+    <string name="teach_no_visible">Öğrenme çubuğu gösterilemedi, bu yüzden kayıt başlamadı. Bildirim izni gerekli değil. Erişilebilirlik katmanı, üzerinde Duraklat ve Bitir ile görünür olmalı.</string>
+    <string name="teach_watch_lost">Öğrenme çubuğu kayboldu, bu yüzden gösterim durdu. Daha fazla bir şey kaydedilmiyor.</string>
+    <string name="teach_shelf_expand">Mika\'ya öğret\'i göster</string>
+    <string name="teach_shelf_collapse">Mika\'ya öğret\'i gizle</string>
+</resources>

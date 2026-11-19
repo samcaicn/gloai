@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_system_interrupted">Önceki yanıt kesildi. Sohbet geçmişiniz kaydedildi ve konuşmaya devam edebilirsiniz. Mevcut görevler Etkinlik\'te kullanılabilir.</string>
+    <string name="personal_system_timeout">Bu yanıt zaman aşımına uğradı. Mevcut görevler bundan dolayı tekrarlanmaz ve mesaj göndermeye devam edebilirsiniz.</string>
+    <string name="personal_system_reply_failed">Yanıt başarısız oldu. Lütfen daha sonra tekrar deneyin.</string>
+    <string name="personal_system_task_start_failed">Görev başlatılamadı</string>
+    <string name="personal_system_task_cancelled">Görev iptal edildi</string>
+    <string name="personal_system_task_completed">Görev tamamlandı</string>
+    <string name="personal_system_task_failed">Görev başarısız oldu</string>
+    <string name="personal_system_task_running">Görev sürüyor</string>
+    <string name="personal_system_task_queued">Görev sırada</string>
+    <string name="personal_system_no_model">Lütfen Ayarlar\'da bir ana model seçin, sonra konuşmaya devam etmek için geri dönün.</string>
+    <string name="personal_system_context_long">Bu mesaj mevcut modelin bağlam sınırını aşıyor. Lütfen birkaç mesaja bölün.</string>
+    <string name="personal_system_empty_reply">Model, görüntülenebilir bir yanıt döndürmedi. Lütfen tekrar deneyin.</string>
+    <string name="personal_system_too_many_actions">Bu tur çok fazla eylem içerdi, bu yüzden işlem durduruldu. Oluşturulan görevler Etkinlik\'te hâlâ kullanılabilir.</string>
+    <string name="personal_system_message_long">Bu mesaj çok uzun. Lütfen birkaç mesaja bölün.</string>
+    <string name="personal_system_task_done_detail">Görev sona erdi. Sonucu görüntülemek için açın.</string>
+    <string name="personal_system_task_stopped_detail">Görev durdu. Mevcut ilerleme görev kaydında korunur.</string>
+    <string name="personal_system_task_failed_detail">Görev tamamlanamadı. Nedenini görmek için açın.</string>
+    <string name="personal_system_history_unreadable">Sohbet geçmişi şu an okunamıyor. Orijinal dosyanın bir yedeği tutuldu. Sohbet etmeye devam edebilirsiniz; kurtarma için lütfen yedeği saklayın.</string>
+    <string name="personal_system_task_interrupted">Önceki çalıştırma kesildi. Sohbet ve görev kayıtları korundu ve isteği yeniden açıklayabilirsiniz.</string>
+    <string name="personal_system_wait_confirmation">Onayınız gerekiyor. Yanıtlamak için görevi açın.</string>
+    <string name="personal_system_saving">Sonuç kaydediliyor</string>
+    <string name="personal_system_waiting">Başlamayı bekliyor</string>
+    <string name="personal_system_stop_not_ready">Görev hazır değil veya zaten sona erdi. Ayrıntıları kontrol etmek için görevi açın.</string>
+    <string name="personal_system_stop_failed">Görev durdurulamadı. Görevi açın ve tekrar deneyin.</string>
+    <string name="personal_system_task_amendment">Ek talimat: %1$s</string>
+</resources>

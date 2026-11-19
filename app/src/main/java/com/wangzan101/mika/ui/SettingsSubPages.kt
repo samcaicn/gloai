@@ -838,6 +838,7 @@ fun languageLabel(l: AppLanguage): String = stringResource(
         AppLanguage.Portuguese -> R.string.language_portuguese
         AppLanguage.Russian -> R.string.language_russian
         AppLanguage.Indonesian -> R.string.language_indonesian
+        AppLanguage.Turkish -> R.string.language_turkish
     },
 )
 

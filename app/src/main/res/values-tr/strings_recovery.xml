@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="rec_a11y">Benim için erişilebilirliği aç</string>
+    <string name="rec_default_on">Varsayılan olarak açık</string>
+    <string name="rec_a11y_body">Mika, ekrandaki metni ve düğmeleri okumak için Erişilebilirlik\'i kullanır. Bu açıkken Mika, sistem ayarlarında kendi erişilebilirlik hizmetini sizin için açar; açık olan diğer erişilebilirlik hizmetleriniz etkilenmez. Kapatırsanız Mika kendi hizmetini kapatır.</string>
+    <string name="rec_battery">Sınırsız pil</string>
+    <string name="rec_battery_body">Bu açıkken Mika kendini sistemin pil optimizasyonu istisnalarına ekler, böylece güç tasarrufu için arka planda durdurulmaz ve telefon kontrolü daha az kopar. Biraz daha fazla pil kullanabilir. Sistem varsayılanına dönmek için kapatın.</string>
+    <string name="rec_boot">Yeniden başlatmadan sonra geri yükle</string>
+    <string name="rec_boot_body">\“Kablosuz hata ayıklama\” yeniden başlatmadan sonra kendini kapatır. Bu açıkken Mika başlangıçta onu geri açar ve yeniden bağlanır. Bu, yalnızca Kablosuz hata ayıklamayı açmak için kullanılan \“Sistem ayarlarını değiştir\” iznini gerektirir ve yalnızca güvendiğiniz Wi-Fi\'larda çalışır. Bunu kapatmak veya eşleştirmeyi kaldırmak izni geri verir.</string>
+    <string name="rec_auto_wireless">Kablosuz hata ayıklamayı otomatik aç</string>
+    <string name="rec_auto_wireless_body">Wi-Fi düştükten veya telefon yeniden başladıktan sonra sistem \“Kablosuz hata ayıklama\”yı kapatır. Telefon kontrolü normalde buna ihtiyaç duymaz — yalnızca yeniden başlarken (örneğin bir Mika güncellemesinden sonra). Bu açıkken, o anlarda ve Wi-Fi\'dayken Mika onu açar ve yeniden bağlanır, ancak sizin için asla kapatmaz. Bu, \“Yeniden başlatmadan sonra geri yükle\” ile aynı \“Sistem ayarlarını değiştir\” iznini kullanır ve yalnızca izin verdiğiniz Wi-Fi\'larda çalışır. Kapatırsanız Mika bunu yapmayı bırakır.</string>
+    <string name="rec_need_setup">Önce telefon kontrolü kurulumunu tamamlayın</string>
+    <string name="rec_failed">Tamamlanamadı. Telefon kontrolünün hazır olduğundan emin olun ve tekrar deneyin.</string>
+    <string name="rec_working">Çalışıyor…</string>
+    <string name="rec_restarted_at">Erişilebilirlik hizmeti %1$s\'de otomatik yeniden başlatıldı.</string>
+    <string name="rec_not_allowed_here">Bu Wi-Fi\'da kablosuz hata ayıklamaya henüz izin verilmiyor, bu yüzden Mika onu açamıyor. Bir kez kendiniz açın ve sorulduğunda \“Bu ağda her zaman izin ver\”i işaretleyin; bundan sonra Mika onu kendisi açabilir.</string>
+    <string name="rec_refused">Bu telefon, Mika\'nın Kablosuz hata ayıklamayı açmasına izin vermiyor. Gerektiğinde kendiniz açın, Mika bağlanır.</string>
+    <string name="rec_gave_up">Mika Kablosuz hata ayıklamayı birkaç kez açtı ama telefon kontrolü yine de başlamadı, bu yüzden durdu. Wi-Fi değiştirin veya Telefon kontrolü\'nde Yeniden dene\'ye dokunun, Mika tekrar denesin.</string>
+    <string name="rec_permission_missing">Son başlangıçta izin yoktu, bu yüzden geri yükleyemedi. Bu anahtarı kapatıp tekrar açın.</string>
+    <string name="rec_setting_unavailable">Bu telefon, Mika\'nın başlangıçta Kablosuz hata ayıklamayı açmasına izin vermiyor. Yeniden başlattıktan sonra kendiniz açın, Mika bağlanır.</string>
+    <string name="rec_not_recovered">Son başlangıçta otomatik yeniden bağlanamadı. Kablosuz hata ayıklama açıkken güvenilir Wi-Fi\'da olduğunuzdan emin olun, Mika bağlanır.</string>
+    <string name="rec_needs_pairing">Yalnızca Kablosuz hata ayıklamayı eşleştirdikten sonra çalışır. Yardımcı USB komutuyla başlatıldı, bu yüzden telefon yeniden başladığında komutu tekrar çalıştırın.</string>
+</resources>

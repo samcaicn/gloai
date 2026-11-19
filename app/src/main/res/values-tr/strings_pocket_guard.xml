@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pocket_guard_title">Cep dokunma koruması</string>
+    <string name="pocket_guard_summary">Görevler sırasında telefon kapalı ve karanlıkken dokunuşları engelleyin. Çıkmak için kaydırın.</string>
+    <string name="pocket_guard_unavailable">Bu telefonda yakınlık ve ışık sensörleri gerekir.</string>
+    <string name="pocket_guard_exit">Çıkmak için sağa kaydırın</string>
+    <string name="pocket_completion_lock_title">Kapalı bir görev durduğunda kilitle</string>
+    <string name="pocket_completion_lock_summary">Bir görev sona erdiğinde veya beklediğinde telefon kapalı ve karanlıksa ekranı kilitleyin.</string>
+</resources>

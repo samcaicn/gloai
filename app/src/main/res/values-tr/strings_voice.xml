@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Chat composer: hold to talk -->
+    <string name="voice_placeholder_idle">Konuşmak için basılı tutun, yazmak için dokunun</string>
+    <string name="voice_placeholder_busy">Görevle konuşmak için basılı tutun, yazmak için dokunun</string>
+    <string name="voice_placeholder_answer">Yanıtlamak için basılı tutun, yazmak için dokunun</string>
+    <string name="voice_listening">Dinleniyor</string>
+    <string name="voice_steer_to">\“%1$s\”e söyleniyor</string>
+    <string name="voice_engine_phone">Telefon</string>
+    <string name="voice_engine_phone_offline">Telefon · çevrimdışı</string>
+    <string name="voice_say_now">Buyurun, dinliyorum…</string>
+    <string name="voice_recording">Kaydediliyor. Bırakın, metne dönüşsün…</string>
+    <string name="voice_foot_live">Bırakın · kelimeler düzenlemek için kutuya girer</string>
+    <string name="voice_foot_convert">Bırakın · metne dönüştürülür, sonra kutuya girer</string>
+    <string name="voice_left">%1$d sn kaldı</string>
+    <string name="voice_slide_send_cancel">Göndermek veya iptal etmek için yukarı kaydırın</string>
+    <string name="voice_release_cancel">İptal etmek için bırakın</string>
+    <string name="voice_release_send">Göndermek için bırakın</string>
+    <string name="voice_release_fill">Doldurmak için bırakın</string>
+    <string name="voice_release_convert">Dönüştürmek için bırakın</string>
+    <string name="voice_converting">Dönüştürülüyor…</string>
+    <string name="voice_no_match">Anlayamadım. Basılı tutup tekrar söyleyin</string>
+    <string name="voice_busy">Konuşma tanıma meşgul. Birazdan tekrar deneyin</string>
+    <string name="voice_network">Ağ yok, metne dönüştürülemedi</string>
+    <string name="voice_mic_unavailable">Mikrofon kullanılamıyor. Başka bir uygulama onu kullanıyor olabilir</string>
+    <string name="voice_hold_to_talk">Konuşmak için basılı tutun</string>
+    <string name="voice_mic_blocked_title">Mikrofon hâlâ kullanılamıyor</string>
+    <string name="voice_mic_blocked_body">Kayda zaten izin verildi, ancak Mika hâlâ kaydedemiyor. Hızlı Ayarlar\'daki mikrofon erişim anahtarının açık olduğunu (Android 12 ve üstü) ve Mika\'nın mikrofonunun sistemin izin yöneticisinde kapatılmadığını kontrol edin. Başka bir uygulama da mikrofonu kullanıyor olabilir.</string>
+    <string name="voice_provider_failed">Metne dönüştürülemedi: %1$s</string>
+    <string name="voice_unavailable_title">Ses girişi hazır değil</string>
+    <string name="voice_unavailable_no_engine">Bu telefonda yerleşik konuşma tanıma yok ve hiçbir konuşmadan yazıya modeli seçilmedi. Ayarlar › Modeller › Konuşmadan yazıya\'da bir sağlayıcının konuşma modelini seçin, çalışacaktır.</string>
+    <string name="voice_unavailable_system_gone">Konuşmadan yazıya, telefonun yerleşik tanımasına ayarlı, ancak bu telefonda artık yok. Ayarlar › Modeller › Konuşmadan yazıya\'da başka bir tane seçin.</string>
+    <string name="voice_unavailable_system_silent">Telefonun yerleşik konuşma tanıması yanıt vermedi, bu yüzden hiçbir kelime gelmedi. Ayarlar › Modeller › Konuşmadan yazıya\'da bir sağlayıcının konuşma modelini seçin, çalışacaktır.</string>
+    <string name="voice_unavailable_system_failed">Telefonun yerleşik konuşma tanıması başlatılamadı. Tekrar deneyin ya da Ayarlar › Modeller › Konuşmadan yazıya\'da başka bir tanıma yöntemi seçin.</string>
+    <string name="voice_service_permission_title">Telefonun konuşma tanıması henüz kaydedemiyor</string>
+    <string name="voice_service_permission_body">\“%1$s\” bu telefonda konuşma tanımayı yapan uygulamadır ve ses kaydetmesine izin verilmedi, bu yüzden sizi duyamıyor. Mika\'nın kendi mikrofon izni sorunsuz. Onun izin sayfasını açıp mikrofonu açın, sonra dönüp tekrar konuşmak için basılı tutun. Ayarlar › Modeller › Konuşmadan yazıya\'da başka bir tanıma yöntemi de seçebilirsiniz.</string>
+    <string name="voice_service_settings_failed">\“%1$s\” için ayarlar sayfası açılamadı. Sistemin uygulama listesinde bulun ve mikrofonu açın.</string>
+    <string name="voice_unavailable_provider_gone">Seçilen konuşma modelinin sağlayıcısı kaldırıldı. Ayarlar › Modeller › Konuşmadan yazıya\'da başka bir tane seçin.</string>
+    <string name="voice_unavailable_off">Konuşmadan yazıya kapalı. Ayarlar › Modeller › Konuşmadan yazıya\'da bir tane seçin.</string>
+    <string name="voice_go_pick">Bir tane seç</string>
+    <string name="voice_permission_title">Mika\'nın mikrofona ihtiyacı var</string>
+    <string name="voice_permission_body">Konuşmak için basılı tutarken sizi duymak için Mika\'nın ses kaydetmesi gerekir. Daha önce reddedildi, bu yüzden telefon bir daha sormayacak. Sistem ayarlarındaki Mika izin sayfasında mikrofonu açın.</string>
+    <string name="voice_permission_open">Ayarları aç</string>
+    <!-- Floating capsule: long press to talk -->
+    <string name="capsule_voice_talk">Konuş</string>
+    <string name="capsule_voice_send">Gönder</string>
+    <string name="capsule_voice_answer_title">Mika\'yı yanıtlama</string>
+    <string name="capsule_voice_continue_title">\“%1$s\” devam ediyor</string>
+    <string name="capsule_voice_cancel">İptal</string>
+    <string name="capsule_voice_edit">Düzenle</string>
+    <string name="capsule_voice_foot_send_up">Göndermek için bırakın · iptal etmek veya düzenlemek için yukarı sürükleyin</string>
+    <string name="capsule_voice_foot_send_down">Göndermek için bırakın · iptal etmek veya düzenlemek için aşağı sürükleyin</string>
+    <string name="capsule_voice_foot_convert_up">Dönüştürüp göndermek için bırakın · iptal etmek veya düzenlemek için yukarı sürükleyin</string>
+    <string name="capsule_voice_foot_convert_down">Dönüştürüp göndermek için bırakın · iptal etmek veya düzenlemek için aşağı sürükleyin</string>
+    <string name="capsule_voice_foot_edit">Bırakın · kart, kutudaki kelimelerle açılır</string>
+    <string name="capsule_voice_foot_cancel">Bırakın · bunu atın</string>
+    <string name="capsule_voice_foot_a11y">Bitirdiğinizde kapsülün eylemlerinden \“Gönder\”i seçin</string>
+    <string name="capsule_voice_steered">Göreve söylendi: %1$s</string>
+    <string name="capsule_voice_answered">Yanıtlandı: %1$s</string>
+    <string name="capsule_voice_sent">Gönderildi: %1$s</string>
+    <string name="capsule_voice_need_mic">Mika\'da mikrofona izin vermek için dokunun</string>
+    <string name="capsule_voice_not_ready">Ses girişi hazır değil · dokunun</string>
+    <string name="capsule_voice_service_need_mic">Konuşma tanıma henüz kaydedemiyor · dokunun</string>
+    <string name="capsule_voice_open">Mika\'yı aç</string>
+</resources>

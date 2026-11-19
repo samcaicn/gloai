@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_record_brief">Görev özeti</string>
+    <string name="calls_record_goal">İstenen sonuç</string>
+    <string name="calls_record_questions">Sorulacak sorular</string>
+    <string name="calls_record_context">Arka plan</string>
+    <string name="calls_record_constraints">Vaatler ve eylemler üzerindeki sınırlar</string>
+    <string name="calls_record_reuse">Yeni görev olarak kullan</string>
+    <string name="calls_record_result_unconfirmed">Arama sona erdi. Sonucu onaylamak için deşifreyi kontrol edin; onu halledildi olarak işaretlemek hedefe ulaşıldığı anlamına gelmez.</string>
+</resources>

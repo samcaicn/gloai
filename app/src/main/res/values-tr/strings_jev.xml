@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="jev_title">Karar modeli · Jev</string>
+    <string name="jev_row_sub">İsteğe bağlı amaç ve rota seçimi</string>
+    <string name="jev_enabled">Karar modelini kullan</string>
+    <string name="jev_privacy">Etkinleştirildiğinde isteğiniz, yakın konuşma bağlamı ve aday rotalar, amacı yargılamak ve rotaları seçmek için yapılandırılan sağlayıcıya gönderilir. Başarısız olursa Mika mevcut modeli kullanır. Ana, görüntü ve hafif model ayarları ayrı kalır.</string>
+    <string name="jev_provider">Sağlayıcı</string>
+    <string name="jev_endpoint">Uç nokta</string>
+    <string name="jev_model">Model kimliği</string>
+    <string name="jev_endpoint_note">Tam SystemOne uç nokta URL\'sini girin. Yerel HTTP hizmetleri dışında HTTPS gerekir. API anahtarı bu cihazda şifrelenmiş saklanır.</string>
+    <string name="jev_invalid">Geçerli bir uç nokta ve model kimliği girin. Etkinleştirmek veya test etmek ayrıca bir API anahtarı gerektirir.</string>
+    <string name="jev_apply_note">Anahtarı ve bağlantı ayarlarını yeni görevlere uygulamak için kaydedin.</string>
+    <string name="jev_test">Bağlantıyı test et</string>
+    <string name="jev_test_note">Test, bu uç noktaya yalnızca sabit bir selamlama ve iki seçenek gönderir. Konuşmalarınızı, ekranlarınızı veya anılarınızı göndermez, değişiklik kaydetmez veya hizmeti etkinleştirmez.</string>
+    <string name="jev_test_success">Bağlantı çalışıyor; sentetik seçim doğruydu.</string>
+    <string name="jev_test_failed">Test başarısız oldu. Uç noktayı, modeli, API anahtarını ve ağı kontrol edin.</string>
+    <string name="jev_saved">Kaydedildi. Yeni görevler bu ayarları kullanacak.</string>
+    <string name="jev_save_failed">Kaydedilemedi. Önceki kayıtlı ayarlarınız değişmedi.</string>
+</resources>

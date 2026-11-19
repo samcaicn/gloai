@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="metrics_model">Model düşünmesi</string>
+    <string name="metrics_observe">Ekran okuma</string>
+    <string name="metrics_act">Eylemler</string>
+    <string name="metrics_other">Diğer (beklemeler, yeniden denemeler)</string>
+    <string name="metrics_title">Çalıştırma istatistikleri</string>
+    <string name="metrics_sub">Son çalıştırmaların süresi, model gidiş-dönüşleri ve tokenları</string>
+    <string name="metrics_empty">Henüz çalıştırma istatistiği yok. Mika\'dan bir şey yapmasını isteyin, buraya kaydedilir.</string>
+    <string name="metrics_note">Yalnızca bu telefondaki son %1$d çalıştırma sayılır. Süre, Mika çalışmaya başladığında başlar; ilk geri bildirim, ne yaptığını ilk gördüğünüz andır.</string>
+    <string name="metrics_copy">JSON kopyala</string>
+    <string name="metrics_share">JSON paylaş</string>
+    <string name="metrics_last_10">Son 10</string>
+    <plurals name="metrics_runs">
+        <item quantity="one">%1$d</item>
+        <item quantity="other">%1$d</item>
+    </plurals>
+    <string name="duration_h_m">%1$d sa %2$d dk</string>
+    <string name="metrics_total">toplam %1$s</string>
+    <plurals name="metrics_round_trips">
+        <item quantity="one">%1$d model gidiş-dönüşü</item>
+        <item quantity="other">%1$d model gidiş-dönüşü</item>
+    </plurals>
+    <string name="metrics_first_feedback_at">ilk geri bildirim %1$s</string>
+    <string name="metrics_retry_wait">Bunun içinde yeniden deneme beklemeleri</string>
+    <string name="metrics_input_tokens">Giriş tokenları</string>
+    <string name="metrics_output_tokens">Çıkış tokenları</string>
+    <string name="usage_cached">Önbellek isabetleri</string>
+    <string name="metrics_no_usage">Kullanım bildirilmedi</string>
+    <string name="metrics_all_calls">Tüm mantıksal model çağrıları</string>
+    <string name="metrics_all_http_calls">Tüm HTTP istekleri</string>
+    <plurals name="metrics_all_calls_value">
+        <item quantity="one">%1$d (yan çağrılar ve yeniden denemeler dahil)</item>
+        <item quantity="other">%1$d (yan çağrılar ve yeniden denemeler dahil)</item>
+    </plurals>
+    <string name="metrics_steps">Adımlar</string>
+    <string name="metrics_observe_act">Okumalar / eylemler</string>
+    <string name="metrics_observe_act_value">%1$d / %2$d</string>
+    <string name="metrics_counted">Sayıldı</string>
+    <plurals name="metrics_n_runs">
+        <item quantity="one">%1$d çalıştırma</item>
+        <item quantity="other">%1$d çalıştırma</item>
+    </plurals>
+    <string name="metrics_success_rate">Başarı oranı</string>
+    <string name="metrics_success_value">%1$s (%2$d/%3$d)</string>
+    <string name="metrics_median_time">Ortanca süre</string>
+    <string name="metrics_median_feedback">Ortanca ilk geri bildirim</string>
+    <string name="metrics_avg_round_trips">Ort. model gidiş-dönüşü</string>
+    <string name="metrics_avg_round_trips_value">%1$s</string>
+    <string name="metrics_avg_tokens">Ort. token</string>
+    <plurals name="metrics_copied">
+        <item quantity="one">%1$d çalıştırmanın özeti kopyalandı</item>
+        <item quantity="other">%1$d çalıştırmanın özetleri kopyalandı</item>
+    </plurals>
+    <string name="metrics_export_failed">Dışa aktarılamadı; veri çok büyük olabilir. Daha küçük bir aralık deneyin.</string>
+    <string name="metrics_where_time">Zamanın nereye gittiğini gör</string>
+    <string name="metrics_overview">Genel bakış</string>
+    <string name="metrics_time_split">Zamanın nereye gittiği</string>
+    <string name="metrics_export">Dışa aktar</string>
+    <plurals name="metrics_summary_of">
+        <item quantity="one">Bu %1$d çalıştırmanın özeti</item>
+        <item quantity="other">Bu %1$d çalıştırmanın özeti</item>
+    </plurals>
+    <string name="metrics_summary_sub">Kendi analiziniz için her çalıştırma bir girdi</string>
+    <plurals name="chat_steps_n">
+        <item quantity="one">%1$d adım</item>
+        <item quantity="other">%1$d adım</item>
+    </plurals>
+</resources>

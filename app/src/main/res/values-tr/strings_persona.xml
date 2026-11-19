@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="persona_title">Kişilik</string>
+    <string name="persona_sub">Mika\'nın sizinle nasıl konuşacağını seçin</string>
+    <string name="persona_default">Varsayılan</string>
+    <string name="persona_default_sub">Mika\'nın her zamanki sesi</string>
+    <string name="persona_empty">Henüz kişilik yok</string>
+    <string name="persona_empty_sub">Bir kişilik, Mika\'nın ne yapabileceğini değil nasıl konuştuğunu değiştirir.</string>
+    <string name="persona_new">Yeni kişilik</string>
+    <string name="persona_edit">Kişiliği düzenle</string>
+    <string name="persona_name">Ad</string>
+    <string name="persona_description">Kısa açıklama</string>
+    <string name="persona_prompt">Talimatlar</string>
+    <string name="persona_prompt_hint">Ton, uzunluk, ifade, biçimlendirme…</string>
+    <string name="persona_empty_prompt">Talimat olmadan bu kişilik hiçbir şeyi değiştirmez.</string>
+    <string name="persona_counter">%1$d karakter · yaklaşık %2$d token</string>
+    <string name="persona_preview">Tam istemi önizle</string>
+    <string name="persona_preview_hide">Önizlemeyi gizle</string>
+    <string name="persona_preview_note">Gri kurallar sabittir. Bir kişilik tonu ve ifadeyi değiştirebilir; asla güvenliği, izinleri veya Mika\'nın raporladıklarını değiştiremez.</string>
+    <string name="persona_chip">Kişilik: %1$s</string>
+    <string name="persona_manage">Kişilikleri yönet</string>
+    <string name="persona_switch_note">Değiştirmek yalnızca bu sohbetteki sonraki mesajları etkiler.</string>
+    <string name="persona_delete_title">\“%1$s\” silinsin mi?</string>
+    <string name="persona_delete_body">Onu kullanan sohbetler varsayılan kişiliğe döner. Bu geri alınamaz.</string>
+    <string name="persona_copy">Çoğalt</string>
+    <string name="persona_missing">Silinen kişilik</string>
+    <string name="persona_name_required">Bir ad girin.</string>
+    <string name="persona_name_too_long">Ad çok uzun.</string>
+    <string name="persona_description_too_long">Açıklama çok uzun (en fazla %1$d karakter).</string>
+    <string name="persona_prompt_too_long">Talimatlar çok uzun (en fazla %1$d karakter).</string>
+    <string name="persona_save_failed">Kişilik kaydedilemedi.</string>
+</resources>

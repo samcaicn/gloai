@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_helper_setup_title">Mika ses yardımcısı</string>
+    <string name="calls_helper_setup_intro">Normal aramaları Android yürütür. Mika, yapay zeka aramalarında duymak ve konuşmak için ses yardımcısını kullanır. Kablosuz hata ayıklama, bu telefonun bilgisayar olmadan yardımcıyı başlatmasını veya geri getirmesini sağlar. Eşleştirmek için Wi-Fi\'a katılın; canlı yapay zeka sesi de internet bağlantısı gerektirir.</string>
+    <string name="calls_helper_unavailable">Ses yardımcısı bu cihazda kurulamıyor.</string>
+    <string name="calls_helper_unavailable_reason">Android, burada yardımcıyı başlatmak için gereken ayarları sağlamıyor. Normal aramalar yine de telefon uygulamanız üzerinden çalışır.</string>
+    <string name="calls_helper_ready">Ses yardımcısı bağlandı</string>
+    <string name="calls_helper_usb_running">Ses yardımcısı çalışıyor · USB ile başlatıldı</string>
+    <string name="calls_helper_usb_stopped">USB ile başlatılan ses yardımcısı durdu.</string>
+    <string name="calls_helper_wireless_recovery">Durursa yardımcıyı bilgisayar olmadan yeniden başlatmak için bu telefonda bir kez eşleştirin. Kurulum için Wi-Fi\'a bağlanın.</string>
+    <string name="calls_helper_wireless_unavailable">Bu telefonda kablosuz hata ayıklama kullanılamıyor.</string>
+    <string name="calls_helper_setup_wireless">Kablosuz kurtarmayı kur</string>
+    <string name="calls_helper_hide_usb">Bilgisayar yedeğini gizle</string>
+    <string name="calls_helper_show_usb">Bilgisayar yedeği</string>
+    <string name="calls_helper_usb_fallback">Kablosuz kurulum kullanılamıyorsa ve bir bilgisayarınız varsa, bir USB kablosu bağlayın ve bu komutu bilgisayarda çalıştırın. Bir güncelleme veya yeniden başlatmadan sonra tekrar çalıştırmanız gerekebilir.</string>
+    <string name="calls_helper_wireless_reconnect">Yardımcı durursa Wi-Fi\'a katılın ve Android kapatmışsa Kablosuz hata ayıklamayı açın. Yalnızca istenirse yeniden eşleştirin.</string>
+    <string name="calls_helper_wireless_debugging_body">Wi-Fi\'a katılın ve Geliştirici seçenekleri\'nde Kablosuz hata ayıklamayı açın. Android sorarsa İzin ver\'e dokunun. Sonra eşleştirme kodu adımına devam etmek için Mika\'ya dönün.</string>
+    <string name="calls_helper_usb_debugging_body">Geliştirici seçenekleri\'nde USB hata ayıklamayı açın ve onaylayın. Kablosuz kurulum için kablo takmanız gerekmez. Diğer ayarlara dokunmayın.</string>
+    <string name="calls_helper_usb_debugging_brief">Kablosuz kurulum için kablo gerekmez</string>
+    <string name="calls_helper_connect_body">Eşleştirmeden sonra Mika, bu telefondaki ses yardımcısına bağlanır.</string>
+    <string name="calls_helper_wifi_needed">Ses yardımcısını Kablosuz hata ayıklama üzerinden başlatmak veya geri getirmek için Wi-Fi\'a katılın.</string>
+    <string name="calls_helper_repair_needed">Eşleştirme kullanılamıyor. Bu telefondan yeniden eşleştirin.</string>
+    <string name="calls_helper_name">Ses yardımcısı</string>
+    <string name="calls_helper_disconnected">Yapay zeka aramaları için iki yönlü sesi etkinleştirmek üzere bağlanın</string>
+    <string name="calls_helper_manage">Yönet</string>
+    <string name="calls_helper_set_up">Kur</string>
+    <string name="calls_helper_pairing_done">Ses yardımcısı bağlandı. Mika\'ya dönebilirsiniz.</string>
+    <string name="calls_helper_pairing_problem">Nasıl yeniden bağlanacağınızı görmek için Mika\'ya dönün.</string>
+</resources>

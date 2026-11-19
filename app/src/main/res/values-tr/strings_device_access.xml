@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="device_access_group">Uzaktan uyandırma ve kilit açma</string>
+    <string name="device_access_title">Uzaktan uyandırma ve kilit açmaya izin ver</string>
+    <string name="device_access_sub">MCP belirtecinize sahip bir bilgisayar bu telefonu uyandırabilir ve kilidini açabilir.</string>
+    <string name="device_access_credential">Ekran kilidi kimliği</string>
+    <string name="device_access_no_credential">Yapılandırılmadı · yalnızca kaydırma veya ekran kilidi yok</string>
+    <string name="device_access_pin_saved">PIN kaydedildi · değiştirmek için dokunun</string>
+    <string name="device_access_password_saved">Parola kaydedildi · değiştirmek için dokunun</string>
+    <string name="device_access_blocked">Kilit açma duraklatıldı · bu telefonda kimliği kontrol edip yeniden kaydedin</string>
+    <string name="device_access_clear">Kayıtlı kimliği kaldır</string>
+    <string name="device_access_foot">Varsayılan olarak kapalı. Kimlikler bu telefonda şifrelenir ve asla bir modele veya bilgisayara gönderilmez. Bir başarısız kimlik denemesi sonraki denemeleri duraklatır. Yeniden başlattıktan sonra telefonun kilidini önce kendiniz bir kez açın. Telefon kontrolü kurulmuş olmalı.</string>
+    <string name="device_access_pin">PIN</string>
+    <string name="device_access_password">Parola</string>
+    <string name="device_access_value">Kimlik</string>
+    <string name="device_access_value_hint">Mevcut ekran kilidinizi girin</string>
+    <string name="device_access_repeat">Onayla</string>
+    <string name="device_access_repeat_hint">Tekrar girin</string>
+    <string name="device_access_save">Kimliği kaydet</string>
+    <string name="device_access_pin_hint">Mevcut 4–16 haneli PIN\'i kullanın. Tekrar kaydetmek, bir başarısızlıktan sonra bir yeni denemeye izin verir.</string>
+    <string name="device_access_password_hint">Mevcut 4–64 karakterlik parolayı kullanın: İngilizce harfler, sayılar, boşluklar ve yaygın ASCII simgeleri. Diğer karakterler ve desen kilitleri desteklenmez.</string>
+    <string name="device_access_save_failed">Kaydedilemedi. Telefon depolamasını kontrol edip tekrar deneyin.</string>
+</resources>

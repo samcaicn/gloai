@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="device_browser_title">Cihaz dosyaları</string>
+    <string name="device_browser_roots">Yetkili klasörler</string>
+    <string name="device_browser_back">Geri</string>
+    <string name="device_browser_retry">Dosyalar yüklenemedi. Yeniden denemek için dokunun.</string>
+    <string name="device_browser_empty">Dosya veya yetkili klasör yok</string>
+    <string name="device_browser_more">Daha fazla yükle</string>
+    <string name="device_browser_add">Seçilenleri ekle (%1$d)</string>
+    <string name="device_browser_cancel">İptal</string>
+    <string name="device_browser_history">Konuşma içe aktarmaları</string>
+    <string name="device_browser_show_files">Dosyalara göz at</string>
+    <string name="device_browser_history_hint">İçe aktarma geçmişi; kopyalar kaldırılmış olabilir. Dosyaları görüntülemek için dosya kitaplığını açın.</string>
+    <string name="device_browser_search">Dosyalarda ara</string>
+    <string name="device_browser_truncated">Arama derinlik, süre veya dosya sınırında durdu; sonuçlar eksik olabilir.</string>
+</resources>

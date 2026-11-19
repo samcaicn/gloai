@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plugins_title">Eklentiler</string>
+    <string name="plugins_install">Eklenti yükle</string>
+    <string name="plugins_installing">Yükleniyor…</string>
+    <string name="plugins_empty">Henüz eklenti yok</string>
+    <string name="plugins_empty_sub">Mika\'nın okuyabileceği beceriler eklemek için bir eklenti zip\'i yükleyin. Bir eklenti, uygulama ayarlarını değiştiremez veya diğer verilerinizi okuyamaz.</string>
+    <string name="plugins_enabled">Etkin</string>
+    <string name="plugins_disabled">Devre dışı</string>
+    <string name="plugins_skills">Beceriler</string>
+    <string name="plugins_no_skills">Beceri yok</string>
+    <string name="plugins_permissions">İzinler</string>
+    <string name="plugins_none">Yok</string>
+    <string name="plugins_version">Sürüm %1$s</string>
+    <string name="plugins_uninstall">Kaldır</string>
+    <string name="plugins_uninstall_body">Bu eklenti ve becerileri kaldırılsın mı? Konuşmalar ve anılar etkilenmez.</string>
+    <string name="plugins_install_failed">Yükleme başarısız: %1$s</string>
+    <string name="plugins_unsupported_in_version">Bu sürüm yalnızca beceri içeren eklentileri destekler.</string>
+    <string name="plugins_error_too_new">Bu eklenti daha yeni bir Mika sürümü gerektirir.</string>
+    <string name="plugins_error_unsafe">Paket güvenli olmayan bir yol içeriyor ve reddedildi.</string>
+    <string name="plugins_error_too_large">Paket çok büyük.</string>
+    <string name="plugins_error_missing_manifest">Paketin kökünde manifest.json yok.</string>
+    <string name="plugins_error_invalid">Paket geçerli bir eklenti değil.</string>
+    <plurals name="plugins_skill_count">
+        <item quantity="one">%1$d beceri</item>
+        <item quantity="other">%1$d beceri</item>
+    </plurals>
+    <plurals name="plugins_count">
+        <item quantity="one">%1$d eklenti</item>
+        <item quantity="other">%1$d eklenti</item>
+    </plurals>
+    <string name="env_vars_title">Ortam değişkenleri</string>
+    <string name="env_vars_add">Değişken ekle</string>
+    <string name="env_vars_name">Ad</string>
+    <string name="env_vars_value">Değer</string>
+    <string name="env_vars_empty">Henüz ortam değişkeni yok</string>
+    <string name="plugins_disclosure_title">Bu eklenti ne yapabilir</string>
+    <string name="plugins_disclosure_prompt">Sistem istemini yeniden yazar</string>
+    <string name="plugins_disclosure_reads">Konuşmalarınızı, belleği ve model anahtarlarını okuyabilir</string>
+    <string name="plugins_rules">İstem kuralları</string>
+    <string name="plugins_rules_view">Görüntüle</string>
+    <string name="plugins_rules_restore">Varsayılanı geri yükle</string>
+</resources>

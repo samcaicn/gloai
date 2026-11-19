@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sms_login_title">SMS oturumu (deneysel)</string>
+    <string name="sms_login_enable">SMS oturumuna izin ver</string>
+    <string name="sms_login_default_off">Varsayılan olarak kapalı · güvenilir yerel profiller</string>
+    <string name="sms_login_limits">Yapılandırılmış yerel uygulamalar için otomatik oturum: tam uygulama imzası, gönderici, hizmet ve hesap eşleşmesi. Oturum başına onay yok. Eksik kimlik, izin veya doğrulanmış başarı manuel kalır. Doğrulamadan sonra yerel metin gözlemi devam eder; bu çalıştırma sırasında görüntüler yerel kalır.</string>
+    <string name="sms_login_permission">Android SMS izni</string>
+    <string name="sms_login_error">İzin veya kayıt başarısız oldu. Manuel oturumu koruyun; Android uygulama izinlerini kontrol edin.</string>
+    <string name="sms_login_disclosure">Otomatik SMS oturumunu yalnızca burada yapılandırdığınız hesaplar ve imzalı uygulamalar için etkinleştirin. Mika, tekrar sormadan isteyebilir, doldurabilir ve gönderebilir, sonra hesabı yerel olarak doğrular. Ödeme, kurtarma veya kayıt yok. SMS ve kodlar asla kaydedilmez veya modele gönderilmez. İptal etmek için bir profili devre dışı bırakın veya silin.</string>
+    <string name="sms_login_sender">Tam SMS gönderici</string>
+    <string name="sms_login_signature">Köşeli parantez içindeki hizmet adı</string>
+    <string name="sms_login_account">Eşleşen hesap haneleri (4–11)</string>
+    <string name="sms_login_listening">Yapılandırılan hesap otomatik isteniyor, dolduruluyor ve doğrulanıyor. İptal bu denemeyi durdurur.</string>
+    <string name="sms_login_tool">SMS oturumu</string>
+    <string name="sms_profile_title">Güvenilir hizmetler ve hesaplar</string>
+    <string name="sms_profile_help">Bir kez yapılandırın. Kaydetmek, bu imzalı uygulama için otomatik kod istemeyi, hesap/kod girmeyi, son oturumu ve hesap doğrulamayı yetkilendirir. Eşleme, gözden geçirilmiş yerel kaynak kimlikleri ve benzersiz bir giriş yapılmış hesap göstergesi gerektirir. Uygulama başına bir hesap; iptal etmek için düzenleyin veya silin. Android Keystore şifrelemesiyle yerel saklanır.</string>
+    <string name="sms_profile_accountvalue">Hesap numarası (bu cihazda tutulur)</string>
+    <string name="sms_profile_package">Yüklü uygulama paketi</string>
+    <string name="sms_profile_accountfield">Hesap düzenleyici kaynak kimliği</string>
+    <string name="sms_profile_codefield">Kod düzenleyici kaynak kimliği</string>
+    <string name="sms_profile_sendbutton">Kod isteği düğmesi kaynak kimliği</string>
+    <string name="sms_profile_loginbutton">Son oturum düğmesi kaynak kimliği</string>
+    <string name="sms_profile_successview">Giriş yapılmış göstergesi kaynak kimliği</string>
+    <string name="sms_profile_successtext">Tam giriş yapılmış gösterge metni</string>
+    <string name="sms_profile_successaccount">Giriş yapılmış hesap görünümü kaynak kimliği</string>
+</resources>

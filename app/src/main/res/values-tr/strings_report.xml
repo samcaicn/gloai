@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Görev raporu</string>
+    <string name="report_entry_hint">Sonuçlar · Ayrıntılar · Ekran görüntüleri</string>
+    <string name="report_no_answer">Bu görev için son yanıt kaydedilmedi.</string>
+    <string name="report_screens">Önemli ekran görüntüleri</string>
+    <string name="report_view_step">Adım %1$d · Tekrarı aç</string>
+    <string name="report_local_note">Çalıştırma kaydıyla birlikte yerel kaydedildi. Ekran görüntüleri sayfa içeriği içerebilir; yalnızca son 30 çalıştırma tutulur.</string>
+    <string name="playback_title">İşlem tekrarı</string>
+    <string name="playback_empty">Bu görev için ekran görüntüsü kaydedilmedi.</string>
+    <string name="playback_legacy">Eski kayıt: eylem işaretleri olmadan yalnızca ekran görüntüleri.</string>
+    <string name="playback_approximate">Ok, kesin dokunma noktalarını değil kaydırma yönünü gösterir.</string>
+    <string name="playback_marks">Kırmızı daire: dokunma · Ok: kaydırma</string>
+    <string name="playback_progress">Tekrar ilerlemesi</string>
+    <string name="playback_pause">Duraklat</string>
+    <string name="playback_play">Oynat</string>
+    <string name="playback_previous">Önceki</string>
+    <string name="playback_next">Sonraki</string>
+    <string name="playback_image">Kaydedilmiş görev ekran görüntüsü</string>
+    <string name="playback_missing">Ekran görüntüsü kullanılamıyor</string>
+    <string name="report_export">Dışa aktar</string>
+    <string name="report_copy_markdown">Markdown olarak kopyala</string>
+    <string name="report_copy_text">Düz metin olarak kopyala</string>
+    <string name="report_share">Raporu paylaş</string>
+    <string name="report_share_text">Düz metin</string>
+    <string name="report_share_txt">TXT dosyası</string>
+    <string name="report_share_md">Markdown dosyası</string>
+    <string name="report_share_docx">Word dosyası</string>
+    <string name="report_share_failed">Paylaşılamadı. Tekrar deneyin ya da önce raporu dışa aktarın.</string>
+    <string name="report_share_too_long">Rapor metin paylaşımı için çok uzun. Bunun yerine TXT, Markdown veya Word dosyası olarak paylaşın.</string>
+    <string name="report_copied">Rapor kopyalandı</string>
+    <string name="report_saved">Rapor kaydedildi</string>
+    <string name="report_save_failed">Kaydedilemedi. Kaydı ve hedefi kontrol edip yeniden deneyin.</string>
+    <string name="report_close">Kapat</string>
+    <string name="report_final_page">Son kaydedilen sayfa</string>
+    <string name="playback_stage_start">Başlangıç</string>
+    <string name="playback_stage_input">Giriş ve arama</string>
+    <string name="playback_skipped">Kullanılamayan kareler atlandı: %1$d.</string>
+    <string name="playback_no_mark">Bu işlem için eylem işareti kaydedilmedi.</string>
+    <string name="playback_error_unknown">Hata: belirli bir neden kaydedilmedi.</string>
+    <string name="playback_result">İşlem sonucu</string>
+    <string name="playback_element_click">Daire, gerçek dokunma noktasını değil tahmini öğe konumunu gösterir.</string>
+</resources>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="relay_transport">Uzak</string>
+    <string name="relay_pair_title">Bir uzak ağ geçidi eşleştir</string>
+    <string name="relay_pair_sub">Ağ geçidi web sayfasında bir eşleştirme kodu oluşturun, sonra adresini ve kodu aşağıya girin.</string>
+    <string name="relay_gateway">Ağ geçidi</string>
+    <string name="relay_code">Eşleştirme kodu</string>
+    <string name="relay_code_hint">Ağ geçidinizden tek kullanımlık kod</string>
+    <string name="relay_pair">Ağ geçidini eşleştir</string>
+    <string name="relay_busy">Lütfen bekleyin…</string>
+    <string name="relay_enable">Uzak erişime izin ver</string>
+    <string name="relay_disabled">Eşleştirildi. Uzak erişim kapalı</string>
+    <string name="relay_online">Ağ geçidi bağlı. CLI / MCP istekleri bekleniyor</string>
+    <string name="relay_connecting">Uzak ağ geçidine bağlanılıyor…</string>
+    <string name="relay_offline">Bağlantı koptu. Otomatik yeniden bağlanılıyor</string>
+    <string name="relay_unauthorized">Eşleştirmenin süresi doldu veya iptal edildi. Ağ geçidini yeniden eşleştirin</string>
+    <string name="relay_copy_address">MCP adresini kopyala</string>
+    <string name="relay_client_help">Bağlanmak için yapılandırmayı bilgisayardaki MCP istemcinize kopyalayın.</string>
+    <string name="relay_unpair">Ağ geçidi eşleştirmesini kaldır</string>
+    <string name="relay_unpair_body">Bu telefonun ağ geçidiyle bağlantısını kesin. İnternet bağlantısı gerekir. Telefon erişim belirteci değişmeden kalır.</string>
+    <string name="relay_failed">Tamamlanamadı. Ağ geçidi adresini, internet bağlantısını ve eşleştirme kodunu kontrol edin. Eşleştirmeyi kaldırma başarısız olduysa erişim kapalıdır; yeniden deneyin veya telefona erişimi ağ geçidinde iptal edin.</string>
+    <string name="relay_notif_body">Uzak erişim etkin. Ağ geçidi bağlantısını kontrol etmek için Mika\'yı açın.</string>
+    <string name="relay_incompatible">Mika\'yı ve ağ geçidini eşleşen sürümlere güncelleyin</string>
+    <string name="relay_copy_gateway">Ağ geçidi adresini kopyala</string>
+    <string name="relay_cli_help">Erişim belirtecini bilgisayarınızda bir dosyaya kaydedin, sonra yukarıdaki bağlantı komutunu çalıştırın.</string>
+    <string name="relay_intro">Ağ geçidi, normalde Wi-Fi / LAN üzerinden gönderilen CLI ve MCP isteklerini uzak erişim için telefonunuza iletir. Eşleştirmeden önce kendi genel sunucunuza dağıtın.</string>
+    <string name="relay_device_access">Ağ geçidi üzerinden uyandırmaya ve kilit açmaya izin ver</string>
+    <string name="relay_device_access_sub">Varsayılan olarak kapalı. Ayrıca bu sayfada \“Uzaktan uyandırma ve kilit açmaya izin ver\” de gerekir. İkisi de açıkken, erişim belirtecine sahip herkes bu telefonu internet üzerinden uyandırabilir ve kilidini açabilir.</string>
+</resources>

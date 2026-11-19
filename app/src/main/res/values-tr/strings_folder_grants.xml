@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_grant_choose">Okumak ve yazmak için bir klasör seçin</string>
+    <string name="folder_grant_writable">Oku ve yaz</string>
+    <string name="folder_grant_readonly">Salt okunur</string>
+    <string name="folder_grant_unavailable">Klasör kullanılamıyor — yeniden seçin</string>
+    <string name="folder_grant_revoke">Erişimi kaldır</string>
+    <string name="folder_grant_loading">Klasörler yükleniyor…</string>
+    <string name="folder_grant_error">Klasöre erişilemedi. Okuma ve yazmaya izin veren bir klasör seçin veya tekrar deneyin.</string>
+    <string name="tool_list_folder_files">Yetkili klasörlere göz at</string>
+</resources>

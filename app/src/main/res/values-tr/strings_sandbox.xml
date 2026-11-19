@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="install_check">Cihaz kontrol ediliyor</string>
+    <string name="install_extract">Açılıyor</string>
+    <string name="install_configure">Yapılandırılıyor</string>
+    <string name="install_skills">Beceri betikleri eşitleniyor</string>
+    <string name="install_interrupted">Kurulum kesildi; yeniden deneyebilirsiniz</string>
+    <string name="install_checksum">Dosya sağlama toplamı uyuşmazlığı</string>
+    <string name="install_unpack_failed">Ortam açılamadı; lütfen Mika\'yı yeniden kurun: %1$s</string>
+    <string name="install_unsupported">Bu cihazda desteklenmiyor (arm64 gerekir)</string>
+    <string name="install_no_space">Yeterli alan yok: %1$d MB gerekir (%2$d MB boş)</string>
+    <string name="install_cannot_start">Ortam başlamıyor: %1$s</string>
+    <string name="install_exit_code">çıkış kodu %1$d</string>
+    <string name="install_no_client">mika komutu eksik (eksik paket)</string>
+    <string name="sandbox_resetting">Sıfırlanıyor</string>
+    <string name="sandbox_reset_failed">Sıfırlama başarısız: %1$s</string>
+    <string name="sandbox_incomplete">Ortam dosyaları eksik; Ayarlar → Gelişmiş\'te sıfırlayabilirsiniz</string>
+    <string name="sandbox_not_finished">Kurulum bitmedi; yeniden deneyebilirsiniz</string>
+    <string name="sandbox_network">Betiklerin çevrimiçi olmasına izin ver</string>
+    <string name="sandbox_network_sub">Varsayılan olarak açık</string>
+    <string name="sandbox_network_explain">Varsayılan olarak Mika dosyalarla çalışır ve betikleri çevrimiçi çalıştırır. Bu açıkken betikler ağı kullanabilir (örneğin makalelere veya haritalara bakmak için) ve ayrıca sohbetteki dosyaları dışarı gönderebilir.</string>
+    <string name="sandbox_isolation_unavailable">Bu cihaz betikleri çevrimdışı tutamıyor: Mika dosyalarla yalnızca \“Betiklerin çevrimiçi olmasına izin ver\” açıkken çalışabilir ve betik çalıştırabilir</string>
+    <string name="sandbox_reset_title">Ortam sıfırlansın mı?</string>
+    <string name="sandbox_reset_body">Mika\'nın dosyalar ve betikler için kullandığı ortamı, ayrıca her sohbette oluşturulan dosyaları (ekledikleriniz dahil) siler, sonra otomatik yeniden kurar. Sohbetler ve ayarlar etkilenmez.</string>
+    <string name="sandbox_broken">Kurulum bitmedi: %1$s</string>
+    <string name="sandbox_reset_sub">Bir şeyler ters gittiğinde: siler ve yeniden kurar</string>
+    <string name="sandbox_reset">Ortamı sıfırla</string>
+    <string name="reset">Sıfırla</string>
+</resources>

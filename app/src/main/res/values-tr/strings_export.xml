@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_conversation">Konuşmayı dışa aktar</string>
+    <string name="export_title">Konuşmayı dışa aktar</string>
+    <string name="export_messages">Mesajlar</string>
+    <string name="export_select_all">Tümünü seç</string>
+    <string name="export_selected_count">%2$d içinden %1$d seçildi</string>
+    <string name="export_format">Biçim</string>
+    <string name="export_format_markdown">Markdown</string>
+    <string name="export_format_json">JSON</string>
+    <string name="export_include_tool_steps">Araç adımları</string>
+    <string name="export_include_attachments">Ekler</string>
+    <string name="export_include_screens">Ekran görüntüleri</string>
+    <string name="export_include_timestamps">Zaman damgaları</string>
+    <string name="export_include_model">Model adı</string>
+    <string name="export_redact_pii">Telefon numaralarını, e-postaları ve yolları da gizle</string>
+    <string name="export_bundle_note">Ekler veya ekran görüntüleri dahil, bu yüzden dosya bir zip.</string>
+    <string name="export_button">Dışa aktar</string>
+    <string name="export_cancel">İptal</string>
+    <string name="export_close">Kapat</string>
+    <string name="export_preparing">Hazırlanıyor…</string>
+    <string name="export_rendering">Dışa aktarılıyor…</string>
+    <string name="export_packaging">Paketleniyor…</string>
+    <string name="export_delivering">Kaydediliyor…</string>
+    <string name="export_done">Dışa aktarıldı</string>
+    <string name="export_failed">Dışa aktarma başarısız: %1$s</string>
+    <string name="export_no_messages">Dışa aktarılacak bir şey yok</string>
+    <string name="export_current_turn">Çalışan tur dahil değil.</string>
+    <string name="export_warnings">%1$d öğe dahil edilemedi.</string>
+    <string name="export_filename_fallback">Mika konuşması</string>
+
+    <string name="export_label_user">Kullanıcı</string>
+    <string name="export_label_mika">Mika</string>
+    <string name="export_label_steer">Görev sırasındaki mesaj</string>
+    <string name="export_label_answer">Yanıt</string>
+    <string name="export_label_tool_steps">Araç adımları</string>
+    <string name="export_label_attachments">Ekler</string>
+    <string name="export_label_screens">Ekran görüntüleri</string>
+    <string name="export_label_files">Dosyalar</string>
+    <string name="export_label_quote">Alıntılanan</string>
+    <string name="export_label_page">Sayfadan</string>
+    <string name="export_label_exported">Dışa aktarıldı</string>
+    <string name="export_label_model">Model</string>
+    <string name="export_label_unknown">Bilinmiyor</string>
+    <string name="export_label_warnings">Uyarılar</string>
+    <string name="export_label_truncated">kesildi, orijinal uzunluk %1$d</string>
+    <string name="export_label_missing_asset">Eksik: %1$s</string>
+    <string name="export_label_too_large">Çok büyük: %1$s</string>
+    <string name="export_label_run_record_missing">Çalıştırma kaydı artık kullanılamıyor</string>
+    <string name="export_label_unverified">Doğrulanmadı: %1$s</string>
+    <string name="export_label_not_done">Yapılmadı: %1$s</string>
+    <string name="export_label_cancelled">İptal edildi</string>
+    <string name="export_label_tool_error">Hata</string>
+    <string name="export_label_step">Adım %1$d</string>
+</resources>

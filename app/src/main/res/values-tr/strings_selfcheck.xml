@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="selfcheck_title">Uyumluluk öz denetimi</string>
+    <string name="selfcheck_row_sub">Bu telefonda neyin çalıştığını görün ve bildirin</string>
+    <string name="selfcheck_intro">Yaklaşık 1 dakika sürer. Diğer uygulamalarınıza dokunmaz, ayar değiştirmez ve ağı kullanmaz. Çalışırken lütfen bu sayfada kalın.</string>
+    <string name="selfcheck_start">Başlat</string>
+    <string name="selfcheck_again">Tekrar çalıştır</string>
+    <string name="selfcheck_cancel">İptal</string>
+    <string name="selfcheck_task_running">Bir görev çalışıyor. Öz denetimi o bittikten sonra başlatın.</string>
+    <string name="selfcheck_checks">Denetimler</string>
+    <string name="selfcheck_report">Rapor</string>
+    <string name="selfcheck_copy">Raporu kopyala</string>
+    <string name="selfcheck_github">GitHub\'da bildir</string>
+    <string name="selfcheck_copied">Rapor kopyalandı</string>
+    <string name="selfcheck_github_copied">Rapor kopyalandı. Açılan sayfada \“Öz denetim raporu\”na yapıştırın.</string>
+    <string name="selfcheck_report_note">Rapor yalnızca telefon modelini, sistem sürümünü ve her denetimin sonucunu içerir; hesap, uygulama listesi veya içeriğiniz yoktur. Göndermeden önce okuyabilirsiniz.</string>
+
+    <string name="selfcheck_check_device">Cihaz</string>
+    <string name="selfcheck_check_permissions">İzinler</string>
+    <string name="selfcheck_check_helper">Yerleşik yardımcı</string>
+    <string name="selfcheck_check_display">Sanal ekran</string>
+    <string name="selfcheck_check_launch">Uygulama açma</string>
+    <string name="selfcheck_check_reading">Ekran okuma</string>
+    <string name="selfcheck_check_actions">Dokunma ve yazma</string>
+    <string name="selfcheck_check_alive">Çalışmaya devam etme</string>
+    <string name="selfcheck_check_main">Ekranınızın rahatsız edilmemesi</string>
+    <string name="selfcheck_check_browser">Yerleşik tarayıcı</string>
+    <string name="selfcheck_check_sandbox">Korumalı alan</string>
+    <string name="selfcheck_check_copies">Uygulama kopyaları</string>
+
+    <string name="selfcheck_status_pending">Bekleniyor</string>
+    <string name="selfcheck_status_running">Denetleniyor</string>
+    <string name="selfcheck_status_pass">Geçti</string>
+    <string name="selfcheck_status_partial">Kısmi</string>
+    <string name="selfcheck_status_fail">Başarısız</string>
+    <string name="selfcheck_status_skipped">Atlandı</string>
+
+    <string name="selfcheck_line_pending">Henüz başlamadı</string>
+    <string name="selfcheck_line_running">Denetleniyor…</string>
+    <string name="selfcheck_line_pass">Çalışıyor</string>
+    <string name="selfcheck_line_needs">Atlandı: önce \“%1$s\” geçmeli</string>
+    <string name="selfcheck_line_other">Geçmedi. Ayrıntılar için rapora bakın.</string>
+
+    <string name="selfcheck_advice_too_old">Bu sistem Android 12\'den eski, bu yüzden telefon kontrolü kullanılamıyor. Sohbet, web ve korumalı alan yine de çalışır.</string>
+    <string name="selfcheck_advice_no_wireless">Bu sistemde Kablosuz hata ayıklama yok. Bunun yerine telefon kontrolünü USB üzerinden bir bilgisayardan başlatabilirsiniz.</string>
+    <string name="selfcheck_advice_phone_unavailable">Bu ortam telefonunuzdaki uygulamaları çalıştıramaz (Geliştirici seçenekleri veya Kablosuz hata ayıklama yok); sohbet, web, dosyalar ve hesaplamalar her zamanki gibi çalışır.</string>
+    <string name="selfcheck_advice_a11y_off">Erişilebilirlik kapalı. Ayarlar › Telefon kontrolü\'nde Mika\'nın erişilebilirliğini açın.</string>
+    <string name="selfcheck_advice_a11y_restart">Erişilebilirlik açık ama çalışmıyor. Sistem ayarlarında Mika\'nın erişilebilirliğini kapatıp yeniden açın.</string>
+    <string name="selfcheck_advice_notifications">Bildirimler engellendi, bu yüzden görev ilerlemesi veya \“size ihtiyaç duyuyor\” uyarılarını göremezsiniz.</string>
+    <string name="selfcheck_advice_battery">Pil kullanımı kısıtlı, bu yüzden Mika arka planda durdurulabilir. Bunu Kurtarma ve onarım\'da kaldırabilirsiniz.</string>
+    <string name="selfcheck_advice_setup">Yerleşik yardımcı çalışmıyor. Ayarlar › Telefon kontrolü\'nde kurulumu tamamlayın, sonra bunu tekrar çalıştırın.</string>
+    <string name="selfcheck_advice_display">Mika\'nın sanal ekranı oluşturulamadı. Yardımcıyı yeniden bağlayıp tekrar deneyin; yine olmazsa lütfen bildirin.</string>
+    <string name="selfcheck_advice_focus">Mika\'nın sanal ekranının kendi odağı yok, bu yüzden Mika çalışırken ekranınız odağı kısa süre kaybedebilir. Her şey yine de çalışır.</string>
+    <string name="selfcheck_advice_launch">Mika\'nın sanal ekranında bir sayfa açılmadı. Lütfen bildirin.</string>
+    <string name="selfcheck_advice_on_main">Sistem Ayarları, Mika\'nın sanal ekranı yerine sizin ekranınızda açıldı. Lütfen bildirin.</string>
+    <string name="selfcheck_advice_settings_in_use">Sistem Ayarları sizin ekranınızda açık, bu yüzden bu adım onu açmadı. Kapatıp bunu tekrar çalıştırın.</string>
+    <string name="selfcheck_advice_read">Sayfanın kontrolleri okunamadı. Mika\'nın erişilebilirliğini kapatıp yeniden açın, sonra bunu tekrar çalıştırın.</string>
+    <string name="selfcheck_advice_blank">Sanal ekranın görüntüsü tamamen siyah veya boş. Lütfen bildirin.</string>
+    <string name="selfcheck_advice_action">Bazı eylemler etki etmedi (rapora bakın). Lütfen bildirin.</string>
+    <string name="selfcheck_advice_frames">Sanal ekran bir süre sonra güncellenmeyi durduruyor, bu yüzden görevler takılabilir. Lütfen bildirin.</string>
+    <string name="selfcheck_advice_main">Denetim sırasında ekranınız değişti. Bu sayfada kaldıysanız lütfen bildirin.</string>
+    <string name="selfcheck_advice_no_webview">Bu sistemde kullanılabilir WebView yok, bu yüzden yerleşik tarayıcı çalışamaz. Sistem WebView bileşenini kurun veya güncelleyin.</string>
+    <string name="selfcheck_advice_web">Yerleşik tarayıcı yerel test sayfasını okuyamadı veya dokunamadı. Lütfen bildirin.</string>
+    <string name="selfcheck_advice_sandbox_unsupported">Korumalı alan yalnızca 64 bit ARM telefonlarda kullanılabilir.</string>
+    <string name="selfcheck_advice_sandbox_not_prepared">Korumalı alan henüz hazır değil. Bir görev onu ilk kullandığında hazır olur; sonra bunu tekrar çalıştırın.</string>
+    <string name="selfcheck_advice_sandbox_failed">Korumalı alan komutları beklenen sonucu vermedi. Dosyalar ve bilgi işlem ortamında ortamı sıfırlayıp tekrar deneyebilirsiniz.</string>
+    <string name="selfcheck_advice_timeout">Bu denetim çok uzun sürdü. Tekrar çalıştırın; sürekli zaman aşımına uğrarsa lütfen bildirin.</string>
+    <string name="selfcheck_advice_error">Bu denetim bir hatayla karşılaştı. Lütfen bildirin.</string>
+    <string name="selfcheck_advice_out_of_time">Öz denetimin süresi bu denetimden önce doldu.</string>
+    <string name="selfcheck_advice_cancelled">İptal edildi.</string>
+
+    <string name="selfcheck_target_title">Mika öz denetim sayfası</string>
+    <string name="selfcheck_target_note">Bu Mika\'nın kendi test sayfası. Uyumluluk öz denetimi burada dokunur ve yazar; diğer uygulamalarınıza dokunmaz.</string>
+    <string name="selfcheck_target_taps">Dokunma: %1$d</string>
+    <string name="selfcheck_target_button">Bana dokun</string>
+    <string name="selfcheck_target_input">Buraya yaz</string>
+    <string name="selfcheck_target_tick">Sayaç %1$d</string>
+    <string name="selfcheck_target_row">Satır %1$d</string>
+</resources>

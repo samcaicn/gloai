@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="trace_switch">Ayrıntılı iz kaydet</string>
+    <string name="trace_switch_detail">Yeni çalıştırmalar için. İstek metni özel bilgiler içerebilir. Bunu kapatmak yakalamayı hemen durdurur.</string>
+    <string name="trace_storage_limit">İz depolama sınırı</string>
+    <string name="trace_storage_hint">Alan gerektiğinde daha eski bitmiş izler kaldırılır.</string>
+    <string name="trace_storage_value">%1$d MiB</string>
+    <string name="trace_title">Ayrıntılı iz</string>
+    <string name="trace_partial">Kısmi kayıt</string>
+    <string name="trace_recorded">Bu cihazda kaydedildi</string>
+    <string name="trace_unknown">Bildirilmedi</string>
+    <string name="trace_ok">Tamam</string>
+    <string name="trace_error">Hata</string>
+    <string name="trace_cancelled">İptal edildi</string>
+    <string name="trace_attempt">Adım %1$d · Deneme %2$d · %3$s</string>
+    <string name="trace_tool">Adım %1$d · %2$s</string>
+    <string name="trace_counts">Giriş %1$s · Önbellek %2$s · Önbelleksiz %3$s · Çıkış %4$s</string>
+    <string name="trace_largest">En çok önbelleksiz giriş</string>
+    <string name="trace_diff">İlk fark: %1$s</string>
+    <string name="trace_no_body">İstek gövdesi yakalanmadı</string>
+    <string name="trace_attach">Redakte edilmiş metni dahil et</string>
+    <string name="trace_attach_hint">Yalnızca yerel ZIP. Kaydetmeden önce yukarıdaki istek metnini inceleyin.</string>
+    <string name="trace_save">Bu izi kaydet</string>
+    <string name="trace_saved">İz kaydedildi</string>
+    <string name="trace_failed">İz dışa aktarılamadı</string>
+    <string name="trace_send">OTLP/HTTP ile gönder</string>
+    <string name="trace_network_hint">Bu izin yalnızca üst verisini gönderin.</string>
+    <string name="trace_endpoint">İzler uç noktası</string>
+    <string name="trace_endpoint_hint">Genel adresler için HTTPS kullanın. HTTP\'ye localhost ve yerel ağda izin verilir.</string>
+    <string name="trace_header_name">Kimlik doğrulama başlığı adı</string>
+    <string name="trace_header_value">Kimlik doğrulama başlığı değeri (isteğe bağlı)</string>
+    <string name="trace_sent">İz kabul edildi</string>
+    <string name="trace_sent_warning">İz, alıcı uyarısıyla kabul edildi</string>
+    <string name="trace_rejected">Alıcı %1$d aralığı reddetti</string>
+    <string name="trace_http_error">Alıcı HTTP %1$d döndürdü</string>
+    <string name="trace_send_failed">İz gönderilemedi</string>
+</resources>

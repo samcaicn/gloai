@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="call_instructions_title">Arama talimatları</string>
+    <string name="call_instructions_intro">Kayıtlı talimatlar gelecekteki aramalara uygulanır. Tüm etkin talimatlar, arama yanıtlanmasa bile bir yapay zeka arama oturumu hazırlanırken Volcengine\'e gönderilir. Arayanın söyledikleri onları değiştirmez.</string>
+    <string name="call_instructions_add">Talimat ekle</string>
+    <string name="call_instructions_empty">Asistanın neler söyleyebileceğini ve neleri sorması gerektiğini ekleyin. Değişiklikler sonraki aramaya uygulanır.</string>
+    <string name="call_instructions_heading">Başlık</string>
+    <string name="call_instructions_situation">Bu ne zaman geçerli</string>
+    <string name="call_instructions_response">Nasıl yanıtlanır</string>
+    <string name="call_instructions_save">Talimatı kaydet</string>
+    <string name="call_instructions_cancel">İptal</string>
+    <string name="call_instructions_edit">Düzenle</string>
+    <string name="call_instructions_delete">Sil</string>
+    <string name="call_instructions_delete_confirm">Bu talimat silinsin mi? Artık gelecekteki aramalara uygulanmaz.</string>
+    <string name="call_instructions_expiry">Geçerlilik</string>
+    <string name="call_instructions_forever">Ben değiştirene kadar</string>
+    <string name="call_instructions_today">Bu geceye kadar</string>
+    <string name="call_instructions_two_hours">İki saat</string>
+    <string name="call_instructions_expired">Süresi doldu</string>
+    <string name="call_instructions_saved">Bu telefonda kaydedildi</string>
+    <string name="call_instructions_failed">Kaydedilemedi. Taslağınız hâlâ burada.</string>
+    <string name="call_instructions_presets">Bir senaryodan başla</string>
+    <string name="call_instructions_delivery">Teslimat</string>
+    <string name="call_instructions_delivery_when">Bir kurye veya teslimat sürücüsü arar</string>
+    <string name="call_instructions_delivery_reply">Paketin nerede olduğunu ve geri arama gerekip gerekmediğini sorun. Bir adres uydurmayın veya erişim vermeyin.</string>
+    <string name="call_instructions_business">İş talebi</string>
+    <string name="call_instructions_business_when">Bir müşteri bir ürün, hizmet veya randevu hakkında sorar</string>
+    <string name="call_instructions_business_reply">Neye ihtiyaç duyduğunu, miktarları veya tercih edilen zamanları ve bir iletişim yöntemini sorun. Fiyat veya randevu taahhüt etmeden not alın.</string>
+    <string name="call_instructions_review_limit">Kaydetmeden önce yanıtı inceleyin ve talimatı 800 karakterin altında tutun.</string>
+</resources>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_dtmf_status_label">Arama durumu</string>
+    <string name="calls_dtmf_open">Tuş takımı</string>
+    <string name="calls_dtmf_title">Arama tuş takımı</string>
+    <string name="calls_dtmf_close">Kapat</string>
+    <string name="calls_dtmf_batch">Bir dizi girin</string>
+    <string name="calls_dtmf_hint">Her tuş hemen gönderilir. Sesli yönergeleri izleyin.</string>
+    <string name="calls_dtmf_batch_hint">En fazla 32 tuş girin, sonra Gönder\'e dokunun.</string>
+    <string name="calls_dtmf_input">0–9, * veya #</string>
+    <string name="calls_dtmf_delete">Sil</string>
+    <string name="calls_dtmf_send">Gönder</string>
+    <string name="calls_dtmf_sending">Gönderiliyor…</string>
+    <string name="calls_dtmf_sent">Tuşlar gönderildi; bir yanıt bekleyin</string>
+    <string name="calls_dtmf_failed">Gönderim tamamlanamadı. Tekrar işlem yapmadan önce bir yanıt bekleyin.</string>
+    <string name="calls_dtmf_invalid">Yalnızca 0–9, * ve # kullanın, en fazla 32 tuş.</string>
+    <string name="calls_voice_briefing_start">Görevi sesle açıklayın</string>
+    <string name="calls_voice_briefing_note">Mandarin konuşun. Aramayı yetkilendirmek için görevi açıkladıktan sonra tek başına \“%1$s\” deyin.</string>
+    <string name="calls_voice_briefing_stopped">Açıklama durdu; arama yapılmadı</string>
+    <string name="calls_voice_briefing_authorized">Görev yetkilendirildi; arama gönderiliyor</string>
+    <string name="calls_voice_briefing_permission_granted">Mikrofona izin verildi. Başlamak için ses düğmesine tekrar dokunun.</string>
+    <string name="calls_voice_briefing_permission_denied">Mikrofon izni verilmedi. Metin görev formunu kullanabilirsiniz.</string>
+    <string name="calls_voice_briefing_incomplete">Başlamadan önce mevcut metin talimatlarını tamamlayın veya temizleyin.</string>
+    <string name="calls_voice_briefing_configure">Önce Ayarlar\'da gerçek zamanlı sesi yapılandırın.</string>
+</resources>

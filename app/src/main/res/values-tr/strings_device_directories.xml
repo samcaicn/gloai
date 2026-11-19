@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="device_dirs_title">Cihaz klasörleri</string>
+    <string name="device_dirs_explanation">Klasör ipuçları Mika\'nın dosyaları bulmasına yardımcı olur. İpucu eklemek erişim vermez; kayıtlı her klasörü ayrıca yetkilendirin.</string>
+    <string name="device_dirs_authorize">Bu dizini okumaya izin ver</string>
+    <string name="device_dirs_recursive">Alt klasörleri dahil et</string>
+    <string name="device_dirs_not_synced">Yetkilendirme eşitlenmedi</string>
+    <string name="device_dirs_synced">Yetkilendirme eşitlendi</string>
+    <string name="device_dirs_retry_sync">Eşitlemeyi yeniden dene</string>
+    <string name="device_dirs_edit_path">Klasör yolunu düzenleyin ve tekrar deneyin.</string>
+    <string name="device_dirs_not_authorized">Yetkili değil</string>
+    <string name="device_dirs_write_failed">Klasör ayarları kaydedilemedi. Uygulamayı yeniden başlatın ve tekrar deneyin.</string>
+    <string name="device_dirs_add">Klasör ipucu ekle</string>
+    <string name="device_dirs_edit">Klasör ipucu</string>
+    <string name="device_dirs_name">Ad</string>
+    <string name="device_dirs_path">Cihaz yolu</string>
+    <string name="device_dirs_description">Açıklama</string>
+    <string name="device_dirs_invalid">Bir ad ve benzersiz bir paylaşılan depolama yolu girin.</string>
+    <string name="device_dirs_delete">İpucunu sil</string>
+    <string name="device_dirs_save">Kaydet</string>
+    <string name="device_dirs_cancel">İptal</string>
+    <string name="device_dirs_available">Yalnızca oku / içe aktar</string>
+    <string name="device_dirs_missing">Klasör bulunamadı</string>
+    <string name="device_dirs_denied">Erişim reddedildi</string>
+    <string name="device_dirs_unknown">Durum kullanılamıyor</string>
+    <string name="device_dirs_entry">Klasör ipuçları</string>
+    <string name="device_dirs_entry_sub">Mika\'nın indirilen dosyaları bulmasına yardımcı olun</string>
+    <string name="device_dirs_source_preset">Ön ayar</string>
+    <string name="device_dirs_source_user">Sizin düzenlediğiniz</string>
+    <string name="device_dirs_source_mika">Mika\'nın düzenlediği</string>
+</resources>

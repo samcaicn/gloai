@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_voice_service">Gerçek zamanlı ses hizmeti</string>
+    <string name="calls_voice_profiles_intro">Birden çok gerçek zamanlı ses yapılandırması kaydedin. Gelen ve giden aramalar varsayılanı kullanır; tek bir giden arama başka birini kullanabilir. Bağlantı testi ve cihaz içi arama sesi doğrulaması ayrıdır.</string>
+    <string name="calls_voice_profile_subtitle">%1$s · %2$s</string>
+    <string name="calls_voice_audio_verified">Telefon sesi doğrulandı</string>
+    <string name="calls_voice_audio_unverified">Telefon sesi doğrulanmadı</string>
+    <string name="calls_voice_selected">Varsayılan yapılandırma</string>
+    <string name="calls_voice_status_untested">Bağlantı testi gerekir</string>
+    <string name="calls_voice_status_tested">Bağlantı test edildi</string>
+    <string name="calls_voice_select">Varsayılan olarak kullan</string>
+    <string name="calls_voice_delete">Yapılandırmayı sil</string>
+    <string name="calls_voice_delete_confirm">%1$s ve yerel olarak saklanan kimlik bilgileri silinsin mi? Mevcut arama kayıtları silinmez.</string>
+    <string name="calls_voice_test">Bağlantıyı test et</string>
+    <string name="calls_voice_testing">Test ediliyor…</string>
+    <string name="calls_voice_add">Gerçek zamanlı ses yapılandırması ekle</string>
+    <string name="calls_voice_edit">Gerçek zamanlı ses yapılandırmasını düzenle</string>
+    <string name="calls_voice_test_note">Başarılı bir bağlantı testi, iki yönlü operatör arama sesini doğrulamaz. Otomatik yanıtı etkinleştirmeden önce gerçek bir test araması yapın.</string>
+    <string name="calls_voice_name">Yapılandırma adı</string>
+    <string name="calls_voice_endpoint">Uç nokta (wss)</string>
+    <string name="calls_voice_model">Gerçek zamanlı diyalog modeli</string>
+    <string name="calls_voice_default_name">Varsayılan gerçek zamanlı ses</string>
+    <string name="calls_voice_protocol">Tümleşik gerçek zamanlı ses: tanıma, diyalog ve konuşma tek hizmet tarafından yürütülür.</string>
+    <string name="calls_voice_credentials_keep">Kayıtlı kimlik bilgilerini korumak için boş bırakın; yeni kimlik bilgileri girmek onları değiştirir ve başka bir bağlantı testi gerektirir.</string>
+    <string name="calls_back_settings">Ayarlara dön</string>
+    <string name="calls_enabled_summary">Yapay zeka yanıtı ve arama etkin; otomatik yanıtın kendi anahtarı var.</string>
+    <string name="calls_settings_voice_group">Ses ve modeller</string>
+    <string name="calls_settings_device_group">Cihaz ve çalışma zamanı</string>
+    <string name="calls_settings_data_group">Veriler</string>
+    <string name="calls_history_entry_summary">Özetler, takipler ve orijinal deşifreler</string>
+    <string name="calls_advanced_summary">Ses yolu ve tanılamalar</string>
+    <string name="calls_advanced_note">Ses yolunu değiştirmek iki yönlü ses doğrulamasını sıfırlar. Otomatik yanıtı etkinleştirmeden önce başka bir gerçek test araması yapın.</string>
+    <string name="calls_voice_setup">Ses hizmetini yapılandırın ve test edin</string>
+</resources>

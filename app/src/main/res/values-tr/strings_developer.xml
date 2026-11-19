@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dev_adaptive">Önce öğeleri oku, gerekince görüntüleri</string>
+    <string name="dev_adaptive_sub">UI ağacı yeterliyken görüntü göndermeyi atlar; yeterli değilse bir tane ekler</string>
+    <string name="dev_inline">Eylemlerden sonra ekran değişikliklerini döndür</string>
+    <string name="dev_inline_sub">Her eylemden sonra ekrana bakar, ayrı bir okuma kazandırır</string>
+    <string name="dev_batch">Emin olunca birkaç adım yap</string>
+    <string name="dev_batch_sub">Modeli sormadan belirli adımları tek seferde yapar</string>
+    <string name="dev_deep_links">Hedef sayfayı doğrudan aç</string>
+    <string name="dev_deep_links_sub">Tıklamak yerine uygulama içindeki sayfalara atlamak için bağlantıları kullanır</string>
+    <string name="dev_light">Kolay adımlar hafif modele gider</string>
+    <string name="dev_light_sub">Daha hızlı hafif model kolay adımları yapar; ana model zor olanları korur</string>
+    <string name="dev_replay">Geçen sefer işe yarayanı tekrarla</string>
+    <string name="dev_replay_sub">Daha önce yapılanlar için kayıtlı rotaları tekrarlar; uymazsa modele geri verir</string>
+    <string name="dev_parallel">Sohbetleri paralel çalıştır</string>
+    <string name="dev_parallel_sub">Farklı sohbetlerden gelen görevlerin her biri bir sanal ekran alır ve birlikte çalışır</string>
+    <string name="dev_compaction">Uzun görevler için yapılandırılmış özetler</string>
+    <string name="dev_compaction_sub">Birçok adımın sıkıştırılması gerektiğinde hedefi, olguları, ilerlemeyi ve sonraki adımı not eder</string>
+    <string name="dev_group">Mika nasıl çalışır</string>
+    <string name="dev_autonomy">Otonom mod</string>
+    <string name="dev_autonomy_sub">Açıkken Mika ödeme öncesi bile sormaz ve bitirir; kapalıyken yalnızca ödeme öncesi sorar</string>
+    <string name="dev_note">Bu anahtarlar Mika\'nın nasıl ve ne kadar hızlı çalıştığını etkiler. Genellikle varsayılanlarda bırakın.</string>
+    <string name="dev_grounding">Görüntü konumlandırma doğrulandı</string>
+    <string name="dev_grounding_sub">Görüntü modeli %1$s, şeyleri doğru konumlandırmak için test edildikten sonra bir kez açın; kapalıyken işaretlediği konumlar, Mika dokunmadan önce başka kanıt gerektirir.</string>
+    <string name="dev_speed">Hız</string>
+    <string name="dev_experiments">Deneyler</string>
+    <string name="dev_run_log">Çalıştırma kayıtları</string>
+    <string name="dev_screen_tables">Yeni ekran öğelerini sıkıştır</string>
+    <string name="dev_screen_tables_sub">Bir ekran ilk okunduğunda tekrarlanan alanları tablo sütunu olarak gönderir. Öğe referansları ve tam ağaç korunur.</string>
+    <string name="dev_device_files">Cihaz dosyalarını içe aktar</string>
+    <string name="dev_device_files_sub">Mika\'nın paylaşılan cihaz depolamasından çalışma alanına dosya kopyalamasına izin verin. Değişiklikler yeni görevlere uygulanır.</string>
+</resources>

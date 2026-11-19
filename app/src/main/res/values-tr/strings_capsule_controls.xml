@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capsule_edge_reveal">Kapsülü göster</string>
+    <string name="capsule_hide_at_edge">Ekran kenarında otomatik gizle</string>
+    <string name="capsule_hide_fullscreen">Tam ekranda kapsülü gizle</string>
+    <string name="capsule_tile_label">Mika kapsülü</string>
+    <string name="capsule_tile_enabled">Hızlı Ayarlar\'da kullanılabilir</string>
+    <string name="capsule_tile_setup">Yüzen kapsülü kullanmak için Mika\'yı açın ve telefon kontrolünü kurun.</string>
+    <string name="pip_size_smaller">Daha küçük önizleme</string>
+    <string name="pip_size_larger">Daha büyük önizleme</string>
+    <string name="pip_size_reset">Önizleme boyutunu sıfırla</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_task_dial_now">Şimdi ara</string>
+    <string name="calls_task_dial_locked">Kilitledikten sonra ara</string>
+    <string name="calls_task_dial_locked_note">Bu telefonu 45 saniye içinde kilitleyin. Mika bu numara, SIM ve görevle bir deneme yapacak. Bildirimden iptal edebilirsiniz. Telefonu gerçekten kilitlemeden ekranı kapatmak aramaz.</string>
+    <string name="calls_task_dial_locked_confirm">Onayla ve kilidi bekle</string>
+</resources>

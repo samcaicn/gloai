@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="confirm_note">Para harcayan her şey her seferinde onayınızı gerektirir.</string>
+    <string name="confirm_pay">Öde</string>
+    <string name="confirm_delete">Sil</string>
+    <string name="confirm_order">Sipariş ver</string>
+    <string name="confirm_submit">Gönder</string>
+    <string name="confirm_other">Diğer eylem</string>
+    <string name="confirm_root">Root komutu</string>
+    <string name="confirm_root_where">tüm telefon (root)</string>
+    <string name="confirm_title">Onayınızı gerektiriyor: %1$s</string>
+    <string name="confirm_in_app">%1$s içinde</string>
+    <string name="confirm_target">Kime: %1$s</string>
+    <string name="confirm_content">İçerik: %1$s</string>
+</resources>
