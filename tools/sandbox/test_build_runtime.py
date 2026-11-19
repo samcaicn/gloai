@@ -17,7 +17,8 @@ spec.loader.exec_module(build_runtime)
 
 ASSET_BYTES = b"pretend this is a 57 MB rootfs"
 RESULT = {"alpine": "3.22.0", "sha256": hashlib.sha256(ASSET_BYTES).hexdigest(),
-          "bytes": len(ASSET_BYTES), "fileBytes": 4096, "entries": 7, "packages": []}
+          "bytes": len(ASSET_BYTES), "fileBytes": 4096, "entries": 7,
+          "packages": [{"name": "musl", "version": "1.2.5-r0", "license": "MIT"}]}
 
 
 class CheckTest(unittest.TestCase):
@@ -28,22 +29,24 @@ class CheckTest(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         base = Path(self.directory.name)
         self.asset, self.kotlin = base / "rootfs.tar.xz", base / "BundledRuntime.kt"
-        self.patches = [patch.object(build_runtime, "ASSET", str(self.asset)),
-                        patch.object(build_runtime, "KOTLIN", str(self.kotlin)),
-                        patch.object(build_runtime, "build", self.fake_build)]
-        for p in self.patches:
+        self.manifest = base / "packages.json"
+        patches = [patch.object(build_runtime, "ASSET", str(self.asset)),
+                   patch.object(build_runtime, "KOTLIN", str(self.kotlin)),
+                   patch.object(build_runtime, "MANIFEST", str(self.manifest)),
+                   patch.object(build_runtime, "build", self.fake_build)]
+        for p in patches:
             p.start()
             self.addCleanup(p.stop)
 
     @staticmethod
     def fake_build(out):
-        Path(out).write_bytes(b"rebuilt")
+        Path(out).write_bytes(ASSET_BYTES)
         return RESULT
 
-    def check(self):
-        """Run --check; return (exit code, stdout, stderr)."""
+    def run_tool(self, *flags):
+        """Run the tool; return (exit code, stdout, stderr)."""
         out, err = io.StringIO(), io.StringIO()
-        argv = ["build-runtime.py", "--check"]
+        argv = ["build-runtime.py", *flags]
         with patch.object(sys, "argv", argv), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             try:
                 build_runtime.main()
@@ -51,12 +54,20 @@ class CheckTest(unittest.TestCase):
                 return stop.code, out.getvalue(), err.getvalue()
         return 0, out.getvalue(), err.getvalue()
 
-    def commit(self, asset=True, kotlin=True):
-        if asset:
-            self.asset.write_bytes(ASSET_BYTES)
-        if kotlin:
-            # Render after ASSET is patched: the generated comment embeds the asset path.
-            self.kotlin.write_text(build_runtime.kotlin(RESULT), encoding="utf-8")
+    def check(self):
+        return self.run_tool("--check")
+
+    def commit(self, asset=True, kotlin=True, manifest=True):
+        """Write the artifacts by running the tool's own build path, then drop the ones asked to be absent.
+
+        The tool generates them, so these tests compare its output with its own comparison rather than
+        restating a format that would then have to be kept in step by hand.
+        """
+        code, out, err = self.run_tool()
+        self.assertEqual(0, code, out + err)
+        for path, present in ((self.asset, asset), (self.kotlin, kotlin), (self.manifest, manifest)):
+            if not present:
+                Path(path).unlink()
 
     def test_matching_artifacts_pass(self):
         self.commit()
@@ -81,6 +92,26 @@ class CheckTest(unittest.TestCase):
         self.assertIn("BundledRuntime.kt", err)
         self.assertIn("missing", err)
         self.assertNotIn("differs", err)
+
+    def test_stale_manifest_fails_instead_of_passing(self):
+        # packages.json is a committed artifact of the same build: the licenses page renders it and
+        # runtime-sources.py decides from it which sources the GPL source pack must ship.
+        self.commit()
+        self.manifest.write_text('{\n "version": "3.21.9-deadbeef",\n "alpine": "3.21.9",\n "packages": []\n}\n',
+                                 encoding="utf-8")
+        code, out, err = self.check()
+        self.assertEqual(1, code, out)
+        self.assertIn("packages.json", err)
+        self.assertIn("differs", err)
+        self.assertNotIn("ok ", out)
+
+    def test_absent_manifest_fails_instead_of_passing(self):
+        self.commit(manifest=False)
+        code, out, err = self.check()
+        self.assertEqual(1, code, out)
+        self.assertIn("packages.json", err)
+        self.assertIn("missing", err)
+        self.assertNotIn("ok ", out)
 
 
 if __name__ == "__main__":

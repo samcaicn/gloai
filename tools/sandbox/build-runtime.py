@@ -9,7 +9,7 @@ from their signed metadata, so apk inside the runtime sees a consistent database
 Usage:
   build-runtime.py --resolve   re-resolve the package closure from the signed v3.22 APKINDEX, rewrite runtime/sources.lock
   build-runtime.py             build from runtime/sources.lock; write the asset, BundledRuntime.kt and runtime/packages.json
-  build-runtime.py --check     build into a temp dir and compare both committed artifacts with it;
+  build-runtime.py --check     build into a temp dir and compare every committed artifact with it;
                                exit 1 on a mismatch or on a missing artifact
 
 Every download is https only and verified: the minirootfs by SHA-256; each .apk by SHA-256 from the lock,
@@ -654,6 +654,12 @@ object BundledRuntime {{
 """
 
 
+def manifest(r):
+    """The committed packages.json, byte for byte: the asset, the Kotlin file and this are one build's output."""
+    return json.dumps({"version": version_id(r), "alpine": r["alpine"], "packages": r["packages"]},
+                      indent=1, ensure_ascii=False) + "\n"
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     g = ap.add_mutually_exclusive_group()
@@ -668,7 +674,7 @@ def main():
             r = build(os.path.join(d, "rootfs.tar.xz"))
         # --check proves the committed artifacts match a rebuild, so an absent one fails here:
         # skipping its comparison would report "ok" for an artifact it never looked at.
-        for path in (KOTLIN, ASSET):
+        for path in (KOTLIN, ASSET, MANIFEST):
             if not os.path.isfile(path):
                 die(f"{os.path.relpath(path, ROOT)} is missing; --check compares it with a rebuild")
         committed = open(KOTLIN, encoding="utf-8").read()
@@ -676,13 +682,13 @@ def main():
             die(f"rebuilt runtime {r['sha256']} differs from BundledRuntime.kt")
         if sha256(open(ASSET, "rb").read()) != r["sha256"]:
             die("assets/runtime/rootfs.tar.xz differs from the rebuild")
+        if open(MANIFEST, encoding="utf-8").read() != manifest(r):
+            die(f"{os.path.relpath(MANIFEST, ROOT)} differs from the rebuild")
         print(f"ok {version_id(r)} ({r['bytes']} bytes)")
         return
     r = build(ASSET)
     open(KOTLIN, "w", encoding="utf-8").write(kotlin(r))
-    json.dump({"version": version_id(r), "alpine": r["alpine"], "packages": r["packages"]},
-              open(MANIFEST, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
-    open(MANIFEST, "a").write("\n")
+    open(MANIFEST, "w", encoding="utf-8").write(manifest(r))
     print(f"built {version_id(r)}: {r['bytes']} bytes compressed, {r['fileBytes']} bytes of files, {r['entries']} entries")
 
 
