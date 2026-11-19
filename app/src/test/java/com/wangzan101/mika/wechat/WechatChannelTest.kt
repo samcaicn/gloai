@@ -11,7 +11,6 @@ import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.SendOutcome
 import com.wangzan101.mika.core.wechat.WechatAccount
 import com.wangzan101.mika.core.wechat.WechatApi
-import com.wangzan101.mika.core.wechat.WechatImage
 import com.wangzan101.mika.settings.KeyCipher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
@@ -53,10 +52,10 @@ class WechatChannelTest {
             var active = original
             var imported: Boolean? = null
             val images = object : WechatImageFiles {
-                override suspend fun receive(peer: ChannelPeer, messageId: String, text: String,
-                    images: List<WechatImage>, accept: (String) -> Boolean): Boolean {
+                override suspend fun receive(peer: ChannelPeer, images: List<WechatImageSource>,
+                    accept: (List<SavedWechatImage>) -> Boolean): Boolean {
                     active = original.copy(id = "replacement", askId = "replacement")
-                    return accept(text).also { imported = it }
+                    return accept(emptyList()).also { imported = it }
                 }
 
                 override suspend fun read(image: Delivery.Image): ByteArray = error("Unexpected image export")

@@ -70,15 +70,40 @@ data class WechatQrStatus(
 @Serializable
 data class WechatText(val text: String = "")
 
+/** Only the immediate quoted item's media is relevant, not older quotes or their text. */
+@Serializable
+data class WechatQuotedItem(
+    val type: Int = 0,
+    @SerialName("image_item") val imageItem: WechatImage? = null,
+    @Serializable(with = FlexibleStringSerializer::class)
+    @SerialName("msg_id") val msgId: String? = null,
+)
+
+@Serializable
+data class WechatReference(
+    @SerialName("message_item") val item: WechatQuotedItem? = null,
+    @Serializable(with = FlexibleStringSerializer::class)
+    @SerialName("svr_id") val serverId: String? = null,
+) {
+    fun targetId() = serverId?.takeIf(String::isNotBlank) ?: item?.msgId?.takeIf(String::isNotBlank)
+}
+
 @Serializable
 data class WechatItem(
     val type: Int = 0,
     @SerialName("text_item") val textItem: WechatText? = null,
     @SerialName("image_item") val imageItem: WechatImage? = null,
+    @SerialName("ref_msg") val reference: WechatReference? = null,
+    @Serializable(with = FlexibleStringSerializer::class)
+    @SerialName("msg_id") val msgId: String? = null,
 )
 
 @Serializable
-data class WechatUserContent(val text: String, val images: List<WechatImage> = emptyList())
+data class WechatUserContent(
+    val text: String,
+    val images: List<WechatImage>,
+    val references: List<WechatReference>,
+)
 
 @Serializable
 data class WechatMessage(
@@ -94,7 +119,9 @@ data class WechatMessage(
     @SerialName("context_token") val contextToken: String? = null,
     @SerialName("group_id") val groupId: String? = null,
 ) {
-    private fun isUserPrivateMessage() = messageType == 1 && !messageId.isNullOrBlank() &&
+    fun serverMessageId() = messageId?.takeIf(String::isNotBlank) ?: items.firstNotNullOfOrNull { it.msgId?.takeIf(String::isNotBlank) }
+
+    private fun isUserPrivateMessage() = messageType == 1 && serverMessageId() != null &&
         !fromUserId.isNullOrBlank() && groupId.isNullOrBlank()
 
     /** Kept for text-only callers. Image-aware channels use [userContent]. */
@@ -109,7 +136,8 @@ data class WechatMessage(
         val text = items.filter { it.type == 1 }.mapNotNull { it.textItem?.text?.takeIf(String::isNotBlank) }
             .joinToString("\n")
         val images = items.filter { it.type == 2 }.map { it.imageItem ?: WechatImage() }
-        return WechatUserContent(text, images).takeIf { text.isNotBlank() || images.isNotEmpty() }
+        val references = if (items.all { it.type == 1 }) items.mapNotNull { it.reference } else emptyList()
+        return WechatUserContent(text, images, references).takeIf { text.isNotBlank() || images.isNotEmpty() || references.isNotEmpty() }
     }
 }
 

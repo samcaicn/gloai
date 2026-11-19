@@ -9,7 +9,6 @@ import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.run.SendOutcome
 import com.wangzan101.mika.core.wechat.WechatAccount
 import com.wangzan101.mika.core.wechat.WechatApi
-import com.wangzan101.mika.core.wechat.WechatImage
 import com.wangzan101.mika.core.workspace.SandboxTree
 import com.wangzan101.mika.settings.KeyCipher
 import kotlinx.coroutines.CompletableDeferred
@@ -80,6 +79,88 @@ class WechatImageChannelTest {
         }
     }
 
+    @Test fun quotedPictureAndCaptionReachTaskTogether() = runBlocking {
+        MockWebServer().use { server ->
+            server.start(InetAddress.getByName("127.0.0.1"), 0)
+            val api = api(server)
+            val workspace = tmp.newFolder()
+            val files = StoredWechatImages(tmp.newFolder(), api::downloadImage, { PreparedWechatImage(it.bytes, it.extension) },
+                { workspace }, JVM_GATE, SandboxTree(), { true }, { null })
+            val inputs = mutableListOf<ChannelInput.Text>()
+            val channel = WechatChannel(store(server), api, log = {}, imageFiles = files)
+            channel.start(ChannelInputSink { inputs += it as ChannelInput.Text })
+            server.enqueue(json("""{"msgs":[{"message_id":1,"from_user_id":"owner","message_type":1,"item_list":[
+                {"type":1,"text_item":{"text":"看看这张图"},"ref_msg":{"message_item":{
+                    "type":2,"image_item":{"media":{"full_url":"${server.url("/picture")}"}}}}}]}]}"""))
+            server.enqueue(MockResponse().setBody(okio.Buffer().write(png)))
+            channel.pollOnce()
+            val message = AttachmentLines.parse(inputs.single().text)
+            assertEquals("看看这张图", message.words)
+            assertEquals(1, message.files.size)
+            val file = File(workspace, message.files.single().first.removePrefix("/workspace/"))
+            assertArrayEquals(png, file.readBytes())
+        }
+    }
+
+    @Test fun idOnlyQuoteResolvesEarlierImageAfterRestartAndRejectsReplacement() = runBlocking {
+        MockWebServer().use { server ->
+            server.start(InetAddress.getByName("127.0.0.1"), 0)
+            val api = api(server)
+            val dir = tmp.newFolder()
+            val workspace = tmp.newFolder()
+            val files = StoredWechatImages(tmp.newFolder(), api::downloadImage, { PreparedWechatImage(it.bytes, it.extension) },
+                { workspace }, JVM_GATE, SandboxTree(), { true }, { null })
+            val inputs = mutableListOf<ChannelInput.Text>()
+            val failures = mutableListOf<Delivery.Notice>()
+            fun start(state: WechatStore): WechatChannel {
+                val channel = WechatChannel(state, api, log = {}, imageFiles = files,
+                    reportImageFailure = { _, notice -> failures += notice })
+                channel.start(ChannelInputSink { inputs += it as ChannelInput.Text; channel.acknowledge(it.messageId) })
+                return channel
+            }
+
+            // Neither a client id nor an adjacent image is a substitute for the server's original id.
+            val idA = "18446744073709551615"
+            val first = start(store(server, dir))
+            server.enqueue(json(update(server).replace("\"message_id\":\"1\",", "")
+                .replace("\"type\":2", "\"type\":2,\"msg_id\":$idA")))
+            server.enqueue(MockResponse().setBody(okio.Buffer().write(png)))
+            first.pollOnce()
+            val other = png + 42.toByte()
+            server.enqueue(json(update(server, id = "B")))
+            server.enqueue(MockResponse().setBody(okio.Buffer().write(other)))
+            first.pollOnce()
+
+            val afterRestart = start(WechatStore(dir, cipher))
+            fun quote(id: String, reference: String) = json("""{"msgs":[{"message_id":"$id","from_user_id":"owner",
+                "message_type":1,"item_list":[{"type":1,"text_item":{"text":"read the card"},"ref_msg":$reference}]}]}""")
+            server.enqueue(quote("quote-a", """{"svr_id":$idA,"message_item":{"msg_id":"B"},"title":"image"}"""))
+            afterRestart.pollOnce()
+            val firstPath = AttachmentLines.parse(inputs.first().text).files.single().first
+            val quoted = AttachmentLines.parse(inputs.last().text)
+            assertEquals("read the card", quoted.words)
+            assertEquals(firstPath, quoted.files.single().first)
+            val original = File(workspace, firstPath.removePrefix("/workspace/"))
+            assertArrayEquals(png, original.readBytes())
+            assertEquals(2, File(workspace, "inbox").listFiles()!!.size)
+
+            // Android WeChat sent item type 0 and the original top-level message id inside the quoted item.
+            server.enqueue(quote("android", """{"message_item":{"type":0,"msg_id":$idA}}"""))
+            afterRestart.pollOnce()
+            assertEquals(firstPath, AttachmentLines.parse(inputs.last().text).files.single().first)
+
+            // Even a same-size replacement must not be delivered as the original.
+            original.writeBytes(png.clone().also { it[it.lastIndex] = 0 })
+            server.enqueue(quote("changed", """{"message_item":{"type":2,"msg_id":"$idA"}}"""))
+            afterRestart.pollOnce()
+            server.enqueue(quote("unknown", """{"svr_id":"absent"}"""))
+            afterRestart.pollOnce()
+            assertEquals(4, inputs.size)
+            assertEquals(2, failures.size)
+            assertEquals(8, server.requestCount)
+        }
+    }
+
     @Test fun missingPictureProducesOneDurableFailureNoticeAndNeverStartsCaptionAsTask() = runBlocking {
         MockWebServer().use { server ->
             server.start(InetAddress.getByName("127.0.0.1"), 0)
@@ -107,7 +188,7 @@ class WechatImageChannelTest {
             server.start(InetAddress.getByName("127.0.0.1"), 0)
             val store = store(server)
             var imports = 0
-            val files = fakeFiles(receive = { _, accept -> imports++; store.setEnabled(false); accept("prepared attachment") })
+            val files = fakeFiles(receive = { _, accept -> imports++; store.setEnabled(false); accept(emptyList()) })
             val channel = WechatChannel(store, api(server), log = {}, imageFiles = files)
             channel.start(ChannelInputSink { fail("Paused input must not be routed") })
             server.enqueue(json(update(server, owner = "stranger")))
@@ -201,9 +282,9 @@ class WechatImageChannelTest {
         }
     }
 
-    private fun fakeFiles(receive: suspend (List<WechatImage>, (String) -> Boolean) -> Boolean = { _, accept -> accept("prepared") }) =
+    private fun fakeFiles(receive: suspend (List<WechatImageSource>, (List<SavedWechatImage>) -> Boolean) -> Boolean = { _, accept -> accept(emptyList()) }) =
         object : WechatImageFiles {
-            override suspend fun receive(peer: ChannelPeer, messageId: String, text: String, images: List<WechatImage>, accept: (String) -> Boolean) = receive(images, accept)
+            override suspend fun receive(peer: ChannelPeer, images: List<WechatImageSource>, accept: (List<SavedWechatImage>) -> Boolean) = receive(images, accept)
             override suspend fun read(image: Delivery.Image) = png
         }
 }

@@ -27,12 +27,19 @@ data class PendingWechatMessage(
 )
 
 @Serializable
+data class SavedWechatImage(val path: String, val bytes: Long, val sha256: String) : WechatImageSource
+
+@Serializable
+private data class IndexedWechatMessage(val threadId: String, val messageId: String, val images: List<SavedWechatImage>)
+
+@Serializable
 private data class WechatState(
     val enabled: Boolean = false,
     val cursor: String = "",
     val threads: Map<String, String> = emptyMap(),
     val contextTokens: Map<String, String> = emptyMap(),
     val pending: List<PendingWechatMessage> = emptyList(),
+    val recentSources: List<IndexedWechatMessage> = emptyList(),
     /** 按确认先后保留最近一段，游标回退或进程恢复时也不会再次登记同一消息。 */
     val acknowledgedMessages: List<String> = emptyList(),
 )
@@ -181,14 +188,22 @@ class WechatStore(
 
     /** 同一消息只入站一次；未确认的会在下次启动由 [pending] 补交。 */
     @Synchronized fun journal(messageId: String, peer: ChannelPeer, text: String, replyToAskId: String? = null,
-        imageFailure: Boolean = false, expectedAccount: WechatAccount? = null, requireMatchingAsk: Boolean? = null): Boolean {
+        imageFailure: Boolean = false, expectedAccount: WechatAccount? = null, requireMatchingAsk: Boolean? = null,
+        sourceImages: List<SavedWechatImage>? = null): Boolean {
         if (expectedAccount != null && !accepts(peer, expectedAccount)) return false
         if (hasMessage(messageId)) return false
-        val next = state.copy(pending = state.pending +
+        val sources = if (sourceImages == null) state.recentSources else
+            (state.recentSources + IndexedWechatMessage(peer.threadId, messageId, sourceImages)).takeLast(MAX_ACKNOWLEDGED_MESSAGES)
+        val next = state.copy(recentSources = sources, pending = state.pending +
             PendingWechatMessage(messageId, peer, text, replyToAskId, imageFailure, requireMatchingAsk))
         saveState(next)
         state = next
         return true
+    }
+
+    @Synchronized fun sourceImages(peer: ChannelPeer, account: WechatAccount, messageId: String): List<SavedWechatImage>? {
+        if (!accepts(peer, account)) return null
+        return state.recentSources.lastOrNull { it.threadId == peer.threadId && it.messageId == messageId }?.images
     }
 
     @Synchronized fun pending(): List<PendingWechatMessage> = state.pending

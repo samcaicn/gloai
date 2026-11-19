@@ -4,7 +4,7 @@
 
 ## 接收
 
-`WechatMessage.userContent()` 合并文字内容，并保留图片列表的原始顺序。`WechatChannel` 先验证当前绑定的本人私聊，并在下载前查消息去重账本；不接收群消息。`WechatApi.downloadImage()` 从微信 CDN 下载、按 iLink 的 AES-128-ECB / PKCS#7 规则解密。
+`WechatMessage.userContent()` 合并文字内容，并保留图片列表的原始顺序。只含文字项的消息如果引用了一张图片，会从 `ref_msg.message_item` 取出图片，和本次提问一起导入。消息本身带有附件时只处理本次附件；只有引用编号时，在同一微信绑定和会话最近登记的 512 条来源记录中查找原图。原消息按 `message_id`（缺失时按首个非空的项级 `msg_id`）登记，引用按 `svr_id`（缺失时按被引项的 `msg_id`）匹配。导入时原子保存路径、大小与 SHA-256；重启后核对文件再交给任务。原图缺失或已改变时，请用户重发。`WechatChannel` 先验证当前绑定的本人私聊，并在下载前查消息去重账本；不接收群消息。`WechatApi.downloadImage()` 从微信 CDN 下载、按 iLink 的 AES-128-ECB / PKCS#7 规则解密。
 
 宿主 `StoredWechatImages` 逐张暂存图片，经 Android 解码边界检查与必要的缩放处理后，调用已有的 `Attachments.withTaskFiles` 导入当前线程工作区。附件仍使用 `AttachmentLines` 格式，因此新任务、追问回答、持久队列及 `read_file` 都复用原有路径。主模型不支持图片时，`read_file` 按已有逻辑明确反馈能力限制。
 
