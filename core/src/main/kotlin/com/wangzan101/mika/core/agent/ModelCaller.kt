@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StreamingChatModel
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.model.Usage
+import com.wangzan101.mika.core.net.RateLimitGovernor
 import com.wangzan101.mika.core.record.Redactor
 import com.wangzan101.mika.core.record.RunEvent
 import com.wangzan101.mika.core.tool.ToolDispatcher
@@ -248,6 +249,8 @@ internal class ModelCaller(
             try {
                 // 差异的 base 被裁掉或折叠时,下一次写操作要发全量
                 if (tools.inlineScreen) tools.setVisibleObservations(visibleReads(sent.messages))
+                // 撞过 429 的话等全局冷却窗口过去再发(不在冷却立即返回,零开销)
+                RateLimitGovernor.awaitClear(using.name)
                 // 这一次之前花掉的(失败的请求、退避)都算重试等待
                 lastRetryWaitMs = now() - began
                 suspend fun invokeModel(): ModelReply {
@@ -273,6 +276,7 @@ internal class ModelCaller(
                     trace.modelCall(step, using, tools::verb, change, sent.messages) { send() }
                 }
                 return reply.also { r ->
+                    RateLimitGovernor.reportSuccess(using.name)
                     lastOverhead[using] = overhead
                     r.usage?.let { compressor.calibrate(sent.estimate + overhead, it.inputTokens) }
                 }
@@ -288,6 +292,15 @@ internal class ModelCaller(
                 if (!again) throw e
             } catch (e: ModelError) {
                 onText?.invoke("")
+                if (e is ModelError.RateLimited) {
+                    // 429：记进全局冷却窗口，别的任务/子代理也一起等；回循环顶部，下一次 awaitClear 统一等，不再「3 次就放弃」
+                    val wait = RateLimitGovernor.reportRateLimited(using.name, e.retryAfterMs)
+                    retries += 1
+                    taskRetryWaitMs += wait
+                    emit(RunEvent.State(now(), "model_retry", "${roleOf(using)} rate_limited #$retries ${wait}ms"))
+                    if (taskRetryWaitMs > policy.taskWaitBudgetMs) throw e
+                    continue
+                }
                 val wait = policy.delayFor(e, retries, taskRetryWaitMs) ?: throw e
                 retries += 1
                 taskRetryWaitMs += wait
