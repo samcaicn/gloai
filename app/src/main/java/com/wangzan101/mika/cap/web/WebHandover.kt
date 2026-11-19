@@ -121,7 +121,7 @@ object WebHandover {
                 else android.util.Log.i("MikaWebHandover", "takeover on $host handed back; sign-in not confirmed ($state), not recorded")
             }
         }
-        return HandoverActivity(s.inputs, s.title?.takeIf { it.isNotBlank() })
+        return HandoverActivity(s.inputs, s.title?.takeIf { it.isNotBlank() }, s.url?.takeIf { it.isNotBlank() })
     }
 
     /** 视图放回后台宿主;没有宿主(设置页登录)就销毁。 */

@@ -279,7 +279,7 @@ class Takeover(
             // 交回(完成或我自己做完了)都算用户在这个网站上登录过;跳过则不算
             val done = result.outcome == HandBackOutcome.complete
             val activity = port.returnWeb(loggedIn = done)
-            if (done) result = result.copy(durationMs = now() - handedAt, inputCount = activity?.inputCount, stoppedAt = activity?.stoppedAt)
+            if (done) result = result.copy(durationMs = now() - handedAt, inputCount = activity?.inputCount, stoppedAt = activity?.stoppedAt, url = activity?.url)
             handedWeb = false
         } else if (from == Stage.HandedOver) {
             // 停在哪一页要在挪回之前看:挪回后它就不在主屏了

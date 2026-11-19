@@ -92,6 +92,8 @@ enum class HandBackOutcome { complete, skipped, timeout, aborted }
 data class HandBack(
     val outcome: HandBackOutcome, val userFinished: Boolean = false,
     val durationMs: Long? = null, val inputCount: Int? = null, val stoppedAt: String? = null,
+    /** 网页接管交回时,用户最后停在那里的地址;App 接管为 null。 */
+    val url: String? = null,
     /** 用户交回时写的备注(用户原话,可作记忆的出处)。 */
     val note: String? = null,
 )

@@ -157,6 +157,7 @@ internal class UserExchange(
                 put("durationMs", back.durationMs ?: (now() - since))
                 back.inputCount?.let { put("inputCount", it) }
                 back.stoppedAt?.let { put("stoppedAt", it) }
+                back.url?.let { put("url", it) }
                 put("note", HANDBACK_NOTE)
                 if (back.userFinished) { put("userFinished", true); put("instruction", USER_FINISHED_PROMPT) }
                 back.note?.takeIf { it.isNotBlank() }?.let { put("userNote", it) }

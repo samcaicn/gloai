@@ -3,8 +3,8 @@ package com.wangzan101.mika.takeover
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 
-/** 交回那一刻用户在主屏上做过的事:操作次数和停在哪个页面(取不到为 null)。 */
-data class HandoverActivity(val inputCount: Int, val stoppedAt: String?)
+/** 交回那一刻用户在主屏上做过的事:操作次数和停在哪个页面(取不到为 null)。[url] 是网页接管交回时的最终地址,App 接管为 null。 */
+data class HandoverActivity(val inputCount: Int, val stoppedAt: String?, val url: String? = null)
 
 /**
  * 接管期间数用户在主屏上对 [packageName] 的点击、输入、滚动次数;一次滑动会连着发很多滚动事件,
