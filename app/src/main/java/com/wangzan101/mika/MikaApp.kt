@@ -378,22 +378,15 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
         voicePlayer.play(bytes, mime)
     }
 
-    /** 合成一句话并在本机播放;没配置声音模型或合成失败时什么都不做。 */
+    /** 合成一句话并在本机播放;总开关关闭或没配置声音模型时跳过。 */
     private suspend fun speak(text: String) {
         try {
-            val state = voiceSettings.state.value
-            val choice = state.choice ?: return
-            val caps = voiceSettings.capabilities() ?: return
-            val tts = ProviderStore.get(this).ttsModel(choice, caps) ?: return
-            val response = tts.synthesize(
-                com.wangzan101.mika.core.model.TtsRequest(
-                    text.take(state.maxCharsPerSpeak),
-                    choice.voice.ifBlank { null },
-                    choice.speed,
-                    "wav",
-                ),
+            com.wangzan101.mika.media.readAloud(
+                text,
+                voiceSettings,
+                model = { choice, caps -> ProviderStore.get(this).ttsModel(choice, caps) },
+                play = { voicePlayer.play(it.bytes, it.mime) },
             )
-            voicePlayer.play(response.bytes, response.mime)
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -499,8 +492,8 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             },
             voiceReady = voiceSettings.state.map { it.enabled && it.choice != null }
                 .stateIn(scope, SharingStarted.Eagerly, voiceSettings.state.value.enabled && voiceSettings.state.value.choice != null),
-            autoRead = voiceSettings.state.map { it.autoRead }
-                .stateIn(scope, SharingStarted.Eagerly, voiceSettings.state.value.autoRead),
+            autoRead = voiceSettings.state.map { it.enabled && it.autoRead }
+                .stateIn(scope, SharingStarted.Eagerly, voiceSettings.state.value.let { it.enabled && it.autoRead }),
             voicePlayback = voicePlayer.state,
             speakText = { text -> speak(text) },
             stopVoice = { voicePlayer.stop() },
