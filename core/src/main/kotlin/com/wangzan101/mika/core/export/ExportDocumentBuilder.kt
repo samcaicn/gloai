@@ -163,8 +163,7 @@ class ExportDocumentBuilder(
 
     /** 失败/取消的原因已经放在 outcome 里,正文不重复;成功的回答和未核实的回答保留原文。 */
     private fun answerMarkdown(turn: ExportTurnRecord): String = when (turn.status) {
-        "failed" -> ""
-        "cancelled" -> turn.outcome.takeIf { it != Conversation.CANCELLED_OUTCOME }.orEmpty()
+        "failed", "cancelled" -> ""
         else -> turn.outcome
     }
 
