@@ -16,11 +16,12 @@ class BackAffordanceTest {
         clickable: Boolean = false,
         centerX: Int = 500,
         centerY: Int = 1000,
+        resourceId: String? = null,
     ) = UiElement(
         ref = ref, role = role, name = name,
         centerX = centerX, centerY = centerY,
         bounds = listOf(centerX - 10, centerY - 10, centerX + 10, centerY + 10),
-        resourceId = null, clickable = clickable, editable = false, scrollable = false,
+        resourceId = resourceId, clickable = clickable, editable = false, scrollable = false,
     )
 
     @Test fun picksClickableBackLabel() {
@@ -34,6 +35,19 @@ class BackAffordanceTest {
     @Test fun backLabelIsCaseInsensitive() {
         val list = listOf(el("@e1", "Back", role = "ImageButton", clickable = true, centerX = 50, centerY = 80))
         assertEquals("@e1", BackAffordance.find(list, 1080, 2400)?.ref)
+    }
+
+    @Test fun picksBackByResourceIdWhenUnlabeled() {
+        val list = listOf(
+            el("@e1", "", role = "ImageButton", clickable = true, centerX = 50, centerY = 80, resourceId = "com.foo:id/action_bar_up"),
+            el("@e2", "搜索", role = "Button", clickable = true, centerX = 400, centerY = 80),
+        )
+        assertEquals("@e1", BackAffordance.find(list, 1080, 2400)?.ref)
+    }
+
+    @Test fun ignoresUnrelatedResourceId() {
+        val list = listOf(el("@e1", "", role = "ImageButton", clickable = true, centerX = 500, centerY = 500, resourceId = "com.foo:id/refresh"))
+        assertNull(BackAffordance.find(list, 1080, 2400))
     }
 
     @Test fun ignoresNonClickableBackText() {

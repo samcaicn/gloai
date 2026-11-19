@@ -15,11 +15,14 @@ object BackAffordance {
     // 不含 "back":它的子串会误伤 feedback/backup/background
     private val CONTAINS = listOf("返回", "后退", "回退", "向上导航", "previous", "navigate up")
     private val ICON_ROLES = setOf("ImageButton", "AppCompatImageButton", "ImageView", "Image")
+    // 返回控件的资源 id 末段(去掉包名和 /id/ 前缀)
+    private val RESOURCE_SEGMENTS = setOf("back", "navigate_up", "arrow_back", "btn_back", "toolbar_back", "action_bar_up")
 
     fun find(elements: List<UiElement>, screenWidth: Int, screenHeight: Int): UiElement? {
         if (screenWidth <= 0 || screenHeight <= 0) return null
         val clickable = elements.filter { it.clickable }
         clickable.firstOrNull { isExact(it.name) }?.let { return it }
+        clickable.firstOrNull { isBackResource(it.resourceId) }?.let { return it }
         clickable.firstOrNull { isBackLike(it.name) }?.let { return it }
         return clickable.firstOrNull { it.name.isBlank() && isTopLeftIcon(it, screenWidth, screenHeight) }
     }
@@ -32,6 +35,11 @@ object BackAffordance {
     private fun isBackLike(name: String): Boolean {
         val n = name.trim().lowercase()
         return n.isNotEmpty() && CONTAINS.any { n.contains(it) }
+    }
+
+    private fun isBackResource(id: String?): Boolean {
+        if (id == null) return false
+        return id.substringAfterLast('/').lowercase() in RESOURCE_SEGMENTS
     }
 
     private fun isTopLeftIcon(e: UiElement, screenWidth: Int, screenHeight: Int): Boolean =

@@ -1135,16 +1135,29 @@ class ShellService(
         val now = SystemClock.uptimeMillis()
         val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, 0, VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_KEYBOARD)
         val up = KeyEvent.changeAction(down, KeyEvent.ACTION_UP)
-        val shellFallback = { exec("input", "-d", "$displayId", "keyevent", "$keyCode") == 0 }
-        // 按键由系统按全局输入焦点路由,不认 event 上的 displayId:不定向的话会投到主屏焦点,虚拟屏上的 App 收不到返回键。
-        // 解析到虚拟屏顶部任务的 uid 时定向投给它;定向没投出去再退回非定向注入(和旧路径一致),最后才走 shell 命令,
-        // 保证在原本就正常的设备上只会更好、不会变差。
+        // 按键由系统按输入焦点路由,不认 event 上的 displayId:不定向的话会投到主屏焦点,虚拟屏上的 App 收不到返回键。
+        // 解析到虚拟屏顶部任务的 uid 时定向投给它;定向没投出去再退回非定向注入(和旧路径一致),最后才走 shell 命令。
+        // 逐级实际走的通道记进日志,方便在真机上定位 back 注入失效(#622)。
         val uid = topTaskUid(displayId)
-        return if (uid != null) {
-            injectPairTo(down, up, displayId, uid) { injectPair(down, up, displayId, shellFallback) }
+        var channel = if (uid != null) "targeted" else "nontargeted"
+        val ok = if (uid != null) {
+            injectPairTo(down, up, displayId, uid) {
+                channel = "nontargeted"
+                injectPair(down, up, displayId) {
+                    channel = "shell"
+                    exec("input", "-d", "$displayId", "keyevent", "$keyCode") == 0
+                }
+            }
         } else {
-            injectPair(down, up, displayId, shellFallback)
+            injectPair(down, up, displayId) {
+                channel = "shell"
+                exec("input", "-d", "$displayId", "keyevent", "$keyCode") == 0
+            }
         }
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            Log.i(TAG, "injectKey BACK display=$displayId uid=$uid channel=$channel ok=$ok")
+        }
+        return ok
     }
 
     /** 虚拟屏顶部任务的 uid(定向注入的目标);解析不到返回 null(退回非定向注入)。 */

@@ -128,6 +128,14 @@ open class ScreenAccessibility : AccessibilityService() {
         return dispatch(displayId, (0 until count).map { i -> GestureDescription.StrokeDescription(at, i * (holdMs + gapMs), holdMs.coerceAtLeast(1)) })
     }
 
+    /** 无障碍的「返回」全局动作:按键注入到虚拟屏失效时的兜底。作用在服务当前聚焦的屏上,只记结果、不记按键内容。 */
+    fun performGlobalBack(): Boolean {
+        val service = instance.value ?: return false
+        val ok = service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+        Log.i(TAG, "performGlobalBack ok=$ok")
+        return ok
+    }
+
     private suspend fun dispatch(displayId: Int, strokes: List<GestureDescription.StrokeDescription>): Boolean {
         val service = instance.value ?: return false
         val gesture = GestureDescription.Builder()

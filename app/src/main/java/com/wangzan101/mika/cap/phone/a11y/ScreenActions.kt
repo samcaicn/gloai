@@ -129,7 +129,10 @@ internal class ScreenActions(private val screen: AndroidScreen) {
 
     suspend fun back(): ActionResult = withContext(Dispatchers.IO) {
         if (!screen.hasDisplay) return@withContext AndroidScreen.NO_APP_OPEN
-        screen.verified(fallback = { clock -> tapBackControl(clock) }) { screen.shell.injectKey(screen.displayId, KeyEvent.KEYCODE_BACK) }
+        // 按键注入 → 点屏上返回控件 → 无障碍全局返回。逐级降级,不把某个设备上的单点失败当整体不可用。
+        screen.verified(fallback = { clock -> tapBackControl(clock) || screen.a11y.performGlobalBack() }) {
+            screen.shell.injectKey(screen.displayId, KeyEvent.KEYCODE_BACK)
+        }
     }
 
     /** back 注入没生效时,点屏上可见的返回控件。认不到返回控件就 false,不硬点。 */
