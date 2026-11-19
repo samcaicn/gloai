@@ -120,7 +120,7 @@ Expected: FAIL（类型/函数未定义）
 
 **Files:**
 - Modify: 助手消息的渲染入口（`ChatScreen.kt` 或 `MarkdownText.kt` 附近的 Message 渲染），以及 `AttachmentMessage.kt` 的渲染原语
-- Test: `app/src/androidTest/...`（instrumentation，若环境允许；否则以手动验证 + 上两层的 JVM 测试兜底）
+- Test: 手动验证 + Task 1/2 的 JVM 测试兜底（Compose UI 不建 instrumentation）
 
 **Interfaces:**
 - Consumes: `MarkdownModel.workspaceRefs`（Task 1）、`resolveWorkspaceRefs`（Task 2）
@@ -156,5 +156,5 @@ Expected: 相关 prompt 快照测试若有则更新，其余 PASS
 ## Self-Review 结论
 
 - 覆盖 spec 三小块 + 提示词，无遗漏。
-- Task 1 是纯逻辑、JVM 可测，是整条链路的锚点；Task 3 是 Compose UI，测试以手动 + androidTest 为主，故把可测逻辑（解析/解析）都沉到 Task 1/2。
+- Task 1 是纯逻辑、JVM 可测，是整条链路的锚点；Task 3 是 Compose UI，以手动验证为主，故把可测逻辑（解析/解析）都沉到 Task 1/2。
 - Review Focus 五条分别落在 Task 1（裸文本/http 不误抽、去重）、Task 2（越界/不存在丢弃）、Task 3（非媒体画卡片、失效不崩）。
