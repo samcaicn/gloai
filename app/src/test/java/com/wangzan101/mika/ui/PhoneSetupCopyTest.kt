@@ -254,15 +254,15 @@ class PhoneSetupCopyTest {
         }
 
         val notRunning = PhoneSetupCopy.failure(BuiltinShellFailure.ShizukuNotRunning)
-        assertTrue(notRunning.title, notRunning.title.contains("Shizuku is not running"))
-        assertTrue(notRunning.body, notRunning.body.contains("after a phone restart", ignoreCase = true))
+        assertTrue(notRunning.title, notRunning.title.contains("未运行"))
+        assertTrue(notRunning.body, notRunning.body.contains("手机重启后"))
 
         assertTrue(PhoneSetupCopy.statusLine(BuiltinShellStatus.Connecting, shizukuStart = true).contains("Shizuku"))
         assertEquals(
             PhoneSetupCopy.statusLine(BuiltinShellStatus.Running, shizukuStart = true),
             PhoneSetupCopy.statusLine(BuiltinShellStatus.Running, usbDebugging = false, shizukuStart = true),
         )
-        assertTrue(PhoneSetupCopy.usageNote(HelperRestart.Shizuku).contains("Mika never starts Shizuku itself"))
-        assertTrue(PhoneSetupCopy.successNote(HelperRestart.Shizuku).contains("after a phone restart", ignoreCase = true))
+        assertTrue(PhoneSetupCopy.usageNote(HelperRestart.Shizuku).contains("不会自行启动"))
+        assertTrue(PhoneSetupCopy.successNote(HelperRestart.Shizuku).contains("手机重启后"))
     }
 }
