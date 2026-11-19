@@ -4,6 +4,9 @@ package com.wangzan101.mika.core.cap.phone
  * 系统命令在做专门工具做的事(点、滑、打字、按键、打开 App)时,结果里提醒换回那个工具:专门工具在 Mika 的屏上做,
  * 做完会核实效果,shell 发的输入不核实。第一次只提醒、照样执行;本任务提醒过之后,再做这几类事的命令不执行,
  * 只回那句提醒([refuses])。用 shell 分享文字一律不执行,指向分享文字的工具。查状态、读设置一类的命令不受影响。
+ *
+ * 打字([Purpose.Type])例外:Flutter/WebView 等自绘界面的隐藏输入框,无障碍节点动作写不进去,只有 shell `input text`
+ * 能写;打字本身也最安全、可回读核对,所以允许多次执行,不因 [steered] 拒绝(#371)。
  */
 internal object CommandSteer {
     enum class Purpose(val feedbackKey: String) {
@@ -11,8 +14,9 @@ internal object CommandSteer {
         Share("system_command.use_share"),
     }
 
-    /** [purpose] 的命令这回不执行:分享一律不执行;其余在本任务已提醒过([steered])之后不执行。 */
-    fun refuses(purpose: Purpose?, steered: Boolean): Boolean = purpose == Purpose.Share || (purpose != null && steered)
+    /** [purpose] 的命令这回不执行:分享一律不执行;其余在本任务已提醒过([steered])之后不执行——打字([Type])例外,允许多次。 */
+    fun refuses(purpose: Purpose?, steered: Boolean): Boolean =
+        purpose == Purpose.Share || (purpose != null && purpose != Purpose.Type && steered)
 
     /** 命令里每一段 `input …` 的子命令(前面可带输入源和 -d 屏号)。 */
     private val INPUT = Regex("""(?:^|[;&|(\s])input\s+(?:(?:touchscreen|touchpad|keyboard|mouse|stylus|trackball|dpad|gamepad|joystick|rotaryencoder|touchnavigation)\s+)?(?:-d\s+\S+\s+)?([a-z]+)""")

@@ -68,9 +68,8 @@ class CommandSteerTest {
         val screen = Counting()
         val d = toolDispatcher(screen)
         assertTrue(d.run("input -d 7 tap 500 900").ok())
-        // 提醒过了:换一类模仿的命令也不执行,只说该用哪个工具
+        // 提醒过了:换一类模仿的命令(除打字外)也不执行,只说该用哪个工具
         for ((command, key) in listOf(
-            "input -d 7 text hi" to "system_command.use_type",
             "input -d 7 keyevent 66" to "system_command.use_key",
             "am start --display 7 -n com.example/.Main" to "system_command.use_launch",
         )) {
@@ -79,10 +78,14 @@ class CommandSteerTest {
             assertEquals("use_phone_tool", r.error())
             assertEquals(Feedback.format("system_command.refused", "use" to Feedback[key]), r.hint())
         }
+        // 打字例外:提醒过之后仍允许多次(Flutter/WebView 隐藏输入框只有 shell 能写,#371)
+        val text = d.run("input -d 7 text hi")
+        assertTrue(text.ok())
+        assertEquals(Feedback["system_command.use_type"], text.hint())
         // 查状态、读设置的命令照常
         assertTrue(d.run("settings get system screen_off_timeout").ok())
         assertTrue(d.run("dumpsys window | grep mCurrentFocus").ok())
-        assertEquals(listOf("input -d 7 tap 500 900", "settings get system screen_off_timeout", "dumpsys window | grep mCurrentFocus"), screen.ran)
+        assertEquals(listOf("input -d 7 tap 500 900", "input -d 7 text hi", "settings get system screen_off_timeout", "dumpsys window | grep mCurrentFocus"), screen.ran)
     }
 
     @Test fun textSharesAreAlwaysPointedToTheShareTool() = runTest {
