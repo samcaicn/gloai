@@ -6,9 +6,11 @@ import importlib.util
 import io
 from pathlib import Path
 import sys
+import tarfile
 import tempfile
 import unittest
 from unittest.mock import patch
+import zipfile
 
 SCRIPT = Path(__file__).with_name("build-runtime.py")
 spec = importlib.util.spec_from_file_location("build_runtime", SCRIPT)
@@ -112,6 +114,69 @@ class CheckTest(unittest.TestCase):
         self.assertIn("packages.json", err)
         self.assertIn("missing", err)
         self.assertNotIn("ok ", out)
+
+
+class RuntimePythonTest(unittest.TestCase):
+    """The build reads the runtime's python from the image, and refuses a wheel built for another one."""
+
+    def bake(self, python_minor, filename):
+        """Bake one wheel into a tree; return (tree, stderr, exit code). None plants no python at all."""
+        tree = build_runtime.Tree()
+        if python_minor is not None:
+            for name in (f"usr/lib/python3.{python_minor}/os.py",
+                         f"usr/lib/python3.{python_minor}/EXTERNALLY-MANAGED"):
+                tree.put(build_runtime.norm(tarfile.TarInfo(name)), b"")
+        entry = {"pkg": "example", "version": "1.0", "filename": filename,
+                 "sha256": "0" * 64, "url": "https://example.invalid/" + filename}
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as zf:
+            zf.writestr("example/__init__.py", b"")
+        wheel = buffer.getvalue()
+        installed = "usr/lib/python3.%s/site-packages/example/__init__.py" % python_minor
+        err, code = io.StringIO(), 0
+        with patch.object(build_runtime, "read_pip_lock", lambda: [entry]), \
+                patch.object(build_runtime, "cached", lambda url, name, want=None: wheel), \
+                contextlib.redirect_stderr(err):
+            try:
+                build_runtime.bake_pip_wheels(tree, 0)
+            except SystemExit as stop:
+                code = stop.code
+        return tree, err.getvalue(), code, installed
+
+    def test_baked_wheels_land_in_the_site_packages_the_image_has(self):
+        # python3 comes from WANT, so its minor version moves with Alpine: a path pinned in the
+        # builder leaves every wheel in a directory the runtime does not have.
+        tree, err, code, installed = self.bake(13, "example-1.0-py3-none-any.whl")
+        self.assertEqual(0, code, err)
+        self.assertIn(installed, tree.entries)
+
+    def test_a_wheel_built_for_another_cpython_is_refused(self):
+        # lxml ships a cp312 wheel; unpacked into a 3.13 runtime it fails at import on the phone.
+        tree, err, code, _ = self.bake(13, "lxml-6.1.3-cp312-cp312-manylinux2014_aarch64.whl")
+        self.assertEqual(1, code, list(tree.entries))
+        self.assertIn("3.12", err)
+        self.assertIn("3.13", err)
+        self.assertIn("pip-requires.lock", err)
+
+    def test_an_abi3_wheel_still_works_on_a_newer_python(self):
+        tree, err, code, installed = self.bake(13, "cryptography-50.0.2-cp311-abi3-manylinux2014_aarch64.whl")
+        self.assertEqual(0, code, err)
+        self.assertIn(installed, tree.entries)
+
+    def test_an_abi3_wheel_is_refused_by_an_older_python(self):
+        tree, err, code, _ = self.bake(10, "cryptography-50.0.2-cp311-abi3-manylinux2014_aarch64.whl")
+        self.assertEqual(1, code, list(tree.entries))
+        self.assertIn("3.11", err)
+
+    def test_a_pure_python_wheel_needs_no_particular_version(self):
+        tree, err, code, installed = self.bake(14, "requests-2.34.2-py3-none-any.whl")
+        self.assertEqual(0, code, err)
+        self.assertIn(installed, tree.entries)
+
+    def test_a_runtime_without_python_is_a_build_error(self):
+        tree, err, code, _ = self.bake(None, "requests-2.34.2-py3-none-any.whl")
+        self.assertEqual(1, code, list(tree.entries))
+        self.assertIn("python3", err)
 
 
 if __name__ == "__main__":

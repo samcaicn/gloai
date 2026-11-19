@@ -498,8 +498,10 @@ def build(out_asset):
     manifest.sort(key=lambda e: e["name"])
 
     # Remove PEP668 EXTERNALLY-MANAGED marker so pip can install into system
-    # site-packages directly (required for on-demand package installs).
-    tree.entries.pop("usr/lib/python3.12/EXTERNALLY-MANAGED", None)
+    # site-packages directly (required for on-demand package installs). The directory is read from
+    # the image: python3 comes from WANT, and its minor version moves with Alpine, so a path pinned
+    # here leaves the real marker in place and turns into "pip refuses to install" on the phone.
+    tree.entries.pop(f"{python_lib(tree)}/EXTERNALLY-MANAGED", None)
 
     # Bake the pinned pip wheels into site-packages (SHA-256-verified, reproducible).
     pip_wheels = bake_pip_wheels(tree, epoch)
@@ -607,9 +609,30 @@ def read_pip_lock():
     return data["wheels"]
 
 
-def site_packages():
-    # python3 in this runtime (from WANT) is 3.12; PEP668 marker removal above confirms the path.
-    return "usr/lib/python3.12/site-packages"
+def python_lib(tree):
+    """The runtime's CPython library directory, read from the image rather than pinned in code."""
+    found = sorted({name.split("/")[2] for name in tree.entries
+                    if name.startswith("usr/lib/python3.") and name.count("/") >= 2})
+    if len(found) != 1:
+        die(f"expected one usr/lib/python3.* directory in the runtime, found {', '.join(found) or 'none'}")
+    return "usr/lib/" + found[0]
+
+
+def wheel_requires(filename):
+    """The CPython a wheel is built for, as (minor, exact), or None when any Python 3 will do.
+
+    `cp312`-`cp312` runs on 3.12 alone; `cp311`-`abi3` is the stable ABI, so 3.11 and later; a
+    `py3`/`none` wheel names no version at all. A wheel's own tags are the authority here, so the
+    check needs no table kept in step with the lock.
+    """
+    parts = filename[:-len(".whl")].split("-") if filename.endswith(".whl") else filename.split("-")
+    if len(parts) < 3:
+        return None
+    python, abi = parts[-3], parts[-2]
+    m = re.fullmatch(r"cp3(\d+)", python)
+    if not m:
+        return None
+    return int(m.group(1)), abi != "abi3"
 
 
 def bake_pip_wheels(tree, epoch):
@@ -617,9 +640,19 @@ def bake_pip_wheels(tree, epoch):
     (package dir + .dist-info), so unzip == install for both pure and native wheels; no pip runs.
     Every wheel is SHA-256-verified against the lock, and each non-regular member is rejected."""
     wheels = read_pip_lock()
-    sp = site_packages()
+    lib = python_lib(tree)
+    sp = f"{lib}/site-packages"
+    minor = int(lib.rpartition(".")[2])
     for w in wheels:
         name = w["filename"]
+        # A wheel built for one CPython lands in site-packages either way and only fails at import
+        # on the phone, where nothing in the build would have said why.
+        need = wheel_requires(name)
+        if need is not None:
+            need_minor, exact = need
+            if (minor != need_minor if exact else minor < need_minor):
+                die(f"{name} needs CPython 3.{need_minor}{'' if exact else ' or newer'}, "
+                    f"the runtime has 3.{minor}: re-resolve the wheels in runtime/pip-requires.lock")
         data = cached(w["url"], f"pip-{name}", w["sha256"])
         zf = zipfile.ZipFile(io.BytesIO(data))
         for zi in zf.infolist():
