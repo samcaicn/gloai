@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="web_fetch_title">Descarga de páginas</string>
-    <string name="web_fetch_enabled">Activar la descarga de páginas</string>
-    <string name="web_fetch_provider">Servicio de descarga</string>
-    <string name="web_fetch_note_tinyfish">Necesita una clave de API. Las páginas se obtienen con la API Fetch de TinyFish (api.fetch.tinyfish.ai).</string>
-    <string name="web_fetch_row_sub">Descarga de páginas opcional; el navegador siempre está disponible</string>
-    <string name="web_fetch_privacy">La clave se guarda cifrada en este teléfono. Las páginas obtenidas se tratan como contenido no confiable.</string>
-</resources>

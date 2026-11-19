@@ -239,7 +239,7 @@ class ModelSetupViewModelTest {
      * 试了也必然失败,而每次失败要等满 PROBE_TIMEOUT_MS。
      */
     @Test fun modelOnAnotherProtocolIsSkippedWithoutProbing() = runTest {
-        val url = "https://api.commandcode.ai/provider/v1"
+        val url = "https://example.com/provider/v1"
         listing[url] = ModelListResult.Ok(listOf(
             ListedModel("claude-sonnet-5-5", protocols = listOf(ModelProtocol.Messages)),
             ListedModel("deepseek/deepseek-v4-flash", protocols = listOf(ModelProtocol.ChatCompletions, ModelProtocol.Responses)),
@@ -260,11 +260,11 @@ class ModelSetupViewModelTest {
      * 不能因为 `supported_endpoints` 里没有当前接口类型就筛掉。
      */
     @Test fun modelWithItsOwnEndpointIsProbedWhateverTheKindIs() = runTest {
-        val url = "https://api.commandcode.ai/provider/v1"
+        val url = "https://example.com/provider/v1"
         listing[url] = ModelListResult.Ok(listOf(
             ListedModel(
                 "claude-sonnet-5-5",
-                endpoint = ModelEndpoint(ModelProtocol.Messages, "https://api.commandcode.ai/provider/v1"),
+                endpoint = ModelEndpoint(ModelProtocol.Messages, "https://example.com/provider/v1"),
                 protocols = listOf(ModelProtocol.Messages),
             ),
         ))
@@ -278,7 +278,7 @@ class ModelSetupViewModelTest {
 
     /** 列表里的模型全都写明不走当前接口类型:一个都不试,照旧存下服务商,并说清为什么。 */
     @Test fun allModelsOnAnotherProtocolSaveWithAReason() = runTest {
-        val url = "https://api.commandcode.ai/provider/v1"
+        val url = "https://example.com/provider/v1"
         listing[url] = ModelListResult.Ok(listOf(
             ListedModel("claude-sonnet-5-5", protocols = listOf(ModelProtocol.Messages)),
             ListedModel("claude-sonnet-5", protocols = listOf(ModelProtocol.Messages)),
@@ -304,7 +304,7 @@ class ModelSetupViewModelTest {
 
     /** 同上,只有一个模型、只走另一套接口:照样一句「换接口类型」,不写「试了」,也不让人去开通。 */
     @Test fun oneModelOnAnotherProtocolSaysToChangeTheInterfaceType() = runTest {
-        val url = "https://api.commandcode.ai/provider/v1"
+        val url = "https://example.com/provider/v1"
         listing[url] = ModelListResult.Ok(listOf(ListedModel("claude-sonnet-5-5", protocols = listOf(ModelProtocol.Messages))))
         reply = { throw AssertionError("不该试调用:这个模型不走 OpenAI 兼容") }
         val store = store()

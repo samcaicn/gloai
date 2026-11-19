@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="web_fetch_title">網頁抓取</string>
-    <string name="web_fetch_enabled">啟用網頁抓取</string>
-    <string name="web_fetch_provider">抓取服務</string>
-    <string name="web_fetch_note_tinyfish">需要 API 金鑰，使用 TinyFish 抓取介面（api.fetch.tinyfish.ai）。</string>
-    <string name="web_fetch_row_sub">選用網頁抓取；一律可以使用瀏覽器</string>
-    <string name="web_fetch_privacy">金鑰會加密儲存在本機。抓取到的網頁內容會視為不可信內容。</string>
-</resources>

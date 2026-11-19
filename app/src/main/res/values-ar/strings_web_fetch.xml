@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="web_fetch_title">جلب الصفحات</string>
-    <string name="web_fetch_enabled">تفعيل جلب الصفحات</string>
-    <string name="web_fetch_provider">خدمة الجلب</string>
-    <string name="web_fetch_note_tinyfish">يتطلب مفتاح API. تُجلب الصفحات عبر واجهة Fetch من TinyFish ‏(api.fetch.tinyfish.ai).</string>
-    <string name="web_fetch_row_sub">جلب الصفحات اختياري؛ المتصفح متاح دائمًا</string>
-    <string name="web_fetch_privacy">يُخزَّن المفتاح مشفرًا على هذا الهاتف. تُعامل الصفحات المجلوبة كمحتوى غير موثوق.</string>
-</resources>
