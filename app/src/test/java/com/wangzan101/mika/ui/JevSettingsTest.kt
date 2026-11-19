@@ -25,7 +25,10 @@ class JevSettingsTest {
     }
 
     @Test fun presetsKeepExactProviderModelIdentifiersAndRecognizeCustomConfiguration() {
-        assertEquals(JevPreset.TypeSafe, JevPreset.of(DecisionConfig()))
+        assertEquals(JevPreset.Google, JevPreset.entries.first())
+        assertEquals(JevPreset.Google, JevPreset.of(DecisionConfig()))
+        assertEquals(JevPreset.TypeSafe, JevPreset.of(DecisionConfig(endpoint = DecisionConfig.TYPE_SAFE_ENDPOINT,
+            model = DecisionConfig.TYPE_SAFE_MODEL)))
         assertEquals(JevPreset.OpenRouter, JevPreset.of(DecisionConfig(endpoint = DecisionConfig.OPEN_ROUTER_ENDPOINT,
             model = DecisionConfig.OPEN_ROUTER_MODEL)))
         assertEquals(JevPreset.Custom, JevPreset.of(DecisionConfig(endpoint = "https://example.com/v1/systemone")))

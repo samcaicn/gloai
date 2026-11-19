@@ -1439,6 +1439,56 @@ class ProviderStoreTest {
         assertEquals(s.proactiveTarget(), light.target)
     }
 
+    @Test fun geminiDeveloperApiKeyOnlyUsesValidGeminiProviderAndPrefersMain() {
+        val s = store()
+        assertNull(s.geminiDeveloperApiKey())
+
+        val openAi = s.connect(
+            "OpenAI", ProviderConfig.Kind.OpenAiCompat, "https://api.openai.com/v1",
+            "sk-openai-key", listOf(ListedModel("gpt-5")),
+        )
+        val anthropic = s.connect(
+            "Anthropic", ProviderConfig.Kind.Anthropic, "https://api.anthropic.com",
+            "sk-ant-key", listOf(ListedModel("claude-sonnet-4-5")),
+        )
+        assertTrue(s.use(ModelRole.Main, openAi.id, "gpt-5", none))
+        assertNull(s.geminiDeveloperApiKey())
+
+        s.connect(
+            "Gemini Invalid", ProviderConfig.Kind.Gemini, "https://generativelanguage.googleapis.com",
+            "bad\nkey", listOf(ListedModel("gemini-2.5-flash")),
+        )
+        s.connect(
+            "Gemini Whitespace", ProviderConfig.Kind.Gemini, "https://generativelanguage.googleapis.com",
+            "AIza bad key", listOf(ListedModel("gemini-2.5-flash")),
+        )
+        s.connect(
+            "Gemini Blank", ProviderConfig.Kind.Gemini, "https://generativelanguage.googleapis.com",
+            "   ", listOf(ListedModel("gemini-2.5-flash")),
+        )
+        assertNull(s.geminiDeveloperApiKey())
+
+        val gemFirst = s.connect(
+            "Gemini First", ProviderConfig.Kind.Gemini, "https://generativelanguage.googleapis.com",
+            "  AIza-first  ", listOf(ListedModel("gemini-2.5-flash")),
+        )
+        val gemMain = s.connect(
+            "Gemini Main", ProviderConfig.Kind.Gemini, "https://generativelanguage.googleapis.com",
+            "AIza-main", listOf(ListedModel("gemini-2.5-pro")),
+        )
+        assertEquals("AIza-first", s.geminiDeveloperApiKey())
+
+        assertTrue(s.use(ModelRole.Main, gemMain.id, "gemini-2.5-pro", none))
+        assertEquals("AIza-main", s.geminiDeveloperApiKey())
+
+        assertTrue(s.use(ModelRole.Main, anthropic.id, "claude-sonnet-4-5", none))
+        assertEquals("AIza-first", s.geminiDeveloperApiKey())
+
+        s.removeProvider(gemFirst.id)
+        s.removeProvider(gemMain.id)
+        assertNull(s.geminiDeveloperApiKey())
+    }
+
     @Suppress("TestFunctionName")
     private fun TriageTargetOf(id: String, name: String, model: String) = com.wangzan101.mika.core.proactive.TriageTarget(id, name, model)
 

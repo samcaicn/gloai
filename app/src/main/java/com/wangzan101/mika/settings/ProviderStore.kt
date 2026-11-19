@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.oauth.OauthTokenResult
 import com.wangzan101.mika.core.oauth.OpenRouterAuth
 import com.wangzan101.mika.core.oauth.XaiAuth
 import com.wangzan101.mika.core.model.AnthropicModel
+import com.wangzan101.mika.core.model.ApiKeyText
 import com.wangzan101.mika.core.model.BearerToken
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.Author
@@ -810,6 +811,22 @@ class ProviderStore(
     }
 
     fun mainProviderId(): String? = configFor(ModelRole.Main)?.providerId
+
+    /** Returns a stored Gemini Developer API key (`Kind.Gemini` only). */
+    @Synchronized
+    fun geminiDeveloperApiKey(): String? {
+        fun validKey(providerId: String): String? = providerKey(providerId)
+            ?.trim()
+            ?.takeIf { it.isNotBlank() && ApiKeyText.isHeaderLegal(it) && it.all { ch -> ch.code in 33..126 } }
+        val mainCfg = configFor(ModelRole.Main)
+        if (mainCfg?.kind == ProviderConfig.Kind.Gemini) {
+            validKey(mainCfg.providerId)?.let { return it }
+        }
+        return _providers.value
+            .asSequence()
+            .filter { it.kind == ProviderConfig.Kind.Gemini }
+            .firstNotNullOfOrNull { validKey(it.id) }
+    }
 
     /** 每次实际请求前重查配置和账本；达到预算时不发请求，也不记一笔虚假调用。 */
     private fun checkDailyBudget(source: UsageSource) {

@@ -49,7 +49,16 @@ class JevSettingsScreenTest {
     }
 
     @Test fun changingProviderOrEndpointClearsTheOldSecretBeforeTesting() {
-        val s = settings().also { it.save(DecisionConfig(enabled = true), "typesafe-key") }
+        val s = settings().also {
+            it.save(
+                DecisionConfig(
+                    enabled = true,
+                    endpoint = DecisionConfig.TYPE_SAFE_ENDPOINT,
+                    model = DecisionConfig.TYPE_SAFE_MODEL,
+                ),
+                "typesafe-key",
+            )
+        }
         compose.setContent { MikaTheme { JevSettingsScreen(s, onBack = {}) } }
         compose.onNodeWithTag("jev-preset-OpenRouter").performScrollTo().performClick()
         compose.onNodeWithTag("jev-endpoint").assertTextEquals(DecisionConfig.OPEN_ROUTER_ENDPOINT)
@@ -61,5 +70,32 @@ class JevSettingsScreenTest {
         compose.onNodeWithTag("jev-key").assertTextEquals("")
         assertEquals("typesafe-key", s.apiKey())
         assertEquals(DecisionConfig.TYPE_SAFE_ENDPOINT, s.state.value.endpoint)
+    }
+
+    @Test fun googlePresetPrefillsStoredGeminiKeyAndSwitchingAwayClearsIt() {
+        val s = DecisionSettings(tmp.root, AesGcmKeyCipher { aes }) { "AIza-stored-gemini-key" }
+        compose.setContent { MikaTheme { JevSettingsScreen(s, onBack = {}) } }
+        compose.onNodeWithTag("jev-preset-Google").performScrollTo()
+        compose.onNodeWithTag("jev-endpoint").assertTextEquals(DecisionConfig.GOOGLE_ENDPOINT)
+        compose.onNodeWithTag("jev-model").assertTextEquals(DecisionConfig.GOOGLE_MODEL)
+        compose.onNodeWithTag("jev-key").assertTextEquals("AIza-stored-gemini-key")
+        compose.onNodeWithTag("jev-test").performScrollTo().assertIsEnabled()
+
+        compose.onNodeWithTag("jev-preset-TypeSafe").performScrollTo().performClick()
+        compose.onNodeWithTag("jev-endpoint").assertTextEquals(DecisionConfig.TYPE_SAFE_ENDPOINT)
+        compose.onNodeWithTag("jev-model").assertTextEquals(DecisionConfig.TYPE_SAFE_MODEL)
+        compose.onNodeWithTag("jev-key").assertTextEquals("")
+        compose.onNodeWithTag("jev-test").performScrollTo().assertIsNotEnabled()
+
+        compose.onNodeWithTag("jev-preset-Google").performScrollTo().performClick()
+        compose.onNodeWithTag("jev-endpoint").assertTextEquals(DecisionConfig.GOOGLE_ENDPOINT)
+        compose.onNodeWithTag("jev-model").assertTextEquals(DecisionConfig.GOOGLE_MODEL)
+        compose.onNodeWithTag("jev-key").assertTextEquals("AIza-stored-gemini-key")
+        compose.onNodeWithTag("jev-test").performScrollTo().assertIsEnabled()
+
+        compose.onNodeWithTag("jev-endpoint").performScrollTo()
+            .performTextReplacement("https://us-central1-aiplatform.googleapis.com/v1/decisions")
+        compose.onNodeWithTag("jev-key").assertTextEquals("")
+        compose.onNodeWithTag("jev-test").performScrollTo().assertIsNotEnabled()
     }
 }
