@@ -13,7 +13,6 @@
     <string name="card_hint_answer">Mika\'yı yanıtla…</string>
     <string name="card_hint_continue">Konuşmaya devam…</string>
     <plurals name="capsule_behind">
-        <item quantity="one">Bundan sonra %1$d daha sizi bekliyor</item>
         <item quantity="other">Bundan sonra %1$d daha sizi bekliyor</item>
     </plurals>
     <string name="capsule_hold">Beklemede</string>
@@ -44,7 +43,6 @@
     <string name="capsule_continuing">Devam ediyor</string>
     <string name="capsule_replay">Bir rota izleniyor %1$d/%2$d</string>
     <plurals name="capsule_batch">
-        <item quantity="one">Aynı anda %1$d adım</item>
         <item quantity="other">Aynı anda %1$d adım</item>
     </plurals>
     <string name="and_more">" ve daha fazlası"</string>

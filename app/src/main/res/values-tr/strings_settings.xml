@@ -18,7 +18,6 @@
     <string name="settings_saved_data">Kayıtlı veriler</string>
     <string name="settings_web_logins">Web sitesi oturumları</string>
     <plurals name="settings_count_sites">
-        <item quantity="one">%1$d site</item>
         <item quantity="other">%1$d site</item>
     </plurals>
     <string name="settings_advanced">Gelişmiş</string>
@@ -27,7 +26,6 @@
     <string name="settings_sandbox">Dosyalar ve bilgi işlem ortamı</string>
     <string name="settings_routes">Kayıtlı rotalar</string>
     <plurals name="settings_count_routes">
-        <item quantity="one">%1$d rota</item>
         <item quantity="other">%1$d rota</item>
     </plurals>
     <string name="settings_recovery">Kurtarma ve onarım</string>
@@ -52,6 +50,8 @@
     <string name="settings_notif_master">Tüm bildirimler</string>
     <string name="settings_allowed">İzin verildi</string>
     <string name="settings_task_notifs">Görev bildirimleri</string>
+    <string name="settings_live_task_updates">Canlı görev güncellemeleri</string>
+    <string name="settings_live_task_updates_detail">Çalışan görevlerinizin durum çubuğunda gösterilip gösterilmeyeceğini seçin</string>
     <string name="settings_keep_on">Ekranı açık tut</string>
     <string name="settings_keep_on_sub">Bir görev çalışırken ekran açık kalır (kullanmadığınızda yine de kararabilir), sonra normale döner</string>
     <string name="settings_mute">Kullanılan uygulamayı sessize al</string>
@@ -76,7 +76,6 @@
     <string name="settings_parallel">Aynı anda görevler</string>
     <string name="settings_parallel_sub">Farklı sohbetlerden gelen görevlerin her biri kendi sanal ekranını alır</string>
     <plurals name="settings_count_tasks">
-        <item quantity="one">%1$d</item>
         <item quantity="other">%1$d</item>
     </plurals>
     <string name="capsule_settings_title">Yüzen kapsül</string>
@@ -100,7 +99,6 @@
     <string name="routes_saved">Kayıtlı rotalar</string>
     <string name="loading">Yükleniyor</string>
     <plurals name="routes_count">
-        <item quantity="one">%1$d rota · daha önce işe yarayanı daha hızlı tekrarlar</item>
         <item quantity="other">%1$d rota · daha önce işe yarayanı daha hızlı tekrarlar</item>
     </plurals>
     <string name="routes_clear_all">Tümünü temizle</string>
@@ -111,6 +109,8 @@
     <string name="net_proxy">Ağ proxy\'si</string>
     <string name="net_proxy_row_sub">Model istekleri, güncellemeler, uygulama içi tarayıcı ve komutlar için</string>
     <string name="net_proxy_hint">Mika\'nın model istekleri (sohbet, model listeleri, hesap oturumu), uygulama içi güncelleme indirmeleri, uygulama içi tarayıcı ve ağ erişimi açıkken Dosyalar ve bilgi işlem ortamındaki komutlar için kullanılır. Bu telefondaki veya yerel ağınızdaki adresler (localhost, 192.168.x.x, 10.x.x.x, .local ile biten adlar) her zaman doğrudan bağlanır, böylece yerel modeller çalışmaya devam eder. user:password@ içerebilir ve bu telefonda şifrelenmiş saklanır. Doğrudan bağlantı için boş bırakın.</string>
+    <string name="net_proxy_summary">Model istekleri, güncellemeler, uygulama içi tarayıcı ve dosya ortamı komutları bu proxy üzerinden geçer.</string>
+    <string name="details">Ayrıntılar</string>
     <string name="net_proxy_invalid">http://host:port biçiminde yazın (socks5, socks5h ve https de çalışır), isteğe bağlı olarak host\'tan önce user:password@ ile.</string>
     <string name="net_proxy_container_only">https:// proxy\'leri yalnızca Dosyalar ve bilgi işlem ortamındaki komutlar tarafından kullanılır; Mika\'nın kendi bağlantıları doğrudan kalır. Her şeyi kapsamak için http:// veya socks5:// kullanın.</string>
     <string name="net_proxy_browser_unsupported">Bu telefonun WebView\'i ayrı bir proxy kullanamaz, bu yüzden uygulama içi tarayıcı doğrudan bağlanır.</string>
@@ -217,7 +217,6 @@
     <string name="settings_auto_archive_sub">Bir süredir yeni mesajı olmayan sohbetler arşive taşınır</string>
     <string name="settings_auto_archive_hint">Seçilen süre boyunca yeni mesajı olmayan sohbetler arşive taşınır. Sabitlenmiş sohbetler ve çalışan görevi olan sohbetler yerinde kalır. Bunları istediğiniz zaman sohbet listesindeki arşivden geri yükleyebilirsiniz.</string>
     <plurals name="settings_auto_archive_days">
-        <item quantity="one">%1$d gün</item>
         <item quantity="other">%1$d gün</item>
     </plurals>
     <string name="settings_scheduled_quiet">Zamanlanmış görev sessiz saatleri</string>
@@ -234,7 +233,6 @@
     <string name="settings_trigger_run_limit">Zamanlanmış görevler için süre sınırı</string>
     <string name="settings_trigger_run_limit_sub">Zamanlanmış görevler siz uzaktayken çalışır. Kapalı, sınırsız demektir; süre dolduğunda görev durur ve süresinin bittiğini söyler.</string>
     <plurals name="settings_trigger_run_minutes_n">
-        <item quantity="one">%1$d dakika</item>
         <item quantity="other">%1$d dakika</item>
     </plurals>
 </resources>

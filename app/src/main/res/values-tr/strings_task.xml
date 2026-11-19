@@ -24,7 +24,6 @@
     <string name="gate_move_back_failed">Uygulama Mika\'nın ekranına geri taşınamadı. Yeniden denemek için Devam et\'e dokunun</string>
     <string name="gate_shell_down">Telefon kontrolü bağlantısı koptu. Yeniden bağlanınca Devam et\'e dokunun (veya Ayarlar\'da düzeltin)</string>
     <plurals name="queue_ahead">
-        <item quantity="one">Sırada: %1$d görev önde</item>
         <item quantity="other">Sırada: %1$d görev önde</item>
     </plurals>
     <string name="fail_no_main_model">Henüz kullanılabilir ana model yok. Ayarlar\'da araç çağıran bir model ekleyin.</string>
@@ -45,11 +44,9 @@
     <string name="task_may_make_sound">Bu uygulama ses çıkarabilir</string>
     <string name="task_notif_title">Mika: %1$s</string>
     <plurals name="task_active">
-        <item quantity="one">%1$d görev çalışıyor</item>
         <item quantity="other">%1$d görev çalışıyor</item>
     </plurals>
     <plurals name="task_behind">
-        <item quantity="one">%1$d görev daha size ihtiyaç duyuyor</item>
         <item quantity="other">%1$d görev daha size ihtiyaç duyuyor</item>
     </plurals>
     <string name="task_interrupted">Görev kesildi. Yeniden başlatabilirsiniz</string>
@@ -84,4 +81,13 @@
     <string name="task_trigger_time_limit">Zamanlanmış görev %1$d dakikadan uzun sürdü, bu yüzden durdu.</string>
     <string name="trigger_failed_streak">Zamanlanmış görev art arda %1$d kez başarısız oldu</string>
     <string name="trigger_failed_streak_hint">Bu planı Zamanlanmış görevler sayfasından duraklatabilir veya değiştirebilirsiniz.</string>
+    <string name="chip_thinking">Düşünüyor</string>
+    <string name="chip_read_screen">Okunuyor</string>
+    <string name="chip_browse">Göz atılıyor</string>
+    <string name="chip_use_phone">Telefonda</string>
+    <string name="chip_wait_app">Uygulama bekleniyor</string>
+    <string name="chip_take_over">Devral</string>
+    <string name="chip_done">Bitti: %1$d</string>
+    <string name="chip_route_step">Adım %1$d/%2$d</string>
+    <string name="chip_count">%1$d/%2$d</string>
 </resources>

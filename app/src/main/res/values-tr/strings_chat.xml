@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="chat_confirmed_goals">Onaylanan hedefler: %1$d/%2$d</string>
+    <string name="chat_last_confirmed_goals">Son onaylanan: %1$d/%2$d</string>
     <string name="chat_greeting_morning">Günaydın</string>
     <string name="chat_greeting_noon">İyi öğlenler</string>
     <string name="chat_greeting_afternoon">İyi öğleden sonralar</string>
@@ -47,7 +49,6 @@
     <string name="chat_paused">Duraklatıldı</string>
     <string name="chat_queued">Sıraya alındı</string>
     <plurals name="chat_earlier_steps">
-        <item quantity="one">%1$d önceki adım</item>
         <item quantity="other">%1$d önceki adım</item>
     </plurals>
     <string name="chat_background_note">Arka planda çalışıyor — telefonunuzu kullanmaya devam edin. Büyütmek için küçük görünüme dokunun.</string>
@@ -94,7 +95,6 @@
     <string name="drawer_delete_body">\“%1$s\” ve içindeki dosyalar silinecek.</string>
     <string name="drawer_delete_running">Çalışan görevi durdurulacak.</string>
     <plurals name="drawer_delete_schedules">
-        <item quantity="one">Bu sohbetteki %1$d zamanlanmış görev korunacak.</item>
         <item quantity="other">Bu sohbetteki %1$d zamanlanmış görev korunacak.</item>
     </plurals>
     <string name="drawer_select">Seç</string>
@@ -103,27 +103,21 @@
     <string name="drawer_select_none">Temizle</string>
     <string name="drawer_delete_many_title">Seçilen sohbetler silinsin mi?</string>
     <plurals name="drawer_delete_many_body">
-        <item quantity="one">%1$d sohbet ve içindeki dosyalar silinecek.</item>
         <item quantity="other">%1$d sohbet ve içlerindeki dosyalar silinecek.</item>
     </plurals>
     <plurals name="drawer_delete_many_running">
-        <item quantity="one">%1$d çalışan görev durdurulacak.</item>
         <item quantity="other">%1$d çalışan görev durdurulacak.</item>
     </plurals>
     <plurals name="drawer_delete_many_schedules">
-        <item quantity="one">İçlerindeki %1$d zamanlanmış görev korunacak.</item>
         <item quantity="other">İçlerindeki %1$d zamanlanmış görev korunacak.</item>
     </plurals>
     <plurals name="drawer_delete_progress">
-        <item quantity="one">%1$d sohbet siliniyor…</item>
         <item quantity="other">%1$d sohbet siliniyor…</item>
     </plurals>
     <plurals name="drawer_delete_done">
-        <item quantity="one">%1$d sohbet silindi.</item>
         <item quantity="other">%1$d sohbet silindi.</item>
     </plurals>
     <plurals name="drawer_delete_partial">
-        <item quantity="one">%1$d sohbet silindi, %2$d başarısız oldu.</item>
         <item quantity="other">%1$d sohbet silindi, %2$d başarısız oldu.</item>
     </plurals>
     <string name="drawer_actions">Sohbet seçenekleri</string>
@@ -142,7 +136,6 @@
     <string name="drawer_archive_earlier">Daha önce</string>
     <string name="drawer_archived_today">Bugün arşivlendi</string>
     <plurals name="drawer_archived_days_ago">
-        <item quantity="one">%1$d gün önce arşivlendi</item>
         <item quantity="other">%1$d gün önce arşivlendi</item>
     </plurals>
     <string name="drawer_search_filter_all">Tümü</string>
@@ -167,7 +160,6 @@
     <string name="steer_next">Mevcut görev sona erdi; sonraki olarak sıraya alındı</string>
     <string name="steer_cancelled">İptal edildi</string>
     <plurals name="chat_steps_done">
-        <item quantity="one">%1$d adım</item>
         <item quantity="other">%1$d adım</item>
     </plurals>
     <string name="step_viewed">%1$s görüntülendi</string>
@@ -180,7 +172,6 @@
     <string name="step_number">Adım %1$d</string>
     <string name="source_label">Kaynak</string>
     <plurals name="screenshots">
-        <item quantity="one">%1$d ekran görüntüsü</item>
         <item quantity="other">%1$d ekran görüntüsü</item>
     </plurals>
     <string name="attach_add">Ek ekle</string>
@@ -209,7 +200,6 @@
     <string name="attach_photos_and_files">Fotoğraflar ve dosyalar</string>
     <string name="attach_photo">Fotoğraf</string>
     <plurals name="attach_n_photos">
-        <item quantity="one">%1$d fotoğraf</item>
         <item quantity="other">%1$d fotoğraf</item>
     </plurals>
     <string name="attach_file_and_more">%1$s ve %2$d dosya daha</string>
@@ -282,11 +272,9 @@
     <string name="voice_placeholder_queue">Sonraki görevi söyleyin…</string>
     <string name="steer_received_paused">Anlaşıldı — görev devam ettiğinde kullanılacak</string>
     <plurals name="drawer_archive_many_done">
-        <item quantity="one">%1$d sohbet arşivlendi</item>
         <item quantity="other">%1$d sohbet arşivlendi</item>
     </plurals>
     <plurals name="drawer_archive_many_skipped">
-        <item quantity="one">%1$d arşivlenmedi</item>
         <item quantity="other">%1$d arşivlenmedi</item>
     </plurals>
     <string name="chat_example_github_star_title">Bir GitHub projesine yıldız ver</string>

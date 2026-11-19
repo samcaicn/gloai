@@ -72,6 +72,7 @@
     <string name="proactive_learn_day_make">Bugünü şu ana kadar özetle</string>
     <string name="proactive_learn_day_make_action">Özetle</string>
     <string name="proactive_learn_level">Mika ne kadar ileri gider</string>
+    <string name="proactive_learn_level_summary">Görevlere girer = her görev bugünün ve dünün özetini alır, bildirimlerden geldiği işaretlenir.</string>
     <string name="proactive_learn_level_conservative">Temkinli</string>
     <string name="proactive_learn_level_balanced">Dengeli</string>
     <string name="proactive_learn_level_aggressive">Cesur</string>

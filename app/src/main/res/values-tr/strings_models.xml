@@ -13,6 +13,9 @@
     <string name="models_lead">Her işi hangi modelin yapacağını \“Roller\” altında seçin; modeller aşağıda bağlanan sağlayıcılardan gelir.</string>
     <string name="models_roles">Roller</string>
     <string name="models_providers">Sağlayıcılar</string>
+    <plurals name="models_providers_count">
+        <item quantity="other">%1$d sağlayıcı</item>
+    </plurals>
     <string name="models_add_provider">Sağlayıcı ekle</string>
     <string name="models_key_note">API anahtarları yalnızca bu telefonda, şifrelenmiş olarak saklanır.</string>
     <string name="models_main_add_first">Önce bir sağlayıcı ekleyin</string>
@@ -65,7 +68,6 @@
     <string name="main_fallback_what">Ana model kullanılamadığında devralır</string>
     <string name="main_fallback_pick">Bir yedek model seçin</string>
     <string name="main_fallback_clear">Yedek yok</string>
-    <string name="main_fallback_hint">Önce ana model çalışır. Kotası biterse veya başarısız olursa yedek otomatik devralır.</string>
     <string name="main_fallback_failed">Yedek model ayarlanamadı</string>
     <string name="main_fallback_is_main">Bu şu anki ana model, bu yüzden kendi yedeği de olamaz</string>
     <string name="role_vision_hint">Ekranı okurken ekran görüntülerini alır; karmaşık ekranlarda daha doğrudur. İsteğe bağlı: olmadan Mika ekranı metin olarak okur.</string>
@@ -75,23 +77,19 @@
     <string name="models_delete_unused">Hiçbir rol için kullanılmıyor.</string>
     <string name="models_delete_used">%1$s onu kullanıyor; sildikten sonra yeniden seçmeniz gerekecek.</string>
     <plurals name="models_more">
-        <item quantity="one">%1$d daha, filtrelemek için bir ad yazın</item>
         <item quantity="other">%1$d daha, filtrelemek için bir ad yazın</item>
     </plurals>
     <plurals name="models_view_all">
-        <item quantity="one">%1$d modelin tümünü gör</item>
         <item quantity="other">%1$d modelin tümünü gör</item>
     </plurals>
     <string name="models_all_title">%1$s · Tüm modeller</string>
     <plurals name="models_all_note">
-        <item quantity="one">Toplam %1$d, önce kullanımdaki modeller. Listeyi yeniden almak için sağ üstteki Yenile\'ye dokunun.</item>
         <item quantity="other">Toplam %1$d, önce kullanımdaki modeller. Listeyi yeniden almak için sağ üstteki Yenile\'ye dokunun.</item>
     </plurals>
     <string name="models_use_as">%1$s · Olarak kullan</string>
     <string name="models_openai_compat">OpenAI uyumlu</string>
     <string name="models_no_list">Model listesi yok</string>
     <plurals name="models_count">
-        <item quantity="one">%1$d model</item>
         <item quantity="other">%1$d model</item>
     </plurals>
     <string name="models_used_by">%1$s olarak kullanılıyor</string>
@@ -205,7 +203,6 @@
     <string name="models_daily_token_budget_save_failed">Bütçe kaydedilemedi. Önceki ayar hâlâ etkin.</string>
     <string name="role_voice">Ses modeli</string>
     <string name="role_voice_what">Mika\'nın konuşmasını ve yanıtları sesli okumasını sağlar</string>
-    <string name="voice_hint">Mika, yanıtları sesli okuyabilir ve kendi konuşma modelinizle bir cümle söyleyebilir. Metin seçtiğiniz hizmete gönderilir.</string>
     <string name="voice_enable">Mika\'nın konuşmasına izin ver</string>
     <string name="voice_enable_note">Otomatik okuma açık değilse, konuşma yalnızca Sesli oku\'ya dokunduğunuzda yapılır</string>
     <string name="voice_provider">Hizmet</string>

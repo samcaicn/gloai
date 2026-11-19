@@ -22,7 +22,6 @@
     <string name="usage_change_dates">Tarihleri değiştir</string>
     <string name="usage_last_7d">7 günde %1$s</string>
     <plurals name="usage_missing">
-        <item quantity="one">%1$d çağrı için sağlayıcı kullanım bildirmedi ve sayılmadı.</item>
         <item quantity="other">%1$d çağrı için sağlayıcı kullanım bildirmedi ve sayılmadı.</item>
     </plurals>
     <string name="usage_hourly">Saatlik</string>
@@ -48,4 +47,15 @@
     <string name="usage_allowance_updated">Son güncelleme %1$s</string>
     <string name="usage_allowance_self_hosted">Kendi sunucunuzda</string>
     <string name="usage_allowance_unsupported">Bu bağlantı için ödenek sorgusu kullanılamıyor</string>
+    <string name="chat_usage_title">Sohbet kullanımı ve bağlamı</string>
+    <string name="chat_request_context">Son ana model isteği</string>
+    <string name="chat_request_size">%1$s · Adım %2$d · Tahmini %3$s / %4$s token</string>
+    <string name="chat_cache_rate">Girdi önbelleği isabet oranı</string>
+    <string name="chat_cache_coverage">%2$s girdi tokenından %1$s kadarı önbellek raporlarıyla önbelleğe alındı</string>
+    <string name="chat_no_context">Henüz bağlam dökümü kaydedilmedi.</string>
+    <string name="chat_context_dialogue">Sohbet geçmişi</string>
+    <string name="chat_context_instructions">Sistem komutu ve araç tanımları</string>
+    <string name="chat_context_references">Bellek, bilgi ve beceriler</string>
+    <string name="chat_context_runtime">Çalışma durumu ve bildirimler</string>
+    <string name="chat_context_tools">Araç çağrıları, sonuçları ve görüntüler</string>
 </resources>

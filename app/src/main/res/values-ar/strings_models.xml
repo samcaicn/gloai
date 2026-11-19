@@ -14,6 +14,7 @@
     <string name="models_roles">الأدوار</string>
     <string name="models_providers">المزوّدون</string>
     <plurals name="models_providers_count">
+        <item quantity="zero">%1$d موفّر</item>
         <item quantity="one">موفّر واحد</item>
         <item quantity="two">موفّران</item>
         <item quantity="few">%1$d موفّرين</item>

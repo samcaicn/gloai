@@ -59,7 +59,6 @@
     <string name="duration_m_s">%1$d dk %2$d sn</string>
     <string name="timeline_title">Nasıl gitti</string>
     <plurals name="timeline_total_steps">
-        <item quantity="one">%1$d adım</item>
         <item quantity="other">%1$d adım</item>
     </plurals>
     <string name="timeline_criteria">Neyin tamam sayılacağı</string>
@@ -71,17 +70,14 @@
     <string name="expand">Genişlet</string>
     <string name="timeline_model_calls">Model çağrıları</string>
     <plurals name="times">
-        <item quantity="one">%1$d kez</item>
         <item quantity="other">%1$d kez</item>
     </plurals>
     <string name="timeline_memory_used">Kullanılan bellek</string>
     <plurals name="items">
-        <item quantity="one">%1$d öğe</item>
         <item quantity="other">%1$d öğe</item>
     </plurals>
     <string name="timeline_timing_note">Adım süreleri model beklemelerini ve araç çalışmalarını sayar, sizi beklemek için harcanan süreyi değil.</string>
     <plurals name="timeline_viewed_times">
-        <item quantity="one">%1$d kez görüntülendi</item>
         <item quantity="other">%1$d kez görüntülendi</item>
     </plurals>
     <string name="effect_small_change">Biraz değişti</string>

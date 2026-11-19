@@ -87,6 +87,7 @@
     <string name="phone_reconnect">Yeniden bağlan</string>
     <string name="phone_row_sub">Uygulamaları sanal ekranda kontrol etmek için kablosuz hata ayıklamayı kullanır</string>
     <string name="phone_usage_note">Bir kez eşleştirdikten sonra Mika\'nın yerleşik yardımcısı arka planda kalır ve Wi-Fi olmadan da çalışmaya devam eder. \“USB hata ayıklama\”yı (Geliştirici seçenekleri\'nde) açık tutun; kapatmak telefon kontrolünü durdurur. Yeniden başlattıktan sonra Wi-Fi\'a katılın ve \“Kablosuz hata ayıklama\”yı açın, Mika kendiliğinden yeniden bağlanır — yeni kod gerekmez.</string>
+    <string name="phone_usage_summary">USB hata ayıklamayı açık tutun; yeniden başlatmadan sonra Mika kendiliğinden yeniden bağlanır.</string>
     <string name="phone_wireless_off">Kablosuz hata ayıklama kapalı</string>
     <string name="phone_connecting">Bağlanıyor</string>
     <string name="phone_error">Hata</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">Telefonu bir USB kablosuyla bilgisayara takın ve bu komutu bilgisayarda çalıştırın (telefon için bu adb komutunu çalıştırmanın başka herhangi bir yolu da işe yarar). Çoğu telefonda kabloyu çıkardıktan sonra çalışmaya devam eder; durursa takın ve telefon kontrolünü geri getirmek için komutu tekrar çalıştırın. Ayrıca her telefon yeniden başlatmasından sonra da gerekir.</string>
     <string name="phone_success_note_usb">USB hata ayıklamayı açık tutun. Yardımcı USB komutuyla başlatıldı. Çoğu telefonda kabloyu çıkardıktan sonra çalışmaya devam eder; durursa takın ve komutu tekrar çalıştırın. Telefon yeniden başladığında Mika\'yı bir kez açın ve komutu tekrar çalıştırın.</string>
     <string name="phone_usage_note_usb">Mika\'nın yerleşik yardımcısı USB başlatma komutuyla başlatıldı. Çoğu telefonda kabloyu çıkardıktan sonra çalışmaya devam eder; bazı sistemlerde çıkarmak onu durdurur. Böyle olursa takın ve telefon kontrolünü geri getirmek için komutu tekrar çalıştırın. \“USB hata ayıklama\”yı (Geliştirici seçenekleri\'nde) açık tutun; kapatmak telefon kontrolünü durdurur. Telefon yeniden başladığında yardımcı kendiliğinden geri gelmez: Mika\'yı açın ve komutu tekrar çalıştırın (\“Telefon kontrolünü kur\”da kopyalayabilirsiniz). Bu telefonda çalışan bir \“Kablosuz hata ayıklama\” varsa, bir kez eşleştirmek Mika\'nın yeniden başlatmalardan sonra kendiliğinden yeniden bağlanmasını sağlar.</string>
+    <string name="phone_usage_summary_usb">USB hata ayıklamayı açık tutun; yeniden başlatmadan sonra başlatma komutunu tekrar çalıştırın.</string>
     <string name="fail_root_denied">Root erişimi reddedildi</string>
     <string name="fail_root_denied_body">Mika, telefon yardımcısını root ile başlatamadı. \“Yeniden dene\”ye dokunun ve izin istemi göründüğünde Mika\'ya izin verin ya da bunun yerine Kablosuz hata ayıklamayı kullanın.</string>
     <string name="fail_root_no_answer">Root yanıt vermedi</string>

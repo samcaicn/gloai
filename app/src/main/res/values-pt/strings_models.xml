@@ -15,6 +15,7 @@
     <string name="models_providers">Provedores</string>
     <plurals name="models_providers_count">
         <item quantity="one">%1$d provedor</item>
+        <item quantity="many">%1$d provedores</item>
         <item quantity="other">%1$d provedores</item>
     </plurals>
     <string name="models_add_provider">Adicionar provedor</string>

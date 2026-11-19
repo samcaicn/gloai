@@ -88,6 +88,7 @@
     <string name="speech_doubao_concurrent_note">Eşzamanlı bağlantılara göre ücretlendirilir</string>
     <string name="speech_funasr_model">Fun-ASR (kendi sunucunuzda)</string>
     <string name="speech_funasr_setup_hint">Kendiniz çalıştırdığınız bir Fun-ASR gerçek zamanlı sunucusu (Fun-ASR projesinden serve_realtime_ws.py) tarafından tanınan kelimeler konuştukça görünür; genellikle yerel ağınızda. Hesap veya anahtar gerekmez.</string>
+    <string name="speech_funasr_deploy_guide">Dağıtım kılavuzu</string>
     <string name="speech_funasr_server">Sunucu</string>
     <string name="speech_funasr_address">Adres</string>
     <string name="speech_funasr_enter_address">örn. 192.168.1.10:10095</string>

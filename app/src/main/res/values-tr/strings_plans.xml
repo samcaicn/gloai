@@ -61,7 +61,6 @@
     <string name="plans_result_pending">Sonucun kontrol edilmesi gerekiyor</string>
     <string name="plans_every_day">Her gün</string>
     <plurals name="plans_every_minutes">
-        <item quantity="one">Her %1$d dakikada bir</item>
         <item quantity="other">Her %1$d dakikada bir</item>
     </plurals>
     <string name="plans_once">Bir kez</string>

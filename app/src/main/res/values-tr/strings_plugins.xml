@@ -22,11 +22,9 @@
     <string name="plugins_error_missing_manifest">Paketin kökünde manifest.json yok.</string>
     <string name="plugins_error_invalid">Paket geçerli bir eklenti değil.</string>
     <plurals name="plugins_skill_count">
-        <item quantity="one">%1$d beceri</item>
         <item quantity="other">%1$d beceri</item>
     </plurals>
     <plurals name="plugins_count">
-        <item quantity="one">%1$d eklenti</item>
         <item quantity="other">%1$d eklenti</item>
     </plurals>
     <string name="env_vars_title">Ortam değişkenleri</string>

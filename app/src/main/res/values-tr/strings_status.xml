@@ -3,7 +3,6 @@
     <string name="progress_replay">Bilinen bir rota tekrarlanıyor (adım %1$d/%2$d)</string>
     <string name="progress_waiting_app">Başka bir görevin %1$s ile bitmesi bekleniyor</string>
     <plurals name="progress_batch">
-        <item quantity="one">Aynı anda %1$d adım çalışıyor</item>
         <item quantity="other">Aynı anda %1$d adım çalışıyor</item>
     </plurals>
     <string name="payment_item">Öğe: %1$s</string>
@@ -17,7 +16,6 @@
     <string name="channel_progress">Görev ilerlemesi</string>
     <string name="notif_normal">Normal</string>
     <plurals name="notif_lowered">
-        <item quantity="one">%1$d üstte açılmayacak</item>
         <item quantity="other">%1$d üstte açılmayacak</item>
     </plurals>
     <string name="state_turned_off">Kapalı</string>
