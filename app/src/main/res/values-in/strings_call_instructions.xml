@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="call_instructions_title">Instruksi panggilan</string>
-    <string name="call_instructions_intro">Instruksi tersimpan berlaku untuk panggilan berikutnya. Semua instruksi aktif dikirim ke Volcengine saat menyiapkan panggilan AI, meski panggilan tidak dijawab. Penelepon tidak dapat mengubahnya.</string>
+    <string name="call_instructions_intro">Instruksi tersimpan berlaku untuk panggilan berikutnya. Semua instruksi aktif dikirim ke layanan suara yang dipilih saat menyiapkan panggilan AI, meski panggilan tidak dijawab. Penelepon tidak dapat mengubahnya.</string>
     <string name="call_instructions_add">Tambah instruksi</string>
     <string name="call_instructions_empty">Tulis apa yang boleh dikatakan dan perlu ditanyakan asisten. Perubahan berlaku mulai panggilan berikutnya.</string>
     <string name="call_instructions_heading">Judul</string>

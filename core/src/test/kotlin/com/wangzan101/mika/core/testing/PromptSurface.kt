@@ -56,7 +56,7 @@ object PromptSurface {
         }
     }
 
-    private val ROLES = listOf("describe", "intent_gate", "locate", "memory_extract", "route_match", "skill_draft", "app_knowledge", "app_knowledge_input", "verifier", "stop_summary", "notice_triage", "notice_learn")
+    private val ROLES = listOf("describe", "intent_gate", "task_stages", "locate", "memory_extract", "route_match", "skill_draft", "app_knowledge", "app_knowledge_input", "verifier", "stop_summary", "notice_triage", "notice_learn")
 
     private fun role(name: String): String =
         checkNotNull(PromptSurface::class.java.getResourceAsStream("/prompts/roles/$name.md")) { "missing role prompt $name" }

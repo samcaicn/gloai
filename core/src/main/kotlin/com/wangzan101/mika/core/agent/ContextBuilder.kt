@@ -155,7 +155,7 @@ class ContextBuilder(
      * [userWords] 是用户最近一句话里他自己打的字(不带屏幕、页面说明这些,见 AgentLoop):读到的内容多是别的语言时,模型写给用户的话容易跟着换语言,紧挨着生成处摆出这些字的开头,
      * 让它照这句话的语言写;不在这里判断是哪种语言。
      */
-    fun runtimeState(place: Place?, label: String?, siteMode: String?, step: Int, maxSteps: Int, nowMs: Long, userWords: String? = null): Part.Text {
+    fun runtimeState(place: Place?, label: String?, siteMode: String?, step: Int, maxSteps: Int, nowMs: Long, userWords: String? = null, pending: String? = null): Part.Text {
         val surface = when {
             place == null -> "no screen or page read yet"
             place.kind == PlaceKind.Site -> "website " + place.name +
@@ -171,7 +171,8 @@ class ContextBuilder(
         val at = Instant.ofEpochMilli(nowMs).atZone(zone)
         val time = TIME.format(at) + " " + WEEKDAYS[at.dayOfWeek.value - 1]
         val language = userWords?.let(::excerpt)?.let { "\nWrite to the user in the language of their latest message: \"$it\"" }.orEmpty()
-        return Part.Text(envelope(ContextKind.RuntimeState, "runtime", "Current place: $surface\nStep: $steps\nLocal time: $time$language"))
+        val goals = pending?.let { "\n$it" }.orEmpty()
+        return Part.Text(envelope(ContextKind.RuntimeState, "runtime", "Current place: $surface\nStep: $steps\nLocal time: $time$goals$language"))
     }
 
     private fun knowledgePiece(e: KnowledgeEntry, note: String, withLinks: Boolean): Piece {

@@ -3,6 +3,7 @@ package com.wangzan101.mika.ui
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
+import com.wangzan101.mika.core.agent.GoalChecklist
 import com.wangzan101.mika.core.agent.RunProgress
 import com.wangzan101.mika.settings.AccessibilityState
 import com.wangzan101.mika.settings.ChannelLevel
@@ -19,12 +20,13 @@ enum class Fix {
     OpenAccessibility, AllowNotifications, AddModel,
     /** 直接打开「需要你处理」/「任务结果」/「任务进度」频道的设置页,打开「在屏幕上弹出」;打不开退回应用通知总页。 */
     OpenAttentionChannel, OpenResultChannel, OpenProgressChannel,
+    OpenLiveTaskSettings,
     /** 「配对」通知频道的设置页:配对码要填在这类通知里。 */
     OpenPairingChannel,
     /** 本 App 的「应用信息」页:系统拦着不让开无障碍时,在这里允许受限制的设置。 */
     OpenAppInfo,
     // 内置助手
-    OpenPhoneSetup, RepairPhoneHelper, RetryPhoneHelper, UnpairPhoneHelper,
+    OpenPhoneSetup, RepairPhoneHelper, RetryPhoneHelper, UnpairPhoneHelper, OpenPhoneOps,
     OpenAboutPhone, OpenDeveloperOptions, OpenUsbDebugging, OpenWirelessDebugging, OpenWifi,
 }
 
@@ -45,10 +47,15 @@ object StatusCopy {
     fun progress(p: RunProgress): String = when (p) {
         is RunProgress.Replay -> tr(R.string.progress_replay, p.step, p.total)
         is RunProgress.Batch -> trPlural(R.plurals.progress_batch, p.steps)
-        is RunProgress.Task -> p.display
+        is RunProgress.Task -> p.goals?.let(::goals) ?: p.display
         // 只是在等另一个任务,不要用户做什么
         is RunProgress.WaitingForApp -> tr(R.string.progress_waiting_app, p.app)
     }
+
+    fun goals(goals: GoalChecklist) = tr(
+        if (goals.stale) R.string.chat_last_confirmed_goals else R.string.chat_confirmed_goals,
+        goals.confirmed.size, goals.items.size,
+    )
 
     /** 付款接管的商品、金额、地址,一行一项;都没有时为 null。卡片和通知共用。 */
     fun paymentLines(item: String?, amount: String?, address: String?): String? =
@@ -76,6 +83,8 @@ object StatusCopy {
         // 引导页把每一步都讲清楚了,不再弹说明
         is Problem.PhoneHelper -> when {
             PhoneSetupCopy.canReconnect(p.status) -> Fix.RetryPhoneHelper
+            (p.status as? BuiltinShellStatus.Failed)?.reason == BuiltinShellFailure.ShizukuNotInstalled ||
+                (p.status as? BuiltinShellStatus.Failed)?.reason == BuiltinShellFailure.ShizukuPermissionNeeded -> Fix.OpenPhoneOps
             // 这个 Wi-Fi 还没允许无线调试:直接去亲手打开一次(系统会问要不要允许)
             (p.status as? BuiltinShellStatus.Failed)?.fix == BuiltinShellFix.OpenWirelessDebugging -> Fix.OpenWirelessDebugging
             else -> Fix.OpenPhoneSetup
@@ -143,6 +152,10 @@ object StatusCopy {
                 else if (st.reason in PhoneSetupCopy.ROOT_FAILURES) BannerCopy(
                     PhoneSetupCopy.failure(st.reason).title, PhoneSetupCopy.failure(st.reason).body,
                     if (PhoneSetupCopy.canReconnect(st)) PhoneSetupCopy.RECONNECT else tr(R.string.view),
+                )
+                else if (st.reason in PhoneSetupCopy.SHIZUKU_FAILURES) BannerCopy(
+                    PhoneSetupCopy.failure(st.reason).title, PhoneSetupCopy.failure(st.reason).body,
+                    if (PhoneSetupCopy.canReconnect(st)) PhoneSetupCopy.RECONNECT else tr(R.string.fix_it),
                 )
                 else if (st.reason == BuiltinShellFailure.WifiNotAllowed) BannerCopy(
                     PhoneSetupCopy.failure(st.reason).title, PhoneSetupCopy.WIFI_NOT_ALLOWED_LINE, tr(R.string.heads_up_action),

@@ -3,6 +3,9 @@
 ## empty_reply
 Your reply was empty. Continue the task with your tools, or reply with your final answer to the user in text.
 
+## progress_call_format
+Write progress JSON inside <task_progress>...</task_progress> in your reply text. Continue with the next real tool call or give the final answer when ready.
+
 ## truncated_reply
 Your reply was cut off by the output limit before it was complete. Continue the task with your tools, or reply again with a shorter final answer.
 
@@ -230,3 +233,6 @@ The page did not allow screenshots, so you cannot see it. Say so in one line and
 ## history_hint
 {{turns}}
 What Mika read and found in these turns is kept: history_read lists them and reads one turn's notes and gathered text, so reuse it instead of gathering it again.
+
+## stage_hint
+Display stages: current {{number}} {{current}}, next {{next}} {{goal}}. When starting that next outcome, include "stage":{{next}} inside <task_progress> with the ordinary tool call. A display stage never confirms a goal.

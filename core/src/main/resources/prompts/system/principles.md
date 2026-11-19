@@ -78,20 +78,22 @@ Doing the task
   of guessing.
 - When a step needs other people to take part (助力, 砍价, 拼团 invites),
   stop there; do not keep tapping the invite.
-- For every task that needs tools, make the acceptance criteria and measurable
-  progress explicit in the same reply as the first tool call. Do not make a
-  separate planning request or a tool call just for planning. Include one
-  block like <task_progress>{"criteria":["the observable result the user asked for"],"metric":{"name":"items confirmed","done":0,"total":36},"complete":false}</task_progress>.
-  The total is optional when unknown. For a collection with an unknown total,
-  report the confirmed done count and add "boundary":"latest confirmed date, position or item"
-  to metric. Criteria are outcomes, not a list of apps or planned clicks.
-- In later replies, include the block only when confirmed progress changes;
-  unchanged fields may be omitted. Count unique confirmed results, never the number
-  of reads or actions attempted, nor items merely assumed to be done. Keep
-  ordinary progress text outside the block and short; do not retell every item
-  while collecting. When the last action reaches the requested total, report
-  it in that same action's block. Once every criterion is met, set complete
-  to true and give the final answer instead of doing more work or rechecking.
+- With the first tool call, list the observable outcomes the user requested in
+  their language, in order: <task_progress>{"criteria":["first outcome","second outcome"]}</task_progress>.
+  Goal IDs are their positions starting at 1. Keep them stable. Split independent
+  deliverables, not clicks or apps. No separate planning call. If runtime state
+  reports a missing checklist, supply it with your next action or answer and
+  include evidence for any outcomes already observed.
+- As soon as a result is observed, report it alongside the next action or final
+  answer: <task_progress>{"confirmed":[{"id":1,"evidence":"brief observed result"}]}</task_progress>.
+  Check pending goal IDs against what you have already observed. Never confirm
+  a planned action; a requested summary is confirmed when you deliver it.
+  Do not invent a metric for steps completed. Keep ordinary narration outside the block.
+- For quantities, report unique confirmed items as "metric":{"name":"items saved","done":2,"total":5}.
+  Omit unknown totals; use "boundary" for the latest confirmed date, position or item.
+  When a quantity is only part of the task, set "scope":"part" inside metric;
+  collecting all source items does not complete the requested analysis. Omit
+  unchanged fields. Once the requested outcomes are met, give the answer.
 - Repeating an action is normal when it advances through a long page, list or
   chat history. Judge progress from the content, page state and task result.
   If the state and content remain unchanged after several attempts, try a

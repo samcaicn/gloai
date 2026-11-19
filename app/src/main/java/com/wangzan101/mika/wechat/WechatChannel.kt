@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.run.SendOutcome
 import com.wangzan101.mika.core.wechat.WechatApi
 import com.wangzan101.mika.core.wechat.WechatApiException
 import com.wangzan101.mika.core.wechat.WechatAccount
+import com.wangzan101.mika.core.wechat.WechatUserContent
 import com.wangzan101.mika.core.wechat.WechatUpdates
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -109,31 +110,35 @@ class WechatChannel(
             val owner = account.ownerId
             if (message.fromUserId != owner) return@forEach
             val content = message.userContent() ?: return@forEach
-            val messageId = message.messageId ?: return@forEach
+            val messageId = message.serverMessageId() ?: return@forEach
             val peer = store.messagePeer(account, message.contextToken) ?: return@withLock null
             // Check before downloading/importing: replay must reuse the journal's workspace paths.
             if (store.hasMessage(messageId)) return@forEach
             if (store.account() != account || sink !== input || !store.enabled()) return@withLock null
             val askId = activeInputAskId(peer.threadId)
-            if (content.images.isEmpty()) {
-                store.journal(messageId, peer, content.text, askId, expectedAccount = account, requireMatchingAsk = false)
+            val images = resolveImages(content, peer, account)
+            if (images != null && images.isEmpty()) {
+                if (content.text.isBlank()) return@forEach
+                store.journal(messageId, peer, content.text, askId, expectedAccount = account,
+                    requireMatchingAsk = false, sourceImages = emptyList())
             } else {
                 try {
+                    if (images == null) throw IOException("The original quoted message is unavailable")
                     val files = imageFiles ?: throw IOException("Image storage unavailable")
-                    files.receive(peer, messageId, content.text, content.images) { prepared ->
+                    files.receive(peer, images) { stored ->
                         if (!current(account, input)) return@receive false
                         if (askId != null && activeInputAskId(peer.threadId) != askId) {
-                            // Reject the batch so the importer can remove the unused files.
                             store.acknowledge(messageId, account)
                             return@receive false
                         }
-                        store.journal(messageId, peer, prepared, askId, expectedAccount = account,
-                            requireMatchingAsk = askId != null)
+                        val text = AttachmentLines.composeBytes(content.text, stored.map { it.path to it.bytes })
+                        store.journal(messageId, peer, text, askId, expectedAccount = account,
+                            requireMatchingAsk = askId != null,
+                            sourceImages = if (content.images.isEmpty()) emptyList() else stored)
                     }
                 } catch (e: CancellationException) { throw e }
                 catch (_: Exception) {
                     if (!current(account, input)) return@withLock null
-                    // Do not execute the caption alone when one of its pictures is missing.
                     store.journal(messageId, peer, imageFailureText(), imageFailure = true, expectedAccount = account)
                 }
             }
@@ -142,6 +147,23 @@ class WechatChannel(
         }
         if (updates.cursor.isNotEmpty() && current(account, input)) store.saveCursor(updates.cursor, account)
         updates
+    }
+
+    /** An unresolved quote must never launch its caption with a guessed attachment. */
+    private fun resolveImages(content: WechatUserContent, peer: ChannelPeer, account: WechatAccount): List<WechatImageSource>? {
+        if (content.references.isEmpty()) return content.images.map(::DownloadWechatImage)
+        return content.references.flatMap { ref ->
+            val item = ref.item
+            val inline = item?.imageItem
+            val media = inline?.media
+            when {
+                item != null && item.type != 0 && item.type != 2 -> emptyList()
+                inline != null && (!media?.fullUrl.isNullOrBlank() || !media?.encryptQueryParam.isNullOrBlank()) ->
+                    listOf(DownloadWechatImage(inline))
+                else -> ref.targetId()?.let { store.sourceImages(peer, account, it) }
+                    ?: return null
+            }
+        }
     }
 
     private fun current(account: WechatAccount, input: ChannelInputSink) =

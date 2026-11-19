@@ -56,13 +56,22 @@ internal const val MAX_TTS_BYTES = 20 * 1024 * 1024
 
 /** 从文件头认音频容器；认不出为 null。只认 TTS 常见的几种。 */
 internal fun sniffAudioMime(bytes: ByteArray): String? = when {
-    bytes.size >= 4 && ascii(bytes, 0, 4) == "RIFF" && ascii(bytes, 8, 4) == "WAVE" -> "audio/wav"
+    bytes.size >= 12 && ascii(bytes, 0, 4) == "RIFF" && ascii(bytes, 8, 4) == "WAVE" -> "audio/wav"
     bytes.size >= 3 && ascii(bytes, 0, 3) == "ID3" -> "audio/mpeg"
     bytes.size >= 2 && u8(bytes, 0) == 0xFF && (u8(bytes, 1) and 0xF6) == 0xF0 -> "audio/aac"
     bytes.size >= 2 && u8(bytes, 0) == 0xFF && (u8(bytes, 1) and 0xE0) == 0xE0 -> "audio/mpeg"
     bytes.size >= 4 && ascii(bytes, 0, 4) == "OggS" -> "audio/ogg"
     bytes.size >= 4 && ascii(bytes, 0, 4) == "fLaC" -> "audio/flac"
     else -> null
+}
+
+internal fun audioMimeOrBad(bytes: ByteArray, declared: String?): String {
+    sniffAudioMime(bytes)?.let { return it }
+    if (bytes.size >= 4 && ascii(bytes, 0, 4) == "RIFF") {
+        throw TtsError.BadAudio("response is not a complete audio file")
+    }
+    return declared?.substringBefore(';')?.takeIf { it.startsWith("audio/") }
+        ?: throw TtsError.BadAudio("response is not a known audio format")
 }
 
 /** 原始 16 位单声道 PCM 包成 WAV；Gemini TTS 常见这种返回。 */

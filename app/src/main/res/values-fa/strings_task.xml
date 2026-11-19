@@ -57,6 +57,15 @@
     <string name="task_too_old">کنترل برنامه‌های گوشی به اندروید ۱۲ یا جدیدتر نیاز دارد. گفتگو، وب و کارهای محیط اجرا همچنان در دسترس‌اند.</string>
     <string name="task_shell_died">اتصال برنامهٔ کمکی کنترل گوشی قطع شد و صفحهٔ مجازی بسته شد. پس از اتصال دوباره تلاش کنید.</string>
     <string name="task_running">در حال اجرا</string>
+    <string name="chip_thinking">در حال فکر</string>
+    <string name="chip_read_screen">خواندن صفحه</string>
+    <string name="chip_use_phone">کار با گوشی</string>
+    <string name="chip_browse">مرور وب</string>
+    <string name="chip_take_over">نوبت شماست</string>
+    <string name="chip_route_step">گام %1$d/%2$d</string>
+    <string name="chip_count">%1$d/%2$d</string>
+    <string name="chip_done">انجام شد: %1$d</string>
+    <string name="chip_wait_app">در انتظار برنامه</string>
     <string name="channel_task_accepted">متوجه شدم؛ کار شما ثبت شد.</string>
     <string name="task_step_note">مرحلهٔ %1$d: %2$s</string>
     <string name="task_wait_unlock">در انتظار باز شدن قفل</string>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="calls_title">Chamadas com IA</string>
-    <string name="calls_entry_sub">Chamadas pela rede móvel com voz em tempo real da Volcengine</string>
+    <string name="calls_entry_sub">Chamadas pela rede móvel com voz em tempo real da plataforma de voz selecionada</string>
     <string name="calls_action_failed">Não foi possível realizar a ação. Verifique se o serviço está pronto e tente novamente.</string>
     <string name="calls_permissions_required">São necessárias permissões de telefone e notificações.</string>
     <string name="calls_ai_active">A IA está atendendo à chamada</string>
@@ -19,7 +19,7 @@
     <string name="calls_sim">SIM para chamadas de saída</string>
     <string name="calls_default">Padrão</string>
     <string name="calls_dial">Ligar com IA</string>
-    <string name="calls_call_note">As chamadas usam o SIM atual. A operadora e a Volcengine podem cobrar pelo uso. Antes de ligar, informe o objetivo e a saudação em Configurações.</string>
+    <string name="calls_call_note">As chamadas usam o SIM atual. A operadora e a plataforma de voz selecionada podem cobrar pelo uso. Antes de ligar, informe o objetivo e a saudação em Configurações.</string>
     <string name="calls_prepare">Verificar e preparar</string>
     <string name="calls_enable">Ativar chamadas com IA</string>
     <string name="calls_disable">Desativar e restaurar chamadas normais</string>
@@ -35,7 +35,7 @@
     <string name="calls_all_note">Inclui números fora da lista e chamadas de números ocultos</string>
     <string name="calls_allowlist">Números autorizados para atendimento automático</string>
     <string name="calls_allowlist_empty">Lista vazia: as chamadas só serão atendidas automaticamente se a opção para todas as chamadas estiver ativada</string>
-    <string name="calls_privacy_note">O áudio só é enviado à Volcengine enquanto a IA atende à chamada. Nenhuma gravação é salva. As transcrições ficam criptografadas neste telefone; você pode assumir a chamada a qualquer momento.</string>
+    <string name="calls_privacy_note">O áudio só é enviado à plataforma de voz selecionada enquanto a IA atende à chamada. Nenhuma gravação é salva. As transcrições ficam criptografadas neste telefone; você pode assumir a chamada a qualquer momento.</string>
     <string name="calls_history_empty">Ainda não há chamadas com IA no histórico</string>
     <string name="calls_collapse">Recolher</string>
     <string name="calls_transcript">Mostrar transcrição</string>
@@ -53,7 +53,7 @@
     <string name="calls_greeting">Saudação</string>
     <string name="calls_instructions">Objetivo e instruções</string>
     <string name="calls_duration">Tempo máximo da IA (15–600 segundos)</string>
-    <string name="calls_speaker">ID de voz da Volcengine</string>
+    <string name="calls_speaker">ID de voz da plataforma de voz selecionada</string>
     <string name="calls_audio_route">Rota de áudio da chamada</string>
     <string name="calls_audio_verified">Confirmei que ambos os lados conseguem ouvir o áudio nas chamadas com IA neste telefone</string>
     <string name="calls_verify_note">Faça ou atenda primeiro uma chamada de teste manualmente e confirme o áudio nos dois sentidos. Depois, ative o atendimento automático.</string>
@@ -89,7 +89,7 @@
     <string name="calls_original_transcript">Transcrição da chamada</string>
     <string name="calls_outgoing_title">Fazer uma chamada</string>
     <string name="calls_rules">Regras de atendimento</string>
-    <string name="calls_setup_credentials">Configure as credenciais de voz em tempo real da Volcengine.</string>
+    <string name="calls_setup_credentials">Configure as credenciais de voz em tempo real da plataforma de voz selecionada.</string>
     <string name="calls_setup_shell">Conecte primeiro o assistente integrado do Mika.</string>
     <string name="calls_sim_clear_preferred">Limpar SIM preferido</string>
     <string name="calls_sim_preferred">SIM preferido: %1$s</string>

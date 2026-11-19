@@ -2,6 +2,8 @@ package com.wangzan101.mika.settings
 
 import com.wangzan101.mika.core.shell.BuiltinShellFailure
 import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.shell.ShellTransport
+import com.wangzan101.mika.core.shell.ShizukuPlatformState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -172,5 +174,31 @@ class PrerequisitesTest {
             listOf<Problem>(Problem.SystemTooOld),
             Prerequisites.check(ready.copy(sdkInt = 30, builtinShell = BuiltinShellStatus.NotPaired), hasMainModel = true).problems,
         )
+    }
+
+    @Test
+    fun shizukuTransportFieldsAndPhoneHelperGating() {
+        val shizukuStatus = ready.copy(
+            shellTransport = ShellTransport.Shizuku,
+            shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true),
+            wirelessPaired = false,
+            shizukuStart = true,
+        )
+        val ok = Prerequisites.check(shizukuStatus, hasMainModel = true)
+        assertTrue(ok.canStartTask)
+        assertTrue(ok.phoneReady)
+        assertTrue(ok.problems.isEmpty())
+
+        val needPerm = BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuPermissionNeeded)
+        val blocked = Prerequisites.check(
+            shizukuStatus.copy(
+                builtinShell = needPerm,
+                shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = false),
+            ),
+            hasMainModel = true,
+        )
+        assertTrue(blocked.canStartTask)
+        assertFalse(blocked.phoneReady)
+        assertEquals(listOf<Problem>(Problem.PhoneHelper(needPerm)), blocked.problems)
     }
 }

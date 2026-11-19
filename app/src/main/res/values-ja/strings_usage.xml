@@ -47,4 +47,15 @@
     <string name="usage_allowance_updated">最終更新 %1$s</string>
     <string name="usage_allowance_self_hosted">セルフホスト接続</string>
     <string name="usage_allowance_unsupported">この接続では利用枠を確認できません</string>
+    <string name="chat_usage_title">会話の使用量とコンテキスト</string>
+    <string name="chat_cache_rate">入力キャッシュのヒット率</string>
+    <string name="chat_cache_coverage">キャッシュ情報のある入力 %2$s トークンのうち %1$s がヒット</string>
+    <string name="chat_request_context">メインモデルへの直近のリクエスト</string>
+    <string name="chat_no_context">コンテキストの内訳はまだ記録されていません。</string>
+    <string name="chat_request_size">%1$s · ステップ %2$d · 推定 %3$s / %4$s トークン</string>
+    <string name="chat_context_instructions">システムプロンプトとツール定義</string>
+    <string name="chat_context_dialogue">会話履歴</string>
+    <string name="chat_context_references">メモリ、知識、スキル</string>
+    <string name="chat_context_tools">ツール呼び出し、結果、画像</string>
+    <string name="chat_context_runtime">実行状態と通知</string>
 </resources>

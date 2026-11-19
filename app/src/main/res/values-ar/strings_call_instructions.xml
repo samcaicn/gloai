@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="call_instructions_title">تعليمات المكالمات</string>
-    <string name="call_instructions_intro">تُطبق التعليمات المحفوظة على المكالمات القادمة. تُرسل كل التعليمات النشطة إلى Volcengine عند تحضير مكالمة الذكاء الاصطناعي، حتى إن لم يُرد على المكالمة. لا يمكن للمتصل تعديلها.</string>
+    <string name="call_instructions_intro">تُطبق التعليمات المحفوظة على المكالمات القادمة. تُرسل كل التعليمات النشطة إلى خدمة الصوت المحددة عند تحضير مكالمة الذكاء الاصطناعي، حتى إن لم يُرد على المكالمة. لا يمكن للمتصل تعديلها.</string>
     <string name="call_instructions_add">إضافة تعليمات</string>
     <string name="call_instructions_empty">اكتب ما يمكن للمساعد قوله وما يحتاج إلى سؤاله. تسري التغييرات بدءًا من المكالمة القادمة.</string>
     <string name="call_instructions_heading">العنوان</string>

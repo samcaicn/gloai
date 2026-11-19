@@ -12,8 +12,10 @@ import android.os.Looper
 import android.os.Process
 import android.os.UserManager
 import android.provider.Settings
+import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.core.shell.BuiltinShellControl
+import com.wangzan101.mika.core.shell.ShizukuPlatformState
 import com.wangzan101.mika.cap.phone.setup.DeveloperSettings
 import com.wangzan101.mika.cap.phone.setup.PairingNotifier
 import kotlinx.coroutines.CoroutineScope
@@ -55,7 +57,10 @@ class SystemStatusMonitor(context: Context, private val shell: BuiltinShellContr
         app.contentResolver.registerContentObserver(DeveloperSettings.developerOptionsUri, false, a11ySetting)
         app.contentResolver.registerContentObserver(DeveloperSettings.wirelessDebuggingUri, false, a11ySetting)
         app.contentResolver.registerContentObserver(DeveloperSettings.usbDebuggingUri, false, a11ySetting)
-        shell.status.onEach { refresh() }.launchIn(s)
+        shell.status.onEach { _status.value = read() }.launchIn(s)
+        val manager = PhoneServices.of(app).shellManager
+        manager.shizuku.state.onEach { _status.value = read() }.launchIn(s)
+        manager.transport.onEach { _status.value = read() }.launchIn(s)
         refresh()
     }
 
@@ -66,31 +71,40 @@ class SystemStatusMonitor(context: Context, private val shell: BuiltinShellContr
     }
 
     fun refresh() {
+        (app as? PhoneServices.Owner)?.phone?.shellManager?.refreshShizukuAsync()
         _status.value = read()
     }
 
-    private fun read() = SystemStatus(
-        sdkInt = Build.VERSION.SDK_INT,
-        builtinShell = shell.status.value,
-        accessibility = accessibilityState(),
-        userLocked = userLocked(),
-        notificationsAllowed = app.getSystemService(NotificationManager::class.java).areNotificationsEnabled(),
-        attentionLowered = channelLowered(TaskService.CHANNEL_ATTENTION),
-        resultLowered = channelLowered(TaskService.CHANNEL_RESULT),
-        // 先建好频道:配对前就能看出它是不是被关了或调低了,也能直接打开它的设置页
-        pairingChannel = PairingNotifier.ensureChannel(app).health,
-        attentionImportance = channelImportance(TaskService.CHANNEL_ATTENTION),
-        resultImportance = channelImportance(TaskService.CHANNEL_RESULT),
-        progressImportance = channelImportance(TaskService.CHANNEL_PROGRESS),
-        developerOptions = DeveloperSettings.developerOptions(app.contentResolver),
-        wirelessDebugging = DeveloperSettings.wirelessDebugging(app.contentResolver),
-        wirelessDebuggingMissing = DeveloperSettings.wirelessDebuggingMissing(app.contentResolver),
-        developerSettingsMissing = DeveloperSettings.developerOptionsPageMissing(app.packageManager),
-        usbDebugging = DeveloperSettings.usbDebugging(app.contentResolver),
-        restrictedSettings = restrictedSettings(),
-        helperRestart = shell.restart,
-        rootStart = shell.rootStart,
-    )
+    private fun read(): SystemStatus {
+        val shizukuState = (app as? PhoneServices.Owner)?.phone?.shellManager?.shizuku?.state?.value
+            ?: ShizukuPlatformState.Unavailable
+        return SystemStatus(
+            sdkInt = Build.VERSION.SDK_INT,
+            builtinShell = shell.status.value,
+            accessibility = accessibilityState(),
+            userLocked = userLocked(),
+            notificationsAllowed = app.getSystemService(NotificationManager::class.java).areNotificationsEnabled(),
+            attentionLowered = channelLowered(TaskService.CHANNEL_ATTENTION),
+            resultLowered = channelLowered(TaskService.CHANNEL_RESULT),
+            // 先建好频道:配对前就能看出它是不是被关了或调低了,也能直接打开它的设置页
+            pairingChannel = PairingNotifier.ensureChannel(app).health,
+            attentionImportance = channelImportance(TaskService.CHANNEL_ATTENTION),
+            resultImportance = channelImportance(TaskService.CHANNEL_RESULT),
+            progressImportance = channelImportance(TaskService.CHANNEL_PROGRESS),
+            developerOptions = DeveloperSettings.developerOptions(app.contentResolver),
+            wirelessDebugging = DeveloperSettings.wirelessDebugging(app.contentResolver),
+            wirelessDebuggingMissing = DeveloperSettings.wirelessDebuggingMissing(app.contentResolver),
+            developerSettingsMissing = DeveloperSettings.developerOptionsPageMissing(app.packageManager),
+            usbDebugging = DeveloperSettings.usbDebugging(app.contentResolver),
+            restrictedSettings = restrictedSettings(),
+            helperRestart = shell.restart,
+            rootStart = shell.rootStart,
+            shellTransport = shell.transport,
+            shizuku = shizukuState,
+            wirelessPaired = shell.paired,
+            shizukuStart = shell.shizukuStart,
+        )
+    }
 
     private fun channelImportance(id: String): Int? =
         app.getSystemService(NotificationManager::class.java).getNotificationChannel(id)?.importance

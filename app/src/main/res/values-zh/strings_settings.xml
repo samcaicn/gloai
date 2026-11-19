@@ -50,6 +50,8 @@
     <string name="settings_notif_master">通知总开关</string>
     <string name="settings_allowed">已允许</string>
     <string name="settings_task_notifs">任务通知</string>
+    <string name="settings_live_task_updates">实时任务通知</string>
+    <string name="settings_live_task_updates_detail">在系统设置中选择是否在状态栏显示进行中的任务</string>
     <string name="settings_keep_on">屏幕保持常亮</string>
     <string name="settings_keep_on_sub">任务进行时屏幕不熄灭(没在用时照常变暗),结束后恢复</string>
     <string name="settings_mute">被操作的 App 静音</string>

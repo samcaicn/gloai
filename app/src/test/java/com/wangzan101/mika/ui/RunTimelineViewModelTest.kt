@@ -39,6 +39,19 @@ class RunTimelineViewModelTest {
 
     private fun ready(runId: String) = RunTimelineViewModel(store, runId).load() as TimelineUi.Ready
 
+    @Test fun recordedGoalsKeepTheirConfirmationsAfterTheTaskEnds() {
+        val criteria = listOf("确认地址", "确认店名", "给出推荐")
+        val id = run("找咖啡馆") {
+            event(RunEvent.Criteria(clock, criteria, emptyList(), confirmedIds = setOf(1)))
+            event(RunEvent.Criteria(clock, criteria, emptyList(), complete = true, confirmedIds = setOf(1, 2, 3)))
+            event(RunEvent.TaskEnded(clock, "succeeded", "推荐拿铁"))
+        }
+        assertEquals(criteria, ready(id).header.criteria)
+        assertEquals(setOf(1, 2, 3), ready(id).header.confirmedIds)
+        val old = run("旧任务") { event(RunEvent.Criteria(clock, criteria, emptyList())) }
+        assertNull(ready(old).header.confirmedIds)
+    }
+
     /** 任务还在跑、还没有结束事件时算「进行中」:页面据此每秒重读,跑完就停。 */
     @Test fun anUnfinishedRunOfALiveTaskReadsAsRunning() {
         val h = store.open("打开设置")

@@ -3,6 +3,7 @@ package com.wangzan101.mika.about
 import com.wangzan101.mika.core.adb.ConnectCandidates
 import com.wangzan101.mika.core.shell.BuiltinShellFailure
 import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.shell.HelperRestart
 import com.wangzan101.mika.core.shell.PairingChannelHealth
 import com.wangzan101.mika.core.shell.PairingDiscovery
 import com.wangzan101.mika.core.shell.RecoveryCapability
@@ -137,6 +138,8 @@ class DiagnosticsTest {
             helperLaunchStage = "handoff_timeout", helperHandoffRejection = "StaleApk",
         )))
         assertTrue(rejected, rejected.contains("helper handoff rejection: StaleApk"))
+        val shizukuRestart = Diagnostics.render(snap.copy(setup = snap.setup.copy(restart = HelperRestart.Shizuku)))
+        assertTrue(shizukuRestart, shizukuRestart.contains("helper restart: Shizuku"))
     }
 
     /** 扫过本机、用户填过端口:只写个数和有没有填,不写端口号。 */

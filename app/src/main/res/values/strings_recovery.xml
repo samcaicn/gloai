@@ -20,4 +20,5 @@
     <string name="rec_setting_unavailable">This phone doesn’t let Mika turn on Wireless debugging at startup. After a restart, turn it on yourself and Mika will connect.</string>
     <string name="rec_not_recovered">Couldn’t reconnect automatically at the last startup. Make sure you’re on trusted Wi-Fi with Wireless debugging on, and Mika will connect.</string>
     <string name="rec_needs_pairing">Only works after pairing Wireless debugging. The helper was started with the USB command, so run the command again after a phone restart.</string>
+    <string name="rec_shizuku_no_wireless" translatable="false">Wireless debugging isn’t used while Shizuku is selected. Mika reconnects through Shizuku once Shizuku is running.</string>
 </resources>

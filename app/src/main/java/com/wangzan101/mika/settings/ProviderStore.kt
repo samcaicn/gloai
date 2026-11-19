@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.oauth.OauthTokenResult
 import com.wangzan101.mika.core.oauth.OpenRouterAuth
 import com.wangzan101.mika.core.oauth.XaiAuth
 import com.wangzan101.mika.core.model.AnthropicModel
+import com.wangzan101.mika.core.model.ApiKeyText
 import com.wangzan101.mika.core.model.BearerToken
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.Author
@@ -37,6 +38,8 @@ import com.wangzan101.mika.core.model.PromptCaching
 import com.wangzan101.mika.core.model.ResponsesModel
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.ToolSpec
+import com.wangzan101.mika.core.search.GoogleGroundingSearch
+import com.wangzan101.mika.core.search.WebSearch
 import com.wangzan101.mika.core.usage.ProactiveBudget
 import com.wangzan101.mika.core.proactive.ProactiveCall
 import com.wangzan101.mika.core.proactive.TargetedModel
@@ -69,6 +72,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import com.wangzan101.mika.core.net.NetProxy
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.Base64
@@ -811,6 +815,79 @@ class ProviderStore(
 
     fun mainProviderId(): String? = configFor(ModelRole.Main)?.providerId
 
+    /** Returns a stored Gemini Developer API key (`Kind.Gemini` only). */
+    @Synchronized
+    fun geminiDeveloperApiKey(): String? {
+        fun validKey(providerId: String): String? = providerKey(providerId)
+            ?.trim()
+            ?.takeIf { it.isNotBlank() && ApiKeyText.isHeaderLegal(it) && it.all { ch -> ch.code in 33..126 } }
+        val mainCfg = configFor(ModelRole.Main)
+        if (mainCfg?.kind == ProviderConfig.Kind.Gemini) {
+            validKey(mainCfg.providerId)?.let { return it }
+        }
+        return _providers.value
+            .asSequence()
+            .filter { it.kind == ProviderConfig.Kind.Gemini }
+            .firstNotNullOfOrNull { validKey(it.id) }
+    }
+
+    private sealed interface GroundingTarget {
+        val providerName: String
+
+        class Gemini(
+            override val providerName: String,
+            val baseUrl: String,
+            val apiKey: String,
+            val model: String,
+            val sessionHeader: String?,
+        ) : GroundingTarget
+
+        class Unsupported(override val providerName: String) : GroundingTarget
+    }
+
+    private fun resolveGrounding(): GroundingTarget? {
+        val cfg = configFor(ModelRole.Main) ?: return null
+        val p = provider(cfg.providerId)
+        val providerName = p?.name?.ifBlank { null } ?: ProviderConnection.displayName(cfg)
+        val endpoint = listedOf(cfg)?.endpoint
+        val (kind, baseUrl) = adapterFor(cfg, endpoint)
+        return when (kind) {
+            ProviderConfig.Kind.Gemini -> {
+                val key = apiKey(cfg.id)?.trim().orEmpty()
+                val cleanModel = cfg.model.trim().removePrefix("models/").trim()
+                val cleanBase = baseUrl.trim()
+                val validUrl = cleanBase.isNotEmpty() &&
+                    cleanModel.isNotEmpty() &&
+                    (cleanBase.trimEnd('/') + "/v1beta/models/$cleanModel:generateContent").toHttpUrlOrNull() != null
+                if (key.isBlank() || !ApiKeyText.isHeaderLegal(key) || !validUrl) {
+                    GroundingTarget.Unsupported(providerName)
+                } else {
+                    GroundingTarget.Gemini(providerName, cleanBase, key, cfg.model, p?.sessionHeader)
+                }
+            }
+            else -> GroundingTarget.Unsupported(providerName)
+        }
+    }
+
+    /** Whether Google Search grounding is available for the active main model. */
+    fun groundingStatus(): GroundingStatus = when (val target = resolveGrounding()) {
+        null -> GroundingStatus(available = false, providerName = null)
+        is GroundingTarget.Unsupported -> GroundingStatus(available = false, providerName = target.providerName)
+        is GroundingTarget.Gemini -> GroundingStatus(available = true, providerName = target.providerName)
+    }
+
+    /** Builds a Google Search grounding client for the main model, or null when unsupported/unconfigured. */
+    fun googleGroundingSearch(session: ModelSession = ModelSession.fresh()): WebSearch? =
+        when (val target = resolveGrounding()) {
+            null, is GroundingTarget.Unsupported -> null
+            is GroundingTarget.Gemini -> GoogleGroundingSearch.forGemini(
+                baseUrl = target.baseUrl,
+                apiKey = target.apiKey,
+                model = target.model,
+                client = http,
+                headers = headers(target.sessionHeader, session),
+            )
+        }
     /** 每次实际请求前重查配置和账本；达到预算时不发请求，也不记一笔虚假调用。 */
     private fun checkDailyBudget(source: UsageSource) {
         val p = provider(source.providerId) ?: return

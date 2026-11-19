@@ -2,6 +2,7 @@ package com.wangzan101.mika.voice
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** 自建 Fun-ASR 实时服务的消息;样例取自真实服务的回应(说的是一句中文)。 */
@@ -37,24 +38,24 @@ class FunAsrProtocolTest {
         assertEquals(LiveAsrUpdate.Ended("先打开微信。给张三发一条消息。"), p.read("""{"event": "stopped"}"""))
     }
 
-    // 一段话说得长、还没切句时服务端只解最近 15 秒:窗口往后挪掉出去的字留在预览里,不被删掉(样例照真实服务的回应)
+    // 一段话说得长、还没切句时服务端只解最近 15 秒:窗口往后挪掉出去的字留在预览里,不被删掉;怎么接见 PartialStitchTest
     @Test fun textThatSlidesOutOfThePartialWindowIsKept() {
         val p = FunAsrProtocol()
         fun partial(text: String, start: Long, duration: Long) =
             p.read("""{"sentences": [], "partial": "$text", "partial_start_ms": $start, "duration_ms": $duration, "is_final": false}""")
         assertEquals(LiveAsrUpdate.Text("", "今天我们来聊一聊语音识别的问题，首先需要打开设置页面。"), partial("今天我们来聊一聊语音识别的问题，首先需要打开设置页面。", 0, 15000))
-        // 新窗口开头(不算标点)在上一份里找到:前面那截掉出去了
+        // 窗口挪了:新的一份从「我们」开始;重叠那截的开头沿用已显示的,到两份一样的地方才换成新的
         assertEquals(
-            LiveAsrUpdate.Text("今天", "我们来聊一聊语音识别的问题，首先需要打开设置页面，然后"),
+            LiveAsrUpdate.Text("今天我们来聊一聊语音", "识别的问题，首先需要打开设置页面，然后"),
             partial("我们来聊一聊语音识别的问题，首先需要打开设置页面，然后", 1000, 16000),
         )
         assertEquals(
-            LiveAsrUpdate.Text("今天我们来聊一", "聊语音识别的问题。首先需要打开设置页面，然后找到"),
+            LiveAsrUpdate.Text("今天我们来聊一聊语音识别的问题，", "首先需要打开设置页面，然后找到"),
             partial("聊语音识别的问题。首先需要打开设置页面，然后找到", 2000, 17000),
         )
-        // 窗口没挪:不多留
+        // 窗口没挪、同一截又解了一遍:留住的不动,后面跟着新的
         assertEquals(
-            LiveAsrUpdate.Text("今天我们来聊一", "聊语音识别的问题，首先需要打开设置页面，然后找到模型"),
+            LiveAsrUpdate.Text("今天我们来聊一聊语音识别的问题，", "首先需要打开设置页面，然后找到模型"),
             partial("聊语音识别的问题，首先需要打开设置页面，然后找到模型", 2000, 17500),
         )
         // 这段整段放进 sentences:留下的字作废,只用服务端的句子;下一段从头来,不和上一段对齐
@@ -84,11 +85,42 @@ class FunAsrProtocolTest {
         assertEquals(LiveAsrUpdate.Ended("今天我们来聊一聊语音识别。"), p.read("""{"event": "stopped"}"""))
     }
 
-    // 新窗口开头在上一份里找不到(识别结果变了)时按时间比例估掉出去的那截
-    @Test fun droppedPrefixFallsBackToTime() {
-        assertEquals("甲乙", FunAsrProtocol.droppedPrefix("甲乙丙丁戊己庚辛壬癸", "子丑寅卯", 0, 10000, 2000))
-        assertEquals("今天", FunAsrProtocol.droppedPrefix("今天，我们来", "我们来了", 0, 3000, 1000))
-        assertEquals("", FunAsrProtocol.droppedPrefix("甲乙", "子丑", 0, 0, 1000))
+    // 窗口挪了但这一份是空的(这一刻没在说话):留住的字还在,后面不跟字
+    @Test fun emptyPartialKeepsCarriedText() {
+        val p = FunAsrProtocol()
+        p.read("""{"sentences": [], "partial": "今天我们来聊一聊", "partial_start_ms": 0, "duration_ms": 15000, "is_final": false}""")
+        p.read("""{"sentences": [], "partial": "我们来聊一聊语音", "partial_start_ms": 1000, "duration_ms": 16000, "is_final": false}""")
+        assertEquals(
+            LiveAsrUpdate.Text("今天", ""),
+            p.read("""{"sentences": [], "partial": "", "partial_start_ms": 16500, "duration_ms": 16500, "is_final": false}"""),
+        )
+    }
+
+    // 真实服务对一段 40 多秒不停顿的话的全部回应(手机录的音):服务端定下这段之前,每一份预览去掉标点后都是终结果的开头——
+    // 没有接缝处重出来的字,也没有窗口开头解错的字;定下之后和终结果都只用服务端的句子
+    @Test fun recordedLongUtterancePreviewNeverStraysFromTheFinalText() {
+        val lines = FunAsrProtocolTest::class.java.getResource("/voice/funasr-long-utterance.jsonl")!!.readText().trim().lines()
+        fun letters(text: String) = text.filter(Char::isLetterOrDigit).lowercase()
+        val final = (FunAsrProtocol().read(lines.last()) as LiveAsrUpdate.Text).stable
+        val p = FunAsrProtocol()
+        var stitched = 0
+        for (line in lines.dropLast(1)) {
+            val locked = "\"sentences\": []" !in line
+            val text = p.read(line) as LiveAsrUpdate.Text
+            if (locked) { assertTrue(text.stable, final.startsWith(text.stable.take(20))); continue }
+            if (text.stable.isEmpty()) continue
+            stitched++
+            assertTrue("${text.stable}|${text.tail}", letters(final).startsWith(letters(text.stable + text.tail)))
+        }
+        assertEquals(18, stitched)
+        assertEquals(LiveAsrUpdate.Text(final, ""), p.read(lines.last()))
+        assertEquals(LiveAsrUpdate.Ended(final), p.read("""{"event": "stopped"}"""))
+    }
+
+    // 设置页「部署说明」打开的是仓库里这份文档:挪了文档要一起改
+    @Test fun deployGuidePointsAtADocInThisRepo() {
+        val path = FunAsrProtocol.DEPLOY_GUIDE.substringAfter("/blob/main/", "")
+        assertTrue(path, path.isNotEmpty() && java.io.File("..", path).isFile)
     }
 
     // 没送过音频(或太短)时服务端不给终结果,直接回 stopped:当没听清

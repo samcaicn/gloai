@@ -157,10 +157,12 @@ private fun HeaderGroup(h: TimelineHeader, stepCount: Int, onExport: () -> Unit)
     if (h.criteria.isNotEmpty()) {
         GroupCard {
             Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 13.dp, bottom = 13.dp)) {
-                Text(stringResource(R.string.timeline_criteria), style = MikaType.Label, color = c.ink3)
+                val ids = h.confirmedIds
+                Text(if (ids == null) stringResource(R.string.timeline_criteria) else
+                    stringResource(R.string.chat_confirmed_goals, ids.size, h.criteria.size), style = MikaType.Label, color = c.ink3)
                 h.criteria.forEachIndexed { i, text ->
                     Text(
-                        if (h.criteria.size > 1) "${i + 1}. $text" else text, Modifier.padding(top = 4.dp),
+                        if (ids != null) "${if (i + 1 in ids) "✓" else "○"}  $text" else if (h.criteria.size > 1) "${i + 1}. $text" else text, Modifier.padding(top = 4.dp),
                         style = MikaType.Caption, color = c.ink2,
                     )
                 }

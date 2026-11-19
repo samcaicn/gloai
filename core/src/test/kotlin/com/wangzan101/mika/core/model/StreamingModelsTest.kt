@@ -111,7 +111,7 @@ class StreamingModelsTest {
             """{"input_tokens":5,"cache_creation_input_tokens":20,"cache_read_input_tokens":100,"output_tokens":7}""",
         ))
         server.enqueue(reply("", """{"input_tokens":7,"output_tokens":2}"""))
-        assertEquals(Usage(10682, 510), anthropic().completeStreaming("s", user, emptyList()) {}.usage)
+        assertEquals(Usage(10682, 510, cacheReported = true), anthropic().completeStreaming("s", user, emptyList()) {}.usage)
         assertEquals(Usage(110, 5, 100), anthropic().completeStreaming("s", user, emptyList()) {}.usage)
         assertEquals(Usage(125, 7, 100), anthropic().completeStreaming("s", user, emptyList()) {}.usage)
         assertEquals(Usage(7, 2), anthropic().completeStreaming("s", user, emptyList()) {}.usage)

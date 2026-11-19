@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.system.Os
 import android.system.OsConstants
+import android.util.Log
 import com.wangzan101.mika.cap.phone.shell.HelperHub
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.Attachments
@@ -116,33 +117,20 @@ internal class AndroidDeviceFiles(
                     if (existing != null) return@withContext DeviceFileImport(existing.workspacePath, existing.size)
                 }
                 val root = dirs.workspace(workspace)
-                check(root.mkdirs() || root.isDirectory) { "Cannot create workspace" }
-                val staging = stagingDirectory(dirs)
-                check(staging.mkdirs() || staging.isDirectory) { "Cannot create staging directory" }
-                val temp = File.createTempFile("import-", ".part", staging)
-                val entry = try {
-                    val size = ParcelFileDescriptor.AutoCloseInputStream(ParcelFileDescriptor.dup(fd.fileDescriptor)).use { input ->
-                        temp.outputStream().use { output ->
-                            DeviceStagedCopy.copy(input, output, sandbox::freeBytes) { AndroidSandbox.treeBytes(root.toPath()) }
-                        }
-                    }
-                    dirs.gate.mkdirs(root, "inbox")
-                    val stat = dirs.gate.openRead(staging, temp.name).use { it.stat }
-                    val base = Attachments.safeName(File(path).name)
-                    var result: Pair<String, Long>? = null
-                    for (n in 1..999) {
-                        val name = Attachments.numbered(base, n)
-                        try {
-                            dirs.gate.publishNoReplace(staging, temp.name, stat, root, "inbox/$name")
-                            result = "/workspace/inbox/$name" to size
-                            break
-                        } catch (e: SandboxError) {
-                            if (e.code != com.wangzan101.mika.core.workspace.WorkspaceFileGate.FILE_EXISTS) throw e
-                        }
-                    }
-                    result ?: throw failure("file_exists", "Too many files with this name.")
-                } finally {
-                    temp.delete()
+                val base = Attachments.safeName(File(path).name)
+                val result = Attachments.importOne(
+                    root,
+                    dirs.gate,
+                    base,
+                    sandbox::freeBytes,
+                    { AndroidSandbox.treeBytes(root.toPath()) },
+                    { ParcelFileDescriptor.AutoCloseInputStream(ParcelFileDescriptor.dup(fd.fileDescriptor)) },
+                    logFailure = { e -> Log.w(TAG, "Device file import failed for \"$base\" (${e.javaClass.simpleName}: ${e.message})") },
+                )
+                val entry = result.added.singleOrNull()
+                if (entry == null) {
+                    val reason = result.failures.firstOrNull()?.reason?.name?.lowercase() ?: "io_error"
+                    throw failure(reason, "Could not copy the device file to the workspace ($reason).")
                 }
                 // Only retain metadata when the open source stayed unchanged throughout the copy.
                 val stable = metadata?.takeIf { it == metadata(fd) && it.size == entry.second }
@@ -178,16 +166,12 @@ internal class AndroidDeviceFiles(
     }
 
     companion object {
+        private const val TAG = "AndroidDeviceFiles"
         private val importLock = Mutex()
-        private fun stagingDirectory(dirs: SandboxDirs) = File(dirs.root.parentFile, "device-import-staging")
 
-        /** Clear copies left by a previous process, without racing an active import. */
-        suspend fun cleanupStaging(dirs: SandboxDirs) = importLock.withLock {
-            withContext(Dispatchers.IO) {
-                stagingDirectory(dirs).listFiles()?.forEach { file ->
-                    if (file.name.startsWith("import-") && file.name.endsWith(".part")) file.delete()
-                }
-            }
+        /** Remove any leftover staging directory left by builds that used staged hard links. */
+        suspend fun cleanupStaging(dirs: SandboxDirs) = withContext(Dispatchers.IO) {
+            File(dirs.root.parentFile, "device-import-staging").takeIf { it.exists() }?.deleteRecursively()
         }
     }
 

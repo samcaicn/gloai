@@ -127,7 +127,7 @@ class LiveSpeechSettingsTest {
         assertEquals(SpeechChoice.System, s.choice.value)
     }
 
-    // 「Fun-ASR实时语音识别」一行点圆圈时沿用上次那种;那种用不了了就没有
+    // 「千问实时语音识别」一行点圆圈时沿用上次那种;那种用不了了就没有
     @Test fun lastLiveFollowsTheLastSavedKind() {
         val prefs = MemoryPrefs(); val cipher = cipher()
         val s = SpeechSettings(prefs, cipher)
@@ -154,7 +154,7 @@ class LiveSpeechSettingsTest {
 
     @Test fun summariesNameTheService() {
         val none = SystemCapability(false, false)
-        assertEquals(SpeechOptions.Summary("Fun-ASR（自建）", "192.168.1.10:10095", false), SpeechOptions.summary(SpeechChoice.FunAsr("ws://192.168.1.10:10095"), none, emptyList()))
+        assertEquals(SpeechOptions.Summary("千问（自建）", "192.168.1.10:10095", false), SpeechOptions.summary(SpeechChoice.FunAsr("ws://192.168.1.10:10095"), none, emptyList()))
         assertEquals(SpeechOptions.Summary("fun-asr-realtime", "阿里云百炼 · 北京", false), SpeechOptions.summary(SpeechChoice.Bailian(), none, emptyList()))
         assertEquals(
             SpeechOptions.Summary("paraformer-realtime-v2", "阿里云百炼 · 新加坡", false),

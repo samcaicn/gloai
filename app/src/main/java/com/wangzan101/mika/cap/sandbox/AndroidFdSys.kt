@@ -97,9 +97,6 @@ object AndroidFdSys : FdSys {
 
     override fun rename(dir: OpenFd, from: String, to: String) = errno { Os.rename(at(dir, from), at(dir, to)) }
 
-    override fun link(fromDir: OpenFd, from: String, toDir: OpenFd, to: String) =
-        errno { Os.link(at(fromDir, from), at(toDir, to)) }
-
     override fun symlink(dir: OpenFd, name: String, target: String) = errno { Os.symlink(target, at(dir, name)) }
 
     override fun chmod(fd: OpenFd, mode: Int) = errno { Os.fchmod(fd(fd).pfd.fileDescriptor, mode) }

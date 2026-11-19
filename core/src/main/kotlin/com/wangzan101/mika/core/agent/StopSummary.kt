@@ -97,7 +97,7 @@ class StopSummary(
                 append("<actions>\n").append(untag(shown.joinToString("\n").ifEmpty { "(还没做任何操作)" })).append("\n</actions>")
                 checkpoint?.let { c ->
                     if (c.criteria.isNotEmpty()) append("\n\n<acceptance>\n").append(untag(c.criteria.joinToString("\n"))).append("\n</acceptance>")
-                    c.progress?.let { p -> append("\n\n<progress>\n").append(untag(progress(p))).append("\n</progress>") }
+                    progress(c)?.let { p -> append("\n\n<progress>\n").append(untag(p)).append("\n</progress>") }
                 }
                 if (reads.isNotEmpty()) append("\n\n<last_read>\n").append(untag(reads.joinToString("\n----\n"))).append("\n</last_read>")
                 draft?.trim()?.takeIf(String::isNotEmpty)?.let { append("\n\n<draft>\n").append(untag(it.clip(DRAFT_CHARS))).append("\n</draft>") }
@@ -125,7 +125,7 @@ class StopSummary(
             if (done.isNotEmpty()) lines += "做过:" + done.entries.joinToString("、") { (what, n) -> if (n > 1) "$what $n 次" else what }
             checkpoint?.let { c ->
                 if (c.criteria.isNotEmpty()) lines += "验收:" + c.criteria.joinToString("；")
-                c.progress?.let { p -> lines += "已确认进度:" + progress(p) }
+                progress(c)?.let { lines += "已确认进度:$it" }
             }
             if (outward.isNotEmpty()) {
                 val where = outward.mapNotNull { a -> a.target?.let { placeOf(it, appLabel) } }.distinct()
@@ -175,7 +175,9 @@ class StopSummary(
             runCatching { (Json.parseToJsonElement(it) as? JsonObject)?.get("reason") as? JsonPrimitive }.getOrNull()?.contentOrNull?.trim()
         }
 
-        private fun progress(p: RunEvent.Progress): String {
+        private fun progress(c: RunEvent.Criteria): String? {
+            c.confirmedIds?.let { return "目标 ${it.size}/${c.criteria.size}" }
+            val p = c.progress ?: return null
             val count = when {
                 p.done != null && p.total != null -> "${p.done}/${p.total}"
                 p.done != null -> "${p.done} 件"

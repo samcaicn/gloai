@@ -54,6 +54,15 @@
     <string name="task_too_old">手机 App 操作需要安卓 12 及以上。仍然可以聊天、使用网页和沙箱。</string>
     <string name="task_shell_died">手机操作助手断开了,虚拟屏随之关闭;等它重新连上后再试</string>
     <string name="task_running">正在执行</string>
+    <string name="chip_thinking">正在思考</string>
+    <string name="chip_read_screen">查看屏幕</string>
+    <string name="chip_use_phone">操作手机</string>
+    <string name="chip_browse">浏览网页</string>
+    <string name="chip_take_over">等你接手</string>
+    <string name="chip_route_step">第%1$d/%2$d步</string>
+    <string name="chip_count">进度%1$d/%2$d</string>
+    <string name="chip_done">已完成 %1$d</string>
+    <string name="chip_wait_app">等待应用</string>
     <string name="channel_task_accepted">收到，任务已登记。</string>
     <string name="task_step_note">第 %1$d 步:%2$s</string>
     <string name="task_wait_unlock">等待解锁</string>

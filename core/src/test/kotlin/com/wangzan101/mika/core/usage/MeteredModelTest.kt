@@ -67,6 +67,35 @@ class MeteredModelTest {
         assertEquals(listOf(source to Usage(100, 20, 60)), recorded)
     }
 
+    @Test fun conversationUsesReportedCacheDenominatorAndLatestMainContext() = runTest {
+        var totals = ConversationUsage()
+        val meter = ConversationMeter { change -> totals = change(totals) }
+        val main = Plain { reply(Usage(100, 12, 80)) }.metered(source, sink)
+        val noCacheField = Plain { reply(Usage(900, 8)) }.metered(source, sink)
+        val explicitMiss = Streaming(reply(Usage(300, 4, cacheReported = true))).metered(source, sink) as StreamingChatModel
+        val ctx = com.wangzan101.mika.core.agent.ContextBuilder()
+        val messages = ctx.start("hello", memory = "memory", taskImages = listOf(Part.Image("private", width = 30, height = 25))).messages
+        withContext(meter) {
+            withContext(ConversationMeter.MainRequest(1)) { main.complete("abcd", messages, emptyList()) }
+            val first = totals.latest!!
+            assertEquals(1L, first.instructions)
+            assertTrue(first.references > 0 && first.dialogue > 0)
+            assertEquals(1L, first.toolsAndMedia)
+            noCacheField.complete("auxiliary", user, emptyList())
+            assertEquals(first, totals.latest)
+            withContext(ConversationMeter.MainRequest(2)) { explicitMiss.completeStreaming("system", user, emptyList()) {} }
+        }
+        assertEquals(1300L, totals.input)
+        assertEquals(24L, totals.output)
+        assertEquals(400L, totals.cacheReportedInput)
+        assertEquals(0.2, totals.cacheRate!!, 0.00001)
+        assertEquals(2, totals.latest!!.step)
+        assertEquals(8000, totals.latest!!.window)
+        assertEquals(0L, totals.latest!!.references)
+        assertTrue(totals.add(null, 1).partial)
+        assertFalse(totals.add(null, 0).partial)
+    }
+
     @Test fun keepsNameAndCapabilities() {
         val inner = Plain { reply(null) }
         val m = inner.metered(source, sink)

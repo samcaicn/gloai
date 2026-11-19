@@ -21,6 +21,8 @@ import com.wangzan101.mika.capsule.CapsuleMode
 import com.wangzan101.mika.core.agent.SpeedFlags
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.shell.ShellTransport
+import com.wangzan101.mika.core.shell.ShizukuPlatformState
 import com.wangzan101.mika.settings.AccessibilityState
 import com.wangzan101.mika.settings.Problem
 import com.wangzan101.mika.settings.SystemStatus
@@ -161,8 +163,8 @@ class SettingsScreenTest {
         compose.onNodeWithText("无线调试已关").assertIsDisplayed()
         compose.onNodeWithText("安卓 14").assertIsDisplayed()
         compose.onNodeWithText("满足").assertIsDisplayed()
-        compose.onNodeWithText(PhoneSetupCopy.usageNote(HelperRestart.None)).assertExists()
-        compose.onNodeWithText(PhoneSetupCopy.REPAIR).performClick()
+        compose.onNodeWithText(PhoneSetupCopy.usageNote(HelperRestart.None)).performScrollTo().assertExists()
+        compose.onNodeWithText(PhoneSetupCopy.REPAIR).performScrollTo().performClick()
         assertEquals(1, repaired)
     }
 
@@ -181,10 +183,19 @@ class SettingsScreenTest {
         compose.onNodeWithText("只进通知栏").assertIsDisplayed()
         compose.onNodeWithText("已关闭").assertIsDisplayed()
         compose.onNodeWithText(StatusCopy.NOTIF_FOOTER).assertExists()
+        compose.onNodeWithText("实时任务通知").assertDoesNotExist()
         compose.onNodeWithText("需要你处理").performClick()
         compose.onNodeWithText("任务结果").performClick()
         compose.onNodeWithText("任务进度").performClick()
         assertEquals(listOf(Fix.OpenAttentionChannel, Fix.OpenResultChannel, Fix.OpenProgressChannel), fixes)
+    }
+
+    @Test
+    fun notificationsPageOpensLiveUpdatesOnAndroid16() {
+        val fixes = mutableListOf<Fix>()
+        compose.setContent { NotificationsScreen(ready.copy(sdkInt = 36), onFix = { fixes += it }, onBack = {}) }
+        compose.onNodeWithText("实时任务通知").performScrollTo().performClick()
+        assertEquals(listOf(Fix.OpenLiveTaskSettings), fixes)
     }
 
     /** 总开关关着:给「去打开」,三个频道都显示已关闭。 */
@@ -201,7 +212,7 @@ class SettingsScreenTest {
     fun unpairAsksFirst() {
         var unpaired = 0
         compose.setContent { PhoneOpsScreen(ready, "14", onProblem = {}, onRepair = {}, onUnpair = { unpaired++ }, onBack = {}) }
-        compose.onNodeWithText(PhoneSetupCopy.UNPAIR).performClick()
+        compose.onNodeWithText(PhoneSetupCopy.UNPAIR).performScrollTo().performClick()
         assertEquals(0, unpaired)
         compose.clickInDialog(PhoneSetupCopy.UNPAIR_CONFIRM)
         assertEquals(1, unpaired)
@@ -496,6 +507,62 @@ class SettingsScreenTest {
         compose.onNodeWithText(SandboxCopy.CLEAR_ALL_BODY).assertIsDisplayed()
         compose.onNodeWithText(SandboxCopy.CLEAR).performClick()
         assertEquals(1, all)
+    }
+
+    @Test
+    fun phoneOpsPageShowsShizukuStatusTransportChipsAndGuide() {
+        var statusState by mutableStateOf(
+            ready.copy(
+                shellTransport = ShellTransport.Auto,
+                shizuku = ShizukuPlatformState(installed = false, running = false, permissionGranted = false),
+                wirelessPaired = false,
+            ),
+        )
+        var selectedTransport: ShellTransport? = null
+        var grants = 0
+        var guides = 0
+        var refreshes = 0
+        compose.setContent {
+            PhoneOpsScreen(
+                status = statusState,
+                androidRelease = "14",
+                onProblem = {},
+                onRepair = {},
+                onUnpair = {},
+                onBack = {},
+                onSelectTransport = { selectedTransport = it; statusState = statusState.copy(shellTransport = it) },
+                onGrantShizuku = { grants++ },
+                onOpenShizukuGuide = { guides++ },
+                onRefreshShizuku = { refreshes++ },
+            )
+        }
+        compose.onNodeWithTag("phone-shizuku-status").assertExists()
+        compose.onNodeWithText("Not installed").assertExists()
+        compose.onNodeWithTag("phone-shizuku-guide").performScrollTo().performClick()
+        assertEquals(1, guides)
+
+        compose.onNodeWithTag("phone-transport-Shizuku").performScrollTo().performClick()
+        assertEquals(ShellTransport.Shizuku, selectedTransport)
+
+        statusState = statusState.copy(
+            shizuku = ShizukuPlatformState(installed = true, running = false, permissionGranted = false),
+        )
+        compose.onNodeWithText("Installed · Not running").assertExists()
+        compose.onNodeWithTag("phone-shizuku-guide").performScrollTo().assertExists()
+
+        statusState = statusState.copy(
+            shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = false),
+        )
+        compose.onNodeWithText("Running · Permission needed").assertExists()
+        compose.onNodeWithTag("phone-shizuku-guide").assertDoesNotExist()
+        compose.onNodeWithTag("phone-shizuku-action").performScrollTo().performClick()
+        assertEquals(1, grants)
+
+        statusState = statusState.copy(
+            shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true),
+        )
+        compose.onNodeWithText("Running · Permission granted").assertExists()
+        assertTrue(refreshes >= 1)
     }
 }
 

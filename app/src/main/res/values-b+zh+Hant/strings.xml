@@ -69,8 +69,9 @@
     <string name="speech_doubao_plan">計費方式</string>
     <string name="speech_doubao_duration_note">依辨識時間計費</string>
     <string name="speech_doubao_concurrent_note">依同時連線數計費</string>
-    <string name="speech_funasr_model">Fun-ASR（自建）</string>
-    <string name="speech_funasr_setup_hint">邊說邊出字，由你自己部署的 Fun-ASR 即時服務辨識（Fun-ASR 專案裡的 serve_realtime_ws.py），通常在區域網路裡。不需要帳號和金鑰。</string>
+    <string name="speech_funasr_model">千問（自建）</string>
+    <string name="speech_funasr_setup_hint">邊說邊出字，由你自己部署的即時辨識服務辨識，通常在區域網路裡。不需要帳號和金鑰。支援 Fun-ASR-Nano 和 Qwen3-ASR。</string>
+    <string name="speech_funasr_deploy_guide">部署說明</string>
     <string name="speech_funasr_server">服務</string>
     <string name="speech_funasr_address">位址</string>
     <string name="speech_funasr_enter_address">例如 192.168.1.10:10095</string>
@@ -92,7 +93,7 @@
     <string name="speech_live_auth">服務拒絕了這個 Key。檢查 Key 是否正確、是否屬於所選地域。</string>
     <string name="speech_live_refused">服務拒絕了請求（%1$s）。</string>
     <string name="speech_live_unreachable">連不上服務。檢查位址，以及服務是否在執行。</string>
-    <string name="speech_funasr_service">Fun-ASR即時語音辨識</string>
+    <string name="speech_funasr_service">千問即時語音辨識</string>
     <string name="speech_funasr_choose_note">自建服務或阿里雲百煉</string>
     <string name="speech_funasr_tab_local">自建</string>
     <string name="speech_bailian_tab">百煉·%1$s</string>

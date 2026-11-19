@@ -92,6 +92,7 @@ object RecoveryCopy {
     ): String? = when {
         !consent.wants(c) -> null
         restart == HelperRestart.UsbCommand && c in NEEDS_PAIRING -> tr(R.string.rec_needs_pairing)
+        restart == HelperRestart.Shizuku && c in NEEDS_PAIRING -> tr(R.string.rec_shizuku_no_wireless)
         consent.isApplied(c) -> null
         !paired -> NEED_SETUP
         c in autoFailed -> FAILED

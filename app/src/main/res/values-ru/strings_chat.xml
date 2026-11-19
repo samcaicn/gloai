@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="chat_confirmed_goals">Подтверждено целей: %1$d/%2$d</string>
+    <string name="chat_last_confirmed_goals">Последнее подтверждение: %1$d/%2$d</string>
     <string name="chat_greeting_morning">Доброе утро</string>
     <string name="chat_greeting_noon">Добрый день</string>
     <string name="chat_greeting_afternoon">Добрый день</string>

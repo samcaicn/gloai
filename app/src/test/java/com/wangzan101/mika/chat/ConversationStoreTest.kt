@@ -1,5 +1,9 @@
 package com.wangzan101.mika.chat
 
+import com.wangzan101.mika.core.model.Usage
+import com.wangzan101.mika.core.record.RunMetrics
+import com.wangzan101.mika.core.record.RunMetricsStore
+import com.wangzan101.mika.core.usage.ConversationUsage
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.chat.GeneratedAudio
 import org.junit.Assert.assertEquals
@@ -44,6 +48,43 @@ class ConversationStoreTest {
         store.delete("a")
         assertTrue(ConversationStore(dir).list().isEmpty())
         assertNull(store.currentChat())
+    }
+
+    @Test fun usageSurvivesHistoryPruningAndNeverChargesAnotherChat() {
+        val dir = tmp.newFolder("chats")
+        val store = ConversationStore(dir)
+        val history = RunMetricsStore(File(dir.parentFile, RunMetricsStore.FILE_NAME), keep = 1)
+        store.append("a", Turn("one", "ok", "succeeded", runId = "r1"))
+        history.append(RunMetrics(runId = "r1", allInputTokens = 80, allOutputTokens = 4))
+        val live = store.meter("a")
+        live.record(Usage(100, 10, 40), 1)
+        history.append(RunMetrics(runId = "r2"))
+        store.append("a", Turn("two", "ok", "succeeded", runId = "r2"))
+        live.record(Usage(5, 1), 1)
+        val saved = ConversationStore(dir).usageSnapshot("a")
+        assertEquals(185L, saved.input)
+        assertEquals(15L, saved.output)
+        assertTrue(saved.partial)
+        assertEquals(0.4, saved.cacheRate!!, 0.00001)
+        assertTrue(store.branch("a", "b", 0, origin = BranchOrigin("a", 0, true, 1)))
+        assertEquals(ConversationUsage(), store.usageSnapshot("b"))
+        val branch = store.meter("b")
+        branch.record(Usage(20, 3, cacheReported = true), 1)
+        assertEquals(0.0, store.usageSnapshot("b").cacheRate!!, 0.0)
+        assertEquals(saved, store.usageSnapshot("a"))
+        store.delete("a")
+        live.record(Usage(2, 1), 1)
+        assertEquals(ConversationUsage(), store.usageSnapshot("a"))
+        assertFalse(File(dir, "a.json.usage").exists())
+    }
+
+    @Test fun overlappingAuxiliaryCallsAccumulateOnce() {
+        val store = ConversationStore(tmp.newFolder())
+        val meter = store.meter("chat")
+        val jobs = List(4) { Thread { repeat(10) { meter.record(Usage(6, 1), 1) } } }
+        jobs.forEach(Thread::start)
+        jobs.forEach(Thread::join)
+        assertEquals(ConversationUsage(input = 240, output = 40), store.usageSnapshot("chat"))
     }
 
     @Test fun persistsAcrossInstances() {

@@ -55,6 +55,14 @@ enum class BuiltinShellFailure(val defaultFix: BuiltinShellFix, val duringPairin
     RootUnavailable(BuiltinShellFix.RePair, duringPairing = false),
     /** su 答应了,却切不到 shell 身份:这种 su 起不了助手,改用无线调试或电脑。 */
     RootNoShellUid(BuiltinShellFix.RePair, duringPairing = false),
+    /** 手机上还没装 Shizuku。 */
+    ShizukuNotInstalled(BuiltinShellFix.Retry, duringPairing = false),
+    /** Shizuku 装了但服务没跑起来(比如重启后还没激活)。 */
+    ShizukuNotRunning(BuiltinShellFix.Retry, duringPairing = false),
+    /** Shizuku 跑着,还没给 Mika 授权。 */
+    ShizukuPermissionNeeded(BuiltinShellFix.Retry, duringPairing = false),
+    /** 经 Shizuku 调起助手,却没能绑定或交接过来。 */
+    ShizukuBindFailed(BuiltinShellFix.Retry, duringPairing = false),
     Unknown(BuiltinShellFix.Retry, duringPairing = false),
 }
 
@@ -84,6 +92,8 @@ enum class HelperRestart {
      * 有的手机没有能用的无线调试,只能走这条路,所以这时不提示去打开无线调试。
      */
     UsbCommand,
+    /** 经 Shizuku 起助手:不需要无线调试或电脑命令。 */
+    Shizuku,
 }
 
 /** 找「使用配对码配对设备」窗口公布的配对端口(本机 mDNS)的结果。 */
@@ -113,6 +123,15 @@ interface BuiltinShellControl {
 
     /** 用户打开了「用 root 启动」且此刻能用:看门狗先经 su 起助手(状态是正在连接时,界面说正在用 root 启动)。 */
     val rootStart: Boolean get() = false
+
+    /** 此刻优先走 Shizuku 起助手(非仅无线调试模式且 Shizuku 已就绪)。 */
+    val shizukuStart: Boolean get() = false
+
+    /** 当前选择的启动通道。 */
+    val transport: ShellTransport get() = ShellTransport.Auto
+
+    /** 切换启动通道。 */
+    fun selectTransport(transport: ShellTransport) {}
 
     /** 开始找配对端口(用户正在去打开配对窗口)。重复调用无害:还在找就从这时起重新计时。 */
     fun startDiscovery()

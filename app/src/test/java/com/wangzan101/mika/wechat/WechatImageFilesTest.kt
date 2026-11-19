@@ -1,7 +1,6 @@
 package com.wangzan101.mika.wechat
 
 import com.wangzan101.mika.cap.sandbox.JVM_GATE
-import com.wangzan101.mika.core.agent.AttachmentLines
 import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.wechat.WechatImage
@@ -35,13 +34,11 @@ class WechatImageFilesTest {
         val images = listOf(WechatImage(aesKey = "first"), WechatImage(aesKey = "second"))
         val files = StoredWechatImages(staging, { seen += it; WechatImages.validate(png) },
             { PreparedWechatImage(it.bytes, it.extension) }, { workspace }, JVM_GATE, SandboxTree(), { true }, { null })
-        var input = ""
-        assertTrue(files.receive(peer, "message", "看看这两张图", images) { input = it; true })
-        val parsed = AttachmentLines.parse(input)
-        assertEquals("看看这两张图", parsed.words)
-        assertEquals(listOf("/workspace/inbox/wechat-1.png", "/workspace/inbox/wechat-2.png"), parsed.files.map { it.first })
+        var stored = emptyList<SavedWechatImage>()
+        assertTrue(files.receive(peer, images.map(::DownloadWechatImage)) { stored = it; true })
+        assertEquals(listOf("/workspace/inbox/wechat-1.png", "/workspace/inbox/wechat-2.png"), stored.map { it.path })
         assertEquals(images, seen)
-        parsed.files.forEach { (path, _) -> assertArrayEquals(png, File(workspace, path.removePrefix("/workspace/")).readBytes()) }
+        stored.forEach { assertArrayEquals(png, File(workspace, it.path.removePrefix("/workspace/")).readBytes()) }
         assertEquals(0, staging.listFiles()!!.size)
     }
 
@@ -56,10 +53,10 @@ class WechatImageFilesTest {
             if (it.aesKey == "bad") throw IOException("download failed")
             WechatImages.validate(png)
         }, { PreparedWechatImage(it.bytes, it.extension) }, { workspace }, JVM_GATE, SandboxTree(), { true }, { null })
-        assertFalse(files.receive(peer, "old-session", "", listOf(WechatImage())) { false })
+        assertFalse(files.receive(peer, listOf(WechatImage()).map(::DownloadWechatImage)) { false })
         assertEquals(listOf(existing.name), inbox.list()!!.toList())
         val failure = runCatching {
-            files.receive(peer, "partial", "", listOf(WechatImage(), WechatImage(aesKey = "bad"))) { fail("Must not launch a partial batch"); true }
+            files.receive(peer, listOf(WechatImage(), WechatImage(aesKey = "bad")).map(::DownloadWechatImage)) { fail("Must not launch a partial batch"); true }
         }.exceptionOrNull()
         assertTrue(failure is IOException)
         assertEquals(3, downloads)
@@ -72,10 +69,10 @@ class WechatImageFilesTest {
         var downloads = 0
         val files = StoredWechatImages(tmp.newFolder(), { downloads++; WechatImages.validate(png) },
             { PreparedWechatImage(it.bytes, it.extension) }, { workspace }, JVM_GATE, SandboxTree(), { true }, { null })
-        val failure = runCatching { files.receive(peer, "disk-error", "", listOf(WechatImage())) { throw IOException("disk full") } }.exceptionOrNull()
+        val failure = runCatching { files.receive(peer, listOf(WechatImage()).map(::DownloadWechatImage)) { throw IOException("disk full") } }.exceptionOrNull()
         assertTrue(failure is IOException)
         assertEquals(0, File(workspace, "inbox").listFiles()!!.size)
-        assertTrue(runCatching { files.receive(peer, "too-many", "", List(WechatImages.MAX_IMAGES + 1) { WechatImage() }) { true } }.exceptionOrNull() is IOException)
+        assertTrue(runCatching { files.receive(peer, List(WechatImages.MAX_IMAGES + 1) { DownloadWechatImage(WechatImage()) }) { true } }.exceptionOrNull() is IOException)
         assertEquals(1, downloads)
     }
 
@@ -101,7 +98,7 @@ class WechatImageFilesTest {
             if (++count == 2) { downloadingSecond.complete(Unit); awaitCancellation() }
             WechatImages.validate(png)
         }, { PreparedWechatImage(it.bytes, it.extension) }, { workspace }, JVM_GATE, SandboxTree(), { true }, { null })
-        val job = launch { files.receive(peer, "cancelled", "", listOf(WechatImage(), WechatImage())) { fail("Cancelled batch must not be accepted"); true } }
+        val job = launch { files.receive(peer, listOf(WechatImage(), WechatImage()).map(::DownloadWechatImage)) { fail("Cancelled batch must not be accepted"); true } }
         withTimeout(2_000) { downloadingSecond.await(); job.cancelAndJoin() }
         assertEquals(0, staging.listFiles()!!.size)
         assertFalse(File(workspace, "inbox").exists())
@@ -113,7 +110,7 @@ class WechatImageFilesTest {
             { PreparedWechatImage(it.bytes, it.extension) }, { workspace }, JVM_GATE, SandboxTree(),
             { File(workspace, "inbox").listFiles().orEmpty().sumOf { it.length() } < png.size }, { null })
         val failure = runCatching {
-            files.receive(peer, "quota", "", listOf(WechatImage())) { fail("Over-quota batch must not be accepted"); true }
+            files.receive(peer, listOf(WechatImage()).map(::DownloadWechatImage)) { fail("Over-quota batch must not be accepted"); true }
         }.exceptionOrNull()
         assertTrue(failure is IOException)
         assertEquals(0, File(workspace, "inbox").listFiles()!!.size)

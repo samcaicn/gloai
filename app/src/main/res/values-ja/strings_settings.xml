@@ -50,6 +50,8 @@
     <string name="settings_notif_master">すべての通知</string>
     <string name="settings_allowed">許可</string>
     <string name="settings_task_notifs">タスクの通知</string>
+    <string name="settings_live_task_updates">タスクのライブ通知</string>
+    <string name="settings_live_task_updates_detail">実行中のタスクをステータスバーに表示するか選べます</string>
     <string name="settings_keep_on">画面をオンのままにする</string>
     <string name="settings_keep_on_sub">タスクの実行中は画面をオンのままにし(操作していないときは通常どおり暗くなります)、終わると通常に戻します</string>
     <string name="settings_mute">使用中のアプリをミュート</string>

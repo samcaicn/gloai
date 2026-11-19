@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -77,6 +78,25 @@ class BuiltinShellEngineTest {
             answered = SuAnswer.Granted
             return true
         }
+
+        var transportMode: ShellTransport = ShellTransport.Auto
+        var shizuku = ShizukuPlatformState.Unavailable
+        val shizukuResults = ArrayDeque<BuiltinShellFailure?>()
+        var deliverOnShizukuLaunch = true
+
+        override fun transport() = transportMode
+        override fun setTransport(transport: ShellTransport) {
+            transportMode = transport
+            calls += "transport=$transport"
+        }
+        override fun shizukuState() = shizuku
+        override suspend fun launchHelperViaShizuku(): BuiltinShellFailure? {
+            calls += "shizuku"
+            val failure = shizukuResults.removeFirstOrNull()
+            if (failure != null) return failure
+            if (deliverOnShizukuLaunch) helper.value = "shizuku"
+            return null
+        }
     }
 
     private val platform = FakePlatform()
@@ -106,6 +126,7 @@ class BuiltinShellEngineTest {
 
     private fun launches() = platform.calls.count { it == "launch" }
     private fun suCalls() = platform.calls.count { it == "su" }
+    private fun shizukuCalls() = platform.calls.count { it == "shizuku" }
 
     @Test
     fun backoffDoublesAndStops() {
@@ -749,5 +770,265 @@ class BuiltinShellEngineTest {
         advanceUntilIdle()
         assertEquals(BuiltinShellStatus.NotPaired, e.status.value)
         assertEquals(1, suCalls())
+    }
+
+    // ---- Shizuku 通道与切换 ----
+
+    @Test
+    fun shellTransportParseDefaultsToAuto() {
+        assertEquals(ShellTransport.Auto, ShellTransport.parse(null))
+        assertEquals(ShellTransport.Auto, ShellTransport.parse(""))
+        assertEquals(ShellTransport.Auto, ShellTransport.parse("unknown"))
+        assertEquals(ShellTransport.Auto, ShellTransport.parse("auto"))
+        assertEquals(ShellTransport.WirelessDebugging, ShellTransport.parse("WirelessDebugging"))
+        assertEquals(ShellTransport.WirelessDebugging, ShellTransport.parse("wirelessdebugging"))
+        assertEquals(ShellTransport.Shizuku, ShellTransport.parse(" shizuku "))
+    }
+
+    @Test
+    fun shizukuPlatformStateMapsReadyAndFailures() {
+        assertFalse(ShizukuPlatformState.Unavailable.ready)
+        assertEquals(BuiltinShellFailure.ShizukuNotInstalled, ShizukuPlatformState.Unavailable.failure())
+        assertEquals(
+            BuiltinShellFailure.ShizukuNotRunning,
+            ShizukuPlatformState(installed = true, running = false, permissionGranted = false).failure(),
+        )
+        assertEquals(
+            BuiltinShellFailure.ShizukuPermissionNeeded,
+            ShizukuPlatformState(installed = true, running = true, permissionGranted = false).failure(),
+        )
+        val ready = ShizukuPlatformState(installed = true, running = true, permissionGranted = true)
+        assertTrue(ready.ready)
+        assertEquals(BuiltinShellFailure.ShizukuBindFailed, ready.failure())
+        assertTrue(BuiltinShellFailures.retryable(BuiltinShellFailure.ShizukuBindFailed))
+        assertFalse(BuiltinShellFailures.retryable(BuiltinShellFailure.ShizukuNotInstalled))
+        assertFalse(BuiltinShellFailures.retryable(BuiltinShellFailure.ShizukuNotRunning))
+        assertFalse(BuiltinShellFailures.retryable(BuiltinShellFailure.ShizukuPermissionNeeded))
+    }
+
+    @Test
+    fun autoModeConnectsViaShizukuWithoutWifiOrPairing() = runTest {
+        platform.wifi = false
+        platform.wireless = false
+        platform.pairedFlag = false
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true)
+        val e = engine()
+        assertEquals(ShellTransport.Auto, e.transport)
+        assertTrue(e.shizukuStart)
+        assertEquals(HelperRestart.Shizuku, e.restart)
+        assertEquals(BuiltinShellStatus.Connecting, e.status.value)
+
+        e.start()
+        runCurrent()
+        assertEquals(BuiltinShellStatus.Running, e.status.value)
+        assertEquals(1, shizukuCalls())
+        assertEquals(0, launches())
+        assertEquals(0, suCalls())
+        assertFalse(platform.usb)
+        assertEquals(null, e.lastError)
+    }
+
+    @Test
+    fun autoModeFallsBackToWirelessWhenShizukuNotRunningPermissionMissingOrBindFails() = runTest {
+        platform.pairedFlag = true
+        platform.shizuku = ShizukuPlatformState(installed = true, running = false, permissionGranted = true)
+        val scope1 = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        val e1 = BuiltinShellEngine(platform, helper, scope1, StandardTestDispatcher(testScheduler), Backoff(baseMs = 1_000, maxMs = 8_000, maxAttempts = 3), graceMs = 3_000, handoffTimeoutMs = 10_000)
+        assertEquals(HelperRestart.Wireless, e1.restart)
+        e1.start()
+        advanceUntilIdle()
+        assertEquals(0, shizukuCalls())
+        assertEquals(1, launches())
+        assertEquals(BuiltinShellStatus.Running, e1.status.value)
+        scope1.coroutineContext[kotlinx.coroutines.Job]?.cancel()
+
+        helper.value = null
+        platform.calls.clear()
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = false)
+        val scope2 = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        val e2 = BuiltinShellEngine(platform, helper, scope2, StandardTestDispatcher(testScheduler), Backoff(baseMs = 1_000, maxMs = 8_000, maxAttempts = 3), graceMs = 3_000, handoffTimeoutMs = 10_000)
+        e2.start()
+        advanceUntilIdle()
+        assertEquals(0, shizukuCalls())
+        assertEquals(1, launches())
+        assertEquals(BuiltinShellStatus.Running, e2.status.value)
+        scope2.coroutineContext[kotlinx.coroutines.Job]?.cancel()
+
+        helper.value = null
+        platform.calls.clear()
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true)
+        platform.shizukuResults += BuiltinShellFailure.ShizukuBindFailed
+        val e3 = engine()
+        e3.start()
+        advanceUntilIdle()
+        assertEquals(listOf("shizuku", "launch"), platform.calls)
+        assertEquals(BuiltinShellStatus.Running, e3.status.value)
+        assertEquals(null, e3.lastError)
+    }
+
+    @Test
+    fun autoModeStopsInFlightShizukuBeforeFallingBackToWirelessOnTimeout() = runTest {
+        platform.pairedFlag = true
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true)
+        platform.deliverOnShizukuLaunch = false
+        platform.deliverOnLaunch = true
+        val e = engine()
+        e.start()
+        advanceUntilIdle()
+        assertEquals(listOf("shizuku", "stop", "launch"), platform.calls)
+        assertEquals(BuiltinShellStatus.Running, e.status.value)
+        assertEquals("binder", helper.value)
+        assertEquals(null, e.lastError)
+    }
+
+    @Test
+    fun autoModeReportsShizukuNotRunningWhenInstalledAndUnpairedThenConnectsOnRetryAndShizukuChanged() = runTest {
+        platform.pairedFlag = false
+        platform.shizuku = ShizukuPlatformState(installed = true, running = false, permissionGranted = true)
+        val e = engine()
+        assertEquals(HelperRestart.Shizuku, e.restart)
+        assertEquals(BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuNotRunning), e.status.value)
+        e.start()
+        advanceUntilIdle()
+        assertEquals(BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuNotRunning), e.status.value)
+        assertEquals(BuiltinShellFix.Retry, (e.status.value as BuiltinShellStatus.Failed).fix)
+        assertEquals(0, shizukuCalls())
+        assertEquals(0, launches())
+
+        // Shizuku 启动后点 retry 直接连上
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true)
+        e.retry()
+        advanceUntilIdle()
+        assertEquals(1, shizukuCalls())
+        assertEquals(BuiltinShellStatus.Running, e.status.value)
+
+        // 之后 Shizuku 停了且助手断开:报 ShizukuNotRunning,等 Shizuku 再起来通知引擎后自动连上
+        platform.shizuku = ShizukuPlatformState(installed = true, running = false, permissionGranted = true)
+        helper.value = null
+        advanceUntilIdle()
+        assertEquals(BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuNotRunning), e.status.value)
+        assertFalse(platform.usb)
+
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true)
+        e.shizukuChanged()
+        advanceUntilIdle()
+        assertEquals(2, shizukuCalls())
+        assertEquals(BuiltinShellStatus.Running, e.status.value)
+    }
+
+    @Test
+    fun shizukuModeReportsAllShizukuFailuresWithoutWirelessOrRootFallback() = runTest {
+        platform.transportMode = ShellTransport.Shizuku
+        platform.pairedFlag = true
+        platform.enableRoot()
+
+        platform.shizuku = ShizukuPlatformState.Unavailable
+        val notInstalled = engine()
+        assertEquals(HelperRestart.Shizuku, notInstalled.restart)
+        assertEquals(BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuNotInstalled), notInstalled.status.value)
+        notInstalled.start()
+        advanceUntilIdle()
+        notInstalled.retry()
+        advanceUntilIdle()
+        assertEquals(BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuNotInstalled), notInstalled.status.value)
+        assertEquals(0, launches())
+        assertEquals(0, suCalls())
+        assertEquals(0, shizukuCalls())
+
+        platform.shizuku = ShizukuPlatformState(installed = true, running = false, permissionGranted = false)
+        val notRunning = engine()
+        assertEquals(BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuNotRunning), notRunning.status.value)
+
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = false)
+        val noPerm = engine()
+        assertEquals(BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuPermissionNeeded), noPerm.status.value)
+
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true)
+        platform.shizukuResults += List(10) { BuiltinShellFailure.ShizukuBindFailed }
+        val bindFailed = engine()
+        bindFailed.start()
+        advanceUntilIdle()
+        assertEquals(3, shizukuCalls())
+        assertEquals(0, launches())
+        assertEquals(0, suCalls())
+        assertEquals(BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuBindFailed), bindFailed.status.value)
+        assertEquals("shizuku: ShizukuBindFailed", bindFailed.lastError)
+
+        // 调起返回 null 却一直没交接过来时,超时报 ShizukuBindFailed
+        platform.calls.clear()
+        platform.shizukuResults.clear()
+        platform.deliverOnShizukuLaunch = false
+        val handoffTimeout = engine(backoff = Backoff(maxAttempts = 1))
+        handoffTimeout.retry()
+        assertEquals(BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuBindFailed), handoffTimeout.status.value)
+        assertEquals("helper handoff timed out (shizuku)", handoffTimeout.lastError)
+        assertEquals(0, launches())
+        assertEquals(0, suCalls())
+    }
+
+    @Test
+    fun wirelessDebuggingModeIgnoresReadyShizuku() = runTest {
+        platform.transportMode = ShellTransport.WirelessDebugging
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true)
+        platform.pairedFlag = false
+        val unpaired = engine()
+        assertEquals(ShellTransport.WirelessDebugging, unpaired.transport)
+        assertFalse(unpaired.shizukuStart)
+        assertEquals(HelperRestart.None, unpaired.restart)
+        unpaired.start()
+        advanceUntilIdle()
+        assertEquals(BuiltinShellStatus.NotPaired, unpaired.status.value)
+        unpaired.shizukuChanged()
+        advanceUntilIdle()
+        assertEquals(BuiltinShellStatus.NotPaired, unpaired.status.value)
+        assertEquals(0, shizukuCalls())
+
+        platform.pairedFlag = true
+        val paired = engine()
+        assertFalse(paired.shizukuStart)
+        assertEquals(HelperRestart.Wireless, paired.restart)
+        paired.start()
+        advanceUntilIdle()
+        assertEquals(0, shizukuCalls())
+        assertEquals(1, launches())
+        assertEquals(BuiltinShellStatus.Running, paired.status.value)
+    }
+
+    @Test
+    fun selectTransportSwitchesBetweenShizukuAndWirelessDebugging() = runTest {
+        platform.pairedFlag = true
+        platform.shizuku = ShizukuPlatformState(installed = true, running = true, permissionGranted = true)
+        val e = engine()
+        e.start()
+        advanceUntilIdle()
+        assertEquals(BuiltinShellStatus.Running, e.status.value)
+        assertEquals("shizuku", helper.value)
+        assertEquals(1, shizukuCalls())
+
+        // 切到同一通道不重启助手
+        e.selectTransport(ShellTransport.Auto)
+        advanceUntilIdle()
+        assertEquals(0, platform.calls.count { it == "stop" })
+
+        // 切到仅无线调试:停掉 Shizuku 起的助手,立即经无线调试重起
+        e.selectTransport(ShellTransport.WirelessDebugging)
+        runCurrent()
+        assertEquals(1, launches())
+        assertEquals("binder", helper.value)
+        assertEquals(BuiltinShellStatus.Running, e.status.value)
+
+        // 切到仅 Shizuku:停掉无线调试助手,立即经 Shizuku 重起
+        e.selectTransport(ShellTransport.Shizuku)
+        runCurrent()
+        assertEquals(2, shizukuCalls())
+        assertEquals("shizuku", helper.value)
+        assertEquals(BuiltinShellStatus.Running, e.status.value)
+
+        // 没配对时切到仅无线调试:停掉助手,回到 NotPaired
+        platform.pairedFlag = false
+        e.selectTransport(ShellTransport.WirelessDebugging)
+        advanceUntilIdle()
+        assertEquals(null, helper.value)
+        assertEquals(BuiltinShellStatus.NotPaired, e.status.value)
     }
 }

@@ -248,7 +248,35 @@ else:
                                        "00000000-0000-4000-8000-000000000001", server=server)
             self.assertNotEqual(0, result.returncode)
             self.assertEqual("incompatible_api", body["error"]["code"])
+            self.assertIn("task_recovery", body["error"]["message"])
+            self.assertIn(DISCOVERY["server_version"], body["error"]["message"])
+            self.assertIn("without --request-id", body["error"]["message"])
+            self.assertEqual("task_recovery", body["error"]["capability"])
+            self.assertEqual(DISCOVERY["server_version"], body["error"]["server_version"])
             self.assertFalse(any(m == "POST" for m, _, _ in server.calls))
+
+    def test_capability_errors_stay_actionable_without_a_phone_version(self):
+        old = {"api_version": 1, "capabilities": ["tasks"]}
+        for args in [["task", "run", "--goal", "once", "--request-id", "00000000-0000-4000-8000-000000000002"],
+                     ["task", "steer", "t1", "--text", "more"],
+                     ["task", "export", "t1"],
+                     ["task", "download", "t1", "f1", "--output", "out"]]:
+            with self.subTest(args=args), api(lambda *_: (200, old, {})) as server:
+                result, body = self.invoke(*args, server=server)
+                self.assertEqual(2, result.returncode)
+                error = body["error"]
+                self.assertEqual("incompatible_api", error["code"])
+                self.assertTrue(error["capability"])
+                self.assertIn(error["capability"], error["message"])
+                self.assertNotIn("server_version", error)
+                self.assertNotIn("version", error["message"])
+
+    def test_download_names_the_missing_files_capability(self):
+        with api() as server:
+            result, body = self.invoke("task", "download", "t1", "f1", "--output", "out", server=server)
+            self.assertEqual(2, result.returncode)
+            self.assertEqual("task_files", body["error"]["capability"])
+            self.assertIn("task_files", body["error"]["message"])
 
     def test_unknown_answer_preserves_known_task_id(self):
         with api(lambda method, path, body: "drop" if method == "POST" else None) as server:
@@ -275,6 +303,8 @@ else:
             result, body = self.invoke("task", "steer", "t1", "--text", "more", server=server)
             self.assertEqual(2, result.returncode)
             self.assertEqual("incompatible_api", body["error"]["code"])
+            self.assertEqual("task_steer", body["error"]["capability"])
+            self.assertIn("task_steer", body["error"]["message"])
             self.assertEqual([("GET", "/api/v1", None)], server.calls)
 
     def test_uncertain_steer_is_not_repeated(self):
@@ -623,6 +653,8 @@ else:
             result, body = self.invoke("task", "export", "t1", server=server)
             self.assertEqual(2, result.returncode)
             self.assertEqual("incompatible_api", body["error"]["code"])
+            self.assertEqual("run_export", body["error"]["capability"])
+            self.assertIn("run_export", body["error"]["message"])
             self.assertEqual([("GET", "/api/v1", None)], server.calls)
         message = "No remote task or run record with id missing"
 

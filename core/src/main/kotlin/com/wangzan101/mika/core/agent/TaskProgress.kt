@@ -18,6 +18,7 @@ internal data class ProgressMetric(
     val done: Int? = null,
     val total: Int? = null,
     val boundary: String? = null,
+    val part: Boolean = false,
 ) {
     init {
         require(name.isNotBlank() && name.length <= MAX_NAME)
@@ -32,36 +33,101 @@ internal data class ProgressMetric(
     fun state() = RunProgress.Task(name, done, total, boundary)
 }
 
-/** 本次任务的验收判据与最近确认的进度。[allCriteriaMet] 是模型申报，数量到达是代码判定。 */
+/** 多个目标逐项确认；只有单目标的任务级数量到达时才可据此收尾。 */
 internal data class CompletionPlan(
     val criteria: List<String> = emptyList(),
     val metric: ProgressMetric? = null,
     val allCriteriaMet: Boolean = false,
+    val confirmedIds: Set<Int> = emptySet(),
 ) {
-    val complete: Boolean get() = allCriteriaMet || metric?.reached == true
+    val complete: Boolean get() = if (criteria.size > 1) confirmedIds.size == criteria.size
+        else allCriteriaMet || confirmedIds.isNotEmpty() || (metric?.reached == true && !metric.part)
+
+    fun state(stale: Boolean): RunProgress.Task? = if (criteria.size > 1) {
+        RunProgress.Task("", confirmedIds.size, criteria.size, null, GoalChecklist(criteria, confirmedIds, stale && !complete))
+    } else metric?.state()
 
     fun apply(u: CompletionUpdate): CompletionPlan {
+        val items = u.criteria ?: criteria
+        require(items.take(criteria.size) == criteria) { "criteria IDs cannot be removed or reassigned" }
+        require(u.confirmed.all { it in 1..items.size }) { "unknown criterion ID" }
         val metric = u.metric?.let { change ->
-            val old = metric
+            val old = metric?.takeIf { change.name == null || change.name == it.name }
             ProgressMetric(
                 change.name ?: old?.name ?: throw IllegalArgumentException("metric.name is required"),
                 change.done ?: old?.done,
                 change.total ?: old?.total,
                 change.boundary ?: old?.boundary,
+                change.part ?: old?.part ?: false,
             )
         } ?: metric
-        return CompletionPlan(u.criteria ?: criteria, metric, u.allCriteriaMet ?: allCriteriaMet)
+        return CompletionPlan(items, metric, u.allCriteriaMet ?: allCriteriaMet, confirmedIds + u.confirmed)
     }
 
-    fun event(atMs: Long) = RunEvent.Criteria(atMs, criteria, emptyList(), progress = metric?.event(), complete = complete)
+    fun event(atMs: Long) = RunEvent.Criteria(atMs, criteria, emptyList(), progress = metric?.event(), complete = complete,
+        confirmedIds = confirmedIds.takeIf { criteria.size > 1 })
 }
 
-internal data class MetricUpdate(val name: String? = null, val done: Int? = null, val total: Int? = null, val boundary: String? = null)
+internal data class MetricUpdate(val name: String? = null, val done: Int? = null, val total: Int? = null, val boundary: String? = null, val part: Boolean? = null)
 internal data class CompletionUpdate(
     val criteria: List<String>? = null,
     val metric: MetricUpdate? = null,
     val allCriteriaMet: Boolean? = null,
+    val confirmed: Set<Int> = emptySet(),
 )
+
+/** 只在正常的模型请求里带上待确认目标。不根据操作次数、工具成功或自由文本推算完成数。 */
+internal class TaskProgressTracker(private val now: () -> Long, private val emit: (RunEvent) -> Unit) {
+    var plan = CompletionPlan()
+        private set
+    private var lastChange = 0
+
+    fun state(step: Int) = plan.state(step - lastChange >= REMINDER_INTERVAL)
+
+    fun pending(step: Int, afterFirstTool: Boolean = false): String? {
+        if (afterFirstTool && plan.criteria.isEmpty() && !plan.complete) {
+            emit(RunEvent.State(now(), "task_progress_plan_reminder", step.toString()))
+            return "No goal checklist: <task_progress>"
+        }
+        if (plan.criteria.size <= 1 || plan.complete) return null
+        val items = plan.criteria.mapIndexedNotNull { i, text ->
+            if (i + 1 in plan.confirmedIds) null else "${i + 1}: ${JsonPrimitive(text)}"
+        }
+        val age = step - lastChange
+        val reminder = if (age >= REMINDER_INTERVAL && age % REMINDER_INTERVAL == 0)
+            " If any is now verified, report its ID and evidence with this reply." else ""
+        return "Pending goal IDs: ${items.joinToString("; ")}.$reminder"
+    }
+
+    fun accept(raw: String, step: Int): String {
+        val parsed = CompletionPlanBlock.extract(raw)
+        acceptParsed(parsed, step)
+        return parsed.text
+    }
+
+    /** 处理已解析好的进度块(可能来自文字块,也可能来自被误写成工具调用的 `task_progress` 调用)。返回是否有效。 */
+    fun acceptParsed(parsed: CompletionPlanBlock.Extracted, step: Int): Boolean {
+        var valid = parsed.errors.isEmpty()
+        fun invalid(reason: String) {
+            valid = false
+            emit(RunEvent.State(now(), "task_progress_invalid", RunEvent.clip(reason)))
+        }
+        parsed.errors.forEach(::invalid)
+        for (update in parsed.updates) {
+            val next = try { plan.apply(update) } catch (e: IllegalArgumentException) {
+                invalid(e.message ?: "invalid progress")
+                continue
+            }
+            if (next == plan) continue
+            if (next.confirmedIds != plan.confirmedIds || next.criteria != plan.criteria) lastChange = step
+            plan = next
+            emit(next.event(now()))
+        }
+        return valid
+    }
+
+    private companion object { const val REMINDER_INTERVAL = 3 }
+}
 
 /**
  * 主模型随实际工具调用或最终回答写出的 <task_progress> JSON 块。它不是工具，不增加请求或 schema；
@@ -70,10 +136,10 @@ internal data class CompletionUpdate(
 internal object CompletionPlanBlock {
     private const val OPEN = "<task_progress>"
     private val BLOCK = Regex("$OPEN(.*?)</task_progress>", RegexOption.DOT_MATCHES_ALL)
-    private val ROOT_KEYS = setOf("criteria", "metric", "complete")
-    private val METRIC_KEYS = setOf("name", "done", "total", "boundary")
+    private val ROOT_KEYS = setOf("criteria", "metric", "complete", "confirmed")
+    private val METRIC_KEYS = setOf("name", "done", "total", "boundary", "scope")
 
-    class Extracted(val text: String, val updates: List<CompletionUpdate>, val errors: List<String>)
+    class Extracted(val text: String, val updates: List<CompletionUpdate>, val errors: List<String>, val stage: Int?)
 
     /** 流式文字也可能只到半个开始标记；完整块和末尾未写完的块都不显示。 */
     fun visible(text: String): String {
@@ -91,27 +157,37 @@ internal object CompletionPlanBlock {
         return if (suffix.length >= 2 && OPEN.startsWith(suffix)) last else -1
     }
 
-    fun extract(text: String): Extracted {
+    fun extract(text: String): Extracted = decode(text, BLOCK.findAll(text).map { it.groupValues[1].trim() })
+
+    fun fromCall(body: String): Extracted = decode("", sequenceOf(body))
+
+    private fun decode(text: String, bodies: Sequence<String>): Extracted {
         val updates = mutableListOf<CompletionUpdate>()
         val errors = mutableListOf<String>()
-        BLOCK.findAll(text).forEach { match ->
-            val body = match.groupValues[1].trim()
+        val stages = mutableSetOf<Int>()
+        bodies.forEach { body ->
             if (body.length > MAX_BLOCK) {
                 errors += "task_progress block is too long"
                 return@forEach
             }
             try {
-                updates += parse(body)
+                val root = Json.parseToJsonElement(body) as? JsonObject ?: throw IllegalArgumentException("task_progress must be a JSON object")
+                val progress = root - "stage"
+                if (progress.isNotEmpty() || "stage" !in root) updates += parse(JsonObject(progress))
+                if ("stage" in root) {
+                    val ordinal = (root["stage"] as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull
+                    require(ordinal != null && ordinal > 0) { "invalid stage ordinal" }
+                    stages += ordinal
+                }
             } catch (e: Exception) {
                 errors += e.message ?: "invalid task_progress block"
             }
         }
         if (incompleteStart(BLOCK.replace(text, "")) >= 0) errors += "unclosed task_progress block"
-        return Extracted(visible(text).trim(), updates, errors)
+        return Extracted(visible(text).trim(), updates, errors, stages.singleOrNull())
     }
 
-    private fun parse(body: String): CompletionUpdate {
-        val root = Json.parseToJsonElement(body) as? JsonObject ?: throw IllegalArgumentException("task_progress must be a JSON object")
+    private fun parse(root: JsonObject): CompletionUpdate {
         require(root.keys.all { it in ROOT_KEYS }) { "unknown task_progress field" }
         val criteria = root["criteria"]?.let { value ->
             val items = value as? JsonArray ?: throw IllegalArgumentException("criteria must be an array")
@@ -123,6 +199,16 @@ internal object CompletionPlanBlock {
                 text
             }
         }
+        val confirmed = root["confirmed"]?.let { value ->
+            val entries = value as? JsonArray ?: throw IllegalArgumentException("confirmed must be an array")
+            require(entries.size <= MAX_CRITERIA) { "too many confirmations" }
+            entries.map { entry ->
+                val obj = entry as? JsonObject ?: throw IllegalArgumentException("invalid confirmation")
+                require(obj.keys == setOf("id", "evidence")) { "confirmation needs id and evidence" }
+                require((obj.string("evidence")?.trim()?.length ?: 0) in 1..MAX_CRITERION) { "missing or oversized evidence" }
+                obj.int("id") ?: throw IllegalArgumentException("missing criterion ID")
+            }.toSet()
+        }
         val metric = root["metric"]?.let { value ->
             val obj = value as? JsonObject ?: throw IllegalArgumentException("metric must be an object")
             require(obj.keys.all { it in METRIC_KEYS }) { "unknown metric field" }
@@ -132,14 +218,15 @@ internal object CompletionPlanBlock {
                 obj.int("done")?.also { require(it >= 0) { "metric.done must be non-negative" } },
                 obj.int("total")?.also { require(it > 0) { "metric.total must be positive" } },
                 obj.string("boundary")?.also { require(it.length <= MAX_BOUNDARY) { "metric.boundary is too long" } },
+                obj.string("scope")?.let { require(it == "part" || it == "task") { "unknown metric scope" }; it == "part" },
             ).also { change ->
                 if (change.done != null && change.total != null) require(change.done <= change.total) { "metric.done exceeds total" }
             }
         }
         val complete = (root["complete"] as? JsonPrimitive)?.booleanOrNull
         if (root.containsKey("complete")) require(complete != null) { "complete must be boolean" }
-        require(criteria != null || metric != null || complete != null) { "empty task_progress update" }
-        return CompletionUpdate(criteria, metric, complete)
+        require(criteria != null || metric != null || complete != null || !confirmed.isNullOrEmpty()) { "empty task_progress update" }
+        return CompletionUpdate(criteria, metric, complete, confirmed.orEmpty())
     }
 
     private fun JsonObject.string(key: String): String? = this[key]?.let {

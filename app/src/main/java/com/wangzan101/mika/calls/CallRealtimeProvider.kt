@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonObject
 
 interface CallRealtimeSession : AutoCloseable {
     val events: Flow<VolcRealtimeEvent>
+    val playbackTruncation: CallPlaybackTruncation? get() = null
     val inputSampleRate: Int get() = VolcRealtimeClient.INPUT_SAMPLE_RATE
     val outputSampleRate: Int get() = VolcRealtimeClient.OUTPUT_SAMPLE_RATE
     val inputChunkBytes: Int get() = VolcRealtimeClient.INPUT_CHUNK_BYTES
@@ -27,10 +28,10 @@ interface CallRealtimeProvider {
     ): CallRealtimeSession
 }
 
-class VolcRealtimeProvider : CallRealtimeProvider {
+class ProfileRealtimeProvider : CallRealtimeProvider {
     private fun config(profile: CallVoiceProfile, systemPrompt: String, enablePhoneDtmf: Boolean): VolcRealtimeConfig {
-        require(profile.protocol == CallVoiceProtocol.VOLC_DUPLEX) { "不支持的实时语音协议" }
-        return VolcRealtimeConfig(systemPrompt = systemPrompt, speaker = profile.speaker, model = profile.model, enablePhoneDtmf = enablePhoneDtmf)
+        if (profile.protocol == CallVoiceProtocol.OPENAI_REALTIME) require(profile.endpoint == OpenAiCallProtocol.ENDPOINT)
+        return VolcRealtimeConfig(systemPrompt = systemPrompt, speaker = profile.speaker, model = profile.model, enablePhoneDtmf = enablePhoneDtmf, protocol = profile.protocol)
     }
 
     override fun validate(profile: CallVoiceProfile, systemPrompt: String, enablePhoneDtmf: Boolean) {

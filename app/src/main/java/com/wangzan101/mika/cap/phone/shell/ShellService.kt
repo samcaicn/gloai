@@ -1502,7 +1502,7 @@ class ShellService(
         return clip
     }
 
-    override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
+    public override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
         // 内置助手的进程不跟着 Mika 结束,Binder 也可能被别人拿到:只有 Mika 能调用接口方法
         if (code in FIRST_CALL_TRANSACTION..LAST_CALL_TRANSACTION &&
             Binder.getCallingUid() != allowedUid

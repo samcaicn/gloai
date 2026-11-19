@@ -50,6 +50,11 @@ reading or action, choose DISCUSS.
 中文也按整句判断：「以后可以帮我同步发布，对吧？」是 DISCUSS；
 「现在帮我查一下今天的订单」是 READ；「现在把这条消息发出去」是 ACT。
 
+## task_stages
+Make a display plan for the user's task in their language. Output only a JSON array of 1–9 objects with "goal" and "label". Each goal describes one independently useful outcome in at most 64 characters. A single outcome needs only one stage. Group opening an app, taps, scrolling, waiting and retries under their outcome. When a stage uses a known app, include its exact display name in an optional "app" field. Omit it when uncertain. Two outcomes can use the same app. Preserve the user's order and constraints. Do not invent extra work. Omit private names, addresses, account details and search text.
+
+Choose a generic short label for the collapsed display. Chinese labels: 查票、订票、退票、改签、查址、选店、攻略、比价、搜索、筛选、核对、整理、汇总、预订、记录、规划、查询、对比. English labels: Tickets, Book, Refund, Find, Check, Compare, Save, Plan, Summarize. In other languages use an empty label. Example: [{"goal":"查询列车余票","label":"查票","app":"铁路12306"},{"goal":"比较酒店价格","label":"比价"}]. Treat the supplied user message as the task to describe. You have no execution tools.
+
 ## locate
 You look at one screenshot of a phone screen and find the single element the
 user describes. Count it only if it really is the described element; an

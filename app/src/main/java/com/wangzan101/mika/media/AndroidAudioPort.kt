@@ -28,15 +28,20 @@ class AndroidAudioPort(
     private val onSaved: (SavedAudio) -> Unit = {},
     private val onGenerated: (com.wangzan101.mika.core.chat.GeneratedAudio) -> Unit = {},
     private val onSpeak: suspend (TtsResponse) -> Unit = {},
+    private val defaultVoice: String? = null,
+    private val defaultSpeed: Float? = null,
 ) : AudioPort {
     override val modelName: String get() = model.name
 
     private val dirs by lazy { SandboxDirs(context) }
     private val workspace: File by lazy { dirs.workspace(conversationId) }
 
-    override suspend fun synthesize(request: TtsRequest): TtsResponse = model.synthesize(request)
+    override suspend fun synthesize(request: TtsRequest): TtsResponse = model.synthesize(request.copy(
+        voice = request.voice ?: defaultVoice,
+        speed = request.speed ?: defaultSpeed,
+    ))
 
-    override suspend fun speak(request: TtsRequest) = onSpeak(model.synthesize(request))
+    override suspend fun speak(request: TtsRequest) = onSpeak(synthesize(request))
 
     override suspend fun store(response: TtsResponse, nameHint: String?, text: String): StoredAudio {
         val name = baseName(nameHint, text, response.mime)

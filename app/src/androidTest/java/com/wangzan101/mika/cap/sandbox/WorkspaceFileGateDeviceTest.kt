@@ -48,22 +48,6 @@ class WorkspaceFileGateDeviceTest : WorkspaceFileGateContract() {
         assertEquals("x", File(ws, "e-old/new.txt").readText())
     }
 
-    @Test fun publishCompleteFileWithoutOverwriting() {
-        val staging = File(tmp, "staging").apply { mkdirs() }
-        File(staging, "part").writeText("complete")
-        val stat = gate.openRead(staging, "part").use { it.stat }
-        File(ws, "inbox").mkdirs()
-        File(ws, "inbox/existing").writeText("old")
-        assertEquals("file_exists", code { gate.publishNoReplace(staging, "part", stat, ws, "inbox/existing") })
-        assertEquals("old", File(ws, "inbox/existing").readText())
-        Os.symlink(File(secret, "key.txt").path, File(ws, "inbox/link").path)
-        assertEquals("file_exists", code { gate.publishNoReplace(staging, "part", stat, ws, "inbox/link") })
-        assertEquals("complete", File(staging, "part").readText())
-        gate.publishNoReplace(staging, "part", stat, ws, "inbox/new")
-        assertFalse(File(staging, "part").exists())
-        gate.openRead(ws, "inbox/new").use { assertEquals("complete", String(it.read(0, 100))) }
-    }
-
     /** /proc/self/fd 读出的根目录与文件路径同出一源,/data/user/0 与 /data/data 的写法差别不影响判断。 */
     @Test fun realPathsComeFromTheHandle() {
         File(ws, "x.txt").writeText("1")

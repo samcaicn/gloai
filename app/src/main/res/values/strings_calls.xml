@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="calls_title">AI phone calls</string>
-    <string name="calls_entry_sub">Cellular calls with Volcengine realtime voice</string>
+    <string name="calls_entry_sub">Cellular calls with realtime voice</string>
     <string name="calls_action_failed">The call action failed. Check readiness and retry.</string>
     <string name="calls_permissions_required">Phone and notification permissions are needed.</string>
     <string name="calls_ai_active">AI is handling the call</string>
@@ -19,7 +19,7 @@
     <string name="calls_sim">Outgoing SIM</string>
     <string name="calls_default">Default</string>
     <string name="calls_dial">Call with AI</string>
-    <string name="calls_call_note">Calls use the existing SIM. Carrier and Volcengine usage charges may apply. Set the purpose and greeting in Settings before dialing.</string>
+    <string name="calls_call_note">Calls use the existing SIM. Carrier and voice service usage charges may apply. Set the purpose and greeting in Settings before dialing.</string>
     <string name="calls_prepare">Check and prepare</string>
     <string name="calls_enable">Enable AI calling</string>
     <string name="calls_disable">Disable and restore normal calling</string>
@@ -35,7 +35,7 @@
     <string name="calls_all_note">Includes numbers outside the list and unknown callers</string>
     <string name="calls_allowlist">Allowed incoming numbers</string>
     <string name="calls_allowlist_empty">Empty list: no automatic answering unless all callers is enabled</string>
-    <string name="calls_privacy_note">Call audio is sent to Volcengine only during AI handling. No audio recordings are saved. Transcripts stay encrypted on this phone; use Take over at any time.</string>
+    <string name="calls_privacy_note">Call audio is sent to the selected voice service only during AI handling. No audio recordings are saved. Transcripts stay encrypted on this phone; use Take over at any time.</string>
     <string name="calls_history_empty">No AI call records yet</string>
     <string name="calls_collapse">Collapse</string>
     <string name="calls_transcript">Show transcript</string>
@@ -53,7 +53,7 @@
     <string name="calls_greeting">Greeting</string>
     <string name="calls_instructions">Purpose and instructions</string>
     <string name="calls_duration">Maximum AI seconds (15–600)</string>
-    <string name="calls_speaker">Volcengine voice id</string>
+    <string name="calls_speaker">Voice ID</string>
     <string name="calls_audio_route">Call audio route</string>
     <string name="calls_audio_verified">I confirmed both parties can hear AI calls on this phone</string>
     <string name="calls_verify_note">First place or answer a manual test call and confirm both directions, then enable automatic answering.</string>
@@ -89,7 +89,7 @@
     <string name="calls_original_transcript">Call transcript</string>
     <string name="calls_outgoing_title">Place a call</string>
     <string name="calls_rules">Answering rules</string>
-    <string name="calls_setup_credentials">Configure Volcengine realtime voice credentials.</string>
+    <string name="calls_setup_credentials">Configure realtime voice credentials.</string>
     <string name="calls_setup_shell">Connect the built-in Mika assistant first.</string>
     <string name="calls_sim_clear_preferred">Clear preferred SIM</string>
     <string name="calls_sim_preferred">Preferred SIM: %1$s</string>

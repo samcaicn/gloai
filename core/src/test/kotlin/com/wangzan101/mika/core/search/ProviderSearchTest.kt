@@ -164,6 +164,12 @@ class ProviderSearchTest {
     // ---------- 共用 ----------
 
     @Test fun providersNeedTheRightFields() {
+        assertEquals(WebSearchProvider.Google, WebSearchProvider.entries.first())
+        assertEquals(false, WebSearchProvider.Google.takesKey)
+        assertEquals(false, WebSearchProvider.Google.needsEndpoint)
+        assertEquals(false, WebSearchProvider.Google.keyRequired)
+        assertEquals(null, WebSearchProvider.Google.problem("", "", groundingAvailable = true))
+        assertEquals(WebSearchProvider.Problem.UnsupportedProvider, WebSearchProvider.Google.problem("", "", groundingAvailable = false))
         assertEquals(null, WebSearchProvider.You.problem("", ""))
         assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.Jina.problem("", " "))
         assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.Exa.problem("", ""))

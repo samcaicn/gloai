@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="chat_confirmed_goals">Objetivos confirmados: %1$d/%2$d</string>
+    <string name="chat_last_confirmed_goals">Última confirmación: %1$d/%2$d</string>
     <string name="chat_greeting_morning">Buenos días</string>
     <string name="chat_greeting_noon">Buen mediodía</string>
     <string name="chat_greeting_afternoon">Buenas tardes</string>

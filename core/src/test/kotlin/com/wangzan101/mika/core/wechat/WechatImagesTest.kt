@@ -77,6 +77,19 @@ class WechatImagesTest {
         assertEquals(9, message.copy(items = List(9) { WechatItem(type = 2) }).userContent()!!.images.size)
     }
 
+    @Test fun quoteIsOnlyAnImageFallbackForTextMessages() {
+        val quote = """{"type":1,"text_item":{"text":"see this"},"ref_msg":{"message_item":{"type":2}}}"""
+        val direct = """{"type":2,"image_item":{"media":{"encrypt_query_param":"new"}}}"""
+        fun content(items: String) = Json.decodeFromString(WechatMessage.serializer(), """{
+            "message_id":1,"message_type":1,"from_user_id":"owner","item_list":[$items]
+        }""").userContent()!!
+
+        // An explicitly referenced image with missing media must use the normal failed-image path.
+        assertEquals(2, content(quote).references.single().item?.type)
+        assertEquals(listOf("new"), content("$quote,$direct").images.map { it.media?.encryptQueryParam })
+        assertTrue(content("""$quote,{"type":4}""").references.isEmpty())
+    }
+
     @Test fun downloadsBothBase64KeyEncodingsAndPrefersTopLevelHex() = server { server, api ->
         val keys = listOf(
             image(key = Base64.getEncoder().encodeToString(key)),

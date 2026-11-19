@@ -47,4 +47,15 @@
     <string name="usage_allowance_updated">Terakhir diperbarui %1$s</string>
     <string name="usage_allowance_self_hosted">Koneksi yang dihosting sendiri</string>
     <string name="usage_allowance_unsupported">Kuota tidak dapat diperiksa untuk koneksi ini</string>
+    <string name="chat_usage_title">Penggunaan dan konteks percakapan</string>
+    <string name="chat_cache_rate">Rasio hit cache input</string>
+    <string name="chat_cache_coverage">%1$s hit dari %2$s token input yang memiliki laporan cache</string>
+    <string name="chat_request_context">Permintaan terakhir ke model utama</string>
+    <string name="chat_no_context">Rincian konteks belum tercatat.</string>
+    <string name="chat_request_size">%1$s · Langkah %2$d · Perkiraan %3$s / %4$s token</string>
+    <string name="chat_context_instructions">Prompt sistem dan definisi alat</string>
+    <string name="chat_context_dialogue">Riwayat percakapan</string>
+    <string name="chat_context_references">Memori, pengetahuan, dan keterampilan</string>
+    <string name="chat_context_tools">Panggilan alat, hasil, dan gambar</string>
+    <string name="chat_context_runtime">Status eksekusi dan pemberitahuan</string>
 </resources>

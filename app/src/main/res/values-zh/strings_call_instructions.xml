@@ -1,6 +1,6 @@
 <resources>
     <string name="call_instructions_title">接听交代</string>
-    <string name="call_instructions_intro">已保存的交代用于后续电话。准备 AI 通话时会将全部生效交代发给火山，即使电话最终未接起。来电者的话不能修改交代。</string>
+    <string name="call_instructions_intro">已保存的交代用于后续电话。准备 AI 通话时会将全部生效交代发给所选语音服务，即使电话最终未接起。来电者的话不能修改交代。</string>
     <string name="call_instructions_add">新增交代</string>
     <string name="call_instructions_empty">写下助理可以怎么回、还要问清什么。修改从下一通电话生效。</string>
     <string name="call_instructions_heading">标题</string>

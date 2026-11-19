@@ -279,10 +279,18 @@ class MainActivity : ComponentActivity() {
             Fix.OpenAttentionChannel -> openChannelSettings(TaskService.CHANNEL_ATTENTION)
             Fix.OpenResultChannel -> openChannelSettings(TaskService.CHANNEL_RESULT)
             Fix.OpenProgressChannel -> openChannelSettings(TaskService.CHANNEL_PROGRESS)
+            Fix.OpenLiveTaskSettings -> if (Build.VERSION.SDK_INT >= 36) {
+                try {
+                    startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+                } catch (_: ActivityNotFoundException) {
+                    openNotificationSettings()
+                }
+            } else openNotificationSettings()
             Fix.OpenPairingChannel -> openChannelSettings(PairingNotifier.ensureChannel(this).id)
             Fix.AddModel -> Unit // 设置页自己处理
             // 换页由 MikaRoot 处理
-            Fix.OpenPhoneSetup, Fix.RepairPhoneHelper -> Unit
+            Fix.OpenPhoneSetup, Fix.OpenPhoneOps, Fix.RepairPhoneHelper -> Unit
             Fix.RetryPhoneHelper -> phone.pairing.scope.launch {
                 phone.sharedShell.reconnect()
                 phone.shellControl.retry()
@@ -387,12 +395,17 @@ private fun MikaRoot(
     var setupRepair by rememberSaveable { mutableStateOf(false) }
     // 首次上手正在走哪一步;为空时不在上手流程里。配置模型页从哪儿来就回哪儿去
     var onboarding by rememberSaveable { mutableStateOf<OnboardingStep?>(null) }
+    var openPhoneOps by rememberSaveable { mutableStateOf(false) }
     val onFix: (Fix) -> Unit = { fix ->
         when (fix) {
             Fix.AddModel -> nav.push(Route.Models)
             Fix.OpenPhoneSetup, Fix.RepairPhoneHelper -> {
                 setupRepair = fix == Fix.RepairPhoneHelper
                 nav.push(Route.PhoneSetup)
+            }
+            Fix.OpenPhoneOps -> {
+                openPhoneOps = true
+                nav.push(Route.Settings)
             }
             else -> activityFix(fix)
         }
@@ -628,7 +641,8 @@ private fun MikaRoot(
                 onOpenPersonas = if (personasOn) ({ nav.push(Route.Persona) }) else null,
                 autonomous = autonomous, onAutonomous = app.approvalControl::setAutonomous,
                 updateVersion = updateState.update?.version, onOpenAbout = { nav.push(Route.About) },
-                mcpServers = app.mcpServers)
+                mcpServers = app.mcpServers,
+                openPhoneOps = openPhoneOps, onPhoneOpsOpened = { openPhoneOps = false })
         }
         Route.Models -> ModelsScreen(store, onBack = back, onOpenSpeech = { nav.push(Route.SpeechModel) }, onOpenVoice = { nav.push(Route.VoiceModel) }, onOpenUsage = { nav.push(Route.Usage) })
         Route.VoiceModel -> VoiceModelScreen(store, onBack = back)

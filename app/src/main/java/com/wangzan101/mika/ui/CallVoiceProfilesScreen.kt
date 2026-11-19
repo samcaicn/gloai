@@ -136,6 +136,8 @@ private fun CallVoiceProfileDialog(
     onSave: (CallVoiceProfile, VolcRealtimeCredentials?) -> Unit,
 ) {
     val defaultName = stringResource(R.string.calls_voice_default_name)
+    var protocol by remember(profile) { mutableStateOf(profile?.protocol ?: CallVoiceProtocol.VOLC_DUPLEX) }
+    val openAi = protocol == CallVoiceProtocol.OPENAI_REALTIME
     var name by remember(profile) { mutableStateOf(profile?.name ?: defaultName) }
     var endpoint by remember(profile) { mutableStateOf(profile?.endpoint ?: VolcRealtimeProtocol.ENDPOINT) }
     var model by remember(profile) { mutableStateOf(profile?.model ?: VolcRealtimeConfig.MODEL) }
@@ -153,18 +155,38 @@ private fun CallVoiceProfileDialog(
         title = { Text(stringResource(if (profile == null) R.string.calls_voice_add else R.string.calls_voice_edit)) },
         text = {
             Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CallVoiceProtocol.entries.forEach { choice ->
+                        val label = if (choice == CallVoiceProtocol.OPENAI_REALTIME) "OpenAI Realtime" else "Doubao"
+                        FilterChip(selected = protocol == choice, enabled = profile == null && !externalBusy,
+                            onClick = {
+                                if (protocol != choice) {
+                                    protocol = choice
+                                    val useOpenAi = choice == CallVoiceProtocol.OPENAI_REALTIME
+                                    name = if (useOpenAi) label else defaultName
+                                    endpoint = if (useOpenAi) OpenAiCallProtocol.ENDPOINT else VolcRealtimeProtocol.ENDPOINT
+                                    model = if (useOpenAi) OpenAiCallProtocol.MODEL else VolcRealtimeConfig.MODEL
+                                    speaker = if (useOpenAi) OpenAiCallProtocol.VOICE else VolcRealtimeConfig.DEFAULT_SPEAKER
+                                    apiKey = ""
+                                    appId = ""
+                                    accessKey = ""
+                                    legacy = false
+                                }
+                            }, label = { Text(label) })
+                    }
+                }
                 Text(stringResource(R.string.calls_voice_protocol), style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3)
                 OutlinedTextField(name, { name = it.take(CallVoiceProfile.MAX_NAME) }, Modifier.fillMaxWidth().testTag("call-voice-name"),
                     label = { Text(stringResource(R.string.calls_voice_name)) }, singleLine = true, enabled = !externalBusy)
                 OutlinedTextField(endpoint, { endpoint = it.take(CallVoiceProfile.MAX_ENDPOINT) }, Modifier.fillMaxWidth().testTag("call-voice-endpoint"),
-                    label = { Text(stringResource(R.string.calls_voice_endpoint)) }, singleLine = true, enabled = !externalBusy)
+                    label = { Text(stringResource(R.string.calls_voice_endpoint)) }, singleLine = true, enabled = !externalBusy && !openAi)
                 OutlinedTextField(model, { model = it.take(CallVoiceProfile.MAX_MODEL) }, Modifier.fillMaxWidth().testTag("call-voice-model"),
                     label = { Text(stringResource(R.string.calls_voice_model)) }, singleLine = true, enabled = !externalBusy)
                 OutlinedTextField(speaker, { speaker = it.take(CallPolicy.MAX_SPEAKER_CHARS) }, Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.calls_speaker)) }, singleLine = true, enabled = !externalBusy,
-                    supportingText = { Text(stringResource(R.string.calls_speaker_edit_note)) })
+                    supportingText = { if (!openAi) Text(stringResource(R.string.calls_speaker_edit_note)) })
                 HorizontalDivider()
-                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                if (!openAi) Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Checkbox(legacy, { legacy = it }, enabled = !externalBusy)
                     Text(stringResource(R.string.calls_legacy_credentials), style = MaterialTheme.typography.bodySmall)
                 }
@@ -179,7 +201,7 @@ private fun CallVoiceProfileDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
                     enabled = !externalBusy,
-                    supportingText = { Text(stringResource(if (configured) R.string.calls_voice_credentials_keep else R.string.calls_credentials_note)) },
+                    supportingText = { if (!configured && openAi) Text("OpenAI API Key") else Text(stringResource(if (configured) R.string.calls_voice_credentials_keep else R.string.calls_credentials_note)) },
                 )
             }
         },
@@ -191,7 +213,7 @@ private fun CallVoiceProfileDialog(
                         !legacy && apiKey.isNotBlank() -> VolcRealtimeCredentials(apiKey = apiKey)
                         else -> null
                     }
-                    onSave(CallVoiceProfile(id, name, endpoint = endpoint, model = model, speaker = speaker,
+                    onSave(CallVoiceProfile(id, name, protocol = protocol, endpoint = endpoint, model = model, speaker = speaker,
                         credentialsConfigured = configured, connectionTested = profile?.connectionTested == true), credentials)
                 },
                 enabled = valid && !externalBusy,

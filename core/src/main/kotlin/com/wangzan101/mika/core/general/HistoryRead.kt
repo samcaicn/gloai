@@ -164,7 +164,8 @@ internal object HistoryRead : AgentTool {
 
     private fun progress(e: RunEvent.Criteria): String = buildString {
         if (e.criteria.isNotEmpty()) append("Acceptance: ").append(e.criteria.joinToString("; "))
-        e.progress?.let { p ->
+        e.confirmedIds?.let { ids -> append("\nConfirmed goals: ").append(ids.size).append('/').append(e.criteria.size) }
+        e.progress?.takeIf { e.confirmedIds == null }?.let { p ->
             if (isNotEmpty()) append('\n')
             append("Confirmed progress: ").append(p.name)
             if (p.done != null) append(' ').append(p.done)

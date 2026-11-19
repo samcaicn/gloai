@@ -69,6 +69,15 @@
     <string name="task_too_old">يتطلب التحكم بتطبيقات الهاتف Android 12 أو أحدث. وما زالت مهام المحادثة والويب وبيئة العزل متاحة.</string>
     <string name="task_shell_died">انقطع اتصال مساعد التحكم بالهاتف وأُغلقت الشاشة الافتراضية. حاول مجددًا بعد إعادة الاتصال.</string>
     <string name="task_running">قيد التشغيل</string>
+    <string name="chip_thinking">جارٍ التفكير</string>
+    <string name="chip_read_screen">قراءة الشاشة</string>
+    <string name="chip_use_phone">استخدام الهاتف</string>
+    <string name="chip_browse">تصفح الويب</string>
+    <string name="chip_take_over">تولّ التحكم</string>
+    <string name="chip_route_step">خطوة %1$d/%2$d</string>
+    <string name="chip_count">%1$d/%2$d</string>
+    <string name="chip_done">تم: %1$d</string>
+    <string name="chip_wait_app">بانتظار التطبيق</string>
     <string name="channel_task_accepted">تم الاستلام — سُجّلت المهمة.</string>
     <string name="task_step_note">الخطوة %1$d: %2$s</string>
     <string name="task_wait_unlock">بانتظار إلغاء القفل</string>

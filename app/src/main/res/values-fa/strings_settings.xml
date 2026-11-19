@@ -63,6 +63,8 @@
     <string name="settings_notif_master">همهٔ اعلان‌ها</string>
     <string name="settings_allowed">مجاز</string>
     <string name="settings_task_notifs">اعلان‌های کار</string>
+    <string name="settings_live_task_updates">اعلان زندهٔ کارها</string>
+    <string name="settings_live_task_updates_detail">انتخاب کنید که کارهای در حال اجرا در نوار وضعیت نمایش داده شوند یا نه</string>
     <string name="settings_keep_on">روشن نگه داشتن صفحه</string>
     <string name="settings_keep_on_sub">هنگام اجرای کار صفحه روشن می‌ماند (در صورت عدم استفاده ممکن است کم‌نور شود) و سپس به حالت عادی برمی‌گردد</string>
     <string name="settings_mute">بی‌صدا کردن برنامهٔ در حال استفاده</string>

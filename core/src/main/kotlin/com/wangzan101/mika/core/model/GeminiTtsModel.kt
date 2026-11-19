@@ -54,7 +54,7 @@ class GeminiTtsModel(
         }
         val req = Request.Builder().url(endpoint)
             .withHeaders(headers)
-            .header("x-goog-api-key", apiKey)
+            .headerOrReject("x-goog-api-key", apiKey)
             .postInference(InferenceProtocol.Gemini, payload)
             .build()
         val response = HttpSupport.execute(http, req)
@@ -87,8 +87,7 @@ class GeminiTtsModel(
                     val rate = pcmRateOf(declared)
                     TtsResponse(wrapPcm16Wav(bytes, rate), "audio/wav", rate)
                 } else {
-                    val mime = sniffAudioMime(bytes) ?: declared?.substringBefore(';')?.takeIf { it.startsWith("audio/") }
-                        ?: throw TtsError.BadAudio("response is not a known audio format")
+                    val mime = audioMimeOrBad(bytes, declared)
                     TtsResponse(bytes, mime)
                 }
             }

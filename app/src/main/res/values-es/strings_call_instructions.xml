@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="call_instructions_title">Instrucciones para llamadas</string>
-    <string name="call_instructions_intro">Las instrucciones guardadas se aplican a futuras llamadas. Todas las activas se envían a Volcengine al preparar una llamada con IA, aunque no se conteste. Quien llama no puede modificarlas.</string>
+    <string name="call_instructions_intro">Las instrucciones guardadas se aplican a futuras llamadas. Todas las activas se envían a tu servicio de voz al preparar una llamada con IA, aunque no se conteste. Quien llama no puede modificarlas.</string>
     <string name="call_instructions_add">Añadir instrucción</string>
     <string name="call_instructions_empty">Indique qué puede decir el asistente y qué debe preguntar. Los cambios se aplican desde la próxima llamada.</string>
     <string name="call_instructions_heading">Título</string>

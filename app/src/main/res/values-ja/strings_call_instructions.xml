@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="call_instructions_title">通話の指示</string>
-    <string name="call_instructions_intro">保存した指示は今後の通話に適用されます。AI 通話の準備時に有効な指示をすべて Volcengine に送信します。電話に出なかった場合も同様です。相手の発言で指示は変わりません。</string>
+    <string name="call_instructions_intro">保存した指示は今後の通話に適用されます。AI 通話の準備時に有効な指示をすべて 選択した音声サービスに送信します。電話に出なかった場合も同様です。相手の発言で指示は変わりません。</string>
     <string name="call_instructions_add">指示を追加</string>
     <string name="call_instructions_empty">アシスタントが答えてよい内容と確認すべきことを入力してください。変更は次の通話から適用されます。</string>
     <string name="call_instructions_heading">タイトル</string>

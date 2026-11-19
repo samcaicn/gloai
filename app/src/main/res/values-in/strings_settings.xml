@@ -50,6 +50,8 @@
     <string name="settings_notif_master">Semua notifikasi</string>
     <string name="settings_allowed">Diizinkan</string>
     <string name="settings_task_notifs">Notifikasi tugas</string>
+    <string name="settings_live_task_updates">Pembaruan tugas langsung</string>
+    <string name="settings_live_task_updates_detail">Pilih apakah tugas yang sedang berjalan ditampilkan di bilah status</string>
     <string name="settings_keep_on">Biarkan layar menyala</string>
     <string name="settings_keep_on_sub">Layar tetap menyala selama tugas berjalan (tetap meredup seperti biasa saat tidak dipakai), lalu kembali normal</string>
     <string name="settings_mute">Bisukan aplikasi yang dipakai</string>

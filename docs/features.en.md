@@ -159,6 +159,12 @@ An empty conversation shows a few examples you can tap, edit and send. Or try so
 
 The FAQ now has its own page: [FAQ](faq.en.md). For phone control, see [Troubleshooting](setup-guide.en.md#troubleshooting) in the setup guide.
 
+## Use OpenAI Realtime for phone calls
+
+In Settings › AI phone calls › Settings › Realtime voice service, add a configuration, select OpenAI Realtime, and enter an OpenAI API key with Realtime access. The default model is `gpt-realtime` and the voice is `marin`. Save the configuration, test the connection, and select **Use as default** for incoming and outgoing calls. Call audio goes to OpenAI and may incur API usage charges.
+
+Before enabling auto-answer, manually answer a test call with Mika and check that both parties can hear each other.
+
 ## Follow up after an AI call
 
 Enable call summaries, tasks and message drafts in AI calling settings. After an AI call, the selected main model summarizes the available transcript and drafts a short WeChat follow-up in the same request. Calls without a transcript do not trigger generation; small talk, a refusal to be contacted or no useful follow-up may produce no draft.

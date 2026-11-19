@@ -11,6 +11,13 @@ class FakeBuiltinShellControl(
     override val status = MutableStateFlow(initial)
     override val pairingDiscovery = MutableStateFlow<PairingDiscovery>(PairingDiscovery.Idle)
     val calls = mutableListOf<String>()
+    override var shizukuStart: Boolean = false
+    override var transport: ShellTransport = ShellTransport.Auto
+
+    override fun selectTransport(transport: ShellTransport) {
+        calls += "transport=$transport"
+        this.transport = transport
+    }
 
     override fun startDiscovery() {
         calls += "discover"

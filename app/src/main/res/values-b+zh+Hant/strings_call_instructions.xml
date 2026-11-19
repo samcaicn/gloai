@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="call_instructions_title">接聽交代</string>
-    <string name="call_instructions_intro">已儲存的交代用於後續電話。準備 AI 通話時會將全部生效交代傳給火山，即使電話最後未接起。來電者的話不能修改交代。</string>
+    <string name="call_instructions_intro">已儲存的交代用於後續電話。準備 AI 通話時會將全部生效交代傳給所選語音服務，即使電話最後未接起。來電者的話不能修改交代。</string>
     <string name="call_instructions_add">新增交代</string>
     <string name="call_instructions_empty">寫下助理可以怎麼回、需要問清什麼。修改從下一通電話生效。</string>
     <string name="call_instructions_heading">標題</string>

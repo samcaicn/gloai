@@ -61,6 +61,32 @@ class ChatViewModelTest {
 
     @get:Rule val tmp = TemporaryFolder()
 
+    @Test fun readAloudReportsFailureAndAllowsRetry() = runTest {
+        val errors = mutableListOf<String>()
+        var attempts = 0
+        val vm = ChatViewModel(backgroundScope, state, stage, actions, ConversationStore(tmp.newFolder()),
+            speakText = { if (++attempts == 1) throw java.io.IOException("offline") },
+            voiceFailed = errors::add)
+        vm.speak("你好")
+        runCurrent()
+        assertEquals(1, errors.size)
+        assertTrue(errors.single().contains("offline"))
+        vm.speak("再试一次")
+        runCurrent()
+        assertEquals(2, attempts)
+        assertEquals(1, errors.size)
+    }
+
+    @Test fun readAloudCancellationDoesNotBecomeAPlaybackError() = runTest {
+        val errors = mutableListOf<String>()
+        val vm = ChatViewModel(backgroundScope, state, stage, actions, ConversationStore(tmp.newFolder()),
+            speakText = { throw kotlinx.coroutines.CancellationException("stopped") },
+            voiceFailed = errors::add)
+        vm.speak("你好")
+        runCurrent()
+        assertTrue(errors.isEmpty())
+    }
+
     private val state = MutableStateFlow<TaskState>(TaskState.Idle)
     private val stage = MutableStateFlow(Takeover.Stage.None)
     private val calls = mutableListOf<String>()

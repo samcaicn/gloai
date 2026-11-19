@@ -60,6 +60,15 @@
     <string name="task_too_old">O controle de apps do celular exige Android 12 ou superior. Conversa, web e tarefas no sandbox continuam disponíveis.</string>
     <string name="task_shell_died">O assistente de controle do celular desconectou e a tela virtual fechou. Tente de novo quando ele reconectar.</string>
     <string name="task_running">Em execução</string>
+    <string name="chip_thinking">Pensando</string>
+    <string name="chip_read_screen">Lendo a tela</string>
+    <string name="chip_use_phone">Usando o celular</string>
+    <string name="chip_browse">Navegando</string>
+    <string name="chip_take_over">Assuma o controle</string>
+    <string name="chip_route_step">Etapa %1$d/%2$d</string>
+    <string name="chip_count">%1$d/%2$d</string>
+    <string name="chip_done">Feito: %1$d</string>
+    <string name="chip_wait_app">Aguardando app</string>
     <string name="channel_task_accepted">Recebido: a tarefa foi registrada.</string>
     <string name="task_step_note">Passo %1$d: %2$s</string>
     <string name="task_wait_unlock">Aguardando desbloqueio</string>

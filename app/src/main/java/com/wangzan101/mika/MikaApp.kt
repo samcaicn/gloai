@@ -51,6 +51,7 @@ import com.wangzan101.mika.task.TaskCenterState
 import com.wangzan101.mika.teach.TeachRuntime
 import com.wangzan101.mika.ui.ChatViewModel
 import com.wangzan101.mika.ui.TaskActions
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -77,7 +78,8 @@ import com.wangzan101.mika.task.TriggerRuntime
  * 其余代码经构造参数拿到。助手进程(HelperMain、ShellService)没有这个对象,不用这里的任何服务。
  */
 class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, PhoneServices.Owner,
-    MemoryRuntime.Owner, ProviderStore.Owner, FileRouteStore.Owner, TaskRecovery.Owner {
+    MemoryRuntime.Owner, ProviderStore.Owner, FileRouteStore.Owner, TaskRecovery.Owner,
+    com.wangzan101.mika.settings.VoiceSettings.Owner {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /** 手机能力的服务:内置助手、共用的 shell 连接、配对、「去设置」提示。 */
@@ -354,7 +356,9 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
 
     /** Mika 自己的朗读播放器:全进程一个,聊天里的「朗读」和设置页的测试共用。 */
     val voicePlayer by lazy { com.wangzan101.mika.voice.VoicePlayer(this) }
-    private val voiceSettings by lazy { com.wangzan101.mika.settings.VoiceSettings.get(this) }
+    override val voiceSettings by lazy {
+        com.wangzan101.mika.settings.VoiceSettings(getSharedPreferences(FeatureFlags.PREFS, MODE_PRIVATE))
+    }
 
     /** 播放工作区里的一段音频(生成结果);读不到时什么都不做。 */
     private suspend fun playWorkspaceAudio(conversationId: String, path: String) {
@@ -374,21 +378,20 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
         voicePlayer.play(bytes, mime)
     }
 
-    /** 合成一句话并在本机播放;没配置声音模型或合成失败时什么都不做。 */
+    /** 合成一句话并在本机播放;总开关关闭或没配置声音模型时跳过。 */
     private suspend fun speak(text: String) {
-        val state = voiceSettings.state.value
-        val choice = state.choice ?: return
-        val caps = voiceSettings.capabilities() ?: return
-        val tts = ProviderStore.get(this).ttsModel(choice, caps) ?: return
-        val response = tts.synthesize(
-            com.wangzan101.mika.core.model.TtsRequest(
-                text.take(state.maxCharsPerSpeak),
-                choice.voice.ifBlank { null },
-                choice.speed,
-                "wav",
-            ),
-        )
-        voicePlayer.play(response.bytes, response.mime)
+        try {
+            com.wangzan101.mika.media.readAloud(
+                text,
+                voiceSettings,
+                model = { choice, caps -> ProviderStore.get(this).ttsModel(choice, caps) },
+                play = { voicePlayer.play(it.bytes, it.mime) },
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // 朗读失败不应让聊天页的协程因服务商响应或配置问题退出。
+        }
     }
 
     /** 人工示范。onCreate 里建好；在那之前的无障碍事件不采集。 */
@@ -489,11 +492,12 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             },
             voiceReady = voiceSettings.state.map { it.enabled && it.choice != null }
                 .stateIn(scope, SharingStarted.Eagerly, voiceSettings.state.value.enabled && voiceSettings.state.value.choice != null),
-            autoRead = voiceSettings.state.map { it.autoRead }
-                .stateIn(scope, SharingStarted.Eagerly, voiceSettings.state.value.autoRead),
+            autoRead = voiceSettings.state.map { it.enabled && it.autoRead }
+                .stateIn(scope, SharingStarted.Eagerly, voiceSettings.state.value.let { it.enabled && it.autoRead }),
             voicePlayback = voicePlayer.state,
             speakText = { text -> speak(text) },
             stopVoice = { voicePlayer.stop() },
+            voiceFailed = voicePlayer::fail,
             personaStore = if (FeatureFlags.get(this).persona()) personas else null,
         )
     }

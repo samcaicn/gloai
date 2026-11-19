@@ -49,7 +49,7 @@ class VoiceBriefingControllerTest {
         }
         fun loseFocus() { onFailure?.invoke("音频焦点已失去，未拨号") }
         override fun enqueue(pcm: ByteArray) = Unit
-        override fun interrupt() { interrupts++ }
+        override fun interrupt(): Long { interrupts++; return 0L }
         override fun stopImmediately() { stopped = true }
         override suspend fun close() { closed = true }
     }

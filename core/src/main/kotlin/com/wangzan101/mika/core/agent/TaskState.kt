@@ -3,6 +3,9 @@ package com.wangzan101.mika.core.agent
 import com.wangzan101.mika.core.gate.ConfirmationRequest
 import com.wangzan101.mika.core.verify.AnswerSource
 
+/** 按首轮清单的顺序编号（从 1 开始）；仅包含模型已用证据确认的目标。 */
+data class GoalChecklist(val items: List<String>, val confirmed: Set<Int>, val stale: Boolean)
+
 /** 不经模型、一下做好几步时的进度,任务卡片和通知据此写明在干什么。 */
 sealed interface RunProgress {
     /** 照着记住的路线做,正在做第 [step]/[total] 步。 */
@@ -10,7 +13,7 @@ sealed interface RunProgress {
     /** 一次执行模型给的 [steps] 步(do_steps)。 */
     data class Batch(val steps: Int) : RunProgress
     /** 主模型随工作回报的任务数量/边界进度;[name] 与 [boundary] 已按用户语言书写。 */
-    data class Task(val name: String, val done: Int?, val total: Int?, val boundary: String?) : RunProgress {
+    data class Task(val name: String, val done: Int?, val total: Int?, val boundary: String?, val goals: GoalChecklist? = null) : RunProgress {
         val display: String get() = listOfNotNull(
             name.ifBlank { null },
             done?.let { d -> total?.let { "$d/$it" } ?: d.toString() },

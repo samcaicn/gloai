@@ -43,7 +43,7 @@ class OpenAiSpeechModel(
         }
         val req = Request.Builder().url(endpoint)
             .withHeaders(headers)
-            .apply { if (!apiKey.isNullOrEmpty()) header("Authorization", "Bearer $apiKey") }
+            .apply { if (!apiKey.isNullOrEmpty()) headerOrReject("Authorization", "Bearer $apiKey") }
             .post(payload.toString().toRequestBody(json))
             .build()
         return withContext(Dispatchers.IO) {
@@ -60,9 +60,7 @@ class OpenAiSpeechModel(
                     if (format == "pcm") {
                         return@use TtsResponse(wrapPcm16Wav(bytes, 24_000), "audio/wav", 24_000)
                     }
-                    val mime = sniffAudioMime(bytes)
-                        ?: resp.header("Content-Type")?.substringBefore(';')?.takeIf { it.startsWith("audio/") }
-                        ?: throw TtsError.BadAudio("response is not a known audio format")
+                    val mime = audioMimeOrBad(bytes, resp.header("Content-Type"))
                     TtsResponse(bytes, mime)
                 }
             } catch (e: IOException) {

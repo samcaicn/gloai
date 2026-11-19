@@ -6,7 +6,6 @@ import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.Attachments
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.sandbox.SandboxState
-import com.wangzan101.mika.core.agent.AttachmentLines
 import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.wechat.WechatApi
@@ -27,10 +26,13 @@ import java.net.URI
 import java.security.MessageDigest
 import java.util.UUID
 
+sealed interface WechatImageSource
+data class DownloadWechatImage(val image: WechatImage) : WechatImageSource
+
 /** Media stays in the host; the generic task input contains only ordinary workspace attachment paths. */
 interface WechatImageFiles {
-    suspend fun receive(peer: ChannelPeer, messageId: String, text: String, images: List<WechatImage>,
-        accept: (String) -> Boolean): Boolean
+    suspend fun receive(peer: ChannelPeer, images: List<WechatImageSource>,
+        accept: (List<SavedWechatImage>) -> Boolean): Boolean
     suspend fun read(image: Delivery.Image): ByteArray
 }
 
@@ -58,18 +60,26 @@ internal class StoredWechatImages(
     private val room: (String) -> Boolean,
     private val openExport: (String) -> InputStream?,
 ) : WechatImageFiles {
-    override suspend fun receive(peer: ChannelPeer, messageId: String, text: String, images: List<WechatImage>,
-        accept: (String) -> Boolean): Boolean = withContext(Dispatchers.IO) {
+    override suspend fun receive(peer: ChannelPeer, images: List<WechatImageSource>,
+        accept: (List<SavedWechatImage>) -> Boolean): Boolean = withContext(Dispatchers.IO) {
         if (images.isEmpty() || images.size > WechatImages.MAX_IMAGES) throw IOException("Image count limit exceeded")
+        val downloads = images.filterIsInstance<DownloadWechatImage>()
+        if (downloads.isEmpty()) return@withContext tree.shared {
+            val stored = images.filterIsInstance<SavedWechatImage>()
+            stored.forEach { verify(peer, it) }
+            accept(stored)
+        }
         if (!room(peer.threadId)) throw IOException("Not enough space for images")
         val batch = File(tempDir, "receive-${UUID.randomUUID()}")
         if (!batch.mkdirs()) throw IOException("Cannot stage images")
         try {
-            val sources = images.mapIndexed { index, image ->
+            val hashes = mutableListOf<String>()
+            val sources = downloads.mapIndexed { index, source ->
                 currentCoroutineContext().ensureActive()
                 if (!room(peer.threadId)) throw IOException("Not enough space for images")
-                val prepared = prepare(download(image))
+                val prepared = prepare(download(source.image))
                 currentCoroutineContext().ensureActive()
+                hashes += sha256(prepared.bytes)
                 val name = "wechat-${index + 1}.${prepared.extension}"
                 name to File(batch, name).apply { writeBytes(prepared.bytes) }
             }
@@ -77,17 +87,35 @@ internal class StoredWechatImages(
             Attachments.withTaskFiles(sources, workspace(peer.threadId), gate, tree, { room(peer.threadId) }) { stored ->
                 taskContext.ensureActive()
                 if (!room(peer.threadId)) throw IOException("Not enough space for images")
-                if (!accept(AttachmentLines.composeBytes(text, stored))) throw DiscardedImageBatch()
+                val imported = stored.mapIndexed { index, (path, size) -> SavedWechatImage(path, size, hashes[index]) }.iterator()
+                val ordered = images.map {
+                    when (it) {
+                        is DownloadWechatImage -> imported.next()
+                        is SavedWechatImage -> it.also { file -> verify(peer, file) }
+                    }
+                }
+                if (!accept(ordered)) throw DiscardedImageBatch()
                 true
             }
         } catch (_: DiscardedImageBatch) { false }
         finally { batch.deleteRecursively() }
     }
 
+    private fun verify(peer: ChannelPeer, image: SavedWechatImage) {
+        if (image.bytes !in 1L..WechatImages.MAX_BYTES.toLong()) throw IOException("Invalid cached image size")
+        gate.openRead(workspace(peer.threadId), image.path.removePrefix("/workspace/"), under = "inbox").use { file ->
+            if (file.size != image.bytes || sha256(file.read(0, image.bytes.toInt())) != image.sha256)
+                throw IOException("The quoted image has changed")
+        }
+    }
+
     override suspend fun read(image: Delivery.Image): ByteArray = withContext(Dispatchers.IO) {
         readWechatExport(image, openExport)
     }
 }
+
+private fun sha256(bytes: ByteArray) =
+    MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
 private class DiscardedImageBatch : RuntimeException()
 
@@ -111,7 +139,7 @@ internal suspend fun readWechatExport(image: Delivery.Image, open: (String) -> I
         out.toByteArray()
     }
     image.sha256?.let { expected ->
-        val actual = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+        val actual = sha256(bytes)
         if (!actual.equals(expected, ignoreCase = true)) throw IOException("Image export changed")
     }
     WechatImages.validate(bytes)
