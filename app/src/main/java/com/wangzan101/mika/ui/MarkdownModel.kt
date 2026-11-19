@@ -99,6 +99,27 @@ object MarkdownModel {
      */
     fun toPlainText(markdown: String): String = blocksText(parse(markdown)).trim()
 
+    /** 回复里 Markdown 图片 `![..]` 与链接 `[..]` 的地址中以 `/workspace` 开头者,按出现顺序去重返回。 */
+    fun workspaceRefs(markdown: String): List<String> = try {
+        val out = LinkedHashSet<String>()
+        fun visit(n: Node) {
+            val dest = when (n) {
+                is Image -> n.destination
+                is Link -> n.destination
+                else -> null
+            }
+            if (dest != null && dest.startsWith("/workspace")) out.add(dest)
+            var c = n.firstChild
+            while (c != null) { visit(c); c = c.next }
+        }
+        visit(parser.parse(markdown))
+        out.toList()
+    } catch (e: Exception) {
+        emptyList()
+    } catch (e: StackOverflowError) {
+        emptyList()
+    }
+
     private fun blocksText(blocks: List<MdBlock>, sep: String = "\n\n"): String = blocks.mapNotNull { b ->
         when (b) {
             is MdBlock.Para -> b.text.text

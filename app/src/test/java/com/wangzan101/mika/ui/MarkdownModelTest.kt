@@ -129,4 +129,22 @@ class MarkdownModelTest {
         assertEquals("名称 · 价格", pendingTable.text)
         assertTrue(MarkdownModel.parseStreaming("| 名称 | 价格 |\n|---|---|\n| 苹果 | 5 |").single() is MdBlock.Table)
     }
+
+    @Test
+    fun workspaceRefsExtractsImageAndLink() {
+        assertEquals(
+            listOf("/workspace/a.png", "/workspace/b.csv"),
+            MarkdownModel.workspaceRefs("看图 ![图](/workspace/a.png) 和 [报告](/workspace/b.csv)"),
+        )
+    }
+
+    @Test
+    fun workspaceRefsIgnoresBareTextAndHttp() {
+        assertEquals(emptyList<String>(), MarkdownModel.workspaceRefs("文件在 /workspace/c 里，外链 https://x.com/a.png"))
+    }
+
+    @Test
+    fun workspaceRefsDeduplicates() {
+        assertEquals(listOf("/workspace/a.png"), MarkdownModel.workspaceRefs("![x](/workspace/a.png) ![y](/workspace/a.png)"))
+    }
 }
