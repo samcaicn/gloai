@@ -60,6 +60,7 @@ class ActionExecutor(
     autonomous: Boolean = false,
     /** 同一网站、App 里连着做对外动作(发送、提交)时两次之间的间隔(见 [OutwardPacing]);默认不等。 */
     private val pacing: OutwardPacing = OutwardPacing.Off,
+    private val onScreenAction: ((Verb?, JsonObject, ToolExecution) -> Unit)? = null,
 ) {
     private val decision = ConfirmDecision(tools, confirmations, approvals, recorder = recorder, provenance = provenance, selfPackage = selfPackage, autonomous = autonomous)
     private val pass = ActionPass()
@@ -253,6 +254,8 @@ class ActionExecutor(
             }
         }
         val (exec, content) = s.followUp.present(resolved, s.before + after)
+
+        if (!s.offScreen) onScreenAction?.invoke(s.verb, s.args, exec)
 
         // 画面:模型单步交给调用方按它的顺序存;子步界面变了才当场存;回放不存
         val picture = if (policy.frames == Frames.Caller && s.verb != Verb.ViewPastScreens && !s.offScreen) exec.image ?: exec.frame else null

@@ -41,6 +41,7 @@ import com.wangzan101.mika.cap.phone.a11y.launchableApps
 import com.wangzan101.mika.confirm.ConfirmationNotifier
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.core.action.ConfirmChoice
+import com.wangzan101.mika.core.agent.TaskStages
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.SystemPrompt
 import com.wangzan101.mika.core.prompt.PersonaPrompt
@@ -175,6 +176,12 @@ class TaskRun(
     val slot: Int = 0,
     val parallel: Boolean = false,
 ) {
+    internal val chipStages = TaskStages {
+        try { service.refreshNotifications(this) } catch (e: RuntimeException) {
+            // The action already ran. A notification failure must never turn it into a failed tool call.
+            Log.w(TAG, "could not refresh stage notification", e)
+        }
+    }
     internal var provenance = RunProvenance()
     internal var triggerWindowKey: String? = null
     internal var triggerActionGoal: String? = null
@@ -1035,6 +1042,7 @@ class TaskRun(
                 interaction = service.interaction(conversationId, channelPeer),
                 profileSnapshot = profileSnapshot,
                 streamReplies = true,
+                stages = chipStages.takeIf { Build.VERSION.SDK_INT >= 36 && provenance.origin == RunOrigin.Ui },
                 userScreens = userScreens,
                 // 同一网站、App 里连着联系别人、提交:两次之间隔一段随机的时间
                 outwardPacing = OutwardPacing.human(),

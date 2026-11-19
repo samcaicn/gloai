@@ -230,3 +230,6 @@ The page did not allow screenshots, so you cannot see it. Say so in one line and
 ## history_hint
 {{turns}}
 What Mika read and found in these turns is kept: history_read lists them and reads one turn's notes and gathered text, so reuse it instead of gathering it again.
+
+## stage_hint
+Display stages: current {{number}} {{current}}, next {{next}} {{goal}}. When starting that next outcome, include "stage":{{next}} inside <task_progress> with the ordinary tool call. A display stage never confirms a goal.

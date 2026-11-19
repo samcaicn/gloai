@@ -156,7 +156,7 @@ class AgentLoop(
     /** 大小模型分工;只在 flags.lightSteps 打开时用。 */
     router: ModelRouter? = null,
     /** UI 对话第一次要用工具时的独立意图判断；null 保留评测与其他入口的原行为。 */
-    intentJudge: ChatModel? = null,
+    private val intentJudge: ChatModel? = null,
     /** 可选的类型化意图判断;不确定或失败时仍问 intentJudge,不替代主模型与执行关卡。 */
     intentDecision: com.wangzan101.mika.core.decision.DecisionModel? = null,
     /** 经验回放的路线匹配;只在 flags.replay 打开时用。 */
@@ -193,6 +193,7 @@ class AgentLoop(
     private val promptTransform: (suspend (String) -> String)? = null,
     /** 这一轮用的人格(名字 · 修订号);只写进运行记录,不参与提示词拼装。没有人格为 null。 */
     private val personaLabel: String? = null,
+    private val stages: TaskStages? = null,
 ) {
     init {
         require(maxSteps > 0) { "maxSteps must be positive" }
@@ -449,7 +450,7 @@ class AgentLoop(
         val recorder = ActionRecorder(sink, clock, saveScreen = { id, png -> sink.media(id, png) })
         val executor = ActionExecutor(tools, guards, confirmations, gate = ::awaitGate, recorder = recorder, offScreen = tools.offScreenGuard(), approvals = approvals,
             provenance = provenance,
-            selfPackage = selfPackage, autonomous = autonomous, pacing = outwardPacing)
+            selfPackage = selfPackage, autonomous = autonomous, pacing = outwardPacing, onScreenAction = stages?.let { it::action })
         var emptyNudged = false
         // 调过工具才有可核对的材料;交给用户付款和放行过对外动作一样,回答要另请核查
         var acted = false
@@ -471,6 +472,7 @@ class AgentLoop(
         val installed = try { installedApps() } catch (e: CancellationException) { throw e } catch (e: Exception) { emptyList() }
         val labels = installed.toMap()
         val matched = knowledge?.matchTask(task, Int.MAX_VALUE, installed).orEmpty()
+        stages?.prepare(latestWords, installed, matched)
         val index = if (skills != null && recommendSkills) GuideRecommender.index(skills, task) else null
         val start = ctx.start(
             task, priorTurns = context?.let { (it.parts.single() as Part.Text).text }?.let { prior ->
@@ -562,6 +564,7 @@ class AgentLoop(
                 }
             }
             val rawText = reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim()
+            CompletionPlanBlock.extract(rawText).stage?.let { stages?.reported(it) }
             val text = progress.accept(rawText, step)
             val cleanParts = cleanReplyParts(reply.parts, text)
             history += Message(Role.Assistant, cleanParts, Author.Mika).also { caller.noteReply(it, used, reply.usage) }
@@ -651,6 +654,9 @@ class AgentLoop(
             answered = null
 
             val first = calls.first()
+            if (stages != null && tools.verb(first.name) !in setOf(Verb.AskUser, Verb.RequestConfirmation, Verb.HandToUser)) {
+                stages.planIfNeeded(latestWords, intentJudge ?: model)
+            }
             trace?.toolStarted(step, first.name, first.id, now())
             val skipped = calls.drop(1).map {
                 Part.ToolResult(it.id, buildJsonObject {
@@ -824,7 +830,8 @@ class AgentLoop(
      */
     private suspend fun appendRuntimeState(history: MutableList<Message>, place: Place?, labels: Map<String, String>, step: Int, pending: String?) {
         val mode = if (place?.kind == PlaceKind.Site) tools.placeMode() else null
-        val state = ctx.runtimeState(place, place?.name?.let(labels::get), mode, step, maxSteps, now(), latestWords, pending)
+        val state = ctx.runtimeState(place, place?.name?.let(labels::get), mode, step, maxSteps, now(), latestWords,
+            listOfNotNull(pending, stages?.hint()).takeIf { it.isNotEmpty() }?.joinToString("\n"))
         val last = history.lastOrNull()
         if (last == null || last.role == Role.Assistant) history += Message(Role.User, listOf(state), Author.Mika)
         else history[history.lastIndex] = last.copy(parts = last.parts + state)
@@ -1049,6 +1056,7 @@ class AgentLoop(
                 return StopRules.closeoutFailed(closeout, maxSteps)
             }
             val text = progress.accept(reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim(), step)
+            CompletionPlanBlock.extract(reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim()).stage?.let { stages?.reported(it) }
             history += Message(Role.Assistant, cleanReplyParts(reply.parts, text), Author.Mika)
                 .also { caller.noteReply(it, caller.lastMainUsed, reply.usage) }
             val calls = reply.parts.filterIsInstance<Part.ToolCall>()

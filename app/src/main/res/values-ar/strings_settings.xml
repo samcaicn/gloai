@@ -60,6 +60,8 @@
     <string name="settings_notif_master">كل الإشعارات</string>
     <string name="settings_allowed">مسموح</string>
     <string name="settings_task_notifs">إشعارات المهام</string>
+    <string name="settings_live_task_updates">إشعارات المهام المباشرة</string>
+    <string name="settings_live_task_updates_detail">اختر ما إذا كنت تريد عرض المهام الجارية في شريط الحالة</string>
     <string name="settings_keep_on">إبقاء الشاشة قيد التشغيل</string>
     <string name="settings_keep_on_sub">تبقى الشاشة قيد التشغيل أثناء تنفيذ المهمة (وقد تخفت عند عدم استخدامها)، ثم تعود إلى وضعها المعتاد</string>
     <string name="settings_mute">كتم التطبيق المستخدم</string>

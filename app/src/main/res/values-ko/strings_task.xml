@@ -54,6 +54,15 @@
     <string name="task_too_old">휴대전화 앱 제어는 Android 12 이상이 필요해요. 채팅, 웹, 샌드박스 작업은 계속 쓸 수 있어요.</string>
     <string name="task_shell_died">휴대전화 제어 도우미의 연결이 끊겨 가상 화면이 닫혔어요. 다시 연결되면 시도하세요.</string>
     <string name="task_running">실행 중</string>
+    <string name="chip_thinking">생각 중</string>
+    <string name="chip_read_screen">화면 확인 중</string>
+    <string name="chip_use_phone">휴대폰 조작 중</string>
+    <string name="chip_browse">웹 탐색 중</string>
+    <string name="chip_take_over">직접 조작 필요</string>
+    <string name="chip_route_step">%1$d/%2$d단계</string>
+    <string name="chip_count">진행 %1$d/%2$d</string>
+    <string name="chip_done">완료 %1$d</string>
+    <string name="chip_wait_app">앱 대기 중</string>
     <string name="channel_task_accepted">확인했어요. 작업이 등록됐어요.</string>
     <string name="task_step_note">%1$d단계: %2$s</string>
     <string name="task_wait_unlock">잠금 해제 대기 중</string>

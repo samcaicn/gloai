@@ -54,6 +54,8 @@
     <string name="settings_notif_master">Todas as notificações</string>
     <string name="settings_allowed">Permitidas</string>
     <string name="settings_task_notifs">Notificações de tarefas</string>
+    <string name="settings_live_task_updates">Atualizações de tarefas em tempo real</string>
+    <string name="settings_live_task_updates_detail">Escolha se as tarefas em andamento aparecem na barra de status</string>
     <string name="settings_keep_on">Manter a tela ligada</string>
     <string name="settings_keep_on_sub">A tela fica ligada enquanto uma tarefa roda (escurece como sempre quando você não está usando) e depois volta ao normal</string>
     <string name="settings_mute">Silenciar o app em uso</string>

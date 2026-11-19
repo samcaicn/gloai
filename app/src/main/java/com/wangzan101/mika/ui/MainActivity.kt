@@ -279,6 +279,14 @@ class MainActivity : ComponentActivity() {
             Fix.OpenAttentionChannel -> openChannelSettings(TaskService.CHANNEL_ATTENTION)
             Fix.OpenResultChannel -> openChannelSettings(TaskService.CHANNEL_RESULT)
             Fix.OpenProgressChannel -> openChannelSettings(TaskService.CHANNEL_PROGRESS)
+            Fix.OpenLiveTaskSettings -> if (Build.VERSION.SDK_INT >= 36) {
+                try {
+                    startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+                } catch (_: ActivityNotFoundException) {
+                    openNotificationSettings()
+                }
+            } else openNotificationSettings()
             Fix.OpenPairingChannel -> openChannelSettings(PairingNotifier.ensureChannel(this).id)
             Fix.AddModel -> Unit // 设置页自己处理
             // 换页由 MikaRoot 处理

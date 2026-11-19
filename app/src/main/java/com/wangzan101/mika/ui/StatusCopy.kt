@@ -20,6 +20,7 @@ enum class Fix {
     OpenAccessibility, AllowNotifications, AddModel,
     /** 直接打开「需要你处理」/「任务结果」/「任务进度」频道的设置页,打开「在屏幕上弹出」;打不开退回应用通知总页。 */
     OpenAttentionChannel, OpenResultChannel, OpenProgressChannel,
+    OpenLiveTaskSettings,
     /** 「配对」通知频道的设置页:配对码要填在这类通知里。 */
     OpenPairingChannel,
     /** 本 App 的「应用信息」页:系统拦着不让开无障碍时,在这里允许受限制的设置。 */

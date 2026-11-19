@@ -54,6 +54,15 @@
     <string name="task_too_old">Kontrol aplikasi ponsel memerlukan Android 12 atau lebih baru. Tugas obrolan, web, dan sandbox tetap tersedia.</string>
     <string name="task_shell_died">Pembantu kontrol ponsel terputus dan layar virtual ditutup. Coba lagi setelah tersambung kembali.</string>
     <string name="task_running">Berjalan</string>
+    <string name="chip_thinking">Berpikir</string>
+    <string name="chip_read_screen">Membaca layar</string>
+    <string name="chip_use_phone">Mengoperasikan ponsel</string>
+    <string name="chip_browse">Menjelajah web</string>
+    <string name="chip_take_over">Ambil alih</string>
+    <string name="chip_route_step">Langkah %1$d/%2$d</string>
+    <string name="chip_count">%1$d/%2$d</string>
+    <string name="chip_done">Selesai: %1$d</string>
+    <string name="chip_wait_app">Menunggu aplikasi</string>
     <string name="channel_task_accepted">Diterima — tugas sudah didaftarkan.</string>
     <string name="task_step_note">Langkah %1$d: %2$s</string>
     <string name="task_wait_unlock">Menunggu dibuka kuncinya</string>

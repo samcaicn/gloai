@@ -181,10 +181,19 @@ class SettingsScreenTest {
         compose.onNodeWithText("只进通知栏").assertIsDisplayed()
         compose.onNodeWithText("已关闭").assertIsDisplayed()
         compose.onNodeWithText(StatusCopy.NOTIF_FOOTER).assertExists()
+        compose.onNodeWithText("实时任务通知").assertDoesNotExist()
         compose.onNodeWithText("需要你处理").performClick()
         compose.onNodeWithText("任务结果").performClick()
         compose.onNodeWithText("任务进度").performClick()
         assertEquals(listOf(Fix.OpenAttentionChannel, Fix.OpenResultChannel, Fix.OpenProgressChannel), fixes)
+    }
+
+    @Test
+    fun notificationsPageOpensLiveUpdatesOnAndroid16() {
+        val fixes = mutableListOf<Fix>()
+        compose.setContent { NotificationsScreen(ready.copy(sdkInt = 36), onFix = { fixes += it }, onBack = {}) }
+        compose.onNodeWithText("实时任务通知").performScrollTo().performClick()
+        assertEquals(listOf(Fix.OpenLiveTaskSettings), fixes)
     }
 
     /** 总开关关着:给「去打开」,三个频道都显示已关闭。 */

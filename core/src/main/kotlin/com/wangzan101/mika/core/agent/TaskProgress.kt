@@ -129,7 +129,7 @@ internal object CompletionPlanBlock {
     private val ROOT_KEYS = setOf("criteria", "metric", "complete", "confirmed")
     private val METRIC_KEYS = setOf("name", "done", "total", "boundary", "scope")
 
-    class Extracted(val text: String, val updates: List<CompletionUpdate>, val errors: List<String>)
+    class Extracted(val text: String, val updates: List<CompletionUpdate>, val errors: List<String>, val stage: Int?)
 
     /** 流式文字也可能只到半个开始标记；完整块和末尾未写完的块都不显示。 */
     fun visible(text: String): String {
@@ -150,6 +150,7 @@ internal object CompletionPlanBlock {
     fun extract(text: String): Extracted {
         val updates = mutableListOf<CompletionUpdate>()
         val errors = mutableListOf<String>()
+        val stages = mutableSetOf<Int>()
         BLOCK.findAll(text).forEach { match ->
             val body = match.groupValues[1].trim()
             if (body.length > MAX_BLOCK) {
@@ -157,17 +158,23 @@ internal object CompletionPlanBlock {
                 return@forEach
             }
             try {
-                updates += parse(body)
+                val root = Json.parseToJsonElement(body) as? JsonObject ?: throw IllegalArgumentException("task_progress must be a JSON object")
+                val progress = root - "stage"
+                if (progress.isNotEmpty() || "stage" !in root) updates += parse(JsonObject(progress))
+                if ("stage" in root) {
+                    val ordinal = (root["stage"] as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull
+                    require(ordinal != null && ordinal > 0) { "invalid stage ordinal" }
+                    stages += ordinal
+                }
             } catch (e: Exception) {
                 errors += e.message ?: "invalid task_progress block"
             }
         }
         if (incompleteStart(BLOCK.replace(text, "")) >= 0) errors += "unclosed task_progress block"
-        return Extracted(visible(text).trim(), updates, errors)
+        return Extracted(visible(text).trim(), updates, errors, stages.singleOrNull())
     }
 
-    private fun parse(body: String): CompletionUpdate {
-        val root = Json.parseToJsonElement(body) as? JsonObject ?: throw IllegalArgumentException("task_progress must be a JSON object")
+    private fun parse(root: JsonObject): CompletionUpdate {
         require(root.keys.all { it in ROOT_KEYS }) { "unknown task_progress field" }
         val criteria = root["criteria"]?.let { value ->
             val items = value as? JsonArray ?: throw IllegalArgumentException("criteria must be an array")

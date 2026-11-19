@@ -50,6 +50,8 @@
     <string name="settings_notif_master">모든 알림</string>
     <string name="settings_allowed">허용됨</string>
     <string name="settings_task_notifs">작업 알림</string>
+    <string name="settings_live_task_updates">실시간 작업 알림</string>
+    <string name="settings_live_task_updates_detail">진행 중인 작업을 상태 표시줄에 표시할지 선택하세요</string>
     <string name="settings_keep_on">화면 켜 두기</string>
     <string name="settings_keep_on_sub">작업이 실행되는 동안 화면이 켜져 있고(사용하지 않을 때는 평소처럼 어두워져요), 끝나면 원래대로 돌아가요</string>
     <string name="settings_mute">사용 중인 앱 음소거</string>

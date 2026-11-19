@@ -37,6 +37,7 @@ class ScriptedModel : ChatModel {
     @Volatile var intent: String? = null
 
     override suspend fun complete(system: String, messages: List<Message>, tools: List<ToolSpec>): ModelReply {
+        if (system == Prompts.role("task_stages")) return ModelReply(listOf(Part.Text("[]")), StopReason.EndTurn, null)
         // 回答交出前的核查:固定回答,不占脚本也不计次
         if (system == Verifier.PROMPT) {
             verifierRequests.incrementAndGet()

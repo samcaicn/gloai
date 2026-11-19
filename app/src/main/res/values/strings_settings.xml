@@ -63,6 +63,8 @@
     <string name="settings_notif_master">All notifications</string>
     <string name="settings_allowed">Allowed</string>
     <string name="settings_task_notifs">Task notifications</string>
+    <string name="settings_live_task_updates">Live task updates</string>
+    <string name="settings_live_task_updates_detail">Choose whether to show your running tasks in the status bar</string>
     <string name="settings_keep_on">Keep screen on</string>
     <string name="settings_keep_on_sub">The screen stays on while a task runs (it can still dim when you’re not using it), then goes back to normal</string>
     <string name="settings_mute">Mute the app being used</string>

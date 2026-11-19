@@ -54,6 +54,15 @@
     <string name="task_too_old">スマホのアプリの操作には Android 12 以降が必要です。チャット、ウェブ、サンドボックスのタスクは使えます。</string>
     <string name="task_shell_died">スマホの操作のヘルパーが切断され、仮想画面が閉じました。再接続したら、もう一度お試しください。</string>
     <string name="task_running">実行中</string>
+    <string name="chip_thinking">思考中</string>
+    <string name="chip_read_screen">画面を確認中</string>
+    <string name="chip_use_phone">端末を操作中</string>
+    <string name="chip_browse">ウェブ閲覧中</string>
+    <string name="chip_take_over">操作を引き継ぐ</string>
+    <string name="chip_route_step">手順 %1$d/%2$d</string>
+    <string name="chip_count">進捗 %1$d/%2$d</string>
+    <string name="chip_done">完了 %1$d</string>
+    <string name="chip_wait_app">アプリ待機中</string>
     <string name="channel_task_accepted">受け付けました。タスクを登録しました。</string>
     <string name="task_step_note">ステップ %1$d: %2$s</string>
     <string name="task_wait_unlock">ロック解除を待っています</string>

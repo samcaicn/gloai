@@ -56,6 +56,8 @@
     <string name="settings_notif_master">Все уведомления</string>
     <string name="settings_allowed">Разрешено</string>
     <string name="settings_task_notifs">Уведомления о задачах</string>
+    <string name="settings_live_task_updates">Уведомления о ходе задач</string>
+    <string name="settings_live_task_updates_detail">Выберите, показывать ли текущие задачи в строке состояния</string>
     <string name="settings_keep_on">Не выключать экран</string>
     <string name="settings_keep_on_sub">Пока выполняется задача, экран не гаснет (без действий он, как обычно, затемняется), а потом всё возвращается как было</string>
     <string name="settings_mute">Отключать звук используемого приложения</string>
