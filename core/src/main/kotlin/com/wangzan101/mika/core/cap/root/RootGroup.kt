@@ -3,7 +3,6 @@ package com.wangzan101.mika.core.cap.root
 import com.wangzan101.mika.core.action.ActionRisk
 import com.wangzan101.mika.core.action.Risk as ApprovalRisk
 import com.wangzan101.mika.core.tool.OutputClip
-import com.wangzan101.mika.core.gate.ConfirmationRequest
 import com.wangzan101.mika.core.observation.ObsKind
 import com.wangzan101.mika.core.observation.Observation
 import com.wangzan101.mika.core.observation.Place
@@ -11,7 +10,6 @@ import com.wangzan101.mika.core.observation.Trust
 import com.wangzan101.mika.core.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.risk.IrrevAction
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.Args
 import com.wangzan101.mika.core.tool.Risk
@@ -58,15 +56,12 @@ internal object RootRunCommand : AgentTool {
 
     override fun available(ctx: ToolContext) = ctx.rootPort != null
 
-    /** 只读的命令不用问;其余(含看不清的)是不在屏上、改了收不回的一步,申报就是这条命令本身。 */
+    /** 只读命令算只读;会改动的算不可逆(记进审批),但不再逐条问——用户打开「允许 root 命令」本身就是授权。 */
     override fun approvalRisk(args: JsonObject): ApprovalRisk {
         val command = (args["command"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty()
         return if (command.isNotEmpty() && RootCommandClass.classify(command) == RootCommandClass.Kind.ReadOnly) ApprovalRisk(ActionRisk.Read)
-        else ApprovalRisk(ActionRisk.Irreversible, ask = ask(command))
+        else ApprovalRisk(ActionRisk.Irreversible)
     }
-
-    /** 给用户看的申报:就是这条命令。 */
-    fun ask(command: String) = ConfirmationRequest(IrrevAction.other, "", command, null, ROOT_CONFIRM_APP)
 
     override suspend fun execute(a: Args, ctx: ToolContext): ToolExecution {
         val command = a.str("command", max = COMMAND_MAX)!!

@@ -1,10 +1,8 @@
 package com.wangzan101.mika.core.cap.root
 
-import com.wangzan101.mika.core.action.ConfirmChoice
 import com.wangzan101.mika.core.action.ApprovalSettings
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.FakeModel
-import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.assembly.knownToolNames
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.gate.ConfirmationGate
@@ -14,7 +12,6 @@ import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.record.RunEvent
 import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.risk.IrrevAction
 import com.wangzan101.mika.core.run.Attendance
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunInbox
@@ -24,8 +21,6 @@ import com.wangzan101.mika.core.run.RunSpec
 import com.wangzan101.mika.core.testing.answerReply
 import com.wangzan101.mika.core.tool.FakeScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -95,38 +90,14 @@ class RootCommandToolTest {
         assertTrue(sink.all.none { it is RunEvent.Confirmation })
     }
 
-    /** 会改的先问:卡片上是这条命令;同意了跑一次,再来一条一样的还要再问。 */
+    /** 会改的直接跑:用户打开「允许 root 命令」本身就是授权,不再逐条问。 */
     @Test
-    fun changesAskFirstAndRunOnceApproved() = runTest {
+    fun changingCommandsRunWithoutAsking() = runTest {
         val port = FakeRoot()
         val m = FakeModel(root("rm /sdcard/Download/old.apk"), FINISH)
-        val l = loop(m, port)
-        val run = async { l.run("t") }
-        advanceUntilIdle()
-        val waiting = l.state.value as TaskState.WaitingConfirmation
-        assertEquals(ROOT_CONFIRM_APP, waiting.request.app)
-        assertEquals(IrrevAction.other, waiting.request.action)
-        assertEquals("rm /sdcard/Download/old.apk", waiting.request.content)
-        assertTrue(port.ran.isEmpty())
-        l.answerConfirmation(ConfirmChoice.Once)
-        run.await()
+        loop(m, port).run("t")
         assertEquals(listOf("rm /sdcard/Download/old.apk"), port.ran)
         assertEquals("true", m.result(1).s("ok"))
-    }
-
-    @Test
-    fun declinedChangesDoNotRun() = runTest {
-        val port = FakeRoot(); val sink = Events()
-        val m = FakeModel(root("pm uninstall com.example.app"), FINISH)
-        val l = loop(m, port, sink = sink)
-        val run = async { l.run("t") }
-        advanceUntilIdle()
-        l.answerConfirmation(ConfirmChoice.Deny)
-        run.await()
-        assertTrue(port.ran.isEmpty())
-        val r = m.result(1)
-        assertEquals("confirmation_declined", r.s("error"))
-        assertEquals("declined", sink.all.filterIsInstance<RunEvent.Confirmation>().last().decision)
     }
 
     @Test

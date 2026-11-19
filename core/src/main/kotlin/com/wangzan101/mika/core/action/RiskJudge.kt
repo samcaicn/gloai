@@ -37,7 +37,7 @@ object ClassifiedRisk : RiskJudge {
         // 金额是页面内容,不等于这一步要花钱。明确付款/下单始终拦;其余动作要有合计或付款面板等应付上下文。
         val payment = when (hit.action) {
             IrrevAction.pay, IrrevAction.order -> true
-            IrrevAction.send -> false
+            IrrevAction.send, IrrevAction.submit -> false
             else -> screen()?.let(IrreversibleDetector::hasPayableAmount) == true
         }
         return Risk(level, payment)
