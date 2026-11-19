@@ -334,7 +334,7 @@ fun ModelSetupContent(ui: ModelSetupUi, onboarding: Boolean, actions: ModelSetup
                 if (onboarding) {
                     Text(
                         ModelSetupCopy.LEAD, Modifier.padding(top = 4.dp, bottom = 12.dp),
-                        fontSize = 14.5.sp, lineHeight = 23.sp, color = c.ink2,
+                        style = MikaType.Body, color = c.ink2,
                     )
                 }
                 // 上手时先连服务商再选模型;设置里先看用途
@@ -406,7 +406,7 @@ private fun ProvidersSection(ui: ModelSetupUi, actions: ModelSetupActions) {
         Text(
             ModelSetupCopy.PICK_MAIN,
             Modifier.padding(start = 16.dp, bottom = 12.dp).clickable { actions.pickRole(ModelRole.Main) }.testTag("setup-pick-main").padding(vertical = 4.dp),
-            fontSize = 13.sp, fontWeight = FontWeight.Medium, color = c.accent,
+            style = MikaType.Label, color = c.accent,
         )
     }
     if (ui.showForm) AddProviderForm(ui, actions)
@@ -426,7 +426,7 @@ private fun AddProviderForm(ui: ModelSetupUi, actions: ModelSetupActions) {
         if (ui.providers.isNotEmpty()) {
             Text(
                 ModelSetupCopy.CANCEL, Modifier.clickable(onClick = actions.closeForm).padding(horizontal = 4.dp, vertical = 6.dp),
-                fontSize = 13.sp, color = c.accent,
+                style = MikaType.Caption, color = c.accent,
             )
         }
     }
@@ -476,7 +476,7 @@ private fun AddProviderForm(ui: ModelSetupUi, actions: ModelSetupActions) {
             clearDescription = stringResource(R.string.model_key_clear),
             clearModifier = Modifier.testTag("setup-api-key-clear"),
         ) {
-            Text(if (showKey) stringResource(R.string.hide) else stringResource(R.string.show), Modifier.clickable { showKey = !showKey }, fontSize = 13.sp, color = c.accent)
+            Text(if (showKey) stringResource(R.string.hide) else stringResource(R.string.show), Modifier.clickable { showKey = !showKey }, style = MikaType.Caption, color = c.accent)
         }
         if (f.showModel) {
             InputRow(
@@ -491,7 +491,7 @@ private fun AddProviderForm(ui: ModelSetupUi, actions: ModelSetupActions) {
         Text(
             if (f.manual) ModelSetupCopy.MANUAL_OFF else ModelSetupCopy.MANUAL_ON,
             Modifier.padding(start = 16.dp, top = 8.dp).clickable { actions.setManual(!f.manual) }.padding(vertical = 4.dp).testTag("setup-manual-model"),
-            fontSize = 13.sp, color = c.accent,
+            style = MikaType.Caption, color = c.accent,
         )
     }
     if (f.manual && !f.noList) FooterNote(ModelSetupCopy.MANUAL_NOTE, Modifier.testTag("setup-manual-note"))
@@ -508,7 +508,7 @@ private fun AddProviderForm(ui: ModelSetupUi, actions: ModelSetupActions) {
     (f.test as? ListState.Failed)?.let { failed ->
         Text(
             ModelSetupCopy.failed(failed.message), Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp).testTag("setup-test-failed"),
-            fontSize = 13.sp, lineHeight = 18.sp, color = c.bad,
+            style = MikaType.Caption, color = c.bad,
         )
     }
     // 试不成又想先存下的:做成按钮,不要藏成一行小字——它是个真实的动作,不是说明
@@ -558,7 +558,7 @@ private fun PresetSuggestion(f: AddForm, label: String, onUse: () -> Unit) {
     Text(
         ModelSetupCopy.usePreset(label),
         Modifier.padding(start = 16.dp, bottom = 12.dp).clickable(onClick = onUse).testTag("setup-use-preset").padding(vertical = 4.dp),
-        fontSize = 13.sp, fontWeight = FontWeight.Medium, color = c.accent,
+        style = MikaType.Label, color = c.accent,
     )
 }
 
@@ -754,7 +754,7 @@ internal fun Tags(o: ModelOption, forVision: Boolean = false, accent: Boolean = 
     }
 }
 
-internal val ModelIdStyle = MikaType.Body.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium, fontFamily = FontFamily.Monospace)
+internal val ModelIdStyle = MikaType.Value.copy(fontWeight = FontWeight.Medium, fontFamily = FontFamily.Monospace)
 
 /** 配置模型页(上手时)和添加服务商表单的文字(纯函数,便于测试)。用途的说法在 [ModelsCopy]。 */
 object ModelSetupCopy {

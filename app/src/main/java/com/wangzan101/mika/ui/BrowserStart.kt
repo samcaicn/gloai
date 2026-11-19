@@ -237,7 +237,7 @@ private fun BigSearchField(value: String, onChange: (String) -> Unit, onGo: () -
     }
 }
 
-private val BigText = MikaType.Body.copy(fontSize = 16.sp)
+private val BigText = MikaType.Body
 
 @Composable
 private fun Caption(text: String) {
@@ -549,6 +549,6 @@ private fun SearchMini(icon: ImageVector = MikaIcons.Search) {
 }
 
 private val TileShape = RoundedCornerShape(16.dp)
-private val InitialLarge = MikaType.Title.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+private val InitialLarge = MikaType.Title.copy(fontWeight = FontWeight.Bold)
 private const val WIGGLE_DEG = 1.5f
 private const val WIGGLE_MS = 250

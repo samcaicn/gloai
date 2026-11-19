@@ -56,6 +56,7 @@ import com.wangzan101.mika.ui.components.PageScaffold
 import com.wangzan101.mika.ui.components.RowValue
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
+import com.wangzan101.mika.ui.theme.MikaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -158,7 +159,7 @@ private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConver
                 if (open) ScreensCopy.HIDE_PREVIEW else ScreensCopy.PREVIEW,
                 Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
                     .clickable { open = !open }.testTag("screens-preview-${row.key}"),
-                fontSize = 13.sp, color = c.accent,
+                style = MikaType.Caption, color = c.accent,
             )
             if (open && frames != null) LiveFrame(frames)
         }

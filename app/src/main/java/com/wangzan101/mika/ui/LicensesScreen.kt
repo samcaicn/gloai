@@ -96,7 +96,7 @@ fun LicensesScreen(onBack: () -> Unit) {
             MikaCard(Modifier.padding(bottom = 12.dp).testTag("license-text")) {
                 Text(
                     licenseText.trimEnd(), Modifier.padding(16.dp),
-                    style = MikaType.Hint.copy(fontFamily = FontFamily.Monospace, fontSize = 11.5.sp, lineHeight = 19.sp),
+                    style = MikaType.Micro.copy(fontFamily = FontFamily.Monospace),
                     color = MikaTheme.colors.ink2,
                 )
             }

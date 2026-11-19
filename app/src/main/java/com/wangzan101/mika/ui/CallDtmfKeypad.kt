@@ -145,7 +145,7 @@ internal fun CallDtmfKeypadDialog(
                                     contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
                                     modifier = Modifier.weight(1f).heightIn(min = 56.dp).testTag("call-dtmf-key-$digit"),
                                 ) {
-                                    Text(digit.toString(), style = MikaType.Title.copy(fontSize = 24.sp, lineHeight = 30.sp), textAlign = TextAlign.Center)
+                                    Text(digit.toString(), style = MikaType.LargeTitle, textAlign = TextAlign.Center)
                                 }
                             }
                         }

@@ -648,9 +648,7 @@ internal fun FileLibraryScreen(
     if (savedElsewhere) AlertDialog(onDismissRequest = { savedElsewhere = false }, text = { Text(stringResource(R.string.file_library_draft_saved)) }, confirmButton = { TextButton(onClick = { savedElsewhere = false }) { Text(stringResource(R.string.done)) } })
 }
 
-internal val LibraryTitleStyle = TextStyle(
-    fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.4).sp,
-)
+internal val LibraryTitleStyle = MikaType.LargeTitle.copy(fontWeight = FontWeight.SemiBold, letterSpacing = (-0.4).sp)
 
 /** 文件库顶栏:返回、左对齐大标题、右边「多选」胶囊。 */
 @Composable
@@ -941,7 +939,7 @@ internal fun FileTypeTile(name: String) {
         Icon(icon, null, Modifier.size(22.dp), tint = c.ink2)
         Text(
             label, Modifier.padding(top = 2.dp),
-            style = TextStyle(fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.6.sp),
+            style = MikaType.Micro.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.6.sp),
             color = c.ink2, maxLines = 1,
         )
     }

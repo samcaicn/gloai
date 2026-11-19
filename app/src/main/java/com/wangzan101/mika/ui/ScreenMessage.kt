@@ -44,6 +44,7 @@ import com.wangzan101.mika.core.userscreen.UserScreen
 import com.wangzan101.mika.core.userscreen.UserScreenMessage
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
+import com.wangzan101.mika.ui.theme.MikaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -149,7 +150,7 @@ fun UserMessage(conversationId: String?, raw: String, thumbWidth: Dp, modifier: 
 }
 
 private val ThumbShape = RoundedCornerShape(10.dp)
-private val TagText = TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp)
+private val TagText = MikaType.Micro
 
 /** 一屏:缩略图和下面那一行;还没读到时先占着位置。 */
 @Composable
@@ -162,7 +163,7 @@ private fun ScreenItem(shown: ShownScreen?, width: Dp) {
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Icon(MikaIcons.Lock, null, Modifier.size(15.dp), tint = c.ink2)
-            Text(ScreenCopy.BLOCKED, style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2)
+            Text(ScreenCopy.BLOCKED, style = MikaType.Hint, color = c.ink2)
         }
         return
     }

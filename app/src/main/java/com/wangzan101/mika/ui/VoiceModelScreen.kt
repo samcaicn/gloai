@@ -33,6 +33,7 @@ import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.MikaSwitch
 import com.wangzan101.mika.ui.components.RadioRow
 import com.wangzan101.mika.ui.theme.MikaTheme
+import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.voice.VoicePlayback
 import com.wangzan101.mika.voice.VoicePlayer
 import kotlinx.coroutines.launch
@@ -58,7 +59,7 @@ fun VoiceModelScreen(store: ProviderStore, onBack: () -> Unit) {
     DisposableEffect(Unit) { onDispose { player.stop() } }
 
     Page(tr(R.string.role_voice), onBack) {
-        Text(tr(R.string.voice_hint), Modifier.padding(top = 4.dp, bottom = 12.dp), fontSize = 14.5.sp, lineHeight = 22.sp, color = c.ink2)
+        Text(tr(R.string.voice_hint), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
         GroupCard {
             ListRow(
                 null, tr(R.string.voice_enable), tr(R.string.voice_enable_note), first = true,

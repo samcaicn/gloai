@@ -509,12 +509,12 @@ private fun ParallelRow(p: ParallelSetting, onMax: (Int) -> Unit) {
         }
         Text(
             "−", Modifier.clickable(enabled = p.max > 1) { onMax(p.max - 1) }.padding(horizontal = 10.dp, vertical = 4.dp),
-            fontSize = 18.sp, color = if (p.max > 1) MikaTheme.colors.accent else MikaTheme.colors.ink3,
+            style = MikaType.Title, color = if (p.max > 1) MikaTheme.colors.accent else MikaTheme.colors.ink3,
         )
         RowValue(trPlural(R.plurals.settings_count_tasks, p.max))
         Text(
             "+", Modifier.clickable(enabled = p.max < 3) { onMax(p.max + 1) }.padding(horizontal = 10.dp, vertical = 4.dp),
-            fontSize = 18.sp, color = if (p.max < 3) MikaTheme.colors.accent else MikaTheme.colors.ink3,
+            style = MikaType.Title, color = if (p.max < 3) MikaTheme.colors.accent else MikaTheme.colors.ink3,
         )
     }
 }

@@ -482,12 +482,12 @@ private val CellShape = RoundedCornerShape(6.dp)
 private val ChipShape = RoundedCornerShape(12.dp)
 private val GridPhotoShape = RoundedCornerShape(14.dp)
 private val FileCardShape = RoundedCornerShape(14.dp)
-private val PanelText = TextStyle(fontSize = 13.5.sp, lineHeight = 21.sp)
-private val TileText = TextStyle(fontSize = 12.5.sp, lineHeight = 16.sp)
-private val LinkText = TextStyle(fontSize = 12.5.sp, lineHeight = 16.sp)
-private val BadgeText = TextStyle(fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold)
-private val BadgeSmall = TextStyle(fontSize = 8.5.sp, lineHeight = 10.sp, fontWeight = FontWeight.Bold)
-private val BadgeLarge = TextStyle(fontSize = 10.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold)
-private val ChipName = TextStyle(fontSize = 12.5.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
-private val ChipMeta = TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp)
-private val FileCardName = TextStyle(fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.Medium)
+private val PanelText = MikaType.Caption
+private val TileText = MikaType.Hint
+private val LinkText = MikaType.Hint
+private val BadgeText = MikaType.Hint.copy(fontWeight = FontWeight.SemiBold)
+private val BadgeSmall = MikaType.Micro.copy(fontWeight = FontWeight.Bold)
+private val BadgeLarge = MikaType.Micro.copy(fontWeight = FontWeight.Bold)
+private val ChipName = MikaType.Hint.copy(fontWeight = FontWeight.Medium)
+private val ChipMeta = MikaType.Micro
+private val FileCardName = MikaType.Body.copy(fontWeight = FontWeight.Medium)

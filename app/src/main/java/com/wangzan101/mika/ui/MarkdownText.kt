@@ -192,7 +192,7 @@ private fun TableBlock(t: MdBlock.Table, style: TextStyle) {
     val find = LocalFindHighlight.current
     val cols = t.header.size
     if (cols == 0) return
-    val cellStyle = style.copy(fontSize = 13.5.sp, lineHeight = 19.sp)
+    val cellStyle = style.copy(fontSize = 13.sp, lineHeight = 19.sp)
     val rows = listOf(t.header) + t.rows
     Box(Modifier.then(if (report) Modifier.clip(RoundedCornerShape(16.dp)).background(MikaTheme.colors.surface) else Modifier)
         .horizontalScroll(rememberScrollState())) {

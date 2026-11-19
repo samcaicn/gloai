@@ -76,7 +76,7 @@ fun TaskReportScreen(vm: TaskReportViewModel, onBack: () -> Unit, onReplay: (Int
                 item("document") {
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(c.surface).padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        Text(r.header.goal, style = MikaType.Title.copy(fontSize = 21.sp, lineHeight = 29.sp, fontWeight = FontWeight.Bold), color = c.ink)
+                        Text(r.header.goal, style = MikaType.Title.copy(fontWeight = FontWeight.Bold), color = c.ink)
                         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(c.accentSoft).height(IntrinsicSize.Min), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.width(3.dp).fillMaxHeight().background(c.accent))
                             Text(r.header.outcome, Modifier.weight(1f).padding(12.dp), style = MikaType.Label, color = c.accent)

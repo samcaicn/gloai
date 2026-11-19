@@ -205,11 +205,11 @@ fun PersonalAgentScreen(
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (user) Alignment.End else Alignment.Start) {
                         if (date != priorDate) {
                             Text(dayFormat.format(date), Modifier.align(Alignment.CenterHorizontally).padding(vertical = 8.dp),
-                                color = c.ink3, fontSize = 11.sp)
+                                color = c.ink3, style = MikaType.Micro)
                             Spacer(Modifier.height(12.dp))
                         }
                         if (task != null) Text(task.title + " · " + personalStatus(task),
-                            Modifier.padding(start = 4.dp, bottom = 6.dp), fontSize = 10.sp, color = c.ink2)
+                            Modifier.padding(start = 4.dp, bottom = 6.dp), style = MikaType.Micro, color = c.ink2)
                         val bubble = Modifier.fillMaxWidth(if (user) 0.8f else 1f)
                             .wrapContentWidth(if (user) Alignment.End else Alignment.Start)
                             .background(if (user) c.accent else c.answer, if (user) MikaShapes.UserBubble else MikaShapes.AnswerBubble)
@@ -219,8 +219,8 @@ fun PersonalAgentScreen(
                         } else {
                             PersonalReply(message.displayText(context), message.error, bubble)
                         }
-                        if (!message.handled) Text(stringResource(R.string.personal_received), Modifier.padding(top = 4.dp, end = 5.dp), fontSize = 10.sp, color = c.ink3)
-                        if (task != null) TextButton(onClick = { selectedTask = task.id }) { Text(stringResource(R.string.personal_view_task), fontSize = 12.sp) }
+                        if (!message.handled) Text(stringResource(R.string.personal_received), Modifier.padding(top = 4.dp, end = 5.dp), style = MikaType.Micro, color = c.ink3)
+                        if (task != null) TextButton(onClick = { selectedTask = task.id }) { Text(stringResource(R.string.personal_view_task), style = MikaType.Hint) }
                     }
                 }
                 item("bottom") { Spacer(Modifier.height(4.dp)) }

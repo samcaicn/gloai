@@ -97,7 +97,7 @@ val BROWSER_DESKTOP_TAG: String get() = tr(R.string.browser_desktop)
 val BROWSER_LOGIN_DONE: String get() = tr(R.string.browser_login_done)
 
 internal val MiniShape = RoundedCornerShape(8.dp)
-internal val InitialSmall = TextStyle(fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)
+internal val InitialSmall = MikaType.Caption.copy(fontWeight = FontWeight.Bold)
 
 /**
  * 网站的方块:有存下的网站图标就画在白底上;没有时是按主机名定的底色加名字的第一个字。
@@ -210,7 +210,7 @@ private fun AddressPill(page: BrowserPage, face: SiteFace?, engines: List<Search
     }
 }
 
-private val TagText = TextStyle(fontSize = 11.sp, lineHeight = 15.sp, fontWeight = FontWeight.SemiBold)
+private val TagText = MikaType.Micro.copy(fontWeight = FontWeight.SemiBold)
 
 /** 展开的地址栏:完整网址全选着,键盘上是「前往」。 */
 @Composable
@@ -229,7 +229,7 @@ private fun AddressEditor(url: String, modifier: Modifier, onGo: (String) -> Uni
             text, { text = it },
             Modifier.weight(1f).focusRequester(focus).testTag("browser-address"),
             singleLine = true,
-            textStyle = MikaType.Body.copy(fontSize = 14.5.sp, color = c.ink, textDirection = androidx.compose.ui.text.style.TextDirection.Content),
+            textStyle = MikaType.Body.copy(color = c.ink, textDirection = androidx.compose.ui.text.style.TextDirection.Content),
             cursorBrush = SolidColor(c.accent),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go, autoCorrectEnabled = false),
             keyboardActions = KeyboardActions(onGo = { onGo(text.text) }),

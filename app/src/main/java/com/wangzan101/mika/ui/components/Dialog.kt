@@ -49,7 +49,7 @@ fun MikaDialog(
             {
                 CompositionLocalProvider(
                     LocalContentColor provides c.ink,
-                    LocalTextStyle provides MikaType.Title.copy(fontSize = 20.sp, lineHeight = 26.sp),
+                    LocalTextStyle provides MikaType.Title,
                 ) { content() }
             }
         },
@@ -57,7 +57,7 @@ fun MikaDialog(
             {
                 CompositionLocalProvider(
                     LocalContentColor provides c.ink2,
-                    LocalTextStyle provides MikaType.Body.copy(fontSize = 14.5.sp, lineHeight = 23.sp),
+                    LocalTextStyle provides MikaType.Body,
                 ) { content() }
             }
         },

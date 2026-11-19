@@ -205,7 +205,7 @@ fun SpeechModelContent(
     val systemSelected = system.usable && (choice == SpeechChoice.System || choice == SpeechChoice.Auto)
     Page(tr(R.string.role_speech), onBack) {
         Text(
-            tr(R.string.speech_hint), Modifier.padding(top = 4.dp, bottom = 12.dp), fontSize = 14.5.sp, lineHeight = 22.sp, color = c.ink2,
+            tr(R.string.speech_hint), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2,
         )
         GroupCard {
             RadioRow(
@@ -317,7 +317,7 @@ fun DoubaoSetupPage(choice: SpeechChoice, configured: Boolean, actions: SpeechPi
     val credentials = DoubaoCredentials(if (legacy) "" else key.trim(), if (legacy) appId.trim() else "", if (legacy) token.trim() else "")
     val unchanged = key.isBlank() && appId.isBlank() && token.isBlank()
     Page(tr(R.string.speech_doubao_model), onBack) {
-        Text(tr(R.string.speech_doubao_setup_hint), Modifier.padding(top = 4.dp, bottom = 4.dp), fontSize = 14.5.sp, lineHeight = 22.sp, color = c.ink2)
+        Text(tr(R.string.speech_doubao_setup_hint), Modifier.padding(top = 4.dp, bottom = 4.dp), style = MikaType.Body, color = c.ink2)
         GroupLabel(tr(R.string.speech_doubao_credentials))
         SegmentedControl(
             listOf(tr(R.string.speech_doubao_new), tr(R.string.speech_doubao_legacy)), if (legacy) 1 else 0,

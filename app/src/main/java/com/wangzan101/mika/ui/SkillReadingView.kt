@@ -38,7 +38,7 @@ internal fun readingSections(blocks: List<MdBlock>): List<ReadingSection> = buil
 @Composable
 internal fun SkillReadingView(markdown: String) {
     val c = MikaTheme.colors
-    val body = MikaType.Body.copy(color = c.ink2, fontSize = 14.sp, lineHeight = 21.sp)
+    val body = MikaType.Body.copy(color = c.ink2)
     MarkdownDocument(markdown) { blocks ->
         Column(Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Spacer(Modifier.fillMaxWidth().height(1.dp).background(c.hair))

@@ -64,7 +64,7 @@ fun DiagnosticsSheet(load: () -> String, onDismiss: () -> Unit) {
             ) {
                 Text(
                     text ?: AboutCopy.DIAGNOSTICS_LOADING, Modifier.testTag("diagnostics-text"),
-                    fontFamily = FontFamily.Monospace, fontSize = 12.sp, lineHeight = 17.sp, color = if (text == null) c.ink3 else c.ink2,
+                    fontFamily = FontFamily.Monospace, style = MikaType.Hint, color = if (text == null) c.ink3 else c.ink2,
                 )
             }
             Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

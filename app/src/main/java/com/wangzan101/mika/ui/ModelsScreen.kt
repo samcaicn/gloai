@@ -135,9 +135,9 @@ internal fun RoleCard(icon: ImageVector, label: String, line: ModelsCopy.RoleLin
                 Icon(icon, null, Modifier.size(21.dp), tint = c.ink)
             }
             Column(Modifier.weight(1f)) {
-                Text(label, fontSize = 12.5.sp, lineHeight = 17.sp, color = c.ink3)
+                Text(label, style = MikaType.Hint, color = c.ink3)
                 Text(
-                    line.title, Modifier.padding(top = 1.dp), fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold,
+                    line.title, Modifier.padding(top = 1.dp), style = MikaType.BodyStrong,
                     fontFamily = if (line.isModel) FontFamily.Monospace else null, color = if (line.unset) c.ink3 else c.ink,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
@@ -166,7 +166,7 @@ internal fun ProviderRow(p: Provider, line: String, first: Boolean, warning: Str
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Box(Modifier.size(MikaSize.Tile).background(c.neutralSoft, MikaShapes.Tile), contentAlignment = Alignment.Center) {
-                Text(p.name.take(1).uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = c.ink)
+                Text(p.name.take(1).uppercase(), style = MikaType.Caption.copy(fontWeight = FontWeight.Bold), color = c.ink)
             }
             Column(Modifier.weight(1f)) {
                 Text(ModelsCopy.providerName(p), style = MikaType.Body, color = c.ink, maxLines = 1)
@@ -214,7 +214,7 @@ fun RolePickerContent(ui: ModelSetupUi, role: ModelRole, actions: RolePickerActi
     val total = groups.sumOf { it.second.size }
     val q = filter.trim()
     Page(titleOverride ?: ModelsCopy.roleName(role), onBack) {
-        Text(hintOverride ?: ModelsCopy.roleHint(role), Modifier.padding(top = 4.dp, bottom = 12.dp), fontSize = 14.5.sp, lineHeight = 22.sp, color = c.ink2)
+        Text(hintOverride ?: ModelsCopy.roleHint(role), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
         val fixed = fixedChoices(role)
         if (fixed.isNotEmpty()) {
             GroupCard {
@@ -284,7 +284,7 @@ internal fun ManualModel(p: Provider, state: ListState?, first: Boolean, onUse: 
     InputRow(ModelsCopy.MODEL_NAME, name, { name = it }, example, first = first, modifier = Modifier.testTag("manual-model")) {
         Text(
             if (running) ModelSetupCopy.TESTING else ModelsCopy.USE, Modifier.clickable(enabled = enabled) { onUse(name.trim()) }.testTag("manual-model-use"),
-            fontSize = 13.sp, fontWeight = FontWeight.Medium, color = if (enabled) MikaTheme.colors.accent else MikaTheme.colors.ink3,
+            style = MikaType.Label, color = if (enabled) MikaTheme.colors.accent else MikaTheme.colors.ink3,
         )
     }
 }

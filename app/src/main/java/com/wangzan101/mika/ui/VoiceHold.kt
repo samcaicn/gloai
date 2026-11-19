@@ -766,12 +766,12 @@ internal fun VoiceSheetHost(vh: VoiceHold, onPickSpeech: () -> Unit) {
     }
 }
 
-private val BarLabel = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium)
-private val HintText = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
-private val HeadText = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp)
-private val ChipText = TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp)
-private val TimeText = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp, fontFeatureSettings = "tnum")
-private val ListenText = TextStyle(fontSize = 18.sp, lineHeight = 27.sp)
-private val FootText = TextStyle(fontSize = 12.sp, lineHeight = 16.sp)
-private val ToastText = TextStyle(fontSize = 13.5.sp, lineHeight = 19.sp)
-private val SheetBody = TextStyle(fontSize = 14.sp, lineHeight = 23.sp)
+private val BarLabel = MikaType.Value.copy(fontWeight = FontWeight.Medium)
+private val HintText = MikaType.Label
+private val HeadText = MikaType.Hint
+private val ChipText = MikaType.Micro
+private val TimeText = MikaType.Hint.copy(fontFeatureSettings = "tnum")
+private val ListenText = MikaType.Title
+private val FootText = MikaType.Hint
+private val ToastText = MikaType.Caption
+private val SheetBody = MikaType.Body

@@ -415,7 +415,7 @@ private fun TotalsCard(t: UsageTotals) {
     }
 }
 
-private val TotalStyle = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold)
+private val TotalStyle = MikaType.Display
 
 @Composable
 private fun Stat(label: String, value: String, modifier: Modifier) {
@@ -443,7 +443,7 @@ private fun ChartCard(title: String, hint: String, content: @Composable () -> Un
     }
 }
 
-private val CardTitle = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
+private val CardTitle = MikaType.Value.copy(fontWeight = FontWeight.SemiBold)
 
 /** 没有用量时:一张居中的说明卡。 */
 @Composable
@@ -503,10 +503,10 @@ private fun RankRow(
 }
 
 private val RowShape = RoundedCornerShape(8.dp)
-private val RankText = TextStyle(fontSize = 13.5.sp, lineHeight = 18.sp)
-private val RankMono = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium)
-private val RankValue = TextStyle(fontSize = 13.sp, lineHeight = 17.sp)
-private val RankShare = TextStyle(fontSize = 11.sp, lineHeight = 14.sp)
+private val RankText = MikaType.Caption
+private val RankMono = MikaType.Hint.copy(fontWeight = FontWeight.Medium, fontFamily = FontFamily.Monospace)
+private val RankValue = MikaType.Caption
+private val RankShare = MikaType.Micro
 
 /** 切换服务商的胶囊:选中时强调色实底;[deleted] 的名字变淡、后面写「（已删除）」。 */
 @Composable
@@ -530,7 +530,7 @@ private fun UsageChip(text: String, selected: Boolean, onClick: () -> Unit, dele
     }
 }
 
-private val ChipText = TextStyle(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
+private val ChipText = MikaType.Body.copy(fontWeight = FontWeight.Medium)
 
 /** 趋势图里的一段:有自己颜色的服务商各一段([slot] 是颜色序号),其余合成「其他」([slot] 为 null)。 */
 private data class StackPart(val slot: Int?, val tokens: Long)
@@ -645,7 +645,7 @@ private fun GridLabel(text: String, modifier: Modifier) {
     Text(text, modifier.width(34.dp), style = GridText, color = MikaTheme.colors.ink3, textAlign = TextAlign.End, maxLines = 1)
 }
 
-private val GridText = TextStyle(fontSize = 10.5.sp, lineHeight = 14.sp)
+private val GridText = MikaType.Micro
 
 /** 点中一根柱子时的说明:哪段时间、合计,下面各家服务商各一行(按用量从多到少);横向对着那根柱子,不出图的左右边。 */
 @Composable
@@ -676,7 +676,7 @@ private fun TrendTip(b: UsageBucket, report: UsageReport, index: Int, gutter: Dp
 }
 
 private val TipShape = RoundedCornerShape(8.dp)
-private val TipText = TextStyle(fontSize = 11.5.sp, lineHeight = 18.sp)
+private val TipText = MikaType.Micro
 
 /** 自定义范围的日期选择:只能选账本还留着的日子(最近 [UsageLedger.KEEP_DAYS] 天)到今天,两头都选了才可查看。 */
 @OptIn(ExperimentalMaterial3Api::class)

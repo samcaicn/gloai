@@ -25,6 +25,10 @@ object MikaType {
     val Hint = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Normal)
     /** 行尾的值。 */
     val Value = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal)
+    /** 徽标、标签、极小的计数。 */
+    val Micro = TextStyle(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal)
+    /** 超大数字:总量、验证码等展示用大数字。 */
+    val Display = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold)
 }
 
 /** 间距。页面左右留 [Page]。 */

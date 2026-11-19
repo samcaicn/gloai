@@ -550,11 +550,11 @@ private fun AskField(chat: PageChat, hint: String, stop: (() -> Unit)?) {
     ) {
         Icon(MikaIcons.Spark, null, Modifier.size(17.dp), tint = GlowColor)
         Box(Modifier.weight(1f).padding(vertical = 11.dp)) {
-            if (chat.draft.isEmpty()) Text(hint, style = MikaType.Body.copy(fontSize = 14.5.sp), color = c.ink3, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (chat.draft.isEmpty()) Text(hint, style = MikaType.Body, color = c.ink3, maxLines = 1, overflow = TextOverflow.Ellipsis)
             BasicTextField(
                 chat.draft, { chat.draft = it },
                 Modifier.fillMaxWidth().focusRequester(focus).testTag("page-ask-field").semantics { contentDescription = hint },
-                textStyle = MikaType.Body.copy(fontSize = 14.5.sp, color = c.ink, textDirection = androidx.compose.ui.text.style.TextDirection.Content), maxLines = 4, cursorBrush = SolidColor(c.accent),
+                textStyle = MikaType.Body.copy(color = c.ink, textDirection = androidx.compose.ui.text.style.TextDirection.Content), maxLines = 4, cursorBrush = SolidColor(c.accent),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { if (canSend) chat.send() }),
             )
@@ -608,7 +608,7 @@ fun PagePanel(chat: PageChat, site: String, pageTitle: String, modifier: Modifie
                         .testTag("page-panel-open-chat"),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
-                    Text(PageAskCopy.OPEN_CHAT, style = MikaType.Hint.copy(fontSize = 12.5.sp), color = c.accent)
+                    Text(PageAskCopy.OPEN_CHAT, style = MikaType.Hint, color = c.accent)
                     Icon(MikaIcons.External, null, Modifier.size(13.dp), tint = c.accent)
                 }
             }

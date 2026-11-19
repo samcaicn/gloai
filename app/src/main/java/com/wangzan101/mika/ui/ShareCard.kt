@@ -46,6 +46,7 @@ import com.wangzan101.mika.R
 import com.wangzan101.mika.about.MikaLinks
 import com.wangzan101.mika.ui.theme.LightColors
 import com.wangzan101.mika.ui.theme.LocalMikaColors
+import com.wangzan101.mika.ui.theme.MikaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -66,22 +67,22 @@ fun ShareCardContent(goal: String, answer: String, logo: ImageBitmap, modifier: 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(logo, null, Modifier.size(40.dp).clip(RoundedCornerShape(11.dp)), contentScale = ContentScale.Crop)
             Spacer(Modifier.width(10.dp))
-            Text("Mika", fontSize = 18.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold, color = ink)
+            Text("Mika", style = MikaType.Title.copy(fontWeight = FontWeight.Bold), color = ink)
         }
         Spacer(Modifier.height(20.dp))
-        Text(stringResource(R.string.share_card_question), fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0A7CFF))
+        Text(stringResource(R.string.share_card_question), style = MikaType.Hint.copy(fontWeight = FontWeight.SemiBold), color = Color(0xFF0A7CFF))
         Spacer(Modifier.height(3.dp))
-        Text(goal, fontSize = 16.sp, lineHeight = 23.sp, fontWeight = FontWeight.SemiBold, color = ink)
+        Text(goal, style = MikaType.BodyStrong, color = ink)
         Spacer(Modifier.height(16.dp))
-        Text(stringResource(R.string.share_card_answer), fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold, color = ink3)
+        Text(stringResource(R.string.share_card_answer), style = MikaType.Hint.copy(fontWeight = FontWeight.SemiBold), color = ink3)
         Spacer(Modifier.height(6.dp))
-        MarkdownText(answer, TextStyle(fontSize = 14.sp, lineHeight = 21.sp, color = ink2))
+        MarkdownText(answer, MikaType.Body.copy(color = ink2))
         Spacer(Modifier.height(20.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x12000000)))
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.share_card_made_by), fontSize = 12.sp, lineHeight = 17.sp, color = ink3, modifier = Modifier.weight(1f))
-            Text(MikaLinks.REPO_LABEL, fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold, color = ink2)
+            Text(stringResource(R.string.share_card_made_by), style = MikaType.Hint, color = ink3, modifier = Modifier.weight(1f))
+            Text(MikaLinks.REPO_LABEL, style = MikaType.Hint.copy(fontWeight = FontWeight.SemiBold), color = ink2)
         }
     }
 }

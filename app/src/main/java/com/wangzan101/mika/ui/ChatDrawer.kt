@@ -1000,10 +1000,10 @@ private class DrawerCardShape(private val progress: Float) : Shape {
     }
 }
 internal val NavShape = RoundedCornerShape(12.dp)
-private val SectionText = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
-private val ConversationTitle = TextStyle(fontSize = 14.5.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium)
-private val ConversationTime = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp)
-private val ConversationTag = TextStyle(fontSize = 10.5.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
+private val SectionText = MikaType.Hint.copy(fontWeight = FontWeight.Medium)
+private val ConversationTitle = MikaType.Body.copy(fontWeight = FontWeight.Medium)
+private val ConversationTime = MikaType.Hint
+private val ConversationTag = MikaType.Micro.copy(fontWeight = FontWeight.Medium)
 
 /**
  * 对话页和它的侧栏:左上角菜单从左边滑出侧栏,外面一层遮罩;点遮罩、往左滑、按返回都关上。

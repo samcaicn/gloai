@@ -137,7 +137,7 @@ private const val LINES_PER_CHUNK = 200
 /** 跳到命中处时上面留一点空,好看见上下文。 */
 private val FindTopMargin = 8.dp
 
-private val MonoText = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.5.sp, lineHeight = 18.sp)
+private val MonoText = MikaType.Hint.copy(fontFamily = FontFamily.Monospace)
 
 /** 读进来的内容;PDF 不在这里,它按页现读现画。 */
 private sealed interface Loaded {

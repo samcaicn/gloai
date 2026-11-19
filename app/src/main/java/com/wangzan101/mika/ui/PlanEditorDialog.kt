@@ -413,7 +413,7 @@ private fun ClockChips(
                     Spacer(Modifier.width(5.dp))
                     Text(
                         formatPlanClock(time),
-                        style = MikaType.Body.copy(fontSize = 13.5.sp, lineHeight = 18.sp),
+                        style = MikaType.Caption,
                         color = c.ink2,
                     )
                 }
@@ -536,7 +536,7 @@ private fun NumberWheel(count: Int, initial: Int, tag: String, onValueChange: (I
                 ) {
                     Text(
                         "%02d".format(java.util.Locale.ROOT, index),
-                        style = MikaType.Body.copy(fontSize = 19.sp, fontFeatureSettings = "tnum"),
+                        style = MikaType.Title.copy(fontFeatureSettings = "tnum"),
                         fontWeight = if (index == selected) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (index == selected) c.ink else c.ink3,
                     )

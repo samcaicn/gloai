@@ -1911,21 +1911,21 @@ private const val JUMP_HIGHLIGHT_MS = 1_800L
 private val StepRail = 8.dp
 
 private val FileTileShape = RoundedCornerShape(10.dp)
-private val EmptyLead = TextStyle(fontSize = 15.sp, lineHeight = 21.sp)
-private val ExampleText = TextStyle(fontSize = 15.sp, lineHeight = 21.sp)
-private val SuggestionText = TextStyle(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
-private val BubbleText = TextStyle(fontSize = 15.5.sp, lineHeight = 22.5.sp)
+private val EmptyLead = MikaType.Value
+private val ExampleText = MikaType.Value
+private val SuggestionText = MikaType.Body.copy(fontWeight = FontWeight.Medium)
+private val BubbleText = MikaType.Body
 /** 回答:正文字号,行距放宽到 1.7。 */
-private val AnswerText = TextStyle(fontSize = 15.5.sp, lineHeight = 26.sp)
-private val NowText = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium)
-private val ClockText = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp, fontFeatureSettings = "tnum")
-private val StepText = TextStyle(fontSize = 14.sp, lineHeight = 19.sp)
-private val StepCurrentText = TextStyle(fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.Medium)
-private val NoteText = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp)
-private val DoneText = TextStyle(fontSize = 13.sp, lineHeight = 18.sp)
-private val NeedTitle = TextStyle(fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold)
-private val CardBody = TextStyle(fontSize = 14.sp, lineHeight = 21.5.sp)
-private val PillText = TextStyle(fontSize = 13.sp, lineHeight = 18.sp)
-private val ChipText = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
-private val FileName = TextStyle(fontSize = 14.5.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium)
-private val FileMeta = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp)
+private val AnswerText = MikaType.Body
+private val NowText = MikaType.Value.copy(fontWeight = FontWeight.Medium)
+private val ClockText = MikaType.Hint.copy(fontFeatureSettings = "tnum")
+private val StepText = MikaType.Body
+private val StepCurrentText = MikaType.Body.copy(fontWeight = FontWeight.Medium)
+private val NoteText = MikaType.Hint
+private val DoneText = MikaType.Caption
+private val NeedTitle = MikaType.Value.copy(fontWeight = FontWeight.SemiBold)
+private val CardBody = MikaType.Body
+private val PillText = MikaType.Caption
+private val ChipText = MikaType.Hint.copy(fontWeight = FontWeight.Medium)
+private val FileName = MikaType.Body.copy(fontWeight = FontWeight.Medium)
+private val FileMeta = MikaType.Hint

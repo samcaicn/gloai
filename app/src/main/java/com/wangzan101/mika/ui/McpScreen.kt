@@ -49,6 +49,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
+import com.wangzan101.mika.ui.theme.MikaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -340,7 +341,7 @@ private fun GuideStep(title: String, body: String, button: String, onClick: () -
 @Composable
 internal fun CommandText(text: String, modifier: Modifier = Modifier) {
     Text(text, modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        fontFamily = FontFamily.Monospace, fontSize = 14.sp, lineHeight = 20.sp, color = MikaTheme.colors.ink)
+        fontFamily = FontFamily.Monospace, style = MikaType.Body, color = MikaTheme.colors.ink)
 }
 
 private fun clock(ms: Long): String =

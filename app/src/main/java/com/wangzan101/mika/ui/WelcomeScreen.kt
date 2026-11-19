@@ -54,10 +54,10 @@ fun WelcomeScreen(onStart: () -> Unit) {
                         Modifier.size(76.dp).shadow(14.dp, LogoShape, clip = false).clip(LogoShape),
                         contentScale = ContentScale.Crop,
                     )
-                    Text(WelcomeCopy.TITLE, Modifier.padding(top = 20.dp), style = MikaType.LargeTitle, fontSize = 26.sp, color = c.ink, textAlign = TextAlign.Center)
+                    Text(WelcomeCopy.TITLE, Modifier.padding(top = 20.dp), style = MikaType.LargeTitle, color = c.ink, textAlign = TextAlign.Center)
                     Text(
                         WelcomeCopy.LEAD, Modifier.padding(top = 8.dp),
-                        fontSize = 15.sp, lineHeight = 24.sp, color = c.ink2, textAlign = TextAlign.Center,
+                        style = MikaType.Value, color = c.ink2, textAlign = TextAlign.Center,
                     )
                 }
                 GroupCard(Modifier.padding(top = 28.dp)) {
@@ -68,7 +68,7 @@ fun WelcomeScreen(onStart: () -> Unit) {
                 ProgressDots(Onboarding.DOTS, Onboarding.dot(OnboardingStep.Welcome), Modifier.padding(top = 4.dp))
                 Text(
                     WelcomeCopy.NOTE, Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 12.dp, start = 16.dp, end = 16.dp),
-                    style = MikaType.Hint, fontSize = 12.5.sp, color = c.ink3, textAlign = TextAlign.Center,
+                    style = MikaType.Hint, color = c.ink3, textAlign = TextAlign.Center,
                 )
                 MikaButton(WelcomeCopy.START, onStart, Modifier.fillMaxWidth().testTag("welcome-start"))
             }
@@ -84,7 +84,7 @@ private fun Feature(icon: ImageVector, title: String, body: String, first: Boole
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 13.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             IconTile(icon)
             Column(Modifier.weight(1f)) {
-                Text(title, fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold, color = c.ink)
+                Text(title, style = MikaType.Value.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
                 Text(body, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink2)
             }
         }
