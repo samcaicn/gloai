@@ -497,6 +497,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             voicePlayback = voicePlayer.state,
             speakText = { text -> speak(text) },
             stopVoice = { voicePlayer.stop() },
+            voiceFailed = voicePlayer::fail,
             personaStore = if (FeatureFlags.get(this).persona()) personas else null,
         )
     }

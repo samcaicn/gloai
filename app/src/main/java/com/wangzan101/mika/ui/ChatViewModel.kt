@@ -488,6 +488,7 @@ class ChatViewModel(
     private val autoRead: StateFlow<Boolean> = MutableStateFlow(false),
     /** 播放工作区里的一段音频(对话编号, 路径);默认不做。 */
     private val playAudio: suspend (String, String) -> Unit = { _, _ -> },
+    private val voiceFailed: (String) -> Unit = {},
 ) {
     /** 用户在对话页上关掉留在后台的那一页。 */
     fun closeKeptPage() = closeKept()
@@ -498,7 +499,15 @@ class ChatViewModel(
     val canSpeak: StateFlow<Boolean> get() = voiceReady
 
     fun speak(text: String) {
-        scope.launch { speakText(text) }
+        scope.launch {
+            try {
+                speakText(text)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                voiceFailed(tr(R.string.task_error, e.message ?: e.javaClass.simpleName))
+            }
+        }
     }
 
     fun stopSpeaking() = stopVoice()

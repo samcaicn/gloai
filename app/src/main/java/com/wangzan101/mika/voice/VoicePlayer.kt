@@ -74,6 +74,8 @@ class VoicePlayer(private val context: Context) {
     /** 停下来并释放。 */
     fun stop() = release(VoicePlayback.Idle)
 
+    fun fail(message: String) = release(VoicePlayback.Error(message))
+
     private fun requestFocus(): Boolean {
         val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
             .setAudioAttributes(attributes)

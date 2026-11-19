@@ -1412,11 +1412,22 @@ private fun ReadAloudIcon(answer: String, vm: ChatViewModel) {
     val playback by vm.voice.collectAsState()
     val playing = playback is VoicePlayback.Playing || playback is VoicePlayback.Loading
     val c = MikaTheme.colors
-    ReplyIcon(
-        MikaIcons.Sound,
-        stringResource(if (playing) R.string.chat_stop_speaking else R.string.chat_read_aloud),
-        tint = if (playing) c.accent else c.ink2,
-    ) { if (playing) vm.stopSpeaking() else vm.speak(answer) }
+    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.clip(MikaShapes.Pill).clickable(role = Role.Button) { if (playing) vm.stopSpeaking() else vm.speak(answer) }
+                .padding(horizontal = 8.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Icon(MikaIcons.Sound, null, Modifier.size(14.dp), tint = if (playing) c.accent else c.ink3)
+            Text(
+                stringResource(if (playing) R.string.chat_stop_speaking else R.string.chat_read_aloud),
+                style = MikaType.Caption, color = if (playing) c.accent else c.ink3,
+            )
+        }
+        (playback as? VoicePlayback.Error)?.let {
+            Text(it.message, Modifier.padding(start = 8.dp), style = MikaType.Caption, color = c.bad)
+        }
+    }
 }
 
 /** 这一轮生成的音频:名字/稿子开头、时长、播放/停止;点整张卡播放,再点停止。 */
