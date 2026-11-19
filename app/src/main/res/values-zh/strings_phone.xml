@@ -87,6 +87,7 @@
     <string name="phone_reconnect">重新连接</string>
     <string name="phone_row_sub">借用无线调试,在虚拟屏上操作 App</string>
     <string name="phone_usage_note">配对一次之后,Mika 的内置助手会常驻后台,断开 Wi-Fi 也能继续操作手机。「USB 调试」(在开发者选项里)要一直开着,关掉后手机操作会停下。手机重启后,连上 Wi-Fi 并打开「无线调试」,Mika 会自己重新连上,不用再输配对码。</string>
+    <string name="phone_usage_summary">「USB 调试」要一直开着；重启后 Mika 会自动重连</string>
     <string name="phone_wireless_off">无线调试已关</string>
     <string name="phone_connecting">正在连接</string>
     <string name="phone_error">出错了</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">用数据线连上电脑，在电脑上运行这条命令（在手机上能跑 adb 命令的其他方式也行）。多数手机拔掉数据线后还能继续用；如果停止，插回数据线再运行一次即可恢复。每次手机重启后也要再运行一次。</string>
     <string name="phone_success_note_usb">请保持 USB 调试开启;助手是用 USB 命令启动的,多数手机拔掉数据线后还能继续用;如果停止,插回数据线再运行一次命令即可恢复。手机重启后,先打开 Mika,再运行一次命令</string>
     <string name="phone_usage_note_usb">Mika 的内置助手是用 USB 启动命令启动的,多数手机拔掉数据线后还能继续运行;部分系统会在拔线时停止助手,插回数据线再运行一次命令即可恢复。「USB 调试」(在开发者选项里)要一直开着,关掉后手机操作会停下。手机重启后助手不会自己回来:打开 Mika,再运行一次启动命令(在「设置手机操作」里可以复制)。如果这台手机有能用的「无线调试」,配对一次之后,重启后 Mika 就能自己重新连上。</string>
+    <string name="phone_usage_summary_usb">「USB 调试」要一直开着；重启后需再运行一次启动命令</string>
     <string name="fail_root_denied">root 授权被拒绝了</string>
     <string name="fail_root_denied_body">Mika 没能用 root 启动手机助手。点「重试」并在授权弹框里允许 Mika,或改用无线调试。</string>
     <string name="fail_root_no_answer">root 没有回应</string>

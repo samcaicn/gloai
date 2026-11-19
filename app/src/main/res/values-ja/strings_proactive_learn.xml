@@ -79,6 +79,7 @@
     <string name="proactive_learn_level_balanced_sub">トピックは 2 日現れてから数えます。アプリごとに 1 日最大 20 件の会話を知らせます。「高」に設定したアプリから集めた内容をタスクに持ち込みます。</string>
     <string name="proactive_learn_level_aggressive_sub">トピックは 1 日現れれば数えます。知らせる件数に上限はありません。「中」と「高」のアプリから集めた内容をタスクに持ち込みます。</string>
     <string name="proactive_learn_level_note">「タスクに持ち込む」とは、この端末で始める各タスクに、今日と昨日のまとめと Mika があなたについて気づいたことを添えることです。通知から得たもので、あなたが言ったことではないと明記します。どの設定でも、Mika が頼まれずに話しかけたり、あなたの代わりに返信したりすることはありません。 持ち込む内容はタスクを実行するモデルに送信されます。通知の判定用に確認したモデルとは限りません。 タスクが必要とするときは、これらのアプリの今日と昨日の通知テキストも読めます。余裕があれば先週と先月のまとめも付き、さらに必要なときは保存してある日・週・月ごとのまとめをタスクが読めます。これらを渡されたタスクでは、終了後にあなたの発言から記憶を自動で取り出しません。自分の言葉で「覚えておいて」と伝えた内容は、これまでどおり保存します。</string>
+    <string name="proactive_learn_level_summary">タスクに持ち込み = 各タスクに今日・昨日の要約が付き、通知由来と明記されます。</string>
     <string name="proactive_learn_tier_title">%1$s の情報源レベル</string>
     <string name="proactive_learn_tier_low">低</string>
     <string name="proactive_learn_tier_mid">中</string>

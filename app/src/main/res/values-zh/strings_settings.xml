@@ -107,6 +107,8 @@
     <string name="net_proxy">网络代理</string>
     <string name="net_proxy_row_sub">调模型、下更新、内置浏览器和命令都走它</string>
     <string name="net_proxy_hint">Mika 调模型（对话、模型列表、账号登录）、在 App 里下载更新、内置浏览器，以及「文件与计算环境」里的命令（那里允许联网时）都走这个代理。这台手机和局域网里的地址（localhost、192.168.x.x、10.x.x.x、以 .local 结尾的名字）始终直连，本地模型照常能用。可以带「用户:密码@」，加密保存在这台手机上。留空表示直连。</string>
+    <string name="net_proxy_summary">模型请求、更新、内置浏览器和文件环境的命令走这个代理</string>
+    <string name="details">详情</string>
     <string name="net_proxy_invalid">写成 http://主机:端口 的样子（也可以是 socks5、socks5h、https），主机前面可以带「用户:密码@」。</string>
     <string name="net_proxy_container_only">https:// 代理只给「文件与计算环境」里的命令用，Mika 自己的连接照旧直连。想全部走代理，请用 http:// 或 socks5://。</string>
     <string name="net_proxy_browser_unsupported">这台手机的 WebView 不支持单独设代理，内置浏览器直连。</string>
@@ -211,7 +213,7 @@
     <string name="settings_token_budget_invalid">请输入 %1$s 到 %2$s 的整数。</string>
     <string name="settings_auto_archive">自动归档对话</string>
     <string name="settings_auto_archive_sub">太久没有新消息的对话自动收进归档</string>
-    <string name="settings_auto_archive_hint">超过选定的时间没有新消息的对话会收进归档。置顶的对话和有任务在运行的对话不归档；随时可以在对话列表的归档里恢复。</string>
+    <string name="settings_auto_archive_hint">超过选定的时间没有新消息的对话会收进归档。</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="other">%1$d 天</item>
     </plurals>

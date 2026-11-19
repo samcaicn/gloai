@@ -79,6 +79,7 @@
     <string name="proactive_learn_level_balanced_sub">A topic counts after 2 days. Up to 20 chats a day per app are flagged. What is gathered from apps set to High goes into tasks.</string>
     <string name="proactive_learn_level_aggressive_sub">A topic counts after 1 day. No limit on flagged chats. What is gathered from apps set to Medium or High goes into tasks.</string>
     <string name="proactive_learn_level_note">“Goes into tasks” means each task you start on this phone is given today\'s and yesterday\'s digest and what Mika has noticed about you, marked as coming from notifications and not from you. At no level does Mika speak up unasked or reply for you. What is carried is sent to whichever model runs the task, which may not be the one you confirmed for sorting notifications. A task can also read today\'s and yesterday\'s notification text from those apps when it needs to. When there is room, last week\'s and last month\'s digests are attached too, and a task that needs more can read the stored daily, weekly and monthly digests. A task that was given this is not mined for memories afterwards; what you tell Mika to remember in your own words is still saved.</string>
+    <string name="proactive_learn_level_summary">Goes into tasks = each task gets today\'s and yesterday\'s digest, marked as coming from notifications.</string>
     <string name="proactive_learn_tier_title">Source level for %1$s</string>
     <string name="proactive_learn_tier_low">Low</string>
     <string name="proactive_learn_tier_mid">Medium</string>

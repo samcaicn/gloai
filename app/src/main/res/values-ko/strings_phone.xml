@@ -87,6 +87,7 @@
     <string name="phone_reconnect">다시 연결</string>
     <string name="phone_row_sub">무선 디버깅으로 가상 화면의 앱을 제어해요</string>
     <string name="phone_usage_note">한 번 페어링하면 Mika의 내장 도우미가 백그라운드에 남아 Wi-Fi 없이도 계속 동작해요. “USB 디버깅”(개발자 옵션)은 켜 두세요. 끄면 휴대전화 제어가 멈춰요. 재부팅한 뒤에는 Wi-Fi에 연결하고 “무선 디버깅”을 켜면 Mika가 알아서 다시 연결해요. 새 코드는 필요 없어요.</string>
+    <string name="phone_usage_summary">「USB 디버깅」을 켜 두세요. 재시작 후 Mika가 자동으로 다시 연결됩니다.</string>
     <string name="phone_wireless_off">무선 디버깅 꺼짐</string>
     <string name="phone_connecting">연결 중</string>
     <string name="phone_error">오류</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">USB 케이블로 휴대전화를 컴퓨터에 연결하고 컴퓨터에서 이 명령을 실행하세요(이 휴대전화용 adb 명령을 실행할 수 있는 다른 방법도 괜찮아요). 휴대전화 재부팅 후에도 명령을 다시 실행하세요. 대부분에서는 케이블을 뽑은 뒤에도 도우미가 계속 실행되지만, 멈추면 케이블을 다시 연결하고 명령을 다시 실행하면 제어를 복구할 수 있어요.</string>
     <string name="phone_success_note_usb">USB 디버깅은 계속 켜 두세요. 도우미를 USB 명령으로 시작했어요. 대부분에서는 케이블을 뽑은 뒤에도 계속 실행되지만, 멈추면 케이블을 다시 연결하고 명령을 다시 실행하세요. 휴대전화를 재부팅하면 돌아오지 않아요. Mika를 열고 명령을 다시 실행하세요.</string>
     <string name="phone_usage_note_usb">Mika의 내장 도우미는 USB 시작 명령으로 시작했어요. 대부분에서는 케이블을 뽑은 뒤에도 계속 실행되지만, 일부 시스템에서는 케이블을 뽑으면 도우미가 멈춰요. 그런 경우 케이블을 다시 연결하고 명령을 다시 실행하면 제어를 복구할 수 있어요. “USB 디버깅”(개발자 옵션)은 켜 두세요. 끄면 휴대전화 제어가 멈춰요. 휴대전화를 재부팅하면 도우미가 저절로 돌아오지 않아요. Mika를 열고 명령을 다시 실행하세요(“휴대전화 제어 설정”에서 복사할 수 있어요). 이 휴대전화에서 “무선 디버깅”이 되면 한 번 페어링해 두는 것으로 재부팅 후에도 Mika가 알아서 다시 연결해요.</string>
+    <string name="phone_usage_summary_usb">「USB 디버깅」을 켜 두세요. 재시작 후 시작 명령을 다시 실행하세요.</string>
     <string name="fail_root_denied">root 권한이 거부되었어요</string>
     <string name="fail_root_denied_body">root로 도우미를 시작하지 못했어요. “다시 시도”를 누르고 권한 요청이 나타나면 Mika를 허용하거나 무선 디버깅을 사용하세요.</string>
     <string name="fail_root_no_answer">root가 응답하지 않았어요</string>

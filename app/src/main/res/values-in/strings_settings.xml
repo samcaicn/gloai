@@ -107,6 +107,8 @@
     <string name="net_proxy">Proksi jaringan</string>
     <string name="net_proxy_row_sub">Untuk panggilan model, pembaruan, browser bawaan, dan perintah</string>
     <string name="net_proxy_hint">Dipakai untuk panggilan model Mika (obrolan, daftar model, masuk dengan akun), unduhan pembaruan di dalam aplikasi, browser bawaan, dan perintah di Berkas &amp; lingkungan komputasi selama akses jaringan di sana aktif. Alamat di ponsel ini atau jaringan lokal (localhost, 192.168.x.x, 10.x.x.x, nama yang berakhiran .local) selalu tersambung langsung, jadi model lokal tetap bisa dipakai. Bisa menyertakan user:password@, yang disimpan terenkripsi di ponsel ini. Kosongkan untuk koneksi langsung.</string>
+    <string name="net_proxy_summary">Permintaan model, pembaruan, peramban bawaan, dan perintah lingkungan file memakai proxy ini.</string>
+    <string name="details">Detail</string>
     <string name="net_proxy_invalid">Tulis sebagai http://host:port (socks5, socks5h, dan https juga bisa), opsional dengan user:password@ sebelum host.</string>
     <string name="net_proxy_container_only">Proksi https:// hanya dipakai oleh perintah di Berkas &amp; lingkungan komputasi; koneksi Mika sendiri tetap langsung. Pakai http:// atau socks5:// agar semuanya lewat proksi.</string>
     <string name="net_proxy_browser_unsupported">WebView di ponsel ini tidak mendukung proksi khusus aplikasi, jadi browser bawaan tersambung langsung.</string>
@@ -211,7 +213,7 @@
     <string name="settings_token_budget_invalid">Masukkan bilangan bulat dari %1$s sampai %2$s.</string>
     <string name="settings_auto_archive">Arsipkan chat otomatis</string>
     <string name="settings_auto_archive_sub">Chat tanpa pesan baru untuk sementara waktu dipindahkan ke arsip</string>
-    <string name="settings_auto_archive_hint">Chat tanpa pesan baru selama waktu yang dipilih dipindahkan ke arsip. Chat yang disematkan dan chat dengan tugas yang sedang berjalan tidak diubah. Anda dapat memulihkannya dari arsip di daftar chat kapan saja.</string>
+    <string name="settings_auto_archive_hint">Chat tanpa pesan baru selama waktu yang dipilih dipindahkan ke arsip.</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="other">%1$d hari</item>
     </plurals>

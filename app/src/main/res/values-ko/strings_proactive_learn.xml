@@ -79,6 +79,7 @@
     <string name="proactive_learn_level_balanced_sub">주제는 2일 동안 나타나야 인정합니다. 앱마다 하루 최대 20개의 대화를 알립니다. \'높음\'으로 설정한 앱에서 모은 내용을 작업에 가져갑니다.</string>
     <string name="proactive_learn_level_aggressive_sub">주제는 1일만 나타나도 인정합니다. 알림 수에 제한이 없습니다. \'중간\'과 \'높음\' 앱에서 모은 내용을 작업에 가져갑니다.</string>
     <string name="proactive_learn_level_note">\'작업에 가져간다\'는 것은 이 기기에서 시작하는 각 작업에 오늘과 어제의 요약, 그리고 Mika가 사용자에 대해 알게 된 내용을 덧붙인다는 뜻입니다. 알림에서 온 것이며 사용자가 말한 것이 아님을 표시합니다. 어느 수준에서도 Mika가 먼저 말을 걸거나 대신 답장하지는 않습니다. 가져가는 내용은 작업을 수행하는 모델로 전송되며, 알림 판정용으로 확인한 모델이 아닐 수 있습니다. 작업에 필요하면 이 앱들의 오늘과 어제 알림 텍스트도 읽을 수 있습니다. 여유가 있으면 지난주와 지난달 요약도 함께 붙으며, 더 필요하면 작업이 저장된 일·주·월별 요약을 읽을 수 있습니다. 이 내용이 전달된 작업에서는 끝난 뒤 사용자의 말에서 기억을 자동으로 추출하지 않습니다. 직접 말로 기억해 달라고 한 내용은 그대로 저장합니다.</string>
+    <string name="proactive_learn_level_summary">작업에 포함 = 각 작업에 오늘·어제 요약이 붙고, 알림에서 왔음이 표시됩니다.</string>
     <string name="proactive_learn_tier_title">%1$s의 출처 수준</string>
     <string name="proactive_learn_tier_low">낮음</string>
     <string name="proactive_learn_tier_mid">중간</string>

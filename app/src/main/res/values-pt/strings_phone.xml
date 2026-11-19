@@ -87,6 +87,7 @@
     <string name="phone_reconnect">Reconectar</string>
     <string name="phone_row_sub">Usa a depuração wireless para controlar apps em uma tela virtual</string>
     <string name="phone_usage_note">Depois de parear uma vez, o assistente integrado do Mika fica em segundo plano e continua funcionando mesmo sem Wi-Fi. Mantenha a “Depuração USB” (em Opções do desenvolvedor) ativada; desativá-la interrompe o controle do celular. Depois de reiniciar, entre no Wi-Fi e ative a “Depuração wireless” e o Mika se reconecta sozinho — não precisa de novo código.</string>
+    <string name="phone_usage_summary">Mantenha a depuração USB ativada; após reiniciar, o Mika se reconecta sozinho.</string>
     <string name="phone_wireless_off">Depuração wireless desativada</string>
     <string name="phone_connecting">Conectando</string>
     <string name="phone_error">Erro</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">Conecte o celular a um computador com um cabo USB e execute este comando no computador (qualquer outra forma de executar este comando adb para o celular também serve). Na maioria dos celulares, o assistente continua funcionando depois que você desconecta o cabo; se ele parar, reconecte o cabo e execute o comando de novo para recuperar o controle. Ele também é necessário de novo a cada reinício do celular.</string>
     <string name="phone_success_note_usb">Mantenha a Depuração USB ativada. O assistente foi iniciado com o comando USB. Na maioria dos celulares, ele continua funcionando depois que você desconecta o cabo; se parar, reconecte o cabo e execute o comando de novo. Depois que o celular reiniciar, abra o Mika uma vez e execute o comando de novo.</string>
     <string name="phone_usage_note_usb">O assistente integrado do Mika foi iniciado com o comando de início por USB. Na maioria dos celulares, ele continua funcionando depois que você desconecta o cabo; em alguns sistemas, desconectar o cabo interrompe o assistente. Se isso acontecer, reconecte o cabo e execute o comando de novo para recuperar o controle do celular. Mantenha a “Depuração USB” (em Opções do desenvolvedor) ativada; desativá-la interrompe o controle do celular. Depois que o celular reinicia, o assistente não volta sozinho: abra o Mika e execute o comando de novo (você pode copiá-lo em “Configurar o controle do celular”). Se este celular tem uma “Depuração wireless” funcionando, parear uma vez permite que o Mika se reconecte sozinho depois de reiniciar.</string>
+    <string name="phone_usage_summary_usb">Mantenha a depuração USB ativada; após reiniciar, execute o comando de início novamente.</string>
     <string name="fail_root_denied">O acesso root foi negado</string>
     <string name="fail_root_denied_body">O Mika não conseguiu iniciar o assistente com root. Toque em “Tentar de novo” e permita o Mika quando a solicitação aparecer, ou use a depuração wireless.</string>
     <string name="fail_root_no_answer">O root não respondeu</string>

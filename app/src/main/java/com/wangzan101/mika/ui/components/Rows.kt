@@ -26,10 +26,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
@@ -38,6 +43,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.wangzan101.mika.R
+import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.ui.theme.MikaColors
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
@@ -58,6 +65,34 @@ fun FooterNote(text: String, modifier: Modifier = Modifier, color: Color = Color
         text, modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
         style = MikaType.Hint, color = color.takeOrElse { MikaTheme.colors.ink3 },
     )
+}
+
+/** 一行摘要 + 可展开的「详情」:默认只显示 [summary],点「详情」展开 [detail] 全文。间距由调用方用 [modifier] 给。 */
+@Composable
+fun DetailNote(summary: String, detail: String, modifier: Modifier = Modifier) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    Column(modifier) {
+        Text(summary, style = MikaType.Hint, color = MikaTheme.colors.ink3)
+        if (detail.isNotBlank()) {
+            Row(
+                Modifier.clickable { open = !open }.padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DirectionalIcon(
+                    MikaIcons.Chevron, null,
+                    Modifier.size(MikaSize.SmallIcon).rotate(if (open) 90f else 0f),
+                    tint = MikaTheme.colors.accent,
+                )
+                Text(
+                    tr(R.string.details), Modifier.padding(start = 2.dp),
+                    style = MikaType.Hint.copy(fontWeight = FontWeight.SemiBold), color = MikaTheme.colors.accent,
+                )
+            }
+            if (open) {
+                Text(detail, Modifier.padding(top = 6.dp), style = MikaType.Hint, color = MikaTheme.colors.ink2)
+            }
+        }
+    }
 }
 
 /** 图标块的底色和图形色。默认中性;只有状态才上色。 */

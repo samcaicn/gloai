@@ -107,6 +107,8 @@
     <string name="net_proxy">네트워크 프록시</string>
     <string name="net_proxy_row_sub">모델 호출, 업데이트, 내장 브라우저, 명령에 사용돼요</string>
     <string name="net_proxy_hint">Mika의 모델 호출(대화, 모델 목록, 계정 로그인), 앱 안에서의 업데이트 다운로드, 내장 브라우저, 그리고 ‘파일 및 컴퓨팅 환경’의 명령(그곳에서 네트워크 접속이 켜져 있을 때)에 사용돼요. 이 휴대전화나 로컬 네트워크의 주소(localhost, 192.168.x.x, 10.x.x.x, .local로 끝나는 이름)는 항상 직접 연결하므로 로컬 모델도 그대로 쓸 수 있어요. user:password@를 포함할 수 있으며, 이 휴대전화에 암호화되어 저장돼요. 비워 두면 직접 연결해요.</string>
+    <string name="net_proxy_summary">모델 요청, 업데이트, 내장 브라우저, 파일 환경 명령이 이 프록시를 사용합니다.</string>
+    <string name="details">자세히</string>
     <string name="net_proxy_invalid">http://host:port 형식으로 입력하세요(socks5, socks5h, https도 가능). 호스트 앞에 user:password@를 붙일 수도 있어요.</string>
     <string name="net_proxy_container_only">https:// 프록시는 ‘파일 및 컴퓨팅 환경’의 명령에만 쓰이고, Mika 자체 연결은 계속 직접 연결해요. 모두 프록시를 거치게 하려면 http:// 또는 socks5://를 쓰세요.</string>
     <string name="net_proxy_browser_unsupported">이 휴대전화의 WebView는 앱별 프록시를 지원하지 않아 내장 브라우저는 직접 연결해요.</string>
@@ -211,7 +213,7 @@
     <string name="settings_token_budget_invalid">%1$s~%2$s 사이의 정수를 입력하세요.</string>
     <string name="settings_auto_archive">채팅 자동 보관</string>
     <string name="settings_auto_archive_sub">한동안 새 메시지가 없는 채팅을 보관함으로 옮깁니다</string>
-    <string name="settings_auto_archive_hint">선택한 기간 동안 새 메시지가 없는 채팅을 보관함으로 옮깁니다. 고정한 채팅과 작업이 실행 중인 채팅은 그대로 둡니다. 채팅 목록의 보관함에서 언제든지 되돌릴 수 있습니다.</string>
+    <string name="settings_auto_archive_hint">선택한 기간 동안 새 메시지가 없는 채팅을 보관함으로 옮깁니다.</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="other">%1$d일</item>
     </plurals>

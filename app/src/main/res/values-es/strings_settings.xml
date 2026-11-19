@@ -115,6 +115,8 @@
     <string name="net_proxy">Proxy de red</string>
     <string name="net_proxy_row_sub">Para las llamadas al modelo, las actualizaciones, el navegador integrado y los comandos</string>
     <string name="net_proxy_hint">Se usa para las llamadas de Mika al modelo (chat, listas de modelos, inicio de sesión con cuenta), las descargas de actualizaciones dentro de la app, el navegador integrado y los comandos de Archivos y entorno de cómputo mientras allí está activado el acceso a la red. Las direcciones de este teléfono o de tu red local (localhost, 192.168.x.x, 10.x.x.x, nombres que terminan en .local) siempre se conectan directamente, así que los modelos locales siguen funcionando. Puede incluir usuario:contraseña@, que se guarda cifrado en este teléfono. Déjalo vacío para una conexión directa.</string>
+    <string name="net_proxy_summary">Las solicitudes del modelo, las actualizaciones, el navegador integrado y los comandos del entorno de archivos pasan por este proxy.</string>
+    <string name="details">Detalles</string>
     <string name="net_proxy_invalid">Escríbelo como http://host:puerto (también valen socks5, socks5h y https), opcionalmente con usuario:contraseña@ antes del host.</string>
     <string name="net_proxy_container_only">Los proxies https:// solo los usan los comandos de Archivos y entorno de cómputo; las conexiones propias de Mika siguen siendo directas. Usa http:// o socks5:// para cubrirlo todo.</string>
     <string name="net_proxy_browser_unsupported">El WebView de este teléfono no admite un proxy propio para la app, así que el navegador integrado se conecta directamente.</string>
@@ -219,7 +221,7 @@
     <string name="settings_token_budget_invalid">Introduce un número entero entre %1$s y %2$s.</string>
     <string name="settings_auto_archive">Archivar chats automáticamente</string>
     <string name="settings_auto_archive_sub">Los chats sin mensajes nuevos durante un tiempo pasan al archivo</string>
-    <string name="settings_auto_archive_hint">Los chats sin mensajes nuevos durante el tiempo elegido pasan al archivo. Los chats fijados y los que tienen una tarea en curso no se tocan. Puedes restaurarlos desde el archivo en la lista de chats cuando quieras.</string>
+    <string name="settings_auto_archive_hint">Los chats sin mensajes nuevos durante el tiempo elegido pasan al archivo.</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="one">%1$d día</item>
         <item quantity="many">%1$d días</item>

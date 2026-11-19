@@ -107,6 +107,8 @@
     <string name="net_proxy">網路代理</string>
     <string name="net_proxy_row_sub">呼叫模型、下載更新、內建瀏覽器和指令都走它</string>
     <string name="net_proxy_hint">Mika 呼叫模型（對話、模型清單、帳號登入）、在 App 裡下載更新、內建瀏覽器，以及「檔案與計算環境」裡的指令（那裡允許連網時）都走這個代理。這台手機和區域網路裡的位址（localhost、192.168.x.x、10.x.x.x、以 .local 結尾的名稱）一律直連，本機模型照常能用。可以帶「使用者:密碼@」，加密保存在這台手機上。留空表示直連。</string>
+    <string name="net_proxy_summary">模型請求、更新、內建瀏覽器和檔案環境的命令走這個代理</string>
+    <string name="details">詳情</string>
     <string name="net_proxy_invalid">寫成 http://主機:連接埠 的樣子（也可以是 socks5、socks5h、https），主機前面可以帶「使用者:密碼@」。</string>
     <string name="net_proxy_container_only">https:// 代理只給「檔案與計算環境」裡的指令用，Mika 自己的連線照舊直連。想全部走代理，請用 http:// 或 socks5://。</string>
     <string name="net_proxy_browser_unsupported">這台手機的 WebView 不支援單獨設定代理，內建瀏覽器直連。</string>
@@ -211,7 +213,7 @@
     <string name="settings_token_budget_invalid">請輸入 %1$s 到 %2$s 的整數。</string>
     <string name="settings_auto_archive">自動歸檔對話</string>
     <string name="settings_auto_archive_sub">太久沒有新訊息的對話自動收進歸檔</string>
-    <string name="settings_auto_archive_hint">超過選定的時間沒有新訊息的對話會收進歸檔。置頂的對話和有任務在運行的對話不歸檔；隨時可以在對話列表的歸檔裡恢復。</string>
+    <string name="settings_auto_archive_hint">超過選定的時間沒有新訊息的對話會收進歸檔。</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="other">%1$d 天</item>
     </plurals>

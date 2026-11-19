@@ -87,6 +87,7 @@
     <string name="phone_reconnect">Reconnect</string>
     <string name="phone_row_sub">Uses wireless debugging to control apps on a virtual screen</string>
     <string name="phone_usage_note">After pairing once, Mika’s built-in helper stays in the background and keeps working even without Wi-Fi. Keep “USB debugging” (in Developer options) on; turning it off stops phone control. After a restart, join Wi-Fi and turn on “Wireless debugging” and Mika reconnects by itself — no new code needed.</string>
+    <string name="phone_usage_summary">Keep USB debugging on; after a restart Mika reconnects by itself.</string>
     <string name="phone_wireless_off">Wireless debugging off</string>
     <string name="phone_connecting">Connecting</string>
     <string name="phone_error">Error</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">Plug the phone into a computer with a USB cable and run this command on the computer (any other way to run this adb command for the phone works too). On most phones it keeps running after you unplug the cable; if it stops, plug in and run the command again to restore phone control. It’s also needed again after every phone restart.</string>
     <string name="phone_success_note_usb">Keep USB debugging on. The helper was started with the USB command. On most phones it keeps running after you unplug the cable; if it stops, plug in and run the command again. After a phone restart, open Mika once and run the command again.</string>
     <string name="phone_usage_note_usb">Mika’s built-in helper was started with the USB start command. On most phones it keeps running after you unplug the cable; on some systems unplugging stops it. If that happens, plug in and run the command again to restore phone control. Keep “USB debugging” (in Developer options) on; turning it off stops phone control. After a phone restart the helper doesn’t come back by itself: open Mika and run the command again (you can copy it in “Set up phone control”). If this phone has a working “Wireless debugging”, pairing once lets Mika reconnect by itself after restarts.</string>
+    <string name="phone_usage_summary_usb">Keep USB debugging on; after a restart run the start command again.</string>
     <string name="fail_root_denied">Root access was denied</string>
     <string name="fail_root_denied_body">Mika couldn’t start the phone helper with root. Tap “Retry” and allow Mika when the permission prompt appears, or use Wireless debugging instead.</string>
     <string name="fail_root_no_answer">Root didn’t answer</string>

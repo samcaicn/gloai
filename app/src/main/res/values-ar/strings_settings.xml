@@ -127,6 +127,8 @@
     <string name="net_proxy">وكيل الشبكة</string>
     <string name="net_proxy_row_sub">لطلبات النماذج والتحديثات ومتصفح التطبيق والأوامر</string>
     <string name="net_proxy_hint">يُستخدم لطلبات نماذج Mika (المحادثة وقوائم النماذج وتسجيل الدخول إلى الحساب)، وتنزيل تحديثات التطبيق، ومتصفحه، والأوامر في «الملفات وبيئة الحوسبة» عند تفعيل الوصول إلى الشبكة هناك. تتصل العناوين على هذا الهاتف أو شبكتك المحلية (localhost و192.168.x.x و10.x.x.x والأسماء المنتهية بـ .local) مباشرةً دائمًا، لذلك تظل النماذج المحلية تعمل. يمكن أن يتضمن العنوان user:password@، ويُخزّن مشفرًا على هذا الهاتف. اتركه فارغًا للاتصال المباشر.</string>
+    <string name="net_proxy_summary">طلبات النموذج والتحديثات والمتصفح المدمج وأوامر بيئة الملفات تمر عبر هذا الوكيل.</string>
+    <string name="details">التفاصيل</string>
     <string name="net_proxy_invalid">اكتبه بهذا الشكل http://host:port (تعمل أيضًا socks5 وsocks5h وhttps)، ويمكن إضافة user:password@ قبل المضيف.</string>
     <string name="net_proxy_container_only">لا تُستخدم وكلاء https إلا لأوامر «الملفات وبيئة الحوسبة»؛ أما اتصالات Mika نفسها فتبقى مباشرة. استخدم http:// أو socks5:// لتغطية كل شيء.</string>
     <string name="net_proxy_browser_unsupported">لا يستطيع WebView في هذا الهاتف استخدام وكيل منفصل، لذا يتصل متصفح التطبيق مباشرةً.</string>
@@ -231,7 +233,7 @@
     <string name="settings_token_budget_invalid">أدخل عددًا صحيحًا من %1$s إلى %2$s.</string>
     <string name="settings_auto_archive">أرشفة المحادثات تلقائيًا</string>
     <string name="settings_auto_archive_sub">المحادثات التي لا تصلها رسائل جديدة لفترة تنتقل إلى الأرشيف</string>
-    <string name="settings_auto_archive_hint">المحادثات التي لا تصلها رسائل جديدة خلال المدة المختارة تنتقل إلى الأرشيف. تبقى المحادثات المثبتة والمحادثات التي تعمل فيها مهمة كما هي. يمكنك استعادتها من الأرشيف في قائمة المحادثات في أي وقت.</string>
+    <string name="settings_auto_archive_hint">المحادثات التي لا تصلها رسائل جديدة خلال المدة المختارة تنتقل إلى الأرشيف.</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="zero">%1$d يوم</item>
         <item quantity="one">يوم واحد</item>

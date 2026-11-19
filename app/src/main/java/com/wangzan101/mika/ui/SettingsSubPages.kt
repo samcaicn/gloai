@@ -61,6 +61,7 @@ import com.wangzan101.mika.settings.SystemStatus
 import com.wangzan101.mika.settings.notificationOverview
 import com.wangzan101.mika.task.ParallelLimit
 import com.wangzan101.mika.ui.components.FooterNote
+import com.wangzan101.mika.ui.components.DetailNote
 import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.GroupLabel
 import com.wangzan101.mika.ui.components.ListRow
@@ -145,7 +146,11 @@ fun PhoneOpsScreen(
                     onClick = if (paired) ({ confirmUnpair = true }) else null,
                 )
             }
-            FooterNote(PhoneSetupCopy.usageNote(status.helperRestart))
+            DetailNote(
+                PhoneSetupCopy.usageSummary(status.helperRestart),
+                PhoneSetupCopy.usageNote(status.helperRestart),
+                Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+            )
         }
     }
     if (confirmUnpair) {

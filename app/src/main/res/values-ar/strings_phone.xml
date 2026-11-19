@@ -87,6 +87,7 @@
     <string name="phone_reconnect">إعادة الاتصال</string>
     <string name="phone_row_sub">يستخدم تصحيح الأخطاء اللاسلكي للتحكم في التطبيقات على شاشة افتراضية</string>
     <string name="phone_usage_note">بعد الاقتران مرة واحدة، تظل أداة المساعدة المدمجة في Mika تعمل في الخلفية وتواصل العمل حتى دون Wi-Fi. أبقِ «USB debugging» (في Developer options) مفعّلًا؛ إذ يؤدي إيقافه إلى تعطيل التحكم بالهاتف. بعد إعادة التشغيل، اتصل بشبكة Wi-Fi وفعّل «Wireless debugging» وسيعيد Mika الاتصال تلقائيًا — دون الحاجة إلى رمز جديد.</string>
+    <string name="phone_usage_summary">أبقِ تصحيح USB قيد التشغيل؛ بعد إعادة التشغيل يعيد Mika الاتصال تلقائيًا.</string>
     <string name="phone_wireless_off">Wireless debugging متوقف</string>
     <string name="phone_connecting">جارٍ الاتصال</string>
     <string name="phone_error">خطأ</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">صِل الهاتف بكمبيوتر باستخدام كابل USB ونفّذ هذا الأمر على الكمبيوتر (ويعمل أيضًا أي أسلوب آخر لتنفيذ أمر adb هذا للهاتف). على معظم الهواتف تستمر أداة المساعدة بعد فصل الكابل؛ إذا توقفت، فأعد توصيل الكابل ونفّذ الأمر مجددًا لاستعادة التحكم بالهاتف. يلزم تنفيذه مجددًا أيضًا بعد كل إعادة تشغيل للهاتف.</string>
     <string name="phone_success_note_usb">أبقِ USB debugging مفعّلًا. شُغّلت أداة المساعدة باستخدام أمر USB. على معظم الهواتف تستمر بعد فصل الكابل؛ إذا توقفت، فأعد توصيل الكابل ونفّذ الأمر مجددًا. بعد إعادة تشغيل الهاتف، افتح Mika مرة واحدة ثم نفّذ الأمر مجددًا.</string>
     <string name="phone_usage_note_usb">شُغّلت أداة المساعدة المدمجة في Mika باستخدام أمر بدء USB. على معظم الهواتف تستمر بعد فصل الكابل؛ لكن بعض الأنظمة يوقفها عند فصله. إذا حدث ذلك، فأعد توصيل الكابل ونفّذ الأمر مجددًا لاستعادة التحكم بالهاتف. أبقِ «USB debugging» (في Developer options) مفعّلًا؛ إذ يؤدي إيقافه إلى تعطيل التحكم بالهاتف. بعد إعادة تشغيل الهاتف، لن تعمل الأداة تلقائيًا: افتح Mika ونفّذ الأمر مجددًا (يمكنك نسخه في «Set up phone control»). إذا كان خيار «Wireless debugging» يعمل على هذا الهاتف، فسيتيح الاقتران مرة واحدة لـ Mika إعادة الاتصال تلقائيًا بعد إعادة التشغيل.</string>
+    <string name="phone_usage_summary_usb">أبقِ تصحيح USB قيد التشغيل؛ بعد إعادة التشغيل شغّل أمر البدء مرة أخرى.</string>
     <string name="fail_root_denied">رُفض إذن root</string>
     <string name="fail_root_denied_body">تعذر على Mika بدء المساعد باستخدام root. انقر على «إعادة المحاولة» واسمح لـ Mika عند ظهور الطلب، أو استخدم تصحيح الأخطاء اللاسلكي.</string>
     <string name="fail_root_no_answer">لم يستجب root</string>

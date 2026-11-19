@@ -87,6 +87,7 @@
     <string name="phone_reconnect">Sambungkan ulang</string>
     <string name="phone_row_sub">Memakai proses debug nirkabel untuk mengendalikan aplikasi di layar virtual</string>
     <string name="phone_usage_note">Setelah dipasangkan sekali, pembantu bawaan Mika tetap berjalan di latar belakang dan terus bekerja walau tanpa Wi-Fi. Biarkan “Proses debug USB” (di Opsi developer) tetap aktif; menonaktifkannya menghentikan kontrol ponsel. Setelah dimulai ulang, terhubunglah ke Wi-Fi dan aktifkan “Proses debug nirkabel”, maka Mika tersambung sendiri — tanpa kode baru.</string>
+    <string name="phone_usage_summary">Biarkan USB debugging menyala; setelah mulai ulang, Mika tersambung lagi sendiri.</string>
     <string name="phone_wireless_off">Proses debug nirkabel nonaktif</string>
     <string name="phone_connecting">Menyambung</string>
     <string name="phone_error">Galat</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">Colokkan ponsel ke komputer dengan kabel USB dan jalankan perintah ini di komputer (cara lain menjalankan perintah adb ini untuk ponsel juga bisa). Di sebagian besar ponsel, pembantu terus berjalan setelah kabel dicabut; jika berhenti, colokkan kembali kabelnya dan jalankan lagi perintahnya untuk memulihkan kontrol ponsel. Perintah ini juga diperlukan lagi setiap kali ponsel dimulai ulang.</string>
     <string name="phone_success_note_usb">Biarkan Proses debug USB tetap aktif. Pembantu dimulai dengan perintah USB. Di sebagian besar ponsel, pembantu terus berjalan setelah kabel dicabut; jika berhenti, colokkan kembali kabelnya dan jalankan lagi perintahnya. Setelah ponsel dimulai ulang, buka Mika sekali lalu jalankan lagi perintahnya.</string>
     <string name="phone_usage_note_usb">Pembantu bawaan Mika dimulai dengan perintah mulai USB. Di sebagian besar ponsel, pembantu terus berjalan setelah kabel dicabut; beberapa sistem menghentikannya saat kabel dicabut. Jika itu terjadi, colokkan kembali kabelnya dan jalankan lagi perintahnya untuk memulihkan kontrol ponsel. Biarkan “Proses debug USB” (di Opsi developer) tetap aktif; menonaktifkannya menghentikan kontrol ponsel. Setelah ponsel dimulai ulang, pembantu tidak kembali sendiri: buka Mika dan jalankan lagi perintahnya (bisa disalin di “Siapkan kontrol ponsel”). Jika ponsel ini punya “Proses debug nirkabel” yang berfungsi, memasangkan sekali membuat Mika tersambung sendiri setelah dimulai ulang.</string>
+    <string name="phone_usage_summary_usb">Biarkan USB debugging menyala; setelah mulai ulang, jalankan lagi perintah start.</string>
     <string name="fail_root_denied">Akses root ditolak</string>
     <string name="fail_root_denied_body">Mika tidak dapat memulai pembantu dengan root. Ketuk «Coba lagi» dan izinkan Mika saat permintaan muncul, atau gunakan debug nirkabel.</string>
     <string name="fail_root_no_answer">Root tidak merespons</string>

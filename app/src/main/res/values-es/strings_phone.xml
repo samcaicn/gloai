@@ -87,6 +87,7 @@
     <string name="phone_reconnect">Reconectar</string>
     <string name="phone_row_sub">Usa la depuración inalámbrica para manejar apps en una pantalla virtual</string>
     <string name="phone_usage_note">Tras vincular una vez, el asistente integrado de Mika se queda en segundo plano y sigue funcionando incluso sin Wi-Fi. Deja activada la “Depuración por USB” (en Opciones de desarrollador); si la desactivas, el control del teléfono se detiene. Tras reiniciar, conéctate a una red Wi-Fi y activa la “Depuración inalámbrica”, y Mika se reconecta sola, sin código nuevo.</string>
+    <string name="phone_usage_summary">Mantén la depuración USB activada; tras un reinicio, Mika se reconecta sola.</string>
     <string name="phone_wireless_off">Depuración inalámbrica desactivada</string>
     <string name="phone_connecting">Conectando</string>
     <string name="phone_error">Error</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">Conecta el teléfono a un ordenador con un cable USB y ejecuta este comando en el ordenador (cualquier otra forma de ejecutar este comando adb para el teléfono también vale). En la mayoría de los teléfonos sigue funcionando después de desenchufar el cable; si se detiene, vuelve a enchufarlo y ejecuta el comando otra vez para recuperar el control. También hace falta de nuevo después de cada reinicio del teléfono.</string>
     <string name="phone_success_note_usb">Deja activada la Depuración por USB. El asistente se inició con el comando USB. En la mayoría de los teléfonos sigue funcionando después de desenchufar el cable; si se detiene, vuelve a enchufarlo y ejecuta el comando otra vez. Tras reiniciar el teléfono, abre Mika una vez y vuelve a ejecutar el comando.</string>
     <string name="phone_usage_note_usb">El asistente integrado de Mika se inició con el comando de inicio por USB. En la mayoría de los teléfonos sigue funcionando después de desenchufar el cable; algunos sistemas lo detienen al desenchufarlo. Si ocurre, vuelve a enchufar el cable y ejecuta el comando otra vez para recuperar el control del teléfono. Deja activada la “Depuración por USB” (en Opciones de desarrollador); si la desactivas, el control del teléfono se detiene. Tras reiniciar el teléfono, el asistente no vuelve solo: abre Mika y vuelve a ejecutar el comando (puedes copiarlo en “Configurar el control del teléfono”). Si este teléfono tiene una “Depuración inalámbrica” que funciona, vincular una vez permite que Mika se reconecte sola tras los reinicios.</string>
+    <string name="phone_usage_summary_usb">Mantén la depuración USB activada; tras un reinicio, vuelve a ejecutar el comando de inicio.</string>
     <string name="fail_root_denied">Se denegó el acceso root</string>
     <string name="fail_root_denied_body">Mika no pudo iniciar el asistente con root. Pulsa «Reintentar» y permite Mika cuando aparezca la solicitud, o usa la depuración inalámbrica.</string>
     <string name="fail_root_no_answer">Root no respondió</string>

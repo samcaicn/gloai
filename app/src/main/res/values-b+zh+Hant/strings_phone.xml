@@ -87,6 +87,7 @@
     <string name="phone_reconnect">重新連線</string>
     <string name="phone_row_sub">借用無線偵錯,在虛擬螢幕上操作 App</string>
     <string name="phone_usage_note">配對一次之後,Mika 的內建助手會常駐背景,Wi-Fi 斷線也能繼續操作手機。「USB 偵錯」(在開發人員選項裡)要一直開著,關掉後手機操作會停下。手機重啟後,連上 Wi-Fi 並開啟「無線偵錯」,Mika 會自己重新連上,不用再輸入配對碼。</string>
+    <string name="phone_usage_summary">「USB 除錯」要一直開著；重啟後 Mika 會自動重新連上</string>
     <string name="phone_wireless_off">無線偵錯已關</string>
     <string name="phone_connecting">正在連線</string>
     <string name="phone_error">出錯了</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">用傳輸線連上電腦，在電腦上執行這條指令（在手機上能跑 adb 指令的其他方式也行）。多數手機拔掉傳輸線後還能繼續用；如果停止，插回傳輸線再執行一次即可恢復。每次手機重啟後也要再執行一次。</string>
     <string name="phone_success_note_usb">請保持 USB 偵錯開啟;助手是用 USB 指令啟動的,多數手機拔掉傳輸線後還能繼續用;如果停止,插回傳輸線再執行一次指令即可恢復。手機重啟後,先開啟 Mika,再執行一次指令</string>
     <string name="phone_usage_note_usb">Mika 的內建助手是用 USB 啟動指令啟動的,多數手機拔掉傳輸線後還能繼續執行;部分系統會在拔線時停止助手,插回傳輸線再執行一次指令即可恢復。「USB 偵錯」(在開發人員選項裡)要一直開著,關掉後手機操作會停下。手機重啟後助手不會自己回來:開啟 Mika,再執行一次啟動指令(在「設定手機操作」裡可以複製)。如果這台手機有能用的「無線偵錯」,配對一次之後,重啟後 Mika 就能自己重新連上。</string>
+    <string name="phone_usage_summary_usb">「USB 除錯」要一直開著；重啟後需再執行一次啟動指令</string>
     <string name="fail_root_denied">root 授權被拒絕了</string>
     <string name="fail_root_denied_body">Mika 沒能用 root 啟動手機助手。點「重試」並在授權彈框裡允許 Mika,或改用無線偵錯。</string>
     <string name="fail_root_no_answer">root 沒有回應</string>

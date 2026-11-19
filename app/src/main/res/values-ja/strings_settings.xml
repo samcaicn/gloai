@@ -107,6 +107,8 @@
     <string name="net_proxy">ネットワークプロキシ</string>
     <string name="net_proxy_row_sub">モデル呼び出し、アップデート、内蔵ブラウザ、コマンドに使われます</string>
     <string name="net_proxy_hint">Mika のモデル呼び出し(チャット、モデル一覧、アカウントでのサインイン)、アプリ内でのアップデートのダウンロード、内蔵ブラウザ、そして「ファイルと計算環境」のコマンド(そこでネットワーク接続がオンのとき)に使われます。このスマホやローカルネットワーク上のアドレス(localhost、192.168.x.x、10.x.x.x、.local で終わる名前)は常に直接接続するので、ローカルのモデルもそのまま使えます。user:password@ を含めることができ、このスマホに暗号化して保存されます。直接接続する場合は空欄にしてください。</string>
+    <string name="net_proxy_summary">モデルのリクエスト、更新、内蔵ブラウザ、ファイル環境のコマンドはこのプロキシを通ります。</string>
+    <string name="details">詳細</string>
     <string name="net_proxy_invalid">http://ホスト:ポート の形式で入力してください(socks5、socks5h、https も使えます)。ホストの前に user:password@ を付けることもできます。</string>
     <string name="net_proxy_container_only">https:// のプロキシは「ファイルと計算環境」のコマンドだけに使われ、Mika 自身の接続は直接接続のままです。すべてに使うには http:// か socks5:// を指定してください。</string>
     <string name="net_proxy_browser_unsupported">このスマホの WebView はアプリ単位のプロキシに対応していないため、内蔵ブラウザは直接接続します。</string>
@@ -211,7 +213,7 @@
     <string name="settings_token_budget_invalid">%1$s〜%2$s の整数を入力してください。</string>
     <string name="settings_auto_archive">チャットを自動アーカイブ</string>
     <string name="settings_auto_archive_sub">しばらく新しいメッセージがないチャットをアーカイブに移します</string>
-    <string name="settings_auto_archive_hint">選んだ期間、新しいメッセージがないチャットをアーカイブに移します。ピン留めしたチャットとタスク実行中のチャットは対象外です。チャット一覧のアーカイブからいつでも戻せます。</string>
+    <string name="settings_auto_archive_hint">選んだ期間、新しいメッセージがないチャットをアーカイブに移します。</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="other">%1$d 日</item>
     </plurals>

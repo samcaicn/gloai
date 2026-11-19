@@ -115,6 +115,8 @@
     <string name="net_proxy">Proxy de rede</string>
     <string name="net_proxy_row_sub">Para chamadas de modelo, atualizações, navegador integrado e comandos</string>
     <string name="net_proxy_hint">Usado nas chamadas de modelo do Mika (chat, listas de modelos, login com conta), nos downloads de atualização dentro do app, no navegador integrado e nos comandos de Arquivos e ambiente de computação enquanto o acesso à rede estiver ativado lá. Endereços deste celular ou da sua rede local (localhost, 192.168.x.x, 10.x.x.x, nomes terminados em .local) sempre se conectam direto, então modelos locais continuam funcionando. Pode incluir usuário:senha@, que fica criptografado neste celular. Deixe vazio para conexão direta.</string>
+    <string name="net_proxy_summary">As solicitações do modelo, as atualizações, o navegador integrado e os comandos do ambiente de arquivos passam por este proxy.</string>
+    <string name="details">Detalhes</string>
     <string name="net_proxy_invalid">Escreva no formato http://host:porta (socks5, socks5h e https também funcionam), opcionalmente com usuário:senha@ antes do host.</string>
     <string name="net_proxy_container_only">Proxies https:// só são usados pelos comandos de Arquivos e ambiente de computação; as conexões do próprio Mika continuam diretas. Use http:// ou socks5:// para cobrir tudo.</string>
     <string name="net_proxy_browser_unsupported">O WebView deste celular não aceita um proxy próprio do app, então o navegador integrado se conecta direto.</string>
@@ -219,7 +221,7 @@
     <string name="settings_token_budget_invalid">Digite um número inteiro de %1$s a %2$s.</string>
     <string name="settings_auto_archive">Arquivar conversas automaticamente</string>
     <string name="settings_auto_archive_sub">Conversas sem mensagens novas por um tempo vão para o arquivo</string>
-    <string name="settings_auto_archive_hint">As conversas sem mensagens novas pelo tempo escolhido vão para o arquivo. Conversas fixadas e conversas com uma tarefa em andamento ficam como estão. Você pode restaurá-las no arquivo da lista de conversas quando quiser.</string>
+    <string name="settings_auto_archive_hint">As conversas sem mensagens novas pelo tempo escolhido vão para o arquivo.</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="one">%1$d dia</item>
         <item quantity="many">%1$d dias</item>

@@ -87,6 +87,7 @@
     <string name="phone_reconnect">再接続</string>
     <string name="phone_row_sub">ワイヤレス デバッグを使って、仮想画面でアプリを操作します</string>
     <string name="phone_usage_note">一度ペア設定すると、Mika 内蔵のヘルパーがバックグラウンドに残り、Wi-Fi がなくても動き続けます。「USB デバッグ」(開発者向けオプション内)はオンのままにしてください。オフにすると、スマホの操作が止まります。再起動後は、Wi-Fi に接続して「ワイヤレス デバッグ」をオンにすれば、Mika が自動で再接続します。新しいコードは不要です。</string>
+    <string name="phone_usage_summary">「USB デバッグ」は常にオンに。再起動後、Mika が自動で再接続します。</string>
     <string name="phone_wireless_off">ワイヤレス デバッグがオフ</string>
     <string name="phone_connecting">接続中</string>
     <string name="phone_error">エラー</string>
@@ -138,6 +139,7 @@
     <string name="phone_usb_again_body">スマホを USB ケーブルでパソコンにつないで、パソコンでこのコマンドを実行します(この adb コマンドをスマホに対して実行できる方法なら、ほかの方法でもかまいません)。多くのスマホではケーブルを抜いても動き続けますが、停止した場合はケーブルを接続してコマンドをもう一度実行すれば操作を再開できます。スマホを再起動した後にも、もう一度実行してください。</string>
     <string name="phone_success_note_usb">USB デバッグはオンのままにしてください。ヘルパーは USB コマンドで起動しました。多くのスマホではケーブルを抜いても動き続けますが、停止した場合はケーブルを接続してコマンドをもう一度実行してください。スマホの再起動後は、Mika を一度開いてからコマンドをもう一度実行してください。</string>
     <string name="phone_usage_note_usb">Mika 内蔵のヘルパーは USB の開始コマンドで起動しました。多くのスマホではケーブルを抜いても動き続けますが、一部のシステムではケーブルを抜くと停止します。その場合はケーブルを接続してコマンドをもう一度実行すれば、スマホの操作を再開できます。「USB デバッグ」(開発者向けオプション内)はオンのままにしてください。オフにすると、スマホの操作が止まります。スマホの再起動後、ヘルパーは自動では復帰しません。Mika を開いて、もう一度コマンドを実行してください(「スマホの操作を設定」でコピーできます)。このスマホで「ワイヤレス デバッグ」が使えるなら、一度ペア設定すると、再起動後も Mika が自動で再接続できます。</string>
+    <string name="phone_usage_summary_usb">「USB デバッグ」は常にオンに。再起動後、起動コマンドをもう一度実行してください。</string>
     <string name="fail_root_denied">root 権限が拒否されました</string>
     <string name="fail_root_denied_body">root でヘルパーを起動できませんでした。「再試行」をタップして表示された許可画面で Mika を許可するか、ワイヤレス デバッグを使用してください。</string>
     <string name="fail_root_no_answer">root から応答がありません</string>

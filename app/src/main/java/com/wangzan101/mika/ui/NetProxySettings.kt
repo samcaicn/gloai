@@ -3,6 +3,7 @@ package com.wangzan101.mika.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import com.wangzan101.mika.ui.components.DetailNote
 import com.wangzan101.mika.ui.components.MikaDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ import com.wangzan101.mika.ui.theme.MikaType
  */
 object NetProxyCopy {
     val TITLE: String get() = tr(R.string.net_proxy)
+    val SUMMARY: String get() = tr(R.string.net_proxy_summary)
     val HINT: String get() = tr(R.string.net_proxy_hint)
     val INVALID: String get() = tr(R.string.net_proxy_invalid)
 
@@ -61,7 +63,7 @@ fun NetProxyDialog(initial: String, onDismiss: () -> Unit, onSave: (String) -> U
         title = { Text(NetProxyCopy.TITLE) },
         text = {
             Column {
-                Text(NetProxyCopy.HINT, style = MikaType.Caption, color = MikaTheme.colors.ink3)
+                DetailNote(NetProxyCopy.SUMMARY, NetProxyCopy.HINT, Modifier.padding(bottom = 4.dp))
                 OutlinedTextField(
                     text, { text = it }, Modifier.fillMaxWidth().padding(top = 8.dp).testTag("net-proxy-input"),
                     singleLine = true, isError = !ok, placeholder = { Text("http://127.0.0.1:7890") },

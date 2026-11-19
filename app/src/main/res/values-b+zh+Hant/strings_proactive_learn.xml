@@ -79,6 +79,7 @@
     <string name="proactive_learn_level_balanced_sub">話題出現滿 2 天才算數;每個 App 每天最多提醒 20 個對話;來源是「高」的 App 歸納出的東西帶進任務。</string>
     <string name="proactive_learn_level_aggressive_sub">話題出現 1 天就算數;提醒不設上限;來源是「中」和「高」的 App 歸納出的東西都帶進任務。</string>
     <string name="proactive_learn_level_note">「帶進任務」是指:你在這支手機上發起的每個任務,都會附上今天和昨天的歸納、以及 Mika 對你的認識,並標明這些來自通知、不是你說的。不管哪一檔,Mika 都不會不等你開口就自己說話,也不會替你回覆。帶進去的內容會傳送給執行任務的那個模型,它不一定是你為判定通知確認過的那一個。任務需要時,還可以去讀這些 App 今天和昨天的通知原文。放得下時還會附上上週、上月的歸納;任務需要更多時,可以去讀存著的各天、各週、各月的歸納。帶了這些內容的任務,結束時不再自動從你說的話裡擷取記憶;你親口說出來、讓 Mika 記住的事照常記。</string>
+    <string name="proactive_learn_level_summary">帶進任務 = 附上今天/昨天的歸納，並標明來自通知</string>
     <string name="proactive_learn_tier_title">%1$s 的來源檔位</string>
     <string name="proactive_learn_tier_low">低</string>
     <string name="proactive_learn_tier_mid">中</string>

@@ -226,6 +226,10 @@ object PhoneSetupCopy {
     fun usageNote(restart: HelperRestart): String =
         if (restart == HelperRestart.UsbCommand) tr(R.string.phone_usage_note_usb) else tr(R.string.phone_usage_note)
 
+    /** 上面那条说明的摘要,常驻一行;全文收进「详情」。 */
+    fun usageSummary(restart: HelperRestart): String =
+        if (restart == HelperRestart.UsbCommand) tr(R.string.phone_usage_summary_usb) else tr(R.string.phone_usage_summary)
+
     fun statusValue(s: BuiltinShellStatus): Pair<String, ValueTone> = when (s) {
         BuiltinShellStatus.Running -> tr(R.string.sandbox_ready) to ValueTone.Ok
         BuiltinShellStatus.NotPaired -> tr(R.string.settings_not_set) to ValueTone.Bad
