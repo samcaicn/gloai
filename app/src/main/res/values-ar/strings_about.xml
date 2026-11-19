@@ -40,7 +40,6 @@
     <string name="about_update_download_in_app">تنزيل التحديث</string>
     <string name="about_update_downloading">جارٍ التنزيل…</string>
     <string name="about_update_progress">جارٍ التنزيل %1$d%%</string>
-    <string name="about_update_paused">أُوقف التنزيل مؤقتاً؛ وسيُستأنف تلقائياً…</string>
     <string name="about_update_install">تثبيت التحديث</string>
     <string name="about_update_retry">إعادة التنزيل</string>
     <string name="about_update_cancel">حذف التنزيل</string>

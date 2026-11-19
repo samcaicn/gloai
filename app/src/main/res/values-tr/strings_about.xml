@@ -40,7 +40,6 @@
     <string name="about_update_download_in_app">Güncellemeyi indir</string>
     <string name="about_update_downloading">İndiriliyor…</string>
     <string name="about_update_progress">%1$d%% indiriliyor</string>
-    <string name="about_update_paused">İndirme duraklatıldı; otomatik devam edecek…</string>
     <string name="about_update_install">Güncellemeyi yükle</string>
     <string name="about_update_retry">Tekrar indir</string>
     <string name="about_update_cancel">İndirmeyi sil</string>

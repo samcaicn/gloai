@@ -40,7 +40,6 @@
     <string name="about_update_download_in_app">دانلود به‌روزرسانی</string>
     <string name="about_update_downloading">در حال دانلود…</string>
     <string name="about_update_progress">در حال دانلود %1$d%%</string>
-    <string name="about_update_paused">دانلود متوقف شده است؛ به‌طور خودکار ادامه پیدا می‌کند…</string>
     <string name="about_update_install">نصب به‌روزرسانی</string>
     <string name="about_update_retry">دانلود دوباره</string>
     <string name="about_update_cancel">حذف دانلود</string>

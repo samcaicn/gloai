@@ -40,7 +40,6 @@
     <string name="about_update_download_in_app">Descargar actualización</string>
     <string name="about_update_downloading">Descargando…</string>
     <string name="about_update_progress">Descargando %1$d%%</string>
-    <string name="about_update_paused">Descarga en pausa; se reanudará automáticamente…</string>
     <string name="about_update_install">Instalar actualización</string>
     <string name="about_update_retry">Descargar de nuevo</string>
     <string name="about_update_cancel">Eliminar descarga</string>

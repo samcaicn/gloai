@@ -40,7 +40,6 @@
     <string name="about_update_download_in_app">Download update</string>
     <string name="about_update_downloading">Downloading…</string>
     <string name="about_update_progress">Downloading %1$d%%</string>
-    <string name="about_update_paused">Download paused; it will resume automatically…</string>
     <string name="about_update_install">Install update</string>
     <string name="about_update_retry">Download again</string>
     <string name="about_update_cancel">Delete download</string>

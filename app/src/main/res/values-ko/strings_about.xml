@@ -40,7 +40,6 @@
     <string name="about_update_download_in_app">업데이트 다운로드</string>
     <string name="about_update_downloading">다운로드 중…</string>
     <string name="about_update_progress">다운로드 중 %1$d%%</string>
-    <string name="about_update_paused">다운로드가 일시 중지됐어요. 자동으로 다시 시작돼요…</string>
     <string name="about_update_install">업데이트 설치</string>
     <string name="about_update_retry">다시 다운로드</string>
     <string name="about_update_cancel">다운로드 삭제</string>

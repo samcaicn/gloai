@@ -60,7 +60,6 @@
     <string name="about_update_download_in_app">下載更新</string>
     <string name="about_update_downloading">正在下載…</string>
     <string name="about_update_progress">正在下載 %1$d%%</string>
-    <string name="about_update_paused">下載已暫停，稍後自動繼續…</string>
     <string name="about_update_install">安裝更新</string>
     <string name="about_update_retry">重新下載</string>
     <string name="about_update_cancel">刪除下載</string>

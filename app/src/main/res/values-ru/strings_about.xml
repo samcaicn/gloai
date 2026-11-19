@@ -40,7 +40,6 @@
     <string name="about_update_download_in_app">Скачать обновление</string>
     <string name="about_update_downloading">Загрузка…</string>
     <string name="about_update_progress">Загрузка %1$d%%</string>
-    <string name="about_update_paused">Загрузка приостановлена, скоро продолжится сама…</string>
     <string name="about_update_install">Установить обновление</string>
     <string name="about_update_retry">Скачать заново</string>
     <string name="about_update_cancel">Удалить загрузку</string>

@@ -40,7 +40,6 @@
     <string name="about_update_download_in_app">アップデートをダウンロード</string>
     <string name="about_update_downloading">ダウンロード中…</string>
     <string name="about_update_progress">ダウンロード中 %1$d%%</string>
-    <string name="about_update_paused">ダウンロードを一時停止中。自動的に再開します…</string>
     <string name="about_update_install">アップデートをインストール</string>
     <string name="about_update_retry">もう一度ダウンロード</string>
     <string name="about_update_cancel">ダウンロードを削除</string>
