@@ -62,6 +62,10 @@ data class VoiceSettingsState(
 }
 
 class VoiceSettings(private val prefs: SharedPreferences) {
+    interface Owner {
+        val voiceSettings: VoiceSettings
+    }
+
     private val _state = MutableStateFlow(read())
     val state: StateFlow<VoiceSettingsState> = _state.asStateFlow()
 
@@ -153,8 +157,8 @@ class VoiceSettings(private val prefs: SharedPreferences) {
     companion object {
         private const val KEY = "voice_settings"
 
-        fun get(context: Context) = VoiceSettings(
-            context.applicationContext.getSharedPreferences(FeatureFlags.PREFS, Context.MODE_PRIVATE),
-        )
+        fun get(context: Context): VoiceSettings =
+            (context.applicationContext as? Owner)?.voiceSettings
+                ?: error("the Application must implement VoiceSettings.Owner")
     }
 }

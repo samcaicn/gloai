@@ -77,7 +77,8 @@ import com.wangzan101.mika.task.TriggerRuntime
  * 其余代码经构造参数拿到。助手进程(HelperMain、ShellService)没有这个对象,不用这里的任何服务。
  */
 class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, PhoneServices.Owner,
-    MemoryRuntime.Owner, ProviderStore.Owner, FileRouteStore.Owner, TaskRecovery.Owner {
+    MemoryRuntime.Owner, ProviderStore.Owner, FileRouteStore.Owner, TaskRecovery.Owner,
+    com.wangzan101.mika.settings.VoiceSettings.Owner {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /** 手机能力的服务:内置助手、共用的 shell 连接、配对、「去设置」提示。 */
@@ -354,7 +355,9 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
 
     /** Mika 自己的朗读播放器:全进程一个,聊天里的「朗读」和设置页的测试共用。 */
     val voicePlayer by lazy { com.wangzan101.mika.voice.VoicePlayer(this) }
-    private val voiceSettings by lazy { com.wangzan101.mika.settings.VoiceSettings.get(this) }
+    override val voiceSettings by lazy {
+        com.wangzan101.mika.settings.VoiceSettings(getSharedPreferences(FeatureFlags.PREFS, MODE_PRIVATE))
+    }
 
     /** 播放工作区里的一段音频(生成结果);读不到时什么都不做。 */
     private suspend fun playWorkspaceAudio(conversationId: String, path: String) {

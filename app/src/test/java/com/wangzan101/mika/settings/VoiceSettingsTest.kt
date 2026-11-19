@@ -1,13 +1,37 @@
 package com.wangzan101.mika.settings
 
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.SharedPreferences
 import com.wangzan101.mika.settings.FeatureFlagsCapsuleTest.MemoryPrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VoiceSettingsTest {
+    @Test fun settingsPageAndChatShareLiveConfiguration() {
+        val prefs = MemoryPrefs()
+        val context = object : ContextWrapper(null), VoiceSettings.Owner {
+            override val voiceSettings = VoiceSettings(prefs)
+            override fun getApplicationContext(): Context = this
+            override fun getSharedPreferences(name: String, mode: Int): SharedPreferences = prefs
+        }
+        val chat = VoiceSettings.get(context)
+        val settings = VoiceSettings.get(context)
+        val choice = VoiceChoice("p", "tts", TtsProtocol.OpenAiSpeech, "alloy", 1.2f)
+        settings.setChoice(choice)
+        settings.setAutoRead(true)
+        assertSame(settings, chat)
+        assertEquals(choice, chat.state.value.choice)
+        assertTrue(chat.state.value.autoRead)
+        settings.setEnabled(false)
+        assertFalse(chat.state.value.enabled)
+        assertSame(chat, VoiceSettings.get(context))
+    }
+
     @Test fun freshDefaultsAreReadableButDoNotAutoSpeak() {
         val state = VoiceSettings(MemoryPrefs()).state.value
         assertTrue(state.enabled)
