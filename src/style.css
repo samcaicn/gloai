@@ -808,3 +808,12 @@ body.ov-open { overflow: hidden; }
    凡是「标题行 + 右侧说明」的卡片，正文统一留 8px 呼吸。 */
 .card .row-between + .card-desc { margin-top: 8px; }
 .row-between .hint { flex: none; text-align: right; }
+
+/* ---- 自动回复浮层：写回服务端限额面板 ---- */
+.limit-writeback { margin-top: 18px; padding: 14px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--card-2); }
+.lw-title { font-size: 13px; font-weight: 700; color: var(--accent-dark); margin-bottom: 6px; }
+.lw-hint { font-size: 11.5px; line-height: 1.6; color: var(--text-dim); margin: 0 0 12px; }
+.lw-hint b { color: var(--accent-deep); }
+.lw-result { min-height: 16px; margin: 10px 0 8px; font-size: 12px; line-height: 1.5; }
+.lw-result.ok { color: var(--accent-deep); }
+.lw-result.err { color: var(--err); }

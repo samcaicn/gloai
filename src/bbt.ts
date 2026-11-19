@@ -9,6 +9,8 @@ export const bbt = {
   test: () => api.testConnection(),
   fetch: () => api.fetchRemoteConfig(),
   push: (value: any) => api.pushRemoteConfig(value),
+  setDailyLimit: (telephone: string, password: string, value: number) =>
+    api.setDailyLimit(telephone, password, value),
   setConnection: (base_url: string, token?: string, telephone?: string) =>
     api.setConnection(base_url, token, telephone),
   updateCheck: (base_url: string) => api.updateCheck(base_url),

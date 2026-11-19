@@ -194,6 +194,7 @@ pub fn run() {
             commands::test_connection,
             commands::fetch_remote_config,
             commands::push_remote_config,
+            commands::set_daily_limit,
             commands::update_check,
             commands::update_prepare,
             // iLink 聊天

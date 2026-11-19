@@ -31,6 +31,9 @@ export const api = {
   testConnection: () => invoke<any>("test_connection"),
   fetchRemoteConfig: () => invoke<any>("fetch_remote_config"),
   pushRemoteConfig: (value: any) => invoke("push_remote_config", { value }),
+  // 用团长凭证临时登录写回服务端限额（凭证不落盘、不动主连接）
+  setDailyLimit: (telephone: string, password: string, value: number) =>
+    invoke<any>("set_daily_limit", { telephone, password, value }),
 
   updateCheck: (base_url: string) => invoke<any>("update_check", { base_url }),
   updatePrepare: (base_url: string) => invoke<any>("update_prepare", { base_url }),

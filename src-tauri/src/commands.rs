@@ -347,6 +347,70 @@ pub async fn push_remote_config(
     bbt::data_of(&result)
 }
 
+/// 写回「每人每日免费条数」到服务端 D1（leaderChatDailyLimit_<团长ID>）。
+///
+/// 关键约束（2026-11-19）：
+///   - 主连接是**团员号**（发消息触发团长 AI 用），团员态调 chat/configSave 返回「无权限」，
+///     且后端没有团员态改限额的 action。故必须用**团长凭证**临时登录再写。
+///   - 团长手机号/密码由前端「每次手动输入」，**不进 config.json、不落盘**。
+///   - 全程用临时 BbtConnection，绝不改 state.conn（换主连接会断 AI 消息链路）。
+///   - 写回后查一次 chat/quota 回读，返回服务端真实 limit 供前端确认。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn set_daily_limit(
+    app: tauri::AppHandle,
+    telephone: String,
+    password: String,
+    value: i64,
+) -> Result<Value, String> {
+    if value <= 0 || value > 999999 {
+        return Err("每日条数需在 1 ~ 999999 之间".into());
+    }
+    let state = app.state::<AppState>();
+    let base = state.conn.lock().unwrap().base_url.clone();
+    if base.trim().is_empty() {
+        return Err("未配置接口地址".into());
+    }
+    if telephone.trim().is_empty() || password.trim().is_empty() {
+        return Err("请填写团长手机号和密码".into());
+    }
+
+    // 临时连接：仅本次写回使用，不写入全局 state.conn、不持久化凭证
+    let mut tmp = bbt::BbtConnection {
+        base_url: base.clone(),
+        ..Default::default()
+    };
+    let (token, account) = bbt::login(&tmp, telephone.trim(), password.trim()).await?;
+    tmp.token = Some(token);
+
+    let role = account.get("role").and_then(|v| v.as_str()).unwrap_or("");
+    if role != "leader" {
+        return Err(format!("账号 {} 不是团长（role={}），无权修改限额", telephone.trim(), role));
+    }
+
+    // chat/configSave 只接受 CONFIG_KEYS，dailyLimit 归一为字符串（对齐官方前端）
+    let params = json!({ "dailyLimit": value.to_string() });
+    let condition = bbt::build_config_save_condition(&params);
+    let result = bbt::call(&tmp, "chat/configSave", &condition).await?;
+    bbt::data_of(&result)?; // status=false（如无权限/参数错）会在此抛错
+
+    // 回读：用同一临时团长连接查 quota，确认服务端真实 limit
+    let quota_res = bbt::call(&tmp, "chat/quota", &json!({})).await?;
+    let quota = bbt::data_of(&quota_res).unwrap_or(json!({}));
+    let applied = quota.get("limit").and_then(|v| v.as_i64()).unwrap_or(value);
+
+    Ok(json!({
+        "success": true,
+        "version": "1",
+        "limit": applied,
+        "requested": value,
+        "message": if applied == value {
+            format!("已写回服务端，当前每日限额 {}", applied)
+        } else {
+            format!("已提交 {}，服务端回读为 {}（可能被上限截断）", value, applied)
+        },
+    }))
+}
+
 // ---------------- 自动更新（weauto 模式）----------------
 
 /// 检查更新：GET {base}/updates/version.json，对比当前版本

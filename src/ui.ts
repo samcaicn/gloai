@@ -93,6 +93,47 @@ function escapeHtml(s: string): string {
   );
 }
 
+// 写回「每人每日免费条数」到服务端 D1。团员号无权限，必须用团长凭证；
+// 凭证只从浮层输入框读取、不进 state 也不落盘，用完即弃。
+async function onWriteDailyLimit() {
+  const tel = ($("limit-tel")?.value || "").trim();
+  const pwd = $("limit-pwd")?.value || "";
+  const value = Number(($("limit-value")?.value || "").trim());
+  const result = $("limit-result");
+  const btn = $("btn-limit-writeback") as HTMLButtonElement | null;
+  if (!tel || !pwd) { setLimitResult("请先填写团长手机号和密码", false); return; }
+  if (!Number.isInteger(value) || value < 1 || value > 999999) {
+    setLimitResult("每日条数需为 1 ~ 999999 的整数", false); return;
+  }
+  if (btn) { btn.classList.add("loading"); btn.disabled = true; }
+  setLimitResult("正在用团长账号写回服务端…", true);
+  try {
+    const res: any = await bbt.setDailyLimit(tel, pwd, value);
+    setLimitResult(res?.message || `已写回服务端，限额 ${res?.limit ?? value}`, true);
+    toast(res?.message || "每日限额已写回服务端");
+    // 写回成功后同步本地显示值（本地值仅作参考，真正生效值在服务端）
+    if (res?.limit != null) {
+      state.params.dailyLimit = res.limit;
+      const local = $("fld-dailyLimit");
+      if (local) local.value = String(res.limit);
+    }
+    // 凭证用完即清，绝不留存在内存 DOM 里
+    if ($("limit-pwd")) $("limit-pwd")!.value = "";
+  } catch (e: any) {
+    setLimitResult(`写回失败：${e?.message || e}`, false);
+    toast(`写回失败：${e?.message || e}`, false);
+  } finally {
+    if (btn) { btn.classList.remove("loading"); btn.disabled = false; }
+  }
+}
+
+function setLimitResult(msg: string, ok: boolean) {
+  const el = $("limit-result");
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `lw-result ${ok ? "ok" : "err"}`;
+}
+
 /** 顶栏常驻连接态：任意页签都能一眼看到是否已连接，点击直接进连接设置。 */
 function updateConnBadge() {
   const el = document.getElementById("conn-badge");
@@ -232,12 +273,38 @@ function render() {
         </button>`).join("")}
       </div>
     </section>`;
+  // 「每人每日免费条数」真正生效在服务端 D1。主连接是团员号、无权限改，
+  // 故在自动回复浮层里单独放一个写回面板：团长凭证每次手输、不进 fld-*、
+  // 不落盘，点按钮时用临时团长连接写 chat/configSave（见 Rust set_daily_limit）。
+  const limitWritebackPanel = `
+    <div class="limit-writeback" id="limit-writeback">
+      <div class="lw-title">写回服务端（每人每日免费条数）</div>
+      <p class="lw-hint">上方的数字只存本机。真正生效的限额在服务端，需用<b>团长账号</b>登录写回。凭证仅本次使用，不保存。</p>
+      <div class="fields">
+        <div class="field">
+          <div class="field-label">团长手机号<span class="hint">有管理权限的团长账号，非当前团员号</span></div>
+          <input type="text" id="limit-tel" inputmode="tel" placeholder="团长手机号"/>
+        </div>
+        <div class="field">
+          <div class="field-label">团长密码<span class="hint">仅用于本次写回，不写入配置文件</span></div>
+          <input type="password" id="limit-pwd" autocomplete="off" placeholder="团长密码"/>
+        </div>
+        <div class="field">
+          <div class="field-label">每日条数<span class="hint">1 ~ 999999，默认 3999</span></div>
+          <input type="number" id="limit-value" value="${state.params.dailyLimit ?? 3999}" step="1" min="1" max="999999"/>
+        </div>
+      </div>
+      <div id="limit-result" class="lw-result"></div>
+      <div class="btn-row"><button class="btn primary small" id="btn-limit-writeback" type="button">写回服务端</button></div>
+    </div>`;
+
   const moreOverlays = SCHEMA.map(
     (g) =>
       overlayHtml(
         `ov-${g.id}`,
         g.title,
-        `<div class="fields">${g.fields.map((f) => fieldHtml(f, state.params[f.key], "fld")).join("")}</div>`,
+        `<div class="fields">${g.fields.map((f) => fieldHtml(f, state.params[f.key], "fld")).join("")}</div>` +
+          (g.id === "chat_ai" ? limitWritebackPanel : ""),
         g.desc
       )
   ).join("");
@@ -286,6 +353,8 @@ function render() {
   SCHEMA.forEach((g) => {
     $(`btn-ov-${g.id}`)?.addEventListener("click", () => openOverlay(`ov-${g.id}`));
   });
+  // 写回服务端限额：团长凭证每次手输、不落盘；用临时团长连接写 D1，主连接不动
+  $("btn-limit-writeback")?.addEventListener("click", () => { void onWriteDailyLimit(); });
   renderChat(document.getElementById("page-chat") as HTMLElement);
   renderMemberQr(document.getElementById("page-members") as HTMLElement);
   renderOrdersPage(document.getElementById("page-orders") as HTMLElement);
