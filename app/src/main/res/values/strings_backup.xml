@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup & data (Settings > Backup & data). English-only initial strings with translatable="false" pending localization. -->
+    <string name="backup_title" translatable="false">Backup &amp; data</string>
+    <string name="backup_sub" translatable="false">Export everything to a ZIP file, or restore from one</string>
+    <string name="backup_warning_title" translatable="false">This backup is not encrypted</string>
+    <string name="backup_warning_body" translatable="false">The ZIP file contains all your secrets: API keys, OAuth tokens, and service credentials. Keep it private, do not share it, and delete it after you have imported it.</string>
+    <string name="backup_included_label" translatable="false">What is included</string>
+    <string name="backup_included_body" translatable="false">Providers and keys, chats, personas, skills, memory, workflows, task runs, and settings.</string>
+    <string name="backup_excluded_body" translatable="false">Not included: wireless-debugging pairing (re-pair after import), the accessibility service setting (turn it back on in Android Settings), the sandbox workspace, and file library attachments.</string>
+    <string name="backup_export" translatable="false">Export backup</string>
+    <string name="backup_export_sub" translatable="false">Save a ZIP file with all your data</string>
+    <string name="backup_import" translatable="false">Import backup</string>
+    <string name="backup_import_sub" translatable="false">Restore everything from a backup ZIP file</string>
+    <string name="backup_exported" translatable="false">Backup saved: %1$d files.</string>
+    <string name="backup_exported_skipped" translatable="false">Backup saved: %1$d files. %2$d keys could not be decrypted and were left out.</string>
+    <string name="backup_export_failed" translatable="false">Could not save the backup.</string>
+    <string name="backup_import_failed" translatable="false">Could not import this backup.</string>
+    <string name="backup_import_confirm_title" translatable="false">Replace current data?</string>
+    <string name="backup_import_confirm_body" translatable="false">This phone already has chats and providers. Importing will replace them.</string>
+    <string name="backup_replace" translatable="false">Replace all</string>
+    <string name="backup_imported_title" translatable="false">Backup restored</string>
+    <string name="backup_imported_body" translatable="false">Restored %1$d files.</string>
+    <string name="backup_after_import_body" translatable="false">Close Mika and open it again to use the restored data. Then re-pair wireless debugging, turn the accessibility service back on in Android Settings, and delete the backup ZIP file.</string>
+    <string name="backup_close_app" translatable="false">Close Mika</string>
+    <string name="backup_restart_note" translatable="false">Export first, before you uninstall anything: only this install can decrypt your data.</string>
+</resources>
