@@ -61,6 +61,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.update
@@ -481,7 +482,7 @@ class TaskService : Service() {
     /** 用户(或电脑)在新对话里交来的第一句话:后台请模型起一个标题记下(只起一次,起不出来就不记)。 */
     private fun nameConversation(store: ConversationStore, id: String, first: String, provenance: RunProvenance) {
         if (provenance.origin != RunOrigin.Ui && provenance.origin != RunOrigin.Mcp && provenance.origin != RunOrigin.Channel) return
-        scope.launch(Dispatchers.IO) {
+        scope.launch(Dispatchers.IO + store.meter(id)) {
             runCatching {
                 val env = TaskEnvironment.of(this@TaskService)
                 // 起标题也属于这段对话,和对话里的任务用同一个会话号
@@ -513,7 +514,8 @@ class TaskService : Service() {
                 }
             }
         }
-        run.job = scope.launch {
+        val meter = store.meter(run.conversationId)
+        run.job = scope.launch(meter) {
             center.markRunning(run)
             // 定时任务没人在场,卡住了没人停:跑过设置里的最长运行时间就停下(默认不限制)
             val limitMinutes = if (run.triggerWindowKey != null) FeatureFlags.get(this@TaskService).triggerRunMinutes() else null
@@ -594,7 +596,7 @@ class TaskService : Service() {
                 // A storage failure skips sending but must still release this task's slot below.
                 val delivery = prepareResult(run, end, deliveryId)
                 center.markResult(run, describe(end).second, deliveryId, successful = end is TaskState.Succeeded)
-                RunLearning.launchAfter(MemoryRuntime.of(this@TaskService).scope, {
+                RunLearning.launchAfter(MemoryRuntime.of(this@TaskService).scope + meter, {
                     delivered = notifyResult(run, delivery) == DeliveryState.Delivered
                     // 定时任务的结果当场按结局记(和以前一样),判下来没办成再改记;不靠服务一直在
                     if (delivered) run.triggerWindowKey?.let { key ->
@@ -635,7 +637,7 @@ class TaskService : Service() {
      * 写好或写不成都从「正在整理」里拿掉。
      */
     private fun summarizeStop(run: TaskRun, runId: String, draft: String?, store: ConversationStore) {
-        MemoryRuntime.of(this).scope.launch {
+        MemoryRuntime.of(this).scope.launch(store.meter(run.conversationId)) {
             try {
                 val text = runCatching { run.stopSummary(draft) }.onFailure { Log.w(TAG, "stop summary failed", it) }.getOrNull()
                 if (text != null) withContext(Dispatchers.IO) {

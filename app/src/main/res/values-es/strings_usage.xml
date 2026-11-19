@@ -49,4 +49,15 @@
     <string name="usage_allowance_updated">Última actualización: %1$s</string>
     <string name="usage_allowance_self_hosted">Conexión con alojamiento propio</string>
     <string name="usage_allowance_unsupported">Esta conexión no permite consultar la cuota</string>
+    <string name="chat_usage_title">Uso y contexto de la conversación</string>
+    <string name="chat_cache_rate">Aciertos de caché de entrada</string>
+    <string name="chat_cache_coverage">%1$s aciertos entre %2$s tokens de entrada con datos de caché</string>
+    <string name="chat_request_context">Última solicitud al modelo principal</string>
+    <string name="chat_no_context">Aún no se ha registrado el desglose del contexto.</string>
+    <string name="chat_request_size">%1$s · Paso %2$d · Estimación de %3$s / %4$s tokens</string>
+    <string name="chat_context_instructions">Instrucciones y definiciones de herramientas</string>
+    <string name="chat_context_dialogue">Historial de conversación</string>
+    <string name="chat_context_references">Memoria, conocimientos y habilidades</string>
+    <string name="chat_context_tools">Llamadas a herramientas, resultados e imágenes</string>
+    <string name="chat_context_runtime">Estado de ejecución y avisos</string>
 </resources>

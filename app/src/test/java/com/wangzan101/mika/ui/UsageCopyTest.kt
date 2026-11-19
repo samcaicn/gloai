@@ -61,6 +61,13 @@ class UsageCopyTest {
         assertEquals(1_000_000, UsageCopy.niceMax(1_000_000))
     }
 
+    @Test fun conversationUsesKMBAndPromotesRoundedBoundaries() {
+        val cases = mapOf(0L to "0", 999L to "999", 1_000L to "1K", 1_249L to "1.2K",
+            1_250L to "1.3K", 999_949L to "999.9K", 999_950L to "1M", 1_200_000L to "1.2M",
+            999_950_000L to "1B", 1_200_000_000L to "1.2B", 3_000_000_000L to "3B")
+        cases.forEach { (tokens, expected) -> assertEquals(expected, UsageCopy.compactTokens(tokens)) }
+    }
+
     @Test fun tokensUseWanAndYiWithThreeSignificantDigits() {
         assertEquals("0", UsageCopy.tokens(0))
         assertEquals("9999", UsageCopy.tokens(9_999))

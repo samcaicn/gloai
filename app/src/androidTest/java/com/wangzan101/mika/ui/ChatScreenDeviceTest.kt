@@ -9,6 +9,17 @@ import com.wangzan101.mika.cap.sandbox.SandboxState
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.core.agent.SpeedFlags
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
+import com.wangzan101.mika.core.model.ChatModel
+import com.wangzan101.mika.core.model.Message
+import com.wangzan101.mika.core.model.ModelReply
+import com.wangzan101.mika.core.model.Part
+import com.wangzan101.mika.core.model.StopReason
+import com.wangzan101.mika.core.model.ToolSpec
+import com.wangzan101.mika.core.model.Usage
+import com.wangzan101.mika.core.usage.UsagePurpose
+import com.wangzan101.mika.core.usage.UsageSink
+import com.wangzan101.mika.core.usage.UsageSource
+import com.wangzan101.mika.core.usage.metered
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.chat.ConversationStore
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -131,6 +142,54 @@ class ChatScreenDeviceTest {
 
     private fun awaitState(predicate: (TaskState) -> Boolean): TaskState =
         pollUntil(15_000) { DeviceTaskState.state.value.takeIf(predicate) } ?: error("state never matched: ${DeviceTaskState.state.value}")
+
+    @Test
+    fun titleShowsLiveAndCompletedConversationUsage() {
+        val counted = object : ChatModel by model {
+            override val name = "fixture"
+            override suspend fun complete(system: String, messages: List<Message>, tools: List<ToolSpec>): ModelReply {
+                if (tools.isEmpty()) return ModelReply(listOf(Part.Text("OK")), StopReason.EndTurn, Usage(0, 0))
+                return model.complete(system, messages, tools).copy(usage = Usage(1_000, 120, 800))
+            }
+        }.metered(UsageSource("fixture", "Fixture", "fixture", UsagePurpose.Main), UsageSink { _, _ -> })
+        testTasks.modelFactory = { _, _ -> counted }
+
+        fun open() = compose.onNodeWithTag("chat-usage-title").performClick()
+        fun waitFor(text: String) = compose.waitUntil(10_000) {
+            compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        }
+        fun close() = compose.onNodeWithTag("close-conversation-usage").performClick()
+        // The user's configured start page can be Personal or onboarding. Open this chat via its normal entry point.
+        val id = ConversationStore.shared(context).newConversation()
+        compose.runOnUiThread {
+            val intent = android.content.Intent(compose.activity.intent).putExtra(MainActivity.EXTRA_OPEN_CONVERSATION, id)
+            InstrumentationRegistry.getInstrumentation().callActivityOnNewIntent(compose.activity, intent)
+        }
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("chat-usage-title").fetchSemanticsNodes().isNotEmpty() }
+        compose.runOnUiThread { assertTrue(vm.send("你好", anyway)) }
+        model.awaitCall()
+        open()
+        waitFor("最近一次主模型请求")
+        compose.onNodeWithText("系统提示与工具定义").assertExists()
+        model.answer("你好。")
+        waitFor("本对话共 1.1K Token")
+        compose.onNodeWithText("80%").assertExists()
+        close()
+        compose.waitUntil(15_000) { !vm.busy() }
+        compose.onNodeWithText("80%").assertDoesNotExist()
+        compose.runOnUiThread { assertTrue(vm.send("再问一次", anyway)) }
+        model.awaitCall()
+        model.answer("好的。")
+        compose.waitUntil(15_000) { !vm.busy() }
+        open()
+        waitFor("本对话共 2.2K Token")
+        compose.onNodeWithText("80%").assertExists()
+        close()
+        compose.runOnUiThread { vm.newConversation() }
+        open()
+        waitFor("本对话共 0 Token")
+        compose.onNodeWithText("还没有记录到请求的上下文构成。").assertExists()
+    }
 
     @Test
     fun runsTaskWithStepsPipAndResult() {

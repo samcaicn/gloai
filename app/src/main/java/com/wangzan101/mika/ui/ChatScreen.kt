@@ -86,6 +86,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
@@ -267,6 +268,7 @@ fun ChatScreen(
     val input = ui.input
     // 推荐任务可以直接填进空输入框;已有内容时先确认,不能因误触把草稿换掉。
     var pendingExample by rememberSaveable(ui.conversationId) { mutableStateOf<String?>(null) }
+    var showUsage by rememberSaveable(ui.conversationId) { mutableStateOf(false) }
     var showChecklists by remember(ui.conversationId) { mutableStateOf(false) }
     var checklistIncoming by remember(ui.conversationId) { mutableStateOf<ChecklistSource?>(null) }
     var pendingChecklistDraft by remember(ui.conversationId) { mutableStateOf<String?>(null) }
@@ -381,6 +383,9 @@ fun ChatScreen(
         if (grown > 0 && followingTail && !listState.isScrollInProgress) listState.scrollBy(grown.toFloat())
     }
 
+    // 已结束各轮的运行小结:每轮结束那一行写这一轮的 token
+    val endedRuns = ui.exchanges.filter { !it.status.isActive() }.mapNotNull { it.recordedRun }
+    val runMetrics = rememberRunMetrics(endedRuns)
     val context = LocalContext.current
 
     val c = MikaTheme.colors
@@ -488,7 +493,12 @@ fun ChatScreen(
                         }
                     }
                     GlassSurface(backdrop = backdrop) {
-                        Text(ChatCopy.APP_TITLE, Modifier.padding(horizontal = 18.dp, vertical = 8.dp), style = MikaType.Title, color = c.ink, maxLines = 1)
+                        Row(Modifier.clickable(role = Role.Button, onClickLabel = stringResource(R.string.chat_usage_title)) { showUsage = true }
+                            .testTag("chat-usage-title").padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(ChatCopy.APP_TITLE, style = MikaType.Title, color = c.ink, maxLines = 1)
+                            Icon(MikaIcons.Chevron, null, Modifier.size(14.dp).rotate(90f), tint = c.ink2)
+                        }
                     }
                     GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
                         Box(
@@ -597,6 +607,8 @@ fun ChatScreen(
             backdrop = backdrop,
             reduceMotion = reduceMotion,
         )
+
+        if (showUsage) ConversationUsageSheet(ui.conversationId) { showUsage = false }
 
         if (personaPicker) {
             PersonaPicker(

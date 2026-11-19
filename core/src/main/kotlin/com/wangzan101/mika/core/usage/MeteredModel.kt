@@ -71,22 +71,30 @@ private open class MeteredModel(
     override val name: String get() = inner.name
 
     override suspend fun complete(system: String, messages: List<Message>, tools: List<ToolSpec>): ModelReply =
-        counted { inner.complete(system, messages, tools) }
+        counted(system, messages, tools) { inner.complete(system, messages, tools) }
 
-    protected suspend fun counted(call: suspend () -> ModelReply): ModelReply {
+    protected suspend fun counted(system: String, messages: List<Message>, tools: List<ToolSpec>, call: suspend () -> ModelReply): ModelReply {
         // 在一次运行里调用的,也记到这次运行名下(见 RunUsageTally)
-        val tally = currentCoroutineContext()[RunUsageTally]
+        val context = currentCoroutineContext()
+        val tally = context[RunUsageTally]
+        val conversation = context[ConversationMeter]
         // 拒绝时不建请求计数、不调用适配器，也不记一笔不存在的逻辑调用。
         tally?.checkBudget()
         beforeCall(source)
+        val step = context[ConversationMeter.MainRequest]?.step
+        if (step != null && conversation != null) {
+            runCatching { conversation.request(RequestComposition.estimate(name, step, capabilities.contextTokens, system, tools, messages)) }
+        }
         val attempts = ModelHttpAttempts { started -> beforeRetry(source, started) }
         val startedAt = tally?.deepSeekCost?.let { Instant.now() }
         val reply = try {
             withContext(attempts) { call() }
         } catch (e: Throwable) {
+            runCatching { conversation?.record(null, attempts.started) }
             note(null, tally, attempts.started, startedAt)
             throw e
         }
+        runCatching { conversation?.record(reply.usage, attempts.started) }
         note(reply.usage, tally, attempts.started, startedAt)
         return reply
     }
@@ -107,5 +115,5 @@ private class MeteredStreamingModel(
 ) : MeteredModel(inner, source, sink, beforeCall, beforeRetry), StreamingChatModel {
     override suspend fun completeStreaming(
         system: String, messages: List<Message>, tools: List<ToolSpec>, onText: (String) -> Unit,
-    ): ModelReply = counted { inner.completeStreaming(system, messages, tools, onText) }
+    ): ModelReply = counted(system, messages, tools) { inner.completeStreaming(system, messages, tools, onText) }
 }

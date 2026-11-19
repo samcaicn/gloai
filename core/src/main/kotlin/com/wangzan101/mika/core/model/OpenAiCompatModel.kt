@@ -313,10 +313,11 @@ class OpenAiCompatModel(
         val miss = int(u, "prompt_cache_miss_tokens")
         val inT = int(u, "prompt_tokens") ?: if (hit != null && miss != null) hit + miss else return null
         val outT = int(u, "completion_tokens") ?: 0
-        val cached = maxOf(int(u["prompt_tokens_details"] as? JsonObject, "cached_tokens") ?: 0, hit ?: 0).coerceAtMost(inT)
+        val detail = int(u["prompt_tokens_details"] as? JsonObject, "cached_tokens")
+        val cached = maxOf(detail ?: 0, hit ?: 0).coerceAtMost(inT)
         // completion_tokens 含思考;有的服务商在 completion_tokens_details.reasoning_tokens 里单独报
         val reasoning = (int(u["completion_tokens_details"] as? JsonObject, "reasoning_tokens") ?: 0).coerceIn(0, outT)
-        return Usage(inT, outT, cached, reasoning)
+        return Usage(inT, outT, cached, reasoning, cacheReported = detail != null || hit != null)
     }
 }
 

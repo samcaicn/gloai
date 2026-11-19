@@ -48,4 +48,15 @@
     <string name="usage_allowance_updated">آخرین به‌روزرسانی %1$s</string>
     <string name="usage_allowance_self_hosted">اتصال با میزبانی شخصی</string>
     <string name="usage_allowance_unsupported">بررسی سهمیه برای این اتصال در دسترس نیست</string>
+    <string name="chat_usage_title">مصرف و زمینهٔ گفتگو</string>
+    <string name="chat_cache_rate">نرخ استفاده از حافظهٔ نهان ورودی</string>
+    <string name="chat_cache_coverage">از %2$s توکن ورودی دارای گزارش، %1$s توکن از حافظهٔ نهان خوانده شد</string>
+    <string name="chat_request_context">آخرین درخواست به مدل اصلی</string>
+    <string name="chat_no_context">هنوز ترکیب زمینه ثبت نشده است.</string>
+    <string name="chat_request_size">%1$s · گام %2$d · برآورد %3$s / %4$s توکن</string>
+    <string name="chat_context_instructions">دستورهای سیستم و تعریف ابزارها</string>
+    <string name="chat_context_dialogue">تاریخچهٔ گفتگو</string>
+    <string name="chat_context_references">حافظه، دانش و مهارت‌ها</string>
+    <string name="chat_context_tools">فراخوانی ابزارها، نتایج و تصاویر</string>
+    <string name="chat_context_runtime">وضعیت اجرا و اعلان‌ها</string>
 </resources>

@@ -52,4 +52,15 @@
     <string name="usage_allowance_updated">آخر تحديث: %1$s</string>
     <string name="usage_allowance_self_hosted">اتصال مستضاف ذاتيًا</string>
     <string name="usage_allowance_unsupported">الاستعلام عن الحصة غير متاح لهذا الاتصال</string>
+    <string name="chat_usage_title">استهلاك المحادثة وسياقها</string>
+    <string name="chat_cache_rate">نسبة إصابات ذاكرة التخزين المؤقت للمدخلات</string>
+    <string name="chat_cache_coverage">تمت قراءة %1$s من الذاكرة المؤقتة من أصل %2$s رمز إدخال تتوفر عنه بيانات التخزين المؤقت</string>
+    <string name="chat_request_context">آخر طلب إلى النموذج الرئيسي</string>
+    <string name="chat_no_context">لم يُسجَّل توزيع السياق بعد.</string>
+    <string name="chat_request_size">%1$s · الخطوة %2$d · تقدير %3$s / %4$s رمزًا</string>
+    <string name="chat_context_instructions">تعليمات النظام وتعريفات الأدوات</string>
+    <string name="chat_context_dialogue">سجل المحادثة</string>
+    <string name="chat_context_references">الذاكرة والمعرفة والمهارات</string>
+    <string name="chat_context_tools">استدعاءات الأدوات والنتائج والصور</string>
+    <string name="chat_context_runtime">حالة التشغيل والتنبيهات</string>
 </resources>

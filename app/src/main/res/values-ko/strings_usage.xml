@@ -47,4 +47,15 @@
     <string name="usage_allowance_updated">마지막 업데이트 %1$s</string>
     <string name="usage_allowance_self_hosted">자체 호스팅 연결</string>
     <string name="usage_allowance_unsupported">이 연결은 한도 조회를 지원하지 않음</string>
+    <string name="chat_usage_title">대화 사용량 및 컨텍스트</string>
+    <string name="chat_cache_rate">입력 캐시 적중률</string>
+    <string name="chat_cache_coverage">캐시 정보가 있는 입력 토큰 %2$s개 중 %1$s개 적중</string>
+    <string name="chat_request_context">최근 주 모델 요청</string>
+    <string name="chat_no_context">기록된 컨텍스트 구성이 아직 없습니다.</string>
+    <string name="chat_request_size">%1$s · %2$d단계 · 추정 %3$s / %4$s 토큰</string>
+    <string name="chat_context_instructions">시스템 프롬프트 및 도구 정의</string>
+    <string name="chat_context_dialogue">대화 기록</string>
+    <string name="chat_context_references">메모리, 지식 및 스킬</string>
+    <string name="chat_context_tools">도구 호출, 결과 및 이미지</string>
+    <string name="chat_context_runtime">실행 상태 및 알림</string>
 </resources>

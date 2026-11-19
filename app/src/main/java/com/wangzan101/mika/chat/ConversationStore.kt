@@ -1,12 +1,21 @@
 package com.wangzan101.mika.chat
 
 import android.content.Context
+import com.wangzan101.mika.core.agent.NoticeTurn
+import com.wangzan101.mika.core.record.RunMetricsStore
+import com.wangzan101.mika.core.usage.ConversationMeter
+import com.wangzan101.mika.core.usage.ConversationUsage
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.settings.PersonaStore
 import com.wangzan101.mika.core.chat.GeneratedAudio
 import com.wangzan101.mika.core.memory.MemoryNote
 import com.wangzan101.mika.core.memory.NoteKind
 import com.wangzan101.mika.core.skills.SkillNote
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +35,7 @@ import kotlinx.serialization.json.put
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.nio.file.LinkOption
 import java.util.UUID
 
@@ -38,6 +48,46 @@ class ConversationStore(
     constructor(context: Context) : this(File(context.filesDir, "conversations"))
 
     fun newConversation(): String = UUID.randomUUID().toString()
+
+    // Separate invalidation: model requests must not reload the transcript, reorder chats or reset auto-archive.
+    private val usageRevision = MutableStateFlow(0L)
+    private val metrics = RunMetricsStore(File(dir.parentFile, RunMetricsStore.FILE_NAME))
+    private val usageJson = Json { ignoreUnknownKeys = true }
+
+    fun observeUsage(id: String): Flow<ConversationUsage> =
+        usageRevision.map { usageSnapshot(id) }.distinctUntilChanged().flowOn(Dispatchers.IO)
+
+    fun meter(id: String) = ConversationMeter { change -> updateUsage(id, change) }
+
+    private fun usageFile(id: String) = File(dir, "${file(id).name}.usage")
+
+    @Synchronized
+    internal fun usageSnapshot(id: String): ConversationUsage {
+        val saved = usageFile(id)
+        if (saved.isFile) return usageJson.decodeFromString(ConversationUsage.serializer(), saved.readText())
+        val branch = branchOrigin(id)
+        val inherited = branch?.let { it.parentTurn + if (it.afterTurn) 1 else 0 } ?: 0
+        val history = turns(id).drop(inherited).filterNot(NoticeTurn::isNotice)
+        if (history.isEmpty()) return ConversationUsage()
+        val summaries = metrics.byIds(history.mapNotNull { it.runId }.toSet()).values
+        // Historical summaries lack cache-report coverage and may omit calls made after a task ended.
+        return ConversationUsage(input = summaries.sumOf { it.allInputTokens ?: it.inputTokens },
+            output = summaries.sumOf { it.allOutputTokens ?: it.outputTokens }, partial = true)
+    }
+
+    @Synchronized
+    private fun updateUsage(id: String, change: (ConversationUsage) -> ConversationUsage) {
+        if (safe(id) in deleted) return
+        val old = usageSnapshot(id)
+        val next = change(old)
+        if (old == next) return
+        dir.mkdirs()
+        val dest = usageFile(id)
+        val tmp = File(dir, "${dest.name}.tmp")
+        tmp.writeText(usageJson.encodeToString(ConversationUsage.serializer(), next))
+        Files.move(tmp.toPath(), dest.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        usageRevision.value++
+    }
 
     private val _changes = MutableSharedFlow<String>(extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
@@ -183,6 +233,7 @@ class ConversationStore(
             if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) throw IOException("Unexpected conversation directory: ${file.name}")
             Files.deleteIfExists(path)
         }
+        usageRevision.value++
         deleted += safe(conversationId)
         firstMessages.remove(main)
         messageTimes.remove(main)

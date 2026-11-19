@@ -156,13 +156,23 @@ object UsageCopy {
             val yi = round3(BigDecimal(n).divide(BigDecimal(100_000_000)))
             return "${yi.stripTrailingZeros().toPlainString()} ${if (hant) "億" else "亿"}"
         }
-        // 英文按千、百万、十亿写:12.3K、1.5M
-        for ((unit, size) in listOf("K" to 1_000L, "M" to 1_000_000L, "B" to 1_000_000_000L)) {
-            val v = round3(BigDecimal(n).divide(BigDecimal(size)))
-            if (v < BigDecimal(1_000) || unit == "B") return "${v.stripTrailingZeros().toPlainString()}$unit"
+        return formatMetricTokens(n, ::round3)
+    }
+
+    /** Chat usage shares the same K/M/B units in every language. Round only for display. */
+    fun compactTokens(n: Long): String =
+        if (n < 1_000) n.toString() else formatMetricTokens(n) { it.setScale(1, RoundingMode.HALF_UP) }
+
+    private fun formatMetricTokens(n: Long, round: (BigDecimal) -> BigDecimal): String {
+        for ((unit, size) in TOKEN_UNITS) {
+            val v = round(BigDecimal.valueOf(n).divide(size))
+            if (v < BigDecimal.valueOf(1_000) || unit == "B") return "${v.stripTrailingZeros().toPlainString()}$unit"
         }
         return n.toString()
     }
+
+    private val TOKEN_UNITS = listOf("K" to BigDecimal.valueOf(1_000),
+        "M" to BigDecimal.valueOf(1_000_000), "B" to BigDecimal.valueOf(1_000_000_000))
 
     private fun round3(v: BigDecimal): BigDecimal = v.setScale(
         when {

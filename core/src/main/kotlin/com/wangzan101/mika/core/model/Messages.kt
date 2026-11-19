@@ -56,6 +56,10 @@ enum class StopReason { EndTurn, ToolUse, MaxTokens, Other }
  * [inputTokens] 是总输入 token(含缓存命中部分,OpenAI prompt_tokens 口径)。[outputTokens] 含思考;
  * [reasoningTokens] 是其中服务商单独报出的思考 token(没单独报的为 0,如 Anthropic)。
  */
-data class Usage(val inputTokens: Int, val outputTokens: Int, val cachedInputTokens: Int = 0, val reasoningTokens: Int = 0)
+data class Usage(
+    val inputTokens: Int, val outputTokens: Int, val cachedInputTokens: Int = 0, val reasoningTokens: Int = 0,
+    /** A provider can explicitly report zero cache reads. An absent counter has no cache-rate denominator. */
+    val cacheReported: Boolean = cachedInputTokens > 0,
+)
 
 data class ModelReply(val parts: List<Part>, val stopReason: StopReason, val usage: Usage?)

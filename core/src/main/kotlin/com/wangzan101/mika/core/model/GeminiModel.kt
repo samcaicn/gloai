@@ -238,7 +238,8 @@ class GeminiModel(
         val inT = n("promptTokenCount") ?: return null
         // promptTokenCount 已含缓存命中部分,与统一口径一致
         val thoughts = n("thoughtsTokenCount") ?: 0
-        return Usage(inT, (n("candidatesTokenCount") ?: 0) + thoughts, n("cachedContentTokenCount") ?: 0, thoughts)
+        val cached = n("cachedContentTokenCount")
+        return Usage(inT, (n("candidatesTokenCount") ?: 0) + thoughts, cached ?: 0, thoughts, cacheReported = cached != null)
     }
 }
 

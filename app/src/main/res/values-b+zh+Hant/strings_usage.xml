@@ -47,4 +47,15 @@
     <string name="usage_allowance_updated">上次更新 %1$s</string>
     <string name="usage_allowance_self_hosted">自行託管的連線</string>
     <string name="usage_allowance_unsupported">此連線未提供額度查詢</string>
+    <string name="chat_usage_title">對話用量與上下文</string>
+    <string name="chat_cache_rate">輸入快取命中率</string>
+    <string name="chat_cache_coverage">已回報快取的 %2$s 個輸入 Token 中，命中 %1$s 個</string>
+    <string name="chat_request_context">最近一次主模型請求</string>
+    <string name="chat_no_context">尚未記錄請求的上下文組成。</string>
+    <string name="chat_request_size">%1$s · 第 %2$d 步 · 估計占用 %3$s / %4$s Token</string>
+    <string name="chat_context_instructions">系統提示與工具定義</string>
+    <string name="chat_context_dialogue">對話記錄</string>
+    <string name="chat_context_references">記憶、知識與技能</string>
+    <string name="chat_context_tools">工具呼叫、結果與圖片</string>
+    <string name="chat_context_runtime">執行狀態與提示</string>
 </resources>

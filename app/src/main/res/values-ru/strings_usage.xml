@@ -50,4 +50,15 @@
     <string name="usage_allowance_updated">Последнее обновление: %1$s</string>
     <string name="usage_allowance_self_hosted">Подключение к собственному серверу</string>
     <string name="usage_allowance_unsupported">Проверка квоты недоступна для этого подключения</string>
+    <string name="chat_usage_title">Расход токенов и контекст чата</string>
+    <string name="chat_cache_rate">Доля попаданий во входной кеш</string>
+    <string name="chat_cache_coverage">Из %2$s входных токенов с данными о кеше %1$s взято из кеша</string>
+    <string name="chat_request_context">Последний запрос к основной модели</string>
+    <string name="chat_no_context">Состав контекста ещё не записан.</string>
+    <string name="chat_request_size">%1$s · Шаг %2$d · Оценка %3$s / %4$s токенов</string>
+    <string name="chat_context_instructions">Системные инструкции и описания инструментов</string>
+    <string name="chat_context_dialogue">История чата</string>
+    <string name="chat_context_references">Память, знания и навыки</string>
+    <string name="chat_context_tools">Вызовы инструментов, результаты и изображения</string>
+    <string name="chat_context_runtime">Состояние задачи и уведомления</string>
 </resources>
