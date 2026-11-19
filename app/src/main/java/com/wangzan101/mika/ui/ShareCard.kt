@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -60,17 +59,17 @@ data class ShareRequest(val goal: String, val answer: String)
  */
 @Composable
 fun ShareCardContent(goal: String, answer: String, logo: ImageBitmap, modifier: Modifier = Modifier) {
-    val ink = Color(0xFF1C1C1E)
-    val ink2 = Color(0xFF5F6068)
-    val ink3 = Color(0xFF9A9BA3)
-    Column(modifier.background(Color.White).padding(24.dp)) {
+    val ink = LightColors.ink
+    val ink2 = LightColors.ink2
+    val ink3 = LightColors.ink3
+    Column(modifier.background(LightColors.surface).padding(24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(logo, null, Modifier.size(40.dp).clip(RoundedCornerShape(11.dp)), contentScale = ContentScale.Crop)
             Spacer(Modifier.width(10.dp))
             Text("Mika", style = MikaType.Title.copy(fontWeight = FontWeight.Bold), color = ink)
         }
         Spacer(Modifier.height(20.dp))
-        Text(stringResource(R.string.share_card_question), style = MikaType.Hint.copy(fontWeight = FontWeight.SemiBold), color = Color(0xFF0A7CFF))
+        Text(stringResource(R.string.share_card_question), style = MikaType.Hint.copy(fontWeight = FontWeight.SemiBold), color = LightColors.accent)
         Spacer(Modifier.height(3.dp))
         Text(goal, style = MikaType.BodyStrong, color = ink)
         Spacer(Modifier.height(16.dp))
@@ -78,7 +77,7 @@ fun ShareCardContent(goal: String, answer: String, logo: ImageBitmap, modifier: 
         Spacer(Modifier.height(6.dp))
         MarkdownText(answer, MikaType.Body.copy(color = ink2))
         Spacer(Modifier.height(20.dp))
-        Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x12000000)))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(LightColors.hair))
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.share_card_made_by), style = MikaType.Hint, color = ink3, modifier = Modifier.weight(1f))
