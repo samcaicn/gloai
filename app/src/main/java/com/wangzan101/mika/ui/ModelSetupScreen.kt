@@ -141,6 +141,7 @@ fun ModelSetupScreen(
         pickingFallback = null
         openProvider = id
         allModels = false
+        showProviders = false
         vm.signedInShown()
     }
     // ChatGPT 登录成功照旧留在这一页(第一次会说明在用套餐额度),面板收起
@@ -155,7 +156,7 @@ fun ModelSetupScreen(
         setModel = vm::setModel, setManual = vm::setManual, setName = vm::setName,
         testAndSave = vm::testAndSave, saveUntested = vm::saveWithoutTest,
         openForm = vm::openForm, closeForm = vm::closeForm,
-        openProvider = { openProvider = it; allModels = false }, pickRole = { picking = it }, pickFallback = { pickingFallback = it },
+        openProvider = { openProvider = it; allModels = false; showProviders = false }, pickRole = { picking = it }, pickFallback = { pickingFallback = it },
         openProviders = { showProviders = true },
         next = onDone, openSpeech = onOpenSpeech, openVoice = onOpenVoice, openUsage = onOpenUsage,
         openDecision = { openDecision = true }, openSignIn = { signInSheet = it },
