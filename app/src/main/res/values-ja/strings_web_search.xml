@@ -8,6 +8,7 @@
     <string name="web_search_note_exa">API キーが必要です。Exa 検索（api.exa.ai）を使います。</string>
     <string name="web_search_note_keirolabs">API キーが必要です。Keirolabs 検索（api.keirolabs.cloud）を使います。</string>
     <string name="web_search_note_tinyfish">API キーが必要です。TinyFish 検索（api.search.tinyfish.ai）を使います。</string>
+    <string name="web_search_note_deepseek">API キーが必要です（チャットと同じキーを使えます）。DeepSeek 検索（api.deepseek.com）を使います。</string>
     <string name="web_search_note_searxng">自分で運用する SearXNG インスタンス。キーは不要です。JSON 出力を有効にしてください（settings.yml の search.formats に json を追加）。</string>
     <string name="web_search_api_key_required">API キー（必須）</string>
     <string name="web_search_missing_key">%1$s を使うには API キーが必要です。</string>

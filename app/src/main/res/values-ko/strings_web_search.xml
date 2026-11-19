@@ -8,6 +8,7 @@
     <string name="web_search_note_exa">API 키가 필요해요. Exa 검색(api.exa.ai)을 사용합니다.</string>
     <string name="web_search_note_keirolabs">API 키가 필요해요. Keirolabs 검색(api.keirolabs.cloud)을 사용합니다.</string>
     <string name="web_search_note_tinyfish">API 키가 필요해요. TinyFish 검색(api.search.tinyfish.ai)을 사용합니다.</string>
+    <string name="web_search_note_deepseek">API 키가 필요해요(채팅과 같은 키 사용 가능). DeepSeek 검색(api.deepseek.com)을 사용합니다.</string>
     <string name="web_search_note_searxng">직접 운영하는 SearXNG 인스턴스, 키는 필요 없어요. 인스턴스에서 JSON 출력을 켜야 해요(settings.yml의 search.formats에 json 추가).</string>
     <string name="web_search_api_key_required">API 키(필수)</string>
     <string name="web_search_missing_key">%1$s을(를) 쓰려면 API 키가 필요해요.</string>

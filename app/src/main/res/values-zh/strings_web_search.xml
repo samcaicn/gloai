@@ -8,6 +8,7 @@
     <string name="web_search_note_exa">需要 API 密钥，使用 Exa 搜索（api.exa.ai）。</string>
     <string name="web_search_note_keirolabs">需要 API 密钥，使用 Keirolabs 搜索（api.keirolabs.cloud）。</string>
     <string name="web_search_note_tinyfish">需要 API 密钥，使用 TinyFish 搜索（api.search.tinyfish.ai）。</string>
+    <string name="web_search_note_deepseek">需要 API 密钥（可与对话共用），使用 DeepSeek 搜索（api.deepseek.com）。</string>
     <string name="web_search_note_searxng">填你自建的 SearXNG 实例，不需要密钥。实例要打开 JSON 输出（在 settings.yml 的 search.formats 里加上 json）。</string>
     <string name="web_search_api_key_required">API 密钥（必填）</string>
     <string name="web_search_missing_key">%1$s 需要 API 密钥才能使用。</string>

@@ -8,6 +8,7 @@
     <string name="web_search_note_exa">Needs an API key. Results come from Exa search (api.exa.ai).</string>
     <string name="web_search_note_keirolabs">Needs an API key. Results come from Keirolabs search (api.keirolabs.cloud).</string>
     <string name="web_search_note_tinyfish">Needs an API key. Results come from TinyFish search (api.search.tinyfish.ai).</string>
+    <string name="web_search_note_deepseek">Needs an API key (the same one works for chat). Results come from DeepSeek search (api.deepseek.com).</string>
     <string name="web_search_note_searxng">Your own SearXNG instance; no key. The instance must allow JSON output (add json to search.formats in settings.yml).</string>
     <string name="web_search_api_key_required">API key (required)</string>
     <string name="web_search_missing_key">%1$s needs an API key to work.</string>

@@ -13,7 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** SearXNG、Jina、Exa、Keirolabs、TinyFish 几家的请求形状、解析和出错时的说法。 */
+/** SearXNG、Jina、Exa、Keirolabs、TinyFish、DeepSeek 几家的请求形状、解析和出错时的说法。 */
 class ProviderSearchTest {
     private fun ok(body: String) = MockResponse().setResponseCode(200).setHeader("Content-Type", "application/json").setBody(body)
 
@@ -198,6 +198,36 @@ class ProviderSearchTest {
         assertEquals(7L, (TinyFishSearch("k", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).retryAfterSeconds)
     }
 
+    // ---------- DeepSeek ----------
+
+    @Test fun deepSeekIsAPostWithBearerAndCount() = withServer(ok("""{"results":[
+        {"rerank_score":2.4,"title":"D1","url":"https://d.example/1","snippet":"S1","summary":"sum1"},
+        {"title":"D2","url":"https://d.example/2","snippet":"","summary":"sum2"},
+        {"title":"no url","url":"","snippet":"dropped"}]}""")) { server ->
+        val result = DeepSeekSearch(" deepseek-key ", client, server.url("/v1/tools/search")).search("mika", 3)
+        val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/v1/tools/search", request.path)
+        assertEquals("Bearer deepseek-key", request.getHeader("Authorization"))
+        assertEquals("application/json", request.getHeader("Accept"))
+        val sent = Json.parseToJsonElement(request.body.readUtf8()).jsonObject
+        assertEquals("mika", sent["query"]!!.jsonPrimitive.content)
+        assertEquals(3, sent["count"]!!.jsonPrimitive.int)
+        assertEquals(false, sent["need_content"]!!.jsonPrimitive.boolean)
+        assertEquals(
+            listOf(WebSearchHit("D1", "https://d.example/1", "S1"), WebSearchHit("D2", "https://d.example/2", "sum2")),
+            (result as WebSearchResult.Success).hits,
+        )
+    }
+
+    @Test fun deepSeekWithoutResultsArrayIsInvalidResponse() = withServer(ok("""{"error":"x"}""")) { server ->
+        assertEquals("invalid_response", (DeepSeekSearch("k", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).code)
+    }
+
+    @Test fun deepSeekRejectedKeyIsAuthenticationFailure() = withServer(MockResponse().setResponseCode(401).setBody("""{"error":{"message":"Invalid API key"}}""")) { server ->
+        assertEquals("authentication_failed", (DeepSeekSearch("bad", client, server.url("/")).search("q", 5) as WebSearchResult.Failure).code)
+    }
+
     // ---------- 共用 ----------
 
     @Test fun providersNeedTheRightFields() {
@@ -209,6 +239,8 @@ class ProviderSearchTest {
         assertEquals(null, WebSearchProvider.Keirolabs.problem("", "k"))
         assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.TinyFish.problem("", ""))
         assertEquals(null, WebSearchProvider.TinyFish.problem("", "k"))
+        assertEquals(WebSearchProvider.Problem.Key, WebSearchProvider.DeepSeek.problem("", ""))
+        assertEquals(null, WebSearchProvider.DeepSeek.problem("", "k"))
         assertEquals(WebSearchProvider.Problem.Endpoint, WebSearchProvider.SearXNG.problem("not a url", ""))
         assertEquals(null, WebSearchProvider.SearXNG.problem("https://searx.example.org", ""))
     }

@@ -8,6 +8,7 @@
     <string name="web_search_note_exa">يتطلب مفتاح API. يستخدم بحث Exa ‏(api.exa.ai).</string>
     <string name="web_search_note_keirolabs">يتطلب مفتاح API. يستخدم بحث Keirolabs ‏(api.keirolabs.cloud).</string>
     <string name="web_search_note_tinyfish">يتطلب مفتاح API. تأتي النتائج من بحث TinyFish ‏(api.search.tinyfish.ai).</string>
+    <string name="web_search_note_deepseek">يتطلب مفتاح API (يمكن استخدام المفتاح نفسه للدردشة). تأتي النتائج من بحث DeepSeek ‏(api.deepseek.com).</string>
     <string name="web_search_note_searxng">مثيل SearXNG خاص بك، بلا مفتاح. يجب أن يسمح المثيل بإخراج JSON (أضف json إلى search.formats في settings.yml).</string>
     <string name="web_search_api_key_required">مفتاح API (مطلوب)</string>
     <string name="web_search_missing_key">يحتاج %1$s إلى مفتاح API ليعمل.</string>

@@ -1,5 +1,6 @@
 package com.wangzan101.mika.settings
 
+import com.wangzan101.mika.core.search.DeepSeekSearch
 import com.wangzan101.mika.core.search.ExaSearch
 import com.wangzan101.mika.core.search.JinaSearch
 import com.wangzan101.mika.core.search.SearxngSearch
@@ -112,6 +113,18 @@ class WebSearchSettingsTest {
         val prefs = MemoryPrefs()
         settings(prefs).set(WebSearchConfig(true, WebSearchProvider.TinyFish, mapOf(WebSearchProvider.TinyFish to WebSearchEntry(apiKey = "tinyfish-key"))))
         assertTrue(settings(prefs).service() is TinyFishSearch)
+    }
+
+    @Test fun deepSeekUsesOnlyItsKey() {
+        val prefs = MemoryPrefs()
+        settings(prefs).set(WebSearchConfig(true, WebSearchProvider.DeepSeek, mapOf(WebSearchProvider.DeepSeek to WebSearchEntry(apiKey = "deepseek-key"))))
+        assertTrue(settings(prefs).service() is DeepSeekSearch)
+        assertEquals("deepseek-key", settings(prefs).get().entries[WebSearchProvider.DeepSeek]!!.apiKey)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun deepSeekCannotBeSavedWithoutAKey() {
+        settings().set(WebSearchConfig(true, WebSearchProvider.DeepSeek))
     }
 
     @Test fun searxngUsesTheInstanceAndNoKey() {
