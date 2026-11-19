@@ -400,6 +400,19 @@ internal fun SentAttachments(parsed: AttachmentMessage.Parsed, conversationId: S
     }
 }
 
+/** 回答里模型产出的 `/workspace/...` 引用:照片排格子、文件画卡片,和回答一起左对齐。 */
+@Composable
+internal fun OutputRefs(answer: String, conversationId: String?, onOpen: (AttachmentMessage.Item) -> Unit) {
+    val parsed = remember(answer) { outputRefsParsed(answer) }
+    if (!parsed.hasAttachments) return
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (parsed.photos.isNotEmpty()) SentPhotos(parsed.photos, conversationId, OutputRefMaxWidth, onOpen)
+        for (f in parsed.files) SentFileCard(f, OutputRefMaxWidth) { onOpen(f) }
+    }
+}
+
+private val OutputRefMaxWidth = 320.dp
+
 @Composable
 private fun SentPhotos(photos: List<AttachmentMessage.Item>, conversationId: String?, maxWidth: Dp, onOpen: (AttachmentMessage.Item) -> Unit) {
     val c = MikaTheme.colors
