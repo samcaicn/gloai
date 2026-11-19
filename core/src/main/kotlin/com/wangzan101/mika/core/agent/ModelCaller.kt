@@ -146,7 +146,7 @@ internal class ModelCaller(
                 (e is ModelError.Server && e.status in 400..499)) r.disable()
             null
         }
-        val first = light?.parts?.filterIsInstance<Part.ToolCall>()?.firstOrNull()
+        val first = light?.parts?.firstActionCall()
         if (first != null && !needsMain(first)) return light to picked
         r.noteTrouble()
         val text = light?.parts?.filterIsInstance<Part.Text>()?.joinToString("") { it.text }?.trim().orEmpty()

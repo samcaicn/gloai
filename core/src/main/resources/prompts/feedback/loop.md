@@ -3,6 +3,9 @@
 ## empty_reply
 Your reply was empty. Continue the task with your tools, or reply with your final answer to the user in text.
 
+## progress_call_format
+Write progress JSON inside <task_progress>...</task_progress> in your reply text. Continue with the next real tool call or give the final answer when ready.
+
 ## truncated_reply
 Your reply was cut off by the output limit before it was complete. Continue the task with your tools, or reply again with a shorter final answer.
 

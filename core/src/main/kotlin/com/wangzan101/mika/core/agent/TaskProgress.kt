@@ -101,7 +101,17 @@ internal class TaskProgressTracker(private val now: () -> Long, private val emit
 
     fun accept(raw: String, step: Int): String {
         val parsed = CompletionPlanBlock.extract(raw)
-        fun invalid(reason: String) = emit(RunEvent.State(now(), "task_progress_invalid", RunEvent.clip(reason)))
+        acceptParsed(parsed, step)
+        return parsed.text
+    }
+
+    /** 处理已解析好的进度块(可能来自文字块,也可能来自被误写成工具调用的 `task_progress` 调用)。返回是否有效。 */
+    fun acceptParsed(parsed: CompletionPlanBlock.Extracted, step: Int): Boolean {
+        var valid = parsed.errors.isEmpty()
+        fun invalid(reason: String) {
+            valid = false
+            emit(RunEvent.State(now(), "task_progress_invalid", RunEvent.clip(reason)))
+        }
         parsed.errors.forEach(::invalid)
         for (update in parsed.updates) {
             val next = try { plan.apply(update) } catch (e: IllegalArgumentException) {
@@ -113,7 +123,7 @@ internal class TaskProgressTracker(private val now: () -> Long, private val emit
             plan = next
             emit(next.event(now()))
         }
-        return parsed.text
+        return valid
     }
 
     private companion object { const val REMINDER_INTERVAL = 3 }
@@ -147,12 +157,15 @@ internal object CompletionPlanBlock {
         return if (suffix.length >= 2 && OPEN.startsWith(suffix)) last else -1
     }
 
-    fun extract(text: String): Extracted {
+    fun extract(text: String): Extracted = decode(text, BLOCK.findAll(text).map { it.groupValues[1].trim() })
+
+    fun fromCall(body: String): Extracted = decode("", sequenceOf(body))
+
+    private fun decode(text: String, bodies: Sequence<String>): Extracted {
         val updates = mutableListOf<CompletionUpdate>()
         val errors = mutableListOf<String>()
         val stages = mutableSetOf<Int>()
-        BLOCK.findAll(text).forEach { match ->
-            val body = match.groupValues[1].trim()
+        bodies.forEach { body ->
             if (body.length > MAX_BLOCK) {
                 errors += "task_progress block is too long"
                 return@forEach

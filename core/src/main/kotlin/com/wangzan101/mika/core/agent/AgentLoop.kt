@@ -452,6 +452,7 @@ class AgentLoop(
             provenance = provenance,
             selfPackage = selfPackage, autonomous = autonomous, pacing = outwardPacing, onScreenAction = stages?.let { it::action })
         var emptyNudged = false
+        var progressOnlyTurns = 0
         // 调过工具才有可核对的材料;交给用户付款和放行过对外动作一样,回答要另请核查
         var acted = false
         var paymentHandedOver = false
@@ -549,7 +550,7 @@ class AgentLoop(
                 continue
             }
             var (reply, used) = routed
-            val proposed = reply.parts.filterIsInstance<Part.ToolCall>().firstOrNull()
+            val proposed = reply.parts.firstActionCall()
             if (provenance.origin == RunOrigin.Ui && intentGate != null && proposed != null &&
                 tools.verb(proposed.name).let { it !in DISCUSSION_LOOKUP_VERBS && it !in MEMORY_WRITE_VERBS }) {
                 if (!intentAssessed) intent = assessIntent()
@@ -564,21 +565,24 @@ class AgentLoop(
                 }
             }
             val rawText = reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim()
-            CompletionPlanBlock.extract(rawText).stage?.let { stages?.reported(it) }
-            val text = progress.accept(rawText, step)
+            fun acceptProgress(parsed: CompletionPlanBlock.Extracted) = progress.acceptParsed(parsed, step)
+            val parsed = CompletionPlanBlock.extract(rawText)
+            parsed.stage?.let { stages?.reported(it) }
+            acceptProgress(parsed)
+            val text = parsed.text
             val cleanParts = cleanReplyParts(reply.parts, text)
             history += Message(Role.Assistant, cleanParts, Author.Mika).also { caller.noteReply(it, used, reply.usage) }
-            val calls = reply.parts.filterIsInstance<Part.ToolCall>()
-            note = text.ifEmpty { calls.firstOrNull()?.name ?: note }
-            val tool = calls.firstOrNull()?.name
-            val reason = calls.firstOrNull()?.let { tools.callReason(it.name, parseArgs(it.argsJson)) }
+            val calls = ReplyCalls(reply.parts, ::acceptProgress)
+            note = text.ifEmpty { calls.action?.name ?: note }
+            val tool = calls.action?.name
+            val reason = calls.action?.let { tools.callReason(it.name, parseArgs(it.argsJson)) }
             val retryWaitMs = caller.lastRetryWaitMs
             val repliedAtMs = now()
             val latencyMs = repliedAtMs - asked - retryWaitMs
             // 随调用写的字是进度说明,界面上的实时那一行先用它
-            val narration = text.takeIf { calls.isNotEmpty() && it.isNotEmpty() }
+            val narration = text.takeIf { !calls.isEmpty && it.isNotEmpty() }
             _state.value = TaskState.Running(step, note, tool, progress = progress.state(step), reason = reason, narration = narration,
-                preview = text.takeIf { streamReplies && calls.isEmpty() && it.isNotEmpty() })
+                preview = text.takeIf { streamReplies && calls.isEmpty && it.isNotEmpty() })
             // 带调用的回复等执行完再记:要看端口是否报告了密码框
             fun recordReply(argsJson: String?) = emit(RunEvent.ModelReply(
                 now(), step, RunEvent.clip(Redactor.text(text)), tool, argsJson,
@@ -587,7 +591,14 @@ class AgentLoop(
                 repliedAtMs = repliedAtMs,
             ))
 
-            if (calls.isEmpty()) {
+            val first = calls.action
+            if (first == null && !calls.isEmpty) {
+                recordReply(null)
+                history += calls.results()
+                if (++progressOnlyTurns >= 3) return StopRules.noAnswer()
+                continue
+            }
+            if (first == null) {
                 track.after(null, ok = false, guard = false, changed = null, recovery = false, app = null)
                 recordReply(null)
                 // 模型给出最终回答时,先收下在途的用户插话,再决定是否交出回答。
@@ -648,23 +659,16 @@ class AgentLoop(
             }
             emptyNudged = false
             leakNudged = false
+            progressOnlyTurns = 0
             acted = true
             if (firstToolStep == null) firstToolStep = step
             // 回答之后又做了别的:那个回答算有了下文
             answered = null
 
-            val first = calls.first()
             if (stages != null && tools.verb(first.name) !in setOf(Verb.AskUser, Verb.RequestConfirmation, Verb.HandToUser)) {
                 stages.planIfNeeded(latestWords, intentJudge ?: model)
             }
             trace?.toolStarted(step, first.name, first.id, now())
-            val skipped = calls.drop(1).map {
-                Part.ToolResult(it.id, buildJsonObject {
-                    put("ok", false)
-                    put("error", "parallel_tool_call_skipped")
-                    put("message", Feedback["parallel_call_skipped"])
-                }.toString(), isError = true)
-            }
             val args = parseArgs(first.argsJson)
 
             // 用户刚同意的那一步要单独做:批里的步不带同意,混进去会被关卡拦下,同意也可能被别的步用掉或作废
@@ -672,14 +676,14 @@ class AgentLoop(
                 val content = buildJsonObject {
                     put("ok", false); put("error", "approved_step_first"); put("message", APPROVED_STEP_FIRST); put("recoverable", true)
                 }
-                history += Message(Role.Tool, listOf(Part.ToolResult(first.id, content.toString(), isError = true)) + skipped, Author.Mika)
+                history += calls.results(Part.ToolResult(first.id, content.toString(), isError = true))
                 recordReply(if (first.name == DO_STEPS_TOOL) BatchRunner.redactArgs(first.argsJson) else Redactor.args(tools.verb(first.name), first.argsJson, secretField = true))
                 recorder.result(step, first.name, tools.verb(first.name), content, JsonObject(emptyMap()), null, null, 0, "model", first.id)
                 track.after(tools.verb(first.name), ok = false, guard = false, changed = null, recovery = false, app = null)
                 continue
             }
             if (flags.batchSteps && first.name == DO_STEPS_TOOL) {
-                val end = batch(first, skipped, history, specs, guards, executor, track, step, note, tool, reason, narration, recordReply = ::recordReply,
+                val end = batch(first, calls, history, specs, guards, executor, track, step, note, tool, reason, narration, recordReply = ::recordReply,
                     app = { place = it }, steerWaiting = { inbox?.hasSteers() == true },
                     noteVerdicts = { s, sub, v ->
                         // 和单步一样计卡住提醒与同一段字的重复输入
@@ -723,7 +727,7 @@ class AgentLoop(
                         (if (verdicts.isEmpty()) emptyMap() else mapOf("guard" to JsonArray(verdicts.map { it.toJson() }))) +
                         (advice?.let { mapOf("advice" to JsonPrimitive(it)) } ?: emptyMap()))
                     val isError = (e.content["ok"] as? JsonPrimitive)?.booleanOrNull == false
-                    history += Message(Role.Tool, listOf(Part.ToolResult(first.id, ScreenElementTable.text(content, flags.tablesAtBirth && !isError), isError, e.observations.map { it.tag })) + skipped, Author.Mika)
+                    history += calls.results(Part.ToolResult(first.id, ScreenElementTable.text(content, flags.tablesAtBirth && !isError), isError, e.observations.map { it.tag }))
                     // 只有端口明确说「不是密码框」才记原文
                     val secret = (e.content["secret"] as? JsonPrimitive)?.booleanOrNull != false
                     if (!waitsForUser) recordReply(Redactor.args(tools.verb(first.name), first.argsJson, secret))
@@ -731,7 +735,7 @@ class AgentLoop(
                 }
 
                 override fun refused(content: JsonObject) {
-                    history += Message(Role.Tool, listOf(Part.ToolResult(first.id, content.toString(), isError = true)) + skipped, Author.Mika)
+                    history += calls.results(Part.ToolResult(first.id, content.toString(), isError = true))
                     recordReply(Redactor.args(tools.verb(first.name), first.argsJson, secretField = true))
                 }
 
@@ -935,7 +939,7 @@ class AgentLoop(
      * 批停下时让下一步回到主模型。返回非 null 表示任务就此结束。
      */
     private suspend fun batch(
-        first: Part.ToolCall, skipped: List<Part.ToolResult>, history: MutableList<Message>, specs: List<ToolSpec>, guards: OperationGuards,
+        first: Part.ToolCall, calls: ReplyCalls, history: MutableList<Message>, specs: List<ToolSpec>, guards: OperationGuards,
         executor: ActionExecutor, track: StepTrack, step: Int, note: String, tool: String?, reason: String?, narration: String?,
         recordReply: (String?) -> Unit, app: (Place) -> Unit, steerWaiting: () -> Boolean,
         noteVerdicts: (BatchStep, ToolExecution?, List<GuardVerdict>) -> String?,
@@ -958,7 +962,7 @@ class AgentLoop(
         }
         val durationMs = now() - started
         val isError = exec.content["ok"] != JsonPrimitive(true)
-        history += Message(Role.Tool, listOf(Part.ToolResult(first.id, ScreenElementTable.text(exec.content, flags.tablesAtBirth && !isError), isError, exec.observations.map { it.tag })) + skipped, Author.Mika)
+        history += calls.results(Part.ToolResult(first.id, ScreenElementTable.text(exec.content, flags.tablesAtBirth && !isError), isError, exec.observations.map { it.tag }))
         // 批做完(或停下)后再给模型一份当前元素表；只有元素信息不足才附画面。
         if (steps != null && ranAnyStep(exec.content)) {
             tools.lookNow()?.let { v ->
@@ -1038,6 +1042,7 @@ class AgentLoop(
         task: String, history: MutableList<Message>, specs: List<ToolSpec>, step: Int, labels: Map<String, String>, place: Place?, recorder: ActionRecorder,
         facts: ReviewFacts, inbox: RunInbox?, progress: TaskProgressTracker, closeout: Closeout = Closeout.StepLimit,
     ): TaskState {
+        fun acceptProgress(parsed: CompletionPlanBlock.Extracted) = progress.acceptParsed(parsed, step)
         TurnPolicy.closeout(closeout, progress.state(step)).let { history += ctx.notice(it.source, it.text) }
         repeat(3) { attempt ->
             appendSteers(history, inbox)
@@ -1055,12 +1060,15 @@ class AgentLoop(
             } catch (e: Exception) {
                 return StopRules.closeoutFailed(closeout, maxSteps)
             }
-            val text = progress.accept(reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim(), step)
-            CompletionPlanBlock.extract(reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim()).stage?.let { stages?.reported(it) }
+            val rawText = reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim()
+            val parsed = CompletionPlanBlock.extract(rawText)
+            parsed.stage?.let { stages?.reported(it) }
+            acceptProgress(parsed)
+            val text = parsed.text
             history += Message(Role.Assistant, cleanReplyParts(reply.parts, text), Author.Mika)
                 .also { caller.noteReply(it, caller.lastMainUsed, reply.usage) }
-            val calls = reply.parts.filterIsInstance<Part.ToolCall>()
-            val call = calls.firstOrNull { tools.verb(it.name) in TurnPolicy.FINAL_VERBS }
+            val calls = ReplyCalls(reply.parts, ::acceptProgress)
+            val call = calls.actions.firstOrNull { tools.verb(it.name) in TurnPolicy.FINAL_VERBS }
             val retryWaitMs = caller.lastRetryWaitMs
             val repliedAtMs = now()
             val latencyMs = repliedAtMs - asked - retryWaitMs
@@ -1070,9 +1078,16 @@ class AgentLoop(
                 repliedAtMs = repliedAtMs,
             ))
             // 收尾模型也可能正在生成时收到插话。最多重答两次，其余交给下一任务。
-            if (attempt < 2 && keepFinished(history, inbox)) return@repeat
+            if (attempt < 2 && inbox?.hasSteers() == true) {
+                if (!calls.isEmpty) history += calls.results()
+                if (keepFinished(history, inbox)) return@repeat
+            }
             if (call == null) {
-                if (calls.isNotEmpty() || text.isEmpty() || reply.stopReason == StopReason.MaxTokens) return StopRules.closeoutFailed(closeout, maxSteps)
+                if (calls.action == null && !calls.isEmpty && text.isEmpty()) {
+                    history += calls.results()
+                    return@repeat
+                }
+                if (calls.action != null || text.isEmpty() || reply.stopReason == StopReason.MaxTokens) return StopRules.closeoutFailed(closeout, maxSteps)
                 return conclude(task, text, step, facts, history = null)!!
             }
             val started = now()
