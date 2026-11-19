@@ -20,4 +20,5 @@
     <string name="rec_setting_unavailable">这台手机不允许 Mika 在开机时打开无线调试。重启后请手动打开,Mika 会自己连上。</string>
     <string name="rec_not_recovered">上次开机没能自动连上。确认连着信任过的 Wi-Fi、无线调试开着,Mika 会自己连上。</string>
     <string name="rec_needs_pairing">要先配对过无线调试才用得上。现在的助手是用 USB 命令启动的,手机重启后请再运行一次命令。</string>
+    <string name="rec_shizuku_no_wireless">选择 Shizuku 后不再使用无线调试。Shizuku 运行起来后，Mika 会通过 Shizuku 重新连接。</string>
 </resources>

@@ -17,4 +17,9 @@
     <string name="web_search_api_key">API キー（任意）</string>
     <string name="web_search_invalid_endpoint">クエリーパラメーターを含まない HTTP または HTTPS の URL を入力してください。</string>
     <string name="web_search_action">ウェブを検索</string>
+    <string name="web_search_google_grounding_toggle">Google 検索グラウンディング（Gemini）</string>
+    <string name="web_search_note_google">既存の Gemini API キーを使います（tools: [{googleSearch: {}}]）。月 5,000 回の無料グラウンディングプロンプト、以後 1,000 クエリごとに 14 ドル。1 つの質問で複数回検索されることがあります。</string>
+    <string name="web_search_google_unavailable_provider">Google 検索グラウンディングは %1$s では使えません。Gemini メインモデルが必要です。</string>
+    <string name="web_search_google_unavailable_none">Google 検索グラウンディングには「設定 › モデル」での Gemini メインモデルが必要です。</string>
+    <string name="web_search_google_unavailable_value">利用不可</string>
 </resources>

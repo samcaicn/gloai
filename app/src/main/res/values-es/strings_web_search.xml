@@ -17,4 +17,9 @@
     <string name="web_search_api_key">Clave de API (opcional)</string>
     <string name="web_search_invalid_endpoint">Introduce una URL HTTP o HTTPS sin parámetros de consulta.</string>
     <string name="web_search_action">Buscar en la web</string>
+    <string name="web_search_google_grounding_toggle">Fundamentación con Google Search (Gemini)</string>
+    <string name="web_search_note_google">Usa tu clave de API de Gemini existente (herramientas: [{googleSearch: {}}]). 5,000 prompts fundamentados gratis al mes; después, $14 por cada 1,000 consultas. Una pregunta puede desencadenar varias búsquedas.</string>
+    <string name="web_search_google_unavailable_provider">La fundamentación con Google Search no está disponible en %1$s. Requiere un modelo principal de Gemini.</string>
+    <string name="web_search_google_unavailable_none">La fundamentación con Google Search requiere un modelo principal de Gemini en Ajustes › Modelos.</string>
+    <string name="web_search_google_unavailable_value">No disponible</string>
 </resources>

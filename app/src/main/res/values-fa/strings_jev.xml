@@ -16,4 +16,6 @@
     <string name="jev_test_failed">تست ناموفق بود. نقطه اتصال، مدل، کلید API و شبکه را بررسی کنید.</string>
     <string name="jev_saved">ذخیره شد. کارهای جدید از این تنظیمات استفاده خواهند کرد.</string>
     <string name="jev_save_failed">ذخیره ممکن نشد. تنظیمات ذخیره‌شدهٔ قبلی شما تغییری نکرده است.</string>
+    <string name="jev_google_endpoint_note">از Gemini Developer API (generativelanguage.googleapis.com) با مدل gemini-decision-1 استفاده می‌کند. اگر تغییری ندهید، از کلید Gemini API موجود در تنظیمات › مدل‌ها استفاده می‌کند. ۰٫۱۰ دلار به ازای هر ۱ میلیون توکن ورودی، خروجی ۰ دلار، حداکثر ۱٬۰۰۰ پرسش، زمینه 256K. کلید API به‌صورت رمزگذاری‌شده روی این دستگاه ذخیره می‌شود.</string>
+    <string name="jev_aiplatform_unsupported">نقاط پایانی Google Cloud AI Platform (aiplatform.googleapis.com) پشتیبانی نمی‌شوند. از Gemini Developer API (generativelanguage.googleapis.com) با یک کلید Gemini API استفاده کنید.</string>
 </resources>

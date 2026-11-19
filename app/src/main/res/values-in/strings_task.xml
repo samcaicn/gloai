@@ -90,4 +90,5 @@
     <string name="task_trigger_time_limit">Tugas terjadwal berjalan lebih dari %1$d menit, jadi dihentikan.</string>
     <string name="trigger_failed_streak">Tugas terjadwal gagal %1$d kali berturut-turut</string>
     <string name="trigger_failed_streak_hint">Anda bisa menjeda atau mengubah rencana ini di halaman Tugas terjadwal.</string>
+    <string name="task_no_phone_helper_shizuku">Kontrol ponsel belum siap. Mulai Shizuku dan beri izin ke Mika (atau periksa Kontrol ponsel di Pengaturan). Tugas web dan file tidak terpengaruh.</string>
 </resources>

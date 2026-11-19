@@ -17,4 +17,9 @@
     <string name="web_search_api_key">Kunci API (opsional)</string>
     <string name="web_search_invalid_endpoint">Masukkan URL HTTP atau HTTPS tanpa parameter kueri.</string>
     <string name="web_search_action">Cari di web</string>
+    <string name="web_search_google_grounding_toggle">Grounding Google Search (Gemini)</string>
+    <string name="web_search_note_google">Menggunakan kunci Gemini API yang sudah ada (alat: [{googleSearch: {}}]). 5.000 prompt grounded gratis per bulan, lalu $14 per 1.000 kueri; satu pertanyaan dapat memicu beberapa pencarian.</string>
+    <string name="web_search_google_unavailable_provider">Grounding Google Search tidak tersedia di %1$s. Memerlukan model utama Gemini.</string>
+    <string name="web_search_google_unavailable_none">Grounding Google Search memerlukan model utama Gemini di Pengaturan › Model.</string>
+    <string name="web_search_google_unavailable_value">Tidak tersedia</string>
 </resources>

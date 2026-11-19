@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">Copia de seguridad y datos</string>
+    <string name="backup_sub">Exporta todo a un archivo ZIP o restaura desde uno</string>
+    <string name="backup_warning_title">Esta copia de seguridad no está cifrada</string>
+    <string name="backup_warning_body">El archivo ZIP contiene todos tus secretos: claves de API, tokens de OAuth y credenciales de servicios. Mantenlo privado, no lo compartas y elimínalo después de importarlo.</string>
+    <string name="backup_included_label">Qué se incluye</string>
+    <string name="backup_included_body">Proveedores y claves, chats, personas, habilidades, memoria, flujos de trabajo, ejecuciones de tareas y ajustes.</string>
+    <string name="backup_excluded_body">No se incluye: el emparejamiento de depuración inalámbrica (vuelve a emparejar tras importar), el ajuste del servicio de accesibilidad (actívalo de nuevo en los ajustes de Android), el espacio de trabajo aislado y los adjuntos de la biblioteca de archivos.</string>
+    <string name="backup_export">Exportar copia de seguridad</string>
+    <string name="backup_export_sub">Guarda un archivo ZIP con todos tus datos</string>
+    <string name="backup_import">Importar copia de seguridad</string>
+    <string name="backup_import_sub">Restaura todo desde un archivo ZIP de copia de seguridad</string>
+    <string name="backup_exported">Copia de seguridad guardada: %1$d archivos.</string>
+    <string name="backup_exported_skipped">Copia de seguridad guardada: %1$d archivos. %2$d claves no se pudieron descifrar y se omitieron.</string>
+    <string name="backup_export_failed">No se pudo guardar la copia de seguridad.</string>
+    <string name="backup_import_failed">No se pudo importar esta copia de seguridad.</string>
+    <string name="backup_import_confirm_title">¿Reemplazar los datos actuales?</string>
+    <string name="backup_import_confirm_body">Este teléfono ya tiene chats y proveedores. La importación los reemplazará.</string>
+    <string name="backup_replace">Reemplazar todo</string>
+    <string name="backup_imported_title">Copia de seguridad restaurada</string>
+    <string name="backup_imported_body">Se restauraron %1$d archivos.</string>
+    <string name="backup_after_import_body">Cierra Mika y ábrelo de nuevo para usar los datos restaurados. Luego vuelve a emparejar la depuración inalámbrica, reactiva el servicio de accesibilidad en los ajustes de Android y elimina el archivo ZIP de copia de seguridad.</string>
+    <string name="backup_close_app">Cerrar Mika</string>
+    <string name="backup_restart_note">Exporta primero, antes de desinstalar cualquier cosa: solo esta instalación puede descifrar tus datos.</string>
+</resources>

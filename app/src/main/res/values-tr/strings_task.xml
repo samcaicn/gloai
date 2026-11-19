@@ -90,4 +90,5 @@
     <string name="chip_done">Bitti: %1$d</string>
     <string name="chip_route_step">Adım %1$d/%2$d</string>
     <string name="chip_count">%1$d/%2$d</string>
+    <string name="task_no_phone_helper_shizuku">Telefon kontrolü hazır değil. Shizuku\'yu başlatın ve Mika\'ya izin verin (veya Ayarlar\'daki Telefon kontrolünü kontrol edin). Web ve dosya görevleri etkilenmez.</string>
 </resources>

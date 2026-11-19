@@ -17,4 +17,9 @@
     <string name="web_search_api_key">Ключ API (необязательно)</string>
     <string name="web_search_invalid_endpoint">Введите URL HTTP или HTTPS без параметров запроса.</string>
     <string name="web_search_action">Искать в интернете</string>
+    <string name="web_search_google_grounding_toggle">Привязка к Google Search (Gemini)</string>
+    <string name="web_search_note_google">Использует ваш текущий ключ Gemini API (инструменты: [{googleSearch: {}}]). 5 000 бесплатных обоснованных запросов в месяц, затем $14 за 1 000 запросов; один вопрос может запускать несколько поисков.</string>
+    <string name="web_search_google_unavailable_provider">Привязка к Google Search недоступна для %1$s. Требуется основная модель Gemini.</string>
+    <string name="web_search_google_unavailable_none">Для привязки к Google Search требуется основная модель Gemini в разделе «Настройки › Модели».</string>
+    <string name="web_search_google_unavailable_value">Недоступно</string>
 </resources>

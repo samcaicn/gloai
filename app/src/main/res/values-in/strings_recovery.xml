@@ -20,4 +20,5 @@
     <string name="rec_setting_unavailable">Ponsel ini tidak mengizinkan Mika mengaktifkan Proses debug nirkabel saat mulai. Setelah dimulai ulang, aktifkan sendiri dan Mika akan menyambung.</string>
     <string name="rec_not_recovered">Gagal menyambung kembali otomatis saat mulai terakhir. Pastikan Anda berada di Wi-Fi tepercaya dengan Proses debug nirkabel aktif, dan Mika akan menyambung.</string>
     <string name="rec_needs_pairing">Hanya bekerja setelah memasangkan Proses debug nirkabel. Pembantu dimulai dengan perintah USB, jadi jalankan lagi perintahnya setelah ponsel dimulai ulang.</string>
+    <string name="rec_shizuku_no_wireless">Wireless debugging tidak digunakan saat Shizuku dipilih. Mika tersambung kembali melalui Shizuku begitu Shizuku berjalan.</string>
 </resources>

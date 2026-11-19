@@ -16,4 +16,6 @@
     <string name="jev_test_failed">فشل الاختبار. تحقق من عنوان الواجهة والنموذج ومفتاح API والشبكة.</string>
     <string name="jev_saved">تم الحفظ. ستستخدم المهام الجديدة هذه الإعدادات.</string>
     <string name="jev_save_failed">تعذر الحفظ. لم تتغير الإعدادات المحفوظة سابقًا.</string>
+    <string name="jev_google_endpoint_note">يستخدم Gemini Developer API (generativelanguage.googleapis.com) مع النموذج gemini-decision-1. يستخدم مفتاح Gemini API الحالي من الإعدادات › النماذج إذا تُرك دون تغيير. 0.10 دولار لكل مليون رمز إدخال، و0 دولار للإخراج، حتى 1,000 سؤال، وسياق 256K. يُخزَّن مفتاح API مشفّرًا على هذا الجهاز.</string>
+    <string name="jev_aiplatform_unsupported">نقاط نهاية Google Cloud AI Platform (aiplatform.googleapis.com) غير مدعومة. استخدم Gemini Developer API (generativelanguage.googleapis.com) مع مفتاح Gemini API.</string>
 </resources>

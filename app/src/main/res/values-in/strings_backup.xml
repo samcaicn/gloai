@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">Cadangan &amp; data</string>
+    <string name="backup_sub">Ekspor semuanya ke file ZIP, atau pulihkan dari file</string>
+    <string name="backup_warning_title">Cadangan ini tidak dienkripsi</string>
+    <string name="backup_warning_body">File ZIP berisi semua rahasia Anda: kunci API, token OAuth, dan kredensial layanan. Jaga agar tetap pribadi, jangan dibagikan, dan hapus setelah diimpor.</string>
+    <string name="backup_included_label">Yang disertakan</string>
+    <string name="backup_included_body">Penyedia dan kunci, chat, persona, keterampilan, memori, alur kerja, eksekusi tugas, dan pengaturan.</string>
+    <string name="backup_excluded_body">Tidak disertakan: pemasangan wireless debugging (pasangkan ulang setelah impor), pengaturan layanan aksesibilitas (aktifkan kembali di Setelan Android), ruang kerja sandbox, dan lampiran pustaka file.</string>
+    <string name="backup_export">Ekspor cadangan</string>
+    <string name="backup_export_sub">Simpan file ZIP dengan semua data Anda</string>
+    <string name="backup_import">Impor cadangan</string>
+    <string name="backup_import_sub">Pulihkan semuanya dari file ZIP cadangan</string>
+    <string name="backup_exported">Cadangan disimpan: %1$d file.</string>
+    <string name="backup_exported_skipped">Cadangan disimpan: %1$d file. %2$d kunci tidak dapat didekripsi dan dikecualikan.</string>
+    <string name="backup_export_failed">Tidak dapat menyimpan cadangan.</string>
+    <string name="backup_import_failed">Tidak dapat mengimpor cadangan ini.</string>
+    <string name="backup_import_confirm_title">Ganti data saat ini?</string>
+    <string name="backup_import_confirm_body">Ponsel ini sudah memiliki chat dan penyedia. Mengimpor akan menggantikannya.</string>
+    <string name="backup_replace">Ganti semua</string>
+    <string name="backup_imported_title">Cadangan dipulihkan</string>
+    <string name="backup_imported_body">%1$d file dipulihkan.</string>
+    <string name="backup_after_import_body">Tutup Mika lalu buka lagi untuk menggunakan data yang dipulihkan. Setelah itu, pasangkan ulang wireless debugging, aktifkan kembali layanan aksesibilitas di Setelan Android, dan hapus file ZIP cadangan.</string>
+    <string name="backup_close_app">Tutup Mika</string>
+    <string name="backup_restart_note">Ekspor dulu sebelum menghapus apa pun: hanya instalasi ini yang dapat mendekripsi data Anda.</string>
+</resources>

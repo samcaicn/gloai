@@ -17,4 +17,9 @@
     <string name="web_search_api_key">API 키(선택 사항)</string>
     <string name="web_search_invalid_endpoint">쿼리 매개변수가 없는 HTTP 또는 HTTPS URL을 입력하세요.</string>
     <string name="web_search_action">웹 검색하기</string>
+    <string name="web_search_google_grounding_toggle">Google 검색 그라운딩(Gemini)</string>
+    <string name="web_search_note_google">기존 Gemini API 키를 사용합니다(도구: [{googleSearch: {}}]). 매월 무료 그라운딩 프롬프트 5,000개, 이후 질문 1,000개당 $14이며, 질문 하나가 여러 검색을 유발할 수 있습니다.</string>
+    <string name="web_search_google_unavailable_provider">%1$s에서는 Google 검색 그라운딩을 사용할 수 없습니다. Gemini 메인 모델이 필요합니다.</string>
+    <string name="web_search_google_unavailable_none">Google 검색 그라운딩을 사용하려면 설정 › 모델에 Gemini 메인 모델이 필요합니다.</string>
+    <string name="web_search_google_unavailable_value">사용할 수 없음</string>
 </resources>

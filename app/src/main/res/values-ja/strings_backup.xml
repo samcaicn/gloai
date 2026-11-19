@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">バックアップとデータ</string>
+    <string name="backup_sub">すべてを ZIP ファイルに書き出す、または ZIP から復元</string>
+    <string name="backup_warning_title">このバックアップは暗号化されていません</string>
+    <string name="backup_warning_body">ZIP には API キー、OAuth トークン、サービス資格情報などすべての機密が含まれます。非公開に保ち、共有せず、インポート後に削除してください。</string>
+    <string name="backup_included_label">含まれるもの</string>
+    <string name="backup_included_body">プロバイダーとキー、チャット、ペルソナ、スキル、メモリ、ワークフロー、タスク実行、設定。</string>
+    <string name="backup_excluded_body">含まれないもの：ワイヤレスデバッグのペアリング（インポート後に再ペアリング）、アクセシビリティサービス設定（Android 設定で再び有効化）、サンドボックスワークスペース、ファイルライブラリの添付。</string>
+    <string name="backup_export">バックアップを書き出す</string>
+    <string name="backup_export_sub">全データを ZIP ファイルに保存</string>
+    <string name="backup_import">バックアップをインポート</string>
+    <string name="backup_import_sub">バックアップ ZIP からすべてを復元</string>
+    <string name="backup_exported">バックアップを保存しました：%1$d ファイル。</string>
+    <string name="backup_exported_skipped">バックアップを保存しました：%1$d ファイル。%2$d 個のキーは復号できず除外しました。</string>
+    <string name="backup_export_failed">バックアップを保存できませんでした。</string>
+    <string name="backup_import_failed">このバックアップをインポートできませんでした。</string>
+    <string name="backup_import_confirm_title">現在のデータを置き換えますか？</string>
+    <string name="backup_import_confirm_body">この端末にはすでにチャットとプロバイダーがあります。インポートすると置き換えられます。</string>
+    <string name="backup_replace">すべて置き換え</string>
+    <string name="backup_imported_title">バックアップを復元しました</string>
+    <string name="backup_imported_body">%1$d ファイルを復元しました。</string>
+    <string name="backup_after_import_body">復元データを使うには Mika を閉じて開き直してください。その後ワイヤレスデバッグを再ペアリングし、Android 設定でアクセシビリティサービスを再度有効化し、バックアップ ZIP を削除してください。</string>
+    <string name="backup_close_app">Mika を閉じる</string>
+    <string name="backup_restart_note">何かをアンインストールする前に先に書き出してください：このインストールだけがデータを復号できます。</string>
+</resources>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">Yedekleme ve veriler</string>
+    <string name="backup_sub">Her şeyi bir ZIP dosyasına aktarın veya bir dosyadan geri yükleyin</string>
+    <string name="backup_warning_title">Bu yedek şifrelenmemiş</string>
+    <string name="backup_warning_body">ZIP dosyası tüm sırlarınızı içerir: API anahtarları, OAuth jetonları ve hizmet kimlik bilgileri. Gizli tutun, paylaşmayın ve içe aktardıktan sonra silin.</string>
+    <string name="backup_included_label">Neler dahil</string>
+    <string name="backup_included_body">Sağlayıcılar ve anahtarlar, sohbetler, kişilikler, beceriler, bellek, iş akışları, görev çalıştırmaları ve ayarlar.</string>
+    <string name="backup_excluded_body">Dahil değildir: kablosuz hata ayıklama eşleştirmesi (içe aktardıktan sonra yeniden eşleştirin), erişilebilirlik hizmeti ayarı (Android Ayarları\'nda yeniden açın), korumalı çalışma alanı ve dosya kitaplığı ekleri.</string>
+    <string name="backup_export">Yedeği dışa aktar</string>
+    <string name="backup_export_sub">Tüm verilerinizle birlikte bir ZIP dosyası kaydedin</string>
+    <string name="backup_import">Yedeği içe aktar</string>
+    <string name="backup_import_sub">Her şeyi bir yedek ZIP dosyasından geri yükleyin</string>
+    <string name="backup_exported">Yedek kaydedildi: %1$d dosya.</string>
+    <string name="backup_exported_skipped">Yedek kaydedildi: %1$d dosya. %2$d anahtarın şifresi çözülemedi ve dışarıda bırakıldı.</string>
+    <string name="backup_export_failed">Yedek kaydedilemedi.</string>
+    <string name="backup_import_failed">Bu yedek içe aktarılamadı.</string>
+    <string name="backup_import_confirm_title">Mevcut veriler değiştirilsin mi?</string>
+    <string name="backup_import_confirm_body">Bu telefonda zaten sohbetler ve sağlayıcılar var. İçe aktarma bunları değiştirecek.</string>
+    <string name="backup_replace">Tümünü değiştir</string>
+    <string name="backup_imported_title">Yedek geri yüklendi</string>
+    <string name="backup_imported_body">%1$d dosya geri yüklendi.</string>
+    <string name="backup_after_import_body">Geri yüklenen verileri kullanmak için Mika\'yı kapatıp yeniden açın. Ardından kablosuz hata ayıklamayı yeniden eşleştirin, Android Ayarları\'nda erişilebilirlik hizmetini yeniden açın ve yedek ZIP dosyasını silin.</string>
+    <string name="backup_close_app">Mika\'yı kapat</string>
+    <string name="backup_restart_note">Herhangi bir şeyi kaldırmadan önce dışa aktarın: verilerinizin şifresini yalnızca bu kurulum çözebilir.</string>
+</resources>

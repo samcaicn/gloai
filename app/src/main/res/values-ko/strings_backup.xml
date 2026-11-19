@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">백업 및 데이터</string>
+    <string name="backup_sub">모든 항목을 ZIP 파일로 내보내거나 ZIP 파일에서 복원하세요</string>
+    <string name="backup_warning_title">이 백업은 암호화되지 않았습니다</string>
+    <string name="backup_warning_body">ZIP 파일에는 API 키, OAuth 토큰, 서비스 자격 증명 등 모든 비밀이 담겨 있습니다. 비공개로 유지하고 공유하지 말며, 가져온 후에는 삭제하세요.</string>
+    <string name="backup_included_label">포함되는 항목</string>
+    <string name="backup_included_body">제공자 및 키, 채팅, 페르소나, 스킬, 메모리, 워크플로, 작업 실행 기록, 설정.</string>
+    <string name="backup_excluded_body">포함되지 않음: 무선 디버깅 페어링(가져온 후 다시 페어링), 접근성 서비스 설정(Android 설정에서 다시 켜기), 샌드박스 작업 공간, 파일 라이브러리 첨부 파일.</string>
+    <string name="backup_export">백업 내보내기</string>
+    <string name="backup_export_sub">모든 데이터가 담긴 ZIP 파일 저장</string>
+    <string name="backup_import">백업 가져오기</string>
+    <string name="backup_import_sub">백업 ZIP 파일에서 모든 항목 복원</string>
+    <string name="backup_exported">백업이 저장되었습니다: 파일 %1$d개.</string>
+    <string name="backup_exported_skipped">백업이 저장되었습니다: 파일 %1$d개. 키 %2$d개는 복호화할 수 없어 제외되었습니다.</string>
+    <string name="backup_export_failed">백업을 저장할 수 없습니다.</string>
+    <string name="backup_import_failed">이 백업을 가져올 수 없습니다.</string>
+    <string name="backup_import_confirm_title">현재 데이터를 교체할까요?</string>
+    <string name="backup_import_confirm_body">이 휴대전화에는 이미 채팅과 제공자가 있습니다. 가져오면 기존 항목이 교체됩니다.</string>
+    <string name="backup_replace">모두 교체</string>
+    <string name="backup_imported_title">백업이 복원되었습니다</string>
+    <string name="backup_imported_body">파일 %1$d개를 복원했습니다.</string>
+    <string name="backup_after_import_body">복원된 데이터를 사용하려면 Mika를 닫았다가 다시 여세요. 그런 다음 무선 디버깅을 다시 페어링하고, Android 설정에서 접근성 서비스를 다시 켜고, 백업 ZIP 파일을 삭제하세요.</string>
+    <string name="backup_close_app">Mika 닫기</string>
+    <string name="backup_restart_note">무언가를 제거하기 전에 먼저 내보내세요. 이 설치본만 데이터를 복호화할 수 있습니다.</string>
+</resources>

@@ -17,4 +17,9 @@
     <string name="web_search_api_key">API anahtarı (isteğe bağlı)</string>
     <string name="web_search_invalid_endpoint">Sorgu parametresi olmayan bir HTTP veya HTTPS URL\'si girin.</string>
     <string name="web_search_action">Web\'de ara</string>
+    <string name="web_search_google_grounding_toggle">Google Search grounding (Gemini)</string>
+    <string name="web_search_note_google">Mevcut Gemini API anahtarınızı kullanır (araçlar: [{googleSearch: {}}]). Ayda 5.000 ücretsiz grounded istem, ardından 1.000 sorgu başına 14 ABD doları; bir soru birden fazla aramayı tetikleyebilir.</string>
+    <string name="web_search_google_unavailable_provider">Google Search grounding, %1$s üzerinde kullanılamaz. Bir Gemini ana modeli gerektirir.</string>
+    <string name="web_search_google_unavailable_none">Google Search grounding, Ayarlar › Modeller bölümünde bir Gemini ana modeli gerektirir.</string>
+    <string name="web_search_google_unavailable_value">Kullanılamıyor</string>
 </resources>

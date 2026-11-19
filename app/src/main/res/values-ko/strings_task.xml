@@ -90,4 +90,5 @@
     <string name="task_trigger_time_limit">예약 작업이 %1$d분을 넘겨서 멈췄어요.</string>
     <string name="trigger_failed_streak">예약 작업이 %1$d번 연속 실패했어요</string>
     <string name="trigger_failed_streak_hint">예약 작업 페이지에서 이 계획을 일시 중지하거나 바꿀 수 있어요.</string>
+    <string name="task_no_phone_helper_shizuku">휴대전화 제어가 준비되지 않았습니다. Shizuku를 시작하고 Mika에 권한을 부여하세요(또는 설정에서 휴대전화 제어 확인). 웹 및 파일 작업에는 영향이 없습니다.</string>
 </resources>

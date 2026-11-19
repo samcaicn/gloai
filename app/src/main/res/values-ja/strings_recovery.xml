@@ -20,4 +20,5 @@
     <string name="rec_setting_unavailable">このスマホでは、Mika が起動時にワイヤレス デバッグをオンにできません。再起動後はご自身でオンにすると、Mika が接続します。</string>
     <string name="rec_not_recovered">前回の起動時に自動で再接続できませんでした。信頼済みの Wi-Fi に接続して、ワイヤレス デバッグがオンになっているか確認してください。Mika が接続します。</string>
     <string name="rec_needs_pairing">ワイヤレス デバッグのペア設定後にだけ使えます。ヘルパーは USB コマンドで起動したため、スマホの再起動後はもう一度コマンドを実行してください。</string>
+    <string name="rec_shizuku_no_wireless">Shizuku 選択中はワイヤレスデバッグを使いません。Shizuku が動き出せば Mika は Shizuku 経由で再接続します。</string>
 </resources>

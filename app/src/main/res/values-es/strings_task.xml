@@ -96,4 +96,5 @@
     <string name="task_trigger_time_limit">La tarea programada duró más de %1$d minutos, así que se detuvo.</string>
     <string name="trigger_failed_streak">La tarea programada falló %1$d veces seguidas</string>
     <string name="trigger_failed_streak_hint">Puedes pausar o cambiar este plan en la página de tareas programadas.</string>
+    <string name="task_no_phone_helper_shizuku">El control del teléfono no está listo. Inicia Shizuku y concede permiso a Mika (o revisa Control del teléfono en Ajustes). Las tareas web y de archivos no se ven afectadas.</string>
 </resources>

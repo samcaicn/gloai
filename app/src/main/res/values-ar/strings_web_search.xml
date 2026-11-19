@@ -17,4 +17,9 @@
     <string name="web_search_api_key">مفتاح API (اختياري)</string>
     <string name="web_search_invalid_endpoint">أدخل عنوان URL باستخدام HTTP أو HTTPS من دون معاملات استعلام.</string>
     <string name="web_search_action">البحث في الويب</string>
+    <string name="web_search_google_grounding_toggle">ربط نتائج Google Search (Gemini)</string>
+    <string name="web_search_note_google">يستخدم مفتاح Gemini API الحالي (الأدوات: [{googleSearch: {}}]). 5,000 مطالبة مربوطة مجانية شهريًا، ثم 14 دولارًا لكل 1,000 استعلام؛ يمكن أن يؤدي سؤال واحد إلى عدة عمليات بحث.</string>
+    <string name="web_search_google_unavailable_provider">ربط نتائج Google Search غير متاح على %1$s. يتطلب نموذج Gemini رئيسيًا.</string>
+    <string name="web_search_google_unavailable_none">يتطلب ربط نتائج Google Search نموذج Gemini رئيسيًا في الإعدادات › النماذج.</string>
+    <string name="web_search_google_unavailable_value">غير متاح</string>
 </resources>

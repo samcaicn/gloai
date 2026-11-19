@@ -96,4 +96,5 @@
     <string name="task_trigger_time_limit">A tarefa agendada passou de %1$d minutos e foi interrompida.</string>
     <string name="trigger_failed_streak">A tarefa agendada falhou %1$d vezes seguidas</string>
     <string name="trigger_failed_streak_hint">Você pode pausar ou alterar este plano na página de tarefas agendadas.</string>
+    <string name="task_no_phone_helper_shizuku">O controle do telefone não está pronto. Inicie o Shizuku e conceda permissão ao Mika (ou verifique o Controle do telefone nas Configurações). Tarefas de web e arquivos não são afetadas.</string>
 </resources>

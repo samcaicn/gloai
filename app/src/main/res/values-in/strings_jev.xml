@@ -16,4 +16,6 @@
     <string name="jev_test_failed">Pengujian gagal. Periksa endpoint, model, kunci API, dan jaringan.</string>
     <string name="jev_saved">Tersimpan. Tugas baru akan menggunakan pengaturan ini.</string>
     <string name="jev_save_failed">Tidak dapat menyimpan. Pengaturan yang sebelumnya disimpan tidak berubah.</string>
+    <string name="jev_google_endpoint_note">Menggunakan Gemini Developer API (generativelanguage.googleapis.com) dengan model gemini-decision-1. Menggunakan kunci Gemini API yang sudah ada dari Pengaturan › Model jika tidak diubah. $0,10 per 1 juta token input, $0 output, hingga 1.000 pertanyaan, konteks 256K. Kunci API disimpan terenkripsi di perangkat ini.</string>
+    <string name="jev_aiplatform_unsupported">Endpoint Google Cloud AI Platform (aiplatform.googleapis.com) tidak didukung. Gunakan Gemini Developer API (generativelanguage.googleapis.com) dengan kunci Gemini API.</string>
 </resources>

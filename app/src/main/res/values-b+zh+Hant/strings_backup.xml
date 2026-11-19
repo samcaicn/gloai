@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">備份與資料</string>
+    <string name="backup_sub">把全部資料匯出成一個 ZIP 檔案，或從 ZIP 還原</string>
+    <string name="backup_warning_title">此備份未加密</string>
+    <string name="backup_warning_body">ZIP 檔案裡包含你的所有機密：API 金鑰、OAuth 權杖和服務憑證。請妥善保管、不要分享，匯入後即刪除。</string>
+    <string name="backup_included_label">包含哪些內容</string>
+    <string name="backup_included_body">服務商與金鑰、聊天、人格、技能、記憶、工作流程、任務執行記錄和設定。</string>
+    <string name="backup_excluded_body">不包含：無線偵錯配對（匯入後需重新配對）、無障礙服務開關（需在 Android 設定裡重新開啟）、沙箱工作區和檔案庫附件。</string>
+    <string name="backup_export">匯出備份</string>
+    <string name="backup_export_sub">把全部資料儲存為一個 ZIP 檔案</string>
+    <string name="backup_import">匯入備份</string>
+    <string name="backup_import_sub">從一個備份 ZIP 檔案還原所有內容</string>
+    <string name="backup_exported">備份已儲存：%1$d 個檔案。</string>
+    <string name="backup_exported_skipped">備份已儲存：%1$d 個檔案。有 %2$d 個金鑰無法解密，已略過。</string>
+    <string name="backup_export_failed">無法儲存備份。</string>
+    <string name="backup_import_failed">無法匯入這份備份。</string>
+    <string name="backup_import_confirm_title">取代目前資料？</string>
+    <string name="backup_import_confirm_body">這台手機已有聊天和服務商。匯入後會取代掉它們。</string>
+    <string name="backup_replace">全部取代</string>
+    <string name="backup_imported_title">備份已還原</string>
+    <string name="backup_imported_body">已還原 %1$d 個檔案。</string>
+    <string name="backup_after_import_body">關閉 Mika 再重新開啟，以使用還原的資料。然後重新配對無線偵錯、在 Android 設定裡重新開啟無障礙服務，並刪除備份 ZIP 檔案。</string>
+    <string name="backup_close_app">關閉 Mika</string>
+    <string name="backup_restart_note">解除安裝任何東西之前請先匯出：只有目前這份安裝才能解密你的資料。</string>
+</resources>

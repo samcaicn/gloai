@@ -8,9 +8,9 @@
     <string name="jev_endpoint">Endpoint</string>
     <string name="jev_model">Model ID</string>
     <string name="jev_endpoint_note">Enter the complete SystemOne endpoint URL. HTTPS is required except for local HTTP services. The API key is stored encrypted on this device.</string>
-    <string name="jev_google_endpoint_note" translatable="false">Uses the Gemini Developer API (generativelanguage.googleapis.com) with model gemini-decision-1. Uses your existing Gemini API key from Settings › Models if left unchanged. $0.10/1M input tokens, $0 output, up to 1,000 questions, 256K context. The API key is stored encrypted on this device.</string>
+    <string name="jev_google_endpoint_note">Uses the Gemini Developer API (generativelanguage.googleapis.com) with model gemini-decision-1. Uses your existing Gemini API key from Settings › Models if left unchanged. $0.10/1M input tokens, $0 output, up to 1,000 questions, 256K context. The API key is stored encrypted on this device.</string>
     <string name="jev_invalid">Enter a valid endpoint and model ID. Enabling or testing also requires an API key.</string>
-    <string name="jev_aiplatform_unsupported" translatable="false">Google Cloud AI Platform endpoints (aiplatform.googleapis.com) are not supported. Use the Gemini Developer API (generativelanguage.googleapis.com) with a Gemini API key.</string>
+    <string name="jev_aiplatform_unsupported">Google Cloud AI Platform endpoints (aiplatform.googleapis.com) are not supported. Use the Gemini Developer API (generativelanguage.googleapis.com) with a Gemini API key.</string>
     <string name="jev_apply_note">Save to apply the switch and connection settings to new tasks.</string>
     <string name="jev_test">Test connection</string>
     <string name="jev_test_note">Testing sends only a fixed greeting and two choices to this endpoint. It does not send your conversations, screens or memories, save changes, or enable the service.</string>

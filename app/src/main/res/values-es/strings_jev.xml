@@ -16,4 +16,6 @@
     <string name="jev_test_failed">La prueba falló. Revisa el endpoint, el modelo, la clave API y la red.</string>
     <string name="jev_saved">Guardado. Las tareas nuevas usarán estos ajustes.</string>
     <string name="jev_save_failed">No se pudo guardar. Los ajustes guardados anteriormente no han cambiado.</string>
+    <string name="jev_google_endpoint_note">Usa la Gemini Developer API (generativelanguage.googleapis.com) con el modelo gemini-decision-1. Usa tu clave de API de Gemini existente de Ajustes › Modelos si no la cambias. $0.10 por 1M de tokens de entrada, $0 de salida, hasta 1,000 preguntas, contexto de 256K. La clave de API se guarda cifrada en este dispositivo.</string>
+    <string name="jev_aiplatform_unsupported">Los endpoints de Google Cloud AI Platform (aiplatform.googleapis.com) no son compatibles. Usa la Gemini Developer API (generativelanguage.googleapis.com) con una clave de API de Gemini.</string>
 </resources>

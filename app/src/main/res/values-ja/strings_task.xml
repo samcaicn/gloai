@@ -90,4 +90,5 @@
     <string name="task_trigger_time_limit">スケジュールタスクが %1$d 分を超えたため停止しました。</string>
     <string name="trigger_failed_streak">スケジュールタスクが %1$d 回続けて失敗しました</string>
     <string name="trigger_failed_streak_hint">スケジュールタスクのページでこの予定を一時停止または変更できます。</string>
+    <string name="task_no_phone_helper_shizuku">電話操作の準備ができていません。Shizuku を起動して Mika に権限を与えてください（または「設定 › 電話操作」を確認）。Web・ファイルタスクには影響しません。</string>
 </resources>

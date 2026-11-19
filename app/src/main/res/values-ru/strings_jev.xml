@@ -16,4 +16,6 @@
     <string name="jev_test_failed">Проверка не удалась. Проверьте адрес API, модель, ключ API и сеть.</string>
     <string name="jev_saved">Сохранено. Новые задачи будут использовать эти настройки.</string>
     <string name="jev_save_failed">Не удалось сохранить. Ранее сохранённые настройки не изменились.</string>
+    <string name="jev_google_endpoint_note">Использует Gemini Developer API (generativelanguage.googleapis.com) с моделью gemini-decision-1. Если не менять, используется ваш текущий ключ Gemini API из раздела «Настройки › Модели». $0.10 за 1 млн входных токенов, $0 за вывод, до 1 000 вопросов, контекст 256K. Ключ API хранится на этом устройстве в зашифрованном виде.</string>
+    <string name="jev_aiplatform_unsupported">Конечные точки Google Cloud AI Platform (aiplatform.googleapis.com) не поддерживаются. Используйте Gemini Developer API (generativelanguage.googleapis.com) с ключом Gemini API.</string>
 </resources>

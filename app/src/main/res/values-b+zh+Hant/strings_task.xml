@@ -90,4 +90,5 @@
     <string name="task_trigger_time_limit">定時任務執行超過 %1$d 分鐘，已停下。</string>
     <string name="trigger_failed_streak">定時任務已連續失敗 %1$d 次</string>
     <string name="trigger_failed_streak_hint">可以在定時任務頁暫停或修改這個計畫。</string>
+    <string name="task_no_phone_helper_shizuku">手機控制尚未就緒。請先啟動 Shizuku 並給 Mika 授權（或到「設定 › 手機控制」裡檢查）。網頁和檔案任務不受影響。</string>
 </resources>

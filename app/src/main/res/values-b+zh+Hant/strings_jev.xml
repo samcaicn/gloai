@@ -16,4 +16,6 @@
     <string name="jev_test_failed">測試失敗，請檢查介面、模型、API Key 和網路。</string>
     <string name="jev_saved">已儲存，新任務將使用這些設定。</string>
     <string name="jev_save_failed">儲存失敗，原先儲存的設定維持不變。</string>
+    <string name="jev_google_endpoint_note">使用 Gemini Developer API（generativelanguage.googleapis.com），模型為 gemini-decision-1。如不修改，沿用你在「設定 › 模型」裡已有的 Gemini API 金鑰。每 100 萬輸入 token 0.10 美元，輸出免費，最多 1,000 個問題，256K 上下文。API 金鑰加密儲存在本機上。</string>
+    <string name="jev_aiplatform_unsupported">不支援 Google Cloud AI Platform 端點（aiplatform.googleapis.com）。請改用 Gemini Developer API（generativelanguage.googleapis.com）和 Gemini API 金鑰。</string>
 </resources>

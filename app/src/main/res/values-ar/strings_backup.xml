@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">النسخ الاحتياطي والبيانات</string>
+    <string name="backup_sub">صدّر كل شيء إلى ملف ZIP، أو استعد من ملف</string>
+    <string name="backup_warning_title">هذه النسخة الاحتياطية غير مشفّرة</string>
+    <string name="backup_warning_body">يحتوي ملف ZIP على كل أسرارك: مفاتيح API ورموز OAuth وبيانات اعتماد الخدمات. أبقِه خاصًا، ولا تشاركه، واحذفه بعد استيراده.</string>
+    <string name="backup_included_label">ما الذي يتم تضمينه</string>
+    <string name="backup_included_body">المزوّدون والمفاتيح، والمحادثات، والشخصيات، والمهارات، والذاكرة، وسير العمل، وتشغيلات المهام، والإعدادات.</string>
+    <string name="backup_excluded_body">غير مضمّن: إقران التصحيح اللاسلكي (أعد الإقران بعد الاستيراد)، وإعداد خدمة الوصول (أعد تشغيله في إعدادات Android)، ومساحة عمل العزل (sandbox)، ومرفقات مكتبة الملفات.</string>
+    <string name="backup_export">تصدير النسخة الاحتياطية</string>
+    <string name="backup_export_sub">احفظ ملف ZIP بكل بياناتك</string>
+    <string name="backup_import">استيراد النسخة الاحتياطية</string>
+    <string name="backup_import_sub">استعد كل شيء من ملف ZIP للنسخة الاحتياطية</string>
+    <string name="backup_exported">تم حفظ النسخة الاحتياطية: %1$d ملف.</string>
+    <string name="backup_exported_skipped">تم حفظ النسخة الاحتياطية: %1$d ملف. تعذّر فك تشفير %2$d مفتاح وتم استبعادها.</string>
+    <string name="backup_export_failed">تعذّر حفظ النسخة الاحتياطية.</string>
+    <string name="backup_import_failed">تعذّر استيراد هذه النسخة الاحتياطية.</string>
+    <string name="backup_import_confirm_title">هل تريد استبدال البيانات الحالية؟</string>
+    <string name="backup_import_confirm_body">يحتوي هذا الهاتف بالفعل على محادثات ومزوّدين. سيؤدي الاستيراد إلى استبدالها.</string>
+    <string name="backup_replace">استبدال الكل</string>
+    <string name="backup_imported_title">تمت استعادة النسخة الاحتياطية</string>
+    <string name="backup_imported_body">تمت استعادة %1$d ملف.</string>
+    <string name="backup_after_import_body">أغلق Mika ثم افتحه مرة أخرى لاستخدام البيانات المستعادة. بعد ذلك، أعد إقران التصحيح اللاسلكي، وأعد تشغيل خدمة الوصول في إعدادات Android، واحذف ملف ZIP للنسخة الاحتياطية.</string>
+    <string name="backup_close_app">إغلاق Mika</string>
+    <string name="backup_restart_note">صدّر أولًا قبل إلغاء تثبيت أي شيء: هذا التثبيت فقط هو من يستطيع فك تشفير بياناتك.</string>
+</resources>

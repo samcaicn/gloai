@@ -16,4 +16,6 @@
     <string name="jev_test_failed">テストに失敗しました。接続先、モデル、API キー、ネットワークを確認してください。</string>
     <string name="jev_saved">保存しました。新しいタスクから適用されます。</string>
     <string name="jev_save_failed">保存できませんでした。保存済みの設定は変わりません。</string>
+    <string name="jev_google_endpoint_note">Gemini Developer API（generativelanguage.googleapis.com）をモデル gemini-decision-1 で使います。変更しなければ「設定 › モデル」の既存 Gemini API キーを使います。100 万入力 token あたり 0.10 ドル、出力は無料、最大 1,000 問、256K コンテキスト。API キーはこの端末に暗号化保存されます。</string>
+    <string name="jev_aiplatform_unsupported">Google Cloud AI Platform エンドポイント（aiplatform.googleapis.com）は非対応です。Gemini Developer API（generativelanguage.googleapis.com）と Gemini API キーを使ってください。</string>
 </resources>

@@ -17,4 +17,9 @@
     <string name="web_search_api_key">API 金鑰（可選）</string>
     <string name="web_search_invalid_endpoint">請輸入不含查詢參數的 HTTP 或 HTTPS 網址。</string>
     <string name="web_search_action">搜尋網頁</string>
+    <string name="web_search_google_grounding_toggle">Google 搜尋接地（Gemini）</string>
+    <string name="web_search_note_google">沿用你現有的 Gemini API 金鑰（tools: [{googleSearch: {}}]）。每月 5,000 次免費接地提示詞，之後每 1,000 次查詢 14 美元；一個問題可能觸發多次搜尋。</string>
+    <string name="web_search_google_unavailable_provider">Google 搜尋接地在 %1$s 上不可用，它需要 Gemini 主模型。</string>
+    <string name="web_search_google_unavailable_none">Google 搜尋接地需要在「設定 › 模型」裡設定 Gemini 主模型。</string>
+    <string name="web_search_google_unavailable_value">不可用</string>
 </resources>

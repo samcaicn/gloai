@@ -17,4 +17,9 @@
     <string name="web_search_api_key">کلید API (اختیاری)</string>
     <string name="web_search_invalid_endpoint">یک نشانی HTTP یا HTTPS بدون پارامترهای پرس‌وجو وارد کنید.</string>
     <string name="web_search_action">جست‌وجو در وب</string>
+    <string name="web_search_google_grounding_toggle">اتصال به Google Search (Gemini)</string>
+    <string name="web_search_note_google">از کلید Gemini API موجود شما استفاده می‌کند (ابزارها: [{googleSearch: {}}]). ماهانه ۵٬۰۰۰ پرامپت متصل رایگان، سپس ۱۴ دلار به ازای هر ۱٬۰۰۰ جست‌وجو؛ یک پرسش می‌تواند چند جست‌وجو را فعال کند.</string>
+    <string name="web_search_google_unavailable_provider">اتصال به Google Search در %1$s در دسترس نیست. به مدل اصلی Gemini نیاز دارد.</string>
+    <string name="web_search_google_unavailable_none">اتصال به Google Search به یک مدل اصلی Gemini در تنظیمات › مدل‌ها نیاز دارد.</string>
+    <string name="web_search_google_unavailable_value">در دسترس نیست</string>
 </resources>

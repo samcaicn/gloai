@@ -20,4 +20,5 @@
     <string name="rec_setting_unavailable">لا يسمح هذا الهاتف لـ Mika بتشغيل تصحيح الأخطاء لاسلكيًا عند بدء التشغيل. بعد إعادة التشغيل، شغّله بنفسك وستتصل Mika.</string>
     <string name="rec_not_recovered">تعذرت إعادة الاتصال تلقائيًا عند بدء التشغيل الأخير. تأكد من اتصالك بشبكة Wi-Fi موثوقة ومن تشغيل تصحيح الأخطاء لاسلكيًا، وستتصل Mika.</string>
     <string name="rec_needs_pairing">لا يعمل إلا بعد إقران تصحيح الأخطاء لاسلكيًا. بدأ المساعد باستخدام أمر USB، لذا أعد تشغيل الأمر بعد إعادة تشغيل الهاتف.</string>
+    <string name="rec_shizuku_no_wireless">لا يُستخدم التصحيح اللاسلكي أثناء اختيار Shizuku. يعيد Mika الاتصال عبر Shizuku بمجرد أن يعمل Shizuku.</string>
 </resources>

@@ -20,4 +20,5 @@
     <string name="rec_setting_unavailable">Este celular não deixa o Mika ativar a Depuração wireless na inicialização. Depois de reiniciar, ative você mesmo e o Mika se conectará.</string>
     <string name="rec_not_recovered">Não foi possível reconectar automaticamente na última inicialização. Confirme que você está em um Wi-Fi confiável com a Depuração wireless ativada e o Mika se conectará.</string>
     <string name="rec_needs_pairing">Só funciona depois de parear a Depuração wireless. O assistente foi iniciado com o comando USB, então execute o comando de novo depois que o celular reiniciar.</string>
+    <string name="rec_shizuku_no_wireless">A depuração sem fio não é usada enquanto o Shizuku estiver selecionado. O Mika se reconecta pelo Shizuku assim que ele estiver em execução.</string>
 </resources>

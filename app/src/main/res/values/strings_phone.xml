@@ -174,40 +174,40 @@
     <string name="phone_root_note">Mika found su on this phone. A helper started with root still runs as the same limited user, with the same permissions as one started over Wireless debugging.</string>
     <string name="phone_root_entry_on">Automatic helper start; root commands on</string>
     <string name="phone_root_entry_off">Automatic helper start; root commands off</string>
-    <string name="fail_shizuku_not_installed" translatable="false">Shizuku isn’t installed</string>
-    <string name="fail_shizuku_not_installed_body" translatable="false">Install and start Shizuku, grant permission to Mika, or switch back to Wireless debugging in Phone control.</string>
-    <string name="fail_shizuku_not_running" translatable="false">Shizuku is not running</string>
-    <string name="fail_shizuku_not_running_body" translatable="false">Shizuku is installed, but its service is not running (for example after a phone restart). Open Shizuku to start it and tap Retry, or pair Wireless debugging in Phone control.</string>
-    <string name="fail_shizuku_permission" translatable="false">Shizuku permission needed</string>
-    <string name="fail_shizuku_permission_body" translatable="false">Shizuku is running, but Mika doesn’t have permission yet. Open Phone control to grant Shizuku permission, or switch to Wireless debugging.</string>
-    <string name="fail_shizuku_bind_failed" translatable="false">Couldn’t start helper via Shizuku</string>
-    <string name="fail_shizuku_bind_failed_body" translatable="false">Shizuku is running and allowed, but the phone helper didn’t connect. Tap Retry, or restart Shizuku and try again.</string>
-    <string name="phone_shizuku_line_starting" translatable="false">Phone helper not running; starting it via Shizuku…</string>
-    <string name="phone_shizuku_line_running" translatable="false">Connected via Shizuku; works on Wi-Fi or mobile data</string>
-    <string name="phone_success_note_shizuku" translatable="false">Started via Shizuku. Works on mobile data without Wi-Fi; after a phone restart, start Shizuku again and Mika reconnects automatically.</string>
-    <string name="phone_usage_note_shizuku" translatable="false">Using Shizuku to start Mika’s built-in helper. Once started, phone control works on Wi-Fi or mobile data without Wireless debugging. Mika never starts Shizuku itself; after a phone restart, open Shizuku to start it again (using Wireless debugging only if that is the start method Shizuku uses on this device), and Mika reconnects automatically.</string>
-    <string name="phone_shizuku_group" translatable="false">Shizuku</string>
-    <string name="phone_shizuku_not_installed" translatable="false">Not installed</string>
-    <string name="phone_shizuku_not_running" translatable="false">Installed · Not running</string>
-    <string name="phone_shizuku_perm_needed" translatable="false">Running · Permission needed</string>
-    <string name="phone_shizuku_ready" translatable="false">Running · Permission granted</string>
-    <string name="phone_shizuku_detail" translatable="false">Installed: %1$s · Running: %2$s · Permission: %3$s</string>
-    <string name="phone_shizuku_yes" translatable="false">Yes</string>
-    <string name="phone_shizuku_no" translatable="false">No</string>
-    <string name="phone_shizuku_perm_granted" translatable="false">Granted</string>
-    <string name="phone_shizuku_perm_missing" translatable="false">Not granted</string>
-    <string name="phone_shizuku_grant" translatable="false">Grant Shizuku permission</string>
-    <string name="phone_shizuku_open_app" translatable="false">Open Shizuku</string>
-    <string name="phone_shizuku_action_install_sub" translatable="false">Shizuku isn’t installed yet; open setup instructions</string>
-    <string name="phone_shizuku_action_start_sub" translatable="false">Open Shizuku to start its service</string>
-    <string name="phone_shizuku_action_grant_sub" translatable="false">Request permission in Shizuku so Mika can use it</string>
-    <string name="phone_shizuku_action_ready_sub" translatable="false">Permission granted; open Shizuku settings</string>
-    <string name="phone_shizuku_guide" translatable="false">How to start Shizuku</string>
-    <string name="phone_shizuku_guide_sub" translatable="false">Open Shizuku’s setup guide in your browser</string>
-    <string name="phone_shizuku_footer" translatable="false">Mika never starts Shizuku itself. If your device only offers Wireless debugging to start Shizuku, enable Wireless debugging only while starting Shizuku.</string>
-    <string name="phone_transport_title" translatable="false">Shell transport</string>
-    <string name="phone_transport_sub" translatable="false">Auto tries Shizuku first when ready, then falls back to Wireless debugging. Choosing Shizuku never uses Wireless debugging.</string>
-    <string name="phone_transport_auto" translatable="false">Auto</string>
-    <string name="phone_transport_wireless" translatable="false">Wireless debugging</string>
-    <string name="phone_transport_shizuku" translatable="false">Shizuku</string>
+    <string name="fail_shizuku_not_installed">Shizuku isn’t installed</string>
+    <string name="fail_shizuku_not_installed_body">Install and start Shizuku, grant permission to Mika, or switch back to Wireless debugging in Phone control.</string>
+    <string name="fail_shizuku_not_running">Shizuku is not running</string>
+    <string name="fail_shizuku_not_running_body">Shizuku is installed, but its service is not running (for example after a phone restart). Open Shizuku to start it and tap Retry, or pair Wireless debugging in Phone control.</string>
+    <string name="fail_shizuku_permission">Shizuku permission needed</string>
+    <string name="fail_shizuku_permission_body">Shizuku is running, but Mika doesn’t have permission yet. Open Phone control to grant Shizuku permission, or switch to Wireless debugging.</string>
+    <string name="fail_shizuku_bind_failed">Couldn’t start helper via Shizuku</string>
+    <string name="fail_shizuku_bind_failed_body">Shizuku is running and allowed, but the phone helper didn’t connect. Tap Retry, or restart Shizuku and try again.</string>
+    <string name="phone_shizuku_line_starting">Phone helper not running; starting it via Shizuku…</string>
+    <string name="phone_shizuku_line_running">Connected via Shizuku; works on Wi-Fi or mobile data</string>
+    <string name="phone_success_note_shizuku">Started via Shizuku. Works on mobile data without Wi-Fi; after a phone restart, start Shizuku again and Mika reconnects automatically.</string>
+    <string name="phone_usage_note_shizuku">Using Shizuku to start Mika’s built-in helper. Once started, phone control works on Wi-Fi or mobile data without Wireless debugging. Mika never starts Shizuku itself; after a phone restart, open Shizuku to start it again (using Wireless debugging only if that is the start method Shizuku uses on this device), and Mika reconnects automatically.</string>
+    <string name="phone_shizuku_group">Shizuku</string>
+    <string name="phone_shizuku_not_installed">Not installed</string>
+    <string name="phone_shizuku_not_running">Installed · Not running</string>
+    <string name="phone_shizuku_perm_needed">Running · Permission needed</string>
+    <string name="phone_shizuku_ready">Running · Permission granted</string>
+    <string name="phone_shizuku_detail">Installed: %1$s · Running: %2$s · Permission: %3$s</string>
+    <string name="phone_shizuku_yes">Yes</string>
+    <string name="phone_shizuku_no">No</string>
+    <string name="phone_shizuku_perm_granted">Granted</string>
+    <string name="phone_shizuku_perm_missing">Not granted</string>
+    <string name="phone_shizuku_grant">Grant Shizuku permission</string>
+    <string name="phone_shizuku_open_app">Open Shizuku</string>
+    <string name="phone_shizuku_action_install_sub">Shizuku isn’t installed yet; open setup instructions</string>
+    <string name="phone_shizuku_action_start_sub">Open Shizuku to start its service</string>
+    <string name="phone_shizuku_action_grant_sub">Request permission in Shizuku so Mika can use it</string>
+    <string name="phone_shizuku_action_ready_sub">Permission granted; open Shizuku settings</string>
+    <string name="phone_shizuku_guide">How to start Shizuku</string>
+    <string name="phone_shizuku_guide_sub">Open Shizuku’s setup guide in your browser</string>
+    <string name="phone_shizuku_footer">Mika never starts Shizuku itself. If your device only offers Wireless debugging to start Shizuku, enable Wireless debugging only while starting Shizuku.</string>
+    <string name="phone_transport_title">Shell transport</string>
+    <string name="phone_transport_sub">Auto tries Shizuku first when ready, then falls back to Wireless debugging. Choosing Shizuku never uses Wireless debugging.</string>
+    <string name="phone_transport_auto">Auto</string>
+    <string name="phone_transport_wireless">Wireless debugging</string>
+    <string name="phone_transport_shizuku">Shizuku</string>
 </resources>

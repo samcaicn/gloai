@@ -16,4 +16,6 @@
     <string name="jev_test_failed">Test başarısız oldu. Uç noktayı, modeli, API anahtarını ve ağı kontrol edin.</string>
     <string name="jev_saved">Kaydedildi. Yeni görevler bu ayarları kullanacak.</string>
     <string name="jev_save_failed">Kaydedilemedi. Önceki kayıtlı ayarlarınız değişmedi.</string>
+    <string name="jev_google_endpoint_note">gemini-decision-1 modeliyle Gemini Developer API\'yi (generativelanguage.googleapis.com) kullanır. Değiştirilmezse Ayarlar › Modeller bölümündeki mevcut Gemini API anahtarınızı kullanır. 1 milyon giriş token\'ı başına 0,10 ABD doları, çıkış 0 ABD doları, 1.000\'e kadar soru, 256K bağlam. API anahtarı bu cihazda şifrelenmiş olarak saklanır.</string>
+    <string name="jev_aiplatform_unsupported">Google Cloud AI Platform uç noktaları (aiplatform.googleapis.com) desteklenmez. Bir Gemini API anahtarıyla Gemini Developer API\'yi (generativelanguage.googleapis.com) kullanın.</string>
 </resources>
