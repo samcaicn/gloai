@@ -49,6 +49,16 @@ class StopSummaryTest {
         assertTrue(StopSummary.worthSaying(events.filterIsInstance<RunEvent.Criteria>(), null))
     }
 
+    @Test fun multiGoalSummaryUsesConfirmationsEvenIfTheInitialMetricNeverChanged() {
+        val checkpoint = RunEvent.Criteria(1, listOf("地址", "店名", "推荐"), emptyList(),
+            progress = RunEvent.Progress("步骤完成", 0, 3), confirmedIds = setOf(1, 2))
+        val events = listOf(checkpoint)
+        val summary = StopSummary.plain("找咖啡馆", events, null)
+        val facts = StopSummary.facts("找咖啡馆", events, null)
+        assertTrue(summary, "已确认进度:目标 2/3" in summary && "0/3" !in summary)
+        assertTrue(facts, "<progress>\n目标 2/3\n</progress>" in facts && "0/3" !in facts)
+    }
+
     @Test fun plainSummaryCountsBatchActionsAndNamesThem() {
         val text = StopSummary.plain("把推荐里的岗位都打个招呼", greeting, null, ::label, ::app)
         assertEquals(

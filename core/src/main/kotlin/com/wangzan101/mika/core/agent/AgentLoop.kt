@@ -505,24 +505,9 @@ class AgentLoop(
             return advice
         }
         val track = StepTrack()
-        var completion = CompletionPlan()
+        val progress = TaskProgressTracker(::now, ::emit)
+        var firstToolStep: Int? = null
         val newData = NewDataTracker()
-        fun progressState() = completion.metric?.state()
-        fun progressText(raw: String): String {
-            val parsed = CompletionPlanBlock.extract(raw)
-            parsed.errors.forEach { emit(RunEvent.State(now(), "task_progress_invalid", RunEvent.clip(it))) }
-            parsed.updates.forEach { update ->
-                val next = try { completion.apply(update) } catch (e: IllegalArgumentException) {
-                    emit(RunEvent.State(now(), "task_progress_invalid", RunEvent.clip(e.message ?: "invalid progress")))
-                    return@forEach
-                }
-                if (next != completion) {
-                    completion = next
-                    emit(completion.event(now()))
-                }
-            }
-            return parsed.text
-        }
         var intent: IntentGate.Intent? = null
         var intentAssessed = false
         // 每次运行只判断一次;判断不出(调用失败、回复不是三个词之一)时为 null,照主模型自己的决定走
@@ -546,8 +531,8 @@ class AgentLoop(
         for (step in 1..maxSteps) {
             appendSteers(history, inbox)
             if (maxSteps != Int.MAX_VALUE) TurnPolicy.beforeStep(TurnSnapshot(step, maxSteps))?.let { history += ctx.notice(it.source, it.text) }
-            appendRuntimeState(history, place, labels, step)
-            _state.value = TaskState.Running(step, note, progress = progressState())
+            appendRuntimeState(history, place, labels, step, progress.pending(step, afterFirstTool = firstToolStep == step - 1))
+            _state.value = TaskState.Running(step, note, progress = progress.state(step))
             refreshOffer()
             var asked = now()
             val routed = try {
@@ -577,7 +562,7 @@ class AgentLoop(
                 }
             }
             val rawText = reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim()
-            val text = progressText(rawText)
+            val text = progress.accept(rawText, step)
             val cleanParts = cleanReplyParts(reply.parts, text)
             history += Message(Role.Assistant, cleanParts, Author.Mika).also { caller.noteReply(it, used, reply.usage) }
             val calls = reply.parts.filterIsInstance<Part.ToolCall>()
@@ -589,7 +574,7 @@ class AgentLoop(
             val latencyMs = repliedAtMs - asked - retryWaitMs
             // 随调用写的字是进度说明,界面上的实时那一行先用它
             val narration = text.takeIf { calls.isNotEmpty() && it.isNotEmpty() }
-            _state.value = TaskState.Running(step, note, tool, progress = progressState(), reason = reason, narration = narration,
+            _state.value = TaskState.Running(step, note, tool, progress = progress.state(step), reason = reason, narration = narration,
                 preview = text.takeIf { streamReplies && calls.isEmpty() && it.isNotEmpty() })
             // 带调用的回复等执行完再记:要看端口是否报告了密码框
             fun recordReply(argsJson: String?) = emit(RunEvent.ModelReply(
@@ -661,6 +646,7 @@ class AgentLoop(
             emptyNudged = false
             leakNudged = false
             acted = true
+            if (firstToolStep == null) firstToolStep = step
             // 回答之后又做了别的:那个回答算有了下文
             answered = null
 
@@ -695,13 +681,13 @@ class AgentLoop(
                         stuckAdvice(v, typed)
                     })
                 if (end != null) return end
-                if (completion.complete) return finalTurn(task, history, specs, step + 1, labels, place, recorder, facts(), inbox, Closeout.Completed, completion)
+                if (progress.plan.complete) return finalTurn(task, history, specs, step + 1, labels, place, recorder, facts(), inbox, progress, Closeout.Completed)
                 continue
             }
 
             val verb = tools.verb(first.name)
             val offScreen = tools.offScreen(first.name)
-            val running = TaskState.Running(step, note, tool, progress = progressState(), reason = reason, narration = narration)
+            val running = TaskState.Running(step, note, tool, progress = progress.state(step), reason = reason, narration = narration)
             gateState = running
             var advice: String? = null
             var waitsForUser = false
@@ -804,12 +790,12 @@ class AgentLoop(
                 // 同一份知识不会重复注入
                 is KnowledgeLookup.Site -> if (visitedSites.add(lookup.host)) knowledge?.byDomain(lookup.host).let { injectKnowledge(history, it) }
             }
-            if (completion.complete) return finalTurn(task, history, specs, step + 1, labels, place, recorder, facts(), inbox, Closeout.Completed, completion)
-            if (noNewData) return finalTurn(task, history, specs, step + 1, labels, place, recorder, facts(), inbox, Closeout.NoNewData, completion)
+            if (progress.plan.complete) return finalTurn(task, history, specs, step + 1, labels, place, recorder, facts(), inbox, progress, Closeout.Completed)
+            if (noNewData) return finalTurn(task, history, specs, step + 1, labels, place, recorder, facts(), inbox, progress, Closeout.NoNewData)
         }
         appendSteers(history, inbox)
         refreshOffer()
-        return finalTurn(task, history, specs, maxSteps + 1, labels, place, recorder, facts(), inbox)
+        return finalTurn(task, history, specs, maxSteps + 1, labels, place, recorder, facts(), inbox, progress)
     }
 
     /** 运行记录里按结果另记的事:报告的障碍(供评测按 barrier 类归因;参数不对被拒的不算)、看过的个人技能、存下的记忆。 */
@@ -836,9 +822,9 @@ class AgentLoop(
      * 发过的消息一概不改,请求前缀逐步只增不变。最后一条是助手消息时(不会发生在正常流程里)单独追加一条。
      * 网页上的版本从浏览器当前标签实际用的版本读。
      */
-    private suspend fun appendRuntimeState(history: MutableList<Message>, place: Place?, labels: Map<String, String>, step: Int) {
+    private suspend fun appendRuntimeState(history: MutableList<Message>, place: Place?, labels: Map<String, String>, step: Int, pending: String?) {
         val mode = if (place?.kind == PlaceKind.Site) tools.placeMode() else null
-        val state = ctx.runtimeState(place, place?.name?.let(labels::get), mode, step, maxSteps, now(), latestWords)
+        val state = ctx.runtimeState(place, place?.name?.let(labels::get), mode, step, maxSteps, now(), latestWords, pending)
         val last = history.lastOrNull()
         if (last == null || last.role == Role.Assistant) history += Message(Role.User, listOf(state), Author.Mika)
         else history[history.lastIndex] = last.copy(parts = last.parts + state)
@@ -1043,13 +1029,13 @@ class AgentLoop(
      */
     private suspend fun finalTurn(
         task: String, history: MutableList<Message>, specs: List<ToolSpec>, step: Int, labels: Map<String, String>, place: Place?, recorder: ActionRecorder,
-        facts: ReviewFacts, inbox: RunInbox?, closeout: Closeout = Closeout.StepLimit, completion: CompletionPlan? = null,
+        facts: ReviewFacts, inbox: RunInbox?, progress: TaskProgressTracker, closeout: Closeout = Closeout.StepLimit,
     ): TaskState {
-        TurnPolicy.closeout(closeout, completion?.metric?.state()).let { history += ctx.notice(it.source, it.text) }
+        TurnPolicy.closeout(closeout, progress.state(step)).let { history += ctx.notice(it.source, it.text) }
         repeat(3) { attempt ->
             appendSteers(history, inbox)
-            appendRuntimeState(history, place, labels, step)
-            _state.value = TaskState.Running(step, "")
+            appendRuntimeState(history, place, labels, step, progress.pending(step))
+            _state.value = TaskState.Running(step, "", progress = progress.state(step))
             val asked = now()
             val reply = try {
                 caller.ask(history, TurnPolicy.finalTools(specs, tools::verb), step, onText = previewFor(step))
@@ -1062,7 +1048,7 @@ class AgentLoop(
             } catch (e: Exception) {
                 return StopRules.closeoutFailed(closeout, maxSteps)
             }
-            val text = CompletionPlanBlock.extract(reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim()).text
+            val text = progress.accept(reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim(), step)
             history += Message(Role.Assistant, cleanReplyParts(reply.parts, text), Author.Mika)
                 .also { caller.noteReply(it, caller.lastMainUsed, reply.usage) }
             val calls = reply.parts.filterIsInstance<Part.ToolCall>()

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="chat_confirmed_goals">確認済みの目標 %1$d/%2$d</string>
+    <string name="chat_last_confirmed_goals">前回の確認 %1$d/%2$d</string>
     <string name="chat_greeting_morning">おはようございます</string>
     <string name="chat_greeting_noon">こんにちは</string>
     <string name="chat_greeting_afternoon">こんにちは</string>

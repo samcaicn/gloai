@@ -5,6 +5,7 @@ import com.wangzan101.mika.cap.web.KeptPage
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
 import com.wangzan101.mika.confirm.ConfirmationCopy
+import com.wangzan101.mika.ui.StatusCopy
 import com.wangzan101.mika.core.agent.RunProgress
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.takeover.Takeover
@@ -407,7 +408,7 @@ class CapsuleModel(private val reasonLabel: (String) -> String? = { null }) {
         fun progressText(p: RunProgress): String = when (p) {
             is RunProgress.Replay -> tr(R.string.capsule_replay, p.step, p.total)
             is RunProgress.Batch -> trPlural(R.plurals.capsule_batch, p.steps)
-            is RunProgress.Task -> p.display
+            is RunProgress.Task -> StatusCopy.progress(p)
             is RunProgress.WaitingForApp -> tr(R.string.progress_waiting_app, p.app)
         }
 

@@ -53,6 +53,7 @@ sealed interface RunEvent {
         val fallback: Boolean = false,
         val progress: Progress? = null,
         val complete: Boolean = false,
+        val confirmedIds: Set<Int>? = null,
     ) : RunEvent
 
     /** [tool]/[argsJson] 是本轮实际执行的那一个调用;参数已脱敏。 */

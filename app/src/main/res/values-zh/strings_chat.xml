@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="chat_confirmed_goals">已确认目标 %1$d/%2$d</string>
+    <string name="chat_last_confirmed_goals">上次确认 %1$d/%2$d</string>
     <string name="chat_greeting_morning">早上好</string>
     <string name="chat_greeting_noon">中午好</string>
     <string name="chat_greeting_afternoon">下午好</string>

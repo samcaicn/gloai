@@ -51,19 +51,20 @@ class AgentLoopRecordTest {
         assertEquals(
             // 坐标处没有元素:不可逆判定无从判断,放行并记一条 gate_unresolved
             // 最后一条不带调用的回复是回答:先字面核对,再记下代码找到的来源
-            // 第一次读屏展开了手机一组:下一次问模型之前记一条 tools_opened
-            listOf("TaskStarted", "PromptVersion", "ModelReply", "ToolResult", "Observed", "Activity", "State", "ModelReply", "ToolResult", "Activity", "State", "ModelReply", "AnswerCheck", "Sources", "TaskEnded"),
+            // 第一次读屏展开手机工具且没有清单：下一轮先记录补建提醒，组装请求时记录工具展开。
+            listOf("TaskStarted", "PromptVersion", "ModelReply", "ToolResult", "Observed", "Activity", "State", "State", "ModelReply", "ToolResult", "Activity", "State", "ModelReply", "AnswerCheck", "Sources", "TaskEnded"),
             ev.map { it::class.simpleName },
         )
         assertEquals("帮我查", (ev[0] as RunEvent.TaskStarted).goal)
         val r1 = ev[2] as RunEvent.ModelReply
         assertEquals(1, r1.step); assertEquals("先看看", r1.text); assertEquals("phone_observe", r1.tool)
-        assertEquals(RunEvent.State((ev[6] as RunEvent.State).atMs, "tools_opened", "phone"), ev[6])
-        val t2 = ev[8] as RunEvent.ToolResult
+        assertEquals(RunEvent.State((ev[6] as RunEvent.State).atMs, "task_progress_plan_reminder", "2"), ev[6])
+        assertEquals(RunEvent.State((ev[7] as RunEvent.State).atMs, "tools_opened", "phone"), ev[7])
+        val t2 = ev[9] as RunEvent.ToolResult
         assertEquals(2, t2.step); assertEquals("phone_tap", t2.tool)
-        assertEquals(RunEvent.State((ev[10] as RunEvent.State).atMs, "gate_unresolved", "phone_tap x=500,y=500 freshRead=true"), ev[10])
+        assertEquals(RunEvent.State((ev[11] as RunEvent.State).atMs, "gate_unresolved", "phone_tap x=500,y=500 freshRead=true"), ev[11])
         assertEquals("observe", (ev[5] as RunEvent.Activity).kind)
-        assertEquals("act", (ev[9] as RunEvent.Activity).kind)
+        assertEquals("act", (ev[10] as RunEvent.Activity).kind)
         val end = ev.last() as RunEvent.TaskEnded
         assertEquals("succeeded", end.outcome); assertEquals("好了", end.answerOrReason)
         // 观察保留采集时刻,但按因果关系记在所属工具结果之后。

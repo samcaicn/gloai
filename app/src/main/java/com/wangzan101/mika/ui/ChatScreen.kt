@@ -3,6 +3,7 @@ package com.wangzan101.mika.ui
 import androidx.compose.foundation.gestures.scrollBy
 import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.cap.sandbox.AttachmentFailureReason
+import com.wangzan101.mika.core.agent.GoalChecklist
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.AttachedPage
 import com.wangzan101.mika.ui.components.DirectionalIcon
@@ -1108,7 +1109,7 @@ private fun Modifier.answerSurface(): Modifier =
  * 在后台操作手机时最下面一行小字。
  */
 @Composable
-private fun WorkBlock(ex: Exchange, reduceMotion: Boolean, backgroundNote: Boolean, openRun: (String) -> Unit) {
+internal fun WorkBlock(ex: Exchange, reduceMotion: Boolean, backgroundNote: Boolean, openRun: (String) -> Unit) {
     val c = MikaTheme.colors
     val paused = ChatCopy.paused(ex.status)
     val elapsed = rememberElapsed(ex.startedAt)
@@ -1128,6 +1129,7 @@ private fun WorkBlock(ex: Exchange, reduceMotion: Boolean, backgroundNote: Boole
             )
             if (elapsed != null) Text(ChatCopy.clock(elapsed), style = ClockText, color = c.ink3)
         }
+        ex.goals?.let { GoalChecklistRow(it, ex.runId) }
         if (ex.steps.isNotEmpty()) StepLine(ex.steps, ex.stepActions, live = true, paused = paused)
         // 跑的时候就能进运行过程(页面按秒接着长);结束后收进「做了 N 步 · 查看过程」那一行
         ex.recordedRun?.let { id ->
@@ -1146,6 +1148,24 @@ private fun WorkBlock(ex: Exchange, reduceMotion: Boolean, backgroundNote: Boole
                 Icon(MikaIcons.Eye, null, Modifier.size(15.dp), tint = c.ink3)
                 Text(ChatCopy.BACKGROUND_NOTE, style = NoteText, color = c.ink3)
             }
+        }
+    }
+}
+
+@Composable
+private fun GoalChecklistRow(goals: GoalChecklist, runId: String?) {
+    val c = MikaTheme.colors
+    var expanded by rememberSaveable(runId) { mutableStateOf(false) }
+    Column {
+        Row(
+            Modifier.clickable(role = Role.Button) { expanded = !expanded }.padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(StatusCopy.goals(goals), style = NoteText, color = c.ink2)
+            Icon(MikaIcons.Chevron, null, Modifier.size(16.dp).rotate(if (expanded) -90f else 90f), tint = c.ink3)
+        }
+        if (expanded) goals.items.forEachIndexed { i, goal ->
+            Text("${if (i + 1 in goals.confirmed) "✓" else "○"}  $goal", style = NoteText, color = c.ink2)
         }
     }
 }

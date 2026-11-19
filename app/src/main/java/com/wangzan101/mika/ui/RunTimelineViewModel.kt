@@ -79,6 +79,7 @@ data class TimelineHeader(
     val usedMemory: List<String> = emptyList(),
     /** 这次运行的小结;记录里没有开始事件时为 null(只显示用时)。 */
     val metrics: RunMetrics? = null,
+    val confirmedIds: Set<Int>? = null,
 )
 
 sealed interface TimelineUi {
@@ -112,10 +113,12 @@ class RunTimelineViewModel(
         val startMs = summary?.startedAtMs ?: events.first().atMs
         val endMs = summary?.endedAtMs ?: ended?.atMs
         val metrics = RunMetrics.of(events, runId)
+        val criteriaEvents = events.filterIsInstance<RunEvent.Criteria>()
+        val goals = criteriaEvents.lastOrNull { it.confirmedIds != null }
         val header = TimelineHeader(
             goal = summary?.goal ?: started?.goal.orEmpty(),
-            criteria = summary?.criteria?.takeIf { it.isNotEmpty() }
-                ?: events.filterIsInstance<RunEvent.Criteria>().lastOrNull()?.criteria.orEmpty(),
+            criteria = goals?.criteria ?: summary?.criteria?.takeIf { it.isNotEmpty() } ?: criteriaEvents.lastOrNull()?.criteria.orEmpty(),
+            confirmedIds = goals?.confirmedIds,
             outcome = outcomeLabel(summary?.outcome ?: ended?.outcome,
                 summary?.judged ?: events.filterIsInstance<RunEvent.OutcomeJudged>().lastOrNull()?.outcome),
             outcomeTone = outcomeTone(summary?.outcome ?: ended?.outcome,

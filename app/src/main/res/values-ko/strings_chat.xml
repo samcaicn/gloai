@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="chat_confirmed_goals">확인된 목표 %1$d/%2$d</string>
+    <string name="chat_last_confirmed_goals">마지막 확인 %1$d/%2$d</string>
     <string name="chat_greeting_morning">좋은 아침이에요</string>
     <string name="chat_greeting_noon">점심 시간이에요</string>
     <string name="chat_greeting_afternoon">좋은 오후예요</string>

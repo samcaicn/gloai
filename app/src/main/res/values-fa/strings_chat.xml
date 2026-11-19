@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="chat_confirmed_goals">هدف‌های تأییدشده: %1$d/%2$d</string>
+    <string name="chat_last_confirmed_goals">آخرین تأیید: %1$d/%2$d</string>
     <string name="chat_greeting_morning">صبح بخیر</string>
     <string name="chat_greeting_noon">بعدازظهر بخیر</string>
     <string name="chat_greeting_afternoon">بعدازظهر بخیر</string>
