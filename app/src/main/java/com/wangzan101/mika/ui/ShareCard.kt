@@ -46,6 +46,8 @@ import com.wangzan101.mika.about.MikaLinks
 import com.wangzan101.mika.ui.theme.LightColors
 import com.wangzan101.mika.ui.theme.LocalMikaColors
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -64,7 +66,7 @@ fun ShareCardContent(goal: String, answer: String, logo: ImageBitmap, modifier: 
     val ink3 = LightColors.ink3
     Column(modifier.background(LightColors.surface).padding(24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(logo, null, Modifier.size(40.dp).clip(RoundedCornerShape(11.dp)), contentScale = ContentScale.Crop)
+            Image(logo, null, Modifier.size(40.dp).clip(MikaShapes.Chip), contentScale = ContentScale.Crop)
             Spacer(Modifier.width(10.dp))
             Text("Mika", style = MikaType.Title.copy(fontWeight = FontWeight.Bold), color = ink)
         }

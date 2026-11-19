@@ -164,6 +164,7 @@ import com.wangzan101.mika.ui.theme.MikaSize
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.viewer.FileViewer
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
 import com.wangzan101.mika.voice.HoldToTalk
 import com.wangzan101.mika.voice.VoicePlayback
 import com.wangzan101.mika.voice.VoiceSource
@@ -888,7 +889,7 @@ private fun JumpHighlight(active: Boolean, reduceMotion: Boolean, content: @Comp
     val alpha by animateFloatAsState(if (active) 1f else 0f, if (reduceMotion) snap() else tween(260), label = "jump-highlight")
     Box(
         Modifier.fillMaxWidth()
-            .background(c.accent.copy(alpha = 0.12f * alpha), RoundedCornerShape(16.dp)),
+            .background(c.accent.copy(alpha = 0.12f * alpha), MikaShapes.Card),
     ) { content() }
 }
 
@@ -1910,7 +1911,7 @@ private const val JUMP_HIGHLIGHT_MS = 1_800L
 /** 竖线的位置(从左边算起);步骤点、转圈的中心都在这条线上。 */
 private val StepRail = 8.dp
 
-private val FileTileShape = RoundedCornerShape(10.dp)
+private val FileTileShape = MikaShapes.Tile
 private val EmptyLead = MikaType.Value
 private val ExampleText = MikaType.Value
 private val SuggestionText = MikaType.Body.copy(fontWeight = FontWeight.Medium)

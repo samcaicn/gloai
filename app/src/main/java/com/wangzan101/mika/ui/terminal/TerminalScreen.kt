@@ -47,6 +47,7 @@ import com.wangzan101.mika.ui.components.TopBar
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** 终端页的入口:打开(或附着)这个对话的会话,把状态交给 [TerminalScreen]。 */
@@ -295,7 +296,7 @@ private fun Key(text: String, onClick: () -> Unit, bad: Boolean = false) {
     Text(
         text,
         Modifier
-            .background(c.fill, RoundedCornerShape(6.dp))
+            .background(c.fill, RoundedCornerShape(MikaRadius.BubbleTail))
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         style = MikaType.Caption,

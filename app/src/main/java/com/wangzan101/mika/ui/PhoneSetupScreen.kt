@@ -88,6 +88,7 @@ import com.wangzan101.mika.ui.components.FooterNote
 import com.wangzan101.mika.ui.components.ProgressDots
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.ui.theme.MikaShapes
+import com.wangzan101.mika.ui.theme.MikaRadius
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -363,11 +364,11 @@ fun PhoneSetupContent(
 private fun UsbStartCard(restart: HelperRestart, command: String, onCopy: () -> Unit) {
     val c = MikaTheme.colors
     val (title, body) = PhoneSetupCopy.usbCard(restart)
-    Column(Modifier.padding(top = 10.dp).fillMaxWidth().background(c.accentSoft, RoundedCornerShape(12.dp)).padding(12.dp).testTag("setup-usb")) {
+    Column(Modifier.padding(top = 10.dp).fillMaxWidth().background(c.accentSoft, MikaShapes.Chip).padding(12.dp).testTag("setup-usb")) {
         Text(title, style = MikaType.Body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
         Text(body, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink2)
         Text(
-            command, Modifier.padding(top = 8.dp).fillMaxWidth().background(c.fill, RoundedCornerShape(10.dp)).padding(10.dp).testTag("setup-usb-command"),
+            command, Modifier.padding(top = 8.dp).fillMaxWidth().background(c.fill, MikaShapes.Tile).padding(10.dp).testTag("setup-usb-command"),
             fontFamily = FontFamily.Monospace, style = MikaType.Hint, color = c.ink,
         )
         PillButton(PhoneSetupCopy.USB_COPY, primary = false, tag = "setup-usb-copy", onClick = onCopy)
@@ -440,7 +441,7 @@ private fun CurrentStepBody(
     view.failure?.let { f ->
         val fc = PhoneSetupCopy.failure(f.reason)
         Column(
-            Modifier.padding(top = 10.dp).fillMaxWidth().background(MikaTheme.colors.badSoft, RoundedCornerShape(12.dp)).padding(12.dp),
+            Modifier.padding(top = 10.dp).fillMaxWidth().background(MikaTheme.colors.badSoft, MikaShapes.Chip).padding(12.dp),
         ) {
             Text(fc.title, style = MikaType.Body.copy(fontWeight = FontWeight.SemiBold), color = MikaTheme.colors.bad)
             Text(fc.body, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = MikaTheme.colors.ink2)
@@ -457,7 +458,7 @@ private fun CurrentStepBody(
     view.suspect?.let { s ->
         Text(
             PhoneSetupCopy.suspect(s),
-            Modifier.padding(top = 10.dp).fillMaxWidth().background(MikaTheme.colors.warnSoft, RoundedCornerShape(12.dp)).padding(12.dp)
+            Modifier.padding(top = 10.dp).fillMaxWidth().background(MikaTheme.colors.warnSoft, MikaShapes.Chip).padding(12.dp)
                 .testTag("setup-suspect"),
             style = MikaType.Caption, color = MikaTheme.colors.ink,
         )
@@ -479,7 +480,7 @@ private fun CurrentStepBody(
             PairingNotifyIssue.NotHeadsUp -> if (!view.autoRead) {
                 Text(
                     PhoneSetupCopy.PAIRING_LOWERED,
-                    Modifier.padding(top = 10.dp).fillMaxWidth().background(MikaTheme.colors.warnSoft, RoundedCornerShape(12.dp)).padding(12.dp)
+                    Modifier.padding(top = 10.dp).fillMaxWidth().background(MikaTheme.colors.warnSoft, MikaShapes.Chip).padding(12.dp)
                         .testTag("setup-pairing-lowered"),
                     style = MikaType.Caption, color = MikaTheme.colors.ink,
                 )
@@ -489,7 +490,7 @@ private fun CurrentStepBody(
         }
         if (headsUpLowered && !view.needsNotifications) {
             Column(
-                Modifier.padding(top = 10.dp).fillMaxWidth().background(MikaTheme.colors.warnSoft, RoundedCornerShape(12.dp)).padding(12.dp)
+                Modifier.padding(top = 10.dp).fillMaxWidth().background(MikaTheme.colors.warnSoft, MikaShapes.Chip).padding(12.dp)
                     .testTag("setup-heads-up"),
             ) {
                 Text(PhoneSetupCopy.HEADS_UP_LOWERED, style = MikaType.Body.copy(fontWeight = FontWeight.SemiBold), color = MikaTheme.colors.warn)
@@ -525,7 +526,7 @@ private fun LinkText(text: String, tag: String?, onClick: () -> Unit) {
 private fun AutoReadHint() {
     val c = MikaTheme.colors
     Row(
-        Modifier.padding(top = 10.dp).fillMaxWidth().background(c.okSoft, RoundedCornerShape(12.dp))
+        Modifier.padding(top = 10.dp).fillMaxWidth().background(c.okSoft, MikaShapes.Chip)
             .padding(12.dp).testTag("setup-pairing-hint"),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -544,7 +545,7 @@ private fun NotifyGuide() {
     val c = MikaTheme.colors
     val icons = listOf(MikaIcons.Phone, MikaIcons.Bell, MikaIcons.Key)
     Column(
-        Modifier.padding(top = 10.dp).fillMaxWidth().background(c.accentSoft, RoundedCornerShape(12.dp))
+        Modifier.padding(top = 10.dp).fillMaxWidth().background(c.accentSoft, MikaShapes.Chip)
             .padding(12.dp).testTag("setup-pairing-guide"),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

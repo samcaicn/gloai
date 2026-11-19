@@ -84,6 +84,7 @@ import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaSpace
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
 
 val BROWSER_SEARCH_HINT: String get() = tr(R.string.browser_search_hint)
 val BROWSER_LOGIN_LEGEND: String get() = tr(R.string.browser_login_legend)
@@ -410,7 +411,7 @@ private fun SiteCell(
     } else 0f
     Column(
         Modifier.graphicsLayer { rotationZ = if (even) angle else -angle }
-            .clip(RoundedCornerShape(12.dp))
+            .clip(MikaShapes.Chip)
             .combinedClickable(
                 onClickLabel = if (editing) null else tr(R.string.browser_open_site, face.name),
                 onLongClickLabel = if (editing) null else tr(R.string.browser_edit_favorites),
@@ -446,7 +447,7 @@ private fun SiteCell(
 private fun AddCell(onAdd: () -> Unit) {
     val c = MikaTheme.colors
     Column(
-        Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClickLabel = tr(R.string.browser_add_favorite), role = Role.Button, onClick = onAdd)
+        Modifier.clip(MikaShapes.Chip).clickable(onClickLabel = tr(R.string.browser_add_favorite), role = Role.Button, onClick = onAdd)
             .padding(horizontal = 2.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(7.dp),
@@ -548,7 +549,7 @@ private fun SearchMini(icon: ImageVector = MikaIcons.Search) {
     }
 }
 
-private val TileShape = RoundedCornerShape(16.dp)
+private val TileShape = MikaShapes.Card
 private val InitialLarge = MikaType.Title.copy(fontWeight = FontWeight.Bold)
 private const val WIGGLE_DEG = 1.5f
 private const val WIGGLE_MS = 250

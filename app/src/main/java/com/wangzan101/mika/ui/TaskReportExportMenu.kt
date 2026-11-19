@@ -33,6 +33,8 @@ import androidx.lifecycle.lifecycleScope
 import com.wangzan101.mika.R
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -173,7 +175,7 @@ internal fun ReportExportMenu(runId: String, report: TaskReport?) {
 private fun ShareChoice(label: Int, tag: String, onClick: () -> Unit) {
     Text(
         stringResource(label),
-        Modifier.fillMaxWidth().testTag(tag).clip(RoundedCornerShape(12.dp))
+        Modifier.fillMaxWidth().testTag(tag).clip(MikaShapes.Chip)
             .clickable(onClick = onClick).padding(horizontal = 8.dp, vertical = 14.dp),
         style = MikaType.Body, color = MikaTheme.colors.ink,
     )

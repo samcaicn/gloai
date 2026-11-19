@@ -56,6 +56,8 @@ import com.wangzan101.mika.ui.components.cardSurface
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 
 /**
  * 对话页里长按的一条消息:[key] 认是哪一条(「选择文字」记的就是它),[from] 是谁说的,[text] 是复制、引用用的纯文字
@@ -221,4 +223,4 @@ internal fun SentQuote(quote: QuoteMessage.Quote, maxWidth: Dp) {
     }
 }
 
-private val QuoteShape = RoundedCornerShape(12.dp)
+private val QuoteShape = MikaShapes.Chip

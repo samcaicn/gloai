@@ -53,6 +53,7 @@ import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaSize
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
 import androidx.compose.runtime.getValue
 
 // ---------- 开关 ----------
@@ -125,8 +126,8 @@ enum class ButtonKind { Primary, Secondary, Tonal, Text }
 /** 大:页面底部 52;中:卡片里并排 42;小:行内 32 的胶囊。 */
 enum class ButtonSize(val height: Dp, val shape: RoundedCornerShape, val text: TextStyle, val padding: Dp) {
     Large(MikaSize.Button, MikaShapes.Button, MikaType.BodyStrong, 20.dp),
-    Medium(42.dp, RoundedCornerShape(12.dp), MikaType.Body.copy(fontWeight = FontWeight.SemiBold), 14.dp),
-    Small(32.dp, RoundedCornerShape(16.dp), MikaType.Caption.copy(fontWeight = FontWeight.SemiBold), 14.dp),
+    Medium(42.dp, MikaShapes.Chip, MikaType.Body.copy(fontWeight = FontWeight.SemiBold), 14.dp),
+    Small(32.dp, MikaShapes.Card, MikaType.Caption.copy(fontWeight = FontWeight.SemiBold), 14.dp),
 }
 
 /** 按钮。宽度由 [modifier] 定(铺满、按权重分或包住文字)。 */
@@ -194,8 +195,8 @@ fun SegmentedControl(
     }
 }
 
-private val SegmentOuter = RoundedCornerShape(10.dp)
-private val SegmentInner = RoundedCornerShape(8.dp)
+private val SegmentOuter = MikaShapes.Tile
+private val SegmentInner = MikaShapes.Tile
 private val SegmentText = MikaType.Caption.copy(fontWeight = FontWeight.Medium)
 
 /** Mirrors horizontal navigation symbols in RTL while leaving non-directional artwork unchanged. */
@@ -308,7 +309,7 @@ fun SelectChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: M
     }
 }
 
-private val SmallChipShape = RoundedCornerShape(8.dp)
+private val SmallChipShape = MikaShapes.Tile
 private val ChipText = MikaType.Body.copy(fontWeight = FontWeight.Medium)
 private val SmallChipText = MikaType.Hint.copy(fontWeight = FontWeight.Medium)
 
@@ -324,7 +325,7 @@ fun CapabilityTag(text: String, tone: TagTone = TagTone.Neutral) {
     Text(text, Modifier.background(bg, TagShape).padding(horizontal = 7.dp, vertical = 2.dp), style = TagText, color = fg, maxLines = 1)
 }
 
-private val TagShape = RoundedCornerShape(7.dp)
+private val TagShape = MikaShapes.Tile
 private val TagText = MikaType.Micro.copy(fontWeight = FontWeight.SemiBold)
 
 // ---------- 分页点 ----------

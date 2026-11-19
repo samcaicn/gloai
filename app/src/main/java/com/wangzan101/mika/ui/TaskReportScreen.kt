@@ -23,6 +23,8 @@ import com.wangzan101.mika.ui.components.*
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -30,7 +32,7 @@ import kotlinx.coroutines.withContext
 internal fun TaskReportEntries(onReport: () -> Unit, onReplay: () -> Unit) {
     val c = MikaTheme.colors
     Column(Modifier.fillMaxWidth().padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(c.surface)
+        Row(Modifier.fillMaxWidth().clip(MikaShapes.Card).background(c.surface)
             .clickable(onClick = onReport).padding(14.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(MikaIcons.Doc, null, Modifier.size(26.dp), tint = c.accent)
@@ -40,7 +42,7 @@ internal fun TaskReportEntries(onReport: () -> Unit, onReplay: () -> Unit) {
             }
             Icon(MikaIcons.Chevron, null, Modifier.size(16.dp), tint = c.ink3)
         }
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).clickable(onClick = onReplay)
+        Row(Modifier.fillMaxWidth().clip(MikaShapes.Card).clickable(onClick = onReplay)
             .heightIn(min = 48.dp).padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(MikaIcons.Route, null, Modifier.size(18.dp), tint = c.accent)
@@ -74,10 +76,10 @@ fun TaskReportScreen(vm: TaskReportViewModel, onBack: () -> Unit, onReplay: (Int
                 contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item("document") {
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(c.surface).padding(20.dp),
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(MikaRadius.Bubble)).background(c.surface).padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         Text(r.header.goal, style = MikaType.Title.copy(fontWeight = FontWeight.Bold), color = c.ink)
-                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(c.accentSoft).height(IntrinsicSize.Min), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.fillMaxWidth().clip(MikaShapes.Tile).background(c.accentSoft).height(IntrinsicSize.Min), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.width(3.dp).fillMaxHeight().background(c.accent))
                             Text(r.header.outcome, Modifier.weight(1f).padding(12.dp), style = MikaType.Label, color = c.accent)
                             r.header.duration?.let { Text(it, Modifier.padding(end = 12.dp), style = MikaType.Hint, color = c.ink2) }
@@ -90,7 +92,7 @@ fun TaskReportScreen(vm: TaskReportViewModel, onBack: () -> Unit, onReplay: (Int
                 if (r.pages.isNotEmpty()) {
                     item("screens-heading") { Text(stringResource(R.string.report_screens), style = MikaType.BodyStrong, color = c.ink) }
                     itemsIndexed(r.pages, key = { _, p -> "page-${p.screenshotId}" }) { _, page ->
-                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.surface)
+                        Row(Modifier.fillMaxWidth().clip(MikaShapes.Card).background(c.surface)
                             .clickable { onReplay(page.screenshotId) }.padding(12.dp), verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             StaticPlaybackImage(vm, page.screenshotId, Modifier.size(46.dp, 72.dp))

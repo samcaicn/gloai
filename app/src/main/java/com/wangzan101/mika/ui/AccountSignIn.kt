@@ -43,6 +43,8 @@ import com.wangzan101.mika.ui.components.RowValue
 import com.wangzan101.mika.ui.components.ValueTone
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 
 /** 「添加模型」里「用账号登录」那一组的三家。ChatGPT 的登录另有一套,xAI、OpenRouter 对应 [AccountProvider]。 */
 enum class SignInKind(val account: AccountProvider?, val label: String, val tag: String) {
@@ -126,7 +128,7 @@ internal fun SignInSheet(ui: ModelSetupUi, kind: SignInKind, actions: SignInShee
         onDismissRequest = actions.dismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surface,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        shape = MikaShapes.SheetTop,
     ) {
         SignInSheetBody(ui, kind, actions)
     }
@@ -215,7 +217,7 @@ private fun DeviceCodeBody(s: AccountSignInUi, code: String, cancel: () -> Unit)
 @Composable
 private fun Note(text: String, bg: Color, fg: Color, modifier: Modifier = Modifier) {
     Text(
-        text, modifier.fillMaxWidth().padding(top = 12.dp).background(bg, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+        text, modifier.fillMaxWidth().padding(top = 12.dp).background(bg, MikaShapes.Chip).padding(horizontal = 12.dp, vertical = 10.dp),
         style = MikaType.Hint, color = fg,
     )
 }

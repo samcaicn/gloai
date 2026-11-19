@@ -57,6 +57,8 @@ import com.wangzan101.mika.ui.components.RowValue
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -179,7 +181,7 @@ private fun LiveFrame(source: StateFlow<Bitmap?>) {
     Image(
         bmp.asImageBitmap(), stringResource(R.string.screens_zoom),
         Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-            .height(260.dp).clip(RoundedCornerShape(10.dp))
+            .height(260.dp).clip(MikaShapes.Tile)
             .clickable { zoom = true }.testTag("screens-zoom"),
         contentScale = ContentScale.Fit,
     )

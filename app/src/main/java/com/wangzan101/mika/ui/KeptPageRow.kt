@@ -31,9 +31,11 @@ import com.wangzan101.mika.cap.web.KeptPage
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.delay
 
-private val RowShape = RoundedCornerShape(14.dp)
+private val RowShape = MikaShapes.Button
 
 /** 一轮下面留页的那一行该怎么显示:还开着(绿色那一行,能关)、已经关了(一句灰字)、或这一轮没留页。 */
 sealed interface KeptRow {
@@ -92,7 +94,7 @@ fun KeptLine(page: KeptPage, onClose: () -> Unit) {
             )
         }
         Box(
-            Modifier.testTag("kept-close").clip(RoundedCornerShape(8.dp)).background(c.surface)
+            Modifier.testTag("kept-close").clip(MikaShapes.Tile).background(c.surface)
                 .clickable(role = Role.Button, onClick = onClose).padding(horizontal = 10.dp, vertical = 5.dp),
         ) {
             Text(stringResource(R.string.kept_row_close), style = MikaType.Label.copy(fontWeight = FontWeight.SemiBold), color = c.bad)

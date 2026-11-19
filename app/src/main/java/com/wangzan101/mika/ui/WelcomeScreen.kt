@@ -40,6 +40,7 @@ import com.wangzan101.mika.ui.components.ProgressDots
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
 
 /** 上手第一步:说清 Mika 是什么、能做哪几类事,开始前要做的两件事和大概时间。 */
 @Composable
@@ -91,7 +92,7 @@ private fun Feature(icon: ImageVector, title: String, body: String, first: Boole
     }
 }
 
-private val LogoShape = RoundedCornerShape(22.dp)
+private val LogoShape = RoundedCornerShape(MikaRadius.Bubble)
 
 /** 欢迎页的文字。 */
 object WelcomeCopy {

@@ -82,6 +82,8 @@ import com.wangzan101.mika.ui.components.keepsKeyboard
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.Instant
@@ -401,7 +403,7 @@ private fun ClockChips(
     ) {
         entries.forEachIndexed { index, time ->
             Row(
-                Modifier.height(32.dp).background(c.fill, RoundedCornerShape(16.dp)).clip(RoundedCornerShape(16.dp)),
+                Modifier.height(32.dp).background(c.fill, MikaShapes.Card).clip(MikaShapes.Card),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
@@ -520,7 +522,7 @@ private fun NumberWheel(count: Int, initial: Int, tag: String, onValueChange: (I
     }
     LaunchedEffect(selected) { onValueChange(selected) }
     Box(modifier.height(WheelItem * 5f), contentAlignment = Alignment.Center) {
-        Box(Modifier.fillMaxWidth().height(WheelItem).background(c.fill, RoundedCornerShape(10.dp)))
+        Box(Modifier.fillMaxWidth().height(WheelItem).background(c.fill, MikaShapes.Tile))
         Column(
             Modifier.fillMaxSize().verticalScroll(scroll).testTag(tag),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -529,7 +531,7 @@ private fun NumberWheel(count: Int, initial: Int, tag: String, onValueChange: (I
             repeat(count) { index ->
                 Box(
                     Modifier.fillMaxWidth().height(WheelItem)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(MikaShapes.Tile)
                         .clickable { scope.launch { scroll.animateScrollTo(index * itemPx) } }
                         .testTag("$tag-$index"),
                     contentAlignment = Alignment.Center,

@@ -29,6 +29,7 @@ import com.wangzan101.mika.ui.components.RadioRow
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaShapes
 
 /**
  * 输入栏上方的人格 chip:显示当前人格,点开选择面板。任务在跑时禁用,提示在面板里说。
@@ -65,7 +66,7 @@ internal fun PersonaPicker(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surface,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        shape = MikaShapes.SheetTop,
     ) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding()

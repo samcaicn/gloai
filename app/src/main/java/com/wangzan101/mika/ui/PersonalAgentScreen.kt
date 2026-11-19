@@ -72,6 +72,7 @@ import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaSpace
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
 import com.wangzan101.mika.voice.HoldToTalk
 import com.wangzan101.mika.voice.VoiceSource
 import kotlinx.coroutines.launch
@@ -436,7 +437,7 @@ internal fun PersonalProfileTabs(selected: PersonalProfileTab, showIcons: Boolea
         }
         if (stacked) {
             Column(
-                Modifier.fillMaxWidth().selectableGroup().clip(RoundedCornerShape(24.dp)).background(c.fill).padding(3.dp),
+                Modifier.fillMaxWidth().selectableGroup().clip(MikaShapes.Sheet).background(c.fill).padding(3.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 PersonalProfileTab.entries.forEachIndexed { i, tab -> item(tab, labels[i], Modifier.fillMaxWidth()) }
@@ -546,7 +547,7 @@ private fun personalTaskTone(task: PersonalTask): PersonalTaskTone {
 
 @Composable
 private fun PersonalTaskIcon(tone: PersonalTaskTone, label: String?) {
-    Box(Modifier.size(40.dp).background(tone.fill, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(40.dp).background(tone.fill, MikaShapes.Chip), contentAlignment = Alignment.Center) {
         Icon(tone.icon, label, Modifier.size(19.dp), tint = tone.ink)
     }
 }

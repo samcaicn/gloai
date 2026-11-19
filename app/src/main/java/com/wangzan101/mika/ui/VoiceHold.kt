@@ -100,6 +100,8 @@ import com.wangzan101.mika.ui.components.floatShadow
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.voice.HoldToTalk
 import com.wangzan101.mika.voice.SpeechEngineSpec
 import com.wangzan101.mika.voice.SpeechFailure
@@ -514,7 +516,7 @@ internal fun VoiceWave(level: Float, flat: Boolean, reduceMotion: Boolean, color
             val peak = 8f + kotlin.math.abs(kotlin.math.sin(k * 1.7f)) * 14f
             val swing = if (reduceMotion) 1f else 0.55f + 0.45f * kotlin.math.sin(phase + k * 0.9f)
             val h = if (flat) 4f else 5f + (peak - 5f) * (0.25f + 0.75f * loud) * swing
-            Box(Modifier.width(3.dp).height(h.dp).background(color, RoundedCornerShape(2.dp)))
+            Box(Modifier.width(3.dp).height(h.dp).background(color, MikaShapes.Micro))
         }
     }
 }
@@ -562,7 +564,7 @@ internal fun VoiceFloat(vh: VoiceHold, state: HoldToTalk.State, title: String, b
 @Composable
 private fun CancelHint(armed: Boolean, modifier: Modifier = Modifier) {
     val c = MikaTheme.colors
-    val shape = RoundedCornerShape(16.dp)
+    val shape = MikaShapes.Card
     Row(
         modifier.floatShadow(c, shape).background(if (armed) c.bad else c.surface, shape)
             .padding(horizontal = 14.dp, vertical = 7.dp).testTag("voice-cancel-hint"),
@@ -585,7 +587,7 @@ private fun ListenCard(
     s: HoldToTalk.State.Listening, title: String, engine: String, backdrop: GlassBackdrop?, onPlaced: (Rect) -> Unit,
 ) {
     val c = MikaTheme.colors
-    val shape = RoundedCornerShape(22.dp)
+    val shape = RoundedCornerShape(MikaRadius.Bubble)
     GlassBar(
         Modifier.fillMaxWidth().testTag("voice-listen").onGloballyPositioned { onPlaced(it.boundsInRoot()) }
             .then(if (s.cancelArmed || s.sendArmed) Modifier.border(1.5.dp, aimTone(s, c.accent), shape) else Modifier),
@@ -597,7 +599,7 @@ private fun ListenCard(
                 Text(title, Modifier.weight(1f, fill = false), style = HeadText, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (engine.isNotEmpty()) {
                     Text(
-                        engine, Modifier.background(c.fill, RoundedCornerShape(7.dp)).padding(horizontal = 8.dp, vertical = 2.dp),
+                        engine, Modifier.background(c.fill, MikaShapes.Tile).padding(horizontal = 8.dp, vertical = 2.dp),
                         style = ChipText, color = c.ink2, maxLines = 1,
                     )
                 }
@@ -662,7 +664,7 @@ private fun VoiceToast(text: String) {
     val c = MikaTheme.colors
     Text(
         text,
-        Modifier.background(c.ink.copy(alpha = 0.88f), RoundedCornerShape(18.dp)).padding(horizontal = 16.dp, vertical = 9.dp).testTag("voice-toast"),
+        Modifier.background(c.ink.copy(alpha = 0.88f), MikaShapes.Card).padding(horizontal = 16.dp, vertical = 9.dp).testTag("voice-toast"),
         style = ToastText, color = c.bg, maxLines = 2,
     )
 }
@@ -753,7 +755,7 @@ internal fun VoiceSheetHost(vh: VoiceHold, onPickSpeech: () -> Unit) {
         onDismissRequest = { vh.sheet = null },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        shape = MikaShapes.SheetTop,
     ) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 18.dp).testTag("voice-sheet")) {
             Text(title, style = MikaType.Title, color = c.ink)

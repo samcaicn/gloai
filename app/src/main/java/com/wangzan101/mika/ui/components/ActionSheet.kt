@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaShapes
 
 /** 操作面板里的一项;[icon] 放在文字左边;[destructive] 为真时文字用出错红。 */
 class SheetAction(
@@ -37,7 +38,7 @@ fun ActionSheet(title: String?, actions: List<SheetAction>, onDismiss: () -> Uni
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surface,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        shape = MikaShapes.SheetTop,
     ) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 8.dp)) {
             if (!title.isNullOrEmpty()) {

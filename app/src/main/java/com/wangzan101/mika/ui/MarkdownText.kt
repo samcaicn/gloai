@@ -68,6 +68,8 @@ import kotlinx.coroutines.withContext
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 
 /** 按 Markdown 显示一段回答；流式草稿用临时闭合的语法预览。 */
 private val LocalReportStyle = staticCompositionLocalOf { false }
@@ -166,13 +168,13 @@ private fun Block(b: MdBlock, style: TextStyle, depth: Int) {
         )
         is MdBlock.Code -> CodeBlock(b, style)
         is MdBlock.Quote -> Row(Modifier.height(IntrinsicSize.Min)) {
-            Box(Modifier.width(3.dp).fillMaxHeight().background(MikaTheme.colors.hair, RoundedCornerShape(2.dp)))
+            Box(Modifier.width(3.dp).fillMaxHeight().background(MikaTheme.colors.hair, MikaShapes.Micro))
             MarkdownBlocks(b.blocks, style.copy(color = MikaTheme.colors.ink2), Modifier.padding(start = 10.dp), depth + 1)
         }
         is MdBlock.ListBlock -> Column(verticalArrangement = Arrangement.spacedBy(if (b.tight) 3.dp else 8.dp)) {
             b.items.forEachIndexed { i, item ->
                 val reportItem = LocalReportStyle.current && depth == 0
-                Row(Modifier.then(if (reportItem) Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                Row(Modifier.then(if (reportItem) Modifier.fillMaxWidth().clip(MikaShapes.Button)
                     .background(MikaTheme.colors.bg).padding(14.dp) else Modifier)) {
                     val marker = if (b.start != null) "${b.start + i}." else if (depth % 2 == 0) "•" else "◦"
                     Text(marker, Modifier.widthIn(min = 18.dp).padding(end = 6.dp), style = style.copy(color = if (reportItem) MikaTheme.colors.accent else MikaTheme.colors.ink2))
@@ -194,7 +196,7 @@ private fun TableBlock(t: MdBlock.Table, style: TextStyle) {
     if (cols == 0) return
     val cellStyle = style.copy(fontSize = 13.sp, lineHeight = 19.sp)
     val rows = listOf(t.header) + t.rows
-    Box(Modifier.then(if (report) Modifier.clip(RoundedCornerShape(16.dp)).background(MikaTheme.colors.surface) else Modifier)
+    Box(Modifier.then(if (report) Modifier.clip(MikaShapes.Card).background(MikaTheme.colors.surface) else Modifier)
         .horizontalScroll(rememberScrollState())) {
         Layout(
             content = {
@@ -213,7 +215,7 @@ private fun TableBlock(t: MdBlock.Table, style: TextStyle) {
                     }
                 }
             },
-            modifier = if (report) Modifier else Modifier.border(0.5.dp, MikaTheme.colors.hair, RoundedCornerShape(2.dp)),
+            modifier = if (report) Modifier else Modifier.border(0.5.dp, MikaTheme.colors.hair, MikaShapes.Micro),
         ) { measurables, _ ->
             val maxCol = 240.dp.roundToPx()
             val minCol = 48.dp.roundToPx()
@@ -254,7 +256,7 @@ private fun CodeBlock(b: MdBlock.Code, style: TextStyle) {
             copyVersion = 0
         }
     }
-    val shape = RoundedCornerShape(10.dp)
+    val shape = MikaShapes.Tile
     val language = b.language
     Column(Modifier.fillMaxWidth().clip(shape).background(c.fill)) {
         // 包进 SelectionContainer(如「选择文字」模式或个人助理回答)时,顶栏标签和按钮不参与拖选。
@@ -279,7 +281,7 @@ private fun CodeBlock(b: MdBlock.Code, style: TextStyle) {
                 val tint = if (copied) c.ok else c.ink2
                 Row(
                     Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(MikaRadius.BubbleTail))
                         .alpha(if (b.code.isNotEmpty()) 1f else 0.4f)
                         .clickable(
                             enabled = b.code.isNotEmpty(),

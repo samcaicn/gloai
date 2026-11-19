@@ -53,6 +53,8 @@ import com.wangzan101.mika.ui.components.MikaDialog
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.delay
 
 /**
@@ -81,7 +83,7 @@ fun DownloadsSheet(downloads: BrowserDownloads, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surface,
-        shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp),
+        shape = MikaShapes.SheetTop,
     ) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 8.dp).testTag("browser-downloads")) {
             Text(
@@ -164,7 +166,7 @@ private fun DownloadRow(
         }
         val percent = item.percent
         if (percent != null) {
-            Box(Modifier.fillMaxWidth().padding(top = 8.dp).height(3.dp).clip(RoundedCornerShape(2.dp)).background(c.fill)) {
+            Box(Modifier.fillMaxWidth().padding(top = 8.dp).height(3.dp).clip(MikaShapes.Micro).background(c.fill)) {
                 Box(Modifier.fillMaxHeight().fillMaxWidth(percent / 100f).background(c.accent))
             }
         }

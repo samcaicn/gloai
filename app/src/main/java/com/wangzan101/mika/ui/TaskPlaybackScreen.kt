@@ -44,6 +44,8 @@ import com.wangzan101.mika.ui.components.*
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -105,7 +107,7 @@ fun TaskPlaybackScreen(vm: TaskReportViewModel, initialScreenshotId: Int?, onBac
                 val stageScroll = rememberLazyListState()
                 LaunchedEffect(stage) { stageScroll.animateScrollToItem(r.stages.indexOf(stage).coerceAtLeast(0)) }
                 val controls: @Composable () -> Unit = {
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surface).padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(MikaRadius.Bubble)).background(c.surface).padding(horizontal = 12.dp, vertical = 8.dp)) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Text(when {
                                 finalResult -> stringResource(R.string.report_final_page)
@@ -135,7 +137,7 @@ fun TaskPlaybackScreen(vm: TaskReportViewModel, initialScreenshotId: Int?, onBac
                         step.failure?.let { Text(it, style = MikaType.Hint, color = c.bad) }
                         if (r.stages.isNotEmpty()) LazyRow(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp), state = stageScroll, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             itemsIndexed(r.stages) { i, s ->
-                                Text("${i + 1} · ${s.title}", Modifier.widthIn(max = 180.dp).clip(RoundedCornerShape(9.dp))
+                                Text("${i + 1} · ${s.title}", Modifier.widthIn(max = 180.dp).clip(MikaShapes.Tile)
                                     .background(if (s == stage) c.accentSoft else c.bg).clickable { seek(TaskReportViewModel.framePosition(frames, s.screenshotId, s.stepIndex)) }.padding(9.dp, 7.dp),
                                     style = MikaType.Hint, color = if (s == stage) c.accent else c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
@@ -240,7 +242,7 @@ private fun FittedPlaybackImage(bitmap: ImageBitmap, mark: PlaybackMark?, modifi
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val ratio = bitmap.width.toFloat() / bitmap.height
         val width = minOf(maxWidth, maxHeight * ratio)
-        Box(Modifier.size(width, width / ratio).clip(RoundedCornerShape(8.dp)).testTag("playback-image")) {
+        Box(Modifier.size(width, width / ratio).clip(MikaShapes.Tile).testTag("playback-image")) {
             Image(bitmap, stringResource(R.string.playback_image), Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
             mark?.takeIf { it.valid() }?.let { m ->
                 Canvas(Modifier.matchParentSize().testTag("playback-mark-${m.kind}")) {

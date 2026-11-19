@@ -49,6 +49,8 @@ import com.wangzan101.mika.ui.components.TopBar
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 
 /** 一次答复的来源:每条是「第几步 · 在哪 · 标题」,下面是当时的画面;没有画面的(后台读的网页正文、文件、命令输出)是摘录原文。 */
 @Composable
@@ -101,7 +103,7 @@ private fun SourceShot(vm: SourceViewModel, id: Int) {
     }
     var zoomed by remember { mutableStateOf(false) }
     image?.let {
-        Image(it, stringResource(R.string.source_image), Modifier.fillMaxWidth().padding(top = 10.dp).clip(RoundedCornerShape(12.dp))
+        Image(it, stringResource(R.string.source_image), Modifier.fillMaxWidth().padding(top = 10.dp).clip(MikaShapes.Chip)
             .clickable(onClickLabel = stringResource(R.string.zoom_in)) { zoomed = true },
             contentScale = ContentScale.FillWidth)
         if (zoomed) ZoomedShot(it) { zoomed = false }

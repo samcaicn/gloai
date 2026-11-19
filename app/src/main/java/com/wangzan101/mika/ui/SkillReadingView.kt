@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 
 internal data class ReadingSection(val title: MdBlock.Heading?, val blocks: List<MdBlock>)
 
@@ -53,7 +55,7 @@ internal fun SkillReadingView(markdown: String) {
                     label.startsWith("什么时候停下交给用户") -> MikaIcons.Hand
                     else -> null
                 }
-                val panel = if (caution) Modifier.background(c.warnSoft, RoundedCornerShape(10.dp)).padding(12.dp) else Modifier
+                val panel = if (caution) Modifier.background(c.warnSoft, MikaShapes.Tile).padding(12.dp) else Modifier
                 Column(Modifier.fillMaxWidth().then(panel), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (title != null) Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(7.dp)) {

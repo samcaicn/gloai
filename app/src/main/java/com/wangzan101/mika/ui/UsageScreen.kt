@@ -90,6 +90,7 @@ import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.math.BigDecimal
@@ -502,7 +503,7 @@ private fun RankRow(
     }
 }
 
-private val RowShape = RoundedCornerShape(8.dp)
+private val RowShape = MikaShapes.Tile
 private val RankText = MikaType.Caption
 private val RankMono = MikaType.Hint.copy(fontWeight = FontWeight.Medium, fontFamily = FontFamily.Monospace)
 private val RankValue = MikaType.Caption
@@ -638,7 +639,7 @@ private fun LegendItem(color: Color, name: String) {
     }
 }
 
-private val LegendShape = RoundedCornerShape(3.dp)
+private val LegendShape = MikaShapes.Micro
 
 @Composable
 private fun GridLabel(text: String, modifier: Modifier) {
@@ -675,7 +676,7 @@ private fun TrendTip(b: UsageBucket, report: UsageReport, index: Int, gutter: Dp
     }
 }
 
-private val TipShape = RoundedCornerShape(8.dp)
+private val TipShape = MikaShapes.Tile
 private val TipText = MikaType.Micro
 
 /** 自定义范围的日期选择:只能选账本还留着的日子(最近 [UsageLedger.KEEP_DAYS] 天)到今天,两头都选了才可查看。 */

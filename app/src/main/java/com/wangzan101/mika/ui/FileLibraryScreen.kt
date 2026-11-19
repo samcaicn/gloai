@@ -52,6 +52,8 @@ import com.wangzan101.mika.ui.components.*
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -665,7 +667,7 @@ private fun LibraryTopBar(canSelect: Boolean, working: Boolean, onBack: () -> Un
             style = LibraryTitleStyle, color = c.ink, maxLines = 1,
         )
         Row(
-            Modifier.clip(RoundedCornerShape(13.dp)).background(c.fill)
+            Modifier.clip(MikaShapes.Chip).background(c.fill)
                 .clickable(enabled = canSelect && !working, role = Role.Button, onClick = onSelect)
                 .testTag("file-library-select")
                 .alpha(if (canSelect && !working) 1f else 0.4f)
@@ -734,7 +736,7 @@ private fun LibraryFilterPill(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = MikaTheme.colors
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(MikaRadius.Bubble)
     Box(modifier) {
         Row(
             Modifier.heightIn(min = 40.dp).clip(shape)
@@ -755,7 +757,7 @@ private fun LibraryFilterPill(
             expanded = expanded,
             onDismissRequest = onDismiss,
             offset = DpOffset(0.dp, 6.dp),
-            shape = RoundedCornerShape(18.dp),
+            shape = MikaShapes.Card,
             containerColor = c.surface,
             tonalElevation = 0.dp,
             shadowElevation = 10.dp,
@@ -771,7 +773,7 @@ private fun LibraryFilterPill(
 private fun FilterMenuItem(label: String, selected: Boolean, onClick: () -> Unit) {
     val c = MikaTheme.colors
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+        Modifier.fillMaxWidth().clip(MikaShapes.Chip)
             .background(if (selected) c.accentSoft else Color.Transparent)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -829,7 +831,7 @@ private fun LibraryFileRow(
     onMore: () -> Unit,
 ) {
     val c = MikaTheme.colors
-    val shape = RoundedCornerShape(13.dp)
+    val shape = MikaShapes.Chip
     Column(Modifier.fillMaxWidth()) {
         if (divider && !selected) {
             Box(Modifier.fillMaxWidth().padding(start = 70.dp, end = 4.dp).height(0.5.dp).background(c.hair))
@@ -893,14 +895,14 @@ private fun LibraryFileRow(
             }
             if (selecting) {
                 Box(
-                    Modifier.width(56.dp).height(48.dp).clip(RoundedCornerShape(10.dp)).clickable(enabled = !working, onClick = onOpen),
+                    Modifier.width(56.dp).height(48.dp).clip(MikaShapes.Tile).clickable(enabled = !working, onClick = onOpen),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(stringResource(R.string.file_library_preview), style = MikaType.Label, color = c.accent)
                 }
             } else {
                 Box(
-                    Modifier.width(56.dp).height(48.dp).clip(RoundedCornerShape(10.dp)).clickable(enabled = !working, onClick = onMore),
+                    Modifier.width(56.dp).height(48.dp).clip(MikaShapes.Tile).clickable(enabled = !working, onClick = onMore),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(MikaIcons.More, stringResource(R.string.more), Modifier.size(20.dp), tint = c.ink3)
@@ -916,7 +918,7 @@ private fun LibraryFileRow(
 private fun ArchivedTag() {
     val c = MikaTheme.colors
     Row(
-        Modifier.clip(RoundedCornerShape(6.dp)).background(c.accentSoft).padding(horizontal = 5.dp, vertical = 1.dp)
+        Modifier.clip(RoundedCornerShape(MikaRadius.BubbleTail)).background(c.accentSoft).padding(horizontal = 5.dp, vertical = 1.dp)
             .testTag("file-library-archived"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -932,7 +934,7 @@ internal fun FileTypeTile(name: String) {
     val c = MikaTheme.colors
     val (icon, label) = fileBadge(name)
     Column(
-        Modifier.size(width = 48.dp, height = 54.dp).clip(RoundedCornerShape(11.dp)).background(c.fill),
+        Modifier.size(width = 48.dp, height = 54.dp).clip(MikaShapes.Chip).background(c.fill),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -978,7 +980,7 @@ private fun LibraryBatchBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
-                Modifier.height(48.dp).clip(RoundedCornerShape(14.dp)).background(c.fill)
+                Modifier.height(48.dp).clip(MikaShapes.Button).background(c.fill)
                     .clickable(enabled = enabled, role = Role.Button, onClick = onShare)
                     .testTag("file-library-share-selected")
                     .padding(horizontal = 16.dp),
@@ -992,7 +994,7 @@ private fun LibraryBatchBar(
                 )
             }
             Row(
-                Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(14.dp))
+                Modifier.weight(1f).height(48.dp).clip(MikaShapes.Button)
                     .background(if (enabled) c.accent else c.accent.copy(alpha = 0.35f))
                     .clickable(enabled = enabled, role = Role.Button, onClick = onAdd)
                     .testTag("file-library-add-selected")

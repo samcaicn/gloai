@@ -78,6 +78,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaIcons
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.components.floatShadow
 import androidx.compose.ui.unit.Dp
 
@@ -159,7 +161,7 @@ fun AgentPip(
 @Composable
 private fun ClosedPip(needsYou: Boolean, reduceMotion: Boolean, modifier: Modifier, onReopen: () -> Unit, onAttention: () -> Unit) {
     val c = MikaTheme.colors
-    val shape = RoundedCornerShape(50)
+    val shape = MikaShapes.Pill
     val breath = if (needsYou && !reduceMotion) {
         rememberInfiniteTransition(label = "closedBreathe").animateFloat(
             1f, 0.45f, infiniteRepeatable(tween(1000), RepeatMode.Reverse), label = "closedBreathe",
@@ -300,8 +302,8 @@ private fun PipWindow(
     }
 
     val pos = free ?: bounds.position(corner).let { (x, y) -> Offset(x, y) }
-    val outer = RoundedCornerShape(if (pip.expanded) 26.dp else 16.dp)
-    val inner = RoundedCornerShape(if (pip.expanded) 22.dp else 13.dp)
+    val outer = RoundedCornerShape(if (pip.expanded) MikaRadius.Sheet else MikaRadius.Card)
+    val inner = RoundedCornerShape(if (pip.expanded) MikaRadius.Bubble else MikaRadius.Chip)
     val insetDp = if (pip.expanded) 4.dp else 3.dp
     // 直接操作:开了开关、小窗展开、有画面、口子还活着时才把点/滑注入到虚拟屏
     val operate = operateEnabled && pip.expanded && frame != null && pipInput != null

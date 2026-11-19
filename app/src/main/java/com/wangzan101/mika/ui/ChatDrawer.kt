@@ -133,6 +133,8 @@ import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaSize
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import java.time.DayOfWeek
@@ -884,7 +886,7 @@ internal fun ConversationRowContent(
             Text(title, Modifier.weight(1f, fill = item.site == null), style = ConversationTitle, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (item.site != null) {
                 Text(
-                    PageAskCopy.WEB, Modifier.background(c.accentSoft, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp).testTag("conversation-web"),
+                    PageAskCopy.WEB, Modifier.background(c.accentSoft, RoundedCornerShape(MikaRadius.BubbleTail)).padding(horizontal = 6.dp).testTag("conversation-web"),
                     style = ConversationTag, color = c.accent, maxLines = 1,
                 )
                 Box(Modifier.weight(1f))
@@ -999,7 +1001,7 @@ private class DrawerCardShape(private val progress: Float) : Shape {
         ))
     }
 }
-internal val NavShape = RoundedCornerShape(12.dp)
+internal val NavShape = MikaShapes.Chip
 private val SectionText = MikaType.Hint.copy(fontWeight = FontWeight.Medium)
 private val ConversationTitle = MikaType.Body.copy(fontWeight = FontWeight.Medium)
 private val ConversationTime = MikaType.Hint

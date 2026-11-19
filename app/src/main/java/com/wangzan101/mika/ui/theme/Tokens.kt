@@ -60,16 +60,27 @@ object MikaSize {
 
 /** 圆角。 */
 object MikaRadius {
+    /** 极小:徽标、圆点。 */
+    val Micro = 4.dp
+    val BubbleTail = 6.dp
+    val Tile = 9.dp
+    /** 小卡片、图片、芯片。 */
+    val Chip = 12.dp
+    val Button = 14.dp
     val Card = 16.dp
     val Bubble = 20.dp
-    val BubbleTail = 6.dp
-    val Button = 14.dp
-    val Tile = 9.dp
+    /** 大卡片、对话框、底部弹窗。 */
+    val Sheet = 24.dp
 }
 
 /** 常用形状;顶层常量,重组时不新建。 */
 object MikaShapes {
+    val Micro = RoundedCornerShape(MikaRadius.Micro)
     val Card = RoundedCornerShape(MikaRadius.Card)
+    val Chip = RoundedCornerShape(MikaRadius.Chip)
+    val Sheet = RoundedCornerShape(MikaRadius.Sheet)
+    /** 底部弹窗:上面两个角圆、下面直角。 */
+    val SheetTop = RoundedCornerShape(topStart = MikaRadius.Bubble, topEnd = MikaRadius.Bubble)
     /** 用户消息气泡:右下角是尾角。 */
     val UserBubble = RoundedCornerShape(MikaRadius.Bubble, MikaRadius.Bubble, MikaRadius.BubbleTail, MikaRadius.Bubble)
     /** Mika 的回答:左下角是尾角,和用户气泡对称。 */

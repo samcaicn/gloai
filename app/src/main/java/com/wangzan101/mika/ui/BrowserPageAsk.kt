@@ -100,6 +100,7 @@ import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -520,7 +521,7 @@ private object CardCopyText {
 private fun SelectionChip(text: String, onRemove: () -> Unit) {
     val c = MikaTheme.colors
     Row(
-        Modifier.padding(bottom = 6.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.ink.copy(alpha = 0.05f))
+        Modifier.padding(bottom = 6.dp).fillMaxWidth().clip(MikaShapes.Chip).background(c.ink.copy(alpha = 0.05f))
             .padding(start = 10.dp, top = 6.dp, bottom = 6.dp, end = 4.dp).testTag("page-ask-selection"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -540,7 +541,7 @@ private fun SelectionChip(text: String, onRemove: () -> Unit) {
 @Composable
 private fun AskField(chat: PageChat, hint: String, stop: (() -> Unit)?) {
     val c = MikaTheme.colors
-    val shape = RoundedCornerShape(16.dp)
+    val shape = MikaShapes.Card
     val focus = remember { FocusRequester() }
     LaunchedEffect(chat.focusAsk) { if (chat.focusAsk > 0) runCatching { focus.requestFocus() } }
     val canSend = chat.draft.isNotBlank() || chat.selection != null
@@ -571,8 +572,8 @@ private fun AskField(chat: PageChat, hint: String, stop: (() -> Unit)?) {
     }
 }
 
-private val PanelShape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
-private val CardShape = RoundedCornerShape(16.dp)
+private val PanelShape = MikaShapes.SheetTop
+private val CardShape = MikaShapes.Card
 
 /**
  * 半屏对话面板:盖在网页下半截,上面露出来的网页就是 Mika 正在操作的那一页。顶上是网站名、「从这一页开始 · 页面标题」、
@@ -682,7 +683,7 @@ fun PageCard(chat: PageChat, modifier: Modifier = Modifier) {
 @Composable
 fun PausedBanner(onResume: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF1D1F24))
+        modifier.fillMaxWidth().clip(MikaShapes.Chip).background(Color(0xFF1D1F24))
             .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp).testTag("page-paused-banner"),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -690,7 +691,7 @@ fun PausedBanner(onResume: () -> Unit, modifier: Modifier = Modifier) {
         Text(PageAskCopy.PAUSED, Modifier.weight(1f), style = MikaType.Caption, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(
             tr(R.string.chat_continue),
-            Modifier.clip(RoundedCornerShape(8.dp)).background(Color.White).clickable(role = Role.Button, onClick = onResume)
+            Modifier.clip(MikaShapes.Tile).background(Color.White).clickable(role = Role.Button, onClick = onResume)
                 .padding(horizontal = 12.dp, vertical = 5.dp).testTag("page-paused-resume"),
             style = MikaType.Label.copy(fontWeight = FontWeight.SemiBold), color = Color(0xFF111111),
         )
@@ -703,7 +704,7 @@ internal fun SentPage(page: AttachedPage.Page, maxWidth: androidx.compose.ui.uni
     val c = MikaTheme.colors
     val host = com.wangzan101.mika.core.cap.web.WebUrlPolicy.host(page.url) ?: page.url
     Column(
-        Modifier.padding(bottom = 4.dp).widthIn(max = maxWidth).background(c.ink.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+        Modifier.padding(bottom = 4.dp).widthIn(max = maxWidth).background(c.ink.copy(alpha = 0.05f), MikaShapes.Chip)
             .padding(horizontal = 10.dp, vertical = 6.dp).testTag("sent-page"),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {

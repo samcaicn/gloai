@@ -55,6 +55,8 @@ import com.wangzan101.mika.ui.components.GlassBackdrop
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.delay
 
 @Composable
@@ -179,7 +181,7 @@ private fun UpdateGlassAction(label: String, primary: Boolean, onClick: () -> Un
         dark -> Color.White.copy(alpha = 0.13f)
         else -> Color.White.copy(alpha = 0.48f)
     }
-    Box(modifier.height(36.dp).clip(RoundedCornerShape(12.dp))
+    Box(modifier.height(36.dp).clip(MikaShapes.Chip)
         .background(fill)
         .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 5.dp),
         contentAlignment = Alignment.Center,

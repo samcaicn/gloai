@@ -35,6 +35,8 @@ import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -53,13 +55,13 @@ fun DiagnosticsSheet(load: () -> String, onDismiss: () -> Unit) {
             runCatching(load).getOrElse { Diagnostics.sanitize("${Diagnostics.HEADER}\n(failed to collect: ${it.javaClass.simpleName})\n") }
         }
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surface, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surface, shape = MikaShapes.SheetTop) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 16.dp).testTag("diagnostics-sheet")) {
             Text(AboutCopy.DIAGNOSTICS_TITLE, style = MikaType.Title, color = c.ink)
             Text(AboutCopy.DIAGNOSTICS_NOTE, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink3)
             Box(
                 Modifier.padding(top = 12.dp).fillMaxWidth().heightIn(min = 120.dp, max = 360.dp)
-                    .background(c.fill, RoundedCornerShape(12.dp)).verticalScroll(rememberScrollState())
+                    .background(c.fill, MikaShapes.Chip).verticalScroll(rememberScrollState())
                     .horizontalScroll(rememberScrollState()).padding(12.dp),
             ) {
                 Text(

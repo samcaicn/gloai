@@ -45,6 +45,8 @@ import com.wangzan101.mika.core.userscreen.UserScreenMessage
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.MikaShapes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -149,7 +151,7 @@ fun UserMessage(conversationId: String?, raw: String, thumbWidth: Dp, modifier: 
     }
 }
 
-private val ThumbShape = RoundedCornerShape(10.dp)
+private val ThumbShape = MikaShapes.Tile
 private val TagText = MikaType.Micro
 
 /** 一屏:缩略图和下面那一行;还没读到时先占着位置。 */

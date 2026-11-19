@@ -84,6 +84,7 @@ import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.theme.MikaRadius
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
@@ -330,7 +331,7 @@ internal fun DeviceFileBrowserScreen(
                 if (truncated) {
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
-                            .clip(RoundedCornerShape(10.dp)).background(c.warnSoft)
+                            .clip(MikaShapes.Tile).background(c.warnSoft)
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                     ) {
                         Text(
@@ -469,7 +470,7 @@ private fun DeviceBrowserTopBar(
         )
         Row(
             Modifier.widthIn(max = 180.dp)
-                .clip(RoundedCornerShape(13.dp))
+                .clip(MikaShapes.Chip)
                 .background(if (showHistory) c.accentSoft else c.fill)
                 .clickable(role = Role.Button, onClick = onToggleHistory)
                 .testTag("device-browser-history-toggle")
@@ -540,7 +541,7 @@ private fun BreadcrumbChip(
     onClick: () -> Unit,
 ) {
     val c = MikaTheme.colors
-    val shape = RoundedCornerShape(9.dp)
+    val shape = MikaShapes.Tile
     Row(
         Modifier.clip(shape)
             .then(if (current) Modifier.background(c.accentSoft) else Modifier)
@@ -653,7 +654,7 @@ private fun DeviceEntryRow(
     onClick: () -> Unit,
 ) {
     val c = MikaTheme.colors
-    val shape = RoundedCornerShape(13.dp)
+    val shape = MikaShapes.Chip
     Column(Modifier.fillMaxWidth()) {
         if (divider && !selected) {
             Box(Modifier.fillMaxWidth().padding(start = 70.dp, end = 4.dp).height(0.5.dp).background(c.hair))
@@ -723,7 +724,7 @@ private fun DeviceEntryRow(
 private fun FolderTile() {
     val c = MikaTheme.colors
     Box(
-        Modifier.size(width = 48.dp, height = 54.dp).clip(RoundedCornerShape(11.dp)).background(c.fill),
+        Modifier.size(width = 48.dp, height = 54.dp).clip(MikaShapes.Chip).background(c.fill),
         contentAlignment = Alignment.Center,
     ) {
         Icon(MikaIcons.Folder, null, Modifier.size(24.dp), tint = c.ink)
@@ -800,7 +801,7 @@ private fun DeviceBrowserBottomBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                Modifier.height(48.dp).clip(RoundedCornerShape(14.dp)).background(c.fill)
+                Modifier.height(48.dp).clip(MikaShapes.Button).background(c.fill)
                     .clickable(role = Role.Button, onClick = onCancel)
                     .testTag("device-browser-cancel")
                     .padding(horizontal = 20.dp),
@@ -809,7 +810,7 @@ private fun DeviceBrowserBottomBar(
                 Text(stringResource(R.string.device_browser_cancel), style = MikaType.BodyStrong, color = c.ink)
             }
             Row(
-                Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(14.dp))
+                Modifier.weight(1f).height(48.dp).clip(MikaShapes.Button)
                     .background(if (canAdd) c.accent else c.accent.copy(alpha = 0.35f))
                     .clickable(enabled = canAdd, role = Role.Button, onClick = onAdd)
                     .testTag("device-browser-add")
