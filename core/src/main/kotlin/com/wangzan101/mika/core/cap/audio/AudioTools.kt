@@ -18,7 +18,7 @@ import com.wangzan101.mika.core.tool.ToolDef
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.tool.fail
-import com.wangzan101.mika.core.tool.int
+import com.wangzan101.mika.core.tool.num
 import com.wangzan101.mika.core.tool.okObj
 import com.wangzan101.mika.core.tool.str
 import kotlinx.coroutines.CancellationException
@@ -43,7 +43,7 @@ internal object AudioGenerate : AgentTool {
         mapOf(
             "text" to str("The script to speak, 1-4000 characters."),
             "voice" to str("Optional voice name; leave out to use the configured voice."),
-            "speed" to str("Optional speaking speed, 0.25-4.0; leave out for the service default."),
+            "speed" to num("Optional speaking speed, 0.25-4.0; leave out for the service default.", min = 0.25, max = 4.0),
             "format" to str("Output format: wav or mp3 (default wav).", listOf("wav", "mp3")),
             "name" to str("Optional file name to suggest, without a path."),
         ), listOf("text"))
@@ -139,6 +139,7 @@ internal class AudioSave(private val ask: Boolean) : AgentTool {
 
 private fun failure(e: Throwable): ToolExecution = when (e) {
     is TtsError.Unsupported -> fail("audio_unsupported", e.message ?: "This voice model does not support that request.")
+    is ModelError.IllegalHeader -> fail("audio_key_invalid", "The voice model API key contains invalid characters. Check Settings › Voice model.", recoverable = false)
     is TtsError.BadAudio -> fail("audio_bad_response", e.message ?: "The voice service returned something that is not audio.")
     is TtsError.TooLarge -> fail("audio_too_large", "The audio is larger than 20 MB.")
     is ModelError.Auth -> fail("audio_auth_failed", "The voice service rejected the API key. Check Settings › Voice model.", recoverable = false)
