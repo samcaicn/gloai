@@ -70,8 +70,9 @@
     <string name="speech_doubao_plan">صورتحساب</string>
     <string name="speech_doubao_duration_note">محاسبهٔ هزینه بر اساس مدت تشخیص</string>
     <string name="speech_doubao_concurrent_note">محاسبهٔ هزینه بر اساس اتصال‌های هم‌زمان</string>
-    <string name="speech_funasr_model">Fun-ASR (میزبانی شخصی)</string>
-    <string name="speech_funasr_setup_hint">کلمات هنگام صحبت نمایش داده می‌شوند و سرور بلادرنگ Fun-ASR که خودتان اجرا می‌کنید (فایل serve_realtime_ws.py از پروژهٔ Fun-ASR)، معمولاً در شبکهٔ محلی، آن‌ها را تشخیص می‌دهد. حساب یا کلید لازم نیست.</string>
+    <string name="speech_funasr_model">Qwen (میزبانی شخصی)</string>
+    <string name="speech_funasr_setup_hint">کلمات هنگام صحبت نمایش داده می‌شوند و سرور بلادرنگی که خودتان اجرا می‌کنید، معمولاً در شبکهٔ محلی، آن‌ها را تشخیص می‌دهد. حساب یا کلید لازم نیست. از Fun-ASR-Nano و Qwen3-ASR پشتیبانی می‌کند.</string>
+    <string name="speech_funasr_deploy_guide">راهنمای استقرار</string>
     <string name="speech_funasr_server">سرور</string>
     <string name="speech_funasr_address">نشانی</string>
     <string name="speech_funasr_enter_address">مثلاً 192.168.1.10:10095</string>
@@ -93,7 +94,7 @@
     <string name="speech_live_auth">سرویس کلید را رد کرد. کلید و تعلق آن به منطقهٔ انتخاب‌شده را بررسی کنید.</string>
     <string name="speech_live_refused">سرویس درخواست را رد کرد (%1$s).</string>
     <string name="speech_live_unreachable">اتصال به سرویس ممکن نشد. نشانی و فعال بودن سرویس را بررسی کنید.</string>
-    <string name="speech_funasr_service">تشخیص گفتار بلادرنگ Fun-ASR</string>
+    <string name="speech_funasr_service">تشخیص گفتار بلادرنگ Qwen</string>
     <string name="speech_funasr_choose_note">سرور با میزبانی شخصی یا Alibaba Cloud Bailian</string>
     <string name="speech_funasr_tab_local">میزبانی شخصی</string>
     <string name="speech_bailian_tab">Bailian · %1$s</string>

@@ -69,8 +69,9 @@
     <string name="speech_doubao_plan">요금 방식</string>
     <string name="speech_doubao_duration_note">인식한 시간만큼 과금</string>
     <string name="speech_doubao_concurrent_note">동시 연결 수만큼 과금</string>
-    <string name="speech_funasr_model">Fun-ASR (직접 운영)</string>
-    <string name="speech_funasr_setup_hint">말하는 동안 글자가 나타납니다. 직접 운영하는 Fun-ASR 실시간 서버(Fun-ASR 프로젝트의 serve_realtime_ws.py, 보통 로컬 네트워크)가 인식합니다. 계정이나 키가 필요 없습니다.</string>
+    <string name="speech_funasr_model">Qwen (직접 운영)</string>
+    <string name="speech_funasr_setup_hint">말하는 동안 글자가 나타납니다. 직접 운영하는 실시간 인식 서버(보통 로컬 네트워크)가 인식합니다. 계정이나 키가 필요 없습니다. Fun-ASR-Nano와 Qwen3-ASR을 지원합니다.</string>
+    <string name="speech_funasr_deploy_guide">배포 안내</string>
     <string name="speech_funasr_server">서버</string>
     <string name="speech_funasr_address">주소</string>
     <string name="speech_funasr_enter_address">예: 192.168.1.10:10095</string>
@@ -92,7 +93,7 @@
     <string name="speech_live_auth">서비스가 키를 거부했습니다. 키가 맞는지, 선택한 리전의 키인지 확인하세요.</string>
     <string name="speech_live_refused">서비스가 요청을 거부했습니다(%1$s).</string>
     <string name="speech_live_unreachable">서비스에 연결할 수 없습니다. 주소와 서비스 실행 여부를 확인하세요.</string>
-    <string name="speech_funasr_service">Fun-ASR 실시간 음성 인식</string>
+    <string name="speech_funasr_service">Qwen 실시간 음성 인식</string>
     <string name="speech_funasr_choose_note">직접 운영하는 서버 또는 Alibaba Cloud Bailian</string>
     <string name="speech_funasr_tab_local">직접 운영</string>
     <string name="speech_bailian_tab">Bailian · %1$s</string>

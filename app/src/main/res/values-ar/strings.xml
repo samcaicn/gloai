@@ -69,8 +69,9 @@
     <string name="speech_doubao_plan">الفوترة</string>
     <string name="speech_doubao_duration_note">تُحتسب الرسوم بحسب مدة التعرّف</string>
     <string name="speech_doubao_concurrent_note">تُحتسب الرسوم بحسب الاتصالات المتزامنة</string>
-    <string name="speech_funasr_model">Fun-ASR (استضافة ذاتية)</string>
-    <string name="speech_funasr_setup_hint">تظهر الكلمات أثناء حديثك، ويتعرّف عليها خادم Fun-ASR فوري تشغّله بنفسك (serve_realtime_ws.py من مشروع Fun-ASR)، عادةً على شبكتك المحلية. لا حاجة إلى حساب أو مفتاح.</string>
+    <string name="speech_funasr_model">Qwen (استضافة ذاتية)</string>
+    <string name="speech_funasr_setup_hint">تظهر الكلمات أثناء حديثك، ويتعرّف عليها خادم فوري تشغّله بنفسك، عادةً على شبكتك المحلية. لا حاجة إلى حساب أو مفتاح. يدعم Fun-ASR-Nano و Qwen3-ASR.</string>
+    <string name="speech_funasr_deploy_guide">دليل النشر</string>
     <string name="speech_funasr_server">الخادم</string>
     <string name="speech_funasr_address">العنوان</string>
     <string name="speech_funasr_enter_address">مثال: 192.168.1.10:10095</string>
@@ -92,7 +93,7 @@
     <string name="speech_live_auth">رفضت الخدمة المفتاح. تحقّق من المفتاح ومن أنه يتبع المنطقة المختارة.</string>
     <string name="speech_live_refused">رفضت الخدمة الطلب (%1$s).</string>
     <string name="speech_live_unreachable">تعذّر الوصول إلى الخدمة. تحقّق من العنوان ومن أن الخدمة تعمل.</string>
-    <string name="speech_funasr_service">التعرّف الفوري على الكلام Fun-ASR</string>
+    <string name="speech_funasr_service">التعرّف الفوري على الكلام Qwen</string>
     <string name="speech_funasr_choose_note">خادم ذاتي الاستضافة أو Alibaba Cloud Bailian</string>
     <string name="speech_funasr_tab_local">استضافة ذاتية</string>
     <string name="speech_bailian_tab">Bailian · %1$s</string>

@@ -154,7 +154,7 @@ class SpeechSettings(private val prefs: SharedPreferences, private val cipher: K
     }
 
     /**
-     * 「Fun-ASR 实时语音识别」一行上次选用的是哪种(自建或百炼的某个地域),点圆圈时沿用它;
+     * 「千问实时语音识别」一行上次选用的是哪种(自建或百炼的某个地域),点圆圈时沿用它;
      * 那种已经用不了(地址读不出、Key 删了)或从没选过时为 null,界面改去设置页。
      */
     val lastLive: SpeechChoice? get() = runCatching {

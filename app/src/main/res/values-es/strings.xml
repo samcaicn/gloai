@@ -69,8 +69,9 @@
     <string name="speech_doubao_plan">Facturación</string>
     <string name="speech_doubao_duration_note">Se cobra por tiempo reconocido</string>
     <string name="speech_doubao_concurrent_note">Se cobra por conexiones simultáneas</string>
-    <string name="speech_funasr_model">Fun-ASR (autoalojado)</string>
-    <string name="speech_funasr_setup_hint">Las palabras aparecen mientras hablas, reconocidas por un servidor de Fun-ASR en tiempo real que ejecutas tú (serve_realtime_ws.py del proyecto Fun-ASR), normalmente en tu red local. No necesita cuenta ni clave.</string>
+    <string name="speech_funasr_model">Qwen (autoalojado)</string>
+    <string name="speech_funasr_setup_hint">Las palabras aparecen mientras hablas, reconocidas por un servidor en tiempo real que ejecutas tú, normalmente en tu red local. No necesita cuenta ni clave. Compatible con Fun-ASR-Nano y Qwen3-ASR.</string>
+    <string name="speech_funasr_deploy_guide">Guía de despliegue</string>
     <string name="speech_funasr_server">Servidor</string>
     <string name="speech_funasr_address">Dirección</string>
     <string name="speech_funasr_enter_address">p. ej. 192.168.1.10:10095</string>
@@ -92,7 +93,7 @@
     <string name="speech_live_auth">El servicio rechazó la clave. Comprueba la clave y que sea de la región elegida.</string>
     <string name="speech_live_refused">El servicio rechazó la solicitud (%1$s).</string>
     <string name="speech_live_unreachable">No se pudo conectar con el servicio. Comprueba la dirección y que el servicio esté en marcha.</string>
-    <string name="speech_funasr_service">Reconocimiento de voz en tiempo real Fun-ASR</string>
+    <string name="speech_funasr_service">Reconocimiento de voz en tiempo real Qwen</string>
     <string name="speech_funasr_choose_note">Servidor propio o Alibaba Cloud Bailian</string>
     <string name="speech_funasr_tab_local">Autoalojado</string>
     <string name="speech_bailian_tab">Bailian · %1$s</string>

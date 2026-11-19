@@ -69,8 +69,9 @@
     <string name="speech_doubao_plan">Penagihan</string>
     <string name="speech_doubao_duration_note">Ditagih per waktu pengenalan</string>
     <string name="speech_doubao_concurrent_note">Ditagih per koneksi bersamaan</string>
-    <string name="speech_funasr_model">Fun-ASR (dihosting sendiri)</string>
-    <string name="speech_funasr_setup_hint">Kata-kata muncul saat Anda berbicara, dikenali oleh server Fun-ASR real-time yang Anda jalankan sendiri (serve_realtime_ws.py dari proyek Fun-ASR), biasanya di jaringan lokal. Tidak perlu akun atau kunci.</string>
+    <string name="speech_funasr_model">Qwen (dihosting sendiri)</string>
+    <string name="speech_funasr_setup_hint">Kata-kata muncul saat Anda berbicara, dikenali oleh server real-time yang Anda jalankan sendiri, biasanya di jaringan lokal. Tidak perlu akun atau kunci. Mendukung Fun-ASR-Nano dan Qwen3-ASR.</string>
+    <string name="speech_funasr_deploy_guide">Panduan penerapan</string>
     <string name="speech_funasr_server">Server</string>
     <string name="speech_funasr_address">Alamat</string>
     <string name="speech_funasr_enter_address">mis. 192.168.1.10:10095</string>
@@ -92,7 +93,7 @@
     <string name="speech_live_auth">Layanan menolak kunci. Periksa kunci dan pastikan berasal dari region yang dipilih.</string>
     <string name="speech_live_refused">Layanan menolak permintaan (%1$s).</string>
     <string name="speech_live_unreachable">Tidak dapat menjangkau layanan. Periksa alamat dan pastikan layanan berjalan.</string>
-    <string name="speech_funasr_service">Pengenalan suara real-time Fun-ASR</string>
+    <string name="speech_funasr_service">Pengenalan suara real-time Qwen</string>
     <string name="speech_funasr_choose_note">Server sendiri atau Alibaba Cloud Bailian</string>
     <string name="speech_funasr_tab_local">Dihosting sendiri</string>
     <string name="speech_bailian_tab">Bailian · %1$s</string>
