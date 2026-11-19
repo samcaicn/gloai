@@ -13,6 +13,9 @@
     <string name="models_lead">Pilih model untuk setiap tugas di bawah “Peran”; model berasal dari penyedia yang terhubung di bawah.</string>
     <string name="models_roles">Peran</string>
     <string name="models_providers">Penyedia</string>
+    <plurals name="models_providers_count">
+        <item quantity="other">%1$d penyedia</item>
+    </plurals>
     <string name="models_add_provider">Tambah penyedia</string>
     <string name="models_key_note">Kunci API hanya disimpan di ponsel ini, terenkripsi.</string>
     <string name="models_main_add_first">Tambahkan penyedia dulu</string>

@@ -13,6 +13,13 @@
     <string name="models_lead">اختر النموذج الذي ينفّذ كل مهمة ضمن «الأدوار»؛ تأتي النماذج من المزوّدين المتصلين أدناه.</string>
     <string name="models_roles">الأدوار</string>
     <string name="models_providers">المزوّدون</string>
+    <plurals name="models_providers_count">
+        <item quantity="one">موفّر واحد</item>
+        <item quantity="two">موفّران</item>
+        <item quantity="few">%1$d موفّرين</item>
+        <item quantity="many">%1$d موفّرًا</item>
+        <item quantity="other">%1$d موفّر</item>
+    </plurals>
     <string name="models_add_provider">إضافة مزوّد</string>
     <string name="models_key_note">تُخزَّن مفاتيح API على هذا الهاتف فقط، مع تشفيرها.</string>
     <string name="models_main_add_first">أضف مزوّدًا أولًا</string>

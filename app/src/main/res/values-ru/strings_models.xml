@@ -13,6 +13,12 @@
     <string name="models_lead">В разделе «Роли» выберите, какая модель что делает; модели берутся у подключённых ниже провайдеров.</string>
     <string name="models_roles">Роли</string>
     <string name="models_providers">Провайдеры</string>
+    <plurals name="models_providers_count">
+        <item quantity="one">%1$d провайдер</item>
+        <item quantity="few">%1$d провайдера</item>
+        <item quantity="many">%1$d провайдеров</item>
+        <item quantity="other">%1$d провайдера</item>
+    </plurals>
     <string name="models_add_provider">Добавить провайдера</string>
     <string name="models_key_note">Ключи API хранятся только на этом телефоне в зашифрованном виде.</string>
     <string name="models_main_add_first">Сначала добавьте провайдера</string>

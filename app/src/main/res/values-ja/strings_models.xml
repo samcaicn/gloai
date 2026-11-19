@@ -13,6 +13,9 @@
     <string name="models_lead">「役割」で、仕事ごとに使うモデルを選びます。モデルは、下で接続したプロバイダーから選べます。</string>
     <string name="models_roles">役割</string>
     <string name="models_providers">プロバイダー</string>
+    <plurals name="models_providers_count">
+        <item quantity="other">%1$d 社</item>
+    </plurals>
     <string name="models_add_provider">プロバイダーを追加</string>
     <string name="models_key_note">API キーは、このスマホの中だけに暗号化して保存されます。</string>
     <string name="models_main_add_first">先にプロバイダーを追加してください</string>

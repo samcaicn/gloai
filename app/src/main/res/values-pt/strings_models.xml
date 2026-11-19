@@ -13,6 +13,10 @@
     <string name="models_lead">Escolha qual modelo faz cada trabalho em “Funções”; os modelos vêm dos provedores conectados abaixo.</string>
     <string name="models_roles">Funções</string>
     <string name="models_providers">Provedores</string>
+    <plurals name="models_providers_count">
+        <item quantity="one">%1$d provedor</item>
+        <item quantity="other">%1$d provedores</item>
+    </plurals>
     <string name="models_add_provider">Adicionar provedor</string>
     <string name="models_key_note">As chaves de API ficam guardadas só neste celular, criptografadas.</string>
     <string name="models_main_add_first">Adicione um provedor primeiro</string>

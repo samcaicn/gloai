@@ -12,6 +12,7 @@ import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.voice.SystemSpeech
 import com.wangzan101.mika.settings.ChatGptSignIns
 import com.wangzan101.mika.i18n.tr
+import com.wangzan101.mika.i18n.trPlural
 import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -345,7 +346,7 @@ fun ModelSetupContent(ui: ModelSetupUi, onboarding: Boolean, actions: ModelSetup
                     // 服务商:一行入口,点进去是单独的服务商页
                     GroupCard {
                         ListRow(MikaIcons.Key, ModelsCopy.PROVIDERS, first = true, onClick = actions.openProviders) {
-                            RowValue(ui.providers.size.toString())
+                            if (ui.providers.isNotEmpty()) RowValue(trPlural(R.plurals.models_providers_count, ui.providers.size))
                             RowChevron()
                         }
                     }

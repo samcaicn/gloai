@@ -13,6 +13,10 @@
     <string name="models_lead">در بخش «نقش‌ها» انتخاب کنید کدام مدل هر کار را انجام دهد؛ مدل‌ها از ارائه‌دهندگان متصل زیر انتخاب می‌شوند.</string>
     <string name="models_roles">نقش‌ها</string>
     <string name="models_providers">ارائه‌دهندگان</string>
+    <plurals name="models_providers_count">
+        <item quantity="one">%1$d ارائه‌دهنده</item>
+        <item quantity="other">%1$d ارائه‌دهنده</item>
+    </plurals>
     <string name="models_add_provider">افزودن ارائه‌دهنده</string>
     <string name="models_key_note">کلیدهای API فقط در این گوشی و به‌صورت رمزگذاری‌شده ذخیره می‌شوند.</string>
     <string name="models_main_add_first">ابتدا یک ارائه‌دهنده اضافه کنید</string>

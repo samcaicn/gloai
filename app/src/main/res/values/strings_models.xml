@@ -13,6 +13,10 @@
     <string name="models_lead">Pick which model does each job under “Roles”; models come from the providers connected below.</string>
     <string name="models_roles">Roles</string>
     <string name="models_providers">Providers</string>
+    <plurals name="models_providers_count">
+        <item quantity="one">%1$d provider</item>
+        <item quantity="other">%1$d providers</item>
+    </plurals>
     <string name="models_add_provider">Add provider</string>
     <string name="models_key_note">API keys are stored only on this phone, encrypted.</string>
     <string name="models_main_add_first">Add a provider first</string>

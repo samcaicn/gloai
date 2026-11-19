@@ -899,7 +899,7 @@ object ModelsCopy {
     val FALLBACK_ICON: ImageVector get() = MikaIcons.Refresh
     val FALLBACK_CLEAR: String get() = tr(R.string.main_fallback_clear)
 
-    fun fallbackLabel(slot: Int) = "${tr(R.string.main_fallback_name, slot + 1)} · ${tr(R.string.main_fallback_what)}"
+    fun fallbackLabel(slot: Int) = tr(R.string.main_fallback_name, slot + 1)
 
     fun fallbackLine(ui: ModelSetupUi, slot: Int): RoleLine {
         val cfg = ui.roles.mainFallbacks.getOrNull(slot)?.let { id -> ui.configs.firstOrNull { it.id == id } }

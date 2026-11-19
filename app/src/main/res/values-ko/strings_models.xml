@@ -13,6 +13,9 @@
     <string name="models_lead">“역할”에서 각 작업을 맡을 모델을 고르세요. 모델은 아래에 연결한 제공업체에서 가져와요.</string>
     <string name="models_roles">역할</string>
     <string name="models_providers">제공업체</string>
+    <plurals name="models_providers_count">
+        <item quantity="other">%1$d개</item>
+    </plurals>
     <string name="models_add_provider">제공업체 추가</string>
     <string name="models_key_note">API 키는 이 휴대전화에만 암호화되어 저장돼요.</string>
     <string name="models_main_add_first">먼저 제공업체를 추가하세요</string>

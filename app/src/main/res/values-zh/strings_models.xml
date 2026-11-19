@@ -13,6 +13,9 @@
     <string name="models_lead">每件事用哪个模型，在「用途」里选；模型来自下面连好的服务商。</string>
     <string name="models_roles">用途</string>
     <string name="models_providers">服务商</string>
+    <plurals name="models_providers_count">
+        <item quantity="other">%1$d 家</item>
+    </plurals>
     <string name="models_add_provider">添加服务商</string>
     <string name="models_key_note">API Key 只保存在这台手机上，加密存放。</string>
     <string name="models_main_add_first">先添加一个服务商</string>
