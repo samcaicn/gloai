@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="calls_title">AI 接打電話</string>
-    <string name="calls_entry_sub">火山即時語音 · 行動網路電話</string>
+    <string name="calls_entry_sub">即時語音 · 行動網路電話</string>
     <string name="calls_action_failed">操作未完成，請檢查是否就緒後再試一次。</string>
     <string name="calls_permissions_required">需要電話和通知權限才能啟用。</string>
     <string name="calls_ai_active">AI 正在通話</string>
@@ -19,7 +19,7 @@
     <string name="calls_sim">撥出使用的 SIM 卡</string>
     <string name="calls_default">預設</string>
     <string name="calls_dial">由 AI 撥打</string>
-    <string name="calls_call_note">通話使用現有的 SIM 卡，可能產生電信業者通話費及火山服務用量費。撥出前請在設定填寫通話目的與開場白。</string>
+    <string name="calls_call_note">通話使用現有的 SIM 卡，可能產生電信業者通話費及語音服務用量費。撥出前請在設定填寫通話目的與開場白。</string>
     <string name="calls_prepare">檢查並準備</string>
     <string name="calls_enable">啟用 AI 電話</string>
     <string name="calls_disable">停用並恢復一般通話</string>
@@ -35,7 +35,7 @@
     <string name="calls_all_note">包含名單外號碼及隱藏號碼的來電</string>
     <string name="calls_allowlist">允許自動接聽的來電號碼</string>
     <string name="calls_allowlist_empty">名單為空：除非啟用接聽所有來電，否則不會自動接聽</string>
-    <string name="calls_privacy_note">僅在 AI 處理通話期間將音訊傳送至火山，不儲存錄音。通話逐字稿會加密儲存在這支手機上，隨時可親自接手。</string>
+    <string name="calls_privacy_note">僅在 AI 處理通話期間將音訊傳送至所選語音服務，不儲存錄音。通話逐字稿會加密儲存在這支手機上，隨時可親自接手。</string>
     <string name="calls_history_empty">目前沒有 AI 通話紀錄</string>
     <string name="calls_collapse">收合</string>
     <string name="calls_transcript">顯示通話逐字稿</string>
@@ -53,7 +53,7 @@
     <string name="calls_greeting">開場白</string>
     <string name="calls_instructions">通話目的與指示</string>
     <string name="calls_duration">AI 最長通話時間（15–600 秒）</string>
-    <string name="calls_speaker">火山音色 ID</string>
+    <string name="calls_speaker">音色 ID</string>
     <string name="calls_audio_route">通話音訊路徑</string>
     <string name="calls_audio_verified">已實測本機通話雙方均能聽到聲音</string>
     <string name="calls_verify_note">先手動撥打或接聽一通測試電話，確認雙方聲音正常後，再啟用自動接聽。</string>
@@ -89,7 +89,7 @@
     <string name="calls_original_transcript">通話文字原文</string>
     <string name="calls_outgoing_title">撥打電話</string>
     <string name="calls_rules">自動接聽規則</string>
-    <string name="calls_setup_credentials">請設定火山即時語音憑據。</string>
+    <string name="calls_setup_credentials">請設定所選語音服務的憑據。</string>
     <string name="calls_setup_shell">請先連線 Mika 內建助理。</string>
     <string name="calls_sim_clear_preferred">取消預設 SIM</string>
     <string name="calls_sim_preferred">預設撥號 SIM：%1$s</string>

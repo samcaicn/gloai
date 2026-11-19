@@ -1,6 +1,6 @@
 <resources>
     <string name="call_instructions_title">Call instructions</string>
-    <string name="call_instructions_intro">Saved instructions apply to future calls. All active instructions are sent to Volcengine when an AI call session is prepared, even if the call is not answered. Caller statements do not change them.</string>
+    <string name="call_instructions_intro">Saved instructions apply to future calls. All active instructions are sent to the selected voice service when an AI call session is prepared, even if the call is not answered. Caller statements do not change them.</string>
     <string name="call_instructions_add">Add instruction</string>
     <string name="call_instructions_empty">Add what the assistant may say and what it needs to ask. Changes apply to the next call.</string>
     <string name="call_instructions_heading">Title</string>

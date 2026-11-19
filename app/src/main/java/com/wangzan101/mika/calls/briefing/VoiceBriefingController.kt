@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.telecom.TelecomManager
+import com.wangzan101.mika.calls.CallPlaybackTruncation
 import com.wangzan101.mika.calls.CallTaskBrief
 import com.wangzan101.mika.calls.VolcRealtimeClient
 import com.wangzan101.mika.calls.VolcRealtimeConfig
@@ -46,6 +47,7 @@ data class VoiceBriefingState(
 }
 
 internal interface VoiceBriefingConnection {
+    val playbackTruncation: CallPlaybackTruncation? get() = null
     val events: Flow<VolcRealtimeEvent>
     fun send(bytes: ByteArray): Boolean
     fun greet(): Boolean
@@ -60,7 +62,7 @@ internal interface VoiceBriefingAudio {
         onFailure: (String) -> Unit,
     )
     fun enqueue(pcm: ByteArray)
-    fun interrupt()
+    fun interrupt(): Long
     fun stopImmediately()
     suspend fun close()
 }
@@ -153,7 +155,12 @@ class VoiceBriefingController internal constructor(
                             provider!!.events.firstOrNull { event ->
                                 if (!valid()) throw VoiceBriefingFailure("语音交代已停止，未拨号")
                                 when (event) {
-                                    VolcRealtimeEvent.UserSpeaking, VolcRealtimeEvent.AssistantInterrupted -> localAudio!!.interrupt()
+                                    VolcRealtimeEvent.UserSpeaking, VolcRealtimeEvent.AssistantInterrupted -> {
+                                        val heardFrames = localAudio!!.interrupt()
+                                        if (provider!!.playbackTruncation?.interrupt(heardFrames) == false) {
+                                            throw VoiceBriefingFailure("无法同步已播放的语音，未拨号")
+                                        }
+                                    }
                                     is VolcRealtimeEvent.Audio -> localAudio!!.enqueue(event.pcm)
                                     is VolcRealtimeEvent.UserTranscript -> {
                                         authorized = conversation.accept(event)
@@ -258,6 +265,7 @@ class VoiceBriefingController internal constructor(
 }
 
 private class ProviderConnection(private val session: VolcRealtimeSession) : VoiceBriefingConnection {
+    override val playbackTruncation get() = session.playbackTruncation
     override val events get() = session.events
     override fun send(bytes: ByteArray) = session.sendPcm16(bytes)
     override fun greet() = session.sendGreeting(VoiceBriefingConversation.GREETING)

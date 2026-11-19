@@ -15,6 +15,7 @@ data class VolcRealtimeConfig(
     val model: String = MODEL,
     /** Tools are enabled only for an owned carrier call, never a briefing or connection test. */
     val enablePhoneDtmf: Boolean = false,
+    val protocol: CallVoiceProtocol = CallVoiceProtocol.VOLC_DUPLEX,
 ) {
     init {
         require(systemPrompt.length <= MAX_PROMPT_CHARS) { "Realtime system prompt is too long" }
@@ -93,27 +94,29 @@ internal object VolcRealtimeProtocol {
     /** tools is a complete replacement, not an incremental addition (Seeduplex API). */
     fun enablePhoneTools(eventId: String): String = message("session.update", eventId) {
         putJsonObject("session") {
-            put("tools", JsonArray(listOf(buildJsonObject {
-                put("type", "function")
-                put("name", DTMF_FUNCTION)
-                put("description", "在电话语音菜单明确要求按键时，发送真正的电话DTMF按键；说出数字不能代替按键。仅按本次任务和听到的菜单选择，不猜测密码或验证码。等待工具结果，失败时不得声称按键成功。")
-                putJsonObject("parameters") {
-                    put("type", "object")
-                    putJsonObject("properties") {
-                        putJsonObject("digits") {
-                            put("type", "string")
-                            put("pattern", "^[0-9*#]{1,32}$")
-                            put("minLength", 1)
-                            put("maxLength", MAX_DTMF_DIGITS)
-                            put("description", "按顺序发送的电话按键，只能含0-9、*、#，最多32个。")
-                        }
-                    }
-                    put("required", JsonArray(listOf(JsonPrimitive("digits"))))
-                    put("additionalProperties", false)
-                }
-            })))
+            put("tools", phoneTools())
         }
     }
+
+    fun phoneTools() = JsonArray(listOf(buildJsonObject {
+        put("type", "function")
+        put("name", DTMF_FUNCTION)
+        put("description", "在电话语音菜单明确要求按键时，发送真正的电话DTMF按键；说出数字不能代替按键。仅按本次任务和听到的菜单选择，不猜测密码或验证码。等待工具结果，失败时不得声称按键成功。")
+        putJsonObject("parameters") {
+            put("type", "object")
+            putJsonObject("properties") {
+                putJsonObject("digits") {
+                    put("type", "string")
+                    put("pattern", "^[0-9*#]{1,32}$")
+                    put("minLength", 1)
+                    put("maxLength", MAX_DTMF_DIGITS)
+                    put("description", "按顺序发送的电话按键，只能含0-9、*、#，最多32个。")
+                }
+            }
+            put("required", JsonArray(listOf(JsonPrimitive("digits"))))
+            put("additionalProperties", false)
+        }
+    }))
 
     fun toolResults(eventId: String, results: List<Pair<String, JsonObject>>): String =
         message("conversation.item.create", eventId) {

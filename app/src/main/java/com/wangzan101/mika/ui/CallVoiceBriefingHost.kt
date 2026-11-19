@@ -130,7 +130,7 @@ internal fun rememberCallVoiceBriefing(
                     if (valid()) {
                         if (credentials == null) detail = context.getString(R.string.calls_voice_briefing_configure)
                         else controller.start(key, credentials,
-                            VolcRealtimeConfig(speaker = capturedProfile.speaker, model = capturedProfile.model), initial.getOrNull(), valid) { brief ->
+                            VolcRealtimeConfig(protocol = capturedProfile.protocol, speaker = capturedProfile.speaker, model = capturedProfile.model), initial.getOrNull(), valid) { brief ->
                             if (valid()) {
                                 draft.fill(number, brief)
                                 draft.simOverride = simId

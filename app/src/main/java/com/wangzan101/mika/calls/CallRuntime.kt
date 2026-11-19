@@ -103,7 +103,7 @@ class CallRuntime(private val app: MikaApp) {
     val voiceProfiles = CallVoiceProfileStore.create(app)
     val instructions = CallInstructionStore.create(app)
     private val access = CallTelecomAccess(app)
-    private val realtimeProvider: CallRealtimeProvider = VolcRealtimeProvider()
+    private val realtimeProvider: CallRealtimeProvider = ProfileRealtimeProvider()
     private val telecom get() = app.getSystemService(TelecomManager::class.java)
     private val telephony get() = app.getSystemService(TelephonyManager::class.java)
     private val notifications = CallNotifications(app)
@@ -1103,7 +1103,7 @@ class CallRuntime(private val app: MikaApp) {
                         realtimeProvider.connect(profile, credentials, systemPrompt, enablePhoneDtmf = true)
                             .also { w.session = it } // Adopt before the timeout/cancellation boundary.
                     } ?: throw CallProblem("实时语音连接超时，未由 AI 接管")
-                    if (!connected.setMuted(true)) throw CallProblem("火山实时语音未进入就绪状态")
+                    if (!connected.setMuted(true)) throw CallProblem("实时语音服务未进入就绪状态")
                     validateSessionTarget(w, helper)
                     connected
                 },
@@ -1190,11 +1190,11 @@ class CallRuntime(private val app: MikaApp) {
         } catch (e: VolcRealtimeException) {
             debugMediaException(w, e)
             w.stopReason.record(when (e.kind) {
-                VolcRealtimeException.Kind.AUTH -> "火山拒绝认证，请检查电话语音凭据和服务开通状态"
-                VolcRealtimeException.Kind.RATE_LIMITED -> "火山实时语音达到服务限额，电话由系统处理"
-                VolcRealtimeException.Kind.TIMEOUT, VolcRealtimeException.Kind.NETWORK -> "火山实时语音连接不可用，电话由系统处理"
-                VolcRealtimeException.Kind.BACKPRESSURE -> "火山实时音频拥塞，电话由系统处理"
-                else -> "火山实时语音未能继续，请检查通话配置"
+                VolcRealtimeException.Kind.AUTH -> "实时语音服务拒绝认证，请检查电话语音凭据和服务开通状态"
+                VolcRealtimeException.Kind.RATE_LIMITED -> "实时语音达到服务限额，电话由系统处理"
+                VolcRealtimeException.Kind.TIMEOUT, VolcRealtimeException.Kind.NETWORK -> "实时语音连接不可用，电话由系统处理"
+                VolcRealtimeException.Kind.BACKPRESSURE -> "实时音频拥塞，电话由系统处理"
+                else -> "实时语音服务未能继续，请检查通话配置"
             })
         } catch (e: Exception) {
             debugMediaException(w, e)
@@ -1428,6 +1428,15 @@ class CallRuntime(private val app: MikaApp) {
                                 liveCalls().singleOrNull() === target && liveTranscriptCallId == target.id &&
                                 appendTranscript(liveTranscript, role, text)) {
                                 publish()
+                            }
+                        },
+                        playedOutputFrames = {
+                            withContext(Dispatchers.IO) {
+                                val stats = helper.callAudioStats(w.audioOwner)
+                                if (stats?.getBoolean("upPlaybackHeadFresh") == true && stats.getBoolean("upPlaybackRouteReady")) {
+                                    (stats.getLong("upPlaybackHeadFrames") - stats.getLong("upPlaybackPrimeFrames"))
+                                        .coerceIn(0L, stats.getLong("upPlaybackEpochDataBytes") / 2L)
+                                } else 0L
                             }
                         },
                         awaitFarewellDrain = { fence ->

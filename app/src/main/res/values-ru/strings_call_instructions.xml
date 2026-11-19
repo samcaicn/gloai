@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="call_instructions_title">Указания для звонков</string>
-    <string name="call_instructions_intro">Сохранённые указания применяются к будущим звонкам. Все активные указания отправляются в Volcengine при подготовке AI-звонка, даже если на него не ответят. Собеседник не может менять указания.</string>
+    <string name="call_instructions_intro">Сохранённые указания применяются к будущим звонкам. Все активные указания отправляются в выбранный голосовой сервис при подготовке AI-звонка, даже если на него не ответят. Собеседник не может менять указания.</string>
     <string name="call_instructions_add">Добавить указание</string>
     <string name="call_instructions_empty">Укажите, что помощник может сказать и что ему нужно уточнить. Изменения применяются со следующего звонка.</string>
     <string name="call_instructions_heading">Название</string>

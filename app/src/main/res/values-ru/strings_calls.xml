@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="calls_title">Звонки с ИИ</string>
-    <string name="calls_entry_sub">Звонки по мобильной сети с голосом Volcengine в реальном времени</string>
+    <string name="calls_entry_sub">Мобильные звонки с голосовым ИИ</string>
     <string name="calls_action_failed">Не удалось выполнить действие со звонком. Проверьте готовность и повторите попытку.</string>
     <string name="calls_permissions_required">Нужны разрешения на звонки и уведомления.</string>
     <string name="calls_ai_active">ИИ ведёт разговор</string>
@@ -19,7 +19,7 @@
     <string name="calls_sim">SIM-карта для исходящих</string>
     <string name="calls_default">По умолчанию</string>
     <string name="calls_dial">Позвонить с помощью ИИ</string>
-    <string name="calls_call_note">Для звонков используется текущая SIM-карта. Оператор и Volcengine могут взимать плату. Перед звонком укажите его цель и приветствие в настройках.</string>
+    <string name="calls_call_note">Для звонков используется текущая SIM-карта. Оператор и голосовой сервис могут взимать плату. Перед звонком укажите его цель и приветствие в настройках.</string>
     <string name="calls_prepare">Проверить и подготовить</string>
     <string name="calls_enable">Включить звонки с ИИ</string>
     <string name="calls_disable">Отключить и вернуться к обычным звонкам</string>
@@ -35,7 +35,7 @@
     <string name="calls_all_note">В том числе номера вне списка и скрытые номера</string>
     <string name="calls_allowlist">Номера, разрешённые для автоответа</string>
     <string name="calls_allowlist_empty">Список пуст: автоответ сработает, только если разрешён ответ на все звонки</string>
-    <string name="calls_privacy_note">Звук разговора отправляется в Volcengine, только пока звонок ведёт ИИ. Аудиозаписи не сохраняются. Расшифровки хранятся на этом телефоне в зашифрованном виде. Перехватить разговор можно в любой момент.</string>
+    <string name="calls_privacy_note">Звук разговора отправляется в выбранный голосовой сервис, только пока звонок ведёт ИИ. Аудиозаписи не сохраняются. Расшифровки хранятся на этом телефоне в зашифрованном виде. Перехватить разговор можно в любой момент.</string>
     <string name="calls_history_empty">В истории пока нет звонков с ИИ</string>
     <string name="calls_collapse">Свернуть</string>
     <string name="calls_transcript">Показать расшифровку</string>
@@ -53,7 +53,7 @@
     <string name="calls_greeting">Приветствие</string>
     <string name="calls_instructions">Цель и инструкции</string>
     <string name="calls_duration">Максимальное время работы ИИ (15–600 с)</string>
-    <string name="calls_speaker">Идентификатор голоса Volcengine</string>
+    <string name="calls_speaker">Идентификатор голоса</string>
     <string name="calls_audio_route">Маршрут звука звонка</string>
     <string name="calls_audio_verified">Подтверждаю, что обе стороны слышат звук при звонках с ИИ на этом телефоне</string>
     <string name="calls_verify_note">Сначала вручную совершите пробный звонок или ответьте на него. Убедитесь, что звук слышен в обе стороны, и только затем включите автоответ.</string>
@@ -89,7 +89,7 @@
     <string name="calls_original_transcript">Расшифровка вызова</string>
     <string name="calls_outgoing_title">Позвонить</string>
     <string name="calls_rules">Правила автоответа</string>
-    <string name="calls_setup_credentials">Настройте данные доступа к голосовому сервису Volcengine.</string>
+    <string name="calls_setup_credentials">Настройте данные доступа к выбранному голосовому сервису.</string>
     <string name="calls_setup_shell">Сначала подключите встроенный помощник Mika.</string>
     <string name="calls_sim_clear_preferred">Сбросить выбор SIM</string>
     <string name="calls_sim_preferred">Предпочитаемая SIM: %1$s</string>

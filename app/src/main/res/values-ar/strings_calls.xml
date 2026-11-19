@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="calls_title">مكالمات هاتفية بالذكاء الاصطناعي</string>
-    <string name="calls_entry_sub">مكالمات عبر شبكة المحمول باستخدام خدمة الصوت الفوري من Volcengine</string>
+    <string name="calls_entry_sub">مكالمات عبر شبكة المحمول باستخدام خدمة الصوت الفوري من خدمة الصوت المحددة</string>
     <string name="calls_action_failed">تعذّر تنفيذ إجراء المكالمة. تحقّق من الجاهزية وحاول مجددًا.</string>
     <string name="calls_permissions_required">يلزم منح أذونات الهاتف والإشعارات.</string>
     <string name="calls_ai_active">الذكاء الاصطناعي يتولى المكالمة</string>
@@ -19,7 +19,7 @@
     <string name="calls_sim">شريحة SIM للمكالمات الصادرة</string>
     <string name="calls_default">افتراضي</string>
     <string name="calls_dial">الاتصال بالذكاء الاصطناعي</string>
-    <string name="calls_call_note">تستخدم المكالمات شريحة SIM الحالية. قد تترتب عليها رسوم من شركة الاتصالات ورسوم استخدام Volcengine. حدّد غرض المكالمة والتحية في الإعدادات قبل الاتصال.</string>
+    <string name="calls_call_note">تستخدم المكالمات شريحة SIM الحالية. قد تترتب عليها رسوم من شركة الاتصالات ورسوم استخدام خدمة الصوت المحددة. حدّد غرض المكالمة والتحية في الإعدادات قبل الاتصال.</string>
     <string name="calls_prepare">التحقّق والإعداد</string>
     <string name="calls_enable">تفعيل المكالمات بالذكاء الاصطناعي</string>
     <string name="calls_disable">التعطيل واستعادة المكالمات العادية</string>
@@ -35,7 +35,7 @@
     <string name="calls_all_note">يشمل الأرقام غير المدرجة والمتصلين مجهولي الرقم</string>
     <string name="calls_allowlist">الأرقام الواردة المسموح بالرد عليها تلقائيًا</string>
     <string name="calls_allowlist_empty">القائمة فارغة: لن يتم الرد تلقائيًا إلا إذا فُعّل الرد على جميع المتصلين</string>
-    <string name="calls_privacy_note">لا يُرسل صوت المكالمة إلى Volcengine إلا أثناء تولّي الذكاء الاصطناعي لها. لا تُحفظ تسجيلات صوتية. يُحفظ النص مشفّرًا على هذا الهاتف، ويمكن تولّي المكالمة يدويًا في أي وقت.</string>
+    <string name="calls_privacy_note">لا يُرسل صوت المكالمة إلى خدمة الصوت المحددة إلا أثناء تولّي الذكاء الاصطناعي لها. لا تُحفظ تسجيلات صوتية. يُحفظ النص مشفّرًا على هذا الهاتف، ويمكن تولّي المكالمة يدويًا في أي وقت.</string>
     <string name="calls_history_empty">لا توجد مكالمات بالذكاء الاصطناعي في السجل بعد</string>
     <string name="calls_collapse">طيّ</string>
     <string name="calls_transcript">إظهار نص المكالمة</string>
@@ -53,7 +53,7 @@
     <string name="calls_greeting">التحية</string>
     <string name="calls_instructions">الغرض والتعليمات</string>
     <string name="calls_duration">الحد الأقصى للمدة بالذكاء الاصطناعي (15–600 ثانية)</string>
-    <string name="calls_speaker">معرّف الصوت في Volcengine</string>
+    <string name="calls_speaker">معرّف الصوت في خدمة الصوت المحددة</string>
     <string name="calls_audio_route">مسار صوت المكالمة</string>
     <string name="calls_audio_verified">تحقّقت من أن الطرفين يسمعان الصوت في مكالمات الذكاء الاصطناعي على هذا الهاتف</string>
     <string name="calls_verify_note">أجرِ مكالمة اختبار أو ردّ عليها يدويًا أولًا وتحقّق من وصول الصوت في الاتجاهين، ثم فعّل الرد التلقائي.</string>
@@ -89,7 +89,7 @@
     <string name="calls_original_transcript">نص المكالمة</string>
     <string name="calls_outgoing_title">إجراء مكالمة</string>
     <string name="calls_rules">قواعد الرد</string>
-    <string name="calls_setup_credentials">اضبط بيانات اعتماد الصوت الفوري من Volcengine.</string>
+    <string name="calls_setup_credentials">اضبط بيانات اعتماد الصوت الفوري من خدمة الصوت المحددة.</string>
     <string name="calls_setup_shell">اتصل بمساعد Mika المدمج أولًا.</string>
     <string name="calls_sim_clear_preferred">مسح بطاقة SIM المفضلة</string>
     <string name="calls_sim_preferred">بطاقة SIM المفضلة: %1$s</string>

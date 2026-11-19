@@ -3,7 +3,11 @@ package com.wangzan101.mika.calls
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.Base64
 import java.util.concurrent.CountDownLatch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -93,6 +97,47 @@ class CallPcmBridgeTest {
             running.cancelAndJoin()
             session.close()
             playback.close()
+        }
+    }
+
+    @Test fun `OpenAI interruption truncates only the unheard part using playback head before flush`() = runBlocking {
+        val session = VolcRealtimeSession(VolcRealtimeConfig(protocol = CallVoiceProtocol.OPENAI_REALTIME), 100)
+        val truncated = CompletableDeferred<String>()
+        val socket = FakeSocket { text ->
+            if (text.contains("conversation.item.truncate")) truncated.complete(text)
+        }
+        session.listener.onOpen(socket, Response.Builder().request(socket.request()).protocol(Protocol.HTTP_1_1)
+            .code(101).message("Switching Protocols").build())
+        fun receive(frame: String) = session.listener.onMessage(socket, frame)
+        receive("""{"type":"session.created"}""")
+        receive("""{"type":"session.updated"}""")
+        var flushes = 0
+        var headReads = 0
+        val bridge = CallPcmBridge(BlockingCapture(), OutputStream.nullOutputStream()) { flushes++; true }
+        val running = launch(start = CoroutineStart.UNDISPATCHED) {
+            bridge.run(session, "", null, { _, _ -> }, playedOutputFrames = {
+                headReads++
+                assertEquals("sample before Android resets its playback head", 0, flushes)
+                240L + 120L
+            })
+        }
+        try {
+            val audio = Base64.getEncoder().encodeToString(ByteArray(480)) // 240 frames = 10 ms
+            for (item in listOf("heard", "interrupted")) {
+                receive("""{"type":"response.output_audio.delta","response_id":"r","item_id":"$item","content_index":1,"delta":"$audio"}""")
+                receive("""{"type":"response.output_audio.done","response_id":"r"}""")
+            }
+            // The server finished both items before the phone finished playing the second.
+            receive("""{"type":"input_audio_buffer.speech_started","item_id":"caller"}""")
+            val frame = Json.parseToJsonElement(withTimeout(4000) { truncated.await() }).jsonObject
+            assertEquals("interrupted", frame["item_id"]!!.jsonPrimitive.content)
+            assertEquals("1", frame["content_index"].toString())
+            assertEquals("5", frame["audio_end_ms"].toString())
+            assertEquals(1, headReads)
+            assertEquals(2, flushes)
+        } finally {
+            running.cancelAndJoin()
+            session.close()
         }
     }
 
@@ -295,10 +340,10 @@ class CallPcmBridgeTest {
         override fun close() { closed.countDown() }
     }
 
-    private class FakeSocket : WebSocket {
+    private class FakeSocket(private val sent: (String) -> Unit = {}) : WebSocket {
         override fun request(): Request = Request.Builder().url("https://localhost/").build()
         override fun queueSize(): Long = 0L
-        override fun send(text: String): Boolean = true
+        override fun send(text: String): Boolean { sent(text); return true }
         override fun send(bytes: ByteString): Boolean = true
         override fun close(code: Int, reason: String?): Boolean = true
         override fun cancel() = Unit

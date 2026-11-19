@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="calls_title">تماس‌های تلفنی هوش مصنوعی</string>
-    <string name="calls_entry_sub">تماس‌های سلولی با صدای بلادرنگ Volcengine</string>
+    <string name="calls_entry_sub">تماس‌های سلولی با صدای بلادرنگ سرویس صوتی انتخاب‌شده</string>
     <string name="calls_action_failed">اقدام تماس ناموفق بود. آمادگی را بررسی و دوباره تلاش کنید.</string>
     <string name="calls_permissions_required">مجوزهای تلفن و اعلان لازم است.</string>
     <string name="calls_ai_active">هوش مصنوعی در حال مدیریت تماس است</string>
@@ -19,7 +19,7 @@
     <string name="calls_sim">سیم‌کارت تماس خروجی</string>
     <string name="calls_default">پیش‌فرض</string>
     <string name="calls_dial">تماس با هوش مصنوعی</string>
-    <string name="calls_call_note">تماس‌ها از سیم‌کارت موجود استفاده می‌کنند. ممکن است هزینه‌های مصرف اپراتور و Volcengine اعمال شود. پیش از شماره‌گیری، هدف و پیام خوش‌آمد را در تنظیمات تعیین کنید.</string>
+    <string name="calls_call_note">تماس‌ها از سیم‌کارت موجود استفاده می‌کنند. ممکن است هزینه‌های مصرف اپراتور و سرویس صوتی انتخاب‌شده اعمال شود. پیش از شماره‌گیری، هدف و پیام خوش‌آمد را در تنظیمات تعیین کنید.</string>
     <string name="calls_prepare">بررسی و آماده‌سازی</string>
     <string name="calls_enable">فعال کردن تماس هوش مصنوعی</string>
     <string name="calls_disable">غیرفعال کردن و بازگرداندن تماس عادی</string>
@@ -35,7 +35,7 @@
     <string name="calls_all_note">شامل شماره‌های خارج از فهرست و تماس‌گیرندگان ناشناس</string>
     <string name="calls_allowlist">شماره‌های ورودی مجاز</string>
     <string name="calls_allowlist_empty">فهرست خالی: بدون پاسخ خودکار مگر اینکه گزینه همه تماس‌گیرندگان فعال باشد</string>
-    <string name="calls_privacy_note">صدای تماس فقط هنگام مدیریت هوش مصنوعی به Volcengine ارسال می‌شود. هیچ ضبط صدایی ذخیره نمی‌شود. متن‌های گفتگو به‌صورت رمزنگاری‌شده روی این گوشی نگهداری می‌شوند؛ هر زمان می‌توانید از صحبت شخصی استفاده کنید.</string>
+    <string name="calls_privacy_note">صدای تماس فقط هنگام مدیریت هوش مصنوعی به سرویس صوتی انتخاب‌شده ارسال می‌شود. هیچ ضبط صدایی ذخیره نمی‌شود. متن‌های گفتگو به‌صورت رمزنگاری‌شده روی این گوشی نگهداری می‌شوند؛ هر زمان می‌توانید از صحبت شخصی استفاده کنید.</string>
     <string name="calls_history_empty">هنوز سابقه تماس هوش مصنوعی وجود ندارد</string>
     <string name="calls_collapse">جمع کردن</string>
     <string name="calls_transcript">نمایش متن گفتگو</string>
@@ -53,7 +53,7 @@
     <string name="calls_greeting">پیام خوش‌آمد</string>
     <string name="calls_instructions">هدف و دستورالعمل‌ها</string>
     <string name="calls_duration">حداکثر ثانیه‌های هوش مصنوعی (۱۵–۶۰۰)</string>
-    <string name="calls_speaker">شناسه صدای Volcengine</string>
+    <string name="calls_speaker">شناسه صدای سرویس صوتی انتخاب‌شده</string>
     <string name="calls_audio_route">مسیر صدای تماس</string>
     <string name="calls_audio_verified">تأیید کردم هر دو طرف می‌توانند تماس‌های هوش مصنوعی را روی این گوشی بشنوند</string>
     <string name="calls_verify_note">ابتدا یک تماس آزمایشی دستی برقرار کنید یا پاسخ دهید و هر دو جهت را تأیید کنید، سپس پاسخ خودکار را فعال کنید.</string>
@@ -89,7 +89,7 @@
     <string name="calls_original_transcript">متن گفتگوی تماس</string>
     <string name="calls_outgoing_title">برقراری تماس</string>
     <string name="calls_rules">قوانین پاسخ‌دهی</string>
-    <string name="calls_setup_credentials">اعتبارنامه‌های صدای بلادرنگ Volcengine را پیکربندی کنید.</string>
+    <string name="calls_setup_credentials">اعتبارنامه‌های صدای بلادرنگ سرویس صوتی انتخاب‌شده را پیکربندی کنید.</string>
     <string name="calls_setup_shell">ابتدا دستیار داخلی Mika را متصل کنید.</string>
     <string name="calls_sim_clear_preferred">پاک کردن سیم‌کارت ترجیحی</string>
     <string name="calls_sim_preferred">سیم‌کارت ترجیحی: %1$s</string>

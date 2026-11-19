@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="call_instructions_title">دستورالعمل‌های تماس</string>
-    <string name="call_instructions_intro">دستورالعمل‌های ذخیره‌شده برای تماس‌های آینده اعمال می‌شوند. هنگام آماده‌سازی یک نشست تماس هوش مصنوعی، همه دستورالعمل‌های فعال به Volcengine ارسال می‌شوند، حتی اگر به تماس پاسخ داده نشود. گفته‌های تماس‌گیرنده آن‌ها را تغییر نمی‌دهد.</string>
+    <string name="call_instructions_intro">دستورالعمل‌های ذخیره‌شده برای تماس‌های آینده اعمال می‌شوند. هنگام آماده‌سازی یک نشست تماس هوش مصنوعی، همه دستورالعمل‌های فعال به سرویس صوتی انتخاب‌شده ارسال می‌شوند، حتی اگر به تماس پاسخ داده نشود. گفته‌های تماس‌گیرنده آن‌ها را تغییر نمی‌دهد.</string>
     <string name="call_instructions_add">افزودن دستورالعمل</string>
     <string name="call_instructions_empty">آنچه دستیار می‌تواند بگوید و آنچه باید بپرسد را اضافه کنید. تغییرات برای تماس بعدی اعمال می‌شوند.</string>
     <string name="call_instructions_heading">عنوان</string>

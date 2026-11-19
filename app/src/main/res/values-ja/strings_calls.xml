@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="calls_title">AI 電話</string>
-    <string name="calls_entry_sub">Volcengine のリアルタイム音声を使った携帯回線での通話</string>
+    <string name="calls_entry_sub">リアルタイム音声による携帯回線での通話</string>
     <string name="calls_action_failed">通話操作に失敗しました。準備状況を確認してから、もう一度お試しください。</string>
     <string name="calls_permissions_required">電話と通知の権限が必要です。</string>
     <string name="calls_ai_active">AI が通話に対応中</string>
@@ -19,7 +19,7 @@
     <string name="calls_sim">発信に使う SIM</string>
     <string name="calls_default">既定</string>
     <string name="calls_dial">AI で発信</string>
-    <string name="calls_call_note">通話には現在の SIM を使います。通信事業者の通話料と Volcengine の利用料がかかる場合があります。発信前に設定で通話の目的とあいさつを入力してください。</string>
+    <string name="calls_call_note">通話には現在の SIM を使います。通信事業者の通話料と選択した音声サービスの利用料がかかる場合があります。発信前に設定で通話の目的とあいさつを入力してください。</string>
     <string name="calls_prepare">確認して準備する</string>
     <string name="calls_enable">AI 電話を有効にする</string>
     <string name="calls_disable">無効にして通常の通話に戻す</string>
@@ -35,7 +35,7 @@
     <string name="calls_all_note">リストにない番号や非通知の着信も含みます</string>
     <string name="calls_allowlist">自動応答を許可する番号</string>
     <string name="calls_allowlist_empty">リストが空の場合、すべての着信への応答を有効にしない限り、自動応答しません</string>
-    <string name="calls_privacy_note">通話音声は AI が対応している間だけ Volcengine に送信されます。録音は保存されません。文字起こしは端末に暗号化して保存されます。いつでも自分で話すことができます。</string>
+    <string name="calls_privacy_note">通話音声は AI が対応している間だけ選択した音声サービスに送信されます。録音は保存されません。文字起こしは端末に暗号化して保存されます。いつでも自分で話すことができます。</string>
     <string name="calls_history_empty">AI 通話の履歴はまだありません</string>
     <string name="calls_collapse">折りたたむ</string>
     <string name="calls_transcript">文字起こしを表示</string>
@@ -53,7 +53,7 @@
     <string name="calls_greeting">あいさつ</string>
     <string name="calls_instructions">通話の目的と指示</string>
     <string name="calls_duration">AI の対応時間の上限（15～600 秒）</string>
-    <string name="calls_speaker">Volcengine 音声 ID</string>
+    <string name="calls_speaker">音声 ID</string>
     <string name="calls_audio_route">通話音声の経路</string>
     <string name="calls_audio_verified">この端末で AI 通話の双方に音声が届くことを確認しました</string>
     <string name="calls_verify_note">まず手動でテスト通話を発信するか、着信に応答して、双方向に音声が届くことを確認してから、自動応答を有効にしてください。</string>
@@ -89,7 +89,7 @@
     <string name="calls_original_transcript">通話の文字起こし</string>
     <string name="calls_outgoing_title">電話をかける</string>
     <string name="calls_rules">応答ルール</string>
-    <string name="calls_setup_credentials">Volcengine のリアルタイム音声認証情報を設定してください。</string>
+    <string name="calls_setup_credentials">選択した音声サービスのリアルタイム音声認証情報を設定してください。</string>
     <string name="calls_setup_shell">先に Mika の内蔵アシスタントに接続してください。</string>
     <string name="calls_sim_clear_preferred">優先 SIM を解除</string>
     <string name="calls_sim_preferred">優先 SIM：%1$s</string>

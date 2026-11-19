@@ -32,6 +32,7 @@ internal class CallPcmBridge(
         counters: CallMediaCounters?,
         onTranscript: (String, String) -> Unit,
         onFinalTranscript: (String, String) -> Unit = { _, _ -> },
+        playedOutputFrames: suspend () -> Long = { 0L },
         awaitFarewellDrain: suspend (CallFarewellFence) -> Boolean = { false },
         commitFarewell: () -> Boolean = { false },
         sendDtmf: suspend (String) -> CallDtmfResult = { CallDtmfResult.rejected("unavailable", it.length) },
@@ -79,7 +80,7 @@ internal class CallPcmBridge(
         }
         try {
             if (!session.setMuted(false) || (greeting.isNotBlank() && !session.sendGreeting(greeting))) {
-                throw CallMediaFailure("火山未接受本次通话的开场白")
+                throw CallMediaFailure("语音服务未接受本次通话的开场白")
             }
             val input = launch(Dispatchers.IO) {
                 val inputPacer = CallInputPacer(session.inputChunkBytes, session.inputSampleRate)
@@ -91,7 +92,7 @@ internal class CallPcmBridge(
                     if (count == 0) continue
                     position += count
                     if (position == frame.size) {
-                        if (!inputPacer.send { session.sendPcm16(frame) }) throw CallMediaFailure("火山音频输入已中断")
+                        if (!inputPacer.send { session.sendPcm16(frame) }) throw CallMediaFailure("语音服务音频输入已中断")
                         counters?.inputAccepted(frame, System.nanoTime())
                         position = 0
                     }
@@ -117,6 +118,8 @@ internal class CallPcmBridge(
                                 farewell.cancelCandidate()
                                 if (farewell.hasPlaybackSinceFlush) {
                                     playbackQueue.invalidate()
+                                    val truncation = session.playbackTruncation?.takeIf { it.hasAudio }
+                                    val heardFrames = if (truncation != null) playedOutputFrames() else 0L
                                     // First release any writer blocked on a full pipe. Flush again under
                                     // the writer lock to remove the last chunk that raced the first flush.
                                     val cleared = interruptPlayback() && withTimeoutOrNull(750) {
@@ -124,6 +127,9 @@ internal class CallPcmBridge(
                                     } == true
                                     if (!cleared) throw CallMediaFailure("通话音频无法及时停止，已交还系统")
                                     farewell.afterPairedFlush()
+                                    if (truncation?.interrupt(heardFrames) == false) {
+                                        throw CallMediaFailure("无法同步已播放的电话音频，已交还系统")
+                                    }
                                 }
                                 // Some providers report a second cancellation after user speech starts.
                                 // Without newly accepted PCM, another flush would only reset the route.
@@ -186,11 +192,11 @@ internal class CallPcmBridge(
                                 }
                             }
                             is VolcRealtimeEvent.Failed -> throw event.error
-                            VolcRealtimeEvent.Closed -> throw CallMediaFailure("火山语音会话已结束，电话由系统处理")
+                            VolcRealtimeEvent.Closed -> throw CallMediaFailure("实时语音会话已结束，电话由系统处理")
                             else -> Unit
                         }
                     }
-                    throw CallMediaFailure("火山语音连接已断开，电话由系统处理")
+                    throw CallMediaFailure("实时语音连接已断开，电话由系统处理")
                 } finally {
                     input.cancel()
                     flushAssistantText()

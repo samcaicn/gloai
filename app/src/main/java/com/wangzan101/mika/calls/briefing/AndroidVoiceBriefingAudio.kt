@@ -179,9 +179,15 @@ internal class AndroidVoiceBriefingAudio(context: Context) : VoiceBriefingAudio 
         if (playbackQueue.offer(pcm) == null) throw VoiceBriefingFailure("语音播放缓冲已满，未拨号")
     }
 
-    override fun interrupt() = synchronized(lock) {
+    override fun interrupt(): Long = synchronized(lock) {
         playbackQueue.invalidate()
-        if (!stopped.get()) player?.let { it.pause(); it.flush(); it.play() }
+        val track = player ?: return@synchronized 0L
+        if (stopped.get()) return@synchronized 0L
+        track.pause()
+        val heardFrames = runCatching { track.playbackHeadPosition.toLong() and 0xffff_ffffL }.getOrDefault(0L)
+        track.flush()
+        track.play()
+        heardFrames
     }
 
     override fun stopImmediately() {

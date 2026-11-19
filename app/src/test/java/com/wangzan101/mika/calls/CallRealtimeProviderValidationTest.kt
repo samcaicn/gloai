@@ -9,7 +9,7 @@ class CallRealtimeProviderValidationTest {
     @Test fun oversizedInstructionsFailLocallyBeforeDialing() = runTest {
         var dials = 0
         val failure = runCatching {
-            val provider = VolcRealtimeProvider()
+            val provider = ProfileRealtimeProvider()
             provider.validate(CallVoiceProfile(), "x".repeat(16_385))
             startCallSession(CallDirection.OUTGOING, connect = { Unit }, awaitCarrier = { dials++ })
         }.exceptionOrNull()
@@ -18,7 +18,7 @@ class CallRealtimeProviderValidationTest {
     }
 
     @Test fun invalidSpeakerAndModelFailWithoutOpeningAConnection() {
-        val provider = VolcRealtimeProvider()
+        val provider = ProfileRealtimeProvider()
         for (profile in listOf(CallVoiceProfile(speaker = ""), CallVoiceProfile(model = "bad model"))) {
             assertTrue(runCatching { provider.validate(profile, "hello") }.exceptionOrNull() is IllegalArgumentException)
         }

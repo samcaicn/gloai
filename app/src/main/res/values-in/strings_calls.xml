@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="calls_title">Panggilan telepon AI</string>
-    <string name="calls_entry_sub">Panggilan seluler dengan suara real-time Volcengine</string>
+    <string name="calls_entry_sub">Panggilan seluler dengan suara real-time layanan suara yang dipilih</string>
     <string name="calls_action_failed">Tindakan pada panggilan gagal. Periksa kesiapan lalu coba lagi.</string>
     <string name="calls_permissions_required">Izin telepon dan notifikasi diperlukan.</string>
     <string name="calls_ai_active">AI sedang menangani panggilan</string>
@@ -19,7 +19,7 @@
     <string name="calls_sim">SIM untuk panggilan keluar</string>
     <string name="calls_default">Bawaan</string>
     <string name="calls_dial">Telepon dengan AI</string>
-    <string name="calls_call_note">Panggilan memakai SIM yang ada. Biaya dari operator dan biaya penggunaan Volcengine mungkin berlaku. Atur tujuan dan salam pembuka di Setelan sebelum menelepon.</string>
+    <string name="calls_call_note">Panggilan memakai SIM yang ada. Biaya dari operator dan biaya penggunaan layanan suara yang dipilih mungkin berlaku. Atur tujuan dan salam pembuka di Setelan sebelum menelepon.</string>
     <string name="calls_prepare">Periksa dan siapkan</string>
     <string name="calls_enable">Aktifkan panggilan AI</string>
     <string name="calls_disable">Nonaktifkan dan pulihkan panggilan biasa</string>
@@ -35,7 +35,7 @@
     <string name="calls_all_note">Termasuk nomor di luar daftar dan penelepon tanpa nomor yang ditampilkan</string>
     <string name="calls_allowlist">Nomor masuk yang boleh dijawab otomatis</string>
     <string name="calls_allowlist_empty">Daftar kosong: tidak ada panggilan yang dijawab otomatis kecuali opsi untuk semua panggilan diaktifkan</string>
-    <string name="calls_privacy_note">Audio panggilan hanya dikirim ke Volcengine selama AI menangani panggilan. Rekaman audio tidak disimpan. Transkrip disimpan secara terenkripsi di ponsel ini; Anda dapat mengambil alih kapan saja.</string>
+    <string name="calls_privacy_note">Audio panggilan hanya dikirim ke layanan suara yang dipilih selama AI menangani panggilan. Rekaman audio tidak disimpan. Transkrip disimpan secara terenkripsi di ponsel ini; Anda dapat mengambil alih kapan saja.</string>
     <string name="calls_history_empty">Belum ada riwayat panggilan AI</string>
     <string name="calls_collapse">Ciutkan</string>
     <string name="calls_transcript">Tampilkan transkrip</string>
@@ -53,7 +53,7 @@
     <string name="calls_greeting">Salam pembuka</string>
     <string name="calls_instructions">Tujuan dan petunjuk</string>
     <string name="calls_duration">Durasi maksimum AI (15–600 detik)</string>
-    <string name="calls_speaker">ID suara Volcengine</string>
+    <string name="calls_speaker">ID suara layanan suara yang dipilih</string>
     <string name="calls_audio_route">Rute audio panggilan</string>
     <string name="calls_audio_verified">Saya sudah memastikan kedua pihak dapat mendengar audio saat memakai panggilan AI di ponsel ini</string>
     <string name="calls_verify_note">Lakukan atau jawab satu panggilan uji secara manual terlebih dahulu dan pastikan audio terdengar di kedua arah. Setelah itu, aktifkan jawab otomatis.</string>
@@ -89,7 +89,7 @@
     <string name="calls_original_transcript">Transkrip panggilan</string>
     <string name="calls_outgoing_title">Buat panggilan</string>
     <string name="calls_rules">Aturan menjawab</string>
-    <string name="calls_setup_credentials">Konfigurasikan kredensial suara real-time Volcengine.</string>
+    <string name="calls_setup_credentials">Konfigurasikan kredensial suara real-time layanan suara yang dipilih.</string>
     <string name="calls_setup_shell">Hubungkan asisten bawaan Mika terlebih dahulu.</string>
     <string name="calls_sim_clear_preferred">Hapus SIM pilihan</string>
     <string name="calls_sim_preferred">SIM pilihan: %1$s</string>
