@@ -435,12 +435,14 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val SPEED_FLAGS = "speed_flags"
         /**
          * 提速开关默认值的升级,按先后各做一次(键记下做过没有):v2 打开分级读屏、连续操作、按需看图;
-         * v3 打开经验回放(学习改看结局判定之后路线才记得下来);v4 打开大小模型分工(没配轻量模型时空转,配了就省钱)。
+         * v3 打开经验回放(学习改看结局判定之后路线才记得下来);v4 打开大小模型分工(没配轻量模型时空转,配了就省钱);
+         * v5 打开界面元素压成表(重复字段首屏压成列,省 token)。
          */
         private val SPEED_UPGRADES: List<Pair<String, (SpeedFlags) -> SpeedFlags>> = listOf(
             "speed_defaults_applied_v2" to { f -> f.copy(inlineScreen = true, batchSteps = true, adaptiveVision = true) },
             "speed_defaults_applied_v3" to { f -> f.copy(replay = true) },
             "speed_defaults_applied_v4" to { f -> f.copy(lightSteps = true) },
+            "speed_defaults_applied_v5" to { f -> f.copy(tablesAtBirth = true) },
         )
         private const val PARALLEL_MAX = "parallel_max"
         private const val TASK_STEP_LIMIT = "task_step_limit"
