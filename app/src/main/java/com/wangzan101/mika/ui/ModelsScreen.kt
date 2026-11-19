@@ -214,7 +214,10 @@ fun RolePickerContent(ui: ModelSetupUi, role: ModelRole, actions: RolePickerActi
     val total = groups.sumOf { it.second.size }
     val q = filter.trim()
     Page(titleOverride ?: ModelsCopy.roleName(role), onBack) {
-        Text(hintOverride ?: ModelsCopy.roleHint(role), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
+        val hint = hintOverride ?: ModelsCopy.roleHint(role)
+        if (hint.isNotEmpty()) {
+            Text(hint, Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
+        }
         val fixed = fixedChoices(role)
         if (fixed.isNotEmpty()) {
             GroupCard {
@@ -876,7 +879,7 @@ object ModelsCopy {
         ModelRole.Light -> tr(R.string.role_light_what)
     }
 
-    fun roleLabel(role: ModelRole) = "${roleName(role)} · ${roleWhat(role)}"
+    fun roleLabel(role: ModelRole) = roleName(role)
 
     /** 选择页顶上的说明。 */
     fun roleHint(role: ModelRole) = when (role) {

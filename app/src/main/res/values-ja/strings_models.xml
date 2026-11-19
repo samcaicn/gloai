@@ -63,9 +63,9 @@
     <string name="role_main_what">考えて、実行する</string>
     <string name="role_vision_what">スクリーンショットを見る</string>
     <string name="role_light_what">確認やメモなどの小さな仕事</string>
-    <string name="role_main_hint">考えることも操作も、すべて担当します。タスクを確実にこなせるよう、ツール呼び出しに対応したモデルを選んでください。</string>
-    <string name="role_vision_hint">画面を読み取るときにスクリーンショットを受け取ります。複雑な画面でもより正確です。省略もできます。ない場合、Mika は画面をテキストで読み取ります。</string>
-    <string name="role_light_hint">タスクが終わったかの確認や、メモリの整理などの小さな仕事を担当します。安くて速いモデルが最適です。</string>
+    <string name="role_main_hint">タスクを確実にこなせるよう、ツール呼び出しに対応したモデルを選んでください。</string>
+    <string name="role_vision_hint">省略もできます。ない場合、Mika は画面をテキストで読み取ります。</string>
+    <string name="role_light_hint">安くて速いモデルが最適です。</string>
     <string name="models_delete_title">「%1$s」を削除しますか？</string>
     <string name="models_delete_body">"API キーも削除されます。"</string>
     <string name="models_delete_unused">どの役割にも使われていません。</string>
@@ -174,7 +174,7 @@
     <!-- Settings > Models: speech-to-text usage and its picker page -->
     <string name="role_speech">音声文字変換</string>
     <string name="role_speech_what">長押しして話すときに使う</string>
-    <string name="speech_hint">スマホ内蔵の音声認識、話しながら文字にする音声サービス、話し終えてから変換するプロバイダーのモデルから選べます。オンラインのサービスはプロバイダーの利用枠を使います。</string>
+    <string name="speech_hint">オンラインのサービスはプロバイダーの利用枠を使います。</string>
     <string name="speech_system">スマホ内蔵</string>
     <string name="speech_system_offline">オフラインで使えます</string>
     <string name="speech_system_online">インターネット接続が必要</string>
@@ -199,12 +199,10 @@
     <string name="main_fallback_what">Takes over when the main model is unavailable</string>
     <string name="main_fallback_pick">Pick a fallback model</string>
     <string name="main_fallback_clear">No fallback</string>
-    <string name="main_fallback_hint">The main model runs first. If it runs out of quota or fails, the fallback takes over automatically.</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
     <string name="role_voice">Voice model</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
-    <string name="voice_hint">Mika can read answers aloud and say a line with your own speech model. Text is sent to the service you pick.</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
     <string name="voice_provider">Service</string>

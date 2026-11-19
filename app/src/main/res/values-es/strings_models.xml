@@ -64,9 +64,9 @@
     <string name="role_main_what">Piensa y actúa</string>
     <string name="role_vision_what">Mira las capturas de pantalla</string>
     <string name="role_light_what">Tareas pequeñas como comprobaciones y notas</string>
-    <string name="role_main_hint">Hace todo el razonamiento y las acciones. Elige un modelo con llamada a herramientas para que las tareas vayan con fiabilidad.</string>
-    <string name="role_vision_hint">Recibe capturas de pantalla al leer la pantalla; más preciso en pantallas complejas. Opcional: sin él, Mika lee la pantalla como texto.</string>
-    <string name="role_light_hint">Se encarga de tareas pequeñas, como comprobar si una tarea está hecha u ordenar la memoria. Lo mejor es uno barato y rápido.</string>
+    <string name="role_main_hint">Elige un modelo con llamada a herramientas para que las tareas vayan con fiabilidad.</string>
+    <string name="role_vision_hint">Opcional: sin él, Mika lee la pantalla como texto.</string>
+    <string name="role_light_hint">Lo mejor es uno barato y rápido.</string>
     <string name="models_delete_title">¿Eliminar “%1$s”?</string>
     <string name="models_delete_body">"También se eliminará su clave de API. "</string>
     <string name="models_delete_unused">No se usa para ningún rol.</string>
@@ -183,7 +183,7 @@
     <!-- Settings > Models: speech-to-text usage and its picker page -->
     <string name="role_speech">Voz a texto</string>
     <string name="role_speech_what">Se usa cuando mantienes pulsado para hablar</string>
-    <string name="speech_hint">Elige el reconocimiento integrado del teléfono, un servicio de voz en directo o un modelo de un proveedor que transcribe cuando terminas. Los servicios en línea usan tu cuota del proveedor.</string>
+    <string name="speech_hint">Los servicios en línea usan tu cuota del proveedor.</string>
     <string name="speech_system">Integrado en el teléfono</string>
     <string name="speech_system_offline">Funciona sin conexión</string>
     <string name="speech_system_online">Necesita internet</string>
@@ -208,12 +208,10 @@
     <string name="main_fallback_what">Takes over when the main model is unavailable</string>
     <string name="main_fallback_pick">Pick a fallback model</string>
     <string name="main_fallback_clear">No fallback</string>
-    <string name="main_fallback_hint">The main model runs first. If it runs out of quota or fails, the fallback takes over automatically.</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
     <string name="role_voice">Voice model</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
-    <string name="voice_hint">Mika can read answers aloud and say a line with your own speech model. Text is sent to the service you pick.</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
     <string name="voice_provider">Service</string>

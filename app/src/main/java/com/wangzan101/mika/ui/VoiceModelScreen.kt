@@ -59,7 +59,6 @@ fun VoiceModelScreen(store: ProviderStore, onBack: () -> Unit) {
     DisposableEffect(Unit) { onDispose { player.stop() } }
 
     Page(tr(R.string.role_voice), onBack) {
-        Text(tr(R.string.voice_hint), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
         GroupCard {
             ListRow(
                 null, tr(R.string.voice_enable), tr(R.string.voice_enable_note), first = true,

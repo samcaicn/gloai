@@ -63,16 +63,15 @@
     <string name="role_main_what">思考和办事</string>
     <string name="role_vision_what">读屏时看截图</string>
     <string name="role_light_what">判断、记东西这类小事</string>
-    <string name="role_main_hint">思考和办事都靠它。选支持工具调用的模型，办事才靠得住。</string>
+    <string name="role_main_hint">选支持工具调用的模型，办事才靠得住。</string>
     <string name="main_fallback_name">备援模型 %1$d</string>
     <string name="main_fallback_what">主模型不能用时接手</string>
     <string name="main_fallback_pick">选一个备援模型</string>
     <string name="main_fallback_clear">不设备援</string>
-    <string name="main_fallback_hint">平常用主模型;它额度用完或出错时,自动换备援模型接手。</string>
     <string name="main_fallback_failed">备援模型设置失败</string>
     <string name="main_fallback_is_main">这个模型就是当前主模型，不能同时当备援</string>
-    <string name="role_vision_hint">读屏时把截图给它看，界面复杂时更准。不选也能用，只靠文字读屏。</string>
-    <string name="role_light_hint">判断任务有没有办完、整理记忆这类小事用它。选便宜、快的更合适。</string>
+    <string name="role_vision_hint">不选也能用，只靠文字读屏。</string>
+    <string name="role_light_hint">选便宜、快的更合适。</string>
     <string name="models_delete_title">删除「%1$s」？</string>
     <string name="models_delete_body">这家的 API Key 会一起删掉。</string>
     <string name="models_delete_unused">它没在给任何用途干活。</string>
@@ -182,7 +181,7 @@
     <!-- 设置 › 模型:语音转文字这个用途和它的选择页 -->
     <string name="role_speech">语音转文字</string>
     <string name="role_speech_what">按住说话时用</string>
-    <string name="speech_hint">可使用手机自带识别、边说边转的语音服务，或说完再转的服务商模型；在线服务使用你的服务商额度。</string>
+    <string name="speech_hint">在线服务使用你的服务商额度。</string>
     <string name="speech_system">手机自带</string>
     <string name="speech_system_offline">可离线</string>
     <string name="speech_system_online">需联网</string>
@@ -205,7 +204,6 @@
     <string name="models_daily_token_budget_save_failed">预算保存失败，原设置未变。</string>
     <string name="role_voice">声音模型</string>
     <string name="role_voice_what">让 Mika 说话、朗读回答</string>
-    <string name="voice_hint">Mika 可以用你自己的语音模型朗读回答、说一句话。文字会发给你选的服务商。</string>
     <string name="voice_enable">允许 Mika 说话</string>
     <string name="voice_enable_note">只有点「朗读」时才会合成；自动朗读另开</string>
     <string name="voice_provider">服务商</string>

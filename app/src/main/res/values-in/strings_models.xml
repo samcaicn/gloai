@@ -63,9 +63,9 @@
     <string name="role_main_what">Berpikir dan bertindak</string>
     <string name="role_vision_what">Melihat tangkapan layar</string>
     <string name="role_light_what">Tugas kecil seperti pemeriksaan dan catatan</string>
-    <string name="role_main_hint">Melakukan semua pemikiran dan tindakan. Pilih model dengan pemanggilan alat agar tugas berjalan andal.</string>
-    <string name="role_vision_hint">Menerima tangkapan layar saat membaca layar; lebih akurat di layar yang rumit. Opsional: tanpanya Mika membaca layar sebagai teks.</string>
-    <string name="role_light_hint">Menangani tugas kecil seperti memeriksa apakah tugas sudah selesai dan merapikan memori. Yang murah dan cepat paling cocok.</string>
+    <string name="role_main_hint">Pilih model dengan pemanggilan alat agar tugas berjalan andal.</string>
+    <string name="role_vision_hint">Opsional: tanpanya Mika membaca layar sebagai teks.</string>
+    <string name="role_light_hint">Yang murah dan cepat paling cocok.</string>
     <string name="models_delete_title">Hapus “%1$s”?</string>
     <string name="models_delete_body">"Kunci API-nya juga akan dihapus. "</string>
     <string name="models_delete_unused">Tidak dipakai untuk peran apa pun.</string>
@@ -172,7 +172,7 @@
 
     <string name="role_speech">Ucapan ke teks</string>
     <string name="role_speech_what">Dipakai saat Anda menahan untuk bicara</string>
-    <string name="speech_hint">Pilih pengenalan bawaan ponsel, layanan suara langsung, atau model penyedia yang mentranskripsi setelah Anda selesai. Layanan online memakai kuota penyedia Anda.</string>
+    <string name="speech_hint">Layanan online memakai kuota penyedia Anda.</string>
     <string name="speech_system">Bawaan ponsel</string>
     <string name="speech_system_offline">Bisa offline</string>
     <string name="speech_system_online">Perlu internet</string>
@@ -197,12 +197,10 @@
     <string name="main_fallback_what">Takes over when the main model is unavailable</string>
     <string name="main_fallback_pick">Pick a fallback model</string>
     <string name="main_fallback_clear">No fallback</string>
-    <string name="main_fallback_hint">The main model runs first. If it runs out of quota or fails, the fallback takes over automatically.</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
     <string name="role_voice">Voice model</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
-    <string name="voice_hint">Mika can read answers aloud and say a line with your own speech model. Text is sent to the service you pick.</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
     <string name="voice_provider">Service</string>

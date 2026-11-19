@@ -64,9 +64,9 @@
     <string name="role_main_what">فکر کردن و انجام کار</string>
     <string name="role_vision_what">بررسی عکس‌های صفحه</string>
     <string name="role_light_what">کارهای کوچک مانند بررسی و یادداشت</string>
-    <string name="role_main_hint">فکر کردن و انجام کارها را بر عهده دارد. مدلی با قابلیت فراخوانی ابزار انتخاب کنید تا کارها با اطمینان انجام شوند.</string>
-    <string name="role_vision_hint">هنگام خواندن صفحه، عکس‌های صفحه را دریافت می‌کند و در صفحات پیچیده دقیق‌تر است. اختیاری است؛ بدون آن میکا صفحه را به‌صورت متن می‌خواند.</string>
-    <string name="role_light_hint">کارهای کوچکی مانند بررسی پایان کار و مرتب کردن حافظه را انجام می‌دهد. مدل ارزان و سریع مناسب‌تر است.</string>
+    <string name="role_main_hint">مدلی با قابلیت فراخوانی ابزار انتخاب کنید تا کارها با اطمینان انجام شوند.</string>
+    <string name="role_vision_hint">اختیاری است؛ بدون آن میکا صفحه را به‌صورت متن می‌خواند.</string>
+    <string name="role_light_hint">مدل ارزان و سریع مناسب‌تر است.</string>
     <string name="models_delete_title">«%1$s» حذف شود؟</string>
     <string name="models_delete_body">"کلید API آن نیز حذف می‌شود. "</string>
     <string name="models_delete_unused">برای هیچ نقشی استفاده نمی‌شود.</string>
@@ -179,7 +179,7 @@
     <!-- Settings > Models: speech-to-text usage and its picker page -->
     <string name="role_speech">گفتار به متن</string>
     <string name="role_speech_what">هنگام نگه داشتن دکمهٔ صحبت استفاده می‌شود</string>
-    <string name="speech_hint">تشخیص داخلی گوشی، یک سرویس گفتار زنده یا مدل ارائه‌دهنده‌ای را انتخاب کنید که پس از پایان صحبت متن را پیاده می‌کند. سرویس‌های آنلاین از سهمیهٔ ارائه‌دهنده استفاده می‌کنند.</string>
+    <string name="speech_hint">سرویس‌های آنلاین از سهمیهٔ ارائه‌دهنده استفاده می‌کنند.</string>
     <string name="speech_system">داخلی گوشی</string>
     <string name="speech_system_offline">آفلاین کار می‌کند</string>
     <string name="speech_system_online">به اینترنت نیاز دارد</string>
@@ -204,12 +204,10 @@
     <string name="main_fallback_what">Takes over when the main model is unavailable</string>
     <string name="main_fallback_pick">Pick a fallback model</string>
     <string name="main_fallback_clear">No fallback</string>
-    <string name="main_fallback_hint">The main model runs first. If it runs out of quota or fails, the fallback takes over automatically.</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
     <string name="role_voice">Voice model</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
-    <string name="voice_hint">Mika can read answers aloud and say a line with your own speech model. Text is sent to the service you pick.</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
     <string name="voice_provider">Service</string>

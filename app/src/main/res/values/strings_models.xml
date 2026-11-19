@@ -64,16 +64,15 @@
     <string name="role_main_what">Thinking and doing</string>
     <string name="role_vision_what">Looks at screenshots</string>
     <string name="role_light_what">Small jobs like checks and notes</string>
-    <string name="role_main_hint">Does all the thinking and acting. Pick a model with tool calling so tasks go reliably.</string>
+    <string name="role_main_hint">Pick a model with tool calling so tasks go reliably.</string>
     <string name="main_fallback_name">Fallback model %1$d</string>
     <string name="main_fallback_what">Takes over when the main model is unavailable</string>
     <string name="main_fallback_pick">Pick a fallback model</string>
     <string name="main_fallback_clear">No fallback</string>
-    <string name="main_fallback_hint">The main model runs first. If it runs out of quota or fails, the fallback takes over automatically.</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
-    <string name="role_vision_hint">Gets screenshots when reading the screen; more accurate on complex screens. Optional: without it Mika reads the screen as text.</string>
-    <string name="role_light_hint">Handles small jobs like checking whether a task is done and tidying memory. Cheap and fast is best.</string>
+    <string name="role_vision_hint">Optional: without it Mika reads the screen as text.</string>
+    <string name="role_light_hint">Cheap and fast is best.</string>
     <string name="models_delete_title">Delete “%1$s”?</string>
     <string name="models_delete_body">"Its API key will be deleted too. "</string>
     <string name="models_delete_unused">It isn’t used for any role.</string>
@@ -186,7 +185,7 @@
     <!-- Settings > Models: speech-to-text usage and its picker page -->
     <string name="role_speech">Speech to text</string>
     <string name="role_speech_what">Used while you hold to talk</string>
-    <string name="speech_hint">Choose the phone’s built-in recognition, a live speech service, or a provider model that transcribes after you finish. Online services use your provider quota.</string>
+    <string name="speech_hint">Online services use your provider quota.</string>
     <string name="speech_system">Built into the phone</string>
     <string name="speech_system_offline">Works offline</string>
     <string name="speech_system_online">Needs internet</string>
@@ -209,7 +208,6 @@
     <string name="models_daily_token_budget_save_failed">The budget could not be saved. The previous setting is still active.</string>
     <string name="role_voice">Voice model</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
-    <string name="voice_hint">Mika can read answers aloud and say a line with your own speech model. Text is sent to the service you pick.</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
     <string name="voice_provider">Service</string>

@@ -64,9 +64,9 @@
     <string name="role_main_what">Pensa e age</string>
     <string name="role_vision_what">Olha as capturas de tela</string>
     <string name="role_light_what">Tarefas pequenas, como verificações e anotações</string>
-    <string name="role_main_hint">Faz todo o raciocínio e todas as ações. Escolha um modelo com chamada de ferramentas para as tarefas rodarem com segurança.</string>
-    <string name="role_vision_hint">Recebe as capturas de tela ao ler a tela; mais preciso em telas complexas. Opcional: sem ele, o Mika lê a tela como texto.</string>
-    <string name="role_light_hint">Cuida de tarefas pequenas, como verificar se uma tarefa foi concluída e organizar a memória. O ideal é barato e rápido.</string>
+    <string name="role_main_hint">Escolha um modelo com chamada de ferramentas para as tarefas rodarem com segurança.</string>
+    <string name="role_vision_hint">Opcional: sem ele, o Mika lê a tela como texto.</string>
+    <string name="role_light_hint">O ideal é barato e rápido.</string>
     <string name="models_delete_title">Excluir “%1$s”?</string>
     <string name="models_delete_body">"A chave de API dele também será excluída. "</string>
     <string name="models_delete_unused">Ele não é usado em nenhuma função.</string>
@@ -181,7 +181,7 @@
 
     <string name="role_speech">Fala para texto</string>
     <string name="role_speech_what">Usado quando você segura para falar</string>
-    <string name="speech_hint">Escolha o reconhecimento integrado do celular, um serviço de voz ao vivo ou um modelo de um provedor que transcreve quando você termina. Os serviços on-line usam a cota do seu provedor.</string>
+    <string name="speech_hint">Os serviços on-line usam a cota do seu provedor.</string>
     <string name="speech_system">Integrado ao celular</string>
     <string name="speech_system_offline">Funciona offline</string>
     <string name="speech_system_online">Precisa de internet</string>
@@ -206,12 +206,10 @@
     <string name="main_fallback_what">Takes over when the main model is unavailable</string>
     <string name="main_fallback_pick">Pick a fallback model</string>
     <string name="main_fallback_clear">No fallback</string>
-    <string name="main_fallback_hint">The main model runs first. If it runs out of quota or fails, the fallback takes over automatically.</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
     <string name="role_voice">Voice model</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
-    <string name="voice_hint">Mika can read answers aloud and say a line with your own speech model. Text is sent to the service you pick.</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
     <string name="voice_provider">Service</string>

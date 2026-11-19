@@ -219,7 +219,7 @@ fun ModelSetupScreen(
                 ),
                 onBack = { pickingFallback = null },
                 titleOverride = stringResource(R.string.main_fallback_name, slot + 1),
-                hintOverride = stringResource(R.string.main_fallback_hint),
+                hintOverride = "",
                 pickedOverride = { pid, model ->
                     ui.roles.mainFallbacks.getOrNull(slot)?.let { id -> ui.configs.firstOrNull { it.id == id } }
                         ?.let { it.providerId == pid && it.model == model } == true

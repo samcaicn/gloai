@@ -63,16 +63,15 @@
     <string name="role_main_what">思考和辦事</string>
     <string name="role_vision_what">讀取螢幕時看截圖</string>
     <string name="role_light_what">判斷、記東西這類小事</string>
-    <string name="role_main_hint">思考和辦事都靠它。選支援工具呼叫的模型，辦事才靠得住。</string>
+    <string name="role_main_hint">選支援工具呼叫的模型，辦事才靠得住。</string>
     <string name="main_fallback_name">備援模型 %1$d</string>
     <string name="main_fallback_what">主模型不能用時接手</string>
     <string name="main_fallback_pick">選一個備援模型</string>
     <string name="main_fallback_clear">不設定備援</string>
-    <string name="main_fallback_hint">平常用主模型;它額度用完或出錯時,自動換備援模型接手。</string>
     <string name="main_fallback_failed">備援模型設定失敗</string>
     <string name="main_fallback_is_main">這個模型就是目前主模型，不能同時當備援</string>
-    <string name="role_vision_hint">讀取螢幕時把截圖給它看，介面複雜時更準。不選也能用，只靠文字讀取螢幕。</string>
-    <string name="role_light_hint">判斷任務有沒有辦完、整理記憶這類小事用它。選便宜、快的更合適。</string>
+    <string name="role_vision_hint">不選也能用，只靠文字讀取螢幕。</string>
+    <string name="role_light_hint">選便宜、快的更合適。</string>
     <string name="models_delete_title">刪除「%1$s」？</string>
     <string name="models_delete_body">這家的 API Key 會一起刪掉。</string>
     <string name="models_delete_unused">它沒在給任何用途幹活。</string>
@@ -181,7 +180,7 @@
     <!-- 設定 › 模型：語音轉文字這個用途和它的選擇頁 -->
     <string name="role_speech">語音轉文字</string>
     <string name="role_speech_what">按住說話時用</string>
-    <string name="speech_hint">可使用手機自帶識別、邊說邊轉的語音服務，或說完再轉的服務商模型；線上服務使用你的服務商額度。</string>
+    <string name="speech_hint">線上服務使用你的服務商額度。</string>
     <string name="speech_system">手機自帶</string>
     <string name="speech_system_offline">可離線</string>
     <string name="speech_system_online">需連網</string>
@@ -204,7 +203,6 @@
     <string name="models_daily_token_budget_save_failed">預算儲存失敗，原設定未變。</string>
     <string name="role_voice">Voice model</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
-    <string name="voice_hint">Mika can read answers aloud and say a line with your own speech model. Text is sent to the service you pick.</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
     <string name="voice_provider">Service</string>
