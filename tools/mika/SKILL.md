@@ -37,7 +37,7 @@ notification contents. A clear report does not prove delivery; test with a real 
 | `device_selection`, `device_offline` | Run `devices`, choose `--device SERIAL`; replug or reconnect if offline. |
 | `stale_connection`, `credentials` | Phone rebooted or token changed: rerun `connect`. |
 | `connection_info` | Mika's connection information could not be read or is invalid: ask the user to unlock the phone and open Mika once, then rerun `connect`. |
-| `incompatible_api` | Update the Mika APK on the phone. |
+| `incompatible_api` | The phone app is older than the option needs. The message names the missing capability and the phone's version. Update the Mika APK on the phone, or rerun without the gated option (for example drop `--request-id` and the task still runs, without recovery). |
 | `adb` / `connection` errors, phone locked | Ask the user to unlock the phone and open Mika, then rerun `connect`. |
 
 ## Delegate and follow the task
@@ -52,7 +52,7 @@ mika --device SERIAL task status TASK_ID --json
 
 For a task that needs a file on this computer, add `--attach PATH` to `task run` for each user-selected input (up to 9 files totalling 200 MiB). When a task returns `files`, save the requested result with `mika task download TASK_ID FILE_ID --output NEW_PATH` using the same phone connection. The file ID comes from that task’s status. A path in answer text alone is not a downloadable result.
 
-For a recoverable submission, generate and save a lowercase UUID before the call and pass `--request-id UUID`. On a compatible phone this is also the task ID. The CLI generates one automatically when the phone advertises `task_recovery`.
+For a recoverable submission, generate and save a lowercase UUID before the call and pass `--request-id UUID`. On a compatible phone this is also the task ID. The CLI generates one automatically when the phone advertises `task_recovery`. If the phone answers `incompatible_api` for `--request-id`, rerun without it: the task still runs, only recovery after a lost receipt is unavailable.
 
 If the task is stuck, failed, or behaved unexpectedly, export the redacted run record before guessing. It is the same event stream as the phone timeline, without screenshot files. `partial: true` means the run is still in progress. An unknown id is an error, not an empty record. Use `task_id`, `conversation_id` and `run_id` in the header to line it up with `task status`.
 

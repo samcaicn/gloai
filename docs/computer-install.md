@@ -85,7 +85,7 @@ mika --url http://PHONE:8765 --token-file /path/to/private-token-file doctor --j
 
 | 现象 | 处理 |
 | --- | --- |
-| `incompatible_api` | 手机上的 APK 太旧，不带任务 API v1，更新 APK。 |
+| `incompatible_api` | 手机 APK 太旧。报错会写明手机版本与缺失的能力：更新 APK，或按报错去掉对应参数重试（如 `--request-id`，去掉后任务照常提交，只是丢失断线找回）。 |
 | `stale_connection` | 手机重启过，重新运行 `connect`。 |
 | `device_selection` | 不止一台手机在线，用 `mika devices` 查到序列号后加 `--device SERIAL`。 |
 | `connection_info` | 读不到 Mika 的连接信息（手机锁着、还没打开过 Mika 等）：解锁手机、打开一次 Mika 后再运行 `connect`。 |

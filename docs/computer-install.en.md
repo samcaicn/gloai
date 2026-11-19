@@ -85,7 +85,7 @@ mika --url http://PHONE:8765 --token-file /path/to/private-token-file doctor --j
 
 | Symptom | What to do |
 | --- | --- |
-| `incompatible_api` | The APK on the phone is too old to include task API v1; update it. |
+| `incompatible_api` | The APK on the phone is too old. The message names the phone version and the missing capability: update the APK, or rerun without the gated option (for example `--request-id`; the task still runs, only recovery after a lost receipt is unavailable). |
 | `stale_connection` | The phone has rebooted; run `connect` again. |
 | `device_selection` | More than one phone is online; find the serial with `mika devices` and add `--device SERIAL`. |
 | `connection_info` | Mika's connection information could not be read (the phone is locked, Mika hasn't been opened yet, and so on): unlock the phone, open Mika once, then run `connect` again. |
