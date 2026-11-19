@@ -77,8 +77,15 @@ fun VoiceModelScreen(store: ProviderStore, onBack: () -> Unit) {
                         subtitle = p.baseUrl,
                         onClick = {
                             val protocol = if (p.kind == ProviderConfig.Kind.Gemini) TtsProtocol.GeminiTts else TtsProtocol.OpenAiSpeech
-                            val speedValue = speed.toFloatOrNull()?.coerceIn(0.25f, 4.0f) ?: 1.0f
-                            settings.setChoice(VoiceChoice(p.id, model, protocol, voice, speedValue))
+                            val switchingProvider = state.choice?.providerId != null && state.choice?.providerId != p.id
+                            val nextModel = if (switchingProvider) "" else model
+                            val nextVoice = if (switchingProvider) "" else voice
+                            val nextSpeed = if (switchingProvider) "1.0" else speed
+                            val speedValue = nextSpeed.toFloatOrNull()?.coerceIn(0.25f, 4.0f) ?: 1.0f
+                            model = nextModel
+                            voice = nextVoice
+                            speed = nextSpeed
+                            settings.setChoice(VoiceChoice(p.id, nextModel, protocol, nextVoice, speedValue))
                             test = null
                         },
                     )
