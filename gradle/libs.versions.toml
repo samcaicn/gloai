@@ -18,6 +18,7 @@ conscrypt = "2.7.0"
 commonmark = "0.30.1"
 mlkitTextRecognition = "16.0.1"
 zxing = "3.5.3"
+shizuku = "13.1.5"
 
 [libraries]
 protobuf-lite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf" }
@@ -49,6 +50,8 @@ mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version
 mlkit-text-recognition-chinese = { module = "com.google.mlkit:text-recognition-chinese", version.ref = "mlkitTextRecognition" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 
 [plugins]
 protobuf = { id = "com.google.protobuf", version = "0.9.5" }

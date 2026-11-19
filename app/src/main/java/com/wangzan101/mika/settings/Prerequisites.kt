@@ -3,6 +3,8 @@ package com.wangzan101.mika.settings
 import com.wangzan101.mika.core.shell.BuiltinShellStatus
 import com.wangzan101.mika.core.shell.HelperRestart
 import com.wangzan101.mika.core.shell.PairingChannelHealth
+import com.wangzan101.mika.core.shell.ShellTransport
+import com.wangzan101.mika.core.shell.ShizukuPlatformState
 
 enum class AccessibilityState {
     Off,
@@ -45,6 +47,14 @@ data class SystemStatus(
     val helperRestart: HelperRestart = HelperRestart.None,
     /** 开机后用户还没解锁过一次([android.os.UserManager.isUserUnlocked] 为假):无障碍服务这时本来就绑不上。 */
     val userLocked: Boolean = false,
+    /** 当前选择的助手启动通道。 */
+    val shellTransport: ShellTransport = ShellTransport.Auto,
+    /** Shizuku 的安装、运行和授权状态。 */
+    val shizuku: ShizukuPlatformState = ShizukuPlatformState.Unavailable,
+    /** 无线调试是否已配对;为空表示沿用 [builtinShell]。 */
+    val wirelessPaired: Boolean? = null,
+    /** 此刻是否优先经 Shizuku 启动助手。 */
+    val shizukuStart: Boolean = false,
 )
 
 fun SystemStatus.notificationOverview() = NotificationOverview.of(

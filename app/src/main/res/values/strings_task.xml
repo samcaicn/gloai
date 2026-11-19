@@ -93,4 +93,5 @@
     <string name="task_trigger_time_limit">The scheduled task ran longer than %1$d minutes, so it stopped.</string>
     <string name="trigger_failed_streak">Scheduled task failed %1$d times in a row</string>
     <string name="trigger_failed_streak_hint">You can pause or change this plan on the Scheduled tasks page.</string>
+    <string name="task_no_phone_helper_shizuku" translatable="false">Phone control isn’t ready. Start Shizuku and grant Mika permission (or check Phone control in Settings). Web and file tasks aren’t affected.</string>
 </resources>

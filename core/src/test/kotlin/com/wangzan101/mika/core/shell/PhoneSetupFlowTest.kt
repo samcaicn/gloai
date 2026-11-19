@@ -456,6 +456,7 @@ class PhoneSetupFlowTest {
         assertFalse(PhoneSetupFlow.unavailable(noWay.copy(status = BuiltinShellStatus.Connecting)))
         assertFalse(PhoneSetupFlow.unavailable(noWay.copy(restart = HelperRestart.UsbCommand)))
         assertFalse(PhoneSetupFlow.unavailable(noWay.copy(restart = HelperRestart.Wireless)))
+        assertFalse(PhoneSetupFlow.unavailable(noWay.copy(restart = HelperRestart.Shizuku)))
         assertTrue(PhoneSetupFlow.unavailable(true, true, BuiltinShellStatus.NotPaired, HelperRestart.None))
     }
 }

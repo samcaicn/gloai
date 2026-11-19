@@ -614,7 +614,11 @@ class TaskRun(
                         phoneServices.setupPrompt.request()
                         // 只用 USB 命令起过的助手停了:照实说要再运行命令,不让人去找无线调试
                         throw PhoneUnavailable(
-                            if (phoneServices.shellControl.restart == HelperRestart.UsbCommand) NO_PHONE_HELPER_USB else NO_PHONE_HELPER,
+                            when (phoneServices.shellControl.restart) {
+                                HelperRestart.UsbCommand -> NO_PHONE_HELPER_USB
+                                HelperRestart.Shizuku -> NO_PHONE_HELPER_SHIZUKU
+                                HelperRestart.Wireless, HelperRestart.None -> NO_PHONE_HELPER
+                            },
                         )
                     }
                 // 服务卡在「开着却没运行」、正在自动重启时多等一会儿,修好了接着做,放弃了照常报错
@@ -1229,6 +1233,7 @@ class TaskRun(
         const val A11Y_WAIT_MS = 5_000L
         val NO_PHONE_HELPER: String get() = tr(R.string.task_no_phone_helper)
         val NO_PHONE_HELPER_USB: String get() = tr(R.string.task_no_phone_helper_usb)
+        val NO_PHONE_HELPER_SHIZUKU: String get() = tr(R.string.task_no_phone_helper_shizuku)
         const val TAG = "MikaTask"
     }
 }

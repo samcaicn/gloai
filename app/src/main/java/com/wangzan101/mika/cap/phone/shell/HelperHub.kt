@@ -7,6 +7,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Binder
 import android.os.Bundle
+import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
 import com.wangzan101.mika.cap.phone.PhoneServices
@@ -16,9 +17,13 @@ import com.wangzan101.mika.core.shell.HelperHandoff
 import com.wangzan101.mika.core.shell.HelperRestoreReport
 import com.wangzan101.mika.core.shell.NonceSlots
 import com.wangzan101.mika.core.shell.NonceStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import android.os.ParcelFileDescriptor
 import java.io.IOException
 import com.wangzan101.mika.shell.IMikaShell
@@ -56,6 +61,7 @@ class HelperHub internal constructor(
 
     private val deviceFilesLock = Any()
     private val deviceFilesSession = java.util.UUID.randomUUID().toString()
+    private val detachScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
 
     /** Synchronize on every call, including after helper reconnection; never fall back to an old policy. */
     fun syncDeviceFiles(): Boolean = synchronized(deviceFilesLock) {
@@ -174,6 +180,56 @@ class HelperHub internal constructor(
             putBoolean(HelperHandoff.KEY_ACCEPTED, true)
             putString(HelperHandoff.KEY_NEXT, next)
             putBinder(HelperHandoff.KEY_TOKEN, token)
+        }
+    }
+
+    /**
+     * Attach a helper binder obtained from Shizuku's UserService.
+     * Verifies the remote identity runs as shell (2000) or root (0) and links death cleanup.
+     */
+    @Synchronized
+    fun attachShizuku(binder: IBinder): IMikaShell? {
+        val shell = IMikaShell.Stub.asInterface(binder) ?: return null
+        val ids = runCatching { shell.identity() }.getOrNull()
+        if (ids == null || ids.size < 2 || (ids[0] != HelperHandoff.SHELL_UID && ids[0] != 0)) {
+            Log.w(TAG, "shizuku helper identity rejected: ${ids?.contentToString()}")
+            return null
+        }
+        try {
+            binder.linkToDeath(
+                {
+                    synchronized(deviceFilesLock) {
+                        if (_shell.compareAndSet(shell, null)) directoryStore.clearSync()
+                    }
+                },
+                0,
+            )
+        } catch (_: Exception) {
+            return null
+        }
+        handoffDiagnostics.clear()
+        synchronized(deviceFilesLock) {
+            directoryStore.clearSync()
+            _shell.value = shell
+        }
+        Log.i(TAG, "shizuku helper pid ${ids[1]} uid ${ids[0]} attached")
+        return shell
+    }
+
+    /** Detach the Shizuku-backed helper and release any resources it held for Mika. */
+    fun detachShizuku(shell: IMikaShell? = null) {
+        val target = synchronized(deviceFilesLock) {
+            val current = _shell.value
+            if (shell == null || current === shell) {
+                _shell.value = null
+                directoryStore.clearSync()
+                current
+            } else {
+                null
+            }
+        }
+        if (target != null) {
+            detachScope.launch { runCatching { target.releaseAll() } }
         }
     }
 

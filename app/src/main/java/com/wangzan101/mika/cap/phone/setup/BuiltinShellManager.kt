@@ -24,6 +24,7 @@ import com.wangzan101.mika.core.adb.LocalPortScan
 import com.wangzan101.mika.core.adb.NioPortScanner
 import com.wangzan101.mika.core.adb.PortCache
 import com.wangzan101.mika.core.shell.BuiltinShellEngine
+import com.wangzan101.mika.core.shell.BuiltinShellFailure
 import com.wangzan101.mika.core.shell.BuiltinShellPlatform
 import com.wangzan101.mika.core.shell.HelperHandoff
 import com.wangzan101.mika.core.shell.PermissionCommands
@@ -31,6 +32,8 @@ import com.wangzan101.mika.core.shell.RecoveryCapability
 import com.wangzan101.mika.core.shell.RecoveryConsent
 import com.wangzan101.mika.core.shell.WirelessDebuggingAutoOn
 import com.wangzan101.mika.core.shell.ShellCommandRunner
+import com.wangzan101.mika.core.shell.ShellTransport
+import com.wangzan101.mika.core.shell.ShizukuPlatformState
 import com.wangzan101.mika.core.shell.SuAnswer
 import com.wangzan101.mika.core.shell.SuProbe
 import com.wangzan101.mika.cap.phone.shell.HelperHub
@@ -43,10 +46,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
+import java.io.IOException
 import java.net.Inet4Address
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
@@ -70,9 +75,18 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
     /** 已 root 的手机上「用 root 启动手机助手」「允许 Mika 执行 root 命令」两个开关;变了就让看门狗按新的情况再试。 */
     val root = RootControl(app, scope) { engine.rootChanged() }
 
+    /** Shizuku 官方 API 通道:检查安装/运行/授权并绑定 UserService。 */
+    val shizuku = ShizukuController(app, hub, scope) { engine.shizukuChanged() }
+
+    private val _transport = MutableStateFlow(
+        ShellTransport.parse(app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_TRANSPORT, null)),
+    )
+    val transport: StateFlow<ShellTransport> = _transport.asStateFlow()
+
     private val platform: AndroidPlatform by lazy {
         AndroidPlatform(
-            app, hub, root,
+            app, hub, root, shizuku, scope,
+            { _transport.value = it },
             { lastConnectCandidates = it },
             { _scanningPorts.value = it },
             { lastHelperLaunchStage = it },
@@ -110,8 +124,18 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
      */
     val commandRunner = ShellCommandRunner { command ->
         withContext(Dispatchers.IO) {
-            hub.shell.value?.let { it.runCommand(command)?.getString("output").orEmpty() }
-                ?: platform.connect().use { it.exec(command).readText() }
+            if (hub.shell.value == null && engine.shizukuStart) {
+                engine.need()
+                withTimeoutOrNull(SHIZUKU_COMMAND_WAIT_MS) { hub.shell.first { it != null } }
+            }
+            val running = hub.shell.value
+            if (running != null) {
+                running.runCommand(command)?.getString("output").orEmpty()
+            } else if (engine.transport == ShellTransport.Shizuku) {
+                throw IOException("Shizuku helper is not running")
+            } else {
+                platform.connect().use { it.exec(command).readText() }
+            }
         }
     }
 
@@ -122,6 +146,19 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
     fun need() {
         engine.need()
         usbScript.refresh()
+    }
+
+    /** 刷新 Shizuku 状态;若有变化立即通知引擎。 */
+    fun refreshShizuku(): ShizukuPlatformState {
+        val before = shizuku.state.value
+        val after = shizuku.refresh()
+        if (after != before) engine.shizukuChanged()
+        return after
+    }
+
+    /** 在后台线程刷新 Shizuku 状态;若有变化立即通知引擎。 */
+    fun refreshShizukuAsync() {
+        scope.launch(Dispatchers.IO) { refreshShizuku() }
     }
 
     /** 用户在引导页填了无线调试的端口:下一次连接带上它(只用这一次,连上了就记作缓存),然后重试。 */
@@ -136,6 +173,7 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
         started = true
         usbScript.start()
         root.refresh()
+        refreshShizukuAsync()
         val e = engine
         // 无线调试一打开就试着连回去;关掉时状态马上变成「无线调试已关」
         app.contentResolver.registerContentObserver(
@@ -155,12 +193,16 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
             )
         }
         e.start()
+        shizuku.start(refreshNow = false)
     }
 
     private class AndroidPlatform(
         private val app: Context,
         private val hub: HelperHub,
         private val root: RootControl,
+        private val shizuku: ShizukuController,
+        private val scope: CoroutineScope,
+        private val onTransportChanged: (ShellTransport) -> Unit,
         private val candidates: (ConnectCandidates) -> Unit,
         private val scanning: (Boolean) -> Unit,
         private val launchStage: (String) -> Unit,
@@ -189,6 +231,18 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
             root.requestStart()
             return true
         }
+
+        override fun transport(): ShellTransport =
+            ShellTransport.parse(prefs.getString(KEY_TRANSPORT, null))
+
+        override fun setTransport(transport: ShellTransport) {
+            prefs.edit().putString(KEY_TRANSPORT, transport.name).apply()
+            onTransportChanged(transport)
+        }
+
+        override fun shizukuState(): ShizukuPlatformState = shizuku.state.value
+
+        override suspend fun launchHelperViaShizuku(): BuiltinShellFailure? = shizuku.launchHelper()
 
         /**
          * 经 su 以 shell 身份起同一个助手:`su 2000 -c '<id -u; 和无线调试同样的命令>'`。先读到 2000(su 答应了、也切到了 shell)
@@ -287,8 +341,16 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
         private fun portRangeText(): String? = runCatching { File(PORT_RANGE_FILE).readText() }.getOrNull()
 
         override fun stopHelper() {
-            // destroy 会让助手进程当场退出,这一调用多半以 DeadObjectException 结束
-            runCatching { hub.shell.value?.destroy() }
+            val remaining = hub.shell.value
+            hub.detachShizuku(remaining)
+            val unbind = shizuku.prepareStop()
+            if (unbind || remaining != null) {
+                scope.launch(Dispatchers.IO) {
+                    if (unbind) shizuku.unbindService()
+                    // destroy 会让助手进程当场退出,这一调用多半以 DeadObjectException 结束
+                    if (remaining != null) runCatching { remaining.destroy() }
+                }
+            }
         }
 
         override fun forget() {
@@ -309,6 +371,8 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
         /** 内置助手从安卓 12 起启用;旧系统使用不带较新屏幕标志的兼容路径。 */
         const val MIN_SDK = Build.VERSION_CODES.S
         private const val PREFS = "builtin_shell"
+        private const val KEY_TRANSPORT = "transport"
+        private const val SHIZUKU_COMMAND_WAIT_MS = 5_000L
         /** 和配对其余几处(PairingCoordinator、PairingCodeReader)用同一个,按它一条命令就能看完配对经过。 */
         private const val PAIRING_TAG = "MikaPairing"
         /** 安卓原版 adbd 把无线调试的连接端口写在这个系统属性里;读不到时靠缓存、mDNS、扫本机端口和用户填的端口。 */

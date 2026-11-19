@@ -121,8 +121,11 @@ object PhoneSetupCopy {
     val CONNECT_PORT_SUBMIT: String get() = tr(R.string.phone_connect_port_submit)
     val SUCCESS_LINE: String get() = tr(R.string.phone_success)
     /** 成功页底部的提醒:手机重启后怎么让助手回来,看它上次是怎么起的。 */
-    fun successNote(restart: HelperRestart): String =
-        if (restart == HelperRestart.UsbCommand) tr(R.string.phone_success_note_usb) else tr(R.string.phone_success_note)
+    fun successNote(restart: HelperRestart): String = when (restart) {
+        HelperRestart.UsbCommand -> tr(R.string.phone_success_note_usb)
+        HelperRestart.Shizuku -> tr(R.string.phone_success_note_shizuku)
+        HelperRestart.Wireless, HelperRestart.None -> tr(R.string.phone_success_note)
+    }
     /** 首次上手最后一步成功后的底部按钮;从设置进来的是 [SUCCESS_DONE]。 */
     val START_USING: String get() = tr(R.string.phone_start_using)
     val SUCCESS_DONE: String get() = tr(R.string.done)
@@ -198,6 +201,22 @@ object PhoneSetupCopy {
             tr(R.string.fail_root_no_shell),
             tr(R.string.fail_root_no_shell_body),
         )
+        BuiltinShellFailure.ShizukuNotInstalled -> FailureCopy(
+            tr(R.string.fail_shizuku_not_installed),
+            tr(R.string.fail_shizuku_not_installed_body),
+        )
+        BuiltinShellFailure.ShizukuNotRunning -> FailureCopy(
+            tr(R.string.fail_shizuku_not_running),
+            tr(R.string.fail_shizuku_not_running_body),
+        )
+        BuiltinShellFailure.ShizukuPermissionNeeded -> FailureCopy(
+            tr(R.string.fail_shizuku_permission),
+            tr(R.string.fail_shizuku_permission_body),
+        )
+        BuiltinShellFailure.ShizukuBindFailed -> FailureCopy(
+            tr(R.string.fail_shizuku_bind_failed),
+            tr(R.string.fail_shizuku_bind_failed_body),
+        )
         BuiltinShellFailure.Unknown -> FailureCopy(
             tr(R.string.fail_unknown),
             tr(R.string.fail_unknown_body),
@@ -217,14 +236,21 @@ object PhoneSetupCopy {
     val RECONNECT: String get() = tr(R.string.phone_reconnect)
 
     /** 已配对、只是没连上或助手掉了:点一下用已配对的钥匙再连一次就行,不必回引导页。 */
-    fun canReconnect(s: BuiltinShellStatus): Boolean = s is BuiltinShellStatus.Failed && s.fix == BuiltinShellFix.Retry
+    fun canReconnect(s: BuiltinShellStatus): Boolean =
+        s is BuiltinShellStatus.Failed &&
+            s.fix == BuiltinShellFix.Retry &&
+            s.reason != BuiltinShellFailure.ShizukuNotInstalled &&
+            s.reason != BuiltinShellFailure.ShizukuPermissionNeeded
 
     val ROW_TITLE: String get() = tr(R.string.settings_phone_ops)
     val ROW_SUBTITLE: String get() = tr(R.string.phone_row_sub)
 
     /** 设置 › 手机操作页底部的完整说明:只用 USB 启动命令起过助手时,说重启后要再运行命令,不说打开无线调试。 */
-    fun usageNote(restart: HelperRestart): String =
-        if (restart == HelperRestart.UsbCommand) tr(R.string.phone_usage_note_usb) else tr(R.string.phone_usage_note)
+    fun usageNote(restart: HelperRestart): String = when (restart) {
+        HelperRestart.UsbCommand -> tr(R.string.phone_usage_note_usb)
+        HelperRestart.Shizuku -> tr(R.string.phone_usage_note_shizuku)
+        HelperRestart.Wireless, HelperRestart.None -> tr(R.string.phone_usage_note)
+    }
 
     fun statusValue(s: BuiltinShellStatus): Pair<String, ValueTone> = when (s) {
         BuiltinShellStatus.Running -> tr(R.string.sandbox_ready) to ValueTone.Ok
@@ -235,30 +261,52 @@ object PhoneSetupCopy {
     }
 
     /**
-     * 「高级」里状态那一行的说明。[usbDebugging] 关着时,在运行也提醒一句:断了 Wi-Fi 就会停(经 root 起的不靠 Wi-Fi,不提醒)。
+     * 「高级」里状态那一行的说明。[usbDebugging] 关着时,在运行也提醒一句:断了 Wi-Fi 就会停(经 root 或 Shizuku 起的不靠 Wi-Fi,不提醒)。
      * [rootStart]:看门狗经 su 起助手(用户打开了「用 root 启动」且能用),正在连接时说正在用 root 启动。
+     * [shizukuStart]:此刻优先经 Shizuku 起助手。
      */
-    fun statusLine(s: BuiltinShellStatus, usbDebugging: Boolean = true, rootStart: Boolean = false): String = when (s) {
-        BuiltinShellStatus.Running ->
-            if (usbDebugging || rootStart) tr(R.string.phone_line_running) else tr(R.string.phone_line_running_no_usb)
+    fun statusLine(
+        s: BuiltinShellStatus,
+        usbDebugging: Boolean = true,
+        rootStart: Boolean = false,
+        shizukuStart: Boolean = false,
+    ): String = when (s) {
+        BuiltinShellStatus.Running -> when {
+            shizukuStart -> SHIZUKU_RUNNING_LINE
+            usbDebugging || rootStart -> tr(R.string.phone_line_running)
+            else -> tr(R.string.phone_line_running_no_usb)
+        }
         BuiltinShellStatus.NotPaired -> tr(R.string.phone_line_not_paired)
         BuiltinShellStatus.WirelessDebuggingOff -> tr(R.string.phone_line_wireless_off)
-        BuiltinShellStatus.Connecting -> if (rootStart) ROOT_STARTING_LINE else tr(R.string.phone_connecting)
+        BuiltinShellStatus.Connecting -> when {
+            shizukuStart -> SHIZUKU_STARTING_LINE
+            rootStart -> ROOT_STARTING_LINE
+            else -> tr(R.string.phone_connecting)
+        }
         is BuiltinShellStatus.Failed -> when (s.reason) {
             BuiltinShellFailure.NoWifi -> NO_WIFI_LINE
             BuiltinShellFailure.WifiNotAllowed -> tr(R.string.phone_line_joined, failure(s.reason).title, WIFI_NOT_ALLOWED_LINE)
             // 停了要用户动手:直接说怎么再起
-            BuiltinShellFailure.UsbHelperStopped, in ROOT_FAILURES -> failure(s.reason).body
+            BuiltinShellFailure.UsbHelperStopped, in ROOT_FAILURES, in SHIZUKU_FAILURES -> failure(s.reason).body
             else -> failure(s.reason).title
         }
     }
 
     val NO_WIFI_LINE: String get() = tr(R.string.phone_no_wifi_line)
     val ROOT_STARTING_LINE: String get() = tr(R.string.phone_root_line_starting)
+    val SHIZUKU_STARTING_LINE: String get() = tr(R.string.phone_shizuku_line_starting)
+    val SHIZUKU_RUNNING_LINE: String get() = tr(R.string.phone_shizuku_line_running)
 
     /** 「用 root 启动」用不了的几种原因:状态行、横幅都直接说为什么、怎么办。 */
     val ROOT_FAILURES = setOf(
         BuiltinShellFailure.RootDenied, BuiltinShellFailure.RootNoAnswer, BuiltinShellFailure.RootUnavailable, BuiltinShellFailure.RootNoShellUid,
+    )
+
+    val SHIZUKU_FAILURES = setOf(
+        BuiltinShellFailure.ShizukuNotInstalled,
+        BuiltinShellFailure.ShizukuNotRunning,
+        BuiltinShellFailure.ShizukuPermissionNeeded,
+        BuiltinShellFailure.ShizukuBindFailed,
     )
 
     // ---------- root ----------

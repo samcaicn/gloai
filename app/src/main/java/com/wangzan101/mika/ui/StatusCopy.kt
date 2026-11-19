@@ -26,7 +26,7 @@ enum class Fix {
     /** 本 App 的「应用信息」页:系统拦着不让开无障碍时,在这里允许受限制的设置。 */
     OpenAppInfo,
     // 内置助手
-    OpenPhoneSetup, RepairPhoneHelper, RetryPhoneHelper, UnpairPhoneHelper,
+    OpenPhoneSetup, RepairPhoneHelper, RetryPhoneHelper, UnpairPhoneHelper, OpenPhoneOps,
     OpenAboutPhone, OpenDeveloperOptions, OpenUsbDebugging, OpenWirelessDebugging, OpenWifi,
 }
 
@@ -83,6 +83,8 @@ object StatusCopy {
         // 引导页把每一步都讲清楚了,不再弹说明
         is Problem.PhoneHelper -> when {
             PhoneSetupCopy.canReconnect(p.status) -> Fix.RetryPhoneHelper
+            (p.status as? BuiltinShellStatus.Failed)?.reason == BuiltinShellFailure.ShizukuNotInstalled ||
+                (p.status as? BuiltinShellStatus.Failed)?.reason == BuiltinShellFailure.ShizukuPermissionNeeded -> Fix.OpenPhoneOps
             // 这个 Wi-Fi 还没允许无线调试:直接去亲手打开一次(系统会问要不要允许)
             (p.status as? BuiltinShellStatus.Failed)?.fix == BuiltinShellFix.OpenWirelessDebugging -> Fix.OpenWirelessDebugging
             else -> Fix.OpenPhoneSetup
@@ -150,6 +152,10 @@ object StatusCopy {
                 else if (st.reason in PhoneSetupCopy.ROOT_FAILURES) BannerCopy(
                     PhoneSetupCopy.failure(st.reason).title, PhoneSetupCopy.failure(st.reason).body,
                     if (PhoneSetupCopy.canReconnect(st)) PhoneSetupCopy.RECONNECT else tr(R.string.view),
+                )
+                else if (st.reason in PhoneSetupCopy.SHIZUKU_FAILURES) BannerCopy(
+                    PhoneSetupCopy.failure(st.reason).title, PhoneSetupCopy.failure(st.reason).body,
+                    if (PhoneSetupCopy.canReconnect(st)) PhoneSetupCopy.RECONNECT else tr(R.string.fix_it),
                 )
                 else if (st.reason == BuiltinShellFailure.WifiNotAllowed) BannerCopy(
                     PhoneSetupCopy.failure(st.reason).title, PhoneSetupCopy.WIFI_NOT_ALLOWED_LINE, tr(R.string.heads_up_action),

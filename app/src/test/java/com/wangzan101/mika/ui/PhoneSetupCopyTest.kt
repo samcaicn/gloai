@@ -28,7 +28,7 @@ class PhoneSetupCopyTest {
         BuiltinShellFailure.entries.forEach { val f = PhoneSetupCopy.failure(it); add(f.title); add(f.body) }
         BuiltinShellFix.entries.forEach { add(PhoneSetupCopy.fixLabel(it)) }
         statuses.forEach { add(PhoneSetupCopy.statusLine(it)); add(PhoneSetupCopy.statusLine(it, usbDebugging = false)); add(PhoneSetupCopy.statusValue(it).first) }
-        statuses.forEach { add(PhoneSetupCopy.statusLine(it, rootStart = true)) }
+        statuses.forEach { add(PhoneSetupCopy.statusLine(it, rootStart = true)); add(PhoneSetupCopy.statusLine(it, shizukuStart = true)) }
         RootGrant.entries.forEach {
             add(PhoneSetupCopy.rootStartLine(it)); add(PhoneSetupCopy.rootStatusLine(it))
             add(PhoneSetupCopy.rootCommandsLine(true, it)); add(PhoneSetupCopy.rootCommandsLine(false, it))
@@ -84,21 +84,24 @@ class PhoneSetupCopyTest {
     fun reconnectOnlyWhenRetryingIsTheFix() {
         val reconnectable = statuses.filter { PhoneSetupCopy.canReconnect(it) }
         assertEquals(
-            // root 被拒绝、没回应:点重试再问一次 su；非本机地址修正后也可重试。
+            // root 被拒绝、没回应:点重试再问一次 su；Shizuku 服务未跑/绑定失败同样直接点重试；非本机地址修正后也可重试。
             listOf(
                 BuiltinShellFailure.ConnectFailed, BuiltinShellFailure.NotLocal, BuiltinShellFailure.HelperStartFailed,
-                BuiltinShellFailure.RootDenied, BuiltinShellFailure.RootNoAnswer, BuiltinShellFailure.Unknown,
+                BuiltinShellFailure.RootDenied, BuiltinShellFailure.RootNoAnswer,
+                BuiltinShellFailure.ShizukuNotRunning, BuiltinShellFailure.ShizukuBindFailed, BuiltinShellFailure.Unknown,
             ),
             reconnectable.map { (it as BuiltinShellStatus.Failed).reason },
         )
         reconnectable.forEach { s ->
             assertEquals(Fix.RetryPhoneHelper, StatusCopy.directFix(Problem.PhoneHelper(s)))
         }
-        // 没配对要走引导;无线调试关着要先去打开;没 Wi-Fi 会自己恢复;配对失效要重新配对
+        // 没配对要走引导;无线调试关着要先去打开;没 Wi-Fi 会自己恢复;配对失效要重新配对;Shizuku 未安装/未授权要去手机操作页处理
         listOf(
             BuiltinShellStatus.NotPaired, BuiltinShellStatus.WirelessDebuggingOff, BuiltinShellStatus.Connecting,
             BuiltinShellStatus.Running, BuiltinShellStatus.Failed(BuiltinShellFailure.NoWifi),
             BuiltinShellStatus.Failed(BuiltinShellFailure.AuthorizationRevoked),
+            BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuNotInstalled),
+            BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuPermissionNeeded),
         ).forEach { assertFalse(PhoneSetupCopy.canReconnect(it)) }
     }
 
@@ -110,6 +113,8 @@ class PhoneSetupCopyTest {
                 PhoneSetupCopy.canReconnect(s) -> Fix.RetryPhoneHelper
                 // 这个 Wi-Fi 还没允许无线调试:直接去亲手打开一次
                 s == BuiltinShellStatus.Failed(BuiltinShellFailure.WifiNotAllowed) -> Fix.OpenWirelessDebugging
+                s == BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuNotInstalled) ||
+                    s == BuiltinShellStatus.Failed(BuiltinShellFailure.ShizukuPermissionNeeded) -> Fix.OpenPhoneOps
                 else -> Fix.OpenPhoneSetup
             }
             assertEquals(fix, StatusCopy.directFix(p))
@@ -217,5 +222,47 @@ class PhoneSetupCopyTest {
         // 无线调试路径的提示不受 USB 恢复说明影响
         assertFalse(PhoneSetupCopy.successNote(HelperRestart.Wireless).contains("拔掉数据线"))
         assertFalse(PhoneSetupCopy.usageNote(HelperRestart.Wireless).contains("拔掉数据线"))
+    }
+
+    /** Shizuku 失败文案、重试/去设置分支、启动中/运行中状态行和重启后提示。 */
+    @Test
+    fun shizukuFailuresHaveClearCopyAndActions() {
+        listOf(
+            BuiltinShellFailure.ShizukuNotInstalled,
+            BuiltinShellFailure.ShizukuPermissionNeeded,
+        ).forEach { reason ->
+            val st = BuiltinShellStatus.Failed(reason)
+            assertFalse(reason.name, PhoneSetupCopy.canReconnect(st))
+            assertEquals(Fix.OpenPhoneOps, StatusCopy.directFix(Problem.PhoneHelper(st)))
+            val banner = StatusCopy.banner(Problem.PhoneHelper(st))
+            assertEquals(PhoneSetupCopy.failure(reason).title, banner.title)
+            assertEquals(PhoneSetupCopy.failure(reason).body, banner.detail)
+            assertEquals("去处理", banner.link)
+        }
+
+        listOf(
+            BuiltinShellFailure.ShizukuNotRunning,
+            BuiltinShellFailure.ShizukuBindFailed,
+        ).forEach { reason ->
+            val st = BuiltinShellStatus.Failed(reason)
+            assertTrue(reason.name, PhoneSetupCopy.canReconnect(st))
+            assertEquals(Fix.RetryPhoneHelper, StatusCopy.directFix(Problem.PhoneHelper(st)))
+            val banner = StatusCopy.banner(Problem.PhoneHelper(st))
+            assertEquals(PhoneSetupCopy.failure(reason).title, banner.title)
+            assertEquals(PhoneSetupCopy.failure(reason).body, banner.detail)
+            assertEquals(PhoneSetupCopy.RECONNECT, banner.link)
+        }
+
+        val notRunning = PhoneSetupCopy.failure(BuiltinShellFailure.ShizukuNotRunning)
+        assertTrue(notRunning.title, notRunning.title.contains("Shizuku is not running"))
+        assertTrue(notRunning.body, notRunning.body.contains("after a phone restart", ignoreCase = true))
+
+        assertTrue(PhoneSetupCopy.statusLine(BuiltinShellStatus.Connecting, shizukuStart = true).contains("Shizuku"))
+        assertEquals(
+            PhoneSetupCopy.statusLine(BuiltinShellStatus.Running, shizukuStart = true),
+            PhoneSetupCopy.statusLine(BuiltinShellStatus.Running, usbDebugging = false, shizukuStart = true),
+        )
+        assertTrue(PhoneSetupCopy.usageNote(HelperRestart.Shizuku).contains("Mika never starts Shizuku itself"))
+        assertTrue(PhoneSetupCopy.successNote(HelperRestart.Shizuku).contains("after a phone restart", ignoreCase = true))
     }
 }
