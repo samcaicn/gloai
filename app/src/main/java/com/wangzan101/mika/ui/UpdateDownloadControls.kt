@@ -122,18 +122,18 @@ internal fun UpdateDownloadActions(
     onInstall: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    val active = state.phase == DownloadPhase.Downloading || state.phase == DownloadPhase.Paused
+    val downloading = state.phase == DownloadPhase.Downloading
+    val active = downloading || state.phase == DownloadPhase.Paused
     val text = when {
         busy -> stringResource(R.string.about_update_working)
-        state.phase == DownloadPhase.Paused -> stringResource(R.string.about_update_paused)
-        active -> state.percent?.let { stringResource(R.string.about_update_progress, it) }
+        downloading -> state.percent?.let { stringResource(R.string.about_update_progress, it) }
             ?: stringResource(R.string.about_update_downloading)
         state.phase == DownloadPhase.Ready -> stringResource(R.string.about_update_install)
-        state.phase == DownloadPhase.Failed -> stringResource(R.string.about_update_retry)
+        state.phase == DownloadPhase.Paused || state.phase == DownloadPhase.Failed -> stringResource(R.string.about_update_retry)
         else -> stringResource(R.string.about_update_download_in_app)
     }
     MikaButton(text, if (state.phase == DownloadPhase.Ready) onInstall else onDownload,
-        Modifier.fillMaxWidth().padding(top = 14.dp), enabled = !busy && !active)
+        Modifier.fillMaxWidth().padding(top = 14.dp), enabled = !busy && !downloading)
     if (active || state.phase == DownloadPhase.Ready) {
         MikaButton(stringResource(R.string.about_update_cancel), onCancel,
             Modifier.fillMaxWidth().padding(top = 10.dp), kind = ButtonKind.Tonal, enabled = !busy)

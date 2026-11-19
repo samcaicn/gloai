@@ -77,8 +77,9 @@ class ApkUpdater(
         sources.forEach { ApkIntegrity.requireTrustedDownloadUrl(it, official, settings.mirrors) }
         val proxy = net.proxyFor(Uri.parse(official).host.orEmpty())
         // 下载的「身份」始终是官方地址:镜像开关或顺序变了,已经下好的同一份包不用重下。
+        // 「暂停」不算在途:系统下载器有时会卡在暂停不自动恢复,再点下载就取消重下,给用户一个手动续上的口子。
         if (prefs.getString("url", null) == official && state(release).phase in
-            listOf(DownloadPhase.Downloading, DownloadPhase.Paused, DownloadPhase.Ready)) return
+            listOf(DownloadPhase.Downloading, DownloadPhase.Ready)) return
         cancel()
         val folder = directory
         check(folder.mkdirs() || folder.isDirectory)
