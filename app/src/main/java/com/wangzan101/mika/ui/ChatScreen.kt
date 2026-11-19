@@ -933,7 +933,7 @@ private fun LazyListScope.exchange(
     fun steer(n: SteerNote) {
         n.finished?.takeIf(String::isNotBlank)?.let { done ->
             item("a$index-${n.id}") {
-                JumpHighlight(highlightKey == "a$index-${n.id}", reduceMotion) { FinishedReply(done, "a$index-${n.id}") }
+                JumpHighlight(highlightKey == "a$index-${n.id}", reduceMotion) { FinishedReply(done, "a$index-${n.id}", conversationId) }
             }
         }
         n.interrupted?.takeIf(String::isNotBlank)?.let { cut ->
@@ -1064,10 +1064,18 @@ private fun DraftText(text: String, generating: Boolean) {
 
 /** 插话交给模型之前已经说完的回复:和回答一样的底和字,长按一样能复制、引用、选择文字。 */
 @Composable
-private fun FinishedReply(text: String, key: String) {
+private fun FinishedReply(text: String, key: String, conversationId: String?) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     Box(Modifier.padding(bottom = 4.dp)) {
         AnswerArea(key, text, Modifier.fillMaxWidth().answerSurface()) {
-            MarkdownText(text, AnswerText.copy(color = MikaTheme.colors.ink), streaming = false)
+            Column {
+                MarkdownText(text, AnswerText.copy(color = MikaTheme.colors.ink), streaming = false)
+                OutputRefs(text, conversationId) { item ->
+                    val id = conversationId ?: return@OutputRefs
+                    scope.launch { if (!AttachFiles.openSent(context, id, item.path)) Toast.makeText(context, AttachCopy.GONE, Toast.LENGTH_SHORT).show() }
+                }
+            }
         }
     }
 }
